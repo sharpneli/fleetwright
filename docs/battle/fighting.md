@@ -507,7 +507,8 @@ between cells), its thickness, material and normal.
   on a ship or a contact engages it, "cease" stops; each engaged battery's state, level, salvos and hits; a line from
   each engaged ship to its target. `-engage=ship[:battery]:target`.
 - **The bench:** `shipgen duel SHOOTER [TARGET] [--range M] [--level L] [--runs N] [--trace] ...`; `--trace` prints
-  each salvo's fall against the target, the track's aim error and the correction it was fired with.
+  each salvo's fall against the target, the track's aim error and the correction it was fired with (policies, weather
+  and the record's cases since `fire-control.md` F1).
 - **The numbers**, against `fire_control_ref.py` run on the same cases in the same clear weather (no haze, smoke or
   splash confusion, which the sim doesn't have yet):
 
@@ -1046,7 +1047,9 @@ numbers before and after against the anchors. The list, by link, with where the 
   Planned in `fire-control.md` (agreed 2026-10-17): fire control as tech blocks in the design, instruments as parts at
   their real heights, a tracker per kind of computer, fire discipline and spotting by the navy's rules. F0 done
   2026-10-18: each battery fires from a fit (optics, computer, mounts) and fire-control units with their instruments;
-  a director holds one target.
+  a director holds one target. F1 done 2026-10-18: `duel` takes target and own policies, weather, night, practice and a
+  fit; `fc-converge`, `fc-ladder` and `fc-history` (the record, the bench every later step answers to), with the
+  reference's tables beside them (`--ref`); where today's model stands is recorded in `fire-control.md` F1.
 - **Ship motion** (`ship-motion/ship-motion-gunnery-research.md` §7.7, in its order):
   - a roll phase per ship from `RollPeriodS` and the sea, with firing on the roll and a once-a-roll rate;
   - laying error `√(base² + (τ·ω)²)`;

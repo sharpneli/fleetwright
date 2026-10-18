@@ -86,7 +86,21 @@ public static class Program
             each design's sea trials on the ship model, headless: turning circles at hard over and standard rudder,
             0 -> full, coasting, a crash stop, each beside the research's band for its kind; --out writes the circles
             as DIR/<design>_turns.svg
-        shipgen duel SHOOTER [TARGET] [--range M] [--level L] [--runs N] [--minutes M] [--speed KN] [--target-speed KN] [--bearing DEG] [--course DEG] [--crew trained] [--battery B] [--seed S] [--damage]
+        shipgen duel SHOOTER [TARGET] [--range M] [--fit design|0-8|NAME] [--runs N] [--minutes M] [--speed KN] [--target-speed KN] [--bearing DEG] [--course DEG]
+                [--target-policy P] [--own-policy P] [--visibility KM] [--night | --at ISO] [--combat X] [--crew trained] [--battery B] [--seed S] [--trace] [--damage]
+            the fire-control bench (docs/battle/fire-control.md F1): the shooter steams north, the target at a bearing and range on
+            a course; a policy is steady, zigzag:AMP:PERIOD, circle:RATE:FROM (°/s, s after the track), chase:AMP:PERIOD (steer for
+            the last splash), turn:DEG:AT or crippled; --fit a preset (--level the same) or the battery's own; --combat 1 for
+            practice. Prints hits, straddles, the first hit by salvo, the track's aim error as it settles and after manoeuvres.
+        shipgen fc-converge [--runs N] [--ref]
+            the computers alone (the research's tables 5 and 12): each preset's predicted-position error over a 25 s time of
+            flight against a crossing target that turns 45° at 300 s, or circles at 1°/s; --ref runs fire_control_ref.py's beside
+        shipgen fc-ladder [--runs N] [--ref]
+            each preset in the research's ladder (table 6: day, long range, haze, night) and against a manoeuvring target
+            (table 11: steady, zigzag, circles)
+        shipgen fc-history [--runs N] [--case TEXT] [--ref]
+            the historical record's cases (fire-control.md, "The yardstick"), each at its recorded range, weather and target
+            behaviour, beside the record's band, then the orderings between them: the bench every fire-control step answers to
         shipgen hits TARGET [--shooter DESIGN] [--battery B] [--kind ap|common|he] [--loadout SPEC] [--range M] [--aspect DEG] [--n N] [--per-ship K] [--seed S] [--show N] [--settle MIN]
             the damage model alone (docs/battle/fighting.md 4.3a): N hits of the shooter's battery's shell (the one it
             fires, or --kind) at a range, spread over the target as the falling shells see it from --aspect degrees off
@@ -224,12 +238,10 @@ public static class Program
                     double.Parse(a.Get("at", "10")!, System.Globalization.CultureInfo.InvariantCulture), !a.Has("no-land"), a.Has("replay"),
                     a.Get("watch")?.Split(',').Select(int.Parse).ToArray(),
                     double.Parse(a.Get("speed", "0")!, System.Globalization.CultureInfo.InvariantCulture)),
-                "duel" => Duel.Run(a.Positional.ElementAtOrDefault(0) ?? "super_dreadnought", a.Positional.ElementAtOrDefault(1) ?? a.Positional.ElementAtOrDefault(0) ?? "super_dreadnought",
-                    n => LoadDesign(File.Exists(n) ? n : Path.Combine(Root(a), "designs", n + ".json")),
-                    a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
-                    new Duel.Options(D(a, "range", 16_000 * 0.9144), a.Int("level", -1), a.Int("runs", 20), D(a, "minutes", 15), D(a, "speed", 25),
-                        D(a, "target-speed", 25), D(a, "bearing", 90), D(a, "course", 0),
-                        Enum.Parse<Fleetwright.Sim.Core.CrewQuality>(a.Get("crew", "trained")!, ignoreCase: true), a.Int("seed", 1), a.Int("battery", 0), a.Has("trace"), a.Has("damage"))),
+                "duel" => DuelCmd(a),
+                "fc-converge" => FcLadder.Converge(Settings(a), a.Int("runs", 30), a.Has("ref") ? Root(a) : null, n => Class(a, n)),
+                "fc-ladder" => FcLadder.Run(Settings(a), a.Int("runs", 20), a.Has("ref") ? Root(a) : null, n => Class(a, n)),
+                "fc-history" => FcHistory.Run(Settings(a), a.Int("runs", 12), a.Get("case"), a.Has("ref") ? Root(a) : null, n => Class(a, n)),
                 "hits" => HitsBench.Run(a.Positional.ElementAtOrDefault(0) ?? "dreadnought", n => LoadDesign(Resolve(a, n)),
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
                     new HitsBench.Options(a.Get("shooter"), a.Int("battery", 0), a.Get("kind"), D(a, "range", 12_000), D(a, "aspect", 90), a.Int("n", 2000),
@@ -562,6 +574,31 @@ public static class Program
         }
         Console.WriteLine($"total {totC:F2} s, python {totP:F2} s (x{totP / totC:F1})");
         return 0;
+    }
+
+    static SimSettings Settings(Args a) => SimSettings.Load(a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"));
+
+    static readonly System.Collections.Concurrent.ConcurrentDictionary<string, ShipClass> classes = new();
+
+    /// <summary>A design compiled once by name or path (shipgen/designs, then Content/Scenarios/Designs).</summary>
+    static ShipClass Class(Args a, string name) =>
+        classes.GetOrAdd(name, n => ShipClassCompiler.Compile(ShipDesign.Build(LoadDesign(Resolve(a, n)))));
+
+    static int DuelCmd(Args a)
+    {
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        string shooter = a.Positional.ElementAtOrDefault(0) ?? "super_dreadnought", target = a.Positional.ElementAtOrDefault(1) ?? shooter;
+        var c = new FcCase
+        {
+            Shooter = Class(a, shooter), Target = Class(a, target), Battery = a.Int("battery", 0),
+            Fit = Duel.ParseFit(a.Get("fit") ?? a.Get("level")), RangeM = D(a, "range", 16 * FcBench.Kyd), BearingDeg = D(a, "bearing", 90),
+            CourseDeg = D(a, "course", 0), OwnKn = D(a, "speed", 25), TargetKn = D(a, "target-speed", 25),
+            Own = Policy.Parse(a.Get("own-policy", "steady")!), Behaviour = Policy.Parse(a.Get("target-policy", "steady")!),
+            VisibilityM = D(a, "visibility", 0) * 1000, Combat = D(a, "combat", double.NaN), Minutes = D(a, "minutes", 15),
+            Start = a.Has("night") ? FcCase.Night : a.Get("at") is { } at ? WorldTime.FromUtc(DateTime.Parse(at, inv, System.Globalization.DateTimeStyles.AdjustToUniversal | System.Globalization.DateTimeStyles.AssumeUniversal)) : FcCase.Day,
+            Crew = Enum.Parse<CrewQuality>(a.Get("crew", "trained")!, ignoreCase: true), Damage = a.Has("damage"),
+        };
+        return Duel.Run(c, Settings(a), a.Int("runs", 20), a.Int("seed", 1), a.Has("trace"));
     }
 
     static int SimCmd(Args a)

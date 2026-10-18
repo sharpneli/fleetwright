@@ -1,5 +1,5 @@
 # Plan: fire control (a 4.5 deepening)
-Status: **agreed with the user 2026-10-17** ("Decided" below; radar moved out); F0 done 2026-10-18    Updated: 2026-10-18
+Status: **agreed with the user 2026-10-17** ("Decided" below; radar moved out); F0 and F1 done 2026-10-18    Updated: 2026-10-18
 
 The fine-tune pass for the **Fire control** link of `fighting.md` 4.5 ("the trackers by era ... the clocks' limits ...
 the full ladder of levels, radar as a sensor, night ... splash confusion ... the designer emitting levels and sensors,
@@ -221,6 +221,87 @@ updates this doc and `fighting.md`.
   departure each step makes is visible. Not a bound.
 - **The kept tests** that pin today's numbers (`GunneryTests`: level 3 at 2.5-8%, the pairs within ×2 of the reference)
   are rewritten to the yardstick's bands as the steps that change them land.
+- **Done 2026-10-18.** What it came to:
+  - **The engine** (`Shipgen.Cli/FcBench.cs`): an `FcCase` (shooter, target, battery, fit, range, bearing, course, speeds,
+    a `Policy` each, visibility, start time, combat factor, minutes, crew) run on a fresh world a second at a time, the
+    ships steered between the seconds as `engage()` steers them: steady, `zigzag:AMP:PERIOD`, `circle:RATE:FROM` (the
+    rudder walked to hold the rate; the circles make good 0.50 and 1.00°/s), `chase:AMP:PERIOD` (steer for the last
+    splash within 600 m), `turn:DEG:AT`, crippled. `FcStats` sums the runs: hits, straddles, the first hit by salvo and
+    after the first salvo, the track's aim error as it settles (2-4, 4-8, 8+ min) and after the target's manoeuvres
+    (0-1, 1-2, 2-4 min), the salvos' mean fall in range after 5 min, the speeds made good. Runs go on threads.
+    The one sim change is a reader, `GunnerySystem.TrackAt` (where a battery's track has its target at a time).
+  - **`shipgen duel`** is that engine with `--target-policy`, `--own-policy`, `--visibility KM`, `--night` (a December
+    night) or `--at ISO`, `--combat X` (1 for practice) and `--fit design|0-8|NAME` (`--level` kept). A steady duel gives
+    the old duel's numbers exactly (3.1%, 48 of 1,560). Its aim error is against the target's course and speed, so it
+    understates a circling target's; `fc-converge` takes where the target went.
+  - **`shipgen fc-converge`** (tables 5 and 12), **`fc-ladder`** (tables 6 and 11), **`fc-history`** (the yardstick) with
+    `--runs N`; `--ref` runs the reference's same table after (`research/simulation/fc_tables.py`, python with numpy).
+    About 10, 13 and 18 s.
+  - **Departures from the research's cases:** the ladder's long-range column is at 22 kyd, since Queen Elizabeth's 20°
+    mounts don't reach the reference's 25 kyd (its 15" has 30°); the converge target is a battlecruiser, the only
+    25 kn ship of the size; the sim's ship turns as a ship does, the reference's at once. Haze is the visibility only,
+    and smoke, splash confusion, the sea and low contrast aren't in the sim yet: each history case names what it misses.
+
+**Where today's model stands** (2026-10-18; not a bound: the size of each later step's departure is read against it).
+
+*Against the record* (`fc-history --runs 24`): 11 of 23 cases in their bands.
+
+| Case | Range | Model | Band | Record |
+|---|---|---|---|---|
+| Santiago 1898, US 12" (preset 0) | 2.6 km | 14.5% | 1.8-7 | 3.5% |
+| Yellow Sea 1904, Japanese 12" | 5.6 km | 10.6% | 2.5-9 | 4.7% |
+| Tsushima 1905, Japanese 12" | 4.6 km | 10.8% | 5-15 | ~9% |
+| Tsushima 1905, Japanese 6" | 4.6 km | 4.0% | 1-4 | ~2% |
+| 1912 trial, director / independent (practice) | 8.2 km | 26.4 / 16.9% | | about even in clear weather |
+| Dogger Bank, British BCs | 16.5 km | 2.7%, first hit salvo 10 | 0.7-2.8 | 1.4%, ~10 salvos |
+| Dogger Bank, German BCs | 16.5 km | 2.1% | 1.2-5 | ~2.5% |
+| Jutland, British 1st/2nd BCS | 15 km | 3.1% | 0.7-2.8 | 1.4% |
+| Jutland, 5th BS | 17.5 km | 2.8% | 1.3-5.2 | 2.6% |
+| Jutland, Grand Fleet BS | 10.5 km | 7.6% | 1.8-7.2 | 3.6% |
+| Jutland, 3rd BCS | 8.2 km | 16.6% | 2.2-8.6 | 4.3% |
+| Jutland, German 1st SG | 15 km | 3.8% | 2-8 | 4.0% |
+| Jutland, German battleships | 11 km | 6.0% | 1.5-6 | 3.0% |
+| Falklands, Invincible | 13.7 km | 3.2% | 3.5-14 | ~7% |
+| USN practice 6 / 10 kyd | 5.5 / 9.1 km | 54.1 / 22.8% | 17-39 / 10-23 | 26 / 15% |
+| Tennessee-like practice, 19 kyd | 17.4 km | first hit salvo 2 | salvo 2-5 | salvo 4 |
+| Bismarck's end, Rodney | 14 km | 40.8% | 6-20 | ~11% |
+| Denmark Strait, Bismarck | 20 km | 16.3% | 2.7-11 | ~5.5% |
+| Komandorski, on a salvo chaser / steady control | 18.3 km | 0.4 / 1.8% | 0.3-1 | ~0.5% |
+| LRBP 1932-33 (practice) | 27.4 km | 2.0% | 2.9-6.6 | 4.4% |
+| USN 1944 study 10 / 20 / 30 kyd (practice) | | 47.0 / 7.9 / 2.2% | in all three | 32.7 / 10.5 / 2.7% |
+| Light guns at a fast boat | 3 km | 0.5% | 0.5-2 | 0.5-2% |
+
+Read: **too good close in and against steady targets** (Santiago 4x, the 3rd BCS 4x, Rodney 4x, practice at 6 kyd 2x),
+where the record's losses are the smoke, the sea, splash confusion and the target's own manoeuvres that the sim doesn't
+have yet; **about right at long range in battle** (Dogger Bank, the 5th BS, the German 1st SG), the Dreyer era's
+numbers landing near its record largely because they're dominated by the rangefinder and spotting errors at range;
+**too low on the long stern chase** (Falklands) and at practice's longest range (LRBP). The orderings: heavy over light
+guns (2.7x) in; the Grand Fleet's short range over the BCs' long range (2.4x) in; a steady target over a salvo chaser
+at long range (4.2x) in, the cart tracker already losing on its own; practice's fall with the range (2.4x) in. Out:
+**Tsushima over the Yellow Sea** (1.0x, want 1.2-4: same machine, nearly the same range), **the Germans over the
+British** (1.2x, want 1.5-5: the two sides are the same machine) and **director about even with independent in clear
+weather** (1.6x, want 0.7-1.5).
+
+*Against the reference* (the mechanisms; its hit rates are not targets):
+
+- **Table 5, settling and a 45° turn:** the early presets don't drift. The rate held at 240 s is 1.8 kn off for presets
+  1-3 against the reference's polar trackers' 5.8-9.9 kn (F2). The eyeball's miss is 385-1,044 yd against the
+  reference's 2,800-3,400: the sim's track starts from the navy's picture, so a battery ranging by eye at 20% inherits
+  the picture's fixes, which hardly move under readings that poor (a finding for F2's eye prior and F5). The later
+  presets floor at 214-240 yd against the reference's 18-121: one 15 ft rangefinder and its bias (1.5 units, ~160 yd at
+  15 kyd) at every preset, where the reference gives each level its instruments (turret rangefinders, radar, laser):
+  F5's. After the turn the sim's +30 s is smaller (the ship is still turning) and its +120 s larger (the track lags a
+  turn that took a minute).
+- **Table 12, a circle at 1°/s:** preset 3 matches the reference (1,022 against 1,103 yd at +120 s); the later presets
+  keep a standing error (538-882 yd at +120 s) where the reference's turn and acceleration filters (4t, 7, 8) follow
+  it down to 19-117 yd: F2's `ct` and `ca`.
+- **Table 6, the ladder:** day 16 kyd zigzag 0.8, 2.1, 2.7, 3.4, 4.2, 5.6, 6.0, 10.1, 9.9% for presets 0-8 against the
+  reference's 0.8, 2.9, 4.9, 7.0, 8.7, 12.5, 10.9, 17.0, 23.3%: about half from preset 2 up (the single biased
+  rangefinder again); haze 13 kyd in the same order. Night: no solution for every preset in both (the reference's radar
+  levels 6-8 do; radar is F9's).
+- **Table 11, target motion:** preset 3 steady, zigzag, circles 4.0, 3.0, 1.0, 1.2% against 7.7, 6.8, 2.6, 1.2%; every
+  sim preset loses about two-thirds of its hits to a circle, as a straight-line machine should, where the reference's
+  4t and 8 keep theirs.
 
 ### F2 The trackers by computer (the prediction logic)
 

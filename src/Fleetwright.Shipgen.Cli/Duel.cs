@@ -6,88 +6,58 @@ using Fleetwright.Sim.Ships;
 
 namespace Fleetwright.Shipgen.Cli;
 
-/// <summary><c>shipgen duel</c>: the fire-control chain's bench (docs/battle/fighting.md 4.2b, "The instruments"): one
+/// <summary><c>shipgen duel</c>: the fire-control chain's bench (docs/battle/fighting.md 4.2b, fire-control.md F1): one
 /// ship's battery engages another, headless, run after run with other seeds, as fire_control_ref.py's <c>run()</c>
-/// does. The shooter steams north; the target starts at a bearing and range from it, on a course relative to north,
-/// and both hold course and speed. Hits do nothing yet (4.3a). It reports the hit and straddle rates, how soon the
-/// first straddle and hit came after the track started, and what the gunnery cost the sim thread.</summary>
+/// does. The shooter steams north; the target starts at a bearing and range from it, on a course relative to north;
+/// each keeps to its policy (steady, zigzag, circle, chase the splashes, a turn, crippled: <see cref="Policy"/>), in the
+/// weather and light asked for, at battle's or practice's errors. Hits do nothing unless asked (4.3a). It reports the
+/// hit and straddle rates, how soon the first straddle and hit came, the track's aim error as it settled and after the
+/// target's manoeuvres, and what the gunnery cost the sim thread.</summary>
 static class Duel
 {
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
-    public record Options(double RangeM, int Level, int Runs, double Minutes, double OwnKn, double TargetKn, double BearingDeg, double TargetCourseDeg,
-        CrewQuality Crew, int Seed, int Battery, bool Trace = false, bool Damage = false);
-
-    public readonly record struct Result(int Shells, int Hits, int Salvos, int Straddles, double FirstHitS, double FirstStraddleS, double GunneryMs,
-        double ShellsMs);
-
-    /// <summary>Runs a duel once on a fresh world: the battery's tally at the end.</summary>
-    public static Result Once(ShipClass shooter, ShipClass target, SimSettings settings, Options o, int seed)
+    public static int Run(FcCase c, SimSettings settings, int runs, int seed, bool trace)
     {
-        var start = WorldTime.FromUtc(1916, 5, 31, 14);
-        var w = new World(start, (ulong)seed, settings);
-        int a = w.Ships.AddClass(shooter), b = w.Ships.AddClass(target);
-        const double lat = 56.0, lon = 4.0;
-        var p = Earth.Position(lat, lon);
-        var f = Earth.Forward(p, o.BearingDeg);
-        Earth.Advance(ref p, ref f, o.RangeM);
-        var (tl, to) = Earth.LatLon(p);
-        w.Apply(ShipSystem.Spawn(a, lat, lon, 0, o.OwnKn, side: 0));
-        w.Apply(ShipSystem.Spawn(b, tl, to, o.TargetCourseDeg, o.TargetKn, side: 1));
-        if (o.Crew != CrewQuality.Trained)
-            w.Apply(GunnerySystem.SetCrew(0, o.Crew));
-        w.Apply(GunnerySystem.Engage(1, o.Battery, 2, o.Level));
-        if (o.Trace)
-            w.Gunnery.Reported = r => Console.WriteLine(string.Format(Inv,
-                "    {0,5:0} s  R {1,6:0}  n {2,2}  fall {3,6:+0;-0} m {4,5:+0;-0} m  aim {5,6:+0;-0} {6,5:+0;-0}  corr {7,6:+0;-0}  hits {8}{9}",
-                (r.FiredMs - start.Ms) / 1000.0, r.RangeM, r.Shells, r.MeanX, r.MeanY, r.AimErrM, r.AimErrAcrossM, r.CorrR, r.Hits, r.Straddle ? "  STRADDLE" : ""));
-        w.AdvanceTo(start + (long)(o.Minutes * 60_000));
-        var t = w.Gunnery.TallyOf(1, o.Battery);
-        if (t is not { } x)
-            return default;
-        double ProbeMs(string name) => Enumerable.Range(0, w.Probes.Count).Where(i => w.Probes.Names[i] == name).Sum(i => Probes.Ms(w.Probes.Ticks[i]));
-        return new Result(x.Shells, x.Hits, x.Salvos, x.Straddles, x.FirstHitMs < 0 ? double.NaN : (x.FirstHitMs - x.TrackMs) / 1000.0,
-            x.FirstStraddleMs < 0 ? double.NaN : (x.FirstStraddleMs - x.TrackMs) / 1000.0, ProbeMs(nameof(GunnerySystem)), ProbeMs(nameof(ShellSystem)));
+        var row = c.Shooter.Batteries[c.Battery];
+        string fit = c.Fit >= 0 ? $"preset {c.Fit} ({(FireControlLevel)c.Fit})" : row.Local ? "local control" : $"its own fit, level {(int)row.Level}";
+        Console.WriteLine(string.Format(Inv, "{0} battery {1} ({2:0.#}/{3:0.#}, {4} guns, {5}) at {6} ({7:0} m, {8:0.0} kyd), bearing {9:0}°, " +
+            "target on {10:0}° at {11:0} kn, {12}; own 0° at {13:0} kn, {14}; {15} crew; {16}{17}{18}; {19} runs of {20:0} min",
+            c.Shooter, c.Battery, row.CalibreMm, row.CalibreLength, row.Guns, fit, c.Target, c.RangeM, c.RangeM / FcBench.Kyd, c.BearingDeg,
+            c.CourseDeg, c.TargetKn, c.Behaviour, c.OwnKn, c.Own, c.Crew.ToString().ToLowerInvariant(),
+            c.VisibilityM > 0 ? string.Format(Inv, "visibility {0:0.#} km", c.VisibilityM / 1000) : "clear",
+            c.Start.Ms == FcCase.Day.Ms ? "" : $", from {c.Start}", double.IsNaN(c.Combat) ? "" : string.Format(Inv, ", combat factor {0:0.##}", c.Combat),
+            runs, c.Minutes));
+        if (trace)
+        {
+            var one = FcBench.Once(c, settings, seed);
+            long t0 = c.Start.Ms;
+            foreach (var r in one.Salvos.OrderBy(s => s.FiredMs))
+                Console.WriteLine(string.Format(Inv,
+                    "    {0,5:0} s  R {1,6:0}  n {2,2}  fall {3,6:+0;-0} m {4,5:+0;-0} m  aim {5,6:+0;-0} {6,5:+0;-0}  corr {7,6:+0;-0}  hits {8}{9}",
+                    (r.FiredMs - t0) / 1000.0, r.RangeM, r.Shells, r.MeanX, r.MeanY, r.AimErrM, r.AimErrAcrossM, r.CorrR, r.Hits, r.Straddle ? "  STRADDLE" : ""));
+            foreach (long m in one.Manoeuvres)
+                Console.WriteLine(string.Format(Inv, "    {0,5:0} s  the target manoeuvres", (m - t0) / 1000.0));
+        }
+        var sw = Stopwatch.StartNew();
+        var all = FcBench.Runs([c], settings, runs, seed)[0];
+        double secs = sw.Elapsed.TotalSeconds;
+        var st = FcStats.Of(all, c.Minutes);
+        foreach (var line in st.Lines())
+            Console.WriteLine(line);
+        Console.WriteLine(string.Format(Inv, "  {0:0.00} s for the runs, {1:0} ms a run (on threads); the battery's fire control {2:0.0} µs a game second",
+            secs, secs * 1000 / Math.Max(runs, 1), st.GunneryMsPerS * 1000));
+        return 0;
     }
 
-    public static int Run(string shooterName, string targetName, Func<string, Design> load, string settingsPath, Options o)
+    /// <summary>A fit from the command line: a preset's number (0-8) or name (Director, Table, ...), or "design" for the
+    /// battery's own.</summary>
+    public static int ParseFit(string? s)
     {
-        // fire control alone, unless asked: hits do nothing to the target (it would slow, turn and sink under them)
-        var settings = SimSettings.Load(settingsPath) with { HitsDoDamage = o.Damage };
-        var shooter = ShipClassCompiler.Compile(ShipDesign.Build(load(shooterName)));
-        var target = targetName == shooterName ? shooter : ShipClassCompiler.Compile(ShipDesign.Build(load(targetName)));
-        var row = shooter.Batteries[o.Battery];
-        int level = o.Level >= 0 ? o.Level : row.Local ? 0 : (int)row.Level;
-        Console.WriteLine(string.Format(Inv, "{0} battery {1} ({2:0.#}/{3:0.#}, {4} guns, level {5}{6}) at {7} ({8:0} m, {9:0.0} kyd), bearing {10:0}°, " +
-            "target on {11:0}° at {12:0} kn, own 0° at {13:0} kn; {14} crew; {15} runs of {16:0} min",
-            shooter, o.Battery, row.CalibreMm, row.CalibreLength, row.Guns, level, row.Local ? ", local control" : "", target, o.RangeM, o.RangeM / 914.4,
-            o.BearingDeg, o.TargetCourseDeg, o.TargetKn, o.OwnKn, o.Crew.ToString().ToLowerInvariant(), o.Runs, o.Minutes));
-        int shells = 0, hits = 0, salvos = 0, straddles = 0, anyHit = 0;
-        double gunneryMs = 0, shellsMs = 0;
-        var firstHit = new List<double>();
-        var firstStraddle = new List<double>();
-        var sw = Stopwatch.StartNew();
-        for (int k = 0; k < o.Runs; k++)
-        {
-            var r = Once(shooter, target, settings, o, o.Seed + k);
-            (shells, hits, salvos, straddles) = (shells + r.Shells, hits + r.Hits, salvos + r.Salvos, straddles + r.Straddles);
-            (gunneryMs, shellsMs) = (gunneryMs + r.GunneryMs, shellsMs + r.ShellsMs);
-            if (!double.IsNaN(r.FirstHitS))
-            {
-                anyHit++;
-                firstHit.Add(r.FirstHitS);
-            }
-            if (!double.IsNaN(r.FirstStraddleS))
-                firstStraddle.Add(r.FirstStraddleS);
-        }
-        double secs = sw.Elapsed.TotalSeconds;
-        static string Median(List<double> v) => v.Count == 0 ? "-" : v.Order().ElementAt(v.Count / 2).ToString("0", Inv);
-        Console.WriteLine(string.Format(Inv, "  hits {0:0.0}% ({1} of {2} shells), straddles {3:0}% of {4} salvos; first straddle {5} s, first hit {6} s " +
-            "after the track (medians); a hit in {7} of {8} runs", 100.0 * hits / Math.Max(shells, 1), hits, shells, 100.0 * straddles / Math.Max(salvos, 1),
-            salvos, Median(firstStraddle), Median(firstHit), anyHit, o.Runs));
-        double batterySeconds = o.Runs * o.Minutes * 60;
-        Console.WriteLine(string.Format(Inv, "  {0:0.00} s for the runs, {1:0} ms a run; the battery's fire control {2:0.0} µs a game second, its shells " +
-            "{3:0.0} µs a shell", secs, secs * 1000 / Math.Max(o.Runs, 1), gunneryMs * 1000 / batterySeconds, shellsMs * 1000 / Math.Max(shells, 1)));
-        return 0;
+        if (s is null or "design" or "-1")
+            return -1;
+        if (int.TryParse(s, out int n))
+            return Math.Clamp(n, 0, FireControlPresets.Count - 1);
+        return (int)Enum.Parse<FireControlLevel>(s, ignoreCase: true);
     }
 }

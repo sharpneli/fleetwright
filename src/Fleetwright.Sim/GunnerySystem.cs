@@ -862,6 +862,22 @@ public sealed class GunnerySystem : IWorldSystem
         return null;
     }
 
+    /// <summary>Where an engaged battery's computer has its target at a time (its track carried on to it), and the
+    /// velocity it holds, for benches (fire-control.md F1: the prediction's error against where the target went); false
+    /// while it has no track.</summary>
+    public bool TrackAt(int shooter, int battery, long ms, out Vec3d position, out Vec3d velocity)
+    {
+        for (int i = 0; i < highFc; i++)
+            if (fcs[i].Alive && fcs[i].Shooter == shooter && fcs[i].Battery == battery && fcs[i].Tracking)
+            {
+                var t = fcs[i].Track.At(Math.Max(ms, fcs[i].Track.Ms), fcs[i].Fit.Computer.Q);
+                (position, velocity) = (t.Position, t.Velocity);
+                return true;
+            }
+        (position, velocity) = (default, default);
+        return false;
+    }
+
     /// <summary>Engaged batteries now.</summary>
     public int EngagedCount
     {
