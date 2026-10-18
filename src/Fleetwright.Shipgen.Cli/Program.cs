@@ -284,6 +284,7 @@ public static class Program
                 "templates" => TemplatesWriter.Run(Path.Combine(Root(a), "..")),
                 "upgrade" => DesignUpgrade.Run(a.Positional, a.Has("dry"), a.Has("materials")),
                 "fit" => DesignFit.Run(a.Positional, new[] { "main", "secondary", "aa" }.Where(k => a.Get(k) is not null).ToDictionary(k => k, k => a.Get(k)!),
+                    new[] { "main", "secondary", "aa" }.Where(k => a.Get(k + "-sights") is not null).ToDictionary(k => k, k => a.Get(k + "-sights")!),
                     a.Has("dry")),
                 "pen-check" => PenCheck.Run(Path.Combine(Root(a), "..")),
                 "burst" => BurstBench.Run(a.Positional.ElementAtOrDefault(0) ?? "destroyer", n => LoadDesign(Resolve(a, n)),

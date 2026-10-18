@@ -740,7 +740,9 @@ public sealed record FireControlInput
 /// <summary>fire_control.BATTERY: its directors, their rangefinder's base and hood armour, the radar's weight, and its fit:
 /// the tech blocks its fire control is (one optics, one computer, one mount; by name, from fire_control_tech or the
 /// catalogue, FireControlTemplates). A battery with directors and no fit fires at the catalogue's default preset; its
-/// computer stands in a transmitting station under the armour, weighing its block's mass (fire-control.md F4c).</summary>
+/// computer stands in a transmitting station under the armour, weighing its block's mass (fire-control.md F4c). Its
+/// sights: the mount block (one without director firing) its guns lay by when no director fires them, in local control or
+/// with no director at all ("Open sights" if not given, as local control laid until 2026-10-18).</summary>
 public sealed record DirectorInput
 {
     public double? Directors { get; init; }
@@ -748,6 +750,7 @@ public sealed record DirectorInput
     public double? ArmourMm { get; init; }
     public double? RadarT { get; init; }
     public List<string>? Fit { get; init; }
+    public string? Sights { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 

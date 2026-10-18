@@ -610,12 +610,17 @@ public static class ShipClassCompiler
                     links.Add(d);
                 int dirs = links.Count - d0;
                 // its fit, the tech blocks the design names (fire-control.md F3); a battery without directors fires under local control
-                var own = FireControlBlocks.Fit(ship.Design, FireControlTemplates.FitOf(ship.Design.FireControl?.Of(row.Kind == Battery.Main ? "main" : "secondary")));
-                var fit = dirs == 0 ? FireControlPresets.Local : own;
+                var spec = ship.Design.FireControl?.Of(row.Kind == Battery.Main ? "main" : "secondary");
+                var own = FireControlBlocks.Fit(ship.Design, FireControlTemplates.FitOf(spec));
+                // its guns' own sights, the design's (fire_control.BATTERY.sights): what they lay by when no director fires them
+                string sightsName = FireControlTemplates.SightsOf(spec);
+                var sights = FireControlBlocks.Mount(FireControlBlocks.Block(ship.Design, sightsName)?.Mount
+                    ?? throw new ShipCompileException($"fire control: no sights block \"{sightsName}\""));
+                var fit = dirs == 0 ? FireControlPresets.Local with { Mount = sights } : own;
                 batteries[b] = row with
                 {
                     Mounts = new Slice(m0, d0 - m0), Guns = guns, Directors = new Slice(d0, dirs), Level = dirs == 0 ? FireControlLevel.Eyeball : FireControlPresets.LevelOf(fit),
-                    Fit = fit, TurretOptics = own.Optics,
+                    Fit = fit, TurretOptics = own.Optics, Sights = sights,
                     PatternPct = DesignerPlaceholders.Pattern(row.CalibreMm, era),
                 };
             }

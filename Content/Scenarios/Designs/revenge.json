@@ -215,19 +215,22 @@
     "Barr & Stroud FQ/FT (O2)",
     "Dreyer table Mk III-V",
     "Director, follow the pointer"
-   ]
+   ],
+   "sights": "Telescopic sights, fired on the roll"
   },
   "secondary": {
    "directors": 0,
    "rangefinder_m": 0,
    "armour_mm": 0,
-   "radar_t": 0
+   "radar_t": 0,
+   "sights": "Telescopic sights"
   },
   "aa": {
    "directors": 0,
    "rangefinder_m": 0,
    "armour_mm": 0,
-   "radar_t": 0
+   "radar_t": 0,
+   "sights": "Telescopic sights"
   },
   "search_radar_t": 0,
   "aft_rangefinder_m": 2.7
@@ -518,6 +521,22 @@
     "stable_vertical": false,
     "lay_mil": 1,
     "salvo_defl_mil": 2
+   }
+  },
+  "Telescopic sights, fired on the roll": {
+   "mount": {
+    "director_firing": false,
+    "stable_vertical": false,
+    "lay_mil": 2,
+    "salvo_defl_mil": 2.5
+   }
+  },
+  "Telescopic sights": {
+   "mount": {
+    "director_firing": false,
+    "stable_vertical": false,
+    "lay_mil": 0.55,
+    "salvo_defl_mil": 2.5
    }
   }
  },

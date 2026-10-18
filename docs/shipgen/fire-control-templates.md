@@ -94,9 +94,10 @@ own numbers. Mass t, crew, power kW.
 
 | Block | Director firing | Stable vertical | Laying mil | Deflection wander mil |
 |---|---|---|---|---|
-| Open sights | no | no | 3 | 3 |
-| Early telescopic sights | no | no | 2.5 | 2.5 |
-| Telescopic sights | no | no | 2 | 2.5 |
+| Open sights | no | no | 3.1 | 3 |
+| Telescopic sights, fired on the roll | no | no | 2 | 2.5 |
+| Early telescopic sights | no | no | 0.85 | 2.5 |
+| Telescopic sights | no | no | 0.55 | 2.5 |
 | Director, follow the pointer | yes | no | 1 | 2 |
 | Director, follow the pointer (no RPC) | yes | no | 1 | 1.5 |
 | Director, power drive | yes | no | 0.8 | 1.5 |
@@ -133,9 +134,10 @@ own numbers. Mass t, crew, power kW.
 - **Ford Mk 8 rangekeeper, radar ranging (stand-in):** The Mk 8 fed by radar spotting (level 6): its shorter latency is the radar's, standing in until the radar pass.
 - **Mk 1A computer:** The 1950s analog with a curved-course (acceleration) predictor and the "target just turned" button (level 7, designer C5).
 - **Digital turn filter (Mk 86, WM-25):** The 1970s digital systems with a turn-following filter (level 8, designer C6; the filter [INFERRED]). Its speed noise is the sim's 0.1, not the reference's 0.05² (F2: ships lose way in a turn).
-- **Open sights:** Each gun laid by its layer over open sights (4′, designer §2.4): the eyeball's (level 0).
-- **Early telescopic sights:** Each gun by its own early telescope (2.5′, designer §2.4; M0): the Tsushima era (level 1).
-- **Telescopic sights:** Each gun by a good telescope (1.2′ with the layer's slop, designer §2.4), continuous aim, no director (level 2).
+- **Open sights:** Each gun laid by its layer over open sights, fired on the roll (table 1: 12.6′ an average layer, 10.8′ trained less the gun's 2′: 3.1 mil): before continuous aim, to the late 1890s (level 0).
+- **Telescopic sights, fired on the roll:** Each gun by its own telescope, fired as the roll brings the sight on (table 1: roll, telescope, trained 7.1′, less the gun's: 2.0 mil): heavy guns until power laying, continuous aim working only to about 9.2″ (fire-control-research.md §6).
+- **Early telescopic sights:** Each gun by its own early telescope, continuous aim (table 1: continuous, early telescope, average 4.1′, 3.6′ trained less the gun's: 0.85 mil; M0): the medium guns of 1899-1905, the Tsushima era (level 1).
+- **Telescopic sights:** Each gun by a good telescope, continuous aim (table 1: continuous, telescope, trained 2.7′, less the gun's: 0.55 mil), no director (level 2).
 - **Director, follow the pointer:** Director firing: the guns laid and fired from the director, the turrets following its pointers (M1, 1912-16; level 3).
 - **Director, follow the pointer (no RPC):** Director firing without remote power control, the Japanese 1930s (no RPC on Yamato, computing.md §3): the Japanese plot's preset numbers.
 - **Director, power drive:** Director firing with power training and elevation (M2, interwar; level 4).

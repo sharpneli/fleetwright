@@ -229,26 +229,34 @@ public class TorpedoTests(ITestOutputHelper output)
     {
         var s = Scenario.Load(Path.Combine(Fleet.Repo, "Content", "Scenarios", "flotilla.json"));
         var designs = new[] { Path.Combine(Fleet.Shipgen, "designs") };
-        // the test needs an attack made, and whether the boats get in is chance: seed 7 makes it in about 16 minutes (12
-        // seeds tried 2026-10-18 once sighting stood on the ships' real tops and the haze was re-fitted,
-        // docs/battle/fire-control.md F4d: 6 of them do; 5 after F4b, when seed 2 did, 4 of the first 8 against 7 on
-        // 2026-10-16)
-        const ulong seed = 7;
-        var w = new World(s.Start, seed, Settings);
-        var ai = new AiSystem(w);
-        var classes = ScenarioLoader.RequestClasses(s, w.Ships.Registry, designs);
-        ScenarioLoader.Apply(s, w, ai, classes);
-        // six boats against four battleships by day aren't worth an attack by their own judgement (docs/battle/command.md
-        // 5.1g): ordered to, they make it, against a line that holds on (one turning away leaves them astern of its beam)
-        w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.TurnAwayDeg, 0));
-        for (int k = 0; k < w.Groups.Count; k++)
-            if (w.Groups[k].Name.Contains("Flotilla"))
-                w.Apply(ai.Orders.Attack(Unit.Group(w.Groups[k].GroupId)));
-        // closing, the first attack made (the boats' first turn together, their first torpedoes): pools at their size
+        // the test needs an attack made, and whether the boats get in is chance, moving with every change to the gunnery
+        // (seed 7 did until the short-range bug hunt of 2026-10-18 let the battleships' secondaries hit close in): it takes
+        // the first of two dozen seeds whose boats get their torpedoes away
+        ulong seed = 0;
+        World w = null!;
+        AiSystem ai = null!;
         long warm = 0;
-        while (w.Torpedoes.Fired == 0 && warm < 40 * 60)
-            w.AdvanceTo(s.Start + ++warm * 1000);
-        Assert.True(w.Torpedoes.Fired > 0, "the boats fired");
+        while (++seed <= 24)
+        {
+            w = new World(s.Start, seed, Settings);
+            ai = new AiSystem(w);
+            var classes = ScenarioLoader.RequestClasses(s, w.Ships.Registry, designs);
+            ScenarioLoader.Apply(s, w, ai, classes);
+            // six boats against four battleships by day aren't worth an attack by their own judgement (docs/battle/command.md
+            // 5.1g): ordered to, they make it, against a line that holds on (one turning away leaves them astern of its beam)
+            w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.TurnAwayDeg, 0));
+            for (int k = 0; k < w.Groups.Count; k++)
+                if (w.Groups[k].Name.Contains("Flotilla"))
+                    w.Apply(ai.Orders.Attack(Unit.Group(w.Groups[k].GroupId)));
+            // closing, the first attack made (the boats' first turn together, their first torpedoes): pools at their size
+            warm = 0;
+            while (w.Torpedoes.Fired == 0 && warm < 40 * 60)
+                w.AdvanceTo(s.Start + ++warm * 1000);
+            if (w.Torpedoes.Fired > 0)
+                break;
+        }
+        Assert.True(w.Torpedoes.Fired > 0, "the boats fired in none of seeds 1-24");
+        output.WriteLine($"seed {seed}");
         warm += 60;
         w.AdvanceTo(s.Start + warm * 1000);
         // nothing a second, but in the seconds a ship goes or falls out of her group (one-off events may allocate: the

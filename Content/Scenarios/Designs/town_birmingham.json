@@ -192,19 +192,22 @@
     "Barr & Stroud FQ/FT (O2)",
     "Dumaresq and Vickers clock",
     "Telescopic sights"
-   ]
+   ],
+   "sights": "Telescopic sights"
   },
   "secondary": {
    "directors": 0,
    "rangefinder_m": 0,
    "armour_mm": 0,
-   "radar_t": 0
+   "radar_t": 0,
+   "sights": "Telescopic sights"
   },
   "aa": {
    "directors": 0,
    "rangefinder_m": 0,
    "armour_mm": 0,
-   "radar_t": 0
+   "radar_t": 0,
+   "sights": "Telescopic sights"
   },
   "search_radar_t": 0
  },
@@ -390,7 +393,7 @@
    "mount": {
     "director_firing": false,
     "stable_vertical": false,
-    "lay_mil": 2,
+    "lay_mil": 0.55,
     "salvo_defl_mil": 2.5
    }
   }

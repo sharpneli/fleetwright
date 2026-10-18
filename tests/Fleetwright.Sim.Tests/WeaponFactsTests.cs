@@ -59,7 +59,7 @@ public class WeaponFactsTests
                     p.Add($"battery {b} ({row.Kind}) is directed by a {c.Directors[d].Battery} director");
             if (row.Local != (row.Directors.Count == 0) || row.Local && row.Level != FireControlLevel.Eyeball)
                 p.Add($"battery {b}: local {row.Local} at level {row.Level}");
-            if (row.Local ? row.Fit != FireControlPresets.Local : row.Level != FireControlPresets.LevelOf(row.Fit))
+            if (row.Local ? row.Fit != (FireControlPresets.Local with { Mount = row.Sights }) : row.Level != FireControlPresets.LevelOf(row.Fit))
                 p.Add($"battery {b}: its fit and its level ({row.Level}) don't go together");
             // its fire-control units (fire-control.md F0): its directors', each with its director's eyes as instruments
             // its directors' units, then (a main battery's) the control positions' rangefinders (fire-control.md F4b)

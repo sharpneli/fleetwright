@@ -82,6 +82,8 @@ public sealed class GunnerySystem : IWorldSystem
         public int Generation;
         public int Shooter, Battery, Target, Level, Table;
         public bool Local;
+        /// <summary>Engaged at a preset's fit (a bench's or a dev's), kept as it is in local control.</summary>
+        public bool Preset;
         /// <summary>The preset it fires at under its directors, a label (it falls to local control's while they're out).</summary>
         public int DirectorLevel;
         /// <summary>Its fire control's fit now, and under its directors.</summary>
@@ -330,10 +332,10 @@ public sealed class GunnerySystem : IWorldSystem
             ref readonly var row = ref cls.Batteries[b];
             int gen = fc.Generation + 1;
             int lv = Math.Clamp(level >= 0 ? level : row.Local ? 0 : (int)row.Level, 0, FireControlPresets.Count - 1);
-            var fit = level >= 0 ? FireControlPresets.At(lv) : row.Local ? FireControlPresets.Local : row.Fit;
+            var fit = level >= 0 ? FireControlPresets.At(lv) : row.Fit;   // a battery without directors: local control, its own sights
             fc = new Fc
             {
-                Alive = true, Generation = gen, Shooter = shooter, Battery = b, Target = target, StartMs = now, Level = lv, Local = row.Local,
+                Alive = true, Generation = gen, Shooter = shooter, Battery = b, Target = target, StartMs = now, Level = lv, Local = row.Local, Preset = level >= 0,
                 FirstHitMs = -1, FirstStraddleMs = -1, EffectMs = -1, DirectorLevel = lv, Fit = fit, DirectorFit = fit,
                 Table = shells.TableOf(store.Combat.Loadout(slot), b), ElevationDeg = double.NaN,
             };
@@ -434,10 +436,11 @@ public sealed class GunnerySystem : IWorldSystem
                     (best, works, s.X, s.Y, s.HeightM) = (h, w, cls.Mounts[m].X, cls.Mounts[m].Y, h);
             }
             sensors[f * MaxSensors + n++] = s;
-            var local = rangefinders ? FireControlPresets.Local with { Optics = row.TurretOptics } : FireControlPresets.Local;
+            // its guns' own sights (not the eyeball's open sights: a dreadnought's layers had telescopes)
+            var local = rangefinders ? FireControlPresets.Local with { Optics = row.TurretOptics, Mount = row.Sights } : FireControlPresets.Local with { Mount = row.Sights };
             if (!fc.Local)
                 (fc.Level, fc.Fit) = (0, local);   // its directors gone: each mount for itself, by its rangefinder or by eye
-            else if (fc.Fit.Computer == FireControlPresets.Local.Computer)
+            else if (!fc.Preset)
                 fc.Fit = local;   // a battery under local control (not a bench's preset): its turret's rangefinder now, or none
             fc.Local = true;
         }
@@ -448,7 +451,7 @@ public sealed class GunnerySystem : IWorldSystem
             bool directed = false;
             foreach (int u in cls.Links(row.Units))
                 directed |= (fc.Units & 1UL << u) != 0 && cls.FcUnits[u].Director >= 0;
-            var fit = directed ? fc.DirectorFit : fc.DirectorFit with { Mount = FireControlPresets.Local.Mount };
+            var fit = directed ? fc.DirectorFit : fc.DirectorFit with { Mount = row.Sights };
             if (fc.Local || fc.Fit != fit)
                 (fc.Local, fc.Level, fc.Fit) = (false, fc.DirectorLevel, fit);   // a director back (E4: a timed outage over): under it again
         }

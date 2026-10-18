@@ -964,6 +964,24 @@ from the parts and independent fire (items 6 and 9); F6e ammunition as a choice 
     (manual-gunnery-research.md table 1, moderate sea) gives the whole elevation error as 3.7 mil firing on the roll
     with open sights but 1.2 mil for continuous aim with an early telescope (Tsushima's) and 0.8 with a good one: a
     calibration of the sights, and of what a battery with no fit lays with, for the user.
+  - *The sights* (the user, 2026-10-18: "go ahead", the units kept consistent, a field in the design rather than a
+    year deduced). The sight blocks a gun lays by itself now carry the gunlayer study's whole elevation error a shot
+    (manual-gunnery-research.md table 1, a moderate sea, less the gun's own 2′ its pattern has, for a trained layer, in
+    mil): open sights fired on the roll 3.1, a telescope fired on the roll 2.0 (new: heavy guns, continuous aim working
+    only to about 9.2″), an early telescope with continuous aim 0.85, a good one 0.55 (3, 2.5 and 2 before: the
+    reference's levels' numbers in mil beside notes in arcminutes). Every angle a block gives is in mil but the optics'
+    acuity, in arcseconds. A battery names its guns' own sights in `fire_control.BATTERY.sights` (open sights if not
+    given): what they lay by in local control, or with no director at all, where they took the eyeball's open sights.
+    `shipgen fit --main-sights NAME` sets it; the shipped designs name theirs by gun and period (open sights before
+    continuous aim, heavy guns on the roll, medium guns an early telescope in 1899-1905 and a good one after), and a fit
+    whose mount slot held a sight block by its old level takes the same. Goldens moved (the design echo), ShipDesign.Version
+    38.
+  - *Numbers:* inside 1 km by her true range, Mikasa's 6" on Aurora at 800 m steady 81% (49.5% before), on the close
+    crossing 80% (60%), head on 65% (53%); her 12" (on the roll) 64-74%. fc-history 8 of 23 (the pre-dreadnought cases
+    climb further over their bands: Tsushima's 6" 6.9%, the Yellow Sea 14.3%; director over independent comes in at
+    1.13). The user, 2026-10-18: guns this accurate are right for the case the sim has, a flat sea in clear air; mist and
+    waves are to come. Tests: `FlotillaAttackTests`' replay takes the first of 24 seeds whose boats get their torpedoes
+    away (seed 7 no longer did, the secondaries hitting close in); the weapon facts test reads a local battery's sights.
   - *A bug found on the way* (committed alone): a row of light AA mounts along each beam blinded the directors on
     their deck, so Bismarck's 150 mm never took a reading and never fired; light AA no longer blinds a post (45 classes'
     eyes move, the WWI scenarios' hashes don't).

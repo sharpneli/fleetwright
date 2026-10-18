@@ -11,8 +11,10 @@ namespace Fleetwright.Shipgen;
 /// the Zeiss stereo's 10″ from Lienau's ±65 m at 10 km (§3.3).</item>
 /// <item>The computers: the trackers and their numbers as fire_control_ref.py LEVELS gives them (the sim's levels, F0-F2),
 /// which designer_ref.py's C0-C6 reproduce; masses, crews and power from designer §2.3 and component-costs.md.</item>
-/// <item>The mounts: designer §2.4 (M0-M4), the sights before directors from §2.4's telescope law (open 4′, early
-/// telescope 2.5′, telescope 1.2′) as the levels' laying errors.</item>
+/// <item>The mounts: designer §2.4 (M0-M4) for the directors (their laying error common to the salvo, fire-control-research.md
+/// §6); the sights a gun lays by itself from manual-gunnery-research.md table 1 (the layer's whole elevation error a shot,
+/// moderate sea, less the gun's own 2′), converted to mil (1′ = 0.291 mil). Every angle a block gives is in mil but the
+/// optics' acuity (arcseconds, a resolution).</item>
 /// </list>
 /// A block is a machine or a make, never a year: the tech tree decides who has it. Blocks whose numbers stand in for a
 /// radar's until the radar pass (decision 2) say so in their names.</summary>
@@ -164,13 +166,21 @@ public static class FireControlTemplates
             "The 1970s digital systems with a turn-following filter (level 8, designer C6; the filter [INFERRED]). Its speed noise is the sim's " +
             "0.1, not the reference's 0.05² (F2: ships lose way in a turn)."),
 
-        // ---- mounts
-        M("Open sights", false, 3, 3,
-            "Each gun laid by its layer over open sights (4′, designer §2.4): the eyeball's (level 0)."),
-        M("Early telescopic sights", false, 2.5, 2.5,
-            "Each gun by its own early telescope (2.5′, designer §2.4; M0): the Tsushima era (level 1)."),
-        M("Telescopic sights", false, 2, 2.5,
-            "Each gun by a good telescope (1.2′ with the layer's slop, designer §2.4), continuous aim, no director (level 2)."),
+        // ---- mounts. A gun laid by its own layer: lay_mil is his whole elevation error a shot, 1 sigma, in mil (the sight's,
+        // his method's, the roll's), from manual-gunnery-research.md table 1 in a moderate sea (3°, 10 s) less the gun's own
+        // 2′ (its pattern has that), for a trained layer (the crews' Lay multiplies it): 1′ = 0.291 mil.
+        M("Open sights", false, 3.1, 3,
+            "Each gun laid by its layer over open sights, fired on the roll (table 1: 12.6′ an average layer, 10.8′ trained less " +
+            "the gun's 2′: 3.1 mil): before continuous aim, to the late 1890s (level 0)."),
+        M("Telescopic sights, fired on the roll", false, 2.0, 2.5,
+            "Each gun by its own telescope, fired as the roll brings the sight on (table 1: roll, telescope, trained 7.1′, less the " +
+            "gun's: 2.0 mil): heavy guns until power laying, continuous aim working only to about 9.2″ (fire-control-research.md §6)."),
+        M("Early telescopic sights", false, 0.85, 2.5,
+            "Each gun by its own early telescope, continuous aim (table 1: continuous, early telescope, average 4.1′, 3.6′ trained " +
+            "less the gun's: 0.85 mil; M0): the medium guns of 1899-1905, the Tsushima era (level 1)."),
+        M("Telescopic sights", false, 0.55, 2.5,
+            "Each gun by a good telescope, continuous aim (table 1: continuous, telescope, trained 2.7′, less the gun's: 0.55 " +
+            "mil), no director (level 2)."),
         M("Director, follow the pointer", true, 1, 2,
             "Director firing: the guns laid and fired from the director, the turrets following its pointers (M1, 1912-16; level 3)."),
         M("Director, follow the pointer (no RPC)", true, 1, 1.5,
@@ -218,6 +228,12 @@ public static class FireControlTemplates
 
     /// <summary>The fit a battery's fire control names: its own, else the default preset's.</summary>
     public static IReadOnlyList<string> FitOf(DirectorInput? spec) => spec?.Fit ?? PresetNamed(DefaultPreset)!.Fit;
+
+    /// <summary>The sights a battery's guns lay by when no director fires them: the design's, else open sights (what local
+    /// control laid with before the field).</summary>
+    public static string SightsOf(DirectorInput? spec) => spec?.Sights ?? DefaultSights;
+
+    public const string DefaultSights = "Open sights";
 
     /// <summary>The computers' trackers and the optics' kinds, as the blocks give them.</summary>
     public static readonly string[] Trackers = ["judgement", "rate_clock", "true_course", "acceleration", "turn_rate"],
@@ -289,6 +305,13 @@ public static class FireControlTemplates
         }
         foreach (var bat in (ReadOnlySpan<string>)["main", "secondary", "aa"])
         {
+            if (design.FireControl?.Of(bat)?.Sights is { } sights)
+            {
+                if (Resolve(design, sights) is not { } sb)
+                    errs.Add($"fire_control.{bat}.sights: no block {Style.Quote(sights)} in fire_control_tech or the catalogue");
+                else if (sb.Mount is not { DirectorFiring: false })
+                    errs.Add($"fire_control.{bat}.sights: {Style.Quote(sights)} isn't a mount block a gun lays by itself (no director firing)");
+            }
             if (design.FireControl?.Of(bat)?.Fit is not { } fit)
                 continue;
             string at = $"fire_control.{bat}.fit";

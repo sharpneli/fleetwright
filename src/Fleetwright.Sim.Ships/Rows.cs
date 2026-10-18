@@ -498,6 +498,9 @@ public readonly record struct BatteryRow
     /// <summary>The make of its gunhouses' rangefinders: its fit's optics, directors or not (fire-control.md F4b: a turret
     /// in local control ranges with its own).</summary>
     public OpticsRow TurretOptics { get; init; }
+    /// <summary>The sights its guns lay by when no director fires them (local control): its fit's mount when that lays by
+    /// sights, else the placeholder's (<see cref="DesignerPlaceholders.Sights"/>).</summary>
+    public MountTechRow Sights { get; init; }
 
     /// <summary>The gun's full-salvo pattern, its 100% spread in range as a percentage of the range (fire_control_ref.py
     /// Gun.pattern_pct): the shells' own dispersion, before any fire control. A placeholder until the designer gives it

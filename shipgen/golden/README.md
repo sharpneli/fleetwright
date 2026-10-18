@@ -161,6 +161,10 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
   lookout's barrel at the masthead; `destroyer`'s foremast carries one (the sim's masthead lookout placeholder went).
   1 design case changes (the destroyer: 116.3 to 113.6 m and 2,084 to 2,064 t standard, the sizer's bistable layout:
   docs/battle/bugs.md), with its SVGs and sprite.json. ShipDesign.Version 37.
+- 2026-10-18, a battery's sights (docs/battle/fire-control.md, the short-range bug hunt), on purpose: `fire_control.BATTERY.sights`
+  names the sights its guns lay by when no director fires them, written into every shipped design by gun and period, and
+  the catalogue's sight blocks carry the gunlayer study's elevation errors. 153 design cases change (the design echo
+  only), no SVG or sprite.json. ShipDesign.Version 38.
 
 ## Layout
 

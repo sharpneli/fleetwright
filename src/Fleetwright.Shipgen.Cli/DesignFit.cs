@@ -3,21 +3,28 @@ using System.Text.Json.Nodes;
 
 namespace Fleetwright.Shipgen.Cli;
 
-/// <summary>`shipgen fit FILE... --main SPEC [--secondary SPEC] [--aa SPEC] [--dry]` (docs/battle/fire-control.md F3):
-/// sets batteries' fire-control fits in design files. A SPEC is a preset's name (FireControlTemplates.Presets) or block
+/// <summary>`shipgen fit FILE... --main SPEC [--secondary SPEC] [--aa SPEC] [--main-sights NAME ...] [--dry]`
+/// (docs/battle/fire-control.md F3): sets batteries' fire-control fits in design files, and their guns' own sights (a mount
+/// block laid without a director: what they lay by in local control), any battery's. A SPEC is a preset's name (FireControlTemplates.Presets) or block
 /// names joined by `|`; a battery without directors is left alone. The design's fire_control_tech is then the blocks its
 /// fits name, the catalogue's for a name the catalogue has, the design's own for the rest. Each file keeps its layout
 /// (DesignUpgrade's writer) and is validated after.</summary>
 static class DesignFit
 {
-    public static int Run(IReadOnlyList<string> paths, IReadOnlyDictionary<string, string> specs, bool dry)
+    public static int Run(IReadOnlyList<string> paths, IReadOnlyDictionary<string, string> specs, IReadOnlyDictionary<string, string> sights, bool dry)
     {
         var fits = new Dictionary<string, List<string>>();
         foreach (var (bat, spec) in specs)
             fits[bat] = FireControlTemplates.PresetNamed(spec) is { } p ? [.. p.Fit] : [.. spec.Split('|', StringSplitOptions.TrimEntries)];
-        if (fits.Count == 0)
-            throw new ArgumentException("give a fit: --main, --secondary or --aa (a preset's name, or blocks joined by |)");
+        if (fits.Count == 0 && sights.Count == 0)
+            throw new ArgumentException("give a fit (--main, --secondary or --aa: a preset's name, or blocks joined by |) or sights (--main-sights, ...)");
         foreach (var p in paths)
+            Apply(p, fits, sights, dry);
+        return 0;
+    }
+
+    static void Apply(string p, Dictionary<string, List<string>> fits, IReadOnlyDictionary<string, string> sights, bool dry)
+    {
         {
             string text = File.ReadAllText(p);
             var before = JsonNode.Parse(text)!.AsObject();
@@ -25,7 +32,7 @@ static class DesignFit
             if (after["fire_control"] is not JsonObject fc)
             {
                 Console.WriteLine($"{p}: no fire_control");
-                continue;
+                return;
             }
             var set = new List<string>();
             foreach (var (bat, names) in fits)
@@ -35,11 +42,18 @@ static class DesignFit
                 spec["fit"] = new JsonArray([.. names.Select(x => (JsonNode)JsonValue.Create(x)!)]);
                 set.Add($"{bat} [{string.Join(", ", names)}]");
             }
-            // the table: the blocks the fits name, the catalogue's where it has them
+            foreach (var (bat, name) in sights)
+                if (fc[bat] is JsonObject spec)
+                {
+                    spec["sights"] = name;
+                    set.Add($"{bat} sights {name}");
+                }
+            // the table: the blocks the fits and the sights name, the catalogue's where it has them
             var old = after["fire_control_tech"] as JsonObject;
             var table = new JsonObject();
             foreach (var bat in (ReadOnlySpan<string>)["main", "secondary", "aa"])
-                foreach (var name in (fc[bat]?["fit"] as JsonArray ?? []).Select(x => x!.GetValue<string>()))
+                foreach (var name in (fc[bat]?["fit"] as JsonArray ?? []).Select(x => x!.GetValue<string>())
+                             .Concat(fc[bat]?["sights"] is JsonValue sv ? [sv.GetValue<string>()] : []))
                     if (!table.ContainsKey(name))
                         table[name] = FireControlTemplates.Get(name) is { } t
                             ? JsonSerializer.SerializeToNode(t.Value, ShipgenJson.Default.FcTechInput)
@@ -52,11 +66,11 @@ static class DesignFit
             if (changed.Count == 0)
             {
                 Console.WriteLine($"{p}: as it is");
-                continue;
+                return;
             }
             Console.WriteLine($"{p}: {string.Join("; ", set)}");
             if (dry)
-                continue;
+                return;
             string nl = text.Contains("\r\n") ? "\r\n" : "\n";
             string written = DesignUpgrade.Pretty(text, nl) is { } indent ? DesignUpgrade.Write(after, indent, nl)
                 : DesignUpgrade.Splice(text, before, after, changed, [], nl);
@@ -65,6 +79,5 @@ static class DesignFit
                 throw new InvalidOperationException($"{p}: {string.Join("; ", errs)}");
             File.WriteAllText(p, written);
         }
-        return 0;
     }
 }
