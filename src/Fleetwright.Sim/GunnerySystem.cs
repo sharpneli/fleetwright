@@ -180,7 +180,7 @@ public sealed class GunnerySystem : IWorldSystem
         public FirePhase Phase;
         /// <summary>Its battery's <see cref="Fc.Shift"/> when it was fired, and whether it was laid point blank (its fall
         /// says nothing to the bracket: its range was the layers' own).</summary>
-        public double Shift;
+        public double Shift, TrueRangeM;
         public bool PointBlank;
         /// <summary>Its ladder's step off the bracket's aim, m (in its correction).</summary>
         public double LadderM;
@@ -193,7 +193,7 @@ public sealed class GunnerySystem : IWorldSystem
     /// the range correction it was fired with (its ladder's step in it), its hits, whether it straddled, and the phase it
     /// was fired in.</summary>
     public readonly record struct SalvoReport(long FiredMs, int Shooter, int Battery, double RangeM, int Shells, double MeanX, double MeanY, double AimErrM,
-        double AimErrAcrossM, double CorrR, int Hits, bool Straddle, FirePhase Phase, double LadderM);
+        double AimErrAcrossM, double CorrR, int Hits, bool Straddle, FirePhase Phase, double LadderM, double TrueRangeM, bool PointBlank);
 
     /// <summary>A salvo's spot, for tools: the salvo (by when it was fired), whether the spotter saw its fall and what he
     /// judged it, the bracket after it (m; infinite: open) and the correction the next salvo goes with, and the phase
@@ -1032,7 +1032,7 @@ public sealed class GunnerySystem : IWorldSystem
             PatternM = 4 * sr, RangeM = range, SpotSigmaM = spot, Common = 0.5 * spot * r.NextGaussian(), U = u, W = w, MinX = double.MaxValue,
             MaxX = double.MinValue, TargetLengthM = store[tslot].Handling.Class.Silhouette.LengthM, FiredMs = now,
             AimErrM = Vec3d.Dot(p - truth, u), AimErrAcrossM = Vec3d.Dot(p - truth, w), Phase = phase, LadderM = ladder, Shift = fc.Shift,
-            PointBlank = pointBlank,
+            PointBlank = pointBlank, TrueRangeM = Earth.Distance(ship.Position, tgt.Position),
         };
         int salvo = shells.NewSalvo();
         for (int j = 0; j < mounts.Length; j++)
@@ -1139,7 +1139,7 @@ public sealed class GunnerySystem : IWorldSystem
         {
             long now = world.Time.Ms;
             Reported?.Invoke(new SalvoReport(sv.FiredMs, fc.Shooter, fc.Battery, sv.RangeM, sv.Landed, sv.SumX / Math.Max(sv.Landed, 1),
-                sv.SumY / Math.Max(sv.Landed, 1), sv.AimErrM, sv.AimErrAcrossM, sv.CorrR, sv.Hits, straddle, sv.Phase, sv.LadderM));
+                sv.SumY / Math.Max(sv.Landed, 1), sv.AimErrM, sv.AimErrAcrossM, sv.CorrR, sv.Hits, straddle, sv.Phase, sv.LadderM, sv.TrueRangeM, sv.PointBlank));
             fc.Hits += sv.Hits;
             if (sv.Hits > 0 && fc.FirstHitMs < 0)
                 fc.FirstHitMs = now;

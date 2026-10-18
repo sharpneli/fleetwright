@@ -177,7 +177,7 @@
   "RangingPowerCoincidence": 0.8,
   "RangingPowerStereo": 0.4,
   "RangingCoatedShare": 0.8,
-  "EyeRangeShare": 0.2,
+  "EyeRangeShare": 0.125,
   "EyeRangeBiasShare": 0.1,
   "EyeBearingMil": 5,
   "OwnTurnYawDegS": 0.2,

@@ -950,6 +950,20 @@ from the parts and independent fire (items 6 and 9); F6e ammunition as a choice 
     over 20 seeds: Britain's hits 41 to 54, Germany's 60 to 75, losses 0.8 to 1.1 British ships and 0.1 German. Tsushima
     over 5 seeds: Russia's hits 270 to 465 and losses 4.6 to 5.6 ships, Japan's 454 to 749 and 2.6 to 3.6.
   - *Cost:* 31 µs a battery-second (27): the line and the point-blank test each second, two predictions a reading.
+  - *A follow-up the same day* (the user asked how anything could miss inside 1 km): the "0-1 km" band above was the
+    range the guns were laid at, the computer's, not hers: in the crossing she never came inside 1.2 km. The duel now
+    bins by her true range, and the trace marks a salvo laid point blank (P) and gives her true range. And the eye's
+    0.125 hadn't taken: `Content/Sim/settings.json` held 0.2 and overrode the code's default, so every number above was
+    at 0.2. Now set there. fc-history 8 of 23 still (Santiago 17.0 to 20.3%, Tsushima's 6" 4.8 to 4.9%); Tsushima over 5
+    seeds: Russia's losses 5.6 to 5.4 ships, Japan's 3.6 to 3.8. Inside 1 km by her true range: the steady target at
+    800 m, Mikasa's 12" 64.5% and 6" 49.5%; head on 56% and 53%; a close crossing (closest approach ~500 m) 69% and 60%.
+    **What's left there is the layer's elevation error,** not prediction: Mikasa's 6", with no fit of their own, lay as
+    the eyeball's open sights, 3 mil, ×1.5 in battle, 3.6 m at 800 m against Aurora's 3.4 m side, so half the shells
+    pass over or fall short; and point blank doesn't take them (her danger space 291 m against twice the eye's 200 m).
+    The catalogue's sights carry the reference's levels' 3, 2.5 and 2 mil, where the gunlayer study
+    (manual-gunnery-research.md table 1, moderate sea) gives the whole elevation error as 3.7 mil firing on the roll
+    with open sights but 1.2 mil for continuous aim with an early telescope (Tsushima's) and 0.8 with a good one: a
+    calibration of the sights, and of what a battery with no fit lays with, for the user.
   - *A bug found on the way* (committed alone): a row of light AA mounts along each beam blinded the directors on
     their deck, so Bismarck's 150 mm never took a reading and never fired; light AA no longer blinds a post (45 classes'
     eyes move, the WWI scenarios' hashes don't).

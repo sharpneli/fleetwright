@@ -368,7 +368,7 @@ sealed record FcStats
             rangingShells += t.RangingShells;
             foreach (var s in salvos)
                 for (int k = 0; k < RangeBandsKm.Length - 1; k++)
-                    if (s.RangeM / 1000 >= RangeBandsKm[k] && s.RangeM / 1000 < RangeBandsKm[k + 1])
+                    if (s.TrueRangeM / 1000 >= RangeBandsKm[k] && s.TrueRangeM / 1000 < RangeBandsKm[k + 1])
                         (st.BandShells[k], st.BandHits[k]) = (st.BandShells[k] + s.Shells, st.BandHits[k] + s.Hits);
             var fell = salvos.ToDictionary(s => s.FiredMs);
             foreach (var p in r.Spots)
@@ -454,7 +454,7 @@ sealed record FcStats
             FcBench.F(DrillPct));
         var bands = Enumerable.Range(0, BandShells.Length).Where(k => BandShells[k] > 0).Select(k => string.Format(inv, "{0}-{1} km {2:0.0}% ({3})",
             RangeBandsKm[k], double.IsInfinity(RangeBandsKm[k + 1]) ? "" : RangeBandsKm[k + 1].ToString(inv), 100.0 * BandHits[k] / BandShells[k], BandShells[k]));
-        yield return "  hits by range fired at: " + string.Join(", ", bands);
+        yield return "  hits by her true range when fired: " + string.Join(", ", bands);
     }
 }
 
