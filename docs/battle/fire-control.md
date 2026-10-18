@@ -505,6 +505,22 @@ the transmitting station; F4d sighting on the new heights.
   ~40), the hull model's turrets standing lower than the real ships'. Those are defaults: the designer gets a knob for
   the heights later (the user, 2026-10-18; F12). fc-history 11 of 23 in band (12 before: the Grand Fleet BS 7.1 to 7.3%,
   over its band's 7.2); squadrons and Tsushima over 5 seeds within the spread.
+- **F4b so far (2026-10-18):**
+  - *Directors in tops:* a mast's \`director\` names a battery one of whose directors stands on its top's roof
+    (\`FireControl.PlaceInTops\`), the top growing to hold its hood. The 33 Great War capital ships put their main
+    director in the foretop (Iron Duke's eye 23 to 31 m): fc-history 13 of 23, the Grand Fleet and German battleships in,
+    director over independent 1.79 to 1.51.
+  - *Turret rangefinders by design* (the user: physical, by design): a battery's \`rangefinder_m\` puts one in each
+    gunhouse, the hitbox's hood spanning the base; the fixed bar every armoured turret had goes, so turrets pack closer
+    (median 0.0 %, -1 to -4 % standard where the bars set the spacing). The 50 capital ships from the Great War on carry
+    them (2.7 m under 15", 4.6 m from it, later the director's base). In the sim each is an eye blind outside its turret's
+    arcs, and a battery in local control reads through every working one (and its best layer's eye last). The Great War
+    cases sit at their bands' edges: fc-history 11 of 23 (the Grand Fleet BS 7.2 and German battleships 6.0% step over).
+    The flotilla's daylight attack gets in less often (5 of 12 seeds, 7 of 8 before).
+  - *A bug found on the way:* the path bender's leg wasn't made ready with a class's other scratch, so a first glance
+    allocated mid-fight (fixed alone).
+  - *Next:* after control's and the conning tower's rangefinders as parts and units, then F4b-3 (the instruments' and
+    directors' weights from designer §3.4, a director to fit its deck).
 
 ### F5 Sensors proper
 
