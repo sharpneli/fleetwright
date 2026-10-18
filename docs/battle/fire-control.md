@@ -1094,6 +1094,15 @@ from the parts and independent fire (items 6 and 9); F6e ammunition as a choice 
     chaser 3.41 (2.25: in). fc-history 10 of 23 (Dogger Bank's British over their band). What's left at Falklands is
     the fall's wander salvo to salvo, ~400 m at 12.5 km (the computer's salvo error ×1.5 in battle and the director's
     laying), not the spotter: his error at a third of today's gives 3.5% (3.6), and Lion 4.3% (3.5) over 20 runs.
+  - *The battle factor dropped* (`GunneryCombat` 1.5 to 1; the user, 2026-10-18: "I'd be towards dropping it because
+    we'll introduce real crew fatigue system later"). The reference's one multiplier on the salvo-to-salvo, laying,
+    rangetaking and spotting errors was calibrated against battles' records, so it lumped in what the sim will have as
+    its own systems (the weather, smoke, sea; crew fatigue): the sim is the ideal case until they come, and they take
+    the knob's place (it goes then). fc-history 8 of 23 (10), every case at or over its band: Falklands 3.1 to 4.9%
+    (in, its first hit on salvo 4), the Grand Fleet 6.3 to 9.1%, Dogger Bank's British 3.1 to 4.7%, Rodney 47 to 61%;
+    the Germans over the British 0.88 (low), a steady target over a salvo chaser 4.80 (in). Squadrons over 20 seeds:
+    Britain's hits 60 to 61, Germany's 86 to 76; Tsushima over 5 seeds: Russia loses 5.6 ships, Japan 4.0. A test:
+    `FlotillaAttackTests` counts a flotilla sunk to the last boat as beaten off (seed 7's were, as they fired).
   - *A bug found on the way: Fight never closed on a runner.* The captain's Fight turned a fixed 40° in from the beam
     whatever the enemy did: at 22.5 kn on a 12 kn runner that closed 0.3 kn, and `Fight_closes_to_its_band` (14.0 km
     against a limit of 15.6) ended at 18.6 km once the falls moved. Beyond the band he now turns in further when the

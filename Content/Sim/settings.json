@@ -151,7 +151,7 @@
   "DevFirePatternPct": 0.8,
   "DevFireDeflectionShare": 0.4,
   "FireControlMs": 1000,
-  "GunneryCombat": 1.5,
+  "GunneryCombat": 1,
   "GunneryOpenS": 120,
   "LayToleranceDeg": 1,
   "SpotDelayMs": 6000,

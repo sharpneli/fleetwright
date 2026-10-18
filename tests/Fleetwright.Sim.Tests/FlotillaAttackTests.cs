@@ -69,9 +69,9 @@ public class FlotillaAttackTests(ITestOutputHelper output)
             if (signalMs < 0 || signalMs - s.Start.Ms > 25 * 60_000)
                 continue;   // beaten off before the signal (or it's made too late to see it through)
             int fired = seen.IndexOf(AttackPhase.Fire);
-            if (!seen.Contains(AttackPhase.Away) && seen.LastIndexOf(AttackPhase.None) > fired && w.Groups.Get(flotilla) is { } fg &&
-                fg.Line.Count < 6 * (1 - ai.Doctrine.OfGroup(fg, 1, DoctrineField.AttackBreakOffShare)))
-                continue;   // beaten off as they fired
+            if (!seen.Contains(AttackPhase.Away) && seen.LastIndexOf(AttackPhase.None) > fired && (w.Groups.Get(flotilla) is not { } fg ||
+                fg.Line.Count < 6 * (1 - ai.Doctrine.OfGroup(fg, 1, DoctrineField.AttackBreakOffShare))))
+                continue;   // beaten off as they fired (or every boat sunk: no group left)
             through++;
             if (firedMinuteOn - firedAtSignal >= 2 * Settings.TorpedoSpread)
                 together++;

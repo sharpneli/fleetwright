@@ -470,8 +470,10 @@ public sealed record SimSettings
     public int FireControlMs { get; init; } = 1000;
 
     /// <summary>Battle against practice: the multiplier on the salvo-to-salvo, laying, rangetaking and spotting errors
-    /// (fire_control_ref.py Conditions.combat, calibrated at 1.5).</summary>
-    public double GunneryCombat { get; init; } = 1.5;
+    /// (fire_control_ref.py Conditions.combat, calibrated there at 1.5 against battles' records). 1 (the user,
+    /// 2026-10-18): the sim is the ideal case, and what the 1.5 lumped together comes as its own systems (the weather,
+    /// smoke and sea; crew fatigue), which will take this knob's place.</summary>
+    public double GunneryCombat { get; init; } = 1;
 
     /// <summary>How long after a battery's track starts (its first reading in the computer) it opens fire, s
     /// (fire_control_ref.py Scenario.t_open).</summary>
