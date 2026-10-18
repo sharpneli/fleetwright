@@ -1,5 +1,5 @@
 # Plan: fire control (a 4.5 deepening)
-Status: **agreed with the user 2026-10-17** ("Decided" below; radar moved out); F0-F5 and F6a done 2026-10-18    Updated: 2026-10-18
+Status: **agreed with the user 2026-10-17** ("Decided" below; radar moved out); F0-F5 and F6a-b done 2026-10-18    Updated: 2026-10-18
 
 The fine-tune pass for the **Fire control** link of `fighting.md` 4.5 ("the trackers by era ... the clocks' limits ...
 the full set of levels, radar as a sensor, night ... splash confusion ... the designer emitting levels and sensors,
@@ -813,6 +813,41 @@ from the parts and independent fire (items 6 and 9); F6e ammunition as a choice 
     and 35, Germany's 92 to 122, losses 1.4 to 1.2 British ships and 0 to 0.1 German. Tsushima over 5 seeds: Russia's
     hits 490 to 359, Japan's 686 to 498, losses 4.4 to 3.8 Russian and 3.2 to 3.0 Japanese ships.
   - *Cost:* a battery 27 µs a game second (26 before); nothing allocated (`Fire_control_allocates_nothing`).
+- **F6b done 2026-10-18** (the side's discipline, decision 3).
+  - *The disciplines* (`SimSettings.FireDisciplines`, a `FireDiscipline` each; a side's by `GunnerySystem.SetDiscipline`,
+    hashed, the first by default; a scenario's `"fire_discipline": { "Germany": "german" }`, checked by the loader):
+    salvos in flight while ranging (1: each waits for the last one's fall), a ladder's step (with one, each group of
+    that many goes at once, stepped about the bracket's aim, and the next group waits for all their spots; without,
+    they roll), a ranging salvo's share of the guns that bear and its least (the shares are of the guns that bear,
+    loaded or not), alternating halves in fire for effect, and the spots in a row without a straddle that send it back.
+    The presets from the research (computing.md §2.5, §9): **rn-1914** single half-salvos, at least 4 guns, halves in
+    fire for effect; **rn-1917** the same with two in flight; **german** the ladder, three salvos 366 m (400 yd) apart
+    of a quarter of the guns, at least 2 (successive turrets), halves; **usn** single half-salvos and full salvos in fire
+    for effect. The IJN's, the Russians' and the other navies' aren't in the research (a request,
+    `research/REQUESTS.md`), so Tsushima's sides take the first.
+  - *Halves by mounts:* firing for effect in halves, the larger half of the bearing mounts and the smaller in turn
+    (five turrets: three, then two), each half a reload after the other. Shared by guns, a half of an odd turret count
+    couldn't be made, and Seydlitz's fifth and fourth turrets waited for a third: 3,170 shells in a duel became 5,064
+    when every gun fired at its reload.
+  - *The bench:* `duel --discipline NAME` (the summary's first line names it; the trace shows a ladder's step), and
+    fc-history gives each case its navy's (the British rn-1914, Rodney rn-1917, the Germans german, the Americans usn,
+    the Japanese the first), printed with the case.
+  - *Numbers* (fc-history `--runs 24`): **15 of 23 in band** (10 after F6a). The Great War cases fall, most into their
+    bands: Dogger Bank's British 3.1 to 2.5% (first hit salvo 17, late against the record's ~10, a half-salvo counted as
+    a salvo), the Jutland BCS 3.3 to 2.7%, the Grand Fleet BS 7.8 to 6.7%, the German battleships 6.6 to 5.8%, the
+    German 1st SG 4.5 to 3.3%, Dogger Bank's Germans 2.9 to 1.7%; the Yellow Sea 10.7 to 8.6%; Denmark Strait 11.7 to
+    10.5%. The halves give the spotter falls twice as often, and his corrections (half a pattern a spot, against
+    today's noisy calls) chase the salvo error twice as often: the research's "full corrections chase the random salvo
+    error" at work, on a spot model F7 is to redo. The USN's cases (full salvos) don't move. Orderings: the Germans
+    over the British 1.37 to 1.20 (want 1.5-5), a steady target over a salvo chaser 3.75 to 2.75 (want 3-10), director
+    over independent 1.61 to 1.58. Disciplines side by side, Lion on Derfflinger at 15 km: rn-1914 4.0%, rn-1917 4.8%,
+    usn 5.0%. Squadrons over 20 seeds: Britain's hits 35 to 29, Germany's 122 to 63 (the ladder's partial salvos),
+    losses 1.2 to 1.1 British ships and 0.1 German. Tsushima over 5 seeds: Russia's hits 359 to 343, Japan's 498 to
+    427, losses 3.8 to 4.2 Russian ships and 3.0 Japanese.
+  - *Tests:* the German ladder's first group stepped -366, 0, +366 and its first two together, then the halves of
+    three and two turrets alternating; Bismarck's 150 mm halves 5.9 s apart (a reload of 11.2 s). The turret test
+    checks no salvo is more than the forward guns (partial salvos now).
+  - *Cost:* 27 µs a battery-second, as F6a.
   - *A bug found on the way* (committed alone): a row of light AA mounts along each beam blinded the directors on
     their deck, so Bismarck's 150 mm never took a reading and never fired; light AA no longer blinds a post (45 classes'
     eyes move, the WWI scenarios' hashes don't).

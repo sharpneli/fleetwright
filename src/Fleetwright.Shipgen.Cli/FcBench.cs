@@ -94,6 +94,9 @@ sealed record FcCase
     public double Combat { get; init; } = double.NaN;
     public double Minutes { get; init; } = 15;
     public CrewQuality Crew { get; init; } = CrewQuality.Trained;
+    /// <summary>The shooter's side's fire discipline (fire-control.md F6), a name of the settings' FireDisciplines; null
+    /// the first.</summary>
+    public string? Discipline { get; init; }
     public bool Damage { get; init; }
 
     public int Level => Fit >= 0 ? Fit : Shooter.Batteries[Battery].Local ? 0 : (int)Shooter.Batteries[Battery].Level;
@@ -144,6 +147,8 @@ static class FcBench
             w.Apply(Command.SetWeather(c.VisibilityM));
         if (c.Crew != CrewQuality.Trained)
             w.Apply(GunnerySystem.SetCrew(0, c.Crew));
+        if (c.Discipline is { } dis)
+            w.Apply(GunnerySystem.SetDiscipline(0, DisciplineOf(s, dis)));
         w.Apply(GunnerySystem.Engage(Shooter, c.Battery, TargetShip, c.Fit));
 
         var run = new FcRun();
@@ -249,6 +254,13 @@ static class FcBench
             if (w.Probes.Names[i] == nameof(GunnerySystem))
                 run.GunneryMs += Probes.Ms(w.Probes.Ticks[i]);
         return run;
+    }
+
+    /// <summary>A fire discipline's index by its name.</summary>
+    public static int DisciplineOf(SimSettings s, string name)
+    {
+        int k = Array.FindIndex(s.FireDisciplines, d => d.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+        return k >= 0 ? k : throw new ArgumentException($"no fire discipline '{name}': {string.Join(", ", s.FireDisciplines.Select(d => d.Name))}");
     }
 
     /// <summary>Several cases' runs at once, on threads: runs[k][j] is case k's j-th (seeds seed0 + j).</summary>

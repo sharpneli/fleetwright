@@ -12,6 +12,23 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: (comparison, recommendation, API notes, plan...)
 -->
 
+### 2026-10-18 - Fire discipline by navy, and battle rates of fire from their causes, 1898-1925
+- Question: how each navy ranged and fired for effect, as numbers a general model can take (the game keeps it as a
+  side's doctrine: salvos in flight while ranging, a ladder's step and size, the guns in a ranging salvo, alternating
+  halves or full salvos in fire for effect, when they went back to ranging). The RN's 1914 and 1917 rules and the German
+  ladder are in `computing.md` §2.5; wanted are the IJN's (1904-05 and the Great War), the Russians', the French, the
+  Italians' and the Austrians', and the USN's before 1920 (the 1912-18 battle practice: ladder or single salvos?).
+  Second, the battle rate of fire as causes rather than one factor: how many ready-use rounds a mount held and how fast
+  the hoists fed after them, by mount type and period (the Majestics' 70 then 100 s is one case), the director's or
+  layer's cycle between salvos, and the crew's fatigue and heat over an hour; the research has battle rates at 30-60% of
+  drill but not what made them.
+- Context / relevant files: `docs/battle/fire-control.md` F6 (the cut: F6b the disciplines, F6d the rate from the
+  parts), `src/Fleetwright.Sim.Core/SimSettings.cs` (`FireDisciplines`: rn-1914, rn-1917, german, usn; the Japanese and
+  Russians take the RN's for want of their own), `research/simulation/fire-control-research/computing.md` §2.5,
+  `predreadnought-tech.md` §3, `manual-gunnery-research.md` §4. Not blocking.
+- Wanted output: a table by navy and period of the ranging and fire-for-effect rules with their numbers, and the rate of
+  fire's parts (ready-use rounds, hoist rates, cycle times, fatigue) by mount type and period, with sources.
+
 ### 2026-10-18 - Fire-control machines as mechanisms and typical fits, 1898-1925
 - Question: what kinds of fire-control machine existed and what could each do, as numbers a general model can take
   (the game builds ships from mechanisms with historical inspiration, not 1:1 replicas of classes): the rate clocks and

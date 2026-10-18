@@ -489,20 +489,30 @@ public sealed record SimSettings
     public double SpotDeflectionMil { get; init; } = 1;
     public double SpotDeflectionGain { get; init; } = 0.5;
 
-    /// <summary>Fire discipline (docs/battle/fire-control.md F6; the side's doctrine later, these its defaults): the
-    /// spots' bracket is never narrower than this many of the salvo's patterns (the USN's "never below the pattern"), nor
-    /// than <see cref="BracketFloorM"/>, m. A ranging salvo is this share of the guns that bear, at least
-    /// <see cref="RangingGunsMin"/> (enough to spot a wild shot: navalgazing Spotting, 3 and better 4), and waits for the
-    /// last one's spot, or this long past its time of flight and the spot's delay, ms. Firing for effect, this many spots
-    /// in a row without a straddle send it back to ranging; so does own ship's turn past this yaw rate, °/s, for a
-    /// computer that takes own ship's motion in (any turn past <see cref="OwnTurnYawDegS"/> for one that doesn't).</summary>
+    /// <summary>Fire discipline (docs/battle/fire-control.md F6): the spots' bracket is never narrower than this many of
+    /// the salvo's patterns (the USN's "never below the pattern"), nor than <see cref="BracketFloorM"/>, m. A ranging
+    /// salvo waits for the spots it's due, or this long past its time of flight and the spot's delay, ms (a spot that
+    /// never came). Firing for effect, own ship's turn past this yaw rate, °/s, sends a battery back to ranging when its
+    /// computer takes own ship's motion in (any turn past <see cref="OwnTurnYawDegS"/> when it doesn't). The rest is the
+    /// side's doctrine (<see cref="FireDisciplines"/>).</summary>
     public double BracketFloorPatterns { get; init; } = 1;
     public double BracketFloorM { get; init; } = 92;
-    public double RangingGunsShare { get; init; } = 0.5;
-    public int RangingGunsMin { get; init; } = 4;
     public int RangingWaitMarginMs { get; init; } = 15_000;
-    public int EffectMissesToRange { get; init; } = 3;
     public double HardTurnYawDegS { get; init; } = 1;
+
+    /// <summary>The fire disciplines a side may follow (fire-control.md F6, decision 3: the side's doctrine, as its crews
+    /// are; a scenario's <c>"fire_discipline"</c>): the first is every side's until it's told otherwise. The research's
+    /// (computing.md §2.5, fire-control-research.md §6, §9): the RN of 1914 ranging by single half-salvos, each after the
+    /// last one's fall, and alternating halves in fire for effect; the RN after Jutland with two in flight; the German
+    /// ladder, successive turrets ~400 yd apart, three salvos before the first falls; the USN's ladder spotted salvo by
+    /// salvo, full salvos in fire for effect.</summary>
+    public FireDiscipline[] FireDisciplines { get; init; } =
+    [
+        new() { Name = "rn-1914", InFlight = 1, GunsShare = 0.5, GunsMin = 4, EffectHalves = true, MissesToRange = 3 },
+        new() { Name = "rn-1917", InFlight = 2, GunsShare = 0.5, GunsMin = 4, EffectHalves = true, MissesToRange = 3 },
+        new() { Name = "german", InFlight = 3, LadderStepM = 366, GunsShare = 0.25, GunsMin = 2, EffectHalves = true, MissesToRange = 3 },
+        new() { Name = "usn", InFlight = 1, GunsShare = 0.5, GunsMin = 4, MissesToRange = 3 },
+    ];
 
     /// <summary>A shell's dispersion across the line of fire as a share of its dispersion along it (Gun.defl_ratio).</summary>
     public double DispersionDeflectionRatio { get; init; } = 0.4;
@@ -1355,6 +1365,27 @@ public enum CrewQuality : byte
     Average,
     Trained,
     Elite,
+}
+
+/// <summary>A fire discipline (docs/battle/fire-control.md F6), the side's doctrine for finding the bracket and hitting:
+/// <list type="bullet">
+/// <item>ranging, how many salvos may be in the air, unspotted, at once (1: each waits for the last one's fall); with a
+/// ladder step (m), each group of that many goes at once, the salvos stepped about the bracket's aim so their falls
+/// bracket the target in one flight; without, they roll (the next goes when one is spotted);</item>
+/// <item>a partial salvo's share of the guns that bear, at least a number of them (enough to spot a wild shot by:
+/// navalgazing Spotting, 3 and better 4; all of them if fewer);</item>
+/// <item>fire for effect in alternating halves (each half as it loads, so the spotter has falls twice as often) or full
+/// salvos; and how many spots in a row without a straddle send it back to ranging.</item>
+/// </list></summary>
+public sealed record FireDiscipline
+{
+    public string Name { get; init; } = "";
+    public int InFlight { get; init; } = 1;
+    public double LadderStepM { get; init; }
+    public double GunsShare { get; init; } = 0.5;
+    public int GunsMin { get; init; } = 4;
+    public bool EffectHalves { get; init; }
+    public int MissesToRange { get; init; } = 3;
 }
 
 /// <summary>A crew quality's multipliers on the rangetakers' and the layers' errors.</summary>

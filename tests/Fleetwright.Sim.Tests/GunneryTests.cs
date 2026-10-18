@@ -120,8 +120,9 @@ public class GunneryTests(ITestOutputHelper output)
         }
         var t = w.Gunnery.TallyOf(1, 0)!.Value;
         Assert.True(t.Salvos > 0, "it fired");
-        Assert.Equal(t.Salvos * forward, t.Shells);
-        output.WriteLine($"{t.Salvos} salvos of {forward} guns");
+        // partial salvos ranging and halves firing for effect (fire-control.md F6): never more than the forward guns
+        Assert.True(t.Shells <= t.Salvos * forward, $"{t.Shells} shells in {t.Salvos} salvos of at most {forward} guns");
+        output.WriteLine($"{t.Salvos} salvos of at most {forward} guns, {t.Shells} shells");
 
         // the mounts fired, for the screens (docs/visuals/muzzle-flashes.md F0): only the forward turrets, all barrels
         var snap = new Snapshot();

@@ -22,12 +22,12 @@ static class Duel
         var row = c.Shooter.Batteries[c.Battery];
         string fit = c.Fit >= 0 ? $"preset {c.Fit} ({FireControlPresets.Name(c.Fit)})" : row.Local ? "local control" : $"its own fit, level {(int)row.Level}";
         Console.WriteLine(string.Format(Inv, "{0} battery {1} ({2:0.#}/{3:0.#}, {4} guns, {5}) at {6} ({7:0} m, {8:0.0} kyd), bearing {9:0}°, " +
-            "target on {10:0}° at {11:0} kn, {12}; own 0° at {13:0} kn, {14}; {15} crew; {16}{17}{18}; {19} runs of {20:0} min",
+            "target on {10:0}° at {11:0} kn, {12}; own 0° at {13:0} kn, {14}; {15} crew, fire discipline {21}; {16}{17}{18}; {19} runs of {20:0} min",
             c.Shooter, c.Battery, row.CalibreMm, row.CalibreLength, row.Guns, fit, c.Target, c.RangeM, c.RangeM / FcBench.Kyd, c.BearingDeg,
             c.CourseDeg, c.TargetKn, c.Behaviour, c.OwnKn, c.Own, c.Crew.ToString().ToLowerInvariant(),
             c.VisibilityM > 0 ? string.Format(Inv, "visibility {0:0.#} km", c.VisibilityM / 1000) : "clear",
             c.Start.Ms == FcCase.Day.Ms ? "" : $", from {c.Start}", double.IsNaN(c.Combat) ? "" : string.Format(Inv, ", combat factor {0:0.##}", c.Combat),
-            runs, c.Minutes));
+            runs, c.Minutes, c.Discipline ?? settings.FireDisciplines[0].Name));
         if (trace)
         {
             var one = FcBench.Once(c, settings, seed);
@@ -40,9 +40,9 @@ static class Duel
                         Bound(p.Hi), p.Next, p.Phase != r.Phase ? $" -> {Phase(p.Phase)}" : "")
                     : "";
                 Console.WriteLine(string.Format(Inv,
-                    "    {0,5:0} s  {1}  R {2,6:0}  n {3,2}  fall {4,6:+0;-0} m {5,5:+0;-0} m  aim {6,6:+0;-0} {7,5:+0;-0}  corr {8,6:+0;-0}  hits {9}{10}{11}",
+                    "    {0,5:0} s  {1}  R {2,6:0}  n {3,2}  fall {4,6:+0;-0} m {5,5:+0;-0} m  aim {6,6:+0;-0} {7,5:+0;-0}  corr {8,6:+0;-0}{12}  hits {9}{10}{11}",
                     (r.FiredMs - t0) / 1000.0, r.Phase == FirePhase.Effect ? "E" : "R", r.RangeM, r.Shells, r.MeanX, r.MeanY, r.AimErrM, r.AimErrAcrossM, r.CorrR,
-                    r.Hits, r.Straddle ? "  STRADDLE" : "", spot));
+                    r.Hits, r.Straddle ? "  STRADDLE" : "", spot, r.LadderM != 0 ? string.Format(Inv, " (step {0:+0;-0})", r.LadderM) : ""));
             }
             foreach (long m in one.Manoeuvres)
                 Console.WriteLine(string.Format(Inv, "    {0,5:0} s  the target manoeuvres", (m - t0) / 1000.0));

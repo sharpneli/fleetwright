@@ -160,11 +160,14 @@
   "SpotDeflectionGain": 0.5,
   "BracketFloorPatterns": 1,
   "BracketFloorM": 92,
-  "RangingGunsShare": 0.5,
-  "RangingGunsMin": 4,
   "RangingWaitMarginMs": 15000,
-  "EffectMissesToRange": 3,
   "HardTurnYawDegS": 1,
+  "FireDisciplines": [
+    { "Name": "rn-1914", "InFlight": 1, "LadderStepM": 0, "GunsShare": 0.5, "GunsMin": 4, "EffectHalves": true, "MissesToRange": 3 },
+    { "Name": "rn-1917", "InFlight": 2, "LadderStepM": 0, "GunsShare": 0.5, "GunsMin": 4, "EffectHalves": true, "MissesToRange": 3 },
+    { "Name": "german", "InFlight": 3, "LadderStepM": 366, "GunsShare": 0.25, "GunsMin": 2, "EffectHalves": true, "MissesToRange": 3 },
+    { "Name": "usn", "InFlight": 1, "LadderStepM": 0, "GunsShare": 0.5, "GunsMin": 4, "EffectHalves": false, "MissesToRange": 3 }
+  ],
   "DispersionDeflectionRatio": 0.4,
   "RangefinderBiasUnits": 1.5,
   "RangingClearMargin": 4,

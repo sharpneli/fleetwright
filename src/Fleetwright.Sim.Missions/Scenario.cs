@@ -37,7 +37,9 @@ namespace Fleetwright.Sim.Missions;
 /// rest. One that doesn't fit a design is a warning, and her design's own shells are kept.</para>
 /// <para>A side's gun crews are green, average, trained or elite (<c>"crews"</c>; trained if not listed). A side's
 /// propellant (<c>"propellant": { "Britain": 2, "Germany": 0.1 }</c>, 1 if not listed) scales how readily its magazines go
-/// up (docs/battle/fighting.md 4.3a: Jutland's cordite against brass-cased RP C/12).</para>
+/// up (docs/battle/fighting.md 4.3a: Jutland's cordite against brass-cased RP C/12). A side's fire discipline
+/// (<c>"fire_discipline": { "Germany": "german" }</c>; the settings' first if not listed) is how its batteries range and
+/// fire for effect (docs/battle/fire-control.md F6: a name of the settings' <c>FireDisciplines</c>).</para>
 /// <para>Each side's doctrine (docs/battle/command.md "Doctrine") is a preset of <c>Content/Sim/doctrine.json</c>,
 /// <c>"doctrine": { "Germany": "default" }</c>, with values over it, <c>{ "Germany": { "preset": "default",
 /// "RangeShare": 0.5 } }</c>; a side not listed takes "default" (Engage: fight). A unit sets values of its own,
@@ -83,6 +85,10 @@ public sealed class Scenario
 
     /// <summary>The sides' propellant where it isn't 1 (docs/battle/fighting.md 4.3a), by side index.</summary>
     public List<(int Side, double Factor)> Propellant { get; init; } = [];
+
+    /// <summary>The sides' fire disciplines where they're given (docs/battle/fire-control.md F6), by side index: a name of
+    /// the settings' FireDisciplines (the loader checks it).</summary>
+    public List<(int Side, string Name)> FireDisciplines { get; init; } = [];
 
     /// <summary>Each side's doctrine where the file gives it, by index: a preset, and values over it.</summary>
     public List<(int Side, string Preset, List<(DoctrineField Field, double Value)> Values)> Doctrine { get; init; } = [];
@@ -227,6 +233,9 @@ public sealed class Scenario
             // "propellant": { "Germany": 0.1 }, by the sides' names; taken from "from" (with its sides) unless given
             var propellant = r.TryGetProperty("propellant", out var pr) ? ParsePropellant(pr, sides)
                 : from != null && !r.TryGetProperty("sides", out _) ? from.Propellant : [];
+            // "fire_discipline": { "Germany": "german" }, by the sides' names; taken from "from" (with its sides) unless given
+            var disciplines = r.TryGetProperty("fire_discipline", out var fd) ? ParseDisciplines(fd, sides)
+                : from != null && !r.TryGetProperty("sides", out _) ? from.FireDisciplines : [];
             if (r.TryGetProperty("fight", out _))
                 throw new ScenarioException("fight: gone; doctrine's Engage is \"fight\" by default (\"doctrine\": { \"Germany\": { \"Engage\": \"carry on\" } } not to)");
             // "doctrine": { "Germany": "default" | { "preset": "default", "RangeShare": 0.5 } }; "home": { "Germany": [54, 8] };
@@ -267,6 +276,7 @@ public sealed class Scenario
                 Weather = weather,
                 Crews = crews,
                 Propellant = propellant,
+                FireDisciplines = disciplines,
                 Doctrine = doctrine,
                 Homes = homes,
                 Until = until,
@@ -385,6 +395,23 @@ public sealed class Scenario
             if (p.Value.ValueKind != JsonValueKind.Number || !(p.Value.GetDouble() >= 0))
                 throw new ScenarioException($"propellant: {p.Value} for {p.Name}: a number, 0 or more");
             list.Add((side, p.Value.GetDouble()));
+        }
+        return list;
+    }
+
+    static List<(int, string)> ParseDisciplines(JsonElement e, string[] sides)
+    {
+        if (e.ValueKind != JsonValueKind.Object)
+            throw new ScenarioException("fire_discipline: an object of sides' names, { \"Germany\": \"german\" }");
+        var list = new List<(int, string)>();
+        foreach (var p in e.EnumerateObject())
+        {
+            int side = Array.IndexOf(sides, p.Name);
+            if (side < 0)
+                throw new ScenarioException($"fire_discipline: \"{p.Name}\" isn't one of the sides ({string.Join(", ", sides)})");
+            if (p.Value.ValueKind != JsonValueKind.String)
+                throw new ScenarioException($"fire_discipline: {p.Value} for {p.Name}: a discipline's name");
+            list.Add((side, p.Value.GetString()!));
         }
         return list;
     }

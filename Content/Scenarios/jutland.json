@@ -19,6 +19,7 @@
   "camera": [56.95, 5.0, 250],
   "sides": ["Britain", "Germany"],
   "propellant": { "Britain": 2, "Germany": 0.1 },
+  "fire_discipline": { "Britain": "rn-1914", "Germany": "german" },
   "player": "Britain",
   // the end (docs/battle/command.md 5.0): the afternoon, the night, and Scheer past Horns Reef by 03:00 on 1 June.
   // History's aims (Germany to cut off part of the Grand Fleet and avoid the whole) wait for "avoid"; v0 has one aim

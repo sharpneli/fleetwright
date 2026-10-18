@@ -77,7 +77,7 @@ public class FireDisciplineTests(ITestOutputHelper output)
                 {
                     ranging++;
                     partial += s.Shells < guns ? 1 : 0;
-                    Assert.True(s.Shells >= Math.Min(Settings.RangingGunsMin, guns), $"a ranging salvo of {s.Shells}");
+                    Assert.True(s.Shells >= Math.Min(Settings.FireDisciplines[0].GunsMin, guns), $"a ranging salvo of {s.Shells}");
                     if (i > 0 && salvos[i - 1].Phase == FirePhase.Ranging)
                         shortestRanging = Math.Min(shortestRanging, (s.FiredMs - salvos[i - 1].FiredMs) / 1000.0);
                 }
@@ -96,5 +96,42 @@ public class FireDisciplineTests(ITestOutputHelper output)
         // each ranging salvo waited for the last one's fall and spot: its flight and the spot's delay, well over a reload
         Assert.True(shortestRanging > reload + Settings.SpotDelayMs / 1000.0, $"ranging salvos {shortestRanging:F0} s apart");
         Assert.True(effectGap < 2 * reload, $"fire for effect at the loading rate: {effectGap:F1} s");
+    }
+
+    [Fact]
+    public void The_german_ladder_brackets_in_one_flight_and_the_halves_alternate()
+    {
+        // Seydlitz (five twin turrets) on Lion at 16.5 km: three salvos stepped 400 yd apart go before the first falls;
+        // firing for effect, three turrets and two in turn, half a reload apart
+        var seydlitz = Fleet.Get("seydlitz").Class!;
+        var w = new World(Start, 3, Settings);
+        int a = w.Ships.AddClass(seydlitz), l = w.Ships.AddClass(Fleet.Get("lion").Class!);
+        var p = Earth.Position(Lat, Lon);
+        var f = Earth.Forward(p, 90);
+        Earth.Advance(ref p, ref f, 16_500);
+        var (tl, to) = Earth.LatLon(p);
+        w.Apply(ShipSystem.Spawn(a, Lat, Lon, 0, 20, side: 0));
+        w.Apply(ShipSystem.Spawn(l, tl, to, 0, 20, side: 1));
+        int german = Array.FindIndex(Settings.FireDisciplines, d => d.Name == "german");
+        w.Apply(GunnerySystem.SetDiscipline(0, german));
+        var salvos = new List<GunnerySystem.SalvoReport>();
+        w.Gunnery.Reported = salvos.Add;
+        w.Apply(GunnerySystem.Engage(1, 0, 2));
+        w.AdvanceTo(Start + 10 * 60_000);
+        var dis = Settings.FireDisciplines[german];
+        var first = salvos.OrderBy(s => s.FiredMs).Take(dis.InFlight).ToArray();
+        output.WriteLine(string.Join("; ", first.Select(s => $"{(s.FiredMs - first[0].FiredMs) / 1000.0:F0} s step {s.LadderM:+0;-0} {s.Shells} guns")));
+        Assert.Equal([-dis.LadderStepM, 0, dis.LadderStepM], first.Select(s => s.LadderM).Order().ToArray());
+        Assert.True(first.All(s => s.Phase == FirePhase.Ranging && s.Shells >= dis.GunsMin && s.Shells < seydlitz.Batteries[0].Guns));
+        // the first two go together, before the first one's fall (its flight is ~30 s)
+        Assert.True(first[1].FiredMs - first[0].FiredMs < 10_000);
+
+        var effect = salvos.Where(s => s.Phase == FirePhase.Effect).OrderBy(s => s.FiredMs).Take(12).ToArray();
+        output.WriteLine("fire for effect: " + string.Join(", ", effect.Select(s => $"{s.Shells}")));
+        Assert.True(effect.Length >= 8);
+        int alternating = 0;
+        for (int i = 1; i < effect.Length; i++)
+            alternating += effect[i].Shells != effect[i - 1].Shells ? 1 : 0;
+        Assert.True(alternating * 4 >= 3 * (effect.Length - 1), "the halves alternate");
     }
 }

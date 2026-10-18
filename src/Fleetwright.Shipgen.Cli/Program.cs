@@ -612,7 +612,7 @@ public static class Program
             Own = Policy.Parse(a.Get("own-policy", "steady")!), Behaviour = Policy.Parse(a.Get("target-policy", "steady")!),
             VisibilityM = D(a, "visibility", 0) * 1000, Combat = D(a, "combat", double.NaN), Minutes = D(a, "minutes", 15),
             Start = a.Has("night") ? FcCase.Night : a.Get("at") is { } at ? WorldTime.FromUtc(DateTime.Parse(at, inv, System.Globalization.DateTimeStyles.AdjustToUniversal | System.Globalization.DateTimeStyles.AssumeUniversal)) : FcCase.Day,
-            Crew = Enum.Parse<CrewQuality>(a.Get("crew", "trained")!, ignoreCase: true), Damage = a.Has("damage"),
+            Crew = Enum.Parse<CrewQuality>(a.Get("crew", "trained")!, ignoreCase: true), Damage = a.Has("damage"), Discipline = a.Get("discipline"),
         };
         return Duel.Run(c, Settings(a), a.Int("runs", 20), a.Int("seed", 1), a.Has("trace"));
     }

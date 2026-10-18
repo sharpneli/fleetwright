@@ -1067,7 +1067,9 @@ numbers before and after against the anchors. The list, by link, with where the 
   F5d done 2026-10-18: `shipgen fc-sensors`, the designer note's base and arrangement studies on the sim, in their
   shape (F5 complete). F6 (fire discipline) cut in five; F6a done 2026-10-18: a battery opens, ranges with partial
   salvos each waiting for the last one's spot, and fires for effect on the spotter's straddle; the spots keep a
-  bracket in correction space (`FireControl.Bracket`) instead of the ladder's last sign.
+  bracket in correction space (`FireControl.Bracket`) instead of the ladder's last sign; F6b done 2026-10-18: the
+  side's fire discipline (`FireDisciplines`: rn-1914, rn-1917, the German ladder, usn; a scenario's
+  `"fire_discipline"`), alternating halves in fire for effect.
 - **Ship motion** (`ship-motion/ship-motion-gunnery-research.md` §7.7, in its order):
   - a roll phase per ship from `RollPeriodS` and the sea, with firing on the roll and a once-a-roll rate;
   - laying error `√(base² + (τ·ω)²)`;

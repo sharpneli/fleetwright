@@ -78,6 +78,13 @@ public static class ScenarioLoader
             w.Apply(GunnerySystem.SetCrew(side, quality));
         foreach (var (side, factor) in s.Propellant)
             w.Apply(DamageSystem.SetPropellant(side, factor));
+        foreach (var (side, name) in s.FireDisciplines)
+        {
+            int k = Array.FindIndex(w.Settings.FireDisciplines, d => d.Name == name);
+            if (k < 0)
+                throw new ScenarioException($"fire_discipline of {s.Sides[side]}: no \"{name}\" (have {string.Join(", ", w.Settings.FireDisciplines.Select(d => d.Name))})");
+            w.Apply(GunnerySystem.SetDiscipline(side, k));
+        }
         var tasked = new List<(ScenarioUnit Top, Unit Unit)>();
         var loadouts = new Dictionary<(int Class, LoadoutSpec Spec), int>();   // a loadout of a class, made once (-1: it didn't fit)
         var placed = new List<(ScenarioUnit Squadron, int Index, double AsternM, double AbeamM)>();
