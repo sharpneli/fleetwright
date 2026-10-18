@@ -317,7 +317,7 @@ public sealed class GunnerySystem : IWorldSystem
 
     /// <summary>Whether a sensor takes ranges with its rangefinder: it has one, and the fit's optics can read it (the
     /// eyeball's can't: a director's rangefinder under it ranges by eye).</summary>
-    static bool Ranges(in OpticsRow o, in Sensor s) => s.BaseM > 0 && o.Magnification > 0;
+    static bool Ranges(in OpticsRow o, in Sensor s) => s.BaseM > 0 && o.Reads;
 
     /// <summary>Whether a battery of the same ship on another target holds a unit.</summary>
     bool HeldElsewhere(int f, int unit)
@@ -470,7 +470,7 @@ public sealed class GunnerySystem : IWorldSystem
             double range = Earth.Distance(at, tpos), brg = Earth.Bearing(at, tpos), sr, bias, sb;
             if (Ranges(optics, s))
             {
-                double unit = FireControl.RangefinderUnitM(s.BaseM, optics.Magnification, range, settings);
+                double unit = FireControl.RangefinderUnitM(s.BaseM, optics, range);
                 (sr, bias, sb) = (crew.Operator * combat * unit, s.Bias * settings.RangefinderBiasUnits * unit, settings.RangefinderBearingMil * FireControl.Mil);
             }
             else

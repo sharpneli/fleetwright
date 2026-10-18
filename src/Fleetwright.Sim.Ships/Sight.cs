@@ -15,11 +15,16 @@ public enum EyeKind : byte
 /// <summary>An observation post (docs/battle/plan.md step 3.2a): its component, where it is (ship-local x, y), its eye's
 /// height over the waterline at rest (m), its rangefinder's base (m, 0 for none) and the bearings it can't see along, a
 /// bit per sector of <see cref="Sight.SectorDeg"/> clockwise from dead ahead (sector k covers k·5.625° to (k+1)·5.625°):
-/// those where a taller part of the ship stands in the way.</summary>
-public readonly record struct EyeRow(EyeKind Kind, int Component, double X, double Y, double HeightM, double RangefinderM, ulong Blind)
+/// those where a taller part of the ship stands in the way; a director's, its rangefinder's make (its battery's fit,
+/// fire-control.md F3).</summary>
+public readonly record struct EyeRow(EyeKind Kind, int Component, double X, double Y, double HeightM, double RangefinderM, ulong Blind,
+    OpticsRow Optics = default)
 {
     /// <summary>Whether it can see along a bearing relative to the bow, degrees clockwise.</summary>
     public bool Sees(double relativeDeg) => (Blind & (1UL << Sight.Sector(relativeDeg))) == 0;
+
+    /// <summary>Whether it takes ranges with a rangefinder: a director's, of a make that's read.</summary>
+    public bool Ranges => Kind == EyeKind.Director && RangefinderM > 0 && Optics.Reads;
 }
 
 /// <summary>What a ship shows to an observer (docs/battle/plan.md step 3.2a): its highest point over the waterline at
@@ -94,7 +99,10 @@ public static class Sight
                 case ComponentKind.Superstructure when x.Role == ComponentRole.Director:
                     var b = x.Bounds;
                     double rf = x.Detail >= 0 ? c.directors[x.Detail].RangefinderM : 0;
-                    eyes.Add(Eye(c, EyeKind.Director, i, (b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2, b.Base + EyeOverFloorM - wl, double.IsNaN(rf) ? 0 : rf));
+                    eyes.Add(Eye(c, EyeKind.Director, i, (b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2, b.Base + EyeOverFloorM - wl, double.IsNaN(rf) ? 0 : rf) with
+                    {
+                        Optics = x.Detail >= 0 ? OpticsOf(c, c.directors[x.Detail].Battery) : default,
+                    });
                     break;
                 case ComponentKind.Superstructure when x.Role == ComponentRole.Bridge:
                     if (bridge < 0 || x.Bounds.Base > comps[bridge].Bounds.Base)
@@ -114,6 +122,15 @@ public static class Sight
             }
         return [.. eyes.OrderByDescending(e => e.HeightM).ThenBy(e => e.Component)];
     }
+
+    /// <summary>A director's rangefinders' make: its battery's fit's optics.</summary>
+    static OpticsRow OpticsOf(ShipClass c, Battery battery) =>
+        FireControlBlocks.Fit(c.design, FireControlTemplates.FitOf(c.design.FireControl?.Of(battery switch
+        {
+            Battery.Main => "main",
+            Battery.Secondary => "secondary",
+            _ => "aa",
+        }))).Optics;
 
     /// <summary>An eye with its blind sectors: each sector whose middle bearing passes through a part of the ship
     /// standing across the eye's height (a line to the horizon runs at about that height, so a director on a roof above

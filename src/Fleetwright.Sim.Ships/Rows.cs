@@ -369,8 +369,14 @@ public readonly record struct InstrumentRow(int Unit, int Eye, int Component, do
 public readonly record struct FcUnitRow(int Director, Battery Battery, Slice Instruments);
 
 /// <summary>The instruments' make on a battery's fit: their magnification (0: the instruments can't be read, so a
-/// rangefinder ranges by eye) and the readings a minute each takes.</summary>
-public readonly record struct OpticsRow(double Magnification, double ReadingsPerMin);
+/// rangefinder ranges by eye), the readings a minute each takes, a trained rangetaker's acuity through them, arcseconds,
+/// and the longest base their tube keeps true, m, past which a base delivers as the flex power of its length
+/// (fire-control-designer.md §3.1: B_eff = rigid·(B/rigid)^flex).</summary>
+public readonly record struct OpticsRow(double Magnification, double ReadingsPerMin, double DeltaArcsec, double RigidBaseM, double FlexExp)
+{
+    /// <summary>Whether a rangefinder of this make is read at all.</summary>
+    public bool Reads => Magnification > 0;
+}
 
 /// <summary>How a fire-control computer keeps its target (docs/battle/fire-control.md F2; fire_control_ref.py's trackers):
 /// each fails where its machine failed.</summary>

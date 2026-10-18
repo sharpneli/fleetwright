@@ -26,7 +26,6 @@ public readonly record struct SightLine(double DistanceM, double AspectDeg, doub
 /// </list></summary>
 public static class SightModel
 {
-    const double Arcsec = Math.PI / 648_000;
 
     /// <summary>How far the sea's horizon is from an eye this high, m.</summary>
     public static double HorizonM(double eyeM, SimSettings s) => Math.Sqrt(2 * s.SightRefraction * Earth.Radius * Math.Max(eyeM, 0));
@@ -57,11 +56,11 @@ public static class SightModel
         return s.SightNightM * Math.Pow(100, 1 - f);
     }
 
-    /// <summary>An eye's magnification: a director's rangefinder's (PLACEHOLDER from its base), binoculars at a masthead
-    /// or on the bridge, the conning tower's slits.</summary>
+    /// <summary>An eye's magnification: a director's rangefinder's (its make's), binoculars at a masthead, on the bridge
+    /// or in a director without a rangefinder read, the conning tower's slits.</summary>
     public static double Magnification(in EyeRow eye, SimSettings s) => eye.Kind switch
     {
-        EyeKind.Director when eye.RangefinderM > 0 => DesignerPlaceholders.RangefinderMagnification(eye.RangefinderM),
+        EyeKind.Director when eye.Ranges => eye.Optics.Magnification,
         EyeKind.ConningTower => s.SightSlitsMagnification,
         _ => s.SightLookoutMagnification,
     };
@@ -112,17 +111,10 @@ public static class SightModel
     /// <summary>The chance of detecting it in a look of dt seconds at a rate.</summary>
     public static double Chance(double rate, double dtS) => rate <= 0 ? 0 : 1 - Math.Exp(-rate * dtS);
 
-    /// <summary>A reading's 1-sigma range error, m: a rangefinder's unit of error (12 arcseconds at the eye over its base
-    /// times magnification; long bases give less than their length, NDRC 1941, as in
-    /// research/simulation/fire_control_ref.py), or the eye's 20% of the range.</summary>
-    public static double RangeSigmaM(in EyeRow eye, double rangeM)
-    {
-        if (eye.Kind != EyeKind.Director || eye.RangefinderM <= 0)
-            return 0.2 * rangeM;
-        double m = DesignerPlaceholders.RangefinderMagnification(eye.RangefinderM);
-        double bm = eye.RangefinderM > 5 ? 5 * Math.Pow(eye.RangefinderM / 5, 0.75) * m : eye.RangefinderM * m;
-        return 12 * Arcsec * rangeM * rangeM / bm;
-    }
+    /// <summary>A reading's 1-sigma range error, m: a rangefinder's unit of error (its make's, fire control's one law:
+    /// <see cref="FireControl.RangefinderUnitM"/>), or the eye's 20% of the range.</summary>
+    public static double RangeSigmaM(in EyeRow eye, double rangeM) =>
+        eye.Ranges ? FireControl.RangefinderUnitM(eye.RangefinderM, eye.Optics, rangeM) : 0.2 * rangeM;
 
     /// <summary>A reading's 1-sigma bearing error, radians: a director's 0.5 mil, binoculars' 2 mil (the reference's
     /// optical and eye figures), the slits' 5.</summary>

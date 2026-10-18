@@ -493,12 +493,9 @@ public sealed record SimSettings
     /// <summary>A shell's dispersion across the line of fire as a share of its dispersion along it (Gun.defl_ratio).</summary>
     public double DispersionDeflectionRatio { get; init; } = 0.4;
 
-    /// <summary>Rangefinding (fire-control-research.md §3.2): one unit of error δ at the eye, arcseconds (OP 1171), so a
-    /// reading's error is δ·R²/(B·M); bases longer than <see cref="RangefinderLongBaseM"/> give less than geometry says
-    /// (as the 0.75 power past it, NDRC 1941); an instrument's own bias after calibration, in units of error; its
+    /// <summary>Rangefinding (fire-control-research.md §3.2): a reading's unit of error is the optics' (their acuity,
+    /// rigid base and flex: the fit's tech block, F3); an instrument's own bias after calibration, in units of error; its
     /// bearing's error, mil.</summary>
-    public double RangefinderUnitArcsec { get; init; } = 12;
-    public double RangefinderLongBaseM { get; init; } = 5;
     public double RangefinderBiasUnits { get; init; } = 1.5;
     public double RangefinderBearingMil { get; init; } = 1;
 

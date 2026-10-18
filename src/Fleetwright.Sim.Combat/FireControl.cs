@@ -1,4 +1,5 @@
 using Fleetwright.Sim.Core;
+using Fleetwright.Sim.Ships;
 
 namespace Fleetwright.Sim.Combat;
 
@@ -16,12 +17,14 @@ public static class FireControl
     public const double Mil = 1e-3;
     const double Arcsec = Math.PI / 648_000;
 
-    /// <summary>One unit of a rangefinder's error at a range, metres: δ·R²/(B·M), long bases giving less than geometry
-    /// says (Sensor.unit_error).</summary>
-    public static double RangefinderUnitM(double baseM, double magnification, double rangeM, SimSettings s)
+    /// <summary>One unit of a rangefinder's error at a range, metres: δ·R²/(B_eff·M), the optics' acuity over its base
+    /// times magnification, a base past the optics' rigid one delivering as the flex power of its length
+    /// (fire-control-designer.md §3.1, NDRC 1941; Sensor.unit_error). The one law: fire control's readings and the
+    /// sighting's fixes both take it.</summary>
+    public static double RangefinderUnitM(double baseM, in OpticsRow o, double rangeM)
     {
-        double bm = baseM > s.RangefinderLongBaseM ? s.RangefinderLongBaseM * Math.Pow(baseM / s.RangefinderLongBaseM, 0.75) * magnification : baseM * magnification;
-        return s.RangefinderUnitArcsec * Arcsec * rangeM * rangeM / Math.Max(bm, 1e-6);
+        double b = baseM > o.RigidBaseM && o.RigidBaseM > 0 ? o.RigidBaseM * Math.Pow(baseM / o.RigidBaseM, o.FlexExp) : baseM;
+        return o.DeltaArcsec * Arcsec * rangeM * rangeM / Math.Max(b * o.Magnification, 1e-6);
     }
 
     /// <summary>A salvo of n guns' own dispersion, 1 sigma in range and across, metres: the pattern (its 100% spread,

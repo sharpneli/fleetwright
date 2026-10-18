@@ -102,7 +102,10 @@ public static class FireControlBlocks
 
     static double N(double? v, string what) => v ?? throw new ShipCompileException($"fire control: a block gives no {what}");
 
-    public static OpticsRow Optics(OpticsTechInput o) => new(N(o.Magnification, "magnification"), N(o.ReadingsPerMin, "readings_per_min"));
+    public static OpticsRow Optics(OpticsTechInput o) => o.Magnification is > 0
+        ? new(o.Magnification.Value, N(o.ReadingsPerMin, "readings_per_min"), N(o.DeltaArcsec, "delta_arcsec"), N(o.RigidBaseM, "rigid_base_m"),
+            N(o.FlexExp, "flex_exp"))
+        : new(0, N(o.ReadingsPerMin, "readings_per_min"), 0, 0, 0);
 
     public static ComputerRow Computer(ComputerTechInput c) => new()
     {

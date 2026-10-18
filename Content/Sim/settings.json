@@ -161,8 +161,6 @@
   "SpotDeflectionGain": 0.5,
   "SpotLadderMinM": 46,
   "DispersionDeflectionRatio": 0.4,
-  "RangefinderUnitArcsec": 12,
-  "RangefinderLongBaseM": 5,
   "RangefinderBiasUnits": 1.5,
   "RangefinderBearingMil": 1,
   "EyeRangeShare": 0.2,

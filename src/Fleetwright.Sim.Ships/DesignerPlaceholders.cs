@@ -11,10 +11,6 @@ public static class DesignerPlaceholders
     /// top + 6 m (a destroyer's as high as Bismarck's over the deck); the designer should place tops by era and size.</summary>
     public const double MastLookoutUnderTopM = 1.0;
 
-    /// <summary>PLACEHOLDER: a rangefinder's magnification from its base, m (the designer gives only the base): 10 + 4 per
-    /// metre, kept to 12-30 (Barr &amp; Stroud's 9 ft FQ ~15-20x, 15 ft ~25x; the 1930s' long bases 25-30x).</summary>
-    public static double RangefinderMagnification(double baseM) => Math.Clamp(10 + 4 * baseM, 12, 30);
-
     /// <summary>Fills what the design didn't give (moving).</summary>
     public static MotionFacts Fill(MotionFacts m) => m with
     {
