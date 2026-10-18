@@ -120,38 +120,6 @@ public static class DesignerPlaceholders
         _ => 1.5,
     };
 
-    /// <summary>PLACEHOLDER (fighting.md decision 6: the level is the design's choice, per battery): the fire-control
-    /// level read from today's fit, its directors, the best rangefinder among them, and the plotting room's computer
-    /// and radar tonnage (research/simulation/fire-control-designer.md §3.3, fire_control_ref.py LEVELS):
-    /// <list type="bullet">
-    /// <item>no director: eyeball, the mounts in local control;</item>
-    /// <item>radar: rangekeeper with radar ranging when there's a rangefinder too, auto-track without;</item>
-    /// <item>no computer: a rangefinder (or eyeball without one); under 1 t a clock (Dumaresq, Vickers); under 5 t a
-    /// Dreyer table and director; under 8 t the interwar table; more, a rangekeeper;</item>
-    /// <item>never past the era's best: rangefinders before 1906, the Dreyer in the Great War, the table between the
-    /// wars, radar spotting in the Second.</item>
-    /// </list>
-    /// The designer should offer the level (computer, mount and propellant tech) per battery.</summary>
-    public static FireControlLevel FireControl(int directors, double rangefinderM, double computerT, bool radar, Era era)
-    {
-        var level = directors == 0 ? FireControlLevel.Eyeball
-            : radar ? rangefinderM > 0 ? FireControlLevel.Rangekeeper : FireControlLevel.AutoTrack
-            : computerT <= 0 ? rangefinderM > 0 ? FireControlLevel.Rangefinder : FireControlLevel.Eyeball
-            : computerT < 1 ? FireControlLevel.Clock
-            : computerT < 5 ? FireControlLevel.Director
-            : computerT < 8 ? FireControlLevel.Table
-            : FireControlLevel.Rangekeeper;
-        var best = era switch
-        {
-            Era.Victorian => FireControlLevel.Rangefinder,
-            Era.GreatWar => FireControlLevel.Director,
-            Era.Treaty => FireControlLevel.Table,
-            Era.Wwii => FireControlLevel.RadarSpotting,
-            _ => FireControlLevel.Digital,
-        };
-        return level < best ? level : best;
-    }
-
     // ------------------------------------------------------------------ the torpedoes (docs/battle/fighting.md 4.6)
 
     /// <summary>PLACEHOLDER: a torpedo from its calibre, shipgen's warhead and the look's era.

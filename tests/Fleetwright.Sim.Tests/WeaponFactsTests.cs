@@ -59,8 +59,8 @@ public class WeaponFactsTests
                     p.Add($"battery {b} ({row.Kind}) is directed by a {c.Directors[d].Battery} director");
             if (row.Local != (row.Directors.Count == 0) || row.Local && row.Level != FireControlLevel.Eyeball)
                 p.Add($"battery {b}: local {row.Local} at level {row.Level}");
-            if (row.Fit != FireControlPresets.Of(row.Level))
-                p.Add($"battery {b}: its fit isn't its preset's ({row.Level})");
+            if (row.Local ? row.Fit != FireControlPresets.Local : row.Level != FireControlPresets.LevelOf(row.Fit))
+                p.Add($"battery {b}: its fit and its level ({row.Level}) don't go together");
             // its fire-control units (fire-control.md F0): its directors', each with its director's eyes as instruments
             if (!c.Links(row.Units).SequenceEqual(c.Links(row.Directors)))
                 p.Add($"battery {b}: units {string.Join(",", c.Links(row.Units).ToArray())} aren't its directors'");

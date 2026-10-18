@@ -13,7 +13,7 @@ public sealed record Director(string Id, string Battery, double X, double Y, dou
 public static class FireControl
 {
     static readonly string[] BatteryNames = ["main", "secondary", "aa"];
-    static readonly string[] Fields = ["directors", "rangefinder_m", "armour_mm", "radar_t", "computer_t"];
+    static readonly string[] Fields = ["directors", "rangefinder_m", "armour_mm", "radar_t", "computer_t", "fit"];
     static readonly Dictionary<string, string> Label = new() { ["main"] = "Main director", ["secondary"] = "Secondary director", ["aa"] = "AA director" };
     public const double HoodH = 2.2;
     const double EyeH = 1.5, HoodPlateT = 0.047, RfTK = 0.03;
@@ -39,7 +39,7 @@ public static class FireControl
                 continue;
             errs.AddRange(d.Extra.KeysOrEmpty().Select(k => $"fire_control.{b}.{k}: not a director setting ({string.Join(", ", Fields)})"));
             var given = new[] { d.Directors, d.RangefinderM, d.ArmourMm, d.RadarT, d.ComputerT };
-            errs.AddRange(Fields.Where((_, i) => given[i] < 0).Select(k => $"fire_control.{b}.{k} must be a number, 0 or more"));
+            errs.AddRange(Fields.Take(given.Length).Where((_, i) => given[i] < 0).Select(k => $"fire_control.{b}.{k} must be a number, 0 or more"));
             if (d.Directors is double n && n != Math.Floor(n))
                 errs.Add($"fire_control.{b}.directors: use a whole number");
         }

@@ -1,5 +1,5 @@
 {
-    "version": 5,
+    "version": 6,
     "id": "murica",
     "name": "Liberty Ship",
     "look": {"navy": "generic", "era": "wwii"},

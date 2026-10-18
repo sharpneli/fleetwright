@@ -207,6 +207,110 @@ public static class FireControlTemplates
     /// <summary>The catalogue's block of a name, or null.</summary>
     public static Template? Get(string name) => byName.GetValueOrDefault(name);
 
+    /// <summary>A name's block: the design's (fire_control_tech), else the catalogue's, else null.</summary>
+    public static FcTechInput? Resolve(Design design, string name) => design.FireControlTech?.GetValueOrDefault(name) ?? Get(name)?.Value;
+
+    /// <summary>The fit a battery's fire control names: its own, else the default preset's.</summary>
+    public static IReadOnlyList<string> FitOf(DirectorInput? spec) => spec?.Fit ?? PresetNamed(DefaultPreset)!.Fit;
+
+    /// <summary>The computers' trackers and the optics' kinds, as the blocks give them.</summary>
+    public static readonly string[] Trackers = ["judgement", "rate_clock", "true_course", "acceleration", "turn_rate"],
+        OpticsKinds = ["eye", "coincidence", "stereo"];
+
+    static readonly string[] OpticsFields = ["kind", "delta_arcsec", "rigid_base_m", "flex_exp", "magnification", "m_max", "readings_per_min", "coated",
+        "gyro_stabilised", "mass_kg_m2"];
+    static readonly string[] ComputerFields = ["tracker", "helm_free", "latency_s", "q", "max_range_rate_ms", "max_bearing_rate_deg_s", "accel_tau_s",
+        "accel_sigma_ms2", "turn_q", "speed_q", "detect", "rejudge_s", "prior_kn", "prior_deg", "resid_pct", "defl_bias_mil", "own_turn_kick_m",
+        "first_step_m", "salvo_pct", "mass_t", "crew", "power_kw"];
+    static readonly string[] MountFields = ["director_firing", "stable_vertical", "lay_mil", "salvo_defl_mil"];
+
+    /// <summary>The design's fire_control_tech blocks: each one kind, its fields known, its numbers given and 0 or more; and
+    /// each battery's fit: names that resolve, one block of each kind.</summary>
+    public static List<string> Validate(Design design)
+    {
+        var errs = new List<string>();
+        foreach (var (name, b) in design.FireControlTech ?? [])
+        {
+            string at = $"fire_control_tech.\"{name}\"";
+            if (b is null)
+            {
+                errs.Add($"{at}: give its numbers");
+                continue;
+            }
+            foreach (var k in b.Extra.KeysOrEmpty())
+                errs.Add($"{at}.{k}: not a kind of block (optics, computer, mount)");
+            int kinds = (b.Optics is null ? 0 : 1) + (b.Computer is null ? 0 : 1) + (b.Mount is null ? 0 : 1);
+            if (kinds != 1)
+                errs.Add($"{at}: a block is one of optics, computer or mount ({kinds} given)");
+            void Numbers(string kind, IEnumerable<(string Key, double? V)> given, IEnumerable<string> required)
+            {
+                foreach (var (k, v) in given)
+                    if (v is double d && !(d >= 0 && double.IsFinite(d)))
+                        errs.Add($"{at}.{kind}.{k}: a number, 0 or more");
+                foreach (var (k, v) in given)
+                    if (v is null && required.Contains(k))
+                        errs.Add($"{at}.{kind}.{k}: give it");
+            }
+            if (b.Optics is { } o)
+            {
+                foreach (var k in o.Extra.KeysOrEmpty())
+                    errs.Add($"{at}.optics.{k}: not an optics field ({string.Join(", ", OpticsFields)})");
+                if (!OpticsKinds.Contains(o.Kind))
+                    errs.Add($"{at}.optics.kind = {Style.Quote(o.Kind ?? "")}: use {string.Join(", ", OpticsKinds)}");
+                Numbers("optics", [("delta_arcsec", o.DeltaArcsec), ("rigid_base_m", o.RigidBaseM), ("flex_exp", o.FlexExp), ("magnification", o.Magnification),
+                    ("m_max", o.MMax), ("readings_per_min", o.ReadingsPerMin), ("mass_kg_m2", o.MassKgM2)], ["magnification", "readings_per_min"]);
+                if (o.ReadingsPerMin is 0)
+                    errs.Add($"{at}.optics.readings_per_min: more than 0");
+            }
+            if (b.Computer is { } c)
+            {
+                foreach (var k in c.Extra.KeysOrEmpty())
+                    errs.Add($"{at}.computer.{k}: not a computer field ({string.Join(", ", ComputerFields)})");
+                if (!Trackers.Contains(c.Tracker))
+                    errs.Add($"{at}.computer.tracker = {Style.Quote(c.Tracker ?? "")}: use {string.Join(", ", Trackers)}");
+                Numbers("computer", [("latency_s", c.LatencyS), ("q", c.Q), ("max_range_rate_ms", c.MaxRangeRateMs), ("max_bearing_rate_deg_s", c.MaxBearingRateDegS),
+                    ("accel_tau_s", c.AccelTauS), ("accel_sigma_ms2", c.AccelSigmaMs2), ("turn_q", c.TurnQ), ("speed_q", c.SpeedQ), ("rejudge_s", c.RejudgeS),
+                    ("prior_kn", c.PriorKn), ("prior_deg", c.PriorDeg), ("resid_pct", c.ResidPct), ("defl_bias_mil", c.DeflBiasMil), ("own_turn_kick_m", c.OwnTurnKickM),
+                    ("first_step_m", c.FirstStepM), ("salvo_pct", c.SalvoPct), ("mass_t", c.MassT), ("crew", c.Crew), ("power_kw", c.PowerKw)],
+                    ["latency_s", "prior_kn", "prior_deg", "resid_pct", "defl_bias_mil", "first_step_m", "salvo_pct"]);
+            }
+            if (b.Mount is { } m)
+            {
+                foreach (var k in m.Extra.KeysOrEmpty())
+                    errs.Add($"{at}.mount.{k}: not a mount field ({string.Join(", ", MountFields)})");
+                Numbers("mount", [("lay_mil", m.LayMil), ("salvo_defl_mil", m.SalvoDeflMil)], ["lay_mil", "salvo_defl_mil"]);
+            }
+        }
+        foreach (var bat in (ReadOnlySpan<string>)["main", "secondary", "aa"])
+        {
+            if (design.FireControl?.Of(bat)?.Fit is not { } fit)
+                continue;
+            string at = $"fire_control.{bat}.fit";
+            var kinds = new List<string>();
+            foreach (var n in fit)
+            {
+                if (Resolve(design, n) is not { } b)
+                {
+                    errs.Add($"{at}: no block {Style.Quote(n ?? "")} in fire_control_tech or the catalogue");
+                    continue;
+                }
+                if (b.Optics is not null)
+                    kinds.Add("optics");
+                if (b.Computer is not null)
+                    kinds.Add("computer");
+                if (b.Mount is not null)
+                    kinds.Add("mount");
+            }
+            foreach (var k in (ReadOnlySpan<string>)["optics", "computer", "mount"])
+            {
+                int count = kinds.Count(x => x == k);
+                if (count != 1 && fit.All(n => n is not null && Resolve(design, n) is not null))
+                    errs.Add($"{at}: name one {k} block ({count} named)");
+            }
+        }
+        return errs;
+    }
+
     /// <summary>A preset by its name (case aside), or null.</summary>
     public static Preset? PresetNamed(string name) => Presets.FirstOrDefault(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase));
 

@@ -38,6 +38,32 @@ public static class FireControlPresets
 
     /// <summary>Local control's: each mount by its layer's eye.</summary>
     public static ref readonly FireControlFit Local => ref Fits[0].Fit;
+
+    /// <summary>The level a fit is labelled with (decision 1: a level is a preset's label, read by the matchup until F10
+    /// and by the displays): a level preset's own when its computer is that preset's, the presets beside the levels by
+    /// the level they stand beside (judgement the eyeball, the Argo and the Japanese plot the Dreyer's, the turn setting
+    /// the table's), any other computer by its kind.</summary>
+    public static FireControlLevel LevelOf(in FireControlFit fit)
+    {
+        for (int i = 0; i < Fits.Length; i++)
+            if (Fits[i].Fit.Computer == fit.Computer)
+                return i switch
+                {
+                    < Judgement => (FireControlLevel)i,
+                    Judgement => FireControlLevel.Eyeball,
+                    Judgement + 2 => FireControlLevel.Table,
+                    _ => FireControlLevel.Director,
+                };
+        var k = fit.Computer;
+        return k.Tracker switch
+        {
+            TrackerKind.Judgement => FireControlLevel.Eyeball,
+            TrackerKind.RateClock => k.HelmFree ? FireControlLevel.Director : k.MaxRangeRateMs > 0 ? FireControlLevel.Clock : FireControlLevel.Rangefinder,
+            TrackerKind.TrueCourse => k.LatencyS >= 8 ? FireControlLevel.Table : FireControlLevel.Rangekeeper,
+            TrackerKind.Acceleration => FireControlLevel.AutoTrack,
+            _ => k.LatencyS >= 8 ? FireControlLevel.Table : FireControlLevel.Digital,
+        };
+    }
 }
 
 /// <summary>A fit's tech blocks as the sim reads them (docs/battle/fire-control.md F3): each name the design's block
@@ -67,7 +93,7 @@ public static class FireControlBlocks
 
     /// <summary>A name's block: the design's, else the catalogue's, else null.</summary>
     public static FcTechInput? Block(Design? design, string name) =>
-        design?.FireControlTech?.GetValueOrDefault(name) ?? FireControlTemplates.Get(name)?.Value;
+        design is null ? FireControlTemplates.Get(name)?.Value : FireControlTemplates.Resolve(design, name);
 
     static ShipCompileException Twice(string kind, string name) => new($"fire control: a fit names two {kind} blocks (\"{name}\" the second)");
 

@@ -595,26 +595,21 @@ public static class ShipClassCompiler
                 // its kind's directors, the longest rangefinder first: a side's, its own side's and the centreline's (all
                 // of its kind if that leaves none); the centreline's, all of them
                 int d0 = links.Count;
-                double rf = 0;
-                bool radar = false;
                 bool Serves(int i) => row.Side is Side.None or Side.Centre || SideOf(Mid(c.components[c.directors[i].Component].Bounds)) is var s && (s == row.Side || s == Side.Centre);
                 static double Mid(Box b) => (b.Y0 + b.Y1) / 2;
                 var mine = Enumerable.Range(0, c.directors.Length).Where(i => c.directors[i].Battery == row.Kind).ToList();
                 if (mine.Any(Serves))
                     mine.RemoveAll(i => !Serves(i));
                 foreach (int d in mine.OrderByDescending(i => c.directors[i].RangefinderM > 0 ? c.directors[i].RangefinderM : 0).ThenBy(i => i))
-                {
                     links.Add(d);
-                    if (c.directors[d].RangefinderM > rf)
-                        rf = c.directors[d].RangefinderM;
-                    radar |= c.directors[d].Radar;
-                }
                 int dirs = links.Count - d0;
-                var spec = FireControl.Spec(ship.Design, row.Kind == Battery.Main ? "main" : "secondary");
-                var level = DesignerPlaceholders.FireControl(dirs, rf, spec.ComputerT, radar || spec.RadarT > 0, era);
+                // its fit, the tech blocks the design names (fire-control.md F3); a battery without directors fires under local control
+                var fit = dirs == 0 ? FireControlPresets.Local
+                    : FireControlBlocks.Fit(ship.Design, FireControlTemplates.FitOf(ship.Design.FireControl?.Of(row.Kind == Battery.Main ? "main" : "secondary")));
                 batteries[b] = row with
                 {
-                    Mounts = new Slice(m0, d0 - m0), Guns = guns, Directors = new Slice(d0, dirs), Level = level, Fit = FireControlPresets.Of(level),
+                    Mounts = new Slice(m0, d0 - m0), Guns = guns, Directors = new Slice(d0, dirs), Level = dirs == 0 ? FireControlLevel.Eyeball : FireControlPresets.LevelOf(fit),
+                    Fit = fit,
                     PatternPct = DesignerPlaceholders.Pattern(row.CalibreMm, era),
                 };
             }

@@ -12,7 +12,7 @@ namespace Fleetwright.Shipgen;
 public static class DesignFormat
 {
     /// <summary>The version this build writes.</summary>
-    public const int Current = 5;
+    public const int Current = 6;
 
     /// <summary>Steps[v] upgrades a version v design to v + 1, adding what it couldn't tell to the warnings.</summary>
     static readonly Action<JsonObject, List<string>>[] Steps =
@@ -22,7 +22,46 @@ public static class DesignFormat
         (d, _) => NoOutcomeRows(d),    // 2 → 3: the shells' outcome rows gone (P3)
         JointsAndShockGrade,           // 3 → 4: the hull's joints and the fittings' shock grade (E0)
         (d, _) => FillerBody(d),       // 4 → 5: the filler's share alongside the body (E1)
+        (d, _) => FireControlFits(d),  // 5 → 6: fire control as tech blocks (docs/battle/fire-control.md F3)
     ];
+
+    /// <summary>5 → 6: a battery's fire control was a level the sim read from its fit's tonnage, capped by the look's era
+    /// (the placeholder fire-control.md F3 replaced); now it's a fit of tech blocks (FireControlTemplates). Each battery
+    /// with directors and no fit gets the blocks of the preset its level was, so it fires as before, and the design's
+    /// fire_control_tech the catalogue's blocks it names. The level's rule: no computer, a rangefinder (else the eye);
+    /// under 1 t a clock, under 5 t the Dreyer and director, under 8 t the interwar table, more a rangekeeper; radar a
+    /// rangekeeper with a rangefinder, auto-track without; never past the era's best (rangefinders before 1906, the Dreyer
+    /// in the Great War, the table between the wars, radar spotting in the Second).</summary>
+    static void FireControlFits(JsonObject d)
+    {
+        if (d["fire_control"] is not JsonObject fc)
+            return;
+        static double Num(JsonNode? n) => n is JsonValue v && v.TryGetValue(out double x) ? x : 0;
+        string? era = d["look"]?["era"] is JsonValue e && e.TryGetValue(out string? es) ? es : null;
+        int best = era switch { "victorian" => 1, "great_war" => 3, "treaty" => 4, null or "wwii" => 6, _ => 8 };
+        foreach (var bat in (ReadOnlySpan<string>)["main", "secondary", "aa"])
+        {
+            if (fc[bat] is not JsonObject spec || spec.ContainsKey("fit") || Num(spec["directors"]) <= 0)
+                continue;
+            double rf = Num(spec["rangefinder_m"]), computer = Num(spec["computer_t"]);
+            int level = Num(spec["radar_t"]) > 0 ? rf > 0 ? 5 : 7
+                : computer <= 0 ? rf > 0 ? 1 : 0
+                : computer < 1 ? 2
+                : computer < 5 ? 3
+                : computer < 8 ? 4
+                : 5;
+            var preset = FireControlTemplates.Presets[Math.Min(level, best)];
+            spec["fit"] = new JsonArray([.. preset.Fit.Select(n => (JsonNode)JsonValue.Create(n)!)]);
+            var table = d["fire_control_tech"] as JsonObject;
+            foreach (var n in preset.Fit)
+                if (table?.ContainsKey(n) != true)
+                {
+                    if (table is null)
+                        d["fire_control_tech"] = table = [];
+                    table[n] = JsonSerializer.SerializeToNode(FireControlTemplates.Get(n)!.Value, ShipgenJson.Default.FcTechInput);
+                }
+        }
+    }
 
     /// <summary>4 → 5: the side spray is thrown by the body's own charge-to-metal ratio (E1; damage/13 §2.1), so each
     /// ammunition block gives its filler's share alongside the body (filler.body); a block without one takes its kind's
