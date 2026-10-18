@@ -495,10 +495,9 @@ public sealed record SimSettings
     public double DispersionDeflectionRatio { get; init; } = 0.4;
 
     /// <summary>Rangefinding (fire-control-research.md §3.2): a reading's unit of error is the optics' (their acuity,
-    /// rigid base and flex: the fit's tech block, F3); an instrument's own bias after calibration, in units of error; its
-    /// bearing's error, mil.</summary>
+    /// rigid base and flex: the fit's tech block, F3); an instrument's own bias after calibration, in units of error. Its
+    /// bearing's error is its post's (SightModel.BearingSigmaRad, fire-control.md F5).</summary>
     public double RangefinderBiasUnits { get; init; } = 1.5;
-    public double RangefinderBearingMil { get; init; } = 1;
 
     /// <summary>A range by eye: its error and its bias as shares of the range, its bearing's error, mil.</summary>
     public double EyeRangeShare { get; init; } = 0.20;

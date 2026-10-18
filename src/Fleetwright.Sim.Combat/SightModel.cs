@@ -151,12 +151,13 @@ public static class SightModel
     public static double RangeSigmaM(in EyeRow eye, double rangeM) =>
         eye.Ranges ? FireControl.RangefinderUnitM(eye.RangefinderM, eye.Optics, rangeM) : 0.2 * rangeM;
 
-    /// <summary>A reading's 1-sigma bearing error, radians: a director's 0.5 mil, binoculars' 2 mil (the reference's
-    /// optical and eye figures), the slits' 5.</summary>
+    /// <summary>A reading's 1-sigma bearing error, radians, by the post: a director's 0.7 mil, a gunhouse's 1.5, a control
+    /// position's rangefinder 1 (fire-control-designer.md §3.1), binoculars' 2 mil (the reference's eye figure), the
+    /// slits' 5. The one law: the picture's fixes and fire control's readings both take it.</summary>
     public static double BearingSigmaRad(in EyeRow eye) => eye.Kind switch
     {
-        EyeKind.Director => 0.0005,
-        EyeKind.Turret => 0.0015,   // fire-control-designer.md §3.1: a turret's 1.5 mil, elsewhere 1
+        EyeKind.Director => 0.0007,
+        EyeKind.Turret => 0.0015,
         EyeKind.Rangefinder => 0.001,
         EyeKind.ConningTower => 0.005,
         _ => 0.002,

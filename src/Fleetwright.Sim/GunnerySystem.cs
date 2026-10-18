@@ -56,7 +56,7 @@ public sealed class GunnerySystem : IWorldSystem
 {
     public const byte Id = 4;
     const ushort TickEvent = 1, SalvoEvent = 2, SpotEvent = 3;
-    const int MaxSensors = 4, PendingCap = 8;
+    const int MaxSensors = 8, PendingCap = 16;
 
     /// <summary>A battery's fire control while it's engaged.</summary>
     struct Fc
@@ -91,12 +91,28 @@ public sealed class GunnerySystem : IWorldSystem
     }
 
     /// <summary>A rangefinder or an eye a battery reads from: the class's eye (-1: a mount's layer), where it stands,
-    /// its height and base, its next reading and its own bias (in sigmas).</summary>
+    /// its height and base, its bearing's error (mil, by its position), its next reading and its own bias (in sigmas).</summary>
     struct Sensor
     {
         public int Eye;
-        public double X, Y, HeightM, BaseM, Bias;
+        public double X, Y, HeightM, BaseM, BearingMil, Bias;
         public long NextMs;
+    }
+
+    /// <summary>A sensor at one of the class's eyes.</summary>
+    static Sensor SensorAt(ShipClass cls, int eye)
+    {
+        ref readonly var e = ref cls.Eyes[eye];
+        return new Sensor { Eye = eye, X = e.X, Y = e.Y, HeightM = e.HeightM, BaseM = e.RangefinderM, BearingMil = SightModel.BearingSigmaRad(e) / FireControl.Mil };
+    }
+
+    /// <summary>Whether one of a battery's first n sensors is at an eye.</summary>
+    bool Taken(int f, int n, int eye)
+    {
+        for (int k = 0; k < n; k++)
+            if (sensors[f * MaxSensors + k].Eye == eye)
+                return true;
+        return false;
     }
 
     /// <summary>A salvo in the air, for its spot: whose, at whom, the corrections it was fired with, its pattern and line
@@ -270,15 +286,34 @@ public sealed class GunnerySystem : IWorldSystem
                 foreach (int i in cls.Links(unit.Instruments))
                 {
                     ref readonly var ins = ref cls.Instruments[i];
-                    if (!cond.EyeWorks[ins.Eye])
+                    if (!cond.EyeWorks[ins.Eye] || n == MaxSensors)
                         continue;
-                    sensors[f * MaxSensors + n++] = new Sensor { Eye = ins.Eye, X = ins.X, Y = ins.Y, HeightM = ins.HeightM, BaseM = ins.BaseM };
+                    sensors[f * MaxSensors + n++] = SensorAt(cls, ins.Eye);
                     fc.Units |= 1UL << u;
-                    break;
                 }
             }
         if ((had & ~fc.Units) != 0)
             LetGo(f);
+        if (n > 0)
+        {
+            // every working gunhouse's rangefinder reports to the computer too (fire-control.md F5: the transmitting
+            // station plots every instrument's cuts), each through its turret's arcs, longest base first
+            while (n < MaxSensors)
+            {
+                int pick = -1;
+                foreach (int m in cls.Links(row.Mounts))
+                {
+                    int eye = cls.Mounts[m].RangefinderEye;
+                    if (eye < 0 || !cond.EyeWorks[eye] || Taken(f, n, eye))
+                        continue;
+                    if (pick < 0 || cls.Eyes[eye].RangefinderM > cls.Eyes[pick].RangefinderM)
+                        pick = eye;
+                }
+                if (pick < 0)
+                    break;
+                sensors[f * MaxSensors + n++] = SensorAt(cls, pick);
+            }
+        }
         if (n == 0)
         {
             // local control (fire-control.md F4b): the working mounts' rangefinders, each in its gunhouse's hood and
@@ -292,23 +327,18 @@ public sealed class GunnerySystem : IWorldSystem
                 foreach (int m in cls.Links(row.Mounts))
                 {
                     int eye = cls.Mounts[m].RangefinderEye;
-                    if (eye < 0 || !cond.Lays(m, local: true) || !cond.EyeWorks[eye] || cls.Eyes[eye].HeightM <= top)
+                    if (eye < 0 || !cond.Lays(m, local: true) || !cond.EyeWorks[eye] || cls.Eyes[eye].HeightM <= top || Taken(f, n, eye))
                         continue;
-                    bool taken = false;
-                    for (int k = 0; k < n && !taken; k++)
-                        taken = sensors[f * MaxSensors + k].Eye == eye;
-                    if (!taken)
-                        (pick, top) = (m, cls.Eyes[eye].HeightM);
+                    (pick, top) = (m, cls.Eyes[eye].HeightM);
                 }
                 if (pick < 0)
                     break;
-                ref readonly var e = ref cls.Eyes[cls.Mounts[pick].RangefinderEye];
-                sensors[f * MaxSensors + n++] = new Sensor { Eye = cls.Mounts[pick].RangefinderEye, X = e.X, Y = e.Y, HeightM = e.HeightM, BaseM = e.RangefinderM };
+                sensors[f * MaxSensors + n++] = SensorAt(cls, cls.Mounts[pick].RangefinderEye);
                 rangefinders = true;
             }
             double best = double.MinValue;
             bool works = false;
-            var s = new Sensor { Eye = -1 };
+            var s = new Sensor { Eye = -1, BearingMil = settings.EyeBearingMil };
             foreach (int m in cls.Links(row.Mounts))
             {
                 ref readonly var comp = ref cls.Components[cls.Mounts[m].Component];
@@ -507,11 +537,11 @@ public sealed class GunnerySystem : IWorldSystem
             if (Ranges(optics, s))
             {
                 double unit = FireControl.RangefinderUnitM(s.BaseM, optics, range);
-                (sr, bias, sb) = (crew.Operator * combat * unit, s.Bias * settings.RangefinderBiasUnits * unit, settings.RangefinderBearingMil * FireControl.Mil);
+                (sr, bias, sb) = (crew.Operator * combat * unit, s.Bias * settings.RangefinderBiasUnits * unit, s.BearingMil * FireControl.Mil);
             }
             else
                 (sr, bias, sb) = (settings.EyeRangeShare * range * crew.Operator * combat, s.Bias * settings.EyeRangeBiasShare * range,
-                    settings.EyeBearingMil * FireControl.Mil);
+                    s.BearingMil * FireControl.Mil);
             double zr = Math.Max(range + bias + sr * r.NextGaussian(), 100), zb = brg + double.RadiansToDegrees(sb * r.NextGaussian());
             var (z, r11, r12, r22) = Track.Reading(at, zr, zb, sr, sb);
             if (fc.PendCount == PendingCap)

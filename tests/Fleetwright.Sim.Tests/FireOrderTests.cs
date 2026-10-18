@@ -172,21 +172,25 @@ public class FireOrderTests(ITestOutputHelper output)
     public void Fight_turns_away_when_outmatched()
     {
         // a battlecruiser, faster than the four battleships she meets (28 kn against 24): she can get away, and does. Judged
-        // at 5 minutes: hit and slowed later she can't refuse them, and with nowhere to fall back on she fights (she turned
-        // back at about 330 s once the battleships' after control rangefinders read too, fire-control.md F4b)
+        // over the first 5 minutes: hit and slowed later she can't refuse them, and with nowhere to fall back on she fights
+        // (she turned back at about 330 s once the battleships' after control rangefinders read too, fire-control.md F4b, and
+        // at about 250 s once their turrets' report to the computer as well, F5)
         var ships = new List<Placed> { new("lion", 0, 0, 90, 18, 0) };
         for (int i = 0; i < 4; i++)
             ships.Add(new Placed("super_dreadnought", 90 + i * 3, 16_000, 270, 15, 1));
         var (w, ai) = Make([.. ships]);
         w.Apply(ai.Orders.Fight(Unit.Ship(1)));
         Run(w, 30);
-        double before = Apart(w, 1, 2);
-        Run(w, 5 * 60);
-        double after = Apart(w, 1, 2);
-        var s1 = w.Ships.Store[w.Ships.Store.SlotOf(1)];
-        output.WriteLine($"from {before / 1000:F1} km to {after / 1000:F1} km, heading {s1.HeadingDeg:F0}°");
-        Assert.InRange(s1.HeadingDeg, 180, 360);   // turned away, west
-        Assert.True(after > before - 3_000, "not closing");   // a little, while she turns
+        double before = Apart(w, 1, 2), away = double.NaN;
+        for (int k = 0; k < 10 && double.IsNaN(away); k++)
+        {
+            Run(w, 30);
+            if (w.Ships.Store[w.Ships.Store.SlotOf(1)].HeadingDeg is >= 180 and <= 360)
+                away = Apart(w, 1, 2);
+        }
+        output.WriteLine($"from {before / 1000:F1} km to {away / 1000:F1} km when she'd turned away");
+        Assert.False(double.IsNaN(away), "she never turned away, west");
+        Assert.True(away > before - 3_000, "not closing");   // a little, while she turns
     }
 
     [Fact]

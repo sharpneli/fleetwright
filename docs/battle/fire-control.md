@@ -1,5 +1,5 @@
 # Plan: fire control (a 4.5 deepening)
-Status: **agreed with the user 2026-10-17** ("Decided" below; radar moved out); F0-F3 done 2026-10-18    Updated: 2026-10-18
+Status: **agreed with the user 2026-10-17** ("Decided" below; radar moved out); F0-F4 done 2026-10-18, F5a done    Updated: 2026-10-18
 
 The fine-tune pass for the **Fire control** link of `fighting.md` 4.5 ("the trackers by era ... the clocks' limits ...
 the full set of levels, radar as a sensor, night ... splash confusion ... the designer emitting levels and sensors,
@@ -610,6 +610,32 @@ the transmitting station; F4d sighting on the new heights.
 - **Crew:** the side's quality stays the rangetakers' multiplier; the stereo operator pool waits for the navy layer.
 - **Anchors:** the designer note's base study (D6: the knee by range, the eye at 10-20% of a 4.6 m set's hits, 15 m
   +20-30% at 20 kyd), its arrangement study (D8: a second instrument +7-10%), and §3.3's per-reading errors.
+
+**The cut** (2026-10-18): F5a every instrument a sensor; F5b the instruments' make (kinds, the stadimeter, effective
+magnification from the mounting); F5c the air (the ranging error from the sighting model's contrast: haze, light,
+small and hull-down targets; stereo against coincidence); F5d the anchors' bench (D6, D8).
+
+- **A bug found first** (fixed alone, 2026-10-18): a rate clock took each reading's range and bearing from the
+  instrument that made it, but keeps one state for the ship, so on a ship with directors fore and aft their bearings
+  (tens of mils apart close in) read as a bearing rate. Every cut now reaches the computer from the ship's reference
+  point, as the tables' parallax correction did. fc-history 10 of 23 (9 before); director over independent 1.57 to 1.40
+  (in). Tsushima over 5 seeds: Russia's hits 296 to 394 (the Borodinos' two directors), Japan's 501 to 475.
+- **F5a done 2026-10-18** (every instrument a sensor). Under its directors a battery reads every working instrument of
+  every unit it holds (not only each unit's first), and every working gunhouse rangefinder of its mounts reports to the
+  computer too, longest base first, each through its turret's arcs (the transmitting station plotted every
+  instrument's cuts; the German ranges were averaged by a machine), up to 8 a battery (4 before; its readings' queue 16).
+  Each keeps its own bias, so the computer's falls as the instruments add, and a spot takes off what's left. Each
+  reading's bearing error is its post's, one law with the picture's fixes (`SightModel.BearingSigmaRad`: a director
+  0.7 mil, a gunhouse 1.5, a control position's rangefinder 1, designer §3.1; the director's was 0.5 in the picture and
+  `RangefinderBearingMil`'s 1 in fire control, a setting gone). A director ranging by eye keeps its sight's bearing.
+  - *Numbers:* fc-history 10 of 23 in band, as after the bug fix: the Great War capital ships gain from their turret
+    sets (Jutland's British BCS 3.5 to 3.9%, the Grand Fleet BS 7.6 to 8.7%, Dogger Bank's Germans 2.7 to 3.4%), the
+    haze that held their rangefinders back being F5c's. The orderings as before (the Germans over the British 1.14,
+    want 1.5-5). Squadrons over 5 seeds: Britain's hits 52 to 31, Germany's 110 to 103, losses within the spread.
+    Tsushima: Russia's hits 394 to 421, Japan's 475 to 624. The Jutland's gunnery costs 33 µs a call, as before.
+  - *Tests:* `Fight_turns_away_when_outmatched` judged her at 5 minutes; the battleships now slow her under their
+    turrets' ranges at about 4 (she then can't refuse them, and fights, as the test's comment had it), so it takes her
+    turn away when it comes.
 
 ### F6 Fire discipline: finding the bracket, then hitting
 

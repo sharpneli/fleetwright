@@ -161,7 +161,6 @@
   "SpotLadderMinM": 46,
   "DispersionDeflectionRatio": 0.4,
   "RangefinderBiasUnits": 1.5,
-  "RangefinderBearingMil": 1,
   "EyeRangeShare": 0.2,
   "EyeRangeBiasShare": 0.1,
   "EyeBearingMil": 5,
