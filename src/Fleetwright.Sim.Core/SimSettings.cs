@@ -490,6 +490,12 @@ public sealed record SimSettings
     public double SpotDeflectionMil { get; init; } = 1;
     public double SpotDeflectionGain { get; init; } = 0.5;
 
+    /// <summary>Line first (the user, 2026-10-18): a splash is judged over or short only in line with the target, against
+    /// her hull (hidden behind it, or in front of it), within her width across the line of sight (her length and beam by
+    /// her aspect) and this margin, m [EST: a heavy splash's column]; a salvo with none in line is doubtful, and only its
+    /// line is corrected. The line's correction is an angle, so it holds as the range changes.</summary>
+    public double SpotLineMarginM { get; init; } = 25;
+
     /// <summary>Fire discipline (docs/battle/fire-control.md F6): the spots' bracket is never narrower than this many of
     /// the salvo's patterns (the USN's "never below the pattern"), nor than <see cref="BracketFloorM"/>, m. A ranging
     /// salvo waits for the spots it's due, or this long past its time of flight and the spot's delay, ms (a spot that

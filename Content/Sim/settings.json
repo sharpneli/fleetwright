@@ -158,6 +158,7 @@
   "SpotOpticK": 4e-05,
   "SpotDeflectionMil": 1,
   "SpotDeflectionGain": 0.5,
+  "SpotLineMarginM": 25,
   "BracketFloorPatterns": 1,
   "BracketFloorM": 92,
   "RangingWaitMarginMs": 15000,

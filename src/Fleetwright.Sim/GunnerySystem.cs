@@ -1074,7 +1074,7 @@ public sealed class GunnerySystem : IWorldSystem
         double kickR = turning ? r.NextGaussian() * computer.OwnTurnKickM : 0, kickL = turning ? r.NextGaussian() * computer.OwnTurnKickM : 0;
         double eSr = r.NextGaussian() * combat * computer.SalvoPct / 100 * range, eSd = r.NextGaussian() * combat * mount.SalvoDeflMil * FireControl.Mil * range;
         double dr = (pointBlank ? 0 : fc.CorrR + ladder) + eEl + eSr + fc.BiasR * computer.ResidPct / 100 * range + kickR;
-        double dl = fc.CorrD + eTr + eSd + fc.BiasD * computer.DeflBiasMil * FireControl.Mil * range + kickL;
+        double dl = fc.CorrD * range + eTr + eSd + fc.BiasD * computer.DeflBiasMil * FireControl.Mil * range + kickL;
         var (sr, sd) = FireControl.Dispersion(row.PatternPct, range + dr, n, settings.DispersionDeflectionRatio);
         if (!mount.DirectorFiring)
             (sr, sd) = (Math.Sqrt(sr * sr + Math.Pow(layRad * perRad, 2)), Math.Sqrt(sd * sd + Math.Pow(layRad * range, 2)));
@@ -1182,10 +1182,18 @@ public sealed class GunnerySystem : IWorldSystem
             double x = Vec3d.Dot(d, sv.U), y = Vec3d.Dot(d, sv.W);
             var r = stream.Derive(0x5B07u).Derive((ulong)si).Derive((ulong)sv.Generation).Derive((ulong)sv.Landed);
             double seen = hit == sv.Target ? 0 : x + sv.Common + sv.SpotSigmaM * r.NextGaussian();
-            if (seen > 0)
-                sv.Over++;
-            else if (seen < 0)
-                sv.Short++;
+            // line first: a splash is judged over or short only in line with her (against her hull, hidden behind it or
+            // in front of it), within her width across the line of sight and a margin; one off for line could be either
+            var tgt = store[tslot];
+            var tm = tgt.Handling.Class.Motion;
+            double ca = Math.Abs(Vec3d.Dot(tgt.Forward, sv.U)), half = 0.5 * (tm.LengthM * Math.Sqrt(Math.Max(1 - ca * ca, 0)) + tm.BeamM * ca);
+            if (Math.Abs(y) <= half + settings.SpotLineMarginM)
+            {
+                if (seen > 0)
+                    sv.Over++;
+                else if (seen < 0)
+                    sv.Short++;
+            }
             if (hit == sv.Target)
                 sv.Hits++;
             sv.SumY += y;
@@ -1247,39 +1255,23 @@ public sealed class GunnerySystem : IWorldSystem
                     sees = MarginOf(ship.Handling.Class, s, fc.Fit.Optics, frame.ToWorld(s.X, s.Y, 0), ship.HeadingDeg, target, air) >= 1;
                 }
             }
-            var sign = sv.Hits > 0 || sv.Over > 0 && sv.Short > 0 ? FireControl.Sign.Straddle : sv.Over > 0 ? FireControl.Sign.Over : FireControl.Sign.Short;
+            var sign = sv.Hits > 0 || sv.Over > 0 && sv.Short > 0 ? FireControl.Sign.Straddle : sv.Over > 0 ? FireControl.Sign.Over :
+                sv.Short > 0 ? FireControl.Sign.Short : FireControl.Sign.Doubtful;
             long now = world.Time.Ms;
             if (sees && !sv.PointBlank)
             {
                 // each spot against the correction its salvo was fired with; a crew may pyramid, putting it on the one in
                 // force (F6: the green most often)
-                var dis = settings.FireDisciplines[disciplines[ship.Side]];
                 var rp = stream.Derive(0x5B09u).Derive((ulong)si).Derive((ulong)sv.Generation);
                 bool pyramid = rp.NextDouble() < settings.GunneryCrews[(int)crews[ship.Side]].Pyramid;
-                double before = fc.CorrR;
-                // firing for effect, one over or short among straddles is the salvo's own scatter: the aim holds until a
-                // second the same way in a row says it's off (the user, 2026-10-18: "if one hits they keep firing at that
-                // point"; the research's full corrections chasing the random salvo error)
-                bool lone = fc.Phase == FirePhase.Effect && sign != FireControl.Sign.Straddle && fc.LastSign != (int)sign;
-                fc.LastSign = (int)sign;
-                if (!lone)
-                    fc.Bracket.Spot(sign, pyramid ? fc.CorrR + sv.LadderM : sv.CorrR - (fc.Shift - sv.Shift), now, fc.DriftMs, sv.PatternM,
-                        Math.Max(settings.BracketFloorM, settings.BracketFloorPatterns * sv.PatternM));
-                if (sign == FireControl.Sign.Straddle)
-                    fc.HeldMs = now;   // the spots have her
-                fc.CorrR = fc.Bracket.Aim(now, fc.DriftMs, Held(fc, now));
-                // the rate spot: two moves the same way, and the range rate takes a share of this one a minute
-                int move = Math.Abs(fc.CorrR - before) < 1 ? 0 : Math.Sign(fc.CorrR - before);
-                if (dis.RateSpotShare > 0 && move != 0 && move == fc.LastMove)
-                    fc.Tracker.CorrectRate(sv.U, dis.RateSpotShare * (fc.CorrR - before) / 60);
-                fc.LastMove = move;
-                if (move != 0)
-                    fc.SettleMs = now + (long)(1000 * settings.LayerSettleS);
-                NextPhase(ref fc, sign, now, dis.MissesToRange);
+                if (sign != FireControl.Sign.Doubtful)
+                    SpotRange(ref fc, sv, ship.Side, sign, pyramid, now);
+                // the line, spotted whether the range could be or not (off for line, it's corrected first): an angle, so
+                // it holds as the range changes
                 var r = stream.Derive(0x5B08u).Derive((ulong)si).Derive((ulong)sv.Generation);
                 double defl = sv.SumY / Math.Max(sv.Landed, 1) + settings.SpotDeflectionMil * FireControl.Mil * sv.RangeM * r.NextGaussian();
                 if (Math.Abs(defl) > 0.25 * sv.PatternAcrossM)
-                    fc.CorrD = (pyramid ? fc.CorrD : sv.CorrD) - settings.SpotDeflectionGain * defl;
+                    fc.CorrD = (pyramid ? fc.CorrD : sv.CorrD) - settings.SpotDeflectionGain * defl / sv.RangeM;
             }
             else if (sees && sv.Hits == 0)
             {
@@ -1293,12 +1285,39 @@ public sealed class GunnerySystem : IWorldSystem
                     fc.PbCorrR = sv.PbCorrR - 0.5 * x / Math.Max(sv.TrueRangeM, 1);
                 double defl = sv.SumY / Math.Max(sv.Landed, 1) + settings.SpotDeflectionMil * FireControl.Mil * sv.RangeM * r.NextGaussian();
                 if (Math.Abs(defl) > 0.25 * sv.PatternAcrossM)
-                    fc.CorrD = sv.CorrD - settings.SpotDeflectionGain * defl;
+                    fc.CorrD = sv.CorrD - settings.SpotDeflectionGain * defl / sv.RangeM;
             }
             Spotted?.Invoke(new SpotReport(sv.FiredMs, fc.Shooter, fc.Battery, sees, sign, fc.Bracket.LoAt(now, fc.DriftMs), fc.Bracket.HiAt(now, fc.DriftMs),
                 fc.CorrR, fc.Phase));
         }
         FreeSalvo(si);
+    }
+
+    /// <summary>A salvo's range spot (over, short or straddling) into the bracket, the correction, the rate spot and the
+    /// phase.</summary>
+    void SpotRange(ref Fc fc, in Salvo sv, int side, FireControl.Sign sign, bool pyramid, long now)
+    {
+        var dis = settings.FireDisciplines[disciplines[side]];
+        double before = fc.CorrR;
+        // firing for effect, one over or short among straddles is the salvo's own scatter: the aim holds until a second the
+        // same way in a row says it's off (the user, 2026-10-18: "if one hits they keep firing at that point"; the
+        // research's full corrections chasing the random salvo error)
+        bool lone = fc.Phase == FirePhase.Effect && sign != FireControl.Sign.Straddle && fc.LastSign != (int)sign;
+        fc.LastSign = (int)sign;
+        if (!lone)
+            fc.Bracket.Spot(sign, pyramid ? fc.CorrR + sv.LadderM : sv.CorrR - (fc.Shift - sv.Shift), now, fc.DriftMs, sv.PatternM,
+                Math.Max(settings.BracketFloorM, settings.BracketFloorPatterns * sv.PatternM));
+        if (sign == FireControl.Sign.Straddle)
+            fc.HeldMs = now;   // the spots have her
+        fc.CorrR = fc.Bracket.Aim(now, fc.DriftMs, Held(fc, now));
+        // the rate spot: two moves the same way, and the range rate takes a share of this one a minute
+        int move = Math.Abs(fc.CorrR - before) < 1 ? 0 : Math.Sign(fc.CorrR - before);
+        if (dis.RateSpotShare > 0 && move != 0 && move == fc.LastMove)
+            fc.Tracker.CorrectRate(sv.U, dis.RateSpotShare * (fc.CorrR - before) / 60);
+        fc.LastMove = move;
+        if (move != 0)
+            fc.SettleMs = now + (long)(1000 * settings.LayerSettleS);
+        NextPhase(ref fc, sign, now, dis.MissesToRange);
     }
 
     /// <summary>A spot's say on the phase (F6): a straddle while ranging opens fire for effect; in fire for effect a run

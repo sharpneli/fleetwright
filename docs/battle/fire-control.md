@@ -1070,6 +1070,17 @@ from the parts and independent fire (items 6 and 9); F6e ammunition as a choice 
     multiplied by the crew or by battle as the range's is; the deflection correction is metres, not mils, and isn't
     rebased when the solution's lead moves (the range's is); the straddle the report counts takes the target's length
     across the line whatever her aspect; a spot over or short is taken from a fall however far off the line.
+  - *The line in mils, and line first* (the user, 2026-10-18: "deflection correction should be in mils ... it
+    naturally should be very small but we want the behaviour to track"; "let's also correct line first"). The line's
+    correction is an angle now (the spot's metres over the salvo's range; laid as that times the range), so one learnt
+    at 15 km is right at 10. Line first: a splash is judged over or short only in line with her, against her hull
+    (hidden behind it or in front of it), within her width across the line of sight (her length and beam by her aspect)
+    and `SpotLineMarginM` (25 m [EST]: a heavy splash's column); a salvo with none in line is doubtful (a new spot,
+    `Sign.Doubtful`): the bracket, the phase and the rate spot are left alone, and only its line is corrected. Doubtful
+    spots in the traces at 14 km: 1 in 28 on a broadside target, 2 in 14 on one going away, 1 in 17 at 45°. fc-history
+    11 of 23 (the moves within its noise: Dogger Bank's British 2.6 to 2.1%, the Grand Fleet 5.6 to 6.7%, the Germans
+    over the British 1.32 to 1.15). Squadrons over 20 seeds, line first against none (the same build, the margin
+    unbounded): Britain's hits 60 and 60, Germany's 86 and 96.
   - *A bug found on the way: Fight never closed on a runner.* The captain's Fight turned a fixed 40° in from the beam
     whatever the enemy did: at 22.5 kn on a 12 kn runner that closed 0.3 kn, and `Fight_closes_to_its_band` (14.0 km
     against a limit of 15.6) ended at 18.6 km once the falls moved. Beyond the band he now turns in further when the

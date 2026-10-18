@@ -134,12 +134,14 @@ public static class FireControl
     }
 
     /// <summary>A spotter's judgement of a salvo's fall against the target, by eye: over, short or straddling, and the
-    /// deflection seen (<see cref="Ladder"/> turns it into the next salvo's correction).</summary>
+    /// deflection seen (<see cref="Ladder"/> turns it into the next salvo's correction); doubtful when no splash fell in
+    /// line with her (off for line: only the line is corrected).</summary>
     public enum Sign : byte
     {
         Short,
         Over,
         Straddle,
+        Doubtful,
     }
 
     /// <summary>The bracket a battery's spots make, kept in correction space (fire-control.md F6;
