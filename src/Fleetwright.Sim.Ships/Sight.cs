@@ -210,7 +210,9 @@ public static class Sight
     /// <summary>An eye with its blind sectors: each sector whose middle bearing passes through a part of the ship
     /// standing across the eye's height (a line to the horizon runs at about that height, so a director on a roof above
     /// doesn't block it), wide enough to block, and not the eye's own or one it's inside (overlapping blocks of a tower:
-    /// the eye looks out from its face).</summary>
+    /// the eye looks out from its face). Light AA mounts don't: open guns behind a low shield, each a few degrees
+    /// wide and with sea between them, that a post on their deck looks over and past (a row of them along each beam had
+    /// blinded Bismarck's secondary directors broadside).</summary>
     static EyeRow Eye(ShipClass c, EyeKind kind, int own, double x, double y, double heightM, double rangefinderM)
     {
         double eyeZ = heightM + c.Vertical.Waterline;   // back over the main deck, as the components' heights are
@@ -224,7 +226,7 @@ public static class Sight
             {
                 var o = comps[i];
                 if (i == own || o.Bounds.Top <= eyeZ || o.Bounds.Base > eyeZ || o.Bounds.Contains(x, y, eyeZ) || o.Kind is ComponentKind.Mast or ComponentKind.Uptake or ComponentKind.Shaft
-                        or ComponentKind.ShaftAlley or ComponentKind.Propeller or ComponentKind.Rudder or ComponentKind.TorpedoTube)
+                        or ComponentKind.ShaftAlley or ComponentKind.Propeller or ComponentKind.Rudder or ComponentKind.TorpedoTube or ComponentKind.Aa)
                     continue;
                 if (Crosses(o.Bounds, x, y, dx, dy))
                     blind |= 1UL << s;
