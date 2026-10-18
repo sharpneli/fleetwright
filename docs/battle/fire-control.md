@@ -1,5 +1,5 @@
 # Plan: fire control (a 4.5 deepening)
-Status: **agreed with the user 2026-10-17** ("Decided" below; radar moved out)    Updated: 2026-10-17
+Status: **agreed with the user 2026-10-17** ("Decided" below; radar moved out); F0 done 2026-10-18    Updated: 2026-10-18
 
 The fine-tune pass for the **Fire control** link of `fighting.md` 4.5 ("the trackers by era ... the clocks' limits ...
 the full ladder of levels, radar as a sensor, night ... splash confusion ... the designer emitting levels and sensors,
@@ -33,7 +33,7 @@ pass makes each system do what it could and couldn't do, from the physical fit t
 - **The level** is `FireControlLevel` 0-8 (`Rows.cs`), read by `DesignerPlaceholders.FireControl` from the director
   count, the best rangefinder and the computer and radar tonnage, **capped by the look's era**. Its numbers are one row
   of `SimSettings.GunneryLevels` (the reference's `LEVELS`: latency, q, priors, residual bias, laying, salvo-to-salvo
-  error, own-turn kick, first ladder step). Local control is row 0. The matchup (`Matchup.cs`) reads the level too
+  error, own-turn kick, first ladder step; since F0 `FireControlPresets` and the battery's `Fit`). Local control is row 0. The matchup (`Matchup.cs`) reads the level too
   (`MatchupMpiPct`).
 - **Shipgen's fire control** (`Shipgen/FireControl.cs`): per battery (main, secondary, AA) a count of directors, one
   rangefinder base, the hood's armour, radar and computer tonnes. Directors stand on the highest free superstructure roof,
@@ -181,6 +181,31 @@ updates this doc and `fighting.md`.
   next free control (after control, a top), else local control.
 - **Checked:** `duel` and the scenarios identical, hashes unchanged, which proves the refactor (one target a director is
   a model change: its effect reported on its own, against the record).
+- **Done 2026-10-18.** What it came to:
+  - **The rows** (`Rows.cs`): `OpticsRow` (magnification, readings a minute), `ComputerRow` (latency, q, the priors,
+    the residual biases, the own-turn kick, the first ladder step, the salvo-to-salvo error), `MountTechRow` (director
+    firing, laying error), together a battery's `FireControlFit` (`BatteryRow.Fit`, beside `Level`, now the preset's
+    label); `FcUnitRow` (one a director for now, so a unit's index is its director's) with its `InstrumentRow`s (the
+    director's eyes: kind, base, height), and `BatteryRow.Units`. `shipgen weapons` prints each battery's units and fit.
+  - **Where the presets went:** the class compile carries no settings, so `SimSettings.GunneryLevels` (and the
+    settings file's rows) moved to `FireControlPresets` in `Sim.Ships`, the same numbers, a fit a level; F3 turns them
+    into the catalogue's named combinations. The optics' make (magnification, rate) is the battery's fit rather than
+    the instrument's, since a director serving two batteries could carry two presets; F3's per-battery fit names its
+    optics block anyway, and the instrument keeps what is its own (kind, base, height).
+  - **The proof:** duels at every level, with damage, a green crew on a crossing target, Bismarck's secondaries,
+    Mikasa's local control and a destroyer, and the squadrons, flotilla and tsushima scenarios' hashes, all identical
+    before and after.
+  - **A fix found on the way,** committed alone: a director back from an E4 outage timed its first readings at the
+    eye's rate (the fit before the switch). Only squadrons moved (it diverges from the first changed reading).
+  - **One target a director** (`GunnerySystem.AddSensors`): a battery passes over a unit that a battery of its ship on
+    another target holds; with none left it falls to local control, and it takes one again when it's let go (cease,
+    a new target, damage). Batteries on the same target share. Where it bites today is batteries of two guns sharing
+    directors: Bismarck's 150 mm and 105 mm on a side share one, and Borodino's 12" and 6" turrets are both main
+    batteries on the main directors. Only tsushima moved, a few salvos and one hit of 8,023 shells; squadrons and
+    flotilla unchanged. Against the record it
+    can't be read yet (F1's benches); what it buys is split fire costing a director, as 4.0 noted. The test:
+    `GunneryTests.A_director_holds_one_target`.
+  - **The cost:** Jutland's two hours, gunnery 20 µs a call, 2.7% of the run.
 
 ### F1 The benches first
 

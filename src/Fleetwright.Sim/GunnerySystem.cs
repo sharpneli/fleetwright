@@ -80,6 +80,10 @@ public sealed class GunnerySystem : IWorldSystem
         public int Salvos, Shells, Hits, Straddles, Arm, SensorCount, PendHead, PendCount;
         /// <summary>The shooter's condition's version its instruments were picked at (damage: a director lost).</summary>
         public int Condition;
+        /// <summary>The fire-control units it reads from (a bit a unit), and whether a working one of its own was held by a
+        /// battery on another target when they were picked (so it picks again when one is let go).</summary>
+        public ulong Units;
+        public bool Short, Repick;
         public long FirstHitMs, FirstStraddleMs;
         public BatteryState State;
     }
@@ -250,28 +254,37 @@ public sealed class GunnerySystem : IWorldSystem
         Tick(world, schedule: true);
     }
 
-    /// <summary>A battery's rangefinders: the first working instrument of each of its units whose director works,
-    /// longest base first (as many as <see cref="MaxSensors"/>); without one, the highest of its working mounts' layers by
-    /// eye, at local control.</summary>
+    /// <summary>A battery's rangefinders: the first working instrument of each of its units whose director works and
+    /// that no battery on another target holds (one target a director: fire-control.md F0), longest base first (as many
+    /// as <see cref="MaxSensors"/>); without one, the highest of its working mounts' layers by eye, at local control.</summary>
     void AddSensors(ref Fc fc, int f, ShipClass cls, in BatteryRow row, ShipCondition cond, long now, ref RandomStream r)
     {
         int n = 0;
-        fc.Condition = cond.Version;
+        ulong had = fc.Units;
+        (fc.Condition, fc.Units, fc.Short, fc.Repick) = (cond.Version, 0, false, false);
         if (!row.Local)
             foreach (int u in cls.Links(row.Units))
             {
                 ref readonly var unit = ref cls.FcUnits[u];
                 if (!cond.DirectorWorks[unit.Director] || n == MaxSensors)
                     continue;
+                if (HeldElsewhere(f, u))
+                {
+                    fc.Short = true;
+                    continue;
+                }
                 foreach (int i in cls.Links(unit.Instruments))
                 {
                     ref readonly var ins = ref cls.Instruments[i];
                     if (!cond.EyeWorks[ins.Eye])
                         continue;
                     sensors[f * MaxSensors + n++] = new Sensor { Eye = ins.Eye, X = ins.X, Y = ins.Y, HeightM = ins.HeightM, BaseM = ins.BaseM };
+                    fc.Units |= 1UL << u;
                     break;
                 }
             }
+        if ((had & ~fc.Units) != 0)
+            LetGo(f);
         if (n == 0)
         {
             // local control: the highest working mount's layer, by eye (any mount's, when none works)
@@ -312,6 +325,24 @@ public sealed class GunnerySystem : IWorldSystem
     /// eyeball's can't: a director's rangefinder under it ranges by eye).</summary>
     static bool Ranges(in OpticsRow o, in Sensor s) => s.BaseM > 0 && o.Magnification > 0;
 
+    /// <summary>Whether a battery of the same ship on another target holds a unit.</summary>
+    bool HeldElsewhere(int f, int unit)
+    {
+        ref readonly var fc = ref fcs[f];
+        for (int j = 0; j < highFc; j++)
+            if (j != f && fcs[j].Alive && fcs[j].Shooter == fc.Shooter && fcs[j].Target != fc.Target && (fcs[j].Units & 1UL << unit) != 0)
+                return true;
+        return false;
+    }
+
+    /// <summary>A battery let go of units: its ship's batteries that went short pick theirs again on their next second.</summary>
+    void LetGo(int f)
+    {
+        for (int j = 0; j < highFc; j++)
+            if (j != f && fcs[j].Alive && fcs[j].Shooter == fcs[f].Shooter && fcs[j].Short)
+                fcs[j].Repick = true;
+    }
+
     int AllocateFc()
     {
         if (freeFc.Count > 0)
@@ -335,6 +366,9 @@ public sealed class GunnerySystem : IWorldSystem
             ships.Store.Combat.Engage(slot, fc.Battery, 0);
         fc.Alive = false;
         fc.Generation++;   // its salvo and spot events go stale
+        if (fc.Units != 0)
+            LetGo(f);
+        fc.Units = 0;
         freeFc.Push(f);
     }
 
@@ -401,10 +435,12 @@ public sealed class GunnerySystem : IWorldSystem
         var cls = ship.Handling.Class;
         var target = store[tslot];
         var cond = store.Combat.Condition(slot);
-        if (cond.Version != fc.Condition)
+        if (cond.Version != fc.Condition || fc.Repick)
         {
-            // damage: its instruments picked again from what still works
-            var rs = stream.Derive((ulong)f).Derive((ulong)fc.Generation).Derive(0xDA3u).Derive((ulong)cond.Version);
+            // damage: its instruments picked again from what still works; or a unit it was short of let go
+            var rs = cond.Version != fc.Condition
+                ? stream.Derive((ulong)f).Derive((ulong)fc.Generation).Derive(0xDA3u).Derive((ulong)cond.Version)
+                : stream.Derive((ulong)f).Derive((ulong)fc.Generation).Derive(0xDA4u).Derive((ulong)now);
             AddSensors(ref fc, f, cls, cls.Batteries[fc.Battery], cond, now, ref rs);
         }
         var computer = fc.Fit.Computer;
@@ -810,9 +846,9 @@ public sealed class GunnerySystem : IWorldSystem
     // ------------------------------------------------------------------ reading it
 
     /// <summary>An engaged battery's counts so far, for tools and tests: salvos, shells, hits, straddles, when it first
-    /// hit and straddled (ms, -1 if not yet), and when its track started.</summary>
+    /// hit and straddled (ms, -1 if not yet), when its track started, what it's doing and whether it's in local control.</summary>
     public readonly record struct Tally(int Salvos, int Shells, int Hits, int Straddles, long FirstHitMs, long FirstStraddleMs, long TrackMs,
-        BatteryState State);
+        BatteryState State, bool Local);
 
     /// <summary>A ship's battery's tally, if it's engaged.</summary>
     public Tally? TallyOf(int shooter, int battery)
@@ -821,7 +857,7 @@ public sealed class GunnerySystem : IWorldSystem
             if (fcs[i].Alive && fcs[i].Shooter == shooter && fcs[i].Battery == battery)
             {
                 ref readonly var fc = ref fcs[i];
-                return new Tally(fc.Salvos, fc.Shells, fc.Hits, fc.Straddles, fc.FirstHitMs, fc.FirstStraddleMs, fc.Tracking ? fc.TrackMs : -1, fc.State);
+                return new Tally(fc.Salvos, fc.Shells, fc.Hits, fc.Straddles, fc.FirstHitMs, fc.FirstStraddleMs, fc.Tracking ? fc.TrackMs : -1, fc.State, fc.Local);
             }
         return null;
     }

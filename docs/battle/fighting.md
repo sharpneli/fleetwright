@@ -497,7 +497,8 @@ between cells), its thickness, material and normal.
   - Engaged ships stay off rails (`ShipSystem.Tiers.cs`, `Engaged`); batteries are silent off the fine tick
     (`BatteryState.Silent`); hits are counted and logged, nothing more (4.3a).
 - **Settings:** the level table, rows 0-8 from `LEVELS` (the plan's 0, 1, 2, 3 and the rest, cheap as data; their
-  trackers, radars and stabilisation are 4.5's), crew qualities (green, average, trained, elite: the rangetakers' and
+  trackers, radars and stabilisation are 4.5's; since `fire-control.md` F0 the rows are `FireControlPresets`, each
+  battery's fit on its class), crew qualities (green, average, trained, elite: the rangetakers' and
   layers' errors), and the gunnery numbers. Crews per side: `GunnerySystem.SetCrew`, and a scenario's `"crews"`.
 - **The gun's pattern** is a placeholder on `BatteryRow` (`DesignerPlaceholders.Pattern`: the Great War's heavy guns
   3.3·(305 mm/d)³ %, 12" 3.3, 13.5" 2.5, 15" 1.7; lighter 2.5; later 1.8-1.9).
@@ -1043,7 +1044,9 @@ numbers before and after against the anchors. The list, by link, with where the 
   - point-blank laying by sight, and a ladder step scaled to the range.
 
   Planned in `fire-control.md` (agreed 2026-10-17): fire control as tech blocks in the design, instruments as parts at
-  their real heights, a tracker per kind of computer, fire discipline and spotting by the navy's rules.
+  their real heights, a tracker per kind of computer, fire discipline and spotting by the navy's rules. F0 done
+  2026-10-18: each battery fires from a fit (optics, computer, mounts) and fire-control units with their instruments;
+  a director holds one target.
 - **Ship motion** (`ship-motion/ship-motion-gunnery-research.md` §7.7, in its order):
   - a roll phase per ship from `RollPeriodS` and the sea, with firing on the roll and a once-a-roll rate;
   - laying error `√(base² + (τ·ω)²)`;

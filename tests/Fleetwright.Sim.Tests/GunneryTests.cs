@@ -183,6 +183,49 @@ public class GunneryTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void A_director_holds_one_target()
+    {
+        // Bismarck's 150 mm and 105 mm starboard batteries share their side's director (fire-control.md F0)
+        var bismarck = Class("bismarck");
+        var dd = Class("destroyer");
+        int b150 = -1, b105 = -1;
+        for (int b = 0; b < bismarck.Batteries.Length; b++)
+            if (bismarck.Batteries[b].Side == Side.Starboard)
+                (b150, b105) = bismarck.Batteries[b].CalibreMm > 120 ? (b, b105) : (b150, b);
+        Assert.Equal(bismarck.Links(bismarck.Batteries[b150].Units).ToArray(), bismarck.Links(bismarck.Batteries[b105].Units).ToArray());
+
+        var w = new World(Start, 5, Settings);
+        int a = w.Ships.AddClass(bismarck), d = w.Ships.AddClass(dd);
+        w.Apply(ShipSystem.Spawn(a, Lat, Lon, 0, 10, side: 0));
+        foreach (double brg in new[] { 60.0, 120.0 })
+        {
+            var p = Earth.Position(Lat, Lon);
+            var f = Earth.Forward(p, brg);
+            Earth.Advance(ref p, ref f, 7_000);
+            var (tl, to) = Earth.LatLon(p);
+            w.Apply(ShipSystem.Spawn(d, tl, to, 0, 10, side: 1));
+        }
+        w.Apply(GunnerySystem.Engage(1, b150, 2));
+        w.Apply(GunnerySystem.Engage(1, b105, 3));
+        w.AdvanceTo(Start + 4 * 60_000);
+        var (t150, t105) = (w.Gunnery.TallyOf(1, b150)!.Value, w.Gunnery.TallyOf(1, b105)!.Value);
+        output.WriteLine($"apart: 150 mm local {t150.Local}, {t150.Salvos} salvos; 105 mm local {t105.Local}, {t105.Salvos} salvos");
+        Assert.False(t150.Local);
+        Assert.True(t105.Local);   // its director's on the other target: each mount for itself
+
+        w.Apply(GunnerySystem.Engage(1, b105, 2));   // on the same target, they share it
+        w.AdvanceTo(Start + 5 * 60_000);
+        Assert.False(w.Gunnery.TallyOf(1, b105)!.Value.Local);
+
+        w.Apply(GunnerySystem.Engage(1, b105, 3));
+        w.AdvanceTo(Start + 6 * 60_000);
+        Assert.True(w.Gunnery.TallyOf(1, b105)!.Value.Local);
+        w.Apply(GunnerySystem.Cease(1, b150));       // let go: the 105 mm take the director again
+        w.AdvanceTo(Start + 6 * 60_000 + 2_000);
+        Assert.False(w.Gunnery.TallyOf(1, b105)!.Value.Local);
+    }
+
+    [Fact]
     public void Fire_control_allocates_nothing()
     {
         var qe = Class("super_dreadnought");

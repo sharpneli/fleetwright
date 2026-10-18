@@ -629,6 +629,8 @@ public static class ShipClassCompiler
         /// that stand in it (highest first, as the eyes are), and each battery's units in its directors' order.</summary>
         void FireControlUnits(ShipClass c)
         {
+            if (c.directors.Length > 64)
+                throw new ShipCompileException($"{c.directors.Length} directors: fire control holds its units as 64 bits");
             var units = new FcUnitRow[c.directors.Length];
             var instruments = new List<InstrumentRow>();
             for (int d = 0; d < units.Length; d++)
