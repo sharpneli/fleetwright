@@ -50,7 +50,8 @@ static class Duel
         var sw = Stopwatch.StartNew();
         var all = FcBench.Runs([c], settings, runs, seed)[0];
         double secs = sw.Elapsed.TotalSeconds;
-        var st = FcStats.Of(all, c.Minutes);
+        var mount = c.Shooter.Mounts[c.Shooter.Links(row.Mounts)[0]];
+        var st = FcStats.Of(all, c.Minutes, row.Guns, mount.ReloadS);
         foreach (var line in st.Lines())
             Console.WriteLine(line);
         Console.WriteLine(string.Format(Inv, "  {0:0.00} s for the runs, {1:0} ms a run (on threads); the battery's fire control {2:0.0} µs a game second",

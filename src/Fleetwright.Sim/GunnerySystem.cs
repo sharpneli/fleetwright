@@ -119,7 +119,7 @@ public sealed class GunnerySystem : IWorldSystem
         public int Half;
         public bool OwnTurning;
         public int RangingSalvos, RangingShells;
-        public long EffectMs, LastSalvoMs;
+        public long EffectMs, LastSalvoMs, SettleMs;
         public int Salvos, Shells, Hits, Straddles, Arm, SensorCount, PendHead, PendCount;
         /// <summary>The shooter's condition's version its instruments were picked at (damage: a director lost).</summary>
         public int Condition;
@@ -699,7 +699,8 @@ public sealed class GunnerySystem : IWorldSystem
         // once, else rolling) and enough guns are loaded and laid; firing for effect, the first instant the bearing mounts
         // are (or a half of them, by the discipline)
         var dis = settings.FireDisciplines[disciplines[ship.Side]];
-        bool ranging = fc.Phase == FirePhase.Ranging, waiting = fc.InFlight > 0 && now < fc.WaitMs;
+        bool independent = Independent(dis, cls, mounts, fc.RangeM);
+        bool ranging = fc.Phase == FirePhase.Ranging && !independent, waiting = fc.InFlight > 0 && now < fc.WaitMs;
         if (ranging && dis.LadderStepM > 0 && fc.Rung >= dis.InFlight && !waiting)
             fc.Rung = 0;   // the ladder's falls all spotted: the next group
         if (fc.State != BatteryState.Firing || fc.SalvoPending || !sees ||
@@ -709,9 +710,11 @@ public sealed class GunnerySystem : IWorldSystem
         int bearingGuns = 0, bearingMounts = 0;
         for (int j = 0; j < mounts.Length; j++)
             (bearingGuns, bearingMounts) = firing[j] ? (bearingGuns + cond.Guns(mounts[j]), bearingMounts + 1) : (bearingGuns, bearingMounts);
-        var (need, quota) = Partial(dis, fc.Phase, bearingGuns, bearingMounts, fc.Half);
-        if (quota < int.MaxValue && fc.Phase == FirePhase.Effect && fc.Salvos > 0)
+        var (need, quota) = independent ? (int.MaxValue, 1) : Partial(dis, fc.Phase, bearingGuns, bearingMounts, fc.Half);
+        if (!independent && quota < int.MaxValue && fc.Phase == FirePhase.Effect && fc.Salvos > 0)
             when = Math.Max(when, fc.LastSalvoMs + (long)(500 * cls.Mounts[mounts[0]].ReloadS));   // the halves alternate
+        if (!independent)
+            when = Math.Max(when, fc.SettleMs);   // the layers on again after a correction (firing independently, each his own)
         for (int k = 0, got = 0, taken = 0; k < mounts.Length && got < need && taken < quota; k++)
         {
             int j = (fc.Group + k) % mounts.Length;
@@ -855,7 +858,8 @@ public sealed class GunnerySystem : IWorldSystem
         // the groups alternate
         var phase = fc.Phase;
         var dis = settings.FireDisciplines[disciplines[ship.Side]];
-        var (need, quota) = Partial(dis, phase, bearingGuns, bearingMounts, fc.Half);
+        bool independent = Independent(dis, cls, mounts, fc.RangeM);
+        var (need, quota) = independent ? (int.MaxValue, 1) : Partial(dis, phase, bearingGuns, bearingMounts, fc.Half);
         int next = fc.Group, taken = 0;
         for (int k = 0; k < mounts.Length; k++)
         {
@@ -877,7 +881,7 @@ public sealed class GunnerySystem : IWorldSystem
             return;
         if (need < int.MaxValue || quota < int.MaxValue)
             fc.Group = next % mounts.Length;
-        if (quota < int.MaxValue)
+        if (quota < int.MaxValue && !independent)
             fc.Half ^= 1;
         // the battery's computer works in its lead shell's table: the first firing mount's (the next salvos lay with it)
         fc.Table = shells.TableOf(loads, fc.Battery, lead);
@@ -964,7 +968,7 @@ public sealed class GunnerySystem : IWorldSystem
             }
             if (away > 0)
                 shells.Fired(world, fc.Shooter, ship.ClassIndex, mounts[j], salvo, away, muzzle, first, firstEl);
-            store.Combat.Fired(slot, cls, mounts[j], fireLoad[j], barrels, now);
+            store.Combat.Fired(slot, cls, mounts[j], fireLoad[j], barrels, now, crew.Load);
         }
         sv.Left = sv.Shells;
         if (sv.Shells == 0)
@@ -1102,6 +1106,8 @@ public sealed class GunnerySystem : IWorldSystem
                 if (dis.RateSpotShare > 0 && move != 0 && move == fc.LastMove)
                     fc.Tracker.CorrectRate(sv.U, dis.RateSpotShare * (fc.CorrR - before) / 60);
                 fc.LastMove = move;
+                if (move != 0)
+                    fc.SettleMs = now + (long)(1000 * settings.LayerSettleS);
                 NextPhase(ref fc, sign, now, dis.MissesToRange);
                 var r = stream.Derive(0x5B08u).Derive((ulong)si).Derive((ulong)sv.Generation);
                 double defl = sv.SumY / Math.Max(sv.Landed, 1) + settings.SpotDeflectionMil * FireControl.Mil * sv.RangeM * r.NextGaussian();
@@ -1162,6 +1168,10 @@ public sealed class GunnerySystem : IWorldSystem
         double sigma = Math.Sqrt(fc.PosSigmaM * fc.PosSigmaM + rate * rate + resid * resid);
         return Math.Clamp(2 * sigma, settings.BracketFloorM, Math.Max(c.FirstStepM, settings.BracketFloorM));
     }
+
+    /// <summary>Whether a battery fires independently (F6d): its discipline's range for it, and its guns quick-firers.</summary>
+    bool Independent(FireDiscipline dis, ShipClass cls, ReadOnlySpan<int> mounts, double rangeM) =>
+        dis.IndependentWithinM > 0 && rangeM < dis.IndependentWithinM && cls.Mounts[mounts[0]].ReloadS <= settings.QuickFirerReloadS;
 
     /// <summary>A partial salvo by the discipline, of the mounts that bear (loaded or not), as the guns it wants and the
     /// mounts it may take (int.MaxValue: no limit, a full salvo): ranging, the discipline's share of the guns, at least

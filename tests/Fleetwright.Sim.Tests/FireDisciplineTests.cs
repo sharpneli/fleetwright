@@ -99,6 +99,34 @@ public class FireDisciplineTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void A_mount_fires_at_the_reload_while_its_ready_rounds_last_then_as_the_hoists_bring_them()
+    {
+        // a Queen Elizabeth's turret, fired each time it's loaded: its ready-use rounds (refilling as it fires) keep it at
+        // the reload for a while, then the hoists set the pace
+        var qe = Fleet.Get("super_dreadnought").Class!;
+        var w = new World(Start, 1, Settings);
+        w.Apply(ShipSystem.Spawn(w.Ships.AddClass(qe), Lat, Lon, 0, 0, side: 0));
+        var store = w.Ships.Store;
+        int slot = store.SlotOf(1), m = qe.Links(qe.Batteries[0].Mounts)[0];
+        var row = qe.Mounts[m];
+        int guns = qe.TurretTypes[row.Type].Barrels;
+        long t = Start.Ms;
+        var gaps = new List<double>();
+        for (int k = 0; k < 30; k++)
+        {
+            store.Combat.Fired(slot, qe, m, 0, guns, t);
+            long next = store.Combat.Mount(slot, m).LoadedMs;
+            gaps.Add((next - t) / 1000.0);
+            t = next;
+        }
+        int atReload = gaps.TakeWhile(g => Math.Abs(g - row.ReloadS) < 0.01).Count();
+        output.WriteLine($"{row.ReadyRounds} ready rounds, reload {row.ReloadS:F1} s, hoists {row.SupplyS:F1} s: {atReload} salvos at the reload, " +
+                         $"then {gaps[^1]:F1} s");
+        Assert.True(atReload >= row.ReadyRounds / guns, "the ready rounds at the reload");
+        Assert.Equal(row.SupplyS, gaps[^1], 1);
+    }
+
+    [Fact]
     public void A_rate_spot_moves_every_computers_prediction_by_the_correction()
     {
         // a target 15 km east of a ship at rest, steaming north at 10 m/s, read cleanly every 2 s for two minutes; then

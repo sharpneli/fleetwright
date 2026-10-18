@@ -26,6 +26,7 @@
   // where ships out of the fight go (docs/battle/command.md 5.1a): off Vladivostok, and off Sasebo
   "home": { "Russia": [42.6, 132.0], "Japan": [33.0, 129.4] },
   "crews": { "Russia": "average" },
+  "fire_discipline": { "Russia": "independent", "Japan": "independent" },
   "weather": { "visibility_km": 13, "wind_from": 225, "wind_kn": 18 },
   "units": [
     // ---------------------------------------------------------------- the Second Pacific Squadron (Rozhestvensky): 13

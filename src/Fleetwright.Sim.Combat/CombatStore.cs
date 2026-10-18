@@ -8,13 +8,14 @@ namespace Fleetwright.Sim.Combat;
 /// nothing steps it), when its guns are next loaded, and the rounds it has left (all kinds; by kind in
 /// <see cref="CombatStore.LoadRounds"/>). Bearings are degrees clockwise from
 /// ahead, unwrapped inside the mount's traverse (an interval that never wraps: shipgen's <c>traverse_deg</c>). Stiff
-/// (docs/battle/shells-armour-damage.md E4): the share of its training rate a hit that held took (0 none).</summary>
+/// (docs/battle/shells-armour-damage.md E4): the share of its training rate a hit that held took (0 none). Its ready-use
+/// rounds (fire-control.md F6d), as they stood at <see cref="ReadyMs"/>: the hoists fill them back at their rate.</summary>
 public struct MountState
 {
-    public long TrainMs, ElevMs, LoadedMs;
+    public long TrainMs, ElevMs, LoadedMs, ReadyMs;
     public double TrainFrom, TrainTo, ElevFrom, ElevTo;
     public int Rounds;
-    public double Stiff;
+    public double Stiff, Ready;
 }
 
 /// <summary>A torpedo launcher's state (docs/battle/fighting.md 4.6): the torpedoes in its tubes, the spares it carries
@@ -65,7 +66,7 @@ public sealed class CombatStore
             double rest = Into(row, row.RestDeg, row.RestDeg);
             m[i] = new MountState
             {
-                TrainMs = ms, TrainFrom = rest, TrainTo = rest, ElevMs = ms, LoadedMs = ms,
+                TrainMs = ms, TrainFrom = rest, TrainTo = rest, ElevMs = ms, LoadedMs = ms, ReadyMs = ms, Ready = row.ReadyRounds,
                 Rounds = row.Rounds > 0 ? row.Rounds : int.MaxValue,
             };
         }
@@ -238,11 +239,26 @@ public sealed class CombatStore
     }
 
     /// <summary>A mount fired its guns of a load (its index in the battery's loads, <see cref="NextLoad"/>): it loads
-    /// again for the reload, and its rounds go down.</summary>
-    public void Fired(int slot, ShipClass cls, int mount, int load, int guns, long ms)
+    /// again, and its rounds go down. The next rounds come from its ready-use rounds while it has them, at the reload (the
+    /// drill's times the crew's battle factor, <paramref name="loadFactor"/>); after, as the hoists bring them, one a gun
+    /// every <see cref="MountRow.SupplyS"/> (fire-control.md F6d), the ready-use rounds filling back at that rate.</summary>
+    public void Fired(int slot, ShipClass cls, int mount, int load, int guns, long ms, double loadFactor = 1)
     {
         ref var s = ref mounts[slot]![mount];
-        s.LoadedMs = ms + (long)Math.Round(cls.Mounts[mount].ReloadS * 1000);
+        ref readonly var row = ref cls.Mounts[mount];
+        double reload = row.ReloadS * loadFactor;
+        if (row.ReadyRounds > 0 && row.SupplyS > 0)
+        {
+            double hoist = cls.TurretTypes[row.Type].Barrels / row.SupplyS;   // rounds a second
+            double ready = Math.Min(row.ReadyRounds, s.Ready + hoist * Math.Max(ms - s.ReadyMs, 0) / 1000.0), wait = 0;
+            if (ready >= guns)
+                ready -= guns;
+            else
+                (wait, ready) = ((guns - ready) / hoist, 0);
+            (s.Ready, s.ReadyMs) = (ready, ms + (long)(wait * 1000));
+            reload = Math.Max(reload, wait);
+        }
+        s.LoadedMs = ms + (long)Math.Round(reload * 1000);
         Spend(slot, mount, load, guns);
     }
 
@@ -356,6 +372,7 @@ public sealed class CombatStore
                 h.Add(s.ElevTo);
                 h.Add(s.LoadedMs);
                 h.Add(s.Rounds);
+                h.Add(s.Ready);
                 if (s.Stiff != 0)
                     h.Add(s.Stiff);
             }

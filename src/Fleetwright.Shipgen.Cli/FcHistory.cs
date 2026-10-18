@@ -32,19 +32,19 @@ static class FcHistory
         [
             new("1890-1925", C("Santiago 1898, US 12\"", "connecticut", "armoured_cruiser", c => c with
                 {
-                    Discipline = "usn", Fit = 0, RangeM = 2_600, BearingDeg = 30, CourseDeg = 0, OwnKn = 13, TargetKn = 14, Minutes = 30,
+                    Discipline = "independent", Fit = 0, RangeM = 2_600, BearingDeg = 30, CourseDeg = 0, OwnKn = 13, TargetKn = 14, Minutes = 30,
                 }), "42 / 1,200 major calibre (3.5%); 1.3% all calibres", 1.75, 7, "brown powder smoke; a running fight along the coast"),
             new("1890-1925", C("Yellow Sea 1904, Japanese 12\"", "mikasa", "borodino", c => c with
                 {
-                    Discipline = "rn-1914", RangeM = 5_600, BearingDeg = 90, CourseDeg = 0, OwnKn = 14, TargetKn = 14, Minutes = 30,
+                    Discipline = "independent", RangeM = 5_600, BearingDeg = 90, CourseDeg = 0, OwnKn = 14, TargetKn = 14, Minutes = 30,
                 }), "~30 / 603 (4.7%)", 2.5, 9, "6-7 h of manoeuvring reduced to a parallel run"),
             new("1890-1925", C("Tsushima 1905, Japanese 12\"", "mikasa", "borodino", c => c with
                 {
-                    Discipline = "rn-1914", RangeM = 5_000 * FcBench.Yd, BearingDeg = 80, CourseDeg = 10, OwnKn = 15, TargetKn = 11, VisibilityM = 9_000, Minutes = 30,
+                    Discipline = "independent", RangeM = 5_000 * FcBench.Yd, BearingDeg = 80, CourseDeg = 10, OwnKn = 15, TargetKn = 11, VisibilityM = 9_000, Minutes = 30,
                 }), "~40 / 446 (~9%), mostly at 6,500 yd or less (the case at 5,000)", 5, 15, "high waves (ship motion)"),
             new("1890-1925", C("Tsushima 1905, Japanese 6\"", "mikasa", "borodino", c => c with
                 {
-                    Discipline = "rn-1914", Battery = 1, RangeM = 5_000 * FcBench.Yd, BearingDeg = 80, CourseDeg = 10, OwnKn = 15, TargetKn = 11, VisibilityM = 9_000, Minutes = 30,
+                    Discipline = "independent", Battery = 1, RangeM = 5_000 * FcBench.Yd, BearingDeg = 80, CourseDeg = 10, OwnKn = 15, TargetKn = 11, VisibilityM = 9_000, Minutes = 30,
                 }), "~350 / ~16,900 (~2%, Sims's estimate)", 1, 4, "high waves; whose splash among many 6\""),
             new("1890-1925", C("1912 trial, director (Thunderer)", "orion", "dreadnought", c => c with
                 {

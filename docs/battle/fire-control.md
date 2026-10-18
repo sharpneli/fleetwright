@@ -1,5 +1,5 @@
 # Plan: fire control (a 4.5 deepening)
-Status: **agreed with the user 2026-10-17** ("Decided" below; radar moved out); F0-F5 and F6a-c done 2026-10-18    Updated: 2026-10-18
+Status: **agreed with the user 2026-10-17** ("Decided" below; radar moved out); F0-F5 and F6a-d done 2026-10-18    Updated: 2026-10-18
 
 The fine-tune pass for the **Fire control** link of `fighting.md` 4.5 ("the trackers by era ... the clocks' limits ...
 the full set of levels, radar as a sensor, night ... splash confusion ... the designer emitting levels and sensors,
@@ -873,6 +873,46 @@ from the parts and independent fire (items 6 and 9); F6e ammunition as a choice 
     Squadrons over 20 seeds: Britain's hits 29 to 42, Germany's 63 to 78, losses as before. Tsushima over 5 seeds:
     Russia's hits 343 to 279, Japan's 427 to 505, losses 4.2 Russian and 3.0 to 2.6 Japanese ships.
   - *Tests:* a rate spot of 1 m/s moves every kind of computer's prediction a minute on by 60 m along the line of fire.
+- **F6d done 2026-10-18** (the rate of fire from its parts, independent fire).
+  - *The supply:* a mount fires from its ready-use rounds (shipgen's `ReadyRounds`: a 4" 26 a gun, a 6" 15, a 12" 6, a
+    15" 4) at the reload, and once they're gone as the hoists bring them, a round a gun every `MountRow.SupplyS`, the
+    ready-use rounds filling back at that rate while it fires slower (`CombatStore.Fired`). The hoists' interval is the
+    reload times `DesignerPlaceholders.HoistShare`, 1.5 [EST from the Majestics' 70 and 100 s and HMS Delhi's 25 and 15
+    rounds a minute]. A Queen Elizabeth turret fires 12 salvos at its 39.6 s reload, then one each 59.4 s.
+  - *The crew:* the battle's factor on the drill reload (`GunneryCrew.Load`: green 1.5, average 1.35, trained 1.2, elite
+    1.1 [EST]: the loaders' fatigue, heat and fumes).
+  - *The layers:* after a spot's correction the next salvo waits `LayerSettleS`, 7 s, for the layers to lay on again
+    (New York's 10 s at the director, the USN's secondaries every 7-10 s); salvos at unchanged settings go as the guns
+    load (Bismarck's ladder 2 s apart). A first try spaced every director's salvos 7 s and broke the German ladder.
+  - *Independent fire:* inside a discipline's `IndependentWithinM` a quick-firing battery (reload `QuickFirerReloadS`,
+    16 s, or less) fires each mount as it loads and lays, each fall spotted on its own, with no wait for the spots and no
+    battery-wide settle (each layer his own); salvo fire beyond. The preset **independent**: quick-firers independent
+    within 5.5 km (the pre-dreadnoughts' shift at 5-6 km), the heavy guns by single salvos and full salvos in fire for
+    effect; salvo firing came in 1905-08 (manual-gunnery-research.md §5), so fc-history's Santiago, Yellow Sea and
+    Tsushima cases and the Tsushima scenario's sides take it. One ship alone, Mikasa's 6" at 4.6 km: independent 4.1%,
+    salvos 5.9% (the research's table 7 has them about even: here each gun's lone fall is spotted as a salvo of one, and
+    whose splash it is, the cost the research gives independent fire, is F7's).
+  - *Rates* (rounds a gun a minute from the first salvo, against the drill's; the duel's new line): Queen Elizabeth's
+    15" at 16 kyd 79% over 15 minutes and 71% over an hour (1.08 a minute: her 100 rounds a gun last about 1.5 hours of
+    unbroken fire, 66 minutes before F6); Seydlitz's 11" on the ladder 73%; Mikasa's 6" 57% in salvos, 77% independent;
+    Lion's 4" in local control 32% (halves every 4.6 s held by the layers' settle). The research's battle rates, 30-60% of
+    drill, include what a duel doesn't have (sight lost, smoke, turns, shifts of target). **Left:** the doctrine's ceiling
+    (deliberate fire at long range, rapid close in) and the crew's fatigue over the hour: no numbers yet (the research
+    request on fire discipline asks).
+  - *Numbers* (fc-history `--runs 24`): 12 of 23 (13 at F6c). The pre-1905 cases on the new preset: the Yellow Sea 8.3
+    to 11.1% (over its band: full salvos in fire for effect and no rate spot), Tsushima's 12" 8.4 to 10.1%, its 6" 3.7 to
+    2.8%; the Great War cases within their noise (Dogger Bank's British 2.5 to 2.1%, the Jutland BCS 3.2 to 3.7%, the
+    Grand Fleet BS 7.0 to 8.0%). Squadrons over 20 seeds: Britain's hits 42 to 41, Germany's 78 to 60, losses 1.2 to 0.8
+    British ships and 0.1 German. Tsushima over 5 seeds: Russia's hits 279 to 270, Japan's 505 to 454, losses 4.2 to 4.6
+    Russian and 2.6 Japanese ships.
+  - *Tests:* a turret fires its ready rounds at the reload, then at the hoists' interval. `FlotillaAttackTests` takes
+    24 seeds (12): with the new rate seeds 1-12 had 2 of 4 attacks with two boats on the signal, seeds 1-48 22 of 27.
+  - *Cost:* 26-27 µs a battery-second.
+- **F6e (ammunition as a choice): proposed to move to F10.** Its floor reads the battery's own estimate of its hits a
+  shell (decision 8), which is F10's `FireEstimate`; a stand-in here would be a second implementation of it, and the
+  matchup's guns measure is to become a call of the same function. The reserve of the magazine has no source yet. So
+  F6e lands with F10's estimate (awaiting the user's word); the fire orders it needs are there (`FireOrder.Engage` is an
+  order, at will is doctrine).
   - *A bug found on the way* (committed alone): a row of light AA mounts along each beam blinded the directors on
     their deck, so Bismarck's 150 mm never took a reading and never fired; light AA no longer blinds a post (45 classes'
     eyes move, the WWI scenarios' hashes don't).

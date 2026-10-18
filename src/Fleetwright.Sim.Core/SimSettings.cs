@@ -500,18 +500,27 @@ public sealed record SimSettings
     public int RangingWaitMarginMs { get; init; } = 15_000;
     public double HardTurnYawDegS { get; init; } = 1;
 
+    /// <summary>After a spot's correction, the next salvo waits this long for the layers to lay on again, s (fire-control.md
+    /// F6d: New York's main battery spent 10 s of its 66 at the director, the USN's secondaries of 1929 fired every 7-10 s,
+    /// computing.md §2.5; salvos at unchanged settings go as the guns load, Bismarck's ladder 2 s apart). A battery whose
+    /// reload is this short or less fires independently inside its discipline's range for it (a quick-firer), s.</summary>
+    public double LayerSettleS { get; init; } = 7;
+    public double QuickFirerReloadS { get; init; } = 16;
+
     /// <summary>The fire disciplines a side may follow (fire-control.md F6, decision 3: the side's doctrine, as its crews
     /// are; a scenario's <c>"fire_discipline"</c>): the first is every side's until it's told otherwise. The research's
     /// (computing.md §2.5, fire-control-research.md §6, §9): the RN of 1914 ranging by single half-salvos, each after the
     /// last one's fall, and alternating halves in fire for effect; the RN after Jutland with two in flight; the German
-    /// ladder, successive turrets ~400 yd apart, three salvos before the first falls; the USN's ladder spotted salvo by
-    /// salvo, full salvos in fire for effect.</summary>
+    /// ladder, successive turrets ~400 yd apart (a turret a rung), three salvos before the first falls; the USN's ladder spotted salvo by
+    /// salvo, full salvos in fire for effect; before salvo firing (1905-08, manual-gunnery-research.md §5), quick-firers
+/// independent within 5.5 km (the pre-dreadnoughts' shift at 5-6 km), the heavy guns by single salvos.</summary>
     public FireDiscipline[] FireDisciplines { get; init; } =
     [
         new() { Name = "rn-1914", InFlight = 1, GunsShare = 0.5, GunsMin = 4, EffectHalves = true, MissesToRange = 3, RateSpotShare = 0.5 },
         new() { Name = "rn-1917", InFlight = 2, GunsShare = 0.5, GunsMin = 4, EffectHalves = true, MissesToRange = 3, RateSpotShare = 0.5 },
-        new() { Name = "german", InFlight = 3, LadderStepM = 366, GunsShare = 0.25, GunsMin = 2, EffectHalves = true, MissesToRange = 3 },
+        new() { Name = "german", InFlight = 3, LadderStepM = 366, GunsShare = 0.2, GunsMin = 2, EffectHalves = true, MissesToRange = 3 },
         new() { Name = "usn", InFlight = 1, GunsShare = 0.5, GunsMin = 4, MissesToRange = 3 },
+        new() { Name = "independent", InFlight = 1, GunsShare = 0.5, GunsMin = 4, MissesToRange = 3, IndependentWithinM = 5_500 },
     ];
 
     /// <summary>A shell's dispersion across the line of fire as a share of its dispersion along it (Gun.defl_ratio).</summary>
@@ -546,13 +555,15 @@ public sealed record SimSettings
     /// <summary>A side's gun crews, a row for each <see cref="CrewQuality"/> in order: the rangetakers' error (Conditions.
     /// operator: 2 green, 1.5 average, 1 trained, 0.85 elite), the layers' (a guess, the same way), and the chance a spot is
     /// applied to the correction in force rather than the one its salvo was fired with (pyramiding, fire-control.md F6:
-    /// "a common error", NO&amp;G ch. 18C; the numbers [EST]).</summary>
+    /// "a common error", NO&amp;G ch. 18C; the numbers [EST]), and the battle's factor on the drill reload (fire-control.md
+    /// F6d: the loaders' fatigue, heat and fumes, the handling in a seaway; [EST]: with the hoists, the director's cycle and
+    /// the ranging waits, battle rates come to the research's 30-60% of drill, predreadnought-tech.md §3).</summary>
     public GunneryCrew[] GunneryCrews { get; init; } =
     [
-        new() { Name = "green", Operator = 2, Lay = 1.3, Pyramid = 0.25 },
-        new() { Name = "average", Operator = 1.5, Lay = 1.15, Pyramid = 0.1 },
-        new() { Name = "trained", Operator = 1, Lay = 1, Pyramid = 0.03 },
-        new() { Name = "elite", Operator = 0.85, Lay = 0.9, Pyramid = 0 },
+        new() { Name = "green", Operator = 2, Lay = 1.3, Pyramid = 0.25, Load = 1.5 },
+        new() { Name = "average", Operator = 1.5, Lay = 1.15, Pyramid = 0.1, Load = 1.35 },
+        new() { Name = "trained", Operator = 1, Lay = 1, Pyramid = 0.03, Load = 1.2 },
+        new() { Name = "elite", Operator = 0.85, Lay = 0.9, Pyramid = 0, Load = 1.1 },
     ];
 
     // ------------------------------------------------------------------ fire orders (docs/battle/fighting.md 4.2c)
@@ -1380,7 +1391,9 @@ public enum CrewQuality : byte
 /// salvos; and how many spots in a row without a straddle send it back to ranging;</item>
 /// <item>the rate spot: when two spots in a row move the aim the same way, the range rate is corrected too, by this share
 /// of the move a minute (the RN's "down 200, rate down 100", computing.md §2.5; 0 for none: the USN's manual held
-/// spotting during rate corrections the same as pyramiding).</item>
+/// spotting during rate corrections the same as pyramiding);</item>
+/// <item>independent fire: inside this range (m; 0 never) a quick-firing battery (<see cref="SimSettings.QuickFirerReloadS"/>)
+/// fires each mount as it loads and lays, each fall spotted on its own (whose splash it is: F7), salvo fire beyond.</item>
 /// </list></summary>
 public sealed record FireDiscipline
 {
@@ -1392,6 +1405,7 @@ public sealed record FireDiscipline
     public bool EffectHalves { get; init; }
     public int MissesToRange { get; init; } = 3;
     public double RateSpotShare { get; init; }
+    public double IndependentWithinM { get; init; }
 }
 
 /// <summary>A crew quality's multipliers on the rangetakers' and the layers' errors.</summary>
@@ -1401,6 +1415,7 @@ public sealed record GunneryCrew
     public double Operator { get; init; }
     public double Lay { get; init; }
     public double Pyramid { get; init; }
+    public double Load { get; init; } = 1;
 }
 
 [JsonSourceGenerationOptions(WriteIndented = true, UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,

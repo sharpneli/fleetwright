@@ -51,6 +51,12 @@ public static class DesignerPlaceholders
         return (Math.Max(reload, 0.5), train, Math.Clamp(2 * train, 2, 20), maxElev);
     }
 
+    /// <summary>PLACEHOLDER (docs/battle/fire-control.md F6d): the hoists' sustained reload over the drill reload, once a
+    /// mount's ready-use rounds are fired [EST from two cases: the Majestics' 12" at 70 s a round from ready rounds and
+    /// 100 s after (1.43), HMS Delhi's 5"/38 at 25 rounds a minute from ready-use and 15 from the magazine (1.67);
+    /// predreadnought-tech.md §3, emergency-eyeball.md]. The designer should give each mount's hoists.</summary>
+    public const double HoistShare = 1.5;
+
     // ------------------------------------------------------------------ magazines going up (docs/visuals/magazine-explosions.md)
 
     /// <summary>PLACEHOLDER: the share of a magazine's propellant that burns in the cascade window, the fireball's M

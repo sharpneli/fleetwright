@@ -39,12 +39,13 @@ public class FlotillaAttackTests(ITestOutputHelper output)
     {
         // six boats against four battleships by day aren't worth an attack by their own judgement (docs/battle/command.md
         // 5.1g): ordered to, they make it, or about half the time they're beaten off first (docs/battle/bugs.md). Which seeds
-        // get in moves with every change to the ships, so the test takes every one of a dozen where the signal is made and the
-        // attack seen through (not beaten off as the boats fire: the gunfire's draws decide that too), and asks that each
+        // get in moves with every change to the ships, so the test takes every one of two dozen where the signal is made and
+        // the attack seen through (not beaten off as the boats fire: the gunfire's draws decide that too), and asks that each
         // goes through its phases in order and that in most of them two boats or more fire on the signal (their tubes
-        // trained out on the beam as they ran in, each track clear of the boats steaming beside her)
+        // trained out on the beam as they ran in, each track clear of the boats steaming beside her). A dozen was too few:
+        // with fire-control.md F6d's rate of fire seeds 1-12 had 2 of 4, seeds 1-48 22 of 27, seeds 1-24 9 of 11
         int through = 0, together = 0;
-        for (ulong seed = 1; seed <= 12; seed++)
+        for (ulong seed = 1; seed <= 24; seed++)
         {
             var (w, ai, s) = Load(TorpedoAttack.Together, seed);
             int flotilla = Flotilla(w);
@@ -77,7 +78,7 @@ public class FlotillaAttackTests(ITestOutputHelper output)
             int gain = seen.IndexOf(AttackPhase.Gain), run = seen.IndexOf(AttackPhase.Run), away = seen.IndexOf(AttackPhase.Away);
             Assert.True(gain >= 0 && gain < run && run < fired && fired < away, $"seed {seed}: " + string.Join(" > ", seen));
         }
-        Assert.True(through > 0, "in none of seeds 1-12 was the signal made and the attack seen through");
+        Assert.True(through > 0, "in none of seeds 1-24 was the signal made and the attack seen through");
         Assert.True(3 * together >= 2 * through, $"two boats or more fired on the signal in only {together} of {through} attacks");
     }
 

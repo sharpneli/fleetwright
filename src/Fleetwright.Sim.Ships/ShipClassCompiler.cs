@@ -583,7 +583,10 @@ public static class ShipClassCompiler
                 }
                 members[b].Add(i);
                 var (reload, train, elevate, maxElev) = DesignerPlaceholders.Gun(m.CalibreMm, m.CalibreLength, c.turretTypes[m.Type].Shape, era);
-                mounts[i] = m with { Battery = b, ReloadS = reload, TrainDegS = train, ElevateDegS = elevate, MaxElevationDeg = maxElev };
+                mounts[i] = m with
+                {
+                    Battery = b, ReloadS = reload, TrainDegS = train, ElevateDegS = elevate, MaxElevationDeg = maxElev, SupplyS = reload * DesignerPlaceholders.HoistShare,
+                };
             }
 
             for (int b = 0; b < batteries.Count; b++)

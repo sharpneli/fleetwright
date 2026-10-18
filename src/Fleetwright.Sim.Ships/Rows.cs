@@ -110,6 +110,9 @@ public readonly record struct MountRow
     public double TrainDegS { get; init; }
     public double ElevateDegS { get; init; }
     public double MaxElevationDeg { get; init; }
+    /// <summary>Seconds a round per gun the hoists bring once the mount's ready-use rounds (<see cref="ReadyRounds"/>) are
+    /// fired (fire-control.md F6d), the sustained reload: a placeholder (<see cref="DesignerPlaceholders.HoistShare"/>).</summary>
+    public double SupplyS { get; init; }
 }
 
 public enum TurretShape : byte

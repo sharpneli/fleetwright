@@ -118,6 +118,7 @@ sealed class FcRun
     /// <summary>When own ship was put on a new course (a turn policy).</summary>
     public readonly List<long> OwnManoeuvres = [];
     public double OwnKn, TargetKn, CircleDegS = double.NaN;
+    public long StartMs;
     public double GunneryMs;
 }
 
@@ -151,7 +152,7 @@ static class FcBench
             w.Apply(GunnerySystem.SetDiscipline(0, DisciplineOf(s, dis)));
         w.Apply(GunnerySystem.Engage(Shooter, c.Battery, TargetShip, c.Fit));
 
-        var run = new FcRun();
+        var run = new FcRun { StartMs = c.Start.Ms };
         var rng = new Random(seed * 7919 + 17);
         GunnerySystem.SalvoReport? fall = null;
         w.Gunnery.Reported = r =>
@@ -315,15 +316,18 @@ sealed record FcStats
     /// the ranging salvos' share of the shells, the median interval between ranging salvos and between salvos in fire
     /// for effect (s), and shells a hit.</summary>
     public double StraddleSalvo, ShellsToStraddle, RangingShellPct, RangingIntervalS, EffectIntervalS, ShellsPerHit;
+    /// <summary>Rounds a gun a minute from the first salvo to the end, and that against the drill's (60 / the reload), %.</summary>
+    public double RoundsPerGunMin, DrillPct;
     /// <summary>The spotter's calls against the truth: the share of seen spots he called straddles, and of those the share
     /// that were; of the salvos that truly straddled, the share he called so.</summary>
     public double CalledStraddlePct, CalledTruePct, TrueCalledPct;
 
     static readonly double[] SettleEdges = [120, 240, 480, double.PositiveInfinity], RecoveryEdges = [0, 60, 120, 240];
 
-    public static FcStats Of(FcRun[] runs, double minutes)
+    public static FcStats Of(FcRun[] runs, double minutes, int guns = 0, double reloadS = 0)
     {
         var st = new FcStats { Runs = runs.Length };
+        double gunMinutes = 0;
         var settle = Enumerable.Range(0, 3).Select(_ => new List<double>()).ToArray();
         var recovery = Enumerable.Range(0, 3).Select(_ => new List<double>()).ToArray();
         var mpi = new List<double>();
@@ -349,6 +353,8 @@ sealed record FcStats
             if (t.FirstStraddleMs >= 0)
                 firstStraddle.Add((t.FirstStraddleMs - t.TrackMs) / 1000.0);
             var salvos = r.Salvos.OrderBy(s => s.FiredMs).ToList();
+            if (salvos.Count > 0)
+                gunMinutes += guns * (minutes - (salvos[0].FiredMs - r.StartMs) / 60_000.0);
             int hit = salvos.FindIndex(s => s.Hits > 0);
             int straddle = salvos.FindIndex(s => s.Straddle);
             if (straddle >= 0)
@@ -407,6 +413,8 @@ sealed record FcStats
         st.EffectIntervalS = FcBench.Median(effectGaps);
         st.ShellsPerHit = st.Hits > 0 ? (double)st.Shells / st.Hits : double.NaN;
         st.CalledStraddlePct = 100.0 * called / Math.Max(seen, 1);
+        st.RoundsPerGunMin = gunMinutes > 0 ? st.Shells / gunMinutes : double.NaN;
+        st.DrillPct = reloadS > 0 ? 100 * st.RoundsPerGunMin * reloadS / 60 : double.NaN;
         st.CalledTruePct = called > 0 ? 100.0 * calledTrue / called : double.NaN;
         st.TrueCalledPct = trueSeen > 0 ? 100.0 * trueCalled / trueSeen : double.NaN;
         st.OwnKn = runs.Average(r => r.OwnKn);
@@ -435,6 +443,8 @@ sealed record FcStats
             FcBench.F(RangingIntervalS), FcBench.F(EffectIntervalS), FcBench.F(ShellsPerHit, "0.0"));
         yield return string.Format(inv, "  the spotter called {0:0}% of the falls he saw straddles, {1}% of them true; of the true straddles he called {2}%",
             CalledStraddlePct, FcBench.F(CalledTruePct), FcBench.F(TrueCalledPct));
+        yield return string.Format(inv, "  the rate: {0} rounds a gun a minute from the first salvo, {1}% of the drill's", FcBench.F(RoundsPerGunMin, "0.00"),
+            FcBench.F(DrillPct));
     }
 }
 
