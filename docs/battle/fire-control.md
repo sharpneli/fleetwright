@@ -1081,6 +1081,19 @@ from the parts and independent fire (items 6 and 9); F6e ammunition as a choice 
     11 of 23 (the moves within its noise: Dogger Bank's British 2.6 to 2.1%, the Grand Fleet 5.6 to 6.7%, the Germans
     over the British 1.32 to 1.15). Squadrons over 20 seeds, line first against none (the same build, the margin
     unbounded): Britain's hits 60 and 60, Germany's 86 and 96.
+  - *Falklands debugged* (the user, 2026-10-18: which cases are under their bands, "let's debug this a bit"). Under:
+    Falklands (2.2% against 3.5-14) and the LRBP (2.0 against 2.9-6.6, its spotting aircraft not modelled); Dogger
+    Bank's British in their band but late (the first hit on salvo 27 against Lion's ~10). Falklands' trace: a chase
+    with her 30° off the bow, four guns bearing (A and a wing turret), and fire for effect in halves fired them in
+    pairs. Two splashes seldom show a straddle (an over and a short in line), so the spotter called half the true ones,
+    fire for effect fell back to ranging, and half the shells went in ranging at a salvo every 48 s. Ranging's salvos
+    kept the discipline's minimum of four guns ("enough to spot a wild shot by"); the halves didn't. Now a battery
+    fires for effect in halves only while the smaller half has that minimum, full salvos with fewer. Falklands 3.3% over
+    60 runs (2.2: just under its band, the record's ~7% uncertain), the first hit on salvo 8 (16); Dogger Bank's British
+    first hit on salvo 10 (27: the record's), their rate 3.1% (2.1: over the band now); the steady target over a salvo
+    chaser 3.41 (2.25: in). fc-history 10 of 23 (Dogger Bank's British over their band). What's left at Falklands is
+    the fall's wander salvo to salvo, ~400 m at 12.5 km (the computer's salvo error ×1.5 in battle and the director's
+    laying), not the spotter: his error at a third of today's gives 3.5% (3.6), and Lion 4.3% (3.5) over 20 runs.
   - *A bug found on the way: Fight never closed on a runner.* The captain's Fight turned a fixed 40° in from the beam
     whatever the enemy did: at 22.5 kn on a 12 kn runner that closed 0.3 kn, and `Fight_closes_to_its_band` (14.0 km
     against a limit of 15.6) ended at 18.6 km once the falls moved. Beyond the band he now turns in further when the

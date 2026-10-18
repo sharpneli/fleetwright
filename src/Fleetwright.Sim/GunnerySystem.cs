@@ -1376,12 +1376,14 @@ public sealed class GunnerySystem : IWorldSystem
     /// <summary>A partial salvo by the discipline, of the mounts that bear (loaded or not), as the guns it wants and the
     /// mounts it may take (int.MaxValue: no limit, a full salvo): ranging, the discipline's share of the guns, at least
     /// its minimum (enough to spot a wild shot by; all of them if fewer); firing for effect in halves, half the mounts,
-    /// the larger half and the smaller in turn (five turrets: three, then two).</summary>
+    /// the larger half and the smaller in turn (five turrets: three, then two), while the smaller half still has that
+    /// minimum: with fewer bearing, full salvos (a chase's four guns fired in pairs left the spotter two splashes, a
+    /// straddle seldom seen, and fire for effect fell back to ranging).</summary>
     static (int Guns, int Mounts) Partial(FireDiscipline dis, FirePhase phase, int bearingGuns, int bearingMounts, int half)
     {
         if (phase == FirePhase.Ranging && dis.GunsShare < 1)
             return (Math.Min(bearingGuns, Math.Max(dis.GunsMin, (int)Math.Ceiling(dis.GunsShare * bearingGuns - 1e-9))), int.MaxValue);
-        if (phase == FirePhase.Effect && dis.EffectHalves && bearingMounts > 1)
+        if (phase == FirePhase.Effect && dis.EffectHalves && bearingMounts > 1 && bearingGuns * (bearingMounts / 2) / bearingMounts >= dis.GunsMin)
             return (int.MaxValue, half == 0 ? (bearingMounts + 1) / 2 : bearingMounts / 2);
         return (int.MaxValue, int.MaxValue);
     }
