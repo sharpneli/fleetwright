@@ -499,6 +499,19 @@ public sealed record SimSettings
     /// bearing's error is its post's (SightModel.BearingSigmaRad, fire-control.md F5).</summary>
     public double RangefinderBiasUnits { get; init; } = 1.5;
 
+    /// <summary>The air on a rangefinder (fire-control.md F5c): a rangetaker reads at his trained acuity while the target's
+    /// contrast through the instrument is this many times the eye's threshold (the sighting model's margin) or more; under
+    /// it his error, his instrument's bias and his bearing's (by the square root) grow as (this / margin) to a power, a
+    /// coincidence set's (two half-images' edges brought into line) more than a stereo set's (two whole images fused).
+    /// Coated glass takes this share of the excess. [EST]: the margin is about 4 on a capital ship at 15 km in clear air,
+    /// and the powers give the reference's Jutland haze, a stereo set's k 1.4 and a coincidence set's 2.2 on a low-contrast
+    /// target (fire_control_ref.py's Conditions, designer §3.1: stereo ×0.8 on the excess, coincidence ×1.5 at low
+    /// contrast).</summary>
+    public double RangingClearMargin { get; init; } = 4;
+    public double RangingPowerCoincidence { get; init; } = 0.8;
+    public double RangingPowerStereo { get; init; } = 0.4;
+    public double RangingCoatedShare { get; init; } = 0.8;
+
     /// <summary>A range by eye: its error and its bias as shares of the range, its bearing's error, mil.</summary>
     public double EyeRangeShare { get; init; } = 0.20;
     public double EyeRangeBiasShare { get; init; } = 0.10;

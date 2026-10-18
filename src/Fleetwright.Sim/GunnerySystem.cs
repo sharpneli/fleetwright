@@ -521,18 +521,25 @@ public sealed class GunnerySystem : IWorldSystem
         }
         var ownV = ship.Forward * ship.Speed;
 
-        // measure: each sensor that's due and sees it
+        // measure: each sensor that's due and makes the target out through its optics
         var frame = ship.Frame;
         var tpos = target.Position;
-        double tTop = target.Handling.Class.Silhouette.TopM, combat = settings.GunneryCombat;
-        bool sees = false;
+        double combat = settings.GunneryCombat;
+        Air air = default;
+        bool sees = false, aired = false;
         for (int k = 0; k < fc.SensorCount; k++)
         {
             ref var s = ref sensors[f * MaxSensors + k];
+            bool due = now >= s.NextMs;
+            if (!due && (sees || !inSight))
+                continue;   // one that sees is enough to fire on; the margins are looked at for readings
+            if (!aired)
+                (air, aired) = (AirAt(world, ship.Position), true);
             var at = frame.ToWorld(s.X, s.Y, 0);
-            bool seen = inSight && Sees(cls, s, at, ship.HeadingDeg, tpos, tTop);
+            double margin = inSight ? MarginOf(cls, s, optics, at, ship.HeadingDeg, target, air) : 0;
+            bool seen = margin >= 1;
             sees |= seen;
-            if (now < s.NextMs)
+            if (!due)
                 continue;
             var r = stream.Derive((ulong)f).Derive((ulong)fc.Generation).Derive((ulong)now).Derive((ulong)k);
             s.NextMs = now + (long)(60_000 / Rate(optics, s) * r.NextDouble(0.7, 1.3));
@@ -541,8 +548,10 @@ public sealed class GunnerySystem : IWorldSystem
             double range = Earth.Distance(at, tpos), brg = Earth.Bearing(at, tpos), sr, bias, sb;
             if (Ranges(optics, s))
             {
-                double unit = FireControl.RangefinderUnitM(s.BaseM, optics, FireControl.Magnification(optics, s.Support, s.HeightM), range);
-                (sr, bias, sb) = (crew.Operator * combat * unit, s.Bias * settings.RangefinderBiasUnits * unit, s.BearingMil * FireControl.Mil);
+                // its unit of error, worse as the air takes the target's contrast toward the eye's threshold (F5c)
+                double kAir = SightModel.RangingFactor(margin, optics, settings);
+                double unit = kAir * FireControl.RangefinderUnitM(s.BaseM, optics, FireControl.Magnification(optics, s.Support, s.HeightM), range);
+                (sr, bias, sb) = (crew.Operator * combat * unit, s.Bias * settings.RangefinderBiasUnits * unit, s.BearingMil * Math.Sqrt(kAir) * FireControl.Mil);
             }
             else
                 (sr, bias, sb) = (settings.EyeRangeShare * range * crew.Operator * combat, s.Bias * settings.EyeRangeBiasShare * range,
@@ -620,14 +629,33 @@ public sealed class GunnerySystem : IWorldSystem
         }
     }
 
-    /// <summary>Whether a battery's sensor sees the target: its eye bears on it (no blind sector), and it's over the
-    /// horizon from the eye's height, within the day's visibility.</summary>
-    bool Sees(ShipClass cls, in Sensor s, Vec3d at, double headingDeg, Vec3d target, double targetTopM)
+    /// <summary>The air at a place now: the visibility, the sun's elevation, and its bearing when it's low enough to
+    /// silhouette a ship against the horizon (else NaN), as the sightings read them.</summary>
+    readonly record struct Air(double VisibilityM, double SunElevationDeg, double SunBearingDeg);
+
+    Air AirAt(World world, Vec3d at)
     {
-        double d = Earth.Distance(at, target);
-        if (d > SightModel.HorizonM(s.HeightM, settings) + SightModel.HorizonM(targetTopM, settings))
-            return false;
-        return s.Eye < 0 || cls.Eyes[s.Eye].Sees(Earth.Bearing(at, target) - headingDeg);
+        double el = Light.SunElevationDeg(at, world.Time);
+        bool low = el >= settings.SightSilhouetteLowDeg && el <= settings.SightSilhouetteHighDeg;
+        return new Air(world.Weather.At(at, world.Time).VisibilityM, el, low ? Light.SunBearingDeg(at, world.Time) : double.NaN);
+    }
+
+    /// <summary>A battery's sensor's margin on the target (fire-control.md F5c: the sighting model's, through its optics'
+    /// magnification, or a layer's or an eye's binoculars): 0 when its eye doesn't bear (a blind sector) or the target is
+    /// under the horizon; under 1 it can't make the target out, so takes no reading and doesn't see the fall.</summary>
+    double MarginOf(ShipClass cls, in Sensor s, in OpticsRow optics, Vec3d at, double headingDeg, in ShipState target, in Air air)
+    {
+        var tc = target.Handling.Class;
+        var tp = target.Position;
+        double d = Earth.Distance(at, tp);
+        if (d > SightModel.HorizonM(s.HeightM, settings) + SightModel.HorizonM(tc.Silhouette.TopM, settings))
+            return 0;
+        double brg = Earth.Bearing(at, tp);
+        if (s.Eye >= 0 && !cls.Eyes[s.Eye].Sees(brg - headingDeg))
+            return 0;
+        bool sil = !double.IsNaN(air.SunBearingDeg) && Math.Abs(Wrap(brg - air.SunBearingDeg)) <= settings.SightSilhouetteArcDeg;
+        var line = new SightLine(d, Earth.Bearing(tp, at) - target.HeadingDeg, air.VisibilityM, air.SunElevationDeg, sil);
+        return SightModel.Margin(s.HeightM, Ranges(optics, s) ? optics.Magnification : settings.SightLookoutMagnification, tc, line, settings);
     }
 
     /// <summary>The oldest reading into the computer: the first starts the track, from the eye's guess at the target's
@@ -916,10 +944,11 @@ public sealed class GunnerySystem : IWorldSystem
             {
                 var frame = ship.Frame;
                 var target = store[tslot];
+                var air = AirAt(world, ship.Position);
                 for (int k = 0; k < fc.SensorCount && !sees; k++)
                 {
                     ref readonly var s = ref sensors[sv.Fc * MaxSensors + k];
-                    sees = Sees(ship.Handling.Class, s, frame.ToWorld(s.X, s.Y, 0), ship.HeadingDeg, target.Position, target.Handling.Class.Silhouette.TopM);
+                    sees = MarginOf(ship.Handling.Class, s, fc.Fit.Optics, frame.ToWorld(s.X, s.Y, 0), ship.HeadingDeg, target, air) >= 1;
                 }
             }
             if (sees)

@@ -238,7 +238,7 @@ public sealed class Sightings
         bool inSight = ci >= 0 && pic[ci].InSight;
         // the rates add; the fix comes from the eye that ranges it best (a rangefinder before an eye's guess), and once
         // a held contact is seen by a rangefinder no more need look
-        double rate = 0, best = 0, fixD = 0, fixBrg = 0, fixSigma = double.MaxValue;
+        double rate = 0, best = 0, fixD = 0, fixBrg = 0, fixSigma = double.MaxValue, fixMargin = 0;
         int fixObs = -1, fixEye = -1;
         bool done = false;
         for (int m = 0; m < found && !done; m++)
@@ -268,9 +268,9 @@ public sealed class Sightings
                 best = Math.Max(best, margin);
                 if (margin < 1)
                     continue;
-                double sigma = SightModel.RangeSigmaM(eyes[e], d);
+                double sigma = SightModel.RangeSigmaM(eyes[e], d, margin, settings);
                 if (sigma < fixSigma)
-                    (fixSigma, fixD, fixBrg, fixObs, fixEye) = (sigma, d, brg, nearIdx[m], e);
+                    (fixSigma, fixD, fixBrg, fixObs, fixEye, fixMargin) = (sigma, d, brg, nearIdx[m], e, margin);
                 done = inSight && eyes[e].RangefinderM > 0;
             }
         }
@@ -280,18 +280,20 @@ public sealed class Sightings
         if (inSight && best >= 1 || !inSight && rate > 0 && r.NextDouble() < SightModel.Chance(rate, dt))
         {
             var os = store[slot[fixObs]];
-            Fix(pic, ci, ts, store.Combat.Condition(ts.Slot), os, os.Handling.Class.Eyes[fixEye], best, fixD, fixBrg, now, ref r, classesInUse);
+            Fix(pic, ci, ts, store.Combat.Condition(ts.Slot), os, os.Handling.Class.Eyes[fixEye], best, fixMargin, fixD, fixBrg, now, ref r, classesInUse);
         }
         else if (inSight && best < 1)
             pic.At(ci).InSight = false;
     }
 
-    /// <summary>A sighting into the picture: a fix of a held contact, or a new one; and how far it's made out.</summary>
-    void Fix(Picture pic, int ci, ShipState ts, ShipCondition tk, ShipState os, in EyeRow eye, double margin, double d, double brg, long now,
+    /// <summary>A sighting into the picture: a fix of a held contact, or a new one; and how far it's made out (the best
+    /// margin; the fix's eye's is its own).</summary>
+    void Fix(Picture pic, int ci, ShipState ts, ShipCondition tk, ShipState os, in EyeRow eye, double margin, double eyeMargin, double d, double brg, long now,
         ref RandomStream r, IReadOnlyList<int> classesInUse)
     {
-        // the reading: the bearing and range with the eye's errors, as a point on the sphere
-        double sr = SightModel.RangeSigmaM(eye, d), sb = SightModel.BearingSigmaRad(eye);
+        // the reading: the bearing and range with the eye's errors in this air, as a point on the sphere
+        double sr = SightModel.RangeSigmaM(eye, d, eyeMargin, settings);
+        double sb = SightModel.BearingSigmaRad(eye) * (eye.Ranges ? Math.Sqrt(SightModel.RangingFactor(eyeMargin, eye.Optics, settings)) : 1);
         double mr = Math.Max(d + sr * Gauss(ref r), 100), mb = brg + sb * Gauss(ref r) * 180 / Math.PI;
         var (z, r11, r12, r22) = Track.Reading(os.Position, mr, mb, sr, sb);
         if (ci < 0)

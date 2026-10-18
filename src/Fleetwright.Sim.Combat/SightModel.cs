@@ -146,10 +146,27 @@ public static class SightModel
     /// <summary>The chance of detecting it in a look of dt seconds at a rate.</summary>
     public static double Chance(double rate, double dtS) => rate <= 0 ? 0 : 1 - Math.Exp(-rate * dtS);
 
-    /// <summary>A reading's 1-sigma range error, m: a rangefinder's unit of error (its make's, fire control's one law:
-    /// <see cref="FireControl.RangefinderUnitM"/>), or the eye's 20% of the range.</summary>
-    public static double RangeSigmaM(in EyeRow eye, double rangeM) =>
-        eye.Ranges ? FireControl.RangefinderUnitM(eye.RangefinderM, eye.Optics, FireControl.Magnification(eye.Optics, eye.Support, eye.HeightM), rangeM) : 0.2 * rangeM;
+    /// <summary>A reading's 1-sigma range error, m, at a margin through the eye: a rangefinder's unit of error (its make's,
+    /// fire control's one law: <see cref="FireControl.RangefinderUnitM"/>) times the air's factor
+    /// (<see cref="RangingFactor"/>), or the eye's 20% of the range.</summary>
+    public static double RangeSigmaM(in EyeRow eye, double rangeM, double margin, SimSettings s) =>
+        eye.Ranges
+            ? FireControl.RangefinderUnitM(eye.RangefinderM, eye.Optics, FireControl.Magnification(eye.Optics, eye.Support, eye.HeightM), rangeM) *
+              RangingFactor(margin, eye.Optics, s)
+            : 0.2 * rangeM;
+
+    /// <summary>How much the air worsens a rangefinder's readings (fire-control.md F5c), from the target's margin over the
+    /// threshold contrast through it (haze, the light, a small, distant or hull-down target, a silhouette against a low
+    /// sun all in it): 1 from <see cref="SimSettings.RangingClearMargin"/> up, under it (clear / margin) to the kind's power,
+    /// a coincidence set's more than a stereo set's; coated glass takes a share of the excess. Its error and bias take it,
+    /// its bearing's the square root (fire_control_ref.py's k_optic).</summary>
+    public static double RangingFactor(double margin, in OpticsRow o, SimSettings s)
+    {
+        if (margin >= s.RangingClearMargin)
+            return 1;
+        double k = Math.Pow(s.RangingClearMargin / Math.Max(margin, 1), o.Kind == InstrumentKind.Stereo ? s.RangingPowerStereo : s.RangingPowerCoincidence);
+        return o.Coated ? 1 + s.RangingCoatedShare * (k - 1) : k;
+    }
 
     /// <summary>A reading's 1-sigma bearing error, radians, by the post: a director's 0.7 mil, a gunhouse's 1.5, a control
     /// position's rangefinder 1 (fire-control-designer.md §3.1), binoculars' 2 mil (the reference's eye figure), the

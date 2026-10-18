@@ -225,6 +225,33 @@ public class SightModelTests(ITestOutputHelper output)
         Assert.InRange(M(InstrumentSupport.Tower, 25, big) / M(InstrumentSupport.Tower, 25, o with { Magnification = 35 }), 0.9, 1.03);   // ×50 no better than ×35
     }
 
+    /// <summary>fire-control.md F5c: the air on a rangefinder. In clear air a capital ship at 15 km is ranged at the
+    /// trained acuity; in Jutland's haze (16 km) a coincidence set's error grows about twice, a stereo set's about a
+    /// third (the reference's k_optic: 2.25 and 1.4), and coated glass less; at dusk the margin, and so the error, worsens
+    /// again; past the night's reach nothing is made out to range.</summary>
+    [Fact]
+    public void The_air_worsens_the_rangefinders_stereo_less()
+    {
+        var lion = Fleet.Get("lion").Class!;
+        var derf = Fleet.Scenario("derfflinger");
+        var dir = lion.Eyes.ToArray().Single(e => e.Kind == EyeKind.Director);
+        var stereo = derf.Eyes.ToArray().Single(e => e.Kind == EyeKind.Director);
+        double K(in EyeRow eye, ShipClass target, double vis, double sun = 30, double range = 15_000)
+        {
+            double m = Combat.SightModel.Margin(eye.HeightM, Combat.SightModel.Magnification(eye, S), target, new Combat.SightLine(range, 80, vis, sun, false), S);
+            return m < 1 ? double.PositiveInfinity : Combat.SightModel.RangingFactor(m, eye.Optics, S);
+        }
+        double clear = K(dir, derf, 35_000), haze = K(dir, derf, 16_000), stereoHaze = K(stereo, lion, 16_000), dusk = K(dir, derf, 16_000, -10, 10_000);
+        output.WriteLine($"coincidence k: clear {clear:F2}, haze {haze:F2}, haze at dusk {dusk:F2}; stereo in haze {stereoHaze:F2}");
+        Assert.InRange(clear, 1, 1.1);
+        Assert.InRange(haze, 1.6, 2.6);
+        Assert.InRange(stereoHaze, 1.15, 1.6);
+        Assert.True(dusk > K(dir, derf, 16_000, 30, 10_000) && double.IsFinite(dusk));
+        Assert.True(double.IsPositiveInfinity(K(dir, derf, 16_000, -18)));   // a dark night: 15 km is past its reach
+        var coated = dir.Optics with { Coated = true };
+        Assert.True(Combat.SightModel.RangingFactor(1.5, coated, S) < Combat.SightModel.RangingFactor(1.5, dir.Optics, S));
+    }
+
     /// <summary>fire-control.md F4d: the world's reach is the tallest eye's and silhouette's horizons among the classes at
     /// sea, it grows as a taller one comes, and the encounters hold ships within it.</summary>
     [Fact]

@@ -1,5 +1,5 @@
 # Plan: fire control (a 4.5 deepening)
-Status: **agreed with the user 2026-10-17** ("Decided" below; radar moved out); F0-F4 done 2026-10-18, F5a-b done    Updated: 2026-10-18
+Status: **agreed with the user 2026-10-17** ("Decided" below; radar moved out); F0-F4 done 2026-10-18, F5a-c done    Updated: 2026-10-18
 
 The fine-tune pass for the **Fire control** link of `fighting.md` 4.5 ("the trackers by era ... the clocks' limits ...
 the full set of levels, radar as a sensor, night ... splash confusion ... the designer emitting levels and sensors,
@@ -656,6 +656,26 @@ small and hull-down targets; stereo against coincidence); F5d the anchors' bench
     stadimeter), and a fit has one optics block; it waits for instruments of more than one make on a battery, with the
     typical fits the research request asks for. Spray on low instruments (designer §3.1) waits for the sea state the
     ship-motion pass brings; vibration at speed (the Falklands' stereo sets) has no numbers yet.
+- **F5c done 2026-10-18** (the air). The haze reaches the rangefinders through the sighting model's own contrast: an
+  instrument's margin on the target (`SightModel.Margin` through its make's magnification: the haze's extinction, the
+  light's reach at dusk and night, the target's size, aspect and what of her shows over the horizon, a silhouette
+  against a low sun) sets its factor (`SightModel.RangingFactor`): 1 from a margin of 4 up (a capital ship at 15 km in
+  clear air), under it (4 / margin) to a power, 0.8 for coincidence (the half-images' edges) and 0.4 for stereo (whole
+  images fused), coated glass taking 0.8 of the excess [EST: the powers give the reference's Jutland factors, a stereo
+  set's 1.4 and a coincidence set's 2.25 on a low-contrast target]. A reading's error and its instrument's bias take
+  the factor, its bearing the square root (fire_control_ref.py's k_optic). An instrument whose margin is under 1 takes
+  no reading and doesn't see the fall: the director's or turret's own optics, a layer's binoculars (×7), not only the
+  side's picture. The picture's fixes take the same factor. At Jutland the British sets read at k 1.8 (BCs, 12.5 km in
+  16 km), 2.0 (3rd BCS) and 2.1-2.3 (Grand Fleet), the German stereo at 1.25; Dogger Bank's clear air at 1.0.
+  - *Numbers:* fc-history 10 of 23. Haze costs the Jutland cases 7-13% of their hits (designer D8: 15%), British BCS
+    3.9 to 3.4%, Grand Fleet BS 8.5 to 7.4%, German battleships 6.9 to 6.3%, German 1st SG 4.4 to 4.1%: the Germans
+    over the British 1.13 to 1.21 (want 1.5-5). Close in the rangefinders aren't the miss that matters (the 3rd BCS
+    17.0 to 16.6%): what's left there is fire discipline and spotting (F6, F7), smoke and splash confusion. Squadrons
+    over 5 seeds: Britain lost 1.2 of 4, hits 32 and 87; Tsushima: Russia's hits 490, Japan's 686.
+  - *Cost:* margins are looked at only for a reading due, or until one sensor sees: a battery 24 µs a game second (31
+    looking at every sensor every second), the Jutland's gunnery 35 µs a call.
+  - *Tests:* the air's factor in clear air, haze, at dusk and past the night's reach, stereo under coincidence, coated
+    under bare.
 
 ### F6 Fire discipline: finding the bracket, then hitting
 
