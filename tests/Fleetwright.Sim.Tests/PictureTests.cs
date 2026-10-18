@@ -198,8 +198,9 @@ public class PictureTests(ITestOutputHelper output)
         Assert.Equal(0, s.Contacts.Count);
     }
 
-    /// <summary>Two lines of 100 abreast 25 km apart: every ship of each side held by the other in a minute, the looks
-    /// allocating nothing once the pictures have grown.</summary>
+    /// <summary>Two lines of 100 abreast 20 km apart: every ship of each side held by the other in a minute, the looks
+    /// allocating nothing once the pictures have grown (25 km until the haze's re-fit, fire-control.md F4d, put
+    /// Dreadnought's sighting in 30 km visibility at about that).</summary>
     [Fact]
     public void Two_hundred_ships_look_at_each_other_without_garbage()
     {
@@ -208,7 +209,7 @@ public class PictureTests(ITestOutputHelper output)
         w.Apply(Command.SetWeather(30_000));
         for (int i = 0; i < 100; i++)
         {
-            foreach (var (lat, hdg, s) in new[] { (56.0, 0.0, (byte)1), (56.22, 180.0, (byte)2) })
+            foreach (var (lat, hdg, s) in new[] { (56.0, 0.0, (byte)1), (56.18, 180.0, (byte)2) })
             {
                 var p = Earth.Position(lat, 3);
                 var f = Earth.Forward(p, 90);

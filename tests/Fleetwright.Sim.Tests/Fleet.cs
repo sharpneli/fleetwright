@@ -61,4 +61,13 @@ static class Fleet
     public static IEnumerable<Built> Designs => All.Where(b => b.Ship != null);
 
     public static Built Get(string name) => All.Single(b => b.Case.Name == name);
+
+    static readonly ConcurrentDictionary<string, ShipClass> scenarioClasses = new(StringComparer.Ordinal);
+
+    /// <summary>A class from the scenarios' own designs, else a shipped one (as the CLI resolves a name), compiled once.</summary>
+    public static ShipClass Scenario(string name) => scenarioClasses.GetOrAdd(name, n =>
+    {
+        string path = Path.Combine(Repo, "Content", "Scenarios", "Designs", n + ".json");
+        return ShipClassCompiler.Compile(ShipDesign.Build(Design.Load(File.Exists(path) ? path : Path.Combine(Shipgen, "designs", n + ".json"))));
+    });
 }

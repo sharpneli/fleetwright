@@ -1,3 +1,4 @@
+using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Ships;
 using Xunit.Abstractions;
 
@@ -59,7 +60,7 @@ public class SightTests(ITestOutputHelper output)
         Assert.Equal(0UL, main.Blind);
         Assert.Equal(c.Directors[c.Components[main.Component].Detail].RangefinderM, main.RangefinderM);
         Assert.Equal(c.Components[main.Component].Bounds.Base + Sight.EyeOverFloorM - c.Vertical.Waterline, main.HeightM, 6);
-        Assert.All(eyes.Where(e => e.Kind == EyeKind.Masthead), e => Assert.Equal(0UL, e.Blind));
+        Assert.DoesNotContain(eyes, e => e.Kind == EyeKind.Masthead);   // her masts carry no tops: no lookout aloft (F4d)
         var bridge = eyes.Single(e => e.Kind == EyeKind.Bridge);
         var aft = eyes.Single(e => e.Kind == EyeKind.AftControl);
         Assert.True(bridge.Sees(0) && bridge.Sees(90) && !bridge.Sees(180));
@@ -109,12 +110,12 @@ public class SightModelTests(ITestOutputHelper output)
     /// <summary>research/simulation/sighting_ref.py's table, written apart from the sim: the hidden height and the margin
     /// for the area it gives (its schematic battleship), to the last digits it printed.</summary>
     [Theory]
-    [InlineData(24, 20000, 7, 25000, 30, false, 0.083104166702, 1926.04124999, 1.64878924876)]
-    [InlineData(24, 30000, 7, 25000, 30, false, 8.30538589554, 602.676846267, 0.614042920136)]
-    [InlineData(20, 30000, 20, 40000, 30, false, 10.9478277071, 444.130337571, 2.09890480629)]
+    [InlineData(24, 20000, 7, 25000, 30, false, 0.083104166702, 1926.04124999, 1.29595461697)]
+    [InlineData(24, 30000, 7, 25000, 30, false, 8.30538589554, 602.676846267, 0.427893508467)]
+    [InlineData(20, 30000, 20, 40000, 30, false, 10.9478277071, 444.130337571, 1.59975553324)]
     [InlineData(15, 34000, 7, double.PositiveInfinity, 30, false, 24.4565288112, 1.63041356626, 0.127747417247)]
-    [InlineData(24, 4000, 7, 25000, -15, false, 0, 1941, 1.5566438374)]
-    [InlineData(24, 25000, 7, 25000, -4, true, 2.51251756067, 1488.74683908, 2.57097622057)]
+    [InlineData(24, 4000, 7, 25000, -15, false, 0, 1941, 1.4278574755)]
+    [InlineData(24, 25000, 7, 25000, -4, true, 2.51251756067, 1488.74683908, 1.90273745711)]
     public void The_model_agrees_with_its_reference(double eye, double d, double mag, double vis, double sun, bool sil, double hidden, double area, double margin)
     {
         Assert.Equal(hidden, Combat.SightModel.HiddenM(eye, d, S), 1e-8);
@@ -136,23 +137,80 @@ public class SightModelTests(ITestOutputHelper output)
         Assert.Equal(S.SightRatePerS, Combat.SightModel.Rate(S.SightFullMargin * 2, 1, S), 12);
     }
 
-    /// <summary>The record (research/simulation/fire-control-research.md §2) with the classes' own silhouettes and a
-    /// lookout at Bismarck's masthead: the Jutland's battlecruisers made each other out at ~24-26 km in a visibility of
-    /// about that; the Denmark Strait's ~35 km in clear Arctic air (the horizon's limit); a destroyer later than a
-    /// battleship, bow on later than side on; at night a few kilometres.</summary>
+    /// <summary>The record (research/simulation/fire-control-research.md §2) on the ships' own eyes and silhouettes
+    /// (fire-control.md F4d: their tops at their heights, their directors' optics), each first sighting the median one
+    /// closing at 30 kn on a 45° aspect: Lion's battlecruisers first sighted Hipper's at ~24 km in a visibility of about
+    /// that; Prince of Wales (KGV) Bismarck at ~35 km in clear Arctic air (the horizons' limit). A destroyer later than a
+    /// battleship, bow on later than side on, at night a few kilometres (a lookout at Bismarck's highest eye).</summary>
     [Fact]
     public void The_reaches_match_the_record()
     {
         var bis = Fleet.Get("bismarck").Class!;
         var dd = Fleet.Get("destroyer").Class!;
+        var lion = Fleet.Scenario("lion");
+        var derf = Fleet.Scenario("derfflinger");
+        var kgv = Fleet.Scenario("kgv");
+        double kn30 = 30 * 0.5144;
+        double jutland = Combat.SightModel.FirstSightingM(lion, derf, 25_000, 45, kn30, S) / 1000;
+        double strait = Combat.SightModel.FirstSightingM(kgv, bis, double.PositiveInfinity, 45, kn30, S) / 1000;
+        output.WriteLine($"Jutland: Lion first sights Derfflinger at {jutland:F1} km (~24); Denmark Strait: KGV Bismarck at {strait:F1} km (~35)");
+        Assert.InRange(jutland, 22, 27);
+        Assert.InRange(strait, 32, 38);
+        Assert.True(Combat.SightModel.FirstSightingM(lion, dd, 25_000, 45, kn30, S) < Combat.SightModel.FirstSightingM(lion, bis, 25_000, 45, kn30, S) - 2000,
+            "a destroyer later than a battleship");
         double eye = bis.Eyes[0].HeightM;
-        Assert.InRange(Reach(eye, 7, 1, bis, 25_000, 30, false, 90, 0), 24, 29);
-        Assert.InRange(Reach(eye, 7, 1, bis, 1e9, 30, false, 90, 0), 32, 38);
-        Assert.True(Reach(eye, 7, 1, dd, 25_000, 30, false, 90, 0) < Reach(eye, 7, 1, bis, 25_000, 30, false, 90, 0) - 2);
         Assert.True(Reach(eye, 7, 1, bis, 25_000, 30, false, 0, 0) < Reach(eye, 7, 1, bis, 25_000, 30, false, 90, 0) - 3);
         Assert.InRange(Reach(eye, 7, 1, bis, 25_000, -15, false, 90, 0), 3, 7);
         Assert.True(Reach(eye, 7, 1, bis, 25_000, -4, true, 90, 0) > Reach(eye, 7, 1, bis, 25_000, -4, false, 90, 0) + 3, "silhouetted at dusk");
         Assert.True(Reach(20, 20, 0.3, bis, 25_000, 30, false, 90, 0) > Reach(20, 7, 1, bis, 25_000, 30, false, 90, 0), "a rangefinder's magnification");
+    }
+
+    /// <summary>fire-control.md F4d: on the same target in clear air a taller eye sees further (the horizon), and a
+    /// battleship's top is made out while her hull is still under the horizon.</summary>
+    [Fact]
+    public void Taller_eyes_see_further_and_a_top_shows_before_the_hull()
+    {
+        var lion = Fleet.Scenario("lion");
+        double low = Combat.SightModel.MadeOutAtM(15, 7, lion, double.PositiveInfinity, 90, 30, false, S);
+        double high = Combat.SightModel.MadeOutAtM(35, 7, lion, double.PositiveInfinity, 90, 30, false, S);
+        output.WriteLine($"Lion side on in clear air: from 15 m {low / 1000:F1} km, from 35 m {high / 1000:F1} km");
+        Assert.True(high > low + 4000, "a taller eye sees further");
+        double deck = 0;
+        foreach (double t in lion.Hull.DeckTops)
+            deck = Math.Max(deck, t);
+        double hidden = Combat.SightModel.HiddenM(35, high, S);
+        Assert.True(hidden > deck - lion.Vertical.Waterline, $"hull down: {hidden:F1} m hidden, her deck {deck - lion.Vertical.Waterline:F1} m up");
+    }
+
+    /// <summary>fire-control.md F4d: a lookout stands in a top, a crow's nest's too; a bare mast has none aloft.</summary>
+    [Fact]
+    public void Lookouts_stand_in_tops_and_crows_nests_not_on_bare_masts()
+    {
+        var dd = Fleet.Get("destroyer").Class!;
+        var nest = dd.Eyes.ToArray().Single(e => e.Kind == EyeKind.Top);
+        Assert.Equal("Foremast top", dd.ComponentId(nest.Component));
+        Assert.Equal(nest.HeightM, dd.Eyes[0].HeightM);   // her highest post
+        var bis = Fleet.Get("bismarck").Class!;
+        Assert.DoesNotContain(bis.Eyes.ToArray(), e => e.Kind is EyeKind.Top or EyeKind.Masthead);
+    }
+
+    /// <summary>fire-control.md F4d: the world's reach is the tallest eye's and silhouette's horizons among the classes at
+    /// sea, it grows as a taller one comes, and the encounters hold ships within it.</summary>
+    [Fact]
+    public void The_reach_follows_the_tallest_eye_and_top_at_sea()
+    {
+        var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), 1, S);
+        Assert.Equal(0, w.Reach.SightM);
+        var dd = Fleet.Get("destroyer").Class!;
+        var derf = Fleet.Scenario("derfflinger");
+        w.Apply(ShipSystem.Spawn(w.Ships.AddClass(dd), 56, 4, 0, 0, 1));
+        double first = w.Reach.SightM;
+        Assert.Equal(Combat.SightModel.ReachM(dd.Eyes[0].HeightM, dd.Silhouette.TopM, S), first, 6);
+        w.Apply(ShipSystem.Spawn(w.Ships.AddClass(derf), 58, 4, 180, 0, 2));
+        double both = Combat.SightModel.ReachM(Math.Max(dd.Eyes[0].HeightM, derf.Eyes[0].HeightM), Math.Max(dd.Silhouette.TopM, derf.Silhouette.TopM), S);
+        output.WriteLine($"reach: a destroyer alone {first / 1000:F1} km, with Derfflinger {both / 1000:F1} km");
+        Assert.Equal(both, w.Reach.SightM, 6);
+        Assert.Equal(Math.Max(both, S.EncounterRangeMinM), w.Reach.EncounterM, 6);
     }
 
     /// <summary>For tuning: how far each kind of eye makes out each kind of ship, by weather and light.</summary>

@@ -116,10 +116,30 @@ public enum Position : byte
     Stern,
 }
 
+/// <summary>A mast's kind (shipgen's MastPlan.Kinds): what its silhouette is (fire-control.md F4d).</summary>
+public enum MastKind : byte
+{
+    Pole,
+    Tripod,
+    Cage,
+    Lattice,
+    Tower,
+}
+
 /// <summary>The export's strings, read once into the enums. An unknown string is a compile error, so a new kind in
 /// shipgen is noticed here instead of read as something else.</summary>
 static class Kinds
 {
+    public static MastKind Mast(string? s) => s switch
+    {
+        null or "pole" => MastKind.Pole,
+        "tripod" => MastKind.Tripod,
+        "cage" => MastKind.Cage,
+        "lattice" => MastKind.Lattice,
+        "tower" => MastKind.Tower,
+        _ => throw Unknown("mast kind", s),
+    };
+
     public static ComponentRole Role(string? s) => s switch
     {
         null => ComponentRole.None,

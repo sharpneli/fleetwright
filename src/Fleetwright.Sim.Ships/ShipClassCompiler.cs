@@ -288,6 +288,7 @@ public static class ShipClassCompiler
                     Y = x.Y ?? double.NaN, Z = x.Z ?? double.NaN, R = Or(x.R), Outline = outline, ArmourMm = x.ArmourMm ?? 0, Material = Material(x.Material),
                     PlateMm = x.PlateMm ?? 0, WoodMm = x.WoodMm ?? 0, Crew = Int(x.Crew), BattleCrew = Int(x.BattleCrew),
                     Smoke = new Slice(smoke, links.Count - smoke), Detail = detail, RangefinderM = x.RangefinderM is > 0 ? x.RangefinderM.Value : 0,
+                    Mast = kind == ComponentKind.Mast ? Kinds.Mast(x.Type) : MastKind.Pole,
                 };
             }
 

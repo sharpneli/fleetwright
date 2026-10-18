@@ -75,7 +75,7 @@
   "SlideRailsMinStepM": 20,
 
   // contacts (docs/battle/plan.md step 2.5, ahead of 3.1's contact scan)
-  "EncounterRangeM": 50000,
+  "EncounterRangeMinM": 0,
   "EncounterMarginM": 10000,
   "EncounterCloseMs": 600000,
   // the end of a scenario (docs/battle/command.md "The end")
@@ -89,7 +89,7 @@
   "SightContrastSilhouette": 0.8,
   "SightThresholdContrast": 0.05,
   "SightCriticalSolidAngle": 2e-4,
-  "SightReferenceAreaM2": 1000,
+  "SightReferenceAreaM2": 3000,
   "SightRatePerS": 0.03333333333333333,
   "SightFullMargin": 3,
   "SightNightM": 5000,
@@ -105,7 +105,6 @@
   "SightObservers": 6,
   "SightEyes": 4,
   "SightGridM": 8000,
-  "SightMaxM": 60000,
   "SightManoeuvreMs2": 0.05,
   "SightCourseSigmaDeg": 20,
   "SightSpeedSigmaMs": 3,

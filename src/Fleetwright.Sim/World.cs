@@ -65,9 +65,10 @@ public sealed class World
         commandsProbe = Probes.Register("Commands");
         fillProbe = Probes.Register("Snapshot fill");
         weather = new UniformWeather(new WeatherHere(Settings.DefaultVisibilityM, Settings.DefaultWindFromDeg, Settings.DefaultWindMs));
-        Encounters = new Encounters(Settings, Relations);
-        Sightings = new Sightings(Settings, Relations, Encounters, seed);
-        Ships = new ShipSystem(Settings, classes ?? new ShipClassRegistry(1), Probes, Relations, Encounters, Sightings);
+        Reach = new SightReach(Settings);
+        Encounters = new Encounters(Settings, Relations, Reach);
+        Sightings = new Sightings(Settings, Relations, Encounters, Reach, seed);
+        Ships = new ShipSystem(Settings, classes ?? new ShipClassRegistry(1), Probes, Relations, Encounters, Sightings) { Reach = Reach };
         Sightings.Registry = Ships.Registry;
         Register(Ships);
         Groups = new GroupSystem { Store = Ships.Store };
@@ -86,12 +87,18 @@ public sealed class World
         Register(Torpedoes);
         Ships.ClassAdded = cls =>
         {
+            if (Reach.Add(cls))
+                Ships.ReachGrew(this);
             Shells.Prepare(cls);
             Damage.Prepare(cls);
             Torpedoes.Prepare(cls);
         };
         Ships.LoadoutTaken = Shells.Prepare;
     }
+
+    /// <summary>How far the ships at sea can see each other, and so the encounters' and the looks' reach
+    /// (docs/battle/fire-control.md F4d).</summary>
+    public SightReach Reach { get; }
 
     /// <summary>Torpedoes running (docs/battle/fighting.md 4.6): always registered sixth (<see cref="TorpedoSystem.Id"/>).</summary>
     public TorpedoSystem Torpedoes { get; }

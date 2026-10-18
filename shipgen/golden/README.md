@@ -157,6 +157,10 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
   block's mass, with its crew at battle stations. 326 design cases change (the design echo in all; standard
   displacement median +1 t, the fuzz designs' random `computer_t` of up to 500 t gone), with their SVGs and sprite.json.
   ShipDesign.Version 36.
+- 2026-10-18, the crow's nest (docs/battle/fire-control.md F4d), on purpose: a mast's `top` may be `crows_nest`, a
+  lookout's barrel at the masthead; `destroyer`'s foremast carries one (the sim's masthead lookout placeholder went).
+  1 design case changes (the destroyer: 116.3 to 113.6 m and 2,084 to 2,064 t standard, the sizer's bistable layout:
+  docs/battle/bugs.md), with its SVGs and sprite.json. ShipDesign.Version 37.
 
 ## Layout
 

@@ -8,8 +8,10 @@ The model: an eye h over the sea, a target d away.
   2. What shows is its silhouette above that, side on and end on by its aspect, seen as a solid angle
      omega = A M^2 / d^2 through the eye's magnification M.
   3. The air fades its contrast: C = C0 exp(-sigma d) (Koschmieder). A visibility V means what a ship's log means: how
-     far a ship is made out. sigma is the one at which a reference ship (1,000 m^2 side on, a lookout's 7x binoculars) is
-     just made out at V. The dark cuts the reach to the night's (~5 km, starlight).
+     far a ship is made out. sigma is the one at which a reference ship (3,000 m^2 side on, about a capital ship's; a
+     lookout's 7x binoculars) is just made out at V. The dark cuts the reach to the night's (~5 km, starlight).
+     (1,000 m^2 until fire-control.md F4d: on the ships' real tops and their directors' optics, Lion first sighted
+     Derfflinger at a median 30 km in Jutland's 25 km against the record's ~24; at 3,000 m^2, 25 km.)
   4. The eye needs a threshold contrast C_t = C_inf (1 + sqrt(omega_c / omega)): small things need more. The margin
      m = C / C_t: visible at m >= 1.
   5. Detection is a rate: rate = rate_max * min(1, ln m / ln m_full), so a look of dt finds it with 1 - exp(-rate dt)
@@ -26,7 +28,7 @@ K = 7.0 / 6.0
 C0_DAY, C0_SIL = 0.35, 0.8
 C_INF = 0.05
 OMEGA_C = 2e-4
-A_REF = 1000.0
+A_REF = 3000.0
 M_LOOKOUT = 7.0
 RATE, M_FULL = 1.0 / 30, 3.0
 NIGHT_M, NIGHT_SUN = 5000.0, -12.0

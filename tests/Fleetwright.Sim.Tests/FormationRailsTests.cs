@@ -343,7 +343,7 @@ public class FormationRailsTests(ITestOutputHelper output)
         w.Apply(ShipSystem.Spawn(c, 58, Lon, 180, Kn, sideB));
         Run(w, 60);
         Assert.True(Ship(w, 1).OnRails && Ship(w, 2).OnRails);
-        double gap = Earth.Distance(Ship(w, 1).Position, Ship(w, 2).Position) - Settings.EncounterRangeM;
+        double gap = Earth.Distance(Ship(w, 1).Position, Ship(w, 2).Position) - w.Reach.EncounterM;
         double v = Ship(w, 1).Speed + Ship(w, 2).Speed;
         return (w, w.Time.Ms + (long)Math.Round(gap / v * 1000));
     }
@@ -357,9 +357,9 @@ public class FormationRailsTests(ITestOutputHelper output)
         while (Ship(w, 1).OnRails)
             w.AdvanceTo(w.Time + 1);
         double d = Earth.Distance(Ship(w, 1).Position, Ship(w, 2).Position);
-        output.WriteLine($"off rails {w.Time.Ms - at:+0;-0} ms from the closed-form time, {d - Settings.EncounterRangeM:F2} m from the range");
+        output.WriteLine($"off rails {w.Time.Ms - at:+0;-0} ms from the closed-form time, {d - w.Reach.EncounterM:F2} m from the range");
         Assert.False(Ship(w, 2).OnRails);
-        Assert.True(Math.Abs(d - Settings.EncounterRangeM) < 1.1, $"{d:F2} m");
+        Assert.True(Math.Abs(d - w.Reach.EncounterM) < 1.1, $"{d:F2} m");
         Assert.True(Math.Abs(w.Time.Ms - at) <= 100, $"{w.Time.Ms - at} ms");
 
         // inside the range they stay on the fine tick, steady as they are, until they're past and apart again
@@ -367,7 +367,7 @@ public class FormationRailsTests(ITestOutputHelper output)
         Assert.False(Ship(w, 1).OnRails || Ship(w, 2).OnRails);
         Run(w, 3 * 3600);
         double apart = Earth.Distance(Ship(w, 1).Position, Ship(w, 2).Position);
-        Assert.True(apart > Settings.EncounterRangeM + Settings.EncounterMarginM);
+        Assert.True(apart > w.Reach.EncounterM + Settings.EncounterMarginM);
         Assert.True(Ship(w, 1).OnRails && Ship(w, 2).OnRails, $"apart again ({apart / 1000:F0} km): back on rails");
     }
 
@@ -401,10 +401,10 @@ public class FormationRailsTests(ITestOutputHelper output)
             Run(w, 1);
         }
         double d = Earth.Distance(Ship(w, g).Position, Ship(w, b).Position);
-        output.WriteLine($"the group came off rails with the ship {d / 1000:F3} km from its guide (the range and the group's spread: {(Settings.EncounterRangeM + radius) / 1000:F0} km)");
+        output.WriteLine($"the group came off rails with the ship {d / 1000:F3} km from its guide (the range and the group's spread: {(w.Reach.EncounterM + radius) / 1000:F0} km)");
         Assert.True(AllOnRails(w, g, 4) == false && !Ship(w, g + 3).OnRails);
         double slack = (Settings.RailsCheckMs / 1000.0 + 1) * 40 * Handling.MsPerKnot;   // looked at every few seconds, closing at 35 kn; and the stations to 50 m
-        Assert.True(d <= Settings.EncounterRangeM + radius + 60 && d > Settings.EncounterRangeM + radius - 60 - slack, $"{d:F0} m");
+        Assert.True(d <= w.Reach.EncounterM + radius + 60 && d > w.Reach.EncounterM + radius - 60 - slack, $"{d:F0} m");
     }
 
     [Fact]

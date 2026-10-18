@@ -556,6 +556,49 @@ the transmitting station; F4d sighting on the new heights.
     4.8 % (12 and 6.8 before), so the sample grew to 200 ships (14.5 and 5 %). The band is unchanged. The near-miss world
     run's destroyer now goes down under the salvos' hits (15 hits and 40 near misses, 26 and 31 before); the test takes
     that as damage taken.
+- **F4d done 2026-10-18** (sighting on the new heights). F4 is complete.
+  - *The eyes:* a lookout stands in each mast's top (since F4a); the masthead placeholder (`MastLookoutUnderTopM`) went,
+    so a bare mast has no lookout aloft. A design gives one with a new top kind, `crows_nest`: a lookout's barrel 0.75 m
+    in radius, its roof 1 m under the masthead by default, 0.7 t. `destroyer` carries one on her foremast. The WWII and
+    later ships whose masts carry no top (Bismarck's, KGV's, Littorio's) see from their towers' directors and bridges,
+    as they did.
+  - *The silhouettes:* masts by their kind instead of their hitbox's 1.4 m column: a pole 0.8 m, a tripod 1.2 m side on
+    and 1.6 end on (its struts), a cage or lattice 1.5, a tower 3.6 [EST], a topmast's 0.4 m pole over the top (or over
+    0.6 of a bare mast). The raster went from 0.5 to 0.25 m so a pole isn't rounded up to a metre; its tables are
+    summed by rows (the old loop was O(cells × metres)).
+  - *The reach:* `SightReach` (Sim) is the tallest eye's horizon and the tallest silhouette's together among the classes
+    that have come into the world. Encounters hold opposing ships within it, and the looks reach as far. The fixed
+    `EncounterRangeM` (50 km) and `SightMaxM` (60 km) went (`EncounterRangeMinM`, 0, is a floor). When a taller class
+    comes, every opposing pair is solved again at once, as when sides go to war. A destroyer alone reaches 36.2 km.
+    With Derfflinger (her director in the foretop at 37.8 m, her masthead 47.6 m) the reach is 50.3 km, so the Jutland's
+    encounters are about as wide as they were. A look costs 83 µs a game second on the Jutland bench (128 before: a
+    pre-dreadnought world's reach is shorter still).
+  - *Re-calibrated, not just moved:* the anchors are now the record's own ships' median first sightings, closing at
+    30 kn on a 45° aspect, with their 4 highest eyes (`SightModel.FirstSightingM`). On the real tops and the directors'
+    optics, the old haze had Lion first sight Derfflinger at 30 km in Jutland's 25 km visibility (the record: ~24).
+    The haze is re-fitted, not the heights. The reference ship that defines a visibility is now 3,000 m² side on
+    (about a capital ship's; Lion's is 2,965) instead of 1,000. Lion first sights Derfflinger at 25.0 km; Prince of
+    Wales (KGV) sights Bismarck at 36.2 km in clear air (the record: ~35, the horizons' limit). `sighting_ref.py` and
+    its table moved with it.
+  - *To look at:* `shipgen sight DESIGN... [--from DESIGN]` lists each class's eyes (kind, part, height, horizon,
+    rangefinder, blind arc) and silhouette by height, how far a lookout makes it out, its first sighting closing at
+    30 kn, and the world's reach. On the map, the dev `horizon` checkbox rings the selected ship with the sea's
+    horizon from her highest eye, and fainter, her reach to a ship as tall as she is (not checked by capture: it needs
+    a ship selected).
+  - *Numbers:* fc-history 9 of 23 in band (10 after F4c): Denmark Strait's Bismarck 10.3 to 12.2% (band 2.7-11), the
+    Germans over the British 1.30 to 1.41 (want 1.5-5). Tsushima over 5 seeds: Russia's hits 413 to 296, its losses 5.0
+    to 4.6 ships (11,530 t, 22,789 before); Japan's hits 522 to 501. Squadrons within the spread. The Jutland played
+    once is a different battle: the forces sight each other later, the light craft's early melee doesn't happen, and
+    the fight runs longer in the fine tier (197 s to play against 107 s). Britain loses 10 ships (29), Germany 31 (27)
+    but 98 kt (163). Per game second the sim costs the same.
+  - *Tests:* new: taller eyes see further and a battleship's top shows with her hull under the horizon; lookouts in
+    tops and crows' nests, none on a bare mast; the reach follows the tallest eye and top at sea; the record's anchors
+    on the real ships. Moved: the 200-ship looks test's lines 25 to 20 km apart (Dreadnought in 30 km visibility was at
+    the edge); the encounter's radius is half the derived range; the friend on the torpedo track 1 km to 600 m along it
+    (a later first sighting led the aim 13° and put her 220 m off); the flotilla test's seed 2 to 7 (6 of 12 seeds
+    attack now, 5 after F4b).
+  - *A bug found:* the crow's nest's 0.7 t made the destroyer 2.6 m shorter (the sizer's bistable layouts;
+    docs/battle/bugs.md).
 
 ### F5 Sensors proper
 

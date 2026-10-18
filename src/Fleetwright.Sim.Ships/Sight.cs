@@ -1,9 +1,10 @@
 using Fleetwright.Shipgen;
 namespace Fleetwright.Sim.Ships;
 
-/// <summary>What an observation post is: a lookout at a masthead, a director (with its rangefinder), the bridge, aft
-/// control, the conning tower's slits, a lookout in a mast's top, a rangefinder in a gunhouse's hood, or a control
-/// position's rangefinder in its hood (after control's, the conning tower's).</summary>
+/// <summary>What an observation post is: a director (with its rangefinder), the bridge, aft control, the conning tower's
+/// slits, a lookout in a mast's top, a rangefinder in a gunhouse's hood, or a control position's rangefinder in its hood
+/// (after control's, the conning tower's). Masthead was a lookout under a bare mast's head, a placeholder until tops
+/// (fire-control.md F4d): no eye is of it now.</summary>
 public enum EyeKind : byte
 {
     Masthead,
@@ -54,8 +55,23 @@ public static class Sight
     /// stay or a rangefinder's arm is looked past.</summary>
     const double MaskMinWidthM = 1.5;
 
-    /// <summary>The silhouette's raster, m.</summary>
-    const double Cell = 0.5;
+    /// <summary>The silhouette's raster, m: fine enough for a mast's pole (F4d; it was 0.5 m).</summary>
+    const double Cell = 0.25;
+
+    /// <summary>How wide a mast's lower part shows side on and end on, m [EST]: a pole's 0.8 m tube; a tripod's leg and
+    /// its two struts raked aft (side on the struts in line, one and a half legs' worth on average as they close to the
+    /// apex; end on two); a cage's or a lattice's thin struts round a ~5 m envelope, about 0.3 of it solid; a tower's
+    /// plated column (its hitbox).</summary>
+    static (double Side, double End) MastWidthM(MastKind k) => k switch
+    {
+        MastKind.Tripod => (1.2, 1.6),
+        MastKind.Cage or MastKind.Lattice => (1.5, 1.5),
+        MastKind.Tower => (3.6, 3.6),
+        _ => (0.8, 0.8),
+    };
+
+    /// <summary>A topmast's pole over a mast's top (or over 0.6 of a bare mast's height), m wide [EST].</summary>
+    const double TopmastWidthM = 0.4, BareLowerShare = 0.6;
 
     public static int Sector(double relativeDeg)
     {
@@ -80,9 +96,9 @@ public static class Sight
         return table[i] + (table[i + 1] - table[i]) * f;
     }
 
-    /// <summary>The posts: a lookout at each masthead (PLACEHOLDER, DesignerPlaceholders.MastLookoutUnderTopM: shipgen
-    /// has no spotting top), each director in its hood, the highest block of the bridge and of aft control, and the
-    /// conning tower.</summary>
+    /// <summary>The posts: a lookout in each mast's top (a crow's nest's too), each director in its hood, each control
+    /// position's and gunhouse's rangefinder, the highest block of the bridge and of aft control, and the conning
+    /// tower.</summary>
     internal static EyeRow[] Eyes(ShipClass c)
     {
         var comps = c.components;
@@ -95,12 +111,11 @@ public static class Sight
             switch (x.Kind)
             {
                 case ComponentKind.Mast:
-                    // a lookout in its top (fire-control.md F4: its floor + the eye's height), else at its head
+                    // a lookout in its top (fire-control.md F4: its floor + the eye's height, a crow's nest's too); a bare
+                    // mast has none (F4d)
                     int top = TopOf(c, i);
                     if (top >= 0)
                         eyes.Add(Eye(c, EyeKind.Top, top, x.X, x.Y, comps[top].Bounds.Base + EyeOverFloorM - wl, 0));
-                    else
-                        eyes.Add(Eye(c, EyeKind.Masthead, i, x.X, x.Y, x.Bounds.Top - DesignerPlaceholders.MastLookoutUnderTopM - wl, 0));
                     break;
                 case ComponentKind.ConningTower:
                     eyes.Add(Eye(c, EyeKind.ConningTower, i, x.X, x.Y, x.Bounds.Top - SlitsUnderRoofM - wl, 0));
@@ -214,8 +229,9 @@ public static class Sight
     }
 
     /// <summary>The silhouette: the hull from the waterline to its deck, and every part above the water, rastered side
-    /// on (x by height) and end on (y by height) at <see cref="Cell"/>; the area above each whole metre over the
-    /// waterline into the class's Numbers pool.</summary>
+    /// on (x by height) and end on (y by height) at <see cref="Cell"/>, the masts by their kind (their lower part as wide
+    /// as <see cref="MastWidthM"/>, a topmast's pole over it) rather than their hitbox's column; the area above each
+    /// whole metre over the waterline into the class's Numbers pool.</summary>
     internal static SilhouetteRow Silhouette(ShipClass c, List<double> numbers)
     {
         double wl = c.Vertical.Waterline;
@@ -253,27 +269,41 @@ public static class Sight
         foreach (double t in hull.DeckTops)
             deckTop = Math.Max(deckTop, t);
         Fill(end, -halfBeam, halfBeam, -ymax, wl, deckTop);
-        foreach (var o in c.components)
-            if (o.Bounds.Top > wl && Shows(o.Kind))
+        for (int i = 0; i < c.components.Length; i++)
+        {
+            var o = c.components[i];
+            if (o.Bounds.Top <= wl || !Shows(o.Kind))
+                continue;
+            if (o.Kind == ComponentKind.Mast)
             {
-                Fill(side, o.Bounds.X0, o.Bounds.X1, x0, o.Bounds.Base, o.Bounds.Top);
-                Fill(end, o.Bounds.Y0, o.Bounds.Y1, -ymax, o.Bounds.Base, o.Bounds.Top);
+                var (ws, we) = MastWidthM(o.Mast);
+                int t = TopOf(c, i);
+                double lower = t >= 0 ? c.components[t].Bounds.Base : o.Bounds.Base + BareLowerShare * (o.Bounds.Top - o.Bounds.Base);
+                Fill(side, o.X - ws / 2, o.X + ws / 2, x0, o.Bounds.Base, lower);
+                Fill(end, o.Y - we / 2, o.Y + we / 2, -ymax, o.Bounds.Base, lower);
+                Fill(side, o.X - TopmastWidthM / 2, o.X + TopmastWidthM / 2, x0, lower, o.Bounds.Top);
+                Fill(end, o.Y - TopmastWidthM / 2, o.Y + TopmastWidthM / 2, -ymax, lower, o.Bounds.Top);
+                continue;
             }
+            Fill(side, o.Bounds.X0, o.Bounds.X1, x0, o.Bounds.Base, o.Bounds.Top);
+            Fill(end, o.Bounds.Y0, o.Bounds.Y1, -ymax, o.Bounds.Base, o.Bounds.Top);
+        }
         int metres = (int)Math.Ceiling(top) + 1;
         Slice Table(bool[,] g)
         {
-            int start = numbers.Count;
-            int n0 = g.GetLength(0);
-            for (int m = 0; m < metres; m++)
+            // each raster row's cells, then the rows above each metre
+            int n0 = g.GetLength(0), n1 = g.GetLength(1);
+            var above = new int[n1 + 1];
+            for (int k = n1 - 1; k >= 0; k--)
             {
-                int k0 = (int)Math.Round(m / Cell);
-                int cells = 0;
+                int row = 0;
                 for (int i = 0; i < n0; i++)
-                    for (int k = k0; k < g.GetLength(1); k++)
-                        if (g[i, k])
-                            cells++;
-                numbers.Add(cells * Cell * Cell);
+                    row += g[i, k] ? 1 : 0;
+                above[k] = above[k + 1] + row;
             }
+            int start = numbers.Count;
+            for (int m = 0; m < metres; m++)
+                numbers.Add(above[Math.Min((int)Math.Round(m / Cell), n1)] * Cell * Cell);
             return new Slice(start, metres);
         }
         int funnels = 0, masts = 0, main = 0;

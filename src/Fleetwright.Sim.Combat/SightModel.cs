@@ -30,6 +30,41 @@ public static class SightModel
     /// <summary>How far the sea's horizon is from an eye this high, m.</summary>
     public static double HorizonM(double eyeM, SimSettings s) => Math.Sqrt(2 * s.SightRefraction * Earth.Radius * Math.Max(eyeM, 0));
 
+    /// <summary>The furthest an eye this high can see anything of a ship this tall, m: the two horizons (fire-control.md
+    /// F4d: what the world's reach is derived from).</summary>
+    public static double ReachM(double eyeM, double topM, SimSettings s) => HorizonM(eyeM, s) + HorizonM(topM, s);
+
+    /// <summary>The furthest range an eye makes the target out at all (a margin of 1), m, to 100 m: for listings and
+    /// tests, not the sim's looks.</summary>
+    public static double MadeOutAtM(double eyeM, double magnification, ShipClass target, double visibilityM, double aspectDeg, double sunDeg,
+        bool silhouetted, SimSettings s)
+    {
+        for (double d = Math.Floor(ReachM(eyeM, target.Silhouette.TopM, s) / 100) * 100; d > 100; d -= 100)
+            if (Margin(eyeM, magnification, target, new SightLine(d, aspectDeg, visibilityM, sunDeg, silhouetted), s) >= 1)
+                return d;
+        return 0;
+    }
+
+    /// <summary>The median range an observer's eyes first sight a target at, closing on it at a steady speed from
+    /// beyond reach, m: where their rates (its <see cref="SimSettings.SightEyes"/> highest, all bearing) have added up to
+    /// an even chance (a cumulative hazard of ln 2), in 100 m steps; 0 if not before they meet. For listings and the
+    /// record's anchors (fire-control.md F4d), not the sim's looks.</summary>
+    public static double FirstSightingM(ShipClass observer, ShipClass target, double visibilityM, double aspectDeg, double closingMs, SimSettings s)
+    {
+        var eyes = observer.Eyes;
+        int n = Math.Min(eyes.Length, s.SightEyes);
+        double hazard = 0, step = 100, dt = step / closingMs;
+        for (double d = Math.Floor(ReachM(n > 0 ? eyes[0].HeightM : 0, target.Silhouette.TopM, s) / step) * step; d > step; d -= step)
+        {
+            var line = new SightLine(d, aspectDeg, visibilityM, 30, false);
+            for (int i = 0; i < n; i++)
+                hazard += Rate(Margin(eyes[i].HeightM, Magnification(eyes[i], s), target, line, s), SearchFactor(eyes[i], s), s) * dt;
+            if (hazard >= Math.Log(2))
+                return d;
+        }
+        return 0;
+    }
+
     /// <summary>How much of a target this far away the horizon hides from an eye this high, m.</summary>
     public static double HiddenM(double eyeM, double distanceM, SimSettings s)
     {

@@ -81,9 +81,10 @@ public class LineOfFireTests(ITestOutputHelper output)
     [Fact]
     public void Torpedoes_are_not_fired_with_a_friend_on_their_track()
     {
-        // a destroyer 4 km west of a stopped battleship (well within its torpedoes' run), a friend 1 km along the track (the
-        // aim leads the navy's first estimate of the target by some degrees: 2 km on she'd be 270 m off the track)
-        var (w, ai) = Make(new Placed("destroyer", 270, 4_000, 0, 0, 0), new Placed("light_cruiser", 270, 3_000, 0, 0, 0),
+        // a destroyer 4 km west of a stopped battleship (well within its torpedoes' run), a friend 600 m along the track
+        // (the aim leads the navy's first estimate of the target, its first fix's prior speed, by as much as ~13°: 1 km on
+        // she'd be 220 m off the track, clear by the rule, as a later first sighting had it in fire-control.md F4d)
+        var (w, ai) = Make(new Placed("destroyer", 270, 4_000, 0, 0, 0), new Placed("light_cruiser", 270, 3_400, 0, 0, 0),
             new Placed("super_dreadnought", 0, 0, 0, 0, 1));
         w.Apply(ai.Orders.Engage(Unit.Ship(1), 3));
         w.AdvanceTo(w.Time + 3 * 60_000);

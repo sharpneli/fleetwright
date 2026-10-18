@@ -1698,7 +1698,8 @@ visibility they light up. Fire control's own sight lines (4.2) are per engaged p
   threshold contrast rises for small things as C∞(1 + √(Ω꜀/Ω)), and the margin gives a detection rate.
   `research/simulation/sighting_ref.py` is the independent reference (the test holds its numbers). Reaches, a 24 m
   masthead on Bismarck side on: ~27 km in 25 km visibility (Jutland's battlecruisers ~26 km), ~35 km in clear air
-  (Denmark Strait), ~5 km at night. A destroyer is ~15% shorter, bow-on ~20% shorter, silhouetted at dusk ~20%
+  (Denmark Strait), ~5 km at night. (Re-fitted in fire-control.md F4d on the ships' real tops: the reference ship is
+  3,000 m², and the anchors are the record's ships' median first sightings.) A destroyer is ~15% shorter, bow-on ~20% shorter, silhouetted at dusk ~20%
   longer. A director's rangefinder sees at its make's magnification (its battery's fit, `fire-control.md` F3; a
   placeholder from its base until then).
 - **3.2d** `Picture` per navy (Fleetwright.Sim), fed by `Sightings`:
@@ -1732,11 +1733,9 @@ visibility they light up. Fire control's own sight lines (4.2) are per engaged p
   map alone, blocking no sight: a logged exception (docs/visuals/muzzle-flashes.md, approved 2026-10-15).
 
 **Needed from the designer for sighting** (2026-10-13; the sim compiles around them with flagged placeholders):
-- **Masts are the funnel top + 6 m on every ship:** a destroyer's and Bismarck's both stand 19.4 m over the main deck.
-  The research: Dreadnought's spotting top ~28-30 m over the sea, Bismarck's foretop ~31 m, battleship mastheads
-  45-55 m, destroyers' 25-30 m.
-- **No spotting or fighting top as a part.** Ships before directors spotted from the mast; Dreadnought (1906) has a
-  director on her bridge, and directors are never put on a mast (Iron Duke's and Bismarck's foretop).
+- ~~Masts are the funnel top + 6 m on every ship~~ and ~~no spotting or fighting top as a part~~: done in
+  fire-control.md F4a-b (masts by kind with tops at their heights, directors in tops) and F4d (the masthead lookout
+  placeholder went: a lookout stands in a top, a crow's nest's too).
 - **Searchlights are render clutter, not parts** (night fighting needs them).
 - **No smoke output per funnel in the export** (shipgen has the fuel, draught and gas flow behind `SmokeReach`): for
   the smoke field.

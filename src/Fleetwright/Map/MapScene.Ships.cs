@@ -27,6 +27,7 @@ public sealed unsafe partial class MapScene
     readonly Func<int, ShipClass?> classOf;
     readonly string[] designNames;
     int selected;   // the selected ship's entity, or -1
+    bool horizonRing;   // dev: the selected ship's horizon from her highest eye
     double pressX, pressY;
     bool pressed;
 
@@ -59,7 +60,7 @@ public sealed unsafe partial class MapScene
 
     static readonly Vector4 TrackColor = new(0.85f, 0.9f, 1f, 0.35f), RouteColor = new(1f, 0.85f, 0.4f, 0.55f),
         RouteSelected = new(1f, 0.8f, 0.3f, 0.95f), SelectColor = new(1f, 0.78f, 0.25f, 0.95f), CourseColor = new(1f, 1f, 1f, 0.6f), TargetColor = new(1f, 0.78f, 0.25f, 0.45f),
-        LandRing = new(0.55f, 0.85f, 0.6f, 0.5f), SlideColor = new(0.55f, 1f, 0.6f, 0.95f), PlaceColor = new(0.6f, 0.9f, 1f, 0.85f);
+        LandRing = new(0.55f, 0.85f, 0.6f, 0.5f), HorizonColor = new(0.6f, 0.85f, 1f, 0.6f), SlideColor = new(0.55f, 1f, 0.6f, 0.95f), PlaceColor = new(0.6f, 0.9f, 1f, 0.85f);
 
     // ------------------------------------------------------------------ lines over the globe
 
@@ -127,6 +128,13 @@ public sealed unsafe partial class MapScene
             {
                 double len = lengthOf(v.Class[k]) * view.Altitude / view.MetresPerPixel / Math.Max(Vec3d.Dot(p - view.Eye, view.Forward), 1e-3);
                 Ring(view, p, Math.Max(len / 2, ShipDrawList.IconLengthPx / 2) + 7, SelectColor, 2f);
+                if (horizonRing && world.Classes.TryGet(v.Class[k]) is { Eyes.Length: > 0 } hc)
+                {
+                    // dev (fire-control.md F4d): the sea's horizon from her highest eye, and the reach to a ship as tall as she is
+                    double eye = hc.Eyes[0].HeightM;
+                    RingM(view, p, SightModel.HorizonM(eye, world.Settings), HorizonColor, 1.5f);
+                    RingM(view, p, SightModel.ReachM(eye, hc.Silhouette.TopM, world.Settings), HorizonColor with { W = 0.3f }, 1f);
+                }
                 int t = v.Captain[k] != 0 ? v.IndexOf(v.CaptainTarget[k]) : -1;
                 if (t >= 0)
                 {
@@ -731,6 +739,11 @@ public sealed unsafe partial class MapScene
                 world.Truth = truth;
             if (ImGui.IsItemHovered())
                 ImGui.SetTooltip("dev: every ship as it is, not the player's picture");
+            ImGui.SameLine();
+            ImGui.Checkbox("horizon", ref horizonRing);
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip("dev: round the selected ship, the sea's horizon from her highest eye, and fainter,\n" +
+                                 "how far she could see a ship as tall as she is (docs/battle/fire-control.md F4d)");
             ImGui.SameLine();
             bool watch = s.PlayerSide < 0;
             if (ImGui.Checkbox("watch", ref watch))

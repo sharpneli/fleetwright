@@ -6,11 +6,6 @@ namespace Fleetwright.Sim.Ships;
 /// list is in docs/battle/plan.md, "Needed from the designer". A replaced placeholder is deleted from here.</summary>
 public static class DesignerPlaceholders
 {
-    /// <summary>PLACEHOLDER (docs/battle/plan.md "Needed from the designer for sighting"): a lookout at each masthead,
-    /// this far under its top, m. Shipgen has no spotting or fighting top as a part, and its masts are all the funnels'
-    /// top + 6 m (a destroyer's as high as Bismarck's over the deck); the designer should place tops by era and size.</summary>
-    public const double MastLookoutUnderTopM = 1.0;
-
     /// <summary>Fills what the design didn't give (moving).</summary>
     public static MotionFacts Fill(MotionFacts m) => m with
     {

@@ -55,6 +55,8 @@ public readonly record struct ComponentRow
     public int Detail { get; init; }
     /// <summary>The rangefinder in it, its base, m (a director's, a gunhouse's, a control position's hood), else 0.</summary>
     public double RangefinderM { get; init; }
+    /// <summary>A mast's kind (Pole on every other part).</summary>
+    public MastKind Mast { get; init; }
 }
 
 /// <summary>A gun or torpedo mount: the one table the sprite, the hit test and the state all use (a mount's index is

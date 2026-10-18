@@ -26,6 +26,7 @@ namespace Fleetwright.Sim;
 public sealed class Sightings
 {
     readonly SimSettings settings;
+    readonly SightReach reach;
     readonly Relations relations;
     readonly Encounters encounters;
     readonly Picture?[] bySide = new Picture?[256];
@@ -46,9 +47,10 @@ public sealed class Sightings
     readonly double[] nearD = new double[16];
     readonly byte[] sidesHere = new byte[256];
 
-    internal Sightings(SimSettings settings, Relations relations, Encounters encounters, ulong seed)
+    internal Sightings(SimSettings settings, Relations relations, Encounters encounters, SightReach reach, ulong seed)
     {
         this.settings = settings;
+        this.reach = reach;
         this.relations = relations;
         this.encounters = encounters;
         stream = RandomStream.Named(seed, "Sighting");
@@ -178,7 +180,7 @@ public sealed class Sightings
     {
         int want = Math.Min(settings.SightObservers, nearIdx.Length), found = 0;
         int cx = (int)((gx[t] - minX) / cell), cy = (int)((gy[t] - minY) / cell);
-        int rings = (int)Math.Ceiling(settings.SightMaxM / cell) + 1;
+        int rings = (int)Math.Ceiling(reach.SightM / cell) + 1;
         for (int r = 0; r <= rings; r++)
         {
             // once the nearest wanted are found closer than this ring can hold, stop
@@ -202,7 +204,7 @@ public sealed class Sightings
                         if (side[o] != by)
                             continue;
                         double ddx = gx[o] - gx[t], ddy = gy[o] - gy[t], d2 = ddx * ddx + ddy * ddy;
-                        if (d2 > settings.SightMaxM * settings.SightMaxM)
+                        if (d2 > reach.SightM * reach.SightM)
                             continue;
                         // insert into the sorted few (ties by index: the same whatever order cells are met in)
                         int at = found;

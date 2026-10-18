@@ -73,6 +73,16 @@ moving underwater shells to a 3-decay reach), which now runs with hits doing no 
   counted as the signal answered; and the track's check held the boats steaming beside the shooter as on it. All three
   in docs/battle/command.md 5.1b piece 4. FlotillaAttackTests now asks two boats or more to fire on the signal.
 
+## Shipgen sizing
+
+- [ ] A little weight up a destroyer's mast made her shorter (fire-control.md F4d, 2026-10-18): the crow's nest's 0.7 t
+  at ~17 m took `destroyer` from 116.3 m and 2,084 t to 113.6 m and 2,064 t. The sizer is right to move a little (more
+  topweight), but the wrong way: with the nest, the layout at 112.3 m (its trim shift -1.62 against -1.47 m) finds
+  ~100 m³ more crew space, so the length the crew needed stops short. The bistable layouts the sizing rework left
+  (docs, designer-monotonic-rework: model step functions make bistable sizes). To hunt it: `SHIPGEN_TRACE=1 shipgen
+  design shipgen/designs/destroyer.json` with and without the nest's weight; which deckhouse or space steps between
+  the two passes.
+
 ## The slide
 
 - [ ] A ship can be trapped in a bay that opens away from its course: decision 7's "boxed in, it follows the coast

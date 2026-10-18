@@ -81,6 +81,20 @@ public sealed partial class ShipSystem
         world.Schedule(world.Time, EventTier.Rails, 0, Id, ContactScan, scanGen);
     }
 
+    /// <summary>How far the ships at sea can see each other: the encounter range (World's, set as it's made).</summary>
+    internal SightReach Reach { get; init; } = null!;
+
+    /// <summary>A taller eye or ship came to sea, so the encounter range grew: every opposing pair is solved afresh at
+    /// once, as when sides go to war.</summary>
+    internal void ReachGrew(World world)
+    {
+        if (!opposed)
+            return;
+        nextScanMs = world.Time.Ms;
+        scanGen++;
+        world.Schedule(world.Time, EventTier.Rails, 0, Id, ContactScan, scanGen);
+    }
+
     /// <summary>A unit on rails: a ship on rails of its own.</summary>
     bool IsUnit(int slot) => Store.IsAlive(slot) && Store.OnRails(slot) && !Store.RidesAnother(slot);
 
@@ -98,7 +112,7 @@ public sealed partial class ShipSystem
         long until = nextScanMs;
         var p = refPos[slot];
         byte side = refSide[slot];
-        double sa = settings.EncounterRangeM + unitRadius[slot] + refSpeed[slot] * (until - refMs[slot]) / 1000;
+        double sa = Reach.EncounterM + unitRadius[slot] + refSpeed[slot] * (until - refMs[slot]) / 1000;
         for (int j = 0; j < Store.Slots; j++)
         {
             if (j == slot || !Hostile(refSide[j], side) || !IsUnit(j))
@@ -183,7 +197,7 @@ public sealed partial class ShipSystem
                     (i, s.Side, refPos[i], unitRadius[i] + Math.Abs(s.Speed) * run);
                 units++;
             }
-        double range = settings.EncounterRangeM;
+        double range = Reach.EncounterM;
         // through the grid (2.7c: 1,800 units were 1.6 million pairs an hour): a pair can close at most the range and
         // both slacks, so a cube that wide finds every pair; each unit takes the later ones only, in order, as the full
         // double loop did
@@ -231,7 +245,7 @@ public sealed partial class ShipSystem
     /// if it doesn't close before <paramref name="untilMs"/>.</summary>
     long Trace(int a, int b, long fromMs, long untilMs)
     {
-        double reach = settings.EncounterRangeM + unitRadius[a] + unitRadius[b];
+        double reach = Reach.EncounterM + unitRadius[a] + unitRadius[b];
         double v = Math.Abs(Store[a].Speed) + Math.Abs(Store[b].Speed);
         long t = fromMs;
         for (int i = 0; i < settings.ContactTraceSteps; i++)
@@ -291,7 +305,7 @@ public sealed partial class ShipSystem
                 int j = near[c];
                 if (!Hostile(refSide[j], side) || !IsUnit(j))
                     continue;
-                double reach = settings.EncounterRangeM + unitRadius[j];
+                double reach = Reach.EncounterM + unitRadius[j];
                 double far = reach + refSpeed[j] * (now - refMs[j]) / 1000;
                 if ((refPos[j] - p).LengthSquared > far * far)
                     continue;   // it can't have come that far since it was anchored
@@ -313,7 +327,7 @@ public sealed partial class ShipSystem
         double far = 0;
         for (int j = 0; j < Store.Slots; j++)
             if (IsUnit(j))
-                far = Math.Max(far, settings.EncounterRangeM + unitRadius[j] + refSpeed[j] * (now - refMs[j]) / 1000);
+                far = Math.Max(far, Reach.EncounterM + unitRadius[j] + refSpeed[j] * (now - refMs[j]) / 1000);
         if (far <= 0)
             return 0;
         grid.Clear(Store.Slots, far);
@@ -359,7 +373,7 @@ public sealed partial class ShipSystem
             return false;
         var p = Store[slot].Position;
         byte side = Store[slot].Side;
-        double reach = settings.EncounterRangeM + settings.EncounterMarginM + radiusM;
+        double reach = Reach.EncounterM + settings.EncounterMarginM + radiusM;
         long now = Store.NowMs;
         EnsureRefs();
         for (int j = 0; j < Store.Slots; j++)

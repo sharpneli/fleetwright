@@ -54,7 +54,7 @@ public class EncounterTests(ITestOutputHelper output)
         Assert.Equal(2, e.Ships);
         Assert.True(w.Time.Ms - e.OpenedMs < 1000, $"opened {w.Time.Ms - e.OpenedMs} ms before the look");
         Assert.True(Of(w, 1) == 1 && Of(w, 2) == 1);
-        Assert.InRange(e.RadiusM, 24_000, 26_000);   // half the range: its ships about its middle
+        Assert.InRange(e.RadiusM, 0.48 * w.Reach.EncounterM, 0.52 * w.Reach.EncounterM);   // half the range: its ships about its middle
 
         // they pass and open the range: the encounter stays while they're within the range and margin, and for the
         // close time after; its ships on the fine tick throughout
@@ -65,7 +65,7 @@ public class EncounterTests(ITestOutputHelper output)
             if (w.Encounters.Count > 0)
                 Assert.False(Ship(w, 1).OnRails || Ship(w, 2).OnRails);
             double d = Earth.Distance(Ship(w, 1).Position, Ship(w, 2).Position);
-            if (cool < 0 && d > Settings.EncounterRangeM + Settings.EncounterMarginM && Vec3d.Dot(Ship(w, 1).Forward, Ship(w, 2).Position - Ship(w, 1).Position) < 0)
+            if (cool < 0 && d > w.Reach.EncounterM + Settings.EncounterMarginM && Vec3d.Dot(Ship(w, 1).Forward, Ship(w, 2).Position - Ship(w, 1).Position) < 0)
                 cool = w.Time.Ms;
         }
         long closedAfter = w.Time.Ms - cool;
@@ -102,7 +102,7 @@ public class EncounterTests(ITestOutputHelper output)
         Assert.True(Of(w, a2) == 1 && Of(w, b2) == 1);
         double gap = Earth.Distance(Ship(w, b1).Position, Ship(w, a2).Position);
         output.WriteLine($"merged with the nearest ships {gap / 1000:F1} km apart");
-        Assert.True(gap <= Settings.EncounterRangeM + Settings.EncounterMarginM + 1000, $"{gap:F0} m");
+        Assert.True(gap <= w.Reach.EncounterM + Settings.EncounterMarginM + 1000, $"{gap:F0} m");
 
         // and parts again, both fights still hot: the first keeps its id, the second opens anew
         w.Apply(ShipSystem.Course(a2, 90));

@@ -241,9 +241,11 @@ public sealed record SimSettings
 
     // ------------------------------------------------------------------ contacts (docs/battle/plan.md 2.5, ahead of 3.1)
 
-    /// <summary>Opposing ships within this of each other are in the fine tier, metres: beyond the longest sighting
-    /// range, so the fine tier owns everything that could be seen. Ships on rails come off at the moment it's crossed.</summary>
-    public double EncounterRangeM { get; init; } = 50_000;
+    /// <summary>The least encounter range, metres. Opposing ships within the encounter range of each other are in the fine
+    /// tier, and ships on rails come off at the moment it's crossed; the range is the sight reach of the ships at sea (the
+    /// tallest eye's and silhouette's horizons, docs/battle/fire-control.md F4d: Sim's SightReach), so the fine tier owns
+    /// everything that could be seen, and never under this. It was a fixed 50 km.</summary>
+    public double EncounterRangeMinM { get; init; } = 0;
 
     /// <summary>Ships go back on rails only this much further apart than the encounter range, metres, so a pair
     /// steaming along its edge doesn't flicker between the tiers.</summary>
@@ -299,8 +301,10 @@ public sealed record SimSettings
     public double SightCriticalSolidAngle { get; init; } = 2e-4;
 
     /// <summary>What a visibility means (the logs' sense, not the meteorologist's): a ship showing this much side on,
-    /// m², is made out by a lookout's binoculars at exactly the visibility; the haze's extinction follows from it.</summary>
-    public double SightReferenceAreaM2 { get; init; } = 1000;
+    /// m², is made out by a lookout's binoculars at exactly the visibility; the haze's extinction follows from it. About a
+    /// capital ship's side (Lion's 2,965 m²): re-fitted in fire-control.md F4d on the ships' real tops, where 1,000 m² had
+    /// Lion first sight Derfflinger at a median 30 km in Jutland's 25 km against the record's ~24.</summary>
+    public double SightReferenceAreaM2 { get; init; } = 3000;
 
     /// <summary>The detection rate, per second, once an object is plainly visible (<see cref="SightFullMargin"/> times its
     /// threshold): a lookout's sweep comes round to it in this.</summary>
@@ -348,9 +352,6 @@ public sealed record SimSettings
 
     /// <summary>The looks' grid in an encounter's tangent plane, m a cell.</summary>
     public double SightGridM { get; init; } = 8_000;
-
-    /// <summary>No eye looks further than this, m (two 60 m mastheads' horizons together).</summary>
-    public double SightMaxM { get; init; } = 60_000;
 
     /// <summary>A contact's dead reckoning allows for manoeuvre: its acceleration's 1-sigma, m/s².</summary>
     public double SightManoeuvreMs2 { get; init; } = 0.05;

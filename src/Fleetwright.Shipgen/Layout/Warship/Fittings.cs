@@ -87,7 +87,7 @@ public sealed partial class Layout
             // what it must clear: the funnels, and over the bridge tower the director on its top
             double clear = k == 0 ? LevelH * nTower + hood : 0.0;
             double dirR = g?.Director is { } bat ? FireControl.HalfDiagonal(FireControl.Spec(site.Design, bat)) + 0.2 : 0.0;
-            var top = MastPlan.Top(g, gunWl, site.Res.Freeboard, Math.Max(clear, funTop), dirR);
+            var top = MastPlan.Top(g, gunWl, site.Res.Freeboard, Math.Max(clear, funTop), dirR, g?.HeightM ?? MastPlan.Head(mastTop, clear, null));
             double head = g?.HeightM ?? MastPlan.Head(mastTop, clear, top, g?.Director is not null);
             masts.Add(new Mast
             {
@@ -101,7 +101,7 @@ public sealed partial class Layout
             MastWeight(lay, m, m.Top!.Value, m.Id!, bse);
             if (m.Platform is { } p)
                 for (int i = 0; i < p.Tiers; i++)
-                    lay.Weights.Add(new Weight($"{m.Id} top{(i == 0 ? "" : $" {i + 1}")}", "superstructure", MastPlan.TopWeightT(p.TierR(i)), m.X,
+                    lay.Weights.Add(new Weight($"{m.Id} top{(i == 0 ? "" : $" {i + 1}")}", "superstructure", MastPlan.TopWeightT(p.TierR(i), p.Kind), m.X,
                         ZRel.Deck(p.Floor + (i + 0.5) * MastTop.TierH)));
         }
         return masts;

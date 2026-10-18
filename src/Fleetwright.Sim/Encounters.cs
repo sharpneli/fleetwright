@@ -4,7 +4,7 @@ using Fleetwright.Sim.Core;
 namespace Fleetwright.Sim;
 
 /// <summary>One encounter as it stands: its id, when it opened and when its sides were last within
-/// <see cref="SimSettings.EncounterRangeM"/> and the margin of each other, its ships' count, where it is (its ships'
+/// the encounter range (<see cref="SightReach.EncounterM"/>) and the margin of each other, its ships' count, where it is (its ships'
 /// middle on the sphere) and how far its ships reach from there; whether the player's ships are in it, and the one it
 /// split off (0 for none).</summary>
 public readonly record struct Encounter(int Id, long OpenedMs, long LastHotMs, int Ships, Vec3d Centre, double RadiusM, bool Own = false, int From = 0);
@@ -23,6 +23,7 @@ public readonly record struct Encounter(int Id, long OpenedMs, long LastHotMs, i
 public sealed class Encounters
 {
     readonly SimSettings settings;
+    readonly SightReach sight;
     readonly Relations relations;
     readonly List<Encounter> open = new(16);
     int nextId = 1;
@@ -49,9 +50,10 @@ public sealed class Encounters
     readonly List<int> roots = new(16);
     readonly List<long> rootsByOld = new(16);
 
-    internal Encounters(SimSettings settings, Relations relations)
+    internal Encounters(SimSettings settings, Relations relations, SightReach reach)
     {
         this.settings = settings;
+        sight = reach;
         this.relations = relations;
     }
 
@@ -79,8 +81,8 @@ public sealed class Encounters
     {
         int n = store.OffRailsCount;
         Ensure(store.Slots, n);
-        double reach = settings.EncounterRangeM + settings.EncounterMarginM;
-        double openAt = settings.EncounterRangeM + 1;   // a contact's derail comes within a metre of the range
+        double reach = sight.EncounterM + settings.EncounterMarginM;
+        double openAt = sight.EncounterM + 1;   // a contact's derail comes within a metre of the range
         double cell = reach / Math.Sqrt(3);
         for (int k = 0; k < n; k++)
         {
