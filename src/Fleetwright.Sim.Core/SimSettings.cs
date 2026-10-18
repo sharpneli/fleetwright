@@ -483,13 +483,26 @@ public sealed record SimSettings
     /// <summary>Spotting: the judgement comes this long after a salvo's last shell lands, ms; a splash is judged over or
     /// short with an error of k·R²/h rad (h the spotter's height; fire-control-research.md §9), and the deflection seen
     /// to this many mil, a share of it corrected (half: one salvo's fall carries its random error, so full corrections
-    /// chase noise) once it's over a quarter of a pattern; the ladder's smallest step, m (and never under half a
-    /// pattern).</summary>
+    /// chase noise) once it's over a quarter of a pattern.</summary>
     public int SpotDelayMs { get; init; } = 6000;
     public double SpotOpticK { get; init; } = 4e-5;
     public double SpotDeflectionMil { get; init; } = 1;
     public double SpotDeflectionGain { get; init; } = 0.5;
-    public double SpotLadderMinM { get; init; } = 46;
+
+    /// <summary>Fire discipline (docs/battle/fire-control.md F6; the side's doctrine later, these its defaults): the
+    /// spots' bracket is never narrower than this many of the salvo's patterns (the USN's "never below the pattern"), nor
+    /// than <see cref="BracketFloorM"/>, m. A ranging salvo is this share of the guns that bear, at least
+    /// <see cref="RangingGunsMin"/> (enough to spot a wild shot: navalgazing Spotting, 3 and better 4), and waits for the
+    /// last one's spot, or this long past its time of flight and the spot's delay, ms. Firing for effect, this many spots
+    /// in a row without a straddle send it back to ranging; so does own ship's turn past this yaw rate, °/s, for a
+    /// computer that takes own ship's motion in (any turn past <see cref="OwnTurnYawDegS"/> for one that doesn't).</summary>
+    public double BracketFloorPatterns { get; init; } = 1;
+    public double BracketFloorM { get; init; } = 92;
+    public double RangingGunsShare { get; init; } = 0.5;
+    public int RangingGunsMin { get; init; } = 4;
+    public int RangingWaitMarginMs { get; init; } = 15_000;
+    public int EffectMissesToRange { get; init; } = 3;
+    public double HardTurnYawDegS { get; init; } = 1;
 
     /// <summary>A shell's dispersion across the line of fire as a share of its dispersion along it (Gun.defl_ratio).</summary>
     public double DispersionDeflectionRatio { get; init; } = 0.4;

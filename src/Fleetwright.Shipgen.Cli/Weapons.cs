@@ -52,7 +52,7 @@ static class Weapons
             var (o, k, mt) = row.Fit;
             Line(string.Format(Inv, "    fit: optics {0:0}x, {1:0.#} readings a minute; computer {2:0.#} s, q {3:0.###}, prior {4:0.#} kn {5:0}°, bias {6:0.#}% " +
                 "{7:0.#} mil, salvo {8:0.#}% {9:0.#} mil, own turn {10:0} m, first step {11:0} m; {12}, laying {13:0.#} mil", o.Magnification, o.ReadingsPerMin,
-                k.LatencyS, k.Q, k.PriorKn, k.PriorDeg, k.ResidPct, k.DeflBiasMil, k.SalvoPct, mt.SalvoDeflMil, k.OwnTurnKickM, k.Ladder0M,
+                k.LatencyS, k.Q, k.PriorKn, k.PriorDeg, k.ResidPct, k.DeflBiasMil, k.SalvoPct, mt.SalvoDeflMil, k.OwnTurnKickM, k.FirstStepM,
                 mt.DirectorFiring ? "director firing" : "each gun lays itself", mt.LayMil));
             Line(string.Format(Inv, "    a gun: reload {0:0.#} s ({1:0.#} a minute), trains {2:0.#}°/s, elevates {3:0.#}°/s to {4:0}°; pattern {5:0.#}% of the range",
                 m.ReloadS, 60 / m.ReloadS, m.TrainDegS, m.ElevateDegS, m.MaxElevationDeg, row.PatternPct));

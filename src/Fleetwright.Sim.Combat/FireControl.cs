@@ -142,29 +142,84 @@ public static class FireControl
         Straddle,
     }
 
-    /// <summary>The RN's ladder (fire-control-research.md §9): correct by the step until the fall crosses the target,
-    /// then halve it; a straddle keeps the correction and halves the step; never under half a pattern. Each judgement is
-    /// applied against the correction its salvo was fired with, so spots don't pile up (the reference's
-    /// <c>engage()</c>).</summary>
-    public struct Ladder
+    /// <summary>The bracket a battery's spots make, kept in correction space (fire-control.md F6;
+    /// fire-control-research.md §9, computing.md §2.5). Each spotted salvo says the target lies beyond the range
+    /// correction it was fired with (short), short of it (over) or about on it (a straddle), so the spots bound the
+    /// correction the target needs from below and above, whatever order they come in. Open on a side, the next salvo
+    /// goes a step beyond the bound seen; closed, into its middle: the RN's 400, 200, 100 yd and the USN's bracket and
+    /// halve are both this, and the bracket is never let narrower than a floor (the USN's "never below the pattern").
+    /// It isn't hard: each bound widens with time at the computer's own doubt of the range rate (the truth drifts in
+    /// range as the rate's error carries it), and a spot against a bound drops it.</summary>
+    public struct Bracket
     {
+        /// <summary>The correction the target needs is over <see cref="Lo"/> and under <see cref="Hi"/>, m along the line
+        /// of fire (infinite: open), as each stood when it was set.</summary>
+        public double Lo, Hi;
+        public long LoMs, HiMs;
+        /// <summary>The step beyond a bound while the other side is open, m.</summary>
         public double Step;
-        public int Last;
 
-        /// <summary>The range correction after a judgement on a salvo fired with <paramref name="firedWith"/>.</summary>
-        public double Apply(Sign sign, double firedWith, double patternM, double minStepM)
+        public static Bracket Open(double stepM) => new() { Lo = double.NegativeInfinity, Hi = double.PositiveInfinity, Step = stepM };
+
+        public readonly bool Closed => !double.IsInfinity(Lo) && !double.IsInfinity(Hi);
+
+        /// <summary>The low bound at a time, widened at the drift (m/s) since it was set.</summary>
+        public readonly double LoAt(long ms, double driftMs) => Lo - driftMs * Math.Max(ms - LoMs, 0) / 1000.0;
+
+        public readonly double HiAt(long ms, double driftMs) => Hi + driftMs * Math.Max(ms - HiMs, 0) / 1000.0;
+
+        /// <summary>The correction to fire with now: the middle of a closed bracket, a step beyond the bound of an open one,
+        /// none before the first spot.</summary>
+        public readonly double Aim(long ms, double driftMs)
         {
-            double floor = Math.Max(minStepM, 0.5 * patternM);
-            if (sign == Sign.Straddle)
+            double lo = LoAt(ms, driftMs), hi = HiAt(ms, driftMs);
+            return Closed ? 0.5 * (lo + hi) : !double.IsInfinity(Lo) ? lo + Step : !double.IsInfinity(Hi) ? hi - Step : 0;
+        }
+
+        /// <summary>A spot of a salvo fired with the correction <paramref name="at"/> taken in at a time: a straddle sets
+        /// the bracket to the pattern round it; an over (short) sets the high (low) bound, dropping the other if it's
+        /// against it, and pushes the other out to the floor's width.</summary>
+        public void Spot(Sign sign, double at, long ms, double driftMs, double patternM, double floorM)
+        {
+            double lo = LoAt(ms, driftMs), hi = HiAt(ms, driftMs);
+            switch (sign)
             {
-                Step = Math.Max(floor, Step / 2);
-                return firedWith;
+                case Sign.Straddle:
+                    double half = 0.5 * Math.Max(patternM, floorM);
+                    (lo, hi) = (at - half, at + half);
+                    break;
+                case Sign.Over:
+                    if (at <= lo)
+                        lo = double.NegativeInfinity;
+                    hi = Math.Min(hi, at);
+                    lo = Math.Min(lo, hi - floorM);
+                    break;
+                default:
+                    if (at >= hi)
+                        hi = double.PositiveInfinity;
+                    lo = Math.Max(lo, at);
+                    hi = Math.Max(hi, lo + floorM);
+                    break;
             }
-            int d = sign == Sign.Over ? -1 : 1;
-            if (Last != 0 && d != Last)
-                Step = Math.Max(floor, Step / 2);
-            Last = d;
-            return firedWith + d * Step;
+            (Lo, Hi, LoMs, HiMs) = (lo, hi, ms, ms);
+        }
+
+        /// <summary>The bracket opened round its middle to at least a width (the solution disturbed: own ship turning, the
+        /// target seen to turn).</summary>
+        public void Widen(long ms, double driftMs, double widthM)
+        {
+            if (!Closed)
+                return;
+            double lo = LoAt(ms, driftMs), hi = HiAt(ms, driftMs), mid = 0.5 * (lo + hi), half = 0.5 * Math.Max(hi - lo, widthM);
+            (Lo, Hi, LoMs, HiMs) = (mid - half, mid + half, ms, ms);
+        }
+
+        /// <summary>One side dropped (fire for effect gone wrong one way): the spots said the target is beyond (short) or
+        /// short of (over) the bracket, so it opens that way from the bound they set.</summary>
+        public void OpenToward(Sign side, long ms, double driftMs)
+        {
+            double lo = LoAt(ms, driftMs), hi = HiAt(ms, driftMs);
+            (Lo, Hi, LoMs, HiMs) = side == Sign.Short ? (lo, double.PositiveInfinity, ms, ms) : (double.NegativeInfinity, hi, ms, ms);
         }
     }
 }

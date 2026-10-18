@@ -110,6 +110,7 @@ sealed class FcRun
 {
     public GunnerySystem.Tally Tally;
     public readonly List<GunnerySystem.SalvoReport> Salvos = [];
+    public readonly List<GunnerySystem.SpotReport> Spots = [];
     public readonly List<long> Manoeuvres = [];
     /// <summary>When own ship was put on a new course (a turn policy).</summary>
     public readonly List<long> OwnManoeuvres = [];
@@ -153,6 +154,7 @@ static class FcBench
             run.Salvos.Add(r);
             fall = r;
         };
+        w.Gunnery.Spotted = r => run.Spots.Add(r);
         double Uniform(double lo, double hi) => lo + (hi - lo) * rng.NextDouble();
         double Gauss() => Math.Sqrt(-2 * Math.Log(1 - rng.NextDouble())) * Math.Cos(2 * Math.PI * rng.NextDouble());
         long start = c.Start.Ms, end = start + (long)(c.Minutes * 60_000);
@@ -297,6 +299,13 @@ sealed record FcStats
     public double[] Recovery = [];
     /// <summary>The salvos' mean fall in range against the target (RMS, m), fired 5 minutes or more after the track.</summary>
     public double MpiRangeM;
+    /// <summary>The fire discipline (fire-control.md F6): the first straddle's salvo and the shells fired to it (medians),
+    /// the ranging salvos' share of the shells, the median interval between ranging salvos and between salvos in fire
+    /// for effect (s), and shells a hit.</summary>
+    public double StraddleSalvo, ShellsToStraddle, RangingShellPct, RangingIntervalS, EffectIntervalS, ShellsPerHit;
+    /// <summary>The spotter's calls against the truth: the share of seen spots he called straddles, and of those the share
+    /// that were; of the salvos that truly straddled, the share he called so.</summary>
+    public double CalledStraddlePct, CalledTruePct, TrueCalledPct;
 
     static readonly double[] SettleEdges = [120, 240, 480, double.PositiveInfinity], RecoveryEdges = [0, 60, 120, 240];
 
@@ -311,6 +320,11 @@ sealed record FcStats
         var firstSalvo = new List<double>();
         var afterOpen = new List<double>();
         var circles = new List<double>();
+        var toStraddle = new List<double>();
+        var shellsToStraddle = new List<double>();
+        var rangingGaps = new List<double>();
+        var effectGaps = new List<double>();
+        int rangingShells = 0, seen = 0, called = 0, calledTrue = 0, trueSeen = 0, trueCalled = 0;
         foreach (var r in runs)
         {
             var t = r.Tally;
@@ -324,6 +338,24 @@ sealed record FcStats
                 firstStraddle.Add((t.FirstStraddleMs - t.TrackMs) / 1000.0);
             var salvos = r.Salvos.OrderBy(s => s.FiredMs).ToList();
             int hit = salvos.FindIndex(s => s.Hits > 0);
+            int straddle = salvos.FindIndex(s => s.Straddle);
+            if (straddle >= 0)
+            {
+                toStraddle.Add(straddle + 1);
+                shellsToStraddle.Add(salvos.Take(straddle + 1).Sum(s => s.Shells));
+            }
+            rangingShells += t.RangingShells;
+            var fell = salvos.ToDictionary(s => s.FiredMs);
+            foreach (var p in r.Spots)
+                if (p.Seen && fell.TryGetValue(p.FiredMs, out var sv))
+                {
+                    bool call = p.Sign == Fleetwright.Sim.Combat.FireControl.Sign.Straddle;
+                    (seen, called, calledTrue) = (seen + 1, called + (call ? 1 : 0), calledTrue + (call && sv.Straddle ? 1 : 0));
+                    (trueSeen, trueCalled) = (trueSeen + (sv.Straddle ? 1 : 0), trueCalled + (call && sv.Straddle ? 1 : 0));
+                }
+            for (int i = 1; i < salvos.Count; i++)
+                if (salvos[i].Phase == salvos[i - 1].Phase)
+                    (salvos[i].Phase == FirePhase.Effect ? effectGaps : rangingGaps).Add((salvos[i].FiredMs - salvos[i - 1].FiredMs) / 1000.0);
             if (hit >= 0)
             {
                 firstSalvo.Add(hit + 1);
@@ -356,6 +388,15 @@ sealed record FcStats
         st.Settle = [.. settle.Select(FcBench.Rms)];
         st.Recovery = [.. recovery.Select(FcBench.Rms)];
         st.MpiRangeM = FcBench.Rms(mpi);
+        st.StraddleSalvo = FcBench.Median(toStraddle);
+        st.ShellsToStraddle = FcBench.Median(shellsToStraddle);
+        st.RangingShellPct = 100.0 * rangingShells / Math.Max(st.Shells, 1);
+        st.RangingIntervalS = FcBench.Median(rangingGaps);
+        st.EffectIntervalS = FcBench.Median(effectGaps);
+        st.ShellsPerHit = st.Hits > 0 ? (double)st.Shells / st.Hits : double.NaN;
+        st.CalledStraddlePct = 100.0 * called / Math.Max(seen, 1);
+        st.CalledTruePct = called > 0 ? 100.0 * calledTrue / called : double.NaN;
+        st.TrueCalledPct = trueSeen > 0 ? 100.0 * trueCalled / trueSeen : double.NaN;
         st.OwnKn = runs.Average(r => r.OwnKn);
         st.TargetKn = runs.Average(r => r.TargetKn);
         st.CircleDegS = circles.Count > 0 ? circles.Average() : double.NaN;
@@ -377,6 +418,11 @@ sealed record FcStats
             FcBench.F(Recovery[0]), FcBench.F(Recovery[1]), FcBench.F(Recovery[2]));
         yield return string.Format(inv, "  the salvos' mean fall in range after 5 min, RMS {0} m; made good: own {1:0.0} kn, target {2:0.0} kn{3}",
             FcBench.F(MpiRangeM), OwnKn, TargetKn, double.IsNaN(CircleDegS) ? "" : string.Format(inv, ", circling {0:0.00}°/s", CircleDegS));
+        yield return string.Format(inv, "  fire discipline: the first straddle on salvo {0} after {1} shells (medians); ranging {2:0}% of the shells, a salvo " +
+            "every {3} s; fire for effect every {4} s; {5} shells a hit", FcBench.F(StraddleSalvo), FcBench.F(ShellsToStraddle), RangingShellPct,
+            FcBench.F(RangingIntervalS), FcBench.F(EffectIntervalS), FcBench.F(ShellsPerHit, "0.0"));
+        yield return string.Format(inv, "  the spotter called {0:0}% of the falls he saw straddles, {1}% of them true; of the true straddles he called {2}%",
+            CalledStraddlePct, FcBench.F(CalledTruePct), FcBench.F(TrueCalledPct));
     }
 }
 

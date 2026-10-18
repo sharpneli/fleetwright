@@ -457,7 +457,7 @@ public readonly record struct ComputerRow
     public double ResidPct { get; init; }
     public double DeflBiasMil { get; init; }
     public double OwnTurnKickM { get; init; }
-    public double Ladder0M { get; init; }
+    public double FirstStepM { get; init; }
     public double SalvoPct { get; init; }
 }
 

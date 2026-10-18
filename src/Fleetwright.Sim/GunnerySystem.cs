@@ -28,6 +28,19 @@ public enum BatteryState : byte
     Silent,
 }
 
+/// <summary>Where an engaged battery is in its fire discipline (docs/battle/fire-control.md F6).</summary>
+public enum FirePhase : byte
+{
+    /// <summary>The track settling; the guns load and lay, and wait.</summary>
+    Opening,
+    /// <summary>Finding the bracket: partial salvos, each fired when the last one's spot is in, so each carries something
+    /// new.</summary>
+    Ranging,
+    /// <summary>Fire for effect, from the spotter's straddle: full salvos as fast as the guns load and lay, the spots
+    /// still correcting; back to ranging when a run of them isn't straddling or the solution is disturbed.</summary>
+    Effect,
+}
+
 /// <summary>The batteries' fire control and firing (docs/battle/fighting.md 4.2b; a port of
 /// research/simulation/fire_control_ref.py <c>engage()</c> cut to its spine, one cause of a miss a stage):
 /// <list type="bullet">
@@ -41,14 +54,17 @@ public enum BatteryState : byte
 /// <item><b>Solve.</b> The target where it'll be after the time of flight, from the track (which lags by the latency),
 /// the gun laid for it with its ship's motion in (<see cref="FireControl.Solve"/>), plus the engagement's residual bias
 /// and the spotting corrections.</item>
-/// <item><b>Lay, fire.</b> Mounts train and elevate as analytic anchors (<see cref="CombatStore"/>); a salvo goes at the
-/// first instant the bearing mounts are loaded and laid. Each salvo draws one common error (the computer's salvo-to-salvo
-/// error, times battle's <see cref="SimSettings.GunneryCombat"/>; the director's laying error, or each gun's for a
-/// battery without director firing), each shell its own dispersion from the gun's pattern; a ship swinging adds the
-/// computer's own-turn kick.</item>
+/// <item><b>Lay, fire.</b> Mounts train and elevate as analytic anchors (<see cref="CombatStore"/>). The fire discipline
+/// (fire-control.md F6, <see cref="FirePhase"/>): after the opening, a battery ranges with partial salvos, each going
+/// when the last one's spot is in; on the spotter's straddle it fires for effect, a full salvo at the first instant the
+/// bearing mounts are loaded and laid. Each salvo draws one common error (the computer's salvo-to-salvo error, times
+/// battle's <see cref="SimSettings.GunneryCombat"/>; the director's laying error, or each gun's for a battery without
+/// director firing), each shell its own dispersion from the gun's pattern; a ship swinging adds the computer's own-turn
+/// kick.</item>
 /// <item><b>Spot.</b> When a salvo's last shell is down, and <see cref="SimSettings.SpotDelayMs"/> on, the spotter (the
-/// highest eye) judges it over, short or straddling (σ = k·R²/h) and sees its deflection; the RN's ladder corrects the
-/// next salvos, against the correction that salvo was fired with.</item>
+/// highest eye) judges it over, short or straddling (σ = k·R²/h) and sees its deflection; the range spots make a bracket
+/// in correction space (<see cref="FireControl.Bracket"/>), each against the correction its salvo was fired with, and
+/// the next salvo goes into it.</item>
 /// </list>
 /// Hits are counted and logged but do nothing yet (4.3a). Batteries fire only on the fine tick. World state: replays,
 /// hashes. Registered fourth, so its id is always <see cref="Id"/>.</summary>
@@ -78,7 +94,22 @@ public sealed class GunnerySystem : IWorldSystem
         /// <summary>When a judgement looks at the target again.</summary>
         public long JudgeMs;
         public double BiasR, BiasD, CorrR, CorrD, SpotHeightM;
-        public FireControl.Ladder Ladder;
+        /// <summary>Its fire discipline (F6): the phase, the spots' bracket, and the computer's doubt of the range rate
+        /// along the line of fire (m/s: the bracket widens at it).</summary>
+        public FirePhase Phase;
+        public FireControl.Bracket Bracket;
+        public double DriftMs;
+        /// <summary>Its salvos in the air or down and not yet spotted; while ranging the next waits for them, or until
+        /// <see cref="WaitMs"/> (a spot that never came).</summary>
+        public int InFlight;
+        public long WaitMs;
+        /// <summary>In fire for effect, the spots in a row that weren't straddles, and of them overs and shorts.</summary>
+        public int Misses, MissOver, MissShort;
+        /// <summary>Which mount the next ranging salvo starts from (the groups alternate), and the tracker's turns seen.</summary>
+        public int Group, Turns;
+        public bool OwnTurning;
+        public int RangingSalvos, RangingShells;
+        public long EffectMs;
         public int Salvos, Shells, Hits, Straddles, Arm, SensorCount, PendHead, PendCount;
         /// <summary>The shooter's condition's version its instruments were picked at (damage: a director lost).</summary>
         public int Condition;
@@ -128,18 +159,28 @@ public sealed class GunnerySystem : IWorldSystem
         public int Generation, Fc, FcGeneration, Target, Shells, Left, Landed, Over, Short, Hits;
         public double CorrR, CorrD, PatternM, RangeM, SpotSigmaM, Common, SumY, MinX, MaxX, TargetLengthM, SumX, AimErrM, AimErrAcrossM;
         public long FiredMs;
+        public FirePhase Phase;
         public Vec3d U, W;
     }
 
     /// <summary>A salvo's fall, for tools (not world state): when it was fired and by whom, its range and shells, where
     /// its shells fell on average against the target (along the line of fire and to its right, m), how far the aim
     /// point was from where the target truly went (the track's error, as the target's course and speed carry it on),
-    /// the range correction it was fired with, its hits, and whether it straddled.</summary>
+    /// the range correction it was fired with, its hits, whether it straddled, and the phase it was fired in.</summary>
     public readonly record struct SalvoReport(long FiredMs, int Shooter, int Battery, double RangeM, int Shells, double MeanX, double MeanY, double AimErrM,
-        double AimErrAcrossM, double CorrR, int Hits, bool Straddle);
+        double AimErrAcrossM, double CorrR, int Hits, bool Straddle, FirePhase Phase);
+
+    /// <summary>A salvo's spot, for tools: the salvo (by when it was fired), whether the spotter saw its fall and what he
+    /// judged it, the bracket after it (m; infinite: open) and the correction the next salvo goes with, and the phase
+    /// after it.</summary>
+    public readonly record struct SpotReport(long FiredMs, int Shooter, int Battery, bool Seen, FireControl.Sign Sign, double Lo, double Hi, double Next,
+        FirePhase Phase);
 
     /// <summary>Told of each salvo once it's down (tools and benches; the world never reads it).</summary>
     public Action<SalvoReport>? Reported { get; set; }
+
+    /// <summary>Told of each salvo's spot (tools and benches).</summary>
+    public Action<SpotReport>? Spotted { get; set; }
 
     readonly SimSettings settings;
     readonly ShipSystem ships;
@@ -253,10 +294,10 @@ public sealed class GunnerySystem : IWorldSystem
             fc = new Fc
             {
                 Alive = true, Generation = gen, Shooter = shooter, Battery = b, Target = target, StartMs = now, Level = lv, Local = row.Local,
-                FirstHitMs = -1, FirstStraddleMs = -1, DirectorLevel = lv, Fit = fit, DirectorFit = fit,
+                FirstHitMs = -1, FirstStraddleMs = -1, EffectMs = -1, DirectorLevel = lv, Fit = fit, DirectorFit = fit,
                 Table = shells.TableOf(store.Combat.Loadout(slot), b), ElevationDeg = double.NaN,
             };
-            fc.Ladder.Step = fit.Computer.Ladder0M;
+            fc.Bracket = FireControl.Bracket.Open(fit.Computer.FirstStepM);
             var r = stream.Derive((ulong)f).Derive((ulong)gen);
             fc.BiasR = r.NextGaussian();
             fc.BiasD = r.NextGaussian();
@@ -612,16 +653,34 @@ public sealed class GunnerySystem : IWorldSystem
         }
         fc.State = !laid ? BatteryState.OutOfRange : !bears ? BatteryState.NotBearing : now < fc.OpenMs ? BatteryState.Tracking : BatteryState.Firing;
 
-        // time the salvo: the first instant the bearing mounts are loaded and laid
-        if (fc.State != BatteryState.Firing || fc.SalvoPending || !sees)
+        // fire discipline (F6): the bracket widens at the computer's doubt of the range rate along the line of fire; own
+        // ship's turn (any for a machine that takes it as the target's, a hard one for the rest) or the target seen to
+        // turn sends a battery firing for effect back to ranging, its bracket opened to the first step
+        fc.DriftMs = fc.Tracker.RateSigma(computer, Earth.Forward(aim, Earth.Bearing(ship.Position, aim)));
+        double yaw = Math.Abs(double.RadiansToDegrees(ship.YawRate));
+        bool plain = !computer.HelmFree && computer.Tracker is TrackerKind.RateClock or TrackerKind.Judgement;
+        bool turning = yaw > (plain ? settings.OwnTurnYawDegS : settings.HardTurnYawDegS);
+        if (turning && !fc.OwnTurning || fc.Tracker.Turns != fc.Turns)
+            Disturbed(ref fc, now);
+        (fc.OwnTurning, fc.Turns) = (turning, fc.Tracker.Turns);
+        if (fc.State == BatteryState.Firing && fc.Phase == FirePhase.Opening)
+            fc.Phase = FirePhase.Ranging;
+
+        // time the salvo: ranging, when the last one's spot is in and enough guns are loaded and laid; firing for effect,
+        // the first instant the bearing mounts are
+        if (fc.State != BatteryState.Firing || fc.SalvoPending || !sees || fc.Phase == FirePhase.Ranging && fc.InFlight > 0 && now < fc.WaitMs)
             return;
         long when = now;
-        for (int j = 0; j < mounts.Length; j++)
-            if (firing[j])
-            {
-                ref readonly var ms = ref store.Combat.Mount(slot, mounts[j]);
-                when = Math.Max(when, Math.Max(ms.LoadedMs, CombatStore.LaidBy(ms, cls.Mounts[mounts[j]])));
-            }
+        int need = fc.Phase == FirePhase.Ranging ? RangingGuns(cond, mounts, firing) : int.MaxValue, got = 0;
+        for (int k = 0; k < mounts.Length && got < need; k++)
+        {
+            int j = (fc.Group + k) % mounts.Length;
+            if (!firing[j])
+                continue;
+            ref readonly var ms = ref store.Combat.Mount(slot, mounts[j]);
+            when = Math.Max(when, Math.Max(ms.LoadedMs, CombatStore.LaidBy(ms, cls.Mounts[mounts[j]])));
+            got += cond.Guns(mounts[j]);
+        }
         if (when < now + settings.FireControlMs)
         {
             fc.SalvoPending = true;
@@ -749,15 +808,29 @@ public sealed class GunnerySystem : IWorldSystem
             // each mount fires the first load of the magazine order it has rounds of
             fireLoad[j] = firing[j] ? store.Combat.NextLoad(slot, mounts[j]) : -1;
             firing[j] &= fireLoad[j] >= 0;
-            if (firing[j])
+        }
+        // ranging (F6): a partial salvo, the mounts taken from where the last one left off, so the groups alternate
+        var phase = fc.Phase;
+        int need = phase == FirePhase.Ranging ? RangingGuns(cond, mounts, firing) : int.MaxValue, next = fc.Group;
+        for (int k = 0; k < mounts.Length; k++)
+        {
+            int j = (fc.Group + k) % mounts.Length;
+            if (!firing[j])
+                continue;
+            if (n >= need)
             {
-                n += cond.Guns(mounts[j]);
-                if (lead < 0)
-                    lead = loads.Loads(fc.Battery)[fireLoad[j]].ShellType;
+                firing[j] = false;
+                continue;
             }
+            n += cond.Guns(mounts[j]);
+            next = j + 1;
+            if (lead < 0)
+                lead = loads.Loads(fc.Battery)[fireLoad[j]].ShellType;
         }
         if (n == 0)
             return;
+        if (phase == FirePhase.Ranging)
+            fc.Group = next % mounts.Length;
         // the battery's computer works in its lead shell's table: the first firing mount's (the next salvos lay with it)
         fc.Table = shells.TableOf(loads, fc.Battery, lead);
 
@@ -781,7 +854,8 @@ public sealed class GunnerySystem : IWorldSystem
             return;
         double perRad = table.RangePerDeg(e0, h0) * 180 / Math.PI;
 
-        // the salvo's common error (fire_control_ref.py engage(), "fire")
+        // the range correction from the spots' bracket, then the salvo's common error (fire_control_ref.py engage(), "fire")
+        fc.CorrR = fc.Bracket.Aim(now, fc.DriftMs);
         var r = stream.Derive((ulong)f).Derive((ulong)fc.Generation).Derive(0x5A1u).Derive((ulong)fc.Salvos);
         double layRad = mount.LayMil * FireControl.Mil * crew.Lay * combat;
         double eEl = mount.DirectorFiring ? r.NextGaussian() * layRad * perRad : 0, eTr = mount.DirectorFiring ? r.NextGaussian() * layRad * range : 0;
@@ -810,7 +884,7 @@ public sealed class GunnerySystem : IWorldSystem
             Alive = true, Generation = sv.Generation + 1, Fc = f, FcGeneration = fc.Generation, Target = fc.Target, CorrR = fc.CorrR, CorrD = fc.CorrD,
             PatternM = 4 * sr, RangeM = range, SpotSigmaM = spot, Common = 0.5 * spot * r.NextGaussian(), U = u, W = w, MinX = double.MaxValue,
             MaxX = double.MinValue, TargetLengthM = store[tslot].Handling.Class.Silhouette.LengthM, FiredMs = now,
-            AimErrM = Vec3d.Dot(p - truth, u), AimErrAcrossM = Vec3d.Dot(p - truth, w),
+            AimErrM = Vec3d.Dot(p - truth, u), AimErrAcrossM = Vec3d.Dot(p - truth, w), Phase = phase,
         };
         int salvo = shells.NewSalvo();
         for (int j = 0; j < mounts.Length; j++)
@@ -850,6 +924,10 @@ public sealed class GunnerySystem : IWorldSystem
         }
         fc.Salvos++;
         fc.Shells += sv.Shells;
+        fc.InFlight++;
+        fc.WaitMs = now + (long)(tof * 1000) + settings.SpotDelayMs + settings.RangingWaitMarginMs;
+        if (phase == FirePhase.Ranging)
+            (fc.RangingSalvos, fc.RangingShells) = (fc.RangingSalvos + 1, fc.RangingShells + sv.Shells);
         log.Add(new CombatEntry(now, CombatEvent.Fired, fc.Shooter, fc.Battery, fc.Target, sv.Shells));
         // the main battery's own shock on its breakers (E4; damage/13 §3.4)
         if (row.Kind == Battery.Main)
@@ -911,7 +989,7 @@ public sealed class GunnerySystem : IWorldSystem
         {
             long now = world.Time.Ms;
             Reported?.Invoke(new SalvoReport(sv.FiredMs, fc.Shooter, fc.Battery, sv.RangeM, sv.Landed, sv.SumX / Math.Max(sv.Landed, 1),
-                sv.SumY / Math.Max(sv.Landed, 1), sv.AimErrM, sv.AimErrAcrossM, sv.CorrR, sv.Hits, straddle));
+                sv.SumY / Math.Max(sv.Landed, 1), sv.AimErrM, sv.AimErrAcrossM, sv.CorrR, sv.Hits, straddle, sv.Phase));
             fc.Hits += sv.Hits;
             if (sv.Hits > 0 && fc.FirstHitMs < 0)
                 fc.FirstHitMs = now;
@@ -926,14 +1004,17 @@ public sealed class GunnerySystem : IWorldSystem
         world.Schedule(new WorldTime(world.Time.Ms + settings.SpotDelayMs), EventTier.Fine, si, Id, SpotEvent, sv.Generation);
     }
 
-    /// <summary>The spotter's judgement on a salvo that's down, if he sees the target: over, short or straddling, and its
-    /// deflection, into the battery's corrections.</summary>
+    /// <summary>The spotter's judgement on a salvo that's down, if he sees the target: over, short or straddling, into
+    /// the bracket (and so the next salvo's range correction) and the phase, and its deflection.</summary>
     void Spot(World world, int si)
     {
         ref var sv = ref salvos[si];
         ref var fc = ref fcs[sv.Fc];
         var store = ships.Store;
-        int slot = fc.Alive && fc.Generation == sv.FcGeneration && fc.Target == sv.Target ? store.SlotOf(fc.Shooter) : -1;
+        bool own = fc.Alive && fc.Generation == sv.FcGeneration;
+        if (own)
+            fc.InFlight = Math.Max(fc.InFlight - 1, 0);
+        int slot = own && fc.Target == sv.Target ? store.SlotOf(fc.Shooter) : -1;
         int tslot = store.SlotOf(sv.Target);
         if (slot >= 0 && tslot >= 0)
         {
@@ -952,17 +1033,69 @@ public sealed class GunnerySystem : IWorldSystem
                     sees = MarginOf(ship.Handling.Class, s, fc.Fit.Optics, frame.ToWorld(s.X, s.Y, 0), ship.HeadingDeg, target, air) >= 1;
                 }
             }
+            var sign = sv.Hits > 0 || sv.Over > 0 && sv.Short > 0 ? FireControl.Sign.Straddle : sv.Over > 0 ? FireControl.Sign.Over : FireControl.Sign.Short;
+            long now = world.Time.Ms;
             if (sees)
             {
-                var sign = sv.Hits > 0 || sv.Over > 0 && sv.Short > 0 ? FireControl.Sign.Straddle : sv.Over > 0 ? FireControl.Sign.Over : FireControl.Sign.Short;
-                fc.CorrR = fc.Ladder.Apply(sign, sv.CorrR, sv.PatternM, settings.SpotLadderMinM);
+                fc.Bracket.Spot(sign, sv.CorrR, now, fc.DriftMs, sv.PatternM, Math.Max(settings.BracketFloorM, settings.BracketFloorPatterns * sv.PatternM));
+                fc.CorrR = fc.Bracket.Aim(now, fc.DriftMs);
+                NextPhase(ref fc, sign, now);
                 var r = stream.Derive(0x5B08u).Derive((ulong)si).Derive((ulong)sv.Generation);
                 double defl = sv.SumY / Math.Max(sv.Landed, 1) + settings.SpotDeflectionMil * FireControl.Mil * sv.RangeM * r.NextGaussian();
                 if (Math.Abs(defl) > 0.25 * sv.PatternM)
                     fc.CorrD = sv.CorrD - settings.SpotDeflectionGain * defl;
             }
+            Spotted?.Invoke(new SpotReport(sv.FiredMs, fc.Shooter, fc.Battery, sees, sign, fc.Bracket.LoAt(now, fc.DriftMs), fc.Bracket.HiAt(now, fc.DriftMs),
+                fc.CorrR, fc.Phase));
         }
         FreeSalvo(si);
+    }
+
+    /// <summary>A spot's say on the phase (F6): a straddle while ranging opens fire for effect; in fire for effect a run
+    /// of spots without one goes back to ranging, the bracket opened the way they all pointed if they did.</summary>
+    void NextPhase(ref Fc fc, FireControl.Sign sign, long now)
+    {
+        if (sign == FireControl.Sign.Straddle)
+        {
+            if (fc.Phase == FirePhase.Ranging && fc.EffectMs < 0)
+                fc.EffectMs = now;
+            if (fc.Phase == FirePhase.Ranging)
+                fc.Phase = FirePhase.Effect;
+            (fc.Misses, fc.MissOver, fc.MissShort) = (0, 0, 0);
+            return;
+        }
+        if (fc.Phase != FirePhase.Effect)
+            return;
+        fc.Misses++;
+        if (sign == FireControl.Sign.Over)
+            fc.MissOver++;
+        else
+            fc.MissShort++;
+        if (fc.Misses < settings.EffectMissesToRange)
+            return;
+        if (fc.MissOver == 0 || fc.MissShort == 0)
+            fc.Bracket.OpenToward(sign, now, fc.DriftMs);
+        (fc.Phase, fc.Misses, fc.MissOver, fc.MissShort) = (FirePhase.Ranging, 0, 0, 0);
+    }
+
+    /// <summary>The solution disturbed (own ship turning, the target seen to turn): a battery firing for effect goes back
+    /// to ranging, its bracket opened round its middle to the first step.</summary>
+    void Disturbed(ref Fc fc, long now)
+    {
+        fc.Bracket.Widen(now, fc.DriftMs, fc.Fit.Computer.FirstStepM);
+        if (fc.Phase == FirePhase.Effect)
+            (fc.Phase, fc.Misses, fc.MissOver, fc.MissShort) = (FirePhase.Ranging, 0, 0, 0);
+    }
+
+    /// <summary>A ranging salvo's guns: a share of those that bear, at least enough to spot a wild shot by (all of them if
+    /// fewer).</summary>
+    int RangingGuns(ShipCondition cond, ReadOnlySpan<int> mounts, bool[] firing)
+    {
+        int all = 0;
+        for (int j = 0; j < mounts.Length; j++)
+            if (firing[j])
+                all += cond.Guns(mounts[j]);
+        return Math.Min(all, Math.Max(settings.RangingGunsMin, (int)Math.Ceiling(settings.RangingGunsShare * all - 1e-9)));
     }
 
     static double Mod(double d) => (d % 360 + 360) % 360;
@@ -972,9 +1105,10 @@ public sealed class GunnerySystem : IWorldSystem
     // ------------------------------------------------------------------ reading it
 
     /// <summary>An engaged battery's counts so far, for tools and tests: salvos, shells, hits, straddles, when it first
-    /// hit and straddled (ms, -1 if not yet), when its track started, what it's doing and whether it's in local control.</summary>
+    /// hit and straddled (ms, -1 if not yet), when its track started, what it's doing and whether it's in local control;
+    /// its fire discipline's phase, the salvos and shells it fired ranging, and when it first fired for effect (-1).</summary>
     public readonly record struct Tally(int Salvos, int Shells, int Hits, int Straddles, long FirstHitMs, long FirstStraddleMs, long TrackMs,
-        BatteryState State, bool Local);
+        BatteryState State, bool Local, FirePhase Phase, int RangingSalvos, int RangingShells, long EffectMs);
 
     /// <summary>A ship's battery's tally, if it's engaged.</summary>
     public Tally? TallyOf(int shooter, int battery)
@@ -983,7 +1117,8 @@ public sealed class GunnerySystem : IWorldSystem
             if (fcs[i].Alive && fcs[i].Shooter == shooter && fcs[i].Battery == battery)
             {
                 ref readonly var fc = ref fcs[i];
-                return new Tally(fc.Salvos, fc.Shells, fc.Hits, fc.Straddles, fc.FirstHitMs, fc.FirstStraddleMs, fc.Tracking ? fc.TrackMs : -1, fc.State, fc.Local);
+                return new Tally(fc.Salvos, fc.Shells, fc.Hits, fc.Straddles, fc.FirstHitMs, fc.FirstStraddleMs, fc.Tracking ? fc.TrackMs : -1, fc.State, fc.Local,
+                    fc.Phase, fc.RangingSalvos, fc.RangingShells, fc.EffectMs);
             }
         return null;
     }
@@ -1041,7 +1176,10 @@ public sealed class GunnerySystem : IWorldSystem
             fc.Tracker.Hash(ref h);
             h.Add(fc.CorrR);
             h.Add(fc.CorrD);
-            h.Add(fc.Ladder.Step);
+            h.Add(fc.Bracket.Lo);
+            h.Add(fc.Bracket.Hi);
+            h.Add((int)fc.Phase);
+            h.Add(fc.InFlight);
             h.Add(fc.Salvos);
             h.Add(fc.Hits);
             h.Add(fc.PendCount);
@@ -1069,7 +1207,7 @@ public sealed class GunnerySystem : IWorldSystem
             int slot = fc.Alive ? store.SlotOf(fc.Shooter) : -1;
             if (slot < 0 || !snap.ShownSides[store[slot].Side])
                 continue;
-            (v.Shooter[n], v.Battery[n], v.Target[n], v.State[n]) = (fc.Shooter, fc.Battery, fc.Target, fc.State);
+            (v.Shooter[n], v.Battery[n], v.Target[n], v.State[n], v.Phase[n]) = (fc.Shooter, fc.Battery, fc.Target, fc.State, fc.Phase);
             (v.Salvos[n], v.Shells[n], v.Hits[n], v.Level[n], v.Local[n]) = (fc.Salvos, fc.Shells, fc.Hits, (byte)fc.Level, fc.Local);
             n++;
         }

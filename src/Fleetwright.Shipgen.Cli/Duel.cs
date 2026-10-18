@@ -33,9 +33,17 @@ static class Duel
             var one = FcBench.Once(c, settings, seed);
             long t0 = c.Start.Ms;
             foreach (var r in one.Salvos.OrderBy(s => s.FiredMs))
+            {
+                // its spot, and the bracket after it (fire-control.md F6)
+                string spot = one.Spots.FirstOrDefault(p => p.FiredMs == r.FiredMs) is { FiredMs: > 0 } p
+                    ? !p.Seen ? "  not seen" : string.Format(Inv, "  {0,-8} [{1}, {2}] next {3:+0;-0}{4}", p.Sign.ToString().ToLowerInvariant(), Bound(p.Lo),
+                        Bound(p.Hi), p.Next, p.Phase != r.Phase ? $" -> {Phase(p.Phase)}" : "")
+                    : "";
                 Console.WriteLine(string.Format(Inv,
-                    "    {0,5:0} s  R {1,6:0}  n {2,2}  fall {3,6:+0;-0} m {4,5:+0;-0} m  aim {5,6:+0;-0} {6,5:+0;-0}  corr {7,6:+0;-0}  hits {8}{9}",
-                    (r.FiredMs - t0) / 1000.0, r.RangeM, r.Shells, r.MeanX, r.MeanY, r.AimErrM, r.AimErrAcrossM, r.CorrR, r.Hits, r.Straddle ? "  STRADDLE" : ""));
+                    "    {0,5:0} s  {1}  R {2,6:0}  n {3,2}  fall {4,6:+0;-0} m {5,5:+0;-0} m  aim {6,6:+0;-0} {7,5:+0;-0}  corr {8,6:+0;-0}  hits {9}{10}{11}",
+                    (r.FiredMs - t0) / 1000.0, r.Phase == FirePhase.Effect ? "E" : "R", r.RangeM, r.Shells, r.MeanX, r.MeanY, r.AimErrM, r.AimErrAcrossM, r.CorrR,
+                    r.Hits, r.Straddle ? "  STRADDLE" : "", spot));
+            }
             foreach (long m in one.Manoeuvres)
                 Console.WriteLine(string.Format(Inv, "    {0,5:0} s  the target manoeuvres", (m - t0) / 1000.0));
         }
@@ -49,6 +57,10 @@ static class Duel
             secs, secs * 1000 / Math.Max(runs, 1), st.GunneryMsPerS * 1000));
         return 0;
     }
+
+    static string Bound(double m) => double.IsInfinity(m) ? (m > 0 ? "+inf" : "-inf") : m.ToString("+0;-0", Inv);
+
+    static string Phase(FirePhase p) => p == FirePhase.Effect ? "fire for effect" : p == FirePhase.Ranging ? "ranging" : "opening";
 
     /// <summary>A fit from the command line: a preset's number or name (director, judgement, argo, ...), or "design" for
     /// the battery's own.</summary>

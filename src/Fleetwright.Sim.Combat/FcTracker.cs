@@ -60,6 +60,8 @@ public struct FcTracker
     public FcState X;
     public FcCov P;
     public int Strikes;
+    /// <summary>How often it has seen the target turn ("target just turned": its motion's doubt opened up).</summary>
+    public int Turns;
     /// <summary>A helm-free rate clock's reference ship: own ship's position and velocity at its last reading.</summary>
     public Vec3d OwnP, OwnV;
 
@@ -263,6 +265,37 @@ public struct FcTracker
         }
     }
 
+    /// <summary>The computer's own doubt of the target's motion along a horizontal direction (a unit tangent vector), m/s
+    /// 1 sigma: what it believes, which can be wrong (a rate clock drifting on a crossing target doesn't know it). The
+    /// spots' bracket widens at it (fire-control.md F6).</summary>
+    public readonly double RateSigma(in ComputerRow c, Vec3d along)
+    {
+        switch (Kind)
+        {
+            case TrackerKind.TrueCourse:
+            {
+                double e = Vec3d.Dot(along, Earth.East(Line.Position)), n = Vec3d.Dot(along, Earth.North(Line.Position));
+                return Math.Sqrt(Math.Max(e * e * Line.P.VeVe + 2 * e * n * Line.P.VeVn + n * n * Line.P.VnVn, 0));
+            }
+            case TrackerKind.RateClock:
+                return Math.Sqrt(Math.Max(P[2], 0));   // its range rate's
+            case TrackerKind.Judgement:
+                return GuessSigma(c, Math.Sqrt(X[2] * X[2] + X[3] * X[3]));   // never learnt
+            case TrackerKind.Acceleration:
+            {
+                double e = Vec3d.Dot(along, Earth.East(Origin)), n = Vec3d.Dot(along, Earth.North(Origin));
+                return Math.Sqrt(Math.Max(e * e * P[2 * 6 + 2] + 2 * e * n * P[2 * 6 + 3] + n * n * P[3 * 6 + 3], 0));
+            }
+            default:
+            {
+                // the speed and heading's doubts through v·cos(ψ - θ), θ the direction's bearing
+                double th = Math.Atan2(Vec3d.Dot(along, Earth.East(Origin)), Vec3d.Dot(along, Earth.North(Origin)));
+                double a = X[3] - th, dv = Math.Cos(a), dpsi = -X[2] * Math.Sin(a);
+                return Math.Sqrt(Math.Max(dv * dv * P[2 * 5 + 2] + 2 * dv * dpsi * P[2 * 5 + 3] + dpsi * dpsi * P[3 * 5 + 3], 0));
+            }
+        }
+    }
+
     public readonly void Hash(ref StateHash h)
     {
         h.Add((int)Kind);
@@ -421,6 +454,7 @@ public struct FcTracker
                     P[3 * n + 3] += 100 * w * w;
                 }
                 Strikes = 0;
+                Turns++;
                 (s11, s12, s22) = (P[0] + r.R11, P[1] + r.R12, P[n + 1] + r.R22);
                 det = s11 * s22 - s12 * s12;
             }

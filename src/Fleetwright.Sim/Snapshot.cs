@@ -167,12 +167,14 @@ public sealed class ConditionsView
 }
 
 /// <summary>An engaged battery: its ship (an entity) and battery (the class's index), what it's engaged on (an entity),
-/// what it's doing, its level (local control at <see cref="Local"/>), and its salvos, shells and hits so far.</summary>
+/// what it's doing and where in its fire discipline, its level (local control at <see cref="Local"/>), and its salvos,
+/// shells and hits so far.</summary>
 public sealed class BatteriesView
 {
     public int Count;
     public int[] Shooter = [], Battery = [], Target = [], Salvos = [], Shells = [], Hits = [];
     public BatteryState[] State = [];
+    public FirePhase[] Phase = [];
     public byte[] Level = [];
     public bool[] Local = [];
 
@@ -188,6 +190,7 @@ public sealed class BatteriesView
         Array.Resize(ref Shells, n);
         Array.Resize(ref Hits, n);
         Array.Resize(ref State, n);
+        Array.Resize(ref Phase, n);
         Array.Resize(ref Level, n);
         Array.Resize(ref Local, n);
     }

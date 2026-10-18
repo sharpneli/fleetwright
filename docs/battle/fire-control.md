@@ -1,5 +1,5 @@
 # Plan: fire control (a 4.5 deepening)
-Status: **agreed with the user 2026-10-17** ("Decided" below; radar moved out); F0-F5 done 2026-10-18    Updated: 2026-10-18
+Status: **agreed with the user 2026-10-17** ("Decided" below; radar moved out); F0-F5 and F6a done 2026-10-18    Updated: 2026-10-18
 
 The fine-tune pass for the **Fire control** link of `fighting.md` 4.5 ("the trackers by era ... the clocks' limits ...
 the full set of levels, radar as a sensor, night ... splash confusion ... the designer emitting levels and sensors,
@@ -769,6 +769,57 @@ pattern floor and the rocking ladder; the IJN's ladder.
   salvo 4 at 3 min 42 s, Lion ~10 salvos at Dogger Bank, Bismarck's fifth on Hood); hits per gun a minute (the WWI
   ~0.165, 1940's 0.75-0.84 for a 14" battery at 12.7 kyd); the salvo intervals above; ammunition: a battle line's
   magazines last the hours of a Jutland, not two hours at the loading rate (`command.md` 5.1g).
+
+**The cut** (2026-10-18): F6a the phases and the bracket (items 1-5, single salvos); F6b the side's discipline
+(the ranging ways, alternating halves, the presets by navy, the scenario's and the bench's); F6c the rate spot, the
+first step from the computer's own doubt, pyramiding as a green crew's error (items 3 and 8); F6d the rate of fire
+from the parts and independent fire (items 6 and 9); F6e ammunition as a choice (item 7).
+
+- **F6a done 2026-10-18** (the phases and the bracket).
+  - *The phases* (`FirePhase`, world state, hashed, in the snapshot; the strip says "ranging" or "fire for effect"):
+    opening as before (the track's start + `GunneryOpenS`); ranging, each salvo a partial one (`RangingGunsShare` of
+    the guns that bear, at least `RangingGunsMin`, 4; the mounts taken from where the last left off, so the groups
+    alternate) fired when the last one's spot is in (`InFlight`; or 15 s past its flight and the spot's delay, a spot
+    that never came); fire for effect on the spotter's straddle, full salvos as the guns load and lay, as before.
+    Back to ranging after 3 spots in a row without a straddle (the bracket opened the way they all pointed, if they
+    did), on own ship's turn (any past 0.2°/s for a plain rate clock or a judgement, past 1°/s for a computer that
+    takes own ship's motion in) and when the tracker sees the target turn (`FcTracker.Turns`, the curved-course and
+    turn filters' detection); those two also open the bracket round its middle to the first step.
+  - *The bracket* (`FireControl.Bracket`): each spot bounds the correction the target needs, against the correction
+    its salvo was fired with, so spots in any order fit. Open on a side, the next salvo goes the first step beyond
+    the bound (the computer's `FirstStepM`, renamed from `Ladder0M`); closed, into its middle: the RN's 400-200-100
+    and the USN's halving are both this, and the first two spots give exactly the old ladder's corrections. Never
+    narrower than a pattern (`BracketFloorPatterns`, and 92 m), so in fire for effect an over or short moves the aim
+    half a pattern from the salvo's, as the old ladder's floor did. Each bound widens at the computer's own doubt of
+    the range rate along the line of fire (`FcTracker.RateSigma`, from each tracker's covariance; a judgement's never
+    learnt guess), and a spot against a bound drops it.
+  - *The bench:* `duel --trace` gives each salvo's phase and its spot (over, short, straddle, not seen), the bracket
+    after it and the next correction; the summary adds the first straddle's salvo and the shells to it, the ranging
+    salvos' share of the shells and their interval, the interval in fire for effect, shells a hit, and the spotter's
+    calls against the truth.
+  - *What it found: the spotter's straddle call.* Spotted as the reference does (each splash judged over or short
+    with its own error of k·R²/h and a common half of it; "straddle" if any over and any short), the spotter calls
+    most falls straddles at long range, and most of those calls are wrong. Queen Elizabeth on a QE at 8, 12, 16 and 20
+    kyd: he called 63, 64, 74 and 81% of the falls he saw straddles, and 81, 47, 31 and 25% of those were (he missed
+    almost no true one). With a ~400 m error a splash at 16 kyd, four or eight splashes nearly always include an over
+    and a short, and "can't tell" comes out as "straddle". So ranging ends on the first or second salvo (16 kyd: the
+    first straddle on salvo 3 after 16 shells, ranging 5% of the shells) and fire for effect holds a mean that's off,
+    corrected only by the run of misses. F6's discipline can't show what it buys until the spot says what a spotter
+    could see (F7's "what a spot says": splashes in line with the target judged by whether they hide its waterline or
+    are hidden by it, the rest by depth, and "doubtful" when he can't tell).
+  - *Numbers* (fc-history `--runs 24`): 10 of 23 in band, as before; every case within its runs' noise (Dogger Bank's
+    British 3.2 to 3.1%, the 5th BS 2.6 to 2.3%, the German 1st SG 4.1 to 4.5%); the first hits a salvo or two later at
+    long range (the 5th BS salvo 7 to 11, Dogger Bank's British 10 to 12). Squadrons over 20 seeds: Britain's hits 35
+    and 35, Germany's 92 to 122, losses 1.4 to 1.2 British ships and 0 to 0.1 German. Tsushima over 5 seeds: Russia's
+    hits 490 to 359, Japan's 686 to 498, losses 4.4 to 3.8 Russian and 3.2 to 3.0 Japanese ships.
+  - *Cost:* a battery 27 µs a game second (26 before); nothing allocated (`Fire_control_allocates_nothing`).
+  - *A bug found on the way* (committed alone): a row of light AA mounts along each beam blinded the directors on
+    their deck, so Bismarck's 150 mm never took a reading and never fired; light AA no longer blinds a post (45 classes'
+    eyes move, the WWI scenarios' hashes don't).
+  - *Tests:* `FireDisciplineTests`: the bracket takes spots in any order (the 400-200-100 by halving, an older spot
+    changes nothing, the floor, a spot against a bound, the straddle, the widening); Bismarck's 150 mm range with
+    partial salvos 24 s apart (the flight and the spot, over twice the 11 s reload) and then fire for effect at the
+    reload.
 
 ### F7 Spotting by the navy's rules
 

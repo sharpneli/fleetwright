@@ -472,7 +472,7 @@ public sealed partial class MapScene
             if (i == v.Count)
                 ImGui.TextDisabled($"{gun}: no target{(fire == FireOrder.Hold ? " (holding fire)" : "")}");
             else
-                ImGui.TextDisabled($"{gun} on {TargetLabel(s, v.Target[i])}: {StateText(v.State[i])}, " +
+                ImGui.TextDisabled($"{gun} on {TargetLabel(s, v.Target[i])}: {StateText(v.State[i], v.Phase[i])}, " +
                                    $"{(v.Local[i] ? "local control" : $"level {v.Level[i]} ({FireControlPresets.Name(v.Level[i])})")}; {v.Salvos[i]} salvos, {v.Hits[i]} hits of {v.Shells[i]}");
         }
         TorpedoRow(s, k, cls);
@@ -615,11 +615,11 @@ public sealed partial class MapScene
         return false;
     }
 
-    static string StateText(BatteryState s) => s switch
+    static string StateText(BatteryState s, FirePhase phase) => s switch
     {
         BatteryState.NoContact => "no contact",
         BatteryState.Tracking => "tracking",
-        BatteryState.Firing => "firing",
+        BatteryState.Firing => phase == FirePhase.Effect ? "fire for effect" : "ranging",
         BatteryState.NotBearing => "not bearing",
         BatteryState.OutOfRange => "out of range",
         _ => "silent (coarse tier)",
