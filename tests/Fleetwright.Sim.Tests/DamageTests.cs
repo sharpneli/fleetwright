@@ -410,7 +410,7 @@ public class DamageTests(ITestOutputHelper output)
     [Fact]
     public void A_magazine_set_off_by_a_fire_records_its_room()
     {
-        var w = World("dreadnought", out int c, Settings with { FireOutPerMin = 0, FireMagazineInPerMin = 1, FireMagazineNextPerMin = 1 });
+        var w = World("dreadnought", out int c, Settings with { FireMagazineInPerMin = 1, FireMagazineNextPerMin = 1 });
         var cls = Class("dreadnought");
         w.Apply(ShipSystem.Spawn(c, 56, 4, 0, 10));
         // a space that burns next to a magazine

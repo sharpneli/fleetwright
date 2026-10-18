@@ -18,6 +18,7 @@ public enum DamageCommand : ushort
     Burn,
     Sink,
     SetReadiness,
+    SetFirefighting,
 }
 
 /// <summary>What set a magazine off (<see cref="DamageSystem.Blast"/>).</summary>
@@ -82,13 +83,13 @@ public sealed class DamageSystem : IWorldSystem
     readonly PathBender bender = new();
     readonly Dictionary<ShipClass, FloodModel> floods = [];
     readonly double[] propellant = new double[256];
-    readonly int[] readiness = new int[256];
-    readonly int readinessDefault;
+    readonly int[] readiness = new int[256], firefighting = new int[256];
+    readonly int readinessDefault, firefightingDefault;
     double[] bearings = new double[16];
     readonly Blast[] blasts;
     int blastNext, blastCount;
     long hits;
-    bool propellantSet, readinessSet, touched;
+    bool propellantSet, readinessSet, firefightingSet, touched;
 
     readonly Sightings sightings;
 
@@ -100,6 +101,8 @@ public sealed class DamageSystem : IWorldSystem
         Array.Fill(propellant, 1.0);
         readinessDefault = Math.Max(0, Array.FindIndex(settings.FireReadiness, x => x.Name == settings.FireReadinessDefault));
         Array.Fill(readiness, readinessDefault);
+        firefightingDefault = Math.Max(0, Array.FindIndex(settings.Firefighting, x => x.Name == settings.FirefightingDefault));
+        Array.Fill(firefighting, firefightingDefault);
         blasts = new Blast[Math.Max(settings.BlastCapacity, 4)];
     }
 
@@ -134,8 +137,18 @@ public sealed class DamageSystem : IWorldSystem
 
     public FireReadiness Readiness(int side) => settings.FireReadiness[readiness[side & 255]];
 
-    /// <summary>A ship's orders kept to her side's, before anything reads them.</summary>
-    void Ready(int slot, ShipCondition k) => k.Readiness = settings.FireReadiness[readiness[ships.Store[slot].Side & 255]];
+    /// <summary>A side's firefighting doctrine (docs/battle/fire.md B4): an index of the settings' Firefighting (the
+    /// scenario's "firefighting", else <see cref="SimSettings.FirefightingDefault"/>), kept on each of its ships.</summary>
+    public static Command SetFirefighting(int side, int index) => new(Id, (ushort)DamageCommand.SetFirefighting, side, A: index);
+
+    public FirefightingDoctrine Firefighting(int side) => settings.Firefighting[firefighting[side & 255]];
+
+    /// <summary>A ship's orders and firefighting kept to her side's, before anything reads them.</summary>
+    void Ready(int slot, ShipCondition k)
+    {
+        int side = ships.Store[slot].Side & 255;
+        (k.Readiness, k.Firefighting) = (settings.FireReadiness[readiness[side]], settings.Firefighting[firefighting[side]]);
+    }
 
     /// <summary>The dev's wreck (and the tests'): a ship's part (a node of its class: a component, or a room after them,
     /// <see cref="ShipClass.RoomNode"/>) made at least this bad, and what the ship can do worked out again, as a hit
@@ -191,6 +204,12 @@ public sealed class DamageSystem : IWorldSystem
                     throw new ArgumentException($"no readiness {c.A} for side {c.Entity}");
                 readiness[c.Entity] = (int)c.A;
                 readinessSet = true;
+                break;
+            case DamageCommand.SetFirefighting:
+                if (c.Entity is < 0 or > 255 || c.A < 0 || c.A >= settings.Firefighting.Length)
+                    throw new ArgumentException($"no firefighting {c.A} for side {c.Entity}");
+                firefighting[c.Entity] = (int)c.A;
+                firefightingSet = true;
                 break;
             case DamageCommand.Wreck:
                 int slot = ships.Store.SlotOf(c.Entity);
@@ -419,6 +438,9 @@ public sealed class DamageSystem : IWorldSystem
             t = Terminal.Resolve(cls, hit, path, bender, lots, settings, ref rng, k, Trace);
             e = Effects.Apply(cls, k, hit, path, t, settings, propellant[ship.Side], ref rng);
         }
+        // its section's fire main and the fire parties there (docs/battle/fire.md B4)
+        if (!near && k.Status == ShipStatus.Afloat)
+            Fires.Hit(cls, Flood(cls), k, cls.SectionAt(hit.Point.X), now, settings, ref rng);
 
         var fx = HitEffect.None;
         if (e.Destroyed > 0)
@@ -637,7 +659,7 @@ public sealed class DamageSystem : IWorldSystem
         var how = Flooding.Settle(cls, f, k, settings, dt);
         var rng = stream.Derive(0xF100Du).Derive((ulong)ships.Store[slot].Entity).Derive((ulong)now);
         Ready(slot, k);
-        var fs = k.Fires > 0 || Fires.Hot(k) ? Fires.Step(cls, f, k, dt, settings, propellant[ships.Store[slot].Side], ref rng) : default;
+        var fs = k.Fires > 0 || Fires.Hot(k) ? Fires.Step(cls, f, k, dt, settings, propellant[ships.Store[slot].Side], ref rng, now) : default;
         touched = true;
         if (fs.Magazine)
         {
@@ -767,6 +789,13 @@ public sealed class DamageSystem : IWorldSystem
                 {
                     h.Add(s);
                     h.Add(propellant[s]);
+                }
+        if (firefightingSet)
+            for (int s = 0; s < firefighting.Length; s++)
+                if (firefighting[s] != firefightingDefault)
+                {
+                    h.Add(s + 768);
+                    h.Add(firefighting[s]);
                 }
         if (readinessSet)
             for (int s = 0; s < readiness.Length; s++)

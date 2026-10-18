@@ -92,6 +92,13 @@ public static class ScenarioLoader
                 throw new ScenarioException($"readiness of {s.Sides[side]}: no \"{name}\" (have {string.Join(", ", w.Settings.FireReadiness.Select(d => d.Name))})");
             w.Apply(DamageSystem.SetReadiness(side, k));
         }
+        foreach (var (side, name) in s.Firefighting)
+        {
+            int k = Array.FindIndex(w.Settings.Firefighting, d => d.Name == name);
+            if (k < 0)
+                throw new ScenarioException($"firefighting of {s.Sides[side]}: no \"{name}\" (have {string.Join(", ", w.Settings.Firefighting.Select(d => d.Name))})");
+            w.Apply(DamageSystem.SetFirefighting(side, k));
+        }
         var tasked = new List<(ScenarioUnit Top, Unit Unit)>();
         var loadouts = new Dictionary<(int Class, LoadoutSpec Spec), int>();   // a loadout of a class, made once (-1: it didn't fit)
         var placed = new List<(ScenarioUnit Squadron, int Index, double AsternM, double AbeamM)>();

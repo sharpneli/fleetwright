@@ -104,14 +104,15 @@ public static class Program
         shipgen fc-history [--runs N] [--case TEXT] [--ref]
             the historical record's cases (fire-control.md, "The yardstick"), each at its recorded range, weather and target
             behaviour, beside the record's band, then the orderings between them: the bench every fire-control step answers to
-        shipgen hits TARGET [--shooter DESIGN] [--battery B] [--kind ap|common|he] [--loadout SPEC] [--range M] [--aspect DEG] [--n N] [--per-ship K] [--seed S] [--show N] [--settle MIN] [--readiness NAME]
+        shipgen hits TARGET [--shooter DESIGN] [--battery B] [--kind ap|common|he] [--loadout SPEC] [--range M] [--aspect DEG] [--n N] [--per-ship K] [--seed S] [--show N] [--settle MIN] [--readiness NAME] [--firefighting NAME]
             the damage model alone (docs/battle/fighting.md 4.3a): N hits of the shooter's battery's shell (the one it
             fires, or --kind) at a range, spread over the target as the falling shells see it from --aspect degrees off
             its bow, through the world's damage system: where they struck, the outcome classes, fire, crew and holes a
             hit, the parts most often put out of action, and each ship's state after K hits (--per-ship) and MIN minutes
             of flooding and fire (default 30: the water it took, and lost to its magazine, foundered or capsized); --show prints
             the first N hits' paths; --readiness the target's orders before action for fire (unprepared, prepared, closed
-            up: the settings' FireReadiness; their default else). TARGET and DESIGN are paths or names (shipgen/designs,
+            up: the settings' FireReadiness; their default else) and --firefighting her crews' doctrine (rn-1916,
+            russian-1905, ...: the settings' Firefighting). TARGET and DESIGN are paths or names (shipgen/designs,
             Content/Scenarios/Designs).
             --loadout gives the shooter other shells (docs/battle/shells-armour-damage.md S5): BATTERY:SHELL[@SHARE][+SHELL...]
             with | between batteries; a battery is main, secondary, main[i] or secondary[i], a shell a template's name
@@ -264,7 +265,7 @@ public static class Program
                 "hits" => HitsBench.Run(a.Positional.ElementAtOrDefault(0) ?? "dreadnought", n => LoadDesign(Resolve(a, n)),
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
                     new HitsBench.Options(a.Get("shooter"), a.Int("battery", 0), a.Get("kind"), D(a, "range", 12_000), D(a, "aspect", 90), a.Int("n", 2000),
-                        a.Int("per-ship", 1), a.Int("seed", 1), a.Int("show", 0), D(a, "settle", 30), a.Get("loadout"), a.Get("readiness"))),
+                        a.Int("per-ship", 1), a.Int("seed", 1), a.Int("show", 0), D(a, "settle", 30), a.Get("loadout"), a.Get("readiness"), a.Get("firefighting"))),
                 "nearmiss" => NearMissBench.Run(a.Positional.ElementAtOrDefault(0) ?? "destroyer", n => LoadDesign(Resolve(a, n)),
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
                     new NearMissBench.Options(a.Get("shooter"), a.Int("battery", 0), a.Get("kind"), a.Get("loadout"), D(a, "range", 15_000), D(a, "aspect", 90),

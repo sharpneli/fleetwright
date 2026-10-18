@@ -495,6 +495,11 @@ public static class ShipClassCompiler
             }
             FireLinks(c, rows);
             c.fireSpaces = rows.ToArray();
+            double mx = 0, mv = 0;
+            foreach (var r in c.rooms)
+                if (r.Kind is RoomKind.BoilerRoom or RoomKind.EngineRoom)
+                    (mx, mv) = (mx + (r.X0 + r.X1) / 2 * r.VolumeM3, mv + r.VolumeM3);
+            c.PumpSection = mv > 0 ? c.SectionAt(mx / mv) : c.sections.Length / 2;
 
             // the section's top cell nearest the centreline: where a fire on its deck or in its superstructure is shown
             int TopCell(int s)

@@ -42,6 +42,8 @@ public struct BurnState
 {
     public double Q, E, E0, Involved, T, PhaseS, DevS, Seat, Charges, ChargesMW, InvolvedMax, Mop;
     public bool Hot;
+    /// <summary>The fire watch's hose on it (B4): 0 not yet, 1 on, 2 cut.</summary>
+    public byte Watch;
     public BurnPhase Phase;
     public readonly bool Burning => Phase is > BurnPhase.None and < BurnPhase.Out;
 }
@@ -56,6 +58,17 @@ public enum BurnEvent : byte
     Dry,
 }
 
+/// <summary>A fire party (docs/battle/fire.md B4): its men, their skill (1, the gun crews turned to less), the section it's
+/// in, the fire space it's sent to (-1: none), when it gets there and when a hit stopped it until (world ms), and whether
+/// it has mustered.</summary>
+public struct FireParty
+{
+    public double Men, Skill;
+    public int Section, Target;
+    public long ArriveMs, StopMs;
+    public bool Mustered;
+}
+
 /// <summary>The water on a fire (docs/battle/fire.md B3): the flow as fog would do the work (L/min), the flow thrown
 /// (L/min), and the most of it the fire can boil (the nozzle's share).</summary>
 public readonly record struct FireWater(double FogLpm, double Lpm, double BoilShare);
@@ -66,19 +79,21 @@ public readonly record struct FireWater(double FogLpm, double Lpm, double BoilSh
 /// room at a time and burns at the lower of its air (the openings, 1.5·A√H MW) and its fuel (0.25 MW/m² over the
 /// involved area, less for thin loads); it decays on its last fifth and goes out when the fuel's gone. A propellant seat
 /// burns its charges on top, by its own oxygen.
-/// <para>B1: the openings are the ship's orders' doors (her readiness), two a part, a cell's holes to the sea and what
-/// bursts opened or tore; a developed fire spreads along the class's fire links (open paths in a minute or two, steel up,
-/// sideways and down after delays, the weather deck along), and a space that went out hot may light again. Fire v0's
-/// stand-ins stay until B2 and B4: a burning space harms its rooms and costs crew by the minute, is put out by its crew
-/// with a chance a minute, and may set off a magazine in it or next to it. Pure and allocation-free; the draws come from
-/// the stream it's given.</para></summary>
+/// <para>The openings are the ship's orders' doors (her readiness), two a part, a cell's holes to the sea and what bursts
+/// opened or tore; a developed fire spreads along the class's fire links (open paths in a minute or two, steel up,
+/// sideways and down after delays, the weather deck along), and a space that went out hot may light again (B1). Water
+/// knocks a fire down, holds it or floods the ship (B3); her side's doctrine sends the water (B4: the fire watch's hose,
+/// the parties, the main by section). Fire v0's stand-ins stay until B2: a burning space harms its rooms and costs crew
+/// by the minute, and may set off a magazine in it or next to it. Pure and allocation-free; the draws come from the
+/// stream it's given.</para></summary>
 public static class Fires
 {
-    public static FireStep Step(ShipClass c, FloodModel f, ShipCondition k, double dt, SimSettings s, double propellant, ref RandomStream r)
+    public static FireStep Step(ShipClass c, FloodModel f, ShipCondition k, double dt, SimSettings s, double propellant, ref RandomStream r, long nowMs = 0)
     {
         var res = new FireStep { MagazineRoom = -1 };
-        double crew = Math.Clamp(1 - k.CrewLost / f.Complement, 0, 1);
-        double harm = Chance(s.FireHarmPerMin, dt), put = Chance(s.FireOutPerMin * crew, dt), reflash = Chance(s.FireReflashPerMin, dt);
+        Fight(c, f, k, nowMs, s);
+        double harm = Chance(s.FireHarmPerMin, dt);
+        double reflash = Chance(s.FireReflashPerMin * (k.Firefighting.ReflashWatch ? s.FireReflashWatchShare : 1), dt);
         double magIn = Chance(s.FireMagazineInPerMin * propellant, dt), magNext = Chance(s.FireMagazineNextPerMin * propellant, dt);
         var spaces = c.FireSpaces;
         for (int i = 0; i < spaces.Length; i++)
@@ -99,7 +114,7 @@ public static class Fires
                 continue;
             }
             bool cell = row.Kind == FireSpaceKind.Cell;
-            if (Wet(f, k, i, s) || r.NextDouble() < put)
+            if (Wet(f, k, i, s))
             {
                 Douse(c, k, i, s);
                 res.Out++;
@@ -162,6 +177,8 @@ public static class Fires
         double vent = Vent(c, k, space, s), q = Load(row, k);
         bool flamesOut = !row.OpenAir && Fuel(x.Involved, q, s) > s.FireFlamesOutRatio * s.FireVentMW * vent;
         double openPath = s.FireOpenPathPerMin * Math.Min(1, x.Q / s.FireOpenPathMW) * (flamesOut ? s.FireFlamesOutK : 1);
+        // boundary cooling (17 §5.2), where the doctrine has it and the fire's water meets its need
+        bool cool = k.Firefighting.CoolBoundaries && k.FireFlow[space].FogLpm >= Math.Max(s.FireWaterMinLpm, s.FireWaterLm2 * x.Involved);
         int lit = 0;
         foreach (ref readonly var l in c.FireLinks(row.Links))
         {
@@ -184,7 +201,7 @@ public static class Fires
                     int way = l.Way == FireWay.Up ? 0 : l.Way == FireWay.Side ? 1 : 2;
                     if (!row.OpenAir && x.DevS >= s.FireSteelDelayS[way])
                         perMin += s.FireSteelPerMin[way] * Math.Clamp(qn / s.FireSteelLoadMJm2, s.FireSteelLoadMin, s.FireSteelLoadMax) *
-                                  (n.PaintMJm2 >= s.FireHeavyPaintMJm2 ? s.FireHeavyPaintK : 1);
+                                  (n.PaintMJm2 >= s.FireHeavyPaintMJm2 ? s.FireHeavyPaintK : 1) * (cool ? s.FireCoolShare : 1);
                     break;
             }
             if (perMin > 0 && r.NextDouble() < Chance(perMin, dt) && Ignite(c, k, l.Space, s.FireSpreadSeatMW, s))
@@ -230,7 +247,8 @@ public static class Fires
             x.E0 = x.E = q * row.AreaM2;
         if (x.E <= s.FireBurntShare * x.E0 && !(chargesMJ > 0))
             return false;
-        (x.Phase, x.Q, x.Seat, x.T, x.PhaseS, x.DevS, x.Involved, x.Hot) = (BurnPhase.Grow, seatMW, seatMW, 0, 0, 0, 0, false);
+        (x.Phase, x.Q, x.Seat, x.T, x.PhaseS, x.DevS, x.Involved, x.Hot, x.Watch, x.InvolvedMax, x.Mop) =
+            (BurnPhase.Grow, seatMW, seatMW, 0, 0, 0, 0, false, 0, 0, 0);
         Mark(c, k, space);
         return true;
     }
@@ -354,8 +372,8 @@ public static class Fires
         return BurnEvent.Out;
     }
 
-    /// <summary>A fire put out (by its crew, or the water over it): hot when it had burned developed long enough.</summary>
-    static void Douse(ShipClass c, ShipCondition k, int space, SimSettings s)
+    /// <summary>A fire put out (the water over it; the tests'): hot when it had burned developed long enough.</summary>
+    internal static void Douse(ShipClass c, ShipCondition k, int space, SimSettings s)
     {
         Out(ref k.Fire[space], k.Fire[space].DevS > s.FireHotS);
         Mark(c, k, space);
@@ -379,6 +397,206 @@ public static class Fires
             k.CellFire[row.Index] = burning;
         else if (row.Kind == FireSpaceKind.Part)
             k.Flags[row.Index] = burning ? k.Flags[row.Index] | PartFlags.Burning : k.Flags[row.Index] & ~PartFlags.Burning;
+    }
+
+    // ------------------------------------------------------------------ firefighting (B4)
+
+    /// <summary>The water on each fire now (docs/battle/fire.md B4; damage/17 §6, §8.3): her parties made at her first fire
+    /// and sent every <see cref="SimSettings.FirePlanS"/> to the worst fires, the gun crews turning to after the action,
+    /// each fire's own watch hose after the doctrine's delay, every flow at the water its section's main gives. Nothing
+    /// when her side's doctrine is none.</summary>
+    static void Fight(ShipClass c, FloodModel f, ShipCondition k, long now, SimSettings s)
+    {
+        ref readonly var doc = ref k.Firefighting;
+        if (doc.Name is null)
+            return;   // nobody fights her fires (the bench's and the tests' water is their own)
+        Array.Clear(k.FireFlow);
+        if (k.Status != ShipStatus.Afloat)
+            return;
+        var nozzle = Nozzle(s, doc.Nozzle);
+        if (!k.PartiesMade)
+        {
+            // her parties: a share of her complement, two to eight of them, spread along her (fire_ref.py's Sim)
+            double men = f.Complement * doc.PartyShare;
+            int n = Math.Clamp((int)Math.Round(men / Math.Max(doc.PartyMen, 1)), s.FirePartiesMin, Math.Min(s.FirePartiesMax, ShipCondition.MaxParties));
+            for (int i = 0; i < n; i++)
+                k.Parties[i] = new FireParty
+                {
+                    Men = men / n, Skill = 1, Section = (int)((i + 0.5) * c.Sections.Length / n), Target = -1,
+                };
+            (k.PartyCount, k.PartiesMade, k.NextPlanMs) = (n, true, now);
+        }
+        if (now >= k.NextPlanMs)
+        {
+            Plan(c, k, now, s);
+            k.NextPlanMs = now + (long)(s.FirePlanS * 1000);
+        }
+        var spaces = c.FireSpaces;
+        for (int p = 0; p < k.PartyCount; p++)
+        {
+            ref var party = ref k.Parties[p];
+            if (party.Target < 0 || now < party.ArriveMs || now < party.StopMs || party.Men < 2)
+                continue;
+            ref readonly var row = ref spaces[party.Target];
+            ref readonly var x = ref k.Fire[party.Target];
+            double lpm = party.Men * doc.ManLpm * party.Skill * s.FireRotation * SectionWater(c, k, row.Section, now, s);
+            // from the doorway of a smoke-filled space below, without breathing sets (17 §8.2)
+            bool smoke = !doc.BreathingSets && row.Kind == FireSpaceKind.Cell && x.Phase is BurnPhase.Developed or BurnPhase.Decay;
+            Add(k, party.Target, lpm * nozzle.FogShare * (smoke ? s.FireSmokeShare : 1), lpm, nozzle.BoilShare);
+        }
+        if (doc.WatchS < 0)
+            return;
+        for (int i = 0; i < spaces.Length; i++)
+        {
+            ref var x = ref k.Fire[i];
+            if (!x.Burning || spaces[i].Kind == FireSpaceKind.Deck)
+                continue;
+            // the fire watch: the hose laid out at the locker, the men on the spot (a cell with none has no watch)
+            if (x.Watch == 0 && x.T >= doc.WatchS && (spaces[i].Kind == FireSpaceKind.Part || c.Cells[spaces[i].Index].BattleCrew + c.Cells[spaces[i].Index].Crew > 0))
+                x.Watch = 1;
+            if (x.Watch == 1)
+            {
+                double lpm = doc.HoseLpm * SectionWater(c, k, spaces[i].Section, now, s);
+                Add(k, i, lpm * nozzle.FogShare, lpm, nozzle.BoilShare);
+            }
+        }
+    }
+
+    static void Add(ShipCondition k, int space, double fog, double lpm, double boil)
+    {
+        ref var w = ref k.FireFlow[space];
+        w = new FireWater(w.FogLpm + fog, w.Lpm + lpm, boil);
+    }
+
+    static FireNozzle Nozzle(SimSettings s, string name)
+    {
+        foreach (var n in s.FireNozzles)
+            if (n.Name == name)
+                return n;
+        return s.FireNozzles[0];
+    }
+
+    /// <summary>The parties sent (fire_ref.py's plan): the gun crews turned to once the action's over, a party off a fire
+    /// that's out, then the free ones each to the worst fire short of its parties, the nearest first: its muster the first
+    /// time, then the sections to go.</summary>
+    static void Plan(ShipClass c, ShipCondition k, long now, SimSettings s)
+    {
+        ref readonly var doc = ref k.Firefighting;
+        if (!k.TurnedTo && k.LastHitMs > 0 && now - k.LastHitMs >= s.FireTurnToS * 1000)
+        {
+            k.TurnedTo = true;
+            for (int i = 0; i < doc.TurnTo && k.PartyCount < ShipCondition.MaxParties; i++)
+                k.Parties[k.PartyCount++] = new FireParty
+                {
+                    Men = Math.Max(doc.PartyMen, 2), Skill = s.FireTurnToSkill, Section = c.PumpSection, Target = -1,
+                };
+        }
+        for (int p = 0; p < k.PartyCount; p++)
+            if (k.Parties[p].Target >= 0 && !k.Fire[k.Parties[p].Target].Burning)
+                k.Parties[p].Target = -1;
+        var spaces = c.FireSpaces;
+        while (true)
+        {
+            int best = -1;
+            double top = 0;
+            for (int i = 0; i < spaces.Length; i++)
+            {
+                ref readonly var x = ref k.Fire[i];
+                if (!x.Burning || x.Phase == BurnPhase.Control || Sent(k, i) >= s.FirePartiesAFire)
+                    continue;
+                double weight = x.Q * (NextToMagazine(c, i) ? s.FireMagazineK : 1) + (x.Phase == BurnPhase.Grow ? 0.5 : 0);
+                if (best < 0 || weight > top)
+                    (best, top) = (i, weight);
+            }
+            if (best < 0)
+                return;
+            int near = -1, sec = spaces[best].Section;
+            for (int p = 0; p < k.PartyCount; p++)
+                if (k.Parties[p].Target < 0 && k.Parties[p].Men >= 2 &&
+                    (near < 0 || Math.Abs(k.Parties[p].Section - sec) < Math.Abs(k.Parties[near].Section - sec)))
+                    near = p;
+            if (near < 0)
+                return;
+            ref var party = ref k.Parties[near];
+            party.ArriveMs = now + (long)(1000 * (Math.Abs(party.Section - sec) * s.FireTravelS + (party.Mustered ? 0 : doc.MusterS)));
+            (party.Target, party.Section, party.Mustered) = (best, sec, true);
+        }
+    }
+
+    static int Sent(ShipCondition k, int space)
+    {
+        int n = 0;
+        for (int p = 0; p < k.PartyCount; p++)
+            n += k.Parties[p].Target == space ? 1 : 0;
+        return n;
+    }
+
+    /// <summary>Whether a fire space holds or adjoins a magazine (its parties' first care).</summary>
+    static bool NextToMagazine(ShipClass c, int space)
+    {
+        ref readonly var row = ref c.FireSpaces[space];
+        if (row.Kind != FireSpaceKind.Cell)
+            return false;
+        foreach (int room in c.RoomsIn(row.Index))
+            if (c.Rooms[room].Kind == RoomKind.Magazine)
+                return true;
+        foreach (var n in c.Neighbours(c.Cells[row.Index].Neighbours))
+            foreach (int room in c.RoomsIn(n.Cell))
+                if (c.Rooms[room].Kind == RoomKind.Magazine)
+                    return true;
+        return false;
+    }
+
+    /// <summary>The share of the water a section's fire main gives (17 §6.4): the pumps' (her plant's power, at least the
+    /// doctrine's diesel floor), dry with buckets and extinguishers at a cut, and unlooped everywhere past it from the pumps
+    /// (her machinery), until it's isolated and rigged past (the doctrine's time): then the cut section on a jumper.</summary>
+    public static double SectionWater(ShipClass c, ShipCondition k, int section, long now, SimSettings s)
+    {
+        ref readonly var doc = ref k.Firefighting;
+        double share = 1;
+        int pump = c.PumpSection, step = section >= pump ? 1 : -1;
+        for (int j = pump; ; j += step)
+        {
+            long cut = k.MainCutMs[j];
+            if (cut > 0)
+            {
+                bool rigged = doc.RestoreS >= 0 && now - cut >= doc.RestoreS * 1000;
+                if (j == section)
+                    share = Math.Min(share, rigged ? s.FireJumperShare : s.FireDryShare);
+                else if (!rigged && !doc.Looped)
+                    share = s.FireDryShare;
+            }
+            if (j == section)
+                break;
+        }
+        return share * Math.Max(k.PowerCap, doc.PumpFloor);
+    }
+
+    /// <summary>A hit in a section (17 §6.3-6.4, fire_ref.py's hit): its fire main broken with the doctrine's chance (more
+    /// on a small ship: fewer risers, less ship between them), a party working there stopped for a while (hoses cut, men
+    /// down) and maybe thinned, a watch hose there cut.</summary>
+    public static void Hit(ShipClass c, FloodModel f, ShipCondition k, int section, long now, SimSettings s, ref RandomStream r)
+    {
+        k.LastHitMs = now;
+        ref readonly var doc = ref k.Firefighting;
+        if (doc.Name is null || section < 0 || section >= k.MainCutMs.Length)
+            return;
+        if (k.MainCutMs[section] == 0 && r.NextDouble() < doc.MainBreak * Math.Pow(s.FireMainRefT / Math.Max(f.DisplacementT, 1), s.FireMainExp))
+            k.MainCutMs[section] = Math.Max(now, 1);
+        for (int p = 0; p < k.PartyCount; p++)
+        {
+            ref var party = ref k.Parties[p];
+            if (party.Target < 0 || party.Section != section || now < party.ArriveMs)
+                continue;
+            if (r.NextDouble() < doc.HoseCut)
+                party.StopMs = now + (long)(s.FireHitStopS * 1000);
+            if (r.NextDouble() < s.FireHitMenChance)
+                party.Men *= s.FireHitMenKeep;
+        }
+        var spaces = c.FireSpaces;
+        for (int i = 0; i < spaces.Length; i++)
+            if (k.Fire[i].Watch == 1 && spaces[i].Section == section && r.NextDouble() < 2 * doc.HoseCut)
+                k.Fire[i].Watch = 2;
     }
 
     /// <summary>The space's fire load now, MJ/m²: as fitted, or stripped by her orders (<see cref="ShipCondition.Readiness"/>).</summary>

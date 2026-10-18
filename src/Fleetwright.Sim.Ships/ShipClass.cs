@@ -182,16 +182,28 @@ public sealed class ShipClass
     public ReadOnlySpan<FireLink> FireLinks(Slice s) => fireLinks.AsSpan(s.Start, s.Count);
     /// <summary>A component's fire space, or -1 when it has none (a funnel, a mast).</summary>
     public int FireOfPart(int component) => fireOfPart[component];
+    /// <summary>The section her fire pumps are in (her machinery's middle; docs/battle/fire.md B4): an unlooped main is
+    /// cut off past a break from here.</summary>
+    public int PumpSection { get; internal set; }
     /// <summary>A section's weather-deck fire space.</summary>
     public int FireOfDeck(int section) => fireOfDeck[section];
 
-    /// <summary>The section a station along the hull (x, m) lies in; past either end, the end's.</summary>
+    /// <summary>The section a station along the hull (x, m) lies in (the sections run from the bow aft); past either end,
+    /// the nearest.</summary>
     public int SectionAt(double x)
     {
+        int best = 0;
+        double near = double.MaxValue;
         for (int i = 0; i < sections.Length; i++)
-            if (x < sections[i].X1 || i == sections.Length - 1)
+        {
+            double lo = Math.Min(sections[i].X0, sections[i].X1), hi = Math.Max(sections[i].X0, sections[i].X1);
+            if (x >= lo && x <= hi)
                 return i;
-        return 0;
+            double d = x < lo ? lo - x : x - hi;
+            if (d < near)
+                (best, near) = (i, d);
+        }
+        return best;
     }
 
     /// <summary>What the damage model asks of the ship's parts (docs/battle/fighting.md 4.3a): each function's needs, as

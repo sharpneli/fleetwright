@@ -1,5 +1,5 @@
 # Plan: fire (a 4.5 deepening)
-Status: **agreed with the user 2026-10-18** ("Decided" below); B0, B1 and B3 done 2026-10-18; the order since: B3, B4, then B2 (decision 5)    Updated: 2026-10-18
+Status: **agreed with the user 2026-10-18** ("Decided" below); B0, B1, B3 and B4 done 2026-10-18 (the order since B1: B3, B4, then B2, decision 5); B2 next    Updated: 2026-10-18
 
 The fine-tune pass for fire: what happens after a fire starts. Its research is `damage/17_fire.md` (with `fire_ref.py`),
 on top of `damage/10_damage_control_holistic.md` §2 (fire, ammunition in a fire, the fire main) and `09_damage_control.md`
@@ -340,6 +340,43 @@ from B0's bench on.
 - The doctrine block and templates, the fire watch, parties, water by section, hits on parties, turn-to. v0's put-out
   goes.
 - The bench gains ships: 17 §9 T6-T8's scenarios, given hits (`GivenHits`) over time.
+- **Built (done 2026-10-18):**
+  - **Doctrine** (`SimSettings.Firefighting`, `FirefightingDoctrine`): unorganised-1890, prepared-1894, russian-1905,
+    rn-1916, german-1916 for the first game, usn-1942 and usn-1944 for later cuts (17 §8.3 and fire_ref.py's DOCTRINES:
+    the watch's delay and hose, the nozzle, muster, a man's flow, the parties' share and size, the main's break chance,
+    looped, the time to rig past a break, the pumps' floor, breathing sets, the gun crews' turn-to, cooling and a reflash
+    watch). A side takes one by name (the scenario's `"firefighting"`, else `FirefightingDefault`, rn-1916), kept on each
+    ship as her readiness is; Jutland, squadrons and the flotilla rn-1916 and german-1916, Tsushima russian-1905 and
+    prepared-1894. `shipgen hits --firefighting`.
+  - **Parties** (`FireParty`, `ShipCondition.Parties`): made at her first fire, 12% of her complement in 2-8 parties
+    spread along her; every 30 s the free ones go to the worst fire short of two parties (heat, ×3 next to a magazine),
+    the nearest first, after the muster the first time and 30 s a section. A party's flow is its men × a man's flow ×
+    0.8 for the reliefs × its section's water, ×0.5 from the doorway of a developed fire below without breathing sets,
+    through the doctrine's nozzle. Fifteen minutes after the last hit the doctrine's extra parties turn to at 0.7.
+  - **The fire watch:** a fire's own hose after the doctrine's delay where men are on the spot, until a hit cuts it.
+  - **The main** (`ShipCondition.MainCutMs`, `Fires.SectionWater`, `ShipClass.PumpSection` at the machinery's middle):
+    a hit breaks the section's main with the doctrine's chance × (2000 t / displacement)^0.4 (destroyer 21%, Dreadnought
+    8% of hits on the USN 1942 doctrine); dry (buckets, 0.15) there and, unlooped, everywhere past it from the pumps, until
+    rigged past after the doctrine's time (never, unorganised): then the cut section on a jumper at 0.5. All of it × her
+    plant's power, at least a diesel's floor.
+  - **Hits** (`Fires.Hit`, from `DamageSystem.Strike`, shells and torpedoes): the main, a party working in the section
+    stopped for 2 min with the hose-cut chance and thinned to 0.6 with 0.3, the watch hoses there cut.
+  - v0's put-out is gone (`FireOutPerMin`); the reflash watch (×0.1) and boundary cooling (×0.3 through steel) where the
+    doctrine has them.
+  - **Fixed on the way:** `ShipClass.SectionAt` took the sections as running aft to fore; they run from the bow aft, so
+    since B0 nearly every part and every outside burst's deck fire was put in section 0 (the bow). Now by each
+    section's span.
+  - `FirefightingTests`, the scenario's key in `DoctrineTests`.
+- **The tests' numbers:** one fire in a Dreadnought's quarters, prepared, rn-1916: out in all 12 runs, median 6 min,
+  nothing else lit; every main cut from the start (buckets): out in all, median 7 min (a fire caught early, as 17 §6.2
+  has it); nobody fighting: never out in the hour, 38 spaces lit.
+- **What moved** (the hits bench, B1 → B4; v0's crew cost still in):
+  - fires still burning after the settle, a ship (ships with any): Borodino under Mikasa's 6", russian-1905, 9.7 (40%)
+    → 0.0 (0%); Dreadnought under 12" HE, prepared, rn-1916, 13.0 (63%) → 0.8 (10%); Iron Duke 0.8 (10%) → 0 (2%); a
+    destroyer 0 → 0.1 (1%). The same Dreadnought hits unprepared and unorganised: 22.2 (80%), the split of 17 §0.1.
+  - crew out of action: Borodino 157 → 13, Dreadnought 218 → 82 (B0 69).
+  - The hits bench lands its hits at once and then settles; the anchors with hits over time (parties hit at work) are
+    B5's.
 
 ### B5 Anchors and cost
 - The yardstick above; the first game's anchors first. Tune only within the [EST] numbers, and log what moved.

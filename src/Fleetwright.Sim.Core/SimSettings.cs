@@ -1254,12 +1254,11 @@ public sealed record SimSettings
     public int FounderMs { get; init; } = 600_000;
     public int CapsizeMs { get; init; } = 180_000;
 
-    /// <summary>Fire v0's stand-ins (until docs/battle/fire.md B2 and B4), chances a minute: a burning space or part
-    /// damaged (each room in it once more), put out by its crew (times the share of the crew left); a magazine in a burning space,
+    /// <summary>Fire v0's stand-ins (until docs/battle/fire.md B2), chances a minute: a burning space or part
+    /// damaged (each room in it once more); a magazine in a burning space,
     /// or next to one, set off (times the side's propellant). A fire costs this many crew a minute; a space this share
     /// flooded doesn't burn.</summary>
     public double FireHarmPerMin { get; init; } = 0.2;
-    public double FireOutPerMin { get; init; } = 0.15;
     public double FireMagazineInPerMin { get; init; } = 0.05;
     public double FireMagazineNextPerMin { get; init; } = 0.01;
     public double FireCrewPerMin { get; init; } = 0.3;
@@ -1390,6 +1389,60 @@ public sealed record SimSettings
         new() { Name = "closed up", Stripped = true, CellDoors = 0, WetDecks = true },
     ];
     public string FireReadinessDefault { get; init; } = "prepared";
+
+    /// <summary>Firefighting (docs/battle/fire.md B4; damage/17 §6, §8.3), rough on purpose (decision 3): a side's doctrine
+    /// by name (the scenario's "firefighting", else <see cref="FirefightingDefault"/>; 17 §8.3's table, fire_ref.py's
+    /// DOCTRINES), the parties re-planned every <see cref="FirePlanS"/>, each going <see cref="FireTravelS"/> a section to
+    /// the worst fires (heat, ×<see cref="FireMagazineK"/> next to a magazine, at most <see cref="FirePartiesAFire"/> on one),
+    /// its men's flow at <see cref="FireRotation"/> for the reliefs and ×<see cref="FireSmokeShare"/> from the doorway of a
+    /// smoke-filled space below without breathing sets; the ship has between <see cref="FirePartiesMin"/> and
+    /// <see cref="FirePartiesMax"/> of them. A section without its main fights with buckets and extinguishers at
+    /// <see cref="FireDryShare"/> of the flow, one cut and rigged again at <see cref="FireJumperShare"/>; a hit in the
+    /// section breaks the main with the doctrine's chance × (<see cref="FireMainRefT"/> t / displacement)^
+    /// <see cref="FireMainExp"/> [FIT to 17 §6.4's ×1 destroyer, ×0.5 cruiser, ×0.35 battleship], stops a party working
+    /// there for <see cref="FireHitStopS"/> with the doctrine's hose-cut chance, and with <see cref="FireHitMenChance"/>
+    /// leaves it <see cref="FireHitMenKeep"/> of its men (fire_ref.py's hit). <see cref="FireTurnToS"/> after the last hit the
+    /// gun crews turn to as the doctrine's extra parties at <see cref="FireTurnToSkill"/> (doc 10 §5).</summary>
+    public FirefightingDoctrine[] Firefighting { get; init; } =
+    [
+        new() { Name = "unorganised-1890", WatchS = -1, HoseLpm = 600, Nozzle = "jet", MusterS = 360, ManLpm = 100, PartyShare = 0.10, PartyMen = 16,
+            MainBreak = 0.25, HoseCut = 0.30, Looped = false, RestoreS = -1, PumpFloor = 0, BreathingSets = false, TurnTo = 1 },
+        new() { Name = "prepared-1894", WatchS = 120, HoseLpm = 600, Nozzle = "jet", MusterS = 180, ManLpm = 100, PartyShare = 0.12, PartyMen = 16,
+            MainBreak = 0.20, HoseCut = 0.30, Looped = false, RestoreS = 900, PumpFloor = 0, BreathingSets = false, TurnTo = 2 },
+        new() { Name = "russian-1905", WatchS = 90, HoseLpm = 600, Nozzle = "jet", MusterS = 180, ManLpm = 100, PartyShare = 0.12, PartyMen = 16,
+            MainBreak = 0.20, HoseCut = 0.45, Looped = false, RestoreS = 900, PumpFloor = 0, BreathingSets = false, TurnTo = 2 },
+        new() { Name = "rn-1916", WatchS = 180, HoseLpm = 420, Nozzle = "jet", MusterS = 240, ManLpm = 84, PartyShare = 0.12, PartyMen = 16,
+            MainBreak = 0.10, HoseCut = 0.15, Looped = false, RestoreS = 900, PumpFloor = 0, BreathingSets = false, TurnTo = 2 },
+        new() { Name = "german-1916", WatchS = 180, HoseLpm = 420, Nozzle = "jet", MusterS = 240, ManLpm = 84, PartyShare = 0.12, PartyMen = 16,
+            MainBreak = 0.10, HoseCut = 0.15, Looped = false, RestoreS = 900, PumpFloor = 0, BreathingSets = false, TurnTo = 2 },
+        new() { Name = "usn-1942", WatchS = 120, HoseLpm = 250, Nozzle = "all-purpose", MusterS = 180, ManLpm = 62.5, PartyShare = 0.12, PartyMen = 16,
+            MainBreak = 0.25, HoseCut = 0.20, Looped = false, RestoreS = 480, PumpFloor = 0, BreathingSets = false, TurnTo = 2 },
+        new() { Name = "usn-1944", WatchS = 60, HoseLpm = 360, Nozzle = "fog", MusterS = 120, ManLpm = 90, PartyShare = 0.12, PartyMen = 16,
+            MainBreak = 0.15, HoseCut = 0.20, Looped = true, RestoreS = 240, PumpFloor = 0.6, BreathingSets = true, TurnTo = 3,
+            CoolBoundaries = true, ReflashWatch = true },
+    ];
+    public string FirefightingDefault { get; init; } = "rn-1916";
+    public double FirePlanS { get; init; } = 30;
+    public double FireTravelS { get; init; } = 30;
+    public double FireMagazineK { get; init; } = 3;
+    public int FirePartiesAFire { get; init; } = 2;
+    public int FirePartiesMin { get; init; } = 2;
+    public int FirePartiesMax { get; init; } = 8;
+    public double FireRotation { get; init; } = 0.8;
+    public double FireSmokeShare { get; init; } = 0.5;
+    public double FireDryShare { get; init; } = 0.15;
+    public double FireJumperShare { get; init; } = 0.5;
+    public double FireMainRefT { get; init; } = 2000;
+    public double FireMainExp { get; init; } = 0.4;
+    public double FireHitStopS { get; init; } = 120;
+    public double FireHitMenChance { get; init; } = 0.3;
+    public double FireHitMenKeep { get; init; } = 0.6;
+    public double FireTurnToS { get; init; } = 900;
+    public double FireTurnToSkill { get; init; } = 0.7;
+    /// <summary>Boundary cooling cuts the spread through steel from a fire its parties have the water for to this share
+    /// (17 §5.2: NRL Phase VI); a reflash watch the chance of lighting again to this share (17 §4).</summary>
+    public double FireCoolShare { get; init; } = 0.3;
+    public double FireReflashWatchShare { get; init; } = 0.1;
 
     /// <summary>What an observer makes out of a ship (a contact's <c>Seen</c>): low in the water (settled by this share of
     /// its freeboard), a list, a trim (degrees), stopped (knots).</summary>
@@ -1590,6 +1643,33 @@ public readonly record struct FireNozzle
     public string Name { get; init; }
     public double FogShare { get; init; }
     public double BoilShare { get; init; }
+}
+
+/// <summary>A side's firefighting doctrine (docs/battle/fire.md B4; <see cref="SimSettings.Firefighting"/>): the fire watch's
+/// delay to first water on a new fire (s; under 0: none) and its hose's flow (L/min); the nozzle (a name of FireNozzles); the
+/// parties' muster (s), each man's flow (L/min thrown, men a hose and the hose's flow folded in), the share of the complement
+/// in them and a party's men; the main's break chance a hit, looped or not, the time to isolate a break and rig past it (s;
+/// under 0: never), the pumps' floor with the steam gone (a diesel pump's share); breathing sets; the extra parties that
+/// turn to after the action; and the habits: cooling the boundaries, a reflash watch.</summary>
+public readonly record struct FirefightingDoctrine
+{
+    public string Name { get; init; }
+    public double WatchS { get; init; }
+    public double HoseLpm { get; init; }
+    public string Nozzle { get; init; }
+    public double MusterS { get; init; }
+    public double ManLpm { get; init; }
+    public double PartyShare { get; init; }
+    public int PartyMen { get; init; }
+    public double MainBreak { get; init; }
+    public double HoseCut { get; init; }
+    public bool Looped { get; init; }
+    public double RestoreS { get; init; }
+    public double PumpFloor { get; init; }
+    public bool BreathingSets { get; init; }
+    public int TurnTo { get; init; }
+    public bool CoolBoundaries { get; init; }
+    public bool ReflashWatch { get; init; }
 }
 
 /// <summary>A ship's orders before action for fire (docs/battle/fire.md B1; <see cref="SimSettings.FireReadiness"/>).</summary>

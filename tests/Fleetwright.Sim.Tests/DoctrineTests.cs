@@ -98,6 +98,11 @@ public class DoctrineTests
         Assert.Equal(w.Settings.FireReadinessDefault, w.Damage.Readiness(0).Name);
         Assert.Equal("closed up", w.Damage.Readiness(1).Name);
         Assert.Contains("no \"open\"", Assert.Throws<ScenarioException>(() => Load(""", "readiness": { "Germany": "open" }""")).Message);
+
+        (w, _) = Load(""", "firefighting": { "Britain": "usn-1944" }""");
+        Assert.Equal("usn-1944", w.Damage.Firefighting(0).Name);
+        Assert.Equal(w.Settings.FirefightingDefault, w.Damage.Firefighting(1).Name);
+        Assert.Contains("no \"heroic\"", Assert.Throws<ScenarioException>(() => Load(""", "firefighting": { "Germany": "heroic" }""")).Message);
     }
 
     [Fact]

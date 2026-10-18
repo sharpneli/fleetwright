@@ -119,6 +119,17 @@ public sealed class ShipCondition
     /// <summary>Her orders before action for fire (docs/battle/fire.md B1): stripped, the doors, the decks wetted. The
     /// damage system keeps it to her side's.</summary>
     public FireReadiness Readiness;
+    /// <summary>Her side's firefighting doctrine (docs/battle/fire.md B4; the damage system keeps it; none: nobody fights
+    /// her fires), her fire parties (<see cref="PartyCount"/> of <see cref="MaxParties"/>, made at her first fire), whether
+    /// her gun crews have turned to, when each section's fire main was cut (world ms, 0: whole), when she was last hit and
+    /// when her parties are next sent.</summary>
+    public FirefightingDoctrine Firefighting;
+    public const int MaxParties = 16;
+    public readonly FireParty[] Parties = new FireParty[MaxParties];
+    public int PartyCount;
+    public bool PartiesMade, TurnedTo;
+    public long[] MainCutMs = [];
+    public long LastHitMs, NextPlanMs;
     public bool[] MountWorks = [], DirectorWorks = [], EyeWorks = [], TubeWorks = [];
     /// <summary>What hits that held left each mount (E4).</summary>
     public MountHarm[] Mount = [];
@@ -220,6 +231,7 @@ public sealed class ShipCondition
             CellOpened = new bool[c.Cells.Length];
             Fire = new BurnState[c.FireSpaces.Length];
             FireFlow = new FireWater[c.FireSpaces.Length];
+            MainCutMs = new long[c.Sections.Length];
             MountWorks = new bool[c.Mounts.Length];
             DirectorWorks = new bool[c.Directors.Length];
             EyeWorks = new bool[c.Eyes.Length];
@@ -258,6 +270,7 @@ public sealed class ShipCondition
             Array.Clear(CellOpened);
             Array.Clear(Fire);
             Array.Clear(FireFlow);
+            Array.Clear(MainCutMs);
         }
         Array.Fill(MountWorks, true);
         Array.Fill(DirectorWorks, true);
@@ -267,6 +280,7 @@ public sealed class ShipCondition
         (Status, Loss, Attitude, PowerCap, Steering, JamRudderRad, Conned, Hits, Damaged) = (ShipStatus.Afloat, LossKind.None, Attitude.Upright, 1, Steering.Free, 0, true, 0, false);
         (WaterT, GmM, StepMs, NextStepMs, HeldCap, LastShooter, LastBattery, LossMs, GoneMs) = (0, c.Hydrostatics.GmT, 0, -1, 1, 0, 0, 0, 0);
         (NextClearMs, ClearAtMs, Leaks) = (-1, -1, 0);
+        (PartyCount, PartiesMade, TurnedTo, LastHitMs, NextPlanMs) = (0, false, false, 0, 0);
         ClearGen++;
         Version++;
     }
@@ -587,6 +601,21 @@ public sealed class ShipCondition
             h.Add(a.StiffUntil);
             h.Add(a.GunUntil);
         }
+        for (int p = 0; p < PartyCount; p++)
+        {
+            ref readonly var party = ref Parties[p];
+            h.Add(p + 4000);
+            h.Add(party.Men);
+            h.Add(party.Target);
+            h.Add(party.ArriveMs);
+            h.Add(party.StopMs);
+        }
+        for (int i = 0; i < MainCutMs.Length; i++)
+            if (MainCutMs[i] != 0)
+            {
+                h.Add(i + 5000);
+                h.Add(MainCutMs[i]);
+            }
         for (int i = 0; i < Fire.Length; i++)
             if (Fire[i].Phase != BurnPhase.None)
             {

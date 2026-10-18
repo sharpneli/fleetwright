@@ -13,8 +13,8 @@ public class FireSpreadTests(ITestOutputHelper output)
 {
     static readonly SimSettings Settings = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json"));
 
-    /// <summary>v0's stand-ins off: nothing put out, harmed or set off but by the fire itself.</summary>
-    static readonly SimSettings Quiet = Settings with { FireOutPerMin = 0, FireHarmPerMin = 0, FireMagazineInPerMin = 0, FireMagazineNextPerMin = 0 };
+    /// <summary>v0's stand-ins off (and nobody fighting: a fresh condition has no doctrine): nothing harmed or set off.</summary>
+    static readonly SimSettings Quiet = Settings with { FireHarmPerMin = 0, FireMagazineInPerMin = 0, FireMagazineNextPerMin = 0 };
 
     static ShipClass Class(string name) => Fleet.Get(name).Class!;
 
@@ -171,7 +171,7 @@ public class FireSpreadTests(ITestOutputHelper output)
             Fires.Ignite(c, k, cell, 0.3, still);
             for (int t = 0; t < 20 * 60; t++)
                 Fires.Step(c, f, k, 1, still, 1, ref r);
-            Fires.Step(c, f, k, 60, still with { FireOutPerMin = 1e6 }, 1, ref r);   // put out after 20 min
+            Fires.Douse(c, k, cell, still);   // put out after 20 min
             Assert.True(k.Fire[cell].Hot);
             int lit = -1;
             for (int t = 0; t < 45 * 60 && lit < 0; t++)

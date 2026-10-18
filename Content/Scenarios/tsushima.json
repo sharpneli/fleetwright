@@ -20,6 +20,8 @@
   "sides": ["Russia", "Japan"],
   // the ships' orders before action for fire (docs/battle/fire.md B1; damage/17 §8.3): stripped, doors, decks wetted
   "readiness": { "Russia": "prepared", "Japan": "prepared" },
+  // how her crews fight fire (docs/battle/fire.md B4): the fire watch, the parties, the main
+  "firefighting": { "Russia": "russian-1905", "Japan": "prepared-1894" },
   "player": "Russia",
   // the end (docs/battle/command.md 5.0): the day and the night, to Nebogatov's surrender the next forenoon. History's aims
   // (Russia through to Vladivostok) wait for "reach"; v0 has one aim
