@@ -272,7 +272,7 @@ public static class Effects
     {
         double g = NonPen.ShockK(impulse, s) * s.ShockGradeK[(int)c.ShockGrade];
         int col = c.ShockGrade == ShockGrade.G0 ? 0 : 1;
-        if (NonPen.Electrics(c, s))
+        if (NonPen.Electrics(c))
         {
             if (r.NextDouble() < s.ShockLocalTrip[col] * g)
                 res.Shock |= PowerOut(c, k, at, struck, -1, s.ShockZoneAM, NonPen.Minutes(s.LocalTripMin, ref r), now);

@@ -485,7 +485,7 @@ public sealed class DamageSystem : IWorldSystem
     {
         var k = ships.Store.Combat.Condition(slot);
         var c = k.Class;
-        if (k.Status != ShipStatus.Afloat || !NonPen.Electrics(c, settings))
+        if (k.Status != ShipStatus.Afloat || !NonPen.Electrics(c))
             return;
         double p = settings.OwnGunBreaker[c.ShockGrade == ShockGrade.G0 ? 0 : 1] * settings.ShockGradeK[(int)c.ShockGrade] *
                    c.Mounts[mount].ReloadS / 1200;

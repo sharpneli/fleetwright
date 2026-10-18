@@ -41,9 +41,19 @@ static class Weapons
             if (row.Local)
                 Line("    no director: local control, each mount by its layer's eye");
             else
+            {
                 Line("    directors: " + string.Join(", ", c.Links(row.Directors).ToArray().Select(d =>
                     string.Format(Inv, "{0} ({1:0.#} m rangefinder{2})", c.ComponentId(c.Directors[d].Component), c.Directors[d].RangefinderM,
                         c.Directors[d].Radar ? ", radar" : ""))));
+                Line("    units: " + string.Join("; ", c.Links(row.Units).ToArray().Select(u => string.Format(Inv, "{0}: {1}", u,
+                    string.Join(", ", c.Links(c.FcUnits[u].Instruments).ToArray().Select(i => c.Instruments[i]).Select(i =>
+                        string.Format(Inv, "{0} {1:0.#} m at {2:0.#} m", i.Kind.ToString().ToLowerInvariant(), i.BaseM, i.HeightM)))))));
+            }
+            var (o, k, mt) = row.Fit;
+            Line(string.Format(Inv, "    fit: optics {0:0}x, {1:0.#} readings a minute; computer {2:0.#} s, q {3:0.###}, prior {4:0.#} kn {5:0}°, bias {6:0.#}% " +
+                "{7:0.#} mil, salvo {8:0.#}% {9:0.#} mil, own turn {10:0} m, first step {11:0} m; {12}, laying {13:0.#} mil", o.Magnification, o.ReadingsPerMin,
+                k.LatencyS, k.Q, k.PriorKn, k.PriorDeg, k.ResidPct, k.DeflBiasMil, k.SalvoPct, k.SalvoDeflMil, k.OwnTurnKickM, k.Ladder0M,
+                mt.DirectorFiring ? "director firing" : "each gun lays itself", mt.LayMil));
             Line(string.Format(Inv, "    a gun: reload {0:0.#} s ({1:0.#} a minute), trains {2:0.#}°/s, elevates {3:0.#}°/s to {4:0}°; pattern {5:0.#}% of the range",
                 m.ReloadS, 60 / m.ReloadS, m.TrainDegS, m.ElevateDegS, m.MaxElevationDeg, row.PatternPct));
             foreach (var l in c.Loadout.Loads(b))

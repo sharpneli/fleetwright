@@ -69,6 +69,7 @@ public static class ShipClassCompiler
             Weapons(c);
             (c.powerKn, c.powerShp) = PowerCurve(c.Motion);
             c.eyes = Sight.Eyes(c);
+            FireControlUnits(c);
             c.Silhouette = Sight.Silhouette(c, numbers);
 
             c.links = links.ToArray();
@@ -610,10 +611,10 @@ public static class ShipClassCompiler
                 }
                 int dirs = links.Count - d0;
                 var spec = FireControl.Spec(ship.Design, row.Kind == Battery.Main ? "main" : "secondary");
+                var level = DesignerPlaceholders.FireControl(dirs, rf, spec.ComputerT, radar || spec.RadarT > 0, era);
                 batteries[b] = row with
                 {
-                    Mounts = new Slice(m0, d0 - m0), Guns = guns, Directors = new Slice(d0, dirs),
-                    Level = DesignerPlaceholders.FireControl(dirs, rf, spec.ComputerT, radar || spec.RadarT > 0, era),
+                    Mounts = new Slice(m0, d0 - m0), Guns = guns, Directors = new Slice(d0, dirs), Level = level, Fit = FireControlPresets.Of(level),
                     PatternPct = DesignerPlaceholders.Pattern(row.CalibreMm, era),
                 };
             }
@@ -622,6 +623,36 @@ public static class ShipClassCompiler
             c.Loadout = Loadout.Compile(c, ship.Report.Shells, "", c.DesignHash);
             c.design = ship.Design;
             Launchers(c, era);
+        }
+
+        /// <summary>The fire-control units (docs/battle/fire-control.md F0): one a director, its instruments the eyes
+        /// that stand in it (highest first, as the eyes are), and each battery's units in its directors' order.</summary>
+        void FireControlUnits(ShipClass c)
+        {
+            var units = new FcUnitRow[c.directors.Length];
+            var instruments = new List<InstrumentRow>();
+            for (int d = 0; d < units.Length; d++)
+            {
+                int i0 = links.Count;
+                for (int e = 0; e < c.eyes.Length; e++)
+                {
+                    ref readonly var eye = ref c.eyes[e];
+                    if (eye.Kind != EyeKind.Director || eye.Component != c.directors[d].Component)
+                        continue;
+                    links.Add(instruments.Count);
+                    instruments.Add(new InstrumentRow(d, e, eye.Component, eye.X, eye.Y, eye.HeightM,
+                        eye.RangefinderM > 0 ? InstrumentKind.Coincidence : InstrumentKind.Eye, eye.RangefinderM));
+                }
+                units[d] = new FcUnitRow(d, c.directors[d].Battery, new Slice(i0, links.Count - i0));
+            }
+            for (int b = 0; b < c.batteries.Length; b++)
+            {
+                int u0 = links.Count;
+                foreach (int d in links.GetRange(c.batteries[b].Directors.Start, c.batteries[b].Directors.Count))
+                    links.Add(d);   // a unit's index is its director's
+                c.batteries[b] = c.batteries[b] with { Units = new Slice(u0, links.Count - u0) };
+            }
+            (c.fcUnits, c.instruments) = (units, instruments.ToArray());
         }
 
         /// <summary>The torpedo mounts and the submerged tubes as one table, and the torpedoes they fire (docs/battle/

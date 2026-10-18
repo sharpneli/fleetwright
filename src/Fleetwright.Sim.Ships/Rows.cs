@@ -348,6 +348,58 @@ public enum FireControlLevel : byte
     Digital,
 }
 
+// ------------------------------------------------------------------ fire control (docs/battle/fire-control.md F0)
+
+/// <summary>How an instrument takes a range: by eye (a director without a rangefinder), or a coincidence rangefinder.
+/// The stadimeter, stereo, radar and laser come with their models (F5, F9).</summary>
+public enum InstrumentKind : byte
+{
+    Eye,
+    Coincidence,
+}
+
+/// <summary>An instrument a fire-control unit reads from: the unit, the class's eye it looks through (its blind sectors),
+/// its component, where it stands (ship-local x, y), its height over the waterline at rest, its kind and its base, m (0
+/// by eye). Its optics' make is the battery's fit (<see cref="OpticsRow"/>).</summary>
+public readonly record struct InstrumentRow(int Unit, int Eye, int Component, double X, double Y, double HeightM, InstrumentKind Kind, double BaseM);
+
+/// <summary>A fire-control unit: a control position whose instruments and computer hold one target at a time, and the
+/// kind of battery it serves. One a director for now (tops and after control come with F4), so a unit's index is its
+/// director's; its instruments (Links: instrument indices) highest first.</summary>
+public readonly record struct FcUnitRow(int Director, Battery Battery, Slice Instruments);
+
+/// <summary>The instruments' make on a battery's fit: their magnification (0: the instruments can't be read, so a
+/// rangefinder ranges by eye) and the readings a minute each takes.</summary>
+public readonly record struct OpticsRow(double Magnification, double ReadingsPerMin);
+
+/// <summary>A fire-control computer (research/simulation/fire_control_ref.py FCLevel; one tracker, the true-course
+/// cart, until F2 gives each kind its own): its latency, s, and the target acceleration its track allows (q, m²/s³);
+/// the eye's first guess at the target's speed and course it starts from (1 sigma); the residual ballistic bias before
+/// spotting, % of range, and in deflection, mil; the extra error while own ship turns, m; the first ladder step, m; the
+/// salvo-to-salvo error, % of range and mil, that spotting can't remove (the propellant's share and its own wander
+/// split apart in F3).</summary>
+public readonly record struct ComputerRow
+{
+    public double LatencyS { get; init; }
+    public double Q { get; init; }
+    public double PriorKn { get; init; }
+    public double PriorDeg { get; init; }
+    public double ResidPct { get; init; }
+    public double DeflBiasMil { get; init; }
+    public double OwnTurnKickM { get; init; }
+    public double Ladder0M { get; init; }
+    public double SalvoPct { get; init; }
+    public double SalvoDeflMil { get; init; }
+}
+
+/// <summary>How a battery's guns are laid: whether a director fires them (its laying error common to the salvo; else
+/// each gun lays itself and its error is dispersion), and that laying error, mil.</summary>
+public readonly record struct MountTechRow(bool DirectorFiring, double LayMil);
+
+/// <summary>A battery's fire-control fit: its instruments' make, its computer and its mounts' laying. A preset's for
+/// now (<see cref="FireControlPresets"/>); the design's tech blocks in F3.</summary>
+public readonly record struct FireControlFit(OpticsRow Optics, ComputerRow Computer, MountTechRow Mount);
+
 /// <summary>A gun battery: the mounts of one kind (main or secondary) firing one gun (calibre and length), so one
 /// fall of shot to spot; its shells are a loadout's (<see cref="Loadout"/>). Its directors are the ship's directors of its kind;
 /// none means local control (each mount aims for itself).</summary>
@@ -364,7 +416,12 @@ public readonly record struct BatteryRow
     public int Guns { get; init; }
     /// <summary>Its directors (Links: director indices), best first; empty: local control.</summary>
     public Slice Directors { get; init; }
+    /// <summary>Its fire-control units (Links: unit indices), in its directors' order.</summary>
+    public Slice Units { get; init; }
+    /// <summary>The preset its fit was made from: a label (fire-control.md decision 1).</summary>
     public FireControlLevel Level { get; init; }
+    /// <summary>Its fire control's fit under its directors; local control fires at <see cref="FireControlPresets.Local"/>.</summary>
+    public FireControlFit Fit { get; init; }
 
     /// <summary>The gun's full-salvo pattern, its 100% spread in range as a percentage of the range (fire_control_ref.py
     /// Gun.pattern_pct): the shells' own dispersion, before any fire control. A placeholder until the designer gives it

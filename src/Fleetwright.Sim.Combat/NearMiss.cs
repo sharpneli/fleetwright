@@ -450,7 +450,7 @@ public static class NearMiss
         }
 
         // the gear: breakers and the directors' gyros (with something to trip)
-        if (NonPen.Electrics(c, s))
+        if (NonPen.Electrics(c))
         {
             if (Chance(Ramp(gear, b[0], b[1]), ref r))
                 res.Shock |= Effects.PowerOut(c, k, nearAt, -1, -1, s.ShockZoneBM, NonPen.Minutes(s.NearTripMin, ref r), now);

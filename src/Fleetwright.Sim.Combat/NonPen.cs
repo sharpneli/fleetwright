@@ -176,10 +176,10 @@ public static class NonPen
     /// <summary>Whether a ship carries breakers for a shock to trip (E4; the user's choice, 2026-10-17): director fire
     /// control on any battery (its FC circuits, gyros and the power to them). Before it, fuses, knife switches and
     /// dynamos on their own governors: little to trip.</summary>
-    public static bool Electrics(ShipClass c, SimSettings s)
+    public static bool Electrics(ShipClass c)
     {
         foreach (ref readonly var b in c.Batteries)
-            if (!b.Local && s.GunneryLevels[Math.Clamp((int)b.Level, 0, s.GunneryLevels.Length - 1)].Director)
+            if (!b.Local && b.Fit.Mount.DirectorFiring)
                 return true;
         return false;
     }

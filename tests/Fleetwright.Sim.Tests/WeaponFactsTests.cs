@@ -59,6 +59,25 @@ public class WeaponFactsTests
                     p.Add($"battery {b} ({row.Kind}) is directed by a {c.Directors[d].Battery} director");
             if (row.Local != (row.Directors.Count == 0) || row.Local && row.Level != FireControlLevel.Eyeball)
                 p.Add($"battery {b}: local {row.Local} at level {row.Level}");
+            if (row.Fit != FireControlPresets.Of(row.Level))
+                p.Add($"battery {b}: its fit isn't its preset's ({row.Level})");
+            // its fire-control units (fire-control.md F0): its directors', each with its director's eyes as instruments
+            if (!c.Links(row.Units).SequenceEqual(c.Links(row.Directors)))
+                p.Add($"battery {b}: units {string.Join(",", c.Links(row.Units).ToArray())} aren't its directors'");
+            foreach (int u in c.Links(row.Units))
+            {
+                var unit = c.FcUnits[u];
+                if (unit.Battery != row.Kind || unit.Instruments.Count == 0)
+                    p.Add($"unit {u}: a {unit.Battery} unit with {unit.Instruments.Count} instruments on a {row.Kind} battery");
+                foreach (int i in c.Links(unit.Instruments))
+                {
+                    var ins = c.Instruments[i];
+                    var eye = c.Eyes[ins.Eye];
+                    if (ins.Unit != u || ins.Component != c.Directors[unit.Director].Component || eye.Kind != EyeKind.Director ||
+                        eye.Component != ins.Component || ins.BaseM != eye.RangefinderM || ins.HeightM != eye.HeightM)
+                        p.Add($"unit {u}: instrument {i} isn't its director's eye");
+                }
+            }
             double share = 0;
             bool fires = false;
             foreach (var l in c.Loadout.Loads(b))

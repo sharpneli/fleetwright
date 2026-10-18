@@ -32,20 +32,20 @@ public enum BatteryState : byte
 /// research/simulation/fire_control_ref.py <c>engage()</c> cut to its spine, one cause of a miss a stage):
 /// <list type="bullet">
 /// <item><b>Measure.</b> Every <see cref="SimSettings.FireControlMs"/> on a grid of world time, each engaged battery's
-/// rangefinders (its directors' eyes; without a director, a mount's layer by eye) take readings at their level's rate
-/// while they see the target: the range's error δ·R²/(B·M) (by eye ~20%), each instrument's own bias drawn at the
-/// engagement's start, the bearing's in mil. A reading reaches the computer after the level's latency.</item>
+/// rangefinders (its fire-control units' instruments; without a director, a mount's layer by eye) take readings at their
+/// optics' rate while they see the target: the range's error δ·R²/(B·M) (by eye ~20%), each instrument's own bias drawn
+/// at the engagement's start, the bearing's in mil. A reading reaches the computer after its latency.</item>
 /// <item><b>Track.</b> A constant-velocity Kalman track (<see cref="Track"/>, as the pictures keep), started from the
-/// navy's picture of the target, so acquiring costs nothing new; the level's q. One tracker for every level for now
-/// (the Dreyer's polar drift, the turn models: 4.5).</item>
+/// navy's picture of the target, so acquiring costs nothing new; the computer's q. One tracker for every computer for now
+/// (the Dreyer's polar drift, the turn models: fire-control.md F2).</item>
 /// <item><b>Solve.</b> The target where it'll be after the time of flight, from the track (which lags by the latency),
 /// the gun laid for it with its ship's motion in (<see cref="FireControl.Solve"/>), plus the engagement's residual bias
 /// and the spotting corrections.</item>
 /// <item><b>Lay, fire.</b> Mounts train and elevate as analytic anchors (<see cref="CombatStore"/>); a salvo goes at the
-/// first instant the bearing mounts are loaded and laid. Each salvo draws one common error (the level's salvo-to-salvo
+/// first instant the bearing mounts are loaded and laid. Each salvo draws one common error (the computer's salvo-to-salvo
 /// error, times battle's <see cref="SimSettings.GunneryCombat"/>; the director's laying error, or each gun's for a
 /// battery without director firing), each shell its own dispersion from the gun's pattern; a ship swinging adds the
-/// level's own-turn kick.</item>
+/// computer's own-turn kick.</item>
 /// <item><b>Spot.</b> When a salvo's last shell is down, and <see cref="SimSettings.SpotDelayMs"/> on, the spotter (the
 /// highest eye) judges it over, short or straddling (σ = k·R²/h) and sees its deflection; the RN's ladder corrects the
 /// next salvos, against the correction that salvo was fired with.</item>
@@ -65,8 +65,10 @@ public sealed class GunnerySystem : IWorldSystem
         public int Generation;
         public int Shooter, Battery, Target, Level, Table;
         public bool Local;
-        /// <summary>The level it fires at under its directors (it falls to local control's while they're out).</summary>
+        /// <summary>The preset it fires at under its directors, a label (it falls to local control's while they're out).</summary>
         public int DirectorLevel;
+        /// <summary>Its fire control's fit now, and under its directors.</summary>
+        public FireControlFit Fit, DirectorFit;
         /// <summary>The bearing (from ahead) and elevation the mounts were last ordered to, degrees; the last solution's
         /// elevation in the plane of fire and time of flight (where the next second's starts).</summary>
         public double OrderBearingDeg, OrderElevationDeg, ElevationDeg, TofS;
@@ -155,8 +157,8 @@ public sealed class GunnerySystem : IWorldSystem
 
     // ------------------------------------------------------------------ commands
 
-    /// <summary>A ship's battery (or all of them: -1) engages a ship (an entity). A level of -1 is the battery's own; a
-    /// dev or a bench may try another (0-8).</summary>
+    /// <summary>A ship's battery (or all of them: -1) engages a ship (an entity). A level of -1 is the battery's own fit; a
+    /// dev or a bench may try another preset's (0-8).</summary>
     public static Command Engage(int shooter, int battery, int target, int level = -1) =>
         new(Id, (ushort)GunneryCommand.Engage, shooter, A: target, B: battery, X: level);
 
@@ -227,20 +229,19 @@ public sealed class GunnerySystem : IWorldSystem
             ref var fc = ref fcs[f];
             ref readonly var row = ref cls.Batteries[b];
             int gen = fc.Generation + 1;
-            int lv = level >= 0 ? level : row.Local ? 0 : (int)row.Level;
+            int lv = Math.Clamp(level >= 0 ? level : row.Local ? 0 : (int)row.Level, 0, FireControlPresets.Count - 1);
+            var fit = level >= 0 ? FireControlPresets.Of((FireControlLevel)lv) : row.Local ? FireControlPresets.Local : row.Fit;
             fc = new Fc
             {
-                Alive = true, Generation = gen, Shooter = shooter, Battery = b, Target = target, StartMs = now,
-                Level = Math.Clamp(lv, 0, settings.GunneryLevels.Length - 1), Local = row.Local, FirstHitMs = -1, FirstStraddleMs = -1,
-                DirectorLevel = Math.Clamp(lv, 0, settings.GunneryLevels.Length - 1),
+                Alive = true, Generation = gen, Shooter = shooter, Battery = b, Target = target, StartMs = now, Level = lv, Local = row.Local,
+                FirstHitMs = -1, FirstStraddleMs = -1, DirectorLevel = lv, Fit = fit, DirectorFit = fit,
                 Table = shells.TableOf(store.Combat.Loadout(slot), b), ElevationDeg = double.NaN,
             };
-            var lvl = settings.GunneryLevels[fc.Level];
-            fc.Ladder.Step = lvl.Ladder0M;
+            fc.Ladder.Step = fit.Computer.Ladder0M;
             var r = stream.Derive((ulong)f).Derive((ulong)gen);
             fc.BiasR = r.NextGaussian();
             fc.BiasD = r.NextGaussian();
-            AddSensors(ref fc, f, cls, row, store.Combat.Condition(slot), now, lvl, ref r);
+            AddSensors(ref fc, f, cls, row, store.Combat.Condition(slot), now, ref r);
             store.Combat.Engage(slot, b, target);
         }
         ever = true;
@@ -249,27 +250,28 @@ public sealed class GunnerySystem : IWorldSystem
         Tick(world, schedule: true);
     }
 
-    /// <summary>A battery's rangefinders: its working directors' eyes, longest base first (as many as
-    /// <see cref="MaxSensors"/>); without one, the highest of its working mounts' layers by eye, at local control.</summary>
-    void AddSensors(ref Fc fc, int f, ShipClass cls, in BatteryRow row, ShipCondition cond, long now, GunneryLevel lvl, ref RandomStream r)
+    /// <summary>A battery's rangefinders: the first working instrument of each of its units whose director works,
+    /// longest base first (as many as <see cref="MaxSensors"/>); without one, the highest of its working mounts' layers by
+    /// eye, at local control.</summary>
+    void AddSensors(ref Fc fc, int f, ShipClass cls, in BatteryRow row, ShipCondition cond, long now, ref RandomStream r)
     {
         int n = 0;
         fc.Condition = cond.Version;
+        var optics = fc.Fit.Optics;   // the first readings come at the rate it was reading at
         if (!row.Local)
-            foreach (int d in cls.Links(row.Directors))
+            foreach (int u in cls.Links(row.Units))
             {
-                var eyes = cls.Eyes;
-                if (!cond.DirectorWorks[d])
+                ref readonly var unit = ref cls.FcUnits[u];
+                if (!cond.DirectorWorks[unit.Director] || n == MaxSensors)
                     continue;
-                for (int e = 0; e < eyes.Length && n < MaxSensors; e++)
-                    if (eyes[e].Kind == EyeKind.Director && eyes[e].Component == cls.Directors[d].Component && cond.EyeWorks[e])
-                    {
-                        sensors[f * MaxSensors + n++] = new Sensor
-                        {
-                            Eye = e, X = eyes[e].X, Y = eyes[e].Y, HeightM = eyes[e].HeightM, BaseM = eyes[e].RangefinderM,
-                        };
-                        break;
-                    }
+                foreach (int i in cls.Links(unit.Instruments))
+                {
+                    ref readonly var ins = ref cls.Instruments[i];
+                    if (!cond.EyeWorks[ins.Eye])
+                        continue;
+                    sensors[f * MaxSensors + n++] = new Sensor { Eye = ins.Eye, X = ins.X, Y = ins.Y, HeightM = ins.HeightM, BaseM = ins.BaseM };
+                    break;
+                }
             }
         if (n == 0)
         {
@@ -287,28 +289,28 @@ public sealed class GunnerySystem : IWorldSystem
             }
             sensors[f * MaxSensors + n++] = s;
             if (!fc.Local)
-                fc.Level = 0;   // its directors gone: each mount for itself, by eye (the level local control fires at)
+                (fc.Level, fc.Fit) = (0, FireControlPresets.Local);   // its directors gone: each mount for itself, by eye
             fc.Local = true;
         }
         else if (fc.Local && !row.Local)
-            (fc.Local, fc.Level) = (false, fc.DirectorLevel);   // a director back (E4: a timed outage over): under it again
+            (fc.Local, fc.Level, fc.Fit) = (false, fc.DirectorLevel, fc.DirectorFit);   // a director back (E4: a timed outage over): under it again
         fc.SensorCount = n;
         fc.SpotHeightM = 0;
         for (int k = 0; k < n; k++)
         {
             ref var s = ref sensors[f * MaxSensors + k];
             s.Bias = r.NextGaussian();
-            s.NextMs = now + (long)(r.NextDouble() * 60_000 / Math.Max(Rate(lvl, s), 1e-6));
+            s.NextMs = now + (long)(r.NextDouble() * 60_000 / Math.Max(Rate(optics, s), 1e-6));
             fc.SpotHeightM = Math.Max(fc.SpotHeightM, s.HeightM);
         }
     }
 
-    /// <summary>A sensor's readings a minute: an eye one, a rangefinder the level's.</summary>
-    static double Rate(GunneryLevel lvl, in Sensor s) => Ranges(lvl, s) ? lvl.ReadingsPerMin : 1;
+    /// <summary>A sensor's readings a minute: an eye one, a rangefinder its optics'.</summary>
+    static double Rate(in OpticsRow o, in Sensor s) => Ranges(o, s) ? o.ReadingsPerMin : 1;
 
-    /// <summary>Whether a sensor takes ranges with its rangefinder: it has one, and the level has the instruments to
-    /// read it (row 0, the eyeball, hasn't: a director's rangefinder at level 0 ranges by eye).</summary>
-    static bool Ranges(GunneryLevel lvl, in Sensor s) => s.BaseM > 0 && lvl.Magnification > 0;
+    /// <summary>Whether a sensor takes ranges with its rangefinder: it has one, and the fit's optics can read it (the
+    /// eyeball's can't: a director's rangefinder under it ranges by eye).</summary>
+    static bool Ranges(in OpticsRow o, in Sensor s) => s.BaseM > 0 && o.Magnification > 0;
 
     int AllocateFc()
     {
@@ -403,9 +405,10 @@ public sealed class GunnerySystem : IWorldSystem
         {
             // damage: its instruments picked again from what still works
             var rs = stream.Derive((ulong)f).Derive((ulong)fc.Generation).Derive(0xDA3u).Derive((ulong)cond.Version);
-            AddSensors(ref fc, f, cls, cls.Batteries[fc.Battery], cond, now, settings.GunneryLevels[fc.Level], ref rs);
+            AddSensors(ref fc, f, cls, cls.Batteries[fc.Battery], cond, now, ref rs);
         }
-        var lvl = settings.GunneryLevels[fc.Level];
+        var computer = fc.Fit.Computer;
+        var optics = fc.Fit.Optics;
         var crew = settings.GunneryCrews[(int)crews[ship.Side]];
         var pic = world.Sightings.Of(ship.Side);
         int ci = pic?.IndexOf(fc.Target) ?? -1;
@@ -419,11 +422,11 @@ public sealed class GunnerySystem : IWorldSystem
             }
             // acquired from the navy's picture: its estimate, the velocity no surer than the eye's first guess
             var (p, v, cov) = pic!.EstimateAt(ci, now, settings);
-            double kn = lvl.PriorKn * Handling.MsPerKnot, sv = kn * kn + Math.Pow(v.Length * double.DegreesToRadians(lvl.PriorDeg), 2);
+            double kn = computer.PriorKn * Handling.MsPerKnot, sv = kn * kn + Math.Pow(v.Length * double.DegreesToRadians(computer.PriorDeg), 2);
             (cov.VeVe, cov.VnVn) = (Math.Max(cov.VeVe, sv), Math.Max(cov.VnVn, sv));
             fc.Track = new Track { Position = p, Velocity = v, P = cov, Ms = now };
             (fc.Tracking, fc.TrackMs) = (true, now);
-            fc.OpenMs = now + (long)((lvl.LatencyS + settings.GunneryOpenS) * 1000);
+            fc.OpenMs = now + (long)((computer.LatencyS + settings.GunneryOpenS) * 1000);
         }
 
         // measure: each sensor that's due and sees it
@@ -440,13 +443,13 @@ public sealed class GunnerySystem : IWorldSystem
             if (now < s.NextMs)
                 continue;
             var r = stream.Derive((ulong)f).Derive((ulong)fc.Generation).Derive((ulong)now).Derive((ulong)k);
-            s.NextMs = now + (long)(60_000 / Rate(lvl, s) * r.NextDouble(0.7, 1.3));
+            s.NextMs = now + (long)(60_000 / Rate(optics, s) * r.NextDouble(0.7, 1.3));
             if (!seen)
                 continue;
             double range = Earth.Distance(at, tpos), brg = Earth.Bearing(at, tpos), sr, bias, sb;
-            if (Ranges(lvl, s))
+            if (Ranges(optics, s))
             {
-                double unit = FireControl.RangefinderUnitM(s.BaseM, lvl.Magnification, range, settings);
+                double unit = FireControl.RangefinderUnitM(s.BaseM, optics.Magnification, range, settings);
                 (sr, bias, sb) = (crew.Operator * combat * unit, s.Bias * settings.RangefinderBiasUnits * unit, settings.RangefinderBearingMil * FireControl.Mil);
             }
             else
@@ -455,21 +458,21 @@ public sealed class GunnerySystem : IWorldSystem
             double zr = Math.Max(range + bias + sr * r.NextGaussian(), 100), zb = brg + double.RadiansToDegrees(sb * r.NextGaussian());
             var (z, r11, r12, r22) = Track.Reading(at, zr, zb, sr, sb);
             if (fc.PendCount == PendingCap)
-                PopReading(ref fc, f, lvl);   // the computer's queue is full: the oldest goes in now
+                PopReading(ref fc, f);   // the computer's queue is full: the oldest goes in now
             int at2 = f * PendingCap + (fc.PendHead + fc.PendCount++) % PendingCap;
-            pending[at2] = new Reading { ArriveMs = now + (long)(lvl.LatencyS * 1000), Ms = now, Z = z, R11 = r11, R12 = r12, R22 = r22 };
+            pending[at2] = new Reading { ArriveMs = now + (long)(computer.LatencyS * 1000), Ms = now, Z = z, R11 = r11, R12 = r12, R22 = r22 };
         }
 
         // the computer: readings that have come through
         while (fc.PendCount > 0 && pending[f * PendingCap + fc.PendHead].ArriveMs <= now)
-            PopReading(ref fc, f, lvl);
+            PopReading(ref fc, f);
 
         // solve, and order the mounts
         ref readonly var row = ref cls.Batteries[fc.Battery];
         var mounts = cls.Links(row.Mounts);
         var table = shells.Ballistics[fc.Table];
         var muzzle = Muzzle(cls, frame, mounts[0]);
-        var aim = Predict(ref fc, table, muzzle, now, lvl);
+        var aim = Predict(ref fc, table, muzzle, now);
         bool laid = FireControl.Solve(table, muzzle, ship.Forward * ship.Speed, aim, out var lay, fc.ElevationDeg);
         double bearing = Mod((laid ? Earth.Heading(muzzle, lay.GunHorizontal) : Earth.Bearing(ship.Position, aim)) - ship.HeadingDeg);
         double elevation = laid ? lay.GunElevationDeg : double.PositiveInfinity;
@@ -516,20 +519,20 @@ public sealed class GunnerySystem : IWorldSystem
         return s.Eye < 0 || cls.Eyes[s.Eye].Sees(Earth.Bearing(at, target) - headingDeg);
     }
 
-    void PopReading(ref Fc fc, int f, GunneryLevel lvl)
+    void PopReading(ref Fc fc, int f)
     {
         ref readonly var r = ref pending[f * PendingCap + fc.PendHead];
-        fc.Track.Fix(r.Ms, lvl.Q, r.Z, r.R11, r.R12, r.R22);
+        fc.Track.Fix(r.Ms, fc.Fit.Computer.Q, r.Z, r.R11, r.R12, r.R22);
         fc.PendHead = (fc.PendHead + 1) % PendingCap;
         fc.PendCount--;
     }
 
     /// <summary>Where the track says the target will be when a shell fired now from a muzzle comes down: the time of
     /// flight iterated through the range table, from last second's.</summary>
-    Vec3d Predict(ref Fc fc, BallisticTable table, Vec3d muzzle, long now, GunneryLevel lvl)
+    Vec3d Predict(ref Fc fc, BallisticTable table, Vec3d muzzle, long now)
     {
-        double h0 = muzzle.Length - Earth.Radius;
-        var p = fc.Track.At(now + (long)(fc.TofS * 1000), lvl.Q).Position;
+        double h0 = muzzle.Length - Earth.Radius, q = fc.Fit.Computer.Q;
+        var p = fc.Track.At(now + (long)(fc.TofS * 1000), q).Position;
         for (int i = 0, n = fc.TofS > 0 ? 2 : 3; i < n; i++)
         {
             double e = table.ElevationFor(Earth.Distance(muzzle, p), h0, 1, fc.ElevationDeg);
@@ -537,7 +540,7 @@ public sealed class GunnerySystem : IWorldSystem
                 break;
             fc.ElevationDeg = e;
             fc.TofS = table.Fall(e, h0).Tof;
-            p = fc.Track.At(now + (long)(fc.TofS * 1000), lvl.Q).Position;
+            p = fc.Track.At(now + (long)(fc.TofS * 1000), q).Position;
         }
         return p;
     }
@@ -597,7 +600,8 @@ public sealed class GunnerySystem : IWorldSystem
         // the battery's computer works in its lead shell's table: the first firing mount's (the next salvos lay with it)
         fc.Table = shells.TableOf(loads, fc.Battery, lead);
 
-        var lvl = settings.GunneryLevels[fc.Level];
+        var computer = fc.Fit.Computer;
+        var mount = fc.Fit.Mount;
         var crew = settings.GunneryCrews[(int)crews[ship.Side]];
         int tableIndex = fc.Table;
         var table = shells.Ballistics[tableIndex];
@@ -605,7 +609,7 @@ public sealed class GunnerySystem : IWorldSystem
         var velocity = ship.Forward * ship.Speed;
         var muzzle0 = Muzzle(cls, frame, mounts[0]);
         double h0 = muzzle0.Length - Earth.Radius;
-        var p = Predict(ref fc, table, muzzle0, now, lvl);
+        var p = Predict(ref fc, table, muzzle0, now);
         var up = p.Normalized();
         var line = p - ship.Position;
         var u = (line - up * Vec3d.Dot(line, up)).Normalized();   // along the line of fire, at the target
@@ -618,15 +622,15 @@ public sealed class GunnerySystem : IWorldSystem
 
         // the salvo's common error (fire_control_ref.py engage(), "fire")
         var r = stream.Derive((ulong)f).Derive((ulong)fc.Generation).Derive(0x5A1u).Derive((ulong)fc.Salvos);
-        double layRad = lvl.LayMil * FireControl.Mil * crew.Lay * combat;
-        double eEl = lvl.Director ? r.NextGaussian() * layRad * perRad : 0, eTr = lvl.Director ? r.NextGaussian() * layRad * range : 0;
+        double layRad = mount.LayMil * FireControl.Mil * crew.Lay * combat;
+        double eEl = mount.DirectorFiring ? r.NextGaussian() * layRad * perRad : 0, eTr = mount.DirectorFiring ? r.NextGaussian() * layRad * range : 0;
         bool turning = Math.Abs(double.RadiansToDegrees(ship.YawRate)) > settings.OwnTurnYawDegS;
-        double kickR = turning ? r.NextGaussian() * lvl.OwnTurnKickM : 0, kickL = turning ? r.NextGaussian() * lvl.OwnTurnKickM : 0;
-        double eSr = r.NextGaussian() * combat * lvl.SalvoPct / 100 * range, eSd = r.NextGaussian() * combat * lvl.SalvoDeflMil * FireControl.Mil * range;
-        double dr = fc.CorrR + eEl + eSr + fc.BiasR * lvl.ResidPct / 100 * range + kickR;
-        double dl = fc.CorrD + eTr + eSd + fc.BiasD * lvl.DeflBiasMil * FireControl.Mil * range + kickL;
+        double kickR = turning ? r.NextGaussian() * computer.OwnTurnKickM : 0, kickL = turning ? r.NextGaussian() * computer.OwnTurnKickM : 0;
+        double eSr = r.NextGaussian() * combat * computer.SalvoPct / 100 * range, eSd = r.NextGaussian() * combat * computer.SalvoDeflMil * FireControl.Mil * range;
+        double dr = fc.CorrR + eEl + eSr + fc.BiasR * computer.ResidPct / 100 * range + kickR;
+        double dl = fc.CorrD + eTr + eSd + fc.BiasD * computer.DeflBiasMil * FireControl.Mil * range + kickL;
         var (sr, sd) = FireControl.Dispersion(row.PatternPct, range + dr, n, settings.DispersionDeflectionRatio);
-        if (!lvl.Director)
+        if (!mount.DirectorFiring)
             (sr, sd) = (Math.Sqrt(sr * sr + Math.Pow(layRad * perRad, 2)), Math.Sqrt(sd * sd + Math.Pow(layRad * range, 2)));
         var centre = p + u * dr + w * dl;
         // the aim's error against the truth, for the report: where the target goes on its course and speed meanwhile

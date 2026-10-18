@@ -22,6 +22,8 @@ public sealed class ShipClass
     internal RudderRow[] rudders = [];
     internal DirectorRow[] directors = [];
     internal BatteryRow[] batteries = [];
+    internal FcUnitRow[] fcUnits = [];
+    internal InstrumentRow[] instruments = [];
     internal ChargeRow[] charges = [];
     internal Design design = null!;
     internal EyeRow[] eyes = [];
@@ -106,6 +108,10 @@ public sealed class ShipClass
 
     /// <summary>The gun batteries (docs/battle/fighting.md 4.0): every gun mount is in one.</summary>
     public ReadOnlySpan<BatteryRow> Batteries => batteries;
+    /// <summary>The fire-control units (docs/battle/fire-control.md F0): the control positions, one target each.</summary>
+    public ReadOnlySpan<FcUnitRow> FcUnits => fcUnits;
+    /// <summary>The fire-control units' instruments.</summary>
+    public ReadOnlySpan<InstrumentRow> Instruments => instruments;
     /// <summary>The shells the design's batteries carry (its default loadout, docs/battle/shells-armour-damage.md
     /// decision 6). A ship may carry another (<see cref="Load"/>): the sim reads hers (CombatStore.Loadout), tools and
     /// what's judged of a class unseen read this.</summary>

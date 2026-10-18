@@ -169,17 +169,6 @@
   "EyeRangeBiasShare": 0.1,
   "EyeBearingMil": 5,
   "OwnTurnYawDegS": 0.2,
-  "GunneryLevels": [
-    { "Name": "0 eyeball", "ReadingsPerMin": 1, "Magnification": 0, "LatencyS": 20, "Q": 0.02, "PriorKn": 5, "PriorDeg": 30, "ResidPct": 2.5, "DeflBiasMil": 4, "LayMil": 3, "Director": false, "OwnTurnKickM": 0, "Ladder0M": 550, "SalvoPct": 2.5, "SalvoDeflMil": 3 },
-    { "Name": "1 early rangefinder", "ReadingsPerMin": 2, "Magnification": 24, "LatencyS": 15, "Q": 0.02, "PriorKn": 4, "PriorDeg": 25, "ResidPct": 2, "DeflBiasMil": 3, "LayMil": 2.5, "Director": false, "OwnTurnKickM": 0, "Ladder0M": 366, "SalvoPct": 2, "SalvoDeflMil": 2.5 },
-    { "Name": "2 Dumaresq and clock", "ReadingsPerMin": 2, "Magnification": 28, "LatencyS": 15, "Q": 0.03, "PriorKn": 3, "PriorDeg": 20, "ResidPct": 1.5, "DeflBiasMil": 2.5, "LayMil": 2, "Director": false, "OwnTurnKickM": 0, "Ladder0M": 366, "SalvoPct": 1.8, "SalvoDeflMil": 2.5 },
-    { "Name": "3 Dreyer and director", "ReadingsPerMin": 2, "Magnification": 28, "LatencyS": 15, "Q": 0.03, "PriorKn": 2.5, "PriorDeg": 15, "ResidPct": 1.2, "DeflBiasMil": 2, "LayMil": 1, "Director": true, "OwnTurnKickM": 300, "Ladder0M": 366, "SalvoPct": 1.5, "SalvoDeflMil": 2 },
-    { "Name": "4 interwar table", "ReadingsPerMin": 4, "Magnification": 28, "LatencyS": 8, "Q": 0.03, "PriorKn": 2, "PriorDeg": 12, "ResidPct": 0.6, "DeflBiasMil": 1.5, "LayMil": 0.8, "Director": true, "OwnTurnKickM": 250, "Ladder0M": 366, "SalvoPct": 1.2, "SalvoDeflMil": 1.5 },
-    { "Name": "5 rangekeeper", "ReadingsPerMin": 6, "Magnification": 25, "LatencyS": 3, "Q": 0.05, "PriorKn": 2, "PriorDeg": 12, "ResidPct": 0.4, "DeflBiasMil": 1, "LayMil": 0.5, "Director": true, "OwnTurnKickM": 150, "Ladder0M": 366, "SalvoPct": 1, "SalvoDeflMil": 1.2 },
-    { "Name": "6 radar spotting", "ReadingsPerMin": 6, "Magnification": 25, "LatencyS": 2, "Q": 0.05, "PriorKn": 2, "PriorDeg": 12, "ResidPct": 0.4, "DeflBiasMil": 1, "LayMil": 0.5, "Director": true, "OwnTurnKickM": 150, "Ladder0M": 366, "SalvoPct": 1, "SalvoDeflMil": 1.2 },
-    { "Name": "7 auto-track", "ReadingsPerMin": 60, "Magnification": 25, "LatencyS": 1, "Q": 0.02, "PriorKn": 2, "PriorDeg": 12, "ResidPct": 0.4, "DeflBiasMil": 0.8, "LayMil": 0.4, "Director": true, "OwnTurnKickM": 50, "Ladder0M": 366, "SalvoPct": 0.7, "SalvoDeflMil": 0.8 },
-    { "Name": "8 digital", "ReadingsPerMin": 30, "Magnification": 25, "LatencyS": 0.5, "Q": 0.01, "PriorKn": 2, "PriorDeg": 12, "ResidPct": 0.3, "DeflBiasMil": 0.5, "LayMil": 0.3, "Director": true, "OwnTurnKickM": 20, "Ladder0M": 366, "SalvoPct": 0.4, "SalvoDeflMil": 0.5 }
-  ],
   "GunneryCrews": [
     { "Name": "green", "Operator": 2, "Lay": 1.3 },
     { "Name": "average", "Operator": 1.5, "Lay": 1.15 },
