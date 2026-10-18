@@ -654,16 +654,12 @@ public sealed class GunnerySystem : IWorldSystem
             else
                 (sr, bias, sb) = (settings.EyeRangeShare * range * crew.Operator * combat, s.Bias * settings.EyeRangeBiasShare * range,
                     s.BearingMil * FireControl.Mil);
-            // a rangefinder's error is fresh each reading (the instrument's setting); a man judging the same ship again a
-            // minute on misjudges her much as he did: his error wanders slowly about his own bias (the user, 2026-10-18)
-            double err = r.NextGaussian();
-            if (!Ranges(optics, s))
-            {
-                double rho = Math.Exp(-Math.Max(now - s.WanderMs, 0) / (1000 * settings.EyeWanderTauS));
-                (s.Wander, s.WanderMs) = (rho * s.Wander + Math.Sqrt(1 - rho * rho) * err, now);
-                err = s.Wander;
-            }
-            double zr = Math.Max(range + bias + sr * err, 100), zb = brg + double.RadiansToDegrees(sb * r.NextGaussian());
+            // the same man reads the same ship a minute on and misjudges her much as he did, through a rangefinder or by
+            // eye: his error wanders slowly about his own bias (the user, 2026-10-18)
+            double tau = Ranges(optics, s) ? settings.RangefinderWanderTauS : settings.EyeWanderTauS;
+            double rho = Math.Exp(-Math.Max(now - s.WanderMs, 0) / (1000 * tau));
+            (s.Wander, s.WanderMs) = (rho * s.Wander + Math.Sqrt(1 - rho * rho) * r.NextGaussian(), now);
+            double zr = Math.Max(range + bias + sr * s.Wander, 100), zb = brg + double.RadiansToDegrees(sb * r.NextGaussian());
             var (z, r11, r12, r22) = Track.Reading(at, zr, zb, sr, sb);
             if (fc.PendCount == PendingCap)
                 PopReading(ref fc, f, target, now, ship.Position, ownV);   // the computer's queue is full: the oldest goes in now

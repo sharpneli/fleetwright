@@ -535,8 +535,12 @@ public sealed record SimSettings
 
     /// <summary>Rangefinding (fire-control-research.md §3.2): a reading's unit of error is the optics' (their acuity,
     /// rigid base and flex: the fit's tech block, F3); an instrument's own bias after calibration, in units of error. Its
-    /// bearing's error is its post's (SightModel.BearingSigmaRad, fire-control.md F5).</summary>
+    /// bearing's error is its post's (SightModel.BearingSigmaRad, fire-control.md F5). The rangetaker's own error is no
+    /// fresh draw each reading: the same man reads all through a fight, so his error wanders about the bias as the eye's
+    /// does (his eyes tiring, the image's edges judged a little differently), with this time constant, s [EST] (the user,
+    /// 2026-10-18: a fresh error each reading would be a different man at each).</summary>
     public double RangefinderBiasUnits { get; init; } = 1.5;
+    public double RangefinderWanderTauS { get; init; } = 300;
 
     /// <summary>The air on a rangefinder (fire-control.md F5c): a rangetaker reads at his trained acuity while the target's
     /// contrast through the instrument is this many times the eye's threshold (the sighting model's margin) or more; under

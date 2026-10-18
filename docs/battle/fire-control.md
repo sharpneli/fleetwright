@@ -1023,6 +1023,21 @@ from the parts and independent fire (items 6 and 9); F6e ammunition as a choice 
     921 and losses 5.6 ships, Japan's 1,286 and 3.8. Cost 32 µs a battery-second. Tests: after a hit the lay moves 19 m on
     average at 3 km and 10 m at 15 km (`After_a_hit_the_guns_hold_their_lay`); the fall-out test's enemy holds her fire
     (a hit on the second ship put her out too, under its any-damage doctrine).
+  - *The rangetaker's error wanders too* (the user, 2026-10-18: "given a single operator and target at constant range
+    they are not going to report wildly different errors per reading"; a fresh error each reading would be a different
+    man at each, and the same man reads all through a fight). A rangefinder's reading now takes the eye's model: its
+    bias (`RangefinderBiasUnits` 1.5 units, as before) and a wander about it with its own time constant
+    (`RangefinderWanderTauS` 300 s [EST]), the wander's size the fresh error's before (crew × combat × unit: 1.5 units
+    trained), so one reading's error is unchanged and only its correlation in time is new. The track no longer
+    averages it away; the spots walk it out. Before and after on one build (the old behaviour is the time constant at
+    zero, the same draws): fc-history **11 of 23** (10): the British BCs at Jutland 3.4 to 2.2% and at Dogger Bank 3.1
+    to 2.1% come into their bands (Lion's first hit on salvo 20, later than the record's ~10), the German 1st SG 3.0
+    to 3.7% and the German battleships 5.3 to 6.8% (now over their band), so the Germans over the British go 0.88 to
+    1.64 (in); the Grand Fleet's range over the BCs' 1.59 to 2.93; Tsushima over the Yellow Sea 0.91 to 1.01 (still
+    low). Duels: Lion at 15 km 4.7 to 4.5% (the track's aim error 167 to 215 m at 2-4 min, the first hit 222 to 343 s);
+    super_dreadnought at 18 km on fit 4 2.3 to 3.8% (its fresh error kept moving the solution). The user, 2026-10-18:
+    hit rates over the record are fine here, the sim being the ideal case (fresh crews, no sea, brilliant visibility);
+    mist, rain and sea will bring them down.
   - *A bug found on the way* (committed alone): a row of light AA mounts along each beam blinded the directors on
     their deck, so Bismarck's 150 mm never took a reading and never fired; light AA no longer blinds a post (45 classes'
     eyes move, the WWI scenarios' hashes don't).

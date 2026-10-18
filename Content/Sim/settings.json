@@ -175,6 +175,7 @@
   ],
   "DispersionDeflectionRatio": 0.4,
   "RangefinderBiasUnits": 1.5,
+  "RangefinderWanderTauS": 300,
   "RangingClearMargin": 4,
   "RangingPowerCoincidence": 0.8,
   "RangingPowerStereo": 0.4,
