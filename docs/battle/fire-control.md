@@ -506,11 +506,11 @@ the transmitting station; F4d sighting on the new heights.
   the heights later (the user, 2026-10-18; F12). fc-history 11 of 23 in band (12 before: the Grand Fleet BS 7.1 to 7.3%,
   over its band's 7.2); squadrons and Tsushima over 5 seeds within the spread.
 - **F4b so far (2026-10-18):**
-  - *Directors in tops:* a mast's \`director\` names a battery one of whose directors stands on its top's roof
-    (\`FireControl.PlaceInTops\`), the top growing to hold its hood. The 33 Great War capital ships put their main
+  - *Directors in tops:* a mast's `director` names a battery one of whose directors stands on its top's roof
+    (`FireControl.PlaceInTops`), the top growing to hold its hood. The 33 Great War capital ships put their main
     director in the foretop (Iron Duke's eye 23 to 31 m): fc-history 13 of 23, the Grand Fleet and German battleships in,
     director over independent 1.79 to 1.51.
-  - *Turret rangefinders by design* (the user: physical, by design): a battery's \`rangefinder_m\` puts one in each
+  - *Turret rangefinders by design* (the user: physical, by design): a battery's `rangefinder_m` puts one in each
     gunhouse, the hitbox's hood spanning the base; the fixed bar every armoured turret had goes, so turrets pack closer
     (median 0.0 %, -1 to -4 % standard where the bars set the spacing). The 50 capital ships from the Great War on carry
     them (2.7 m under 15", 4.6 m from it, later the director's base). In the sim each is an eye blind outside its turret's
