@@ -98,6 +98,9 @@ public static class Program
         shipgen fc-levels [--runs N] [--ref]
             each preset in the research's table of levels (table 6: day, long range, haze, night) and against a manoeuvring target
             (table 11: steady, zigzag, circles)
+        shipgen fc-sensors [--runs N]
+            the sensors' anchors (fire-control.md F5d), the designer note's cruiser study on the sim: hits against the
+            director's base by tech and range (D6) and against the instruments' arrangement (D8), beside the research's
         shipgen fc-history [--runs N] [--case TEXT] [--ref]
             the historical record's cases (fire-control.md, "The yardstick"), each at its recorded range, weather and target
             behaviour, beside the record's band, then the orderings between them: the bench every fire-control step answers to
@@ -249,6 +252,7 @@ public static class Program
                 "duel" => DuelCmd(a),
                 "fc-converge" => FcLevels.Converge(Settings(a), a.Int("runs", 30), a.Has("ref") ? Root(a) : null, n => Class(a, n)),
                 "fc-levels" => FcLevels.Run(Settings(a), a.Int("runs", 20), a.Has("ref") ? Root(a) : null, n => Class(a, n)),
+                "fc-sensors" => FcSensors.Run(Settings(a), a.Int("runs", 12), Root(a), n => Class(a, n)),
                 "fc-history" => FcHistory.Run(Settings(a), a.Int("runs", 12), a.Get("case"), a.Has("ref") ? Root(a) : null, n => Class(a, n)),
                 "hits" => HitsBench.Run(a.Positional.ElementAtOrDefault(0) ?? "dreadnought", n => LoadDesign(Resolve(a, n)),
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),

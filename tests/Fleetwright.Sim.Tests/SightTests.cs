@@ -225,6 +225,27 @@ public class SightModelTests(ITestOutputHelper output)
         Assert.InRange(M(InstrumentSupport.Tower, 25, big) / M(InstrumentSupport.Tower, 25, o with { Magnification = 35 }), 0.9, 1.03);   // ×50 no better than ×35
     }
 
+    /// <summary>fire-control.md F5d: one reading's error in clear air, on a tower at 25 m, against the research's table 2
+    /// (fire-control-research.md §3.3: the FQ2 9 ft 69 yd and the FT24 15 ft 42 yd at 10 kyd, 166 yd at 20) and Lienau's
+    /// Zeiss 3 m (±65 m at 10 km, 165 m at 16 km).</summary>
+    [Fact]
+    public void One_reading_matches_the_research()
+    {
+        var o2 = Shipgen.FireControlTemplates.Get("Barr & Stroud FQ/FT (O2)")!.Value.Optics!;
+        var zeiss = Shipgen.FireControlTemplates.Get("Zeiss stereo (WWI)")!.Value.Optics!;
+        double U(Shipgen.OpticsTechInput b, double baseM, double rangeM)
+        {
+            var o = FireControlBlocks.Optics(b);
+            return Combat.FireControl.RangefinderUnitM(baseM, o, Combat.FireControl.Magnification(o, InstrumentSupport.Tower, 25), rangeM);
+        }
+        const double kyd = 914.4, yd = 0.9144;
+        Assert.InRange(U(o2, 2.74, 10 * kyd) / yd, 62, 76);
+        Assert.InRange(U(o2, 4.57, 10 * kyd) / yd, 38, 46);
+        Assert.InRange(U(o2, 4.57, 20 * kyd) / yd, 150, 183);
+        Assert.InRange(U(zeiss, 3, 10_000), 58, 72);
+        Assert.InRange(U(zeiss, 3, 16_000), 148, 182);
+    }
+
     /// <summary>fire-control.md F5c: the air on a rangefinder. In clear air a capital ship at 15 km is ranged at the
     /// trained acuity; in Jutland's haze (16 km) a coincidence set's error grows about twice, a stereo set's about a
     /// third (the reference's k_optic: 2.25 and 1.4), and coated glass less; at dusk the margin, and so the error, worsens

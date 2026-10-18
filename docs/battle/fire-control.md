@@ -1,5 +1,5 @@
 # Plan: fire control (a 4.5 deepening)
-Status: **agreed with the user 2026-10-17** ("Decided" below; radar moved out); F0-F4 done 2026-10-18, F5a-c done    Updated: 2026-10-18
+Status: **agreed with the user 2026-10-17** ("Decided" below; radar moved out); F0-F5 done 2026-10-18    Updated: 2026-10-18
 
 The fine-tune pass for the **Fire control** link of `fighting.md` 4.5 ("the trackers by era ... the clocks' limits ...
 the full set of levels, radar as a sensor, night ... splash confusion ... the designer emitting levels and sensors,
@@ -676,6 +676,30 @@ small and hull-down targets; stereo against coincidence); F5d the anchors' bench
     looking at every sensor every second), the Jutland's gunnery 35 µs a call.
   - *Tests:* the air's factor in clear air, haze, at dusk and past the night's reach, stereo under coincidence, coated
     under bare.
+- **F5d done 2026-10-18** (the anchors). F5 is complete.
+  - *The bench:* `shipgen fc-sensors [--runs N]`, the designer note's cruiser study (§4) on the sim: the heavy cruiser
+    (9 x 8"/55) rebuilt with one director of a given base, magnification and kind and nothing else ranging unless asked
+    (after control's and the turrets' sets), against a cruiser at 30 kn on a parallel course, steady or zigzagging ±25°
+    every 150 s, clear (35 km) or haze (25 km), practice's errors, 15 minutes; the variants share seeds, so close
+    arrangements can tie shell for shell. About 7 minutes at 24 runs. A narrow field slows the readings past ×30
+    (designer §3.1: ×√(30/M)), which no catalogue block reaches.
+  - *D6, hits against base* (relative to 4.57 m; the research after the slash), the keeper: eye 18/14, 17/10, 13/10,
+    7/11 at 10, 15, 20, 25 kyd; 2.74 m 93/91 to 75/79; 15 m 114/110, 121/119, 125/128, 136/140. The table's 15 m
+    109/107 to 146/137, the plot's 118/107 to 112/119. The knee and the rise with range are the research's: the eye at
+    10-25% of a 4.57 m set (the research's 10-20%), 15 m +20-25% at 15-20 kyd (+19-28%). The plot at 25 kyd is noisy (4.5
+    hits a run).
+  - *D8, the arrangements* at 18 kyd, table tech, zigzag, clear / haze against the research: three 4.57 m turret sets
+    +31/+22% (the research +9/+16% for one; +7-10% an instrument); 8.1 m in the director +13/+9% (+12/+22%); 4.57 m
+    director and 8.1 m turrets +25/+20%; ×15 -19/-21% (-15/-13%); ×35 -4/-2% (0/+2%); ×50 -20/-11% (-12/-3%). After
+    control's set doesn't fit this cruiser's after control roof, even at 2.74 m (shipgen leaves it off), so that row
+    is empty. **A departure:** coincidence instead of stereo costs 0/-3% here against the research's -16/-11%: at 18 kyd
+    in 25 km the margin is ~2.5 and the AFCT's track isn't bound by one instrument's random error; the research's
+    clear-air penalty comes mostly from its readings' rate.
+  - *Absolute hits* sit above the research's (the keeper's 4.57 m 151 / 53 / 19 / 7 against 78 / 27 / 11 / 5): the sim
+    is still too good close in and against steady targets, the fire discipline and spotting of F6-F7.
+  - *Tests:* one reading's error against the research's table 2 (the FQ2 9 ft and FT24 15 ft at 10 and 20 kyd) and
+    Lienau's Zeiss 3 m figures. The bench is too slow for a kept test; it's run, like fc-history, when a step changes
+    the sensors.
 
 ### F6 Fire discipline: finding the bracket, then hitting
 

@@ -383,8 +383,9 @@ public sealed class GunnerySystem : IWorldSystem
         }
     }
 
-    /// <summary>A sensor's readings a minute: an eye one, a rangefinder its optics'.</summary>
-    static double Rate(in OpticsRow o, in Sensor s) => Ranges(o, s) ? o.ReadingsPerMin : 1;
+    /// <summary>A sensor's readings a minute: an eye one, a rangefinder its optics', fewer past ×30 where the narrow field
+    /// is slower to pick the target up (designer §3.1: ×√(30/M) [INFERRED]).</summary>
+    static double Rate(in OpticsRow o, in Sensor s) => Ranges(o, s) ? o.ReadingsPerMin * Math.Sqrt(Math.Min(1, 30 / o.Magnification)) : 1;
 
     /// <summary>Whether a sensor takes ranges with its rangefinder: it has one, and the fit's optics can read it (the
     /// eyeball's can't: a director's rangefinder under it ranges by eye).</summary>

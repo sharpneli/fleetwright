@@ -1063,7 +1063,9 @@ numbers before and after against the anchors. The list, by link, with where the 
   F5b done 2026-10-18: the optics' kind, top magnification and gyro mounting reach the sim, and each rangefinder's
   useful magnification follows what it stands on (turret, roof, tower, a mast by its kind) and its height; F5c done
   2026-10-18: the haze, the light and the target's size reach the rangefinders through the sighting model's contrast
-  margin, stereo sets less than coincidence ones, and an instrument that can't make the target out takes no reading.
+  margin, stereo sets less than coincidence ones, and an instrument that can't make the target out takes no reading;
+  F5d done 2026-10-18: `shipgen fc-sensors`, the designer note's base and arrangement studies on the sim, in their
+  shape (F5 complete).
 - **Ship motion** (`ship-motion/ship-motion-gunnery-research.md` §7.7, in its order):
   - a roll phase per ship from `RollPeriodS` and the sea, with firing on the roll and a once-a-roll rate;
   - laying error `√(base² + (τ·ω)²)`;
