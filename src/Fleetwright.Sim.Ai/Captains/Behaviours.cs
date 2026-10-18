@@ -208,13 +208,24 @@ public static class Behaviours
     /// battery fights from, turned <paramref name="closeDeg"/> in toward him beyond the band (<paramref name="rangeM"/>,
     /// ± <paramref name="bandShare"/> of it) and as far out inside it. <paramref name="side"/> is which side the enemy is
     /// kept on (1 starboard, -1 port); 0 picks the one nearer the ship's heading, and it's returned so the captain keeps
-    /// it. The speed is his full speed.</summary>
+    /// it. Beyond the band he turns in further when that angle wouldn't close on him by <paramref name="minCloseKn"/>
+    /// (an enemy running away eats what it closes), as far as a stern chase. The speed is his full speed.</summary>
     public static (double CourseDeg, double SpeedKn) Fight(ShipState own, in Sighting enemy, double rangeM, double bandShare, double closeDeg,
-        ref int side)
+        double minCloseKn, ref int side)
     {
         var p = own.Position;
         double bearing = Earth.Bearing(p, enemy.Position), range = Earth.Distance(p, enemy.Position);
         double off = range > rangeM * (1 + bandShare) ? 90 - closeDeg : range < rangeM * (1 - bandShare) ? 90 + closeDeg : 90;
+        if (range > rangeM * (1 + bandShare))
+        {
+            // his speed away along the line of sight, and the angle off it that closes on that by the least wanted
+            var away = Earth.Forward(enemy.Position, Earth.Bearing(enemy.Position, p) + 180);
+            double opening = Vec3d.Dot(enemy.Forward, away) * enemy.SpeedMs;
+            // at the speed she makes (her trials' top she may not, fouled or loaded), half her top while working up to it
+            double v = Math.Max(own.Speed, 0.5 * own.Handling.Class.Motion.MaxSpeedKn * Handling.MsPerKnot);
+            double need = (opening + minCloseKn * Handling.MsPerKnot) / v;
+            off = need >= 1 ? 0 : Math.Min(off, double.RadiansToDegrees(Math.Acos(Math.Max(need, -1))));
+        }
         if (side == 0)
         {
             double heading = own.HeadingDeg;

@@ -187,7 +187,7 @@ public sealed class GunnerySystem : IWorldSystem
     {
         public bool Alive;
         public int Generation, Fc, FcGeneration, Target, Shells, Left, Landed, Over, Short, Hits;
-        public double CorrR, CorrD, PatternM, RangeM, SpotSigmaM, Common, SumY, MinX, MaxX, TargetLengthM, SumX, AimErrM, AimErrAcrossM;
+        public double CorrR, CorrD, PatternM, PatternAcrossM, RangeM, SpotSigmaM, Common, SumY, MinX, MaxX, TargetLengthM, SumX, AimErrM, AimErrAcrossM;
         public long FiredMs;
         public FirePhase Phase;
         /// <summary>Its battery's <see cref="Fc.Shift"/> when it was fired, and whether it was laid point blank (its fall
@@ -878,7 +878,7 @@ public sealed class GunnerySystem : IWorldSystem
 
     /// <summary>Where a battery's guns are laid (the short-range bug hunt, 2026-10-18; fire-control.md F7's point blank
     /// taken in): the line is the layers' own, laid on the target as they see her now, with the computer's lead over the
-    /// time of flight on it (its estimate of her velocity: speed across is what it gives the sights); the range is the
+    /// time of flight on it (how its solution has her move meanwhile: its motion across is what it gives the sights); the range is the
     /// computer's, which the spots correct. Point blank, where the danger space of her side covers twice the error of her
     /// present range by sight (the battery's first instrument, or the layer's eye, with the computer's residual ballistic
     /// bias: what spotting would take off), the range is that present range,
@@ -890,8 +890,10 @@ public sealed class GunnerySystem : IWorldSystem
         fc.PointBlank = false;
         if (!fc.Sees || double.IsNaN(fc.ElevationDeg))
             return c;
-        fc.Tracker.At(fc.Fit.Computer, now, now, ownP, ownV, out _, out var v);
-        var lead = (target.Position + v * fc.TofS).Normalized() * Earth.Radius;
+        // the lead is the way the solution has her move in the time of flight, not her velocity now times it: a turn
+        // filter's arc (a straight lead threw away ½·v·ω·T², 70 m at 14 km on a 1°/s circle), a clock's rates
+        fc.Tracker.At(fc.Fit.Computer, now, now, ownP, ownV, out var here, out _);
+        var lead = (target.Position + (c - here)).Normalized() * Earth.Radius;
         double range = Earth.Distance(ownP, c), present = Earth.Distance(ownP, lead);
         var tc = target.Handling.Class;
         double side = Math.Max(tc.Hull.DeckTop(0) - tc.Vertical.Waterline, 1);
@@ -1091,7 +1093,7 @@ public sealed class GunnerySystem : IWorldSystem
         sv = new Salvo
         {
             Alive = true, Generation = sv.Generation + 1, Fc = f, FcGeneration = fc.Generation, Target = fc.Target, CorrR = fc.CorrR + ladder, CorrD = fc.CorrD,
-            PatternM = 4 * sr, RangeM = range, SpotSigmaM = spot, Common = 0.5 * spot * r.NextGaussian(), U = u, W = w, MinX = double.MaxValue,
+            PatternM = 4 * sr, PatternAcrossM = 4 * sd, RangeM = range, SpotSigmaM = spot, Common = 0.5 * spot * r.NextGaussian(), U = u, W = w, MinX = double.MaxValue,
             MaxX = double.MinValue, TargetLengthM = store[tslot].Handling.Class.Silhouette.LengthM, FiredMs = now,
             AimErrM = Vec3d.Dot(p - truth, u), AimErrAcrossM = Vec3d.Dot(p - truth, w), Phase = phase, LadderM = ladder, Shift = fc.Shift,
             PointBlank = pointBlank, TrueRangeM = Earth.Distance(ship.Position, tgt.Position), PbCorrR = fc.PbCorrR,
@@ -1276,7 +1278,7 @@ public sealed class GunnerySystem : IWorldSystem
                 NextPhase(ref fc, sign, now, dis.MissesToRange);
                 var r = stream.Derive(0x5B08u).Derive((ulong)si).Derive((ulong)sv.Generation);
                 double defl = sv.SumY / Math.Max(sv.Landed, 1) + settings.SpotDeflectionMil * FireControl.Mil * sv.RangeM * r.NextGaussian();
-                if (Math.Abs(defl) > 0.25 * sv.PatternM)
+                if (Math.Abs(defl) > 0.25 * sv.PatternAcrossM)
                     fc.CorrD = (pyramid ? fc.CorrD : sv.CorrD) - settings.SpotDeflectionGain * defl;
             }
             else if (sees && sv.Hits == 0)
@@ -1290,7 +1292,7 @@ public sealed class GunnerySystem : IWorldSystem
                 if (Math.Abs(x) > 0.5 * sv.PatternM)
                     fc.PbCorrR = sv.PbCorrR - 0.5 * x / Math.Max(sv.TrueRangeM, 1);
                 double defl = sv.SumY / Math.Max(sv.Landed, 1) + settings.SpotDeflectionMil * FireControl.Mil * sv.RangeM * r.NextGaussian();
-                if (Math.Abs(defl) > 0.25 * sv.PatternM)
+                if (Math.Abs(defl) > 0.25 * sv.PatternAcrossM)
                     fc.CorrD = sv.CorrD - settings.SpotDeflectionGain * defl;
             }
             Spotted?.Invoke(new SpotReport(sv.FiredMs, fc.Shooter, fc.Battery, sees, sign, fc.Bracket.LoAt(now, fc.DriftMs), fc.Bracket.HiAt(now, fc.DriftMs),

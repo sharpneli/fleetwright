@@ -200,6 +200,7 @@
   "FireLineGapM": 3000,
   "FightBandShare": 0.15,
   "FightCloseDeg": 40,
+  "FightMinCloseKn": 3,
   "FightCompareM": 30000,
   "FightRallyShare": 0.75,
   "FightFinishConfidence": 10,

@@ -475,7 +475,7 @@ public sealed partial class CaptainLayer
             // the attack: in to the torpedoes' range, fire, away, and in again
             bool off = cap.TorpedoMs != 0 && ctx.NowMs - cap.TorpedoMs < s.TorpedoTurnAwayMs;
             double attack = s.TorpedoAttackShare * FastSetting(cls).RangeM;
-            var (course0, kn0) = off ? Behaviours.Run(own, t) : Behaviours.Fight(own, t, attack, s.FightBandShare, s.FightCloseDeg, ref cap.FightSide);
+            var (course0, kn0) = off ? Behaviours.Run(own, t) : Behaviours.Fight(own, t, attack, s.FightBandShare, s.FightCloseDeg, s.FightMinCloseKn, ref cap.FightSide);
             // under fire on the run-in, and away after: evading, but steady for the last of it (the research: hold for the launch)
             if (off || Earth.Distance(own.Position, t.Position) > s.EvadeSteadyShare * attack)
                 course0 = Evade(ctx, own, slot, course0, attackRun: true);
@@ -487,7 +487,7 @@ public sealed partial class CaptainLayer
         cap.FightAway = away;
         if (!away && c >= s.FightFinishConfidence && m.Terms.LostA < s.FightFinishLostShare)
             band *= s.FightFinishShare;   // he can hardly be hurt (a cripple, not a torpedo boat): in to finish her
-        var (course, kn) = away ? Behaviours.Run(own, t) : Behaviours.Fight(own, t, band, s.FightBandShare, s.FightCloseDeg, ref cap.FightSide);
+        var (course, kn) = away ? Behaviours.Run(own, t) : Behaviours.Fight(own, t, band, s.FightBandShare, s.FightCloseDeg, s.FightMinCloseKn, ref cap.FightSide);
         if (away)
         {
             if (double.IsNaN(fallBack))

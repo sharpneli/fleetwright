@@ -1048,6 +1048,34 @@ from the parts and independent fire (items 6 and 9); F6e ammunition as a choice 
     unchanged to the shell): the British BCs at Jutland 2.2 to 2.5%, the Grand Fleet 6.6 to 5.8%, Falklands 3.1 to
     1.9%; the Germans over the British 1.64 to 1.46 (just under the band's 1.5). Lion at 15 km 4.5% as before, the
     track's aim error 215 to 184 m at 2-4 min and the first hit back to 222 s (salvo 3).
+  - *The bearing's maths checked* (the user, 2026-10-18: "a slight hunch that bearing error in the prediction or
+    elsewhere is a bit wonky in some cases"). Checked and right: a reading's fix and its covariance (`Track.Reading`:
+    the range's variance along the line of sight, the bearing's times the range across it, R12 = (along - across)·sin·cos),
+    the true-course track's Kalman update, the rate clock (its start's range and bearing rates from the relative
+    velocity, the bearing's two-state filter on q/R², the helm-free re-reference, `ClockPoint`'s velocity), the
+    coordinated turn and the Singer model, the gate, and the deflection's sign from spot to lay. How a bearing's error
+    reaches the guns: while the battery sees her, the layers lay on her as she is and the computer gives the lead, so a
+    reading's bearing error only acts through the track's velocity. Fixed:
+    - *The lead was straight* (`Aim`): her present place plus the track's velocity now times the time of flight, while
+      the range took the track's own prediction; a turn filter's arc was lost from the line (½·v·ω·T², 70 m at 14 km on
+      a 1°/s circle, the trace's across error 65-76 m). The lead is now the track's own motion over the flight (where it
+      has her at the fall less where it has her now). Duels at 14 km, 20 runs: on a circle the turn-setting table 2.6 to
+      3.1%, the digital filter 4.6 to 5.2%; the straight-line trackers as before.
+    - *The deflection spot's dead band* was a quarter of the range's pattern, 2.5 times the line's own (40 m at 15 km,
+      an end-on target's beam): now a quarter of the pattern across. Over 100 runs it makes no difference (Lion 4.4
+      against 4.6%, a stern chase 1.9 against 1.8%, head on 3.1 against 3.2%): the line isn't the limiter.
+    fc-history 11 of 23 both before and after these two (the British 1st/2nd BCS 2.5 to 3.0%, just over their band; the
+    German battleships 6.8 to 5.8%, now in; Komandorski's control 1.2 to 0.9%).
+    Left as they are, for the user: a bearing's error is fresh each reading (the range's now wanders) and isn't
+    multiplied by the crew or by battle as the range's is; the deflection correction is metres, not mils, and isn't
+    rebased when the solution's lead moves (the range's is); the straddle the report counts takes the target's length
+    across the line whatever her aspect; a spot over or short is taken from a fall however far off the line.
+  - *A bug found on the way: Fight never closed on a runner.* The captain's Fight turned a fixed 40° in from the beam
+    whatever the enemy did: at 22.5 kn on a 12 kn runner that closed 0.3 kn, and `Fight_closes_to_its_band` (14.0 km
+    against a limit of 15.6) ended at 18.6 km once the falls moved. Beyond the band he now turns in further when the
+    angle wouldn't close by `FightMinCloseKn` (3 kn [EST]) at the speed she makes, as far as a stern chase. Squadrons
+    over 10 seeds: Britain's hits 54 to 79 and Germany's 60 to 158, Germany losing 0.3 ships (0), two seeds ending
+    quiet (none).
   - *A bug found on the way* (committed alone): a row of light AA mounts along each beam blinded the directors on
     their deck, so Bismarck's 150 mm never took a reading and never fired; light AA no longer blinds a post (45 classes'
     eyes move, the WWI scenarios' hashes don't).

@@ -483,7 +483,8 @@ public sealed record SimSettings
     /// <summary>Spotting: the judgement comes this long after a salvo's last shell lands, ms; a splash is judged over or
     /// short with an error of k·R²/h rad (h the spotter's height; fire-control-research.md §9), and the deflection seen
     /// to this many mil, a share of it corrected (half: one salvo's fall carries its random error, so full corrections
-    /// chase noise) once it's over a quarter of a pattern.</summary>
+    /// chase noise) once it's over a quarter of the pattern across (its own, not the range's: 2.5 times wider, it
+    /// left 40 m off the line at 15 km uncorrected, a whole end-on target's beam).</summary>
     public int SpotDelayMs { get; init; } = 6000;
     public double SpotOpticK { get; init; } = 4e-5;
     public double SpotDeflectionMil { get; init; } = 1;
@@ -606,9 +607,12 @@ public sealed record SimSettings
     /// <summary>Fight (a captain's minimal fighting manoeuvre): how far either side of the range he keeps is near enough
     /// (a share of it); the angle off the line of sight he closes or opens at, degrees; the radius the enemy round him is
     /// judged in (the matchup, docs/battle/command.md 5.1g), m; and turned away, the share of doctrine's bar he must be
-    /// over again to turn back (the bar over it). The range and the bar are doctrine's (RangeShare, OutgunnedRatio).</summary>
+    /// over again to turn back (the bar over it). The range and the bar are doctrine's (RangeShare, OutgunnedRatio).
+    /// Closing, he turns in further when that angle wouldn't close on an enemy running away by this many knots [EST]
+    /// (40° in from the beam at 22 kn closed 0.3 kn on a 12 kn runner and never reached the band).</summary>
     public double FightBandShare { get; init; } = 0.15;
     public double FightCloseDeg { get; init; } = 40;
+    public double FightMinCloseKn { get; init; } = 3;
     public double FightCompareM { get; init; } = 30_000;
     public double FightRallyShare { get; init; } = 0.75;
 
