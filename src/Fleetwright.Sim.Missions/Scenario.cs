@@ -39,7 +39,9 @@ namespace Fleetwright.Sim.Missions;
 /// propellant (<c>"propellant": { "Britain": 2, "Germany": 0.1 }</c>, 1 if not listed) scales how readily its magazines go
 /// up (docs/battle/fighting.md 4.3a: Jutland's cordite against brass-cased RP C/12). A side's fire discipline
 /// (<c>"fire_discipline": { "Germany": "german" }</c>; the settings' first if not listed) is how its batteries range and
-/// fire for effect (docs/battle/fire-control.md F6: a name of the settings' <c>FireDisciplines</c>).</para>
+/// fire for effect (docs/battle/fire-control.md F6: a name of the settings' <c>FireDisciplines</c>). A side's readiness
+/// (<c>"readiness": { "Russia": "prepared" }</c>; the settings' default if not listed) is its ships' orders before action
+/// for fire (docs/battle/fire.md B1: a name of the settings' <c>FireReadiness</c>: stripped, doors, decks wetted).</para>
 /// <para>Each side's doctrine (docs/battle/command.md "Doctrine") is a preset of <c>Content/Sim/doctrine.json</c>,
 /// <c>"doctrine": { "Germany": "default" }</c>, with values over it, <c>{ "Germany": { "preset": "default",
 /// "RangeShare": 0.5 } }</c>; a side not listed takes "default" (Engage: fight). A unit sets values of its own,
@@ -89,6 +91,10 @@ public sealed class Scenario
     /// <summary>The sides' fire disciplines where they're given (docs/battle/fire-control.md F6), by side index: a name of
     /// the settings' FireDisciplines (the loader checks it).</summary>
     public List<(int Side, string Name)> FireDisciplines { get; init; } = [];
+
+    /// <summary>The sides' readiness for fire where it's given (docs/battle/fire.md B1), by side index: a name of the
+    /// settings' FireReadiness (the loader checks it).</summary>
+    public List<(int Side, string Name)> Readiness { get; init; } = [];
 
     /// <summary>Each side's doctrine where the file gives it, by index: a preset, and values over it.</summary>
     public List<(int Side, string Preset, List<(DoctrineField Field, double Value)> Values)> Doctrine { get; init; } = [];
@@ -234,8 +240,11 @@ public sealed class Scenario
             var propellant = r.TryGetProperty("propellant", out var pr) ? ParsePropellant(pr, sides)
                 : from != null && !r.TryGetProperty("sides", out _) ? from.Propellant : [];
             // "fire_discipline": { "Germany": "german" }, by the sides' names; taken from "from" (with its sides) unless given
-            var disciplines = r.TryGetProperty("fire_discipline", out var fd) ? ParseDisciplines(fd, sides)
+            var disciplines = r.TryGetProperty("fire_discipline", out var fd) ? ParseNames("fire_discipline", "a discipline's name", fd, sides)
                 : from != null && !r.TryGetProperty("sides", out _) ? from.FireDisciplines : [];
+            // "readiness": { "Russia": "prepared" }, the same way
+            var readiness = r.TryGetProperty("readiness", out var rd) ? ParseNames("readiness", "a readiness's name", rd, sides)
+                : from != null && !r.TryGetProperty("sides", out _) ? from.Readiness : [];
             if (r.TryGetProperty("fight", out _))
                 throw new ScenarioException("fight: gone; doctrine's Engage is \"fight\" by default (\"doctrine\": { \"Germany\": { \"Engage\": \"carry on\" } } not to)");
             // "doctrine": { "Germany": "default" | { "preset": "default", "RangeShare": 0.5 } }; "home": { "Germany": [54, 8] };
@@ -277,6 +286,7 @@ public sealed class Scenario
                 Crews = crews,
                 Propellant = propellant,
                 FireDisciplines = disciplines,
+                Readiness = readiness,
                 Doctrine = doctrine,
                 Homes = homes,
                 Until = until,
@@ -399,18 +409,19 @@ public sealed class Scenario
         return list;
     }
 
-    static List<(int, string)> ParseDisciplines(JsonElement e, string[] sides)
+    /// <summary>A setting by side, a name each (fire_discipline, readiness): { "Germany": "german" }.</summary>
+    static List<(int, string)> ParseNames(string key, string what, JsonElement e, string[] sides)
     {
         if (e.ValueKind != JsonValueKind.Object)
-            throw new ScenarioException("fire_discipline: an object of sides' names, { \"Germany\": \"german\" }");
+            throw new ScenarioException($"{key}: an object of sides' names, {{ \"{sides.FirstOrDefault() ?? "Germany"}\": ... }}");
         var list = new List<(int, string)>();
         foreach (var p in e.EnumerateObject())
         {
             int side = Array.IndexOf(sides, p.Name);
             if (side < 0)
-                throw new ScenarioException($"fire_discipline: \"{p.Name}\" isn't one of the sides ({string.Join(", ", sides)})");
+                throw new ScenarioException($"{key}: \"{p.Name}\" isn't one of the sides ({string.Join(", ", sides)})");
             if (p.Value.ValueKind != JsonValueKind.String)
-                throw new ScenarioException($"fire_discipline: {p.Value} for {p.Name}: a discipline's name");
+                throw new ScenarioException($"{key}: {p.Value} for {p.Name}: {what}");
             list.Add((side, p.Value.GetString()!));
         }
         return list;

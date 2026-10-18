@@ -37,6 +37,7 @@ public sealed class ShipClass
     internal TierRow[] tiers = [];
     internal SectionRow[] sections = [];
     internal FireSpaceRow[] fireSpaces = [];
+    internal FireLink[] fireLinks = [];
     internal int[] fireOfPart = [], fireOfDeck = [];
     internal SidePlateRow[] sidePlates = [];
     internal ArmourBulkheadRow[] armourBulkheads = [];
@@ -178,6 +179,7 @@ public sealed class ShipClass
     /// <summary>The places a fire burns (docs/battle/fire.md): the cells first, each at its own index, then the parts that
     /// burn, then a strip of weather deck a section.</summary>
     public ReadOnlySpan<FireSpaceRow> FireSpaces => fireSpaces;
+    public ReadOnlySpan<FireLink> FireLinks(Slice s) => fireLinks.AsSpan(s.Start, s.Count);
     /// <summary>A component's fire space, or -1 when it has none (a funnel, a mast).</summary>
     public int FireOfPart(int component) => fireOfPart[component];
     /// <summary>A section's weather-deck fire space.</summary>

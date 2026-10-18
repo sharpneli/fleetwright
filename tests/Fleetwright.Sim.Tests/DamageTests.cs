@@ -410,11 +410,14 @@ public class DamageTests(ITestOutputHelper output)
     [Fact]
     public void A_magazine_set_off_by_a_fire_records_its_room()
     {
-        var w = World("dreadnought", out int c, Settings with { FireSpreadPerMin = 1, FireOutPerMin = 0, FireMagazineInPerMin = 1, FireMagazineNextPerMin = 1 });
+        var w = World("dreadnought", out int c, Settings with { FireOutPerMin = 0, FireMagazineInPerMin = 1, FireMagazineNextPerMin = 1 });
         var cls = Class("dreadnought");
         w.Apply(ShipSystem.Spawn(c, 56, 4, 0, 10));
-        int mag = Enumerable.Range(0, cls.Rooms.Length).First(r => cls.Rooms[r].Kind == RoomKind.Magazine);
-        w.Apply(DamageSystem.Burn(1, (cls.Rooms[mag].X0 + cls.Rooms[mag].X1) / 2));
+        // a space that burns next to a magazine
+        bool Magazine(int cell) => cls.Rooms[cls.Cells[cell].Room].Kind == RoomKind.Magazine;
+        int next = Enumerable.Range(0, cls.Cells.Length).First(i => cls.FireSpaces[i].Use != FireUse.None &&
+            cls.Neighbours(cls.Cells[i].Neighbours).ToArray().Any(n => Magazine(n.Cell)));
+        w.Apply(DamageSystem.BurnCell(1, next));
         var k = w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(1));
         for (int min = 0; min < 30 && k.Status == ShipStatus.Afloat; min++)
             w.AdvanceTo(w.Time + 60_000);

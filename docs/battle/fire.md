@@ -1,5 +1,5 @@
 # Plan: fire (a 4.5 deepening)
-Status: **agreed with the user 2026-10-18** ("Decided" below); B0 done 2026-10-18    Updated: 2026-10-18
+Status: **agreed with the user 2026-10-18** ("Decided" below); B0 and B1 done 2026-10-18; B1 showed v0's put-out can't hold the spread (decision 4), B3 and B4 proposed ahead of B2    Updated: 2026-10-18
 
 The fine-tune pass for fire: what happens after a fire starts. Its research is `damage/17_fire.md` (with `fire_ref.py`),
 on top of `damage/10_damage_control_holistic.md` §2 (fire, ammunition in a fire, the fire main) and `09_damage_control.md`
@@ -266,6 +266,43 @@ from B0's bench on.
 - The readiness (ship state): stripped or as fitted (B0 burns every ship as fitted), doors shut or open, decks wetted;
   doors from it, holes from the breaches; the spread table; the open deck; propellant seats; reflash.
 - The bench: spread times from flashover, the starved fire that flashes on a hole.
+- **Built (done 2026-10-18):**
+  - **Readiness** (`SimSettings.FireReadiness`, `FireReadiness`): unprepared (as fitted, a door a cell, dry decks),
+    prepared (stripped, doors open, decks wetted) and closed up (stripped, doors shut, wetted); a side takes one by name
+    (the scenario's `"readiness"`, else `FireReadinessDefault`, prepared), `DamageSystem.SetReadiness`, and each ship's
+    condition carries its side's (`ShipCondition.Readiness`) for the starts and the step. Jutland, squadrons and the
+    flotilla are closed up both sides, Tsushima prepared. `shipgen hits --readiness`.
+  - **The fire links** (`ShipClass.FireLinks`, `FireLink`, `FireWay`), compiled once: cells to their neighbours (the
+    same room open; a deck up or down; a bulkhead sideways, with the pool entry its openings are kept on), the top cells
+    up to their section's weather deck, the decks along, parts out onto their deck and open to the parts they stand on or
+    against (paired within a section and its next only).
+  - **Spread** (`Fires.Spread`) from a developed fire over 0.3 MW: open paths (the same room, a part's openings, a burst's
+    opening of 0.5 m² or more, open doors through a bulkhead over the waterline) 1/2 min × Q/2 MW, ×2 with flames out; steel
+    up, sideways and down after 8, 12 and 40 min at 1/15, 1/40 and 1/180 a minute × the neighbour's load (/400, 0.3-1.5)
+    × 1.5 under heavy paint; the weather deck along at 1/6 × load/300, ×0.3 wetted (a wetted deck sustains a fire at
+    ×0.6 of its load). v0's spread is gone.
+  - **Vents:** a cell's doors by her readiness, its holes to the sea, and what bursts opened in its decks and bulkheads
+    (`JoinOpenM2`) and tore (`CellOpened`: 0.2 m²).
+  - **Propellant seats:** a mount's ready charges (rounds × charge × 4.5 MJ/kg) burn on top of the space's own fire over
+    30 s by their own oxygen (`BurnState.Charges`); a 1 GJ seat in a gunhouse peaks at 34 MW, then its thin fittings burn
+    locally and die.
+  - **Reflash:** a fire out hot (developed over 10 min, or smouldered out starved) may light again at 1/20 min for 30
+    min; the damage system steps a ship while any steel is hot (`Fires.Hot`).
+  - The dev's `DamageSystem.BurnCell` (the tests'), `FireSpreadTests` and the scenario test for readiness.
+- **The tests' numbers:** steel up (to the weather deck) median 26 min, sideways 31, down within the hour 10% (17 §5.2:
+  ~18, ~40, ~2.5 h); through a 1 m² opening 5 min; a wooden 1890 deck along in 18 min unwetted, never wetted; 29 of 40
+  hot spaces lit again, none after 30 min.
+- **What moved, and the finding** (the hits bench; B0 → B1 at the default, prepared):
+  - fire per hit: Dreadnought under 12" HE 33% → 28% (stripped loads), the rest the same.
+  - fires still burning after the settle, a ship (ships with any): Borodino under Mikasa's 6" (30 hits, 60 min) 0 →
+    9.7 (40%); Dreadnought under 12" HE (15 hits, 60 min) 0 → 13.0 (63%), closed up 6.0 (55%), unprepared 26.7 (80%);
+    Iron Duke under Seydlitz 0 → 0.8 (10%); a destroyer 0 → 0. Crew out of action: Borodino 14 → 157, Dreadnought 69 →
+    218 (closed up 157, unprepared 374), nearly all v0's flat 0.3 men a minute a fire.
+  - The squadrons scenario (closed up, mostly AP) stays calm: one fire at the end, the damage system 9.5% of the run.
+  - **Decision 4 doesn't hold:** v0's put-out (0.15/min × the crew left) is no match for physical spread; one developed
+    fire reaches several neighbours by open paths in minutes. Unfought (with only that stand-in), HE-heavy fire now burns
+    ships the way 17 §9 T6 has unfought ships burn. Proposed: B3 (the water) and B4 (firefighting) next, B2 after; the
+    crew cost (B2) is the other half of the jump.
 
 ### B2 Effects
 - Heat harm, crew by 16, smoke into the machinery, magazine heat and flooding, seen by Q. The v0 chances go, except

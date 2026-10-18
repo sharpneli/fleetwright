@@ -92,6 +92,15 @@ public class DoctrineTests
     }
 
     [Fact]
+    public void A_scenario_sets_each_sides_readiness_for_fire()
+    {
+        var (w, _) = Load(""", "readiness": { "Germany": "closed up" }""");
+        Assert.Equal(w.Settings.FireReadinessDefault, w.Damage.Readiness(0).Name);
+        Assert.Equal("closed up", w.Damage.Readiness(1).Name);
+        Assert.Contains("no \"open\"", Assert.Throws<ScenarioException>(() => Load(""", "readiness": { "Germany": "open" }""")).Message);
+    }
+
+    [Fact]
     public void A_scenario_gives_each_side_its_preset_and_values_and_each_unit_its_own()
     {
         var (w, ai) = Load(""", "doctrine": { "Germany": { "preset": "default", "Engage": "carry on" } }, "home": { "Germany": [54.0, 8.0] }""");

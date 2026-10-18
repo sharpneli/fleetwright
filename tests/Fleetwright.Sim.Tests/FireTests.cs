@@ -186,7 +186,9 @@ public class FireTests(ITestOutputHelper output)
         var k = new ShipCondition();
         k.Reset(c);
         var f = new FloodModel(c);
-        var quiet = Settings with { FireOutPerMin = 0, FireSpreadPerMin = 0, FireHarmPerMin = 0, FireMagazineInPerMin = 0, FireMagazineNextPerMin = 0 };
+        var quiet = Settings with { FireOutPerMin = 0, FireHarmPerMin = 0, FireMagazineInPerMin = 0, FireMagazineNextPerMin = 0, FireOpenPathPerMin = 0,
+            FireSteelPerMin = [0, 0, 0], FireDeckPerMin = 0, FireReflashPerMin = 0 };
+        k.Readiness = Settings.FireReadiness[1];   // prepared: a door a cell
         int cell = Enumerable.Range(0, c.Cells.Length).First(i => c.FireSpaces[i].Use == FireUse.Quarters && c.FireSpaces[i].AreaM2 > 20);
         int bunker = Enumerable.Range(0, c.Cells.Length).FirstOrDefault(i => c.FireSpaces[i].Use == FireUse.None, -1);
         Assert.True(bunker < 0 || !Fires.Ignite(c, k, bunker, 0.3, quiet), "a space with nothing to burn doesn't light");

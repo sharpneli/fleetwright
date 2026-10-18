@@ -439,7 +439,7 @@ public static class ShipClassCompiler
             FireSpaceRow Row(FireSpaceKind kind, int index, int sec, FireUse use, double area, double height, int cell) => new()
             {
                 Kind = kind, Index = index, Section = sec, Use = use, AreaM2 = area, HeightM = height, LoadMJm2 = Load(o.Fitted!, use),
-                StrippedMJm2 = Load(o.Stripped!, use), Growth = growth, Cell = cell,
+                StrippedMJm2 = Load(o.Stripped!, use), Growth = growth, PaintMJm2 = use is FireUse.None or FireUse.Deck ? 0 : paint, Cell = cell,
             };
 
             var rows = new List<FireSpaceRow>();
@@ -493,6 +493,7 @@ public static class ShipClassCompiler
                 c.fireOfDeck[s] = rows.Count;
                 rows.Add(Row(FireSpaceKind.Deck, s, s, FireUse.Deck, area, 0, TopCell(s)));
             }
+            FireLinks(c, rows);
             c.fireSpaces = rows.ToArray();
 
             // the section's top cell nearest the centreline: where a fire on its deck or in its superstructure is shown
@@ -515,6 +516,84 @@ public static class ShipClassCompiler
                 }
                 return Math.Max(best, 0);
             }
+        }
+
+        /// <summary>The fire spaces' graph (docs/battle/fire.md B1), each edge from both ends: a cell to its neighbours (the
+        /// same room open, a deck up or down, a bulkhead sideways, with the pool entry a burst's openings between them are
+        /// kept on); a cell with nothing over it up to its section's weather deck; a section's deck along to the next ones;
+        /// a part with a space inside out onto its section's deck, and open to the parts it stands on or against (the
+        /// superstructure's own ladders and doors). Parts are paired within a section and its neighbours only.</summary>
+        void FireLinks(ShipClass c, List<FireSpaceRow> rows)
+        {
+            var links = new List<FireLink>[rows.Count];
+            for (int i = 0; i < links.Length; i++)
+                links[i] = [];
+            void Both(int a, int b, FireWay ab, FireWay ba, int pool = -1)
+            {
+                links[a].Add(new FireLink(b, ab, pool));
+                links[b].Add(new FireLink(a, ba, pool));
+            }
+            var cells = c.cells;
+            for (int i = 0; i < cells.Length; i++)
+            {
+                var b = cells[i].Box;
+                bool covered = false;
+                var nb = cells[i].Neighbours;
+                for (int j = nb.Start; j < nb.End; j++)
+                {
+                    var n = c.neighbours[j];
+                    var o = cells[n.Cell].Box;
+                    if (o.Base >= b.Top - 0.05)
+                        covered = true;
+                    if (n.Cell <= i)
+                        continue;   // each edge once, from its lower cell: its pool entry is the one the openings are kept on
+                    var (ab, ba) = n.Join switch
+                    {
+                        JoinKind.Open => (FireWay.Open, FireWay.Open),
+                        JoinKind.Deck when o.Base >= b.Top - 0.05 => (FireWay.Up, FireWay.Down),
+                        JoinKind.Deck => (FireWay.Down, FireWay.Up),
+                        _ => (FireWay.Side, FireWay.Side),
+                    };
+                    Both(i, n.Cell, ab, ba, j);
+                }
+                if (!covered)
+                    Both(i, c.fireOfDeck[cells[i].Section], FireWay.Up, FireWay.Down);
+            }
+            for (int s = 0; s + 1 < c.sections.Length; s++)
+                Both(c.fireOfDeck[s], c.fireOfDeck[s + 1], FireWay.Deck, FireWay.Deck);
+            var parts = new List<int>[c.sections.Length];
+            for (int s = 0; s < parts.Length; s++)
+                parts[s] = [];
+            for (int p = 0; p < c.components.Length; p++)
+                if (c.fireOfPart[p] >= 0)
+                {
+                    int f = c.fireOfPart[p];
+                    parts[rows[f].Section].Add(p);
+                    Both(f, c.fireOfDeck[rows[f].Section], FireWay.Out, FireWay.Out);
+                }
+            static bool Over(double a0, double a1, double b0, double b1) => Math.Min(a1, b1) - Math.Max(a0, b0) > 0.05;
+            static bool Meet(double a0, double a1, double b0, double b1) => Math.Abs(a1 - b0) < 0.15 || Math.Abs(b1 - a0) < 0.15;
+            for (int s = 0; s < parts.Length; s++)
+                foreach (int p in parts[s])
+                    for (int t = s; t <= Math.Min(s + 1, parts.Length - 1); t++)
+                        foreach (int q in parts[t])
+                        {
+                            if (t == s && q <= p)
+                                continue;
+                            Box a = c.components[p].Bounds, d = c.components[q].Bounds;
+                            bool x = Over(a.X0, a.X1, d.X0, d.X1), y = Over(a.Y0, a.Y1, d.Y0, d.Y1), z = Over(a.Base, a.Top, d.Base, d.Top);
+                            bool stacked = x && y && Meet(a.Base, a.Top, d.Base, d.Top);
+                            bool beside = z && (x && Meet(a.Y0, a.Y1, d.Y0, d.Y1) || y && Meet(a.X0, a.X1, d.X0, d.X1));
+                            if (stacked || beside || x && y && z)
+                                Both(c.fireOfPart[p], c.fireOfPart[q], FireWay.Open, FireWay.Open);
+                        }
+            var pool = new List<FireLink>();
+            for (int i = 0; i < rows.Count; i++)
+            {
+                rows[i] = rows[i] with { Links = new Slice(pool.Count, links[i].Count) };
+                pool.AddRange(links[i]);
+            }
+            c.fireLinks = pool.ToArray();
         }
 
         RoomRow RoomOf(Shipgen.Room x)

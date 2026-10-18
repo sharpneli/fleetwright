@@ -480,7 +480,9 @@ public static class Effects
             if (worse && m >= 0 && c.Mounts[m].Component == i && c.Mounts[m].ReadyRounds > 0 && state >= PartState.Disabled &&
                 r.NextDouble() < s.ReadyAmmoFireChance * force)
             {
-                res.Fire |= Fires.Ignite(c, k, c.FireOfPart(i), s.ReadyAmmoSeatMW, s);
+                // its ready charges burn as a propellant seat (fire.md B1): every one, by its own oxygen, in seconds
+                double charges = c.Mounts[m].ReadyRounds * c.Charges[c.Mounts[m].Type].MassKg * s.FirePropellantMJkg;
+                res.Fire |= Fires.Ignite(c, k, c.FireOfPart(i), s.ReadyAmmoSeatMW, s, charges);
                 // its ready charges flash through its crew (16 §4.6): a gunhouse's as a turret's train, else as a battery's
                 Casualties.Flash(k, Casualties.Part(i), Casualties.Enclosed(c, m), s);
                 res.Flash = true;
@@ -574,7 +576,7 @@ public static class Effects
         if (!broken && space >= 0)
         {
             int kind = Math.Clamp((int)shell.Kind, 0, s.FireChance.Length - 1);
-            double load = Math.Min(s.FireStartLoadCap, Fires.Load(c.FireSpaces[space]) / s.FireStartLoadMJm2);
+            double load = Math.Min(s.FireStartLoadCap, Fires.Load(c.FireSpaces[space], k) / s.FireStartLoadMJm2);
             double chance = s.FireChance[kind] * load * Math.Min(1.5, 0.5 + 0.5 * Math.Cbrt(w / 10)) * (t.Burst == BurstKind.Outside ? s.FireOutsideShare : 1);
             if (r.NextDouble() < chance)
                 res.Fire |= Fires.Ignite(c, k, space, s.FireSeatMW[Math.Min(kind, s.FireSeatMW.Length - 1)], s);

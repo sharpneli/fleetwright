@@ -774,6 +774,10 @@ public readonly record struct TierRow(double Base, double Top, bool BelowWaterli
 
 public readonly record struct SectionRow(double X0, double X1);
 
+/// <summary>An edge of the fire spaces' graph from one space: the space it reaches, the way, and for two cells the
+/// Neighbours pool's entry a burst's openings between them are kept on (<c>ShipCondition.JoinOpenM2</c>; -1 else).</summary>
+public readonly record struct FireLink(int Space, FireWay Way, int Pool);
+
 /// <summary>A place a fire burns (docs/battle/fire.md): what it is (Index: the cell, the component or the section), its
 /// section, its use, its deck area and height, its fire load as fitted and as stripped, MJ per m² of deck, the paint in, its
 /// growth factor over a furnished room's t² fire, and the cell a fire there is shown at.</summary>
@@ -788,7 +792,11 @@ public readonly record struct FireSpaceRow
     public double LoadMJm2 { get; init; }
     public double StrippedMJm2 { get; init; }
     public double Growth { get; init; }
+    /// <summary>The paint's share of the load, MJ/m²: heavy paint carries a fire across hot steel.</summary>
+    public double PaintMJm2 { get; init; }
     public int Cell { get; init; }
+    /// <summary>The spaces a fire here reaches (the FireLinks pool).</summary>
+    public Slice Links { get; init; }
     /// <summary>Open to the air: a weather deck burns without a ceiling or a door to hold it.</summary>
     public bool OpenAir => Kind == FireSpaceKind.Deck;
 }

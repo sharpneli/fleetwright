@@ -10,6 +10,8 @@
   "seed": 4,
   "camera": [56.47, 4.18, 40],
   "sides": ["Britain", "Germany"],
+  // the ships' orders before action for fire (docs/battle/fire.md B1; damage/17 §8.3): stripped, doors, decks wetted
+  "readiness": { "Britain": "closed up", "Germany": "closed up" },
   "propellant": { "Britain": 2, "Germany": 0.1 },
   "fire_discipline": { "Britain": "rn-1914", "Germany": "german" },
   "player": "Britain",

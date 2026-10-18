@@ -1254,26 +1254,23 @@ public sealed record SimSettings
     public int FounderMs { get; init; } = 600_000;
     public int CapsizeMs { get; init; } = 180_000;
 
-    /// <summary>Fire, chances a minute: a burning space or part damaged (each room in it once more), a burning space
-    /// spreading to each neighbour, put out by its crew (times the share of the crew left); a magazine in a burning space,
+    /// <summary>Fire v0's stand-ins (until docs/battle/fire.md B2 and B4), chances a minute: a burning space or part
+    /// damaged (each room in it once more), put out by its crew (times the share of the crew left); a magazine in a burning space,
     /// or next to one, set off (times the side's propellant). A fire costs this many crew a minute; a space this share
     /// flooded doesn't burn.</summary>
     public double FireHarmPerMin { get; init; } = 0.2;
-    public double FireSpreadPerMin { get; init; } = 0.02;
     public double FireOutPerMin { get; init; } = 0.15;
     public double FireMagazineInPerMin { get; init; } = 0.05;
     public double FireMagazineNextPerMin { get; init; } = 0.01;
     public double FireCrewPerMin { get; init; } = 0.3;
     public double FireDrownShare { get; init; } = 0.5;
-    /// <summary>A cell's v0 spread lights its neighbour with this seat, MW.</summary>
-    public double FireSpreadSeatMW { get; init; } = 0.3;
 
     /// <summary>One space's fire (docs/battle/fire.md B0; damage/17 §3-4, fire_ref.py). Growth: Q = seat + α·t², α the
     /// "medium" t² fire (1 MW at 300 s: Eurocode EN 1991-1-2 E.5 [SRC]) times the outfit's growth and the use's (by
     /// FireUse: none, quarters, cabins, offices, stores ×2 "fast", machinery, deck). The room it flashes over in, m² by
     /// use (0: the whole space) [EST: a cabin ~12, an office ~20, a messdeck up to ~90]; developed, the next room joins
     /// every <see cref="FireRoomToRoomS"/> (an open path, 1-3 min: 17 §5.1). Openings: leakage, a door's A√H (0.66 × 1.68
-    /// m: 1.44 m^2.5) and the doors a cell and a part has until the material condition (B1). Air: 1.5 MW per m^2.5
+    /// m: 1.44 m^2.5) and the doors a part has (a cell's are its readiness's, B1). Air: 1.5 MW per m^2.5
     /// (Kawagoe [SRC]); fuel: 0.25 MW/m² (Eurocode [SRC]) ramped from 230 MJ/m² over 420 (DTIC bands [FIT]); flashover:
     /// Thomas × 0.65 (NBS berthing 0.67 MW [FIT]). A load under the minimum doesn't light; local fires die after
     /// <see cref="FireLocalS"/> or a share of their room's load; starved ones smoulder out after <see cref="FireStarvedS"/>;
@@ -1286,7 +1283,6 @@ public sealed record SimSettings
     public double FireRoomToRoomS { get; init; } = 120;
     public double FireLeakAoh { get; init; } = 0.05;
     public double FireDoorAoh { get; init; } = 1.44;
-    public double FireCellDoors { get; init; } = 1;
     public double FirePartDoors { get; init; } = 2;
     public double FireVentMW { get; init; } = 1.5;
     public double FireFuelMWm2 { get; init; } = 0.25;
@@ -1303,6 +1299,67 @@ public sealed record SimSettings
     public double FireOpenMWm2 { get; init; } = 0.1;
     public double FireBurntShare { get; init; } = 0.05;
     public double FireHotS { get; init; } = 600;
+
+    /// <summary>Spread (docs/battle/fire.md B1; damage/17 §5, fire_ref.py's spread), from a developed fire over
+    /// <see cref="FireSpreadMinMW"/>: through an open path (the same room, an opening a burst left of at least
+    /// <see cref="FireOpenPathM2"/>, open doors through a bulkhead over the waterline, a part's openings onto its deck) a
+    /// chance a minute times Q over <see cref="FireOpenPathMW"/> (at most 1), doubled when the fuel could feed half as much
+    /// again as the air lets burn (flames out of the openings: Shadwell [EST]); through steel after a delay from flashover
+    /// (s), then a chance a minute: up 8 min then 1/15, sideways 12 then 1/40, down 40 then 1/180 [FIT to Shadwell Ph V/VI
+    /// and USCG A-0], times the neighbour's load over 400 MJ/m² (0.3 to 1.5) and ×1.5 under heavy paint (60 MJ/m² or more);
+    /// along the weather deck to the next section 1/6 a minute times its load over 300 (at most 1.5) [EST], ×0.3 wetted. A
+    /// weather deck sustains a fire over <see cref="FireOpenSustainMJm2"/> of its load, ×0.6 wetted. Each lights its
+    /// neighbour with a seat of <see cref="FireSpreadSeatMW"/>. A burst's torn bulkheads let a fire breathe as an opening of
+    /// <see cref="FireTornM2"/>.</summary>
+    public double FireSpreadMinMW { get; init; } = 0.3;
+    public double FireSpreadSeatMW { get; init; } = 0.3;
+    public double FireOpenPathM2 { get; init; } = 0.5;
+    public double FireOpenPathPerMin { get; init; } = 0.5;
+    public double FireOpenPathMW { get; init; } = 2;
+    public double FireFlamesOutRatio { get; init; } = 1.5;
+    public double FireFlamesOutK { get; init; } = 2;
+    /// <summary>Through steel, by way (up, sideways, down): the delay from flashover, s, and the chance a minute after.</summary>
+    public double[] FireSteelDelayS { get; init; } = [480, 720, 2400];
+    public double[] FireSteelPerMin { get; init; } = [1.0 / 15, 1.0 / 40, 1.0 / 180];
+    public double FireSteelLoadMJm2 { get; init; } = 400;
+    public double FireSteelLoadMin { get; init; } = 0.3;
+    public double FireSteelLoadMax { get; init; } = 1.5;
+    public double FireHeavyPaintMJm2 { get; init; } = 60;
+    public double FireHeavyPaintK { get; init; } = 1.5;
+    public double FireDeckPerMin { get; init; } = 1.0 / 6;
+    public double FireDeckLoadMJm2 { get; init; } = 300;
+    public double FireDeckLoadMax { get; init; } = 1.5;
+    public double FireWetSustain { get; init; } = 0.6;
+    public double FireWetSpread { get; init; } = 0.3;
+    public double FireTornM2 { get; init; } = 0.2;
+
+    /// <summary>Reflash (17 §4: Lion's Q turret flashed 28 min after it was thought out; Samuel B. Roberts): a space that
+    /// burned developed longer than <see cref="FireHotS"/> and went out holds its heat for <see cref="FireReflashS"/>, with
+    /// a chance a minute of lighting again from a seat of <see cref="FireReflashSeatMW"/> [EST: 1/20 min, ×0.1 with a
+    /// reflash watch, B4].</summary>
+    public double FireReflashPerMin { get; init; } = 0.05;
+    public double FireReflashS { get; init; } = 1800;
+    public double FireReflashSeatMW { get; init; } = 0.2;
+
+    /// <summary>A propellant seat (ready charges, charges in a gunhouse): its charges' heat, MJ/kg (cordite and nitrocellulose
+    /// ~4-5 MJ/kg [SRC: heats of explosion]), released over <see cref="FirePropellantBurnS"/> [EST: charges burn in seconds,
+    /// a battery's in a few minutes, Malaya's ~5 min with what they lit], carrying its own oxygen: no limit of air or the
+    /// space's fuel.</summary>
+    public double FirePropellantMJkg { get; init; } = 4.5;
+    public double FirePropellantBurnS { get; init; } = 30;
+
+    /// <summary>The orders a ship goes into action with (docs/battle/fire.md B1): stripped of what burns or as fitted
+    /// (the outfit's two loads), the open doors a cell has (the material condition: 0 closed up), and the weather decks
+    /// wetted. A side takes one by name (the scenario's "readiness"; <see cref="FireReadinessDefault"/> else): unprepared
+    /// (the Chinese at the Yalu, the Spanish at Santiago), prepared (stripped, hoses out, decks wetted, doors open: the
+    /// Japanese in 1894, the Russians in 1905), closed up (the RN and the Germans by 1916, the USN in WWII: 17 §8.3).</summary>
+    public FireReadiness[] FireReadiness { get; init; } =
+    [
+        new() { Name = "unprepared", Stripped = false, CellDoors = 1, WetDecks = false },
+        new() { Name = "prepared", Stripped = true, CellDoors = 1, WetDecks = true },
+        new() { Name = "closed up", Stripped = true, CellDoors = 0, WetDecks = true },
+    ];
+    public string FireReadinessDefault { get; init; } = "prepared";
 
     /// <summary>What an observer makes out of a ship (a contact's <c>Seen</c>): low in the water (settled by this share of
     /// its freeboard), a list, a trim (degrees), stopped (knots).</summary>
@@ -1495,6 +1552,15 @@ public sealed record FireDiscipline
     public int MissesToRange { get; init; } = 3;
     public double RateSpotShare { get; init; }
     public double IndependentWithinM { get; init; }
+}
+
+/// <summary>A ship's orders before action for fire (docs/battle/fire.md B1; <see cref="SimSettings.FireReadiness"/>).</summary>
+public readonly record struct FireReadiness
+{
+    public string Name { get; init; }
+    public bool Stripped { get; init; }
+    public double CellDoors { get; init; }
+    public bool WetDecks { get; init; }
 }
 
 /// <summary>A crew quality's multipliers on the rangetakers' and the layers' errors.</summary>

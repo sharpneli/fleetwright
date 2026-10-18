@@ -106,6 +106,20 @@ public enum FireUse : byte
     Deck,
 }
 
+/// <summary>How a fire reaches the next space (docs/battle/fire.md B1; damage/17 §5): through the same room or the
+/// superstructure's own ladders and doors (open), up, down or sideways through steel (a deck, a bulkhead: open too where
+/// a burst opened it or the doors stand open), along the weather deck to the next section's, or out of a part's openings
+/// onto its deck and back in.</summary>
+public enum FireWay : byte
+{
+    Open,
+    Up,
+    Down,
+    Side,
+    Deck,
+    Out,
+}
+
 /// <summary>The battery a director controls.</summary>
 public enum Battery : byte
 {

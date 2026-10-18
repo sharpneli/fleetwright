@@ -114,6 +114,9 @@ public sealed class ShipCondition
     /// <summary>Each fire space's fire (the class's FireSpaces; docs/battle/fire.md): <see cref="CellFire"/> and a part's
     /// <see cref="PartFlags.Burning"/> show which burn.</summary>
     public BurnState[] Fire = [];
+    /// <summary>Her orders before action for fire (docs/battle/fire.md B1): stripped, the doors, the decks wetted. The
+    /// damage system keeps it to her side's.</summary>
+    public FireReadiness Readiness;
     public bool[] MountWorks = [], DirectorWorks = [], EyeWorks = [], TubeWorks = [];
     /// <summary>What hits that held left each mount (E4).</summary>
     public MountHarm[] Mount = [];

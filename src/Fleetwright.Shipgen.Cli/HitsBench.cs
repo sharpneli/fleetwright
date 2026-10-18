@@ -17,7 +17,7 @@ static class HitsBench
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
     public record Options(string? Shooter, int Battery, string? Kind, double RangeM, double AspectDeg, int N, int PerShip, int Seed, int Trace, double SettleMin,
-        string? Loadout = null);
+        string? Loadout = null, string? Readiness = null);
 
     /// <summary>A shooter's battery's shell: the one it fires, or its first of a kind, from its design's loadout or one
     /// given; and its name.</summary>
@@ -55,6 +55,9 @@ static class HitsBench
     public static int Run(string target, Func<string, Design> load, string settingsPath, Options o)
     {
         var settings = SimSettings.Load(settingsPath);
+        if (o.Readiness is { } ready)
+            settings = settings.FireReadiness.Any(x => x.Name == ready) ? settings with { FireReadinessDefault = ready }
+                : throw new ArgumentException($"--readiness: no \"{ready}\" (have {string.Join(", ", settings.FireReadiness.Select(x => x.Name))})");
         var tc = ShipClassCompiler.Compile(ShipDesign.Build(load(target)));
         var sc = o.Shooter == null || o.Shooter == target ? tc : ShipClassCompiler.Compile(ShipDesign.Build(load(o.Shooter)));
         var (shell, shellName) = ShellOf(sc, o.Battery, o.Kind, o.Loadout);
