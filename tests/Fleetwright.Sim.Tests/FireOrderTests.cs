@@ -204,9 +204,12 @@ public class FireOrderTests(ITestOutputHelper output)
         var (w, ai) = Make([.. ships]);
         w.Apply(ai.Orders.Fight(Unit.Ship(1)));
         Run(w, 30);
-        double before = Apart(w, 1, 2);
-        Run(w, 8 * 60);
-        double after = Apart(w, 1, 2);
+        double before = Apart(w, 1, 2), after = before;
+        for (int k = 0; k < 16 && w.Ships.Store.SlotOf(1) >= 0 && w.Ships.Store.SlotOf(2) >= 0; k++)
+        {
+            after = Apart(w, 1, 2);   // over 8 minutes, or until one of them is gone (fire-control.md F5: sunk inside them)
+            Run(w, 30);
+        }
         output.WriteLine($"from {before / 1000:F1} km to {after / 1000:F1} km");
         Assert.True(after < before, "she closes to fight");
     }

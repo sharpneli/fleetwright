@@ -1059,7 +1059,9 @@ numbers before and after against the anchors. The list, by link, with where the 
   them. F4 done 2026-10-18: masts and tops from the design, directors in tops, turret and control positions'
   rangefinders as parts, the transmitting station as a room, and sighting on the new heights. F5 (sensors proper) cut
   in four; F5a done 2026-10-18: every working instrument of a battery, its turrets' rangefinders among them, reports
-  to its computer, each with its own bias and its post's bearing error (and a rate clock's parallax between them fixed).
+  to its computer, each with its own bias and its post's bearing error (and a rate clock's parallax between them fixed);
+  F5b done 2026-10-18: the optics' kind, top magnification and gyro mounting reach the sim, and each rangefinder's
+  useful magnification follows what it stands on (turret, roof, tower, a mast by its kind) and its height.
 - **Ship motion** (`ship-motion/ship-motion-gunnery-research.md` §7.7, in its order):
   - a roll phase per ship from `RollPeriodS` and the sea, with firing on the roll and a once-a-roll rate;
   - laying error `√(base² + (τ·ω)²)`;

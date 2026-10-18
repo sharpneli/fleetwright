@@ -1,5 +1,5 @@
 # Plan: fire control (a 4.5 deepening)
-Status: **agreed with the user 2026-10-17** ("Decided" below; radar moved out); F0-F4 done 2026-10-18, F5a done    Updated: 2026-10-18
+Status: **agreed with the user 2026-10-17** ("Decided" below; radar moved out); F0-F4 done 2026-10-18, F5a-b done    Updated: 2026-10-18
 
 The fine-tune pass for the **Fire control** link of `fighting.md` 4.5 ("the trackers by era ... the clocks' limits ...
 the full set of levels, radar as a sensor, night ... splash confusion ... the designer emitting levels and sensors,
@@ -636,6 +636,26 @@ small and hull-down targets; stereo against coincidence); F5d the anchors' bench
   - *Tests:* `Fight_turns_away_when_outmatched` judged her at 5 minutes; the battleships now slow her under their
     turrets' ranges at about 4 (she then can't refuse them, and fights, as the test's comment had it), so it takes her
     turn away when it comes.
+- **F5b done 2026-10-18** (the instruments' make). An optics block's kind (coincidence, stereo), top magnification,
+  coatings and gyro mounting now reach the sim (`OpticsRow`), and an instrument's kind is its make's (`shipgen weapons`
+  lists the German sets as stereo). Each post knows what it stands on (`EyeRow.Support`, from the part under its
+  floor: a mast's top by the mast's kind, the conning tower, a gunhouse, else a roof). A reading's unit of error takes
+  the useful magnification (`FireControl.Magnification`, designer §3.1): the clear air's shimmer (×60) and the
+  support's shake cap it, M_eff = M/√(1 + (M/M_lim)²), the stiffness (turret 70, tower 60, roof 55, tripod and lattice
+  50, cage 40 [EST], pole 32) falling as √(25 m/h) above 25 m and half again higher on a gyro mounting, normalised so
+  ×28 on a tower is ×28; past the glass's top magnification the image dims. The picture's fixes take the same law.
+  Lion's foretop director reads at ×26.1 (tripod, 34 m), Derfflinger's at ×19.8 of ×23 (pole, 38 m), the turrets' at
+  ×28.6. `shipgen sight` prints each rangefinder's kind, useful magnification and support.
+  - *Numbers:* as the research says, a few per cent at most: fc-history 10 of 23, every case within its runs' noise
+    (Dogger Bank's Germans 3.4 to 3.2%, the German battleships 6.6 to 6.9%). Squadrons over 5 seeds: Britain lost 1.6 of
+    4 (0.4 after F5a; 0.8 at F4d, from 0 to 3), hits 38 and 108; Tsushima: Russia's hits 463, Japan's 482.
+  - *Tests:* new, a foretop director on her tripod, gunhouse sets on their turrets, the kinds by make, and the useful
+    magnification by support. `Fight_with_no_escape_fights` ran 8 minutes and read the range to a ship that had sunk in
+    them (Dreadnought under four Queen Elizabeths): it judges her closing while both are afloat.
+  - *Left:* the stadimeter. It is a second make beside a battery's rangefinders (the reference's level 1: the FA and a
+    stadimeter), and a fit has one optics block; it waits for instruments of more than one make on a battery, with the
+    typical fits the research request asks for. Spray on low instruments (designer §3.1) waits for the sea state the
+    ship-motion pass brings; vibration at speed (the Falklands' stereo sets) has no numbers yet.
 
 ### F6 Fire discipline: finding the bracket, then hitting
 

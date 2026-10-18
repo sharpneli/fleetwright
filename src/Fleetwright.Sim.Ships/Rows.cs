@@ -358,12 +358,28 @@ public enum FireControlLevel : byte
 
 // ------------------------------------------------------------------ fire control (docs/battle/fire-control.md F0)
 
-/// <summary>How an instrument takes a range: by eye (a director without a rangefinder), or a coincidence rangefinder.
-/// The stadimeter, stereo, radar and laser come with their models (F5, F9).</summary>
+/// <summary>How an instrument takes a range: by eye (a director without a rangefinder, or one whose make isn't read), a
+/// coincidence rangefinder (two half-images brought into line) or a stereo one (two images fused, the range read off a
+/// mark floating in depth: better in haze, fire-control.md F5c). Radar and laser come with their models (F9).</summary>
 public enum InstrumentKind : byte
 {
     Eye,
     Coincidence,
+    Stereo,
+}
+
+/// <summary>What a rangefinder stands on, so how much it shakes (fire-control-designer.md §3.1: the stiffness that caps
+/// its useful magnification): a gunhouse, the conning tower or a tower mast, a superstructure's roof, a tripod, a pole
+/// mast's top, a cage or a lattice mast's.</summary>
+public enum InstrumentSupport : byte
+{
+    Deck,
+    Turret,
+    Tower,
+    Tripod,
+    Pole,
+    Cage,
+    Lattice,
 }
 
 /// <summary>An instrument a fire-control unit reads from: the unit, the class's eye it looks through (its blind sectors),
@@ -380,8 +396,11 @@ public readonly record struct FcUnitRow(int Director, Battery Battery, Slice Ins
 /// <summary>The instruments' make on a battery's fit: their magnification (0: the instruments can't be read, so a
 /// rangefinder ranges by eye), the readings a minute each takes, a trained rangetaker's acuity through them, arcseconds,
 /// and the longest base their tube keeps true, m, past which a base delivers as the flex power of its length
-/// (fire-control-designer.md §3.1: B_eff = rigid·(B/rigid)^flex).</summary>
-public readonly record struct OpticsRow(double Magnification, double ReadingsPerMin, double DeltaArcsec, double RigidBaseM, double FlexExp)
+/// (fire-control-designer.md §3.1: B_eff = rigid·(B/rigid)^flex); their kind (coincidence or stereo), the highest
+/// magnification their glass gives a full image at (0: no limit), whether the glass is coated, and whether the mounting
+/// is gyro-stabilised (fire-control.md F5).</summary>
+public readonly record struct OpticsRow(double Magnification, double ReadingsPerMin, double DeltaArcsec, double RigidBaseM, double FlexExp,
+    InstrumentKind Kind = InstrumentKind.Coincidence, double MaxMagnification = 0, bool Coated = false, bool Gyro = false)
 {
     /// <summary>Whether a rangefinder of this make is read at all.</summary>
     public bool Reads => Magnification > 0;

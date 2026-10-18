@@ -45,7 +45,9 @@ static class SightList
                     blind += (e.Blind >> k & 1) != 0 ? 1 : 0;
                 Line(string.Format(Inv, "  {0,-13} {1,-26} {2,5:0.0} m, horizon {3,4:0.0} km{4}{5}", e.Kind.ToString().ToLowerInvariant(),
                     c.ComponentId(e.Component), e.HeightM, SightModel.HorizonM(e.HeightM, s) / 1000,
-                    e.RangefinderM > 0 ? string.Format(Inv, ", rangefinder {0:0.#} m x{1:0}", e.RangefinderM, SightModel.Magnification(e, s)) : "",
+                    e.RangefinderM > 0 ? string.Format(Inv, ", {0} rangefinder {1:0.#} m x{2:0} (x{3:0.#} useful, on {4})", e.Optics.Kind.ToString().ToLowerInvariant(),
+                        e.RangefinderM, SightModel.Magnification(e, s), Sim.Combat.FireControl.Magnification(e.Optics, e.Support, e.HeightM),
+                        e.Support.ToString().ToLowerInvariant()) : "",
                     blind > 0 ? string.Format(Inv, ", blind {0:0}°", blind * Sight.SectorDeg) : ""));
             }
             Line(string.Format(Inv, "  made out side on by {0}a lookout at {1:0.0} m (x{2:0}): {3:0.0} km in 25 km visibility, {4:0.0} km in clear air; bow on {5:0.0} km",

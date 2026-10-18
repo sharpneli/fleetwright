@@ -252,6 +252,25 @@ static class Kinds
     };
 
     /// <summary>A fire-control computer's tracker (docs/battle/fire-control.md F2).</summary>
+    /// <summary>An optics block's kind.</summary>
+    public static InstrumentKind InstrumentOf(string? s) => s switch
+    {
+        "eye" => InstrumentKind.Eye,
+        null or "coincidence" => InstrumentKind.Coincidence,
+        "stereo" => InstrumentKind.Stereo,
+        _ => throw Unknown("optics kind", s),
+    };
+
+    /// <summary>What a mast's top gives an instrument to stand on.</summary>
+    public static InstrumentSupport SupportOf(MastKind k) => k switch
+    {
+        MastKind.Tripod => InstrumentSupport.Tripod,
+        MastKind.Cage => InstrumentSupport.Cage,
+        MastKind.Lattice => InstrumentSupport.Lattice,
+        MastKind.Tower => InstrumentSupport.Tower,
+        _ => InstrumentSupport.Pole,
+    };
+
     public static TrackerKind TrackerOf(string? s) => s switch
     {
         "judgement" => TrackerKind.Judgement,

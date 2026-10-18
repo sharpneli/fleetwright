@@ -17,15 +17,50 @@ public static class FireControl
     public const double Mil = 1e-3;
     const double Arcsec = Math.PI / 648_000;
 
-    /// <summary>One unit of a rangefinder's error at a range, metres: δ·R²/(B_eff·M), the optics' acuity over its base
-    /// times magnification, a base past the optics' rigid one delivering as the flex power of its length
-    /// (fire-control-designer.md §3.1, NDRC 1941; Sensor.unit_error). The one law: fire control's readings and the
-    /// sighting's fixes both take it.</summary>
-    public static double RangefinderUnitM(double baseM, in OpticsRow o, double rangeM)
+    /// <summary>One unit of a rangefinder's error at a range, metres: δ·R²/(B_eff·M_eff), the optics' acuity over its base
+    /// times its useful magnification (<see cref="Magnification"/>), a base past the optics' rigid one delivering as the
+    /// flex power of its length (fire-control-designer.md §3.1, NDRC 1941; Sensor.unit_error). The one law: fire control's
+    /// readings and the sighting's fixes both take it.</summary>
+    public static double RangefinderUnitM(double baseM, in OpticsRow o, double magnification, double rangeM)
     {
         double b = baseM > o.RigidBaseM && o.RigidBaseM > 0 ? o.RigidBaseM * Math.Pow(baseM / o.RigidBaseM, o.FlexExp) : baseM;
-        return o.DeltaArcsec * Arcsec * rangeM * rangeM / Math.Max(b * o.Magnification, 1e-6);
+        return o.DeltaArcsec * Arcsec * rangeM * rangeM / Math.Max(b * magnification, 1e-6);
     }
+
+    /// <summary>A rangefinder's useful magnification, standing on a support at a height (fire-control-designer.md §3.1,
+    /// designer_ref.py RFSensor.M_eff): the air's shimmer and the support's shake cap it, M_eff = M / √(1 + (M/M_lim)²)
+    /// with 1/M_lim² = 1/M_air² + 1/M_vib², M_vib the support's stiffness, less as it stands higher (√(25 m / h)) and half
+    /// again on a gyro-stabilised mounting; normalised so the nominal ×28 on a tower is ×28 (the levels were set there,
+    /// [CAL]); past the glass's top magnification the image dims (×√(M_max/M)), and M is never more than 1.3 M_max. Haze
+    /// is the contrast's (F5c), not the shimmer's.</summary>
+    public static double Magnification(in OpticsRow o, InstrumentSupport support, double heightM)
+    {
+        double m = o.MaxMagnification > 0 ? Math.Min(o.Magnification, 1.3 * o.MaxMagnification) : o.Magnification;
+        double vib = Stiffness(support) * Math.Min(1, Math.Sqrt(25 / Math.Max(heightM, 1))) * (o.Gyro ? 1.5 : 1);
+        double lim = 1 / Math.Sqrt(1 / (AirMagnification * AirMagnification) + 1 / (vib * vib));
+        double me = m / Math.Sqrt(1 + m / lim * (m / lim)) / MagnificationNorm;
+        return o.MaxMagnification > 0 && m > o.MaxMagnification ? me * Math.Sqrt(o.MaxMagnification / m) : me;
+    }
+
+    /// <summary>The magnification past which the clear air's shimmer costs (designer §3.1, M_ATM_CLEAR [INFERRED]).</summary>
+    const double AirMagnification = 60;
+
+    /// <summary>A support's stiffness, as the magnification its shake allows at 25 m (designer §3.1, MAST_STIFF [INFERRED]:
+    /// turret 70, tower 60, deck 55, tripod 50, pole 32); a lattice mast as a tripod and a cage mast less, the US cage
+    /// masts' whip being their known fault [EST].</summary>
+    public static double Stiffness(InstrumentSupport s) => s switch
+    {
+        InstrumentSupport.Turret => 70,
+        InstrumentSupport.Tower => 60,
+        InstrumentSupport.Tripod or InstrumentSupport.Lattice => 50,
+        InstrumentSupport.Cage => 40,
+        InstrumentSupport.Pole => 32,
+        _ => 55,
+    };
+
+    /// <summary>The nominal ×28 on a tower (60) at 25 m, as M_eff gives it before normalising, over 28 (designer_ref.py
+    /// _REF_NORM, 0.835).</summary>
+    static readonly double MagnificationNorm = 1 / Math.Sqrt(1 + Math.Pow(28 * Math.Sqrt(1.0 / (AirMagnification * AirMagnification) + 1.0 / (60 * 60)), 2));
 
     /// <summary>A salvo of n guns' own dispersion, 1 sigma in range and across, metres: the pattern (its 100% spread,
     /// % of the range) is ratio(n)·D, D = 0.798σ (USNI 1917), times 0.85 for the gun-to-gun scatter in quoted

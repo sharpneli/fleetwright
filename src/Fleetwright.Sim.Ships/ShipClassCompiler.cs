@@ -650,7 +650,7 @@ public static class ShipClassCompiler
                 }
                 var b = c.components[mt.Component].Bounds;
                 add.Add(new EyeRow(EyeKind.Turret, mt.Component, mt.X, mt.Y, b.Top + 0.3 - c.Vertical.Waterline, mt.RangefinderM, blind,
-                    c.batteries[mt.Battery].TurretOptics));
+                    c.batteries[mt.Battery].TurretOptics, InstrumentSupport.Turret));
             }
             if (add.Count == 0)
                 return;
@@ -682,8 +682,8 @@ public static class ShipClassCompiler
                     if (eye.Kind != EyeKind.Director || eye.Component != c.directors[d].Component)
                         continue;
                     links.Add(instruments.Count);
-                    instruments.Add(new InstrumentRow(d, e, eye.Component, eye.X, eye.Y, eye.HeightM,
-                        eye.RangefinderM > 0 ? InstrumentKind.Coincidence : InstrumentKind.Eye, eye.RangefinderM));
+                    instruments.Add(new InstrumentRow(d, e, eye.Component, eye.X, eye.Y, eye.HeightM, eye.Ranges ? eye.Optics.Kind : InstrumentKind.Eye,
+                        eye.RangefinderM));
                 }
                 units[d] = new FcUnitRow(d, c.directors[d].Battery, new Slice(i0, links.Count - i0));
             }
@@ -696,7 +696,8 @@ public static class ShipClassCompiler
                     continue;
                 int i0 = links.Count;
                 links.Add(instruments.Count);
-                instruments.Add(new InstrumentRow(u, e, eye.Component, eye.X, eye.Y, eye.HeightM, InstrumentKind.Coincidence, eye.RangefinderM));
+                instruments.Add(new InstrumentRow(u, e, eye.Component, eye.X, eye.Y, eye.HeightM, eye.Ranges ? eye.Optics.Kind : InstrumentKind.Eye,
+                    eye.RangefinderM));
                 units[u++] = new FcUnitRow(-1, Battery.Main, new Slice(i0, 1));
             }
             for (int b = 0; b < c.batteries.Length; b++)

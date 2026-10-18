@@ -90,11 +90,13 @@ public sealed class GunnerySystem : IWorldSystem
         public BatteryState State;
     }
 
-    /// <summary>A rangefinder or an eye a battery reads from: the class's eye (-1: a mount's layer), where it stands,
-    /// its height and base, its bearing's error (mil, by its position), its next reading and its own bias (in sigmas).</summary>
+    /// <summary>A rangefinder or an eye a battery reads from: the class's eye (-1: a mount's layer), where it stands and
+    /// on what, its height and base, its bearing's error (mil, by its position), its next reading and its own bias (in
+    /// sigmas).</summary>
     struct Sensor
     {
         public int Eye;
+        public InstrumentSupport Support;
         public double X, Y, HeightM, BaseM, BearingMil, Bias;
         public long NextMs;
     }
@@ -103,7 +105,10 @@ public sealed class GunnerySystem : IWorldSystem
     static Sensor SensorAt(ShipClass cls, int eye)
     {
         ref readonly var e = ref cls.Eyes[eye];
-        return new Sensor { Eye = eye, X = e.X, Y = e.Y, HeightM = e.HeightM, BaseM = e.RangefinderM, BearingMil = SightModel.BearingSigmaRad(e) / FireControl.Mil };
+        return new Sensor
+        {
+            Eye = eye, Support = e.Support, X = e.X, Y = e.Y, HeightM = e.HeightM, BaseM = e.RangefinderM, BearingMil = SightModel.BearingSigmaRad(e) / FireControl.Mil,
+        };
     }
 
     /// <summary>Whether one of a battery's first n sensors is at an eye.</summary>
@@ -536,7 +541,7 @@ public sealed class GunnerySystem : IWorldSystem
             double range = Earth.Distance(at, tpos), brg = Earth.Bearing(at, tpos), sr, bias, sb;
             if (Ranges(optics, s))
             {
-                double unit = FireControl.RangefinderUnitM(s.BaseM, optics, range);
+                double unit = FireControl.RangefinderUnitM(s.BaseM, optics, FireControl.Magnification(optics, s.Support, s.HeightM), range);
                 (sr, bias, sb) = (crew.Operator * combat * unit, s.Bias * settings.RangefinderBiasUnits * unit, s.BearingMil * FireControl.Mil);
             }
             else

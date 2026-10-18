@@ -149,7 +149,7 @@ public static class SightModel
     /// <summary>A reading's 1-sigma range error, m: a rangefinder's unit of error (its make's, fire control's one law:
     /// <see cref="FireControl.RangefinderUnitM"/>), or the eye's 20% of the range.</summary>
     public static double RangeSigmaM(in EyeRow eye, double rangeM) =>
-        eye.Ranges ? FireControl.RangefinderUnitM(eye.RangefinderM, eye.Optics, rangeM) : 0.2 * rangeM;
+        eye.Ranges ? FireControl.RangefinderUnitM(eye.RangefinderM, eye.Optics, FireControl.Magnification(eye.Optics, eye.Support, eye.HeightM), rangeM) : 0.2 * rangeM;
 
     /// <summary>A reading's 1-sigma bearing error, radians, by the post: a director's 0.7 mil, a gunhouse's 1.5, a control
     /// position's rangefinder 1 (fire-control-designer.md §3.1), binoculars' 2 mil (the reference's eye figure), the

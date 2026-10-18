@@ -194,6 +194,37 @@ public class SightModelTests(ITestOutputHelper output)
         Assert.DoesNotContain(bis.Eyes.ToArray(), e => e.Kind is EyeKind.Top or EyeKind.Masthead);
     }
 
+    /// <summary>fire-control.md F5b: each rangefinder stands on what's under it (a foretop director on her tripod, the
+    /// gunhouses' sets on their turrets, after control's on a roof), and its make's kind is the instrument's.</summary>
+    [Fact]
+    public void Rangefinders_stand_on_their_supports()
+    {
+        var lion = Fleet.Get("lion").Class!;
+        var eyes = lion.Eyes.ToArray();
+        Assert.Equal(InstrumentSupport.Tripod, eyes.Single(e => e.Kind == EyeKind.Director).Support);
+        Assert.All(eyes.Where(e => e.Kind == EyeKind.Turret), e => Assert.Equal(InstrumentSupport.Turret, e.Support));
+        Assert.Equal(InstrumentSupport.Deck, eyes.Single(e => e.Kind == EyeKind.Rangefinder).Support);
+        Assert.All(lion.Instruments.ToArray(), i => Assert.Equal(InstrumentKind.Coincidence, i.Kind));
+        var derf = Fleet.Scenario("derfflinger");
+        Assert.All(derf.Instruments.ToArray(), i => Assert.Equal(InstrumentKind.Stereo, i.Kind));
+    }
+
+    /// <summary>fire-control.md F5b (designer §3.1): the nominal ×28 on a tower at 25 m is ×28; a pole mast's top shakes
+    /// it down, a gunhouse less than a roof, a gyro mounting lifts it, and past the glass's top magnification the image dims.</summary>
+    [Fact]
+    public void Useful_magnification_follows_the_support()
+    {
+        var o = new OpticsRow(28, 2, 12, 4, 0.75, InstrumentKind.Coincidence, 30);
+        double M(InstrumentSupport s, double h, OpticsRow? row = null) => Combat.FireControl.Magnification(row ?? o, s, h);
+        Assert.Equal(28, M(InstrumentSupport.Tower, 25), 6);
+        Assert.Equal(28, M(InstrumentSupport.Tower, 10), 6);   // no stiffer for standing lower than 25 m
+        Assert.InRange(M(InstrumentSupport.Pole, 40), 19, 22);   // designer D3: a pole mast ~×21-23 at 25-30
+        Assert.True(M(InstrumentSupport.Turret, 11) > M(InstrumentSupport.Deck, 11));
+        Assert.True(M(InstrumentSupport.Pole, 40, o with { Gyro = true }) > M(InstrumentSupport.Pole, 40));
+        var big = o with { Magnification = 50 };
+        Assert.InRange(M(InstrumentSupport.Tower, 25, big) / M(InstrumentSupport.Tower, 25, o with { Magnification = 35 }), 0.9, 1.03);   // ×50 no better than ×35
+    }
+
     /// <summary>fire-control.md F4d: the world's reach is the tallest eye's and silhouette's horizons among the classes at
     /// sea, it grows as a taller one comes, and the encounters hold ships within it.</summary>
     [Fact]

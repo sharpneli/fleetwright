@@ -21,9 +21,9 @@ public enum EyeKind : byte
 /// height over the waterline at rest (m), its rangefinder's base (m, 0 for none) and the bearings it can't see along, a
 /// bit per sector of <see cref="Sight.SectorDeg"/> clockwise from dead ahead (sector k covers k·5.625° to (k+1)·5.625°):
 /// those where a taller part of the ship stands in the way; a director's, its rangefinder's make (its battery's fit,
-/// fire-control.md F3).</summary>
+/// fire-control.md F3); and what it stands on (F5: how much it shakes).</summary>
 public readonly record struct EyeRow(EyeKind Kind, int Component, double X, double Y, double HeightM, double RangefinderM, ulong Blind,
-    OpticsRow Optics = default)
+    OpticsRow Optics = default, InstrumentSupport Support = InstrumentSupport.Deck)
 {
     /// <summary>Whether it can see along a bearing relative to the bow, degrees clockwise.</summary>
     public bool Sees(double relativeDeg) => (Blind & (1UL << Sight.Sector(relativeDeg))) == 0;
@@ -115,24 +115,24 @@ public static class Sight
                     // mast has none (F4d)
                     int top = TopOf(c, i);
                     if (top >= 0)
-                        eyes.Add(Eye(c, EyeKind.Top, top, x.X, x.Y, comps[top].Bounds.Base + EyeOverFloorM - wl, 0));
+                        eyes.Add(Eye(c, EyeKind.Top, top, x.X, x.Y, comps[top].Bounds.Base + EyeOverFloorM - wl, 0) with { Support = Kinds.SupportOf(x.Mast) });
                     break;
                 case ComponentKind.ConningTower:
-                    eyes.Add(Eye(c, EyeKind.ConningTower, i, x.X, x.Y, x.Bounds.Top - SlitsUnderRoofM - wl, 0));
+                    eyes.Add(Eye(c, EyeKind.ConningTower, i, x.X, x.Y, x.Bounds.Top - SlitsUnderRoofM - wl, 0) with { Support = InstrumentSupport.Tower });
                     break;
                 case ComponentKind.Superstructure when x.Role == ComponentRole.Director:
                     var b = x.Bounds;
                     double rf = x.Detail >= 0 ? c.directors[x.Detail].RangefinderM : 0;
                     eyes.Add(Eye(c, EyeKind.Director, i, (b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2, b.Base + EyeOverFloorM - wl, double.IsNaN(rf) ? 0 : rf) with
                     {
-                        Optics = x.Detail >= 0 ? OpticsOf(c, c.directors[x.Detail].Battery) : default,
+                        Optics = x.Detail >= 0 ? OpticsOf(c, c.directors[x.Detail].Battery) : default, Support = SupportUnder(c, i),
                     });
                     break;
                 case ComponentKind.Superstructure when x.Role == ComponentRole.Rangefinder:
                     var rb = x.Bounds;
                     eyes.Add(Eye(c, EyeKind.Rangefinder, i, (rb.X0 + rb.X1) / 2, (rb.Y0 + rb.Y1) / 2, rb.Base + EyeOverFloorM - wl, x.RangefinderM) with
                     {
-                        Optics = OpticsOf(c, Battery.Main),
+                        Optics = OpticsOf(c, Battery.Main), Support = SupportUnder(c, i),
                     });
                     break;
                 case ComponentKind.Superstructure when x.Role == ComponentRole.Bridge:
@@ -153,6 +153,37 @@ public static class Sight
             }
         return [.. eyes.OrderByDescending(e => e.HeightM).ThenBy(e => e.Component)];
     }
+
+    /// <summary>What a post stands on (fire-control.md F5): the part under its floor, across its middle: a mast's top
+    /// (the mast's kind), the conning tower, a gunhouse, else a superstructure's roof.</summary>
+    static InstrumentSupport SupportUnder(ShipClass c, int post)
+    {
+        var comps = c.components;
+        var b = comps[post].Bounds;
+        double x = (b.X0 + b.X1) / 2, y = (b.Y0 + b.Y1) / 2;
+        for (int i = 0; i < comps.Length; i++)
+        {
+            var o = comps[i];
+            if (i == post || Math.Abs(o.Bounds.Top - b.Base) > SupportGapM || x < o.Bounds.X0 || x > o.Bounds.X1 || y < o.Bounds.Y0 || y > o.Bounds.Y1)
+                continue;
+            switch (o.Kind)
+            {
+                case ComponentKind.Top:
+                    for (int m = 0; m < comps.Length; m++)
+                        if (comps[m].Kind == ComponentKind.Mast && c.componentIds[i].StartsWith(c.componentIds[m] + " top", StringComparison.Ordinal))
+                            return Kinds.SupportOf(comps[m].Mast);
+                    return InstrumentSupport.Pole;
+                case ComponentKind.ConningTower:
+                    return InstrumentSupport.Tower;
+                case ComponentKind.Main or ComponentKind.Secondary:
+                    return InstrumentSupport.Turret;
+            }
+        }
+        return InstrumentSupport.Deck;
+    }
+
+    /// <summary>How far a post's floor may be from the roof under it, m, for that roof to carry it.</summary>
+    const double SupportGapM = 0.6;
 
     /// <summary>A mast's top: the lowest top component it carries (its id's "top" ones), or -1.</summary>
     static int TopOf(ShipClass c, int mast)
