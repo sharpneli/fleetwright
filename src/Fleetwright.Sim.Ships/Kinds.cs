@@ -228,6 +228,17 @@ static class Kinds
         _ => throw Unknown("cap", s),
     };
 
+    /// <summary>A fire-control computer's tracker (docs/battle/fire-control.md F2).</summary>
+    public static TrackerKind TrackerOf(string? s) => s switch
+    {
+        "judgement" => TrackerKind.Judgement,
+        "rate_clock" => TrackerKind.RateClock,
+        "true_course" => TrackerKind.TrueCourse,
+        "acceleration" => TrackerKind.Acceleration,
+        "turn_rate" => TrackerKind.TurnRate,
+        _ => throw Unknown("tracker", s ?? "(none)"),
+    };
+
     /// <summary>A look's era; none is wwii, as Shipgen's own default.</summary>
     public static Era EraOf(string? s) => s switch
     {

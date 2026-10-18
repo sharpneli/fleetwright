@@ -43,6 +43,9 @@ public sealed record Design
     /// <summary>How the fittings are mounted: their shock grade (Fittings; docs/battle/shells-armour-damage.md E0).</summary>
     public FittingsInput? Fittings { get; init; }
     public FireControlInput? FireControl { get; init; }
+    /// <summary>The fire-control tech blocks the batteries' fits name, keyed by name (FireControlTemplates;
+    /// docs/battle/fire-control.md F3): a name the table doesn't give takes the catalogue's block.</summary>
+    public Dictionary<string, FcTechInput>? FireControlTech { get; init; }
     public AviationInput? Aviation { get; init; }
     public CargoInput? Cargo { get; init; }
     public LookInput? Look { get; init; }
@@ -712,6 +715,82 @@ public sealed record DirectorInput
     public double? ArmourMm { get; init; }
     public double? RadarT { get; init; }
     public double? ComputerT { get; init; }
+    [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+/// <summary>A fire-control tech block (docs/battle/fire-control.md F3; research/simulation/fire-control-designer.md §2):
+/// one of optics, a computer or a mount, its physical numbers under a name (FireControlTemplates). A battery's fit names
+/// one of each; a radar block joins them with the radar pass.</summary>
+public sealed record FcTechInput
+{
+    public OpticsTechInput? Optics { get; init; }
+    public ComputerTechInput? Computer { get; init; }
+    public MountTechInput? Mount { get; init; }
+    [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+/// <summary>What an optical works makes (designer §2.1): its kind (eye: no instrument; coincidence; stereo); a trained
+/// rangetaker's acuity through it, arcseconds; the longest base its tube keeps true, m, and how a longer one delivers
+/// (B_eff = rigid·(B/rigid)^flex_exp); the instruments' magnification and the highest at a full image; readings a
+/// minute; coatings and a gyro-stabilised mounting; the bare instrument's mass per square metre of base, kg.</summary>
+public sealed record OpticsTechInput
+{
+    public string? Kind { get; init; }
+    public double? DeltaArcsec { get; init; }
+    public double? RigidBaseM { get; init; }
+    public double? FlexExp { get; init; }
+    public double? Magnification { get; init; }
+    public double? MMax { get; init; }
+    public double? ReadingsPerMin { get; init; }
+    public bool? Coated { get; init; }
+    public bool? GyroStabilised { get; init; }
+    public double? MassKgM2 { get; init; }
+    [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+/// <summary>A fire-control computer (designer §2.3, the sim's ComputerRow): its tracker (judgement, rate_clock,
+/// true_course, acceleration, turn_rate) and whether own ship's motion is fed to it; latency, s, and the target
+/// acceleration it allows, m²/s³; the clock's limits (m/s, °/s; 0 none); the acceleration filter's memory, s, and size,
+/// m/s²; the turn filter's turn-rate (rad²/s³) and speed (m²/s³) noise; whether it opens up on a manoeuvre; how often a
+/// judgement looks again, s; the eye's first guess it starts from (kn, °, 1 sigma); the residual ballistic bias, % of
+/// range and mil; the extra error while own ship turns, m; the first ladder step, m; the salvo-to-salvo error, % of
+/// range. Then the designer's: its mass, t, crew and power, kW (the transmitting station's, F4).</summary>
+public sealed record ComputerTechInput
+{
+    public string? Tracker { get; init; }
+    public bool? HelmFree { get; init; }
+    public double? LatencyS { get; init; }
+    public double? Q { get; init; }
+    public double? MaxRangeRateMs { get; init; }
+    public double? MaxBearingRateDegS { get; init; }
+    public double? AccelTauS { get; init; }
+    public double? AccelSigmaMs2 { get; init; }
+    public double? TurnQ { get; init; }
+    public double? SpeedQ { get; init; }
+    public bool? Detect { get; init; }
+    public double? RejudgeS { get; init; }
+    public double? PriorKn { get; init; }
+    public double? PriorDeg { get; init; }
+    public double? ResidPct { get; init; }
+    public double? DeflBiasMil { get; init; }
+    public double? OwnTurnKickM { get; init; }
+    public double? FirstStepM { get; init; }
+    public double? SalvoPct { get; init; }
+    public double? MassT { get; init; }
+    public double? Crew { get; init; }
+    public double? PowerKw { get; init; }
+    [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+/// <summary>How the guns are laid (designer §2.4): from a director (its laying error common to the salvo) or each gun by
+/// its own sights; a stable vertical (no sea-state penalty, with ship motion); the laying error and the salvo's
+/// deflection wander, mil.</summary>
+public sealed record MountTechInput
+{
+    public bool? DirectorFiring { get; init; }
+    public bool? StableVertical { get; init; }
+    public double? LayMil { get; init; }
+    public double? SalvoDeflMil { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 

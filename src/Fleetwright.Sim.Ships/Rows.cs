@@ -402,8 +402,8 @@ public enum TrackerKind : byte
 /// surprises in a row: the Mk 1A's "target just turned"); how often a judgement looks at the target again, s; the eye's
 /// first guess at the target's speed and course it starts from (1 sigma); the residual ballistic bias before spotting, %
 /// of range, and in deflection, mil; the extra error while own ship turns, m; the first ladder step, m; the
-/// salvo-to-salvo error, % of range and mil, that spotting can't remove (the propellant's share and its own wander split
-/// apart in F3).</summary>
+/// salvo-to-salvo error in range, % of range, that spotting can't remove (the propellant's share and the computer's own
+/// wander, one number until they're split). A tech block's (<see cref="FireControlBlocks"/>).</summary>
 public readonly record struct ComputerRow
 {
     public TrackerKind Tracker { get; init; }
@@ -425,15 +425,15 @@ public readonly record struct ComputerRow
     public double OwnTurnKickM { get; init; }
     public double Ladder0M { get; init; }
     public double SalvoPct { get; init; }
-    public double SalvoDeflMil { get; init; }
 }
 
 /// <summary>How a battery's guns are laid: whether a director fires them (its laying error common to the salvo; else
-/// each gun lays itself and its error is dispersion), and that laying error, mil.</summary>
-public readonly record struct MountTechRow(bool DirectorFiring, double LayMil);
+/// each gun lays itself and its error is dispersion), that laying error, mil, and the salvo-to-salvo wander in
+/// deflection that spotting can't remove, mil.</summary>
+public readonly record struct MountTechRow(bool DirectorFiring, double LayMil, double SalvoDeflMil);
 
-/// <summary>A battery's fire-control fit: its instruments' make, its computer and its mounts' laying. A preset's for
-/// now (<see cref="FireControlPresets"/>); the design's tech blocks in F3.</summary>
+/// <summary>A battery's fire-control fit: its instruments' make, its computer and its mounts' laying, from the tech
+/// blocks its fit names (<see cref="FireControlBlocks"/>; a preset's: <see cref="FireControlPresets"/>).</summary>
 public readonly record struct FireControlFit(OpticsRow Optics, ComputerRow Computer, MountTechRow Mount);
 
 /// <summary>A gun battery: the mounts of one kind (main or secondary) firing one gun (calibre and length), so one

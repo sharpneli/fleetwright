@@ -1,0 +1,945 @@
+{
+ "blocks": [
+  {
+   "name": "By eye",
+   "group": "optics",
+   "note": "No instrument: ranges by eye, about 20% of the range (fire-control-research.md §3.1). A director without a rangefinder, or one whose instrument isn't read.",
+   "value": {
+    "optics": {
+     "kind": "eye",
+     "delta_arcsec": 0,
+     "rigid_base_m": 0,
+     "flex_exp": 0,
+     "magnification": 0,
+     "m_max": 0,
+     "readings_per_min": 1,
+     "coated": false,
+     "gyro_stabilised": false,
+     "mass_kg_m2": 0
+    }
+   }
+  },
+  {
+   "name": "Barr & Stroud FA (O1)",
+   "group": "optics",
+   "note": "Early coincidence, c.1895-1906: the FA2 and FA3 4.5 ft (1.37 m) at ×24, the Japanese ships' at Tsushima and Oslyabya's (§3.3; early-hit-rates.md). O1: 14″, rigid to 2 m, ×20 at a full image (designer §2.5). Unstabilised, 2 readings a minute (§3.5).",
+   "value": {
+    "optics": {
+     "kind": "coincidence",
+     "delta_arcsec": 14,
+     "rigid_base_m": 2,
+     "flex_exp": 0.75,
+     "magnification": 24,
+     "m_max": 20,
+     "readings_per_min": 2,
+     "coated": false,
+     "gyro_stabilised": false,
+     "mass_kg_m2": 30
+    }
+   }
+  },
+  {
+   "name": "Barr & Stroud FQ/FT (O2)",
+   "group": "optics",
+   "note": "Mature coincidence, c.1906-1925: the FQ2 9 ft (2.74 m) and FT24 15 ft (4.57 m) at ×28 (§3.3). O2: 12″, rigid to 4 m (designer §2.5). Unstabilised, 2 readings a minute (§3.5).",
+   "value": {
+    "optics": {
+     "kind": "coincidence",
+     "delta_arcsec": 12,
+     "rigid_base_m": 4,
+     "flex_exp": 0.75,
+     "magnification": 28,
+     "m_max": 28,
+     "readings_per_min": 2,
+     "coated": false,
+     "gyro_stabilised": false,
+     "mass_kg_m2": 28
+    }
+   }
+  },
+  {
+   "name": "Barr & Stroud FQ/FT on the Argo mounting",
+   "group": "optics",
+   "note": "The O2 instruments on Pollen's gyro-stabilised mounting: range-taking about fivefold, 8 readings a minute (§3.5).",
+   "value": {
+    "optics": {
+     "kind": "coincidence",
+     "delta_arcsec": 12,
+     "rigid_base_m": 4,
+     "flex_exp": 0.75,
+     "magnification": 28,
+     "m_max": 28,
+     "readings_per_min": 8,
+     "coated": false,
+     "gyro_stabilised": true,
+     "mass_kg_m2": 28
+    }
+   }
+  },
+  {
+   "name": "Zeiss stereo (WWI)",
+   "group": "optics",
+   "note": "The German 3 m stereo of 1914-18 at ×23: Lienau's ±65 m at 10 km and 165 m at 16 km give 10″ (§3.3). Rigid base as O2's [EST]; unstabilised, 2 readings a minute (§3.5). Stereo's haze and contrast advantages are the sensors' (F5).",
+   "value": {
+    "optics": {
+     "kind": "stereo",
+     "delta_arcsec": 10,
+     "rigid_base_m": 4,
+     "flex_exp": 0.75,
+     "magnification": 23,
+     "m_max": 28,
+     "readings_per_min": 2,
+     "coated": false,
+     "gyro_stabilised": false,
+     "mass_kg_m2": 28
+    }
+   }
+  },
+  {
+   "name": "Stereo, long base (O3)",
+   "group": "optics",
+   "note": "Interwar stereo and long bases (Zeiss, interwar B&S), c.1925-40: O3, 12″, rigid to 5 m (designer §2.5). 4 readings a minute (§3.5's WWII director 4-6).",
+   "value": {
+    "optics": {
+     "kind": "stereo",
+     "delta_arcsec": 12,
+     "rigid_base_m": 5,
+     "flex_exp": 0.75,
+     "magnification": 28,
+     "m_max": 30,
+     "readings_per_min": 4,
+     "coated": false,
+     "gyro_stabilised": false,
+     "mass_kg_m2": 27
+    }
+   }
+  },
+  {
+   "name": "Stereo, long base (O3, ×23)",
+   "group": "optics",
+   "note": "O3 at ×23: Bismarck's 10.5 m stereo (§3.3, its magnification [INFERRED]).",
+   "value": {
+    "optics": {
+     "kind": "stereo",
+     "delta_arcsec": 12,
+     "rigid_base_m": 5,
+     "flex_exp": 0.75,
+     "magnification": 23,
+     "m_max": 30,
+     "readings_per_min": 4,
+     "coated": false,
+     "gyro_stabilised": false,
+     "mass_kg_m2": 27
+    }
+   }
+  },
+  {
+   "name": "Stereo, long base (O3, ×25)",
+   "group": "optics",
+   "note": "O3 at ×25: the Japanese plot's preset (fire_control_ref.py LEVELS).",
+   "value": {
+    "optics": {
+     "kind": "stereo",
+     "delta_arcsec": 12,
+     "rigid_base_m": 5,
+     "flex_exp": 0.75,
+     "magnification": 25,
+     "m_max": 30,
+     "readings_per_min": 4,
+     "coated": false,
+     "gyro_stabilised": false,
+     "mass_kg_m2": 27
+    }
+   }
+  },
+  {
+   "name": "Coated, stabilised (O4)",
+   "group": "optics",
+   "note": "USN 1943: coated, gyro-stabilised, rigid to 6 m (designer §2.5); the Mk 48 26.5 ft at ×25 (§3.3); 6 readings a minute (§3.5).",
+   "value": {
+    "optics": {
+     "kind": "stereo",
+     "delta_arcsec": 12,
+     "rigid_base_m": 6,
+     "flex_exp": 0.8,
+     "magnification": 25,
+     "m_max": 30,
+     "readings_per_min": 6,
+     "coated": true,
+     "gyro_stabilised": true,
+     "mass_kg_m2": 25
+    }
+   }
+  },
+  {
+   "name": "Auto-track ranging (radar stand-in)",
+   "group": "optics",
+   "note": "O4's instruments read as an auto-tracking radar's range: 60 a minute (§3.5). Stands in for the radar block until the radar pass.",
+   "value": {
+    "optics": {
+     "kind": "stereo",
+     "delta_arcsec": 12,
+     "rigid_base_m": 6,
+     "flex_exp": 0.8,
+     "magnification": 25,
+     "m_max": 30,
+     "readings_per_min": 60,
+     "coated": true,
+     "gyro_stabilised": true,
+     "mass_kg_m2": 25
+    }
+   }
+  },
+  {
+   "name": "Digital ranging (radar and laser stand-in)",
+   "group": "optics",
+   "note": "O4's instruments read as the 1970s' radar and laser: 30 a minute (fire_control_ref.py LEVELS 8). Stands in for the radar block.",
+   "value": {
+    "optics": {
+     "kind": "stereo",
+     "delta_arcsec": 12,
+     "rigid_base_m": 6,
+     "flex_exp": 0.8,
+     "magnification": 25,
+     "m_max": 30,
+     "readings_per_min": 30,
+     "coated": true,
+     "gyro_stabilised": true,
+     "mass_kg_m2": 25
+    }
+   }
+  },
+  {
+   "name": "Judgement",
+   "group": "computer",
+   "note": "A sailor's eye and head: the range guessed, the target's course and speed guessed from her look and led by it, looked at again each minute, never a rate learnt (F2: the worst computer there is).",
+   "value": {
+    "computer": {
+     "tracker": "judgement",
+     "helm_free": false,
+     "latency_s": 5,
+     "q": 0,
+     "max_range_rate_ms": 0,
+     "max_bearing_rate_deg_s": 0,
+     "accel_tau_s": 0,
+     "accel_sigma_ms2": 0,
+     "turn_q": 0,
+     "speed_q": 0,
+     "detect": false,
+     "rejudge_s": 60,
+     "prior_kn": 5,
+     "prior_deg": 30,
+     "resid_pct": 2.5,
+     "defl_bias_mil": 4,
+     "own_turn_kick_m": 0,
+     "first_step_m": 550,
+     "salvo_pct": 2.5,
+     "mass_t": 0,
+     "crew": 0,
+     "power_kw": 0
+    }
+   }
+  },
+  {
+   "name": "Eye and hand plot",
+   "group": "computer",
+   "note": "Ranges by eye, rates by a hand plot (fire_control_ref.py level 0; designer C0).",
+   "value": {
+    "computer": {
+     "tracker": "rate_clock",
+     "helm_free": false,
+     "latency_s": 20,
+     "q": 0.02,
+     "max_range_rate_ms": 0,
+     "max_bearing_rate_deg_s": 0,
+     "accel_tau_s": 0,
+     "accel_sigma_ms2": 0,
+     "turn_q": 0,
+     "speed_q": 0,
+     "detect": false,
+     "rejudge_s": 0,
+     "prior_kn": 5,
+     "prior_deg": 30,
+     "resid_pct": 2.5,
+     "defl_bias_mil": 4,
+     "own_turn_kick_m": 0,
+     "first_step_m": 550,
+     "salvo_pct": 2.5,
+     "mass_t": 0.2,
+     "crew": 3,
+     "power_kw": 0
+    }
+   }
+  },
+  {
+   "name": "Hand plot",
+   "group": "computer",
+   "note": "Rangefinder ranges, rates from a hand plot and estimates, no machine (level 1: the Tsushima era; designer C0).",
+   "value": {
+    "computer": {
+     "tracker": "rate_clock",
+     "helm_free": false,
+     "latency_s": 15,
+     "q": 0.02,
+     "max_range_rate_ms": 0,
+     "max_bearing_rate_deg_s": 0,
+     "accel_tau_s": 0,
+     "accel_sigma_ms2": 0,
+     "turn_q": 0,
+     "speed_q": 0,
+     "detect": false,
+     "rejudge_s": 0,
+     "prior_kn": 4,
+     "prior_deg": 25,
+     "resid_pct": 2,
+     "defl_bias_mil": 3,
+     "own_turn_kick_m": 0,
+     "first_step_m": 366,
+     "salvo_pct": 2,
+     "mass_t": 0.2,
+     "crew": 3,
+     "power_kw": 0
+    }
+   }
+  },
+  {
+   "name": "Dumaresq and Vickers clock",
+   "group": "computer",
+   "note": "The Dumaresq's rates run on by the Vickers range clock (1906): constant rates only, the roller slipping on a change (computing.md §3; level 2, designer C1).",
+   "value": {
+    "computer": {
+     "tracker": "rate_clock",
+     "helm_free": false,
+     "latency_s": 15,
+     "q": 0.03,
+     "max_range_rate_ms": 18.3,
+     "max_bearing_rate_deg_s": 0,
+     "accel_tau_s": 0,
+     "accel_sigma_ms2": 0,
+     "turn_q": 0,
+     "speed_q": 0,
+     "detect": false,
+     "rejudge_s": 0,
+     "prior_kn": 3,
+     "prior_deg": 20,
+     "resid_pct": 1.5,
+     "defl_bias_mil": 2.5,
+     "own_turn_kick_m": 0,
+     "first_step_m": 366,
+     "salvo_pct": 1.8,
+     "mass_t": 0.8,
+     "crew": 4,
+     "power_kw": 0
+    }
+   }
+  },
+  {
+   "name": "Dreyer table Mk I-II",
+   "group": "computer",
+   "note": "The Dreyer table's range and bearing plots and clock before the gyro feed (1911-12): the Mk III's numbers without helm-free, so own ship's turns are re-learnt (computing.md §3: helm-free from the Mk III).",
+   "value": {
+    "computer": {
+     "tracker": "rate_clock",
+     "helm_free": false,
+     "latency_s": 15,
+     "q": 0.03,
+     "max_range_rate_ms": 18.3,
+     "max_bearing_rate_deg_s": 0.25,
+     "accel_tau_s": 0,
+     "accel_sigma_ms2": 0,
+     "turn_q": 0,
+     "speed_q": 0,
+     "detect": false,
+     "rejudge_s": 0,
+     "prior_kn": 2.5,
+     "prior_deg": 15,
+     "resid_pct": 1.2,
+     "defl_bias_mil": 2,
+     "own_turn_kick_m": 300,
+     "first_step_m": 366,
+     "salvo_pct": 1.5,
+     "mass_t": 4,
+     "crew": 10,
+     "power_kw": 1
+    }
+   }
+  },
+  {
+   "name": "Dreyer table Mk III-V",
+   "group": "computer",
+   "note": "The Dreyer table from the Mk III (1914-22), helm-free by the gyro: a rate clock limited to ±1,200 yd/min and ±15°/min, its bearing plot the weak point (computing.md §3; level 3, designer C2). Crew 7-8 at the table, up to 30 in the station.",
+   "value": {
+    "computer": {
+     "tracker": "rate_clock",
+     "helm_free": true,
+     "latency_s": 15,
+     "q": 0.03,
+     "max_range_rate_ms": 18.3,
+     "max_bearing_rate_deg_s": 0.25,
+     "accel_tau_s": 0,
+     "accel_sigma_ms2": 0,
+     "turn_q": 0,
+     "speed_q": 0,
+     "detect": false,
+     "rejudge_s": 0,
+     "prior_kn": 2.5,
+     "prior_deg": 15,
+     "resid_pct": 1.2,
+     "defl_bias_mil": 2,
+     "own_turn_kick_m": 300,
+     "first_step_m": 366,
+     "salvo_pct": 1.5,
+     "mass_t": 4,
+     "crew": 10,
+     "power_kw": 1
+    }
+   }
+  },
+  {
+   "name": "German clock and plot (EU-Anzeiger, C12)",
+   "group": "computer",
+   "note": "The German WWI range-rate clock and plot (computing.md §3). No specifications found; taken as the Dreyer Mk III's, helm-free by the gyro [EST], the two navies' 1916 machines doing the same job.",
+   "value": {
+    "computer": {
+     "tracker": "rate_clock",
+     "helm_free": true,
+     "latency_s": 15,
+     "q": 0.03,
+     "max_range_rate_ms": 18.3,
+     "max_bearing_rate_deg_s": 0.25,
+     "accel_tau_s": 0,
+     "accel_sigma_ms2": 0,
+     "turn_q": 0,
+     "speed_q": 0,
+     "detect": false,
+     "rejudge_s": 0,
+     "prior_kn": 2.5,
+     "prior_deg": 15,
+     "resid_pct": 1.2,
+     "defl_bias_mil": 2,
+     "own_turn_kick_m": 300,
+     "first_step_m": 366,
+     "salvo_pct": 1.5,
+     "mass_t": 4,
+     "crew": 10,
+     "power_kw": 1
+    }
+   }
+  },
+  {
+   "name": "Argo clock Mk IV",
+   "group": "computer",
+   "note": "Pollen's true-course plotter and variable-speed clock (1912-13): follows a changing range rate, gyro-corrected; about six in RN service at Jutland (computing.md §3; fire_control_ref.py level 3b). Mass and crew [EST].",
+   "value": {
+    "computer": {
+     "tracker": "true_course",
+     "helm_free": true,
+     "latency_s": 8,
+     "q": 0.03,
+     "max_range_rate_ms": 0,
+     "max_bearing_rate_deg_s": 0,
+     "accel_tau_s": 0,
+     "accel_sigma_ms2": 0,
+     "turn_q": 0,
+     "speed_q": 0,
+     "detect": false,
+     "rejudge_s": 0,
+     "prior_kn": 2.5,
+     "prior_deg": 15,
+     "resid_pct": 1.2,
+     "defl_bias_mil": 2,
+     "own_turn_kick_m": 200,
+     "first_step_m": 366,
+     "salvo_pct": 1.5,
+     "mass_t": 2,
+     "crew": 4,
+     "power_kw": 1
+    }
+   }
+  },
+  {
+   "name": "Admiralty Fire Control Table",
+   "group": "computer",
+   "note": "The AFCT Mk I-X (1927-45): clock and MPI plot, helm-free, a straight-course target (computing.md §3; level 4, designer C3).",
+   "value": {
+    "computer": {
+     "tracker": "true_course",
+     "helm_free": true,
+     "latency_s": 8,
+     "q": 0.03,
+     "max_range_rate_ms": 0,
+     "max_bearing_rate_deg_s": 0,
+     "accel_tau_s": 0,
+     "accel_sigma_ms2": 0,
+     "turn_q": 0,
+     "speed_q": 0,
+     "detect": false,
+     "rejudge_s": 0,
+     "prior_kn": 2,
+     "prior_deg": 12,
+     "resid_pct": 0.6,
+     "defl_bias_mil": 1.5,
+     "own_turn_kick_m": 250,
+     "first_step_m": 366,
+     "salvo_pct": 1.2,
+     "mass_t": 5,
+     "crew": 8,
+     "power_kw": 5
+    }
+   }
+  },
+  {
+   "name": "Admiralty Fire Control Table, turn setting",
+   "group": "computer",
+   "note": "The AFCT with a hand-set enemy rate of turn: a turn filter whose rate adapts slowly (level 4t; [UNCERTAIN] in the research, a computer option anyone may fit, decision 5).",
+   "value": {
+    "computer": {
+     "tracker": "turn_rate",
+     "helm_free": true,
+     "latency_s": 8,
+     "q": 0.03,
+     "max_range_rate_ms": 0,
+     "max_bearing_rate_deg_s": 0,
+     "accel_tau_s": 0,
+     "accel_sigma_ms2": 0,
+     "turn_q": 1E-07,
+     "speed_q": 0.1,
+     "detect": false,
+     "rejudge_s": 0,
+     "prior_kn": 2,
+     "prior_deg": 12,
+     "resid_pct": 0.6,
+     "defl_bias_mil": 1.5,
+     "own_turn_kick_m": 250,
+     "first_step_m": 366,
+     "salvo_pct": 1.2,
+     "mass_t": 5,
+     "crew": 8,
+     "power_kw": 5
+    }
+   }
+  },
+  {
+   "name": "German Rechenstelle (1930s)",
+   "group": "computer",
+   "note": "The German computing rooms of the 1930s, fore and aft under armour (computing.md §3): no specifications found; the research's table puts them with the AFCT, whose numbers they take [EST].",
+   "value": {
+    "computer": {
+     "tracker": "true_course",
+     "helm_free": true,
+     "latency_s": 8,
+     "q": 0.03,
+     "max_range_rate_ms": 0,
+     "max_bearing_rate_deg_s": 0,
+     "accel_tau_s": 0,
+     "accel_sigma_ms2": 0,
+     "turn_q": 0,
+     "speed_q": 0,
+     "detect": false,
+     "rejudge_s": 0,
+     "prior_kn": 2,
+     "prior_deg": 12,
+     "resid_pct": 0.6,
+     "defl_bias_mil": 1.5,
+     "own_turn_kick_m": 250,
+     "first_step_m": 366,
+     "salvo_pct": 1.2,
+     "mass_t": 5,
+     "crew": 8,
+     "power_kw": 5
+    }
+   }
+  },
+  {
+   "name": "Type 92 Shagekiban",
+   "group": "computer",
+   "note": "The Japanese Type 92 (1932) with its Sokutekiban: rates from a range-rate plot, deflection by hand, no gyro horizon; rates rebuilt after a manoeuvre (computing.md §3; level 4j). Crew 7 + 8; mass [EST].",
+   "value": {
+    "computer": {
+     "tracker": "rate_clock",
+     "helm_free": true,
+     "latency_s": 15,
+     "q": 0.03,
+     "max_range_rate_ms": 0,
+     "max_bearing_rate_deg_s": 0,
+     "accel_tau_s": 0,
+     "accel_sigma_ms2": 0,
+     "turn_q": 0,
+     "speed_q": 0,
+     "detect": false,
+     "rejudge_s": 0,
+     "prior_kn": 2,
+     "prior_deg": 12,
+     "resid_pct": 0.6,
+     "defl_bias_mil": 1.5,
+     "own_turn_kick_m": 400,
+     "first_step_m": 366,
+     "salvo_pct": 1.3,
+     "mass_t": 4,
+     "crew": 15,
+     "power_kw": 2
+    }
+   }
+  },
+  {
+   "name": "Ford Mk 8 rangekeeper",
+   "group": "computer",
+   "note": "The Ford Mk 8 with the stable vertical (1941-42): continuous, helm-free, tilt, wind and drift corrected; one operator (computing.md §3; level 5, designer C4).",
+   "value": {
+    "computer": {
+     "tracker": "true_course",
+     "helm_free": true,
+     "latency_s": 3,
+     "q": 0.05,
+     "max_range_rate_ms": 0,
+     "max_bearing_rate_deg_s": 0,
+     "accel_tau_s": 0,
+     "accel_sigma_ms2": 0,
+     "turn_q": 0,
+     "speed_q": 0,
+     "detect": false,
+     "rejudge_s": 0,
+     "prior_kn": 2,
+     "prior_deg": 12,
+     "resid_pct": 0.4,
+     "defl_bias_mil": 1,
+     "own_turn_kick_m": 150,
+     "first_step_m": 366,
+     "salvo_pct": 1,
+     "mass_t": 3,
+     "crew": 4,
+     "power_kw": 10
+    }
+   }
+  },
+  {
+   "name": "Ford Mk 8 rangekeeper, radar ranging (stand-in)",
+   "group": "computer",
+   "note": "The Mk 8 fed by radar spotting (level 6): its shorter latency is the radar's, standing in until the radar pass.",
+   "value": {
+    "computer": {
+     "tracker": "true_course",
+     "helm_free": true,
+     "latency_s": 2,
+     "q": 0.05,
+     "max_range_rate_ms": 0,
+     "max_bearing_rate_deg_s": 0,
+     "accel_tau_s": 0,
+     "accel_sigma_ms2": 0,
+     "turn_q": 0,
+     "speed_q": 0,
+     "detect": false,
+     "rejudge_s": 0,
+     "prior_kn": 2,
+     "prior_deg": 12,
+     "resid_pct": 0.4,
+     "defl_bias_mil": 1,
+     "own_turn_kick_m": 150,
+     "first_step_m": 366,
+     "salvo_pct": 1,
+     "mass_t": 3,
+     "crew": 4,
+     "power_kw": 10
+    }
+   }
+  },
+  {
+   "name": "Mk 1A computer",
+   "group": "computer",
+   "note": "The 1950s analog with a curved-course (acceleration) predictor and the \"target just turned\" button (level 7, designer C5).",
+   "value": {
+    "computer": {
+     "tracker": "acceleration",
+     "helm_free": true,
+     "latency_s": 1,
+     "q": 0.02,
+     "max_range_rate_ms": 0,
+     "max_bearing_rate_deg_s": 0,
+     "accel_tau_s": 20,
+     "accel_sigma_ms2": 0.1,
+     "turn_q": 0,
+     "speed_q": 0,
+     "detect": true,
+     "rejudge_s": 0,
+     "prior_kn": 2,
+     "prior_deg": 12,
+     "resid_pct": 0.4,
+     "defl_bias_mil": 0.8,
+     "own_turn_kick_m": 50,
+     "first_step_m": 366,
+     "salvo_pct": 0.7,
+     "mass_t": 2.5,
+     "crew": 3,
+     "power_kw": 10
+    }
+   }
+  },
+  {
+   "name": "Digital turn filter (Mk 86, WM-25)",
+   "group": "computer",
+   "note": "The 1970s digital systems with a turn-following filter (level 8, designer C6; the filter [INFERRED]). Its speed noise is the sim's 0.1, not the reference's 0.05² (F2: ships lose way in a turn).",
+   "value": {
+    "computer": {
+     "tracker": "turn_rate",
+     "helm_free": true,
+     "latency_s": 0.5,
+     "q": 0.01,
+     "max_range_rate_ms": 0,
+     "max_bearing_rate_deg_s": 0,
+     "accel_tau_s": 0,
+     "accel_sigma_ms2": 0,
+     "turn_q": 5E-07,
+     "speed_q": 0.1,
+     "detect": true,
+     "rejudge_s": 0,
+     "prior_kn": 2,
+     "prior_deg": 12,
+     "resid_pct": 0.3,
+     "defl_bias_mil": 0.5,
+     "own_turn_kick_m": 20,
+     "first_step_m": 366,
+     "salvo_pct": 0.4,
+     "mass_t": 0.8,
+     "crew": 2,
+     "power_kw": 8
+    }
+   }
+  },
+  {
+   "name": "Open sights",
+   "group": "mount",
+   "note": "Each gun laid by its layer over open sights (4′, designer §2.4): the eyeball's (level 0).",
+   "value": {
+    "mount": {
+     "director_firing": false,
+     "stable_vertical": false,
+     "lay_mil": 3,
+     "salvo_defl_mil": 3
+    }
+   }
+  },
+  {
+   "name": "Early telescopic sights",
+   "group": "mount",
+   "note": "Each gun by its own early telescope (2.5′, designer §2.4; M0): the Tsushima era (level 1).",
+   "value": {
+    "mount": {
+     "director_firing": false,
+     "stable_vertical": false,
+     "lay_mil": 2.5,
+     "salvo_defl_mil": 2.5
+    }
+   }
+  },
+  {
+   "name": "Telescopic sights",
+   "group": "mount",
+   "note": "Each gun by a good telescope (1.2′ with the layer's slop, designer §2.4), continuous aim, no director (level 2).",
+   "value": {
+    "mount": {
+     "director_firing": false,
+     "stable_vertical": false,
+     "lay_mil": 2,
+     "salvo_defl_mil": 2.5
+    }
+   }
+  },
+  {
+   "name": "Director, follow the pointer",
+   "group": "mount",
+   "note": "Director firing: the guns laid and fired from the director, the turrets following its pointers (M1, 1912-16; level 3).",
+   "value": {
+    "mount": {
+     "director_firing": true,
+     "stable_vertical": false,
+     "lay_mil": 1,
+     "salvo_defl_mil": 2
+    }
+   }
+  },
+  {
+   "name": "Director, follow the pointer (no RPC)",
+   "group": "mount",
+   "note": "Director firing without remote power control, the Japanese 1930s (no RPC on Yamato, computing.md §3): the Japanese plot's preset numbers.",
+   "value": {
+    "mount": {
+     "director_firing": true,
+     "stable_vertical": false,
+     "lay_mil": 1,
+     "salvo_defl_mil": 1.5
+    }
+   }
+  },
+  {
+   "name": "Director, power drive",
+   "group": "mount",
+   "note": "Director firing with power training and elevation (M2, interwar; level 4).",
+   "value": {
+    "mount": {
+     "director_firing": true,
+     "stable_vertical": false,
+     "lay_mil": 0.8,
+     "salvo_defl_mil": 1.5
+    }
+   }
+  },
+  {
+   "name": "Stable vertical, remote power control",
+   "group": "mount",
+   "note": "A stable vertical and gyro firing, the mounts under remote power control (M3, 1941-45; levels 5-6).",
+   "value": {
+    "mount": {
+     "director_firing": true,
+     "stable_vertical": true,
+     "lay_mil": 0.5,
+     "salvo_defl_mil": 1.2
+    }
+   }
+  },
+  {
+   "name": "Stable vertical, power servo",
+   "group": "mount",
+   "note": "The 1950s' servos (fire_control_ref.py level 7), between M3 and M4.",
+   "value": {
+    "mount": {
+     "director_firing": true,
+     "stable_vertical": true,
+     "lay_mil": 0.4,
+     "salvo_defl_mil": 0.8
+    }
+   }
+  },
+  {
+   "name": "Digital servo",
+   "group": "mount",
+   "note": "Digital servos (M4, 1970s; level 8).",
+   "value": {
+    "mount": {
+     "director_firing": true,
+     "stable_vertical": true,
+     "lay_mil": 0.3,
+     "salvo_defl_mil": 0.5
+    }
+   }
+  }
+ ],
+ "presets": [
+  {
+   "name": "eyeball",
+   "note": "Level 0, c.1890: ranges by eye, each gun laid by its own layer.",
+   "fit": [
+    "By eye",
+    "Eye and hand plot",
+    "Open sights"
+   ]
+  },
+  {
+   "name": "rangefinder",
+   "note": "Level 1, 1905: an early rangefinder.",
+   "fit": [
+    "Barr & Stroud FA (O1)",
+    "Hand plot",
+    "Early telescopic sights"
+   ]
+  },
+  {
+   "name": "clock",
+   "note": "Level 2, 1910: Dumaresq and range clock.",
+   "fit": [
+    "Barr & Stroud FQ/FT (O2)",
+    "Dumaresq and Vickers clock",
+    "Telescopic sights"
+   ]
+  },
+  {
+   "name": "director",
+   "note": "Level 3, 1916: the Dreyer table and director firing.",
+   "fit": [
+    "Barr & Stroud FQ/FT (O2)",
+    "Dreyer table Mk III-V",
+    "Director, follow the pointer"
+   ]
+  },
+  {
+   "name": "table",
+   "note": "Level 4, the 1930s: the interwar central table.",
+   "fit": [
+    "Stereo, long base (O3)",
+    "Admiralty Fire Control Table",
+    "Director, power drive"
+   ]
+  },
+  {
+   "name": "rangekeeper",
+   "note": "Level 5, 1941-42: rangekeeper and stable vertical.",
+   "fit": [
+    "Coated, stabilised (O4)",
+    "Ford Mk 8 rangekeeper",
+    "Stable vertical, remote power control"
+   ]
+  },
+  {
+   "name": "radar-spotting",
+   "note": "Level 6, 1945: radar spotting (its radar a stand-in until the radar pass).",
+   "fit": [
+    "Coated, stabilised (O4)",
+    "Ford Mk 8 rangekeeper, radar ranging (stand-in)",
+    "Stable vertical, remote power control"
+   ]
+  },
+  {
+   "name": "auto-track",
+   "note": "Level 7, 1955: auto-tracking radar.",
+   "fit": [
+    "Auto-track ranging (radar stand-in)",
+    "Mk 1A computer",
+    "Stable vertical, power servo"
+   ]
+  },
+  {
+   "name": "digital",
+   "note": "Level 8, 1975: digital.",
+   "fit": [
+    "Digital ranging (radar and laser stand-in)",
+    "Digital turn filter (Mk 86, WM-25)",
+    "Digital servo"
+   ]
+  },
+  {
+   "name": "judgement",
+   "note": "A sailor's judgement: the worst computer, for comparison (F2).",
+   "fit": [
+    "By eye",
+    "Judgement",
+    "Open sights"
+   ]
+  },
+  {
+   "name": "argo",
+   "note": "Pollen's Argo clock (level 3b).",
+   "fit": [
+    "Barr & Stroud FQ/FT on the Argo mounting",
+    "Argo clock Mk IV",
+    "Director, follow the pointer"
+   ]
+  },
+  {
+   "name": "table-turn",
+   "note": "The AFCT with its turn setting (level 4t, decision 5).",
+   "fit": [
+    "Stereo, long base (O3)",
+    "Admiralty Fire Control Table, turn setting",
+    "Director, power drive"
+   ]
+  },
+  {
+   "name": "japanese-plot",
+   "note": "The Japanese plot of the 1930s (level 4j).",
+   "fit": [
+    "Stereo, long base (O3, ×25)",
+    "Type 92 Shagekiban",
+    "Director, follow the pointer (no RPC)"
+   ]
+  }
+ ]
+}

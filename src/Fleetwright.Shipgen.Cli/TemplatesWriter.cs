@@ -6,11 +6,12 @@ using System.Text.Json.Nodes;
 
 namespace Fleetwright.Shipgen.Cli;
 
-/// <summary>`shipgen templates`: the shell, explosive, material and fittings catalogues (ShellTemplates, Explosives,
-/// MaterialTemplates, Fittings: their one source) written out as the game's template assets, `Content/Templates/shells.json`,
-/// `explosives.json`, `materials.json` and `fittings.json` (entries {name, group, note, value}, as
-/// tools/designer_templates.py writes the others), and as the docs' pages, docs/shipgen/shell-templates.md,
-/// explosive-templates.md, material-templates.md and fittings-templates.md. Never edit those by hand.</summary>
+/// <summary>`shipgen templates`: the shell, explosive, material, fittings and fire-control catalogues (ShellTemplates,
+/// Explosives, MaterialTemplates, Fittings, FireControlTemplates: their one source) written out as the game's template
+/// assets, `Content/Templates/shells.json`, `explosives.json`, `materials.json`, `fittings.json` (entries {name, group,
+/// note, value}, as tools/designer_templates.py writes the others) and `fire-control.json` (its blocks so, and its
+/// presets), and as the docs' pages, docs/shipgen/shell-templates.md, explosive-templates.md, material-templates.md,
+/// fittings-templates.md and fire-control-templates.md. Never edit those by hand.</summary>
 static class TemplatesWriter
 {
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
@@ -46,7 +47,123 @@ static class TemplatesWriter
         Write(Path.Combine(repo, "docs", "shipgen", "explosive-templates.md"), ExplosivePage());
         Write(Path.Combine(repo, "docs", "shipgen", "material-templates.md"), MaterialPage());
         Write(Path.Combine(repo, "docs", "shipgen", "fittings-templates.md"), FittingsPage());
+        var fc = new JsonObject
+        {
+            ["blocks"] = new JsonArray(FireControlTemplates.All.Select(t => (JsonNode)new JsonObject
+            {
+                ["name"] = t.Name, ["group"] = t.Kind, ["note"] = t.Note, ["value"] = Value(t.Value),
+            }).ToArray()),
+            ["presets"] = new JsonArray(FireControlTemplates.Presets.Select(p => (JsonNode)new JsonObject
+            {
+                ["name"] = p.Name, ["note"] = p.Note, ["fit"] = new JsonArray(p.Fit.Select(n => (JsonNode)JsonValue.Create(n)!).ToArray()),
+            }).ToArray()),
+        };
+        Write(Path.Combine(repo, "Content", "Templates", "fire-control.json"), fc.ToJsonString(json) + "\n");
+        Write(Path.Combine(repo, "docs", "shipgen", "fire-control-templates.md"), FireControlPage());
         return 0;
+    }
+
+    static string FireControlPage()
+    {
+        var sb = new StringBuilder();
+        sb.Append("""
+            # Fire-control templates
+
+            Written by `shipgen templates` from `src/Fleetwright.Shipgen/FireControlTemplates.cs`; don't edit by hand. The
+            designer's templates are `Content/Templates/fire-control.json`, from the same table.
+
+            A battery's fire control is a fit of tech blocks (`docs/battle/fire-control.md` F3): one optics block (what its
+            rangefinders are and how they read), one computer (how it predicts) and one mount block (how its guns are
+            laid). The fit names them, the design copies them into `fire_control_tech`, and a name the design doesn't carry
+            takes the catalogue's:
+
+            ```json
+            "fire_control": {"main": {"directors": 1, "rangefinder_m": 4.6, "fit": ["Barr & Stroud FQ/FT (O2)",
+              "Dreyer table Mk III-V", "Director, follow the pointer"]}}
+            ```
+
+            A block is a machine or a make, never a year (the tech tree decides who has it); the combat model sees only its
+            numbers. The presets are named fits standing for the reference's levels (`research/simulation/fire_control_ref.py`
+            LEVELS 0-8, then its rows beside them): a level is a preset, not a type. Blocks named as a radar's stand-in carry
+            a radar's numbers until the radar pass. Sources: `research/simulation/fire-control-designer.md` §2 (the tech
+            values, tiers O1-O4, C0-C6, M0-M4), `fire-control-research.md` §3.3-3.5 and §5.3, and
+            `fire-control-research/computing.md` §3; [EST] marks numbers no source gives.
+
+            Read by the sim so far: the optics' magnification and readings a minute; every computer number above the mass;
+            the mounts' director firing, laying error and deflection wander. The rest (acuity, rigid base and flex, the top
+            magnification, coatings, the gyro mounting, the masses, crews and power, the stable vertical) is carried for the
+            steps that read it (F4: the instruments' and the transmitting station's weights; F5: the sensors proper; ship
+            motion).
+
+            ## Presets
+
+            | Preset | Optics | Computer | Mount | |
+            |---|---|---|---|---|
+
+            """.Replace("\r\n", "\n"));
+        foreach (var p in FireControlTemplates.Presets)
+            sb.Append(Inv, $"| {p.Name} | {p.Optics} | {p.Computer} | {p.Mount} | {p.Note} |\n");
+        sb.Append("""
+
+            ## Optics
+
+            Kind; acuity ″; rigid base m and flex exponent; magnification (top at a full image); readings a minute; coated,
+            gyro-stabilised; mass kg per m² of base.
+
+            | Block | Kind | δ ″ | Rigid m / flex | × (max) | A minute | Coated, gyro | kg/m² |
+            |---|---|---|---|---|---|---|---|
+
+            """.Replace("\r\n", "\n"));
+        foreach (var t in FireControlTemplates.All.Where(t => t.Kind == "optics"))
+        {
+            var o = t.Value.Optics!;
+            sb.Append(Inv, $"| {t.Name} | {o.Kind} | {N(o.DeltaArcsec)} | {N(o.RigidBaseM)} / {N(o.FlexExp)} | {N(o.Magnification)} ({N(o.MMax)}) | " +
+                $"{N(o.ReadingsPerMin)} | {(o.Coated == true ? "coated" : "-")}, {(o.GyroStabilised == true ? "gyro" : "-")} | {N(o.MassKgM2)} |\n");
+        }
+        sb.Append("""
+
+            ## Computers
+
+            Tracker, helm-free; latency s; q m²/s³; the clock's limits (m/s, °/s); the eye's first guess (kn, °); the residual
+            bias (% of range, mil); own turn's kick m; first ladder step m; salvo-to-salvo error % of range; and the filters'
+            own numbers. Mass t, crew, power kW.
+
+            | Block | Tracker | Latency | q | Limits | Prior | Bias | Kick | Step | Salvo | Filter | t, crew, kW |
+            |---|---|---|---|---|---|---|---|---|---|---|---|
+
+            """.Replace("\r\n", "\n"));
+        foreach (var t in FireControlTemplates.All.Where(t => t.Kind == "computer"))
+        {
+            var c = t.Value.Computer!;
+            string limits = c.MaxRangeRateMs > 0 || c.MaxBearingRateDegS > 0 ? $"{N(c.MaxRangeRateMs)}, {N(c.MaxBearingRateDegS)}" : "-";
+            string filter = c.Tracker switch
+            {
+                "acceleration" => $"τ {N(c.AccelTauS)} s, σ {N(c.AccelSigmaMs2)} m/s²",
+                "turn_rate" => $"turn {N(c.TurnQ)}, speed {N(c.SpeedQ)}",
+                "judgement" => $"looks again {N(c.RejudgeS)} s",
+                _ => "-",
+            } + (c.Detect == true ? "; detects turns" : "");
+            sb.Append(Inv, $"| {t.Name} | {c.Tracker}{(c.HelmFree == true ? ", helm-free" : "")} | {N(c.LatencyS)} | {N(c.Q)} | {limits} | " +
+                $"{N(c.PriorKn)}, {N(c.PriorDeg)} | {N(c.ResidPct)}, {N(c.DeflBiasMil)} | {N(c.OwnTurnKickM)} | {N(c.FirstStepM)} | {N(c.SalvoPct)} | " +
+                $"{filter} | {N(c.MassT)}, {N(c.Crew)}, {N(c.PowerKw)} |\n");
+        }
+        sb.Append("""
+
+            ## Mounts
+
+            | Block | Director firing | Stable vertical | Laying mil | Deflection wander mil |
+            |---|---|---|---|---|
+
+            """.Replace("\r\n", "\n"));
+        foreach (var t in FireControlTemplates.All.Where(t => t.Kind == "mount"))
+        {
+            var m = t.Value.Mount!;
+            sb.Append(Inv, $"| {t.Name} | {(m.DirectorFiring == true ? "yes" : "no")} | {(m.StableVertical == true ? "yes" : "no")} | {N(m.LayMil)} | {N(m.SalvoDeflMil)} |\n");
+        }
+        sb.Append('\n');
+        foreach (var t in FireControlTemplates.All)
+            sb.Append("- **").Append(t.Name).Append(":** ").Append(t.Note).Append('\n');
+        return sb.ToString();
     }
 
     static string FittingsPage()
