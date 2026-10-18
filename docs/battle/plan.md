@@ -1699,7 +1699,8 @@ visibility they light up. Fire control's own sight lines (4.2) are per engaged p
   `research/simulation/sighting_ref.py` is the independent reference (the test holds its numbers). Reaches, a 24 m
   masthead on Bismarck side on: ~27 km in 25 km visibility (Jutland's battlecruisers ~26 km), ~35 km in clear air
   (Denmark Strait), ~5 km at night. A destroyer is ~15% shorter, bow-on ~20% shorter, silhouetted at dusk ~20%
-  longer. The rangefinder's magnification is a placeholder from its base.
+  longer. A director's rangefinder sees at its make's magnification (its battery's fit, `fire-control.md` F3; a
+  placeholder from its base until then).
 - **3.2d** `Picture` per navy (Fleetwright.Sim), fed by `Sightings`:
   - It looks every second over ships in encounters. Each encounter has a grid in its tangent plane; for each side at
     war, the 6 nearest observers and their 4 highest eyes that bear look. Their rates add, and a draw from a substream
@@ -1748,8 +1749,8 @@ fitted to the research's guns, `shipgen weapons --research`):
   designs carry them as data (`ammunition`, `explosives`, each battery's `shells`) from the templates of their navy and
   year; a battery that gives none carries the default template's outfit. Done.
 - **Working the guns per mount type:** reload, training and elevating rates, the highest elevation.
-- **The fire-control level per battery** (fighting.md decision 6), read from the fit (directors, rangefinder, computer
-  and radar tonnage) until the designer offers it.
+- **The fire-control level per battery** (fighting.md decision 6): done in `fire-control.md` F3, each battery's fit of
+  tech blocks (optics, computer, mount) in the design; the level is a preset's label.
 - **A gun's dispersion** (4.2b): its full-salvo pattern, % of range, by calibre and era until then.
 - **Rangefinders** (4.2b): one per director today; turret and spotting-top rangefinders would give a battery the
   several readings the era's ships had (QE's one 15 ft against the reference's three).

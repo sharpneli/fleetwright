@@ -498,7 +498,8 @@ between cells), its thickness, material and normal.
     (`BatteryState.Silent`); hits are counted and logged, nothing more (4.3a).
 - **Settings:** the level table, rows 0-8 from `LEVELS` (the plan's 0, 1, 2, 3 and the rest, cheap as data; their
   trackers, radars and stabilisation are 4.5's; since `fire-control.md` F0 the rows are `FireControlPresets`, each
-  battery's fit on its class), crew qualities (green, average, trained, elite: the rangetakers' and
+  battery's fit on its class; since F3 the presets are the catalogue's named fits and a battery's fit its design's
+  tech blocks), crew qualities (green, average, trained, elite: the rangetakers' and
   layers' errors), and the gunnery numbers. Crews per side: `GunnerySystem.SetCrew`, and a scenario's `"crews"`.
 - **The gun's pattern** is a placeholder on `BatteryRow` (`DesignerPlaceholders.Pattern`: the Great War's heavy guns
   3.3·(305 mm/d)³ %, 12" 3.3, 13.5" 2.5, 15" 1.7; lighter 2.5; later 1.8-1.9).
@@ -1052,6 +1053,10 @@ numbers before and after against the anchors. The list, by link, with where the 
   reference's tables beside them (`--ref`); where today's model stands is recorded in `fire-control.md` F1.
   F2 done 2026-10-18: a tracker per kind of computer (`FcTracker`: a sailor's judgement, rate clocks plain and
   helm-free, true course, curved course, turn), each track started from its own first reading and the eye's guess.
+  F3 done 2026-10-18: fire control as tech blocks (the catalogue `FireControlTemplates`, `fire-control-templates.md`):
+  each battery's fit names its optics, computer and mount, the levels are presets and labels, rangefinding and the
+  directors' sighting read the optics' make, and the designs carry their navies' machines where the research names
+  them.
 - **Ship motion** (`ship-motion/ship-motion-gunnery-research.md` §7.7, in its order):
   - a roll phase per ship from `RollPeriodS` and the sea, with firing on the roll and a once-a-roll rate;
   - laying error `√(base² + (τ·ω)²)`;

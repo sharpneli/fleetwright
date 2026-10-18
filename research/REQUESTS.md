@@ -12,6 +12,22 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: (comparison, recommendation, API notes, plan...)
 -->
 
+### 2026-10-18 - Which fire-control machines each class carried, 1898-1925
+- Question: for the classes in the game's first cut, which rangefinders (make, base, magnification, coincidence or
+  stereo, how many and where), which computer or plot, and which laying gear (director firing or not, from when) did
+  each carry, in the year of its battle? Above all the Royal Navy's Dreyer marks by class (Mk I-V, and which were
+  helm-free) and which ships had Pollen's Argo clock at Jutland; the German Jutland ships' clocks, plots and
+  Richtungsweiser (and whether turrets laid by director or by their own sights); the USN's Ford Mk 1 rangekeeper (from
+  which ships and year); the French, Italian and Austrian tables of 1910-18; the Russians' Liuzhol micrometer sets in
+  1904-05 (its error and range, as a stadimeter's). Numbers for any machine's limits (rate clock ranges, bearing rates)
+  are welcome.
+- Context / relevant files: `src/Fleetwright.Shipgen/FireControlTemplates.cs` (the catalogue; blocks marked [EST]
+  where no source gave numbers), `docs/shipgen/fire-control-templates.md`, `docs/battle/fire-control.md` F3 ("Real
+  fits"), the designs under `Content/Scenarios/Designs/` (the Jutland and Tsushima ships) and `shipgen/designs/`.
+  `research/simulation/fire-control-research/computing.md` §3 has what's known so far. Not blocking.
+- Wanted output: a table by class (navy, class, year, rangefinders, computer, laying), with sources, and numbers for
+  machines the catalogue lacks.
+
 ### 2026-10-16 - Shell bursts in confined spaces aboard ship
 - Question: how much harder does a shell's burst hit inside a closed compartment than on an open deck, and how should a
   model scale it? The quasi-static pressure from a confined burst against the room's volume and its vents (doors,

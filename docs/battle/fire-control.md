@@ -1,5 +1,5 @@
 # Plan: fire control (a 4.5 deepening)
-Status: **agreed with the user 2026-10-17** ("Decided" below; radar moved out); F0-F2 done 2026-10-18    Updated: 2026-10-18
+Status: **agreed with the user 2026-10-17** ("Decided" below; radar moved out); F0-F3 done 2026-10-18    Updated: 2026-10-18
 
 The fine-tune pass for the **Fire control** link of `fighting.md` 4.5 ("the trackers by era ... the clocks' limits ...
 the full set of levels, radar as a sensor, night ... splash confusion ... the designer emitting levels and sensors,
@@ -408,6 +408,44 @@ weather** (1.6x, want 0.7-1.5).
   identical numbers), then a second commit gives each its navy's and year's real fit where the research has it.
 - `DesignerPlaceholders.FireControl` and `RangefinderMagnification` are deleted; `ShipDesign.Version` bumps; goldens
   moved deliberately, one per commit.
+- **Done 2026-10-18.** What it came to:
+  - **The catalogue** (`Shipgen/FireControlTemplates.cs`; `shipgen templates` writes `Content/Templates/fire-control.json`
+    and `docs/shipgen/fire-control-templates.md`): optics (by eye, the B&S FA (O1) and FQ/FT (O2), the FQ/FT on the Argo
+    mounting, the WWI Zeiss stereo, O3 and its ×23 and ×25 eyepieces, O4, and two radar stand-ins), computers (judgement,
+    the eye and hand plot, the hand plot, Dumaresq and Vickers clock, Dreyer Mk I-II and Mk III-V, the German clock and
+    plot and the German range clock, the Argo, the AFCT, its turn setting and the AFCC, the German Rechenstelle, the
+    Type 92, the Ford Mk 8 and its radar stand-in, the Mk 1A, the digital turn filter) and mounts (open, early
+    telescopic and telescopic sights, the director following the pointer, without RPC, with power drive, the stable
+    vertical with RPC and with a servo, the digital servo). The presets 0-12 are named fits of one of each, the same
+    numbers as before (a refactor: identical duels and hashes). The salvo's deflection wander moved onto the mount
+    block, where the research has it.
+  - **Design format 6:** `fire_control.BATTERY.fit` names the blocks, `fire_control_tech` holds the design's copies (a
+    name it doesn't carry takes the catalogue's); a battery with directors and no fit fires at `rangefinder`; shipgen
+    validates both. The format step carries the old placeholder's rule (tonnage, radar, the era's cap), so every older
+    design got the blocks of the preset its level was: identical fights (the world hash moved only with the shipgen
+    version and the designs' hashes). The level is a label now (`FireControlPresets.LevelOf`, by the computer), read
+    by the matchup until F10 and the displays.
+  - **Rangefinding reads the optics' make:** the unit of error takes the block's acuity, rigid base and flex exponent
+    (two settings went), and a director's eye sights and fixes through its battery's optics at their magnification,
+    by the same law (`FireControl.RangefinderUnitM`): the base placeholder went.
+  - **Real fits where the research names the machine** (`shipgen fit`, a commit of its own): the German WWI capital
+    ships Zeiss stereo with their clock and plot, the cruisers Zeiss with the range clock and no director; Bismarck and
+    Deutschland the 1930s Rechenstelle with O3 stereo at ×23 and power drive; Yamato and Nagato the Type 92 plot; KGV
+    the AFCT and the AFCC for her secondaries. Everything else keeps the preset its level was, so radar no longer
+    lifts anything, and a Dreyer on a 1916 French or American ship is a preset's label, not a claim. Which machine each
+    class carried elsewhere (the Dreyer marks by class, the Argo ships, the Ford Mk 1, the French, Italian and Austrian
+    tables, the Russians' Liuzhol) is a research request (`research/REQUESTS.md`).
+  - **Departures from the text above, for the steps that own them:** the computer's mass, crew and power are in its
+    block, but shipgen still weighs `computer_t`: the computer's weight goes with the transmitting station as a room
+    (F4), so no ship's displacement moved here. The salvo error is still one number (`salvo_pct`); splitting off the
+    propellant's share needs each charge's muzzle-velocity spread as data, left for F11. The stadimeter isn't an
+    instrument kind yet (the Russians keep the FA, as Oslyabya had): F5, with stereo's haze and contrast gains.
+  - **Against the record** (`fc-history --runs 24`): 10 of 23 in band before, 11 with the optics' make (the Grand
+    Fleet BS comes in; Tsushima's 12" 9.2 to 8.7% from the FA's 14″), 12 with the real fits (Denmark Strait comes in:
+    Bismarck 16.6 to 10.3% on the Rechenstelle instead of a Ford rangekeeper). The German fits hardly move: Zeiss 10″
+    at ×23 gives the FQ/FT's 12″ at ×28's unit of error, so the Germans over the British stays at 1.15 (want 1.5-5)
+    until F5 gives stereo its own. Squadrons played over 5 seeds: hits 45/83 before, 41/65 after, losses within the
+    spread.
 
 ### F4 Shipgen: instruments as parts, masts and tops at their heights
 
