@@ -1,5 +1,5 @@
 # Plan: fire control (a 4.5 deepening)
-Status: **agreed with the user 2026-10-17** ("Decided" below; radar moved out); F0-F5 and F6a-d done 2026-10-18    Updated: 2026-10-18
+Status: **agreed with the user 2026-10-17** ("Decided" below; radar moved out); F0-F6 done 2026-10-18 (F6e moved to F10)    Updated: 2026-10-18
 
 The fine-tune pass for the **Fire control** link of `fighting.md` 4.5 ("the trackers by era ... the clocks' limits ...
 the full set of levels, radar as a sensor, night ... splash confusion ... the designer emitting levels and sensors,
@@ -773,7 +773,8 @@ pattern floor and the rocking ladder; the IJN's ladder.
 **The cut** (2026-10-18): F6a the phases and the bracket (items 1-5, single salvos); F6b the side's discipline
 (the ranging ways, alternating halves, the presets by navy, the scenario's and the bench's); F6c the rate spot, the
 first step from the computer's own doubt, pyramiding as a green crew's error (items 3 and 8); F6d the rate of fire
-from the parts and independent fire (items 6 and 9); F6e ammunition as a choice (item 7).
+from the parts and independent fire (items 6 and 9); F6e ammunition as a choice (item 7), moved to F10 (the user,
+2026-10-18).
 
 - **F6a done 2026-10-18** (the phases and the bracket).
   - *The phases* (`FirePhase`, world state, hashed, in the snapshot; the strip says "ranging" or "fire for effect"):
@@ -908,11 +909,9 @@ from the parts and independent fire (items 6 and 9); F6e ammunition as a choice 
   - *Tests:* a turret fires its ready rounds at the reload, then at the hoists' interval. `FlotillaAttackTests` takes
     24 seeds (12): with the new rate seeds 1-12 had 2 of 4 attacks with two boats on the signal, seeds 1-48 22 of 27.
   - *Cost:* 26-27 µs a battery-second.
-- **F6e (ammunition as a choice): proposed to move to F10.** Its floor reads the battery's own estimate of its hits a
-  shell (decision 8), which is F10's `FireEstimate`; a stand-in here would be a second implementation of it, and the
-  matchup's guns measure is to become a call of the same function. The reserve of the magazine has no source yet. So
-  F6e lands with F10's estimate (awaiting the user's word); the fire orders it needs are there (`FireOrder.Engage` is an
-  order, at will is doctrine).
+- **F6e (ammunition as a choice): moved to F10** (the user, 2026-10-18: "it suits there"). Its floor reads the
+  battery's own estimate of its hits a shell (decision 8), which is F10's `FireEstimate`; a stand-in here would be a
+  second implementation of it. F6 is complete without it.
   - *A bug found on the way* (committed alone): a row of light AA mounts along each beam blinded the directors on
     their deck, so Bismarck's 150 mm never took a reading and never fired; light AA no longer blinds a post (45 classes'
     eyes move, the WWI scenarios' hashes don't).
@@ -957,7 +956,8 @@ a `radar` block without a migration. Night for optics alone (the target lit or n
 
 The captains and admirals today know whom they can shoot (`Matchup`, by a level's fixed MPI table) but not how well
 it's going, or how well it would go somewhere else. This step gives them the contract and a first model, and uses it
-only where this plan needs it (F6's floor); the tactics that read it are the AI's passes (`command.md`).
+only where this plan needs it (the ammunition floor below, F6's item 7, moved here from F6e); the tactics that read it
+are the AI's passes (`command.md`).
 
 - **One estimate, `FireEstimate`** (`Sim.Combat`, pure, allocation-free): from a battery's guns and rate, its fire
   control's error budget, the gun's dispersion, the range table's fall, and the target's hitting space (danger space
@@ -979,12 +979,21 @@ only where this plan needs it (F6's floor); the tactics that read it are the AI'
   taken for and its fit), and the evidence at own ship: splashes from the shell system within a pattern of her, enemy
   straddles seen, hits taken, by shooter where it's known. A captain gets "under effective fire from X" as a fact, so the
   evasion doctrine (today's zigzag, the chase later) and Fight's turn-away can read it instead of counting guns.
+- **Ammunition as a choice** (F6 item 7, from F6e; decision 8): the doctrine holds a battery's fire, unless it's
+  ordered, while its own estimate of its hits per shell is under a floor (a side's doctrine field, by the target's
+  worth later), and keeps a reserve of the magazine; firing on regardless is an order (`FireOrder.Engage` is one,
+  fire at will is doctrine; the secondaries at the edge of their reach, `fighting.md` 4.2c's "left as it is"). The
+  battery shows it holds (a state beside its phase), and takes the target up again when the estimate clears the floor
+  (closing range, a settled track). The reserve's share has no source yet (the research request on fire discipline).
+  Anchors: a battle line's magazines last the hours of a Jutland, not 1.5 hours of unbroken fire (F6d's rate);
+  `command.md` 5.1g's Tsushima, where both sides' battleships emptied their main magazines in 1.5-2 hours.
 - **What it enables, later and not here:** the range band a ship fights at from the hits each side gets there; target
   choice by expected effect per shell; when to open fire; turning away when out-hit; an admiral's fire distribution by
   value rather than counting from the van.
 - **Tests:** the estimator calibrated against itself: over `duel` runs across levels, ranges and target policies, the
   estimated hits per salvo against the hits that came, within a band, and the estimate's ordering always right; the
-  matchup's numbers before and after (reported); no allocation; its cost a battery-second.
+  matchup's numbers before and after (reported); no allocation; its cost a battery-second; a battery holds fire under
+  the floor at will and fires on an order; rounds left after a Jutland-length play against the record.
 
 ### F11 Calibration
 

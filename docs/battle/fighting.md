@@ -1072,7 +1072,8 @@ numbers before and after against the anchors. The list, by link, with where the 
   `"fire_discipline"`), alternating halves in fire for effect; F6c done 2026-10-18: the RN's rate spot, the first step
   from the computer's own doubt, pyramiding as the crew's error; F6d done 2026-10-18: the rate of fire from its parts
   (ready-use rounds then the hoists, the crew's battle factor, the layers' settle) and independent fire for
-  quick-firers; F6e (the hit-chance floor) proposed to land with F10's estimate.
+  quick-firers (F6 complete); F6e (the hit-chance floor and the magazine's reserve) moved to F10, beside the estimate
+  it reads.
 - **Ship motion** (`ship-motion/ship-motion-gunnery-research.md` §7.7, in its order):
   - a roll phase per ship from `RollPeriodS` and the sea, with firing on the roll and a once-a-roll rate;
   - laying error `√(base² + (τ·ω)²)`;
