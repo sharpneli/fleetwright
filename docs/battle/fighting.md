@@ -607,6 +607,12 @@ rework, with the fire-control computers by era, revisits these):
   - each battery picks from its navy's contacts in sight and within its reach (the range table at its highest elevation,
     with a margin to track before it): bearing first, then (secondaries) the smallest type, then the nearest;
   - it keeps its target until the contact is lost (unseen for `FireLostMs`) or another is nearer by `FireSwitchShare`;
+  - *nearer* (2026-10-18, after Tsushima's destroyer attack): the range she'll be at `FireLeadS` (120 s) on as the
+    picture has her going, so a boat closing comes before one turning away, and longer by `FireCrowdShare` (0.25) for
+    each other ship's battery of the kind already on her, so a line spreads its fire instead of every ship taking the
+    nearest; the counts follow the orders of the same pass, so ships don't all pick one in the same second. A smaller
+    type wins a secondary's fire only when it's made out: an unknown contact's rank is a guess (each Russian ship coming
+    out of the haze took the Japanese 6" off the one before, two minutes' opening lost each time);
   - with nothing to shoot at, it ceases fire, so the ship can go back on rails when the encounter closes;
   - the contacts in sight come from one `CubeIndex` per navy, built once a think, not ships × contacts.
 - **To a group:** its admiral hands the order to every ship of his tree (the group they came from is his). `Engage` is

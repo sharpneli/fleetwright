@@ -718,13 +718,14 @@ public sealed class GunnerySystem : IWorldSystem
                         store.Combat.Mount(slot, mounts[j]).Rounds > 0 && elevation <= mr.MaxElevationDeg;
             bears |= firing[j];
         }
-        fc.State = !laid ? BatteryState.OutOfRange : !bears ? BatteryState.NotBearing : now < fc.OpenMs ? BatteryState.Tracking : BatteryState.Firing;
-
         // fire discipline (F6): the bracket widens at the computer's doubt of the range rate along the line of fire; own
         // ship's turn (any for a machine that takes it as the target's, a hard one for the rest) or the target seen to
         // turn sends a battery firing for effect back to ranging, its bracket opened to the first step
         var along = Earth.Forward(aim, Earth.Bearing(ship.Position, aim));
         (fc.DriftMs, fc.PosSigmaM, fc.RangeM) = (fc.Tracker.RateSigma(computer, along), fc.Tracker.PositionSigma(along), Earth.Distance(ship.Position, aim));
+        if (fc.Phase == FirePhase.Opening && now < fc.OpenMs && (fc.PointBlank || Settled(fc)))
+            fc.OpenMs = now;   // the solution good enough to range from (or none needed): no more waiting
+        fc.State = !laid ? BatteryState.OutOfRange : !bears ? BatteryState.NotBearing : now < fc.OpenMs ? BatteryState.Tracking : BatteryState.Firing;
         double yaw = Math.Abs(double.RadiansToDegrees(ship.YawRate));
         bool plain = !computer.HelmFree && computer.Tracker is TrackerKind.RateClock or TrackerKind.Judgement;
         bool turning = yaw > (plain ? settings.OwnTurnYawDegS : settings.HardTurnYawDegS);
@@ -1367,6 +1368,18 @@ public sealed class GunnerySystem : IWorldSystem
         double rate = fc.DriftMs * fc.TofS, resid = c.ResidPct / 100 * fc.RangeM;
         double sigma = Math.Sqrt(fc.PosSigmaM * fc.PosSigmaM + rate * rate + resid * resid);
         return Math.Clamp(2 * sigma, settings.BracketFloorM, Math.Max(c.FirstStepM, settings.BracketFloorM));
+    }
+
+    /// <summary>Whether a battery's track has settled enough to open fire on (F6 item 1, "the tracker's own uncertainty
+    /// below a doctrine's bound"): twice its doubt of where she'll be when the shells fall (her position and its rate
+    /// over the time of flight along the line of fire) within <see cref="SimSettings.OpenDoubtSteps"/> of its first
+    /// step, so the ranging finds her as soon as more readings would. The residual ballistic bias isn't in it: waiting
+    /// takes none of it off, only the spots do.</summary>
+    bool Settled(in Fc fc)
+    {
+        double rate = fc.DriftMs * fc.TofS;
+        double step = Math.Max(fc.Fit.Computer.FirstStepM, settings.BracketFloorM);
+        return 2 * Math.Sqrt(fc.PosSigmaM * fc.PosSigmaM + rate * rate) <= settings.OpenDoubtSteps * step;
     }
 
     /// <summary>Whether a battery fires independently (F6d): its discipline's range for it, and its guns quick-firers.</summary>

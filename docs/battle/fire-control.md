@@ -874,6 +874,17 @@ from the parts and independent fire (items 6 and 9); F6e ammunition as a choice 
     Squadrons over 20 seeds: Britain's hits 29 to 42, Germany's 63 to 78, losses as before. Tsushima over 5 seeds:
     Russia's hits 343 to 279, Japan's 427 to 505, losses 4.2 Russian and 3.0 to 2.6 Japanese ships.
   - *Tests:* a rate spot of 1 m/s moves every kind of computer's prediction a minute on by 60 m along the line of fire.
+- **The opening by the track's doubt** (2026-10-18, item 1's "later", after Tsushima's destroyer attack: every shift of
+  target cost 135-160 s before the first salvo, a destroyer at 3 km as much as a battleship at 13). A battery opens
+  once twice its computer's doubt of where the shells must go (the position along the line of fire and its rate over
+  the time of flight; not the residual bias, which waiting doesn't take off) is within `OpenDoubtSteps` (2 [EST]) of
+  its first step, at once point blank, and at `GunneryOpenS` (120 s) at the latest. Tsushima's main batteries now
+  fire 15-80 s after a shift at 2-10 km; by-eye secondaries still wait to the cap beyond ~5 km. fc-history: 8 of 23
+  in band before and after; the first hit from the engagement's start (the "from" column, new; before it was about
+  135 s of opening plus "after") mostly comes sooner: Grand Fleet 104 s against ~230, Tennessee-like 170 against ~280
+  (the record 222), 3rd BCS 73 against ~160; at 16-18 km sometimes later, opening on a rawer track: 5th BS 318 against
+  ~260, the German BCs at Dogger Bank 579 against ~500. Lion's lay after a hit moved 52 m against 50 (bound now 60,
+  `bugs.md`).
 - **F6d done 2026-10-18** (the rate of fire from its parts, independent fire).
   - *The supply:* a mount fires from its ready-use rounds (shipgen's `ReadyRounds`: a 4" 26 a gun, a 6" 15, a 12" 6, a
     15" 4) at the reload, and once they're gone as the hoists bring them, a round a gun every `MountRow.SupplyS`, the

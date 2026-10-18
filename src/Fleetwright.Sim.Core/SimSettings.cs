@@ -475,9 +475,14 @@ public sealed record SimSettings
     /// smoke and sea; crew fatigue), which will take this knob's place.</summary>
     public double GunneryCombat { get; init; } = 1;
 
-    /// <summary>How long after a battery's track starts (its first reading in the computer) it opens fire, s
-    /// (fire_control_ref.py Scenario.t_open).</summary>
+    /// <summary>How long after a battery's track starts (its first reading in the computer) it opens fire at the latest,
+    /// s (fire_control_ref.py Scenario.t_open). It opens sooner once its computer's doubt of where the shells must go is
+    /// within <see cref="OpenDoubtSteps"/> of its first step (twice the sigma) [EST: about two ranging salvos' worth, so
+    /// waiting for more readings would buy no more than ranging does], and at once point blank (the layers' own sight).
+    /// A fixed two minutes made every shift of target, a destroyer at 3 km as much as a battleship at 15, cost two
+    /// minutes of silence (Tsushima, 2026-10-18).</summary>
     public double GunneryOpenS { get; init; } = 120;
+    public double OpenDoubtSteps { get; init; } = 2;
 
     /// <summary>A mount bears when trained and elevated within this of its order, degrees.</summary>
     public double LayToleranceDeg { get; init; } = 1;
@@ -602,11 +607,18 @@ public sealed record SimSettings
     /// <summary>Fire at will: a battery takes contacts in sight within its reach (the range table at its highest
     /// elevation) times <see cref="FireReachShare"/>, so it tracks one a little before it can fire, and keeps one to
     /// <see cref="FireKeepShare"/> of it (no flicking at the edge); it keeps its target until the contact is unseen for
-    /// <see cref="FireLostMs"/>, or another is nearer than <see cref="FireSwitchShare"/> of its range.</summary>
+    /// <see cref="FireLostMs"/>, or another is nearer than <see cref="FireSwitchShare"/> of its range. Nearer is the range
+    /// she'll be at <see cref="FireLeadS"/> on, as the picture has her moving [EST: a destroyer's run of 1.5-2 km], so
+    /// one closing comes before one turning away (Tsushima, 2026-10-18: the line kept hammering a destroyer already
+    /// running while the others closed); and each other ship's battery of the same kind already on her counts as
+    /// <see cref="FireCrowdShare"/> more of it [EST], so a line spreads its fire rather than all taking the nearest (a
+    /// second ship's splashes confuse the first's spotting, fire-control-research.md §9).</summary>
     public double FireReachShare { get; init; } = 1.1;
     public double FireKeepShare { get; init; } = 1.25;
     public long FireLostMs { get; init; } = 30_000;
     public double FireSwitchShare { get; init; } = 0.7;
+    public double FireLeadS { get; init; } = 120;
+    public double FireCrowdShare { get; init; } = 0.25;
 
     /// <summary>An admiral distributing fire: the enemy's line is the contacts in sight chained to the target, each
     /// within this of the next, m.</summary>

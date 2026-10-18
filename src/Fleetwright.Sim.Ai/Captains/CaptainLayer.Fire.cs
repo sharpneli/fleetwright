@@ -11,11 +11,14 @@ namespace Fleetwright.Sim.Ai.Captains;
 /// <list type="bullet">
 /// <item><b>Fire at will:</b> each second, for every ship on the fine tick that's in an encounter or has a battery
 /// engaged, each battery picks from its navy's contacts in sight within its reach (<see cref="SimSettings.FireReachShare"/>
-/// of the range table's): one that bears first, then (secondaries) the smallest type, then the nearest. It keeps its
+/// of the range table's): one that bears first, then (secondaries) the smallest type, then the nearest, by the range
+/// she'll be at <see cref="SimSettings.FireLeadS"/> on and longer by <see cref="SimSettings.FireCrowdShare"/> for each
+/// other ship's battery of the kind already on her (one closing before one running; the fire spread). It keeps its
 /// target until it's unseen for <see cref="SimSettings.FireLostMs"/> or past <see cref="SimSettings.FireKeepShare"/> of its
-/// reach, or another bears where it doesn't,
-/// is smaller (secondaries), or is nearer than <see cref="SimSettings.FireSwitchShare"/> of its range: no flicking
-/// between targets. With nothing to shoot at it ceases fire, so the ship can go back on rails.</item>
+/// reach, or another bears where it doesn't, is smaller (secondaries: by a type made out, never a contact still unknown,
+/// or each ship coming out of the haze would take the fire off the one held), or is nearer so than
+/// <see cref="SimSettings.FireSwitchShare"/> of it: no flicking between targets, as each shift starts the track again.
+/// With nothing to shoot at it ceases fire, so the ship can go back on rails.</item>
 /// <item><b>Engage:</b> the main batteries on the contact while the navy holds it (then at will again); the secondaries
 /// pick their own. <b>Hold fire:</b> every battery ceases.</item>
 /// <item><b>Who gave it:</b> the player's order to the ship, or an admiral's to his tree (its group kept with it). An
@@ -86,6 +89,7 @@ public sealed partial class CaptainLayer
                 fighters.Add(slot);
         }
         (fighting, fightingFine) = (0, false);
+        CountOn(store);
         foreach (int slot in fighters)
         {
             var own = store[slot];
@@ -126,14 +130,19 @@ public sealed partial class CaptainLayer
         Recount();
     }
 
-    // a ship's candidates, found once for all its batteries: each contact in sight within its widest reach, its entity,
-    // range (m), bearing from ahead and the rank of its type for a secondary battery
-    int[] candEntity = new int[32], candRank = new int[32];
-    double[] candRange = new double[32], candBearing = new double[32];
+    // a ship's candidates, found once for all its batteries: each contact in sight within its widest reach, its entity
+    // and slot, range (m), the range it'll be at FireLeadS on (m), bearing from ahead and the rank of its type for a
+    // secondary battery
+    int[] candEntity = new int[32], candRank = new int[32], candSlot = new int[32];
+    double[] candRange = new double[32], candLead = new double[32], candBearing = new double[32];
     Vec3d[] candPos = new Vec3d[32];
     sbyte[] candFoul = new sbyte[32];   // its line of fire: -1 not asked yet, 0 clear, 1 foul
     int candCount;
     readonly Dictionary<Loadout, double[]> reaches = new(ReferenceEqualityComparer.Instance);
+    // by target slot, the batteries on her (main, and the rest), kept as this pass's orders go out; and the ship's own
+    // batteries' targets as its captain's orders leave them
+    int[] onMain = [], onOther = [];
+    int[] ownTargets = new int[8];
 
     /// <summary>His ship's batteries on what his fire order wants.</summary>
     void Aim(in AiContext ctx, ref Captain cap, ShipState own, int slot)
@@ -144,19 +153,67 @@ public sealed partial class CaptainLayer
             (cap.Fire, cap.FireTarget) = (FireOrder.AtWill, 0);   // gone from the picture: at will again
         var reach = Reaches(ctx, ctx.Ships.Combat.Loadout(slot));
         candCount = -1;   // found when a battery first needs them
+        if (ownTargets.Length < cls.Batteries.Length)
+            ownTargets = new int[Math.Max(cls.Batteries.Length, ownTargets.Length * 2)];
+        for (int b = 0; b < cls.Batteries.Length; b++)
+            ownTargets[b] = ctx.Ships.Combat.Target(slot, b);
         for (int b = 0; b < cls.Batteries.Length; b++)
         {
-            int current = ctx.Ships.Combat.Target(slot, b);
+            int current = ownTargets[b];
             int want = cap.Fire switch
             {
                 FireOrder.Hold => 0,
                 FireOrder.Engage when cls.Batteries[b].Kind == Battery.Main => cap.FireTarget,
                 _ => Pick(ctx, pic, own, cls, b, reach[b], reach[^1], current),
             };
-            if (want != current)
-                ctx.Issue(want == 0 ? GunnerySystem.Cease(own.Entity, b) : GunnerySystem.Engage(own.Entity, b, want));
+            if (want == current)
+                continue;
+            ctx.Issue(want == 0 ? GunnerySystem.Cease(own.Entity, b) : GunnerySystem.Engage(own.Entity, b, want));
+            // the next ships' picks see it at once, so a line doesn't all take the same one in the same second
+            var on = cls.Batteries[b].Kind == Battery.Main ? onMain : onOther;
+            if (ctx.Ships.SlotOf(current) is int cs and >= 0 && cs < on.Length)
+                on[cs] = Math.Max(on[cs] - 1, 0);
+            if (ctx.Ships.SlotOf(want) is int ws and >= 0 && ws < on.Length)
+                on[ws]++;
+            ownTargets[b] = want;
         }
         Torpedoes(ctx, ref cap, own, slot, pic);
+    }
+
+    /// <summary>The batteries on each ship (by her slot), main and the rest, from the targets the last pass set.</summary>
+    void CountOn(ShipStore store)
+    {
+        if (onMain.Length < store.Slots)
+            (onMain, onOther) = (new int[Math.Max(store.Slots, onMain.Length * 2)], new int[Math.Max(store.Slots, onMain.Length * 2)]);
+        else
+        {
+            Array.Clear(onMain);
+            Array.Clear(onOther);
+        }
+        for (int k = 0; k < store.OffRailsCount; k++)
+        {
+            int slot = store.OffRailsSlot(k);
+            if (store.Combat.Engaged(slot) == 0)
+                continue;
+            var cls = store[slot].Handling.Class;
+            for (int b = 0; b < cls.Batteries.Length; b++)
+                if (store.Combat.Target(slot, b) is int t and > 0 && store.SlotOf(t) is int ts and >= 0)
+                    (cls.Batteries[b].Kind == Battery.Main ? onMain : onOther)[ts]++;
+        }
+    }
+
+    /// <summary>How many other ships' batteries of a battery's kind are on a target (her slot).</summary>
+    int Crowd(ShipClass cls, int b, int target, int targetSlot)
+    {
+        bool main = cls.Batteries[b].Kind == Battery.Main;
+        var on = main ? onMain : onOther;
+        if (targetSlot < 0 || targetSlot >= on.Length)
+            return 0;
+        int n = on[targetSlot];
+        for (int k = 0; k < cls.Batteries.Length; k++)
+            if (ownTargets[k] == target && (cls.Batteries[k].Kind == Battery.Main) == main)
+                n--;   // his own aren't another ship's splashes
+        return Math.Max(n, 0);
     }
 
     /// <summary>His torpedoes at will: at the engaged ship if it's within the fast setting's reach, else the biggest
@@ -331,7 +388,8 @@ public sealed partial class CaptainLayer
     }
 
     /// <summary>A battery's target at will: the current one while it's held and in reach, unless another is better by
-    /// bearing, by size (secondaries) or by much in range; else the best in sight; 0 for none.</summary>
+    /// bearing, by size (secondaries, a type made out) or by much in range to come and in the fire on her; else the best
+    /// in sight; 0 for none.</summary>
     int Pick(in AiContext ctx, Picture? pic, ShipState own, ShipClass cls, int b, double reach, double widest, int current)
     {
         if (pic == null)
@@ -347,30 +405,31 @@ public sealed partial class CaptainLayer
         bool keep = ci >= 0 && now - pic[ci].SeenMs <= s.FireLostMs;
         if (keep && lines.GunsFoul(ctx, own, pic.EstimateAt(ci, now, s).Position))
             keep = false;   // a friend in the way: not while he's there
-        double curRange = 0;
+        double curRange = 0, curBy = 0;
         bool curBears = false;
         int curRank = 0;
         if (keep)
         {
-            var q = pic.EstimateAt(ci, now, s).Position;
+            var (q, v, _) = pic.EstimateAt(ci, now, s);
             curRange = (q - p).Length;
             keep = curRange <= reach * s.FireKeepShare / s.FireReachShare;   // held a little further than taken: no flicking at the edge
             curBears = Bears(cls, b, Earth.Bearing(p, q) - own.HeadingDeg);
             curRank = secondary ? Rank(pic[ci].Type) : 0;
+            curBy = Lead(own, q, v, s) * (1 + s.FireCrowdShare * Crowd(cls, b, current, ctx.Ships.SlotOf(current)));
         }
 
         int best = 0, bestRank = int.MaxValue;
         bool bestBears = false;
-        double bestRange = double.MaxValue;
+        double bestBy = double.MaxValue;
         for (int k = 0; k < candCount; k++)
         {
-            double range = candRange[k];
-            if (range > reach || Foul(ctx, own, k))
+            if (candRange[k] > reach || Foul(ctx, own, k))
                 continue;
             bool bears = Bears(cls, b, candBearing[k]);
             int rank = secondary ? candRank[k] : 0;
-            if (bears != bestBears ? bears : rank != bestRank ? rank < bestRank : range < bestRange)
-                (best, bestBears, bestRank, bestRange) = (candEntity[k], bears, rank, range);
+            double by = candLead[k] * (1 + s.FireCrowdShare * Crowd(cls, b, candEntity[k], candSlot[k]));
+            if (bears != bestBears ? bears : rank != bestRank ? rank < bestRank : by < bestBy)
+                (best, bestBears, bestRank, bestBy) = (candEntity[k], bears, rank, by);
         }
         if (!keep)
             return best;
@@ -378,12 +437,26 @@ public sealed partial class CaptainLayer
             return current;
         if (bestBears != curBears)
             return bestBears ? best : current;
-        if (bestRank != curRank)
+        // by size only for a type made out: an unknown's smaller rank is a guess
+        if (bestRank != curRank && !(bestRank < curRank && bestRank == Rank(ShipType.Unknown)))
             return bestRank < curRank ? best : current;
-        return bestRange < s.FireSwitchShare * curRange ? best : current;
+        return bestBy < s.FireSwitchShare * curBy ? best : current;
     }
 
-    /// <summary>The contacts his navy holds in sight within his widest reach: range, bearing from ahead, type's rank.</summary>
+    /// <summary>The range a contact (where and how his navy has her going) will be at <see cref="SimSettings.FireLeadS"/>
+    /// on at the rate it's opening or closing now, m: never under a tenth of the range now.</summary>
+    static double Lead(ShipState own, Vec3d q, Vec3d v, SimSettings s)
+    {
+        var d = q - own.Position;
+        double range = d.Length;
+        if (range < 1)
+            return range;
+        double rate = Vec3d.Dot(v - own.Forward * own.Speed, d) / range;
+        return Math.Max(range + rate * s.FireLeadS, 0.1 * range);
+    }
+
+    /// <summary>The contacts his navy holds in sight within his widest reach: range now and to come, bearing from ahead,
+    /// type's rank.</summary>
     void Candidates(in AiContext ctx, Picture pic, ShipState own, double widest)
     {
         var p = own.Position;
@@ -392,14 +465,16 @@ public sealed partial class CaptainLayer
         if (candEntity.Length < near.Length)
         {
             int n = Math.Max(near.Length, candEntity.Length * 2);
-            (candEntity, candRank, candRange, candBearing) = (new int[n], new int[n], new double[n], new double[n]);
+            (candEntity, candRank, candSlot, candRange, candLead, candBearing) = (new int[n], new int[n], new int[n], new double[n], new double[n], new double[n]);
             (candPos, candFoul) = (new Vec3d[n], new sbyte[n]);
         }
         candCount = 0;
         foreach (int i in near)
         {
             var q = seen.Position(own.Side, i);
-            (candEntity[candCount], candRange[candCount]) = (pic[i].Entity, (q - p).Length);
+            int e = pic[i].Entity;
+            (candEntity[candCount], candSlot[candCount], candRange[candCount]) = (e, ctx.Ships.SlotOf(e), (q - p).Length);
+            candLead[candCount] = Lead(own, q, seen.Velocity(own.Side, i), ctx.Settings);
             (candBearing[candCount], candRank[candCount]) = (Earth.Bearing(p, q) - heading, Rank(pic[i].Type));
             (candPos[candCount], candFoul[candCount]) = (q, -1);
             candCount++;

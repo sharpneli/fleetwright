@@ -183,7 +183,7 @@ static class FcHistory
             {
                 era = h.Era;
                 Console.WriteLine($"\n{(era == "later" ? "Later cuts (secondary checks)" : "The first game's era, " + era)}");
-                Console.WriteLine($"  {"case",-42}{"fit",4}{"km",6}{"model",8}{"band",11}{"verdict",10}{"strad",7}{"1st hit",9}{"after",7}  record");
+                Console.WriteLine($"  {"case",-42}{"fit",4}{"km",6}{"model",8}{"band",11}{"verdict",10}{"strad",7}{"1st hit",9}{"after",7}{"from",7}  record");
             }
             string verdict = double.IsNaN(h.Lo) ? "" : st.HitPct < h.Lo ? "LOW" : st.HitPct > h.Hi ? "HIGH" : "in";
             if (!double.IsNaN(h.Lo))
@@ -195,9 +195,9 @@ static class FcHistory
                 verdict += (verdict.Length > 0 ? "," : "") + (st.FirstHitSalvo < h.FirstSalvoLo ? "early" : st.FirstHitSalvo > h.FirstSalvoHi ? "late" :
                     double.IsNaN(st.FirstHitSalvo) ? "none" : "1st ok");
             string band = double.IsNaN(h.Lo) ? "" : string.Format(Inv, "{0:0.#}-{1:0.#}%", h.Lo, h.Hi);
-            Console.WriteLine(string.Format(Inv, "  {0,-42}{1,4}{2,6:0.0}{3,7:0.0}%{4,11}{5,10}{6,6:0}%{7,9}{8,7}  {9}", c.Name, c.Level, c.RangeM / 1000,
+            Console.WriteLine(string.Format(Inv, "  {0,-42}{1,4}{2,6:0.0}{3,7:0.0}%{4,11}{5,10}{6,6:0}%{7,9}{8,7}{9,7}  {10}", c.Name, c.Level, c.RangeM / 1000,
                 st.HitPct, band, verdict, st.StraddlePct, st.FirstHitSalvo is var s && double.IsNaN(s) ? "-" : $"salvo {s:0}",
-                double.IsNaN(st.FirstHitAfterOpenS) ? "-" : $"{st.FirstHitAfterOpenS:0} s", h.Record));
+                double.IsNaN(st.FirstHitAfterOpenS) ? "-" : $"{st.FirstHitAfterOpenS:0} s", double.IsNaN(st.FirstHitS) ? "-" : $"{st.FirstHitS:0} s", h.Record));
             if (h.Missing.Length > 0)
                 Console.WriteLine($"  {"",42}  not modelled: {h.Missing}; {st.Shells / Math.Max(st.Runs, 1)} shells a run, fire discipline {c.Discipline ?? settings.FireDisciplines[0].Name}");
         }

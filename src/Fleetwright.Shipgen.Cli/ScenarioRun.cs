@@ -16,7 +16,7 @@ namespace Fleetwright.Shipgen.Cli;
 static class ScenarioRun
 {
     public static int Run(string path, string settingsPath, string landPath, string designsPath, double minutes, int threads,
-        int every, double atSpeed, bool land, bool replay, int[]? watch = null, double worldSpeed = 0)
+        int every, double atSpeed, bool land, bool replay, int[]? watch = null, double worldSpeed = 0, bool fireTrace = false)
     {
         var settings = SimSettings.Load(settingsPath);
         var total = Stopwatch.StartNew();
@@ -71,12 +71,20 @@ static class ScenarioRun
         int g0 = GC.CollectionCount(0), g1 = GC.CollectionCount(1), g2 = GC.CollectionCount(2);
         double run = 0, worst = 0;
         var fight = new FightTally(w.CombatLog);
+        var trace = fireTrace ? new FireTrace(start.ShipNames) : null;
         var stretch = Stopwatch.StartNew();
         long stretchMs = 0;
         for (int m = 1; m <= minutes; m++)
         {
             sw.Restart();
-            w.AdvanceTo(w.Time + 60_000);
+            if (trace != null)
+                for (int k = 1; k <= 12; k++)
+                {
+                    w.AdvanceTo(w.Time + 5_000);
+                    trace.Read(w);
+                }
+            else
+                w.AdvanceTo(w.Time + 60_000);
             double t = sw.Elapsed.TotalSeconds;
             run += t;
             worst = Math.Max(worst, t);
@@ -153,6 +161,58 @@ static class ScenarioRun
                 return 1;
         }
         return failed > 0 ? 1 : 0;
+    }
+}
+
+/// <summary>--fire-trace: each battery's target, state and fire-discipline phase as they change (read every 5 game
+/// seconds), with the range and the time since its engagement began, and its first salvo, first straddle and fire for
+/// effect: how long a new target takes to come under fire.</summary>
+sealed class FireTrace(IReadOnlyDictionary<int, string> names)
+{
+    readonly Dictionary<(int Shooter, int Battery), (int Target, BatteryState State, FirePhase Phase, int Salvos, long Since, bool Straddled)> was = [];
+
+    public void Read(World w)
+    {
+        var store = w.Ships.Store;
+        string Name(int e) => names.TryGetValue(e, out var n) ? n : $"#{e}";
+        string Clock(long ms) => new WorldTime(ms).ToString()[11..19];
+        long now = w.Time.Ms;
+        for (int slot = 0; slot < store.Slots; slot++)
+        {
+            if (!store.IsAlive(slot))
+                continue;
+            var own = store[slot];
+            var cls = own.Handling.Class;
+            for (int b = 0; b < cls.Batteries.Length; b++)
+            {
+                var key = (own.Entity, b);
+                int target = store.Combat.Target(slot, b);
+                var t = target != 0 ? w.Gunnery.TallyOf(own.Entity, b) : null;
+                bool had = was.TryGetValue(key, out var p);
+                if (target == 0)
+                {
+                    if (had && p.Target != 0)
+                        Console.WriteLine($"    {Clock(now)} {Name(own.Entity),-16} {cls.Batteries[b].Label,-10} ceases on {Name(p.Target)}");
+                    was.Remove(key);
+                    continue;
+                }
+                var st = t?.State ?? BatteryState.NoContact;
+                var ph = t?.Phase ?? FirePhase.Opening;
+                int salvos = t?.Salvos ?? 0;
+                bool straddled = (t?.Straddles ?? 0) > 0;
+                long since = had && p.Target == target ? p.Since : now;
+                if (had && p.Target == target && p.State == st && p.Phase == ph && (p.Salvos > 0) == (salvos > 0) && p.Straddled == straddled)
+                    continue;
+                int ts = store.SlotOf(target);
+                double r = ts >= 0 ? Earth.Distance(own.Position, store[ts].Position) : double.NaN;
+                string what = !had || p.Target != target ? (had && p.Target != 0 ? $"SWITCHES from {Name(p.Target)} to" : "engages") : "on";
+                string tag = had && p.Target == target && (p.Salvos > 0) != (salvos > 0) ? " first salvo" : "";
+                tag += had && p.Target == target && straddled && !p.Straddled ? " first straddle" : "";
+                Console.WriteLine($"    {Clock(now)} {Name(own.Entity),-16} {cls.Batteries[b].Label,-10} {what} {Name(target)} at {r / 1000:F1} km: " +
+                                  $"{st} {ph}, {salvos} salvos{tag} (+{(now - since) / 1000} s)");
+                was[key] = (target, st, ph, salvos, since, straddled);
+            }
+        }
     }
 }
 

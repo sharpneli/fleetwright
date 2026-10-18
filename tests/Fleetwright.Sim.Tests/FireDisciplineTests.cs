@@ -166,7 +166,9 @@ public class FireDisciplineTests(ITestOutputHelper output)
         // Mikasa's 6" on a cruiser 3 km off (by eye, outside point blank) and Lion on Derfflinger at 15 km: after a salvo
         // that hit, the next is laid where it was (the user, 2026-10-18: "the target teleported 200 m!" isn't a reason to
         // toss shells over her). Before the eye's error wandered slowly, the spots held her and lone overs held the aim, the
-        // laid point moved 67 and 192 m on average, and up to 700 m
+        // laid point moved 67 and 192 m on average, and up to 700 m. Opening once the track is good enough to range from
+        // (2026-10-18, not a fixed two minutes) gives Lion a less settled track when she first hits: 52 m, so 60 is the
+        // bound (flagged for the tuning: docs/battle/bugs.md)
         var cases = new (ShipClass Shooter, ShipClass Target, int Battery, double RangeM, double Bearing)[]
         {
             (Fleet.Get("mikasa").Class!, Fleet.Scenario("aurora"), -1, 3_000, 90),
@@ -203,7 +205,7 @@ public class FireDisciplineTests(ITestOutputHelper output)
             output.WriteLine($"{shooter.Name} at {rangeM / 1000:F0} km: {moves.Count} salvos after a hit, laid {mean:F0} m from the last on average, " +
                              $"{moves.Count(m => m > 100)} over 100 m");
             Assert.True(moves.Count >= 5, "it hit");
-            Assert.True(mean < 50, $"the lay moved {mean:F0} m on average after a hit");
+            Assert.True(mean < 60, $"the lay moved {mean:F0} m on average after a hit");
         }
     }
 

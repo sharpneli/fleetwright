@@ -44,7 +44,17 @@ add what's found.
   together in half the runs: 4 of 8 seeds both before and after the destroyer crunch's lighter boats (2026-10-15),
   boats falling out for steering and speed and the line dropping under the break-off share. `FlotillaAttackTests`
   takes the first of seeds 1-12 that gets in. 2026-10-16 (the signal fixed): 17 of seeds 1-30 get in, and 15 of those
-  fire two boats or more on the signal. Decide whether half is the balance wanted.
+  fire two boats or more on the signal. Decide whether half is the balance wanted. 2026-10-18 (target choice and
+  the opening, fire-control.md F6): the line now opens on a boat within a minute instead of two, spreads its fire over
+  the boats and takes the closing ones first, and the secondaries no longer flick to each unknown contact: none of
+  seeds 1-24 gets in (all beaten off in Gain or Run). Accepted for now (user); `FlotillaAttackTests`'s attack test is
+  skipped until the tuning (the boats' break-off share, their run-in, or the line's fire against them).
+- [ ] Opening fire once the track is good enough to range from (2026-10-18, `OpenDoubtSteps` 2) moves Lion's lay after
+  a hit at 15 km from under 50 m to 52 m on average (`FireDisciplineTests`, bound now 60): she opens on a less settled
+  track. Tune `OpenDoubtSteps` (1 waits for about twice the readings) against fc-history's time to first hit.
+- [ ] A battery ranges on an evading cruiser for 20 minutes without a straddle (Tsushima 2026-10-18: Shikishima on
+  Aurora, 23 salvos from 11 to 4 km) and never shifts to a target it could hit: the spotter's calls (F7) and target
+  choice by estimated effect (F10).
 - [ ] `Matchup.OutExponent` scales a hit's effect by 1/displacement, so it overstates what a hit does to a light ship
   against the fine model: a 6" HE hit on the V25 puts her out 10.2 % by the matchup, 6.0 % by `shipgen hits` (it was
   about 8 % against 7.2 % on the old, twice-too-heavy V25). The AI judges destroyers more fragile than they are;

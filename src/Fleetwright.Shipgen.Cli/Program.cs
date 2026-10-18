@@ -196,7 +196,8 @@ public static class Program
             a scenario headless at full tilt (default Content/Scenarios/jutland.json): its classes' build time (no
             art), the land and the placing, then game minutes on the sim's work alone: ships on the fine tick and on
             rails, the speed it runs at, the share of the sim thread --at x takes, allocations and collections;
-            --replay runs the command log again and compares the hashes
+            --replay runs the command log again and compares the hashes; --fire-trace logs each battery's target,
+            state and phase as they change (the time a new target takes to come under fire)
         shipgen scenario [SCENARIO.json] --play [--seeds N] [--fast 1000] [--fine 1] [--threads N] [--no-land]
             the scenario played to its end with the AI on every side (docs/battle/command.md 5.0): one seed's
             timeline and result, or a line a seed and the spread; the asked speed is --fine while an encounter is
@@ -248,7 +249,7 @@ public static class Program
                     double.Parse(a.Get("minutes", "60")!, System.Globalization.CultureInfo.InvariantCulture), a.Int("threads", 0), a.Int("every", 5),
                     double.Parse(a.Get("at", "10")!, System.Globalization.CultureInfo.InvariantCulture), !a.Has("no-land"), a.Has("replay"),
                     a.Get("watch")?.Split(',').Select(int.Parse).ToArray(),
-                    double.Parse(a.Get("speed", "0")!, System.Globalization.CultureInfo.InvariantCulture)),
+                    double.Parse(a.Get("speed", "0")!, System.Globalization.CultureInfo.InvariantCulture), a.Has("fire-trace")),
                 "duel" => DuelCmd(a),
                 "fc-converge" => FcLevels.Converge(Settings(a), a.Int("runs", 30), a.Has("ref") ? Root(a) : null, n => Class(a, n)),
                 "fc-levels" => FcLevels.Run(Settings(a), a.Int("runs", 20), a.Has("ref") ? Root(a) : null, n => Class(a, n)),
@@ -332,7 +333,7 @@ public static class Program
                 int eq = s.IndexOf('=');
                 if (eq > 0)
                     flags[s[2..eq]] = s[(eq + 1)..];
-                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay" or "--research" or "--trace" or "--damage" or "--cells" or "--play" or "--dry" or "--outfits" or "--summary" or "--rooms" or "--write" or "--materials")   // the switches
+                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay" or "--research" or "--trace" or "--damage" or "--cells" or "--play" or "--dry" or "--outfits" or "--summary" or "--rooms" or "--write" or "--materials" or "--fire-trace")   // the switches
                     flags[s[2..]] = null;
                 else if (i + 1 < list.Count)
                     flags[s[2..]] = list[++i];
