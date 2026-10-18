@@ -1038,6 +1038,16 @@ from the parts and independent fire (items 6 and 9); F6e ammunition as a choice 
     super_dreadnought at 18 km on fit 4 2.3 to 3.8% (its fresh error kept moving the solution). The user, 2026-10-18:
     hit rates over the record are fine here, the sim being the ideal case (fresh crews, no sea, brilliant visibility);
     mist, rain and sea will bring them down.
+  - *Coincidence and stereo differ* (the user, 2026-10-18: "having stereo sets work a bit differently from the
+    coincidence ones is an interesting gameplay mechanic and thus makes the choice actually matter"; good enough for
+    the first release, a research-backed refinement later). A coincidence set's halves are brought into line afresh each
+    reading (a vernier setting the eye scatters on, the image shaking as it's caught), so half its man's error (of the
+    sigma, `RangefinderFreshCoincidence` 0.5 [EST]) is fresh again and the wander √0.75 of it; a stereo set's fused
+    picture holds his error (`RangefinderFreshStereo` 0: all wander, unchanged). One reading's error is the same for
+    both; the coincidence set's readings scatter, the stereo set's drift. fc-history 11 of 23 (the stereo cases
+    unchanged to the shell): the British BCs at Jutland 2.2 to 2.5%, the Grand Fleet 6.6 to 5.8%, Falklands 3.1 to
+    1.9%; the Germans over the British 1.64 to 1.46 (just under the band's 1.5). Lion at 15 km 4.5% as before, the
+    track's aim error 215 to 184 m at 2-4 min and the first hit back to 222 s (salvo 3).
   - *A bug found on the way* (committed alone): a row of light AA mounts along each beam blinded the directors on
     their deck, so Bismarck's 150 mm never took a reading and never fired; light AA no longer blinds a post (45 classes'
     eyes move, the WWI scenarios' hashes don't).

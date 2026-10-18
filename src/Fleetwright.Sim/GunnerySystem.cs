@@ -659,7 +659,10 @@ public sealed class GunnerySystem : IWorldSystem
             double tau = Ranges(optics, s) ? settings.RangefinderWanderTauS : settings.EyeWanderTauS;
             double rho = Math.Exp(-Math.Max(now - s.WanderMs, 0) / (1000 * tau));
             (s.Wander, s.WanderMs) = (rho * s.Wander + Math.Sqrt(1 - rho * rho) * r.NextGaussian(), now);
-            double zr = Math.Max(range + bias + sr * s.Wander, 100), zb = brg + double.RadiansToDegrees(sb * r.NextGaussian());
+            // but a coincidence set's halves are brought into line afresh each reading: a share of his error is fresh
+            double fresh = !Ranges(optics, s) ? 0 : optics.Kind == InstrumentKind.Coincidence ? settings.RangefinderFreshCoincidence : settings.RangefinderFreshStereo;
+            double err = fresh > 0 ? Math.Sqrt(1 - fresh * fresh) * s.Wander + fresh * r.NextGaussian() : s.Wander;
+            double zr = Math.Max(range + bias + sr * err, 100), zb = brg + double.RadiansToDegrees(sb * r.NextGaussian());
             var (z, r11, r12, r22) = Track.Reading(at, zr, zb, sr, sb);
             if (fc.PendCount == PendingCap)
                 PopReading(ref fc, f, target, now, ship.Position, ownV);   // the computer's queue is full: the oldest goes in now
