@@ -90,10 +90,10 @@ static class TemplatesWriter
             `fire-control-research/computing.md` §3; [EST] marks numbers no source gives.
 
             Read by the sim so far: the optics' magnification and readings a minute; every computer number above the mass;
-            the mounts' director firing, laying error and deflection wander. The rest (acuity, rigid base and flex, the top
-            magnification, coatings, the gyro mounting, the masses, crews and power, the stable vertical) is carried for the
-            steps that read it (F4: the instruments' and the transmitting station's weights; F5: the sensors proper; ship
-            motion).
+            the mounts' director firing, laying error and deflection wander. Shipgen reads the computer's mass and crew: its
+            transmitting station's weight and men (F4c). The rest (acuity, rigid base and flex, the top magnification,
+            coatings, the gyro mounting, the optics' and mounts' masses and crews, power, the stable vertical) is carried for
+            the steps that read it (F5: the sensors proper; ship motion; power with the power networks).
 
             ## Presets
 

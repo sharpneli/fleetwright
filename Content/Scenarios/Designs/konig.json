@@ -1,5 +1,5 @@
 {
- "version": 6,
+ "version": 7,
  "id": "konig",
  "name": "K\u00F6nig-like (1914)",
  "type": "BB",
@@ -163,7 +163,7 @@
    "tolerance_days": 30
   }
  },
- "fire_control": {"main": {"directors": 1, "rangefinder_m": 4.6, "armour_mm": 0, "radar_t": 0, "computer_t": 2, "fit": ["Zeiss stereo (WWI)", "German clock and plot (EU-Anzeiger, C12)", "Director, follow the pointer"]}, "secondary": {"directors": 0, "rangefinder_m": 0, "armour_mm": 0, "radar_t": 0, "computer_t": 0}, "aa": {"directors": 0, "rangefinder_m": 0, "armour_mm": 0, "radar_t": 0, "computer_t": 0}, "search_radar_t": 0, "aft_rangefinder_m": 2.7},
+ "fire_control": {"main": {"directors": 1, "rangefinder_m": 4.6, "armour_mm": 0, "radar_t": 0, "fit": ["Zeiss stereo (WWI)", "German clock and plot (EU-Anzeiger, C12)", "Director, follow the pointer"]}, "secondary": {"directors": 0, "rangefinder_m": 0, "armour_mm": 0, "radar_t": 0}, "aa": {"directors": 0, "rangefinder_m": 0, "armour_mm": 0, "radar_t": 0}, "search_radar_t": 0, "aft_rangefinder_m": 2.7},
  "look": {
   "navy": "kiel",
   "era": "great_war"

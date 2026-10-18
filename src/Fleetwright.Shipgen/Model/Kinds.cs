@@ -29,6 +29,8 @@ public enum RoomKind : byte
     Handling,
     /// <summary>A carrier's hangar bay: a compartment of the layout, never a room (the subdivision gives it no cells).</summary>
     Hangar,
+    /// <summary>A battery's fire-control computer and its crew, under the armour (fire-control.md F4c).</summary>
+    TransmittingStation,
 }
 
 /// <summary>A hitbox component's kind. Main, Secondary and Torpedo are the mounts by battery (the mount table); AA mounts

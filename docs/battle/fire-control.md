@@ -532,6 +532,30 @@ the transmitting station; F4d sighting on the new heights.
     would overweigh a 1914 director sight. A director fitting its deck (§7.1) already holds: it takes only a roof spot its
     whole footprint fits, the rangefinder's arms included, and the build fails when one finds none.
 - **F4b done 2026-10-18.**
+- **F4c done 2026-10-18** (the transmitting station). Each battery with directors gets a room of kind
+  `transmitting_station` holding its computer: the block's mass weighs there, its crew stand there at battle stations,
+  and the old `computer_t` goes (design format 7; it was the director's share of a plotting room, low in the hull). It
+  lies in the deck space under the protective deck, 15 m² and 3 m² a man [EST], 0.4 B wide and at least a section long.
+  It takes the free stretch nearest the conning tower, between the vitals' ends, that no magazine, handling room,
+  machinery or earlier station fills (`FireControl.PlaceStations`). Its cells give way only to those rooms (priority 6,
+  permeability 0.85). Where there's no free stretch it shares the cell of the station before it, still under the armour.
+  - *Where they land:* all 139 stations of the shipped and scenario designs are under their ships' armour, except on the
+    unarmoured destroyers and carriers. 13 share a cell: later ships with three director batteries, where the handling
+    rooms' bulkheads swallow the stations' own (KGV's secondary and HA stations, over B turret's handling room).
+    Dreadnought's sits under her conning tower, in a 337 m³ cell under the 49 mm deck, 10 men and 4 t.
+  - *Departures:* research 02 §4 has the station "below the waterline and inside the armored belt". The deck space
+    under the protective deck straddles the waterline on most ships, and the spaces wholly below it are the magazines'
+    and the machinery's sections (a short magazine takes its whole section's cell). Tried below the waterline: 61 of
+    139 stations lost their cells to the secondaries' magazines. The size is an estimate. The computer's power waits for
+    the power networks.
+  - *Numbers:* standard displacement median +1 t; the fuzz designs whose random `computer_t` ran to 500 t a director
+    lose it (one -30 %). Bismarck -56 t, KGV -22 t, Dreadnought +5 t. fc-history 10 of 23 in band, as after F4b
+    (director over independent 1.58 to 1.57). Squadrons and Tsushima over 5 seeds within the spread.
+  - *Tests:* the weight moved the destroyer's layout 0.7 m, which tipped her subdivision from 18 sections to 17.
+    The 10-hit destroyer test's 60-ship sample then drew 22 % lost against a 20 % band, but 600 ships give 13.2 % and
+    4.8 % (12 and 6.8 before), so the sample grew to 200 ships (14.5 and 5 %). The band is unchanged. The near-miss world
+    run's destroyer now goes down under the salvos' hits (15 hits and 40 near misses, 26 and 31 before); the test takes
+    that as damage taken.
 
 ### F5 Sensors proper
 

@@ -1,5 +1,5 @@
 {
- "version": 6,
+ "version": 7,
  "id": "deutschland_1906",
  "name": "Deutschland-like pre-dreadnought (1906)",
  "type": "BB",
@@ -259,7 +259,6 @@
    "rangefinder_m": 1.4,
    "armour_mm": 0,
    "radar_t": 0,
-   "computer_t": 0,
    "fit": [
     "Barr & Stroud FA (O1)",
     "Hand plot",
@@ -270,15 +269,13 @@
    "directors": 0,
    "rangefinder_m": 0,
    "armour_mm": 0,
-   "radar_t": 0,
-   "computer_t": 0
+   "radar_t": 0
   },
   "aa": {
    "directors": 0,
    "rangefinder_m": 0,
    "armour_mm": 0,
-   "radar_t": 0,
-   "computer_t": 0
+   "radar_t": 0
   },
   "search_radar_t": 0
  },

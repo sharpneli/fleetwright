@@ -648,7 +648,6 @@ public sealed unsafe partial class DesignerScene : IScene
                 {
                     Num(Knobs.DirectorArmour(b), $"{name} director armour");
                     Num(Knobs.DirectorRadar(b), $"{name} fire-control radar, t");
-                    Num(Knobs.DirectorComputer(b), $"{name} computer, t");
                 }
                 Num(Knobs.SearchRadar);
                 break;

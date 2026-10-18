@@ -9,12 +9,15 @@ public static class Subdivision
     const int ZSamples = 6;
     const double SliverM3 = 1.0, SliverFrac = 0.05;
     /// <summary>Which room takes a cell two rooms claim, the higher first.</summary>
-    static int RoomPriority(RoomKind k) => k switch
+    /// <summary>The shortest section the subdivision makes in a hull L long, m.</summary>
+    internal static double MinSectionOf(double L) => Math.Min(MinSectionMaxM, Math.Max(MinSectionM, MinSection * L));
+
+    internal static int RoomPriority(RoomKind k) => k switch
     {
         RoomKind.Magazine => 9,
         RoomKind.TorpedoRoom or RoomKind.Handling => 8,
         RoomKind.BoilerRoom or RoomKind.EngineRoom or RoomKind.FuelTank => 7,
-        RoomKind.Steering or RoomKind.Bunker => 6,
+        RoomKind.Steering or RoomKind.Bunker or RoomKind.TransmittingStation => 6,
         RoomKind.CargoTank or RoomKind.Hold => 5,
         RoomKind.Stores or RoomKind.DoubleBottom or RoomKind.Tds or RoomKind.Hangar => 4,
         RoomKind.Accommodation => 2,
@@ -24,7 +27,8 @@ public static class Subdivision
     static double Permeability(RoomKind k) => k switch
     {
         RoomKind.Magazine or RoomKind.Hold or RoomKind.Stores => 0.6,
-        RoomKind.TorpedoRoom or RoomKind.Handling or RoomKind.Steering or RoomKind.BoilerRoom or RoomKind.EngineRoom => 0.85,
+        RoomKind.TorpedoRoom or RoomKind.Handling or RoomKind.Steering or RoomKind.BoilerRoom or RoomKind.EngineRoom
+            or RoomKind.TransmittingStation => 0.85,
         RoomKind.FuelTank or RoomKind.Bunker or RoomKind.CargoTank or RoomKind.Accommodation or RoomKind.DoubleBottom or RoomKind.Tds => 0.95,
         RoomKind.Hangar => 0.9,
     };
@@ -314,7 +318,7 @@ public static class Subdivision
             cit = (ag.X0, ag.X1, ag.BulkheadMm > 0 ? "armoured" : "citadel");
         else if (lay.Geo.Citadel is { } gc && design.StyleName is "warship" or "carrier")
             cit = (gc.X0, gc.X1, "citadel");
-        var st = Stations(L, rooms, cit, Math.Min(MinSectionMaxM, Math.Max(MinSectionM, MinSection * L)), Math.Max(MaxSectionM, MaxSection * L),
+        var st = Stations(L, rooms, cit, MinSectionOf(L), Math.Max(MaxSectionM, MaxSection * L),
             lay.Raised.SelectMany(s => new[] { s.X0, s.X1 }), ag.EndBulkheads.Select(b => b.X),
             mach is { } me ? [me.X0, me.X1] : []);
         var armBh = new List<ArmourBulkhead>();

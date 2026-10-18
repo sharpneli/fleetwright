@@ -184,6 +184,9 @@ public sealed class Compartment
     public List<string>? Mounts;
     /// <summary>A torpedo room's tubes.</summary>
     public List<string>? Tubes;
+    /// <summary>A transmitting station's battery (main, secondary, aa) and its computer's crew.</summary>
+    public string? Battery;
+    public long? Men;
 
     /// <summary>The fields beyond the room's box, as the subdivision reports them.</summary>
     public IEnumerable<(string Key, object? Value)> Extras()
@@ -200,6 +203,8 @@ public sealed class Compartment
             yield return ("mounts", Mounts.Cast<object?>().ToList());
         if (Tubes != null)
             yield return ("tubes", Tubes.Cast<object?>().ToList());
+        if (Battery != null)
+            yield return ("battery", Battery);
     }
 }
 

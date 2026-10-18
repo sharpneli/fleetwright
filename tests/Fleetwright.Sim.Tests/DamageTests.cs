@@ -153,10 +153,12 @@ public class DamageTests(ITestOutputHelper output)
         // docs/shipgen/protection-plan.md H2: 2 and 3% lost, the rest of the band the 60-ship sample's noise), and widened
         // to 15% when a burst in a handling room, among the charges passing up, became a flash source (user, 2026-10-17,
         // docs/battle/shells-armour-damage.md E5: 11.7 and 6.7% lost), and to 20% when casualties came to count men, fewer
-        // of them left to fight the fires (user, 2026-10-17, E6: 12% and 6.8% over 600 ships, this sample's 17%)
+        // of them left to fight the fires (user, 2026-10-17, E6: 12% and 6.8% over 600 ships, this sample's 17%). 200 ships
+        // since the transmitting stations (fire-control.md F4c): their weight moved the layout, and 60 ships drew 22% lost
+        // where 600 gave 13.2% and 4.8% (this sample: 14.5% and 5%)
         foreach (string dd in new[] { "destroyer", "tb_destroyer" })
         {
-            var r = Hits(dd, "lion", 1, 6_000, 600, 10, settleS: 1800);
+            var r = Hits(dd, "lion", 1, 6_000, 2000, 10, settleS: 1800);
             Assert.InRange((double)r.Crippled / r.Ships, 0.5, 1);
             Assert.InRange((double)r.Lost / r.Ships, 0, 0.2);
             Assert.True(r.Crippled > 3 * r.Lost, "crippled far more often than sunk");

@@ -118,10 +118,16 @@ public class NearMissTests(ITestOutputHelper output)
         int lines = 0;
         for (int i = 0; i < a.CombatLog.Count; i++)
             lines += a.CombatLog.Newest(i) is { Kind: CombatEvent.NearMiss, Target: 2 } ? 1 : 0;
-        var k = a.Ships.Store.Combat.Condition(a.Ships.Store.SlotOf(2));
-        output.WriteLine($"near misses {a.Shells.NearMissCount}, logged {lines}; hits {a.Shells.Hits}; killed {k.Killed}, wounded {k.Wounded}, holes {k.BreachM2.Sum():0.000} m²");
         Assert.True(lines > 0);
-        Assert.True(k.Killed + k.Wounded > 0 || k.BreachM2.Sum() > 0);
+        // she may go down under the salvos' hits: then she took her damage
+        if (a.Ships.Store.SlotOf(2) is int slot and >= 0)
+        {
+            var k = a.Ships.Store.Combat.Condition(slot);
+            output.WriteLine($"near misses {a.Shells.NearMissCount}, logged {lines}; hits {a.Shells.Hits}; killed {k.Killed}, wounded {k.Wounded}, holes {k.BreachM2.Sum():0.000} m²");
+            Assert.True(k.Killed + k.Wounded > 0 || k.BreachM2.Sum() > 0);
+        }
+        else
+            output.WriteLine($"near misses {a.Shells.NearMissCount}, logged {lines}; hits {a.Shells.Hits}; she went down");
         Assert.Equal(ha, hb);
         Assert.Equal(a.Shells.NearMissCount, b.Shells.NearMissCount);
     }

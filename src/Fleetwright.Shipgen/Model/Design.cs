@@ -737,17 +737,16 @@ public sealed record FireControlInput
     public DirectorInput? Of(string battery) => battery switch { "main" => Main, "secondary" => Secondary, _ => Aa };
 }
 
-/// <summary>fire_control.BATTERY: its directors, their rangefinder's base and hood armour, the radar's and the plotting
-/// room computer's weight, and its fit: the tech blocks its fire control is (one optics, one computer, one mount; by
-/// name, from fire_control_tech or the catalogue, FireControlTemplates). A battery with directors and no fit fires at
-/// the catalogue's default preset.</summary>
+/// <summary>fire_control.BATTERY: its directors, their rangefinder's base and hood armour, the radar's weight, and its fit:
+/// the tech blocks its fire control is (one optics, one computer, one mount; by name, from fire_control_tech or the
+/// catalogue, FireControlTemplates). A battery with directors and no fit fires at the catalogue's default preset; its
+/// computer stands in a transmitting station under the armour, weighing its block's mass (fire-control.md F4c).</summary>
 public sealed record DirectorInput
 {
     public double? Directors { get; init; }
     public double? RangefinderM { get; init; }
     public double? ArmourMm { get; init; }
     public double? RadarT { get; init; }
-    public double? ComputerT { get; init; }
     public List<string>? Fit { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }

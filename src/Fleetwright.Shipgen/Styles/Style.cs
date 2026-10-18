@@ -90,7 +90,6 @@ public abstract class Style
             l.Add(Lim(0, 50, "fire_control", b, "rangefinder_m"));
             l.Add(Lim(0, 2000, "fire_control", b, "armour_mm"));
             l.Add(Lim(0, 500, "fire_control", b, "radar_t"));
-            l.Add(Lim(0, 500, "fire_control", b, "computer_t"));
         }
         l.Add(Lim(0, 500, "fire_control", "search_radar_t"));
         l.Add(Lim(0, 60, "funnels"));

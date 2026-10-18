@@ -1,5 +1,5 @@
 {
- "version": 6,
+ "version": 7,
  "id": "cambrian",
  "name": "Cambrian-like C class (1916)",
  "type": "CL",
@@ -188,7 +188,6 @@
    "rangefinder_m": 2.7,
    "armour_mm": 0,
    "radar_t": 0,
-   "computer_t": 0.5,
    "fit": [
     "Barr & Stroud FQ/FT (O2)",
     "Dumaresq and Vickers clock",
@@ -199,15 +198,13 @@
    "directors": 0,
    "rangefinder_m": 0,
    "armour_mm": 0,
-   "radar_t": 0,
-   "computer_t": 0
+   "radar_t": 0
   },
   "aa": {
    "directors": 0,
    "rangefinder_m": 0,
    "armour_mm": 0,
-   "radar_t": 0,
-   "computer_t": 0
+   "radar_t": 0
   },
   "search_radar_t": 0
  },

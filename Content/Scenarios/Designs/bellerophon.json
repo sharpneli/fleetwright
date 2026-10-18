@@ -1,5 +1,5 @@
 {
- "version": 6,
+ "version": 7,
  "id": "bellerophon",
  "name": "Bellerophon-like (1909)",
  "type": "BB",
@@ -224,7 +224,6 @@
    "rangefinder_m": 2.7,
    "armour_mm": 0,
    "radar_t": 0,
-   "computer_t": 1,
    "fit": [
     "Barr & Stroud FQ/FT (O2)",
     "Dreyer table Mk III-V",
@@ -235,15 +234,13 @@
    "directors": 0,
    "rangefinder_m": 0,
    "armour_mm": 0,
-   "radar_t": 0,
-   "computer_t": 0
+   "radar_t": 0
   },
   "aa": {
    "directors": 0,
    "rangefinder_m": 0,
    "armour_mm": 0,
-   "radar_t": 0,
-   "computer_t": 0
+   "radar_t": 0
   },
   "search_radar_t": 0,
   "aft_rangefinder_m": 2.7

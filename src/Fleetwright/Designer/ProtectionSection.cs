@@ -75,6 +75,8 @@ public sealed class ProtectionSection
         RoomKind.BoilerRoom => ("boiler room", "boilers"), RoomKind.DoubleBottom => ("double bottom", ""), RoomKind.Accommodation => ("quarters", ""),
         RoomKind.Steering => ("steering gear", "steering"), RoomKind.TorpedoRoom => ("torpedo room", "torpedoes"), RoomKind.FuelTank => ("oil", "oil"),
         RoomKind.CargoTank => ("cargo tank", "cargo"), RoomKind.Hold => ("hold", "hold"), RoomKind.Hangar => ("hangar", ""),
+        RoomKind.TransmittingStation => ("transmitting station", "TS"),
+        _ => (k.ToString()!, ""),
     };
 
     static string F1(double v) => v.ToString("0.0", CultureInfo.InvariantCulture);
@@ -393,6 +395,7 @@ public sealed class ProtectionSection
         [RoomKind.Tds] = Rgb(0x4FA3B8, 0.30f), [RoomKind.Bunker] = Rgb(0x05070A, 0.62f), [RoomKind.EngineRoom] = Rgb(0x6F92B5, 0.34f),
         [RoomKind.BoilerRoom] = Rgb(0x6F92B5, 0.34f), [RoomKind.DoubleBottom] = Rgb(0x2E4A66, 0), [RoomKind.Accommodation] = Rgb(0x9CC2E2, 0.04f),
         [RoomKind.Steering] = Rgb(0x7F8B95, 0.2f), [RoomKind.TorpedoRoom] = Rgb(0x8E9AA4, 0.22f), [RoomKind.FuelTank] = Rgb(0x5B4A2A, 0.4f),
+        [RoomKind.TransmittingStation] = Rgb(0x8E9AA4, 0.3f),
     };
 
     /// <summary>The legend's swatches: (kind, label).</summary>

@@ -180,7 +180,8 @@ public static class Crew
     }
 
     // not "handling": the deck over a magazine was always its handling space (Ordnance.TPerM3), shared with the crew
-    static readonly RoomKind[] Taken = [RoomKind.Magazine, RoomKind.BoilerRoom, RoomKind.EngineRoom, RoomKind.Bunker, RoomKind.Hold, RoomKind.CargoTank, RoomKind.FuelTank, RoomKind.Steering];
+    static readonly RoomKind[] Taken = [RoomKind.Magazine, RoomKind.BoilerRoom, RoomKind.EngineRoom, RoomKind.Bunker, RoomKind.Hold, RoomKind.CargoTank, RoomKind.FuelTank, RoomKind.Steering,
+        RoomKind.TransmittingStation];
 
     /// <summary>The ship's volume and what of it is free for the crew, m3; the superstructure's by block.</summary>
     sealed record Space(double HullM3, double TakenM3, double SuperstructureM3, double FreeM3, double UsableM3, double HullUsableM3,
@@ -395,6 +396,12 @@ public static class Crew
         {
             long n = Take(DirectorK + (long)Math.Round(d.Spec.RangefinderM), rest);
             Put(onComp, [(("superstructure", d.Id), n)], "directors");
+            rest -= n;
+        }
+        foreach (var ts in lay.Compartments.Where(cc => cc.Kind == RoomKind.TransmittingStation))
+        {
+            long n = Take(ts.Men ?? 0, rest);
+            Put(onRoom, [(ts.Id, n)], "directors");
             rest -= n;
         }
         var steer = rooms.Where(r => r.Kind == RoomKind.Steering).Select(r => r.Id).ToList();

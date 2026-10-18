@@ -1,5 +1,5 @@
 {
- "version": 6,
+ "version": 7,
  "id": "derfflinger",
  "name": "Derfflinger-like (1914)",
  "type": "BC",
@@ -244,7 +244,6 @@
    "rangefinder_m": 3,
    "armour_mm": 0,
    "radar_t": 0,
-   "computer_t": 1,
    "fit": [
     "Zeiss stereo (WWI)",
     "German clock and plot (EU-Anzeiger, C12)",
@@ -255,15 +254,13 @@
    "directors": 0,
    "rangefinder_m": 0,
    "armour_mm": 0,
-   "radar_t": 0,
-   "computer_t": 0
+   "radar_t": 0
   },
   "aa": {
    "directors": 0,
    "rangefinder_m": 0,
    "armour_mm": 0,
-   "radar_t": 0,
-   "computer_t": 0
+   "radar_t": 0
   },
   "search_radar_t": 0,
   "aft_rangefinder_m": 2.7

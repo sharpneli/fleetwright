@@ -1,5 +1,5 @@
 {
- "version": 6,
+ "version": 7,
  "id": "ikazuchi",
  "name": "Ikazuchi-like destroyer (1899)",
  "type": "DD",
@@ -152,30 +152,7 @@
    "tolerance_days": 30
   }
  },
- "fire_control": {
-  "main": {
-   "directors": 0,
-   "rangefinder_m": 0,
-   "armour_mm": 0,
-   "radar_t": 0,
-   "computer_t": 0
-  },
-  "secondary": {
-   "directors": 0,
-   "rangefinder_m": 0,
-   "armour_mm": 0,
-   "radar_t": 0,
-   "computer_t": 0
-  },
-  "aa": {
-   "directors": 0,
-   "rangefinder_m": 0,
-   "armour_mm": 0,
-   "radar_t": 0,
-   "computer_t": 0
-  },
-  "search_radar_t": 0
- },
+ "fire_control": {"main": {"directors": 0, "rangefinder_m": 0, "armour_mm": 0, "radar_t": 0}, "secondary": {"directors": 0, "rangefinder_m": 0, "armour_mm": 0, "radar_t": 0}, "aa": {"directors": 0, "rangefinder_m": 0, "armour_mm": 0, "radar_t": 0}, "search_radar_t": 0},
  "look": {
   "navy": "kure",
   "era": "victorian"

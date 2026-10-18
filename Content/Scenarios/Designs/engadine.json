@@ -1,5 +1,5 @@
 {
- "version": 6,
+ "version": 7,
  "id": "engadine",
  "name": "Engadine-like seaplane carrier (1911)",
  "type": "AV",
@@ -167,22 +167,19 @@
    "directors": 0,
    "rangefinder_m": 0,
    "armour_mm": 0,
-   "radar_t": 0,
-   "computer_t": 0
+   "radar_t": 0
   },
   "secondary": {
    "directors": 0,
    "rangefinder_m": 0,
    "armour_mm": 0,
-   "radar_t": 0,
-   "computer_t": 0
+   "radar_t": 0
   },
   "aa": {
    "directors": 0,
    "rangefinder_m": 0,
    "armour_mm": 0,
-   "radar_t": 0,
-   "computer_t": 0
+   "radar_t": 0
   },
   "search_radar_t": 0
  },

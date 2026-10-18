@@ -152,6 +152,11 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
 - 2026-10-18, control positions' rangefinders (docs/battle/fire-control.md F4b), on purpose: the Great War capital ships
   with after control carry a 2.7 m rangefinder in a hood on its roof (a block of role `rangefinder`). 14 design cases change
   (at most +0.03 % standard), with their SVGs and sprite.json. ShipDesign.Version 35.
+- 2026-10-18, the transmitting station (docs/battle/fire-control.md F4c), on purpose: design format 7 drops `computer_t`;
+  each battery with directors gets a `transmitting_station` room under the protective deck, weighing its computer
+  block's mass, with its crew at battle stations. 326 design cases change (the design echo in all; standard
+  displacement median +1 t, the fuzz designs' random `computer_t` of up to 500 t gone), with their SVGs and sprite.json.
+  ShipDesign.Version 36.
 
 ## Layout
 

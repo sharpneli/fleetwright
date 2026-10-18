@@ -1,8 +1,8 @@
 namespace Fleetwright.Shipgen;
 
 /// <summary>One battery's fire control: how many directors, the rangefinder's base, the hood's armour, and the radar's
-/// and the plotting room computer's weight.</summary>
-public sealed record DirectorSpec(long Directors, double RangefinderM, double ArmourMm, double RadarT, double ComputerT);
+/// weight.</summary>
+public sealed record DirectorSpec(long Directors, double RangefinderM, double ArmourMm, double RadarT);
 
 /// <summary>A placed director: its battery, where it stands (base and top above the main deck, and its eye), its
 /// settings, its weight, and (secondary and AA directors) the unit of a pair it belongs to.</summary>
@@ -13,18 +13,18 @@ public sealed record Director(string Id, string Battery, double X, double Y, dou
 public static class FireControl
 {
     static readonly string[] BatteryNames = ["main", "secondary", "aa"];
-    static readonly string[] Fields = ["directors", "rangefinder_m", "armour_mm", "radar_t", "computer_t", "fit"];
+    static readonly string[] Fields = ["directors", "rangefinder_m", "armour_mm", "radar_t", "fit"];
     static readonly Dictionary<string, string> Label = new() { ["main"] = "Main director", ["secondary"] = "Secondary director", ["aa"] = "AA director" };
     public const double HoodH = 2.2;
     const double EyeH = 1.5, HoodPlateT = 0.047, RfTK = 0.03;
     static readonly (double A, double B) GearT = (1.0, 1.2);
-    const double ComputerZ = 0.3, MainSpread = 0.25, Refraction = 1.17;
+    const double MainSpread = 0.25, Refraction = 1.17;
 
     /// <summary>The design's fire control for a battery, every field (0 where it gives none).</summary>
     public static DirectorSpec Spec(Design design, string battery)
     {
         var d = design.FireControl?.Of(battery);
-        return new DirectorSpec((long)(d?.Directors ?? 0), d?.RangefinderM ?? 0, d?.ArmourMm ?? 0, d?.RadarT ?? 0, d?.ComputerT ?? 0);
+        return new DirectorSpec((long)(d?.Directors ?? 0), d?.RangefinderM ?? 0, d?.ArmourMm ?? 0, d?.RadarT ?? 0);
     }
 
     public static List<string> Validate(Design design)
@@ -41,7 +41,7 @@ public static class FireControl
             if (fc.Of(b) is not { } d)
                 continue;
             errs.AddRange(d.Extra.KeysOrEmpty().Select(k => $"fire_control.{b}.{k}: not a director setting ({string.Join(", ", Fields)})"));
-            var given = new[] { d.Directors, d.RangefinderM, d.ArmourMm, d.RadarT, d.ComputerT };
+            var given = new[] { d.Directors, d.RangefinderM, d.ArmourMm, d.RadarT };
             errs.AddRange(Fields.Take(given.Length).Where((_, i) => given[i] < 0).Select(k => $"fire_control.{b}.{k} must be a number, 0 or more"));
             if (d.Directors is double n && n != Math.Floor(n))
                 errs.Add($"fire_control.{b}.directors: use a whole number");
@@ -71,15 +71,13 @@ public static class FireControl
         return (0.25 * bse + 1.8, Math.Max(bse + 1.0, 1.8));
     }
 
-    /// <summary>One director's weights, t: the hood, the rangefinder and its gear, the armour, the radar and the plotting
-    /// room's computer.</summary>
-    static (double Hood, double Gear, double Rangefinder, double Armour, double Radar, double Computer) Weights(DirectorSpec d)
+    /// <summary>One director's weights, t: the hood, the rangefinder and its gear, the armour and the radar.</summary>
+    static (double Hood, double Gear, double Rangefinder, double Armour, double Radar) Weights(DirectorSpec d)
     {
         double bse = d.RangefinderM;
         var (l, w) = Size(d);
         double area = 2 * (l + w) * HoodH + l * w;
-        return (area * HoodPlateT, GearT.A + GearT.B * bse, RfTK * Math.Pow(bse, 2), area * d.ArmourMm / 1000.0 * Weight.Steel, d.RadarT,
-            d.ComputerT);
+        return (area * HoodPlateT, GearT.A + GearT.B * bse, RfTK * Math.Pow(bse, 2), area * d.ArmourMm / 1000.0 * Weight.Steel, d.RadarT);
     }
 
     public static double HorizonKm(double eyeM) => 3.57 * Math.Sqrt(Refraction * Math.Max(0.0, eyeM));
@@ -246,9 +244,7 @@ public static class FireControl
         b.Director = new BlockDirector(bat, d.RangefinderM, d.RadarT > 0, (long)Math.Round(z0 / Layout.LevelH));
         double aloft = wt.Hood + wt.Gear + wt.Rangefinder + wt.Armour + wt.Radar;
         lay.Weights.Add(new Weight(bid, "fire_control", aloft, x, ZRel.Deck(z0 + 0.5 * HoodH)));
-        if (wt.Computer != 0)
-            lay.Weights.Add(new Weight($"Plotting room ({bid})", "fire_control", wt.Computer, x, ZRel.Frac(ComputerZ)));
-        var rec = new Director(bid, bat, x, y, z0, z0 + HoodH, z0 + EyeH, d, aloft + wt.Computer, unit);
+        var rec = new Director(bid, bat, x, y, z0, z0 + HoodH, z0 + EyeH, d, aloft, unit);
         lay.Directors.Add(rec);
         return rec;
     }
@@ -367,6 +363,87 @@ public static class FireControl
             else
                 Hood("Conning tower rangefinder", ct, c.X, c.Y, c.Top);
         }
+    }
+
+    /// <summary>A battery's computer block (its fit's), or null.</summary>
+    public static ComputerTechInput? ComputerOf(Design design, string battery) =>
+        FireControlTemplates.FitOf(design.FireControl?.Of(battery)).Select(n => FireControlTemplates.Resolve(design, n)?.Computer)
+            .FirstOrDefault(c => c is not null);
+
+    /// <summary>The transmitting stations (fire-control.md F4c): one a battery with directors, holding its computer (its
+    /// block's mass, crew and power), in the deck space just under the machinery's roof, the protective deck (two levels
+    /// down without a plant plan): 15 m² and 3 m² a man [EST], 0.4 of the beam wide, and at least a section long, so its
+    /// ends can be bulkheads of its own. Each takes the free stretch nearest the conning tower (else the bridge) that no
+    /// room it gives way to fills (magazines, handling rooms, machinery, bunkers, the stations before it) between the
+    /// vitals' ends; with no room there it stands beside the station before it (else under the tower) and shares that
+    /// cell, staying under the armour. A ship without vitals (no magazines or
+    /// machinery spaces) looks within the middle 0.6 of its length. Stations no bulkhead falls between share a compartment,
+    /// as the subdivision makes them. A room of its own, so damage can find it; its weight at its middle.</summary>
+    public static void PlaceStations(Layout lay, Design design)
+    {
+        double x = lay.ConningTower?.X ?? lay.Blocks.Where(b => b.Role == "bridge").Select(b => (b.X0 + b.X1) / 2).DefaultIfEmpty(0.0).First();
+        double hw = Math.Max(0.2 * lay.Hull.B, 1.5), top = -2 * Layout.LevelH, bse = -3 * Layout.LevelH;
+        if (lay.Geo.Plant is { } plan)
+        {
+            // under the protective deck (research 02 §4: "below the waterline and inside the armored belt"; the deck space
+            // under it straddles the waterline on most ships: the spaces wholly below are the magazines' and machinery's
+            // sections, a short magazine taking its whole section)
+            double D = plan.Decks[0];
+            top = plan.Top - D;
+            bse = top - Layout.LevelH;
+            foreach (var z in plan.Decks)
+                if (z - D < top - 1.8 && z - D > bse)
+                    bse = z - D;
+            bse = Math.Max(bse, plan.InnerBottom - D);
+        }
+        int yields = Subdivision.RoomPriority(RoomKind.TransmittingStation);
+        var taken = new List<(double X0, double X1)>();
+        double vital0 = double.PositiveInfinity, vital1 = double.NegativeInfinity;
+        foreach (var c in lay.Compartments)
+        {
+            if (Subdivision.RoomPriority(c.Kind) < yields)
+                continue;
+            if (c.Kind is RoomKind.Magazine or RoomKind.BoilerRoom or RoomKind.EngineRoom)
+                (vital0, vital1) = (Math.Min(vital0, c.X0), Math.Max(vital1, c.X1));
+            double cb = c.Base ?? double.NegativeInfinity, ct = c.Top ?? 0.0;
+            if (Math.Min(ct, top) - Math.Max(cb, bse) >= 0.25 * (top - bse) && Math.Abs(c.Y ?? 0.0) - c.HalfWidth < hw)
+                taken.Add((c.X0, c.X1));
+        }
+        double half = 0.3 * lay.Hull.L;
+        double? last = null;
+        foreach (var bat in BatteryNames)
+        {
+            if (Spec(design, bat).Directors <= 0 || ComputerOf(design, bat) is not { } k)
+                continue;
+            double area = 15 + 3 * (k.Crew ?? 0), l = Math.Max(area / (2 * hw), Math.Max(3.0, Subdivision.MinSectionOf(lay.Hull.L)));
+            double mid = (vital0 <= vital1 ? Spot(taken, vital0, vital1, l, x) : Spot(taken, -half, half, l, x)) ?? last ?? x;
+            double x0 = mid - l / 2, x1 = mid + l / 2;
+            taken.Add((x0, x1));
+            last = mid;
+            string id = bat == "main" ? "Transmitting station" : $"Transmitting station ({(bat == "aa" ? "AA" : bat)})";
+            lay.Compartments.Add(new Compartment { Id = id, Kind = RoomKind.TransmittingStation, X0 = x0, X1 = x1, HalfWidth = hw, Base = bse, Top = top,
+                Battery = bat, Men = (long)Math.Round(k.Crew ?? 0) });
+            if (k.MassT is > 0)
+                lay.Weights.Add(new Weight(id, "fire_control", k.MassT.Value, (x0 + x1) / 2, ZRel.Deck((bse + top) / 2)));
+        }
+    }
+
+    /// <summary>The middle of the stretch l long within lo..hi that none of taken overlaps, nearest x; null if none.</summary>
+    static double? Spot(List<(double X0, double X1)> taken, double lo, double hi, double l, double x)
+    {
+        double? best = null;
+        double at = lo;
+        foreach (var (t0, t1) in taken.Where(t => t.X1 > lo && t.X0 < hi).OrderBy(t => t.X0).Append((hi, hi)))
+        {
+            if (Math.Min(t0, hi) - at >= l)
+            {
+                double c = Math.Clamp(x, at + l / 2, Math.Min(t0, hi) - l / 2);
+                if (best is not { } b || Math.Abs(c - x) < Math.Abs(b - x))
+                    best = c;
+            }
+            at = Math.Max(at, t1);
+        }
+        return best;
     }
 
     /// <summary>The search radar's weight on the foremast's top, or 1 m over the highest roof on a ship without masts.</summary>

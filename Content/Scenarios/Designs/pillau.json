@@ -1,5 +1,5 @@
 {
- "version": 6,
+ "version": 7,
  "id": "pillau",
  "name": "Pillau-like (1914)",
  "type": "CL",
@@ -210,7 +210,6 @@
    "rangefinder_m": 2,
    "armour_mm": 0,
    "radar_t": 0,
-   "computer_t": 0.3,
    "fit": [
     "Zeiss stereo (WWI)",
     "German range clock (EU-Anzeiger)",
@@ -221,15 +220,13 @@
    "directors": 0,
    "rangefinder_m": 0,
    "armour_mm": 0,
-   "radar_t": 0,
-   "computer_t": 0
+   "radar_t": 0
   },
   "aa": {
    "directors": 0,
    "rangefinder_m": 0,
    "armour_mm": 0,
-   "radar_t": 0,
-   "computer_t": 0
+   "radar_t": 0
   },
   "search_radar_t": 0
  },

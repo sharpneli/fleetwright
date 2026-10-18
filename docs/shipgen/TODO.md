@@ -109,7 +109,7 @@ Open shipgen items, one line each (details in DECISIONS.md, which was shipgen's 
 - [ ] Clean up remaining shared cells
 - [ ] Links and flags: engine room → shaft, generators → power networks, grouped vs alternating machinery, fuel type, bottom layers, riveted/welded, centreline bulkhead, TDS depth along length
 - [ ] Carrier extras: flight-deck segments, lifts, hangar bays, avgas fore and aft
-- [ ] Systems session: radar and masts, plotting room as a room, power and hydraulic networks, director armour material
+- [ ] Systems session: radar, power and hydraulic networks, director armour material (masts and tops: fire-control.md F4a; the plotting room as a room: the transmitting station, F4c)
 - [ ] Reload torpedoes, depth charges and boats as hitboxes
 - [ ] Mines (battle module step 4.7, `docs/battle/plan.md`): mine stowage and rails as an armament with a count (minelayers, and cruisers and destroyers fitted for minelaying), its magazine as a room; sweeping gear for sweepers
 - [ ] Destroyer has 18 sections (research: 12–16; 20 before protection-plan.md H7, which stopped splitting a room in two). The rest: a magazine compartment per mount (A, B, W, X, Y; real destroyers grouped them fore and aft) and the 0.07 L splits in empty stretches

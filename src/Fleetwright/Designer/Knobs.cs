@@ -1073,15 +1073,6 @@ public static class Knobs
         Applies = d => (d.FireControl?.Of(battery)?.Directors ?? 0) > 0,
     };
 
-    public static NumberKnob DirectorComputer(string battery) => new($"fc_{battery}_computer", "Plotting computer, t", Quantity.Ratio, 0.5, 0.5)
-    {
-        Get = d => d.FireControl?.Of(battery)?.ComputerT,
-        Set = (d, v) => Fc(d, battery, x => x with { ComputerT = v }),
-        Auto = (d, s) => 0,
-        LimitPath = ["fire_control", battery, "computer_t"],
-        Applies = d => (d.FireControl?.Of(battery)?.Directors ?? 0) > 0,
-    };
-
     public static readonly NumberKnob SearchRadar = new("search_radar", "Search radar, t", Quantity.Ratio, 0.5, 0.5)
     {
         Get = d => d.FireControl?.SearchRadarT,
@@ -1269,7 +1260,6 @@ public static class Knobs
             yield return Rangefinder(b);
             yield return DirectorArmour(b);
             yield return DirectorRadar(b);
-            yield return DirectorComputer(b);
         }
     }
 
