@@ -17,7 +17,8 @@ public struct FcCov
 }
 
 /// <summary>A reading as a fire-control computer takes it: when it was taken (and when it reaches the computer), from
-/// where (the instrument) and own ship's velocity then, its range and bearing with their errors (1 sigma: m, rad), and
+/// where (own ship's reference point: every instrument's cut is reduced to it) and own ship's velocity then, its range
+/// and bearing from there with their errors (1 sigma: m, rad), and
 /// the same as a point on the sphere with its east/north covariance (<see cref="Track.Reading"/>).</summary>
 public struct FcReading
 {

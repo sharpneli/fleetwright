@@ -517,10 +517,13 @@ public sealed class GunnerySystem : IWorldSystem
             if (fc.PendCount == PendingCap)
                 PopReading(ref fc, f, target, now);   // the computer's queue is full: the oldest goes in now
             int at2 = f * PendingCap + (fc.PendHead + fc.PendCount++) % PendingCap;
+            // the computer takes every instrument's cut from one reference point, the ship's (the tables' parallax
+            // correction: a director forward and one aft see the target on bearings tens of mils apart close in)
             pending[at2] = new FcReading
             {
-                Ms = now, ArriveMs = now + (long)(computer.LatencyS * 1000), From = at, OwnVelocity = ownV, Z = z, RangeM = zr, BearingDeg = zb, SigmaRangeM = sr,
-                SigmaBearingRad = sb, R11 = r11, R12 = r12, R22 = r22,
+                Ms = now, ArriveMs = now + (long)(computer.LatencyS * 1000), From = ship.Position, OwnVelocity = ownV, Z = z,
+                RangeM = Earth.Distance(ship.Position, z), BearingDeg = Earth.Bearing(ship.Position, z), SigmaRangeM = sr, SigmaBearingRad = sb, R11 = r11,
+                R12 = r12, R22 = r22,
             };
         }
 

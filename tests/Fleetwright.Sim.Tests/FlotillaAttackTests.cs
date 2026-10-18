@@ -52,7 +52,7 @@ public class FlotillaAttackTests(ITestOutputHelper output)
             var seen = new List<AttackPhase>();
             long signalMs = -1;
             long firedAtSignal = 0, firedMinuteOn = 0;
-            for (int t = 10; t <= 30 * 60; t += 10)
+            for (int t = 10; t <= 40 * 60; t += 10)
             {
                 w.AdvanceTo(s.Start + t * 1000L);
                 var phase = ai.Admirals.AttackOf(flotilla).Phase;
