@@ -181,6 +181,9 @@ public static class Program
         shipgen upgrade DESIGN.json... [--materials] [--dry]
             design files rewritten to the current format (DesignFormat), each in its own layout; --materials also sets
             each design's materials table to the catalogue's blocks (after a catalogue change); --dry lists them
+        shipgen fit DESIGN.json... --main SPEC [--secondary SPEC] [--aa SPEC] [--dry]
+            batteries' fire-control fits set (docs/battle/fire-control.md F3): a preset's name or blocks joined by |;
+            the design's fire_control_tech then holds the blocks its fits name
         shipgen scenario [SCENARIO.json] [--minutes 60] [--every 5] [--threads N] [--at 10] [--no-land] [--replay]
             a scenario headless at full tilt (default Content/Scenarios/jutland.json): its classes' build time (no
             art), the land and the placing, then game minutes on the sim's work alone: ships on the fine tick and on
@@ -271,6 +274,8 @@ public static class Program
                 "ammo-templates" => AmmoTemplates.Run(a.Positional, a.Has("dry"), a.Has("outfits")),
                 "templates" => TemplatesWriter.Run(Path.Combine(Root(a), "..")),
                 "upgrade" => DesignUpgrade.Run(a.Positional, a.Has("dry"), a.Has("materials")),
+                "fit" => DesignFit.Run(a.Positional, new[] { "main", "secondary", "aa" }.Where(k => a.Get(k) is not null).ToDictionary(k => k, k => a.Get(k)!),
+                    a.Has("dry")),
                 "pen-check" => PenCheck.Run(Path.Combine(Root(a), "..")),
                 "burst" => BurstBench.Run(a.Positional.ElementAtOrDefault(0) ?? "destroyer", n => LoadDesign(Resolve(a, n)),
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),

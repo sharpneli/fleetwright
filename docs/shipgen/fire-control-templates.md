@@ -75,11 +75,13 @@ own numbers. Mass t, crew, power kW.
 | Eye and hand plot | rate_clock | 20 | 0.02 | - | 5, 30 | 2.5, 4 | 0 | 550 | 2.5 | - | 0.2, 3, 0 |
 | Hand plot | rate_clock | 15 | 0.02 | - | 4, 25 | 2, 3 | 0 | 366 | 2 | - | 0.2, 3, 0 |
 | Dumaresq and Vickers clock | rate_clock | 15 | 0.03 | 18.3, 0 | 3, 20 | 1.5, 2.5 | 0 | 366 | 1.8 | - | 0.8, 4, 0 |
+| German range clock (EU-Anzeiger) | rate_clock | 15 | 0.03 | 18.3, 0 | 3, 20 | 1.5, 2.5 | 0 | 366 | 1.8 | - | 0.8, 4, 0 |
 | Dreyer table Mk I-II | rate_clock | 15 | 0.03 | 18.3, 0.25 | 2.5, 15 | 1.2, 2 | 300 | 366 | 1.5 | - | 4, 10, 1 |
 | Dreyer table Mk III-V | rate_clock, helm-free | 15 | 0.03 | 18.3, 0.25 | 2.5, 15 | 1.2, 2 | 300 | 366 | 1.5 | - | 4, 10, 1 |
 | German clock and plot (EU-Anzeiger, C12) | rate_clock, helm-free | 15 | 0.03 | 18.3, 0.25 | 2.5, 15 | 1.2, 2 | 300 | 366 | 1.5 | - | 4, 10, 1 |
 | Argo clock Mk IV | true_course, helm-free | 8 | 0.03 | - | 2.5, 15 | 1.2, 2 | 200 | 366 | 1.5 | - | 2, 4, 1 |
 | Admiralty Fire Control Table | true_course, helm-free | 8 | 0.03 | - | 2, 12 | 0.6, 1.5 | 250 | 366 | 1.2 | - | 5, 8, 5 |
+| Admiralty Fire Control Clock | true_course, helm-free | 8 | 0.03 | - | 2, 12 | 0.6, 1.5 | 250 | 366 | 1.2 | - | 3, 4, 3 |
 | Admiralty Fire Control Table, turn setting | turn_rate, helm-free | 8 | 0.03 | - | 2, 12 | 0.6, 1.5 | 250 | 366 | 1.2 | turn 0, speed 0.1 | 5, 8, 5 |
 | German Rechenstelle (1930s) | true_course, helm-free | 8 | 0.03 | - | 2, 12 | 0.6, 1.5 | 250 | 366 | 1.2 | - | 5, 8, 5 |
 | Type 92 Shagekiban | rate_clock, helm-free | 15 | 0.03 | - | 2, 12 | 0.6, 1.5 | 400 | 366 | 1.3 | - | 4, 15, 2 |
@@ -117,11 +119,13 @@ own numbers. Mass t, crew, power kW.
 - **Eye and hand plot:** Ranges by eye, rates by a hand plot (fire_control_ref.py level 0; designer C0).
 - **Hand plot:** Rangefinder ranges, rates from a hand plot and estimates, no machine (level 1: the Tsushima era; designer C0).
 - **Dumaresq and Vickers clock:** The Dumaresq's rates run on by the Vickers range clock (1906): constant rates only, the roller slipping on a change (computing.md §3; level 2, designer C1).
+- **German range clock (EU-Anzeiger):** The German WWI range-rate indicator and clock without the plot, the cruisers' (computing.md §3): no specifications found; taken as the Dumaresq and Vickers clock's [EST].
 - **Dreyer table Mk I-II:** The Dreyer table's range and bearing plots and clock before the gyro feed (1911-12): the Mk III's numbers without helm-free, so own ship's turns are re-learnt (computing.md §3: helm-free from the Mk III).
 - **Dreyer table Mk III-V:** The Dreyer table from the Mk III (1914-22), helm-free by the gyro: a rate clock limited to ±1,200 yd/min and ±15°/min, its bearing plot the weak point (computing.md §3; level 3, designer C2). Crew 7-8 at the table, up to 30 in the station.
 - **German clock and plot (EU-Anzeiger, C12):** The German WWI range-rate clock and plot (computing.md §3). No specifications found; taken as the Dreyer Mk III's, helm-free by the gyro [EST], the two navies' 1916 machines doing the same job.
 - **Argo clock Mk IV:** Pollen's true-course plotter and variable-speed clock (1912-13): follows a changing range rate, gyro-corrected; about six in RN service at Jutland (computing.md §3; fire_control_ref.py level 3b). Mass and crew [EST].
 - **Admiralty Fire Control Table:** The AFCT Mk I-X (1927-45): clock and MPI plot, helm-free, a straight-course target (computing.md §3; level 4, designer C3).
+- **Admiralty Fire Control Clock:** The AFCC, the AFCT without its plot, for destroyers and secondaries (computing.md §3; Haida's Mk III limited to 16,000 yd): the table's numbers [EST]; mass and crew [EST].
 - **Admiralty Fire Control Table, turn setting:** The AFCT with a hand-set enemy rate of turn: a turn filter whose rate adapts slowly (level 4t; [UNCERTAIN] in the research, a computer option anyone may fit, decision 5).
 - **German Rechenstelle (1930s):** The German computing rooms of the 1930s, fore and aft under armour (computing.md §3): no specifications found; the research's table puts them with the AFCT, whose numbers they take [EST].
 - **Type 92 Shagekiban:** The Japanese Type 92 (1932) with its Sokutekiban: rates from a range-rate plot, deflection by hand, no gyro horizon; rates rebuilt after a manoeuvre (computing.md §3; level 4j). Crew 7 + 8; mass [EST].

@@ -106,6 +106,9 @@ public static class FireControlTemplates
         C("Dumaresq and Vickers clock", K("rate_clock", false, 15, 0.03, 3, 20, 1.5, 2.5, 0, 366, 1.8, 0.8, 4, 0) with { MaxRangeRateMs = DreyerRangeRate },
             "The Dumaresq's rates run on by the Vickers range clock (1906): constant rates only, the roller slipping on a change (computing.md " +
             "§3; level 2, designer C1)."),
+        C("German range clock (EU-Anzeiger)", K("rate_clock", false, 15, 0.03, 3, 20, 1.5, 2.5, 0, 366, 1.8, 0.8, 4, 0) with { MaxRangeRateMs = DreyerRangeRate },
+            "The German WWI range-rate indicator and clock without the plot, the cruisers' (computing.md §3): no specifications found; taken as " +
+            "the Dumaresq and Vickers clock's [EST]."),
         C("Dreyer table Mk I-II", K("rate_clock", false, 15, 0.03, 2.5, 15, 1.2, 2, 300, 366, 1.5, 4, 10, 1) with
             {
                 MaxRangeRateMs = DreyerRangeRate, MaxBearingRateDegS = DreyerBearingRate,
@@ -129,6 +132,9 @@ public static class FireControlTemplates
             "service at Jutland (computing.md §3; fire_control_ref.py level 3b). Mass and crew [EST]."),
         C("Admiralty Fire Control Table", K("true_course", true, 8, 0.03, 2, 12, 0.6, 1.5, 250, 366, 1.2, 5, 8, 5),
             "The AFCT Mk I-X (1927-45): clock and MPI plot, helm-free, a straight-course target (computing.md §3; level 4, designer C3)."),
+        C("Admiralty Fire Control Clock", K("true_course", true, 8, 0.03, 2, 12, 0.6, 1.5, 250, 366, 1.2, 3, 4, 3),
+            "The AFCC, the AFCT without its plot, for destroyers and secondaries (computing.md §3; Haida's Mk III limited to 16,000 yd): the " +
+            "table's numbers [EST]; mass and crew [EST]."),
         C("Admiralty Fire Control Table, turn setting", K("turn_rate", true, 8, 0.03, 2, 12, 0.6, 1.5, 250, 366, 1.2, 5, 8, 5) with
             {
                 TurnQ = 1e-7, SpeedQ = 0.1,

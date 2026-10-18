@@ -88,7 +88,7 @@ static class DesignUpgrade
 
     /// <summary>Into hand-laid lines: each changed top-level value replaced in place, each new key added after the last
     /// value on a line of its own. Removing a key isn't done here (no upgrade has).</summary>
-    static string Splice(string text, JsonObject before, JsonObject after, List<string> changed, List<string> gone, string nl)
+    internal static string Splice(string text, JsonObject before, JsonObject after, List<string> changed, List<string> gone, string nl)
     {
         if (gone.Count > 0)
             throw new InvalidOperationException($"removing top-level keys ({string.Join(", ", gone)}) from hand-laid lines isn't done");

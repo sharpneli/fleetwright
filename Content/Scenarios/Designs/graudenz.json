@@ -212,8 +212,8 @@
    "radar_t": 0,
    "computer_t": 0.3,
    "fit": [
-    "Barr & Stroud FQ/FT (O2)",
-    "Dumaresq and Vickers clock",
+    "Zeiss stereo (WWI)",
+    "German range clock (EU-Anzeiger)",
     "Telescopic sights"
    ]
   },
@@ -371,13 +371,13 @@
   "shock_grade": "G0"
  },
  "fire_control_tech": {
-  "Barr & Stroud FQ/FT (O2)": {
+  "Zeiss stereo (WWI)": {
    "optics": {
-    "kind": "coincidence",
-    "delta_arcsec": 12,
+    "kind": "stereo",
+    "delta_arcsec": 10,
     "rigid_base_m": 4,
     "flex_exp": 0.75,
-    "magnification": 28,
+    "magnification": 23,
     "m_max": 28,
     "readings_per_min": 2,
     "coated": false,
@@ -385,7 +385,7 @@
     "mass_kg_m2": 28
    }
   },
-  "Dumaresq and Vickers clock": {
+  "German range clock (EU-Anzeiger)": {
    "computer": {
     "tracker": "rate_clock",
     "helm_free": false,
