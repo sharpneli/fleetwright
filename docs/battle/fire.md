@@ -284,6 +284,12 @@ from B0's bench on.
 - The yardstick above; the first game's anchors first. Tune only within the [EST] numbers, and log what moved.
 - Cost per burning space and per ship; the squadrons scenario's frame time.
 - What the AI and the matchup read about fire, if anything (a ship burning beyond help).
+- **Later (the user, 2026-10-18): deck clutter on a long voyage.** The Russians at Tsushima steamed in with cluttered
+  decks after the voyage round Africa: coal piled on the upper decks (the Borodinos took ~2,200 t against a design 1,100,
+  17 §2.1), stores, hammocks, boats. B0's starts on Borodino fell to 4% a hit against 17 §9 T6's ~19 fires in 60 hits,
+  with the bunkers rightly burning nothing. A scenario's ship could carry deck cargo as a load on its weather-deck strips
+  (and its weight), on top of the outfit; bulk coal itself burns poorly from a shell (17 §2.1: dust and stability more
+  than flame), so what burns is the rest of the clutter. Not built; ignored until the anchors.
 
 ## What stays out
 
