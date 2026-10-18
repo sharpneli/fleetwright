@@ -13,12 +13,13 @@ public struct FireStep
     /// <summary>The magazine set off (a room of the class), when <see cref="Magazine"/>; else -1.</summary>
     public int MagazineRoom;
     public int Spread, Out, Flashed, Reflashed;
-    public double CrewLost;
+    /// <summary>The crew it cost, and the firefighting water it left in the cells, m³.</summary>
+    public double CrewLost, WaterM3;
 }
 
-/// <summary>Where a fire is in its life (damage/17 §3-4): growing as t², burning locally (its load can't feed a
+/// <summary>Where a fire is in its life (damage/17 §3-4, §6.1): growing as t², burning locally (its load can't feed a
 /// flashover), starved (its air can't), developed (flashed over, burning as fast as its air and fuel let it), decaying on
-/// its last fuel, or out.</summary>
+/// its last fuel, under control (knocked down, being mopped up), or out.</summary>
 public enum BurnPhase : byte
 {
     None,
@@ -27,28 +28,37 @@ public enum BurnPhase : byte
     Starved,
     Developed,
     Decay,
+    /// <summary>Knocked down by water, dying while it's mopped up.</summary>
+    Control,
     Out,
 }
 
 /// <summary>A fire space's fire (docs/battle/fire.md): its heat release Q (MW), the fuel left and at its first ignition
 /// (MJ), the area involved (m²), the time since it was lit and in its phase (s; out, since it went out), the time it has
 /// burned developed (s), the seat it was lit by (MW), a propellant seat's charges left (MJ) and the rate they burn at (MW),
-/// whether it went out hot (its steel can light it again), and its phase.</summary>
+/// the most area it involved (m²) and the water it has been mopped up with (L), whether it went out hot (its steel can
+/// light it again), and its phase.</summary>
 public struct BurnState
 {
-    public double Q, E, E0, Involved, T, PhaseS, DevS, Seat, Charges, ChargesMW;
+    public double Q, E, E0, Involved, T, PhaseS, DevS, Seat, Charges, ChargesMW, InvolvedMax, Mop;
     public bool Hot;
     public BurnPhase Phase;
     public readonly bool Burning => Phase is > BurnPhase.None and < BurnPhase.Out;
 }
 
-/// <summary>What one space's fire did in a step (<see cref="Fires.Advance"/>).</summary>
+/// <summary>What one space's fire did in a step (<see cref="Fires.Advance"/>): flashed over, went out, or lost its water
+/// under control before it was out (the fire step draws whether it rekindles).</summary>
 public enum BurnEvent : byte
 {
     None,
     Flashover,
     Out,
+    Dry,
 }
+
+/// <summary>The water on a fire (docs/battle/fire.md B3): the flow as fog would do the work (L/min), the flow thrown
+/// (L/min), and the most of it the fire can boil (the nozzle's share).</summary>
+public readonly record struct FireWater(double FogLpm, double Lpm, double BoilShare);
 
 /// <summary>FIRE (docs/battle/fire.md; damage/17 §8): each fire space (a cell, a part with a space inside, a section's
 /// weather deck) burns as one compartment fire. It grows as t² from its seat; flashes over at Thomas's threshold when its
@@ -95,11 +105,27 @@ public static class Fires
                 res.Out++;
                 continue;
             }
-            var e = Advance(row, ref x, Vent(c, k, i, s), Load(row, k), dt, s, k.Readiness.WetDecks);
+            var e = Advance(row, ref x, Vent(c, k, i, s), Load(row, k), dt, s, k.Readiness.WetDecks, k.FireFlow[i], out double aboardL);
+            if (cell && aboardL > 0)
+            {
+                // what the fire didn't boil stays in the cell, to the flooding (17 §6.5); on deck and in the upper works it runs off
+                k.WaterM3[row.Index] = Math.Min(f.Capacity[row.Index], k.WaterM3[row.Index] + aboardL / 1000);
+                res.WaterM3 += aboardL / 1000;
+            }
+            if (e == BurnEvent.Dry)
+            {
+                // the water stopped before it was out: it rekindles, or it was beaten after all
+                if (r.NextDouble() < s.FireRekindleShare)
+                    (x.Phase, x.Seat, x.Q, x.T, x.Involved) = (BurnPhase.Grow, s.FireReflashSeatMW, s.FireReflashSeatMW, 60, 0);
+                else
+                    e = BurnEvent.Out;
+            }
             if (e == BurnEvent.Flashover)
                 res.Flashed++;
             else if (e == BurnEvent.Out)
             {
+                if (x.Burning)
+                    Douse(c, k, i, s);
                 Mark(c, k, i);
                 res.Out++;
                 continue;
@@ -209,12 +235,18 @@ public static class Fires
         return true;
     }
 
-    /// <summary>One space's fire over dt seconds, from its openings' A√H (m^2.5; infinite in the open) and its fire load
-    /// (MJ/m²), its weather deck wetted or not: the physics alone, for the ship's step and the bench (damage/17 §8.2,
-    /// fire_ref.py's Space). A propellant seat's charges burn on top at their own rate, and the fire isn't out while they
-    /// last.</summary>
-    public static BurnEvent Advance(in FireSpaceRow row, ref BurnState x, double aoh, double q, double dt, SimSettings s, bool wet = false)
+    /// <summary>One space's fire over dt seconds unfought (the bench's free burns).</summary>
+    public static BurnEvent Advance(in FireSpaceRow row, ref BurnState x, double aoh, double q, double dt, SimSettings s, bool wet = false) =>
+        Advance(row, ref x, aoh, q, dt, s, wet, default, out _);
+
+    /// <summary>One space's fire over dt seconds, from its openings' A√H (m^2.5; infinite in the open), its fire load
+    /// (MJ/m²), its weather deck wetted or not, and the water on it: the physics alone, for the ship's step and the bench
+    /// (damage/17 §8.2, fire_ref.py's Space and attack). A propellant seat's charges burn on top at their own rate, water
+    /// or not, and the fire isn't out while they last. <paramref name="aboardL"/>: the water left in the space, L.</summary>
+    public static BurnEvent Advance(in FireSpaceRow row, ref BurnState x, double aoh, double q, double dt, SimSettings s, bool wet,
+        in FireWater water, out double aboardL)
     {
+        aboardL = 0;
         if (!x.Burning || dt <= 0)
             return BurnEvent.None;
         var ev = BurnEvent.None;
@@ -224,63 +256,91 @@ public static class Fires
         double qfo = open ? double.PositiveInfinity : Flashover(room, row.HeightM, aoh, s);
         double fuelRoom = Fuel(room, q, s), lim = Math.Min(fuelRoom, qvent);
         double charges = x.Charges > 0 ? Math.Min(x.Charges, x.ChargesMW * dt) / dt : 0;
+        double need = Math.Max(s.FireWaterMinLpm, s.FireWaterLm2 * (x.Phase == BurnPhase.Control ? x.InvolvedMax : x.Involved));
+        double held = water.FogLpm > 0 ? Math.Min(1, water.FogLpm / need) : 0;
         x.T += dt;
-        switch (x.Phase)
+        if (x.Phase == BurnPhase.Control)
         {
-            case BurnPhase.Grow:
+            if (water.Lpm <= 0)
+                return BurnEvent.Dry;
+            x.Q *= Math.Exp(-dt / s.FireControlS);
+            x.Mop += water.Lpm * dt / 60;
+            if (x.Mop >= s.FireMopLm2 * x.InvolvedMax && charges <= 0)
+                ev = BurnEvent.Out;
+        }
+        else if (held >= 1)
+        {
+            // knocked down (Shadwell's fog attack: control in ~2 min)
+            x.Q *= Math.Exp(-dt / (s.FireKnockS * need / water.FogLpm));
+            if (x.Q < s.FireControlMW + s.FireControlMWm2 * x.Involved)
+                (x.Phase, x.Mop, x.PhaseS) = (BurnPhase.Control, 0, 0);
+        }
+        else
+            switch (x.Phase)
             {
-                double a = s.FireAlphaMWs2 * row.Growth * s.FireUseGrowth[Math.Min((int)row.Use, s.FireUseGrowth.Length - 1)];
-                x.Q = x.Seat + a * x.T * x.T;
-                if (!open && x.Q + charges >= qfo && fuelRoom >= qfo && qvent >= qfo)
+                case BurnPhase.Grow:
                 {
-                    (x.Phase, x.PhaseS, x.Involved) = (BurnPhase.Developed, 0, room);
-                    ev = BurnEvent.Flashover;
+                    double a = s.FireAlphaMWs2 * row.Growth * s.FireUseGrowth[Math.Min((int)row.Use, s.FireUseGrowth.Length - 1)];
+                    x.Q = x.Seat + a * x.T * x.T * (1 - held) * (1 - held);
+                    if (!open && x.Q + charges >= qfo && fuelRoom >= qfo && qvent >= qfo)
+                    {
+                        (x.Phase, x.PhaseS, x.Involved) = (BurnPhase.Developed, 0, room);
+                        ev = BurnEvent.Flashover;
+                    }
+                    else if (x.Q >= lim)
+                    {
+                        x.Q = lim;
+                        x.PhaseS = 0;
+                        x.Phase = open ? q * (wet ? s.FireWetSustain : 1) >= s.FireOpenSustainMJm2 ? BurnPhase.Developed : BurnPhase.Local
+                            : fuelRoom < qfo ? BurnPhase.Local : BurnPhase.Starved;
+                        if (x.Phase == BurnPhase.Developed)
+                            x.Involved = area;
+                    }
+                    else
+                        x.Involved = open ? Math.Min(area, x.Q / s.FireOpenMWm2) : room * Math.Clamp(x.Q / qfo, 0.1, 1);
+                    break;
                 }
-                else if (x.Q >= lim)
-                {
-                    x.Q = lim;
-                    x.PhaseS = 0;
-                    x.Phase = open ? q * (wet ? s.FireWetSustain : 1) >= s.FireOpenSustainMJm2 ? BurnPhase.Developed : BurnPhase.Local
-                        : fuelRoom < qfo ? BurnPhase.Local : BurnPhase.Starved;
-                    if (x.Phase == BurnPhase.Developed)
-                        x.Involved = area;
-                }
-                else
-                    x.Involved = open ? Math.Min(area, x.Q / s.FireOpenMWm2) : room * Math.Clamp(x.Q / qfo, 0.1, 1);
-                break;
+                case BurnPhase.Local:
+                    x.Q = lim * (1 - held);
+                    x.PhaseS += dt;
+                    if (charges <= 0 && (x.PhaseS > s.FireLocalS || x.E0 - x.E >= s.FireLocalShare * room * q))
+                        ev = BurnEvent.Out;
+                    break;
+                case BurnPhase.Starved:
+                    x.PhaseS += dt;
+                    x.Q = Math.Max(s.FireSmoulderMW, lim) * (1 - held);
+                    if (qvent >= qfo && fuelRoom >= qfo)
+                    {
+                        // a hole or an opened door lets the air in: it flashes (backdraft)
+                        (x.Phase, x.PhaseS, x.Involved) = (BurnPhase.Developed, 0, room);
+                        ev = BurnEvent.Flashover;
+                    }
+                    else if (charges <= 0 && x.PhaseS > s.FireStarvedS)
+                        ev = BurnEvent.Out;
+                    break;
+                case BurnPhase.Developed:
+                case BurnPhase.Decay:
+                    x.DevS += dt;
+                    x.Involved = open ? area : Math.Min(area, x.Involved + room * dt / s.FireRoomToRoomS);
+                    x.Q = Math.Min(qvent, Fuel(x.Involved, q, s)) * (1 - s.FireHeldDeveloped * held);
+                    if (x.Phase == BurnPhase.Developed && x.E <= s.FireDecayShare * x.E0)
+                        x.Phase = BurnPhase.Decay;
+                    if (x.Phase == BurnPhase.Decay)
+                        x.Q *= Math.Max(0.25, x.E / (s.FireDecayShare * x.E0));
+                    break;
             }
-            case BurnPhase.Local:
-                x.Q = lim;
-                x.PhaseS += dt;
-                if (charges <= 0 && (x.PhaseS > s.FireLocalS || x.E0 - x.E >= s.FireLocalShare * room * q))
-                    return Out(ref x, false);
-                break;
-            case BurnPhase.Starved:
-                x.PhaseS += dt;
-                x.Q = Math.Max(s.FireSmoulderMW, lim);
-                if (qvent >= qfo && fuelRoom >= qfo)
-                {
-                    // a hole or an opened door lets the air in: it flashes (backdraft)
-                    (x.Phase, x.PhaseS, x.Involved) = (BurnPhase.Developed, 0, room);
-                    ev = BurnEvent.Flashover;
-                }
-                else if (charges <= 0 && x.PhaseS > s.FireStarvedS)
-                    return Out(ref x, true);
-                break;
-            case BurnPhase.Developed:
-            case BurnPhase.Decay:
-                x.DevS += dt;
-                x.Involved = open ? area : Math.Min(area, x.Involved + room * dt / s.FireRoomToRoomS);
-                x.Q = Math.Min(qvent, Fuel(x.Involved, q, s));
-                if (x.Phase == BurnPhase.Developed && x.E <= s.FireDecayShare * x.E0)
-                    x.Phase = BurnPhase.Decay;
-                if (x.Phase == BurnPhase.Decay)
-                    x.Q *= Math.Max(0.25, x.E / (s.FireDecayShare * x.E0));
-                break;
+        x.InvolvedMax = Math.Max(x.InvolvedMax, x.Involved);
+        if (water.Lpm > 0)
+        {
+            // the water a fire doesn't boil stays in the space (17 §6.5)
+            double thrown = water.Lpm * dt / 60;
+            aboardL = thrown - Math.Min(thrown * water.BoilShare, x.Q * dt / s.FireWaterMJkg);
         }
         x.E -= x.Q * dt;
         x.Charges = Math.Max(0, x.Charges - charges * dt);
         x.Q += charges;
+        if (ev == BurnEvent.Out)
+            return Out(ref x, x.Phase == BurnPhase.Starved || x.DevS > s.FireHotS);
         if (charges <= 0 && (x.E <= 0 || x.Phase == BurnPhase.Decay && x.Q < s.FireSmoulderMW))
             return Out(ref x, x.DevS > s.FireHotS);
         return ev;

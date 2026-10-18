@@ -114,6 +114,8 @@ public sealed class ShipCondition
     /// <summary>Each fire space's fire (the class's FireSpaces; docs/battle/fire.md): <see cref="CellFire"/> and a part's
     /// <see cref="PartFlags.Burning"/> show which burn.</summary>
     public BurnState[] Fire = [];
+    /// <summary>The water on each fire space now (docs/battle/fire.md B3): the firefighting's (B4) to set each step.</summary>
+    public FireWater[] FireFlow = [];
     /// <summary>Her orders before action for fire (docs/battle/fire.md B1): stripped, the doors, the decks wetted. The
     /// damage system keeps it to her side's.</summary>
     public FireReadiness Readiness;
@@ -217,6 +219,7 @@ public sealed class ShipCondition
             CellFire = new bool[c.Cells.Length];
             CellOpened = new bool[c.Cells.Length];
             Fire = new BurnState[c.FireSpaces.Length];
+            FireFlow = new FireWater[c.FireSpaces.Length];
             MountWorks = new bool[c.Mounts.Length];
             DirectorWorks = new bool[c.Directors.Length];
             EyeWorks = new bool[c.Eyes.Length];
@@ -254,6 +257,7 @@ public sealed class ShipCondition
             Array.Clear(CellFire);
             Array.Clear(CellOpened);
             Array.Clear(Fire);
+            Array.Clear(FireFlow);
         }
         Array.Fill(MountWorks, true);
         Array.Fill(DirectorWorks, true);

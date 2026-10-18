@@ -1,5 +1,5 @@
 # Plan: fire (a 4.5 deepening)
-Status: **agreed with the user 2026-10-18** ("Decided" below); B0 and B1 done 2026-10-18; B1 showed v0's put-out can't hold the spread (decision 4), B3 and B4 proposed ahead of B2    Updated: 2026-10-18
+Status: **agreed with the user 2026-10-18** ("Decided" below); B0, B1 and B3 done 2026-10-18; the order since: B3, B4, then B2 (decision 5)    Updated: 2026-10-18
 
 The fine-tune pass for fire: what happens after a fire starts. Its research is `damage/17_fire.md` (with `fire_ref.py`),
 on top of `damage/10_damage_control_holistic.md` §2 (fire, ammunition in a fire, the fire main) and `09_damage_control.md`
@@ -90,6 +90,9 @@ The first game is 1890-1925, so its anchors lead; the WWII ones check the mechan
 3. **The supply side is rough:** parties as units, no individual hoses anywhere, no detailed fire main or pumps.
 4. **Until B4 the stand-in stays:** B0-B3 keep v0's put-out chance on top of the new fire, so the ships don't burn
    unfought in between (end-goal rules: a step may relax a rule the plan restores). B4 removes it.
+
+5. **B3 and B4 before B2** (the user, 2026-10-18, after B1): v0's put-out can't hold physical spread (decision 4
+   failed), so the water and the parties come next, the effects after. Main runs hot on HE fire until B4.
 
 ## The model
 
@@ -311,6 +314,27 @@ from B0's bench on.
 ### B3 Water
 - The attack physics with a bench flow (17 §9 T3, T4); water left aboard; flooding's outflow above the sea.
 - Tests: Shadwell's fog and jet (17 §8.7-2); 12-21 t a hose-hour.
+- **Built (done 2026-10-18):**
+  - `Fires.Advance` takes the water on a fire (`FireWater`: the flow as fog would do the work, the flow thrown, the most
+    the fire can boil) and puts out what it left aboard. Need 4 L/min a m² involved (at least 40); at or over it the fire
+    is knocked down (τ = 90 s × need / flow) to under 0.05 + 0.002 MW a m², then under control (`BurnPhase.Control`: τ 60
+    s) until mopped up with 60 L a m² of the most it involved; under it the fire is held ((1 − held)² of its growth, 1 −
+    0.7·held developed, 1 − held local or starved). Water stopped under control rekindles it with 0.3 (`BurnEvent.Dry`;
+    the step draws). The nozzles are settings (`FireNozzles`: jet a third of its flow, all-purpose half, fog all; boiling
+    0.15, 0.4, 0.8); a doctrine picks one (B4).
+  - The fire step reads each space's water (`ShipCondition.FireFlow`, B4's to set) and puts what it left into the cell's
+    water (`FireStep.WaterM3`); on deck and in the upper works it runs off.
+  - **Flooding's outflow:** water over a hole's lower edge, with the sea outside lower, runs out through it
+    (`FloodStep.OutM3`).
+  - `shipgen burn` gains T3 and T4; `FireWaterTests`.
+- **The bench against `fire_ref.py`:** T4 within 1 min everywhere (one hose at 1 min out at 3.6 min, at 6 min only
+  held; three at 6 min out at 16.5); T3's fog at 8 min exact (1.5 / 14.5 min, 2.3 t), its earlier rows 0.4-1.3 min slower
+  to control: the reference caps a fire at its flashover threshold on the step it flashes and the hose knocks that down,
+  where ours is at the door's 2.2 MW by then (ours is the physics; noted, not copied). A 150 L/min jet holds the fire 197
+  min (the reference 155, without a decay). A 400 L/min jet on a held 90 m² fire leaves 21.7 t aboard an hour (17 §6.5:
+  12-21). Shadwell's fog: control in 2 min, done at 9.1; ours 1.5 and 10.5 (from water at 4 min).
+- **What moved:** nothing sets the water yet, so the hits bench is as at B1 but for the outflow (Iron Duke's water 104 →
+  102 t a ship).
 
 ### B4 Firefighting
 - The doctrine block and templates, the fire watch, parties, water by section, hits on parties, turn-to. v0's put-out

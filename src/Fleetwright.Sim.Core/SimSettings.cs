@@ -1348,6 +1348,36 @@ public sealed record SimSettings
     public double FirePropellantMJkg { get; init; } = 4.5;
     public double FirePropellantBurnS { get; init; } = 30;
 
+    /// <summary>Water on a fire (docs/battle/fire.md B3; damage/17 §6.1, fire_ref.py's attack): a fire needs
+    /// <see cref="FireWaterLm2"/> L/min of fog-equivalent flow per m² involved (Grimwood, the Iowa formula [SRC]), at least
+    /// <see cref="FireWaterMinLpm"/>. Given that, it's knocked down with τ = <see cref="FireKnockS"/> × need / flow [FIT to
+    /// Shadwell's fog attack, 2 min], under control once its heat is under 0.05 MW plus 0.002 MW a m² involved, then dies
+    /// down with τ <see cref="FireControlS"/> while it's mopped up, out after <see cref="FireMopLm2"/> L a m² of the most it
+    /// involved (Särdqvist [SRC]); water stopped before then rekindles it with this share. Short of the need it's held: a
+    /// growing fire at (1 − held)² of its growth, a developed one at 1 − 0.7·held of its heat, a local or starved one at
+    /// 1 − held. Water boils at <see cref="FireWaterMJkg"/> MJ/kg from the sea's temperature to steam (17 §6.5): at most
+    /// the fire's heat over that, and at most the nozzle's share of what it throws; the rest stays aboard.</summary>
+    public double FireWaterLm2 { get; init; } = 4;
+    public double FireWaterMinLpm { get; init; } = 40;
+    public double FireKnockS { get; init; } = 90;
+    public double FireControlMW { get; init; } = 0.05;
+    public double FireControlMWm2 { get; init; } = 0.002;
+    public double FireControlS { get; init; } = 60;
+    public double FireMopLm2 { get; init; } = 60;
+    public double FireRekindleShare { get; init; } = 0.3;
+    public double FireHeldDeveloped { get; init; } = 0.7;
+    public double FireWaterMJkg { get; init; } = 2.6;
+
+    /// <summary>Nozzles (17 §6.1): the share of a nozzle's flow that does the work of fog (a straight jet ~10% of its water
+    /// cooling against fog's 30-60% [SRC Gałaj; fog UNCERTAIN]: a third; the USN's 1942 all-purpose nozzle half [EST]),
+    /// and the most of its water a fire can boil (jet 0.15, all-purpose 0.4, fog 0.8 [EST]).</summary>
+    public FireNozzle[] FireNozzles { get; init; } =
+    [
+        new() { Name = "jet", FogShare = 1.0 / 3, BoilShare = 0.15 },
+        new() { Name = "all-purpose", FogShare = 0.5, BoilShare = 0.4 },
+        new() { Name = "fog", FogShare = 1, BoilShare = 0.8 },
+    ];
+
     /// <summary>The orders a ship goes into action with (docs/battle/fire.md B1): stripped of what burns or as fitted
     /// (the outfit's two loads), the open doors a cell has (the material condition: 0 closed up), and the weather decks
     /// wetted. A side takes one by name (the scenario's "readiness"; <see cref="FireReadinessDefault"/> else): unprepared
@@ -1552,6 +1582,14 @@ public sealed record FireDiscipline
     public int MissesToRange { get; init; } = 3;
     public double RateSpotShare { get; init; }
     public double IndependentWithinM { get; init; }
+}
+
+/// <summary>A nozzle (docs/battle/fire.md B3; <see cref="SimSettings.FireNozzles"/>).</summary>
+public readonly record struct FireNozzle
+{
+    public string Name { get; init; }
+    public double FogShare { get; init; }
+    public double BoilShare { get; init; }
 }
 
 /// <summary>A ship's orders before action for fire (docs/battle/fire.md B1; <see cref="SimSettings.FireReadiness"/>).</summary>

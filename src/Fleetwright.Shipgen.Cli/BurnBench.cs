@@ -7,7 +7,8 @@ namespace Fleetwright.Shipgen.Cli;
 
 /// <summary>`shipgen burn`: one space burning unfought (docs/battle/fire.md B0), through the game's own fire
 /// (<see cref="Fires.Advance"/>): damage/17 §9 T2's spaces (fire_ref.py physics) with the reference's numbers beside
-/// them, each run at a 1 s and a 15 s step (they must agree); then the rooms of a big space joining one by one.</summary>
+/// them, each run at a 1 s and a 15 s step (they must agree); then the rooms of a big space joining one by one; then T3 and
+/// T4, one hose on a fire from a time on (B3), beside the reference.</summary>
 static class BurnBench
 {
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
@@ -61,7 +62,66 @@ static class BurnBench
             Console.WriteLine(string.Format(Inv, "{0,-48} {1,5:0}  {2,9} {3,7:0} {4,7:0} {5,7:0} {6,9:0.00} {7,6:0.0}",
                 name, Fires.Room(row, s), Min(r.Fo), r.At10, r.At30, r.At60, r.Mw60, r.Hours));
         }
+
+        Console.WriteLine();
+        Console.WriteLine("== T3. One hose on a 30 m2 (Shadwell-size) fire, 1939 load (fire_ref.py beside: control min after water, out min, water t) ==");
+        Console.WriteLine($"{"nozzle, flow, water at",-34} {"control",8} {"out",6} {"flashed",8} {"water t",8} | {"ref",6} {"out",6} {"t",5}");
+        foreach (var (nozzle, lpm, at, rc, ro, rw) in new (string, double, double, double, double, double)[]
+                 {
+                     ("fog", 360, 4, 1.1, 10.1, 2.2), ("jet", 360, 4, 3.2, 12.2, 2.9), ("fog", 360, 1, 0.1, 1.9, 0.3), ("fog", 360, 8, 1.5, 14.5, 2.3),
+                     ("all-purpose", 250, 4, 3.1, 14.3, 2.6), ("jet", 150, 4, double.NaN, 154.9, 19.2), ("jet", 750, 4, 1.5, 7.9, 2.9),
+                 })
+        {
+            var a = Attack(Row(FireUse.Quarters, 30, 480, 1.3), 480, Water(s, nozzle, lpm), at, s);
+            Console.WriteLine(string.Format(Inv, "{0,-34} {1,8} {2,6} {3,8} {4,8:0.0} | {5,6} {6,6:0.0} {7,5:0.0}",
+                $"{nozzle} {lpm:0} L/min at {at:0} min", Min(a.Control), Min(a.Out), a.Flashed, a.WaterT, Min(rc), ro, rw));
+        }
+
+        Console.WriteLine();
+        Console.WriteLine("== T4. When the first water comes: 90 m2 1939 messdeck, all-purpose 250 L/min, one hose and three (fire_ref.py's out min beside) ==");
+        Console.WriteLine($"{"water at",-10} {"1 hose",8} {"flashed",8} {"3 hoses",8} {"flashed",8} {"water t",8} | {"ref 1",6} {"ref 3",6}");
+        foreach (var (at, r1, r3) in new (double, double, double)[]
+                 {
+                     (0.5, 3, 1), (1, 4, 2), (2, 7, 4), (3, 12, 6), (4, 16, 9), (6, double.NaN, 16), (8, double.NaN, 18), (10, double.NaN, 20),
+                     (15, double.NaN, 25),
+                 })
+        {
+            var one = Attack(Row(FireUse.Quarters, 90, 480, 1.3), 480, Water(s, "all-purpose", 250), at, s);
+            var three = Attack(Row(FireUse.Quarters, 90, 480, 1.3), 480, Water(s, "all-purpose", 750), at, s);
+            Console.WriteLine(string.Format(Inv, "{0,-10} {1,8} {2,8} {3,8} {4,8} {5,8:0.0} | {6,6} {7,6}",
+                $"{at:0.#} min", Min(one.Out), one.Flashed, Min(three.Out), three.Flashed, three.WaterT, Min(r1), Min(r3)));
+        }
         return 0;
+    }
+
+    /// <summary>A nozzle's water at a flow (the settings' FireNozzles).</summary>
+    static FireWater Water(SimSettings s, string nozzle, double lpm)
+    {
+        var n = s.FireNozzles.Single(x => x.Name == nozzle);
+        return new FireWater(lpm * n.FogShare, lpm, n.BoilShare);
+    }
+
+    record struct Attacked(double Control, double Out, bool Flashed, double WaterT);
+
+    /// <summary>A fire lit by a 0.1 MW seat in a space with one door, a hose on it from a time on (fire_ref.py's
+    /// compartment_attack): when it came under control after the water (min), when it was out (min from ignition; NaN
+    /// not in 4 h), whether it flashed over, and the water left aboard (t).</summary>
+    static Attacked Attack(in FireSpaceRow row, double q, FireWater hose, double atMin, SimSettings s)
+    {
+        const double dt = 2;
+        var x = new BurnState { Phase = BurnPhase.Grow, Q = 0.1, Seat = 0.1, E0 = q * row.AreaM2, E = q * row.AreaM2 };
+        double aoh = s.FireLeakAoh + s.FireDoorAoh, t = 0, control = double.NaN, water = 0;
+        bool flashed = false;
+        while (x.Burning && t < 4 * 3600)
+        {
+            var e = Fires.Advance(row, ref x, aoh, q, dt, s, false, t >= atMin * 60 ? hose : default, out double aboard);
+            t += dt;
+            water += aboard;
+            flashed |= e == BurnEvent.Flashover;
+            if (double.IsNaN(control) && x.Phase == BurnPhase.Control)
+                control = t / 60 - atMin;
+        }
+        return new Attacked(control, x.Burning ? double.NaN : t / 60, flashed, water / 1000);
     }
 
     static FireSpaceRow Row(FireUse use, double area, double q, double growth) => new()

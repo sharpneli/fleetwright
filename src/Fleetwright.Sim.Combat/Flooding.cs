@@ -124,7 +124,7 @@ public sealed class FloodModel
 /// was flooded out of action (what the ship can do must be worked out again).</summary>
 public struct FloodStep
 {
-    public double InM3, PumpedM3;
+    public double InM3, OutM3, PumpedM3;
     public bool RoomsFlooded;
 }
 
@@ -184,6 +184,21 @@ public static class Flooding
             double v = Math.Min(q * dt, room);
             w[i] += v;
             res.InM3 += v;
+        }
+
+        // and out: water standing over a hole's lower edge, with the sea outside lower, runs out through it (a fire's
+        // hose water high in the ship, a cell the ship's righting lifted; docs/battle/fire.md B3)
+        for (int i = 0; i < cells.Length; i++)
+        {
+            if (w[i] <= 0 || k.BreachM2[i] <= 0)
+                continue;
+            double bottom = k.BreachZ[i] - Math.Sqrt(k.BreachM2[i] / Math.PI);
+            double floor = Math.Max(bottom, water.At(f.Cx[i], k.BreachY[i])), head = f.Level(c, k, i) - floor;
+            if (head <= 0)
+                continue;
+            double v = Math.Min(Math.Min(cd * k.BreachM2[i] * Math.Sqrt(2 * G * head) * dt, head * f.Area[i]), w[i]);
+            w[i] -= v;
+            res.OutM3 += v;
         }
 
         // across the graph: from the higher water (over the sea outside) to the lower, down to the opening between

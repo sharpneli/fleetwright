@@ -532,6 +532,22 @@
   "FireReflashSeatMW": 0.2,
   "FirePropellantMJkg": 4.5,
   "FirePropellantBurnS": 30,
+  // water on a fire (docs/battle/fire.md B3; damage/17 §6.1): the need, knock-down, control, mop-up, the nozzles
+  "FireWaterLm2": 4,
+  "FireWaterMinLpm": 40,
+  "FireKnockS": 90,
+  "FireControlMW": 0.05,
+  "FireControlMWm2": 0.002,
+  "FireControlS": 60,
+  "FireMopLm2": 60,
+  "FireRekindleShare": 0.3,
+  "FireHeldDeveloped": 0.7,
+  "FireWaterMJkg": 2.6,
+  "FireNozzles": [
+    { "Name": "jet", "FogShare": 0.3333333333333333, "BoilShare": 0.15 },
+    { "Name": "all-purpose", "FogShare": 0.5, "BoilShare": 0.4 },
+    { "Name": "fog", "FogShare": 1, "BoilShare": 0.8 }
+  ],
   // a ship's orders before action for fire: the scenario's "readiness" by side, else the default
   "FireReadiness": [
     { "Name": "unprepared", "Stripped": false, "CellDoors": 1, "WetDecks": false },
