@@ -257,7 +257,6 @@ public sealed class GunnerySystem : IWorldSystem
     {
         int n = 0;
         fc.Condition = cond.Version;
-        var optics = fc.Fit.Optics;   // the first readings come at the rate it was reading at
         if (!row.Local)
             foreach (int u in cls.Links(row.Units))
             {
@@ -296,6 +295,7 @@ public sealed class GunnerySystem : IWorldSystem
             (fc.Local, fc.Level, fc.Fit) = (false, fc.DirectorLevel, fc.DirectorFit);   // a director back (E4: a timed outage over): under it again
         fc.SensorCount = n;
         fc.SpotHeightM = 0;
+        var optics = fc.Fit.Optics;
         for (int k = 0; k < n; k++)
         {
             ref var s = ref sensors[f * MaxSensors + k];
