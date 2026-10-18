@@ -24,8 +24,6 @@
 //                  funnel   "box", "oval" or "capped" (default: stadium)
 //                  blocks   superstructure corners: "boxy", "soft", "bowfront" (round fronts, square backs),
 //                           "chamfer" or "tower" (the top levels a round-fronted tower bridge) (default: as laid out)
-//                  mast     "pole": no tripod legs; "fighting_top": pole masts with a round fighting top;
-//                           "cage": US cage masts; "lattice": square braced lattice masts
 //                Features painted on (the colours are palette keys, HullArt.DeckPaint and DazzlePanels):
 //                  dazzle         true: dazzle panels in palette "camo" colours over the hull, superstructure and
 //                                 funnels, a repeatable pattern per design
@@ -67,11 +65,6 @@
 //     funnel_squareness  superellipse exponent of the oval funnel (2.6; 2 = ellipse, higher = squarer)
 //     funnel_band_w      width of the painted top band in m, the rim seen from above (0.25)
 //     funnel_band_h      the band's height on the profile in m (3 x funnel_band_w)
-//     tripod             tripod leg length factor (1; 0 = pole masts; pole, fighting_top and cage give 0)
-//     top_r              fighting top radius in m (0 = none; fighting_top gives 1.6)
-//     top_tiers          stacked tops, each smaller and lighter (1; 3 or so reads as a pagoda)
-//     cage_r             US cage mast foot radius in m (0 = none; mast "cage" gives 3)
-//     lattice_r          lattice mast half-width in m (0 = none; mast "lattice" gives 2.2)
 //     tower_level        the lowest superstructure level drawn as a tower by blocks "tower" (3)
 //     funnel_rake        how far aft a raked funnel's top stands from its foot, in m (0)
 //     funnel_cap         "pan" (an Italian flat plate overhanging aft) or "hat" (a broad black French cap)
@@ -201,8 +194,7 @@
             }
           },
           "turrets": "drum",
-          "shapes": {"funnel": "oval", "blocks": "soft", "mast": "fighting_top"},
-          "shapes_by_style": {"merchant": {"mast": "pole"}, "carrier": {"mast": "pole"}, "planing": {"mast": "pole"}}
+          "shapes": {"funnel": "oval", "blocks": "soft"}
         },
         // 1904-1920: the first service greys, darker than later ones; tall tripods with spotting tops, teak,
         // black funnel tops. Merchants keep their own colours
@@ -215,13 +207,8 @@
             {"keys": "decks", "tint": ["#8a6a3e", 0.25], "styles": ["warship", "carrier", "planing"]}
           ],
           "shapes": {
-            "funnel": "oval", "tripod": 1.3, "top_r": 1.4, "funnel_band_w": 0.4,
+            "funnel": "oval", "funnel_band_w": 0.4,
             "deck_line_opacity": 0.6
-          },
-          "shapes_by_style": {
-            "merchant": {"top_r": 0.0, "cage_r": 0.0},
-            "carrier": {"top_r": 0.0, "cage_r": 0.0},
-            "planing": {"top_r": 0.0, "cage_r": 0.0}
           }
         },
         // 1920-1936: light peacetime grey, holystoned white teak, tripods with director tops
@@ -233,12 +220,7 @@
             {"keys": ["hull", "upperworks", "armament", "funnels"], "lighten": 0.15, "styles": ["warship", "carrier", "planing"]},
             {"keys": "wood", "tint": ["#e2d5b5", 0.3], "styles": ["warship", "carrier", "planing"]}
           ],
-          "shapes": {"tripod": 1.2, "top_r": 1.1, "funnel_band_w": 0.4},
-          "shapes_by_style": {
-            "merchant": {"top_r": 0.0, "cage_r": 0.0},
-            "carrier": {"top_r": 0.0, "cage_r": 0.0},
-            "planing": {"top_r": 0.0, "cage_r": 0.0}
-          }
+          "shapes": {"funnel_band_w": 0.4}
         },
         // the original WWII haze-grey scheme
         "wwii": {
@@ -256,7 +238,7 @@
           "adjust": [
             {"keys": ["hull", "upperworks", "armament", "funnels"], "tint": ["#6e7d8c", 0.12], "styles": ["warship", "carrier", "planing"]}
           ],
-          "shapes": {"tripod": 0.0, "blocks": "boxy", "funnel": "capped", "deck_line_opacity": 0.2}
+          "shapes": {"blocks": "boxy", "funnel": "capped", "deck_line_opacity": 0.2}
         }
       }
     },
@@ -289,8 +271,7 @@
           "palette": {"camo": ["#1c2f52", "#3b6db0", "#d6e2ee"]},
           "turrets": "slab",
           "shapes": {
-            "funnel": "box", "blocks": "boxy", "mast": "cage", "tripod": 0.0, "top_r": 0.0,
-            "cage_r": 3.8, "dazzle": true, "dazzle_decks": 0.75
+            "funnel": "box", "blocks": "boxy", "dazzle": true, "dazzle_decks": 0.75
           }
         },
         // US-inspired 1920s-30s, the Battle Fleet: navy grey over honey-oiled teak, big white hull numbers on the
@@ -307,8 +288,7 @@
           ],
           "turrets": "slab",
           "shapes": {
-            "funnel": "box", "blocks": "boxy", "mast": "cage", "tripod": 0.0, "top_r": 0.0,
-            "cage_r": 3.4, "hull_number": true
+            "funnel": "box", "blocks": "boxy", "hull_number": true
           }
         },
         // US-inspired: Measure 21-style deck blue on every horizontal surface, boxy slab-sided turrets
@@ -376,7 +356,7 @@
             {"keys": "wood", "tint": ["#8e5a3c", 1.0], "styles": ["warship", "carrier", "planing"]}
           ],
           "turrets": "classic",
-          "shapes": {"blocks": "soft", "top_tiers": 2, "top_r": 2.0, "funnel_band_w": 0.7}
+          "shapes": {"blocks": "soft", "funnel_band_w": 0.7}
         },
         // Japan-inspired 1920s-30s: the Kure look before the rebuilds: smaller early pagodas, finer bows
         "treaty": {
@@ -386,7 +366,7 @@
             {"keys": "wood", "tint": ["#6b4635", 1.0], "styles": ["warship", "carrier", "planing"]},
             {"keys": "deck_line", "tint": ["#b39050", 1.0], "styles": ["warship", "carrier", "planing"]}
           ],
-          "shapes": {"top_r": 2.6, "top_tiers": 2, "deck_line_opacity": 0.6}
+          "shapes": {"deck_line_opacity": 0.6}
         },
         // Japan-inspired: dark Kure grey, pale hinoki wood, brown linoleum on steel decks, black-topped funnels,
         // rounded turrets with long rangefinder arms, red and white carrier deck stripes
@@ -412,12 +392,7 @@
           },
           "turrets": "round",
           "shapes": {
-            "funnel": "oval", "blocks": "soft", "tripod": 1.4, "top_r": 3.2, "top_tiers": 3
-          },
-          "shapes_by_style": {
-            "merchant": {"top_r": 0.0, "cage_r": 0.0},
-            "carrier": {"top_r": 0.0, "cage_r": 0.0},
-            "planing": {"top_r": 0.0, "cage_r": 0.0}
+            "funnel": "oval", "blocks": "soft"
           }
         },
         // Japan-inspired 1950s-60s: Kure-tinted haze grey over a muted brown non-skid (the linoleum's echo), rounded
@@ -444,7 +419,7 @@
           "desc": "UK-inspired 1890s: black, white and buff, two-tier fighting tops",
           "palette": {"wood": "#e4d8b8", "deck": "#cbbd99", "deck_line": "#9a8660", "steel_line": "#8f7b56"},
           "turrets": "classic",
-          "shapes": {"blocks": "bowfront", "top_r": 1.9, "top_tiers": 2}
+          "shapes": {"blocks": "bowfront"}
         },
         // UK-inspired 1917-18, the Grand Fleet: dark grey, dark weathered teak, three-colour dazzle carried across the
         // decks, black and white recognition bands on the turret roofs, tall tripods with spotting tops
@@ -458,13 +433,11 @@
             {"keys": "wood", "tint": ["#7a6a55", 1.0], "styles": ["warship", "carrier", "planing"]}
           ],
           "shapes": {
-            "tripod": 1.3, "top_r": 1.4, "funnel_band_w": 0.6, "deck_line_opacity": 0.7, "dazzle": true,
+            "funnel_band_w": 0.6, "deck_line_opacity": 0.7, "dazzle": true,
             "dazzle_decks": 0.6, "turret_bands": ["recog_a", "recog_b"]
           },
           "shapes_by_style": {
-            "merchant": {"top_r": 0.0, "cage_r": 0.0, "dazzle": true},
-            "carrier": {"top_r": 0.0, "cage_r": 0.0},
-            "planing": {"top_r": 0.0, "cage_r": 0.0}
+            "merchant": {"dazzle": true}
           }
         },
         // UK-inspired 1920s-30s, the Mediterranean Fleet: pale Med grey, teak holystoned nearly white, red, white and
@@ -477,13 +450,8 @@
             {"keys": "wood", "tint": ["#ebe6d6", 1.0], "styles": ["warship", "carrier", "planing"]}
           ],
           "shapes": {
-            "tripod": 1.2, "top_r": 1.1, "funnel_band_w": 0.4, "dazzle": false,
+            "funnel_band_w": 0.4, "dazzle": false,
             "turret_bands": ["#c0262d", "#f4f2ea", "#1f3f8a"]
-          },
-          "shapes_by_style": {
-            "merchant": {"top_r": 0.0, "cage_r": 0.0},
-            "carrier": {"top_r": 0.0, "cage_r": 0.0},
-            "planing": {"top_r": 0.0, "cage_r": 0.0}
           }
         },
         // UK-inspired: pale Admiralty grey, holystoned teak, white boats, black funnel tops, straight-sided turrets
@@ -540,7 +508,7 @@
             "funnel_band": "#161616", "boat": "#eeeeea", "fitting": "#6a7073", "mast": "#5a5f62", "crane": "#6a7073"
           },
           "turrets": "faceted",
-          "shapes": {"funnel": "capped", "blocks": "chamfer", "top_r": 1.8}
+          "shapes": {"funnel": "capped", "blocks": "chamfer"}
         },
         // German-inspired 1910s: dark decks under light blue-grey upperworks (as in wwii), pole masts with small
         // spotting tops, faceted turrets
@@ -555,7 +523,7 @@
           ],
           "turrets": "faceted",
           "shapes": {
-            "funnel": "capped", "blocks": "chamfer", "tripod": 0.0, "top_r": 0.9
+            "funnel": "capped", "blocks": "chamfer"
           }
         },
         // German-inspired 1920s-30s: the Reichsmarine's lighter hull, dark grey decks under light grey upperworks,
@@ -571,12 +539,7 @@
             {"keys": "wood", "tint": ["#55585a", 1.0], "styles": ["warship", "carrier", "planing"]},
             {"keys": "deck_line", "tint": ["#2e3133", 1.0], "styles": ["warship", "carrier", "planing"]}
           ],
-          "shapes": {"top_r": 0.9, "turret_bands": ["#1a1a1a", "#f4f2ea", "#c0262d"], "dazzle": false},
-          "shapes_by_style": {
-            "merchant": {"top_r": 0.0, "cage_r": 0.0},
-            "carrier": {"top_r": 0.0, "cage_r": 0.0},
-            "planing": {"top_r": 0.0, "cage_r": 0.0}
-          }
+          "shapes": {"turret_bands": ["#1a1a1a", "#f4f2ea", "#c0262d"], "dazzle": false}
         },
         // German-inspired: dark grey hull and decks under light grey upperworks, mid teak, grey funnel caps,
         // faceted turrets
@@ -602,7 +565,7 @@
           },
           "turrets": "faceted",
           "shapes": {
-            "funnel": "capped", "blocks": "chamfer", "mast": "pole",
+            "funnel": "capped", "blocks": "chamfer",
             "dazzle": true, "dazzle_upperworks": 0.0
           },
           "shapes_by_style": {"merchant": {"dazzle": false}}
@@ -635,7 +598,7 @@
             "funnel_band": "#f2efe6", "mast": "#3a3631"
           },
           "turrets": "hooded",
-          "shapes": {"funnel_band_w": 0.5, "top_r": 2.3}
+          "shapes": {"funnel_band_w": 0.5}
         },
         // Italy-inspired 1910s: light grey, cream teak, red and white chevrons on the forecastle, tall pole masts with
         // small tops, the first long turrets
@@ -652,7 +615,6 @@
             "funnel_cap": null,
             "dazzle": false,
             "deck_stripes": {"ends": "fore", "pattern": "chevron", "n": 3},
-            "top_r": 0.9,
             "deck_line_opacity": 0.55
           }
         },
@@ -668,8 +630,7 @@
           "shapes": {
             "dazzle": false,
             "deck_stripes": {"ends": "fore", "pattern": "chevron", "n": 3},
-            "awnings": true,
-            "top_r": 1.0
+            "awnings": true
           }
         },
         // Italy-inspired: light grey under dark grey and blue-grey dazzle panels, red and white recognition chevrons
@@ -701,7 +662,6 @@
             "funnel_rake": 1.6,
             "funnel_cap": "pan",
             "blocks": "tower",
-            "mast": "pole",
             "funnel_band_w": 0.4,
             "dazzle": true,
             "deck_stripes": {"ends": "both", "pattern": "chevron", "n": 4}
@@ -710,8 +670,7 @@
             "merchant": {
               "funnel_rake": 0.0, "funnel_cap": null, "blocks": "soft", "dazzle": false, "awnings": false,
               "deck_stripes": null
-            },
-            "carrier": {"top_r": 0.0}
+            }
           }
         },
         // Italy-inspired 1950s-60s: light haze grey over a warm grey non-skid and cream teak, black funnel tops, lattice
@@ -728,12 +687,11 @@
           ],
           "turrets": "lancia",
           "shapes": {
-            "funnel": "oval", "funnel_rake": 1.0, "funnel_cap": "pan", "blocks": "tower", "mast": "lattice",
+            "funnel": "oval", "funnel_rake": 1.0, "funnel_cap": "pan", "blocks": "tower",
             "funnel_band_w": 0.6, "hull_number": true
           },
           "shapes_by_style": {
-            "merchant": {"funnel_rake": 0.0, "funnel_cap": null, "mast": "pole"},
-            "carrier": {"mast": "pole"}
+            "merchant": {"funnel_rake": 0.0, "funnel_cap": null}
           }
         }
       }
@@ -753,7 +711,7 @@
           },
           "turrets": "champignon",
           "shapes": {
-            "top_r": 2.1, "top_tiers": 3, "awnings": true, "blocks": "soft"
+            "awnings": true, "blocks": "soft"
           },
           "shapes_by_style": {
             "merchant": {"awnings": false},
@@ -772,7 +730,7 @@
             {"keys": "deck_line", "tint": ["#2c3846", 1.0], "styles": ["warship", "carrier", "planing"]}
           ],
           "shapes": {
-            "funnel": "oval", "funnel_rake": 0.0, "turret_bands": null, "top_r": 0.9,
+            "funnel": "oval", "funnel_rake": 0.0, "turret_bands": null,
             "deck_line_opacity": 0.6, "funnel_band_w": 0.5
           }
         },
@@ -786,12 +744,10 @@
             {"keys": "deck_line", "tint": ["#3a4858", 1.0], "styles": ["warship", "carrier", "planing"]}
           ],
           "shapes": {
-            "funnel_rake": 1.0, "turret_bands": null, "awnings": true, "mast": null, "tripod": 1.2, "top_r": 1.1
+            "funnel_rake": 1.0, "turret_bands": null, "awnings": true
           },
           "shapes_by_style": {
-            "merchant": {"top_r": 0.0, "cage_r": 0.0, "awnings": false},
-            "carrier": {"top_r": 0.0, "cage_r": 0.0},
-            "planing": {"top_r": 0.0, "cage_r": 0.0}
+            "merchant": {"awnings": false}
           }
         },
         // France-inspired: dark blue-grey, wide split quadruple turrets with red and yellow roof bands (1940-42),
@@ -823,7 +779,7 @@
             {"keys": "deck_line", "tint": ["#323e4b", 1.0], "styles": ["warship", "carrier", "planing"]}
           ],
           "shapes": {
-            "funnel_rake": 3.0, "block_round": [2.2, 0.2], "mast": "pole", "funnel_band_w": 0.5,
+            "funnel_rake": 3.0, "block_round": [2.2, 0.2], "funnel_band_w": 0.5,
             "turret_bands": ["recog_a", "recog_b"]
           },
           "shapes_by_style": {"merchant": {"funnel_rake": 0.0, "block_round": null}}
@@ -842,11 +798,10 @@
           ],
           "turrets": "quadruple",
           "shapes": {
-            "funnel": "box", "funnel_cap": "hat", "block_round": [2.2, 0.2], "mast": "lattice", "hull_number": true
+            "funnel": "box", "funnel_cap": "hat", "block_round": [2.2, 0.2], "hull_number": true
           },
           "shapes_by_style": {
-            "merchant": {"funnel_cap": null, "mast": "pole", "block_round": null},
-            "carrier": {"mast": "pole"}
+            "merchant": {"funnel_cap": null, "block_round": null}
           }
         }
       }
@@ -867,7 +822,7 @@
             "funnel_band": "#141414", "boat": "#d9d4c6", "fitting": "#3a3631", "mast": "#262422", "crane": "#2a2a2c"
           },
           "turrets": "round",
-          "shapes": {"funnel": "oval", "funnel_band_w": 0.3, "funnel_band_h": 3.2, "top_r": 2.0}
+          "shapes": {"funnel": "oval", "funnel_band_w": 0.3, "funnel_band_h": 3.2}
         },
         // Russia-inspired 1910s, the Baltic two-tone of 1912: dark grey hull sides under light grey upperworks, pale
         // scrubbed pine decks, bare pole masts (the Ganguts carried no tops), the broad funnel bands the Baltic kept
@@ -883,7 +838,7 @@
             {"keys": "deck_line", "tint": ["#8c7a58", 1.0], "styles": ["warship", "carrier", "planing"]}
           ],
           "turrets": "classic",
-          "shapes": {"mast": "pole", "funnel": "oval", "funnel_band_w": 1.0, "deck_line_opacity": 0.5}
+          "shapes": {"funnel": "oval", "funnel_band_w": 1.0, "deck_line_opacity": 0.5}
         },
         // Russia-inspired 1920s-30s, the new Red fleet: the old dreadnoughts rebuilt with round tower bridges and a
         // capped fore funnel raked aft (Marat, Parizhskaya Kommuna), mid grey, grey-washed pine, red funnel bands
@@ -925,13 +880,11 @@
           },
           "turrets": "round",
           "shapes": {
-            "blocks": "tower", "funnel": "oval", "funnel_band_w": 0.5, "tripod": 1.2, "top_r": 1.6,
+            "blocks": "tower", "funnel": "oval", "funnel_band_w": 0.5,
             "dazzle": true, "dazzle_decks": 0.45, "dazzle_upperworks": 0.7
           },
           "shapes_by_style": {
-            "merchant": {"blocks": "soft", "dazzle": false, "top_r": 0.0},
-            "carrier": {"top_r": 0.0},
-            "planing": {"top_r": 0.0}
+            "merchant": {"blocks": "soft", "dazzle": false}
           }
         },
         // Russia-inspired 1950s-60s: light Soviet grey over red-brown non-skid, the red-brown teak to match, capped
@@ -955,11 +908,7 @@
             }
           },
           "turrets": "round",
-          "shapes": {"funnel": "capped", "mast": "lattice", "funnel_band_w": 0.8, "blocks": "soft"},
-          "shapes_by_style": {
-            "merchant": {"mast": "pole"},
-            "carrier": {"mast": "pole"}
-          }
+          "shapes": {"funnel": "capped", "funnel_band_w": 0.8, "blocks": "soft"}
         }
       }
     }

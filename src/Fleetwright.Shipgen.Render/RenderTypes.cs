@@ -65,14 +65,6 @@ public sealed record Shapes
     public double? FunnelBandW { get; init; }
     public double? FunnelBandH { get; init; }
 
-    // masts: "pole", "fighting_top", "cage", "lattice"
-    public string? Mast { get; init; }
-    public double? Tripod { get; init; }
-    public double? CageR { get; init; }
-    public double? LatticeR { get; init; }
-    public double? TopR { get; init; }
-    public long? TopTiers { get; init; }
-
     // paint
     public bool? Dazzle { get; init; }
     public double? DazzleDecks { get; init; }

@@ -422,7 +422,6 @@ public static class SideArt
     /// fighting tops, a cage or a lattice), as the plan does from above.</summary>
     static void Mast(List<Node> o, Painter P, SideView.Mast m)
     {
-        var sh = P.Shapes;
         string mast = P.C("mast");
         double x = m.X, b = m.Base, t = m.Top, h = t - b;
         if (h <= 0)

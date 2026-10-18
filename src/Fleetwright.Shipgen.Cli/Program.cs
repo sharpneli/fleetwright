@@ -274,7 +274,6 @@ public static class Program
                 "ammo-templates" => AmmoTemplates.Run(a.Positional, a.Has("dry"), a.Has("outfits")),
                 "templates" => TemplatesWriter.Run(Path.Combine(Root(a), "..")),
                 "upgrade" => DesignUpgrade.Run(a.Positional, a.Has("dry"), a.Has("materials")),
-                "masts-from-looks" => MastsFromLooks.Run(a.Positional, a.Has("dry")),
                 "fit" => DesignFit.Run(a.Positional, new[] { "main", "secondary", "aa" }.Where(k => a.Get(k) is not null).ToDictionary(k => k, k => a.Get(k)!),
                     a.Has("dry")),
                 "pen-check" => PenCheck.Run(Path.Combine(Root(a), "..")),
