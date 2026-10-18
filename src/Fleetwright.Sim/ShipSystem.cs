@@ -509,7 +509,7 @@ public sealed partial class ShipSystem : IWorldSystem
         if (!k.Damaged)
             return;
         int parts = k.Class.Components.Length, cells = k.CellFire.Length;
-        v.EnsureDamage(v.PartTotal + parts, v.FireTotal + cells);
+        v.EnsureDamage(v.PartTotal + parts, v.FireTotal + cells + k.Class.Sections.Length);
         for (int c = 0; c < parts; c++)
             if (k.State[c] != PartState.Ok || k.Flags[c] != PartFlags.None)
             {
@@ -521,6 +521,14 @@ public sealed partial class ShipSystem : IWorldSystem
             if (k.CellFire[c])
             {
                 v.FireCells[v.FireTotal++] = c;
+                v.FireCount[n]++;
+            }
+        // a weather deck's fire at its section's top cell, unless that burns too (a part's shows on the part)
+        var spaces = k.Class.FireSpaces;
+        for (int d = cells; d < spaces.Length; d++)
+            if (spaces[d].Kind == FireSpaceKind.Deck && k.Fire[d].Burning && !k.CellFire[spaces[d].Cell])
+            {
+                v.FireCells[v.FireTotal++] = spaces[d].Cell;
                 v.FireCount[n]++;
             }
     }

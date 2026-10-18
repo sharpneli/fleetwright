@@ -1,5 +1,5 @@
 {
- "version": 7,
+ "version": 8,
  "id": "doom",
  "name": "Coastal battleship of doom (1900)",
  "look": {
@@ -207,5 +207,6 @@
  "materials": {"Harvey nickel steel": {"density_t_per_m3": 7.85, "q": 0.82, "q_scale": 0, "face_hardened": {"share": 0.08, "min_mm": 81.3}, "back": {"spall_u": 0.85, "holed_u": 0.94, "big": 0.5}, "fragments": "fh"}, "mild steel": {"density_t_per_m3": 7.85, "q": 0.7, "back": {"spall_u": 0.9, "holed_u": 1, "big": 0.5}, "fragments": "mild"}, "wrought iron": {"density_t_per_m3": 7.7, "q": 0.53, "back": {"spall_u": 0.9, "holed_u": 1, "big": 0.5}, "fragments": "mild"}},
  "fittings": {"shock_grade": "G0"},
  "masts": [{"kind": "pole", "top": "fighting", "top_radius_m": 1.6}, {"kind": "pole", "top": "fighting", "top_radius_m": 1.6}],
- "fire_control_tech": {"Telescopic sights, fired on the roll": {"mount": {"director_firing": false, "stable_vertical": false, "lay_mil": 2, "salvo_defl_mil": 2.5}}, "Early telescopic sights": {"mount": {"director_firing": false, "stable_vertical": false, "lay_mil": 0.85, "salvo_defl_mil": 2.5}}}
+ "fire_control_tech": {"Telescopic sights, fired on the roll": {"mount": {"director_firing": false, "stable_vertical": false, "lay_mil": 2, "salvo_defl_mil": 2.5}}, "Early telescopic sights": {"mount": {"director_firing": false, "stable_vertical": false, "lay_mil": 0.85, "salvo_defl_mil": 2.5}}},
+ "outfit": {"name": "Pre-dreadnought (1905)", "fitted": {"quarters": 450, "cabins": 900, "offices": 420, "stores": 1500, "machinery": 150, "deck": 400}, "stripped": {"quarters": 380, "cabins": 600, "offices": 420, "stores": 1500, "machinery": 150, "deck": 350}, "paint_mj_m2": 60, "growth": 1.5}
 }

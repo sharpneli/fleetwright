@@ -1,4 +1,4 @@
-{"version": 7, "id": "tiger", "name": "Tiger-class cruiser (1959)", "look": {"navy": "portsmouth", "era": "cold_war"}, "type": "CL",
+{"version": 8, "id": "tiger", "name": "Tiger-class cruiser (1959)", "look": {"navy": "portsmouth", "era": "cold_war"}, "type": "CL",
  "hull": {"block_coefficient": 0.52, "construction": {"name": "High-tensile steel, all welded", "yield_mpa": 350, "join_factor": 1.0, "standard": 1.0, "shell": "welded", "internals": "welded"}, "plating": {"shell_mm": 0, "material": "steel", "deck_wood_mm": 0}, "freeboard": 1.0, "raised": []},
  "speed_kn": 31.5,
  "range_nm": 6500,
@@ -16,5 +16,6 @@
  "materials": {"Class A": {"density_t_per_m3": 7.85, "q": 1.03, "q_scale": 0.17, "face_hardened": {"share": 0.55, "min_mm": 127}, "back": {"spall_u": 0.85, "holed_u": 0.94, "big": 0.5}, "fragments": "fh"}, "Class B": {"density_t_per_m3": 7.85, "q": 1, "back": {"spall_u": 0.9, "holed_u": 1, "big": 0.5}, "elongation_pct": 25, "fragments": "ductile"}, "STS": {"density_t_per_m3": 7.85, "q": 1, "back": {"spall_u": 0.9, "holed_u": 1, "big": 0.5}, "elongation_pct": 25, "fragments": "ductile"}, "steel": {"density_t_per_m3": 7.85, "q": 0.7, "back": {"spall_u": 0.9, "holed_u": 1, "big": 0.5}, "fragments": "mild"}},
  "fittings": {"shock_grade": "G3"},
  "fire_control_tech": {"Auto-track ranging (radar stand-in)": {"optics": {"kind": "stereo", "delta_arcsec": 12, "rigid_base_m": 6, "flex_exp": 0.8, "magnification": 25, "m_max": 30, "readings_per_min": 60, "coated": true, "gyro_stabilised": true, "mass_kg_m2": 25}}, "Mk 1A computer": {"computer": {"tracker": "acceleration", "helm_free": true, "latency_s": 1, "q": 0.02, "max_range_rate_ms": 0, "max_bearing_rate_deg_s": 0, "accel_tau_s": 20, "accel_sigma_ms2": 0.1, "turn_q": 0, "speed_q": 0, "detect": true, "rejudge_s": 0, "prior_kn": 2, "prior_deg": 12, "resid_pct": 0.4, "defl_bias_mil": 0.8, "own_turn_kick_m": 50, "first_step_m": 366, "salvo_pct": 0.7, "mass_t": 2.5, "crew": 3, "power_kw": 10}}, "Stable vertical, power servo": {"mount": {"director_firing": true, "stable_vertical": true, "lay_mil": 0.4, "salvo_defl_mil": 0.8}}, "Telescopic sights": {"mount": {"director_firing": false, "stable_vertical": false, "lay_mil": 0.55, "salvo_defl_mil": 2.5}}},
- "masts": [{"kind": "pole"}, {"kind": "pole"}]
+ "masts": [{"kind": "pole"}, {"kind": "pole"}],
+ "outfit": {"name": "Interwar (1939)", "fitted": {"quarters": 380, "cabins": 650, "offices": 500, "stores": 1500, "machinery": 150, "deck": 250}, "stripped": {"quarters": 240, "cabins": 280, "offices": 300, "stores": 1200, "machinery": 120, "deck": 120}, "paint_mj_m2": 100, "growth": 1.3}
 }

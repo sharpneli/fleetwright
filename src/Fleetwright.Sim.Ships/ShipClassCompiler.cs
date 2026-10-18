@@ -65,6 +65,7 @@ public static class ShipClassCompiler
             Decks(c);
             c.tiers = hb.Tiers.Select(TierOf).ToArray();
             c.sections = hb.Sections.Select(s => new SectionRow(s.X0, s.X1)).ToArray();
+            FireSpaces(c);
             Armour(c);
             c.Plating = PlatingOf(hb.Plating);
             Weapons(c);
@@ -413,6 +414,107 @@ public static class ShipClassCompiler
             c.cells = rows;
             c.neighbours = nb.ToArray();
             c.armourAbove = above.ToArray();
+        }
+
+        /// <summary>The places a fire burns (docs/battle/fire.md B0), with the design's outfit's loads (Outfits): every cell
+        /// at its own index, by its room's use; the parts with a space inside (superstructure blocks as cabins and offices,
+        /// the conning tower and tops as offices, gunhouses and casemates as machinery until their charges are a seat of
+        /// their own); a strip of weather deck a section, over its top cells. Paint goes on every space but the deck; a
+        /// wooden deck burns at the outfit's deck load, a steel one at half [EST].</summary>
+        void FireSpaces(ShipClass c)
+        {
+            var o = Outfits.Of(ship.Design);
+            double paint = o.PaintMjM2 ?? 0, growth = o.Growth ?? 1;
+            bool wood = hb.Plating is { } plating && plating.DeckWoodMm > 0;
+            double Load(FireLoadsInput l, FireUse use) => use switch
+            {
+                FireUse.Quarters => (l.Quarters ?? 0) + paint,
+                FireUse.Cabins => ((l.Cabins ?? 0) + (l.Offices ?? 0)) / 2 + paint,
+                FireUse.Offices => (l.Offices ?? 0) + paint,
+                FireUse.Stores => (l.Stores ?? 0) + paint,
+                FireUse.Machinery => (l.Machinery ?? 0) + paint,
+                FireUse.Deck => (l.Deck ?? 0) * (wood ? 1 : 0.5),
+                _ => 0,
+            };
+            FireSpaceRow Row(FireSpaceKind kind, int index, int sec, FireUse use, double area, double height, int cell) => new()
+            {
+                Kind = kind, Index = index, Section = sec, Use = use, AreaM2 = area, HeightM = height, LoadMJm2 = Load(o.Fitted!, use),
+                StrippedMJm2 = Load(o.Stripped!, use), Growth = growth, Cell = cell,
+            };
+
+            var rows = new List<FireSpaceRow>();
+            for (int i = 0; i < c.cells.Length; i++)
+            {
+                var x = c.cells[i];
+                var use = c.rooms[x.Room].Kind switch
+                {
+                    RoomKind.Accommodation => FireUse.Quarters,
+                    RoomKind.Stores or RoomKind.Hold => FireUse.Stores,
+                    RoomKind.BoilerRoom or RoomKind.EngineRoom or RoomKind.Steering or RoomKind.TorpedoRoom => FireUse.Machinery,
+                    RoomKind.TransmittingStation => FireUse.Offices,
+                    _ => FireUse.None,
+                };
+                var b = x.Box;
+                rows.Add(Row(FireSpaceKind.Cell, i, x.Section, use, (b.X1 - b.X0) * (b.Y1 - b.Y0), b.Top - b.Base, i));
+            }
+            c.fireOfPart = new int[c.components.Length];
+            for (int i = 0; i < c.components.Length; i++)
+            {
+                var x = c.components[i];
+                var use = x.Kind switch
+                {
+                    ComponentKind.Superstructure => FireUse.Cabins,
+                    ComponentKind.ConningTower or ComponentKind.Top => FireUse.Offices,
+                    ComponentKind.Main or ComponentKind.Secondary or ComponentKind.Torpedo or ComponentKind.Aa or ComponentKind.Sponson
+                        or ComponentKind.TorpedoTube => FireUse.Machinery,
+                    ComponentKind.HangarBay => FireUse.Stores,
+                    ComponentKind.FlightDeck => FireUse.Deck,
+                    _ => FireUse.None,
+                };
+                c.fireOfPart[i] = -1;
+                var b = x.Bounds;
+                double area = (b.X1 - b.X0) * (b.Y1 - b.Y0);
+                if (use == FireUse.None || !(area > 0))
+                    continue;
+                c.fireOfPart[i] = rows.Count;
+                int sec = c.SectionAt((b.X0 + b.X1) / 2);
+                rows.Add(Row(FireSpaceKind.Part, i, sec, use, area, Math.Clamp(b.Top - b.Base, 2, 3.5), TopCell(sec)));
+            }
+            c.fireOfDeck = new int[c.sections.Length];
+            for (int s = 0; s < c.sections.Length; s++)
+            {
+                double top = double.MinValue, area = 0;
+                foreach (var x in c.cells)
+                    if (x.Section == s)
+                        top = Math.Max(top, x.Box.Top);
+                foreach (var x in c.cells)
+                    if (x.Section == s && x.Box.Top >= top - 0.05)
+                        area += (x.Box.X1 - x.Box.X0) * (x.Box.Y1 - x.Box.Y0);
+                c.fireOfDeck[s] = rows.Count;
+                rows.Add(Row(FireSpaceKind.Deck, s, s, FireUse.Deck, area, 0, TopCell(s)));
+            }
+            c.fireSpaces = rows.ToArray();
+
+            // the section's top cell nearest the centreline: where a fire on its deck or in its superstructure is shown
+            int TopCell(int s)
+            {
+                int best = -1;
+                for (int i = 0; i < c.cells.Length; i++)
+                {
+                    var b = c.cells[i].Box;
+                    if (c.cells[i].Section != s)
+                        continue;
+                    if (best < 0)
+                    {
+                        best = i;
+                        continue;
+                    }
+                    var bb = c.cells[best].Box;
+                    if (b.Top > bb.Top + 0.05 || b.Top > bb.Top - 0.05 && Math.Abs(b.Y0 + b.Y1) < Math.Abs(bb.Y0 + bb.Y1))
+                        best = i;
+                }
+                return Math.Max(best, 0);
+            }
         }
 
         RoomRow RoomOf(Shipgen.Room x)

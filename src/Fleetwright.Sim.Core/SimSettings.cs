@@ -1042,17 +1042,22 @@ public sealed record SimSettings
     public double[] PartFragilityJ { get; init; } = [100, 100, 500, 100, 5000, 100, 100, 5000, 5000, 5000, 5000, 500, 5000, 500, 5000, 5000, 500, 500, 500];
     public double RoomFragilityJ { get; init; } = 500;
 
-    /// <summary>Fire: a burst's chance by the shell's kind (AP, common, HE), times the fire load where it bursts (by the
-    /// look's era: Victorian, Great War, treaty, WWII, Cold War; and in superstructure, machinery or the rest of the
-    /// hull), times the burst's size (0.5 + 0.5 times the cube root of W over 10 kg, at most 1.5), and this share when
-    /// it bursts outside; fragments reaching a mount's ready ammunition light it with this chance.</summary>
+    /// <summary>Fire: a burst's chance by the shell's kind (AP, common, HE), times the fire load where it bursts over
+    /// <see cref="FireStartLoadMJm2"/> (the space's, from the design's outfit: docs/battle/fire.md B0; at most
+    /// <see cref="FireStartLoadCap"/>; 560 MJ/m² reads a Great War messdeck as Fire v0's hull did, 0.8), times the burst's
+    /// size (0.5 + 0.5 times the cube root of W over 10 kg, at most 1.5), and this share when it bursts outside; the seat
+    /// it lights, MW by kind (damage/17 §1: HE 0.1-0.5 MW [EST]; fire_ref.py's SHELL_Q0); fragments reaching a mount's
+    /// ready ammunition light it with this chance, its seat that.</summary>
     public double[] FireChance { get; init; } = [0.15, 0.30, 0.45];
-    public double[] FireLoadByEra { get; init; } = [1.6, 1.2, 1, 1, 1];
-    public double FireLoadSuperstructure { get; init; } = 1.3;
-    public double FireLoadMachinery { get; init; } = 0.5;
-    public double FireLoadHull { get; init; } = 0.8;
+    public double FireStartLoadMJm2 { get; init; } = 560;
+    public double FireStartLoadCap { get; init; } = 2;
+    public double[] FireSeatMW { get; init; } = [0.1, 0.4, 0.3];
     public double FireOutsideShare { get; init; } = 0.4;
+    /// <summary>A burst outside lights the weather deck only this close under its top, m, or above it (one on the side
+    /// lower down lights nothing).</summary>
+    public double FireDeckBurstM { get; init; } = 0.5;
     public double ReadyAmmoFireChance { get; init; } = 0.3;
+    public double ReadyAmmoSeatMW { get; init; } = 1;
 
     /// <summary>What a turret or barbette that held does (docs/battle/shells-armour-damage.md E4; damage/13 §1.4
     /// <c>turret_nonpen</c>): by where it struck (rows: exposed barbette near the ring, barbette at or under the deck,
@@ -1260,6 +1265,44 @@ public sealed record SimSettings
     public double FireMagazineNextPerMin { get; init; } = 0.01;
     public double FireCrewPerMin { get; init; } = 0.3;
     public double FireDrownShare { get; init; } = 0.5;
+    /// <summary>A cell's v0 spread lights its neighbour with this seat, MW.</summary>
+    public double FireSpreadSeatMW { get; init; } = 0.3;
+
+    /// <summary>One space's fire (docs/battle/fire.md B0; damage/17 §3-4, fire_ref.py). Growth: Q = seat + α·t², α the
+    /// "medium" t² fire (1 MW at 300 s: Eurocode EN 1991-1-2 E.5 [SRC]) times the outfit's growth and the use's (by
+    /// FireUse: none, quarters, cabins, offices, stores ×2 "fast", machinery, deck). The room it flashes over in, m² by
+    /// use (0: the whole space) [EST: a cabin ~12, an office ~20, a messdeck up to ~90]; developed, the next room joins
+    /// every <see cref="FireRoomToRoomS"/> (an open path, 1-3 min: 17 §5.1). Openings: leakage, a door's A√H (0.66 × 1.68
+    /// m: 1.44 m^2.5) and the doors a cell and a part has until the material condition (B1). Air: 1.5 MW per m^2.5
+    /// (Kawagoe [SRC]); fuel: 0.25 MW/m² (Eurocode [SRC]) ramped from 230 MJ/m² over 420 (DTIC bands [FIT]); flashover:
+    /// Thomas × 0.65 (NBS berthing 0.67 MW [FIT]). A load under the minimum doesn't light; local fires die after
+    /// <see cref="FireLocalS"/> or a share of their room's load; starved ones smoulder out after <see cref="FireStarvedS"/>;
+    /// decay on the last share of the fuel, out under the smoulder's heat; an open deck sustains a fire over its load
+    /// [EST], its burning area ~0.1 MW a m² [EST]; a space burnt to the share left doesn't light again; one that burned
+    /// developed longer than <see cref="FireHotS"/> goes out hot.</summary>
+    public double FireAlphaMWs2 { get; init; } = 0.01172e-3;
+    public double[] FireUseGrowth { get; init; } = [1, 1, 1, 1, 2, 1, 1];
+    public double[] FireRoomM2 { get; init; } = [0, 90, 12, 20, 60, 0, 0];
+    public double FireRoomToRoomS { get; init; } = 120;
+    public double FireLeakAoh { get; init; } = 0.05;
+    public double FireDoorAoh { get; init; } = 1.44;
+    public double FireCellDoors { get; init; } = 1;
+    public double FirePartDoors { get; init; } = 2;
+    public double FireVentMW { get; init; } = 1.5;
+    public double FireFuelMWm2 { get; init; } = 0.25;
+    public double FireFuelFloorMJm2 { get; init; } = 230;
+    public double FireFuelSpanMJm2 { get; init; } = 420;
+    public double FireThomasShare { get; init; } = 0.65;
+    public double FireMinLoadMJm2 { get; init; } = 60;
+    public double FireLocalS { get; init; } = 1200;
+    public double FireLocalShare { get; init; } = 0.3;
+    public double FireStarvedS { get; init; } = 1800;
+    public double FireSmoulderMW { get; init; } = 0.02;
+    public double FireDecayShare { get; init; } = 0.2;
+    public double FireOpenSustainMJm2 { get; init; } = 300;
+    public double FireOpenMWm2 { get; init; } = 0.1;
+    public double FireBurntShare { get; init; } = 0.05;
+    public double FireHotS { get; init; } = 600;
 
     /// <summary>What an observer makes out of a ship (a contact's <c>Seen</c>): low in the water (settled by this share of
     /// its freeboard), a list, a trim (degrees), stopped (knots).</summary>

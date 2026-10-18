@@ -1,5 +1,5 @@
 {
- "version": 7,
+ "version": 8,
  "id": "l_laforey",
  "name": "Laforey-like L class destroyer (1913)",
  "type": "DD",
@@ -352,5 +352,26 @@
     "salvo_defl_mil": 2.5
    }
   }
+ },
+ "outfit": {
+  "name": "Great War (1914)",
+  "fitted": {
+   "quarters": 420,
+   "cabins": 750,
+   "offices": 420,
+   "stores": 1500,
+   "machinery": 150,
+   "deck": 300
+  },
+  "stripped": {
+   "quarters": 400,
+   "cabins": 450,
+   "offices": 420,
+   "stores": 1500,
+   "machinery": 150,
+   "deck": 150
+  },
+  "paint_mj_m2": 50,
+  "growth": 1
  }
 }

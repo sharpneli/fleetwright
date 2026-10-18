@@ -36,6 +36,8 @@ public sealed class ShipClass
     internal DeckRow[] decks = [];
     internal TierRow[] tiers = [];
     internal SectionRow[] sections = [];
+    internal FireSpaceRow[] fireSpaces = [];
+    internal int[] fireOfPart = [], fireOfDeck = [];
     internal SidePlateRow[] sidePlates = [];
     internal ArmourBulkheadRow[] armourBulkheads = [];
     internal ArmourDeckRow[] armourDecks = [];
@@ -83,7 +85,7 @@ public sealed class ShipClass
     public Slice DeckOutline { get; internal init; }
     public HydrostaticsRow Hydrostatics { get; internal init; }
     public MotionFacts Motion { get; internal init; }
-    /// <summary>The look's era: what the placeholders for the weapons and the fire load read until the designer gives
+    /// <summary>The look's era: what the placeholders for the weapons read until the designer gives
     /// a year.</summary>
     public Era Era { get; internal set; }
 
@@ -172,6 +174,23 @@ public sealed class ShipClass
     public ReadOnlySpan<ArmourDeckRow> ArmourDecks => armourDecks;
     /// <summary>The inclined plates: the decks' slopes (protection-plan.md H6).</summary>
     public ReadOnlySpan<InclinedRow> Inclined => inclined;
+
+    /// <summary>The places a fire burns (docs/battle/fire.md): the cells first, each at its own index, then the parts that
+    /// burn, then a strip of weather deck a section.</summary>
+    public ReadOnlySpan<FireSpaceRow> FireSpaces => fireSpaces;
+    /// <summary>A component's fire space, or -1 when it has none (a funnel, a mast).</summary>
+    public int FireOfPart(int component) => fireOfPart[component];
+    /// <summary>A section's weather-deck fire space.</summary>
+    public int FireOfDeck(int section) => fireOfDeck[section];
+
+    /// <summary>The section a station along the hull (x, m) lies in; past either end, the end's.</summary>
+    public int SectionAt(double x)
+    {
+        for (int i = 0; i < sections.Length; i++)
+            if (x < sections[i].X1 || i == sections.Length - 1)
+                return i;
+        return 0;
+    }
 
     /// <summary>What the damage model asks of the ship's parts (docs/battle/fighting.md 4.3a): each function's needs, as
     /// nodes (<see cref="FunctionNodes"/>).</summary>

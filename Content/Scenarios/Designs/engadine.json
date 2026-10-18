@@ -1,5 +1,5 @@
 {
- "version": 7,
+ "version": 8,
  "id": "engadine",
  "name": "Engadine-like seaplane carrier (1911)",
  "type": "AV",
@@ -340,5 +340,26 @@
     "salvo_defl_mil": 2.5
    }
   }
+ },
+ "outfit": {
+  "name": "Interwar (1939)",
+  "fitted": {
+   "quarters": 380,
+   "cabins": 650,
+   "offices": 500,
+   "stores": 1500,
+   "machinery": 150,
+   "deck": 250
+  },
+  "stripped": {
+   "quarters": 240,
+   "cabins": 280,
+   "offices": 300,
+   "stores": 1200,
+   "machinery": 120,
+   "deck": 120
+  },
+  "paint_mj_m2": 100,
+  "growth": 1.3
  }
 }

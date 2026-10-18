@@ -1,5 +1,5 @@
 {
- "version": 7,
+ "version": 8,
  "id": "izumo",
  "name": "Izumo-like armoured cruiser (1900)",
  "type": "CA",
@@ -182,5 +182,6 @@
  "materials": {"Harvey nickel steel": {"density_t_per_m3": 7.85, "q": 0.82, "q_scale": 0, "face_hardened": {"share": 0.08, "min_mm": 81.3}, "back": {"spall_u": 0.85, "holed_u": 0.94, "big": 0.5}, "fragments": "fh"}, "Krupp cemented": {"density_t_per_m3": 7.85, "q": 0.88, "q_scale": 0.05, "face_hardened": {"share": 0.34, "min_mm": 81.3}, "back": {"spall_u": 0.85, "holed_u": 0.94, "big": 0.5}, "fragments": "fh"}, "mild steel": {"density_t_per_m3": 7.85, "q": 0.7, "back": {"spall_u": 0.9, "holed_u": 1, "big": 0.5}, "fragments": "mild"}, "nickel steel": {"density_t_per_m3": 7.85, "q": 0.85, "back": {"spall_u": 0.9, "holed_u": 1, "big": 0.5}, "fragments": "ductile"}},
  "fittings": {"shock_grade": "G0"},
  "fire_control_tech": {"Barr & Stroud FA (O1)": {"optics": {"kind": "coincidence", "delta_arcsec": 14, "rigid_base_m": 2, "flex_exp": 0.75, "magnification": 24, "m_max": 20, "readings_per_min": 2, "coated": false, "gyro_stabilised": false, "mass_kg_m2": 30}}, "Hand plot": {"computer": {"tracker": "rate_clock", "helm_free": false, "latency_s": 15, "q": 0.02, "max_range_rate_ms": 0, "max_bearing_rate_deg_s": 0, "accel_tau_s": 0, "accel_sigma_ms2": 0, "turn_q": 0, "speed_q": 0, "detect": false, "rejudge_s": 0, "prior_kn": 4, "prior_deg": 25, "resid_pct": 2, "defl_bias_mil": 3, "own_turn_kick_m": 0, "first_step_m": 366, "salvo_pct": 2, "mass_t": 0.2, "crew": 3, "power_kw": 0}}, "Early telescopic sights": {"mount": {"director_firing": false, "stable_vertical": false, "lay_mil": 0.85, "salvo_defl_mil": 2.5}}},
- "masts": [{"kind": "pole", "top": "fighting", "top_radius_m": 1.6}]
+ "masts": [{"kind": "pole", "top": "fighting", "top_radius_m": 1.6}],
+ "outfit": {"name": "Pre-dreadnought (1905)", "fitted": {"quarters": 450, "cabins": 900, "offices": 420, "stores": 1500, "machinery": 150, "deck": 400}, "stripped": {"quarters": 380, "cabins": 600, "offices": 420, "stores": 1500, "machinery": 150, "deck": 350}, "paint_mj_m2": 60, "growth": 1.5}
 }

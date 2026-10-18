@@ -1,5 +1,5 @@
 {
- "version": 7,
+ "version": 8,
  "id": "buyny",
  "name": "Buyny-like destroyer (1902)",
  "type": "DD",
@@ -162,5 +162,6 @@
  "materials": {"mild steel": {"density_t_per_m3": 7.85, "q": 0.7, "back": {"spall_u": 0.9, "holed_u": 1, "big": 0.5}, "fragments": "mild"}, "steel": {"density_t_per_m3": 7.85, "q": 0.7, "back": {"spall_u": 0.9, "holed_u": 1, "big": 0.5}, "fragments": "mild"}},
  "fittings": {"shock_grade": "G0"},
  "masts": [{"kind": "pole", "top": "fighting", "top_radius_m": 2}],
- "fire_control_tech": {"Early telescopic sights": {"mount": {"director_firing": false, "stable_vertical": false, "lay_mil": 0.85, "salvo_defl_mil": 2.5}}}
+ "fire_control_tech": {"Early telescopic sights": {"mount": {"director_firing": false, "stable_vertical": false, "lay_mil": 0.85, "salvo_defl_mil": 2.5}}},
+ "outfit": {"name": "Pre-dreadnought (1905)", "fitted": {"quarters": 450, "cabins": 900, "offices": 420, "stores": 1500, "machinery": 150, "deck": 400}, "stripped": {"quarters": 380, "cabins": 600, "offices": 420, "stores": 1500, "machinery": 150, "deck": 350}, "paint_mj_m2": 60, "growth": 1.5}
 }

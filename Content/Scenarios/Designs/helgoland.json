@@ -1,5 +1,5 @@
 {
- "version": 7,
+ "version": 8,
  "id": "helgoland",
  "name": "Helgoland-like (1911)",
  "type": "BB",
@@ -466,5 +466,26 @@
    "top": "spotting",
    "top_radius_m": 0.9
   }
- ]
+ ],
+ "outfit": {
+  "name": "Pre-dreadnought (1905)",
+  "fitted": {
+   "quarters": 450,
+   "cabins": 900,
+   "offices": 420,
+   "stores": 1500,
+   "machinery": 150,
+   "deck": 400
+  },
+  "stripped": {
+   "quarters": 380,
+   "cabins": 600,
+   "offices": 420,
+   "stores": 1500,
+   "machinery": 150,
+   "deck": 350
+  },
+  "paint_mj_m2": 60,
+  "growth": 1.5
+ }
 }

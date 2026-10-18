@@ -291,7 +291,8 @@ public sealed class DamageSystem : IWorldSystem
                 }
                 if (top < 0)
                     throw new ArgumentException($"no cell at {c.X:0.0} m on ship {c.Entity}");
-                k.CellFire[top] = true;
+                if (!Fires.Ignite(cls, k, top, settings.FireSeatMW[^1], settings) && !k.Fire[top].Burning)
+                    throw new ArgumentException($"nothing to burn at {c.X:0.0} m on ship {c.Entity} ({cls.Rooms[cls.Cells[top].Room].Kind})");
                 Wake(world, slot, k);
                 break;
         }

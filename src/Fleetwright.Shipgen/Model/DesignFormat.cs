@@ -12,7 +12,7 @@ namespace Fleetwright.Shipgen;
 public static class DesignFormat
 {
     /// <summary>The version this build writes.</summary>
-    public const int Current = 7;
+    public const int Current = 8;
 
     /// <summary>Steps[v] upgrades a version v design to v + 1, adding what it couldn't tell to the warnings.</summary>
     static readonly Action<JsonObject, List<string>>[] Steps =
@@ -24,7 +24,23 @@ public static class DesignFormat
         (d, _) => FillerBody(d),       // 4 → 5: the filler's share alongside the body (E1)
         (d, _) => FireControlFits(d),  // 5 → 6: fire control as tech blocks (docs/battle/fire-control.md F3)
         (d, _) => NoComputerT(d),      // 6 → 7: the computer's weight its block's, in a transmitting station (F4c)
+        Outfit,                        // 7 → 8: what burns aboard (docs/battle/fire.md B0)
     ];
+
+    /// <summary>7 → 8: the fire loads were the sim's, by the look's era; now they're the design's outfit (Outfits). A design
+    /// without one gets its navy's (look.navy) in its plant's year (machinery.tech's name ends with it), else the Great
+    /// War's, with a warning.</summary>
+    static void Outfit(JsonObject d, List<string> warnings)
+    {
+        if (d["outfit"] is not null)
+            return;
+        string? tech = d["machinery"]?["tech"]?["name"] is JsonValue t && t.TryGetValue(out string? ts) ? ts : null;
+        string? navy = d["look"]?["navy"] is JsonValue nv && nv.TryGetValue(out string? ns) ? ns : null;
+        var template = Fittings.YearOf(tech) is int year ? Outfits.ByNavyAndYear(navy, year) : Outfits.All[2];
+        if (Fittings.YearOf(tech) is null)
+            warnings.Add($"outfit: no plant year to set it by (machinery.tech's name); {template.Name} assumed");
+        d["outfit"] = JsonSerializer.SerializeToNode(template.Value, ShipgenJson.Default.OutfitInput);
+    }
 
     /// <summary>6 → 7: a battery's `computer_t` was the plotting room's weight, booked a director; the computer's block
     /// carries its mass now (with its crew and power), and the transmitting station holds it (fire-control.md F4c). The key

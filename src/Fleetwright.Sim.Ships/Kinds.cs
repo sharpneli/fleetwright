@@ -83,6 +83,29 @@ public enum JoinKind : byte
     Bulkhead,
 }
 
+/// <summary>What a fire space is (docs/battle/fire.md): a watertight cell, a part (a superstructure block, a gunhouse), or
+/// a section's strip of weather deck.</summary>
+public enum FireSpaceKind : byte
+{
+    Cell,
+    Part,
+    Deck,
+}
+
+/// <summary>What a fire space is used for, as the outfit's loads go (damage/17 §2): nothing that burns from a shell (tanks,
+/// voids, bunkers, magazines: those are the magazine model's), messdecks, cabins, offices, stores, machinery, or open
+/// deck.</summary>
+public enum FireUse : byte
+{
+    None,
+    Quarters,
+    Cabins,
+    Offices,
+    Stores,
+    Machinery,
+    Deck,
+}
+
 /// <summary>The battery a director controls.</summary>
 public enum Battery : byte
 {

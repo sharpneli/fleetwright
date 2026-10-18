@@ -480,8 +480,7 @@ public static class Effects
             if (worse && m >= 0 && c.Mounts[m].Component == i && c.Mounts[m].ReadyRounds > 0 && state >= PartState.Disabled &&
                 r.NextDouble() < s.ReadyAmmoFireChance * force)
             {
-                k.Flags[i] |= PartFlags.Burning;
-                res.Fire = true;
+                res.Fire |= Fires.Ignite(c, k, c.FireOfPart(i), s.ReadyAmmoSeatMW, s);
                 // its ready charges flash through its crew (16 §4.6): a gunhouse's as a turret's train, else as a battery's
                 Casualties.Flash(k, Casualties.Part(i), Casualties.Enclosed(c, m), s);
                 res.Flash = true;
@@ -565,20 +564,20 @@ public static class Effects
         // the people its pieces and gas reach (E6)
         Crew(c, k, path, t, part, cell, p, fdir, frag, share, around, broken ? 0 : w * force, broken, res.Blast, s);
 
-        // fire, by what burns where it burst
-        double load = part >= 0 ? s.FireLoadSuperstructure : inHull ? (Terminal.IsMachinery(c, cell) ? s.FireLoadMachinery : s.FireLoadHull) : s.FireLoadHull;
-        double era = s.FireLoadByEra[Math.Clamp((int)c.Era, 0, s.FireLoadByEra.Length - 1)];
-        double chance = broken ? 0 : s.FireChance[Math.Clamp((int)shell.Kind, 0, s.FireChance.Length - 1)] * load * era * Math.Min(1.5, 0.5 + 0.5 * Math.Cbrt(w / 10)) *
-                        (t.Burst == BurstKind.Outside ? s.FireOutsideShare : 1);
-        if (r.NextDouble() < chance)
+        // fire, by what burns where it burst (docs/battle/fire.md B0): the part it burst in, its cell, or outside the part
+        // its fragments reached first, else the weather deck it burst on (not one on the side below it)
+        int space = part >= 0 ? c.FireOfPart(part) : inHull ? cell
+            : res.Part >= 0 && res.Part < c.Components.Length && c.FireOfPart(res.Part) >= 0 ? c.FireOfPart(res.Part)
+            : c.FireOfDeck(c.SectionAt(p.X));
+        if (space >= 0 && c.FireSpaces[space].Kind == FireSpaceKind.Deck && p.Z < c.Cells[c.FireSpaces[space].Cell].Box.Top - s.FireDeckBurstM)
+            space = -1;
+        if (!broken && space >= 0)
         {
-            if (part >= 0)
-                k.Flags[part] |= PartFlags.Burning;
-            else if (inHull)
-                k.CellFire[cell] = true;
-            else if (res.Part >= 0 && res.Part < c.Components.Length)
-                k.Flags[res.Part] |= PartFlags.Burning;
-            res.Fire = true;
+            int kind = Math.Clamp((int)shell.Kind, 0, s.FireChance.Length - 1);
+            double load = Math.Min(s.FireStartLoadCap, Fires.Load(c.FireSpaces[space]) / s.FireStartLoadMJm2);
+            double chance = s.FireChance[kind] * load * Math.Min(1.5, 0.5 + 0.5 * Math.Cbrt(w / 10)) * (t.Burst == BurstKind.Outside ? s.FireOutsideShare : 1);
+            if (r.NextDouble() < chance)
+                res.Fire |= Fires.Ignite(c, k, space, s.FireSeatMW[Math.Min(kind, s.FireSeatMW.Length - 1)], s);
         }
 
         // the magazine: a burst in it, or in a turret or its barbette (the handling path down to it); its gas reaching one,

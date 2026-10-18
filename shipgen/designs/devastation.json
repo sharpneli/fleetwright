@@ -1,5 +1,5 @@
 {
- "version": 7,
+ "version": 8,
  "id": "devastation",
  "name": "Devastation-like breastwork turret ship (1873)",
  "look": {
@@ -156,5 +156,6 @@
  "materials": {"wrought iron": {"density_t_per_m3": 7.7, "q": 0.53, "back": {"spall_u": 0.9, "holed_u": 1, "big": 0.5}, "fragments": "mild"}},
  "fittings": {"shock_grade": "G0"},
  "masts": [{"kind": "pole", "top": "fighting", "top_radius_m": 1.9, "tiers": 2}],
- "fire_control_tech": {"Open sights": {"mount": {"director_firing": false, "stable_vertical": false, "lay_mil": 3.1, "salvo_defl_mil": 3}}}
+ "fire_control_tech": {"Open sights": {"mount": {"director_firing": false, "stable_vertical": false, "lay_mil": 3.1, "salvo_defl_mil": 3}}},
+ "outfit": {"name": "Victorian (1890)", "fitted": {"quarters": 450, "cabins": 900, "offices": 420, "stores": 1500, "machinery": 150, "deck": 400}, "stripped": {"quarters": 380, "cabins": 600, "offices": 420, "stores": 1500, "machinery": 150, "deck": 350}, "paint_mj_m2": 30, "growth": 2}
 }

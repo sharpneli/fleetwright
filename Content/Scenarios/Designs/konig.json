@@ -1,5 +1,5 @@
 {
- "version": 7,
+ "version": 8,
  "id": "konig",
  "name": "K\u00F6nig-like (1914)",
  "type": "BB",
@@ -173,5 +173,6 @@
  "materials": {"Krupp cemented": {"density_t_per_m3": 7.85, "q": 0.88, "q_scale": 0.05, "face_hardened": {"share": 0.34, "min_mm": 81.3}, "back": {"spall_u": 0.85, "holed_u": 0.94, "big": 0.5}, "fragments": "fh"}, "high-tensile steel": {"density_t_per_m3": 7.85, "q": 0.8, "back": {"spall_u": 0.9, "holed_u": 1, "big": 0.5}, "fragments": "mild"}, "steel": {"density_t_per_m3": 7.85, "q": 0.7, "back": {"spall_u": 0.9, "holed_u": 1, "big": 0.5}, "fragments": "mild"}},
  "fittings": {"shock_grade": "G0"},
  "fire_control_tech": {"Zeiss stereo (WWI)": {"optics": {"kind": "stereo", "delta_arcsec": 10, "rigid_base_m": 4, "flex_exp": 0.75, "magnification": 23, "m_max": 28, "readings_per_min": 2, "coated": false, "gyro_stabilised": false, "mass_kg_m2": 28}}, "German clock and plot (EU-Anzeiger, C12)": {"computer": {"tracker": "rate_clock", "helm_free": true, "latency_s": 15, "q": 0.03, "max_range_rate_ms": 18.3, "max_bearing_rate_deg_s": 0.25, "accel_tau_s": 0, "accel_sigma_ms2": 0, "turn_q": 0, "speed_q": 0, "detect": false, "rejudge_s": 0, "prior_kn": 2.5, "prior_deg": 15, "resid_pct": 1.2, "defl_bias_mil": 2, "own_turn_kick_m": 300, "first_step_m": 366, "salvo_pct": 1.5, "mass_t": 4, "crew": 10, "power_kw": 1}}, "Director, follow the pointer": {"mount": {"director_firing": true, "stable_vertical": false, "lay_mil": 1, "salvo_defl_mil": 2}}, "Telescopic sights, fired on the roll": {"mount": {"director_firing": false, "stable_vertical": false, "lay_mil": 2, "salvo_defl_mil": 2.5}}, "Telescopic sights": {"mount": {"director_firing": false, "stable_vertical": false, "lay_mil": 0.55, "salvo_defl_mil": 2.5}}},
- "masts": [{"kind": "pole", "director": "main", "top": "spotting", "top_radius_m": 0.9}, {"kind": "pole", "top": "spotting", "top_radius_m": 0.9}]
+ "masts": [{"kind": "pole", "director": "main", "top": "spotting", "top_radius_m": 0.9}, {"kind": "pole", "top": "spotting", "top_radius_m": 0.9}],
+ "outfit": {"name": "Great War (1914)", "fitted": {"quarters": 420, "cabins": 750, "offices": 420, "stores": 1500, "machinery": 150, "deck": 300}, "stripped": {"quarters": 400, "cabins": 450, "offices": 420, "stores": 1500, "machinery": 150, "deck": 150}, "paint_mj_m2": 50, "growth": 1}
 }

@@ -6,8 +6,8 @@ using System.Text.Json.Nodes;
 
 namespace Fleetwright.Shipgen.Cli;
 
-/// <summary>`shipgen templates`: the shell, explosive, material, fittings and fire-control catalogues (ShellTemplates,
-/// Explosives, MaterialTemplates, Fittings, FireControlTemplates: their one source) written out as the game's template
+/// <summary>`shipgen templates`: the shell, explosive, material, fittings, outfit and fire-control catalogues (ShellTemplates,
+/// Explosives, MaterialTemplates, Fittings, Outfits, FireControlTemplates: their one source) written out as the game's template
 /// assets, `Content/Templates/shells.json`, `explosives.json`, `materials.json`, `fittings.json` (entries {name, group,
 /// note, value}, as tools/designer_templates.py writes the others) and `fire-control.json` (its blocks so, and its
 /// presets), and as the docs' pages, docs/shipgen/shell-templates.md, explosive-templates.md, material-templates.md,
@@ -43,6 +43,12 @@ static class TemplatesWriter
         }).ToArray());
         Write(Path.Combine(repo, "Content", "Templates", "materials.json"), materials.ToJsonString(json) + "\n");
         Write(Path.Combine(repo, "Content", "Templates", "fittings.json"), fittings.ToJsonString(json) + "\n");
+        var outfits = new JsonArray(Outfits.All.Select(o => (JsonNode)new JsonObject
+        {
+            ["name"] = o.Name, ["group"] = "", ["note"] = o.Note, ["value"] = Value(o.Value),
+        }).ToArray());
+        Write(Path.Combine(repo, "Content", "Templates", "outfits.json"), outfits.ToJsonString(json) + "\n");
+        Write(Path.Combine(repo, "docs", "shipgen", "outfit-templates.md"), OutfitPage());
         Write(Path.Combine(repo, "docs", "shipgen", "shell-templates.md"), ShellPage());
         Write(Path.Combine(repo, "docs", "shipgen", "explosive-templates.md"), ExplosivePage());
         Write(Path.Combine(repo, "docs", "shipgen", "material-templates.md"), MaterialPage());
@@ -196,6 +202,47 @@ static class TemplatesWriter
         sb.Append('\n');
         foreach (var f in Fittings.All)
             sb.Append("- **").Append(f.Name).Append(":** ").Append(f.Note).Append('\n');
+        return sb.ToString();
+    }
+
+    static string OutfitPage()
+    {
+        var sb = new StringBuilder();
+        sb.Append("""
+            # Outfit templates
+
+            Written by `shipgen templates` from `src/Fleetwright.Shipgen/Outfits.cs`; don't edit by hand. The designer's
+            templates are `Content/Templates/outfits.json`, from the same table.
+
+            A design's `outfit` block says what burns aboard (`docs/battle/fire.md`; `docs/battle/damage/17_fire.md` §2):
+            each kind of space's fire load, MJ per m² of deck, as fitted and as stripped for war (the ship's orders before
+            action pick one), the paint's load on every space but the weather deck, and the growth factor over a furnished
+            room's "medium" t² fire (1 MW at 300 s). The sim reads the numbers: a space flashes over only on a load that can
+            feed it (about 230 MJ/m² and up), burns as long as its load lasts at the heat its openings let through, and a
+            wooden weather deck burns at the deck load, a steel one at half. A key not given takes its navy's template in
+            its plant's year (old designs got the whole block so when the format moved to 8).
+
+            ```json
+            "outfit": {"name": "Great War (1914)", "fitted": {"quarters": 420, "cabins": 750, "offices": 420, "stores": 1500,
+              "machinery": 150, "deck": 300}, "stripped": {"quarters": 400, "cabins": 450, "offices": 420, "stores": 1500,
+              "machinery": 150, "deck": 150}, "paint_mj_m2": 50, "growth": 1}
+            ```
+
+            | Template | Quarters | Cabins | Offices | Stores | Machinery | Deck | Paint | Growth |
+            |---|---|---|---|---|---|---|---|---|
+
+            """.Replace("\r\n", "\n"));
+        foreach (var o in Outfits.All)
+        {
+            var v = o.Value;
+            string L(double? fitted, double? stripped) => fitted == stripped ? $"{fitted:0}" : $"{fitted:0} / {stripped:0}";
+            sb.Append(Inv, $"| {o.Name} | {L(v.Fitted!.Quarters, v.Stripped!.Quarters)} | {L(v.Fitted.Cabins, v.Stripped.Cabins)} | " +
+                           $"{L(v.Fitted.Offices, v.Stripped.Offices)} | {L(v.Fitted.Stores, v.Stripped.Stores)} | {L(v.Fitted.Machinery, v.Stripped.Machinery)} | " +
+                           $"{L(v.Fitted.Deck, v.Stripped.Deck)} | {v.PaintMjM2:0} | {v.Growth:0.0#} |\n");
+        }
+        sb.Append("\nAs fitted / stripped where they differ, MJ/m².\n\n");
+        foreach (var o in Outfits.All)
+            sb.Append("- **").Append(o.Name).Append(":** ").Append(o.Note).Append('\n');
         return sb.ToString();
     }
 

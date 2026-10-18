@@ -774,6 +774,25 @@ public readonly record struct TierRow(double Base, double Top, bool BelowWaterli
 
 public readonly record struct SectionRow(double X0, double X1);
 
+/// <summary>A place a fire burns (docs/battle/fire.md): what it is (Index: the cell, the component or the section), its
+/// section, its use, its deck area and height, its fire load as fitted and as stripped, MJ per m² of deck, the paint in, its
+/// growth factor over a furnished room's t² fire, and the cell a fire there is shown at.</summary>
+public readonly record struct FireSpaceRow
+{
+    public FireSpaceKind Kind { get; init; }
+    public int Index { get; init; }
+    public int Section { get; init; }
+    public FireUse Use { get; init; }
+    public double AreaM2 { get; init; }
+    public double HeightM { get; init; }
+    public double LoadMJm2 { get; init; }
+    public double StrippedMJm2 { get; init; }
+    public double Growth { get; init; }
+    public int Cell { get; init; }
+    /// <summary>Open to the air: a weather deck burns without a ceiling or a door to hold it.</summary>
+    public bool OpenAir => Kind == FireSpaceKind.Deck;
+}
+
 // ------------------------------------------------------------------ the armour report
 
 public enum StrakeKind : byte

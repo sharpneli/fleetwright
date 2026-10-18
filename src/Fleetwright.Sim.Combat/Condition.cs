@@ -111,6 +111,9 @@ public sealed class ShipCondition
     public PartFlags[] Flags = [];
     public double[] WaterM3 = [], BreachM2 = [], BreachY = [], BreachZ = [];
     public bool[] CellFire = [], CellOpened = [];
+    /// <summary>Each fire space's fire (the class's FireSpaces; docs/battle/fire.md): <see cref="CellFire"/> and a part's
+    /// <see cref="PartFlags.Burning"/> show which burn.</summary>
+    public BurnState[] Fire = [];
     public bool[] MountWorks = [], DirectorWorks = [], EyeWorks = [], TubeWorks = [];
     /// <summary>What hits that held left each mount (E4).</summary>
     public MountHarm[] Mount = [];
@@ -210,6 +213,7 @@ public sealed class ShipCondition
             BreachZ = new double[c.Cells.Length];
             CellFire = new bool[c.Cells.Length];
             CellOpened = new bool[c.Cells.Length];
+            Fire = new BurnState[c.FireSpaces.Length];
             MountWorks = new bool[c.Mounts.Length];
             DirectorWorks = new bool[c.Directors.Length];
             EyeWorks = new bool[c.Eyes.Length];
@@ -246,6 +250,7 @@ public sealed class ShipCondition
             Array.Clear(BreachZ);
             Array.Clear(CellFire);
             Array.Clear(CellOpened);
+            Array.Clear(Fire);
         }
         Array.Fill(MountWorks, true);
         Array.Fill(DirectorWorks, true);
@@ -498,16 +503,14 @@ public sealed class ShipCondition
         }
     }
 
+    /// <summary>The fires burning: the fire spaces alight.</summary>
     public int Fires
     {
         get
         {
             int n = 0;
-            foreach (bool f in CellFire)
-                if (f)
-                    n++;
-            foreach (var f in Flags)
-                if ((f & PartFlags.Burning) != 0)
+            foreach (ref readonly var f in Fire.AsSpan())
+                if (f.Burning)
                     n++;
             return n;
         }
@@ -577,6 +580,17 @@ public sealed class ShipCondition
             h.Add(a.StiffUntil);
             h.Add(a.GunUntil);
         }
+        for (int i = 0; i < Fire.Length; i++)
+            if (Fire[i].Phase != BurnPhase.None)
+            {
+                ref readonly var f = ref Fire[i];
+                h.Add(i + 3000);
+                h.Add((int)f.Phase);
+                h.Add(f.Q);
+                h.Add(f.E);
+                h.Add(f.Involved);
+                h.Add(f.T);
+            }
         for (int i = 0; i < BreachM2.Length; i++)
             if (BreachM2[i] != 0 || CellFire[i] || CellOpened[i] || WaterM3[i] != 0)
             {

@@ -112,7 +112,7 @@ public sealed class ShotRange(SimSettings settings)
         var state = (PartState[])k.State.Clone();
         var flags = (PartFlags[])k.Flags.Clone();
         var breach = (double[])k.BreachM2.Clone();
-        var fire = (bool[])k.CellFire.Clone();
+        var fire = k.Fire.Select(f => f.Burning).ToArray();
         world!.Damage.Strike(world, new Hit
         {
             Ship = entity, Ms = world.Time.Ms, Point = shot.Point, Direction = dir, SpeedMs = fall.StrikeMs, WaterRunM = run, Source = HitSource.Shell,
@@ -128,9 +128,11 @@ public sealed class ShotRange(SimSettings settings)
         {
             if (k.BreachM2[i] > breach[i])
                 shot.Holes.Add((i, k.BreachM2[i] - breach[i]));
-            if (k.CellFire[i] && !fire[i])
-                shot.Fires.Add(i);
         }
+        // the fires it lit, at the cell each is shown at (a part's or a deck's: its section's top cell)
+        for (int i = 0; i < fire.Length; i++)
+            if (k.Fire[i].Burning && !fire[i] && !shot.Fires.Contains(k.Class.FireSpaces[i].Cell))
+                shot.Fires.Add(k.Class.FireSpaces[i].Cell);
         return shot;
     }
 }

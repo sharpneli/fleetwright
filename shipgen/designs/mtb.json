@@ -1,5 +1,5 @@
 {
-  "version": 7,
+  "version": 8,
   "id": "mtb", "name": "Motor Torpedo Boat", "look": {"navy": "generic", "era": "wwii"}, "type": "MTB", "style": "planing",
   "hull": {"block_coefficient": 0.45, "plating": {"shell_mm": 0, "material": "wood", "deck_wood_mm": 0}, "freeboard": 1.0},
   "armour": {"belt_mm": 0, "belt_depth_m": 1.3, "belt_height_m": 1.3, "belt_bottom_mm": 0, "bulkhead_mm": 0, "upper_belt": {"mm": 0, "to_deck": 0, "extent": "citadel"}, "end_belts": {"fore": {"mm": 0, "tip_mm": 0, "reach": 1.0, "bulkhead_mm": 0}, "aft": {"mm": 0, "tip_mm": 0, "reach": 1.0, "bulkhead_mm": 0}}, "steering_box": {"mm": 0, "deck_mm": 0, "bulkhead_mm": 0}, "decks": [], "materials": {"belt": "mild steel", "upper_belt": "mild steel", "end_belts": "mild steel", "bulkheads": "mild steel", "decks": "mild steel", "turrets": "mild steel", "barbettes": "mild steel", "conning_tower": "mild steel", "secondary": "mild steel"}},
@@ -15,5 +15,6 @@
  "explosives": {"Explosive D": {"name": "Explosive D", "re": 0.95, "q_det": 3.2, "q_comb": 11.5, "air_m3_kg": 1.87, "eta": 1, "gurney_ms": 2350, "brisance": 0.9, "in_plate": 0.02, "full": {"basic": 0.5, "ce": 0.92}, "fire": 0.2, "from": 1911}},
  "materials": {"mild steel": {"density_t_per_m3": 7.85, "q": 0.7, "back": {"spall_u": 0.9, "holed_u": 1, "big": 0.5}, "fragments": "mild"}, "wood": {"density_t_per_m3": 0.7, "q": 0.01, "back": {"spall_u": 0.9, "holed_u": 1, "big": 0.5}, "fragments": "mild"}},
  "fittings": {"shock_grade": "G0"},
- "fire_control_tech": {"Telescopic sights": {"mount": {"director_firing": false, "stable_vertical": false, "lay_mil": 0.55, "salvo_defl_mil": 2.5}}}
+ "fire_control_tech": {"Telescopic sights": {"mount": {"director_firing": false, "stable_vertical": false, "lay_mil": 0.55, "salvo_defl_mil": 2.5}}},
+ "outfit": {"name": "Interwar (1939)", "fitted": {"quarters": 380, "cabins": 650, "offices": 500, "stores": 1500, "machinery": 150, "deck": 250}, "stripped": {"quarters": 240, "cabins": 280, "offices": 300, "stores": 1200, "machinery": 120, "deck": 120}, "paint_mj_m2": 100, "growth": 1.3}
 }

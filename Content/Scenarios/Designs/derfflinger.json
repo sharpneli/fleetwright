@@ -1,5 +1,5 @@
 {
- "version": 7,
+ "version": 8,
  "id": "derfflinger",
  "name": "Derfflinger-like (1914)",
  "type": "BC",
@@ -498,5 +498,26 @@
    "top": "spotting",
    "top_radius_m": 0.9
   }
- ]
+ ],
+ "outfit": {
+  "name": "Great War (1914)",
+  "fitted": {
+   "quarters": 420,
+   "cabins": 750,
+   "offices": 420,
+   "stores": 1500,
+   "machinery": 150,
+   "deck": 300
+  },
+  "stripped": {
+   "quarters": 400,
+   "cabins": 450,
+   "offices": 420,
+   "stores": 1500,
+   "machinery": 150,
+   "deck": 150
+  },
+  "paint_mj_m2": 50,
+  "growth": 1
+ }
 }

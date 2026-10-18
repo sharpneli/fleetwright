@@ -46,6 +46,9 @@ public sealed record Design
     public CrewInput? Crew { get; init; }
     /// <summary>How the fittings are mounted: their shock grade (Fittings; docs/battle/shells-armour-damage.md E0).</summary>
     public FittingsInput? Fittings { get; init; }
+    /// <summary>What burns aboard: each kind of space's fire load as fitted and stripped for war, the paint's, and how
+    /// fast the linings let a fire grow (Outfits; docs/battle/fire.md).</summary>
+    public OutfitInput? Outfit { get; init; }
     public FireControlInput? FireControl { get; init; }
     /// <summary>The fire-control tech blocks the batteries' fits name, keyed by name (FireControlTemplates;
     /// docs/battle/fire-control.md F3): a name the table doesn't give takes the catalogue's block.</summary>
@@ -128,6 +131,37 @@ public sealed record FittingsInput
 {
     /// <summary>G0 unsecured, G1 secured, G2 shock-tested, G3 post-war (ShockGrade; G0 when absent).</summary>
     public string? ShockGrade { get; init; }
+    [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+/// <summary>outfit: what burns aboard (docs/battle/fire.md; damage/17 §2). The fire loads as the ship is fitted and
+/// as she's stripped for war (her orders before action pick one), the paint on the steel, and the growth factor over a
+/// furnished room's "medium" t² fire (varnished wood 2, bare steel and retardant fabric 0.7). A key not given takes the
+/// template's for the navy and year (Outfits).</summary>
+public sealed record OutfitInput
+{
+    /// <summary>The template it was made from, a label only.</summary>
+    public string? Name { get; init; }
+    public FireLoadsInput? Fitted { get; init; }
+    public FireLoadsInput? Stripped { get; init; }
+    /// <summary>The paint's load, MJ per m² of deck (about 2.5 m² of bulkhead and deckhead each): on every space below
+    /// the weather deck and in the superstructure.</summary>
+    public double? PaintMjM2 { get; init; }
+    public double? Growth { get; init; }
+    [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+/// <summary>Fire loads, MJ per m² of deck, by kind of space: messdecks and berthing (quarters), officers' cabins and
+/// wardroom, offices and control spaces, stores, machinery spaces (lagging, oil film, rags), and what burns on the weather
+/// deck (boats, hammocks, gear, the top of the planking).</summary>
+public sealed record FireLoadsInput
+{
+    public double? Quarters { get; init; }
+    public double? Cabins { get; init; }
+    public double? Offices { get; init; }
+    public double? Stores { get; init; }
+    public double? Machinery { get; init; }
+    public double? Deck { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 

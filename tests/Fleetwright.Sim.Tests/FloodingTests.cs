@@ -152,7 +152,7 @@ public class FloodingTests(ITestOutputHelper output)
             var (w, c) = Ship("dreadnought", kn: 12);
             w.Apply(Command.SetSpeed(1000));
             Hole(w, c, c.Hydrostatics.Lcf + 20, -0.5, 0.3);
-            Condition(w).CellFire[c.Cells.Length / 2] = true;
+            Fires.Ignite(c, Condition(w), Enumerable.Range(0, c.Cells.Length).First(i => c.FireSpaces[i].Use == FireUse.Quarters), 0.3, Settings);
             w.AdvanceTo(w.Time + 10 * 60_000);
             return w;
         }

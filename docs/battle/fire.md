@@ -1,5 +1,5 @@
 # Plan: fire (a 4.5 deepening)
-Status: **proposed 2026-10-18**; decisions 1-4 from the user ("Decided" below), the steps waiting for their go    Updated: 2026-10-18
+Status: **agreed with the user 2026-10-18** ("Decided" below); B0 done 2026-10-18    Updated: 2026-10-18
 
 The fine-tune pass for fire: what happens after a fire starts. Its research is `damage/17_fire.md` (with `fire_ref.py`),
 on top of `damage/10_damage_control_holistic.md` §2 (fire, ammunition in a fire, the fire main) and `09_damage_control.md`
@@ -209,23 +209,62 @@ for later cuts USN 1942 and USN 1943+ (17 §8.3's table).
   17 §2.2's table; the design format gains the block with a version step, old designs taking their navy and year's.
 - **Readiness** (ship state, scenario): stripped, doors shut, fans secured, fire watch posted, decks wetted. Defaults
   from the doctrine.
-- **The starts** lose `FireLoadByEra` and the load multipliers: 08's chance by shell and filler starts a seat; the space's
-  load decides whether it grows (a thin load gives a local fire that dies, 17 §3). The hits bench's fire % will move.
+- **The starts** lose `FireLoadByEra` and the load multipliers: 08's chance by shell, times the space's load, starts a
+  seat; the load then decides whether it grows (a thin load gives a local fire that dies, 17 §3). The hits bench's fire %
+  will move.
 
 ## The steps
 
 Each step reports its numbers on the hits bench, the squadrons scenario and the matchup, and the record's anchors
 from B0's bench on.
 
-### B0 One space, unfought, and the bench
+### B0 One space, unfought, and the bench (done 2026-10-18)
 - The fire spaces' state (cells, superstructure parts, deck strips), the outfit block and its templates, sub-rooms;
   growth, the limits, flashover, local and starved, burn-out. The starts on the new seats.
-- `shipgen fire-bench`: one space by load, size and openings (17 §9 T2), against `fire_ref.py`'s tables.
+- `shipgen burn`: one space by load, size and openings (17 §9 T2), against `fire_ref.py`'s tables.
 - v0's spread, harm and put-out stay as the stand-in (decision 4).
 - Tests: 17 §8.7-1 unfought half and 3; dt 1 s vs 15 s.
+- **Built:**
+  - **The outfit** (shipgen): `outfit` in the design (`OutfitInput`: `fitted` and `stripped` loads by kind of space,
+    `paint_mj_m2`, `growth`), five templates (`Outfits.cs`: Victorian 1890, pre-dreadnought 1905, Great War 1914,
+    interwar 1939, post-Savo 1943) by navy and the plant's year; format 7 → 8 wrote each design its template's block
+    (125 files); `shipgen templates` writes `Content/Templates/outfits.json` and `docs/shipgen/outfit-templates.md`.
+    The goldens gained the block (ShipDesign 39); nothing else in shipgen's output moved.
+  - **The fire spaces** (`ShipClass.FireSpaces`, `FireSpaceRow`): every cell at its own index by its room's use
+    (quarters; stores and holds; boiler, engine, steering and torpedo rooms as machinery; the transmitting station as
+    offices; magazines, handling rooms, bunkers, tanks and voids burn nothing from a shell); superstructure blocks as
+    cabins-and-offices, the conning tower and tops as offices, gunhouses, casemates and tubes as machinery (local fires
+    until B1's propellant seats), hangar and flight deck; a weather-deck strip a section over its top cells, wooden at the
+    outfit's deck load, steel at half [EST]. Dreadnought: 308 spaces (253 cells, 35 parts, 20 decks), 101 cells that
+    don't burn.
+  - **The fire** (`Fires.Advance`, `BurnState`, `BurnPhase`; one function for the ship and the bench): 17 §8.2 with
+    the sub-rooms (`FireRoomM2` by use: a messdeck 90 m², a cabin 12, an office 20, stores 60; developed, the next room
+    joins every 2 min). Openings: one door a cell, two a part, a cell's holes to the sea. `Fires.Ignite` lights a space
+    (refuses one with nothing to burn or burnt out; a space alight takes the seat's heat); `CellFire` and a part's
+    `Burning` are shown from it, so every reader stayed as it was. The dev `-burn` lights the top cell (an error where
+    nothing burns).
+  - **The starts:** the space the burst is in (its part, its cell, outside the part its fragments reached first, else
+    the weather deck, only when it burst at deck level); the chance is v0's × the space's load over 560 MJ/m² (at most
+    ×2; a Great War messdeck reads as v0's hull did) in place of the look's era and the three multipliers; the seat by
+    kind (AP 0.1, common 0.4, HE 0.3 MW; ready ammunition 1). The load still scales the start (fire_ref.py's p_fire does
+    too), and a thin load's fire then dies on its own.
+- **The bench** (`shipgen burn`): every T2 row within 0.1 min of `fire_ref.py`'s flashover, its peak and its hours
+  (the 40 m² 1939 messdeck: 4.3 min, 2.24 MW, 3.1 h; closed up: starved 0.08 MW, out at 30 min; the 1943 load: local, 24
+  min); at a 15 s step flashover 0.2-0.3 min later, hours the same. A 300 m² messdeck section is all involved ~4 min after
+  its first room flashes; a wooden 1890 deck burns at ~20 MW for 1.6 h, a 1914 one dies.
+- **What moved** (the hits bench, before → after; v0's put-out still ends every fire inside the settle):
+  - fire per hit: Borodino under Mikasa's 6" common 11% → 4%, Dreadnought under 12" HE 52% → 33%, Iron Duke under
+    Seydlitz 7% → 5%, a destroyer under a light cruiser 2% → 2%. Bunkers, tanks, magazines, voids, funnels, masts and
+    barbettes no longer light (v0 lit them at the hull's or superstructure's multiplier). Pre-dreadnoughts lose most: their
+    sides are coal bunkers, and v0's ×1.6 for the Victorian look is gone. B5 judges the starts against 08 §3.9 and
+    17 §9 T6 (Tsushima's ~19 fires in 60 hits), with the outside bursts' share the first thing to look at.
+  - crew out of action after the settle: Dreadnought 76 → 69, the rest within 1. Magazines lost, flooding, speed:
+    unchanged within the noise. The squadrons scenario diverges at the first fire draw (a single seed); the damage
+    system's share of the run 12.7% → 10.4%.
 
 ### B1 Openings, spread, reflash
-- Doors from the readiness, holes from the breaches; the spread table; the open deck; propellant seats; reflash.
+- The readiness (ship state): stripped or as fitted (B0 burns every ship as fitted), doors shut or open, decks wetted;
+  doors from it, holes from the breaches; the spread table; the open deck; propellant seats; reflash.
 - The bench: spread times from flashover, the starved fire that flashes on a hole.
 
 ### B2 Effects

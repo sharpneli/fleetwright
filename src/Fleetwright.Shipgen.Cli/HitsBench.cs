@@ -155,6 +155,8 @@ static class HitsBench
         Console.WriteLine(string.Format(Inv, "  then {0:0} min of flooding and fire: water {1:0} t a ship; lost to the magazine {2:0.#}%, foundered {3:0.#}%, capsized {4:0.#}%",
             o.SettleMin, r.WaterT / r.Ships, 100.0 * r.LostBy[(int)LossKind.Magazine] / r.Ships, 100.0 * r.LostBy[(int)LossKind.Foundered] / r.Ships,
             100.0 * r.LostBy[(int)LossKind.Capsized] / r.Ships));
+        Console.WriteLine(string.Format(Inv, "    fires still burning {0:0.0} a ship (any in {1:0}% of ships); crew out of action {2:0}",
+            r.BurningAfter / r.Ships, 100.0 * r.BurningShips / r.Ships, r.CrewAfter / r.Ships));
         if (r.LostBy[(int)LossKind.Magazine] > 0)
             Console.WriteLine(string.Format(Inv, "    to the magazine: set off by a hit {0:0.#}%, by a fire later {1:0.#}%",
                 100.0 * (r.LostBy[(int)LossKind.Magazine] - r.MagazineByFire) / r.Ships, 100.0 * r.MagazineByFire / r.Ships));

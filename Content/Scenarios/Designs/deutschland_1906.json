@@ -1,5 +1,5 @@
 {
- "version": 7,
+ "version": 8,
  "id": "deutschland_1906",
  "name": "Deutschland-like pre-dreadnought (1906)",
  "type": "BB",
@@ -513,5 +513,26 @@
    "top": "fighting",
    "top_radius_m": 1.8
   }
- ]
+ ],
+ "outfit": {
+  "name": "Pre-dreadnought (1905)",
+  "fitted": {
+   "quarters": 450,
+   "cabins": 900,
+   "offices": 420,
+   "stores": 1500,
+   "machinery": 150,
+   "deck": 400
+  },
+  "stripped": {
+   "quarters": 380,
+   "cabins": 600,
+   "offices": 420,
+   "stores": 1500,
+   "machinery": 150,
+   "deck": 350
+  },
+  "paint_mj_m2": 60,
+  "growth": 1.5
+ }
 }
