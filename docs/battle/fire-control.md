@@ -432,9 +432,10 @@ weather** (1.6x, want 0.7-1.5).
     ships Zeiss stereo with their clock and plot, the cruisers Zeiss with the range clock and no director; Bismarck and
     Deutschland the 1930s Rechenstelle with O3 stereo at ×23 and power drive; Yamato and Nagato the Type 92 plot; KGV
     the AFCT and the AFCC for her secondaries. Everything else keeps the preset its level was, so radar no longer
-    lifts anything, and a Dreyer on a 1916 French or American ship is a preset's label, not a claim. Which machine each
-    class carried elsewhere (the Dreyer marks by class, the Argo ships, the Ford Mk 1, the French, Italian and Austrian
-    tables, the Russians' Liuzhol) is a research request (`research/REQUESTS.md`).
+    lifts anything, and a Dreyer on a 1916 French or American ship is a preset's label, not a claim. The aim isn't to
+    reproduce classes 1:1 (the user, 2026-10-18: a general system with historical inspiration, the mechanisms to
+    produce them if wished; the fits get more generic later, sizes the player's): the machines the catalogue lacks and
+    the typical fits by type and period are a research request (`research/REQUESTS.md`).
   - **Departures from the text above, for the steps that own them:** the computer's mass, crew and power are in its
     block, but shipgen still weighs `computer_t`: the computer's weight goes with the transmitting station as a room
     (F4), so no ship's displacement moved here. The salvo error is still one number (`salvo_pct`); splitting off the
