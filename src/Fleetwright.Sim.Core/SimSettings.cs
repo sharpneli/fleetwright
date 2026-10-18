@@ -508,8 +508,8 @@ public sealed record SimSettings
     /// salvo, full salvos in fire for effect.</summary>
     public FireDiscipline[] FireDisciplines { get; init; } =
     [
-        new() { Name = "rn-1914", InFlight = 1, GunsShare = 0.5, GunsMin = 4, EffectHalves = true, MissesToRange = 3 },
-        new() { Name = "rn-1917", InFlight = 2, GunsShare = 0.5, GunsMin = 4, EffectHalves = true, MissesToRange = 3 },
+        new() { Name = "rn-1914", InFlight = 1, GunsShare = 0.5, GunsMin = 4, EffectHalves = true, MissesToRange = 3, RateSpotShare = 0.5 },
+        new() { Name = "rn-1917", InFlight = 2, GunsShare = 0.5, GunsMin = 4, EffectHalves = true, MissesToRange = 3, RateSpotShare = 0.5 },
         new() { Name = "german", InFlight = 3, LadderStepM = 366, GunsShare = 0.25, GunsMin = 2, EffectHalves = true, MissesToRange = 3 },
         new() { Name = "usn", InFlight = 1, GunsShare = 0.5, GunsMin = 4, MissesToRange = 3 },
     ];
@@ -544,13 +544,15 @@ public sealed record SimSettings
     public double OwnTurnYawDegS { get; init; } = 0.2;
 
     /// <summary>A side's gun crews, a row for each <see cref="CrewQuality"/> in order: the rangetakers' error (Conditions.
-    /// operator: 2 green, 1.5 average, 1 trained, 0.85 elite) and the layers' (a guess, the same way).</summary>
+    /// operator: 2 green, 1.5 average, 1 trained, 0.85 elite), the layers' (a guess, the same way), and the chance a spot is
+    /// applied to the correction in force rather than the one its salvo was fired with (pyramiding, fire-control.md F6:
+    /// "a common error", NO&amp;G ch. 18C; the numbers [EST]).</summary>
     public GunneryCrew[] GunneryCrews { get; init; } =
     [
-        new() { Name = "green", Operator = 2, Lay = 1.3 },
-        new() { Name = "average", Operator = 1.5, Lay = 1.15 },
-        new() { Name = "trained", Operator = 1, Lay = 1 },
-        new() { Name = "elite", Operator = 0.85, Lay = 0.9 },
+        new() { Name = "green", Operator = 2, Lay = 1.3, Pyramid = 0.25 },
+        new() { Name = "average", Operator = 1.5, Lay = 1.15, Pyramid = 0.1 },
+        new() { Name = "trained", Operator = 1, Lay = 1, Pyramid = 0.03 },
+        new() { Name = "elite", Operator = 0.85, Lay = 0.9, Pyramid = 0 },
     ];
 
     // ------------------------------------------------------------------ fire orders (docs/battle/fighting.md 4.2c)
@@ -1375,7 +1377,10 @@ public enum CrewQuality : byte
 /// <item>a partial salvo's share of the guns that bear, at least a number of them (enough to spot a wild shot by:
 /// navalgazing Spotting, 3 and better 4; all of them if fewer);</item>
 /// <item>fire for effect in alternating halves (each half as it loads, so the spotter has falls twice as often) or full
-/// salvos; and how many spots in a row without a straddle send it back to ranging.</item>
+/// salvos; and how many spots in a row without a straddle send it back to ranging;</item>
+/// <item>the rate spot: when two spots in a row move the aim the same way, the range rate is corrected too, by this share
+/// of the move a minute (the RN's "down 200, rate down 100", computing.md §2.5; 0 for none: the USN's manual held
+/// spotting during rate corrections the same as pyramiding).</item>
 /// </list></summary>
 public sealed record FireDiscipline
 {
@@ -1386,6 +1391,7 @@ public sealed record FireDiscipline
     public int GunsMin { get; init; } = 4;
     public bool EffectHalves { get; init; }
     public int MissesToRange { get; init; } = 3;
+    public double RateSpotShare { get; init; }
 }
 
 /// <summary>A crew quality's multipliers on the rangetakers' and the layers' errors.</summary>
@@ -1394,6 +1400,7 @@ public sealed record GunneryCrew
     public string Name { get; init; } = "";
     public double Operator { get; init; }
     public double Lay { get; init; }
+    public double Pyramid { get; init; }
 }
 
 [JsonSourceGenerationOptions(WriteIndented = true, UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,

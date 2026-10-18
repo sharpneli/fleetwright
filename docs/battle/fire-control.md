@@ -1,5 +1,5 @@
 # Plan: fire control (a 4.5 deepening)
-Status: **agreed with the user 2026-10-17** ("Decided" below; radar moved out); F0-F5 and F6a-b done 2026-10-18    Updated: 2026-10-18
+Status: **agreed with the user 2026-10-17** ("Decided" below; radar moved out); F0-F5 and F6a-c done 2026-10-18    Updated: 2026-10-18
 
 The fine-tune pass for the **Fire control** link of `fighting.md` 4.5 ("the trackers by era ... the clocks' limits ...
 the full set of levels, radar as a sensor, night ... splash confusion ... the designer emitting levels and sensors,
@@ -848,6 +848,31 @@ from the parts and independent fire (items 6 and 9); F6e ammunition as a choice 
     three and two turrets alternating; Bismarck's 150 mm halves 5.9 s apart (a reload of 11.2 s). The turret test
     checks no salvo is more than the forward guns (partial salvos now).
   - *Cost:* 27 µs a battery-second, as F6a.
+- **F6c done 2026-10-18** (the rate spot, the first step, pyramiding).
+  - *The rate spot* (the discipline's `RateSpotShare`: the RN's 0.5, none for the Germans and the USN, whose manual held
+    spotting during rate corrections the same as pyramiding): when two spots in a row move the aim the same way, the
+    range rate takes that share of the move a minute ("down 200, rate down 100", computing.md §2.5), set on the machine
+    as its operator would (`FcTracker.CorrectRate`: a rate clock's range rate, a plot's velocity, a turn filter's speed
+    and heading, a judgement's guess until it looks again). The bracket stays as it is: the rate's error was what moved
+    the needed correction, and it's taken off at its source.
+  - *The first step* (`FirstStep`): twice the error the computer expects of its own solution over the time of flight
+    (its doubt of the target's position and rate along the line of fire, `FcTracker.PositionSigma` and `RateSigma`, and
+    its residual bias), never more than its own first step (the RN's 400 yd) nor under the bracket's floor; set when
+    ranging opens and each time it goes back. At the opening it's mostly the 366 m cap; a settled Queen Elizabeth goes
+    back to ranging at 17.5 kyd with 266 m.
+  - *Pyramiding* (the crew's `Pyramid`: green 0.25, average 0.1, trained 0.03, elite 0 [EST]; "a common error", NO&G
+    18C): the chance a spot is put on the correction in force rather than the one its salvo was fired with, range and
+    deflection both. Lion on Derfflinger at 15 km over 48 runs: trained 3.9%, green 3.5% (the green crew's rangetakers
+    and layers worse too). **Left:** the time-of-flight buzzer as a computer's fit (the cure): only the Ford Mk 8 has one
+    in the research, a WWII machine, so it waits for a computer block's field and the designs' copies refreshed.
+  - *Numbers* (fc-history `--runs 24`): 13 of 23 in band (15 at F6b). The rate spot lifts the British: the Jutland
+    BCS 2.7 to 3.2% (over the band's 2.8), the Grand Fleet BS 6.7 to 7.0%, the 3rd BCS 14.3 to 14.7%, the Falklands 2.3
+    to 2.5%; the German cases within their noise or lower (the battleships 5.8 to 4.8%), so the Germans over the British
+    fall to 0.98 (want 1.5-5): the record's British losses are in what the sim doesn't have yet (smoke, the British
+    silhouetted, splash confusion), not in their machine. A steady target over a salvo chaser 2.75 to 3.20 (in).
+    Squadrons over 20 seeds: Britain's hits 29 to 42, Germany's 63 to 78, losses as before. Tsushima over 5 seeds:
+    Russia's hits 343 to 279, Japan's 427 to 505, losses 4.2 Russian and 3.0 to 2.6 Japanese ships.
+  - *Tests:* a rate spot of 1 m/s moves every kind of computer's prediction a minute on by 60 m along the line of fire.
   - *A bug found on the way* (committed alone): a row of light AA mounts along each beam blinded the directors on
     their deck, so Bismarck's 150 mm never took a reading and never fired; light AA no longer blinds a post (45 classes'
     eyes move, the WWI scenarios' hashes don't).

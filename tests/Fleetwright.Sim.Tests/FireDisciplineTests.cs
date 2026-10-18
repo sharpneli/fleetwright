@@ -99,6 +99,46 @@ public class FireDisciplineTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void A_rate_spot_moves_every_computers_prediction_by_the_correction()
+    {
+        // a target 15 km east of a ship at rest, steaming north at 10 m/s, read cleanly every 2 s for two minutes; then
+        // "rate up 60 m a minute" along the line of fire: a minute on, every computer has her 60 m further east
+        var own = Earth.Position(Lat, Lon);
+        var start = own;
+        var f0 = Earth.Forward(start, 90);
+        Earth.Advance(ref start, ref f0, 15_000);
+        FcReading Read(int t)
+        {
+            var p = start;
+            var f = Earth.Forward(p, 0);
+            Earth.Advance(ref p, ref f, 10.0 * t);
+            double r = Earth.Distance(own, p), b = Earth.Bearing(own, p);
+            var (z, r11, r12, r22) = Track.Reading(own, r, b, 5, 0.2e-3);
+            return new FcReading
+            {
+                Ms = t * 1000L, From = own, Z = z, RangeM = r, BearingDeg = b, SigmaRangeM = 5, SigmaBearingRad = 0.2e-3, R11 = r11, R12 = r12, R22 = r22,
+            };
+        }
+        foreach (int preset in new[] { 2, 4, 7, 8, 9 })   // rate clock, true course, acceleration, turn rate, judgement
+        {
+            var c = FireControlPresets.At(preset).Computer with { LatencyS = 0 };
+            var guess = Earth.Forward(start, 0) * 10;
+            var tr = FcTracker.Start(c, Read(0), guess, 0.5);
+            for (int t = 2; t <= 120; t += 2)
+                tr.Fix(c, Read(t));
+            var corrected = tr;
+            tr.At(c, 120_000, 120_000, own, default, out var p0, out _);
+            var along = Earth.Forward(p0, Earth.Bearing(own, p0));
+            corrected.CorrectRate(along, 1);
+            tr.At(c, 180_000, 120_000, own, default, out var a, out _);
+            corrected.At(c, 180_000, 120_000, own, default, out var b, out _);
+            double moved = Vec3d.Dot(b - a, along);
+            output.WriteLine($"preset {preset} ({c.Tracker}): {moved:F1} m along the line of fire");
+            Assert.InRange(moved, 50, 70);
+        }
+    }
+
+    [Fact]
     public void The_german_ladder_brackets_in_one_flight_and_the_halves_alternate()
     {
         // Seydlitz (five twin turrets) on Lion at 16.5 km: three salvos stepped 400 yd apart go before the first falls;

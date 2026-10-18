@@ -296,6 +296,57 @@ public struct FcTracker
         }
     }
 
+    /// <summary>The computer's own doubt of the target's position along a horizontal direction, m 1 sigma (as
+    /// <see cref="RateSigma"/>: what it believes).</summary>
+    public readonly double PositionSigma(Vec3d along)
+    {
+        double ee, en, nn;
+        Vec3d at;
+        switch (Kind)
+        {
+            case TrackerKind.TrueCourse:
+                (ee, en, nn, at) = (Line.P.Ee, Line.P.En, Line.P.Nn, Line.Position);
+                break;
+            case TrackerKind.RateClock:
+                return Math.Sqrt(Math.Max(P[0], 0));   // its range's
+            default:
+                int n = N;
+                (ee, en, nn, at) = (P[0], P[1], P[n + 1], Origin);
+                break;
+        }
+        double e = Vec3d.Dot(along, Earth.East(at)), no = Vec3d.Dot(along, Earth.North(at));
+        return Math.Sqrt(Math.Max(e * e * ee + 2 * e * no * en + no * no * nn, 0));
+    }
+
+    /// <summary>A rate spot (fire-control.md F6): the target's motion along a horizontal direction (a unit tangent vector;
+    /// the line of fire) corrected by dv, m/s, as the operator sets it on his machine: a rate clock's range rate, a plot's
+    /// velocity, a turn filter's speed and heading; a judgement's guess until it looks again.</summary>
+    public void CorrectRate(Vec3d along, double dv)
+    {
+        switch (Kind)
+        {
+            case TrackerKind.TrueCourse:
+                Line.Velocity += along * dv;
+                return;
+            case TrackerKind.RateClock:
+                X[1] += dv;
+                return;
+            case TrackerKind.TurnRate:
+            {
+                double e = Vec3d.Dot(along, Earth.East(Origin)), n = Vec3d.Dot(along, Earth.North(Origin));
+                double ve = X[2] * Math.Sin(X[3]) + e * dv, vn = X[2] * Math.Cos(X[3]) + n * dv;
+                (X[2], X[3]) = (Math.Sqrt(ve * ve + vn * vn), Math.Atan2(ve, vn));
+                return;
+            }
+            default:
+            {
+                double e = Vec3d.Dot(along, Earth.East(Origin)), n = Vec3d.Dot(along, Earth.North(Origin));
+                (X[2], X[3]) = (X[2] + e * dv, X[3] + n * dv);
+                return;
+            }
+        }
+    }
+
     public readonly void Hash(ref StateHash h)
     {
         h.Add((int)Kind);

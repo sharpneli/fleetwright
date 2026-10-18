@@ -100,6 +100,11 @@ public sealed class GunnerySystem : IWorldSystem
         public FirePhase Phase;
         public FireControl.Bracket Bracket;
         public double DriftMs;
+        /// <summary>The computer's doubt of the target's position along the line of fire (m), and the range to its aim
+        /// (m), for the first step.</summary>
+        public double PosSigmaM, RangeM;
+        /// <summary>Which way the last spot moved the aim (-1, 0, +1): two the same way correct the rate too.</summary>
+        public int LastMove;
         /// <summary>Its salvos in the air or down and not yet spotted; while ranging the next waits for them, or until
         /// <see cref="WaitMs"/> (a spot that never came).</summary>
         public int InFlight;
@@ -679,7 +684,8 @@ public sealed class GunnerySystem : IWorldSystem
         // fire discipline (F6): the bracket widens at the computer's doubt of the range rate along the line of fire; own
         // ship's turn (any for a machine that takes it as the target's, a hard one for the rest) or the target seen to
         // turn sends a battery firing for effect back to ranging, its bracket opened to the first step
-        fc.DriftMs = fc.Tracker.RateSigma(computer, Earth.Forward(aim, Earth.Bearing(ship.Position, aim)));
+        var along = Earth.Forward(aim, Earth.Bearing(ship.Position, aim));
+        (fc.DriftMs, fc.PosSigmaM, fc.RangeM) = (fc.Tracker.RateSigma(computer, along), fc.Tracker.PositionSigma(along), Earth.Distance(ship.Position, aim));
         double yaw = Math.Abs(double.RadiansToDegrees(ship.YawRate));
         bool plain = !computer.HelmFree && computer.Tracker is TrackerKind.RateClock or TrackerKind.Judgement;
         bool turning = yaw > (plain ? settings.OwnTurnYawDegS : settings.HardTurnYawDegS);
@@ -687,7 +693,7 @@ public sealed class GunnerySystem : IWorldSystem
             Disturbed(ref fc, now);
         (fc.OwnTurning, fc.Turns) = (turning, fc.Tracker.Turns);
         if (fc.State == BatteryState.Firing && fc.Phase == FirePhase.Opening)
-            fc.Phase = FirePhase.Ranging;
+            (fc.Phase, fc.Bracket.Step) = (FirePhase.Ranging, FirstStep(fc));
 
         // time the salvo: ranging, when the spots it's due are in (the discipline's salvos in flight: a ladder's group at
         // once, else rolling) and enough guns are loaded and laid; firing for effect, the first instant the bearing mounts
@@ -1082,13 +1088,25 @@ public sealed class GunnerySystem : IWorldSystem
             long now = world.Time.Ms;
             if (sees)
             {
-                fc.Bracket.Spot(sign, sv.CorrR, now, fc.DriftMs, sv.PatternM, Math.Max(settings.BracketFloorM, settings.BracketFloorPatterns * sv.PatternM));
+                // each spot against the correction its salvo was fired with; a crew may pyramid, putting it on the one in
+                // force (F6: the green most often)
+                var dis = settings.FireDisciplines[disciplines[ship.Side]];
+                var rp = stream.Derive(0x5B09u).Derive((ulong)si).Derive((ulong)sv.Generation);
+                bool pyramid = rp.NextDouble() < settings.GunneryCrews[(int)crews[ship.Side]].Pyramid;
+                double before = fc.CorrR;
+                fc.Bracket.Spot(sign, pyramid ? fc.CorrR + sv.LadderM : sv.CorrR, now, fc.DriftMs, sv.PatternM,
+                    Math.Max(settings.BracketFloorM, settings.BracketFloorPatterns * sv.PatternM));
                 fc.CorrR = fc.Bracket.Aim(now, fc.DriftMs);
-                NextPhase(ref fc, sign, now, settings.FireDisciplines[disciplines[ship.Side]].MissesToRange);
+                // the rate spot: two moves the same way, and the range rate takes a share of this one a minute
+                int move = Math.Abs(fc.CorrR - before) < 1 ? 0 : Math.Sign(fc.CorrR - before);
+                if (dis.RateSpotShare > 0 && move != 0 && move == fc.LastMove)
+                    fc.Tracker.CorrectRate(sv.U, dis.RateSpotShare * (fc.CorrR - before) / 60);
+                fc.LastMove = move;
+                NextPhase(ref fc, sign, now, dis.MissesToRange);
                 var r = stream.Derive(0x5B08u).Derive((ulong)si).Derive((ulong)sv.Generation);
                 double defl = sv.SumY / Math.Max(sv.Landed, 1) + settings.SpotDeflectionMil * FireControl.Mil * sv.RangeM * r.NextGaussian();
                 if (Math.Abs(defl) > 0.25 * sv.PatternM)
-                    fc.CorrD = sv.CorrD - settings.SpotDeflectionGain * defl;
+                    fc.CorrD = (pyramid ? fc.CorrD : sv.CorrD) - settings.SpotDeflectionGain * defl;
             }
             Spotted?.Invoke(new SpotReport(sv.FiredMs, fc.Shooter, fc.Battery, sees, sign, fc.Bracket.LoAt(now, fc.DriftMs), fc.Bracket.HiAt(now, fc.DriftMs),
                 fc.CorrR, fc.Phase));
@@ -1120,17 +1138,29 @@ public sealed class GunnerySystem : IWorldSystem
             return;
         if (fc.MissOver == 0 || fc.MissShort == 0)
             fc.Bracket.OpenToward(sign, now, fc.DriftMs);
-        (fc.Phase, fc.Misses, fc.MissOver, fc.MissShort, fc.Rung) = (FirePhase.Ranging, 0, 0, 0, 0);
+        (fc.Phase, fc.Misses, fc.MissOver, fc.MissShort, fc.Rung, fc.Bracket.Step) = (FirePhase.Ranging, 0, 0, 0, 0, FirstStep(fc));
     }
 
     /// <summary>The solution disturbed (own ship turning, the target seen to turn): a battery firing for effect goes back
     /// to ranging, its bracket opened round its middle to the first step.</summary>
     void Disturbed(ref Fc fc, long now)
     {
-        fc.Bracket.Widen(now, fc.DriftMs, fc.Fit.Computer.FirstStepM);
+        fc.Bracket.Step = FirstStep(fc);
+        fc.Bracket.Widen(now, fc.DriftMs, fc.Bracket.Step);
         if (fc.Phase == FirePhase.Effect)
             (fc.Phase, fc.Misses, fc.MissOver, fc.MissShort) = (FirePhase.Ranging, 0, 0, 0);
         fc.Rung = 0;
+    }
+
+    /// <summary>The first step beyond a bound (F6): twice the error the computer expects of its own solution over the time
+    /// of flight (its doubt of the target's position and rate along the line of fire, and its residual bias), never more
+    /// than its own first step (the RN's 400 yd) nor under the bracket's floor.</summary>
+    double FirstStep(in Fc fc)
+    {
+        var c = fc.Fit.Computer;
+        double rate = fc.DriftMs * fc.TofS, resid = c.ResidPct / 100 * fc.RangeM;
+        double sigma = Math.Sqrt(fc.PosSigmaM * fc.PosSigmaM + rate * rate + resid * resid);
+        return Math.Clamp(2 * sigma, settings.BracketFloorM, Math.Max(c.FirstStepM, settings.BracketFloorM));
     }
 
     /// <summary>A partial salvo by the discipline, of the mounts that bear (loaded or not), as the guns it wants and the
