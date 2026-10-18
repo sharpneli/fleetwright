@@ -161,6 +161,53 @@ public class FireDisciplineTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void After_a_hit_the_guns_hold_their_lay()
+    {
+        // Mikasa's 6" on a cruiser 3 km off (by eye, outside point blank) and Lion on Derfflinger at 15 km: after a salvo
+        // that hit, the next is laid where it was (the user, 2026-10-18: "the target teleported 200 m!" isn't a reason to
+        // toss shells over her). Before the eye's error wandered slowly, the spots held her and lone overs held the aim, the
+        // laid point moved 67 and 192 m on average, and up to 700 m
+        var cases = new (ShipClass Shooter, ShipClass Target, int Battery, double RangeM, double Bearing)[]
+        {
+            (Fleet.Get("mikasa").Class!, Fleet.Scenario("aurora"), -1, 3_000, 90),
+            (Fleet.Get("lion").Class!, Fleet.Scenario("derfflinger"), 0, 15_000, 80),
+        };
+        foreach (var (shooter, target, battery, rangeM, bearing) in cases)
+        {
+            int bat = battery;
+            if (bat < 0)
+                for (int k = 0; k < shooter.Batteries.Length; k++)
+                    if (shooter.Batteries[k].Side == Side.Starboard && shooter.Batteries[k].CalibreMm is > 140 and < 160)
+                        bat = k;
+            var moves = new List<double>();
+            for (int seed = 1; seed <= 6; seed++)
+            {
+                var w = new World(Start, (ulong)seed, Settings);
+                int a = w.Ships.AddClass(shooter), c = w.Ships.AddClass(target);
+                var p = Earth.Position(Lat, Lon);
+                var f = Earth.Forward(p, bearing);
+                Earth.Advance(ref p, ref f, rangeM);
+                var (tl, to) = Earth.LatLon(p);
+                w.Apply(ShipSystem.Spawn(a, Lat, Lon, 0, 15, side: 0));
+                w.Apply(ShipSystem.Spawn(c, tl, to, 0, 15, side: 1));
+                var reports = new List<GunnerySystem.SalvoReport>();
+                w.Gunnery.Reported = reports.Add;
+                w.Apply(GunnerySystem.Engage(1, bat, 2));
+                w.AdvanceTo(Start + 15 * 60_000);
+                reports.Sort((x, y) => x.FiredMs.CompareTo(y.FiredMs));
+                for (int i = 1; i < reports.Count; i++)
+                    if (reports[i - 1].Hits > 0 && reports[i].FiredMs - reports[i - 1].FiredMs <= 40_000)
+                        moves.Add(Math.Abs(reports[i].LaidErrM - reports[i - 1].LaidErrM));
+            }
+            double mean = moves.Count > 0 ? moves.Average() : 0;
+            output.WriteLine($"{shooter.Name} at {rangeM / 1000:F0} km: {moves.Count} salvos after a hit, laid {mean:F0} m from the last on average, " +
+                             $"{moves.Count(m => m > 100)} over 100 m");
+            Assert.True(moves.Count >= 5, "it hit");
+            Assert.True(mean < 50, $"the lay moved {mean:F0} m on average after a hit");
+        }
+    }
+
+    [Fact]
     public void A_rate_spot_moves_every_computers_prediction_by_the_correction()
     {
         // a target 15 km east of a ship at rest, steaming north at 10 m/s, read cleanly every 2 s for two minutes; then

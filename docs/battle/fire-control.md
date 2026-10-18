@@ -995,6 +995,34 @@ from the parts and independent fire (items 6 and 9); F6e ammunition as a choice 
     (80%); zigzagging in 62% under 1 km and 36% at 1-2 km. Her 12" (a telescope on the roll, 3 mil in battle) 61-74%
     under 1 km. fc-history unchanged (8 of 23: nothing in it is that close). Tsushima over 5 seeds: Russia loses 4.8 ships
     and Japan 3.8. A test: Mikasa's 6" at 800 m lay point blank and hit with 83% of their shells.
+  - *No teleporting* (the user, 2026-10-18: "Sir, the target teleported 200 meters!" — the officer carries on hitting;
+    spotting walks out a steady error, and doesn't work against a large uncorrelated one). After a salvo that hit, the
+    next one's laid point (the aim with its correction, against where she went: the duel's new `laid` column) moved
+    67 m on average and up to 706 m (Mikasa's 6" at 3 km), 192 m (Lion at 15 km), 184 m (Queen Elizabeth at 14 km).
+    Four changes:
+    - *The eye's error wanders, it isn't redrawn* (`EyeRangeShare` 0.075, `EyeRangeBiasShare` 0.10, `EyeWanderTauS`
+      300 s [EST]): the research's 12.5% for one practised estimate split into a man's own bias, the same every time, and
+      a wander about it that changes over minutes (√(0.10² + 0.075²) = 12.5%; battle and the crew multiply the wander).
+      It was a fresh 19% each minute on top of the 10% bias. A rangefinder's error stays fresh each reading (the
+      instrument's setting).
+    - *The spots lay the guns while they hold her* (`SpotsHoldS`, 120 s after a straddle or a hit [EST]): the bracket's
+      aim, its computer's steps taken back off it (Rebase), so a new range never moves the guns; the "solution stands
+      inside the bracket" rule only when the spots are stale.
+    - *A lone over or short among straddles holds the aim*: firing for effect, a spot moves the bracket only when the one
+      before was the same way (the spots of the salvos in the air arrived between two salvos and each moved the aim
+      half a pattern, chasing the scatter: the research's full corrections chasing the random salvo error).
+    - *A plausibility gate* (`ReadingGateSigmas`, 3): a reading more than 3 sigma off the computer's own prediction for
+      its time is set aside, unless the next is too (then she really moved, or the old picture was wrong). And point
+      blank comes in at its test and goes out only past a margin, a layer back in within a minute keeping his setting.
+    After: 18 m on average at 3 km (13 of 219 over 100 m, the corrections of two spots the same way), 5 m at 1.5 km,
+    14 m at 15 km (Lion), 38 m at 14 km (Queen Elizabeth). Hit rates rise where the noise was chased: fc-history **11
+    of 23** (8): the Grand Fleet BS 8.4 to 6.4%, the German battleships 6.1 to 5.5%, Denmark Strait 11.5 to 7.1% come into
+    their bands; director about even with independent 1.05, heavy guns over the 6" 2.04 (both in). Close in, Mikasa's 6"
+    on Aurora: a close crossing 93%, head on under 1 km 73%, on a diagonal at 1-2 km 47%, steady at 3 km 26%. Squadrons
+    over 20 seeds: Britain's hits 48 to 63, Germany's 81 to 97, losses as before. Tsushima over 5 seeds: Russia's hits
+    921 and losses 5.6 ships, Japan's 1,286 and 3.8. Cost 32 µs a battery-second. Tests: after a hit the lay moves 19 m on
+    average at 3 km and 10 m at 15 km (`After_a_hit_the_guns_hold_their_lay`); the fall-out test's enemy holds her fire
+    (a hit on the second ship put her out too, under its any-damage doctrine).
   - *A bug found on the way* (committed alone): a row of light AA mounts along each beam blinded the directors on
     their deck, so Bismarck's 150 mm never took a reading and never fired; light AA no longer blinds a post (45 classes'
     eyes move, the WWI scenarios' hashes don't).

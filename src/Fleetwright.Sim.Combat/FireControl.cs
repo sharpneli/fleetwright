@@ -168,13 +168,15 @@ public static class FireControl
 
         public readonly double HiAt(long ms, double driftMs) => Hi + driftMs * Math.Max(ms - HiMs, 0) / 1000.0;
 
-        /// <summary>The correction to fire with now: none while the solution it corrects lies inside the bracket (the spots
-        /// say nothing against it: a computer that took a new range in stands, the bug hunt of 2026-10-18), else the middle
-        /// of a closed bracket or a step beyond the bound of an open one.</summary>
-        public readonly double Aim(long ms, double driftMs)
+        /// <summary>The correction to fire with now. While the spots hold her (<paramref name="held"/>: a hit or a straddle
+        /// lately), the bracket's: its middle closed, a step beyond its bound open; the computer's new ranges move the
+        /// bracket with them (Rebase), so they never move the guns ("Sir, the target teleported 200 m": the user,
+        /// 2026-10-18). Otherwise none while the solution lies inside the bracket (the spots say nothing against it: a computer
+        /// that took a good range in stands), else the bracket's as before. None before the first spot.</summary>
+        public readonly double Aim(long ms, double driftMs, bool held = false)
         {
             double lo = LoAt(ms, driftMs), hi = HiAt(ms, driftMs);
-            if (lo < 0 && hi > 0)
+            if (double.IsInfinity(Lo) && double.IsInfinity(Hi) || !held && lo < 0 && hi > 0)
                 return 0;
             return Closed ? 0.5 * (lo + hi) : !double.IsInfinity(Lo) ? lo + Step : hi - Step;
         }

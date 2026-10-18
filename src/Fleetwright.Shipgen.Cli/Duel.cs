@@ -40,10 +40,10 @@ static class Duel
                         Bound(p.Hi), p.Next, p.Phase != r.Phase ? $" -> {Phase(p.Phase)}" : "")
                     : "";
                 Console.WriteLine(string.Format(Inv,
-                    "    {0,5:0} s  {1}{13} R {2,6:0} (true {14,6:0})  n {3,2}  fall {4,6:+0;-0} m {5,5:+0;-0} m  aim {6,6:+0;-0} {7,5:+0;-0}  corr {8,6:+0;-0}{12}  hits {9}{10}{11}",
+                    "    {0,5:0} s  {1}{13} R {2,6:0} (true {14,6:0}) laid {15,6:+0;-0}  n {3,2}  fall {4,6:+0;-0} m {5,5:+0;-0} m  aim {6,6:+0;-0} {7,5:+0;-0}  corr {8,6:+0;-0}{12}  hits {9}{10}{11}",
                     (r.FiredMs - t0) / 1000.0, r.Phase == FirePhase.Effect ? "E" : "R", r.RangeM, r.Shells, r.MeanX, r.MeanY, r.AimErrM, r.AimErrAcrossM, r.CorrR,
                     r.Hits, r.Straddle ? "  STRADDLE" : "", spot, r.LadderM != 0 ? string.Format(Inv, " (step {0:+0;-0})", r.LadderM) : "", r.PointBlank ? "P" : " ",
-                    r.TrueRangeM));
+                    r.TrueRangeM, r.LaidErrM));
             }
             foreach (long m in one.Manoeuvres)
                 Console.WriteLine(string.Format(Inv, "    {0,5:0} s  the target manoeuvres", (m - t0) / 1000.0));

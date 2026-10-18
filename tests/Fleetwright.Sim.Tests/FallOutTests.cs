@@ -40,6 +40,9 @@ public class FallOutTests(ITestOutputHelper output)
         var (w, ai, g) = Make();
         w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.FallOutGunsShare, 1.01));   // any damage at all
         w.Apply(ai.Orders.Home(0, 57.0, 3.0));
+        // the enemy holds her fire: a hit on the other ship would put her out too (any damage), and the test is of falling
+        // out, not of the enemy's shooting (which since the short-range bug hunt of 2026-10-18 hits at 12 km in minutes)
+        w.Apply(ai.Orders.HoldFire(Unit.Ship(3)));
         w.AdvanceTo(w.Time + 60_000);
         w.Apply(DamageSystem.SideHole(1, HoleAt.Mid, 0, 3, 0.01));   // a scratch above the waterline: damaged, nothing lost
         w.AdvanceTo(w.Time + 5_000);

@@ -498,6 +498,13 @@ public sealed record SimSettings
     public double BracketFloorPatterns { get; init; } = 1;
     public double BracketFloorM { get; init; } = 92;
     public int RangingWaitMarginMs { get; init; } = 15_000;
+
+    /// <summary>After a straddle or a hit the spots hold her for this long, s [EST]: the guns lay by the bracket, and the
+    /// computer's new ranges don't move them (the short-range bug hunt, 2026-10-18).</summary>
+    public double SpotsHoldS { get; init; } = 120;
+
+    /// <summary>A reading more than this many sigma off the computer's own prediction is set aside, unless the next is too.</summary>
+    public double ReadingGateSigmas { get; init; } = 3;
     public double HardTurnYawDegS { get; init; } = 1;
 
     /// <summary>After a spot's correction, the next salvo waits this long for the layers to lay on again, s (fire-control.md
@@ -544,11 +551,15 @@ public sealed record SimSettings
     public double RangingPowerStereo { get; init; } = 0.4;
     public double RangingCoatedShare { get; init; } = 0.8;
 
-    /// <summary>A range by eye: its error and its bias as shares of the range, its bearing's error, mil. The error is a
-    /// trained crew's (the crews' Operator multiplies it: green ×2): fire-control-research.md §3.1, "σ ≈ 20% of range
-    /// untrained, 10-15% practised" (0.20 until 2026-10-18 gave a trained crew the untrained number).</summary>
-    public double EyeRangeShare { get; init; } = 0.125;
+    /// <summary>A range by eye (fire-control-research.md §3.1: "σ ≈ 20% of range untrained, 10-15% practised", the whole
+    /// error of one estimate, a trained crew's 12.5%): a man's own bias, the same in every estimate he makes, and a wander
+    /// about it that changes slowly, with this time constant, s [EST], not a fresh draw each reading (the user,
+    /// 2026-10-18: spotting walks out a steady error, no walking follows a fresh 19% a minute). Together √(0.10² + 0.075²)
+    /// = 12.5%; battle (the combat factor) and the crew (its Operator: green ×2) multiply the wander. Its bearing's error,
+    /// mil.</summary>
+    public double EyeRangeShare { get; init; } = 0.075;
     public double EyeRangeBiasShare { get; init; } = 0.10;
+    public double EyeWanderTauS { get; init; } = 300;
     public double EyeBearingMil { get; init; } = 5;
 
     /// <summary>Own ship counts as turning (its salvos take its computer's own-turn kick) past this rate of yaw, °/s.</summary>
