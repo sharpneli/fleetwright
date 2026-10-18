@@ -982,6 +982,19 @@ from the parts and independent fire (items 6 and 9); F6e ammunition as a choice 
     1.13). The user, 2026-10-18: guns this accurate are right for the case the sim has, a flat sea in clear air; mist and
     waves are to come. Tests: `FlotillaAttackTests`' replay takes the first of 24 seeds whose boats get their torpedoes
     away (seed 7 no longer did, the secondaries hitting close in); the weapon facts test reads a local battery's sights.
+  - *Walking the fall* (the user, 2026-10-18: "a gunlayer is not going to always fire randomly within errors, they are
+    also walking the shots and if one hits they keep firing at that point"). Point blank, the sight's setting error is
+    drawn once as she comes into the band and kept, and the layers walk their own falls onto her: they read how far over
+    or short and off the line each fell (k·R²/h from their guns' height: a few metres at 800 m), hold the lay on a hit,
+    and on a miss take half of it off, as magnitude spots go (a dead band of half a pattern, so the gun's own scatter
+    isn't chased). The walked correction is a share of her range (the errors it takes off are), so one walked in at 2 km
+    isn't four times too big at 500 m. And the band also opens where the layers read their own falls finely enough to
+    walk them (their spotting error under a quarter of her danger space), not only where the danger space covers the
+    error outright: the 6" by eye are point blank to about 2 km on a cruiser. Mikasa's 6" on Aurora, by her true range:
+    steady at 800 m 88% (81% before the walk), 1.5 km 60%, 2.5 km 35%; head on under 1 km 71% (65%); a close crossing 90%
+    (80%); zigzagging in 62% under 1 km and 36% at 1-2 km. Her 12" (a telescope on the roll, 3 mil in battle) 61-74%
+    under 1 km. fc-history unchanged (8 of 23: nothing in it is that close). Tsushima over 5 seeds: Russia loses 4.8 ships
+    and Japan 3.8. A test: Mikasa's 6" at 800 m lay point blank and hit with 83% of their shells.
   - *A bug found on the way* (committed alone): a row of light AA mounts along each beam blinded the directors on
     their deck, so Bismarck's 150 mm never took a reading and never fired; light AA no longer blinds a post (45 classes'
     eyes move, the WWI scenarios' hashes don't).

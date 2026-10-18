@@ -103,8 +103,11 @@ public sealed class GunnerySystem : IWorldSystem
         /// <summary>Whether a sensor of it saw the target on its last second (its layers lay their line on her then), and
         /// whether she's inside its point-blank range (laid by sight at her present range, no ranging), with the present
         /// range's error by sight its layers will lay at for the next salvo (m).</summary>
-        public bool Sees, PointBlank;
-        public double SightZ;
+        public bool Sees, PointBlank, WasPointBlank;
+        /// <summary>Point blank: the error of the layers' sight setting (in sigmas, drawn as she comes into the band), and
+        /// the correction they've walked onto it from their own falls, a share of her range (the errors it takes off are
+        /// shares of it: a correction walked in at 2 km is a quarter of the metres at 500 m).</summary>
+        public double SightZ, PbCorrR;
         public FireControl.Bracket Bracket;
         public double DriftMs;
         /// <summary>How far the computer's solution has moved in range by its readings since the engagement began, m (the
@@ -182,7 +185,7 @@ public sealed class GunnerySystem : IWorldSystem
         public FirePhase Phase;
         /// <summary>Its battery's <see cref="Fc.Shift"/> when it was fired, and whether it was laid point blank (its fall
         /// says nothing to the bracket: its range was the layers' own).</summary>
-        public double Shift, TrueRangeM;
+        public double Shift, TrueRangeM, PbCorrR;
         public bool PointBlank;
         /// <summary>Its ladder's step off the bracket's aim, m (in its correction).</summary>
         public double LadderM;
@@ -192,8 +195,8 @@ public sealed class GunnerySystem : IWorldSystem
     /// <summary>A salvo's fall, for tools (not world state): when it was fired and by whom, its range and shells, where
     /// its shells fell on average against the target (along the line of fire and to its right, m), how far the aim
     /// point was from where the target truly went (the track's error, as the target's course and speed carry it on),
-    /// the range correction it was fired with (its ladder's step in it), its hits, whether it straddled, and the phase it
-    /// was fired in.</summary>
+    /// the range correction it was fired with (its ladder's step in it; laid point blank, what its layers had walked onto
+    /// their sight), its hits, whether it straddled, the phase it was fired in, her true range, and whether point blank.</summary>
     public readonly record struct SalvoReport(long FiredMs, int Shooter, int Battery, double RangeM, int Shells, double MeanX, double MeanY, double AimErrM,
         double AimErrAcrossM, double CorrR, int Hits, bool Straddle, FirePhase Phase, double LadderM, double TrueRangeM, bool PointBlank);
 
@@ -862,8 +865,19 @@ public sealed class GunnerySystem : IWorldSystem
         // propellant, the air, the gun's wear; small at short range: a share of the range)
         var (sigma, bias) = PresentRangeError(fc, f, crew, present);
         double resid = fc.Fit.Computer.ResidPct / 100 * present;
-        if (danger >= 2 * Math.Sqrt(sigma * sigma + bias * bias + resid * resid))
-            (fc.PointBlank, range) = (true, Math.Max(present + 0.5 * danger + bias + sigma * fc.SightZ, 50));
+        // point blank where the danger space covers the error, or where the layers read their own falls finely enough to walk
+        // them onto her (their spotting error from their guns' height under a quarter of it: the user, 2026-10-18)
+        double own = settings.SpotOpticK * settings.GunneryCombat * present * present / Math.Max(h0, 1);
+        bool pb = danger >= 2 * Math.Sqrt(sigma * sigma + bias * bias + resid * resid) || own <= 0.25 * danger;
+        if (pb && !fc.WasPointBlank)
+        {
+            // into the band: the sight set to her present range as judged then, nothing walked onto it yet
+            var rz = stream.Derive((ulong)f).Derive((ulong)fc.Generation).Derive(0x5B0Au).Derive((ulong)now);
+            (fc.SightZ, fc.PbCorrR) = (rz.NextGaussian(), 0);
+        }
+        fc.WasPointBlank = pb;
+        if (pb)
+            (fc.PointBlank, range) = (true, Math.Max(present * (1 + fc.PbCorrR) + 0.5 * danger + bias + sigma * fc.SightZ, 50));
         var p = ownP;
         var fw = Earth.Forward(p, Earth.Bearing(ownP, lead));
         Earth.Advance(ref p, ref fw, range);
@@ -1035,7 +1049,7 @@ public sealed class GunnerySystem : IWorldSystem
             PatternM = 4 * sr, RangeM = range, SpotSigmaM = spot, Common = 0.5 * spot * r.NextGaussian(), U = u, W = w, MinX = double.MaxValue,
             MaxX = double.MinValue, TargetLengthM = store[tslot].Handling.Class.Silhouette.LengthM, FiredMs = now,
             AimErrM = Vec3d.Dot(p - truth, u), AimErrAcrossM = Vec3d.Dot(p - truth, w), Phase = phase, LadderM = ladder, Shift = fc.Shift,
-            PointBlank = pointBlank, TrueRangeM = Earth.Distance(ship.Position, tgt.Position),
+            PointBlank = pointBlank, TrueRangeM = Earth.Distance(ship.Position, tgt.Position), PbCorrR = fc.PbCorrR,
         };
         int salvo = shells.NewSalvo();
         for (int j = 0; j < mounts.Length; j++)
@@ -1075,7 +1089,6 @@ public sealed class GunnerySystem : IWorldSystem
         }
         fc.Salvos++;
         fc.Shells += sv.Shells;
-        fc.SightZ = r.NextGaussian();   // the next salvo's present range by sight, point blank
         fc.LastSalvoMs = now;
         fc.InFlight++;
         fc.WaitMs = now + (long)(tof * 1000) + settings.SpotDelayMs + settings.RangingWaitMarginMs;
@@ -1142,7 +1155,8 @@ public sealed class GunnerySystem : IWorldSystem
         {
             long now = world.Time.Ms;
             Reported?.Invoke(new SalvoReport(sv.FiredMs, fc.Shooter, fc.Battery, sv.RangeM, sv.Landed, sv.SumX / Math.Max(sv.Landed, 1),
-                sv.SumY / Math.Max(sv.Landed, 1), sv.AimErrM, sv.AimErrAcrossM, sv.CorrR, sv.Hits, straddle, sv.Phase, sv.LadderM, sv.TrueRangeM, sv.PointBlank));
+                sv.SumY / Math.Max(sv.Landed, 1), sv.AimErrM, sv.AimErrAcrossM, sv.PointBlank ? sv.PbCorrR * sv.TrueRangeM : sv.CorrR, sv.Hits, straddle, sv.Phase, sv.LadderM,
+                sv.TrueRangeM, sv.PointBlank));
             fc.Hits += sv.Hits;
             if (sv.Hits > 0 && fc.FirstHitMs < 0)
                 fc.FirstHitMs = now;
@@ -1211,6 +1225,20 @@ public sealed class GunnerySystem : IWorldSystem
                 double defl = sv.SumY / Math.Max(sv.Landed, 1) + settings.SpotDeflectionMil * FireControl.Mil * sv.RangeM * r.NextGaussian();
                 if (Math.Abs(defl) > 0.25 * sv.PatternM)
                     fc.CorrD = (pyramid ? fc.CorrD : sv.CorrD) - settings.SpotDeflectionGain * defl;
+            }
+            else if (sees && sv.Hits == 0)
+            {
+                // point blank: the layers walk their own fall onto her (the user, 2026-10-18), reading how far over or short
+                // and off the line it fell (k·R²/h from their height: a few metres close in); a hit, and they hold the lay
+                // (this branch isn't taken); a miss, they take half of it off, as magnitude spots go (half gain, a dead band
+                // of half a pattern, so the gun's own scatter isn't chased: fire-control-research.md §9)
+                var r = stream.Derive(0x5B0Bu).Derive((ulong)si).Derive((ulong)sv.Generation);
+                double x = sv.SumX / Math.Max(sv.Landed, 1) + sv.SpotSigmaM * r.NextGaussian();
+                if (Math.Abs(x) > 0.5 * sv.PatternM)
+                    fc.PbCorrR = sv.PbCorrR - 0.5 * x / Math.Max(sv.TrueRangeM, 1);
+                double defl = sv.SumY / Math.Max(sv.Landed, 1) + settings.SpotDeflectionMil * FireControl.Mil * sv.RangeM * r.NextGaussian();
+                if (Math.Abs(defl) > 0.25 * sv.PatternM)
+                    fc.CorrD = sv.CorrD - settings.SpotDeflectionGain * defl;
             }
             Spotted?.Invoke(new SpotReport(sv.FiredMs, fc.Shooter, fc.Battery, sees, sign, fc.Bracket.LoAt(now, fc.DriftMs), fc.Bracket.HiAt(now, fc.DriftMs),
                 fc.CorrR, fc.Phase));

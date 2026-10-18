@@ -127,6 +127,40 @@ public class FireDisciplineTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void Close_in_the_layers_lay_by_sight_and_walk_their_fall_onto_her()
+    {
+        // Mikasa's 6" (early telescopes, continuous aim, ranges by eye) on a protected cruiser 800 m off, both steaming
+        // north: point blank, laid by sight at her present range and walked on by their own falls, they hit with most
+        // shells (the short-range bug hunt, 2026-10-18: a cruiser that close should be wrecked; 50% before the walk)
+        var mikasa = Fleet.Get("mikasa").Class!;
+        int bat = -1;
+        for (int k = 0; k < mikasa.Batteries.Length; k++)
+            if (mikasa.Batteries[k].Side == Side.Starboard && mikasa.Batteries[k].CalibreMm is > 140 and < 160)
+                bat = k;
+        int shells = 0, hits = 0, pointBlank = 0, salvos = 0;
+        for (int seed = 1; seed <= 6; seed++)
+        {
+            var w = new World(Start, (ulong)seed, Settings);
+            int a = w.Ships.AddClass(mikasa), c = w.Ships.AddClass(Fleet.Scenario("aurora"));
+            var p = Earth.Position(Lat, Lon);
+            var f = Earth.Forward(p, 90);
+            Earth.Advance(ref p, ref f, 800);
+            var (tl, to) = Earth.LatLon(p);
+            w.Apply(ShipSystem.Spawn(a, Lat, Lon, 0, 15, side: 0));
+            w.Apply(ShipSystem.Spawn(c, tl, to, 0, 15, side: 1));
+            var reports = new List<GunnerySystem.SalvoReport>();
+            w.Gunnery.Reported = reports.Add;
+            w.Apply(GunnerySystem.Engage(1, bat, 2));
+            w.AdvanceTo(Start + 6 * 60_000);
+            foreach (var s in reports)
+                (shells, hits, salvos, pointBlank) = (shells + s.Shells, hits + s.Hits, salvos + 1, pointBlank + (s.PointBlank ? 1 : 0));
+        }
+        output.WriteLine($"{hits} hits of {shells} shells ({100.0 * hits / shells:F0}%), {pointBlank} of {salvos} salvos laid point blank");
+        Assert.True(pointBlank * 10 >= salvos * 9, "laid point blank");
+        Assert.True(hits * 100 >= shells * 70, $"{100.0 * hits / shells:F0}% hits at 800 m");
+    }
+
+    [Fact]
     public void A_rate_spot_moves_every_computers_prediction_by_the_correction()
     {
         // a target 15 km east of a ship at rest, steaming north at 10 m/s, read cleanly every 2 s for two minutes; then
