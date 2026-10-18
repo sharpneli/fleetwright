@@ -519,8 +519,19 @@ the transmitting station; F4d sighting on the new heights.
     The flotilla's daylight attack gets in less often (5 of 12 seeds, 7 of 8 before).
   - *A bug found on the way:* the path bender's leg wasn't made ready with a class's other scratch, so a first glance
     allocated mid-fight (fixed alone).
-  - *Next:* after control's and the conning tower's rangefinders as parts and units, then F4b-3 (the instruments' and
-    directors' weights from designer §3.4, a director to fit its deck).
+  - *Control positions' rangefinders:* `fire_control.aft_rangefinder_m` and `conning_tower_rangefinder_m` put a hood
+    (a block of role rangefinder) on after control's roof and the conning tower's; in the sim each is an eye and a
+    fire-control unit with no director, after the main battery's directors: one more instrument when the battery is engaged
+    alone, the control a second target takes before local control, and when only positions are left the guns lay by their
+    own sights on the station's solution. The Great War capital ships with after control carry a 2.7 m set (the conning
+    tower's sits under the bridge's levels in this layout, so none). A second instrument lifts the Great War cases a
+    little (German 1st SG 3.9 to 4.7%, British BCS 3.2 to 3.6%): fc-history 10 of 23.
+  - *Weights and fit (F4b-3):* the instruments' weights follow designer §3.4 (three times the bare instrument, a 6 mm
+    hood box). The directors' own weights were already calibrated to sourced directors (a Mk 37 about 20 t, a Mk 51 1.7 t,
+    Bismarck's 10.5 m about 45 t: docs/shipgen/README.md), so they stay: §3.4's box carries a flat 8 t of WWII gear that
+    would overweigh a 1914 director sight. A director fitting its deck (§7.1) already holds: it takes only a roof spot its
+    whole footprint fits, the rangefinder's arms included, and the build fails when one finds none.
+- **F4b done 2026-10-18.**
 
 ### F5 Sensors proper
 
