@@ -111,6 +111,8 @@ sealed class FcRun
     public GunnerySystem.Tally Tally;
     public readonly List<GunnerySystem.SalvoReport> Salvos = [];
     public readonly List<long> Manoeuvres = [];
+    /// <summary>When own ship was put on a new course (a turn policy).</summary>
+    public readonly List<long> OwnManoeuvres = [];
     public double OwnKn, TargetKn, CircleDegS = double.NaN;
     public double GunneryMs;
 }
@@ -156,7 +158,7 @@ static class FcBench
         long start = c.Start.Ms, end = start + (long)(c.Minutes * 60_000);
         var tp = c.Behaviour;
         double tNext = tp.PeriodS * Uniform(0.3, 1.0), oNext = c.Own.PeriodS * Uniform(0.5, 1.0), lastChase = -1e9, rudder = 0, prevHeading = double.NaN;
-        bool turned = false, circling = false;
+        bool turned = false, circling = false, ownTurned = false;
         double circleSum = 0, ownSum = 0, tgtSum = 0;
         int circleN = 0, n = 0;
         var store = w.Ships.Store;
@@ -221,6 +223,12 @@ static class FcBench
             {
                 w.Apply(ShipSystem.Course(Shooter, Mod(c.Own.AmpDeg * (rng.Next(2) * 2 - 1))));
                 oNext = el + c.Own.PeriodS * Uniform(0.7, 1.3);
+            }
+            else if (c.Own.Kind == PolicyKind.Turn && !ownTurned && sinceTrack >= c.Own.FromS)
+            {
+                w.Apply(ShipSystem.Course(Shooter, Mod(store[os].HeadingDeg + c.Own.AmpDeg)));
+                ownTurned = true;
+                run.OwnManoeuvres.Add(t);
             }
             w.AdvanceTo(new WorldTime(t));
             second?.Invoke(w, run);

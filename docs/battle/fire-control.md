@@ -1,5 +1,5 @@
 # Plan: fire control (a 4.5 deepening)
-Status: **agreed with the user 2026-10-17** ("Decided" below; radar moved out); F0 and F1 done 2026-10-18    Updated: 2026-10-18
+Status: **agreed with the user 2026-10-17** ("Decided" below; radar moved out); F0-F2 done 2026-10-18    Updated: 2026-10-18
 
 The fine-tune pass for the **Fire control** link of `fighting.md` 4.5 ("the trackers by era ... the clocks' limits ...
 the full set of levels, radar as a sensor, night ... splash confusion ... the designer emitting levels and sensors,
@@ -322,6 +322,72 @@ weather** (1.6x, want 0.7-1.5).
   against the reference (not targets): a rate clock drifts on a crossing target and a true-course plot doesn't; a
   straight-line machine keeps a standing error on a circle and a turn filter doesn't. No allocation; the cost a
   battery-second.
+- **Done 2026-10-18.** What it came to:
+  - **`FcTracker`** (`Sim.Combat`): one fixed-size struct for every `TrackerKind` (state and covariance in inline
+    arrays, a switch on the kind, nothing allocated), fed `FcReading`s (the time it was taken and arrives, the
+    instrument's place, own ship's velocity then, range and bearing with their errors, the same as a point) and asked
+    one question, where the target will be at a time. The kinds: **`Judgement`**, the user's addition (2026-10-18: "a
+    sailor sighting by eye and thinking about how to lead is also a fire control computer, just a really bad one"):
+    a position from the sightings weighed as a man would (the bearing he lays on, the range he guesses), carried on
+    along a course and speed guessed from the target's look, never learnt, guessed again every minute; **`RateClock`**
+    (two two-state filters, range and true bearing from own ship, constant rates clamped at the clock's limits);
+    **`TrueCourse`** (today's `Track`); **`Acceleration`** (a Singer acceleration, 6 states) and **`TurnRate`** (a
+    coordinated turn, 5 states), both in a plane tangent at the first reading, with the "target just turned"
+    detection. The words were picked to say one thing each: "ladder" is now only the spotting ladder (`fc-ladder`
+    became `fc-levels`).
+  - **`ComputerRow`** gains the tracker, helm-free, the clock's limits (±18.3 m/s on presets 2-3, ±0.25°/s on 3),
+    the acceleration's memory and size, the turn filter's turn-rate and speed noise, the detection, and how often a
+    judgement looks again. **The presets** follow the reference: 0-2 plain rate clocks, 3 the helm-free Dreyer, 4-6
+    true course, 7 acceleration, 8 turn rate; then, beside the levels and for benches and fits by name (`--fit
+    judgement`), **9 judgement**, **10 argo**, **11 table-turn** (the AFCT's turn setting, decision 5) and **12
+    japanese-plot**. No design and no local control uses 9-12; local control is still preset 0.
+  - **The eye's guess starts every track** (§5.2, the synthetic method): a battery's computer begins at its own first
+    reading, with the target's course and speed by eye (the computer's priors), and no longer from the navy's picture.
+    F1's finding goes with it: the eyeball's miss in table 5 is now 2,600-3,600 yd against the reference's 2,800-3,400
+    (385-1,044 before).
+  - **A helm-free clock with latency:** taking own ship's turn off the rates as it happened wasn't enough, since
+    readings taken before the turn, still on their way, pulled the rates back. Its rates are now from a reference ship
+    (own ship at its last reading, carried on straight); at each reading its prediction is taken from where she
+    really is and its rates re-referenced to her velocity then. A plain clock's rates are from the ship as she goes.
+  - **A departure from the reference, on physics:** the sim's ships lose way in a hard turn (a fifth of their speed in
+    a minute), the reference's keep it, and a turn filter whose speed hardly moves (the reference's 0.05² m²/s³) came
+    apart on a slowing circle, worse than a straight-line machine (484 and 810 m against 305 on clean readings). Its
+    speed noise is 0.1 m²/s³ (`SpeedQ`); it follows again (36 m), and costs a little on a straight course, as the
+    research says the turn models did.
+  - **The mechanisms, on clean readings** (`FcTrackerTests`): on a target crossing at 45 kn relative, a rate clock
+    holds the motion 4.3 kn off against a true course's 0.9 (the reference: 5.8 against 1.8); on a 1°/s circle the true
+    course lags 150 m, the turn filters 14-20 m, the acceleration filter 85 m; own ship turning 45° adds ~70 m (in
+    quadrature) to a plain clock's miss and nothing to a helm-free one's.
+  - **Benches** (`fc-converge --runs 60`, `fc-levels --runs 20`, `fc-history --runs 24`):
+    - *Table 5:* rate error at 240 s, presets 1-3 and the Japanese plot 6.2-7.8 kn against the true-course machines'
+      1.5-1.8 (the reference: 5.8-9.9 against 1.5-1.8). The misses settle at 330-430 yd for the clocks, 190-210 for the
+      rest: the one 15 ft rangefinder's bias is still every computer's floor (F5).
+    - *Recovery after the target's 45° turn,* against the research's bands: Argo 186 s (1.5-2.5 min, in), AFCT 282 s
+      (1-2 min), Mk 8 203 s (1-2 min), auto-track 280 s (15-30 s), digital not back within the test's 1.25x (5-15 s);
+      the clocks never leave their own drift. All slower than the research, and all read against that ~200 yd floor:
+      the metric needs F5's better instruments before it says much.
+    - *Own ship turning 45°* (half the runs each way: toward the target a plain clock's stale rates cancel the drift it
+      already has, away they add): after it, the plain clocks 370-496 yd against 330-390 before, the helm-free Dreyer
+      369-388 against 329-361, the true-course machines +30-100 yd as the range opens.
+    - *Table 12, a circle at 1°/s:* at +120 s the digital 244 yd and the auto-track 257, the AFCT's turn setting 546,
+      the straight-line machines 589-788 (the reference: 23-107 for the turn models, 380-1,103 for the others).
+    - *Table 11, hits:* the straight-line machines lose about two-thirds of their hits to a circle (Dreyer 3.7 to
+      0.7%, AFCT 6.2 to 1.9%), the digital keeps most (9.7 to 7.7%), the AFCT's turn setting half (6.0 to 3.0%).
+    - *Table 6:* day 16 kyd zigzag judgement 0.6%, eyeball 0.6, rangefinder 2.1, clock 2.6, Dreyer 3.9, Argo 4.2,
+      AFCT 4.9, Mk 8 6.0, auto-track 8.6, digital 10.9 (the reference: -, 0.8, 2.9, 4.9, 7.0, 8.4, 8.7, 12.5, 17.0,
+      23.3): the order kept, about half the reference from the clock up (the instruments again).
+    - *The record:* 10 of 23 in band (11 at F1). Most cases are steady or gently zigzagging targets on near-parallel
+      courses, where a rate clock hardly drifts; the Tsushima 6" came into its band, Dogger Bank's British went just
+      over (2.8%, the band's top), and the light guns at a fast boat fell under (0.2%: that destroyer's own fit is now a
+      rate clock). The orderings as at F1.
+  - **Not yet anchored:** the record's own-turn cases (USN 1927-28, California 1941) are of salvos fired through a turn,
+    with the own-turn kick and the firing rules; they wait for F6's phases.
+  - **A kept test moved:** `FlotillaAttackTests` took the first of twelve seeds whose attack came off and asked that
+    two boats fire on the signal; with the new gunnery that seed's signal came late and one boat fired inside two
+    minutes. It now holds over every attack seen through: each in phase order, two-thirds or more with two boats on the
+    signal (5 of 6 today). `GunneryTests` pass unchanged.
+  - **The cost:** Jutland's two hours, gunnery 2.2% of the sim thread, 16.7 µs a call (2.7% and 20 µs at F1); a single
+    battery ~24 µs a game second whatever its computer; no allocation (`Fire_control_allocates_nothing`).
 
 ### F3 Shipgen: fire control as tech blocks
 

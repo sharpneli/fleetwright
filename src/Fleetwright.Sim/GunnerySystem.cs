@@ -35,9 +35,9 @@ public enum BatteryState : byte
 /// rangefinders (its fire-control units' instruments; without a director, a mount's layer by eye) take readings at their
 /// optics' rate while they see the target: the range's error δ·R²/(B·M) (by eye ~20%), each instrument's own bias drawn
 /// at the engagement's start, the bearing's in mil. A reading reaches the computer after its latency.</item>
-/// <item><b>Track.</b> A constant-velocity Kalman track (<see cref="Track"/>, as the pictures keep), started from the
-/// navy's picture of the target, so acquiring costs nothing new; the computer's q. One tracker for every computer for now
-/// (the Dreyer's polar drift, the turn models: fire-control.md F2).</item>
+/// <item><b>Track.</b> The computer's tracker (<see cref="FcTracker"/>, fire-control.md F2: a sailor's judgement, a rate
+/// clock, a true course, a curved course or a turn), started from its own first reading and the eye's guess at the
+/// target's course and speed (the synthetic method), never from the navy's picture.</item>
 /// <item><b>Solve.</b> The target where it'll be after the time of flight, from the track (which lags by the latency),
 /// the gun laid for it with its ship's motion in (<see cref="FireControl.Solve"/>), plus the engagement's residual bias
 /// and the spotting corrections.</item>
@@ -74,7 +74,9 @@ public sealed class GunnerySystem : IWorldSystem
         public double OrderBearingDeg, OrderElevationDeg, ElevationDeg, TofS;
         public long StartMs, OpenMs, TrackMs;
         public bool Tracking, SalvoPending;
-        public Track Track;
+        public FcTracker Tracker;
+        /// <summary>When a judgement looks at the target again.</summary>
+        public long JudgeMs;
         public double BiasR, BiasD, CorrR, CorrD, SpotHeightM;
         public FireControl.Ladder Ladder;
         public int Salvos, Shells, Hits, Straddles, Arm, SensorCount, PendHead, PendCount;
@@ -95,14 +97,6 @@ public sealed class GunnerySystem : IWorldSystem
         public int Eye;
         public double X, Y, HeightM, BaseM, Bias;
         public long NextMs;
-    }
-
-    /// <summary>A reading on its way to the computer.</summary>
-    struct Reading
-    {
-        public long ArriveMs, Ms;
-        public Vec3d Z;
-        public double R11, R12, R22;
     }
 
     /// <summary>A salvo in the air, for its spot: whose, at whom, the corrections it was fired with, its pattern and line
@@ -135,7 +129,7 @@ public sealed class GunnerySystem : IWorldSystem
     // fight's new peak doesn't grow it within a step
     Fc[] fcs;
     Sensor[] sensors;
-    Reading[] pending;
+    FcReading[] pending;
     readonly Stack<int> freeFc;
     int highFc;
     Salvo[] salvos;
@@ -154,7 +148,7 @@ public sealed class GunnerySystem : IWorldSystem
         salvos = new Salvo[Math.Max(settings.SalvoCapacity, 16)];
         freeSalvo = new Stack<int>(salvos.Length);   // as big as the pool, so freeing never grows it
         int engagements = Math.Max(16, 2 * settings.ShipCapacity);
-        (fcs, sensors, pending, freeFc) = (new Fc[engagements], new Sensor[engagements * MaxSensors], new Reading[engagements * PendingCap],
+        (fcs, sensors, pending, freeFc) = (new Fc[engagements], new Sensor[engagements * MaxSensors], new FcReading[engagements * PendingCap],
             new Stack<int>(engagements));
         Array.Fill(crews, CrewQuality.Trained);
     }
@@ -234,7 +228,7 @@ public sealed class GunnerySystem : IWorldSystem
             ref readonly var row = ref cls.Batteries[b];
             int gen = fc.Generation + 1;
             int lv = Math.Clamp(level >= 0 ? level : row.Local ? 0 : (int)row.Level, 0, FireControlPresets.Count - 1);
-            var fit = level >= 0 ? FireControlPresets.Of((FireControlLevel)lv) : row.Local ? FireControlPresets.Local : row.Fit;
+            var fit = level >= 0 ? FireControlPresets.At(lv) : row.Local ? FireControlPresets.Local : row.Fit;
             fc = new Fc
             {
                 Alive = true, Generation = gen, Shooter = shooter, Battery = b, Target = target, StartMs = now, Level = lv, Local = row.Local,
@@ -449,21 +443,12 @@ public sealed class GunnerySystem : IWorldSystem
         var pic = world.Sightings.Of(ship.Side);
         int ci = pic?.IndexOf(fc.Target) ?? -1;
         bool inSight = ci >= 0 && pic![ci].InSight;
-        if (!fc.Tracking)
+        if (!fc.Tracking && !inSight)
         {
-            if (!inSight)
-            {
-                fc.State = BatteryState.NoContact;
-                return;
-            }
-            // acquired from the navy's picture: its estimate, the velocity no surer than the eye's first guess
-            var (p, v, cov) = pic!.EstimateAt(ci, now, settings);
-            double kn = computer.PriorKn * Handling.MsPerKnot, sv = kn * kn + Math.Pow(v.Length * double.DegreesToRadians(computer.PriorDeg), 2);
-            (cov.VeVe, cov.VnVn) = (Math.Max(cov.VeVe, sv), Math.Max(cov.VnVn, sv));
-            fc.Track = new Track { Position = p, Velocity = v, P = cov, Ms = now };
-            (fc.Tracking, fc.TrackMs) = (true, now);
-            fc.OpenMs = now + (long)((computer.LatencyS + settings.GunneryOpenS) * 1000);
+            fc.State = BatteryState.NoContact;
+            return;
         }
+        var ownV = ship.Forward * ship.Speed;
 
         // measure: each sensor that's due and sees it
         var frame = ship.Frame;
@@ -494,21 +479,37 @@ public sealed class GunnerySystem : IWorldSystem
             double zr = Math.Max(range + bias + sr * r.NextGaussian(), 100), zb = brg + double.RadiansToDegrees(sb * r.NextGaussian());
             var (z, r11, r12, r22) = Track.Reading(at, zr, zb, sr, sb);
             if (fc.PendCount == PendingCap)
-                PopReading(ref fc, f);   // the computer's queue is full: the oldest goes in now
+                PopReading(ref fc, f, target, now);   // the computer's queue is full: the oldest goes in now
             int at2 = f * PendingCap + (fc.PendHead + fc.PendCount++) % PendingCap;
-            pending[at2] = new Reading { ArriveMs = now + (long)(computer.LatencyS * 1000), Ms = now, Z = z, R11 = r11, R12 = r12, R22 = r22 };
+            pending[at2] = new FcReading
+            {
+                Ms = now, ArriveMs = now + (long)(computer.LatencyS * 1000), From = at, OwnVelocity = ownV, Z = z, RangeM = zr, BearingDeg = zb, SigmaRangeM = sr,
+                SigmaBearingRad = sb, R11 = r11, R12 = r12, R22 = r22,
+            };
         }
 
         // the computer: readings that have come through
         while (fc.PendCount > 0 && pending[f * PendingCap + fc.PendHead].ArriveMs <= now)
-            PopReading(ref fc, f);
+            PopReading(ref fc, f, target, now);
+        if (!fc.Tracking)
+        {
+            fc.State = BatteryState.Tracking;   // its first reading still on its way
+            return;
+        }
+        if (computer.Tracker == TrackerKind.Judgement && sees && now >= fc.JudgeMs)
+        {
+            // a sailor looks at her again: a fresh guess at her course and speed
+            var rg = stream.Derive((ulong)f).Derive((ulong)fc.Generation).Derive(0xE7Fu).Derive((ulong)now);
+            fc.Tracker.Rejudge(Guess(computer, target.Position, target.Forward * target.Speed, ref rg));
+            fc.JudgeMs = now + (long)(computer.RejudgeS * 1000);
+        }
 
         // solve, and order the mounts
         ref readonly var row = ref cls.Batteries[fc.Battery];
         var mounts = cls.Links(row.Mounts);
         var table = shells.Ballistics[fc.Table];
         var muzzle = Muzzle(cls, frame, mounts[0]);
-        var aim = Predict(ref fc, table, muzzle, now);
+        var aim = Predict(ref fc, table, muzzle, now, ship.Position, ownV);
         bool laid = FireControl.Solve(table, muzzle, ship.Forward * ship.Speed, aim, out var lay, fc.ElevationDeg);
         double bearing = Mod((laid ? Earth.Heading(muzzle, lay.GunHorizontal) : Earth.Bearing(ship.Position, aim)) - ship.HeadingDeg);
         double elevation = laid ? lay.GunElevationDeg : double.PositiveInfinity;
@@ -555,20 +556,41 @@ public sealed class GunnerySystem : IWorldSystem
         return s.Eye < 0 || cls.Eyes[s.Eye].Sees(Earth.Bearing(at, target) - headingDeg);
     }
 
-    void PopReading(ref Fc fc, int f)
+    /// <summary>The oldest reading into the computer: the first starts the track, from the eye's guess at the target's
+    /// course and speed.</summary>
+    void PopReading(ref Fc fc, int f, in ShipState target, long now)
     {
         ref readonly var r = ref pending[f * PendingCap + fc.PendHead];
-        fc.Track.Fix(r.Ms, fc.Fit.Computer.Q, r.Z, r.R11, r.R12, r.R22);
+        var computer = fc.Fit.Computer;
+        if (!fc.Tracking)
+        {
+            var rg = stream.Derive((ulong)f).Derive((ulong)fc.Generation).Derive(0xE7Eu);
+            var truth = target.Forward * target.Speed;
+            fc.Tracker = FcTracker.Start(computer, r, Guess(computer, target.Position, truth, ref rg), FcTracker.GuessSigma(computer, target.Speed));
+            (fc.Tracking, fc.TrackMs, fc.OpenMs) = (true, now, now + (long)(settings.GunneryOpenS * 1000));
+            fc.JudgeMs = now + (long)(computer.RejudgeS * 1000);
+        }
+        else
+            fc.Tracker.Fix(computer, r);
         fc.PendHead = (fc.PendHead + 1) % PendingCap;
         fc.PendCount--;
     }
 
+    /// <summary>The eye's guess at a target's velocity: its speed and course, each off by the computer's prior (1 sigma).</summary>
+    static Vec3d Guess(in ComputerRow c, Vec3d position, Vec3d velocity, ref RandomStream r)
+    {
+        double speed = velocity.Length, course = speed > 1e-6 ? Earth.Heading(position, velocity) : 0;
+        double ds = r.NextGaussian() * c.PriorKn * Handling.MsPerKnot, dc = r.NextGaussian() * c.PriorDeg;
+        return Earth.Forward(position, course + dc) * Math.Max(speed + ds, 0);
+    }
+
     /// <summary>Where the track says the target will be when a shell fired now from a muzzle comes down: the time of
     /// flight iterated through the range table, from last second's.</summary>
-    Vec3d Predict(ref Fc fc, BallisticTable table, Vec3d muzzle, long now)
+    Vec3d Predict(ref Fc fc, BallisticTable table, Vec3d muzzle, long now, Vec3d ownPosition, Vec3d ownVelocity)
     {
-        double h0 = muzzle.Length - Earth.Radius, q = fc.Fit.Computer.Q;
-        var p = fc.Track.At(now + (long)(fc.TofS * 1000), q).Position;
+        double h0 = muzzle.Length - Earth.Radius;
+        var computer = fc.Fit.Computer;
+        fc.Tracker.At(computer, now + (long)(fc.TofS * 1000), now, ownPosition, ownVelocity, out var p, out _);
         for (int i = 0, n = fc.TofS > 0 ? 2 : 3; i < n; i++)
         {
             double e = table.ElevationFor(Earth.Distance(muzzle, p), h0, 1, fc.ElevationDeg);
@@ -576,7 +598,7 @@ public sealed class GunnerySystem : IWorldSystem
                 break;
             fc.ElevationDeg = e;
             fc.TofS = table.Fall(e, h0).Tof;
-            p = fc.Track.At(now + (long)(fc.TofS * 1000), q).Position;
+            fc.Tracker.At(computer, now + (long)(fc.TofS * 1000), now, ownPosition, ownVelocity, out p, out _);
         }
         return p;
     }
@@ -645,7 +667,7 @@ public sealed class GunnerySystem : IWorldSystem
         var velocity = ship.Forward * ship.Speed;
         var muzzle0 = Muzzle(cls, frame, mounts[0]);
         double h0 = muzzle0.Length - Earth.Radius;
-        var p = Predict(ref fc, table, muzzle0, now);
+        var p = Predict(ref fc, table, muzzle0, now, ship.Position, velocity);
         var up = p.Normalized();
         var line = p - ship.Position;
         var u = (line - up * Vec3d.Dot(line, up)).Normalized();   // along the line of fire, at the target
@@ -868,10 +890,10 @@ public sealed class GunnerySystem : IWorldSystem
     public bool TrackAt(int shooter, int battery, long ms, out Vec3d position, out Vec3d velocity)
     {
         for (int i = 0; i < highFc; i++)
-            if (fcs[i].Alive && fcs[i].Shooter == shooter && fcs[i].Battery == battery && fcs[i].Tracking)
+            if (fcs[i].Alive && fcs[i].Shooter == shooter && fcs[i].Battery == battery && fcs[i].Tracking && ships.Store.SlotOf(shooter) is >= 0 and var slot)
             {
-                var t = fcs[i].Track.At(Math.Max(ms, fcs[i].Track.Ms), fcs[i].Fit.Computer.Q);
-                (position, velocity) = (t.Position, t.Velocity);
+                var own = ships.Store[slot];
+                fcs[i].Tracker.At(fcs[i].Fit.Computer, ms, ships.Store.NowMs, own.Position, own.Forward * own.Speed, out position, out velocity);
                 return true;
             }
         (position, velocity) = (default, default);
@@ -912,10 +934,7 @@ public sealed class GunnerySystem : IWorldSystem
             h.Add(fc.Shooter);
             h.Add(fc.Battery);
             h.Add(fc.Target);
-            h.Add(fc.Track.Position.X);
-            h.Add(fc.Track.Position.Y);
-            h.Add(fc.Track.Velocity.X);
-            h.Add(fc.Track.Ms);
+            fc.Tracker.Hash(ref h);
             h.Add(fc.CorrR);
             h.Add(fc.CorrD);
             h.Add(fc.Ladder.Step);

@@ -50,7 +50,7 @@ public class GunneryTests(ITestOutputHelper output)
     }
 
     [Fact]
-    public void The_level_ladder_keeps_its_order_and_level_3_lands_near_the_reference()
+    public void The_levels_keep_their_order_and_level_3_lands_near_the_reference()
     {
         var qe = Class("super_dreadnought");
         var pct = new double[4];
@@ -62,7 +62,7 @@ public class GunneryTests(ITestOutputHelper output)
         }
         // the reference on a QE-size box: 5.0% at level 3; level 0 about a fifth of it
         Assert.InRange(pct[3], 2.5, 8);
-        Assert.True(pct[0] < pct[1] && pct[1] < pct[3], "the ladder's order");
+        Assert.True(pct[0] < pct[1] && pct[1] < pct[3], "the levels' order");
     }
 
     [Fact]

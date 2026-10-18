@@ -1050,6 +1050,8 @@ numbers before and after against the anchors. The list, by link, with where the 
   a director holds one target. F1 done 2026-10-18: `duel` takes target and own policies, weather, night, practice and a
   fit; `fc-converge`, `fc-levels` and `fc-history` (the record, the bench every later step answers to), with the
   reference's tables beside them (`--ref`); where today's model stands is recorded in `fire-control.md` F1.
+  F2 done 2026-10-18: a tracker per kind of computer (`FcTracker`: a sailor's judgement, rate clocks plain and
+  helm-free, true course, curved course, turn), each track started from its own first reading and the eye's guess.
 - **Ship motion** (`ship-motion/ship-motion-gunnery-research.md` §7.7, in its order):
   - a roll phase per ship from `RollPeriodS` and the sea, with firing on the roll and a once-a-roll rate;
   - laying error `√(base² + (τ·ω)²)`;

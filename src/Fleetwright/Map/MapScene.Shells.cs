@@ -473,7 +473,7 @@ public sealed partial class MapScene
                 ImGui.TextDisabled($"{gun}: no target{(fire == FireOrder.Hold ? " (holding fire)" : "")}");
             else
                 ImGui.TextDisabled($"{gun} on {TargetLabel(s, v.Target[i])}: {StateText(v.State[i])}, " +
-                                   $"{(v.Local[i] ? "local control" : $"level {v.Level[i]}")}; {v.Salvos[i]} salvos, {v.Hits[i]} hits of {v.Shells[i]}");
+                                   $"{(v.Local[i] ? "local control" : $"level {v.Level[i]} ({FireControlPresets.Name(v.Level[i])})")}; {v.Salvos[i]} salvos, {v.Hits[i]} hits of {v.Shells[i]}");
         }
         TorpedoRow(s, k, cls);
         DamageRow(s, k, cls);

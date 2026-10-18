@@ -20,7 +20,7 @@ static class Duel
     public static int Run(FcCase c, SimSettings settings, int runs, int seed, bool trace)
     {
         var row = c.Shooter.Batteries[c.Battery];
-        string fit = c.Fit >= 0 ? $"preset {c.Fit} ({(FireControlLevel)c.Fit})" : row.Local ? "local control" : $"its own fit, level {(int)row.Level}";
+        string fit = c.Fit >= 0 ? $"preset {c.Fit} ({FireControlPresets.Name(c.Fit)})" : row.Local ? "local control" : $"its own fit, level {(int)row.Level}";
         Console.WriteLine(string.Format(Inv, "{0} battery {1} ({2:0.#}/{3:0.#}, {4} guns, {5}) at {6} ({7:0} m, {8:0.0} kyd), bearing {9:0}°, " +
             "target on {10:0}° at {11:0} kn, {12}; own 0° at {13:0} kn, {14}; {15} crew; {16}{17}{18}; {19} runs of {20:0} min",
             c.Shooter, c.Battery, row.CalibreMm, row.CalibreLength, row.Guns, fit, c.Target, c.RangeM, c.RangeM / FcBench.Kyd, c.BearingDeg,
@@ -50,14 +50,17 @@ static class Duel
         return 0;
     }
 
-    /// <summary>A fit from the command line: a preset's number (0-8) or name (Director, Table, ...), or "design" for the
-    /// battery's own.</summary>
+    /// <summary>A fit from the command line: a preset's number or name (director, judgement, argo, ...), or "design" for
+    /// the battery's own.</summary>
     public static int ParseFit(string? s)
     {
         if (s is null or "design" or "-1")
             return -1;
         if (int.TryParse(s, out int n))
             return Math.Clamp(n, 0, FireControlPresets.Count - 1);
-        return (int)Enum.Parse<FireControlLevel>(s, ignoreCase: true);
+        int p = FireControlPresets.Find(s);
+        if (p < 0)
+            throw new ArgumentException($"no preset '{s}': " + string.Join(", ", Enumerable.Range(0, FireControlPresets.Count).Select(FireControlPresets.Name)));
+        return p;
     }
 }

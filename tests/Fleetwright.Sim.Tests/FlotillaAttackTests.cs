@@ -39,10 +39,11 @@ public class FlotillaAttackTests(ITestOutputHelper output)
     {
         // six boats against four battleships by day aren't worth an attack by their own judgement (docs/battle/command.md
         // 5.1g): ordered to, they make it, or about half the time they're beaten off first (docs/battle/bugs.md). Which seeds
-        // get in moves with every change to the ships, so the test takes the first of a dozen where the signal is made and the
-        // attack seen through (not beaten off as the boats fire: the gunfire's draws decide that too), and asks that two
-        // boats or more fire on it (their tubes trained out on the beam as they ran in, each track clear of the boats
-        // steaming beside her) and the phases of it
+        // get in moves with every change to the ships, so the test takes every one of a dozen where the signal is made and the
+        // attack seen through (not beaten off as the boats fire: the gunfire's draws decide that too), and asks that each
+        // goes through its phases in order and that in most of them two boats or more fire on the signal (their tubes
+        // trained out on the beam as they ran in, each track clear of the boats steaming beside her)
+        int through = 0, together = 0;
         for (ulong seed = 1; seed <= 12; seed++)
         {
             var (w, ai, s) = Load(TorpedoAttack.Together, seed);
@@ -70,12 +71,14 @@ public class FlotillaAttackTests(ITestOutputHelper output)
             if (!seen.Contains(AttackPhase.Away) && seen.LastIndexOf(AttackPhase.None) > fired && w.Groups.Get(flotilla) is { } fg &&
                 fg.Line.Count < 6 * (1 - ai.Doctrine.OfGroup(fg, 1, DoctrineField.AttackBreakOffShare)))
                 continue;   // beaten off as they fired
-            Assert.True(firedMinuteOn - firedAtSignal >= 2 * Settings.TorpedoSpread, "fewer than two boats fired on the signal");
-            int gain = seen.IndexOf(AttackPhase.Gain), run = seen.IndexOf(AttackPhase.Run), fire = seen.IndexOf(AttackPhase.Fire), away = seen.IndexOf(AttackPhase.Away);
-            Assert.True(gain >= 0 && gain < run && run < fire && fire < away, string.Join(" > ", seen));
-            return;
+            through++;
+            if (firedMinuteOn - firedAtSignal >= 2 * Settings.TorpedoSpread)
+                together++;
+            int gain = seen.IndexOf(AttackPhase.Gain), run = seen.IndexOf(AttackPhase.Run), away = seen.IndexOf(AttackPhase.Away);
+            Assert.True(gain >= 0 && gain < run && run < fired && fired < away, $"seed {seed}: " + string.Join(" > ", seen));
         }
-        Assert.Fail("in none of seeds 1-12 was the signal made");
+        Assert.True(through > 0, "in none of seeds 1-12 was the signal made and the attack seen through");
+        Assert.True(3 * together >= 2 * through, $"two boats or more fired on the signal in only {together} of {through} attacks");
     }
 
     [Fact]

@@ -372,14 +372,50 @@ public readonly record struct FcUnitRow(int Director, Battery Battery, Slice Ins
 /// rangefinder ranges by eye) and the readings a minute each takes.</summary>
 public readonly record struct OpticsRow(double Magnification, double ReadingsPerMin);
 
-/// <summary>A fire-control computer (research/simulation/fire_control_ref.py FCLevel; one tracker, the true-course
-/// cart, until F2 gives each kind its own): its latency, s, and the target acceleration its track allows (q, m²/s³);
-/// the eye's first guess at the target's speed and course it starts from (1 sigma); the residual ballistic bias before
-/// spotting, % of range, and in deflection, mil; the extra error while own ship turns, m; the first ladder step, m; the
-/// salvo-to-salvo error, % of range and mil, that spotting can't remove (the propellant's share and its own wander
-/// split apart in F3).</summary>
+/// <summary>How a fire-control computer keeps its target (docs/battle/fire-control.md F2; fire_control_ref.py's trackers):
+/// each fails where its machine failed.</summary>
+public enum TrackerKind : byte
+{
+    /// <summary>A sailor's head: ranges by sight, the target's course and speed guessed from her look and led by that
+    /// guess, looked at again now and then. It never learns a rate. The worst computer there is.</summary>
+    Judgement,
+    /// <summary>Constant range and bearing rates from own ship (Dumaresq and Vickers clock, Dreyer table, the Japanese
+    /// plot): it drifts on a crossing target by geometry, and unless helm-free it re-learns its rates after own ship's
+    /// turns and speed changes.</summary>
+    RateClock,
+    /// <summary>The target's true course and speed on a straight line (Argo, AFCT, Ford, Mk 1A): geometry exact until
+    /// the target turns.</summary>
+    TrueCourse,
+    /// <summary>A true course plus a decaying target acceleration (the 1950s curved-course predictors).</summary>
+    Acceleration,
+    /// <summary>The target's speed, heading and rate of turn (digital filters; the AFCT's turn setting): follows a
+    /// steady circle.</summary>
+    TurnRate,
+}
+
+/// <summary>A fire-control computer (research/simulation/fire_control_ref.py FCLevel): its tracker and whether own
+/// ship's course and speed are fed to it (helm-free: a rate clock's rates corrected at once; the others work in true
+/// motion and need no feed); its latency, s, and the target acceleration its track allows (q, m²/s³); the clock's limits
+/// (range rate, m/s, and bearing rate, °/s; 0 none); the curved-course predictor's acceleration memory, s, and its
+/// acceleration (1 sigma, m/s²); the turn filter's turn-rate noise (rad²/s³) and speed noise (m²/s³: a ship loses way in
+/// a hard turn, a fifth of her speed in a minute); whether it opens up on a manoeuvre (two large
+/// surprises in a row: the Mk 1A's "target just turned"); how often a judgement looks at the target again, s; the eye's
+/// first guess at the target's speed and course it starts from (1 sigma); the residual ballistic bias before spotting, %
+/// of range, and in deflection, mil; the extra error while own ship turns, m; the first ladder step, m; the
+/// salvo-to-salvo error, % of range and mil, that spotting can't remove (the propellant's share and its own wander split
+/// apart in F3).</summary>
 public readonly record struct ComputerRow
 {
+    public TrackerKind Tracker { get; init; }
+    public bool HelmFree { get; init; }
+    public double MaxRangeRateMs { get; init; }
+    public double MaxBearingRateDegS { get; init; }
+    public double AccelTauS { get; init; }
+    public double AccelSigmaMs2 { get; init; }
+    public double TurnQ { get; init; }
+    public double SpeedQ { get; init; }
+    public bool Detect { get; init; }
+    public double RejudgeS { get; init; }
     public double LatencyS { get; init; }
     public double Q { get; init; }
     public double PriorKn { get; init; }
