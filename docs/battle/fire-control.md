@@ -490,6 +490,22 @@ further by the geometry alone, once the parts are right. What this step makes ri
 - **Tests:** taller eyes see further on the same target in clear air, a hull-down battleship is made out by her top before
   her hull, the anchors within their bands, the encounter range covering the tallest pair, hashes moved and reported.
 
+**The cut** (2026-10-18): F4a masts and tops from the design; F4b directors in tops and the rangefinders as parts; F4c
+the transmitting station; F4d sighting on the new heights.
+
+- **F4a done 2026-10-18** (the user: the drawing follows the design, looks only colour; heights by a rule a design may
+  override). A design's `masts` (`docs/shipgen/README.md`) give each mast's kind and top; heights left out follow the
+  ship (`MastPlan`: the top's floor at 2.25 times the highest gun's height over the water, a topmast over it). Tops are
+  hitbox parts (`top`), mast weights go by kind (tripod 3 poles, cage and lattice 4, tower 8, each top's tier ~2 t), the
+  plan and profile draw the kind's legs and struts as dressing and the tops from their hitboxes, and the looks' mast
+  shapes went (the shipped warships' masts were written from what their looks drew, so they look as before, the tops
+  now at their heights). The sim's lookouts stand in a mast's top (its floor + 1.5 m), pulled forward from F4d since
+  topmasts now reach 40 m. Standard displacement: median 0.0 %, at most +2.5 % (Fubuki's two-tier tops). Tops at 29-31 m
+  on Lion, Nagato, Seydlitz, in the research's band; low on Dreadnought (22 m against 28-30) and Yamato (26.5 against
+  ~40), the hull model's turrets standing lower than the real ships'. Those are defaults: the designer gets a knob for
+  the heights later (the user, 2026-10-18; F12). fc-history 11 of 23 in band (12 before: the Grand Fleet BS 7.1 to 7.3%,
+  over its band's 7.2); squadrons and Tsushima over 5 seeds within the spread.
+
 ### F5 Sensors proper
 
 - Every instrument a sensor with its own rate, bias and bearing error; the tracker takes all of them, so random error
@@ -647,7 +663,8 @@ tuning for gameplay waits for the balance pass, as the damage plan's did.
 ### F12 The designer's Fire control tab
 
 Mockup, then port, as the other tabs (`docs/designer-ui/`). The fit per battery from the catalogue, instruments
-placed on the plan and profile, mast and top heights, and the sizing rule as a live readout ("unit of error at 15 kyd 62
+placed on the plan and profile, mast and top heights (a knob each, the user 2026-10-18; today's defaults are
+MastPlan's rule), and the sizing rule as a live readout ("unit of error at 15 kyd 62
 m, your salvo's spread 73 m: adequate", designer §5) with the curve for the ship's own guns.
 
 ## What stays out
