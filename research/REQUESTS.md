@@ -12,6 +12,10 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: (comparison, recommendation, API notes, plan...)
 -->
 
+### 2026-10-18 - What inside a ship stops or slows a shell, 1890-1925 first
+- Question, context and wanted output (R1-R6: machinery, liquids inside the hull, coal, magazines, turret and barbette
+  interiors, shafts and steering gear) are in `docs/battle/shell-contents.md` "Research requests". Not blocking.
+
 ### 2026-10-18 - Fire discipline by navy, and battle rates of fire from their causes, 1898-1925
 - Question: how each navy ranged and fired for effect, as numbers a general model can take (the game keeps it as a
   side's doctrine: salvos in flight while ranging, a ladder's step and size, the guns in a ranging salvo, alternating
