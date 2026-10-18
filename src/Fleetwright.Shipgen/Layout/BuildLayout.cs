@@ -84,6 +84,7 @@ public sealed partial class Layout
 
         // ---------------- masts and boats ----------------
         var masts = PlaceMasts(site, control, ctl, funTop, mounts);
+        FireControl.PlaceInTops(lay, design, blocks, masts);
         var boats = PlaceBoats(site, row, middle.MachC, riders, level1);
 
         // ---------------- citadel & compartments ----------------

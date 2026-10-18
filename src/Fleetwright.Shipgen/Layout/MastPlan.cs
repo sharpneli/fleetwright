@@ -33,24 +33,29 @@ public static class MastPlan
         return Layout.LevelH;
     }
 
-    /// <summary>A mast's top, or null: the design's, its floor the design's or TopOverGun times the highest gun's height
-    /// over the water, and over what it must clear (the bridge tower's director, the funnels).</summary>
-    public static MastTop? Top(MastInput? given, double gunOverWaterM, double freeboardM, double clearM)
+    /// <summary>A mast's top, or null: the design's (a spotting top when it carries a director and gives none), its floor
+    /// the design's or TopOverGun times the highest gun's height over the water, and over what it must clear (the bridge
+    /// tower's director, the funnels); with a director on it, at least wide enough for the director's body (directorR:
+    /// half its footprint's diagonal).</summary>
+    public static MastTop? Top(MastInput? given, double gunOverWaterM, double freeboardM, double clearM, double directorR = 0)
     {
-        if (given?.Top is null or "none")
+        string? kind = given?.Top is null or "none" ? given?.Director is null ? null : "spotting" : given.Top;
+        if (kind is null)
             return null;
-        int tiers = Math.Max(given.Tiers ?? 1, 1);
+        int tiers = Math.Max(given!.Tiers ?? 1, 1);
         double floor = given.TopM ?? Math.Max(TopOverGun * gunOverWaterM - freeboardM, clearM + 0.3);
-        return new MastTop(given.Top, floor, given.TopRadiusM ?? DefaultTopR(given.Top, tiers), tiers);
+        return new MastTop(kind, floor, given.TopRadiusM ?? Math.Max(DefaultTopR(kind, tiers), directorR), tiers);
     }
 
     /// <summary>A masthead by default: over the funnels and the bridge tower as before, and with a top a topmast over it
-    /// (0.3 of the top's height, 4 m at least).</summary>
-    public static double Head(double overFunnelsM, double towerM, MastTop? top)
+    /// and any director on it (0.3 of the top's height, 4 m at least).</summary>
+    public static double Head(double overFunnelsM, double towerM, MastTop? top, bool director = false)
     {
         double head = Math.Max(overFunnelsM, towerM > 0 ? towerM + 2.0 : 0.0);
-        return top is null ? head : Math.Max(head, top.Roof + Math.Max(4.0, 0.3 * top.Floor));
+        return top is null ? head : Math.Max(head, top.Roof + (director ? Layout.LevelH : 0) + Math.Max(4.0, 0.3 * top.Floor));
     }
+
+    public static readonly string[] Batteries = ["main", "secondary", "aa"];
 
     /// <summary>A kind's weight as poles' worth of the same height: a pole 1, a tripod's three legs, a cage's and a lattice's
     /// struts 4 [EST], a tower's plated column 8 [EST].</summary>
@@ -77,11 +82,18 @@ public static class MastPlan
                 continue;
             }
             foreach (var k in m.Extra.KeysOrEmpty())
-                errs.Add($"{at}.{k}: not a mast field (kind, height_m, top, top_m, top_radius_m, tiers)");
+                errs.Add($"{at}.{k}: not a mast field (kind, height_m, top, top_m, top_radius_m, tiers, director)");
             if (m.Kind is { } kind && !Kinds.Contains(kind))
                 errs.Add($"{at}.kind = {Style.Quote(kind)}: use {string.Join(", ", Kinds)}");
             if (m.Top is { } top && !TopKinds.Contains(top))
                 errs.Add($"{at}.top = {Style.Quote(top)}: use {string.Join(", ", TopKinds)}");
+            if (m.Director is { } bat)
+            {
+                if (!Batteries.Contains(bat))
+                    errs.Add($"{at}.director = {Style.Quote(bat)}: use {string.Join(", ", Batteries)}");
+                if (m.Kind == "none")
+                    errs.Add($"{at}: no mast to carry a director");
+            }
             foreach (var (k, v) in new[] { ("height_m", m.HeightM), ("top_m", m.TopM), ("top_radius_m", m.TopRadiusM) })
                 if (v is double d && !(d > 0 && double.IsFinite(d)))
                     errs.Add($"{at}.{k}: a number, more than 0");

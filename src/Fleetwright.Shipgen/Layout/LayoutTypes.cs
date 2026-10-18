@@ -143,6 +143,8 @@ public sealed record Mast
     public bool Tripod => Kind == "tripod";
     public double? Top { get; set; }
     [JsonIgnore] public MastTop? Platform { get; init; }
+    /// <summary>The battery one of whose directors stands on its top, or null.</summary>
+    [JsonIgnore] public string? Director { get; init; }
     public List<double[]>? Booms { get; init; }
 
     /// <summary>Its hitbox's radius.</summary>

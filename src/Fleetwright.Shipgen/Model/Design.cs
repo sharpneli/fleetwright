@@ -591,12 +591,14 @@ public sealed record SteeringBoxInput
 
 /// <summary>masts[i]: a mast's kind (pole, tripod, cage, lattice, tower; none leaves its place empty), its masthead over
 /// the main deck, m, and its top: none, a fighting top (open, for lookouts) or a spotting top (enclosed, for the
-/// spotters), its floor over the main deck, m, its radius, m, and its tiers (platforms stacked, a pagoda's). Heights not
-/// given follow the ship (MastPlan: the top at 2.25 times the highest gun's height over the water, the masthead a topmast
-/// over it).</summary>
+/// spotters), its floor over the main deck, m, its radius, m, and its tiers (platforms stacked, a pagoda's); and the
+/// battery (main, secondary, aa) one of whose directors stands on its top (the top grows to hold it; a mast without one
+/// gets a spotting top). Heights not given follow the ship (MastPlan: the top at 2.25 times the highest gun's height over
+/// the water, the masthead a topmast over it and its director).</summary>
 public sealed record MastInput
 {
     public string? Kind { get; init; }
+    public string? Director { get; init; }
     public double? HeightM { get; init; }
     public string? Top { get; init; }
     public double? TopM { get; init; }

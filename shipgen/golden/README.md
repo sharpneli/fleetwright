@@ -140,6 +140,9 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
   heights the rule gives (2.25 x the highest gun over the water), mast weights go by kind, and the plan and profile
   draw the kind and the tops from the ship. 326 design cases change (median 0.0 %, at most +2.5 % standard: fubuki's
   two-tier tops), with 247 SVG and 46 sprite.json cases. ShipDesign.Version 32.
+- 2026-10-18, directors in tops (docs/battle/fire-control.md F4b), on purpose: the Great War capital ships' main director
+  stands on the foremast's top (`masts[0].director`). 13 design cases change (at most +0.08 % standard), with their SVGs
+  and sprite.json. ShipDesign.Version 33.
 
 ## Layout
 

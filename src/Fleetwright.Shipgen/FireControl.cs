@@ -48,6 +48,19 @@ public static class FireControl
         return errs;
     }
 
+    /// <summary>Half a director's hood's diagonal (its rangefinder's arms reach out past it, as Geometry.DirectorParts draws
+    /// the hood): the radius a top needs to hold it.</summary>
+    public static double HalfDiagonal(DirectorSpec d)
+    {
+        var (l, w) = Size(d);
+        return double.Hypot(l, Math.Min(w, l * 1.15)) / 2;
+    }
+
+    /// <summary>How many of a battery's directors stand in masts' tops (masts[i].director): no more than it has; a top
+    /// asking for more stands empty.</summary>
+    static long InTops(Design design, string battery) =>
+        Math.Min(design.Masts?.Count(m => m?.Director == battery && m.Kind != "none") ?? 0, Spec(design, battery).Directors);
+
     /// <summary>A director's footprint: (fore-and-aft, athwartships) m.</summary>
     static (double L, double W) Size(DirectorSpec d)
     {
@@ -121,8 +134,8 @@ public static class FireControl
         foreach (var bat in BatteryNames)
         {
             var d = Spec(design, bat);
-            long n = d.Directors;
-            if (n == 0)
+            long n = d.Directors - InTops(design, bat);   // those in tops stand there once the masts are up (PlaceInTops)
+            if (n <= 0)
                 continue;
             var (l, w) = Size(d);
             double hl = l / 2, hw = w / 2;
@@ -140,17 +153,7 @@ public static class FireControl
                 int k = mine.Count;
                 string bid = bat == "main" ? Label[bat] + (k == 0 ? "" : $" {k + 1}")
                     : $"{Label[bat]} {(unit is null ? "None" : unit.ToString())}" + (pair ? (y > 0 ? "S" : "P") : "");
-                var pts = Geometry.DirectorParts(x, y, l, w, d.RangefinderM).Outline;
-                var b = Layout.AddBlock(lay, blocks, bid, x - hl, x + hl, w, 1, 0.0, 0.0, y: y, z0: z0, kind: "director", tPerM2: 0.0,
-                    points: pts, role: "director");
-                b.Director = new BlockDirector(bat, d.RangefinderM, d.RadarT > 0, (long)Math.Round(z0 / Layout.LevelH));
-                double aloft = wt.Hood + wt.Gear + wt.Rangefinder + wt.Armour + wt.Radar;
-                lay.Weights.Add(new Weight(bid, "fire_control", aloft, x, ZRel.Deck(z0 + 0.5 * HoodH)));
-                if (wt.Computer != 0)
-                    lay.Weights.Add(new Weight($"Plotting room ({bid})", "fire_control", wt.Computer, x, ZRel.Frac(ComputerZ)));
-                var rec = new Director(bid, bat, x, y, z0, z0 + HoodH, z0 + EyeH, d, aloft + wt.Computer, unit);
-                lay.Directors.Add(rec);
-                mine.Add(rec);
+                mine.Add(PutDirector(lay, blocks, bat, d, bid, x, y, z0, unit));
             }
 
             bool Smoky(double x, double y, double z0) =>
@@ -225,6 +228,44 @@ public static class FireControl
         }
         if (design.MainBatteries.Any(b => b.Turrets != 0) && Spec(design, "main").Directors == 0)
             lay.Warnings.Add("The main battery has no director: each turret fires under local control.");
+    }
+
+    /// <summary>A director as a block of its own at (x, y) on z0 above the main deck, its weights aloft and its plotting
+    /// room's below, and its record.</summary>
+    static Director PutDirector(Layout lay, List<Block> blocks, string bat, DirectorSpec d, string bid, double x, double y, double z0, long? unit)
+    {
+        var (l, w) = Size(d);
+        double hl = l / 2;
+        var wt = Weights(d);
+        var pts = Geometry.DirectorParts(x, y, l, w, d.RangefinderM).Outline;
+        var b = Layout.AddBlock(lay, blocks, bid, x - hl, x + hl, w, 1, 0.0, 0.0, y: y, z0: z0, kind: "director", tPerM2: 0.0,
+            points: pts, role: "director");
+        b.Director = new BlockDirector(bat, d.RangefinderM, d.RadarT > 0, (long)Math.Round(z0 / Layout.LevelH));
+        double aloft = wt.Hood + wt.Gear + wt.Rangefinder + wt.Armour + wt.Radar;
+        lay.Weights.Add(new Weight(bid, "fire_control", aloft, x, ZRel.Deck(z0 + 0.5 * HoodH)));
+        if (wt.Computer != 0)
+            lay.Weights.Add(new Weight($"Plotting room ({bid})", "fire_control", wt.Computer, x, ZRel.Frac(ComputerZ)));
+        var rec = new Director(bid, bat, x, y, z0, z0 + HoodH, z0 + EyeH, d, aloft + wt.Computer, unit);
+        lay.Directors.Add(rec);
+        return rec;
+    }
+
+    /// <summary>The directors the masts' tops carry (masts[i].director, fire-control.md F4b): one of the battery's on the
+    /// top's roof, over the mast, named for it; a secondary or AA one a unit of its own.</summary>
+    public static void PlaceInTops(Layout lay, Design design, List<Block> blocks, List<Mast> masts)
+    {
+        var placed = new Dictionary<string, long>();
+        foreach (var m in masts)
+        {
+            if (m.Director is not { } bat || m.Platform is not { } top)
+                continue;
+            var d = Spec(design, bat);
+            if (placed.GetValueOrDefault(bat) >= d.Directors)
+                continue;   // the battery has fewer directors than tops asking for one: this top stands empty
+            placed[bat] = placed.GetValueOrDefault(bat) + 1;
+            long? unit = bat == "main" ? null : lay.Directors.Where(x => x.Battery == bat).Select(x => x.Unit ?? 0).DefaultIfEmpty(0).Max() + 1;
+            PutDirector(lay, blocks, bat, d, $"{Label[bat]} ({m.Id} top)", m.X, m.Y ?? 0.0, top.Roof, unit);
+        }
     }
 
     /// <summary>Does any funnel's smoke blind a control position? (SmokeFrom(...).Count > 0)</summary>

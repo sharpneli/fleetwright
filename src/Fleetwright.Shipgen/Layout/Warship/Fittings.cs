@@ -86,12 +86,13 @@ public sealed partial class Layout
                 : ax0 + la * 0.5;
             // what it must clear: the funnels, and over the bridge tower the director on its top
             double clear = k == 0 ? LevelH * nTower + hood : 0.0;
-            var top = MastPlan.Top(g, gunWl, site.Res.Freeboard, Math.Max(clear, funTop));
-            double head = g?.HeightM ?? MastPlan.Head(mastTop, clear, top);
+            double dirR = g?.Director is { } bat ? FireControl.HalfDiagonal(FireControl.Spec(site.Design, bat)) + 0.2 : 0.0;
+            var top = MastPlan.Top(g, gunWl, site.Res.Freeboard, Math.Max(clear, funTop), dirR);
+            double head = g?.HeightM ?? MastPlan.Head(mastTop, clear, top, g?.Director is not null);
             masts.Add(new Mast
             {
                 Id = k == 0 ? "Foremast" : "Mainmast", X = x, Yard = Math.Min((k == 0 ? 0.3 : 0.22) * B, k == 0 ? 10 : 8), Kind = kind,
-                Top = head, Platform = top,
+                Top = head, Platform = top, Director = g?.Director,
             });
         }
         foreach (var m in masts)

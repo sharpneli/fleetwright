@@ -495,6 +495,7 @@
  "masts": [
   {
    "kind": "tripod",
+   "director": "main",
    "top": "spotting",
    "top_radius_m": 1.4
   },

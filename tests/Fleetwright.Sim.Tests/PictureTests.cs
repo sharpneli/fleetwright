@@ -124,7 +124,7 @@ public class PictureTests(ITestOutputHelper output)
         var (p, _, cov) = pic.EstimateAt(pic.IndexOf(2), w.Time.Ms, Settings);
         double err = Earth.Distance(p, Ship(w, 2).Position);
         output.WriteLine($"lost at {lost:F1} km; 10 min on, dead reckoned {err:F0} m off, ellipse {cov.Ellipse().Major:F0} m");
-        Assert.InRange(lost, 15, 30);
+        Assert.InRange(lost, 15, 33);   // 30.3 km since the director went up into the foretop (fire-control.md F4b); F4d re-fits
         Assert.True(err < 3_000, $"{err:F0} m");
         Assert.Equal(seen, pic[pic.IndexOf(2)].SeenMs);
 

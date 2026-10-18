@@ -27,7 +27,7 @@
    "clutter": 63
   },
   "battlecruiser": {
-   "max_height_m": 32.39,
+   "max_height_m": 34.99,
    "clutter": 73
   },
   "battleship": {
@@ -63,16 +63,16 @@
    "clutter": 51
   },
   "courbet": {
-   "max_height_m": 35.95,
+   "max_height_m": 38.55,
    "clutter": 54
   },
   "dante": {
-   "max_height_m": 31.76,
+   "max_height_m": 34.36,
    "clutter": 63
   },
   "danton": {
-   "max_height_m": 30.01,
-   "clutter": 57
+   "max_height_m": 32.61,
+   "clutter": 53
   },
   "daring": {
    "max_height_m": 22.72,
@@ -99,8 +99,8 @@
    "clutter": 25
   },
   "dreadnought": {
-   "max_height_m": 29.43,
-   "clutter": 67
+   "max_height_m": 32.03,
+   "clutter": 66
   },
   "duilio": {
    "max_height_m": 25.76,
@@ -147,7 +147,7 @@
    "clutter": 36
   },
   "invincible": {
-   "max_height_m": 30.26,
+   "max_height_m": 32.86,
    "clutter": 58
   },
   "karlsruhe": {
@@ -163,8 +163,8 @@
    "clutter": 108
   },
   "kongo": {
-   "max_height_m": 35.2,
-   "clutter": 71
+   "max_height_m": 37.8,
+   "clutter": 72
   },
   "liberty": {
    "max_height_m": 23.65,
@@ -175,16 +175,16 @@
    "clutter": 17
   },
   "lion": {
-   "max_height_m": 40.23,
-   "clutter": 72
+   "max_height_m": 42.83,
+   "clutter": 71
   },
   "littorio": {
    "max_height_m": 28.08,
    "clutter": 114
   },
   "lord_nelson": {
-   "max_height_m": 28.37,
-   "clutter": 62
+   "max_height_m": 30.97,
+   "clutter": 60
   },
   "mikasa": {
    "max_height_m": 23.85,
@@ -239,12 +239,12 @@
    "clutter": 26
   },
   "seydlitz": {
-   "max_height_m": 38.36,
-   "clutter": 50
+   "max_height_m": 40.96,
+   "clutter": 52
   },
   "super_dreadnought": {
-   "max_height_m": 37.63,
-   "clutter": 51
+   "max_height_m": 40.23,
+   "clutter": 53
   },
   "supercarrier": {
    "max_height_m": 36.49,
@@ -263,16 +263,16 @@
    "clutter": 9
   },
   "tegetthoff": {
-   "max_height_m": 27.68,
-   "clutter": 54
+   "max_height_m": 30.28,
+   "clutter": 56
   },
   "tiger": {
    "max_height_m": 23.71,
    "clutter": 36
   },
   "tiger_1914": {
-   "max_height_m": 39.44,
-   "clutter": 53
+   "max_height_m": 42.04,
+   "clutter": 56
   },
   "tramp_1914": {
    "max_height_m": 22.76,

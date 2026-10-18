@@ -451,6 +451,7 @@
  "masts": [
   {
    "kind": "pole",
+   "director": "main",
    "top": "spotting",
    "top_radius_m": 0.9
   },
