@@ -353,12 +353,11 @@ public sealed partial class Layout
 
     const double MastTK = 0.012;
 
-    /// <summary>A mast's weight at half its height: tripod legs or a pole.</summary>
+    /// <summary>A mast's weight at half its height: its pole's, times its kind's legs (MastPlan.Legs).</summary>
     public static void MastWeight(Layout lay, Mast m, double top, string name, double bse = 0.0)
     {
-        int legs = m.Tripod ? 3 : 1;
         double h = top - bse;
-        lay.Weights.Add(new Weight(name, "superstructure", legs * MastTK * Math.Pow(h, 2), m.X, ZRel.Deck(bse + h / 2)));
+        lay.Weights.Add(new Weight(name, "superstructure", MastPlan.Legs(m.Kind) * MastTK * Math.Pow(h, 2), m.X, ZRel.Deck(bse + h / 2)));
     }
 
     static readonly double[] AaRoofPen = [0.05, 0.05, 0.0, 0.0, 0.03];

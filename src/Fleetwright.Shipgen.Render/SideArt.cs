@@ -427,23 +427,22 @@ public static class SideArt
         double x = m.X, b = m.Base, t = m.Top, h = t - b;
         if (h <= 0)
             return;
-        var mode = sh.Mast;
         double w = Math.Max(P.Sw * 1.6, 0.35);
         foreach (var bo in m.Booms ?? [])   // cargo derricks, heel at the mast, topped up a little
         {
             double bx = bo[0], len = Math.Abs(bx - x);
             o.Add(new LineNode(x, -(b + 1.5), bx, -(b + 1.5 + 0.3 * len)).Stroke(mast, Math.Max(P.Sw * 1.4, 0.3)).Cap("round"));
         }
-        double legs = sh.Tripod ?? (mode is "pole" or "fighting_top" or "cage" or "lattice" ? 0.0 : 1.0);
-        if (m.Tripod && legs != 0)   // the legs spread aft, as in the plan, and meet the pole about half way up
+        if (m.Kind == "tripod")   // the legs spread aft, as in the plan, and meet the pole about half way up (or at the top)
         {
-            double lx = x + 4.0 * legs * Math.Cos(double.DegreesToRadians(150)), lz = b + Math.Min(0.55 * h, 12.0);
+            double lz = m.Tops.Count > 0 ? m.Tops[0].Base : b + Math.Min(0.55 * h, 12.0);
+            double lx = x + 4.0 * Painter.MastLegs * Math.Cos(double.DegreesToRadians(150));
             o.Add(new LineNode(lx, -b, x, -lz).Stroke(mast, Math.Max(P.Sw * 1.3, 0.3)).Cap("round"));
         }
-        double cage = sh.CageR ?? (mode == "cage" ? 3.0 : 0.0);
-        if (cage != 0 && m.Tripod)   // a US cage mast: twisted struts from a wide foot to a narrow head
+        double cage = m.Kind == "cage" ? Painter.CageR : 0.0;
+        if (cage != 0)   // a cage mast: twisted struts from a wide foot to a narrow head (its top, or most of its height)
         {
-            double ct = b + 0.85 * h;
+            double ct = m.Tops.Count > 0 ? m.Tops[0].Base : b + 0.85 * h;
             var g = new Group().Stroke(mast, Math.Max(P.Sw * 0.8, 0.15));
             for (int i = 0; i <= 6; i++)
             {
@@ -455,10 +454,10 @@ public static class SideArt
             o.Add(g);
             o.Add(P.Ln(new PathNode(Rect(x - 0.6 * cage, x + 0.6 * cage, ct - 0.6, ct)).Fill(Painter.Shade(mast, 0.85)), 0.6));
         }
-        double lat = sh.LatticeR ?? (mode == "lattice" ? 2.2 : 0.0);
-        if (lat != 0 && m.Tripod)   // a lattice mast: a braced truss narrowing to a radar platform
+        double lat = m.Kind == "lattice" ? Painter.LatticeR : 0.0;
+        if (lat != 0)   // a lattice mast: a braced truss narrowing to a platform (its top, or most of its height)
         {
-            double lt = b + 0.8 * h;
+            double lt = m.Tops.Count > 0 ? m.Tops[0].Base : b + 0.8 * h;
             var g = new Group().Stroke(mast, Math.Max(P.Sw * 0.7, 0.14));
             g.Items.Add(new LineNode(x - lat, -b, x - 0.55 * lat, -lt));
             g.Items.Add(new LineNode(x + lat, -b, x + 0.55 * lat, -lt));
@@ -473,18 +472,17 @@ public static class SideArt
             o.Add(g);
             o.Add(P.Ln(new PathNode(Rect(x - 0.7 * lat, x + 0.7 * lat, lt - 0.4, lt)).Fill(Painter.Shade(mast, 1.3)), 0.6));
         }
-        // the pole, from its full radius at the foot to half that at the head
-        var pole = Poly(new(x - m.R, b), new(x + m.R, b), new(x + 0.4 * m.R, t), new(x - 0.4 * m.R, t));
+        // the pole, from its full radius at the foot to half that at the head (a tower mast's column barely tapers)
+        double head = m.Kind == "tower" ? 0.85 : 0.4;
+        var pole = Poly(new(x - m.R, b), new(x + m.R, b), new(x + head * m.R, t), new(x - head * m.R, t));
         o.Add(P.Ln(new PathNode(pole).Fill(mast), 0.6));
         double tr = b + 0.82 * h;   // the crosstree where the yard crosses
         o.Add(new LineNode(x - 1.0, -tr, x + 1.0, -tr).Stroke(mast, w).Cap("round"));
-        double topR = sh.TopR ?? (mode == "fighting_top" ? 1.6 : 0.0);
-        long tiers = topR != 0 ? sh.TopTiers ?? 1 : 0;
-        for (int i = 0; i < tiers; i++)   // a fighting top below the crosstree; tiers stack a pagoda
+        for (int i = 0; i < m.Tops.Count; i++)   // its top, tier on tier (a pagoda's), each its hitbox
         {
-            double r = topR * (1 - 0.3 * i), z = b + 0.62 * h + 1.6 * i;
+            var tier = m.Tops[i];
             string col = Painter.Shade(mast, 0.75 + 0.2 * i);
-            var d = Rect(x - r, x + r, z, z + 1.2);
+            var d = Rect(x - tier.R, x + tier.R, tier.Base, tier.Top);
             o.Add(P.Ln(new PathNode(d).Fill(col), 0.8));
             o.Add(Rim(P, d, col));
         }

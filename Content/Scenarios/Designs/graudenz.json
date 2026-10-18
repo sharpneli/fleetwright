@@ -419,5 +419,17 @@
     "salvo_defl_mil": 2.5
    }
   }
- }
+ },
+ "masts": [
+  {
+   "kind": "pole",
+   "top": "spotting",
+   "top_radius_m": 0.9
+  },
+  {
+   "kind": "pole",
+   "top": "spotting",
+   "top_radius_m": 0.9
+  }
+ ]
 }

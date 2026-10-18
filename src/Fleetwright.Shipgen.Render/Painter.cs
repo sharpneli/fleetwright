@@ -325,18 +325,15 @@ public sealed class Painter
             o.Add(new LineNode(x, y, bx, by).Stroke(mast, Math.Max(Sw * 1.4, 0.3)).Cap("round"));
             o.Add(new CircleNode(bx, by, 0.3).Fill(mast));
         }
-        var mode = Shapes.Mast;
-        bool tripod = m.Tripod;
-        double legs = Shapes.Tripod ?? (mode is "pole" or "fighting_top" or "cage" or "lattice" ? 0.0 : 1.0);   // 0: every mast a pole
-        if (tripod && legs != 0)
+        if (m.Kind == "tripod")   // the legs, spread aft
             foreach (int ang in new[] { 150, 210 })
             {
-                double lx = x + 4.0 * legs * Math.Cos(double.DegreesToRadians(ang));
-                double ly = y + 3.0 * legs * (ang == 150 ? 1 : -1);
+                double lx = x + 4.0 * MastLegs * Math.Cos(double.DegreesToRadians(ang));
+                double ly = y + 3.0 * MastLegs * (ang == 150 ? 1 : -1);
                 o.Add(new LineNode(x, y, lx, ly).Stroke(mast, Math.Max(Sw * 1.3, 0.3)).Cap("round"));
             }
-        double cage = Shapes.CageR ?? (mode == "cage" ? 3.0 : 0.0);
-        if (cage != 0 && tripod)   // a US cage mast from above: twisted struts from a wide foot to a narrow head
+        double cage = m.Kind == "cage" ? CageR : 0.0;
+        if (cage != 0)   // a cage mast from above: twisted struts from a wide foot to a narrow head
         {
             for (int i = 0; i < 12; i++)
             {
@@ -347,8 +344,8 @@ public sealed class Painter
             o.Add(new CircleNode(x, y, cage).Fill("none").Stroke(mast, Math.Max(Sw * 0.8, 0.15)));
             o.Add(Ln(new CircleNode(x, y, 0.45 * cage).Fill(Shade(mast, 0.85)), 0.6));
         }
-        double lat = Shapes.LatticeR ?? (mode == "lattice" ? 2.2 : 0.0);
-        if (lat != 0 && tripod)   // a lattice mast: a square braced truss narrowing to a radar platform
+        double lat = m.Kind == "lattice" ? LatticeR : 0.0;
+        if (lat != 0)   // a lattice mast: a square braced truss narrowing to a radar platform
         {
             foreach (double k in new[] { 1.0, 0.55 })
             {
@@ -361,16 +358,19 @@ public sealed class Painter
             o.Add(Ln(new RectNode(x - 0.4 * lat, y - 0.4 * lat, 0.8 * lat, 0.8 * lat).Fill(Shade(mast, 1.3)), 0.6));
             o.Add(new LineNode(x, y - 1.3 * lat, x, y + 1.3 * lat).Stroke(Shade(mast, 0.8), Math.Max(Sw * 1.6, 0.35)));
         }
-        double top = Shapes.TopR ?? (mode == "fighting_top" ? 1.6 : 0.0);
-        long tiers = top != 0 ? Shapes.TopTiers ?? 1 : 0;
-        for (int i = 0; i < tiers; i++)   // a fighting top; tiers stack a pagoda
+        for (int i = 0; i < m.Tops.Count; i++)   // its top, tier on tier (a pagoda's)
         {
-            double r = top * (1 - 0.3 * i);
+            double r = m.Tops[i].R;
             o.Add(Ln(new CircleNode(x, y, r).Fill(Shade(mast, 0.75 + 0.2 * i)), 0.8));
             o.Add(new CircleNode(x, y, r - 0.35).Fill("none").Stroke(Shade(mast, 1.2 + 0.2 * i), 0.2));
         }
-        o.Add(Ln(new CircleNode(x, y, 0.7).Fill(mast), 0.6).Profile(Relief.Dome(x, y, 0.7, 0.7, head, 0.5)));
+        double pr = m.Kind == "tower" ? m.R : 0.7;   // the pole's head, or a tower mast's column
+        o.Add(Ln(new CircleNode(x, y, pr).Fill(mast), 0.6).Profile(Relief.Dome(x, y, pr, pr, head, 0.5)));
     }
+
+    /// <summary>The dressing of a mast's kind (no hitbox of their own: the mast's pole is the part): a tripod's legs'
+    /// spread, a cage mast's foot radius, a lattice mast's half-width, m.</summary>
+    public const double MastLegs = 1.3, CageR = 3.4, LatticeR = 2.2;
 
     /// <summary>Revolving crane: pedestal and cab, jib pointing along dir (degrees, 0 = ahead).</summary>
     public void Crane(List<Node> o, Crane c)

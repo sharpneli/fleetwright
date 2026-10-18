@@ -55,6 +55,7 @@ public static class ShipClassCompiler
                 InternalsJoint = r.Hull.Internals,
                 ShockGrade = r.Fittings.ShockGrade,
             };
+            c.componentIds = [.. hb.Components.Select(x => x.Id)];
             c.turretTypes = hb.TurretTypes.Values.Select(TurretTypeOf).ToArray();
             c.turretTypeIds = [.. hb.TurretTypes.Keys];
             Components(c);
@@ -77,7 +78,6 @@ public static class ShipClassCompiler
             c.numbers = numbers.ToArray();
             c.materials = materialNames.ToArray();
             c.materialRows = [.. materialNames.Select(MaterialOf)];
-            c.componentIds = [.. hb.Components.Select(x => x.Id)];
             c.cellIds = [.. hb.Cells.Select(x => x.Id)];
             c.roomIds = [.. hb.Rooms.Select(x => x.Id)];
             c.bulkheadIds = [.. hb.Bulkheads.Select(x => x.Id)];

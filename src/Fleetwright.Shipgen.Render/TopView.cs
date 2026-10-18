@@ -24,8 +24,20 @@ public sealed class TopView
 
     public sealed record Funnel(string Id, double X, double Y, double L, double W, long Pipes, List<Pt> Outline, double Top);
 
-    /// <summary>A mast's pole and top, and the dressing on it: its yard, tripod legs and cargo booms.</summary>
-    public sealed record Mast(string Id, double X, double Y, double R, double Top, double Yard, bool Tripod, List<double[]>? Booms);
+    /// <summary>A mast's pole and its top's tiers (their hitboxes), its kind, and the dressing on it: its yard, the legs or
+    /// struts its kind has, and cargo booms.</summary>
+    public sealed record Mast(string Id, double X, double Y, double R, double Top, double Yard, string Kind, List<double[]>? Booms, List<MastTier> Tops)
+    {
+        public bool Tripod => Kind == "tripod";
+    }
+
+    /// <summary>A tier of a mast's top: its radius, and its floor and roof above the main deck.</summary>
+    public sealed record MastTier(double R, double Base, double Top);
+
+    /// <summary>A mast's top tiers, from the hitboxes' top components it carries (its id's "top" ones), lowest first.</summary>
+    public static List<MastTier> TiersOf(IEnumerable<Component> comps, string mastId) =>
+        comps.Where(c => c.Kind == ComponentKind.Top && c.Id.StartsWith(mastId + " top", StringComparison.Ordinal))
+            .Select(c => new MastTier(c.R!.Value, c.Base, c.Top)).OrderBy(t => t.Base).ToList();
 
     public sealed record Aa(string Id, string Type, double X, double Y, double Dir, double R, double Top, bool Upper);
 
@@ -121,7 +133,7 @@ public sealed class TopView
         var masts = comps.Where(c => c.Kind == ComponentKind.Mast).Select(c =>
         {
             var d = dressed[c.Id];
-            return new Mast(c.Id, c.X!.Value, c.Y!.Value, c.R!.Value, c.Top, d.Yard, d.Tripod, d.Booms);
+            return new Mast(c.Id, c.X!.Value, c.Y!.Value, c.R!.Value, c.Top, d.Yard, c.Type ?? "pole", d.Booms, TiersOf(comps, c.Id));
         }).ToList();
 
         // an AA mount on a roof drawn in the high pass is drawn there too, over the roof
@@ -207,7 +219,11 @@ public sealed class TopView
         foreach (var fn in Funnels)
             items.Add(new(DeckM + fn.Top, "polygon") { Points = fn.Outline });
         foreach (var m in Masts)
+        {
             items.Add(new(DeckM + m.Top, "circle") { Cx = m.X, Cy = m.Y, R = m.R, Profile = Relief.Dome(m.X, m.Y, m.R, m.R, DeckM + m.Top, m.R) });
+            foreach (var t in m.Tops)
+                items.Add(new(DeckM + t.Top, "circle") { Cx = m.X, Cy = m.Y, R = t.R });
+        }
         return items.OrderBy(it => it.Top).ToList();
     }
 }

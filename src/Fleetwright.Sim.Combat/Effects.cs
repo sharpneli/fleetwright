@@ -1071,12 +1071,12 @@ public static class Effects
         Math.Min(a.Top, b.Top) - Math.Max(a.Base, b.Base) > 0.05;
 
     /// <summary>A part's own plates as mild steel against fragments (E1): its armour by its material, and the plating
-    /// of a superstructure block, a funnel, an uptake's casing or a mast (the ship's superstructure plating).</summary>
+    /// of a superstructure block, a funnel, an uptake's casing, a mast or its top (the ship's superstructure plating).</summary>
     public static double PartMild(ShipClass c, int i, double armourMm)
     {
         ref readonly var comp = ref c.Components[i];
         double mm = armourMm > 0 ? c.MaterialOf(comp.Material).FragmentMildMm(armourMm) : 0;
-        if (comp.Kind is ComponentKind.Superstructure or ComponentKind.Funnel or ComponentKind.Casing or ComponentKind.Mast)
+        if (comp.Kind is ComponentKind.Superstructure or ComponentKind.Funnel or ComponentKind.Casing or ComponentKind.Mast or ComponentKind.Top)
             mm += c.Plating.SuperstructureMm;
         return mm;
     }

@@ -498,5 +498,12 @@
     "salvo_defl_mil": 2.5
    }
   }
- }
+ },
+ "masts": [
+  {
+   "kind": "pole",
+   "top": "fighting",
+   "top_radius_m": 1.8
+  }
+ ]
 }

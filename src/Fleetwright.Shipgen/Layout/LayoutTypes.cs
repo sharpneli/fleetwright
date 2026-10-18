@@ -127,19 +127,35 @@ public sealed class AaMount
     [JsonIgnore] public double Base;
 }
 
-/// <summary>A mast: where it stands, its yard, tripod legs, its top above the main deck (null until FinishLayout sets the
-/// layout's default) and a merchant's cargo booms ([x, y] of each boom's head). Its hitbox is a pole of PoleR.</summary>
+/// <summary>A mast: where it stands, its yard, its kind (pole, tripod, cage, lattice, tower), its masthead above the main
+/// deck (null until FinishLayout sets the layout's default), its top (a platform round it, or none) and a merchant's cargo
+/// booms ([x, y] of each boom's head). Its hitbox is a pole of PoleR, a tower's a column of TowerR; its top's, a cylinder
+/// a tier (fire-control.md F4).</summary>
 public sealed record Mast
 {
-    public const double PoleR = 0.7;
+    public const double PoleR = 0.7, TowerR = 1.8;
     /// <summary>Its name (FinishLayout names those left without one).</summary>
     [JsonIgnore] public string? Id { get; set; }
     public double X { get; init; }
     public double? Y { get; init; }
     public double Yard { get; init; }
-    public bool Tripod { get; init; }
+    [JsonIgnore] public string Kind { get; init; } = "pole";
+    public bool Tripod => Kind == "tripod";
     public double? Top { get; set; }
+    [JsonIgnore] public MastTop? Platform { get; init; }
     public List<double[]>? Booms { get; init; }
+
+    /// <summary>Its hitbox's radius.</summary>
+    [JsonIgnore] public double R => Kind == "tower" ? TowerR : PoleR;
+}
+
+/// <summary>A mast's top (fire-control.md F4): fighting (open) or spotting (enclosed), its floor above the main deck,
+/// its radius and its tiers, each <see cref="TierH"/> high and narrower than the one under it (a pagoda's).</summary>
+public sealed record MastTop(string Kind, double Floor, double R, int Tiers)
+{
+    public const double TierH = 2.2;
+    public double Roof => Floor + TierH * Tiers;
+    public double TierR(int i) => R * (1 - 0.3 * i);
 }
 
 /// <summary>A deck the layout adds over the main deck: a raised stretch of hull ("deck"), a flight deck, or a sponson,

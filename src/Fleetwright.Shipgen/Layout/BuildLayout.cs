@@ -83,7 +83,7 @@ public sealed partial class Layout
         var aaOut = PlaceAaMounts(site, middle.MachC, blocks);
 
         // ---------------- masts and boats ----------------
-        var masts = PlaceMasts(site, control, ctl, funTop);
+        var masts = PlaceMasts(site, control, ctl, funTop, mounts);
         var boats = PlaceBoats(site, row, middle.MachC, riders, level1);
 
         // ---------------- citadel & compartments ----------------

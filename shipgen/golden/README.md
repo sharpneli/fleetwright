@@ -132,6 +132,14 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
   designs' armour moves (slopes, inclined and internal belts, inner bulkheads, Kent's boxes, KGV's zones), and they grow
   (docs/shipgen/protection-templates.md has the table); the hull girder counts a sloped deck's flat over its share.
   30 design cases with their SVGs and sprite.json change. ShipDesign.Version 17.
+- 2026-10-18, fire control as tech blocks (docs/battle/fire-control.md F3), on purpose: design format 6 (each battery's
+  `fit`, the design's `fire_control_tech`), so the 326 design cases' design echo changes (version, the fits, the
+  blocks); nothing built moves. ShipDesign.Version 30; then the real fits on 10 shipped designs (their echo only), 31.
+- 2026-10-18, masts and tops from the design (docs/battle/fire-control.md F4a), on purpose: `masts` gives each mast's
+  kind and top (the shipped warships' written from what their looks drew), tops are hitbox parts (`top`) at the
+  heights the rule gives (2.25 x the highest gun over the water), mast weights go by kind, and the plan and profile
+  draw the kind and the tops from the ship. 326 design cases change (median 0.0 %, at most +2.5 % standard: fubuki's
+  two-tier tops), with 247 SVG and 46 sprite.json cases. ShipDesign.Version 32.
 
 ## Layout
 

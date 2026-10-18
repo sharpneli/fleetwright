@@ -435,7 +435,7 @@ public sealed class ShipDrawList
                 continue;
             ref readonly var comp = ref c.Components[v.Parts[j]];
             if (comp.Bounds.Top <= 0 || comp.Kind is not (ComponentKind.Superstructure or ComponentKind.ConningTower or ComponentKind.Funnel
-                    or ComponentKind.Uptake or ComponentKind.Mast or ComponentKind.Casing or ComponentKind.Sponson or ComponentKind.FlightDeck
+                    or ComponentKind.Uptake or ComponentKind.Mast or ComponentKind.Top or ComponentKind.Casing or ComponentKind.Sponson or ComponentKind.FlightDeck
                     or ComponentKind.HangarBay))
                 continue;
             var b = comp.Bounds;

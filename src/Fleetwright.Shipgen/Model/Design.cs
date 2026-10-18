@@ -38,6 +38,10 @@ public sealed record Design
     /// <summary>How the hull is divided (protection-plan.md H7).</summary>
     public SubdivisionInput? Subdivision { get; init; }
     public SuperstructureInput? Superstructure { get; init; }
+    /// <summary>A warship's masts, fore to aft (the foremast by the bridge, the mainmast on aft control): each one's kind,
+    /// height and top (docs/battle/fire-control.md F4). One not given takes the default (a pole, a tripod on a long ship,
+    /// over the funnels, no top).</summary>
+    public List<MastInput>? Masts { get; init; }
     public MachineryInput? Machinery { get; init; }
     public CrewInput? Crew { get; init; }
     /// <summary>How the fittings are mounted: their shock grade (Fittings; docs/battle/shells-armour-damage.md E0).</summary>
@@ -582,6 +586,22 @@ public sealed record SteeringBoxInput
     public double? BulkheadMm { get; init; }
     public string? Material { get; init; }
     public string? DeckMaterial { get; init; }
+    [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+/// <summary>masts[i]: a mast's kind (pole, tripod, cage, lattice, tower; none leaves its place empty), its masthead over
+/// the main deck, m, and its top: none, a fighting top (open, for lookouts) or a spotting top (enclosed, for the
+/// spotters), its floor over the main deck, m, its radius, m, and its tiers (platforms stacked, a pagoda's). Heights not
+/// given follow the ship (MastPlan: the top at 2.25 times the highest gun's height over the water, the masthead a topmast
+/// over it).</summary>
+public sealed record MastInput
+{
+    public string? Kind { get; init; }
+    public double? HeightM { get; init; }
+    public string? Top { get; init; }
+    public double? TopM { get; init; }
+    public double? TopRadiusM { get; init; }
+    public int? Tiers { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 

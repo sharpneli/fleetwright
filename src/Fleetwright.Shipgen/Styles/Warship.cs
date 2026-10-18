@@ -96,7 +96,7 @@ public sealed class PlaningStyle : Style
         double cx0 = 0.0 + shift, cx1 = 0.22 * L + shift;
         double wc = 0.42 * B;
         Layout.AddBlock(lay, blocks, "Charthouse", cx0, cx1, wc, 1, 0.45 * wc, 0.2, role: "bridge");
-        var masts = new List<Mast> { new() { X = cx0 + 0.25 * (cx1 - cx0), Yard = Math.Min(0.5 * B, 2.4), Tripod = false, Top = Layout.LevelH + 3.5 } };
+        var masts = new List<Mast> { new() { X = cx0 + 0.25 * (cx1 - cx0), Yard = Math.Min(0.5 * B, 2.4), Top = Layout.LevelH + 3.5 } };
 
         double m0 = -0.42 * L, m1 = -0.08 * L;
         double lMach = Layout.PlanMachinery(lay, design, res, hull, (m0 + m1) / 2);

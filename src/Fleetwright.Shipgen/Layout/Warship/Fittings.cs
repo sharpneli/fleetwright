@@ -62,24 +62,46 @@ public sealed partial class Layout
     }
 
     /// <summary>The foremast at the bridge's after end (or through it when that spot is taken), over the funnels and
-    /// clear of the tower's top; the mainmast on aft control. Their weights.</summary>
-    static List<Mast> PlaceMasts(WarshipSite site, ControlPlan control, ControlPlaced ctl, double funTop)
+    /// clear of the tower's top; the mainmast on aft control. Each of the kind the design gives (masts[0] the foremast,
+    /// masts[1] the mainmast; by default a pole, the foremast a tripod on a ship of 150 m or more), with its top, and its
+    /// heights the design's or the rule's (<see cref="MastPlan"/>). Their weights and their tops'.</summary>
+    static List<Mast> PlaceMasts(WarshipSite site, ControlPlan control, ControlPlaced ctl, double funTop, List<Mount> mounts)
     {
         var (lay, L, B) = (site.Lay, site.L, site.B);
         double lb = control.Lb, la = control.La, hood = control.Hood;
         long nTower = control.NTower;
         double bx0 = ctl.Bx0, ax0 = ctl.Ax0;
-        double mastTop = funTop + 6.0;
-        double fxM = lay.Clear(Footprint.Circle(bx0 - 1.2, 0, 0.7), mastTop) ? bx0 - 1.2 : bx0 + 0.3 * lb;
-        var masts = new List<Mast> { new() { X = fxM, Yard = Math.Min(0.3 * B, 10), Tripod = L >= 150 } };
-        if (LevelH * nTower + hood + 2.0 > mastTop)
-            masts[0].Top = LevelH * nTower + hood + 2.0;
-        if (la != 0)
-            masts.Add(new Mast { X = ax0 + la * 0.5, Yard = Math.Min(0.22 * B, 8), Tripod = false });
-        for (int k = 0; k < masts.Count; k++)
+        double mastTop = funTop + MastAboveFunnel;
+        var given = site.Design.Masts ?? [];
+        double gunWl = MastPlan.HighestGunM(mounts) + site.Res.Freeboard;
+        var masts = new List<Mast>();
+        for (int k = 0; k < 2; k++)
         {
-            masts[k].Id = k == 0 ? "Foremast" : "Mainmast";
-            MastWeight(lay, masts[k], masts[k].Top ?? mastTop, masts[k].Id!, lay.DeckZ(masts[k].X));
+            var g = k < given.Count ? given[k] : null;
+            string kind = g?.Kind ?? (k == 0 && L >= 150 ? "tripod" : "pole");
+            if (kind == "none" || k == 1 && la == 0)
+                continue;
+            double x = k == 0
+                ? lay.Clear(Footprint.Circle(bx0 - 1.2, 0, 0.7), mastTop) ? bx0 - 1.2 : bx0 + 0.3 * lb
+                : ax0 + la * 0.5;
+            // what it must clear: the funnels, and over the bridge tower the director on its top
+            double clear = k == 0 ? LevelH * nTower + hood : 0.0;
+            var top = MastPlan.Top(g, gunWl, site.Res.Freeboard, Math.Max(clear, funTop));
+            double head = g?.HeightM ?? MastPlan.Head(mastTop, clear, top);
+            masts.Add(new Mast
+            {
+                Id = k == 0 ? "Foremast" : "Mainmast", X = x, Yard = Math.Min((k == 0 ? 0.3 : 0.22) * B, k == 0 ? 10 : 8), Kind = kind,
+                Top = head, Platform = top,
+            });
+        }
+        foreach (var m in masts)
+        {
+            double bse = lay.DeckZ(m.X);
+            MastWeight(lay, m, m.Top!.Value, m.Id!, bse);
+            if (m.Platform is { } p)
+                for (int i = 0; i < p.Tiers; i++)
+                    lay.Weights.Add(new Weight($"{m.Id} top{(i == 0 ? "" : $" {i + 1}")}", "superstructure", MastPlan.TopWeightT(p.TierR(i)), m.X,
+                        ZRel.Deck(p.Floor + (i + 0.5) * MastTop.TierH)));
         }
         return masts;
     }

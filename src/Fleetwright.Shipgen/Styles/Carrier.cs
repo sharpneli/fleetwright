@@ -420,7 +420,7 @@ public sealed class CarrierStyle : Style
         }
         var masts = new List<Mast>
         {
-            new() { X = fwd0 - 0.5, Y = yi, Yard = Math.Min(0.6 * wi, 6), Tripod = false,
+            new() { X = fwd0 - 0.5, Y = yi, Yard = Math.Min(0.6 * wi, 6),
                 Top = Math.Max(funTop + 5.0, fdH + Layout.LevelH * topLevel + FireControl.HoodH + 2.0) },
         };
         Layout.MastWeight(lay, masts[0], masts[0].Top!.Value, "Mast");
@@ -566,7 +566,7 @@ public sealed class CarrierStyle : Style
             lay.Occupy(Footprint.Rect(fx - fl / 2, -fw / 2, fx + fl / 2, fw / 2), 0, funTop, $"Funnel {i + 1}");
             Layout.AddFunnelWeights(lay, funnels[^1], funTop, mc, res.Depth);
         }
-        var masts = new List<Mast> { new() { X = bx0 - 1.0, Yard = Math.Min(0.3 * B, 8), Tripod = false } };
+        var masts = new List<Mast> { new() { X = bx0 - 1.0, Yard = Math.Min(0.3 * B, 8) } };
         if (Layout.LevelH * nTower + FireControl.HoodH + 2.0 > funTop + 6.0)
             masts[0].Top = Layout.LevelH * nTower + FireControl.HoodH + 2.0;
         Layout.MastWeight(lay, masts[0], masts[0].Top ?? funTop + 6.0, "Mast");

@@ -2,7 +2,7 @@ using Fleetwright.Shipgen;
 namespace Fleetwright.Sim.Ships;
 
 /// <summary>What an observation post is: a lookout at a masthead, a director (with its rangefinder), the bridge, aft
-/// control, or the conning tower's slits.</summary>
+/// control, the conning tower's slits, or a lookout in a mast's top.</summary>
 public enum EyeKind : byte
 {
     Masthead,
@@ -10,6 +10,7 @@ public enum EyeKind : byte
     Bridge,
     AftControl,
     ConningTower,
+    Top,
 }
 
 /// <summary>An observation post (docs/battle/plan.md step 3.2a): its component, where it is (ship-local x, y), its eye's
@@ -91,7 +92,12 @@ public static class Sight
             switch (x.Kind)
             {
                 case ComponentKind.Mast:
-                    eyes.Add(Eye(c, EyeKind.Masthead, i, x.X, x.Y, x.Bounds.Top - DesignerPlaceholders.MastLookoutUnderTopM - wl, 0));
+                    // a lookout in its top (fire-control.md F4: its floor + the eye's height), else at its head
+                    int top = TopOf(c, i);
+                    if (top >= 0)
+                        eyes.Add(Eye(c, EyeKind.Top, top, x.X, x.Y, comps[top].Bounds.Base + EyeOverFloorM - wl, 0));
+                    else
+                        eyes.Add(Eye(c, EyeKind.Masthead, i, x.X, x.Y, x.Bounds.Top - DesignerPlaceholders.MastLookoutUnderTopM - wl, 0));
                     break;
                 case ComponentKind.ConningTower:
                     eyes.Add(Eye(c, EyeKind.ConningTower, i, x.X, x.Y, x.Bounds.Top - SlitsUnderRoofM - wl, 0));
@@ -121,6 +127,19 @@ public static class Sight
                 eyes.Add(Eye(c, kind, i, (b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2, b.Base + EyeOverFloorM - wl, 0));
             }
         return [.. eyes.OrderByDescending(e => e.HeightM).ThenBy(e => e.Component)];
+    }
+
+    /// <summary>A mast's top: the lowest top component it carries (its id's "top" ones), or -1.</summary>
+    static int TopOf(ShipClass c, int mast)
+    {
+        var comps = c.components;
+        string prefix = c.componentIds[mast] + " top";
+        int best = -1;
+        for (int i = 0; i < comps.Length; i++)
+            if (comps[i].Kind == ComponentKind.Top && c.componentIds[i].StartsWith(prefix, StringComparison.Ordinal)
+                && (best < 0 || comps[i].Bounds.Base < comps[best].Bounds.Base))
+                best = i;
+        return best;
     }
 
     /// <summary>A director's rangefinders' make: its battery's fit's optics.</summary>

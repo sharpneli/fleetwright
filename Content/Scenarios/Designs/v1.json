@@ -335,5 +335,12 @@
  },
  "fittings": {
   "shock_grade": "G0"
- }
+ },
+ "masts": [
+  {
+   "kind": "pole",
+   "top": "spotting",
+   "top_radius_m": 0.9
+  }
+ ]
 }

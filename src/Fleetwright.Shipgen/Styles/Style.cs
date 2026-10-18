@@ -288,6 +288,7 @@ public abstract class Style
         errs.AddRange(Armour.ArmourErrors(design));
         errs.AddRange(FireControl.Validate(design));
         errs.AddRange(FireControlTemplates.Validate(design));
+        errs.AddRange(MastPlan.Validate(design));
         errs.AddRange(Ammunition.Validate(design));
         errs.AddRange(MaterialTemplates.Validate(design));
         errs.AddRange(SuperstructureErrors(design, this));

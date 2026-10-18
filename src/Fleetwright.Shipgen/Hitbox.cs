@@ -187,9 +187,17 @@ public static class Hitbox
                     bse = dk.Top;
             comps.Add(new Component
             {
-                Id = m.Id!, Kind = ComponentKind.Mast, Shape = "circle", X = Math.Round(x, 3), Y = Math.Round(y, 3), R = Mast.PoleR, Base = Math.Round(bse, 2),
-                Top = Math.Round(m.Top!.Value, 2),
+                Id = m.Id!, Kind = ComponentKind.Mast, Type = m.Kind, Shape = "circle", X = Math.Round(x, 3), Y = Math.Round(y, 3), R = m.R,
+                Base = Math.Round(bse, 2), Top = Math.Round(m.Top!.Value, 2),
             });
+            if (m.Platform is { } p)   // its top, a cylinder a tier
+                for (int i = 0; i < p.Tiers; i++)
+                    comps.Add(new Component
+                    {
+                        Id = $"{m.Id} top{(i == 0 ? "" : $" {i + 1}")}", Kind = ComponentKind.Top, Type = p.Kind, Shape = "circle", X = Math.Round(x, 3),
+                        Y = Math.Round(y, 3), R = Math.Round(p.TierR(i), 3), Base = Math.Round(p.Floor + i * MastTop.TierH, 2),
+                        Top = Math.Round(p.Floor + (i + 1) * MastTop.TierH, 2),
+                    });
         }
         foreach (var c in lay.Compartments.Where(c => c.Kind == RoomKind.Hangar))
             comps.Add(new Component

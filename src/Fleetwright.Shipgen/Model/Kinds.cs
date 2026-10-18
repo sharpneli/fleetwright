@@ -56,6 +56,8 @@ public enum ComponentKind : byte
     TorpedoTube,
     FlightDeck,
     HangarBay,
+    /// <summary>A mast's top: a platform or an enclosed top round the mast at its height (fire-control.md F4).</summary>
+    Top,
 }
 
 /// <summary>Where along the hull an armour strake or deck runs (the design's "ends" is a fore and an aft piece). The sim

@@ -30,8 +30,9 @@ public sealed class SideView
 
     public sealed record Funnel(string Id, Box B, long Pipes);
 
-    /// <summary>A mast's pole from its deck to its top, and the dressing on it.</summary>
-    public sealed record Mast(string Id, double X, double Y, double R, double Base, double Top, double Yard, bool Tripod, List<double[]>? Booms);
+    /// <summary>A mast's pole from its deck to its top, its kind, its top's tiers, and the dressing on it.</summary>
+    public sealed record Mast(string Id, double X, double Y, double R, double Base, double Top, double Yard, string Kind, List<double[]>? Booms,
+        List<TopView.MastTier> Tops);
 
     public sealed record Aa(string Id, string Type, double X, double Y, double R, double Base, double Top, double Dir);
 
@@ -176,7 +177,7 @@ public sealed class SideView
         var masts = comps.Where(c => c.Kind == ComponentKind.Mast).Select(c =>
         {
             var d = dressed[c.Id];
-            return new Mast(c.Id, c.X!.Value, c.Y!.Value, c.R!.Value, c.Base, c.Top, d.Yard, d.Tripod, d.Booms);
+            return new Mast(c.Id, c.X!.Value, c.Y!.Value, c.R!.Value, c.Base, c.Top, d.Yard, c.Type ?? "pole", d.Booms, TopView.TiersOf(comps, c.Id));
         }).ToList();
 
         var props = comps.Where(c => c.Kind == ComponentKind.Propeller).Select(c => new Propeller(c.Id, c.X!.Value, c.Y!.Value, c.Z!.Value, c.DiameterM!.Value / 2))
@@ -238,7 +239,11 @@ public sealed class SideView
                      .Concat(Barbettes.Select(b => b.B)).Concat(Casings).Concat(Hangars))
             Add(b.X0, b.X1, b.Base, b.Top);
         foreach (var m in Masts)
+        {
             Add(m.X - m.R, m.X + m.R, m.Base, m.Top);
+            foreach (var t in m.Tops)
+                Add(m.X - t.R, m.X + t.R, t.Base, t.Top);
+        }
         foreach (var a in AaMounts)
             Add(a.X - a.R, a.X + a.R, a.Base, a.Top);
         foreach (var p in Propellers)
