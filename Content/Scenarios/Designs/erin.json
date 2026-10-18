@@ -33,6 +33,7 @@
   {
    "calibre_mm": 343,
    "calibre_length": 42,
+   "rangefinder_m": 2.7,
    "barrels": 2,
    "armour_mm": 330,
    "rounds_per_gun": 100,

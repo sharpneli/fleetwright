@@ -68,7 +68,7 @@ public static class Hitbox
                 BroadphaseR = Math.Round(Math.Max(t.R, Geometry.TurretReach(t, 0.0)), 3), Rotating = m.Fixed is null, RestDeg = m.Rest,
                 ArcsDeg = m.Arcs, TraverseDeg = m.Traverse,
                 Local = new TurretLocal(R3(sh.Body), sh.Parts.Select(R3).ToList(), sh.Barrels.Select(R3).ToList()),
-                Magazine = NonEmpty(m.Magazine), Casemate = m.Casemate ? true : null,
+                Magazine = NonEmpty(m.Magazine), Casemate = m.Casemate ? true : null, RangefinderM = t.RangefinderM,
             };
             if (m.Kind is ComponentKind.Main or ComponentKind.Secondary)
             {

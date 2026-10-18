@@ -28,6 +28,7 @@
   {
    "calibre_mm": 280,
    "calibre_length": 45,
+   "rangefinder_m": 2.7,
    "barrels": 2,
    "armour_mm": 280,
    "rounds_per_gun": 100,

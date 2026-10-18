@@ -140,8 +140,12 @@ public class OrderPathTests(ITestOutputHelper output)
         for (; s < 1800 && Ship(w, 3).Helm == Helm.Route; s++)
             Run(w, 1);
         Assert.True(s < 1800, "the waypoint was reached");
-        Run(w, 2);
-        output.WriteLine($"the waypoint passed {s} s on; back in the line");
+        // the captain sees the route ended at his next look (steaming steady she's on rails, and he looks at their pace,
+        // not every second: 22 s for the Dreadnought of 2026-10-18), hands her back, and the admiral gives her her station
+        int back = 0;
+        for (; back < 60 && ai.Captains.Of(3).Order != CaptainOrder.Station; back++)
+            Run(w, 1);
+        output.WriteLine($"the waypoint passed {s} s on; back in the line {back} s after");
         Assert.Equal(Detachment.InLine, Detached(w, 3));
         Assert.Equal((CaptainOrder.Station, OrderSource.Superior), (ai.Captains.Of(3).Order, ai.Captains.Of(3).Source));
     }

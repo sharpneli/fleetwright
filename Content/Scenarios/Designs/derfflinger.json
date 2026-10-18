@@ -39,6 +39,7 @@
   {
    "calibre_mm": 305,
    "calibre_length": 50,
+   "rangefinder_m": 2.7,
    "barrels": 2,
    "armour_mm": 250,
    "rounds_per_gun": 100,

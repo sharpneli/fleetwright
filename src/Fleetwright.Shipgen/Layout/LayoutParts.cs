@@ -788,6 +788,7 @@ public sealed partial class Layout
         lay.Masts = masts;
         lay.FunTop = funTop;
         AddMountSponsons(lay, design);
+        FireControl.TurretRangefinders(lay, design, mounts);
         FireControl.SearchRadar(lay, design, blocks, masts, funTop);
         lay.Geo.Windage = LateralProfile(lay, blocks, funnels, masts, mounts, aaOut, funTop);
         return lay;

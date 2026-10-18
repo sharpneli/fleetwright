@@ -24,6 +24,7 @@
     "main": [{
         "calibre_mm": 305,
         "calibre_length": 52,
+        "rangefinder_m": 2.7,
         "barrels": 3,
         "rounds_per_gun": 100,
         "armour_mm": 203,

@@ -271,11 +271,14 @@ public static class Geometry
         });
     }
 
-    /// <summary>MakeTurretType for a battery, carrying its rounds_per_gun when it gives one and its mean shell mass.</summary>
+    /// <summary>MakeTurretType for a battery, carrying its rounds_per_gun when it gives one, its mean shell mass, and its
+    /// turrets' rangefinder where its gunhouses can hold one (bb, dp; the type's id says so).</summary>
     public static (string Id, TurretType T) BatteryType(BatteryInput b, string kind = "auto")
     {
         var (tid, t) = MakeTurretType(b.CalibreMm!.Value, b.CalibreLength!.Value, b.Barrels!.Value, kind);
-        return (tid, t with { RoundsPerGun = b.RoundsPerGun, ShellKg = b.ShellKg });
+        double? rf = b.RangefinderM is > 0 && t.Shape is "bb" or "dp" ? b.RangefinderM : null;
+        return (rf is { } base_ ? FormattableString.Invariant($"{tid}_rf{base_:0.#}") : tid,
+            t with { RoundsPerGun = b.RoundsPerGun, ShellKg = b.ShellKg, RangefinderM = rf });
     }
 
     public static (string Id, TurretType T) MakeTorpedoType(int n, bool fixed_ = false)
@@ -311,15 +314,15 @@ public static class Geometry
         BarrelRoot.TryGetValue(t.Shape, out var root) ? root * t.R + BarrelShown(t) : 0;
 
     // turret_shapes is a pure function of these values; each thread memoises its own (no shared mutable state)
-    [ThreadStatic] static Dictionary<(string, double, long, double, double, double), (TurretShapes Shapes, double Reach, double Inscribed)>? shapeCache;
+    [ThreadStatic] static Dictionary<(string, double, long, double, double, double, double), (TurretShapes Shapes, double Reach, double Inscribed)>? shapeCache;
 
     static (TurretShapes Shapes, double Reach, double Inscribed) ShapesAndReach(TurretType t, double? barrelLen = null)
     {
-        var key = (t.Shape, t.R, t.Barrels, barrelLen ?? t.BarrelLen, t.BarrelW, t.Spacing);
+        var key = (t.Shape, t.R, t.Barrels, barrelLen ?? t.BarrelLen, t.BarrelW, t.Spacing, t.RangefinderM ?? 0.0);
         shapeCache ??= [];
         if (!shapeCache.TryGetValue(key, out var v))
         {
-            var sh = MakeShapes(key.Item1, key.Item2, key.Item3, key.Item4, key.Item5, key.Item6);
+            var sh = MakeShapes(key.Item1, key.Item2, key.Item3, key.Item4, key.Item5, key.Item6, key.Item7);
             double reach = double.NaN;
             bool first = true;
             foreach (var p in sh.Body.Concat(sh.Parts.Concat(sh.Barrels).SelectMany(q => q)))
@@ -358,7 +361,15 @@ public static class Geometry
         return double.Hypot(a.X + f * dx, a.Y + f * dy);
     }
 
-    static TurretShapes MakeShapes(string shape, double r, long n, double bl, double bw, double sp)
+    /// <summary>A gunhouse rangefinder's hood across the rear (bb at -0.66..-0.48 r, dp likewise): its tube's base and an
+    /// end hood each side, so the bar spans the base + 0.5 m (fire-control.md F4b).</summary>
+    static List<Pt> RangefinderBar(double r, double baseM)
+    {
+        double hy = baseM / 2 + 0.25;
+        return [new(-0.66 * r, -hy), new(-0.48 * r, -hy), new(-0.48 * r, hy), new(-0.66 * r, hy)];
+    }
+
+    static TurretShapes MakeShapes(string shape, double r, long n, double bl, double bw, double sp, double rf = 0)
     {
         var result = new TurretShapes();
         double shown = bl * (BarrelShownK.TryGetValue(shape, out var kk) ? kk : 1.0);
@@ -392,12 +403,13 @@ public static class Geometry
                     }
                     pts.Add(new Pt(0.4 * r, -0.85 * r));
                     result.Body = pts;
-                    result.Parts = [[new(-0.66 * r, -1.02 * r), new(-0.48 * r, -1.02 * r), new(-0.48 * r, 1.02 * r), new(-0.66 * r, 1.02 * r)]];
+                    result.Parts = rf > 0 ? [RangefinderBar(r, rf)] : [];
                     result.Barrels = BarrelPolys(BarrelRoot["bb"] * r);
                     break;
                 }
             case "dp":
                 result.Body = RrectPolygon(-0.95 * r, -0.72 * r, 0.75 * r, 0.72 * r, 0.42 * r, 0.6 * r);
+                result.Parts = rf > 0 ? [RangefinderBar(r, rf)] : [];
                 result.Barrels = BarrelPolys(BarrelRoot["dp"] * r);
                 break;
             case "open":

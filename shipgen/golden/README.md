@@ -143,6 +143,12 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
 - 2026-10-18, directors in tops (docs/battle/fire-control.md F4b), on purpose: the Great War capital ships' main director
   stands on the foremast's top (`masts[0].director`). 13 design cases change (at most +0.08 % standard), with their SVGs
   and sprite.json. ShipDesign.Version 33.
+- 2026-10-18, turret rangefinders (docs/battle/fire-control.md F4b), on purpose: a battery's `rangefinder_m` gives its
+  gunhouses a hood spanning the base; the fixed bar every armoured turret carried at 1.02 r goes, so turrets reach less
+  aft and pack closer: 241 design cases change (median 0.0 %, -1 to -4 % standard where the bars set the spacing:
+  dreadnought -2.5 %, doom -3.9 %; gangut's 260 kt -5.8 %), with 241 SVG and 49 sprite.json (the rangefinder turrets'
+  ids gain `_rf`). The 50 capital ships from the Great War on carry them (2.7 or 4.6 m; later, the director's base).
+  ShipDesign.Version 34.
 
 ## Layout
 

@@ -23,8 +23,28 @@ public static class TurretArt
 
     /// <summary>A look's drawing of an armoured (bb) turret, in units of r: (body outline, rangefinder parts, front
     /// face x, front face half-width). Drawing only: the hitbox keeps Geometry.TurretShapesOf, and each outline stays
-    /// close to it.</summary>
-    public static (List<Pt> Body, List<List<Pt>> Parts, double Xf, double Hf) LookTurretBody(string look, double r)
+    /// close to it. The rangefinder's ears or bar only with a rangefinder (rangefinderM, its base): in the look's style,
+    /// reaching the hitbox bar's ends (the base + 0.5 m); a Victorian drum's sighting hoods are dressing, always.</summary>
+    public static (List<Pt> Body, List<List<Pt>> Parts, double Xf, double Hf) LookTurretBody(string look, double r, double rangefinderM = 0)
+    {
+        var (body, parts, xf, hf) = LookTurretShape(look, r);
+        if (look == "drum")
+            return (body, parts, xf, hf);
+        if (!(rangefinderM > 0))
+            return (body, [], xf, hf);
+        // stretch each part across: its outer edge at the bar's end, its own width kept
+        double end = rangefinderM / 2 + 0.25;
+        var scaled = parts.Select(p =>
+        {
+            double y0 = p.Min(q => q.Y), y1 = p.Max(q => q.Y);
+            bool across = y0 < 0 && y1 > 0;
+            return p.Select(q => across ? q with { Y = q.Y / Math.Max(-y0, y1) * end }
+                : q with { Y = Math.Sign(q.Y) * (end - (Math.Max(Math.Abs(y0), Math.Abs(y1)) - Math.Abs(q.Y))) }).ToList();
+        }).ToList();
+        return (body, scaled, xf, hf);
+    }
+
+    static (List<Pt> Body, List<List<Pt>> Parts, double Xf, double Hf) LookTurretShape(string look, double r)
     {
         // top: points from the front centreline round the port side (y < 0) to the rear
         List<Pt> Mirror(IEnumerable<(double X, double Y)> top)
@@ -125,7 +145,7 @@ public static class TurretArt
         string shape = t.Shape;
         if (shape == "bb" && look != "standard")
         {
-            var (pts, parts, xf, hf) = LookTurretBody(look, r);
+            var (pts, parts, xf, hf) = LookTurretBody(look, r, t.RangefinderM ?? 0);
             var body = Painter.Poly(pts);
             Barrels(BarrelRoot["bb"] * r);
             for (int i = 0; i < n; i++)   // gun ports

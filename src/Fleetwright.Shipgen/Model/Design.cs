@@ -157,6 +157,9 @@ public sealed record BatteryInput
     public double? ArmourMm { get; init; }
     public double? RoundsPerGun { get; init; }
     public string? Material { get; init; }
+    /// <summary>A rangefinder's base in each of its turrets, m (fire-control.md F4b: across the gunhouse's rear in a hood,
+    /// seeing only its turret's arcs); 0 or none: no rangefinder. Armoured and dual-purpose gunhouses only.</summary>
+    public double? RangefinderM { get; init; }
     /// <summary>The gun's muzzle velocity with its heaviest shell, m/s (Ammunition.DefaultMuzzleVelocity when absent).</summary>
     public double? MuzzleVelocityMs { get; init; }
     /// <summary>The outfit: the ammunition blocks it carries and their shares of the rounds (none: the sim's placeholder

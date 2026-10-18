@@ -622,7 +622,7 @@ public static class SideArt
         if (look == "drum")   // the roof's lip
             o.Add(P.Ln(new PathNode(Rect(Math.Min(front, back) - 0.08, Math.Max(front, back) + 0.08, b.Top - 0.12 * h, b.Top)).Fill(Painter.Shade(col, 1.1)), 0.7));
         // rangefinder ears stand out at the turret's sides near the rear: seen across, a box on the side
-        var parts = look == "standard" ? Geometry.TurretShapesOf(t).Parts : TurretArt.LookTurretBody(look, r).Parts;
+        var parts = look == "standard" ? Geometry.TurretShapesOf(t).Parts : TurretArt.LookTurretBody(look, r, t.RangefinderM ?? 0).Parts;
         foreach (var part in parts.Where(p => p.Min(q => q.Y) < 0).Take(1))
         {
             double xa = Math.Min(m.X + f * part.Min(q => q.X), m.X + f * part.Max(q => q.X)), xb = Math.Max(m.X + f * part.Min(q => q.X), m.X + f * part.Max(q => q.X));

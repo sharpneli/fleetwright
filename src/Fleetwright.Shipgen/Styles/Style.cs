@@ -50,6 +50,7 @@ public abstract class Style
             Lim(1, 2000, "secondary", "calibre_mm"), Lim(1, 200, "secondary", "calibre_length"),
             Lim(1, 20, "secondary", "barrels"), Lim(0, 100, "secondary", "per_side"), Lim(0, 200, "secondary", "count"),
             Lim(0, 1000, "main", "rounds_per_gun"), Lim(0, 1000, "secondary", "rounds_per_gun"),
+            Lim(0, 20, "main", "rangefinder_m"), Lim(0, 20, "secondary", "rangefinder_m"),
             Lim(0, 40, "torpedoes", "mounts"), Lim(1, 20, "torpedoes", "tubes"),
             Lim(0, 10, "torpedoes", "submerged", "per_side"), Lim(0, 4, "torpedoes", "submerged", "bow"),
             Lim(0, 4, "torpedoes", "submerged", "stern"), Lim(1, 20, "torpedoes", "submerged", "torpedoes_per_tube"),
@@ -120,6 +121,7 @@ public abstract class Style
         (["main", "calibre_length"], 0.0, false, null), (["secondary", "barrels"], 1, true, null),
         (["secondary", "calibre_mm"], 0.0, false, null), (["secondary", "calibre_length"], 0.0, false, null),
         (["main", "rounds_per_gun"], 0, true, null), (["secondary", "rounds_per_gun"], 0, true, null),
+        (["main", "rangefinder_m"], 0, true, null), (["secondary", "rangefinder_m"], 0, true, null),
     ];
 
     /// <summary>The objects a dotted path's parent reaches in the design's JSON: a list on the way checks every

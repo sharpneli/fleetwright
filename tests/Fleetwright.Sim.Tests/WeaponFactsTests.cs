@@ -228,9 +228,16 @@ public class WeaponFactsTests
         Assert.Equal(2, secs.Count(b => b.Side == Side.Starboard));
         foreach (var b in secs)
         {
+            // its own side's directors and the centreline's (her pair, or since the turret rangefinders shortened her,
+            // fire-control.md F4b, two on the centreline serving both sides)
             var dirs = bismarck.Links(b.Directors).ToArray();
-            Assert.Single(dirs);
-            Assert.EndsWith(b.Side == Side.Port ? "P" : "S", bismarck.ComponentId(bismarck.Directors[dirs[0]].Component));
+            Assert.NotEmpty(dirs);
+            foreach (int d in dirs)
+            {
+                var bx = bismarck.Components[bismarck.Directors[d].Component].Bounds;
+                double y = (bx.Y0 + bx.Y1) / 2;
+                Assert.True(Math.Abs(y) < 0.5 || (y < 0) == (b.Side == Side.Port), $"{bismarck.ComponentId(bismarck.Directors[d].Component)} on the wrong side");
+            }
             foreach (int m in bismarck.Links(b.Mounts))
                 Assert.Equal(b.Side == Side.Port, bismarck.Mounts[m].Y < 0);
         }

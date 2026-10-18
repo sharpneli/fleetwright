@@ -11,8 +11,11 @@ namespace Fleetwright.Shipgen.Tests;
 /// png-check` runs every design.</summary>
 [Trait("Category", "Gpu")]
 [Collection("Gpu")]   // one GPU device at a time
-public class BakeTests
+public partial class BakeTests
 {
+    [System.Text.RegularExpressions.GeneratedRegex(@"_rf[0-9.]+$")]
+    private static partial System.Text.RegularExpressions.Regex RangefinderSuffix();
+
     static readonly string Root = Paths.Shipgen();
 
     [Fact]
@@ -27,8 +30,9 @@ public class BakeTests
             var sp = RenderGolden.Draw(c, outline: 1);   // Python's full-weight inks
             var b = ShipBake.Bake(sp, gpu);
             string g = Paths.Shipgen("golden", "sprite", c.Name);
-            foreach (var (tid, im) in b.Turrets)
-                Assert.True(ShipBake.CoverageIoU(Png.Load(Path.Combine(g, "turrets", tid + ".png")), im) >= 0.965, $"{c.Name} {tid}");
+            foreach (var (tid, im) in b.Turrets)   // a turret with a rangefinder (fire-control.md F4b) against Python's same turret
+                Assert.True(ShipBake.CoverageIoU(Png.Load(Path.Combine(g, "turrets", RangefinderSuffix().Replace(tid, "") + ".png")), im) >= 0.965,
+                    $"{c.Name} {tid}");
             var rects = sp.Meta.MipRects;
             var atlas = Mips.Atlas(b.Hull, rects, max: false);
             Assert.Equal(b.Hull.Width * 3 / 2, atlas.Width);

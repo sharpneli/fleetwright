@@ -304,6 +304,24 @@ public static class FireControl
             Points = dk.Points,
         }).ToList();
 
+    /// <summary>A gunhouse rangefinder's weight, t, on each mount with one (fire-control-designer.md §3.4): the instrument
+    /// with its mounting, three times the bare instrument's (its battery's optics' mass_kg_m2 times the base squared, else
+    /// 27), and its hood as a box of 6 mm plate (B + 0.6 wide, 1.6 deep, 1.9 high), at the gunhouse's roof.</summary>
+    public static void TurretRangefinders(Layout lay, Design design, List<Mount> mounts)
+    {
+        foreach (var m in mounts)
+        {
+            if (m.T.RangefinderM is not double b)
+                continue;
+            string bat = m.Kind == ComponentKind.Main ? "main" : "secondary";
+            double massK = FireControlTemplates.FitOf(design.FireControl?.Of(bat)).Select(n => FireControlTemplates.Resolve(design, n)?.Optics?.MassKgM2)
+                .FirstOrDefault(k => k is > 0) ?? 27.0;
+            double instrument = massK * b * b / 1000.0, w = b + 0.6, d = 1.6, h = 1.9;
+            double hood = (2 * w * h + 2 * d * h + w * d) * 0.006 * Weight.Steel;
+            lay.Weights.Add(new Weight($"Rangefinder ({m.Id})", "fire_control", 3 * instrument + hood, m.X, ZRel.Deck(m.Top)));
+        }
+    }
+
     /// <summary>The search radar's weight on the foremast's top, or 1 m over the highest roof on a ship without masts.</summary>
     public static void SearchRadar(Layout lay, Design design, List<Block> blocks, List<Mast> masts, double funTop)
     {

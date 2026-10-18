@@ -20,6 +20,8 @@ public sealed record TurretType
     public required double CalibreMm { get; init; }
     public double? CalibreLength { get; init; }
     public double? RoundsPerGun { get; init; }
+    /// <summary>The base of the rangefinder in its gunhouse's hood, m (fire-control.md F4b), or none.</summary>
+    public double? RangefinderM { get; init; }
     /// <summary>Its battery's mean shell mass, kg (the outfit's, BatteryInput.ShellKg); null: the old curve by calibre
     /// (AA mounts, which have no outfit).</summary>
     [JsonIgnore] public double? ShellKg { get; init; }
