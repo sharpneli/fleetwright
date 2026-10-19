@@ -296,6 +296,7 @@
   "GranularDecayC": 96000,
   "FuelShareDefault": 0.8,
   "ProtectiveBunkersLast": true,
+  "CoalFragmentDragL1": 0.75,
   "UnderwaterReachDecays": 3,
   "FuzeStartsOnWater": true,
   "WreckRadiusK": 1.0,

@@ -143,6 +143,41 @@ public class ContentsTests(ITestOutputHelper output)
         Assert.True(runs > 0);
     }
 
+    /// <summary>Coal catches a burst's fragments (C3b; damage/09 §4): from a burst in a wing bunker to its inboard wall,
+    /// the way under the coal counts as the air that slows them as much (L₁ 247 in air against 0.75 in coal, per m^⅓);
+    /// half of it under the coal, half that; over it, none.</summary>
+    [Fact]
+    public void Coal_catches_fragments()
+    {
+        var target = Fleet.Scenario("hessen");
+        int room = -1;
+        for (int i = 0; i < target.Rooms.Length && room < 0; i++)
+            if (target.Stowages[i].Some && target.Stowages[i].Kind == MediumKind.Granular)
+                room = i;
+        int cell = target.Links(target.Rooms[room].Cells)[0];
+        var box = target.Cells[cell].Box;
+        var range = new ShotRange(Settings);
+        var shooter = Fleet.Scenario("iron_duke");
+        var shell = shooter.Loadout.ShellTypes[shooter.Loadout.Fires(0)];
+        range.Fire(target, shell, "", 20, 10_000, 90, new P3(0, 0, 100), 1);   // a miss: only to make her
+        var k = range.Condition!;
+        Array.Fill(k.Level, double.NaN);
+        double mid = (box.Base + box.Top) / 2, x = (box.X0 + box.X1) / 2;
+        var p = new P3(x, (box.Y0 + box.Y1) / 2, mid);
+        var wall = new P3(x, box.Y0 + 0.01 < 0 ? box.Y1 : box.Y0, mid);
+        double rr = Math.Abs(wall.Y - p.Y), perM = Fragments.DragL1 / Settings.CoalFragmentDragL1 - 1;
+        Assert.Equal(0, Effects.MediumDragM(target, k, cell, p, wall, Settings));
+        k.Level[room] = box.Top + 1;   // the coal over them both
+        Assert.Equal(rr * perM, Effects.MediumDragM(target, k, cell, p, wall, Settings), 6);
+        var high = wall with { Z = mid + 2 };   // up through its surface halfway
+        k.Level[room] = mid + 1;
+        double way = Math.Sqrt(rr * rr + 4);
+        Assert.Equal(way / 2 * perM, Effects.MediumDragM(target, k, cell, p, high, Settings), 6);
+        k.Level[room] = mid - 0.5;
+        Assert.Equal(0, Effects.MediumDragM(target, k, cell, p, wall, Settings));
+        output.WriteLine($"{rr:0.0} m of coal is {rr * perM:0} m of air to its fragments");
+    }
+
     /// <summary>Heavy shells plunging into a destroyer's engine room (under her waterline: only falling shells reach it):
     /// most strike something there (its band, its λ), and a fair share burst on it (damage/09 §2.4: WDR 51, Johnston);
     /// the rest go on through her.</summary>

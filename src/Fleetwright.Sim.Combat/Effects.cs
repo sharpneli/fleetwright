@@ -469,7 +469,8 @@ public static class Effects
             double raw = Armour(c, i);
             // the fragments into it, through its armour and its own plating: any at all and its armour doesn't box it; its
             // vitals' share of them damage it (one draw for both, the second a subset of the first)
-            double into = share * (frag?.Hits(p, fdir, t.BurstMs, comp.Bounds, around + PartMild(c, i, raw)) ?? 0);
+            double into = share * (frag?.Hits(p, fdir, t.BurstMs, comp.Bounds, around + PartMild(c, i, raw), default,
+                inHull ? MediumDragM(c, k, cell, p, Nearest(comp.Bounds, p), s) : 0) ?? 0);
             double u = into > 1e-4 ? r.NextDouble() : 1;
             bool pierced = u < 1 - Math.Exp(-into), struck = u < 1 - Math.Exp(-into * s.PartVital[Math.Min((int)comp.Kind, s.PartVital.Length - 1)]);
             if (raw > 0 && !pierced)
@@ -523,7 +524,9 @@ public static class Effects
                     _ => 0,
                 } + InclinedMild(c, p, Nearest(there, p));
                 var normal = n.Join == JoinKind.Deck ? new P3(0, 0, 1) : Touch(c.Cells[cell].Box, there) ? new P3(0, 1, 0) : new P3(1, 0, 0);
-                double into = share * (frag?.Hits(p, fdir, t.BurstMs, there, join, normal) ?? 0);
+                // the coal, oil or water they go through in the burst's own space on the way (C3b)
+                double drag = MediumDragM(c, k, cell, p, Nearest(there, p), s);
+                double into = share * (frag?.Hits(p, fdir, t.BurstMs, there, join, normal, drag) ?? 0);
                 if (!(into > 1e-4 && r.NextDouble() < 1 - Math.Exp(-into)))
                     continue;
                 if (n.Join != JoinKind.Open)
@@ -535,7 +538,7 @@ public static class Effects
                     ref readonly var comp = ref comps[j];
                     if (j == part || !Overlaps(comp.Bounds, there) || Overlaps(comp.Bounds, cellBox) || Distance(c, j, p) <= rw)
                         continue;
-                    double hits = share * (frag?.Hits(p, fdir, t.BurstMs, comp.Bounds, join + PartMild(c, j, Armour(c, j)), normal) ?? 0);
+                    double hits = share * (frag?.Hits(p, fdir, t.BurstMs, comp.Bounds, join + PartMild(c, j, Armour(c, j)), normal, drag) ?? 0);
                     if (hits > 1e-4 && r.NextDouble() < 1 - Math.Exp(-hits * s.PartVital[Math.Min((int)comp.Kind, s.PartVital.Length - 1)]))
                         Count(ref res, k, j, k.Harm(j) ? k.State[j] : PartState.Ok);
                 }
@@ -1128,6 +1131,45 @@ public static class Effects
     }
 
     /// <summary>The point of a box nearest p.</summary>
+    /// <summary>What a burst's fragments go through in its own space from p to a point there (docs/battle/shell-contents.md
+    /// C3b), as the air that slows them as much over the air they're counted in already (as a near miss's water, E7):
+    /// the stretch below its room's level through what the room stows (coal: <see cref="SimSettings.CoalFragmentDragL1"/>,
+    /// a liquid the sea's <see cref="SimSettings.WaterDragL1"/>, each by its density), and the flooding's water above that
+    /// up to its own level.</summary>
+    internal static double MediumDragM(ShipClass c, ShipCondition k, int cell, P3 p, P3 to, SimSettings s)
+    {
+        if (cell < 0)
+            return 0;
+        ref readonly var row = ref c.Cells[cell];
+        int room = row.Room;
+        double zRoom = room >= 0 && room < k.Level.Length ? k.Level[room] : double.NaN;
+        double cap = row.VolumeM3 * row.Permeability, water = cell < k.WaterM3.Length ? k.WaterM3[cell] : 0;
+        double zSea = water > 0 && cap > 0 ? row.Box.Base + Math.Min(water / cap, 1) * (row.Box.Top - row.Box.Base) : double.NaN;
+        if (double.IsNaN(zRoom) && double.IsNaN(zSea))
+            return 0;
+        double dx = to.X - p.X, dy = to.Y - p.Y, dz = to.Z - p.Z, rr = Math.Sqrt(dx * dx + dy * dy + dz * dz), drag = 0;
+        if (!double.IsNaN(zRoom))
+        {
+            ref readonly var st = ref c.Stowages[room];
+            double l1 = st.Kind == MediumKind.Granular ? s.CoalFragmentDragL1 * Stowage.CoalRho / st.Rho : s.WaterDragL1 * WaterRun.SeaRho / st.Rho;
+            drag += Within(p.Z, to.Z, double.NegativeInfinity, zRoom) * rr * (Fragments.DragL1 / l1 - 1);
+        }
+        if (!double.IsNaN(zSea) && !(zSea <= zRoom))
+            drag += Within(p.Z, to.Z, double.IsNaN(zRoom) ? double.NegativeInfinity : zRoom, zSea) * rr * (Fragments.DragL1 / s.WaterDragL1 - 1);
+        return drag;
+
+        // the share of a straight way from height za to zb that lies between lo and hi
+        static double Within(double za, double zb, double lo, double hi)
+        {
+            if (Math.Abs(zb - za) < 1e-9)
+                return za >= lo && za <= hi ? 1 : 0;
+            double a = (lo - za) / (zb - za), b = (hi - za) / (zb - za);
+            if (a > b)
+                (a, b) = (b, a);
+            return Math.Max(Math.Min(b, 1) - Math.Max(a, 0), 0);
+        }
+    }
+
     static P3 Nearest(in Box b, P3 p) => new(Math.Clamp(p.X, b.X0, b.X1), Math.Clamp(p.Y, b.Y0, b.Y1), Math.Clamp(p.Z, b.Base, b.Top));
 
     /// <summary>How far a point is from a part: a mount's turret (a cylinder about its pivot), else its box.</summary>

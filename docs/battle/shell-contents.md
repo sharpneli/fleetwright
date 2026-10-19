@@ -271,6 +271,16 @@ The TDS design key `fill` (liquid or void) keeps its name: it says what's in a l
   - **Done 2026-10-19 with C2** (above).
 - **C3b Splinters,** measured on its own because it moves E1's fragment counts. Coal along a fragment's way through a
   bunker stops it: the same medium at the fragment's own size, e-fold about 15 sizes.
+  - **Done 2026-10-19.** A burst's fragments to the parts in its space and to the spaces next door
+    (`Effects.Burst`) go through what its space stows below its level, and the flooding's water above that, counted
+    as the air that slows them as much (`Effects.MediumDragM`, as E7 counts a near miss's water): coal e-folds them every
+    0.75·m^⅓ m (`SimSettings.CoalFragmentDragL1`: 15 sizes of a steel splinter, 09's [EST]), a liquid the sea's 0.3·m^⅓
+    by density, against the air's 247·m^⅓. 1.4 m of coal is 455 m of air to them: a 20 mm splinter keeps about 1% of
+    its speed, so it's stopped within the metre 09 gives. Test: `ContentsTests.Coal_catches_fragments`.
+  - **What it does:** little yet, since few bursts happen in coal. An observation: Shipgen sizes coal for the design's
+    range, so Hessen's wing bunkers are only 66% full at full load (her coal tops out at −3.4 m against her −3.8 m
+    waterline), and a waterline hit crosses the empty top of the bunker. Real coal-burners carried far more than their
+    normal load. Left for the stowage (Shipgen), not tuned here.
 
 ### C4 The rest
 

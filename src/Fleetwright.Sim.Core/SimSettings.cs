@@ -850,6 +850,11 @@ public sealed record SimSettings
     /// practice (damage/09 §4, a doctrine: [UNCERTAIN] as a found rule); off, every fuel space falls alike.</summary>
     public bool ProtectiveBunkersLast { get; init; } = true;
 
+    /// <summary>A burst's fragments through coal slow 1/e every this·m^⅓ m (docs/battle/shell-contents.md C3b; damage/09
+    /// §4: a tumbling splinter's e-fold about 15 of its own sizes [EST], a steel cube's side 0.050·m^⅓): coal is
+    /// "quite effective at catching fragments". Through a liquid the sea's <see cref="WaterDragL1"/>, by density.</summary>
+    public double CoalFragmentDragL1 { get; init; } = 0.75;
+
     /// <summary>The hit query follows a shell this many decay lengths on under the water (3: down to 5% of its speed; a
     /// 15" shell 29 m). Physical, not tuned to historical loss rates: without damage control more ships flood and sink
     /// than history saw, and that's accepted (user, 2026-10-16). The fuze started on the water
