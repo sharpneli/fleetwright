@@ -140,34 +140,12 @@ public static class GivenHits
         SimSettings settings, Action<int, HitPath, TerminalResult, EffectsResult>? each = null, double settleS = 0,
         FallOutRule? fallOut = null)
     {
-        var table = new BallisticTable(BallisticKey.Of(shell, maxElevationDeg));
-        double e = table.ElevationFor(rangeM, 10);
-        if (double.IsNaN(e))
-            throw new ArgumentException($"{rangeM:0} m is beyond the gun's reach");
-        var fall = table.Fall(e, 10);
-        var rep = new Report { FallDeg = fall.FallDeg, StrikeMs = fall.StrikeMs, PartsOut = new int[target.NodeCount] };
-
-        // the shell's flight in the ship's frame, and two axes across it
-        double b = double.DegreesToRadians(aspectDeg), f = double.DegreesToRadians(fall.FallDeg);
-        var dir = new P3(-Math.Cos(b) * Math.Cos(f), -Math.Sin(b) * Math.Cos(f), -Math.Sin(f));
-        var u = Normalize(Cross(dir, new P3(0, 0, 1)));
-        var v = Cross(u, dir);
-        var box = target.Solids.Bounds;
-        double u0 = double.MaxValue, u1 = double.MinValue, v0 = double.MaxValue, v1 = double.MinValue;
-        foreach (double x in (ReadOnlySpan<double>)[box.X0, box.X1])
-            foreach (double y in (ReadOnlySpan<double>)[box.Y0, box.Y1])
-                foreach (double z in (ReadOnlySpan<double>)[box.Base, box.Top])
-                {
-                    var p = new P3(x, y, z);
-                    (u0, u1, v0, v1) = (Math.Min(u0, Dot(p, u)), Math.Max(u1, Dot(p, u)), Math.Min(v0, Dot(p, v)), Math.Max(v1, Dot(p, v)));
-                }
-        double far = 2 * target.Solids.Radius + 50;
-
+        var aim = new Aim(target, shell, maxElevationDeg, rangeM, aspectDeg, settings);
+        var rep = new Report { FallDeg = aim.Fall.FallDeg, StrikeMs = aim.Fall.StrikeMs, PartsOut = new int[target.NodeCount] };
         var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), seed, settings);
         int cls = w.Ships.AddClass(target);
         var path = new HitPath();
         var rng = RandomStream.Named(seed, "given hits");
-        double reach = WaterRun.ReachM(shell, fall.StrikeMs, settings);
         int entity = 0;
         while (rep.Hits < n)
         {
@@ -180,33 +158,9 @@ public static class GivenHits
             bool hitMagazine = false;
             for (int k = 0; k < perShip && rep.Hits < n; k++)
             {
-                // a point across the line of flight, until one meets the ship, its waterline where it floats now
-                var water = HitQuery.WaterOf(target, w.Ships.Store.Combat.Condition(slot).Attitude);
-                P3 at;
-                double run;
-                while (true)
-                {
-                    double a = rng.NextDouble(u0, u1), c = rng.NextDouble(v0, v1);
-                    var mid = new P3(u.X * a + v.X * c, u.Y * a + v.Y * c, u.Z * a + v.Z * c);
-                    ShipTracer.Trace(target, Add(mid, dir, -far), Add(mid, dir, far), [], water, path);
-                    int first = First(path);
-                    if (first < 0)
-                        continue;
-                    var x = path.Crossings[first];
-                    // the sea first: a miss, unless it meets the ship within the shell system's reach under the water
-                    run = WaterRun.RunM(path, first);
-                    if (run > reach)
-                        continue;
-                    at = x.Point;
-                    string where = Where(target, x);
-                    rep.Struck[where] = rep.Struck.GetValueOrDefault(where) + 1;
-                    break;
-                }
-                var hit = new Hit
-                {
-                    Ship = entity, Ms = w.Time.Ms, Point = at, Direction = dir, SpeedMs = fall.StrikeMs, WaterRunM = run, Source = HitSource.Shell, Shell = shell,
-                    ShellType = -1,
-                };
+                var hit = aim.Next(w, entity, slot, path, ref rng, out string where);
+                double run = hit.WaterRunM;
+                rep.Struck[where] = rep.Struck.GetValueOrDefault(where) + 1;
                 var k0 = w.Ships.Store.Combat.Condition(slot);
                 var before = (PartState[])k0.State.Clone();
                 w.Damage.Strike(w, hit);
@@ -277,6 +231,64 @@ public static class GivenHits
             After(rep, target, w, entity, slot, settleS, fallOut, hitMagazine);
         }
         return rep;
+    }
+
+    /// <summary>A shell's fall on a class (the bench's): its flight at a range from a bearing off the target's bow, in the
+    /// ship's frame, and the points across it a hit is drawn from: uniformly over the ship's outline as the shell sees it,
+    /// until a line meets her (a miss in the sea first, unless within the shell's reach under the water).</summary>
+    public sealed class Aim
+    {
+        public readonly ShipClass Target;
+        public readonly ShellTypeRow Shell;
+        public readonly (double Range, double Tof, double FallDeg, double StrikeMs) Fall;
+        public readonly P3 Dir;
+        readonly P3 u, v;
+        readonly double u0, u1, v0, v1, far, reach;
+
+        public Aim(ShipClass target, ShellTypeRow shell, double maxElevationDeg, double rangeM, double aspectDeg, SimSettings settings)
+        {
+            (Target, Shell) = (target, shell);
+            (Dir, Fall) = Flight(shell, maxElevationDeg, rangeM, aspectDeg);
+            // two axes across the line of flight, and the ship's outline on them
+            u = Normalize(Cross(Dir, new P3(0, 0, 1)));
+            v = Cross(u, Dir);
+            var box = target.Solids.Bounds;
+            (u0, u1, v0, v1) = (double.MaxValue, double.MinValue, double.MaxValue, double.MinValue);
+            foreach (double x in (ReadOnlySpan<double>)[box.X0, box.X1])
+                foreach (double y in (ReadOnlySpan<double>)[box.Y0, box.Y1])
+                    foreach (double z in (ReadOnlySpan<double>)[box.Base, box.Top])
+                    {
+                        var p = new P3(x, y, z);
+                        (u0, u1, v0, v1) = (Math.Min(u0, Dot(p, u)), Math.Max(u1, Dot(p, u)), Math.Min(v0, Dot(p, v)), Math.Max(v1, Dot(p, v)));
+                    }
+            far = 2 * target.Solids.Radius + 50;
+            reach = WaterRun.ReachM(shell, Fall.StrikeMs, settings);
+        }
+
+        /// <summary>The next hit on a ship now, its waterline where it floats; where it struck (the bench's label).</summary>
+        public Hit Next(World w, int entity, int slot, HitPath path, ref RandomStream rng, out string where)
+        {
+            var water = HitQuery.WaterOf(Target, w.Ships.Store.Combat.Condition(slot).Attitude);
+            while (true)
+            {
+                double a = rng.NextDouble(u0, u1), c = rng.NextDouble(v0, v1);
+                var mid = new P3(u.X * a + v.X * c, u.Y * a + v.Y * c, u.Z * a + v.Z * c);
+                ShipTracer.Trace(Target, Add(mid, Dir, -far), Add(mid, Dir, far), [], water, path);
+                int first = First(path);
+                if (first < 0)
+                    continue;
+                var x = path.Crossings[first];
+                double run = WaterRun.RunM(path, first);
+                if (run > reach)
+                    continue;
+                where = Where(Target, x);
+                return new Hit
+                {
+                    Ship = entity, Ms = w.Time.Ms, Point = x.Point, Direction = Dir, SpeedMs = Fall.StrikeMs, WaterRunM = run, Source = HitSource.Shell,
+                    Shell = Shell, ShellType = -1,
+                };
+            }
+        }
     }
 
     /// <summary>Where along the path the shell first met armour over 9" (229 mm) before it stopped; NaN for none.</summary>

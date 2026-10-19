@@ -173,6 +173,11 @@ public static class Program
             one space burning unfought (docs/battle/fire.md B0) through the game's fire: damage/17 §9 T2's spaces with
             fire_ref.py's flashover, peak and hours beside them, at a 1 s and a 15 s step; then a big space's rooms
             joining one by one, and a weather deck
+        shipgen fire-history [--runs N] [--case TEXT] [--hours H] [--trace] [--settings FILE]
+            fire's yardstick (docs/battle/fire.md B5; damage/17 §9 T6): the record's cases, a ship of its kind hit by its
+            weight of fire at random over its minutes through the world's damage system (parties, the main, smoke,
+            magazines), run on for hours (default each case's): ablaze, all out, still burning, water, how she ended;
+            N runs a case (default 20), --case a case by name
         shipgen templates
             writes the shell, explosive, material and fittings catalogues (ShellTemplates, Explosives, MaterialTemplates,
             Fittings) out: Content/Templates/shells.json, explosives.json, materials.json and fittings.json,
@@ -299,6 +304,8 @@ public static class Program
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
                     new BurstBench.Options(a.Get("room"), D(a, "filler", 0), a.Get("explosive") ?? "TNT", D(a, "calibre", 152))),
                 "burn" => BurnBench.Run(a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json")),
+                "fire-history" => FireHistory.Run(a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), a.Int("runs", 20),
+                    a.Get("case"), a.Get("hours") is null ? null : D(a, "hours", 4), n => LoadDesign(Resolve(a, n)), a.Has("trace")),
                 "frag" => FragBench.Run(a.Positional.Count > 0 ? [.. a.Positional, "--calibre", a.Get("calibre") ?? "152"] : []),
                 "weapons" => Weapons.Run(a.Positional, a.Has("research"), n => LoadDesign(File.Exists(n) ? n : Path.Combine(Root(a), "designs", n + ".json"))),
                 "matchup" => MatchupBench.Run(a.Positional.ElementAtOrDefault(0) ?? "arethusa", a.Positional.ElementAtOrDefault(1) ?? "v25",
