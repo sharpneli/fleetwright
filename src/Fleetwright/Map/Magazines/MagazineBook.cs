@@ -66,6 +66,15 @@ public sealed class MagazineBook : IThrownTurrets
     /// <summary>The kept entries, oldest first.</summary>
     public ref readonly Entry this[int i] => ref ring[(head - count + i + Capacity) % Capacity];
 
+    /// <summary>A new world: nothing seen, and the events cached by its classes' ids dropped (a new world's registry
+    /// numbers them afresh). Its clock may start before the old one's last blast.</summary>
+    public void Clear()
+    {
+        Array.Clear(ring);
+        (head, count, lastMs) = (0, 0, long.MinValue);
+        events.Clear();
+    }
+
     /// <summary>A frame: the clocks advanced by <paramref name="dtS"/> real seconds at the clock's
     /// <paramref name="speed"/> (0 paused), the snapshot's new events taken (newest first in it), the spent let go.</summary>
     public void Update(BlastsView v, long drawMs, double speed, double dtS, Func<int, ShipClass?> classOf, ShipsView? ships = null,

@@ -173,6 +173,19 @@ public class MagazineTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void A_new_world_takes_its_blasts_though_the_old_ones_were_later()
+    {
+        // a scenario loaded again starts its clock where the old world's did: its blasts come before the old world's last
+        var book = new MagazineBook();
+        book.Update(Blasts((600_000, 1)), 600_000, 1, 0.016, ClassOf);
+        book.Clear();
+        Assert.Equal(0, book.Count);
+        book.Update(Blasts((1000, 1)), 1000, 1, 0.016, ClassOf);
+        Assert.Equal(1, book.Count);
+        Assert.Equal(1000, book[0].Ms);
+    }
+
+    [Fact]
     public void A_frame_allocates_nothing()
     {
         var book = new MagazineBook();

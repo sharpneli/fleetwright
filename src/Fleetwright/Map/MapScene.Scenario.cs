@@ -35,6 +35,7 @@ public sealed unsafe partial class MapScene
         shipRenderer.Splashes.Book.Clear();
         shipRenderer.Flashes.Book.Clear();
         shipRenderer.Smoke.Book.Clear();
+        shipRenderer.Magazines.Book.Clear();
         torpedoBook.Clear();
         hitBook.Clear();
         hitMarks.Clear();
