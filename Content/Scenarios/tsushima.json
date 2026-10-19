@@ -19,7 +19,7 @@
   "camera": [34.11, 130.07, 40],
   "sides": ["Russia", "Japan"],
   // the ships' orders before action for fire (docs/battle/fire.md B1; damage/17 §8.3): stripped, doors, decks wetted
-  "readiness": { "Russia": "prepared", "Japan": "prepared" },
+  "readiness": { "Russia": "prepared, cluttered", "Japan": "prepared" },
   // how her crews fight fire (docs/battle/fire.md B4): the fire watch, the parties, the main
   "firefighting": { "Russia": "russian-1905", "Japan": "prepared-1894" },
   "player": "Russia",

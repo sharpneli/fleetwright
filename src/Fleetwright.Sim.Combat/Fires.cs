@@ -812,8 +812,10 @@ public static class Fires
                 k.Fire[i].Watch = 2;
     }
 
-    /// <summary>The space's fire load now, MJ/m²: as fitted, or stripped by her orders (<see cref="ShipCondition.Readiness"/>).</summary>
-    public static double Load(in FireSpaceRow row, ShipCondition k) => k.Readiness.Stripped ? row.StrippedMJm2 : row.LoadMJm2;
+    /// <summary>The space's fire load now, MJ/m²: as fitted, or stripped by her orders (<see cref="ShipCondition.Readiness"/>);
+    /// a weather deck with what's piled on it besides (her orders' deck load: B5's clutter).</summary>
+    public static double Load(in FireSpaceRow row, ShipCondition k) =>
+        (k.Readiness.Stripped ? row.StrippedMJm2 : row.LoadMJm2) + (row.Kind == FireSpaceKind.Deck ? k.Readiness.DeckLoadMJm2 : 0);
 
     /// <summary>A space's openings' A√H, m^2.5: leakage, its doors (a cell's by her orders, two a part's), and a cell's holes
     /// to the sea and between spaces (what bursts opened in its decks and bulkheads, and tore), each lot as a square

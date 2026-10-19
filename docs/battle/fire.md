@@ -1,5 +1,5 @@
 # Plan: fire (a 4.5 deepening)
-Status: **agreed with the user 2026-10-18** ("Decided" below); B0, B1, B3 and B4 done 2026-10-18 (the order since B1: B3, B4, then B2, decision 5), B2 done 2026-10-19; B5 next    Updated: 2026-10-19
+Status: **agreed with the user 2026-10-18** ("Decided" below); B0, B1, B3 and B4 done 2026-10-18 (the order since B1: B3, B4, then B2, decision 5), B2 and B5 done 2026-10-19 (B5 with open items: the plan is complete)    Updated: 2026-10-19
 
 The fine-tune pass for fire: what happens after a fire starts. Its research is `damage/17_fire.md` (with `fire_ref.py`),
 on top of `damage/10_damage_control_holistic.md` §2 (fire, ammunition in a fire, the fire main) and `09_damage_control.md`
@@ -458,14 +458,50 @@ from B0's bench on.
   side burst outside on it, which lights nothing unless at deck level. The record's fires were on and around her upper
   deck: boats, hammocks, deck coal, paint, wooden decks (the deck clutter below). The same holds the Yalu's unprepared
   cruiser and Orel's water (fires in parts and on deck run off).
-- Cost per burning space and per ship; the squadrons scenario's frame time.
-- What the AI and the matchup read about fire, if anything (a ship burning beyond help).
-- **Later (the user, 2026-10-18): deck clutter on a long voyage.** The Russians at Tsushima steamed in with cluttered
-  decks after the voyage round Africa: coal piled on the upper decks (the Borodinos took ~2,200 t against a design 1,100,
-  17 §2.1), stores, hammocks, boats. B0's starts on Borodino fell to 4% a hit against 17 §9 T6's ~19 fires in 60 hits,
-  with the bunkers rightly burning nothing. A scenario's ship could carry deck cargo as a load on its weather-deck strips
-  (and its weight), on top of the outfit; bulk coal itself burns poorly from a shell (17 §2.1: dust and stability more
-  than flame), so what burns is the rest of the clutter. Not built; ignored until the anchors.
+- **Deck clutter (the user, 2026-10-18; chosen 2026-10-19 over bigger fire spaces and bigger seats):** the Russians at
+  Tsushima steamed in with cluttered decks after the voyage round Africa: coal piled on the upper decks (the Borodinos
+  took ~2,200 t against a design 1,100, 17 §2.1), stores, hammocks, boats; bulk coal burns poorly from a shell, so what
+  burns is the rest of it. **Built:** a readiness's deck load (`FireReadiness.DeckLoadMJm2`, on the weather-deck strips
+  over the outfit's: `Fires.Load`), and a preset "prepared, cluttered" (stripped below, doors open, wetted, +300 MJ/m²
+  [EST: a wetted 1905 deck then sustains a fire, 650 × 0.6 over 17 §5.3's 300]) for Tsushima's Russians (the scenario
+  and the bench). And a burst above the hull, from just under the deck's edge to `FireDeckReachM` (5 m [EST]) over it,
+  also rolls for its section's weather deck as one outside (`Effects.Start`: its burning pieces fall on what's piled
+  there). Not built: the clutter's weight (the hydrostatics have no load but water yet).
+- **What it gave:** Suvorov's fires lit 10 → 11 a ship, ablaze in 0 → 5% of runs; her decks now light (one or two a run)
+  but grow slowly in the open (~1 MW in 3-4 min) and her parties arrive with 350-700 L/min and beat them. Tried and
+  not kept (20 runs each): a cluttered deck growing fast (×2): no change; hits reaching parties two sections away (a
+  section is ~7 m): ablaze 10%; seats five times bigger: 20%, median 86 min. **The user, 2026-10-19: "no need to go
+  overboard in matching the historical rates, as long as we get more fires it's fine for now."** So B5 stops here with
+  the gaps below open.
+- **The reading at the end (20 runs a case, `shipgen fire-history`):**
+
+  | Case | Fires lit a ship | Ablaze | All out | Lost | Wanted |
+  |---|---|---|---|---|---|
+  | Santiago, unprepared, unorganised | 3 (94 spaces burned) | 80%, median 56 min | 20% | 65%, magazines cooked off (median 101 min) | beyond help in 30-100 min ✓ |
+  | Santiago, prepared | 3 | 0% | 100% | 0% | ✓ |
+  | Yalu, 12 hits, unprepared | 2 | 25%, 103 min | 75% | 0% | beyond help in most ✗ |
+  | Yalu, 12 hits, prepared | 2 | 0% | 100% | 0% | ✓ |
+  | Suvorov, prepared and cluttered | 11 | 5%, 63 min | 55% | 35% (magazines by hits, capsized) | ablaze in 20-40 min ✗ |
+  | Orel, prepared and cluttered | 12 | 0% | 90% | 10% | mostly out ✓; water ~0 t ✗ |
+  | RN battleship, 15 heavy hits | 1 | 0% | 90% | 10% (magazines by hits) | out in minutes ✓ |
+  | Savo, 1942 fit | 6 | 10% | 55% | 30% | never out in most ✗ (later cuts) |
+  | Savo, post-Savo fit | 3 | 0% | 75% | 25% | ✓ |
+
+- **Cost:** the squadrons scenario's damage system 34 µs a call at B4, 39 at B2, 46-47 now (more fires: 12's filler, the
+  decks; 8.5-8.9% of the run, longest call ~4 ms). The bench's burning Santiago runs 80 ship-hours in 3.3 s: ~40 ms of
+  wall time a burning ship-hour, ~11 µs a 1 s step for a ship with tens of spaces alight.
+- **The AI and the matchup:** they read fire through what's seen (`SeenFlags.Burning`, now only while a fire shows:
+  B2), and the matchup's toughness takes `MatchupSeenBurningShare` for it; nothing more for now.
+- **Open (for the final balance pass, or a later fire step):**
+  - Suvorov and the Yalu's unprepared cruiser don't burn as the record has them: small superstructure fire spaces
+    (Borodino's blocks median 8 m²), armour keeping bursts out of the big spaces, and parties only hit in their own
+    ~7 m section. The levers measured above are the candidates (bigger upper-works fire spaces, burst-scaled seats,
+    parties' exposure by distance).
+  - Santiago's beached cruisers burned out; ours blow up in 65% of runs later (magazines cooked off at ~100 min).
+  - Orel's water: fires in parts and on deck run off, so no hose water stays aboard (the record: tens to hundreds of
+    tonnes; 17 §9 T6 itself says drain it through holes and scuppers).
+  - The clutter's weight (the overload's stability), with a ship load in the hydrostatics.
+  - A contact fuze on armour (bugs.md, Damage).
 
 ## What stays out
 

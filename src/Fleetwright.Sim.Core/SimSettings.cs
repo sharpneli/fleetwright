@@ -1059,6 +1059,9 @@ public sealed record SimSettings
     /// <summary>A burst outside lights the weather deck only this close under its top, m, or above it (one on the side
     /// lower down lights nothing).</summary>
     public double FireDeckBurstM { get; init; } = 0.5;
+    /// <summary>A burst outside the hull up to this high over its section's weather deck showers it with its burning pieces
+    /// and products (as one outside), m [EST: a deckhouse's tier or two] (fire.md B5).</summary>
+    public double FireDeckReachM { get; init; } = 5;
     public double ReadyAmmoFireChance { get; init; } = 0.3;
     public double ReadyAmmoSeatMW { get; init; } = 1;
 
@@ -1424,12 +1427,16 @@ public sealed record SimSettings
     /// (the outfit's two loads), the open doors a cell has (the material condition: 0 closed up), and the weather decks
     /// wetted. A side takes one by name (the scenario's "readiness"; <see cref="FireReadinessDefault"/> else): unprepared
     /// (the Chinese at the Yalu, the Spanish at Santiago), prepared (stripped, hoses out, decks wetted, doors open: the
-    /// Japanese in 1894, the Russians in 1905), closed up (the RN and the Germans by 1916, the USN in WWII: 17 §8.3).</summary>
+    /// Japanese in 1894), closed up (the RN and the Germans by 1916, the USN in WWII: 17 §8.3); prepared, cluttered (the
+    /// Russians at Tsushima after the voyage round Africa: stripped below, but coal, stores, hammocks and timber on the upper
+    /// decks, 17 §2.1; fire.md B5), its deck load on the weather decks over the outfit's [EST: enough to sustain a wetted
+    /// deck fire, 17 §5.3].</summary>
     public FireReadiness[] FireReadiness { get; init; } =
     [
         new() { Name = "unprepared", Stripped = false, CellDoors = 1, WetDecks = false },
         new() { Name = "prepared", Stripped = true, CellDoors = 1, WetDecks = true },
         new() { Name = "closed up", Stripped = true, CellDoors = 0, WetDecks = true },
+        new() { Name = "prepared, cluttered", Stripped = true, CellDoors = 1, WetDecks = true, DeckLoadMJm2 = 300 },
     ];
     public string FireReadinessDefault { get; init; } = "prepared";
 
@@ -1720,6 +1727,8 @@ public readonly record struct FireReadiness
     public bool WetDecks { get; init; }
     /// <summary>The supply fans secured (B2): smoke kept out of the machinery.</summary>
     public bool FansSecured { get; init; }
+    /// <summary>What's piled on her weather decks over the outfit's load, MJ/m² (B5's deck clutter).</summary>
+    public double DeckLoadMJm2 { get; init; }
 }
 
 /// <summary>A crew quality's multipliers on the rangetakers' and the layers' errors.</summary>

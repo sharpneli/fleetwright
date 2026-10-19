@@ -567,23 +567,24 @@ public static class Effects
         Crew(c, k, path, t, part, cell, p, fdir, frag, share, around, broken ? 0 : w * force, broken, res.Blast, s);
 
         // fire, by what burns where it burst (docs/battle/fire.md B0): the part it burst in, its cell, or outside the part
-        // its fragments reached first, else the weather deck it burst on (not one on the side below it)
+        // its fragments reached first, else the weather deck it burst on (not one on the side below it); and a burst above
+        // the hull, from just under the deck's edge to a few metres over it, also showers that section's weather deck with
+        // its burning pieces and products, as one outside (B5: what's piled there)
         int space = part >= 0 ? c.FireOfPart(part) : inHull ? cell
             : res.Part >= 0 && res.Part < c.Components.Length && c.FireOfPart(res.Part) >= 0 ? c.FireOfPart(res.Part)
             : c.FireOfDeck(c.SectionAt(p.X));
-        if (space >= 0 && c.FireSpaces[space].Kind == FireSpaceKind.Deck && p.Z < c.Cells[c.FireSpaces[space].Cell].Box.Top - s.FireDeckBurstM)
+        int deck = inHull ? -1 : c.FireOfDeck(c.SectionAt(p.X));
+        double deckTop = deck >= 0 ? c.Cells[c.FireSpaces[deck].Cell].Box.Top : 0;
+        if (deck >= 0 && (p.Z < deckTop - s.FireDeckBurstM || p.Z > deckTop + s.FireDeckReachM))
+            deck = -1;
+        if (space >= 0 && c.FireSpaces[space].Kind == FireSpaceKind.Deck && deck < 0)
             space = -1;
-        if (!broken && space >= 0)
+        if (!broken)
         {
-            // 08's chance by kind as a rate (λ = -ln(1 - p)), times the filler's fire over the reference's (12 §4.1), the
-            // load and the burst's size: 1 - e^-λ (fire_ref.py's p_fire), so the chances saturate (docs/battle/fire.md B5)
-            int kind = Math.Clamp((int)shell.Kind, 0, s.FireChance.Length - 1);
-            double load = Math.Min(s.FireStartLoadCap, Fires.Load(c.FireSpaces[space], k) / s.FireStartLoadMJm2);
-            double filler = shell.FillerFire > 0 ? shell.FillerFire / s.FireFillerRef : 1;
-            double lambda = -Math.Log(1 - s.FireChance[kind]) * filler * load * Math.Min(1.5, 0.5 + 0.5 * Math.Cbrt(w / 10)) *
-                            (t.Burst == BurstKind.Outside ? s.FireOutsideShare : 1);
-            if (r.NextDouble() < 1 - Math.Exp(-lambda))
-                res.Fire |= Fires.Ignite(c, k, space, s.FireSeatMW[Math.Min(kind, s.FireSeatMW.Length - 1)], s);
+            if (space >= 0)
+                res.Fire |= Start(c, k, space, shell, w, t.Burst == BurstKind.Outside, s, ref r);
+            if (deck >= 0 && deck != space)
+                res.Fire |= Start(c, k, deck, shell, w, true, s, ref r);
         }
 
         // the magazine: a burst in it, or in a turret or its barbette (the handling path down to it); its gas reaching one,
@@ -598,6 +599,19 @@ public static class Effects
                     : turret >= 0 ? (true, c.Mounts[turret].Magazine, MagazineVia.Turret)
                     : (true, gasHandling, inHandling ? MagazineVia.Handling : MagazineVia.Gas);
         }
+    }
+
+    /// <summary>A burst's fire start in a space: 08's chance by kind as a rate (λ = -ln(1 - p)), times its filler's fire over
+    /// the reference's (12 §4.1), the space's load and the burst's size (and the outside share for one outside it): 1 - e^-λ
+    /// (fire_ref.py's p_fire), so the chances saturate (docs/battle/fire.md B5). Whether it lit a new fire.</summary>
+    static bool Start(ShipClass c, ShipCondition k, int space, in ShellTypeRow shell, double w, bool outside, SimSettings s, ref RandomStream r)
+    {
+        int kind = Math.Clamp((int)shell.Kind, 0, s.FireChance.Length - 1);
+        double load = Math.Min(s.FireStartLoadCap, Fires.Load(c.FireSpaces[space], k) / s.FireStartLoadMJm2);
+        double filler = shell.FillerFire > 0 ? shell.FillerFire / s.FireFillerRef : 1;
+        double lambda = -Math.Log(1 - s.FireChance[kind]) * filler * load * Math.Min(1.5, 0.5 + 0.5 * Math.Cbrt(w / 10)) *
+                        (outside ? s.FireOutsideShare : 1);
+        return r.NextDouble() < 1 - Math.Exp(-lambda) && Fires.Ignite(c, k, space, s.FireSeatMW[Math.Min(kind, s.FireSeatMW.Length - 1)], s);
     }
 
     /// <summary>The people a burst's pieces and gas reach (E6; damage/16 §4.1, §4.5): the men in the part or space it burst

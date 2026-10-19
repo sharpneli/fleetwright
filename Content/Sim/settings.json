@@ -387,6 +387,7 @@
   "FireSeatMW": [0.1, 0.4, 0.3],
   "FireOutsideShare": 0.4,
   "FireDeckBurstM": 0.5,
+  "FireDeckReachM": 5,
   "ReadyAmmoFireChance": 0.3,
   "ReadyAmmoSeatMW": 1,
   "NonPenImpulseRef": 4e5,
@@ -562,9 +563,10 @@
   ],
   // a ship's orders before action for fire: the scenario's "readiness" by side, else the default
   "FireReadiness": [
-    { "Name": "unprepared", "Stripped": false, "CellDoors": 1, "WetDecks": false, "FansSecured": false },
-    { "Name": "prepared", "Stripped": true, "CellDoors": 1, "WetDecks": true, "FansSecured": false },
-    { "Name": "closed up", "Stripped": true, "CellDoors": 0, "WetDecks": true, "FansSecured": false }
+    { "Name": "unprepared", "Stripped": false, "CellDoors": 1, "WetDecks": false, "FansSecured": false, "DeckLoadMJm2": 0 },
+    { "Name": "prepared", "Stripped": true, "CellDoors": 1, "WetDecks": true, "FansSecured": false, "DeckLoadMJm2": 0 },
+    { "Name": "closed up", "Stripped": true, "CellDoors": 0, "WetDecks": true, "FansSecured": false, "DeckLoadMJm2": 0 },
+    { "Name": "prepared, cluttered", "Stripped": true, "CellDoors": 1, "WetDecks": true, "FansSecured": false, "DeckLoadMJm2": 300 }
   ],
   "FireReadinessDefault": "prepared",
   // firefighting (docs/battle/fire.md B4; damage/17 §8.3): a side's doctrine by the scenario's "firefighting", else the default
