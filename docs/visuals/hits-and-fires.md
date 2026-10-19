@@ -183,14 +183,14 @@ draws it each frame through the models already there, `HitLook` holds the knobs 
   delay, its centre at the burst; its light into the flashes' lights by its heat (`MagazineRenderer.Light`, the
   magazine's rule, share 0.3);
 - **a burst inside**: a short warm light (0.4 of its fireball's life) and its gas jetting back out of the hole it came in
-  by (`MagazineRenderer.AddJet`, the ports' jets: 45 d âˆš2, d the hole's (1.2 calibres) with what the burst tore open, at
+  by (`MagazineRenderer.AddJet`, the ports' jets: 45 d √2, d the hole's (1.2 calibres) with what the burst tore open, at
   most `reach` 0.6 of its fireball, for 0.6 of its life) [EST];
 - **a plate that held** (stopped, broke up, holed in pieces, a dud, a glance): a hard flash 3 m for a 12" by the calibre,
   0.1 s, as the jet shader's round flash (the magazine's hit's flash: one flash model, rather than `FlashRenderer`'s
   muzzle parts the plan named); a shell through thin plating flashes half that at each hole;
-- **smoke** on the gun smoke's book, once, dated to the burst: the burst's (A 1 mÂ²/g of W [EST]; its tint from the
+- **smoke** on the gun smoke's book, once, dated to the burst: the burst's (A 1 m²/g of W [EST]; its tint from the
   filler's RE, black powder's white-grey to the high explosives' grey-brown, placeholders), the vent's (half) at the
-  hole, a hole's dust and paint (300 mÂ² for a 12").
+  hole, a hole's dust and paint (300 m² for a 12").
 
 A hit under the water shows nothing yet (I3's boil). The table's pop fades out over the cross-fade. `HitsView` gained the
 filler's RE; a shell that bursts beyond her far side is recorded 5 m past it [EST] (the walk keeps no point there). The
@@ -199,6 +199,23 @@ TARGET:SHOOTER[:every_s[:shot]]`, the shooter's shells at a still ship in turn, 
 dreadnought struck by a super-dreadnought's 15" at 0.1 m/px, noon: an AP burst inside her belt a thin orange jet out of
 the hole; a 15" HE on her upper works a fireball over the funnels, its soot skin and light on the water at 0.8 s; an AP
 bursting beyond her bow a fireball off her far side; the smoke drifting off downwind. No hash moved. Test: `HitBookTests`.
+
+**I2 (2026-10-19).** `HitEffects.Hand` gives what flies off each hit, once, to the splash book, dated on its clocks
+(seen late, back-dated; still to come, it waits):
+- **flying on** (passed through, glanced off, leaving above the water): from the exit at its speed out, under gravity
+  alone (drag left out, display only; at most 40 s), landing as a full splash of its calibre. Decision 4: the spotter
+  doesn't see it;
+- **a burst's pieces** (in the open only): `HitsView.Pieces`, E1's Mott count of pieces of 50 g and more
+  (N₀ e^(−√0.05 / M_k)), a share `pieces` 0.03 of them (at most `marks` 40) landing as foam marks (`SplashBook.Add`,
+  foam alone, as a 30 mm's) out to 0.4-2 of a 50 g piece's drag length (~90 m), none on her, at ~400 m/s [EST];
+- **a plate that held** (stopped, shattered): 2-4 large pieces off the side it came from, 4-24 m out, as shells of 0.3
+  of its calibre, falling from the hit's height;
+- **a glance**: seven sparks scraped off the plate along its way out, fanning and falling for 0.25-0.55 s (the jet
+  shader's points) [EST].
+
+Seen at 0.3 m/px on a destroyer struck by 15": the AP through her leaves a column standing just off her far side; the HE
+on her upper works a fireball and a scatter of small foam rings out to ~150 m round her. Test:
+`HitBookTests.A_shell_through_her_lands_beyond_and_a_bursts_pieces_never_on_her`.
 
 ## Later
 

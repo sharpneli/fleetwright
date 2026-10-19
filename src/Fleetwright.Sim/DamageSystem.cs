@@ -79,7 +79,7 @@ public sealed class DamageSystem : IWorldSystem
     /// hit had, kept for the screens only (not world state, never hashed).</summary>
     public readonly record struct Struck(long Ms, int Ship, int Class, int Shooter, Vec3d At, Vec3d Forward, P3 Point, P3 Direction,
         Outcome Outcome, BurstKind Burst, P3 BurstAt, double BurstS, P3 ExitAt, P3 ExitDirection, double ExitMs, double CalibreMm,
-        double FillerKg, double FillerRe, double VentM2, ShellKind Kind, HitShows Shows);
+        double FillerKg, double FillerRe, double VentM2, double Pieces, ShellKind Kind, HitShows Shows);
 
     readonly SimSettings settings;
     readonly ShipSystem ships;
@@ -725,8 +725,15 @@ public sealed class DamageSystem : IWorldSystem
             }
         }
         double w = shell.FillerKg * shell.FillerRe * (t.Outcome == Outcome.LowOrder ? Math.Min(t.Force, 1) : 1);
+        // its pieces of 50 g and more (Mott: N(>m) = N₀ e^(−√m / M_k)), when it burst
+        double pieces = 0;
+        if ((t.Bursts || t.Outcome == Outcome.BurstBeyond) && shell.Fragments is { } f)
+        {
+            var fb = f.Of(t.Outcome == Outcome.LowOrder);
+            pieces = fb.MottK > 0 ? fb.MottN0 * Math.Exp(-Math.Sqrt(0.05) / fb.MottK) : 0;
+        }
         struck[struckNext] = new Struck(hit.Ms, ship.Entity, ship.ClassIndex, hit.Shooter, ship.Position, ship.Forward, hit.Point, hit.Direction,
-            t.Outcome, t.Burst, burstAt, burstS, exitAt, exitDir, exitMs, shell.CalibreMm, w, shell.FillerRe, e.Blast.HoleM2, shell.Kind, shows);
+            t.Outcome, t.Burst, burstAt, burstS, exitAt, exitDir, exitMs, shell.CalibreMm, w, shell.FillerRe, e.Blast.HoleM2, pieces, shell.Kind, shows);
         struckNext = (struckNext + 1) % struck.Length;
         struckCount = Math.Min(struckCount + 1, struck.Length);
     }
@@ -1023,6 +1030,7 @@ public sealed class DamageSystem : IWorldSystem
             (h.Point[n], h.Direction[n], h.Outcome[n], h.Burst[n], h.BurstAt[n], h.BurstS[n]) = (x.Point, x.Direction, x.Outcome, x.Burst, x.BurstAt, (float)x.BurstS);
             (h.ExitAt[n], h.ExitDirection[n], h.ExitMs[n], h.CalibreMm[n]) = (x.ExitAt, x.ExitDirection, (float)x.ExitMs, (float)x.CalibreMm);
             (h.FillerKg[n], h.FillerRe[n], h.VentM2[n], h.Kind[n], h.Shows[n]) = ((float)x.FillerKg, (float)x.FillerRe, (float)x.VentM2, x.Kind, x.Shows);
+            h.Pieces[n] = (float)x.Pieces;
             n++;
         }
         h.Count = n;

@@ -474,7 +474,7 @@ public sealed unsafe class MagazineRenderer : IDisposable
     }
 
     /// <summary>The light a fire of <paramref name="kelvin"/> over <paramref name="areaM2"/> throws on the sea and the ships
-    /// (display units Ã— mÂ²): its brightness as drawn this frame, compressed as the flashes' halo's source, times its area
+    /// (display units × m²): its brightness as drawn this frame, compressed as the flashes' halo's source, times its area
     /// over pi (FlashRenderer's rule), times a share. Needs <see cref="Ready"/>.</summary>
     public double Light(double kelvin, double areaM2, double share)
     {

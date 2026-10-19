@@ -25,15 +25,15 @@ public sealed class HitBook
         /// <summary>Where it struck, burst and left her, in her frame (heights over the waterline), and the ways in and
         /// out (unit, her frame).</summary>
         public P3 Point, BurstAt, ExitAt, Direction, ExitDirection;
-        public float BurstS, ExitMs, CalibreMm, FillerKg, FillerRe, VentM2, Seed;
+        public float BurstS, ExitMs, CalibreMm, FillerKg, FillerRe, VentM2, Pieces, Seed;
         public Outcome Outcome;
         public BurstKind Burst;
         public ShellKind Kind;
         public HitShows Shows;
         /// <summary>The hit on the effects' clock and the sea's, s.</summary>
         public double T0, SeaT0;
-        /// <summary>Its smoke handed to the smoke's book.</summary>
-        public bool Smoked;
+        /// <summary>Its smoke handed to the smoke's book, and what flew off it to the splashes' (I2).</summary>
+        public bool Smoked, Handed;
 
         /// <summary>The sea point under a point of her frame.</summary>
         public readonly Vec3d Sea(P3 p) => At + Forward * p.X + Starboard * p.Y;
@@ -97,7 +97,7 @@ public sealed class HitBook
                 Point = Over(v.Point[i]), BurstAt = Over(v.BurstAt[i]), ExitAt = Over(v.ExitAt[i]), Direction = v.Direction[i],
                 ExitDirection = v.ExitDirection[i],
                 BurstS = v.BurstS[i], ExitMs = v.ExitMs[i], CalibreMm = v.CalibreMm[i], FillerKg = v.FillerKg[i], FillerRe = v.FillerRe[i],
-                VentM2 = v.VentM2[i], Outcome = v.Outcome[i], Burst = v.Burst[i], Kind = v.Kind[i], Shows = v.Shows[i],
+                VentM2 = v.VentM2[i], Pieces = v.Pieces[i], Outcome = v.Outcome[i], Burst = v.Burst[i], Kind = v.Kind[i], Shows = v.Shows[i],
                 Seed = (Hash((uint)ms ^ Hash((uint)i * 977u + (uint)v.Ship[i])) & 0xffff) / 65536f,
                 T0 = Clock - ageS * ratio, SeaT0 = SeaClock - ageS * seaRatio,
             };

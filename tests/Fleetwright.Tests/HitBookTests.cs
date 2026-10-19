@@ -57,4 +57,39 @@ public class HitBookTests
             book.Update(v, ms + 600 + f * 16, 1, 0.016, ClassOf);
         Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - before);
     }
+
+    [Fact]
+    public void A_shell_through_her_lands_beyond_and_a_bursts_pieces_never_on_her()
+    {
+        var v = Two(1_000_000);
+        v.Count = 1;
+        double wl = Dreadnought.Vertical.Waterline, half = Dreadnought.Beam / 2;
+        // through her from starboard, leaving to port 6 m up, falling at 10 degrees
+        (v.Outcome[0], v.Burst[0], v.Shows[0], v.ExitMs[0]) = (Outcome.PassedThrough, BurstKind.None, HitShows.Exit, 450);
+        (v.ExitAt[0], v.ExitDirection[0]) = (new P3(0, -half, wl + 6), new P3(0, -Math.Cos(0.1745), -Math.Sin(0.1745)));
+        var book = new HitBook();
+        book.Update(v, 1_000_000, 1, 0.016, ClassOf);
+        var splashes = new Fleetwright.Map.Splashes.SplashBook(256);
+        HitEffects.Hand(book, 1_000_000, 1, splashes, ClassOf);
+        HitEffects.Hand(book, 1_000_016, 1, splashes, ClassOf);
+        Assert.Equal(1, splashes.Count);   // once
+        var e = book[0];
+        double across = Vec3d.Dot(splashes[0].Point - e.At, e.Starboard);
+        Assert.InRange(-across, half + 20, half + 60);   // 6 m / tan 10 degrees = 34 m out to port
+
+        // a 15" HE bursting on her deck: its pieces' marks round her, none on her
+        v = Two(2_000_000);
+        v.Count = 1;
+        (v.Outcome[0], v.Burst[0], v.Shows[0], v.Pieces[0], v.FillerKg[0]) = (Outcome.BurstInPlate, BurstKind.InPlate, HitShows.None, 2000, 100);
+        book.Update(v, 2_000_000, 1, 0.016, ClassOf);
+        splashes = new Fleetwright.Map.Splashes.SplashBook(256);
+        HitEffects.Hand(book, 2_000_000, 1, splashes, ClassOf);
+        Assert.InRange(splashes.Count, 10, (int)HitLook.PieceMarks);
+        for (int i = 0; i < splashes.Count; i++)
+        {
+            var d = splashes[i].Point - e.At;
+            double x = Vec3d.Dot(d, e.Forward), y = Vec3d.Dot(d, e.Starboard);
+            Assert.False(x > Dreadnought.Hull.X0 && x < Dreadnought.Hull.X1 && Math.Abs(y) < half - 0.5, $"a mark on her at {x:0}, {y:0}");
+        }
+    }
 }

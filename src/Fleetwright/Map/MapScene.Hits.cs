@@ -40,6 +40,7 @@ public sealed partial class MapScene
     void BuildHits(in MapView view, Snapshot s, double dt)
     {
         hitBook.Update(s.Hits, world.DrawMs, s.Paused ? 0 : s.AchievedSpeed, dt, classOf);
+        HitEffects.Hand(hitBook, world.DrawMs, s.Paused ? 0 : s.AchievedSpeed, shipRenderer.Splashes.Book, classOf);
         HitEffects.Build(view, hitBook, WorldView.Factor(view), shipRenderer.Magazines, shipRenderer.Flashes.Lights, shipRenderer.Smoke.Book,
             shipRenderer.Flashes.Book.SeaClock);
         RunHitBench(s);

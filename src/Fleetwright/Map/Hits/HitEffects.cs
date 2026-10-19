@@ -1,6 +1,7 @@
 using System.Numerics;
 using Fleetwright.Map.Flashes;
 using Fleetwright.Map.Magazines;
+using Fleetwright.Map.Splashes;
 using Fleetwright.Sim;
 using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
@@ -135,9 +136,134 @@ public static class HitEffects
         double fs = HitLook.PlateFlashS;
         if ((plate || through) && age < fs && !Under(e, e.Point))
             Flash(view, e, e.Point, HitLook.PlateFlashM * cal * (through ? HitLook.ThroughShare : 1), age / fs, world, bodies, lights, age);
+        if (e.Outcome == Outcome.Ricochet && (e.Shows & HitShows.Exit) != 0)
+            Sparks(view, e, age, world, bodies);
         if (through && (e.Shows & HitShows.Exit) != 0 && age < fs)
             Flash(view, e, e.ExitAt, HitLook.PlateFlashM * cal * HitLook.ThroughShare, age / fs, world, bodies, lights, age);
     }
+
+    /// <summary>What flies off each hit, once, into the splash book (I2), dated by its moment in the world on the book's
+    /// clocks at the clock's rates (seen late, back-dated; still to come, it waits):
+    /// <list type="bullet">
+    /// <item>a shell that leaves her whole (through her, or glanced off) flies on from where it left her, falling under
+    /// gravity alone (drag left out: display only), and lands as a full splash of its calibre. Decision 4: display only,
+    /// the spotter doesn't see it;</item>
+    /// <item>a burst in the open throws its pieces of 50 g and more (E1's count) out round it: a share land in the sea
+    /// as foam marks within a few of their drag lengths, none on her;</item>
+    /// <item>a plate that held (stopped, shattered) drops a few large pieces (the cap, the broken body) into the sea
+    /// close by on the side it came from.</item>
+    /// </list></summary>
+    public static void Hand(HitBook book, long nowMs, double speed, SplashBook splashes, Func<int, ShipClass?> classOf)
+    {
+        if (!HitLook.On)
+            return;
+        double colRatio = speed > 0 ? Effects.Rate(speed) / speed : 1, seaRatio = speed > 0 ? Effects.SeaRate(speed) / speed : 1;
+        for (int i = 0; i < book.Count; i++)
+        {
+            ref var e = ref book.Edit(i);
+            if (e.Handed)
+                continue;
+            e.Handed = true;
+            if ((HitLook.Parts & 32) == 0 || classOf(e.Class) is not { } cls)
+                continue;
+            double ago = (nowMs - e.Ms) / 1000.0;
+
+            // flying on
+            if ((e.Shows & HitShows.Exit) != 0 && e.ExitMs > 0)
+            {
+                var d = e.ExitDirection;
+                double v = e.ExitMs, vz = v * d.Z, h = Math.Max(e.ExitAt.Z, 0);
+                double t = Math.Min((vz + Math.Sqrt(vz * vz + 2 * G * h)) / G, MaxFlightS);
+                var horiz = e.Forward * d.X + e.Starboard * d.Y;
+                Land(splashes, e, e.Sea(e.ExitAt) + horiz * (v * t), t - ago, colRatio, seaRatio, e.CalibreMm, 1, true);
+            }
+
+            // a burst's pieces in the sea round it
+            if (Bursts(e) && Open(e) && e.Pieces > 0 && !Under(e, e.BurstAt))
+            {
+                int n = (int)Math.Min(Math.Round(e.Pieces * HitLook.PieceShare), HitLook.PieceMarks);
+                double reach = Fragments.DragL1 * Math.Cbrt(0.05);
+                for (int j = 0; j < n; j++)
+                {
+                    double a = 2 * Math.PI * U(e.Seed, 10 + (uint)j), r = reach * (0.4 + 1.6 * U(e.Seed, 200 + (uint)j));
+                    var p = new P3(e.BurstAt.X + r * Math.Cos(a), e.BurstAt.Y + r * Math.Sin(a), 0);
+                    if (p.X > cls.Hull.X0 && p.X < cls.Hull.X1 && Math.Abs(p.Y) < cls.Beam / 2)
+                        continue;   // on her: no mark on the water
+                    Land(splashes, e, e.Sea(p), e.BurstS + r / PieceMs - ago, colRatio, seaRatio, HitLook.PieceMm, 400 + (uint)j, false);
+                }
+            }
+
+            // a plate that held: a few large pieces off the side it came from
+            if (e.Outcome is Outcome.Defeated or Outcome.BrokeUp && !Under(e, e.Point))
+            {
+                int n = 2 + (int)(3 * U(e.Seed, 7));
+                double bx = -e.Direction.X, by = -e.Direction.Y, bl = Math.Max(Math.Sqrt(bx * bx + by * by), 1e-6);
+                for (int j = 0; j < n; j++)
+                {
+                    double off = 4 + 20 * U(e.Seed, 30 + (uint)j), along = 8 * (U(e.Seed, 40 + (uint)j) - 0.5);
+                    var p = new P3(e.Point.X + bx / bl * off - by / bl * along, e.Point.Y + by / bl * off + bx / bl * along, 0);
+                    double fall = Math.Sqrt(2 * Math.Max(e.Point.Z, 0.5) / G) + 0.3 * U(e.Seed, 50 + (uint)j);
+                    Land(splashes, e, e.Sea(p), fall - ago, colRatio, seaRatio, HitLook.FallenShare * e.CalibreMm, 60 + (uint)j, true);
+                }
+            }
+        }
+    }
+
+    /// <summary>A splash of what flew off, <paramref name="ahead"/> world seconds from now (past: back-dated).</summary>
+    static void Land(SplashBook splashes, in HitBook.Entry e, Vec3d point, double ahead, double colRatio, double seaRatio, double calibreMm, uint k,
+        bool column) =>
+        splashes.Add(point.Normalized() * Earth.Radius, calibreMm, splashes.ColumnClock + ahead * colRatio, splashes.FoamClock + ahead * seaRatio,
+            (float)U(e.Seed, k), column);
+
+    const double G = 9.81, MaxFlightS = 40;
+    /// <summary>The pieces' mean speed out to where they fall, m/s (they slow from ~1,000 by drag) [EST].</summary>
+    const double PieceMs = 400;
+
+    /// <summary>A number in [0, 1) from a hit's seed, one per <paramref name="k"/>.</summary>
+    static double U(float seed, uint k)
+    {
+        uint x = (uint)(seed * 65536) * 2654435761u ^ k * 40503u;
+        x ^= x >> 16;
+        x *= 0x7feb352d;
+        x ^= x >> 15;
+        x *= 0x846ca68b;
+        x ^= x >> 16;
+        return x / 4294967296.0;
+    }
+
+    /// <summary>A glance's sparks: steel scraped off the plate, flying on along the shell's way out and fanning out, under
+    /// gravity, for their part of a second [EST].</summary>
+    static void Sparks(in MapView view, in HitBook.Entry e, double age, double world, MagazineRenderer bodies)
+    {
+        var sea = e.Sea(e.Point);
+        var (east, north) = (view.Right, view.Up);
+        double k = Effects.K, minR = 0.6 * view.MetresPerPixel;
+        var d = e.ExitDirection;
+        for (uint j = 0; j < SparkCount; j++)
+        {
+            double life = 0.25 + 0.3 * U(e.Seed, 70 + j);
+            if (age >= life)
+                continue;
+            double speed = 40 + 50 * U(e.Seed, 80 + j), spread = 0.6 * (U(e.Seed, 90 + j) - 0.5), lift = 0.4 * U(e.Seed, 100 + j);
+            // its way: the shell's out, turned a little about the vertical and lifted
+            double cx = Math.Cos(spread), sx = Math.Sin(spread);
+            var w = new P3(d.X * cx - d.Y * sx, d.X * sx + d.Y * cx, d.Z + lift);
+            var a = SparkAt(e, w, speed, Math.Max(age - 0.03, 0), east, north, k);
+            var b = SparkAt(e, w, speed, age, east, north, k);
+            double u = age / life;
+            bodies.AddJet(view, sea, a, b, Math.Max(0.25, minR), Math.Max(0.2, minR), 1 - 0.3 * u, 0.8 - 0.3 * u, 0, world * (1 - u), age, e.Seed);
+        }
+    }
+
+    /// <summary>A spark t s out along way w at speed, drawn through the effects camera from its plate.</summary>
+    static Vector2 SparkAt(in HitBook.Entry e, P3 w, double speed, double t, Vec3d east, Vec3d north, double k)
+    {
+        var plan = e.Forward * (w.X * speed * t) + e.Starboard * (w.Y * speed * t);
+        double z = w.Z * speed * t - 0.5 * G * t * t;
+        return new((float)Vec3d.Dot(plan, east), (float)(Vec3d.Dot(plan, north) + k * z));
+    }
+
+    const uint SparkCount = 7;
 
     /// <summary>A hard flash at a point of her frame, u of the way through its life.</summary>
     static void Flash(in MapView view, in HitBook.Entry e, P3 p, double r, double u, double world, MagazineRenderer bodies, FlashLights lights, double age)

@@ -29,12 +29,17 @@ public static class HitLook
     /// out of the hole; a hole's dust and paint, m² for a 12" (by the calibre squared) [EST].</summary>
     public static double SmokeM2g = 1.0, VentSmokeShare = 0.5, DustM2 = 300;
 
+    /// <summary>What flies off (I2): the share of a burst's pieces of 50 g and more that mark the sea (the rest fall on
+    /// her, short, or too small to see) and the most marks a burst leaves, and the foam's size as a shell's of this
+    /// calibre, mm; a plate's fallen pieces as shells of this share of its calibre [EST].</summary>
+    public static double PieceShare = 0.03, PieceMarks = 40, PieceMm = 30, FallenShare = 0.3;
+
     /// <summary>The share of a burst's light as drawn that it throws on the sea and the ships (as the magazine's).</summary>
     public static double LightShare = 0.3;
 
     /// <summary>Which parts draw, for measuring each's cost: 1 the fireballs, 2 the plates' flashes, 4 the vents' jets, 8
-    /// the lights, 16 the smoke.</summary>
-    public static int Parts = 31;
+    /// the lights, 16 the smoke, 32 what flies off (splashes, pieces, sparks).</summary>
+    public static int Parts = 63;
 
     /// <summary>A dev aid for captures: the hits of the newest 2 s drawn at this age, s after they struck (-1: off).</summary>
     public static double AtS = -1;
@@ -61,6 +66,10 @@ public static class HitLook
             case "ventsmoke": VentSmokeShare = Math.Max(v, 0); break;
             case "dust": DustM2 = Math.Max(v, 0); break;
             case "light": LightShare = Math.Max(v, 0); break;
+            case "pieces": PieceShare = Math.Max(v, 0); break;
+            case "marks": PieceMarks = Math.Max(v, 0); break;
+            case "piecemm": PieceMm = Math.Max(v, 1); break;
+            case "fallen": FallenShare = Math.Max(v, 0); break;
             case "parts": Parts = (int)v; break;
             case "at": AtS = v; break;
             case "on": On = v != 0; break;
@@ -69,5 +78,5 @@ public static class HitLook
         return true;
     }
 
-    public const string Knobs = "scale, open, flash, flashs, through, inside, vent, reach, smoke, ventsmoke, dust, light, parts (1 fireballs, 2 plate flashes, 4 vents, 8 lights, 16 smoke), at (a still at that age, s), on";
+    public const string Knobs = "scale, open, flash, flashs, through, inside, vent, reach, smoke, ventsmoke, dust, light, pieces, marks, piecemm, fallen, parts (1 fireballs, 2 plate flashes, 4 vents, 8 lights, 16 smoke, 32 what flies off), at (a still at that age, s), on";
 }
