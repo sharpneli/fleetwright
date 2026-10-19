@@ -567,6 +567,38 @@ public static class Knobs
         Hi = 6,
     };
 
+    /// <summary>A main battery's turret rangefinders, each turret's base across its gunhouse's rear (fire-control.md F4b);
+    /// 0: none.</summary>
+    public static NumberKnob MainRangefinder(int i) => new($"main{i}_rf", "Turret rangefinders", Quantity.Length, 0.5, 1)
+    {
+        Get = d => d.Main?.ElementAtOrDefault(i)?.RangefinderM,
+        Set = (d, v) => MainBattery(d, i, b => b with { RangefinderM = v }),
+        Auto = (d, s) => 0,
+        Lo = 0,
+        Hi = 15,
+        Applies = d => d.Main?.Count > i,
+    };
+
+    /// <summary>The rangefinder in a hood on after control's top, a control position for the main battery (F4b).</summary>
+    public static readonly NumberKnob AftRangefinder = new("fc_aft_rf", "Aft control rangefinder", Quantity.Length, 0.5, 1)
+    {
+        Get = d => d.FireControl?.AftRangefinderM,
+        Set = (d, v) => d with { FireControl = (d.FireControl ?? new FireControlInput()) with { AftRangefinderM = v } },
+        Auto = (d, s) => 0,
+        Lo = 0,
+        Hi = 15,
+    };
+
+    /// <summary>The rangefinder on the conning tower's roof (F4b).</summary>
+    public static readonly NumberKnob TowerRangefinder = new("fc_ct_rf", "Conning tower rangefinder", Quantity.Length, 0.5, 1)
+    {
+        Get = d => d.FireControl?.ConningTowerRangefinderM,
+        Set = (d, v) => d with { FireControl = (d.FireControl ?? new FireControlInput()) with { ConningTowerRangefinderM = v } },
+        Auto = (d, s) => 0,
+        Lo = 0,
+        Hi = 15,
+    };
+
     public static NumberKnob Rangefinder(string battery) => new($"fc_{battery}_rf", "Rangefinder base", Quantity.Length, 0.5, 1)
     {
         Get = d => d.FireControl?.Of(battery)?.RangefinderM,
@@ -1197,7 +1229,7 @@ public static class Knobs
             Topside, TumblehomeStrength, TumblehomeKnuckle, TumblehomeExtent, DeckFinish, ShellMm, DeckWoodMm, LevelsOverBridge,
             SuperstructurePlating, ControlPlating, BeltDepth, BeltHeight, UpperBeltToDeck, UpperBeltExtent, SteeringSides,
             SteeringRoof, SteeringEnds, FlightDeckArmour, Funnels, Transmission, UnitsPerShaft, CentrelineBulkhead, Bunkers,
-            WingBunker, Rudders, SearchRadar, BufferDays, WaterRation, BerthRatio, OfficerFraction,
+            WingBunker, Rudders, SearchRadar, AftRangefinder, TowerRangefinder, BufferDays, WaterRation, BerthRatio, OfficerFraction,
             HullMaterial, SuperstructureMaterial, UpperBeltMaterial, SteeringMaterial, SteeringRoofMaterial,
             MainFaces, MainCalibres, MainRoundsAll, EndBelts,
             BeltMagazines, BeltIncline, BeltPosition, BeltExtent, TdsLayers, TdsHolding, TdsLayerWall, InnerMm, InnerMagazines, InnerInboard,
@@ -1238,6 +1270,7 @@ public static class Knobs
             yield return MainMaterial(i);
             yield return MainArmour(i);
             yield return MainRounds(i);
+            yield return MainRangefinder(i);
         }
         for (int i = 0; i < (d.Secondary?.Count ?? 0); i++)
         {

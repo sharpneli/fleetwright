@@ -29,7 +29,7 @@ public sealed unsafe partial class DesignerScene
     static float RowH => P(20);
 
     static readonly string[] DigitText = ["0", "1", "2", "3", "4", "5", "6", "7"];
-    static readonly string[] TemplateLabels = ["Plant", "Hull", "Crew", "Armour", "Protection", "Shells"];
+    static readonly string[] TemplateLabels = ["Plant", "Hull", "Crew", "Armour", "Protection", "Shells", "Guns", "Torpedoes", "Shock", "Outfit"];
 
     // the plan and profile's overlays: arcs of fire, armour plates, magazines, tags (A, R, M, T)
     bool showArcs = true, showArmour = true, showMags, showTags = true;
@@ -638,21 +638,48 @@ public sealed unsafe partial class DesignerScene
             dl.PopClipRect();
             Twisty(dl, new Vector2(p.X + w - P(8), p.Y + RowH / 2), true, T.Muted);
             if (hover)
-                ImGui.SetTooltip(t.Names[t.Index]);
+                PickTip(t.Index < t.Count && t.Tips != null ? t.Tips[t.Index] : t.Names[t.Index]);
             if (ImGui.BeginPopup("pick"))
             {
                 ImGui.TextColored(T.Muted, t.Label);
                 ImGui.Separator();
                 t.Popup?.Invoke();
-                for (int k = 0; k < t.Count; k++)
-                    if (ImGui.Selectable(t.Names[k], k == t.Index) && k != t.Index)
-                        t.Apply(k);
-                if (t.Index >= t.Count && t.Popup == null)
-                    ImGui.TextColored(T.Muted, t.Names[t.Index]);
+                PickList(t);
                 ImGui.EndPopup();
             }
             ImGui.PopID();
         }
+    }
+
+    /// <summary>A picker's catalogue: entries under their groups' headings, each one's tooltip on hover; the design's own
+    /// block (not in the catalogue) shown after, not pickable.</summary>
+    void PickList(PickRow t)
+    {
+        string? group = null;
+        for (int k = 0; k < t.Count; k++)
+        {
+            if (t.Groups?[k] is { } g && g != group)
+            {
+                group = g;
+                ImGui.TextColored(T.Brass, g);
+            }
+            if (ImGui.Selectable(t.Names[k], k == t.Index) && k != t.Index)
+                t.Apply(k);
+            if (t.Tips != null && ImGui.IsItemHovered())
+                PickTip(t.Tips[k]);
+        }
+        if (t.Index >= t.Count && t.Popup == null)
+            ImGui.TextColored(T.Muted, t.Names[t.Index]);
+    }
+
+    /// <summary>A template's tooltip, wrapped.</summary>
+    void PickTip(string text)
+    {
+        ImGui.BeginTooltip();
+        ImGui.PushTextWrapPos(P(460));
+        ImGui.TextUnformatted(text);
+        ImGui.PopTextWrapPos();
+        ImGui.EndTooltip();
     }
 
     // ------------------------------------------------------------------ centre: plan, profile, tabs, tables
@@ -1123,13 +1150,19 @@ public sealed unsafe partial class DesignerScene
                 ImGui.EndDisabled();
                 break;
             case PickRow pr:
+                ImGui.BeginDisabled(!pr.Applies);
                 ImGui.AlignTextToFramePadding();
                 ImGui.TextUnformatted(pr.Label);
                 ImGui.SameLine(labelW);
                 ImGui.SetNextItemWidth(w - labelW - P(8));
-                int pi = pr.Index;
-                if (ImGui.Combo("##p", ref pi, pr.Names, pr.Names.Length) && pi < pr.Count && pi != pr.Index)
-                    pr.Apply(pi);
+                if (ImGui.BeginCombo("##p", pr.Names[pr.Index], ImGuiComboFlags.HeightLarge))
+                {
+                    PickList(pr);
+                    ImGui.EndCombo();
+                }
+                else if (ImGui.IsItemHovered() && pr.Index < pr.Count && pr.Tips != null)
+                    PickTip(pr.Tips[pr.Index]);
+                ImGui.EndDisabled();
                 break;
             case ToggleRow tr:
                 ImGui.BeginDisabled(!tr.Applies);

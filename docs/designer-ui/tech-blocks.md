@@ -85,12 +85,23 @@ not "Fittings", which the drawing uses for its dressing. A fire-control row ther
 
 Each step verified with real clicks (`-input`) and `-ui` screenshots, committed on its own.
 
-## Open questions
+## The user's decisions (2026-10-19)
 
-1. **The Fire control tab.** Its proper tab is the fire-control plan's last step (`docs/battle/fire-control.md`:
-   "Data first, the designer's tab after"), with F7-F12 still to come. Proposed: put the fit pickers in today's
-   generic rows now, and leave the tab's layout to that plan's end. Or mock the whole tab now?
-2. **Main and secondary gun blocks.** Every shipped design shares one block between them. Proposed: the Templates row
-   sets all batteries, the GUN column overrides one. Or should a design carry one gun block, period?
-3. **Own values.** Proposed: picked from templates only, a design's own values kept and shown but not editable in
-   the designer. Fine for now?
+1. **Plain rows are fine for now**: the fits only need configuring for testing; the Fire control tab's layout stays the
+   fire-control plan's last step.
+2. **A single gun block**: one Guns picker names the same block on every battery and leaves only it in `gun_tech`, so
+   a design saved from the designer carries one block. The format keeps a name per battery (the sim reads it); no GUN
+   column. Hand-edited designs that differ show "mixed".
+3. **Templates only**: a design's own values are kept and shown ("own values", "custom"), never edited here.
+
+## Done
+
+- **T0-T2 (2026-10-19).** `TechEdits` (set, copy in, prune; `Picked` for what a picker shows), tested by
+  `TechEditsTests` over every shipped design. `PickRow` gained groups, tooltips and Applies; one `PickList` draws the
+  Templates panel's popups and the tabs' combos (tall). The Templates panel's Guns, Torpedoes, Shock and Outfit rows
+  (`DesignerScene.Tech.cs`): a gun block's tooltip gives each of the design's calibres its reload, training,
+  elevation, pattern and propellant by `DesignerPlaceholders`; a torpedo's its 21" settings, warhead, gyro and
+  failures. The Fire control tab per battery: directors, rangefinder, Preset, Optics, Computer, Mount (with
+  directors), Sights (with the battery); the turret rangefinders (`Knobs.MainRangefinder`), aft control's and the
+  conning tower's. The Crew tab: the outfit's picker and its fire loads. The torpedo picker went to the Templates panel
+  only, and the "outfit" rename is still to do.

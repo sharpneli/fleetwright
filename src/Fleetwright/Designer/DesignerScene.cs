@@ -366,6 +366,11 @@ public sealed unsafe partial class DesignerScene : IScene
     {
         /// <summary>A picker of its own in place of the list (the shells' family tree).</summary>
         public Action? Popup { get; init; }
+        /// <summary>Each catalogue entry's group, a heading where it changes (null: no groups).</summary>
+        public string[]? Groups { get; init; }
+        /// <summary>Each catalogue entry's tooltip (null: none).</summary>
+        public string[]? Tips { get; init; }
+        public bool Applies { get; init; } = true;
     }
     sealed record ToggleRow(ToggleKnob Knob, bool Value, bool Applies) : Item;
 
@@ -484,7 +489,8 @@ public sealed unsafe partial class DesignerScene : IScene
             FullT = res != null ? N0(res.FullDisplacementT) : "–",
             RemarkCount = remarks.Count == 0 ? "none" : remarks.Count.ToString(CultureInfo.InvariantCulture),
             Outline = Outline(ship, summaries),
-            Templates = [PlantPick(d, ship), HullPick(d, ship), CrewPick(d, ship), ArmourPick(d), ProtectionPick(d), ShellsPick(d)],
+            Templates = [PlantPick(d, ship), HullPick(d, ship), CrewPick(d, ship), ArmourPick(d), ProtectionPick(d), ShellsPick(d),
+                GunsPick(d), TorpedoPick(d), ShockPick(d), OutfitPick(d)],
             Remarks = remarks.ToArray(),
             Panel = PanelItems(d, ship),
             HistoryLabels = doc.History.Select(h => h.Label).ToArray(),
@@ -637,11 +643,22 @@ public sealed unsafe partial class DesignerScene : IScene
                 Choice(Knobs.HullMaterial);
                 Choice(Knobs.SuperstructureMaterial);
                 break;
-            case 6:
-                foreach (var b in new[] { "main", "secondary", "aa" })
+            case 6:   // plain rows until the fire-control plan's tab (docs/designer-ui/tech-blocks.md)
+                foreach (var (b, name) in new[] { ("main", "Main battery"), ("secondary", "Secondary battery"), ("aa", "Anti-aircraft") })
                 {
+                    items.Add(new Header(name));
                     Num(Knobs.Directors(b));
                     Num(Knobs.Rangefinder(b));
+                    items.Add(PresetPick(d, b));
+                    for (int slot = 0; slot < 4; slot++)
+                        items.Add(BlockPick(d, b, slot));
+                    if (b == "main")
+                    {
+                        for (int i = 0; i < (d.Main?.Count ?? 0); i++)
+                            Num(Knobs.MainRangefinder(i), d.Main!.Count > 1 ? $"Turret rangefinders ({i + 1})" : null);
+                        Num(Knobs.AftRangefinder);
+                        Num(Knobs.TowerRangefinder);
+                    }
                 }
                 items.Add(new Header("Fire control, details", Details: true));
                 foreach (var (b, name) in new[] { ("main", "Main"), ("secondary", "Secondary"), ("aa", "AA") })
@@ -653,6 +670,8 @@ public sealed unsafe partial class DesignerScene : IScene
                 break;
             case 7:
                 items.Add(CrewPick(d, ship));
+                items.Add(OutfitPick(d));
+                items.Add(new Note(OutfitLine(Outfits.Of(d))));
                 Num(Knobs.Endurance);
                 Toggle(Knobs.Distiller);
                 items.Add(new Header("Crew, details", Details: true));
