@@ -423,6 +423,41 @@ from B0's bench on.
 
 ### B5 Anchors and cost
 - The yardstick above; the first game's anchors first. Tune only within the [EST] numbers, and log what moved.
+- **The bench (built 2026-10-19):** `shipgen fire-history` (`FireHistory.cs`): 17 §9 T6's cases on our designs, a ship
+  hit by the case's weight of fire at random over its minutes through the world's damage system (`GivenHits.Aim`, the
+  hits bench's aim shared), her parties hit at work, run on for hours; ablaze is developed fires in half her sections
+  (17 §9's measure). Santiago and the Yalu on `armoured_cruiser` with the Victorian outfit and Connecticut's or Mikasa's
+  shells, Suvorov and Orel on `borodino` under Mikasa's, the RN battleship on `iron_duke` under Seydlitz, Savo on
+  `heavy_cruiser`. `--trace` prints one run minute by minute.
+- **Fixed on the way (2026-10-19):**
+  - **The Ijuin fuze** (JP 1904, both shells): its note said it bursts on contact, its plate threshold was the default
+    0.07 calibre (21 mm for a 12"): Mikasa's shells crossed a Russian ship's ~8 mm upper works whole. Now 0.01 [EST].
+    On Borodino: 6" common burst inside 16% → 30% of hits, 12" Shimose 3% → 32%.
+  - **The filler's fire** (12 §4.1) never reached the starts, though the plan had it: now a rate, 1 − exp(ln(1 − p_kind)
+    × fire/0.25 × load × size) (fire_ref.py's p_fire form; TNT's chance as before, black-powder common in a 1905
+    superstructure ~0.69, 08 §3.9's 0.6-0.8 for 1890-1905 ships).
+  - **Idle parties hit:** a party freed from a fire only at its next plan was thinned by hits as if at work.
+  - Found, not fire's: a contact-fuzed shell on armour breaks up (`Holed`) before its fuze bursts it on the face
+    (bugs.md, Damage).
+- **The first reading (20 runs a case, 2026-10-19):**
+
+  | Case | Ours | Wanted |
+  |---|---|---|
+  | Santiago, unprepared, unorganised | ablaze in 80%, median 56 min; 65% then lost to a magazine cooked off (median 101 min) | beyond help in 30-100 min ✓; the record has them burned out, not blown up |
+  | Santiago, prepared | all out | later than unprepared ✓ |
+  | Yalu, 12 hits, unprepared | ablaze in 30%, 99 min | beyond help in most ✗ |
+  | Yalu, 12 hits, prepared | all out | ✓ |
+  | Suvorov, 60 hits in 40 min | 10 fires lit, none flashes over, never ablaze | ablaze in 20-40 min ✗ |
+  | Orel, 50 hits over 4 h | 9 fires, all out; water ~0 t | out ✓; tens to hundreds of tonnes ✗ |
+  | RN battleship, 15 heavy hits | 1 fire, out in minutes | ✓ |
+  | Savo, 1942 fit / post-Savo | 5 fires, out in half / out | never out in most ✗ / ✓ |
+
+- **Why Suvorov doesn't burn** (`--trace`): her fires light in her superstructure blocks, which are small (17 parts as
+  cabins, median 8 m²; 34 mounts at 3 m²), and her prepared crew's watch hose is on each within 90 s: a cabin fire one
+  hose beats. Her big burnable spaces (44 quarters cells, 82 m², 510 MJ/m²) are behind her armour, and most hits on her
+  side burst outside on it, which lights nothing unless at deck level. The record's fires were on and around her upper
+  deck: boats, hammocks, deck coal, paint, wooden decks (the deck clutter below). The same holds the Yalu's unprepared
+  cruiser and Orel's water (fires in parts and on deck run off).
 - Cost per burning space and per ship; the squadrons scenario's frame time.
 - What the AI and the matchup read about fire, if anything (a ship burning beyond help).
 - **Later (the user, 2026-10-18): deck clutter on a long voyage.** The Russians at Tsushima steamed in with cluttered

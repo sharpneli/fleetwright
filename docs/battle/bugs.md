@@ -37,6 +37,13 @@ add what's found.
 
 - [x] A battleship under medium HE sometimes loses a magazine to fire (about 1.5 %): decided 2026-10-15, rarely is
   right (user); damage control and flash discipline refine it later (fighting.md, the later passes' Magazines).
+- [ ] A contact-fuzed shell on armour breaks up instead of bursting on the face (found 2026-10-19, fire.md B5).
+  `Terminal`'s plate step calls a shell between the plate's holing limit and V_L `Holed` and returns before its fuze
+  is asked: Mikasa's 12" Shimose (Ijuin fuze, delay 0, starts on any plate since 2026-10-19) on Borodino's belt is
+  `Holed` in 43% of hits (a weak burst of pieces, no blast, no fire), where the record has it bursting on the armour
+  face (06 §5: "never penetrated armour over about 6 in"; 15 §2.3: "exploded the moment they touched"). A fuze that
+  starts on the plate with no delay should burst on the face (`Defeated`, outside) before the shell can hole it. The
+  shells plan's, not fire's; it moves blast and men on armoured targets more than fires.
 
 ## Balance and calibration
 
