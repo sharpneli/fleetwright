@@ -381,6 +381,7 @@
   "PartFragilityJ": [100, 100, 500, 100, 5000, 100, 100, 5000, 5000, 5000, 5000, 500, 5000, 500, 5000, 5000, 500, 500, 500],
   "RoomFragilityJ": 500,
   "FireChance": [0.15, 0.30, 0.45],
+  "FireFillerRef": 0.25,
   "FireStartLoadMJm2": 560,
   "FireStartLoadCap": 2,
   "FireSeatMW": [0.1, 0.4, 0.3],

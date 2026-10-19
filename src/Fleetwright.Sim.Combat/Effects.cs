@@ -575,10 +575,14 @@ public static class Effects
             space = -1;
         if (!broken && space >= 0)
         {
+            // 08's chance by kind as a rate (λ = -ln(1 - p)), times the filler's fire over the reference's (12 §4.1), the
+            // load and the burst's size: 1 - e^-λ (fire_ref.py's p_fire), so the chances saturate (docs/battle/fire.md B5)
             int kind = Math.Clamp((int)shell.Kind, 0, s.FireChance.Length - 1);
             double load = Math.Min(s.FireStartLoadCap, Fires.Load(c.FireSpaces[space], k) / s.FireStartLoadMJm2);
-            double chance = s.FireChance[kind] * load * Math.Min(1.5, 0.5 + 0.5 * Math.Cbrt(w / 10)) * (t.Burst == BurstKind.Outside ? s.FireOutsideShare : 1);
-            if (r.NextDouble() < chance)
+            double filler = shell.FillerFire > 0 ? shell.FillerFire / s.FireFillerRef : 1;
+            double lambda = -Math.Log(1 - s.FireChance[kind]) * filler * load * Math.Min(1.5, 0.5 + 0.5 * Math.Cbrt(w / 10)) *
+                            (t.Burst == BurstKind.Outside ? s.FireOutsideShare : 1);
+            if (r.NextDouble() < 1 - Math.Exp(-lambda))
                 res.Fire |= Fires.Ignite(c, k, space, s.FireSeatMW[Math.Min(kind, s.FireSeatMW.Length - 1)], s);
         }
 

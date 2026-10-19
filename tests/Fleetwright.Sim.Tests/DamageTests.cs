@@ -174,7 +174,9 @@ public class DamageTests(ITestOutputHelper output)
         // 2026-10-15): about 1.5 % of them over 200 ships, 2.1 % over 333 with her director in the foretop
         // (fire-control.md F4b), so a few in 50 is chance
         Assert.InRange((double)r.Lost / r.Ships, 0, 0.06);
-        Assert.InRange(r.SpeedShare / r.Ships, 0.85, 1);
+        // her speed: the funnels' draught and, since lyddite's fire counts (fire.md B5: ~7 fires in 30 hits, 08 §5's "about
+        // 8 small fires"), some smoke in her machinery; 84% at B5
+        Assert.InRange(r.SpeedShare / r.Ships, 0.8, 1);
         Assert.InRange(r.MainWorking / r.MainMounts, 0.85, 1);
         Assert.InRange(r.DirectorsWorking / r.Directors, 0, 0.9);   // fire control lost in some
         int upper = 0, below = 0;

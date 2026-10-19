@@ -1042,13 +1042,16 @@ public sealed record SimSettings
     public double[] PartFragilityJ { get; init; } = [100, 100, 500, 100, 5000, 100, 100, 5000, 5000, 5000, 5000, 500, 5000, 500, 5000, 5000, 500, 500, 500];
     public double RoomFragilityJ { get; init; } = 500;
 
-    /// <summary>Fire: a burst's chance by the shell's kind (AP, common, HE), times the fire load where it bursts over
+    /// <summary>Fire: a burst's chance by the shell's kind (AP, common, HE; 08 §3.9's WWII bursts), as a rate times its
+    /// filler's fire over <see cref="FireFillerRef"/> (damage/12 §4.1: TNT's, the WWII shells' the chances were read from;
+    /// black powder 4 times it), times the fire load where it bursts over
     /// <see cref="FireStartLoadMJm2"/> (the space's, from the design's outfit: docs/battle/fire.md B0; at most
     /// <see cref="FireStartLoadCap"/>; 560 MJ/m² reads a Great War messdeck as Fire v0's hull did, 0.8), times the burst's
     /// size (0.5 + 0.5 times the cube root of W over 10 kg, at most 1.5), and this share when it bursts outside; the seat
     /// it lights, MW by kind (damage/17 §1: HE 0.1-0.5 MW [EST]; fire_ref.py's SHELL_Q0); fragments reaching a mount's
     /// ready ammunition light it with this chance, its seat that.</summary>
     public double[] FireChance { get; init; } = [0.15, 0.30, 0.45];
+    public double FireFillerRef { get; init; } = 0.25;
     public double FireStartLoadMJm2 { get; init; } = 560;
     public double FireStartLoadCap { get; init; } = 2;
     public double[] FireSeatMW { get; init; } = [0.1, 0.4, 0.3];

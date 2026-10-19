@@ -235,7 +235,7 @@ public static class Ammunition
                 BreakTD = a.Body?.BreakTD ?? 0, BodyQuality = a.Body?.Quality ?? 1, FillerKg = masses[k] * a.Filler.Share!.Value,
                 Explosive = x.Name ?? "", FillerRe = x.Re ?? 1, Booster = a.Filler.Booster ?? "basic",
                 FillerQDet = x.QDet ?? 4.5, FillerQComb = x.QComb ?? 15, FillerAirM3Kg = x.AirM3Kg ?? 2.66, FillerEta = x.Eta ?? 1,
-                FillerInPlate = x.InPlate ?? 0, FillerFull = (a.Filler.Booster == "ce" ? x.Full?.Ce : x.Full?.Basic) ?? 1,
+                FillerInPlate = x.InPlate ?? 0, FillerFire = x.Fire ?? 0.25, FillerFull = (a.Filler.Booster == "ce" ? x.Full?.Ce : x.Full?.Basic) ?? 1,
                 Fuze = a.Fuze!.Position!, FuzeDelayS = a.Fuze.DelayS ?? 0, FuzeStartCal = a.Fuze.StartCal ?? FuzeDefaults.StartCal,
                 FuzeOblique = a.Fuze.Oblique ?? FuzeDefaults.Oblique, FuzePlates = a.Fuze.Plates ?? "single",
                 FuzeScatter = a.Fuze.Scatter ?? FuzeDefaults.Scatter, FuzeBlind = a.Fuze.Blind ?? FuzeDefaults.Blind,
@@ -382,6 +382,9 @@ public sealed record ShellReport
     public double FillerEta { get; init; }
     public required string Booster { get; init; }
     public double FillerInPlate { get; init; }
+    /// <summary>Its explosive's fire: how readily its burst sets what's near alight (damage/12 §4.1: black powder 1, TNT
+    /// 0.25).</summary>
+    public double FillerFire { get; init; }
     public double FillerFull { get; init; }
     public required string Fuze { get; init; }
     public double FuzeDelayS { get; init; }

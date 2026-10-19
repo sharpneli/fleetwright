@@ -288,6 +288,9 @@ public readonly record struct ShellTypeRow
     /// chance it detonates fully with the shell's booster (the rest go low-order or are duds).</summary>
     public double FillerInPlate { get; init; }
     public double FillerFull { get; init; }
+    /// <summary>The filler's fire (damage/12 §4.1, docs/battle/fire.md B5): how readily its burst lights what's near,
+    /// black powder 1, Shimose 0.5, TNT 0.25 (0: not given, taken as the starts' reference).</summary>
+    public double FillerFire { get; init; }
     public Fuze Fuze { get; init; }
     public double FuzeDelayS { get; init; }
     /// <summary>A base fuze: the plate that starts it, calibres at normal, and its share from 61° (Okun's own curve
