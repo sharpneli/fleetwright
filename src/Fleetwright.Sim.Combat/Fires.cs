@@ -799,8 +799,8 @@ public static class Fires
         for (int p = 0; p < k.PartyCount; p++)
         {
             ref var party = ref k.Parties[p];
-            if (party.Target < 0 || party.Section != section || now < party.ArriveMs)
-                continue;
+            if (party.Target < 0 || party.Section != section || now < party.ArriveMs || !k.Fire[party.Target].Burning)
+                continue;   // only a party at work on a fire (one whose fire went out waits for the next plan to be freed)
             if (r.NextDouble() < doc.HoseCut)
                 party.StopMs = now + (long)(s.FireHitStopS * 1000);
             if (r.NextDouble() < s.FireHitMenChance)
