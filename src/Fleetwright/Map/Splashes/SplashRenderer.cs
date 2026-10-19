@@ -47,6 +47,10 @@ public sealed unsafe class SplashRenderer : IDisposable
     /// shell's of the same height (the plume ~0.4 of its height across), its water greyed by the explosion's smoke
     /// through the dye's tint.</summary>
     const double TorpedoWidth = 2.5;
+
+    /// <summary>Oil on the water (docs/visuals/hits-and-fires.md I7): a heavy fuel's near black, its w 2 marking it to the
+    /// stain (darker, no dye's vividness) and the foam (none) [EST].</summary>
+    static readonly Vector4 OilDark = new(0.07f, 0.055f, 0.045f, 2);
     static readonly Vector4 TorpedoGrey = new(0.42f, 0.42f, 0.44f, 1);
     /// <summary>The longest shadow, metres per metre of height (a sun at ~7°).</summary>
     const float MaxDrift = 8;
@@ -169,7 +173,7 @@ public sealed unsafe class SplashRenderer : IDisposable
                 Base = new Vector4((float)rel.X, (float)rel.Y, (float)rel.Z, e.Seed),
                 Shape = new Vector4((float)h, (float)(w0 * floor), (float)tau, (float)ta),
                 Lean = new Vector4((float)(lean * Math.Sin(b)), (float)(lean * Math.Cos(b)), (float)(world / floor), column ? 1 : 0),
-                Dye = e.TorpedoHit ? TorpedoGrey : new Vector4(SplashLook.Palette[(int)dye], dye == Dye.None ? 0 : 1),
+                Dye = e.Oil ? OilDark : e.TorpedoHit ? TorpedoGrey : new Vector4(SplashLook.Palette[(int)dye], dye == Dye.None ? 0 : 1),
                 Foam = new Vector4((float)foamAge, e.FoamStrength, (float)w0, (float)world),
             };
             keys[count] = -(float)Vec3d.Dot(rel, north);   // north first: the effects camera looks north, so they're furthest

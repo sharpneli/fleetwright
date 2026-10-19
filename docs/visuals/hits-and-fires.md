@@ -273,8 +273,32 @@ wake's turbulence; a ship going down makes none [EST, gap 4]. The shared budget:
 0.6 of it, the fires to 0.9, so the fires come first. A moving source lays a puff every 12 m it runs (never more often
 than every 0.5 s, nor less often than its own spacing: 4 s funnels, 2 s fires): laid by time at speed, the young puffs
 read as a string of beads 40 m apart (seen, fixed). Knobs `-funnels=` (output, idle, oil, rise, every, spare, on). Seen at
-1.2 m/px, two dreadnoughts at 20 kn and a destroyer at 28 kn, a 12 kn wind on their beam: a smooth plume streaming off
+1.2 m/px, two dreadnoughts at 20 kn and a destroyer at 28 kn, a 6 kn wind on their beam: a smooth plume streaming off
 each, bending downwind and widening over a kilometre. Test: `SmokeTrailsTests.A_moving_source_lays_its_puffs_by_the_distance_it_runs`.
+
+**The user, 2026-10-19:** "It's fine if the oil stain vanishes past a minute. It's a visual effect, not a simulated
+object. This applies to everything here." So nothing in I7 keeps state past the splash book's foam and stains: no oil
+renderer, no long-lived wreck marks.
+
+**I7 (2026-10-19).** `Map/Sinking/SinkingEffects`, driven by the attitude she goes under by (`Attitude.At`, the hit
+queries' model; her deck's edge posed at 24 stations a side by `HitQuery.ToWorld`'s maths), its layers on the splash
+book (foam alone, `SplashBook.Add(column: false)`; a radius R m as a shell of 12·R mm):
+- **crossing foam** where her deck's edge goes down through the water (w = 0.25 + 0.75 smoothstep(0.03, 0.8, −v_z)), and
+  cascade foam off an end rising (0.55 smoothstep(0.05, 1, v_z)), a station at most every 1.2 s;
+- **the collar** at her waterline cut while she moves up or down (0.18 + 0.82 smoothstep(0.05, 1.2, |v_z|)), every 2 s;
+- **air boils** over what's under, as often as she's going down fast, rising d / 2 m/s, S = 0.9 V^⅓ + 0.1 d (2-14 m),
+  fainter from deeper (1.15 − 0.008 d);
+- **the slam** when she's gone (out of the snapshot within 2 s of her time; one lost from sight is only forgotten): a
+  boil of 3 + 0.9 √(0.3 L B) m, a ring on the water (the blasts' spherical quad, λ 0.25 L) [EST], a dozen trapped-air
+  burps over a minute (τ 14 s, the wreck descending 7.5 m/s: later, wider, fainter, drifting), her oil as three dark
+  stains (the splash book's stain, a new oil kind: near-black brown, 0.45 at most, no foam; gone in a minute), and 25
+  debris specks over 0.3 L × 0.15 L.
+
+The table's ring round a ship going down and its wreck mark fade out over the cross-fade (the label stays). First
+captures had the boils 3.4 times too big (a splash's foam reaches ~85 calibres: they buried her) and the oil a black blob
+hiding the slam; both fixed. Seen at 0.25 m/px, a dreadnought foundering by the stern at 20x: foam and boils working
+along her as her deck goes under, the bow last, then the slam's foam and specks with a dark sheen over the wreck,
+fading within a couple of minutes. No whirlpool. Test: `SinkingTests`.
 
 ## Later
 

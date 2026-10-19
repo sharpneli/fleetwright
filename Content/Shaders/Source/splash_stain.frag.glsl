@@ -33,7 +33,8 @@ void main()
     float rad = 1.4 * w * (1.0 + age / 50.0) * (0.75 + 0.5 * n);
     float cover = (1.0 - smoothstep(0.4, 1.0, length(fragLoc) / rad)) * smoothstep(0.8 * ta, 2.0 * ta, age) * exp(-age / 40.0);
     cover *= (0.6 + 0.8 * n) * (1.0 - smoothstep(40.0, 60.0, age));
-    float a = clamp(0.4 * fragDye.w * misc.w * cover, 0.0, 0.6) * fragFoam.w * fragFoam.y;
+    // oil (w 2: docs/visuals/hits-and-fires.md I7) lies thicker than a dye and is no dye's vividness
+    float a = (fragDye.w > 1.5 ? clamp(0.45 * cover, 0.0, 0.45) : clamp(0.4 * fragDye.w * misc.w * cover, 0.0, 0.6)) * fragFoam.w * fragFoam.y;
     if (a < 0.002)
         discard;
     vec3 light = skyAmb.rgb + sunRad.rgb * max(sunL.z, 0.0) + moonRad.rgb * max(moonL.z, 0.0);

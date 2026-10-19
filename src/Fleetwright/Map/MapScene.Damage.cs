@@ -63,17 +63,21 @@ public sealed partial class MapScene
                 Magazine(view, w.At, (now - w.LossMs) / 1000.0, s, windDeg);
 
         const double r = 8;   // pixels, at any zoom
+        // in the world, the wreck is its oil and debris (docs/visuals/hits-and-fires.md I7): the mark gives way over the
+        // cross-fade (the label stays)
+        float mark = Sinking.SinkingEffects.On ? (float)(1 - WorldView.Factor(view)) : 1f;
+        var wreckColour = WreckColour with { W = WreckColour.W * mark };
         foreach (var w in wrecks)
         {
-            if (!view.Project(w.At, out double x, out double y) || x < -20 || y < -20 || x > view.Width + 20 || y > view.Height + 20)
+            if (mark <= 0 || !view.Project(w.At, out double x, out double y) || x < -20 || y < -20 || x > view.Width + 20 || y > view.Height + 20)
                 continue;
-            overlay.BeginStrip(WreckColour, 1.5f);
+            overlay.BeginStrip(wreckColour, 1.5f);
             for (int k = 0; k <= 12; k++)
                 overlay.Point(x + Math.Cos(k * Math.PI / 6) * r, y + Math.Sin(k * Math.PI / 6) * r);
             overlay.End();
             foreach (double a in (ReadOnlySpan<double>)[Math.PI / 4, -Math.PI / 4])
             {
-                overlay.BeginStrip(WreckColour, 1.5f);
+                overlay.BeginStrip(wreckColour, 1.5f);
                 overlay.Point(x - Math.Cos(a) * r * 0.7, y - Math.Sin(a) * r * 0.7);
                 overlay.Point(x + Math.Cos(a) * r * 0.7, y + Math.Sin(a) * r * 0.7);
                 overlay.End();
@@ -155,8 +159,8 @@ public sealed partial class MapScene
             if (burning > 0 && glow > 0)   // the streak gives way to the world view's smoke (I5) over the cross-fade
                 Smoke(view, p, fx / burning, fy / burning, wind, burning, now, seed, mpp, glow);
 
-            if (lost)
-                GoingDown(IconLengthAt(view, v.Class[k], p), v, k, cx, cy, now);
+            if (lost && (!Sinking.SinkingEffects.On || icon > 0))   // the ring gives way to the world view's sinking (I7) over the cross-fade
+                GoingDown(IconLengthAt(view, v.Class[k], p), v, k, cx, cy, now, Sinking.SinkingEffects.On ? (float)icon : 1f);
         }
     }
 
@@ -222,13 +226,13 @@ public sealed partial class MapScene
     }
 
     /// <summary>A ship going down: a pale ring of foam and wreckage widening round her until she's gone.</summary>
-    void GoingDown(double iconPx, ShipsView v, int k, double x, double y, long now)
+    void GoingDown(double iconPx, ShipsView v, int k, double x, double y, long now, float fade)
     {
         double age = (now - v.LossMs[k]) / 1000.0, span = Math.Max((v.GoneMs[k] - v.LossMs[k]) / 1000.0, 1);
         if (age < 0)
             return;
         double gone = Math.Clamp(age / span, 0, 1);
-        Ring(x, y, Math.Max(iconPx, ShipDrawList.IconLengthPx / 2) * (0.55 + 0.45 * gone), WreckColour with { W = (float)(0.4 * Math.Min(1, age / 2) * (1 - gone * gone)) }, 1.5f);
+        Ring(x, y, Math.Max(iconPx, ShipDrawList.IconLengthPx / 2) * (0.55 + 0.45 * gone), WreckColour with { W = (float)(0.4 * Math.Min(1, age / 2) * (1 - gone * gone)) * fade }, 1.5f);
     }
 
     /// <summary>A magazine's blast where a ship was, <paramref name="age"/> seconds after: a white-hot flash with sparks,

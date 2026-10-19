@@ -29,6 +29,8 @@ float noise2(vec2 p, float salt)
 
 void main()
 {
+    if (fragDye.w > 1.5)
+        discard;   // oil (docs/visuals/hits-and-fires.md I7): a stain, no foam
     float w = fragFoam.z, age = fragFoam.x, ta = max(fragShape.w, 0.5), tf = age / ta;
     float d = length(fragLoc);
     vec2 p = fragLoc + fragSeed * 911.0;
