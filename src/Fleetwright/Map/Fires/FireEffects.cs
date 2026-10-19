@@ -26,7 +26,7 @@ public static class FireEffects
     const int MaxTongues = 4;
 
     public static void Build(in MapView view, Snapshot s, long drawMs, double world, double clock, Func<int, ShipClass?> classOf,
-        MagazineRenderer bodies, FlashLights lights)
+        MagazineRenderer bodies, FlashLights lights, SmokeBook? smoke = null, SmokeTrails? trails = null)
     {
         if (!FireLook.On || world <= 0 || !bodies.Ready)
             return;
@@ -50,7 +50,11 @@ public static class FireEffects
                 var wind = Earth.Forward(p, (s.Weather.WindFromDeg + 180) % 360) * s.Weather.WindMs - f * v.Speed[k];
                 var windPlan = new Vector2((float)Vec3d.Dot(wind, view.Right), (float)Vec3d.Dot(wind, view.Up));
                 for (int j = v.ShowStart[k]; j < v.ShowStart[k] + v.ShowCount[k]; j++)
+                {
                     Fire(view, v, j, p, f, stbd, c.Vertical.Waterline, windPlan, world, clock, bodies, lights, span, v.Entity[k]);
+                    if (smoke != null && trails != null && (FireLook.Parts & 4) != 0)
+                        Smoke(v, j, p, f, stbd, c.Vertical.Waterline, wind.Length, clock, smoke, trails, v.Entity[k]);
+                }
             }
         lights.Finish(view);
     }
@@ -106,6 +110,47 @@ public static class FireEffects
 
         static Vec3d up(Vec3d x) => x.Normalized();
     }
+
+    /// <summary>A fire's smoke (I5), a trail of puffs on the gun smoke's book (<see cref="SmokeTrails"/>), from its flames'
+    /// tips:
+    /// <list type="bullet">
+    /// <item>its extinction area a second, Ȧ = (Q / ΔH_c) y_s σ_s (ΔH_c 18 MJ/kg, σ_s 8,700 m²/kg, Mulholland): a growing
+    /// fire's soot yield <see cref="FireLook.YieldGrow"/> in a light grey, a developed one's <see cref="FireLook.YieldDeveloped"/>
+    /// in a grey-brown going black (10 MW developed: ~350 m²/s), burning charges a yellow-brown [EST, gaps 1 and 3];</item>
+    /// <item>steam while water is on it: the water it boils (the hoses' flow times its boil share) as water fog, white,
+    /// evaporating over <see cref="FireLook.SteamS"/> [EST];</item>
+    /// <item>its rise, bent over in the apparent wind (Briggs): Δh = 1.6 F^⅓ x^⅔ / U, F ≈ 9 Q_c m⁴/s³ with Q_c 0.7 Q MW,
+    /// reached at <see cref="FireLook.LevelM"/> downwind (10 MW in 7 m/s: ~40 m up at 200 m), then levelling off and
+    /// spreading as the puffs do.</item>
+    /// </list></summary>
+    static void Smoke(ShipsView v, int j, Vec3d p, Vec3d f, Vec3d stbd, double wl, double windMs, double now, SmokeBook book, SmokeTrails trails,
+        int entity)
+    {
+        var at = v.ShowAt[j];
+        double q = Math.Max(v.ShowMW[j], 0), qc = Math.Max(v.ShowChargesMW[j], 0), d = Math.Max(v.ShowWidthM[j], 0.5);
+        var phase = v.ShowPhase[j];
+        double dev = phase is BurnPhase.Developed or BurnPhase.Decay ? 1 : phase == BurnPhase.Control ? 0.3 : 0;
+        double yield = FireLook.YieldGrow + (FireLook.YieldDeveloped - FireLook.YieldGrow) * dev;
+        double aRate = (q / FireLook.HeatMJkg * yield + qc / FireLook.HeatMJkg * FireLook.YieldCharges) * FireLook.SootM2Kg;
+        double steam = v.ShowWaterLpm[j] / 60 * v.ShowBoil[j] * FireLook.SteamM2Kg;
+        if (aRate + steam <= 0)
+            return;
+        var tint = Vector3.Lerp(GrowSmoke, DevelopedSmoke, (float)dev);
+        if (qc > 0)
+            tint = Vector3.Lerp(tint, ChargeSmoke, (float)(qc / (q + qc)));
+        double u = Math.Max(windMs, 1), fc = 9 * 0.7 * (q + qc);
+        double rise = Math.Min(1.6 * Math.Cbrt(fc) * Math.Pow(FireLook.LevelM, 2.0 / 3) / u, FireLook.MaxRiseM);
+        double l = Math.Max(MagazineBlast.Heskestad((q + qc) * 1000, d), 0.4 * d) * FireLook.Height, z = at.Z - wl + l;
+        var sea = p + f * at.X + stbd * at.Y;
+        long key = (long)entity << 20 | (uint)v.ShowSpace[j];
+        int owner = (int)((uint)(entity * 64 + v.ShowSpace[j] % 64) & 0xffffff) | 1 << 29;
+        trails.Emit(book, key, owner, now, FireLook.EveryS, sea + sea.Normalized() * z, z, aRate, steam, FireLook.SteamS, tint, Math.Max(d, 2), rise,
+            FireLook.LevelM / u, (float)U((uint)key, 99), FireLook.Spare);
+    }
+
+    /// <summary>A fire's smoke's tints, linear [EST, gap 1]: growing a light grey, developed a grey-brown near black,
+    /// burning charges a yellow-brown.</summary>
+    static readonly Vector3 GrowSmoke = new(0.5f, 0.49f, 0.47f), DevelopedSmoke = new(0.13f, 0.115f, 0.1f), ChargeSmoke = new(0.45f, 0.37f, 0.22f);
 
     /// <summary>A number in [0, 1) from a fire's seed, one per <paramref name="k"/>.</summary>
     static double U(uint seed, uint k)

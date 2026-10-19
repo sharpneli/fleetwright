@@ -15,6 +15,9 @@ public sealed partial class MapScene
     readonly HitBook hitBook = new();
     readonly HitMarks hitMarks = new();
 
+    /// <summary>The continuous smoke sources: fires (I5), funnels (I6).</summary>
+    readonly Fires.SmokeTrails smokeTrails = new();
+
     /// <summary>The dev's hits bench: "target:shooter[:every_s[:shot]]" (entities; one of the bench's shots over and over),
     /// or null.</summary>
     public string? HitBench { get; init; }

@@ -246,6 +246,24 @@ go out (the sim's own result, B5), so nothing shows; with `prepared, cluttered` 
 her deck grows from 0.3 MW to 9 MW over nine minutes, its tongues leaning off the burnt spot by day and its light warming
 her deck and turrets by night. Test: `FireLightsTests`.
 
+**I5 (2026-10-19).** `Map/Fires/SmokeTrails`: continuous smoke sources (the smoke research's), shared with I6's
+funnels. Each lays a puff on the gun smoke's book every `every` 2 s of the sea's clock carrying what it made since (its
+rates times the time; after a gap, at most three spacings' worth), left in the air to drift with the wind while its ship
+steams on: the trail. The book merges a source's settled puffs by age (one key a source); its merge now keeps the rise
+still to come (gun smoke's jet is spent by then: unchanged). Each fire that shows is a source at its flames' tips:
+- **Ȧ = (Q / ΔH_c) y_s σ_s**: ΔH_c 18 MJ/kg, σ_s 8,700 m²/kg, the yield 0.03 growing (light grey), 0.08 developed
+  (grey-brown near black), charges 0.02 and yellow-brown [EST, gaps 1 and 3]: 10 MW developed ~390 m²/s;
+- **steam** while water is on it: the hoses' flow times its boil share, as water fog (white), 500 m² a kg, evaporating
+  over 15 s [EST];
+- **the rise**, Briggs bent over in the apparent wind: Δh = 1.6 F^⅓ x^⅔ / U, F = 9·0.7 Q, reached at `level` 200 m
+  downwind (at most 300 m), as the puff's jet over that run's time.
+
+The fires may fill the book to 0.9 of its 4,096 (`Spare`; the funnels get less: I6). Decision 2's exception holds: no
+smoke blocks sight. The table's streak fades out over the cross-fade. Seen at ~0.6 m/px, 8 m/s wind: a growing deck
+fire's light-grey plume rising off her and trailing away downwind for most of a kilometre. A note for I8: a test run
+killed by its timeout left the game running and drawing (Windows keeps the child), which halved later runs' frame
+rates until it finished; benches should run to their own end. Tests: `SmokeTrailsTests`.
+
 ## Later
 
 - **The colour pass:** smoke colours by fire, filler and fuel, soot yields and the funnels' output from the research

@@ -26,6 +26,13 @@ public static class FireLook
     /// drawn that they throw on the sea, the ships and the smoke [EST].</summary>
     public static double Kelvin = 1250, LightShare = 0.3;
 
+    /// <summary>The smoke (I5): its fuel's heat of combustion, MJ/kg (cellulosics and cable), its soot yield growing,
+    /// developed and from burning charges (gap 3: 0.03-0.08), soot's extinction, m²/kg (Mulholland); the steam's, m² per kg
+    /// boiled, and its evaporation, s; a puff laid every so often, s (the sea's clock); where the plume levels off downwind,
+    /// m, and the most it rises; the share of the smoke's book the fires may fill to (the funnels get less) [EST].</summary>
+    public static double HeatMJkg = 18, YieldGrow = 0.03, YieldDeveloped = 0.08, YieldCharges = 0.02, SootM2Kg = 8700, SteamM2Kg = 500,
+        SteamS = 15, EveryS = 2, LevelM = 200, MaxRiseM = 300, Spare = 0.9;
+
     /// <summary>Which parts draw: 1 the flames, 2 their lights, 4 their smoke (I5).</summary>
     public static int Parts = 7;
 
@@ -45,6 +52,12 @@ public static class FireLook
             case "lean": Lean = Math.Clamp(v, 0, 1); break;
             case "kelvin": Kelvin = Math.Max(v, 600); break;
             case "light": LightShare = Math.Max(v, 0); break;
+            case "yield": YieldDeveloped = Math.Max(v, 0); break;
+            case "growyield": YieldGrow = Math.Max(v, 0); break;
+            case "steam": SteamM2Kg = Math.Max(v, 0); break;
+            case "steams": SteamS = Math.Max(v, 0.1); break;
+            case "every": EveryS = Math.Max(v, 0.2); break;
+            case "level": LevelM = Math.Max(v, 1); break;
             case "parts": Parts = (int)v; break;
             case "on": On = v != 0; break;
             default: return false;
@@ -52,5 +65,5 @@ public static class FireLook
         return true;
     }
 
-    public const string Knobs = "height, puff, flare, lean, kelvin, light, parts (1 flames, 2 lights, 4 smoke), on";
+    public const string Knobs = "height, puff, flare, lean, kelvin, light, yield, growyield, steam, steams, every, level, parts (1 flames, 2 lights, 4 smoke), on";
 }

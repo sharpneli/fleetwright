@@ -165,12 +165,16 @@ public sealed class SmokeBook
             double ageEff = (-0.5 + Math.Sqrt(0.25 + 4 * g * g * rest)) / (2 * g * g);
             double fogNow = WaterNow(q, now) + WaterNow(p, now), fogS = Math.Max(q.FogS, p.FogS);
             double particles = ParticlesNow(q, now) + ParticlesNow(p, now);
+            // the rise still to come (a fire's plume's buoyancy, docs/visuals/hits-and-fires.md I5), kept over the merged
+            // puff's own age; a gun's jet is spent by now
+            double riseLeft = wj * RiseLeft(q, now) + wi * RiseLeft(p, now), jetS = Math.Max(q.JetS, p.JetS);
+            double jetNow = riseLeft > 0.5 && jetS > 0 ? 1 - Math.Exp(-ageEff / jetS) : 0, jetZ = riseLeft > 0.5 && jetNow < 0.999 ? riseLeft / (1 - jetNow) : 0;
             q = new Puff
             {
                 Born = now - ageEff,
                 Origin = c - Earth.Forward(c, WindToDeg) * (WindMs * ageEff),
-                Bore = default, Jet0 = 0, Jet = 0, JetS = 0,
-                Z0 = (float)(z - 0.6 * lambda * (1 - Math.Exp(-ageEff / (3 + 0.05 * lambda)))), JetZ = 0,
+                Bore = default, Jet0 = 0, Jet = 0, JetS = jetZ > 0 ? (float)jetS : 0,
+                Z0 = (float)(z - jetZ * jetNow - 0.6 * lambda * (1 - Math.Exp(-ageEff / (3 + 0.05 * lambda)))), JetZ = (float)jetZ,
                 Anchor = (float)(q.Anchor * wj + p.Anchor * wi), Lambda = (float)lambda,
                 Ap = (float)particles, Aw0 = (float)(fogNow * Math.Exp(ageEff / fogS)), FogS = (float)fogS, RampS = 0,
                 Tint = q.Tint * (float)wj + p.Tint * (float)wi, Seed = q.Seed, Shooter = q.Shooter, Keep = q.Keep,
@@ -178,6 +182,10 @@ public sealed class SmokeBook
             p.Ap = p.Aw0 = 0;   // merged away: swept below
         }
     }
+
+    /// <summary>The height a puff has still to rise by its jet, m.</summary>
+    static double RiseLeft(in Puff p, double now) =>
+        p.JetS > 0 && p.JetZ > 0 ? p.JetZ * Math.Exp(-Math.Max(now - p.Born, 0) / p.JetS) : 0;
 
     double ParticlesNow(in Puff p, double now)
     {

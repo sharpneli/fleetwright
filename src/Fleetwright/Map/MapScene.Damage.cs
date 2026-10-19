@@ -152,8 +152,8 @@ public sealed partial class MapScene
                     var b = c.Components[v.Parts[j]].Bounds;
                     Flame(frame.At((b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2), now, seed + 7 + j, ref fx, ref fy, ref burning, glow);
                 }
-            if (burning > 0)
-                Smoke(view, p, fx / burning, fy / burning, wind, burning, now, seed, mpp);
+            if (burning > 0 && glow > 0)   // the streak gives way to the world view's smoke (I5) over the cross-fade
+                Smoke(view, p, fx / burning, fy / burning, wind, burning, now, seed, mpp, glow);
 
             if (lost)
                 GoingDown(IconLengthAt(view, v.Class[k], p), v, k, cx, cy, now);
@@ -202,7 +202,7 @@ public sealed partial class MapScene
 
     /// <summary>A ship's smoke: one streak from its fires drifting downwind, widening and fading to nothing, with a slow
     /// meander; longer and darker the more is burning.</summary>
-    void Smoke(in MapView view, Vec3d ship, double x, double y, double headingDeg, int fires, long now, int seed, double mpp)
+    void Smoke(in MapView view, Vec3d ship, double x, double y, double headingDeg, int fires, long now, int seed, double mpp, float fade)
     {
         double reachPx = Math.Max(SmokeM / mpp, SmokePx) * (0.6 + 0.4 * Math.Min(fires, 6) / 6.0);
         if (!view.Project(ship, out double ox, out double oy) || !view.Project(ship + Earth.Forward(ship, headingDeg) * (reachPx * mpp), out double tx, out double ty))
@@ -215,7 +215,7 @@ public sealed partial class MapScene
         for (int i = 0; i <= N; i++)
         {
             double u = i / (double)N, wob = Math.Sin(now / 1400.0 + u * 4 + seed) * u * reachPx * 0.08;
-            overlay.Point(x + dx * u + nx * wob, y + dy * u + ny * wob, SmokeColour with { W = (float)(dark * (1 - u) * Math.Min(1, u * 6 + 0.3)) },
+            overlay.Point(x + dx * u + nx * wob, y + dy * u + ny * wob, SmokeColour with { W = (float)(dark * (1 - u) * Math.Min(1, u * 6 + 0.3)) * fade },
                 (float)(3 + 12 * u));
         }
         overlay.End();
