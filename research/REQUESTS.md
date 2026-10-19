@@ -12,6 +12,34 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: (comparison, recommendation, API notes, plan...)
 -->
 
+### 2026-10-19 - Burning warships and shell hits as seen, 1904-1925
+- Question: what a shell hit and a shipboard fire looked like from outside, as numbers and colours the world view can
+  take. (1) Photos and film of burning warships as anchors for flame height, smoke colour and density, and how far a
+  fire's smoke trailed: Blücher at Dogger Bank, Lion and Seydlitz, Invincible and Wiesbaden at Jutland, the Russian
+  ships at Tsushima, anything else of the period. (2) The burst's smoke colour by filler: black powder, wet guncotton,
+  the picric fillers (lyddite, melinite, Shimose: the yellow-to-black smoke noted at Tsushima), TNT; and how a hit
+  looked by what it did (burst on the side or deck, burst inside, holed and through, glanced off). (3) The soot yield
+  of a 1910s warship's fire load (cork, linoleum, wood, rubber-insulated cable, paint, stores) and how a fire's smoke
+  changed colour as it grew, burned out, or had water put on it (steam).
+- Context / relevant files: `docs/visuals/hits-and-fires.md` (the plan; its "What the physics gives" table has the
+  estimates these replace), `docs/visuals/shell-impacts.md` (the game-art survey), `docs/battle/fire.md`, the 2026-10-16
+  request "Explosive fillers as parameters" (the filler's smoke would sit beside its other numbers). Not blocking: the
+  plan builds with flagged placeholder colours and a later pass sets them.
+- Wanted output: a table of flame and smoke appearance by fire kind and phase, burst smoke by filler, soot yields with
+  sources, and a short list of the best photos with what each shows.
+
+### 2026-10-19 - Funnel smoke as seen, coal and oil, 1890-1925
+- Question: how much smoke a funnel made and what it looked like from above: its colour and density for coal (by
+  grade, and when stoking or forcing the boilers) and for oil (clean burning against making smoke on purpose), how it
+  changed with speed and power, how high the plume rose and how far it trailed before thinning, and how it bent and
+  spread in the wind. Photos of squadrons under way with their smoke, Jutland's above all.
+- Context / relevant files: `docs/visuals/hits-and-fires.md` (funnel smoke folded in, kept light),
+  `research/vfx/unified-smoke-system.md` ("Calibrating funnel smoke": Ȧ = 1500 m²/s tuning, the k_smoke factors by
+  plant), `src/Fleetwright.Shipgen` `Powerplant.SmokeReach`. Not blocking; the smoke field's sight lines will want the
+  same numbers later.
+- Wanted output: smoke output and appearance by fuel, plant and power share, plume rise and trail length, with sources
+  and photos.
+
 ### 2026-10-18 - Fire discipline by navy, and battle rates of fire from their causes, 1898-1925
 - Question: how each navy ranged and fired for effect, as numbers a general model can take (the game keeps it as a
   side's doctrine: salvos in flight while ranging, a ladder's step and size, the guns in a ranging salvo, alternating
