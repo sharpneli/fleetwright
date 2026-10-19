@@ -814,6 +814,13 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
       shell that still gets through is `BrokeUp`. This also carries 02 §4.6's "RN pre-1917: treat as shatter at
       15-20° on 0.4 calibre". A hard cut at the proof angle was tried first: Queen Elizabeth's 15″ then shattered on
       46% of hits on a dreadnought at 15 km (1 in 47 through plate over 9″ and burst, against Jutland's 1 in 13).
+    - **Met from behind (2026-10-19):** a face-hardened plate's face is outboard, the way its crossing's normal points.
+      A shell going out through it (the far side's belt, a barbette's wall from inside) meets its soft back first, and
+      none of the face's rules apply: no shatter, no sure decapping, no body quality; it's a plate of its q and a fuze
+      starts on it by thickness (`Terminal.FromBehind`) [EST: no research on the back's worth]. Found from Bismarck
+      on Dreadnought at 1 km: shells through the near 203 mm upper belt, their fuzes still running at the far one,
+      shattered on its back (41% of all hits shattered; 7% after). Iron Duke on König at 12 km: shattered 40.8% →
+      35.9%, `Holed` 21.8% → 18.2%, `BurstBeyond` 9.9% → 12.9%.
     - **The body's quality** (the block's `body.quality`, 0.85-1.10) divides the face-hardened plate's thickness only:
       02 §4.6's multipliers are against face-hardened plate, and on homogeneous plate the USN's tables (pen-check A, the
       Mk 8 at 1.00) are the formula's own. Unassigned in the plan; P2 is the body's step.

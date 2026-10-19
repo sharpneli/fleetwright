@@ -143,4 +143,37 @@ public class ShotRangeTests(ITestOutputHelper output)
         output.WriteLine($"plates checked {checkedSteps}, bursts {bursts}");
         Assert.True(checkedSteps > 0 && bursts > 0);
     }
+
+    /// <summary>A face-hardened plate met from behind: Bismarck's 38 cm through Dreadnought's belt at 1 km reaches her far
+    /// side's armour with its fuze still running, and meets its soft back first. It goes through as a plate of its q, and
+    /// the face doesn't shatter it (it did: the far plate took the near one's face rules).</summary>
+    [Fact]
+    public void Armour_met_from_behind_doesnt_shatter_the_shell()
+    {
+        Assert.True(Terminal.FromBehind(new P3(0, -1, 0), new P3(0, -1, 0)));
+        Assert.False(Terminal.FromBehind(new P3(0, -1, 0), new P3(0, 1, 0)));
+        Assert.False(Terminal.FromBehind(new P3(0, -1, 0), new P3(double.NaN, double.NaN, double.NaN)));
+
+        var target = Class("dreadnought");
+        var (shell, elev) = MainShell(Class("bismarck"));
+        var range = new ShotRange(Settings);
+        int far = 0, through = 0;
+        for (ulong seed = 1; seed <= 20; seed++)
+            foreach (double z in (ReadOnlySpan<double>)[0.5, 2, 3.5])
+            {
+                var s = range.Fire(target, shell, "bismarck main", elev, 1000, 90, new P3(0, 0, target.Vertical.Waterline + z), seed);
+                if (!s.Struck || s.Steps.Length == 0)
+                    continue;
+                double nearY = s.Steps[0].Point.Y;
+                foreach (var st in s.Steps)
+                    if (st.Mm >= 150 && st.Point.Y * nearY < 0)
+                    {
+                        far++;
+                        Assert.NotEqual(PlateCall.Shattered, st.Call);
+                        through += st.Call == PlateCall.Through ? 1 : 0;
+                    }
+            }
+        output.WriteLine($"far side's armour met {far} times, through whole {through}");
+        Assert.True(far > 0 && through > 0);
+    }
 }

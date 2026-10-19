@@ -256,7 +256,9 @@ public static class Terminal
                 * Math.Max(1 + s.PlateShotSigma * r.NextGaussian(), MinQuality);
             if (x.Plate == PlateKind.SideArmour && k is not null && k.Loosened(x.Index, x.Point, s.BeltRepeatM))
                 quality *= s.LoosenedPlate;   // a belt plate a leak loosened before (E4): its bolts pulled, its backing crushed
-            bool hard = mat.FaceHardened, shatter = false;
+            // a face-hardened plate's face is outboard (its normal's way): a shell going out through it meets its soft back
+            // first, and the face's rules don't apply (shatter, decapping, the body's quality); it's a plate of its q [EST]
+            bool hard = mat.FaceHardened && !FromBehind(dir, x.Normal), shatter = false;
             if (hard)
             {
                 double p = ShatterChance(shell, mat.FaceShatters, td, ob, x.T - capOffT < capGapM ? 0 : BareShare(cap, ob), s);
@@ -698,6 +700,10 @@ public static class Terminal
     /// armor/05 §1.2 and its plate-sequence outline).</summary>
     public static double NearLimitBreak(double obliquityDeg, SimSettings s) =>
         s.NearLimitBreakFloor + (s.NearLimitBreakPeak - s.NearLimitBreakFloor) * Math.Max(0, 1 - Math.Abs(obliquityDeg - 45) / 15);
+
+    /// <summary>Whether the flight meets a plate from behind: going the way of its normal (outward from the hull or the
+    /// part), so its back first. No normal: from the front.</summary>
+    public static bool FromBehind(P3 d, P3 n) => d.X * n.X + d.Y * n.Y + d.Z * n.Z > 0;
 
     /// <summary>The angle between the flight and a plate's normal, degrees (0 square on; no normal: square on).</summary>
     public static double Obliquity(P3 d, P3 n)
