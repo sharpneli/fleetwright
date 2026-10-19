@@ -119,7 +119,7 @@ public sealed class MatchupProfile
                 (fast, Torpedo) = (tr.FastRangeM, tr);
         }
         (TubesBearing, Torpedoes) = (tubes, torpedoes);
-        TorpedoDud = s.TorpedoDud[Math.Clamp((int)c.Era, 0, s.TorpedoDud.Length - 1)];
+        TorpedoDud = Torpedo.DudShare;
         TorpedoCraft = craft && c.Launchers.Length > 0;
     }
 

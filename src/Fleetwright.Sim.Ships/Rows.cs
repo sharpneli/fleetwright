@@ -561,8 +561,9 @@ public readonly record struct TubeRow
 }
 
 /// <summary>A torpedo (docs/battle/fighting.md 4.6): its calibre, its charge (kg of TNT's worth: what the explosion does),
-/// and its two settings of speed and range, the fast one first. The designer's to give; placeholders until then
-/// (<see cref="DesignerPlaceholders.Torpedo"/>).</summary>
+/// and its two settings of speed and range, the fast one first; how far off a fixed tube's bearing its gyro can angle it
+/// (degrees), the chance it fails on its run and that one striking doesn't go off. From the design's torpedo block
+/// (<see cref="TorpedoTechRow"/>) by <see cref="DesignerPlaceholders.Torpedo"/>.</summary>
 public readonly record struct TorpedoRow
 {
     public double CalibreMm { get; init; }
@@ -571,6 +572,50 @@ public readonly record struct TorpedoRow
     public double FastRangeM { get; init; }
     public double SlowKn { get; init; }
     public double SlowRangeM { get; init; }
+    public double GyroDeg { get; init; }
+    public double FailShare { get; init; }
+    public double DudShare { get; init; }
+}
+
+/// <summary>A design's torpedo block (torpedo_tech; Shipgen's TorpedoTemplates), calibre-free: a 21"'s settings (the fast
+/// and slow speeds, kn, and ranges, m: <see cref="DesignerPlaceholders.Torpedo"/> scales them by calibre), the share of
+/// shipgen's warhead that's TNT's worth, a deck mount's training (°/s) and reloads (s), a submerged tube's reload (s), the
+/// gyro's angle (degrees), and the chances it fails on its run and doesn't go off.</summary>
+public readonly record struct TorpedoTechRow
+{
+    public double FastKn { get; init; }
+    public double FastRangeM { get; init; }
+    public double SlowKn { get; init; }
+    public double SlowRangeM { get; init; }
+    public double ChargeShare { get; init; }
+    public double MountTrainDegS { get; init; }
+    public double MountReloadS { get; init; }
+    public double TubeReloadS { get; init; }
+    public double GyroDeg { get; init; }
+    public double FailShare { get; init; }
+    public double DudShare { get; init; }
+}
+
+/// <summary>A design's gun block (gun_tech; Shipgen's GunTemplates), calibre-free: how its guns are worked as shares of the
+/// placeholder rules (<see cref="DesignerPlaceholders.Gun"/>: the reload, a heavy gun's slowing at 300 mm by its length,
+/// the training, a dual-purpose mount's), the highest elevation (a dual-purpose mount's), the full-salvo pattern
+/// (<see cref="DesignerPlaceholders.Pattern"/>: % of the range at 305 mm, its power of 305/d, a light gun's under 280 mm),
+/// and the charge's propellant (black powder under a length).</summary>
+public readonly record struct GunTechRow
+{
+    public double ReloadShare { get; init; }
+    public double HeavySlow { get; init; }
+    public double HeavySlowUnder40Cal { get; init; }
+    public double HeavySlowUnder30Cal { get; init; }
+    public double TrainShare { get; init; }
+    public double DpTrainShare { get; init; }
+    public double MaxElevationDeg { get; init; }
+    public double DpMaxElevationDeg { get; init; }
+    public double PatternPct { get; init; }
+    public double PatternExp { get; init; }
+    public double PatternLightPct { get; init; }
+    public PropellantRow Propellant { get; init; }
+    public double BlackPowderUnderCal { get; init; }
 }
 
 /// <summary>Where a torpedo comes from: a torpedo mount on deck or a submerged tube.</summary>

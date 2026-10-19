@@ -53,6 +53,12 @@ public sealed record Design
     /// <summary>The fire-control tech blocks the batteries' fits name, keyed by name (FireControlTemplates;
     /// docs/battle/fire-control.md F3): a name the table doesn't give takes the catalogue's block.</summary>
     public Dictionary<string, FcTechInput>? FireControlTech { get; init; }
+    /// <summary>The gun blocks the batteries name (`main[i].gun`, `secondary[i].gun`), keyed by name (GunTemplates): how
+    /// their guns are worked, laid and charged. A name the table doesn't give takes the catalogue's block.</summary>
+    public Dictionary<string, GunTechInput>? GunTech { get; init; }
+    /// <summary>The torpedo blocks `torpedoes.torpedo` names, keyed by name (TorpedoTemplates); a name the table doesn't
+    /// give takes the catalogue's block.</summary>
+    public Dictionary<string, TorpedoTechInput>? TorpedoTech { get; init; }
     public AviationInput? Aviation { get; init; }
     public CargoInput? Cargo { get; init; }
     public LookInput? Look { get; init; }
@@ -196,6 +202,9 @@ public sealed record BatteryInput
     public double? RangefinderM { get; init; }
     /// <summary>The gun's muzzle velocity with its heaviest shell, m/s (Ammunition.DefaultMuzzleVelocity when absent).</summary>
     public double? MuzzleVelocityMs { get; init; }
+    /// <summary>Its gun block, by name (gun_tech, else the catalogue's: GunTemplates): its reload, training, elevation,
+    /// pattern and propellant. None: <see cref="GunTemplates.Default"/>.</summary>
+    public string? Gun { get; init; }
     /// <summary>The outfit: the ammunition blocks it carries and their shares of the rounds (none: the sim's placeholder
     /// by the look, until the default template).</summary>
     public List<ShellEntryInput>? Shells { get; init; }
@@ -425,6 +434,53 @@ public sealed record TorpedoInput
     public int? Tubes { get; init; }
     /// <summary>Fixed tubes below the waterline (SubmergedTubes).</summary>
     public SubmergedInput? Submerged { get; init; }
+    /// <summary>The torpedo, by name (torpedo_tech, else the catalogue's: TorpedoTemplates). None:
+    /// <see cref="TorpedoTemplates.Default"/>.</summary>
+    public string? Torpedo { get; init; }
+    [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+/// <summary>gun_tech.NAME: a gun block (GunTemplates; DesignerPlaceholders.Gun, Charge and Pattern read it), calibre-free
+/// like machinery.tech: its reload as a share of the placeholder rule's; a heavy gun's slowing at 300 mm, for one of 40
+/// calibres or more, under 40 and under 30; its training as a share of the rule's, and a dual-purpose mount's on top; its
+/// highest elevation, degrees, and a dual-purpose mount's; its full-salvo pattern, % of the range at 305 mm, the power of
+/// 305/d it goes by and a light gun's (under 280 mm); its charge's propellant (one of Propellants.Names), and the
+/// length under which it fires black powder (0 none).</summary>
+public sealed record GunTechInput
+{
+    public double? ReloadShare { get; init; }
+    public double? HeavySlow { get; init; }
+    [JsonPropertyName("heavy_slow_under_40_cal")] public double? HeavySlowUnder40Cal { get; init; }
+    [JsonPropertyName("heavy_slow_under_30_cal")] public double? HeavySlowUnder30Cal { get; init; }
+    public double? TrainShare { get; init; }
+    public double? DpTrainShare { get; init; }
+    public double? MaxElevationDeg { get; init; }
+    public double? DpMaxElevationDeg { get; init; }
+    public double? PatternPct { get; init; }
+    public double? PatternExp { get; init; }
+    public double? PatternLightPct { get; init; }
+    public string? Propellant { get; init; }
+    public double? BlackPowderUnderCal { get; init; }
+    [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+/// <summary>torpedo_tech.NAME: a torpedo block (TorpedoTemplates; DesignerPlaceholders.Torpedo reads it), calibre-free: a
+/// 21"'s fast and slow settings (kn, m), the share of the warhead that's TNT's worth, a deck mount's training (°/s) and
+/// reload (s), a submerged tube's reload (s), its gyro's angle (degrees), and its shares that fail on the run and that
+/// don't go off.</summary>
+public sealed record TorpedoTechInput
+{
+    public double? FastKn { get; init; }
+    public double? FastRangeM { get; init; }
+    public double? SlowKn { get; init; }
+    public double? SlowRangeM { get; init; }
+    public double? ChargeShare { get; init; }
+    public double? MountTrainDegS { get; init; }
+    public double? MountReloadS { get; init; }
+    public double? TubeReloadS { get; init; }
+    public double? GyroDeg { get; init; }
+    public double? Fail { get; init; }
+    public double? Dud { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 
@@ -887,7 +943,9 @@ public sealed record CargoInput
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 
-/// <summary>The design's look: how its navy paints and builds it in an era (Fleetwright.Shipgen.Render.Looks).</summary>
+/// <summary>The design's look: how its navy paints and builds it in an era (Fleetwright.Shipgen.Render.Looks). Only the
+/// drawing reads it: no number the designer or the sim works out may depend on it (the user, 2026-10-19). What a navy or
+/// a period gives a ship is its own blocks (gun_tech, torpedo_tech, fire_control_tech, ammunition, outfit, ...).</summary>
 public sealed record LookInput
 {
     public string? Navy { get; init; }

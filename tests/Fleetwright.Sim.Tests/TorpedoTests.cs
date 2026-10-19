@@ -1,3 +1,4 @@
+using Fleetwright.Shipgen;
 using Fleetwright.Sim.Ai;
 using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
@@ -26,14 +27,18 @@ public class TorpedoTests(ITestOutputHelper output)
         Pair(shooter, target, rangeM, bearingDeg, targetKn, speed, out _, withAi: false);
 
     static World Pair(string shooter, string target, double rangeM, double bearingDeg, double targetKn, double speed, out AiSystem? ai, bool withAi = true,
-        SimSettings? settings = null)
+        SimSettings? settings = null) =>
+        Pair(Class(shooter), Class(target), rangeM, bearingDeg, targetKn, speed, out ai, withAi, settings);
+
+    static World Pair(ShipClass shooter, ShipClass target, double rangeM, double bearingDeg, double targetKn, double speed, out AiSystem? ai,
+        bool withAi = true, SimSettings? settings = null)
     {
         var w = new World(Start, 3, settings ?? Settings);
         ai = withAi ? new AiSystem(w) : null;
         w.Apply(Command.SetWeather(25_000));
         if (speed != 1)
             w.Apply(Command.SetSpeed(speed));
-        int a = w.Ships.AddClass(Class(shooter)), b = w.Ships.AddClass(Class(target));
+        int a = w.Ships.AddClass(shooter), b = w.Ships.AddClass(target);
         w.Apply(ShipSystem.Spawn(b, Lat, Lon, 0, targetKn, side: 1));
         var p = Earth.Position(Lat, Lon);
         var f = Earth.Forward(p, bearingDeg);
@@ -137,9 +142,11 @@ public class TorpedoTests(ITestOutputHelper output)
         }
         Assert.Contains(ends.Values, x => x.How == TorpedoEnd.Hit);
 
-        // every one failing: each ends short of its range, and says so
-        var failing = Settings with { TorpedoFail = [1, 1, 1, 1, 1] };
-        w = Pair("destroyer", "super_dreadnought", 2_500, 90, 12, 1, out _, withAi: false, settings: failing);
+        // every one failing (the design's torpedo block's): each ends short of its range, and says so
+        var dd = Design.Load(Path.Combine(Fleet.Shipgen, "designs", "destroyer.json"));
+        var block = TorpedoTemplates.Resolve(dd, dd.Torpedoes?.Torpedo)! with { Fail = 1 };
+        dd = dd with { TorpedoTech = new() { ["Failing"] = block }, Torpedoes = dd.Torpedoes! with { Torpedo = "Failing" } };
+        w = Pair(ShipClassCompiler.Compile(ShipDesign.Build(dd)), Class("super_dreadnought"), 2_500, 90, 12, 1, out _, withAi: false);
         w.Apply(TorpedoSystem.Launch(2, 1, 4, truth: true));
         var hows = new Dictionary<long, TorpedoEnd>();
         for (int s = 1; s <= 300; s++)

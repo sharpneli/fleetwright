@@ -18,36 +18,33 @@ public static class DesignerPlaceholders
 
     // ------------------------------------------------------------------ the weapons (docs/battle/fighting.md 4.0)
 
-    /// <summary>PLACEHOLDER: working a gun, from its calibre and length, its mount's shape and the era.
+    /// <summary>PLACEHOLDER: working a gun, from its calibre and length, its mount's shape and the design's gun block
+    /// (gun_tech; the catalogue's blocks by period are in Shipgen's GunTemplates, which give the shares below).
     /// <list type="bullet">
     /// <item>reload 7·(d/102 mm)^1.5 s, at most 36 s: the 4"'s ~8 rounds a minute, the 8"'s ~3, the heavy guns' ~2
     /// (research/simulation/manual-gunnery-research.md §4, fire-control-research/early-hit-rates.md: 12" about 2 a
-    /// minute in 1906, the KGV's 14" cycles 26-30 s); ×1.1 in the Great War, 0.9 in the Second, 0.5 for the Cold War's
-    /// automatic guns; before 1906 heavy guns are slower (12"/35 70-100 s, the muzzle-loaders minutes): up to ×1.3,
-    /// ×2.5 under 40 calibres and ×4 under 30, growing from 150 to 300 mm;</item>
-    /// <item>training 2·(381 mm/d)^1.5 °/s (fire-control-research.md §4's mount rates: RN 15" 2, 8" 6.7, 6" 10), ×0.7
-    /// before 1906, ×1.2 between the wars, ×1.5 in the Second (USN 16" 4, 38 cm 5), ×3 in the Cold War, ×1.6 for a
-    /// dual-purpose mount from the treaty years on (5"/38 25); elevating twice as fast, 2-20 °/s;</item>
-    /// <item>the highest elevation: 13° before 1906, 18° in the Great War (RN 13.5" and 15" 20°, German 13.5-16°), 30°
-    /// between the wars, 40° in the Second, 45° after and on dual-purpose mounts (from the treaty years: Shipgen draws
-    /// some earlier light guns in a dp shape).</item>
+    /// minute in 1906, the KGV's 14" cycles 26-30 s), times the block's share (1.1 in the Great War, 0.9 in the Second,
+    /// 0.5 for the Cold War's automatic guns); and a heavy gun slower by the block's slowing at 300 mm, growing from 150
+    /// mm, by its length (before 1906, 12"/35 70-100 s, the muzzle-loaders minutes: ×1.3, ×2.5 under 40 calibres and ×4
+    /// under 30);</item>
+    /// <item>training 2·(381 mm/d)^1.5 °/s (fire-control-research.md §4's mount rates: RN 15" 2, 8" 6.7, 6" 10) times the
+    /// block's share (0.7 before 1906, 1.2 between the wars, 1.5 in the Second: USN 16" 4, 38 cm 5, 3 in the Cold War),
+    /// and its dual-purpose mount's on a dp shape (×1.6 from the treaty years: 5"/38 25); elevating twice as fast, 2-20
+    /// °/s;</item>
+    /// <item>the highest elevation, the block's (13° before 1906, 18° in the Great War: RN 13.5" and 15" 20°, German
+    /// 13.5-16°; 30° between the wars, 40° in the Second, 45° after), its dual-purpose mount's on a dp shape (45° from the
+    /// treaty years: Shipgen draws some earlier light guns in a dp shape).</item>
     /// </list>
     /// The designer should give these per mount type from its machinery (hydraulic or electric, all-angle loading).</summary>
     public static (double ReloadS, double TrainDegS, double ElevateDegS, double MaxElevationDeg) Gun(double calibreMm, double calibreLength,
-        TurretShape shape, Era era)
+        TurretShape shape, in GunTechRow g)
     {
-        double reload = Math.Min(7 * Math.Pow(calibreMm / 102, 1.5), 36);
-        if (era == Era.Victorian)
-        {
-            double slow = calibreLength < 30 ? 4 : calibreLength < 40 ? 2.5 : 1.3;
-            reload *= 1 + (slow - 1) * Math.Clamp((calibreMm - 150) / 150, 0, 1);
-        }
-        else
-            reload *= era switch { Era.GreatWar => 1.1, Era.Treaty => 1.0, Era.Wwii => 0.9, _ => 0.5 };
-        bool dp = shape == TurretShape.Dp && era >= Era.Treaty;
-        double train = Math.Clamp(2 * Math.Pow(381 / calibreMm, 1.5)
-            * era switch { Era.Victorian => 0.7, Era.GreatWar => 1.0, Era.Treaty => 1.2, Era.Wwii => 1.5, _ => 3.0 } * (dp ? 1.6 : 1), 0.5, 60);
-        double maxElev = dp ? 45 : era switch { Era.Victorian => 13, Era.GreatWar => 18, Era.Treaty => 30, Era.Wwii => 40, _ => 45 };
+        double reload = Math.Min(7 * Math.Pow(calibreMm / 102, 1.5), 36) * g.ReloadShare;
+        double slow = calibreLength < 30 ? g.HeavySlowUnder30Cal : calibreLength < 40 ? g.HeavySlowUnder40Cal : g.HeavySlow;
+        reload *= 1 + (slow - 1) * Math.Clamp((calibreMm - 150) / 150, 0, 1);
+        bool dp = shape == TurretShape.Dp;
+        double train = Math.Clamp(2 * Math.Pow(381 / calibreMm, 1.5) * g.TrainShare * (dp ? g.DpTrainShare : 1), 0.5, 60);
+        double maxElev = dp ? g.DpMaxElevationDeg : g.MaxElevationDeg;
         return (Math.Max(reload, 0.5), train, Math.Clamp(2 * train, 2, 20), maxElev);
     }
 
@@ -73,93 +70,76 @@ public static class DesignerPlaceholders
     public static double MagazineTonnes(double volumeM3) => 0.5 * Math.Max(volumeM3, 0);
 
     /// <summary>PLACEHOLDER (docs/visuals/muzzle-flashes.md, "What the model takes", decision 4): a gun's charge, from its
-    /// calibre and length, the look's era and navy.
+    /// calibre and length and the design's gun block.
     /// <list type="bullet">
     /// <item>its mass 4000·d³·(L/50) kg (d in m; research/vfx/muzzle-flash-smoke-research.md §2.1: the 20 mm to the 80 cm
     /// within ~15%: 5"/38 6.3 against 7, 16"/50 268 against 297);</item>
-    /// <item>its propellant: black (brown) powder for a Victorian gun under 36 calibres, the short guns of the
-    /// brown-powder years (the 12"/35, the 13.5"/30; the designs carry an era, not a year, and the long guns came with
-    /// smokeless powder); single-base for the USN (brooklyn), France (toulon, poudre B) and Russia (kronstadt,
-    /// pyroxylin); diglycol for Germany (kiel) from the treaty years (RPC/38); triple-base in the Cold War; double-base
-    /// cordite and its kin otherwise (the RN's MD and SC, the German RPC/12, Japan's and Italy's);</item>
+    /// <item>its propellant, the block's: black (brown) powder under its length (the Victorian blocks' 36 calibres: the
+    /// short guns of the brown-powder years, the 12"/35, the 13.5"/30; the long guns came with smokeless powder), else
+    /// its smokeless one (single-base for the USN, France's poudre B and Russia's pyroxylin; diglycol for Germany from
+    /// the treaty years, RPC/38; triple-base in the Cold War; double-base cordite and its kin otherwise: the RN's MD and
+    /// SC, the German RPC/12, Japan's and Italy's);</item>
     /// <item>no flash-reducer salt or wear reducer (they came between the wars and later), a black-powder igniter of 1%
     /// for a bag gun and 0.3% for a cased one (120 mm and under), and no muzzle device.</item>
     /// </list>
-    /// The designer, or a later ammunition system, should give the charge per gun and the propellant by navy and
-    /// year, and the flashless night charge as a choice.</summary>
-    public static ChargeRow Charge(double calibreMm, double calibreLength, Era era, string navy)
+    /// The designer, or a later ammunition system, should give the charge per gun, and the flashless night charge as a
+    /// choice.</summary>
+    public static ChargeRow Charge(double calibreMm, double calibreLength, in GunTechRow g)
     {
         double d = calibreMm / 1000;
-        var propellant = era switch
-        {
-            Era.Victorian when calibreLength < 36 => Propellants.BlackPowder,
-            Era.ColdWar => Propellants.TripleBase,
-            _ when navy is "brooklyn" or "toulon" or "kronstadt" => Propellants.SingleBase,
-            Era.Treaty or Era.Wwii when navy == "kiel" => Propellants.Diglycol,
-            _ => Propellants.DoubleBase,
-        };
         return new ChargeRow
         {
-            MassKg = 4000 * d * d * d * (calibreLength / 50), Propellant = propellant, Igniter = calibreMm <= 120 ? 0.003 : 0.01,
+            MassKg = 4000 * d * d * d * (calibreLength / 50), Propellant = calibreLength < g.BlackPowderUnderCal ? Propellants.BlackPowder : g.Propellant,
+            Igniter = calibreMm <= 120 ? 0.003 : 0.01,
         };
     }
 
     /// <summary>PLACEHOLDER: a gun's full-salvo pattern, % of the range (fire-control-research.md §7, fire_control_ref.py
-    /// GUNS): the Great War's heavy guns 3.3·(305 mm/d)³ (the 12" 3.3-3.5%, the 13.5" 2.5, the 15" 1.7, "the most
-    /// accurate battleship gun"), its lighter guns 2.5; before 1906 3.5; from the treaty years 1.9 for the heavy guns
-    /// (16" 1.9, 14" 2.0; delay coils and stiffer mounts) and 1.8 for the lighter (8" 2.0, 5"/38 1.7), the Cold War's 1.5.
-    /// The designer should give it from the gun and its mount (wear, delay coils, mixed rifling).</summary>
-    public static double Pattern(double calibreMm, Era era) => era switch
-    {
-        Era.Victorian => 3.5,
-        Era.GreatWar => calibreMm >= 280 ? Math.Clamp(3.3 * Math.Pow(305 / calibreMm, 3), 1.5, 3.5) : 2.5,
-        Era.Treaty or Era.Wwii => calibreMm >= 280 ? 1.9 : 1.8,
-        _ => 1.5,
-    };
+    /// GUNS), from the design's gun block: a heavy gun's (280 mm and up) the block's at 305 mm times (305 mm/d) to its
+    /// power, kept to 1.5-3.5; a lighter one's the block's own. The Great War's heavy guns 3.3·(305 mm/d)³ (the 12"
+    /// 3.3-3.5%, the 13.5" 2.5, the 15" 1.7, "the most accurate battleship gun"), its lighter guns 2.5; before 1906 3.5;
+    /// from the treaty years 1.9 for the heavy guns (16" 1.9, 14" 2.0; delay coils and stiffer mounts) and 1.8 for the
+    /// lighter (8" 2.0, 5"/38 1.7), the Cold War's 1.5. The designer should give it from the gun and its mount (wear,
+    /// delay coils, mixed rifling).</summary>
+    public static double Pattern(double calibreMm, in GunTechRow g) =>
+        calibreMm >= 280 ? Math.Clamp(g.PatternPct * Math.Pow(305 / calibreMm, g.PatternExp), 1.5, 3.5) : g.PatternLightPct;
 
     // ------------------------------------------------------------------ the torpedoes (docs/battle/fighting.md 4.6)
 
-    /// <summary>PLACEHOLDER: a torpedo from its calibre, shipgen's warhead and the look's era.
+    /// <summary>PLACEHOLDER: a torpedo from its calibre, shipgen's warhead and the design's torpedo block (torpedo_tech; the
+    /// catalogue's blocks by period are in Shipgen's TorpedoTemplates).
     /// <list type="bullet">
-    /// <item>the settings, fast and slow, a 21"'s: 30 kn for 1,000 m or 24 kn for 2,700 m before 1906 (the 1890s'
-    /// Whiteheads), 41 kn for 3,900 m or 28 kn for 9,200 m in the Great War (the RN's 21" Mk II 45 kn for 3,840 m or 29 kn
-    /// for 9,100; the German G/7 37 kn for 4,000 m or 27 kn for 9,300), 43/5,000 or 30/11,000 between the wars, 45/6,000
-    /// or 32/12,500 in the Second (Mk 15 45 kn for 5,500 m, G7a 44 for 5,000), 45/9,000 or 35/18,000 after; the range
-    /// by the calibre cubed (the air and fuel it holds), the speed by its 0.3 power (an 18" a little slower). Oxygen
+    /// <item>the settings, fast and slow, the block's for a 21" (30 kn for 1,000 m or 24 kn for 2,700 m before 1906, the
+    /// 1890s' Whiteheads; 41 kn for 3,900 m or 28 kn for 9,200 m in the Great War, the RN's 21" Mk II 45 kn for 3,840 m or
+    /// 29 kn for 9,100, the German G/7 37 kn for 4,000 m or 27 kn for 9,300; 43/5,000 or 30/11,000 between the wars;
+    /// 45/6,000 or 32/12,500 in the Second, Mk 15 45 kn for 5,500 m, G7a 44 for 5,000; 45/9,000 or 35/18,000 after); the
+    /// range by the calibre cubed (the air and fuel it holds), the speed by its 0.3 power (an 18" a little slower). Oxygen
     /// torpedoes (the Type 93's 20 km at 48 kn) aren't told apart;</item>
     /// <item>the charge, TNT's worth: shipgen's warhead (2·10⁻⁶·d³ kg, ~300 kg for a 21", the Second War's) times the
-    /// era's share: 0.45 before 1906 (wet guncotton), 0.6 in the Great War (the G/7's 195 kg of hexanite, the 21" Mk II's
-    /// ~110-130 kg), 0.85 between the wars, 1 after.</item>
+    /// block's share (0.45 before 1906, wet guncotton; 0.6 in the Great War, the G/7's 195 kg of hexanite, the 21" Mk II's
+    /// ~110-130 kg; 0.85 between the wars, 1 after);</item>
+    /// <item>its gyro's angle, its failures on the run and its duds, the block's.</item>
     /// </list>
     /// The designer should give the torpedo by type and year: its settings, warhead and explosive.</summary>
-    public static TorpedoRow Torpedo(double calibreMm, double warheadKg, Era era)
+    public static TorpedoRow Torpedo(double calibreMm, double warheadKg, in TorpedoTechRow t)
     {
-        var (fastKn, fastM, slowKn, slowM, share) = era switch
-        {
-            Era.Victorian => (30.0, 1_000.0, 24.0, 2_700.0, 0.45),
-            Era.GreatWar => (41.0, 3_900.0, 28.0, 9_200.0, 0.6),
-            Era.Treaty => (43.0, 5_000.0, 30.0, 11_000.0, 0.85),
-            Era.Wwii => (45.0, 6_000.0, 32.0, 12_500.0, 1.0),
-            _ => (45.0, 9_000.0, 35.0, 18_000.0, 1.0),
-        };
         double d = calibreMm > 0 ? calibreMm / 533 : 1, range = d * d * d, speed = Math.Pow(d, 0.3);
         double warhead = warheadKg > 0 ? warheadKg : 2e-6 * Math.Pow(calibreMm > 0 ? calibreMm : 533, 3);
         return new TorpedoRow
         {
-            CalibreMm = calibreMm > 0 ? calibreMm : 533, ChargeKg = warhead * share, FastKn = fastKn * speed, FastRangeM = fastM * range,
-            SlowKn = slowKn * speed, SlowRangeM = slowM * range,
+            CalibreMm = calibreMm > 0 ? calibreMm : 533, ChargeKg = warhead * t.ChargeShare, FastKn = t.FastKn * speed, FastRangeM = t.FastRangeM * range,
+            SlowKn = t.SlowKn * speed, SlowRangeM = t.SlowRangeM * range, GyroDeg = t.GyroDeg, FailShare = t.FailShare, DudShare = t.DudShare,
         };
     }
 
-    /// <summary>PLACEHOLDER: a torpedo mount's training rate, °/s: trained by hand before the Second War (3), by power
-    /// in it (6). Shipgen gives the arcs, not the gear.</summary>
-    public static double TorpedoTrainDegS(Era era) => era >= Era.Wwii ? 6 : 3;
+    /// <summary>PLACEHOLDER: a torpedo mount's training rate, °/s, the block's: trained by hand before the Second War (3),
+    /// by power in it (6). Shipgen gives the arcs, not the gear.</summary>
+    public static double TorpedoTrainDegS(in TorpedoTechRow t) => t.MountTrainDegS;
 
-    /// <summary>PLACEHOLDER: how long a tube takes to load again, s: a submerged tube's ~3 minutes (the torpedo run in
-    /// from the room by hand), a deck mount's reloads (when it carries any) ~10 (the IJN's reload gear ~5 by 1940).
-    /// Shipgen gives the torpedoes carried, not the gear.</summary>
-    public static double TorpedoReloadS(LauncherKind kind, Era era) =>
-        kind == LauncherKind.Tube ? 180 : era >= Era.Wwii ? 300 : 600;
+    /// <summary>PLACEHOLDER: how long a tube takes to load again, s, the block's: a submerged tube's ~3 minutes (the
+    /// torpedo run in from the room by hand), a deck mount's reloads (when it carries any) ~10 (the IJN's reload gear ~5
+    /// by 1940). Shipgen gives the torpedoes carried, not the gear.</summary>
+    public static double TorpedoReloadS(LauncherKind kind, in TorpedoTechRow t) => kind == LauncherKind.Tube ? t.TubeReloadS : t.MountReloadS;
 
     /// <summary>PLACEHOLDER: TD/L = 0.341·(L/B)^1.3, times 0.77 for two rudders or more, kept to 2.5-8 (4-8
     /// under 60 m: planing craft turn in 3-6 lengths). A rough fit to

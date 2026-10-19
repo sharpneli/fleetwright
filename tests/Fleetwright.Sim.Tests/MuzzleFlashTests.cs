@@ -1,3 +1,4 @@
+using Fleetwright.Shipgen;
 using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Ships;
 using Xunit.Abstractions;
@@ -54,23 +55,27 @@ public class MuzzleFlashTests(ITestOutputHelper output)
         Assert.True(f.FlashLengthM(1) > 1.3 * f.FlashLengthM(0));
     }
 
-    /// <summary>The placeholders (decision 4): cordite for the Great War's RN and Germans, single-base for the USN,
-    /// brown powder only for a Victorian short gun, the mass 4000·d³·L/50 per gun, and no charge for torpedo mounts.</summary>
+    /// <summary>The placeholders (decision 4), by the design's gun block: cordite for the Great War's RN and Germans,
+    /// single-base for the USN, brown powder only for a Victorian short gun, the mass 4000·d³·L/50 per gun, and no charge
+    /// for torpedo mounts. The look named the block before design format 9; its upgrade still maps it so.</summary>
     [Theory]
-    [InlineData(305, 45, Era.GreatWar, "portsmouth", "double")]
-    [InlineData(305, 50, Era.GreatWar, "kiel", "double")]
-    [InlineData(356, 45, Era.GreatWar, "brooklyn", "single")]
-    [InlineData(305, 40, Era.Victorian, "kure", "double")]
-    [InlineData(305, 35, Era.Victorian, "portsmouth", "black")]
-    [InlineData(380, 52, Era.Wwii, "kiel", "diglycol")]
-    public void Charges_by_navy_and_era(double mm, double cal, Era era, string navy, string family)
+    [InlineData(305, 45, "great_war", "portsmouth", "Great War, double-base", "double")]
+    [InlineData(305, 50, "great_war", "kiel", "Great War, double-base", "double")]
+    [InlineData(356, 45, "great_war", "brooklyn", "Great War, single-base", "single")]
+    [InlineData(305, 40, "victorian", "kure", "Victorian, double-base", "double")]
+    [InlineData(305, 35, "victorian", "portsmouth", "Victorian, double-base", "black")]
+    [InlineData(380, 52, "wwii", "kiel", "Second War, diglycol", "diglycol")]
+    [InlineData(127, 54, "cold_war", "brooklyn", "Cold War, triple-base", "triple")]
+    public void Charges_by_gun_block(double mm, double cal, string era, string navy, string block, string family)
     {
-        var c = DesignerPlaceholders.Charge(mm, cal, era, navy);
+        Assert.Equal(block, GunTemplates.ForLook(era, navy));
+        var c = DesignerPlaceholders.Charge(mm, cal, WeaponBlocks.Gun(new Design(), block));
         var want = family switch
         {
             "single" => Propellants.SingleBase,
             "black" => Propellants.BlackPowder,
             "diglycol" => Propellants.Diglycol,
+            "triple" => Propellants.TripleBase,
             _ => Propellants.DoubleBase,
         };
         Assert.Equal(want, c.Propellant);

@@ -1177,10 +1177,10 @@ Collisions and ramming were part of this step; they're moved out to a later step
     against the ships the index finds near it: in each ship's frame at the piece's two ends (its pose carried on, as
     the shells' window has it), at the set depth, through the one tracer; the first hull or part it meets is hit, at
     the instant along the piece. It can't hit in its first `TorpedoArmM` (arming); some fail and sink early
-    (`TorpedoFail` by era). At the end of its run it sinks. One fired in the fine tier runs on in any tier.
+    (its torpedo block's `fail`; by the look's era until 2026-10-19). At the end of its run it sinks. One fired in the fine tier runs on in any tier.
   - The snapshot carries the torpedoes running and their ends (hits and sinkings) for the map.
-- **The hit** (`Sim.Combat/Underwater.cs`, through `DamageSystem.Strike` as `HitSource.Torpedo`): a dud by era
-  (`TorpedoDud`), else the explosion at the hull point with the charge's reach (`TorpedoReachK`·w^⅓ inboard) and hole
+- **The hit** (`Sim.Combat/Underwater.cs`, through `DamageSystem.Strike` as `HitSource.Torpedo`): a dud by its
+  torpedo block's `dud` (the struck ship's era's until 2026-10-19), else the explosion at the hull point with the charge's reach (`TorpedoReachK`·w^⅓ inboard) and hole
   (`TorpedoHoleK`·w^⅔ m²). The cell behind the hull takes the hole; every cell within the reach floods too (its own
   hole), unless the hit's cell is a TDS cell (`TdsM` > 0) deeper than the reach: then the holding bulkhead holds and
   only the TDS and double-bottom cells flood. Parts within the reach (shafts, propellers, rudders, tubes) are put out of
@@ -1354,11 +1354,11 @@ allocated at spawn.
 Placeholders in `DesignerPlaceholders.cs` until shipgen gives them, listed in plan.md's "Needed from the designer":
 
 - **Shells** (in since 4.0): mass, muzzle velocity, drag form factor, kinds carried and the mix, filler, fuze, per
-  gun, and a navy's shell quality by year. Today they come from the calibre, the calibre length and the look's era
-  and navy; the look's era is a paint scheme, not a year, so a design drawn in the wrong era gets the wrong guns.
+  gun, and a navy's shell quality by year. The designs carry them as data since S1 (`ammunition`).
+  Nothing comes from the look since 2026-10-19 (design format 9): it's the drawing's only.
 - **Working the guns** (in since 4.0): reload time, training and elevating rates, highest elevation, per mount type.
-  Shipgen draws some Great War light guns in a dual-purpose shape; the placeholders ignore it before the treaty
-  years.
+  The design's gun block per battery (`gun`, `gun_tech`) since 2026-10-19, by period; the Victorian and Great War
+  blocks give a dual-purpose shape nothing more (Shipgen draws some light guns of those years so).
 - **Fire control** (in since 4.0): the level per battery from its fit (`fire-control-designer.md` §3), until the
   designer emits it.
 - **A gun's dispersion** (in since 4.2b): its full-salvo pattern, % of range, from the calibre and era until the

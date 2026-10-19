@@ -1,5 +1,5 @@
 {
- "version": 8,
+ "version": 9,
  "id": "graudenz",
  "name": "Graudenz-like (1914)",
  "type": "CL",
@@ -49,7 +49,8 @@
      "ammo": "DE 1911 Spgr Kz (TNT)",
      "share": 0.3
     }
-   ]
+   ],
+   "gun": "Great War, double-base"
   }
  ],
  "secondary": [
@@ -70,12 +71,14 @@
      "ammo": "DE 1911 Spgr Kz (TNT)",
      "share": 0.7
     }
-   ]
+   ],
+   "gun": "Great War, double-base"
   }
  ],
  "torpedoes": {
   "mounts": 2,
-  "tubes": 1
+  "tubes": 1,
+  "torpedo": "Great War torpedo"
  },
  "aa": {
   "heavy": 0,
@@ -452,5 +455,37 @@
   },
   "paint_mj_m2": 50,
   "growth": 1
+ },
+ "gun_tech": {
+  "Great War, double-base": {
+   "reload_share": 1.1,
+   "heavy_slow": 1,
+   "heavy_slow_under_40_cal": 1,
+   "heavy_slow_under_30_cal": 1,
+   "train_share": 1,
+   "dp_train_share": 1,
+   "max_elevation_deg": 18,
+   "dp_max_elevation_deg": 18,
+   "pattern_pct": 3.3,
+   "pattern_exp": 3,
+   "pattern_light_pct": 2.5,
+   "propellant": "double-base",
+   "black_powder_under_cal": 0
+  }
+ },
+ "torpedo_tech": {
+  "Great War torpedo": {
+   "fast_kn": 41,
+   "fast_range_m": 3900,
+   "slow_kn": 28,
+   "slow_range_m": 9200,
+   "charge_share": 0.6,
+   "mount_train_deg_s": 3,
+   "mount_reload_s": 600,
+   "tube_reload_s": 180,
+   "gyro_deg": 20,
+   "fail": 0.12,
+   "dud": 0.1
+  }
  }
 }

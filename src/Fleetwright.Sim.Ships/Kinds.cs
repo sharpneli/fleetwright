@@ -129,17 +129,6 @@ public enum Battery : byte
     Aa,
 }
 
-/// <summary>The design's look's era (Shipgen's Looks): what the weapon placeholders read until the designer gives the
-/// facts.</summary>
-public enum Era : byte
-{
-    Victorian,
-    GreatWar,
-    Treaty,
-    Wwii,
-    ColdWar,
-}
-
 /// <summary>A shaft's (and its propeller's) place across the stern, or a submerged tube's along the hull.</summary>
 public enum Position : byte
 {
@@ -316,17 +305,6 @@ static class Kinds
         "acceleration" => TrackerKind.Acceleration,
         "turn_rate" => TrackerKind.TurnRate,
         _ => throw Unknown("tracker", s ?? "(none)"),
-    };
-
-    /// <summary>A look's era; none is wwii, as Shipgen's own default.</summary>
-    public static Era EraOf(string? s) => s switch
-    {
-        null or "wwii" => Era.Wwii,
-        "victorian" => Era.Victorian,
-        "great_war" => Era.GreatWar,
-        "treaty" => Era.Treaty,
-        "cold_war" => Era.ColdWar,
-        _ => throw Unknown("era", s),
     };
 
     public static Position PositionOf(string? s) => s switch

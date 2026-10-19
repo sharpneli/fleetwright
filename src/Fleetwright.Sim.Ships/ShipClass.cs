@@ -86,9 +86,6 @@ public sealed class ShipClass
     public Slice DeckOutline { get; internal init; }
     public HydrostaticsRow Hydrostatics { get; internal init; }
     public MotionFacts Motion { get; internal init; }
-    /// <summary>The look's era: what the placeholders for the weapons read until the designer gives
-    /// a year.</summary>
-    public Era Era { get; internal set; }
 
     /// <summary>The uptakes' armoured gratings in the armour decks, as a share of the deck's plate
     /// (docs/battle/shells-armour-damage.md P7).</summary>

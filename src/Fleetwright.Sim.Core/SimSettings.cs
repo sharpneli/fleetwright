@@ -1462,21 +1462,15 @@ public sealed record SimSettings
     public int TorpedoCheckMs { get; init; } = 2000;
     public double TorpedoArmM { get; init; } = 200;
 
-    /// <summary>Aiming a spread: a fixed launcher fires within this many degrees of its own bearing (its gyro angle; by
-    /// era), each torpedo's own course error (1 sigma, degrees), the spacing between torpedoes as a share of the target's
-    /// length at the meeting point, and the depth set as a share of the target's draught as it's taken (within the two
-    /// depths, m).</summary>
-    public double[] TorpedoGyroDeg { get; init; } = [5, 20, 90, 90, 90];
+    /// <summary>Aiming a spread (a fixed launcher fires within its torpedo's gyro angle of its own bearing, the design's
+    /// torpedo block's): each torpedo's own course error (1 sigma, degrees), the spacing between torpedoes as a share of
+    /// the target's length at the meeting point, and the depth set as a share of the target's draught as it's taken
+    /// (within the two depths, m).</summary>
     public double TorpedoCourseSigmaDeg { get; init; } = 1;
     public double TorpedoSpacingShare { get; init; } = 0.6;
     public double TorpedoDepthShare { get; init; } = 0.6;
     public double TorpedoDepthMinM { get; init; } = 1.5;
     public double TorpedoDepthMaxM { get; init; } = 4.5;
-
-    /// <summary>By era: the chance a torpedo fails on its run (it sinks somewhere along it), and that one that strikes
-    /// doesn't go off.</summary>
-    public double[] TorpedoFail { get; init; } = [0.25, 0.12, 0.1, 0.08, 0.05];
-    public double[] TorpedoDud { get; init; } = [0.15, 0.1, 0.08, 0.1, 0.05];
 
     /// <summary>The explosion at the hull (damage-model-research.md §3.4, A6): how far inboard it wrecks, m per kg^⅓ of its
     /// charge (TNT's worth; a 300 kg charge 4.7 m, the depth of a TDS rated for it), and the hole it tears in the side,

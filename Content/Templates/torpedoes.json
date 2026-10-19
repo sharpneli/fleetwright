@@ -1,0 +1,92 @@
+[
+ {
+  "name": "Victorian torpedo",
+  "group": "",
+  "note": "Before 1906: the 1890s' Whiteheads, wet guncotton; no gyro angling to speak of.",
+  "value": {
+   "fast_kn": 30,
+   "fast_range_m": 1000,
+   "slow_kn": 24,
+   "slow_range_m": 2700,
+   "charge_share": 0.45,
+   "mount_train_deg_s": 3,
+   "mount_reload_s": 600,
+   "tube_reload_s": 180,
+   "gyro_deg": 5,
+   "fail": 0.25,
+   "dud": 0.15
+  }
+ },
+ {
+  "name": "Great War torpedo",
+  "group": "",
+  "note": "1906-1921: the RN's 21\" Mk II 45 kn for 3,840 m or 29 kn for 9,100; the German G/7 37 kn for 4,000 m or 27 kn for 9,300 and its 195 kg of hexanite.",
+  "value": {
+   "fast_kn": 41,
+   "fast_range_m": 3900,
+   "slow_kn": 28,
+   "slow_range_m": 9200,
+   "charge_share": 0.6,
+   "mount_train_deg_s": 3,
+   "mount_reload_s": 600,
+   "tube_reload_s": 180,
+   "gyro_deg": 20,
+   "fail": 0.12,
+   "dud": 0.1
+  }
+ },
+ {
+  "name": "Treaty torpedo",
+  "group": "",
+  "note": "1922-1936.",
+  "value": {
+   "fast_kn": 43,
+   "fast_range_m": 5000,
+   "slow_kn": 30,
+   "slow_range_m": 11000,
+   "charge_share": 0.85,
+   "mount_train_deg_s": 3,
+   "mount_reload_s": 600,
+   "tube_reload_s": 180,
+   "gyro_deg": 90,
+   "fail": 0.1,
+   "dud": 0.08
+  }
+ },
+ {
+  "name": "Second War torpedo",
+  "group": "",
+  "note": "1937-1949: Mk 15 45 kn for 5,500 m, G7a 44 for 5,000; power-trained mounts, the IJN's reload gear. Oxygen torpedoes (the Type 93's 20 km at 48 kn) aren't told apart.",
+  "value": {
+   "fast_kn": 45,
+   "fast_range_m": 6000,
+   "slow_kn": 32,
+   "slow_range_m": 12500,
+   "charge_share": 1,
+   "mount_train_deg_s": 6,
+   "mount_reload_s": 300,
+   "tube_reload_s": 180,
+   "gyro_deg": 90,
+   "fail": 0.08,
+   "dud": 0.1
+  }
+ },
+ {
+  "name": "Cold War torpedo",
+  "group": "",
+  "note": "From 1950.",
+  "value": {
+   "fast_kn": 45,
+   "fast_range_m": 9000,
+   "slow_kn": 35,
+   "slow_range_m": 18000,
+   "charge_share": 1,
+   "mount_train_deg_s": 6,
+   "mount_reload_s": 300,
+   "tube_reload_s": 180,
+   "gyro_deg": 90,
+   "fail": 0.05,
+   "dud": 0.05
+  }
+ }
+]

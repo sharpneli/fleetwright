@@ -291,8 +291,7 @@ public sealed class TorpedoSystem : IWorldSystem
     {
         if (row.Trains)
             return CombatStore.InArcs(cls, row.Arcs, relDeg);
-        double gyro = settings.TorpedoGyroDeg[Math.Clamp((int)cls.Era, 0, settings.TorpedoGyroDeg.Length - 1)];
-        return Math.Abs(Wrap(relDeg - row.RestDeg)) <= gyro;
+        return Math.Abs(Wrap(relDeg - row.RestDeg)) <= cls.Torpedoes[row.Torpedo].GyroDeg;
     }
 
     int AllocatePending()
@@ -378,7 +377,7 @@ public sealed class TorpedoSystem : IWorldSystem
 
         var (length, depth) = Target(world, ship.Side, pe.Target, pe.Truth);
         double spacing = settings.TorpedoSpacingShare * length / Math.Max(run, 1);   // radians between neighbours
-        int era = Math.Clamp((int)cls.Era, 0, settings.TorpedoFail.Length - 1);
+        double fail = cls.Torpedoes[row.Torpedo].FailShare;
         var origin = ship.Frame.ToWorld(row.X, row.Y, 0).Normalized() * Earth.Radius;
         for (int j = 0; j < count; j++)
         {
@@ -386,7 +385,7 @@ public sealed class TorpedoSystem : IWorldSystem
             var r = stream.Derive((ulong)serial++);
             double off = (pe.First + j - (pe.Spread - 1) / 2.0) * spacing;
             double h = heading + double.RadiansToDegrees(off) + r.NextGaussian() * settings.TorpedoCourseSigmaDeg;
-            bool failed = r.NextDouble() < settings.TorpedoFail[era];
+            bool failed = r.NextDouble() < fail;
             double end = failed ? range * r.NextDouble() : range;
             int i = Allocate();
             ref var t = ref torpedoes[i];

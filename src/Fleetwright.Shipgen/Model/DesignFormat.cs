@@ -12,7 +12,7 @@ namespace Fleetwright.Shipgen;
 public static class DesignFormat
 {
     /// <summary>The version this build writes.</summary>
-    public const int Current = 8;
+    public const int Current = 9;
 
     /// <summary>Steps[v] upgrades a version v design to v + 1, adding what it couldn't tell to the warnings.</summary>
     static readonly Action<JsonObject, List<string>>[] Steps =
@@ -25,7 +25,47 @@ public static class DesignFormat
         (d, _) => FireControlFits(d),  // 5 → 6: fire control as tech blocks (docs/battle/fire-control.md F3)
         (d, _) => NoComputerT(d),      // 6 → 7: the computer's weight its block's, in a transmitting station (F4c)
         Outfit,                        // 7 → 8: what burns aboard (docs/battle/fire.md B0)
+        (d, _) => GunAndTorpedoTech(d), // 8 → 9: the guns and torpedoes the design's, not the look's
     ];
+
+    /// <summary>8 → 9: the sim worked a design's guns (reload, training, elevation, pattern, propellant) and its torpedoes
+    /// by its look's era and navy; the look is the drawing's only now (the user, 2026-10-19), and they're the design's
+    /// blocks (GunTemplates, TorpedoTemplates). Each battery without one names the block its look stood for, and the
+    /// torpedoes theirs, and the design's gun_tech and torpedo_tech take those blocks from the catalogue, so it fights as
+    /// before. No look stood for the Second War's guns, double-base, as the sim took it.</summary>
+    static void GunAndTorpedoTech(JsonObject d)
+    {
+        string? era = d["look"]?["era"] is JsonValue e && e.TryGetValue(out string? es) ? es : null;
+        string? navy = d["look"]?["navy"] is JsonValue n && n.TryGetValue(out string? ns) ? ns : null;
+        string gun = GunTemplates.ForLook(era, navy);
+        bool used = false;
+        foreach (var key in (ReadOnlySpan<string>)["main", "secondary"])
+        {
+            JsonNode?[] batteries = d[key] switch { JsonArray a => [.. a], JsonObject o => [o], _ => [] };
+            foreach (var b in batteries)
+                if (b is JsonObject bo && !bo.ContainsKey("gun"))
+                {
+                    bo["gun"] = gun;
+                    used = true;
+                }
+        }
+        if (used)
+            Table(d, "gun_tech", gun, JsonSerializer.SerializeToNode(GunTemplates.Get(gun)!.Value, ShipgenJson.Default.GunTechInput));
+        if (d["torpedoes"] is JsonObject t && !t.ContainsKey("torpedo"))
+        {
+            string torpedo = TorpedoTemplates.ForLook(era);
+            t["torpedo"] = torpedo;
+            Table(d, "torpedo_tech", torpedo, JsonSerializer.SerializeToNode(TorpedoTemplates.Get(torpedo)!.Value, ShipgenJson.Default.TorpedoTechInput));
+        }
+
+        static void Table(JsonObject d, string key, string name, JsonNode? block)
+        {
+            var table = d[key] as JsonObject;
+            if (table is null)
+                d[key] = table = [];
+            table.TryAdd(name, block);
+        }
+    }
 
     /// <summary>7 → 8: the fire loads were the sim's, by the look's era; now they're the design's outfit (Outfits). A design
     /// without one gets its navy's (look.navy) in its plant's year (machinery.tech's name ends with it), else the Great

@@ -194,7 +194,7 @@ public class WeaponFactsTests
         Assert.InRange(Ammunition.DefaultMuzzleVelocity(cal) / ms, 0.9, 1.1);
 
         // reload: the 4"'s 6-10 rounds a minute, the heavy guns' 1-2; training 2-3 °/s for the big turrets
-        var (reload, train, _, maxElev) = DesignerPlaceholders.Gun(mm, cal, TurretShape.Bb, Era.GreatWar);
+        var (reload, train, _, maxElev) = DesignerPlaceholders.Gun(mm, cal, TurretShape.Bb, WeaponBlocks.Gun(new Design(), "Great War, double-base"));
         Assert.InRange(reload, mm < 200 ? 6 : 30, mm < 200 ? 10 : 60);
         if (mm > 300)
             Assert.InRange(train, 1.5, 3.5);
@@ -214,6 +214,22 @@ public class WeaponFactsTests
                 Assert.Equal(FireControlLevel.Eyeball, b.Level);
             }
         }
+    }
+
+    /// <summary>The look is the drawing's only (the user, 2026-10-19): the same design drawn in another navy and era
+    /// fights with the same guns, charges and torpedoes.</summary>
+    [Fact]
+    public void The_look_changes_no_weapon_number()
+    {
+        var d = Design.Load(Path.Combine(Fleet.Shipgen, "designs", "lion.json"));
+        var a = ShipClassCompiler.Compile(ShipDesign.Build(d));
+        var b = ShipClassCompiler.Compile(ShipDesign.Build(d with { Look = new LookInput { Navy = "brooklyn", Era = "cold_war" } }));
+        Assert.Equal(a.Mounts.ToArray(), b.Mounts.ToArray());
+        Assert.Equal(a.Batteries.ToArray().Select(x => x.PatternPct), b.Batteries.ToArray().Select(x => x.PatternPct));
+        Assert.Equal(a.Charges.ToArray(), b.Charges.ToArray());
+        Assert.Equal(a.Torpedoes.ToArray(), b.Torpedoes.ToArray());
+        Assert.Equal(a.Launchers.ToArray(), b.Launchers.ToArray());
+        Assert.NotEmpty(a.Torpedoes.ToArray());
     }
 
     [Fact]

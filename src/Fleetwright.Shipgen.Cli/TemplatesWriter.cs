@@ -6,12 +6,13 @@ using System.Text.Json.Nodes;
 
 namespace Fleetwright.Shipgen.Cli;
 
-/// <summary>`shipgen templates`: the shell, explosive, material, fittings, outfit and fire-control catalogues (ShellTemplates,
-/// Explosives, MaterialTemplates, Fittings, Outfits, FireControlTemplates: their one source) written out as the game's template
-/// assets, `Content/Templates/shells.json`, `explosives.json`, `materials.json`, `fittings.json` (entries {name, group,
-/// note, value}, as tools/designer_templates.py writes the others) and `fire-control.json` (its blocks so, and its
-/// presets), and as the docs' pages, docs/shipgen/shell-templates.md, explosive-templates.md, material-templates.md,
-/// fittings-templates.md and fire-control-templates.md. Never edit those by hand.</summary>
+/// <summary>`shipgen templates`: the shell, explosive, material, fittings, outfit, fire-control, gun and torpedo catalogues
+/// (ShellTemplates, Explosives, MaterialTemplates, Fittings, Outfits, FireControlTemplates, GunTemplates, TorpedoTemplates:
+/// their one source) written out as the game's template assets, `Content/Templates/shells.json`, `explosives.json`,
+/// `materials.json`, `fittings.json`, `guns.json`, `torpedoes.json` (entries {name, group, note, value}, as
+/// tools/designer_templates.py writes the others) and `fire-control.json` (its blocks so, and its presets), and as the
+/// docs' pages, docs/shipgen/shell-templates.md, explosive-templates.md, material-templates.md, fittings-templates.md,
+/// fire-control-templates.md and gun-templates.md. Never edit those by hand.</summary>
 static class TemplatesWriter
 {
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
@@ -66,7 +67,72 @@ static class TemplatesWriter
         };
         Write(Path.Combine(repo, "Content", "Templates", "fire-control.json"), fc.ToJsonString(json) + "\n");
         Write(Path.Combine(repo, "docs", "shipgen", "fire-control-templates.md"), FireControlPage());
+        var guns = new JsonArray(GunTemplates.All.Select(g => (JsonNode)new JsonObject
+        {
+            ["name"] = g.Name, ["group"] = g.Group, ["note"] = g.Note, ["value"] = Value(g.Value),
+        }).ToArray());
+        Write(Path.Combine(repo, "Content", "Templates", "guns.json"), guns.ToJsonString(json) + "\n");
+        var torpedoes = new JsonArray(TorpedoTemplates.All.Select(t => (JsonNode)new JsonObject
+        {
+            ["name"] = t.Name, ["group"] = "", ["note"] = t.Note, ["value"] = Value(t.Value),
+        }).ToArray());
+        Write(Path.Combine(repo, "Content", "Templates", "torpedoes.json"), torpedoes.ToJsonString(json) + "\n");
+        Write(Path.Combine(repo, "docs", "shipgen", "gun-templates.md"), GunPage());
         return 0;
+    }
+
+    static string GunPage()
+    {
+        var sb = new StringBuilder();
+        sb.Append("""
+            # Gun and torpedo templates
+
+            Written by `shipgen templates` from `src/Fleetwright.Shipgen/GunTemplates.cs`; don't edit by hand. The designer's
+            templates are `Content/Templates/guns.json` and `torpedoes.json`, from the same tables.
+
+            A battery's `gun` names its gun block, and `torpedoes.torpedo` its torpedo block: the design's own (`gun_tech`,
+            `torpedo_tech`), else the catalogue's below; a battery that names none fires with the Second War's double-base
+            block, and torpedoes that name none are the Second War's. The blocks are calibre-free, shares of the sim's
+            placeholder rules (`DesignerPlaceholders.Gun`, `Charge`, `Pattern`, `Torpedo`: the sources are there), so one
+            block serves a period's family of guns. The look never sets them: it's the drawing's only. Designs from before
+            format 9 got the blocks their look's era and navy stood for, so they fight as before.
+
+            ```json
+            "secondary": [{"calibre_mm": 152, "calibre_length": 50, "per_side": 6, "mount": "casemate", "gun": "Second War, double-base"}],
+            "torpedoes": {"tubes": 4, "torpedo": "Great War torpedo"}
+            ```
+
+            | Gun block | Reload | Slower at 300 mm (≥40 / <40 / <30 cal) | Training | DP | Elevation | DP | Pattern % (305 mm, power, light) | Propellant |
+            |---|---|---|---|---|---|---|---|---|
+
+            """.Replace("\r\n", "\n"));
+        foreach (var g in GunTemplates.All)
+        {
+            var v = g.Value;
+            string propellant = v.BlackPowderUnderCal > 0 ? $"{v.Propellant}, black powder under {v.BlackPowderUnderCal:0} cal" : v.Propellant!;
+            sb.Append(Inv, $"| {g.Name} | ×{v.ReloadShare:0.0#} | ×{v.HeavySlow:0.0#} / ×{v.HeavySlowUnder40Cal:0.0#} / ×{v.HeavySlowUnder30Cal:0.0#} | " +
+                           $"×{v.TrainShare:0.0#} | ×{v.DpTrainShare:0.0#} | {v.MaxElevationDeg:0}° | {v.DpMaxElevationDeg:0}° | " +
+                           $"{v.PatternPct:0.0#}, {v.PatternExp:0}, {v.PatternLightPct:0.0#} | {propellant} |\n");
+        }
+        sb.Append("\nShares of the rules' reload, 7·(d/102 mm)^1.5 s (at most 36), and training, 2·(381 mm/d)^1.5 °/s.\n\n");
+        foreach (var g in GunTemplates.All)
+            sb.Append("- **").Append(g.Name).Append(":** ").Append(g.Note).Append('\n');
+        sb.Append("""
+
+            | Torpedo block | Fast (21") | Slow (21") | Warhead TNT share | Mount training | Reload (mount / tube) | Gyro | Fail | Dud |
+            |---|---|---|---|---|---|---|---|---|
+
+            """.Replace("\r\n", "\n"));
+        foreach (var t in TorpedoTemplates.All)
+        {
+            var v = t.Value;
+            sb.Append(Inv, $"| {t.Name} | {v.FastKn:0} kn, {v.FastRangeM:#,0} m | {v.SlowKn:0} kn, {v.SlowRangeM:#,0} m | {v.ChargeShare:0.0#} | " +
+                           $"{v.MountTrainDegS:0} °/s | {v.MountReloadS:0} / {v.TubeReloadS:0} s | {v.GyroDeg:0}° | {v.Fail:0.0#} | {v.Dud:0.0#} |\n");
+        }
+        sb.Append('\n');
+        foreach (var t in TorpedoTemplates.All)
+            sb.Append("- **").Append(t.Name).Append(":** ").Append(t.Note).Append('\n');
+        return sb.ToString();
     }
 
     static string FireControlPage()

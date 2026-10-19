@@ -39,8 +39,7 @@ public static class Underwater
         }
         if (first >= 0 && cells[first].Room >= 0)
             res.Part = c.RoomNode(cells[first].Room);
-        int era = Math.Clamp((int)c.Era, 0, s.TorpedoDud.Length - 1);
-        if (r.NextDouble() < s.TorpedoDud[era])
+        if (r.NextDouble() < hit.Torpedo.DudShare)   // the torpedo's own (it was the struck ship's era's until 2026-10-19)
         {
             outcome = Outcome.Dud;
             return res;

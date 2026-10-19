@@ -48,10 +48,11 @@ public static class Outfits
         _ => navy is "brooklyn" or "generic" or null ? All[4] : All[3],
     };
 
-    /// <summary>The template a design falls back on: its navy's in its plant's year (machinery.tech's name ends with it),
-    /// else the Great War's.</summary>
+    /// <summary>The template a design falls back on: its plant's year's (machinery.tech's name ends with it; no navy: the
+    /// look is the drawing's only), else the Great War's. Format 8's upgrade read the look's navy into each design's
+    /// outfit.</summary>
     public static Template Default(Design design) =>
-        Fittings.YearOf(design.Machinery?.Tech?.Name) is int year ? ByNavyAndYear(design.Look?.Navy, year) : All[2];
+        Fittings.YearOf(design.Machinery?.Tech?.Name) is int year ? ByNavyAndYear(null, year) : All[2];
 
     /// <summary>The design's outfit with every number given: its own block's, the rest its default template's.</summary>
     public static OutfitInput Of(Design design)

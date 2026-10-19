@@ -1,5 +1,5 @@
 {
- "version": 8,
+ "version": 9,
  "id": "izumo",
  "name": "Izumo-like armoured cruiser (1900)",
  "type": "CA",
@@ -124,48 +124,8 @@
    "secondary": "Krupp cemented"
   }
  },
- "main": [
-  {
-   "calibre_mm": 203,
-   "calibre_length": 45,
-   "barrels": 2,
-   "rounds_per_gun": 120,
-   "armour_mm": 152,
-   "fore": 1,
-   "aft": 1, "shells": [{"ammo": "JP 1904 AP (Shimose)", "share": 0.7}, {"ammo": "JP 1904 common (powder)", "share": 0.3}]
-  }
- ],
- "secondary": [
-  {
-   "calibre_mm": 152,
-   "calibre_length": 40,
-   "barrels": 1,
-   "rounds_per_gun": 200,
-   "per_side": 5,
-   "mount": "casemate",
-   "armour_mm": 152, "shells": [{"ammo": "JP 1904 AP (Shimose)", "share": 0.3}, {"ammo": "JP 1904 common (powder)", "share": 0.7}]
-  },
-  {
-   "calibre_mm": 152,
-   "calibre_length": 40,
-   "barrels": 1,
-   "rounds_per_gun": 200,
-   "per_side": 2,
-   "mount": "casemate",
-   "tier": "upper",
-   "armour_mm": 152, "shells": [{"ammo": "JP 1904 AP (Shimose)", "share": 0.3}, {"ammo": "JP 1904 common (powder)", "share": 0.7}]
-  },
-  {
-   "calibre_mm": 76,
-   "calibre_length": 40,
-   "barrels": 1,
-   "rounds_per_gun": 300,
-   "per_side": 6,
-   "mount": "casemate",
-   "tier": "upper",
-   "armour_mm": 0, "shells": [{"ammo": "JP 1904 AP (Shimose)", "share": 0.3}, {"ammo": "JP 1904 common (powder)", "share": 0.7}]
-  }
- ],
+ "main": [{"calibre_mm": 203, "calibre_length": 45, "barrels": 2, "rounds_per_gun": 120, "armour_mm": 152, "fore": 1, "aft": 1, "shells": [{"ammo": "JP 1904 AP (Shimose)", "share": 0.7}, {"ammo": "JP 1904 common (powder)", "share": 0.3}], "gun": "Victorian, double-base"}],
+ "secondary": [{"calibre_mm": 152, "calibre_length": 40, "barrels": 1, "rounds_per_gun": 200, "per_side": 5, "mount": "casemate", "armour_mm": 152, "shells": [{"ammo": "JP 1904 AP (Shimose)", "share": 0.3}, {"ammo": "JP 1904 common (powder)", "share": 0.7}], "gun": "Victorian, double-base"}, {"calibre_mm": 152, "calibre_length": 40, "barrels": 1, "rounds_per_gun": 200, "per_side": 2, "mount": "casemate", "tier": "upper", "armour_mm": 152, "shells": [{"ammo": "JP 1904 AP (Shimose)", "share": 0.3}, {"ammo": "JP 1904 common (powder)", "share": 0.7}], "gun": "Victorian, double-base"}, {"calibre_mm": 76, "calibre_length": 40, "barrels": 1, "rounds_per_gun": 300, "per_side": 6, "mount": "casemate", "tier": "upper", "armour_mm": 0, "shells": [{"ammo": "JP 1904 AP (Shimose)", "share": 0.3}, {"ammo": "JP 1904 common (powder)", "share": 0.7}], "gun": "Victorian, double-base"}],
  "superstructure": {
   "t_per_m2": 0.32,
   "material": "mild steel",
@@ -183,5 +143,6 @@
  "fittings": {"shock_grade": "G0"},
  "fire_control_tech": {"Barr & Stroud FA (O1)": {"optics": {"kind": "coincidence", "delta_arcsec": 14, "rigid_base_m": 2, "flex_exp": 0.75, "magnification": 24, "m_max": 20, "readings_per_min": 2, "coated": false, "gyro_stabilised": false, "mass_kg_m2": 30}}, "Hand plot": {"computer": {"tracker": "rate_clock", "helm_free": false, "latency_s": 15, "q": 0.02, "max_range_rate_ms": 0, "max_bearing_rate_deg_s": 0, "accel_tau_s": 0, "accel_sigma_ms2": 0, "turn_q": 0, "speed_q": 0, "detect": false, "rejudge_s": 0, "prior_kn": 4, "prior_deg": 25, "resid_pct": 2, "defl_bias_mil": 3, "own_turn_kick_m": 0, "first_step_m": 366, "salvo_pct": 2, "mass_t": 0.2, "crew": 3, "power_kw": 0}}, "Early telescopic sights": {"mount": {"director_firing": false, "stable_vertical": false, "lay_mil": 0.85, "salvo_defl_mil": 2.5}}},
  "masts": [{"kind": "pole", "top": "fighting", "top_radius_m": 1.6}],
- "outfit": {"name": "Pre-dreadnought (1905)", "fitted": {"quarters": 450, "cabins": 900, "offices": 420, "stores": 1500, "machinery": 150, "deck": 400}, "stripped": {"quarters": 380, "cabins": 600, "offices": 420, "stores": 1500, "machinery": 150, "deck": 350}, "paint_mj_m2": 60, "growth": 1.5}
+ "outfit": {"name": "Pre-dreadnought (1905)", "fitted": {"quarters": 450, "cabins": 900, "offices": 420, "stores": 1500, "machinery": 150, "deck": 400}, "stripped": {"quarters": 380, "cabins": 600, "offices": 420, "stores": 1500, "machinery": 150, "deck": 350}, "paint_mj_m2": 60, "growth": 1.5},
+ "gun_tech": {"Victorian, double-base": {"reload_share": 1, "heavy_slow": 1.3, "heavy_slow_under_40_cal": 2.5, "heavy_slow_under_30_cal": 4, "train_share": 0.7, "dp_train_share": 1, "max_elevation_deg": 13, "dp_max_elevation_deg": 13, "pattern_pct": 3.5, "pattern_exp": 0, "pattern_light_pct": 3.5, "propellant": "double-base", "black_powder_under_cal": 36}}
 }

@@ -1,5 +1,5 @@
 {
- "version": 8,
+ "version": 9,
  "id": "warrior",
  "name": "Warrior-like (1907)",
  "type": "CA",
@@ -50,7 +50,8 @@
      "ammo": "RN 1909 HE (lyddite)",
      "share": 0.3
     }
-   ]
+   ],
+   "gun": "Great War, double-base"
   }
  ],
  "secondary": [
@@ -71,7 +72,8 @@
      "ammo": "RN 1906 light HE (lyddite)",
      "share": 0.7
     }
-   ]
+   ],
+   "gun": "Great War, double-base"
   },
   {
    "calibre_mm": 88,
@@ -90,7 +92,8 @@
      "ammo": "RN 1906 light HE (lyddite)",
      "share": 0.7
     }
-   ]
+   ],
+   "gun": "Great War, double-base"
   }
  ],
  "armour": {
@@ -522,5 +525,22 @@
   },
   "paint_mj_m2": 60,
   "growth": 1.5
+ },
+ "gun_tech": {
+  "Great War, double-base": {
+   "reload_share": 1.1,
+   "heavy_slow": 1,
+   "heavy_slow_under_40_cal": 1,
+   "heavy_slow_under_30_cal": 1,
+   "train_share": 1,
+   "dp_train_share": 1,
+   "max_elevation_deg": 18,
+   "dp_max_elevation_deg": 18,
+   "pattern_pct": 3.3,
+   "pattern_exp": 3,
+   "pattern_light_pct": 2.5,
+   "propellant": "double-base",
+   "black_powder_under_cal": 0
+  }
  }
 }

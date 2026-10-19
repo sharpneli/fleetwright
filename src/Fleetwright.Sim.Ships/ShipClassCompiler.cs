@@ -728,15 +728,25 @@ public static class ShipClassCompiler
 
         /// <summary>The guns' working numbers on each mount, the batteries (a kind of mount and a gun: one range table,
         /// one set of shells), their directors and fire-control level, and the shells they carry. What the designer
-        /// doesn't give comes from DesignerPlaceholders, by the look's era and navy.</summary>
+        /// doesn't give comes from DesignerPlaceholders, by the design's gun and torpedo blocks (never the look: it's the
+        /// drawing's only).</summary>
         void Weapons(ShipClass c)
         {
-            var era = Kinds.EraOf(ship.Design.Look?.Era);
-            c.Era = era;
-            string navy = ship.Design.Look?.Navy ?? "generic";
-            c.charges = c.turretTypes.Select(t => t.Shape is TurretShape.Torp or TurretShape.Tube || !(t.CalibreLength > 0) ? default
-                : DesignerPlaceholders.Charge(t.CalibreMm, t.CalibreLength, era, navy)).ToArray();
+            var design = ship.Design;
+            var torpedo = WeaponBlocks.Torpedo(design);
+            var blocks = new Dictionary<string, GunTechRow>();
+            // a mount's gun block: its design battery's (of its kind and calibre, and length where the battery gives it)
+            GunTechRow GunOf(ComponentKind kind, double calibreMm, double calibreLength)
+            {
+                var list = kind == ComponentKind.Main ? design.Main : design.Secondary;
+                string? name = list?.FirstOrDefault(x => x.CalibreMm == calibreMm && (x.CalibreLength is null || x.CalibreLength == calibreLength))?.Gun;
+                string key = name ?? GunTemplates.Default;
+                if (!blocks.TryGetValue(key, out var g))
+                    blocks[key] = g = WeaponBlocks.Gun(design, name);
+                return g;
+            }
             var mounts = c.mounts;
+            var gunOfType = new GunTechRow?[c.turretTypes.Length];
             var batteries = new List<BatteryRow>();
             var members = new List<List<int>>();
             var byGun = new Dictionary<(ComponentKind, double, double, Side), int>();
@@ -748,7 +758,7 @@ public static class ShipClassCompiler
                 {
                     mounts[i] = m with
                     {
-                        Battery = -1, ReloadS = DesignerPlaceholders.TorpedoReloadS(LauncherKind.Mount, era), TrainDegS = DesignerPlaceholders.TorpedoTrainDegS(era),
+                        Battery = -1, ReloadS = DesignerPlaceholders.TorpedoReloadS(LauncherKind.Mount, torpedo), TrainDegS = DesignerPlaceholders.TorpedoTrainDegS(torpedo),
                         ElevateDegS = double.NaN, MaxElevationDeg = double.NaN,
                     };
                     continue;
@@ -768,12 +778,17 @@ public static class ShipClassCompiler
                     members.Add([]);
                 }
                 members[b].Add(i);
-                var (reload, train, elevate, maxElev) = DesignerPlaceholders.Gun(m.CalibreMm, m.CalibreLength, c.turretTypes[m.Type].Shape, era);
+                var gun = GunOf(m.Kind, m.CalibreMm, m.CalibreLength);
+                gunOfType[m.Type] ??= gun;
+                var (reload, train, elevate, maxElev) = DesignerPlaceholders.Gun(m.CalibreMm, m.CalibreLength, c.turretTypes[m.Type].Shape, gun);
                 mounts[i] = m with
                 {
                     Battery = b, ReloadS = reload, TrainDegS = train, ElevateDegS = elevate, MaxElevationDeg = maxElev, SupplyS = reload * DesignerPlaceholders.HoistShare,
                 };
             }
+            // each turret type's charge, by the block of the first mount of it (a type no mount uses: the default's)
+            c.charges = c.turretTypes.Select((t, k) => t.Shape is TurretShape.Torp or TurretShape.Tube || !(t.CalibreLength > 0) ? default
+                : DesignerPlaceholders.Charge(t.CalibreMm, t.CalibreLength, gunOfType[k] ?? WeaponBlocks.Gun(design, null))).ToArray();
 
             for (int b = 0; b < batteries.Count; b++)
             {
@@ -807,7 +822,7 @@ public static class ShipClassCompiler
                 {
                     Mounts = new Slice(m0, d0 - m0), Guns = guns, Directors = new Slice(d0, dirs), Level = dirs == 0 ? FireControlLevel.Eyeball : FireControlPresets.LevelOf(fit),
                     Fit = fit, TurretOptics = own.Optics, Sights = sights,
-                    PatternPct = DesignerPlaceholders.Pattern(row.CalibreMm, era),
+                    PatternPct = DesignerPlaceholders.Pattern(row.CalibreMm, GunOf(row.Kind == Battery.Main ? ComponentKind.Main : ComponentKind.Secondary, row.CalibreMm, row.CalibreLength)),
                 };
             }
             // the guns she fights with: her main battery, or with none her heaviest
@@ -819,7 +834,7 @@ public static class ShipClassCompiler
             // the gun's shells, as shipgen resolved them (the design's, or the default outfit): the class's own loadout
             c.Loadout = Loadout.Compile(c, ship.Report.Shells, "", c.DesignHash);
             c.design = ship.Design;
-            Launchers(c, era);
+            Launchers(c, torpedo);
         }
 
         /// <summary>The gunhouses' rangefinders as eyes (docs/battle/fire-control.md F4b): each a hood 0.3 m over its turret's
@@ -914,13 +929,13 @@ public static class ShipClassCompiler
 
         /// <summary>The torpedo mounts and the submerged tubes as one table, and the torpedoes they fire (docs/battle/
         /// fighting.md 4.6): a mount's torpedoes go in at its pivot on the waterline, a tube's at its muzzle.</summary>
-        void Launchers(ShipClass c, Era era)
+        void Launchers(ShipClass c, TorpedoTechRow tech)
         {
             var launchers = new List<LauncherRow>();
             var torpedoes = new List<TorpedoRow>();
             int TorpedoOf(double calibreMm, double warheadKg)
             {
-                var t = DesignerPlaceholders.Torpedo(calibreMm, warheadKg, era);
+                var t = DesignerPlaceholders.Torpedo(calibreMm, warheadKg, tech);
                 int k = torpedoes.IndexOf(t);
                 if (k < 0)
                 {
@@ -950,7 +965,7 @@ public static class ShipClassCompiler
                 launchers.Add(new LauncherRow
                 {
                     Kind = LauncherKind.Tube, Index = i, Component = t.Component, X = t.P1.X, Y = t.P1.Y, Z = t.P1.Z, Arcs = t.Arcs, Trains = t.Rotating,
-                    RestDeg = t.RestDeg, Tubes = 1, Torpedoes = t.Torpedoes, ReloadS = DesignerPlaceholders.TorpedoReloadS(LauncherKind.Tube, era),
+                    RestDeg = t.RestDeg, Tubes = 1, Torpedoes = t.Torpedoes, ReloadS = DesignerPlaceholders.TorpedoReloadS(LauncherKind.Tube, tech),
                     Torpedo = TorpedoOf(t.CalibreMm, t.WarheadKg),
                 });
             }

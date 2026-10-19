@@ -1747,15 +1747,18 @@ fitted to the research's guns, `shipgen weapons --research`):
   year: a design drawn in the wrong era gets the wrong guns. Since 2026-10-16 (S0 and S1 of `shells-armour-damage.md`) the
   designs carry them as data (`ammunition`, `explosives`, each battery's `shells`) from the templates of their navy and
   year; a battery that gives none carries the default template's outfit. Done.
-- **Working the guns per mount type:** reload, training and elevating rates, the highest elevation.
+- **Working the guns per mount type:** reload, training and elevating rates, the highest elevation. Since 2026-10-19
+  (design format 9) the design's gun block per battery (`gun`, `gun_tech`), not the look's era: the rules are still
+  placeholders, per period rather than per mount.
 - **The fire-control level per battery** (fighting.md decision 6): done in `fire-control.md` F3, each battery's fit of
   tech blocks (optics, computer, mount) in the design; the level is a preset's label.
-- **A gun's dispersion** (4.2b): its full-salvo pattern, % of range, by calibre and era until then.
+- **A gun's dispersion** (4.2b): its full-salvo pattern, % of range, by calibre and the gun block's period until then.
 - **Rangefinders** (4.2b): one per director today; turret and spotting-top rangefinders would give a battery the
   several readings the era's ships had (QE's one 15 ft against the reference's three).
 - **Magazines' propellant** (4.3a: a side's factor in the scenario until then), **fillers' TNT equivalence** and
-  **funnels' draught** (4.3a), and **torpedoes** (4.6: speed and range settings, the charge by era, the mounts'
-  training and the tubes' reload).
+  **funnels' draught** (4.3a), and **torpedoes** (4.6: speed and range settings, the charge, the mounts' training and
+  the tubes' reload, the gyro, failures and duds: the design's torpedo block since 2026-10-19, by period, not by type
+  and year yet).
 - **No unarmoured barbette over an armour deck** (the user, 2026-10-13: a 0 mm barbette's bore is a hole in the deck).
   Lord Nelson's and Bouvet's secondary mounts stand on 0 mm barbettes that pass through the armour deck, so
   `shell-test --gratings` finds leaks down them. The designer should armour them, or close the deck under a light

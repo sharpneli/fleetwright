@@ -47,4 +47,16 @@ public static class Propellants
         EnergyMJkg = 4.0, AfterburnMJkg = 4.0, Flash0 = 0.6, SecondaryK = 1800, Solids = 0.0005, ExtinctionM2g = 3.0, Water = 0.25,
         TintR = 0.90, TintG = 0.90, TintB = 0.88,
     };
+
+    /// <summary>A propellant by the name a design's gun block gives it (Shipgen's GunTemplates.Propellants), or null.</summary>
+    public static PropellantRow? Of(string? name) => name switch
+    {
+        "black powder" => BlackPowder,
+        "single-base" => SingleBase,
+        "double-base" => DoubleBase,
+        "diglycol" => Diglycol,
+        "triple-base" => TripleBase,
+        "lova" => Lova,
+        _ => null,
+    };
 }

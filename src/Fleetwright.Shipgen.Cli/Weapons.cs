@@ -18,18 +18,18 @@ static class Weapons
         {
             var design = load(p);
             var c = ShipClassCompiler.Compile(ShipDesign.Build(design));
-            Console.Write(Text(c, design.Look?.Era ?? "wwii", design.Look?.Navy ?? "generic"));
+            Console.Write(Text(c));
         }
         if (research)
             Console.Write(ResearchTable());
         return 0;
     }
 
-    static string Text(ShipClass c, string era, string navy)
+    static string Text(ShipClass c)
     {
         var sb = new StringBuilder();
         void Line(string s) => sb.AppendLine(s);
-        Line($"{c} - {era}, {navy}");
+        Line($"{c}");
         for (int b = 0; b < c.Batteries.Length; b++)
         {
             var row = c.Batteries[b];
@@ -79,25 +79,25 @@ static class Weapons
     }
 
     /// <summary>research/simulation/fire_control_ref.py's GUNS (shell, velocity, training) and the QF 4"/45 Mk V
-    /// (navweaps), each with the era the placeholders read it in.</summary>
-    static readonly (string Name, double Mm, double Cal, Era Era, string Navy, double Kg, double Ms, double Train)[] Guns =
+    /// (navweaps), each with the gun block (GunTemplates) its period and navy's guns fire with.</summary>
+    static readonly (string Name, double Mm, double Cal, string Gun, double Kg, double Ms, double Train)[] Guns =
     [
-        ("12in/40 (Mikasa)", 305, 40, Era.Victorian, "kure", 386, 732, 2.0),
-        ("12in/45 Mk X", 305, 45, Era.GreatWar, "portsmouth", 386, 831, 2.0),
-        ("30.5cm SK L/50", 305, 50, Era.GreatWar, "kiel", 405, 855, 3.0),
-        ("13.5in/45 Mk V(H)", 343, 45, Era.GreatWar, "portsmouth", 635, 757, 2.0),
-        ("15in/42 Mk I", 381, 42, Era.GreatWar, "portsmouth", 871, 749, 2.0),
-        ("4in/45 QF Mk V", 102, 45, Era.GreatWar, "portsmouth", 14.06, 716, double.NaN),
-        ("14in/45 Mk VII", 356, 45, Era.Wwii, "portsmouth", 721, 757, 2.0),
-        ("38cm SK C/34", 380, 52, Era.Wwii, "kiel", 800, 820, 5.0),
-        ("16in/45 Mk 6", 406, 45, Era.Wwii, "brooklyn", 1225, 701, 4.0),
-        ("16in/50 Mk 7", 406, 50, Era.Wwii, "brooklyn", 1225, 762, 4.0),
-        ("46cm Type 94", 460, 45, Era.Wwii, "kure", 1460, 780, 2.0),
-        ("8in/55 Mk 9", 203, 55, Era.Wwii, "brooklyn", 118, 853, 6.7),
-        ("6in/47 Mk 16", 152, 47, Era.Wwii, "brooklyn", 59, 812, 10.0),
-        ("5in/38 Mk 12 (DP)", 127, 38, Era.Wwii, "brooklyn", 25, 792, 25.0),
-        ("5in/54 Mk 45", 127, 54, Era.ColdWar, "brooklyn", 31.75, 808, 30.0),
-        ("76mm/62 OTO", 76, 62, Era.ColdWar, "la_spezia", 6.3, 925, 60.0),
+        ("12in/40 (Mikasa)", 305, 40, "Victorian, double-base", 386, 732, 2.0),
+        ("12in/45 Mk X", 305, 45, "Great War, double-base", 386, 831, 2.0),
+        ("30.5cm SK L/50", 305, 50, "Great War, double-base", 405, 855, 3.0),
+        ("13.5in/45 Mk V(H)", 343, 45, "Great War, double-base", 635, 757, 2.0),
+        ("15in/42 Mk I", 381, 42, "Great War, double-base", 871, 749, 2.0),
+        ("4in/45 QF Mk V", 102, 45, "Great War, double-base", 14.06, 716, double.NaN),
+        ("14in/45 Mk VII", 356, 45, "Second War, double-base", 721, 757, 2.0),
+        ("38cm SK C/34", 380, 52, "Second War, diglycol", 800, 820, 5.0),
+        ("16in/45 Mk 6", 406, 45, "Second War, single-base", 1225, 701, 4.0),
+        ("16in/50 Mk 7", 406, 50, "Second War, single-base", 1225, 762, 4.0),
+        ("46cm Type 94", 460, 45, "Second War, double-base", 1460, 780, 2.0),
+        ("8in/55 Mk 9", 203, 55, "Second War, single-base", 118, 853, 6.7),
+        ("6in/47 Mk 16", 152, 47, "Second War, single-base", 59, 812, 10.0),
+        ("5in/38 Mk 12 (DP)", 127, 38, "Second War, single-base", 25, 792, 25.0),
+        ("5in/54 Mk 45", 127, 54, "Cold War, triple-base", 31.75, 808, 30.0),
+        ("76mm/62 OTO", 76, 62, "Cold War, triple-base", 6.3, 925, 60.0),
     ];
 
     static string ResearchTable()
@@ -105,12 +105,12 @@ static class Weapons
         var sb = new StringBuilder();
         sb.AppendLine("The placeholders beside the research's guns (the muzzle velocity with the heaviest shell; the shells themselves are the");
         sb.AppendLine("templates', docs/shipgen/shell-templates.md, and the research's mass here is HE for some):");
-        sb.AppendLine($"  {"gun",-20} {"era",-10} {"kg",6} {"m/s",12} {"train °/s",14}  reload s");
+        sb.AppendLine($"  {"gun",-20} {"gun block",-24} {"kg",6} {"m/s",12} {"train °/s",14}  reload s");
         foreach (var g in Guns)
         {
             double ms = Ammunition.DefaultMuzzleVelocity(g.Cal);
-            var (reload, train, _, _) = DesignerPlaceholders.Gun(g.Mm, g.Cal, g.Name.Contains("DP") ? TurretShape.Dp : TurretShape.Bb, g.Era);
-            sb.AppendLine(string.Format(Inv, "  {0,-20} {1,-10} {2,6:0.#} {3,4:0} ({4,3:+0;-0}%) {5,5:0.#} ({6,5})  {7,6:0.#}", g.Name, g.Era,
+            var (reload, train, _, _) = DesignerPlaceholders.Gun(g.Mm, g.Cal, g.Name.Contains("DP") ? TurretShape.Dp : TurretShape.Bb, WeaponBlocks.Gun(new Design(), g.Gun));
+            sb.AppendLine(string.Format(Inv, "  {0,-20} {1,-24} {2,6:0.#} {3,4:0} ({4,3:+0;-0}%) {5,5:0.#} ({6,5})  {7,6:0.#}", g.Name, g.Gun,
                 g.Kg, ms, 100 * (ms / g.Ms - 1), train, double.IsNaN(g.Train) ? "-" : g.Train.ToString("0.#", Inv), reload));
         }
         return sb.ToString();
