@@ -127,7 +127,7 @@ public sealed unsafe partial class MapScene
             if (sel && view.Project(p, out double x, out double y))
             {
                 double len = lengthOf(v.Class[k]) * view.Altitude / view.MetresPerPixel / Math.Max(Vec3d.Dot(p - view.Eye, view.Forward), 1e-3);
-                Ring(view, p, Math.Max(len / 2, ShipDrawList.IconLengthPx / 2) + 7, SelectColor, 2f);
+                Ring(view, p, Math.Max(len / 2, IconLengthOf(v.Class[k]) / 2) + 7, SelectColor, 2f);
                 if (horizonRing && world.Classes.TryGet(v.Class[k]) is { Eyes.Length: > 0 } hc)
                 {
                     // dev (fire-control.md F4d): the sea's horizon from her highest eye, and the reach to a ship as tall as she is
@@ -423,7 +423,7 @@ public sealed unsafe partial class MapScene
         var f = Earth.Forward(at, heading);
         var starboard = Vec3d.Cross(f, up);
         var formation = (Formation)spawnFormation;
-        double half = Math.Max(lengthOf(placeClass), ShipDrawList.IconLengthPx * view.MetresPerPixel) / 2;
+        double half = Math.Max(lengthOf(placeClass), IconLengthOf(placeClass) * view.MetresPerPixel) / 2;
         for (int i = 0; i < spawnCount; i++)
         {
             var p = Station(at, f, starboard, formation, i);
@@ -501,11 +501,17 @@ public sealed unsafe partial class MapScene
                 continue;
             double len = lengthOf(v.Class[k]) * view.Altitude / view.MetresPerPixel / Math.Max(Vec3d.Dot(p - view.Eye, view.Forward), 1e-3);
             double d = Math.Sqrt((px - x) * (px - x) + (py - y) * (py - y));
-            if (d <= Math.Max(len / 2, ShipDrawList.IconLengthPx / 2 + 4) && d < bestD)
+            if (d <= Math.Max(len / 2, Math.Max(IconLengthOf(v.Class[k]) / 2 + 4, MinPickPx)) && d < bestD)
                 (best, bestD) = (v.Entity[k], d);
         }
         return best;
     }
+
+    /// <summary>The reach of a click round a ship, px, at least: a torpedo boat's icon is small, not hard to pick.</summary>
+    const double MinPickPx = 9;
+
+    /// <summary>A class's icon length on the table, px (by its tonnage, <see cref="ShipDrawList.IconPx"/>).</summary>
+    double IconLengthOf(int cls) => ShipDrawList.IconPx(classOf(cls)).Length;
 
     /// <summary>A right click on the sea with a ship selected: steer for it, or with shift add it to the route.</summary>
     void OrderAt(double x, double y, bool waypoint)

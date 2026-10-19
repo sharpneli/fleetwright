@@ -172,11 +172,11 @@ public sealed unsafe partial class MapScene
             if (!gv.Force[g])
                 for (int i = 0; i < gv.MemberCount[g]; i++)
                     if (Held(gv.Detached[gv.MemberStart[g] + i]) && v.IndexOf(gv.Members[gv.MemberStart[g] + i]) is int k and >= 0)
-                        Ring(view, v.PoseAt(k, world.DrawMs).Position, ShipDrawList.IconLengthPx / 2 + 9, v.Asked[k] ? AskColor : HeldColor, 1.2f);
+                        Ring(view, v.PoseAt(k, world.DrawMs).Position, IconLengthOf(v.Class[k]) / 2 + 9, v.Asked[k] ? AskColor : HeldColor, 1.2f);
         // the other picked ships
         foreach (int e in picked)
             if (v.IndexOf(e) is int k and >= 0)
-                Ring(view, v.PoseAt(k, world.DrawMs).Position, ShipDrawList.IconLengthPx / 2 + 5, PickColor, 1.5f);
+                Ring(view, v.PoseAt(k, world.DrawMs).Position, IconLengthOf(v.Class[k]) / 2 + 5, PickColor, 1.5f);
     }
 
     /// <summary>The groups' labels, drawn under the UI's windows: a force's below its guide squadron's, "held" and "!"

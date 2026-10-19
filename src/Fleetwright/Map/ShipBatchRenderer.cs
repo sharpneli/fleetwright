@@ -79,8 +79,25 @@ public sealed class ShipDrawList
 
     Vector2 northInShip;   // the view's north in the frame of the ship being drawn (for a thrown gunhouse's height)
     Vec3d viewNorth;
-    /// <summary>The icon's length and width on screen, pixels.</summary>
+    /// <summary>The icon's length and width on screen, pixels, for a ship of <see cref="IconRefT"/> (or a class not up
+    /// yet); <see cref="IconPx"/> sizes the others.</summary>
     public const double IconLengthPx = 22, IconWidthPx = 8;
+
+    /// <summary>The icons scale by tonnage, so the table shows the balance of power at a glance: the length as the cube
+    /// root of the full-load displacement (the icon's area as tonnage^⅔, a destroyer a third of a dreadnought's length),
+    /// from <see cref="IconMinLengthPx"/> (a torpedo boat still shows) to <see cref="IconMaxLengthPx"/>; the width
+    /// with it, at least <see cref="IconMinWidthPx"/>.</summary>
+    public const double IconRefT = 20000, IconMinLengthPx = 6, IconMaxLengthPx = 40, IconMinWidthPx = 2.5;
+
+    /// <summary>A class's icon on screen, pixels (null: the reference's).</summary>
+    public static (double Length, double Width) IconPx(ShipClass? c)
+    {
+        double t = c?.Motion.FullDisplacementT ?? 0;
+        if (!(t > 0))
+            return (IconLengthPx, IconWidthPx);
+        double l = Math.Clamp(IconLengthPx * Math.Cbrt(t / IconRefT), IconMinLengthPx, IconMaxLengthPx);
+        return (l, Math.Max(l * IconWidthPx / IconLengthPx, IconMinWidthPx));
+    }
 
     /// <summary>Sprites shorter than this on screen get no shadows: too small to see, and the march costs.</summary>
     public const double ShadowFromPx = 90;
@@ -135,7 +152,7 @@ public sealed class ShipDrawList
     struct Placed
     {
         public Vec3d Rel, F, S;
-        public double PxPerM, LengthPx, SpriteAlpha, IconAlpha;
+        public double PxPerM, LengthPx, SpriteAlpha, IconAlpha, IconL, IconW;
         public Vector2 SunDir;
         public double SunTan;
         public bool Shadows;
@@ -287,7 +304,8 @@ public sealed class ShipDrawList
             double length = c?.Length ?? 150;
             var rel = p - view.Eye;
             double pxPerM = 1 / view.MetresPerPixel * view.Altitude / Math.Max(Vec3d.Dot(rel, view.Forward), 1e-3);
-            double lengthPx = length * pxPerM, margin = Math.Max(lengthPx, IconLengthPx);
+            var (iconL, iconW) = IconPx(c);
+            double lengthPx = length * pxPerM, margin = Math.Max(lengthPx, iconL);
             double reach = wakes ? Math.Max(margin, WakeReachLengths * lengthPx) : margin;
             if (x < -reach || y < -reach || x > view.Width + reach || y > view.Height + reach)
                 continue;
@@ -301,7 +319,7 @@ public sealed class ShipDrawList
             var (sea, fade) = c != null && art != null ? SeaOf(c, art, ships, k, timeMs) : (Vector4.Zero, 1.0);
             placed[placedCount] = new Placed
             {
-                Rel = rel, F = f, S = s, PxPerM = pxPerM, LengthPx = lengthPx,
+                Rel = rel, F = f, S = s, PxPerM = pxPerM, LengthPx = lengthPx, IconL = iconL, IconW = iconW,
                 SpriteAlpha = sprite * fade, IconAlpha = wakeOnly ? 0 : (1 - sprite) * fade, WakeOnly = wakeOnly,
                 SunDir = horiz > 1e-9 ? new Vector2((float)(sx / horiz), (float)(sy / horiz)) : Vector2.UnitX,
                 SunTan = Math.Max(sz / Math.Max(horiz, 1e-9), 0.15),
@@ -551,8 +569,8 @@ public sealed class ShipDrawList
 
     void Icon(ref Placed p, bool selected)
     {
-        // a fixed size on screen, along the heading: metres per pixel at the ship
-        double l = IconLengthPx / p.PxPerM, w = IconWidthPx / p.PxPerM;
+        // a fixed size on screen by tonnage, along the heading: metres per pixel at the ship
+        double l = p.IconL / p.PxPerM, w = p.IconW / p.PxPerM;
         Emit(ref p, null, -l / 2, -w / 2, l, 0, 0, w, mode: 2, opacity: p.IconAlpha, roof: 0,
             selected ? SelectedTint : SideTints[p.Side < SideTints.Length ? p.Side : 0], IconSea(p));
     }

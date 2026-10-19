@@ -178,7 +178,8 @@ public sealed partial class MapScene
         // px per ship metre along and across, true; and the icon's
         double fx = (ax - x) / 100, fy = (ay - y) / 100, sx = (bx - x) / 100, sy = (by - y) / 100;
         double fl = Math.Max(Math.Sqrt(fx * fx + fy * fy), 1e-9), sl = Math.Max(Math.Sqrt(sx * sx + sy * sy), 1e-9);
-        double ia = ShipDrawList.IconLengthPx / c.Length / fl, ib = ShipDrawList.IconWidthPx * 0.8 / c.Beam / sl;
+        var (il, iw) = ShipDrawList.IconPx(c);
+        double ia = il / c.Length / fl, ib = iw * 0.8 / c.Beam / sl;
         double ka = 1 + icon * (ia - 1), kb = 1 + icon * (ib - 1);
         return new Frame(x, y, fx * ka, fy * ka, sx * kb, sy * kb);
     }
@@ -225,7 +226,7 @@ public sealed partial class MapScene
         if (age < 0)
             return;
         double gone = Math.Clamp(age / span, 0, 1);
-        Ring(x, y, ShipDrawList.IconLengthPx * (0.55 + 0.45 * gone), WreckColour with { W = (float)(0.4 * Math.Min(1, age / 2) * (1 - gone * gone)) }, 1.5f);
+        Ring(x, y, Math.Max(IconLengthOf(v.Class[k]), ShipDrawList.IconLengthPx / 2) * (0.55 + 0.45 * gone), WreckColour with { W = (float)(0.4 * Math.Min(1, age / 2) * (1 - gone * gone)) }, 1.5f);
     }
 
     /// <summary>A magazine's blast where a ship was, <paramref name="age"/> seconds after: a white-hot flash with sparks,
