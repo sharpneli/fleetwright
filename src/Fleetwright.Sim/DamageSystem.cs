@@ -20,6 +20,7 @@ public enum DamageCommand : ushort
     SetReadiness,
     SetFirefighting,
     SetFuel,
+    Shoot,
 }
 
 /// <summary>What set a magazine off (<see cref="DamageSystem.Blast"/>).</summary>
@@ -78,7 +79,7 @@ public sealed class DamageSystem : IWorldSystem
     /// hit had, kept for the screens only (not world state, never hashed).</summary>
     public readonly record struct Struck(long Ms, int Ship, int Class, int Shooter, Vec3d At, Vec3d Forward, P3 Point, P3 Direction,
         Outcome Outcome, BurstKind Burst, P3 BurstAt, double BurstS, P3 ExitAt, P3 ExitDirection, double ExitMs, double CalibreMm,
-        double FillerKg, double VentM2, ShellKind Kind, HitShows Shows);
+        double FillerKg, double FillerRe, double VentM2, ShellKind Kind, HitShows Shows);
 
     readonly SimSettings settings;
     readonly ShipSystem ships;
@@ -211,6 +212,14 @@ public sealed class DamageSystem : IWorldSystem
     public static Command Burn(int entity, double xM) => new(Id, (ushort)DamageCommand.Burn, entity, X: xM);
     public static Command BurnCell(int entity, int cell) => new(Id, (ushort)DamageCommand.Burn, entity, B: cell + 1);
 
+    /// <summary>The dev's shot (the world view's hits bench, docs/visuals/hits-and-fires.md I1): a shell of the shooter's
+    /// battery (of a kind, or the one it fires) from a range and an aspect (degrees off the target's bow it comes from), its
+    /// line through a point on her centreline, x m along her and z m over her waterline, struck through the damage system as
+    /// a shell's hit is (the sea may take it on the way, or it may miss her). The hitbox viewer's shot, in the world.</summary>
+    public static Command Shoot(int target, int shooter, int battery, ShellKind? kind, double xM, double zM, double rangeM, double aspectDeg) =>
+        new(Id, (ushort)DamageCommand.Shoot, target, A: (uint)shooter | (long)(battery & 255) << 32 | (long)(kind is { } k ? (int)k + 1 : 0) << 40 |
+            (long)((int)Math.Round(aspectDeg) % 360 + 360) % 360 << 48, X: rangeM, B: (int)Math.Round(xM * 100), Y: zM);
+
     public void Apply(World world, in Command c)
     {
         switch ((DamageCommand)c.Code)
@@ -277,7 +286,51 @@ public sealed class DamageSystem : IWorldSystem
                 if (slot >= 0)
                     Dev(world, slot, c);
                 break;
+            case DamageCommand.Shoot:
+                DevShot(world, c);
+                break;
         }
+    }
+
+    readonly HitPath probe = new(64);
+
+    /// <summary>The dev's shot (<see cref="Shoot"/>): its flight, where it meets her first, its run under the water, the hit.</summary>
+    void DevShot(World world, in Command c)
+    {
+        var store = ships.Store;
+        int slot = store.SlotOf(c.Entity), from = store.SlotOf((int)(c.A & 0xffffffff));
+        if (slot < 0 || from < 0 || store.Combat.Condition(slot).Status != ShipStatus.Afloat)
+            return;
+        var lo = store.Combat.Loadout(from);
+        int battery = (int)(c.A >> 32 & 255), kind = (int)(c.A >> 40 & 255);
+        if (battery >= lo.Class.Batteries.Length)
+            throw new ArgumentException($"no battery {battery} on ship {c.A & 0xffffffff}");
+        int type = lo.Fires(battery);
+        if (kind > 0)
+            foreach (var l in lo.Loads(battery))
+                if (lo.ShellTypes[l.ShellType].Kind == (ShellKind)(kind - 1))
+                    type = l.ShellType;
+        var shell = lo.ShellTypes[type];
+        var sc = lo.Class;
+        double elev = sc.Mounts[sc.Links(sc.Batteries[battery].Mounts)[0]].MaxElevationDeg;
+        var (dir, fall) = GivenHits.Flight(shell, elev, c.X, c.A >> 48 & 511);
+        var cls = store[slot].Handling.Class;
+        var k = store.Combat.Condition(slot);
+        var aim = new P3(c.B / 100.0, 0, c.Y + cls.Vertical.Waterline);
+        double far = 2 * cls.Solids.Radius + 50;
+        ShipTracer.Trace(cls, new P3(aim.X - dir.X * far, aim.Y - dir.Y * far, aim.Z - dir.Z * far),
+            new P3(aim.X + dir.X * far, aim.Y + dir.Y * far, aim.Z + dir.Z * far), [], HitQuery.WaterOf(cls, k.Attitude), probe);
+        int first = GivenHits.First(probe);
+        if (first < 0)
+            return;
+        double run = WaterRun.RunM(probe, first);
+        if (run > WaterRun.ReachM(shell, fall.StrikeMs, settings))
+            return;
+        Strike(world, new Hit
+        {
+            Ship = c.Entity, Ms = world.Time.Ms, Point = probe.Crossings[first].Point, Direction = dir, SpeedMs = fall.StrikeMs, WaterRunM = run,
+            Source = HitSource.Shell, Shell = shell, ShellType = type, Shooter = store[from].Entity, Battery = battery,
+        });
     }
 
     /// <summary>The dev's damage commands, resolved against the ship's class.</summary>
@@ -617,6 +670,9 @@ public sealed class DamageSystem : IWorldSystem
     /// <summary>A shell's hit into the screens' ring (<see cref="Struck"/>): where it burst and after how long, where it left
     /// the ship if it flew on (the last time the path left her hull or a part, on the leg it was on then; a glance off her
     /// side that never got in leaves at the plate), its filler's W and what its burst tore open to the outside.</summary>
+    /// <summary>How far past her far side a shell that bursts beyond her goes off, m [EST]: the walk stops at her side.</summary>
+    const double BeyondM = 5;
+
     void Record(ShipState ship, ShipClass cls, in Hit hit, in TerminalResult t, in EffectsResult e)
     {
         var shell = hit.Shell;
@@ -639,7 +695,7 @@ public sealed class DamageSystem : IWorldSystem
         }
         P3 exitAt = default, exitDir = default;
         double exitMs = 0;
-        if (t.Outcome is Outcome.PassedThrough or Outcome.Ricochet)
+        if (t.Outcome is Outcome.PassedThrough or Outcome.Ricochet or Outcome.BurstBeyond)
         {
             var xs = path.Crossings;
             double from = t.Glance >= 0 && t.Glance < xs.Length ? xs[t.Glance].T : 0, exitT = double.NaN;
@@ -652,15 +708,25 @@ public sealed class DamageSystem : IWorldSystem
             {
                 exitAt = path.At(exitT);
                 exitDir = path.LegOf(path.Leg(exitT)).Direction;
-                // its speed out [EST]: the plates' toll isn't kept; a glance leaves at about half the speed it met the plate
-                exitMs = t.Outcome == Outcome.Ricochet ? 0.5 * (double.IsFinite(t.PlateMs) && t.PlateMs > 0 ? t.PlateMs : t.StrikeMs) : 0.85 * t.StrikeMs;
-                if (exitAt.Z > cls.Vertical.Waterline)
-                    shows |= HitShows.Exit;
+                if (t.Outcome == Outcome.BurstBeyond)
+                {
+                    // the walk keeps no point past her far side: it bursts a few metres out [EST]
+                    burstAt = new P3(exitAt.X + exitDir.X * BeyondM, exitAt.Y + exitDir.Y * BeyondM, exitAt.Z + exitDir.Z * BeyondM);
+                    burstS = Math.Max(exitT - 1 + BeyondM, 0) / Math.Max(t.StrikeMs, 30);
+                    (exitAt, exitDir) = (default, default);
+                }
+                else
+                {
+                    // its speed out [EST]: the plates' toll isn't kept; a glance leaves at about half the speed it met the plate
+                    exitMs = t.Outcome == Outcome.Ricochet ? 0.5 * (double.IsFinite(t.PlateMs) && t.PlateMs > 0 ? t.PlateMs : t.StrikeMs) : 0.85 * t.StrikeMs;
+                    if (exitAt.Z > cls.Vertical.Waterline)
+                        shows |= HitShows.Exit;
+                }
             }
         }
         double w = shell.FillerKg * shell.FillerRe * (t.Outcome == Outcome.LowOrder ? Math.Min(t.Force, 1) : 1);
         struck[struckNext] = new Struck(hit.Ms, ship.Entity, ship.ClassIndex, hit.Shooter, ship.Position, ship.Forward, hit.Point, hit.Direction,
-            t.Outcome, t.Burst, burstAt, burstS, exitAt, exitDir, exitMs, shell.CalibreMm, w, e.Blast.HoleM2, shell.Kind, shows);
+            t.Outcome, t.Burst, burstAt, burstS, exitAt, exitDir, exitMs, shell.CalibreMm, w, shell.FillerRe, e.Blast.HoleM2, shell.Kind, shows);
         struckNext = (struckNext + 1) % struck.Length;
         struckCount = Math.Min(struckCount + 1, struck.Length);
     }
@@ -956,7 +1022,7 @@ public sealed class DamageSystem : IWorldSystem
             (h.Ms[n], h.Ship[n], h.Class[n], h.Shooter[n], h.At[n], h.Forward[n]) = (x.Ms, x.Ship, x.Class, x.Shooter, x.At, x.Forward);
             (h.Point[n], h.Direction[n], h.Outcome[n], h.Burst[n], h.BurstAt[n], h.BurstS[n]) = (x.Point, x.Direction, x.Outcome, x.Burst, x.BurstAt, (float)x.BurstS);
             (h.ExitAt[n], h.ExitDirection[n], h.ExitMs[n], h.CalibreMm[n]) = (x.ExitAt, x.ExitDirection, (float)x.ExitMs, (float)x.CalibreMm);
-            (h.FillerKg[n], h.VentM2[n], h.Kind[n], h.Shows[n]) = ((float)x.FillerKg, (float)x.VentM2, x.Kind, x.Shows);
+            (h.FillerKg[n], h.FillerRe[n], h.VentM2[n], h.Kind[n], h.Shows[n]) = ((float)x.FillerKg, (float)x.FillerRe, (float)x.VentM2, x.Kind, x.Shows);
             n++;
         }
         h.Count = n;

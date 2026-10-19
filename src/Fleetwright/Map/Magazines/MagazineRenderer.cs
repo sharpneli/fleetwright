@@ -61,7 +61,7 @@ public sealed unsafe class MagazineRenderer : IDisposable
     MagazineGpu[] items = new MagazineGpu[8];
     MagazineJetGpu[] jets = new MagazineJetGpu[32], trails = new MagazineJetGpu[64];
     int count, jetCount, trailCount;
-    Vector2 windDir;
+    Vector2 windDir, shadowDrift;
     double windMs;
     ShipLights lights = ShipLights.Flat;
     Params prms;
@@ -116,11 +116,15 @@ public sealed unsafe class MagazineRenderer : IDisposable
             Book.SpawnSmoke(smoke, smokeNow);
         lights = frameLights;
         count = jetCount = trailCount = 0;
-        if (world <= 0 || !MagazineLook.On || Book.Count == 0)
+        Ready = false;
+        if (world <= 0)
+            return;
+        Frame(view, s, drawMs);
+        if (!MagazineLook.On || Book.Count == 0)
             return;
         try
         {
-            BuildEvents(view, s, drawMs, world, flashLights, blasts);
+            BuildEvents(view, world, flashLights, blasts);
         }
         finally
         {
@@ -128,9 +132,16 @@ public sealed unsafe class MagazineRenderer : IDisposable
         }
     }
 
-    void BuildEvents(in MapView view, Snapshot s, long drawMs, double world, FlashLights? flashLights, BlastRenderer? blasts)
-    {
+    /// <summary>Whether this frame's light, wind and shadows are set: the bodies, flashes and jets of others (a shell's
+    /// burst, docs/visuals/hits-and-fires.md I1) may be added after <see cref="Build"/>.</summary>
+    public bool Ready { get; private set; }
 
+    /// <summary>Display units per cd/m² this frame (the fire's brightness as drawn), once <see cref="Ready"/>.</summary>
+    public double PerCandela { get; private set; }
+
+    /// <summary>This frame's light, wind and shadows, which every body drawn shares.</summary>
+    void Frame(in MapView view, Snapshot s, long drawMs)
+    {
         var up = (-view.Forward).Normalized();
         var (east, north) = (view.Right, view.Up);
         Vector3 Local(Vec3d d) => new((float)Vec3d.Dot(d, east), (float)Vec3d.Dot(d, north), (float)Vec3d.Dot(d, up));
@@ -139,24 +150,29 @@ public sealed unsafe class MagazineRenderer : IDisposable
         var l = Local(lights.ShadowDir);
         double sinLo = Math.Sin(3 * Math.PI / 180), sinHi = Math.Sin(7 * Math.PI / 180);
         float on = (float)(lights.ShadowOpacity * SmoothStep(sinLo, sinHi, l.Z));
-        var drift = l.Z > 1e-3 ? -new Vector2(l.X, l.Y) / l.Z : Vector2.Zero;
-        if (drift.Length() > MaxDrift)
-            drift *= MaxDrift / drift.Length();
+        shadowDrift = l.Z > 1e-3 ? -new Vector2(l.X, l.Y) / l.Z : Vector2.Zero;
+        if (shadowDrift.Length() > MaxDrift)
+            shadowDrift *= MaxDrift / shadowDrift.Length();
         shadows = on > 0.002f && (MagazineLook.Parts & 2) != 0;
         double mpp = view.MetresPerPixel, k = Effects.K;
-        double perCd = MagazineLook.Gain * FlashRenderer.PerCandela(lights, s.Sun, up, drawMs);
+        PerCandela = MagazineLook.Gain * FlashRenderer.PerCandela(lights, s.Sun, up, drawMs);
         prms = new Params
         {
-            SunL = new Vector4(sunL, 0), MoonL = new Vector4(moonL, 0), ShadowL = new Vector4(drift, on, 0),
-            Misc = new Vector4((float)k, (float)mpp, (float)MagazineLook.Steps, (float)perCd),
+            SunL = new Vector4(sunL, 0), MoonL = new Vector4(moonL, 0), ShadowL = new Vector4(shadowDrift, on, 0),
+            Misc = new Vector4((float)k, (float)mpp, (float)MagazineLook.Steps, (float)PerCandela),
             FireK = new Vector4((float)MagazineLook.ColdK, (float)MagazineLook.HotK, (float)MagazineLook.SootAlbedo, 0),
             More = new Vector4(0, 0, (float)MagazineLook.Whiten, 0),
         };
         // the wind, toward where it blows (east, north), and its speed at 10 m
         double toward = (s.Weather.WindFromDeg + 180) * Math.PI / 180;
         windDir = new Vector2((float)Math.Sin(toward), (float)Math.Cos(toward));
-        double u10 = windMs = s.Weather.WindMs;
+        windMs = s.Weather.WindMs;
+        Ready = true;
+    }
 
+    void BuildEvents(in MapView view, double world, FlashLights? flashLights, BlastRenderer? blasts)
+    {
+        double mpp = view.MetresPerPixel, k = Effects.K, perCd = PerCandela;
         var book = Book;
         for (int i = 0; i < book.Count; i++)
         {
@@ -179,58 +195,73 @@ public sealed unsafe class MagazineRenderer : IDisposable
                 Light(view, e, age, perCd, flashLights);
             if (t < 0 || t > MagazineLook.FadeTo * life)
                 continue;
-            var b = MagazineBlast.BodyAt(e.FireballM, life, deck, t);
-            // downwind: the cloud at its height's wind (the shear's power law), once it's grown
-            double u = u10 * Math.Pow(Math.Max(b.CentreZ, 1) / 10, 0.14);
-            var capDrift = windDir * (float)(u * Math.Max(t - 0.3 * life, 0) * 0.8);
-            double r = b.R, rv = b.Rv;
-            double sigma = MagazineLook.Opacity * b.Tau / (2 * r);
-            double fade = (1 - SmoothStep(MagazineLook.FadeFrom * life, MagazineLook.FadeTo * life, t)) * world;
-            double roll = SmoothStep(0.6 * life, 1.5 * life, t);
-            double churn = MagazineLook.Churn * Math.Log(1 + t / (0.3 * life));
-            double spin = t > life ? 2 * Math.PI * MagazineLook.Spin * 2 * life * (Math.Sqrt(t / life) - 1) : 0;
-            // the fire's light on its own smoke: the core's drawn brightness, compressed as the flashes' halo's source
-            double kel = MagazineLook.ColdK + (MagazineLook.HotK - MagazineLook.ColdK) * Math.Max(b.Heat, 0);
-            double drawn = perCd * FlashPhotometry.Luminance(kel) * Math.Max(b.Heat, 0);
-            double glow = 0.3 * drawn / (1 + drawn / FlashLook.HaloKnee);
-
-            // the quads: the body through the effects camera, its shadow down-sun
-            double zb = Math.Max(b.CentreZ - 1.35 * rv, 0), zt = b.CentreZ + 1.35 * rv;
-            double rr = 1.4 * r;
-            var c = new Vector2(capDrift.X, capDrift.Y);
-            var lo = c - new Vector2((float)rr) + new Vector2(0, (float)(k * (zb - deck)));
-            var hi = c + new Vector2((float)rr) + new Vector2(0, (float)(k * (zt - deck)));
-            Vector4 shade = default;
-            if (shadows)
-            {
-                var sLo = Vector2.Min(c + drift * (float)zb, c + drift * (float)zt) - new Vector2((float)rr);
-                var sHi = Vector2.Max(c + drift * (float)zb, c + drift * (float)zt) + new Vector2((float)rr);
-                shade = new Vector4(sLo, sHi.X, sHi.Y);
-            }
-
-            if (!view.Project(e.At, out double x, out double y))
-                continue;
-            double reach = Math.Max(Math.Max(Math.Abs(lo.X), Math.Abs(lo.Y)), Math.Max(Math.Abs(hi.X), Math.Abs(hi.Y)));
-            if (shadows)
-                reach = Math.Max(reach, Math.Max(Math.Max(Math.Abs(shade.X), Math.Abs(shade.Y)), Math.Max(Math.Abs(shade.Z), Math.Abs(shade.W))));
-            double reachPx = reach / mpp + 8;
-            if (x < -reachPx || x > view.Width + reachPx || y < -reachPx || y > view.Height + reachPx)
-                continue;
-
-            var rel = e.At - view.Eye;
-            if (count == items.Length)
-                Array.Resize(ref items, count * 2);
-            items[count++] = new MagazineGpu
-            {
-                Base = new Vector4((float)rel.X, (float)rel.Y, (float)rel.Z, e.Seed),
-                Quad = new Vector4(lo, hi.X, hi.Y),
-                Shade = shade,
-                Body = new Vector4(c, (float)b.CentreZ, (float)r),
-                BodyB = new Vector4((float)rv, (float)sigma, (float)b.Heat, (float)(b.Skin * MagazineLook.Skin * 0.5)),
-                Time = new Vector4((float)churn, (float)roll, (float)spin, (float)fade),
-                Misc = new Vector4((float)deck, (float)glow, 0, 0),
-            };
+            AddBody(view, e.At, deck, e.FireballM, life, t, e.Seed, world);
         }
+    }
+
+    /// <summary>A fireball and its cloud (<see cref="MagazineBlast.BodyAt"/>) of diameter <paramref name="d"/> m and life
+    /// <paramref name="life"/> s, <paramref name="t"/> s after it burst, over the sea point <paramref name="seaAt"/> from a
+    /// deck <paramref name="deck"/> m over the waterline: drifting downwind with the shear once grown, fading out from
+    /// <see cref="MagazineLook.FadeFrom"/> to <see cref="MagazineLook.FadeTo"/> lives. A magazine's, or a shell's burst
+    /// (docs/visuals/hits-and-fires.md I1): one body model. Needs <see cref="Ready"/>.</summary>
+    public void AddBody(in MapView view, Vec3d seaAt, double deck, double d, double life, double t, float seed, double world)
+    {
+        if (!Ready || t < 0 || t > MagazineLook.FadeTo * life)
+            return;
+        double mpp = view.MetresPerPixel, k = Effects.K, perCd = PerCandela;
+        var drift = shadowDrift;
+        double u10 = windMs;
+        var b = MagazineBlast.BodyAt(d, life, deck, t);
+        // downwind: the cloud at its height's wind (the shear's power law), once it's grown
+        double u = u10 * Math.Pow(Math.Max(b.CentreZ, 1) / 10, 0.14);
+        var capDrift = windDir * (float)(u * Math.Max(t - 0.3 * life, 0) * 0.8);
+        double r = b.R, rv = b.Rv;
+        double sigma = MagazineLook.Opacity * b.Tau / (2 * r);
+        double fade = (1 - SmoothStep(MagazineLook.FadeFrom * life, MagazineLook.FadeTo * life, t)) * world;
+        double roll = SmoothStep(0.6 * life, 1.5 * life, t);
+        double churn = MagazineLook.Churn * Math.Log(1 + t / (0.3 * life));
+        double spin = t > life ? 2 * Math.PI * MagazineLook.Spin * 2 * life * (Math.Sqrt(t / life) - 1) : 0;
+        // the fire's light on its own smoke: the core's drawn brightness, compressed as the flashes' halo's source
+        double kel = MagazineLook.ColdK + (MagazineLook.HotK - MagazineLook.ColdK) * Math.Max(b.Heat, 0);
+        double drawn = perCd * FlashPhotometry.Luminance(kel) * Math.Max(b.Heat, 0);
+        double glow = 0.3 * drawn / (1 + drawn / FlashLook.HaloKnee);
+
+        // the quads: the body through the effects camera, its shadow down-sun
+        double zb = Math.Max(b.CentreZ - 1.35 * rv, 0), zt = b.CentreZ + 1.35 * rv;
+        double rr = 1.4 * r;
+        var c = new Vector2(capDrift.X, capDrift.Y);
+        var lo = c - new Vector2((float)rr) + new Vector2(0, (float)(k * (zb - deck)));
+        var hi = c + new Vector2((float)rr) + new Vector2(0, (float)(k * (zt - deck)));
+        Vector4 shade = default;
+        if (shadows)
+        {
+            var sLo = Vector2.Min(c + drift * (float)zb, c + drift * (float)zt) - new Vector2((float)rr);
+            var sHi = Vector2.Max(c + drift * (float)zb, c + drift * (float)zt) + new Vector2((float)rr);
+            shade = new Vector4(sLo, sHi.X, sHi.Y);
+        }
+
+        if (!view.Project(seaAt, out double x, out double y))
+            return;
+        double reach = Math.Max(Math.Max(Math.Abs(lo.X), Math.Abs(lo.Y)), Math.Max(Math.Abs(hi.X), Math.Abs(hi.Y)));
+        if (shadows)
+            reach = Math.Max(reach, Math.Max(Math.Max(Math.Abs(shade.X), Math.Abs(shade.Y)), Math.Max(Math.Abs(shade.Z), Math.Abs(shade.W))));
+        double reachPx = reach / mpp + 8;
+        if (x < -reachPx || x > view.Width + reachPx || y < -reachPx || y > view.Height + reachPx)
+            return;
+
+        var rel = seaAt - view.Eye;
+        if (count == items.Length)
+            Array.Resize(ref items, count * 2);
+        items[count++] = new MagazineGpu
+        {
+            Base = new Vector4((float)rel.X, (float)rel.Y, (float)rel.Z, seed),
+            Quad = new Vector4(lo, hi.X, hi.Y),
+            Shade = shade,
+            Body = new Vector4(c, (float)b.CentreZ, (float)r),
+            BodyB = new Vector4((float)rv, (float)sigma, (float)b.Heat, (float)(b.Skin * MagazineLook.Skin * 0.5)),
+            Time = new Vector4((float)churn, (float)roll, (float)spin, (float)fade),
+            Misc = new Vector4((float)deck, (float)glow, 0, 0),
+        };
     }
 
     /// <summary>An event's jets now, <paramref name="age"/> s after the hit (research §2.5): each opening's flame from its
@@ -417,6 +448,38 @@ public sealed unsafe class MagazineRenderer : IDisposable
         // the soot skin hides the fire as it grows over it
         double rad = Thrown(kel, Math.PI * b.R * b.R) * (1 - 0.7 * b.Skin);
         into.Add(e.At + up * b.CentreZ, rad, FlashPhotometry.Chroma(kel), b.R);
+    }
+
+    /// <summary>A flame from <paramref name="a"/> to <paramref name="tip"/> (metres east and north of the sea point
+    /// <paramref name="seaAt"/>, heights over its deck already drawn up the screen), r0 to r1 m wide, hot at its root and
+    /// cooler at its tip, <paramref name="lenM"/> long: a magazine's opening's, or a shell's burst venting out of its hole
+    /// (docs/visuals/hits-and-fires.md I1). A point (a == tip) is a round flash (a hit on a plate, a spark). One jet
+    /// model. Off the screen, nothing.</summary>
+    public void AddJet(in MapView view, Vec3d seaAt, Vector2 a, Vector2 tip, double r0, double r1, double heat0, double heat1, double lenM,
+        double strength, double clock, float seed)
+    {
+        if (strength <= 0.002 || !view.Project(seaAt, out double px, out double py))
+            return;
+        double mpp = view.MetresPerPixel, reach = (Math.Max(a.Length(), tip.Length()) + 2 * Math.Max(r0, r1)) / mpp + 4;
+        if (px < -reach || py < -reach || px > view.Width + reach || py > view.Height + reach)
+            return;
+        var rel = seaAt - view.Eye;
+        float pad = 2 * (float)Math.Max(r0, r1);
+        Add(new MagazineJetGpu
+        {
+            Base = new Vector4((float)rel.X, (float)rel.Y, (float)rel.Z, seed), Seg = new Vector4(a, tip.X, tip.Y),
+            Shape = new Vector4((float)r0, (float)r1, (float)heat0, (float)heat1), Look = new Vector4((float)strength, (float)clock, (float)lenM, 0),
+            Quad = new Vector4(Vector2.Min(a, tip) - new Vector2(pad), Vector2.Max(a, tip).X + pad, Vector2.Max(a, tip).Y + pad),
+        });
+    }
+
+    /// <summary>The light a fire of <paramref name="kelvin"/> over <paramref name="areaM2"/> throws on the sea and the ships
+    /// (display units Ã— mÂ²): its brightness as drawn this frame, compressed as the flashes' halo's source, times its area
+    /// over pi (FlashRenderer's rule), times a share. Needs <see cref="Ready"/>.</summary>
+    public double Light(double kelvin, double areaM2, double share)
+    {
+        double drawn = PerCandela * FlashPhotometry.Luminance(kelvin);
+        return drawn / (1 + drawn / FlashLook.HaloKnee) * areaM2 / Math.PI * share;
     }
 
     void AddJet(Vector4 baseV, Vector2 a, Vector2 b, float r, float heat, float strength, double clock)

@@ -430,7 +430,8 @@ public enum HitShows : byte
 /// in her frame (the hitboxes': +x bow, +y starboard, the class's heights) where it struck and which way it was going,
 /// where it burst (when it did) and how long after it struck, s, and where it left her and which way (when it flew on,
 /// <see cref="HitShows.Exit"/>) at what speed, m/s; the outcome and the burst's kind, the calibre, the shell's kind, its
-/// filler's TNT-equivalent W, kg (low-order's force in), and the area its burst tore to the sea or air, m². Display only:
+/// filler's TNT-equivalent W, kg (low-order's force in) and its explosive's RE (black powder's 0.55 to the high explosives'
+/// 1 and over: its smoke), and the area its burst tore to the sea or air, m². Display only:
 /// facts the damage system had at the hit.</summary>
 public sealed class HitsView
 {
@@ -439,7 +440,7 @@ public sealed class HitsView
     public int[] Ship = [], Class = [], Shooter = [];
     public Vec3d[] At = [], Forward = [];
     public P3[] Point = [], Direction = [], BurstAt = [], ExitAt = [], ExitDirection = [];
-    public float[] BurstS = [], ExitMs = [], CalibreMm = [], FillerKg = [], VentM2 = [];
+    public float[] BurstS = [], ExitMs = [], CalibreMm = [], FillerKg = [], FillerRe = [], VentM2 = [];
     public Combat.Outcome[] Outcome = [];
     public Combat.BurstKind[] Burst = [];
     public ShellKind[] Kind = [];
@@ -465,6 +466,7 @@ public sealed class HitsView
         Array.Resize(ref ExitMs, n);
         Array.Resize(ref CalibreMm, n);
         Array.Resize(ref FillerKg, n);
+        Array.Resize(ref FillerRe, n);
         Array.Resize(ref VentM2, n);
         Array.Resize(ref Outcome, n);
         Array.Resize(ref Burst, n);

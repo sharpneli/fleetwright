@@ -20,6 +20,7 @@ public static unsafe class Program
         var start = Sim.Core.WorldTime.FromUtc(1916, 5, 31, 14, 0);
         double? startSpeed = null;
         bool startPaused = false, noPause = false;
+        string? hitBench = null;
         var devShips = new List<string>();
         int selectShip = -1;
         var captains = new List<string>();
@@ -159,6 +160,16 @@ public static unsafe class Program
                 foreach (var kv in arg.Substring("-magazine=".Length).Split(',', StringSplitOptions.RemoveEmptyEntries))
                     if (!Map.Magazines.MagazineLook.Set(kv))
                         Console.Error.WriteLine($"Bad magazine knob: {kv} (want {Map.Magazines.MagazineLook.Knobs})");
+            }
+            else if (arg.StartsWith("-hit="))   // the world view's shell hits' knobs (docs/visuals/hits-and-fires.md): -hit=at:0.4,scale:1.2
+            {
+                foreach (var kv in arg.Substring("-hit=".Length).Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    if (!Map.Hits.HitLook.Set(kv))
+                        Console.Error.WriteLine($"Bad hit knob: {kv} (want {Map.Hits.HitLook.Knobs})");
+            }
+            else if (arg.StartsWith("-hitbench="))   // the hits bench: -hitbench=TARGET:SHOOTER[:every_s], shells struck at a still ship in turn
+            {
+                hitBench = arg.Substring("-hitbench=".Length);
             }
             else if (arg.StartsWith("-tracks="))   // the world view's torpedoes' knobs (docs/visuals/torpedoes.md): -tracks=fast:0.8,life:90
             {
@@ -414,7 +425,7 @@ public static unsafe class Program
             // opens the others
             view ??= designerFlags ? "designer" : null;
             engine.Scene = new SceneSwitcher(view switch { "designer" => 1, "hitbox" => 2, "ship" => 3, "profile" => 4, _ => 0 },
-                ("World", () => new Map.MapScene((SDL.SDL_GPUDevice*)device, world, mapCamera, shipArt, session, selectShip) { KeepCameraOnce = mapGiven && scenarioArg != null, SelectOnce = scenarioArg != null ? selectShip : -1 }),
+                ("World", () => new Map.MapScene((SDL.SDL_GPUDevice*)device, world, mapCamera, shipArt, session, selectShip) { KeepCameraOnce = mapGiven && scenarioArg != null, SelectOnce = scenarioArg != null ? selectShip : -1, HitBench = hitBench }),
                 ("Designer", () => early ?? MakeDesigner()),
                 ("Hitboxes", () => new HitView.HitboxScene((SDL.SDL_GPUDevice*)device, session, camera, show, hitRay)),
                 ("Ship", () => new ShipViewer((SDL.SDL_GPUDevice*)device, session, navy, era)),

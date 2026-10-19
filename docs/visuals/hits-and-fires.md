@@ -174,6 +174,32 @@ when theirs does: the table's leak is closed (decision 3), her own side's marks 
 min: `EBA470E7A89D8BBA` before and after). Tests: `DamageTests.Each_shell_hit_records_its_outcome_burst_and_exit_for_the_screens`,
 `Only_fires_that_show_are_listed_for_the_world_and_for_an_enemy_seen`.
 
+**I1 (2026-10-19).** `Map/Hits/`: `HitBook` keeps each hit seen (placed once where she was at the hit: a burst's gas and
+smoke stay in the air, she steams on from under them; back-dated on the effects' clock, never thinned), `HitEffects`
+draws it each frame through the models already there, `HitLook` holds the knobs (`-hit=`). One body, one jet, one smoke:
+- **a burst in the open** (outside a plate, in it, beyond her, or inside a space open enough to vent as fast as it
+  formed, at `open` 0.7 of its size [EST]): the magazine's fireball body at the filler's W (`MagazineRenderer.AddBody`,
+  refactored out of the magazine's loop; `MagazineBlast.Fireball`: a 15" HE's 102 kg, 27 m and 2.1 s), after the fuze's
+  delay, its centre at the burst; its light into the flashes' lights by its heat (`MagazineRenderer.Light`, the
+  magazine's rule, share 0.3);
+- **a burst inside**: a short warm light (0.4 of its fireball's life) and its gas jetting back out of the hole it came in
+  by (`MagazineRenderer.AddJet`, the ports' jets: 45 d âˆš2, d the hole's (1.2 calibres) with what the burst tore open, at
+  most `reach` 0.6 of its fireball, for 0.6 of its life) [EST];
+- **a plate that held** (stopped, broke up, holed in pieces, a dud, a glance): a hard flash 3 m for a 12" by the calibre,
+  0.1 s, as the jet shader's round flash (the magazine's hit's flash: one flash model, rather than `FlashRenderer`'s
+  muzzle parts the plan named); a shell through thin plating flashes half that at each hole;
+- **smoke** on the gun smoke's book, once, dated to the burst: the burst's (A 1 mÂ²/g of W [EST]; its tint from the
+  filler's RE, black powder's white-grey to the high explosives' grey-brown, placeholders), the vent's (half) at the
+  hole, a hole's dust and paint (300 mÂ² for a 12").
+
+A hit under the water shows nothing yet (I3's boil). The table's pop fades out over the cross-fade. `HitsView` gained the
+filler's RE; a shell that bursts beyond her far side is recorded 5 m past it [EST] (the walk keeps no point there). The
+bench: `DamageSystem.Shoot` (the hitbox viewer's shot in the world, a dev command, so it replays) and `-hitbench=
+TARGET:SHOOTER[:every_s[:shot]]`, the shooter's shells at a still ship in turn, each hit's outcome printed. Seen on a
+dreadnought struck by a super-dreadnought's 15" at 0.1 m/px, noon: an AP burst inside her belt a thin orange jet out of
+the hole; a 15" HE on her upper works a fireball over the funnels, its soot skin and light on the water at 0.8 s; an AP
+bursting beyond her bow a fireball off her far side; the smoke drifting off downwind. No hash moved. Test: `HitBookTests`.
+
 ## Later
 
 - **The colour pass:** smoke colours by fire, filler and fuel, soot yields and the funnels' output from the research

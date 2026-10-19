@@ -131,6 +131,7 @@ public sealed unsafe partial class MapScene : IScene
         // the magazines' fire adds to the flashes' lights and their blasts to the water's marks
         shipRenderer.Magazines.Build(view, s, world.DrawMs, s.Paused ? 0 : s.AchievedSpeed, dt, WorldView.Factor(view), shipRenderer.List.Lights, classOf,
             shipRenderer.Flashes.Lights, shipRenderer.Blasts, shipRenderer.Smoke.Book, shipRenderer.Flashes.Book.SeaClock);
+        BuildHits(view, s, dt);
         shipRenderer.List.SetFlashLights(shipRenderer.Flashes.Lights.Block);
         shipRenderer.Smoke.Build(view, shipRenderer.Flashes.Book, s.Weather, WorldView.Factor(view), shipRenderer.List.Lights);
         shipRenderer.Splashes.Build(view, s, world.DrawMs, s.Paused ? 0 : s.AchievedSpeed, dt, selected, WorldView.Factor(view), shipRenderer.List.Lights);

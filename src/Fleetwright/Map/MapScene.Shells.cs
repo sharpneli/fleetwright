@@ -193,6 +193,8 @@ public sealed partial class MapScene
         long now = world.DrawMs;
         float table = Splashes.SplashLook.On ? (float)(1 - WorldView.Factor(view)) : 1f;
         double life = world.Settings.SplashLifeMs / 1000.0, hitS = Floor(s, HitFlashS), sparkS = Floor(s, SparkS);
+        // a hit's pop gives way to the world view's burst (docs/visuals/hits-and-fires.md I1) over the cross-fade
+        float hitTable = Hits.HitLook.On ? (float)(1 - WorldView.Factor(view)) : 1f;
         for (int i = 0; i < w.Count; i++)
         {
             double age = (now - w.Ms[i]) / 1000.0;
@@ -202,7 +204,8 @@ public sealed partial class MapScene
             float dim = selected < 0 || w.Shooter[i] == selected ? 1f : 0.5f;
             if (w.Ship[i] >= 0)
             {
-                Hit(x, y, age, g, hitS, sparkS, Seed(w.Point[i]), HitPx, HitSmokeS);
+                if (hitTable > 0)
+                    Hit(x, y, age, g, hitS, sparkS, Seed(w.Point[i]), HitPx, HitSmokeS, hitTable);
                 continue;
             }
             // the column: up in sqrt(2H/g), down by twice that and a second (12": 3.3 s, 7.7 s)
