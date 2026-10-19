@@ -40,6 +40,17 @@ static class ContentsBench
                         o.InteriorRho > 0 ? string.Format(Inv, ", {0:0} kg/m³ over {1:0.00} of it", o.InteriorRho, o.InteriorShare) : "",
                         o.CoreChance > 0 ? string.Format(Inv, ", then {0} with {1:0.00}", Solid(c, o.Core), o.CoreChance) : ""));
             }
+            // what stands in the parts (C4b)
+            for (int i = 0; i < c.Components.Length; i++)
+                foreach (var k in c.PartContents(i))
+                {
+                    var b = c.Components[i].Bounds;
+                    double width = Math.Min(b.X1 - b.X0, b.Y1 - b.Y0), meet = (k.ZHi - k.ZLo) / (b.Top - b.Base) * (1 - Math.Exp(-width / k.LambdaM));
+                    Console.WriteLine(string.Format(Inv, "  {0,-28} {1}: {2:0.0} m across, band {3:0.0}-{4:0.0} m, λ {5:0.0} m: meets a solid {6:0.00}",
+                        c.ComponentId(i), k.Name, width, k.ZLo - b.Base, k.ZHi - b.Base, k.LambdaM, meet));
+                    foreach (var o in c.ContentObjects(k.Mix))
+                        Console.WriteLine(string.Format(Inv, "      {0,-32} {1}", o.Name, Solid(c, o.Skin)));
+                }
             // what the rooms stow, at the default fuel share and full (C2-C3)
             var level = new double[c.Rooms.Length];
             var full = new double[c.Rooms.Length];

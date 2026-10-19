@@ -90,13 +90,8 @@ public static class Contents
 {
     const string Mild = "mild steel", Forged = "high-tensile steel", CastIron = "cast iron";
 
-    /// <summary>The displacements (t) of the small and large rows: a 1915 destroyer's and a dreadnought's. Between them a
-    /// ship's size is ln(Δ/small) / ln(large/small), held to 0..1.</summary>
-    public const double SmallT = 1_000, LargeT = 20_000;
-
-    /// <summary>A ship's place between the small rows (0) and the large (1).</summary>
-    public static double SizeOf(double displacementT) =>
-        displacementT > 0 ? Math.Clamp(Math.Log(displacementT / SmallT) / Math.Log(LargeT / SmallT), 0, 1) : 1;
+    /// <summary>A ship's place between the small rows (0) and the large (1): <see cref="ShipSize.Of"/>.</summary>
+    public static double SizeOf(double displacementT) => ShipSize.Of(displacementT);
 
     // ------------------------------------------------------------------ boiler rooms (09 §2.2)
 
@@ -208,9 +203,80 @@ public static class Contents
         new(0.5, new("machinery", 20, 80, Mild, SolidShape.Flat)),
     ]);
 
-    /// <summary>The small and large rows of a room of a kind on a ship with this plant (null: the room's empty).</summary>
-    public static (ContentsRow Small, ContentsRow Large)? Of(RoomKind kind, BoilerKind boilers, EngineKind engines) => kind switch
+    // ------------------------------------------------------------------ magazines, handling rooms, steering (09 §5, §7.2)
+
+    /// <summary>A magazine's shell room (09 §5): the shells stowed in the lower 0.45 of it (racks and bins to 1.2-1.5 m),
+    /// packing 0.5, chord 1 m (λ 2 m); a struck shell a bar of the calibre it serves, forged, its cavity 0.4 of it (AP's
+    /// 0.3, common's and HE's 0.55: a shell room holds both [INFERRED]); through one, the next in the stack with 0.6.
+    /// The charges above it slow a shell negligibly (L ≈ 175 calibres) and are left out; a struck filled shell's chance to
+    /// go off is the magazine model's, later (09 §5).</summary>
+    public static ContentsRow Magazine(double calibreMm) => new("stowed shells", 0, 0.45, 0.5, 1.0,
+    [
+        new(1, new("stowed shell", calibreMm, calibreMm, Forged, SolidShape.Bar, 0.4), CoreChance: 0.6,
+            Core: new("the next shell in the stack", calibreMm, calibreMm, Forged, SolidShape.Bar, 0.4)),
+    ]);
+
+    /// <summary>A handling room (09 §5): hoists, cages, trays and the trunk's walls, band 0-0.8, packing 0.2, chord 0.6 m
+    /// (λ 3 m), 10-35 mm of mild steel. Rounds in transit are left out.</summary>
+    static readonly ContentsRow Handling = new("hoists and cages", 0, 0.80, 0.2, 0.6,
+    [
+        new(1, new("hoist and cage", 10, 35, Mild, SolidShape.Flat)),
+    ]);
+
+    /// <summary>The steering gear (09 §7.2): band 0-0.7, packing 0.3, chord 0.8 m (λ 2.7 m). A battleship's rudder stock
+    /// 380-560 mm, a destroyer's 120-200 (a cruiser's 250-400 falls between).</summary>
+    static readonly ContentsRow SteeringLarge = new("steering gear", 0, 0.70, 0.30, 0.8,
+    [
+        new(0.25, new("rudder stock", 380, 560, Forged, SolidShape.Bar)),
+        new(0.35, new("tiller and quadrant", 60, 200, Forged, SolidShape.Flat)),
+        new(0.25, new("steering engine", 40, 90, CastIron, SolidShape.Cylinder)),
+        new(0.15, new("piping and telemotor", 10, 30, Mild, SolidShape.Flat)),
+    ]);
+
+    /// <summary>[EST] A destroyer's: her rudder stock (09); the rest scaled from the large.</summary>
+    static readonly ContentsRow SteeringSmall = new("steering gear", 0, 0.70, 0.30, 0.6,
+    [
+        new(0.25, new("rudder stock", 120, 200, Forged, SolidShape.Bar)),
+        new(0.35, new("tiller and quadrant", 30, 100, Forged, SolidShape.Flat)),
+        new(0.25, new("steering engine", 25, 50, CastIron, SolidShape.Cylinder)),
+        new(0.15, new("piping and telemotor", 8, 20, Mild, SolidShape.Flat)),
+    ]);
+
+    // ------------------------------------------------------------------ turret and barbette interiors (09 §6)
+
+    /// <summary>A gun house's interior by its gun's calibre d (09 §6): band 0.15-0.85 of its height, packing 0.35, chord
+    /// 1 m (λ 2.9 m). A quarter the guns at the slide and trunnions (a bar of 2.2-2.6 d, its bore d: 1.55 d of steel on
+    /// average, a 12"'s 475 mm), a quarter the cradle, slide and recoil cylinders (0.2-0.5 d), 15% the breech end and its
+    /// mechanism (0.8-1.2 d, struck from ahead), the rest rammers, trays, cages and sights (10-40 mm). The shares fold in
+    /// that a shell through the face of a turret trained toward the firer travels nearly along the guns.</summary>
+    public static ContentsRow GunHouse(double d) => new("guns and their gear", 0.15, 0.85, 0.35, 1.0,
+    [
+        new(0.25, new("gun", 2.2 * d, 2.6 * d, Forged, SolidShape.Bar, 1 / 2.4)),
+        new(0.25, new("cradle, slide and recoil cylinders", 0.2 * d, 0.5 * d, Forged, SolidShape.Flat)),
+        new(0.15, new("breech", 0.8 * d, 1.2 * d, Forged, SolidShape.Flat)),
+        new(0.35, new("rammers, trays and sights", 10, 40, Mild, SolidShape.Flat)),
+    ]);
+
+    /// <summary>A barbette's interior (09 §6): its trunk walls, cages, hydraulic pipes and rails through its height
+    /// (packing 0.15, chord 0.8 m, 10-40 mm); and its top 0.12, the turntable and the working chamber's floor (packing
+    /// 0.6, 30-80 mm [EST] chord 0.3 m): the floor a turret has over its barbette.</summary>
+    public static readonly ContentsRow BarbetteTrunk = new("trunk, cages and pipes", 0, 0.88, 0.15, 0.8,
+    [
+        new(1, new("trunk and cages", 10, 40, Mild, SolidShape.Flat)),
+    ]);
+
+    public static readonly ContentsRow BarbetteTop = new("turntable", 0.88, 1.0, 0.6, 0.3,
+    [
+        new(1, new("turntable and working chamber floor", 30, 80, Mild, SolidShape.Flat)),
+    ]);
+
+    /// <summary>The small and large rows of a room of a kind on a ship with this plant (null: the room's empty); a
+    /// magazine's by the largest calibre it serves (none: empty).</summary>
+    public static (ContentsRow Small, ContentsRow Large)? Of(RoomKind kind, BoilerKind boilers, EngineKind engines, double calibreMm = 0) => kind switch
     {
+        RoomKind.Magazine when calibreMm > 0 => Magazine(calibreMm) is var m ? (m, m) : null,
+        RoomKind.Handling => (Handling, Handling),
+        RoomKind.Steering => (SteeringSmall, SteeringLarge),
         RoomKind.BoilerRoom => boilers switch
         {
             BoilerKind.Cylindrical or BoilerKind.Locomotive => (CylindricalSmall, CylindricalLarge),

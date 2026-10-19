@@ -2,7 +2,9 @@
 
 Proposed 2026-10-18. The research landed 2026-10-19
 ([damage/09](../../research/simulation/damage-research/09-contents-in-the-path.md), with `contents_ref.py`); the plan
-below was drafted from it and agreed 2026-10-19. Found from a test: a 15" AP shell through a destroyer's engine
+below was drafted from it and agreed 2026-10-19, and C0-C4 were built the same day: the plan is complete. What's
+left: the contents' own splinters (open question 4), a struck filled shell going off (the magazine model), the TDS
+layers' and double bottom's use as design choices, and the matchup's shares in the final balance pass. Found from a test: a 15" AP shell through a destroyer's engine
 room, its fuze started at the side plating, passed out of the far side and burst beyond her.
 
 ## Today
@@ -302,6 +304,53 @@ The TDS design key `fill` (liquid or void) keeps its name: it says what's in a l
     shaft is struck as a round solid.
   - The steering room holds the rudder stock, the tiller and quadrant, and the steering engine.
 - Torpedo rooms stay empty (item 9 of the list, later).
+
+**Done 2026-10-19.**
+- **C4a (`Contents.Magazine`, `Handling`, `Steering…`).**
+  - **Magazines:** the shells' band is the room's lower 0.45 (packing 0.5, chord 1 m). A struck shell is a bar of the
+    largest calibre the room serves, forged, with a 0.4 bore: between AP's 0.3 and common's or HE's 0.55, since a shell
+    room holds both [INFERRED]. The next shell in the stack is its core, met with 0.6.
+  - **Left out:** the charges (175 calibres of decay, negligible as 09 says), and the struck filled shell's chance to
+    go off: that belongs to the magazine model, later.
+  - **Handling rooms:** hoists and cages, 10-35 mm (packing 0.2, chord 0.6 m).
+  - **Steering:** the rudder stock (a bar of 120-200 mm on a destroyer, 380-560 on a battleship, between by size), the
+    tiller and quadrant, the steering engine (cast iron), piping. The destroyer's row besides its stock is [EST].
+- **C4b (parts: `ShipClass.PartContents`, `PlateKind.PartContents`).**
+  - **Gun house** (enclosed turrets): by its calibre d, band 0.15-0.85 of its height, packing 0.35. Its mix: the guns
+    as bars of 2.2-2.6 d with a bore of d, the cradle and slide (0.2-0.5 d), the breech (0.8-1.2 d), and loading gear
+    (10-40 mm).
+  - **Barbette:** its trunk (packing 0.15, 10-40 mm), and the turntable band at its top (0.88-1, packing 0.6, 30-80 mm
+    [EST]): the floor a turret lacks over its barbette. A part's bands each draw, and the first strike is taken.
+  - **Simplification:** a gun's axis isn't the mount's bearing. The obliquity comes from the offset draw, which doesn't
+    need the axis; the axis only sets which way a glance turns. A struck part's contents add no damage of their own,
+    since the part is struck as it's entered.
+  - **Anchor** (`ContentsTests`, König's 12" through Iron Duke's turret face at 6 km): of 30 shots into the gun house,
+    15 strike its guns or gear and 7 are stopped there.
+- **C4c Shafts (`Propulsion.ShaftOdM`, `ShaftRpm`, `ShipSize`).**
+  - **Size:** OD = 120·(P/N)^⅓ mm, with the rpm by engine kind between a destroyer's and a large ship's by size
+    (reciprocating 380 to 110, direct turbines 650 to 290, geared 360 to 200, diesels 450 to 150) [EST]. That gives a
+    dreadnought 290 mm (09: 270-310), Lion 435 (415-470), a real M class 255 (245-275) and Hood 605 (580-655).
+  - **Size rule:** it moved into Shipgen (`ShipSize`), and the contents call it there: one implementation.
+  - **Hitboxes:** shafts change, and with them the cells they pass through; the goldens were updated (shipgen 44). No
+    weight moves, since the shaft's weight isn't from this geometry, and no sprite moves (shafts lie under the
+    waterline).
+  - **The strike:** a shaft is struck surely where the line crosses it, at the offset its geometry gives. The steel
+    through the 0.45 bore goes in as a plate of steel × cos θ.
+  - **Not done:** the shaft alleys' plummer blocks and walkway (packing 0.05, 30 mm), which are negligible.
+  - **Anchor** (`ContentsTests`): Iron Duke's 13.5" falling onto a destroyer's shaft inboard strikes it. A battleship's
+    shafts lie under her armour deck, which stops the shells first.
+- **A fix found on the way:** rooms with contents skipped the line of flight's `RoomVital` roll, but a nose fuze's
+  shell never walks among the contents (it fires on the first plate). Once C4 gave steering gear, magazines and
+  handling rooms contents, nose-fuzed HE stopped damaging them on its line of flight, and
+  `DamageTests.Ten_4in_HE_hits_usually_cripple_a_destroyer_and_seldom_sink_it` fell to 45% crippled. A nose-fuzed
+  shell's rooms take the roll again (72% and 56% crippled, as before).
+- **The `hits` bench** (2,000 hits each, against C3b):
+  - **M class under Revenge:** bursts inside rise 7.2% → 9.9%, holes 1.9 → 2.3 m², crippled 7% → 9% (steering 2%).
+    Her magazines, steering gear and shafts stop and start shells now.
+  - **König and Iron Duke:** they move only in the third digit (the magazine share 1.05% → 0.85% and 0.45% → 0.75%,
+    noise at this count).
+- **Scenarios** (one run each, 120 min; chaotic): squadrons 69 → 68 hits, Tiger lost to her magazine (none before);
+  flotilla the same boat lost; Tsushima 6 → 4 lost (2,124 → 2,861 hits).
 
 ### After the plan
 

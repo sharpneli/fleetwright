@@ -25,6 +25,10 @@ add what's found.
 - [ ] `PictureTests.Two_hundred_ships_look_at_each_other_without_garbage` failed once in a full run (2026-10-14, after
   4.3a) and passed alone and in the next full run. No ship fires in it, so it's not the damage system's; the same
   suspicion as above.
+- [ ] `RailsTests.Two_thousand_ships_steam_a_year_in_seconds` (its 60 s limit) failed in two full Debug runs of
+  `Fleetwright.Sim.Tests` in a row (2026-10-19, shell contents C4, which touches no rails code) and passed alone both
+  times: 33.0 s against 32.3 s on the commit before. A timing test in Debug under the suite's parallel load: the limit
+  has little room there. Worth running it in Release, or with the load it meets in mind.
 - [ ] `ShipMotionTests.A_tick_allocates_nothing` failed in a full `dotnet test` of every assembly at once (2026-10-14,
   lighting L4, which touches no sim code; once with a second Sim failure) and passed alone three times in three. The
   same suspicion as above.

@@ -58,6 +58,8 @@ public sealed class ShipClass
     internal RoomContents[] roomContents = [];
     internal ContentObject[] contentObjects = [];
     internal RoomStowage[] stowages = [];
+    internal RoomContents[] partRows = [];
+    internal Slice[] partContents = [];
     internal FrozenDictionary<string, int> componentIndex = null!, cellIndex = null!, roomIndex = null!, bulkheadIndex = null!,
         deckIndex = null!, tierIndex = null!, sectionIndex = null!;
 
@@ -65,11 +67,23 @@ public sealed class ShipClass
     public ref readonly RoomContents ContentsOf(int room) => ref roomContents[room];
     public ReadOnlySpan<RoomContents> RoomContents => roomContents;
 
+    /// <summary>A room's contents as a span of one (none: not <see cref="RoomContents.Some"/>).</summary>
+    public ReadOnlySpan<RoomContents> RoomContentsOf(int room) => roomContents.AsSpan(room, 1);
+
+    /// <summary>What stands in a part (docs/battle/shell-contents.md C4b): a gun house's guns and gear, a barbette's trunk
+    /// and turntable; none for most.</summary>
+    public ReadOnlySpan<RoomContents> PartContents(int component) =>
+        component < partContents.Length ? partRows.AsSpan(partContents[component].Start, partContents[component].Count) : default;
+
     /// <summary>What each room stows to a level (oil, water, coal: docs/battle/shell-contents.md C2-C3), by room.</summary>
     public ReadOnlySpan<RoomStowage> Stowages => stowages;
 
     /// <summary>The objects of a room's contents (<see cref="RoomContents.Mix"/>).</summary>
     public ReadOnlySpan<ContentObject> ContentObjects(Slice s) => contentObjects.AsSpan(s.Start, s.Count);
+
+    /// <summary>The class's forged steel, the material of what's forged inside her (shafts, rotors, guns: "high-tensile
+    /// steel", docs/battle/shell-contents.md).</summary>
+    public int ForgedMaterial { get; internal set; }
 
     /// <summary>The plant's boilers and engines (the tech block's; what's in the machinery rooms).</summary>
     public BoilerKind Boilers { get; internal init; }

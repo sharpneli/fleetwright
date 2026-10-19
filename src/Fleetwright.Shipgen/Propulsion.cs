@@ -9,7 +9,32 @@ public static class Propulsion
     const double RudderK = 0.017, RudderH = 0.7, RudderBalance = 0.25, RudderThick = 0.15, StockAt = 0.2;
     public const double AlleyW = 2.4, AlleyH = 2.6;
     const double ShaftAboveIb = 1.2;
-    public const double ShaftR = 0.3;
+
+    /// <summary>A propeller shaft's outer diameter, m (docs/battle/shell-contents.md C4c; damage/09 §7.1): the cube-root
+    /// rule OD = k·(P/N)^⅓ mm, P kW a shaft and N its rpm at full power, k 120 for a warship's hollow forged shaft (bore
+    /// 0.45 of it) [EST: the rule's form; k not checked against drawings]. The rpm by the engines and the ship's size
+    /// (<see cref="ShaftRpm"/>). A dreadnought's 270-310 mm, Lion's 415-470, an M class destroyer's 245-275, Hood's 580-655.</summary>
+    public static double ShaftOdM(double kwPerShaft, double rpm) => 0.120 * Math.Cbrt(Math.Max(kwPerShaft, 1) / Math.Max(rpm, 1));
+
+    /// <summary>A shaft's turning speed at full power, rpm, by the engines, between a destroyer's and a large ship's by her
+    /// size (<see cref="ShipSize"/>; 09 §7.1): reciprocating 380 to 110, direct-drive turbines 650 to 290, geared
+    /// turbines 360 to 200, diesels 450 to 150, petrol engines 1,500, gas turbines (geared) 300 [EST].</summary>
+    public static double ShaftRpm(string engines, double size)
+    {
+        var (small, large) = engines switch
+        {
+            "compound" or "vte" => (380.0, 110.0),
+            "direct_turbine" => (650.0, 290.0),
+            "geared_turbine" => (360.0, 200.0),
+            "diesel" => (450.0, 150.0),
+            "petrol" => (1500.0, 1500.0),
+            _ => (300.0, 300.0),
+        };
+        return small + (large - small) * Math.Clamp(size, 0, 1);
+    }
+
+    /// <summary>A hollow shaft's bore as a share of its diameter.</summary>
+    public const double ShaftBore = 0.45;
 
     /// <summary>The steering gear's stretch (x0, x1) by the rule.</summary>
     public static (double, double) SteeringSpan(double L) => (-L / 2 + Steering.X0 * L, -L / 2 + Steering.X1 * L);
@@ -46,6 +71,7 @@ public static class Propulsion
         bool planing = design.StyleName == "planing";
         double ib = planing ? 0.0 : Geometry.DoubleBottom(D);
         double mw = res.PowerShp * 0.7457 / 1000.0 / n;
+        double shaftR = ShaftOdM(mw * 1000, ShaftRpm(res.Plant.Tech.Engines, ShipSize.Of(res.Full))) / 2;
         double dp = Math.Max(DpMin, (planing ? DpKPlaning : DpK) * Math.Pow(mw, 0.4));
         if (!planing)
             dp = Math.Min(dp, DpT * T);
@@ -81,7 +107,7 @@ public static class Propulsion
             double zs = ib + ShaftAboveIb;
             double xp = Math.Min(xP0 + Stagger * L * (rank - (n % 2 == 0 ? 1 : 0)), xs - 1.0);
             string pos = Math.Abs(y) < 1e-6 ? "centre" : pairs == 1 ? "wing" : rank == pairs ? "outer" : "inner";
-            shafts.Add(new Shaft(sid, y, pos, room?.Id, pid, (xs, y, zs), (xp, y, zP)));
+            shafts.Add(new Shaft(sid, y, pos, room?.Id, pid, (xs, y, zs), (xp, y, zP)) { R = shaftR });
             props.Add(new Propeller(pid, xp, y, zP, dp, sid, pos));
         }
         return new Gear(n, planing, ib, shafts, props, rudders, mw);
@@ -105,7 +131,7 @@ public static class Propulsion
             for (long j = 0; j <= steps; j++)
             {
                 double x = xs - (xs - xp) * j / steps;
-                if (Math.Abs(y) + ShaftR + 0.2 > form.HalfWidth(x, ZAt(x)))
+                if (Math.Abs(y) + sh.R + 0.2 > form.HalfWidth(x, ZAt(x)))
                 {
                     exitX = x;
                     break;
@@ -177,6 +203,8 @@ public sealed record Shaft(string Id, double Y, string Position, string? EngineR
 {
     public double ExitX { get; init; }
     public string? Alley { get; init; }
+    /// <summary>Its radius, m (<see cref="Propulsion.ShaftOdM"/>).</summary>
+    public double R { get; init; } = 0.3;
 }
 
 public sealed record Propeller(string Id, double X, double Y, double Z, double Diameter, string Shaft, string Position);

@@ -343,7 +343,7 @@ public sealed unsafe partial class HitboxScene
                     ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg1, ImGui.GetColorU32(new Vector4(0.9f, 0.7f, 0.2f, 0.35f)));
                 Cell(string.Format(inv, "{0:0.00}", st.T - pb.T0));
                 Cell(st.Call == PlateCall.Medium ? st.Name ?? "medium"
-                    : st.Name is { } what ? string.Format(inv, "{0}: {1}", c.RoomId(x.Index), what)
+                    : st.Name is { } what ? string.Format(inv, "{0}: {1}", x.Plate == PlateKind.PartContents ? c.ComponentId(x.Index) : c.RoomId(x.Index), what)
                     : HitPath.PlateName(c, x) is { Length: > 0 } n ? n : x.Kind is CrossingKind.PartIn ? c.ComponentId(x.Index) : x.Kind.ToString());
                 Cell(st.Call == PlateCall.Medium ? string.Format(inv, "{0:0.0} m", st.RunM)
                     : string.Format(inv, "{0:0.#}{1} ({2:0})", st.Mm, c.Material(x.Material) is { } m ? " " + m : "", st.EffectiveMm));

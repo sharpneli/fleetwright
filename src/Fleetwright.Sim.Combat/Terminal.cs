@@ -186,18 +186,25 @@ public static class Terminal
             }
             // in a space, before the next crossing: what it stows slows it (oil, coal, water to a level: C2-C3), and it may
             // strike a solid there (C1c), put on the path where it meets it
-            if (!nose && among.Cell >= 0 && among.Part < 0 && xs[i].T - among.FromT > HitPath.SameM)
+            if (!nose && (among.Cell >= 0 || among.Part >= 0) && xs[i].T - among.FromT > HitPath.SameM)
             {
-                double ts = NextSolid(c, path, i, among, ref r);
-                if (k is not null)
+                // in a part (a gun house, a barbette) what's in it; else the space's contents and what it stows
+                bool inPart = among.Part >= 0;
+                int at = inPart ? among.Part : c.Cells[among.Cell].Room;
+                var rows = at < 0 ? default : inPart ? c.PartContents(at) : c.RoomContentsOf(at);
+                double ts = NextSolid(rows, path, i, among.FromT, out int row, ref r);
+                if (k is not null && !inPart)
                     Media(c, k, path, i, among.Cell, among.FromT, Math.Min(ts, xs[i].T), shell, s, ref v, ref burstT, trace);
-                if (ts < xs[i].T && Put(c, path, i, ts, dir, ref among, ref r))
+                if (ts < xs[i].T && Put(c, path, i, ts, dir, rows[row], inPart ? PlateKind.PartContents : PlateKind.Contents, at, ref among, ref r))
                     xs = path.Crossings;
             }
             ref readonly var x = ref xs[i];
             if (x.T >= burstT)
                 return Burst(ref res, burstT, force, res.Outcome, BurstKind.Inside, v);
             among.Enter(x);
+            // into a shaft: it's solid steel, struck where the line crosses it (C4c)
+            if (!nose && x.Kind == CrossingKind.PartIn && c.Components[x.Index].Kind == ComponentKind.Shaft && Shaft(c, path, i, dir, ref among, ref r))
+                xs = path.Crossings;
             switch (x.Kind)
             {
                 case CrossingKind.HullIn or CrossingKind.PartIn:
@@ -245,7 +252,7 @@ public static class Terminal
             ref readonly var mat = ref c.MaterialOf(x.Material);
             double td = mat.SteelMm(x.Mm) / calMm;
             // contents have no lot: only the shot's scatter (the user, 2026-10-19)
-            double quality = (x.Plate == PlateKind.Contents ? 1 : PlateQuality(lots, x.Plate, x.Index, s))
+            double quality = (x.Plate.IsContents() ? 1 : PlateQuality(lots, x.Plate, x.Index, s))
                 * Math.Max(1 + s.PlateShotSigma * r.NextGaussian(), MinQuality);
             if (x.Plate == PlateKind.SideArmour && k is not null && k.Loosened(x.Index, x.Point, s.BeltRepeatM))
                 quality *= s.LoosenedPlate;   // a belt plate a leak loosened before (E4): its bolts pulled, its backing crushed
@@ -701,7 +708,7 @@ public static class Terminal
         return double.RadiansToDegrees(Math.Acos(Math.Min(c, 1)));
     }
 
-    static FuzeCause Cause(in Crossing x) => x.Plate == PlateKind.Contents ? FuzeCause.Contents : FuzeCause.Plate;
+    static FuzeCause Cause(in Crossing x) => x.Plate.IsContents() ? FuzeCause.Contents : FuzeCause.Plate;
 
     // ------------------------------------------------------------------ what stands in the spaces (C1c)
     // docs/battle/shell-contents.md; research/simulation/damage-research/09-contents-in-the-path.md §1
@@ -737,14 +744,14 @@ public static class Terminal
             FromT = Math.Max(FromT, x.T);
         }
 
-        public readonly string? NameOf(in Crossing x) => x.Plate != PlateKind.Contents ? null
+        public readonly string? NameOf(in Crossing x) => !x.Plate.IsContents() ? null
             : Math.Abs(x.T - SkinT) < HitPath.SameM / 2 ? SkinName : CoreName;
 
         /// <summary>Whether a crossing was a struck skin with an interior behind it, and that interior (once).</summary>
         public bool Interior(in Crossing x, out double runM, out double rho, out MediumKind medium, out string? name)
         {
             (runM, rho, medium, name) = (InteriorM, InteriorRho, Medium, InteriorName);
-            if (x.Plate != PlateKind.Contents || !(Math.Abs(x.T - SkinT) < HitPath.SameM / 2) || !(InteriorM > 0))
+            if (!x.Plate.IsContents() || !(Math.Abs(x.T - SkinT) < HitPath.SameM / 2) || !(InteriorM > 0))
                 return false;
             InteriorM = 0;
             return true;
@@ -755,28 +762,31 @@ public static class Terminal
     /// C1c; infinity: it doesn't): over the stretch from where it may next meet one to the crossing, clipped to the
     /// contents' band, the next solid comes after an Exp(λ) draw (memoryless: a room cut into more cells meets as
     /// often).</summary>
-    static double NextSolid(ShipClass c, HitPath path, int i, in Among a, ref RandomStream r)
+    static double NextSolid(ReadOnlySpan<RoomContents> rows, HitPath path, int i, double t0, out int row, ref RandomStream r)
     {
-        if (c.Cells[a.Cell].Room is not (int room and >= 0))
-            return double.PositiveInfinity;
-        ref readonly var k = ref c.ContentsOf(room);
-        if (!k.Some)
-            return double.PositiveInfinity;
-        double t0 = a.FromT, t1 = path.Crossings[i].T;
-        var (ta, tb) = Band(path.At(t0).Z, path.At(t1).Z, t0, t1, k.ZLo, k.ZHi);
-        if (!(tb > ta))
-            return double.PositiveInfinity;
-        double ts = ta - Math.Log(1 - r.NextDouble()) * k.LambdaM;
-        return ts < tb - HitPath.SameM ? ts : double.PositiveInfinity;
+        // each of its bands (a barbette has two) draws its next solid; the first met is struck
+        (double best, row) = (double.PositiveInfinity, -1);
+        double t1 = path.Crossings[i].T;
+        for (int j = 0; j < rows.Length; j++)
+        {
+            ref readonly var k = ref rows[j];
+            if (!k.Some)
+                continue;
+            var (ta, tb) = Band(path.At(t0).Z, path.At(t1).Z, t0, t1, k.ZLo, k.ZHi);
+            if (!(tb > ta))
+                continue;
+            double ts = ta - Math.Log(1 - r.NextDouble()) * k.LambdaM;
+            if (ts < tb - HitPath.SameM && ts < best)
+                (best, row) = (ts, j);
+        }
+        return best;
     }
 
     /// <summary>A solid struck at ts, before crossing i: the object drawn from the room's mix; its skin goes on the path
     /// there, and its core, by its chance, behind its interior (or halfway through it), as plates the walk takes like any
     /// other; no other solid within its chord. False when the path is full.</summary>
-    static bool Put(ShipClass c, HitPath path, int i, double ts, P3 dir, ref Among a, ref RandomStream r)
+    static bool Put(ShipClass c, HitPath path, int i, double ts, P3 dir, in RoomContents k, PlateKind plate, int room, ref Among a, ref RandomStream r)
     {
-        int room = c.Cells[a.Cell].Room;
-        ref readonly var k = ref c.ContentsOf(room);
         double t1 = path.Crossings[i].T;
         var mix = c.ContentObjects(k.Mix);
         double u = r.NextDouble();
@@ -785,14 +795,14 @@ public static class Terminal
             j++;
         ref readonly var o = ref mix[j];
         double extent = Math.Min(k.ChordM, t1 - ts - HitPath.SameM), interior = o.InteriorRho > 0 ? o.InteriorShare * extent : 0;
-        if (!path.Insert(i, Solid(path, room, ts, dir, o.Skin, ref r)))
+        if (!path.Insert(i, Solid(path, plate, room, ts, dir, o.Skin, ref r)))
             return false;
         (a.SkinT, a.SkinName, a.InteriorM, a.InteriorRho, a.Medium, a.InteriorName) = (ts, o.Skin.Name, interior, o.InteriorRho, o.Interior, o.Name);
         a.CoreT = double.NaN;
         if (o.Core.Some && r.NextDouble() < o.CoreChance)
         {
             double tc = Math.Min(ts + (interior > 0 ? interior : 0.5 * extent), t1 - HitPath.SameM / 2);
-            if (tc > ts + HitPath.SameM && path.Insert(i + 1, Solid(path, room, tc, dir, o.Core, ref r)))
+            if (tc > ts + HitPath.SameM && path.Insert(i + 1, Solid(path, plate, room, tc, dir, o.Core, ref r)))
                 (a.CoreT, a.CoreName) = (tc, o.Core.Name);
         }
         a.FromT = ts + extent;
@@ -848,6 +858,38 @@ public static class Terminal
         });
     }
 
+    /// <summary>A shaft the line crosses at crossing i (its PartIn), struck as the solid it is (docs/battle/shell-contents.md
+    /// C4c; damage/09 §7.1): its offset b from the axis (fore and aft) where the line crosses it is the geometry's, from the
+    /// line's chord through it across the axis; the steel it crosses there, through the bore (<see cref="Propulsion.ShaftBore"/>),
+    /// goes on the path halfway through as one plate of that steel times cos θ, θ its obliquity on the shaft's face.</summary>
+    static bool Shaft(ShipClass c, HitPath path, int i, P3 d, ref Among a, ref RandomStream r)
+    {
+        var xs = path.Crossings;
+        int comp = xs[i].Index, j = i + 1;
+        while (j < xs.Length && !(xs[j].Kind == CrossingKind.PartOut && xs[j].Index == comp))
+            j++;
+        double rM = c.Components[comp].R;
+        if (j >= xs.Length || !(rM > 0))
+            return false;
+        double len = xs[j].T - xs[i].T, across = Math.Sqrt(d.Y * d.Y + d.Z * d.Z);
+        double half = Math.Min(len * across / 2, rM), b = Math.Sqrt(Math.Max(rM * rM - half * half, 0)), sinB = Math.Min(b / rM, 1);
+        double steel = Contents.BarChordMm(2000 * rM, Propulsion.ShaftBore, 1000 * b), cosOb = across * Math.Sqrt(1 - sinB * sinB);
+        double tm = xs[i].T + len / 2;
+        int at = i + 1;
+        while (at < xs.Length && xs[at].T < tm)
+            at++;
+        var n = Struck(d, Math.Sqrt(Math.Max(1 - cosOb * cosOb, 0)), ref r);
+        var hit = new Crossing
+        {
+            T = tm, Point = path.At(tm), Kind = CrossingKind.Struck, Plate = PlateKind.PartContents, Index = comp, Mm = steel * Math.Sqrt(1 - sinB * sinB),
+            Material = c.ForgedMaterial, Normal = n,
+        };
+        if (!path.Insert(at, hit))
+            return false;
+        (a.SkinT, a.SkinName, a.InteriorM, a.CoreT) = (tm, "shaft", 0, double.NaN);
+        return true;
+    }
+
     /// <summary>The stretch of [t0, t1] (heights z0 to z1, straight) within the band zLo..zHi; empty when none.</summary>
     static (double, double) Band(double z0, double z1, double t0, double t1, double zLo, double zHi)
     {
@@ -863,7 +905,7 @@ public static class Terminal
     /// obliquity from its shape: a flat one square to the room's axis nearest the flight; a cylinder (along the ship) with
     /// sin θ uniform, a sphere sin² θ; a bar's offset b uniform across it, θ = asin(b/R), the steel it crosses its chord at
     /// b, as a plate of chord·cos θ (the plate model puts the 1/cos back).</summary>
-    static Crossing Solid(HitPath path, int room, double t, P3 d, in SolidAt sol, ref RandomStream r)
+    static Crossing Solid(HitPath path, PlateKind plate, int index, double t, P3 d, in SolidAt sol, ref RandomStream r)
     {
         double mm = sol.LoMm + (sol.HiMm - sol.LoMm) * r.NextDouble();
         P3 n;
@@ -885,7 +927,7 @@ public static class Terminal
         }
         return new Crossing
         {
-            T = t, Point = path.At(t), Kind = CrossingKind.Struck, Plate = PlateKind.Contents, Index = room, Mm = mm, Material = sol.Material, Normal = n,
+            T = t, Point = path.At(t), Kind = CrossingKind.Struck, Plate = plate, Index = index, Mm = mm, Material = sol.Material, Normal = n,
         };
     }
 

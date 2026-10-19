@@ -78,6 +78,7 @@ public static class ShipClassCompiler
             c.Silhouette = Sight.Silhouette(c, numbers);
             RoomContents(c);
             RoomStowages(c);
+            PartContents(c, objects);
 
             c.links = links.ToArray();
             c.points = points.ToArray();
@@ -181,14 +182,27 @@ public static class ShipClassCompiler
         /// <summary>What stands in each room in a shell's path (docs/battle/shell-contents.md C1b): its kind's rows for
         /// this plant, between the small and the large by her displacement; the band as heights over the room's cells.
         /// The objects' materials are the catalogue's names (the design may give its own of the same name).</summary>
+        readonly List<ContentObject> objects = [];
+
         void RoomContents(ShipClass c)
         {
             double size = Contents.SizeOf(c.Hydrostatics.DisplacementT);
-            var objects = new List<ContentObject>();
+            c.ForgedMaterial = Material("high-tensile steel");
             c.roomContents = new RoomContents[c.rooms.Length];
             for (int i = 0; i < c.rooms.Length; i++)
             {
-                if (Contents.Of(c.rooms[i].Kind, c.Boilers, c.Engines) is not var (small, large))
+                // the largest calibre a room serves (a magazine's shells), its mounts by their components
+                double cal = 0;
+                var ms = c.rooms[i].Mounts;
+                foreach (var mount in c.mounts)
+                {
+                    bool serves = mount.Component == c.rooms[i].Mount;
+                    for (int j = ms.Start; j < ms.End && !serves; j++)
+                        serves = links[j] == mount.Component;
+                    if (serves)
+                        cal = Math.Max(cal, mount.CalibreMm);
+                }
+                if (Contents.Of(c.rooms[i].Kind, c.Boilers, c.Engines, cal) is not var (small, large))
                     continue;
                 var row = Contents.Between(small, large, size);
                 double lo = double.PositiveInfinity, hi = double.NegativeInfinity;
@@ -197,19 +211,57 @@ public static class ShipClassCompiler
                     (lo, hi) = (Math.Min(lo, c.cells[links[j]].Box.Base), Math.Max(hi, c.cells[links[j]].Box.Top));
                 if (!(hi > lo) || !(row.Packing > 0))
                     continue;
-                int start = objects.Count;
-                double total = row.Mix.Sum(o => o.Share), upTo = 0;
-                foreach (var o in row.Mix)
-                {
-                    upTo += o.Share / total;
-                    objects.Add(new ContentObject(upTo, o.Skin.Name, Solid(o.Skin), o.InteriorRho, o.InteriorShare, o.Interior, o.CoreChance, Solid(o.Core)));
-                }
                 c.roomContents[i] = new RoomContents(lo + row.BandLo * (hi - lo), lo + row.BandHi * (hi - lo), row.ChordM / row.Packing, row.ChordM,
-                    new Slice(start, row.Mix.Length), row.Name);
+                    Objects(row), row.Name);
             }
             c.contentObjects = [.. objects];
+        }
 
-            SolidAt Solid(SolidRow s) => s.Some ? new SolidAt(s.Name, s.LoMm, s.HiMm, Material(s.Material), s.Shape, s.Bore) : default;
+        SolidAt Solid(SolidRow s) => s.Some ? new SolidAt(s.Name, s.LoMm, s.HiMm, Material(s.Material), s.Shape, s.Bore) : default;
+
+        /// <summary>A row's objects into the pool, cumulated for the draw: their slice.</summary>
+        Slice Objects(ContentsRow row)
+        {
+            int start = objects.Count;
+            double total = row.Mix.Sum(o => o.Share), upTo = 0;
+            foreach (var o in row.Mix)
+            {
+                upTo += o.Share / total;
+                objects.Add(new ContentObject(upTo, o.Skin.Name, Solid(o.Skin), o.InteriorRho, o.InteriorShare, o.Interior, o.CoreChance, Solid(o.Core)));
+            }
+            return new Slice(start, row.Mix.Length);
+        }
+
+        /// <summary>What stands in the parts (docs/battle/shell-contents.md C4b): an enclosed turret's gun house its guns and
+        /// gear by its calibre, a barbette its trunk and turntable; bands as heights over the part's bounds.</summary>
+        void PartContents(ShipClass c, List<ContentObject> pool)
+        {
+            var rows = new List<RoomContents>();
+            c.partContents = new Slice[c.components.Length];
+            for (int i = 0; i < c.components.Length; i++)
+            {
+                var b = c.components[i].Bounds;
+                int start = rows.Count;
+                void Add(ContentsRow row) => rows.Add(new RoomContents(b.Base + row.BandLo * (b.Top - b.Base), b.Base + row.BandHi * (b.Top - b.Base),
+                    row.ChordM / row.Packing, row.ChordM, Objects(row), row.Name));
+                if (c.components[i].Kind == ComponentKind.Barbette)
+                {
+                    Add(Contents.BarbetteTrunk);
+                    Add(Contents.BarbetteTop);
+                }
+                else
+                    foreach (var m in c.mounts)
+                        if (m.Component == i && m.Turret && c.turretTypes[m.Type].Shape == TurretShape.Bb)
+                        {
+                            Add(Contents.GunHouse(m.CalibreMm));
+                            break;
+                        }
+                if (!(b.Top > b.Base))
+                    rows.RemoveRange(start, rows.Count - start);
+                c.partContents[i] = new Slice(start, rows.Count - start);
+            }
+            c.partRows = [.. rows];
+            c.contentObjects = [.. pool];
         }
 
         /// <summary>What each room stows to a level (docs/battle/shell-contents.md C2-C3), as Shipgen stowed the fuel

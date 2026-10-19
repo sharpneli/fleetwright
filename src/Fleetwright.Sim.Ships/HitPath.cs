@@ -61,6 +61,15 @@ public enum PlateKind : byte
     Backing,
     /// <summary>What stands in a space, struck (Index: the room; <see cref="CrossingKind.Struck"/>).</summary>
     Contents,
+    /// <summary>What stands in a part, struck: a gun house's guns and gear, a barbette's trunk (Index: the component;
+    /// docs/battle/shell-contents.md C4b).</summary>
+    PartContents,
+}
+
+public static class PlateKinds
+{
+    /// <summary>Whether a plate is something struck inside a space or a part (docs/battle/shell-contents.md C1c, C4b).</summary>
+    public static bool IsContents(this PlateKind k) => k is PlateKind.Contents or PlateKind.PartContents;
 }
 
 /// <summary>One crossing along a segment: where (T, metres from the segment's start, and the point, ship-local), what
@@ -173,6 +182,7 @@ public sealed class HitPath
             PlateKind.HullDeck => "hull deck",
             PlateKind.Backing => $"backing of {c.SidePlateId(x.Index)}",
             PlateKind.Contents => $"{c.RoomId(x.Index)}: {c.ContentsOf(x.Index).Name}",
+            PlateKind.PartContents => $"{c.ComponentId(x.Index)}: what's in it",
             _ => x.Plate.ToString(),
         };
 

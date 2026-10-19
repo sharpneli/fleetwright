@@ -35,8 +35,8 @@ public class ContentsTests(ITestOutputHelper output)
     public void Contents_grow_with_the_ship()
     {
         Assert.Equal(0, Contents.SizeOf(800));
-        Assert.Equal(0, Contents.SizeOf(Contents.SmallT), 9);
-        Assert.Equal(1, Contents.SizeOf(Contents.LargeT), 9);
+        Assert.Equal(0, Contents.SizeOf(Fleetwright.Shipgen.ShipSize.SmallT), 9);
+        Assert.Equal(1, Contents.SizeOf(Fleetwright.Shipgen.ShipSize.LargeT), 9);
         Assert.Equal(1, Contents.SizeOf(60_000));
         var (small, large) = Contents.Of(RoomKind.EngineRoom, BoilerKind.SmallTube, EngineKind.DirectTurbine)!.Value;
         Assert.Equal(small.ChordM, Contents.Between(small, large, 0).ChordM, 9);
@@ -176,6 +176,82 @@ public class ContentsTests(ITestOutputHelper output)
         k.Level[room] = mid - 0.5;
         Assert.Equal(0, Effects.MediumDragM(target, k, cell, p, wall, Settings));
         output.WriteLine($"{rr:0.0} m of coal is {rr * perM:0} m of air to its fragments");
+    }
+
+    /// <summary>Shells through a turret's face (C4b; damage/09 §6): most strike the guns and their gear behind it, and
+    /// the guns (a 13.5"'s about 1.55 calibres of forged steel) stop some of them.</summary>
+    [Fact]
+    public void Shells_through_a_turret_strike_its_guns()
+    {
+        var target = Fleet.Scenario("iron_duke");
+        var shooter = Fleet.Scenario("konig");
+        var shell = shooter.Loadout.ShellTypes[shooter.Loadout.Fires(0)];
+        double elev = shooter.Mounts[shooter.Links(shooter.Batteries[0].Mounts)[0]].MaxElevationDeg;
+        int house = -1;
+        for (int i = 0; i < target.Components.Length && house < 0; i++)
+            if (target.PartContents(i).Length > 0 && target.Components[i].Kind == ComponentKind.Main)
+                house = i;
+        Assert.True(house >= 0);
+        var b = target.Components[house].Bounds;
+        var range = new ShotRange(Settings);
+        int inside = 0, struck = 0, stopped = 0;
+        for (ulong seed = 1; seed <= 30; seed++)
+        {
+            double y = b.Y0 + (b.Y1 - b.Y0) * (seed - 0.5) / 30;
+            var s = range.Fire(target, shell, "konig main", elev, 6_000, 0, new P3((b.X0 + b.X1) / 2, y, (b.Base + b.Top) / 2), seed);
+            bool entered = false, hit = false;
+            foreach (ref readonly var x in s.Path.Crossings)
+            {
+                entered |= x.Kind == CrossingKind.PartIn && x.Index == house;
+                hit |= x.Kind == CrossingKind.Struck && x.Plate == PlateKind.PartContents && x.Index == house;
+            }
+            if (!entered)
+                continue;
+            inside++;
+            struck += hit ? 1 : 0;
+            if (s.Terminal.Plate >= 0 && s.Path.Crossings[s.Terminal.Plate].Plate == PlateKind.PartContents && s.Terminal.StopT <= s.Path.Crossings[s.Terminal.Plate].T + 0.5)
+                stopped++;
+        }
+        output.WriteLine($"{inside} into the gun house: struck its gear {struck}, stopped on it {stopped}");
+        Assert.True(inside >= 10);
+        Assert.True(struck > inside / 3);
+    }
+
+    /// <summary>A shaft is solid steel (C4c; damage/09 §7.1): sized by the cube-root rule from its power and turning speed
+    /// (a dreadnought's about 290 mm, Lion's about 435, a destroyer's about 255, Hood's about 605), and a shell falling onto
+    /// a destroyer's (a battleship's lie under her armour deck) strikes it.</summary>
+    [Fact]
+    public void Shafts_are_sized_and_struck()
+    {
+        Assert.InRange(1000 * Propulsion.ShaftOdM(4290, 320), 270, 310);
+        Assert.InRange(1000 * Propulsion.ShaftOdM(13050, 275), 415, 470);
+        Assert.InRange(1000 * Propulsion.ShaftOdM(26800, 210), 580, 655);
+        Assert.InRange(1000 * Propulsion.ShaftOdM(6200, Propulsion.ShaftRpm("direct_turbine", 0)), 245, 275);
+
+        var target = Fleet.Scenario("m_class");
+        var shooter = Fleet.Scenario("iron_duke");
+        var shell = shooter.Loadout.ShellTypes[shooter.Loadout.Fires(0)];
+        double elev = shooter.Mounts[shooter.Links(shooter.Batteries[0].Mounts)[0]].MaxElevationDeg;
+        int shaft = -1;
+        for (int i = 0; i < target.Components.Length && shaft < 0; i++)
+            if (target.Components[i].Kind == ComponentKind.Shaft)
+                shaft = i;
+        var b = target.Components[shaft].Bounds;
+        var range = new ShotRange(Settings);
+        int struck = 0;
+        for (ulong seed = 1; seed <= 20; seed++)
+        {
+            double x = b.X1 - 0.4 * (b.X1 - b.X0) * (seed - 0.5) / 20;   // its inboard end, inside the hull
+            var s = range.Fire(target, shell, "iron duke main", elev, 18_000, (b.Y0 + b.Y1) / 2 > 0 ? 270 : 90, new P3(x, (b.Y0 + b.Y1) / 2, (b.Base + b.Top) / 2), seed);
+            foreach (ref readonly var c in s.Path.Crossings)
+                if (c.Kind == CrossingKind.Struck && c.Index == shaft && c.Plate == PlateKind.PartContents)
+                {
+                    struck++;
+                    Assert.InRange(c.Mm, 0, 1000 * 2 * target.Components[shaft].R);
+                }
+        }
+        output.WriteLine($"M class's shaft {2000 * target.Components[shaft].R:0} mm across: struck {struck} of 20");
+        Assert.True(struck > 0);
     }
 
     /// <summary>Heavy shells plunging into a destroyer's engine room (under her waterline: only falling shells reach it):

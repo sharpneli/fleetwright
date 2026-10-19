@@ -21,8 +21,8 @@ public static class Hitbox
             {
                 Id = sh.Id, Kind = ComponentKind.Shaft, Shape = "segment", Position = sh.Position,
                 P0 = [Math.Round(p0.X, 3), Math.Round(p0.Y, 3), Z(p0.Z)], P1 = [Math.Round(p1.X, 3), Math.Round(p1.Y, 3), Z(p1.Z)],
-                R = Propulsion.ShaftR, Points = Rect(p1.X, p0.X, p0.Y, Propulsion.ShaftR), Base = Z(Math.Min(p0.Z, p1.Z) - Propulsion.ShaftR),
-                Top = Z(Math.Max(p0.Z, p1.Z) + Propulsion.ShaftR), LeavesHullX = Math.Round(sh.ExitX, 3), Propeller = sh.Propeller,
+                R = Math.Round(sh.R, 3), Points = Rect(p1.X, p0.X, p0.Y, sh.R), Base = Z(Math.Min(p0.Z, p1.Z) - sh.R),
+                Top = Z(Math.Max(p0.Z, p1.Z) + sh.R), LeavesHullX = Math.Round(sh.ExitX, 3), Propeller = sh.Propeller,
                 EngineRoom = NonEmpty(sh.EngineRoom), Alley = NonEmpty(sh.Alley),
             };
         }
