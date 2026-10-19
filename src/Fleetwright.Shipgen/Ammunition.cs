@@ -17,7 +17,7 @@ public static class Ammunition
 
     static readonly string[] BlockFields =
         ["kind", "mass_k_kg_m3", "nose_crh", "form_factor", "cap", "windscreen", "body", "filler", "steel", "casing", "fuze"];
-    static readonly string[] EntryFields = ["ammo", "share", "mass_kg", "muzzle_velocity_ms"];
+    static readonly string[] EntryFields = ["ammo", "share", "mass_kg", "muzzle_velocity_ms", "fuze_delay_s"];
 
     /// <summary>PLACEHOLDER (until a gun tech exists): a gun's muzzle velocity with its heaviest shell from its length
     /// in calibres, 280 + 11·L m/s kept to 380-1000, from the Victorian muzzle-loaders (12"/14 RML ~400 m/s) to the
@@ -71,6 +71,13 @@ public static class Ammunition
                         errs.Add($"{ek}.mass_kg: more than 0");
                     if (e.MuzzleVelocityMs is { } v && !(v > 0))
                         errs.Add($"{ek}.muzzle_velocity_ms: more than 0");
+                    if (e.FuzeDelayS is { } delay)
+                    {
+                        if (!(delay >= 0))
+                            errs.Add($"{ek}.fuze_delay_s: 0 or more");
+                        else if (e.Ammo is not null && table.GetValueOrDefault(e.Ammo)?.Fuze?.Position is "nose")
+                            errs.Add($"{ek}.fuze_delay_s: {Style.Quote(e.Ammo)} has a nose fuze, which fires on the first plate; a delay is a base fuze's");
+                    }
                 }
                 if (shells.Count > 0 && Math.Abs(sum - 1) > 1e-6)
                     errs.Add($"{at}.shells: the shares add up to {sum:0.###}, not 1");
@@ -177,15 +184,18 @@ public static class Ammunition
         return design with { Main = Stamp(design.Main, true), Secondary = Stamp(design.Secondary, false) };
     }
 
-    /// <summary>A battery's loadout: its shells (block, name, share, mass, its own velocity if given), or the default
-    /// loadout's.</summary>
-    static List<(AmmoInput Block, string Name, double Share, double MassKg, double? MuzzleVelocityMs)> Loadout(Design design, BatteryInput b, bool main)
+    /// <summary>A battery's loadout: its shells (block, name, share, mass, its own velocity and fuze delay if given), or
+    /// the default loadout's.</summary>
+    static List<(AmmoInput Block, string Name, double Share, double MassKg, double? MuzzleVelocityMs, double? FuzeDelayS)> Loadout(Design design, BatteryInput b,
+        bool main)
     {
         var table = design.Ammunition ?? [];
         double d = b.CalibreMm!.Value / 1000;
         return b.Shells is { Count: > 0 } shells
-            ? shells.Select(e => (table[e.Ammo!], e.Ammo!, e.Share!.Value, e.MassKg ?? table[e.Ammo!].MassKKgM3!.Value * d * d * d, e.MuzzleVelocityMs)).ToList()
-            : ShellTemplates.DefaultLoadout(main).Select(o => (o.Block, o.Name, o.Share, o.Block.MassKKgM3!.Value * d * d * d, (double?)null)).ToList();
+            ? shells.Select(e => (table[e.Ammo!], e.Ammo!, e.Share!.Value, e.MassKg ?? table[e.Ammo!].MassKKgM3!.Value * d * d * d, e.MuzzleVelocityMs,
+                e.FuzeDelayS)).ToList()
+            : ShellTemplates.DefaultLoadout(main).Select(o => (o.Block, o.Name, o.Share, o.Block.MassKKgM3!.Value * d * d * d, (double?)null, (double?)null))
+                .ToList();
     }
 
     /// <summary>Each gun battery's resolved shells, main batteries first, in the design's order: its `shells`, else the
@@ -226,7 +236,7 @@ public static class Ammunition
         var resolved = new List<ShellReport>();
         for (int k = 0; k < loadout.Count; k++)
         {
-            var (a, name, share, _, mv) = loadout[k];
+            var (a, name, share, _, mv, delay) = loadout[k];
             var x = Explosives.Resolve(design, a.Filler!.Explosive)!;
             resolved.Add(new ShellReport
             {
@@ -236,7 +246,7 @@ public static class Ammunition
                 Explosive = x.Name ?? "", FillerRe = x.Re ?? 1, Booster = a.Filler.Booster ?? "basic",
                 FillerQDet = x.QDet ?? 4.5, FillerQComb = x.QComb ?? 15, FillerAirM3Kg = x.AirM3Kg ?? 2.66, FillerEta = x.Eta ?? 1,
                 FillerInPlate = x.InPlate ?? 0, FillerFire = x.Fire ?? 0.25, FillerFull = (a.Filler.Booster == "ce" ? x.Full?.Ce : x.Full?.Basic) ?? 1,
-                Fuze = a.Fuze!.Position!, FuzeDelayS = a.Fuze.DelayS ?? 0, FuzeStartCal = a.Fuze.StartCal ?? FuzeDefaults.StartCal,
+                Fuze = a.Fuze!.Position!, FuzeDelayS = delay ?? a.Fuze.DelayS ?? 0, FuzeStartCal = a.Fuze.StartCal ?? FuzeDefaults.StartCal,
                 FuzeOblique = a.Fuze.Oblique ?? FuzeDefaults.Oblique, FuzePlates = a.Fuze.Plates ?? "single",
                 FuzeScatter = a.Fuze.Scatter ?? FuzeDefaults.Scatter, FuzeBlind = a.Fuze.Blind ?? FuzeDefaults.Blind,
                 FuzeWaterMs = a.Fuze.WaterMs ?? FuzeDefaults.WaterMs, FuzeWaterFires = a.Fuze.WaterFires ?? FuzeDefaults.WaterFires,

@@ -75,6 +75,29 @@ public class ShellEditsTests
         Assert.Equal(1, SE.Loadout(gone, true, 0).Sum(e => e.Share!.Value), 6);
     }
 
+    /// <summary>The FUZE cell: a base fuze's delay set for one battery, kept through other edits, gone where it means
+    /// nothing (the block's own, a nose-fuzed block) and back to the block's on a reset.</summary>
+    [Fact]
+    public void A_battery_sets_its_own_fuze_delay()
+    {
+        var d = Load("dreadnought");   // main: RN 1906 APC (0.003 s) 70%, HE (nose) 30%
+        int ap = SE.Loadout(d, true, 0).FindIndex(e => SE.TemplateOf(e.Ammo)!.Value.Kind == "ap");
+        var set = SE.SetFuzeDelay(d, true, 0, ap, 0.02);
+        Sound(set, "delay set");
+        Assert.Equal(0.02, SE.Loadout(set, true, 0)[ap].FuzeDelayS);
+        Assert.Null(SE.Loadout(set, false, 0)[0].FuzeDelayS);   // the other battery's untouched
+        Assert.Equal(0.02, SE.Loadout(SE.SetShare(set, true, 0, ap, 80), true, 0)[ap].FuzeDelayS);   // kept through a share change
+        Assert.Equal(0.02, SE.Loadout(SE.SetBlock(set, true, 0, ap, "RN 1912 APC (lyddite)"), true, 0)[ap].FuzeDelayS);   // and another base-fuzed block
+        Assert.Null(SE.Loadout(SE.SetFuzeDelay(set, true, 0, ap, null), true, 0)[ap].FuzeDelayS);   // the reset
+        double block = SE.BlockFuze(d, SE.Loadout(d, true, 0)[ap].Ammo)!.DelayS!.Value;
+        Assert.Null(SE.Loadout(SE.SetFuzeDelay(d, true, 0, ap, block), true, 0)[ap].FuzeDelayS);   // the block's own is no setting
+        Assert.Equal(0, SE.Loadout(SE.SetFuzeDelay(d, true, 0, ap, -1), true, 0)[ap].FuzeDelayS);   // never under 0
+        // on a nose-fuzed block it means nothing, and goes
+        var nose = SE.SetBlock(set, true, 0, ap, "Standard HE (1912)");
+        Sound(nose, "delay on a nose block");
+        Assert.All(SE.Loadout(nose, true, 0), e => Assert.Null(e.FuzeDelayS));
+    }
+
     [Fact]
     public void A_battery_on_the_default_loadout_writes_it_out_when_edited()
     {

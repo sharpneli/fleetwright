@@ -54,6 +54,24 @@ public class AmmunitionTests
         Assert.Equal((390.0, 830.0), (own.MassKg, own.MuzzleVelocityMs));
     }
 
+    /// <summary>A battery's own fuze delay (the designer's FUZE cell) over its block's; the block's where it gives none. A
+    /// nose fuze takes none, and a delay is 0 or more.</summary>
+    [Fact]
+    public void A_battery_sets_its_own_fuze_delay()
+    {
+        var design = WithMain(new ShellEntryInput { Ammo = "heavy AP", Share = 0.7, FuzeDelayS = 0.008 }, new ShellEntryInput { Ammo = "light HE", Share = 0.3 });
+        Assert.Empty(ShipDesign.Validate(design));
+        var main = Ammunition.Resolve(design, [])[0].Shells;
+        Assert.Equal((0.008, 0.0), (main[0].FuzeDelayS, main[1].FuzeDelayS));
+        Assert.Equal(0.025, Ammunition.Resolve(WithMain(new ShellEntryInput { Ammo = "heavy AP", Share = 1 }), [])[0].Shells[0].FuzeDelayS);
+        Assert.Contains(ShipDesign.Validate(WithMain(new ShellEntryInput { Ammo = "heavy AP", Share = 1, FuzeDelayS = -0.01 })),
+            e => e.Contains("main[0].shells[0].fuze_delay_s: 0 or more"));
+        Assert.Contains(ShipDesign.Validate(WithMain(new ShellEntryInput { Ammo = "light HE", Share = 1, FuzeDelayS = 0.01 })),
+            e => e.Contains("main[0].shells[0].fuze_delay_s") && e.Contains("nose fuze"));
+        // the file's key
+        Assert.Contains("\"fuze_delay_s\":0.008", System.Text.Json.JsonSerializer.Serialize(design.Main![0].Shells![0], ShipgenJson.Default.ShellEntryInput));
+    }
+
     [Fact]
     public void Bad_ammunition_is_named()
     {

@@ -53,9 +53,12 @@ static class ShellEdits
         return (calibreMm < LightGunMm ? ts.FirstOrDefault(t => t.Light) : null) ?? ts.FirstOrDefault(t => !t.Light) ?? ts.FirstOrDefault();
     }
 
-    /// <summary>The design with a battery's loadout set, the templates it names copied in, and blocks nobody names dropped.</summary>
+    /// <summary>The design with a battery's loadout set, the templates it names copied in, and blocks nobody names dropped.
+    /// An entry's own fuze delay goes where it means nothing: on a nose-fuzed block, or the block's own.</summary>
     static Design With(Design d, bool main, int k, List<ShellEntryInput>? shells)
     {
+        shells = shells?.Select(e => e.FuzeDelayS is { } s && BlockFuze(d, e.Ammo) is var f && (f?.Position == "nose" || f?.DelayS is { } b && Math.Abs(s - b) < 1e-9)
+            ? e with { FuzeDelayS = null } : e).ToList();
         var list = List(d, main)!.ToList();
         list[k] = list[k] with { Shells = shells };
         d = main ? d with { Main = list } : d with { Secondary = list };
@@ -139,6 +142,18 @@ static class ShellEdits
         shells.RemoveAt(entry);
         int big = shells.Select((e, i) => (e.Share ?? 0, i)).Max().i;
         shells[big] = shells[big] with { Share = Math.Round(((shells[big].Share ?? 0) + gone) * 100) / 100 };
+        return With(d, main, k, shells);
+    }
+
+    /// <summary>A block's fuze by its name: the template's (what <see cref="With"/> copies in), else the design's own block's.</summary>
+    public static FuzeInput? BlockFuze(Design d, string? ammo) => (TemplateOf(ammo)?.Value ?? d.Ammunition?.GetValueOrDefault(ammo ?? ""))?.Fuze;
+
+    /// <summary>One entry's base fuze delay, seconds (0 or more), or null for its block's own: a navy set its delays for
+    /// the ranges it expected to fight at, a player sets them for theirs.</summary>
+    public static Design SetFuzeDelay(Design d, bool main, int k, int entry, double? delayS)
+    {
+        var shells = Loadout(d, main, k);
+        shells[entry] = shells[entry] with { FuzeDelayS = delayS is { } s ? Math.Max(s, 0) : null };
         return With(d, main, k, shells);
     }
 

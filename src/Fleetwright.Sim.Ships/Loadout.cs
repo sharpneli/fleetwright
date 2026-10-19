@@ -184,7 +184,7 @@ public sealed record LoadoutSpec(string Name, IReadOnlyList<(string Battery, Lis
 {
     /// <summary>A scenario's <c>"loadout": { "main": [{ "ammo": "RN 1912 HE (lyddite)", "share": 0.5 }, { "ammo": "ap" }] }</c>:
     /// an ammo is a name or a block (an object, as a design's ammunition gives one); shares left out split what the
-    /// others leave evenly.</summary>
+    /// others leave evenly. An entry may give its own mass_kg, muzzle_velocity_ms and fuze_delay_s, as a design's does.</summary>
     public static LoadoutSpec FromJson(JsonElement e, string name)
     {
         if (e.ValueKind != JsonValueKind.Object)
@@ -211,7 +211,10 @@ public sealed record LoadoutSpec(string Name, IReadOnlyList<(string Battery, Lis
                 else
                     throw new FormatException($"loadout.{b.Name}: ammo is a name or a block");
                 double? Num(string key) => s.TryGetProperty(key, out var v) ? v.GetDouble() : null;
-                shells.Add(new ShellEntryInput { Ammo = ammoName, Share = Num("share"), MassKg = Num("mass_kg"), MuzzleVelocityMs = Num("muzzle_velocity_ms") });
+                shells.Add(new ShellEntryInput
+                {
+                    Ammo = ammoName, Share = Num("share"), MassKg = Num("mass_kg"), MuzzleVelocityMs = Num("muzzle_velocity_ms"), FuzeDelayS = Num("fuze_delay_s"),
+                });
             }
             batteries.Add((b.Name, Even(shells)));
         }

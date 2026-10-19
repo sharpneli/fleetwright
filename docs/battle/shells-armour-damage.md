@@ -107,7 +107,9 @@ navy's 15″ main and 6″ secondary share one block, written once):
 Metric like the rest of shipgen; the templates' notes give lb/in³, the literature's unit.
 
 Per battery, **`shells`**: the loadout, entries `{ammo: <name in the table>, share}`, each with an optional `mass_kg`
-(one battery's own shell, over k·D³). And the battery's **`muzzle_velocity_ms`**, the gun's with its heaviest shell
+(one battery's own shell, over k·D³) and `fuze_delay_s` (its base fuze's delay over the block's, 0 or more, none on a
+nose fuze: a navy set its delays for the ranges it expected, a player sets them for theirs; added 2026-10-19, the
+designer's FUZE cell, and a scenario's loadout takes it too). And the battery's **`muzzle_velocity_ms`**, the gun's with its heaviest shell
 (the placeholder's 280 + 11·L when absent, until a gun tech exists); a lighter kind goes faster by the placeholder's
 rule, (m_heavy/m)^0.25, unless its entry gives its own. `rounds_per_gun` is already there.
 

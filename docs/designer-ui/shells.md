@@ -61,7 +61,11 @@ under the cell.
   - mass (k·D³ at this calibre)
   - m/s (the gun's velocity with its heaviest shell; a lighter shell leaves faster by the ¼ power)
   - filler (share and explosive)
-  - fuze (nose, or base with its delay)
+  - fuze: nose, or a base fuze's delay in ms, set for this battery (added 2026-10-19). ◀ [ms] ▶ typed in place, the
+    arrows and the wheel stepping 1 ms (10 with Shift). Brass when it's the battery's own, written as the entry's
+    `fuze_delay_s`; right-click goes back to the block's. The hover gives the block's delay and how far past a plate it
+    bursts at 500 m/s. Kept through share, block and family changes while the block is base-fuzed, and dropped when it
+    equals the block's.
   - × removes the load and gives its share to the largest.
 - **+ AP / + common / + HE** adds a kind the battery lacks, from its family, at 20%.
 - **The block list** groups by family and gives each block's mass at this calibre and its fuze. Light blocks are dimmed
@@ -102,6 +106,7 @@ battery shares one (else **mixed**), and picking a family sets every battery at 
    The other option is a small combo in each tab's Selected panel.
 2. **Shares in 5% steps, or typed?** The mockup steps by 5. The game's spinners also take typing, so both are free.
 3. **Custom blocks:** this pass picks templates only. Editing a block's numbers (k, filler, fuze), for a player's own
-   or silly shell, could come later as "copy and edit" in the same popup. Is that right?
+   or silly shell, could come later as "copy and edit" in the same popup. Is that right? (2026-10-19: the fuze's delay
+   came first, as a battery's own setting over the block's rather than an edited block.)
 4. **Family list:** all 26 families show until the tech tree filters them, sorted oldest first. Should it sort by
    the design's navy or year instead?

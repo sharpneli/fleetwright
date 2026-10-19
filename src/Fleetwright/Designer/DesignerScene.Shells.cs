@@ -18,8 +18,10 @@ namespace Fleetwright.Designer;
 public sealed unsafe partial class DesignerScene
 {
     /// <summary>One load as the picker shows it: its entry in the battery's shells, block, kind, share (whole percent),
-    /// rounds a gun, mass, velocity, filler share and explosive, fuze.</summary>
-    sealed record ShellLine(int Entry, string Ammo, string Kind, int Pct, int Rounds, double Kg, double Ms, double Filler, string Explosive, string Fuze);
+    /// rounds a gun, mass, velocity, filler share and explosive, fuze; a base fuze's delay as fired and its block's, and
+    /// whether the delay is the battery's own (s).</summary>
+    sealed record ShellLine(int Entry, string Ammo, string Kind, int Pct, int Rounds, double Kg, double Ms, double Filler, string Explosive, string Fuze,
+        bool Base = false, double DelayS = 0, double BlockDelayS = 0, bool OwnDelay = false);
 
     /// <summary>A battery's shells cell: which battery (main or secondary, its index, its name and gun), its family, the
     /// loads in the magazine order, its rounds a gun and the gun's velocity with its heaviest shell; Problem when the
@@ -50,9 +52,10 @@ public sealed unsafe partial class DesignerScene
             var lines = order.Select((i, o) =>
             {
                 var r = res[i];
-                string fuze = r.Fuze == "nose" ? "nose" : FormattableString.Invariant($"base {r.FuzeDelayS:0.000} s");
+                bool own = b.Shells is { } es && i < es.Count && es[i].FuzeDelayS is not null;
+                string fuze = r.Fuze == "nose" ? "nose" : FormattableString.Invariant($"base {r.FuzeDelayS:0.000} s{(own ? ", own" : "")}");
                 return new ShellLine(i, r.Ammo, r.Kind, (int)Math.Round(r.Share * 100), split[o], r.MassKg, r.MuzzleVelocityMs, r.FillerKg / r.MassKg,
-                    r.Explosive, fuze);
+                    r.Explosive, fuze, r.Fuze != "nose", r.FuzeDelayS, ShellEdits.BlockFuze(d, r.Ammo)?.DelayS ?? 0, own);
             }).ToArray();
             return new ShellCell(main, k, name, gun, cal, ShellEdits.FamilyOf(d, main, k), dflt, rounds, gunMs, lines);
         }
@@ -124,7 +127,7 @@ public sealed unsafe partial class DesignerScene
             {
                 ImGui.TextColored(KindColour(l.Kind), $"{ShellEdits.KindLabel(l.Kind),-6}");
                 ImGui.SameLine();
-                ImGui.TextUnformatted(FormattableString.Invariant($"{l.Ammo,-34} {Kg(l.Kg),7} kg {l.Ms,5:0} m/s  {l.Fuze,-13} {l.Rounds} a gun"));
+                ImGui.TextUnformatted(FormattableString.Invariant($"{l.Ammo,-34} {Kg(l.Kg),7} kg {l.Ms,5:0} m/s  {l.Fuze,-18} {l.Rounds} a gun"));
             }
             ImGui.PopFont();
         }
@@ -179,7 +182,7 @@ public sealed unsafe partial class DesignerScene
         if (ImGui.BeginTable("##loads", 10, flags))
         {
             foreach (var (head, wd) in new[] { ("", 20f), ("KIND", 46f), ("SHELL", 236f), ("SHARE", 88f), ("ROUNDS", 52f), ("MASS", 70f), ("M/S", 46f),
-                         ("FILLER", 130f), ("FUZE", 100f), ("", 20f) })
+                         ("FILLER", 130f), ("FUZE", 128f), ("", 20f) })
                 ImGui.TableSetupColumn(head, ImGuiTableColumnFlags.WidthFixed, P(wd));
             ImGui.PushFont(UiFonts.SansSmall);
             ImGui.TableHeadersRow();
@@ -223,9 +226,25 @@ public sealed unsafe partial class DesignerScene
                 ImGui.TableNextColumn();
                 ImGui.TextUnformatted(FormattableString.Invariant($"{l.Filler * 100:0.0}% {l.Explosive}"));
                 ImGui.TableNextColumn();
-                ImGui.PushFont(UiFonts.Mono);
-                ImGui.TextUnformatted(l.Fuze);
-                ImGui.PopFont();
+                if (l.Base)
+                {
+                    string id = $"fuze:{key}:{l.Entry}", what = $"{ShellEdits.KindLabel(l.Kind)} fuze";
+                    var (to, reset) = FuzeDelayField(l, id);
+                    if (to is { } ms)
+                        Edit(ShellEdits.SetFuzeDelay(d, main, k, l.Entry, ms / 1000), Label(FormattableString.Invariant($"{what} {l.DelayS * 1000:0.#} to {ms:0.#} ms")),
+                            key: id);
+                    else if (reset)
+                        Edit(ShellEdits.SetFuzeDelay(d, main, k, l.Entry, null), Label(FormattableString.Invariant($"{what} back to the block's {l.BlockDelayS * 1000:0.#} ms")));
+                }
+                else
+                {
+                    ImGui.AlignTextToFramePadding();
+                    ImGui.PushFont(UiFonts.Mono);
+                    ImGui.TextUnformatted(l.Fuze);
+                    ImGui.PopFont();
+                    if (ImGui.IsItemHovered())
+                        Tip("A nose fuze: it fires on the first thing it meets, so it has no delay to set");
+                }
                 ImGui.TableNextColumn();
                 ImGui.BeginDisabled(c.Lines.Length < 2);
                 if (ImGui.SmallButton("x"))
@@ -292,6 +311,67 @@ public sealed unsafe partial class DesignerScene
         dl.PopClipRect();
         Twisty(dl, new Vector2(p.X + w - P(8), p.Y + h / 2), true, T.Muted);
         return clicked;
+    }
+
+    /// <summary>A base fuze's delay: ◀ [ms] ▶, typed in place (Enter or leaving it applies; a value that doesn't parse or is
+    /// under 0 is dropped), the arrows and the wheel stepping it 1 ms (10 with Shift). Brass when it's the battery's own;
+    /// a right-click on it goes back to the block's. Returns the delay to set in ms, or whether to reset.</summary>
+    (double? Ms, bool Reset) FuzeDelayField(ShellLine l, string id)
+    {
+        var inv = CultureInfo.InvariantCulture;
+        double ms = l.DelayS * 1000;
+        int step = 0;
+        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
+        if (ImGui.ArrowButton("##dless", ImGuiDir.Left))
+            step = -1;
+        bool hover = ImGui.IsItemHovered();
+        ImGui.SameLine();
+        bool mine = fieldId == id;
+        string text = mine ? fieldText : ms.ToString("0.#", inv);
+        ImGui.SetNextItemWidth(P(64));
+        ImGui.PushFont(UiFonts.Mono);
+        ImGui.PushStyleColor(ImGuiCol.Text, l.OwnDelay ? T.Brass : T.Bright);
+        ImGui.InputText("##delay", ref text, 8, ImGuiInputTextFlags.CharsDecimal | ImGuiInputTextFlags.AutoSelectAll);
+        ImGui.PopStyleColor();
+        ImGui.PopFont();
+        double? to = null;
+        if (ImGui.IsItemActivated())
+        {
+            fieldId = id;
+            mine = true;
+        }
+        if (mine && ImGui.IsItemActive())
+            fieldText = text;
+        if (mine && ImGui.IsItemDeactivated())
+        {
+            fieldId = null;
+            if (ImGui.IsItemDeactivatedAfterEdit() && !ImGui.IsKeyPressed(ImGuiKey.Escape)
+                && double.TryParse(fieldText, NumberStyles.Float, inv, out double typed) && typed >= 0 && Math.Abs(typed - ms) > 1e-9)
+                to = typed;
+        }
+        var a = ImGui.GetItemRectMin();
+        var b = ImGui.GetItemRectMax();
+        ImGui.GetWindowDrawList().AddText(UiFonts.Mono, UiFonts.Mono.FontSize,
+            new Vector2(b.X - P(4) - Width(UiFonts.Mono, "ms"), (a.Y + b.Y - UiFonts.Mono.FontSize) / 2), T.U32(T.Muted), "ms");
+        bool field = ImGui.IsItemHovered() && !ImGui.IsItemActive();
+        bool reset = field && l.OwnDelay && ImGui.IsMouseClicked(ImGuiMouseButton.Right);
+        if (field)
+            Tip(FormattableString.Invariant($"Base fuze delay: from the plate that starts the fuze to the burst. The block's is {l.BlockDelayS * 1000:0.#} ms") +
+                (l.OwnDelay ? FormattableString.Invariant($"; this battery's own {ms:0.#} ms (right-click: the block's)") : "") +
+                FormattableString.Invariant($". Past a plate at 500 m/s it bursts {ms * 0.5:0.#} m on. Navies set their delays for the ranges they expected: ") +
+                "a long one goes clean through a small ship at close range, a short one bursts in a big ship's outer spaces.");
+        hover |= field;
+        ImGui.SameLine();
+        if (ImGui.ArrowButton("##dmore", ImGuiDir.Right))
+            step = 1;
+        hover |= ImGui.IsItemHovered();
+        ImGui.PopStyleVar();
+        float wheel = ImGui.GetIO().MouseWheel;
+        if (hover && !mine && wheel != 0)
+            step = Math.Sign(wheel);
+        if (step != 0)
+            to = Math.Max(0, Math.Round(ms) + step * (ImGui.GetIO().KeyShift ? 10 : 1));
+        return (to is { } t && Math.Abs(t - ms) > 1e-9 ? t : null, reset);
     }
 
     /// <summary>◀ n% ▶, the wheel stepping it too: −1, 0 or +1 for a step of 5%.</summary>

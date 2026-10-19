@@ -240,13 +240,15 @@ public sealed record BatteryInput
 }
 
 /// <summary>A battery's shells[k]: an ammunition block by name and its share of the rounds; mass_kg and
-/// muzzle_velocity_ms give this battery's own shell over the block's k·D³ and the fourth-root rule.</summary>
+/// muzzle_velocity_ms give this battery's own shell over the block's k·D³ and the fourth-root rule, and fuze_delay_s its
+/// base fuze's delay over the block's (the navy set it for its own fights' ranges; a player sets it for theirs).</summary>
 public sealed record ShellEntryInput
 {
     public string? Ammo { get; init; }
     public double? Share { get; init; }
     public double? MassKg { get; init; }
     public double? MuzzleVelocityMs { get; init; }
+    public double? FuzeDelayS { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 

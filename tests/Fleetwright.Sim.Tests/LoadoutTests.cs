@@ -58,6 +58,28 @@ public class LoadoutTests(ITestOutputHelper output)
         output.WriteLine($"{c.Name}: {string.Join(", ", loads.Select(l => $"{mix.ShellTypeId(l.ShellType)} {l.Share:P0}"))}, {r} rounds a mount");
     }
 
+    /// <summary>A battery's own fuze delay (the designer's FUZE cell) is the delay its shell type fires with: a shell type
+    /// of its own beside the block's, the other battery's unchanged. A loadout sets one the same way.</summary>
+    [Fact]
+    public void A_battery_fires_its_own_fuze_delay()
+    {
+        var path = Path.Combine(Fleet.Shipgen, "designs", "dreadnought.json");
+        var d = Design.Load(path);
+        var main = d.Main![0];
+        d = d with { Main = [main with { Shells = [.. main.Shells!.Select(e => Ammunition.Resolve(d, [])[0].Shells.First(s => s.Ammo == e.Ammo).Fuze == "base" ? e with { FuzeDelayS = 0.012 } : e)] }] };
+        var c = ShipClassCompiler.Compile(ShipDesign.Build(d));
+        var ap = c.Loadout.ShellTypes[c.Loadout.Fires(0)];
+        Assert.Equal((ShellKind.Ap, 0.012), (ap.Kind, ap.FuzeDelayS));
+        Assert.NotEqual(0.012, Dreadnought.Loadout.ShellTypes[Dreadnought.Loadout.Fires(0)].FuzeDelayS);
+        using var json = System.Text.Json.JsonDocument.Parse("{\"main\": [{\"ammo\": \"RN 1912 APC (lyddite)\", \"share\": 1, \"fuze_delay_s\": 0.001}]}");
+        var spec = LoadoutSpec.FromJson(json.RootElement, "short");
+        Assert.Equal(0.001, spec.Batteries.Single().Shells.Single().FuzeDelayS);
+        var errors = new List<string>();
+        var lo = Dreadnought.Load(spec, errors);
+        Assert.True(lo != null, string.Join("; ", errors));
+        Assert.Equal(0.001, lo!.ShellTypes[lo.Fires(0)].FuzeDelayS);
+    }
+
     /// <summary>The gun keeps its velocity with the design's heaviest shell: a heavier one leaves it slower by the fourth
     /// root of the masses, a lighter one faster, as the kinds do (decision 6).</summary>
     [Fact]
