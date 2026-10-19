@@ -99,6 +99,14 @@ public sealed class ShipDrawList
         return (l, Math.Max(l * IconWidthPx / IconLengthPx, IconMinWidthPx));
     }
 
+    /// <summary>A class's icon at a zoom, pixels: its tonnage's size (<see cref="IconPx(ShipClass?)"/>) at the least,
+    /// its true length and beam once they are longer, so the icon lies over the ship as the table fades to the world.</summary>
+    public static (double Length, double Width) IconPx(ShipClass? c, double pxPerM)
+    {
+        var (l, w) = IconPx(c);
+        return c == null ? (l, w) : (Math.Max(l, c.Length * pxPerM), Math.Max(w, c.Beam * pxPerM));
+    }
+
     /// <summary>Sprites shorter than this on screen get no shadows: too small to see, and the march costs.</summary>
     public const double ShadowFromPx = 90;
 
@@ -304,7 +312,7 @@ public sealed class ShipDrawList
             double length = c?.Length ?? 150;
             var rel = p - view.Eye;
             double pxPerM = 1 / view.MetresPerPixel * view.Altitude / Math.Max(Vec3d.Dot(rel, view.Forward), 1e-3);
-            var (iconL, iconW) = IconPx(c);
+            var (iconL, iconW) = IconPx(c, pxPerM);
             double lengthPx = length * pxPerM, margin = Math.Max(lengthPx, iconL);
             double reach = wakes ? Math.Max(margin, WakeReachLengths * lengthPx) : margin;
             if (x < -reach || y < -reach || x > view.Width + reach || y > view.Height + reach)
@@ -569,7 +577,7 @@ public sealed class ShipDrawList
 
     void Icon(ref Placed p, bool selected)
     {
-        // a fixed size on screen by tonnage, along the heading: metres per pixel at the ship
+        // its tonnage's size on screen, or the ship's own once longer, along the heading: metres per pixel at the ship
         double l = p.IconL / p.PxPerM, w = p.IconW / p.PxPerM;
         Emit(ref p, null, -l / 2, -w / 2, l, 0, 0, w, mode: 2, opacity: p.IconAlpha, roof: 0,
             selected ? SelectedTint : SideTints[p.Side < SideTints.Length ? p.Side : 0], IconSea(p));

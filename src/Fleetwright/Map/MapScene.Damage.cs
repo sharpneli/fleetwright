@@ -154,7 +154,7 @@ public sealed partial class MapScene
                 Smoke(view, p, fx / burning, fy / burning, wind, burning, now, seed, mpp);
 
             if (lost)
-                GoingDown(v, k, cx, cy, now);
+                GoingDown(IconLengthAt(view, v.Class[k], p), v, k, cx, cy, now);
         }
     }
 
@@ -178,7 +178,7 @@ public sealed partial class MapScene
         // px per ship metre along and across, true; and the icon's
         double fx = (ax - x) / 100, fy = (ay - y) / 100, sx = (bx - x) / 100, sy = (by - y) / 100;
         double fl = Math.Max(Math.Sqrt(fx * fx + fy * fy), 1e-9), sl = Math.Max(Math.Sqrt(sx * sx + sy * sy), 1e-9);
-        var (il, iw) = ShipDrawList.IconPx(c);
+        var (il, iw) = ShipDrawList.IconPx(c, Math.Min(fl, sl));
         double ia = il / c.Length / fl, ib = iw * 0.8 / c.Beam / sl;
         double ka = 1 + icon * (ia - 1), kb = 1 + icon * (ib - 1);
         return new Frame(x, y, fx * ka, fy * ka, sx * kb, sy * kb);
@@ -220,13 +220,13 @@ public sealed partial class MapScene
     }
 
     /// <summary>A ship going down: a pale ring of foam and wreckage widening round her until she's gone.</summary>
-    void GoingDown(ShipsView v, int k, double x, double y, long now)
+    void GoingDown(double iconPx, ShipsView v, int k, double x, double y, long now)
     {
         double age = (now - v.LossMs[k]) / 1000.0, span = Math.Max((v.GoneMs[k] - v.LossMs[k]) / 1000.0, 1);
         if (age < 0)
             return;
         double gone = Math.Clamp(age / span, 0, 1);
-        Ring(x, y, Math.Max(IconLengthOf(v.Class[k]), ShipDrawList.IconLengthPx / 2) * (0.55 + 0.45 * gone), WreckColour with { W = (float)(0.4 * Math.Min(1, age / 2) * (1 - gone * gone)) }, 1.5f);
+        Ring(x, y, Math.Max(iconPx, ShipDrawList.IconLengthPx / 2) * (0.55 + 0.45 * gone), WreckColour with { W = (float)(0.4 * Math.Min(1, age / 2) * (1 - gone * gone)) }, 1.5f);
     }
 
     /// <summary>A magazine's blast where a ship was, <paramref name="age"/> seconds after: a white-hot flash with sparks,

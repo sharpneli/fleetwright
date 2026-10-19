@@ -513,6 +513,10 @@ public sealed unsafe partial class MapScene
     /// <summary>A class's icon length on the table, px (by its tonnage, <see cref="ShipDrawList.IconPx"/>).</summary>
     double IconLengthOf(int cls) => ShipDrawList.IconPx(classOf(cls)).Length;
 
+    /// <summary>A class's icon length at a point in the view, px: its tonnage's at the least, its true length once longer.</summary>
+    double IconLengthAt(in MapView view, int cls, Vec3d p) =>
+        ShipDrawList.IconPx(classOf(cls), view.Altitude / view.MetresPerPixel / Math.Max(Vec3d.Dot(p - view.Eye, view.Forward), 1e-3)).Length;
+
     /// <summary>A right click on the sea with a ship selected: steer for it, or with shift add it to the route.</summary>
     void OrderAt(double x, double y, bool waypoint)
     {
