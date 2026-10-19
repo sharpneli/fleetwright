@@ -1,11 +1,16 @@
-# Hits, fires and sinkings in the world view (plan, draft 2026-10-19)
+# Hits, fires, smoke and sinkings in the world view (plan agreed 2026-10-19)
 
 The world view has its own splashes, muzzle flashes, gun smoke, wakes, torpedoes and magazine explosions. Three things
 a battle shows most are still the table's marks drawn at pixel sizes over the world: **a shell hitting a ship**, **a
 fire** and **the smoke from it**. A ship going down has the same problem: the sprite drowns properly, but the water
-around it does nothing. This plan covers the **world view** only, as `splashes.md`, `muzzle-flashes.md`,
-`magazine-explosions.md` and `torpedoes.md` did: what it draws × the world's share (`WorldView.Factor`), the table's
-marks × (1 − it).
+around it does nothing. **Funnel smoke**, missing altogether, is folded in, kept light (decision 6). This plan covers
+the **world view** only, as `splashes.md`, `muzzle-flashes.md`, `magazine-explosions.md` and `torpedoes.md` did: what it
+draws × the world's share (`WorldView.Factor`), the table's marks × (1 − it).
+
+**Placeholders first** (the user, 2026-10-19): the plan builds shapes, sizes, timing and cost. Colours (the fire
+smoke's, the burst smoke's by filler, the funnel smoke's by fuel), soot yields and the funnels' output are reasonable
+placeholders, flagged in code where the estimates live (`[EST]`), and set right in a later pass when the research
+requests below come back.
 
 ## The tally: what the world view still draws as a placeholder
 
@@ -21,12 +26,12 @@ From the code (2026-10-19). "Faded" means the table mark already gives way to a 
 | Torpedo hit | The table's pop under the world's column | Yes (R5) | Done |
 | Magazine | The table's flash, ring and pall | Yes (X0-X7) | Done |
 | Miss splash, gun flash, torpedo track | Table marks | Yes | Done |
-| Shells in flight | The table's streak and head, in both views | No | Kept as a mark: a shell in flight shows almost nothing from above. Recommended to stay (decision 6) |
+| Shells in flight | The table's streak and head, in both views | No | Kept as a mark: a shell in flight shows almost nothing from above. Stays (decision 7) |
 | Scorched parts, damaged turrets | On the sprite (`ShipBatchRenderer` `Scorches`, `TurretTint`) | — | World look already. Whole parts only, nothing at the hit point |
 
-**Not there at all** (no placeholder, so not in this plan's core, see "Later"): **funnel smoke**, which at Jutland was
-the biggest thing on the sea; **steam** from boiler and engine room hits; searchlights and star shell (no sim yet);
-smoke screens (the smoke field).
+**Not there at all:** **funnel smoke**, which at Jutland was the biggest thing on the sea (folded in: I6); **steam**
+from boiler and engine room hits; searchlights and star shell (no sim yet); smoke screens (the smoke field). The last
+three are "Later".
 
 ## Research
 
@@ -41,14 +46,17 @@ smoke screens (the smoke field).
   (`MagazineBlast.Fireball`, `Heskestad`). A shell's burst is the same law at a few kilograms.
 - `docs/battle/fire.md` and damage/17: what a fire is in the sim (Q, phase, openings, charges, water on it).
 
-**Gaps**, for a research request (not filed: `research/REQUESTS.md` has your uncommitted edits):
+**Gaps**, filed in `research/REQUESTS.md` (2026-10-19, "Burning warships and shell hits as seen" and "Funnel smoke as
+seen"):
 1. Period photos and film of burning warships, as anchors for flame size and smoke colour and density: Blücher at
    Dogger Bank, Lion and Seydlitz, Invincible, Wiesbaden, the Russian ships at Tsushima.
 2. The **filler's smoke colour**: black powder (white-grey), picric acid as lyddite and shimose (yellow to black,
-   noted at Tsushima), TNT (black). Does the sim know the filler's kind, or only its mass and RE?
+   noted at Tsushima), TNT (black). The sim has the filler's mass and RE (`FillerKg`, `FillerRe`); its kind waits on
+   the 2026-10-16 fillers request.
 3. Soot yield of a 1910s warship's fire load (cork, linoleum, wood, rubber-insulated cable, paint).
+4. Funnel smoke by fuel, plant and power: colour, density, rise, how far it trailed.
 
-The plan doesn't wait for these. The estimates below are flagged in code, as the torpedo plan did.
+The plan doesn't wait for these: placeholders, flagged in code.
 
 ## What the physics gives
 
@@ -66,6 +74,7 @@ The plan doesn't wait for these. The estimates below are flagged in code, as the
 | Plume rise | Bent over in the wind: Δh = 1.6 F^⅓ x^⅔ / U, F ≈ 9 Q_c m⁴/s³ (Q_c the convective MW, ~0.7 Q). 10 MW in a 7 m/s apparent wind: 40 m up 200 m downwind. Then it levels off and spreads as the puffs do | Briggs |
 | Smoke colour | Cellulosic and cable fires grey-brown to near black when developed; light grey while growing; **white steam** while water is on it (`Control`, the boil share of B3's water); burning charges a sudden yellow-brown burst then white-grey | `shell-impacts.md` "Fires"; photos (gap 1) |
 | Fire light at night | Radiant share ~0.3 Q, warm (~1,200 K) | Estimate |
+| Funnel smoke | A line source behind each funnel, Ȧ ≈ 1,500 m²/s at full power for coal, scaled by the power share ((v / v_max)³) and the plant's k_smoke (oil ~0.3 of coal), rising some tens of metres on its heat and trailing kilometres. Grey-brown for coal, light grey for oil (placeholders) | `unified-smoke-system.md` "Calibrating funnel smoke"; gap 4 |
 | Sinking | As `sinking-vfx-research.md`: crossing foam and collar, air boils (and late ones after she's gone), the closing slam, oil (Fay spreading, damping the ripples), debris | The research |
 
 ## What the sim gives today, and what it needs
@@ -77,7 +86,10 @@ The plan doesn't wait for these. The estimates below are flagged in code, as the
   `EffectsResult`). A **hits record** for the screens, as `ShotsView` is for the shots (I0).
 - **Fires:** `ShipsView.FireCells` lists every burning cell. The look needs, per fire **that shows** (B2's
   `Fires.Shows`): where (its space, and its opening to the outside when inside), Q, the phase, charges burning, and
-  the water on it. The same rule for own ships and enemies; the table may keep marking own hidden fires (decision 3).
+  the water on it. The same rule for own ships and enemies; the table keeps marking own hidden fires (decision 3).
+- **Funnel smoke:** the funnels are the class's components (their plan and top), the fuel is the plant's (`Fuel`),
+  the speed and the most speed are known. Nothing new from the sim; a smoke output per funnel from the designer can
+  replace the power-share estimate later (`plan.md`, "needed from the designer for sighting").
 - **Sinking:** the attitude over time and how she's lost (`Attitude.At`, `Loss`) are there. Oil needs the fuel
   aboard (the class has its tanks and bunkers). Nothing else.
 
@@ -96,28 +108,32 @@ I0 adds these. They're facts the sim has, so no result changes: the scenario ben
 | Holes at the hit point | **Decals on the sprite** in the ship's frame: a dark hole with a scorch, sized by calibre and outcome, capped per ship (old ones fold into the part scorch) | Lit like the scorches (L5) |
 | A fire's flames | **A flame sprite** per showing fire at its opening or its deck, Heskestad's height up the screen through the effects camera, flickering, warm; charges burning a brighter, taller flare | |
 | A fire's glow | **A fire light**, steady with flicker, in the Lights block (a pool of its own, decision 5), lighting the ship, the sea and the smoke | |
-| A fire's smoke | **A trail of puffs** per fire (the smoke research's continuous source): Ȧ from Q, the Briggs rise, drift with the wind relative to a moving ship, merged by age; coloured by the phase and the water | The puffs' renderer; the base for funnel smoke later |
+| A fire's smoke | **A trail of puffs** per fire (the smoke research's continuous source): Ȧ from Q, the Briggs rise, drift with the wind relative to a moving ship, merged by age; coloured by the phase and the water | The puffs' renderer, `SmokeRenderer` |
+| Funnel smoke | **The same trails**, one per funnel, light: coarse puff spacing, early merging, a shared budget with the fires' trails (fires first when it's tight) | One trail model for every continuous source |
 | Sinking | **The research's layers**: crossing foam and collar into the wake target from the hull's waterline cut, boils and the slam as foam-only splashes and a ring on the water (the blast quads' ring), an oil slick (dark, damping the glitter), debris points drifting | The sea's shading turns them into foam and calm |
 
-## Decisions to agree
+## Decisions (agreed 2026-10-19)
 
-1. **Scope and order:** hits (I1-I3), then fires and their smoke (I4-I5), then sinking (I6). Funnel smoke and steam
-   are a later plan that reuses I5's trails.
-2. **Fire smoke blocks no sight** until the smoke field, as the gun smoke (the exception logged in
-   `muzzle-flashes.md`, approved 2026-10-15) — **an extension of that exception, for approval.** The enemy still sees
-   a fire by its heat (B2's `FireShowMW`).
-3. **The world draws only fires that show from outside**, for every ship: a growing or starved fire inside the hull
-   shows nothing. The table keeps marking the player's own hidden fires (he knows of them); an enemy's hidden fires
-   go from the table too (today's leak).
+1. **Order:** hits (I1-I3), fires and their smoke (I4-I5), funnel smoke (I6), sinking (I7). Steam is "Later".
+2. **No smoke blocks sight yet**, fire or funnel, until the smoke field: the gun smoke's exception (`muzzle-flashes.md`,
+   approved 2026-10-15) **extended to fire and funnel smoke**, approved by the user 2026-10-19 and logged here. The
+   enemy still sees a fire by its heat (B2's `FireShowMW`).
+3. **The world draws only fires that show from outside**, for every ship: nobody sees inside a hull, so a growing or
+   starved fire inside shows nothing. The table keeps marking the player's own hidden fires (he knows of them); an
+   enemy's hidden fires go from the table too (today's leak).
 4. **Exit and ricochet splashes are display only:** the sim gives the exit point and way; the map flies the shell on
-   to the water on its ballistic table and lands a splash. The spotter doesn't see it. If fire control should count it
-   (an "over"), the sim must carry the shell on, which is a fire-control question (F7), not this plan's.
-5. **Fires get their own light pool** (8 lights, the brightest by Q over distance) beside the flashes' 8, rather than
-   competing with the guns for one list. Cost measured in I7.
-6. **Shells in flight keep the table's streak** in the world view: there's almost nothing to see of a real shell
+   to the water on its ballistic table and lands a splash. The spotter doesn't see it. If fire control should ever
+   count it (an "over"), the sim must carry the shell on: a fire-control question (F7), not this plan's.
+5. **16 lights in all:** the Lights block grows from 8 to 16, the flashes keeping their 8 and the fires a pool of 8
+   (the brightest by Q over distance), so the guns and the fires don't compete. Cost measured in I8; if 16 breaks the
+   budget, I8 says so and we choose.
+6. **Funnel smoke folded in, light:** one trail per funnel on I5's machinery, coarse and merged early, placeholder
+   output and colour. No per-funnel designer output, no smoke screens.
+7. **Shells in flight keep the table's streak** in the world view: there's almost nothing to see of a real shell
    from above, and the streak is how the player reads who is firing at whom.
-7. **Clocks:** hits on the effects' clock (knee 2x), never thinned (they're few and decisive); fires and smoke on the
+8. **Clocks:** hits on the effects' clock (knee 2x), never thinned (they're few and decisive); fires and smoke on the
    sea's clock, as the gun smoke.
+9. **Placeholders for colours and yields**, set right in a later pass.
 
 ## Steps
 
@@ -128,20 +144,24 @@ I0 adds these. They're facts the sim has, so no result changes: the scenario ben
   still target (as the duel bench), captured with `-screenshot`.
 - **I2, what flies off.** Exit and ricochet splashes, fragment foam, falling pieces.
 - **I3, the marks.** Hole decals at the hit points; the under-water hit's boil against the hull.
-- **I4, the flames.** Flames at the openings and on deck, the charges' flare, the fire lights (decision 5); the
-  table's glow fades over the cross-fade.
-- **I5, the smoke.** The trail of puffs per fire, its rise, drift, merging and colours, steam under water; the
-  table's streak fades over the cross-fade (it stays on the table, decision 2's grey).
-- **I6, sinking.** The research's layers; the going-down ring fades over the cross-fade; the wreck in the world is
+- **I4, the flames.** Flames at the openings and on deck, the charges' flare, the fire lights (the Lights block to
+  16, decision 5); the table's glow fades over the cross-fade.
+- **I5, the fire smoke.** The trail of puffs per fire, its rise, drift, merging and placeholder colours, steam while
+  water is on it; the table's streak fades over the cross-fade (it stays on the table, in its grey).
+- **I6, funnel smoke.** A trail per funnel on I5's machinery, by the power share and the fuel; the shared budget.
+- **I7, sinking.** The research's layers; the going-down ring fades over the cross-fade; the wreck in the world is
   its oil and debris (the label stays).
-- **I7, cost.** The Jutland and a 40-ship melee at 1x, 10x and 60x: frame time, puffs, lights (`WorldPerf`, F2's
+- **I8, cost.** The Jutland and a 40-ship melee at 1x, 10x and 60x: frame time, puffs, lights (`WorldPerf`, F2's
   stats). Budgets as F7 and R6 did.
-- **I8, by eye.** Side-by-side captures against the photos (gap 1), day, dusk and night, calm and rough.
+- **I9, by eye.** Side-by-side captures for shape, size and timing, day, dusk and night, calm and rough. Colours wait
+  for the colour pass.
 
 ## Later
 
-- **Funnel smoke** on I5's trails, display only under the same exception until the smoke field; needs a smoke output
-  per funnel from the designer (`plan.md`'s "needed from the designer for sighting").
+- **The colour pass:** smoke colours by fire, filler and fuel, soot yields and the funnels' output from the research
+  requests (decision 9).
+- **Per-funnel smoke output** from the designer, replacing the power-share estimate; smoke screens with the smoke
+  field.
 - **Steam** from wrecked boiler and engine rooms and a holed funnel: white jets, from the parts' states.
 - **Night lights** (searchlights, star shell) with their sim.
 - **A ship broken in two** parting in halves, with I6's layers at the break (`magazine-explosions.md` "Later").
