@@ -3718,14 +3718,14 @@
  {
   "name": "JP 1931 Type 91 AP (TNA)",
   "group": "JP 1931",
-  "note": "46 cm Type 91 1,460 kg (W/D³ 0.54), the break-away cap head (diving: off above 45°), 23.9 kg TNA with its liner, 0.4 s quoted [UNCERTAIN]. Cap share and booster [EST].",
+  "note": "46 cm Type 91 1,460 kg (W/D³ 0.54), 23.9 kg TNA with its liner. As a plain hard-capped APC with the period's 0.03 s: the real break-away cap and 0.4 s fuze were the diving doctrine, not in the game yet. Cap share and booster [EST].",
   "value": {
    "kind": "ap",
    "mass_k_kg_m3": 14950,
    "nose_crh": 4,
    "form_factor": 1.05,
    "cap": {
-    "kind": "break_away",
+    "kind": "hard",
     "share": 0.1
    },
    "windscreen": true,
@@ -3753,7 +3753,7 @@
    },
    "fuze": {
     "position": "base",
-    "delay_s": 0.4,
+    "delay_s": 0.03,
     "start_cal": 0.05,
     "oblique": 0.45,
     "plates": "two",

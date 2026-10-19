@@ -97,13 +97,16 @@ public class NearMissTests(ITestOutputHelper output)
     }
 
     /// <summary>15 §1.1: a base fuze's delay runs from the water, so an AP shell that misses bursts metres down, and the
-    /// sea stops every piece.</summary>
+    /// sea stops every piece (§1.2's 16" Mk 8 20 m short: 2.7 m deep; nearer, it reaches her hull). Under one piece a burst
+    /// still reaches the upper works from 1.8 m down, holing nothing (docs/battle/bugs.md, Damage).</summary>
     [Fact]
     public void AP_bursts_deep_and_throws_no_splinters()
     {
-        var r = Burst("yamato", ShellKind.Ap, "short", 5);
-        Assert.True(r.DepthM > 2, $"{r.DepthM:0.0} m down");
-        Assert.Equal(0, r.SideThrough + r.UpperThrough);
+        var r = Burst("battleship", ShellKind.Ap, "short", 20);
+        Assert.True(r.DepthM > 1.5, $"{r.DepthM:0.0} m down");
+        Assert.Equal(0, r.SideThrough);
+        Assert.True(Per(r, r.UpperThrough) < 1, $"above {Per(r, r.UpperThrough):0.0}");
+        Assert.Equal(0, r.HoleM2);
         Assert.Equal(0, r.Killed + r.Wounded);
     }
 

@@ -39,6 +39,11 @@ add what's found.
 
 ## Damage
 
+- [ ] An AP near miss 1.8 m down still puts 0.8 pieces a burst into a destroyer's upper works (the 16" Mk 8 20 m short at
+  15 km, `NearMissTests.AP_bursts_deep_and_throws_no_splinters`; no holes, nobody hurt). Damage/15 §1.1 has the sea
+  stopping every piece at that depth. Found 2026-10-19 when the Type 91 lost its diving fuze: its 0.4 s burst 14 m down
+  had hidden it. Likely the heaviest pieces (the base plug) and `NearMiss.WaterDragM`'s path up through the water.
+
 - [x] A battleship under medium HE sometimes loses a magazine to fire (about 1.5 %): decided 2026-10-15, rarely is
   right (user); damage control and flash discipline refine it later (fighting.md, the later passes' Magazines).
 - [ ] A contact-fuzed shell on armour breaks up instead of bursting on the face (found 2026-10-19, fire.md B5).

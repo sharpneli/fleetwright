@@ -318,12 +318,12 @@ plate, full detonation) is the explosive's (`explosive-templates.md`).
 
 | Template | Kind | W/D³ | crh / i | Cap | Body | Filler | Fuze | Steel |
 |---|---|---|---|---|---|---|---|---|
-| JP 1931 Type 91 AP (TNA) | ap | 0.54 | 4 / 1.05 | break_away 10% | 20°, 0.67; 0.96 | 1.6% TNA, ce | base 0.4 s, 0.05 cal (×0.45), two, ±10%, 5% blind | 1.25/1 |
+| JP 1931 Type 91 AP (TNA) | ap | 0.54 | 4 / 1.05 | hard 10% | 20°, 0.67; 0.96 | 1.6% TNA, ce | base 0.03 s, 0.05 cal (×0.45), two, ±10%, 5% blind | 1.25/1 |
 | JP 1931 Type 0 HE (TNA) | he | 0.51 | 4 / 1.05 | none | 0°, 0.2; 1.00 | 4.5% TNA, ce | nose | 1/1 |
 | JP 1931 light common (TNA) (light) | common | 0.44 | 4 / 1.05 | none | 10°, 0.33; 0.90 | 3% TNA, ce | base 0.01 s, 0.07 cal (×0.45), single, ±10%, 5% blind | 1/1 |
 | JP 1931 light HE (TNA) (light) | he | 0.44 | 4 / 1.05 | none | 0°, 0.2; 1.00 | 8% TNA, ce | nose | 1/1 |
 
-- **JP 1931 Type 91 AP (TNA):** 46 cm Type 91 1,460 kg (W/D³ 0.54), the break-away cap head (diving: off above 45°), 23.9 kg TNA with its liner, 0.4 s quoted [UNCERTAIN]. Cap share and booster [EST].
+- **JP 1931 Type 91 AP (TNA):** 46 cm Type 91 1,460 kg (W/D³ 0.54), 23.9 kg TNA with its liner. As a plain hard-capped APC with the period's 0.03 s: the real break-away cap and 0.4 s fuze were the diving doctrine, not in the game yet. Cap share and booster [EST].
 - **JP 1931 Type 0 HE (TNA):** 46 cm Type 0 HE 1,360 kg, 61.7 kg TNA.
 - **JP 1931 light common (TNA):** 15.5 cm and 12.7 cm (W/D³ 0.41-0.48). Filler [EST].
 - **JP 1931 light HE (TNA):** 12.7 cm Type 0 HE 23 kg, 1.88 kg TNA.
