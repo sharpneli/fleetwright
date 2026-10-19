@@ -109,10 +109,10 @@ public static class ShellTemplates
 
         // ---- Japan 1904
         T("JP 1904 AP (Shimose)", "JP 1904", "ap", 0.49, 2, 1.8, "none", 0, false, Uncapped, 0.05, "Shimose", "basic",
-            Base(0, blind: 0.05, waterMs: 0.1), "nicr",
-            "12\" 'Furoshiki' 386 kg (W/D³ 0.49), 19.3 kg Shimose, the sensitive Ijuin base fuze: bursts on contact, on the water too (0.1 ms: Semenov's \"exploded the moment they touched its surface\", damage/15 §2.3). No 12\" known to pierce over ~6\"."),
+            Base(0, start: 0.01, blind: 0.05, waterMs: 0.1), "nicr",
+            "12\" 'Furoshiki' 386 kg (W/D³ 0.49), 19.3 kg Shimose, the sensitive Ijuin base fuze: bursts on contact (it starts on any plate, 0.01 calibre [EST]), on the water too (0.1 ms: Semenov's \"exploded the moment they touched its surface\", damage/15 §2.3). No 12\" known to pierce over ~6\"."),
         T("JP 1904 common (powder)", "JP 1904", "common", 0.49, 2, 1.8, "none", 0, false, Common, 0.10, "Black powder", "basic",
-            Base(0), "forged", "12\" common, 39 kg powder (10%): the upper-works fires of Tsushima."),
+            Base(0, start: 0.01), "forged", "12\" common, 39 kg powder (10%): the upper-works fires of Tsushima. The Ijuin fuze too: it starts on any plate (0.01 calibre [EST], armor/04 \"designed to burst on contact\"), so it bursts in the upper works rather than passing through."),
 
         // ---- USN 1906
         T("US 1906 AP (Explosive D)", "US 1906", "ap", 0.50, 2, 1.5, "soft", 0.06, false, Soft, 0.025, "Explosive D", "basic",

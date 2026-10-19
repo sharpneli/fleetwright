@@ -291,7 +291,7 @@
  {
   "name": "JP 1904 AP (Shimose)",
   "group": "JP 1904",
-  "note": "12\" 'Furoshiki' 386 kg (W/D³ 0.49), 19.3 kg Shimose, the sensitive Ijuin base fuze: bursts on contact, on the water too (0.1 ms: Semenov's \"exploded the moment they touched its surface\", damage/15 §2.3). No 12\" known to pierce over ~6\".",
+  "note": "12\" 'Furoshiki' 386 kg (W/D³ 0.49), 19.3 kg Shimose, the sensitive Ijuin base fuze: bursts on contact (it starts on any plate, 0.01 calibre [EST]), on the water too (0.1 ms: Semenov's \"exploded the moment they touched its surface\", damage/15 §2.3). No 12\" known to pierce over ~6\".",
   "value": {
    "kind": "ap",
    "mass_k_kg_m3": 13560,
@@ -326,7 +326,7 @@
    "fuze": {
     "position": "base",
     "delay_s": 0,
-    "start_cal": 0.07,
+    "start_cal": 0.01,
     "oblique": 0.45,
     "plates": "single",
     "scatter": 0.1,
@@ -339,7 +339,7 @@
  {
   "name": "JP 1904 common (powder)",
   "group": "JP 1904",
-  "note": "12\" common, 39 kg powder (10%): the upper-works fires of Tsushima.",
+  "note": "12\" common, 39 kg powder (10%): the upper-works fires of Tsushima. The Ijuin fuze too: it starts on any plate (0.01 calibre [EST], armor/04 \"designed to burst on contact\"), so it bursts in the upper works rather than passing through.",
   "value": {
    "kind": "common",
    "mass_k_kg_m3": 13560,
@@ -374,7 +374,7 @@
    "fuze": {
     "position": "base",
     "delay_s": 0,
-    "start_cal": 0.07,
+    "start_cal": 0.01,
     "oblique": 0.45,
     "plates": "single",
     "scatter": 0.1,

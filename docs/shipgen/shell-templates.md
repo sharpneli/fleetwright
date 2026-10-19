@@ -50,11 +50,11 @@ plate, full detonation) is the explosive's (`explosive-templates.md`).
 
 | Template | Kind | W/D³ | crh / i | Cap | Body | Filler | Fuze | Steel |
 |---|---|---|---|---|---|---|---|---|
-| JP 1904 AP (Shimose) | ap | 0.49 | 2 / 1.80 | none | 15°, 0.5; 0.95 | 5% Shimose, basic | base 0 s, 0.07 cal (×0.45), single, ±10%, 5% blind | 1.25/1 |
-| JP 1904 common (powder) | common | 0.49 | 2 / 1.80 | none | 10°, 0.33; 0.90 | 10% Black powder, basic | base 0 s, 0.07 cal (×0.45), single, ±10%, 5% blind | 1/1 |
+| JP 1904 AP (Shimose) | ap | 0.49 | 2 / 1.80 | none | 15°, 0.5; 0.95 | 5% Shimose, basic | base 0 s, 0.01 cal (×0.45), single, ±10%, 5% blind | 1.25/1 |
+| JP 1904 common (powder) | common | 0.49 | 2 / 1.80 | none | 10°, 0.33; 0.90 | 10% Black powder, basic | base 0 s, 0.01 cal (×0.45), single, ±10%, 5% blind | 1/1 |
 
-- **JP 1904 AP (Shimose):** 12" 'Furoshiki' 386 kg (W/D³ 0.49), 19.3 kg Shimose, the sensitive Ijuin base fuze: bursts on contact, on the water too (0.1 ms: Semenov's "exploded the moment they touched its surface", damage/15 §2.3). No 12" known to pierce over ~6".
-- **JP 1904 common (powder):** 12" common, 39 kg powder (10%): the upper-works fires of Tsushima.
+- **JP 1904 AP (Shimose):** 12" 'Furoshiki' 386 kg (W/D³ 0.49), 19.3 kg Shimose, the sensitive Ijuin base fuze: bursts on contact (it starts on any plate, 0.01 calibre [EST]), on the water too (0.1 ms: Semenov's "exploded the moment they touched its surface", damage/15 §2.3). No 12" known to pierce over ~6".
+- **JP 1904 common (powder):** 12" common, 39 kg powder (10%): the upper-works fires of Tsushima. The Ijuin fuze too: it starts on any plate (0.01 calibre [EST], armor/04 "designed to burst on contact"), so it bursts in the upper works rather than passing through.
 
 ## US 1906
 
