@@ -264,6 +264,18 @@ fire's light-grey plume rising off her and trailing away downwind for most of a 
 killed by its timeout left the game running and drawing (Windows keeps the child), which halved later runs' frame
 rates until it finished; benches should run to their own end. Tests: `SmokeTrailsTests`.
 
+**I6 (2026-10-19).** `Map/Fires/FunnelSmoke`: each funnel (the class's `Funnel` components) of each ship in the world view
+and within 3 km of it is a continuous source on I5's machinery at its top: Ȧ = 1,500 m²/s at full power for coal (the
+smoke research's calibration) times the power share (v / v_max)³ (at least 0.05: banked fires still smoke) and the
+plant's smokiness by the fuel in her bunkers (coal 1, oil 0.3, a mixed plant between by tonnes: no switch), grey-brown
+for coal and light grey for oil (placeholders), rising 20 m on its heat over 10 s, its core 8 m as it mixes into her
+wake's turbulence; a ship going down makes none [EST, gap 4]. The shared budget: the funnels fill the smoke's book to
+0.6 of it, the fires to 0.9, so the fires come first. A moving source lays a puff every 12 m it runs (never more often
+than every 0.5 s, nor less often than its own spacing: 4 s funnels, 2 s fires): laid by time at speed, the young puffs
+read as a string of beads 40 m apart (seen, fixed). Knobs `-funnels=` (output, idle, oil, rise, every, spare, on). Seen at
+1.2 m/px, two dreadnoughts at 20 kn and a destroyer at 28 kn, a 12 kn wind on their beam: a smooth plume streaming off
+each, bending downwind and widening over a kilometre. Test: `SmokeTrailsTests.A_moving_source_lays_its_puffs_by_the_distance_it_runs`.
+
 ## Later
 
 - **The colour pass:** smoke colours by fire, filler and fuel, soot yields and the funnels' output from the research

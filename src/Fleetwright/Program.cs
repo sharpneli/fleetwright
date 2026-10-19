@@ -175,6 +175,12 @@ public static unsafe class Program
                     if (!Map.Fires.FireLook.Set(kv))
                         Console.Error.WriteLine($"Bad fires knob: {kv} (want {Map.Fires.FireLook.Knobs})");
             }
+            else if (arg.StartsWith("-funnels="))   // the world view's funnel smoke (docs/visuals/hits-and-fires.md I6): -funnels=output:1500,on:0
+            {
+                foreach (var kv in arg.Substring("-funnels=".Length).Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    if (!Map.Fires.FunnelSmoke.Set(kv))
+                        Console.Error.WriteLine($"Bad funnels knob: {kv} (want {Map.Fires.FunnelSmoke.Knobs})");
+            }
             else if (arg.StartsWith("-hitbench="))   // the hits bench: -hitbench=TARGET:SHOOTER[:every_s], shells struck at a still ship in turn
             {
                 hitBench = arg.Substring("-hitbench=".Length);

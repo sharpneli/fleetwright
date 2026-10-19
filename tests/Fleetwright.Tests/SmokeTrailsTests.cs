@@ -34,6 +34,14 @@ public class SmokeTrailsTests
     }
 
     [Fact]
+    public void A_moving_source_lays_its_puffs_by_the_distance_it_runs()
+    {
+        Assert.Equal(1.2, SmokeTrails.Spacing(10, 4), 9);    // 20 kn: every 12 m
+        Assert.Equal(4, SmokeTrails.Spacing(0, 4), 9);       // stopped: the source's own spacing
+        Assert.Equal(0.5, SmokeTrails.Spacing(40, 4), 9);    // never faster than twice a second
+    }
+
+    [Fact]
     public void Merged_puffs_keep_rising()
     {
         var book = new SmokeBook();

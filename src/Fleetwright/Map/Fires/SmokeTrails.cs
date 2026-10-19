@@ -29,6 +29,12 @@ public sealed class SmokeTrails
 
     public void Clear() => sources.Clear();
 
+    /// <summary>A moving source's spacing, s: a puff every <paramref name="spacingM"/> m it runs (so a trail behind a ship at
+    /// speed reads as one plume, not a string of beads), never more often than every half second nor less than
+    /// <paramref name="every"/>.</summary>
+    public static double Spacing(double speedMs, double every, double spacingM = 12) =>
+        Math.Clamp(spacingM / Math.Max(Math.Abs(speedMs), 0.1), Math.Min(0.5, every), every);
+
     /// <summary>A new frame; every so often the sources not seen for a while are forgotten.</summary>
     public void Begin()
     {
