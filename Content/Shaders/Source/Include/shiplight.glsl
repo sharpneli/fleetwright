@@ -15,13 +15,14 @@ layout(set = 3, binding = LIGHTS_BINDING) uniform Lights
     vec4 seaAmb;    // rgb: the ambient from below; w: the horizon's brightness over the zenith's (the analytic sky)
     vec4 look;      // x: 1 lit, 0 flat (the albedo as drawn), 2-5 debug views (normal, AO, roughness, metallic); y: a
                     // scale on the materials' roughness; z: the shoulder's knee; w: specular
-    // the muzzle flashes' lights (docs/visuals/muzzle-flashes.md F4)
-    vec4 flashInfo;     // x: how many (0-8)
+    // the point lights (docs/visuals/muzzle-flashes.md F4): the flashes' (muzzle flashes, bursts, magazines), then the
+    // fires' (docs/visuals/hits-and-fires.md I4)
+    vec4 flashInfo;     // x: how many (0-16)
     vec4 flashEast;     // xyz: east at the view's centre, Earth-fixed (for shaders in a local frame)
     vec4 flashNorth;    // xyz: north there
     vec4 flashUp;       // xyz: up there
-    vec4 flashPos[8];   // xyz: metres from the eye, Earth-fixed; w: its size, m (the falloff softened inside it)
-    vec4 flashRad[8];   // rgb: its intensity, display units x m^2 (a white surface facing it d away is lit by rgb / d^2)
+    vec4 flashPos[16];  // xyz: metres from the eye, Earth-fixed; w: its size, m (the falloff softened inside it)
+    vec4 flashRad[16];  // rgb: its intensity, display units x m^2 (a white surface facing it d away is lit by rgb / d^2)
 };
 
 int flashCount()

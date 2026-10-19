@@ -64,9 +64,9 @@ public sealed class LightTable
     }
 }
 
-/// <summary>Eight vec4s: an array of the Lights block (std140, 16 bytes a slot).</summary>
-[System.Runtime.CompilerServices.InlineArray(8)]
-public struct Vec4x8
+/// <summary>Sixteen vec4s: an array of the Lights block (std140, 16 bytes a slot).</summary>
+[System.Runtime.CompilerServices.InlineArray(LightUniforms.MaxLights)]
+public struct Vec4x16
 {
     Vector4 e;
 }
@@ -76,8 +76,9 @@ public struct Vec4x8
 [StructLayout(LayoutKind.Sequential)]
 public struct LightUniforms
 {
-    /// <summary>The most flash lights a frame.</summary>
-    public const int MaxFlashes = 8;
+    /// <summary>The most point lights a frame (docs/visuals/hits-and-fires.md decision 5): the flashes' pool (muzzle
+    /// flashes, bursts, magazines) and the fires', each of eight, so the guns and the fires don't compete.</summary>
+    public const int MaxLights = 16, MaxFlashes = 8, MaxFires = 8;
 
     /// <summary>rgb: the sun's light, linear (0 when down); w unused.</summary>
     public Vector4 SunRad;
@@ -89,17 +90,17 @@ public struct LightUniforms
     public Vector4 Sea;
     /// <summary>x: 1 lit, 0 flat (the albedo as drawn); y: roughness; z: the shoulder's knee; w: the specular's scale.</summary>
     public Vector4 Look;
-    /// <summary>x: how many flash lights there are (0-8).</summary>
+    /// <summary>x: how many point lights there are (0-16: the flashes', then the fires').</summary>
     public Vector4 FlashInfo;
     /// <summary>xyz: east, north and up at the view's centre, Earth-fixed: the axes of shaders that work in a local
     /// frame (the splash columns).</summary>
     public Vector4 FlashEast, FlashNorth, FlashUp;
     /// <summary>Per flash light, xyz: where it is, metres from the eye, Earth-fixed axes; w: its size, m (its falloff
     /// is softened inside it).</summary>
-    public Vec4x8 FlashPos;
+    public Vec4x16 FlashPos;
     /// <summary>Per flash light, rgb: its intensity in display units × m²: a matte white surface facing it from d metres
     /// is lit by rgb / d², in the lights' units (as the sun's radiance is).</summary>
-    public Vec4x8 FlashRad;
+    public Vec4x16 FlashRad;
 }
 
 /// <summary>One frame's light at a place: the uniforms, the directions (in the caller's axes) and the shadows.</summary>

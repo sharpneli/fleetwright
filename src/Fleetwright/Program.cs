@@ -31,6 +31,8 @@ public static unsafe class Program
         string? weather = null;
         var torpedoes = new List<string>();
         var damages = new List<string>();
+        var firefightings = new List<string>();
+        var readinesses = new List<string>();
         var devGroups = new List<string>();
         var devForces = new List<string>();
         bool frameTimes = false;
@@ -167,6 +169,12 @@ public static unsafe class Program
                     if (!Map.Hits.HitLook.Set(kv))
                         Console.Error.WriteLine($"Bad hit knob: {kv} (want {Map.Hits.HitLook.Knobs})");
             }
+            else if (arg.StartsWith("-fires="))   // the world view's fires' knobs (docs/visuals/hits-and-fires.md I4-I5): -fires=height:1.2
+            {
+                foreach (var kv in arg.Substring("-fires=".Length).Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    if (!Map.Fires.FireLook.Set(kv))
+                        Console.Error.WriteLine($"Bad fires knob: {kv} (want {Map.Fires.FireLook.Knobs})");
+            }
             else if (arg.StartsWith("-hitbench="))   // the hits bench: -hitbench=TARGET:SHOOTER[:every_s], shells struck at a still ship in turn
             {
                 hitBench = arg.Substring("-hitbench=".Length);
@@ -220,6 +228,14 @@ public static unsafe class Program
             else if (arg.StartsWith("-torpedo="))   // a dev spread: -torpedo=ship:target[:n] (docs/battle/fighting.md 4.6)
             {
                 torpedoes.Add(arg.Substring("-torpedo=".Length));
+            }
+            else if (arg.StartsWith("-firefighting="))   // a side's firefighting doctrine: -firefighting=side:name (docs/battle/fire.md B4; settings.json's Firefighting, unorganised-1890 the weakest)
+            {
+                firefightings.Add(arg.Substring("-firefighting=".Length));
+            }
+            else if (arg.StartsWith("-readiness="))   // a side's orders before action for fire: -readiness=side:name (docs/battle/fire.md B1; settings.json's FireReadiness)
+            {
+                readinesses.Add(arg.Substring("-readiness=".Length));
             }
             else if (arg.StartsWith("-hole=") || arg.StartsWith("-flood=") || arg.StartsWith("-jam=") || arg.StartsWith("-wreck=") ||
                      arg.StartsWith("-burn=") || arg.StartsWith("-sink="))   // dev damage (docs/battle/fighting.md 4.3b, 4.4): see DevDamage
@@ -398,6 +414,26 @@ public static unsafe class Program
                     world.Send(order);
                 else
                     Console.Error.WriteLine($"Bad torpedo: -torpedo={torpedo} (want ship:target[:n])");
+            foreach (var ff in firefightings)
+            {
+                var p = ff.Split(':', 2);
+                var doctrines = world.Settings.Firefighting;
+                int index = p.Length == 2 ? Array.FindIndex(doctrines, d => d.Name == p[1]) : -1;
+                if (p.Length == 2 && int.TryParse(p[0], out int side) && index >= 0)
+                    world.Send(Sim.DamageSystem.SetFirefighting(side, index));
+                else
+                    Console.Error.WriteLine($"Bad firefighting: -firefighting={ff} (want side:{string.Join("|", doctrines.Select(d => d.Name))})");
+            }
+            foreach (var rd in readinesses)
+            {
+                var p = rd.Split(':', 2);
+                var orders = world.Settings.FireReadiness;
+                int index = p.Length == 2 ? Array.FindIndex(orders, d => d.Name == p[1]) : -1;
+                if (p.Length == 2 && int.TryParse(p[0], out int side) && index >= 0)
+                    world.Send(Sim.DamageSystem.SetReadiness(side, index));
+                else
+                    Console.Error.WriteLine($"Bad readiness: -readiness={rd} (want side:{string.Join("|", orders.Select(d => d.Name))})");
+            }
             foreach (var damage in damages)
                 if (DevDamage(damage) is { } order)
                     world.Send(order);

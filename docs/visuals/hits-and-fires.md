@@ -230,6 +230,22 @@ only ~1.2 m under it before the sea takes it). Seen at 0.12 m/px: sooty rounds a
 the defeated shot's pieces standing as small columns off her side; the under-water burst a column against her side over
 its foam. Test: `HitBookTests.A_hit_marks_her_once_with_a_hole_in_a_scorch_and_a_ship_keeps_the_newest`.
 
+**I4 (2026-10-19).** `Map/Fires/FireEffects` draws each fire that shows (I0's list, every ship's alike) on her pose now,
+so it rides with her, through the magazine's jets (one flame model): 1-4 tongues across its opening or deck (one per
+~3 m), Heskestad's height (`MagazineBlast.Heskestad`; at least 0.4 of the width: a wide deck fire burns low, 9 MW over
+9 m stands ~4 m) up the screen through the effects camera, puffing at a pool fire's 1.5/√D Hz by `puff` 0.25 of their
+length, leaning downwind in the apparent wind (her own way in it) by up to `lean` 0.7; charges burning add a hotter,
+taller flare at their own MW (`flare` 1.4). Their light (1,250 K, over the flames' area, share 0.3 as the magazine's rule
+[EST]) goes into **the fires' own pool**: the Lights block grew from 8 to 16 (`LightUniforms.MaxLights`, `Vec4x16`,
+`shiplight.glsl`'s arrays), the flashes keeping their eight and the fires eight (`FlashLights.AddFire`), the fires kept by
+their light over their distance from the view's centre (decision 5; I8 measures the cost). The table's glow fades out
+over the cross-fade (its smoke streak stays until I5). Knobs `-fires=` (`FireLook`: height, puff, flare, lean, kelvin,
+light, parts, on). Dev flags for fire benches: `-firefighting=SIDE:DOCTRINE` and `-readiness=SIDE:ORDERS` (the sim's
+commands). Seen: under the default readiness and firefighting the dev's fires in her spaces stay growing or starved and
+go out (the sim's own result, B5), so nothing shows; with `prepared, cluttered` and `unorganised-1890` a 15" HE's fire on
+her deck grows from 0.3 MW to 9 MW over nine minutes, its tongues leaning off the burnt spot by day and its light warming
+her deck and turrets by night. Test: `FireLightsTests`.
+
 ## Later
 
 - **The colour pass:** smoke colours by fire, filler and fuel, soot yields and the funnels' output from the research

@@ -136,19 +136,21 @@ public sealed partial class MapScene
                     overlay.Disc(x, y, ScorchPx, ScorchColour with { W = a * (float)icon }, 0.6f);
                 }
 
-            // the fires: a glow at each, the smoke from where they are on the whole
+            // the fires: a glow at each, the smoke from where they are on the whole; the glow gives way to the world
+            // view's flames (docs/visuals/hits-and-fires.md I4) over the cross-fade
             double fx = 0, fy = 0;
+            float glow = Map.Fires.FireLook.On ? (float)icon : 1f;
             int burning = 0;
             for (int j = v.FireStart[k]; j < v.FireStart[k] + fires; j++)
             {
                 var b = c.Cells[v.FireCells[j]].Box;
-                Flame(frame.At((b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2), now, seed + j, ref fx, ref fy, ref burning);
+                Flame(frame.At((b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2), now, seed + j, ref fx, ref fy, ref burning, glow);
             }
             for (int j = v.PartStart[k]; j < v.PartStart[k] + parts; j++)
                 if ((v.PartFlags[j] & PartFlags.Burning) != 0)
                 {
                     var b = c.Components[v.Parts[j]].Bounds;
-                    Flame(frame.At((b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2), now, seed + 7 + j, ref fx, ref fy, ref burning);
+                    Flame(frame.At((b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2), now, seed + 7 + j, ref fx, ref fy, ref burning, glow);
                 }
             if (burning > 0)
                 Smoke(view, p, fx / burning, fy / burning, wind, burning, now, seed, mpp);
@@ -185,13 +187,13 @@ public sealed partial class MapScene
     }
 
     /// <summary>A fire's flickering glow and its hot core; adds where it is to the ship's fires' sum.</summary>
-    void Flame((double X, double Y) at, long now, int seed, ref double sumX, ref double sumY, ref int n)
+    void Flame((double X, double Y) at, long now, int seed, ref double sumX, ref double sumY, ref int n, float fade)
     {
-        if (n < MaxFlames)   // past a few, more glows only pile up into a blot; they still feed the smoke
+        if (n < MaxFlames && fade > 0)   // past a few, more glows only pile up into a blot; they still feed the smoke
         {
             double flicker = 0.7 + 0.3 * Math.Sin(now / 90.0 + seed * 1.7) * Math.Sin(now / 37.0 + seed);
-            overlay.Disc(at.X, at.Y, FlamePx * (0.8 + 0.3 * flicker), FlameColour with { W = (float)(0.55 * flicker + 0.15) });
-            overlay.Disc(at.X, at.Y, FlamePx * 0.4, FlameCore with { W = (float)flicker });
+            overlay.Disc(at.X, at.Y, FlamePx * (0.8 + 0.3 * flicker), FlameColour with { W = (float)(0.55 * flicker + 0.15) * fade });
+            overlay.Disc(at.X, at.Y, FlamePx * 0.4, FlameCore with { W = (float)flicker * fade });
         }
         (sumX, sumY, n) = (sumX + at.X, sumY + at.Y, n + 1);
     }
