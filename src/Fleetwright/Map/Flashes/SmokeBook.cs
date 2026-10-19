@@ -37,6 +37,10 @@ public sealed class SmokeBook
         /// <summary>The particles' extinction area and the water fog's at birth, m² (the sea's strength in), the fog's
         /// evaporation and the ramp's time, s (0: full).</summary>
         public float Ap, Aw0, FogS, RampS;
+        /// <summary>A stylised life, s (0: none, its particles only spread): the puff stays whole for 0.4 of it, then thins
+        /// to nothing by its end (a funnel's smoke: dense, and ended quickly; docs/visuals/hits-and-fires.md I9, the user).
+        /// Such a puff isn't merged: it's gone before merging would matter.</summary>
+        public float FadeS;
         public Vector3 Tint;
         public float Seed;
         /// <summary>Who it belongs to: puffs merge only with their own's (a ship's gun smoke; a magazine's soot, its
@@ -136,7 +140,7 @@ public sealed class SmokeBook
         double g = Growth, core = 0.35 * p.Lambda;
         sigma = Math.Sqrt(core * core + g * g * age * age + 0.5 * age);
         double ramp = p.RampS > 0 ? 1 - Math.Exp(-age / p.RampS) : 1;
-        area = ramp * (p.Ap + p.Aw0 * Math.Exp(-age / p.FogS));
+        area = ramp * (p.Ap * Fade(p, age) + p.Aw0 * Math.Exp(-age / p.FogS));
     }
 
     /// <summary>Each ship's settled puffs, oldest first, into the one before when they overlap within
@@ -147,7 +151,7 @@ public sealed class SmokeBook
         for (int i = 0; i < count; i++)
         {
             ref var p = ref puffs[i];
-            if (now - p.Born < SettleS || p.Ap + p.Aw0 <= 0)
+            if (now - p.Born < SettleS || p.Ap + p.Aw0 <= 0 || p.FadeS > 0)
                 continue;
             if (!lastOf.TryGetValue(p.Shooter, out int j))
             {
@@ -193,10 +197,19 @@ public sealed class SmokeBook
     static double RiseLeft(in Puff p, double now) =>
         p.JetS > 0 && p.JetZ > 0 ? p.JetZ * Math.Exp(-Math.Max(now - p.Born, 0) / p.JetS) : 0;
 
+    /// <summary>A puff's stylised fade at an age: whole for 0.4 of its life, nothing at its end (1: no life set).</summary>
+    static double Fade(in Puff p, double age)
+    {
+        if (p.FadeS <= 0)
+            return 1;
+        double u = Math.Clamp((age - 0.4 * p.FadeS) / (0.6 * p.FadeS), 0, 1);
+        return 1 - u * u * (3 - 2 * u);
+    }
+
     double ParticlesNow(in Puff p, double now)
     {
         double age = Math.Max(now - p.Born, 0);
-        return (p.RampS > 0 ? 1 - Math.Exp(-age / p.RampS) : 1) * p.Ap;
+        return (p.RampS > 0 ? 1 - Math.Exp(-age / p.RampS) : 1) * p.Ap * Fade(p, age);
     }
 
     double WaterNow(in Puff p, double now)

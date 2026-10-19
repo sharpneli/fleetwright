@@ -53,11 +53,12 @@ public sealed class SmokeTrails
     /// <summary>A source this frame, <paramref name="now"/> on the sea's clock: a puff into the book when its spacing has
     /// passed, with its rates (m²/s of particles' extinction area, of water fog) times the time since its last; its start
     /// at <paramref name="origin"/> (Earth-centred, at the height <paramref name="z"/> over the sea), rising
-    /// <paramref name="rise"/> m over <paramref name="riseS"/> s (its buoyancy), its core <paramref name="lambda"/> m.
+    /// <paramref name="rise"/> m over <paramref name="riseS"/> s (its buoyancy), its core <paramref name="lambda"/> m, its
+    /// particles fading over <paramref name="fadeS"/> s (0: they only spread).
     /// Over its share of the book (<paramref name="spare"/>) it lays a puff only every third spacing, carrying all it
     /// made: its plume thins, never breaks. False when it was its turn but it waited for that.</summary>
     public bool Emit(SmokeBook book, long key, int owner, double now, double every, Vec3d origin, double z, double aRate, double fogRate,
-        double fogS, Vector3 tint, double lambda, double rise, double riseS, float seed, double spare = 1)
+        double fogS, Vector3 tint, double lambda, double rise, double riseS, float seed, double spare = 1, double fadeS = 0)
     {
         if (!sources.TryGetValue(key, out var s))
             s = new Source { Last = now - every };
@@ -76,6 +77,7 @@ public sealed class SmokeTrails
         {
             Born = now, Origin = origin, Z0 = (float)z, JetZ = (float)rise, JetS = (float)Math.Max(riseS, 0.1), Anchor = (float)z,
             Lambda = (float)lambda, Ap = (float)(aRate * dt), Aw0 = (float)(fogRate * dt), FogS = (float)Math.Max(fogS, 0.1), RampS = 0.5f,
+            FadeS = (float)Math.Max(fadeS, 0),
             Tint = tint, Seed = seed, Shooter = owner, Keep = true,
         });
         Laid++;

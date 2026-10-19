@@ -348,6 +348,15 @@ end; three ships' funnel smoke in a 3 kn and a 25 kn wind. Seen, to judge:
 
 Colours stay placeholders for the colour pass (decision 9). Tuning waits on the user's look.
 
+**The user on the funnel smoke (2026-10-19):** "It should be substantially lighter, as in lifetime of a puff should be
+way shorter", then, on a first try (an exponential fade over 12 s, puffs every 20 m): "The puffs look sparse and still go
+a long way. The smoke can look dense but it should end quick. It is unrealistic but this is just stylistic thing. We
+won't have the simulated smoke system in the first game so we just want a stylistic short smoke." So the funnel smoke is
+a stylised, short plume, a named departure from the calibration's minutes-long one: a puff has a life (`SmokeBook.Puff.
+FadeS`, `-funnels=life:` 8 s), whole for 0.4 of it and thinned to nothing by its end, and isn't merged (it's gone first);
+puffs every 8 m with an 8 m core, so the plume reads as one dense ribbon ~80 m long thinning over ~120 m more at 20 kn.
+Fire smoke keeps its physical trail.
+
 ## Later
 
 - **The colour pass:** smoke colours by fire, filler and fuel, soot yields and the funnels' output from the research

@@ -28,9 +28,14 @@ public static class FunnelSmoke
     /// it may fill to [EST].</summary>
     public static double FunnelM2s = 1500, IdleShare = 0.05, OilShare = 0.3, RiseM = 20, RiseS = 10, EveryS = 4, Spare = 0.6;
 
-    /// <summary>The plume's core as it leaves the funnel's lee, m: it mixes into her wake's turbulence at once; a puff every
-    /// so many metres she runs (coarse, the funnels being many: docs/visuals/hits-and-fires.md I8) [EST].</summary>
-    public static double CoreM = 10, SpacingM = 20;
+    /// <summary>The plume's core as it leaves the funnel's lee, m, and a puff every so many metres she runs: close enough
+    /// that the short plume reads as one dense ribbon.</summary>
+    public static double CoreM = 8, SpacingM = 8;
+
+    /// <summary>A puff's stylised life, s: whole for 0.4 of it, gone by its end (the user, 2026-10-19: "The smoke can look
+    /// dense but it should end quick. It is unrealistic but this is just a stylistic thing": no smoke field in the first
+    /// game). At 20 kn the plume is ~80 m of dense smoke thinning out over ~120 m more.</summary>
+    public static double LifeS = 8;
 
     /// <summary>Off: no funnel smoke.</summary>
     public static bool On = true;
@@ -93,7 +98,7 @@ public static class FunnelSmoke
                     int owner = (int)((uint)(v.Entity[k] * 16 + fn % 16) & 0xffffff) | 1 << 30;
                     trails.Emit(book, key, owner, now, SmokeTrails.Spacing(v.Speed[k], EveryS, SpacingM), at.Normalized() * (Earth.Radius + z), z, rate, 0, 1,
                         tint, Math.Max(w, CoreM), RiseM, RiseS,
-                        (fn * 0.618f + v.Entity[k] * 0.137f) % 1, Spare);
+                        (fn * 0.618f + v.Entity[k] * 0.137f) % 1, Spare, LifeS);
                 }
             }
     }
@@ -113,6 +118,7 @@ public static class FunnelSmoke
             case "oil": OilShare = Math.Max(v, 0); break;
             case "rise": RiseM = Math.Max(v, 0); break;
             case "every": EveryS = Math.Max(v, 0.2); break;
+            case "life": LifeS = Math.Max(v, 0); break;
             case "spare": Spare = Math.Clamp(v, 0, 1); break;
             case "on": On = v != 0; break;
             default: return false;
@@ -120,5 +126,5 @@ public static class FunnelSmoke
         return true;
     }
 
-    public const string Knobs = "output, idle, oil, rise, every, spare, on";
+    public const string Knobs = "output, idle, oil, rise, every, life, spare, on";
 }
