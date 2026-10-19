@@ -156,6 +156,24 @@ I0 adds these. They're facts the sim has, so no result changes: the scenario ben
 - **I9, by eye.** Side-by-side captures for shape, size and timing, day, dusk and night, calm and rough. Colours wait
   for the colour pass.
 
+### Done
+
+**I0 (2026-10-19).** `Snapshot.Hits` (`HitsView`), the damage system's ring of shell hits (shells and coarse fire's;
+torpedoes have their ends, near misses their splashes) kept for `SplashLifeMs`: when, the ship and class, the shooter,
+her pose at the hit, and in her frame the point and way in, the outcome and burst kind, the burst's point and its delay
+after the strike (the path's run to it over the mean of the striking and bursting speeds), the exit's point and way
+for a shell that passed through or glanced off and leaves above the water (the last time its path left her hull or a
+part, on the leg it was on; a glance that never got in leaves at the plate) and its speed out (an estimate: 0.85 of
+the striking speed through, half the plate's speed off a glance; the plates' toll isn't kept), the calibre and kind, the
+filler's TNT-equivalent W (low-order's force in) and the area its burst tore to the sea or air; flags for under water,
+a fire started, an open space's burst and spall. `ShipsView` gains the fires that show (`Fires.Shows`), every ship's
+alike: the space, Q, the charges' MW, the phase, the water and its boil share, where the flames come out (a hole in her
+side above the water, else up through the deck over the space, 1.5 m of hatches [EST]; a part's top; a weather deck's
+middle) and how wide. A ship seen (the `Sighted` rows) lists only fires that show, and her parts are flagged burning only
+when theirs does: the table's leak is closed (decision 3), her own side's marks unchanged. No hash moved (squadrons, 20
+min: `EBA470E7A89D8BBA` before and after). Tests: `DamageTests.Each_shell_hit_records_its_outcome_burst_and_exit_for_the_screens`,
+`Only_fires_that_show_are_listed_for_the_world_and_for_an_enemy_seen`.
+
 ## Later
 
 - **The colour pass:** smoke colours by fire, filler and fuel, soot yields and the funnels' output from the research

@@ -74,6 +74,12 @@ public sealed class DamageSystem : IWorldSystem
     /// fire or the dev's).</summary>
     public readonly record struct Blast(long Ms, int Ship, int Class, int Room, BlastCause Cause, Vec3d At, Vec3d Forward, P3 Point);
 
+    /// <summary>A shell's hit as the screens draw it (docs/visuals/hits-and-fires.md I0; <see cref="HitsView"/>): facts the
+    /// hit had, kept for the screens only (not world state, never hashed).</summary>
+    public readonly record struct Struck(long Ms, int Ship, int Class, int Shooter, Vec3d At, Vec3d Forward, P3 Point, P3 Direction,
+        Outcome Outcome, BurstKind Burst, P3 BurstAt, double BurstS, P3 ExitAt, P3 ExitDirection, double ExitMs, double CalibreMm,
+        double FillerKg, double VentM2, ShellKind Kind, HitShows Shows);
+
     readonly SimSettings settings;
     readonly ShipSystem ships;
     readonly CombatLog log;
@@ -89,6 +95,8 @@ public sealed class DamageSystem : IWorldSystem
     double[] bearings = new double[16];
     readonly Blast[] blasts;
     int blastNext, blastCount;
+    readonly Struck[] struck;
+    int struckNext, struckCount;
     long hits;
     bool propellantSet, readinessSet, firefightingSet, fuelSet, touched;
 
@@ -106,6 +114,7 @@ public sealed class DamageSystem : IWorldSystem
         firefightingDefault = Math.Max(0, Array.FindIndex(settings.Firefighting, x => x.Name == settings.FirefightingDefault));
         Array.Fill(firefighting, firefightingDefault);
         blasts = new Blast[Math.Max(settings.BlastCapacity, 4)];
+        struck = new Struck[Math.Max(settings.SplashCapacity / 4, 16)];
     }
 
     /// <summary>Hits taken in the world so far.</summary>
@@ -503,6 +512,8 @@ public sealed class DamageSystem : IWorldSystem
         if (broke)
             fx |= HitEffect.Broken;
         (LastTerminal, LastEffects, LastEffect) = (t, e, fx);
+        if (hit.Source is HitSource.Shell or HitSource.Coarse)
+            Record(ship, cls, hit, t, e);
         if (!near || fx != HitEffect.None || e.Killed + e.Wounded > 0)   // a near miss that did nothing isn't news
             log.Add(new CombatEntry(now, near ? CombatEvent.NearMiss : CombatEvent.Hit, hit.Shooter, hit.Battery, hit.Ship, hit.ShellType, e.Part, t.Outcome,
                 fx, hit.Shell.Kind, (float)(hit.Source == HitSource.Torpedo ? hit.Torpedo.CalibreMm : hit.Shell.CalibreMm), hit.Source));
@@ -601,6 +612,57 @@ public sealed class DamageSystem : IWorldSystem
             return;
         k.HeldCap = cap;
         ships.Damaged(world, slot, cap, k.Steering, k.JamRudderRad);
+    }
+
+    /// <summary>A shell's hit into the screens' ring (<see cref="Struck"/>): where it burst and after how long, where it left
+    /// the ship if it flew on (the last time the path left her hull or a part, on the leg it was on then; a glance off her
+    /// side that never got in leaves at the plate), its filler's W and what its burst tore open to the outside.</summary>
+    void Record(ShipState ship, ShipClass cls, in Hit hit, in TerminalResult t, in EffectsResult e)
+    {
+        var shell = hit.Shell;
+        var shows = HitShows.None;
+        if (t.Underwater)
+            shows |= HitShows.Underwater;
+        if (e.Fire)
+            shows |= HitShows.Fire;
+        if (e.Blast.Open)
+            shows |= HitShows.Open;
+        if (e.Spall)
+            shows |= HitShows.Spall;
+        // the path starts a metre short of the hit, along the flight
+        P3 burstAt = default;
+        double burstS = 0;
+        if (t.Bursts && double.IsFinite(t.BurstT))
+        {
+            burstAt = path.At(t.BurstT);
+            burstS = Math.Max(t.BurstT - 1, 0) / Math.Max(0.5 * (t.StrikeMs + t.BurstMs), 30);
+        }
+        P3 exitAt = default, exitDir = default;
+        double exitMs = 0;
+        if (t.Outcome is Outcome.PassedThrough or Outcome.Ricochet)
+        {
+            var xs = path.Crossings;
+            double from = t.Glance >= 0 && t.Glance < xs.Length ? xs[t.Glance].T : 0, exitT = double.NaN;
+            for (int i = xs.Length - 1; i >= 0 && double.IsNaN(exitT); i--)
+                if (xs[i].T >= from && xs[i].Kind is CrossingKind.HullOut or CrossingKind.PartOut)
+                    exitT = xs[i].T;
+            if (double.IsNaN(exitT) && t.Glance >= 0)
+                exitT = from;
+            if (!double.IsNaN(exitT))
+            {
+                exitAt = path.At(exitT);
+                exitDir = path.LegOf(path.Leg(exitT)).Direction;
+                // its speed out [EST]: the plates' toll isn't kept; a glance leaves at about half the speed it met the plate
+                exitMs = t.Outcome == Outcome.Ricochet ? 0.5 * (double.IsFinite(t.PlateMs) && t.PlateMs > 0 ? t.PlateMs : t.StrikeMs) : 0.85 * t.StrikeMs;
+                if (exitAt.Z > cls.Vertical.Waterline)
+                    shows |= HitShows.Exit;
+            }
+        }
+        double w = shell.FillerKg * shell.FillerRe * (t.Outcome == Outcome.LowOrder ? Math.Min(t.Force, 1) : 1);
+        struck[struckNext] = new Struck(hit.Ms, ship.Entity, ship.ClassIndex, hit.Shooter, ship.Position, ship.Forward, hit.Point, hit.Direction,
+            t.Outcome, t.Burst, burstAt, burstS, exitAt, exitDir, exitMs, shell.CalibreMm, w, e.Blast.HoleM2, shell.Kind, shows);
+        struckNext = (struckNext + 1) % struck.Length;
+        struckCount = Math.Min(struckCount + 1, struck.Length);
     }
 
     /// <summary>A magazine set off: its record for the screens (<see cref="Blast"/>), and the ship lost.</summary>
@@ -881,5 +943,22 @@ public sealed class DamageSystem : IWorldSystem
             n++;
         }
         b.Count = n;
+
+        var h = snap.Hits;
+        h.EnsureCapacity(struckCount);
+        oldest = snap.Time.Ms - settings.SplashLifeMs;
+        n = 0;
+        for (int i = 0; i < struckCount; i++)
+        {
+            ref readonly var x = ref struck[(struckNext - 1 - i + struck.Length) % struck.Length];
+            if (x.Ms < oldest)
+                break;
+            (h.Ms[n], h.Ship[n], h.Class[n], h.Shooter[n], h.At[n], h.Forward[n]) = (x.Ms, x.Ship, x.Class, x.Shooter, x.At, x.Forward);
+            (h.Point[n], h.Direction[n], h.Outcome[n], h.Burst[n], h.BurstAt[n], h.BurstS[n]) = (x.Point, x.Direction, x.Outcome, x.Burst, x.BurstAt, (float)x.BurstS);
+            (h.ExitAt[n], h.ExitDirection[n], h.ExitMs[n], h.CalibreMm[n]) = (x.ExitAt, x.ExitDirection, (float)x.ExitMs, (float)x.CalibreMm);
+            (h.FillerKg[n], h.VentM2[n], h.Kind[n], h.Shows[n]) = ((float)x.FillerKg, (float)x.VentM2, x.Kind, x.Shows);
+            n++;
+        }
+        h.Count = n;
     }
 }

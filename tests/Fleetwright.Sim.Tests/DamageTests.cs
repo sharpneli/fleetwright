@@ -409,6 +409,102 @@ public class DamageTests(ITestOutputHelper output)
         Assert.True((b.At[0] - Ship(w, 1).Position).Length < 1);
     }
 
+    // ------------------------------------------------------------------ hits and fires, for the world view (hits-and-fires.md I0)
+
+    [Fact]
+    public void Each_shell_hit_records_its_outcome_burst_and_exit_for_the_screens()
+    {
+        var w = World("destroyer", out int c);
+        var cls = Class("destroyer");
+        w.Apply(ShipSystem.Spawn(c, 56, 4, 0, 10));
+        w.AdvanceTo(w.Time + 1000);
+        var rng = RandomStream.Named(3, "test hits seen");
+        int n = 0;
+        foreach (var kind in (ShellKind[])[ShellKind.Ap, ShellKind.He])
+        {
+            var (shell, _) = Shell(Class("dreadnought"), 0, kind);
+            for (int i = 0; i < 20; i++, n++)
+                w.Damage.Strike(w, new Hit
+                {
+                    Ship = 1, Ms = w.Time.Ms, Point = new P3(rng.NextDouble(-30, 30), cls.Beam / 2 + 0.5, rng.NextDouble(1, 4)),
+                    Direction = new P3(0, -0.96, -0.28), SpeedMs = 480, Shell = shell, ShellType = 0, Shooter = 2,
+                });
+        }
+        // a near miss is its splash: no hit record
+        var (he, _) = Shell(Class("dreadnought"), 0, ShellKind.He);
+        w.Damage.Strike(w, new Hit
+        {
+            Ship = 1, Ms = w.Time.Ms, Point = new P3(0, cls.Beam / 2 + 8, -2), Direction = new P3(0, -0.96, -0.28), SpeedMs = 100,
+            Source = HitSource.NearMiss, Shell = he, Force = 1, Shooter = 2,
+        });
+        var h = Snap(w).Hits;
+        Assert.Equal(n, h.Count);
+        int exits = 0, bursts = 0;
+        for (int i = 0; i < h.Count; i++)
+        {
+            Assert.Equal(1, h.Ship[i]);
+            Assert.Equal(2, h.Shooter[i]);
+            Assert.Equal(c, h.Class[i]);
+            if ((h.Shows[i] & HitShows.Exit) != 0)
+            {
+                exits++;
+                Assert.True(h.ExitAt[i].Y < 0, "a shell through her from starboard leaves to port");
+                Assert.True(h.ExitDirection[i].Y < 0 && h.ExitMs[i] > 0);
+            }
+            if (h.Burst[i] != BurstKind.None)
+            {
+                bursts++;
+                Assert.True(h.BurstS[i] >= 0 && h.FillerKg[i] > 0);
+                Assert.InRange(h.BurstAt[i].Y, -cls.Beam / 2 - 5, cls.Beam / 2 + 5);
+            }
+        }
+        output.WriteLine($"{h.Count} hits: {exits} flew on, {bursts} burst");
+        Assert.True(exits >= 10, "heavy AP mostly passes through a destroyer");
+        Assert.True(bursts >= 10, "HE bursts");
+    }
+
+    [Fact]
+    public void Only_fires_that_show_are_listed_for_the_world_and_for_an_enemy_seen()
+    {
+        // nobody fighting it, so it develops
+        var nobody = Settings.Firefighting.Single(d => d.Name == "unorganised-1890") with { Name = "nobody", WatchS = -1, PartyShare = 0, TurnTo = 0, FloodMagazineS = -1 };
+        var w = World("dreadnought", out int c, Settings with { Firefighting = [.. Settings.Firefighting, nobody], FirefightingDefault = "nobody" });
+        var cls = Class("dreadnought");
+        w.Apply(ShipSystem.Spawn(c, 56, 4, 0, 10));
+        int cell = Enumerable.Range(0, cls.Cells.Length).First(i => cls.FireSpaces[i].Use is FireUse.Quarters or FireUse.Cabins && !cls.Cells[i].BelowWaterline);
+        w.Apply(DamageSystem.BurnCell(1, cell));
+        var k = w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(1));
+        Assert.Equal(BurnPhase.Grow, k.Fire[cell].Phase);
+
+        // growing inside her: her own side knows of it, nobody sees it
+        var own = Snap(w).Ships;
+        Assert.Equal(1, own.FireCount[0]);
+        Assert.Equal(0, own.ShowCount[0]);
+        var seen = new ShipsView();
+        var contacts = new ContactsView();
+        contacts.EnsureCapacity(1);
+        (contacts.Count, contacts.Entity[0], contacts.InSight[0], contacts.Side[0]) = (1, 1, true, 0);
+        w.Ships.FillSighted(seen, contacts, new bool[256]);
+        Assert.Equal(1, seen.Count);
+        Assert.Equal(0, seen.FireCount[0]);
+
+        // developed: it shows, to her and to whoever has her in sight
+        for (int s = 0; s < 1800 && !Fires.Shows(cls.FireSpaces[cell], k.Fire[cell]); s += 10)
+            w.AdvanceTo(w.Time + 10_000);
+        Assert.True(Fires.Shows(cls.FireSpaces[cell], k.Fire[cell]), $"{k.Fire[cell].Phase}");
+        own = Snap(w).Ships;
+        int j = own.ShowStart[0];
+        Assert.True(own.ShowCount[0] >= 1);
+        Assert.Equal(cell, own.ShowSpace[j]);
+        Assert.True(own.ShowMW[j] > 0 && own.ShowWidthM[j] > 0);
+        var box = cls.Cells[cell].Box;
+        Assert.InRange(own.ShowAt[j].X, box.X0, box.X1);
+        Assert.True(own.ShowAt[j].Z >= box.Top - 1e-9, "inside, its flames come up through the deck over it");
+        w.Ships.FillSighted(seen, contacts, new bool[256]);
+        Assert.True(seen.FireCount[0] >= 1);
+        Assert.True(seen.ShowCount[0] >= 1);
+    }
+
     [Fact]
     public void A_magazine_set_off_by_a_fire_records_its_room()
     {

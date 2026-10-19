@@ -99,6 +99,10 @@ public sealed class Snapshot
     /// (docs/visuals/magazine-explosions.md X0).</summary>
     public BlastsView Blasts { get; } = new();
 
+    /// <summary>The shells that struck a ship in the last <see cref="SimSettings.SplashLifeMs"/>, newest first, with what
+    /// the world view draws of each (docs/visuals/hits-and-fires.md I0).</summary>
+    public HitsView Hits { get; } = new();
+
     /// <summary>Torpedoes running (each where its run puts it at the frame's time) and their ends of the last
     /// <see cref="SimSettings.SplashLifeMs"/>: hits, and those that sank at the end of their run (docs/battle/fighting.md
     /// 4.6).</summary>
@@ -403,6 +407,72 @@ public sealed class BlastsView
     }
 }
 
+/// <summary>What shows of a shell's hit from outside (<see cref="HitsView.Shows"/>).</summary>
+[Flags]
+public enum HitShows : byte
+{
+    None = 0,
+    /// <summary>It struck under the water (its run there ended at the hull).</summary>
+    Underwater = 1,
+    /// <summary>It left the ship whole, above the water, and flies on (passed through, a ricochet; the exit's point and
+    /// way are set).</summary>
+    Exit = 2,
+    /// <summary>It started a fire.</summary>
+    Fire = 4,
+    /// <summary>Its burst's gas vented as fast as it formed (an open space): no gas load.</summary>
+    Open = 8,
+    /// <summary>A plate that held threw spall off its back.</summary>
+    Spall = 16,
+}
+
+/// <summary>The shells that struck a ship of the last while, newest first (docs/visuals/hits-and-fires.md I0): when, the
+/// ship (an entity) and her class (a registry id), who fired, where she was and her heading over the sea at the hit (unit);
+/// in her frame (the hitboxes': +x bow, +y starboard, the class's heights) where it struck and which way it was going,
+/// where it burst (when it did) and how long after it struck, s, and where it left her and which way (when it flew on,
+/// <see cref="HitShows.Exit"/>) at what speed, m/s; the outcome and the burst's kind, the calibre, the shell's kind, its
+/// filler's TNT-equivalent W, kg (low-order's force in), and the area its burst tore to the sea or air, m². Display only:
+/// facts the damage system had at the hit.</summary>
+public sealed class HitsView
+{
+    public int Count;
+    public long[] Ms = [];
+    public int[] Ship = [], Class = [], Shooter = [];
+    public Vec3d[] At = [], Forward = [];
+    public P3[] Point = [], Direction = [], BurstAt = [], ExitAt = [], ExitDirection = [];
+    public float[] BurstS = [], ExitMs = [], CalibreMm = [], FillerKg = [], VentM2 = [];
+    public Combat.Outcome[] Outcome = [];
+    public Combat.BurstKind[] Burst = [];
+    public ShellKind[] Kind = [];
+    public HitShows[] Shows = [];
+
+    public void EnsureCapacity(int n)
+    {
+        if (n <= Ms.Length)
+            return;
+        n = Math.Max(n, Math.Max(16, Ms.Length * 2));
+        Array.Resize(ref Ms, n);
+        Array.Resize(ref Ship, n);
+        Array.Resize(ref Class, n);
+        Array.Resize(ref Shooter, n);
+        Array.Resize(ref At, n);
+        Array.Resize(ref Forward, n);
+        Array.Resize(ref Point, n);
+        Array.Resize(ref Direction, n);
+        Array.Resize(ref BurstAt, n);
+        Array.Resize(ref ExitAt, n);
+        Array.Resize(ref ExitDirection, n);
+        Array.Resize(ref BurstS, n);
+        Array.Resize(ref ExitMs, n);
+        Array.Resize(ref CalibreMm, n);
+        Array.Resize(ref FillerKg, n);
+        Array.Resize(ref VentM2, n);
+        Array.Resize(ref Outcome, n);
+        Array.Resize(ref Burst, n);
+        Array.Resize(ref Kind, n);
+        Array.Resize(ref Shows, n);
+    }
+}
+
 /// <summary>The player's navy's picture, as the map draws it (docs/battle/plan.md step 3.2e): per contact the ship it's
 /// on (the key: contacts are on true ships in the battle module), the estimate carried on to the snapshot's time (position
 /// and velocity) and its error ellipse (1-sigma semi-axes, the major's bearing), whether it's in sight and when it was
@@ -648,7 +718,8 @@ public sealed class ShipsView
     /// out of action, wrecked, jammed or burning, <see cref="PartCount"/> from <see cref="PartStart"/> in
     /// <see cref="Parts"/>, <see cref="PartStates"/> and <see cref="PartFlags"/>; and its spaces on fire (the class's
     /// cells), <see cref="FireCount"/> from <see cref="FireStart"/> in <see cref="FireCells"/>. An enemy in sight shows
-    /// the same: it's what an observer sees of it.</summary>
+    /// the same, but for her fires: only those that show from outside are listed and flagged burning (docs/visuals/
+    /// hits-and-fires.md decision 3: nobody sees inside her hull; her own side knows of the rest).</summary>
     public Combat.Attitude[] Attitude = [];
     public Combat.LossKind[] Loss = [];
     public long[] LossMs = [], GoneMs = [];
@@ -657,6 +728,34 @@ public sealed class ShipsView
     public Combat.PartState[] PartStates = [];
     public Combat.PartFlags[] PartFlags = [];
     public int PartTotal, FireTotal;
+
+    /// <summary>The fires that show from outside (docs/battle/fire.md B2, <see cref="Combat.Fires.Shows"/>; docs/visuals/
+    /// hits-and-fires.md I0), every ship's alike, <see cref="ShowCount"/> from <see cref="ShowStart"/>: the fire space (the
+    /// class's FireSpaces), its heat release and its charges' (MW), its phase, the water on it (L/min) and the share of it
+    /// it can boil, where its flames come out in her frame (a hole in her side, the deck over it, the part's top; the
+    /// class's heights) and how wide that is, m.</summary>
+    public int[] ShowStart = [], ShowCount = [];
+    public int[] ShowSpace = [];
+    public float[] ShowMW = [], ShowChargesMW = [], ShowWaterLpm = [], ShowBoil = [], ShowWidthM = [];
+    public Combat.BurnPhase[] ShowPhase = [];
+    public P3[] ShowAt = [];
+    public int ShowTotal;
+
+    /// <summary>Room for n showing fires in all; grows only past the most yet.</summary>
+    public void EnsureShows(int n)
+    {
+        if (n <= ShowSpace.Length)
+            return;
+        n = Math.Max(n, Math.Max(16, ShowSpace.Length * 2));
+        Array.Resize(ref ShowSpace, n);
+        Array.Resize(ref ShowMW, n);
+        Array.Resize(ref ShowChargesMW, n);
+        Array.Resize(ref ShowWaterLpm, n);
+        Array.Resize(ref ShowBoil, n);
+        Array.Resize(ref ShowWidthM, n);
+        Array.Resize(ref ShowPhase, n);
+        Array.Resize(ref ShowAt, n);
+    }
 
     /// <summary>Room for n damaged parts and n fires in all; grows only past the most yet.</summary>
     public void EnsureDamage(int parts, int fires)
@@ -741,6 +840,8 @@ public sealed class ShipsView
         Array.Resize(ref PartCount, n);
         Array.Resize(ref FireStart, n);
         Array.Resize(ref FireCount, n);
+        Array.Resize(ref ShowStart, n);
+        Array.Resize(ref ShowCount, n);
         Array.Resize(ref TorpedoesLoaded, n);
         Array.Resize(ref TorpedoesLeft, n);
         Array.Resize(ref LoadStart, n);

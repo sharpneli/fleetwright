@@ -387,7 +387,7 @@ public sealed partial class ShipSystem : IWorldSystem
         var s = Store;
         v.EnsureCapacity(s.Count);
         int n = 0, w = 0, mounts = 0;
-        v.PartTotal = v.FireTotal = v.LoadTotal = 0;
+        v.PartTotal = v.FireTotal = v.LoadTotal = v.ShowTotal = 0;
         for (int i = 0; i < s.Slots; i++)
             if (s.IsAlive(i) && shownSides[s[i].Side])
                 Put(v, i, n++, ref w, ref mounts, orders: true);
@@ -403,7 +403,7 @@ public sealed partial class ShipSystem : IWorldSystem
     {
         v.EnsureCapacity(contacts.Count);
         int n = 0, w = 0, mounts = 0;
-        v.PartTotal = v.FireTotal = v.LoadTotal = 0;
+        v.PartTotal = v.FireTotal = v.LoadTotal = v.ShowTotal = 0;
         for (int j = 0; j < contacts.Count; j++)
         {
             int i = contacts.InSight[j] ? Store.SlotOf(contacts.Entity[j]) : -1;
@@ -472,7 +472,7 @@ public sealed partial class ShipSystem : IWorldSystem
             v.TorpedoesLeft[n] += st.Loaded + st.Spare;
         }
         PutLoads(v, i, n, orders);
-        PutDamage(v, i, n);
+        PutDamage(v, i, n, orders);
     }
 
     /// <summary>A ship's rounds left by load, summed over each battery's mounts (own ships only).</summary>
@@ -500,36 +500,104 @@ public sealed partial class ShipSystem : IWorldSystem
     }
 
     /// <summary>What shows of a ship's damage (docs/battle/fighting.md 4.4): its attitude, its going down, its damaged parts
-    /// and its fires.</summary>
-    void PutDamage(ShipsView v, int i, int n)
+    /// and its fires; and the fires that show from outside, where their flames come out (docs/visuals/hits-and-fires.md
+    /// I0). Without <paramref name="orders"/> (a ship seen, not her own side's) only the fires that show are listed.</summary>
+    void PutDamage(ShipsView v, int i, int n, bool orders)
     {
         var k = Store.Combat.Condition(i);
         (v.PartStart[n], v.PartCount[n], v.FireStart[n], v.FireCount[n]) = (v.PartTotal, 0, v.FireTotal, 0);
+        (v.ShowStart[n], v.ShowCount[n]) = (v.ShowTotal, 0);
         (v.Attitude[n], v.Loss[n], v.LossMs[n], v.GoneMs[n]) = (k.Attitude, k.Loss, k.LossMs, k.GoneMs);
         if (!k.Damaged)
             return;
-        int parts = k.Class.Components.Length, cells = k.CellFire.Length;
-        v.EnsureDamage(v.PartTotal + parts, v.FireTotal + cells + k.Class.Sections.Length);
-        for (int c = 0; c < parts; c++)
-            if (k.State[c] != PartState.Ok || k.Flags[c] != PartFlags.None)
+        var c = k.Class;
+        var spaces = c.FireSpaces;
+        int parts = c.Components.Length, cells = k.CellFire.Length;
+        v.EnsureDamage(v.PartTotal + parts, v.FireTotal + cells + c.Sections.Length);
+        for (int p = 0; p < parts; p++)
+        {
+            var flags = k.Flags[p];
+            if (!orders && (flags & PartFlags.Burning) != 0 && !PartShows(c, k, p))
+                flags &= ~PartFlags.Burning;
+            if (k.State[p] != PartState.Ok || flags != PartFlags.None)
             {
-                (v.Parts[v.PartTotal], v.PartStates[v.PartTotal], v.PartFlags[v.PartTotal]) = (c, k.State[c], k.Flags[c]);
+                (v.Parts[v.PartTotal], v.PartStates[v.PartTotal], v.PartFlags[v.PartTotal]) = (p, k.State[p], flags);
                 v.PartTotal++;
                 v.PartCount[n]++;
             }
-        for (int c = 0; c < cells; c++)
-            if (k.CellFire[c])
+        }
+        for (int cell = 0; cell < cells; cell++)
+            if (k.CellFire[cell] && (orders || Fires.Shows(spaces[cell], k.Fire[cell])))
             {
-                v.FireCells[v.FireTotal++] = c;
+                v.FireCells[v.FireTotal++] = cell;
                 v.FireCount[n]++;
             }
         // a weather deck's fire at its section's top cell, unless that burns too (a part's shows on the part)
-        var spaces = k.Class.FireSpaces;
         for (int d = cells; d < spaces.Length; d++)
             if (spaces[d].Kind == FireSpaceKind.Deck && k.Fire[d].Burning && !k.CellFire[spaces[d].Cell])
             {
                 v.FireCells[v.FireTotal++] = spaces[d].Cell;
                 v.FireCount[n]++;
             }
+
+        // the fires that show, for the world view
+        for (int f = 0; f < spaces.Length; f++)
+        {
+            ref readonly var x = ref k.Fire[f];
+            if (!Fires.Shows(spaces[f], x))
+                continue;
+            v.EnsureShows(v.ShowTotal + 1);
+            int j = v.ShowTotal++;
+            v.ShowCount[n]++;
+            var (at, width) = FireOpening(c, k, f);
+            (v.ShowSpace[j], v.ShowMW[j], v.ShowChargesMW[j], v.ShowPhase[j]) = (f, (float)x.Q, x.Charges > 0 ? (float)x.ChargesMW : 0, x.Phase);
+            (v.ShowWaterLpm[j], v.ShowBoil[j], v.ShowAt[j], v.ShowWidthM[j]) = ((float)k.FireFlow[f].Lpm, (float)k.FireFlow[f].BoilShare, at, (float)width);
+        }
     }
+
+    /// <summary>Whether a part's fire shows from outside (its fire space's, B2).</summary>
+    static bool PartShows(ShipClass c, ShipCondition k, int component)
+    {
+        var spaces = c.FireSpaces;
+        for (int f = k.CellFire.Length; f < spaces.Length; f++)
+            if (spaces[f].Kind == FireSpaceKind.Part && spaces[f].Index == component)
+                return Fires.Shows(spaces[f], k.Fire[f]);
+        return false;
+    }
+
+    /// <summary>Where a showing fire's flames come out, in the ship's frame, and how wide the opening or the burning area
+    /// is, m: a space's through a hole in her side above the water (the holes' mean), else up through the deck over it
+    /// (its hatches); a part's at its top; a weather deck's on the deck at its section's middle. Display only.</summary>
+    static (P3 At, double WidthM) FireOpening(ShipClass c, ShipCondition k, int space)
+    {
+        ref readonly var row = ref c.FireSpaces[space];
+        ref readonly var x = ref k.Fire[space];
+        double burning = Math.Sqrt(Math.Max(Math.Min(x.Involved, row.AreaM2), 1));
+        switch (row.Kind)
+        {
+            case FireSpaceKind.Part:
+            {
+                var b = c.Components[row.Index].Bounds;
+                return (new P3((b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2, b.Top), Math.Min(burning, Math.Min(b.X1 - b.X0, b.Y1 - b.Y0)));
+            }
+            case FireSpaceKind.Deck:
+            {
+                var b = c.Cells[row.Cell].Box;
+                double xm = (b.X0 + b.X1) / 2;
+                return (new P3(xm, 0, c.Hull.DeckTop(xm)), burning);
+            }
+            default:
+            {
+                var b = c.Cells[row.Index].Box;
+                double xm = (b.X0 + b.X1) / 2, hole = k.BreachM2[row.Index];
+                if (hole > 0 && k.BreachZ[row.Index] > c.Vertical.Waterline)
+                    return (new P3(xm, k.BreachY[row.Index], k.BreachZ[row.Index]), Math.Clamp(Math.Sqrt(hole), 0.5, burning));
+                return (new P3(xm, (b.Y0 + b.Y1) / 2, Math.Max(b.Top, c.Hull.DeckTop(xm))), Math.Min(FireHatchM, burning));
+            }
+        }
+    }
+
+    /// <summary>A fire inside with no hole in her side comes up through the deck's hatches and ventilators: this wide, m
+    /// [EST].</summary>
+    const double FireHatchM = 1.5;
 }
