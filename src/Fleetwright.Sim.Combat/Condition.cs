@@ -130,6 +130,14 @@ public sealed class ShipCondition
     public bool PartiesMade, TurnedTo;
     public long[] MainCutMs = [];
     public long LastHitMs, NextPlanMs;
+    /// <summary>Each magazine's heat (docs/battle/fire.md B2; by room): the dose of its fires so far, the limit it goes up
+    /// at (drawn when it first heats, 0 before), how long it's been threatened (s), and whether it's being flooded.</summary>
+    public double[] MagazineHeat = [], MagazineLimit = [], MagazineThreatS = [];
+    public bool[] MagazineFlood = [];
+    /// <summary>The machinery spaces (by room) abandoned to smoke (B2), until their outage runs out.</summary>
+    public bool[] Smoked = [];
+    /// <summary>The heat release of her fires that show (B2: developed, on the open deck, burning charges), MW.</summary>
+    public double FireShowMW;
     public bool[] MountWorks = [], DirectorWorks = [], EyeWorks = [], TubeWorks = [];
     /// <summary>What hits that held left each mount (E4).</summary>
     public MountHarm[] Mount = [];
@@ -167,8 +175,8 @@ public sealed class ShipCondition
     public int Leaks;
 
     /// <summary>The crew (E6 of docs/battle/shells-armour-damage.md): the men out of action now (the killed, the wounded
-    /// out for the action, the walking wounded not back yet; and the men the fire's and the torpedo's rules take, which
-    /// aren't split yet), and the killed and wounded so far.</summary>
+    /// out for the action, the walking wounded not back yet; and the men the torpedo's rule takes, which aren't split
+    /// yet), and the killed and wounded so far (the fire's too: docs/battle/fire.md B2).</summary>
     public double CrewLost, Killed, Wounded;
     /// <summary>At each station, the men killed or out there now: a part's (by component), then a cell's
     /// (<see cref="Casualties"/>'s groups).</summary>
@@ -232,6 +240,9 @@ public sealed class ShipCondition
             Fire = new BurnState[c.FireSpaces.Length];
             FireFlow = new FireWater[c.FireSpaces.Length];
             MainCutMs = new long[c.Sections.Length];
+            (MagazineHeat, MagazineLimit, MagazineThreatS, MagazineFlood) =
+                (new double[c.Rooms.Length], new double[c.Rooms.Length], new double[c.Rooms.Length], new bool[c.Rooms.Length]);
+            Smoked = new bool[c.Rooms.Length];
             MountWorks = new bool[c.Mounts.Length];
             DirectorWorks = new bool[c.Directors.Length];
             EyeWorks = new bool[c.Eyes.Length];
@@ -271,6 +282,11 @@ public sealed class ShipCondition
             Array.Clear(Fire);
             Array.Clear(FireFlow);
             Array.Clear(MainCutMs);
+            Array.Clear(MagazineHeat);
+            Array.Clear(MagazineLimit);
+            Array.Clear(MagazineThreatS);
+            Array.Clear(MagazineFlood);
+            Array.Clear(Smoked);
         }
         Array.Fill(MountWorks, true);
         Array.Fill(DirectorWorks, true);
@@ -280,7 +296,7 @@ public sealed class ShipCondition
         (Status, Loss, Attitude, PowerCap, Steering, JamRudderRad, Conned, Hits, Damaged) = (ShipStatus.Afloat, LossKind.None, Attitude.Upright, 1, Steering.Free, 0, true, 0, false);
         (WaterT, GmM, StepMs, NextStepMs, HeldCap, LastShooter, LastBattery, LossMs, GoneMs) = (0, c.Hydrostatics.GmT, 0, -1, 1, 0, 0, 0, 0);
         (NextClearMs, ClearAtMs, Leaks) = (-1, -1, 0);
-        (PartyCount, PartiesMade, TurnedTo, LastHitMs, NextPlanMs) = (0, false, false, 0, 0);
+        (PartyCount, PartiesMade, TurnedTo, LastHitMs, NextPlanMs, FireShowMW) = (0, false, false, 0, 0, 0);
         ClearGen++;
         Version++;
     }
@@ -615,6 +631,13 @@ public sealed class ShipCondition
             {
                 h.Add(i + 5000);
                 h.Add(MainCutMs[i]);
+            }
+        for (int i = 0; i < MagazineHeat.Length; i++)
+            if (MagazineHeat[i] != 0 || MagazineFlood[i])
+            {
+                h.Add(i + 6000);
+                h.Add(MagazineHeat[i]);
+                h.Add(MagazineFlood[i]);
             }
         for (int i = 0; i < Fire.Length; i++)
             if (Fire[i].Phase != BurnPhase.None)

@@ -233,6 +233,8 @@ public sealed class Sightings
         var ts = store[slot[t]];
         var tc = ts.Handling.Class;
         double tTop = tc.Silhouette.TopM;
+        // her fires as a light at night (fire.md B2)
+        double glowMW = store.Combat.Condition(ts.Slot).FireShowMW, glowM = settings.FireGlowHeightShare * tTop;
         var pic = Get(by);
         int ci = pic.IndexOf(ts.Entity);
         bool inSight = ci >= 0 && pic[ci].InSight;
@@ -264,6 +266,8 @@ public sealed class Sightings
                     continue;
                 tried++;
                 double margin = SightModel.Margin(eyes[e].HeightM, SightModel.Magnification(eyes[e], settings), tc, line, settings);
+                if (glowMW > 0)
+                    margin = Math.Max(margin, SightModel.GlowMargin(eyes[e].HeightM, glowMW, glowM, d, vis, sunEl, settings));
                 rate += SightModel.Rate(margin, SightModel.SearchFactor(eyes[e], settings), settings);
                 best = Math.Max(best, margin);
                 if (margin < 1)
@@ -346,8 +350,8 @@ public sealed class Sightings
             seen |= SeenFlags.ByBow;
         else if (a.TrimDeg <= -settings.SeenTrimDeg)
             seen |= SeenFlags.ByStern;
-        if (k.Fires > 0)
-            seen |= SeenFlags.Burning;
+        if (k.FireShowMW > 0)
+            seen |= SeenFlags.Burning;   // a developed or open-deck fire shows; a starved one inside doesn't (fire.md B2)
         if (k.MountWorks.Length > 0 && k.MountsWorking == 0)
             seen |= SeenFlags.Silent;
         if (k.Status == ShipStatus.GoingDown)

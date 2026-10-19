@@ -91,6 +91,20 @@ public static class SightModel
         return s.SightNightM * Math.Pow(100, 1 - f);
     }
 
+    /// <summary>A ship's fires as a light at night (docs/battle/fire.md B2; 17 §8.5), its margin over what an eye this high
+    /// makes out: the heat that shows (MW) as a lamp of <see cref="SimSettings.FireGlowCdPerMW"/>, at a height on the ship,
+    /// through the haze by Allard's law (3.912 / the visibility), against <see cref="SimSettings.FireGlowLux"/> in the dark
+    /// and a hundred times it at sunset, as <see cref="LightReachM"/> ramps; none by day or below the horizon.</summary>
+    public static double GlowMargin(double eyeM, double fireMW, double heightM, double distanceM, double visibilityM, double sunElevationDeg,
+        SimSettings s)
+    {
+        if (fireMW <= 0 || sunElevationDeg >= 0 || HiddenM(eyeM, distanceM, s) >= heightM)
+            return 0;
+        double f = Math.Clamp(sunElevationDeg / s.SightNightSunDeg, 0, 1), d = Math.Max(distanceM, 1);
+        double sigma = double.IsPositiveInfinity(visibilityM) || visibilityM <= 0 ? 0 : 3.912 / visibilityM;
+        return s.FireGlowCdPerMW * fireMW * Math.Exp(-sigma * d) / (d * d * s.FireGlowLux * Math.Pow(100, 1 - f));
+    }
+
     /// <summary>An eye's magnification: a director's rangefinder's (its make's), binoculars at a masthead, on the bridge
     /// or in a director without a rangefinder read, the conning tower's slits.</summary>
     public static double Magnification(in EyeRow eye, SimSettings s) => eye.Kind switch

@@ -673,6 +673,8 @@ public sealed class DamageSystem : IWorldSystem
         }
         if (fl.RoomsFlooded || fs.Changed)
             Recompute(world, slot, k, ref rng);
+        if (fs.Abandoned > 0 || k.Smoked.AsSpan().Contains(true))
+            Remind(world, slot, k);   // smoke's outages (B2) end on the clear event
         Hold(world, slot, k, force: false);
         if (k.Fires > 0 || Fires.Hot(k) || Math.Abs(k.WaterT - was) >= settings.FloodIdleT)
             return settings.FloodMs;

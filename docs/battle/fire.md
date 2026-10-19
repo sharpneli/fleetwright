@@ -1,5 +1,5 @@
 # Plan: fire (a 4.5 deepening)
-Status: **agreed with the user 2026-10-18** ("Decided" below); B0, B1, B3 and B4 done 2026-10-18 (the order since B1: B3, B4, then B2, decision 5); B2 next    Updated: 2026-10-18
+Status: **agreed with the user 2026-10-18** ("Decided" below); B0, B1, B3 and B4 done 2026-10-18 (the order since B1: B3, B4, then B2, decision 5), B2 done 2026-10-19; B5 next    Updated: 2026-10-19
 
 The fine-tune pass for fire: what happens after a fire starts. Its research is `damage/17_fire.md` (with `fire_ref.py`),
 on top of `damage/10_damage_control_holistic.md` §2 (fire, ammunition in a fire, the fire main) and `09_damage_control.md`
@@ -148,9 +148,9 @@ the flow it needs and the doctrine cools boundaries. Not into a space half flood
 - **Rooms and parts:** harmed by a developed fire (a dose of time at heat: cables and paper at 232 °C, 17 §5.2), lightly
   by a local one. Replaces the 0.2/min.
 - **Crew:** the men in a space at flashover, and smoke, by 16. Replaces the flat 0.3/min.
-- **Smoke into the machinery:** a machinery space over or next to a developed fire is abandoned at 1/8 min with the
-  supply fans running, 1/60 min secured (17 §5.4 [EST, set to Savo]); out of action on E4's outage clock until the fire
-  is out and a while after. Steam lost stops the pumps.
+- **Smoke into the machinery:** a machinery space burning or under a developed or starved fire is abandoned at 1/8
+  min with the supply fans running, 1/60 min secured (17 §5.4 [EST, set to Savo]); out of action on E4's outage clock
+  until the fire is out and a while after. Steam lost stops the pumps.
 - **Magazines:** heat through the boundary instead of a chance a minute. A magazine sharing a bulkhead with a developed
   fire cooks off after a time drawn around tens of minutes; under a fire (the fire's floor is its cool layer) hours; a
   fire in it or a handling room, minutes (10 §2.3; propellant at ~160-170 °C). **Flooding or sprinkling it** stops the
@@ -307,9 +307,52 @@ from B0's bench on.
     ships the way 17 §9 T6 has unfought ships burn. Proposed: B3 (the water) and B4 (firefighting) next, B2 after; the
     crew cost (B2) is the other half of the jump.
 
-### B2 Effects
+### B2 Effects (done 2026-10-19)
 - Heat harm, crew by 16, smoke into the machinery, magazine heat and flooding, seen by Q. The v0 chances go, except
   put-out.
+- **Built:**
+  - **Heat** (`Fires.Heat`, `BurnState.HeatS` and `Harmed`): a dose of time at heat, developed by the share of the space
+    involved, growing, local or starved at 0.1 [EST]; at 3 and 15 min of it (`FireHarmS` [EST: cables at 232 °C within
+    minutes, gear gone after a quarter of an hour at 500-800 °C overhead]) the cell's rooms (a part itself) are harmed
+    once more. The dose stays when the fire goes out. Replaces v0's 0.2 a minute.
+  - **Men** (`Fires.Caught`, `Fires.Hurt`): at flashover the room's share of the space's battle crew killed at 0.5 and
+    casualties at 0.8 (`FireFlashCaught` [EST]), a risk drawn by 16's draw (a propellant seat's men are its flash's, at
+    the hit); a party working a developed fire below decks loses its men at 0.6% a minute, 0.2% with breathing sets
+    (`FirePartyHurtPerMin` [EST]), 30% of them killed. Replaces v0's flat 0.3 men a minute.
+  - **Smoke** (`Fires.Smoke`, `ShipCondition.Smoked`): a boiler or engine room burning, or **under** a developed or
+    starved fire (17 §5.4 and fire_ref.py's smoky; this plan's "over or next to" was a slip), abandoned at 1/8 a minute
+    with the supply fans running, 1/60 secured (`FireReadiness.FansSecured`, false on all three presets: the stokeholds'
+    forced draught can't be secured in the first game's ships); out on E4's clock while the smoke lasts and 10 min after
+    (`FireSmokeClearS` [EST]). Its steam lost, her power falls and the main with it (`SectionWater` by `PowerCap`).
+  - **Magazines** (`Fires.Magazines`, `ShipCondition.MagazineHeat`, `MagazineLimit`, `MagazineThreatS`,
+    `MagazineFlood`): each developed fire (or burning charges) on a magazine's boundary doses it by the way it comes:
+    in it, a handling room's or burning charges beside it 5 min; an open path (a burst's opening, its turret's trunk from a
+    burning gunhouse) 20; under it 20; beside it through a bulkhead 40; over it 3 h (`FireMagazineS` [EST: doc 10 §2.3,
+    §7.2 rule 12]), × the side's propellant; it goes up past a limit drawn lognormal (σ 0.5) about 1, and cools without a
+    fire over an hour. The doctrine floods one threatened for its time (`FloodMagazineS`: 10 min unorganised, 5 in 1894
+    and 1905, 3 in 1916 and 1942, 2 in 1944 [EST]) unless smoke over it has its controls cut off (Teresa, Astoria);
+    through its sea valves under the waterline, else its section's main, full in 10 min; the flooding takes it from there
+    (the room flooded, its mounts lose their ammunition; drowned, it can't go up). Sprinkling is for later cuts.
+  - **Seen** (`Fires.Shows`, `ShipCondition.FireShowMW`): `Burning` only while a developed or open-deck fire (or charges)
+    shows; at night the heat that shows is a lamp of 10⁴ cd a MW [EST: a candle] halfway up her silhouette, made out at
+    2·10⁻⁷ lux (Allard's law, IALA's night threshold) through the haze (`SightModel.GlowMargin`, the sighting's margin the
+    better of it and her silhouette's): a 2 MW fire through 20 km of visibility from a 30 m masthead to 25 km.
+  - The hits bench reports magazines flooded and machinery abandoned to smoke; `FireEffectsTests`.
+- **The tests' numbers:** a 40 m² Great War messdeck flashes at 3.6 min, its room damaged at 6.2 and out of action at
+  18.2; a local fire harms nothing in its twenty minutes. A transmitting station (10 men, its room 15% of the space)
+  loses 1.0 men to its flashover (0.6 killed). The boiler room under a developed fire: abandoned within 30 min in 39 of 40
+  runs, median 6 min, fans running; 16 of 40, median 14 min, secured; power 67% with it gone, back 10 min after the fire
+  over it is out. A magazine with a developed fire beside it goes up in a median 36 min (10%: 19), with one over it 2.7 h;
+  flooded 3 min into the threat (rn-1916), it never goes up; with smoke over it, never flooded and gone up in all 20.
+- **What moved** (the hits bench, B4 → B2, 600 hits a case, 60 min settle; Borodino at 5 km):
+  - crew out of action after the settle: Dreadnought under 12" HE (prepared, rn-1916) 84 → 59; the same unprepared and
+    unorganised 324 → 65 (v0's flat 0.3 men a minute a fire gone; the fire's own men now the flashovers' and the parties'
+    few); Borodino under Mikasa's 6" (russian-1905) 13 → 11; super_dreadnought under Seydlitz 49 → 48; a destroyer under a light cruiser 32 → 26.
+  - the unprepared, unorganised Dreadnought: power after the settle 69% → 56%, crippled 5% → 23%, out of the fight 3% →
+    20% (smoke in her machinery, 0.95 spaces a ship still abandoned at the end, and heat in her rooms); lost to the
+    magazine by a fire later 2.5% → 2.5%, 0.05 magazines a ship flooded. The prepared cases barely move.
+  - The squadrons scenario: the same fights and hits to the end; the damage system 34 → 39 µs a call (the mean of three
+    runs before and six after; the runs' spread is about as wide), B5's to measure properly.
 
 ### B3 Water
 - The attack physics with a bench flow (17 §9 T3, T4); water left aboard; flooding's outflow above the sea.

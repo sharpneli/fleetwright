@@ -1254,15 +1254,55 @@ public sealed record SimSettings
     public int FounderMs { get; init; } = 600_000;
     public int CapsizeMs { get; init; } = 180_000;
 
-    /// <summary>Fire v0's stand-ins (until docs/battle/fire.md B2), chances a minute: a burning space or part
-    /// damaged (each room in it once more); a magazine in a burning space,
-    /// or next to one, set off (times the side's propellant). A fire costs this many crew a minute; a space this share
-    /// flooded doesn't burn.</summary>
-    public double FireHarmPerMin { get; init; } = 0.2;
-    public double FireMagazineInPerMin { get; init; } = 0.05;
-    public double FireMagazineNextPerMin { get; init; } = 0.01;
-    public double FireCrewPerMin { get; init; } = 0.3;
+    /// <summary>A space this share flooded doesn't burn (nor its magazine go up).</summary>
     public double FireDrownShare { get; init; } = 0.5;
+
+    /// <summary>What a fire does (docs/battle/fire.md B2). Heat: a space's rooms (a part itself) are harmed once more each
+    /// time its fire's dose of heat passes the next of <see cref="FireHarmS"/>, seconds of developed fire over the whole
+    /// space [EST: cables, phones and lighting fail within minutes over 232 °C (17 §5.2), gear and machinery is gone after a
+    /// quarter of an hour at 500-800 °C overhead (Shadwell Phase VI)]; a developed fire doses by the share of the space
+    /// involved, a growing, local or starved one by <see cref="FireLocalHarmShare"/> [EST]. Men: at flashover the room's
+    /// share of the space's men are killed with the first of <see cref="FireFlashCaught"/> and casualties with the second
+    /// [EST: a flashed-over room is untenable in seconds; a propellant seat's men are the flash's (16 §4.6)]; a party working
+    /// a developed fire below decks loses its men at <see cref="FirePartyHurtPerMin"/> a minute, without breathing sets and
+    /// with them [EST: smoke and burns], <see cref="FirePartyKilledShare"/> of them killed.</summary>
+    public double[] FireHarmS { get; init; } = [180, 900];
+    public double FireLocalHarmShare { get; init; } = 0.1;
+    public double[] FireFlashCaught { get; init; } = [0.5, 0.8];
+    public double[] FirePartyHurtPerMin { get; init; } = [0.006, 0.002];
+    public double FirePartyKilledShare { get; init; } = 0.3;
+
+    /// <summary>Smoke into the machinery (B2; 17 §5.4, fire_ref.py's smoke): a boiler or engine room burning, or under a
+    /// space whose fire is developed or starved, is abandoned with a chance a minute of <see cref="FireSmokeFansPerMin"/>
+    /// with her supply fans running and <see cref="FireSmokeSecuredPerMin"/> with them secured [EST, set to Savo], and stays
+    /// out (E4's outage clock) while the smoke goes on and <see cref="FireSmokeClearS"/> after [EST].</summary>
+    public double FireSmokeFansPerMin { get; init; } = 1.0 / 8;
+    public double FireSmokeSecuredPerMin { get; init; } = 1.0 / 60;
+    public double FireSmokeClearS { get; init; } = 600;
+
+    /// <summary>A magazine's heat (B2; doc 10 §2.3 and §7.2 rule 12): each developed fire (or burning charges) on its
+    /// boundary adds a minute's dose over the time it takes to cook off its propellant (~160-170 °C), s, by the way it
+    /// comes: <see cref="FireMagazineS"/> = [a fire in it, a handling room's or burning charges beside it; an open path (an
+    /// opening a burst left, its turret's trunk); a fire under it; one beside it through a bulkhead; one over it, its floor
+    /// the fire's cool layer] [EST: minutes (Abner Read), 20 min, 20 min, "tens of minutes", 3 h (Astoria)], times the
+    /// side's propellant. It goes up when the dose passes a limit drawn once, lognormal of σ
+    /// <see cref="FireMagazineSigma"/> about 1; the dose cools away over <see cref="FireMagazineCoolS"/> without a fire. The
+    /// doctrine floods one threatened for its time if the controls over it aren't in a burning or smoky space (Teresa,
+    /// Astoria) and there's water (the sea's under the waterline, else the section's main), filling it in
+    /// <see cref="FireMagazineFloodS"/> [EST].</summary>
+    public double[] FireMagazineS { get; init; } = [300, 1200, 1200, 2400, 10800];
+    public double FireMagazineSigma { get; init; } = 0.5;
+    public double FireMagazineCoolS { get; init; } = 3600;
+    public double FireMagazineFloodS { get; init; } = 600;
+
+    /// <summary>A fire seen (B2; 17 §8.5): a developed or open-deck fire (or burning charges) shows, a starved one inside
+    /// doesn't. At night its light is a lamp of <see cref="FireGlowCdPerMW"/> candela a MW of what shows [EST: a candle's
+    /// ~1 cd from ~80 W], halfway up the ship (<see cref="FireGlowHeightShare"/> of her silhouette's top), made out at
+    /// <see cref="FireGlowLux"/> on the eye (Allard's law, IALA's night threshold [SRC]) through the haze (3.912 / the
+    /// visibility), the threshold ×100 at sunset as the light's reach has it.</summary>
+    public double FireGlowCdPerMW { get; init; } = 1e4;
+    public double FireGlowLux { get; init; } = 2e-7;
+    public double FireGlowHeightShare { get; init; } = 0.5;
 
     /// <summary>One space's fire (docs/battle/fire.md B0; damage/17 §3-4, fire_ref.py). Growth: Q = seat + α·t², α the
     /// "medium" t² fire (1 MW at 300 s: Eurocode EN 1991-1-2 E.5 [SRC]) times the outfit's growth and the use's (by
@@ -1406,20 +1446,20 @@ public sealed record SimSettings
     public FirefightingDoctrine[] Firefighting { get; init; } =
     [
         new() { Name = "unorganised-1890", WatchS = -1, HoseLpm = 600, Nozzle = "jet", MusterS = 360, ManLpm = 100, PartyShare = 0.10, PartyMen = 16,
-            MainBreak = 0.25, HoseCut = 0.30, Looped = false, RestoreS = -1, PumpFloor = 0, BreathingSets = false, TurnTo = 1 },
+            MainBreak = 0.25, HoseCut = 0.30, Looped = false, RestoreS = -1, PumpFloor = 0, BreathingSets = false, TurnTo = 1, FloodMagazineS = 600 },
         new() { Name = "prepared-1894", WatchS = 120, HoseLpm = 600, Nozzle = "jet", MusterS = 180, ManLpm = 100, PartyShare = 0.12, PartyMen = 16,
-            MainBreak = 0.20, HoseCut = 0.30, Looped = false, RestoreS = 900, PumpFloor = 0, BreathingSets = false, TurnTo = 2 },
+            MainBreak = 0.20, HoseCut = 0.30, Looped = false, RestoreS = 900, PumpFloor = 0, BreathingSets = false, TurnTo = 2, FloodMagazineS = 300 },
         new() { Name = "russian-1905", WatchS = 90, HoseLpm = 600, Nozzle = "jet", MusterS = 180, ManLpm = 100, PartyShare = 0.12, PartyMen = 16,
-            MainBreak = 0.20, HoseCut = 0.45, Looped = false, RestoreS = 900, PumpFloor = 0, BreathingSets = false, TurnTo = 2 },
+            MainBreak = 0.20, HoseCut = 0.45, Looped = false, RestoreS = 900, PumpFloor = 0, BreathingSets = false, TurnTo = 2, FloodMagazineS = 300 },
         new() { Name = "rn-1916", WatchS = 180, HoseLpm = 420, Nozzle = "jet", MusterS = 240, ManLpm = 84, PartyShare = 0.12, PartyMen = 16,
-            MainBreak = 0.10, HoseCut = 0.15, Looped = false, RestoreS = 900, PumpFloor = 0, BreathingSets = false, TurnTo = 2 },
+            MainBreak = 0.10, HoseCut = 0.15, Looped = false, RestoreS = 900, PumpFloor = 0, BreathingSets = false, TurnTo = 2, FloodMagazineS = 180 },
         new() { Name = "german-1916", WatchS = 180, HoseLpm = 420, Nozzle = "jet", MusterS = 240, ManLpm = 84, PartyShare = 0.12, PartyMen = 16,
-            MainBreak = 0.10, HoseCut = 0.15, Looped = false, RestoreS = 900, PumpFloor = 0, BreathingSets = false, TurnTo = 2 },
+            MainBreak = 0.10, HoseCut = 0.15, Looped = false, RestoreS = 900, PumpFloor = 0, BreathingSets = false, TurnTo = 2, FloodMagazineS = 180 },
         new() { Name = "usn-1942", WatchS = 120, HoseLpm = 250, Nozzle = "all-purpose", MusterS = 180, ManLpm = 62.5, PartyShare = 0.12, PartyMen = 16,
-            MainBreak = 0.25, HoseCut = 0.20, Looped = false, RestoreS = 480, PumpFloor = 0, BreathingSets = false, TurnTo = 2 },
+            MainBreak = 0.25, HoseCut = 0.20, Looped = false, RestoreS = 480, PumpFloor = 0, BreathingSets = false, TurnTo = 2, FloodMagazineS = 180 },
         new() { Name = "usn-1944", WatchS = 60, HoseLpm = 360, Nozzle = "fog", MusterS = 120, ManLpm = 90, PartyShare = 0.12, PartyMen = 16,
             MainBreak = 0.15, HoseCut = 0.20, Looped = true, RestoreS = 240, PumpFloor = 0.6, BreathingSets = true, TurnTo = 3,
-            CoolBoundaries = true, ReflashWatch = true },
+            CoolBoundaries = true, ReflashWatch = true, FloodMagazineS = 120 },
     ];
     public string FirefightingDefault { get; init; } = "rn-1916";
     public double FirePlanS { get; init; } = 30;
@@ -1664,6 +1704,8 @@ public readonly record struct FirefightingDoctrine
     public int TurnTo { get; init; }
     public bool CoolBoundaries { get; init; }
     public bool ReflashWatch { get; init; }
+    /// <summary>How long a magazine is threatened before it's flooded, s (B2; -1: never).</summary>
+    public double FloodMagazineS { get; init; }
 }
 
 /// <summary>A ship's orders before action for fire (docs/battle/fire.md B1; <see cref="SimSettings.FireReadiness"/>).</summary>
@@ -1673,6 +1715,8 @@ public readonly record struct FireReadiness
     public bool Stripped { get; init; }
     public double CellDoors { get; init; }
     public bool WetDecks { get; init; }
+    /// <summary>The supply fans secured (B2): smoke kept out of the machinery.</summary>
+    public bool FansSecured { get; init; }
 }
 
 /// <summary>A crew quality's multipliers on the rangetakers' and the layers' errors.</summary>

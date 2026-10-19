@@ -97,7 +97,7 @@ public class FireWaterTests(ITestOutputHelper output)
         var c = Fleet.Get("dreadnought").Class!;
         var f = new FloodModel(c);
         int cell = Enumerable.Range(0, c.Cells.Length).First(i => c.FireSpaces[i].Use == FireUse.Quarters && c.FireSpaces[i].AreaM2 > 30);
-        var quiet = Settings with { FireHarmPerMin = 0, FireMagazineInPerMin = 0, FireMagazineNextPerMin = 0, FireOpenPathPerMin = 0,
+        var quiet = Settings with { FireHarmS = [], FireMagazineS = [1e12, 1e12, 1e12, 1e12, 1e12], FireOpenPathPerMin = 0,
             FireSteelPerMin = [0, 0, 0], FireDeckPerMin = 0 };
         int rekindled = 0;
         double water = 0;

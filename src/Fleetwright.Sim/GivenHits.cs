@@ -105,8 +105,9 @@ public static class GivenHits
         public int Crippled, Slowed, SteeringLost, Lost, MainSilenced, Out;
         public readonly int[] LostBy = new int[Enum.GetValues<LossKind>().Length];
         public double WaterT, ListDeg;
-        /// <summary>After the settle: the fires still burning, the ships with any, the crew out of action.</summary>
-        public double BurningAfter, CrewAfter;
+        /// <summary>After the settle: the fires still burning, the ships with any, the crew out of action, the magazines
+        /// flooded against a fire and the machinery spaces still abandoned to smoke (docs/battle/fire.md B2).</summary>
+        public double BurningAfter, CrewAfter, MagazinesFlooded, Smoked;
         public int BurningShips;
         public double FallDeg, StrikeMs;
         /// <summary>The hits that ran under the water to the hull: how many, and their runs and striking speeds summed.</summary>
@@ -541,6 +542,10 @@ public static class GivenHits
         rep.BurningAfter += kk.Fires;
         rep.BurningShips += kk.Fires > 0 ? 1 : 0;
         rep.CrewAfter += kk.CrewLost;
+        foreach (bool b in kk.MagazineFlood)
+            rep.MagazinesFlooded += b ? 1 : 0;
+        foreach (bool b in kk.Smoked)
+            rep.Smoked += b ? 1 : 0;
         rep.LostBy[(int)kk.Loss]++;
         rep.MagazineByFire += kk.Loss == LossKind.Magazine && !hitMagazine ? 1 : 0;
         int main = 0, mainOk = 0, dirs = 0;

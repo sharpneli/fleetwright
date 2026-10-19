@@ -410,7 +410,12 @@ public class DamageTests(ITestOutputHelper output)
     [Fact]
     public void A_magazine_set_off_by_a_fire_records_its_room()
     {
-        var w = World("dreadnought", out int c, Settings with { FireMagazineInPerMin = 1, FireMagazineNextPerMin = 1 });
+        // a magazine quick to cook off, and nobody fighting the fire or flooding it (fire.md B2)
+        var nobody = Settings.Firefighting.Single(d => d.Name == "unorganised-1890") with { Name = "nobody", WatchS = -1, PartyShare = 0, TurnTo = 0, FloodMagazineS = -1 };
+        var w = World("dreadnought", out int c, Settings with
+        {
+            FireMagazineS = [60, 60, 60, 60, 60], Firefighting = [.. Settings.Firefighting, nobody], FirefightingDefault = "nobody",
+        });
         var cls = Class("dreadnought");
         w.Apply(ShipSystem.Spawn(c, 56, 4, 0, 10));
         // a space that burns next to a magazine

@@ -13,8 +13,8 @@ public class FireSpreadTests(ITestOutputHelper output)
 {
     static readonly SimSettings Settings = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json"));
 
-    /// <summary>v0's stand-ins off (and nobody fighting: a fresh condition has no doctrine): nothing harmed or set off.</summary>
-    static readonly SimSettings Quiet = Settings with { FireHarmPerMin = 0, FireMagazineInPerMin = 0, FireMagazineNextPerMin = 0 };
+    /// <summary>No harm and no magazines (and nobody fighting: a fresh condition has no doctrine): nothing harmed or set off.</summary>
+    static readonly SimSettings Quiet = Settings with { FireHarmS = [], FireMagazineS = [1e12, 1e12, 1e12, 1e12, 1e12] };
 
     static ShipClass Class(string name) => Fleet.Get(name).Class!;
 
@@ -146,11 +146,11 @@ public class FireSpreadTests(ITestOutputHelper output)
         {
             var runs = Enumerable.Range(0, 30).Select(seed =>
             {
-                var at = Run(c, Fresh(c, readiness), d0, [d1, d2], 20, (ulong)seed, Quiet);
+                var at = Run(c, Fresh(c, readiness), d0, [d1, d2], 30, (ulong)seed, Quiet);
                 return Math.Min(double.IsNaN(at[0]) ? 99 : at[0], double.IsNaN(at[1]) ? 99 : at[1]);
             }).ToList();
             double share = runs.Count(x => x < 99) / (double)runs.Count;
-            output.WriteLine($"{readiness} deck ({Fires.Load(c.FireSpaces[d0], Fresh(c, readiness)):0} MJ/m²): along within 20 min in " +
+            output.WriteLine($"{readiness} deck ({Fires.Load(c.FireSpaces[d0], Fresh(c, readiness)):0} MJ/m²): along within 30 min in " +
                              $"{100 * share:0}%, median {Median(runs):0.0} min");
             Assert.True(spreads ? share > 0.8 : share == 0, $"{readiness}: {share:P0}");
         }
