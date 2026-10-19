@@ -920,7 +920,7 @@ odds, not a forecast of the battle.
   doctrine's band and fights.
 - **Ammunition counts** (the user, after the questions): a battery's rate on the enemy is capped by the rounds its
   mounts have left (what it can still deliver, not only how fast), own ships exactly, enemies at their class's full
-  outfit (rounds fired aren't seen). And **a ship whose magazines are empty withdraws:** main batteries out of rounds and
+  loadout (rounds fired aren't seen). And **a ship whose magazines are empty withdraws:** main batteries out of rounds and
   no torpedoes left, she leaves her group and goes home, as falling out does, with her own reason ("out of
   ammunition"); her secondaries fire at will on the way. A mount with no rounds given (0 in the class: unlimited) never
   runs out.
@@ -984,7 +984,7 @@ speeds (each its slowest ship's) and who can refuse. What's added is building th
 - **`Matchups`:** each class's profile, made once from the world's own range tables, and each side's census (its
   classes at sea by type, made once a moment it's asked).
 - **`MatchupSide`:** a reused list of entries. An own ship goes in exactly: guns working by barrels and rounds left by
-  the outfit (main and the rest), torpedoes left in launchers that work, speed (`Fitness`), and toughness by the water
+  the loadout (main and the rest), torpedoes left in launchers that work, speed (`Fitness`), and toughness by the water
   in her (1 - her reserve's share flooded). A contact goes in as taken: the class it's taken for once made out, else
   spread over what its side has of its type as fractional ships (before its side is made out, v0 counts it as nothing);
   as seen, silent is no guns, stopped no speed, and low, listing, trimmed and burning take its toughness down

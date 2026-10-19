@@ -70,7 +70,7 @@ leaks, shock) come into phase E (decision 8): they're `Effects`, and they read t
 6. **The loadout is the admiral's, the armour the designer's** (user, 2026-10-16: "Admiral naturally may want to change
    the ammunition loadouts of their ships even ship by ship basis, whereas they can't just change armor willy nilly").
    The design carries a **default loadout**; each ship may carry another, set outside the design (S5).
-7. **Default outfits and the magazine order** (user, 2026-10-16): main batteries 70% AP and 30% HE, secondaries 30% AP
+7. **Default loadouts and the magazine order** (user, 2026-10-16): main batteries 70% AP and 30% HE, secondaries 30% AP
    and 70% HE. Magazines empty AP first on the main battery and HE first on the secondaries; the AI's behaviour is
    otherwise as it is. A dev toggle on the right-click fire picks the kind to shoot (S2).
 8. **Casualties and the non-penetrating effects join phase E** (user, 2026-10-16). Casualties per hit (16) were
@@ -106,7 +106,7 @@ navy's 15″ main and 6″ secondary share one block, written once):
 
 Metric like the rest of shipgen; the templates' notes give lb/in³, the literature's unit.
 
-Per battery, **`shells`**: the outfit, entries `{ammo: <name in the table>, share}`, each with an optional `mass_kg`
+Per battery, **`shells`**: the loadout, entries `{ammo: <name in the table>, share}`, each with an optional `mass_kg`
 (one battery's own shell, over k·D³). And the battery's **`muzzle_velocity_ms`**, the gun's with its heaviest shell
 (the placeholder's 280 + 11·L when absent, until a gun tech exists); a lighter kind goes faster by the placeholder's
 rule, (m_heavy/m)^0.25, unless its entry gives its own. `rounds_per_gun` is already there.
@@ -119,7 +119,7 @@ as `machinery.tech` is.
 | The design's (fixed with the ship) | The loadout's (per ship, changeable in port) |
 |---|---|
 | the guns: calibre, length, mounts | which shell blocks each battery carries (any block of the gun's calibre) |
-| the magazines: `rounds_per_gun` (DECISIONS.md, 2026-10-07) | the shares of the outfit within those rounds |
+| the magazines: `rounds_per_gun` (DECISIONS.md, 2026-10-07) | the shares of the loadout within those rounds |
 | the armour and its materials | — |
 
 So `ammunition` and the batteries' `shells` in a design are its **default loadout**: what shipgen weighs the magazines
@@ -185,14 +185,14 @@ amatol 60/40 and 80/20), plus RDX/TNT and Comp B for late HE. Each row (TNT as t
 - The dye (already a sim fact).
 
 **Shipgen's own use:** the magazines are weighed with one W/D³ for every gun and era (`Batteries.ShellK`, the 16″
-Mk 8's). The outfit's mean shell mass replaces it (the charge keeps its share in `AmmoMult` until the charge is added),
+Mk 8's). The loadout's mean shell mass replaces it (the charge keeps its share in `AmmoMult` until the charge is added),
 so a light Victorian shell weighs less than a super-heavy one (memory: weights follow physics; reported, goldens
 updated).
 
 **Out of shipgen** (`report.json`, then `ShipClassCompiler`): each battery's resolved shells (kind, mass in kg, muzzle
-velocity, form factor, cap, body, filler kg and rates, fuze) and the outfit's shares. `DesignerPlaceholders.Shell` and
+velocity, form factor, cap, body, filler kg and rates, fuze) and the loadout's shares. `DesignerPlaceholders.Shell` and
 `ShellMix` are deleted. `Fires` (guns of 200 mm and up fire AP) gives way to the magazine order (decision 7, S2): a
-firing rule in the sim, reading the outfit, until the AI's pass (decision 3).
+firing rule in the sim, reading the loadout, until the AI's pass (decision 3).
 
 **One source for the catalogues.** The built-in blocks (ammunition and materials) live in shipgen as C# tables, as the
 crew standards (`Crew.cs`) and the default plant (`Powerplant.cs`) do, because `DesignFormat`'s upgrade and the defaults
@@ -308,7 +308,7 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
     (`golden-update`, no value moves).
   - The magazine weight keeps `ShellK` in this step.
   - **Done 2026-10-16.** What it came to:
-    - Shipgen: `Ammunition.cs` validates the table and the outfits and resolves each battery's shells into the report
+    - Shipgen: `Ammunition.cs` validates the table and the loadouts and resolves each battery's shells into the report
       (`report.shells`: kind, mass, muzzle velocity, form factor, cap, filler kg and `re`, fuze, outcome row). The
       schema is S0's part of the block: `kind`, `mass_k_kg_m3`, `form_factor`, `cap`, `filler {share, explosive {re}}`,
       `fuze {position, delay_s}`, `outcomes`; the rest of the table above comes with S1. `docs/shipgen/README.md` has
@@ -321,7 +321,7 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
       which the placeholder now calls) gives the same, and it follows the gun's length in the designer.
     - **The designer:** a calibre change drops the battery's `shells` (`Knobs.Calibre`), since its written masses
       belong to the old gun; it falls back to the placeholder, as before S0.
-    - `Fires` reads the outfit (AP first from a heavy gun, else HE, else common): the same choices as before.
+    - `Fires` reads the loadout (AP first from a heavy gun, else HE, else common): the same choices as before.
     - Blocks are named `<kind> <era> <row>` ("AP great_war rn1916"), so the shell type ids (`305/45 AP great_war
       rn1916`) and the layout hash didn't move. 123 designs written (70 shipped, 53 scenario; the escort carrier and the
       tanker have no guns); `shipgen ammo-parity` compiled each before and after and found every shell, share and fired
@@ -362,7 +362,7 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
       battery with no shells (new designs, the fuzz mutants, saves). "We'll add a selector in ship designer so that one
       can toss in what they want" (S4), and a scenario may override, the loadout being the Admiralty's decision (S5).
     - **The mapping** (user, approved as proposed): `shipgen ammo-templates` (one-off) switched the 123 designs, each
-      battery keeping its outfit's kinds and shares, each kind taking its family's block (a gun under 200 mm the
+      battery keeping its loadout's kinds and shares, each kind taking its family's block (a gun under 200 mm the
       family's light block where it has one):
       - 1867 chilled iron: devastation, inflexible, duilio. 1895 forged steel: doom. RU 1895: borodino, aurora, buyny,
         oslyabya. JP 1904: mikasa, izumo, ikazuchi. US 1906: connecticut. DE 1902: armoured_cruiser, hessen,
@@ -407,14 +407,14 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
         widened to 0-20%** (user, 2026-10-16): "we'll do tuning of the actual hull generator later. Right now we have
         just a single layer of steel and magazine straight behind it. We'll have better protection schemes later so
         high casualty figures are to be expected."
-    - Goldens: the designs' shells and `report.shells` only (the fuzz cases gained the default outfit); nothing else
+    - Goldens: the designs' shells and `report.shells` only (the fuzz cases gained the default loadout); nothing else
       moved. ShipDesign.Version 8.
-- **S2 Default outfits and the magazine order** (decision 7).
-  - **Outfits:** every design's default loadout is 70% AP and 30% HE on its main batteries and 30% AP and 70% HE on its
+- **S2 Default loadouts and the magazine order** (decision 7).
+  - **Loadouts:** every design's default loadout is 70% AP and 30% HE on its main batteries and 30% AP and 70% HE on its
     secondaries, replacing `ShellMix`'s mix by calibre and era. Common shell leaves the defaults; its templates stay for
     loadouts and players.
   - **Rounds by kind:** a mount counts its rounds of each kind (today one count a mount, `CombatStore` `Rounds`), out of
-    the battery's `rounds_per_gun` by the outfit's shares.
+    the battery's `rounds_per_gun` by the loadout's shares.
   - **The magazine order:** a main battery fires AP until it's spent, then HE; a secondary battery HE first, then AP.
     This replaces `Fires`' 200 mm rule, a hidden size threshold (DECISIONS.md: no arbitrary size cutoffs). The AI is
     otherwise unchanged.
@@ -428,7 +428,7 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
   - Report `shipgen ballistics` (range tables), `duel` (fire control's calibration, hit % and time to first hit) and
     `weapons`, before and after.
   - **Done 2026-10-16.** What it came to:
-    - **Outfits:** `shipgen ammo-templates --outfits` wrote decision 7's outfit into the 123 designs from each design's
+    - **Loadouts:** `shipgen ammo-templates --loadouts` wrote decision 7's loadout into the 123 designs from each design's
       family. Where a family has no HE (the ones before HE shells: 1867, 1895, RU 1895, JP 1904, US 1906, FR 1893) its
       common shell takes HE's place, the era's explosive shell; where it has no AP (1950 dual-purpose) its SAP takes AP's.
       A light gun of a family without a light AP block takes the family's AP (the 12-pounders' soft-capped APC).
@@ -443,7 +443,7 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
     - **The dev toggle:** the strip's Fire row picks the magazine order or a kind the battery carries, with its rounds
       left, and says "no AP left"; `ShellSystem.FireAt` takes the kind (the command's X, kind + 1: 0 is the order, as
       every old log), and `-fire=ship[:battery][:kind]:lat,lon`. The dev salvo now spends its rounds (no reload).
-    - **Shell ids:** a template's muzzle velocity follows the outfit's heaviest shell, so the same id on the same gun can
+    - **Shell ids:** a template's muzzle velocity follows the loadout's heaviest shell, so the same id on the same gun can
       leave faster in another class (Colorado's 5" beside a heavier AP than Pennsylvania's); the shared-id test compares
       all but the velocity. Ballistic tables are keyed by value, not id.
     - **Tests:** the flotilla replay-and-allocation test pinned to seed 5 (it needs an attack made: over seeds 1-8 the
@@ -455,19 +455,19 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
         to 0.1, out of the fight after 5 hits 17% to 6%. `matchup` arethusa:4 against v25:6 3.46 to 1.68, town_chatham
         against v25:3 1.13 to 0.51; arethusa:4 against iron_duke 1.92 to 2.01, lion against seydlitz unchanged. The
         shell by target is the AI's pass (decision 3); until then light cruisers fight destroyers poorly.
-      - `duel` unchanged (4.8%, 5.1%). `weapons` shows the new outfits in the order.
+      - `duel` unchanged (4.8%, 5.1%). `weapons` shows the new loadouts in the order.
       - Squadrons (40 min): Britain lost 2 (Princess Royal, then Queen Mary rather than Lion), Germany none (Von der
         Tann survives). Flotilla: S51 2 hits. Tsushima --play (4 seeds): Russia lost 6/8/4/4, now 4/8/6/8; Japan
         3/2/4/3, now 5/4/4/3.
     - Goldens: the designs' shells only (70 cases); ShipDesign.Version 9.
-- **S3 Ammunition weight.** The magazines weighed from the default outfit's mean shell mass (the charge stays in
+- **S3 Ammunition weight.** The magazines weighed from the default loadout's mean shell mass (the charge stays in
   `AmmoMult`). Report the displacement shifts,
   run `golden-update` with a `ShipDesign.Version` bump and `mono-check`.
   - **Done 2026-10-16.** What it came to:
-    - `ShipDesign.Build` stamps each gun battery with its outfit's mean shell mass (`Ammunition.WithShellMasses`, the
+    - `ShipDesign.Build` stamps each gun battery with its loadout's mean shell mass (`Ammunition.WithShellMasses`, the
       shares by the masses `Resolve` gives; `BatteryInput.ShellKg`, not serialized); the turret type carries it
       (`TurretType.ShellKg`) as it carries `rounds_per_gun`, and `Batteries.MountWeights` and the ready-use rounds weigh
-      it times `AmmoMult`. A mount with no outfit (AA guns) keeps `ShellK`'s curve.
+      it times `AmmoMult`. A mount with no loadout (AA guns) keeps `ShellK`'s curve.
     - **Displacement:** every shipped design lighter, median -1.5% standard: victory_1944 2,261 -> 2,141 t (-5.3%), doom
       -4.7%, duilio -3.6%, brennus -3.4%, borodino -2.9%, colorado -2.8%, devastation -2.8%, armoured_cruiser -2.7%;
       the least moved the merchants and carriers (-0.1 to -0.6%). `ShellK` was the 16" Mk 8's super-heavy W/D³, the top
@@ -499,7 +499,7 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
       - the family, a tree with the design's navy first and her era marked;
       - a row per load in the magazine order: the block (the same tree, with each block's mass at this calibre and
         its fuze), the share in 5% steps, rounds, mass, m/s, filler and fuze;
-      - + a kind, × a load, and the default outfit.
+      - + a kind, × a load, and the default loadout.
     - **The Templates panel** gains Shells, which sets every battery's family.
     - **One implementation:**
       - The edits (`ShellEdits`) copy the picked templates into the design's `ammunition` and drop the blocks nobody
@@ -507,7 +507,7 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
       - The read-outs are shipgen's `Ammunition.ResolveBattery`, factored out of `Resolve`.
       - The rounds are `Loadout.Split`, factored out of the class's split.
     - **Tests:** `ShellEditsTests`. Every edit on every shipped design's batteries leaves it valid, its shares at 1 and
-      its ammunition exactly what it names; plus the light-block rule, shares, the default outfit written out, and
+      its ammunition exactly what it names; plus the light-block rule, shares, the default loadout written out, and
       the tree's order.
     - Checked by clicks (`-input`):
       - the cell opens the picker;
@@ -559,7 +559,7 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
     - Tests: `LoadoutTests` (a kind, a template and shares; the fourth-root velocity; errors; a ship fires her loadout
       and refuses another after firing; a scenario unit's loadout and a ship entry's over it).
 - **Not here: the shell by target** (decided). A battery fires by the magazine order (S2). This plan gives
-  every battery its outfit of kinds and every ship its loadout; firing HE or common at unarmoured targets is the AI's
+  every battery its loadout of kinds and every ship its loadout; firing HE or common at unarmoured targets is the AI's
   pass (the matchup bench showed it matters: four light cruisers against a battleship).
 
 ## Phase P: how it hits
@@ -1763,7 +1763,7 @@ None blocks a step; each is settled by its step's bench.
 |---|---|---|---|---|
 | S0 | — | ammunition read, reported | compiler reads it | no |
 | S1 | S0 | ammunition and explosives catalogues, templates | the explosive's `re` | ballistics, fire control, burst size |
-| S2 | S0 | default outfits | rounds by kind, the magazine order, the dev fire's kind | who fires what |
+| S2 | S0 | default loadouts | rounds by kind, the magazine order, the dev fire's kind | who fires what |
 | S3 | S2 | ammunition weight | — | displacement |
 | S4 | S1 | designer picker (UI session; done) | — | no |
 | S5 | S2 | the loadout applied and resolved | per-ship loadouts: scenarios, dev flag, bench (done) | only for ships given one |

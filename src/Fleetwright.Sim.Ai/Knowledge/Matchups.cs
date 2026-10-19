@@ -262,7 +262,7 @@ public sealed class MatchupSide
         return true;
     }
 
-    /// <summary>A ship's guns working by barrels and rounds left by the outfit, chief (<see cref="BatteryRow.Chief"/>) and the
+    /// <summary>A ship's guns working by barrels and rounds left by the loadout, chief (<see cref="BatteryRow.Chief"/>) and the
     /// rest (-1: none of a kind).</summary>
     static (double MainGuns, double OtherGuns, double MainRounds, double OtherRounds) Guns(ShipStore store, int slot, ShipClass cls, ShipCondition k)
     {

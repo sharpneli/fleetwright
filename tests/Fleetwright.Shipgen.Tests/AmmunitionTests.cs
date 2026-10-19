@@ -1,7 +1,7 @@
 namespace Fleetwright.Shipgen.Tests;
 
 /// <summary>The shells as design data (docs/battle/shells-armour-damage.md S0): the ammunition table and the batteries'
-/// outfits validated, and resolved into the report: k·D³ unless a battery gives its own mass, the gun's velocity with
+/// loadouts validated, and resolved into the report: k·D³ unless a battery gives its own mass, the gun's velocity with
 /// its heaviest shell and the lighter ones faster by the fourth root, the filler's kilograms.</summary>
 public class AmmunitionTests
 {
@@ -21,14 +21,14 @@ public class AmmunitionTests
     };
 
     [Fact]
-    public void A_battery_resolves_its_outfit()
+    public void A_battery_resolves_its_loadout()
     {
         var design = WithMain(new ShellEntryInput { Ammo = "heavy AP", Share = 0.7 }, new ShellEntryInput { Ammo = "light HE", Share = 0.3 });
         Assert.Empty(ShipDesign.Validate(design));
         var warnings = new List<string>();
         var all = Ammunition.Resolve(design, warnings);
         Assert.Empty(warnings);
-        Assert.Equal(2, all.Count);   // the secondary gives none: it carries the default outfit
+        Assert.Equal(2, all.Count);   // the secondary gives none: it carries the default loadout
         Assert.Equal(["Standard APC (1912)", "Standard HE (1912)"], all[1].Shells.Select(s => s.Ammo));
         Assert.Equal([0.3, 0.7], all[1].Shells.Select(s => s.Share));
         var main = all[0];

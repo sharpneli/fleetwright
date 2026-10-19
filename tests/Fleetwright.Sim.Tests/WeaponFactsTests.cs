@@ -103,7 +103,7 @@ public class WeaponFactsTests
                 || s.FillerKg > 0.2 * s.MassKg || s.Kind == ShellKind.He && s.Fuze != Fuze.Nose || !(s.FillerRe > 0))
                 p.Add($"shell type {c.Loadout.ShellTypeId(t)}: {s}");
             // shared by id: one id, one shell, whichever class it's in (but for its muzzle velocity, which follows the
-            // outfit's heaviest shell: a template beside a heavier AP leaves the gun faster)
+            // loadout's heaviest shell: a template beside a heavier AP leaves the gun faster)
             if (shared.TryGetValue(c.Loadout.ShellTypeId(t), out var other) && other with { MuzzleVelocityMs = 0 } != s with { MuzzleVelocityMs = 0 })
                 p.Add($"shell type {c.Loadout.ShellTypeId(t)} differs from another class's");
             else
@@ -117,7 +117,7 @@ public class WeaponFactsTests
     }
 
     /// <summary>The class reads the design's shells: a block's drag shows in its shell, and a battery that gives none
-    /// carries the default outfit (docs/battle/shells-armour-damage.md S1).</summary>
+    /// carries the default loadout (docs/battle/shells-armour-damage.md S1).</summary>
     [Fact]
     public void Shells_come_from_the_design()
     {

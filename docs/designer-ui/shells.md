@@ -24,7 +24,7 @@ How the game differs from the mockup:
 The rest of this note is the mockup's reasoning.
 
 Step S4 of `docs/battle/shells-armour-damage.md`: the designer picks each gun battery's shells from the shell
-templates. This is the design's own outfit, so it decides what the magazines are weighed with and what a ship gets
+templates. This is the design's own loadout, so it decides what the magazines are weighed with and what a ship gets
 unless her admiral loads another (S5).
 
 Mockup: `shells.html`, with the real catalogue (`Content/Templates/shells.json`) and dreadnought's two batteries
@@ -52,7 +52,7 @@ under the cell.
 
 - **Family:** one combo with the 26 families (`ShellTemplates`, oldest first). Picking one sets each kind's block to
   the family's. A gun under 200 mm gets the family's light block where there is one, the rule `ammo-templates` used.
-  For a family without the kind, common stands in for HE, as S2 did. **Default outfit** puts back the 1912 standard,
+  For a family without the kind, common stands in for HE, as S2 did. **Default loadout** puts back the 1912 standard,
   70/30 for a main battery and 30/70 for a secondary.
 - **A row per load, in the magazine order:** a numbered badge for the order fired (① brass for the lead), the kind,
   the shell (a combo of that kind's templates by family), the share (± 5%, the others rescaling to 100), and these
@@ -80,7 +80,7 @@ battery shares one (else **mixed**), and picking a family sets every battery at 
   are copied.
 - The battery's `shells` lists `{ammo, share}`.
 - Blocks that no battery names are dropped on save.
-- A calibre change keeps the outfit (S1: blocks scale with the calibre).
+- A calibre change keeps the loadout (S1: blocks scale with the calibre).
 - Each pick is one undo step with a label ("Battery A shells: RN 1912 family", "Battery A HE share 40%").
 - The magazine weight follows at the next build (S3).
 

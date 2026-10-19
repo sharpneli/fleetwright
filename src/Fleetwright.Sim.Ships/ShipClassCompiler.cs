@@ -831,7 +831,7 @@ public static class ShipClassCompiler
             for (int b = 0; b < batteries.Count; b++)
                 batteries[b] = batteries[b] with { Chief = anyMain ? batteries[b].Kind == Battery.Main : batteries[b].CalibreMm == heaviest };
             c.batteries = batteries.ToArray();
-            // the gun's shells, as shipgen resolved them (the design's, or the default outfit): the class's own loadout
+            // the gun's shells, as shipgen resolved them (the design's, or the default loadout): the class's own loadout
             c.Loadout = Loadout.Compile(c, ship.Report.Shells, "", c.DesignHash);
             c.design = ship.Design;
             Launchers(c, torpedo);

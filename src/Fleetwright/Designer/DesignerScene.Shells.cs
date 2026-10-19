@@ -9,9 +9,9 @@ namespace Fleetwright.Designer;
 
 /// <summary>
 /// The shell picker (docs/designer-ui/shells.md; docs/battle/shells-armour-damage.md S4), in both battery tables where
-/// the material column was: a cell of the outfit's kinds and shares and its family, its hover the shells as fired, and
+/// the material column was: a cell of the loadout's kinds and shares and its family, its hover the shells as fired, and
 /// a click the picker: the family (a tree by navy, the design's first), a row per load in the magazine order (block,
-/// share, rounds, mass, velocity, filler, fuze), the kinds to add and the default outfit. The edits are
+/// share, rounds, mass, velocity, filler, fuze), the kinds to add and the default loadout. The edits are
 /// <see cref="ShellEdits"/>'s; the read-outs are shipgen's own resolution (Ammunition.ResolveBattery), the rounds the
 /// class's split (Loadout.Split).
 /// </summary>
@@ -23,7 +23,7 @@ public sealed unsafe partial class DesignerScene
 
     /// <summary>A battery's shells cell: which battery (main or secondary, its index, its name and gun), its family, the
     /// loads in the magazine order, its rounds a gun and the gun's velocity with its heaviest shell; Problem when the
-    /// outfit doesn't resolve.</summary>
+    /// loadout doesn't resolve.</summary>
     sealed record ShellCell(bool Main, int K, string Name, string Gun, double CalibreMm, string Family, bool Default, int Rounds, double GunMs,
         ShellLine[] Lines, string? Problem = null);
 
@@ -58,7 +58,7 @@ public sealed unsafe partial class DesignerScene
         }
         catch (Exception x) when (x is KeyNotFoundException or NullReferenceException or InvalidOperationException)
         {
-            return new ShellCell(main, k, name, gun, cal, "?", dflt, rounds, gunMs, [], "the outfit names a block the design doesn't have");
+            return new ShellCell(main, k, name, gun, cal, "?", dflt, rounds, gunMs, [], "the loadout names a block the design doesn't have");
         }
     }
 
@@ -118,7 +118,7 @@ public sealed unsafe partial class DesignerScene
             ImGui.TextColored(T.Amber, c.Problem);
         else
         {
-            ImGui.TextColored(T.Brass, $"{c.Gun}: the shells as fired, in the magazine order{(c.Default ? " (the default outfit)" : "")}");
+            ImGui.TextColored(T.Brass, $"{c.Gun}: the shells as fired, in the magazine order{(c.Default ? " (the default loadout)" : "")}");
             ImGui.PushFont(UiFonts.Mono);
             foreach (var l in c.Lines)
             {
@@ -142,7 +142,7 @@ public sealed unsafe partial class DesignerScene
         ImGui.TextUnformatted($"{c.Name} · {c.Gun} · shells");
         ImGui.PopFont();
         ImGui.SameLine(0, P(10));
-        ImGui.TextColored(T.Muted, "the design's own outfit: what the magazines are weighed with, and what a ship gets unless her admiral loads another");
+        ImGui.TextColored(T.Muted, "the design's own loadout: what the magazines are weighed with, and what a ship gets unless her admiral loads another");
         ImGui.SameLine(0, P(16));
         ImGui.PushFont(UiFonts.Mono);
         ImGui.TextUnformatted($"{c.Rounds} rounds a gun");
@@ -167,8 +167,8 @@ public sealed unsafe partial class DesignerScene
         ImGui.TextColored(T.Muted, $"sets each kind below to the family's block{(c.CalibreMm < 200 ? " (its light guns' where it has them)" : "")}");
         ImGui.SameLine(0, P(16));
         ImGui.BeginDisabled(c.Default);
-        if (ImGui.Button("Default outfit"))
-            Edit(ShellEdits.Default(d, main, k), Label("shells: the default outfit"));
+        if (ImGui.Button("Default loadout"))
+            Edit(ShellEdits.Default(d, main, k), Label("shells: the default loadout"));
         ImGui.EndDisabled();
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
             Tip($"The default: the {ShellTemplates.DefaultFamily} family, {(main ? "70% AP and 30% HE" : "30% AP and 70% HE")}");
@@ -255,7 +255,7 @@ public sealed unsafe partial class DesignerScene
         ImGui.Separator();
         ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + P(780));
         ImGui.TextColored(T.Muted, FormattableString.Invariant($"The gun leaves at {c.GunMs:0} m/s with its heaviest shell; a lighter one leaves faster by the ¼ power ") +
-                                   $"of the masses. Mass is the block's k·D³ at {c.CalibreMm:0.#} mm, so a calibre change keeps the outfit. Picking a template " +
+                                   $"of the masses. Mass is the block's k·D³ at {c.CalibreMm:0.#} mm, so a calibre change keeps the loadout. Picking a template " +
                                    "copies its block into the design's ammunition; blocks no battery names are dropped.");
         ImGui.PopTextWrapPos();
         if (shellOpen?.StartsWith(key, StringComparison.Ordinal) == true)

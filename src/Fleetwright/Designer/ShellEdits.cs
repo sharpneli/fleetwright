@@ -4,9 +4,9 @@ using Fleetwright.Shipgen;
 namespace Fleetwright.Designer;
 
 /// <summary>The shell picker's edits (docs/designer-ui/shells.md; docs/battle/shells-armour-damage.md S4), each a new
-/// design: a battery's outfit (its <c>shells</c>, the blocks they name copied into the design's <c>ammunition</c> from
+/// design: a battery's loadout (its <c>shells</c>, the blocks they name copied into the design's <c>ammunition</c> from
 /// the templates, as plant templates are copied), and the families' order for picking. A battery without shells
-/// carries the default outfit; editing it writes that outfit out first. Blocks no battery names are dropped.</summary>
+/// carries the default loadout; editing it writes that loadout out first. Blocks no battery names are dropped.</summary>
 static class ShellEdits
 {
     public static readonly string[] Kinds = ["ap", "common", "he"];
@@ -18,19 +18,19 @@ static class ShellEdits
 
     static List<BatteryInput>? List(Design d, bool main) => main ? d.Main : d.Secondary;
 
-    /// <summary>A battery's outfit as entries: its own, or the default outfit's (its blocks then come from the catalogue).</summary>
-    public static List<ShellEntryInput> Outfit(Design d, bool main, int k) =>
+    /// <summary>A battery's loadout as entries: its own, or the default loadout's (its blocks then come from the catalogue).</summary>
+    public static List<ShellEntryInput> Loadout(Design d, bool main, int k) =>
         List(d, main)![k].Shells is { Count: > 0 } own ? [.. own]
-            : [.. ShellTemplates.DefaultOutfit(main).Select(o => new ShellEntryInput { Ammo = o.Name, Share = o.Share })];
+            : [.. ShellTemplates.DefaultLoadout(main).Select(o => new ShellEntryInput { Ammo = o.Name, Share = o.Share })];
 
     /// <summary>The template a block is (by its name), or null for one of the design's own.</summary>
     public static ShellTemplates.Template? TemplateOf(string? ammo) => ammo is null ? null : ShellTemplates.Get(ammo);
 
-    /// <summary>The family of a battery's outfit: its blocks' one family, "mixed", or "custom" for blocks of the design's
+    /// <summary>The family of a battery's loadout: its blocks' one family, "mixed", or "custom" for blocks of the design's
     /// own.</summary>
     public static string FamilyOf(Design d, bool main, int k)
     {
-        var fams = Outfit(d, main, k).Select(e => TemplateOf(e.Ammo)?.Group ?? "custom").Distinct().ToList();
+        var fams = Loadout(d, main, k).Select(e => TemplateOf(e.Ammo)?.Group ?? "custom").Distinct().ToList();
         return fams.Count == 1 ? fams[0] : "mixed";
     }
 
@@ -53,7 +53,7 @@ static class ShellEdits
         return (calibreMm < LightGunMm ? ts.FirstOrDefault(t => t.Light) : null) ?? ts.FirstOrDefault(t => !t.Light) ?? ts.FirstOrDefault();
     }
 
-    /// <summary>The design with a battery's outfit set, the templates it names copied in, and blocks nobody names dropped.</summary>
+    /// <summary>The design with a battery's loadout set, the templates it names copied in, and blocks nobody names dropped.</summary>
     static Design With(Design d, bool main, int k, List<ShellEntryInput>? shells)
     {
         var list = List(d, main)!.ToList();
@@ -70,12 +70,12 @@ static class ShellEdits
         return d with { Ammunition = table.Count > 0 ? table : null };
     }
 
-    /// <summary>Every kind of a battery's outfit to a family's block; a kind the family lacks takes its common shell (the
+    /// <summary>Every kind of a battery's loadout to a family's block; a kind the family lacks takes its common shell (the
     /// families before HE shells), else its AP.</summary>
     public static Design SetFamily(Design d, bool main, int k, string family)
     {
         double cal = List(d, main)![k].CalibreMm ?? 0;
-        var shells = Outfit(d, main, k).Select(e =>
+        var shells = Loadout(d, main, k).Select(e =>
         {
             string kind = TemplateOf(e.Ammo)?.Value.Kind ?? d.Ammunition?.GetValueOrDefault(e.Ammo ?? "")?.Kind ?? "ap";
             var t = BlockOf(family, kind, cal) ?? BlockOf(family, "common", cal) ?? BlockOf(family, "ap", cal);
@@ -94,10 +94,10 @@ static class ShellEdits
         return d;
     }
 
-    /// <summary>One entry of a battery's outfit to another block.</summary>
+    /// <summary>One entry of a battery's loadout to another block.</summary>
     public static Design SetBlock(Design d, bool main, int k, int entry, string template)
     {
-        var shells = Outfit(d, main, k);
+        var shells = Loadout(d, main, k);
         shells[entry] = shells[entry] with { Ammo = template, MassKg = null, MuzzleVelocityMs = null };
         return With(d, main, k, Merge(shells));
     }
@@ -106,7 +106,7 @@ static class ShellEdits
     /// make up the rest, rounded to whole percent, the largest taking what rounding leaves.</summary>
     public static Design SetShare(Design d, bool main, int k, int entry, int pct)
     {
-        var shells = Outfit(d, main, k);
+        var shells = Loadout(d, main, k);
         int n = shells.Count;
         if (n < 2)
             return d;
@@ -120,7 +120,7 @@ static class ShellEdits
     /// <summary>A kind the battery lacks, from its family (the first entry's), at 20%.</summary>
     public static Design AddKind(Design d, bool main, int k, string kind)
     {
-        var shells = Outfit(d, main, k);
+        var shells = Loadout(d, main, k);
         string family = TemplateOf(shells[0].Ammo)?.Group ?? ShellTemplates.DefaultFamily;
         var t = BlockOf(family, kind, List(d, main)![k].CalibreMm ?? 0) ?? BlockOf(ShellTemplates.DefaultFamily, kind, List(d, main)![k].CalibreMm ?? 0);
         if (t is null)
@@ -132,7 +132,7 @@ static class ShellEdits
     /// <summary>An entry gone, its share to the largest left.</summary>
     public static Design Remove(Design d, bool main, int k, int entry)
     {
-        var shells = Outfit(d, main, k);
+        var shells = Loadout(d, main, k);
         if (shells.Count < 2)
             return d;
         double gone = shells[entry].Share ?? 0;
@@ -142,7 +142,7 @@ static class ShellEdits
         return With(d, main, k, shells);
     }
 
-    /// <summary>The default outfit again: the battery gives no shells.</summary>
+    /// <summary>The default loadout again: the battery gives no shells.</summary>
     public static Design Default(Design d, bool main, int k) => With(d, main, k, null);
 
     /// <summary>Two entries of one block become one (a family change can make AP and common the same block).</summary>

@@ -205,10 +205,10 @@ public sealed record BatteryInput
     /// <summary>Its gun block, by name (gun_tech, else the catalogue's: GunTemplates): its reload, training, elevation,
     /// pattern and propellant. None: <see cref="GunTemplates.Default"/>.</summary>
     public string? Gun { get; init; }
-    /// <summary>The outfit: the ammunition blocks it carries and their shares of the rounds (none: the sim's placeholder
+    /// <summary>The loadout: the ammunition blocks it carries and their shares of the rounds (none: the sim's placeholder
     /// by the look, until the default template).</summary>
     public List<ShellEntryInput>? Shells { get; init; }
-    /// <summary>Not input: the outfit's mean shell mass, kg, stamped on by ShipDesign.Build (Ammunition.WithShellMasses)
+    /// <summary>Not input: the loadout's mean shell mass, kg, stamped on by ShipDesign.Build (Ammunition.WithShellMasses)
     /// for the magazines' weight; null outside a build.</summary>
     [JsonIgnore] public double? ShellKg { get; init; }
     // main batteries

@@ -71,7 +71,8 @@ scrolls, so it fits.
 
 **One word, one meaning:** "outfit" is the design's fire-load block, and also what the shells' code and picker call a
 battery's shells and shares (`ShellEdits.Outfit`, `BatteryInput.Shells`' summary, the shells tooltip). With both on
-one screen, T0 renames the shells' sense to "load" (the shells picker's own word already). The row says "Shock grade",
+one screen, T0 renames the shells' sense to "loadout", the sim's word for it already (`Loadout`, `-loadout=`); a
+"load" stays one entry of it. The row says "Shock grade",
 not "Fittings", which the drawing uses for its dressing. A fire-control row there ("every battery's preset") is left out: main and secondary fits rarely match.
 
 ## Order (one tab a session, mockup then port)
@@ -104,4 +105,7 @@ Each step verified with real clicks (`-input`) and `-ui` screenshots, committed 
   failures. The Fire control tab per battery: directors, rangefinder, Preset, Optics, Computer, Mount (with
   directors), Sights (with the battery); the turret rangefinders (`Knobs.MainRangefinder`), aft control's and the
   conning tower's. The Crew tab: the outfit's picker and its fire loads. The torpedo picker went to the Templates panel
-  only, and the "outfit" rename is still to do.
+  only. The rename: "outfit" for a battery's shells became "loadout" in code, UI, tests and the live docs
+  (`ShellTemplates.DefaultLoadout`, `ShellEdits.Loadout`, `shipgen ammo-templates --loadouts`); `outfit` is the fire
+  block's alone. Left as is: "Equipment, outfit, crew & stores", the naval architect's outfit weight (the ship's
+  fittings, near the fire block's sense), a weight name the goldens carry.

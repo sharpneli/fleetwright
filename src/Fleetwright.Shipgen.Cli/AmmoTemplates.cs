@@ -8,7 +8,7 @@ namespace Fleetwright.Shipgen.Cli;
 
 /// <summary>`shipgen ammo-templates FILE...` (S1 of docs/battle/shells-armour-damage.md, one-off): switches each
 /// design's shells from S0's placeholder blocks to the templates of its navy and year (ShellTemplates). Each battery
-/// keeps its outfit's kinds and shares; each kind takes its family's block (a light gun's, under 200 mm, the family's
+/// keeps its loadout's kinds and shares; each kind takes its family's block (a light gun's, under 200 mm, the family's
 /// light block where it has one), copied into the design's `ammunition` with the explosives it names copied into
 /// `explosives`, and the per-battery `mass_kg` goes. `--dry` prints what it would do. The mapping is the one the
 /// user approved (the plan's S1 section has it).</summary>
@@ -75,17 +75,17 @@ static class AmmoTemplates
             ?? ShellTemplates.All.FirstOrDefault(t => t.Group == heavy && !t.Light && t.Value.Kind == kind);
     }
 
-    /// <summary>The default outfit (S2, decision 7): a main battery 70% AP and 30% HE, a secondary 30% and 70%. Either
+    /// <summary>The default loadout (S2, decision 7): a main battery 70% AP and 30% HE, a secondary 30% and 70%. Either
     /// is the family's common shell where it has none of that kind: HE in the families before HE shells (~1900), AP in
     /// the post-war dual-purpose family (its SAP).</summary>
-    static (string Kind, double Share)[] Outfit(bool main, string heavy, string light, double calibreMm)
+    static (string Kind, double Share)[] Loadout(bool main, string heavy, string light, double calibreMm)
     {
         string Or(string kind) => Find(heavy, light, kind, calibreMm) != null ? kind : "common";
         string ap = Or("ap"), he = Or("he");
         return main ? [(ap, 0.7), (he, 0.3)] : [(ap, 0.3), (he, 0.7)];
     }
 
-    public static int Run(IEnumerable<string> paths, bool dry, bool outfits = false)
+    public static int Run(IEnumerable<string> paths, bool dry, bool loadouts = false)
     {
         int written = 0, skipped = 0;
         foreach (var p in paths)
@@ -103,8 +103,8 @@ static class AmmoTemplates
             foreach (var (b, main) in design.MainBatteries.Select(b => (b, true)).Concat((design.Secondary ?? []).Select(b => (b, false))))
             {
                 var list = new JsonArray();
-                // the outfit's kinds and shares: the design's (S1), or the default outfit (S2's --outfits)
-                var kinds = outfits ? Outfit(main, fam.Heavy, fam.Light, b.CalibreMm!.Value)
+                // the loadout's kinds and shares: the design's (S1), or the default loadout (S2's --loadouts)
+                var kinds = loadouts ? Loadout(main, fam.Heavy, fam.Light, b.CalibreMm!.Value)
                     : (b.Shells ?? []).Select(e => (design.Ammunition[e.Ammo!].Kind!, e.Share!.Value)).ToArray();
                 foreach (var (kind, share) in kinds)
                 {

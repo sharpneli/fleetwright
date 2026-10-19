@@ -315,7 +315,7 @@ public sealed class MatchupGun
 
 /// <summary>Ships of one class on a side of a matchup (a count, fractional for a contact spread over the classes it may
 /// be), and what they still have: their guns working (chief and the rest, shares), their rounds left (shares of the
-/// outfit), their torpedoes left (a share), their speed (a share of the designed) and the toughness left in them (a
+/// loadout), their torpedoes left (a share), their speed (a share of the designed) and the toughness left in them (a
 /// share: less once they're seen low or listing).</summary>
 public readonly record struct MatchupEntry(MatchupProfile Profile, double Count, double MainGuns = 1, double OtherGuns = 1, double MainRounds = 1,
     double OtherRounds = 1, double TorpedoesLeft = 1, double Speed = 1, double Toughness = 1)

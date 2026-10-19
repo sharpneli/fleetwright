@@ -3,10 +3,10 @@ using System.Text.Json.Serialization;
 namespace Fleetwright.Shipgen;
 
 /// <summary>The shells as design data (docs/battle/shells-armour-damage.md phase S): the design's `ammunition` table of
-/// shell tech blocks, calibre-free like machinery.tech, its `explosives`, and each battery's outfit (`shells`) naming
+/// shell tech blocks, calibre-free like machinery.tech, its `explosives`, and each battery's loadout (`shells`) naming
 /// the blocks. Validated here and resolved per battery into the report (kind, mass, muzzle velocity, filler and its
-/// explosive, fuze), which the sim's compiler reads. A battery that gives no shells carries the default outfit of the
-/// default template (ShellTemplates.DefaultOutfit).</summary>
+/// explosive, fuze), which the sim's compiler reads. A battery that gives no shells carries the default loadout of the
+/// default template (ShellTemplates.DefaultLoadout).</summary>
 public static class Ammunition
 {
     public static readonly string[] Kinds = ["ap", "common", "he"];
@@ -168,30 +168,30 @@ public static class Ammunition
         }
     }
 
-    /// <summary>The design with each gun battery stamped with its outfit's mean shell mass, kg (BatteryInput.ShellKg, the
+    /// <summary>The design with each gun battery stamped with its loadout's mean shell mass, kg (BatteryInput.ShellKg, the
     /// shares by the masses Resolve gives): what its magazines weigh (S3). Expects a valid design.</summary>
     public static Design WithShellMasses(Design design)
     {
         List<BatteryInput>? Stamp(List<BatteryInput>? list, bool main) => list?.Select(b =>
-            b.CalibreMm is { } cal && b.CalibreLength is not null ? b with { ShellKg = Outfit(design, b, main).Sum(o => o.Share * o.MassKg) } : b).ToList();
+            b.CalibreMm is { } cal && b.CalibreLength is not null ? b with { ShellKg = Loadout(design, b, main).Sum(o => o.Share * o.MassKg) } : b).ToList();
         return design with { Main = Stamp(design.Main, true), Secondary = Stamp(design.Secondary, false) };
     }
 
-    /// <summary>A battery's outfit: its shells (block, name, share, mass, its own velocity if given), or the default
-    /// outfit's.</summary>
-    static List<(AmmoInput Block, string Name, double Share, double MassKg, double? MuzzleVelocityMs)> Outfit(Design design, BatteryInput b, bool main)
+    /// <summary>A battery's loadout: its shells (block, name, share, mass, its own velocity if given), or the default
+    /// loadout's.</summary>
+    static List<(AmmoInput Block, string Name, double Share, double MassKg, double? MuzzleVelocityMs)> Loadout(Design design, BatteryInput b, bool main)
     {
         var table = design.Ammunition ?? [];
         double d = b.CalibreMm!.Value / 1000;
         return b.Shells is { Count: > 0 } shells
             ? shells.Select(e => (table[e.Ammo!], e.Ammo!, e.Share!.Value, e.MassKg ?? table[e.Ammo!].MassKKgM3!.Value * d * d * d, e.MuzzleVelocityMs)).ToList()
-            : ShellTemplates.DefaultOutfit(main).Select(o => (o.Block, o.Name, o.Share, o.Block.MassKKgM3!.Value * d * d * d, (double?)null)).ToList();
+            : ShellTemplates.DefaultLoadout(main).Select(o => (o.Block, o.Name, o.Share, o.Block.MassKKgM3!.Value * d * d * d, (double?)null)).ToList();
     }
 
     /// <summary>Each gun battery's resolved shells, main batteries first, in the design's order: its `shells`, else the
-    /// default outfit. Two batteries of one gun (kind, calibre and length) that carry different shells: the first's are
+    /// default loadout. Two batteries of one gun (kind, calibre and length) that carry different shells: the first's are
     /// used, with a warning, since the sim fires one gun's shells from one battery. Expects a valid design.
-    /// <para><paramref name="gun"/> is the design whose outfit sets each gun's muzzle velocity (its heaviest shell's), when
+    /// <para><paramref name="gun"/> is the design whose loadout sets each gun's muzzle velocity (its heaviest shell's), when
     /// that isn't this one: a loadout's (<see cref="WithLoadout"/>), so a heavier shell than the design's leaves the gun
     /// slower by the fourth-root rule, as a lighter kind leaves it faster.</para></summary>
     public static List<BatteryShells> Resolve(Design design, List<string> warnings, Design? gun = null)
@@ -208,25 +208,25 @@ public static class Ammunition
                 if (same is null)
                     res.Add(new BatteryShells(which, i, cal, len, resolved));
                 else if (!same.Shells.SequenceEqual(resolved))
-                    warnings.Add($"{which}[{i}]: the same gun as {which}[{same.Index}] with other shells; one gun fires one outfit, so " +
+                    warnings.Add($"{which}[{i}]: the same gun as {which}[{same.Index}] with other shells; one gun fires one loadout, so " +
                                  $"{which}[{same.Index}]'s are used");
             }
         return res;
     }
 
     /// <summary>One gun battery's resolved shells (main or secondary, its index; it has a calibre and length), in its
-    /// outfit's order: what <see cref="Resolve"/> reports for it, and the designer shows.</summary>
+    /// loadout's order: what <see cref="Resolve"/> reports for it, and the designer shows.</summary>
     public static List<ShellReport> ResolveBattery(Design design, string which, int i, Design? gun = null)
     {
         var b = (which == "main" ? design.Main : design.Secondary)![i];
-        var outfit = Outfit(design, b, which == "main");
-        var masses = outfit.Select(e => e.MassKg).ToArray();
-        var anchor = gun is null ? outfit : Outfit(gun, (which == "main" ? gun.Main : gun.Secondary)![i], which == "main");
+        var loadout = Loadout(design, b, which == "main");
+        var masses = loadout.Select(e => e.MassKg).ToArray();
+        var anchor = gun is null ? loadout : Loadout(gun, (which == "main" ? gun.Main : gun.Secondary)![i], which == "main");
         double heavyKg = anchor.Max(e => e.MassKg), heavyMs = b.MuzzleVelocityMs ?? DefaultMuzzleVelocity(b.CalibreLength!.Value);
         var resolved = new List<ShellReport>();
-        for (int k = 0; k < outfit.Count; k++)
+        for (int k = 0; k < loadout.Count; k++)
         {
-            var (a, name, share, _, mv) = outfit[k];
+            var (a, name, share, _, mv) = loadout[k];
             var x = Explosives.Resolve(design, a.Filler!.Explosive)!;
             resolved.Add(new ShellReport
             {
@@ -328,7 +328,7 @@ public static class Ammunition
         return errors.Count > had ? null : loaded;
     }
 
-    /// <summary>A battery's own block of a kind (its outfit's, or the default outfit's when it gives none, copied into the
+    /// <summary>A battery's own block of a kind (its loadout's, or the default loadout's when it gives none, copied into the
     /// table), else the table's first of the kind; null for none.</summary>
     static string? OwnOfKind(BatteryInput b, bool main, string kind, Dictionary<string, AmmoInput> table)
     {
@@ -337,7 +337,7 @@ public static class Ammunition
             if (shells.FirstOrDefault(e => e.Ammo is { } n && table.TryGetValue(n, out var a) && a.Kind == kind) is { Ammo: { } own })
                 return own;
         }
-        else if (ShellTemplates.DefaultOutfit(main).FirstOrDefault(o => o.Block.Kind == kind) is { Block: not null } d)
+        else if (ShellTemplates.DefaultLoadout(main).FirstOrDefault(o => o.Block.Kind == kind) is { Block: not null } d)
         {
             table[d.Name] = d.Block;
             return d.Name;
@@ -347,10 +347,10 @@ public static class Ammunition
 }
 
 /// <summary>A battery's resolved shells in the report: which battery (main or secondary, its index in the design) and
-/// its gun, and the outfit.</summary>
+/// its gun, and the loadout.</summary>
 public sealed record BatteryShells(string Battery, int Index, double CalibreMm, double CalibreLength, List<ShellReport> Shells);
 
-/// <summary>One shell of a battery's outfit, resolved: its share of the rounds, mass, muzzle velocity, drag, cap (its
+/// <summary>One shell of a battery's loadout, resolved: its share of the rounds, mass, muzzle velocity, drag, cap (its
 /// kind and share of the mass), body (the obliquity and T/D past which it breaks up on face-hardened plate, 90° and 0
 /// when the block gives none, and its quality on that plate), filler (kg, the explosive, its TNT equivalent, the
 /// booster, and the explosive's rates: bursting in the plate at the limit, and full detonation with this booster) and

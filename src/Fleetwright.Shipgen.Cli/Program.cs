@@ -165,9 +165,9 @@ public static class Program
             fire-control level, a gun's reload, training and elevation, the shells and their shares, the plating; most
             are placeholders until the designer gives them. DESIGN is a path or a shipped design's name. --research
             adds the placeholders beside the research's guns
-        shipgen ammo-templates DESIGN.json... [--outfits] [--dry]
+        shipgen ammo-templates DESIGN.json... [--loadouts] [--dry]
             S1 of docs/battle/shells-armour-damage.md, one-off: switches each design's shells to the templates of its
-            navy and year (the outfits' kinds and shares kept); --outfits (S2) gives each battery the default outfit
+            navy and year (the loadouts' kinds and shares kept); --loadouts (S2) gives each battery the default loadout
             instead, main 70% AP / 30% HE, secondary 30 / 70 (common for HE in the families before HE); --dry lists it
         shipgen burn [--settings FILE]
             one space burning unfought (docs/battle/fire.md B0) through the game's fire: damage/17 §9 T2's spaces with
@@ -288,7 +288,7 @@ public static class Program
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
                     new FloodBench.Options(a.Get("hole"), a.Get("rooms"), D(a, "minutes", 60), D(a, "every", 120), a.Int("step", 0), a.Has("cells"))),
                 "ballistics" => BallisticsBench.Run(a.Positional, a.Has("research"), n => LoadDesign(File.Exists(n) ? n : Path.Combine(Root(a), "designs", n + ".json"))),
-                "ammo-templates" => AmmoTemplates.Run(a.Positional, a.Has("dry"), a.Has("outfits")),
+                "ammo-templates" => AmmoTemplates.Run(a.Positional, a.Has("dry"), a.Has("loadouts")),
                 "templates" => TemplatesWriter.Run(Path.Combine(Root(a), "..")),
                 "upgrade" => DesignUpgrade.Run(a.Positional, a.Has("dry"), a.Has("materials")),
                 "fit" => DesignFit.Run(a.Positional, new[] { "main", "secondary", "aa" }.Where(k => a.Get(k) is not null).ToDictionary(k => k, k => a.Get(k)!),
@@ -341,7 +341,7 @@ public static class Program
                 int eq = s.IndexOf('=');
                 if (eq > 0)
                     flags[s[2..eq]] = s[(eq + 1)..];
-                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay" or "--research" or "--trace" or "--damage" or "--cells" or "--play" or "--dry" or "--outfits" or "--summary" or "--rooms" or "--write" or "--materials" or "--fire-trace")   // the switches
+                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay" or "--research" or "--trace" or "--damage" or "--cells" or "--play" or "--dry" or "--loadouts" or "--summary" or "--rooms" or "--write" or "--materials" or "--fire-trace")   // the switches
                     flags[s[2..]] = null;
                 else if (i + 1 < list.Count)
                     flags[s[2..]] = list[++i];

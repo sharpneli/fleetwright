@@ -377,7 +377,7 @@ static class TemplatesWriter
             A template is an `ammunition` block (docs/shipgen/README.md): calibre-free, so a navy's family of guns shares it.
             Mass is k·D³ (D in m); k is shown here also as W/D³ in lb/in³, the literature's unit (1 lb/in³ = 27,680 kg/m³).
             Shares are of the shell's mass, thresholds in calibres. A design copies the blocks it uses; a battery that gives
-            no shells carries the default outfit of the **1912 standard** family (main 70% AP / 30% HE, secondary 30% / 70%).
+            no shells carries the default loadout of the **1912 standard** family (main 70% AP / 30% HE, secondary 30% / 70%).
             Light guns (under 200 mm) of a family take its light blocks where it has them. Notes cite the research
             (`research/simulation/armor/04-shells-fuzes.md` §1.7 and §3.5, `armor/00` §5.4, `damage/13` §2.5 and §3.2); [EST]
             marks numbers no source gives.

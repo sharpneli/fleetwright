@@ -120,7 +120,7 @@ public sealed class ShipClass
     /// <summary>A loadout of this class: its design with the batteries' shells given (Ammunition.WithLoadout), resolved by
     /// shipgen with each gun's velocity the design's, compiled as the class's own is. The design's guns, magazines and
     /// weights stay as they are (the sim's hydrostatics stay on the design's weight; flagged in the plan). Null, with
-    /// the errors, when it doesn't apply; <paramref name="warnings"/> gets shipgen's (one gun, two outfits).</summary>
+    /// the errors, when it doesn't apply; <paramref name="warnings"/> gets shipgen's (one gun, two loadouts).</summary>
     public Loadout? Load(LoadoutSpec spec, List<string> errors, List<string>? warnings = null)
     {
         var loaded = Ammunition.WithLoadout(design, spec.Batteries, spec.Blocks, errors);

@@ -137,7 +137,7 @@ public static class ShellTemplates
         T("FR 1893 common (Melinite)", "FR 1893", "common", 0.41, 2, 1.8, "none", 0, false, Common, 0.06, "Lyddite", "basic",
             Base(0), "forged", "Melinite (picric acid, catalogued as Lyddite) from 1887. Filler [EST]."),
 
-        // ---- RN 1906: the 12" Mk X outfit
+        // ---- RN 1906: the 12" Mk X loadout
         T("RN 1906 APC (powder)", "RN 1906", "ap", 0.49, 2, 1.5, "soft", 0.086, false, Rn1914, 0.031, "Black powder", "basic",
             Base(0.003), "nicr",
             "12\" APC Mk VI 2crh 850 lb (W/D³ 0.49), Hadfield soft cap 73 lb (8.6%), powder-filled (lyddite from 1909-10), No. 16 non-delay. Lord Nelsons kept 2crh."),
@@ -303,9 +303,9 @@ public static class ShellTemplates
     /// <summary>The default template's family: what a battery that gives no `shells` carries.</summary>
     public const string DefaultFamily = "1912 standard";
 
-    /// <summary>The default outfit (decision 7): a main battery 70% AP and 30% HE, a secondary 30% AP and 70% HE, of the
+    /// <summary>The default loadout (decision 7): a main battery 70% AP and 30% HE, a secondary 30% AP and 70% HE, of the
     /// default family.</summary>
-    public static IReadOnlyList<(AmmoInput Block, string Name, double Share)> DefaultOutfit(bool main)
+    public static IReadOnlyList<(AmmoInput Block, string Name, double Share)> DefaultLoadout(bool main)
     {
         var ap = All.First(t => t.Group == DefaultFamily && t.Value.Kind == "ap");
         var he = All.First(t => t.Group == DefaultFamily && t.Value.Kind == "he");

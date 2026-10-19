@@ -1746,7 +1746,7 @@ fitted to the research's guns, `shipgen weapons --research`):
   a navy's shell quality by year. The placeholders read the look's era and navy, and an era is a paint scheme, not a
   year: a design drawn in the wrong era gets the wrong guns. Since 2026-10-16 (S0 and S1 of `shells-armour-damage.md`) the
   designs carry them as data (`ammunition`, `explosives`, each battery's `shells`) from the templates of their navy and
-  year; a battery that gives none carries the default template's outfit. Done.
+  year; a battery that gives none carries the default template's loadout. Done.
 - **Working the guns per mount type:** reload, training and elevating rates, the highest elevation. Since 2026-10-19
   (design format 9) the design's gun block per battery (`gun`, `gun_tech`), not the look's era: the rules are still
   placeholders, per period rather than per mount.

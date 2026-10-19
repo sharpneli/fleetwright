@@ -5,7 +5,7 @@ using SE = Fleetwright.Designer.ShellEdits;
 namespace Fleetwright.Tests;
 
 /// <summary>The shell picker's edits (docs/designer-ui/shells.md): a family, a block, shares, kinds added and removed,
-/// the default outfit and the Templates panel's every-battery family. Every edit leaves the design valid, its shares
+/// the default loadout and the Templates panel's every-battery family. Every edit leaves the design valid, its shares
 /// adding up to 1, and only the blocks its batteries name in its ammunition.</summary>
 public class ShellEditsTests
 {
@@ -40,7 +40,7 @@ public class ShellEditsTests
                     Sound(c, at + " + common");
                     var s = SE.SetShare(c, main, k, 0, 55);
                     Sound(s, at + " share");
-                    var r = SE.Remove(s, main, k, SE.Outfit(s, main, k).Count - 1);
+                    var r = SE.Remove(s, main, k, SE.Loadout(s, main, k).Count - 1);
                     Sound(r, at + " remove");
                     Sound(SE.Default(r, main, k), at + " default");
                 }
@@ -52,12 +52,12 @@ public class ShellEditsTests
         var d = Load("dreadnought");
         // the 12-pdr (76 mm) secondary: RN 1906's light HE; the 12" main its heavy HE
         var sec = SE.SetFamily(d, false, 0, "RN 1906");
-        Assert.Contains(SE.Outfit(sec, false, 0), e => e.Ammo == "RN 1906 light HE (lyddite)");
+        Assert.Contains(SE.Loadout(sec, false, 0), e => e.Ammo == "RN 1906 light HE (lyddite)");
         var main = SE.SetFamily(d, true, 0, "RN 1906");
-        Assert.Contains(SE.Outfit(main, true, 0), e => e.Ammo == "RN 1906 HE (lyddite)");
+        Assert.Contains(SE.Loadout(main, true, 0), e => e.Ammo == "RN 1906 HE (lyddite)");
         // the 1867 family has no HE: its common shell takes HE's place
         var old = SE.SetFamily(d, true, 0, "1867 chilled iron");
-        Assert.Equal(["ap", "common"], SE.Outfit(old, true, 0).Select(e => SE.TemplateOf(e.Ammo)!.Value.Kind));
+        Assert.Equal(["ap", "common"], SE.Loadout(old, true, 0).Select(e => SE.TemplateOf(e.Ammo)!.Value.Kind));
         Assert.Equal("1867 chilled iron", SE.FamilyOf(old, true, 0));
     }
 
@@ -66,24 +66,24 @@ public class ShellEditsTests
     {
         var d = Load("dreadnought");   // main 70 AP / 30 HE
         var up = SE.SetShare(d, true, 0, 0, 75);
-        Assert.Equal([0.75, 0.25], SE.Outfit(up, true, 0).Select(e => e.Share!.Value));
+        Assert.Equal([0.75, 0.25], SE.Loadout(up, true, 0).Select(e => e.Share!.Value));
         var top = SE.SetShare(d, true, 0, 0, 100);   // the other keeps 5%
-        Assert.Equal([0.95, 0.05], SE.Outfit(top, true, 0).Select(e => e.Share!.Value));
+        Assert.Equal([0.95, 0.05], SE.Loadout(top, true, 0).Select(e => e.Share!.Value));
         var three = SE.AddKind(d, true, 0, "common");
-        Assert.Equal(20, SE.Outfit(three, true, 0).Single(e => SE.TemplateOf(e.Ammo)!.Value.Kind == "common").Share!.Value * 100, 6);
+        Assert.Equal(20, SE.Loadout(three, true, 0).Single(e => SE.TemplateOf(e.Ammo)!.Value.Kind == "common").Share!.Value * 100, 6);
         var gone = SE.Remove(three, true, 0, 0);   // AP's share to the largest left
-        Assert.Equal(1, SE.Outfit(gone, true, 0).Sum(e => e.Share!.Value), 6);
+        Assert.Equal(1, SE.Loadout(gone, true, 0).Sum(e => e.Share!.Value), 6);
     }
 
     [Fact]
-    public void A_battery_on_the_default_outfit_writes_it_out_when_edited()
+    public void A_battery_on_the_default_loadout_writes_it_out_when_edited()
     {
         var d = Load("dreadnought");
         var bare = SE.Default(SE.Default(d, true, 0), false, 0);
         Assert.Null(bare.Ammunition);
         Assert.Equal("1912 standard", SE.FamilyOfAll(bare));
         var block = SE.SetBlock(bare, true, 0, 0, "RN 1912 APC (lyddite)");
-        Assert.Equal(["RN 1912 APC (lyddite)", "Standard HE (1912)"], SE.Outfit(block, true, 0).Select(e => e.Ammo));
+        Assert.Equal(["RN 1912 APC (lyddite)", "Standard HE (1912)"], SE.Loadout(block, true, 0).Select(e => e.Ammo));
         Sound(block, "default, then a block");
         Assert.Equal("mixed", SE.FamilyOfAll(block));
         Assert.Equal("RN 1912", SE.FamilyOfAll(SE.SetFamilyAll(block, "RN 1912")));

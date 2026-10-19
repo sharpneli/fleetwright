@@ -38,7 +38,7 @@ public sealed class Loadout
     public ReadOnlySpan<ShellTypeRow> ShellTypes => types;
 
     /// <summary>A shell type's id, shared across classes: the gun and the block ("305/45 RN 1906 APC (powder)"), so
-    /// equal ids are equal rows but for the muzzle velocity (it follows the outfit's heaviest shell).</summary>
+    /// equal ids are equal rows but for the muzzle velocity (it follows the loadout's heaviest shell).</summary>
     public string ShellTypeId(int i) => typeIds[i];
 
     /// <summary>A battery's loads (the class's Batteries), shares adding up to 1, in the magazine order
@@ -59,7 +59,7 @@ public sealed class Loadout
     /// mount's start ends them. Torpedo mounts have none.</summary>
     public int MountLoadStart(int mount) => mountLoadStart[mount];
 
-    /// <summary>Each mount's rounds of each of its battery's loads at the start: its rounds split by the outfit's shares
+    /// <summary>Each mount's rounds of each of its battery's loads at the start: its rounds split by the loadout's shares
     /// (largest remainder, so they add up), int.MaxValue each for a mount that counts none.</summary>
     public ReadOnlySpan<int> LoadRounds => loadRounds;
 

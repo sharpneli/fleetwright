@@ -22,8 +22,8 @@ public sealed record TurretType
     public double? RoundsPerGun { get; init; }
     /// <summary>The base of the rangefinder in its gunhouse's hood, m (fire-control.md F4b), or none.</summary>
     public double? RangefinderM { get; init; }
-    /// <summary>Its battery's mean shell mass, kg (the outfit's, BatteryInput.ShellKg); null: the old curve by calibre
-    /// (AA mounts, which have no outfit).</summary>
+    /// <summary>Its battery's mean shell mass, kg (the loadout's, BatteryInput.ShellKg); null: the old curve by calibre
+    /// (AA mounts, which have no loadout).</summary>
     [JsonIgnore] public double? ShellKg { get; init; }
 
     /// <summary>Does a mount of this type stand on a barbette?</summary>
