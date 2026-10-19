@@ -54,8 +54,8 @@ public sealed class SmokeTrails
     /// passed, with its rates (m²/s of particles' extinction area, of water fog) times the time since its last; its start
     /// at <paramref name="origin"/> (Earth-centred, at the height <paramref name="z"/> over the sea), rising
     /// <paramref name="rise"/> m over <paramref name="riseS"/> s (its buoyancy), its core <paramref name="lambda"/> m.
-    /// False when it was its turn but the book had no room to spare (<paramref name="spare"/>: the share of the book it
-    /// may fill to).</summary>
+    /// Over its share of the book (<paramref name="spare"/>) it lays a puff only every third spacing, carrying all it
+    /// made: its plume thins, never breaks. False when it was its turn but it waited for that.</summary>
     public bool Emit(SmokeBook book, long key, int owner, double now, double every, Vec3d origin, double z, double aRate, double fogRate,
         double fogS, Vector3 tint, double lambda, double rise, double riseS, float seed, double spare = 1)
     {
@@ -63,16 +63,15 @@ public sealed class SmokeTrails
             s = new Source { Last = now - every };
         s.Frame = frame;
         double dt = now - s.Last;
-        if (dt < every)
+        bool tight = book.Count >= spare * SmokeBook.Capacity;
+        if (dt < every || tight && dt < 3 * every)
         {
             sources[key] = s;
-            return true;
+            return !tight;
         }
-        dt = Math.Min(dt, 3 * every);
+        dt = Math.Min(dt, 4 * every);
         s.Last = now;
         sources[key] = s;
-        if (book.Count >= spare * SmokeBook.Capacity)
-            return false;
         book.Add(new SmokeBook.Puff
         {
             Born = now, Origin = origin, Z0 = (float)z, JetZ = (float)rise, JetS = (float)Math.Max(riseS, 0.1), Anchor = (float)z,

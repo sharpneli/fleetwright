@@ -100,6 +100,18 @@ public class MagazineTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void A_blast_first_seen_after_its_event_is_over_is_not_taken_again_every_frame()
+    {
+        // the snapshot keeps a blast for its pall's 15 minutes; at 10x the event is over after ~5 minutes of world time
+        var splashes = new Fleetwright.Map.Splashes.SplashBook();
+        var book = new MagazineBook();
+        for (int f = 0; f < 10; f++)
+            book.Update(Blasts((1000, 1)), 1000 + 400_000 + f * 160, 10, 0.016, ClassOf, null, splashes);
+        Assert.Equal(0, book.Count);
+        Assert.Equal(0, splashes.Count);
+    }
+
+    [Fact]
     public void The_after_smoke_is_given_once_back_dated_as_soot_that_keeps_its_colour()
     {
         var book = new MagazineBook();

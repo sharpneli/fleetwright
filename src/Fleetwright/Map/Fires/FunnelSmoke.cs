@@ -28,8 +28,9 @@ public static class FunnelSmoke
     /// it may fill to [EST].</summary>
     public static double FunnelM2s = 1500, IdleShare = 0.05, OilShare = 0.3, RiseM = 20, RiseS = 10, EveryS = 4, Spare = 0.6;
 
-    /// <summary>The plume's core as it leaves the funnel's lee, m: it mixes into her wake's turbulence at once [EST].</summary>
-    public static double CoreM = 8;
+    /// <summary>The plume's core as it leaves the funnel's lee, m: it mixes into her wake's turbulence at once; a puff every
+    /// so many metres she runs (coarse, the funnels being many: docs/visuals/hits-and-fires.md I8) [EST].</summary>
+    public static double CoreM = 10, SpacingM = 20;
 
     /// <summary>Off: no funnel smoke.</summary>
     public static bool On = true;
@@ -90,7 +91,7 @@ public static class FunnelSmoke
                     var at = p + f * ((b.X0 + b.X1) / 2) + stbd * ((b.Y0 + b.Y1) / 2);
                     long key = 1L << 40 | (long)v.Entity[k] << 16 | (uint)fn;
                     int owner = (int)((uint)(v.Entity[k] * 16 + fn % 16) & 0xffffff) | 1 << 30;
-                    trails.Emit(book, key, owner, now, SmokeTrails.Spacing(v.Speed[k], EveryS), at.Normalized() * (Earth.Radius + z), z, rate, 0, 1,
+                    trails.Emit(book, key, owner, now, SmokeTrails.Spacing(v.Speed[k], EveryS, SpacingM), at.Normalized() * (Earth.Radius + z), z, rate, 0, 1,
                         tint, Math.Max(w, CoreM), RiseM, RiseS,
                         (fn * 0.618f + v.Entity[k] * 0.137f) % 1, Spare);
                 }

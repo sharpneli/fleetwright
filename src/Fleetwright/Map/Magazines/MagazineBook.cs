@@ -92,6 +92,10 @@ public sealed class MagazineBook : IThrownTurrets
             var stbd = Vec3d.Cross(fwd, up).Normalized();
             double scale = Math.Exp(MagazineLook.ScatterD * Gaussian(h, 1)), life = Math.Exp(MagazineLook.ScatterS * Gaussian(h, 3));
             double ageS = (drawMs - ms) / 1000.0;
+            // spent before it was first seen (the snapshot keeps a blast for its pall's minutes, longer than the event is kept
+            // here at speed): not taken, or it would be let go and taken again every frame, its debris' splashes with it
+            if (Spent(ageS * ratio, ev.FireballS * life))
+                continue;
             // her mounts' bearings, if she's in view (a new event's array: the start may allocate, the frames don't)
             var bearings = new double[cls.Mounts.Length];
             int k = ships?.IndexOf(v.Ship[i]) ?? -1, start = k >= 0 ? ships!.MountStart[k] : -1;
@@ -115,9 +119,12 @@ public sealed class MagazineBook : IThrownTurrets
             count = Math.Min(count + 1, Capacity);
         }
 
-        while (count > 0 && Clock - this[0].T0 > MagazineBlast.MainAtS + Math.Max(MagazineLook.FadeTo * this[0].FireballS, KeepS) && MagazineLook.AtS < 0)
+        while (count > 0 && Spent(Clock - this[0].T0, this[0].FireballS) && MagazineLook.AtS < 0)
             count--;
     }
+
+    /// <summary>Whether an event this old on the effects' clock, its fireball living this long, s, is over and let go.</summary>
+    static bool Spent(double age, double fireballS) => age > MagazineBlast.MainAtS + Math.Max(MagazineLook.FadeTo * fireballS, KeepS);
 
     /// <summary>Each debris piece's splash, and the gunhouse's if it comes down in the sea, into the splash book once,
     /// dated ahead on its clocks to when it lands (its column and foam wait for it).</summary>

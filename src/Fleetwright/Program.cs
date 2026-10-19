@@ -21,6 +21,7 @@ public static unsafe class Program
         double? startSpeed = null;
         bool startPaused = false, noPause = false;
         string? hitBench = null;
+        int follow = 0;
         var devShips = new List<string>();
         int selectShip = -1;
         var captains = new List<string>();
@@ -180,6 +181,14 @@ public static unsafe class Program
                 foreach (var kv in arg.Substring("-funnels=".Length).Split(',', StringSplitOptions.RemoveEmptyEntries))
                     if (!Map.Fires.FunnelSmoke.Set(kv))
                         Console.Error.WriteLine($"Bad funnels knob: {kv} (want {Map.Fires.FunnelSmoke.Knobs})");
+            }
+            else if (arg.StartsWith("-follow="))   // the camera kept on a ship (an entity): benches and captures
+            {
+                int.TryParse(arg.AsSpan("-follow=".Length), out follow);
+            }
+            else if (arg.StartsWith("-sinking="))   // the world view's sinking (docs/visuals/hits-and-fires.md I7): -sinking=on:0
+            {
+                Map.Sinking.SinkingEffects.On = !arg.EndsWith("on:0");
             }
             else if (arg.StartsWith("-hitbench="))   // the hits bench: -hitbench=TARGET:SHOOTER[:every_s], shells struck at a still ship in turn
             {
@@ -467,7 +476,7 @@ public static unsafe class Program
             // opens the others
             view ??= designerFlags ? "designer" : null;
             engine.Scene = new SceneSwitcher(view switch { "designer" => 1, "hitbox" => 2, "ship" => 3, "profile" => 4, _ => 0 },
-                ("World", () => new Map.MapScene((SDL.SDL_GPUDevice*)device, world, mapCamera, shipArt, session, selectShip) { KeepCameraOnce = mapGiven && scenarioArg != null, SelectOnce = scenarioArg != null ? selectShip : -1, HitBench = hitBench }),
+                ("World", () => new Map.MapScene((SDL.SDL_GPUDevice*)device, world, mapCamera, shipArt, session, selectShip) { KeepCameraOnce = mapGiven && scenarioArg != null, SelectOnce = scenarioArg != null ? selectShip : -1, HitBench = hitBench, Follow = follow }),
                 ("Designer", () => early ?? MakeDesigner()),
                 ("Hitboxes", () => new HitView.HitboxScene((SDL.SDL_GPUDevice*)device, session, camera, show, hitRay)),
                 ("Ship", () => new ShipViewer((SDL.SDL_GPUDevice*)device, session, navy, era)),

@@ -12,9 +12,6 @@ namespace Fleetwright.Map.Sinking;
 /// on the models already drawn (marks on the water, short-lived: a visual effect, not a simulated object, the user
 /// 2026-10-19):
 /// <list type="bullet">
-/// <item><b>crossing foam</b>: where her deck's edge goes down through the water, white water pouring over it, the more the
-/// faster it goes (w = 0.25 + 0.75 smoothstep(0.03, 0.8, −v_z)); weaker cascade foam off an end rising out of it;</item>
-/// <item><b>the collar</b>: round her waterline cut while she moves up or down, brighter the faster;</item>
 /// <item><b>air boils</b> (water in, air out) over what's under, rising d / 2 m/s and sized S = 0.9 V^⅓ + 0.1 d;</item>
 /// <item><b>the closing slam</b> when she's gone: one big boil (3 + 0.9 √area) and a ring on the water (the blasts'
 /// quads), then trapped air burping up over the wreck as it sinks on (τ 14 s: later, wider, fainter); her tanks'
@@ -32,7 +29,6 @@ public sealed class SinkingEffects
         public LossKind Loss;
         public long LossMs, GoneMs, Seen;
         public double NextBoil, Slam = double.NaN;
-        public readonly double[] NextFoam = new double[Stations * 2], NextCollar = new double[Stations * 2];
         public uint Seed;
         public bool Done;
     }
@@ -40,9 +36,8 @@ public sealed class SinkingEffects
     /// <summary>Stations along her the layers are sampled at.</summary>
     const int Stations = 24;
 
-    /// <summary>How often a station lays foam again, s on the foam's clock; how long the slam's ring and the burps go on, s
-    /// [EST].</summary>
-    public static double FoamEveryS = 1.2, CollarEveryS = 2.0, AfterS = 50;
+    /// <summary>How long the slam's ring and the burps go on, s [EST].</summary>
+    public static double AfterS = 50;
 
     /// <summary>Off: no world view sinking (the table's ring stays).</summary>
     public static bool On = true;
@@ -135,45 +130,17 @@ public sealed class SinkingEffects
         var a = Attitude.At(c, g.Settled, g.Loss, g.LossMs, g.GoneMs, ms);
         var a2 = Attitude.At(c, g.Settled, g.Loss, g.LossMs, g.GoneMs, ms + 500);
         var hull = c.Hull;
+        // how much of her deck is under, and how fast it's going down: the boils' place and pace
         int under = 0;
         double sink = 0;
         for (int i = 0; i < Stations; i++)
         {
             double x = hull.X0 + (hull.X1 - hull.X0) * (i + 0.5) / Stations, deck = hull.DeckTop(x);
-            double hw = Math.Max(hull.HalfWidth(x, deck - 0.3), 0.5);
-            for (int side = 0; side < 2; side++)
+            double h = Posed(c, a, x, 0, deck).Height;
+            if (h < 0)
             {
-                double y = side == 0 ? hw : -hw;
-                var (al, ac, h) = Posed(c, a, x, y, deck);
-                double vz = (Posed(c, a2, x, y, deck).Height - h) / 0.5;
-                int j = i * 2 + side;
-                if (h < 0)
-                {
-                    under++;
-                    sink += Math.Max(-vz, 0);
-                }
-                // crossing: the deck's edge going down through the water (white water pouring over it), or an end coming
-                // up out of it (cascading off)
-                double band = 1 + 0.7 * Math.Abs(vz);
-                if (Math.Abs(h) < band && now >= g.NextFoam[j])
-                {
-                    double w = vz < 0 ? 0.25 + 0.75 * SmoothStep(0.03, 0.8, -vz) : 0.55 * SmoothStep(0.05, 1.0, vz);
-                    if (w > 0.05)
-                    {
-                        g.NextFoam[j] = now + FoamEveryS;
-                        splashes.Add(Sea(g, al, ac), FoamMmPerM * (2 + 4 * w), splashes.ColumnClock, now, U(g.Seed, (uint)(j * 7 + (int)now)), column: false,
-                            strength: Math.Min(w, 0.8));
-                    }
-                }
-                // the collar: her waterline cut while she moves, at the side where the water stands
-                if (h > 0 && Math.Abs(vz) > 0.05 && now >= g.NextCollar[j])
-                {
-                    var (cal, cac, _) = Posed(c, a, x, y, c.Vertical.Waterline + a.SinkageM);
-                    double w = 0.18 + 0.82 * SmoothStep(0.05, 1.2, Math.Abs(vz));
-                    g.NextCollar[j] = now + CollarEveryS;
-                    splashes.Add(Sea(g, cal, cac), FoamMmPerM * (1.5 + 2.5 * w), splashes.ColumnClock, now, U(g.Seed, (uint)(j * 13 + (int)now)), column: false,
-                        strength: 0.6 * w);
-                }
+                under++;
+                sink += Math.Max(-(Posed(c, a2, x, 0, deck).Height - h) / 0.5, 0);
             }
         }
         // air boils over what's under: as often as she's going down fast; each rises d / 2 m/s to the surface

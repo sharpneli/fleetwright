@@ -185,6 +185,25 @@ public sealed class WorldPerf
         }
     }
 
+    long effectFrames;
+    readonly long[] effectSum = new long[5];
+    readonly int[] effectMax = new int[5];
+    static readonly string[] EffectNames = ["smoke puffs", "point lights", "of them fires'", "splash book", "smoke sources"];
+
+    /// <summary>The world view's effects this frame (docs/visuals/hits-and-fires.md I8): the smoke's puffs, the point lights
+    /// and the fires' share of them, the splash book's entries and the continuous smoke sources, for the run's means and
+    /// peaks.</summary>
+    public void Effects(int puffs, int lights, int fireLights, int splashes, int sources)
+    {
+        effectFrames++;
+        Span<int> n = [puffs, lights, fireLights, splashes, sources];
+        for (int i = 0; i < n.Length; i++)
+        {
+            effectSum[i] += n[i];
+            effectMax[i] = Math.Max(effectMax[i], n[i]);
+        }
+    }
+
     /// <summary>The run's whole, for -frametimes at exit.</summary>
     public string Report(Snapshot s, ShipArtLibrary art)
     {
@@ -203,6 +222,9 @@ public sealed class WorldPerf
         sb.AppendLine($"  snapshot age when drawn: p50 {age[age.Length / 2]:F1}, p99 {age[age.Length * 99 / 100]:F1}, max {age[^1]:F1} ms");
         sb.AppendLine($"  GC: gen0 {GC.CollectionCount(0) - runG0}, gen1 {GC.CollectionCount(1) - runG1}, gen2 {GC.CollectionCount(2) - runG2}");
         sb.AppendLine($"  ship art: {art.Uploaded} classes, {art.Bytes / 1048576.0:F0} MB of textures, longest upload frame {art.MaxUploadMs:F1} ms");
+        if (effectFrames > 0)
+            sb.AppendLine("  effects, mean (most): " + string.Join(", ",
+                EffectNames.Select((name, i) => $"{name} {effectSum[i] / (double)effectFrames:F0} ({effectMax[i]})")));
         sb.AppendLine("  sim thread, share of the thread (longest call):");
         for (int i = 0; i < s.Probes.Count; i++)
         {

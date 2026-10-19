@@ -300,6 +300,40 @@ hiding the slam; both fixed. Seen at 0.25 m/px, a dreadnought foundering by the 
 along her as her deck goes under, the bow last, then the slam's foam and specks with a dark sheen over the wreck,
 fading within a couple of minutes. No whirlpool. Test: `SinkingTests`.
 
+**The user, on I7's first look (2026-10-19):** "Just remove the deck edge stations from causing the splash effect, it
+indeed looks silly." The crossing foam and the collar (marks laid at her deck edge's stations) are gone; the stations
+now only measure how much of her is under and how fast it's going, for the boils. The boils, the slam, its ring, the
+burps, the oil and the debris stay.
+
+**I8, the cost (2026-10-19).** DevRelease, 2560×1440, `-gputime -frametimes`; every new effect on against `-hit=on:0
+-fires=on:0 -funnels=on:0 -sinking=on:0`. Two dev aids for it: `-follow=ENTITY` keeps the camera on a ship (the fight
+stays in view), and the frame-times report gains the effects' means and peaks (smoke puffs, point lights and the
+fires' share, the splash book, smoke sources: `WorldPerf.Effects`).
+- **Squadrons at 10x**, following Lion at 3 m/px, three alternating pairs: CPU p50 +0.65 ms (mean +0.30), GPU p50
+  +0.5 ms (mean +0.17), the effects' build (the map's "Splashes" probe) 0.016 → 0.155 ms. Nearly all of it is the
+  funnel smoke (funnels alone: the same; everything but them: the probe at 0.017): 12 funnels keep ~590 puffs (most
+  950). Hits, fires and lights don't show above the noise.
+- **The Jutland at 60x**, following Lion with the battlecruiser fleet round her (48-63 funnels in reach): first ~935
+  puffs (most 2,458, the funnels' share of the book: there they'd have stopped laying and broken their plumes) and the
+  probe +0.28 ms. Now: **a soft budget** (over its share a source lays a puff only every third spacing, carrying all it
+  made: plumes thin, never break), **funnel puffs every 20 m** with a 10 m core, and **the smoke book merging and
+  sweeping every third frame** (slow processes): ~710 puffs and the probe 0.161 ms (off: 0.006). Frame means within the
+  noise.
+- **A fire bench at night** (the hits bench on a cluttered deck, unorganised firefighting, 10x): at most 5 point lights,
+  2 of them fires': the 16-light block costs nothing measurable at these counts (decision 5 holds; a big night action
+  is I9's to look at). The effects' build +0.005 ms.
+- **A bug found and fixed** (from X2): a magazine's event the book had let go (130 s on the effects' clock, ~290 s of
+  world time at 10x) was taken again every frame while the snapshot still listed the blast (15 minutes), its ~70 debris
+  splashes with it: the splash book filled to 16,384 and frames went to ~5 ms. An event already spent when first seen
+  isn't taken now. Test: `MagazineTests.A_blast_first_seen_after_its_event_is_over_is_not_taken_again_every_frame`.
+- **The machine's own swings**: whole runs flip between a fast and a slow mode (the same scene 1.5 or 5 ms on the GPU,
+  late in the session the slow one throughout), so totals compare only within alternating pairs taken together; the
+  effects' probe is the steady figure.
+
+The budget stands at ~0.15 ms CPU for a fleet's funnel smoke in view and ~0.5 ms GPU at p50 for its puffs; the rest
+measures as nothing. For the user: whether the funnel smoke's ~0.65 ms (CPU+GPU, p50) is worth it, or it should go
+lighter still (fewer puffs, or drawn only nearer the eye).
+
 ## Later
 
 - **The colour pass:** smoke colours by fire, filler and fuel, soot yields and the funnels' output from the research

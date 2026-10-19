@@ -87,6 +87,9 @@ public sealed unsafe partial class MapScene : IScene
             camera.Drag(grab, dragX, dragY, width, height);
             dragPending = false;
         }
+        // the dev's follow (-follow=ENTITY: benches and captures stay on a ship as she steams)
+        if (Follow > 0 && world.Current.Ships.IndexOf(Follow) is int fk and >= 0)
+            camera.Target = world.Current.Ships.PoseAt(fk, world.DrawMs).Position.Normalized();
         var probes = world.Perf.Ui;
         long t = Probes.Now;
         var view = View;
@@ -139,6 +142,8 @@ public sealed unsafe partial class MapScene : IScene
             shipRenderer.Flashes.Lights, shipRenderer.Smoke.Book, smokeTrails);
         Map.Fires.FunnelSmoke.Build(view, s, world.DrawMs, WorldView.Factor(view), shipRenderer.Flashes.Book.SeaClock, classOf, shipRenderer.Smoke.Book,
             smokeTrails);
+        world.Perf.Effects(shipRenderer.Smoke.Book.Count, shipRenderer.Flashes.Lights.Count, shipRenderer.Flashes.Lights.Fires,
+            shipRenderer.Splashes.Book.Count, smokeTrails.Count);
         shipRenderer.List.SetFlashLights(shipRenderer.Flashes.Lights.Block);
         shipRenderer.Smoke.Build(view, shipRenderer.Flashes.Book, s.Weather, WorldView.Factor(view), shipRenderer.List.Lights);
         shipRenderer.Splashes.Build(view, s, world.DrawMs, s.Paused ? 0 : s.AchievedSpeed, dt, selected, WorldView.Factor(view), shipRenderer.List.Lights);

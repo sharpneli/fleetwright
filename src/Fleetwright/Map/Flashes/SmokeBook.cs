@@ -73,11 +73,17 @@ public sealed class SmokeBook
         (WindToDeg, WindMs) = ((windFromDeg + 180) % 360, Math.Max(windMs, 0));
         for (int k = shots.Count - shots.Added; k < shots.Count; k++)
             Spawn(shots[k]);
+        // merging and sweeping are slow processes (puffs take seconds to grow into each other and to thin away): every
+        // third frame does (docs/visuals/hits-and-fires.md I8: the funnels' and fires' trails are thousands of puffs)
+        if (++frames % 3 != 0 && count < Capacity * 3 / 4)
+            return;
         Merge(now, 1.5);
         if (count > Capacity / 2)
             Merge(now, 3.0);
         Sweep(now);
     }
+
+    long frames;
 
     /// <summary>A puff from elsewhere than a gun (a magazine's after-smoke): kept as given, merged and swept with the
     /// rest. Its <see cref="Puff.Born"/> is on this book's clock (the sea's), and may lie in the past.</summary>
