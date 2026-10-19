@@ -2,7 +2,7 @@
 
 Proposed 2026-10-18. The research landed 2026-10-19
 ([damage/09](../../research/simulation/damage-research/09-contents-in-the-path.md), with `contents_ref.py`); the plan
-below is drafted from it 2026-10-19 and waits for agreement. Found from a test: a 15" AP shell through a destroyer's engine
+below was drafted from it and agreed 2026-10-19. Found from a test: a 15" AP shell through a destroyer's engine
 room, its fuze started at the side plating, passed out of the far side and burst beyond her.
 
 ## Today
@@ -109,8 +109,8 @@ The TDS design key `fill` (liquid or void) keeps its name: it says what's in a l
     name the block matches, else from `part_load`.
   - Locomotive boilers take the cylindrical row at destroyer size, and compound engines the VTE row [EST]. Diesel and
     petrol take the auxiliary-machinery row for now.
-- **Ship size.** Damage/09 has destroyer rows and large-ship rows. A general rule replaces the switch: thicknesses and
-  chords fall between the two rows by power per shaft (open question 5).
+- **Ship size.** Damage/09 has destroyer rows and large-ship rows. No switch between them: thicknesses and chords are
+  interpolated between the two rows by power per shaft (open question 5).
 - **Compiled into `ShipClass`.** Each room with contents gets its row resolved: the band as heights from the room's
   `Base`/`Top`, and λ = chord / packing. Each part kind gets its row the same way. Read without allocation.
 - **A `contents` readout in the CLI:** for each room, the chance that a beam crossing at a random height meets a solid.
@@ -186,7 +186,8 @@ The TDS design key `fill` (liquid or void) keeps its name: it says what's in a l
 ### C4 The rest
 
 - **C4a Magazines and handling rooms.**
-  - A magazine has its shell band at the room's bottom. The stowed shells are round solids of the served mount's
+  - A magazine has its shell band at the room's bottom, with the charges above, in every navy (open question 7). The
+    stowed shells are round solids of the served mount's
     calibre, λ 2 m, and 1.4 d between shells inside a stack.
   - The charges are a light medium.
   - A handling room has hoists and cages.
@@ -217,13 +218,12 @@ The TDS design key `fill` (liquid or void) keeps its name: it says what's in a l
 2. ~~Whether a strike turns the shell.~~ No new rule: the plate step's glance and turn (09 §1.3).
 3. ~~How far the data splits.~~ By boiler kind and engine kind (C1b).
 4. Whether struck contents throw their own splinters. Later (09 B).
-5. Destroyer rows against large-ship rows: interpolate by power per shaft (recommended), by displacement, or switch on
-   the plant block (express boilers)?
-6. Liquids at the sea's 25 calibres (recommended: one rule), or at a stable shell's ~170 scaled by density (liquid
-   layers about 7× weaker)? (09 A)
-7. Whether the shell room sits above or below the charges is a magazine design fact, by navy and period ([UNCERTAIN]
-   in 09 §5). Shells below by default?
-8. Plate lots for contents: none (a ship's lot draw is for her armour), only the shot's scatter. Recommended.
+5. ~~Destroyer rows against large-ship rows.~~ Interpolated by power per shaft (the user, 2026-10-19). No hard
+   switches: the only step changes allowed are the ones physics makes (a delay fuze bursting inside a wide ship and
+   beyond a narrow one).
+6. ~~Liquids' decay.~~ The sea's 25 calibres, scaled by density (the user, 2026-10-19). (09 A)
+7. ~~Shell room above or below the charges.~~ Shells below, everywhere: no variation by navy (the user, 2026-10-19).
+8. ~~Plate lots for contents.~~ None: only the shot's scatter (the user, 2026-10-19).
 
 ## Research requests
 
