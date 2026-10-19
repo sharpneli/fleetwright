@@ -101,4 +101,46 @@ public class ShotRangeTests(ITestOutputHelper output)
         output.WriteLine($"stopped {stopped}, burst inside {through} of 40");
         Assert.True(stopped + through > 0);
     }
+
+    /// <summary>C0 (docs/battle/shell-contents.md): the fuze runs on time. Past the plate that started it, each plate's
+    /// delay left is the one before less the time to get there at the speed it left with; a burst after its delay is
+    /// where the last of it runs out. So a plate that slows the shell brings its burst in.</summary>
+    [Fact]
+    public void The_fuze_runs_on_time()
+    {
+        Assert.Equal(16, Terminal.Slowed(20, 10, 500, 300), 9);   // 0.02 s left: 10 m at 500, 6 m at 300
+        Assert.Equal(10, Terminal.Slowed(20, 10, 500, 0), 9);
+        Assert.True(double.IsNaN(Terminal.Slowed(double.NaN, 10, 500, 300)));
+
+        var target = Class("bismarck");
+        var (shell, elev) = MainShell(Class("lion"));
+        var range = new ShotRange(Settings);
+        int checkedSteps = 0, bursts = 0;
+        for (ulong seed = 1; seed <= 20; seed++)
+            foreach (double z in (ReadOnlySpan<double>)[-1, 1.5, 4])
+            {
+                var s = range.Fire(target, shell, "lion main", elev, 18_000, 70, new P3(0, 0, target.Vertical.Waterline + z), seed);
+                if (!s.Struck || s.Fuze is FuzeCause.None or FuzeCause.Nose)
+                    continue;
+                PlateStep? prev = null;
+                foreach (var st in s.Steps)
+                {
+                    if (double.IsNaN(st.FuzeLeftS))
+                        continue;
+                    if (prev is { } p && st.Call is PlateCall.Through or PlateCall.Glanced)
+                    {
+                        Assert.Equal(p.FuzeLeftS - (st.T - p.T) / p.OutMs, st.FuzeLeftS, 6);
+                        checkedSteps++;
+                    }
+                    prev = st;
+                }
+                if (prev is { } last && s.Terminal.Outcome is Outcome.BurstInside or Outcome.LowOrder && s.Terminal.BurstT > last.T + 0.5)
+                {
+                    Assert.Equal(last.T + last.FuzeLeftS * last.OutMs, s.Terminal.BurstT, 6);
+                    bursts++;
+                }
+            }
+        output.WriteLine($"plates checked {checkedSteps}, bursts {bursts}");
+        Assert.True(checkedSteps > 0 && bursts > 0);
+    }
 }

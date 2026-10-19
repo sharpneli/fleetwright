@@ -329,9 +329,9 @@ public sealed unsafe partial class HitboxScene
         // the walk, plate by plate
         int at = pb.StepAt(play);
         var flags = ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.ScrollX;
-        if (s.Steps.Length > 0 && ImGui.BeginTable("plates", 10, flags))
+        if (s.Steps.Length > 0 && ImGui.BeginTable("plates", 11, flags))
         {
-            foreach (string h in (ReadOnlySpan<string>)["m", "plate", "mm (as met)", "ob°", "v in", "V_L", "v/V_L", "made of it", "v out", "turn°"])
+            foreach (string h in (ReadOnlySpan<string>)["m", "plate", "mm (as met)", "ob°", "v in", "V_L", "v/V_L", "made of it", "v out", "turn°", "fuze ms"])
                 ImGui.TableSetupColumn(h);
             ImGui.TableHeadersRow();
             for (int i = 0; i < s.Steps.Length; i++)
@@ -352,6 +352,7 @@ public sealed unsafe partial class HitboxScene
                 ImGui.TextColored(CallColour(st.Call), Words(st.Call) + (st.Decapped ? ", decapped" : ""));
                 Cell(string.Format(inv, "{0:0}", st.OutMs));
                 Cell(st.TurnDeg > 0 ? string.Format(inv, "{0:0.0}", st.TurnDeg) : "");
+                Cell(double.IsNaN(st.FuzeLeftS) ? "" : string.Format(inv, "{0:0.0}", st.FuzeLeftS * 1000));
             }
             ImGui.EndTable();
         }

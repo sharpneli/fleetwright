@@ -82,6 +82,13 @@ The TDS design key `fill` (liquid or void) keeps its name: it says what's in a l
 - Trace: the Shot window shows the time left at each step.
 - Measure: the `hits` bench before and after, outcome shares by target. Expect fewer `BurstBeyond` behind thick plates.
 - Tests: a slowed shell bursts sooner than an unslowed one with the same fuze; still zero-alloc.
+- **Done 2026-10-19.** `Terminal.Slowed` brings a running fuze's burst in by the speed lost, at a plate the shell gets
+  through and at one it glances off. The trace's steps carry the delay left (`PlateStep.FuzeLeftS`, the Shot window's
+  "fuze ms"). Test: `ShotRangeTests.The_fuze_runs_on_time` (Lion on Bismarck; 60 plates and 58 bursts checked).
+  - The `hits` bench, 2,000 hits each (Iron Duke on M class, Wiesbaden and König; König on Iron Duke): the outcomes are
+    the same to 0.1%, and the rest moves only in the third digit (König's shells burst 5.5 m behind the fuze start, was
+    5.6). As expected: the delays are short (RN 1912 APC 0.003 s, about 1.3 m) and few plates stand behind a started
+    fuze. The step matters once C1 puts contents in the way.
 
 ### C1 Solids, machinery first
 

@@ -38,7 +38,8 @@ public enum FuzeCause : byte
 /// <summary>One plate on the walk: its crossing on the path (and where, how far along), its thickness and the plate as
 /// this shell met it (mm of the formula's plate: material, body, shatter), the obliquity, the shell's speed in, the
 /// plate's limit as it met it (its lot and this shot's scatter in it, <see cref="Quality"/>), what it made of it, the
-/// speed out and the turn toward its normal; whether the cap came off on it.</summary>
+/// speed out and the turn toward its normal; whether the cap came off on it; and the delay its fuze had left leaving the
+/// plate, seconds (C0: it runs on time; NaN when not running).</summary>
 public struct PlateStep
 {
     public int Crossing;
@@ -46,6 +47,7 @@ public struct PlateStep
     public P3 Point;
     public double Mm, EffectiveMm, ObliquityDeg;
     public double InMs, LimitMs, Quality, OutMs, TurnDeg;
+    public double FuzeLeftS;
     public PlateCall Call;
     public bool Decapped;
 }
@@ -87,6 +89,13 @@ public sealed class TerminalTrace
             return;
         }
         steps[count++] = s;
+    }
+
+    /// <summary>The last plate's fuze delay left, once the walk is past it.</summary>
+    internal void FuzeLeft(double s)
+    {
+        if (count > 0)
+            steps[count - 1].FuzeLeftS = s;
     }
 
     internal void Fuzed(double t, int crossing, FuzeCause cause) => (FuzeT, FuzeCrossing, Fuze) = (t, crossing, cause);

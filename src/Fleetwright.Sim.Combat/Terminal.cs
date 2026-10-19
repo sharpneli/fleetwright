@@ -123,7 +123,8 @@ public struct TerminalResult
 /// (<see cref="SimSettings.MachineryArmChance"/>), even on a plate that then holds. Started, the fuze may be blind (its
 /// <c>FuzeBlind</c>), and the filler detonates fully by its explosive's rate with the booster, else goes low-order
 /// (<see cref="SimSettings.LowOrderShare"/>) or is a dud (<see cref="Start"/>); it bursts the delay (scattered by the
-/// fuze's own share) times the residual velocity on. A plate it can't get through stops it: running since an earlier
+/// fuze's own share) times the residual velocity on, and runs on time: a plate that slows it after brings the burst in
+/// by the speed it lost (<see cref="Slowed"/>; C0 of docs/battle/shell-contents.md). A plate it can't get through stops it: running since an earlier
 /// plate, it bursts against this one; started on this one, it bursts on its face; not started, it's defeated. Out of the
 /// far side before its delay runs out, it bursts beyond; a shell that glanced and leaves unburst is a ricochet;</item>
 /// <item><b>under water:</b> a shell that met the sea before the hull strikes at the speed its run there left it
@@ -222,7 +223,7 @@ public static class Terminal
                     {
                         Crossing = i, T = x.T, Point = x.Point, Mm = x.Mm, EffectiveMm = t, ObliquityDeg = ob, InMs = v,
                         LimitMs = t > 0 ? LimitMs(t, calMm, massKg, ob) : 0, Quality = 1, OutMs = punches ? v : 0,
-                        Call = punches ? PlateCall.NoseInside : PlateCall.NoseOutside,
+                        Call = punches ? PlateCall.NoseInside : PlateCall.NoseOutside, FuzeLeftS = double.NaN,
                     });
                     trace.Fuzed(x.T, i, FuzeCause.Nose);
                 }
@@ -258,7 +259,7 @@ public static class Terminal
             var step = trace == null ? default : new PlateStep
             {
                 Crossing = i, T = x.T, Point = x.Point, Mm = x.Mm, EffectiveMm = te, ObliquityDeg = ob, InMs = v, LimitMs = vl, Quality = quality,
-                Decapped = decapped,
+                Decapped = decapped, FuzeLeftS = double.NaN,
             };
             if (!shatter && Glances(v, te, calMm, massKg, ob, s, quality))
             {
@@ -266,16 +267,18 @@ public static class Terminal
                 // it skids off along the plate's face, its fuze started as on a plate that held; the path bends at once,
                 // so nothing behind the plate is crossed
                 (res.Glance, res.PlateMs, res.PlateU) = (i, v, v / vl);
+                double skid = v * Math.Sin(double.DegreesToRadians(ob));
+                burstT = Slowed(burstT, x.T, v, skid);
                 if (!started && StartsOn(shell, mat.SteelMm(x.Mm), ob, hard, x.T, ref impulse, ref impulseT, s))
                 {
                     started = true;
-                    Start(ref res, ref r, shell, s, x.T, v * Math.Sin(double.DegreesToRadians(ob)), i, 0, ref burstT, ref force);
+                    Start(ref res, ref r, shell, s, x.T, skid, i, 0, ref burstT, ref force);
                     trace?.Fuzed(x.T, i, FuzeCause.Plate);
                 }
-                v *= Math.Sin(double.DegreesToRadians(ob));
+                v = skid;
                 if (trace != null)
                 {
-                    (step.Call, step.OutMs) = (PlateCall.Glanced, v);
+                    (step.Call, step.OutMs, step.FuzeLeftS) = (PlateCall.Glanced, v, FuzeLeftS(burstT, x.T, v));
                     trace.Add(step);
                 }
                 dir = Skid(dir, x.Normal, s.GlanceLiftDeg);
@@ -324,8 +327,9 @@ public static class Terminal
             bool inPlate = !shatter && !near && InPlate(shell, v, vl, ref r);
             // whole and through, it turns toward the plate's normal, the turn costing it a little more (P5); the path
             // bends once the plates at this point are crossed
-            double df = Turn(v, vl, ob);
-            v = Residual(v, vl) * Math.Cos(double.DegreesToRadians(df));
+            double df = Turn(v, vl, ob), vOut = Residual(v, vl) * Math.Cos(double.DegreesToRadians(df));
+            burstT = Slowed(burstT, x.T, v, vOut);
+            v = vOut;
             if (!shatter && !near && !inPlate && df >= s.NormaliseMinDeg)
             {
                 dir = TurnToward(dir, x.Normal, df);
@@ -357,6 +361,7 @@ public static class Terminal
                 Start(ref res, ref r, shell, s, x.T, v, i, 0, ref burstT, ref force);
                 trace?.Fuzed(x.T, i, FuzeCause.Plate);
             }
+            trace?.FuzeLeft(FuzeLeftS(burstT, x.T, v));
         }
         // a turn at the path's last plates: bent there all the same, so the line beyond (a burst out there) is the shell's
         if (turned)
@@ -459,6 +464,15 @@ public static class Terminal
             res.Plate = res.Glance;
         return res;
     }
+
+    /// <summary>C0 (docs/battle/shell-contents.md): the fuze runs on time. A running fuze's burst, burstT along the path,
+    /// when the shell is slowed at t from v0 to v1: the delay left, (burstT − t)/v0, is spent at the new speed, so the
+    /// burst comes in to t + (burstT − t)·v1/v0. Not running (NaN): as it is.</summary>
+    internal static double Slowed(double burstT, double t, double v0, double v1) =>
+        double.IsNaN(burstT) || !(v0 > 0) ? burstT : t + Math.Max(burstT - t, 0) * Math.Max(v1, 0) / v0;
+
+    /// <summary>The delay a running fuze has left at t, the shell at v, seconds (NaN: not running).</summary>
+    static double FuzeLeftS(double burstT, double t, double v) => double.IsNaN(burstT) ? double.NaN : Math.Max(burstT - t, 0) / Math.Max(v, 1e-9);
 
     static TerminalResult Burst(ref TerminalResult res, double t, double force, Outcome o, BurstKind kind, double v)
     {
