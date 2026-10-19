@@ -334,6 +334,20 @@ The budget stands at ~0.15 ms CPU for a fleet's funnel smoke in view and ~0.5 ms
 measures as nothing. For the user: whether the funnel smoke's ~0.65 ms (CPU+GPU, p50) is worth it, or it should go
 lighter still (fewer puffs, or drawn only nearer the eye).
 
+**I9, by eye: the first sheet (2026-10-19), for the user's judgement.** Captures of a 15" HE's burst on the upper works at
+0.5 s by day, at dusk (19:50) and by night (23:30); a deck fire after ten minutes by day and night; a foundering near its
+end; three ships' funnel smoke in a 3 kn and a 25 kn wind. Seen, to judge:
+- **the burst** reads the same at every hour (it makes its own light): an orange fireball ~25 m over the funnels;
+- **the fire by night** lights its own smoke strongly: the plume glows red for its first hundred metres, and a red
+  patch hangs over the flames (the fire's light on the young puffs). Striking; possibly too much (`-fires=light:`);
+- **the fire by day**: low tongues on the deck, a dark young puff over them going light grey downwind (a growing
+  fire's yield);
+- **the funnel smoke**: in a light wind a low plume trailing straight astern; in a strong one bent off on the beam,
+  narrower and longer. Its density (1,500 m²/s a funnel at full power) is the calibration's, untested by eye;
+- **the foundering**: boils working along where she was, the oil and debris after.
+
+Colours stay placeholders for the colour pass (decision 9). Tuning waits on the user's look.
+
 ## Later
 
 - **The colour pass:** smoke colours by fire, filler and fuel, soot yields and the funnels' output from the research
