@@ -248,7 +248,7 @@ her deck and turrets by night. Test: `FireLightsTests`.
 
 **I5 (2026-10-19).** `Map/Fires/SmokeTrails`: continuous smoke sources (the smoke research's), shared with I6's
 funnels. Each lays a puff on the gun smoke's book every `every` 2 s of the sea's clock carrying what it made since (its
-rates times the time; after a gap, at most three spacings' worth), left in the air to drift with the wind while its ship
+rates times the time; after a gap, at most four spacings' worth), left in the air to drift with the wind while its ship
 steams on: the trail. The book merges a source's settled puffs by age (one key a source); its merge now keeps the rise
 still to come (gun smoke's jet is spent by then: unchanged). Each fire that shows is a source at its flames' tips:
 - **Ȧ = (Q / ΔH_c) y_s σ_s**: ΔH_c 18 MJ/kg, σ_s 8,700 m²/kg, the yield 0.03 growing (light grey), 0.08 developed

@@ -9,7 +9,7 @@ namespace Fleetwright.Map.Fires;
 /// every so often on the sea's clock, carrying what it made since (its extinction area and water fog at their rates), so
 /// a plume's strength never depends on the spacing. Left in the air where it was laid, it drifts with the wind while its
 /// source steams on: the trail. The book merges a source's settled puffs by age (one key a source). A source not seen for
-/// a while is forgotten; one seen again after a gap lays at most a few spacings' worth (no dump after a pause or a pan).
+/// a while is forgotten; one seen again after a gap lays at most four spacings' worth (no dump after a pause or a pan).
 /// Allocates only for a new source.</summary>
 public sealed class SmokeTrails
 {
