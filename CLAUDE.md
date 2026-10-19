@@ -84,7 +84,8 @@ loadout's kinds and shares, and a picker for the family (a tree by navy, the des
 share; the Templates panel's Shells row sets every battery's family. Its Guns, Torpedoes, Shock and Outfit rows pick
 the design's tech blocks from their catalogues, a tooltip giving each entry's numbers for this design
 (`docs/designer-ui/tech-blocks.md`, `TechEdits`: one gun block for every battery, copied in, the unnamed dropped), and the
-Fire control tab each battery's fit (preset, optics, computer, mount) and sights, plain rows until its own tab. The Protection tab (`docs/designer-ui/protection.md`,
+Fire control tab each battery's fit (preset, optics, computer, mount) and sights, plain rows until its own tab. The Hull & upperworks
+tab sets the masts (kind, top, its director, height, tiers), the joints and doors below. The Protection tab (`docs/designer-ui/protection.md`,
 the layers in `protection-layers.md`) is the elevation (the side deck by deck, heights stretched, every built plate, `+`
 ghosts where a missing part goes, Rooms and Compartments toggles, two flags for the sections' cuts), two half-sections at
 their own stations to scale (`ProtectionSection`, from the build's cells, walls and armour; a Whole section toggle locks

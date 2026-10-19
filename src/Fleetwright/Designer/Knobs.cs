@@ -1034,6 +1034,99 @@ public static class Knobs
         LimitPath = ["funnels"],
     };
 
+    // ------------------------------------------------------------------ masts, joints, doors (docs/designer-ui/tech-blocks.md T3)
+
+    static readonly string[] MastNames = ["Foremast", "Mainmast"];
+
+    /// <summary>A mast's input, the list grown to hold it (a mast left empty takes the defaults).</summary>
+    static Design Mast(Design d, int i, Func<MastInput, MastInput> f)
+    {
+        var l = (d.Masts ?? []).ToList();
+        while (l.Count <= i)
+            l.Add(new MastInput());
+        l[i] = f(l[i]);
+        return d with { Masts = l };
+    }
+
+    static MastInput? MastOf(Design d, int i) => d.Masts?.ElementAtOrDefault(i);
+
+    /// <summary>A mast's kind (masts[0] the foremast, [1] the mainmast); auto: a pole, the foremast a tripod from 150 m.</summary>
+    public static ChoiceKnob MastKind(int i) => new($"mast{i}_kind", $"{MastNames[i]}", MastPlan.Kinds, MastPlan.Kinds)
+    {
+        Get = d => MastOf(d, i)?.Kind,
+        Set = (d, v) => Mast(d, i, m => m with { Kind = v }),
+        Default = "auto",
+    };
+
+    public static ChoiceKnob MastTop(int i) => new($"mast{i}_top", $"{MastNames[i]} top", MastPlan.TopKinds,
+        ["none", "fighting top", "spotting top", "crow's nest"])
+    {
+        Get = d => MastOf(d, i)?.Top,
+        Set = (d, v) => Mast(d, i, m => m with { Top = v }),
+        Default = "auto",
+        Applies = d => MastOf(d, i)?.Kind != "none",
+    };
+
+    /// <summary>The battery one of whose directors stands in the mast's top (fire-control.md F4b); none: "none".</summary>
+    public static ChoiceKnob MastDirector(int i) => new($"mast{i}_director", $"{MastNames[i]} top's director", ["none", "main", "secondary", "aa"],
+        ["none", "a main director", "a secondary director", "an AA director"])
+    {
+        Get = d => MastOf(d, i)?.Director,
+        Set = (d, v) => Mast(d, i, m => m with { Director = v == "none" ? null : v }),
+        Default = "none",
+        Applies = d => MastOf(d, i)?.Kind != "none",
+    };
+
+    /// <summary>The masthead over the main deck; auto: the top at 2.25 times the highest gun's height, a topmast over it.</summary>
+    public static NumberKnob MastHeight(int i) => new($"mast{i}_height", $"{MastNames[i]} height", Quantity.Length, 1, 1)
+    {
+        Get = d => MastOf(d, i)?.HeightM,
+        Set = (d, v) => Mast(d, i, m => m with { HeightM = v }),
+        Auto = (d, s) => s?.Hitboxes.Components.Where(c => c.Kind == ComponentKind.Mast).OrderByDescending(c => c.X ?? 0)
+            .ElementAtOrDefault(i)?.Top,
+        CanAuto = true,
+        Lo = 10,
+        Hi = 80,
+        Applies = d => MastOf(d, i)?.Kind != "none",
+    };
+
+    public static NumberKnob MastTiers(int i) => new($"mast{i}_tiers", $"{MastNames[i]} top's tiers", Quantity.Count, 1, 1)
+    {
+        Get = d => MastOf(d, i)?.Tiers,
+        Set = (d, v) => Mast(d, i, m => m with { Tiers = I(v) }),
+        Auto = (d, s) => 1,
+        Lo = 1,
+        Hi = 5,
+        Applies = d => MastOf(d, i) is { } m && m.Kind != "none" && m.Top is not (null or "none"),
+    };
+
+    static Design Joints(Design d, Func<ConstructionInput, ConstructionInput> f) =>
+        Hull(d, h => h with { Construction = f(h.Construction!) });
+
+    /// <summary>How the shell plating is joined (Fittings.Joint), the construction's own; a template sets it.</summary>
+    public static readonly ChoiceKnob ShellJoint = new("joint_shell", "Shell plating joined", ["riveted", "welded"], ["riveted", "welded"])
+    {
+        Get = d => d.Hull?.Construction?.Shell,
+        Set = (d, v) => Joints(d, c => c with { Shell = v }),
+        Default = "welded",
+        Applies = d => d.Hull?.Construction != null,
+    };
+
+    public static readonly ChoiceKnob InternalsJoint = new("joint_internals", "Internals joined", ["riveted", "welded"], ["riveted", "welded"])
+    {
+        Get = d => d.Hull?.Construction?.Internals,
+        Set = (d, v) => Joints(d, c => c with { Internals = v }),
+        Default = "welded",
+        Applies = d => d.Hull?.Construction != null,
+    };
+
+    /// <summary>Doors in the main bulkheads below the damage-control deck (null: the style's, merchants yes).</summary>
+    public static readonly ToggleKnob DoorsBelow = new("doors_below", "Doors in the bulkheads below")
+    {
+        Get = d => d.Subdivision?.DoorsBelow,
+        Set = (d, v) => d with { Subdivision = (d.Subdivision ?? new SubdivisionInput()) with { DoorsBelow = v } },
+    };
+
     public static readonly ChoiceKnob Transmission = new("transmission", "Transmission", ["mechanical", "electric"], ["mechanical", "electric (turbo-/diesel-electric)"])
     {
         Get = d => d.Machinery?.Transmission,
@@ -1230,6 +1323,7 @@ public static class Knobs
             SuperstructurePlating, ControlPlating, BeltDepth, BeltHeight, UpperBeltToDeck, UpperBeltExtent, SteeringSides,
             SteeringRoof, SteeringEnds, FlightDeckArmour, Funnels, Transmission, UnitsPerShaft, CentrelineBulkhead, Bunkers,
             WingBunker, Rudders, SearchRadar, AftRangefinder, TowerRangefinder, BufferDays, WaterRation, BerthRatio, OfficerFraction,
+            ShellJoint, InternalsJoint, DoorsBelow,
             HullMaterial, SuperstructureMaterial, UpperBeltMaterial, SteeringMaterial, SteeringRoofMaterial,
             MainFaces, MainCalibres, MainRoundsAll, EndBelts,
             BeltMagazines, BeltIncline, BeltPosition, BeltExtent, TdsLayers, TdsHolding, TdsLayerWall, InnerMm, InnerMagazines, InnerInboard,
@@ -1237,6 +1331,14 @@ public static class Knobs
         ];
         foreach (var k in fixedKnobs)
             yield return k;
+        for (int i = 0; i < 2; i++)
+        {
+            yield return MastKind(i);
+            yield return MastTop(i);
+            yield return MastDirector(i);
+            yield return MastHeight(i);
+            yield return MastTiers(i);
+        }
         foreach (var end in new[] { "fore", "aft" })
         {
             yield return EndBeltMm(end);

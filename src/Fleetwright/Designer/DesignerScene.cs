@@ -632,7 +632,19 @@ public sealed unsafe partial class DesignerScene : IScene
                 if (ship?.Report.Bridge is { } br)
                     items.Add(new Note($"Bridge eye {br.EyeHeightM:0.0} m, horizon {br.HorizonKm:0.0} km" +
                                        (br.SeesOverTurrets ? ", sees over the turrets" : ", blocked by the turrets")));
+                items.Add(new Header("Masts"));
+                for (int i = 0; i < 2; i++)
+                {
+                    Choice(Knobs.MastKind(i));
+                    Choice(Knobs.MastTop(i));
+                    Choice(Knobs.MastDirector(i));
+                    Num(Knobs.MastHeight(i));
+                    Num(Knobs.MastTiers(i));
+                }
                 items.Add(new Header("Hull and upperworks, details", Details: true));
+                Choice(Knobs.ShellJoint);
+                Choice(Knobs.InternalsJoint);
+                Toggle(Knobs.DoorsBelow);
                 Choice(Knobs.DeckFinish);
                 Num(Knobs.ShellMm);
                 Num(Knobs.DeckWoodMm);

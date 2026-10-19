@@ -109,3 +109,8 @@ Each step verified with real clicks (`-input`) and `-ui` screenshots, committed 
   (`ShellTemplates.DefaultLoadout`, `ShellEdits.Loadout`, `shipgen ammo-templates --loadouts`); `outfit` is the fire
   block's alone. Left as is: "Equipment, outfit, crew & stores", the naval architect's outfit weight (the ship's
   fittings, near the fire block's sense), a weight name the goldens carry.
+- **T3 (2026-10-19).** The Hull & upperworks tab's Masts: each mast's kind, top, the director in its top, height (auto
+  read from the built mast) and the top's tiers (`Knobs.MastKind` ... `MastTiers`; a mast set grows the list, the
+  other left to its defaults). Its details: the shell's and internals' joints (with a construction given; the
+  Construction pick sets them) and doors in the bulkheads below, in the details rather than the Protection tab's
+  sub-bar, plain rows like the rest.
