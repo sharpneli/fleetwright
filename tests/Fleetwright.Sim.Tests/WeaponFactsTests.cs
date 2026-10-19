@@ -247,6 +247,14 @@ public class WeaponFactsTests
         // a centreline secondary is a third, its own
         Assert.Contains(Fleet.Get("murica").Class!.Batteries.ToArray(), b => b.Kind == Battery.Secondary && b.Side == Side.Centre);
 
+        // the guns a ship fights with: her main battery, or with none her heaviest (a ship of the line's 6" broadside, both
+        // sides, not her 120s)
+        Assert.All(kgv.Batteries.ToArray(), b => Assert.Equal(b.Kind == Battery.Main, b.Chief));
+        var victory = Fleet.Get("victory_1944").Class!.Batteries.ToArray();
+        Assert.DoesNotContain(victory, b => b.Kind == Battery.Main);
+        Assert.All(victory, b => Assert.Equal(b.CalibreMm == 152, b.Chief));
+        Assert.Equal(2, victory.Count(b => b.Chief));
+
         // the Great War's dreadnought: a director and a Dreyer table, AP from the main battery, HE from the 12-pdrs
         var dn = Fleet.Get("dreadnought").Class!;
         var main = dn.Batteries[0];

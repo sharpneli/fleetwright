@@ -38,7 +38,7 @@ public sealed class MatchupProfile
     public double DeckMeanMm { get; }
 
     public MatchupGun[] Guns { get; }
-    /// <summary>The main battery's reach (the heaviest gun's), m; 0 without one.</summary>
+    /// <summary>The chief guns' reach (<see cref="BatteryRow.Chief"/>: the heaviest of them), m; 0 without any.</summary>
     public double MainReachM { get; }
 
     /// <summary>Its torpedoes: the tubes that bear on a beam (one salvo), all it carries, and the torpedo (the longest-ranged
@@ -102,7 +102,7 @@ public sealed class MatchupProfile
             var t = table(BallisticKey.Of(shell, maxElev));
             var g = new MatchupGun(b, row, bearing, 60 / (reload / mounts), rounds, shell, t, s);
             guns.Add(g);
-            if (row.Kind == Battery.Main && row.CalibreMm > mainCal)
+            if (row.Chief && row.CalibreMm > mainCal)
                 (mainCal, MainReachM) = (row.CalibreMm, g.ReachM);
         }
         Guns = [.. guns];
@@ -246,6 +246,8 @@ public sealed class MatchupGun
 {
     public int Battery { get; }
     public Battery Kind { get; }
+    /// <summary>Whether it's among its ship's chief guns (<see cref="BatteryRow.Chief"/>): its condition counts with the main.</summary>
+    public bool Chief { get; }
     public double CalibreMm { get; }
     public int Guns { get; }
     public double ShellsPerGunMin { get; }
@@ -259,7 +261,7 @@ public sealed class MatchupGun
 
     internal MatchupGun(int battery, in BatteryRow row, int guns, double perMin, int rounds, ShellTypeRow shell, BallisticTable t, SimSettings s)
     {
-        (Battery, Kind, CalibreMm, Guns, ShellsPerGunMin, Rounds, Shell, PatternPct) = (battery, row.Kind, row.CalibreMm, guns, perMin, rounds, shell, row.PatternPct);
+        (Battery, Kind, Chief, CalibreMm, Guns, ShellsPerGunMin, Rounds, Shell, PatternPct) = (battery, row.Kind, row.Chief, row.CalibreMm, guns, perMin, rounds, shell, row.PatternPct);
         Level = row.Local ? 0 : (int)row.Level;
         double hi = Math.Min(t.Key.MaxElevationDeg, t.MaxElevationDeg - 2 * BallisticTable.ElevationStep);
         ReachM = t.Fall(hi, s.MatchupMuzzleM).Range;
@@ -312,15 +314,15 @@ public sealed class MatchupGun
 }
 
 /// <summary>Ships of one class on a side of a matchup (a count, fractional for a contact spread over the classes it may
-/// be), and what they still have: their guns working (main and the rest, shares), their rounds left (shares of the
+/// be), and what they still have: their guns working (chief and the rest, shares), their rounds left (shares of the
 /// outfit), their torpedoes left (a share), their speed (a share of the designed) and the toughness left in them (a
 /// share: less once they're seen low or listing).</summary>
 public readonly record struct MatchupEntry(MatchupProfile Profile, double Count, double MainGuns = 1, double OtherGuns = 1, double MainRounds = 1,
     double OtherRounds = 1, double TorpedoesLeft = 1, double Speed = 1, double Toughness = 1)
 {
     public double SpeedKn => Profile.SpeedKn * Speed;
-    public double GunShare(MatchupGun g) => g.Kind == Battery.Main ? MainGuns : OtherGuns;
-    public double RoundsShare(MatchupGun g) => g.Kind == Battery.Main ? MainRounds : OtherRounds;
+    public double GunShare(MatchupGun g) => g.Chief ? MainGuns : OtherGuns;
+    public double RoundsShare(MatchupGun g) => g.Chief ? MainRounds : OtherRounds;
 }
 
 /// <summary>How the engagement judged is fought: the lines' gunfight, and each side's torpedo attack, if it makes one

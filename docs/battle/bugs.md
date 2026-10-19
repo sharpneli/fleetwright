@@ -83,6 +83,20 @@ moving underwater shells to a 3-decay reach), which now runs with hits doing no 
   counted as the signal answered; and the track's check held the boats steaming beside the shooter as on it. All three
   in docs/battle/command.md 5.1b piece 4. FlotillaAttackTests now asks two boats or more to fire on the signal.
 
+Seen with `victory_1944` against `dreadnought` at 4.8 km (2026-10-19, the bug hunt that gave ships without a main
+battery their heaviest guns as chief, `BatteryRow.Chief`):
+
+- [ ] The Fight band is doctrine's RangeShare (0.6) of the chief guns' reach, whatever they are: Victory's 152s reach
+  16.6 km, so she opens from 4 km out to ~10 km, where her light guns hit far less (7.7% against 40% at 4 km) and the
+  Dreadnought's 12" are still in reach. A ship of light, quick guns should want the range where her matchup is best,
+  not a share of her reach. A design question for the band (the matchup's best range?), not a quick fix.
+- [ ] Britain made the Dreadnought out 20 s later than Germany made Victory out (15:30:35 against 15:30:10), and only
+  with Victory on side 0; on side 1 she engages at once. Both in 25 km visibility at 4.8 km, where the first look
+  should see a dreadnought. Likely the detection's draw (`Sightings.Sight`, its stream by side, entity and look), but
+  20 s at that range is long: check the chance per look for a 15 m eye on a big ship at 5 km.
+- [ ] Germany's commander judged the Dreadnought outmatched by Victory (2,274 t) and withdrew her, a few minutes in.
+  Victory's 152s were hitting at 40% at 4 km, so maybe right; check the judgement's terms before believing it.
+
 ## Shipgen sizing
 
 - [ ] A little weight up a destroyer's mast made her shorter (fire-control.md F4d, 2026-10-18): the crow's nest's 0.7 t
@@ -92,6 +106,10 @@ moving underwater shells to a 3-decay reach), which now runs with hits doing no 
   (docs, designer-monotonic-rework: model step functions make bistable sizes). To hunt it: `SHIPGEN_TRACE=1 shipgen
   design shipgen/designs/destroyer.json` with and without the nest's weight; which deckhouse or space steps between
   the two passes.
+- [ ] `victory_1944`'s two secondary directors stand in tandem on the centreline at the same height, 3 m apart: the
+  after one is blind 45° either side of the bow (the forward one's hood), the forward one astern. Casemate batteries
+  fight a side each, so their directors belong a side each (as the compiler's `Serves` already prefers); with the
+  forward one wrecked she was blind ahead (2026-10-19). The layout's placing of a casemate ship's directors.
 
 ## The slide
 

@@ -19,13 +19,14 @@ namespace Fleetwright.Sim.Ai.Captains;
 /// or each ship coming out of the haze would take the fire off the one held), or is nearer so than
 /// <see cref="SimSettings.FireSwitchShare"/> of it: no flicking between targets, as each shift starts the track again.
 /// With nothing to shoot at it ceases fire, so the ship can go back on rails.</item>
-/// <item><b>Engage:</b> the main batteries on the contact while the navy holds it (then at will again); the secondaries
-/// pick their own. <b>Hold fire:</b> every battery ceases.</item>
+/// <item><b>Engage:</b> the chief batteries (<see cref="BatteryRow.Chief"/>: the main, or with none the heaviest guns) on
+/// the contact while the navy holds it (then at will again); the others pick their own. <b>Hold fire:</b> every battery
+/// ceases.</item>
 /// <item><b>Who gave it:</b> the player's order to the ship, or an admiral's to his tree (its group kept with it). An
 /// admiral's order he hands down again (a redistribution) only reaches the ships still holding his; a fresh one, from a
 /// group just given a fire order, reaches all of them.</item>
-/// <item><b>Fight:</b> a behaviour, as follow and station are: close to the band, hold it with the main battery bearing,
-/// turn away when outgunned (<see cref="Behaviours.Fight"/>). A torpedo craft's (no gun of 6" or more, torpedoes left)
+/// <item><b>Fight:</b> a behaviour, as follow and station are: close to the band (by its chief guns' reach), hold it with
+/// them bearing, turn away when outgunned (<see cref="Behaviours.Fight"/>). A torpedo craft's (no gun of 6" or more, torpedoes left)
 /// is the attack: close to <see cref="SimSettings.TorpedoAttackShare"/> of its torpedoes' fast setting whatever
 /// guns it faces, fire, turn away for <see cref="SimSettings.TorpedoTurnAwayMs"/>, and again (docs/battle/fighting.md
 /// 4.6).</item>
@@ -139,9 +140,9 @@ public sealed partial class CaptainLayer
     sbyte[] candFoul = new sbyte[32];   // its line of fire: -1 not asked yet, 0 clear, 1 foul
     int candCount;
     readonly Dictionary<Loadout, double[]> reaches = new(ReferenceEqualityComparer.Instance);
-    // by target slot, the batteries on her (main, and the rest), kept as this pass's orders go out; and the ship's own
+    // by target slot, the batteries on her (chief, and the rest), kept as this pass's orders go out; and the ship's own
     // batteries' targets as its captain's orders leave them
-    int[] onMain = [], onOther = [];
+    int[] onChief = [], onOther = [];
     int[] ownTargets = new int[8];
 
     /// <summary>His ship's batteries on what his fire order wants.</summary>
@@ -163,14 +164,14 @@ public sealed partial class CaptainLayer
             int want = cap.Fire switch
             {
                 FireOrder.Hold => 0,
-                FireOrder.Engage when cls.Batteries[b].Kind == Battery.Main => cap.FireTarget,
+                FireOrder.Engage when cls.Batteries[b].Chief => cap.FireTarget,
                 _ => Pick(ctx, pic, own, cls, b, reach[b], reach[^1], current),
             };
             if (want == current)
                 continue;
             ctx.Issue(want == 0 ? GunnerySystem.Cease(own.Entity, b) : GunnerySystem.Engage(own.Entity, b, want));
             // the next ships' picks see it at once, so a line doesn't all take the same one in the same second
-            var on = cls.Batteries[b].Kind == Battery.Main ? onMain : onOther;
+            var on = cls.Batteries[b].Chief ? onChief : onOther;
             if (ctx.Ships.SlotOf(current) is int cs and >= 0 && cs < on.Length)
                 on[cs] = Math.Max(on[cs] - 1, 0);
             if (ctx.Ships.SlotOf(want) is int ws and >= 0 && ws < on.Length)
@@ -183,11 +184,11 @@ public sealed partial class CaptainLayer
     /// <summary>The batteries on each ship (by her slot), main and the rest, from the targets the last pass set.</summary>
     void CountOn(ShipStore store)
     {
-        if (onMain.Length < store.Slots)
-            (onMain, onOther) = (new int[Math.Max(store.Slots, onMain.Length * 2)], new int[Math.Max(store.Slots, onMain.Length * 2)]);
+        if (onChief.Length < store.Slots)
+            (onChief, onOther) = (new int[Math.Max(store.Slots, onChief.Length * 2)], new int[Math.Max(store.Slots, onChief.Length * 2)]);
         else
         {
-            Array.Clear(onMain);
+            Array.Clear(onChief);
             Array.Clear(onOther);
         }
         for (int k = 0; k < store.OffRailsCount; k++)
@@ -198,20 +199,20 @@ public sealed partial class CaptainLayer
             var cls = store[slot].Handling.Class;
             for (int b = 0; b < cls.Batteries.Length; b++)
                 if (store.Combat.Target(slot, b) is int t and > 0 && store.SlotOf(t) is int ts and >= 0)
-                    (cls.Batteries[b].Kind == Battery.Main ? onMain : onOther)[ts]++;
+                    (cls.Batteries[b].Chief ? onChief : onOther)[ts]++;
         }
     }
 
     /// <summary>How many other ships' batteries of a battery's kind are on a target (her slot).</summary>
     int Crowd(ShipClass cls, int b, int target, int targetSlot)
     {
-        bool main = cls.Batteries[b].Kind == Battery.Main;
-        var on = main ? onMain : onOther;
+        bool chief = cls.Batteries[b].Chief;
+        var on = chief ? onChief : onOther;
         if (targetSlot < 0 || targetSlot >= on.Length)
             return 0;
         int n = on[targetSlot];
         for (int k = 0; k < cls.Batteries.Length; k++)
-            if (ownTargets[k] == target && (cls.Batteries[k].Kind == Battery.Main) == main)
+            if (ownTargets[k] == target && cls.Batteries[k].Chief == chief)
                 n--;   // his own aren't another ship's splashes
         return Math.Max(n, 0);
     }
@@ -396,7 +397,7 @@ public sealed partial class CaptainLayer
             return 0;
         var s = ctx.Settings;
         long now = ctx.NowMs;
-        bool secondary = cls.Batteries[b].Kind != Battery.Main;
+        bool secondary = !cls.Batteries[b].Chief;
         var p = own.Position;
         if (candCount < 0)
             Candidates(ctx, pic, own, widest);
@@ -521,7 +522,7 @@ public sealed partial class CaptainLayer
     {
         var s = ctx.Settings;
         var cls = own.Handling.Class;
-        int main = MainBattery(cls);
+        int main = ChiefBattery(cls);
         double reach = main >= 0 ? ctx.World.Gunnery.ReachM(ctx.Ships.Combat.Loadout(slot), main) : s.ShadowMinM;
         double band = cap.DistanceM > 0 ? cap.DistanceM : doctrine.Of(own.Entity, own.Side, DoctrineField.RangeShare) * reach;
 
@@ -654,7 +655,7 @@ public sealed partial class CaptainLayer
         Recount();
     }
 
-    /// <summary>Whether his ship's magazines are empty (docs/battle/command.md 5.1g): every main mount out of the rounds
+    /// <summary>Whether his ship's magazines are empty (docs/battle/command.md 5.1g): every chief mount out of the rounds
     /// it carries (a mount with none given never runs out) and no torpedo left. Then she leaves her group and goes home,
     /// as one fallen out does, her secondaries firing at will as she goes.</summary>
     void OutOfRounds(in AiContext ctx, ref Captain cap, ShipState own)
@@ -668,7 +669,7 @@ public sealed partial class CaptainLayer
         for (int m = 0; m < cls.Mounts.Length; m++)
         {
             ref readonly var mr = ref cls.Mounts[m];
-            if (mr.Battery < 0 || cls.Batteries[mr.Battery].Kind != Battery.Main)
+            if (mr.Battery < 0 || !cls.Batteries[mr.Battery].Chief)
                 continue;
             if (mr.Rounds <= 0 || combat.Mount(slot, m).Rounds > 0)
                 return;   // rounds left, or no limit given
@@ -812,12 +813,12 @@ public sealed partial class CaptainLayer
         return entity;
     }
 
-    /// <summary>A class's main battery (the heaviest gun of its main batteries), -1 for none.</summary>
-    static int MainBattery(ShipClass cls)
+    /// <summary>A class's heaviest chief battery (<see cref="BatteryRow.Chief"/>: its main, else its heaviest guns), -1 for none.</summary>
+    static int ChiefBattery(ShipClass cls)
     {
         int best = -1;
         for (int b = 0; b < cls.Batteries.Length; b++)
-            if (cls.Batteries[b].Kind == Battery.Main && (best < 0 || cls.Batteries[b].CalibreMm > cls.Batteries[best].CalibreMm))
+            if (cls.Batteries[b].Chief && (best < 0 || cls.Batteries[b].CalibreMm > cls.Batteries[best].CalibreMm))
                 best = b;
         return best;
     }

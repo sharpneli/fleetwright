@@ -810,6 +810,11 @@ public static class ShipClassCompiler
                     PatternPct = DesignerPlaceholders.Pattern(row.CalibreMm, era),
                 };
             }
+            // the guns she fights with: her main battery, or with none her heaviest
+            bool anyMain = batteries.Any(r => r.Kind == Battery.Main);
+            double heaviest = batteries.Count > 0 ? batteries.Max(r => r.CalibreMm) : 0;
+            for (int b = 0; b < batteries.Count; b++)
+                batteries[b] = batteries[b] with { Chief = anyMain ? batteries[b].Kind == Battery.Main : batteries[b].CalibreMm == heaviest };
             c.batteries = batteries.ToArray();
             // the gun's shells, as shipgen resolved them (the design's, or the default outfit): the class's own loadout
             c.Loadout = Loadout.Compile(c, ship.Report.Shells, "", c.DesignHash);

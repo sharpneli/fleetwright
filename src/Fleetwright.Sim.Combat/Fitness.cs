@@ -3,8 +3,8 @@ using Fleetwright.Sim.Ships;
 namespace Fleetwright.Sim.Combat;
 
 /// <summary>What a ship can still do (docs/battle/command.md "Fitness"), from its condition: the speed it can make as a
-/// share of its designed speed, its main guns working as a share of them (by barrels), the water aboard as a share of its
-/// reserve buoyancy, its list, and its steering. Its own captain reads it exactly (own ships are known); doctrine's
+/// share of its designed speed, its chief guns (<see cref="BatteryRow.Chief"/>) working as a share of them (by barrels),
+/// the water aboard as a share of its reserve buoyancy, its list, and its steering. Its own captain reads it exactly (own ships are known); doctrine's
 /// fall-out thresholds compare against it. Pure, and it allocates nothing.</summary>
 public readonly record struct Fitness(double SpeedShare, double MainGunsShare, double WaterShare, double ListDeg, Steering Steering)
 {
@@ -20,7 +20,7 @@ public readonly record struct Fitness(double SpeedShare, double MainGunsShare, d
         int barrels = 0, working = 0;
         foreach (ref readonly var b in c.Batteries)
         {
-            if (b.Kind != Battery.Main)
+            if (!b.Chief)
                 continue;
             foreach (int m in c.Links(b.Mounts))
             {

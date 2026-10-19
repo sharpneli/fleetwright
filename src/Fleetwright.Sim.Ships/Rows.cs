@@ -479,6 +479,10 @@ public readonly record struct FireControlFit(OpticsRow Optics, ComputerRow Compu
 public readonly record struct BatteryRow
 {
     public Battery Kind { get; init; }
+    /// <summary>Whether it's among the guns its ship fights with: her main battery, or with none her heaviest guns (a
+    /// ship of the line's broadside, a Q-ship's). The captain's band, his engage order, his fall-out and the matchup
+    /// count these; <see cref="Kind"/> stays the design's (its fire control, its shells).</summary>
+    public bool Chief { get; init; }
     /// <summary>The side its mounts stand on: a secondary gun's port, starboard and centreline mounts are three batteries,
     /// each with its own fire control and target; a main battery is one whatever the side (None).</summary>
     public Side Side { get; init; }

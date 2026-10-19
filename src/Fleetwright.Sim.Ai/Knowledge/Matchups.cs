@@ -262,7 +262,8 @@ public sealed class MatchupSide
         return true;
     }
 
-    /// <summary>A ship's guns working by barrels and rounds left by the outfit, main and the rest (-1: none of a kind).</summary>
+    /// <summary>A ship's guns working by barrels and rounds left by the outfit, chief (<see cref="BatteryRow.Chief"/>) and the
+    /// rest (-1: none of a kind).</summary>
     static (double MainGuns, double OtherGuns, double MainRounds, double OtherRounds) Guns(ShipStore store, int slot, ShipClass cls, ShipCondition k)
     {
         double mainB = 0, mainOk = 0, otherB = 0, otherOk = 0, mainR = 0, mainLeft = 0, otherR = 0, otherLeft = 0;
@@ -271,7 +272,7 @@ public sealed class MatchupSide
             ref readonly var mr = ref cls.Mounts[m];
             if (mr.Battery < 0)
                 continue;
-            bool main = cls.Batteries[mr.Battery].Kind == Battery.Main;
+            bool main = cls.Batteries[mr.Battery].Chief;
             int barrels = cls.TurretTypes[mr.Type].Barrels;
             double ok = k.MountWorks[m] ? k.Guns(m) : 0;
             double rounds = mr.Rounds > 0 ? mr.Rounds : 0, left = mr.Rounds > 0 ? store.Combat.Mount(slot, m).Rounds : 0;
