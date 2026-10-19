@@ -110,6 +110,11 @@ public sealed class ShipCondition
     public PartState[] State = [];
     public PartFlags[] Flags = [];
     public double[] WaterM3 = [], BreachM2 = [], BreachY = [], BreachZ = [];
+    /// <summary>What each room stows stands to this height in the ship's frame (NaN: nothing; docs/battle/shell-contents.md
+    /// C2-C3): her oil, coal and feed water, made from her side's fuel share (<see cref="LevelsFuel"/>, NaN before) when she
+    /// first needs them. Nothing is burnt in a battle (hours, a few percent).</summary>
+    public double[] Level = [];
+    public double LevelsFuel = double.NaN;
     public bool[] CellFire = [], CellOpened = [];
     /// <summary>Each fire space's fire (the class's FireSpaces; docs/battle/fire.md): <see cref="CellFire"/> and a part's
     /// <see cref="PartFlags.Burning"/> show which burn.</summary>
@@ -243,6 +248,7 @@ public sealed class ShipCondition
             (MagazineHeat, MagazineLimit, MagazineThreatS, MagazineFlood) =
                 (new double[c.Rooms.Length], new double[c.Rooms.Length], new double[c.Rooms.Length], new bool[c.Rooms.Length]);
             Smoked = new bool[c.Rooms.Length];
+            (Level, LevelsFuel) = (new double[c.Rooms.Length], double.NaN);
             MountWorks = new bool[c.Mounts.Length];
             DirectorWorks = new bool[c.Directors.Length];
             EyeWorks = new bool[c.Eyes.Length];

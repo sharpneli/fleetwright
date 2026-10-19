@@ -57,12 +57,16 @@ public sealed class ShipClass
     internal MaterialRow[] materialRows = [];
     internal RoomContents[] roomContents = [];
     internal ContentObject[] contentObjects = [];
+    internal RoomStowage[] stowages = [];
     internal FrozenDictionary<string, int> componentIndex = null!, cellIndex = null!, roomIndex = null!, bulkheadIndex = null!,
         deckIndex = null!, tierIndex = null!, sectionIndex = null!;
 
     /// <summary>What a room holds in a shell's path (docs/battle/shell-contents.md C1b): none for most.</summary>
     public ref readonly RoomContents ContentsOf(int room) => ref roomContents[room];
     public ReadOnlySpan<RoomContents> RoomContents => roomContents;
+
+    /// <summary>What each room stows to a level (oil, water, coal: docs/battle/shell-contents.md C2-C3), by room.</summary>
+    public ReadOnlySpan<RoomStowage> Stowages => stowages;
 
     /// <summary>The objects of a room's contents (<see cref="RoomContents.Mix"/>).</summary>
     public ReadOnlySpan<ContentObject> ContentObjects(Slice s) => contentObjects.AsSpan(s.Start, s.Count);

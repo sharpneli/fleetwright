@@ -77,6 +77,7 @@ public static class ShipClassCompiler
             FireControlUnits(c);
             c.Silhouette = Sight.Silhouette(c, numbers);
             RoomContents(c);
+            RoomStowages(c);
 
             c.links = links.ToArray();
             c.points = points.ToArray();
@@ -209,6 +210,81 @@ public static class ShipClassCompiler
             c.contentObjects = [.. objects];
 
             SolidAt Solid(SolidRow s) => s.Some ? new SolidAt(s.Name, s.LoMm, s.HiMm, Material(s.Material), s.Shape, s.Bore) : default;
+        }
+
+        /// <summary>What each room stows to a level (docs/battle/shell-contents.md C2-C3), as Shipgen stowed the fuel
+        /// (Powerplant.Bunkers): a coal plant's in its wing bunkers (their tonnes) and then its end bunkers (0.9 of them);
+        /// an oil plant's in the double bottom (0.6 of it), then the TDS layers (0.3 of them: half the protection's width at
+        /// 0.6), then end bunkers (0.9), each only as far as the fuel goes, in that order. A coal plant's double bottom
+        /// holds the crew's feed and fresh water (Crew.WaterInDoubleBottomM3). Fuel tanks hold their tonnes. A space off
+        /// the centreline (a wing bunker, a TDS layer) is protective.</summary>
+        void RoomStowages(ShipClass c)
+        {
+            var r = ship.Report;
+            string plantFuel = r.Plant.Fuel;
+            bool oil = plantFuel is "oil" or "diesel";
+            double stow = Powerplant.Fuels.TryGetValue(plantFuel, out var f) ? f.Stowage : 1.07;
+            double fuelLeft = (r.Results?.FuelT ?? 0) * stow;   // m³ of fuel at full load, placed in Shipgen's order
+            double fuelRho = plantFuel switch { "coal" => Stowage.CoalRho, "diesel" => Stowage.DieselRho, "petrol" => Stowage.PetrolRho, _ => Stowage.OilRho };
+            var kind = plantFuel == "coal" ? MediumKind.Granular : MediumKind.Liquid;
+            c.stowages = new RoomStowage[c.rooms.Length];
+            var spans = new (double Lo, double Hi, bool Side)[c.rooms.Length];
+            double dbVolume = 0;
+            for (int i = 0; i < c.rooms.Length; i++)
+            {
+                double lo = double.PositiveInfinity, hi = double.NegativeInfinity, y0 = double.PositiveInfinity, y1 = double.NegativeInfinity;
+                var cs = c.rooms[i].Cells;
+                for (int j = cs.Start; j < cs.End; j++)
+                {
+                    var b = c.cells[links[j]].Box;
+                    (lo, hi, y0, y1) = (Math.Min(lo, b.Base), Math.Max(hi, b.Top), Math.Min(y0, b.Y0), Math.Max(y1, b.Y1));
+                }
+                spans[i] = (lo, hi, y0 > 0.05 || y1 < -0.05);
+                if (c.rooms[i].Kind == RoomKind.DoubleBottom)
+                    dbVolume += c.rooms[i].VolumeM3;
+            }
+            // Shipgen's order: wing bunkers (given), the double bottom and the TDS layers for oil, then the end bunkers
+            void Place(Func<int, bool> which, double share, MediumKind k, double rho, bool fuel)
+            {
+                // a group the fuel doesn't fill is filled evenly, to the share the fuel left makes
+                bool Takes(int i) => which(i) && spans[i].Hi > spans[i].Lo && c.rooms[i].VolumeM3 > 0;
+                double room3 = 0;
+                for (int i = 0; i < c.rooms.Length; i++)
+                    if (Takes(i))
+                        room3 += share * c.rooms[i].VolumeM3;
+                double scale = fuel ? (room3 > 0 ? Math.Clamp(fuelLeft / room3, 0, 1) : 0) : 1;
+                if (fuel)
+                    fuelLeft -= scale * room3;
+                for (int i = 0; i < c.rooms.Length; i++)
+                {
+                    var room = c.rooms[i];
+                    if (!Takes(i))
+                        continue;
+                    double want = scale * share * room.VolumeM3;
+                    if (want > 0)
+                        c.stowages[i] = new RoomStowage(k, rho, want / room.VolumeM3, fuel, spans[i].Side, spans[i].Lo, spans[i].Hi, room.VolumeM3,
+                            k == MediumKind.Granular ? "coal" : fuel ? plantFuel : "water");
+                }
+            }
+            bool Is(int i, RoomKind k) => c.rooms[i].Kind == k;
+            Place(i => Is(i, RoomKind.Bunker) && c.rooms[i].Tonnes > 0, 0.9, kind, fuelRho, true);   // wing bunkers: their tonnes fit 0.9
+            if (oil)
+            {
+                Place(i => Is(i, RoomKind.DoubleBottom), 0.6, MediumKind.Liquid, fuelRho, true);
+                Place(i => Is(i, RoomKind.Tds), 0.3, MediumKind.Liquid, fuelRho, true);
+            }
+            Place(i => Is(i, RoomKind.Bunker) && !(c.rooms[i].Tonnes > 0), 0.9, kind, fuelRho, true);
+            if (!oil && r.Crew?.WaterInDoubleBottomM3 is > 0 and var water && dbVolume > 0)
+                Place(i => Is(i, RoomKind.DoubleBottom), Math.Min(water / dbVolume, 0.95), MediumKind.Liquid, Stowage.WaterRho, false);
+            for (int i = 0; i < c.rooms.Length; i++)
+                if (Is(i, RoomKind.FuelTank) && c.rooms[i].VolumeM3 > 0 && spans[i].Hi > spans[i].Lo)
+                {
+                    bool petrol = c.rooms[i].Fuel == Fuel.Petrol;
+                    double rho = petrol ? Stowage.PetrolRho : Stowage.OilRho;
+                    double share = c.rooms[i].Tonnes > 0 ? Math.Min(c.rooms[i].Tonnes * 1000 / rho / c.rooms[i].VolumeM3, 0.95) : 0.9;
+                    c.stowages[i] = new RoomStowage(MediumKind.Liquid, rho, share, true, spans[i].Side, spans[i].Lo, spans[i].Hi, c.rooms[i].VolumeM3,
+                        petrol ? "petrol" : "oil");
+                }
         }
 
         P3 Point3(double[]? p) => p switch

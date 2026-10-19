@@ -90,6 +90,10 @@ public sealed class Scenario
     /// <summary>The sides' propellant where it isn't 1 (docs/battle/fighting.md 4.3a), by side index.</summary>
     public List<(int Side, double Factor)> Propellant { get; init; } = [];
 
+    /// <summary>The sides' fuel where it's given, a share of a full load (docs/battle/shell-contents.md C2), by side
+    /// index.</summary>
+    public List<(int Side, double Share)> Fuel { get; init; } = [];
+
     /// <summary>The sides' fire disciplines where they're given (docs/battle/fire-control.md F6), by side index: a name of
     /// the settings' FireDisciplines (the loader checks it).</summary>
     public List<(int Side, string Name)> FireDisciplines { get; init; } = [];
@@ -245,6 +249,8 @@ public sealed class Scenario
             // "propellant": { "Germany": 0.1 }, by the sides' names; taken from "from" (with its sides) unless given
             var propellant = r.TryGetProperty("propellant", out var pr) ? ParsePropellant(pr, sides)
                 : from != null && !r.TryGetProperty("sides", out _) ? from.Propellant : [];
+            var fuelShares = r.TryGetProperty("fuel", out var fu) ? ParseFuel(fu, sides)
+                : from != null && !r.TryGetProperty("sides", out _) ? from.Fuel : [];
             // "fire_discipline": { "Germany": "german" }, by the sides' names; taken from "from" (with its sides) unless given
             var disciplines = r.TryGetProperty("fire_discipline", out var fd) ? ParseNames("fire_discipline", "a discipline's name", fd, sides)
                 : from != null && !r.TryGetProperty("sides", out _) ? from.FireDisciplines : [];
@@ -293,6 +299,7 @@ public sealed class Scenario
                 Weather = weather,
                 Crews = crews,
                 Propellant = propellant,
+                Fuel = fuelShares,
                 FireDisciplines = disciplines,
                 Readiness = readiness,
                 Firefighting = firefighting,
@@ -397,6 +404,23 @@ public sealed class Scenario
             if (!Enum.TryParse<CrewQuality>(p.Value.GetString(), ignoreCase: true, out var q) || !Enum.IsDefined(q))
                 throw new ScenarioException($"crews: \"{p.Value}\" for {p.Name}: green, average, trained or elite");
             list.Add((side, q));
+        }
+        return list;
+    }
+
+    static List<(int, double)> ParseFuel(JsonElement e, string[] sides)
+    {
+        if (e.ValueKind != JsonValueKind.Object)
+            throw new ScenarioException("fuel: an object of sides' names, { \"Britain\": 0.6 } (a share of a full load)");
+        var list = new List<(int, double)>();
+        foreach (var p in e.EnumerateObject())
+        {
+            int side = Array.IndexOf(sides, p.Name);
+            if (side < 0)
+                throw new ScenarioException($"fuel: \"{p.Name}\" isn't one of the sides ({string.Join(", ", sides)})");
+            if (p.Value.ValueKind != JsonValueKind.Number || !(p.Value.GetDouble() is >= 0 and <= 1))
+                throw new ScenarioException($"fuel: {p.Value} for {p.Name}: a share of a full load, 0 to 1");
+            list.Add((side, p.Value.GetDouble()));
         }
         return list;
     }

@@ -19,6 +19,7 @@ public enum DamageCommand : ushort
     Sink,
     SetReadiness,
     SetFirefighting,
+    SetFuel,
 }
 
 /// <summary>What set a magazine off (<see cref="DamageSystem.Blast"/>).</summary>
@@ -82,14 +83,14 @@ public sealed class DamageSystem : IWorldSystem
     readonly HitPath path = new();
     readonly PathBender bender = new();
     readonly Dictionary<ShipClass, FloodModel> floods = [];
-    readonly double[] propellant = new double[256];
+    readonly double[] propellant = new double[256], fuel = new double[256];
     readonly int[] readiness = new int[256], firefighting = new int[256];
     readonly int readinessDefault, firefightingDefault;
     double[] bearings = new double[16];
     readonly Blast[] blasts;
     int blastNext, blastCount;
     long hits;
-    bool propellantSet, readinessSet, firefightingSet, touched;
+    bool propellantSet, readinessSet, firefightingSet, fuelSet, touched;
 
     readonly Sightings sightings;
 
@@ -99,6 +100,7 @@ public sealed class DamageSystem : IWorldSystem
         stream = RandomStream.Named(seed, "damage");
         lotStream = RandomStream.Named(seed, "plate lots");
         Array.Fill(propellant, 1.0);
+        Array.Fill(fuel, settings.FuelShareDefault);
         readinessDefault = Math.Max(0, Array.FindIndex(settings.FireReadiness, x => x.Name == settings.FireReadinessDefault));
         Array.Fill(readiness, readinessDefault);
         firefightingDefault = Math.Max(0, Array.FindIndex(settings.Firefighting, x => x.Name == settings.FirefightingDefault));
@@ -130,6 +132,12 @@ public sealed class DamageSystem : IWorldSystem
 
     public double Propellant(int side) => propellant[side & 255];
 
+    /// <summary>A side's fuel, as a share of a full load (docs/battle/shell-contents.md C2): the scenario's "fuel", else
+    /// <see cref="SimSettings.FuelShareDefault"/>. Her levels (oil, coal) are made from it.</summary>
+    public static Command SetFuel(int side, double share) => new(Id, (ushort)DamageCommand.SetFuel, side, X: share);
+
+    public double Fuel(int side) => fuel[side & 255];
+
     /// <summary>A side's orders before action for fire (docs/battle/fire.md B1): an index of the settings'
     /// FireReadiness (the scenario's "readiness", else <see cref="SimSettings.FireReadinessDefault"/>), kept on each of its
     /// ships' conditions.</summary>
@@ -148,6 +156,11 @@ public sealed class DamageSystem : IWorldSystem
     {
         int side = ships.Store[slot].Side & 255;
         (k.Readiness, k.Firefighting) = (settings.FireReadiness[readiness[side]], settings.Firefighting[firefighting[side]]);
+        if (k.LevelsFuel != fuel[side])
+        {
+            Stowage.Levels(k.Class, fuel[side], settings.ProtectiveBunkersLast, k.Level);
+            k.LevelsFuel = fuel[side];
+        }
     }
 
     /// <summary>The dev's wreck (and the tests'): a ship's part (a node of its class: a component, or a room after them,
@@ -198,6 +211,12 @@ public sealed class DamageSystem : IWorldSystem
                     throw new ArgumentException($"no propellant {c.X} for side {c.Entity}");
                 propellant[c.Entity] = c.X;
                 propellantSet = true;
+                break;
+            case DamageCommand.SetFuel:
+                if (c.Entity is < 0 or > 255 || !(c.X >= 0 && c.X <= 1))
+                    throw new ArgumentException($"no fuel share {c.X} for side {c.Entity}: 0 to 1");
+                fuel[c.Entity] = c.X;
+                fuelSet = true;
                 break;
             case DamageCommand.SetReadiness:
                 if (c.Entity is < 0 or > 255 || c.A < 0 || c.A >= settings.FireReadiness.Length)
@@ -791,6 +810,13 @@ public sealed class DamageSystem : IWorldSystem
                 {
                     h.Add(s);
                     h.Add(propellant[s]);
+                }
+        if (fuelSet)
+            for (int s = 0; s < fuel.Length; s++)
+                if (fuel[s] != settings.FuelShareDefault)
+                {
+                    h.Add(s + 1024);
+                    h.Add(fuel[s]);
                 }
         if (firefightingSet)
             for (int s = 0; s < firefighting.Length; s++)

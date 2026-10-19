@@ -184,9 +184,16 @@ public static class Terminal
                 if (i >= xs.Length)
                     break;
             }
-            // in a space with contents, it may strike one before the next crossing: put on the path here
-            if (!nose && Strikes(c, path, i, dir, ref among, ref r))
-                xs = path.Crossings;
+            // in a space, before the next crossing: what it stows slows it (oil, coal, water to a level: C2-C3), and it may
+            // strike a solid there (C1c), put on the path where it meets it
+            if (!nose && among.Cell >= 0 && among.Part < 0 && xs[i].T - among.FromT > HitPath.SameM)
+            {
+                double ts = NextSolid(c, path, i, among, ref r);
+                if (k is not null)
+                    Media(c, k, path, i, among.Cell, among.FromT, Math.Min(ts, xs[i].T), shell, s, ref v, ref burstT, trace);
+                if (ts < xs[i].T && Put(c, path, i, ts, dir, ref among, ref r))
+                    xs = path.Crossings;
+            }
             ref readonly var x = ref xs[i];
             if (x.T >= burstT)
                 return Burst(ref res, burstT, force, res.Outcome, BurstKind.Inside, v);
@@ -744,28 +751,33 @@ public static class Terminal
         }
     }
 
-    /// <summary>Whether the shell, in a space with contents, strikes one before crossing i (docs/battle/shell-contents.md
-    /// C1c): over the stretch from where it may next meet one to the crossing, clipped to the contents' band, the next
-    /// solid comes after an Exp(λ) draw (memoryless: a room cut into more cells meets as often). Struck, the object is
-    /// drawn from the room's mix; its skin goes on the path there, and its core, by its chance, behind its interior (or
-    /// halfway through it), as plates the walk takes like any other; no other solid within its chord.</summary>
-    static bool Strikes(ShipClass c, HitPath path, int i, P3 dir, ref Among a, ref RandomStream r)
+    /// <summary>Where the shell, in a space with contents, next strikes one before crossing i (docs/battle/shell-contents.md
+    /// C1c; infinity: it doesn't): over the stretch from where it may next meet one to the crossing, clipped to the
+    /// contents' band, the next solid comes after an Exp(λ) draw (memoryless: a room cut into more cells meets as
+    /// often).</summary>
+    static double NextSolid(ShipClass c, HitPath path, int i, in Among a, ref RandomStream r)
     {
-        if (a.Cell < 0 || a.Part >= 0 || c.Cells[a.Cell].Room is not (int room and >= 0))
-            return false;
+        if (c.Cells[a.Cell].Room is not (int room and >= 0))
+            return double.PositiveInfinity;
         ref readonly var k = ref c.ContentsOf(room);
         if (!k.Some)
-            return false;
+            return double.PositiveInfinity;
         double t0 = a.FromT, t1 = path.Crossings[i].T;
-        if (!(t1 - t0 > HitPath.SameM))
-            return false;
         var (ta, tb) = Band(path.At(t0).Z, path.At(t1).Z, t0, t1, k.ZLo, k.ZHi);
         if (!(tb > ta))
-            return false;
+            return double.PositiveInfinity;
         double ts = ta - Math.Log(1 - r.NextDouble()) * k.LambdaM;
-        if (ts >= tb - HitPath.SameM)
-            return false;
+        return ts < tb - HitPath.SameM ? ts : double.PositiveInfinity;
+    }
 
+    /// <summary>A solid struck at ts, before crossing i: the object drawn from the room's mix; its skin goes on the path
+    /// there, and its core, by its chance, behind its interior (or halfway through it), as plates the walk takes like any
+    /// other; no other solid within its chord. False when the path is full.</summary>
+    static bool Put(ShipClass c, HitPath path, int i, double ts, P3 dir, ref Among a, ref RandomStream r)
+    {
+        int room = c.Cells[a.Cell].Room;
+        ref readonly var k = ref c.ContentsOf(room);
+        double t1 = path.Crossings[i].T;
         var mix = c.ContentObjects(k.Mix);
         double u = r.NextDouble();
         int j = 0;
@@ -785,6 +797,55 @@ public static class Terminal
         }
         a.FromT = ts + extent;
         return true;
+    }
+
+    /// <summary>What a space stows slows the shell over [t0, t1] (docs/battle/shell-contents.md C2-C3): its room's medium
+    /// (oil, coal, feed water) below the level it stands to (<see cref="ShipCondition.Level"/>), and the sea the flooding
+    /// has let into the cell above that up to its own level, each a run on the fuze's clock
+    /// (<see cref="WaterRun.Through"/>), in order along the path.</summary>
+    static void Media(ShipClass c, ShipCondition k, HitPath path, int i, int cell, double t0, double t1, in ShellTypeRow shell, SimSettings s,
+        ref double v, ref double burstT, TerminalTrace? trace)
+    {
+        if (!(t1 - t0 > HitPath.SameM))
+            return;
+        ref readonly var row = ref c.Cells[cell];
+        int room = row.Room;
+        double zRoom = room >= 0 && room < k.Level.Length ? k.Level[room] : double.NaN;
+        double cap = row.VolumeM3 * row.Permeability, water = cell < k.WaterM3.Length ? k.WaterM3[cell] : 0;
+        double zSea = water > 0 && cap > 0 ? row.Box.Base + Math.Min(water / cap, 1) * (row.Box.Top - row.Box.Base) : double.NaN;
+        if (double.IsNaN(zRoom) && double.IsNaN(zSea))
+            return;
+        double z0 = path.At(t0).Z, z1 = path.At(t1).Z;
+        var (ra, rb) = double.IsNaN(zRoom) ? (1.0, 0.0) : Band(z0, z1, t0, t1, double.NegativeInfinity, zRoom);
+        var (wa, wb) = double.IsNaN(zSea) || zSea <= zRoom ? (1.0, 0.0) : Band(z0, z1, t0, t1, double.IsNaN(zRoom) ? double.NegativeInfinity : zRoom, zSea);
+        // in order along the path: falling, the flood water above the stowed medium comes first
+        if (wa < ra)
+        {
+            Run(path, i, wa, wb, WaterRun.SeaRho, MediumKind.Liquid, "sea water, flooded", shell, s, ref v, ref burstT, trace);
+            if (room >= 0)
+                Run(path, i, ra, rb, c.Stowages[room].Rho, c.Stowages[room].Kind, c.Stowages[room].Name, shell, s, ref v, ref burstT, trace);
+        }
+        else
+        {
+            if (room >= 0 && !double.IsNaN(zRoom))
+                Run(path, i, ra, rb, c.Stowages[room].Rho, c.Stowages[room].Kind, c.Stowages[room].Name, shell, s, ref v, ref burstT, trace);
+            Run(path, i, wa, wb, WaterRun.SeaRho, MediumKind.Liquid, "sea water, flooded", shell, s, ref v, ref burstT, trace);
+        }
+    }
+
+    /// <summary>One run through a medium from ta to tb (none when empty, or past where the fuze has already burst it).</summary>
+    static void Run(HitPath path, int i, double ta, double tb, double rho, MediumKind kind, string name, in ShellTypeRow shell, SimSettings s,
+        ref double v, ref double burstT, TerminalTrace? trace)
+    {
+        if (!(tb - ta > 1e-6) || kind == MediumKind.None || !double.IsNaN(burstT) && burstT <= ta)
+            return;
+        double vIn = v;
+        WaterRun.Through(ref v, ref burstT, ta, tb - ta, WaterRun.DecayM(shell, s, rho, kind));
+        trace?.Add(new PlateStep
+        {
+            Crossing = i, T = ta, Point = path.At(ta), InMs = vIn, OutMs = v, FuzeLeftS = FuzeLeftS(burstT, tb, v), Name = name, RunM = tb - ta,
+            Call = PlateCall.Medium, Quality = 1,
+        });
     }
 
     /// <summary>The stretch of [t0, t1] (heights z0 to z1, straight) within the band zLo..zHi; empty when none.</summary>

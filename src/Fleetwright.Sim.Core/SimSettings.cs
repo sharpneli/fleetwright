@@ -841,6 +841,15 @@ public sealed record SimSettings
     /// inside the hull is the sea's physics: <see cref="UnderwaterDecayCalibres"/> × 1,025 over its density.</summary>
     public double GranularDecayC { get; init; } = 96_000;
 
+    /// <summary>The share of a full load of fuel a ship goes into battle with, where the scenario gives her side none
+    /// (docs/battle/shell-contents.md C2): 0.8, ships coaled or oiled before a sortie (damage/09 §4: about 0.9 just after
+    /// coaling, 0.3-0.5 after a week at sea). What's left of it stands in her tanks and bunkers, and a shell meets it.</summary>
+    public double FuelShareDefault { get; init; } = 0.8;
+
+    /// <summary>The protective side spaces (wing bunkers, TDS layers) kept full and the others burnt first, the period's
+    /// practice (damage/09 §4, a doctrine: [UNCERTAIN] as a found rule); off, every fuel space falls alike.</summary>
+    public bool ProtectiveBunkersLast { get; init; } = true;
+
     /// <summary>The hit query follows a shell this many decay lengths on under the water (3: down to 5% of its speed; a
     /// 15" shell 29 m). Physical, not tuned to historical loss rates: without damage control more ships flood and sink
     /// than history saw, and that's accepted (user, 2026-10-16). The fuze started on the water

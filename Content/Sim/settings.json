@@ -294,6 +294,8 @@
   "UnderwaterDecayCalibres": 25,
   "UnderwaterDecayCalibresDiving": 50,
   "GranularDecayC": 96000,
+  "FuelShareDefault": 0.8,
+  "ProtectiveBunkersLast": true,
   "UnderwaterReachDecays": 3,
   "FuzeStartsOnWater": true,
   "WreckRadiusK": 1.0,

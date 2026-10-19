@@ -281,7 +281,7 @@ public static class Program
                         D(a, "fc-range", 150), D(a, "fc-defl", 40), D(a, "water-ms", double.NaN), a.Int("seed", 1), D(a, "settle", 0))),
                 "scheme" => SchemeCommand.Run(a.Get("catalogue") ?? Path.Combine(Root(a), "..", "Content", "Templates", "protection.json"),
                     a.Positional.ElementAtOrDefault(0) ?? "", [.. a.Positional.Skip(1).Select(n => Resolve(a, n))], a.Has("write")),
-                "contents" => ContentsBench.Run(a.Positional.Count > 0 ? a.Positional : ["m_class"], n => Class(a, n)),
+                "contents" => ContentsBench.Run(a.Positional.Count > 0 ? a.Positional : ["m_class"], n => Class(a, n), Settings(a)),
                 "subdivision" => SubdivisionBench.Run(a.Positional.Count > 0 ? a.Positional : ["destroyer"], n => LoadDesign(Resolve(a, n)), a.Has("rooms")),
                 "protection" => ProtectionBench.Run(a.Positional.Count > 0 ? a.Positional : ["destroyer"], n => LoadDesign(Resolve(a, n)), a.Int("shells", 400),
                     a.Int("seed", 1), a.Has("summary")),

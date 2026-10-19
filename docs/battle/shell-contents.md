@@ -233,6 +233,34 @@ The TDS design key `fill` (liquid or void) keeps its name: it says what's in a l
   - 3 m of oil keeps a 12" at 69%.
   - A diving shell under the belt against a liquid-loaded TDS: measured before and after.
 
+**Done 2026-10-19, with C3a** (the coal is the same mechanism with the granular rule).
+- **What stands where follows what Shipgen stowed** (`Powerplant.Bunkers`), a change from the text above: no design keys
+  yet. A coal plant fills its wing bunkers (their tonnes, 0.9 of them), then end bunkers (0.9), and its double bottom
+  holds the crew's feed and fresh water (`Crew.WaterInDoubleBottomM3`). An oil plant fills the double bottom (0.6 of
+  it), then the TDS layers (0.3 of them: Shipgen's half the protection's width at 0.6), then end bunkers (0.9), as far as
+  the fuel goes, each group filled evenly. Fuel tanks hold their tonnes. Choosing otherwise per design (a TDS layer's
+  `fill`, the double bottom's use) stays with protection-plan H3's open item and TODO "Double-bottom contents", since
+  it moves the stowage and weights too. (`ShipClass.Stowages`, `RoomStowage`.)
+- **A level, not whole layers:** a room fills from its floor, so a TDS layer at 0.3 is oil in its lower 30% (true to
+  the tonnes; the real practice kept some layers full and some void). Levels are flat in the ship's frame, not her heel.
+- **The load state:** `SimSettings.FuelShareDefault` 0.8, or the scenario's `"fuel": { "Britain": 0.6 }` per side
+  (`DamageSystem.SetFuel`, hashed). `Stowage.Levels` spreads it: with `ProtectiveBunkersLast` (on) the protective side
+  spaces (rooms off the centreline: wing bunkers, TDS layers) stay full before the rest get any. The ship's levels are on
+  her condition (`ShipCondition.Level`), made when she's first hit.
+- **The walk:** in each stretch of a cell, before any solid struck in it, what's below the room's level is a run
+  through its medium, and the flooding's water above that up to the cell's own level (`WaterM3` over its capacity) a
+  run through the sea's (`Terminal.Media`, `WaterRun.Through` on the fuze's clock). Liquids are the sea's 25 calibres
+  by density (open question 6), coal 96,000 over 800 (120 calibres).
+- **Anchors** (`shipgen contents`): 4 m of a liquid layer keeps a 15" at 66%, 3 m of oil a 12" at 69%: 09's own. 2 ft
+  of coal costs a 4-15" shell at 500 m/s 1.3-4.9% of its speed, as 0.77-0.85 in of mild steel by Thompson's limit (09:
+  0.76-1.41 in by DeMarre, rising with the calibre): "about 1 in", the right direction.
+- **What it does:** little to outcomes, as 09 says. Coal and oil cost a heavy shell a few percent, and a half-empty
+  bunker protects only its lower part. At 0.8 of a load Hessen's coal stands at −4.7 m, under her −3.8 m waterline, so
+  a flat hit at the waterline crosses empty bunker; only a falling shell meets the coal (`ContentsTests`). The `hits`
+  bench (Iron Duke on Hessen and Wiesbaden, König on Warrior and Iron Duke, Revenge on M class) moves only in the third
+  digit. Scenarios (one run each, 120 min): squadrons the same (69 hits, none lost), flotilla the same boat lost 18 s
+  later, Tsushima 6 lost either way (1,838 → 2,124 hits).
+
 ### C3 Coal
 
 - **C3a Bunkers.**
@@ -240,6 +268,7 @@ The TDS design key `fill` (liquid or void) keeps its name: it says what's in a l
   - A doctrine knob, "protective bunkers last", on by default: the side bunkers at the waterline stay full and the
     others are burnt first.
   - Anchor: the readout's table of 2 ft of coal ≈ 0.8-1.4 in of armour by calibre (09 §4).
+  - **Done 2026-10-19 with C2** (above).
 - **C3b Splinters,** measured on its own because it moves E1's fragment counts. Coal along a fragment's way through a
   bunker stops it: the same medium at the fragment's own size, e-fold about 15 sizes.
 

@@ -78,6 +78,8 @@ public static class ScenarioLoader
             w.Apply(GunnerySystem.SetCrew(side, quality));
         foreach (var (side, factor) in s.Propellant)
             w.Apply(DamageSystem.SetPropellant(side, factor));
+        foreach (var (side, share) in s.Fuel)
+            w.Apply(DamageSystem.SetFuel(side, share));
         foreach (var (side, name) in s.FireDisciplines)
         {
             int k = Array.FindIndex(w.Settings.FireDisciplines, d => d.Name == name);
