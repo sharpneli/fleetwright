@@ -1,5 +1,5 @@
 {
- "version": 9,
+ "version": 10,
  "id": "derfflinger",
  "name": "Derfflinger-like (1914)",
  "type": "BC",
@@ -202,7 +202,9 @@
     "reach_m": 9.8,
     "gas_temp_k": 600,
     "air_fuel_ratio": 16
-   }
+   },
+   "boilers": "small_tube",
+   "engines": "direct_turbine"
   },
   "stress": 0.5,
   "shafts": 4,

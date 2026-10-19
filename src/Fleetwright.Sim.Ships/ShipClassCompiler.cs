@@ -54,6 +54,8 @@ public static class ShipClassCompiler
                 ShellJoint = r.Hull.Shell,
                 InternalsJoint = r.Hull.Internals,
                 ShockGrade = r.Fittings.ShockGrade,
+                Boilers = Contents.BoilersOf(r.Plant.Boilers),
+                Engines = Contents.EnginesOf(r.Plant.Engines),
             };
             c.componentIds = [.. hb.Components.Select(x => x.Id)];
             c.turretTypes = hb.TurretTypes.Values.Select(TurretTypeOf).ToArray();
@@ -74,6 +76,7 @@ public static class ShipClassCompiler
             TurretRangefinders(c);
             FireControlUnits(c);
             c.Silhouette = Sight.Silhouette(c, numbers);
+            RoomContents(c);
 
             c.links = links.ToArray();
             c.points = points.ToArray();
@@ -171,7 +174,42 @@ public static class ShipClassCompiler
         /// <summary>A material's row from the report's table (every name the parts give, resolved by shipgen).</summary>
         MaterialRow MaterialOf(string name) =>
             ship.Report.Materials?.GetValueOrDefault(name) is { Q: > 0 } m ? MaterialRow.Of(m)
-                : throw new ShipCompileException($"material {name}: not in report.materials, or no q");
+                : MaterialTemplates.Resolve(ship.Design, name) is { Q: > 0 } k ? MaterialRow.Of(k)
+                : throw new ShipCompileException($"material {name}: not in report.materials nor the catalogue, or no q");
+
+        /// <summary>What stands in each room in a shell's path (docs/battle/shell-contents.md C1b): its kind's rows for
+        /// this plant, between the small and the large by her displacement; the band as heights over the room's cells.
+        /// The objects' materials are the catalogue's names (the design may give its own of the same name).</summary>
+        void RoomContents(ShipClass c)
+        {
+            double size = Contents.SizeOf(c.Hydrostatics.DisplacementT);
+            var objects = new List<ContentObject>();
+            c.roomContents = new RoomContents[c.rooms.Length];
+            for (int i = 0; i < c.rooms.Length; i++)
+            {
+                if (Contents.Of(c.rooms[i].Kind, c.Boilers, c.Engines) is not var (small, large))
+                    continue;
+                var row = Contents.Between(small, large, size);
+                double lo = double.PositiveInfinity, hi = double.NegativeInfinity;
+                var cs = c.rooms[i].Cells;
+                for (int j = cs.Start; j < cs.End; j++)
+                    (lo, hi) = (Math.Min(lo, c.cells[links[j]].Box.Base), Math.Max(hi, c.cells[links[j]].Box.Top));
+                if (!(hi > lo) || !(row.Packing > 0))
+                    continue;
+                int start = objects.Count;
+                double total = row.Mix.Sum(o => o.Share), upTo = 0;
+                foreach (var o in row.Mix)
+                {
+                    upTo += o.Share / total;
+                    objects.Add(new ContentObject(upTo, o.Skin.Name, Solid(o.Skin), o.InteriorRho, o.InteriorShare, o.Interior, o.CoreChance, Solid(o.Core)));
+                }
+                c.roomContents[i] = new RoomContents(lo + row.BandLo * (hi - lo), lo + row.BandHi * (hi - lo), row.ChordM / row.Packing, row.ChordM,
+                    new Slice(start, row.Mix.Length), row.Name);
+            }
+            c.contentObjects = [.. objects];
+
+            SolidAt Solid(SolidRow s) => s.Some ? new SolidAt(s.Name, s.LoMm, s.HiMm, Material(s.Material), s.Shape, s.Bore) : default;
+        }
 
         P3 Point3(double[]? p) => p switch
         {

@@ -12,7 +12,7 @@ namespace Fleetwright.Shipgen;
 public static class DesignFormat
 {
     /// <summary>The version this build writes.</summary>
-    public const int Current = 9;
+    public const int Current = 10;
 
     /// <summary>Steps[v] upgrades a version v design to v + 1, adding what it couldn't tell to the warnings.</summary>
     static readonly Action<JsonObject, List<string>>[] Steps =
@@ -26,7 +26,26 @@ public static class DesignFormat
         (d, _) => NoComputerT(d),      // 6 → 7: the computer's weight its block's, in a transmitting station (F4c)
         Outfit,                        // 7 → 8: what burns aboard (docs/battle/fire.md B0)
         (d, _) => GunAndTorpedoTech(d), // 8 → 9: the guns and torpedoes the design's, not the look's
+        PlantKinds,                    // 9 → 10: the boilers' and engines' kinds (docs/battle/shell-contents.md C1b)
     ];
+
+    /// <summary>9 → 10: a plant tech block says its boilers' and engines' kinds (what a shell meets in its rooms). A block
+    /// without them takes what its name says (the name of the template it was picked from: Powerplant.KindsOf), else its
+    /// part-load curve, and says so. A design without a block takes its style's default, which says them.</summary>
+    static void PlantKinds(JsonObject d, List<string> warnings)
+    {
+        if (d["machinery"]?["tech"] is not JsonObject t || t.ContainsKey("boilers") && t.ContainsKey("engines"))
+            return;
+        static string? Str(JsonNode? n) => n is JsonValue v && v.TryGetValue(out string? s) ? s : null;
+        double? bf = t["boiler_fraction"] is JsonValue b && b.TryGetValue(out double f) ? f : null;
+        var (boilers, engines, guessed) = Powerplant.KindsOf(Str(t["name"]), Str(t["part_load"]), bf);
+        if (!t.ContainsKey("boilers"))
+            t["boilers"] = boilers;
+        if (!t.ContainsKey("engines"))
+            t["engines"] = engines;
+        if (guessed)
+            warnings.Add($"machinery.tech: its name doesn't say its boilers and engines; took {boilers} and {engines} (format 10)");
+    }
 
     /// <summary>8 → 9: the sim worked a design's guns (reload, training, elevation, pattern, propellant) and its torpedoes
     /// by its look's era and navy; the look is the drawing's only now (the user, 2026-10-19), and they're the design's

@@ -18,6 +18,9 @@ public enum CrossingKind : byte
     /// <summary>Into the sea and out of it: through the waterplane, or out through the hull's skin under it.</summary>
     WaterIn,
     WaterOut,
+    /// <summary>A solid struck inside a space (Plate: Contents, Index: the room): put on the path by the terminal walk where
+    /// the shell met it (docs/battle/shell-contents.md C1c), its skin or its core as one plate.</summary>
+    Struck,
 }
 
 /// <summary>Which plate a crossing goes through; Index says which row or component it is.</summary>
@@ -56,6 +59,8 @@ public enum PlateKind : byte
     /// <summary>The backing behind side armour, wood or cement (Index: ShipClass.SidePlates; docs/battle/shells-armour-damage.md
     /// P7).</summary>
     Backing,
+    /// <summary>What stands in a space, struck (Index: the room; <see cref="CrossingKind.Struck"/>).</summary>
+    Contents,
 }
 
 /// <summary>One crossing along a segment: where (T, metres from the segment's start, and the point, ship-local), what
@@ -167,6 +172,7 @@ public sealed class HitPath
             PlateKind.HullEnd => "hull end",
             PlateKind.HullDeck => "hull deck",
             PlateKind.Backing => $"backing of {c.SidePlateId(x.Index)}",
+            PlateKind.Contents => $"{c.RoomId(x.Index)}: {c.ContentsOf(x.Index).Name}",
             _ => x.Plate.ToString(),
         };
 
@@ -278,6 +284,21 @@ public sealed class HitPath
     internal void Begin(P3 start, P3 end, double length)
     {
         (Start, End, Length, count, Overflowed, legs) = (start, end, length, 0, false, 0);
+    }
+
+    /// <summary>A crossing put in at an index, those from it on moved one along (the terminal walk's struck contents: it
+    /// keeps the order by T). False, and the path unchanged, when it's full.</summary>
+    public bool Insert(int at, in Crossing x)
+    {
+        if (count == items.Length)
+        {
+            Overflowed = true;
+            return false;
+        }
+        items.AsSpan(at, count - at).CopyTo(items.AsSpan(at + 1));
+        items[at] = x;
+        count++;
+        return true;
     }
 
     internal void Add(in Crossing x)

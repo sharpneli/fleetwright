@@ -105,6 +105,21 @@
   }
  },
  {
+  "name": "cast iron",
+  "group": "structure",
+  "note": "Engine cylinders, early turbine casings, steering-engine cylinders: what a shell meets inside (damage/09 §1.4). [EST] q 0.35 at every calibre: brittle, as the 1870s' chilled iron was against steel shot.",
+  "value": {
+   "density_t_per_m3": 7.2,
+   "q": 0.35,
+   "back": {
+    "spall_u": 0.75,
+    "holed_u": 0.95,
+    "big": 0.3
+   },
+   "fragments": "brittle"
+  }
+ },
+ {
   "name": "compound",
   "group": "armour",
   "note": "Steel face welded to a wrought-iron back, a third and two thirds (1877-1891). Annapolis < 0.75-0.80; shatters chilled shot only (CMP): no bare steel shell. Its back is brittle.",

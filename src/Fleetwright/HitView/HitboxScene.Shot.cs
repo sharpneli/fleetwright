@@ -318,7 +318,7 @@ public sealed unsafe partial class HitboxScene
             ImGui.TextUnformatted(string.Format(inv, "fuze {0} at {1:0.00} m{2}", s.Fuze switch
             {
                 FuzeCause.Water => "started on the water, running",
-                FuzeCause.Machinery => "started by machinery",
+                FuzeCause.Contents => "started on what it struck inside",
                 FuzeCause.Nose => "fired (nose)",
                 _ => "started by a plate",
             }, s.FuzeT - pb.T0, t.Bursts ? string.Format(inv, "; burst {0} at {1:0.00} m ({2:0.0} m on), force {3:0.00}, wreck radius {4:0.0} m",
@@ -342,8 +342,10 @@ public sealed unsafe partial class HitboxScene
                 if (i == at)
                     ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg1, ImGui.GetColorU32(new Vector4(0.9f, 0.7f, 0.2f, 0.35f)));
                 Cell(string.Format(inv, "{0:0.00}", st.T - pb.T0));
-                Cell(HitPath.PlateName(c, x) is { Length: > 0 } n ? n : x.Kind is CrossingKind.PartIn ? c.ComponentId(x.Index) : x.Kind.ToString());
-                Cell(string.Format(inv, "{0:0.#}{1} ({2:0})", st.Mm, c.Material(x.Material) is { } m ? " " + m : "", st.EffectiveMm));
+                Cell(st.Name is { } what ? string.Format(inv, "{0}: {1}{2}", c.RoomId(x.Index), what, st.Call == PlateCall.Medium ? ", inside" : "")
+                    : HitPath.PlateName(c, x) is { Length: > 0 } n ? n : x.Kind is CrossingKind.PartIn ? c.ComponentId(x.Index) : x.Kind.ToString());
+                Cell(st.Call == PlateCall.Medium ? string.Format(inv, "{0:0.0} m", st.RunM)
+                    : string.Format(inv, "{0:0.#}{1} ({2:0})", st.Mm, c.Material(x.Material) is { } m ? " " + m : "", st.EffectiveMm));
                 Cell(string.Format(inv, "{0:0.0}", st.ObliquityDeg));
                 Cell(string.Format(inv, "{0:0}", st.InMs));
                 Cell(st.LimitMs > 0 ? string.Format(inv, "{0:0}", st.LimitMs) : "-");
@@ -407,6 +409,7 @@ public sealed unsafe partial class HitboxScene
         PlateCall.BurstInPlate => "burst in it",
         PlateCall.NoseInside => "nose fuze: inside",
         PlateCall.NoseOutside => "nose fuze: outside",
+        PlateCall.Medium => "slowed in it",
         _ => call.ToString(),
     };
 

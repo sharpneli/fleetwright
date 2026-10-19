@@ -170,6 +170,8 @@ public static class Terminal
         var cap = res.Underwater && shell.Cap == Cap.BreakAway ? Cap.None : shell.Cap;
         double massKg = cap == shell.Cap ? shell.MassKg : shell.MassKg * (1 - shell.CapShare);
         double capOffT = double.NaN, capGapM = 0;
+        // what the shell is among (C1c): the cell and the part it's in, where it may next meet a solid, the last one struck
+        var among = new Among { Cell = -1, Part = -1, FromT = double.NegativeInfinity, SkinT = double.NaN, CoreT = double.NaN };
 
         for (int i = 0; i < xs.Length; i++)
         {
@@ -182,9 +184,13 @@ public static class Terminal
                 if (i >= xs.Length)
                     break;
             }
+            // in a space with contents, it may strike one before the next crossing: put on the path here
+            if (!nose && Strikes(c, path, i, dir, ref among, ref r))
+                xs = path.Crossings;
             ref readonly var x = ref xs[i];
             if (x.T >= burstT)
                 return Burst(ref res, burstT, force, res.Outcome, BurstKind.Inside, v);
+            among.Enter(x);
             switch (x.Kind)
             {
                 case CrossingKind.HullIn or CrossingKind.PartIn:
@@ -199,11 +205,6 @@ public static class Terminal
                     break;
                 case CrossingKind.WaterIn when inside:
                     return Gone(ref res, started, x.T);   // out of the ship into the sea: the shell's gone
-                case CrossingKind.CellIn when !started && !nose && IsMachinery(c, x.Index) && r.NextDouble() < s.MachineryArmChance:
-                    started = true;
-                    Start(ref res, ref r, shell, s, x.T, v, i, 0, ref burstT, ref force);
-                    trace?.Fuzed(x.T, i, FuzeCause.Machinery);
-                    break;
             }
             // a nose fuze fires on anything solid it enters (a funnel, an open mount, a rudder), plated or not
             bool solid = nose && x.Kind is CrossingKind.HullIn or CrossingKind.PartIn;
@@ -236,7 +237,9 @@ public static class Terminal
             double te = t / (shell.Kind == ShellKind.Common ? s.CommonPenShare : 1);
             ref readonly var mat = ref c.MaterialOf(x.Material);
             double td = mat.SteelMm(x.Mm) / calMm;
-            double quality = PlateQuality(lots, x.Plate, x.Index, s) * Math.Max(1 + s.PlateShotSigma * r.NextGaussian(), MinQuality);
+            // contents have no lot: only the shot's scatter (the user, 2026-10-19)
+            double quality = (x.Plate == PlateKind.Contents ? 1 : PlateQuality(lots, x.Plate, x.Index, s))
+                * Math.Max(1 + s.PlateShotSigma * r.NextGaussian(), MinQuality);
             if (x.Plate == PlateKind.SideArmour && k is not null && k.Loosened(x.Index, x.Point, s.BeltRepeatM))
                 quality *= s.LoosenedPlate;   // a belt plate a leak loosened before (E4): its bolts pulled, its backing crushed
             bool hard = mat.FaceHardened, shatter = false;
@@ -259,7 +262,7 @@ public static class Terminal
             var step = trace == null ? default : new PlateStep
             {
                 Crossing = i, T = x.T, Point = x.Point, Mm = x.Mm, EffectiveMm = te, ObliquityDeg = ob, InMs = v, LimitMs = vl, Quality = quality,
-                Decapped = decapped, FuzeLeftS = double.NaN,
+                Decapped = decapped, FuzeLeftS = double.NaN, Name = among.NameOf(x),
             };
             if (!shatter && Glances(v, te, calMm, massKg, ob, s, quality))
             {
@@ -273,7 +276,7 @@ public static class Terminal
                 {
                     started = true;
                     Start(ref res, ref r, shell, s, x.T, skid, i, 0, ref burstT, ref force);
-                    trace?.Fuzed(x.T, i, FuzeCause.Plate);
+                    trace?.Fuzed(x.T, i, Cause(x));
                 }
                 v = skid;
                 if (trace != null)
@@ -314,7 +317,7 @@ public static class Terminal
                 if (StartsOn(shell, mat.SteelMm(x.Mm), ob, hard, x.T, ref impulse, ref impulseT, s))
                 {
                     Start(ref res, ref r, shell, s, x.T, 0, i, 0, ref burstT, ref force);
-                    trace?.Fuzed(x.T, i, FuzeCause.Plate);
+                    trace?.Fuzed(x.T, i, Cause(x));
                     if (res.Outcome != Outcome.Dud)
                         (res.Burst, res.BurstT, res.Force) = (BurstKind.Outside, Math.Max(x.T - 0.3, 0), s.BurstOutsideK * force);
                 }
@@ -359,9 +362,20 @@ public static class Terminal
             {
                 started = true;
                 Start(ref res, ref r, shell, s, x.T, v, i, 0, ref burstT, ref force);
-                trace?.Fuzed(x.T, i, FuzeCause.Plate);
+                trace?.Fuzed(x.T, i, Cause(x));
             }
             trace?.FuzeLeft(FuzeLeftS(burstT, x.T, v));
+            if (among.Interior(x, out double runM, out double rho, out var medium, out string? name))
+            {
+                // through a struck object's skin: its interior, a medium, slows it (and a fuze running on time may burst in it)
+                double vIn = v;
+                WaterRun.Through(ref v, ref burstT, x.T, runM, WaterRun.DecayM(shell, s, rho, medium));
+                trace?.Add(new PlateStep
+                {
+                    Crossing = i, T = x.T, Point = x.Point, InMs = vIn, OutMs = v, FuzeLeftS = FuzeLeftS(burstT, x.T + runM, v), Name = name, RunM = runM,
+                    Call = PlateCall.Medium, Quality = 1,
+                });
+            }
         }
         // a turn at the path's last plates: bent there all the same, so the line beyond (a burst out there) is the shell's
         if (turned)
@@ -680,8 +694,159 @@ public static class Terminal
         return double.RadiansToDegrees(Math.Acos(Math.Min(c, 1)));
     }
 
-    /// <summary>Whether a cell holds machinery: a boiler or engine room.</summary>
-    public static bool IsMachinery(ShipClass c, int cell) => HasRoom(c, cell, RoomKind.BoilerRoom) || HasRoom(c, cell, RoomKind.EngineRoom);
+    static FuzeCause Cause(in Crossing x) => x.Plate == PlateKind.Contents ? FuzeCause.Contents : FuzeCause.Plate;
+
+    // ------------------------------------------------------------------ what stands in the spaces (C1c)
+    // docs/battle/shell-contents.md; research/simulation/damage-research/09-contents-in-the-path.md §1
+
+    /// <summary>What the walk is among: the cell and the part it's in, where it may next meet a solid (the end of the last
+    /// object struck, or the last crossing), and the last object struck: its skin's and core's T and names, and its
+    /// interior, run once the shell is through the skin.</summary>
+    struct Among
+    {
+        public int Cell, Part;
+        public double FromT, SkinT, CoreT, InteriorM, InteriorRho;
+        public MediumKind Medium;
+        public string? SkinName, CoreName, InteriorName;
+
+        /// <summary>Past a crossing: the cell or part it enters or leaves, and no solid before it.</summary>
+        public void Enter(in Crossing x)
+        {
+            switch (x.Kind)
+            {
+                case CrossingKind.CellIn:
+                    Cell = x.Index;
+                    break;
+                case CrossingKind.CellOut when x.Index == Cell:
+                    Cell = -1;
+                    break;
+                case CrossingKind.PartIn:
+                    Part = x.Index;
+                    break;
+                case CrossingKind.PartOut when x.Index == Part:
+                    Part = -1;
+                    break;
+            }
+            FromT = Math.Max(FromT, x.T);
+        }
+
+        public readonly string? NameOf(in Crossing x) => x.Plate != PlateKind.Contents ? null
+            : Math.Abs(x.T - SkinT) < HitPath.SameM / 2 ? SkinName : CoreName;
+
+        /// <summary>Whether a crossing was a struck skin with an interior behind it, and that interior (once).</summary>
+        public bool Interior(in Crossing x, out double runM, out double rho, out MediumKind medium, out string? name)
+        {
+            (runM, rho, medium, name) = (InteriorM, InteriorRho, Medium, InteriorName);
+            if (x.Plate != PlateKind.Contents || !(Math.Abs(x.T - SkinT) < HitPath.SameM / 2) || !(InteriorM > 0))
+                return false;
+            InteriorM = 0;
+            return true;
+        }
+    }
+
+    /// <summary>Whether the shell, in a space with contents, strikes one before crossing i (docs/battle/shell-contents.md
+    /// C1c): over the stretch from where it may next meet one to the crossing, clipped to the contents' band, the next
+    /// solid comes after an Exp(λ) draw (memoryless: a room cut into more cells meets as often). Struck, the object is
+    /// drawn from the room's mix; its skin goes on the path there, and its core, by its chance, behind its interior (or
+    /// halfway through it), as plates the walk takes like any other; no other solid within its chord.</summary>
+    static bool Strikes(ShipClass c, HitPath path, int i, P3 dir, ref Among a, ref RandomStream r)
+    {
+        if (a.Cell < 0 || a.Part >= 0 || c.Cells[a.Cell].Room is not (int room and >= 0))
+            return false;
+        ref readonly var k = ref c.ContentsOf(room);
+        if (!k.Some)
+            return false;
+        double t0 = a.FromT, t1 = path.Crossings[i].T;
+        if (!(t1 - t0 > HitPath.SameM))
+            return false;
+        var (ta, tb) = Band(path.At(t0).Z, path.At(t1).Z, t0, t1, k.ZLo, k.ZHi);
+        if (!(tb > ta))
+            return false;
+        double ts = ta - Math.Log(1 - r.NextDouble()) * k.LambdaM;
+        if (ts >= tb - HitPath.SameM)
+            return false;
+
+        var mix = c.ContentObjects(k.Mix);
+        double u = r.NextDouble();
+        int j = 0;
+        while (j < mix.Length - 1 && u > mix[j].UpTo)
+            j++;
+        ref readonly var o = ref mix[j];
+        double extent = Math.Min(k.ChordM, t1 - ts - HitPath.SameM), interior = o.InteriorRho > 0 ? o.InteriorShare * extent : 0;
+        if (!path.Insert(i, Solid(path, room, ts, dir, o.Skin, ref r)))
+            return false;
+        (a.SkinT, a.SkinName, a.InteriorM, a.InteriorRho, a.Medium, a.InteriorName) = (ts, o.Skin.Name, interior, o.InteriorRho, o.Interior, o.Name);
+        a.CoreT = double.NaN;
+        if (o.Core.Some && r.NextDouble() < o.CoreChance)
+        {
+            double tc = Math.Min(ts + (interior > 0 ? interior : 0.5 * extent), t1 - HitPath.SameM / 2);
+            if (tc > ts + HitPath.SameM && path.Insert(i + 1, Solid(path, room, tc, dir, o.Core, ref r)))
+                (a.CoreT, a.CoreName) = (tc, o.Core.Name);
+        }
+        a.FromT = ts + extent;
+        return true;
+    }
+
+    /// <summary>The stretch of [t0, t1] (heights z0 to z1, straight) within the band zLo..zHi; empty when none.</summary>
+    static (double, double) Band(double z0, double z1, double t0, double t1, double zLo, double zHi)
+    {
+        if (Math.Abs(z1 - z0) < 1e-9)
+            return z0 >= zLo && z0 <= zHi ? (t0, t1) : (1, 0);
+        double a = t0 + (zLo - z0) / (z1 - z0) * (t1 - t0), b = t0 + (zHi - z0) / (z1 - z0) * (t1 - t0);
+        if (a > b)
+            (a, b) = (b, a);
+        return (Math.Max(a, t0), Math.Min(b, t1));
+    }
+
+    /// <summary>A struck solid as one plate on the path at T (damage/09 §1.3): its thickness drawn from its range, and its
+    /// obliquity from its shape: a flat one square to the room's axis nearest the flight; a cylinder (along the ship) with
+    /// sin θ uniform, a sphere sin² θ; a bar's offset b uniform across it, θ = asin(b/R), the steel it crosses its chord at
+    /// b, as a plate of chord·cos θ (the plate model puts the 1/cos back).</summary>
+    static Crossing Solid(HitPath path, int room, double t, P3 d, in SolidAt sol, ref RandomStream r)
+    {
+        double mm = sol.LoMm + (sol.HiMm - sol.LoMm) * r.NextDouble();
+        P3 n;
+        switch (sol.Shape)
+        {
+            case SolidShape.Flat:
+                n = Square(d);
+                break;
+            case SolidShape.Bar:
+            {
+                double sin = r.NextDouble(), cos = Math.Sqrt(1 - sin * sin);
+                n = Struck(d, sin, ref r);
+                mm = Contents.BarChordMm(mm, sol.Bore, sin * mm / 2) * cos;
+                break;
+            }
+            default:
+                n = Struck(d, sol.Shape == SolidShape.Sphere ? Math.Sqrt(r.NextDouble()) : r.NextDouble(), ref r);
+                break;
+        }
+        return new Crossing
+        {
+            T = t, Point = path.At(t), Kind = CrossingKind.Struck, Plate = PlateKind.Contents, Index = room, Mm = mm, Material = sol.Material, Normal = n,
+        };
+    }
+
+    /// <summary>The normal of the room's axis nearest the flight d, facing it.</summary>
+    static P3 Square(P3 d)
+    {
+        double ax = Math.Abs(d.X), ay = Math.Abs(d.Y), az = Math.Abs(d.Z);
+        return ax >= ay && ax >= az ? new P3(-Math.Sign(d.X), 0, 0) : ay >= az ? new P3(0, -Math.Sign(d.Y), 0) : new P3(0, 0, -Math.Sign(d.Z));
+    }
+
+    /// <summary>A surface normal at obliquity asin(sin) to the flight d: turned from facing it about the ship's long axis
+    /// (a cylinder lying fore and aft is curved across it), either way.</summary>
+    static P3 Struck(P3 d, double sin, ref RandomStream r)
+    {
+        // e: square to the flight and to the cylinder's axis (x); for a flight along the axis, to the vertical instead
+        var (ex, ey, ez) = (0.0, d.Z, -d.Y);
+        double l = Math.Sqrt(ey * ey + ez * ez);
+        if (l < 1e-6)
+            (ex, ey, ez, l) = (d.Y, -d.X, 0.0, Math.Sqrt(d.X * d.X + d.Y * d.Y));
+        double side = r.NextDouble() < 0.5 ? -1 : 1, cos = Math.Sqrt(Math.Max(1 - sin * sin, 0)), k = side * sin / Math.Max(l, 1e-12);
+        return new P3(-cos * d.X + k * ex, -cos * d.Y + k * ey, -cos * d.Z + k * ez);
+    }
 
     /// <summary>Whether a room of a kind is in a cell.</summary>
     public static bool HasRoom(ShipClass c, int cell, RoomKind kind)

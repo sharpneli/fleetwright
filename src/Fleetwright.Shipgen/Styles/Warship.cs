@@ -32,7 +32,7 @@ public sealed class PlaningStyle : Style
     {
         Name = "Petrol engines (1940)", Fuel = "petrol", WeightKgPerKw = 6.5, StressFloor = 0.7, SfcGPerKwh = 291, DensityTPerM3 = 0.4,
         UnitMaxMw = 1.1, Unit = new() { Mw = 1, HeightM = 1.2, WidthM = 1.1, LengthM = 2.5 }, BoilerFraction = 0.0, CrewK = 3,
-        PartLoad = "DSL", Draught = new() { System = "exhaust", VelocityMS = 35, ReachM = 60, GasTempK = 620, AirFuelRatio = 38 },
+        PartLoad = "DSL", Boilers = "none", Engines = "petrol", Draught = new() { System = "exhaust", VelocityMS = 35, ReachM = 60, GasTempK = 620, AirFuelRatio = 38 },
     };
 
     public override double DefaultBlockCoefficient => 0.45;

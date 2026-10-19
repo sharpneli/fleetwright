@@ -1,5 +1,5 @@
 {
- "version": 9,
+ "version": 10,
  "id": "hessen",
  "name": "Braunschweig-like pre-dreadnought (1905)",
  "type": "BB",
@@ -218,7 +218,9 @@
     "reach_m": 8,
     "gas_temp_k": 600,
     "air_fuel_ratio": 16
-   }
+   },
+   "boilers": "large_tube",
+   "engines": "vte"
   },
   "stress": 0.1,
   "shafts": 2,

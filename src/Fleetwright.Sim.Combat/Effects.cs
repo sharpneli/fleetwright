@@ -118,8 +118,9 @@ public static class Effects
                     break;
                 case CrossingKind.CellIn:
                     (cell, cellT) = (x.Index, x.T);
+                    // a room with contents is damaged by what the shell struck in it (C1c), the rest by their vitals' share
                     foreach (int room in c.RoomsIn(x.Index))
-                        if (r.NextDouble() < Vital(c, room, s))
+                        if (!c.ContentsOf(room).Some && r.NextDouble() < Vital(c, room, s))
                             Count(ref res, k, c.RoomNode(room), k.Worsen(c.RoomNode(room), PartState.Damaged) ? PartState.Damaged : PartState.Ok);
                     if (res.Part < 0 && c.Cells[x.Index].Room >= 0)
                         res.Part = c.RoomNode(c.Cells[x.Index].Room);
@@ -129,8 +130,12 @@ public static class Effects
                         Casualties.Lane(c, k, Casualties.Cell(c, cell), path.At(cellT), x.Point, calM, s);
                     cell = -1;
                     break;
+                case CrossingKind.Struck:
+                    Count(ref res, k, c.RoomNode(x.Index), k.Worsen(c.RoomNode(x.Index), PartState.Damaged) ? PartState.Damaged : PartState.Ok);
+                    break;
             }
-            if (x.Plate != PlateKind.None && x.Mm > 0 && Into(c, xs, i) is int into and >= 0)
+            // what it struck inside throws no plate's disc ahead of it (its own splinters are for later: shell-contents.md)
+            if (x.Plate is not (PlateKind.None or PlateKind.Contents) && x.Mm > 0 && Into(c, xs, i) is int into and >= 0)
                 Casualties.Debris(c, k, into, Debris(c, path, x, shell.CalibreMm, hit.SpeedMs), s);
         }
         if (!double.IsInfinity(t.StopT))
@@ -202,7 +207,7 @@ public static class Effects
 
         // E3: behind a plate that held, the spall off its back: a shell it stopped within its band, or a heavy shell
         // glancing off a thin turret roof (Dunkerque); a burst on a face it doesn't hole throws next to nothing (14 §3.3)
-        if (!double.IsNaN(t.Spall) && t.Plate >= 0)
+        if (!double.IsNaN(t.Spall) && t.Plate >= 0 && xs[t.Plate].Plate != PlateKind.Contents)
             Spall(c, k, path, t.Plate, t.Spall, false, shell, t.PlateMs, s, propellant, ref res, ref r);
         else if (t.Glance >= 0 && xs[t.Glance].Plate == PlateKind.TurretRoof && xs[t.Glance].Mm <= s.SpallRoofTD * shell.CalibreMm &&
                  r.NextDouble() < s.SpallRoofChance)

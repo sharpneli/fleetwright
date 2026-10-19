@@ -126,6 +126,9 @@ public static class Program
         shipgen scheme SCHEME DESIGN... [--write] [--catalogue Content/Templates/protection.json]
             put a protection scheme (docs/shipgen/protection-templates.md; its id or name) on each design: standard
             displacement and length before and after; --write rewrites the design file's armour line
+        shipgen contents DESIGN...
+            what stands in each room in a shell's path (docs/battle/shell-contents.md C1b): the rows at the ship's
+            size, and the chance a beam crossing at a random height meets a solid (damage/09 §2.3's anchors)
         shipgen subdivision DESIGN... [--rooms]
             the main compartments (docs/shipgen/protection-plan.md H7): how many sections and the longest, and how many
             adjacent ones the ship floats with, flooded to the sea, before the margin line (76 mm under the bulkhead
@@ -278,6 +281,7 @@ public static class Program
                         D(a, "fc-range", 150), D(a, "fc-defl", 40), D(a, "water-ms", double.NaN), a.Int("seed", 1), D(a, "settle", 0))),
                 "scheme" => SchemeCommand.Run(a.Get("catalogue") ?? Path.Combine(Root(a), "..", "Content", "Templates", "protection.json"),
                     a.Positional.ElementAtOrDefault(0) ?? "", [.. a.Positional.Skip(1).Select(n => Resolve(a, n))], a.Has("write")),
+                "contents" => ContentsBench.Run(a.Positional.Count > 0 ? a.Positional : ["m_class"], n => Class(a, n)),
                 "subdivision" => SubdivisionBench.Run(a.Positional.Count > 0 ? a.Positional : ["destroyer"], n => LoadDesign(Resolve(a, n)), a.Has("rooms")),
                 "protection" => ProtectionBench.Run(a.Positional.Count > 0 ? a.Positional : ["destroyer"], n => LoadDesign(Resolve(a, n)), a.Int("shells", 400),
                     a.Int("seed", 1), a.Has("summary")),

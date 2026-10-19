@@ -108,6 +108,9 @@ public sealed class PlantReport
     [JsonConverter(typeof(ArrangementConverter))]
     public required Arrangement Arrangement { get; init; }
     public long Crew { get; init; }
+    /// <summary>The boilers' and engines' kinds (the tech's; docs/battle/shell-contents.md C1b).</summary>
+    public string Boilers { get; init; } = "small_tube";
+    public string Engines { get; init; } = "vte";
     public double MachineryLengthM { get; set; }
     public long BoilerRooms { get; set; }
     public long EngineRooms { get; set; }

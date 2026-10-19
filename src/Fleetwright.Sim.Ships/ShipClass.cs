@@ -55,8 +55,21 @@ public sealed class ShipClass
     internal string[] componentIds = [], turretTypeIds = [], cellIds = [], roomIds = [], bulkheadIds = [], deckIds = [], tierIds = [],
         sectionIds = [], sidePlateIds = [], armourBulkheadIds = [], inclinedIds = [], materials = [];
     internal MaterialRow[] materialRows = [];
+    internal RoomContents[] roomContents = [];
+    internal ContentObject[] contentObjects = [];
     internal FrozenDictionary<string, int> componentIndex = null!, cellIndex = null!, roomIndex = null!, bulkheadIndex = null!,
         deckIndex = null!, tierIndex = null!, sectionIndex = null!;
+
+    /// <summary>What a room holds in a shell's path (docs/battle/shell-contents.md C1b): none for most.</summary>
+    public ref readonly RoomContents ContentsOf(int room) => ref roomContents[room];
+    public ReadOnlySpan<RoomContents> RoomContents => roomContents;
+
+    /// <summary>The objects of a room's contents (<see cref="RoomContents.Mix"/>).</summary>
+    public ReadOnlySpan<ContentObject> ContentObjects(Slice s) => contentObjects.AsSpan(s.Start, s.Count);
+
+    /// <summary>The plant's boilers and engines (the tech block's; what's in the machinery rooms).</summary>
+    public BoilerKind Boilers { get; internal init; }
+    public EngineKind Engines { get; internal init; }
 
     /// <summary>The design's name and id (not unique: an edited copy keeps its id).</summary>
     public string Name { get; internal init; } = "";

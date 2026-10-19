@@ -97,6 +97,10 @@ The TDS design key `fill` (liquid or void) keeps its name: it says what's in a l
   normal. The method does the cap, shatter, glance, three limits, turn and fuze start.
 - A struck solid will call the same method; there is no second copy.
 - A pure refactor: the `hits` bench and `ShotRangeTests` stay identical hit by hit.
+- **Not needed (2026-10-19).** A struck solid is put on the hit's path as a crossing of its own
+  (`CrossingKind.Struck`, `PlateKind.Contents`, Index the room: `HitPath.Insert`), so the walk's one plate code takes it
+  like any plate, and everything after the walk that reads crossings (the stopping plate, the pieces, the Shot window)
+  sees it too. Still one implementation, with no refactor.
 
 **C1b The data.**
 - **A contents table** in Sim.Ships, keyed by room kind and variant, and by part kind. A row has a band, a packing, a
@@ -117,7 +121,7 @@ The TDS design key `fill` (liquid or void) keeps its name: it says what's in a l
   - Locomotive boilers take the cylindrical row at destroyer size, and compound engines the VTE row [EST]. Diesel and
     petrol take the auxiliary-machinery row for now.
 - **Ship size.** Damage/09 has destroyer rows and large-ship rows. No switch between them: thicknesses and chords are
-  interpolated between the two rows by power per shaft (open question 5).
+  interpolated between the two rows by ~~power per shaft~~ **displacement** (open question 5).
 - **Compiled into `ShipClass`.** Each room with contents gets its row resolved: the band as heights from the room's
   `Base`/`Top`, and λ = chord / packing. Each part kind gets its row the same way. Read without allocation.
 - **A `contents` readout in the CLI:** for each room, the chance that a beam crossing at a random height meets a solid.
@@ -157,6 +161,55 @@ The TDS design key `fill` (liquid or void) keeps its name: it says what's in a l
   - A Scotch boiler keeps a 6" shell at 75% of its speed.
 
   Report how far the matchup and the squadrons scenario move.
+
+**Done 2026-10-19 (C1b, C1c).**
+- **Data:** `Contents` (Sim.Ships) holds damage/09 §2.2-2.3's rows, each at a destroyer's size and a large ship's; [EST]
+  marks the sizes the research didn't give. The compiler gives each boiler and engine room its row
+  (`ShipClass.ContentsOf`): the band over the room's cells, λ = chord / packing, objects cumulated for the draw, and
+  materials from the catalogue when the design's report lacks them. Cast iron is in the catalogue (q 0.35, brittle).
+- **Plant kinds:** `boilers` and `engines` on the tech block (express boilers are `small_tube`; their size comes from
+  the ship's). Format 10 reads them off the block's name, the template it was picked from; every shipped design and
+  template states them. The goldens gained the two keys (shipgen 43).
+- **Size by displacement, not power per shaft** (a change from the agreed text, flagged for the user): power per shaft
+  doesn't tell a destroyer from a battleship (M class about 6.2 MW a shaft, Iron Duke about 5.4). The rows differ because
+  the objects grow with the ship (a battleship's turbine about 2.4 m across, a destroyer's 1.2 m). So size runs on
+  ln(Δ/1,000 t) / ln(20,000/1,000), held to 0..1: still continuous, no switch. This game's WW1 destroyers are heavy (about
+  1,200-2,500 t: the destroyer crunch's open item), so they sit at 0.05-0.30, not 0.
+- **The walk:** in a room with contents, each stretch between crossings, clipped to the band, gets one Exp(λ) draw.
+  A strike puts the object's skin on the path, and its core by its chance (behind the interior, or halfway through the
+  object). The interior is a granular run on the fuze's clock (`WaterRun.Through`, `SimSettings.GranularDecayC` 96,000).
+  No other solid is met within the object's chord. Round solids: a cylinder lying fore and aft (sin θ uniform), a sphere
+  (sin² θ), a bar (offset uniform: chord and angle from one draw; it goes in as a plate of chord · cos θ, since the
+  plate model puts the 1/cos back). Flat ones are square to the room's axis nearest the flight. Contents have no plate
+  lot. `MachineryArmChance` is gone; the fuze starts on a struck solid as on a plate (`FuzeCause.Contents`).
+- **Effects:** a strike damages its room. Rooms with contents no longer take the line-of-flight `RoomVital` roll (pieces
+  of a broken shell still do, since the walk ends where it broke). A struck solid throws no plate debris or spall: its
+  own splinters are later (open question 4).
+- **Trace and readouts:** the Shot window names each struck solid and shows each interior's run. `shipgen contents`
+  prints each room's rows and the chance a beam crossing at a random height meets a solid: destroyer small-tube boiler
+  rooms 0.78 (09: 0.75 at 8.5 m beam; M class is 11.4 m), geared turbine rooms 0.60 (09: 0.53, direct turbines, 8.5 m),
+  a Braunschweig-type VTE engine room 15 m wide 0.87 (09: 0.77, a 9 m wing room). The `hits` bench breaks out hits
+  through boiler and engine rooms.
+- **Anchors on the `hits` bench** (2,000 hits, 12 km, beam on):
+
+  | Target, shooter | Through the boiler rooms: struck, burst there | Through the engine rooms: struck, burst there |
+  |---|---|---|
+  | M class, Revenge 15" APC | 68%, 20% | 40%, 31% |
+  | M class, Iron Duke 13.5" | 66%, 25% | 44%, 34% |
+  | V25, König 12" | 68%, 12% | 51%, 21% |
+  | Wiesbaden, Iron Duke | 24%, 71% | 14%, 77% |
+
+  - Engine rooms come out a little under 09's "about half": shells falling at 11° cross only part of the band. Shells
+    plunging into a destroyer's engine room (`ContentsTests`, Lion from 20 km) strike almost always and burst on what
+    they struck 80% of the time.
+  - Boiler rooms: strikes are common, bursts rarer, because a small-tube boiler's 6-8 mm casing doesn't start a heavy
+    fuze; only its drums (about 0.2 of strikes) do. That's 09 §2.2's "a water-tube boiler mostly arms a big shell
+    (skin and drum) and rarely stops it". The old roll armed far more often (0.45 a cell, and the rooms are two cells
+    deep), so over the whole ship M class's bursts inside fell from 12.7% to 7.2% under Revenge's fire.
+  - The battleships (König, Iron Duke, Braunschweig under 13.5") don't move: few hits reach their machinery.
+  - The Scotch boiler's 75% for a 6" was for a full-diameter crossing; at the mean chord its interior keeps about 85%.
+- **Scenarios** (one run each, 120 min; chaotic): squadrons 71 → 69 hits, lost Queen Mary (magazine) → none; flotilla
+  one destroyer lost either way; Tsushima 1,590 → 1,838 hits, 5 → 6 lost. The cost per hit is unchanged.
 
 ### C2 Liquids
 
@@ -225,7 +278,8 @@ The TDS design key `fill` (liquid or void) keeps its name: it says what's in a l
 2. ~~Whether a strike turns the shell.~~ No new rule: the plate step's glance and turn (09 §1.3).
 3. ~~How far the data splits.~~ By boiler kind and engine kind (C1b).
 4. Whether struck contents throw their own splinters. Later (09 B).
-5. ~~Destroyer rows against large-ship rows.~~ Interpolated by power per shaft (the user, 2026-10-19). No hard
+5. ~~Destroyer rows against large-ship rows.~~ Interpolated (the user, 2026-10-19), by displacement rather than power
+   per shaft, which doesn't separate them (C1 done, flagged). No hard
    switches: the only step changes allowed are the ones physics makes (a delay fuze bursting inside a wide ship and
    beyond a narrow one).
 6. ~~Liquids' decay.~~ The sea's 25 calibres, scaled by density (the user, 2026-10-19). (09 A)

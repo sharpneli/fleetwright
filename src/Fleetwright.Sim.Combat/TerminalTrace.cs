@@ -23,6 +23,9 @@ public enum PlateCall : byte
     NoseInside,
     /// <summary>A nose fuze fired on it: too thick to punch, bursting outside.</summary>
     NoseOutside,
+    /// <summary>Not a plate: a run through a medium inside a struck object (a boiler's tubes and water, a turbine's
+    /// blading), its length <see cref="PlateStep.RunM"/>, slowing the shell (C1c).</summary>
+    Medium,
 }
 
 /// <summary>What started a base fuze, or fired a nose fuze (<see cref="TerminalTrace"/>).</summary>
@@ -31,7 +34,8 @@ public enum FuzeCause : byte
     None,
     Plate,
     Water,
-    Machinery,
+    /// <summary>A solid struck inside a space (docs/battle/shell-contents.md C1c).</summary>
+    Contents,
     Nose,
 }
 
@@ -48,6 +52,10 @@ public struct PlateStep
     public double Mm, EffectiveMm, ObliquityDeg;
     public double InMs, LimitMs, Quality, OutMs, TurnDeg;
     public double FuzeLeftS;
+    /// <summary>A struck solid's name (its skin, its core or its interior's run; null for a ship's plate), and a medium
+    /// run's length, m.</summary>
+    public string? Name;
+    public double RunM;
     public PlateCall Call;
     public bool Decapped;
 }

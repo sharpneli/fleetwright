@@ -1,5 +1,5 @@
 {
- "version": 9,
+ "version": 10,
  "id": "inflexible",
  "name": "Inflexible-like citadel ship (1881)",
  "look": {
@@ -38,43 +38,7 @@
   "berth_ratio": 1.0,
   "officer_fraction": 0.08
  },
- "machinery": {
-  "stress": 0.1,
-  "shafts": 2,
-  "units_per_shaft": 1,
-  "transmission": "mechanical",
-  "arrangement": ["boiler", "boiler", "engine"],
-  "centreline_bulkhead": false,
-  "bunkers": "wing",
-  "wing_bunker_m": 2.0,
-  "rudders": 1,
-  "tech": {
-   "name": "Compound engines, cylindrical (Scotch) boilers (1880)",
-   "fuel": "coal",
-   "weight_kg_per_kw": 203.8,
-   "stress_floor": 0.75,
-   "sfc_g_per_kwh": 1378,
-   "density_t_per_m3": 0.24,
-   "unit_max_mw": 4.8,
-   "unit": {
-    "mw": 3,
-    "height_m": 5.5,
-    "width_m": 4.5,
-    "length_m": 6
-   },
-   "boiler_fraction": 0.6,
-   "crew_k": 40,
-   "part_load": "REC",
-   "draught": {
-    "system": "forced_boost",
-    "velocity_m_s": 7.0,
-    "reach_m": 7.0,
-    "natural_fraction": 0.55,
-    "gas_temp_k": 600,
-    "air_fuel_ratio": 16
-   }
-  }
- },
+ "machinery": {"stress": 0.1, "shafts": 2, "units_per_shaft": 1, "transmission": "mechanical", "arrangement": ["boiler", "boiler", "engine"], "centreline_bulkhead": false, "bunkers": "wing", "wing_bunker_m": 2.0, "rudders": 1, "tech": {"name": "Compound engines, cylindrical (Scotch) boilers (1880)", "fuel": "coal", "weight_kg_per_kw": 203.8, "stress_floor": 0.75, "sfc_g_per_kwh": 1378, "density_t_per_m3": 0.24, "unit_max_mw": 4.8, "unit": {"mw": 3, "height_m": 5.5, "width_m": 4.5, "length_m": 6}, "boiler_fraction": 0.6, "crew_k": 40, "part_load": "REC", "draught": {"system": "forced_boost", "velocity_m_s": 7.0, "reach_m": 7.0, "natural_fraction": 0.55, "gas_temp_k": 600, "air_fuel_ratio": 16}, "boilers": "cylindrical", "engines": "compound"}},
  "armour": {
   "belt_mm": 610,
   "belt_depth_m": 1.8,

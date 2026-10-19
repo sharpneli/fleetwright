@@ -20,6 +20,8 @@
    "boiler_fraction": 0.6,
    "crew_k": 40,
    "part_load": "REC",
+   "boilers": "cylindrical",
+   "engines": "compound",
    "draught": {
     "system": "forced_boost",
     "velocity_m_s": 7.0,
@@ -51,6 +53,8 @@
    "boiler_fraction": 0.6,
    "crew_k": 40,
    "part_load": "REC",
+   "boilers": "locomotive",
+   "engines": "compound",
    "draught": {
     "system": "forced_boost",
     "velocity_m_s": 7.0,
@@ -82,6 +86,8 @@
    "boiler_fraction": 0.6,
    "crew_k": 38,
    "part_load": "REC",
+   "boilers": "cylindrical",
+   "engines": "vte",
    "draught": {
     "system": "forced_boost",
     "velocity_m_s": 8.5,
@@ -113,6 +119,8 @@
    "boiler_fraction": 0.6,
    "crew_k": 38,
    "part_load": "REC",
+   "boilers": "locomotive",
+   "engines": "vte",
    "draught": {
     "system": "forced_boost",
     "velocity_m_s": 8.5,
@@ -144,6 +152,8 @@
    "boiler_fraction": 0.55,
    "crew_k": 34,
    "part_load": "REC",
+   "boilers": "large_tube",
+   "engines": "vte",
    "draught": {
     "system": "forced_boost",
     "velocity_m_s": 8.5,
@@ -175,6 +185,8 @@
    "boiler_fraction": 0.55,
    "crew_k": 34,
    "part_load": "REC",
+   "boilers": "large_tube",
+   "engines": "vte",
    "draught": {
     "system": "forced",
     "velocity_m_s": 8.0,
@@ -205,6 +217,8 @@
    "boiler_fraction": 0.55,
    "crew_k": 34,
    "part_load": "REC",
+   "boilers": "small_tube",
+   "engines": "vte",
    "draught": {
     "system": "forced",
     "velocity_m_s": 8.0,
@@ -235,6 +249,8 @@
    "boiler_fraction": 0.6,
    "crew_k": 38,
    "part_load": "REC",
+   "boilers": "cylindrical",
+   "engines": "vte",
    "draught": {
     "system": "forced",
     "velocity_m_s": 8.0,
@@ -265,6 +281,8 @@
    "boiler_fraction": 0.6,
    "crew_k": 30,
    "part_load": "DT",
+   "boilers": "small_tube",
+   "engines": "direct_turbine",
    "draught": {
     "system": "forced",
     "velocity_m_s": 9.1,
@@ -295,6 +313,8 @@
    "boiler_fraction": 0.55,
    "crew_k": 34,
    "part_load": "REC",
+   "boilers": "large_tube",
+   "engines": "vte",
    "draught": {
     "system": "forced",
     "velocity_m_s": 9.1,
@@ -325,6 +345,8 @@
    "boiler_fraction": 0.55,
    "crew_k": 34,
    "part_load": "REC",
+   "boilers": "large_tube",
+   "engines": "vte",
    "draught": {
     "system": "forced",
     "velocity_m_s": 9.1,
@@ -355,6 +377,8 @@
    "boiler_fraction": 0.55,
    "crew_k": 34,
    "part_load": "REC",
+   "boilers": "small_tube",
+   "engines": "vte",
    "draught": {
     "system": "forced",
     "velocity_m_s": 9.1,
@@ -385,6 +409,8 @@
    "boiler_fraction": 0.6,
    "crew_k": 30,
    "part_load": "DT",
+   "boilers": "small_tube",
+   "engines": "direct_turbine",
    "draught": {
     "system": "forced",
     "velocity_m_s": 9.8,
@@ -415,6 +441,8 @@
    "boiler_fraction": 0.6,
    "crew_k": 25.5,
    "part_load": "DT",
+   "boilers": "small_tube",
+   "engines": "direct_turbine",
    "draught": {
     "system": "forced",
     "velocity_m_s": 9.8,
@@ -445,6 +473,8 @@
    "boiler_fraction": 0.6,
    "crew_k": 13.5,
    "part_load": "DT",
+   "boilers": "small_tube",
+   "engines": "direct_turbine",
    "draught": {
     "system": "forced",
     "velocity_m_s": 11.8,
@@ -475,6 +505,8 @@
    "boiler_fraction": 0.55,
    "crew_k": 34,
    "part_load": "REC",
+   "boilers": "large_tube",
+   "engines": "vte",
    "draught": {
     "system": "forced",
     "velocity_m_s": 9.8,
@@ -505,6 +537,8 @@
    "boiler_fraction": 0.0,
    "crew_k": 3,
    "part_load": "DSL",
+   "boilers": "none",
+   "engines": "petrol",
    "draught": {
     "system": "exhaust",
     "velocity_m_s": 35,
@@ -535,6 +569,8 @@
    "boiler_fraction": 0.0,
    "crew_k": 6,
    "part_load": "DSL",
+   "boilers": "none",
+   "engines": "diesel",
    "draught": {
     "system": "exhaust",
     "velocity_m_s": 35,
@@ -565,6 +601,8 @@
    "boiler_fraction": 0.6,
    "crew_k": 13.5,
    "part_load": "DT",
+   "boilers": "small_tube",
+   "engines": "direct_turbine",
    "draught": {
     "system": "forced",
     "velocity_m_s": 13.0,
@@ -595,6 +633,8 @@
    "boiler_fraction": 0.6,
    "crew_k": 13.5,
    "part_load": "GTB",
+   "boilers": "small_tube",
+   "engines": "direct_turbine",
    "draught": {
     "system": "forced",
     "velocity_m_s": 13.0,
@@ -625,6 +665,8 @@
    "boiler_fraction": 0.55,
    "crew_k": 12,
    "part_load": "GTB",
+   "boilers": "small_tube",
+   "engines": "geared_turbine",
    "draught": {
     "system": "forced",
     "velocity_m_s": 13.0,
@@ -655,6 +697,8 @@
    "boiler_fraction": 0.6,
    "crew_k": 30,
    "part_load": "DT",
+   "boilers": "small_tube",
+   "engines": "direct_turbine",
    "draught": {
     "system": "forced",
     "velocity_m_s": 10.0,
@@ -685,6 +729,8 @@
    "boiler_fraction": 0.0,
    "crew_k": 3,
    "part_load": "DSL",
+   "boilers": "none",
+   "engines": "petrol",
    "draught": {
     "system": "exhaust",
     "velocity_m_s": 35,
@@ -715,6 +761,8 @@
    "boiler_fraction": 0.0,
    "crew_k": 6,
    "part_load": "DSL",
+   "boilers": "none",
+   "engines": "diesel",
    "draught": {
     "system": "exhaust",
     "velocity_m_s": 35,
@@ -745,6 +793,8 @@
    "boiler_fraction": 0.55,
    "crew_k": 12,
    "part_load": "GTB",
+   "boilers": "small_tube",
+   "engines": "geared_turbine",
    "draught": {
     "system": "forced",
     "velocity_m_s": 13.8,
@@ -775,6 +825,8 @@
    "boiler_fraction": 0.55,
    "crew_k": 15.3,
    "part_load": "REC",
+   "boilers": "large_tube",
+   "engines": "vte",
    "draught": {
     "system": "forced",
     "velocity_m_s": 13.8,
@@ -805,6 +857,8 @@
    "boiler_fraction": 0.0,
    "crew_k": 3,
    "part_load": "DSL",
+   "boilers": "none",
+   "engines": "diesel",
    "draught": {
     "system": "exhaust",
     "velocity_m_s": 35,
@@ -835,6 +889,8 @@
    "boiler_fraction": 0.0,
    "crew_k": 3,
    "part_load": "DSL",
+   "boilers": "none",
+   "engines": "petrol",
    "draught": {
     "system": "exhaust",
     "velocity_m_s": 35,
@@ -865,6 +921,8 @@
    "boiler_fraction": 0.55,
    "crew_k": 12,
    "part_load": "GTB",
+   "boilers": "small_tube",
+   "engines": "geared_turbine",
    "draught": {
     "system": "forced",
     "velocity_m_s": 14.0,
@@ -895,6 +953,8 @@
    "boiler_fraction": 0.5,
    "crew_k": 10,
    "part_load": "GTB",
+   "boilers": "small_tube",
+   "engines": "geared_turbine",
    "draught": {
     "system": "forced",
     "velocity_m_s": 12.0,
@@ -925,6 +985,8 @@
    "boiler_fraction": 0.0,
    "crew_k": 5,
    "part_load": "DSL",
+   "boilers": "none",
+   "engines": "diesel",
    "draught": {
     "system": "exhaust",
     "velocity_m_s": 35,
@@ -955,6 +1017,8 @@
    "boiler_fraction": 0.0,
    "crew_k": 3,
    "part_load": "DSL",
+   "boilers": "none",
+   "engines": "diesel",
    "draught": {
     "system": "exhaust",
     "velocity_m_s": 35,
@@ -985,6 +1049,8 @@
    "boiler_fraction": 0.0,
    "crew_k": 3,
    "part_load": "DSL",
+   "boilers": "none",
+   "engines": "petrol",
    "draught": {
     "system": "exhaust",
     "velocity_m_s": 35,
@@ -1015,6 +1081,8 @@
    "boiler_fraction": 0.5,
    "crew_k": 10,
    "part_load": "GTB",
+   "boilers": "small_tube",
+   "engines": "geared_turbine",
    "draught": {
     "system": "forced",
     "velocity_m_s": 13.7,
@@ -1045,6 +1113,8 @@
    "boiler_fraction": 0.0,
    "crew_k": 5,
    "part_load": "DSL",
+   "boilers": "none",
+   "engines": "diesel",
    "draught": {
     "system": "exhaust",
     "velocity_m_s": 35,
@@ -1075,6 +1145,8 @@
    "boiler_fraction": 0.0,
    "crew_k": 3,
    "part_load": "DSL",
+   "boilers": "none",
+   "engines": "diesel",
    "draught": {
     "system": "exhaust",
     "velocity_m_s": 35,
@@ -1105,6 +1177,8 @@
    "boiler_fraction": 0.0,
    "crew_k": 3,
    "part_load": "DSL",
+   "boilers": "none",
+   "engines": "petrol",
    "draught": {
     "system": "exhaust",
     "velocity_m_s": 35,
@@ -1135,6 +1209,8 @@
    "boiler_fraction": 0.5,
    "crew_k": 10,
    "part_load": "GTB",
+   "boilers": "small_tube",
+   "engines": "geared_turbine",
    "draught": {
     "system": "forced",
     "velocity_m_s": 14.7,
@@ -1165,6 +1241,8 @@
    "boiler_fraction": 0.45,
    "crew_k": 9,
    "part_load": "GTB",
+   "boilers": "small_tube",
+   "engines": "geared_turbine",
    "draught": {
     "system": "forced",
     "velocity_m_s": 14.7,
@@ -1195,6 +1273,8 @@
    "boiler_fraction": 0.55,
    "crew_k": 15.3,
    "part_load": "REC",
+   "boilers": "large_tube",
+   "engines": "vte",
    "draught": {
     "system": "forced",
     "velocity_m_s": 14.0,
@@ -1225,6 +1305,8 @@
    "boiler_fraction": 0.55,
    "crew_k": 12,
    "part_load": "GTB",
+   "boilers": "small_tube",
+   "engines": "geared_turbine",
    "draught": {
     "system": "forced",
     "velocity_m_s": 14.0,
@@ -1255,6 +1337,8 @@
    "boiler_fraction": 0.0,
    "crew_k": 3,
    "part_load": "DSL",
+   "boilers": "none",
+   "engines": "diesel",
    "draught": {
     "system": "exhaust",
     "velocity_m_s": 35,
@@ -1285,6 +1369,8 @@
    "boiler_fraction": 0.0,
    "crew_k": 5,
    "part_load": "DSL",
+   "boilers": "none",
+   "engines": "diesel",
    "draught": {
     "system": "exhaust",
     "velocity_m_s": 35,
@@ -1315,6 +1401,8 @@
    "boiler_fraction": 0.0,
    "crew_k": 3,
    "part_load": "DSL",
+   "boilers": "none",
+   "engines": "diesel",
    "draught": {
     "system": "exhaust",
     "velocity_m_s": 35,
@@ -1345,6 +1433,8 @@
    "boiler_fraction": 0.0,
    "crew_k": 3,
    "part_load": "DSL",
+   "boilers": "none",
+   "engines": "petrol",
    "draught": {
     "system": "exhaust",
     "velocity_m_s": 35,
@@ -1375,6 +1465,8 @@
    "boiler_fraction": 0.5,
    "crew_k": 10,
    "part_load": "GTB",
+   "boilers": "small_tube",
+   "engines": "geared_turbine",
    "draught": {
     "system": "forced",
     "velocity_m_s": 15.0,
@@ -1405,6 +1497,8 @@
    "boiler_fraction": 0.45,
    "crew_k": 9,
    "part_load": "GTB",
+   "boilers": "small_tube",
+   "engines": "geared_turbine",
    "draught": {
     "system": "forced",
     "velocity_m_s": 15.0,
@@ -1435,6 +1529,8 @@
    "boiler_fraction": 0.0,
    "crew_k": 3,
    "part_load": "DSL",
+   "boilers": "none",
+   "engines": "diesel",
    "draught": {
     "system": "exhaust",
     "velocity_m_s": 35,
@@ -1465,6 +1561,8 @@
    "boiler_fraction": 0.0,
    "crew_k": 3,
    "part_load": "DSL",
+   "boilers": "none",
+   "engines": "petrol",
    "draught": {
     "system": "exhaust",
     "velocity_m_s": 35,
@@ -1495,6 +1593,8 @@
    "boiler_fraction": 0.45,
    "crew_k": 9,
    "part_load": "GTB",
+   "boilers": "small_tube",
+   "engines": "geared_turbine",
    "draught": {
     "system": "forced",
     "velocity_m_s": 15.0,
@@ -1525,6 +1625,8 @@
    "boiler_fraction": 0.0,
    "crew_k": 3,
    "part_load": "GTS",
+   "boilers": "none",
+   "engines": "gas_turbine",
    "draught": {
     "system": "exhaust",
     "velocity_m_s": 35,
@@ -1555,6 +1657,8 @@
    "boiler_fraction": 0.0,
    "crew_k": 3,
    "part_load": "DSL",
+   "boilers": "none",
+   "engines": "diesel",
    "draught": {
     "system": "exhaust",
     "velocity_m_s": 35,
@@ -1585,6 +1689,8 @@
    "boiler_fraction": 0.45,
    "crew_k": 9,
    "part_load": "GTB",
+   "boilers": "small_tube",
+   "engines": "geared_turbine",
    "draught": {
     "system": "forced",
     "velocity_m_s": 15.0,
@@ -1615,6 +1721,8 @@
    "boiler_fraction": 0.0,
    "crew_k": 3,
    "part_load": "GTS",
+   "boilers": "none",
+   "engines": "gas_turbine",
    "draught": {
     "system": "exhaust",
     "velocity_m_s": 35,
@@ -1645,6 +1753,8 @@
    "boiler_fraction": 0.0,
    "crew_k": 3,
    "part_load": "DSL",
+   "boilers": "none",
+   "engines": "diesel",
    "draught": {
     "system": "exhaust",
     "velocity_m_s": 35,
@@ -1675,6 +1785,8 @@
    "boiler_fraction": 0.0,
    "crew_k": 3,
    "part_load": "DSL",
+   "boilers": "none",
+   "engines": "diesel",
    "draught": {
     "system": "exhaust",
     "velocity_m_s": 35,
@@ -1705,6 +1817,8 @@
    "boiler_fraction": 0.45,
    "crew_k": 9,
    "part_load": "GTB",
+   "boilers": "small_tube",
+   "engines": "geared_turbine",
    "draught": {
     "system": "forced",
     "velocity_m_s": 15.0,
@@ -1735,6 +1849,8 @@
    "boiler_fraction": 0.0,
    "crew_k": 2.5,
    "part_load": "GTS",
+   "boilers": "none",
+   "engines": "gas_turbine",
    "draught": {
     "system": "exhaust",
     "velocity_m_s": 35,
@@ -1765,6 +1881,8 @@
    "boiler_fraction": 0.0,
    "crew_k": 3,
    "part_load": "DSL",
+   "boilers": "none",
+   "engines": "diesel",
    "draught": {
     "system": "exhaust",
     "velocity_m_s": 35,
@@ -1795,6 +1913,8 @@
    "boiler_fraction": 0.0,
    "crew_k": 3,
    "part_load": "DSL",
+   "boilers": "none",
+   "engines": "diesel",
    "draught": {
     "system": "exhaust",
     "velocity_m_s": 35,

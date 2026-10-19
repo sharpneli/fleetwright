@@ -76,7 +76,7 @@ public sealed class MerchantStyle : Style
     {
         Name = "Triple expansion, large-tube water-tube boilers, oil-fired (1940)", Fuel = "oil", WeightKgPerKw = 103.5,
         StressFloor = 0.45, SfcGPerKwh = 660, DensityTPerM3 = 0.28, UnitMaxMw = 12.0,
-        Unit = new() { Mw = 5, HeightM = 7.5, WidthM = 4.5, LengthM = 9 }, BoilerFraction = 0.55, CrewK = 15.3, PartLoad = "REC",
+        Unit = new() { Mw = 5, HeightM = 7.5, WidthM = 4.5, LengthM = 9 }, BoilerFraction = 0.55, CrewK = 15.3, PartLoad = "REC", Boilers = "large_tube", Engines = "vte",
         Draught = new() { System = "forced", VelocityMS = 14.0, ReachM = 20.0, GasTempK = 570, AirFuelRatio = 15 },
     };
 

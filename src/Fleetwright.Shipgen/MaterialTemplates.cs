@@ -53,6 +53,8 @@ public static class MaterialTemplates
         M("wood", "structure", 0.7, 0.01, "Planking and wooden hulls (oak and teak 0.65-0.75). Okun counts teak at 1/100 of its thickness."),
         M("cement", "structure", 2.3, 0.04, "Cement and concrete, armour backing (US Class A's 2\"). Okun counts cement at 1/25 of its thickness."),
         M("aluminium alloy", "structure", 2.7, 0.33, "Light alloy deckhouses. [EST] about steel's protection per weight (2.7/7.85); no research row."),
+        new("cast iron", "structure", new MaterialInput { DensityTPerM3 = 7.2, Q = 0.35, Back = Brittle, Fragments = "brittle" },
+            "Engine cylinders, early turbine casings, steering-engine cylinders: what a shell meets inside (damage/09 §1.4). [EST] q 0.35 at every calibre: brittle, as the 1870s' chilled iron was against steel shot."),
         Fh("compound", 0.72, 0, 0.30, 0, "Steel face welded to a wrought-iron back, a third and two thirds (1877-1891). Annapolis < 0.75-0.80; shatters chilled shot only (CMP): no bare steel shell. Its back is brittle.", 7.75, false, Brittle),
         M("nickel steel", "armour", 7.85, 0.85, "Homogeneous nickel steel (1889-1896). Annapolis > 0.77-0.83, Johnson's limit 0.92 (NIS)."),
         Fh("Harvey nickel steel", 0.82, 0, 0.08, 3.2, "Harveyized: carburized nickel steel, a thin hard face (1891-1899). NO 1937's limit 0.79 (HRV)."),

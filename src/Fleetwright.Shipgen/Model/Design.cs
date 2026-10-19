@@ -751,6 +751,10 @@ public sealed record TechInput
     public double? BoilerFraction { get; init; }
     public double? CrewK { get; init; }
     public string? PartLoad { get; init; }
+    /// <summary>The boilers' kind (<see cref="Powerplant.BoilerKinds"/>) and the engines' (<see cref="Powerplant.EngineKinds"/>):
+    /// what a shell meets in the boiler and engine rooms (docs/battle/shell-contents.md C1b).</summary>
+    public string? Boilers { get; init; }
+    public string? Engines { get; init; }
     public DraughtInput? Draught { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }

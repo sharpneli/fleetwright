@@ -1,5 +1,5 @@
 {
- "version": 9,
+ "version": 10,
  "id": "minotaur",
  "name": "Minotaur-like (1908)",
  "type": "CA",
@@ -179,7 +179,9 @@
     "reach_m": 9.1,
     "gas_temp_k": 600,
     "air_fuel_ratio": 16
-   }
+   },
+   "boilers": "large_tube",
+   "engines": "vte"
   },
   "stress": 0.5,
   "shafts": 3,

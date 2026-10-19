@@ -827,15 +827,19 @@ public sealed record SimSettings
     public double NormaliseMinDeg { get; init; } = 0.5;
 
 
-    /// <summary>A shell crossing a machinery space (a boiler or engine room) is armed by what's in it (turbines, gears,
-    /// boilers: Johnston) with this chance.</summary>
-    public double MachineryArmChance { get; init; } = 0.45;
 
     /// <summary>A shell under the water (water is a crossing, not a stop; WaterRun) slows as e^(−x/L), L this many
     /// calibres: a pointed shell, its tumbling folded in (a stable ogive ~150, armor/05 §6; 25 fits 08 §3.8's 30-50% of
     /// its velocity a few metres down and Tosa's 76 mm), and a diving one's flat nose (~45-60).</summary>
     public double UnderwaterDecayCalibres { get; init; } = 25;
     public double UnderwaterDecayCalibresDiving { get; init; } = 50;
+
+    /// <summary>A shell's decay length through a granular or distributed solid (coal; a boiler's tube banks, a turbine's
+    /// blading, stacked charges: their metal and water per m³) is this over the medium's density, in calibres
+    /// (docs/battle/shell-contents.md; damage/09 §1.1): 96,000 is 120 calibres in coal at 800 kg/m³, fitted to "2 ft of
+    /// coal ≈ 1 in of armour" at 6-12" ([INFERRED]; a stable shell's in water, scaled by density, would be ~215). A liquid
+    /// inside the hull is the sea's physics: <see cref="UnderwaterDecayCalibres"/> × 1,025 over its density.</summary>
+    public double GranularDecayC { get; init; } = 96_000;
 
     /// <summary>The hit query follows a shell this many decay lengths on under the water (3: down to 5% of its speed; a
     /// 15" shell 29 m). Physical, not tuned to historical loss rates: without damage control more ships flood and sink

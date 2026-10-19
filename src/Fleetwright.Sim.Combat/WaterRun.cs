@@ -15,6 +15,40 @@ public static class WaterRun
     public static double DecayM(in ShellTypeRow shell, SimSettings s) =>
         shell.CalibreMm / 1000 * (shell.Diving ? s.UnderwaterDecayCalibresDiving : s.UnderwaterDecayCalibres);
 
+    /// <summary>The sea's density, kg/m³: what the decay lengths in calibres are for.</summary>
+    public const double SeaRho = 1025;
+
+    /// <summary>The shell's decay length through a medium inside the hull, m (docs/battle/shell-contents.md; damage/09
+    /// §1.1): a liquid the sea's by density, a diving shell's the same way; a granular one
+    /// <see cref="SimSettings.GranularDecayC"/> over its density, in calibres.</summary>
+    public static double DecayM(in ShellTypeRow shell, SimSettings s, double rho, MediumKind kind) =>
+        shell.CalibreMm / 1000 / Math.Max(rho, 1) * (kind == MediumKind.Liquid
+            ? SeaRho * (shell.Diving ? s.UnderwaterDecayCalibresDiving : s.UnderwaterDecayCalibres)
+            : s.GranularDecayC);
+
+    /// <summary>A run of runM through a medium of decay length decayM from T, the shell at v (C1c): its speed after it,
+    /// and a fuze running on time (its burst at burstT along the path, at v) bursting in it where the time runs out, or
+    /// later by what's left at the new speed. Not running (NaN): only slowed.</summary>
+    public static void Through(ref double v, ref double burstT, double t, double runM, double decayM)
+    {
+        if (!(runM > 0) || !(v > 0))
+            return;
+        if (double.IsNaN(burstT))
+        {
+            v = Speed(v, runM, decayM);
+            return;
+        }
+        double left = Math.Max(burstT - t, 0) / v, takes = TimeS(v, runM, decayM);
+        if (takes >= left)
+        {
+            double at = RunInM(v, left, decayM);
+            (burstT, v) = (t + at, Speed(v, at, decayM));
+            return;
+        }
+        double v1 = Speed(v, runM, decayM);
+        (burstT, v) = (t + runM + (left - takes) * v1, v1);
+    }
+
     /// <summary>Its speed after runM under the water, having met it at v.</summary>
     public static double Speed(double v, double runM, double decayM) => runM > 0 ? v * Math.Exp(-runM / decayM) : v;
 

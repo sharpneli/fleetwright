@@ -30,6 +30,7 @@ how a burst's fragments see it (E1: THOR's class).
 | wood | structure | 0.01 | 0.01 | - | - | - | 0.90, 1.00, 0.5 | 0.70 |
 | cement | structure | 0.04 | 0.04 | - | - | - | 0.90, 1.00, 0.5 | 2.30 |
 | aluminium alloy | structure | 0.33 | 0.33 | - | - | - | 0.90, 1.00, 0.5 | 2.70 |
+| cast iron | structure | 0.35 | 0.35 | - | - | - | 0.75, 0.95, 0.3 | 7.20 |
 | compound | armour | 0.72 | 0.72 | 0.00 | 0.30, 0; shatters no steel shell | - | 0.75, 0.95, 0.3 | 7.75 |
 | nickel steel | armour | 0.85 | 0.85 | - | - | - | 0.90, 1.00, 0.5 | 7.85 |
 | Harvey nickel steel | armour | 0.82 | 0.82 | 0.00 | 0.08, 81 | - | 0.85, 0.94, 0.5 | 7.85 |
@@ -62,6 +63,7 @@ how a burst's fragments see it (E1: THOR's class).
 - **wood:** Planking and wooden hulls (oak and teak 0.65-0.75). Okun counts teak at 1/100 of its thickness.
 - **cement:** Cement and concrete, armour backing (US Class A's 2"). Okun counts cement at 1/25 of its thickness.
 - **aluminium alloy:** Light alloy deckhouses. [EST] about steel's protection per weight (2.7/7.85); no research row.
+- **cast iron:** Engine cylinders, early turbine casings, steering-engine cylinders: what a shell meets inside (damage/09 §1.4). [EST] q 0.35 at every calibre: brittle, as the 1870s' chilled iron was against steel shot.
 - **compound:** Steel face welded to a wrought-iron back, a third and two thirds (1877-1891). Annapolis < 0.75-0.80; shatters chilled shot only (CMP): no bare steel shell. Its back is brittle.
 - **nickel steel:** Homogeneous nickel steel (1889-1896). Annapolis > 0.77-0.83, Johnson's limit 0.92 (NIS).
 - **Harvey nickel steel:** Harveyized: carburized nickel steel, a thin hard face (1891-1899). NO 1937's limit 0.79 (HRV).

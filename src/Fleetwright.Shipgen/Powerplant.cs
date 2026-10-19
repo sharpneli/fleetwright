@@ -2,7 +2,8 @@ namespace Fleetwright.Shipgen;
 
 /// <summary>A plant technology with nothing left out (TechInput over the style's default).</summary>
 public sealed record Tech(string Name, string Fuel, double WeightKgPerKw, double StressFloor, double SfcGPerKwh,
-    double DensityTPerM3, double UnitMaxMw, TechUnit Unit, double BoilerFraction, double CrewK, string PartLoad, Draught Draught);
+    double DensityTPerM3, double UnitMaxMw, TechUnit Unit, double BoilerFraction, double CrewK, string PartLoad, Draught Draught,
+    string Boilers, string Engines);
 
 /// <summary>One machinery unit at the tech's reference power: its size in metres.</summary>
 public sealed record TechUnit(double Mw, double HeightM, double WidthM, double LengthM);
@@ -88,7 +89,7 @@ public static class Powerplant
     {
         Name = "High-pressure geared turbines (1940)", Fuel = "oil", WeightKgPerKw = 35.2, StressFloor = 0.5, SfcGPerKwh = 349,
         DensityTPerM3 = 0.34, UnitMaxMw = 42.8, Unit = new() { Mw = 30, HeightM = 5.0, WidthM = 5.0, LengthM = 8 },
-        BoilerFraction = 0.5, CrewK = 10, PartLoad = "GTB",
+        BoilerFraction = 0.5, CrewK = 10, PartLoad = "GTB", Boilers = "small_tube", Engines = "geared_turbine",
         Draught = new() { System = "forced", VelocityMS = 14.0, ReachM = 27.0, GasTempK = 450, AirFuelRatio = 15 },
     };
 
@@ -105,7 +106,43 @@ public static class Powerplant
             new TechUnit(Pick(u.Mw, bu.Mw), Pick(u.HeightM, bu.HeightM), Pick(u.WidthM, bu.WidthM), Pick(u.LengthM, bu.LengthM)),
             Pick(t?.BoilerFraction, b.BoilerFraction), Pick(t?.CrewK, b.CrewK), Text(t?.PartLoad, b.PartLoad),
             new Draught(Text(dr.System, bd.System), Pick(dr.VelocityMS, bd.VelocityMS), Pick(dr.ReachM, bd.ReachM),
-                Pick(dr.GasTempK, bd.GasTempK), Pick(dr.AirFuelRatio, bd.AirFuelRatio), dr.NaturalFraction ?? bd.NaturalFraction));
+                Pick(dr.GasTempK, bd.GasTempK), Pick(dr.AirFuelRatio, bd.AirFuelRatio), dr.NaturalFraction ?? bd.NaturalFraction),
+            Text(t?.Boilers, b.Boilers), Text(t?.Engines, b.Engines));
+    }
+
+    /// <summary>The boilers' kinds (docs/battle/shell-contents.md C1b; damage/09 §2.1): none (a plant without boilers),
+    /// cylindrical (Scotch, return-tube), locomotive, large-tube water-tube (Belleville, Niclausse, Babcock), small-tube
+    /// water-tube (Yarrow, Thornycroft, Normand, the express boilers).</summary>
+    public static readonly string[] BoilerKinds = ["none", "cylindrical", "locomotive", "large_tube", "small_tube"];
+
+    /// <summary>The engines' kinds: compound, triple or quadruple expansion (vte), direct-drive turbines, geared turbines,
+    /// diesels, petrol engines, gas turbines.</summary>
+    public static readonly string[] EngineKinds = ["compound", "vte", "direct_turbine", "geared_turbine", "diesel", "petrol", "gas_turbine"];
+
+    /// <summary>The kinds a plant's name says, for a block that doesn't give them (DesignFormat 9 → 10 reads the name of
+    /// the template a block was picked from); then its part-load curve and whether it has boilers. Null for a part the
+    /// name doesn't tell and nothing else does.</summary>
+    public static (string Boilers, string Engines, bool Guessed) KindsOf(string? name, string? partLoad, double? boilerFraction)
+    {
+        string n = (name ?? "").ToLowerInvariant();
+        string? boilers = boilerFraction is 0 ? "none"
+            : n.Contains("scotch") || n.Contains("cylindrical") ? "cylindrical"
+            : n.Contains("locomotive") ? "locomotive"
+            : n.Contains("large-tube") ? "large_tube"
+            : n.Contains("small-tube") || n.Contains("express") || n.Contains("water-tube") || n.Contains("boilers") ? "small_tube"
+            : null;
+        string? engines = n.Contains("compound") ? "compound"
+            : n.Contains("expansion") ? "vte"
+            : n.Contains("direct-drive") ? "direct_turbine"
+            : n.Contains("geared") ? "geared_turbine"
+            : n.Contains("gas turbine") ? "gas_turbine"
+            : n.Contains("diesel") ? "diesel"
+            : n.Contains("petrol") ? "petrol"
+            : null;
+        bool guessed = engines is null || boilers is null && engines is not ("direct_turbine" or "geared_turbine");
+        engines ??= partLoad switch { "REC" => "vte", "DT" => "direct_turbine", "GTB" => "geared_turbine", "GTS" => "gas_turbine", _ => "diesel" };
+        boilers ??= engines is "diesel" or "petrol" or "gas_turbine" ? "none" : "small_tube";
+        return (boilers, engines, guessed);
     }
 
     /// <summary>The design's plant: its tech over the default tech, and its choices over the defaults.</summary>
@@ -127,6 +164,10 @@ public static class Powerplant
             errs.Add($"machinery.tech.fuel = {Style.Quote(t.Fuel)}: use {string.Join(", ", Fuels.Keys)}");
         if (!Curves.ContainsKey(t.PartLoad))
             errs.Add($"machinery.tech.part_load = {Style.Quote(t.PartLoad)}: use {string.Join(", ", Curves.Keys)}");
+        if (!BoilerKinds.Contains(t.Boilers))
+            errs.Add($"machinery.tech.boilers = {Style.Quote(t.Boilers)}: use {string.Join(", ", BoilerKinds)}");
+        if (!EngineKinds.Contains(t.Engines))
+            errs.Add($"machinery.tech.engines = {Style.Quote(t.Engines)}: use {string.Join(", ", EngineKinds)}");
         var dr = t.Draught;
         if (!DraughtSystems.Contains(dr.System))
             errs.Add($"machinery.tech.draught.system = {Style.Quote(dr.System)}: use {string.Join(", ", DraughtSystems)}");
@@ -442,7 +483,7 @@ public static class Powerplant
             UnitMw = Math.Round(r.UnitMw, 2), WeightT = Math.Round(r.WeightT, 1), SfcGPerKwh = Math.Round(r.Sfc, 1),
             PartLoad = new PartLoad(t.PartLoad, CurveLoads, Curves[t.PartLoad].Pts, Curves[t.PartLoad].Over),
             Draught = t.Draught.System, NaturalFraction = t.Draught.System == "forced_boost" ? t.Draught.NaturalFraction ?? 0.6 : null,
-            Stress = p.Stress, Transmission = p.Transmission, Arrangement = p.Arrangement, Crew = r.Crew,
+            Stress = p.Stress, Transmission = p.Transmission, Arrangement = p.Arrangement, Crew = r.Crew, Boilers = t.Boilers, Engines = t.Engines,
         };
     }
 }

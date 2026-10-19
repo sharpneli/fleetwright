@@ -52,6 +52,48 @@ static class HitsBench
         return (lo.ShellTypes[type], lo.ShellTypeId(type));
     }
 
+    /// <summary>Hits whose line of flight crossed a boiler or an engine room (docs/battle/shell-contents.md C1c): how many
+    /// struck a solid there, burst there, or went on out of it unburst.</summary>
+    struct Machinery
+    {
+        public int Crossed, Struck, Burst, WentOn;
+    }
+
+    /// <summary>A hit into the machinery tally: the first boiler or engine room its body reached.</summary>
+    static void Count(ShipClass c, HitPath path, TerminalResult t, Machinery[] m)
+    {
+        var xs = path.Crossings;
+        for (int i = 0; i < xs.Length && xs[i].T < t.StopT; i++)
+        {
+            if (xs[i].Kind != CrossingKind.CellIn || c.Cells[xs[i].Index].Room is not (int room and >= 0)
+                || c.Rooms[room].Kind is not (RoomKind.BoilerRoom or RoomKind.EngineRoom) || i > 0 && xs[i - 1].Kind == CrossingKind.CellOut
+                && c.Cells[xs[i - 1].Index].Room == room)
+                continue;
+            ref var k = ref m[c.Rooms[room].Kind == RoomKind.BoilerRoom ? 0 : 1];
+            k.Crossed++;
+            double outT = double.PositiveInfinity;
+            bool struck = false;
+            for (int j = i + 1; j < xs.Length; j++)
+            {
+                if (xs[j].Kind == CrossingKind.Struck && xs[j].Index == room)
+                    struck = true;
+                if (xs[j].Kind == CrossingKind.CellOut && c.Cells[xs[j].Index].Room == room
+                    && !(j + 1 < xs.Length && xs[j + 1].Kind == CrossingKind.CellIn && c.Cells[xs[j + 1].Index].Room == room))
+                {
+                    outT = xs[j].T;
+                    break;
+                }
+            }
+            if (struck)
+                k.Struck++;
+            if (t.Bursts && t.BurstT >= xs[i].T && t.BurstT <= outT)
+                k.Burst++;
+            else if (t.StopT > outT && !(t.Bursts && t.BurstT <= outT))
+                k.WentOn++;
+            return;
+        }
+    }
+
     public static int Run(string target, Func<string, Design> load, string settingsPath, Options o)
     {
         var settings = SimSettings.Load(settingsPath);
@@ -67,9 +109,11 @@ static class HitsBench
         var b = sc.Batteries[o.Battery];
         double maxElev = sc.Mounts[sc.Links(b.Mounts)[0]].MaxElevationDeg;
         int traced = 0;
+        var machinery = new Machinery[2];
         var sw = Stopwatch.StartNew();
         var r = GivenHits.Run(tc, shell, maxElev, o.RangeM, o.AspectDeg, o.N, Math.Max(o.PerShip, 1), (ulong)o.Seed, settings, (i, path, t, e) =>
         {
+            Count(tc, path, t, machinery);
             if (traced >= o.Trace)
                 return;
             traced++;
@@ -102,6 +146,11 @@ static class HitsBench
         if (r.Glanced > 0 || r.Bent > 0)
             Console.WriteLine(string.Format(Inv, "  glanced off a plate {0:0.#}% of hits; turned by the plates they got through {1:0.#}%, by {2:0.0}° on average",
                 100.0 * r.Glanced / r.Hits, 100.0 * r.Bent / r.Hits, r.TurnDeg / Math.Max(r.Bent, 1)));
+        string[] rooms = ["boiler rooms", "engine rooms"];
+        foreach (var (m, name) in machinery.Zip(rooms))
+            if (m.Crossed > 0)
+                Console.WriteLine(string.Format(Inv, "  through the {0} ({1} hits): struck a solid there {2:0}%, burst there {3:0}%, went on unburst {4:0}%",
+                    name, m.Crossed, 100.0 * m.Struck / m.Crossed, 100.0 * m.Burst / m.Crossed, 100.0 * m.WentOn / m.Crossed));
         if (r.Delayed > 0)
             Console.WriteLine(string.Format(Inv, "  bursts after the delay: {0:0.#}% of hits, {1:0.0} m on average behind where the fuze started", 100.0 * r.Delayed / r.Hits,
                 r.DelayedM / r.Delayed));
