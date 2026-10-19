@@ -217,6 +217,19 @@ Seen at 0.3 m/px on a destroyer struck by 15": the AP through her leaves a colum
 on her upper works a fireball and a scatter of small foam rings out to ~150 m round her. Test:
 `HitBookTests.A_shell_through_her_lands_beyond_and_a_bursts_pieces_never_on_her`.
 
+**I3 (2026-10-19).** `Map/Hits/HitMarks`: the marks each hit left, kept per ship (at most 24: past them the oldest goes,
+by then the parts round it are wrecked and scorched whole), drawn with the part scorches in `ShipDrawList.Scorches` as a
+round decal (`shipmap.frag` mode 4: lit and mottled as the scorches, clipped to her by the height map, so a hit on her
+side shows as a half-round scorch at her deck edge; a ragged near-black hole, its share of the radius in the quad's
+roof). Sizes [EST]: the hole 1.2 calibres across where it got in (as wide as what a burst inside tore to the outside); the
+scorch a quarter of the fireball for a burst in the open, an eighth past the hole for one inside, 2.5 holes for a shell
+through her (both sides) or holing a plate, 2 calibres for a plate that held. Nothing under the water. **The boil:** a
+burst under the water against her side is the splash model's torpedo kind, its column 0.6 of a torpedo's for its W
+(12 W^⅓ m) [EST]. Knobs `hole`, `scorch`, `boil`; parts 64. The bench gained a shot just under the water (a 15" AP runs
+only ~1.2 m under it before the sea takes it). Seen at 0.12 m/px: sooty rounds at her struck edges and on her upper works;
+the defeated shot's pieces standing as small columns off her side; the under-water burst a column against her side over
+its foam. Test: `HitBookTests.A_hit_marks_her_once_with_a_hole_in_a_scorch_and_a_ship_keeps_the_newest`.
+
 ## Later
 
 - **The colour pass:** smoke colours by fire, filler and fuel, soot yields and the funnels' output from the research

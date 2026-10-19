@@ -104,15 +104,24 @@ void main()
         if (h <= 0.05)
             discard;
         vec2 e = min(fragUv, 1.0 - fragUv);
-        float edge = smoothstep(0.0, 0.18, min(e.x, e.y));
+        float edge = smoothstep(0.0, 0.18, min(e.x, e.y)), hole = 0.0;
+        if (fragMode.x > 3.5)
+        {
+            // a shell's mark (docs/visuals/hits-and-fires.md I3): round, its scorch fading out to the quad's edge, the hole
+            // (z: its share of the radius) a ragged near-black core
+            float d = length(fragUv - 0.5) * 2.0;
+            edge = 1.0 - smoothstep(0.35, 1.0, d);
+            float rag = 0.85 + 0.3 * fract(sin(dot(floor(fragShip * 8.0), vec2(27.17, 91.73))) * 15731.743);
+            hole = 1.0 - smoothstep(0.8 * fragMode.z * rag, fragMode.z * rag, d);
+        }
         // wreckage, rust and soot: mottled at a metre and a quarter-metre
         vec2 cellA = floor(at), cellB = floor(at * 4.0);
         float n = 0.6 * fract(sin(dot(cellA, vec2(12.9898, 78.233))) * 43758.5453) + 0.4 * fract(sin(dot(cellB, vec2(39.346, 11.135))) * 24634.6345);
         vec4 nt = texture(normalTex, at * fragHmap.xy + fragHmap.zw);
         float depth = depthAt(at, h);
-        vec3 rgb = shipShade(fragTint.rgb * (0.55 + 0.9 * n), unpackNormal(nt), normalize(fragEye), fragLightSun, fragLightMoon, 1.0, 0.0,
+        vec3 rgb = shipShade(fragTint.rgb * (0.55 + 0.9 * n) * (1.0 - 0.95 * hole), unpackNormal(nt), normalize(fragEye), fragLightSun, fragLightMoon, 1.0, 0.0,
             nt.a * (0.45 + 0.35 * n), specAt(depth), flashLit(unpackNormal(nt)));
-        vec4 c = vec4(rgb, 1.0) * fragTint.a * edge * (0.7 + 0.3 * n);
+        vec4 c = vec4(rgb, 1.0) * max(fragTint.a * edge * (0.7 + 0.3 * n), hole);
         outColour = drown(c, depth) * opacity;
         return;
     }

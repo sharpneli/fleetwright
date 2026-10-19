@@ -13,6 +13,7 @@ namespace Fleetwright.Map;
 public sealed partial class MapScene
 {
     readonly HitBook hitBook = new();
+    readonly HitMarks hitMarks = new();
 
     /// <summary>The dev's hits bench: "target:shooter[:every_s[:shot]]" (entities; one of the bench's shots over and over),
     /// or null.</summary>
@@ -33,14 +34,16 @@ public sealed partial class MapScene
         (1, ShellKind.He, -0.35, 4, 5_000, 100),    // the side, a secondary's
         (0, ShellKind.Common, -0.25, 8, 8_000, 120),   // the after upper works
         (0, ShellKind.He, -0.85, 2, 8_000, 90),     // the thin stern
+        (0, ShellKind.Ap, 0.3, -4.4, 16_000, 90),   // just under the water
     ];
 
     /// <summary>The frame's hits: the book from the snapshot, what they show through the models already drawn (after the
     /// magazines', before the lights are set into the frame's).</summary>
     void BuildHits(in MapView view, Snapshot s, double dt)
     {
+        shipRenderer.List.Marks ??= hitMarks;
         hitBook.Update(s.Hits, world.DrawMs, s.Paused ? 0 : s.AchievedSpeed, dt, classOf);
-        HitEffects.Hand(hitBook, world.DrawMs, s.Paused ? 0 : s.AchievedSpeed, shipRenderer.Splashes.Book, classOf);
+        HitEffects.Hand(hitBook, world.DrawMs, s.Paused ? 0 : s.AchievedSpeed, shipRenderer.Splashes.Book, classOf, hitMarks);
         HitEffects.Build(view, hitBook, WorldView.Factor(view), shipRenderer.Magazines, shipRenderer.Flashes.Lights, shipRenderer.Smoke.Book,
             shipRenderer.Flashes.Book.SeaClock);
         RunHitBench(s);

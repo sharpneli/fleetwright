@@ -28,6 +28,7 @@ public class HitBookTests
             (v.Ms[i], v.Ship[i], v.Class[i], v.At[i], v.Forward[i]) = (ms, 1, 0, at, Earth.Forward(at, 90));
             (v.Point[i], v.BurstAt[i], v.Outcome[i], v.Burst[i], v.FillerKg[i]) = (new P3(10 * i, 12, wl + 2), new P3(10 * i, 10, wl + 1), Outcome.BurstInside,
                 BurstKind.Inside, 15);
+            v.CalibreMm[i] = 305;
         }
         return v;
     }
@@ -91,5 +92,25 @@ public class HitBookTests
             double x = Vec3d.Dot(d, e.Forward), y = Vec3d.Dot(d, e.Starboard);
             Assert.False(x > Dreadnought.Hull.X0 && x < Dreadnought.Hull.X1 && Math.Abs(y) < half - 0.5, $"a mark on her at {x:0}, {y:0}");
         }
+    }
+
+    [Fact]
+    public void A_hit_marks_her_once_with_a_hole_in_a_scorch_and_a_ship_keeps_the_newest()
+    {
+        var book = new HitBook();
+        var marks = new HitMarks();
+        var splashes = new Fleetwright.Map.Splashes.SplashBook(64);
+        long ms = 1_000_000;
+        for (int k = 0; k < HitMarks.PerShip + 5; k++, ms += 1000)
+        {
+            book.Update(Two(ms), ms, 1, 0.016, ClassOf);
+            HitEffects.Hand(book, ms, 1, splashes, ClassOf, marks);
+            HitEffects.Hand(book, ms, 1, splashes, ClassOf, marks);
+        }
+        var m = marks.Of(1);
+        Assert.Equal(HitMarks.PerShip, m.Length);
+        // a 15 kg burst inside: a hole 1.2 calibres across... in a scorch an eighth of its 14 m fireball and the hole wider
+        Assert.All(m.ToArray(), x => Assert.True(x.Hole > 0 && x.Hole < 1 && x.R > 1.5 && x.R < 4, $"{x}"));
+        Assert.True(marks.Of(2).IsEmpty);
     }
 }

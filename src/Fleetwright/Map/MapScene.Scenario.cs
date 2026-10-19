@@ -37,6 +37,7 @@ public sealed unsafe partial class MapScene
         shipRenderer.Smoke.Book.Clear();
         torpedoBook.Clear();
         hitBook.Clear();
+        hitMarks.Clear();
         (benchShot, benchNextMs) = (0, long.MinValue);
         (placing, placeDrag) = (false, false);
         // the spawner's side is the player's: the scenario's (any of its sides), else the dev world's 0

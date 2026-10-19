@@ -77,6 +77,9 @@ public sealed class ShipDrawList
     /// <summary>The gunhouses thrown by magazines going up, drawn on their arcs (null: none).</summary>
     public IThrownTurrets? Thrown { get; set; }
 
+    /// <summary>The marks shells left on the ships (docs/visuals/hits-and-fires.md I3), drawn with the scorches.</summary>
+    public Hits.HitMarks? Marks { get; set; }
+
     Vector2 northInShip;   // the view's north in the frame of the ship being drawn (for a thrown gunhouse's height)
     Vec3d viewNorth;
     /// <summary>The icon's length and width on screen, pixels, for a ship of <see cref="IconRefT"/> (or a class not up
@@ -470,7 +473,20 @@ public sealed class ShipDrawList
             var tint = st == PartState.Destroyed ? ScorchWrecked : st == PartState.Disabled ? ScorchOut : ScorchDamaged;
             Emit(ref p, art, b.X0, b.Y0, b.X1 - b.X0, 0, 0, b.Y1 - b.Y0, mode: 3, opacity: p.SpriteAlpha, roof: 0, tint);
         }
+        // the shells' marks: round, a hole in a scorch (mode 4; roof: the hole's share of its radius)
+        if (Marks is null)
+            return;
+        foreach (var m in Marks.Of(p.Entity))
+        {
+            if (m.R * p.PxPerM < 0.6)
+                continue;
+            double sx = m.Z * p.Sea.Y, sy = m.Z * p.Sea.Z;   // tilted with the hull
+            Emit(ref p, art, m.X - m.R + sx, m.Y - m.R + sy, 2 * m.R, 0, 0, 2 * m.R, mode: 4, opacity: p.SpriteAlpha, roof: m.Hole, HitScorch);
+        }
     }
+
+    /// <summary>A shell's mark's scorch: soot over burnt paint (its hole near black in the shader).</summary>
+    static readonly Vector4 HitScorch = new(0.07f, 0.06f, 0.05f, 0.92f);
 
     /// <summary>A mount's tint and soot by its state, or none.</summary>
     static (Vector4 Tint, float Soot) TurretTint(in Placed p, int classMount)

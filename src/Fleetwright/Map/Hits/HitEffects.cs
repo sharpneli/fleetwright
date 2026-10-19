@@ -153,7 +153,7 @@ public static class HitEffects
     /// <item>a plate that held (stopped, shattered) drops a few large pieces (the cap, the broken body) into the sea
     /// close by on the side it came from.</item>
     /// </list></summary>
-    public static void Hand(HitBook book, long nowMs, double speed, SplashBook splashes, Func<int, ShipClass?> classOf)
+    public static void Hand(HitBook book, long nowMs, double speed, SplashBook splashes, Func<int, ShipClass?> classOf, HitMarks? marks = null)
     {
         if (!HitLook.On)
             return;
@@ -164,9 +164,22 @@ public static class HitEffects
             if (e.Handed)
                 continue;
             e.Handed = true;
-            if ((HitLook.Parts & 32) == 0 || classOf(e.Class) is not { } cls)
+            if (marks != null && (HitLook.Parts & 64) != 0)
+                Mark(e, marks);
+            if (classOf(e.Class) is not { } cls)
                 continue;
             double ago = (nowMs - e.Ms) / 1000.0;
+
+            // under the water: its burst's boil against her side, the splash model's torpedo kind, its column 12 W^⅓ m (the
+            // torpedo's law) [EST]
+            if ((HitLook.Parts & 64) != 0 && Bursts(e) && Under(e, e.BurstAt))
+            {
+                double h = 12 * Math.Cbrt(e.FillerKg) * HitLook.BoilShare;
+                splashes.Add(e.Sea(e.BurstAt).Normalized() * Earth.Radius, h / 180 * 1000, splashes.ColumnClock + (e.BurstS - ago) * colRatio,
+                    splashes.FoamClock + (e.BurstS - ago) * seaRatio, (float)U(e.Seed, 3), torpedoHit: true);
+            }
+            if ((HitLook.Parts & 32) == 0)
+                continue;
 
             // flying on
             if ((e.Shows & HitShows.Exit) != 0 && e.ExitMs > 0)
@@ -207,6 +220,44 @@ public static class HitEffects
                 }
             }
         }
+    }
+
+    /// <summary>A hit's marks on her (I3), in her frame: the hole it made (1.2 calibres across where it got in, as wide as
+    /// what its burst tore open to the outside), in a scorch by its burst (a quarter of its fireball in the open, an eighth
+    /// round the hole from inside); a plate that held only scorched and dented; a shell through her holed at both sides.
+    /// Nothing under the water [EST: the sizes].</summary>
+    static void Mark(in HitBook.Entry e, HitMarks marks)
+    {
+        double cal = e.CalibreMm / 1000, hole = 0.6 * cal * HitLook.HoleScale;
+        var (d, _) = Bursts(e) ? MagazineBlast.Fireball(e.FillerKg) : (0, 0);
+        var at = e.Point;
+        double hr, r;
+        switch (e.Outcome)
+        {
+            case Outcome.Defeated or Outcome.Ricochet or Outcome.Dud:
+                (hr, r) = (0, 2 * cal);
+                break;
+            case Outcome.PassedThrough or Outcome.Holed or Outcome.BrokeUp:
+                (hr, r) = (hole, 2.5 * hole);
+                break;
+            default:
+                if (Open(e))
+                {
+                    at = e.Outcome == Outcome.BurstBeyond ? at : e.BurstAt;
+                    (hr, r) = (e.Burst == BurstKind.Outside ? 0 : hole, Math.Max(0.25 * d, 2.5 * hole));
+                }
+                else
+                {
+                    hr = Math.Max(hole, Math.Sqrt(Math.Max(e.VentM2, 0) / Math.PI));
+                    r = Math.Max(0.125 * d, hr) + hr;
+                }
+                break;
+        }
+        r *= HitLook.ScorchScale;
+        if (!Under(e, at))
+            marks.Add(e.Ship, new HitMarks.Mark((float)at.X, (float)at.Y, (float)at.Z, (float)r, (float)Math.Clamp(hr / Math.Max(r, 1e-6), 0, 1)));
+        if (e.Outcome is Outcome.PassedThrough or Outcome.BurstBeyond && (e.Shows & HitShows.Exit) != 0 && !Under(e, e.ExitAt))
+            marks.Add(e.Ship, new HitMarks.Mark((float)e.ExitAt.X, (float)e.ExitAt.Y, (float)e.ExitAt.Z, (float)(2.5 * hole), 0.4f));
     }
 
     /// <summary>A splash of what flew off, <paramref name="ahead"/> world seconds from now (past: back-dated).</summary>
