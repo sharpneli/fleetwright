@@ -97,6 +97,7 @@ Ballistics has no note of its own: the point-mass ballistics fitted to each gun 
 | [06-service-networks.md](simulation/damage-research/06-service-networks.md) | Hydraulics, electrics, electronics: designer outputs and damage/repair models (draft) | — |
 | [07-magazine-explosions.md](simulation/damage-research/07-magazine-explosions.md) | Magazine explosions after ignition | — |
 | [08-gunfire-effects.md](simulation/damage-research/08-gunfire-effects.md) | What a shell does when it hits | [gunfire_ref.py](simulation/damage-research/gunfire_ref.py) |
+| [09-contents-in-the-path.md](simulation/damage-research/09-contents-in-the-path.md) | What inside a ship slows or stops a shell: machinery, liquids, coal, magazines, turrets, shafts (draft) | [contents_ref.py](simulation/damage-research/contents_ref.py) |
 
 **Armour penetration** in [simulation/armor/](simulation/armor/) (2026-10-16)
 

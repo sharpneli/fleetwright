@@ -12,10 +12,6 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: (comparison, recommendation, API notes, plan...)
 -->
 
-### 2026-10-18 - What inside a ship stops or slows a shell, 1890-1925 first
-- Question, context and wanted output (R1-R6: machinery, liquids inside the hull, coal, magazines, turret and barbette
-  interiors, shafts and steering gear) are in `docs/battle/shell-contents.md` "Research requests". Not blocking.
-
 ### 2026-10-18 - Fire discipline by navy, and battle rates of fire from their causes, 1898-1925
 - Question: how each navy ranged and fired for effect, as numbers a general model can take (the game keeps it as a
   side's doctrine: salvos in flight while ranging, a ladder's step and size, the guns in a ranging salvo, alternating
@@ -166,6 +162,12 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: a table of the ratios per ship, and a recommended range for `strength` and `knuckle`.
 
 ## Done
+
+### 2026-10-18 - What inside a ship stops or slows a shell, 1890-1925 first
+- Done 2026-10-19 (draft): [simulation/damage-research/09-contents-in-the-path.md](simulation/damage-research/09-contents-in-the-path.md)
+  with [contents_ref.py](simulation/damage-research/contents_ref.py). Two rules: media (liquids at the sea's 25 cal
+  scaled by density, coal and tube nests at 96,000/rho cal) and solids met at lambda = chord/f in a height band, struck
+  as one plate (round ones by impact offset). Tables for R1-R6 by type and period; most dimensions are [EST].
 
 ### 2026-10-13 - Jutland at 14:00 GMT: positions, courses, dispositions
 - Done 2026-10-13: [jutland-1400-dispositions.md](jutland-1400-dispositions.md). The British 2 p.m. dispositions are
