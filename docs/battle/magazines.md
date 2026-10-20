@@ -133,8 +133,22 @@ The first game's cases lead (1890-1925); the later ones check the mechanisms.
 A battery says how its guns are housed: a **gunhouse** (enclosed, with a barbette, a working chamber and hoists in a
 trunk), a **shield** (open behind, ammunition up by hoist or whip to the deck, ready rounds by the gun), or **open**.
 It replaces the calibre switch, and splits today's `dp`: a 5″/38's gunhouse from a destroyer's shield. Every reader of
-"enclosed" takes it from the housing: the flash path, the crews' cover and flash, and fire's trunk to the magazine. The design key isn't `mount` (the secondaries' position, and fire control's mount
-already use that word: one word, one meaning). Working name `housing`.
+"enclosed" takes it from the housing: the flash path, the crews' cover and flash, and fire's trunk to the magazine. The
+design key isn't `mount` (the secondaries' position, and fire control's mount already use that word: one word, one
+meaning). Working name `housing`.
+
+**The housing is selected, at any calibre** (the user, 2026-10-20). It's the designer's choice for each battery, not
+something the calibre decides:
+- **Small guns had enclosed gunhouses too.** Examples: the Monmouths' twin 6″ turrets (1901), Fubuki's fully enclosed
+  12.7 cm destroyer gunhouses (1928), and the USN's enclosed 5″/38s. Big guns could stand behind shields: the Towns' and
+  Chester's 6″.
+- **No rule ties the two.** A new battery may start from a suggestion, but the design keeps what was chosen, and nothing
+  refuses a combination (limits come from gameplay, never block).
+- **The choice is felt three ways:**
+  - in the weight, which shipgen weighs from the housing, so a gunhouse is heavier than a shield, and in the cost in
+    the campaign;
+  - in the crews' cover from splinters and weather;
+  - in the flash path to the magazine, which only a gunhouse's trunk has.
 
 ### The ammunition train (an enclosed mount)
 
@@ -230,7 +244,8 @@ follows the dependencies: the fake turrets first, because the chain means nothin
     one by one.
   - Every reader of "enclosed" takes the housing (`Effects.Enclosed`, `Casualties.Enclosed`, fire's trunk dose in
     `Fires.Magazines`). How a shield mount reaches its magazine follows question 4.
-  - The designer's battery tables show it (one cell, no new pane).
+  - The designer's battery tables (main and secondary) let it be picked for any battery at any calibre (one cell, no
+    new pane); its weight follows in the ledger.
   - Goldens move, so `ShipDesign.Version` bumps. Closes bugs.md's item and E8a item 1.
 - **V2. The train.**
   - The stations and their doors as class rows (from the mount, barbette, handling-room and magazine links).
