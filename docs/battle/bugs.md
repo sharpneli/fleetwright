@@ -46,13 +46,19 @@ add what's found.
 
 - [x] A battleship under medium HE sometimes loses a magazine to fire (about 1.5 %): decided 2026-10-15, rarely is
   right (user); damage control and flash discipline refine it later (fighting.md, the later passes' Magazines).
-- [ ] A contact-fuzed shell on armour breaks up instead of bursting on the face (found 2026-10-19, fire.md B5).
+- [x] A contact-fuzed shell on armour breaks up instead of bursting on the face (found 2026-10-19, fire.md B5; fixed
+  2026-10-20, shells plan E8a: `Terminal.FiresIn`, Shimose on Borodino `Holed` 42% → 2%).
   `Terminal`'s plate step calls a shell between the plate's holing limit and V_L `Holed` and returns before its fuze
   is asked: Mikasa's 12" Shimose (Ijuin fuze, delay 0, starts on any plate since 2026-10-19) on Borodino's belt is
   `Holed` in 43% of hits (a weak burst of pieces, no blast, no fire), where the record has it bursting on the armour
   face (06 §5: "never penetrated armour over about 6 in"; 15 §2.3: "exploded the moment they touched"). A fuze that
   starts on the plate with no delay should burst on the face (`Defeated`, outside) before the shell can hole it. The
   shells plan's, not fire's; it moves blast and men on armoured targets more than fires.
+- [ ] Every main-battery mount of 150 mm or more is a gunhouse with a barbette (`Geometry.cs`, `kind = calMm >= 150 ?
+  "bb"`: a switch by calibre), so a WWI light cruiser's open-backed 6″ (Chester, the Towns) get an enclosed turret's
+  flash path to the magazine and their crews sit inside steel (found 2026-10-20, shells plan E8a: Chester lost 13% of
+  ships to a magazine under 17 hits of 15 cm, killed 0.38 a hit against the record's 2.0). Wants a mount kind in the
+  design (shield, gunhouse), shipgen's.
 - [ ] Four torpedoes at once on one side capsize `yamato` in about 2 minutes, whatever her tightness: 6,800 t and 21.6°
   of list in the first minute, faster than any counterflooding (found 2026-10-20, damage-control.md DC4; one torpedo
   alone gives 2,450 t and 8.8°). Shinano took four from one spread and listed 10-13°, lasting 7¾ h. Likely her wing and

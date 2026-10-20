@@ -147,7 +147,8 @@ public static class Terminal
             PlateU = double.NaN,
         };
         double calMm = shell.CalibreMm, v = hit.SpeedMs;
-        bool nose = shell.Fuze == Fuze.Nose, inside = false, started = false;
+        // dead: a nose fuze that failed on a plate the shell punched, which goes on inert (E8)
+        bool nose = shell.Fuze == Fuze.Nose, inside = false, started = false, dead = false;
         double burstT = double.NaN, force = 1;
         // a two-plate fuze's impulse so far, and where it last took a plate
         double impulse = 0, impulseT = double.NegativeInfinity;
@@ -240,9 +241,22 @@ public static class Terminal
                         LimitMs = t > 0 ? LimitMs(t, calMm, massKg, ob) : 0, Quality = 1, OutMs = punches ? v : 0,
                         Call = punches ? PlateCall.NoseInside : PlateCall.NoseOutside, FuzeLeftS = double.NaN,
                     });
-                    trace.Fuzed(x.T, i, FuzeCause.Nose);
+                    if (!dead)
+                        trace.Fuzed(x.T, i, FuzeCause.Nose);
                 }
-                return Nose(ref res, ref r, shell, s, x.T, i, punches, v);
+                if (dead)
+                {
+                    // inert: its thin body goes through what it punches and lies against the first plate it doesn't
+                    if (punches)
+                        continue;
+                    (res.Plate, res.StopT) = (i, x.T);
+                    return res;
+                }
+                var nosed = Nose(ref res, ref r, shell, s, x.T, i, punches, v);
+                if (!(nosed.Outcome == Outcome.Dud && punches))
+                    return nosed;
+                dead = true;   // blind or a failed filler, through this plate: on, inert
+                continue;
             }
 
             // the plate as this shell meets it: a common shell's weaker body; on face-hardened plate the body's quality,
@@ -321,6 +335,9 @@ public static class Terminal
                 }
                 if (u >= mat.HoledU)
                 {
+                    if (FiresIn(ref res, ref r, shell, mat.SteelMm(x.Mm), ob, hard, x, i, v, ref started, ref burstT, ref force, ref impulse, ref impulseT, s,
+                        trace))
+                        return res;
                     (res.Outcome, res.Burst, res.BurstT, res.StopT, res.BurstMs) = (Outcome.Holed, BurstKind.None, double.NaN, x.T + 0.5, 0);
                     return res;
                 }
@@ -343,6 +360,9 @@ public static class Terminal
             // through: shattered, it's in pieces; just over the limit, the body may give way; whole, the filler, shocked by
             // the plate, may burst in it, the likelier the nearer the plate came to holding
             bool near = !shatter && v < s.NearLimitBand * vl && td >= s.BreakFromTD && r.NextDouble() < NearLimitBreak(ob, s);
+            if ((shatter || near) && FiresIn(ref res, ref r, shell, mat.SteelMm(x.Mm), ob, hard, x, i, v, ref started, ref burstT, ref force, ref impulse,
+                    ref impulseT, s, trace))
+                return res;
             bool inPlate = !shatter && !near && InPlate(shell, v, vl, ref r);
             // whole and through, it turns toward the plate's normal, the turn costing it a little more (P5); the path
             // bends once the plates at this point are crossed
@@ -399,9 +419,34 @@ public static class Terminal
         return Gone(ref res, started, path.Length);
     }
 
+    /// <summary>A shell breaking in a plate (holing it under its limit, shattered on it, or broken just over it, E8): a fuze
+    /// that fires within the plate bursts it there first, before it's in pieces. Started on this plate with next to no
+    /// delay (Shimose's Ijuin fuze on a Krupp belt: "exploded the moment they touched", 06 §5, 15 §2.3) it bursts on the
+    /// face; running since an earlier plate, against it. Whether it burst (the result's set).</summary>
+    static bool FiresIn(ref TerminalResult res, ref RandomStream r, in ShellTypeRow shell, double steelMm, double ob, bool hard, in Crossing x, int i,
+        double v, ref bool started, ref double burstT, ref double force, ref double impulse, ref double impulseT, SimSettings s, TerminalTrace? trace)
+    {
+        bool here = false;
+        if (!started && StartsOn(shell, steelMm, ob, hard, x.T, ref impulse, ref impulseT, s))
+        {
+            (started, here) = (true, true);
+            Start(ref res, ref r, shell, s, x.T, v, i, 0, ref burstT, ref force);
+            trace?.Fuzed(x.T, i, Cause(x));
+        }
+        double across = steelMm / 1000 / Math.Max(Math.Cos(double.DegreesToRadians(ob)), 0.1);
+        if (double.IsNaN(burstT) || burstT > x.T + across)
+            return false;
+        res.Plate = i;
+        if (here)
+            Burst(ref res, Math.Max(x.T - 0.3, 0), s.BurstOutsideK * force, Outcome.BurstOutside, BurstKind.Outside, v);
+        else
+            Burst(ref res, Math.Max(x.T - 0.3, 0), force, res.Outcome, BurstKind.Inside, 0);
+        return true;
+    }
+
     /// <summary>A nose fuze on the first solid thing it meets, the crossing at T: blind, the shell goes on through a plate it
-    /// punches (a dud) or lies against one it doesn't; else the filler (<see cref="Initiate"/>) bursts just inside a plate
-    /// it punches, or outside one it doesn't, or is a dud.</summary>
+    /// punches (a dud, walked on inert by the caller) or lies against one it doesn't; else the filler (<see cref="Initiate"/>)
+    /// bursts just inside a plate it punches, or outside one it doesn't, or is a dud.</summary>
     static TerminalResult Nose(ref TerminalResult res, ref RandomStream r, in ShellTypeRow shell, SimSettings s, double t, int i, bool punches, double v)
     {
         res.Plate = i;

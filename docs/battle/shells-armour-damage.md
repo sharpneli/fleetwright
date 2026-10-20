@@ -1,5 +1,5 @@
 # Plan: shells, armour and damage (a 4.5 deepening)
-Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S, phase P (PM moved to the balance pass), E0-E7 done    Updated: 2026-10-17
+Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S, phase P (PM moved to the balance pass), E0-E7 done; E8a (the yardstick) done    Updated: 2026-10-20
 
 The fine-tune pass for the **Terminal** link of `fighting.md` 4.5 ("penetration proper: material qualities, capped and
 uncapped shells, spaced armour, edge effects; shell quality by navy and year; diving shells and underwater hits;
@@ -1704,6 +1704,86 @@ squadrons, and changes `Matchup.cs` with it.
   move. The leftover rolls are tuned only within their sourced bands; penetration itself is vanilla Thompson
   and isn't tuned (P1a). The anchors are the damage *done* (holes, parts, crew, outcomes per
   hit), not who survived it: losses and sinkings above history are expected until damage control (the rules above).
+  - **The user's frame (2026-10-20):** the record matched roughly *at the ranges the battles were fought at*, holistically,
+    with no constant shifted to force a result; situations that never happened (close range above all) must act sensibly
+    too.
+  - **E8a: the yardstick and what it found (done 2026-10-20).**
+    - **The bench** `shipgen damage-history` (`DamageHistory.cs`, beside fire-history and dc-history): 21 cases, each a
+      ship of the record's kind hit by its record's shells at random over the case's minutes through the world's damage
+      system, at her speed, under her side's propellant (the scenarios': Britain 2, Germany 0.1), and **each hit from a
+      range and target angle drawn from the battle's bands** (5 × 5 aims), not one beam-on shot: the beam-on `hits`
+      bench had Lion on Seydlitz at 14 km through plate over 9″ and burst 1 in 4.8, the battle's spread of angles and
+      ranges gives 1 in 18-22 (record 1 in 13, a count of 13: 1 in 3 to 1 in 500 within it). It prints the shells on
+      the first plate over 9″ and of 6-9″ met from outside (Jutland's count), belt holes (whole, in pieces, over 9″),
+      killed and wounded a hit (flashes aside), turret-minutes lost (13), directors, steering, the most water, list,
+      how she ended and what set a magazine off; `--trace-run N` one run hit by hit. Cases: Jutland's count, Seydlitz,
+      Derfflinger, Lion, Tiger, Indefatigable, Warspite, Lion at Dogger Bank, Chester, Kent at the Falklands, thirty 6″
+      HE on a battleship (the user's 1.5%), a destroyer under 6″ HE, Orel and Mikasa at Tsushima, the Yalu (Inflexible
+      for Dingyuan); later cuts: Bismarck on 27 May, South Dakota (Colorado for her, the 8″ AP's record 0.4 s fuze
+      given by the case), Kirishima, Samar, a destroyer under ten and forty 5″.
+    - **Fixed on the way** (each physical, none a tuning):
+      1. **Holes at any height** (`HoleOverWaterlineM` gone). Plating holed more than 0.5 m over the waterline was never
+         recorded, so it could not flood when she settled, listed, trimmed or her bow wave reached it (the flooding
+         model already takes any height and the ram head). Every hull hole is kept now, and the flooding takes **each
+         hole class at its own height** (`ShipCondition.HoleM2`, `HoledUnder`: a cell's holes differ by up to its
+         deck's height, and one mean height lifted a waterline hole over the sea with a higher one); a class's height
+         counts its worked holes too.
+      2. **A nose-fuzed dud walks on** (`Terminal`): a nose fuze that failed on a plate the shell punched ended the
+         walk there, so the dud flew through every later plate to the path's end (a 6″ HE through a 51 mm armour deck
+         and out through a 12″ belt, wrecking its line and holing the hull below the waterline). Inert now, it gets
+         through what its body punches (`HePenCalibres`, as the nose fuze) and lies against the first plate it doesn't.
+      3. **A fuze fires in the plate before the shell breaks** (`Terminal.FiresIn`; bugs.md's contact-fuzed item): a
+         shell holing a plate under its limit, shattered on it, or broken just over it asks its fuze first; one that
+         fires within the plate (started there with next to no delay, or running out there) bursts on the face (or
+         against it). Mikasa's 12″ Shimose on Borodino at 5 km: `Holed` 42% → 2%, burst outside 0 → 40%. The matchup
+         already counts that band as kept out.
+    - **Before → after** (40 runs a case; the same bench on the code before this step): Orel's belt holed in pieces
+      1.08 → 0.10 a ship and lost 23 → 3% (record: none of four belt hits pierced); WWI capital ships' most water,
+      median (90th): Seydlitz 0 (1,766) → 50 (1,167) t, Derfflinger 2 (5,323) → 245 (8,883), Warspite 0 (804) → 84
+      (1,256), Lion at Dogger Bank 0 (3,296) → 151 (1,354); destroyer under ten 6″ HE lost 20 → 33%, under forty 5″ 45 →
+      68% (capsized); Bismarck 20 → 30-48% lost by 90 min (run to run); Kirishima water 8,522 → 13,081 t. Killed and
+      wounded a hit within a few percent everywhere. Standing benches: `hits` holes a hit 0.035 → 0.79 m² (Lion on
+      Seydlitz), water after 30 min 219 → 214 t; matchup identical; squadrons 40 min no ship lost either way (hash
+      16C61BC15F9DE6FE → C12D14A047D3AC1C); flotilla S51 capsized either way (31A82DA2541E4B16 → 8F9CE69848549E83);
+      tsushima --play 2 seeds Russia lost 6.5 → 1.5 (6 seeds after: 2.3, all small ships), Japan 5 → 4 (her torpedo
+      boats, 3,112 t; the record 3): the Russian belts hold now (open item 5); dc-history within its wanted bands (Lützow's water at 8 h 8,010 → 16,555 t, lost 35 →
+      40%).
+    - **Where it stands** (after; record in brackets):
+      - **Jutland's count:** through plate over 9″ and burst 1 in 18-22 at the battle's angles (1 in 13); on 6-9″
+        through and burst 22%, holed in pieces or burst in it 41% (3 clean and 6 burst while penetrating of 17).
+        Seydlitz 1 in 16.5, Derfflinger 1 in 8.
+      - **Turret-minutes per 100 heavy hits:** 150-530 by the case's length (13's 316 over 2 h).
+      - **Killed and wounded a hit, flashes aside:** German ships under British shells 1.1-1.7 / 2.3-3.2, British under
+        German 0.4-1.1 / 1.3-3.4 (G1 1.94 / 3.00, its ships 0-4.5); Kent 0.10 (G6a 0.17); Chester 0.38 / 0.55 (G6b 2.0
+        / 2.4: see the open items); Orel 0.32 (G2a 0.58), Mikasa 0.71 (G2b 1.69); the Yalu 0.04 (Dingyuan 0.07);
+        destroyers 1.5-3.0 / 3.8-7.2 (G7 2.2 / 4.5); South Dakota 0.77 (1.5).
+      - **Belts:** the 1894-1905 belts hold (Orel 0.1 holed in pieces in 53 hits, Yalu 0 in 200); Bismarck's main belt
+        4-5 holes a ship in 380 hits at 3-15 km (~3).
+      - **Magazines:** thirty 6″ HE on a battleship 3 in 200 (the user's 1.5%); British battlecruisers under German
+        heavy shells 0.6-3% a hit by the case (the record about 5%: 3 in ~58); German ships 0-0.3% a hit (none in the
+        record).
+      - **Water:** the capital ships' medians sit low (tens to hundreds of tonnes over hours), the record's ships
+        (Derfflinger ~3,000 t, Lion at Dogger Bank ~3,000) at our 70th-90th percentile: the holes now flood as they
+        should; what's left is open item 2.
+    - **Open, for the user** (not tuned here):
+      1. **Medium shells set magazines off through "turrets" that weren't** (Chester 13% of ships, South Dakota's
+         stand-in 23%, Bismarck 18-25%; record none): shipgen makes every main-battery mount of 150 mm or more a
+         gunhouse with a barbette (`Geometry.cs`, a calibre switch), so a WWI light cruiser's open-backed 6″ get a
+         turret's flash path and their crews sit inside steel (Chester's killed a hit a fifth of the record). A mount
+         kind as design data (shield or gunhouse) is shipgen's; noted in bugs.md.
+      2. **Water per heavy hit low in the median.** Not in the sim: the sea's waves over holes near the waterline (the
+         North Sea at Jutland), a captain slowing for holes forward (the safe speed only guards bulkheads, DC6), the
+         near zone holing the burst space's *outside* faces (E5 holes only its inner boundaries; the hull's own plating
+         gets the contact hole when the burst is within 2 m of where the shell came in).
+      3. **Small destroyers capsize more** with every hole kept: a 6″ lyddite burst in a V-class's small compartment
+         ruptures a whole cell side (9-15 m², E5's `RupturedShare` 0.25 of the face); E5's open question 7 leaves the
+         rupture capacity to the destroyer benches (0.04-0.08 MPa/mm).
+      4. **German turrets burn out without the magazine** (Seydlitz at Dogger Bank, Derfflinger's C and D): the sim
+         has a flash only as a magazine loss; the magazines session's (the venting race, the flash chain).
+      5. **Tsushima's Russian battleships no longer go down in the play** (Russia 2.3 ships lost over 6 seeds, all
+         small). Per hit it's the record (Orel "only moderately damaged", no belt pierced); what sank the Borodinos was
+         their overload (coal past a full load, the main belt under water, holed upper sides near the sea), fire, and
+         Oslyabya's unarmoured bow. A scenario's `fuel` stops at a full load; an overload is the scenario's to carry.
 
 ## What stays out
 
