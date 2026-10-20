@@ -1144,14 +1144,8 @@ public sealed record SimSettings
     /// <list type="bullet">
     /// <item>StationLightChance: a burst, its spall or its gas at a station lights the charges there (the old turret
     /// roll's 0.25 [EST], fitted at V8);</item>
-    /// <item>StationDoorOpen: the door below the station (the gunhouse's floor and cages, the trunk's lower doors, the
-    /// scuttle to the magazine, a casemate's hoist and passage) stands open this share of the time, a roll a door for the
-    /// flame's way down or up [EST, 10 §3.3: in drill each door opens once a cycle as the cage passes, 5-15% of the time;
-    /// flash discipline (V5) moves it: safe never, rate first always]; a casemate's is its hoist and its passage's magazine
-    /// door in series, both open well under 5% (10 §3.3; Kent at the Falklands: down the hoist, stopped at the shut
-    /// magazine door, §5) [EST];</item>
-    /// <item>StationCharges: the charges lying at a station, a gun [SRC: Brown, about 8 between the magazine and the guns
-    /// of a twin turret in action, ~2 a station].</item>
+    /// <item>the doors and the charges lying at the stations are the side's flash discipline's
+    /// (<see cref="FlashDisciplines"/>, V5).</item>
     /// </list></summary>
     public double[] StationLightChance { get; init; } = [0.25, 0.25, 0.25, 0.25];
 
@@ -1173,9 +1167,14 @@ public sealed record SimSettings
     /// a 4 m² tear; the armoured deck over it, 700, 10 m²; its sides, 1,000, 60 m²; its bottom, 2,000, 60 m²]. An
     /// approved exception to the blast's own rules (the user, 2026-10-20): on a ship's own plating they spread the gas
     /// through her thin bulkheads and never load the girder.</item>
-    /// <item>The tiers (07 §6.3; V4 puts the hull girder in their place): the share of the girder lost at the magazine,
-    /// MagazineD [the deck over it, its sides, its bottom] [EST, 10 §6], severs her at MagazineSeveredD; less and it's a
-    /// local breach; a gunhouse vented and nothing more, burned out; else contained.</item>
+    /// <item>The hull girder at the magazine (V4; 07 §3.1): the share of its section lost there, d, by MagazineD [the deck
+    /// over it, its sides, its bottom] [EST, 10 §6]; it breaks when the moment on it passes what's left of its capacity,
+    /// K·(1 − d) ≥ sin(π·x/L)·(still + wave·sea + whip), MagazineGirder [K, still water, the waves in a seaway, the
+    /// explosion's whipping] as shares of the design moment [EST, fitted to 07 §3.1: amidships in calm water past d ≈
+    /// 0.75, in a seaway past ≈ 0.5, near the ends hardly ever]; the sea is the wind's share of MagazineSeawayMs (a
+    /// moderate gale) [EST]. A magazine within MagazineEndShare of the length from an end that loses MagazineEndD of
+    /// the section without breaking her takes that end off instead (New Orleans: the bow lost, the ship afloat).
+    /// Less, it's a local breach; a gunhouse vented and nothing more, burned out; else contained.</item>
     /// <item>The steps: MagazineRaceMs [the first 5 s, after], up to MagazineRaceS.</item>
     /// </list></summary>
     public double MagazineHeatKeep { get; init; } = 0.5;
@@ -1190,11 +1189,34 @@ public sealed record SimSettings
     public double[] MagazineGiveKPa { get; init; } = [250, 700, 1000, 2000];
     public double[] MagazineGiveM2 { get; init; } = [4, 10, 60, 60];
     public double[] MagazineD { get; init; } = [0.35, 0.45, 0.2];
-    public double MagazineSeveredD { get; init; } = 0.8;
+    public double[] MagazineGirder { get; init; } = [2.5, 0.35, 0.6, 0.35];
+    public double MagazineSeawayMs { get; init; } = 15;
+    public double MagazineEndShare { get; init; } = 0.12;
+    public double MagazineEndD { get; init; } = 0.8;
     public double[] MagazineRaceMs { get; init; } = [2, 20];
     public double MagazineRaceS { get; init; } = 180;
-    public double[] StationDoorOpen { get; init; } = [0.1, 0.1, 0.02, 0.1];
-    public double StationCharges { get; init; } = 1;
+    /// <summary>How a side's crews handle charges (docs/battle/magazines.md V5, decision 2; research/simulation/
+    /// damage-research/10 §3): a doctrine row names one (<see cref="DamageControlDoctrine.Flash"/>).
+    /// <list type="bullet">
+    /// <item><b>safe:</b> interlocked doors and revolving scuttles, never open through (the RN from 1917, KGV's, the USN's
+    /// later); half a charge a gun at a station; the hoists slower for their interlocks (KGV, Prince of Wales).</item>
+    /// <item><b>drill:</b> each door opens as the cage passes, 5-15% of the time (a casemate's hoist and its passage's
+    /// magazine door in series, well under 5%: Kent, §5); about a charge a gun at each station [SRC: Brown, 8 in a twin
+    /// turret's train in action].</item>
+    /// <item><b>rate first:</b> doors propped or removed (the BCF, Seydlitz's connecting door), charges stacked at the
+    /// stations, the Clarkson cases' lids off in the magazine (10 §6.2's BCF anchor; whether the lids came off in the
+    /// magazine or only in the handing room is 10 §8's open question, Friedman against Brown) [EST]; the hoists hardly
+    /// wait.</item>
+    /// </list>
+    /// DoorOpen by the station above the door [gunhouse, working chamber, casemate, handling room]; StationCharges a gun;
+    /// LidsOff the share of a magazine's stow lying open; HoistShare the hoists' sustained reload over the drill's
+    /// (fire-control F6d's <c>DesignerPlaceholders.HoistShare</c>, 1.5, is drill's).</summary>
+    public FlashDiscipline[] FlashDisciplines { get; init; } =
+    [
+        new() { Name = "safe", DoorOpen = [0, 0, 0, 0], StationCharges = 0.5, LidsOff = 0, HoistShare = 1.7 },
+        new() { Name = "drill", DoorOpen = [0.1, 0.1, 0.02, 0.1], StationCharges = 1, LidsOff = 0, HoistShare = 1.5 },
+        new() { Name = "rate first", DoorOpen = [1, 1, 0.5, 1], StationCharges = 2, LidsOff = 1, HoistShare = 1.0 },
+    ];
     public int MagazineLossMs { get; init; } = 60_000;
 
     /// <summary>Casualties (docs/battle/shells-armour-damage.md E6; damage/16): men, not area. Each group of men in reach
@@ -1670,6 +1692,9 @@ public sealed record SimSettings
             MainBreak = 0.20, HoseCut = 0.35, Looped = false, RestoreS = 900, PumpFloor = 0, BreathingSets = false, TurnTo = 2, FloodMagazineS = 300 },
         new() { Name = "1916", HoldSpeedS = 900, CounterfloodDeg = 2, CounterfloodTrimDeg = 1, Skill = 0.85, WatchS = 180, HoseLpm = 420, Nozzle = "jet", MusterS = 240, ManLpm = 84, PartyShare = 0.12, PartyMen = 16,
             MainBreak = 0.10, HoseCut = 0.15, Looped = false, RestoreS = 900, PumpFloor = 0, BreathingSets = false, TurnTo = 2, FloodMagazineS = 180 },
+        new() { Name = "1916 BCF", HoldSpeedS = 900, CounterfloodDeg = 2, CounterfloodTrimDeg = 1, Skill = 0.85, WatchS = 180, HoseLpm = 420, Nozzle = "jet", MusterS = 240, ManLpm = 84,
+            PartyShare = 0.12, PartyMen = 16, MainBreak = 0.10, HoseCut = 0.15, Looped = false, RestoreS = 900, PumpFloor = 0, BreathingSets = false, TurnTo = 2,
+            FloodMagazineS = 180, Flash = "rate first" },
         new() { Name = "1942", HoldSpeedS = 600, CounterfloodDeg = 1, CounterfloodTrimDeg = 1, Skill = 0.9, WatchS = 120, HoseLpm = 250, Nozzle = "all-purpose", MusterS = 180, ManLpm = 62.5, PartyShare = 0.12, PartyMen = 16,
             MainBreak = 0.25, HoseCut = 0.20, Looped = false, RestoreS = 480, PumpFloor = 0, BreathingSets = false, TurnTo = 2, FloodMagazineS = 180 },
         new() { Name = "1944", HoldSpeedS = 600, CounterfloodDeg = 1, CounterfloodTrimDeg = 1, Skill = 1.0, WatchS = 60, HoseLpm = 360, Nozzle = "fog", MusterS = 120, ManLpm = 90, PartyShare = 0.12, PartyMen = 16,
@@ -1932,6 +1957,9 @@ public readonly record struct DamageControlDoctrine
     /// <summary>How long her captain holds his speed once damage control asks for less, s (DC6, decision 2; -1: he never
     /// slows for it) [EST: the German navy slowed at once (Seydlitz, Lützow), the RN held the line longer].</summary>
     public double HoldSpeedS { get; init; }
+    /// <summary>Its flash discipline, a name of <see cref="SimSettings.FlashDisciplines"/> (docs/battle/magazines.md V5;
+    /// none: drill).</summary>
+    public string? Flash { get; init; }
 }
 
 /// <summary>A ship's orders before action for fire (docs/battle/fire.md B1; <see cref="SimSettings.Readiness"/>).</summary>
@@ -1964,3 +1992,15 @@ public sealed record GunneryCrew
     ReadCommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true)]
 [JsonSerializable(typeof(SimSettings))]
 internal partial class SimSettingsJson : JsonSerializerContext;
+
+/// <summary>A flash discipline (<see cref="SimSettings.FlashDisciplines"/>; docs/battle/magazines.md V5): the share of the
+/// time each door of an ammunition train stands open, by the station above it; the charges lying at a station, a gun; the
+/// share of a magazine's stow with its lids off; the hoists' sustained reload over the drill reload.</summary>
+public readonly record struct FlashDiscipline
+{
+    public string Name { get; init; }
+    public double[] DoorOpen { get; init; }
+    public double StationCharges { get; init; }
+    public double LidsOff { get; init; }
+    public double HoistShare { get; init; }
+}

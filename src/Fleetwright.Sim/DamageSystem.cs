@@ -94,6 +94,8 @@ public sealed class DamageSystem : IWorldSystem
     readonly double[] fuel = new double[256];
     readonly int[] readiness = new int[256], firefighting = new int[256];
     readonly int readinessDefault, firefightingDefault;
+    /// <summary>Each doctrine's flash discipline (docs/battle/magazines.md V5), by the doctrine's index.</summary>
+    readonly FlashDiscipline[] flashOf;
     double[] bearings = new double[16];
     readonly Blast[] blasts;
     int blastNext, blastCount;
@@ -113,6 +115,7 @@ public sealed class DamageSystem : IWorldSystem
         readinessDefault = Math.Max(0, Array.FindIndex(settings.Readiness, x => x.Name == settings.ReadinessDefault));
         Array.Fill(readiness, readinessDefault);
         firefightingDefault = Math.Max(0, Array.FindIndex(settings.DamageControl, x => x.Name == settings.DamageControlDefault));
+        flashOf = [.. settings.DamageControl.Select(d => Magazines.Of(settings, d.Name))];
         Array.Fill(firefighting, firefightingDefault);
         blasts = new Blast[Math.Max(settings.BlastCapacity, 4)];
         struck = new Struck[Math.Max(settings.SplashCapacity / 4, 16)];
@@ -158,6 +161,9 @@ public sealed class DamageSystem : IWorldSystem
 
     public DamageControlDoctrine DamageControlOf(int side) => settings.DamageControl[firefighting[side & 255]];
 
+    /// <summary>A side's flash discipline, by its doctrine (docs/battle/magazines.md V5): the gunnery reads its hoists'.</summary>
+    public FlashDiscipline FlashOf(int side) => flashOf[firefighting[side & 255]];
+
     /// <summary>A ship's orders to hold her speed whatever damage control asks (docs/battle/damage-control.md DC6, decision
     /// 2: the player's override, the benches').</summary>
     public static Command HoldSpeed(int entity, bool on) => new(Id, (ushort)DamageCommand.HoldSpeed, entity, A: on ? 1 : 0);
@@ -166,7 +172,7 @@ public sealed class DamageSystem : IWorldSystem
     void Ready(int slot, ShipCondition k)
     {
         int side = ships.Store[slot].Side & 255;
-        (k.Readiness, k.DamageControl) = (settings.Readiness[readiness[side]], settings.DamageControl[firefighting[side]]);
+        (k.Readiness, k.DamageControl, k.Flash) = (settings.Readiness[readiness[side]], settings.DamageControl[firefighting[side]], flashOf[firefighting[side]]);
         if (!k.DoorsDrawn)
         {
             // her watertight doors left open, by her orders (docs/battle/damage-control.md DC1)
@@ -537,7 +543,7 @@ public sealed class DamageSystem : IWorldSystem
         var race = default(RaceResult);
         if (e.Magazine && k.Status == ShipStatus.Afloat)
         {
-            race = Magazines.SetOff(cls, k, e.MagazineRoom, store.Combat.Mounts(slot), settings, now, ref rng);
+            race = Magazines.SetOff(cls, k, e.MagazineRoom, store.Combat.Mounts(slot), settings, now, ref rng, Sea(world, slot));
             (e.Killed, e.Wounded, e.Fire) = (e.Killed + race.Killed, e.Wounded + race.Wounded, e.Fire || !race.Lost);
         }
         LastRace = race;
@@ -771,6 +777,10 @@ public sealed class DamageSystem : IWorldSystem
         struckCount = Math.Min(struckCount + 1, struck.Length);
     }
 
+    /// <summary>The sea a ship's girder takes at a magazine's set-off (docs/battle/magazines.md V4): the wind where she is,
+    /// as a share of a seaway's (<see cref="SimSettings.MagazineSeawayMs"/>).</summary>
+    double Sea(World world, int slot) => world.Weather.At(ships.Store[slot].Position, world.Time).WindMs / settings.MagazineSeawayMs;
+
     /// <summary>A magazine that took the ship (its race severed her, or the dev's): its record for the screens
     /// (<see cref="Blast"/>: the tier and the propellant burned by the girder's failure, the fireball's), and the ship
     /// lost.</summary>
@@ -862,7 +872,7 @@ public sealed class DamageSystem : IWorldSystem
         if (fs.Magazine)
         {
             // fire's heat set it off (fire B2): the venting race decides (docs/battle/magazines.md V3)
-            var race = Magazines.SetOff(cls, k, fs.MagazineRoom, ships.Store.Combat.Mounts(slot), settings, now, ref rng);
+            var race = Magazines.SetOff(cls, k, fs.MagazineRoom, ships.Store.Combat.Mounts(slot), settings, now, ref rng, Sea(world, slot));
             if (race.Lost)
             {
                 Blew(world, slot, k, fs.MagazineRoom, BlastCause.Fire, default, race);

@@ -179,6 +179,9 @@ public sealed class ShipCondition
     /// her gun crews have turned to, when each section's fire main was cut (world ms, 0: whole), when she was last hit and
     /// when her parties are next sent.</summary>
     public DamageControlDoctrine DamageControl;
+    /// <summary>Her side's flash discipline (docs/battle/magazines.md V5), by its doctrine; unset until her side's orders
+    /// are read (<see cref="Magazines.Discipline"/> falls back to the default doctrine's).</summary>
+    public FlashDiscipline Flash;
     public const int MaxParties = 16;
     public readonly RepairParty[] Parties = new RepairParty[MaxParties];
     public int PartyCount;

@@ -28,6 +28,10 @@ public struct RaceResult
     public int Magazines, Vented, Lifted, Killed, Wounded;
     /// <summary>What gave, as flags: 1 the bulkhead to the next space, 2 the deck over it, 4 the sides, 8 the bottom.</summary>
     public int Gave;
+    /// <summary>The magazine's place along her, 0 the stern to 1 the bow; the moment on the girder there over what's left
+    /// of its capacity (1 or more: broken); an end magazine that took her end off (forward or aft of it flooding).</summary>
+    public double Station, GirderLoad;
+    public bool EndLost;
     public readonly bool Lost => Tier >= MagazineTier.Severed;
 }
 
@@ -63,7 +67,7 @@ public static partial class Magazines
     /// barbettes destroyed and burning, the trains' men flashed (a contained one, the magazine's), the holes to the sea
     /// where its sides or bottom gave. Allocation-free.</summary>
     public static RaceResult SetOff(ShipClass c, ShipCondition k, int room, ReadOnlySpan<MountState> mounts, SimSettings s, long now,
-        ref RandomStream r)
+        ref RandomStream r, double sea = 0)
     {
         var res = new RaceResult { VentS = double.NaN, StructureS = double.NaN };
         if (room < 0)
@@ -87,7 +91,8 @@ public static partial class Magazines
             return res with { Tier = MagazineTier.Severed };   // nothing known to burn: as before
         double nOpen = 0, nCased = 0, massSum = 0, v = 0, a = 0;
         int id = ++k.BlastId;
-        Light(c, k, room, mounts, fed, lit, ref lits, ref nOpen, ref nCased, ref massSum, s, id, ref v, ref a);
+        var flash = Discipline(k, s);
+        Light(c, k, room, mounts, fed, lit, ref lits, ref nOpen, ref nCased, ref massSum, flash, s, id, ref v, ref a);
         double flooded = Flooded(c, k, room);
         double ck = massSum / Math.Max(nOpen + nCased, 1);   // a charge's kg, mass-weighted
         res.Charges = nOpen + nCased;
@@ -167,7 +172,7 @@ public static partial class Magazines
                 {
                     // another magazine across it lights too: its charges join the stow, those lying open with the rest
                     double o0 = nOpen, c0 = nCased;
-                    Neighbours(c, k, mounts, fed, lit, ref lits, ref nOpen, ref nCased, ref massSum, s, id, ref v, ref a);
+                    Neighbours(c, k, mounts, fed, lit, ref lits, ref nOpen, ref nCased, ref massSum, flash, s, id, ref v, ref a);
                     ck = massSum / Math.Max(nOpen + nCased, 1);
                     res.Charges = nOpen + nCased;
                     if (nOpen - o0 < 1 && nCased - c0 >= 1)
@@ -190,7 +195,8 @@ public static partial class Magazines
         res.Gave = gave;
         res.VentM2 = a;
         res.D = ((gave & 2) != 0 ? s.MagazineD[0] : 0) + ((gave & 4) != 0 ? s.MagazineD[1] : 0) + ((gave & 8) != 0 ? s.MagazineD[2] : 0);
-        res.Tier = res.D >= s.MagazineSeveredD ? (lits > 1 ? MagazineTier.TwoGroups : MagazineTier.Severed)
+        Girder(c, lit[..lits], res.D, sea, s, ref res);
+        res.Tier = res.GirderLoad >= 1 ? (lits > 1 ? MagazineTier.TwoGroups : MagazineTier.Severed)
             : res.D > 0 ? MagazineTier.Breached : res.Vented > 0 ? MagazineTier.BurnedOut : MagazineTier.Contained;
         if (double.IsNaN(res.StructureS))
             res.FastKg = burned;
@@ -198,11 +204,32 @@ public static partial class Magazines
         return res;
     }
 
+    /// <summary>The hull girder at the magazines alight (V4; 07 §3.1): their place along her (the hull's cells' length,
+    /// the stern 0), the moment there over what's left of the section's capacity; an end magazine that lost
+    /// <see cref="SimSettings.MagazineEndD"/> of it without breaking her takes her end off.</summary>
+    static void Girder(ShipClass c, ReadOnlySpan<int> lit, double d, double sea, SimSettings s, ref RaceResult res)
+    {
+        double x0 = double.PositiveInfinity, x1 = double.NegativeInfinity, mx = 0, mm = 0;
+        foreach (ref readonly var cell in c.Cells)
+            (x0, x1) = (Math.Min(x0, cell.Box.X0), Math.Max(x1, cell.Box.X1));
+        foreach (int rm in lit)
+        {
+            double t = Math.Max(c.Rooms[rm].Tonnes, 1);
+            (mx, mm) = (mx + t * (c.Rooms[rm].X0 + c.Rooms[rm].X1) / 2, mm + t);
+        }
+        double station = x1 > x0 ? Math.Clamp((mx / mm - x0) / (x1 - x0), 0, 1) : 0.5;
+        var g = s.MagazineGirder;
+        double moment = Math.Sin(Math.PI * station) * (g[1] + g[2] * Math.Clamp(sea, 0, 1.5) + g[3]);
+        res.Station = station;
+        res.GirderLoad = d >= 1 ? double.PositiveInfinity : moment / (g[0] * (1 - d));
+        res.EndLost = res.GirderLoad < 1 && d >= s.MagazineEndD && Math.Min(station, 1 - station) <= s.MagazineEndShare;
+    }
+
     /// <summary>A magazine alight: its spaces' gas and vents join the race's, and the charges of the mounts it feeds join
-    /// the stow (their rounds left; those lying open in the scuttles, a station's charges a gun, or all of them in bags
-    /// alone).</summary>
+    /// the stow (their rounds left; those lying open: in the scuttles, the discipline's charges a station a gun, and the
+    /// share with their lids off; all of them in bags alone).</summary>
     static void Light(ShipClass c, ShipCondition k, int room, ReadOnlySpan<MountState> mounts, Span<bool> fed, Span<int> lit, ref int lits,
-        ref double nOpen, ref double nCased, ref double massSum, SimSettings s, int id, ref double v, ref double a)
+        ref double nOpen, ref double nCased, ref double massSum, in FlashDiscipline flash, SimSettings s, int id, ref double v, ref double a)
     {
         lit[lits++] = room;
         foreach (int cell in c.Links(c.Rooms[room].Cells))
@@ -216,7 +243,8 @@ public static partial class Magazines
             var ch = c.Charges[mr.Type];
             int left = m < mounts.Length ? mounts[m].Rounds : mr.Rounds;
             double rounds = left == int.MaxValue ? Math.Max(mr.Rounds, 0) : Math.Max(left, 0);
-            double open = ch.Packaging == Packaging.Bag ? rounds : Math.Min(rounds, s.StationCharges * c.TurretTypes[mr.Type].Barrels);
+            double open = ch.Packaging == Packaging.Bag ? rounds
+                : Math.Min(rounds, flash.StationCharges * c.TurretTypes[mr.Type].Barrels + flash.LidsOff * rounds);
             (nOpen, nCased, massSum) = (nOpen + open, nCased + rounds - open, massSum + rounds * ch.MassKg);
         }
     }
@@ -233,7 +261,7 @@ public static partial class Magazines
 
     /// <summary>The magazines across the bulkheads of those alight light when the bulkhead gives.</summary>
     static void Neighbours(ShipClass c, ShipCondition k, ReadOnlySpan<MountState> mounts, Span<bool> fed, Span<int> lit, ref int lits,
-        ref double nOpen, ref double nCased, ref double massSum, SimSettings s, int id, ref double v, ref double a)
+        ref double nOpen, ref double nCased, ref double massSum, in FlashDiscipline flash, SimSettings s, int id, ref double v, ref double a)
     {
         for (int l = 0, l0 = lits; l < l0; l++)
             foreach (int cell in c.Links(c.Rooms[lit[l]].Cells))
@@ -243,7 +271,7 @@ public static partial class Magazines
                         continue;
                     foreach (int rm in c.RoomsIn(e.Cell))
                         if (c.Rooms[rm].Kind == RoomKind.Magazine && lits < lit.Length && lit[..lits].IndexOf(rm) < 0)
-                            Light(c, k, rm, mounts, fed, lit, ref lits, ref nOpen, ref nCased, ref massSum, s, id, ref v, ref a);
+                            Light(c, k, rm, mounts, fed, lit, ref lits, ref nOpen, ref nCased, ref massSum, flash, s, id, ref v, ref a);
                 }
     }
 
@@ -357,6 +385,20 @@ public static partial class Magazines
             if (mr.Barbette >= 0)
                 k.Worsen(mr.Barbette, PartState.Destroyed);
             Fires.Ignite(c, k, c.FireOfPart(mr.Component), s.ReadyAmmoSeatMW, s);
+        }
+        // an end magazine took her end off: everything beyond it toward that end open to the sea at its cut (New Orleans)
+        if (res.EndLost)
+        {
+            ref readonly var mag = ref c.Rooms[room];
+            bool bow = res.Station > 0.5;
+            for (int cell = 0; cell < c.Cells.Length; cell++)
+            {
+                var b = c.Cells[cell].Box;
+                if (bow ? b.X0 < mag.X0 : b.X1 > mag.X1)
+                    continue;
+                double xm = (b.X0 + b.X1) / 2;
+                k.Hole(cell, s.RupturedShare * (b.Y1 - b.Y0) * (b.Top - b.Base), new P3(xm, (b.Y0 + b.Y1) / 2, b.Base));
+            }
         }
         // the sea in where its sides or bottom gave, at the magazine's middle
         if (!res.Lost && (gave & 12) != 0 && c.Links(c.Rooms[room].Cells) is { Length: > 0 } cells)

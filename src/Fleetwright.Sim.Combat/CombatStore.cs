@@ -242,14 +242,15 @@ public sealed class CombatStore
     /// again, and its rounds go down. The next rounds come from its ready-use rounds while it has them, at the reload (the
     /// drill's times the crew's battle factor, <paramref name="loadFactor"/>); after, as the hoists bring them, one a gun
     /// every <see cref="MountRow.SupplyS"/> (fire-control.md F6d), the ready-use rounds filling back at that rate.</summary>
-    public void Fired(int slot, ShipClass cls, int mount, int load, int guns, long ms, double loadFactor = 1)
+    public void Fired(int slot, ShipClass cls, int mount, int load, int guns, long ms, double loadFactor = 1, double supplyFactor = 1)
     {
         ref var s = ref mounts[slot]![mount];
         ref readonly var row = ref cls.Mounts[mount];
         double reload = row.ReloadS * loadFactor;
         if (row.ReadyRounds > 0 && row.SupplyS > 0)
         {
-            double hoist = cls.TurretTypes[row.Type].Barrels / row.SupplyS;   // rounds a second
+            // rounds a second; the side's flash discipline hurries or slows the hoists (docs/battle/magazines.md V5)
+            double hoist = cls.TurretTypes[row.Type].Barrels / (row.SupplyS * supplyFactor);
             double ready = Math.Min(row.ReadyRounds, s.Ready + hoist * Math.Max(ms - s.ReadyMs, 0) / 1000.0), wait = 0;
             if (ready >= guns)
                 ready -= guns;

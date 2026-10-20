@@ -1127,7 +1127,7 @@ public sealed class GunnerySystem : IWorldSystem
             }
             if (away > 0)
                 shells.Fired(world, fc.Shooter, ship.ClassIndex, mounts[j], salvo, away, muzzle, first, firstEl);
-            store.Combat.Fired(slot, cls, mounts[j], fireLoad[j], barrels, now, crew.Load);
+            store.Combat.Fired(slot, cls, mounts[j], fireLoad[j], barrels, now, crew.Load, world.Damage.FlashOf(ship.Side).HoistShare / DesignerPlaceholders.HoistShare);
         }
         sv.Left = sv.Shells;
         if (sv.Shells == 0)

@@ -1,5 +1,5 @@
 # Plan: magazines (a 4.5 deepening)
-Status: **every question decided** (the user, 2026-10-20: "Decided" below); research arrived (10); V0-V3 done 2026-10-20
+Status: **every question decided** (the user, 2026-10-20: "Decided" below); research arrived (10); V0-V5 done 2026-10-20
 Updated: 2026-10-20
 
 The fine-tune pass for magazines: how a flash gets to the charges, what happens once they burn, and what the ship
@@ -460,10 +460,77 @@ follows the dependencies: the fake turrets first, because the chain means nothin
       reach a magazine. The few that do now burn out: Bismarck's four (brass), Orel's one contained. Ships lost to a
       magazine stay near none until V5's rate first props the BCF's doors and opens their lids.
 - **V4. The hull at the magazine.** `d`, the girder check with the sea, the end case, `BrokeInTwo`.
+  - **Done 2026-10-20.** What it came to:
+    - **The check** (`Magazines.Girder`; 07 §3.1): the girder breaks when the moment at the magazine passes what's
+      left of its capacity, K·(1 − d) ≤ sin(π·x/L)·(still + wave·sea + whip).
+      - `MagazineGirder` [2.5, 0.35, 0.6, 0.35] [EST] is fitted to 07's bands: amidships in calm water it breaks past
+        d ≈ 0.75, in a seaway past ≈ 0.5; at a quarter of the length past ≈ 0.84 calm and ≈ 0.69 in a seaway; near
+        the ends hardly ever.
+      - d is V3's (the deck 0.35, the sides 0.45, the bottom 0.2).
+      - The station is the magazines' tonnage-weighted middle along the hull's cells.
+      - The sea is the wind at the ship over `MagazineSeawayMs`, 15 m/s, a moderate gale [EST].
+      - `RaceResult` carries `Station`, `GirderLoad` (1 or more: broken) and `EndLost`.
+    - **The end case:** a magazine within `MagazineEndShare` (0.12) of an end that loses `MagazineEndD` (0.8) of the
+      section without breaking her takes the end off. Every space beyond it toward that end is opened to the sea at
+      its cut (a quarter of its section), and the flooding decides whether she lives (New Orleans). Gangut's Y with
+      bags is the case: her stern open, her girder at 0.42 of what's left.
+    - **The loss stays `LossKind.Magazine`**, not `BrokeInTwo`: it's the look's event, and the record's tier says
+      severed. The pieces apart are the sinking pass's (07 §4).
+    - **Lion with bags alone:**
+
+      | Magazine | Station | Calm water | A seaway |
+      |---|---|---|---|
+      | Q (midships) | 0.53 | severed (load 1.39) | severed (2.59) |
+      | A, B (forward) | 0.79-0.81 | breached (0.80-0.84), her deck and sides gone | two groups (1.49-1.57) |
+      | Y (aft) | 0.15 | breached (0.63) | two groups (1.17) |
+
+      A breached magazine leaves about 30 m² of side and the deck over it open, so she founders fast unless her
+      subdivision holds.
+    - **Bench:** `shipgen magazine --race --sea S` gives each magazine's station, the girder's load and an end lost.
+    - **Tests:** `MagazineRaceTests` covers amidships breaking in calm water, the quarter breaking only in a seaway,
+      Gangut's stern lost with her afloat, and the neighbour magazine's two groups in a seaway.
+    - **For V8:** Jutland's light airs (about 4 m/s, 0.27 of a seaway) put an aft magazine at 0.2 of the length right
+      on the edge (load ≈ 1.0). The battlecruisers' record, three broken in about 58 hits, is the check.
 - **V5. Flash discipline.**
   - A doctrine row by period (decision 2), picked by the scenario with the side's doctrine, and the supply.
   - Jutland's British side on drill. The BCF's rate first would need a doctrine of its own for that squadron, which is
     for the scenario to choose.
+  - **Done 2026-10-20.** What it came to:
+    - **`FlashDisciplines`** (settings), each a row [EST, 10 §3]:
+
+      | Discipline | Doors open (gunhouse, chamber, casemate, handling) | Charges a station, a gun | Lids off | Hoists |
+      |---|---|---|---|---|
+      | safe | 0, 0, 0, 0 | 0.5 | 0 | ×1.7 |
+      | drill | 0.1, 0.1, 0.02, 0.1 | 1 | 0 | ×1.5 |
+      | rate first | 1, 1, 0.5, 1 | 2 | 1 | ×1.0 |
+
+      Rate first's lids are off in the magazine itself, as 10 §6.2's BCF anchor has it. 10 §8 leaves open whether
+      they came off there or only in the handing room (Friedman against Brown); V8 or a researcher may move it.
+    - **A doctrine row names its discipline** (`DamageControlDoctrine.Flash`): 1890-1916 drill, 1942 and 1944 safe.
+      The new **"1916 BCF"** row is 1916's with rate first, a side's to choose: a scenario's `"damage_control"`, or the
+      benches' battlecruiser cases (Indefatigable, Tiger). Jutland's British side stays on 1916. Per-squadron doctrine
+      is the scenarios' later step.
+    - **Each ship carries it** (`ShipCondition.Flash`, read with her side's orders). `Magazines.Discipline` falls back
+      to the default doctrine's for a ship whose side hasn't been read: a bench's, a test's.
+      - The train's doors and its stations' charges read it, and so does the race: its open charges are those in the
+        scuttles plus the lids-off share.
+      - The hoists' sustained supply goes as its HoistShare over drill's 1.5: `CombatStore.Fired`'s supply factor,
+        from `DamageSystem.FlashOf(side)` in the gunnery.
+    - **Lion at Jutland's sea** (0.27 of a seaway), one magazine set off:
+      - drill or safe: every magazine burns out, 340-510 kPa;
+      - rate first: about 1,000 kPa. Q severs her (load 1.72), the forward group breaks her as two groups (1.04-1.15),
+        and A alone (0.99) and the aft group (0.78) breach her.
+    - **Rate of fire:** a Lion turret's 30 salvos take 1,188 s on rate first against 1,485 s on drill (the hoists past
+      the ready rounds).
+    - **Bench:** `shipgen magazine --doctrine NAME` for both `--runs` and `--race`.
+    - **Tests:** rate first severs Lion where drill burns out, its flame from the gunhouse always reaches the
+      magazine, and its hoists are faster.
+    - **The numbers** (`damage-history`, 40 runs):
+      - Tiger on the BCF's doctrine loses 8% of runs to a magazine (one breached, one severed, two as two groups;
+        record: she lived);
+      - Indefatigable's case still loses none in 40 × 5 hits (record: 3 battlecruisers in ~58 hits);
+      - the rest as V3.
+      How often a hit lights a turret's charges (`StationLightChance`) is V8's to fit.
 - **V6. One set of valves.**
   - The flooding moved and ordered as above.
   - Sprinklers as design data (a fit by period, in the outfit block).

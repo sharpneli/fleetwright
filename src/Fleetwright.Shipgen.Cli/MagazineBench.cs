@@ -18,8 +18,9 @@ static class MagazineBench
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
     public static int Run(IReadOnlyList<string> designs, Func<string, Design> load, string settingsPath, int runs = 0, bool race = false,
-        double flooded = 0, string? packaging = null, bool trace = false)
+        double flooded = 0, string? packaging = null, bool trace = false, double sea = 0, string? doctrine = null)
     {
+        Doctrine = doctrine;
         if (trace)
             Magazines.Trace = Console.WriteLine;
         var settings = SimSettings.Load(settingsPath);
@@ -33,7 +34,7 @@ static class MagazineBench
             if (runs > 0)
                 Light(c, settings, runs);
             if (race)
-                Race(c, settings, flooded);
+                Race(c, settings, flooded, sea);
         }
         return 0;
     }
@@ -46,8 +47,9 @@ static class MagazineBench
         w.Apply(ShipSystem.Spawn(w.Ships.AddClass(c), 50, -20, 0, 0));
         var k = w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(w.Ships.NewestEntity));
         var rng = RandomStream.Named(1, "magazine bench");
-        Console.WriteLine(string.Format(Inv, "  charges lit at each station, {0} times (doors open {1}):", runs,
-            string.Join(", ", s.StationDoorOpen.Select(v => v.ToString("0.##", Inv)))));
+        k.Flash = Magazines.Of(s, Doctrine ?? s.DamageControlDefault);
+        Console.WriteLine(string.Format(Inv, "  charges lit at each station, {0} times ({1}: doors open {2}):", runs, k.Flash.Name,
+            string.Join(", ", k.Flash.DoorOpen.Select(v => v.ToString("0.##", Inv)))));
         var seen = new HashSet<int>();
         for (int m = 0; m < c.Mounts.Length; m++)
         {
@@ -105,9 +107,13 @@ static class MagazineBench
     }
 
     /// <summary>Each magazine set off on a fresh ship of the class (its rounds all aboard, a share flooded).</summary>
-    static void Race(ShipClass c, SimSettings s, double flooded)
+    /// <summary>The doctrine whose flash discipline the bench's ships keep (none: the default's).</summary>
+    static string? Doctrine;
+
+    static void Race(ShipClass c, SimSettings s, double flooded, double sea)
     {
-        Console.WriteLine(string.Format(Inv, "  each magazine set off{0}:", flooded > 0 ? $", {flooded:0%} flooded" : ""));
+        Console.WriteLine(string.Format(Inv, "  each magazine set off{0}, the sea {1:0.##} of a seaway's, {2}:", flooded > 0 ? $", {flooded:0%} flooded" : "", sea,
+            Magazines.Of(s, Doctrine ?? s.DamageControlDefault).Name));
         for (int room = 0; room < c.Rooms.Length; room++)
         {
             if (c.Rooms[room].Kind != RoomKind.Magazine)
@@ -116,22 +122,24 @@ static class MagazineBench
             w.Apply(ShipSystem.Spawn(w.Ships.AddClass(c), 50, -20, 0, 0));
             int slot = w.Ships.Store.SlotOf(w.Ships.NewestEntity);
             var k = w.Ships.Store.Combat.Condition(slot);
+            k.Flash = Magazines.Of(s, Doctrine ?? s.DamageControlDefault);
             if (flooded > 0)
                 foreach (int cell in c.Links(c.Rooms[room].Cells))
                     k.WaterM3[cell] = flooded * c.Cells[cell].VolumeM3 * Math.Clamp(c.Cells[cell].Permeability, 0.05, 1);
             var rng = RandomStream.Named(1, "magazine race");
             var sw = System.Diagnostics.Stopwatch.StartNew();
-            var r = Magazines.SetOff(c, k, room, w.Ships.Store.Combat.Mounts(slot), s, 0, ref rng);
+            var r = Magazines.SetOff(c, k, room, w.Ships.Store.Combat.Mounts(slot), s, 0, ref rng, sea);
             double ms = sw.Elapsed.TotalMilliseconds;
             var mr = Enumerable.Range(0, c.Mounts.Length).FirstOrDefault(m => c.Mounts[m].Magazine == room);
             var ch = c.Charges[c.Mounts[mr].Type];
             Console.WriteLine(string.Format(Inv, "    {0}: {1} — {2:0} charges of {3:0} kg ({4}), peak {5:0} kPa, burned {6:0.0} t ({7:0.0} t by the girder's failure + 1 s), " +
-                "girder lost {8:0.00}, gunhouses vented {9} (lifted {10}){11}{12}, magazines {13}; vents {17:0.0} m² at the end, gave: {18}; " +
+                "girder lost {8:0.00} at {19:0.00} of her length (load {20:0.00} of what's left{21}), gunhouses vented {9} (lifted {10}){11}{12}, magazines {13}; vents {17:0.0} m² at the end, gave: {18}; " +
                 "killed {14}, wounded {15} ({16:0.0} ms)", c.RoomId(room), r.Tier,
                 r.Charges, ch.MassKg, ch.Packaging, r.PeakKPa, r.BurnedKg / 1000, r.FastKg / 1000, r.D, r.Vented, r.Lifted,
                 double.IsNaN(r.VentS) ? "" : string.Format(Inv, " at {0:0.00} s", r.VentS),
                 double.IsNaN(r.StructureS) ? "" : string.Format(Inv, ", the girder at {0:0.00} s", r.StructureS), r.Magazines, r.Killed, r.Wounded, ms,
-                r.VentM2, r.Gave == 0 ? "nothing" : string.Join(", ", new[] { "bulkhead", "deck", "sides", "bottom" }.Where((_, i) => (r.Gave & (1 << i)) != 0))));
+                r.VentM2, r.Gave == 0 ? "nothing" : string.Join(", ", new[] { "bulkhead", "deck", "sides", "bottom" }.Where((_, i) => (r.Gave & (1 << i)) != 0)),
+                r.Station, r.GirderLoad, r.EndLost ? ", her end lost" : ""));
         }
     }
 

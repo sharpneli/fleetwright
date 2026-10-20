@@ -389,7 +389,7 @@ public class DamageTests(ITestOutputHelper output)
         // every charge lighting the next at once (magazines.md V3): the race severs her, as the record's case wants
         var w = World("dreadnought", out int c, Settings with
         {
-            MagazineFlashChance = 1, StationLightChance = [1, 1, 1, 1], StationDoorOpen = [1, 1, 1, 1], MagazinePackageR = [0, 1000, 1000, 1000],
+            MagazineFlashChance = 1, StationLightChance = [1, 1, 1, 1], DamageControlDefault = "1916 BCF", MagazinePackageR = [0, 1000, 1000, 1000],
         });
         var cls = Class("dreadnought");
         // a WWII shell (proofed to 30° on a calibre of plate): a WWI British one shatters on her belt at this fall (P2)
