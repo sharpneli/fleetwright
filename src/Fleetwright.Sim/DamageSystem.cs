@@ -602,7 +602,7 @@ public sealed class DamageSystem : IWorldSystem
             Blew(world, slot, k, e.MagazineRoom, hit.Source == HitSource.Torpedo ? BlastCause.Torpedo : BlastCause.Shell, hit.Point, race);
         else if (broke)
             Lose(world, slot, k, LossKind.BrokeInTwo);
-        else if (k.Status == ShipStatus.Afloat && (e.BreachM2 > 0 || e.Fire || Repairs.Busy(cls, k)))
+        else if (k.Status == ShipStatus.Afloat && (e.BreachM2 > 0 || e.Fire || Repairs.Busy(cls, k) || Magazines.Busy(cls, Flood(cls), k, settings)))
             Wake(world, slot, k);   // water or fire: its steps begin (or come sooner)
     }
 
@@ -859,6 +859,7 @@ public sealed class DamageSystem : IWorldSystem
         var fix = stream.Derive(0xF1C5u).Derive((ulong)ships.Store[slot].Entity).Derive((ulong)now);
         var repaired = Repairs.Step(cls, f, k, dt, now, ships.Store[slot].Speed, settings, ref fix);   // her repair parties and DC Central (DC3-DC7)
         var wet = stream.Derive(0xF1000Du).Derive((ulong)ships.Store[slot].Entity).Derive((ulong)now);
+        Magazines.Valves(cls, f, k, dt, now, settings);   // the magazines' flooding and sprinklers (docs/battle/magazines.md V6)
         var fl = Flooding.Step(cls, f, k, dt, k.PowerCap, ships.Store[slot].Speed, settings, ref wet);
         if (fl.Collapsed > 0)
             log.Add(new CombatEntry(now, CombatEvent.DamageControl, 0, fl.Collapsed, ships.Store[slot].Entity, (int)DcEvent.Gave));
@@ -894,7 +895,7 @@ public sealed class DamageSystem : IWorldSystem
         Hold(world, slot, k, force: false);
         if (k.Fires > 0 || Fires.Hot(k) || Math.Abs(k.WaterT - was) >= settings.FloodIdleT)
             return settings.FloodMs;
-        return k.WaterT > 0 || Holed(cls, k) || Repairs.Busy(cls, k) ? settings.FloodIdleMs : -1;
+        return k.WaterT > 0 || Holed(cls, k) || Repairs.Busy(cls, k) || Magazines.Busy(cls, f, k, settings) ? settings.FloodIdleMs : -1;
     }
 
     /// <summary>Whether any hole is under the sea now.</summary>

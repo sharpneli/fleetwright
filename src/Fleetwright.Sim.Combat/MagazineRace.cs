@@ -93,7 +93,7 @@ public static partial class Magazines
         int id = ++k.BlastId;
         var flash = Discipline(k, s);
         Light(c, k, room, mounts, fed, lit, ref lits, ref nOpen, ref nCased, ref massSum, flash, s, id, ref v, ref a);
-        double flooded = Flooded(c, k, room);
+        double flooded = Math.Max(Flooded(c, k, room), k.MagazineWet.Length > room ? k.MagazineWet[room] : 0);   // flooded or sprinkled
         double ck = massSum / Math.Max(nOpen + nCased, 1);   // a charge's kg, mass-weighted
         res.Charges = nOpen + nCased;
 

@@ -255,6 +255,8 @@ public sealed class ShipClass
     /// <summary>The section her fire pumps are in (her machinery's middle; docs/battle/fire.md B4): an unlooped main is
     /// cut off past a break from here.</summary>
     public int PumpSection { get; internal set; }
+    /// <summary>Sprinklers in her magazines (her outfit's; docs/battle/magazines.md V6).</summary>
+    public bool MagazineSprinklers { get; internal set; }
     /// <summary>A section's weather-deck fire space.</summary>
     public int FireOfDeck(int section) => fireOfDeck[section];
 

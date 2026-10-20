@@ -616,15 +616,15 @@ public static class Effects
                 (reached, res.Stations) = (magazine, res.Stations + 1);
         }
         else if (readyMount >= 0)
-            (reached, via) = (Magazines.Light(c, k, readyMount, readySt, burning: true, s, ref r, ref res), MagazineVia.Turret);
+            (reached, via) = (Magazines.Light(c, k, readyMount, readySt, burning: true, s, ref r, ref res, hit.Ms), MagazineVia.Turret);
         else if (t.Burst != BurstKind.Outside && turret >= 0)
         {
             if (r.NextDouble() < s.StationLightChance[(int)c.Train(turret)[turretSt].Kind])
-                (reached, via) = (Magazines.Light(c, k, turret, turretSt, burning: false, s, ref r, ref res), MagazineVia.Turret);
+                (reached, via) = (Magazines.Light(c, k, turret, turretSt, burning: false, s, ref r, ref res, hit.Ms), MagazineVia.Turret);
         }
         else if (t.Burst != BurstKind.Outside && gasHandling >= 0 && c.MountOf(c.Rooms[gasHandling].Mount) is int hm and >= 0 &&
                  c.StationOfRoom(hm, gasHandling) is var hs and >= 0 && r.NextDouble() < s.StationLightChance[(int)StationKind.Handling])
-            (reached, via) = (Magazines.Light(c, k, hm, hs, burning: false, s, ref r, ref res), inHandling ? MagazineVia.Handling : MagazineVia.Gas);
+            (reached, via) = (Magazines.Light(c, k, hm, hs, burning: false, s, ref r, ref res, hit.Ms), inHandling ? MagazineVia.Handling : MagazineVia.Gas);
         if (reached >= 0)
             (res.Magazine, res.MagazineRoom, res.MagazineVia) = (true, reached, via);
     }

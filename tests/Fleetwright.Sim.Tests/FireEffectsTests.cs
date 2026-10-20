@@ -199,8 +199,11 @@ public class FireEffectsTests(ITestOutputHelper output)
         var r = RandomStream.FromSeed(seed);
         Burn(c, k, fire);
         for (int t = 10; t <= hours * 3600; t += 10)
+        {
+            Magazines.Valves(c, f, k, 10, t * 1000L, Still);   // the magazines' valves, as the damage system steps them (magazines.md V6)
             if (Fires.Step(c, f, k, 10, Still, ref r, t * 1000L).Magazine)
                 return t / 60.0;
+        }
         return double.NaN;
     }
 

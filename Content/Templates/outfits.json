@@ -22,7 +22,8 @@
     "deck": 350
    },
    "paint_mj_m2": 30,
-   "growth": 2
+   "growth": 2,
+   "magazine_sprinklers": false
   }
  },
  {
@@ -48,7 +49,8 @@
     "deck": 350
    },
    "paint_mj_m2": 60,
-   "growth": 1.5
+   "growth": 1.5,
+   "magazine_sprinklers": false
   }
  },
  {
@@ -74,13 +76,14 @@
     "deck": 150
    },
    "paint_mj_m2": 50,
-   "growth": 1
+   "growth": 1,
+   "magazine_sprinklers": false
   }
  },
  {
   "name": "Interwar (1939)",
   "group": "",
-  "note": "Comfort back: linoleum, cork, upholstery, up to 80-90 coats of paint (Savo's inventory). Stripped: inflammables landed, the paint left on (scraping it is a refit).",
+  "note": "Comfort back: linoleum, cork, upholstery, up to 80-90 coats of paint (Savo's inventory). Stripped: inflammables landed, the paint left on (scraping it is a refit). Magazine sprinklers (the USN's 1932 bulletin; research 10 §4.1).",
   "value": {
    "name": "Interwar (1939)",
    "fitted": {
@@ -100,13 +103,14 @@
     "deck": 120
    },
    "paint_mj_m2": 100,
-   "growth": 1.3
+   "growth": 1.3,
+   "magazine_sprinklers": true
   }
  },
  {
   "name": "Post-Savo (1943)",
   "group": "",
-  "note": "The USN after Savo: linoleum up, paint scraped to bare steel, cork, rugs and curtains banned, retardant fabrics (NBS berthing 240 MJ/m²); already stripped.",
+  "note": "The USN after Savo: linoleum up, paint scraped to bare steel, cork, rugs and curtains banned, retardant fabrics (NBS berthing 240 MJ/m²); already stripped. Magazine sprinklers.",
   "value": {
    "name": "Post-Savo (1943)",
    "fitted": {
@@ -126,7 +130,8 @@
     "deck": 120
    },
    "paint_mj_m2": 10,
-   "growth": 0.7
+   "growth": 0.7,
+   "magazine_sprinklers": true
   }
  }
 ]

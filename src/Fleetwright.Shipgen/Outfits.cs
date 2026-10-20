@@ -11,8 +11,8 @@ public static class Outfits
     static FireLoadsInput L(double quarters, double cabins, double offices, double stores, double machinery, double deck) =>
         new() { Quarters = quarters, Cabins = cabins, Offices = offices, Stores = stores, Machinery = machinery, Deck = deck };
 
-    static Template T(string name, FireLoadsInput fitted, FireLoadsInput stripped, double paint, double growth, string note) =>
-        new(name, new OutfitInput { Name = name, Fitted = fitted, Stripped = stripped, PaintMjM2 = paint, Growth = growth }, note);
+    static Template T(string name, FireLoadsInput fitted, FireLoadsInput stripped, double paint, double growth, string note, bool sprinklers = false) =>
+        new(name, new OutfitInput { Name = name, Fitted = fitted, Stripped = stripped, PaintMjM2 = paint, Growth = growth, MagazineSprinklers = sprinklers }, note);
 
     public static readonly Template[] All =
     [
@@ -28,10 +28,11 @@ public static class Outfits
             "stay, wetted before action. As fitted is the peacetime ship [EST]."),
         T("Interwar (1939)", L(380, 650, 500, 1500, 150, 250), L(240, 280, 300, 1200, 120, 120), 100, 1.3,
             "Comfort back: linoleum, cork, upholstery, up to 80-90 coats of paint (Savo's inventory). Stripped: inflammables " +
-            "landed, the paint left on (scraping it is a refit)."),
+            "landed, the paint left on (scraping it is a refit). Magazine sprinklers (the USN's 1932 bulletin; research 10 " +
+            "§4.1).", sprinklers: true),
         T("Post-Savo (1943)", L(240, 280, 300, 1200, 120, 120), L(240, 280, 300, 1200, 120, 120), 10, 0.7,
             "The USN after Savo: linoleum up, paint scraped to bare steel, cork, rugs and curtains banned, retardant fabrics " +
-            "(NBS berthing 240 MJ/m²); already stripped."),
+            "(NBS berthing 240 MJ/m²); already stripped. Magazine sprinklers.", sprinklers: true),
     ];
 
     public static Template? Get(string name) => All.FirstOrDefault(t => t.Name == name);
@@ -65,6 +66,7 @@ public static class Outfits
         {
             Name = o.Name ?? basis.Name, Fitted = Loads(o.Fitted, basis.Fitted!), Stripped = Loads(o.Stripped, basis.Stripped!),
             PaintMjM2 = o.PaintMjM2 ?? basis.PaintMjM2, Growth = o.Growth ?? basis.Growth,
+            MagazineSprinklers = o.MagazineSprinklers ?? basis.MagazineSprinklers,
         };
     }
 
@@ -81,7 +83,7 @@ public static class Outfits
         var errs = new List<string>();
         if (design.Outfit is not { } o)
             return errs;
-        errs.AddRange(o.Extra.KeysOrEmpty().Select(k => $"outfit.{k}: not an outfit setting (name, fitted, stripped, paint_mj_m2, growth)"));
+        errs.AddRange(o.Extra.KeysOrEmpty().Select(k => $"outfit.{k}: not an outfit setting (name, fitted, stripped, paint_mj_m2, growth, magazine_sprinklers)"));
         foreach (var (what, l) in new[] { ("fitted", o.Fitted), ("stripped", o.Stripped) })
         {
             if (l is null)

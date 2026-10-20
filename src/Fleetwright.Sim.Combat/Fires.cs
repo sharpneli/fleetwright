@@ -310,8 +310,6 @@ public static class Fires
         {
             if (rooms[m].Kind != RoomKind.Magazine)
                 continue;
-            if (k.MagazineFlood[m])
-                res.WaterM3 += Fill(c, f, k, m, dt, now, s);
             double held = 0, cap = 0, rate = 0;
             bool blocked = false;
             foreach (int cell in c.Links(rooms[m].Cells))
@@ -322,9 +320,9 @@ public static class Fires
             for (int t = 0; t < c.Mounts.Length; t++)
                 if (c.Mounts[t].Magazine == m && c.Enclosed(t) && c.FireOfPart(c.Mounts[t].Component) is int g and >= 0 && Heats(k.Fire[g]))
                     rate += 1 / s.FireMagazineS[k.Fire[g].Charges > 0 ? 0 : 1];   // down its turret's trunk
-            if (cap > 0 && held >= s.FireDrownShare * cap)
+            if (cap > 0 && held >= s.FireDrownShare * cap || k.MagazineWet[m] >= s.MagazineSprinkleShare)
             {
-                k.MagazineThreatS[m] = 0;   // drowned: it can't go up
+                k.MagazineThreatS[m] = 0;   // drowned or sprinkled through: it can't go up
                 continue;
             }
             if (rate <= 0)
@@ -341,9 +339,10 @@ public static class Fires
                 (res.Magazine, res.MagazineRoom) = (true, m);
                 return;
             }
-            if (!k.MagazineFlood[m] && !blocked && doc.Name is not null && doc.FloodMagazineS >= 0 && k.MagazineThreatS[m] >= doc.FloodMagazineS)
+            if (!k.MagazineFlood[m] && k.MagazineOrderMs[m] == 0 && !blocked && doc.Name is not null && doc.FloodMagazineS >= 0 &&
+                k.MagazineThreatS[m] >= doc.FloodMagazineS)
             {
-                k.MagazineFlood[m] = true;
+                Combat.Magazines.Order(k, m, now);   // the threat's own clock was the decision: the valves at once
                 res.Flooded++;
             }
         }
@@ -371,21 +370,6 @@ public static class Fires
             rate += 1 / s.FireMagazineS[way];
         }
         return rate;
-    }
-
-    /// <summary>A magazine flooding (B2): each cell of it filled toward full in <see cref="SimSettings.FireMagazineFloodS"/>
-    /// through its sea valves under the waterline, else from its section's main. The water let in, m³.</summary>
-    static double Fill(ShipClass c, FloodModel f, ShipCondition k, int room, double dt, long now, SimSettings s)
-    {
-        double added = 0;
-        foreach (int cell in c.Links(c.Rooms[room].Cells))
-        {
-            double source = c.Cells[cell].BelowWaterline ? 1 : SectionWater(c, k, c.FireSpaces[cell].Section, now, s);
-            double w = Math.Min(f.Capacity[cell] - k.WaterM3[cell], f.Capacity[cell] * source * dt / s.FireMagazineFloodS);
-            if (w > 0)
-                (k.WaterM3[cell], added) = (k.WaterM3[cell] + w, added + w);
-        }
-        return added;
     }
 
     /// <summary>A developed fire reaching the spaces it links to (17 §5; fire.md B1): the fires it lit.</summary>

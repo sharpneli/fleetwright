@@ -1,5 +1,5 @@
 # Plan: magazines (a 4.5 deepening)
-Status: **every question decided** (the user, 2026-10-20: "Decided" below); research arrived (10); V0-V5 done 2026-10-20
+Status: **every question decided** (the user, 2026-10-20: "Decided" below); research arrived (10); V0-V6 done 2026-10-20
 Updated: 2026-10-20
 
 The fine-tune pass for magazines: how a flash gets to the charges, what happens once they burn, and what the ship
@@ -535,6 +535,37 @@ follows the dependencies: the fake turrets first, because the chain means nothin
   - The flooding moved and ordered as above.
   - Sprinklers as design data (a fit by period, in the outfit block).
   - Power and controls cut.
+  - **Done 2026-10-20.** What it came to:
+    - **`Magazines.Valves`**, stepped every damage step before the flooding (`Fires.Magazines` keeps the heat and
+      the order, and its `Fill` is gone).
+      - An ordered magazine's valves open at the order's time and fill it in `FireMagazineFloodS` (10 min), from the
+        sea under the waterline, else its section's main.
+      - This follows damage control's valve rule (DC4): at the valves' rate while she's conned; by hand, a third of it
+        after `CounterfloodHandS` (3 min), when she isn't.
+      - Its water is let in on purpose (`Counterflooded`), so the pumps leave it. A first cut let the pumps take it
+        back out: Lion's Q sixth tier stood at 120 of 381 m³ after a quarter of an hour.
+    - **The orders:**
+      - fire's heat threat, B2's rule unchanged (`Magazines.Order` at once: the threat's own clock was the decision);
+      - a flash in a train that didn't reach the magazine (`Magazines.Light`): its magazine ordered
+        `MagazineOrderS` later (2 min, research 10 §4.2's 1-5 min), unless her doctrine never floods one.
+    - **Sprinklers:** `outfit.magazine_sprinklers`, an outfit setting with the period's templates (interwar and
+      post-Savo true, the earlier ones false: research 10 §4.1 finds none before the 1930s USN), read into
+      `ShipClass.MagazineSprinklers`.
+      - An ordered magazine's stow is wetted to `MagazineSprinkleShare` (0.95) in `MagazineSprinkleS` (60 s) while
+        its section's main has water (`ShipCondition.MagazineWet`).
+      - A wet magazine can't cook off, and the race counts the wetted share as flooded.
+    - **Controls cut:**
+      - smoke over the magazine still blocks fire's order (B2);
+      - by hand when she isn't conned;
+      - no main, no sprinkling.
+      - Lost power stopping remote controls (Astoria) waits for a later cut's remote valves: the first game's are
+        worked by hand.
+    - **Lion's Q** (`MagazineRaceTests`): a flash stopped at shut doors orders her magazine flooded; a quarter of an
+      hour on, set off with every lid off, it burns out at 41 kPa, 2.7 t burned (dry: severed).
+    - **Fire's yardstick moved toward the record:** `fire-history`'s Santiago cruisers, unorganised, lost 65% (a
+      magazine cooked off at ~100 min) and now 0%. Their magazines still go up from the fire, but now burn out (V3).
+      fire.md B5 had "the record has them burned out, not blown up".
+    - **Goldens:** the outfit echo gains `magazine_sprinklers` (254 cases), ShipDesign.Version 48.
 - **V7. Every other source into the race.**
   - Fire's heat limit lights the magazine instead of losing the ship.
   - A torpedo's gas and shock reaching the magazine light it (`TorpedoMagazineChance` goes): Pommern.

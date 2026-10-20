@@ -1177,6 +1177,13 @@ public sealed record SimSettings
     /// Less, it's a local breach; a gunhouse vented and nothing more, burned out; else contained.</item>
     /// <item>The steps: MagazineRaceMs [the first 5 s, after], up to MagazineRaceS.</item>
     /// </list></summary>
+    /// <summary>The magazines' flooding (docs/battle/magazines.md V6; research 10 §4): a flash in a train orders its
+    /// magazine flooded MagazineOrderS later (the order and the walk to the valves, 1-5 min [INFERRED]); its valves fill it
+    /// in FireMagazineFloodS (10-30 min by their bore); sprinklers, where fitted, wet MagazineSprinkleShare of the stow in
+    /// MagazineSprinkleS [EST].</summary>
+    public double MagazineOrderS { get; init; } = 120;
+    public double MagazineSprinkleS { get; init; } = 60;
+    public double MagazineSprinkleShare { get; init; } = 0.95;
     public double MagazineHeatKeep { get; init; } = 0.5;
     public double MagazineVentCd { get; init; } = 0.7;
     public double MagazineGasGamma { get; init; } = 1.25;

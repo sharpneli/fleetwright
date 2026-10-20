@@ -599,6 +599,7 @@ public static class ShipClassCompiler
         {
             var o = Outfits.Of(ship.Design);
             double paint = o.PaintMjM2 ?? 0, growth = o.Growth ?? 1;
+            c.MagazineSprinklers = o.MagazineSprinklers ?? false;
             bool wood = hb.Plating is { } plating && plating.DeckWoodMm > 0;
             double Load(FireLoadsInput l, FireUse use) => use switch
             {

@@ -500,6 +500,7 @@ from B0's bench on.
     ~7 m section. The levers measured above are the candidates (bigger upper-works fire spaces, burst-scaled seats,
     parties' exposure by distance).
   - Santiago's beached cruisers burned out; ours blow up in 65% of runs later (magazines cooked off at ~100 min).
+    Since `magazines.md` V3-V6 their magazines burn out instead (lost 0%), as the record has it.
   - Orel's water: fires in parts and on deck run off, so no hose water stays aboard (the record: tens to hundreds of
     tonnes; 17 §9 T6 itself says drain it through holes and scuppers).
   - The clutter's weight (the overload's stability), with a ship load in the hydrostatics.

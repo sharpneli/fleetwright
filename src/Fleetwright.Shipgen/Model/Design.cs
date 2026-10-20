@@ -157,6 +157,9 @@ public sealed record OutfitInput
     /// the weather deck and in the superstructure.</summary>
     public double? PaintMjM2 { get; init; }
     public double? Growth { get; init; }
+    /// <summary>Sprinklers in the magazines (docs/battle/magazines.md V6): they wet a threatened stow in a minute while
+    /// the fire main has water. None in the first game's period (research 10 §4.1: a 1930s USN fit).</summary>
+    public bool? MagazineSprinklers { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 

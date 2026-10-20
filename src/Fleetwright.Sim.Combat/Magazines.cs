@@ -37,9 +37,11 @@ public static partial class Magazines
     }
 
     /// <summary>Charges lit at a station of a mount's train: they burn (unless <paramref name="burning"/>, a fire that's
-    /// already theirs), the flame runs on past the open doors; returns the magazine room it reached, or -1.</summary>
+    /// already theirs), the flame runs on past the open doors; returns the magazine room it reached, or -1. A flash in
+    /// the train that didn't reach it orders its magazine flooded (Harvey's; V6), the order and the walk to the valves
+    /// <see cref="SimSettings.MagazineOrderS"/> on, unless her doctrine never floods one.</summary>
     public static int Light(ShipClass c, ShipCondition k, int mount, int station, bool burning, SimSettings s, ref RandomStream r,
-        ref EffectsResult res)
+        ref EffectsResult res, long now = 0)
     {
         var train = c.Train(mount);
         var flash = Discipline(k, s);
@@ -52,7 +54,70 @@ public static partial class Magazines
             Burn(c, k, mount, train[--lo], flash, s, ref res);
         res.Stations += hi - lo + 1;
         res.Flash = true;
-        return train[hi].Kind == StationKind.Magazine ? train[hi].Room : -1;
+        if (train[hi].Kind == StationKind.Magazine)
+            return train[hi].Room;
+        if (k.DamageControl.FloodMagazineS >= 0 || k.DamageControl.Name is null)
+            Order(k, c.Mounts[mount].Magazine, now + (long)(s.MagazineOrderS * 1000));
+        return -1;
+    }
+
+    /// <summary>A magazine's flooding ordered, its valves to open at <paramref name="atMs"/> (the earlier order stands).</summary>
+    public static void Order(ShipCondition k, int room, long atMs)
+    {
+        if (room >= 0 && !k.MagazineFlood[room] && (k.MagazineOrderMs[room] == 0 || atMs < k.MagazineOrderMs[room]))
+            k.MagazineOrderMs[room] = Math.Max(atMs, 1);
+    }
+
+    /// <summary>Whether any magazine's flooding or sprinkling is under way: her steps go on for it.</summary>
+    public static bool Busy(ShipClass c, FloodModel f, ShipCondition k, SimSettings s)
+    {
+        for (int m = 0; m < c.Rooms.Length; m++)
+        {
+            if (k.MagazineOrderMs[m] == 0 && !k.MagazineFlood[m])
+                continue;
+            if (c.MagazineSprinklers && k.MagazineWet[m] < s.MagazineSprinkleShare)
+                return true;
+            foreach (int cell in c.Links(c.Rooms[m].Cells))
+                if (k.WaterM3[cell] < 0.999 * f.Capacity[cell])
+                    return true;
+        }
+        return false;
+    }
+
+    /// <summary>The magazines' valves (V6; research 10 §4; one set of valves with damage control's counterflooding, DC4):
+    /// an ordered magazine's valves open at the order's time, and it fills (the sea's water under the waterline, else its
+    /// section's main) in <see cref="SimSettings.FireMagazineFloodS"/> while she's conned; by hand, at
+    /// <see cref="SimSettings.CounterfloodHandShare"/> of that after <see cref="SimSettings.CounterfloodHandS"/>, when
+    /// she isn't. Her sprinklers, where her outfit has them, wet the ordered magazine's stow in
+    /// <see cref="SimSettings.MagazineSprinkleS"/> while its section's main has water. Its water is let in on purpose, as
+    /// damage control's tanks are (<see cref="ShipCondition.Counterflooded"/>): the pumps leave it. The water it let in, m³.</summary>
+    public static double Valves(ShipClass c, FloodModel f, ShipCondition k, double dt, long now, SimSettings s)
+    {
+        double added = 0;
+        for (int m = 0; m < c.Rooms.Length; m++)
+        {
+            if (k.MagazineOrderMs[m] == 0 && !k.MagazineFlood[m])
+                continue;
+            long open = k.MagazineOrderMs[m] + (k.Conned ? 0 : (long)(s.CounterfloodHandS * 1000));
+            if (!k.MagazineFlood[m] && now >= open)
+                k.MagazineFlood[m] = true;
+            var cells = c.Links(c.Rooms[m].Cells);
+            if (c.MagazineSprinklers && cells.Length > 0 && k.MagazineWet[m] < s.MagazineSprinkleShare &&
+                Fires.SectionWater(c, k, c.FireSpaces[cells[0]].Section, now, s) > 0)
+                k.MagazineWet[m] = Math.Min(s.MagazineSprinkleShare, k.MagazineWet[m] + dt / s.MagazineSprinkleS);
+            if (!k.MagazineFlood[m])
+                continue;
+            double hand = k.Conned ? 1 : s.CounterfloodHandShare;
+            foreach (int cell in cells)
+            {
+                double source = c.Cells[cell].BelowWaterline ? 1 : Fires.SectionWater(c, k, c.FireSpaces[cell].Section, now, s);
+                double w = Math.Min(f.Capacity[cell] - k.WaterM3[cell], f.Capacity[cell] * source * hand * dt / s.FireMagazineFloodS);
+                if (w > 0)
+                    (k.WaterM3[cell], added) = (k.WaterM3[cell] + w, added + w);
+                k.Counterflooded[cell] = true;   // let in on purpose, as damage control's tanks: the pumps leave it
+            }
+        }
+        return added;
     }
 
     /// <summary>A station's charges burning: its men's flash and a propellant seat. A magazine reached is its caller's.</summary>

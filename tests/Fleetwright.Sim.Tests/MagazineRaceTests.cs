@@ -168,6 +168,47 @@ public class MagazineRaceTests(ITestOutputHelper output)
         Assert.True(rate < 0.85 * drill);
     }
 
+    /// <summary>V6, Lion's Q (Harvey's order): a flash in the train that doesn't reach the magazine orders it flooded; a
+    /// quarter of an hour on, the magazine is full of water, and charges set off there later are contained.</summary>
+    [Fact]
+    public void A_flash_in_the_train_floods_its_magazine_in_time()
+    {
+        var c = Packed("lion", "bag");   // lids off: dry, it would sever her
+        var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), 1, Settings);
+        w.Apply(ShipSystem.Spawn(w.Ships.AddClass(c), 56, 4, 0, 0));
+        int slot = w.Ships.Store.SlotOf(w.Ships.NewestEntity);
+        var k = w.Ships.Store.Combat.Condition(slot);
+        k.Flash = Magazines.Of(Settings, "1942");   // safe: the flash stops at the shut doors
+        int q = Enumerable.Range(0, c.Mounts.Length).First(m => c.ComponentId(c.Mounts[m].Component) == "Q");
+        var rng = RandomStream.Named(1, "harvey");
+        var res = new EffectsResult { Part = -1, MagazineRoom = -1 };
+        Assert.Equal(-1, Magazines.Light(c, k, q, 0, false, Settings, ref rng, ref res, w.Time.Ms));
+        int mag = c.Mounts[q].Magazine;
+        Assert.True(k.MagazineOrderMs[mag] > w.Time.Ms, "the order given, the valves a walk away");
+        w.Damage.Settle(w, w.Ships.NewestEntity, 15 * 60);
+        Assert.True(k.MagazineFlood[mag]);
+        var r = Magazines.SetOff(c, k, mag, w.Ships.Store.Combat.Mounts(slot), Settings, w.Time.Ms, ref rng);
+        output.WriteLine($"flooded: {r.Tier}, peak {r.PeakKPa:0} kPa, burned {r.BurnedKg / 1000:0.0} t");
+        Assert.False(r.Lost);
+        Assert.True(r.BurnedKg < 3000);
+    }
+
+    /// <summary>V6: a magazine with sprinklers (a WWII outfit) has its stow wetted within a minute of the order.</summary>
+    [Fact]
+    public void Sprinklers_wet_the_stow_within_a_minute()
+    {
+        var c = Fleet.Get("battleship").Class!;
+        Assert.True(c.MagazineSprinklers);
+        Assert.False(Fleet.Get("lion").Class!.MagazineSprinklers);
+        var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), 1, Settings);
+        w.Apply(ShipSystem.Spawn(w.Ships.AddClass(c), 56, 4, 0, 0));
+        var k = w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(w.Ships.NewestEntity));
+        int mag = Enumerable.Range(0, c.Rooms.Length).First(i => c.Rooms[i].Kind == RoomKind.Magazine);
+        Magazines.Order(k, mag, w.Time.Ms + 120_000);
+        w.Damage.Settle(w, w.Ships.NewestEntity, 70);
+        Assert.True(k.MagazineWet[mag] >= Settings.MagazineSprinkleShare - 1e-9, $"wet {k.MagazineWet[mag]:0.00}");
+    }
+
     [Fact]
     public void The_race_allocates_nothing()
     {

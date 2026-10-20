@@ -174,6 +174,9 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
   `packaging` (bag, clarkson, brass, tank), written into every design by its propellant (double-base in Clarkson cases,
   single-base in tanks, the later ones in brass); the German designs fire the catalogue's brass-cased blocks. All 372
   design cases change (the design echo only), no SVG or sprite.json. ShipDesign.Version 47.
+- 2026-10-20, magazine sprinklers (docs/battle/magazines.md V6), on purpose: the outfit block gains
+  `magazine_sprinklers` (the interwar and post-Savo templates true, the earlier ones false). 254 design cases change
+  (the outfit in the design echo and the report's inputs), no SVG or sprite.json. ShipDesign.Version 48.
 
 ## Layout
 

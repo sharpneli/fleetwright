@@ -431,6 +431,9 @@
     { "Name": "drill", "DoorOpen": [0.1, 0.1, 0.02, 0.1], "StationCharges": 1, "LidsOff": 0, "HoistShare": 1.5 },
     { "Name": "rate first", "DoorOpen": [1, 1, 0.5, 1], "StationCharges": 2, "LidsOff": 1, "HoistShare": 1.0 }
   ],
+  "MagazineOrderS": 120,
+  "MagazineSprinkleS": 60,
+  "MagazineSprinkleShare": 0.95,
   "MagazineHeatKeep": 0.5,
   "MagazineVentCd": 0.7,
   "MagazineGasGamma": 1.25,

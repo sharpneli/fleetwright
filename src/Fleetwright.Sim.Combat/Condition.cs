@@ -192,6 +192,10 @@ public sealed class ShipCondition
     /// at (drawn when it first heats, 0 before), how long it's been threatened (s), and whether it's being flooded.</summary>
     public double[] MagazineHeat = [], MagazineLimit = [], MagazineThreatS = [];
     public bool[] MagazineFlood = [];
+    /// <summary>A magazine's flood order (docs/battle/magazines.md V6): world ms its valves open (0: none), and the share of
+    /// its stow its sprinklers have wetted.</summary>
+    public long[] MagazineOrderMs = [];
+    public double[] MagazineWet = [];
     /// <summary>The machinery spaces (by room) abandoned to smoke (B2), until their outage runs out.</summary>
     public bool[] Smoked = [];
     /// <summary>The heat release of her fires that show (B2: developed, on the open deck, burning charges), MW.</summary>
@@ -348,6 +352,7 @@ public sealed class ShipCondition
             MainCutMs = new long[c.Sections.Length];
             (MagazineHeat, MagazineLimit, MagazineThreatS, MagazineFlood) =
                 (new double[c.Rooms.Length], new double[c.Rooms.Length], new double[c.Rooms.Length], new bool[c.Rooms.Length]);
+            (MagazineOrderMs, MagazineWet) = (new long[c.Rooms.Length], new double[c.Rooms.Length]);
             Smoked = new bool[c.Rooms.Length];
             (Level, LevelsFuel) = (new double[c.Rooms.Length], double.NaN);
             MountWorks = new bool[c.Mounts.Length];
@@ -419,6 +424,8 @@ public sealed class ShipCondition
             Array.Clear(MagazineLimit);
             Array.Clear(MagazineThreatS);
             Array.Clear(MagazineFlood);
+            Array.Clear(MagazineOrderMs);
+            Array.Clear(MagazineWet);
             Array.Clear(Smoked);
         }
         Array.Fill(HoleLeft, 1.0);
@@ -857,11 +864,13 @@ public sealed class ShipCondition
                 h.Add(MainCutMs[i]);
             }
         for (int i = 0; i < MagazineHeat.Length; i++)
-            if (MagazineHeat[i] != 0 || MagazineFlood[i])
+            if (MagazineHeat[i] != 0 || MagazineFlood[i] || MagazineOrderMs[i] != 0 || MagazineWet[i] != 0)
             {
                 h.Add(i + 6000);
                 h.Add(MagazineHeat[i]);
                 h.Add(MagazineFlood[i]);
+                h.Add(MagazineOrderMs[i]);
+                h.Add(MagazineWet[i]);
             }
         for (int i = 0; i < Fire.Length; i++)
             if (Fire[i].Phase != BurnPhase.None)
