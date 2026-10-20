@@ -1,6 +1,5 @@
 # Plan: damage control (a 4.5 deepening)
-Status: **draft for the user, 2026-10-20**. Two decisions are taken (below: parts are repaired, the captain slows by
-doctrine). Decisions 3-6 are proposals waiting for the user's word.    Updated: 2026-10-20
+Status: **agreed with the user 2026-10-20** ("Decided" below); DC0 next.    Updated: 2026-10-20
 
 The fine-tune pass for damage control: what the crew does about a hit once it has landed. Firefighting came first, as
 this pass's first slice (`fire.md`, decision 1). This plan adds the water and the repairs, and both draw on the same
@@ -117,7 +116,9 @@ Seen from outside, after this pass:
 ## The yardstick: the historical record
 
 The first game is 1890-1925, so its cases lead. The WWII cases check the mechanisms for later cuts. Cases marked (?)
-come from general knowledge and wait on the research request (DC0).
+come from general knowledge and wait on the research request (DC0). **This version is built against the existing
+research only** (decision 7): 09, 10 and 17's mechanism checks and sourced cases are what DC9 tunes to; the (?) rows
+are read but not tuned to until the research is back.
 
 | Case | Record | Wanted |
 |---|---|---|
@@ -144,17 +145,21 @@ come from general knowledge and wait on the research request (DC0).
    keeps to it, falling out of line if he must. A doctrine number sets how long a navy holds speed first. The player
    gets an override in the UI pass.
 
-**Proposed, for the user's word:**
-
-3. **Before E8** (the shells plan's battle anchors), as fire went: E8 then anchors once, with damage control in. E8
-   judges damage done, but its turret-minutes lost per 100 heavy hits read the repairs.
-4. **Watertight closures are their own order**, apart from fire's doors. Fire's "doors open" stays as the non-watertight
+3. **Before E8** (the user, 2026-10-20: "DC goes in before E8, we do the anchoring pass probably after this"). E8
+   then anchors once, with damage control in; its turret-minutes lost per 100 heavy hits read the repairs.
+4. **Watertight closures are their own order**, apart from fire's doors (the user, 2026-10-20: fine). Fire's "doors open" stays as the non-watertight
    doors and hatches in the upper hull (vents for a fire). Watertight doors are shut at action stations, except a share
    left open by the readiness (in use, or by poor discipline), which the first response shuts if its men are there.
    Tying them to fire's doors would flood every "prepared" ship through open watertight doors.
-5. **Services stay with the systems pass.** Power and hydraulics as routes, casualty power and cable splicing are
-   `06`'s Model B. The repairs here work on the parts' states and E4's outages only.
-6. **No post-battle repair.** Tenders, docks and pumping the counterflood water back out are the campaign's.
+5. **Power and hydraulics are left alone, unless something today disables them for good** (the user, 2026-10-20).
+   Routes, casualty power and cable splicing are `06`'s Model B, for the systems pass. Checked 2026-10-20: every power
+   outage today is timed (E4's and E7's trips and cascades, 1-90 min), so they stay as they are. Power is lost for good
+   only through parts: a boiler or engine room disabled by a hit, or **flooded out of action** (`RoomFloodedShare`),
+   which never comes back even when pumped dry. Both are DC7's (parts, and rooms dewatered).
+6. **No post-battle repair** (the user, 2026-10-20: "after battle is for the next game"). Tenders, docks and pumping the
+   counterflood water back out.
+7. **Built against the existing research** (the user, 2026-10-20): 09, 10, 17 and 06. The research request (DC0) is
+   filed and folded in when it's back, not waited for.
 
 ## The model
 
@@ -308,6 +313,9 @@ nothing until the list, sinkage or rolling bring it within ~1 m.
     and engines (steam cross-connected, relit) ~30% in 30-60 min; uptakes, funnels, masts, hull and armour never.
   - The draw is made at the damage, so a part either can be fixed or can't.
   - It waits while its space is flooded or burning.
+- **Rooms flooded out of action** (decision 5): a room disabled by its water comes back to damaged once it's pumped
+  below `RoomFloodedShare` and a party works it [EST: machinery 30-60 min to relight and restart, other rooms 10-20
+  min]. Its parts' own damage is separate.
 - **Battle-long jams:** E4's timed jams and outages already include the crew's own repair and stay as they are. A party
   may bring a battle-long one (`NonPen.Battle`) down to a time, when its cause can be fixed.
 
@@ -404,7 +412,8 @@ on the yardstick bench.
 - **Tests:** 09 §8's bow shell at 28 kn and slowed to 12 kn; Seydlitz and Lützow on the bench.
 
 ### DC7 Steering and parts
-- The steering ladder; freeing a jammed rudder; the parts' repair table and its draw at the damage; battle-long jams.
+- The steering ladder; freeing a jammed rudder; the parts' repair table and its draw at the damage; battle-long jams;
+  rooms flooded out of action brought back once dewatered (the plant's power with them).
 - **Tests:** a ship that lost her steering takes it back by hand in ~15 min and circles no more; the share of disabled
   mounts back within the hour.
 
@@ -435,6 +444,4 @@ on the yardstick bench.
 
 ## Questions for the user
 
-- Decisions 3-6 above (proposed).
-- The yardstick's (?) rows wait on the research request. Build against 09, 10 and 17's mechanism checks until it's
-  back?
+None open (2026-10-20).
