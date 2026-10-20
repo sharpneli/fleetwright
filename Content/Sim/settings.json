@@ -338,7 +338,6 @@
   "DraughtFloor": 0.7,
   "NeighbourShare": 0.5,
   "ShellHoleCalibres": 1.5,
-  "HoleOverWaterlineM": 0.5,
   "BeltLeakChance": [0.50, 0.25, 0.80],
   "BeltBehindM": 2,
   "BeltWaterlineM": 1,

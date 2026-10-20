@@ -456,10 +456,22 @@ public sealed class ShipCondition
         BreachZ[cell] = (BreachZ[cell] * a0 + at.Z * areaM2) / a1;
         BreachM2[cell] = a1;
         int h = cell * HoleClasses + (int)(seam ? HoleClass.Seam : Classify(areaM2 / Math.Max(count, 1)));
-        double o0 = HoleOpenM2[h];
-        HoleZ[h] = (HoleZ[h] * o0 + at.Z * areaM2) / (o0 + areaM2);
+        double o0 = HoleOpenM2[h], d0 = HoleDoneM2[h];
+        HoleZ[h] = (HoleZ[h] * (o0 + d0) + at.Z * areaM2) / (o0 + d0 + areaM2);   // the class's holes, worked on or not
         HoleOpenM2[h] = o0 + areaM2;
         HoleOpenN[h] += Math.Max(count, 1);
+    }
+
+    /// <summary>What a cell's holes of a class (an index into <see cref="HoleOpenM2"/>) let through: open + worked × left.</summary>
+    public double HoleM2(int h) => HoleOpenM2[h] + HoleDoneM2[h] * HoleLeft[h];
+
+    /// <summary>Whether any of a cell's holes is under a height (the sea outside it).</summary>
+    public bool HoledUnder(int cell, double z)
+    {
+        for (int h = cell * HoleClasses; h < (cell + 1) * HoleClasses; h++)
+            if (HoleM2(h) > 0 && HoleZ[h] < z)
+                return true;
+        return false;
     }
 
     /// <summary>A cell's breach counted again from its holes by class (open + worked × left).</summary>

@@ -136,7 +136,7 @@ public class FireWaterTests(ITestOutputHelper output)
         int high = Enumerable.Range(0, c.Cells.Length).First(i => c.Cells[i].Box.Base > wl + 1 && c.Cells[i].Box.Y1 > c.Beam / 2 - 1);
         var b = c.Cells[high].Box;
         k.WaterM3[high] = 0.3 * f.Capacity[high];
-        (k.BreachM2[high], k.BreachZ[high], k.BreachY[high]) = (0.5, b.Base + 1.0, b.Y1);   // its lower edge 0.6 m up
+        k.Hole(high, 0.5, new P3((b.X0 + b.X1) / 2, b.Y1, b.Base + 1.0));   // its lower edge 0.6 m up
         double before = k.WaterM3[high], out_ = 0;
         for (int t = 0; t < 600; t++)
             out_ += Flooding.Step(c, f, k, 1, 0, Settings).OutM3;   // no pumps: what leaves goes through the hole
@@ -149,7 +149,7 @@ public class FireWaterTests(ITestOutputHelper output)
         // a hole over the water lets nothing out
         k.Reset(c);
         k.WaterM3[high] = 0.1 * f.Capacity[high];
-        (k.BreachM2[high], k.BreachZ[high], k.BreachY[high]) = (0.5, b.Top - 0.5, b.Y1);
+        k.Hole(high, 0.5, new P3((b.X0 + b.X1) / 2, b.Y1, b.Top - 0.5));
         double none = 0;
         for (int t = 0; t < 60; t++)
             none += Flooding.Step(c, f, k, 1, 0, Settings).OutM3;

@@ -224,10 +224,18 @@ public static class Flooding
             double inside = f.Level(c, k, i), q = 0;
             if (k.BreachM2[i] > 0)
             {
-                double bottom = k.BreachZ[i] - Math.Sqrt(k.BreachM2[i] / Math.PI);   // the sea comes in over the hole's lower edge
-                double head = water.At(f.Cx[i], k.BreachY[i]) + Ram(c, f.Cx[i], speedMs, s) - Math.Max(bottom, inside);
-                if (head > 0)
-                    q += cd * k.BreachM2[i] * Math.Sqrt(2 * G * head);
+                // each class of its holes at its own height (a cell's holes differ by up to its deck's height: one mean
+                // height would lift a hole at the waterline over the sea with one higher up)
+                double sea = water.At(f.Cx[i], k.BreachY[i]) + Ram(c, f.Cx[i], speedMs, s);
+                for (int h = i * ShipCondition.HoleClasses; h < (i + 1) * ShipCondition.HoleClasses; h++)
+                {
+                    double a = k.HoleM2(h);
+                    if (!(a > 0))
+                        continue;
+                    double head = sea - Math.Max(k.HoleZ[h] - Math.Sqrt(a / Math.PI), inside);   // the sea comes in over the hole's lower edge
+                    if (head > 0)
+                        q += cd * a * Math.Sqrt(2 * G * head);
+                }
             }
             if (f.Weather[i])
             {
@@ -247,13 +255,19 @@ public static class Flooding
         {
             if (w[i] <= 0 || k.BreachM2[i] <= 0)
                 continue;
-            double bottom = k.BreachZ[i] - Math.Sqrt(k.BreachM2[i] / Math.PI);
-            double floor = Math.Max(bottom, water.At(f.Cx[i], k.BreachY[i]) + Ram(c, f.Cx[i], speedMs, s)), head = f.Level(c, k, i) - floor;
-            if (head <= 0)
-                continue;
-            double v = Math.Min(Math.Min(cd * k.BreachM2[i] * Math.Sqrt(2 * G * head) * dt, head * f.Area[i]), w[i]);
-            w[i] -= v;
-            res.OutM3 += v;
+            double sea = water.At(f.Cx[i], k.BreachY[i]) + Ram(c, f.Cx[i], speedMs, s), level = f.Level(c, k, i);
+            for (int h = i * ShipCondition.HoleClasses; h < (i + 1) * ShipCondition.HoleClasses && w[i] > 0; h++)
+            {
+                double a = k.HoleM2(h);
+                if (!(a > 0))
+                    continue;
+                double head = level - Math.Max(k.HoleZ[h] - Math.Sqrt(a / Math.PI), sea);
+                if (head <= 0)
+                    continue;
+                double v = Math.Min(Math.Min(cd * a * Math.Sqrt(2 * G * head) * dt, head * f.Area[i]), w[i]);
+                w[i] -= v;
+                res.OutM3 += v;
+            }
         }
 
         // across the graph: from the higher water (over the sea outside) to the lower, down to the opening between
@@ -378,7 +392,7 @@ public static class Flooding
     static double Head(ShipClass c, FloodModel f, ShipCondition k, int i, double sea, double speedMs, SimSettings s)
     {
         double level = f.Level(c, k, i), top = c.Cells[i].Box.Top;
-        bool holed = k.BreachM2[i] > 0 && k.BreachZ[i] < sea;
+        bool holed = k.BreachM2[i] > 0 && k.HoledUnder(i, sea);
         // a holed space with its water at its ceiling is the sea's: its leaks into its neighbours drain it a little each
         // step and the hole fills it again, so it presses as a full one
         if (!f.Full(k, i) && !(holed && level >= top - PressedM))
@@ -396,9 +410,14 @@ public static class Flooding
     {
         if (k.BreachM2[i] <= 0)
             return 0;
-        double bottom = k.BreachZ[i] - Math.Sqrt(k.BreachM2[i] / Math.PI);
-        double head = water.At(f.Cx[i], k.BreachY[i]) - Math.Max(bottom, c.Cells[i].Box.Base);
-        return head > 0 ? cd * k.BreachM2[i] * Math.Sqrt(2 * G * head) : 0;
+        double sea = water.At(f.Cx[i], k.BreachY[i]), q = 0;
+        for (int h = i * ShipCondition.HoleClasses; h < (i + 1) * ShipCondition.HoleClasses; h++)
+        {
+            double a = k.HoleM2(h), head = sea - Math.Max(k.HoleZ[h] - Math.Sqrt(Math.Max(a, 0) / Math.PI), c.Cells[i].Box.Base);
+            if (a > 0 && head > 0)
+                q += cd * a * Math.Sqrt(2 * G * head);
+        }
+        return q;
     }
 
     /// <summary>The ram head at x along the ship under way ahead, m (09 §2.2): k·v²/2g, k <see cref="SimSettings.FloodRamK"/>
@@ -426,7 +445,7 @@ public static class Flooding
         if (drive <= 0 && Math.Max(ha, hb) <= 0)
             return (0, 0);
         double level = f.Level(c, k, hi), top = c.Cells[hi].Box.Top;
-        bool pressed = k.BreachM2[hi] > 0 && k.BreachZ[hi] < (hi == a ? sa : sb) && (f.Full(k, hi) || level >= top - PressedM);
+        bool pressed = k.BreachM2[hi] > 0 && k.HoledUnder(hi, hi == a ? sa : sb) && (f.Full(k, hi) || level >= top - PressedM);
         double reach = s.FloodRamReach * c.Length, share = Math.Clamp((f.Cx[hi] - (c.Hull.X1 - reach)) / reach, 0, 1);
         return (Math.Max(drive, 0), pressed ? s.FloodRamLoad * s.FloodRamK * share / (2 * G) : 0);
     }

@@ -886,7 +886,7 @@ public sealed class DamageSystem : IWorldSystem
         var water = HitQuery.WaterOf(c, k.Attitude);
         var cells = c.Cells;
         for (int i = 0; i < cells.Length; i++)
-            if (k.BreachM2[i] > 0 && k.BreachZ[i] < water.At((cells[i].Box.X0 + cells[i].Box.X1) / 2, k.BreachY[i]))
+            if (k.BreachM2[i] > 0 && k.HoledUnder(i, water.At((cells[i].Box.X0 + cells[i].Box.X1) / 2, k.BreachY[i])))
                 return true;
         return false;
     }

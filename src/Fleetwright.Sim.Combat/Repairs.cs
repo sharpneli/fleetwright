@@ -275,14 +275,13 @@ public static class Repairs
         int cells = k.HoleDoneM2.Length / ShipCondition.HoleClasses;
         for (int i = 0; i < cells; i++)
         {
-            double stopped = 0;
+            double sea = water.At(f.Cx[i], k.BreachY[i]);
             for (int h = i * ShipCondition.HoleClasses; h < (i + 1) * ShipCondition.HoleClasses; h++)
-                stopped += k.HoleDoneM2[h] * (1 - k.HoleLeft[h]);
-            if (stopped <= 0)
-                continue;
-            double head = water.At(f.Cx[i], k.BreachY[i]) - Math.Max(k.BreachZ[i], c.Cells[i].Box.Base);
-            if (head > 0)
-                held += s.FloodCd * stopped * Math.Sqrt(2 * 9.81 * head);
+            {
+                double stopped = k.HoleDoneM2[h] * (1 - k.HoleLeft[h]), head = sea - Math.Max(k.HoleZ[h], c.Cells[i].Box.Base);
+                if (stopped > 0 && head > 0)
+                    held += s.FloodCd * stopped * Math.Sqrt(2 * 9.81 * head);
+            }
         }
         return held;
     }

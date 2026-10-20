@@ -68,7 +68,7 @@ public struct EffectsResult
 /// <list type="bullet">
 /// <item><b>the line of flight:</b> what the shell's body went through before it stopped (parts and spaces), and the
 /// people in its lane when it didn't burst;</item>
-/// <item><b>holes:</b> the hull's plating crossed near or under the waterline lets the sea into the cell behind it (a
+/// <item><b>holes:</b> the hull's plating crossed lets the sea into the cell behind it at its height (a
 /// contact burst's hole, else the shell's own; <see cref="Flooding"/>);</item>
 /// <item><b>the burst:</b> parts within the wreck radius (cube-root scaled) wrecked or put out of action by distance,
 /// unless their armour keeps its fragments out, and those its fragments get into damaged (E1 of docs/battle/
@@ -147,11 +147,12 @@ public static class Effects
                 Casualties.Lane(c, k, Casualties.Part(inPart), path.At(partT), path.At(t.StopT), calM, s);
         }
 
-        // holes: plating crossed near or under the waterline, behind it the cell the sea comes into
+        // holes: the hull's plating crossed, behind it the cell the sea comes into; at any height, as the flooding takes
+        // each at its own (over the waterline it lets the sea in once she settles, lists or trims, or her bow wave reaches it)
         for (int i = 0; i < xs.Length; i++)
         {
             ref readonly var x = ref xs[i];
-            if (x.Kind is not (CrossingKind.HullIn or CrossingKind.HullOut) || x.Point.Z > water.At(x.Point.X, x.Point.Y) + s.HoleOverWaterlineM)
+            if (x.Kind is not (CrossingKind.HullIn or CrossingKind.HullOut))
                 continue;
             bool contact = t.Bursts && t.Burst != BurstKind.Outside && Math.Abs(t.BurstT - x.T) <= 2;
             if (!(x.T < t.StopT) && !contact)
@@ -993,7 +994,7 @@ public static class Effects
             if (v < vl)
                 return;
             v = Terminal.Residual(v, vl);
-            if (x.Kind is CrossingKind.HullIn or CrossingKind.HullOut && x.Point.Z <= water.At(x.Point.X, x.Point.Y) + s.HoleOverWaterlineM)
+            if (x.Kind is CrossingKind.HullIn or CrossingKind.HullOut)
             {
                 int behind = CellAt(xs, i, x.Kind == CrossingKind.HullIn);
                 if (behind >= 0)

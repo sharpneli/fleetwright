@@ -958,10 +958,8 @@ public sealed record SimSettings
     public double DraughtFloor { get; init; } = 0.7;
     public double NeighbourShare { get; init; } = 0.5;
 
-    /// <summary>Holes: a shell that passes through plating leaves a hole this many calibres across; plating holed up to
-    /// this far over the waterline lets water in.</summary>
+    /// <summary>Holes: a shell that passes through plating leaves a hole this many calibres across.</summary>
     public double ShellHoleCalibres { get; init; } = 1.5;
-    public double HoleOverWaterlineM { get; init; } = 0.5;
 
     /// <summary>A belt that held still leaks (docs/battle/shells-armour-damage.md E4; damage/13 §2, <c>belt_leak</c>): the
     /// chance by where it struck against the waterline now (within <see cref="BeltWaterlineM"/> of it, higher, or within
