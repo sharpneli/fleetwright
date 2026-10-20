@@ -184,7 +184,7 @@ public static class NearMiss
                                     double dx = at.X - p.X, dy = at.Y - p.Y, dz = at.Z - p.Z, rr = Math.Sqrt(dx * dx + dy * dy + dz * dz);
                                     double ob = double.RadiansToDegrees(Math.Acos(Math.Clamp(Math.Abs(dy) / Math.Max(rr, 1e-6), 0, 1)));
                                     double a = n * s.SplinterHoleK * frag.ThroughAreaM2(rr + drag, v, mild, ob);
-                                    k.Hole(ci, a, at);
+                                    k.Hole(ci, a, at, n);
                                     res.BreachM2 += a;
                                     if (ci == nearCell)
                                         nearHoles += a;
@@ -383,7 +383,7 @@ public static class NearMiss
                     double leak = Math.Min(Seams(d0, Distance(p, at), area, c.ShellJoint, s) * Blast.Spread(s, ref r) * 1e-4, s.RupturedShare * area);
                     if (leak > 0)
                     {
-                        k.Hole(i, leak, at);
+                        k.Hole(i, leak, at, seam: true);
                         (res.BreachM2, res.ShockM2) = (res.BreachM2 + leak, res.ShockM2 + leak);
                     }
                 }

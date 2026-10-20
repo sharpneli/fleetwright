@@ -374,7 +374,7 @@ public static class Effects
         var (regime, a) = NonPen.BeltLeak((BeltZone)zone, impulse, margin, joint, repeat, c.ShellJoint == Joint.Welded, s, ref r);
         if (regime == LeakRegime.None)
             return;
-        k.Hole(behind, a, x.Point);
+        k.Hole(behind, a, x.Point, seam: regime is LeakRegime.Seep or LeakRegime.Moderate);   // rivets and seams; worse, the plate dished or loose
         k.Leaked(x.Index, x.Point);
         res.BreachM2 += a;
         res.Leak = regime;

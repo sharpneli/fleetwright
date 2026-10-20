@@ -70,6 +70,18 @@ public enum PartFlags : byte
     Down = 4,
 }
 
+/// <summary>What a hole in the side is to damage control (docs/battle/damage-control.md DC2; 09 §4): sprung plating (seams
+/// and rivets: caulked), a hole a plug stops (≤ 150 cm²), one a patch covers (≤ 0.3 m²), one only a collision mat from
+/// outside reaches (≤ 5 m², near the waterline, the ship slow), or beyond repair at sea.</summary>
+public enum HoleClass : byte
+{
+    Seam,
+    Plug,
+    Patch,
+    Mat,
+    Beyond,
+}
+
 /// <summary>An edge's marks for the flooding and damage control (docs/battle/damage-control.md DC1): a watertight door
 /// in it left open, its door jammed by a load, it gave way under the head; and damage control's work on it (DC3).</summary>
 [Flags]
@@ -125,6 +137,13 @@ public sealed class ShipCondition
     public PartState[] State = [];
     public PartFlags[] Flags = [];
     public double[] WaterM3 = [], BreachM2 = [], BreachY = [], BreachZ = [];
+    /// <summary>Each cell's holes by class (docs/battle/damage-control.md DC2; by cell × <see cref="HoleClass"/>): the area
+    /// and count still open, their mean height (ship frame), the area of those damage control has worked on and the share
+    /// of it that still leaks (1 until worked on). <see cref="BreachM2"/> is their sum as the sea sees it: open + worked ×
+    /// left.</summary>
+    public double[] HoleOpenM2 = [], HoleZ = [], HoleDoneM2 = [], HoleLeft = [];
+    public int[] HoleOpenN = [];
+    public const int HoleClasses = 5;
     /// <summary>What each room stows stands to this height in the ship's frame (NaN: nothing; docs/battle/shell-contents.md
     /// C2-C3): her oil, coal and feed water, made from her side's fuel share (<see cref="LevelsFuel"/>, NaN before) when she
     /// first needs them. Nothing is burnt in a battle (hours, a few percent).</summary>
@@ -263,6 +282,8 @@ public sealed class ShipCondition
             BreachM2 = new double[c.Cells.Length];
             BreachY = new double[c.Cells.Length];
             BreachZ = new double[c.Cells.Length];
+            (HoleOpenM2, HoleZ, HoleDoneM2) = (new double[c.Cells.Length * HoleClasses], new double[c.Cells.Length * HoleClasses], new double[c.Cells.Length * HoleClasses]);
+            (HoleLeft, HoleOpenN) = (new double[c.Cells.Length * HoleClasses], new int[c.Cells.Length * HoleClasses]);
             CellFire = new bool[c.Cells.Length];
             CellOpened = new bool[c.Cells.Length];
             Fire = new BurnState[c.FireSpaces.Length];
@@ -316,6 +337,10 @@ public sealed class ShipCondition
             Array.Clear(BreachM2);
             Array.Clear(BreachY);
             Array.Clear(BreachZ);
+            Array.Clear(HoleOpenM2);
+            Array.Clear(HoleZ);
+            Array.Clear(HoleDoneM2);
+            Array.Clear(HoleOpenN);
             Array.Clear(CellFire);
             Array.Clear(CellOpened);
             Array.Clear(Fire);
@@ -327,6 +352,7 @@ public sealed class ShipCondition
             Array.Clear(MagazineFlood);
             Array.Clear(Smoked);
         }
+        Array.Fill(HoleLeft, 1.0);
         Array.Fill(MountWorks, true);
         Array.Fill(DirectorWorks, true);
         Array.Fill(EyeWorks, true);
@@ -349,17 +375,30 @@ public sealed class ShipCondition
         return true;
     }
 
-    /// <summary>A hole to the sea in a cell, at a point (ship frame): its area adds, its height and side are the holes'
-    /// mean by area.</summary>
-    public void Hole(int cell, double areaM2, P3 at)
+    /// <summary>Holes to the sea in a cell, at a point (ship frame): count of them making areaM2 together (or a seam's
+    /// leak, sprung plating rather than holes: caulked, not plugged). Its area adds, its height and side are the holes'
+    /// mean by area; each is kept by its class (docs/battle/damage-control.md DC2), by the size of one hole.</summary>
+    public void Hole(int cell, double areaM2, P3 at, int count = 1, bool seam = false)
     {
         double a0 = BreachM2[cell], a1 = a0 + areaM2;
-        if (a1 <= 0)
+        if (a1 <= 0 || !(areaM2 > 0))
             return;
         BreachY[cell] = (BreachY[cell] * a0 + at.Y * areaM2) / a1;
         BreachZ[cell] = (BreachZ[cell] * a0 + at.Z * areaM2) / a1;
         BreachM2[cell] = a1;
+        int h = cell * HoleClasses + (int)(seam ? HoleClass.Seam : Classify(areaM2 / Math.Max(count, 1)));
+        double o0 = HoleOpenM2[h];
+        HoleZ[h] = (HoleZ[h] * o0 + at.Z * areaM2) / (o0 + areaM2);
+        HoleOpenM2[h] = o0 + areaM2;
+        HoleOpenN[h] += Math.Max(count, 1);
     }
+
+    /// <summary>A hole's class by its own area (09 §4): plugged up to 150 cm², patched to 0.3 m², a collision mat's to
+    /// 5 m², beyond that the dockyard's.</summary>
+    public static HoleClass Classify(double areaM2) => areaM2 <= PlugM2 ? HoleClass.Plug : areaM2 <= PatchM2 ? HoleClass.Patch :
+        areaM2 <= MatM2 ? HoleClass.Mat : HoleClass.Beyond;
+
+    public const double PlugM2 = 0.015, PatchM2 = 0.3, MatM2 = 5;
 
     /// <summary>A part damaged once more: ok to damaged, damaged to disabled.</summary>
     public bool Harm(int node) => Worsen(node, State[node] == PartState.Ok ? PartState.Damaged : PartState.Disabled);

@@ -151,6 +151,9 @@ static class DcHistory
         public double[] WaterAt = [];
         public double MaxList, List, Trim, WaterT, Power = 1, Kn, LostMin = double.NaN;
         public int Sprung, Collapsed, DoorsOpen;
+        /// <summary>Her holes by class (DC2): how many and their area still open, m².</summary>
+        public readonly int[] HolesN = new int[ShipCondition.HoleClasses];
+        public readonly double[] HolesM2 = new double[ShipCondition.HoleClasses];
         public LossKind Loss;
         public bool Afloat = true;
     }
@@ -305,6 +308,11 @@ static class DcHistory
                 (r.WaterT, r.List, r.Trim, r.Power, r.Kn) = (k.WaterT, Math.Abs(k.Attitude.HeelDeg), k.Attitude.TrimDeg, k.PowerCap,
                     store[slot].Speed / 0.514444);
                 (r.Sprung, r.Collapsed, r.DoorsOpen) = (0, 0, 0);
+                Array.Clear(r.HolesN);
+                Array.Clear(r.HolesM2);
+                for (int h = 0; h < k.HoleOpenN.Length; h++)
+                    (r.HolesN[h % ShipCondition.HoleClasses], r.HolesM2[h % ShipCondition.HoleClasses]) =
+                        (r.HolesN[h % ShipCondition.HoleClasses] + k.HoleOpenN[h], r.HolesM2[h % ShipCondition.HoleClasses] + k.HoleOpenM2[h]);
                 for (int j = 0; j < k.JoinMarks.Length; j++)
                 {
                     r.Sprung += k.JoinSeamM2[j] > 0 || k.JoinClosureM2[j] > 0 ? 1 : 0;
@@ -366,6 +374,9 @@ static class DcHistory
         Console.WriteLine(string.Format(Inv, "    boundaries sprung {0}, gave way {1} (in {2:0}% of runs), watertight doors open {3} (medians)",
             Med(rs.Select(r => (double)r.Sprung)), Med(rs.Select(r => (double)r.Collapsed)), 100.0 * rs.Count(r => r.Collapsed > 0) / n,
             Med(rs.Select(r => (double)r.DoorsOpen))));
+        Console.WriteLine("    holes open (medians, count and m²): " + string.Join(", ", Enum.GetValues<HoleClass>().Select(h =>
+            string.Format(Inv, "{0} {1} ({2})", h.ToString().ToLowerInvariant(), Med(rs.Select(r => (double)r.HolesN[(int)h])),
+                Med(rs.Select(r => r.HolesM2[(int)h]), "0.00")))));
         var lost = rs.Where(r => !r.Afloat).ToList();
         Console.WriteLine(string.Format(Inv, "    lost {0:0}%{1}", 100.0 * lost.Count / n, lost.Count == 0 ? "" : " (" + string.Join(", ",
             lost.GroupBy(r => r.Loss).Select(g => string.Format(Inv, "{0} {1}, median {2} min", g.Key, g.Count(), Med(g.Select(r => r.LostMin))))) + ")"));

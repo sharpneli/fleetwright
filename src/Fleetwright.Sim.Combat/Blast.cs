@@ -228,7 +228,7 @@ public static class Blast
                 double leak = Leak(k.FaceFelt[fi] / (s.DeformMPaMm * mm * Rivets(c.ShellJoint, s)), area, c.ShellJoint, s, ref r);
                 if (leak > 0)
                 {
-                    k.Hole(ci, leak, point);
+                    k.Hole(ci, leak, point, seam: true);
                     (res.HoleM2, res.Deformed) = (res.HoleM2 + leak, res.Deformed + 1);
                 }
             }

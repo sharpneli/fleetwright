@@ -1,5 +1,5 @@
 # Plan: damage control (a 4.5 deepening)
-Status: **agreed with the user 2026-10-20** ("Decided" below); DC0 and DC1 done 2026-10-20, DC2 next.    Updated: 2026-10-20
+Status: **agreed with the user 2026-10-20** ("Decided" below); DC0-DC2 done 2026-10-20, DC3 next.    Updated: 2026-10-20
 
 The fine-tune pass for damage control: what the crew does about a hit once it has landed. Firefighting came first, as
 this pass's first slice (`fire.md`, decision 1). This plan adds the water and the repairs, and both draw on the same
@@ -536,6 +536,21 @@ on the yardstick bench.
 ### DC2 Holes by size
 - The four classes in `Hole`, the effective area in the inflow, reachability.
 - Nothing is plugged yet, so outcomes shouldn't move (a parity check).
+- **Built (done 2026-10-20):**
+  - **`ShipCondition.Hole(cell, area, at, count, seam)`** keeps each cell's holes by `HoleClass`, by the size of one hole:
+    seam, plug (≤ 150 cm²), patch (≤ 0.3 m²), mat (≤ 5 m²), beyond.
+  - **Per class:** the area and count still open, their mean height, the area damage control has worked on, and the
+    share of it that still leaks. `BreachM2` stays the sum as the sea sees it (open + worked × left), so every reader is
+    unchanged.
+  - **Seams:** the blast's deformed outside faces, the near miss's shell seams and the belt leaks' seep and moderate
+    regimes are seams. The near miss's splinters come with their count.
+  - The bench reports the holes open by class.
+- **Parity:** dc-history's water and losses are identical to DC1's, and the sim tests pass (624).
+- **What the classes say:**
+  - The 30 splinter holes are all plug-class (0.14 m² together).
+  - Torpedoes leave 4-9 holes beyond repair at sea (80-140 m²), plus mat-class tears in the cells around the hole.
+  - The bench's bow shells are mat-class: a collision mat or nothing.
+  - Shell hits on the RN battleship and the destroyer leave seams more than holes.
 
 ### DC3 Repair parties take water jobs
 - The renames: `RepairParty`, `DamageControlDoctrine`, `Readiness`; the scenario keys.
