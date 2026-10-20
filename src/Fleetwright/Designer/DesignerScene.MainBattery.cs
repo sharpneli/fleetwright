@@ -256,7 +256,7 @@ public sealed unsafe partial class DesignerScene
 
     // ------------------------------------------------------------------ drawing
 
-    static readonly float[] ColW = [34, 40, 138, 104, 128, 0, 42, 40, 104, 130, 232, 120, 54, 46];   // 0: the positions take what's left
+    static readonly float[] ColW = [34, 40, 138, 104, 128, 0, 42, 40, 104, 130, 180, 84, 54, 46];   // 0: the positions take what's left
     readonly float[] colX = new float[ColW.Length + 1];   // the table's column edges, laid out each frame
     static readonly string[] ColHead = ["", "", "CALIBRE", "LENGTH", "GUNS / TURRET", "POSITIONS · BOW TO STERN (↑ SUPERFIRES)", "TURR.", "GUNS",
         "FACES", "ROUNDS / GUN", "SHELLS", "HOUSING", "TURRET T", ""];
@@ -377,9 +377,9 @@ public sealed unsafe partial class DesignerScene
             At(9);
             Spinner(r.Rounds, P(40), extras: true);
             At(10);
-            ShellCellUi(r.Shells, P(222));   // where the material was: the turrets' material stays the scheme's, hidden (user, 2026-10-16)
+            ShellCellUi(r.Shells, P(172));   // where the material was: the turrets' material stays the scheme's, hidden (user, 2026-10-16)
             At(11);
-            if (HousingCell(Housings.Of(d.Main![k]), P(112)) is { } h)
+            if (HousingCell(Housings.Of(d.Main![k]), P(78)) is { } h)
                 Edit(Knobs.MainHousing(k).Set(d, h), $"Battery {Letter(k)}: {Knobs.HousingLabels[Array.IndexOf(Housings.All, h)]}");
             Text(dl, UiFonts.Mono, new Vector2(x[13] - P(6) - Width(UiFonts.Mono, r.Tonnes), ty), T.Muted, r.Tonnes);
             At(13, 2);
@@ -441,7 +441,7 @@ public sealed unsafe partial class DesignerScene
         int at = Array.IndexOf(Housings.All, current);
         ImGui.SetNextItemWidth(width);
         ImGui.BeginDisabled(!enabled);
-        if (ImGui.BeginCombo("##housing", enabled ? Knobs.HousingLabels[Math.Max(at, 0)] : "casemate"))
+        if (ImGui.BeginCombo("##housing", enabled ? current : "casemate"))
         {
             for (int i = 0; i < Housings.All.Length; i++)
                 if (ImGui.Selectable(Knobs.HousingLabels[i], i == at) && i != at)

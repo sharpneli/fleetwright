@@ -278,10 +278,10 @@ public sealed unsafe partial class DesignerScene
 
     // ------------------------------------------------------------------ drawing
 
-    static readonly float[] SecColW = [34, 40, 138, 104, 128, 0, 74, 50, 44, 104, 120, 232, 120, 46, 46];   // 0: the position takes what's left
+    static readonly float[] SecColW = [34, 40, 138, 104, 128, 84, 0, 74, 50, 44, 104, 120, 180, 46, 46];   // 0: the position takes what's left
     readonly float[] secX = new float[SecColW.Length + 1];
-    static readonly string[] SecHead = ["", "", "CALIBRE", "LENGTH", "GUNS / MOUNT", "TURRET ON", "PER SIDE", "PLACED", "GUNS", "SHIELDS",
-        "ROUNDS / GUN", "SHELLS", "HOUSING", "T", ""];
+    static readonly string[] SecHead = ["", "", "CALIBRE", "LENGTH", "GUNS / MOUNT", "HOUSING", "TURRET ON", "PER SIDE", "PLACED", "GUNS", "SHIELDS",
+        "ROUNDS / GUN", "SHELLS", "T", ""];
 
     void SecondaryPane(Vector2 size)
     {
@@ -327,14 +327,14 @@ public sealed unsafe partial class DesignerScene
         float segW = P(4) + Width(UiFonts.SansSmall, "deckhouse") + P(12) + Width(UiFonts.SansSmall, "deck") + P(12);
         for (int i = 0; i < SecHead.Length; i++)
         {
-            string head = i == 6 && sp.Counted ? "MOUNTS" : SecHead[i];
+            string head = i == 7 && sp.Counted ? "MOUNTS" : SecHead[i];
             if (head.Length == 0)
                 continue;
-            float tx = i is 7 or 8 or 12 ? x[i + 1] - P(6) - Width(UiFonts.SansSmall, head) : x[i] + P(4);
+            float tx = i is 8 or 9 or 13 ? x[i + 1] - P(6) - Width(UiFonts.SansSmall, head) : x[i] + P(4);
             Text(dl, UiFonts.SansSmall, new Vector2(tx, o.Y + (hh - UiFonts.SansSmall.FontSize) / 2), T.Muted, head);
         }
         if (sp.Offered[(int)Pos.Upper])
-            Text(dl, UiFonts.SansSmall, new Vector2(x[5] + P(4) + segW + P(4), o.Y + (hh - UiFonts.SansSmall.FontSize) / 2), T.Muted, "CASEMATE");
+            Text(dl, UiFonts.SansSmall, new Vector2(x[6] + P(4) + segW + P(4), o.Y + (hh - UiFonts.SansSmall.FontSize) / 2), T.Muted, "CASEMATE");
 
         var d = doc.Current;
         float fh = ImGui.GetFrameHeight();
@@ -401,8 +401,14 @@ public sealed unsafe partial class DesignerScene
             }
             ImGui.PopStyleVar();
 
-            // the position: one click sets mount, tier and stands_on
+            // how it's housed (docs/battle/magazines.md V1): a casemate's is its position
             At(5);
+            var sb = d.Secondary![k];
+            if (HousingCell(Housings.Of(sb), P(78), sb.Mount != "casemate") is { } h)
+                Edit(Knobs.SecHousing(k).Set(d, h), $"Secondary {SecName(k)}: {Knobs.HousingLabels[Array.IndexOf(Housings.All, h)]}");
+
+            // the position: one click sets mount, tier and stands_on
+            At(6);
             ImGui.PushFont(UiFonts.SansSmall);
             ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(1, 0));
             bool firstSeg = true;
@@ -420,29 +426,25 @@ public sealed unsafe partial class DesignerScene
             }
             ImGui.PopStyleVar();
             ImGui.PopFont();
-            Text(dl, UiFonts.SansSmall, new Vector2(x[6] - P(6) - Width(UiFonts.SansSmall, r.Axis), p.Y + (RowH - UiFonts.SansSmall.FontSize) / 2), T.Muted, r.Axis);
+            Text(dl, UiFonts.SansSmall, new Vector2(x[7] - P(6) - Width(UiFonts.SansSmall, r.Axis), p.Y + (RowH - UiFonts.SansSmall.FontSize) / 2), T.Muted, r.Axis);
 
-            At(6);
+            At(7);
             Spinner(r.Per, P(26), extras: false);
             string placed = sp.Built ? $"{r.Placed}/{r.Wanted}" : "–";
             bool shortOf = sp.Built && r.Placed < r.Wanted;
-            var pp = new Vector2(x[8] - P(6) - Width(UiFonts.Mono, placed), ty);
+            var pp = new Vector2(x[9] - P(6) - Width(UiFonts.Mono, placed), ty);
             Text(dl, UiFonts.Mono, pp, shortOf ? T.Amber : T.Muted, placed);
             if (shortOf && ImGui.IsMouseHoveringRect(pp, pp + new Vector2(Width(UiFonts.Mono, placed), UiFonts.Mono.FontSize)))
                 Tip(r.ShortTip);
             if (shortOf && secForceTip == $"short:{k}")
                 TipAt(r.ShortTip, pp + new Vector2(0, UiFonts.Mono.FontSize + P(4)));
-            Text(dl, UiFonts.Mono, new Vector2(x[9] - P(6) - Width(UiFonts.Mono, r.Guns), ty), T.Bright, r.Guns);
-            At(9);
-            Spinner(r.Shields, P(56), extras: false);
+            Text(dl, UiFonts.Mono, new Vector2(x[10] - P(6) - Width(UiFonts.Mono, r.Guns), ty), T.Bright, r.Guns);
             At(10);
-            Spinner(r.Rounds, P(40), extras: true);
+            Spinner(r.Shields, P(56), extras: false);
             At(11);
-            ShellCellUi(r.Shells, P(222));   // where the material was: the mounts' material stays the scheme's, hidden (user, 2026-10-16)
+            Spinner(r.Rounds, P(40), extras: true);
             At(12);
-            var sb = d.Secondary![k];
-            if (HousingCell(Housings.Of(sb), P(112), sb.Mount != "casemate") is { } h)
-                Edit(Knobs.SecHousing(k).Set(d, h), $"Secondary {SecName(k)}: {Knobs.HousingLabels[Array.IndexOf(Housings.All, h)]}");
+            ShellCellUi(r.Shells, P(172));   // where the material was: the mounts' material stays the scheme's, hidden (user, 2026-10-16)
             Text(dl, UiFonts.Mono, new Vector2(x[14] - P(6) - Width(UiFonts.Mono, r.Tonnes), ty), T.Muted, r.Tonnes);
             At(14, 2);
             ImGui.PushFont(UiFonts.SansSmall);
@@ -1166,7 +1168,7 @@ public sealed unsafe partial class DesignerScene
         y += P(20);
         var ms = sp.Mounts.Where(m => m.K == r.K).ToList();
         string span = ms.Count > 0 ? $"x {ms.Min(m => m.X):0} … {ms.Max(m => m.X):0} m" : "not placed";
-        string kind = SA.Casemate(r.Pos) ? "casemate" : (b.CalibreMm ?? 0) >= 150 ? "turret on a barbette" : (b.CalibreMm ?? 0) >= 76 ? "shielded mount" : "open mount";
+        string kind = SA.Casemate(r.Pos) ? "casemate" : Knobs.HousingLabels[Array.IndexOf(Housings.All, Housings.Of(b))];
         KeyValue(dl, x, ref y, "Mount", $"{kind} · shields {r.Shields.Value}");
         KeyValue(dl, x, ref y, "Place", sp.Built ? $"{r.Placed} of {r.Wanted} {(b.Count != null ? "mounts" : "per side")} · {span}" : "after the build");
         KeyValue(dl, x, ref y, "Height", $"gun axis {r.Axis} above the full-load waterline");
