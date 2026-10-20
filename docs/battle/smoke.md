@@ -1,5 +1,6 @@
 # Plan: the smoke field (a feasibility study)
-Status: **drafted 2026-10-20**, decisions 1-4 from the user ("Decided" below); nothing built    Updated: 2026-10-20
+Status: **drafted 2026-10-20**, decisions 1-4 from the user ("Decided" below); weather's one optical depth proposed;
+nothing built    Updated: 2026-10-20
 
 Smoke as sim state that sight reads, and the same state drawn. The research is `research/vfx/unified-smoke-system.md`
 (Lagrangian Gaussian puffs as the one store, every grid a throw-away view of them), on top of
@@ -194,6 +195,37 @@ ship smoked to her upper works still shows her tops, as a small, hard target. `G
 lines, so readings, ranging and the spotter's view of the fall follow. Own smoke comes from the field: an aft control
 in its own plume is blinded by the wind, not by a rule (`ComponentRow.Smoke` stays as the designer's warning).
 
+### Weather and the one optical depth (proposed, for the user)
+
+Haze and smoke are already one thing to the eye: an optical depth along the line, τ = σ_bg·d + τ_smoke, and the
+contrast falls as e^(−τ). Today σ_bg is uniform (`SightModel.Extinction` of the visibility, or of the light's reach at
+night), so its integral is a multiply and costs nothing. A unified field saves nothing against that. It saves against
+a *second* non-uniform field: fog banks, squalls and mist patches with their own index, walk and cache. So the
+proposal is to unify at the query, not in the store:
+
+- **One function every sight consumer calls**, `Air.Tau(a, b, bands)`: the background analytic (from `IWeather`
+  along the line, the mean of the ends while it varies slowly), plus the local features. One walk, one pair cache.
+  The looks, fire control's readings, the spotter, and the lights (`GlowMargin`; searchlights, star shell and gun
+  flashes later) all take the same τ, so a fire's glow is dimmed by smoke too.
+- **Local weather features later, as a short list beside the puffs**, not puffs in the store: fog banks and squalls
+  as large, flat, long-lived Gaussians (σ_h kilometres, σ_z tens to hundreds of metres, low), each drifting at its own
+  velocity (sea fog sits, squalls go with the steering wind). They're few (tens), so each line tests them all, with no
+  index and none of the smoke's merging, cap or retiring. Same closed form, same erf, drawn by the same splat in their
+  own tint: a fog bank shows on the table, and what's drawn is what blocks sight.
+- **Light stays out of the field.** Night, twilight and a silhouette against a low sun are illumination, not
+  scattering: the sight model keeps them (`LightReachM`, C₀). So does the sun's glare on the haze (looking toward the
+  sun the haze is brighter and contrast falls faster). That's a per-line factor on σ_bg by the angle to the sun, a
+  candidate for Jutland's bearing-dependent visibility beside the smoke. A later weather item.
+- **What changes now:** `SightLine` carries τ_local per band beside the visibility; the store's puffs have a class
+  (smoke kinds) and the query a source list, so weather can join without a second structure. Nothing else until the
+  weather grows past one per scenario (plan.md 3.2, decision 5).
+- **One departure to name:** e^(−τ) is Koschmieder's, which assumes the path glows like the horizon sky. That holds
+  for haze and roughly for grey smoke. Dark coal smoke glows less (it hides by darkening, more slowly at low τ), and
+  sunlit white smoke glows more. Start with e^(−τ) for all, and give each tint an airlight factor only if the
+  yardstick asks.
+- **The AI's scalar visibility** (`CaptainLayer`'s reach, `TaskLayer`'s search spacing) stays the background's. Smoke is
+  local: the AI meets it through its contacts, not by a smaller number.
+
 ### Smoke contacts (decision 4)
 
 - **A plume as a target:** per emitter, a summary kept up as it emits and merges: its top (the highest young puff's
@@ -251,7 +283,8 @@ Each step reports its costs on the `shipgen smoke` bench and leaves the field of
 - **Gate 1:** the budget above. If it fails, the study stops and records why.
 
 ### Z3 Sighting and fire control read it
-- `SightLine`'s bands and the margin; `MarginOf`; the scenario test that smoke off changes nothing (hashes as before).
+- `SightLine`'s bands and the margin through the one optical depth (`Air.Tau`, if agreed); `MarginOf`; `GlowMargin`
+  taking the same τ; the scenario test that smoke off changes nothing (hashes as before).
 - The yardstick: Jutland's directional visibility and the trails' bands; `fc-history` and `duel` with the field on and
   off, beside the record.
 
@@ -278,6 +311,8 @@ Each step reports its costs on the `shipgen smoke` bench and leaves the field of
 - A flow solve, eddies, blast tunnels and wakes stirring the smoke: the research's visual-only detail grid, a VFX-pass
   item if ever.
 - A wind that varies by place: when the weather has one.
+- Fog banks, squalls and the sun's glare on the haze: weather items that join the one optical depth later (proposed
+  above), not built here.
 - Spotting from aircraft (none in 1890-1925): the vertical τ is there for it.
 - Land: smoke drifts over it unchanged (islands are rare at sea).
 - Night: smoke lit by fires, flashes and searchlights comes with the night pass.
