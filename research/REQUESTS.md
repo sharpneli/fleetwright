@@ -12,6 +12,21 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: (comparison, recommendation, API notes, plan...)
 -->
 
+### 2026-10-20 - Flooding and damage control in the record, 1890-1925
+- Question: how ships of the first game's period took on water after hits, and what their crews did about it, as
+  numbers. (1) Cases with times, tonnages, list and speed: Seydlitz and Lützow at Jutland (Lützow's hour by hour if
+  known), Marlborough's torpedo, Audacious (1914), Oslyabya, Borodino and Alexander III at Tsushima, the 1915
+  pre-dreadnoughts torpedoed or mined (Majestic, Triumph, Formidable, Irresistible, Ocean, Bouvet, Goliath), Retvizan
+  and Tsesarevich at Port Arthur, and any destroyer cases. (2) Who counterflooded and how: Makarov's and Krylov's
+  tables, the German navy's system, the RN at Jutland; the rate and the tanks used. (3) Portable and fixed pumps by navy
+  and year (hand, steam, petrol), collision mats and shot plugs in use, repair-party organisation and size before the
+  USN's 1940s system. (4) Watertight doors and closure discipline in action, and how often doors left open mattered.
+- Context / relevant files: `docs/battle/damage-control.md` (the plan; its yardstick's rows marked (?) wait on this),
+  `docs/battle/09_damage_control.md` and `10_damage_control_holistic.md` (mostly WWII anchors),
+  `docs/battle/damage/17_structural_leakage.md`. Not blocking: the plan builds on 09/10/17's mechanism checks first.
+- Wanted output: a table of cases (hits, water by time, list, speed, outcome, what the crew did), counterflood practice
+  and rates by navy, pumps and party sizes by navy and year, with sources.
+
 ### 2026-10-19 - Burning warships and shell hits as seen, 1904-1925
 - Question: what a shell hit and a shipboard fire looked like from outside, as numbers and colours the world view can
   take. (1) Photos and film of burning warships as anchors for flame height, smoke colour and density, and how far a
