@@ -158,7 +158,7 @@ public class FireEffectsTests(ITestOutputHelper output)
         long now = 0;
         while (!s.Smoked[c.Cells[cell].Room])
             Fires.Step(c, f, s, 10, Still, ref rs, now += 10_000);
-        Functions.Evaluate(s, Settings.DraughtFloor);
+        Functions.Evaluate(s, Settings.DraughtFloor, now);
         output.WriteLine($"abandoned at {now / 60_000.0:0.0} min: power {s.PowerCap:P0}");
         Assert.True(s.PowerCap < 1);
         Assert.True(s.Has(node, PartFlags.Down));
@@ -174,7 +174,7 @@ public class FireEffectsTests(ITestOutputHelper output)
         }
         output.WriteLine($"manned again {(now - outAt) / 60_000.0:0.0} min after the fire over it was out");
         Assert.InRange((now - outAt) / 1000.0, Settings.FireSmokeClearS - 20, Settings.FireSmokeClearS + 20);
-        Functions.Evaluate(s, Settings.DraughtFloor);
+        Functions.Evaluate(s, Settings.DraughtFloor, now);
         Assert.Equal(1, s.PowerCap, 9);
     }
 

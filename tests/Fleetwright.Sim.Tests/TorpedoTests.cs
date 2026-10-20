@@ -238,12 +238,13 @@ public class TorpedoTests(ITestOutputHelper output)
         var designs = new[] { Path.Combine(Fleet.Shipgen, "designs") };
         // the test needs an attack made, and whether the boats get in is chance, moving with every change to the gunnery
         // (seed 7 did until the short-range bug hunt of 2026-10-18 let the battleships' secondaries hit close in): it takes
-        // the first of two dozen seeds whose boats get their torpedoes away
+        // the first of four dozen seeds whose boats get their torpedoes away (seed 6 did until E7's fix of 2026-10-20: near
+        // misses no longer black out the battleships and silence their secondaries; seed 34 now)
         ulong seed = 0;
         World w = null!;
         AiSystem ai = null!;
         long warm = 0;
-        while (++seed <= 24)
+        while (++seed <= 48)
         {
             w = new World(s.Start, seed, Settings);
             ai = new AiSystem(w);
@@ -262,7 +263,7 @@ public class TorpedoTests(ITestOutputHelper output)
             if (w.Torpedoes.Fired > 0)
                 break;
         }
-        Assert.True(w.Torpedoes.Fired > 0, "the boats fired in none of seeds 1-24");
+        Assert.True(w.Torpedoes.Fired > 0, "the boats fired in none of seeds 1-48");
         output.WriteLine($"seed {seed}");
         warm += 60;
         w.AdvanceTo(s.Start + warm * 1000);

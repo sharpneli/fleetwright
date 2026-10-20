@@ -956,6 +956,12 @@ public sealed record SimSettings
     /// <summary>A boiler room keeps this share of its steam with every funnel it draws through wrecked (the draught
     /// lost; 08-gunfire-effects.md §8: funnel hits cost draught, not the boilers).</summary>
     public double DraughtFloor { get; init; } = 0.7;
+
+    /// <summary>The outages a captain waits out in the line, minutes (docs/battle/command.md 5.1a item 2; the user,
+    /// 2026-10-20): his fall-out reads his ship as she'll be once what ends within this is back (a blackout, a tripped
+    /// breaker, a stunned crew, a short jam), not what's down for a while. 13 §1.3's short jams are under 15 min, the
+    /// trips 1-5 [EST].</summary>
+    public double FallOutWaitMin { get; init; } = 15;
     public double NeighbourShare { get; init; } = 0.5;
 
     /// <summary>Holes: a shell that passes through plating leaves a hole this many calibres across.</summary>
@@ -1295,10 +1301,11 @@ public sealed record SimSettings
     /// <summary>A near miss's shock (E7; damage/15 §3, §6.4): the near-miss shock factor NSF = √W/R·(1 + sin a)/2·
     /// √(1 − e^(−2Δt/θ)) (lb, ft; Cole's θ, the surface's reflection cutting the pulse off) at the nearest wetted point,
     /// at least <see cref="ShockWetM"/> down [EST]. Its bands (<see cref="NearShockBands"/>, fitted to the British bomb
-    /// near misses of 1939-41 [FIT]): 0.03 fragile gear (breakers trip: a section's power and the directors' gyros, for
-    /// <see cref="NearTripMin"/>), 0.08 machinery mounts and castings (a machinery space's gear damaged; the whole ship's
-    /// breakers), 0.2 the hull's seams (shafts strained), 0.45 plating buckled (shafts and thrusts out of line, the
-    /// machinery again), 1.0 plating split. Each happens with a chance rising across its band from 0 to 1 [EST]. The
+    /// near misses of 1939-41 [FIT]): 0.03 fragile gear (breakers trip, each mount's and director's by its own NSF, and
+    /// the directors' gyros, for <see cref="NearTripMin"/>), 0.08 machinery mounts and castings (a machinery space's gear
+    /// damaged), 0.2 the hull's seams (shafts strained; the whole ship's breakers by her machinery spaces' NSF, White
+    /// Plains' 0.3-0.6: E7's fix, 2026-10-20), 0.45 plating buckled (shafts and thrusts out of line, the machinery
+    /// again), 1.0 plating split. Each happens with a chance rising across its band from 0 to 1 [EST]. The
     /// gear's edges are times the ship's shock grade's <see cref="NearShockGradeK"/> (G0 the record's cast-iron fittings,
     /// G1 shock-hardened: 15 §6.5's ×2 [EST]), the structure's not. The seams leak by r(D) (damage/17 §3.1: D = 5·NSF,
     /// times <see cref="ShockPlateMm"/> over the plate: the bands are a destroyer's bottom's [EST]), over the shell and

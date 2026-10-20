@@ -63,6 +63,7 @@ static class ScenarioPlay
                     if (w.Speed != want)
                         w.Apply(Command.SetSpeed(want));
                     w.AdvanceTo(w.Time + 60_000);
+                    guns.Read(w.CombatLog);
                     // a ship falling out for her main guns: why they're out, as she falls out
                     for (; seen < end.Timeline.Count; seen++)
                         if (end.Timeline[seen] is { Kind: PlayEvent.FellOut } l && (Fleetwright.Sim.Ai.Captains.CaptainReason)l.Count ==
@@ -96,6 +97,8 @@ static class ScenarioPlay
                 guns.Print("           ");
             all.FellOut.Merge(guns.FellOut);
             all.End.Merge(guns.End);
+            (all.HitBlackouts, all.NearBlackouts, all.ShipsBlacked) = (all.HitBlackouts + guns.HitBlackouts, all.NearBlackouts + guns.NearBlackouts,
+                all.ShipsBlacked + guns.ShipsBlacked);
         }
         if (seeds > 1 && runs.Count > 0)
         {
@@ -114,11 +117,33 @@ static class ScenarioPlay
     sealed class MainGuns
     {
         public readonly Tally FellOut = new(), End = new();
+        /// <summary>The ship-wide blackouts (E4's cascade, E7's near misses), and the ships blacked out at least once.</summary>
+        public int HitBlackouts, NearBlackouts, ShipsBlacked;
+        readonly HashSet<int> blacked = [];
+        long read;
+
+        public void Read(CombatLog log)
+        {
+            for (long i = Math.Min(log.Written - read, log.Count) - 1; i >= 0; i--)
+            {
+                var e = log.Newest((int)i);
+                if (e.Kind is not (CombatEvent.Hit or CombatEvent.NearMiss) || (e.Effect & HitEffect.Blackout) == 0)
+                    continue;
+                if (e.Kind == CombatEvent.NearMiss)
+                    NearBlackouts++;
+                else
+                    HitBlackouts++;
+                ShipsBlacked += blacked.Add(e.Target) ? 1 : 0;
+            }
+            read = log.Written;
+        }
 
         public void Print(string indent)
         {
             Console.WriteLine($"{indent}main guns: {FellOut.Ships} fell out for them, " + FellOut.Text());
             Console.WriteLine($"{indent}           at the end, {End.Ships} ships afloat: " + End.Text());
+            Console.WriteLine($"{indent}blackouts: {HitBlackouts + NearBlackouts} ship-wide ({HitBlackouts} by a hit's shock, {NearBlackouts} by near misses), " +
+                              $"{ShipsBlacked} ships blacked out");
         }
 
         public sealed class Tally

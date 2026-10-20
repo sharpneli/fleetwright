@@ -5,7 +5,9 @@ namespace Fleetwright.Sim.Combat;
 /// <summary>What a ship can still do (docs/battle/command.md "Fitness"), from its condition: the speed it can make as a
 /// share of its designed speed, its chief guns (<see cref="BatteryRow.Chief"/>) working as a share of them (by barrels),
 /// the water aboard as a share of its reserve buoyancy, its list, and its steering. Its own captain reads it exactly (own ships are known); doctrine's
-/// fall-out thresholds compare against it. Pure, and it allocates nothing.</summary>
+/// fall-out thresholds compare against it. The speed and guns are the lasting state's (<see cref="ShipCondition.MountLasts"/>,
+/// <see cref="ShipCondition.PowerCapLasts"/>): a fault he expects back soon (a blackout, a tripped breaker, a stunned
+/// crew) doesn't take her out of the line (the user, 2026-10-20). Pure, and it allocates nothing.</summary>
 public readonly record struct Fitness(double SpeedShare, double MainGunsShare, double WaterShare, double ListDeg, Steering Steering)
 {
     public static readonly Fitness Whole = new(1, 1, 0, 0, Steering.Free);
@@ -16,7 +18,7 @@ public readonly record struct Fitness(double SpeedShare, double MainGunsShare, d
         if (!k.Damaged)
             return Whole;
         double top = c.Motion.MaxSpeedKn;
-        double speed = top > 0 ? c.SpeedAt(c.PowerAt(top) * k.PowerCap) / top : 1;
+        double speed = top > 0 ? c.SpeedAt(c.PowerAt(top) * k.PowerCapLasts) / top : 1;
         int barrels = 0, working = 0;
         foreach (ref readonly var b in c.Batteries)
         {
@@ -26,7 +28,7 @@ public readonly record struct Fitness(double SpeedShare, double MainGunsShare, d
             {
                 int n = c.TurretTypes[c.Mounts[m].Type].Barrels;
                 barrels += n;
-                if (k.MountWorks[m])
+                if (k.MountLasts[m])
                     working += n;
             }
         }

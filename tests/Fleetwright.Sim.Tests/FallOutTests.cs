@@ -2,6 +2,7 @@ using Fleetwright.Sim.Ai;
 using Fleetwright.Sim.Ai.Captains;
 using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
+using Fleetwright.Sim.Ships;
 using Xunit.Abstractions;
 
 namespace Fleetwright.Sim.Tests;
@@ -97,5 +98,30 @@ public class FallOutTests(ITestOutputHelper output)
         w.AdvanceTo(w.Time + 60_000);
         Assert.NotNull(w.Groups.Of(1));
         Assert.Equal(CaptainReason.None, ai.Captains.ReasonOf(1));
+    }
+
+    /// <summary>A fault the captain judges temporary doesn't take her out of the line (the user, 2026-10-20; E7's fix): with
+    /// the whole ship's power out for 3 minutes her fitness reads her main guns whole; out for an hour, gone. The power cut
+    /// lasting doesn't slow her either way (the mounts are what it reaches).</summary>
+    [Fact]
+    public void A_blackout_for_minutes_leaves_her_fit_one_for_an_hour_does_not()
+    {
+        var c = Fleet.Get("dreadnought").Class!;
+        var rule = new FallOutRule(0.5, 0.5, 15, 0.5);
+        foreach (var (min, whole) in new[] { (3.0, true), (60.0, false) })
+        {
+            var k = new ShipCondition();
+            k.Reset(c);
+            k.Damaged = true;
+            long now = 600_000;
+            Effects.PowerOut(c, k, new P3(0, 0, 0), -1, -1, double.PositiveInfinity, (long)(min * 60_000), now, DownCause.NearMissCascade);
+            Functions.Evaluate(k, Settings.DraughtFloor, now + (long)(Settings.FallOutWaitMin * 60_000));
+            var fit = Fitness.Of(c, k, 1000);
+            output.WriteLine($"power out {min} min: mounts working {k.MountWorks.Count(m => m)} of {k.MountWorks.Length}, " +
+                             $"main guns {fit.MainGunsShare:P0} to the captain, fall-out {rule.Of(fit)}");
+            Assert.DoesNotContain(true, k.MountWorks);
+            Assert.Equal(whole ? 1 : 0, fit.MainGunsShare);
+            Assert.Equal(whole ? FallOutCause.None : FallOutCause.Guns, rule.Of(fit));
+        }
     }
 }

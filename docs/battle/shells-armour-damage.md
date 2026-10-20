@@ -1,5 +1,5 @@
 # Plan: shells, armour and damage (a 4.5 deepening)
-Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S, phase P (PM moved to the balance pass), E0-E7 done (E7 has an open fix: near misses black out too many ships, 2026-10-20); E8a (the yardstick) and E8b (one value for every navy) done    Updated: 2026-10-20
+Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S, phase P (PM moved to the balance pass), E0-E7 done (E7's fix, near misses blacking out too many ships, done 2026-10-20); E8a (the yardstick) and E8b (one value for every navy) done    Updated: 2026-10-20
 
 The fine-tune pass for the **Terminal** link of `fighting.md` 4.5 ("penetration proper: material qualities, capped and
 uncapped shells, spaced armour, edge effects; shell quality by navy and year; diving shells and underwater hits;
@@ -1697,7 +1697,7 @@ squadrons, and changes `Matchup.cs` with it.
     - **Not built:** a ricocheting shell carried on (v0 stops it); water on deck, the splash on the rangefinders; radar,
       sonar and the gyrocompass (the sim doesn't carry them); the seams' fittings (17's session); bombs (§3 is ready for
       them). The matchup has no near-miss term (the balance pass).
-  - **Fix (found 2026-10-20, open):** near misses black out too many ships, and the captains fall out on it.
+  - **Fix (found and done 2026-10-20):** near misses black out too many ships, and the captains fall out on it.
     - **Found** with the play bench's new main-guns tally (`scenario --play`: each chief mount out, by its first cause,
       when a ship falls out for her guns and at the end; temporary outages tagged by `ShipCondition.DownWhy`). The user
       had seen "a lot of ships with disabled main guns" in a game. Squadrons, 5 seeds: 27 ships fell out for their main
@@ -1712,6 +1712,41 @@ squadrons, and changes `Matchup.cs` with it.
       battle line. A blackout, a tripped breaker or a stunned crew lasts minutes; his fall-out (`Fitness`,
       `FallOutRule`, docs/battle/command.md 5.1a item 2) reads the lasting state, not what's down for a while. He falls
       out only for what he expects to last, and the matchup's toughness reads the same.
+    - **Done 2026-10-20.** What it came to:
+      - **The captains:** `Functions.Evaluate` works out beside the mounts and the plant as they are now the lasting
+        state (`ShipCondition.MountLasts`, `PowerCapLasts`): each as it'll be once the outages ending within
+        `FallOutWaitMin` (15 min [EST]: 13 §1.3's short jams are under 15 min, the trips 1-5) are over: a node down, a
+        jam, guns out. `Fitness` reads it, so the captain's fall-out, the matchup's toughness and the benches' "out" all
+        do. A blackout of minutes leaves her fit, one of an hour (E4's cascade's 30-90 min tail) doesn't
+        (`FallOutTests`).
+      - **The breakers by their own shock** (15 §6.4: "each space by its own NSF"): across the fragile band each mount
+        (its gunhouse or barbette, the nearer) and director trips by its own NSF, one draw for them all, so the nearer
+        trip first; before, everything within 40 m of the nearest wetted point went at that point's NSF.
+      - **The whole ship's** by her machinery spaces' NSF (her dynamos and switchboards) across the hull's band, 0.2-0.45
+        times the grade, not the castings' 0.08-0.2 at the nearest point: the record's one ship-wide trip from a burst in
+        the water is White Plains' at 0.3-0.6 (15 §3.3); the bomb record's 0.05-0.25 names gear and machinery, no
+        ship-wide loss (15 §3.2).
+      - **Tests:** White Plains (15 §6.7 test 6) restated: the record's breakers came at 0.33-0.53, so within it (5 m
+        under, 0.36) they trip ship-wide at least half the time (0.70), under it (8 m, 0.24) less (0.20) but they trip;
+        it asked half the time at both (**restated, for the user to approve**). The flotilla's allocation test took seed
+        6 because near misses blacked out the battleships and silenced their secondaries as the boats came in (seed 6,
+        9-13 min: two of the four with 0-2 of 17 mounts); with that gone the boats are beaten off in seeds 1-33, so it
+        searches four dozen seeds (34 now).
+      - **Before and after** (squadrons 5 seeds, `scenario --play`, which now counts ship-wide blackouts): fell out for
+        the main guns 27 → 5 (the captains' half alone: 7), every one now for lasting damage (magazines flooded,
+        gunhouses, barbettes); ship-wide blackouts, the captains' half in both, 106 → 19 (near misses 105 → 15, hits'
+        cascade 1 → 4), ships blacked out at least once 37 → 15 of 45. With ships staying in the line the battle is bloodier: Britain lost 0.0 → 1.6 of 4,
+        Germany 0.6 → 3.0 of 5 (mostly capsized), hits 131/161 → 179/268. `nearmiss` salvos: Derfflinger's AP on Lion
+        gear out 0.17 → 0.04 and blackouts 0.08 → 0.02 a salvo, the super-dreadnought's 0.21 → 0.03 and 0.10 → 0.01.
+        Tsushima (no breakers before director fire) 3 seeds about the same: Russia 3.7 of 13 both, Japan 4.0 of 14
+        both, 14 → 13 out for their guns. Flotilla 5 seeds unchanged. Squadrons' 30 min hash DAE8B3FAD19C4EAE →
+        E2F7CCFB3E7C52B7; the damage system 60.6 → 60.9 µs a call (more calls: more ships firing).
+      - **Left open for the user:** the G0 grade lumps everyone before 1940 with 1939-42's fittings, and its rates are
+        that column's (13 §3.4: the ship-wide cascade 0.02 a heavy hit on armour, WWI 0.005; a section's power 0.15,
+        WWI 0.08). A 1916 ship takes 1939-42's breakers and ABTs; 13 §3.3 has WWI's switchboards failing "mostly through
+        flooding and splinters". Squadrons still blacks out a third of its ships once. The fix would be a grade under
+        G0 for the fused, dynamo-on-its-own-governor plants (a design block, set by the format upgrade by year), and it's
+        a design change, not a band.
 - **E8 The battle anchors.** With S and P in, the whole chain against the battles: Jutland, Bismarck's ~3 belt holes in
   ~400 hits, South Dakota, Samar, the 1894–1905 battles, the destroyer benches; and the notes' own: 16's killed and
   wounded per hit by group, 13's turret-minutes lost per 100 heavy hits (about half to non-penetrations), 15's

@@ -612,7 +612,7 @@ public sealed class DamageSystem : IWorldSystem
     {
         double cap = k.PowerCap;
         var steering = k.Steering;
-        bool steers = Functions.Evaluate(k, settings.DraughtFloor);
+        bool steers = Functions.Evaluate(k, settings.DraughtFloor, world.Time.Ms + (long)(settings.FallOutWaitMin * 60_000));
         Freeze(world, slot, k);
         Stiffen(world, slot, k);
         if (!steers && k.Steering == Steering.Free)
@@ -801,10 +801,11 @@ public sealed class DamageSystem : IWorldSystem
         var store = ships.Store;
         int entity = store[slot].Entity;
         (k.Status, k.Loss) = (ShipStatus.GoingDown, how);
-        k.PowerCap = 0;
+        (k.PowerCap, k.PowerCapLasts) = (0, 0);
         k.NextStepMs = -1;
         k.StepGen++;   // no more steps: its water and attitude stay as they were
         Array.Fill(k.MountWorks, false);
+        Array.Fill(k.MountLasts, false);
         Array.Fill(k.TubeWorks, false);
         Array.Fill(k.DirectorWorks, false);
         Freeze(world, slot, k);

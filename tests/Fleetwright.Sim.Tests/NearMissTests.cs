@@ -188,7 +188,10 @@ public class NearMissTests(ITestOutputHelper output)
 
     /// <summary>15 §6.7 test 6 (White Plains, 15 §3.3): a 46 cm AP burst 5-8 m under the turn of a light hull's bilge reaches
     /// 0.25-0.7, springs her seams, damages her machinery and trips her breakers (a destroyer here: the stand-in escort
-    /// carrier carries no guns, so nothing to trip, E4's rule), and doesn't sink her.</summary>
+    /// carrier carries no guns, so nothing to trip, E4's rule), and doesn't sink her. The record's "most of the circuit
+    /// breakers" came at 0.33-0.53: within it they trip ship-wide at least half the time; under it (8 m, about 0.24) they
+    /// trip less, but they trip (restated 2026-10-20 with E7's fix: the whole ship's by her machinery spaces' NSF across
+    /// the hull's band).</summary>
     [Fact]
     public void An_AP_burst_under_the_keel_springs_the_hull_and_trips_the_breakers()
     {
@@ -202,7 +205,7 @@ public class NearMissTests(ITestOutputHelper output)
             Assert.InRange(r.Nsf / n, 0.2, 0.7);
             Assert.True(r.ShockM2 > 0);
             Assert.True(r.Parts / n >= 1);
-            Assert.True(r.Shocks / n >= 0.5);
+            Assert.True(r.Nsf / n >= 0.3 ? r.Shocks / n >= 0.5 && r.Blackouts / n >= 0.5 : r.Shocks > 0);
             Assert.Equal(0, r.Lost);
         }
     }

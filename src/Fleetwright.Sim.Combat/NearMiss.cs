@@ -355,9 +355,11 @@ public static class NearMiss
     /// there (less what the splinters holed it already: the larger, not both);</item>
     /// <item><b>the machinery:</b> each boiler and engine room by its own NSF: its gear damaged across the castings' band
     /// (times the grade), the shafts through it strained across the hull's, the room again across the buckling's;</item>
-    /// <item><b>the gear</b> (with director fire control, E4's: breakers to trip): across the fragile band the section's
-    /// power round the nearest point out and the directors' gyros rolling E4's failure, across the castings' the whole ship's breakers, each
-    /// for a while;</item>
+    /// <item><b>the gear</b> (with director fire control, E4's: breakers to trip): across the fragile band each mount's and
+    /// director's breakers by its own NSF (one draw: the nearer trip first) and the directors' gyros rolling E4's failure
+    /// at the nearest point's; the whole ship's breakers by her machinery spaces' NSF (her dynamos and switchboards) across
+    /// the hull's band (White Plains, 0.3-0.6; the bomb record's 0.05-0.25 names gear and machinery, no ship-wide loss),
+    /// each times the grade, each for a while;</item>
     /// <item><b>the stern:</b> a burst near it shakes the rudders, shafts and propellers by their own NSF across the hull's
     /// band (Ilex, Fortune).</item>
     /// </list></summary>
@@ -428,6 +430,7 @@ public static class NearMiss
 
         // the machinery, each space by its own shock
         var comps = c.Components;
+        double plant = -1;   // the machinery spaces' worst: where her dynamos and switchboards are
         for (int room = 0; room < c.Rooms.Length; room++)
         {
             if (c.Rooms[room].Kind is not (RoomKind.BoilerRoom or RoomKind.EngineRoom))
@@ -435,6 +438,7 @@ public static class NearMiss
             double n = 0;
             foreach (int cell in c.Links(c.Rooms[room].Cells))
                 n = Math.Max(n, Nsf(w, p, surface, Nearest(c.Cells[cell].Box, p)));
+            plant = Math.Max(plant, n);
             int node = c.RoomNode(room);
             if (Chance(Ramp(n / grade, b[1], b[2]), ref r))
                 Effects.Harm(ref res, k, node);
@@ -449,9 +453,34 @@ public static class NearMiss
         // the gear: breakers and the directors' gyros (with something to trip)
         if (NonPen.Electrics(c))
         {
-            if (Chance(Ramp(gear, b[0], b[1]), ref r))
-                res.Shock |= Effects.PowerOut(c, k, nearAt, -1, -1, s.ShockZoneBM, NonPen.Minutes(s.NearTripMin, ref r), now, DownCause.NearMiss);
-            if (Chance(Ramp(gear, b[1], b[2]), ref r))
+            // the breakers by each mount's and director's own shock, one draw for them all: the nearer trip first
+            if (Ramp(gear, b[0], b[1]) > 0)
+            {
+                double u = r.NextDouble();
+                long ms = -1;
+                for (int m = 0; m < c.Mounts.Length; m++)
+                {
+                    ref readonly var mr = ref c.Mounts[m];
+                    double n = Nsf(w, p, surface, Nearest(comps[mr.Component].Bounds, p));
+                    if (mr.Barbette >= 0)
+                        n = Math.Max(n, Nsf(w, p, surface, Nearest(comps[mr.Barbette].Bounds, p)));
+                    if (u < Ramp(n / grade, b[0], b[1]))
+                    {
+                        ms = ms < 0 ? NonPen.Minutes(s.NearTripMin, ref r) : ms;
+                        k.Down(mr.Component, now, ms, DownCause.NearMiss);
+                        res.Shock = true;
+                    }
+                }
+                for (int d = 0; d < c.Directors.Length; d++)
+                    if (u < Ramp(Nsf(w, p, surface, Nearest(comps[c.Directors[d].Component].Bounds, p)) / grade, b[0], b[1]))
+                    {
+                        ms = ms < 0 ? NonPen.Minutes(s.NearTripMin, ref r) : ms;
+                        k.Out(k.DirectorDown, d, now, ms);
+                        res.Shock = true;
+                    }
+            }
+            // the whole ship's by her machinery spaces' (15 §3.3: White Plains' "most of the circuit breakers" at 0.3-0.6)
+            if (Chance(Ramp((plant >= 0 ? plant : nsf) / grade, b[2], b[3]), ref r))
             {
                 res.Shock |= Effects.PowerOut(c, k, nearAt, -1, -1, double.PositiveInfinity, NonPen.Minutes(s.NearTripMin, ref r), now, DownCause.NearMissCascade);
                 res.Blackout = true;

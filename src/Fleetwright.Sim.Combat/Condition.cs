@@ -217,6 +217,11 @@ public sealed class ShipCondition
     /// <summary>The heat release of her fires that show (B2: developed, on the open deck, burning charges), MW.</summary>
     public double FireShowMW;
     public bool[] MountWorks = [], DirectorWorks = [], EyeWorks = [], TubeWorks = [];
+    /// <summary>Which mounts work and the power the plant makes once the outages ending by <see cref="LastingMs"/> are over
+    /// (<see cref="Functions.Evaluate"/>): what her captain's fall-out reads (<see cref="Fitness"/>), the lasting state.</summary>
+    public bool[] MountLasts = [];
+    public double PowerCapLasts = 1;
+    public long LastingMs;
     /// <summary>What hits that held left each mount (E4).</summary>
     public MountHarm[] Mount = [];
     /// <summary>Each node's outage while it's <see cref="PartFlags.Down"/>: until when, world ms.</summary>
@@ -374,6 +379,7 @@ public sealed class ShipCondition
             Smoked = new bool[c.Rooms.Length];
             (Level, LevelsFuel) = (new double[c.Rooms.Length], double.NaN);
             MountWorks = new bool[c.Mounts.Length];
+            MountLasts = new bool[c.Mounts.Length];
             DirectorWorks = new bool[c.Directors.Length];
             EyeWorks = new bool[c.Eyes.Length];
             TubeWorks = new bool[c.Tubes.Length];
@@ -450,6 +456,8 @@ public sealed class ShipCondition
         }
         Array.Fill(HoleLeft, 1.0);
         Array.Fill(MountWorks, true);
+        Array.Fill(MountLasts, true);
+        (PowerCapLasts, LastingMs) = (1, 0);
         Array.Fill(DirectorWorks, true);
         Array.Fill(EyeWorks, true);
         Array.Fill(TubeWorks, true);
@@ -543,6 +551,15 @@ public sealed class ShipCondition
         _ => 0,
     };
 
+    /// <summary>How much a node gives once its outage, if it ends by then (world ms), is over: <see cref="Health"/> but
+    /// for that.</summary>
+    public double HealthBy(int node, long ms) => (Flags[node] & PartFlags.Down) != 0 && DownUntil[node] <= ms ? State[node] switch
+    {
+        PartState.Ok => 1,
+        PartState.Damaged => 0.5,
+        _ => 0,
+    } : Health(node);
+
     public bool Has(int node, PartFlags f) => (Flags[node] & f) != 0;
 
     /// <summary>A node out for a while, from now for ms (E4): down until then, or later if it already was; the longer
@@ -624,6 +641,16 @@ public sealed class ShipCondition
 
     /// <summary>The guns a mount still fires of its barrels (E4: its guns out don't).</summary>
     public int Guns(int mount) => Math.Max(Class.TurretTypes[Class.Mounts[mount].Type].Barrels - Mount[mount].GunsOut, 0);
+
+    /// <summary>Whether a mount works once the outages ending by then (world ms) are over: its function's worth then
+    /// (<paramref name="value"/>), its jam cleared and its guns back if they're due by then.</summary>
+    public bool WorksBy(int mount, double value, long ms)
+    {
+        ref readonly var a = ref Mount[mount];
+        bool jammed = Has(Class.Mounts[mount].Component, PartFlags.Jammed) && !(a.JamUntil > 0 && a.JamUntil <= ms);
+        bool guns = a.GunUntil > 0 && a.GunUntil <= ms || Guns(mount) > 0;
+        return value > 0 && !jammed && guns;
+    }
 
     /// <summary>Whether a mount can lay its guns: it works, and at local control, with its sights (E4: a mount with its
     /// sights out fires only by a director).</summary>
