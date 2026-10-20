@@ -1,5 +1,5 @@
 # Plan: magazines (a 4.5 deepening)
-Status: **every question decided** (the user, 2026-10-20: "Decided" below); research filed; V0 and V1 done 2026-10-20
+Status: **every question decided** (the user, 2026-10-20: "Decided" below); research arrived (10); V0, V1 and V2 done 2026-10-20
 Updated: 2026-10-20
 
 The fine-tune pass for magazines: how a flash gets to the charges, what happens once they burn, and what the ship
@@ -15,6 +15,9 @@ The research:
   Lion, Derfflinger) and the mitigations (flash doors, interlocks, flooding).
 - `docs/battle/10_damage_control_holistic.md` §2.3 is magazines under fire, and `docs/battle/damage/11_blast_confinement.md`
   covers trunks as joins between spaces.
+- `research/simulation/damage-research/10-magazine-flash-chain.md` (2026-10-20, the request's answer, with
+  `magazine_race_ref.py`): the burn law and its constants, turret weights and the lift, doors and charges by station and
+  practice, flooding times, the open guns' paths, and the race run on the anchors.
 
 As in the other plans, the reference code is something to check against, never a second engine.
 
@@ -164,8 +167,9 @@ fire (fire B's seat). The flame goes down one station past each open door, a rol
 Every source above lights the station it reaches: a burst in the gunhouse lights the gunhouse, spall in the working
 chamber lights that, gas in a handling room lights that. A burst among the magazine's charges lights the magazine.
 
-The hoist trunk is also a join in the cell graph. E5's gas and fire's spread go through it as a low-pressure edge
-(11 §4). It's one link for flash, gas and fire.
+The hoist trunk is the train's own links, not a new join in the cell graph (as built in V2): E5's hot gas reaching a
+handling room lights its station, and fire's dose down an enclosed mount's trunk (B2) stays. It's one link for flash,
+gas and fire.
 
 **A shield or open mount** (decision 4):
 - **No flash goes down from the gun.** Its hoist ends in a scuttle at the deck, and an open gun vents its flash to the
@@ -348,6 +352,45 @@ follows the dependencies: the fake turrets first, because the chain means nothin
   - Every source lights its station; the flame goes down by the doors. `TurretFlashChance` goes;
     `MagazineFlashChance` stays as a burst among the magazine's charges.
   - Until V3, a magazine reached is lost as today.
+  - **Done 2026-10-20.** What it came to:
+    - **`Magazines.Light`** (`Sim.Combat/Magazines.cs`): charges lit at a station burn there, and the flame goes up and
+      down the train past each door that stands open, a roll a door. Each station it reaches burns its charges:
+      `StationCharges` 1 a gun [SRC: Brown, about 8 in a twin turret's train in action], the men's flash (a turret's
+      train; a casemate's as a battery's), and a propellant seat (fire's B1) in the part or the room's first cell. A
+      flame reaching the magazine sets it off (lost until V3). `EffectsResult.Stations` counts the stations lit.
+    - **The sources:**
+      - a burst in a gunhouse, its working chamber or a casemate lights its station with `StationLightChance` (0.25
+        [EST], the old turret roll's);
+      - a mount's ready charges set burning at a station light it without a roll (a shield's are on deck: none);
+      - E5's hot gas in a handling room, or a burst there, lights the handling room, a shield's too (decision 4);
+      - E3's spall lights the station it reaches;
+      - a burst among a magazine's charges keeps `MagazineFlashChance`.
+      `TurretFlashChance` and `Effects.MagazineUnder` are gone.
+    - **The doors** (`StationDoorOpen`, the drill's until V5): 0.1 below a gunhouse, a working chamber and a handling
+      room [EST, 10 §3.3: each opens as the cage passes, 5-15% of the time]; a casemate's 0.02, its hoist and its
+      passage's magazine door in series (10 §3.3, §5: Kent's flash stopped at the shut magazine door). From the
+      gunhouse the flame reaches the magazine 0.2% of the time, from the working chamber 1%, from a handling room 10%,
+      from a casemate 2% (`shipgen magazine --runs`).
+    - **Every reader of "enclosed" takes `ShipClass.Enclosed`:** a light gunhouse now has its train, and its burst's
+      gas is held in it (`PartGas`'s vent share), as a barbette turret's is.
+    - **The trunk** is the train's links, not a cell-graph edge (the model above).
+    - **The research** (10, arrived during V0-V1) set the doors and charges. A first cut with the casemate's door at 0.1
+      lost a QE to her casemates' magazine in `FireOrderTests` within four minutes: the record's casemate fires
+      (Malaya, Kent, König, Moltke) never reached one.
+    - **Tests:**
+      - `DamageTests`' broken-shell case counts charges lit in the train (0.05-0.5 of turret hits, the light chance's
+        0.25), not magazines reached;
+      - `FireOrderTests` stops its watch when the shooter herself is lost, as it did for the target.
+    - **The numbers** (`damage-history`, 40 runs; V1 → V2):
+      - magazines set off by hits go to almost nothing in drill: the Jutland cases, Lion, Tiger, Warspite, Chester and
+        the destroyers 0% (from 3-28%); Bismarck 93 → 13% (lost 40%, mostly foundering now); Orel 3% (a fire later);
+      - the charges burn in the turrets instead: flashes per case (40 runs) the Jutland count 13, Seydlitz 17,
+        Derfflinger 8, Lion 5, Bismarck 135, killing about 20-35 each, the German turrets' record (E8a item 4) in
+        everything but the turret's own end, which is V3's tier 1;
+      - charges lit in a train 0.3-1.8 per 100 hits on the capital ships, 2-4 on the WWII destroyer;
+      - the British battlecruisers' losses (Jutland's ~5% a heavy hit) wait for V5's rate first, their doors propped,
+        and V3's race. Until then the magazine risk sits under the record for every side: end-goal rules, the plan
+        restores it.
 - **V3. The race.**
   - The ODE on E5's cascade, the gunhouse lift, tiers 0-4, the neighbour link.
   - The packaging (decision 1), the turret's revolving weight from shipgen's weights, and the fill from the rounds.

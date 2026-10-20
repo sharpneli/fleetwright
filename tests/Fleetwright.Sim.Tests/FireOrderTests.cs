@@ -93,8 +93,9 @@ public class FireOrderTests(ITestOutputHelper output)
         for (int s = 0; s < 6 * 60; s++)
         {
             Run(w, 1);
-            if (w.Ships.Store.SlotOf(2) < 0)
-                break;   // the battleship gone (sunk at 241 s since fire-control.md F4b): the destroyer next isn't a flick
+            if (w.Ships.Store.SlotOf(2) < 0 || w.Ships.Store.SlotOf(1) < 0)
+                break;   // the battleship gone (sunk at 241 s since fire-control.md F4b): the destroyer next isn't a flick; nor is
+                         // anything once the shooter herself is lost (a magazine, since docs/battle/magazines.md V2's trains)
             if (Target(w, 1, 0) != last)
                 (changes, last) = (changes + 1, Target(w, 1, 0));
         }

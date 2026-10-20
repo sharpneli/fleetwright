@@ -8,8 +8,9 @@ namespace Fleetwright.Sim.Combat;
 /// stopped by, else the first it entered; -1 for none), how many parts it wrecked, put out of action or damaged, the
 /// crew it hit, the holes it opened to the sea (m²), and whether it jammed a mount, started a fire, set off a magazine
 /// or broke the ship's back.</summary>
-/// <summary>How a hit set a magazine off: a burst in it, beside it (fragments through a wall or deck), in a turret or
-/// its barbette (the handling path down), or an explosion under water within its reach.</summary>
+/// <summary>How a hit set a magazine off: a burst in it, beside it (fragments through a wall or deck), charges lit in a
+/// gunhouse, its working chamber or a casemate and the flame down its train (docs/battle/magazines.md V2), or an
+/// explosion under water within its reach.</summary>
 public enum MagazineVia : byte
 {
     None,
@@ -84,7 +85,8 @@ public struct EffectsResult
 /// didn't get through may be jammed in train, stiff, have a gun or its sights out, or its crew stunned, for a time by
 /// cause (<see cref="NonPen"/>); a conning tower's crew stunned; a belt leaking into the cell behind it by where it
 /// struck against the waterline now, by regime (<see cref="Belt"/>);</item>
-/// <item><b>magazines:</b> a burst in a magazine, or in a turret or its barbette, may set it off.</item>
+/// <item><b>magazines:</b> a burst in a magazine may set it off; charges lit at a station of a mount's ammunition train
+/// burn there, and the flame goes on down the train's open doors (<see cref="Magazines"/>).</item>
 /// </list>
 /// Pure and allocation-free; the draws come from the stream it's given.</summary>
 public static class Effects
@@ -436,7 +438,8 @@ public static class Effects
         var frag = shell.Fragments?.Of(t.Outcome == Outcome.LowOrder);
         var fdir = path.LegOf(path.Leg(t.BurstT)).Direction;
         var comps = c.Components;
-        int magazine = -1, turret = -1;   // the magazine room it burst in or beside, the enclosed mount it burst in
+        int magazine = -1, turret = -1, turretSt = -1;   // the magazine room it burst in or beside; the mount it burst in, its station
+        int readyMount = -1, readySt = -1;   // a mount whose ready charges it lit at a station of its train
         var via = MagazineVia.None;
 
         // the part it burst in: wrecked; or the part its pieces got into, struck by them from inside its plates
@@ -451,8 +454,8 @@ public static class Effects
                 if (inside > 1e-4 && r.NextDouble() < 1 - Math.Exp(-inside * s.PartVital[Math.Min((int)comps[part].Kind, s.PartVital.Length - 1)]))
                     Count(ref res, k, part, k.Harm(part) ? k.State[part] : PartState.Ok);
             }
-            if (c.MountOf(part) is int m and >= 0 && Enclosed(c, m))
-                turret = m;
+            if (c.MountOf(part) is int m and >= 0 && c.StationOfPart(m, part) is var st and >= 0)
+                (turret, turretSt) = (m, st);   // a gunhouse, its working chamber, a casemate (docs/battle/magazines.md V2)
         }
 
         // parts: within the wreck radius wrecked or out of action, unless armour its fragments don't get through boxes
@@ -497,6 +500,9 @@ public static class Effects
                 // its ready charges flash through its crew (16 §4.6): a gunhouse's as a turret's train, else as a battery's
                 Casualties.Flash(k, Casualties.Part(i), Casualties.Enclosed(c, m), s);
                 res.Flash = true;
+                // charges burning at a station of its train: the flame's way down it (a shield's are on deck: none)
+                if (readyMount < 0 && c.StationOfPart(m, i) is var st and >= 0)
+                    (readyMount, readySt) = (m, st);
             }
         }
 
@@ -600,18 +606,29 @@ public static class Effects
                 res.Fire |= Start(c, k, deck, shell, w, true, s, ref r);
         }
 
-        // the magazine: a burst in it, or in a turret or its barbette (the handling path down to it); its gas reaching one,
-        // or a handling room (E5: Savannah's)
-        if (t.Burst != BurstKind.Outside)
+        // the magazine (docs/battle/magazines.md V2): a burst among its charges, or in it beside them, or its gas reaching one;
+        // else charges lit at a station of a mount's train (ready charges set burning, a burst in a gunhouse, its working
+        // chamber or a casemate, its gas in a handling room: E5's Savannah) and the flame down the train's open doors
+        int reached = -1;
+        if (t.Burst != BurstKind.Outside && magazine < 0 && gasMagazine >= 0)
+            (magazine, via) = (gasMagazine, MagazineVia.Gas);
+        if (t.Burst != BurstKind.Outside && magazine >= 0)
         {
-            if (magazine < 0 && gasMagazine >= 0)
-                (magazine, via) = (gasMagazine, MagazineVia.Gas);
-            double flash = magazine >= 0 ? s.MagazineFlashChance : turret >= 0 || gasHandling >= 0 ? s.TurretFlashChance : 0;
-            if (flash > 0 && r.NextDouble() < flash)
-                (res.Magazine, res.MagazineRoom, res.MagazineVia) = magazine >= 0 ? (true, magazine, via)
-                    : turret >= 0 ? (true, c.Mounts[turret].Magazine, MagazineVia.Turret)
-                    : (true, gasHandling, inHandling ? MagazineVia.Handling : MagazineVia.Gas);
+            if (r.NextDouble() < s.MagazineFlashChance)
+                (reached, res.Stations) = (magazine, res.Stations + 1);
         }
+        else if (readyMount >= 0)
+            (reached, via) = (Magazines.Light(c, k, readyMount, readySt, burning: true, s, ref r, ref res), MagazineVia.Turret);
+        else if (t.Burst != BurstKind.Outside && turret >= 0)
+        {
+            if (r.NextDouble() < s.StationLightChance[(int)c.Train(turret)[turretSt].Kind])
+                (reached, via) = (Magazines.Light(c, k, turret, turretSt, burning: false, s, ref r, ref res), MagazineVia.Turret);
+        }
+        else if (t.Burst != BurstKind.Outside && gasHandling >= 0 && c.MountOf(c.Rooms[gasHandling].Mount) is int hm and >= 0 &&
+                 c.StationOfRoom(hm, gasHandling) is var hs and >= 0 && r.NextDouble() < s.StationLightChance[(int)StationKind.Handling])
+            (reached, via) = (Magazines.Light(c, k, hm, hs, burning: false, s, ref r, ref res), inHandling ? MagazineVia.Handling : MagazineVia.Gas);
+        if (reached >= 0)
+            (res.Magazine, res.MagazineRoom, res.MagazineVia) = (true, reached, via);
     }
 
     /// <summary>A burst's fire start in a space: 08's chance by kind as a rate (λ = -ln(1 - p)), times its filler's fire over
@@ -722,7 +739,7 @@ public static class Effects
         double dx = b.X1 - b.X0, dy = b.Y1 - b.Y0, dz = b.Top - b.Base;
         double v = Math.Max(dx * dy * dz * s.PartAirShare, 1), face = Math.Pow(v, 2.0 / 3);
         int m = c.MountOf(part);
-        double share = m >= 0 && c.Mounts[m].Component == part && !Enclosed(c, m) ? 1 : s.PartVentShare[Math.Min((int)comp.Kind, s.PartVentShare.Length - 1)];
+        double share = m >= 0 && c.Mounts[m].Component == part && !c.Enclosed(m) ? 1 : s.PartVentShare[Math.Min((int)comp.Kind, s.PartVentShare.Length - 1)];
         double a = share * face + vent;   // a share of 1 and over: open (α·A ≥ 0.6·V^⅔)
         var bl = new BlastResult { Spaces = 1, VolumeM3 = v, Rounds = 1 };
         double p = Blast.Pressure(shell, fill, v, s), felt = Blast.Felt(p, v, a, s);
@@ -767,8 +784,8 @@ public static class Effects
                 bool hot = cell == burstCell || k.BlastBefore[cell] < hotM3;
                 if (kind == RoomKind.Magazine && cell != burstCell && hot && felt > best)
                     (magazine, best) = (room, felt);
-                else if (kind == RoomKind.Handling && hot && handling < 0)
-                    (handling, inHandling) = (MagazineUnder(c, room), cell == burstCell);
+                else if (kind == RoomKind.Handling && hot && handling < 0 && c.Rooms[room].Mount >= 0)
+                    (handling, inHandling) = (room, cell == burstCell);
             }
         }
         var comps = c.Components;
@@ -794,18 +811,6 @@ public static class Effects
         var state = felt >= classMPa ? PartState.Disabled : felt >= s.BlastDamagedShare * classMPa ? PartState.Damaged : PartState.Ok;
         if (state != PartState.Ok)
             Count(ref res, k, node, k.Worsen(node, state) ? state : PartState.Ok);
-    }
-
-    /// <summary>The magazine a handling room serves: the mount's whose magazine lies nearest along the ship.</summary>
-    static int MagazineUnder(ShipClass c, int handling)
-    {
-        ref readonly var h = ref c.Rooms[handling];
-        double x = (h.X0 + h.X1) / 2, best = double.MaxValue;
-        int room = -1;
-        foreach (ref readonly var m in c.Mounts)
-            if (m.Magazine >= 0 && Math.Abs((c.Rooms[m.Magazine].X0 + c.Rooms[m.Magazine].X1) / 2 - x) is double d && d < best)
-                (room, best) = (m.Magazine, d);
-        return room;
     }
 
     /// <summary>The spall off the back of a plate that held (E3; damage/14 §6): its cloud (<see cref="SpallCloud"/>) thinned
@@ -849,7 +854,7 @@ public static class Effects
         if (!(cloud.Flakes > 0) && !(cloud.BigKg > 0))
             return;
         res.Spall = true;
-        int open = -1, magazine = -1;   // the mount whose charges the cloud reaches in its turret or handling room; a magazine it reaches
+        int open = -1, openSt = -1, magazine = -1;   // the mount and the station of its train whose charges the cloud reaches; a magazine it reaches
         var comps = c.Components;
         // a gunhouse, a working chamber, a conning tower: the whole cloud inside the part, its contents take it
         int space = cell < 0 && x.Plate is PlateKind.TurretFace or PlateKind.TurretSide or PlateKind.TurretRear or PlateKind.TurretRoof
@@ -865,8 +870,8 @@ public static class Effects
             double hits = Combat.Spall.Counted(cloud, fragility) * PartVital(c, space, s) + (cloud.BigJ >= fragility ? 1 : 0);
             if (hits > 1e-4 && r.NextDouble() < 1 - Math.Exp(-hits))
                 Harm(ref res, k, space);
-            if (c.MountOf(space) is int m and >= 0 && Enclosed(c, m))
-                open = m;
+            if (c.MountOf(space) is int m and >= 0 && c.StationOfPart(m, space) is var st and >= 0)
+                (open, openSt) = (m, st);
         }
         else if (cell >= 0)
         {
@@ -899,8 +904,8 @@ public static class Effects
                 double into = counted * Vital(c, room, s) + (big < 0 && cloud.BigJ >= s.RoomFragilityJ ? Vital(c, room, s) : 0);
                 if (into > 1e-4 && r.NextDouble() < 1 - Math.Exp(-into))
                     Harm(ref res, k, node);
-                if (rr.Kind == RoomKind.Handling && rr.Mount >= 0 && c.MountOf(rr.Mount) is int m and >= 0 && Enclosed(c, m))
-                    open = m;
+                if (rr.Kind == RoomKind.Handling && rr.Mount >= 0 && c.MountOf(rr.Mount) is int m and >= 0 && c.StationOfRoom(m, room) is var st and >= 0)
+                    (open, openSt) = (m, st);   // a shield's handling room too: its train starts there (decision 4)
                 else if (rr.Kind == RoomKind.Magazine && magazine < 0)
                     magazine = room;
             }
@@ -932,9 +937,10 @@ public static class Effects
         // room the turret's
         double lights = s.SpallFlashChance * Math.Min(1, cloud.Severity / 0.5);
         if (magazine >= 0 && !res.Magazine && r.NextDouble() < lights * s.MagazineFlashChance)
-            (res.Magazine, res.MagazineRoom, res.MagazineVia) = (true, magazine, MagazineVia.Spall);
-        if (open >= 0 && !res.Magazine && r.NextDouble() < lights * s.TurretFlashChance)
-            (res.Magazine, res.MagazineRoom, res.MagazineVia) = (true, c.Mounts[open].Magazine, MagazineVia.Spall);
+            (res.Magazine, res.MagazineRoom, res.MagazineVia, res.Stations) = (true, magazine, MagazineVia.Spall, res.Stations + 1);
+        if (open >= 0 && !res.Magazine && r.NextDouble() < lights * s.StationLightChance[(int)c.Train(open)[openSt].Kind] &&
+            Magazines.Light(c, k, open, openSt, burning: false, s, ref r, ref res) is int reached and >= 0)
+            (res.Magazine, res.MagazineRoom, res.MagazineVia) = (true, reached, MagazineVia.Spall);
     }
 
     internal static void Harm(ref EffectsResult res, ShipCondition k, int node) => Count(ref res, k, node, k.Harm(node) ? k.State[node] : PartState.Ok);
@@ -1027,9 +1033,6 @@ public static class Effects
 
     /// <summary>A turret proper (a battleship's, with its hoists down to the magazine), not an open or shielded mount
     /// whose ammunition comes up by hand: the flash chain runs only from the one (07-magazine-explosions.md).</summary>
-    /// <summary>A mount whose burst sets its magazine off by the flat roll: a turret on a barbette only, until the trains
-    /// (docs/battle/magazines.md V2) give every gunhouse its flash path through the doors.</summary>
-    static bool Enclosed(ShipClass c, int mount) => c.Mounts[mount].Turret && c.TurretTypes[c.Mounts[mount].Type].Shape == TurretShape.Bb;
 
     internal static double Vital(ShipClass c, int room, SimSettings s) => s.RoomVital[Math.Min((int)c.Rooms[room].Kind, s.RoomVital.Length - 1)];
 

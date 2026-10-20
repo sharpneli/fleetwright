@@ -1047,7 +1047,7 @@ public sealed record SimSettings
     /// calibre) glancing off a turret roof drives it in with this chance (Dunkerque, one case [EST]); charges in a cloud's
     /// way (a gunhouse, a working chamber, a handling room, a magazine) light with SpallFlashChance at severity 0.5 and up
     /// (14 §6.3 [EST]; in proportion below, the ramp the code's), a flash source for the magazine chain as E2's pieces
-    /// are (MagazineFlashChance in a magazine, TurretFlashChance in a turret or handling room); a boundary of SpallStopMm or more stops
+    /// are (MagazineFlashChance in a magazine, StationLightChance at a station of a train); a boundary of SpallStopMm or more stops
     /// the flakes unless THOR lets them through (14 §4.3). What a flake or the big piece must carry to harm a part, J, by
     /// its kind (as PartVital's list), and a space's vitals (pipes, cables, gauges) [EST, 14 §5.2: instrument or sight
     /// ~100 J, cable or pipe ~500 J, a machine's casing ~5 kJ].</summary>
@@ -1134,11 +1134,28 @@ public sealed record SimSettings
     public double KeyManShare { get; init; } = 0.1;
     public double[] KeyManMin { get; init; } = [5, 30];
 
-    /// <summary>A burst in a magazine, or in a turret or its barbette (the handling path to it), sets off the magazine
-    /// with these chances. v0: the ship is lost at once and goes under <see cref="MagazineLossMs"/> later (the venting
+    /// <summary>A burst among a magazine's charges (in it, its pieces or gas into it) sets it off with
+    /// MagazineFlashChance. v0: the ship is lost at once and goes under <see cref="MagazineLossMs"/> later (the venting
     /// race is docs/battle/magazines.md V3's).</summary>
     public double MagazineFlashChance { get; init; } = 0.25;
-    public double TurretFlashChance { get; init; } = 0.25;
+
+    /// <summary>The ammunition trains (docs/battle/magazines.md V2; research/simulation/damage-research/10 §3), by a
+    /// station's kind [gunhouse, working chamber, casemate, handling room]:
+    /// <list type="bullet">
+    /// <item>StationLightChance: a burst, its spall or its gas at a station lights the charges there (the old turret
+    /// roll's 0.25 [EST], fitted at V8);</item>
+    /// <item>StationDoorOpen: the door below the station (the gunhouse's floor and cages, the trunk's lower doors, the
+    /// scuttle to the magazine, a casemate's hoist and passage) stands open this share of the time, a roll a door for the
+    /// flame's way down or up [EST, 10 §3.3: in drill each door opens once a cycle as the cage passes, 5-15% of the time;
+    /// flash discipline (V5) moves it: safe never, rate first always]; a casemate's is its hoist and its passage's magazine
+    /// door in series, both open well under 5% (10 §3.3; Kent at the Falklands: down the hoist, stopped at the shut
+    /// magazine door, §5) [EST];</item>
+    /// <item>StationCharges: the charges lying at a station, a gun [SRC: Brown, about 8 between the magazine and the guns
+    /// of a twin turret in action, ~2 a station].</item>
+    /// </list></summary>
+    public double[] StationLightChance { get; init; } = [0.25, 0.25, 0.25, 0.25];
+    public double[] StationDoorOpen { get; init; } = [0.1, 0.1, 0.02, 0.1];
+    public double StationCharges { get; init; } = 1;
     public int MagazineLossMs { get; init; } = 60_000;
 
     /// <summary>Casualties (docs/battle/shells-armour-damage.md E6; damage/16): men, not area. Each group of men in reach

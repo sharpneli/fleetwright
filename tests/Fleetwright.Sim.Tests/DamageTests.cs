@@ -59,14 +59,14 @@ public class DamageTests(ITestOutputHelper output)
             if (path.Crossings[t.Plate].Plate is PlateKind.TurretFace or PlateKind.TurretSide or PlateKind.TurretRear or PlateKind.TurretRoof or PlateKind.Barbette)
             {
                 turret++;
-                flashed += e.Magazine && e.MagazineVia == MagazineVia.Turret ? 1 : 0;
+                flashed += e.Stations > 0 ? 1 : 0;   // charges lit in its train (docs/battle/magazines.md V2); the magazine is the doors' to reach
             }
         });
         output.WriteLine($"  broken {broken}: {brokenHarm} parts harmed; into a turret or barbette {turret}, flashed {flashed}");
         Assert.True(broken > 30, "Lion's 13.5\" holes Seydlitz's armour in pieces now and then");
         Assert.True(brokenHarm > broken / 4, "the pieces do something behind the plate");
         Assert.True(turret > 10);
-        Assert.InRange((double)flashed / turret, 0.05, 0.5);   // the turret's flash chance, 0.25
+        Assert.InRange((double)flashed / turret, 0.05, 0.5);   // a station's light chance, 0.25
     }
 
     [Fact]
@@ -386,7 +386,7 @@ public class DamageTests(ITestOutputHelper output)
     [Fact]
     public void A_magazine_set_off_by_a_hit_records_its_room_once()
     {
-        var w = World("dreadnought", out int c, Settings with { MagazineFlashChance = 1, TurretFlashChance = 1 });
+        var w = World("dreadnought", out int c, Settings with { MagazineFlashChance = 1, StationLightChance = [1, 1, 1, 1], StationDoorOpen = [1, 1, 1, 1] });
         var cls = Class("dreadnought");
         // a WWII shell (proofed to 30° on a calibre of plate): a WWI British one shatters on her belt at this fall (P2)
         var (shell, _) = Shell(Class("kgv"), 0);

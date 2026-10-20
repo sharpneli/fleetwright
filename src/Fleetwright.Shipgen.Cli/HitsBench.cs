@@ -235,7 +235,7 @@ static class HitsBench
     {
         MagazineVia.In => "a burst in it",
         MagazineVia.Beside => "a burst beside it",
-        MagazineVia.Turret => "the turret or barbette",
+        MagazineVia.Turret => "charges lit in a gunhouse, its working chamber or a casemate",
         MagazineVia.Underwater => "under water",
         MagazineVia.Spall => "spall among its charges",
         MagazineVia.Gas => "a burst's gas reaching it",

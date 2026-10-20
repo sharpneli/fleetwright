@@ -1,4 +1,6 @@
 using System.Globalization;
+using Fleetwright.Sim;
+using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Ships;
 
@@ -6,17 +8,57 @@ namespace Fleetwright.Shipgen.Cli;
 
 /// <summary><c>shipgen magazine</c>: the magazines alone (docs/battle/magazines.md V0): each design's magazines (what they
 /// hold, where they lie against the waterline, the mounts they feed) and each mount's ammunition train, the stations a
-/// flash runs along from the gunhouse down to the magazine.</summary>
+/// flash runs along from the gunhouse down to the magazine. With <c>--runs N</c> (V2), each battery's first mount has
+/// charges lit at each station of its train N times through the sim's own <see cref="Magazines.Light"/>: how often the
+/// flame reaches the magazine, and how many stations burn.</summary>
 static class MagazineBench
 {
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
-    public static int Run(IReadOnlyList<string> designs, Func<string, Design> load, string settingsPath)
+    public static int Run(IReadOnlyList<string> designs, Func<string, Design> load, string settingsPath, int runs = 0)
     {
         var settings = SimSettings.Load(settingsPath);
         foreach (var name in designs.Count > 0 ? designs : ["iron_duke"])
-            List(ShipClassCompiler.Compile(ShipDesign.Build(load(name))), settings);
+        {
+            var c = ShipClassCompiler.Compile(ShipDesign.Build(load(name)));
+            List(c, settings);
+            if (runs > 0)
+                Light(c, settings, runs);
+        }
         return 0;
+    }
+
+    /// <summary>Each battery's first mount: charges lit at each station of its train, RUNS times, on one ship of the class
+    /// (what a flash leaves behind doesn't change the doors' rolls).</summary>
+    static void Light(ShipClass c, SimSettings s, int runs)
+    {
+        var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), 1, s);
+        w.Apply(ShipSystem.Spawn(w.Ships.AddClass(c), 50, -20, 0, 0));
+        var k = w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(w.Ships.NewestEntity));
+        var rng = RandomStream.Named(1, "magazine bench");
+        Console.WriteLine(string.Format(Inv, "  charges lit at each station, {0} times (doors open {1}):", runs,
+            string.Join(", ", s.StationDoorOpen.Select(v => v.ToString("0.##", Inv)))));
+        var seen = new HashSet<int>();
+        for (int m = 0; m < c.Mounts.Length; m++)
+        {
+            var train = c.Train(m);
+            if (train.Length == 0 || !seen.Add(c.Mounts[m].Battery))
+                continue;
+            var parts = new List<string>();
+            for (int st = 0; st < train.Length - 1; st++)
+            {
+                int reached = 0, lit = 0;
+                for (int i = 0; i < runs; i++)
+                {
+                    var res = new EffectsResult { Part = -1, MagazineRoom = -1 };
+                    reached += Magazines.Light(c, k, m, st, burning: false, s, ref rng, ref res) >= 0 ? 1 : 0;
+                    lit += res.Stations;
+                }
+                parts.Add(string.Format(Inv, "from the {0}: magazine {1:0.#}%, {2:0.00} stations", Station(train[st].Kind), 100.0 * reached / runs,
+                    (double)lit / runs));
+            }
+            Console.WriteLine($"    {c.ComponentId(c.Mounts[m].Component)}: {(parts.Count == 0 ? "the magazine only" : string.Join("; ", parts))}");
+        }
     }
 
     static void List(ShipClass c, SimSettings s)

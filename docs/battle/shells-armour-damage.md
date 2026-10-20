@@ -1780,7 +1780,8 @@ squadrons, and changes `Matchup.cs` with it.
          ruptures a whole cell side (9-15 m², E5's `RupturedShare` 0.25 of the face); E5's open question 7 leaves the
          rupture capacity to the destroyer benches (0.04-0.08 MPa/mm).
       4. **German turrets burn out without the magazine** (Seydlitz at Dogger Bank, Derfflinger's C and D): the sim
-         has a flash only as a magazine loss; `magazines.md` V2-V3 (the flash chain, the venting race).
+         has a flash only as a magazine loss; `magazines.md` V2-V3 (the flash chain, the venting race). Since V2 the
+         charges burn in the turret's train and seldom reach the magazine; the turret's own end is V3's tier 1.
       5. **Tsushima's Russian battleships no longer go down in the play** (Russia 2.3 ships lost over 6 seeds, all
          small). Per hit it's the record (Orel "only moderately damaged", no belt pierced); what sank the Borodinos was
          their overload (coal past a full load, the main belt under water, holed upper sides near the sea), fire, and
