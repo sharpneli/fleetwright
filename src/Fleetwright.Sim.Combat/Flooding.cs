@@ -37,6 +37,9 @@ public sealed class FloodModel
     /// top that it's built for (m: a bulkhead's own top, a deck's section's top, at least the waterline; infinite open):
     /// its rating is <see cref="SimSettings.FloodRatingK"/> times this (docs/battle/damage-control.md DC1).</summary>
     public readonly double[] FaceM2, BuiltM;
+    /// <summary>The cells DC Central may counterflood (docs/battle/damage-control.md DC5): tanks, voids, the double bottom
+    /// and wing bunkers below the waterline, off the centreline (for the list) or toward the ends (for the trim).</summary>
+    public readonly int[] CounterTanks;
     public readonly double ReserveT, DisplacementT, DeckAtLcf, Complement;
 
     /// <summary>Tonnes a cubic metre of sea water.</summary>
@@ -99,6 +102,16 @@ public sealed class FloodModel
             };
             BuiltM[i] = double.IsPositiveInfinity(t) ? t : Math.Max(Math.Max(t, wl) - e.Z, 0.5);
         }
+        var tanks = new List<int>();
+        for (int i = 0; i < n; i++)
+        {
+            var kind = c.Rooms[cells[i].Room].Kind;
+            if (!cells[i].BelowWaterline || kind is not (RoomKind.DoubleBottom or RoomKind.Tds or RoomKind.FuelTank or RoomKind.Bunker))
+                continue;
+            if (Math.Abs(Cy[i]) >= 1 || Math.Abs(Cx[i] - lcf) >= 0.25 * c.Length)
+                tanks.Add(i);
+        }
+        CounterTanks = [.. tanks];
         DisplacementT = c.Hydrostatics.DisplacementT;
         ReserveT = Math.Max(volume * SeaT - DisplacementT, 0);
         DeckAtLcf = double.IsNegativeInfinity(deck) ? 0 : deck;
@@ -314,7 +327,7 @@ public static class Flooding
         for (int pass = 0; pass < passes && pump > 0; pass++)
             for (int i = 0; i < cells.Length && pump > 0; i++)
             {
-                if (w[i] <= 0 || (k.BreachM2[i] > 0) != (pass == 1))
+                if (w[i] <= 0 || (k.BreachM2[i] > 0) != (pass == 1) || k.Counterflooded[i])
                     continue;
                 if (pass == 1 && FullInflow(c, f, k, water, i, cd) * dt >= pump)
                     continue;

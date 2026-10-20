@@ -135,7 +135,7 @@ static class DcHistory
             [Blow.Hole(0, 0.88, 0.8, 1.2, d: 2), Blow.Hole(0, 0.88, -0.4, 0.4), Blow.Speed(4, 12)],
             "closed up", "rn-1916", 4, "(the research's model) ~1,900 t", "a fifth of holding 28 kn", "09 §8, §2.2"),
 
-        new("later cuts", "North Carolina 1942: one torpedo abreast turret A, at 19 kn", "super_dreadnought", 19,
+        new("later cuts", "North Carolina 1942: one torpedo abreast turret A, at 19 kn (on a treaty battleship with torpedo protection)", "kgv", 19,
             [Blow.Torpedo(0, 0.78, 5, port: true)],
             "closed up", "usn-1942", 4, "970 t; 5.5° list off in 6 min with ~480 t counterflooded; slow flooding negligible",
             "~1,000 t; the list off within ~10 min", "09 §8, WDR 61"),
@@ -152,6 +152,7 @@ static class DcHistory
         public double[] WaterAt = [];
         public double MaxList, List, Trim, WaterT, Power = 1, Kn, LostMin = double.NaN;
         public int Sprung, Collapsed, DoorsOpen;
+        public double Counterflood;
         /// <summary>Her holes by class (DC2): how many and their area still open, m².</summary>
         public readonly int[] HolesN = new int[ShipCondition.HoleClasses];
         public readonly double[] HolesM2 = new double[ShipCondition.HoleClasses];
@@ -161,7 +162,7 @@ static class DcHistory
 
     static readonly double[] Hours = [0.5, 1, 2, 4, 8, 12];
 
-    public static int Run(string settingsPath, int runs, string? only, double? hours, Func<string, Design> load, bool trace = false)
+    public static int Run(string settingsPath, int runs, string? only, double? hours, Func<string, Design> load, bool trace = false, int traceRun = 0)
     {
         var settings = SimSettings.Load(settingsPath);
         var classes = new Dictionary<string, ShipClass>();
@@ -188,14 +189,14 @@ static class DcHistory
             var sw = Stopwatch.StartNew();
             var target = Tight(dc.Target, dc.Tightness);
             double h = hours ?? dc.Hours;
-            var res = One(dc, target, Cls, settings, runs, h, trace);
+            var res = One(dc, target, Cls, settings, runs, h, trace, traceRun);
             Print(dc, target, res, h, sw.Elapsed.TotalSeconds);
         }
         return 0;
     }
 
     /// <summary>A case's runs: every ship in one world, far apart, her blows at their times, sampled a minute at a time.</summary>
-    static List<Ship> One(DcCase dc, ShipClass target, Func<string, ShipClass> cls, SimSettings settings, int runs, double hours, bool trace)
+    static List<Ship> One(DcCase dc, ShipClass target, Func<string, ShipClass> cls, SimSettings settings, int runs, double hours, bool trace, int traceRun)
     {
         var s = settings with { ReadinessDefault = dc.Readiness, DamageControlDefault = dc.Doctrine };
         if (!s.Readiness.Any(x => x.Name == dc.Readiness) || !s.DamageControl.Any(x => x.Name == dc.Doctrine))
@@ -245,6 +246,14 @@ static class DcHistory
         var path = new HitPath();
         int next = 0;
         var store = w.Ships.Store;
+        if (trace)
+        {
+            var f0 = w.Damage.Flood(target);
+            var k0 = store.Combat.Condition(store.SlotOf(list[Math.Min(traceRun, runs - 1)].Entity));
+            Console.WriteLine(string.Format(Inv, "      counterflood tanks {0}: port {1:0} t, starboard {2:0} t, at {3:0} t/min; drainage {4}",
+                f0.CounterTanks.Length, Repairs.CounterfloodLeftT(f0, k0, -1), Repairs.CounterfloodLeftT(f0, k0, 1), target.Drainage.CounterfloodTpm,
+                target.Drainage));
+        }
         for (int m = 1; m <= hours * 60; m++)
         {
             long end = m * 60_000L;
@@ -318,7 +327,7 @@ static class DcHistory
                 }
                 (r.WaterT, r.List, r.Trim, r.Power, r.Kn) = (k.WaterT, Math.Abs(k.Attitude.HeelDeg), k.Attitude.TrimDeg, k.PowerCap,
                     store[slot].Speed / 0.514444);
-                (r.Sprung, r.Collapsed, r.DoorsOpen) = (0, 0, 0);
+                (r.Sprung, r.Collapsed, r.DoorsOpen, r.Counterflood) = (0, 0, 0, k.CounterfloodT);
                 Array.Clear(r.HolesN);
                 Array.Clear(r.HolesM2);
                 for (int h = 0; h < k.HoleOpenN.Length; h++)
@@ -334,17 +343,17 @@ static class DcHistory
                 for (int h = 0; h < Hours.Length; h++)
                     if (Math.Abs(m - Hours[h] * 60) < 0.5)
                         r.WaterAt[h] = r.WaterT;
-                if (trace && r == list[0] && (m <= 30 || m % 10 == 0))
+                if (trace && r == list[Math.Min(traceRun, runs - 1)] && (m <= 30 || m % 10 == 0))
                     Console.WriteLine(string.Format(Inv, "      {0,5} min  water {1,6:0} t, list {2,5:0.0}°, trim {3,5:+0.00;-0.00}°, GM {4,5:0.00} m, " +
-                        "speed {5,4:0.0} kn, power {6:0%}, holes {7:0.00} m², parties {8}", m, k.WaterT, k.Attitude.HeelDeg, k.Attitude.TrimDeg,
+                        "speed {5,4:0.0} kn, power {6:0%}, holes {7:0.00} m², cf {9:0} t ({10}), parties {8}", m, k.WaterT, k.Attitude.HeelDeg, k.Attitude.TrimDeg,
                         k.GmM, r.Kn, k.PowerCap, k.BreachM2.Sum(), string.Join(" ", k.Parties.Take(k.PartyCount).Select(q =>
-                            q.Target >= 0 ? "fire" : q.Job == RepairJob.None ? "-" : q.Job.ToString().ToLowerInvariant()))));
+                            q.Target >= 0 ? "fire" : q.Job == RepairJob.None ? "-" : q.Job.ToString().ToLowerInvariant())), k.CounterfloodT, k.CounterTank));
             }
         }
         if (trace)
         {
             // the first run's sprung boundaries at the end: each one's cells, plate, height, rating and the water either side
-            int slot = store.SlotOf(list[0].Entity);
+            int slot = store.SlotOf(list[Math.Min(traceRun, runs - 1)].Entity);
             var k = slot >= 0 ? store.Combat.Condition(slot) : null;
             var f = w.Damage.Flood(target);
             for (int ei = 0; k != null && ei < f.Edges.Length; ei++)
@@ -384,15 +393,16 @@ static class DcHistory
         Console.WriteLine(string.Format(Inv, "    at {0:0.#} h afloat: list {1}°, trim {2}° (+ by the head), speed {3} kn, power {4}",
             hours, Med(afloat.Select(r => r.List), "0.0"), Med(afloat.Select(r => r.Trim), "+0.0;-0.0"), Med(afloat.Select(r => r.Kn), "0.0"),
             afloat.Count == 0 ? "-" : (100 * afloat.Average(r => r.Power)).ToString("0", Inv) + "%"));
-        Console.WriteLine(string.Format(Inv, "    boundaries sprung {0}, gave way {1} (in {2:0}% of runs), watertight doors open {3} (medians)",
+        Console.WriteLine(string.Format(Inv, "    boundaries sprung {0}, gave way {1} (in {2:0}% of runs), watertight doors open {3}, counterflooded {4} t (medians)",
             Med(rs.Select(r => (double)r.Sprung)), Med(rs.Select(r => (double)r.Collapsed)), 100.0 * rs.Count(r => r.Collapsed > 0) / n,
-            Med(rs.Select(r => (double)r.DoorsOpen))));
+            Med(rs.Select(r => (double)r.DoorsOpen)), Med(rs.Select(r => r.Counterflood))));
         Console.WriteLine("    holes open (medians, count and m²): " + string.Join(", ", Enum.GetValues<HoleClass>().Select(h =>
             string.Format(Inv, "{0} {1} ({2})", h.ToString().ToLowerInvariant(), Med(rs.Select(r => (double)r.HolesN[(int)h])),
                 Med(rs.Select(r => r.HolesM2[(int)h]), "0.00")))));
         var lost = rs.Where(r => !r.Afloat).ToList();
         Console.WriteLine(string.Format(Inv, "    lost {0:0}%{1}", 100.0 * lost.Count / n, lost.Count == 0 ? "" : " (" + string.Join(", ",
-            lost.GroupBy(r => r.Loss).Select(g => string.Format(Inv, "{0} {1}, median {2} min", g.Key, g.Count(), Med(g.Select(r => r.LostMin))))) + ")"));
+            lost.GroupBy(r => r.Loss).Select(g => string.Format(Inv, "{0} {1}, median {2} min", g.Key, g.Count(), Med(g.Select(r => r.LostMin))))) + ")") +
+            (lost.Count == 0 ? "" : "; runs " + string.Join(" ", lost.Select(r => string.Format(Inv, "{0}:{1}@{2:0}", rs.IndexOf(r), r.Loss.ToString()[0], r.LostMin)))));
         Console.WriteLine($"    record: {dc.Record}");
         Console.WriteLine($"    wanted: {dc.Wanted}");
         Console.WriteLine(string.Format(Inv, "    basis: {0}  ({1:0.0} s)", dc.Basis, secs));

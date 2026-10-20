@@ -1323,6 +1323,15 @@ public sealed record SimSettings
     public double[] RepairJobManMin { get; init; } = [0, 2, 6, 60, 80, 6, 80, 60, 40];
     public double[] RepairJobMen { get; init; } = [1, 2, 2, 3, 4, 2, 4, 3, 4];
 
+    /// <summary>DC Central's counterflooding without the conning position (DC5): by hand at the valves at this share of
+    /// their rate, after this many seconds to get men there [EST].</summary>
+    public double CounterfloodHandShare { get; init; } = 1.0 / 3;
+    public double CounterfloodHandS { get; init; } = 180;
+
+    /// <summary>DC Central opens no new tank while her GM is under this, m: the list is a loll, and flooding the high side
+    /// would throw her over to the other (10 §2.7, Ralph Talbot) [EST].</summary>
+    public double CounterfloodMinGmM { get; init; } = 0.3;
+
     /// <summary>A portable pump is rigged (DC4; 09 §4: 5-15 min, 3-4 men, the job's man-minutes above) where this much water
     /// stands, m³.</summary>
     public double RepairPumpMinM3 { get; init; } = 5;
@@ -1562,19 +1571,19 @@ public sealed record SimSettings
     /// gun crews turn to as the doctrine's extra parties at <see cref="FireTurnToSkill"/> (doc 10 §5).</summary>
     public DamageControlDoctrine[] DamageControl { get; init; } =
     [
-        new() { Name = "unorganised-1890", Skill = 0.4, WatchS = -1, HoseLpm = 600, Nozzle = "jet", MusterS = 360, ManLpm = 100, PartyShare = 0.10, PartyMen = 16,
+        new() { Name = "unorganised-1890", CounterfloodDeg = -1, CounterfloodTrimDeg = -1, Skill = 0.4, WatchS = -1, HoseLpm = 600, Nozzle = "jet", MusterS = 360, ManLpm = 100, PartyShare = 0.10, PartyMen = 16,
             MainBreak = 0.25, HoseCut = 0.30, Looped = false, RestoreS = -1, PumpFloor = 0, BreathingSets = false, TurnTo = 1, FloodMagazineS = 600 },
-        new() { Name = "prepared-1894", Skill = 0.6, WatchS = 120, HoseLpm = 600, Nozzle = "jet", MusterS = 180, ManLpm = 100, PartyShare = 0.12, PartyMen = 16,
+        new() { Name = "prepared-1894", CounterfloodDeg = 5, CounterfloodTrimDeg = -1, Skill = 0.6, WatchS = 120, HoseLpm = 600, Nozzle = "jet", MusterS = 180, ManLpm = 100, PartyShare = 0.12, PartyMen = 16,
             MainBreak = 0.20, HoseCut = 0.30, Looped = false, RestoreS = 900, PumpFloor = 0, BreathingSets = false, TurnTo = 2, FloodMagazineS = 300 },
-        new() { Name = "russian-1905", Skill = 0.6, WatchS = 90, HoseLpm = 600, Nozzle = "jet", MusterS = 180, ManLpm = 100, PartyShare = 0.12, PartyMen = 16,
+        new() { Name = "russian-1905", CounterfloodDeg = 3, CounterfloodTrimDeg = -1, Skill = 0.6, WatchS = 90, HoseLpm = 600, Nozzle = "jet", MusterS = 180, ManLpm = 100, PartyShare = 0.12, PartyMen = 16,
             MainBreak = 0.20, HoseCut = 0.45, Looped = false, RestoreS = 900, PumpFloor = 0, BreathingSets = false, TurnTo = 2, FloodMagazineS = 300 },
-        new() { Name = "rn-1916", Skill = 0.8, WatchS = 180, HoseLpm = 420, Nozzle = "jet", MusterS = 240, ManLpm = 84, PartyShare = 0.12, PartyMen = 16,
+        new() { Name = "rn-1916", CounterfloodDeg = 3, CounterfloodTrimDeg = -1, Skill = 0.8, WatchS = 180, HoseLpm = 420, Nozzle = "jet", MusterS = 240, ManLpm = 84, PartyShare = 0.12, PartyMen = 16,
             MainBreak = 0.10, HoseCut = 0.15, Looped = false, RestoreS = 900, PumpFloor = 0, BreathingSets = false, TurnTo = 2, FloodMagazineS = 180 },
-        new() { Name = "german-1916", Skill = 0.9, WatchS = 180, HoseLpm = 420, Nozzle = "jet", MusterS = 240, ManLpm = 84, PartyShare = 0.12, PartyMen = 16,
+        new() { Name = "german-1916", CounterfloodDeg = 1.5, CounterfloodTrimDeg = 1, Skill = 0.9, WatchS = 180, HoseLpm = 420, Nozzle = "jet", MusterS = 240, ManLpm = 84, PartyShare = 0.12, PartyMen = 16,
             MainBreak = 0.10, HoseCut = 0.15, Looped = false, RestoreS = 900, PumpFloor = 0, BreathingSets = false, TurnTo = 2, FloodMagazineS = 180 },
-        new() { Name = "usn-1942", Skill = 0.9, WatchS = 120, HoseLpm = 250, Nozzle = "all-purpose", MusterS = 180, ManLpm = 62.5, PartyShare = 0.12, PartyMen = 16,
+        new() { Name = "usn-1942", CounterfloodDeg = 1, CounterfloodTrimDeg = 1, Skill = 0.9, WatchS = 120, HoseLpm = 250, Nozzle = "all-purpose", MusterS = 180, ManLpm = 62.5, PartyShare = 0.12, PartyMen = 16,
             MainBreak = 0.25, HoseCut = 0.20, Looped = false, RestoreS = 480, PumpFloor = 0, BreathingSets = false, TurnTo = 2, FloodMagazineS = 180 },
-        new() { Name = "usn-1944", Skill = 1.0, WatchS = 60, HoseLpm = 360, Nozzle = "fog", MusterS = 120, ManLpm = 90, PartyShare = 0.12, PartyMen = 16,
+        new() { Name = "usn-1944", CounterfloodDeg = 1, CounterfloodTrimDeg = 1, Skill = 1.0, WatchS = 60, HoseLpm = 360, Nozzle = "fog", MusterS = 120, ManLpm = 90, PartyShare = 0.12, PartyMen = 16,
             MainBreak = 0.15, HoseCut = 0.20, Looped = true, RestoreS = 240, PumpFloor = 0.6, BreathingSets = true, TurnTo = 3,
             CoolBoundaries = true, ReflashWatch = true, FloodMagazineS = 120 },
     ];
@@ -1827,6 +1836,10 @@ public readonly record struct DamageControlDoctrine
     /// the doctrine puts the water before fires next to magazines (10 §5.1: fire first).</summary>
     public double Skill { get; init; }
     public bool FloodFirst { get; init; }
+    /// <summary>DC Central counterfloods past this list, degrees (-1: never; DC5), and past this trim (-1: never)
+    /// [EST: NC took 5.5° off at once; the German navy trimmed, the RN rarely].</summary>
+    public double CounterfloodDeg { get; init; }
+    public double CounterfloodTrimDeg { get; init; }
 }
 
 /// <summary>A ship's orders before action for fire (docs/battle/fire.md B1; <see cref="SimSettings.Readiness"/>).</summary>

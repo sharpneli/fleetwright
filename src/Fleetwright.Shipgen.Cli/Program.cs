@@ -186,7 +186,7 @@ public static class Program
             mechanism checks, a ship given the case's damage (shell hits, torpedoes, holes, splinters) and speeds through
             the world's damage system, run on for hours (default each case's): water by the hour, worst list, list, trim,
             speed and power at the end, how and when lost; N runs a case (default 20), --case a case by name, --trace
-            the first run minute by minute
+            the first run minute by minute (--trace-run N another)
         shipgen templates
             writes the shell, explosive, material and fittings catalogues (ShellTemplates, Explosives, MaterialTemplates,
             Fittings) out: Content/Templates/shells.json, explosives.json, materials.json and fittings.json,
@@ -317,7 +317,8 @@ public static class Program
                 "fire-history" => FireHistory.Run(a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), a.Int("runs", 20),
                     a.Get("case"), a.Get("hours") is null ? null : D(a, "hours", 4), n => LoadDesign(Resolve(a, n)), a.Has("trace")),
                 "dc-history" => DcHistory.Run(a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), a.Int("runs", 20),
-                    a.Get("case"), a.Get("hours") is null ? null : D(a, "hours", 4), n => LoadDesign(Resolve(a, n)), a.Has("trace")),
+                    a.Get("case"), a.Get("hours") is null ? null : D(a, "hours", 4), n => LoadDesign(Resolve(a, n)), a.Has("trace") || a.Get("trace-run") != null,
+                    a.Int("trace-run", 0)),
                 "frag" => FragBench.Run(a.Positional.Count > 0 ? [.. a.Positional, "--calibre", a.Get("calibre") ?? "152"] : []),
                 "weapons" => Weapons.Run(a.Positional, a.Has("research"), n => LoadDesign(File.Exists(n) ? n : Path.Combine(Root(a), "designs", n + ".json"))),
                 "matchup" => MatchupBench.Run(a.Positional.ElementAtOrDefault(0) ?? "arethusa", a.Positional.ElementAtOrDefault(1) ?? "v25",

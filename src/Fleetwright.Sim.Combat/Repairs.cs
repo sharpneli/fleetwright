@@ -46,8 +46,134 @@ public static class Repairs
             return;
         Make(c, f, k, now, s);
         Watch(c, f, k, now, s);
+        Counterflood(c, f, k, dt, now, s);
         PlanIfDue(c, f, k, now, s);
         Work(c, f, k, dt, now, s);
+    }
+
+    // ------------------------------------------------------------------ DC Central (DC5)
+
+    /// <summary>DC Central's counterflooding (09 §2.5, §3; WDR 61): past the doctrine's list it opens the tank on the high
+    /// side whose fill best matches the water the list needs (Δ·GM·tanφ over its lever), and fills it, the next when it's
+    /// full; past its trim, a centreline tank at the other end. It shuts the valve once the list is inside half the
+    /// doctrine's (or has gone the other way): a tank left part full has free surface, the price of not overshooting. At
+    /// the design's valves' rate while she's conned (DC Central's stand-in until the designer has the station), by hand at
+    /// a share of it after a delay when she isn't. The tanks it fills the pumps leave alone; when the high side's are
+    /// full, the list grows (the doom clock).</summary>
+    static void Counterflood(ShipClass c, FloodModel f, ShipCondition k, double dt, long now, SimSettings s)
+    {
+        ref readonly var doc = ref k.DamageControl;
+        double rate = c.Drainage.CounterfloodTpm / 60 / FloodModel.SeaT;   // m³/s
+        if (rate <= 0 || doc.CounterfloodDeg < 0)
+            return;
+        if (!k.Conned)
+        {
+            if (k.CounterHandMs == 0)
+                k.CounterHandMs = Math.Max(now, 1);
+            if (now - k.CounterHandMs < s.CounterfloodHandS * 1000)
+                return;
+            rate *= s.CounterfloodHandShare;
+        }
+        double heel = k.Attitude.HeelDeg, trim = k.Attitude.TrimDeg;
+        int t = k.CounterTank;
+        if (t >= 0)
+        {
+            // the valve shut once the list (or the trim it was opened for) is put right, or the tank is full or holed
+            bool forList = Math.Abs(f.Cy[t]) >= 1;
+            bool done = forList ? Math.Abs(heel) < 0.5 * doc.CounterfloodDeg || heel * f.Cy[t] > 0
+                : Math.Abs(trim) < 0.5 * doc.CounterfloodTrimDeg || trim * (f.Cx[t] - c.Hydrostatics.Lcf) > 0;
+            if (done || k.WaterM3[t] >= f.Capacity[t] * 0.999 || k.BreachM2[t] > 0)
+                k.CounterTank = t = -1;
+        }
+        if (t < 0 && Math.Abs(heel) > doc.CounterfloodDeg && Deballast(c, f, k, heel > 0 ? 1 : -1, dt))
+            return;   // the list is now toward water it let in itself: that goes out first
+        if (t < 0 && k.GmM < s.CounterfloodMinGmM)
+            return;   // a list with her GM gone is a loll: flooding the high side would throw her over (Ralph Talbot's lesson)
+        if (t < 0)
+        {
+            if (Math.Abs(heel) > doc.CounterfloodDeg)
+                t = Tank(c, f, k, heel > 0 ? -1 : 1, 0, Needed(c, k, heel));
+            else if (doc.CounterfloodTrimDeg >= 0 && Math.Abs(trim) > doc.CounterfloodTrimDeg)
+                t = Tank(c, f, k, 0, trim > 0 ? -1 : 1, 0);
+            if (t < 0)
+                return;
+            k.CounterTank = t;
+        }
+        double v = Math.Min(rate * dt, f.Capacity[t] - k.WaterM3[t]);
+        if (v <= 0)
+            return;
+        k.WaterM3[t] += v;
+        k.Counterflooded[t] = true;
+        k.CounterfloodT += v * FloodModel.SeaT;
+    }
+
+    /// <summary>Counterflood water on the low side pumped back out by the drainage pumps (on her power), the outermost tank
+    /// first: when the flooding that was answered drains away (a holed side lifted clear) the list swings toward it.
+    /// Whether there was any to pump.</summary>
+    static bool Deballast(ShipClass c, FloodModel f, ShipCondition k, int side, double dt)
+    {
+        int best = -1;
+        foreach (int i in f.CounterTanks)
+            if (k.Counterflooded[i] && k.WaterM3[i] > 0 && k.BreachM2[i] <= 0 && side * f.Cy[i] > 0.5 &&
+                (best < 0 || side * f.Cy[i] > side * f.Cy[best]))
+                best = i;
+        if (best < 0)
+            return false;
+        double v = Math.Min(k.WaterM3[best], c.Drainage.PumpsTph / FloodModel.SeaT / 3600 * k.PowerCap * dt);
+        if (v <= 0)
+            return false;
+        k.WaterM3[best] -= v;
+        k.CounterfloodT -= v * FloodModel.SeaT;
+        if (k.WaterM3[best] <= 1e-6)
+            (k.WaterM3[best], k.Counterflooded[best]) = (0, false);
+        return true;
+    }
+
+    /// <summary>The heeling moment a list stands for, t·m (Δ·GM·tanφ, with her water in): what counterflooding must answer.</summary>
+    static double Needed(ShipClass c, ShipCondition k, double heelDeg) =>
+        (c.Hydrostatics.DisplacementT + k.WaterT) * Math.Max(k.GmM, 0.1) * Math.Tan(double.DegreesToRadians(Math.Abs(heelDeg)));
+
+    /// <summary>The tank to open: on a side (-1 port, +1 starboard) the one whose free room × lever comes nearest the moment
+    /// needed (a longer lever among near equals), or at an end (-1 aft, +1 forward) the centreline one with the longest
+    /// lever along; with room, not holed (the sea's in it already).</summary>
+    static int Tank(ShipClass c, FloodModel f, ShipCondition k, int side, int end, double moment)
+    {
+        int best = -1;
+        double top = double.NegativeInfinity, lcf = c.Hydrostatics.Lcf;
+        foreach (int i in f.CounterTanks)
+        {
+            double room = (f.Capacity[i] - k.WaterM3[i]) * FloodModel.SeaT;
+            if (k.BreachM2[i] > 0 || room < 1)
+                continue;
+            double score;
+            if (side != 0)
+            {
+                double lever = side * f.Cy[i];
+                if (lever <= 0.5)
+                    continue;
+                score = -Math.Abs(Math.Log(room * lever / Math.Max(moment, 1))) + 0.01 * lever;
+            }
+            else
+            {
+                double lever = end * (f.Cx[i] - lcf);
+                if (lever <= 0.1 * c.Length || Math.Abs(f.Cy[i]) >= 1)
+                    continue;
+                score = lever;
+            }
+            if (score > top)
+                (best, top) = (i, score);
+        }
+        return best;
+    }
+
+    /// <summary>The tonnes DC Central could still let in on a side (-1 port, +1 starboard): the doom clock's (DC8).</summary>
+    public static double CounterfloodLeftT(FloodModel f, ShipCondition k, int side)
+    {
+        double left = 0;
+        foreach (int i in f.CounterTanks)
+            if (side * f.Cy[i] > 0.5 && k.BreachM2[i] <= 0)
+                left += Math.Max(f.Capacity[i] - k.WaterM3[i], 0) * FloodModel.SeaT;
+        return left;
     }
 
     /// <summary>The parties planned, every <see cref="SimSettings.FirePlanS"/> (the fire's step asks too, for the tools

@@ -1,5 +1,5 @@
 # Plan: damage control (a 4.5 deepening)
-Status: **agreed with the user 2026-10-20** ("Decided" below); DC0-DC4 done 2026-10-20, DC5 next.    Updated: 2026-10-20
+Status: **agreed with the user 2026-10-20** ("Decided" below); DC0-DC5 done 2026-10-20, DC6 next.    Updated: 2026-10-20
 
 The fine-tune pass for damage control: what the crew does about a hit once it has landed. Firefighting came first, as
 this pass's first slice (`fire.md`, decision 1). This plan adds the water and the repairs, and both draw on the same
@@ -710,6 +710,65 @@ on the yardstick bench.
 - The tanks, the doctrine's threshold, the design's rate, one tank at a time, capacity left, the conned stand-in.
 - B2's magazine flooding moves here.
 - **Tests:** the NC mechanism check; QE with 1-4 torpedoes on one side against the baseline.
+- **Built (done 2026-10-20):**
+  - **The tanks** (`FloodModel.CounterTanks`): cells below the waterline whose room is a double bottom, a
+    torpedo-protection void, a fuel tank or a bunker, at least 1 m off the centreline (for the list) or a quarter-length
+    from the centre of flotation (for the trim). Some designs have none on the sides: QE (oil-fired, no wing spaces)
+    can't counterflood her list.
+  - **DC Central** (`Repairs.Counterflood`, each step):
+    - Past the doctrine's list (`CounterfloodDeg` [EST]: unorganised never, 1894 5°, 1905 and rn-1916 3°, german-1916
+      1.5°, USN 1°), it opens the tank on the high side whose free room × lever comes nearest the moment the list stands
+      for (Δ·GM·tanφ).
+    - Past its trim (`CounterfloodTrimDeg`: German and USN 1°, else never), it opens a centreline tank at the other end.
+    - It fills at the design's valve rate, and shuts the valve once the list is inside half the doctrine's or has gone
+      the other way, or the tank is full. A part-full tank has free surface: the price of not overshooting.
+    - When the list swings toward water it let in itself (the flooding it answered drained away as the holed side
+      lifted), the drainage pumps take that out first (`Deballast`).
+    - **No new tank while GM is under 0.3 m** (`CounterfloodMinGmM` [EST]): that list is a loll, and flooding the high
+      side throws her over (10 §2.7, Ralph Talbot).
+    - **Conned:** at the valves' rate. **Not conned:** by hand at a third of it after 3 min (DC Central's stand-in until
+      the designer has a station).
+    - The pumps leave counterflooded tanks alone. `Repairs.CounterfloodLeftT(side)` is the doom clock's data (DC8).
+  - B2's magazine flooding stays where it is (`Fires.Magazines`): one set of valves in the story, two in the code, until
+    the station exists.
+  - **The bench:**
+    - reports the tonnes counterflooded and which runs were lost, and how;
+    - `--trace-run N` follows any run, its trace now with the counterflooding and the parties' jobs;
+    - the North Carolina-type case moved to `kgv`, a treaty battleship with torpedo protection (QE has no side tanks).
+- **Getting it right took three tries:**
+  1. Filling to full chose by lever alone, and the trim rule could pick an off-centre tank. Seydlitz listed 13°; Lützow
+     was lost in 65% of runs.
+  2. Choosing by the moment needed, and shutting the valve once right: but the pre-dreadnought at anchor swung from
+     +5.5° through zero to −11° as her holed side's water drained out, leaving the counterflood water unbalanced (lost
+     60%). Hence the deballasting.
+  3. Seydlitz's heavy runs (9,000-10,000 t, twice the record) lost GM to free surface. DC Central counterflooded the
+     loll, and 12 of 60 capsized at about 4.5 h, against none without counterflooding. Hence the GM gate. Even so, 9 of
+     60 do, against 0 without: in runs already far past the record, counterflooding turns a slow foundering into a
+     capsize. 09 §7.3 names this trade.
+- **What moved (dc-history, 20 runs; DC4 → DC5):**
+
+  | Case | Worst list | Counterflooded | Lost |
+  |---|---|---|---|
+  | North Carolina-type (now on `kgv`) | 4.8° in the first minutes, off in ~10 min | ~650 t in the first 10 min, ~1,000 t in all | 0% |
+  | Seydlitz | 1.3° | 47 t | 15 → 20% (magazines; one capsized at ~4 h) |
+  | Lützow (×10) | 0.1° | 0 t | 45 → 55% (magazines; 4 capsized, 2 of them in the first 30 min to free surface, not counterflooding) |
+  | Pre-dreadnought, one torpedo (?) | 13 → 10° | 245 t | 20 → 15% |
+  | Pre-dreadnought, two torpedoes (?) | 22° | 270 t | 90 → 85% (capsized ~22 min) |
+  | Marlborough (?) | 0.4° | 0 t | 20% (capsized at ~8 h) |
+
+  - **The North Carolina-type case:** the record had 5.5° off in 6 min with ~480 t. Ours (run 0) takes 4.8° off in
+    10 min with 646 t. But `kgv`'s torpedo floods 4,370 t against North Carolina's 970 (wing, TDS and inner spaces),
+    and in later hours her GM falls from 1.8 m to 0 as water rises into decks gone under that no party reaches. The
+    median worst list over 4 h is 18° (a slow loll); none are lost.
+  - **Torpedo bench, 120 min:**
+    - QE with 4: unchanged, 87% capsized (no side tanks).
+    - Seydlitz with 2: 10,630 t, 6.6°; lost 7% (3% capsized).
+- **Open:**
+  - The slow loll of the North Carolina-type case: water high in the ship through decks gone under (the Lützow rule's
+    openings), with no job to fight it.
+  - Counterflooding's capsizes in runs past the record.
+
+  Both are DC9's, with the tightness and the free surface's pocket the first suspects.
 
 ### DC6 Speed
 - The safe speed, the captain keeping to it after the hold time, the collision mat, and hull work loosening at speed.

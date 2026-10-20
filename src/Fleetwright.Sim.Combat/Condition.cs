@@ -200,6 +200,12 @@ public sealed class ShipCondition
     /// <summary>The portable pumps rigged in each cell, and how many are out of the store (DC4).</summary>
     public byte[] PumpsIn = [];
     public int PumpsRigged;
+    /// <summary>DC Central's counterflooding (DC5): the cells flooded on purpose (the pumps leave them), the tank filling
+    /// now (-1: none), the tonnes let in so far, and when the valves went to hand (world ms, 0: they haven't).</summary>
+    public bool[] Counterflooded = [];
+    public int CounterTank = -1;
+    public double CounterfloodT;
+    public long CounterHandMs;
     public long[] JoinWetMs = [];
     /// <summary>Whether her watertight doors left open have been drawn (at her first damage, by her readiness).</summary>
     public bool DoorsDrawn;
@@ -314,6 +320,7 @@ public sealed class ShipCondition
             JoinMarks = new JoinMark[c.NeighbourCount];
             (JoinFlow, JoinWetMs, CellInflow) = (new double[c.NeighbourCount], new long[c.NeighbourCount], new double[c.Cells.Length]);
             PumpsIn = new byte[c.Cells.Length];
+            Counterflooded = new bool[c.Cells.Length];
             (BlastRegion, BlastStamp, BlastFelt) = (new int[c.Cells.Length], new int[c.Cells.Length], new double[c.Cells.Length]);
             BlastBefore = new double[c.Cells.Length];
             (JoinStamp, JoinFate, JoinFelt) = (new int[c.NeighbourCount], new byte[c.NeighbourCount], new double[c.NeighbourCount]);
@@ -337,6 +344,7 @@ public sealed class ShipCondition
             Array.Clear(JoinWetMs);
             Array.Clear(CellInflow);
             Array.Clear(PumpsIn);
+            Array.Clear(Counterflooded);
             Array.Clear(BlastStamp);
             Array.Clear(JoinStamp);
             Array.Clear(FaceStamp);
@@ -374,6 +382,7 @@ public sealed class ShipCondition
         (Status, Loss, Attitude, PowerCap, Steering, JamRudderRad, Conned, Hits, Damaged) = (ShipStatus.Afloat, LossKind.None, Attitude.Upright, 1, Steering.Free, 0, true, 0, false);
         (WaterT, GmM, StepMs, NextStepMs, HeldCap, LastShooter, LastBattery, LossMs, GoneMs) = (0, c.Hydrostatics.GmT, 0, -1, 1, 0, 0, 0, 0);
         (NextClearMs, ClearAtMs, Leaks, DoorsDrawn, PumpsRigged) = (-1, -1, 0, false, 0);
+        (CounterTank, CounterfloodT, CounterHandMs) = (-1, 0, 0);
         (PartyCount, PartiesMade, TurnedTo, LastHitMs, NextPlanMs, FireShowMW) = (0, false, false, 0, 0, 0);
         ClearGen++;
         Version++;
@@ -700,6 +709,11 @@ public sealed class ShipCondition
                 h.Add(i + 2000);
                 h.Add(JoinOpenM2[i]);
             }
+        if (CounterfloodT > 0)
+        {
+            h.Add(CounterfloodT);
+            h.Add(CounterTank);
+        }
         for (int i = 0; i < PumpsIn.Length; i++)
             if (PumpsIn[i] != 0)
             {
