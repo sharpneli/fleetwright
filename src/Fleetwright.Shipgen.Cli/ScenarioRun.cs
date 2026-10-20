@@ -232,6 +232,10 @@ sealed class FightTally(CombatLog log)
     /// out, blacked her out and harmed a part.</summary>
     record struct Near(int Count, int Holed, int Shock, int Blackout, int Parts);
     readonly SortedDictionary<int, Near> near = [];
+    /// <summary>Damage control's events by ship (docs/battle/damage-control.md DC8): boundaries that gave way, the steering
+    /// it went to last, parts repaired, rooms brought back, sides whose counterflood tanks ran out, the lowest speed asked.</summary>
+    record struct Dc(int Gave, Steering Steering, int Repaired, int Restored, int CounterOut, int SafeKn);
+    readonly SortedDictionary<int, Dc> dc = [];
     long read;
 
     public bool Any => lines.Count > 0;
@@ -244,6 +248,21 @@ sealed class FightTally(CombatLog log)
         for (long i = n - 1; i >= 0; i--)
         {
             var e = log.Newest((int)i);
+            if (e.Kind == CombatEvent.DamageControl)
+            {
+                var d = dc.GetValueOrDefault(e.Target, new Dc(0, Steering.Free, 0, 0, 0, int.MaxValue));
+                d = (DcEvent)e.Count switch
+                {
+                    DcEvent.Gave => d with { Gave = d.Gave + e.Battery },
+                    DcEvent.Steering => d with { Steering = (Steering)e.Battery },
+                    DcEvent.Repaired => d with { Repaired = d.Repaired + 1 },
+                    DcEvent.Restored => d with { Restored = d.Restored + 1 },
+                    DcEvent.CounterfloodOut => d with { CounterOut = d.CounterOut + 1 },
+                    _ => d with { SafeKn = Math.Min(d.SafeKn, e.Battery) },
+                };
+                dc[e.Target] = d;
+                continue;
+            }
             int battery = e.Source == HitSource.Torpedo ? -1 : e.Battery;   // a ship's torpedoes on one line, its launchers together
             if (!lines.TryGetValue((e.Shooter, battery, e.Target), out var l))
                 lines[(e.Shooter, battery, e.Target)] = l = new Line();
@@ -297,6 +316,10 @@ sealed class FightTally(CombatLog log)
         }
         foreach (var (target, n) in near)
             Console.WriteLine($"  near misses on {Name(target),-16} {n.Count,4}: holed {n.Holed}, gear out {n.Shock}, blacked out {n.Blackout}, parts harmed {n.Parts}");
+        foreach (var (ship, d) in dc)
+            Console.WriteLine($"  damage control on {Name(ship),-16} boundaries gave way {d.Gave}, parts repaired {d.Repaired}, rooms brought back {d.Restored}" +
+                              (d.Steering != Steering.Free ? $", steering by {(d.Steering == Steering.Hand ? "hand" : "engines")}" : "") +
+                              (d.CounterOut > 0 ? ", counterflood tanks ran out" : "") + (d.SafeKn < int.MaxValue ? $", asked for {d.SafeKn} kn" : ""));
         foreach (var e in losses)
             Console.WriteLine($"  LOST: {Name(e.Target)} at {new WorldTime(e.Ms).ToString()[11..19]}, " + (LossKind)e.Count switch
             {

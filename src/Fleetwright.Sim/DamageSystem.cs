@@ -850,7 +850,10 @@ public sealed class DamageSystem : IWorldSystem
         var wet = stream.Derive(0xF1000Du).Derive((ulong)ships.Store[slot].Entity).Derive((ulong)now);
         var fl = Flooding.Step(cls, f, k, dt, k.PowerCap, ships.Store[slot].Speed, settings, ref wet);
         if (fl.Collapsed > 0)
-            log.Add(new CombatEntry(now, CombatEvent.Flood, 0, 0, ships.Store[slot].Entity, fl.Collapsed));
+            log.Add(new CombatEntry(now, CombatEvent.DamageControl, 0, fl.Collapsed, ships.Store[slot].Entity, (int)DcEvent.Gave));
+        for (int i = 0; i < k.NoteCount; i++)
+            log.Add(new CombatEntry(now, CombatEvent.DamageControl, 0, k.Notes[i].Value, ships.Store[slot].Entity, (int)k.Notes[i].What, k.Notes[i].Part));
+        k.NoteCount = 0;
         var how = Flooding.Settle(cls, f, k, settings, dt);
         var rng = stream.Derive(0xF100Du).Derive((ulong)ships.Store[slot].Entity).Derive((ulong)now);
         var fs = k.Fires > 0 || Fires.Hot(k) ? Fires.Step(cls, f, k, dt, settings, propellant[ships.Store[slot].Side], ref rng, now) : default;
@@ -1040,6 +1043,10 @@ public sealed class DamageSystem : IWorldSystem
                 (v.MountsWorking[n], v.Mounts[n], v.DirectorsWorking[n], v.Directors[n]) = (k.MountsWorking, k.MountWorks.Length, directors, k.DirectorWorks.Length);
                 (v.CrewLost[n], v.Fires[n], v.BreachM2[n], v.Conned[n]) = (k.CrewLost, k.Fires, k.BreachTotalM2, k.Conned);
                 (v.WaterT[n], v.ReserveT[n], v.Attitude[n], v.Loss[n], v.HeldCap[n]) = (k.WaterT, Flood(k.Class).ReserveT - k.WaterT, k.Attitude, k.Loss, k.HeldCap);
+                // damage control's (DC8): the speed it asks for, and the counterflooding left on each side (the doom clock)
+                var fm = Flood(k.Class);
+                (v.SafeSpeedKn[n], v.CounterfloodPortT[n], v.CounterfloodStarboardT[n]) = (k.SafeSpeedKn,
+                    Repairs.CounterfloodLeftT(fm, k, -1), Repairs.CounterfloodLeftT(fm, k, 1));
                 n++;
             }
         v.Count = n;

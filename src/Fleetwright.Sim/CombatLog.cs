@@ -23,8 +23,10 @@ public enum CombatEvent : byte
     /// <summary>A shell that missed burst close to a ship (Target) and did something to it (docs/battle/
     /// shells-armour-damage.md E7): as a hit's line, its source <see cref="HitSource.NearMiss"/>.</summary>
     NearMiss,
-    /// <summary>A ship's (Target) flooding (docs/battle/damage-control.md DC1): Count boundaries gave way under the head.</summary>
-    Flood,
+    /// <summary>A ship's (Target) damage control (docs/battle/damage-control.md DC8): Count says what (a
+    /// <see cref="Fleetwright.Sim.Combat.DcEvent"/>), Part the part or room it was about (-1: none), Battery a number with
+    /// it (boundaries that gave way, the steering it went to, the side whose counterflood tanks are full).</summary>
+    DamageControl,
 }
 
 /// <summary>What a hit did, as the log tells it.</summary>

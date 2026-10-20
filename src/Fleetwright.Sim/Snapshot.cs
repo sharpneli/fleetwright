@@ -129,6 +129,9 @@ public sealed class ConditionsView
     public double[] PowerCap = [], CrewLost = [], BreachM2 = [], WaterT = [], ReserveT = [];
     /// <summary>The share of its power that drives it, its water's weight taken off (what its speed comes from).</summary>
     public double[] HeldCap = [];
+    /// <summary>Damage control's (docs/battle/damage-control.md DC8): the speed it asks for (knots, infinite: none) and the
+    /// counterflooding left on each side, t (the doom clock).</summary>
+    public double[] SafeSpeedKn = [], CounterfloodPortT = [], CounterfloodStarboardT = [];
     public Fleetwright.Sim.Combat.Attitude[] Attitude = [];
     public Fleetwright.Sim.Combat.LossKind[] Loss = [];
     public Fleetwright.Sim.Combat.Steering[] Steering = [];
@@ -161,6 +164,9 @@ public sealed class ConditionsView
         Array.Resize(ref BreachM2, n);
         Array.Resize(ref WaterT, n);
         Array.Resize(ref HeldCap, n);
+        Array.Resize(ref SafeSpeedKn, n);
+        Array.Resize(ref CounterfloodPortT, n);
+        Array.Resize(ref CounterfloodStarboardT, n);
         Array.Resize(ref ReserveT, n);
         Array.Resize(ref Attitude, n);
         Array.Resize(ref Loss, n);

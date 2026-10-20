@@ -1,5 +1,5 @@
 # Plan: damage control (a 4.5 deepening)
-Status: **agreed with the user 2026-10-20** ("Decided" below); DC0-DC7 done 2026-10-20, DC8 next.    Updated: 2026-10-20
+Status: **agreed with the user 2026-10-20** ("Decided" below); DC0-DC8 done 2026-10-20, DC9 next.    Updated: 2026-10-20
 
 The fine-tune pass for damage control: what the crew does about a hit once it has landed. Firefighting came first, as
 this pass's first slice (`fire.md`, decision 1). This plan adds the water and the repairs, and both draw on the same
@@ -884,6 +884,26 @@ on the yardstick bench.
 ### DC8 What's seen and logged
 - Log lines in symptom → cause form; the list and slowing as the enemy sees them (already from the attitude and speed).
 - What the matchup and fall-out read: the doom clock's data for the UI pass. No UI here.
+- **Built (done 2026-10-20):**
+  - **The log:** `CombatEvent.DamageControl` (DC1's `Flood` renamed: one word, one meaning). Count is a `DcEvent`:
+    - boundaries that gave way (how many);
+    - the steering going to engines or hand;
+    - a part repaired, or a room brought back (which);
+    - a side's counterflood tanks full (once a side: the doom clock run out);
+    - a lower speed asked (how fast).
+
+    `Repairs` notes them on the condition (`ShipCondition.Note`, a ring of 8) and the damage system drains them into the
+    log each step. The map's damage panel already names "steering by hand" and "steering by engines" (DC7).
+  - **The snapshot** (`ConditionsView`) carries the safe speed asked and the counterflooding left on each side, t (the
+    doom clock), for the UI pass.
+  - **The scenario tool** prints a damage-control line a ship (boundaries that gave way, parts repaired, rooms brought
+    back, steering, counterflooding run out, the lowest speed asked). DC1's `Flood` entries had been making junk rows in
+    the fight table.
+  - **Test:** the log tells the steering's story (engines, then hand).
+- **Squadrons, 90 min:** Princess Royal, Tiger and Von der Tann each had a part repaired; Queen Mary steered by engines.
+- **Not built (the UI pass):** the symptom → cause lines in words (09 §7.4: "list growing 0.5°/10 min ← counterflood
+  capacity port exhausted ← seepage..."). The log has the facts in order; the words are the UI's. The matchup and the
+  fall-out read nothing new: the safe speed reaches them through her speed, and the list through her attitude.
 
 ### DC9 Anchors and cost
 - The yardstick above, the first game's cases first. Tune only within the [EST] numbers and log what moved.

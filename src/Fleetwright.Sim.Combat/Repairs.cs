@@ -29,6 +29,22 @@ public enum RepairJob : byte
     Restore,
 }
 
+/// <summary>What damage control did or met, for the log (docs/battle/damage-control.md DC8): boundaries gave way under the
+/// head; her steering went to engines or to hand; a part was repaired; a room flooded out of action was brought back; the
+/// counterflood tanks on a side are full (the doom clock run out); damage control asked for a lower speed.</summary>
+public enum DcEvent : byte
+{
+    Gave,
+    Steering,
+    Repaired,
+    Restored,
+    CounterfloodOut,
+    SafeSpeed,
+}
+
+/// <summary>A damage-control event waiting for the log: what, the part (or -1), a number with it.</summary>
+public readonly record struct DcNote(DcEvent What, int Part, int Value);
+
 /// <summary>What a repairs step changed that the ship must answer: her steering, or her parts (what she can do worked out
 /// again).</summary>
 public enum RepairChange : byte
@@ -114,6 +130,7 @@ public static class Repairs
         if (k.Steering is not (Steering.Jammed or Steering.Lost) || now - k.SteerSinceMs < s.EnginesSteerS * 1000 || Shafts(c, k) < 2)
             return RepairChange.None;
         k.Steering = Steering.Engines;
+        k.Note(DcEvent.Steering, -1, (int)Steering.Engines);
         return RepairChange.Steering;
     }
 
@@ -236,7 +253,10 @@ public static class Repairs
             safe = Math.Max(safe, s.SafeMinKn);
         bool asks = safe < Math.Abs(speedMs) / Kn - 0.5;
         if (asks && (!double.IsFinite(k.SafeSpeedKn) || k.SafeSinceMs == 0))
+        {
             k.SafeSinceMs = Math.Max(now, 1);
+            k.Note(DcEvent.SafeSpeed, -1, (int)Math.Round(safe));
+        }
         else if (!double.IsFinite(safe))
             k.SafeSinceMs = 0;
         k.SafeSpeedKn = safe;
@@ -332,7 +352,16 @@ public static class Repairs
         if (t < 0)
         {
             if (Math.Abs(heel) > doc.CounterfloodDeg)
-                t = Tank(c, f, k, heel > 0 ? -1 : 1, 0, Needed(c, k, heel));
+            {
+                int side = heel > 0 ? -1 : 1;
+                t = Tank(c, f, k, side, 0, Needed(c, k, heel));
+                byte mark = (byte)(side < 0 ? 1 : 2);
+                if (t < 0 && (k.CounterOut & mark) == 0 && CounterfloodLeftT(f, k, side) < 1)
+                {
+                    k.CounterOut |= mark;   // the high side's tanks full: the list can only grow now
+                    k.Note(DcEvent.CounterfloodOut, -1, side);
+                }
+            }
             else if (doc.CounterfloodTrimDeg >= 0 && Math.Abs(trim) > doc.CounterfloodTrimDeg)
                 t = Tank(c, f, k, 0, trim > 0 ? -1 : 1, 0);
             if (t < 0)
@@ -844,9 +873,11 @@ public static class Repairs
         {
             case RepairJob.Steering:
                 (k.Steering, k.JamRudderRad) = (Steering.Hand, 0);
+                k.Note(DcEvent.Steering, -1, (int)Steering.Hand);
                 return RepairChange.Steering;
             case RepairJob.Repair:
             case RepairJob.Restore:
+                k.Note(job == RepairJob.Restore ? DcEvent.Restored : DcEvent.Repaired, at, 0);
                 (k.State[at], k.Fix[at], k.Drowned[at]) = (PartState.Damaged, 0, false);
                 k.Version++;
                 return RepairChange.Parts;

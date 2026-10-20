@@ -222,6 +222,19 @@ public sealed class ShipCondition
     /// can't), its man-minutes, and the rooms flooded out of action (to come back once pumped down).</summary>
     public SteerCause SteerCause;
     public long SteerSinceMs;
+    /// <summary>Damage control's events waiting for the log (DC8: the damage system drains them each step), and which sides'
+    /// counterflood tanks it has found full (1 port, 2 starboard).</summary>
+    public const int NoteSlots = 8;
+    public readonly DcNote[] Notes = new DcNote[NoteSlots];
+    public int NoteCount;
+    public byte CounterOut;
+
+    /// <summary>A damage-control event for the log (the oldest kept when the ring is full: a step never makes many).</summary>
+    public void Note(DcEvent what, int part, int value)
+    {
+        if (NoteCount < NoteSlots)
+            Notes[NoteCount++] = new DcNote(what, part, value);
+    }
     public byte[] Fix = [];
     public double[] FixManMin = [];
     public bool[] Drowned = [];
@@ -414,6 +427,7 @@ public sealed class ShipCondition
         (NextClearMs, ClearAtMs, Leaks, DoorsDrawn, PumpsRigged) = (-1, -1, 0, false, 0);
         (CounterTank, CounterfloodT, CounterHandMs) = (-1, 0, 0);
         (SafeSpeedKn, SafeSinceMs, HoldsSpeed, SteerCause, SteerSinceMs) = (double.PositiveInfinity, 0, false, SteerCause.None, 0);
+        (NoteCount, CounterOut) = (0, 0);
         (PartyCount, PartiesMade, TurnedTo, LastHitMs, NextPlanMs, FireShowMW) = (0, false, false, 0, 0, 0);
         ClearGen++;
         Version++;

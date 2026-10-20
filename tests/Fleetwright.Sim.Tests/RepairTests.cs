@@ -187,6 +187,20 @@ public class RepairTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void The_log_tells_damage_controls_story()
+    {
+        var c = Class("dreadnought");
+        var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), 3, Settings);
+        w.Apply(ShipSystem.Spawn(w.Ships.AddClass(c), 56, 4, 0, 15));
+        w.Apply(DamageSystem.Wreck(1, c.RoomNode(Array.FindIndex(c.Rooms.ToArray(), r => r.Kind == RoomKind.Steering)), PartState.Disabled));
+        w.AdvanceTo(w.Time + 30 * 60_000);
+        var dc = Enumerable.Range(0, w.CombatLog.Count).Select(i => w.CombatLog.Newest(i))
+            .Where(e => e.Kind == CombatEvent.DamageControl && e.Target == 1 && (DcEvent)e.Count == DcEvent.Steering).Select(e => (Steering)e.Battery).ToList();
+        output.WriteLine("the steering's story, newest first: " + string.Join(", ", dc));
+        Assert.Equal([Steering.Hand, Steering.Engines], dc);
+    }
+
+    [Fact]
     public void About_the_tables_share_of_disabled_mounts_come_back_within_two_hours()
     {
         var c = Class("dreadnought");
