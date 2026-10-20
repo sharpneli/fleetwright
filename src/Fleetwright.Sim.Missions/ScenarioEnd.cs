@@ -91,10 +91,18 @@ public sealed class ScenarioEnd
     readonly Dictionary<int, byte> taskStates = [];   // the state each unit's task was last told in
     readonly Dictionary<int, long> ordersTold = [];   // when each unit's last commander's order was given, as told
     readonly int[] phases = new int[256];             // each side's commander's phase and reason as last told
-    readonly Dictionary<int, string> groupNames = [];
+    readonly Dictionary<int, (string Name, int Side)> groupsTold = [];
 
     /// <summary>A group's name as it was when the timeline told of it.</summary>
-    public string GroupName(int groupId) => groupNames.TryGetValue(groupId, out var n) ? n : $"group {groupId}";
+    public string GroupName(int groupId) => groupsTold.TryGetValue(groupId, out var n) ? n.Name : $"group {groupId}";
+
+    /// <summary>A group's side, its name and side kept for the timeline (a group gone by the time its task ends, its
+    /// ships lost, is still told as its side's).</summary>
+    int Told(GroupSystem groups, GroupSystem.Group g) => (groupsTold[g.GroupId] = (g.Name, groups.SideOf(g))).Side;
+
+    int SideOf(GroupSystem groups, Unit unit) =>
+        unit.IsGroup ? groups.Get(unit.GroupId) is { } g ? Told(groups, g) : groupsTold.TryGetValue(unit.GroupId, out var t) ? t.Side : -1
+        : world.Ships.Store.SlotOf(unit.Entity) is int slot and >= 0 ? world.Ships.Store[slot].Side : -1;
     readonly long untilMs;
     readonly Aim[][] aims;   // by side
     readonly Dictionary<int, (byte Side, double Tonnes)> ships = [];   // every ship seen, kept after it's gone
@@ -261,8 +269,7 @@ public sealed class ScenarioEnd
             var g = groups[k];
             if (ai!.Admirals.Deploying(g.GroupId) && deployed.Add(g.GroupId))
             {
-                groupNames[g.GroupId] = g.Name;
-                lines.Add(new PlayLine(now, PlayEvent.Deployed, groups.SideOf(g), g.GroupId));
+                lines.Add(new PlayLine(now, PlayEvent.Deployed, Told(groups, g), g.GroupId));
             }
         }
         for (int i = 0; i < ai!.Tasks.Count; i++)
@@ -271,11 +278,7 @@ public sealed class ScenarioEnd
             if (state is not (TaskState.InContact or TaskState.Done or TaskState.Cant) || taskStates.TryGetValue(unit.Id, out byte told) && told == (byte)state)
                 continue;
             taskStates[unit.Id] = (byte)state;
-            int side = -1;
-            if (unit.IsGroup && groups.Get(unit.GroupId) is { } g)
-                (side, groupNames[g.GroupId]) = (groups.SideOf(g), g.Name);
-            else if (world.Ships.Store.SlotOf(unit.Entity) is int slot and >= 0)
-                side = world.Ships.Store[slot].Side;
+            int side = SideOf(groups, unit);
             lines.Add(new PlayLine(now, PlayEvent.Task, side, unit.Id, (int)kind * 256 + (int)why, (int)state));
         }
         var cmd = ai.Commanders;
@@ -295,13 +298,9 @@ public sealed class ScenarioEnd
             if (given == TaskKind.None || ordersTold.TryGetValue(unit.Id, out long told) && told == ms)
                 continue;
             ordersTold[unit.Id] = ms;
-            int side = -1;
-            if (unit.IsGroup && groups.Get(unit.GroupId) is { } g)
-                (side, groupNames[g.GroupId]) = (groups.SideOf(g), g.Name);
-            else if (world.Ships.Store.SlotOf(unit.Entity) is int slot and >= 0)
-                side = world.Ships.Store[slot].Side;
+            int side = SideOf(groups, unit);
             if (target < 0 && groups.Get(-target) is { } tg)
-                groupNames[tg.GroupId] = tg.Name;
+                Told(groups, tg);
             lines.Add(new PlayLine(ms, PlayEvent.Ordered, side, unit.Id, (int)given * 256 + (int)why, target));
         }
     }

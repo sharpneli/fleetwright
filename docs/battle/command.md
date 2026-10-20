@@ -1083,6 +1083,41 @@ and replaying (the flotilla's bench).
   `shipgen duel`, `hits` and `torpedo` re-fits them.
 - Doctrine presets by navy (the outgunned and seek ratios are where a navy's boldness goes) are the presets' fine-tune.
 
+**The AI after the detail passes** (2026-10-20, at `e41ad571`: the shells, armour and damage plan to E8a, fire control
+F0-F6, fire, shell contents, damage control and magazines since 5.1g; Release, the same 5 seeds each as after 5.1g; the
+user: data to choose between 5.2, 5.1f and the matchup's re-fit):
+
+| Scenario | How it ended | Losses | After 5.1g |
+|---|---|---|---|
+| `squadrons` | time 3, quiet 2 | Britain 1.6 of 4 (0-3), Germany 3.0 of 5 (2-4) | time 5; 1.8, 0.0 |
+| `flotilla` | time 5 | Britain 0.0 of 4, Germany 1.4 of 6 (1.4 torpedoes a run) | time 5; 0.0, 0.4 (4.4) |
+| `tsushima` | quiet 4 (after 13:53), time 1 | Russia 4.6 of 13 (2-6), Japan 3.6 of 14 (2-4, destroyers only; 818 and 1443 hits) | quiet 5 (after 13:15); 4.2, 3.8 (582, 631) |
+| the Jutland | time 5 | Britain 28.6 of 151 (18-40, 85 kt), Germany 50.6 of 99 (33-60, 223 kt); 4110 and 4353 hits, 176 and 177 torpedoes | time 5; 23.6, 26.6 |
+
+- **No Jutland reaches an end of its own** (5.1f's bar): every seed runs its 14 hours. In seed 1916 Britain gives up at
+  01:30 and every unit goes home, but Germany is "retiring (outmatched)", which isn't one of the `Done` rule's ends,
+  and ships still sink in the night (Tiger 00:41, Lapwing 03:07), so it's never quiet either. `squadrons` ends by its
+  own rules in 2 seeds of 5, Tsushima in 4.
+- **A commander who declined forgets it when contact drops** (bugs.md): withdraw, lost, search back towards the enemy,
+  contact, outmatched, withdraw. Japan's commander at Tsushima (seed 1905) goes round it every ~35 minutes from 07:09 to
+  the end at 02:00 (the seed that ran out of time); the High Seas Fleet four times between 16:48 and 21:09.
+- **The same intercept is given again every think** (bugs.md): the High Seas Fleet "to intercept Valiant" every minute
+  15:56-16:24 and "Lion" 19:46-20:03, the Battlecruiser Fleet "B97" 17:03-17:33.
+- **Japan's battle line empties its magazines in 1.5-2.5 hours** at Tsushima (eleven ships between 06:13 and 07:09 in
+  seed 1905, as after 5.1g), and then its commander, its heavy ships fallen out, is outmatched by the Russians it has
+  beaten. It hits 1443 times a run and loses only destroyers; Russia loses 2-6 of 13.
+- **Germany pays at the Jutland:** 50.6 ships lost (26.6 after 5.1g). Its commander declines at 16:48 in seed 1916
+  (19:15 after 5.1g), but the whole 1st Scouting Group is lost (Britain's capital losses: Tiger alone, foundered at
+  00:41). Destroyers falling out "too slow" are half of the falling out (27 of 54 in seed 1916, nearly all in the
+  flotillas' melee 15:55-16:28).
+- **The flotilla presses less:** 1.4 torpedoes a run against 4.4.
+- **Cost** (the Jutland, seed 1916, two runs): played in 85-102 s (5.1g 113 s); the commanders 1.9% of the run (1.9-2.3
+  ms a think, at most 9.8-16 ms; 5.1g 3.1% and 4.2 ms), the captains 18.6-19.2% (311-389 µs a second; 5.1g 24.6%), the
+  admirals 3.6-4.0% (5.1%), the tasks 0.1%. Across the five seeds a run took 100-173 s, longer the bigger the fight.
+  The same run's wall time moves ±20% between runs.
+- Found on the way: a task ending after its group was gone (the IX Flotilla, its boats lost) was told as "?'s"; the
+  timeline now keeps each group's side with its name (`ScenarioEnd`).
+
 **5.1e Signals and flagships.**
 
 - **Flagships,** flag delays, searchlights by night, wireless, and missed signals, as above; the order in transit in

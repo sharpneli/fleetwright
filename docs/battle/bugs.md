@@ -22,6 +22,10 @@ add what's found.
   and `EncounterTests.Two_hundred_ships_in_one_fight_are_one_encounter_without_garbage`, each now and then (running
   just the allocation tests, 1 run in 4 had two failures), each passing alone. Same suspicion as above.
 
+- [ ] `SimHostTests.A_live_run_replays_exactly_headless` failed once in a filtered Release run of 73 tests (2026-10-20,
+  the AI's baseline) at `Assert.Empty(violations)` (line 57: the snapshots read on another thread broke a rule), and
+  passed alone with and without that change. Not a timing limit: a snapshot race the parallel load shows now and then.
+  The violations' text wasn't kept; to hunt it, run it under load in a loop and print them.
 - [ ] `PictureTests.Two_hundred_ships_look_at_each_other_without_garbage` failed once in a full run (2026-10-14, after
   4.3a) and passed alone and in the next full run. No ship fires in it, so it's not the damage system's; the same
   suspicion as above.
@@ -125,6 +129,22 @@ battery their heaviest guns as chief, `BatteryRow.Chief`):
   20 s at that range is long: check the chance per look for a 15 m eye on a big ship at 5 km.
 - [ ] Germany's commander judged the Dreadnought outmatched by Victory (2,274 t) and withdrew her, a few minutes in.
   Victory's 152s were hitting at 40% at 4 km, so maybe right; check the judgement's terms before believing it.
+
+Seen in the AI's baseline after the detail passes (2026-10-20, docs/battle/command.md, after 5.1g):
+
+- [ ] A commander who declined forgets it as soon as contact drops, and searches back into the enemy he declined:
+  `Balance` clears `Declined` when no enemy is held (`CommanderLayer.cs` ~477), the phase goes to Lost, and `Search`
+  runs again because seeing the enemy reset `Searched` (~678). Withdraw, lost, search, contact, outmatched, withdraw:
+  Japan at Tsushima (seed 1905) every ~35 minutes for 15 hours, which is why that seed ran out of time; the High Seas
+  Fleet four times at the Jutland (seed 1916). A decline should hold until the balance turns (his side's strength
+  against what he last held), not until the enemy is out of sight.
+- [ ] The same intercept is given again every commander think: the High Seas Fleet "to intercept Valiant" every minute
+  15:56-16:24 (seed 1916), "Lion" 19:46-20:03; the Battlecruiser Fleet "B97" 17:03-17:33. `FreeToClose` lets an
+  intercept go only for another target, so the task is likely idle or through between thinks (or the target's id
+  differs from `Tasks.TargetOf`). Not known which; each re-order may restart the approach.
+- [ ] No Jutland seed ends by its own rules: `Done` needs every side to have its aims, given up or broken off with every
+  unit home, and a side retiring outmatched (Germany, seed 1916) is none of them; ships sinking hours later keep it
+  from quiet. Whether a decline that has got away should count as an end is for 5.1f.
 
 ## Shipgen sizing
 
