@@ -1,5 +1,5 @@
 # Plan: magazines (a 4.5 deepening)
-Status: **every question decided** (the user, 2026-10-20: "Decided" below); research arrived (10); V0-V6 done 2026-10-20
+Status: **every question decided** (the user, 2026-10-20: "Decided" below); research arrived (10); V0-V7 done 2026-10-20
 Updated: 2026-10-20
 
 The fine-tune pass for magazines: how a flash gets to the charges, what happens once they burn, and what the ship
@@ -570,6 +570,20 @@ follows the dependencies: the fake turrets first, because the chain means nothin
   - Fire's heat limit lights the magazine instead of losing the ship.
   - A torpedo's gas and shock reaching the magazine light it (`TorpedoMagazineChance` goes): Pommern.
   - Magazines going up as she sinks or capsizes (Barham, Yamato, Kongō) wait for the sinking pass (decision 5).
+  - **Done 2026-10-20.** What it came to:
+    - **Fire's heat** was already in the race from V3 (`DamageSystem`'s fire step: `Fires.Step` sets it off, the race
+      decides, the ship lives unless it severs).
+    - **The torpedo** (`Underwater.Apply`): the nearest magazine within the reach is lit as by a burst among its charges,
+      `MagazineFlashChance`, whole in the half of the reach the explosion wrecks and fading to none at the reach (no
+      switch at the edge). A TDS that holds keeps it out, as before. `TorpedoMagazineChance` is gone. The race runs on
+      the magazine as it is at the moment of the hit: the hole is under water, so it vents no gas.
+    - **The bench** (`shipgen torpedo DESIGN --shooter v25 --n 400 --settle 60`), a magazine lit a hit, before -> after:
+      super_dreadnought and iron_duke 0% -> 0% (their wings keep the reach off them); lion 0.5% -> 0.8%, dreadnought
+      0.3% -> 0.8%; destroyer 1.5% -> 9.5%, light_cruiser 3.5% -> 11%. **None lost by it:** the destroyer's brass
+      charges burn out (41 kPa) and the light cruiser's Clarkson-cased 6" are contained (180-250 kPa; `shipgen magazine
+      light_cruiser --race`). Pathfinder (1914, one torpedo, the forward magazine, gone in minutes) and Pommern want more
+      than the race of the charges: V8's open item.
+    - `dc-history` unchanged: none of its torpedoes reaches a magazine.
 - **V8. The yardstick.**
   - The propellants' β and α fitted.
   - The cases above, scenario runs (squadrons, jutland, tsushima), and the user's 1.5%.

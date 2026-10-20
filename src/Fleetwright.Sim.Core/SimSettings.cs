@@ -1763,14 +1763,13 @@ public sealed record SimSettings
     /// charge (TNT's worth; a 300 kg charge 4.7 m, the depth of a TDS rated for it), and the hole it tears in the side,
     /// m² per kg^⅔ (Seydlitz's 12 × 4 m from a ~200 kg charge). Each other cell within the reach takes a hole of its own
     /// of this share of it, less by its distance; machinery spaces within this many reaches may trip from the shock (the
-    /// chance), a magazine within the reach may go (once a hit, times the side's propellant: torpedoes seldom set one
-    /// off), and this share of the battle crew in the spaces it floods is lost.</summary>
+    /// chance), the nearest magazine within the reach is lit as by a burst among its charges (MagazineFlashChance, fading
+    /// to none over the reach's outer half; docs/battle/magazines.md V7), and this share of the battle crew in the spaces it floods is lost.</summary>
     public double TorpedoReachK { get; init; } = 0.7;
     public double TorpedoHoleK { get; init; } = 1.4;
     public double TorpedoInnerHoleShare { get; init; } = 0.5;
     public double TorpedoShockShare { get; init; } = 2;
     public double TorpedoShockChance { get; init; } = 0.5;
-    public double TorpedoMagazineChance { get; init; } = 0.05;
     public double TorpedoCasualtyShare { get; init; } = 0.5;
 
     /// <summary>The hull girder (damage-model-research.md §1.6, 03-small-vessels: small ships die by broken backs): an

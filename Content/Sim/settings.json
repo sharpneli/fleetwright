@@ -707,7 +707,6 @@
   "TorpedoInnerHoleShare": 0.5,
   "TorpedoShockShare": 2,
   "TorpedoShockChance": 0.5,
-  "TorpedoMagazineChance": 0.05,
   "TorpedoCasualtyShare": 0.5,
   "TorpedoBreakShare": [0.7, 1.0],
   "BrokenMs": 300000,

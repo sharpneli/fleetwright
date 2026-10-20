@@ -14,7 +14,7 @@ namespace Fleetwright.Sim.Combat;
 /// <item><b>the torpedo protection:</b> when the struck cell is a TDS cell at least as deep as the reach, its holding
 /// bulkhead holds: only the TDS and the double bottom flood, and nothing inside it is wrecked;</item>
 /// <item><b>what's in reach:</b> the spaces within half the reach are put out of action, the rest within it damaged; parts
-/// within it (shafts, propellers, rudders, tubes) put out of action; a magazine within it may go; this share of the battle crew in the cells it floods is lost;</item>
+/// within it (shafts, propellers, rudders, tubes) put out of action; the nearest magazine within it may be lit, as by a burst among its charges; this share of the battle crew in the cells it floods is lost;</item>
 /// <item><b>the shock:</b> machinery spaces further off, within <see cref="SimSettings.TorpedoShockShare"/> reaches, may
 /// trip (damaged);</item>
 /// <item><b>the hull girder:</b> a small ship whose depth is little beside the explosion's height may break in two, the
@@ -50,6 +50,7 @@ public static class Underwater
 
         // the cells within the reach flood: the struck one through the hole, the others through holes of their own
         int magazine = -1;
+        double magazineD = double.MaxValue;
         for (int i = 0; i < cells.Length; i++)
         {
             double d = i == first ? 0 : Effects.BoxDistance(cells[i].Box, p);
@@ -67,8 +68,8 @@ public static class Underwater
                 int node = c.RoomNode(room);
                 var state = d <= reach / 2 ? PartState.Disabled : PartState.Damaged;
                 Effects.Count(ref res, k, node, (state == PartState.Damaged ? k.Harm(node) : k.Worsen(node, state)) ? k.State[node] : PartState.Ok);
-                if (magazine < 0 && c.Rooms[room].Kind == RoomKind.Magazine)
-                    magazine = room;
+                if (c.Rooms[room].Kind == RoomKind.Magazine && d < magazineD)
+                    (magazine, magazineD) = (room, d);
             }
         }
         // the boundaries of what it flooded, loaded by its shock: sprung by r(D), their closures loosened
@@ -88,7 +89,9 @@ public static class Underwater
             }
         }
 
-        res.Magazine = magazine >= 0 && r.NextDouble() < s.TorpedoMagazineChance;
+        // the gas in the nearest magazine within the reach: a burst among its charges, as a shell's (MagazineFlashChance),
+        // whole in the half the explosion wrecks, fading to none at the reach (docs/battle/magazines.md V7); the race decides
+        res.Magazine = magazine >= 0 && r.NextDouble() < s.MagazineFlashChance * Math.Clamp(2 * (1 - magazineD / reach), 0, 1);
         (res.MagazineRoom, res.MagazineVia) = res.Magazine ? (magazine, MagazineVia.Underwater) : (-1, MagazineVia.None);
 
         // parts within the reach: what's under the stern, the tubes, whatever stands near (not inside a protection that held)

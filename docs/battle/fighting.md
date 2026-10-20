@@ -1179,8 +1179,8 @@ Collisions and ramming were part of this step; they're moved out to a later step
   (`TorpedoHoleK`·w^⅔ m²). The cell behind the hull takes the hole; every cell within the reach floods too (its own
   hole), unless the hit's cell is a TDS cell (`TdsM` > 0) deeper than the reach: then the holding bulkhead holds and
   only the TDS and double-bottom cells flood. Parts within the reach (shafts, propellers, rudders, tubes) are put out of
-  action; machinery spaces within `TorpedoShockShare` times the reach can trip (damaged, by chance); a magazine within
-  it may go (`TorpedoMagazineChance` × the side's propellant). Crew in the flooded cells are lost by share. The log's
+  action; machinery spaces within `TorpedoShockShare` times the reach can trip (damaged, by chance); the nearest magazine
+  within it is lit as by a burst among its charges and the venting race decides (docs/battle/magazines.md V7). Crew in the flooded cells are lost by share. The log's
   line: the torpedo, the space, the outcome (exploded, held by the TDS, dud), the effects.
 - **The captains** (`CaptainLayer.Fire.cs`): torpedoes at will beside the guns, for a ship on the fine tick not holding
   fire: at the engaged target, else the main battery's, else the biggest contact in sight, when its run for the fast
@@ -1231,7 +1231,7 @@ What it settled, beyond the plan:
   falling to none at the ends; the ship goes under in `BrokenMs` (5 min). Shipgen's destroyers are 2,300-2,800 t and
   7.2-7.4 m deep, WWII destroyers' size, so that anchor applies as it is.
 - **A magazine rolls once a hit**, at `TorpedoMagazineChance` 0.05 (times the side's propellant): rolled per cell,
-  a magazine in several cells went up from 19% of hits on QE.
+  a magazine in several cells went up from 19% of hits on QE. (Replaced 2026-10-20 by docs/battle/magazines.md V7.)
 - **A torpedo craft is a ship with no gun of 6" or more** (and torpedoes left), not the type: shipgen's "Fleet
   Destroyer" is 2,770 t, a cruiser by `Sightings.TypeOf`.
 - **A launch waits for its mount to train,** and the aim is solved again at the launch; a launch that no longer bears or
