@@ -30,9 +30,17 @@ public partial class BakeTests
             var sp = RenderGolden.Draw(c, outline: 1);   // Python's full-weight inks
             var b = ShipBake.Bake(sp, gpu);
             string g = Paths.Shipgen("golden", "sprite", c.Name);
+            int compared = 0;
             foreach (var (tid, im) in b.Turrets)   // a turret with a rangefinder (fire-control.md F4b) against Python's same turret
-                Assert.True(ShipBake.CoverageIoU(Png.Load(Path.Combine(g, "turrets", RangefinderSuffix().Replace(tid, "") + ".png")), im) >= 0.965,
-                    $"{c.Name} {tid}");
+            {
+                // a housing the design chose since format 12 (docs/battle/magazines.md V1) may be a type Python never drew for it
+                string png = Path.Combine(g, "turrets", RangefinderSuffix().Replace(tid, "") + ".png");
+                if (!File.Exists(png))
+                    continue;
+                Assert.True(ShipBake.CoverageIoU(Png.Load(png), im) >= 0.965, $"{c.Name} {tid}");
+                compared++;
+            }
+            Assert.True(compared > 0, $"{c.Name}: no turret to compare with Python's");
             var rects = sp.Meta.MipRects;
             var atlas = Mips.Atlas(b.Hull, rects, max: false);
             Assert.Equal(b.Hull.Width * 3 / 2, atlas.Width);

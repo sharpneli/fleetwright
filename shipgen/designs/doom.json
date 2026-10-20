@@ -1,5 +1,5 @@
 {
- "version": 11,
+ "version": 12,
  "id": "doom",
  "name": "Coastal battleship of doom (1900)",
  "look": {
@@ -93,7 +93,7 @@
    "secondary": "mild steel"
   }
  },
- "main": [{"calibre_mm": 432, "calibre_length": 25, "barrels": 2, "rounds_per_gun": 100, "armour_mm": 356, "fore": 0, "aft": 0, "wing": 1, "echelon": true, "cross_deck": true, "amidships_stands_on": "deck", "shells": [{"ammo": "Forged steel APC, soft cap (1895)", "share": 0.7}, {"ammo": "Common shell, forged steel (1895)", "share": 0.3}], "gun": "Victorian, double-base"}],
+ "main": [{"calibre_mm": 432, "calibre_length": 25, "barrels": 2, "rounds_per_gun": 100, "armour_mm": 356, "fore": 0, "aft": 0, "wing": 1, "echelon": true, "cross_deck": true, "amidships_stands_on": "deck", "shells": [{"ammo": "Forged steel APC, soft cap (1895)", "share": 0.7}, {"ammo": "Common shell, forged steel (1895)", "share": 0.3}], "gun": "Victorian, double-base", "housing": "barbette"}],
  "secondary": [{"calibre_mm": 152, "calibre_length": 40, "barrels": 1, "rounds_per_gun": 200, "per_side": 4, "mount": "casemate", "armour_mm": 76, "shells": [{"ammo": "Forged steel APC, soft cap (1895)", "share": 0.3}, {"ammo": "Common shell, forged steel (1895)", "share": 0.7}], "gun": "Victorian, double-base"}, {"calibre_mm": 120, "calibre_length": 40, "barrels": 1, "rounds_per_gun": 350, "per_side": 4, "mount": "casemate", "tier": "upper", "armour_mm": 51, "shells": [{"ammo": "Forged steel APC, soft cap (1895)", "share": 0.3}, {"ammo": "Common shell, forged steel (1895)", "share": 0.7}], "gun": "Victorian, double-base"}, {"calibre_mm": 76, "calibre_length": 40, "barrels": 1, "rounds_per_gun": 350, "per_side": 6, "mount": "casemate", "armour_mm": 25, "shells": [{"ammo": "Forged steel APC, soft cap (1895)", "share": 0.3}, {"ammo": "Common shell, forged steel (1895)", "share": 0.7}], "gun": "Victorian, double-base"}, {"calibre_mm": 57, "calibre_length": 40, "barrels": 1, "rounds_per_gun": 350, "per_side": 5, "mount": "casemate", "tier": "upper", "armour_mm": 0, "shells": [{"ammo": "Forged steel APC, soft cap (1895)", "share": 0.3}, {"ammo": "Common shell, forged steel (1895)", "share": 0.7}], "gun": "Victorian, double-base"}, {"calibre_mm": 47, "calibre_length": 40, "barrels": 1, "rounds_per_gun": 350, "per_side": 6, "mount": "casemate", "armour_mm": 0, "shells": [{"ammo": "Forged steel APC, soft cap (1895)", "share": 0.3}, {"ammo": "Common shell, forged steel (1895)", "share": 0.7}], "gun": "Victorian, double-base"}],
  "funnels": 2,
  "superstructure": {

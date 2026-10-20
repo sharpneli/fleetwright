@@ -1,5 +1,5 @@
 {
- "version": 11,
+ "version": 12,
  "id": "l_laforey",
  "name": "Laforey-like L class destroyer (1913)",
  "type": "DD",
@@ -48,7 +48,8 @@
      "share": 0.3
     }
    ],
-   "gun": "Great War, double-base"
+   "gun": "Great War, double-base",
+   "housing": "shield"
   }
  ],
  "torpedoes": {

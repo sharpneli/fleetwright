@@ -1771,7 +1771,7 @@ squadrons, and changes `Matchup.cs` with it.
          stand-in 23%, Bismarck 18-25%; record none): shipgen makes every main-battery mount of 150 mm or more a
          gunhouse with a barbette (`Geometry.cs`, a calibre switch), so a WWI light cruiser's open-backed 6″ get a
          turret's flash path and their crews sit inside steel (Chester's killed a hit a fifth of the record). A mount
-         kind as design data (shield or gunhouse) is shipgen's; planned in `magazines.md` V1.
+         kind as design data (shield or gunhouse) is shipgen's; done in `magazines.md` V1 (Chester 8% → 3%, the rest V2's).
       2. **Water per heavy hit low in the median.** Not in the sim: the sea's waves over holes near the waterline (the
          North Sea at Jutland), a captain slowing for holes forward (the safe speed only guards bulkheads, DC6), the
          near zone holing the burst space's *outside* faces (E5 holes only its inner boundaries; the hull's own plating

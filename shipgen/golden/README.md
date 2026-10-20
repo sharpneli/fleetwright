@@ -165,6 +165,11 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
   names the sights its guns lay by when no director fires them, written into every shipped design by gun and period, and
   the catalogue's sight blocks carry the gunlayer study's elevation errors. 153 design cases change (the design echo
   only), no SVG or sprite.json. ShipDesign.Version 38.
+- 2026-10-20, the guns' housing (docs/battle/magazines.md V1), on purpose: design format 12 gives each battery a `housing`
+  (barbette, gunhouse or shield) where the calibre chose it before, written into every design as the calibre gave it.
+  Then the Great War's open guns are shields: the destroyers' and light cruisers' guns, the capital ships' and armoured
+  cruisers' 3-4″. All 372 design cases change (the design echo); 18 shipped designs' SVGs and sprite.json (their guns
+  drawn as shields on pedestals, no barbettes), and tb_destroyer's windage warning (67 to 66 kn). ShipDesign.Version 46.
 
 ## Layout
 

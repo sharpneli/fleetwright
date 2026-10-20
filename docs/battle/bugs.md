@@ -54,11 +54,14 @@ add what's found.
   face (06 §5: "never penetrated armour over about 6 in"; 15 §2.3: "exploded the moment they touched"). A fuze that
   starts on the plate with no delay should burst on the face (`Defeated`, outside) before the shell can hole it. The
   shells plan's, not fire's; it moves blast and men on armoured targets more than fires.
-- [ ] Every main-battery mount of 150 mm or more is a gunhouse with a barbette (`Geometry.cs`, `kind = calMm >= 150 ?
+- [x] Every main-battery mount of 150 mm or more is a gunhouse with a barbette (`Geometry.cs`, `kind = calMm >= 150 ?
   "bb"`: a switch by calibre), so a WWI light cruiser's open-backed 6″ (Chester, the Towns) get an enclosed turret's
   flash path to the magazine and their crews sit inside steel (found 2026-10-20, shells plan E8a: Chester lost 13% of
-  ships to a magazine under 17 hits of 15 cm, killed 0.38 a hit against the record's 2.0). Wants a mount kind in the
-  design (shield, gunhouse), shipgen's: planned as `magazines.md` V1.
+  ships to a magazine under 17 hits of 15 cm, killed 0.38 a hit against the record's 2.0). Fixed 2026-10-20 by
+  `magazines.md` V1: a battery's `housing` (barbette, gunhouse, shield), Chester and the Towns on shields.
+- [ ] Chester's crews behind open-backed shields still lose only 0.43 killed a hit to 15 cm against the record's 2.0
+  (`damage-history`, after `magazines.md` V1 put them in the open). Damage/16 has the legs lost under shields that
+  didn't reach the deck: splinters at deck level, likely the casualty model's (E6), not the housing's.
 - [ ] Four torpedoes at once on one side capsize `yamato` in about 2 minutes, whatever her tightness: 6,800 t and 21.6°
   of list in the first minute, faster than any counterflooding (found 2026-10-20, damage-control.md DC4; one torpedo
   alone gives 2,450 t and 8.8°). Shinano took four from one spread and listed 10-13°, lasting 7¾ h. Likely her wing and

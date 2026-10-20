@@ -261,7 +261,7 @@ public static class Geometry
         double width = (n - 1) * spacing + cal * 15.0 + 1.5;
         double r = width / 1.7;
         if (kind == "auto")
-            kind = calMm >= 150 ? "bb" : calMm >= 76 ? "dp" : "open";
+            kind = Housings.Shape(Housings.Suggest(calMm));
         string tid = $"t{n}x{Math.Round(calMm)}L{Math.Round(calLen)}" + (kind is "bb" or "dp" ? "" : "_" + kind);
         return (tid, new TurretType
         {
@@ -275,7 +275,7 @@ public static class Geometry
     /// turrets' rangefinder where its gunhouses can hold one (bb, dp; the type's id says so).</summary>
     public static (string Id, TurretType T) BatteryType(BatteryInput b, string kind = "auto")
     {
-        var (tid, t) = MakeTurretType(b.CalibreMm!.Value, b.CalibreLength!.Value, b.Barrels!.Value, kind);
+        var (tid, t) = MakeTurretType(b.CalibreMm!.Value, b.CalibreLength!.Value, b.Barrels!.Value, kind == "auto" ? Housings.Shape(Housings.Of(b)) : kind);
         double? rf = b.RangefinderM is > 0 && t.Shape is "bb" or "dp" ? b.RangefinderM : null;
         return (rf is { } base_ ? FormattableString.Invariant($"{tid}_rf{base_:0.#}") : tid,
             t with { RoundsPerGun = b.RoundsPerGun, ShellKg = b.ShellKg, RangefinderM = rf });

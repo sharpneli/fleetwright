@@ -1,5 +1,5 @@
 {
- "version": 11,
+ "version": 12,
  "id": "v25",
  "name": "V25-like torpedo boat (1914)",
  "type": "DD",
@@ -48,7 +48,8 @@
      "share": 0.3
     }
    ],
-   "gun": "Great War, double-base"
+   "gun": "Great War, double-base",
+   "housing": "shield"
   }
  ],
  "torpedoes": {

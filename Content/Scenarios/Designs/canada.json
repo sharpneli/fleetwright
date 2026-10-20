@@ -1,5 +1,5 @@
 {
- "version": 11,
+ "version": 12,
  "id": "canada",
  "name": "Canada-like (1915)",
  "type": "BB",
@@ -50,7 +50,8 @@
      "share": 0.3
     }
    ],
-   "gun": "Great War, double-base"
+   "gun": "Great War, double-base",
+   "housing": "barbette"
   }
  ],
  "secondary": [

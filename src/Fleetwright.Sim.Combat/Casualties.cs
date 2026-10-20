@@ -57,8 +57,7 @@ public static class Casualties
     }
 
     /// <summary>A gunhouse proper: a turret a mount's crew works inside (a battleship's or a dual-purpose one).</summary>
-    internal static bool Enclosed(ShipClass c, int mount) =>
-        c.Mounts[mount].Turret && c.TurretTypes[c.Mounts[mount].Type].Shape is TurretShape.Bb or TurretShape.Dp;
+    internal static bool Enclosed(ShipClass c, int mount) => c.Enclosed(mount);
 
     /// <summary>A new hit: no group touched yet.</summary>
     internal static void Begin(ShipCondition k)

@@ -1,5 +1,5 @@
 {
- "version": 11,
+ "version": 12,
  "id": "helgoland",
  "name": "Helgoland-like (1911)",
  "type": "BB",
@@ -46,7 +46,8 @@
      "share": 0.3
     }
    ],
-   "gun": "Great War, double-base"
+   "gun": "Great War, double-base",
+   "housing": "barbette"
   }
  ],
  "secondary": [
@@ -68,7 +69,8 @@
      "share": 0.7
     }
    ],
-   "gun": "Great War, double-base"
+   "gun": "Great War, double-base",
+   "housing": "barbette"
   }
  ],
  "torpedoes": {

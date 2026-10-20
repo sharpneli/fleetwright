@@ -1,5 +1,5 @@
 {
- "version": 11,
+ "version": 12,
  "id": "derfflinger",
  "name": "Derfflinger-like (1914)",
  "type": "BC",
@@ -59,7 +59,8 @@
      "share": 0.3
     }
    ],
-   "gun": "Great War, double-base"
+   "gun": "Great War, double-base",
+   "housing": "barbette"
   }
  ],
  "secondary": [
@@ -101,7 +102,8 @@
      "share": 0.7
     }
    ],
-   "gun": "Great War, double-base"
+   "gun": "Great War, double-base",
+   "housing": "shield"
   }
  ],
  "torpedoes": {

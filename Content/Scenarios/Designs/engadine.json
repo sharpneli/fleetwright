@@ -1,5 +1,5 @@
 {
- "version": 11,
+ "version": 12,
  "id": "engadine",
  "name": "Engadine-like seaplane carrier (1911)",
  "type": "AV",
@@ -42,7 +42,8 @@
      "share": 0.7
     }
    ],
-   "gun": "Great War, double-base"
+   "gun": "Great War, double-base",
+   "housing": "shield"
   }
  ],
  "aa": {

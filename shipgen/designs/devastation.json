@@ -1,5 +1,5 @@
 {
- "version": 11,
+ "version": 12,
  "id": "devastation",
  "name": "Devastation-like breastwork turret ship (1873)",
  "look": {
@@ -93,7 +93,7 @@
    "secondary": "wrought iron"
   }
  },
- "main": [{"calibre_mm": 305, "calibre_length": 14, "barrels": 2, "rounds_per_gun": 100, "armour_mm": 356, "fore": 1, "aft": 1, "shells": [{"ammo": "Palliser shell (1867)", "share": 0.7}, {"ammo": "Common shell, cast iron (1867)", "share": 0.3}], "gun": "Victorian, double-base"}],
+ "main": [{"calibre_mm": 305, "calibre_length": 14, "barrels": 2, "rounds_per_gun": 100, "armour_mm": 356, "fore": 1, "aft": 1, "shells": [{"ammo": "Palliser shell (1867)", "share": 0.7}, {"ammo": "Common shell, cast iron (1867)", "share": 0.3}], "gun": "Victorian, double-base", "housing": "barbette"}],
  "secondary": [],
  "funnels": 1,
  "superstructure": {

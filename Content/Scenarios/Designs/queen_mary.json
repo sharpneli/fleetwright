@@ -1,5 +1,5 @@
 {
- "version": 11,
+ "version": 12,
  "id": "queen_mary",
  "name": "Queen Mary-like (1913)",
  "type": "BC",
@@ -52,7 +52,8 @@
      "share": 0.3
     }
    ],
-   "gun": "Great War, double-base"
+   "gun": "Great War, double-base",
+   "housing": "barbette"
   }
  ],
  "secondary": [
@@ -74,7 +75,8 @@
      "share": 0.7
     }
    ],
-   "gun": "Great War, double-base"
+   "gun": "Great War, double-base",
+   "housing": "shield"
   }
  ],
  "torpedoes": {

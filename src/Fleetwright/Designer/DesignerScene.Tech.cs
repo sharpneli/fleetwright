@@ -48,7 +48,7 @@ public sealed unsafe partial class DesignerScene
             if (b.CalibreMm is not { } cal)
                 continue;
             double len = b.CalibreLength ?? 45;
-            bool dp = b.Mount == "dp";
+            bool dp = Housings.Of(b) == "gunhouse";
             if (!seen.Add((cal, len, dp)))
                 continue;
             var g = DesignerPlaceholders.Gun(cal, len, dp ? TurretShape.Dp : TurretShape.Bb, row);

@@ -38,7 +38,12 @@ static class MagazineBench
             if (train.Length == 0)
                 continue;
             ref readonly var mr = ref c.Mounts[m];
-            string housing = c.Enclosed(m) ? "gunhouse" : mr.Casemate ? "casemate" : "shield";
+            string housing = mr.Casemate ? "casemate" : c.TurretTypes[mr.Type].Shape switch
+            {
+                TurretShape.Bb => "barbette",
+                TurretShape.Dp => "gunhouse",
+                _ => "shield",
+            };
             var stations = new List<string>();
             foreach (var st in train)
                 stations.Add($"{Station(st.Kind)} ({(st.Part >= 0 ? c.ComponentId(st.Part) : c.RoomId(st.Room))})");

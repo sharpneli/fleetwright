@@ -1027,6 +1027,8 @@ public static class Effects
 
     /// <summary>A turret proper (a battleship's, with its hoists down to the magazine), not an open or shielded mount
     /// whose ammunition comes up by hand: the flash chain runs only from the one (07-magazine-explosions.md).</summary>
+    /// <summary>A mount whose burst sets its magazine off by the flat roll: a turret on a barbette only, until the trains
+    /// (docs/battle/magazines.md V2) give every gunhouse its flash path through the doors.</summary>
     static bool Enclosed(ShipClass c, int mount) => c.Mounts[mount].Turret && c.TurretTypes[c.Mounts[mount].Type].Shape == TurretShape.Bb;
 
     internal static double Vital(ShipClass c, int room, SimSettings s) => s.RoomVital[Math.Min((int)c.Rooms[room].Kind, s.RoomVital.Length - 1)];

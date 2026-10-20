@@ -90,7 +90,7 @@ public sealed unsafe partial class DesignerScene
                 axisN[(int)pos]++;
                 var tty = c.Type != null && hb.TurretTypes.TryGetValue(c.Type, out var ty) ? ty : null;
                 bool cas = c.Casemate == true;
-                string kind = cas ? "casemate" : tty?.Shape switch { "bb" => "turret on a barbette", "dp" => "shielded mount", "open" => "open mount", _ => "mount" };
+                string kind = cas ? "casemate" : tty?.Shape switch { "bb" => "turret on a barbette", "dp" => "gunhouse", "open" => "shield", _ => "mount" };
                 string arcs = c.ArcsDeg is { Count: > 0 } a ? string.Join(", ", a.Where(q => q.Length == 2).Select(q => $"{q[0] % 360:0}°–{q[1] % 360:0}°")) : "–";
                 string pair = side == 0 ? c.Id : $"{SecName(k)}{n}S / {SecName(k)}{n}P";
                 mounts.Add(new SecMount(k, n, (float)x, (float)(c.Y ?? 0), pos, axis, (float)(c.BroadphaseR ?? 1.5), (float)(tty?.BarrelLen ?? 3),
@@ -278,10 +278,10 @@ public sealed unsafe partial class DesignerScene
 
     // ------------------------------------------------------------------ drawing
 
-    static readonly float[] SecColW = [34, 40, 138, 104, 128, 0, 74, 50, 44, 104, 120, 232, 46, 46];   // 0: the position takes what's left
+    static readonly float[] SecColW = [34, 40, 138, 104, 128, 0, 74, 50, 44, 104, 120, 232, 120, 46, 46];   // 0: the position takes what's left
     readonly float[] secX = new float[SecColW.Length + 1];
     static readonly string[] SecHead = ["", "", "CALIBRE", "LENGTH", "GUNS / MOUNT", "TURRET ON", "PER SIDE", "PLACED", "GUNS", "SHIELDS",
-        "ROUNDS / GUN", "SHELLS", "T", ""];
+        "ROUNDS / GUN", "SHELLS", "HOUSING", "T", ""];
 
     void SecondaryPane(Vector2 size)
     {
@@ -439,8 +439,12 @@ public sealed unsafe partial class DesignerScene
             Spinner(r.Rounds, P(40), extras: true);
             At(11);
             ShellCellUi(r.Shells, P(222));   // where the material was: the mounts' material stays the scheme's, hidden (user, 2026-10-16)
-            Text(dl, UiFonts.Mono, new Vector2(x[13] - P(6) - Width(UiFonts.Mono, r.Tonnes), ty), T.Muted, r.Tonnes);
-            At(13, 2);
+            At(12);
+            var sb = d.Secondary![k];
+            if (HousingCell(Housings.Of(sb), P(112), sb.Mount != "casemate") is { } h)
+                Edit(Knobs.SecHousing(k).Set(d, h), $"Secondary {SecName(k)}: {Knobs.HousingLabels[Array.IndexOf(Housings.All, h)]}");
+            Text(dl, UiFonts.Mono, new Vector2(x[14] - P(6) - Width(UiFonts.Mono, r.Tonnes), ty), T.Muted, r.Tonnes);
+            At(14, 2);
             ImGui.PushFont(UiFonts.SansSmall);
             ImGui.BeginDisabled(!sp.TakesList);
             if (ImGui.SmallButton("+"))

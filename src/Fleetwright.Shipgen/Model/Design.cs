@@ -222,6 +222,9 @@ public sealed record BatteryInput
     /// <summary>A rangefinder's base in each of its turrets, m (fire-control.md F4b: across the gunhouse's rear in a hood,
     /// seeing only its turret's arcs); 0 or none: no rangefinder. Armoured and dual-purpose gunhouses only.</summary>
     public double? RangefinderM { get; init; }
+    /// <summary>How its guns are housed (docs/battle/magazines.md V1, <see cref="Housings"/>): "barbette", "gunhouse" or
+    /// "shield", at any calibre. None: the suggestion by calibre. A casemate battery's position says it instead.</summary>
+    public string? Housing { get; init; }
     /// <summary>The gun's muzzle velocity with its heaviest shell, m/s (Ammunition.DefaultMuzzleVelocity when absent).</summary>
     public double? MuzzleVelocityMs { get; init; }
     /// <summary>Its gun block, by name (gun_tech, else the catalogue's: GunTemplates): its reload, training, elevation,

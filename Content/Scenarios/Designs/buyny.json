@@ -1,5 +1,5 @@
 {
- "version": 11,
+ "version": 12,
  "id": "buyny",
  "name": "Buyny-like destroyer (1902)",
  "type": "DD",
@@ -7,7 +7,7 @@
  "range_nm": 1200,
  "funnels": 3,
  "hull": {"block_coefficient": 0.48, "freeboard": 1, "construction": {"name": "Mild steel, riveted", "yield_mpa": 235, "join_factor": 1.1, "standard": 0.85, "shell": "riveted", "internals": "riveted"}, "plating": {"shell_mm": 0, "material": "mild steel", "deck_wood_mm": 0}, "raised": [{"from": "bow", "to": "bridge", "decks": 1}]},
- "main": [{"calibre_mm": 75, "calibre_length": 40, "barrels": 1, "armour_mm": 0, "rounds_per_gun": 200, "fore": 1, "aft": 0, "shells": [{"ammo": "RU 1895 AP (pyroxylin)", "share": 0.7}, {"ammo": "RU 1895 HE (pyroxylin)", "share": 0.3}], "gun": "Victorian, single-base"}, {"calibre_mm": 47, "calibre_length": 40, "barrels": 1, "armour_mm": 0, "rounds_per_gun": 400, "fore": 0, "aft": 1, "shells": [{"ammo": "RU 1895 AP (pyroxylin)", "share": 0.7}, {"ammo": "RU 1895 HE (pyroxylin)", "share": 0.3}], "gun": "Victorian, single-base"}],
+ "main": [{"calibre_mm": 75, "calibre_length": 40, "barrels": 1, "armour_mm": 0, "rounds_per_gun": 200, "fore": 1, "aft": 0, "shells": [{"ammo": "RU 1895 AP (pyroxylin)", "share": 0.7}, {"ammo": "RU 1895 HE (pyroxylin)", "share": 0.3}], "gun": "Victorian, single-base", "housing": "shield"}, {"calibre_mm": 47, "calibre_length": 40, "barrels": 1, "armour_mm": 0, "rounds_per_gun": 400, "fore": 0, "aft": 1, "shells": [{"ammo": "RU 1895 AP (pyroxylin)", "share": 0.7}, {"ammo": "RU 1895 HE (pyroxylin)", "share": 0.3}], "gun": "Victorian, single-base", "housing": "shield"}],
  "torpedoes": {"mounts": 3, "tubes": 1, "torpedo": "Victorian torpedo"},
  "aa": {
   "heavy": 0,

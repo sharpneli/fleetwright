@@ -296,8 +296,8 @@ public static class Fires
         }
     }
 
-    /// <summary>The magazines' heat (B2; doc 10 §2.3, §7.2 rule 12): each fire on a magazine's boundary (and its turrets'
-    /// trunks) doses it by the way it comes (<see cref="SimSettings.FireMagazineS"/>), and it goes up past its drawn
+    /// <summary>The magazines' heat (B2; doc 10 §2.3, §7.2 rule 12): each fire on a magazine's boundary (and its enclosed
+    /// mounts' trunks: a shield's or casemate's fire reaches it only through the decks, docs/battle/magazines.md decision 4) doses it by the way it comes (<see cref="SimSettings.FireMagazineS"/>), and it goes up past its drawn
     /// limit; the dose cools without a fire. Her doctrine floods one threatened for its time unless smoke over it cuts the
     /// controls off; the water (the sea's under the waterline, else her main's) fills it, and the
     /// flooding takes it from there (a flooded magazine's mounts lose their ammunition, a drowned one can't go up).</summary>
@@ -320,7 +320,7 @@ public static class Fires
                 rate += Exposure(c, k, cell, s, ref blocked);
             }
             for (int t = 0; t < c.Mounts.Length; t++)
-                if (c.Mounts[t].Magazine == m && c.FireOfPart(c.Mounts[t].Component) is int g and >= 0 && Heats(k.Fire[g]))
+                if (c.Mounts[t].Magazine == m && c.Enclosed(t) && c.FireOfPart(c.Mounts[t].Component) is int g and >= 0 && Heats(k.Fire[g]))
                     rate += 1 / s.FireMagazineS[k.Fire[g].Charges > 0 ? 0 : 1];   // down its turret's trunk
             if (cap > 0 && held >= s.FireDrownShare * cap)
             {

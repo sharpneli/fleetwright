@@ -1,5 +1,5 @@
 {
-    "version": 11,
+    "version": 12,
     "id": "murica",
     "name": "Liberty Ship",
     "look": {"navy": "generic", "era": "wwii"},
@@ -19,7 +19,7 @@
         "light": 10,
         "heavy": 10
     },
-    "secondary": {"calibre_mm": 152, "calibre_length": 38, "barrels": 2, "rounds_per_gun": 200, "armour_mm": 0, "count": 2, "where": "ends", "shells": [{"ammo": "US 1941 AP Mk 8 (Explosive D)", "share": 0.3}, {"ammo": "US 1941 5in AAC (Explosive D)", "share": 0.7}], "gun": "Second War, double-base"},
+    "secondary": {"calibre_mm": 152, "calibre_length": 38, "barrels": 2, "rounds_per_gun": 200, "armour_mm": 0, "count": 2, "where": "ends", "shells": [{"ammo": "US 1941 AP Mk 8 (Explosive D)", "share": 0.3}, {"ammo": "US 1941 5in AAC (Explosive D)", "share": 0.7}], "gun": "Second War, double-base", "housing": "barbette"},
     "superstructure": {"t_per_m2": 0.32, "material": "steel", "plating_mm": 0, "control_mm": 13},
     "fire_control": {"main": {"directors": 0, "rangefinder_m": 0.0, "armour_mm": 0, "radar_t": 0.0, "sights": "Telescopic sights"}, "secondary": {"directors": 0, "rangefinder_m": 0.0, "armour_mm": 0, "radar_t": 0.0, "sights": "Telescopic sights"}, "aa": {"directors": 0, "rangefinder_m": 0.0, "armour_mm": 0, "radar_t": 0.0, "sights": "Telescopic sights"}, "search_radar_t": 0.0},
  "ammunition": {"US 1941 5in AAC (Explosive D)": {"kind": "he", "mass_k_kg_m3": 12180, "nose_crh": 4, "form_factor": 1.05, "cap": {"kind": "none"}, "windscreen": true, "body": {"break_ob_deg": 0, "break_t_d": 0.2, "quality": 1}, "filler": {"share": 0.13, "explosive": "Explosive D", "booster": "ce", "body": 0.75}, "steel": {"size": 1, "speed": 1}, "casing": {"nose": 0.02, "ogive": 0.2, "body": 0.63, "plug": 0.07, "tail": 0.08}, "fuze": {"position": "nose", "delay_s": 0, "start_cal": 0, "oblique": 1, "plates": "single", "scatter": 0, "blind": 0.05, "water_ms": 0.5, "water_fires": 1}}, "US 1941 AP Mk 8 (Explosive D)": {"kind": "ap", "mass_k_kg_m3": 18270, "nose_crh": 9, "form_factor": 1.05, "cap": {"kind": "hard", "share": 0.12}, "windscreen": true, "body": {"break_ob_deg": 45, "break_t_d": 1.2, "quality": 1.1}, "filler": {"share": 0.015, "explosive": "Explosive D", "booster": "ce", "body": 0.9}, "steel": {"size": 1.25, "speed": 1}, "casing": {"nose": 0.33, "ogive": 0, "body": 0.55, "plug": 0.08, "tail": 0.04}, "fuze": {"position": "base", "delay_s": 0.033, "start_cal": 0.094, "oblique": 0.25, "plates": "single", "scatter": 0.1, "blind": 0.05, "water_ms": 0.5, "water_fires": 1}}},

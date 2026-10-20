@@ -143,7 +143,7 @@ public class FireWaterTests(ITestOutputHelper output)
         double aboard = k.WaterM3.Sum();
         output.WriteLine($"{c.CellId(high)}: {before:0} m³, out through a hole 0.6 m over its floor {out_:0.0} m³ in 10 min, {aboard:0.0} m³ still aboard " +
                          "(leaked down through her decks)");
-        Assert.Equal(before, aboard + out_, 3);
+        Assert.Equal(before, aboard + out_, 1e-3);   // a tolerance, not rounding: 187.1595 against 187.15949 straddled the third place
         Assert.True(out_ > 1, "it runs out over the hole's edge");
 
         // a hole over the water lets nothing out

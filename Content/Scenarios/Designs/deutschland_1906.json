@@ -1,5 +1,5 @@
 {
- "version": 11,
+ "version": 12,
  "id": "deutschland_1906",
  "name": "Deutschland-like pre-dreadnought (1906)",
  "type": "BB",
@@ -43,7 +43,8 @@
      "share": 0.3
     }
    ],
-   "gun": "Victorian, double-base"
+   "gun": "Victorian, double-base",
+   "housing": "barbette"
   }
  ],
  "secondary": [

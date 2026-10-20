@@ -1,5 +1,5 @@
 {
- "version": 11,
+ "version": 12,
  "id": "ikazuchi",
  "name": "Ikazuchi-like destroyer (1899)",
  "type": "DD",
@@ -7,7 +7,7 @@
  "range_nm": 1200,
  "funnels": 2,
  "hull": {"block_coefficient": 0.48, "freeboard": 1, "construction": {"name": "Mild steel, riveted", "yield_mpa": 235, "join_factor": 1.1, "standard": 0.85, "shell": "riveted", "internals": "riveted"}, "plating": {"shell_mm": 0, "material": "mild steel", "deck_wood_mm": 0}, "raised": [{"from": "bow", "to": "bridge", "decks": 1}]},
- "main": [{"calibre_mm": 76, "calibre_length": 40, "barrels": 1, "armour_mm": 0, "rounds_per_gun": 200, "fore": 1, "aft": 0, "shells": [{"ammo": "JP 1904 AP (Shimose)", "share": 0.7}, {"ammo": "JP 1904 common (powder)", "share": 0.3}], "gun": "Victorian, double-base"}, {"calibre_mm": 57, "calibre_length": 40, "barrels": 1, "armour_mm": 0, "rounds_per_gun": 400, "fore": 0, "aft": 1, "shells": [{"ammo": "JP 1904 AP (Shimose)", "share": 0.7}, {"ammo": "JP 1904 common (powder)", "share": 0.3}], "gun": "Victorian, double-base"}],
+ "main": [{"calibre_mm": 76, "calibre_length": 40, "barrels": 1, "armour_mm": 0, "rounds_per_gun": 200, "fore": 1, "aft": 0, "shells": [{"ammo": "JP 1904 AP (Shimose)", "share": 0.7}, {"ammo": "JP 1904 common (powder)", "share": 0.3}], "gun": "Victorian, double-base", "housing": "shield"}, {"calibre_mm": 57, "calibre_length": 40, "barrels": 1, "armour_mm": 0, "rounds_per_gun": 400, "fore": 0, "aft": 1, "shells": [{"ammo": "JP 1904 AP (Shimose)", "share": 0.7}, {"ammo": "JP 1904 common (powder)", "share": 0.3}], "gun": "Victorian, double-base", "housing": "shield"}],
  "torpedoes": {"mounts": 2, "tubes": 1, "torpedo": "Victorian torpedo"},
  "aa": {
   "heavy": 0,

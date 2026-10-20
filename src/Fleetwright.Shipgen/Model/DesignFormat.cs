@@ -12,7 +12,7 @@ namespace Fleetwright.Shipgen;
 public static class DesignFormat
 {
     /// <summary>The version this build writes.</summary>
-    public const int Current = 11;
+    public const int Current = 12;
 
     /// <summary>Steps[v] upgrades a version v design to v + 1, adding what it couldn't tell to the warnings.</summary>
     static readonly Action<JsonObject, List<string>>[] Steps =
@@ -28,7 +28,23 @@ public static class DesignFormat
         (d, _) => GunAndTorpedoTech(d), // 8 → 9: the guns and torpedoes the design's, not the look's
         PlantKinds,                    // 9 → 10: the boilers' and engines' kinds (docs/battle/shell-contents.md C1b)
         Drainage,                      // 10 → 11: what's built in against water (docs/battle/damage-control.md DC4)
+        (d, _) => Housing(d),          // 11 → 12: how the guns are housed (docs/battle/magazines.md V1)
     ];
+
+    /// <summary>11 → 12: a battery's housing was its calibre's (a barbette from 150 mm, a gunhouse from 76, a shield under);
+    /// now it's the design's (<see cref="Housings"/>). Each main and secondary battery outside a casemate gets the one its
+    /// calibre gave, so it builds as before.</summary>
+    static void Housing(JsonObject d)
+    {
+        foreach (var key in (ReadOnlySpan<string>)["main", "secondary"])
+        {
+            JsonNode?[] batteries = d[key] switch { JsonArray a => [.. a], JsonObject o => [o], _ => [] };
+            foreach (var b in batteries)
+                if (b is JsonObject bo && !bo.ContainsKey("housing") && !(bo["mount"] is JsonValue m && m.TryGetValue(out string? ms) && ms == "casemate") &&
+                    bo["calibre_mm"] is JsonValue c && c.TryGetValue(out double cal))
+                    bo["housing"] = Housings.Suggest(cal);
+        }
+    }
 
     /// <summary>10 → 11: the pumps, counterflooding and tightness were the sim's (one pump rate by displacement); now
     /// they're the design's drainage (DrainageTemplates). A design without one gets its navy's (look.navy) in its plant's

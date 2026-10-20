@@ -1,5 +1,5 @@
 {
- "version": 11,
+ "version": 12,
  "id": "inflexible",
  "name": "Inflexible-like citadel ship (1881)",
  "look": {
@@ -93,7 +93,7 @@
    "secondary": "wrought iron"
   }
  },
- "main": [{"calibre_mm": 406, "calibre_length": 18, "barrels": 2, "rounds_per_gun": 100, "armour_mm": 432, "fore": 0, "aft": 0, "wing": 1, "echelon": true, "cross_deck": true, "amidships_stands_on": "deck", "shells": [{"ammo": "Palliser shell (1867)", "share": 0.7}, {"ammo": "Common shell, cast iron (1867)", "share": 0.3}], "gun": "Victorian, double-base"}],
+ "main": [{"calibre_mm": 406, "calibre_length": 18, "barrels": 2, "rounds_per_gun": 100, "armour_mm": 432, "fore": 0, "aft": 0, "wing": 1, "echelon": true, "cross_deck": true, "amidships_stands_on": "deck", "shells": [{"ammo": "Palliser shell (1867)", "share": 0.7}, {"ammo": "Common shell, cast iron (1867)", "share": 0.3}], "gun": "Victorian, double-base", "housing": "barbette"}],
  "secondary": [],
  "funnels": 2,
  "superstructure": {

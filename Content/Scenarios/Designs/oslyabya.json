@@ -1,5 +1,5 @@
 {
- "version": 11,
+ "version": 12,
  "id": "oslyabya",
  "name": "Oslyabya-like (Peresvet class, the old second division's stand-in)",
  "type": "BB",
@@ -7,7 +7,7 @@
  "range_nm": 6000,
  "funnels": 3,
  "hull": {"block_coefficient": 0.62, "freeboard": 1.2, "construction": {"name": "Mild steel, riveted", "yield_mpa": 235, "join_factor": 1.1, "standard": 1, "shell": "riveted", "internals": "riveted"}, "plating": {"shell_mm": 0, "material": "mild steel", "deck_wood_mm": 100}, "raised": [{"from": "bow", "to": "aft_control", "decks": 1}]},
- "main": [{"calibre_mm": 254, "calibre_length": 45, "barrels": 2, "armour_mm": 229, "rounds_per_gun": 80, "fore": 1, "aft": 1, "shells": [{"ammo": "RU 1895 AP (pyroxylin)", "share": 0.7}, {"ammo": "RU 1895 HE (pyroxylin)", "share": 0.3}], "gun": "Victorian, single-base"}],
+ "main": [{"calibre_mm": 254, "calibre_length": 45, "barrels": 2, "armour_mm": 229, "rounds_per_gun": 80, "fore": 1, "aft": 1, "shells": [{"ammo": "RU 1895 AP (pyroxylin)", "share": 0.7}, {"ammo": "RU 1895 HE (pyroxylin)", "share": 0.3}], "gun": "Victorian, single-base", "housing": "barbette"}],
  "secondary": [{"calibre_mm": 152, "calibre_length": 45, "barrels": 1, "armour_mm": 127, "rounds_per_gun": 180, "per_side": 5, "mount": "casemate", "shells": [{"ammo": "RU 1895 AP (pyroxylin)", "share": 0.3}, {"ammo": "RU 1895 HE (pyroxylin)", "share": 0.7}], "gun": "Victorian, single-base"}, {"calibre_mm": 75, "calibre_length": 50, "barrels": 1, "armour_mm": 51, "rounds_per_gun": 300, "per_side": 6, "mount": "casemate", "shells": [{"ammo": "RU 1895 AP (pyroxylin)", "share": 0.3}, {"ammo": "RU 1895 HE (pyroxylin)", "share": 0.7}], "gun": "Victorian, single-base"}, {"calibre_mm": 75, "calibre_length": 50, "barrels": 1, "armour_mm": 0, "rounds_per_gun": 300, "per_side": 4, "mount": "casemate", "tier": "upper", "shells": [{"ammo": "RU 1895 AP (pyroxylin)", "share": 0.3}, {"ammo": "RU 1895 HE (pyroxylin)", "share": 0.7}], "gun": "Victorian, single-base"}],
  "armour": {
   "belt_mm": 229,

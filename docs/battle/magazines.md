@@ -1,5 +1,5 @@
 # Plan: magazines (a 4.5 deepening)
-Status: **every question decided** (the user, 2026-10-20: "Decided" below); research filed; V0 done 2026-10-20
+Status: **every question decided** (the user, 2026-10-20: "Decided" below); research filed; V0 and V1 done 2026-10-20
 Updated: 2026-10-20
 
 The fine-tune pass for magazines: how a flash gets to the charges, what happens once they burn, and what the ship
@@ -293,6 +293,52 @@ follows the dependencies: the fake turrets first, because the chain means nothin
   - The designer's battery tables (main and secondary) let it be picked for any battery at any calibre (one cell, no
     new pane); its weight follows in the ledger.
   - Goldens move, so `ShipDesign.Version` bumps. Closes bugs.md's item and E8a item 1.
+  - **Done 2026-10-20.** What it came to:
+    - **`housing`** on main and secondary batteries: `barbette` (an armoured turret on a barbette, the drawing's `bb`),
+      `gunhouse` (a light enclosed one, `dp`) or `shield` (a shield on a pedestal, open behind, `open`). There's no
+      separate "open" (unshielded): the sim has no difference between them yet. A casemate is the secondary's position,
+      not a housing. `Housings.cs` holds the words, the shapes, the check and `Suggest`: the old calibre rule kept only
+      as a suggestion for a battery that doesn't say.
+    - **Design format 12** writes each battery's housing as its calibre gave it, so every design builds as before; then
+      the shields were set by hand, design by design:
+      - the Great War's destroyers (abdiel, b97, flotilla_leader, g101, k_acasta, l_laforey, m_class, r_class,
+        scout_cruiser, v1, v25, ikazuchi, tb_destroyer);
+      - the light cruisers (arethusa, aurora, cambrian, caroline, the Towns, wiesbaden, gazelle, graudenz, pillau,
+        stettin, karlsruhe, light_cruiser);
+      - the 3-4″ on the dreadnoughts and battlecruisers (dreadnought, agincourt, bellerophon, colossus, kaiser, neptune,
+        st_vincent, lord_nelson, kongo, colorado, invincible, indefatigable, lion, queen_mary, battlecruiser, erebus,
+        engadine);
+      - the 88 mm on the German battlecruisers and the armoured cruisers (seydlitz, derfflinger, moltke, von_der_tann,
+        devonshire, duke_of_edinburgh, minotaur, warrior, armoured_cruiser);
+      - also gangut's and kent's secondaries, bouvet's 100 mm, and q_ship's and tramp_1914's guns.
+      Kept as gunhouses: dante's 120 mm and bouvet's 138.6 mm (both in turrets), and the treaty-era and later ships.
+    - **The weight:** a shield's armour is the front half of the ring, with no roof and no rear [EST], and no barbette.
+      Displacements move by tens of tonnes (dreadnought 24,862 to 24,843 t, light_cruiser 6,411 to 6,361 t).
+      Borodino's +8 t is the sizer's knock-on.
+    - **The sim:**
+      - `ShipClass.Enclosed` (a barbette or a gunhouse) is the one reader for the crews' cover and flash
+        (`Casualties`) and for fire's trunk dose (`Fires.Magazines`). A shield's burning ready charges no longer dose
+        its magazine (decision 4).
+      - The flat turret roll in `Effects` stays a barbette's until V2's train gives every gunhouse its doors. Giving a
+        gunhouse the flat 0.25 at once put the WWII destroyer's losses past `DamageTests`' band (22% against 20%).
+    - **The designer:**
+      - a HOUSING column in both battery tables (a combo; a casemate shows its position);
+      - `main{i}_housing` and `sec{i}_housing` knobs (for `-steps=`);
+      - the secondaries' mount tip names the housing;
+      - the gun block tip's "dp" now comes from a gunhouse. Before, it read the position and was never set.
+    - **Goldens:**
+      - all 372 design cases change (the design echo), with SVGs and sprites for the redrawn guns;
+      - ShipDesign.Version 46, noted in `shipgen/golden/README.md`;
+      - `BakeTests` skips a turret type Python never drew for that design;
+      - `mono-check` goes from 37 reversals and 23 lumps to 38 and 21: the sizer's bistable layouts reshuffle
+        (Kongo's main-calibre reversal moved from 350→356 to 340→350), not a new monotonicity break.
+    - **The numbers** (`damage-history`, 40 runs; V0 → V1):
+      - Chester lost to a magazine 8% → 3%, the one left a burst in a handling room, V2's to door;
+      - killed a hit 0.38 → 0.43 against the record's 2.0: her crews are now in the open, so what's left is casualties',
+        not this plan's;
+      - the rest move within the noise (the capital ships' 3-4″ lost their barbettes, which changes the hit geometry
+        and the draws): the Jutland count 28 → 18%, Derfflinger 23 → 13%, Lion 8 → 13%, Lion at Dogger Bank 10 → 5%,
+        Indefatigable 3 → 0%, Kirishima 13 → 10%, the destroyer under lyddite 5 → 8%; the rest unchanged.
 - **V2. The train.**
   - The stations and their doors as class rows (from the mount, barbette, handling-room and magazine links). A shield
     or open mount's train starts at its handling room (decision 4).

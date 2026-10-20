@@ -370,6 +370,23 @@ public static class Knobs
         Default = "deck",
     };
 
+    /// <summary>How a battery's guns are housed (docs/battle/magazines.md V1): any of the three at any calibre; a battery
+    /// that doesn't say shows the suggestion by its calibre.</summary>
+    public static ChoiceKnob MainHousing(int i) => new($"main{i}_housing", "Housing", Housings.All, HousingLabels)
+    {
+        Get = d => d.Main?.ElementAtOrDefault(i) is { } b ? Housings.Of(b) : null,
+        Set = (d, v) => MainBattery(d, i, b => b with { Housing = v }),
+    };
+
+    public static ChoiceKnob SecHousing(int i) => new($"sec{i}_housing", "Housing", Housings.All, HousingLabels)
+    {
+        Get = d => d.Secondary?.ElementAtOrDefault(i) is { } b && b.Mount != "casemate" ? Housings.Of(b) : null,
+        Set = (d, v) => Sec(d, i, b => b with { Housing = v }),
+        Applies = d => d.Secondary?.ElementAtOrDefault(i)?.Mount != "casemate",
+    };
+
+    public static readonly string[] HousingLabels = ["turret on a barbette", "gunhouse", "shield"];
+
     public static NumberKnob SecArmour(int i) => new($"sec{i}_armour", "Shields", Quantity.Armour, 5, 0.25)
     {
         Get = d => d.Secondary?.ElementAtOrDefault(i)?.ArmourMm,
@@ -1362,6 +1379,7 @@ public static class Knobs
             yield return MainCalibre(i);
             yield return MainLength(i);
             yield return MainBarrels(i);
+            yield return MainHousing(i);
             foreach (var g in new[] { "fore", "aft", "mid", "wing" })
                 yield return MainGroup(i, g);
             yield return MainStepped(i, "fore");
@@ -1382,6 +1400,7 @@ public static class Knobs
             yield return SecPerSide(i);
             yield return SecCount(i);
             yield return SecMount(i);
+            yield return SecHousing(i);
             yield return SecArmour(i);
             yield return SecRounds(i);
             yield return SecTier(i);

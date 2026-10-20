@@ -1,5 +1,5 @@
 {
- "version": 11,
+ "version": 12,
  "id": "hessen",
  "name": "Braunschweig-like pre-dreadnought (1905)",
  "type": "BB",
@@ -43,7 +43,8 @@
      "share": 0.3
     }
    ],
-   "gun": "Victorian, double-base"
+   "gun": "Victorian, double-base",
+   "housing": "barbette"
   }
  ],
  "secondary": [

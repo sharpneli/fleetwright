@@ -39,7 +39,9 @@ public static class Batteries
     public static double GunRounds(TurretType t) => t.RoundsPerGun ?? RoundsPerGun(t.CalibreMm);
 
     /// <summary>(turret incl. guns+armour, barbette armour, magazine/ammo) for one mount of type t; the turret's and the
-    /// barbette's armour of their materials' densities, t/m³ (P1c).</summary>
+    /// barbette's armour of their materials' densities, t/m³ (P1c). A gunhouse's armour wraps its sides and roof; a
+    /// shield's (the "open" shape, docs/battle/magazines.md V1) is the front half of the ring, open behind and above [EST],
+    /// with no barbette.</summary>
     public static (double Turret, double Barbette, double Ammo) MountWeights(TurretType t, double armourMm, double depth, double level,
         double deck = 0.0, double turretRho = Weight.Steel, double barbetteRho = Weight.Steel)
     {
@@ -47,7 +49,7 @@ public static class Batteries
         double guns = n * GunTubeT(cal, cl);
         double mech = MountK * guns + MountFixedT * Math.Min(1.0, Math.Pow(cal / 76.0, 3));
         double th = 0.42 * r;
-        double area = 2 * Math.PI * 0.9 * r * th + 0.85 * Math.PI * r * r;
+        double area = t.Shape == "open" ? Math.PI * 0.9 * r * th : 2 * Math.PI * 0.9 * r * th + 0.85 * Math.PI * r * r;
         double tAvg = TurretTAvg * armourMm / 1000.0;
         double turret = guns + mech + area * tAvg * turretRho;
         double bh = 0.45 * depth + deck + level * Geometry.SuperfireStep(th);

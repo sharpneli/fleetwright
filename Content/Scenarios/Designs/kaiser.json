@@ -1,5 +1,5 @@
 {
- "version": 11,
+ "version": 12,
  "id": "kaiser",
  "name": "Kaiser-like (1912)",
  "type": "BB",
@@ -53,7 +53,8 @@
      "share": 0.3
     }
    ],
-   "gun": "Great War, double-base"
+   "gun": "Great War, double-base",
+   "housing": "barbette"
   }
  ],
  "secondary": [
@@ -75,7 +76,8 @@
      "share": 0.7
     }
    ],
-   "gun": "Great War, double-base"
+   "gun": "Great War, double-base",
+   "housing": "shield"
   }
  ],
  "torpedoes": {

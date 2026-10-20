@@ -98,6 +98,7 @@ Ballistics has no note of its own: the point-mass ballistics fitted to each gun 
 | [07-magazine-explosions.md](simulation/damage-research/07-magazine-explosions.md) | Magazine explosions after ignition | — |
 | [08-gunfire-effects.md](simulation/damage-research/08-gunfire-effects.md) | What a shell does when it hits | [gunfire_ref.py](simulation/damage-research/gunfire_ref.py) |
 | [09-contents-in-the-path.md](simulation/damage-research/09-contents-in-the-path.md) | What inside a ship slows or stops a shell: machinery, liquids, coal, magazines, turrets, shafts (draft) | [contents_ref.py](simulation/damage-research/contents_ref.py) |
+| [10-magazine-flash-chain.md](simulation/damage-research/10-magazine-flash-chain.md) | The flash chain and the venting race: propellant burn rates, turret lift pressures, charges and doors by station, flooding, open-gun flash paths (draft) | [magazine_race_ref.py](simulation/damage-research/magazine_race_ref.py) |
 
 **Armour penetration** in [simulation/armor/](simulation/armor/) (2026-10-16)
 
