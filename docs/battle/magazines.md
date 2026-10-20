@@ -1,5 +1,6 @@
 # Plan: magazines (a 4.5 deepening)
-Status: **draft for the user** (2026-10-20); "Questions for the user" open, no step started    Updated: 2026-10-20
+Status: **draft**; the user decided questions 1-3 and 5 on 2026-10-20 ("Decided" below), question 4 (shield mounts) is
+open; no step started    Updated: 2026-10-20
 
 The fine-tune pass for magazines: how a flash gets to the charges, what happens once they burn, and what the ship
 keeps. **This is the one place for magazine work.** Every open item about magazines, hoists, flash doors, the
@@ -44,6 +45,18 @@ Today a flash is a lottery that ends the ship. The record says it's a chain and 
 - **Enclosed** means `TurretShape.Bb` (`Effects.Enclosed`). Shipgen makes every main-battery mount of 150 mm or more a
   `bb` (`Geometry.MakeTurretType`: `calMm >= 150 ? "bb"`, a switch by calibre). So Chester's open-backed 6″ get a
   turret's flash path.
+- **Shield mounts** (checked 2026-10-20): the same switch makes every mount of 76-150 mm a `dp` (the designer calls it
+  shielded) and anything smaller `open`; casemates come from the secondaries' position. Then:
+  - **No flash goes down from the mount:** a burst or spall in a `dp` or `open` mount isn't a turret source.
+  - **Crews sit in steel:** `Casualties.Enclosed` counts `dp` as a gunhouse, for the men's cover and their flash. A
+    destroyer's 4″ behind a shield and a 5″/38 gunhouse are the same shape.
+  - **A handling room** sits over every main mount's own magazine, a destroyer's shielded guns included
+    (`Ordnance.AddHandlingRooms`). A burst or hot gas in it rolls `TurretFlashChance` (V25 under Arethusa's 6″ HE:
+    0.17% of hits). Secondaries share a battery magazine, fore and aft, with no handling room.
+  - **The ready rounds** burn when the mount is disabled (`ReadyAmmoFireChance` 0.3 × the burst's force): a propellant
+    seat and the crew's flash.
+  - **That fire doses the mount's magazine** as if down a gunhouse's trunk (`Fires.Magazines`, 300 s with charges
+    burning, 1,200 without), for any mount, open or shielded. That's a fake path, like the calibre switch.
 - **The ammunition train in the hitbox model:**
   - each mount has its magazine (`MountRow.Magazine`) and its barbette;
   - a handling room sits under each enclosed mount (`RoomKind.Handling`, protection-plan H1);
@@ -119,7 +132,8 @@ The first game's cases lead (1890-1925); the later ones check the mechanisms.
 
 A battery says how its guns are housed: a **gunhouse** (enclosed, with a barbette, a working chamber and hoists in a
 trunk), a **shield** (open behind, ammunition up by hoist or whip to the deck, ready rounds by the gun), or **open**.
-It replaces the calibre switch. The design key isn't `mount` (the secondaries' position, and fire control's mount
+It replaces the calibre switch, and splits today's `dp`: a 5″/38's gunhouse from a destroyer's shield. Every reader of
+"enclosed" takes it from the housing: the flash path, the crews' cover and flash, and fire's trunk to the magazine. The design key isn't `mount` (the secondaries' position, and fire control's mount
 already use that word: one word, one meaning). Working name `housing`.
 
 ### The ammunition train (an enclosed mount)
@@ -171,20 +185,21 @@ the race.
 The cascade's broken boundaries at the magazine's station give `d`, the share of the girder's section lost (the deck,
 sides and bottom plate there, from the cells' boxes and plates). The check is 07 §3.1: d under ~0.5 holds in calm
 water, 0.5-0.8 breaks in a seaway (the weather's sea), over 0.8 breaks at anchor. An end magazine (under ~0.12 L from
-an end) opens that end to the sea and the ship may live (New Orleans). A broken ship is `LossKind.BrokeInTwo`. The
-pieces' own floating stays with the sinking and the look (07 §4, `sinking-vfx-research.md`).
+an end) opens that end to the sea and the ship may live (New Orleans). A broken ship is `LossKind.BrokeInTwo`: she goes
+down fast, as the record has it (decision 3). The pieces' own floating and the look of the break come later, with the
+sinking and the VFX (07 §4, `sinking-vfx-research.md`).
 
-### Flash discipline (the ship's orders)
+### Flash discipline (a doctrine row)
 
-One setting among the orders before action (fire's readiness): **safe**, **drill** and **rate first**.
+A row in the side's doctrine, by period, as damage control's (decision 2): **safe**, **drill** and **rate first**.
 - **safe:** doors shut, interlocks kept, charges only in transit.
 - **drill:** the period's practice.
 - **rate first:** doors propped, charges stacked in the handling room and working chamber, cases opened (the BCF at
   Jutland).
 
 Rate first gives the handling room's stack as more ready rounds and a shorter hoist cycle (`HoistShare` by discipline,
-fire-control F6d). It also gives more open charges and doors open more of the time. The default is the side's doctrine
-by period, as damage control's; a scenario or the player sets a ship's. Felt both ways: the rate in `duel`, the risk in
+fire-control F6d). It also gives more open charges and doors open more of the time. A scenario picks a side's doctrine
+as it does damage control's; per-ship orders can come later. Felt both ways: the rate in `duel`, the risk in
 `damage-history`.
 
 ### Flooding and sprinkling (one set of valves)
@@ -211,7 +226,10 @@ follows the dependencies: the fake turrets first, because the chain means nothin
   - Records today's numbers here.
 - **V1. The housing.**
   - `housing` on batteries (gunhouse, shield, open); shipgen's turret types take it, and the calibre switch goes.
-  - The designs say theirs: Chester and the Towns shield, the rest as they are, checked one by one.
+  - The designs say theirs: Chester and the Towns shield, the destroyers' guns shield, the rest as they are, checked
+    one by one.
+  - Every reader of "enclosed" takes the housing (`Effects.Enclosed`, `Casualties.Enclosed`, fire's trunk dose in
+    `Fires.Magazines`). How a shield mount reaches its magazine follows question 4.
   - The designer's battery tables show it (one cell, no new pane).
   - Goldens move, so `ShipDesign.Version` bumps. Closes bugs.md's item and E8a item 1.
 - **V2. The train.**
@@ -222,7 +240,7 @@ follows the dependencies: the fake turrets first, because the chain means nothin
   - Until V3, a magazine reached is lost as today.
 - **V3. The race.**
   - The ODE on E5's cascade, the gunhouse lift, tiers 0-4, the neighbour link.
-  - The packaging (question 1), the turret's revolving weight from shipgen's weights, and the fill from the rounds.
+  - The packaging (decision 1), the turret's revolving weight from shipgen's weights, and the fill from the rounds.
   - The ship is lost only at tiers 3-4. Tier 1 destroys the mount and lights the fire's seat; tier 2 leaves its holes.
   - The charge as design data: the shells plan's deferred `charge` (`{kg, propellant, packaging}`), read by the
     muzzle flashes too, replacing `DesignerPlaceholders.Charge`.
@@ -231,8 +249,9 @@ follows the dependencies: the fake turrets first, because the chain means nothin
   - Closes E8a item 4.
 - **V4. The hull at the magazine.** `d`, the girder check with the sea, the end case, `BrokeInTwo`.
 - **V5. Flash discipline.**
-  - The orders, the doctrine's defaults by period, a scenario's `"flash_discipline"`, and the supply.
-  - Jutland's BCF on rate first, the Grand Fleet on drill (question 2).
+  - A doctrine row by period (decision 2), picked by the scenario with the side's doctrine, and the supply.
+  - Jutland's British side on drill. The BCF's rate first would need a doctrine of its own for that squadron, which is
+    for the scenario to choose.
 - **V6. One set of valves.**
   - The flooding moved and ordered as above.
   - Sprinklers as design data (a fit by period, in the outfit block).
@@ -240,7 +259,7 @@ follows the dependencies: the fake turrets first, because the chain means nothin
 - **V7. Every other source into the race.**
   - Fire's heat limit lights the magazine instead of losing the ship.
   - A torpedo's gas and shock reaching the magazine light it (`TorpedoMagazineChance` goes): Pommern.
-  - A magazine keeps racing while the ship sinks or capsizes (Barham, Yamato, Kongō); question 5.
+  - Magazines going up as she sinks or capsizes (Barham, Yamato, Kongō) wait for the sinking pass (decision 5).
 - **V8. The yardstick.**
   - The propellants' β and α fitted.
   - The cases above, scenario runs (squadrons, jutland, tsushima), and the user's 1.5%.
@@ -255,6 +274,8 @@ follows the dependencies: the fake turrets first, because the chain means nothin
   seats today; a warhead's detonation is a later cut's (deck torpedoes and Long Lances are WWII).
 - Unstable propellant and accidents (Iéna, Liberté, Bulwark, Vanguard): peacetime, not a battle's.
 - The pieces as floating bodies (07 §4): with the sinking and the look.
+- Magazines going up after the ship is lost (Barham, Yamato, Kongō): the sinking pass's, eye candy once she's lost
+  (decision 5).
 - Uptakes and vent trunks as joins: Hood's vent through the engine-room vents wants them. They're E5's open item,
   added here only if the yardstick needs them.
 
@@ -267,23 +288,37 @@ follows the dependencies: the fake turrets first, because the chain means nothin
   and how often doors stood open in drill.
 - Sprinklers and magazine flooding times by period (10 §2.3 has some).
 
+## Decided (the user, 2026-10-20)
+
+1. **The charge's propellant and packaging are gun-block data.** Bags or brass cases are a design choice, not a navy
+   value. It changes little now; in the campaign it has an economic cost, as design choices do.
+2. **Flash discipline is a doctrine row** by period, for now. Per-ship orders can come later.
+3. **The hull girder is in now (V4).** Tier 3 means the ship breaks and sinks fast; the look of the break comes later.
+4. *(open, below)*
+5. **Magazines going up as a ship sinks** wait for the sinking pass: by then she's lost anyway, so it's eye candy.
+
 ## Questions for the user
 
-1. **Propellant and packaging as gun-block data?** Bags against brass cases is the physics that made the German ships
-   burn out. As a gun block's packaging (a design choice, like the FUZE cell) it isn't a navy value. But E8b took the
-   per-side factor out for balance, and the shipped German designs would carry cases by default. Keep it as design
-   data, or one packaging for all?
-2. **Flash discipline as ship orders,** defaulted by the doctrine's period, with Jutland's BCF set to rate first by the
-   scenario. Or a doctrine row only?
-3. **The hull girder now (V4),** or a tier 3 that's always "lost" until the sinking pass?
-4. **Shield mounts:** no flash down their hoists at all, or a small chance?
-5. **Magazines going up as the ship sinks** (Barham, Yamato): in V7, or with the sinking pass?
+4. **Shield mounts: how do they reach their magazine?** The record as far as our research goes:
+   - The danger at an open or shielded gun was its **ready charges**: fires and burns on deck (Chester and Southampton
+     at Jutland, Kent's casemate at the Falklands: 10 of her 14 casualties from one cordite fire).
+   - In big ships the path below ran along the **ammunition passages** and through the **casemate battery**, not down
+     one gun's hoist. Defence's fire ran along her ammunition passages from magazine to magazine. Malaya's 6″ battery
+     burned from charges staged on trolleys (~5 min, 65 dead) and came close.
+   - We have **no case of a flash going straight down an open mount's hoist** to its magazine. The hoists ended in a
+     scuttle at the deck, and an open gun vents its flash to the air. [UNCERTAIN: not checked against the sources;
+     worth a research request.]
+
+   Recommendation: no flash roll down a shield mount's hoist. Its ready charges burn as now, and fire reaches the
+   magazine only by the ways fire goes (through the decks, by heat). Where charges travel along a passage or a casemate
+   battery, that passage is a station of the train, with its doors, like a handling room. Today's 300 s dose "down its
+   turret's trunk" goes for shield and open mounts.
 
 ## Open items (from the other docs, folded in)
 
 - E8a item 1 (Chester's fake turrets): V1. E8a item 4 (German turrets burn out): V3.
 - Fighting.md 4.5's Magazines list (the venting race, the flash chain, propellant by navy, flooding as an order, the
-  hull broken, flash discipline, medium HE stays rare): V2-V8. Propellant by navy is now the packaging (question 1).
+  hull broken, flash discipline, medium HE stays rare): V2-V8. Propellant by navy is now the packaging (decision 1).
 - The shells plan's seams: E2's and E3's flash sources and E5's gas are the train's first links (V2). E5's trunks are
   the hoist trunk (V2). E6 kills by flash per station (V2).
 - Fire B2's magazine heat and flooding: V6 and V7. Damage control's two valve sets: V6.

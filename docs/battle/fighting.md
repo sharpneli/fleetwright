@@ -817,7 +817,7 @@ What it settled, beyond the plan:
 - **Propellant by side:** the research has no number, only the contrast: British cordite in silk bags exploded,
   German brass-cased RP C/12 "only blazed". The squadrons and the Jutland have Britain 2, Germany 0.1. With 1 for
   both, the squadrons fight lost three German battlecruisers to their magazines and no British. (Gone in E8b; the
-  packaging as design data is `magazines.md`'s question 1.)
+  packaging is gun-block data: `magazines.md` decision 1.)
 - **Hits do damage unless the settings say not** (`HitsDoDamage`): fire control's calibration (`GunneryTests`,
   `shipgen duel` without `--damage`) runs without it, as the plan's "with or without damage" bench has it, and so do
   the rails tests whose opposing ships must pass.
