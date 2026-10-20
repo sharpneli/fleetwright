@@ -720,7 +720,7 @@ it meets, whether and where the fuze fires, what is within reach of the burst):
   - **a heavy hit on a turret or barbette** that doesn't get in can still jam it (~35%, R5);
   - **fire or a burst in a magazine** or its turret's handling path rolls for an explosion (propellant sensitivity ×
     fill: a side's or navy's knob). v0's result is the ship lost at once; the venting race and the break at the
-    magazine are 4.5's (`07-magazine-explosions.md`).
+    magazine are `magazines.md`'s.
 - **FUNCTIONS** (`Functions`), recomputed when the condition changes: the research's Model A
   (`06-service-networks.md` §4), direct dependencies over the links the class already has (decision 5). **Built to be
   extended:** the dependencies are data compiled into the class, a table of each function's needs (all of these
@@ -813,10 +813,11 @@ What it settled, beyond the plan:
 - **A wrecked funnel costs draught, not steam** (`DraughtFloor` 0.7: a boiler room keeps 70% with every funnel it
   draws through wrecked). QE has one funnel for both boiler rooms, and medium HE stopped her dead before this.
 - **Only an enclosed turret flashes down to its magazine** (a battleship turret with its hoists), not a destroyer's
-  open mount. Fire at a magazine waits for fire in 4.3b.
+  open mount. Fire at a magazine waits for fire in 4.3b. (The flash chain station by station: `magazines.md`.)
 - **Propellant by side:** the research has no number, only the contrast: British cordite in silk bags exploded,
   German brass-cased RP C/12 "only blazed". The squadrons and the Jutland have Britain 2, Germany 0.1. With 1 for
-  both, the squadrons fight lost three German battlecruisers to their magazines and no British.
+  both, the squadrons fight lost three German battlecruisers to their magazines and no British. (Gone in E8b; the
+  packaging as design data is `magazines.md`'s question 1.)
 - **Hits do damage unless the settings say not** (`HitsDoDamage`): fire control's calibration (`GunneryTests`,
   `shipgen duel` without `--damage`) runs without it, as the plan's "with or without damage" bench has it, and so do
   the rails tests whose opposing ships must pass.
@@ -1113,15 +1114,9 @@ numbers before and after against the anchors. The list, by link, with where the 
   - pumping and counter-flooding, and speed driving water in;
   - a plunge or capsize that plays out;
   - the hull girder (broken backs).
-- **Magazines** (`07-magazine-explosions.md`): the venting race, the flash chain by doors, propellant by navy,
-  flooding a magazine as an order, the hull broken at the magazine.
-  - **Flash discipline as a choice** (user, 2026-10-15: "something wrong with our bloody ships today"): hoist hatches and
-    flash doors propped open, charges stacked in the handling rooms, for a faster rate of fire at the price of a flash
-    reaching the magazine far more often (the battlecruisers at Jutland). A doctrine or order, its rate and its risk
-    both felt.
-  - **Medium HE cooking off a battleship's magazine stays rare, not never** (user, 2026-10-15): about 1.5 % of ships
-    under thirty 6" HE hits (Malaya's 6" battery fire at Jutland came close). Damage control and the better damage model
-    refine it, flash discipline above moves it.
+- **Magazines:** planned in `magazines.md` (draft 2026-10-20), the one place for them: the flash chain down the hoists,
+  the venting race, the hull at the magazine, flash discipline (the user, 2026-10-15), flooding as one set of valves,
+  and the user's "medium HE stays rare, not never" (about 1.5% under thirty 6" HE hits) as an anchor.
 - **Fire:** spread on the cell graph and the vents, fire load by era, cook-off timers, fires lighting the ship at night.
 - **Crew:** crew as the damage-control resource, the command node (a bridge hit delays orders), posture (closed up or
   under cover, `damage/16_casualties.md` §4.9). Casualties per hit moved to `shells-armour-damage.md` E6.

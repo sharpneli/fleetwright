@@ -181,7 +181,7 @@ amatol 60/40 and 80/20), plus RDX/TNT and Comp B for late HE. Each row (TNT as t
 
 **Not added in this plan** (the schema leaves room; each is its own step later):
 
-- `charge`: `{kg, propellant, packaging: bag | case}`, for the magazines' venting race (`07-magazine-explosions.md`).
+- `charge`: `{kg, propellant, packaging: bag | case}`, for the magazines' venting race (`magazines.md` V3).
   Today it's `DesignerPlaceholders.Charge`, which the muzzle flashes read too (`docs/visuals/muzzle-flashes.md`), and a
   side's propellant factor in the scenario. Moving it touches the VFX, so it stays out.
 - The dye (already a sim fact).
@@ -1327,7 +1327,7 @@ squadrons, and changes `Matchup.cs` with it.
       in a turret or handling room TurretFlashChance, × the side's propellant. `MagazineVia.Spall` names it. A first cut
       exempted the magazines (their charges cased and racked) and was reverted on review: how the charges are packed and
       handled (bags, Clarkson cases opened before battle as the RN's at Jutland, brass; flash discipline) is the
-      magazine chain's session, not a rule here.
+      magazine chain's session (`magazines.md`), not a rule here.
     - **Where the cloud lands, measured** (4,000 hits each, the space behind the plate by its rooms): KGV under
       Bismarck's 38 cm at 32 km, 294 clouds, behind her armour deck into accommodation 116, the torpedo protection 90,
       engine rooms 27, boiler rooms 10, a barbette 14, a handling room 1, no magazine; Yamato under the generic
@@ -1519,7 +1519,8 @@ squadrons, and changes `Matchup.cs` with it.
       rolls TurretFlashChance (`MagazineVia.Handling`; nothing rolled it before): destroyers 11.7% lost (7 of 60),
       tb_destroyer 6.7%. The user widened DamageTests' destroyer band 0.08 → 0.15 (2026-10-17).
     - **Not built:** fire's rise with afterburning and opened boundaries (11 §5.4 [EST]), fumes (11 §2.4), the trunks
-      (hoists, uptakes, vent trunks: no such edges in the cell graph yet), the matchup's term (the balance pass).
+      (hoists, uptakes, vent trunks: no such edges in the cell graph yet; the hoist trunk is `magazines.md` V2), the
+      matchup's term (the balance pass).
     - **Bench** `shipgen burst` (11 §4.2's cases on our ships): a 5" AAC in a destroyer's compartment felt 0.11 MPa
       (11: 0.09), nothing ruptured or blown; an 8" HC 0.31 (0.25), its bulkheads holed through, 7 spaces; a 14" HC in
       her engine room 0.22 (0.30), 4 doors (4); a 46 cm Type 0 0.46 (0.44), 14 boundaries and her side and bottom torn;
@@ -1770,7 +1771,7 @@ squadrons, and changes `Matchup.cs` with it.
          stand-in 23%, Bismarck 18-25%; record none): shipgen makes every main-battery mount of 150 mm or more a
          gunhouse with a barbette (`Geometry.cs`, a calibre switch), so a WWI light cruiser's open-backed 6″ get a
          turret's flash path and their crews sit inside steel (Chester's killed a hit a fifth of the record). A mount
-         kind as design data (shield or gunhouse) is shipgen's; noted in bugs.md.
+         kind as design data (shield or gunhouse) is shipgen's; planned in `magazines.md` V1.
       2. **Water per heavy hit low in the median.** Not in the sim: the sea's waves over holes near the waterline (the
          North Sea at Jutland), a captain slowing for holes forward (the safe speed only guards bulkheads, DC6), the
          near zone holing the burst space's *outside* faces (E5 holes only its inner boundaries; the hull's own plating
@@ -1779,7 +1780,7 @@ squadrons, and changes `Matchup.cs` with it.
          ruptures a whole cell side (9-15 m², E5's `RupturedShare` 0.25 of the face); E5's open question 7 leaves the
          rupture capacity to the destroyer benches (0.04-0.08 MPa/mm).
       4. **German turrets burn out without the magazine** (Seydlitz at Dogger Bank, Derfflinger's C and D): the sim
-         has a flash only as a magazine loss; the magazines session's (the venting race, the flash chain).
+         has a flash only as a magazine loss; `magazines.md` V2-V3 (the flash chain, the venting race).
       5. **Tsushima's Russian battleships no longer go down in the play** (Russia 2.3 ships lost over 6 seeds, all
          small). Per hit it's the record (Orel "only moderately damaged", no belt pierced); what sank the Borodinos was
          their overload (coal past a full load, the main belt under water, holed upper sides near the sea), fire, and
@@ -1812,13 +1813,8 @@ squadrons, and changes `Matchup.cs` with it.
 - The magazines, flooding, fire spread and the service networks: their own 4.5 sessions (`fighting.md` 4.5 lists
   them), fed by better burst points (P3) and the states phase E adds. Their research is in, and this plan hands each a
   seam:
-  - **Magazines** (`07-magazine-explosions.md`; fighting.md 4.5: the venting race, the flash chain by doors, propellant
-    by navy, flooding a magazine as an order, the hull broken at the magazine, flash discipline as a choice): E2's
-    flash source at a holed gunhouse, working chamber or barbette and E3's flash roll where charges lie open are the
-    chain's first link; E5's trunks (hoists, uptakes, vent trunks) are the low-pressure edges it runs along; E6 kills
-    by propellant flash. Flash discipline decides where charges lie open, so it moves E3's roll without a change here.
-    The venting race needs the ammunition's `charge`, its own later step (Ammunition: "Not added in this plan"); until
-    then it's `DesignerPlaceholders.Charge` and a side's propellant factor.
+  - **Magazines:** planned in `magazines.md`, which takes over this seam (E2's and E3's flash sources as the train's
+    first links, E5's hoist trunk, E6's flash per station, the `charge`).
   - **Fire** (`17_fire.md`: growth to flashover, burning by the openings, fire load as design numbers, the fire main
     deciding quick or never, hose water left aboard): phase E gives it the seat, the explosive's `fire`, and the
     boundaries the blast opened and the holes that ventilate.

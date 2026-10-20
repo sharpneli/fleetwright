@@ -333,6 +333,8 @@ from B0's bench on.
     and 1905, 3 in 1916 and 1942, 2 in 1944 [EST]) unless smoke over it has its controls cut off (Teresa, Astoria);
     through its sea valves under the waterline, else its section's main, full in 10 min; the flooding takes it from there
     (the room flooded, its mounts lose their ammunition; drowned, it can't go up). Sprinkling is for later cuts.
+    What's next for magazines (the heat lighting the venting race instead of losing the ship, the flooding on damage
+    control's valves, sprinklers) is `magazines.md` V6-V7.
   - **Seen** (`Fires.Shows`, `ShipCondition.FireShowMW`): `Burning` only while a developed or open-deck fire (or charges)
     shows; at night the heat that shows is a lamp of 10⁴ cd a MW [EST: a candle] halfway up her silhouette, made out at
     2·10⁻⁷ lux (Allard's law, IALA's night threshold) through the haze (`SightModel.GlowMargin`, the sighting's margin the

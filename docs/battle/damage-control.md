@@ -425,7 +425,7 @@ on the yardstick bench.
     take it back with the crew.
   - **Pre-dreadnoughts already capsize from torpedoes** (two torpedoes: 80% within the hour). One torpedo at anchor
     leaves 8.8° and she lives, where Majestic and Triumph went over in minutes (?).
-  - **Most losses in the shellfire cases are magazines**, not water: E8's and the magazines pass's, not this plan's.
+  - **Most losses in the shellfire cases are magazines**, not water: E8's and `magazines.md`'s, not this plan's.
 
 ### DC1 Leaks with structure
 - `JoinOpenM2` split into ruptured, seam and fittings; fittings by room kind and their rolls (17 §4); the design's
@@ -734,7 +734,7 @@ on the yardstick bench.
       the designer has a station).
     - The pumps leave counterflooded tanks alone. `Repairs.CounterfloodLeftT(side)` is the doom clock's data (DC8).
   - B2's magazine flooding stays where it is (`Fires.Magazines`): one set of valves in the story, two in the code, until
-    the station exists.
+    the station exists. Joining them is `magazines.md` V6.
   - **The bench:**
     - reports the tonnes counterflooded and which runs were lost, and how;
     - `--trace-run N` follows any run, its trace now with the counterflooding and the parties' jobs;

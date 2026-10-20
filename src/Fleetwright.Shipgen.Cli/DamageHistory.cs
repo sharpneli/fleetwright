@@ -77,7 +77,7 @@ static class DamageHistory
             "killed well under 1 a hit; little water"),
         new("1890-1925", "Medium HE on a battleship: 30 × 6″ HE (König's secondaries) over 1 h", "iron_duke", 18,
             [new("konig", 1, "he", 1)], 30, 60, (6_000, 10_000), (45, 135), "closed up", "1916", 2,
-            "(Malaya's 6″ battery fire came close)", "a magazine lost rarely, not never: about 1.5% of ships (fighting.md 4.5, the user's)"),
+            "(Malaya's 6″ battery fire came close)", "a magazine lost rarely, not never: about 1.5% of ships (magazines.md, the user's)"),
         new("1890-1925", "Destroyer under shellfire: 10 × 6″ lyddite HE (a light cruiser's) in 10 min", "tb_destroyer", 25,
             [new("arethusa", 0, "he", 1)], 10, 10, (3_000, 7_000), (30, 150), "closed up", "1916", 2,
             "(08 R3: one machinery hit cripples; hit count a poor predictor. Jutland's destroyers stopped by medium gunfire mostly went down (?))",

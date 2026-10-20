@@ -1136,7 +1136,7 @@ public sealed record SimSettings
 
     /// <summary>A burst in a magazine, or in a turret or its barbette (the handling path to it), sets off the magazine
     /// with these chances. v0: the ship is lost at once and goes under <see cref="MagazineLossMs"/> later (the venting
-    /// race is fighting.md 4.5's).</summary>
+    /// race is docs/battle/magazines.md V3's).</summary>
     public double MagazineFlashChance { get; init; } = 0.25;
     public double TurretFlashChance { get; init; } = 0.25;
     public int MagazineLossMs { get; init; } = 60_000;

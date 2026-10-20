@@ -27,7 +27,7 @@ which barbette becomes a column, which boiler room steams, how much propellant) 
 recorded each mount fired. It changes no result.
 
 **Only tier 3 exists** (07 §6.3: severed, the ship lost). Tier 1 (the turret burns out, the ship fights on: Lion,
-Seydlitz) needs the venting race, which is 4.5's and moved out (fighting.md decision 13). Tier 4 (two groups, Vanguard) also. So
+Seydlitz) needs the venting race, which is `docs/battle/magazines.md`'s (V3). Tier 4 (two groups, Vanguard) also. So
 every event here is drawn as tier 3 (decision 1). The barbette's flame column is still built in X3, as the last of the
 jet phase, so tier 1 later is the same event with no fireball.
 
@@ -158,7 +158,7 @@ In draw order, all after the ships' layer:
 ## Decisions (the user, 2026-10-15)
 
 1. **Tier 3 only, for now.** Every magazine loss draws the full event. Tier 1 (the column the ship survives) and
-   tier 4 (two fireballs) come after 4.5's venting race (systems design is on a break); the column is built anyway,
+   tier 4 (two fireballs) come after the venting race (`docs/battle/magazines.md` V3); the column is built anyway,
    inside the jet phase.
 2. **Analytic volumes, not a ported particle sim.** Reality is traded for the realtime budget: the game stays light,
    so the look comes from tricks that are cheap. The mushroom's circulation is imitated by advected noise. If X2's
@@ -393,7 +393,8 @@ the wreck when half faded.
 
 ## Later
 
-- Tier 1 (the burn-out column the ship survives) and tier 4 (two fireballs along the hull), with the venting race.
+- Tier 1 (the burn-out column the ship survives) and tier 4 (two fireballs along the hull), with the venting race
+  (`docs/battle/magazines.md` V3; the sim's record gains the tier).
 - The hull broken at the magazine and its pieces sinking apart, with the sinking VFX (`sinking-vfx-research.md`).
 - The open barbette and the scorch on a survivor, with the hit-effects pass.
 - Debris landing on neighbours (a spark and a scorch on her), Tiger's and Bellerophon's.

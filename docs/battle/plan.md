@@ -1755,7 +1755,8 @@ fitted to the research's guns, `shipgen weapons --research`):
 - **A gun's dispersion** (4.2b): its full-salvo pattern, % of range, by calibre and the gun block's period until then.
 - **Rangefinders** (4.2b): one per director today; turret and spotting-top rangefinders would give a battery the
   several readings the era's ships had (QE's one 15 ft against the reference's three).
-- **Magazines' propellant** (4.3a: a side's factor in the scenario until then), **fillers' TNT equivalence** and
+- **Magazines' propellant** (4.3a's side factor gone in E8b; the charge and its packaging, the mounts' housing:
+  `magazines.md` V1, V3), **fillers' TNT equivalence** and
   **funnels' draught** (4.3a), and **torpedoes** (4.6: speed and range settings, the charge, the mounts' training and
   the tubes' reload, the gyro, failures and duds: the design's torpedo block since 2026-10-19, by period, not by type
   and year yet).
@@ -1806,7 +1807,9 @@ that held shakes) are planned in detail in `shells-armour-damage.md` (phase S do
 it hands the sessions below. The systems' dependency graph
 (`research/simulation/damage-model-research.md` §8-9). Then, area by area, each its own small step checked against
 the previous one: leaks through bulkheads and decks, free surface, `sinking.py`'s non-linear settling, pumping and
-counter-flooding, a plunge or capsize that plays out.
+counter-flooding, a plunge or capsize that plays out. Planned so far: `fire.md`, `damage-control.md`, `shell-contents.md`,
+`fire-control.md`, and `magazines.md` (draft 2026-10-20: the flash chain down the hoists, the venting race, the hull at
+the magazine, flash discipline).
 
 **4.6 Torpedoes** (done 2026-10-14, `fighting.md` 4.6). Tubes, and running torpedoes as tracks with events (like
 shells). Hits below the waterline go into the same damage. Torpedo boat and destroyer attacks need them.

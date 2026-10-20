@@ -890,7 +890,8 @@ from the parts and independent fire (items 6 and 9); F6e ammunition as a choice 
     15" 4) at the reload, and once they're gone as the hoists bring them, a round a gun every `MountRow.SupplyS`, the
     ready-use rounds filling back at that rate while it fires slower (`CombatStore.Fired`). The hoists' interval is the
     reload times `DesignerPlaceholders.HoistShare`, 1.5 [EST from the Majestics' 70 and 100 s and HMS Delhi's 25 and 15
-    rounds a minute]. A Queen Elizabeth turret fires 12 salvos at its 39.6 s reload, then one each 59.4 s.
+    rounds a minute]. A Queen Elizabeth turret fires 12 salvos at its 39.6 s reload, then one each 59.4 s. (Flash
+    discipline moves the supply: `magazines.md` V5.)
   - *The crew:* the battle's factor on the drill reload (`GunneryCrew.Load`: green 1.5, average 1.35, trained 1.2, elite
     1.1 [EST]: the loaders' fatigue, heat and fumes).
   - *The layers:* after a spot's correction the next salvo waits `LayerSettleS`, 7 s, for the layers to lay on again

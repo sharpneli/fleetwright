@@ -48,7 +48,8 @@ public sealed class MagazineBlast
     /// down and back), then after that, each opening's (the prototype's), the roof lifting and the main event.</summary>
     public const double HitLeadS = 0.5, PortsS = 0, HoodS = 0.05, HatchS = 0.12, ScuttleS = 0.22, VentS = 0.35, LiftS = 0.45, MainS = 0.9;
 
-    /// <summary>The magazine's pressure at the main event, bar absolute (the stand-in for the venting race's), and how
+    /// <summary>The magazine's pressure at the main event, bar absolute (the stand-in for the venting race's,
+    /// docs/battle/magazines.md V3), and how
     /// fast it vents after, s.</summary>
     public const double PeakBar = 3.0, VentTauS = 0.7;
 

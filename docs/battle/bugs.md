@@ -45,7 +45,7 @@ add what's found.
   had hidden it. Likely the heaviest pieces (the base plug) and `NearMiss.WaterDragM`'s path up through the water.
 
 - [x] A battleship under medium HE sometimes loses a magazine to fire (about 1.5 %): decided 2026-10-15, rarely is
-  right (user); damage control and flash discipline refine it later (fighting.md, the later passes' Magazines).
+  right (user); damage control and flash discipline refine it later (`magazines.md`, its yardstick).
 - [x] A contact-fuzed shell on armour breaks up instead of bursting on the face (found 2026-10-19, fire.md B5; fixed
   2026-10-20, shells plan E8a: `Terminal.FiresIn`, Shimose on Borodino `Holed` 42% → 2%).
   `Terminal`'s plate step calls a shell between the plate's holing limit and V_L `Holed` and returns before its fuze
@@ -58,7 +58,7 @@ add what's found.
   "bb"`: a switch by calibre), so a WWI light cruiser's open-backed 6″ (Chester, the Towns) get an enclosed turret's
   flash path to the magazine and their crews sit inside steel (found 2026-10-20, shells plan E8a: Chester lost 13% of
   ships to a magazine under 17 hits of 15 cm, killed 0.38 a hit against the record's 2.0). Wants a mount kind in the
-  design (shield, gunhouse), shipgen's.
+  design (shield, gunhouse), shipgen's: planned as `magazines.md` V1.
 - [ ] Four torpedoes at once on one side capsize `yamato` in about 2 minutes, whatever her tightness: 6,800 t and 21.6°
   of list in the first minute, faster than any counterflooding (found 2026-10-20, damage-control.md DC4; one torpedo
   alone gives 2,450 t and 8.8°). Shinano took four from one spread and listed 10-13°, lasting 7¾ h. Likely her wing and

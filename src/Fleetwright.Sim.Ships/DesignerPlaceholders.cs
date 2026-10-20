@@ -58,7 +58,7 @@ public static class DesignerPlaceholders
 
     /// <summary>PLACEHOLDER: the share of a magazine's propellant that burns in the cascade window, the fireball's M
     /// (research/vfx/magazine-explosion-vfx-research.md §2.2: "not the whole magazine"). Vidgen's tuning value: Queen
-    /// Mary's forward group fits ~0.45, Invincible's ~0.17. The venting race (fighting.md 4.5) should give M.</summary>
+    /// Mary's forward group fits ~0.45, Invincible's ~0.17. The venting race (docs/battle/magazines.md V3) should give M.</summary>
     public const double MagazineFastShare = 0.3;
 
     /// <summary>PLACEHOLDER: the propellant's share of a round's weight when a magazine serves no gun with a charge
