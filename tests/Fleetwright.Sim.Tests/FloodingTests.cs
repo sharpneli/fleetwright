@@ -101,8 +101,11 @@ public class FloodingTests(ITestOutputHelper output)
         Assert.True(sunk > 50 * Math.Max(dry, 0.01), "fast once under");
     }
 
+    /// <summary>A destroyer with one machinery space flooded floats upright and fights on; with three she's helpless:
+    /// lolled past 10° with her GM gone, or lost. (Before the free surface's pool cap of docs/battle/damage-control.md DC9
+    /// the puddles on her flats capsized her; with it she lolls at ~14-20°, the capsize line 25°.)</summary>
     [Fact]
-    public void A_destroyer_with_three_machinery_spaces_flooded_goes_down_and_with_one_lives()
+    public void A_destroyer_with_three_machinery_spaces_flooded_is_helpless_and_with_one_lives()
     {
         foreach (var (boilers, engines, lost) in new[] { (1, 0, false), (2, 1, true) })
         {
@@ -112,7 +115,10 @@ public class FloodingTests(ITestOutputHelper output)
             var status = w.Damage.Settle(w, 1, 4 * 3600);
             var k = Condition(w);
             Report($"destroyer, {boilers} boiler and {engines} engine rooms flooded", k);
-            Assert.Equal(lost ? ShipStatus.GoingDown : ShipStatus.Afloat, status);
+            if (lost)
+                Assert.True(status != ShipStatus.Afloat || Math.Abs(k.Attitude.HeelDeg) > 10 && k.GmM <= 0, "helpless");
+            else
+                Assert.True(status == ShipStatus.Afloat && Math.Abs(k.Attitude.HeelDeg) < 3 && k.GmM > 0, "fights on");
         }
     }
 
@@ -183,9 +189,7 @@ public class FloodingTests(ITestOutputHelper output)
         w.Apply(GroupSystem.Create(1));
         w.Apply(GroupSystem.Add(w.Groups.Of(1)!.GroupId, 2));
         w.AdvanceTo(w.Time + 60_000);
-        var c = Class("destroyer");
-        Flood(w, c, RoomKind.BoilerRoom, 2);
-        Flood(w, c, RoomKind.EngineRoom, 1);
+        w.Apply(DamageSystem.Sink(1, LossKind.Foundered));   // how she goes doesn't matter here
         WorldTime gone = default;
         for (int i = 0; i < 6 * 60 && w.Ships.Store.SlotOf(1) >= 0; i++)
         {

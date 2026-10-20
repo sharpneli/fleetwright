@@ -286,7 +286,8 @@ public static class Flooding
             {
                 JoinKind.Open => s.FloodOpenM2,
                 _ when k.CellOpened[a] && k.CellOpened[b] => s.FloodTornM2,
-                JoinKind.Deck when open < 0 && e.Z > c.Vertical.Waterline => s.FloodSunkDeckM2,   // over the waterline once, under the sea now
+                JoinKind.Deck when open < 0 && e.Z > c.Vertical.Waterline =>   // over the waterline once, under the sea now
+                    s.FloodSunkDeckM2 * ((marks & JoinMark.Battened) != 0 ? s.BattenShare : 1),
                 JoinKind.Deck => s.FloodLeakDeckM2 * c.Drainage.Tightness,   // her glands and penetrations (DC4)
                 _ => s.FloodLeakBulkheadM2 * c.Drainage.Tightness,
             } + k.JoinOpenM2[p];   // and what a burst's gas opened there (E5), or the head broke
@@ -485,10 +486,14 @@ public static class Flooding
             my += t * f.Cy[i];
             mz += t * (b.Base + 0.5 * fill * (b.Top - b.Base));
             // its free surface: the water's plane's inertia about the centreline (the cell's mean breadth), less in a
-            // cell nearly dry or nearly full, where the water can't run across as the ship heels
+            // cell nearly dry or nearly full, where the water can't run across as the ship heels; and shallow water pools
+            // at the low side, its shift at most a third of the breadth (09 §2.5: a puddle on a wide flat isn't a layer
+            // across it; docs/battle/damage-control.md DC9)
             double l = Math.Max(b.X1 - b.X0, 0.1), breadth = cells[i].VolumeM3 / (l * Math.Max(b.Top - b.Base, 0.1));
             double pocket = Math.Min(1, Math.Min(fill, 1 - fill) / s.FreeSurfacePocket);
-            fs += pocket * cells[i].Permeability * l * breadth * breadth * breadth / 12;
+            double layer = pocket * cells[i].Permeability * l * breadth * breadth * breadth / 12;
+            double pooled = v * breadth / 3 / Math.Tan(double.DegreesToRadians(Math.Max(Math.Abs(k.Attitude.HeelDeg), s.FreeSurfacePoolMinDeg)));
+            fs += Math.Min(layer, pooled);
         }
         k.WaterT = wt;
         if (wt <= 0)

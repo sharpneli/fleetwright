@@ -95,6 +95,8 @@ public enum JoinMark : byte
     Redogged = 16,
     Shored = 32,
     ShoredTwice = 64,
+    /// <summary>A deck gone under the sea with its hatches battened down (DC9: the Lützow rule's opening, closed).</summary>
+    Battened = 128,
 }
 
 /// <summary>What hits that held left a mount (docs/battle/shells-armour-damage.md E4; damage/13 §1): jammed in train (its

@@ -360,6 +360,14 @@ static class DcHistory
             int slot = store.SlotOf(list[Math.Min(traceRun, runs - 1)].Entity);
             var k = slot >= 0 ? store.Combat.Condition(slot) : null;
             var f = w.Damage.Flood(target);
+            if (k != null)
+                foreach (int i in Enumerable.Range(0, target.Cells.Length).OrderByDescending(i => k.WaterM3[i]).Take(12).Where(i => k.WaterM3[i] > 0))
+                {
+                    var b = target.Cells[i].Box;
+                    Console.WriteLine(string.Format(Inv, "      cell {0} {1}: water {2:0}/{3:0} m³, z {4:0.0}..{5:0.0} (waterline {6:0.0}), {7:0.0} m across, {8:0.0} m long, holes {9:0.00} m², pumps {10}{11}",
+                        i, target.Rooms[target.Cells[i].Room].Kind, k.WaterM3[i], f.Capacity[i], b.Base, b.Top, target.Vertical.Waterline, b.Y1 - b.Y0, b.X1 - b.X0,
+                        k.BreachM2[i], k.PumpsIn[i], k.Counterflooded[i] ? ", counterflooded" : ""));
+                }
             for (int ei = 0; k != null && ei < f.Edges.Length; ei++)
             {
                 var e = f.Edges[ei];

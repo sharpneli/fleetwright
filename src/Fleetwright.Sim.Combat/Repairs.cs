@@ -27,6 +27,8 @@ public enum RepairJob : byte
     Repair,
     /// <summary>A room flooded out of action brought back once pumped down (DC7).</summary>
     Restore,
+    /// <summary>A deck gone under the sea battened down: its hatches and scuttles closed from above (DC9).</summary>
+    Batten,
 }
 
 /// <summary>What damage control did or met, for the log (docs/battle/damage-control.md DC8): boundaries gave way under the
@@ -313,10 +315,11 @@ public static class Repairs
 
     // ------------------------------------------------------------------ DC Central (DC5)
 
-    /// <summary>DC Central's counterflooding (09 §2.5, §3; WDR 61): past the doctrine's list it opens the tank on the high
-    /// side whose fill best matches the water the list needs (Δ·GM·tanφ over its lever), and fills it, the next when it's
-    /// full; past its trim, a centreline tank at the other end. It shuts the valve once the list is inside half the
-    /// doctrine's (or has gone the other way): a tank left part full has free surface, the price of not overshooting. At
+    /// <summary>DC Central's counterflooding (09 §2.5, §3; WDR 61): past the doctrine's list it opens the narrow wing tank on
+    /// the high side whose fill best matches the water the list needs (Δ·GM·tanφ over its lever), and fills it to full (a
+    /// tank left part full is free surface: NC's one at a time), the next when the list still asks; past its trim, a
+    /// centreline tank at the other end. It shuts a valve early only when the list has gone past the doctrine's the other
+    /// way. At
     /// the design's valves' rate while she's conned (DC Central's stand-in until the designer has the station), by hand at
     /// a share of it after a delay when she isn't. The tanks it fills the pumps leave alone; when the high side's are
     /// full, the list grows (the doom clock).</summary>
@@ -340,8 +343,8 @@ public static class Repairs
         {
             // the valve shut once the list (or the trim it was opened for) is put right, or the tank is full or holed
             bool forList = Math.Abs(f.Cy[t]) >= 1;
-            bool done = forList ? Math.Abs(heel) < 0.5 * doc.CounterfloodDeg || heel * f.Cy[t] > 0
-                : Math.Abs(trim) < 0.5 * doc.CounterfloodTrimDeg || trim * (f.Cx[t] - c.Hydrostatics.Lcf) > 0;
+            bool done = forList ? heel * f.Cy[t] > 0 && Math.Abs(heel) > doc.CounterfloodDeg
+                : trim * (f.Cx[t] - c.Hydrostatics.Lcf) > 0 && Math.Abs(trim) > doc.CounterfloodTrimDeg;
             if (done || k.WaterM3[t] >= f.Capacity[t] * 0.999 || k.BreachM2[t] > 0)
                 k.CounterTank = t = -1;
         }
@@ -418,8 +421,9 @@ public static class Repairs
             if (side != 0)
             {
                 double lever = side * f.Cy[i];
-                if (lever <= 0.5)
-                    continue;
+                var b = c.Cells[i].Box;
+                if (lever <= 0.5 || b.Y1 - b.Y0 > 0.25 * c.Beam)
+                    continue;   // narrow wing tanks only: a wide one part full is free surface (the loll it would make)
                 score = -Math.Abs(Math.Log(room * lever / Math.Max(moment, 1))) + 0.01 * lever;
             }
             else
@@ -521,6 +525,11 @@ public static class Repairs
         }
         while (true)
         {
+            bool free = false;
+            for (int p = 0; p < k.PartyCount && !free; p++)
+                free = k.Parties[p].Target < 0 && k.Parties[p].Job == RepairJob.None && k.Parties[p].Men >= 2;
+            if (!free)
+                return;   // every party at work: no need to look over the jobs
             var best = Best(c, f, k, s);
             if (best.Score <= 0)
                 return;
@@ -593,13 +602,16 @@ public static class Repairs
             if ((m & JoinMark.Collapsed) != 0 || k.WaterM3[e.A] <= 0 && k.WaterM3[e.B] <= 0)
                 continue;
             bool doorOpen = (m & JoinMark.DoorOpen) != 0;
-            if (!doorOpen && k.JoinSeamM2[p] <= 0 && k.JoinClosureM2[p] <= 0)
+            bool sunk = e.Join == JoinKind.Deck && (m & JoinMark.Battened) == 0 && e.Z > c.Vertical.Waterline && k.JoinFlow[p] != 0;
+            if (!doorOpen && !sunk && k.JoinSeamM2[p] <= 0 && k.JoinClosureM2[p] <= 0)
                 continue;
             var (hi, lo) = Sides(c, f, k, e);
             if (!DrySide(c, f, k, lo, s))
                 continue;
             double flowH = Math.Abs(k.JoinFlow[p]) * 3600, value = Value(c, lo);
             int sec = cells[lo].Section;
+            if (sunk && !Taken(k, RepairJob.Batten, ei))
+                Offer(new Candidate(RepairJob.Batten, ei, sec, Score(Tier.Door, floodFirst, 1 + flowH * value)), ref best);
             if (doorOpen && (m & JoinMark.DoorJammed) == 0 && !Taken(k, RepairJob.Door, ei))
                 Offer(new Candidate(RepairJob.Door, ei, sec, Score(Tier.Door, floodFirst, 1 + flowH * value)), ref best);
             if (flowH <= 0)
@@ -762,6 +774,7 @@ public static class Repairs
             case RepairJob.Redog:
             case RepairJob.Caulk:
             case RepairJob.Shore:
+            case RepairJob.Batten:
             {
                 ref readonly var e = ref f.Edges[at];
                 var m = k.JoinMarks[e.Pool];
@@ -770,6 +783,7 @@ public static class Repairs
                 return job switch
                 {
                     RepairJob.Door => (m & JoinMark.DoorOpen) != 0,
+                    RepairJob.Batten => (m & JoinMark.Battened) == 0,
                     RepairJob.Redog => (m & JoinMark.Redogged) == 0,
                     RepairJob.Caulk => (m & JoinMark.Caulked) == 0,
                     _ => (m & JoinMark.ShoredTwice) == 0,
@@ -882,13 +896,14 @@ public static class Repairs
                 k.Version++;
                 return RepairChange.Parts;
         }
-        if (job is RepairJob.Door or RepairJob.Redog or RepairJob.Caulk or RepairJob.Shore)
+        if (job is RepairJob.Door or RepairJob.Redog or RepairJob.Caulk or RepairJob.Shore or RepairJob.Batten)
         {
             int p = f.Edges[at].Pool;
             var m = k.JoinMarks[p];
             k.JoinMarks[p] = job switch
             {
                 RepairJob.Door => m & ~JoinMark.DoorOpen,
+                RepairJob.Batten => m | JoinMark.Battened,
                 RepairJob.Redog => m | JoinMark.Redogged,
                 RepairJob.Caulk => m | JoinMark.Caulked,
                 _ => (m & JoinMark.Shored) != 0 ? m | JoinMark.ShoredTwice : m | JoinMark.Shored,

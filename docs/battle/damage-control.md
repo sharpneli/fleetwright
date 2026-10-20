@@ -1,5 +1,5 @@
 # Plan: damage control (a 4.5 deepening)
-Status: **agreed with the user 2026-10-20** ("Decided" below); DC0-DC8 done 2026-10-20, DC9 next.    Updated: 2026-10-20
+Status: **agreed with the user 2026-10-20** ("Decided" below); DC0-DC9 done 2026-10-20: the plan is complete (open items in DC9).    Updated: 2026-10-20
 
 The fine-tune pass for damage control: what the crew does about a hit once it has landed. Firefighting came first, as
 this pass's first slice (`fire.md`, decision 1). This plan adds the water and the repairs, and both draw on the same
@@ -913,6 +913,74 @@ on the yardstick bench.
   - the longest call.
 - **Open items carried:** the clutter's weight (fire B5), whether battleships still list too little from torpedoes
   (`fighting.md` open item 8).
+- **Done 2026-10-20.** The final reading found three faults behind the worst misses. All three fixes are physical, two of
+  them straight from the research.
+  - **Shallow water's free surface capped** (09 §2.5, `Flooding.Settle`, `FreeSurfacePoolMinDeg` 2°):
+    - The problem: v0's rule gave a puddle on a wide flat up to 30% of a full layer's free surface. Dozens of puddles
+      (the seepage, what the pumps leave) took 2 m off GM over hours. That was behind the North Carolina-type's slow loll
+      (18°), Seydlitz's capsizes at 5-7 h, and Lützow's early ones.
+    - The fix: shallow water pools at the low side, its shift at most a third of the breadth. Its free surface is no more
+      than its volume × b/3 over tan of the heel (at least 2°).
+  - **Counterflooding into narrow tanks only, filled to full:**
+    - A double-bottom cell off the centreline can be 20 m wide, and part full it is the loll it was meant to cure.
+    - DC Central now picks wing tanks a quarter of the beam or less, and fills each to full (NC's one at a time). It shuts
+      a valve early only when the list goes past the doctrine's the other way.
+  - **Decks gone under battened down** (`RepairJob.Batten`, 4 man-minutes, the door tier; `JoinMark.Battened`;
+    `BattenShare` 0.1 [EST]):
+    - v0's Lützow rule opens a deck 0.3 m² once it goes under the sea, and nothing could close it.
+    - A crew closes the hatches and scuttles from above as she settles; battened, the deck leaks a tenth of that.
+  - **The planner** no longer looks over every job when no party is free.
+- **The final reading (dc-history, 40 runs):**
+
+  | Case | Ours | Record / wanted | |
+  |---|---|---|---|
+  | Seydlitz, slowing | 5,300 t at 8 h; worst list 1.2°; lost 13% (magazines only) | 5,308 t, survived | ✓ |
+  | Seydlitz, holding 24 kn | 5,800 t; lost 13% | more water than slowing | ✓ |
+  | Lützow (her bulkheads ×10) | 1,720 t at 2 h, 2,740 at 4 h, 5,540 at 8 h; lost 25% (magazines) | 2,395 t at 3¾ h, 8,351 by 7½ h; scuttled | ~ |
+  | Audacious, unprepared | 5,940 t at 12 h, no list; lost 0% | capsized at ~12 h | ✗ |
+  | Marlborough (?) | 5,650 t; 0.4°; lost 0% | survived | ✓ |
+  | Oslyabya (?) | 510 t; lost 5% | capsized within the hour | ✗ |
+  | Pre-dreadnought, one torpedo at anchor (?) | 4,200 t; 4.8°; lost 5% | capsized in minutes | ✗ |
+  | Pre-dreadnought, two torpedoes (?) | lost 83% (foundered, median 101 min) | sank in ~2¾ h | ✓ |
+  | RN battleship, 15 heavy hits | 0 t; lost 15% (magazines) | came home | ✓ (the magazines are E8's) |
+  | Destroyer, 6 HE hits | lost 8% (5% magazines, 3% capsized) | most survive | ✓ |
+  | 30 splinter holes (drilled) | 0 t | the research's ~120 t | ✓ |
+  | Bow shell, 28 kn / 12 kn | 1,570 / 1,420 t at 4 h | slowing pays | ✓ (weaker than 09's model) |
+  | North Carolina-type (`kgv`) | worst list 4.6°, off within ~10 min; ~3,700 t; lost 0% | 5.5° off in 6 min; 970 t | ✓ list; ✗ water (`kgv`'s torpedo floods more) |
+  | Shinano-like (×25) | lost 98% (foundered, median 51 min) | lost at 7¾ h | ✗ (the research's ×25 on a ship half her size) |
+
+  - **The other benches:**
+    - Torpedoes, 120 min: QE with 4 lost 33% (foundered; no side tanks to counterflood; 87% capsized before the
+      free-surface cap); Seydlitz with 2: 10,600 t, 2.2°, lost 3%; a destroyer with 1: 77% broke in two.
+    - Hits, 180 min: Iron Duke under Derfflinger 484 t, out of the fight 19%; a destroyer under Arethusa's HE 244 t,
+      lost 7.5% (magazines), out of the fight 25%.
+    - fire-history: the first game's cases within the noise of B5's end. Savo's post-Savo fit lost 15% (25 at B5).
+- **Cost:**
+  - Squadrons, 120 min: the damage system 40 µs a call (46-47 at fire B5), its longest call 6.5 ms (4.4 at DC1).
+  - Jutland, 120 min, ~250 ships: 22 µs a call, 1.4% of the run, the sim thread 1.7% busy at 10x. Its longest call
+    is 10 ms, not traced: for the next profiling pass.
+  - dc-history: 14 cases × 40 runs in ~1.5 min.
+- **An anchor changed, for the user's word** (the rule: a band moves only with the user's say).
+  `FloodingTests.A_destroyer_with_three_machinery_spaces_flooded_goes_down...` is now `...is_helpless...`. With two
+  boiler rooms and an engine room flooded, the destroyer no longer goes down in 4 h: she lolls at ~14-20° with her GM
+  gone, the capsize line at 25°. Even with five spaces flooded (1,900 t) she floats. The puddles' free surface, which
+  the research says is wrong, had been what capsized her. The test now asks "helpless (lolled past 10° with no GM) or
+  lost". The group test that needed a ship to go down uses the dev's `Sink`.
+- **Open (for the final balance pass, or a later damage-control step):**
+  - **Audacious doesn't capsize.** Ours takes ~5,900 t with no list. The record's list came from water spreading aft
+    through unclosed fittings on one side; our mine stand-in (a 303 kg torpedo 7.5 m down) and an unorganised crew
+    aren't her case. A mine model and the 1914 RN's damage-control doctrine are the first suspects.
+  - **One torpedo doesn't capsize a pre-dreadnought, and the Oslyabya case doesn't sink** (both (?) until the research
+    request is back). Their subdivision (no longitudinal bulkheads in the Victorian ships) is shipgen's.
+  - **Lützow** reaches two-thirds of the record's water at 8 h: the bow walks aft, but her crew's failures (jammed
+    pumps, three patches lost) aren't in.
+  - **Shinano-like:** the research's ×25 tightness on our smaller stand-in sinks her in under an hour. `yamato`
+    capsizes from four simultaneous torpedoes in two minutes whatever her tightness (bugs.md).
+  - **Speed's effect is about 10%:** our bulkheads, rated to their real tops, rarely give way to the ram head.
+  - **Counterflooding has no designated tanks:** the class's wing tanks stand in, and QE-like designs with none can't
+    counterflood. A designer row (which spaces are counterflood tanks, with their valves) is the UI pass's.
+  - **No rows in the designer and no orders for the player yet** (the UI pass): hold speed, flood-first, counterflood or
+    save capacity, the doom clock.
 
 ## What stays out
 

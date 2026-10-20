@@ -1262,6 +1262,11 @@ public sealed record SimSettings
     /// either (the water can't run across as the ship heels).</summary>
     public double FreeSurfacePocket { get; init; } = 0.1;
 
+    /// <summary>Shallow water pools at the low side (09 §2.5): its free surface no more than its volume × a third of the
+    /// breadth over tan of the heel, the heel taken as at least this, degrees (upright, the pool's side isn't yet chosen)
+    /// (docs/battle/damage-control.md DC9) [EST].</summary>
+    public double FreeSurfacePoolMinDeg { get; init; } = 2;
+
     /// <summary>The heel comes on toward what the water gives with this time constant, s (a ship lolls over its rolls,
     /// not at once).</summary>
     public double HeelLagS { get; init; } = 30;
@@ -1319,10 +1324,14 @@ public sealed record SimSettings
 
     /// <summary>The repair parties' water jobs (docs/battle/damage-control.md DC3; 09 §4, by <c>RepairJob</c>: none, door,
     /// re-dog, caulk, shore, plug, patch, plating, rig a pump, mat, steering by hand, a part, a room pumped out: the last two
-    /// drawn per part, <see cref="RepairPartMin"/>): each job's man-minutes for a drilled crew (a plug's and a patch's a
+    /// drawn per part, <see cref="RepairPartMin"/>; a sunk deck battened): each job's man-minutes for a drilled crew (a plug's and a patch's a
     /// hole) and its crew; a party puts at most <see cref="RepairCrewsAJob"/> crews on one [EST: 09 §4's times × men].</summary>
-    public double[] RepairJobManMin { get; init; } = [0, 2, 6, 60, 80, 6, 80, 60, 40, 1800, 60, 0, 0];
-    public double[] RepairJobMen { get; init; } = [1, 2, 2, 3, 4, 2, 4, 3, 4, 20, 4, 4, 4];
+    public double[] RepairJobManMin { get; init; } = [0, 2, 6, 60, 80, 6, 80, 60, 40, 1800, 60, 0, 0, 4];
+    public double[] RepairJobMen { get; init; } = [1, 2, 2, 3, 4, 2, 4, 3, 4, 20, 4, 4, 4, 2];
+
+    /// <summary>A deck gone under the sea, its hatches battened down (DC9), leaks this share of the Lützow rule's opening
+    /// (<see cref="FloodSunkDeckM2"/>) [EST].</summary>
+    public double BattenShare { get; init; } = 0.1;
 
     /// <summary>The safe speed (DC6; 09 §2.2): a holed space's boundaries kept under this share of their rating with the ram
     /// head on them, at least <see cref="SafeMinKn"/> (steerage); no faster than <see cref="HullWorkKn"/> while there's work
