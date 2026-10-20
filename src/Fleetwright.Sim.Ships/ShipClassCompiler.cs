@@ -98,6 +98,7 @@ public static class ShipClassCompiler
             c.DoorsBelow = hb.DoorsBelow;
             c.Solids = new ShipSolids(c);
             FunctionTable.Build(c);
+            Trains.Build(c);
             c.LayoutHash = LayoutHash(c);
             return c;
         }

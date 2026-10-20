@@ -1,5 +1,5 @@
 # Plan: magazines (a 4.5 deepening)
-Status: **draft, every question decided** (the user, 2026-10-20: "Decided" below); research filed; no step started
+Status: **every question decided** (the user, 2026-10-20: "Decided" below); research filed; V0 done 2026-10-20
 Updated: 2026-10-20
 
 The fine-tune pass for magazines: how a flash gets to the charges, what happens once they burn, and what the ship
@@ -247,6 +247,43 @@ follows the dependencies: the fake turrets first, because the chain means nothin
   - `shipgen magazine DESIGN [--mount N] [--discipline D] [--flooded S]` lights one magazine or station, and prints the
     chain, the race's pressure by the ms, what broke, d, and the tier. It's the race alone, like `burst`.
   - Records today's numbers here.
+  - **Done 2026-10-20.** What it came to:
+    - **The trains are class data** (`ShipClass.Train(mount)`, `Trains.cs`), top first. An enclosed mount
+      (`ShipClass.Enclosed`, a gunhouse on a barbette or a light one) has gunhouse > working chamber (its barbette) >
+      handling room > magazine. A casemate has casemate > magazine. A shield's train starts at its handling room, or at
+      the magazine without one. `StationOfPart` and `StationOfRoom` find a part's or room's place in it.
+    - **`shipgen magazine DESIGN...`** lists each magazine (tonnes, volume, its place against the waterline, the mounts
+      it feeds) and each mount's train. It already shows V1's problem: V25's 88 mm and Chatham's 6″ come out as gunhouses
+      with working chambers. Seydlitz's 88 mm magazines list 0 m³ (a stowage quirk, not this plan's).
+    - **`damage-history`** has a magazines line: magazines set off per 100 hits (and per 100 hits on plate over 6″), the
+      tiers (all severed until V3), and charges lit in a train per 100 hits with the stations each (0 until V2).
+      `EffectsResult.Stations` carries the count.
+    - **The sim is unchanged:** the same runs as before, case by case.
+  - **Today's numbers** (`damage-history`, 40 runs a case; "lost" is the share of runs lost to a magazine):
+
+    | Case | Lost | Set off per 100 hits | How |
+    |---|---|---|---|
+    | Jutland: British APC on Seydlitz (the count) | 28% | 1.58 | turret 11 |
+    | Seydlitz, Jutland, 21 heavy hits | 25% | 1.32 | turret 10 |
+    | Derfflinger, Jutland | 23% | 0.97 | turret 9 |
+    | Lion, Jutland | 8% | 0.60 | turret 3 |
+    | Tiger, Jutland | 10% | 0.59 | turret 3, spall 1 |
+    | Indefatigable, Jutland | 3% | 0.50 | turret 1 |
+    | Warspite, Jutland | 5% | 0.34 | turret 2 |
+    | Lion, Dogger Bank | 10% | 0.65 | turret 3, spall 1 |
+    | Chester, Jutland | 8% | 0.45 | turret 3 (its fake barbettes) |
+    | Kent, the Falklands | 0% | 0 | |
+    | Thirty 6″ HE on a battleship | 0% | 0 | |
+    | Destroyer under 6″ lyddite | 5% | 0.51 | handling room 2 |
+    | Orel, Tsushima | 3% | 0.05 | turret 1 |
+    | Mikasa, Tsushima | 8% | 0.20 | turret 3 |
+    | Yalu (Inflexible for Dingyuan) | 10% | 0.05 | turret 4 |
+    | Bismarck 1941 | 93% | 0.62 | turret 36, spall 1 |
+    | South Dakota 1942 | 25% | 1.09 | turret 9, spall 1 |
+    | Kirishima 1942 | 13% | 0.69 | turret 5 |
+    | Samar 1944 (a destroyer) | 3% | 0.83 | handling room 1 |
+    | WWII destroyer, 10 × 5″ | 13% | 1.30 | handling room 5 |
+    | WWII destroyer, 40 × 5″ | 28% | 0.91 | handling room 11 |
 - **V1. The housing.**
   - `housing` on batteries (gunhouse, shield, open); shipgen's turret types take it, and the calibre switch goes.
   - The designs say theirs: Chester and the Towns shield, the destroyers' guns shield, the rest as they are, checked

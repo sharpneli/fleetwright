@@ -123,6 +123,8 @@ static class DamageHistory
     sealed class Ship
     {
         public int Entity, Hits, Killed, Wounded, FlashKilled, FlashWounded, Flashes, Fires, BeltThrough, BeltHoled, MainBelt, Magazine;
+        /// <summary>Hits that lit charges in an ammunition train, and the stations they lit (docs/battle/magazines.md).</summary>
+        public int TrainHits, Stations;
         public double TurretMin, LostMin = double.NaN, SilentMin = double.NaN, DirMin = double.NaN, SteerMin = double.NaN;
         public double WaterT, PeakT, MaxList, Speed = 1, Power = 1;
         public MagazineVia Via;
@@ -235,6 +237,7 @@ static class DamageHistory
                 (r.Killed, r.Wounded, r.Fires, r.Magazine) = (r.Killed + fx.Killed, r.Wounded + fx.Wounded, r.Fires + (fx.Fire ? 1 : 0), r.Magazine + (fx.Magazine ? 1 : 0));
                 if (fx.Magazine)
                     r.Via = fx.MagazineVia;
+                (r.TrainHits, r.Stations) = (r.TrainHits + (fx.Stations > 0 ? 1 : 0), r.Stations + fx.Stations);
                 if (fx.Magazine && fx.MagazineVia == MagazineVia.Turret)
                     tally.TurretVia[fx.Part >= 0 && fx.Part < target.Components.Length ? $"{target.Components[fx.Part].Kind} {t.Outcome} {(int)(w.Damage.LastPath.Crossings.ToArray().Where(c => c.T < t.StopT && c.Plate is >= PlateKind.SideArmour and <= PlateKind.PartArmour).Select(c => c.Mm).DefaultIfEmpty(0).Max())}mm" : "?"] =
                         tally.TurretVia.GetValueOrDefault(fx.Part >= 0 && fx.Part < target.Components.Length ? $"{target.Components[fx.Part].Kind} {t.Outcome} {(int)(w.Damage.LastPath.Crossings.ToArray().Where(c => c.T < t.StopT && c.Plate is >= PlateKind.SideArmour and <= PlateKind.PartArmour).Select(c => c.Mm).DefaultIfEmpty(0).Max())}mm" : "?") + 1;
@@ -399,6 +402,12 @@ static class DamageHistory
             100.0 * rs.Count(r => r.Magazine > 0) / n, rs.Any(r => r.Magazine > 0) ? " (" + string.Join(", ", rs.Where(r => r.Magazine > 0).GroupBy(r => r.Via)
                 .Select(g => $"{g.Key} {g.Count()}")) + ")" : "") + (lost.Count == 0 ? "" : "; runs " +
             string.Join(" ", lost.Select(r => string.Format(Inv, "{0}:{1}@{2:0}", rs.IndexOf(r), r.Loss.ToString()[0], r.LostMin)))));
+        // the magazines (docs/battle/magazines.md): every magazine set off is lost with the ship until the venting race (V3)
+        // gives the tiers; trains lit from V2
+        int set = rs.Sum(r => r.Magazine), trains = rs.Sum(r => r.TrainHits);
+        Console.WriteLine(string.Format(Inv, "    magazines: set off {0:0.##} per 100 hits ({1:0.##} per 100 hits on plate over 6″); tiers: severed {2}, " +
+            "the rest come with the venting race; charges lit in a train by {3:0.#} per 100 hits, {4:0.#} stations each", 100.0 * set / hits,
+            100.0 * set / Math.Max(ty.Heavy.Sum() + ty.Medium.Sum(), 1), set, 100.0 * trains / hits, trains == 0 ? 0 : (double)rs.Sum(r => r.Stations) / trains));
         if (ty.TurretVia.Count > 0)
             Console.WriteLine("    turret flashes by the part and the plate got through: " + string.Join(", ", ty.TurretVia.OrderByDescending(kv => kv.Value).Select(kv => $"{kv.Key} {kv.Value}")));
         Console.WriteLine($"    record: {dc.Record}");

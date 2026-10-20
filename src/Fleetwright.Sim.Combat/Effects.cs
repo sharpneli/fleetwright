@@ -39,6 +39,9 @@ public struct EffectsResult
     /// <summary>The magazine set off (a room of the class), when <see cref="Magazine"/>; else -1.</summary>
     public int MagazineRoom;
     public MagazineVia MagazineVia;
+    /// <summary>The stations of an ammunition train whose charges this hit lit, the magazine's own among them
+    /// (docs/battle/magazines.md V2).</summary>
+    public int Stations;
     /// <summary>The hull girder cut through (an underwater explosion's, 4.6): the ship breaks in two.</summary>
     public bool Broken;
     /// <summary>E3: a plate that held threw spall off its back.</summary>

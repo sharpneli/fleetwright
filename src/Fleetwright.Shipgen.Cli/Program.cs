@@ -207,6 +207,9 @@ public static class Program
         shipgen burst [DESIGN --room KIND[:n] --filler KG --explosive NAME --calibre MM]
             a burst's gas in a closed space (docs/battle/shells-armour-damage.md E5): the cascade over the cell graph,
             what ruptured, the doors blown, the spaces reached and what each felt; with no charge, damage/11's cases
+        shipgen magazine [DESIGN...]
+            the magazines alone (docs/battle/magazines.md V0): each magazine's tonnes, place against the waterline and
+            the mounts it feeds; each mount's ammunition train, the stations a flash runs along down to the magazine
         shipgen frag [TEMPLATE --calibre MM]
             a burst's pieces (docs/battle/shells-armour-damage.md E1) by the game's generator against damage/13's anchors
             (Okun's 8" HE table, WDR 51's speed and knee, Boise), or one shell template at a calibre
@@ -319,6 +322,8 @@ public static class Program
                 "burst" => BurstBench.Run(a.Positional.ElementAtOrDefault(0) ?? "destroyer", n => LoadDesign(Resolve(a, n)),
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
                     new BurstBench.Options(a.Get("room"), D(a, "filler", 0), a.Get("explosive") ?? "TNT", D(a, "calibre", 152))),
+                "magazine" => MagazineBench.Run(a.Positional, n => LoadDesign(Resolve(a, n)),
+                    a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json")),
                 "burn" => BurnBench.Run(a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json")),
                 "fire-history" => FireHistory.Run(a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), a.Int("runs", 20),
                     a.Get("case"), a.Get("hours") is null ? null : D(a, "hours", 4), n => LoadDesign(Resolve(a, n)), a.Has("trace")),

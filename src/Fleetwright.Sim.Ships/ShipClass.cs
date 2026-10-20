@@ -51,6 +51,8 @@ public sealed class ShipClass
     internal DeckPlate[] deckPlates = [];
     internal FunctionRow[] functions = [];
     internal int[] functionNodes = [], mountOfComponent = [];
+    internal StationRow[] stations = [];
+    internal Slice[] trains = [];
     internal double[] powerKn = [], powerShp = [];
     internal string[] componentIds = [], turretTypeIds = [], cellIds = [], roomIds = [], bulkheadIds = [], deckIds = [], tierIds = [],
         sectionIds = [], sidePlateIds = [], armourBulkheadIds = [], inclinedIds = [], materials = [];
@@ -134,6 +136,36 @@ public sealed class ShipClass
     public ReadOnlySpan<MountRow> Mounts => mounts;
     public ReadOnlySpan<TurretTypeRow> TurretTypes => turretTypes;
     public ReadOnlySpan<BarbetteRow> Barbettes => barbettes;
+
+    /// <summary>A mount's ammunition train (docs/battle/magazines.md), top first: an enclosed mount's gunhouse and working
+    /// chamber, a casemate, the handling room, the magazine; a shield's starts below the deck. None for a mount without a
+    /// magazine.</summary>
+    public ReadOnlySpan<StationRow> Train(int mount) => stations.AsSpan(trains[mount].Start, trains[mount].Count);
+
+    /// <summary>The station of a mount's train that a part is (its gunhouse, its barbette, its casemate), or -1.</summary>
+    public int StationOfPart(int mount, int component)
+    {
+        var t = Train(mount);
+        for (int i = 0; i < t.Length; i++)
+            if (t[i].Part == component)
+                return i;
+        return -1;
+    }
+
+    /// <summary>The station of a mount's train that a room is (its handling room, its magazine), or -1.</summary>
+    public int StationOfRoom(int mount, int room)
+    {
+        var t = Train(mount);
+        for (int i = 0; i < t.Length; i++)
+            if (t[i].Room == room)
+                return i;
+        return -1;
+    }
+
+    /// <summary>A gunhouse proper: a turret the mount's crew works inside, on a barbette or a light one (a dual-purpose
+    /// mount's), with its train down through the trunk.</summary>
+    public bool Enclosed(int mount) => mounts[mount].Turret && turretTypes[mounts[mount].Type].Shape is TurretShape.Bb or TurretShape.Dp;
+
     public ReadOnlySpan<FunnelRow> Funnels => funnels;
     public ReadOnlySpan<ShaftLineRow> ShaftLines => shaftLines;
     public ReadOnlySpan<RudderRow> Rudders => rudders;

@@ -143,6 +143,21 @@ public readonly record struct TurretTypeRow
 
 public readonly record struct BarbetteRow(int Component, int Mount, double X, double Y, double R);
 
+/// <summary>Where a mount's charges pass on their way up from the magazine (docs/battle/magazines.md): an enclosed mount's
+/// gunhouse and working chamber, a casemate, the handling room, the magazine.</summary>
+public enum StationKind : byte
+{
+    Gunhouse,
+    Chamber,
+    Casemate,
+    Handling,
+    Magazine,
+}
+
+/// <summary>A station of a mount's ammunition train, top first: a part (the gunhouse, the barbette's working chamber, a
+/// casemate) or a room (the handling room, the magazine), and below it the door or scuttle to the next.</summary>
+public readonly record struct StationRow(StationKind Kind, int Part, int Room);
+
 /// <summary>A propellant's facts for its flash and smoke (docs/visuals/muzzle-flashes.md, "What the model takes";
 /// research/vfx/muzzle-flash-smoke-research.md §3.1). A family is a named set of these (<see cref="Propellants"/>); a
 /// later propellant system gives its own.</summary>
