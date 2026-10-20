@@ -576,7 +576,7 @@ public static class GivenHits
         rep.MainMounts += main;
         rep.DirectorsWorking += dirs;
         rep.Directors += kk.DirectorWorks.Length;
-        bool lost = kk.Status != ShipStatus.Afloat, slowed = speed < SlowShare, steer = kk.Steering != Steering.Free;
+        bool lost = kk.Status != ShipStatus.Afloat, slowed = speed < SlowShare, steer = kk.Steering is Steering.Jammed or Steering.Lost or Steering.Engines;
         rep.Lost += lost ? 1 : 0;
         rep.Slowed += slowed ? 1 : 0;
         rep.SteeringLost += steer ? 1 : 0;

@@ -48,7 +48,7 @@ public static class CoarseMotion
 
         // the helm: the turn's curvature and how far it goes (or a straight leg's length to its end), the leg's line
         double curv = 0, dist = double.PositiveInfinity, course = double.NaN;
-        bool free = s.steering[i] == Steering.Free;   // damage: a jammed rudder turns for ever, one lost trails amidships
+        bool free = s.steering[i] is Steering.Free or Steering.Hand or Steering.Engines;   // damage: a jammed rudder turns for ever, one lost trails amidships (by hand or engines she steers, roughly)
         switch (free ? s.helm[i] : Helm.None)
         {
             case Helm.Rudder:

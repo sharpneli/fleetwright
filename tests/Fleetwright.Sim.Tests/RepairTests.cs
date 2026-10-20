@@ -157,6 +157,54 @@ public class RepairTests(ITestOutputHelper output)
         Assert.True(rn > 20, "the RN holds its speed for half an hour first");
     }
 
+    /// <summary>A dreadnought at 15 kn with parts wrecked (nodes), stepped for a while; her steering then.</summary>
+    static Steering SteeringAfter(ShipClass c, int[] nodes, double minutes)
+    {
+        var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), 3, Settings);
+        w.Apply(ShipSystem.Spawn(w.Ships.AddClass(c), 56, 4, 0, 15));
+        foreach (int node in nodes)
+            w.Apply(DamageSystem.Wreck(1, node, PartState.Disabled));
+        w.AdvanceTo(w.Time + (long)(minutes * 60_000));
+        return w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(1)).Steering;
+    }
+
+    [Fact]
+    public void Steering_lost_at_the_gear_goes_to_the_engines_then_to_hand_and_a_wrecked_rudder_stays_on_the_engines()
+    {
+        var c = Class("dreadnought");
+        int room = Array.FindIndex(c.Rooms.ToArray(), r => r.Kind == RoomKind.Steering);
+        int[] rudders = [.. Enumerable.Range(0, c.Components.Length).Where(i => c.Components[i].Kind == ComponentKind.Rudder)];
+        Assert.True(room >= 0 && rudders.Length > 0);
+        int[] gear = [c.RoomNode(room)];
+        var (g0, g2, g30) = (SteeringAfter(c, gear, 0.5), SteeringAfter(c, gear, 2), SteeringAfter(c, gear, 30));
+        var (r2, r30) = (SteeringAfter(c, rudders, 2), SteeringAfter(c, rudders, 30));
+        output.WriteLine($"the steering gear wrecked: {g0} at 30 s, {g2} at 2 min, {g30} at 30 min; the rudders ({rudders.Length}): {r2} at 2 min, {r30} at 30 min");
+        Assert.True(g0 is Steering.Jammed or Steering.Lost);
+        Assert.Equal(Steering.Engines, g2);
+        Assert.Equal(Steering.Hand, g30);
+        Assert.Equal(Steering.Engines, r2);
+        Assert.Equal(Steering.Engines, r30);
+    }
+
+    [Fact]
+    public void About_the_tables_share_of_disabled_mounts_come_back_within_two_hours()
+    {
+        var c = Class("dreadnought");
+        var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), 3, Settings);
+        int cls = w.Ships.AddClass(c), mount = c.Mounts[0].Component, n = 40;
+        for (int i = 0; i < n; i++)
+        {
+            w.Apply(ShipSystem.Spawn(cls, 56 + 0.05 * i, 4, 0, 0));
+            w.Apply(DamageSystem.Wreck(w.Ships.NewestEntity, mount, PartState.Disabled));
+        }
+        w.AdvanceTo(w.Time + 2 * 3_600_000);
+        int back = 0;
+        for (int e = 1; e <= n; e++)
+            back += w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(e)).State[mount] == PartState.Damaged ? 1 : 0;
+        output.WriteLine($"{back} of {n} disabled main mounts back (damaged) after 2 h; the table's chance {Settings.RepairPartShare[0]:0%}");
+        Assert.InRange(back, 0.1 * n, 0.55 * n);
+    }
+
     [Fact]
     public void A_hole_beyond_repair_at_sea_is_never_worked_on()
     {

@@ -780,9 +780,9 @@ public sealed class ShipStore
     {
         this.powerCap[slot] = Math.Clamp(powerCap, 0, 1);
         this.steering[slot] = steering;
-        jamRudder[slot] = steering == Steering.Jammed ? jamRudderRad : 0;
+        jamRudder[slot] = steering is Steering.Jammed or Steering.Engines ? jamRudderRad : 0;
         powerOrder[slot] = Capped(slot, powerOrder[slot]);
-        if (steering != Steering.Free)
+        if (steering is Steering.Jammed or Steering.Lost)
             rudder[slot] = jamRudder[slot];
     }
 

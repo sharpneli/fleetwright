@@ -522,6 +522,8 @@ public sealed partial class MapScene
         {
             Steering.Jammed => "RUDDER JAMMED",
             Steering.Lost => "steering lost",
+            Steering.Hand => "steering by hand",
+            Steering.Engines => "steering by engines",
             _ => "steering",
         };
         var a = c.Attitude[i];

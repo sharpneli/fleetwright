@@ -282,6 +282,9 @@ public sealed class DamageSystem : IWorldSystem
                 {
                     var rng = stream.Derive(0x3EC4u).Derive((ulong)world.Time.Ms).Derive((ulong)c.A);
                     Recompute(world, slot, k, ref rng);
+                    Ready(slot, k);
+                    if (Repairs.Busy(k.Class, k))
+                        Wake(world, slot, k);   // damage control has work to do (DC7)
                 }
                 touched = true;
                 break;
@@ -595,7 +598,7 @@ public sealed class DamageSystem : IWorldSystem
             Blew(world, slot, k, e.MagazineRoom, hit.Source == HitSource.Torpedo ? BlastCause.Torpedo : BlastCause.Shell, hit.Point);
         else if (broke)
             Lose(world, slot, k, LossKind.BrokeInTwo);
-        else if (k.Status == ShipStatus.Afloat && (e.BreachM2 > 0 || e.Fire))
+        else if (k.Status == ShipStatus.Afloat && (e.BreachM2 > 0 || e.Fire || Repairs.Busy(cls, k)))
             Wake(world, slot, k);   // water or fire: its steps begin (or come sooner)
     }
 
@@ -612,7 +615,10 @@ public sealed class DamageSystem : IWorldSystem
         {
             bool jam = rng.NextDouble() < settings.RudderJamChance;
             (k.Steering, k.JamRudderRad) = jam ? (Steering.Jammed, ships.Store[slot].Rudder) : (Steering.Lost, 0);
+            (k.SteerCause, k.SteerSinceMs) = (Repairs.RudderHit(k) ? SteerCause.Rudder : SteerCause.Gear, Math.Max(world.Time.Ms, 1));
         }
+        else if (steers && k.Steering != Steering.Free && k.SteerCause == SteerCause.Gear)
+            (k.Steering, k.JamRudderRad, k.SteerCause) = (Steering.Free, 0, SteerCause.None);   // the gear answers again (DC7)
         k.Version++;
         var fx = HitEffect.None;
         if (k.Steering != steering)
@@ -839,7 +845,8 @@ public sealed class DamageSystem : IWorldSystem
         if (dt <= 0)
             return settings.FloodMs;
         Ready(slot, k);
-        Repairs.Step(cls, f, k, dt, now, ships.Store[slot].Speed, settings);   // her repair parties and DC Central (DC3-DC6)
+        var fix = stream.Derive(0xF1C5u).Derive((ulong)ships.Store[slot].Entity).Derive((ulong)now);
+        var repaired = Repairs.Step(cls, f, k, dt, now, ships.Store[slot].Speed, settings, ref fix);   // her repair parties and DC Central (DC3-DC7)
         var wet = stream.Derive(0xF1000Du).Derive((ulong)ships.Store[slot].Entity).Derive((ulong)now);
         var fl = Flooding.Step(cls, f, k, dt, k.PowerCap, ships.Store[slot].Speed, settings, ref wet);
         if (fl.Collapsed > 0)
@@ -858,14 +865,16 @@ public sealed class DamageSystem : IWorldSystem
             Lose(world, slot, k, how);
             return -1;
         }
-        if (fl.RoomsFlooded || fs.Changed)
+        if (fl.RoomsFlooded || fs.Changed || repaired == RepairChange.Parts)
             Recompute(world, slot, k, ref rng);
+        else if (repaired == RepairChange.Steering)
+            Hold(world, slot, k, force: true);
         if (fs.Abandoned > 0 || k.Smoked.AsSpan().Contains(true))
             Remind(world, slot, k);   // smoke's outages (B2) end on the clear event
         Hold(world, slot, k, force: false);
         if (k.Fires > 0 || Fires.Hot(k) || Math.Abs(k.WaterT - was) >= settings.FloodIdleT)
             return settings.FloodMs;
-        return k.WaterT > 0 || Holed(cls, k) ? settings.FloodIdleMs : -1;
+        return k.WaterT > 0 || Holed(cls, k) || Repairs.Busy(cls, k) ? settings.FloodIdleMs : -1;
     }
 
     /// <summary>Whether any hole is under the sea now.</summary>

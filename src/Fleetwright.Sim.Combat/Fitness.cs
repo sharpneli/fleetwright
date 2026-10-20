@@ -53,7 +53,7 @@ public enum FallOutCause : byte
 public readonly record struct FallOutRule(double SpeedShare, double GunsShare, double ListDeg, double WaterShare)
 {
     public FallOutCause Of(in Fitness f) =>
-        SpeedShare > 0 && f.Steering != Steering.Free ? FallOutCause.Steering
+        SpeedShare > 0 && f.Steering is Steering.Jammed or Steering.Lost or Steering.Engines ? FallOutCause.Steering
         : f.SpeedShare <= 0 || f.SpeedShare < SpeedShare ? FallOutCause.Speed
         : f.MainGunsShare < GunsShare ? FallOutCause.Guns
         : f.ListDeg > ListDeg ? FallOutCause.List

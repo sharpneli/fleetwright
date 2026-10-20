@@ -21,6 +21,21 @@ public enum RepairJob : byte
     RigPump,
     /// <summary>A collision mat over a cell's large holes near the waterline, from outside, the ship slowed (DC6).</summary>
     Mat,
+    /// <summary>Steering by hand or the steam gear aft rigged, the gear's failure (DC7).</summary>
+    Steering,
+    /// <summary>A disabled part brought back to damaged: a mount, a tube, a top, a machinery room (DC7).</summary>
+    Repair,
+    /// <summary>A room flooded out of action brought back once pumped down (DC7).</summary>
+    Restore,
+}
+
+/// <summary>What a repairs step changed that the ship must answer: her steering, or her parts (what she can do worked out
+/// again).</summary>
+public enum RepairChange : byte
+{
+    None,
+    Steering,
+    Parts,
 }
 
 /// <summary>REPAIRS (docs/battle/damage-control.md DC3; 09 §3-§4, 10 §5.1): her repair parties, one pool of men for fire
@@ -39,24 +54,154 @@ public static class Repairs
 
     /// <summary>The tiers of the doctrine's order, fire first (10 §5.1); flood first swaps the magazine's fires below the
     /// water's.</summary>
-    enum Tier : byte { Parts = 1, Pump = 2, Near = 3, Fire = 4, Water = 5, Door = 6, MagazineFire = 7 }
+    enum Tier : byte { Parts = 1, Pump = 2, Near = 3, Fire = 4, Steer = 5, Water = 6, Door = 7, MagazineFire = 8 }
 
-    public static void Step(ShipClass c, FloodModel f, ShipCondition k, double dt, long now, SimSettings s) =>
-        Step(c, f, k, dt, now, 0, s);
+    public static RepairChange Step(ShipClass c, FloodModel f, ShipCondition k, double dt, long now, SimSettings s)
+    {
+        var r = RandomStream.FromSeed(0xF1C5);
+        return Step(c, f, k, dt, now, 0, s, ref r);
+    }
 
-    public static void Step(ShipClass c, FloodModel f, ShipCondition k, double dt, long now, double speedMs, SimSettings s)
+    public static RepairChange Step(ShipClass c, FloodModel f, ShipCondition k, double dt, long now, double speedMs, SimSettings s,
+        ref RandomStream rng)
     {
         ref readonly var doc = ref k.DamageControl;
-        if (doc.Name is null || k.Status != ShipStatus.Afloat || !k.Damaged && k.Fires == 0)
-            return;
+        if (k.Status != ShipStatus.Afloat)
+            return RepairChange.None;
+        var change = Steer(c, k, now, s);
+        if (doc.Name is null || !k.Damaged && k.Fires == 0)
+            return change;
         Make(c, f, k, now, s);
         Watch(c, f, k, now, s);
         Counterflood(c, f, k, dt, now, s);
         Loosen(k, dt, speedMs, s);
         if (now >= k.NextPlanMs)
+        {
             Safe(c, f, k, now, speedMs, s);
+            Draw(c, f, k, s, ref rng);
+        }
         PlanIfDue(c, f, k, now, s);
-        Work(c, f, k, dt, now, speedMs, s);
+        var work = Work(c, f, k, dt, now, speedMs, s);
+        return work > change ? work : change;
+    }
+
+    // ------------------------------------------------------------------ steering and parts (DC7)
+
+    /// <summary>Whether her rudder itself is out (beyond repair at sea).</summary>
+    public static bool RudderHit(ShipCondition k)
+    {
+        var comps = k.Class.Components;
+        for (int i = 0; i < comps.Length; i++)
+            if (comps[i].Kind == ComponentKind.Rudder && k.State[i] >= PartState.Disabled)
+                return true;
+        return false;
+    }
+
+    /// <summary>Her shafts still turning.</summary>
+    static int Shafts(ShipClass c, ShipCondition k)
+    {
+        int n = 0;
+        var comps = c.Components;
+        for (int i = 0; i < comps.Length; i++)
+            n += comps[i].Kind == ComponentKind.Shaft && k.State[i] < PartState.Disabled && (k.Flags[i] & PartFlags.Down) == 0 ? 1 : 0;
+        return n;
+    }
+
+    /// <summary>The bridge steers by her engines once the steering's gone a while (10 §3: two shafts or more, a share of a
+    /// rudder's turn): the gear's failure waits there for a party to rig hand steering, the rudder's for good.</summary>
+    static RepairChange Steer(ShipClass c, ShipCondition k, long now, SimSettings s)
+    {
+        if (k.Steering is not (Steering.Jammed or Steering.Lost) || now - k.SteerSinceMs < s.EnginesSteerS * 1000 || Shafts(c, k) < 2)
+            return RepairChange.None;
+        k.Steering = Steering.Engines;
+        return RepairChange.Steering;
+    }
+
+    /// <summary>The part kinds damage control can fix at sea (the settings' columns): mounts, torpedo tubes, tops (their
+    /// directors and rangefinders), boiler and engine rooms; -1 none.</summary>
+    static int PartKind(ShipClass c, int node)
+    {
+        if (node < c.Components.Length)
+            return c.Components[node].Kind switch
+            {
+                ComponentKind.Main or ComponentKind.Secondary or ComponentKind.Aa or ComponentKind.Torpedo => 0,
+                ComponentKind.TorpedoTube => 1,
+                ComponentKind.Top => 2,
+                _ => -1,
+            };
+        return c.Rooms[node - c.Components.Length].Kind is RoomKind.BoilerRoom or RoomKind.EngineRoom ? 3 : -1;
+    }
+
+    /// <summary>Each part newly out drawn once: can it be fixed at sea (by its kind's chance), and how long; a room flooded
+    /// out of action its time to bring back once pumped down.</summary>
+    static void Draw(ShipClass c, FloodModel f, ShipCondition k, SimSettings s, ref RandomStream r)
+    {
+        for (int node = 0; node < k.State.Length; node++)
+        {
+            if (k.State[node] != PartState.Disabled || k.Fix[node] != 0)
+                continue;
+            if (k.Drowned[node])
+            {
+                bool machinery = PartKind(c, node) == 3;
+                double lo = s.RestoreMin[machinery ? 0 : 2], hi = s.RestoreMin[machinery ? 1 : 3];
+                (k.Fix[node], k.FixManMin[node]) = (1, (lo + r.NextDouble() * (hi - lo)) * s.RepairPartMen);
+                continue;
+            }
+            int kind = PartKind(c, node);
+            if (kind < 0 || r.NextDouble() >= s.RepairPartShare[kind])
+            {
+                k.Fix[node] = 2;
+                continue;
+            }
+            double a = s.RepairPartMin[2 * kind], b = s.RepairPartMin[2 * kind + 1];
+            (k.Fix[node], k.FixManMin[node]) = (1, (a + r.NextDouble() * (b - a)) * s.RepairPartMen);
+        }
+    }
+
+    /// <summary>Whether she has repairs still to come: steering to take over or rig, parts newly out or to fix, rooms to
+    /// bring back (her damage system keeps stepping her while so).</summary>
+    public static bool Busy(ShipClass c, ShipCondition k)
+    {
+        if (k.Steering is Steering.Jammed or Steering.Lost || k.Steering == Steering.Engines && k.SteerCause == SteerCause.Gear)
+            return true;
+        if (k.DamageControl.Name is null)
+            return false;
+        for (int node = 0; node < k.State.Length; node++)
+            if (k.State[node] == PartState.Disabled && (k.Fix[node] == 1 || k.Fix[node] == 0 && (k.Drowned[node] || PartKind(c, node) >= 0)))
+                return true;
+        return false;
+    }
+
+    /// <summary>A room's water as a share of its cells' capacity, and whether a party can work in it (not burning).</summary>
+    static (double Share, bool Burning) RoomWater(ShipClass c, FloodModel f, ShipCondition k, int room)
+    {
+        double w = 0, cap = 0;
+        bool burning = false;
+        foreach (int i in c.Links(c.Rooms[room].Cells))
+            (w, cap, burning) = (w + k.WaterM3[i], cap + f.Capacity[i], burning | k.CellFire[i]);
+        return (cap > 0 ? w / cap : 0, burning);
+    }
+
+    /// <summary>The section a part or room is in.</summary>
+    static int SectionOf(ShipClass c, int node)
+    {
+        if (node < c.Components.Length)
+        {
+            var b = c.Components[node].Bounds;
+            return c.SectionAt((b.X0 + b.X1) / 2);
+        }
+        foreach (int i in c.Links(c.Rooms[node - c.Components.Length].Cells))
+            return c.Cells[i].Section;
+        return 0;
+    }
+
+    /// <summary>The steering room (-1: none), its section (aft when there's none).</summary>
+    static (int Room, int Section) SteeringRoom(ShipClass c)
+    {
+        for (int r = 0; r < c.Rooms.Length; r++)
+            if (c.Rooms[r].Kind == RoomKind.Steering)
+                return (r, SectionOf(c, c.Components.Length + r));
+        return (-1, c.Sections.Length - 1);
     }
 
     // ------------------------------------------------------------------ speed (DC6)
@@ -377,9 +522,9 @@ public static class Repairs
     {
         int rank = (t, floodFirst) switch
         {
-            (Tier.MagazineFire, true) => 5,
-            (Tier.Door, true) => 7,
-            (Tier.Water, true) => 6,
+            (Tier.MagazineFire, true) => 6,
+            (Tier.Door, true) => 8,
+            (Tier.Water, true) => 7,
             _ => (int)t,
         };
         return rank * 1e9 + Math.Min(weight, 1e9 - 1);
@@ -469,6 +614,23 @@ public static class Repairs
             // a mat means stopping the ship: only for holes whose water the pumps can't keep up with
             if (flowH > 0 && Flooding.FullInflow(c, f, k, HitQuery.WaterOf(c, k.Attitude), i, s.FloodCd) > Pumps(c, k))
                 Offer(new Candidate(RepairJob.Mat, i, cells[i].Section, Score(Tier.Water, floodFirst, flowH * Value(c, i))), ref best);
+        }
+
+        // the steering: hand or the steam gear aft rigged when the gear failed (its room not flooded nor burning)
+        if (k.SteerCause == SteerCause.Gear && k.Steering is Steering.Jammed or Steering.Lost or Steering.Engines && !Taken(k, RepairJob.Steering, 0) &&
+            Valid(c, f, k, RepairJob.Steering, 0, s))
+            Offer(new Candidate(RepairJob.Steering, 0, SteeringRoom(c).Section, Score(Tier.Steer, floodFirst, 1)), ref best);
+
+        // the parts: weapons and their eyes, then machinery (the room's power first)
+        for (int node = 0; node < k.State.Length; node++)
+        {
+            if (k.State[node] != PartState.Disabled || k.Fix[node] != 1)
+                continue;
+            var job = k.Drowned[node] ? RepairJob.Restore : RepairJob.Repair;
+            if (Taken(k, job, node) || !Valid(c, f, k, job, node, s))
+                continue;
+            double weight = 1 + (PartKind(c, node) == 3 ? 2 : 1) * 1000 / Math.Max(k.FixManMin[node], 1);
+            Offer(new Candidate(job, node, SectionOf(c, node), Score(Tier.Parts, floodFirst, weight)), ref best);
         }
 
         // the portable pumps: rigged where water stands and the holes don't beat them, the most water (by what it is) first
@@ -591,6 +753,26 @@ public static class Repairs
                 int h = at * ShipCondition.HoleClasses + (int)HoleClass.Mat;
                 return k.HoleOpenM2[h] > 0 && MatReach(c, k, at, k.HoleZ[h], s);
             }
+            case RepairJob.Steering:
+            {
+                if (k.SteerCause != SteerCause.Gear || k.Steering is not (Steering.Jammed or Steering.Lost or Steering.Engines))
+                    return false;
+                int room = SteeringRoom(c).Room;
+                if (room < 0)
+                    return true;
+                var (share, burning) = RoomWater(c, f, k, room);
+                return !burning && share < 0.5;
+            }
+            case RepairJob.Repair:
+            case RepairJob.Restore:
+            {
+                if (k.State[at] != PartState.Disabled || k.Fix[at] != 1)
+                    return false;
+                if (at < c.Components.Length)
+                    return true;
+                var (share, burning) = RoomWater(c, f, k, at - c.Components.Length);
+                return !burning && share <= (job == RepairJob.Restore ? s.RestoreShare : s.RoomFloodedShare);
+            }
             default:
             {
                 int h = at * ShipCondition.HoleClasses + (int)Class(job);
@@ -619,13 +801,16 @@ public static class Repairs
     static double ManMin(ShipCondition k, RepairJob job, int at, SimSettings s)
     {
         double each = s.RepairJobManMin[(int)job];
+        if (job is RepairJob.Repair or RepairJob.Restore)
+            return k.FixManMin[at];
         return job is RepairJob.Plug or RepairJob.Patch or RepairJob.Mat ? each * Math.Max(k.HoleOpenN[at * ShipCondition.HoleClasses + (int)Class(job)], 1) : each;
     }
 
     /// <summary>The parties at their water jobs: their men (at most twice the job's crew) at the doctrine's skill, slower in
     /// the dark and on a list; a job done is applied and the party freed (its next job at the next plan).</summary>
-    static void Work(ShipClass c, FloodModel f, ShipCondition k, double dt, long now, double speedMs, SimSettings s)
+    static RepairChange Work(ShipClass c, FloodModel f, ShipCondition k, double dt, long now, double speedMs, SimSettings s)
     {
+        var change = RepairChange.None;
         bool slow = Math.Abs(speedMs) / Kn <= s.MatKn;
         double env = k.DamageControl.Skill / ((k.PowerCap < s.RepairDarkPower ? s.RepairDarkK : 1) * (1 + s.RepairListPerDeg * Math.Abs(k.Attitude.HeelDeg)));
         for (int p = 0; p < k.PartyCount; p++)
@@ -644,14 +829,28 @@ public static class Repairs
             party.Done += men * party.Skill * env * dt / 60;
             if (party.Done < ManMin(k, party.Job, party.JobAt, s))
                 continue;
-            Apply(c, f, k, party.Job, party.JobAt, s);
+            var done = Apply(c, f, k, party.Job, party.JobAt, s);
+            if (done > change)
+                change = done;
             (party.Job, party.JobAt, party.Done) = (RepairJob.None, -1, 0);
         }
+        return change;
     }
 
     /// <summary>A job done: the edge marked, or the cell's holes of its class worked on (what's left of them leaking).</summary>
-    static void Apply(ShipClass c, FloodModel f, ShipCondition k, RepairJob job, int at, SimSettings s)
+    static RepairChange Apply(ShipClass c, FloodModel f, ShipCondition k, RepairJob job, int at, SimSettings s)
     {
+        switch (job)
+        {
+            case RepairJob.Steering:
+                (k.Steering, k.JamRudderRad) = (Steering.Hand, 0);
+                return RepairChange.Steering;
+            case RepairJob.Repair:
+            case RepairJob.Restore:
+                (k.State[at], k.Fix[at], k.Drowned[at]) = (PartState.Damaged, 0, false);
+                k.Version++;
+                return RepairChange.Parts;
+        }
         if (job is RepairJob.Door or RepairJob.Redog or RepairJob.Caulk or RepairJob.Shore)
         {
             int p = f.Edges[at].Pool;
@@ -663,12 +862,12 @@ public static class Repairs
                 RepairJob.Caulk => m | JoinMark.Caulked,
                 _ => (m & JoinMark.Shored) != 0 ? m | JoinMark.ShoredTwice : m | JoinMark.Shored,
             };
-            return;
+            return RepairChange.None;
         }
         if (job == RepairJob.RigPump)
         {
             (k.PumpsIn[at], k.PumpsRigged) = ((byte)(k.PumpsIn[at] + 1), k.PumpsRigged + 1);
-            return;
+            return RepairChange.None;
         }
         int h = at * ShipCondition.HoleClasses + (int)Class(job);
         double left = job switch
@@ -680,6 +879,7 @@ public static class Repairs
             _ => Flowing(c, f, k, at, k.HoleZ[h]) ? s.RepairPatchFlowLeft : s.RepairPatchLeft,
         };
         k.Worked(at, h, left);
+        return RepairChange.None;
     }
 
     /// <summary>Whether the sea still comes in at holes at a height: under the sea outside, the water inside under them.</summary>

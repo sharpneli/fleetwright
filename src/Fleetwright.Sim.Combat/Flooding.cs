@@ -363,7 +363,11 @@ public static class Flooding
             foreach (int i in c.Links(rooms[r].Cells))
                 (held, cap) = (held + w[i], cap + f.Capacity[i]);
             if (cap > 0 && held >= s.RoomFloodedShare * cap)
-                res.RoomsFlooded |= k.Worsen(node, PartState.Disabled);
+            {
+                bool drowned = k.Worsen(node, PartState.Disabled);
+                res.RoomsFlooded |= drowned;
+                k.Drowned[node] |= drowned;   // to come back once pumped down (DC7)
+            }
         }
         return res;
     }

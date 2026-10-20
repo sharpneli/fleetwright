@@ -1,5 +1,5 @@
 # Plan: damage control (a 4.5 deepening)
-Status: **agreed with the user 2026-10-20** ("Decided" below); DC0-DC6 done 2026-10-20, DC7 next.    Updated: 2026-10-20
+Status: **agreed with the user 2026-10-20** ("Decided" below); DC0-DC7 done 2026-10-20, DC8 next.    Updated: 2026-10-20
 
 The fine-tune pass for damage control: what the crew does about a hit once it has landed. Firefighting came first, as
 this pass's first slice (`fire.md`, decision 1). This plan adds the water and the repairs, and both draw on the same
@@ -836,6 +836,50 @@ on the yardstick bench.
   rooms flooded out of action brought back once dewatered (the plant's power with them).
 - **Tests:** a ship that lost her steering takes it back by hand in ~15 min and circles no more; the share of disabled
   mounts back within the hour.
+- **Built (done 2026-10-20):**
+  - **Steering has a cause** (`SteerCause`, set when it goes):
+    - **The rudder** when a rudder component is out: beyond repair at sea.
+    - **The gear** otherwise: the steering room, its power, a timed outage.
+  - **Gear that answers again gives steering back.** When the gear works again (power back after E4's or E7's timed trip,
+    a room repaired), she's Free again. Before this, a ship whose steering tripped with her power lost it for the
+    battle: the "disabled for good" case decision 5 asked to fix.
+  - **The ladder** (10 §3) [EST]:
+    1. Jammed or lost.
+    2. **Engines** a minute later if two shafts turn (`Steering.Engines`: a share of 0.3 of hard over about the jam, so a
+       rudder jammed hard over still circles, wider).
+    3. **Hand** once a party has rigged hand or steam steering aft (`RepairJob.Steering`, 60 man-minutes, its own tier
+       between the water and the other fires; the steering room not flooded past half nor burning). This applies only
+       when the gear was the cause. `Steering.Hand`: the rudder answers at a third of its rate.
+
+    Hand steering doesn't make her fall out (`Fitness`); jammed, lost and engines do. Coarse motion takes hand and
+    engines as steering.
+  - **Parts** (`Repairs.Draw` at each plan): a part newly disabled is drawn once for whether it can be fixed at sea, by
+    kind, and how long it takes [EST, 06 §5.1]. The time is at 4 men; a party of 16 puts 8 on it.
+
+    | Part | Chance | Time |
+    |---|---|---|
+    | Mounts | 30% | 20-60 min |
+    | Torpedo tubes | 40% | 20-40 min |
+    | Tops (their directors and rangefinders) | 50% | 15-30 min |
+    | Boiler and engine rooms (relit, cross-connected) | 30% | 30-60 min |
+
+    Funnels, masts, shafts, rudders, the superstructure and the hull never come back.
+    - `RepairJob.Repair`, the lowest tier: done, the part is damaged again (working, a room at half), and what she can do
+      is worked out again.
+  - **Rooms flooded out of action** (`ShipCondition.Drowned`, marked by the flooding) come back once pumped under a
+    quarter of their capacity (`RepairJob.Restore`: machinery 30-60 min, other rooms 10-20).
+  - **Ships with repairs to come keep stepping** (`Repairs.Busy`), and a hit or the dev's `Wreck` wakes them.
+  - Battle-long turret jams (`NonPen.Battle`: a ring distorted) stay as they are: no cause on the list can be fixed at
+    sea.
+  - **Tests** (`RepairTests`):
+    - the steering gear wrecked: jammed at 30 s, engines at 2 min, hand at 30 min;
+    - both rudders wrecked: engines at 2 min and at 30 min;
+    - 14 of 40 disabled main mounts back within 2 h (the table's 30%).
+- **What moved:**
+  - Hits bench, 180 min: Iron Duke 300 → 479 t (the draws moved: steps now come for repairs); a destroyer 217 → 228 t;
+    the rest within the noise.
+  - **Squadrons, 90 min:** Queen Mary, lost to her magazine in every run since DC1, lives this time and steers by her
+    engines (one seed; the draws moved). The damage system 49 µs a call.
 
 ### DC8 What's seen and logged
 - Log lines in symptom → cause form; the list and slowing as the enemy sees them (already from the attitude and speed).

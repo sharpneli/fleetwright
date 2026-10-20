@@ -1318,10 +1318,11 @@ public sealed record SimSettings
     public double ClosureCap { get; init; } = 0.9;
 
     /// <summary>The repair parties' water jobs (docs/battle/damage-control.md DC3; 09 §4, by <c>RepairJob</c>: none, door,
-    /// re-dog, caulk, shore, plug, patch, plating, rig a pump, mat): each job's man-minutes for a drilled crew (a plug's and a patch's a
+    /// re-dog, caulk, shore, plug, patch, plating, rig a pump, mat, steering by hand, a part, a room pumped out: the last two
+    /// drawn per part, <see cref="RepairPartMin"/>): each job's man-minutes for a drilled crew (a plug's and a patch's a
     /// hole) and its crew; a party puts at most <see cref="RepairCrewsAJob"/> crews on one [EST: 09 §4's times × men].</summary>
-    public double[] RepairJobManMin { get; init; } = [0, 2, 6, 60, 80, 6, 80, 60, 40, 1800];
-    public double[] RepairJobMen { get; init; } = [1, 2, 2, 3, 4, 2, 4, 3, 4, 20];
+    public double[] RepairJobManMin { get; init; } = [0, 2, 6, 60, 80, 6, 80, 60, 40, 1800, 60, 0, 0];
+    public double[] RepairJobMen { get; init; } = [1, 2, 2, 3, 4, 2, 4, 3, 4, 20, 4, 4, 4];
 
     /// <summary>The safe speed (DC6; 09 §2.2): a holed space's boundaries kept under this share of their rating with the ram
     /// head on them, at least <see cref="SafeMinKn"/> (steerage); no faster than <see cref="HullWorkKn"/> while there's work
@@ -1329,6 +1330,22 @@ public sealed record SimSettings
     /// faster than <see cref="MatKn"/> while a collision mat goes over (09 §4: the ship slowed to a crawl), which reaches
     /// holes within <see cref="MatReachM"/> of the sea and leaves <see cref="MatLeft"/> of them [EST].</summary>
     public double SafeLoadShare { get; init; } = 0.8;
+
+    /// <summary>Steering and parts (DC7; 10 §3, 06 §5.1) [EST]: by hand or steam a rudder answers at
+    /// <see cref="HandRudderShare"/> of its rate, by engines within <see cref="EnginesRudderShare"/> of hard over about its
+    /// jam, taken up <see cref="EnginesSteerS"/> after the steering goes when two shafts turn. A disabled part can be
+    /// fixed at sea with a chance by kind (<see cref="RepairPartShare"/>: mounts, torpedo tubes, tops with their
+    /// directors and rangefinders, boiler and engine rooms) in a time drawn between two (<see cref="RepairPartMin"/>, pairs,
+    /// minutes, × <see cref="RepairPartMen"/> men); a room flooded out of action comes back once pumped under
+    /// <see cref="RestoreShare"/> of its capacity in <see cref="RestoreMin"/> (machinery, then the rest: pairs, minutes).</summary>
+    public double HandRudderShare { get; init; } = 1.0 / 3;
+    public double EnginesRudderShare { get; init; } = 0.3;
+    public double EnginesSteerS { get; init; } = 60;
+    public double[] RepairPartShare { get; init; } = [0.3, 0.4, 0.5, 0.3];
+    public double[] RepairPartMin { get; init; } = [20, 60, 20, 40, 15, 30, 30, 60];
+    public double RepairPartMen { get; init; } = 4;
+    public double RestoreShare { get; init; } = 0.25;
+    public double[] RestoreMin { get; init; } = [30, 60, 10, 20];
     public double SafeMinKn { get; init; } = 3;
     public double HullWorkKn { get; init; } = 15;
     public double HullWorkLoosen { get; init; } = 0.15;

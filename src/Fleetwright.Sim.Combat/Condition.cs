@@ -115,6 +115,20 @@ public enum Steering : byte
     Free,
     Jammed,
     Lost,
+    /// <summary>Steered by hand or the steam gear aft, rigged by a party (docs/battle/damage-control.md DC7): the rudder
+    /// answers at a share of its rate.</summary>
+    Hand,
+    /// <summary>Steered by her engines (DC7): a share of hard over about the rudder's jam angle (amidships when it trails).</summary>
+    Engines,
+}
+
+/// <summary>Why her steering went (DC7): the gear (the steering room, its power: damage control can rig it by hand, and
+/// it answers again once the gear does), or the rudder itself (beyond repair at sea: steered by engines at best).</summary>
+public enum SteerCause : byte
+{
+    None,
+    Gear,
+    Rudder,
 }
 
 /// <summary>Whether a ship is afloat or going down (its magazine gone, foundered or capsized: <see cref="LossKind"/>).
@@ -204,6 +218,13 @@ public sealed class ShipCondition
     /// now (-1: none), the tonnes let in so far, and when the valves went to hand (world ms, 0: they haven't).</summary>
     /// <summary>The speed damage control asks for (DC6; knots, infinite: none), since when it has asked for less than she
     /// makes (world ms), and her orders to hold speed whatever it asks (the player's override, the benches').</summary>
+    /// <summary>Why her steering went and when (DC7); each node's repair at sea (DC7: 0 not drawn yet, 1 can be fixed, 2
+    /// can't), its man-minutes, and the rooms flooded out of action (to come back once pumped down).</summary>
+    public SteerCause SteerCause;
+    public long SteerSinceMs;
+    public byte[] Fix = [];
+    public double[] FixManMin = [];
+    public bool[] Drowned = [];
     public double SafeSpeedKn = double.PositiveInfinity;
     public long SafeSinceMs;
     public bool HoldsSpeed;
@@ -326,6 +347,7 @@ public sealed class ShipCondition
             (JoinFlow, JoinWetMs, CellInflow) = (new double[c.NeighbourCount], new long[c.NeighbourCount], new double[c.Cells.Length]);
             PumpsIn = new byte[c.Cells.Length];
             Counterflooded = new bool[c.Cells.Length];
+            (Fix, FixManMin, Drowned) = (new byte[c.NodeCount], new double[c.NodeCount], new bool[c.NodeCount]);
             (BlastRegion, BlastStamp, BlastFelt) = (new int[c.Cells.Length], new int[c.Cells.Length], new double[c.Cells.Length]);
             BlastBefore = new double[c.Cells.Length];
             (JoinStamp, JoinFate, JoinFelt) = (new int[c.NeighbourCount], new byte[c.NeighbourCount], new double[c.NeighbourCount]);
@@ -350,6 +372,9 @@ public sealed class ShipCondition
             Array.Clear(CellInflow);
             Array.Clear(PumpsIn);
             Array.Clear(Counterflooded);
+            Array.Clear(Fix);
+            Array.Clear(FixManMin);
+            Array.Clear(Drowned);
             Array.Clear(BlastStamp);
             Array.Clear(JoinStamp);
             Array.Clear(FaceStamp);
@@ -388,7 +413,7 @@ public sealed class ShipCondition
         (WaterT, GmM, StepMs, NextStepMs, HeldCap, LastShooter, LastBattery, LossMs, GoneMs) = (0, c.Hydrostatics.GmT, 0, -1, 1, 0, 0, 0, 0);
         (NextClearMs, ClearAtMs, Leaks, DoorsDrawn, PumpsRigged) = (-1, -1, 0, false, 0);
         (CounterTank, CounterfloodT, CounterHandMs) = (-1, 0, 0);
-        (SafeSpeedKn, SafeSinceMs, HoldsSpeed) = (double.PositiveInfinity, 0, false);
+        (SafeSpeedKn, SafeSinceMs, HoldsSpeed, SteerCause, SteerSinceMs) = (double.PositiveInfinity, 0, false, SteerCause.None, 0);
         (PartyCount, PartiesMade, TurnedTo, LastHitMs, NextPlanMs, FireShowMW) = (0, false, false, 0, 0, 0);
         ClearGen++;
         Version++;
@@ -720,6 +745,14 @@ public sealed class ShipCondition
             {
                 h.Add(i + 2000);
                 h.Add(JoinOpenM2[i]);
+            }
+        if (SteerCause != SteerCause.None)
+            h.Add((int)SteerCause);
+        for (int i = 0; i < Fix.Length; i++)
+            if (Fix[i] != 0 || Drowned[i])
+            {
+                h.Add(i + 6000);
+                h.Add(Fix[i] | (Drowned[i] ? 4 : 0));
             }
         if (double.IsFinite(SafeSpeedKn))
         {

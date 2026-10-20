@@ -33,7 +33,16 @@ public static class ShipMotion
         // the helm, then the rudder at its gear's rate
         double order = HelmOrder(s, i, h, set, shore);
         double d = s.rudder[i], step = h.RudderRateRadS * dt;
-        s.rudder[i] = s.steering[i] != Steering.Free ? s.jamRudder[i] : d + Math.Clamp(order - d, -step, step);   // jammed, or trailing
+        s.rudder[i] = s.steering[i] switch
+        {
+            Steering.Free => d + Math.Clamp(order - d, -step, step),
+            // by hand or steam aft, slower (docs/battle/damage-control.md DC7)
+            Steering.Hand => d + Math.Clamp(order - d, -step * set.HandRudderShare, step * set.HandRudderShare),
+            // by her engines: a share of hard over about the jam
+            Steering.Engines => d + Math.Clamp(Math.Clamp(order, s.jamRudder[i] - set.EnginesRudderShare * h.HardOverRad,
+                s.jamRudder[i] + set.EnginesRudderShare * h.HardOverRad) - d, -step, step),
+            _ => s.jamRudder[i],   // jammed, or trailing
+        };
 
         // the engines toward what's rung: power grows at the plant's rate, falls toward none at the throttle's
         double p = s.power[i], want = s.powerOrder[i];

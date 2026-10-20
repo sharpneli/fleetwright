@@ -500,9 +500,18 @@
   "ClosureMinCm2": [10, 10, 0.5, 5, 1, 10, 5],
   "ClosureMaxCm2": [60, 50, 3, 50, 5, 100, 130],
   "ClosureCap": 0.9,
-  // the repair parties' water jobs (docs/battle/damage-control.md DC3), by job: none, door, re-dog, caulk, shore, plug, patch, plating, rig a pump, mat
-  "RepairJobManMin": [0, 2, 6, 60, 80, 6, 80, 60, 40, 1800],
-  "RepairJobMen": [1, 2, 2, 3, 4, 2, 4, 3, 4, 20],
+  // the repair parties' water jobs (docs/battle/damage-control.md DC3), by job: none, door, re-dog, caulk, shore, plug, patch, plating, rig a pump, mat, by hand, a part, a room pumped out
+  "RepairJobManMin": [0, 2, 6, 60, 80, 6, 80, 60, 40, 1800, 60, 0, 0],
+  "RepairJobMen": [1, 2, 2, 3, 4, 2, 4, 3, 4, 20, 4, 4, 4],
+  // steering and parts (docs/battle/damage-control.md DC7): mounts, tubes, tops, machinery rooms; times as pairs, minutes
+  "HandRudderShare": 0.3333333333333333,
+  "EnginesRudderShare": 0.3,
+  "EnginesSteerS": 60,
+  "RepairPartShare": [0.3, 0.4, 0.5, 0.3],
+  "RepairPartMin": [20, 60, 20, 40, 15, 30, 30, 60],
+  "RepairPartMen": 4,
+  "RestoreShare": 0.25,
+  "RestoreMin": [30, 60, 10, 20],
   // the safe speed and the work on the hull at speed (docs/battle/damage-control.md DC6)
   "SafeLoadShare": 0.8,
   "SafeMinKn": 3,
