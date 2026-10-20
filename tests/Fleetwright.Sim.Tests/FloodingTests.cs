@@ -135,7 +135,7 @@ public class FloodingTests(ITestOutputHelper output)
     {
         double Water(int ms, string design, double x)
         {
-            var (w, c) = Ship(design, Settings with { FloodMs = ms });
+            var (w, c) = Ship(design, Shut with { FloodMs = ms });
             Hole(w, c, x, -1, 0.5);
             w.Damage.Settle(w, 1, 20 * 60);
             return Condition(w).WaterT;

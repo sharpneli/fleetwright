@@ -1321,6 +1321,35 @@ public sealed record SimSettings
     public double[] ClosureMaxCm2 { get; init; } = [60, 50, 3, 50, 5, 100, 130];
     public double ClosureCap { get; init; } = 0.9;
 
+    /// <summary>The repair parties' water jobs (docs/battle/damage-control.md DC3; 09 §4, by <c>RepairJob</c>: none, door,
+    /// re-dog, caulk, shore, plug, patch, plating): each job's man-minutes for a drilled crew (a plug's and a patch's a
+    /// hole) and its crew; a party puts at most <see cref="RepairCrewsAJob"/> crews on one [EST: 09 §4's times × men].</summary>
+    public double[] RepairJobManMin { get; init; } = [0, 2, 6, 60, 80, 6, 80, 60];
+    public double[] RepairJobMen { get; init; } = [1, 2, 2, 3, 4, 2, 4, 3];
+    public double RepairCrewsAJob { get; init; } = 2;
+
+    /// <summary>What a plug leaves of its holes, a patch put on with no flow and against the water coming in (09 §4; NRL's
+    /// ex-Shadwell: no method reliably sealed an actively flowing rupture) [EST].</summary>
+    public double RepairPlugLeft { get; init; } = 0.1;
+    public double RepairPatchLeft { get; init; } = 0.08;
+    public double RepairPatchFlowLeft { get; init; } = 0.3;
+
+    /// <summary>A party works in water up to this deep (09 §4: about waist deep), m; holes this near the sea outside are
+    /// worked on before they leak (the list and the roll bring them under), m [EST].</summary>
+    public double RepairReachM { get; init; } = 1.2;
+    public double RepairNearM { get; init; } = 1;
+
+    /// <summary>The work's pace (09 §4): × 1 / <see cref="RepairDarkK"/> in the dark (her power under
+    /// <see cref="RepairDarkPower"/>), × 1 / (1 + <see cref="RepairListPerDeg"/> × the list in degrees).</summary>
+    public double RepairDarkK { get; init; } = 1.6;
+    public double RepairDarkPower { get; init; } = 0.5;
+    public double RepairListPerDeg { get; init; } = 0.1;
+
+    /// <summary>A boundary is shored once its load passes this share of its rating, its job weighed as this many t/h of
+    /// water × what's behind × the load [EST].</summary>
+    public double RepairShoreAt { get; init; } = 0.5;
+    public double RepairShoreWeightM3h { get; init; } = 500;
+
     /// <summary>A torpedo's shock on the boundaries of the cells it floods: D this at its reach, more nearer (as reach over
     /// the distance, at most 4.9) (docs/battle/damage-control.md DC1) [EST: damage/17 §6.1's holding bulkhead that stood,
     /// D 1-2; North Carolina's at its rivets].</summary>
@@ -1533,19 +1562,19 @@ public sealed record SimSettings
     /// gun crews turn to as the doctrine's extra parties at <see cref="FireTurnToSkill"/> (doc 10 §5).</summary>
     public DamageControlDoctrine[] DamageControl { get; init; } =
     [
-        new() { Name = "unorganised-1890", WatchS = -1, HoseLpm = 600, Nozzle = "jet", MusterS = 360, ManLpm = 100, PartyShare = 0.10, PartyMen = 16,
+        new() { Name = "unorganised-1890", Skill = 0.4, WatchS = -1, HoseLpm = 600, Nozzle = "jet", MusterS = 360, ManLpm = 100, PartyShare = 0.10, PartyMen = 16,
             MainBreak = 0.25, HoseCut = 0.30, Looped = false, RestoreS = -1, PumpFloor = 0, BreathingSets = false, TurnTo = 1, FloodMagazineS = 600 },
-        new() { Name = "prepared-1894", WatchS = 120, HoseLpm = 600, Nozzle = "jet", MusterS = 180, ManLpm = 100, PartyShare = 0.12, PartyMen = 16,
+        new() { Name = "prepared-1894", Skill = 0.6, WatchS = 120, HoseLpm = 600, Nozzle = "jet", MusterS = 180, ManLpm = 100, PartyShare = 0.12, PartyMen = 16,
             MainBreak = 0.20, HoseCut = 0.30, Looped = false, RestoreS = 900, PumpFloor = 0, BreathingSets = false, TurnTo = 2, FloodMagazineS = 300 },
-        new() { Name = "russian-1905", WatchS = 90, HoseLpm = 600, Nozzle = "jet", MusterS = 180, ManLpm = 100, PartyShare = 0.12, PartyMen = 16,
+        new() { Name = "russian-1905", Skill = 0.6, WatchS = 90, HoseLpm = 600, Nozzle = "jet", MusterS = 180, ManLpm = 100, PartyShare = 0.12, PartyMen = 16,
             MainBreak = 0.20, HoseCut = 0.45, Looped = false, RestoreS = 900, PumpFloor = 0, BreathingSets = false, TurnTo = 2, FloodMagazineS = 300 },
-        new() { Name = "rn-1916", WatchS = 180, HoseLpm = 420, Nozzle = "jet", MusterS = 240, ManLpm = 84, PartyShare = 0.12, PartyMen = 16,
+        new() { Name = "rn-1916", Skill = 0.8, WatchS = 180, HoseLpm = 420, Nozzle = "jet", MusterS = 240, ManLpm = 84, PartyShare = 0.12, PartyMen = 16,
             MainBreak = 0.10, HoseCut = 0.15, Looped = false, RestoreS = 900, PumpFloor = 0, BreathingSets = false, TurnTo = 2, FloodMagazineS = 180 },
-        new() { Name = "german-1916", WatchS = 180, HoseLpm = 420, Nozzle = "jet", MusterS = 240, ManLpm = 84, PartyShare = 0.12, PartyMen = 16,
+        new() { Name = "german-1916", Skill = 0.9, WatchS = 180, HoseLpm = 420, Nozzle = "jet", MusterS = 240, ManLpm = 84, PartyShare = 0.12, PartyMen = 16,
             MainBreak = 0.10, HoseCut = 0.15, Looped = false, RestoreS = 900, PumpFloor = 0, BreathingSets = false, TurnTo = 2, FloodMagazineS = 180 },
-        new() { Name = "usn-1942", WatchS = 120, HoseLpm = 250, Nozzle = "all-purpose", MusterS = 180, ManLpm = 62.5, PartyShare = 0.12, PartyMen = 16,
+        new() { Name = "usn-1942", Skill = 0.9, WatchS = 120, HoseLpm = 250, Nozzle = "all-purpose", MusterS = 180, ManLpm = 62.5, PartyShare = 0.12, PartyMen = 16,
             MainBreak = 0.25, HoseCut = 0.20, Looped = false, RestoreS = 480, PumpFloor = 0, BreathingSets = false, TurnTo = 2, FloodMagazineS = 180 },
-        new() { Name = "usn-1944", WatchS = 60, HoseLpm = 360, Nozzle = "fog", MusterS = 120, ManLpm = 90, PartyShare = 0.12, PartyMen = 16,
+        new() { Name = "usn-1944", Skill = 1.0, WatchS = 60, HoseLpm = 360, Nozzle = "fog", MusterS = 120, ManLpm = 90, PartyShare = 0.12, PartyMen = 16,
             MainBreak = 0.15, HoseCut = 0.20, Looped = true, RestoreS = 240, PumpFloor = 0.6, BreathingSets = true, TurnTo = 3,
             CoolBoundaries = true, ReflashWatch = true, FloodMagazineS = 120 },
     ];
@@ -1794,6 +1823,10 @@ public readonly record struct DamageControlDoctrine
     public bool ReflashWatch { get; init; }
     /// <summary>How long a magazine is threatened before it's flooded, s (B2; -1: never).</summary>
     public double FloodMagazineS { get; init; }
+    /// <summary>Her parties' pace at water jobs (docs/battle/damage-control.md DC3; 09 §5.3's dc_skill, 0.4-1), and whether
+    /// the doctrine puts the water before fires next to magazines (10 §5.1: fire first).</summary>
+    public double Skill { get; init; }
+    public bool FloodFirst { get; init; }
 }
 
 /// <summary>A ship's orders before action for fire (docs/battle/fire.md B1; <see cref="SimSettings.Readiness"/>).</summary>

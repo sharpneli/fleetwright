@@ -325,8 +325,9 @@ static class DcHistory
                         r.WaterAt[h] = r.WaterT;
                 if (trace && r == list[0] && (m <= 30 || m % 10 == 0))
                     Console.WriteLine(string.Format(Inv, "      {0,5} min  water {1,6:0} t, list {2,5:0.0}°, trim {3,5:+0.00;-0.00}°, GM {4,5:0.00} m, " +
-                        "speed {5,4:0.0} kn, power {6:0%}, holes {7:0.00} m²", m, k.WaterT, k.Attitude.HeelDeg, k.Attitude.TrimDeg,
-                        k.GmM, r.Kn, k.PowerCap, k.BreachM2.Sum()));
+                        "speed {5,4:0.0} kn, power {6:0%}, holes {7:0.00} m², parties {8}", m, k.WaterT, k.Attitude.HeelDeg, k.Attitude.TrimDeg,
+                        k.GmM, r.Kn, k.PowerCap, k.BreachM2.Sum(), string.Join(" ", k.Parties.Take(k.PartyCount).Select(q =>
+                            q.Target >= 0 ? "fire" : q.Job == RepairJob.None ? "-" : q.Job.ToString().ToLowerInvariant()))));
             }
         }
         if (trace)

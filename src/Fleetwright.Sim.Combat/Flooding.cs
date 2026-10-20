@@ -201,6 +201,8 @@ public static class Flooding
         var w = k.WaterM3;
 
         // the sea in: through holes, and over a weather deck gone under
+        Array.Clear(k.CellInflow);
+        Array.Clear(k.JoinFlow);
         for (int i = 0; i < cells.Length; i++)
         {
             double room = f.Capacity[i] - w[i];
@@ -221,6 +223,7 @@ public static class Flooding
                     q += cd * s.FloodWeatherShare * f.DeckArea[i] * Math.Sqrt(2 * G * head);
             }
             double v = Math.Min(q * dt, room);
+            k.CellInflow[i] = v / dt;
             w[i] += v;
             res.InM3 += v;
         }
@@ -300,6 +303,7 @@ public static class Flooding
                 continue;
             w[hi] -= v;
             w[lo] += v;
+            k.JoinFlow[p] = (hi == a ? v : -v) / dt;
         }
 
         // the pumps, on the cells with no hole of their own

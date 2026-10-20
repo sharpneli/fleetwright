@@ -194,6 +194,10 @@ public sealed class ShipCondition
     /// (D), and its marks (<see cref="JoinMark"/>).</summary>
     public double[] JoinSeamM2 = [], JoinClosureM2 = [], JoinWork = [], JoinWorkAcc = [], JoinWorkAt = [], JoinD = [];
     public JoinMark[] JoinMarks = [];
+    /// <summary>Each edge's flow in the last flooding step (m³/s, on its entry) and when water first stood at a door left
+    /// open in it (world ms, 0: never); each cell's inflow from the sea (m³/s): damage control's measures (DC3).</summary>
+    public double[] JoinFlow = [], CellInflow = [];
+    public long[] JoinWetMs = [];
     /// <summary>Whether her watertight doors left open have been drawn (at her first damage, by her readiness).</summary>
     public bool DoorsDrawn;
     /// <summary>The last cascade's (E5, <see cref="Blast.Cascade"/>): its number, the spaces it reached (BlastRegion, by
@@ -305,6 +309,7 @@ public sealed class ShipCondition
             (JoinSeamM2, JoinClosureM2, JoinWork) = (new double[c.NeighbourCount], new double[c.NeighbourCount], new double[c.NeighbourCount]);
             (JoinWorkAcc, JoinWorkAt, JoinD) = (new double[c.NeighbourCount], new double[c.NeighbourCount], new double[c.NeighbourCount]);
             JoinMarks = new JoinMark[c.NeighbourCount];
+            (JoinFlow, JoinWetMs, CellInflow) = (new double[c.NeighbourCount], new long[c.NeighbourCount], new double[c.Cells.Length]);
             (BlastRegion, BlastStamp, BlastFelt) = (new int[c.Cells.Length], new int[c.Cells.Length], new double[c.Cells.Length]);
             BlastBefore = new double[c.Cells.Length];
             (JoinStamp, JoinFate, JoinFelt) = (new int[c.NeighbourCount], new byte[c.NeighbourCount], new double[c.NeighbourCount]);
@@ -324,6 +329,9 @@ public sealed class ShipCondition
             Array.Clear(JoinWorkAt);
             Array.Clear(JoinD);
             Array.Clear(JoinMarks);
+            Array.Clear(JoinFlow);
+            Array.Clear(JoinWetMs);
+            Array.Clear(CellInflow);
             Array.Clear(BlastStamp);
             Array.Clear(JoinStamp);
             Array.Clear(FaceStamp);
@@ -391,6 +399,21 @@ public sealed class ShipCondition
         HoleZ[h] = (HoleZ[h] * o0 + at.Z * areaM2) / (o0 + areaM2);
         HoleOpenM2[h] = o0 + areaM2;
         HoleOpenN[h] += Math.Max(count, 1);
+    }
+
+    /// <summary>A cell's open holes of a class worked on by damage control (DC3): they leak left of their area from now
+    /// (mixed by area with any worked on before), and the cell's breach is counted again.</summary>
+    public void Worked(int cell, int h, double left)
+    {
+        double open = HoleOpenM2[h], done = HoleDoneM2[h];
+        if (open <= 0)
+            return;
+        HoleLeft[h] = (done * HoleLeft[h] + open * left) / (done + open);
+        (HoleDoneM2[h], HoleOpenM2[h], HoleOpenN[h]) = (done + open, 0, 0);
+        double sum = 0;
+        for (int i = cell * HoleClasses; i < (cell + 1) * HoleClasses; i++)
+            sum += HoleOpenM2[i] + HoleDoneM2[i] * HoleLeft[i];
+        BreachM2[cell] = sum;
     }
 
     /// <summary>A hole's class by its own area (09 §4): plugged up to 150 cm², patched to 0.3 m², a collision mat's to
@@ -671,6 +694,13 @@ public sealed class ShipCondition
             {
                 h.Add(i + 2000);
                 h.Add(JoinOpenM2[i]);
+            }
+        for (int i = 0; i < HoleDoneM2.Length; i++)
+            if (HoleDoneM2[i] != 0)
+            {
+                h.Add(i + 4000);
+                h.Add(HoleDoneM2[i]);
+                h.Add(HoleLeft[i]);
             }
         for (int i = 0; i < JoinSeamM2.Length; i++)
             if (JoinSeamM2[i] != 0 || JoinClosureM2[i] != 0 || JoinMarks[i] != JoinMark.None)

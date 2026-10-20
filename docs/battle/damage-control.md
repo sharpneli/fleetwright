@@ -1,5 +1,5 @@
 # Plan: damage control (a 4.5 deepening)
-Status: **agreed with the user 2026-10-20** ("Decided" below); DC0-DC2 done 2026-10-20, DC3 next.    Updated: 2026-10-20
+Status: **agreed with the user 2026-10-20** ("Decided" below); DC0-DC3 done 2026-10-20, DC4 next.    Updated: 2026-10-20
 
 The fine-tune pass for damage control: what the crew does about a hit once it has landed. Firefighting came first, as
 this pass's first slice (`fire.md`, decision 1). This plan adds the water and the repairs, and both draw on the same
@@ -559,6 +559,96 @@ on the yardstick bench.
   - 09 §8's 30 splinter holes, drilled and with nobody;
   - 17 §6.1's drilled crew;
   - fire-first against flood-first on 10 §8's battleship case (the list the same, the fires different).
+- **Built (done 2026-10-20), in two commits:**
+  - **DC3a, the renames (parity):**
+    - `FireParty` → `RepairParty`, `FirefightingDoctrine` → `DamageControlDoctrine`, `FireReadiness` → `Readiness`.
+    - Their settings keys: `DamageControl`, `DamageControlDefault`, `Readiness`, `ReadinessDefault`.
+    - The scenario key `"damage_control"`, the flags `-damage-control=` and `--damage-control`, and
+      `DamageSystem.ReadinessOf` / `DamageControlOf`.
+  - **`Repairs`** (`Sim.Combat/Repairs.cs`): one pool of men for fire and water.
+    - **The parties** are made at her first damage of any kind (`Make`, B4's numbers).
+    - **Planning** happens every 30 s (`PlanIfDue`; the fire's step asks too, for the tools that step fire alone) over
+      every job by the doctrine's tiers:
+      1. fires next to a magazine;
+      2. doors left open on the flooding boundary;
+      3. the water jobs, ranked by the flow through them (`JoinFlow`, `CellInflow`, now kept by the flooding step) ×
+         what's behind (a magazine 3, machinery and steering 2, else 1); shoring past half the rating, weighed as 500 t/h ×
+         value × load;
+      4. other fires;
+      5. holes within 1 m of the sea that don't leak yet.
+
+      A flood-first doctrine puts the water above the magazine's fires. The nearest free party goes, as B4's do.
+    - **The work** (`Work`): man-minutes from the catalogue (`RepairJobManMin`, `RepairJobMen` [EST, 09 §4's times ×
+      crews]):
+
+      | Job | Man-minutes |
+      |---|---|
+      | Door | 2 |
+      | Re-dog | 6 |
+      | Caulk | 60 |
+      | Shore | 80 a set |
+      | Plug | 6 a hole |
+      | Patch | 80 a hole |
+      | Hull plating (seams) | 60 |
+
+      - A party works with its men, at most two crews on a job, at the doctrine's `Skill`: unorganised 0.4, 1894 and
+        1905 0.6, rn-1916 0.8, german-1916 and usn-1942 0.9, usn-1944 1 [EST, 09 §5.3].
+      - It goes ×1/1.6 in the dark (power under half) and ×1/(1 + 0.1·list°).
+      - Edge jobs need their dry side: not full, the water under 1.2 m, not burning.
+      - Holes need the water inside under 1.2 m, or under the holes.
+    - **Done:** an edge is marked (door shut, re-dogged, caulked, shored once or twice). A cell's holes of the class are
+      worked on (`ShipCondition.Worked`) and leave a share leaking: a plug 0.1, a patch 0.08, or 0.3 put on against
+      the water still coming in, plating caulked 0.15. Its breach is counted again.
+    - **The men on the spot** (`Watch`): a door left open with water at it is shut after the doctrine's watch delay
+      (the fire watch's, rn-1916 180 s) if there's crew in either space and its dogs aren't jammed. An unorganised crew
+      has no watch, so a party has to come.
+    - **Fire's planner moved here unchanged in its weights.** B4's hits on parties now stop and thin a party at a water
+      job too.
+  - **Tests** (`RepairTests`):
+    - 09 §8's thirty splinter holes on QE for 2 h: drilled 28 t with none still open under the waterline, nobody
+      972 t and 9.5°;
+    - a door left open with water at it: shut at 181 s by rn-1916's watch, 466 s by an unorganised crew's party;
+    - a 20 m² hole is never worked on.
+
+    The 1 s against 5 s step test now shuts the doors: the watch shuts one at a moment rounded to the step, and the water
+    that got through differs by 7% on the destroyer. With the doors shut the two steps agree exactly.
+- **What moved (dc-history, 20 runs; DC1 → DC3):**
+
+  | Case | Water at 2 h / 8 h | Worst list | Lost | Record / wanted |
+  |---|---|---|---|---|
+  | Seydlitz | 4,730 → 3,600 t / 7,230 → 5,490 t | 1.6 → 1.3° | 15% (magazines) | 5,308 t ✓ |
+  | Lützow | 1,530 → 1,230 t / 2,170 → 1,580 t | 0° | 30 → 35% (magazines, one capsized) | 8,351 t ✗ |
+  | Audacious, unprepared | 5,370 → 4,930 t / 5,700 → 5,460 t | 0.5° | 0% | capsized at 12 h ✗ |
+  | Marlborough (?) | 5,370 → 4,610 t / 8,080 → 5,620 t | 17 → 0.4° | 5 → 0% | survived ✓ |
+  | Pre-dreadnought, one torpedo (?) | 4,400 → 3,980 t | 9.3 → 8.9° | 20 → 5% | capsized ✗ |
+  | Pre-dreadnought, two torpedoes (?) | — | 21° | 100 → 80% (capsized ~22 min) | sank in 2¾ h |
+  | Destroyer, 6 HE hits | 35 → 65 t | 0.8 → 0° | 25% (3 capsized at ~15 min) | most survive |
+  | 30 splinter holes | 200 → 8 t / 373 → 7 t | 5.5 → 0.1° | 20 → 0% | the research's drilled ~120 t ✓ |
+  | Bow shell, 28 kn / 12 kn | 1,470 → 1,130 / 1,070 t (4 h: 1,470 / 1,380) | 0.2° | 0% | — |
+  | North Carolina-type | 2,660 → 1,060 t, held | 4.5 → 3.2° | 0% | 970 t ✓; the list is DC5's |
+  | Shinano-like, unprepared | 20,000 → 23,000 t | 21° | 70 → 60% (foundered ~6.7 h) | lost at 7¾ h ✓ |
+
+  - **Hits bench, 180 min:**
+    - Iron Duke under Derfflinger: 559 → 321 t.
+    - A destroyer under Arethusa's HE: 264 → 244 t; capsized 10 → 7.5%.
+  - **Torpedo bench:** QE with 4 unchanged (12,820 t, 80% capsized): the holes are beyond repair, so counterflooding
+    (DC5) is the answer.
+  - **fire-history:** the first game's cases stay near B5's end (Santiago ablaze 80 → 85%, Suvorov 5%). Savo's 1942 fit
+    is lost in 65% of runs (30 at B5; a third capsized), with half its doors open (unprepared) and the parties now
+    split between water and fire.
+  - **Squadrons, 60 min:** the damage system 49 µs a call (40 at DC1).
+- **What it says:**
+  - **The crew decides the slow battle, as the research has it** (09 §8: "party skill decides the small-leak battle;
+    design and closure decide the big-hole battle"). The splinters, Seydlitz, Marlborough and the North Carolina-type
+    now land on the record. The Shinano-like loss and the torpedo bench don't move: what floods there is beyond any
+    party.
+  - **Open:**
+    - Lützow and Audacious don't go as the record has them. Lützow's crew had jammed pumps and three failed patches;
+      Audacious listed and her after part filled through unclosed fittings. Ours hold.
+    - The pre-dreadnoughts capsize from two torpedoes in minutes and live through one.
+    - A destroyer capsizing in 15 minutes from 6 HE hits is faster than any party.
+
+    These are DC5's (counterflooding, the list) and DC9's.
 
 ### DC4 Pumps
 - The design's fixed drainage replaces the setting, put where it beats the inflow; portable pumps rigged by parties.

@@ -816,6 +816,7 @@ public sealed class DamageSystem : IWorldSystem
         if (dt <= 0)
             return settings.FloodMs;
         Ready(slot, k);
+        Repairs.Step(cls, f, k, dt, now, settings);   // her repair parties: planned, at their water jobs (DC3)
         var wet = stream.Derive(0xF1000Du).Derive((ulong)ships.Store[slot].Entity).Derive((ulong)now);
         var fl = Flooding.Step(cls, f, k, dt, k.PowerCap, ships.Store[slot].Speed, settings, ref wet);
         if (fl.Collapsed > 0)

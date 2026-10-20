@@ -68,9 +68,15 @@ public enum BurnEvent : byte
 public struct RepairParty
 {
     public double Men, Skill;
+    /// <summary>Where it is, and the fire space it fights (-1: none).</summary>
     public int Section, Target;
     public long ArriveMs, StopMs;
     public bool Mustered;
+    /// <summary>Its water job (docs/battle/damage-control.md DC3), where (an edge of the flooding model, or a cell), and the
+    /// man-minutes done on it.</summary>
+    public RepairJob Job;
+    public int JobAt;
+    public double Done;
 }
 
 /// <summary>The water on a fire (docs/battle/fire.md B3): the flow as fog would do the work (L/min), the flow thrown
@@ -627,23 +633,9 @@ public static class Fires
         if (k.Status != ShipStatus.Afloat)
             return;
         var nozzle = Nozzle(s, doc.Nozzle);
-        if (!k.PartiesMade)
-        {
-            // her parties: a share of her complement, two to eight of them, spread along her (fire_ref.py's Sim)
-            double men = f.Complement * doc.PartyShare;
-            int n = Math.Clamp((int)Math.Round(men / Math.Max(doc.PartyMen, 1)), s.FirePartiesMin, Math.Min(s.FirePartiesMax, ShipCondition.MaxParties));
-            for (int i = 0; i < n; i++)
-                k.Parties[i] = new RepairParty
-                {
-                    Men = men / n, Skill = 1, Section = (int)((i + 0.5) * c.Sections.Length / n), Target = -1,
-                };
-            (k.PartyCount, k.PartiesMade, k.NextPlanMs) = (n, true, now);
-        }
-        if (now >= k.NextPlanMs)
-        {
-            Plan(c, k, now, s);
-            k.NextPlanMs = now + (long)(s.FirePlanS * 1000);
-        }
+        // her repair parties (docs/battle/damage-control.md DC3: one pool for fire and water), planned when due
+        Repairs.Make(c, f, k, now, s);
+        Repairs.PlanIfDue(c, f, k, now, s);
         var spaces = c.FireSpaces;
         for (int p = 0; p < k.PartyCount; p++)
         {
@@ -689,63 +681,8 @@ public static class Fires
         return s.FireNozzles[0];
     }
 
-    /// <summary>The parties sent (fire_ref.py's plan): the gun crews turned to once the action's over, a party off a fire
-    /// that's out, then the free ones each to the worst fire short of its parties, the nearest first: its muster the first
-    /// time, then the sections to go.</summary>
-    static void Plan(ShipClass c, ShipCondition k, long now, SimSettings s)
-    {
-        ref readonly var doc = ref k.DamageControl;
-        if (!k.TurnedTo && k.LastHitMs > 0 && now - k.LastHitMs >= s.FireTurnToS * 1000)
-        {
-            k.TurnedTo = true;
-            for (int i = 0; i < doc.TurnTo && k.PartyCount < ShipCondition.MaxParties; i++)
-                k.Parties[k.PartyCount++] = new RepairParty
-                {
-                    Men = Math.Max(doc.PartyMen, 2), Skill = s.FireTurnToSkill, Section = c.PumpSection, Target = -1,
-                };
-        }
-        for (int p = 0; p < k.PartyCount; p++)
-            if (k.Parties[p].Target >= 0 && !k.Fire[k.Parties[p].Target].Burning)
-                k.Parties[p].Target = -1;
-        var spaces = c.FireSpaces;
-        while (true)
-        {
-            int best = -1;
-            double top = 0;
-            for (int i = 0; i < spaces.Length; i++)
-            {
-                ref readonly var x = ref k.Fire[i];
-                if (!x.Burning || x.Phase == BurnPhase.Control || Sent(k, i) >= s.FirePartiesAFire)
-                    continue;
-                double weight = x.Q * (NextToMagazine(c, i) ? s.FireMagazineK : 1) + (x.Phase == BurnPhase.Grow ? 0.5 : 0);
-                if (best < 0 || weight > top)
-                    (best, top) = (i, weight);
-            }
-            if (best < 0)
-                return;
-            int near = -1, sec = spaces[best].Section;
-            for (int p = 0; p < k.PartyCount; p++)
-                if (k.Parties[p].Target < 0 && k.Parties[p].Men >= 2 &&
-                    (near < 0 || Math.Abs(k.Parties[p].Section - sec) < Math.Abs(k.Parties[near].Section - sec)))
-                    near = p;
-            if (near < 0)
-                return;
-            ref var party = ref k.Parties[near];
-            party.ArriveMs = now + (long)(1000 * (Math.Abs(party.Section - sec) * s.FireTravelS + (party.Mustered ? 0 : doc.MusterS)));
-            (party.Target, party.Section, party.Mustered) = (best, sec, true);
-        }
-    }
-
-    static int Sent(ShipCondition k, int space)
-    {
-        int n = 0;
-        for (int p = 0; p < k.PartyCount; p++)
-            n += k.Parties[p].Target == space ? 1 : 0;
-        return n;
-    }
-
     /// <summary>Whether a fire space holds or adjoins a magazine (its parties' first care).</summary>
-    static bool NextToMagazine(ShipClass c, int space)
+    public static bool NextToMagazine(ShipClass c, int space)
     {
         ref readonly var row = ref c.FireSpaces[space];
         if (row.Kind != FireSpaceKind.Cell)
@@ -799,8 +736,9 @@ public static class Fires
         for (int p = 0; p < k.PartyCount; p++)
         {
             ref var party = ref k.Parties[p];
-            if (party.Target < 0 || party.Section != section || now < party.ArriveMs || !k.Fire[party.Target].Burning)
-                continue;   // only a party at work on a fire (one whose fire went out waits for the next plan to be freed)
+            bool working = party.Target >= 0 && k.Fire[party.Target].Burning || party.Job != RepairJob.None;
+            if (!working || party.Section != section || now < party.ArriveMs)
+                continue;   // only a party at work (one whose fire went out waits for the next plan to be freed)
             if (r.NextDouble() < doc.HoseCut)
                 party.StopMs = now + (long)(s.FireHitStopS * 1000);
             if (r.NextDouble() < s.FireHitMenChance)
