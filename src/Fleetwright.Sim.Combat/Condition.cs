@@ -202,6 +202,11 @@ public sealed class ShipCondition
     public int PumpsRigged;
     /// <summary>DC Central's counterflooding (DC5): the cells flooded on purpose (the pumps leave them), the tank filling
     /// now (-1: none), the tonnes let in so far, and when the valves went to hand (world ms, 0: they haven't).</summary>
+    /// <summary>The speed damage control asks for (DC6; knots, infinite: none), since when it has asked for less than she
+    /// makes (world ms), and her orders to hold speed whatever it asks (the player's override, the benches').</summary>
+    public double SafeSpeedKn = double.PositiveInfinity;
+    public long SafeSinceMs;
+    public bool HoldsSpeed;
     public bool[] Counterflooded = [];
     public int CounterTank = -1;
     public double CounterfloodT;
@@ -383,6 +388,7 @@ public sealed class ShipCondition
         (WaterT, GmM, StepMs, NextStepMs, HeldCap, LastShooter, LastBattery, LossMs, GoneMs) = (0, c.Hydrostatics.GmT, 0, -1, 1, 0, 0, 0, 0);
         (NextClearMs, ClearAtMs, Leaks, DoorsDrawn, PumpsRigged) = (-1, -1, 0, false, 0);
         (CounterTank, CounterfloodT, CounterHandMs) = (-1, 0, 0);
+        (SafeSpeedKn, SafeSinceMs, HoldsSpeed) = (double.PositiveInfinity, 0, false);
         (PartyCount, PartiesMade, TurnedTo, LastHitMs, NextPlanMs, FireShowMW) = (0, false, false, 0, 0, 0);
         ClearGen++;
         Version++;
@@ -415,6 +421,15 @@ public sealed class ShipCondition
         HoleOpenN[h] += Math.Max(count, 1);
     }
 
+    /// <summary>A cell's breach counted again from its holes by class (open + worked × left).</summary>
+    public void Recount(int cell)
+    {
+        double sum = 0;
+        for (int i = cell * HoleClasses; i < (cell + 1) * HoleClasses; i++)
+            sum += HoleOpenM2[i] + HoleDoneM2[i] * HoleLeft[i];
+        BreachM2[cell] = sum;
+    }
+
     /// <summary>A cell's open holes of a class worked on by damage control (DC3): they leak left of their area from now
     /// (mixed by area with any worked on before), and the cell's breach is counted again.</summary>
     public void Worked(int cell, int h, double left)
@@ -424,10 +439,7 @@ public sealed class ShipCondition
             return;
         HoleLeft[h] = (done * HoleLeft[h] + open * left) / (done + open);
         (HoleDoneM2[h], HoleOpenM2[h], HoleOpenN[h]) = (done + open, 0, 0);
-        double sum = 0;
-        for (int i = cell * HoleClasses; i < (cell + 1) * HoleClasses; i++)
-            sum += HoleOpenM2[i] + HoleDoneM2[i] * HoleLeft[i];
-        BreachM2[cell] = sum;
+        Recount(cell);
     }
 
     /// <summary>A hole's class by its own area (09 §4): plugged up to 150 cm², patched to 0.3 m², a collision mat's to
@@ -709,6 +721,11 @@ public sealed class ShipCondition
                 h.Add(i + 2000);
                 h.Add(JoinOpenM2[i]);
             }
+        if (double.IsFinite(SafeSpeedKn))
+        {
+            h.Add(SafeSpeedKn);
+            h.Add(SafeSinceMs);
+        }
         if (CounterfloodT > 0)
         {
             h.Add(CounterfloodT);

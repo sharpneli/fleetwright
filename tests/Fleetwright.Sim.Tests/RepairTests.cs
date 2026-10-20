@@ -133,6 +133,31 @@ public class RepairTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void A_captain_slows_for_a_bow_hole_by_his_doctrine_unless_ordered_to_hold_speed()
+    {
+        var c = Class("seydlitz");
+        double Kn(string doctrine, bool holds)
+        {
+            var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), 3, Settings);
+            w.Apply(ShipSystem.Spawn(w.Ships.AddClass(c), 56, 4, 0, 24));
+            w.Apply(DamageSystem.SetDamageControl(0, Array.FindIndex(Settings.DamageControl, d => d.Name == doctrine)));
+            w.Apply(DamageSystem.HoldSpeed(1, holds));
+            // a heavy shell's hole in the bow at the waterline, too big for her pumps: a collision mat, the way off her
+            double x = c.Hull.X1 - 0.12 * c.Length;
+            w.Apply(DamageSystem.SideHole(1, HoleAt.X, x, 0.5, 1.5));
+            w.AdvanceTo(w.Time + 30 * 60_000);
+            int slot = w.Ships.Store.SlotOf(1);
+            var k = w.Ships.Store.Combat.Condition(slot);
+            output.WriteLine($"{doctrine}{(holds ? ", holding speed" : "")}: damage control asks {k.SafeSpeedKn:0.0} kn, she makes {w.Ships.Store[slot].Speed / 0.514444:0.0} kn");
+            return w.Ships.Store[slot].Speed / 0.514444;
+        }
+        double german = Kn("german-1916", false), held = Kn("german-1916", true), rn = Kn("rn-1916", false);
+        Assert.InRange(german, 0, Settings.MatKn + 1.5);   // the way coming off her
+        Assert.True(held > 20, "her orders to hold speed");
+        Assert.True(rn > 20, "the RN holds its speed for half an hour first");
+    }
+
+    [Fact]
     public void A_hole_beyond_repair_at_sea_is_never_worked_on()
     {
         var c = Class("super_dreadnought");

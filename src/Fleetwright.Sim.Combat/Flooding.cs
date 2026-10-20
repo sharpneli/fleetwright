@@ -406,6 +406,26 @@ public static class Flooding
         return s.FloodRamK * share * speedMs * speedMs / (2 * G);
     }
 
+    /// <summary>An edge's load now at rest (the head across it, m, as the step drives water through it) and the share of the
+    /// ram head that adds to it under way (its pressed side's: half the ram head's k at that x; 0 when neither side is a
+    /// holed space at its ceiling): the safe speed's (DC6).</summary>
+    public static (double Static, double RamK) EdgeLoad(ShipClass c, FloodModel f, ShipCondition k, int ei, SimSettings s)
+    {
+        ref readonly var e = ref f.Edges[ei];
+        var water = HitQuery.WaterOf(c, k.Attitude);
+        int a = e.A, b = e.B;
+        double sa = water.At(f.Cx[a], f.Cy[a]), sb = water.At(f.Cx[b], f.Cy[b]), so = (sa + sb) / 2;
+        double ha = Head(c, f, k, a, sa, 0, s), hb = Head(c, f, k, b, sb, 0, s);
+        int hi = ha >= hb ? a : b;
+        double drive = Math.Max(ha, hb) - Math.Max(Math.Min(ha, hb), e.Z - so);
+        if (drive <= 0 && Math.Max(ha, hb) <= 0)
+            return (0, 0);
+        double level = f.Level(c, k, hi), top = c.Cells[hi].Box.Top;
+        bool pressed = k.BreachM2[hi] > 0 && k.BreachZ[hi] < (hi == a ? sa : sb) && (f.Full(k, hi) || level >= top - PressedM);
+        double reach = s.FloodRamReach * c.Length, share = Math.Clamp((f.Cx[hi] - (c.Hull.X1 - reach)) / reach, 0, 1);
+        return (Math.Max(drive, 0), pressed ? s.FloodRamLoad * s.FloodRamK * share / (2 * G) : 0);
+    }
+
     /// <summary>An edge's rating now, the head across it it takes, m: built for its height of water × <see
     /// cref="SimSettings.FloodRatingK"/>, less for the load that sprung it, more for each set of shores.</summary>
     public static double Rating(FloodModel f, ShipCondition k, int edge, int pool, SimSettings s)

@@ -1,5 +1,5 @@
 # Plan: damage control (a 4.5 deepening)
-Status: **agreed with the user 2026-10-20** ("Decided" below); DC0-DC5 done 2026-10-20, DC6 next.    Updated: 2026-10-20
+Status: **agreed with the user 2026-10-20** ("Decided" below); DC0-DC6 done 2026-10-20, DC7 next.    Updated: 2026-10-20
 
 The fine-tune pass for damage control: what the crew does about a hit once it has landed. Firefighting came first, as
 this pass's first slice (`fire.md`, decision 1). This plan adds the water and the repairs, and both draw on the same
@@ -773,6 +773,63 @@ on the yardstick bench.
 ### DC6 Speed
 - The safe speed, the captain keeping to it after the hold time, the collision mat, and hull work loosening at speed.
 - **Tests:** 09 §8's bow shell at 28 kn and slowed to 12 kn; Seydlitz and Lützow on the bench.
+- **Built (done 2026-10-20):**
+  - **The safe speed** (`Repairs.Safe`, at each plan; `ShipCondition.SafeSpeedKn`). It is the highest speed at which:
+    - every boundary of a holed space pressed by the sea stays under 0.8 of its rating with the ram head's share on it
+      (`Flooding.EdgeLoad`: its load at rest, and the k of the ram head on it), at least 3 kn for steerage;
+    - the work on her hull's holes holds, capped at 15 kn, but only while what it holds back (worked area × share
+      stopped, at full head) is more than her pumps could take if it worked loose;
+    - a mat can go over: 5 kn while one is being rigged.
+  - **The captain keeps to it** (decision 2), as a cap on the engines in `DamageSystem.Hold` beside the power cap, so
+    every tier steams no faster. It applies once the doctrine's `HoldSpeedS` has run from when it first asked for less
+    than she was making [EST]:
+
+    | Doctrine | Hold time |
+    |---|---|
+    | german-1916 | 0 |
+    | usn | 600 s |
+    | 1894, rn-1916 | 1,800 s |
+    | unorganised, russian-1905 | 3,600 s |
+
+    Her orders can override it (`ShipCondition.HoldsSpeed`, the `DamageSystem.HoldSpeed` command: the player's in the UI
+    pass).
+  - **Hull work loosens at speed:** plugs, patches, caulking and mats on the hull go 15% back toward open every 10 min
+    above 15 kn (17 §5.2, 13).
+  - **The collision mat** (`RepairJob.Mat`, 1,800 man-minutes, 20 men a crew, so a party of 16 takes about two hours):
+    - over mat-class holes in the hull's own side (not the tears a torpedo leaves inside), within 2 m of the sea;
+    - only where they let in more than the pumps can take;
+    - worked only with the way off her (≤ 5 kn);
+    - it leaves 30%.
+  - **The bench:**
+    - a case may hold speed (`Holds`: the Seydlitz holding 24 kn and the bow shell holding 28 kn);
+    - it reports the lowest safe speed asked that bound her.
+  - **Test:** a Seydlitz holed in the bow at 24 kn: german-1916 slows to ~6 kn within 30 min, holding speed she stays at
+    24, rn-1916 still at 24 after 30 min.
+- **Tried and changed on the way:**
+  - At first every plug or patch asked for 15 kn and every mat-class hole for a mat. The splinter case, the RN battleship
+    and the destroyers all slowed for trivial damage, which no captain in a battle line would, and no damage-control
+    officer would ask. Both now ask only when the leak they protect would beat the pumps.
+  - The torpedo's inner tears were offered mats; mats now need their holes on the hull's own side.
+- **What moved (dc-history, 20 runs; DC5 → DC6):**
+
+  | Case | Water at 8 h (4 h) | Lost | Safe speed asked |
+  |---|---|---|---|
+  | Seydlitz, obeying (german-1916) | 5,430 → 5,170 t | 20 → 35% (magazines; 4 capsized at ~7 h) | 5 kn (a mat) in 95% |
+  | Seydlitz, holding 24 kn | 5,610 → 5,670 t | 20 → 40% (5 capsized at ~5 h) | 3 kn (the boundaries) in 95% |
+  | Bow shell, holding 28 kn | (1,580 t) | 0% | 5 kn |
+  | Bow shell, slowed (german: at once) | (1,430 t) | 0% | 5 kn |
+  | Destroyer, 6 HE | 64 t | 25% | 5 kn (a mat) in half the runs |
+
+  - Speed now costs water: about 10% here, more in the boundaries' load. The difference is mostly what comes in while
+    she's fast, as the research has it (17 §6.2: the chain doesn't collapse; 09's collapse comes from lower compartment
+    tops).
+  - **Squadrons, 90 min:** no ship slowed by damage control, Queen Mary lost to her magazine as before; the damage system
+    57 µs a call.
+- **Open:**
+  - Seydlitz's capsizes at 5-7 h, in both the obeying and the holding runs. They come from the free surface of heavy
+    runs (DC5's open item).
+  - A destroyer asked to stop for a mat in half the runs. Her RN doctrine holds 30 min first, and in action that's the
+    UI pass's and the AI's call.
 
 ### DC7 Steering and parts
 - The steering ladder; freeing a jammed rudder; the parts' repair table and its draw at the damage; battle-long jams;

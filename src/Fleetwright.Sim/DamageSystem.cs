@@ -21,6 +21,7 @@ public enum DamageCommand : ushort
     SetDamageControl,
     SetFuel,
     Shoot,
+    HoldSpeed,
 }
 
 /// <summary>What set a magazine off (<see cref="DamageSystem.Blast"/>).</summary>
@@ -161,6 +162,10 @@ public sealed class DamageSystem : IWorldSystem
 
     public DamageControlDoctrine DamageControlOf(int side) => settings.DamageControl[firefighting[side & 255]];
 
+    /// <summary>A ship's orders to hold her speed whatever damage control asks (docs/battle/damage-control.md DC6, decision
+    /// 2: the player's override, the benches').</summary>
+    public static Command HoldSpeed(int entity, bool on) => new(Id, (ushort)DamageCommand.HoldSpeed, entity, A: on ? 1 : 0);
+
     /// <summary>A ship's orders and firefighting kept to her side's, before anything reads them.</summary>
     void Ready(int slot, ShipCondition k)
     {
@@ -248,6 +253,16 @@ public sealed class DamageSystem : IWorldSystem
                 readiness[c.Entity] = (int)c.A;
                 readinessSet = true;
                 break;
+            case DamageCommand.HoldSpeed:
+            {
+                int hs = ships.Store.SlotOf(c.Entity);
+                if (hs < 0)
+                    return;
+                var hk = ships.Store.Combat.Condition(hs);
+                hk.HoldsSpeed = c.A != 0;
+                Hold(world, hs, hk, force: true);
+                break;
+            }
             case DamageCommand.SetDamageControl:
                 if (c.Entity is < 0 or > 255 || c.A < 0 || c.A >= settings.DamageControl.Length)
                     throw new ArgumentException($"no firefighting {c.A} for side {c.Entity}");
@@ -667,6 +682,14 @@ public sealed class DamageSystem : IWorldSystem
     void Hold(World world, int slot, ShipCondition k, bool force)
     {
         double d = Flood(k.Class).DisplacementT, cap = k.PowerCap * Math.Pow(d / (d + k.WaterT), 2.0 / 3);
+        // damage control's safe speed (DC6, decision 2): her captain keeps to it once the doctrine's hold time is up, unless
+        // her orders are to hold speed
+        double hold = k.DamageControl.HoldSpeedS;
+        if (double.IsFinite(k.SafeSpeedKn) && !k.HoldsSpeed && hold >= 0 && k.SafeSinceMs > 0 && world.Time.Ms - k.SafeSinceMs >= hold * 1000)
+        {
+            var h = ships.Store[slot].Handling;
+            cap = Math.Min(cap, h.PowerFor(k.SafeSpeedKn) / Math.Max(h.MaxPowerW, 1));
+        }
         if (!force && Math.Abs(cap - k.HeldCap) < 0.01)
             return;
         k.HeldCap = cap;
@@ -816,7 +839,7 @@ public sealed class DamageSystem : IWorldSystem
         if (dt <= 0)
             return settings.FloodMs;
         Ready(slot, k);
-        Repairs.Step(cls, f, k, dt, now, settings);   // her repair parties: planned, at their water jobs (DC3)
+        Repairs.Step(cls, f, k, dt, now, ships.Store[slot].Speed, settings);   // her repair parties and DC Central (DC3-DC6)
         var wet = stream.Derive(0xF1000Du).Derive((ulong)ships.Store[slot].Entity).Derive((ulong)now);
         var fl = Flooding.Step(cls, f, k, dt, k.PowerCap, ships.Store[slot].Speed, settings, ref wet);
         if (fl.Collapsed > 0)

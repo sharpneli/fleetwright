@@ -73,7 +73,7 @@ static class DcHistory
     /// <summary>A case: the target, her speed at the start, what's done to her, her readiness and doctrine, the hours run,
     /// what was recorded, what the plan wants, and where the research has it.</summary>
     sealed record DcCase(string Era, string Name, string Target, double Kn, Blow[] Blows, string Readiness, string Doctrine, double Hours,
-        string Record, string Wanted, string Basis, double Tightness = 0);
+        string Record, string Wanted, string Basis, double Tightness = 0, bool Holds = false);
 
     static readonly DcCase[] Cases =
     [
@@ -86,7 +86,7 @@ static class DcHistory
             [Blow.Torpedo(10, 0.78, 4), Blow.Hole(30, 0.9, 0.2, 1.2, d: 2), Blow.Hole(60, 0.88, -0.5, 0.6, port: true, d: 2),
              Blow.Shells(0, 120, 12, 13_000, 60, new Fall("lion", 0, null, 1))],
             "closed up", "german-1916", 10, "(Bismarck kept her speed and gave up her repair)",
-            "more water than slowing; her forward bulkheads may give way", "09 §2.2"),
+            "more water than slowing; her forward bulkheads may give way", "09 §2.2", Holds: true),
         new("1890-1925", "Lützow, Jutland 1916: the torpedo flat holed by two heavy shells", "derfflinger", 22,
             [Blow.Hole(0, 0.86, -2, 1.0, d: 2.5), Blow.Hole(1, 0.84, -2.5, 1.0, d: 2.5), Blow.Shells(0, 60, 16, 9_000, 70, new Fall("lion", 0, null, 1)),
              Blow.Speed(60, 15), Blow.Speed(180, 7), Blow.Speed(300, 3)],
@@ -130,7 +130,7 @@ static class DcHistory
         new("mechanism checks", "A heavy shell through the bow near the waterline, holds 28 kn (09 §8)", "lion", 28,
             [Blow.Hole(0, 0.88, 0.8, 1.2, d: 2), Blow.Hole(0, 0.88, -0.4, 0.4)],
             "closed up", "rn-1916", 4, "(the research's model) forward bulkheads collapse at 8 min, ~10,400 t",
-            "forward bulkheads give way; thousands of tonnes", "09 §8, §2.2"),
+            "forward bulkheads give way; thousands of tonnes", "09 §8, §2.2", Holds: true),
         new("mechanism checks", "The same, slowed to 12 kn at 4 min (09 §8)", "lion", 28,
             [Blow.Hole(0, 0.88, 0.8, 1.2, d: 2), Blow.Hole(0, 0.88, -0.4, 0.4), Blow.Speed(4, 12)],
             "closed up", "rn-1916", 4, "(the research's model) ~1,900 t", "a fifth of holding 28 kn", "09 §8, §2.2"),
@@ -152,7 +152,7 @@ static class DcHistory
         public double[] WaterAt = [];
         public double MaxList, List, Trim, WaterT, Power = 1, Kn, LostMin = double.NaN;
         public int Sprung, Collapsed, DoorsOpen;
-        public double Counterflood;
+        public double Counterflood, SafeKn = double.PositiveInfinity;
         /// <summary>Her holes by class (DC2): how many and their area still open, m².</summary>
         public readonly int[] HolesN = new int[ShipCondition.HoleClasses];
         public readonly double[] HolesM2 = new double[ShipCondition.HoleClasses];
@@ -232,6 +232,8 @@ static class DcHistory
         {
             w.Apply(ShipSystem.Spawn(ci, 50 + 0.05 * (i % 20), -20 - 0.1 * (i / 20), 0, dc.Kn));   // the open Atlantic, 5 km apart
             list.Add(new Ship { Entity = w.Ships.NewestEntity, WaterAt = new double[Hours.Length] });
+            if (dc.Holds)
+                w.Apply(DamageSystem.HoldSpeed(w.Ships.NewestEntity, true));   // her orders: hold speed whatever damage control asks
             for (int b = 0; b < dc.Blows.Length; b++)
             {
                 var bl = dc.Blows[b];
@@ -328,6 +330,8 @@ static class DcHistory
                 (r.WaterT, r.List, r.Trim, r.Power, r.Kn) = (k.WaterT, Math.Abs(k.Attitude.HeelDeg), k.Attitude.TrimDeg, k.PowerCap,
                     store[slot].Speed / 0.514444);
                 (r.Sprung, r.Collapsed, r.DoorsOpen, r.Counterflood) = (0, 0, 0, k.CounterfloodT);
+                if (k.SafeSpeedKn < target.Motion.MaxSpeedKn)
+                    r.SafeKn = Math.Min(r.SafeKn, k.SafeSpeedKn);   // only what binds
                 Array.Clear(r.HolesN);
                 Array.Clear(r.HolesM2);
                 for (int h = 0; h < k.HoleOpenN.Length; h++)
@@ -390,9 +394,10 @@ static class DcHistory
         var hs = Enumerable.Range(0, Hours.Length).Where(h => Hours[h] <= hours).ToList();
         Console.WriteLine("    water afloat (median): " + string.Join(", ", hs.Select(h => $"{Hours[h].ToString("0.#", Inv)} h {Med(rs.Select(r => r.WaterAt[h]))} t")) +
                           string.Format(Inv, "; worst list {0}° (median, all runs)", Med(rs.Select(r => r.MaxList), "0.0")));
-        Console.WriteLine(string.Format(Inv, "    at {0:0.#} h afloat: list {1}°, trim {2}° (+ by the head), speed {3} kn, power {4}",
-            hours, Med(afloat.Select(r => r.List), "0.0"), Med(afloat.Select(r => r.Trim), "+0.0;-0.0"), Med(afloat.Select(r => r.Kn), "0.0"),
-            afloat.Count == 0 ? "-" : (100 * afloat.Average(r => r.Power)).ToString("0", Inv) + "%"));
+        Console.WriteLine(string.Format(Inv, "    at {0:0.#} h afloat: list {1}°, trim {2}° (+ by the head), speed {3} kn, power {4}; the lowest safe speed asked {5} kn " +
+            "(in {6:0}% of runs)", hours, Med(afloat.Select(r => r.List), "0.0"), Med(afloat.Select(r => r.Trim), "+0.0;-0.0"), Med(afloat.Select(r => r.Kn), "0.0"),
+            afloat.Count == 0 ? "-" : (100 * afloat.Average(r => r.Power)).ToString("0", Inv) + "%",
+            Med(rs.Where(r => double.IsFinite(r.SafeKn)).Select(r => r.SafeKn), "0.0"), 100.0 * rs.Count(r => double.IsFinite(r.SafeKn)) / n));
         Console.WriteLine(string.Format(Inv, "    boundaries sprung {0}, gave way {1} (in {2:0}% of runs), watertight doors open {3}, counterflooded {4} t (medians)",
             Med(rs.Select(r => (double)r.Sprung)), Med(rs.Select(r => (double)r.Collapsed)), 100.0 * rs.Count(r => r.Collapsed > 0) / n,
             Med(rs.Select(r => (double)r.DoorsOpen)), Med(rs.Select(r => r.Counterflood))));

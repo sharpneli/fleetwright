@@ -1318,10 +1318,23 @@ public sealed record SimSettings
     public double ClosureCap { get; init; } = 0.9;
 
     /// <summary>The repair parties' water jobs (docs/battle/damage-control.md DC3; 09 §4, by <c>RepairJob</c>: none, door,
-    /// re-dog, caulk, shore, plug, patch, plating, rig a pump): each job's man-minutes for a drilled crew (a plug's and a patch's a
+    /// re-dog, caulk, shore, plug, patch, plating, rig a pump, mat): each job's man-minutes for a drilled crew (a plug's and a patch's a
     /// hole) and its crew; a party puts at most <see cref="RepairCrewsAJob"/> crews on one [EST: 09 §4's times × men].</summary>
-    public double[] RepairJobManMin { get; init; } = [0, 2, 6, 60, 80, 6, 80, 60, 40];
-    public double[] RepairJobMen { get; init; } = [1, 2, 2, 3, 4, 2, 4, 3, 4];
+    public double[] RepairJobManMin { get; init; } = [0, 2, 6, 60, 80, 6, 80, 60, 40, 1800];
+    public double[] RepairJobMen { get; init; } = [1, 2, 2, 3, 4, 2, 4, 3, 4, 20];
+
+    /// <summary>The safe speed (DC6; 09 §2.2): a holed space's boundaries kept under this share of their rating with the ram
+    /// head on them, at least <see cref="SafeMinKn"/> (steerage); no faster than <see cref="HullWorkKn"/> while there's work
+    /// on her hull's holes, which above it works loose by <see cref="HullWorkLoosen"/> every 10 min (17 §5.2, 13); no
+    /// faster than <see cref="MatKn"/> while a collision mat goes over (09 §4: the ship slowed to a crawl), which reaches
+    /// holes within <see cref="MatReachM"/> of the sea and leaves <see cref="MatLeft"/> of them [EST].</summary>
+    public double SafeLoadShare { get; init; } = 0.8;
+    public double SafeMinKn { get; init; } = 3;
+    public double HullWorkKn { get; init; } = 15;
+    public double HullWorkLoosen { get; init; } = 0.15;
+    public double MatKn { get; init; } = 5;
+    public double MatReachM { get; init; } = 2;
+    public double MatLeft { get; init; } = 0.3;
 
     /// <summary>DC Central's counterflooding without the conning position (DC5): by hand at the valves at this share of
     /// their rate, after this many seconds to get men there [EST].</summary>
@@ -1571,19 +1584,19 @@ public sealed record SimSettings
     /// gun crews turn to as the doctrine's extra parties at <see cref="FireTurnToSkill"/> (doc 10 §5).</summary>
     public DamageControlDoctrine[] DamageControl { get; init; } =
     [
-        new() { Name = "unorganised-1890", CounterfloodDeg = -1, CounterfloodTrimDeg = -1, Skill = 0.4, WatchS = -1, HoseLpm = 600, Nozzle = "jet", MusterS = 360, ManLpm = 100, PartyShare = 0.10, PartyMen = 16,
+        new() { Name = "unorganised-1890", HoldSpeedS = 3600, CounterfloodDeg = -1, CounterfloodTrimDeg = -1, Skill = 0.4, WatchS = -1, HoseLpm = 600, Nozzle = "jet", MusterS = 360, ManLpm = 100, PartyShare = 0.10, PartyMen = 16,
             MainBreak = 0.25, HoseCut = 0.30, Looped = false, RestoreS = -1, PumpFloor = 0, BreathingSets = false, TurnTo = 1, FloodMagazineS = 600 },
-        new() { Name = "prepared-1894", CounterfloodDeg = 5, CounterfloodTrimDeg = -1, Skill = 0.6, WatchS = 120, HoseLpm = 600, Nozzle = "jet", MusterS = 180, ManLpm = 100, PartyShare = 0.12, PartyMen = 16,
+        new() { Name = "prepared-1894", HoldSpeedS = 1800, CounterfloodDeg = 5, CounterfloodTrimDeg = -1, Skill = 0.6, WatchS = 120, HoseLpm = 600, Nozzle = "jet", MusterS = 180, ManLpm = 100, PartyShare = 0.12, PartyMen = 16,
             MainBreak = 0.20, HoseCut = 0.30, Looped = false, RestoreS = 900, PumpFloor = 0, BreathingSets = false, TurnTo = 2, FloodMagazineS = 300 },
-        new() { Name = "russian-1905", CounterfloodDeg = 3, CounterfloodTrimDeg = -1, Skill = 0.6, WatchS = 90, HoseLpm = 600, Nozzle = "jet", MusterS = 180, ManLpm = 100, PartyShare = 0.12, PartyMen = 16,
+        new() { Name = "russian-1905", HoldSpeedS = 3600, CounterfloodDeg = 3, CounterfloodTrimDeg = -1, Skill = 0.6, WatchS = 90, HoseLpm = 600, Nozzle = "jet", MusterS = 180, ManLpm = 100, PartyShare = 0.12, PartyMen = 16,
             MainBreak = 0.20, HoseCut = 0.45, Looped = false, RestoreS = 900, PumpFloor = 0, BreathingSets = false, TurnTo = 2, FloodMagazineS = 300 },
-        new() { Name = "rn-1916", CounterfloodDeg = 3, CounterfloodTrimDeg = -1, Skill = 0.8, WatchS = 180, HoseLpm = 420, Nozzle = "jet", MusterS = 240, ManLpm = 84, PartyShare = 0.12, PartyMen = 16,
+        new() { Name = "rn-1916", HoldSpeedS = 1800, CounterfloodDeg = 3, CounterfloodTrimDeg = -1, Skill = 0.8, WatchS = 180, HoseLpm = 420, Nozzle = "jet", MusterS = 240, ManLpm = 84, PartyShare = 0.12, PartyMen = 16,
             MainBreak = 0.10, HoseCut = 0.15, Looped = false, RestoreS = 900, PumpFloor = 0, BreathingSets = false, TurnTo = 2, FloodMagazineS = 180 },
-        new() { Name = "german-1916", CounterfloodDeg = 1.5, CounterfloodTrimDeg = 1, Skill = 0.9, WatchS = 180, HoseLpm = 420, Nozzle = "jet", MusterS = 240, ManLpm = 84, PartyShare = 0.12, PartyMen = 16,
+        new() { Name = "german-1916", HoldSpeedS = 0, CounterfloodDeg = 1.5, CounterfloodTrimDeg = 1, Skill = 0.9, WatchS = 180, HoseLpm = 420, Nozzle = "jet", MusterS = 240, ManLpm = 84, PartyShare = 0.12, PartyMen = 16,
             MainBreak = 0.10, HoseCut = 0.15, Looped = false, RestoreS = 900, PumpFloor = 0, BreathingSets = false, TurnTo = 2, FloodMagazineS = 180 },
-        new() { Name = "usn-1942", CounterfloodDeg = 1, CounterfloodTrimDeg = 1, Skill = 0.9, WatchS = 120, HoseLpm = 250, Nozzle = "all-purpose", MusterS = 180, ManLpm = 62.5, PartyShare = 0.12, PartyMen = 16,
+        new() { Name = "usn-1942", HoldSpeedS = 600, CounterfloodDeg = 1, CounterfloodTrimDeg = 1, Skill = 0.9, WatchS = 120, HoseLpm = 250, Nozzle = "all-purpose", MusterS = 180, ManLpm = 62.5, PartyShare = 0.12, PartyMen = 16,
             MainBreak = 0.25, HoseCut = 0.20, Looped = false, RestoreS = 480, PumpFloor = 0, BreathingSets = false, TurnTo = 2, FloodMagazineS = 180 },
-        new() { Name = "usn-1944", CounterfloodDeg = 1, CounterfloodTrimDeg = 1, Skill = 1.0, WatchS = 60, HoseLpm = 360, Nozzle = "fog", MusterS = 120, ManLpm = 90, PartyShare = 0.12, PartyMen = 16,
+        new() { Name = "usn-1944", HoldSpeedS = 600, CounterfloodDeg = 1, CounterfloodTrimDeg = 1, Skill = 1.0, WatchS = 60, HoseLpm = 360, Nozzle = "fog", MusterS = 120, ManLpm = 90, PartyShare = 0.12, PartyMen = 16,
             MainBreak = 0.15, HoseCut = 0.20, Looped = true, RestoreS = 240, PumpFloor = 0.6, BreathingSets = true, TurnTo = 3,
             CoolBoundaries = true, ReflashWatch = true, FloodMagazineS = 120 },
     ];
@@ -1840,6 +1853,9 @@ public readonly record struct DamageControlDoctrine
     /// [EST: NC took 5.5° off at once; the German navy trimmed, the RN rarely].</summary>
     public double CounterfloodDeg { get; init; }
     public double CounterfloodTrimDeg { get; init; }
+    /// <summary>How long her captain holds his speed once damage control asks for less, s (DC6, decision 2; -1: he never
+    /// slows for it) [EST: the German navy slowed at once (Seydlitz, Lützow), the RN held the line longer].</summary>
+    public double HoldSpeedS { get; init; }
 }
 
 /// <summary>A ship's orders before action for fire (docs/battle/fire.md B1; <see cref="SimSettings.Readiness"/>).</summary>

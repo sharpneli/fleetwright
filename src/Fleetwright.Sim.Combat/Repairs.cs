@@ -19,6 +19,8 @@ public enum RepairJob : byte
     Seam,
     /// <summary>Rig a portable pump in a flooded space (DC4).</summary>
     RigPump,
+    /// <summary>A collision mat over a cell's large holes near the waterline, from outside, the ship slowed (DC6).</summary>
+    Mat,
 }
 
 /// <summary>REPAIRS (docs/battle/damage-control.md DC3; 09 §3-§4, 10 §5.1): her repair parties, one pool of men for fire
@@ -39,7 +41,10 @@ public static class Repairs
     /// water's.</summary>
     enum Tier : byte { Parts = 1, Pump = 2, Near = 3, Fire = 4, Water = 5, Door = 6, MagazineFire = 7 }
 
-    public static void Step(ShipClass c, FloodModel f, ShipCondition k, double dt, long now, SimSettings s)
+    public static void Step(ShipClass c, FloodModel f, ShipCondition k, double dt, long now, SimSettings s) =>
+        Step(c, f, k, dt, now, 0, s);
+
+    public static void Step(ShipClass c, FloodModel f, ShipCondition k, double dt, long now, double speedMs, SimSettings s)
     {
         ref readonly var doc = ref k.DamageControl;
         if (doc.Name is null || k.Status != ShipStatus.Afloat || !k.Damaged && k.Fires == 0)
@@ -47,8 +52,98 @@ public static class Repairs
         Make(c, f, k, now, s);
         Watch(c, f, k, now, s);
         Counterflood(c, f, k, dt, now, s);
+        Loosen(k, dt, speedMs, s);
+        if (now >= k.NextPlanMs)
+            Safe(c, f, k, now, speedMs, s);
         PlanIfDue(c, f, k, now, s);
-        Work(c, f, k, dt, now, s);
+        Work(c, f, k, dt, now, speedMs, s);
+    }
+
+    // ------------------------------------------------------------------ speed (DC6)
+
+    /// <summary>The speed damage control asks for (09 §2.2, 17 §5; Seydlitz, Lützow, Bismarck): the highest at which every
+    /// boundary of a holed space forward stays under <see cref="SimSettings.SafeLoadShare"/> of its rating with the ram head
+    /// on it (at least <see cref="SimSettings.SafeMinKn"/>, steerage); no more than <see cref="SimSettings.HullWorkKn"/>
+    /// while the work on her hull's holes holds back more than her pumps could take if it worked loose; no more than
+    /// <see cref="SimSettings.MatKn"/> while a mat goes over (only started on holes the pumps can't keep up with). When it
+    /// first asks for less than she's making is when the doctrine's hold time starts.</summary>
+    static void Safe(ShipClass c, FloodModel f, ShipCondition k, long now, double speedMs, SimSettings s)
+    {
+        double safe = double.PositiveInfinity;
+        var edges = f.Edges;
+        for (int ei = 0; ei < edges.Length; ei++)
+        {
+            ref readonly var e = ref edges[ei];
+            if (k.BreachM2[e.A] <= 0 && k.BreachM2[e.B] <= 0 || (k.JoinMarks[e.Pool] & JoinMark.Collapsed) != 0)
+                continue;
+            var (load, ramK) = Flooding.EdgeLoad(c, f, k, ei, s);
+            if (ramK <= 0)
+                continue;
+            double room = s.SafeLoadShare * Flooding.Rating(f, k, ei, e.Pool, s) - load;
+            safe = Math.Min(safe, room <= 0 ? 0 : Math.Sqrt(room / ramK) / Kn);
+        }
+        if (safe > s.HullWorkKn && Held(c, f, k, s) > Pumps(c, k))
+            safe = s.HullWorkKn;
+        for (int p = 0; p < k.PartyCount; p++)
+            if (k.Parties[p].Job == RepairJob.Mat)
+                safe = Math.Min(safe, s.MatKn);
+        if (double.IsFinite(safe))
+            safe = Math.Max(safe, s.SafeMinKn);
+        bool asks = safe < Math.Abs(speedMs) / Kn - 0.5;
+        if (asks && (!double.IsFinite(k.SafeSpeedKn) || k.SafeSinceMs == 0))
+            k.SafeSinceMs = Math.Max(now, 1);
+        else if (!double.IsFinite(safe))
+            k.SafeSinceMs = 0;
+        k.SafeSpeedKn = safe;
+    }
+
+    const double Kn = 0.514444;
+
+    /// <summary>What the work on her hull's holes holds back, m³/s: their area worked on × the share stopped, at each cell's
+    /// full head (what would come in if it all worked loose).</summary>
+    static double Held(ShipClass c, FloodModel f, ShipCondition k, SimSettings s)
+    {
+        var water = HitQuery.WaterOf(c, k.Attitude);
+        double held = 0;
+        int cells = k.HoleDoneM2.Length / ShipCondition.HoleClasses;
+        for (int i = 0; i < cells; i++)
+        {
+            double stopped = 0;
+            for (int h = i * ShipCondition.HoleClasses; h < (i + 1) * ShipCondition.HoleClasses; h++)
+                stopped += k.HoleDoneM2[h] * (1 - k.HoleLeft[h]);
+            if (stopped <= 0)
+                continue;
+            double head = water.At(f.Cx[i], k.BreachY[i]) - Math.Max(k.BreachZ[i], c.Cells[i].Box.Base);
+            if (head > 0)
+                held += s.FloodCd * stopped * Math.Sqrt(2 * 9.81 * head);
+        }
+        return held;
+    }
+
+    /// <summary>What her pumps can take now, m³/s: the drainage on her power and the portable pumps she carries.</summary>
+    static double Pumps(ShipClass c, ShipCondition k) =>
+        (c.Drainage.PumpsTph * k.PowerCap + c.Drainage.PortablePumps * c.Drainage.PortableTph) / FloodModel.SeaT / 3600;
+
+    /// <summary>Caulking, plugs, patches and mats on the hull work loose at speed (17 §5.2, 13: 15% back toward open every
+    /// 10 min above <see cref="SimSettings.HullWorkKn"/>; Bismarck's mat).</summary>
+    static void Loosen(ShipCondition k, double dt, double speedMs, SimSettings s)
+    {
+        if (Math.Abs(speedMs) / Kn <= s.HullWorkKn)
+            return;
+        double creep = 1 - Math.Pow(1 - s.HullWorkLoosen, dt / 600);
+        int cells = k.HoleDoneM2.Length / ShipCondition.HoleClasses;
+        for (int i = 0; i < cells; i++)
+        {
+            bool any = false;
+            for (int h = i * ShipCondition.HoleClasses; h < (i + 1) * ShipCondition.HoleClasses; h++)
+                if (k.HoleDoneM2[h] > 0 && k.HoleLeft[h] < 1)
+                {
+                    k.HoleLeft[h] += (1 - k.HoleLeft[h]) * creep;
+                    any = true;
+                }
+            if (any)
+                k.Recount(i);
+        }
     }
 
     // ------------------------------------------------------------------ DC Central (DC5)
@@ -364,6 +459,18 @@ public static class Repairs
                     Offer(new Candidate(job, i, cells[i].Section, Score(Tier.Near, floodFirst, 1 + k.HoleOpenM2[hi] * 1e4)), ref best);
             }
         }
+        // the collision mats: over a cell's large holes near the waterline, from the deck (09 §4: 1-4 h, 20-40 men, slowed)
+        for (int i = 0; i < cells.Length; i++)
+        {
+            int hm = i * ShipCondition.HoleClasses + (int)HoleClass.Mat;
+            if (k.HoleOpenM2[hm] <= 0 || Taken(k, RepairJob.Mat, i) || !MatReach(c, k, i, k.HoleZ[hm], s))
+                continue;
+            double flowH = k.CellInflow[i] * 3600 * k.HoleOpenM2[hm] / Math.Max(k.BreachM2[i], 1e-9);
+            // a mat means stopping the ship: only for holes whose water the pumps can't keep up with
+            if (flowH > 0 && Flooding.FullInflow(c, f, k, HitQuery.WaterOf(c, k.Attitude), i, s.FloodCd) > Pumps(c, k))
+                Offer(new Candidate(RepairJob.Mat, i, cells[i].Section, Score(Tier.Water, floodFirst, flowH * Value(c, i))), ref best);
+        }
+
         // the portable pumps: rigged where water stands and the holes don't beat them, the most water (by what it is) first
         if (k.PumpsRigged < c.Drainage.PortablePumps && c.Drainage.PortableTph > 0)
         {
@@ -479,6 +586,11 @@ public static class Repairs
             }
             case RepairJob.RigPump:
                 return k.PumpsIn[at] == 0 && k.WaterM3[at] > 0 && !k.CellFire[at] && k.PumpsRigged < c.Drainage.PortablePumps;
+            case RepairJob.Mat:
+            {
+                int h = at * ShipCondition.HoleClasses + (int)HoleClass.Mat;
+                return k.HoleOpenM2[h] > 0 && MatReach(c, k, at, k.HoleZ[h], s);
+            }
             default:
             {
                 int h = at * ShipCondition.HoleClasses + (int)Class(job);
@@ -487,19 +599,34 @@ public static class Repairs
         }
     }
 
-    static HoleClass Class(RepairJob job) => job switch { RepairJob.Seam => HoleClass.Seam, RepairJob.Plug => HoleClass.Plug, _ => HoleClass.Patch };
+    static HoleClass Class(RepairJob job) => job switch
+    {
+        RepairJob.Seam => HoleClass.Seam, RepairJob.Plug => HoleClass.Plug, RepairJob.Mat => HoleClass.Mat, _ => HoleClass.Patch,
+    };
+
+    /// <summary>Whether a mat from outside reaches holes at a height: in the hull's own side (the cell behind the plating
+    /// there, not a space a torpedo tore open inside), within <see cref="SimSettings.MatReachM"/> of the sea.</summary>
+    static bool MatReach(ShipClass c, ShipCondition k, int cell, double holeZ, SimSettings s)
+    {
+        var b = c.Cells[cell].Box;
+        double x = (b.X0 + b.X1) / 2;
+        if (FloodModel.SideCell(c, x, holeZ, k.BreachY[cell] >= 0).Cell != cell)
+            return false;
+        return Math.Abs(holeZ - HitQuery.WaterOf(c, k.Attitude).At(x, k.BreachY[cell])) <= s.MatReachM;
+    }
 
     /// <summary>A job's size, man-minutes (09 §4's times × its crew; the holes' by their count).</summary>
     static double ManMin(ShipCondition k, RepairJob job, int at, SimSettings s)
     {
         double each = s.RepairJobManMin[(int)job];
-        return job is RepairJob.Plug or RepairJob.Patch ? each * Math.Max(k.HoleOpenN[at * ShipCondition.HoleClasses + (int)Class(job)], 1) : each;
+        return job is RepairJob.Plug or RepairJob.Patch or RepairJob.Mat ? each * Math.Max(k.HoleOpenN[at * ShipCondition.HoleClasses + (int)Class(job)], 1) : each;
     }
 
     /// <summary>The parties at their water jobs: their men (at most twice the job's crew) at the doctrine's skill, slower in
     /// the dark and on a list; a job done is applied and the party freed (its next job at the next plan).</summary>
-    static void Work(ShipClass c, FloodModel f, ShipCondition k, double dt, long now, SimSettings s)
+    static void Work(ShipClass c, FloodModel f, ShipCondition k, double dt, long now, double speedMs, SimSettings s)
     {
+        bool slow = Math.Abs(speedMs) / Kn <= s.MatKn;
         double env = k.DamageControl.Skill / ((k.PowerCap < s.RepairDarkPower ? s.RepairDarkK : 1) * (1 + s.RepairListPerDeg * Math.Abs(k.Attitude.HeelDeg)));
         for (int p = 0; p < k.PartyCount; p++)
         {
@@ -511,6 +638,8 @@ public static class Repairs
                 (party.Job, party.JobAt) = (RepairJob.None, -1);
                 continue;
             }
+            if (party.Job == RepairJob.Mat && !slow)
+                continue;   // a mat goes over only with the way off her
             double men = Math.Min(party.Men, s.RepairJobMen[(int)party.Job] * s.RepairCrewsAJob);
             party.Done += men * party.Skill * env * dt / 60;
             if (party.Done < ManMin(k, party.Job, party.JobAt, s))
@@ -545,6 +674,7 @@ public static class Repairs
         double left = job switch
         {
             RepairJob.Plug => s.RepairPlugLeft,
+            RepairJob.Mat => s.MatLeft,
             RepairJob.Seam => s.CaulkSeamShare,
             // a patch put on against the water still coming in holds worse (NRL's ex-Shadwell)
             _ => Flowing(c, f, k, at, k.HoleZ[h]) ? s.RepairPatchFlowLeft : s.RepairPatchLeft,
