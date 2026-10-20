@@ -108,8 +108,8 @@ static class TemplatesWriter
             "torpedoes": {"tubes": 4, "torpedo": "Great War torpedo"}
             ```
 
-            | Gun block | Reload | Slower at 300 mm (≥40 / <40 / <30 cal) | Training | DP | Elevation | DP | Pattern % (305 mm, power, light) | Propellant |
-            |---|---|---|---|---|---|---|---|---|
+            | Gun block | Reload | Slower at 300 mm (≥40 / <40 / <30 cal) | Training | DP | Elevation | DP | Pattern % (305 mm, power, light) | Propellant | Packed |
+            |---|---|---|---|---|---|---|---|---|---|
 
             """.Replace("\r\n", "\n"));
         foreach (var g in GunTemplates.All)
@@ -118,7 +118,7 @@ static class TemplatesWriter
             string propellant = v.BlackPowderUnderCal > 0 ? $"{v.Propellant}, black powder under {v.BlackPowderUnderCal:0} cal" : v.Propellant!;
             sb.Append(Inv, $"| {g.Name} | ×{v.ReloadShare:0.0#} | ×{v.HeavySlow:0.0#} / ×{v.HeavySlowUnder40Cal:0.0#} / ×{v.HeavySlowUnder30Cal:0.0#} | " +
                            $"×{v.TrainShare:0.0#} | ×{v.DpTrainShare:0.0#} | {v.MaxElevationDeg:0}° | {v.DpMaxElevationDeg:0}° | " +
-                           $"{v.PatternPct:0.0#}, {v.PatternExp:0}, {v.PatternLightPct:0.0#} | {propellant} |\n");
+                           $"{v.PatternPct:0.0#}, {v.PatternExp:0}, {v.PatternLightPct:0.0#} | {propellant} | {v.Packaging} |\n");
         }
         sb.Append("\nShares of the rules' reload, 7·(d/102 mm)^1.5 s (at most 36), and training, 2·(381 mm/d)^1.5 °/s.\n\n");
         foreach (var g in GunTemplates.All)

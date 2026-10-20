@@ -90,6 +90,7 @@ public static class DesignerPlaceholders
         return new ChargeRow
         {
             MassKg = 4000 * d * d * d * (calibreLength / 50), Propellant = calibreLength < g.BlackPowderUnderCal ? Propellants.BlackPowder : g.Propellant,
+            Packaging = g.Packaging,
             Igniter = calibreMm <= 120 ? 0.003 : 0.01,
         };
     }

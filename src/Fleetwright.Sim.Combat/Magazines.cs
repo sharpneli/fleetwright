@@ -6,7 +6,7 @@ namespace Fleetwright.Sim.Combat;
 /// <summary>The magazines (docs/battle/magazines.md). V2, the ammunition trains: charges lit at a station of a mount's train
 /// (<see cref="ShipClass.Train"/>) burn there, and the flame goes on up and down the train past each door that stands
 /// open (research/simulation/damage-research/10-magazine-flash-chain.md §3). A flame that reaches the magazine sets it
-/// off: until the venting race (V3) the ship is lost with it, as before.
+/// off, and the venting race (V3, <see cref="SetOff"/>) decides what's left.
 /// <list type="bullet">
 /// <item><b>The doors:</b> each station's door to the next one down (the gunhouse's floor and cages, the trunk's lower
 /// doors, the handling room's scuttle to the magazine, a casemate's hoist and passage) stands open
@@ -16,7 +16,7 @@ namespace Fleetwright.Sim.Combat;
 /// (16 §4.6: a turret's train, a casemate's as a battery's) and the charges start a propellant seat (fire.md B1).</item>
 /// </list>
 /// Pure and allocation-free; the draws come from the stream it's given.</summary>
-public static class Magazines
+public static partial class Magazines
 {
     /// <summary>Charges lit at a station of a mount's train: they burn (unless <paramref name="burning"/>, a fire that's
     /// already theirs), the flame runs on past the open doors; returns the magazine room it reached, or -1.</summary>

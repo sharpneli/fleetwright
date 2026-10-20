@@ -73,7 +73,8 @@ public sealed class DamageSystem : IWorldSystem
     /// and her class (a registry id), the magazine (a room of the class; -1 when none is linked to what went up), what
     /// set it off, where she was and her heading over the sea (unit), and the hit's point in her frame (the origin for a
     /// fire or the dev's).</summary>
-    public readonly record struct Blast(long Ms, int Ship, int Class, int Room, BlastCause Cause, Vec3d At, Vec3d Forward, P3 Point);
+    public readonly record struct Blast(long Ms, int Ship, int Class, int Room, BlastCause Cause, Vec3d At, Vec3d Forward, P3 Point,
+        MagazineTier Tier = MagazineTier.Severed, double FastKg = double.NaN);
 
     /// <summary>A shell's hit as the screens draw it (docs/visuals/hits-and-fires.md I0; <see cref="HitsView"/>): facts the
     /// hit had, kept for the screens only (not world state, never hashed).</summary>
@@ -124,6 +125,9 @@ public sealed class DamageSystem : IWorldSystem
     /// not world state).</summary>
     public TerminalResult LastTerminal { get; private set; }
     public EffectsResult LastEffects { get; private set; }
+
+    /// <summary>The last hit's magazine race, when it set one off (docs/battle/magazines.md V3); default otherwise.</summary>
+    public RaceResult LastRace { get; private set; }
     public HitEffect LastEffect { get; private set; }
 
     /// <summary>The last hit's own path (tools: it's overwritten by the next hit).</summary>
@@ -529,6 +533,14 @@ public sealed class DamageSystem : IWorldSystem
             t = Terminal.Resolve(cls, hit, path, bender, lots, settings, ref rng, k, Trace);
             e = Effects.Apply(cls, k, hit, path, t, settings, ref rng);
         }
+        // a magazine set off: the venting race decides what's left (docs/battle/magazines.md V3)
+        var race = default(RaceResult);
+        if (e.Magazine && k.Status == ShipStatus.Afloat)
+        {
+            race = Magazines.SetOff(cls, k, e.MagazineRoom, store.Combat.Mounts(slot), settings, now, ref rng);
+            (e.Killed, e.Wounded, e.Fire) = (e.Killed + race.Killed, e.Wounded + race.Wounded, e.Fire || !race.Lost);
+        }
+        LastRace = race;
         // its section's fire main and the fire parties there (docs/battle/fire.md B4)
         if (!near && k.Status == ShipStatus.Afloat)
             Fires.Hit(cls, Flood(cls), k, cls.SectionAt(hit.Point.X), now, settings, ref rng);
@@ -569,7 +581,7 @@ public sealed class DamageSystem : IWorldSystem
             fx |= Recompute(world, slot, k, ref rng);
             Remind(world, slot, k);
         }
-        bool blew = e.Magazine && k.Status == ShipStatus.Afloat, broke = e.Broken && !blew && k.Status == ShipStatus.Afloat;
+        bool blew = e.Magazine && race.Lost && k.Status == ShipStatus.Afloat, broke = e.Broken && !blew && k.Status == ShipStatus.Afloat;
         if (blew)
             fx |= HitEffect.Magazine;
         if (broke)
@@ -581,7 +593,7 @@ public sealed class DamageSystem : IWorldSystem
             log.Add(new CombatEntry(now, near ? CombatEvent.NearMiss : CombatEvent.Hit, hit.Shooter, hit.Battery, hit.Ship, hit.ShellType, e.Part, t.Outcome,
                 fx, hit.Shell.Kind, (float)(hit.Source == HitSource.Torpedo ? hit.Torpedo.CalibreMm : hit.Shell.CalibreMm), hit.Source));
         if (blew)
-            Blew(world, slot, k, e.MagazineRoom, hit.Source == HitSource.Torpedo ? BlastCause.Torpedo : BlastCause.Shell, hit.Point);
+            Blew(world, slot, k, e.MagazineRoom, hit.Source == HitSource.Torpedo ? BlastCause.Torpedo : BlastCause.Shell, hit.Point, race);
         else if (broke)
             Lose(world, slot, k, LossKind.BrokeInTwo);
         else if (k.Status == ShipStatus.Afloat && (e.BreachM2 > 0 || e.Fire || Repairs.Busy(cls, k)))
@@ -759,11 +771,14 @@ public sealed class DamageSystem : IWorldSystem
         struckCount = Math.Min(struckCount + 1, struck.Length);
     }
 
-    /// <summary>A magazine set off: its record for the screens (<see cref="Blast"/>), and the ship lost.</summary>
-    void Blew(World world, int slot, ShipCondition k, int room, BlastCause cause, P3 point)
+    /// <summary>A magazine that took the ship (its race severed her, or the dev's): its record for the screens
+    /// (<see cref="Blast"/>: the tier and the propellant burned by the girder's failure, the fireball's), and the ship
+    /// lost.</summary>
+    void Blew(World world, int slot, ShipCondition k, int room, BlastCause cause, P3 point, in RaceResult race = default)
     {
         var ship = ships.Store[slot];
-        blasts[blastNext] = new Blast(world.Time.Ms, ship.Entity, ship.ClassIndex, room, cause, ship.Position, ship.Forward, point);
+        blasts[blastNext] = new Blast(world.Time.Ms, ship.Entity, ship.ClassIndex, room, cause, ship.Position, ship.Forward, point,
+            race.Tier >= MagazineTier.Severed ? race.Tier : MagazineTier.Severed, race.Tier >= MagazineTier.Severed ? race.FastKg : double.NaN);
         blastNext = (blastNext + 1) % blasts.Length;
         blastCount = Math.Min(blastCount + 1, blasts.Length);
         Lose(world, slot, k, LossKind.Magazine);
@@ -846,8 +861,14 @@ public sealed class DamageSystem : IWorldSystem
         touched = true;
         if (fs.Magazine)
         {
-            Blew(world, slot, k, fs.MagazineRoom, BlastCause.Fire, default);
-            return -1;
+            // fire's heat set it off (fire B2): the venting race decides (docs/battle/magazines.md V3)
+            var race = Magazines.SetOff(cls, k, fs.MagazineRoom, ships.Store.Combat.Mounts(slot), settings, now, ref rng);
+            if (race.Lost)
+            {
+                Blew(world, slot, k, fs.MagazineRoom, BlastCause.Fire, default, race);
+                return -1;
+            }
+            Recompute(world, slot, k, ref rng);
         }
         if (how != LossKind.None)
         {

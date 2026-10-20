@@ -471,8 +471,10 @@ public sealed record TorpedoInput
 /// like machinery.tech: its reload as a share of the placeholder rule's; a heavy gun's slowing at 300 mm, for one of 40
 /// calibres or more, under 40 and under 30; its training as a share of the rule's, and a dual-purpose mount's on top; its
 /// highest elevation, degrees, and a dual-purpose mount's; its full-salvo pattern, % of the range at 305 mm, the power of
-/// 305/d it goes by and a light gun's (under 280 mm); its charge's propellant (one of Propellants.Names), and the
-/// length under which it fires black powder (0 none).</summary>
+/// 305/d it goes by and a light gun's (under 280 mm); its charge's propellant (one of Propellants.Names), the length
+/// under which it fires black powder (0 none), and how its charges are packed in the magazine (GunTemplates.Packagings:
+/// silk bags alone, bags in Clarkson cases, a brass cartridge case, bags in airtight tanks; docs/battle/magazines.md
+/// decision 1).</summary>
 public sealed record GunTechInput
 {
     public double? ReloadShare { get; init; }
@@ -488,6 +490,7 @@ public sealed record GunTechInput
     public double? PatternLightPct { get; init; }
     public string? Propellant { get; init; }
     public double? BlackPowderUnderCal { get; init; }
+    public string? Packaging { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 

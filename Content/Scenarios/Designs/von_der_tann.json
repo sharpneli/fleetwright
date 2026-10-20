@@ -1,5 +1,5 @@
 {
- "version": 12,
+ "version": 13,
  "id": "von_der_tann",
  "name": "Von der Tann-like (1910)",
  "type": "BC",
@@ -59,7 +59,7 @@
      "share": 0.3
     }
    ],
-   "gun": "Great War, double-base",
+   "gun": "Great War, double-base, brass-cased",
    "housing": "barbette"
   }
  ],
@@ -82,7 +82,7 @@
      "share": 0.7
     }
    ],
-   "gun": "Great War, double-base"
+   "gun": "Great War, double-base, brass-cased"
   },
   {
    "calibre_mm": 88,
@@ -102,7 +102,7 @@
      "share": 0.7
     }
    ],
-   "gun": "Great War, double-base",
+   "gun": "Great War, double-base, brass-cased",
    "housing": "shield"
   }
  ],
@@ -529,7 +529,7 @@
   "growth": 1
  },
  "gun_tech": {
-  "Great War, double-base": {
+  "Great War, double-base, brass-cased": {
    "reload_share": 1.1,
    "heavy_slow": 1,
    "heavy_slow_under_40_cal": 1,
@@ -542,7 +542,8 @@
    "pattern_exp": 3,
    "pattern_light_pct": 2.5,
    "propellant": "double-base",
-   "black_powder_under_cal": 0
+   "black_powder_under_cal": 0,
+   "packaging": "brass"
   }
  },
  "torpedo_tech": {

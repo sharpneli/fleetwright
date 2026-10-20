@@ -1154,6 +1154,45 @@ public sealed record SimSettings
     /// of a twin turret in action, ~2 a station].</item>
     /// </list></summary>
     public double[] StationLightChance { get; init; } = [0.25, 0.25, 0.25, 0.25];
+
+    /// <summary>The venting race (docs/battle/magazines.md V3; research/simulation/damage-research/10 §6,
+    /// magazine_race_ref.py): a magazine alight is one gas volume, its spaces' gas, made by the lit charges' surface and
+    /// let out through the vents.
+    /// <list type="bullet">
+    /// <item>MagazineHeatKeep: the share of the impetus left as pressure in a cold steel room [EST: losses, mixing];
+    /// MagazineVentCd a ragged opening's discharge coefficient [EST]; MagazineGasGamma the hot gas's [EST: 1.2-1.25].</item>
+    /// <item>MagazinePackageR [bag, Clarkson case, brass case, tank]: how many neighbours one burning charge lights in its
+    /// package before it burns out, a branching process (10 §1.3 [EST, fitted]: Clarkson ~4, brass ~1.4, tank ~1.2); bags
+    /// alone light together, within MagazineBagSpreadS of the flash [EST: 0.2-1 s].</item>
+    /// <item>The way out: the magazine's door or scuttle to its handling room gives at MagazineScuttleKPa [EST, 10 §6:
+    /// 40 kPa]; a gunhouse's roof at MagazineRoofShare of its lift [EST, 10 §2.3: 0.3-0.5], the gunhouse itself at its
+    /// lift (<see cref="Fleetwright.Sim.Ships.ShipClass.LiftKPa"/>); either opens its trunk, MagazineTrunkShare of the
+    /// barbette's bore [EST, 10 §2.2: 2-6 m² for a heavy turret]; a mount without a barbette has its hoist,
+    /// MagazineHoistM2 [EST], at the scuttle's pressure. The magazine's own boundaries give by the research's table
+    /// (10 §6 [EST]), MagazineGiveKPa and the vent each opens, MagazineGiveM2: [the bulkhead to the next space, 250 kPa,
+    /// a 4 m² tear; the armoured deck over it, 700, 10 m²; its sides, 1,000, 60 m²; its bottom, 2,000, 60 m²]. An
+    /// approved exception to the blast's own rules (the user, 2026-10-20): on a ship's own plating they spread the gas
+    /// through her thin bulkheads and never load the girder.</item>
+    /// <item>The tiers (07 §6.3; V4 puts the hull girder in their place): the share of the girder lost at the magazine,
+    /// MagazineD [the deck over it, its sides, its bottom] [EST, 10 §6], severs her at MagazineSeveredD; less and it's a
+    /// local breach; a gunhouse vented and nothing more, burned out; else contained.</item>
+    /// <item>The steps: MagazineRaceMs [the first 5 s, after], up to MagazineRaceS.</item>
+    /// </list></summary>
+    public double MagazineHeatKeep { get; init; } = 0.5;
+    public double MagazineVentCd { get; init; } = 0.7;
+    public double MagazineGasGamma { get; init; } = 1.25;
+    public double[] MagazinePackageR { get; init; } = [0, 4, 1.4, 1.2];
+    public double MagazineBagSpreadS { get; init; } = 0.5;
+    public double MagazineScuttleKPa { get; init; } = 40;
+    public double MagazineRoofShare { get; init; } = 0.4;
+    public double MagazineTrunkShare { get; init; } = 0.05;
+    public double MagazineHoistM2 { get; init; } = 0.25;
+    public double[] MagazineGiveKPa { get; init; } = [250, 700, 1000, 2000];
+    public double[] MagazineGiveM2 { get; init; } = [4, 10, 60, 60];
+    public double[] MagazineD { get; init; } = [0.35, 0.45, 0.2];
+    public double MagazineSeveredD { get; init; } = 0.8;
+    public double[] MagazineRaceMs { get; init; } = [2, 20];
+    public double MagazineRaceS { get; init; } = 180;
     public double[] StationDoorOpen { get; init; } = [0.1, 0.1, 0.02, 0.1];
     public double StationCharges { get; init; } = 1;
     public int MagazineLossMs { get; init; } = 60_000;

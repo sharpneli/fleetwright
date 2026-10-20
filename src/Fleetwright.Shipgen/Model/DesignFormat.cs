@@ -12,7 +12,7 @@ namespace Fleetwright.Shipgen;
 public static class DesignFormat
 {
     /// <summary>The version this build writes.</summary>
-    public const int Current = 12;
+    public const int Current = 13;
 
     /// <summary>Steps[v] upgrades a version v design to v + 1, adding what it couldn't tell to the warnings.</summary>
     static readonly Action<JsonObject, List<string>>[] Steps =
@@ -29,7 +29,20 @@ public static class DesignFormat
         PlantKinds,                    // 9 → 10: the boilers' and engines' kinds (docs/battle/shell-contents.md C1b)
         Drainage,                      // 10 → 11: what's built in against water (docs/battle/damage-control.md DC4)
         (d, _) => Housing(d),          // 11 → 12: how the guns are housed (docs/battle/magazines.md V1)
+        (d, _) => Packaging(d),        // 12 → 13: how the charges are packed (docs/battle/magazines.md V3)
     ];
+
+    /// <summary>12 → 13: a gun block says how its charges are packed (GunTemplates.Packagings); a block without gets its
+    /// propellant's usual (GunTemplates.PackagingOf: double-base in Clarkson cases, single-base in tanks, the later ones in
+    /// brass), as nothing read it before.</summary>
+    static void Packaging(JsonObject d)
+    {
+        if (d["gun_tech"] is not JsonObject table)
+            return;
+        foreach (var (_, b) in table)
+            if (b is JsonObject bo && !bo.ContainsKey("packaging"))
+                bo["packaging"] = GunTemplates.PackagingOf(bo["propellant"] is JsonValue p && p.TryGetValue(out string? ps) ? ps : null);
+    }
 
     /// <summary>11 → 12: a battery's housing was its calibre's (a barbette from 150 mm, a gunhouse from 76, a shield under);
     /// now it's the design's (<see cref="Housings"/>). Each main and secondary battery outside a casemate gets the one its

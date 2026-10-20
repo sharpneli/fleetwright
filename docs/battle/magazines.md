@@ -1,5 +1,5 @@
 # Plan: magazines (a 4.5 deepening)
-Status: **every question decided** (the user, 2026-10-20: "Decided" below); research arrived (10); V0, V1 and V2 done 2026-10-20
+Status: **every question decided** (the user, 2026-10-20: "Decided" below); research arrived (10); V0-V3 done 2026-10-20
 Updated: 2026-10-20
 
 The fine-tune pass for magazines: how a flash gets to the charges, what happens once they burn, and what the ship
@@ -400,6 +400,65 @@ follows the dependencies: the fake turrets first, because the chain means nothin
   - The record gains the tier, the burned share and the boundaries' failure times for the look. `MagazineBlast`'s
     stand-ins (`PeakBar`, `PressureBar`, `MagazineFastShare`) read those instead (one model).
   - Closes E8a item 4.
+  - **Done 2026-10-20.** What it came to:
+    - **The packing is gun-block data** (decision 1): `packaging` on `gun_tech` blocks (bag, clarkson, brass, tank),
+      design format 13 writing each block's by its propellant (double-base in Clarkson cases, single-base in tanks,
+      diglycol and later in brass). The catalogue gains "…, double-base, brass-cased" blocks for the Victorian, Great
+      War, Treaty and Second War periods, and the 21 German designs fire them. The charge's mass stays
+      `DesignerPlaceholders.Charge`'s; it now carries the packing.
+    - **The burn law** on `PropellantRow` (10 §1.1): β, α above and below the knee, impetus, density, surface per kg,
+      web and grain form. Double-base is cordite MD's (a cord), single-base and black powder as sourced, and diglycol,
+      triple-base and LOVA cooler kin in tubes [INFERRED].
+    - **The lift:** each mount's revolving weight from Shipgen's `MountWeights` (`MountRow.RevolvingT`), over its
+      barbette's bore (`ShipClass.LiftKPa`, `BoreM2`).
+    - **The race** (`Magazines.SetOff`, `MagazineRace.cs`): magazine_race_ref.py's mass balance on one gas volume.
+      - The volume is the magazine's spaces, and its handling room's once the scuttle gives at 40 kPa.
+      - Open charges light within 0.5 s; packaged ones light one from the next with R by packing (bag: all open;
+        Clarkson 4, brass 1.4, tank 1.2 [EST]). The flooded share never lights. Cohorts of lit charges are kept on
+        the stack.
+      - The ways out: the spaces' own vents; each enclosed mount's trunk (0.05 of the bore) once its roof gives at
+        0.4 of the lift; a shield's or casemate's hoist (0.25 m²) at the scuttle's pressure; then the research's
+        table for the magazine's boundaries (`MagazineGiveKPa`, `MagazineGiveM2`).
+      - A magazine across the bulkhead lights when it gives.
+      - The tier comes from the girder share (deck 0.35, sides 0.45, bottom 0.2; severed at 0.8) and the gunhouses
+        vented. A Lion magazine runs in 2-13 ms and allocates nothing.
+    - **The approved exception** (the user, 2026-10-20): the race's boundaries go by the research's table (10 §6: the
+      bulkhead to the next space 250 kPa and a 4 m² tear, the armoured deck 700 kPa and 10 m², the sides 1,000 kPa and
+      60 m², the bottom 2,000 kPa and 60 m²), not by E5's rules on the ship's own plating. Run on her plating, the
+      race never reached the girder. Lion's magazines sit inside 7-11 mm decks and bulkheads that give at 0.35-0.45
+      MPa, the gas spreads into the ship faster than it builds, and every packing plateaus at 0.4-0.5 MPa. Five
+      versions of the spreading were tried: tears as vents, a fill model, two zones, the second zone loaded, a panel's
+      delay. V4 or V8 may come back to it.
+    - **All set-offs go through the race:** a hit's, a torpedo's and fire's heat (B2). That pulls V7's first bullet in.
+      - Tiers 3-4 lose the ship as before; the blast record now carries the tier and the propellant burned by the
+        girder's failure and a second after (`FastKg`).
+      - Tiers 0-2 leave her afloat. The magazines alight are spent (their mounts out of ammunition), and the vented
+        gunhouses and barbettes are destroyed and burning. The trains' men are flashed (`Casualties.Train` moved here
+        from `Effects`; a contained fire flashes only the magazine's men). Holes open to the sea where the sides or
+        bottom gave.
+      - The dev's `-sink=SHIP:magazine` still sets one off outright.
+    - **Not done here:**
+      - `MagazineBlast`'s stand-ins (`PeakBar`, `PressureBar`, `MagazineFastShare`) still drive the look. The record
+        carries what they need, for the look's step.
+      - The charge's mass as design data waits for an ammunition step.
+    - **The bench:** `shipgen magazine --race [--flooded S] [--packaging P] [--trace]` sets each magazine off on a fresh
+      ship. `damage-history` reports set-offs by tier.
+    - **Lion's magazines on the research's anchors:**
+
+      | Lion's stow | Peak | Tier | Research (10 §6) |
+      |---|---|---|---|
+      | bags alone (lids off) | ~1,000 kPa | severed (two groups where a neighbour lit) | tier 3 at 1,003 kPa |
+      | Clarkson cases (as designed) | 340-560 kPa | burned out | tier 1 at 273 kPa |
+      | brass cases | 110-180 kPa | burned out | tier 0-1 (Gneisenau, Seydlitz) |
+      | bags, 95% flooded | 40 kPa | contained, a twentieth burned | tier 0 from ~95% |
+
+      Seydlitz as designed burns out (46-158 kPa). The V25 and Chatham's shields are contained.
+    - **Tests:**
+      - `MagazineRaceTests`: the anchors, a neighbour magazine across the bulkhead, and nothing allocated;
+      - `DamageTests`' two record tests give their magazine R 1000, so it severs as their cases want.
+    - **The numbers** (`damage-history`, 40 runs; V2 → V3): almost no change, as V2's drill doors seldom let a flame
+      reach a magazine. The few that do now burn out: Bismarck's four (brass), Orel's one contained. Ships lost to a
+      magazine stay near none until V5's rate first props the BCF's doors and opens their lids.
 - **V4. The hull at the magazine.** `d`, the girder check with the sea, the end case, `BrokeInTwo`.
 - **V5. Flash discipline.**
   - A doctrine row by period (decision 2), picked by the scenario with the side's doctrine, and the supply.
@@ -459,6 +518,8 @@ follows the dependencies: the fake turrets first, because the chain means nothin
      65 dead);
    - there's no known case of a flash straight down an open mount's hoist [UNCERTAIN: in the research request].
 5. **Magazines going up as a ship sinks** wait for the sinking pass: by then she's lost anyway, so it's eye candy.
+6. **The race's boundaries go by the research's table** (2026-10-20, an approved exception to "one gas model"): run on
+   the ship's own plating, the gas spread through her thin bulkheads and never loaded the girder (V3).
 
 ## Open items (from the other docs, folded in)
 

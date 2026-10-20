@@ -17,6 +17,11 @@ namespace Fleetwright.Shipgen;
 /// years 1.9 and 1.8; the Cold War's 1.5.</item>
 /// <item>The propellant: double-base cordite and its kin, single-base for the USN, France and Russia, diglycol for
 /// Germany from the treaty years, triple-base in the Cold War; black powder under 36 calibres before 1906.</item>
+/// <item>The packaging (docs/battle/magazines.md decision 1; research/simulation/damage-research/10 §1.3): double-base
+/// in silk bags in Clarkson cases (the RN's, and Japan's on its pattern), or a brass cartridge case with the fore charge
+/// in a tin (the German blocks, "brass-cased"); single-base in airtight tanks (the USN's); diglycol and triple-base in
+/// brass. How readily a burning charge lights the next in its package decides the venting race; it costs in the
+/// campaign as any design choice does.</item>
 /// </list></summary>
 public static class GunTemplates
 {
@@ -25,6 +30,19 @@ public static class GunTemplates
 
     /// <summary>The propellants a block may give (the sim's Propellants by these names).</summary>
     public static readonly string[] Propellants = ["black powder", "single-base", "double-base", "diglycol", "triple-base", "lova"];
+
+    /// <summary>How a block's charges are packed (the sim's Packaging by these names): silk bags alone, bags in Clarkson
+    /// cases, a brass cartridge case, bags in airtight tanks.</summary>
+    public static readonly string[] Packagings = ["bag", "clarkson", "brass", "tank"];
+
+    /// <summary>A propellant's usual packing, the default for a block that doesn't say (design format 13).</summary>
+    public static string PackagingOf(string? propellant) => propellant switch
+    {
+        "black powder" => "bag",
+        "double-base" => "clarkson",
+        "single-base" => "tank",
+        _ => "brass",
+    };
 
     /// <summary>A period's numbers, before the propellant.</summary>
     sealed record Period(string Name, double Reload, double Slow, double Slow40, double Slow30, double Train, double DpTrain, double MaxElev,
@@ -44,12 +62,17 @@ public static class GunTemplates
             "From 1950: automatic guns, power-worked mounts."),
     ];
 
-    static Template T(Period p, string propellant, string note) => new($"{p.Name}, {propellant}", p.Name, p.Note + " " + note, new GunTechInput
+    static Template T(Period p, string propellant, string note, string? packaging = null) => new(
+        $"{p.Name}, {propellant}" + (packaging is null ? "" : $", {packaging}-cased"), p.Name, p.Note + " " + note, new GunTechInput
     {
         ReloadShare = p.Reload, HeavySlow = p.Slow, HeavySlowUnder40Cal = p.Slow40, HeavySlowUnder30Cal = p.Slow30, TrainShare = p.Train,
         DpTrainShare = p.DpTrain, MaxElevationDeg = p.MaxElev, DpMaxElevationDeg = p.DpMaxElev, PatternPct = p.Pattern, PatternExp = p.PatternExp,
         PatternLightPct = p.PatternLight, Propellant = propellant, BlackPowderUnderCal = p.BlackUnder,
+        Packaging = packaging ?? PackagingOf(propellant),
     });
+
+    const string Brass = "The main charge in a brass cartridge case, the fore charge in silk in a tin (Germany: RP C/12; " +
+        "Seydlitz's 62 charges burned at Dogger Bank and her magazines held).";
 
     const string Cordite = "Double-base: cordite MD and SC, the German RPC/12, Japan's and Italy's.";
     const string Single = "Single-base nitrocellulose: the USN's SPD, the French poudre B, the Russian pyroxylin.";
@@ -58,13 +81,17 @@ public static class GunTemplates
     public static readonly IReadOnlyList<Template> All =
     [
         T(Periods[0], "double-base", Cordite),
+        T(Periods[0], "double-base", Brass, "brass"),
         T(Periods[0], "single-base", Single),
         T(Periods[1], "double-base", Cordite),
+        T(Periods[1], "double-base", Brass, "brass"),
         T(Periods[1], "single-base", Single),
         T(Periods[2], "double-base", Cordite),
+        T(Periods[2], "double-base", Brass, "brass"),
         T(Periods[2], "single-base", Single),
         T(Periods[2], "diglycol", Diglycol),
         T(Periods[3], "double-base", Cordite),
+        T(Periods[3], "double-base", Brass, "brass"),
         T(Periods[3], "single-base", Single),
         T(Periods[3], "diglycol", Diglycol),
         T(Periods[4], "triple-base", "Triple-base: Cordite N/NQ, SPCG, M30/M31."),
@@ -99,7 +126,7 @@ public static class GunTemplates
     static readonly string[] Fields =
     [
         "reload_share", "heavy_slow", "heavy_slow_under_40_cal", "heavy_slow_under_30_cal", "train_share", "dp_train_share", "max_elevation_deg",
-        "dp_max_elevation_deg", "pattern_pct", "pattern_exp", "pattern_light_pct", "propellant", "black_powder_under_cal",
+        "dp_max_elevation_deg", "pattern_pct", "pattern_exp", "pattern_light_pct", "propellant", "black_powder_under_cal", "packaging",
     ];
 
     /// <summary>The design's gun blocks and the names its batteries give: every field given, the shares and elevations
@@ -126,6 +153,8 @@ public static class GunTemplates
                     errs.Add($"{at}.{k}: give it, 0 or more");
             if (!Propellants.Contains(b.Propellant))
                 errs.Add($"{at}.propellant = {Style.Quote(b.Propellant ?? "")}: use {string.Join(", ", Propellants)}");
+            if (!Packagings.Contains(b.Packaging))
+                errs.Add($"{at}.packaging = {Style.Quote(b.Packaging ?? "")}: use {string.Join(", ", Packagings)}");
         }
         foreach (var (list, key) in new[] { (design.Main, "main"), (design.Secondary, "secondary") })
             for (int i = 0; i < (list?.Count ?? 0); i++)

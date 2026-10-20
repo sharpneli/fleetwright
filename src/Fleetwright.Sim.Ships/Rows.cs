@@ -94,6 +94,9 @@ public readonly record struct MountRow
     public int Rounds { get; init; }
     public int ReadyRounds { get; init; }
     public double ReadyT { get; init; }
+    /// <summary>A gun mount's revolving weight, t: its guns, gear and gunhouse armour (Shipgen's MountWeights); what holds
+    /// a gunhouse down against the gas under it (docs/battle/magazines.md V3). 0 on a torpedo mount.</summary>
+    public double RevolvingT { get; init; }
     public int Torpedoes { get; init; }
     public double WarheadKg { get; init; }
 
@@ -181,6 +184,40 @@ public readonly record struct PropellantRow
     public double TintR { get; init; }
     public double TintG { get; init; }
     public double TintB { get; init; }
+
+    /// <summary>Its burning in a magazine fire (docs/battle/magazines.md V3; research/simulation/damage-research/10 §1.1):
+    /// the linear rate r = β·P^α, mm/s at P in MPa, α above the knee and below it (the two branches meet there); its
+    /// impetus, J/kg (the gas's R·T); its density, kg/m³; its grain's burning surface, m²/kg, the web a face burns
+    /// through to finish, m, and the grain's form (a solid cord's surface shrinks as √(1−z), a tube's stays, a grain's
+    /// goes as (1−z)^⅔).</summary>
+    public double BetaMmS { get; init; }
+    public double AlphaHi { get; init; }
+    public double AlphaLo { get; init; }
+    public double KneeMPa { get; init; }
+    public double ImpetusJkg { get; init; }
+    public double DensityKgM3 { get; init; }
+    public double SurfaceM2Kg { get; init; }
+    public double WebM { get; init; }
+    public PropellantForm Form { get; init; }
+}
+
+/// <summary>A propellant grain's form, for how its burning surface changes as it burns.</summary>
+public enum PropellantForm : byte
+{
+    Cord,
+    Tube,
+    Grain,
+}
+
+/// <summary>How a gun's charges are packed in the magazine (docs/battle/magazines.md decision 1; research 10 §1.3): silk
+/// bags alone (they light together), bags in Clarkson cases, a brass cartridge case (with the fore charge in a tin), bags
+/// in airtight tanks.</summary>
+public enum Packaging : byte
+{
+    Bag,
+    Clarkson,
+    Brass,
+    Tank,
 }
 
 /// <summary>A device on the muzzle: a hider (small arms) cuts the secondary flash, a brake adds to it.</summary>
@@ -199,6 +236,8 @@ public readonly record struct ChargeRow
 {
     public double MassKg { get; init; }
     public PropellantRow Propellant { get; init; }
+    /// <summary>How it's packed in the magazine (its gun block's).</summary>
+    public Packaging Packaging { get; init; }
     public double Salt { get; init; }
     public double Igniter { get; init; }
     public double Liner { get; init; }
@@ -634,6 +673,7 @@ public readonly record struct GunTechRow
     public double PatternLightPct { get; init; }
     public PropellantRow Propellant { get; init; }
     public double BlackPowderUnderCal { get; init; }
+    public Packaging Packaging { get; init; }
 }
 
 /// <summary>Where a torpedo comes from: a torpedo mount on deck or a submerged tube.</summary>

@@ -22,6 +22,14 @@ public static class WeaponBlocks
             PatternPct = N(g.PatternPct, at, "pattern_pct"), PatternExp = N(g.PatternExp, at, "pattern_exp"), PatternLightPct = N(g.PatternLightPct, at, "pattern_light_pct"),
             Propellant = Propellants.Of(g.Propellant) ?? throw new ShipCompileException($"{at}: no propellant \"{g.Propellant}\""),
             BlackPowderUnderCal = N(g.BlackPowderUnderCal, at, "black_powder_under_cal"),
+            Packaging = g.Packaging switch
+            {
+                "bag" => Packaging.Bag,
+                "clarkson" => Packaging.Clarkson,
+                "brass" => Packaging.Brass,
+                "tank" => Packaging.Tank,
+                _ => throw new ShipCompileException($"{at}: no packaging \"{g.Packaging}\""),
+            },
         };
     }
 

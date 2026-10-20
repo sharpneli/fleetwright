@@ -41,5 +41,21 @@ static class Trains
             c.trains[m] = new Slice(start, rows.Count - start);
         }
         c.stations = [.. rows];
+
+        // what holds an enclosed mount's gunhouse down: its revolving weight over its barbette's bore (research 10 §2.2)
+        c.liftKPa = new double[c.mounts.Length];
+        c.boreM2 = new double[c.mounts.Length];
+        for (int m = 0; m < c.mounts.Length; m++)
+        {
+            ref readonly var mr = ref c.mounts[m];
+            if (mr.Barbette < 0 || !c.Enclosed(m))
+                continue;
+            foreach (ref readonly var b in c.barbettes.AsSpan())
+                if (b.Component == mr.Barbette && b.R > 0)
+                {
+                    c.boreM2[m] = Math.PI * b.R * b.R;
+                    c.liftKPa[m] = mr.RevolvingT * 1000 * 9.81 / c.boreM2[m] / 1000;
+                }
+        }
     }
 }

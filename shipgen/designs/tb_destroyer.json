@@ -1,4 +1,4 @@
-{"version": 12, "id": "tb_destroyer", "name": "Torpedo-boat destroyer (V-class-like, 1917)", "look": {"navy": "portsmouth", "era": "great_war"}, "type": "DD",
+{"version": 13, "id": "tb_destroyer", "name": "Torpedo-boat destroyer (V-class-like, 1917)", "look": {"navy": "portsmouth", "era": "great_war"}, "type": "DD",
  "hull": {"block_coefficient": 0.48, "construction": {"name": "Mild steel hull, high-tensile strength deck, riveted", "yield_mpa": 290, "join_factor": 1.1, "standard": 0.85, "shell": "riveted", "internals": "riveted"}, "plating": {"shell_mm": 0, "material": "steel", "deck_wood_mm": 0}, "freeboard": 1.0, "raised": [{"from": "bow", "to": "bridge", "decks": 1}]},
  "speed_kn": 34,
  "range_nm": 3500,
@@ -17,7 +17,7 @@
  "masts": [{"kind": "pole", "top": "spotting", "top_radius_m": 1.4}],
  "fire_control_tech": {"Telescopic sights": {"mount": {"director_firing": false, "stable_vertical": false, "lay_mil": 0.55, "salvo_defl_mil": 2.5}}},
  "outfit": {"name": "Great War (1914)", "fitted": {"quarters": 420, "cabins": 750, "offices": 420, "stores": 1500, "machinery": 150, "deck": 300}, "stripped": {"quarters": 400, "cabins": 450, "offices": 420, "stores": 1500, "machinery": 150, "deck": 150}, "paint_mj_m2": 50, "growth": 1},
- "gun_tech": {"Great War, double-base": {"reload_share": 1.1, "heavy_slow": 1, "heavy_slow_under_40_cal": 1, "heavy_slow_under_30_cal": 1, "train_share": 1, "dp_train_share": 1, "max_elevation_deg": 18, "dp_max_elevation_deg": 18, "pattern_pct": 3.3, "pattern_exp": 3, "pattern_light_pct": 2.5, "propellant": "double-base", "black_powder_under_cal": 0}},
+ "gun_tech": {"Great War, double-base": {"reload_share": 1.1, "heavy_slow": 1, "heavy_slow_under_40_cal": 1, "heavy_slow_under_30_cal": 1, "train_share": 1, "dp_train_share": 1, "max_elevation_deg": 18, "dp_max_elevation_deg": 18, "pattern_pct": 3.3, "pattern_exp": 3, "pattern_light_pct": 2.5, "propellant": "double-base", "black_powder_under_cal": 0, "packaging": "clarkson"}},
  "torpedo_tech": {"Great War torpedo": {"fast_kn": 41, "fast_range_m": 3900, "slow_kn": 28, "slow_range_m": 9200, "charge_share": 0.6, "mount_train_deg_s": 3, "mount_reload_s": 600, "tube_reload_s": 180, "gyro_deg": 20, "fail": 0.12, "dud": 0.1}},
  "drainage": {"name": "RN Great War (1914)", "pumps_tph_per_1000t": 50, "portable_pumps": 4, "portable_tph": 15, "counterflood_tpm_per_10000t": 10, "tightness": 1.5}
 }

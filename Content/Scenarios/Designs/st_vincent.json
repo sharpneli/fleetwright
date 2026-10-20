@@ -1,5 +1,5 @@
 {
- "version": 12,
+ "version": 13,
  "id": "st_vincent",
  "name": "St Vincent-like (1910)",
  "type": "BB",
@@ -564,7 +564,8 @@
    "pattern_exp": 3,
    "pattern_light_pct": 2.5,
    "propellant": "double-base",
-   "black_powder_under_cal": 0
+   "black_powder_under_cal": 0,
+   "packaging": "clarkson"
   }
  },
  "torpedo_tech": {

@@ -233,12 +233,10 @@ public static class Effects
             (weak.BurstT, weak.Force, weak.Burst) = (xs[t.Plate].T + 0.1, s.BrokenShare, BurstKind.Inside);
             Burst(c, k, hit, path, weak, s, w, size, ref res, ref r, broken: true);
         }
-        // a magazine set off: the flash through its turrets' trains (the ship is lost; drowning isn't a hit's)
+        // a magazine set off: its race and the flash through its trains are the damage system's to run
+        // (Magazines.SetOff, docs/battle/magazines.md V3)
         if (res.Magazine)
-        {
-            Casualties.Train(c, k, res.MagazineRoom, s);
             res.Flash = true;
-        }
         Casualties.Draw(c, k, hit.Ms, s, ref res, ref r);
         return res;
     }

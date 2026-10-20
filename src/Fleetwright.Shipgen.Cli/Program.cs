@@ -207,10 +207,11 @@ public static class Program
         shipgen burst [DESIGN --room KIND[:n] --filler KG --explosive NAME --calibre MM]
             a burst's gas in a closed space (docs/battle/shells-armour-damage.md E5): the cascade over the cell graph,
             what ruptured, the doors blown, the spaces reached and what each felt; with no charge, damage/11's cases
-        shipgen magazine [DESIGN...] [--runs N]
+        shipgen magazine [DESIGN...] [--runs N] [--race [--flooded SHARE] [--packaging bag|clarkson|brass|tank]]
             the magazines alone (docs/battle/magazines.md V0): each magazine's tonnes, place against the waterline and
             the mounts it feeds; each mount's ammunition train, the stations a flash runs along down to the magazine;
-            --runs (V2): charges lit at each station N times, how often the flame reaches the magazine
+            --runs (V2): charges lit at each station N times, how often the flame reaches the magazine; --race (V3):
+            each magazine set off, the venting race's tier, peak, propellant burned, what gave and when
         shipgen frag [TEMPLATE --calibre MM]
             a burst's pieces (docs/battle/shells-armour-damage.md E1) by the game's generator against damage/13's anchors
             (Okun's 8" HE table, WDR 51's speed and knee, Boise), or one shell template at a calibre
@@ -324,7 +325,8 @@ public static class Program
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
                     new BurstBench.Options(a.Get("room"), D(a, "filler", 0), a.Get("explosive") ?? "TNT", D(a, "calibre", 152))),
                 "magazine" => MagazineBench.Run(a.Positional, n => LoadDesign(Resolve(a, n)),
-                    a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), a.Int("runs", 0)),
+                    a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), a.Int("runs", 0), a.Has("race"),
+                    D(a, "flooded", 0), a.Get("packaging"), a.Has("trace")),
                 "burn" => BurnBench.Run(a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json")),
                 "fire-history" => FireHistory.Run(a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), a.Int("runs", 20),
                     a.Get("case"), a.Get("hours") is null ? null : D(a, "hours", 4), n => LoadDesign(Resolve(a, n)), a.Has("trace")),
@@ -375,7 +377,7 @@ public static class Program
                 int eq = s.IndexOf('=');
                 if (eq > 0)
                     flags[s[2..eq]] = s[(eq + 1)..];
-                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay" or "--research" or "--trace" or "--damage" or "--cells" or "--play" or "--dry" or "--loadouts" or "--summary" or "--rooms" or "--write" or "--materials" or "--fire-trace")   // the switches
+                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay" or "--research" or "--trace" or "--damage" or "--cells" or "--play" or "--dry" or "--loadouts" or "--summary" or "--rooms" or "--write" or "--materials" or "--fire-trace" or "--race")   // the switches
                     flags[s[2..]] = null;
                 else if (i + 1 < list.Count)
                     flags[s[2..]] = list[++i];

@@ -395,6 +395,7 @@ public static class ShipClassCompiler
                         RoofMm = x.Armour?.Roof ?? 0, Magazine = Room(x.Magazine), Barbette = Comp(x.Barbette, ComponentKind.Barbette), Rounds = Int(x.Rounds),
                         ReadyRounds = Int(x.ReadyRounds), ReadyT = Or(x.ReadyT), Torpedoes = Int(x.Torpedoes), WarheadKg = Or(x.WarheadKg),
                         RangefinderM = x.RangefinderM is > 0 ? x.RangefinderM.Value : 0, RangefinderEye = -1,
+                        RevolvingT = kind != ComponentKind.Torpedo && t.CalibreLength is > 0 ? Batteries.MountWeights(t, x.Armour?.Face ?? 0, 0, 0).Turret : 0,
                     });
                 }
                 else

@@ -1,5 +1,5 @@
 {
- "version": 12,
+ "version": 13,
  "id": "r_class",
  "name": "R class destroyer (1916)",
  "type": "DD",
@@ -393,7 +393,8 @@
    "pattern_exp": 3,
    "pattern_light_pct": 2.5,
    "propellant": "double-base",
-   "black_powder_under_cal": 0
+   "black_powder_under_cal": 0,
+   "packaging": "clarkson"
   }
  },
  "torpedo_tech": {

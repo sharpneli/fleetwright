@@ -53,6 +53,7 @@ public sealed class ShipClass
     internal int[] functionNodes = [], mountOfComponent = [];
     internal StationRow[] stations = [];
     internal Slice[] trains = [];
+    internal double[] liftKPa = [], boreM2 = [];
     internal double[] powerKn = [], powerShp = [];
     internal string[] componentIds = [], turretTypeIds = [], cellIds = [], roomIds = [], bulkheadIds = [], deckIds = [], tierIds = [],
         sectionIds = [], sidePlateIds = [], armourBulkheadIds = [], inclinedIds = [], materials = [];
@@ -161,6 +162,13 @@ public sealed class ShipClass
                 return i;
         return -1;
     }
+
+    /// <summary>The gas pressure under an enclosed mount's gunhouse that lifts it, gauge kPa: its revolving weight over its
+    /// barbette's bore (docs/battle/magazines.md V3; research 10 §2: 40-140 kPa); 0 for a mount without a barbette.</summary>
+    public double LiftKPa(int mount) => liftKPa[mount];
+
+    /// <summary>An enclosed mount's barbette bore, m² (0 without one): the trunk the gas leaves by is a share of it.</summary>
+    public double BoreM2(int mount) => boreM2[mount];
 
     /// <summary>A gunhouse proper: a turret the mount's crew works inside, on a barbette or a light one (a dual-purpose
     /// mount's), with its train down through the trunk.</summary>
