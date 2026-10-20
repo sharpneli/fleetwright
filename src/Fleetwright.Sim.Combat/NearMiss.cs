@@ -421,11 +421,8 @@ public static class NearMiss
                         continue;
                     double area = (y1 - y0) * (z1 - z0);
                     double leak = Math.Min(Seams(d0, Distance(p, at), area, c.InternalsJoint, s) * Blast.Spread(s, ref r) * 1e-4, s.RupturedShare * area);
-                    if (leak > 0)
-                    {
-                        Blast.Open(c, k, i, j, leak);
-                        res.Blast.LeakM2 += leak;
-                    }
+                    leak += Leaks.Sprung(c, k, i, j, leak, d0, area, s, ref r);   // its seams sprung and its closures loosened (DC1)
+                    res.Blast.LeakM2 += leak;
                 }
             }
 

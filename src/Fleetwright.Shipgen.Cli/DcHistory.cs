@@ -40,6 +40,7 @@ static class DcHistory
         public double DMax { get; init; }
         public bool Port { get; init; }
         public double Kn { get; init; }
+        public double D { get; init; }
         public double RangeM { get; init; }
         public double AspectDeg { get; init; }
         public string? From { get; init; }
@@ -49,8 +50,9 @@ static class DcHistory
             new(BlowKind.Shells, fromMin) { ToMin = toMin, N = n, RangeM = rangeM, AspectDeg = aspectDeg, Falls = falls };
         public static Blow Torpedo(double atMin, double share, double depthM, bool port = false, string from = "v25") =>
             new(BlowKind.Torpedo, atMin) { Share = share, Z = depthM, Port = port, From = from };
-        public static Blow Hole(double atMin, double share, double zOverWl, double areaM2, bool port = false) =>
-            new(BlowKind.Hole, atMin) { Share = share, Z = zOverWl, Area = areaM2, Port = port };
+        /// <summary>A hole; d over 0 springs the holed space's boundaries at that load, as its shell's burst would.</summary>
+        public static Blow Hole(double atMin, double share, double zOverWl, double areaM2, bool port = false, double d = 0) =>
+            new(BlowKind.Hole, atMin) { Share = share, Z = zOverWl, Area = areaM2, Port = port, D = d };
         public static Blow Splinters(double atMin, int n, double dMinM, double dMaxM, double share, double shareTo, double z, double zTo) =>
             new(BlowKind.Splinters, atMin) { N = n, DMin = dMinM, DMax = dMaxM, Share = share, ShareTo = shareTo, Z = z, ZTo = zTo };
         public static Blow Speed(double atMin, double kn) => new(BlowKind.Speed, atMin) { Kn = kn };
@@ -60,7 +62,8 @@ static class DcHistory
             BlowKind.Shells => string.Format(Inv, "{0} hits {1:0}-{2:0} min at {3:0} m ({4})", N, AtMin, ToMin, RangeM,
                 string.Join(" + ", Falls.Select(f => string.Format(Inv, "{0:0}% {1} {2}{3}", 100 * f.Share, f.Shooter, f.Battery, f.Kind != null ? " " + f.Kind : "")))),
             BlowKind.Torpedo => string.Format(Inv, "{0}'s torpedo at {1:0} min, {2:0.00} from the stern, {3:0.#} m down{4}", From, AtMin, Share, Z, Port ? ", port" : ""),
-            BlowKind.Hole => string.Format(Inv, "a {0:0.##} m² hole at {1:0} min, {2:0.00} from the stern, {3:+0.#;-0.#} m{4}", Area, AtMin, Share, Z, Port ? ", port" : ""),
+            BlowKind.Hole => string.Format(Inv, "a {0:0.##} m² hole at {1:0} min, {2:0.00} from the stern, {3:+0.#;-0.#} m{4}{5}", Area, AtMin, Share, Z, Port ? ", port" : "",
+                D > 0 ? string.Format(Inv, ", its boundaries sprung at D {0:0.#}", D) : ""),
             BlowKind.Splinters => string.Format(Inv, "{0} holes of {1:0}-{2:0} cm at {3:0} min, {4:0.00}-{5:0.00} from the stern, {6:+0.#;-0.#} to {7:+0.#;-0.#} m",
                 N, 100 * DMin, 100 * DMax, AtMin, Share, ShareTo, Z, ZTo),
             _ => string.Format(Inv, "{0:0} kn at {1:0} min", Kn, AtMin),
@@ -75,12 +78,17 @@ static class DcHistory
     static readonly DcCase[] Cases =
     [
         new("1890-1925", "Seydlitz, Jutland 1916: a torpedo forward and heavy shells in the bow", "seydlitz", 24,
-            [Blow.Torpedo(10, 0.78, 4), Blow.Hole(30, 0.9, 0.2, 1.2), Blow.Hole(60, 0.88, -0.5, 0.6, port: true),
+            [Blow.Torpedo(10, 0.78, 4), Blow.Hole(30, 0.9, 0.2, 1.2, d: 2), Blow.Hole(60, 0.88, -0.5, 0.6, port: true, d: 2),
              Blow.Shells(0, 120, 12, 13_000, 60, new Fall("lion", 0, null, 1)), Blow.Speed(240, 7)],
             "closed up", "german-1916", 10, "5,308 t; slowed, steamed stern first to ease the forward bulkheads, reached harbour",
             "survives in most runs when she slows; loses her forward bulkheads if she holds speed", "17 §1.3, 09 §2.2"),
+        new("1890-1925", "Seydlitz's damage, holding 24 kn throughout (against the record's slowing)", "seydlitz", 24,
+            [Blow.Torpedo(10, 0.78, 4), Blow.Hole(30, 0.9, 0.2, 1.2, d: 2), Blow.Hole(60, 0.88, -0.5, 0.6, port: true, d: 2),
+             Blow.Shells(0, 120, 12, 13_000, 60, new Fall("lion", 0, null, 1))],
+            "closed up", "german-1916", 10, "(Bismarck kept her speed and gave up her repair)",
+            "more water than slowing; her forward bulkheads may give way", "09 §2.2"),
         new("1890-1925", "Lützow, Jutland 1916: the torpedo flat holed by two heavy shells", "derfflinger", 22,
-            [Blow.Hole(0, 0.86, -2, 1.0), Blow.Hole(1, 0.84, -2.5, 1.0), Blow.Shells(0, 60, 16, 9_000, 70, new Fall("lion", 0, null, 1)),
+            [Blow.Hole(0, 0.86, -2, 1.0, d: 2.5), Blow.Hole(1, 0.84, -2.5, 1.0, d: 2.5), Blow.Shells(0, 60, 16, 9_000, 70, new Fall("lion", 0, null, 1)),
              Blow.Speed(60, 15), Blow.Speed(180, 7), Blow.Speed(300, 3)],
             "closed up", "german-1916", 8, "1,038 t at 3 h, 2,395 t at 3¾ h, 8,351 t by ~7½ h (4,209 below the armour deck); scuttled",
             "thousands of tonnes walking aft over hours; lost or close to it in many runs", "17 §1.3, §6.2"),
@@ -89,7 +97,7 @@ static class DcHistory
             "unprepared", "rn-1916", 13, "engine rooms abandoned ~2 h, power lost, capsized ~12 h after the mine",
             "unprepared closures: lost over hours; closed up and drilled: survives", "17 §1.3"),
         new("1890-1925", "Oslyabya, Tsushima 1905: waterline holes forward, kept her place (?)", "oslyabya", 9,
-            [Blow.Hole(0, 0.88, 0.1, 2.0, port: true), Blow.Hole(5, 0.85, -0.3, 1.0, port: true),
+            [Blow.Hole(0, 0.88, 0.1, 2.0, port: true, d: 2.5), Blow.Hole(5, 0.85, -0.3, 1.0, port: true, d: 2.5),
              Blow.Shells(0, 40, 20, 4_600, 100, new Fall("mikasa", 0, "ap", 0.4), new Fall("mikasa", 1, "common", 0.6))],
             "prepared, cluttered", "russian-1905", 3, "listed to port and capsized within about an hour of the first hits (?)",
             "at speed with holes forward at the waterline: lost within about an hour in most runs", "general knowledge (?)"),
@@ -119,11 +127,11 @@ static class DcHistory
             "closed up", "rn-1916", 8, "(the research's model) drilled ~120 t; no damage control ~2,950 t and 18° at 8 h",
             "drilled: ~120 t; nobody: thousands of tonnes and a heavy list", "09 §8"),
         new("mechanism checks", "A heavy shell through the bow near the waterline, holds 28 kn (09 §8)", "lion", 28,
-            [Blow.Hole(0, 0.93, 0, 1.2), Blow.Hole(0, 0.93, -0.4, 0.4)],
+            [Blow.Hole(0, 0.88, 0.8, 1.2, d: 2), Blow.Hole(0, 0.88, -0.4, 0.4)],
             "closed up", "rn-1916", 4, "(the research's model) forward bulkheads collapse at 8 min, ~10,400 t",
             "forward bulkheads give way; thousands of tonnes", "09 §8, §2.2"),
         new("mechanism checks", "The same, slowed to 12 kn at 4 min (09 §8)", "lion", 28,
-            [Blow.Hole(0, 0.93, 0, 1.2), Blow.Hole(0, 0.93, -0.4, 0.4), Blow.Speed(4, 12)],
+            [Blow.Hole(0, 0.88, 0.8, 1.2, d: 2), Blow.Hole(0, 0.88, -0.4, 0.4), Blow.Speed(4, 12)],
             "closed up", "rn-1916", 4, "(the research's model) ~1,900 t", "a fifth of holding 28 kn", "09 §8, §2.2"),
 
         new("later cuts", "North Carolina 1942: one torpedo abreast turret A, at 19 kn", "super_dreadnought", 19,
@@ -142,6 +150,7 @@ static class DcHistory
         public int Entity;
         public double[] WaterAt = [];
         public double MaxList, List, Trim, WaterT, Power = 1, Kn, LostMin = double.NaN;
+        public int Sprung, Collapsed, DoorsOpen;
         public LossKind Loss;
         public bool Afloat = true;
     }
@@ -260,8 +269,14 @@ static class DcHistory
                         break;
                     }
                     case BlowKind.Hole:
-                        w.Apply(DamageSystem.SideHole(r.Entity, HoleAt.X, x0 + bl.Share * (x1 - x0), bl.Z, bl.Area, !bl.Port));
+                    {
+                        double x = x0 + bl.Share * (x1 - x0);
+                        w.Apply(DamageSystem.SideHole(r.Entity, HoleAt.X, x, bl.Z, bl.Area, !bl.Port));
+                        var (cell, _) = FloodModel.SideCell(target, x, target.Vertical.Waterline + bl.Z, !bl.Port);
+                        if (bl.D > 0 && cell >= 0)
+                            Leaks.SpringCell(target, store.Combat.Condition(slot), cell, bl.D, s, ref rng);
                         break;
+                    }
                     case BlowKind.Splinters:
                         for (int h = 0; h < bl.N; h++)
                         {
@@ -289,6 +304,13 @@ static class DcHistory
                 }
                 (r.WaterT, r.List, r.Trim, r.Power, r.Kn) = (k.WaterT, Math.Abs(k.Attitude.HeelDeg), k.Attitude.TrimDeg, k.PowerCap,
                     store[slot].Speed / 0.514444);
+                (r.Sprung, r.Collapsed, r.DoorsOpen) = (0, 0, 0);
+                for (int j = 0; j < k.JoinMarks.Length; j++)
+                {
+                    r.Sprung += k.JoinSeamM2[j] > 0 || k.JoinClosureM2[j] > 0 ? 1 : 0;
+                    r.Collapsed += (k.JoinMarks[j] & JoinMark.Collapsed) != 0 ? 1 : 0;
+                    r.DoorsOpen += (k.JoinMarks[j] & JoinMark.DoorOpen) != 0 ? 1 : 0;
+                }
                 r.MaxList = Math.Max(r.MaxList, r.List);
                 for (int h = 0; h < Hours.Length; h++)
                     if (Math.Abs(m - Hours[h] * 60) < 0.5)
@@ -297,6 +319,23 @@ static class DcHistory
                     Console.WriteLine(string.Format(Inv, "      {0,5} min  water {1,6:0} t, list {2,5:0.0}°, trim {3,5:+0.00;-0.00}°, GM {4,5:0.00} m, " +
                         "speed {5,4:0.0} kn, power {6:0%}, holes {7:0.00} m²", m, k.WaterT, k.Attitude.HeelDeg, k.Attitude.TrimDeg,
                         k.GmM, r.Kn, k.PowerCap, k.BreachM2.Sum()));
+            }
+        }
+        if (trace)
+        {
+            // the first run's sprung boundaries at the end: each one's cells, plate, height, rating and the water either side
+            int slot = store.SlotOf(list[0].Entity);
+            var k = slot >= 0 ? store.Combat.Condition(slot) : null;
+            var f = w.Damage.Flood(target);
+            for (int ei = 0; k != null && ei < f.Edges.Length; ei++)
+            {
+                var e = f.Edges[ei];
+                if (k.JoinSeamM2[e.Pool] <= 0 && k.JoinClosureM2[e.Pool] <= 0 && k.JoinMarks[e.Pool] == JoinMark.None)
+                    continue;
+                Console.WriteLine(string.Format(Inv, "      edge {0}-{1} {2} at {3:0.0} m: built {4:0.0} m, rating {5:0.0} m, D {6:0.0}, seam {7:0} cm² ×{8:0.0}, closures {9:0} cm², {10}; " +
+                    "water {11:0}/{12:0} and {13:0}/{14:0} m³", e.A, e.B, e.Join, e.Z, f.BuiltM[ei], Flooding.Rating(f, k, ei, e.Pool, s), k.JoinD[e.Pool],
+                    k.JoinSeamM2[e.Pool] * 1e4, k.JoinWork[e.Pool], k.JoinClosureM2[e.Pool] * 1e4, k.JoinMarks[e.Pool], k.WaterM3[e.A], f.Capacity[e.A],
+                    k.WaterM3[e.B], f.Capacity[e.B]));
             }
         }
         // a lost ship's water by the hour after she went is her last
@@ -324,6 +363,9 @@ static class DcHistory
         Console.WriteLine(string.Format(Inv, "    at {0:0.#} h afloat: list {1}°, trim {2}° (+ by the head), speed {3} kn, power {4}",
             hours, Med(afloat.Select(r => r.List), "0.0"), Med(afloat.Select(r => r.Trim), "+0.0;-0.0"), Med(afloat.Select(r => r.Kn), "0.0"),
             afloat.Count == 0 ? "-" : (100 * afloat.Average(r => r.Power)).ToString("0", Inv) + "%"));
+        Console.WriteLine(string.Format(Inv, "    boundaries sprung {0}, gave way {1} (in {2:0}% of runs), watertight doors open {3} (medians)",
+            Med(rs.Select(r => (double)r.Sprung)), Med(rs.Select(r => (double)r.Collapsed)), 100.0 * rs.Count(r => r.Collapsed > 0) / n,
+            Med(rs.Select(r => (double)r.DoorsOpen))));
         var lost = rs.Where(r => !r.Afloat).ToList();
         Console.WriteLine(string.Format(Inv, "    lost {0:0}%{1}", 100.0 * lost.Count / n, lost.Count == 0 ? "" : " (" + string.Join(", ",
             lost.GroupBy(r => r.Loss).Select(g => string.Format(Inv, "{0} {1}, median {2} min", g.Key, g.Count(), Med(g.Select(r => r.LostMin))))) + ")"));

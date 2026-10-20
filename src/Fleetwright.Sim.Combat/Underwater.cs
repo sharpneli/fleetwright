@@ -72,6 +72,23 @@ public static class Underwater
                     magazine = room;
             }
         }
+        // the boundaries of what it flooded, loaded by its shock: sprung by r(D), their closures loosened
+        // (docs/battle/damage-control.md DC1; D about TorpedoSprungD at the reach, more nearer) [EST, damage/17 §6.1]
+        for (int i = 0; i < cells.Length; i++)
+        {
+            if (!Flooded(c, cells, i, first, p, reach, held))
+                continue;
+            for (int j = cells[i].Neighbours.Start; j < cells[i].Neighbours.End; j++)
+            {
+                ref readonly var e = ref c.Neighbour(j);
+                if (e.Join == JoinKind.Open || Flooded(c, cells, e.Cell, first, p, reach, held))
+                    continue;
+                double d = Math.Min(s.TorpedoSprungD * reach / Math.Max(Effects.BoxDistance(cells[e.Cell].Box, p), 0.5 * reach), 4.9);
+                double area = Blast.Area(cells[i].Box, cells[e.Cell].Box, e.Join), seam = Blast.Leak(d, area, c.InternalsJoint, s, ref r);
+                res.Blast.LeakM2 += seam + Leaks.Sprung(c, k, i, j, seam, d, area, s, ref r);
+            }
+        }
+
         res.Magazine = magazine >= 0 && r.NextDouble() < s.TorpedoMagazineChance * propellant;
         (res.MagazineRoom, res.MagazineVia) = res.Magazine ? (magazine, MagazineVia.Underwater) : (-1, MagazineVia.None);
 
@@ -112,6 +129,10 @@ public static class Underwater
         k.CrewLost += res.CrewLost;
         return res;
     }
+
+    /// <summary>Whether the explosion holed a cell (as the flooding loop above decides).</summary>
+    static bool Flooded(ShipClass c, ReadOnlySpan<CellRow> cells, int i, int first, P3 p, double reach, bool held) =>
+        (i == first ? 0 : Effects.BoxDistance(cells[i].Box, p)) <= reach && !(held && !Outboard(c, i));
 
     /// <summary>Whether a cell lies outside a holding bulkhead: a TDS cell, or the double bottom.</summary>
     static bool Outboard(ShipClass c, int cell)

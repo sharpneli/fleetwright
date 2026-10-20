@@ -212,13 +212,11 @@ public static class Blast
                 ref readonly var e = ref c.Neighbour(j);
                 var other = cells[e.Cell].Box;
                 k.JoinFate[j] = Fate.Deformed;   // once, from whichever side
-                double leak = Leak(k.JoinFelt[j] / (s.DeformMPaMm * JoinMm(c, e, box, other) * Rivets(c.InternalsJoint, s)), Area(box, other, e.Join),
-                    c.InternalsJoint, s, ref r);
+                double d = k.JoinFelt[j] / (s.DeformMPaMm * JoinMm(c, e, box, other) * Rivets(c.InternalsJoint, s)), area = Area(box, other, e.Join);
+                double leak = Leak(d, area, c.InternalsJoint, s, ref r);
+                leak += Leaks.Sprung(c, k, ci, j, leak, d, area, s, ref r);   // its seams sprung and its closures loosened (DC1)
                 if (leak > 0)
-                {
-                    Open(c, k, ci, j, leak);
                     (res.LeakM2, res.Deformed) = (res.LeakM2 + leak, res.Deformed + 1);
-                }
             }
             for (int face = 0; face < Faces; face++)
             {
@@ -291,30 +289,11 @@ public static class Blast
 
     /// <summary>An opening between two spaces for the flooding, on the edge's one entry the flooding reads (the lower
     /// cell's).</summary>
-    internal static void Open(ShipClass c, ShipCondition k, int from, int poolIndex, double m2)
-    {
-        ref readonly var e = ref c.Neighbour(poolIndex);
-        if (from < e.Cell)
-        {
-            k.JoinOpenM2[poolIndex] += m2;
-            return;
-        }
-        var back = c.Cells[e.Cell].Neighbours;
-        for (int j = back.Start; j < back.End; j++)
-            if (c.Neighbour(j).Cell == from)
-            {
-                k.JoinOpenM2[j] += m2;
-                return;
-            }
-    }
+    internal static void Open(ShipClass c, ShipCondition k, int from, int poolIndex, double m2) => k.JoinOpenM2[Leaks.Entry(c, from, poolIndex)] += m2;
 
     static double Rivets(Joint j, SimSettings s) => j == Joint.Riveted ? s.RivetedK : 1;
 
-    /// <summary>Whether a boundary has a watertight door (the user's default, 2026-10-17, until the designer emits them): a
-    /// transverse watertight bulkhead between two spaces above the waterline.</summary>
-    static bool Door(ShipClass c, in Neighbour e, int from) =>
-        e.Join == JoinKind.Bulkhead && c.Bulkheads[e.Through].Kind is BulkheadKind.Main && !c.Cells[from].BelowWaterline &&
-        !c.Cells[e.Cell].BelowWaterline;
+    static bool Door(ShipClass c, in Neighbour e, int from) => Leaks.HasDoor(c, e, from);
 
     /// <summary>A join's plate, mm of steel: a bulkhead's plate where the two spaces meet (and its armour there), a deck's
     /// plate and its armour over them.</summary>

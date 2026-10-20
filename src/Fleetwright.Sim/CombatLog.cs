@@ -23,6 +23,8 @@ public enum CombatEvent : byte
     /// <summary>A shell that missed burst close to a ship (Target) and did something to it (docs/battle/
     /// shells-armour-damage.md E7): as a hit's line, its source <see cref="HitSource.NearMiss"/>.</summary>
     NearMiss,
+    /// <summary>A ship's (Target) flooding (docs/battle/damage-control.md DC1): Count boundaries gave way under the head.</summary>
+    Flood,
 }
 
 /// <summary>What a hit did, as the log tells it.</summary>

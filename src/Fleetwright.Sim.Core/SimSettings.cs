@@ -1278,6 +1278,66 @@ public sealed record SimSettings
     public int FounderMs { get; init; } = 600_000;
     public int CapsizeMs { get; init; } = 180_000;
 
+    // ------------------------------------------------------------------ leaks with structure (docs/battle/damage-control.md DC1)
+    // damage/17 §4-§7, 09 §2.2-§2.4
+
+    /// <summary>A boundary's rating, the head across it it takes before it gives way, as a multiple of the head of water
+    /// from its lowest point up to its top (a bulkhead's own, a deck's section's top), its top at least the waterline: built
+    /// for the sea at its top with a margin (09 §2.4: ×1.3) [EST].</summary>
+    public double FloodRatingK { get; init; } = 1.3;
+
+    /// <summary>A sprung boundary's rating, × (1 − this × D), at least <see cref="FloodRatingSprungMin"/> (09 §2.4: 20-40%
+    /// down) [EST].</summary>
+    public double FloodRatingPerD { get; init; } = 0.1;
+    public double FloodRatingSprungMin { get; init; } = 0.6;
+
+    /// <summary>A sprung seam's area opens with the head: × (1 + β·Δh/rating) (17 §5.1) [EST].</summary>
+    public double FloodSeamBeta { get; init; } = 1;
+
+    /// <summary>The working of a sprung seam (17 §5.2) [EST]: a step × <see cref="FloodWorkStep"/> up to
+    /// <see cref="FloodWorkMax"/>, at a hazard of <see cref="FloodWorkPerHour"/> × Δh/rating × (1 + v/<see
+    /// cref="FloodWorkKn"/>)² × (1 + <see cref="FloodWorkSea"/>) an hour (the sea: ~1 moderate, 3 a gale; the weather has no
+    /// sea state yet, so a moderate one).</summary>
+    public double FloodWorkPerHour { get; init; } = 0.1;
+    public double FloodWorkStep { get; init; } = 1.6;
+    public double FloodWorkMax { get; init; } = 4;
+    public double FloodWorkKn { get; init; } = 15;
+    public double FloodWorkSea { get; init; } = 1;
+
+    /// <summary>The ram head at a hole forward under way: k·v²/2g, k this at the stem falling to 0 at
+    /// <see cref="FloodRamReach"/> of her length aft of it (09 §2.2: k ≈ 0.5, the most sensitive guess) [EST]; a full space
+    /// holed there presses on its boundaries with <see cref="FloodRamLoad"/> of it.</summary>
+    public double FloodRamK { get; init; } = 0.5;
+    public double FloodRamReach { get; init; } = 0.25;
+    public double FloodRamLoad { get; init; } = 0.5;
+
+    /// <summary>The closures in a boundary a load loosens (damage/17 §4's fittings; door dogs, hatch dogs, cable stuffing tubes, vent
+    /// closures, reach rods, shaft glands, pipe flanges, by <c>Closure</c>): the D each starts at, its chance per unit of
+    /// D over that (p = min(<see cref="ClosureCap"/>, per·(D − start + ½))) and its area, log-uniform between the two, cm²
+    /// [EST, checked against Houston, Chester, Helena and North Carolina's vent].</summary>
+    public double[] ClosureStartD { get; init; } = [0.5, 0.5, 0.3, 0.5, 0.5, 0.3, 0.5];
+    public double[] ClosurePerD { get; init; } = [0.35, 0.30, 0.12, 0.25, 0.20, 0.50, 0.25];
+    public double[] ClosureMinCm2 { get; init; } = [10, 10, 0.5, 5, 1, 10, 5];
+    public double[] ClosureMaxCm2 { get; init; } = [60, 50, 3, 50, 5, 100, 130];
+    public double ClosureCap { get; init; } = 0.9;
+
+    /// <summary>A torpedo's shock on the boundaries of the cells it floods: D this at its reach, more nearer (as reach over
+    /// the distance, at most 4.9) (docs/battle/damage-control.md DC1) [EST: damage/17 §6.1's holding bulkhead that stood,
+    /// D 1-2; North Carolina's at its rivets].</summary>
+    public double TorpedoSprungD { get; init; } = 2;
+
+    /// <summary>Damage control's work on a boundary (damage/17 §5.2, 09 §4): a caulked seam keeps this share of its leak,
+    /// re-dogged closures this; a set of shores raises its rating this many times (at most two sets) and halves its
+    /// working [SRC 13 / EST].</summary>
+    public double CaulkSeamShare { get; init; } = 0.15;
+    public double RedogShare { get; init; } = 0.2;
+    public double ShoreRatingK { get; init; } = 1.6;
+
+    /// <summary>Cable stuffing tubes, one per this many m² of a boundary of a machinery, magazine, handling, steering or
+    /// transmitting space (17 §4: Houston's ~5), and of any other lived-in space's (fewer cables) [EST].</summary>
+    public double ClosureTubeM2 { get; init; } = 5;
+    public double ClosureTubeOtherM2 { get; init; } = 20;
+
     /// <summary>A space this share flooded doesn't burn (nor its magazine go up).</summary>
     public double FireDrownShare { get; init; } = 0.5;
 
@@ -1451,10 +1511,10 @@ public sealed record SimSettings
     /// deck fire, 17 §5.3].</summary>
     public FireReadiness[] FireReadiness { get; init; } =
     [
-        new() { Name = "unprepared", Stripped = false, CellDoors = 1, WetDecks = false },
-        new() { Name = "prepared", Stripped = true, CellDoors = 1, WetDecks = true },
-        new() { Name = "closed up", Stripped = true, CellDoors = 0, WetDecks = true },
-        new() { Name = "prepared, cluttered", Stripped = true, CellDoors = 1, WetDecks = true, DeckLoadMJm2 = 300 },
+        new() { Name = "unprepared", Stripped = false, CellDoors = 1, WetDecks = false, WtDoorsOpen = 0.5 },
+        new() { Name = "prepared", Stripped = true, CellDoors = 1, WetDecks = true, WtDoorsOpen = 0.1 },
+        new() { Name = "closed up", Stripped = true, CellDoors = 0, WetDecks = true, WtDoorsOpen = 0.02 },
+        new() { Name = "prepared, cluttered", Stripped = true, CellDoors = 1, WetDecks = true, DeckLoadMJm2 = 300, WtDoorsOpen = 0.1 },
     ];
     public string FireReadinessDefault { get; init; } = "prepared";
 
@@ -1747,6 +1807,9 @@ public readonly record struct FireReadiness
     public bool FansSecured { get; init; }
     /// <summary>What's piled on her weather decks over the outfit's load, MJ/m² (B5's deck clutter).</summary>
     public double DeckLoadMJm2 { get; init; }
+    /// <summary>The share of her watertight doors left open in action (docs/battle/damage-control.md DC1, decision 4: in
+    /// use, or by poor discipline; fire's <see cref="CellDoors"/> are the upper hull's other doors).</summary>
+    public double WtDoorsOpen { get; init; }
 }
 
 /// <summary>A crew quality's multipliers on the rangetakers' and the layers' errors.</summary>

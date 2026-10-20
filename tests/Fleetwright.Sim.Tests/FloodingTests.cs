@@ -15,6 +15,10 @@ public class FloodingTests(ITestOutputHelper output)
     static readonly WorldTime Start = WorldTime.FromUtc(1916, 5, 31, 14);
     static readonly SimSettings Settings = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json"));
 
+    /// <summary>The settings with every watertight door shut (docs/battle/damage-control.md DC1): the subdivision's tests
+    /// test the subdivision, not a door left open (LeakTests).</summary>
+    static readonly SimSettings Shut = Settings with { FireReadiness = [.. Settings.FireReadiness.Select(r => r with { WtDoorsOpen = 0 })] };
+
     static ShipClass Class(string name) => Fleet.Get(name).Class!;
 
     /// <summary>A ship of a design stopped at sea (entity 1) in a world of its own.</summary>
@@ -102,7 +106,7 @@ public class FloodingTests(ITestOutputHelper output)
     {
         foreach (var (boilers, engines, lost) in new[] { (1, 0, false), (2, 1, true) })
         {
-            var (w, c) = Ship("destroyer");
+            var (w, c) = Ship("destroyer", Shut);
             Flood(w, c, RoomKind.BoilerRoom, boilers);
             Flood(w, c, RoomKind.EngineRoom, engines);
             var status = w.Damage.Settle(w, 1, 4 * 3600);
@@ -115,7 +119,7 @@ public class FloodingTests(ITestOutputHelper output)
     [Fact]
     public void A_capital_ship_lives_through_thousands_of_tonnes()
     {
-        var (w, c) = Ship("super_dreadnought");
+        var (w, c) = Ship("super_dreadnought", Shut);
         // its engine room (a hole in the side there opens the wing over the deck's slope since protection-plan.md H8:
         // the room is flooded as the destroyer's are)
         Flood(w, c, RoomKind.EngineRoom, 1);

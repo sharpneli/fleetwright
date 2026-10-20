@@ -166,6 +166,12 @@ public sealed class DamageSystem : IWorldSystem
     {
         int side = ships.Store[slot].Side & 255;
         (k.Readiness, k.Firefighting) = (settings.FireReadiness[readiness[side]], settings.Firefighting[firefighting[side]]);
+        if (!k.DoorsDrawn)
+        {
+            // her watertight doors left open, by her orders (docs/battle/damage-control.md DC1)
+            var r = stream.Derive(0xD0025u).Derive((ulong)ships.Store[slot].Entity);
+            Leaks.DrawDoors(k.Class, k, k.Readiness.WtDoorsOpen, ref r);
+        }
         if (k.LevelsFuel != fuel[side])
         {
             Stowage.Levels(k.Class, fuel[side], settings.ProtectiveBunkersLast, k.Level);
@@ -809,10 +815,13 @@ public sealed class DamageSystem : IWorldSystem
         k.StepMs = now;
         if (dt <= 0)
             return settings.FloodMs;
-        var fl = Flooding.Step(cls, f, k, dt, k.PowerCap, settings);
+        Ready(slot, k);
+        var wet = stream.Derive(0xF1000Du).Derive((ulong)ships.Store[slot].Entity).Derive((ulong)now);
+        var fl = Flooding.Step(cls, f, k, dt, k.PowerCap, ships.Store[slot].Speed, settings, ref wet);
+        if (fl.Collapsed > 0)
+            log.Add(new CombatEntry(now, CombatEvent.Flood, 0, 0, ships.Store[slot].Entity, fl.Collapsed));
         var how = Flooding.Settle(cls, f, k, settings, dt);
         var rng = stream.Derive(0xF100Du).Derive((ulong)ships.Store[slot].Entity).Derive((ulong)now);
-        Ready(slot, k);
         var fs = k.Fires > 0 || Fires.Hot(k) ? Fires.Step(cls, f, k, dt, settings, propellant[ships.Store[slot].Side], ref rng, now) : default;
         touched = true;
         if (fs.Magazine)

@@ -1,5 +1,5 @@
 # Plan: damage control (a 4.5 deepening)
-Status: **agreed with the user 2026-10-20** ("Decided" below); DC0 done 2026-10-20, DC1 next.    Updated: 2026-10-20
+Status: **agreed with the user 2026-10-20** ("Decided" below); DC0 and DC1 done 2026-10-20, DC2 next.    Updated: 2026-10-20
 
 The fine-tune pass for damage control: what the crew does about a hit once it has landed. Firefighting came first, as
 this pass's first slice (`fire.md`, decision 1). This plan adds the water and the repairs, and both draw on the same
@@ -430,6 +430,108 @@ on the yardstick bench.
 - No crew yet, so ships flood more (expected: first we break, then we fix).
 - **Tests:** 17 §6's tables (a holding bulkhead by D with no damage control; the Lützow-type bow; Houston's magazine);
   dt 1 s against 15 s.
+- **Built (done 2026-10-20):**
+  - **The state per edge** (`ShipCondition`, on the entry the flooding reads):
+    - `JoinOpenM2` stays the openings: E5's ruptures and blown doors, and now a collapse.
+    - Beside it: `JoinSeamM2` (sprung seams), `JoinClosureM2` (loosened closures), the working (`JoinWork`, its hazard
+      and threshold), the highest load (`JoinD`), and `JoinMarks` (door open, door jammed, collapsed, and DC3's caulked,
+      re-dogged, shored).
+    - **Renamed on the way:** 17's "fittings" are *closures* in the code (`Closure`, the `Closure*` settings), since
+      shipgen's fittings are how gear is mounted.
+  - **`Leaks`** (`Sim.Combat/Leaks.cs`):
+    - A boundary's closures, by what's on either side:
+      - doors by the user's 2026-10-17 rule, now shared with the blast (`Leaks.HasDoor`);
+      - hatches between non-tanks;
+      - stuffing tubes, one per 5 m² round machinery, magazines, handling rooms, steering and the transmitting
+        station, one per 20 m² elsewhere;
+      - a vent closure;
+      - a reach rod and a pipe flange in a main bulkhead;
+      - a gland for each shaft through both spaces.
+    - `Sprung`: the seam from r(D), drawn by the caller. Each closure rolls at min(0.9, per·(D − start + ½)), and a
+      loosened door is jammed. D is kept as the highest plus half the lesser, and the working's threshold is drawn.
+    - `DrawDoors`: the doors left open, drawn once by the readiness at her first step.
+    - `SpringCell`, for the benches.
+  - **What springs boundaries:**
+    - the blast's deformed boundaries (E5) and the near miss's internal ones (E7), which now go through `Sprung`, so
+      closures roll as well as seams;
+    - **torpedoes**: the boundaries of every cell they flood, at D = 2 × reach / distance, at most 4.9
+      (`TorpedoSprungD` [EST, 17 §6.1]). v0 sprang nothing.
+  - **The flooding step** (`Flooding.Step`, now given her speed and a stream):
+    - **An edge's area** is v0's base + its openings + an open door's 1.2 m² + seams × work × (caulked 0.15) ×
+      (1 + Δh/rating) + closures × (re-dogged 0.2).
+    - **The rating** is 1.3 × the height of water from the edge's lowest point to its top (`FloodModel.BuiltM`: a
+      bulkhead's own top, a deck's section's top, at least the waterline). It is × max(0.6, 1 − 0.1·D) when sprung and
+      × 1.6 for each set of shores. Past it the edge collapses: a quarter of its face opens, with a `CombatEvent.Flood`
+      log line.
+    - **The working** steps ×1.6, up to ×4, at 0.1/h × Δh/rating × (1 + v/15 kn)² × (1 + sea), with sea 1. It's a
+      summed hazard against a drawn threshold, so the step size doesn't matter.
+    - **The ram head** (k 0.5 at the stem, falling to 0 at a quarter of her length: `Flooding.Ram`) adds to the inflow
+      at a hole and to the outflow's floor, and half of it adds to a holed space's pressure on its boundaries.
+  - **Fixed on the way:**
+    - A holed space whose leaks drained it a little each step never counted as full, so it never pressed on its
+      boundaries with the sea's head. Now a holed space with its water within 0.1 m of its ceiling presses as full.
+    - B3's outflow ignored what drives water in under way, so it cancelled the ram head.
+  - **Readiness:** `WtDoorsOpen` [EST]: unprepared 0.5, prepared and cluttered 0.1, closed up 0.02.
+  - **Tests** (`LeakTests`):
+    - a machinery bulkhead's closures by D;
+    - the rating's cuts and shores;
+    - the ram head: 5.29 m at the stem at 28 kn, none aft or astern;
+    - an open door passes 311 m³ in 10 min, against 1.2 m³ shut;
+    - a working seam gives the same at a 1 s and a 15 s step, 176 m³ against 19 m³ for one that never works.
+    
+    `FloodingTests`' subdivision cases now run with every door shut (the doors are `LeakTests`'), and the torpedo test
+    allows for a ship already gone.
+  - **Tightness waits for DC4's design block.** The base leak stays 5 cm² × 1, so the Shinano-like case's unsealed hull
+    and Lützow's untight other bulkheads aren't in yet.
+- **What moved (dc-history, 20 runs; DC0 → DC1):**
+
+  | Case | Water at 2 h / 8 h | Worst list | Lost |
+  |---|---|---|---|
+  | Seydlitz | 2,560 → 4,730 t / 4,260 → 7,230 t | 1.1 → 1.6° | 20 → 15% (magazines) |
+  | Lützow | 580 → 1,530 t / 955 → 2,170 t | 0° | 25 → 30% (one capsized at 6 h) |
+  | Audacious, unprepared | 4,470 → 5,370 t / 4,770 → 5,700 t | 0.5° | 0% |
+  | Marlborough (?) | 3,340 → 5,370 t / 4,040 → 8,080 t | 1.9 → 17° | 0 → 5% |
+  | Pre-dreadnought, one torpedo at anchor (?) | 3,790 → 4,400 t | 8.8 → 9.3° | 5 → 20% (capsized ~80 min) |
+  | Pre-dreadnought, two torpedoes (?) | — | 23 → 21° | 85 → 100% (capsized, median 11 min) |
+  | Destroyer, 6 HE hits | 8 → 35 t | 0 → 0.8° | 15 → 25% |
+  | 30 splinter holes | 156 → 200 t / 307 → 373 t | 4.1 → 5.5° | 5 → 20% (capsized ~6 h) |
+  | Bow shell, 28 kn / slowed to 12 | 264 → 1,470 t / 1,470 t (4 h: 1,790 / 1,780) | 0.3° | 0% |
+  | North Carolina-type | 1,060 → 2,660 t (4 h: 3,570) | 2.1 → 4.5° | 0% |
+  | Shinano-like, unprepared | 12,830 → 20,000 t | 11.5 → 21° | 10 → 70% (foundered ~2⅓ h) |
+
+  - **Bench changes:**
+    - The bow shell moved to 12% from the bow and +0.8 m. It had landed in Lion's fine stem, where the spaces hold
+      1-100 m³.
+    - The benches' holes now spring their space's boundaries at the D their shell's burst would (`Blow.Hole(.., d:)`).
+    - A Seydlitz holding 24 kn is a new case.
+  - **Hits bench, 180 min:**
+    - Iron Duke under Derfflinger: 482 → 559 t.
+    - A destroyer under Arethusa's HE: 145 → 264 t; capsized 9 → 10%.
+  - **Torpedo bench:** QE with 4: 11,270 → 13,370 t; capsized 53 → 80%.
+  - **Squadrons, 60 min:** the damage system 40 µs a call (46-47 at fire B5); no ship lost to water.
+- **What it says:**
+  - **The slow battle is in.** Unfought, water now walks from compartment to compartment for hours:
+    - Lützow 1,000 → 2,200 t over 8 h, against 17 §6.2's model 1,400-3,000;
+    - the North Carolina-type 1,060 → 3,570 t in 4 h.
+    
+    Damage control now has something to fight.
+  - **Open doors are the big new killer.** Unprepared ships (half their doors open) and even prepared ones (one in ten)
+    flood across bulkheads in minutes once the water reaches the doors.
+    - The Shinano-like case is lost in 70% of runs.
+    - One flooded boiler room capsizes a destroyer with prepared's doors, which is why the subdivision tests now shut
+      them.
+    
+    DC3's first response (shut the door in a minute) is the cure.
+  - **Speed barely matters yet.** Seydlitz holding 24 kn takes 7,010 t at 8 h against 7,230 t slowed; the bow shell
+    1,790 t against 1,780 t.
+    - Our bulkheads are rated to their real tops, so a sprung one holds even under 28 kn's ram head.
+    - 09's model collapses its bow bulkheads because its compartment tops are lower. Not copied.
+    - The ram head does drive water through holes over the waterline and into the boundaries, but a hit's holed space
+      fills either way.
+    
+    DC6 (the safe speed) revisits it; the bow wave and trim are the first suspects.
+  - **Torpedoes are harsher now.** QE with 2 unfought torpedoes capsizes in 13% of runs within 5 min and 33% within the
+    hour; with 4, 80% in 2 h. The record needed 3-5 to sink a capital ship, with counterflooding (DC5).
 
 ### DC2 Holes by size
 - The four classes in `Hole`, the effective area in the inflow, reachability.

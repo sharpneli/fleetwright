@@ -482,6 +482,31 @@
   "CapsizeHeelDeg": 25,
   "FounderMs": 600000,
   "CapsizeMs": 180000,
+  // leaks with structure (docs/battle/damage-control.md DC1; damage/17 §4-§7, 09 §2.2-§2.4)
+  "FloodRatingK": 1.3,
+  "FloodRatingPerD": 0.1,
+  "FloodRatingSprungMin": 0.6,
+  "FloodSeamBeta": 1,
+  "FloodWorkPerHour": 0.1,
+  "FloodWorkStep": 1.6,
+  "FloodWorkMax": 4,
+  "FloodWorkKn": 15,
+  "FloodWorkSea": 1,
+  "FloodRamK": 0.5,
+  "FloodRamReach": 0.25,
+  "FloodRamLoad": 0.5,
+  // closures by kind (damage/17 §4's fittings): door dogs, hatch dogs, stuffing tubes, vent closures, reach rods, shaft glands, pipe flanges
+  "ClosureStartD": [0.5, 0.5, 0.3, 0.5, 0.5, 0.3, 0.5],
+  "ClosurePerD": [0.35, 0.30, 0.12, 0.25, 0.20, 0.50, 0.25],
+  "ClosureMinCm2": [10, 10, 0.5, 5, 1, 10, 5],
+  "ClosureMaxCm2": [60, 50, 3, 50, 5, 100, 130],
+  "ClosureCap": 0.9,
+  "TorpedoSprungD": 2,
+  "CaulkSeamShare": 0.15,
+  "RedogShare": 0.2,
+  "ShoreRatingK": 1.6,
+  "ClosureTubeM2": 5,
+  "ClosureTubeOtherM2": 20,
   "FireDrownShare": 0.5,
   // what a fire does (docs/battle/fire.md B2): heat, men, smoke into the machinery, magazines, seen
   "FireHarmS": [180, 900],
@@ -566,10 +591,10 @@
   ],
   // a ship's orders before action for fire: the scenario's "readiness" by side, else the default
   "FireReadiness": [
-    { "Name": "unprepared", "Stripped": false, "CellDoors": 1, "WetDecks": false, "FansSecured": false, "DeckLoadMJm2": 0 },
-    { "Name": "prepared", "Stripped": true, "CellDoors": 1, "WetDecks": true, "FansSecured": false, "DeckLoadMJm2": 0 },
-    { "Name": "closed up", "Stripped": true, "CellDoors": 0, "WetDecks": true, "FansSecured": false, "DeckLoadMJm2": 0 },
-    { "Name": "prepared, cluttered", "Stripped": true, "CellDoors": 1, "WetDecks": true, "FansSecured": false, "DeckLoadMJm2": 300 }
+    { "Name": "unprepared", "Stripped": false, "CellDoors": 1, "WetDecks": false, "FansSecured": false, "DeckLoadMJm2": 0, "WtDoorsOpen": 0.5 },
+    { "Name": "prepared", "Stripped": true, "CellDoors": 1, "WetDecks": true, "FansSecured": false, "DeckLoadMJm2": 0, "WtDoorsOpen": 0.1 },
+    { "Name": "closed up", "Stripped": true, "CellDoors": 0, "WetDecks": true, "FansSecured": false, "DeckLoadMJm2": 0, "WtDoorsOpen": 0.02 },
+    { "Name": "prepared, cluttered", "Stripped": true, "CellDoors": 1, "WetDecks": true, "FansSecured": false, "DeckLoadMJm2": 300, "WtDoorsOpen": 0.1 }
   ],
   "FireReadinessDefault": "prepared",
   // firefighting (docs/battle/fire.md B4; damage/17 §8.3): a side's doctrine by the scenario's "firefighting", else the default

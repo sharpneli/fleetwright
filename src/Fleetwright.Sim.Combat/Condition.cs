@@ -70,6 +70,21 @@ public enum PartFlags : byte
     Down = 4,
 }
 
+/// <summary>An edge's marks for the flooding and damage control (docs/battle/damage-control.md DC1): a watertight door
+/// in it left open, its door jammed by a load, it gave way under the head; and damage control's work on it (DC3).</summary>
+[Flags]
+public enum JoinMark : byte
+{
+    None = 0,
+    DoorOpen = 1,
+    DoorJammed = 2,
+    Collapsed = 4,
+    Caulked = 8,
+    Redogged = 16,
+    Shored = 32,
+    ShoredTwice = 64,
+}
+
 /// <summary>What hits that held left a mount (docs/battle/shells-armour-damage.md E4; damage/13 §1): jammed in train (its
 /// component's <see cref="PartFlags.Jammed"/>, by a cause) until a time, stiff until one, guns out until one, its sights
 /// gone. Times are world ms; 0 none, <see cref="NonPen.Battle"/> the rest of the battle.</summary>
@@ -154,6 +169,14 @@ public sealed class ShipCondition
     /// <summary>Openings between spaces a burst's gas left (E5: ruptured boundaries, blown doors, sprung seams), m², on
     /// each edge of the cell graph's entry from its lower cell (the Neighbours pool's index): the flooding adds them.</summary>
     public double[] JoinOpenM2 = [];
+    /// <summary>Each edge's leaks besides its openings (docs/battle/damage-control.md DC1; damage/17 §7), on the same entry
+    /// as <see cref="JoinOpenM2"/>: its sprung seams (m², r(D)), its loosened closures (m²), how far its seams have worked
+    /// open (×1 to ×4: 0 until sprung), the working's hazard so far and the threshold it fires at, the highest load it took
+    /// (D), and its marks (<see cref="JoinMark"/>).</summary>
+    public double[] JoinSeamM2 = [], JoinClosureM2 = [], JoinWork = [], JoinWorkAcc = [], JoinWorkAt = [], JoinD = [];
+    public JoinMark[] JoinMarks = [];
+    /// <summary>Whether her watertight doors left open have been drawn (at her first damage, by her readiness).</summary>
+    public bool DoorsDrawn;
     /// <summary>The last cascade's (E5, <see cref="Blast.Cascade"/>): its number, the spaces it reached (BlastRegion, by
     /// BlastStamp) and what each felt, MPa; scratch for the boundaries' marks. E6 reads the pressures.</summary>
     public int BlastId;
@@ -258,6 +281,9 @@ public sealed class ShipCondition
             DirectorDown = new long[c.Directors.Length];
             EyeDown = new long[c.Eyes.Length];
             JoinOpenM2 = new double[c.NeighbourCount];
+            (JoinSeamM2, JoinClosureM2, JoinWork) = (new double[c.NeighbourCount], new double[c.NeighbourCount], new double[c.NeighbourCount]);
+            (JoinWorkAcc, JoinWorkAt, JoinD) = (new double[c.NeighbourCount], new double[c.NeighbourCount], new double[c.NeighbourCount]);
+            JoinMarks = new JoinMark[c.NeighbourCount];
             (BlastRegion, BlastStamp, BlastFelt) = (new int[c.Cells.Length], new int[c.Cells.Length], new double[c.Cells.Length]);
             BlastBefore = new double[c.Cells.Length];
             (JoinStamp, JoinFate, JoinFelt) = (new int[c.NeighbourCount], new byte[c.NeighbourCount], new double[c.NeighbourCount]);
@@ -270,6 +296,13 @@ public sealed class ShipCondition
         {
             Array.Clear(Gone);
             Array.Clear(JoinOpenM2);
+            Array.Clear(JoinSeamM2);
+            Array.Clear(JoinClosureM2);
+            Array.Clear(JoinWork);
+            Array.Clear(JoinWorkAcc);
+            Array.Clear(JoinWorkAt);
+            Array.Clear(JoinD);
+            Array.Clear(JoinMarks);
             Array.Clear(BlastStamp);
             Array.Clear(JoinStamp);
             Array.Clear(FaceStamp);
@@ -301,7 +334,7 @@ public sealed class ShipCondition
         (CrewLost, Killed, Wounded, Returns) = (0, 0, 0, 0);
         (Status, Loss, Attitude, PowerCap, Steering, JamRudderRad, Conned, Hits, Damaged) = (ShipStatus.Afloat, LossKind.None, Attitude.Upright, 1, Steering.Free, 0, true, 0, false);
         (WaterT, GmM, StepMs, NextStepMs, HeldCap, LastShooter, LastBattery, LossMs, GoneMs) = (0, c.Hydrostatics.GmT, 0, -1, 1, 0, 0, 0, 0);
-        (NextClearMs, ClearAtMs, Leaks) = (-1, -1, 0);
+        (NextClearMs, ClearAtMs, Leaks, DoorsDrawn) = (-1, -1, 0, false);
         (PartyCount, PartiesMade, TurnedTo, LastHitMs, NextPlanMs, FireShowMW) = (0, false, false, 0, 0, 0);
         ClearGen++;
         Version++;
@@ -599,6 +632,16 @@ public sealed class ShipCondition
             {
                 h.Add(i + 2000);
                 h.Add(JoinOpenM2[i]);
+            }
+        for (int i = 0; i < JoinSeamM2.Length; i++)
+            if (JoinSeamM2[i] != 0 || JoinClosureM2[i] != 0 || JoinMarks[i] != JoinMark.None)
+            {
+                h.Add(i + 3000);
+                h.Add(JoinSeamM2[i]);
+                h.Add(JoinClosureM2[i]);
+                h.Add(JoinWork[i]);
+                h.Add(JoinWorkAcc[i]);
+                h.Add((int)JoinMarks[i]);
             }
         for (int i = 0; i < DirectorDown.Length; i++)
             if (DirectorDown[i] != 0)

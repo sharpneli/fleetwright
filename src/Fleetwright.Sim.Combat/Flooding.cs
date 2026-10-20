@@ -33,6 +33,10 @@ public sealed class FloodModel
     public readonly double[] Capacity, Area, Cx, Cy, DeckArea;
     public readonly bool[] Weather;
     public readonly FloodEdge[] Edges;
+    /// <summary>Each edge's face (m², the area the two cells share) and the height of water from its lowest point to its
+    /// top that it's built for (m: a bulkhead's own top, a deck's section's top, at least the waterline; infinite open):
+    /// its rating is <see cref="SimSettings.FloodRatingK"/> times this (docs/battle/damage-control.md DC1).</summary>
+    public readonly double[] FaceM2, BuiltM;
     public readonly double ReserveT, DisplacementT, DeckAtLcf, Complement;
 
     /// <summary>Tonnes a cubic metre of sea water.</summary>
@@ -72,6 +76,29 @@ public sealed class FloodModel
                 deck = Math.Max(deck, b.Top);
         }
         Edges = [.. edges];
+        // each section's top: what a deck in it is built to hold water up to
+        var top = new double[Math.Max(c.Sections.Length, 1)];
+        Array.Fill(top, double.NegativeInfinity);
+        foreach (ref readonly var x in cells)
+        {
+            int sec = Math.Clamp(x.Section, 0, top.Length - 1);
+            top[sec] = Math.Max(top[sec], x.Box.Top);
+        }
+        (FaceM2, BuiltM) = (new double[Edges.Length], new double[Edges.Length]);
+        double wl = c.Vertical.Waterline;
+        for (int i = 0; i < Edges.Length; i++)
+        {
+            ref readonly var e = ref Edges[i];
+            ref readonly var nb = ref c.Neighbour(e.Pool);
+            FaceM2[i] = Blast.Area(cells[e.A].Box, cells[e.B].Box, e.Join);
+            double t = e.Join switch
+            {
+                JoinKind.Bulkhead when nb.Through >= 0 => c.Bulkheads[nb.Through].Top,
+                JoinKind.Open => double.PositiveInfinity,
+                _ => Math.Max(top[Math.Clamp(cells[e.A].Section, 0, top.Length - 1)], top[Math.Clamp(cells[e.B].Section, 0, top.Length - 1)]),
+            };
+            BuiltM[i] = double.IsPositiveInfinity(t) ? t : Math.Max(Math.Max(t, wl) - e.Z, 0.5);
+        }
         DisplacementT = c.Hydrostatics.DisplacementT;
         ReserveT = Math.Max(volume * SeaT - DisplacementT, 0);
         DeckAtLcf = double.IsNegativeInfinity(deck) ? 0 : deck;
@@ -126,6 +153,8 @@ public struct FloodStep
 {
     public double InM3, OutM3, PumpedM3;
     public bool RoomsFlooded;
+    /// <summary>Boundaries that gave way under the head this step (docs/battle/damage-control.md DC1).</summary>
+    public int Collapsed;
 }
 
 /// <summary>FLOODING v0 (docs/battle/fighting.md 4.3b; damage-model-research.md §3.5, §3.6, §8.4): deliberately simple,
@@ -151,9 +180,19 @@ public static class Flooding
 {
     const double G = 9.81;
 
-    /// <summary>One step of dt seconds: the sea in, the water across the graph, the pumps; then the rooms flooded out of
-    /// action. The attitude is the one the step starts from (<see cref="Settle"/> after it).</summary>
+    /// <summary>A step for the tools and tests that don't move the ship: stopped, its draws from a fixed stream.</summary>
     public static FloodStep Step(ShipClass c, FloodModel f, ShipCondition k, double dt, double pumpShare, SimSettings s)
+    {
+        var r = RandomStream.FromSeed(0xF100D);
+        return Step(c, f, k, dt, pumpShare, 0, s, ref r);
+    }
+
+    /// <summary>One step of dt seconds at a speed through the water (m/s, ahead over 0): the sea in, the water across the
+    /// graph (the leaks with structure, docs/battle/damage-control.md DC1: seams opening with the head and working open,
+    /// loosened closures, open watertight doors, boundaries giving way past their rating), the pumps; then the rooms
+    /// flooded out of action. The attitude is the one the step starts from (<see cref="Settle"/> after it).</summary>
+    public static FloodStep Step(ShipClass c, FloodModel f, ShipCondition k, double dt, double pumpShare, double speedMs, SimSettings s,
+        ref RandomStream rng)
     {
         var res = new FloodStep();
         var cells = c.Cells;
@@ -171,7 +210,7 @@ public static class Flooding
             if (k.BreachM2[i] > 0)
             {
                 double bottom = k.BreachZ[i] - Math.Sqrt(k.BreachM2[i] / Math.PI);   // the sea comes in over the hole's lower edge
-                double head = water.At(f.Cx[i], k.BreachY[i]) - Math.Max(bottom, inside);
+                double head = water.At(f.Cx[i], k.BreachY[i]) + Ram(c, f.Cx[i], speedMs, s) - Math.Max(bottom, inside);
                 if (head > 0)
                     q += cd * k.BreachM2[i] * Math.Sqrt(2 * G * head);
             }
@@ -186,14 +225,14 @@ public static class Flooding
             res.InM3 += v;
         }
 
-        // and out: water standing over a hole's lower edge, with the sea outside lower, runs out through it (a fire's
-        // hose water high in the ship, a cell the ship's righting lifted; docs/battle/fire.md B3)
+        // and out: water standing over a hole's lower edge, with the sea outside lower (and the ram head at it, under way),
+        // runs out through it (a fire's hose water high in the ship, a cell the ship's righting lifted; docs/battle/fire.md B3)
         for (int i = 0; i < cells.Length; i++)
         {
             if (w[i] <= 0 || k.BreachM2[i] <= 0)
                 continue;
             double bottom = k.BreachZ[i] - Math.Sqrt(k.BreachM2[i] / Math.PI);
-            double floor = Math.Max(bottom, water.At(f.Cx[i], k.BreachY[i])), head = f.Level(c, k, i) - floor;
+            double floor = Math.Max(bottom, water.At(f.Cx[i], k.BreachY[i]) + Ram(c, f.Cx[i], speedMs, s)), head = f.Level(c, k, i) - floor;
             if (head <= 0)
                 continue;
             double v = Math.Min(Math.Min(cd * k.BreachM2[i] * Math.Sqrt(2 * G * head) * dt, head * f.Area[i]), w[i]);
@@ -202,18 +241,31 @@ public static class Flooding
         }
 
         // across the graph: from the higher water (over the sea outside) to the lower, down to the opening between
-        foreach (ref readonly var e in f.Edges.AsSpan())
+        var edges = f.Edges;
+        double fast = 1 + Math.Abs(speedMs) / (s.FloodWorkKn * Kn);
+        double work = s.FloodWorkPerHour / 3600 * dt * fast * fast * (1 + s.FloodWorkSea);
+        for (int ei = 0; ei < edges.Length; ei++)
         {
-            int a = e.A, b = e.B;
+            ref readonly var e = ref edges[ei];
+            int a = e.A, b = e.B, p = e.Pool;
             if (w[a] <= 0 && w[b] <= 0)
                 continue;
             double sa = water.At(f.Cx[a], f.Cy[a]), sb = water.At(f.Cx[b], f.Cy[b]), so = (sa + sb) / 2;
-            double ha = Head(c, f, k, a, sa), hb = Head(c, f, k, b, sb), open = e.Z - so;
+            double ha = Head(c, f, k, a, sa, speedMs, s), hb = Head(c, f, k, b, sb, speedMs, s), open = e.Z - so;
             int hi = ha >= hb ? a : b, lo = hi == a ? b : a;
             double hh = Math.Max(ha, hb), hl = Math.Min(ha, hb);
             double drive = hh - Math.Max(hl, open);
             if (drive <= 0 || w[hi] <= 0)
                 continue;
+            var marks = k.JoinMarks[p];
+            double rating = Rating(f, k, ei, p, s);
+            if (drive > rating && (marks & JoinMark.Collapsed) == 0)
+            {
+                // past its rating it gives way: a share of it open (11's ruptured)
+                k.JoinMarks[p] = marks |= JoinMark.Collapsed;
+                k.JoinOpenM2[p] += s.RupturedShare * f.FaceM2[ei];
+                res.Collapsed++;
+            }
             double area = e.Join switch
             {
                 JoinKind.Open => s.FloodOpenM2,
@@ -221,7 +273,24 @@ public static class Flooding
                 JoinKind.Deck when open < 0 && e.Z > c.Vertical.Waterline => s.FloodSunkDeckM2,   // over the waterline once, under the sea now
                 JoinKind.Deck => s.FloodLeakDeckM2,
                 _ => s.FloodLeakBulkheadM2,
-            } + k.JoinOpenM2[e.Pool];   // and what a burst's gas opened there (E5)
+            } + k.JoinOpenM2[p];   // and what a burst's gas opened there (E5), or the head broke
+            if ((marks & JoinMark.DoorOpen) != 0)
+                area += s.DoorM2;
+            if (k.JoinSeamM2[p] > 0)
+            {
+                // its sprung seams, opened by the head and worked open over time (17 §5)
+                double load = Math.Min(drive / rating, 1);
+                area += k.JoinSeamM2[p] * Math.Max(k.JoinWork[p], 1) * ((marks & JoinMark.Caulked) != 0 ? s.CaulkSeamShare : 1) * (1 + s.FloodSeamBeta * load);
+                if (k.JoinWork[p] < s.FloodWorkMax &&
+                    (k.JoinWorkAcc[p] += work * load * ((marks & JoinMark.Shored) != 0 ? 0.5 : 1)) >= k.JoinWorkAt[p])
+                {
+                    k.JoinWork[p] = Math.Min(k.JoinWork[p] * s.FloodWorkStep, s.FloodWorkMax);
+                    k.JoinWorkAcc[p] = 0;
+                    k.JoinWorkAt[p] = -Math.Log(1 - rng.NextDouble());
+                }
+            }
+            if (k.JoinClosureM2[p] > 0)
+                area += k.JoinClosureM2[p] * ((marks & JoinMark.Redogged) != 0 ? s.RedogShare : 1);
             double v = cd * area * Math.Sqrt(2 * G * drive) * dt;
             // no more than lies over the opening, than the lower has room for, and than levels them
             double over = f.Full(k, hi) ? w[hi] : Math.Min(Math.Max(f.Level(c, k, hi) - e.Z, 0) * f.Area[hi], w[hi]);
@@ -266,12 +335,43 @@ public static class Flooding
 
     /// <summary>The water's pressure in a cell as a height over the sea outside: its surface while there's room; full,
     /// the sea's own level if it's holed under it, else its ceiling.</summary>
-    static double Head(ShipClass c, FloodModel f, ShipCondition k, int i, double sea)
+    static double Head(ShipClass c, FloodModel f, ShipCondition k, int i, double sea, double speedMs, SimSettings s)
     {
-        if (!f.Full(k, i))
-            return f.Level(c, k, i) - sea;
-        double top = c.Cells[i].Box.Top - sea;
-        return k.BreachM2[i] > 0 && k.BreachZ[i] < sea ? Math.Max(top, 0) : top;
+        double level = f.Level(c, k, i), top = c.Cells[i].Box.Top;
+        bool holed = k.BreachM2[i] > 0 && k.BreachZ[i] < sea;
+        // a holed space with its water at its ceiling is the sea's: its leaks into its neighbours drain it a little each
+        // step and the hole fills it again, so it presses as a full one
+        if (!f.Full(k, i) && !(holed && level >= top - PressedM))
+            return level - sea;
+        return holed ? Math.Max(top - sea, s.FloodRamLoad * Ram(c, f.Cx[i], speedMs, s)) : top - sea;
+    }
+
+    /// <summary>How near its ceiling a holed space's water is to press as a full one, m.</summary>
+    const double PressedM = 0.1;
+
+    const double Kn = 0.514444;
+
+    /// <summary>The ram head at x along the ship under way ahead, m (09 §2.2): k·v²/2g, k <see cref="SimSettings.FloodRamK"/>
+    /// at the stem, falling to 0 at <see cref="SimSettings.FloodRamReach"/> of her length aft of it; none astern.</summary>
+    public static double Ram(ShipClass c, double x, double speedMs, SimSettings s)
+    {
+        if (!(speedMs > 0))
+            return 0;
+        double reach = s.FloodRamReach * c.Length, share = Math.Clamp((x - (c.Hull.X1 - reach)) / reach, 0, 1);
+        return s.FloodRamK * share * speedMs * speedMs / (2 * G);
+    }
+
+    /// <summary>An edge's rating now, the head across it it takes, m: built for its height of water × <see
+    /// cref="SimSettings.FloodRatingK"/>, less for the load that sprung it, more for each set of shores.</summary>
+    public static double Rating(FloodModel f, ShipCondition k, int edge, int pool, SimSettings s)
+    {
+        double r = s.FloodRatingK * f.BuiltM[edge], d = k.JoinD[pool];
+        if (d > 0)
+            r *= Math.Max(s.FloodRatingSprungMin, 1 - s.FloodRatingPerD * d);
+        var m = k.JoinMarks[pool];
+        if ((m & JoinMark.Shored) != 0)
+            r *= (m & JoinMark.ShoredTwice) != 0 ? s.ShoreRatingK * s.ShoreRatingK : s.ShoreRatingK;
+        return r;
     }
 
     /// <summary>The heel an off-centre moment (t·m over the displacement, m) gives, radians, by the wall-sided formula:

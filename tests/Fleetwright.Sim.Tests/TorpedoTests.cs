@@ -100,8 +100,8 @@ public class TorpedoTests(ITestOutputHelper output)
         output.WriteLine($"fired {w.Torpedoes.Fired}, hits {w.Torpedoes.Hits}");
         Assert.True(w.Torpedoes.Fired >= 2);
         Assert.True(w.Torpedoes.Hits >= 1);
-        var k = w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(1));
-        Assert.True(k.BreachTotalM2 > 10 || k.Status != ShipStatus.Afloat);
+        int slot = w.Ships.Store.SlotOf(1);   // -1: she's gone under already
+        Assert.True(slot < 0 || w.Ships.Store.Combat.Condition(slot) is var k && (k.BreachTotalM2 > 10 || k.Status != ShipStatus.Afloat));
         Assert.Contains(Enumerable.Range(0, w.CombatLog.Count).Select(i => w.CombatLog.Newest(i)),
             e => e.Kind == CombatEvent.Hit && e.Source == HitSource.Torpedo && e.Target == 1);
     }
