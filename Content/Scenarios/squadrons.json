@@ -13,8 +13,7 @@
   // the ships' orders before action for fire (docs/battle/fire.md B1; damage/17 §8.3): stripped, doors, decks wetted
   "readiness": { "Britain": "closed up", "Germany": "closed up" },
   // how her crews fight fire (docs/battle/fire.md B4): the fire watch, the parties, the main
-  "damage_control": { "Britain": "rn-1916", "Germany": "german-1916" },
-  "propellant": { "Britain": 2, "Germany": 0.1 },
+  "damage_control": { "Britain": "1916", "Germany": "1916" },
   "fire_discipline": { "Britain": "rn-1914", "Germany": "german" },
   "player": "Britain",
   // the end (docs/battle/command.md 5.0): an evening's fighting, each side out to sink the other

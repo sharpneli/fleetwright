@@ -99,8 +99,8 @@ public class DoctrineTests
         Assert.Equal("closed up", w.Damage.ReadinessOf(1).Name);
         Assert.Contains("no \"open\"", Assert.Throws<ScenarioException>(() => Load(""", "readiness": { "Germany": "open" }""")).Message);
 
-        (w, _) = Load(""", "damage_control": { "Britain": "usn-1944" }""");
-        Assert.Equal("usn-1944", w.Damage.DamageControlOf(0).Name);
+        (w, _) = Load(""", "damage_control": { "Britain": "1944" }""");
+        Assert.Equal("1944", w.Damage.DamageControlOf(0).Name);
         Assert.Equal(w.Settings.DamageControlDefault, w.Damage.DamageControlOf(1).Name);
         Assert.Contains("no \"heroic\"", Assert.Throws<ScenarioException>(() => Load(""", "damage_control": { "Germany": "heroic" }""")).Message);
     }

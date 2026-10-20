@@ -1,6 +1,10 @@
 # Plan: damage control (a 4.5 deepening)
 Status: **agreed with the user 2026-10-20** ("Decided" below); DC0-DC9 done 2026-10-20: the plan is complete (open items in DC9).    Updated: 2026-10-20
 
+**2026-10-20, after the plan (shells plan E8b):** the doctrines are one a period, not a navy: `1890`, `1905`, `1916`,
+`1942`, `1944` (rn-1916 and german-1916 merged into `1916`, russian-1905 and prepared-1894 into `1905`, the US rows
+renamed). The navy names below are the plan as built; a side still picks its doctrine, so a campaign's player can.
+
 The fine-tune pass for damage control: what the crew does about a hit once it has landed. Firefighting came first, as
 this pass's first slice (`fire.md`, decision 1). This plan adds the water and the repairs, and both draw on the same
 men. Its research:

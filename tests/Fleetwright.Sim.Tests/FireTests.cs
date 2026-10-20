@@ -199,7 +199,7 @@ public class FireTests(ITestOutputHelper output)
         var r = RandomStream.FromSeed(7);
         int flashed = 0;
         for (int s = 0; s < 20 * 60; s++)
-            flashed += Fires.Step(c, f, k, 1, quiet, 1, ref r).Flashed;
+            flashed += Fires.Step(c, f, k, 1, quiet, ref r).Flashed;
         output.WriteLine($"{c.CellId(cell)} ({c.FireSpaces[cell].AreaM2:0} m², {c.FireSpaces[cell].LoadMJm2:0} MJ/m²): {k.Fire[cell].Phase}, " +
                          $"{k.Fire[cell].Q:0.00} MW, {k.Fire[cell].Involved:0} m² after 20 min");
         Assert.Equal(1, flashed);

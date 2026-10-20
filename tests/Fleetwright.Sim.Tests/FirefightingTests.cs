@@ -36,27 +36,27 @@ public class FirefightingTests(ITestOutputHelper output)
             .Where(r => c.Rooms[r].Kind is RoomKind.BoilerRoom or RoomKind.EngineRoom).Select(r => $"{c.Rooms[r].Kind} {c.Rooms[r].X0:0}-{c.Rooms[r].X1:0} {c.Rooms[r].VolumeM3:0}")) +
             $"; sections {c.Sections[0].X0:0}..{c.Sections[^1].X1:0}");
         Assert.InRange(pump, 2, c.Sections.Length - 3);   // amidships
-        var k = Fresh(c, "rn-1916");
+        var k = Fresh(c, "1916");
         Assert.Equal(1, Fires.SectionWater(c, k, fore, 1000, Settings));
         k.MainCutMs[pump + 1] = 1000;
         double cutAt = Fires.SectionWater(c, k, pump + 1, 2000, Settings), past = Fires.SectionWater(c, k, fore, 2000, Settings);
         double behind = Fires.SectionWater(c, k, aft, 2000, Settings);
         output.WriteLine($"pumps in section {pump}; a cut in {pump + 1}: there {cutAt}, past it {past}, the other way {behind}");
         Assert.Equal((Settings.FireDryShare, Settings.FireDryShare, 1.0), (cutAt, past, behind));
-        long rigged = 1000 + (long)(Doctrine("rn-1916").RestoreS * 1000);
+        long rigged = 1000 + (long)(Doctrine("1916").RestoreS * 1000);
         Assert.Equal((Settings.FireJumperShare, 1.0), (Fires.SectionWater(c, k, pump + 1, rigged, Settings), Fires.SectionWater(c, k, fore, rigged, Settings)));
 
-        var looped = Fresh(c, "usn-1944");
+        var looped = Fresh(c, "1944");
         looped.MainCutMs[pump + 1] = 1000;
         Assert.Equal((Settings.FireDryShare, 1.0), (Fires.SectionWater(c, looped, pump + 1, 2000, Settings), Fires.SectionWater(c, looped, fore, 2000, Settings)));
 
         // the pumps on steam: her plant's power, a diesel's floor on the looped main
         (k.PowerCap, looped.PowerCap) = (0.2, 0.2);
         Assert.Equal(0.2, Fires.SectionWater(c, k, aft, 2000, Settings), 9);
-        Assert.Equal(Doctrine("usn-1944").PumpFloor, Fires.SectionWater(c, looped, aft, 2000, Settings), 9);
+        Assert.Equal(Doctrine("1944").PumpFloor, Fires.SectionWater(c, looped, aft, 2000, Settings), 9);
 
         // never rigged past by the unorganised
-        var none = Fresh(c, "unorganised-1890");
+        var none = Fresh(c, "1890");
         none.MainCutMs[pump] = 1000;
         Assert.Equal(Settings.FireDryShare, Fires.SectionWater(c, none, fore, 10_000_000, Settings));
     }
@@ -71,7 +71,7 @@ public class FirefightingTests(ITestOutputHelper output)
             int cuts = 0;
             for (int i = 0; i < 2000; i++)
             {
-                var k = Fresh(c, "usn-1942");
+                var k = Fresh(c, "1942");
                 var r = RandomStream.FromSeed((ulong)i);
                 Fires.Hit(c, f, k, c.Sections.Length / 2, 1000, Settings, ref r);
                 cuts += k.MainCutMs[c.Sections.Length / 2] > 0 ? 1 : 0;
@@ -89,26 +89,26 @@ public class FirefightingTests(ITestOutputHelper output)
     {
         var c = Class("dreadnought");
         var f = new FloodModel(c);
-        var k = Fresh(c, "rn-1916");
+        var k = Fresh(c, "1916");
         int a = Enumerable.Range(0, c.Cells.Length).First(i => c.FireSpaces[i].Use == FireUse.Quarters && c.FireSpaces[i].AreaM2 > 30);
         Fires.Ignite(c, k, a, 0.3, Settings);
         var r = RandomStream.FromSeed(1);
-        Fires.Step(c, f, k, 1, Settings, 1, ref r, 1000);
+        Fires.Step(c, f, k, 1, Settings, ref r, 1000);
         double men = Enumerable.Range(0, k.PartyCount).Sum(p => k.Parties[p].Men);
         output.WriteLine($"{k.PartyCount} parties, {men:0} men of {f.Complement:0}; sent: " +
                          string.Join(", ", Enumerable.Range(0, k.PartyCount).Select(p => $"{k.Parties[p].Target}@{k.Parties[p].ArriveMs / 1000.0:0}s")));
         Assert.InRange(k.PartyCount, Settings.FirePartiesMin, Settings.FirePartiesMax);
-        Assert.Equal(f.Complement * Doctrine("rn-1916").PartyShare, men, 6);
+        Assert.Equal(f.Complement * Doctrine("1916").PartyShare, men, 6);
         Assert.Equal(Settings.FirePartiesAFire, Enumerable.Range(0, k.PartyCount).Count(p => k.Parties[p].Target == a));
         Assert.All(Enumerable.Range(0, k.PartyCount).Where(p => k.Parties[p].Target == a), p =>
-            Assert.True(k.Parties[p].ArriveMs >= 1000 + Doctrine("rn-1916").MusterS * 1000, "mustered first"));
+            Assert.True(k.Parties[p].ArriveMs >= 1000 + Doctrine("1916").MusterS * 1000, "mustered first"));
 
         // nobody fights for a doctrine of none
         var none = new ShipCondition();
         none.Reset(c);
         Fires.Ignite(c, none, a, 0.3, Settings);
         for (int t = 0; t < 600; t++)
-            Fires.Step(c, f, none, 1, Settings, 1, ref r, 1000 + t * 1000);
+            Fires.Step(c, f, none, 1, Settings, ref r, 1000 + t * 1000);
         Assert.Equal(0, none.FireFlow[a].Lpm);
         Assert.Equal(0, none.PartyCount);
     }
@@ -118,7 +118,7 @@ public class FirefightingTests(ITestOutputHelper output)
     (double OutMin, int Fires, double WaterT) OneFire(string design, string doctrine, string readiness, ulong seed, bool dry = false)
     {
         // "nobody": no watch, no parties, no turning to
-        var nobody = Doctrine("unorganised-1890") with { Name = "nobody", WatchS = -1, PartyShare = 0, TurnTo = 0 };
+        var nobody = Doctrine("1890") with { Name = "nobody", WatchS = -1, PartyShare = 0, TurnTo = 0 };
         var s = Settings with { DamageControl = [.. Settings.DamageControl, nobody], DamageControlDefault = doctrine, ReadinessDefault = readiness };
         var w = new World(Start, seed, s);
         int cls = w.Ships.AddClass(Class(design));
@@ -144,8 +144,8 @@ public class FirefightingTests(ITestOutputHelper output)
     [Fact]
     public void One_fire_on_a_prepared_Great_War_ship_is_out_in_minutes_and_unfought_it_runs_on()
     {
-        var fought = Enumerable.Range(0, 12).Select(i => OneFire("dreadnought", "rn-1916", "prepared", (ulong)i)).ToList();
-        var dry = Enumerable.Range(0, 12).Select(i => OneFire("dreadnought", "rn-1916", "prepared", (ulong)i, dry: true)).ToList();
+        var fought = Enumerable.Range(0, 12).Select(i => OneFire("dreadnought", "1916", "prepared", (ulong)i)).ToList();
+        var dry = Enumerable.Range(0, 12).Select(i => OneFire("dreadnought", "1916", "prepared", (ulong)i, dry: true)).ToList();
         var unfought = Enumerable.Range(0, 12).Select(i => OneFire("dreadnought", "nobody", "prepared", (ulong)i)).ToList();
         string Show(List<(double OutMin, int Fires, double WaterT)> runs) =>
             $"out {runs.Count(x => !double.IsNaN(x.OutMin))} of {runs.Count}, median {runs.Select(x => double.IsNaN(x.OutMin) ? 99 : x.OutMin).Order().ElementAt(runs.Count / 2):0} min, " +

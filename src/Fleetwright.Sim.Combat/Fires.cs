@@ -100,7 +100,7 @@ public readonly record struct FireWater(double FogLpm, double Lpm, double BoilSh
 /// given.</para></summary>
 public static class Fires
 {
-    public static FireStep Step(ShipClass c, FloodModel f, ShipCondition k, double dt, SimSettings s, double propellant, ref RandomStream r, long nowMs = 0)
+    public static FireStep Step(ShipClass c, FloodModel f, ShipCondition k, double dt, SimSettings s, ref RandomStream r, long nowMs = 0)
     {
         var res = new FireStep { MagazineRoom = -1 };
         Fight(c, f, k, nowMs, s);
@@ -179,7 +179,7 @@ public static class Fires
             return res;
         if (smoky)
             Smoke(c, k, nowMs, dt, s, ref r, ref res);
-        Magazines(c, f, k, dt, s, propellant, nowMs, ref r, ref res);
+        Magazines(c, f, k, dt, s, nowMs, ref r, ref res);
         return res;
     }
 
@@ -297,11 +297,11 @@ public static class Fires
     }
 
     /// <summary>The magazines' heat (B2; doc 10 §2.3, §7.2 rule 12): each fire on a magazine's boundary (and its turrets'
-    /// trunks) doses it by the way it comes (<see cref="SimSettings.FireMagazineS"/>) times her side's propellant, and it
-    /// goes up past its drawn limit; the dose cools without a fire. Her doctrine floods one threatened for its time unless
-    /// smoke over it cuts the controls off; the water (the sea's under the waterline, else her main's) fills it, and the
+    /// trunks) doses it by the way it comes (<see cref="SimSettings.FireMagazineS"/>), and it goes up past its drawn
+    /// limit; the dose cools without a fire. Her doctrine floods one threatened for its time unless smoke over it cuts the
+    /// controls off; the water (the sea's under the waterline, else her main's) fills it, and the
     /// flooding takes it from there (a flooded magazine's mounts lose their ammunition, a drowned one can't go up).</summary>
-    static void Magazines(ShipClass c, FloodModel f, ShipCondition k, double dt, SimSettings s, double propellant, long now, ref RandomStream r,
+    static void Magazines(ShipClass c, FloodModel f, ShipCondition k, double dt, SimSettings s, long now, ref RandomStream r,
         ref FireStep res)
     {
         var rooms = c.Rooms;
@@ -334,7 +334,7 @@ public static class Fires
             }
             if (k.MagazineLimit[m] <= 0)
                 k.MagazineLimit[m] = Math.Exp(s.FireMagazineSigma * r.NextGaussian());
-            k.MagazineHeat[m] += rate * propellant * dt;
+            k.MagazineHeat[m] += rate * dt;
             k.MagazineThreatS[m] += dt;
             if (k.MagazineHeat[m] >= k.MagazineLimit[m])
             {

@@ -8,8 +8,7 @@ namespace Fleetwright.Sim;
 /// <summary>What the damage system understands (<see cref="DamageSystem"/>).</summary>
 public enum DamageCommand : ushort
 {
-    SetPropellant = 1,
-    Wreck,
+    Wreck = 2,
     Breach,
     SideHole,
     FloodRooms,
@@ -91,7 +90,7 @@ public sealed class DamageSystem : IWorldSystem
     readonly HitPath path = new();
     readonly PathBender bender = new();
     readonly Dictionary<ShipClass, FloodModel> floods = [];
-    readonly double[] propellant = new double[256], fuel = new double[256];
+    readonly double[] fuel = new double[256];
     readonly int[] readiness = new int[256], firefighting = new int[256];
     readonly int readinessDefault, firefightingDefault;
     double[] bearings = new double[16];
@@ -100,7 +99,7 @@ public sealed class DamageSystem : IWorldSystem
     readonly Struck[] struck;
     int struckNext, struckCount;
     long hits;
-    bool propellantSet, readinessSet, firefightingSet, fuelSet, touched;
+    bool readinessSet, firefightingSet, fuelSet, touched;
 
     readonly Sightings sightings;
 
@@ -109,7 +108,6 @@ public sealed class DamageSystem : IWorldSystem
         (this.settings, this.ships, this.log, this.sightings) = (settings, ships, log, sightings);
         stream = RandomStream.Named(seed, "damage");
         lotStream = RandomStream.Named(seed, "plate lots");
-        Array.Fill(propellant, 1.0);
         Array.Fill(fuel, settings.FuelShareDefault);
         readinessDefault = Math.Max(0, Array.FindIndex(settings.Readiness, x => x.Name == settings.ReadinessDefault));
         Array.Fill(readiness, readinessDefault);
@@ -136,12 +134,6 @@ public sealed class DamageSystem : IWorldSystem
     public TerminalTrace? Trace { get; set; }
 
     // ------------------------------------------------------------------ commands
-
-    /// <summary>A side's propellant: how readily its magazines go up, times the settings' chances (1 by default; the
-    /// Great War's cordite against the German RP C/12 is the knob's first use).</summary>
-    public static Command SetPropellant(int side, double factor) => new(Id, (ushort)DamageCommand.SetPropellant, side, X: factor);
-
-    public double Propellant(int side) => propellant[side & 255];
 
     /// <summary>A side's fuel, as a share of a full load (docs/battle/shell-contents.md C2): the scenario's "fuel", else
     /// <see cref="SimSettings.FuelShareDefault"/>. Her levels (oil, coal) are made from it.</summary>
@@ -235,12 +227,6 @@ public sealed class DamageSystem : IWorldSystem
     {
         switch ((DamageCommand)c.Code)
         {
-            case DamageCommand.SetPropellant:
-                if (c.Entity is < 0 or > 255 || !(c.X >= 0))
-                    throw new ArgumentException($"no propellant {c.X} for side {c.Entity}");
-                propellant[c.Entity] = c.X;
-                propellantSet = true;
-                break;
             case DamageCommand.SetFuel:
                 if (c.Entity is < 0 or > 255 || !(c.X >= 0 && c.X <= 1))
                     throw new ArgumentException($"no fuel share {c.X} for side {c.Entity}: 0 to 1");
@@ -515,7 +501,7 @@ public sealed class DamageSystem : IWorldSystem
         if (hit.Source == HitSource.Torpedo)
         {
             // an underwater explosion against the hull (4.6): no path of its own
-            e = Underwater.Apply(cls, k, hit, settings, propellant[ship.Side], ref rng, out var outcome);
+            e = Underwater.Apply(cls, k, hit, settings, ref rng, out var outcome);
             t = new TerminalResult { Outcome = outcome, Plate = -1 };
         }
         else if (near)
@@ -541,7 +527,7 @@ public sealed class DamageSystem : IWorldSystem
             bender.Set(bearings, n, water);
             var lots = lotStream.Derive((ulong)hit.Ship);
             t = Terminal.Resolve(cls, hit, path, bender, lots, settings, ref rng, k, Trace);
-            e = Effects.Apply(cls, k, hit, path, t, settings, propellant[ship.Side], ref rng);
+            e = Effects.Apply(cls, k, hit, path, t, settings, ref rng);
         }
         // its section's fire main and the fire parties there (docs/battle/fire.md B4)
         if (!near && k.Status == ShipStatus.Afloat)
@@ -856,7 +842,7 @@ public sealed class DamageSystem : IWorldSystem
         k.NoteCount = 0;
         var how = Flooding.Settle(cls, f, k, settings, dt);
         var rng = stream.Derive(0xF100Du).Derive((ulong)ships.Store[slot].Entity).Derive((ulong)now);
-        var fs = k.Fires > 0 || Fires.Hot(k) ? Fires.Step(cls, f, k, dt, settings, propellant[ships.Store[slot].Side], ref rng, now) : default;
+        var fs = k.Fires > 0 || Fires.Hot(k) ? Fires.Step(cls, f, k, dt, settings, ref rng, now) : default;
         touched = true;
         if (fs.Magazine)
         {
@@ -984,13 +970,6 @@ public sealed class DamageSystem : IWorldSystem
 
     public void Hash(ref StateHash h)
     {
-        if (propellantSet)
-            for (int s = 0; s < propellant.Length; s++)
-                if (propellant[s] != 1)
-                {
-                    h.Add(s);
-                    h.Add(propellant[s]);
-                }
         if (fuelSet)
             for (int s = 0; s < fuel.Length; s++)
                 if (fuel[s] != settings.FuelShareDefault)

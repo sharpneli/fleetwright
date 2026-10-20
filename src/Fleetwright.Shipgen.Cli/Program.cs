@@ -111,8 +111,8 @@ public static class Program
             hit, the parts most often put out of action, and each ship's state after K hits (--per-ship) and MIN minutes
             of flooding and fire (default 30: the water it took, and lost to its magazine, foundered or capsized); --show prints
             the first N hits' paths; --readiness the target's orders before action for fire (unprepared, prepared, closed
-            up: the settings' Readiness; their default else) and --damage-control her crews' doctrine (rn-1916,
-            russian-1905, ...: the settings' DamageControl). TARGET and DESIGN are paths or names (shipgen/designs,
+            up: the settings' Readiness; their default else) and --damage-control her crews' doctrine (1916,
+            1905, ...: the settings' DamageControl). TARGET and DESIGN are paths or names (shipgen/designs,
             Content/Scenarios/Designs).
             --loadout gives the shooter other shells (docs/battle/shells-armour-damage.md S5): BATTERY:SHELL[@SHARE][+SHELL...]
             with | between batteries; a battery is main, secondary, main[i] or secondary[i], a shell a template's name
@@ -183,8 +183,8 @@ public static class Program
             N runs a case (default 20), --case a case by name
         shipgen damage-history [--runs N] [--case TEXT] [--settings FILE]
             the battle anchors (docs/battle/shells-armour-damage.md E8): the record's cases, a ship of its kind hit by its
-            shells at random over its minutes, each from a range and target angle in the case's bands, at her speed and
-            under her side's propellant, through the world's damage system: the shells on plate over 9" and 6-9"
+            shells at random over its minutes, each from a range and target angle in the case's bands, at her speed,
+            through the world's damage system: the shells on plate over 9" and 6-9"
             (Jutland's count), belt holes, killed and wounded a hit, turret-minutes, directors, steering, water, list, how
             she ended; N runs a case (default 20), --case a case by name
         shipgen dc-history [--runs N] [--case TEXT] [--hours H] [--trace] [--settings FILE]

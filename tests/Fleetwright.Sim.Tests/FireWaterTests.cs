@@ -109,14 +109,14 @@ public class FireWaterTests(ITestOutputHelper output)
             var r = RandomStream.FromSeed((ulong)seed);
             Fires.Ignite(c, k, cell, 0.3, quiet);
             for (int t = 0; t < 10 * 60; t++)
-                Fires.Step(c, f, k, 1, quiet, 1, ref r);
+                Fires.Step(c, f, k, 1, quiet, ref r);
             k.FireFlow[cell] = Hose("fog", 2000);
             for (int t = 0; t < 600 && k.Fire[cell].Phase != BurnPhase.Control; t++)
-                Fires.Step(c, f, k, 1, quiet, 1, ref r);
+                Fires.Step(c, f, k, 1, quiet, ref r);
             Assert.Equal(BurnPhase.Control, k.Fire[cell].Phase);
             water += k.WaterM3[cell];
             k.FireFlow[cell] = default;   // the hose goes before it's out
-            Fires.Step(c, f, k, 1, quiet, 1, ref r);
+            Fires.Step(c, f, k, 1, quiet, ref r);
             rekindled += k.Fire[cell].Phase == BurnPhase.Grow ? 1 : 0;
             Assert.Equal(k.Fire[cell].Burning, k.CellFire[cell]);
         }

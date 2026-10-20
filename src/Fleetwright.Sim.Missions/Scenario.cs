@@ -36,13 +36,11 @@ namespace Fleetwright.Sim.Missions;
 /// design's, a kind (ap, common, he: the battery's own of it), or a block written out; shares left out split the
 /// rest. One that doesn't fit a design is a warning, and her design's own shells are kept.</para>
 /// <para>A side's gun crews are green, average, trained or elite (<c>"crews"</c>; trained if not listed). A side's
-/// propellant (<c>"propellant": { "Britain": 2, "Germany": 0.1 }</c>, 1 if not listed) scales how readily its magazines go
-/// up (docs/battle/fighting.md 4.3a: Jutland's cordite against brass-cased RP C/12). A side's fire discipline
-/// (<c>"fire_discipline": { "Germany": "german" }</c>; the settings' first if not listed) is how its batteries range and
-/// fire for effect (docs/battle/fire-control.md F6: a name of the settings' <c>FireDisciplines</c>). A side's readiness
+/// fire discipline (<c>"fire_discipline": { "Germany": "german" }</c>; the settings' first if not listed) is how its
+/// batteries range and fire for effect (docs/battle/fire-control.md F6: a name of the settings' <c>FireDisciplines</c>). A side's readiness
 /// (<c>"readiness": { "Russia": "prepared" }</c>; the settings' default if not listed) is its ships' orders before action
 /// for fire (docs/battle/fire.md B1: a name of the settings' <c>Readiness</c>: stripped, doors, decks wetted), and its
-/// firefighting (<c>"damage_control": { "Russia": "russian-1905" }</c>; B4: a name of the settings' <c>DamageControl</c>) how
+/// firefighting (<c>"damage_control": { "Russia": "1905" }</c>; B4: a name of the settings' <c>DamageControl</c>) how
 /// its crews fight her fires.</para>
 /// <para>Each side's doctrine (docs/battle/command.md "Doctrine") is a preset of <c>Content/Sim/doctrine.json</c>,
 /// <c>"doctrine": { "Germany": "default" }</c>, with values over it, <c>{ "Germany": { "preset": "default",
@@ -86,9 +84,6 @@ public sealed class Scenario
 
     /// <summary>The sides' gun crews where they aren't trained (docs/battle/fighting.md 4.2b), by side index.</summary>
     public List<(int Side, CrewQuality Quality)> Crews { get; init; } = [];
-
-    /// <summary>The sides' propellant where it isn't 1 (docs/battle/fighting.md 4.3a), by side index.</summary>
-    public List<(int Side, double Factor)> Propellant { get; init; } = [];
 
     /// <summary>The sides' fuel where it's given, a share of a full load (docs/battle/shell-contents.md C2), by side
     /// index.</summary>
@@ -246,9 +241,6 @@ public sealed class Scenario
             // "crews": { "Germany": "elite" }, by the sides' names; taken from "from" (with its sides) unless given
             var crews = r.TryGetProperty("crews", out var cr) ? ParseCrews(cr, sides)
                 : from != null && !r.TryGetProperty("sides", out _) ? from.Crews : [];
-            // "propellant": { "Germany": 0.1 }, by the sides' names; taken from "from" (with its sides) unless given
-            var propellant = r.TryGetProperty("propellant", out var pr) ? ParsePropellant(pr, sides)
-                : from != null && !r.TryGetProperty("sides", out _) ? from.Propellant : [];
             var fuelShares = r.TryGetProperty("fuel", out var fu) ? ParseFuel(fu, sides)
                 : from != null && !r.TryGetProperty("sides", out _) ? from.Fuel : [];
             // "fire_discipline": { "Germany": "german" }, by the sides' names; taken from "from" (with its sides) unless given
@@ -298,7 +290,6 @@ public sealed class Scenario
                 PlayerName = player,
                 Weather = weather,
                 Crews = crews,
-                Propellant = propellant,
                 Fuel = fuelShares,
                 FireDisciplines = disciplines,
                 Readiness = readiness,
@@ -420,23 +411,6 @@ public sealed class Scenario
                 throw new ScenarioException($"fuel: \"{p.Name}\" isn't one of the sides ({string.Join(", ", sides)})");
             if (p.Value.ValueKind != JsonValueKind.Number || !(p.Value.GetDouble() is >= 0 and <= 1))
                 throw new ScenarioException($"fuel: {p.Value} for {p.Name}: a share of a full load, 0 to 1");
-            list.Add((side, p.Value.GetDouble()));
-        }
-        return list;
-    }
-
-    static List<(int, double)> ParsePropellant(JsonElement e, string[] sides)
-    {
-        if (e.ValueKind != JsonValueKind.Object)
-            throw new ScenarioException("propellant: an object of sides' names, { \"Germany\": 0.1 }");
-        var list = new List<(int, double)>();
-        foreach (var p in e.EnumerateObject())
-        {
-            int side = Array.IndexOf(sides, p.Name);
-            if (side < 0)
-                throw new ScenarioException($"propellant: \"{p.Name}\" isn't one of the sides ({string.Join(", ", sides)})");
-            if (p.Value.ValueKind != JsonValueKind.Number || !(p.Value.GetDouble() >= 0))
-                throw new ScenarioException($"propellant: {p.Value} for {p.Name}: a number, 0 or more");
             list.Add((side, p.Value.GetDouble()));
         }
         return list;

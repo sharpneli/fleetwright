@@ -1135,8 +1135,8 @@ public sealed record SimSettings
     public double[] KeyManMin { get; init; } = [5, 30];
 
     /// <summary>A burst in a magazine, or in a turret or its barbette (the handling path to it), sets off the magazine
-    /// with these chances, times the side's propellant (1 by default; <c>DamageSystem.SetPropellant</c>). v0: the ship is
-    /// lost at once and goes under <see cref="MagazineLossMs"/> later (the venting race is fighting.md 4.5's).</summary>
+    /// with these chances. v0: the ship is lost at once and goes under <see cref="MagazineLossMs"/> later (the venting
+    /// race is fighting.md 4.5's).</summary>
     public double MagazineFlashChance { get; init; } = 0.25;
     public double TurretFlashChance { get; init; } = 0.25;
     public int MagazineLossMs { get; init; } = 60_000;
@@ -1608,23 +1608,19 @@ public sealed record SimSettings
     /// gun crews turn to as the doctrine's extra parties at <see cref="FireTurnToSkill"/> (doc 10 §5).</summary>
     public DamageControlDoctrine[] DamageControl { get; init; } =
     [
-        new() { Name = "unorganised-1890", HoldSpeedS = 3600, CounterfloodDeg = -1, CounterfloodTrimDeg = -1, Skill = 0.4, WatchS = -1, HoseLpm = 600, Nozzle = "jet", MusterS = 360, ManLpm = 100, PartyShare = 0.10, PartyMen = 16,
+        new() { Name = "1890", HoldSpeedS = 3600, CounterfloodDeg = -1, CounterfloodTrimDeg = -1, Skill = 0.4, WatchS = -1, HoseLpm = 600, Nozzle = "jet", MusterS = 360, ManLpm = 100, PartyShare = 0.10, PartyMen = 16,
             MainBreak = 0.25, HoseCut = 0.30, Looped = false, RestoreS = -1, PumpFloor = 0, BreathingSets = false, TurnTo = 1, FloodMagazineS = 600 },
-        new() { Name = "prepared-1894", HoldSpeedS = 1800, CounterfloodDeg = 5, CounterfloodTrimDeg = -1, Skill = 0.6, WatchS = 120, HoseLpm = 600, Nozzle = "jet", MusterS = 180, ManLpm = 100, PartyShare = 0.12, PartyMen = 16,
-            MainBreak = 0.20, HoseCut = 0.30, Looped = false, RestoreS = 900, PumpFloor = 0, BreathingSets = false, TurnTo = 2, FloodMagazineS = 300 },
-        new() { Name = "russian-1905", HoldSpeedS = 3600, CounterfloodDeg = 3, CounterfloodTrimDeg = -1, Skill = 0.6, WatchS = 90, HoseLpm = 600, Nozzle = "jet", MusterS = 180, ManLpm = 100, PartyShare = 0.12, PartyMen = 16,
-            MainBreak = 0.20, HoseCut = 0.45, Looped = false, RestoreS = 900, PumpFloor = 0, BreathingSets = false, TurnTo = 2, FloodMagazineS = 300 },
-        new() { Name = "rn-1916", HoldSpeedS = 1800, CounterfloodDeg = 3, CounterfloodTrimDeg = -1, Skill = 0.8, WatchS = 180, HoseLpm = 420, Nozzle = "jet", MusterS = 240, ManLpm = 84, PartyShare = 0.12, PartyMen = 16,
+        new() { Name = "1905", HoldSpeedS = 1800, CounterfloodDeg = 4, CounterfloodTrimDeg = -1, Skill = 0.6, WatchS = 120, HoseLpm = 600, Nozzle = "jet", MusterS = 180, ManLpm = 100, PartyShare = 0.12, PartyMen = 16,
+            MainBreak = 0.20, HoseCut = 0.35, Looped = false, RestoreS = 900, PumpFloor = 0, BreathingSets = false, TurnTo = 2, FloodMagazineS = 300 },
+        new() { Name = "1916", HoldSpeedS = 900, CounterfloodDeg = 2, CounterfloodTrimDeg = 1, Skill = 0.85, WatchS = 180, HoseLpm = 420, Nozzle = "jet", MusterS = 240, ManLpm = 84, PartyShare = 0.12, PartyMen = 16,
             MainBreak = 0.10, HoseCut = 0.15, Looped = false, RestoreS = 900, PumpFloor = 0, BreathingSets = false, TurnTo = 2, FloodMagazineS = 180 },
-        new() { Name = "german-1916", HoldSpeedS = 0, CounterfloodDeg = 1.5, CounterfloodTrimDeg = 1, Skill = 0.9, WatchS = 180, HoseLpm = 420, Nozzle = "jet", MusterS = 240, ManLpm = 84, PartyShare = 0.12, PartyMen = 16,
-            MainBreak = 0.10, HoseCut = 0.15, Looped = false, RestoreS = 900, PumpFloor = 0, BreathingSets = false, TurnTo = 2, FloodMagazineS = 180 },
-        new() { Name = "usn-1942", HoldSpeedS = 600, CounterfloodDeg = 1, CounterfloodTrimDeg = 1, Skill = 0.9, WatchS = 120, HoseLpm = 250, Nozzle = "all-purpose", MusterS = 180, ManLpm = 62.5, PartyShare = 0.12, PartyMen = 16,
+        new() { Name = "1942", HoldSpeedS = 600, CounterfloodDeg = 1, CounterfloodTrimDeg = 1, Skill = 0.9, WatchS = 120, HoseLpm = 250, Nozzle = "all-purpose", MusterS = 180, ManLpm = 62.5, PartyShare = 0.12, PartyMen = 16,
             MainBreak = 0.25, HoseCut = 0.20, Looped = false, RestoreS = 480, PumpFloor = 0, BreathingSets = false, TurnTo = 2, FloodMagazineS = 180 },
-        new() { Name = "usn-1944", HoldSpeedS = 600, CounterfloodDeg = 1, CounterfloodTrimDeg = 1, Skill = 1.0, WatchS = 60, HoseLpm = 360, Nozzle = "fog", MusterS = 120, ManLpm = 90, PartyShare = 0.12, PartyMen = 16,
+        new() { Name = "1944", HoldSpeedS = 600, CounterfloodDeg = 1, CounterfloodTrimDeg = 1, Skill = 1.0, WatchS = 60, HoseLpm = 360, Nozzle = "fog", MusterS = 120, ManLpm = 90, PartyShare = 0.12, PartyMen = 16,
             MainBreak = 0.15, HoseCut = 0.20, Looped = true, RestoreS = 240, PumpFloor = 0.6, BreathingSets = true, TurnTo = 3,
             CoolBoundaries = true, ReflashWatch = true, FloodMagazineS = 120 },
     ];
-    public string DamageControlDefault { get; init; } = "rn-1916";
+    public string DamageControlDefault { get; init; } = "1916";
     public double FirePlanS { get; init; } = 30;
     public double FireTravelS { get; init; } = 30;
     public double FireMagazineK { get; init; } = 3;

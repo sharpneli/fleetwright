@@ -244,7 +244,7 @@ public static unsafe class Program
             {
                 torpedoes.Add(arg.Substring("-torpedo=".Length));
             }
-            else if (arg.StartsWith("-damage-control="))   // a side's firefighting doctrine: -damage-control=side:name (docs/battle/fire.md B4; settings.json's DamageControl, unorganised-1890 the weakest)
+            else if (arg.StartsWith("-damage-control="))   // a side's firefighting doctrine: -damage-control=side:name (docs/battle/fire.md B4; settings.json's DamageControl, 1890 the weakest)
             {
                 firefightings.Add(arg.Substring("-damage-control=".Length));
             }

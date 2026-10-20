@@ -14,8 +14,7 @@ namespace Fleetwright.Sim.Combat;
 /// <item><b>the torpedo protection:</b> when the struck cell is a TDS cell at least as deep as the reach, its holding
 /// bulkhead holds: only the TDS and the double bottom flood, and nothing inside it is wrecked;</item>
 /// <item><b>what's in reach:</b> the spaces within half the reach are put out of action, the rest within it damaged; parts
-/// within it (shafts, propellers, rudders, tubes) put out of action; a magazine within it may go (times the side's
-/// propellant); this share of the battle crew in the cells it floods is lost;</item>
+/// within it (shafts, propellers, rudders, tubes) put out of action; a magazine within it may go; this share of the battle crew in the cells it floods is lost;</item>
 /// <item><b>the shock:</b> machinery spaces further off, within <see cref="SimSettings.TorpedoShockShare"/> reaches, may
 /// trip (damaged);</item>
 /// <item><b>the hull girder:</b> a small ship whose depth is little beside the explosion's height may break in two, the
@@ -24,7 +23,7 @@ namespace Fleetwright.Sim.Combat;
 /// Pure and allocation-free; the draws come from the stream it's given.</summary>
 public static class Underwater
 {
-    public static EffectsResult Apply(ShipClass c, ShipCondition k, in Hit hit, SimSettings s, double propellant, ref RandomStream r, out Outcome outcome)
+    public static EffectsResult Apply(ShipClass c, ShipCondition k, in Hit hit, SimSettings s, ref RandomStream r, out Outcome outcome)
     {
         var res = new EffectsResult { Part = -1, MagazineRoom = -1 };
         var p = hit.Point;
@@ -89,7 +88,7 @@ public static class Underwater
             }
         }
 
-        res.Magazine = magazine >= 0 && r.NextDouble() < s.TorpedoMagazineChance * propellant;
+        res.Magazine = magazine >= 0 && r.NextDouble() < s.TorpedoMagazineChance;
         (res.MagazineRoom, res.MagazineVia) = res.Magazine ? (magazine, MagazineVia.Underwater) : (-1, MagazineVia.None);
 
         // parts within the reach: what's under the stern, the tubes, whatever stands near (not inside a protection that held)

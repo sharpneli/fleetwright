@@ -1,5 +1,5 @@
 # Plan: shells, armour and damage (a 4.5 deepening)
-Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S, phase P (PM moved to the balance pass), E0-E7 done; E8a (the yardstick) done    Updated: 2026-10-20
+Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S, phase P (PM moved to the balance pass), E0-E7 done; E8a (the yardstick) and E8b (one value for every navy) done    Updated: 2026-10-20
 
 The fine-tune pass for the **Terminal** link of `fighting.md` 4.5 ("penetration proper: material qualities, capped and
 uncapped shells, spaced armour, edge effects; shell quality by navy and year; diving shells and underwater hits;
@@ -1784,6 +1784,27 @@ squadrons, and changes `Matchup.cs` with it.
          small). Per hit it's the record (Orel "only moderately damaged", no belt pierced); what sank the Borodinos was
          their overload (coal past a full load, the main belt under water, holed upper sides near the sea), fire, and
          Oslyabya's unarmoured bow. A scenario's `fuel` stops at a full load; an overload is the scenario's to carry.
+  - **E8b: one value for every navy (done 2026-10-20).** The user: gameplay balance and simplicity go above the
+    historical anchor here, so nothing in the damage path is set by navy or by ship any more:
+    - **The side's propellant factor is gone** (`DamageSystem.SetPropellant`, the scenarios' `"propellant"`, the bench's
+      column): a magazine or turret flash, a torpedo at a magazine and a fire's heat on one all take the settings' own
+      chances (`MagazineFlashChance`, `TurretFlashChance`, `TorpedoMagazineChance`, `FireMagazineS`), the one knob for
+      every side. It was Britain ×2, Germany ×0.1 (fighting.md 4.3a's cordite against RP C/12), a lumped navy factor.
+    - **Damage control by period, not navy:** `1890`, `1905` (Russia's 1905 and the 1894 row merged), `1916` (the RN's
+      and the German rows merged: hold speed 15 min, counterflood past 2° and trim past 1°, skill 0.85), `1942`, `1944`.
+      Still a side's setting (the scenario's `"damage_control"`, `-damage-control`), so a campaign's player can choose or
+      make their own.
+    - **Readiness:** Tsushima's Russians are "prepared" like the Japanese (the clutter row stays for the fire and DC
+      benches); the bench's Orel and Mikasa likewise.
+    - **The bench's South Dakota case** fires the Type 91 template's 0.03 s fuze, not the record's 0.4 s.
+    - **Kept by navy:** the shell templates (fuzes included) and the designer's FUZE cell: the player's to choose and
+      tweak, design blocks as any other.
+    - **What moved** (`damage-history`, 40 runs, lost before → after; all magazines): German ships under British heavy
+      shells Jutland's count 3 → 28%, Seydlitz 5 → 25%, Derfflinger 0 → 23%, Bismarck 43 → 93% (median 24 min);
+      British under German Lion 30 → 8%, Warspite 18 → 5%, Tiger 13 → 10%, Indefatigable 5 → 3%, Dogger Bank 13 → 10%;
+      thirty 6″ HE on a battleship 5 → 0% (the user's 1.5%: about 1% expected at the base chance); the rest within
+      noise. Per heavy hit the German ships now go up about 1.2%, the British 0.3-0.6% (the record ~5% for the
+      battlecruisers). The flash chances are the knob if the balance pass wants fewer or more.
 
 ## What stays out
 

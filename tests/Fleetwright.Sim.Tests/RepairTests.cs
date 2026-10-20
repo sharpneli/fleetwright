@@ -59,7 +59,7 @@ public class RepairTests(ITestOutputHelper output)
     {
         var c = Class("super_dreadnought");
         var f = new FloodModel(c);
-        var drilled = Fresh(c, "rn-1916");
+        var drilled = Fresh(c, "1916");
         var nobody = Fresh(c, null);
         Splinters(c, drilled);
         Splinters(c, nobody);
@@ -104,8 +104,8 @@ public class RepairTests(ITestOutputHelper output)
             }
             return double.PositiveInfinity;
         }
-        double rn = Shut("rn-1916"), none = Shut("unorganised-1890");
-        output.WriteLine($"a door open with water at it: shut at {rn:0} s (rn-1916, the watch at 180 s), {none:0} s (unorganised: a party)");
+        double rn = Shut("1916"), none = Shut("1890");
+        output.WriteLine($"a door open with water at it: shut at {rn:0} s (1916, the watch at 180 s), {none:0} s (unorganised: a party)");
         Assert.InRange(rn, 180, 200);
         Assert.InRange(none, 300, 1200);
     }
@@ -125,7 +125,7 @@ public class RepairTests(ITestOutputHelper output)
             Run(c, f, k, 3 * 3600);
             return k.WaterM3.Sum();   // aboard: what leaks down into the spaces below is still hers
         }
-        double drilled = Left("rn-1916"), nobody = Left(null);
+        double drilled = Left("1916"), nobody = Left(null);
         output.WriteLine($"{c.Drainage.PortablePumps} portable pumps of {c.Drainage.PortableTph:0} t/h; half of a {f.Capacity[cell]:0} m³ store, aboard " +
                          $"after 3 h in a blackout: drilled {drilled:0} m³, nobody {nobody:0} m³");
         Assert.True(drilled < 0.2 * nobody, "pumped out (puddles under RepairPumpMinM3 left)");
@@ -145,16 +145,16 @@ public class RepairTests(ITestOutputHelper output)
             // a heavy shell's hole in the bow at the waterline, too big for her pumps: a collision mat, the way off her
             double x = c.Hull.X1 - 0.12 * c.Length;
             w.Apply(DamageSystem.SideHole(1, HoleAt.X, x, 0.5, 1.5));
-            w.AdvanceTo(w.Time + 30 * 60_000);
+            w.AdvanceTo(w.Time + 45 * 60_000);
             int slot = w.Ships.Store.SlotOf(1);
             var k = w.Ships.Store.Combat.Condition(slot);
             output.WriteLine($"{doctrine}{(holds ? ", holding speed" : "")}: damage control asks {k.SafeSpeedKn:0.0} kn, she makes {w.Ships.Store[slot].Speed / 0.514444:0.0} kn");
             return w.Ships.Store[slot].Speed / 0.514444;
         }
-        double german = Kn("german-1916", false), held = Kn("german-1916", true), rn = Kn("rn-1916", false);
-        Assert.InRange(german, 0, Settings.MatKn + 1.5);   // the way coming off her
+        double slowed = Kn("1916", false), held = Kn("1916", true), late = Kn("1890", false);
+        Assert.InRange(slowed, 0, Settings.MatKn + 1.5);   // the way coming off her after a quarter of an hour
         Assert.True(held > 20, "her orders to hold speed");
-        Assert.True(rn > 20, "the RN holds its speed for half an hour first");
+        Assert.True(late > 20, "the 1890 doctrine holds its speed for an hour first");
     }
 
     /// <summary>A dreadnought at 15 kn with parts wrecked (nodes), stepped for a while; her steering then.</summary>
@@ -224,7 +224,7 @@ public class RepairTests(ITestOutputHelper output)
     {
         var c = Class("super_dreadnought");
         var f = new FloodModel(c);
-        var k = Fresh(c, "usn-1944");
+        var k = Fresh(c, "1944");
         var (cell, y) = FloodModel.SideCell(c, c.Hydrostatics.Lcf, c.Vertical.Waterline - 0.5, true);
         k.Hole(cell, 20, new P3(c.Hydrostatics.Lcf, y, c.Vertical.Waterline - 0.5));
         Run(c, f, k, 1800);

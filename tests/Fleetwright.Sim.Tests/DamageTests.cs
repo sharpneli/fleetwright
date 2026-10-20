@@ -467,7 +467,7 @@ public class DamageTests(ITestOutputHelper output)
     public void Only_fires_that_show_are_listed_for_the_world_and_for_an_enemy_seen()
     {
         // nobody fighting it, so it develops
-        var nobody = Settings.DamageControl.Single(d => d.Name == "unorganised-1890") with { Name = "nobody", WatchS = -1, PartyShare = 0, TurnTo = 0, FloodMagazineS = -1 };
+        var nobody = Settings.DamageControl.Single(d => d.Name == "1890") with { Name = "nobody", WatchS = -1, PartyShare = 0, TurnTo = 0, FloodMagazineS = -1 };
         var w = World("dreadnought", out int c, Settings with { DamageControl = [.. Settings.DamageControl, nobody], DamageControlDefault = "nobody" });
         var cls = Class("dreadnought");
         w.Apply(ShipSystem.Spawn(c, 56, 4, 0, 10));
@@ -509,7 +509,7 @@ public class DamageTests(ITestOutputHelper output)
     public void A_magazine_set_off_by_a_fire_records_its_room()
     {
         // a magazine quick to cook off, and nobody fighting the fire or flooding it (fire.md B2)
-        var nobody = Settings.DamageControl.Single(d => d.Name == "unorganised-1890") with { Name = "nobody", WatchS = -1, PartyShare = 0, TurnTo = 0, FloodMagazineS = -1 };
+        var nobody = Settings.DamageControl.Single(d => d.Name == "1890") with { Name = "nobody", WatchS = -1, PartyShare = 0, TurnTo = 0, FloodMagazineS = -1 };
         var w = World("dreadnought", out int c, Settings with
         {
             FireMagazineS = [60, 60, 60, 60, 60], DamageControl = [.. Settings.DamageControl, nobody], DamageControlDefault = "nobody",

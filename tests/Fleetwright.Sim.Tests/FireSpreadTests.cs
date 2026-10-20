@@ -52,7 +52,7 @@ public class FireSpreadTests(ITestOutputHelper output)
         var at = Enumerable.Repeat(double.NaN, watch.Length).ToArray();
         for (int t = 1; t <= minutes * 60; t++)
         {
-            Fires.Step(c, f, k, 1, s, 1, ref r);
+            Fires.Step(c, f, k, 1, s, ref r);
             for (int j = 0; j < watch.Length; j++)
                 if (double.IsNaN(at[j]) && k.Fire[watch[j]].Burning)
                     at[j] = t / 60.0;
@@ -126,7 +126,7 @@ public class FireSpreadTests(ITestOutputHelper output)
             var phases = new List<BurnPhase>();
             for (int t = 0; t < 20 * 60; t++)
             {
-                flashed += Fires.Step(c, f, k, 1, still, 1, ref r).Flashed;
+                flashed += Fires.Step(c, f, k, 1, still, ref r).Flashed;
                 if (phases.Count == 0 || phases[^1] != k.Fire[cell].Phase)
                     phases.Add(k.Fire[cell].Phase);
             }
@@ -170,12 +170,12 @@ public class FireSpreadTests(ITestOutputHelper output)
             var r = RandomStream.FromSeed((ulong)seed);
             Fires.Ignite(c, k, cell, 0.3, still);
             for (int t = 0; t < 20 * 60; t++)
-                Fires.Step(c, f, k, 1, still, 1, ref r);
+                Fires.Step(c, f, k, 1, still, ref r);
             Fires.Douse(c, k, cell, still);   // put out after 20 min
             Assert.True(k.Fire[cell].Hot);
             int lit = -1;
             for (int t = 0; t < 45 * 60 && lit < 0; t++)
-                if (Fires.Step(c, f, k, 1, still, 1, ref r).Reflashed > 0)
+                if (Fires.Step(c, f, k, 1, still, ref r).Reflashed > 0)
                     lit = t;
             again += lit >= 0 ? 1 : 0;
             late += lit > Settings.FireReflashS ? 1 : 0;
@@ -198,7 +198,7 @@ public class FireSpreadTests(ITestOutputHelper output)
         double peak = 0, gone = double.NaN, outAt = double.NaN;
         for (int t = 1; t <= 40 * 60 && double.IsNaN(outAt); t++)
         {
-            Fires.Step(c, f, k, 1, Quiet, 1, ref r);
+            Fires.Step(c, f, k, 1, Quiet, ref r);
             peak = Math.Max(peak, k.Fire[space].Q);
             if (double.IsNaN(gone) && k.Fire[space].Charges <= 0)
                 gone = t;

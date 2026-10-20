@@ -87,7 +87,7 @@ public struct EffectsResult
 public static class Effects
 {
     public static EffectsResult Apply(ShipClass c, ShipCondition k, in Hit hit, HitPath path, in TerminalResult t,
-        SimSettings s, double propellant, ref RandomStream r)
+        SimSettings s, ref RandomStream r)
     {
         var res = new EffectsResult { Part = -1, MagazineRoom = -1 };
         var shell = hit.Shell;
@@ -210,14 +210,14 @@ public static class Effects
         // E3: behind a plate that held, the spall off its back: a shell it stopped within its band, or a heavy shell
         // glancing off a thin turret roof (Dunkerque); a burst on a face it doesn't hole throws next to nothing (14 §3.3)
         if (!double.IsNaN(t.Spall) && t.Plate >= 0 && !xs[t.Plate].Plate.IsContents())
-            Spall(c, k, path, t.Plate, t.Spall, false, shell, t.PlateMs, s, propellant, ref res, ref r);
+            Spall(c, k, path, t.Plate, t.Spall, false, shell, t.PlateMs, s, ref res, ref r);
         else if (t.Glance >= 0 && xs[t.Glance].Plate == PlateKind.TurretRoof && xs[t.Glance].Mm <= s.SpallRoofTD * shell.CalibreMm &&
                  r.NextDouble() < s.SpallRoofChance)
-            Spall(c, k, path, t.Glance, 0.5, true, shell, t.PlateMs, s, propellant, ref res, ref r);
+            Spall(c, k, path, t.Glance, 0.5, true, shell, t.PlateMs, s, ref res, ref r);
 
         if (t.Bursts)
         {
-            Burst(c, k, hit, path, t, s, propellant, w, size, ref res, ref r);
+            Burst(c, k, hit, path, t, s, w, size, ref res, ref r);
             if (t.Burst != BurstKind.Outside && shell.Fragments is { } f)
                 Pieces(c, k, path, t, f.Of(t.Outcome == Outcome.LowOrder), shell, s, water, ref res, ref r);
         }
@@ -226,7 +226,7 @@ public static class Effects
             // E2: holed in pieces, which go on through the hole: a weak burst just behind the plate, no blast
             var weak = t;
             (weak.BurstT, weak.Force, weak.Burst) = (xs[t.Plate].T + 0.1, s.BrokenShare, BurstKind.Inside);
-            Burst(c, k, hit, path, weak, s, propellant, w, size, ref res, ref r, broken: true);
+            Burst(c, k, hit, path, weak, s, w, size, ref res, ref r, broken: true);
         }
         // a magazine set off: the flash through its turrets' trains (the ship is lost; drowning isn't a hit's)
         if (res.Magazine)
@@ -406,7 +406,7 @@ public static class Effects
     /// <summary>A burst at its point along the path, with its force. Broken (E2): a shell's pieces through a plate it
     /// holed, a weak burst of its fragments at the force's share and nothing else: no blast, no fire; the part they're in takes them, and an enclosed turret or barbette they're in is a flash source.</summary>
     static void Burst(ShipClass c, ShipCondition k, in Hit hit, HitPath path, in TerminalResult t, SimSettings s,
-        double propellant, double w, double size, ref EffectsResult res, ref RandomStream r, bool broken = false)
+        double w, double size, ref EffectsResult res, ref RandomStream r, bool broken = false)
     {
         var shell = hit.Shell;
         var xs = path.Crossings;
@@ -604,7 +604,7 @@ public static class Effects
             if (magazine < 0 && gasMagazine >= 0)
                 (magazine, via) = (gasMagazine, MagazineVia.Gas);
             double flash = magazine >= 0 ? s.MagazineFlashChance : turret >= 0 || gasHandling >= 0 ? s.TurretFlashChance : 0;
-            if (flash > 0 && r.NextDouble() < flash * propellant)
+            if (flash > 0 && r.NextDouble() < flash)
                 (res.Magazine, res.MagazineRoom, res.MagazineVia) = magazine >= 0 ? (true, magazine, via)
                     : turret >= 0 ? (true, c.Mounts[turret].Magazine, MagazineVia.Turret)
                     : (true, gasHandling, inHandling ? MagazineVia.Handling : MagazineVia.Gas);
@@ -814,7 +814,7 @@ public static class Effects
     /// pieces are. How the charges are packed and handled (bags, cases open or closed, brass; flash discipline) isn't in
     /// the model yet: the magazine chain's session. People are E6's. Not a burst: no blast, no fire, no breach.</summary>
     static void Spall(ShipClass c, ShipCondition k, HitPath path, int plate, double severity, bool roof, in ShellTypeRow shell, double v,
-        SimSettings s, double propellant, ref EffectsResult res, ref RandomStream r)
+        SimSettings s, ref EffectsResult res, ref RandomStream r)
     {
         var xs = path.Crossings;
         ref readonly var x = ref xs[plate];
@@ -928,9 +928,9 @@ public static class Effects
         // a flash source for the magazine chain as E2's pieces are: in a magazine its own chance, in a turret or handling
         // room the turret's
         double lights = s.SpallFlashChance * Math.Min(1, cloud.Severity / 0.5);
-        if (magazine >= 0 && !res.Magazine && r.NextDouble() < lights * s.MagazineFlashChance * propellant)
+        if (magazine >= 0 && !res.Magazine && r.NextDouble() < lights * s.MagazineFlashChance)
             (res.Magazine, res.MagazineRoom, res.MagazineVia) = (true, magazine, MagazineVia.Spall);
-        if (open >= 0 && !res.Magazine && r.NextDouble() < lights * s.TurretFlashChance * propellant)
+        if (open >= 0 && !res.Magazine && r.NextDouble() < lights * s.TurretFlashChance)
             (res.Magazine, res.MagazineRoom, res.MagazineVia) = (true, c.Mounts[open].Magazine, MagazineVia.Spall);
     }
 

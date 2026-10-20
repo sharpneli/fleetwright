@@ -58,7 +58,7 @@ public class FireEffectsTests(ITestOutputHelper output)
         double flashed = double.NaN, damaged = double.NaN, disabled = double.NaN;
         for (int t = 1; t <= 40 * 60; t++)
         {
-            var st = Fires.Step(c, f, k, 1, Still, 1, ref r, t * 1000L);
+            var st = Fires.Step(c, f, k, 1, Still, ref r, t * 1000L);
             if (st.Flashed > 0)
                 flashed = t / 60.0;
             if (double.IsNaN(damaged) && k.State[node] >= PartState.Damaged)
@@ -75,7 +75,7 @@ public class FireEffectsTests(ITestOutputHelper output)
         var local = Fresh(c);
         Burn(c, local, cell, BurnPhase.Local, 0.1);
         for (int t = 1; t <= 25 * 60; t++)
-            Fires.Step(c, f, local, 1, Still, 1, ref r, t * 1000L);
+            Fires.Step(c, f, local, 1, Still, ref r, t * 1000L);
         Assert.Equal(PartState.Ok, local.State[node]);
     }
 
@@ -97,7 +97,7 @@ public class FireEffectsTests(ITestOutputHelper output)
             var r = RandomStream.FromSeed(seed);
             Fires.Ignite(c, k, cell, 0.3, Still);
             for (int t = 1; t <= 20 * 60 && k.Fire[cell].Phase != BurnPhase.Developed; t++)
-                Fires.Step(c, f, k, 1, Still, 1, ref r, t * 1000L);
+                Fires.Step(c, f, k, 1, Still, ref r, t * 1000L);
             if (k.Fire[cell].Phase != BurnPhase.Developed)
                 continue;
             runs++;
@@ -139,7 +139,7 @@ public class FireEffectsTests(ITestOutputHelper output)
                 var r = RandomStream.FromSeed(seed);
                 Burn(c, k, over);
                 for (int t = 10; t <= 30 * 60; t += 10)
-                    if (Fires.Step(c, f, k, 10, Still, 1, ref r, t * 1000L).Abandoned > 0)
+                    if (Fires.Step(c, f, k, 10, Still, ref r, t * 1000L).Abandoned > 0)
                     {
                         at.Add(t / 60.0);
                         lost++;
@@ -157,7 +157,7 @@ public class FireEffectsTests(ITestOutputHelper output)
         Burn(c, s, over);
         long now = 0;
         while (!s.Smoked[c.Cells[cell].Room])
-            Fires.Step(c, f, s, 10, Still, 1, ref rs, now += 10_000);
+            Fires.Step(c, f, s, 10, Still, ref rs, now += 10_000);
         Functions.Evaluate(s, Settings.DraughtFloor);
         output.WriteLine($"abandoned at {now / 60_000.0:0.0} min: power {s.PowerCap:P0}");
         Assert.True(s.PowerCap < 1);
@@ -166,7 +166,7 @@ public class FireEffectsTests(ITestOutputHelper output)
         long outAt = now;
         for (; now < outAt + 30 * 60_000; now += 10_000)
         {
-            Fires.Step(c, f, s, 10, Still, 1, ref rs, now);
+            Fires.Step(c, f, s, 10, Still, ref rs, now);
             if (s.NextClearMs >= 0 && s.NextClearMs <= now)
                 s.Clear(now);
             if (!s.Has(node, PartFlags.Down))
@@ -199,7 +199,7 @@ public class FireEffectsTests(ITestOutputHelper output)
         var r = RandomStream.FromSeed(seed);
         Burn(c, k, fire);
         for (int t = 10; t <= hours * 3600; t += 10)
-            if (Fires.Step(c, f, k, 10, Still, 1, ref r, t * 1000L).Magazine)
+            if (Fires.Step(c, f, k, 10, Still, ref r, t * 1000L).Magazine)
                 return t / 60.0;
         return double.NaN;
     }
@@ -227,7 +227,7 @@ public class FireEffectsTests(ITestOutputHelper output)
         var f = new FloodModel(c);
         var (cell, room, beside, over) = Magazine(c);
         // the doctrine floods; nobody fights the fire itself
-        var doc = Settings.DamageControl.Single(d => d.Name == "rn-1916") with { WatchS = -1, PartyShare = 0, TurnTo = 0 };
+        var doc = Settings.DamageControl.Single(d => d.Name == "1916") with { WatchS = -1, PartyShare = 0, TurnTo = 0 };
         int up = 0, flooded = 0;
         double water = 0;
         for (ulong seed = 0; seed < 20; seed++)
@@ -273,13 +273,13 @@ public class FireEffectsTests(ITestOutputHelper output)
         var r = RandomStream.FromSeed(5);
         Burn(c, k, cell, BurnPhase.Starved, 0.05);
         k.Fire[cell].PhaseS = -1e9;
-        Fires.Step(c, f, k, 1, Still, 1, ref r);
+        Fires.Step(c, f, k, 1, Still, ref r);
         Assert.Equal(0, k.FireShowMW);   // a starved fire inside shows nothing
         Burn(c, k, cell);
-        Fires.Step(c, f, k, 1, Still, 1, ref r);
+        Fires.Step(c, f, k, 1, Still, ref r);
         double inside = k.FireShowMW;
         Burn(c, k, deck, BurnPhase.Local, 0.5);
-        Fires.Step(c, f, k, 1, Still, 1, ref r);
+        Fires.Step(c, f, k, 1, Still, ref r);
         output.WriteLine($"developed inside {inside:0.00} MW shows; with a deck fire {k.FireShowMW:0.00} MW");
         Assert.True(inside > 0);
         Assert.True(k.FireShowMW > inside);

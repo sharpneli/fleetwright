@@ -76,8 +76,6 @@ public static class ScenarioLoader
             w.Apply(Command.SetWeather(we.VisibilityM, we.WindFromDeg, we.WindMs));
         foreach (var (side, quality) in s.Crews)
             w.Apply(GunnerySystem.SetCrew(side, quality));
-        foreach (var (side, factor) in s.Propellant)
-            w.Apply(DamageSystem.SetPropellant(side, factor));
         foreach (var (side, share) in s.Fuel)
             w.Apply(DamageSystem.SetFuel(side, share));
         foreach (var (side, name) in s.FireDisciplines)
