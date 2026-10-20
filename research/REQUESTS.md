@@ -12,6 +12,19 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: (comparison, recommendation, API notes, plan...)
 -->
 
+### 2026-10-20 - Smoke in the record, 1890-1925
+- Question: smoke as numbers the sim's smoke field can be checked against. (1) Funnel smoke by plant and fuel (coal
+  under natural and forced draught, oil, mixed firing): how dark, how high it rose, how long and wide trails lay in a
+  given wind, and how much a ship made at cruising against full power. (2) How far smoke was sighted before the ships
+  under it, by period, fuel and weather (Jutland, Dogger Bank, the Falklands, Tsushima, anything with ranges and
+  bearings). (3) Smoke screens: how fast destroyers laid funnel smoke and (later) chemical smoke, the screen's length,
+  height and how long it held by wind; the cases at Jutland. (4) Black and brown powder gun smoke at the Yalu and
+  Santiago: how long it hung over a firing ship and what it did to her gunnery.
+- Context / relevant files: `docs/battle/smoke.md` (the plan, a feasibility study; its yardstick), 
+  `research/vfx/unified-smoke-system.md` (the puff model and its INFERRED funnel calibration, Ȧ = 1,500 m²/s),
+  `research/vfx/muzzle-flash-smoke-research.md` §5, `research/simulation/powerplant-model.md` (k_smoke). Not blocking.
+- Wanted output: tables of sightings and conditions, plume and screen sizes and lifetimes, gun smoke cases, with sources.
+
 ### 2026-10-20 - Flooding and damage control in the record, 1890-1925
 - Question: how ships of the first game's period took on water after hits, and what their crews did about it, as
   numbers. (1) Cases with times, tonnages, list and speed: Seydlitz and Lützow at Jutland (Lützow's hour by hour if

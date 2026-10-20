@@ -1730,7 +1730,8 @@ visibility they light up. Fire control's own sight lines (4.2) are per engaged p
   be thinned to a reporting rate, with a bias per observer.
 - **Ships of sides at peace are shown as they are** (exact positions); they'd need sighting too, at no clock cost.
 - **Smoke**, kept out of step 3 (agreed), comes with the smoke field. Meanwhile the world view draws gun smoke from the
-  map alone, blocking no sight: a logged exception (docs/visuals/muzzle-flashes.md, approved 2026-10-15).
+  map alone, blocking no sight: a logged exception (docs/visuals/muzzle-flashes.md, approved 2026-10-15). The field is
+  now a feasibility study, gated, off by default until taken in: `docs/battle/smoke.md` (drafted 2026-10-20).
 
 **Needed from the designer for sighting** (2026-10-13; the sim compiles around them with flagged placeholders):
 - ~~Masts are the funnel top + 6 m on every ship~~ and ~~no spotting or fighting top as a part~~: done in
