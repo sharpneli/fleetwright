@@ -181,6 +181,12 @@ public static class Program
             weight of fire at random over its minutes through the world's damage system (parties, the main, smoke,
             magazines), run on for hours (default each case's): ablaze, all out, still burning, water, how she ended;
             N runs a case (default 20), --case a case by name
+        shipgen dc-history [--runs N] [--case TEXT] [--hours H] [--trace] [--settings FILE]
+            damage control's yardstick (docs/battle/damage-control.md DC0): the record's cases and the research's
+            mechanism checks, a ship given the case's damage (shell hits, torpedoes, holes, splinters) and speeds through
+            the world's damage system, run on for hours (default each case's): water by the hour, worst list, list, trim,
+            speed and power at the end, how and when lost; N runs a case (default 20), --case a case by name, --trace
+            the first run minute by minute
         shipgen templates
             writes the shell, explosive, material and fittings catalogues (ShellTemplates, Explosives, MaterialTemplates,
             Fittings) out: Content/Templates/shells.json, explosives.json, materials.json and fittings.json,
@@ -309,6 +315,8 @@ public static class Program
                     new BurstBench.Options(a.Get("room"), D(a, "filler", 0), a.Get("explosive") ?? "TNT", D(a, "calibre", 152))),
                 "burn" => BurnBench.Run(a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json")),
                 "fire-history" => FireHistory.Run(a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), a.Int("runs", 20),
+                    a.Get("case"), a.Get("hours") is null ? null : D(a, "hours", 4), n => LoadDesign(Resolve(a, n)), a.Has("trace")),
+                "dc-history" => DcHistory.Run(a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), a.Int("runs", 20),
                     a.Get("case"), a.Get("hours") is null ? null : D(a, "hours", 4), n => LoadDesign(Resolve(a, n)), a.Has("trace")),
                 "frag" => FragBench.Run(a.Positional.Count > 0 ? [.. a.Positional, "--calibre", a.Get("calibre") ?? "152"] : []),
                 "weapons" => Weapons.Run(a.Positional, a.Has("research"), n => LoadDesign(File.Exists(n) ? n : Path.Combine(Root(a), "designs", n + ".json"))),

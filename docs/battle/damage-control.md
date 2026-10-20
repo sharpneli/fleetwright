@@ -1,5 +1,5 @@
 # Plan: damage control (a 4.5 deepening)
-Status: **agreed with the user 2026-10-20** ("Decided" below); DC0 next.    Updated: 2026-10-20
+Status: **agreed with the user 2026-10-20** ("Decided" below); DC0 done 2026-10-20, DC1 next.    Updated: 2026-10-20
 
 The fine-tune pass for damage control: what the crew does about a hit once it has landed. Firefighting came first, as
 this pass's first slice (`fire.md`, decision 1). This plan adds the water and the repairs, and both draw on the same
@@ -126,7 +126,7 @@ are read but not tuned to until the research is back.
 | Lützow, Jutland: heavy hits forward, low | 2,400 t at 22:15 grew to 8,350 t at 02:00 at a few knots, then scuttled (17 §0.1) | thousands of tonnes spread forward over hours; lost, or close to it, in many runs |
 | Oslyabya, Tsushima: waterline holes forward, kept her speed (?) | sank within about an hour of the first hits (?) | at speed with holes forward at the waterline: lost within about an hour in most runs |
 | Marlborough, Jutland: one torpedo (?) | listed ~7°, kept her place for hours, then slowed and went home (?) | survives; a few degrees of list after counterflooding |
-| Audacious, 1914: one mine, poor closures (?) | lost after ~12 h (?) | unprepared closures: lost over hours; closed up and drilled: survives |
+| Audacious, 1914: one mine under the port engine room, not at action stations | engine rooms abandoned ~2 h, power lost, capsized ~12 h after (17 §1.3) | unprepared closures: lost over hours; closed up and drilled: survives |
 | Pre-dreadnoughts torpedoed, 1915: Majestic, Triumph, Formidable (?) | capsized minutes to hours after one or two torpedoes (?) | capsize or founder after 1-2 torpedoes, within minutes to hours |
 | Borodino, Alexander III at Tsushima: overloaded, shell holes at the waterline (?) | capsized under heavy fire (?) | some capsize under heavy shellfire; the clutter's weight is fire B5's open item |
 | Destroyers under shellfire | most survive unless the boilers or a magazine go | small holes held by the crew |
@@ -376,6 +376,52 @@ on the yardstick bench.
 - **A research request** (`research/REQUESTS.md`): the first game's flooding record, 1890-1925, with times, tonnages,
   speeds and what the crews did. It covers the (?) rows above, plus who counterflooded then (Makarov's and Krylov's
   tables, the German navy) and portable pumps by navy and year.
+- **Built (done 2026-10-20):**
+  - `shipgen dc-history` (`DcHistory.cs`): fourteen cases, each a ship given a list of blows at their minutes (shell
+    hits through `GivenHits.Aim`, torpedoes struck as the torpedo bench does on either side, holes and splinter holes
+    through the dev's `SideHole`, orders of speed), run 20 times in one world and sampled every minute. It reports water
+    afloat by the hour, the worst list, list, trim, speed and power at the end, and losses by kind and minute; `--trace`
+    follows the first run.
+  - The first game's cases: Seydlitz (`seydlitz`), Lützow (`derfflinger`), Audacious (`king_george_v`), Oslyabya (?),
+    Marlborough (?, `iron_duke`), a pre-dreadnought at anchor and one under way (?, `lord_nelson`), the RN battleship
+    under 15 heavy hits and a destroyer under 6 HE hits. The mechanism checks: 09 §8's splinters and bow shell (at 28 kn
+    and slowed to 12). Later cuts: North Carolina and Shinano-like on `super_dreadnought`. The whole run takes 34 s.
+  - The research request is filed. Audacious, Seydlitz and Lützow turn out to be in 17 §1.3 already (secondary sources),
+    so only Oslyabya, Marlborough and the 1915 pre-dreadnoughts stay (?).
+- **The baselines (20 runs a case, today's model, no damage control):**
+
+  | Case | Water afloat (median) | Worst list | At the end | Lost | Record / wanted |
+  |---|---|---|---|---|---|
+  | Seydlitz, 24 kn then 7 | 1,470 t at ½ h, 2,560 at 2 h, 4,260 at 8 h | 1.1° | 10 h: trim +1.6°, power 72% | 20%, magazines | 5,308 t, survived |
+  | Lützow, 22 kn down to 3 | 460 t at ½ h, 700 at 4 h, 955 at 8 h | 0° | trim +0.3° | 25%, magazines | 1,038 t at 3 h, 8,351 by 7½ h |
+  | Audacious, then stopped | 4,390 t at ½ h, 4,950 at 12 h | 0.5° | 13 h: power 46% | 0% | capsized at ~12 h |
+  | Oslyabya (?), 9 kn | 69 t | 0° | — | 15%, magazines | capsized within the hour |
+  | Marlborough (?), 17 kn | 3,150 t at ½ h, 4,040 at 8 h | 1.9° | power 46% | 0% | ~7° list, survived |
+  | Pre-dreadnought, one torpedo at anchor (?) | 3,610 t at ½ h, 3,790 at 2 h | 8.8° | power 55% | 5% | capsized in minutes |
+  | Pre-dreadnought, two torpedoes (?) | (survivors) 2,700-3,500 t | 23° | — | 85%, 80% capsized (median 36 min) | sank in ~2¾ h |
+  | RN battleship, 15 heavy hits | 0 t | 0° | power 76% | 5%, magazine | came home |
+  | Destroyer, 6 HE hits | 15-35 t | 0° | power 49% | 15% (10% magazines, 5% capsized at 92 min) | most survive |
+  | 30 splinter holes, 18 kn | 38 t at ½ h, 156 at 2 h, 307 at 8 h | 4.1° | list 3.4° | 5% capsized | the research's model: ~2,950 t, 18° unfought |
+  | Bow shell, holds 28 kn | 222 t at ½ h, 316 at 4 h | 0° | — | 0% | the research's model: bulkheads collapse, ~10,400 t |
+  | Bow shell, slowed to 12 kn | identical | — | — | 0% | ~1,900 t |
+  | North Carolina-type torpedo, 19 kn | 1,060 t, no growth | 2.1° | — | 0% | 970 t, 5.5° off in 6 min |
+  | Shinano-like, 4 torpedoes, unprepared | 11,400 t at ½ h, 16,200 at 8 h | 11.5° | power 3% | 10%, magazines | lost at 7¾ h |
+
+- **What the baselines say:**
+  - **Water doesn't spread.** A holed space fills and the water stops there. The intact 5 cm² edges and the pumps keep
+    it in, and nothing loosens, works open or collapses. Lützow ends with a ninth of the record's water, the 28 kn bow
+    shell with a thirtieth of the research's. Speed changes nothing (the two bow-shell runs are identical). That's DC1.
+  - **The first minutes are already about right in size.** Torpedoes and the mine put in 1,000-4,400 t at once, close to
+    the record (North Carolina-type 1,060 t against 970). But lists stay small (Marlborough 1.9°, North Carolina-type
+    2.1°, against 5.5-7°), so counterflooding (DC5) will have little to do on these until DC1's leaks and the wing
+    flooding put more water on one side. `fighting.md`'s open item 8 is still open.
+  - **Unfought small leaks already look like a fought ship.** The 30 splinter holes reach 307 t and 3.4° at 8 h, close to
+    the research's *drilled* crew (~120 t) and a tenth of its unfought case. Today's pumps (50 t/h per 1,000 t) clear
+    every cell without a hole, and nothing else spreads the water. DC1 gives the unfought case its water; DC3 and DC4
+    take it back with the crew.
+  - **Pre-dreadnoughts already capsize from torpedoes** (two torpedoes: 80% within the hour). One torpedo at anchor
+    leaves 8.8° and she lives, where Majestic and Triumph went over in minutes (?).
+  - **Most losses in the shellfire cases are magazines**, not water: E8's and the magazines pass's, not this plan's.
 
 ### DC1 Leaks with structure
 - `JoinOpenM2` split into ruptured, seam and fittings; fittings by room kind and their rolls (17 §4); the design's
