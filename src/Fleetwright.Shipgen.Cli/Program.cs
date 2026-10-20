@@ -181,6 +181,12 @@ public static class Program
             weight of fire at random over its minutes through the world's damage system (parties, the main, smoke,
             magazines), run on for hours (default each case's): ablaze, all out, still burning, water, how she ended;
             N runs a case (default 20), --case a case by name
+        shipgen damage-history [--runs N] [--case TEXT] [--settings FILE]
+            the battle anchors (docs/battle/shells-armour-damage.md E8): the record's cases, a ship of its kind hit by its
+            shells at random over its minutes, each from a range and target angle in the case's bands, at her speed and
+            under her side's propellant, through the world's damage system: the shells on plate over 9" and 6-9"
+            (Jutland's count), belt holes, killed and wounded a hit, turret-minutes, directors, steering, water, list, how
+            she ended; N runs a case (default 20), --case a case by name
         shipgen dc-history [--runs N] [--case TEXT] [--hours H] [--trace] [--settings FILE]
             damage control's yardstick (docs/battle/damage-control.md DC0): the record's cases and the research's
             mechanism checks, a ship given the case's damage (shell hits, torpedoes, holes, splinters) and speeds through
@@ -316,6 +322,8 @@ public static class Program
                 "burn" => BurnBench.Run(a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json")),
                 "fire-history" => FireHistory.Run(a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), a.Int("runs", 20),
                     a.Get("case"), a.Get("hours") is null ? null : D(a, "hours", 4), n => LoadDesign(Resolve(a, n)), a.Has("trace")),
+                "damage-history" => DamageHistory.Run(a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), a.Int("runs", 20),
+                    a.Get("case"), n => LoadDesign(Resolve(a, n)), a.Int("trace-run", -1)),
                 "dc-history" => DcHistory.Run(a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), a.Int("runs", 20),
                     a.Get("case"), a.Get("hours") is null ? null : D(a, "hours", 4), n => LoadDesign(Resolve(a, n)), a.Has("trace") || a.Get("trace-run") != null,
                     a.Int("trace-run", 0)),
