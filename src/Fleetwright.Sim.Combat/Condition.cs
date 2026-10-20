@@ -70,6 +70,22 @@ public enum PartFlags : byte
     Down = 4,
 }
 
+/// <summary>What put a node down for a while (<see cref="ShipCondition.DownWhy"/>), for the benches: a crew stunned, a
+/// heavy hit's shock tripping the power round it or cascading through the ship (E4), a near miss's (E7) round it or
+/// through the ship, the ship's own main battery tripping its breakers, a room's feed casualty or smoke.</summary>
+public enum DownCause : byte
+{
+    None,
+    Stunned,
+    HitShock,
+    HitCascade,
+    NearMiss,
+    NearMissCascade,
+    OwnGuns,
+    Feed,
+    Smoke,
+}
+
 /// <summary>What a hole in the side is to damage control (docs/battle/damage-control.md DC2; 09 §4): sprung plating (seams
 /// and rivets: caulked), a hole a plug stops (≤ 150 cm²), one a patch covers (≤ 0.3 m²), one only a collision mat from
 /// outside reaches (≤ 5 m², near the waterline, the ship slow), or beyond repair at sea.</summary>
@@ -205,6 +221,8 @@ public sealed class ShipCondition
     public MountHarm[] Mount = [];
     /// <summary>Each node's outage while it's <see cref="PartFlags.Down"/>: until when, world ms.</summary>
     public long[] DownUntil = [];
+    /// <summary>What put each node down, the longest outage's (<see cref="DownCause"/>): the benches' tally.</summary>
+    public DownCause[] DownWhy = [];
     /// <summary>Each director's and eye's outage of its own (E4's shock: a director's gyro, a rangefinder knocked out of
     /// adjustment), not its part's: until when, world ms (0: none).</summary>
     public long[] DirectorDown = [], EyeDown = [];
@@ -361,6 +379,7 @@ public sealed class ShipCondition
             TubeWorks = new bool[c.Tubes.Length];
             Mount = new MountHarm[c.Mounts.Length];
             DownUntil = new long[c.NodeCount];
+            DownWhy = new DownCause[c.NodeCount];
             DirectorDown = new long[c.Directors.Length];
             EyeDown = new long[c.Eyes.Length];
             JoinOpenM2 = new double[c.NeighbourCount];
@@ -403,6 +422,7 @@ public sealed class ShipCondition
             Array.Clear(FaceStamp);
             Array.Clear(Mount);
             Array.Clear(DownUntil);
+            Array.Clear(DownWhy);
             Array.Clear(DirectorDown);
             Array.Clear(EyeDown);
             Array.Clear(State);
@@ -525,14 +545,16 @@ public sealed class ShipCondition
 
     public bool Has(int node, PartFlags f) => (Flags[node] & f) != 0;
 
-    /// <summary>A node out for a while, from now for ms (E4): down until then, or later if it already was.</summary>
-    public void Down(int node, long now, long ms)
+    /// <summary>A node out for a while, from now for ms (E4): down until then, or later if it already was; the longer
+    /// outage's cause kept.</summary>
+    public void Down(int node, long now, long ms, DownCause why)
     {
         if (ms <= 0)
             return;
         long until = Until(now, ms);
         Flags[node] |= PartFlags.Down;
-        DownUntil[node] = Math.Max(DownUntil[node], until);
+        if (until > DownUntil[node])
+            (DownUntil[node], DownWhy[node]) = (until, why);
         Due(until);
     }
 
@@ -575,7 +597,7 @@ public sealed class ShipCondition
                 a.Sights = true;
                 break;
         }
-        Down(row.Component, now, h.StunMs);
+        Down(row.Component, now, h.StunMs, DownCause.Stunned);
     }
 
     /// <summary>A leak in a belt's plate at a point (E4): the plate loosened there.</summary>

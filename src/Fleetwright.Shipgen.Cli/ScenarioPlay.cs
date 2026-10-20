@@ -33,6 +33,7 @@ static class ScenarioPlay
         var shore = shoreTask.Result;
 
         var runs = new List<(ulong Seed, ScenarioEnd End, SideResult[] Result, double Wall)>();
+        var all = new MainGuns();
         int crashed = 0;
         for (int i = 0; i < seeds; i++)
         {
@@ -51,6 +52,8 @@ static class ScenarioPlay
             w.Apply(Command.SetPlayerSide(-1));   // watching: every side the AI's
             w.Apply(Command.SetInterest(InterestKind.Others, InterestAction.Slow, fine));   // an encounter opening drops to the fine tier at once
             var end = new ScenarioEnd(s, w, ai);
+            var guns = new MainGuns();
+            int seen = 0;
             var sw = Stopwatch.StartNew();
             try
             {
@@ -60,7 +63,15 @@ static class ScenarioPlay
                     if (w.Speed != want)
                         w.Apply(Command.SetSpeed(want));
                     w.AdvanceTo(w.Time + 60_000);
+                    // a ship falling out for her main guns: why they're out, as she falls out
+                    for (; seen < end.Timeline.Count; seen++)
+                        if (end.Timeline[seen] is { Kind: PlayEvent.FellOut } l && (Fleetwright.Sim.Ai.Captains.CaptainReason)l.Count ==
+                            Fleetwright.Sim.Ai.Captains.CaptainReason.OutGuns && w.Ships.Store.SlotOf(l.Entity) is int fs and >= 0)
+                            guns.FellOut.Add(w.Ships.Store.Combat.Condition(fs));
                 }
+                for (int slot = 0; slot < w.Ships.Store.Slots; slot++)
+                    if (w.Ships.Store.IsAlive(slot))
+                        guns.End.Add(w.Ships.Store.Combat.Condition(slot));
             }
             catch (Exception x) when (x is ArgumentException or InvalidOperationException or IndexOutOfRangeException or NullReferenceException)
             {
@@ -73,17 +84,111 @@ static class ScenarioPlay
             var result = end.Result();
             runs.Add((seed, end, result, wall));
             if (seeds == 1)
+            {
                 PrintOne(s, end, result, names, wall, w, ai);
+                guns.Print("  ");
+            }
             else
                 Console.WriteLine($"  seed {seed,6}: {Why(end.Reason),-7} at {Clock(s, end.EndMs)}  " +
                                   string.Join("   ", result.Select(r => $"{r.Name} lost {r.Lost}/{r.Ships} ({r.LostTonnes:0} t){(r.AimsMet ? ", aims met" : "")}")) +
-                                  $"   ({wall:F1} s)" + (end.Missed > 0 ? $"   {end.Missed} log lines missed" : ""));
+                                  Causes(end) + $"   ({wall:F1} s)" + (end.Missed > 0 ? $"   {end.Missed} log lines missed" : ""));
+            if (seeds > 1)
+                guns.Print("           ");
+            all.FellOut.Merge(guns.FellOut);
+            all.End.Merge(guns.End);
         }
         if (seeds > 1 && runs.Count > 0)
+        {
             PrintSpread(s, runs.Select(r => (r.End, r.Result)).ToList());
+            Console.WriteLine($"over {runs.Count} seeds:");
+            all.Print("  ");
+        }
         if (crashed > 0)
             Console.WriteLine($"the sim broke in {crashed} of {seeds} seeds");
         return crashed > 0 ? 1 : 0;
+    }
+
+    /// <summary>Why ships' main guns are out (the user's question, 2026-10-20: "a lot of ships with disabled main guns"):
+    /// their chief batteries' mounts not working, each by its first cause (the magazine, the gunhouse, the barbette, a jam,
+    /// its guns), at the moment a ship falls out for her main guns and at the end of the run for every ship afloat.</summary>
+    sealed class MainGuns
+    {
+        public readonly Tally FellOut = new(), End = new();
+
+        public void Print(string indent)
+        {
+            Console.WriteLine($"{indent}main guns: {FellOut.Ships} fell out for them, " + FellOut.Text());
+            Console.WriteLine($"{indent}           at the end, {End.Ships} ships afloat: " + End.Text());
+        }
+
+        public sealed class Tally
+        {
+            public static readonly string[] Names = ["magazine flooded by order", "magazine flooded by the sea", "magazine spent (its race)",
+                "magazine put out by a hit", "gunhouse destroyed", "gunhouse out of action", "barbette out", "jammed", "guns out",
+                "down: a crew stunned", "down: a hit's shock round it", "down: a hit's shock through the ship", "down: a near miss round it",
+                "down: a near miss through the ship", "down: her own guns' breakers", "down: feed", "down: smoke", "down: unknown"];
+            public readonly int[] By = new int[Names.Length];
+            public int Ships, Mounts, Barrels, Out, OutBarrels;
+
+            public void Merge(Tally o)
+            {
+                for (int i = 0; i < By.Length; i++)
+                    By[i] += o.By[i];
+                (Ships, Mounts, Barrels, Out, OutBarrels) = (Ships + o.Ships, Mounts + o.Mounts, Barrels + o.Barrels, Out + o.Out, OutBarrels + o.OutBarrels);
+            }
+
+            public void Add(ShipCondition k)
+            {
+                var c = k.Class;
+                Ships++;
+                foreach (ref readonly var b in c.Batteries)
+                {
+                    if (!b.Chief)
+                        continue;
+                    foreach (int m in c.Links(b.Mounts))
+                    {
+                        ref readonly var mr = ref c.Mounts[m];
+                        int n = c.TurretTypes[mr.Type].Barrels;
+                        (Mounts, Barrels) = (Mounts + 1, Barrels + n);
+                        if (k.MountWorks[m])
+                            continue;
+                        (Out, OutBarrels) = (Out + 1, OutBarrels + n);
+                        By[Cause(c, k, m)]++;
+                    }
+                }
+            }
+
+            static int Cause(ShipClass c, ShipCondition k, int m)
+            {
+                ref readonly var mr = ref c.Mounts[m];
+                if (mr.Magazine >= 0 && c.RoomNode(mr.Magazine) is int mag && k.Health(mag) <= 0)
+                    return k.MagazineFlood[mr.Magazine] ? 0 : k.Drowned[mag] ? 1 : k.State[mag] == PartState.Destroyed ? 2 : 3;
+                if (k.Health(mr.Component) <= 0)
+                    return k.Has(mr.Component, PartFlags.Down) ? Down(k.DownWhy[mr.Component]) : k.State[mr.Component] == PartState.Destroyed ? 4 : 5;
+                if (mr.Barbette >= 0 && k.Health(mr.Barbette) <= 0)
+                    return k.Has(mr.Barbette, PartFlags.Down) ? Down(k.DownWhy[mr.Barbette]) : 6;
+                return k.Has(mr.Component, PartFlags.Jammed) ? 7 : 8;
+            }
+
+            static int Down(DownCause why) => why == DownCause.None ? 17 : 8 + (int)why;
+
+            public string Text()
+            {
+                if (Mounts == 0)
+                    return "no main mounts";
+                var parts = Enumerable.Range(0, By.Length).Where(i => By[i] > 0).OrderByDescending(i => By[i]).Select(i => $"{Names[i]} {By[i]}");
+                return $"main mounts out {Out} of {Mounts} ({OutBarrels} of {Barrels} guns)" + (Out > 0 ? ": " + string.Join(", ", parts) : "");
+            }
+        }
+    }
+
+    /// <summary>A seed's losses by how they went (a magazine, capsized, broke in two, foundered), for its one line.</summary>
+    static string Causes(ScenarioEnd end)
+    {
+        var lost = end.Timeline.Where(l => l.Kind == PlayEvent.Lost).GroupBy(l => (LossKind)l.Count).OrderBy(g => g.Key)
+            .Select(g => $"{g.Key switch { LossKind.Magazine => "magazine", LossKind.Capsized => "capsized", LossKind.BrokeInTwo => "broke in two", _ => "foundered" }} {g.Count()}")
+            .ToList();
+        return lost.Count > 0 ? "   (" + string.Join(", ", lost) + ")" : "";
     }
 
     static void PrintOne(Scenario s, ScenarioEnd end, SideResult[] result, Dictionary<int, string> names, double wall, World w, AiSystem ai)

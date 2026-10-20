@@ -66,7 +66,7 @@ public class DamageTests(ITestOutputHelper output)
         Assert.True(broken > 30, "Lion's 13.5\" holes Seydlitz's armour in pieces now and then");
         Assert.True(brokenHarm > broken / 4, "the pieces do something behind the plate");
         Assert.True(turret > 10);
-        Assert.InRange((double)flashed / turret, 0.05, 0.5);   // a station's light chance, 0.25
+        Assert.InRange((double)flashed / turret, 0.5, 0.95);   // a twin's station on drill lights 1 - 0.5² = 0.75 (Magazines.LightChance, V8)
     }
 
     [Fact]

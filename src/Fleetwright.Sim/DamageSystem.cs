@@ -659,7 +659,7 @@ public sealed class DamageSystem : IWorldSystem
         ref readonly var m = ref c.Mounts[mount];
         var at = new P3(m.X, m.Y, c.Components[m.Component].Bounds.Base);
         long now = world.Time.Ms;
-        if (!Effects.PowerOut(c, k, at, m.Component, -1, settings.ShockZoneBM, NonPen.Minutes(settings.SectionPowerMin, ref r), now))
+        if (!Effects.PowerOut(c, k, at, m.Component, -1, settings.ShockZoneBM, NonPen.Minutes(settings.SectionPowerMin, ref r), now, DownCause.OwnGuns))
             return;
         k.Damaged = touched = true;
         Recompute(world, slot, k, ref r);

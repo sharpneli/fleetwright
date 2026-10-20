@@ -1142,12 +1142,14 @@ public sealed record SimSettings
     /// <summary>The ammunition trains (docs/battle/magazines.md V2; research/simulation/damage-research/10 §3), by a
     /// station's kind [gunhouse, working chamber, casemate, handling room]:
     /// <list type="bullet">
-    /// <item>StationLightChance: a burst, its spall or its gas at a station lights the charges there (the old turret
-    /// roll's 0.25 [EST], fitted at V8);</item>
+    /// <item>StationLightChance: a burst, its spall or its gas at a station lights each charge lying there with this
+    /// chance, the station if any lights (<c>Magazines.LightChance</c>): fitted at V8 to the record's turret and barbette
+    /// bursts, 1914-16, about 9 lit in 12 (Seydlitz, Derfflinger C and D, Lion Q, the three battlecruisers, Blücher,
+    /// Malaya's battery; not Princess Royal's or Tiger's X) with ~2 charges a station [EST, 10 §3.2];</item>
     /// <item>the doors and the charges lying at the stations are the side's flash discipline's
     /// (<see cref="FlashDisciplines"/>, V5).</item>
     /// </list></summary>
-    public double[] StationLightChance { get; init; } = [0.25, 0.25, 0.25, 0.25];
+    public double[] StationLightChance { get; init; } = [0.5, 0.5, 0.5, 0.5];
 
     /// <summary>The venting race (docs/battle/magazines.md V3; research/simulation/damage-research/10 §6,
     /// magazine_race_ref.py): a magazine alight is one gas volume, its spaces' gas, made by the lit charges' surface and

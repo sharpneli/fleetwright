@@ -1,5 +1,5 @@
 # Plan: shells, armour and damage (a 4.5 deepening)
-Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S, phase P (PM moved to the balance pass), E0-E7 done; E8a (the yardstick) and E8b (one value for every navy) done    Updated: 2026-10-20
+Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S, phase P (PM moved to the balance pass), E0-E7 done (E7 has an open fix: near misses black out too many ships, 2026-10-20); E8a (the yardstick) and E8b (one value for every navy) done    Updated: 2026-10-20
 
 The fine-tune pass for the **Terminal** link of `fighting.md` 4.5 ("penetration proper: material qualities, capped and
 uncapped shells, spaced armour, edge effects; shell quality by navy and year; diving shells and underwater hits;
@@ -1697,6 +1697,21 @@ squadrons, and changes `Matchup.cs` with it.
     - **Not built:** a ricocheting shell carried on (v0 stops it); water on deck, the splash on the rangefinders; radar,
       sonar and the gyrocompass (the sim doesn't carry them); the seams' fittings (17's session); bombs (§3 is ready for
       them). The matchup has no near-miss term (the balance pass).
+  - **Fix (found 2026-10-20, open):** near misses black out too many ships, and the captains fall out on it.
+    - **Found** with the play bench's new main-guns tally (`scenario --play`: each chief mount out, by its first cause,
+      when a ship falls out for her guns and at the end; temporary outages tagged by `ShipCondition.DownWhy`). The user
+      had seen "a lot of ships with disabled main guns" in a game. Squadrons, 5 seeds: 27 ships fell out for their main
+      guns, with 93 of 114 mounts out then. Of those 93, 56 were down by a near miss blacking out the whole ship, 16 by a
+      near miss tripping the section round it, 10 by a heavy hit's shock cascading through the ship (E4); the lasting
+      damage (magazines flooded by order, barbettes) only 11. At the end only 20 of 176 mounts were still out.
+    - **The fix:** the whole-ship power trip (`NearShockBands` 0.08-0.2) and the section's (0.03-0.08), and E4's
+      cascade (`ShockCascade`), measured against the record: 15 §6.4 and 13 §3.4's cases (South Dakota's blackout was one
+      in a battle, not a ship's every few salvos). The bands are [EST]; a fragile ship tripping at every near salvo isn't
+      the record.
+    - **The captains (the user, 2026-10-20):** a fault the captain judges temporary doesn't take his ship out of the
+      battle line. A blackout, a tripped breaker or a stunned crew lasts minutes; his fall-out (`Fitness`,
+      `FallOutRule`, docs/battle/command.md 5.1a item 2) reads the lasting state, not what's down for a while. He falls
+      out only for what he expects to last, and the matchup's toughness reads the same.
 - **E8 The battle anchors.** With S and P in, the whole chain against the battles: Jutland, Bismarck's ~3 belt holes in
   ~400 hits, South Dakota, Samar, the 1894–1905 battles, the destroyer benches; and the notes' own: 16's killed and
   wounded per hit by group, 13's turret-minutes lost per 100 heavy hits (about half to non-penetrations), 15's

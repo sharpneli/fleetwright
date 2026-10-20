@@ -425,7 +425,7 @@
   "KeyManShare": 0.1,
   "KeyManMin": [5, 30],
   "MagazineFlashChance": 0.25,
-  "StationLightChance": [0.25, 0.25, 0.25, 0.25],
+  "StationLightChance": [0.5, 0.5, 0.5, 0.5],
   "FlashDisciplines": [
     { "Name": "safe", "DoorOpen": [0, 0, 0, 0], "StationCharges": 0.5, "LidsOff": 0, "HoistShare": 1.7 },
     { "Name": "drill", "DoorOpen": [0.1, 0.1, 0.02, 0.1], "StationCharges": 1, "LidsOff": 0, "HoistShare": 1.5 },

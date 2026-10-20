@@ -285,10 +285,10 @@ public static class Fires
             if (k.Smoked[room] && !k.Has(node, PartFlags.Down))
                 k.Smoked[room] = false;   // its last outage ran out: manned again
             if (k.Smoked[room])
-                k.Down(node, now, clear);   // still smoke-filled
+                k.Down(node, now, clear, DownCause.Smoke);   // still smoke-filled
             else if (r.NextDouble() < p)
             {
-                k.Down(node, now, clear);
+                k.Down(node, now, clear, DownCause.Smoke);
                 k.Smoked[room] = true;
                 res.Changed = true;
                 res.Abandoned++;

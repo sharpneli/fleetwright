@@ -36,6 +36,19 @@ public static partial class Magazines
         throw new ArgumentException($"no flash discipline \"{flash}\"");
     }
 
+    /// <summary>How likely a burst, its spall or its gas at a station of a mount's train lights the charges lying there
+    /// (docs/battle/magazines.md V8): each lights with <see cref="SimSettings.StationLightChance"/> by the station's kind,
+    /// and there are the discipline's charges a gun times the mount's guns, so 1 - (1 - q)^n: a twin on drill 0.75, on
+    /// safe 0.5, on rate first 0.94.</summary>
+    public static double LightChance(ShipClass c, ShipCondition k, int mount, int station, SimSettings s)
+    {
+        var kind = c.Train(mount)[station].Kind;
+        if (kind == StationKind.Magazine)
+            return s.MagazineFlashChance;
+        double n = Discipline(k, s).StationCharges * c.TurretTypes[c.Mounts[mount].Type].Barrels;
+        return 1 - Math.Pow(1 - s.StationLightChance[(int)kind], n);
+    }
+
     /// <summary>Charges lit at a station of a mount's train: they burn (unless <paramref name="burning"/>, a fire that's
     /// already theirs), the flame runs on past the open doors; returns the magazine room it reached, or -1. A flash in
     /// the train that didn't reach it orders its magazine flooded (Harvey's; V6), the order and the walk to the valves

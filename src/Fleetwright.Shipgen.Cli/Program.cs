@@ -290,7 +290,7 @@ public static class Program
                 "hits" => HitsBench.Run(a.Positional.ElementAtOrDefault(0) ?? "dreadnought", n => LoadDesign(Resolve(a, n)),
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
                     new HitsBench.Options(a.Get("shooter"), a.Int("battery", 0), a.Get("kind"), D(a, "range", 12_000), D(a, "aspect", 90), a.Int("n", 2000),
-                        a.Int("per-ship", 1), a.Int("seed", 1), a.Int("show", 0), D(a, "settle", 30), a.Get("loadout"), a.Get("readiness"), a.Get("damage_control"))),
+                        a.Int("per-ship", 1), a.Int("seed", 1), a.Int("show", 0), D(a, "settle", 30), a.Get("loadout"), a.Get("readiness"), a.Get("damage-control"))),
                 "nearmiss" => NearMissBench.Run(a.Positional.ElementAtOrDefault(0) ?? "destroyer", n => LoadDesign(Resolve(a, n)),
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
                     new NearMissBench.Options(a.Get("shooter"), a.Int("battery", 0), a.Get("kind"), a.Get("loadout"), D(a, "range", 15_000), D(a, "aspect", 90),

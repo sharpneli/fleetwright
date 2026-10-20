@@ -201,7 +201,7 @@ public static class Effects
                 // a conning tower: its crew stunned (13 §3.4)
                 res.Part = x.Index;
                 long stun = NonPen.Stun(impulse, s.TowerStunChance, s, ref r);
-                k.Down(x.Index, hit.Ms, stun);
+                k.Down(x.Index, hit.Ms, stun, DownCause.Stunned);
                 res.Stunned = stun > 0;
             }
             else if (x.Plate == PlateKind.SideArmour)
@@ -285,12 +285,12 @@ public static class Effects
         if (NonPen.Electrics(c))
         {
             if (r.NextDouble() < s.ShockLocalTrip[col] * g)
-                res.Shock |= PowerOut(c, k, at, struck, -1, s.ShockZoneAM, NonPen.Minutes(s.LocalTripMin, ref r), now);
+                res.Shock |= PowerOut(c, k, at, struck, -1, s.ShockZoneAM, NonPen.Minutes(s.LocalTripMin, ref r), now, DownCause.HitShock);
             if (r.NextDouble() < s.ShockSectionPower[col] * g)
-                res.Shock |= PowerOut(c, k, at, struck, s.ShockZoneAM, s.ShockZoneBM, NonPen.Minutes(s.SectionPowerMin, ref r), now);
+                res.Shock |= PowerOut(c, k, at, struck, s.ShockZoneAM, s.ShockZoneBM, NonPen.Minutes(s.SectionPowerMin, ref r), now, DownCause.HitShock);
             if (r.NextDouble() < s.ShockCascade[col] * g)
             {
-                res.Shock |= PowerOut(c, k, at, -1, -1, double.PositiveInfinity, NonPen.Minutes(s.CascadeMin, ref r), now);
+                res.Shock |= PowerOut(c, k, at, -1, -1, double.PositiveInfinity, NonPen.Minutes(s.CascadeMin, ref r), now, DownCause.HitCascade);
                 res.Blackout = true;
             }
             if (r.NextDouble() < s.ShockDirectorGyro[col] * g)
@@ -319,7 +319,7 @@ public static class Effects
     /// <summary>The power off for ms (E4's shock) to the mounts and directors from <paramref name="from"/> (exclusive; -1
     /// takes in the struck part's too) to <paramref name="to"/> metres of a point, and to the struck part's own (its
     /// mount, a conning tower's directors): mounts down, directors out. Whether it reached any.</summary>
-    public static bool PowerOut(ShipClass c, ShipCondition k, P3 at, int struck, double from, double to, long ms, long now)
+    public static bool PowerOut(ShipClass c, ShipCondition k, P3 at, int struck, double from, double to, long ms, long now, DownCause why)
     {
         bool any = false;
         for (int m = 0; m < c.Mounts.Length; m++)
@@ -328,7 +328,7 @@ public static class Effects
             double d = mr.Component == struck || mr.Barbette == struck ? 0 : Distance(c, mr.Component, at);
             if (d <= to && (from < 0 || d > from))
             {
-                k.Down(mr.Component, now, ms);
+                k.Down(mr.Component, now, ms, why);
                 any = true;
             }
         }
@@ -395,7 +395,7 @@ public static class Effects
             if (near >= 0)
             {
                 double m0 = s.FeedCasualtyMin[0], m1 = s.FeedCasualtyMin[1];
-                k.Down(c.RoomNode(near), now, (long)(60_000 * Math.Exp(Math.Log(m0) + (Math.Log(m1) - Math.Log(m0)) * r.NextDouble())));
+                k.Down(c.RoomNode(near), now, (long)(60_000 * Math.Exp(Math.Log(m0) + (Math.Log(m1) - Math.Log(m0)) * r.NextDouble())), DownCause.Feed);
                 res.Feed = true;
             }
         }
@@ -619,11 +619,11 @@ public static class Effects
             (reached, via) = (Magazines.Light(c, k, readyMount, readySt, burning: true, s, ref r, ref res, hit.Ms), MagazineVia.Turret);
         else if (t.Burst != BurstKind.Outside && turret >= 0)
         {
-            if (r.NextDouble() < s.StationLightChance[(int)c.Train(turret)[turretSt].Kind])
+            if (r.NextDouble() < Magazines.LightChance(c, k, turret, turretSt, s))
                 (reached, via) = (Magazines.Light(c, k, turret, turretSt, burning: false, s, ref r, ref res, hit.Ms), MagazineVia.Turret);
         }
         else if (t.Burst != BurstKind.Outside && gasHandling >= 0 && c.MountOf(c.Rooms[gasHandling].Mount) is int hm and >= 0 &&
-                 c.StationOfRoom(hm, gasHandling) is var hs and >= 0 && r.NextDouble() < s.StationLightChance[(int)StationKind.Handling])
+                 c.StationOfRoom(hm, gasHandling) is var hs and >= 0 && r.NextDouble() < Magazines.LightChance(c, k, hm, hs, s))
             (reached, via) = (Magazines.Light(c, k, hm, hs, burning: false, s, ref r, ref res, hit.Ms), inHandling ? MagazineVia.Handling : MagazineVia.Gas);
         if (reached >= 0)
             (res.Magazine, res.MagazineRoom, res.MagazineVia) = (true, reached, via);
@@ -936,7 +936,7 @@ public static class Effects
         double lights = s.SpallFlashChance * Math.Min(1, cloud.Severity / 0.5);
         if (magazine >= 0 && !res.Magazine && r.NextDouble() < lights * s.MagazineFlashChance)
             (res.Magazine, res.MagazineRoom, res.MagazineVia, res.Stations) = (true, magazine, MagazineVia.Spall, res.Stations + 1);
-        if (open >= 0 && !res.Magazine && r.NextDouble() < lights * s.StationLightChance[(int)c.Train(open)[openSt].Kind] &&
+        if (open >= 0 && !res.Magazine && r.NextDouble() < lights * Magazines.LightChance(c, k, open, openSt, s) &&
             Magazines.Light(c, k, open, openSt, burning: false, s, ref r, ref res) is int reached and >= 0)
             (res.Magazine, res.MagazineRoom, res.MagazineVia) = (true, reached, MagazineVia.Spall);
     }

@@ -450,10 +450,10 @@ public static class NearMiss
         if (NonPen.Electrics(c))
         {
             if (Chance(Ramp(gear, b[0], b[1]), ref r))
-                res.Shock |= Effects.PowerOut(c, k, nearAt, -1, -1, s.ShockZoneBM, NonPen.Minutes(s.NearTripMin, ref r), now);
+                res.Shock |= Effects.PowerOut(c, k, nearAt, -1, -1, s.ShockZoneBM, NonPen.Minutes(s.NearTripMin, ref r), now, DownCause.NearMiss);
             if (Chance(Ramp(gear, b[1], b[2]), ref r))
             {
-                res.Shock |= Effects.PowerOut(c, k, nearAt, -1, -1, double.PositiveInfinity, NonPen.Minutes(s.NearTripMin, ref r), now);
+                res.Shock |= Effects.PowerOut(c, k, nearAt, -1, -1, double.PositiveInfinity, NonPen.Minutes(s.NearTripMin, ref r), now, DownCause.NearMissCascade);
                 res.Blackout = true;
             }
             // the gyros roll a failure (15 §6.4) at E4's chance for a heavy shock, the grade already in the edges

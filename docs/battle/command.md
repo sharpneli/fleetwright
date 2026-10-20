@@ -427,6 +427,8 @@ Bottom-up, so each layer is built on one that already behaves.
    group (the line closes up) and goes `Home` (a captain's order): away from the enemy in sight, else for his side's
    home, stopped within `HomeRadiusM`. His reason (`CaptainReason`) is in the snapshot, on the map beside the ship and
    in the captain row, and on the bench's timeline. Steering lost counts only where doctrine falls out at all.
+   - A fault the captain judges temporary (a blackout, a tripped breaker, a stunned crew) isn't to take her out of the
+     line (the user, 2026-10-20): open, with near misses' blackouts in docs/battle/shells-armour-damage.md E7's fix.
    - Found on the way: the sightings' per-encounter grid grew when a ship running off spread the encounter (48-72
      bytes, a fight's seconds); it's sized for 250 km now (4 KB a world), and the flotilla's allocation test skips the
      seconds a ship leaves a group, as it does those a ship goes.

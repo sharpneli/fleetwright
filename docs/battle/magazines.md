@@ -1,5 +1,5 @@
 # Plan: magazines (a 4.5 deepening)
-Status: **every question decided** (the user, 2026-10-20: "Decided" below); research arrived (10); V0-V7 done 2026-10-20
+Status: **every question decided** (the user, 2026-10-20: "Decided" below); research arrived (10); V0-V8 done 2026-10-20 (the look next, by its own process)
 Updated: 2026-10-20
 
 The fine-tune pass for magazines: how a flash gets to the charges, what happens once they burn, and what the ship
@@ -125,7 +125,7 @@ The first game's cases lead (1890-1925); the later ones check the mechanisms.
 | Lion Q, Jutland: face-roof joint holed, magazine ordered flooded | charges in the chain lit ~28 min later, masthead flame, the flooded magazine held | tier 0-1; flooded in time in most runs |
 | British battlecruisers, Jutland (Indefatigable, Queen Mary, Invincible): ~3 lost in ~58 heavy hits | tier 3, broke at the magazine, ~1,000 dead each | ~5% a heavy hit (1-14% within the count) with Jutland's BCF discipline |
 | The same ships on safe discipline | (the Grand Fleet's battleships, stricter) | well under the BCF's rate |
-| Thirty 6″ HE on a battleship | Malaya's battery fire came close | about 1.5% of ships (the user's, 2026-10-15) |
+| Thirty 6″ HE on a battleship | Malaya's battery fire came close | about 1.5% of ships (the user's, 2026-10-15); none behind armoured casemates accepted (decision 7) |
 | Chester, 17 × 15 cm on open shields | 3 of 10 guns out, no magazine | magazine losses near none |
 | Gneisenau 1942 (later cuts): 23 t RP C/32 | no explosion, turret displaced | tier 1 |
 | Hood, Mutsu, Vanguard, New Orleans (later cuts) | stern off; cut in two at anchor; midships gone; bow lost and survived | tier 3 aft; tier 3 in calm water; tier 4; end lost, ship afloat |
@@ -588,6 +588,42 @@ follows the dependencies: the fake turrets first, because the chain means nothin
   - The propellants' β and α fitted.
   - The cases above, scenario runs (squadrons, jutland, tsushima), and the user's 1.5%.
   - What's left goes to open items here.
+  - **Done 2026-10-20.** What it came to:
+    - **A station lights by its charges** (`Magazines.LightChance`): each charge lying there lights with
+      `StationLightChance` 0.5, the station if any does, 1 - (1 - q)^n, n the discipline's charges a gun times the
+      mount's guns. A twin on drill 0.75, on safe 0.5, on rate first 0.94. It was a flat 0.25 [EST]; the record's
+      turret and barbette bursts of 1914-16 lit about 9 in 12 (Seydlitz, Derfflinger C and D, Lion Q, the three
+      battlecruisers, Blücher, Malaya's battery; not Princess Royal's or Tiger's X). A burst, its spall (times
+      `SpallFlashChance`) and its gas in a handling room all read it.
+    - **A bench bug:** `shipgen hits` read `damage_control`, so `--damage-control` never reached the ship (every run on
+      the default doctrine). Fixed.
+    - **The propellants' β and α stay the research's** (10 §1.1), and Clarkson's R stays 4: the cases split as the
+      record does without a refit (Lion's own lids-on burn out, the BCF's rate first severs, German brass burns out).
+    - **The yardstick** (`damage-history`, 400 runs where noted):
+
+      | Case | Now | Record |
+      |---|---|---|
+      | Indefatigable, 5 × 11″, "1916 BCF" (400) | lost 14% of runs, 2.75% a hit | ~5% a hit (1-14%) |
+      | Tiger, 18 × 11″, "1916 BCF" (200) | lost 24% of runs, 1.3% a hit | lived; the BCF lost 3 of 7 |
+      | Seydlitz, Derfflinger, Lion at Jutland (drill) | 0.4-0.9 trains lit a ship, none lost | Seydlitz's, Derfflinger's C and D, Lion's Q burned; none lost |
+      | Lion at Dogger Bank, Chester, Kent | nothing | nothing |
+      | 30 × 6″ HE on Iron Duke (400) | none | about 1.5% wanted; decision 7 accepts none |
+      | Bismarck's brass, 1942 doctrine (Gneisenau's anchor) | every magazine burns out, 250-425 kPa | burned out |
+
+      `shipgen hits indefatigable --shooter von_der_tann --range 14500` in calm water: on "1916 BCF" 2.75% of hits set
+      off a magazine and 2.1% lose her; on drill 0.03%; on safe none.
+    - **Scenario runs** (`scenario --play --seeds N`, before -> after V8; no ship lost to a magazine in either):
+      - squadrons, 20 seeds: lost 8 (3 foundered, 5 capsized) -> 7 (capsized); main mounts still out at the end behind
+        magazines flooded by order 15 -> 46 (the flash stopped short orders its magazine flooded, V6).
+      - Tsushima, 4 seeds: Russia lost 3.0 -> 4.0 a seed, Japan 3.8 -> 3.5.
+      - Jutland, 3 seeds: lost 91 -> 60 a seed (Britain 34 -> 20, Germany 57 -> 40), hits made 8,800 -> 5,200. The old
+        rule at a flat 0.75 gives 74 and 6,900 (56-88 by seed): the drop is the turret fires being three times as
+        common (each costs a turret its crew and often its magazine), not the new rule's own doing. The record:
+        14 British and 11 German lost; every run is still far over it.
+      - Found on the way: ships fall out for their main guns mostly on temporary blackouts from near misses
+        (docs/battle/shells-armour-damage.md E7's fix, open). `scenario --play` prints the main-guns tally now, and each
+        seed's losses by how they went.
+    - **Tests:** the broken-shell turret test's range moved to the twin's 0.75.
 - **Then the look:** tier 1 (the column without the fireball) and tier 4 (two fireballs) in
   `docs/visuals/magazine-explosions.md`, by its own process.
 
@@ -632,6 +668,9 @@ follows the dependencies: the fake turrets first, because the chain means nothin
 5. **Magazines going up as a ship sinks** wait for the sinking pass: by then she's lost anyway, so it's eye candy.
 6. **The race's boundaries go by the research's table** (2026-10-20, an approved exception to "one gas model"): run on
    the ship's own plating, the gas spread through her thin bulkheads and never loaded the girder (V3).
+7. **Armoured casemates keep medium HE off the magazines** (2026-10-20): thirty 6″ HE on Iron Duke lose no ship in
+   400 runs, against the 1.5% once wanted. Accepted: "it means the armouring is working". A ship with thinner
+   casemates or open batteries can still lose one.
 
 ## Open items (from the other docs, folded in)
 
@@ -643,3 +682,16 @@ follows the dependencies: the fake turrets first, because the chain means nothin
 - Fire B2's magazine heat and flooding: V6 and V7. Damage control's two valve sets: V6.
 - The magazine look's tiers 1 and 4: after V3 (`docs/visuals/magazine-explosions.md` decision 1).
 - bugs.md's mount kind: V1.
+- **Left after V8** (2026-10-20):
+  - A torpedo or mine into a magazine (Pathfinder, Pommern, Pallada; Petropavlovsk and Hatsuse by mines) lights it, but
+    the race of the charges alone burns out or holds there. The warhead breaking the packages, or the shell room's
+    filler going sympathetically, would be what took them. Research first.
+  - A burst among a magazine's own charges still rolls the flat `MagazineFlashChance` 0.25 [EST]; the stow's charges
+    in their packages could light by count as a station's do.
+  - Rate first's stack: the research has 20-40% of a magazine's rounds in the handing room and working chamber, lids
+    off; ours is 2 charges a station a gun. And whether the BCF's lids came off in the magazine or only in the handing
+    room (Friedman against Brown, 10 §8).
+  - Jutland's British side is on 1916's drill, so its battlecruisers rarely blow up in the scenario. Per-squadron
+    doctrine (the BCF on rate first) is the scenarios' later step.
+  - `shipgen magazine` prints shipgen's room volumes, which are 0 m³ for a secondary magazine sharing a main one's
+    cells. The race reads the cells' gas, so only the print is off.
