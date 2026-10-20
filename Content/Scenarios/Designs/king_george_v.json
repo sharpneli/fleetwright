@@ -1,5 +1,5 @@
 {
- "version": 10,
+ "version": 11,
  "id": "king_george_v",
  "name": "King George V-like (1912)",
  "type": "BB",
@@ -595,5 +595,13 @@
    "propellant": "double-base",
    "black_powder_under_cal": 0
   }
+ },
+ "drainage": {
+  "name": "RN Great War (1914)",
+  "pumps_tph_per_1000t": 50,
+  "portable_pumps": 4,
+  "portable_tph": 15,
+  "counterflood_tpm_per_10000t": 10,
+  "tightness": 1.5
  }
 }

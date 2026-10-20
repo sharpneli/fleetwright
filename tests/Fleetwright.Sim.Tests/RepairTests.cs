@@ -111,6 +111,28 @@ public class RepairTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void In_a_blackout_the_parties_rig_portable_pumps_and_clear_a_flooded_space()
+    {
+        var c = Class("dreadnought");
+        var f = new FloodModel(c);
+        // a dry-ish space below the waterline half full of seepage, no hole of its own, and no power for the drainage
+        int cell = Array.FindIndex(c.Cells.ToArray(), x => x.BelowWaterline && x.VolumeM3 > 150 && c.Rooms[x.Room].Kind == RoomKind.Stores);
+        double Left(string? doctrine)
+        {
+            var k = Fresh(c, doctrine);
+            k.PowerCap = 0;
+            k.WaterM3[cell] = 0.5 * f.Capacity[cell];
+            Run(c, f, k, 3 * 3600);
+            return k.WaterM3.Sum();   // aboard: what leaks down into the spaces below is still hers
+        }
+        double drilled = Left("rn-1916"), nobody = Left(null);
+        output.WriteLine($"{c.Drainage.PortablePumps} portable pumps of {c.Drainage.PortableTph:0} t/h; half of a {f.Capacity[cell]:0} m³ store, aboard " +
+                         $"after 3 h in a blackout: drilled {drilled:0} m³, nobody {nobody:0} m³");
+        Assert.True(drilled < 0.2 * nobody, "pumped out (puddles under RepairPumpMinM3 left)");
+        Assert.True(nobody > 0.4 * f.Capacity[cell], "no power, nobody: it stays");
+    }
+
+    [Fact]
     public void A_hole_beyond_repair_at_sea_is_never_worked_on()
     {
         var c = Class("super_dreadnought");

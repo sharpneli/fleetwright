@@ -476,7 +476,6 @@
   "FloodSunkDeckM2": 0.3,
   "FloodWeatherShare": 0.01,
   "RoomFloodedShare": 0.5,
-  "PumpTPerHourPer1000T": 50,
   "FreeSurfacePocket": 0.1,
   "HeelLagS": 30,
   "CapsizeHeelDeg": 25,
@@ -501,9 +500,10 @@
   "ClosureMinCm2": [10, 10, 0.5, 5, 1, 10, 5],
   "ClosureMaxCm2": [60, 50, 3, 50, 5, 100, 130],
   "ClosureCap": 0.9,
-  // the repair parties' water jobs (docs/battle/damage-control.md DC3), by job: none, door, re-dog, caulk, shore, plug, patch, plating
-  "RepairJobManMin": [0, 2, 6, 60, 80, 6, 80, 60],
-  "RepairJobMen": [1, 2, 2, 3, 4, 2, 4, 3],
+  // the repair parties' water jobs (docs/battle/damage-control.md DC3), by job: none, door, re-dog, caulk, shore, plug, patch, plating, rig a pump
+  "RepairJobManMin": [0, 2, 6, 60, 80, 6, 80, 60, 40],
+  "RepairJobMen": [1, 2, 2, 3, 4, 2, 4, 3, 4],
+  "RepairPumpMinM3": 5,
   "RepairCrewsAJob": 2,
   "RepairPlugLeft": 0.1,
   "RepairPatchLeft": 0.08,

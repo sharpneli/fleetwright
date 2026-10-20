@@ -274,8 +274,8 @@ public static class Flooding
                 JoinKind.Open => s.FloodOpenM2,
                 _ when k.CellOpened[a] && k.CellOpened[b] => s.FloodTornM2,
                 JoinKind.Deck when open < 0 && e.Z > c.Vertical.Waterline => s.FloodSunkDeckM2,   // over the waterline once, under the sea now
-                JoinKind.Deck => s.FloodLeakDeckM2,
-                _ => s.FloodLeakBulkheadM2,
+                JoinKind.Deck => s.FloodLeakDeckM2 * c.Drainage.Tightness,   // her glands and penetrations (DC4)
+                _ => s.FloodLeakBulkheadM2 * c.Drainage.Tightness,
             } + k.JoinOpenM2[p];   // and what a burst's gas opened there (E5), or the head broke
             if ((marks & JoinMark.DoorOpen) != 0)
                 area += s.DoorM2;
@@ -306,17 +306,35 @@ public static class Flooding
             k.JoinFlow[p] = (hi == a ? v : -v) / dt;
         }
 
-        // the pumps, on the cells with no hole of their own
-        double pump = s.PumpTPerHourPer1000T * f.DisplacementT / 1000 / FloodModel.SeaT / 3600 * pumpShare * dt;
-        for (int i = 0; i < cells.Length && pump > 0; i++)
-        {
-            if (w[i] <= 0 || k.BreachM2[i] > 0)
-                continue;
-            double v = Math.Min(w[i], pump);
-            w[i] -= v;
-            pump -= v;
-            res.PumpedM3 += v;
-        }
+        // the drainage pumps (the design's, on her power: DC4): first the cells with no hole of their own (the leaks), then,
+        // where a damage-control organisation lines the valves up to them, the holed ones whose hole they beat at its full
+        // head (a plugged or patched hole); never a hole they can't
+        double pump = c.Drainage.PumpsTph / FloodModel.SeaT / 3600 * pumpShare * dt;
+        int passes = k.DamageControl.Name is null ? 1 : 2;
+        for (int pass = 0; pass < passes && pump > 0; pass++)
+            for (int i = 0; i < cells.Length && pump > 0; i++)
+            {
+                if (w[i] <= 0 || (k.BreachM2[i] > 0) != (pass == 1))
+                    continue;
+                if (pass == 1 && FullInflow(c, f, k, water, i, cd) * dt >= pump)
+                    continue;
+                double v = Math.Min(w[i], pump);
+                w[i] -= v;
+                pump -= v;
+                res.PumpedM3 += v;
+            }
+        // the portable pumps the parties rigged (no power: DC4), back to the store once their space is dry
+        if (k.PumpsRigged > 0)
+            for (int i = 0; i < cells.Length; i++)
+            {
+                if (k.PumpsIn[i] == 0)
+                    continue;
+                double v = Math.Min(w[i], k.PumpsIn[i] * c.Drainage.PortableTph / FloodModel.SeaT / 3600 * dt);
+                w[i] -= v;
+                res.PumpedM3 += v;
+                if (w[i] < 1e-6)
+                    (k.PumpsRigged, k.PumpsIn[i]) = (k.PumpsRigged - k.PumpsIn[i], 0);
+            }
         for (int i = 0; i < cells.Length; i++)
             if (w[i] < 1e-9)
                 w[i] = 0;
@@ -354,6 +372,16 @@ public static class Flooding
     const double PressedM = 0.1;
 
     const double Kn = 0.514444;
+
+    /// <summary>What a cell's holes let in at their full head (the cell empty), m³/s: what a pump must beat to keep it dry.</summary>
+    public static double FullInflow(ShipClass c, FloodModel f, ShipCondition k, in Waterplane water, int i, double cd)
+    {
+        if (k.BreachM2[i] <= 0)
+            return 0;
+        double bottom = k.BreachZ[i] - Math.Sqrt(k.BreachM2[i] / Math.PI);
+        double head = water.At(f.Cx[i], k.BreachY[i]) - Math.Max(bottom, c.Cells[i].Box.Base);
+        return head > 0 ? cd * k.BreachM2[i] * Math.Sqrt(2 * G * head) : 0;
+    }
 
     /// <summary>The ram head at x along the ship under way ahead, m (09 §2.2): k·v²/2g, k <see cref="SimSettings.FloodRamK"/>
     /// at the stem, falling to 0 at <see cref="SimSettings.FloodRamReach"/> of her length aft of it; none astern.</summary>

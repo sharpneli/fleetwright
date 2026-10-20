@@ -73,7 +73,7 @@ static class DcHistory
     /// <summary>A case: the target, her speed at the start, what's done to her, her readiness and doctrine, the hours run,
     /// what was recorded, what the plan wants, and where the research has it.</summary>
     sealed record DcCase(string Era, string Name, string Target, double Kn, Blow[] Blows, string Readiness, string Doctrine, double Hours,
-        string Record, string Wanted, string Basis);
+        string Record, string Wanted, string Basis, double Tightness = 0);
 
     static readonly DcCase[] Cases =
     [
@@ -91,7 +91,8 @@ static class DcHistory
             [Blow.Hole(0, 0.86, -2, 1.0, d: 2.5), Blow.Hole(1, 0.84, -2.5, 1.0, d: 2.5), Blow.Shells(0, 60, 16, 9_000, 70, new Fall("lion", 0, null, 1)),
              Blow.Speed(60, 15), Blow.Speed(180, 7), Blow.Speed(300, 3)],
             "closed up", "german-1916", 8, "1,038 t at 3 h, 2,395 t at 3¾ h, 8,351 t by ~7½ h (4,209 below the armour deck); scuttled",
-            "thousands of tonnes walking aft over hours; lost or close to it in many runs", "17 §1.3, §6.2"),
+            "thousands of tonnes walking aft over hours; lost or close to it in many runs", "17 §1.3, §6.2 (her bulkheads 'not completely watertight')",
+            Tightness: 10),
         new("1890-1925", "Audacious 1914: a mine under the port engine room, not at action stations", "king_george_v", 15,
             [Blow.Torpedo(0, 0.38, 7.5, port: true), Blow.Speed(30, 0)],
             "unprepared", "rn-1916", 13, "engine rooms abandoned ~2 h, power lost, capsized ~12 h after the mine",
@@ -138,10 +139,10 @@ static class DcHistory
             [Blow.Torpedo(0, 0.78, 5, port: true)],
             "closed up", "usn-1942", 4, "970 t; 5.5° list off in 6 min with ~480 t counterflooded; slow flooding negligible",
             "~1,000 t; the list off within ~10 min", "09 §8, WDR 61"),
-        new("later cuts", "Shinano-like: 4 torpedoes on one side at 18 kn, unprepared", "super_dreadnought", 18,
+        new("later cuts", "Shinano-like: 4 torpedoes on one side at 18 kn, unprepared, unsealed", "super_dreadnought", 18,
             [Blow.Torpedo(0, 0.6, 5), Blow.Torpedo(0, 0.45, 5), Blow.Torpedo(0, 0.35, 5), Blow.Torpedo(0, 0.25, 5)],
             "unprepared", "usn-1942", 8, "Shinano: list 10-13°, 20° at 2¾ h, lost at 7¾ h, run at speed throughout",
-            "unsealed and weak crew: lost after 4-8 h; tight and drilled: lives", "09 §8, 17 §1.3"),
+            "unsealed and weak crew: lost after 4-8 h; tight and drilled: lives", "09 §8, 17 §1.3", Tightness: 25),
     ];
 
     /// <summary>One run's ship: the water by the hour, her worst list, how she ended.</summary>
@@ -164,7 +165,17 @@ static class DcHistory
     {
         var settings = SimSettings.Load(settingsPath);
         var classes = new Dictionary<string, ShipClass>();
-        ShipClass Cls(string name) => classes.TryGetValue(name, out var c) ? c : classes[name] = ShipClassCompiler.Compile(ShipDesign.Build(load(name)));
+        ShipClass Cls(string name) => Tight(name, 0);
+        ShipClass Tight(string name, double tightness)
+        {
+            string key = name + "|" + tightness;
+            if (classes.TryGetValue(key, out var c))
+                return c;
+            var d = load(name);
+            if (tightness > 0)
+                d = d with { Drainage = DrainageTemplates.Of(d) with { Name = null, Tightness = tightness } };   // the case's own hull
+            return classes[key] = ShipClassCompiler.Compile(ShipDesign.Build(d));
+        }
         Console.WriteLine($"damage control's yardstick (docs/battle/damage-control.md DC0): {runs} runs a case, the case's damage and speeds " +
                           "through the world's damage system; (?) marks a case from general knowledge, read but not tuned to");
         string era = "";
@@ -175,7 +186,7 @@ static class DcHistory
             if (dc.Era != era)
                 Console.WriteLine($"\n{(era = dc.Era)}");
             var sw = Stopwatch.StartNew();
-            var target = Cls(dc.Target);
+            var target = Tight(dc.Target, dc.Tightness);
             double h = hours ?? dc.Hours;
             var res = One(dc, target, Cls, settings, runs, h, trace);
             Print(dc, target, res, h, sw.Elapsed.TotalSeconds);
@@ -365,7 +376,8 @@ static class DcHistory
         }
         var afloat = rs.Where(r => r.Afloat).ToList();
         Console.WriteLine($"  {dc.Name}");
-        Console.WriteLine(string.Format(Inv, "    {0}, {1:0} kn; {2}, {3}; {4}", target.Name, dc.Kn, dc.Readiness, dc.Doctrine, string.Join("; ", dc.Blows)));
+        Console.WriteLine(string.Format(Inv, "    {0}, {1:0} kn; {2}, {3}{4}; {5}", target.Name, dc.Kn, dc.Readiness, dc.Doctrine,
+            dc.Tightness > 0 ? string.Format(Inv, ", tightness ×{0:0}", dc.Tightness) : "", string.Join("; ", dc.Blows)));
         var hs = Enumerable.Range(0, Hours.Length).Where(h => Hours[h] <= hours).ToList();
         Console.WriteLine("    water afloat (median): " + string.Join(", ", hs.Select(h => $"{Hours[h].ToString("0.#", Inv)} h {Med(rs.Select(r => r.WaterAt[h]))} t")) +
                           string.Format(Inv, "; worst list {0}° (median, all runs)", Med(rs.Select(r => r.MaxList), "0.0")));

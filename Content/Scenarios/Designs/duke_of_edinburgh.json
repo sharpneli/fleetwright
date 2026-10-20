@@ -1,5 +1,5 @@
 {
- "version": 10,
+ "version": 11,
  "id": "duke_of_edinburgh",
  "name": "Duke of Edinburgh-like (1906)",
  "type": "CA",
@@ -544,5 +544,13 @@
    "propellant": "double-base",
    "black_powder_under_cal": 0
   }
+ },
+ "drainage": {
+  "name": "Pre-dreadnought (1905)",
+  "pumps_tph_per_1000t": 40,
+  "portable_pumps": 4,
+  "portable_tph": 8,
+  "counterflood_tpm_per_10000t": 8,
+  "tightness": 2
  }
 }

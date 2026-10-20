@@ -105,6 +105,8 @@ public sealed class ShipClass
     public Joint InternalsJoint { get; internal init; }
     /// <summary>How the fittings stand shock (E0): the armour shock, the near misses and the service networks read it.</summary>
     public ShockGrade ShockGrade { get; internal init; }
+    /// <summary>What's built in against water (DC4): pumps, portable pumps, counterflooding, tightness.</summary>
+    public DrainageRow Drainage { get; internal init; }
     /// <summary>The shipgen it was built by (<see cref="ShipDesign.Version"/>).</summary>
     public int ShipgenVersion { get; internal init; }
 

@@ -1,0 +1,80 @@
+[
+ {
+  "name": "Victorian (1890)",
+  "group": "",
+  "note": "Steam drainage pumps and hand pumps; no counterflooding system (the sea valves are for the magazines); bulkheads never air-tested, many pipes and cables through them [EST].",
+  "value": {
+   "name": "Victorian (1890)",
+   "pumps_tph_per_1000t": 30,
+   "portable_pumps": 4,
+   "portable_tph": 5,
+   "counterflood_tpm_per_10000t": 0,
+   "tightness": 3
+  }
+ },
+ {
+  "name": "Pre-dreadnought (1905)",
+  "group": "",
+  "note": "Main drainage with steam ejectors; Makarov's and Krylov's counterflooding tables, a few tanks flooded by hand valves (Orel, Retvizan) [EST].",
+  "value": {
+   "name": "Pre-dreadnought (1905)",
+   "pumps_tph_per_1000t": 40,
+   "portable_pumps": 4,
+   "portable_tph": 8,
+   "counterflood_tpm_per_10000t": 8,
+   "tightness": 2
+  }
+ },
+ {
+  "name": "RN Great War (1914)",
+  "group": "",
+  "note": "Main drainage on the dynamos; counterflooding by hand at the valves, little organised for it (no unified damage control until 1943) [EST].",
+  "value": {
+   "name": "RN Great War (1914)",
+   "pumps_tph_per_1000t": 50,
+   "portable_pumps": 4,
+   "portable_tph": 15,
+   "counterflood_tpm_per_10000t": 10,
+   "tightness": 1.5
+  }
+ },
+ {
+  "name": "German Great War (1914)",
+  "group": "",
+  "note": "Close subdivision, good closure discipline and systematic counterflooding (Seydlitz, Lützow trimmed by it) [EST].",
+  "value": {
+   "name": "German Great War (1914)",
+   "pumps_tph_per_1000t": 50,
+   "portable_pumps": 4,
+   "portable_tph": 15,
+   "counterflood_tpm_per_10000t": 20,
+   "tightness": 1
+  }
+ },
+ {
+  "name": "Interwar (1939)",
+  "group": "",
+  "note": "Electric drainage, submersibles; remote counterflood valves (North Carolina: ~80 t/min on 45,000 t) [EST from WDR 61].",
+  "value": {
+   "name": "Interwar (1939)",
+   "pumps_tph_per_1000t": 60,
+   "portable_pumps": 6,
+   "portable_tph": 30,
+   "counterflood_tpm_per_10000t": 18,
+   "tightness": 1
+  }
+ },
+ {
+  "name": "USN 1943",
+  "group": "",
+  "note": "Wartime lessons: handy-billies (14 t/h) and P-500s (115 t/h) standard, emergency diesels, air-tested compartments (09 §5.2) [EST].",
+  "value": {
+   "name": "USN 1943",
+   "pumps_tph_per_1000t": 70,
+   "portable_pumps": 8,
+   "portable_tph": 60,
+   "counterflood_tpm_per_10000t": 20,
+   "tightness": 1
+  }
+ }
+]

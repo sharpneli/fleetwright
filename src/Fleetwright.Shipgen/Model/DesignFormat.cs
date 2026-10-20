@@ -12,7 +12,7 @@ namespace Fleetwright.Shipgen;
 public static class DesignFormat
 {
     /// <summary>The version this build writes.</summary>
-    public const int Current = 10;
+    public const int Current = 11;
 
     /// <summary>Steps[v] upgrades a version v design to v + 1, adding what it couldn't tell to the warnings.</summary>
     static readonly Action<JsonObject, List<string>>[] Steps =
@@ -27,7 +27,23 @@ public static class DesignFormat
         Outfit,                        // 7 → 8: what burns aboard (docs/battle/fire.md B0)
         (d, _) => GunAndTorpedoTech(d), // 8 → 9: the guns and torpedoes the design's, not the look's
         PlantKinds,                    // 9 → 10: the boilers' and engines' kinds (docs/battle/shell-contents.md C1b)
+        Drainage,                      // 10 → 11: what's built in against water (docs/battle/damage-control.md DC4)
     ];
+
+    /// <summary>10 → 11: the pumps, counterflooding and tightness were the sim's (one pump rate by displacement); now
+    /// they're the design's drainage (DrainageTemplates). A design without one gets its navy's (look.navy) in its plant's
+    /// year, else the RN Great War's, with a warning.</summary>
+    static void Drainage(JsonObject d, List<string> warnings)
+    {
+        if (d["drainage"] is not null)
+            return;
+        string? tech = d["machinery"]?["tech"]?["name"] is JsonValue t && t.TryGetValue(out string? ts) ? ts : null;
+        string? navy = d["look"]?["navy"] is JsonValue nv && nv.TryGetValue(out string? ns) ? ns : null;
+        var template = Fittings.YearOf(tech) is int year ? DrainageTemplates.ByNavyAndYear(navy, year) : DrainageTemplates.All[2];
+        if (Fittings.YearOf(tech) is null)
+            warnings.Add($"drainage: no plant year to set it by (machinery.tech's name); {template.Name} assumed");
+        d["drainage"] = JsonSerializer.SerializeToNode(template.Value, ShipgenJson.Default.DrainageInput);
+    }
 
     /// <summary>9 → 10: a plant tech block says its boilers' and engines' kinds (what a shell meets in its rooms). A block
     /// without them takes what its name says (the name of the template it was picked from: Powerplant.KindsOf), else its

@@ -50,6 +50,12 @@ static class TemplatesWriter
         }).ToArray());
         Write(Path.Combine(repo, "Content", "Templates", "outfits.json"), outfits.ToJsonString(json) + "\n");
         Write(Path.Combine(repo, "docs", "shipgen", "outfit-templates.md"), OutfitPage());
+        var drainage = new JsonArray(DrainageTemplates.All.Select(o => (JsonNode)new JsonObject
+        {
+            ["name"] = o.Name, ["group"] = "", ["note"] = o.Note, ["value"] = Value(o.Value),
+        }).ToArray());
+        Write(Path.Combine(repo, "Content", "Templates", "drainage.json"), drainage.ToJsonString(json) + "\n");
+        Write(Path.Combine(repo, "docs", "shipgen", "drainage-templates.md"), DrainagePage());
         Write(Path.Combine(repo, "docs", "shipgen", "shell-templates.md"), ShellPage());
         Write(Path.Combine(repo, "docs", "shipgen", "explosive-templates.md"), ExplosivePage());
         Write(Path.Combine(repo, "docs", "shipgen", "material-templates.md"), MaterialPage());
@@ -308,6 +314,43 @@ static class TemplatesWriter
         }
         sb.Append("\nAs fitted / stripped where they differ, MJ/m².\n\n");
         foreach (var o in Outfits.All)
+            sb.Append("- **").Append(o.Name).Append(":** ").Append(o.Note).Append('\n');
+        return sb.ToString();
+    }
+
+    static string DrainagePage()
+    {
+        var sb = new StringBuilder();
+        sb.Append("""
+            # Drainage templates
+
+            Written by `shipgen templates` from `src/Fleetwright.Shipgen/DrainageTemplates.cs`; don't edit by hand. The
+            designer's templates are `Content/Templates/drainage.json`, from the same table.
+
+            A design's `drainage` block says what's built in against water (`docs/battle/damage-control.md` DC4;
+            `docs/battle/09_damage_control.md` §5): the fixed drainage pumps (t/h for each 1,000 t of displacement, on the
+            ship's power), the portable pumps her repair parties rig (each one's t/h, no power needed), how fast her
+            counterflooding valves fill the tanks on the high side (t/min for each 10,000 t; 0: none), and the tightness of
+            her intact boundaries (× the base leak: 1 air-tested, more where glands and penetrations were never tested). A
+            key not given takes its navy's template in its plant's year (old designs got the whole block so when the format
+            moved to 11). The numbers are estimates by period [EST]; no weight is booked for them yet.
+
+            ```json
+            "drainage": {"name": "RN Great War (1914)", "pumps_tph_per_1000t": 50, "portable_pumps": 4, "portable_tph": 15,
+              "counterflood_tpm_per_10000t": 10, "tightness": 1.5}
+            ```
+
+            | Template | Pumps, t/h per 1,000 t | Portable pumps | Each, t/h | Counterflooding, t/min per 10,000 t | Tightness |
+            |---|---|---|---|---|---|
+
+            """.Replace("\r\n", "\n"));
+        foreach (var o in DrainageTemplates.All)
+        {
+            var v = o.Value;
+            sb.Append(Inv, $"| {o.Name} | {v.PumpsTphPer1000T:0} | {v.PortablePumps} | {v.PortableTph:0} | {v.CounterfloodTpmPer10000T:0} | {v.Tightness:0.#} |\n");
+        }
+        sb.Append('\n');
+        foreach (var o in DrainageTemplates.All)
             sb.Append("- **").Append(o.Name).Append(":** ").Append(o.Note).Append('\n');
         return sb.ToString();
     }

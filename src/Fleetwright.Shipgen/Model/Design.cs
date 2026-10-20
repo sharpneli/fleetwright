@@ -49,6 +49,9 @@ public sealed record Design
     /// <summary>What burns aboard: each kind of space's fire load as fitted and stripped for war, the paint's, and how
     /// fast the linings let a fire grow (Outfits; docs/battle/fire.md).</summary>
     public OutfitInput? Outfit { get; init; }
+    /// <summary>What's built in against water: drainage pumps, portable pumps, the counterflooding valves' rate and her
+    /// boundaries' tightness (DrainageTemplates; docs/battle/damage-control.md DC4).</summary>
+    public DrainageInput? Drainage { get; init; }
     public FireControlInput? FireControl { get; init; }
     /// <summary>The fire-control tech blocks the batteries' fits name, keyed by name (FireControlTemplates;
     /// docs/battle/fire-control.md F3): a name the table doesn't give takes the catalogue's block.</summary>
@@ -154,6 +157,25 @@ public sealed record OutfitInput
     /// the weather deck and in the superstructure.</summary>
     public double? PaintMjM2 { get; init; }
     public double? Growth { get; init; }
+    [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+/// <summary>A design's drainage (docs/battle/damage-control.md DC4), every number optional: a number not given is its
+/// default template's for the plant's year (DrainageTemplates).</summary>
+public sealed record DrainageInput
+{
+    /// <summary>The template it was made from, a label only.</summary>
+    public string? Name { get; init; }
+    /// <summary>The fixed drainage pumps, tonnes an hour for each 1,000 t of displacement, at full power.</summary>
+    [JsonPropertyName("pumps_tph_per_1000t")] public double? PumpsTphPer1000T { get; init; }
+    /// <summary>The portable pumps carried and each one's rate, t/h (no power needed).</summary>
+    public int? PortablePumps { get; init; }
+    public double? PortableTph { get; init; }
+    /// <summary>How fast the counterflooding valves fill the tanks on the high side, tonnes a minute for each 10,000 t of
+    /// displacement (0: none).</summary>
+    [JsonPropertyName("counterflood_tpm_per_10000t")] public double? CounterfloodTpmPer10000T { get; init; }
+    /// <summary>The intact boundaries' leak, × the base: 1 air-tested, more for glands and penetrations never tested.</summary>
+    public double? Tightness { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 

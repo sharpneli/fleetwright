@@ -1,5 +1,5 @@
 {
- "version": 10,
+ "version": 11,
  "id": "queen_mary",
  "name": "Queen Mary-like (1913)",
  "type": "BC",
@@ -614,5 +614,13 @@
    "fail": 0.12,
    "dud": 0.1
   }
+ },
+ "drainage": {
+  "name": "RN Great War (1914)",
+  "pumps_tph_per_1000t": 50,
+  "portable_pumps": 4,
+  "portable_tph": 15,
+  "counterflood_tpm_per_10000t": 10,
+  "tightness": 1.5
  }
 }

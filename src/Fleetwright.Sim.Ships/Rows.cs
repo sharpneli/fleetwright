@@ -649,6 +649,11 @@ public readonly record struct LauncherRow
     public int Torpedo { get; init; }
 }
 
+/// <summary>A class's drainage (docs/battle/damage-control.md DC4; the design's block, DrainageTemplates), scaled to her:
+/// the fixed pumps, t/h at full power; the portable pumps and each one's t/h; the counterflooding valves' rate, t/min
+/// (0: none); the intact boundaries' tightness, × the base leak.</summary>
+public readonly record struct DrainageRow(double PumpsTph, int PortablePumps, double PortableTph, double CounterfloodTpm, double Tightness);
+
 /// <summary>A watertight cell: one section x tier x band.</summary>
 public readonly record struct CellRow
 {

@@ -53,6 +53,10 @@ add what's found.
   face (06 §5: "never penetrated armour over about 6 in"; 15 §2.3: "exploded the moment they touched"). A fuze that
   starts on the plate with no delay should burst on the face (`Defeated`, outside) before the shell can hole it. The
   shells plan's, not fire's; it moves blast and men on armoured targets more than fires.
+- [ ] Four torpedoes at once on one side capsize `yamato` in about 2 minutes, whatever her tightness: 6,800 t and 21.6°
+  of list in the first minute, faster than any counterflooding (found 2026-10-20, damage-control.md DC4; one torpedo
+  alone gives 2,450 t and 8.8°). Shinano took four from one spread and listed 10-13°, lasting 7¾ h. Likely her wing and
+  TDS cells (water all on one side, deep) against a GM of 1.4 m; the hull and protection's, not damage control's.
 
 ## Balance and calibration
 

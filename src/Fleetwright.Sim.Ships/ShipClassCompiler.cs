@@ -54,6 +54,7 @@ public static class ShipClassCompiler
                 ShellJoint = r.Hull.Shell,
                 InternalsJoint = r.Hull.Internals,
                 ShockGrade = r.Fittings.ShockGrade,
+                Drainage = DrainageOf(DrainageTemplates.Of(ship.Design), hb.Hydrostatics.DisplacementT),
                 Boilers = Contents.BoilersOf(r.Plant.Boilers),
                 Engines = Contents.EnginesOf(r.Plant.Engines),
             };
@@ -581,6 +582,11 @@ public static class ShipClassCompiler
             c.neighbours = nb.ToArray();
             c.armourAbove = above.ToArray();
         }
+
+        /// <summary>The design's drainage scaled to her displacement (DC4).</summary>
+        static DrainageRow DrainageOf(DrainageInput d, double displacementT) => new(
+            (d.PumpsTphPer1000T ?? 0) * displacementT / 1000, d.PortablePumps ?? 0, d.PortableTph ?? 0,
+            (d.CounterfloodTpmPer10000T ?? 0) * displacementT / 10_000, Math.Max(d.Tightness ?? 1, 1));
 
         /// <summary>The places a fire burns (docs/battle/fire.md B0), with the design's outfit's loads (Outfits): every cell
         /// at its own index, by its room's use; the parts with a space inside (superstructure blocks as cabins and offices,

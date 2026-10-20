@@ -17,6 +17,8 @@ public enum RepairJob : byte
     Plug,
     Patch,
     Seam,
+    /// <summary>Rig a portable pump in a flooded space (DC4).</summary>
+    RigPump,
 }
 
 /// <summary>REPAIRS (docs/battle/damage-control.md DC3; 09 §3-§4, 10 §5.1): her repair parties, one pool of men for fire
@@ -35,7 +37,7 @@ public static class Repairs
 
     /// <summary>The tiers of the doctrine's order, fire first (10 §5.1); flood first swaps the magazine's fires below the
     /// water's.</summary>
-    enum Tier : byte { Near = 1, Fire = 2, Water = 3, Door = 4, MagazineFire = 5 }
+    enum Tier : byte { Parts = 1, Pump = 2, Near = 3, Fire = 4, Water = 5, Door = 6, MagazineFire = 7 }
 
     public static void Step(ShipClass c, FloodModel f, ShipCondition k, double dt, long now, SimSettings s)
     {
@@ -154,9 +156,9 @@ public static class Repairs
     {
         int rank = (t, floodFirst) switch
         {
-            (Tier.MagazineFire, true) => 3,
-            (Tier.Door, true) => 5,
-            (Tier.Water, true) => 4,
+            (Tier.MagazineFire, true) => 5,
+            (Tier.Door, true) => 7,
+            (Tier.Water, true) => 6,
             _ => (int)t,
         };
         return rank * 1e9 + Math.Min(weight, 1e9 - 1);
@@ -234,6 +236,19 @@ public static class Repairs
                     Offer(new Candidate(job, i, cells[i].Section, Score(Tier.Water, floodFirst, flowH * Value(c, i))), ref best);
                 else if (Near(c, k, i, k.HoleZ[hi], s))
                     Offer(new Candidate(job, i, cells[i].Section, Score(Tier.Near, floodFirst, 1 + k.HoleOpenM2[hi] * 1e4)), ref best);
+            }
+        }
+        // the portable pumps: rigged where water stands and the holes don't beat them, the most water (by what it is) first
+        if (k.PumpsRigged < c.Drainage.PortablePumps && c.Drainage.PortableTph > 0)
+        {
+            var water = HitQuery.WaterOf(c, k.Attitude);
+            double rate = c.Drainage.PortableTph / FloodModel.SeaT / 3600;
+            for (int i = 0; i < cells.Length; i++)
+            {
+                if (k.WaterM3[i] < s.RepairPumpMinM3 || k.PumpsIn[i] > 0 || k.CellFire[i] || Taken(k, RepairJob.RigPump, i) ||
+                    Flooding.FullInflow(c, f, k, water, i, s.FloodCd) >= rate)
+                    continue;
+                Offer(new Candidate(RepairJob.RigPump, i, cells[i].Section, Score(Tier.Pump, floodFirst, k.WaterM3[i] * Value(c, i))), ref best);
             }
         }
         return best;
@@ -336,6 +351,8 @@ public static class Repairs
                     _ => (m & JoinMark.ShoredTwice) == 0,
                 };
             }
+            case RepairJob.RigPump:
+                return k.PumpsIn[at] == 0 && k.WaterM3[at] > 0 && !k.CellFire[at] && k.PumpsRigged < c.Drainage.PortablePumps;
             default:
             {
                 int h = at * ShipCondition.HoleClasses + (int)Class(job);
@@ -391,6 +408,11 @@ public static class Repairs
                 RepairJob.Caulk => m | JoinMark.Caulked,
                 _ => (m & JoinMark.Shored) != 0 ? m | JoinMark.ShoredTwice : m | JoinMark.Shored,
             };
+            return;
+        }
+        if (job == RepairJob.RigPump)
+        {
+            (k.PumpsIn[at], k.PumpsRigged) = ((byte)(k.PumpsIn[at] + 1), k.PumpsRigged + 1);
             return;
         }
         int h = at * ShipCondition.HoleClasses + (int)Class(job);

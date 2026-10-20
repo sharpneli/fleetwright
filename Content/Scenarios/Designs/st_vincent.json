@@ -1,5 +1,5 @@
 {
- "version": 10,
+ "version": 11,
  "id": "st_vincent",
  "name": "St Vincent-like (1910)",
  "type": "BB",
@@ -579,5 +579,13 @@
    "fail": 0.12,
    "dud": 0.1
   }
+ },
+ "drainage": {
+  "name": "Pre-dreadnought (1905)",
+  "pumps_tph_per_1000t": 40,
+  "portable_pumps": 4,
+  "portable_tph": 8,
+  "counterflood_tpm_per_10000t": 8,
+  "tightness": 2
  }
 }

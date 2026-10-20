@@ -287,6 +287,7 @@ public abstract class Style
         errs.AddRange(HullWeight.Validate(design));
         errs.AddRange(Fittings.Validate(design));
         errs.AddRange(Outfits.Validate(design));
+        errs.AddRange(DrainageTemplates.Validate(design));
         errs.AddRange(Topside.Validate(design));
         errs.AddRange(Armour.ArmourErrors(design));
         errs.AddRange(FireControl.Validate(design));

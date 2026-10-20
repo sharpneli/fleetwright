@@ -1,5 +1,5 @@
 {
- "version": 10,
+ "version": 11,
  "id": "pillau",
  "name": "Pillau-like (1914)",
  "type": "CL",
@@ -489,5 +489,13 @@
    "fail": 0.12,
    "dud": 0.1
   }
+ },
+ "drainage": {
+  "name": "German Great War (1914)",
+  "pumps_tph_per_1000t": 50,
+  "portable_pumps": 4,
+  "portable_tph": 15,
+  "counterflood_tpm_per_10000t": 20,
+  "tightness": 1
  }
 }

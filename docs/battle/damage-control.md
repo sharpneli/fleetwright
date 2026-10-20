@@ -1,5 +1,5 @@
 # Plan: damage control (a 4.5 deepening)
-Status: **agreed with the user 2026-10-20** ("Decided" below); DC0-DC3 done 2026-10-20, DC4 next.    Updated: 2026-10-20
+Status: **agreed with the user 2026-10-20** ("Decided" below); DC0-DC4 done 2026-10-20, DC5 next.    Updated: 2026-10-20
 
 The fine-tune pass for damage control: what the crew does about a hit once it has landed. Firefighting came first, as
 this pass's first slice (`fire.md`, decision 1). This plan adds the water and the repairs, and both draw on the same
@@ -654,6 +654,57 @@ on the yardstick bench.
 - The design's fixed drainage replaces the setting, put where it beats the inflow; portable pumps rigged by parties.
 - The `drainage` block, its templates and the format step land here (or in DC1 if tightness needs them first).
 - **Tests:** dewatering after plugging; pumping in a blackout; NC's "15 minutes a watch".
+- **Built (done 2026-10-20):**
+  - **The design's `drainage` block** (shipgen: `DrainageInput`, `DrainageTemplates`):
+    - Fixed pumps, t/h per 1,000 t; portable pumps and each one's t/h; the counterflooding valves' rate, t/min per
+      10,000 t (DC5's); tightness. The templates [EST, 09 §5, 10 §2.4]:
+
+      | Template | Pumps | Portable | Counterflood | Tightness |
+      |---|---|---|---|---|
+      | Victorian (1890) | 30 | 4 × 5 | 0 | ×3 |
+      | Pre-dreadnought (1905) | 40 | 4 × 8 | 8 | ×2 |
+      | RN Great War (1914) | 50 | 4 × 15 | 10 | ×1.5 |
+      | German Great War (1914) | 50 | 4 × 15 | 20 | ×1 |
+      | Interwar (1939) | 60 | 6 × 30 | 18 | ×1 |
+      | USN 1943 | 70 | 8 × 60 | 20 | ×1 |
+
+    - **Format 10 → 11** wrote each of the 125 designs its navy's template in its plant's year.
+    - `ShipDesign` 45. The goldens gained the block (326 rewritten); nothing else in shipgen's output moved; 372 of 372,
+      svg and sprite checks too.
+    - `shipgen templates` writes `Content/Templates/drainage.json` and `docs/shipgen/drainage-templates.md`.
+    - No weight is booked for the pumps yet, and there are no designer rows (the UI pass).
+  - **The class:** `ShipClass.Drainage` (`DrainageRow`, scaled to her displacement).
+  - **The flooding:**
+    - The intact leak is × the tightness.
+    - The fixed pumps are the design's, × power (`PumpTPerHourPer1000T` retired). First they pump the cells with no hole
+      of their own. Then, **where a damage-control organisation lines the valves up**, they pump holed cells whose holes
+      they beat at full head (`Flooding.FullInflow`). Never a hole they can't.
+    - Portable pumps rigged in a cell pump without power and go back to the store once it's dry (`PumpsIn`,
+      `PumpsRigged`).
+  - **Repairs:** a new job, `RigPump` (40 man-min, 4 men), in a new lowest tier above parts: where at least 5 m³
+    stands, the cell's holes don't beat the pump, and the store has one left. The tiers are now: parts < pumps < near <
+    fire < water < door < magazine fires.
+  - **The door rule** honours the design's `subdivision.doors_below` (merchant hulls by default): doors below the
+    waterline too. Warships unchanged.
+  - **The bench:** a case may give its own tightness (`DcCase.Tightness`):
+    - Lützow ×10, after her bulkheads "not completely watertight" (17 §1.3);
+    - the Shinano-like case ×25, the research's worst case (09 §5.3).
+  - **Tests** (`RepairTests`):
+    - in a blackout, a drilled crew's portable pumps clear half a 92 m³ store (6 m³ left in puddles under the threshold,
+      against 46 m³ with nobody);
+    - the splinter test's nobody now gets no drainage on its holed cells (893 t, 8.9°).
+- **What moved (dc-history; DC3 → DC4):**
+  - **Lützow at ×10:** 1,580 → 2,570 t at 8 h; lost 35 → 45% (magazines, one capsized). The record has 8,351 t.
+  - **Marlborough** (RN ×1.5): 5,620 → 5,660 t; capsized at ~8 h in 20% of runs (0 before).
+  - **The 1915 pre-dreadnought at anchor** (×2): worst list 8.9 → 13°; lost 5 → 20%.
+  - **The Shinano-like case at ×25:** lost 60% at ~6.7 h → 95% at ~49 min. The research's ×25 on our base 5 cm² (its
+    own base was 20) is still too much for a Queen Elizabeth half Shinano's size taking the same four torpedoes. ×3 gives
+    3 h and ×1 6.7 h. Kept at the research's number.
+  - **On `yamato`,** four torpedoes at once capsize her in 2 minutes whatever the tightness: 6,800 t and 21.6° in the
+    first minute, faster than any counterflooding. Noted in bugs.md (hull and protection, not damage control).
+  - **Hits bench, 180 min:** Iron Duke 321 → 300 t; a destroyer 244 → 217 t.
+  - **Torpedo bench:** QE with 4: capsized 80 → 87%.
+  - **Squadrons:** the damage system 48 µs a call.
 
 ### DC5 DC Central: counterflooding
 - The tanks, the doctrine's threshold, the design's rate, one tank at a time, capacity left, the conned stand-in.

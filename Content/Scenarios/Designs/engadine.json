@@ -1,5 +1,5 @@
 {
- "version": 10,
+ "version": 11,
  "id": "engadine",
  "name": "Engadine-like seaplane carrier (1911)",
  "type": "AV",
@@ -381,5 +381,13 @@
    "propellant": "double-base",
    "black_powder_under_cal": 0
   }
+ },
+ "drainage": {
+  "name": "Interwar (1939)",
+  "pumps_tph_per_1000t": 60,
+  "portable_pumps": 6,
+  "portable_tph": 30,
+  "counterflood_tpm_per_10000t": 18,
+  "tightness": 1
  }
 }

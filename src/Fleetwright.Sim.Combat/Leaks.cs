@@ -44,10 +44,11 @@ public static class Leaks
     }
 
     /// <summary>Whether a boundary has a watertight door (the user's default, 2026-10-17, until the designer emits them): a
-    /// main transverse bulkhead between two spaces above the waterline.</summary>
+    /// main transverse bulkhead between two spaces above the waterline, or below it too where the design has doors below
+    /// (subdivision.doors_below: merchant hulls by default).</summary>
     public static bool HasDoor(ShipClass c, in Neighbour e, int from) =>
-        e.Join == JoinKind.Bulkhead && c.Bulkheads[e.Through].Kind is BulkheadKind.Main && !c.Cells[from].BelowWaterline &&
-        !c.Cells[e.Cell].BelowWaterline;
+        e.Join == JoinKind.Bulkhead && c.Bulkheads[e.Through].Kind is BulkheadKind.Main &&
+        (c.DoorsBelow || !c.Cells[from].BelowWaterline && !c.Cells[e.Cell].BelowWaterline);
 
     /// <summary>A boundary's closures by kind (17 §4's defaults by what's either side).</summary>
     public static void Count(ShipClass c, int from, int poolIndex, double areaM2, Span<int> n, SimSettings s)

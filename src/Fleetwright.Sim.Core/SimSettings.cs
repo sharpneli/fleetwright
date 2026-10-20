@@ -1258,10 +1258,6 @@ public sealed record SimSettings
     /// can't serve its guns).</summary>
     public double RoomFloodedShare { get; init; } = 0.5;
 
-    /// <summary>The pumps, tonnes an hour for each 1,000 t of displacement, at full power: they clear the cells with no
-    /// hole of their own (the leaks, not the holes). Counter-flooding is fighting.md 4.5's.</summary>
-    public double PumpTPerHourPer1000T { get; init; } = 50;
-
     /// <summary>A cell's free surface counts in full once its water is this share from dry and from full, less nearer
     /// either (the water can't run across as the ship heels).</summary>
     public double FreeSurfacePocket { get; init; } = 0.1;
@@ -1322,10 +1318,14 @@ public sealed record SimSettings
     public double ClosureCap { get; init; } = 0.9;
 
     /// <summary>The repair parties' water jobs (docs/battle/damage-control.md DC3; 09 §4, by <c>RepairJob</c>: none, door,
-    /// re-dog, caulk, shore, plug, patch, plating): each job's man-minutes for a drilled crew (a plug's and a patch's a
+    /// re-dog, caulk, shore, plug, patch, plating, rig a pump): each job's man-minutes for a drilled crew (a plug's and a patch's a
     /// hole) and its crew; a party puts at most <see cref="RepairCrewsAJob"/> crews on one [EST: 09 §4's times × men].</summary>
-    public double[] RepairJobManMin { get; init; } = [0, 2, 6, 60, 80, 6, 80, 60];
-    public double[] RepairJobMen { get; init; } = [1, 2, 2, 3, 4, 2, 4, 3];
+    public double[] RepairJobManMin { get; init; } = [0, 2, 6, 60, 80, 6, 80, 60, 40];
+    public double[] RepairJobMen { get; init; } = [1, 2, 2, 3, 4, 2, 4, 3, 4];
+
+    /// <summary>A portable pump is rigged (DC4; 09 §4: 5-15 min, 3-4 men, the job's man-minutes above) where this much water
+    /// stands, m³.</summary>
+    public double RepairPumpMinM3 { get; init; } = 5;
     public double RepairCrewsAJob { get; init; } = 2;
 
     /// <summary>What a plug leaves of its holes, a patch put on with no flow and against the water coming in (09 §4; NRL's
