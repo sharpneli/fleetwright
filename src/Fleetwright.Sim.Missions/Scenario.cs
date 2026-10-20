@@ -41,8 +41,8 @@ namespace Fleetwright.Sim.Missions;
 /// (<c>"fire_discipline": { "Germany": "german" }</c>; the settings' first if not listed) is how its batteries range and
 /// fire for effect (docs/battle/fire-control.md F6: a name of the settings' <c>FireDisciplines</c>). A side's readiness
 /// (<c>"readiness": { "Russia": "prepared" }</c>; the settings' default if not listed) is its ships' orders before action
-/// for fire (docs/battle/fire.md B1: a name of the settings' <c>FireReadiness</c>: stripped, doors, decks wetted), and its
-/// firefighting (<c>"firefighting": { "Russia": "russian-1905" }</c>; B4: a name of the settings' <c>Firefighting</c>) how
+/// for fire (docs/battle/fire.md B1: a name of the settings' <c>Readiness</c>: stripped, doors, decks wetted), and its
+/// firefighting (<c>"damage_control": { "Russia": "russian-1905" }</c>; B4: a name of the settings' <c>DamageControl</c>) how
 /// its crews fight her fires.</para>
 /// <para>Each side's doctrine (docs/battle/command.md "Doctrine") is a preset of <c>Content/Sim/doctrine.json</c>,
 /// <c>"doctrine": { "Germany": "default" }</c>, with values over it, <c>{ "Germany": { "preset": "default",
@@ -99,12 +99,12 @@ public sealed class Scenario
     public List<(int Side, string Name)> FireDisciplines { get; init; } = [];
 
     /// <summary>The sides' readiness for fire where it's given (docs/battle/fire.md B1), by side index: a name of the
-    /// settings' FireReadiness (the loader checks it).</summary>
+    /// settings' Readiness (the loader checks it).</summary>
     public List<(int Side, string Name)> Readiness { get; init; } = [];
 
     /// <summary>The sides' firefighting doctrines where they're given (docs/battle/fire.md B4), by side index: a name of the
-    /// settings' Firefighting (the loader checks it).</summary>
-    public List<(int Side, string Name)> Firefighting { get; init; } = [];
+    /// settings' DamageControl (the loader checks it).</summary>
+    public List<(int Side, string Name)> DamageControl { get; init; } = [];
 
     /// <summary>Each side's doctrine where the file gives it, by index: a preset, and values over it.</summary>
     public List<(int Side, string Preset, List<(DoctrineField Field, double Value)> Values)> Doctrine { get; init; } = [];
@@ -257,8 +257,8 @@ public sealed class Scenario
             // "readiness": { "Russia": "prepared" }, the same way
             var readiness = r.TryGetProperty("readiness", out var rd) ? ParseNames("readiness", "a readiness's name", rd, sides)
                 : from != null && !r.TryGetProperty("sides", out _) ? from.Readiness : [];
-            var firefighting = r.TryGetProperty("firefighting", out var ff) ? ParseNames("firefighting", "a doctrine's name", ff, sides)
-                : from != null && !r.TryGetProperty("sides", out _) ? from.Firefighting : [];
+            var firefighting = r.TryGetProperty("damage_control", out var ff) ? ParseNames("damage_control", "a doctrine's name", ff, sides)
+                : from != null && !r.TryGetProperty("sides", out _) ? from.DamageControl : [];
             if (r.TryGetProperty("fight", out _))
                 throw new ScenarioException("fight: gone; doctrine's Engage is \"fight\" by default (\"doctrine\": { \"Germany\": { \"Engage\": \"carry on\" } } not to)");
             // "doctrine": { "Germany": "default" | { "preset": "default", "RangeShare": 0.5 } }; "home": { "Germany": [54, 8] };
@@ -302,7 +302,7 @@ public sealed class Scenario
                 Fuel = fuelShares,
                 FireDisciplines = disciplines,
                 Readiness = readiness,
-                Firefighting = firefighting,
+                DamageControl = firefighting,
                 Doctrine = doctrine,
                 Homes = homes,
                 Until = until,

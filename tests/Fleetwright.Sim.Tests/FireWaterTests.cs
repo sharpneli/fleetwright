@@ -105,7 +105,7 @@ public class FireWaterTests(ITestOutputHelper output)
         {
             var k = new ShipCondition();
             k.Reset(c);
-            k.Readiness = Settings.FireReadiness[1];
+            k.Readiness = Settings.Readiness[1];
             var r = RandomStream.FromSeed((ulong)seed);
             Fires.Ignite(c, k, cell, 0.3, quiet);
             for (int t = 0; t < 10 * 60; t++)

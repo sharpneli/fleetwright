@@ -157,14 +157,14 @@ public sealed class ShipCondition
     public FireWater[] FireFlow = [];
     /// <summary>Her orders before action for fire (docs/battle/fire.md B1): stripped, the doors, the decks wetted. The
     /// damage system keeps it to her side's.</summary>
-    public FireReadiness Readiness;
+    public Readiness Readiness;
     /// <summary>Her side's firefighting doctrine (docs/battle/fire.md B4; the damage system keeps it; none: nobody fights
     /// her fires), her fire parties (<see cref="PartyCount"/> of <see cref="MaxParties"/>, made at her first fire), whether
     /// her gun crews have turned to, when each section's fire main was cut (world ms, 0: whole), when she was last hit and
     /// when her parties are next sent.</summary>
-    public FirefightingDoctrine Firefighting;
+    public DamageControlDoctrine DamageControl;
     public const int MaxParties = 16;
-    public readonly FireParty[] Parties = new FireParty[MaxParties];
+    public readonly RepairParty[] Parties = new RepairParty[MaxParties];
     public int PartyCount;
     public bool PartiesMade, TurnedTo;
     public long[] MainCutMs = [];

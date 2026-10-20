@@ -18,7 +18,7 @@ public enum DamageCommand : ushort
     Burn,
     Sink,
     SetReadiness,
-    SetFirefighting,
+    SetDamageControl,
     SetFuel,
     Shoot,
 }
@@ -110,9 +110,9 @@ public sealed class DamageSystem : IWorldSystem
         lotStream = RandomStream.Named(seed, "plate lots");
         Array.Fill(propellant, 1.0);
         Array.Fill(fuel, settings.FuelShareDefault);
-        readinessDefault = Math.Max(0, Array.FindIndex(settings.FireReadiness, x => x.Name == settings.FireReadinessDefault));
+        readinessDefault = Math.Max(0, Array.FindIndex(settings.Readiness, x => x.Name == settings.ReadinessDefault));
         Array.Fill(readiness, readinessDefault);
-        firefightingDefault = Math.Max(0, Array.FindIndex(settings.Firefighting, x => x.Name == settings.FirefightingDefault));
+        firefightingDefault = Math.Max(0, Array.FindIndex(settings.DamageControl, x => x.Name == settings.DamageControlDefault));
         Array.Fill(firefighting, firefightingDefault);
         blasts = new Blast[Math.Max(settings.BlastCapacity, 4)];
         struck = new Struck[Math.Max(settings.SplashCapacity / 4, 16)];
@@ -149,23 +149,23 @@ public sealed class DamageSystem : IWorldSystem
     public double Fuel(int side) => fuel[side & 255];
 
     /// <summary>A side's orders before action for fire (docs/battle/fire.md B1): an index of the settings'
-    /// FireReadiness (the scenario's "readiness", else <see cref="SimSettings.FireReadinessDefault"/>), kept on each of its
+    /// Readiness (the scenario's "readiness", else <see cref="SimSettings.ReadinessDefault"/>), kept on each of its
     /// ships' conditions.</summary>
     public static Command SetReadiness(int side, int index) => new(Id, (ushort)DamageCommand.SetReadiness, side, A: index);
 
-    public FireReadiness Readiness(int side) => settings.FireReadiness[readiness[side & 255]];
+    public Readiness ReadinessOf(int side) => settings.Readiness[readiness[side & 255]];
 
-    /// <summary>A side's firefighting doctrine (docs/battle/fire.md B4): an index of the settings' Firefighting (the
-    /// scenario's "firefighting", else <see cref="SimSettings.FirefightingDefault"/>), kept on each of its ships.</summary>
-    public static Command SetFirefighting(int side, int index) => new(Id, (ushort)DamageCommand.SetFirefighting, side, A: index);
+    /// <summary>A side's firefighting doctrine (docs/battle/fire.md B4): an index of the settings' DamageControl (the
+    /// scenario's "damage_control", else <see cref="SimSettings.DamageControlDefault"/>), kept on each of its ships.</summary>
+    public static Command SetDamageControl(int side, int index) => new(Id, (ushort)DamageCommand.SetDamageControl, side, A: index);
 
-    public FirefightingDoctrine Firefighting(int side) => settings.Firefighting[firefighting[side & 255]];
+    public DamageControlDoctrine DamageControlOf(int side) => settings.DamageControl[firefighting[side & 255]];
 
     /// <summary>A ship's orders and firefighting kept to her side's, before anything reads them.</summary>
     void Ready(int slot, ShipCondition k)
     {
         int side = ships.Store[slot].Side & 255;
-        (k.Readiness, k.Firefighting) = (settings.FireReadiness[readiness[side]], settings.Firefighting[firefighting[side]]);
+        (k.Readiness, k.DamageControl) = (settings.Readiness[readiness[side]], settings.DamageControl[firefighting[side]]);
         if (!k.DoorsDrawn)
         {
             // her watertight doors left open, by her orders (docs/battle/damage-control.md DC1)
@@ -243,13 +243,13 @@ public sealed class DamageSystem : IWorldSystem
                 fuelSet = true;
                 break;
             case DamageCommand.SetReadiness:
-                if (c.Entity is < 0 or > 255 || c.A < 0 || c.A >= settings.FireReadiness.Length)
+                if (c.Entity is < 0 or > 255 || c.A < 0 || c.A >= settings.Readiness.Length)
                     throw new ArgumentException($"no readiness {c.A} for side {c.Entity}");
                 readiness[c.Entity] = (int)c.A;
                 readinessSet = true;
                 break;
-            case DamageCommand.SetFirefighting:
-                if (c.Entity is < 0 or > 255 || c.A < 0 || c.A >= settings.Firefighting.Length)
+            case DamageCommand.SetDamageControl:
+                if (c.Entity is < 0 or > 255 || c.A < 0 || c.A >= settings.DamageControl.Length)
                     throw new ArgumentException($"no firefighting {c.A} for side {c.Entity}");
                 firefighting[c.Entity] = (int)c.A;
                 firefightingSet = true;

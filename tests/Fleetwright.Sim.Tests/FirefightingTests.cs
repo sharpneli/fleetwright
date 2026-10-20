@@ -17,13 +17,13 @@ public class FirefightingTests(ITestOutputHelper output)
 
     static ShipClass Class(string name) => Fleet.Get(name).Class!;
 
-    static FirefightingDoctrine Doctrine(string name) => Settings.Firefighting.Single(d => d.Name == name);
+    static DamageControlDoctrine Doctrine(string name) => Settings.DamageControl.Single(d => d.Name == name);
 
     static ShipCondition Fresh(ShipClass c, string doctrine)
     {
         var k = new ShipCondition();
         k.Reset(c);
-        (k.Readiness, k.Firefighting) = (Settings.FireReadiness[1], Doctrine(doctrine));
+        (k.Readiness, k.DamageControl) = (Settings.Readiness[1], Doctrine(doctrine));
         return k;
     }
 
@@ -119,7 +119,7 @@ public class FirefightingTests(ITestOutputHelper output)
     {
         // "nobody": no watch, no parties, no turning to
         var nobody = Doctrine("unorganised-1890") with { Name = "nobody", WatchS = -1, PartyShare = 0, TurnTo = 0 };
-        var s = Settings with { Firefighting = [.. Settings.Firefighting, nobody], FirefightingDefault = doctrine, FireReadinessDefault = readiness };
+        var s = Settings with { DamageControl = [.. Settings.DamageControl, nobody], DamageControlDefault = doctrine, ReadinessDefault = readiness };
         var w = new World(Start, seed, s);
         int cls = w.Ships.AddClass(Class(design));
         w.Apply(ShipSystem.Spawn(cls, 56, 4, 0, 10));

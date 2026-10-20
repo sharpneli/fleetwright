@@ -109,8 +109,8 @@ static class FireHistory
     /// <summary>A case's runs: every ship in one world, far apart, her hits at their times, sampled a minute at a time.</summary>
     static List<Ship> One(FireCase fc, ShipClass target, Func<string, ShipClass> cls, SimSettings settings, int runs, double hours, bool trace)
     {
-        var s = settings with { FireReadinessDefault = fc.Readiness, FirefightingDefault = fc.Doctrine };
-        if (!s.FireReadiness.Any(x => x.Name == fc.Readiness) || !s.Firefighting.Any(x => x.Name == fc.Doctrine))
+        var s = settings with { ReadinessDefault = fc.Readiness, DamageControlDefault = fc.Doctrine };
+        if (!s.Readiness.Any(x => x.Name == fc.Readiness) || !s.DamageControl.Any(x => x.Name == fc.Doctrine))
             throw new ArgumentException($"{fc.Name}: no readiness \"{fc.Readiness}\" or doctrine \"{fc.Doctrine}\"");
         var aims = fc.Falls.Select(f =>
         {

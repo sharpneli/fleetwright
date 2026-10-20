@@ -17,7 +17,7 @@ public class FloodingTests(ITestOutputHelper output)
 
     /// <summary>The settings with every watertight door shut (docs/battle/damage-control.md DC1): the subdivision's tests
     /// test the subdivision, not a door left open (LeakTests).</summary>
-    static readonly SimSettings Shut = Settings with { FireReadiness = [.. Settings.FireReadiness.Select(r => r with { WtDoorsOpen = 0 })] };
+    static readonly SimSettings Shut = Settings with { Readiness = [.. Settings.Readiness.Select(r => r with { WtDoorsOpen = 0 })] };
 
     static ShipClass Class(string name) => Fleet.Get(name).Class!;
 

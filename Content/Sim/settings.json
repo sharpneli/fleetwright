@@ -512,8 +512,8 @@
   "FireHarmS": [180, 900],
   "FireLocalHarmShare": 0.1,
   "FireFlashCaught": [0.5, 0.8],
-  "FirePartyHurtPerMin": [0.006, 0.002],
-  "FirePartyKilledShare": 0.3,
+  "RepairPartyHurtPerMin": [0.006, 0.002],
+  "RepairPartyKilledShare": 0.3,
   "FireSmokeFansPerMin": 0.125,
   "FireSmokeSecuredPerMin": 0.016667,
   "FireSmokeClearS": 600,
@@ -590,15 +590,15 @@
     { "Name": "fog", "FogShare": 1, "BoilShare": 0.8 }
   ],
   // a ship's orders before action for fire: the scenario's "readiness" by side, else the default
-  "FireReadiness": [
+  "Readiness": [
     { "Name": "unprepared", "Stripped": false, "CellDoors": 1, "WetDecks": false, "FansSecured": false, "DeckLoadMJm2": 0, "WtDoorsOpen": 0.5 },
     { "Name": "prepared", "Stripped": true, "CellDoors": 1, "WetDecks": true, "FansSecured": false, "DeckLoadMJm2": 0, "WtDoorsOpen": 0.1 },
     { "Name": "closed up", "Stripped": true, "CellDoors": 0, "WetDecks": true, "FansSecured": false, "DeckLoadMJm2": 0, "WtDoorsOpen": 0.02 },
     { "Name": "prepared, cluttered", "Stripped": true, "CellDoors": 1, "WetDecks": true, "FansSecured": false, "DeckLoadMJm2": 300, "WtDoorsOpen": 0.1 }
   ],
-  "FireReadinessDefault": "prepared",
-  // firefighting (docs/battle/fire.md B4; damage/17 §8.3): a side's doctrine by the scenario's "firefighting", else the default
-  "Firefighting": [
+  "ReadinessDefault": "prepared",
+  // firefighting (docs/battle/fire.md B4; damage/17 §8.3): a side's doctrine by the scenario's "damage_control", else the default
+  "DamageControl": [
     { "Name": "unorganised-1890", "WatchS": -1, "HoseLpm": 600, "Nozzle": "jet", "MusterS": 360, "ManLpm": 100, "PartyShare": 0.10, "PartyMen": 16, "MainBreak": 0.25, "HoseCut": 0.30, "Looped": false, "RestoreS": -1, "PumpFloor": 0, "BreathingSets": false, "TurnTo": 1, "CoolBoundaries": false, "ReflashWatch": false, "FloodMagazineS": 600 },
     { "Name": "prepared-1894", "WatchS": 120, "HoseLpm": 600, "Nozzle": "jet", "MusterS": 180, "ManLpm": 100, "PartyShare": 0.12, "PartyMen": 16, "MainBreak": 0.20, "HoseCut": 0.30, "Looped": false, "RestoreS": 900, "PumpFloor": 0, "BreathingSets": false, "TurnTo": 2, "CoolBoundaries": false, "ReflashWatch": false, "FloodMagazineS": 300 },
     { "Name": "russian-1905", "WatchS": 90, "HoseLpm": 600, "Nozzle": "jet", "MusterS": 180, "ManLpm": 100, "PartyShare": 0.12, "PartyMen": 16, "MainBreak": 0.20, "HoseCut": 0.45, "Looped": false, "RestoreS": 900, "PumpFloor": 0, "BreathingSets": false, "TurnTo": 2, "CoolBoundaries": false, "ReflashWatch": false, "FloodMagazineS": 300 },
@@ -607,7 +607,7 @@
     { "Name": "usn-1942", "WatchS": 120, "HoseLpm": 250, "Nozzle": "all-purpose", "MusterS": 180, "ManLpm": 62.5, "PartyShare": 0.12, "PartyMen": 16, "MainBreak": 0.25, "HoseCut": 0.20, "Looped": false, "RestoreS": 480, "PumpFloor": 0, "BreathingSets": false, "TurnTo": 2, "CoolBoundaries": false, "ReflashWatch": false, "FloodMagazineS": 180 },
     { "Name": "usn-1944", "WatchS": 60, "HoseLpm": 360, "Nozzle": "fog", "MusterS": 120, "ManLpm": 90, "PartyShare": 0.12, "PartyMen": 16, "MainBreak": 0.15, "HoseCut": 0.20, "Looped": true, "RestoreS": 240, "PumpFloor": 0.6, "BreathingSets": true, "TurnTo": 3, "CoolBoundaries": true, "ReflashWatch": true, "FloodMagazineS": 120 }
   ],
-  "FirefightingDefault": "rn-1916",
+  "DamageControlDefault": "rn-1916",
   "FirePlanS": 30,
   "FireTravelS": 30,
   "FireMagazineK": 3,

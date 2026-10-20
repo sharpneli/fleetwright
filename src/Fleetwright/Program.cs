@@ -244,11 +244,11 @@ public static unsafe class Program
             {
                 torpedoes.Add(arg.Substring("-torpedo=".Length));
             }
-            else if (arg.StartsWith("-firefighting="))   // a side's firefighting doctrine: -firefighting=side:name (docs/battle/fire.md B4; settings.json's Firefighting, unorganised-1890 the weakest)
+            else if (arg.StartsWith("-damage-control="))   // a side's firefighting doctrine: -damage-control=side:name (docs/battle/fire.md B4; settings.json's DamageControl, unorganised-1890 the weakest)
             {
-                firefightings.Add(arg.Substring("-firefighting=".Length));
+                firefightings.Add(arg.Substring("-damage-control=".Length));
             }
-            else if (arg.StartsWith("-readiness="))   // a side's orders before action for fire: -readiness=side:name (docs/battle/fire.md B1; settings.json's FireReadiness)
+            else if (arg.StartsWith("-readiness="))   // a side's orders before action for fire: -readiness=side:name (docs/battle/fire.md B1; settings.json's Readiness)
             {
                 readinesses.Add(arg.Substring("-readiness=".Length));
             }
@@ -432,17 +432,17 @@ public static unsafe class Program
             foreach (var ff in firefightings)
             {
                 var p = ff.Split(':', 2);
-                var doctrines = world.Settings.Firefighting;
+                var doctrines = world.Settings.DamageControl;
                 int index = p.Length == 2 ? Array.FindIndex(doctrines, d => d.Name == p[1]) : -1;
                 if (p.Length == 2 && int.TryParse(p[0], out int side) && index >= 0)
-                    world.Send(Sim.DamageSystem.SetFirefighting(side, index));
+                    world.Send(Sim.DamageSystem.SetDamageControl(side, index));
                 else
-                    Console.Error.WriteLine($"Bad firefighting: -firefighting={ff} (want side:{string.Join("|", doctrines.Select(d => d.Name))})");
+                    Console.Error.WriteLine($"Bad firefighting: -damage-control={ff} (want side:{string.Join("|", doctrines.Select(d => d.Name))})");
             }
             foreach (var rd in readinesses)
             {
                 var p = rd.Split(':', 2);
-                var orders = world.Settings.FireReadiness;
+                var orders = world.Settings.Readiness;
                 int index = p.Length == 2 ? Array.FindIndex(orders, d => d.Name == p[1]) : -1;
                 if (p.Length == 2 && int.TryParse(p[0], out int side) && index >= 0)
                     world.Send(Sim.DamageSystem.SetReadiness(side, index));

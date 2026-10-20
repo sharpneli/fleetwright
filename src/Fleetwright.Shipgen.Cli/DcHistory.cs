@@ -186,8 +186,8 @@ static class DcHistory
     /// <summary>A case's runs: every ship in one world, far apart, her blows at their times, sampled a minute at a time.</summary>
     static List<Ship> One(DcCase dc, ShipClass target, Func<string, ShipClass> cls, SimSettings settings, int runs, double hours, bool trace)
     {
-        var s = settings with { FireReadinessDefault = dc.Readiness, FirefightingDefault = dc.Doctrine };
-        if (!s.FireReadiness.Any(x => x.Name == dc.Readiness) || !s.Firefighting.Any(x => x.Name == dc.Doctrine))
+        var s = settings with { ReadinessDefault = dc.Readiness, DamageControlDefault = dc.Doctrine };
+        if (!s.Readiness.Any(x => x.Name == dc.Readiness) || !s.DamageControl.Any(x => x.Name == dc.Doctrine))
             throw new ArgumentException($"{dc.Name}: no readiness \"{dc.Readiness}\" or doctrine \"{dc.Doctrine}\"");
         // each shell fall's aim, by blow and fall
         var aims = dc.Blows.Select(b => b.Falls.Select(f =>

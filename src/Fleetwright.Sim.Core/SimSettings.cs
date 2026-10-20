@@ -1348,13 +1348,13 @@ public sealed record SimSettings
     /// involved, a growing, local or starved one by <see cref="FireLocalHarmShare"/> [EST]. Men: at flashover the room's
     /// share of the space's men are killed with the first of <see cref="FireFlashCaught"/> and casualties with the second
     /// [EST: a flashed-over room is untenable in seconds; a propellant seat's men are the flash's (16 §4.6)]; a party working
-    /// a developed fire below decks loses its men at <see cref="FirePartyHurtPerMin"/> a minute, without breathing sets and
-    /// with them [EST: smoke and burns], <see cref="FirePartyKilledShare"/> of them killed.</summary>
+    /// a developed fire below decks loses its men at <see cref="RepairPartyHurtPerMin"/> a minute, without breathing sets and
+    /// with them [EST: smoke and burns], <see cref="RepairPartyKilledShare"/> of them killed.</summary>
     public double[] FireHarmS { get; init; } = [180, 900];
     public double FireLocalHarmShare { get; init; } = 0.1;
     public double[] FireFlashCaught { get; init; } = [0.5, 0.8];
-    public double[] FirePartyHurtPerMin { get; init; } = [0.006, 0.002];
-    public double FirePartyKilledShare { get; init; } = 0.3;
+    public double[] RepairPartyHurtPerMin { get; init; } = [0.006, 0.002];
+    public double RepairPartyKilledShare { get; init; } = 0.3;
 
     /// <summary>Smoke into the machinery (B2; 17 §5.4, fire_ref.py's smoke): a boiler or engine room burning, or under a
     /// space whose fire is developed or starved, is abandoned with a chance a minute of <see cref="FireSmokeFansPerMin"/>
@@ -1503,23 +1503,23 @@ public sealed record SimSettings
 
     /// <summary>The orders a ship goes into action with (docs/battle/fire.md B1): stripped of what burns or as fitted
     /// (the outfit's two loads), the open doors a cell has (the material condition: 0 closed up), and the weather decks
-    /// wetted. A side takes one by name (the scenario's "readiness"; <see cref="FireReadinessDefault"/> else): unprepared
+    /// wetted. A side takes one by name (the scenario's "readiness"; <see cref="ReadinessDefault"/> else): unprepared
     /// (the Chinese at the Yalu, the Spanish at Santiago), prepared (stripped, hoses out, decks wetted, doors open: the
     /// Japanese in 1894), closed up (the RN and the Germans by 1916, the USN in WWII: 17 §8.3); prepared, cluttered (the
     /// Russians at Tsushima after the voyage round Africa: stripped below, but coal, stores, hammocks and timber on the upper
     /// decks, 17 §2.1; fire.md B5), its deck load on the weather decks over the outfit's [EST: enough to sustain a wetted
     /// deck fire, 17 §5.3].</summary>
-    public FireReadiness[] FireReadiness { get; init; } =
+    public Readiness[] Readiness { get; init; } =
     [
         new() { Name = "unprepared", Stripped = false, CellDoors = 1, WetDecks = false, WtDoorsOpen = 0.5 },
         new() { Name = "prepared", Stripped = true, CellDoors = 1, WetDecks = true, WtDoorsOpen = 0.1 },
         new() { Name = "closed up", Stripped = true, CellDoors = 0, WetDecks = true, WtDoorsOpen = 0.02 },
         new() { Name = "prepared, cluttered", Stripped = true, CellDoors = 1, WetDecks = true, DeckLoadMJm2 = 300, WtDoorsOpen = 0.1 },
     ];
-    public string FireReadinessDefault { get; init; } = "prepared";
+    public string ReadinessDefault { get; init; } = "prepared";
 
     /// <summary>Firefighting (docs/battle/fire.md B4; damage/17 §6, §8.3), rough on purpose (decision 3): a side's doctrine
-    /// by name (the scenario's "firefighting", else <see cref="FirefightingDefault"/>; 17 §8.3's table, fire_ref.py's
+    /// by name (the scenario's "damage_control", else <see cref="DamageControlDefault"/>; 17 §8.3's table, fire_ref.py's
     /// DOCTRINES), the parties re-planned every <see cref="FirePlanS"/>, each going <see cref="FireTravelS"/> a section to
     /// the worst fires (heat, ×<see cref="FireMagazineK"/> next to a magazine, at most <see cref="FirePartiesAFire"/> on one),
     /// its men's flow at <see cref="FireRotation"/> for the reliefs and ×<see cref="FireSmokeShare"/> from the doorway of a
@@ -1531,7 +1531,7 @@ public sealed record SimSettings
     /// there for <see cref="FireHitStopS"/> with the doctrine's hose-cut chance, and with <see cref="FireHitMenChance"/>
     /// leaves it <see cref="FireHitMenKeep"/> of its men (fire_ref.py's hit). <see cref="FireTurnToS"/> after the last hit the
     /// gun crews turn to as the doctrine's extra parties at <see cref="FireTurnToSkill"/> (doc 10 §5).</summary>
-    public FirefightingDoctrine[] Firefighting { get; init; } =
+    public DamageControlDoctrine[] DamageControl { get; init; } =
     [
         new() { Name = "unorganised-1890", WatchS = -1, HoseLpm = 600, Nozzle = "jet", MusterS = 360, ManLpm = 100, PartyShare = 0.10, PartyMen = 16,
             MainBreak = 0.25, HoseCut = 0.30, Looped = false, RestoreS = -1, PumpFloor = 0, BreathingSets = false, TurnTo = 1, FloodMagazineS = 600 },
@@ -1549,7 +1549,7 @@ public sealed record SimSettings
             MainBreak = 0.15, HoseCut = 0.20, Looped = true, RestoreS = 240, PumpFloor = 0.6, BreathingSets = true, TurnTo = 3,
             CoolBoundaries = true, ReflashWatch = true, FloodMagazineS = 120 },
     ];
-    public string FirefightingDefault { get; init; } = "rn-1916";
+    public string DamageControlDefault { get; init; } = "rn-1916";
     public double FirePlanS { get; init; } = 30;
     public double FireTravelS { get; init; } = 30;
     public double FireMagazineK { get; init; } = 3;
@@ -1767,13 +1767,13 @@ public readonly record struct FireNozzle
     public double BoilShare { get; init; }
 }
 
-/// <summary>A side's firefighting doctrine (docs/battle/fire.md B4; <see cref="SimSettings.Firefighting"/>): the fire watch's
+/// <summary>A side's firefighting doctrine (docs/battle/fire.md B4; <see cref="SimSettings.DamageControl"/>): the fire watch's
 /// delay to first water on a new fire (s; under 0: none) and its hose's flow (L/min); the nozzle (a name of FireNozzles); the
 /// parties' muster (s), each man's flow (L/min thrown, men a hose and the hose's flow folded in), the share of the complement
 /// in them and a party's men; the main's break chance a hit, looped or not, the time to isolate a break and rig past it (s;
 /// under 0: never), the pumps' floor with the steam gone (a diesel pump's share); breathing sets; the extra parties that
 /// turn to after the action; and the habits: cooling the boundaries, a reflash watch.</summary>
-public readonly record struct FirefightingDoctrine
+public readonly record struct DamageControlDoctrine
 {
     public string Name { get; init; }
     public double WatchS { get; init; }
@@ -1796,8 +1796,8 @@ public readonly record struct FirefightingDoctrine
     public double FloodMagazineS { get; init; }
 }
 
-/// <summary>A ship's orders before action for fire (docs/battle/fire.md B1; <see cref="SimSettings.FireReadiness"/>).</summary>
-public readonly record struct FireReadiness
+/// <summary>A ship's orders before action for fire (docs/battle/fire.md B1; <see cref="SimSettings.Readiness"/>).</summary>
+public readonly record struct Readiness
 {
     public string Name { get; init; }
     public bool Stripped { get; init; }

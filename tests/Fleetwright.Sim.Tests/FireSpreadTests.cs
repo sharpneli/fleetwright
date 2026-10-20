@@ -22,7 +22,7 @@ public class FireSpreadTests(ITestOutputHelper output)
     {
         var k = new ShipCondition();
         k.Reset(c);
-        k.Readiness = Settings.FireReadiness.Single(x => x.Name == readiness);
+        k.Readiness = Settings.Readiness.Single(x => x.Name == readiness);
         return k;
     }
 

@@ -65,7 +65,7 @@ public enum BurnEvent : byte
 /// <summary>A fire party (docs/battle/fire.md B4): its men, their skill (1, the gun crews turned to less), the section it's
 /// in, the fire space it's sent to (-1: none), when it gets there and when a hit stopped it until (world ms), and whether
 /// it has mustered.</summary>
-public struct FireParty
+public struct RepairParty
 {
     public double Men, Skill;
     public int Section, Target;
@@ -98,7 +98,7 @@ public static class Fires
     {
         var res = new FireStep { MagazineRoom = -1 };
         Fight(c, f, k, nowMs, s);
-        double reflash = Chance(s.FireReflashPerMin * (k.Firefighting.ReflashWatch ? s.FireReflashWatchShare : 1), dt);
+        double reflash = Chance(s.FireReflashPerMin * (k.DamageControl.ReflashWatch ? s.FireReflashWatchShare : 1), dt);
         bool caught = false, smoky = false;
         double show = 0;
         var spaces = c.FireSpaces;
@@ -240,7 +240,7 @@ public static class Fires
     /// sets; off the party, into her killed and wounded.</summary>
     static double Hurt(ShipClass c, ShipCondition k, long now, double dt, SimSettings s)
     {
-        double rate = s.FirePartyHurtPerMin[k.Firefighting.BreathingSets ? 1 : 0] * dt / 60, lost = 0;
+        double rate = s.RepairPartyHurtPerMin[k.DamageControl.BreathingSets ? 1 : 0] * dt / 60, lost = 0;
         for (int p = 0; p < k.PartyCount; p++)
         {
             ref var party = ref k.Parties[p];
@@ -252,7 +252,7 @@ public static class Fires
             lost += men;
         }
         if (lost > 0)
-            (k.Killed, k.Wounded, k.CrewLost) = (k.Killed + lost * s.FirePartyKilledShare, k.Wounded + lost * (1 - s.FirePartyKilledShare), k.CrewLost + lost);
+            (k.Killed, k.Wounded, k.CrewLost) = (k.Killed + lost * s.RepairPartyKilledShare, k.Wounded + lost * (1 - s.RepairPartyKilledShare), k.CrewLost + lost);
         return lost;
     }
 
@@ -299,7 +299,7 @@ public static class Fires
         ref FireStep res)
     {
         var rooms = c.Rooms;
-        ref readonly var doc = ref k.Firefighting;
+        ref readonly var doc = ref k.DamageControl;
         for (int m = 0; m < rooms.Length; m++)
         {
             if (rooms[m].Kind != RoomKind.Magazine)
@@ -391,7 +391,7 @@ public static class Fires
         bool flamesOut = !row.OpenAir && Fuel(x.Involved, q, s) > s.FireFlamesOutRatio * s.FireVentMW * vent;
         double openPath = s.FireOpenPathPerMin * Math.Min(1, x.Q / s.FireOpenPathMW) * (flamesOut ? s.FireFlamesOutK : 1);
         // boundary cooling (17 §5.2), where the doctrine has it and the fire's water meets its need
-        bool cool = k.Firefighting.CoolBoundaries && k.FireFlow[space].FogLpm >= Math.Max(s.FireWaterMinLpm, s.FireWaterLm2 * x.Involved);
+        bool cool = k.DamageControl.CoolBoundaries && k.FireFlow[space].FogLpm >= Math.Max(s.FireWaterMinLpm, s.FireWaterLm2 * x.Involved);
         int lit = 0;
         foreach (ref readonly var l in c.FireLinks(row.Links))
         {
@@ -620,7 +620,7 @@ public static class Fires
     /// when her side's doctrine is none.</summary>
     static void Fight(ShipClass c, FloodModel f, ShipCondition k, long now, SimSettings s)
     {
-        ref readonly var doc = ref k.Firefighting;
+        ref readonly var doc = ref k.DamageControl;
         if (doc.Name is null)
             return;   // nobody fights her fires (the bench's and the tests' water is their own)
         Array.Clear(k.FireFlow);
@@ -633,7 +633,7 @@ public static class Fires
             double men = f.Complement * doc.PartyShare;
             int n = Math.Clamp((int)Math.Round(men / Math.Max(doc.PartyMen, 1)), s.FirePartiesMin, Math.Min(s.FirePartiesMax, ShipCondition.MaxParties));
             for (int i = 0; i < n; i++)
-                k.Parties[i] = new FireParty
+                k.Parties[i] = new RepairParty
                 {
                     Men = men / n, Skill = 1, Section = (int)((i + 0.5) * c.Sections.Length / n), Target = -1,
                 };
@@ -694,12 +694,12 @@ public static class Fires
     /// time, then the sections to go.</summary>
     static void Plan(ShipClass c, ShipCondition k, long now, SimSettings s)
     {
-        ref readonly var doc = ref k.Firefighting;
+        ref readonly var doc = ref k.DamageControl;
         if (!k.TurnedTo && k.LastHitMs > 0 && now - k.LastHitMs >= s.FireTurnToS * 1000)
         {
             k.TurnedTo = true;
             for (int i = 0; i < doc.TurnTo && k.PartyCount < ShipCondition.MaxParties; i++)
-                k.Parties[k.PartyCount++] = new FireParty
+                k.Parties[k.PartyCount++] = new RepairParty
                 {
                     Men = Math.Max(doc.PartyMen, 2), Skill = s.FireTurnToSkill, Section = c.PumpSection, Target = -1,
                 };
@@ -765,7 +765,7 @@ public static class Fires
     /// (her machinery), until it's isolated and rigged past (the doctrine's time): then the cut section on a jumper.</summary>
     public static double SectionWater(ShipClass c, ShipCondition k, int section, long now, SimSettings s)
     {
-        ref readonly var doc = ref k.Firefighting;
+        ref readonly var doc = ref k.DamageControl;
         double share = 1;
         int pump = c.PumpSection, step = section >= pump ? 1 : -1;
         for (int j = pump; ; j += step)
@@ -791,7 +791,7 @@ public static class Fires
     public static void Hit(ShipClass c, FloodModel f, ShipCondition k, int section, long now, SimSettings s, ref RandomStream r)
     {
         k.LastHitMs = now;
-        ref readonly var doc = ref k.Firefighting;
+        ref readonly var doc = ref k.DamageControl;
         if (doc.Name is null || section < 0 || section >= k.MainCutMs.Length)
             return;
         if (k.MainCutMs[section] == 0 && r.NextDouble() < doc.MainBreak * Math.Pow(s.FireMainRefT / Math.Max(f.DisplacementT, 1), s.FireMainExp))

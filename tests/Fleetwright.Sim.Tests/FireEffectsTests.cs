@@ -24,7 +24,7 @@ public class FireEffectsTests(ITestOutputHelper output)
     {
         var k = new ShipCondition();
         k.Reset(c);
-        k.Readiness = Settings.FireReadiness.Single(x => x.Name == readiness);
+        k.Readiness = Settings.Readiness.Single(x => x.Name == readiness);
         return k;
     }
 
@@ -227,13 +227,13 @@ public class FireEffectsTests(ITestOutputHelper output)
         var f = new FloodModel(c);
         var (cell, room, beside, over) = Magazine(c);
         // the doctrine floods; nobody fights the fire itself
-        var doc = Settings.Firefighting.Single(d => d.Name == "rn-1916") with { WatchS = -1, PartyShare = 0, TurnTo = 0 };
+        var doc = Settings.DamageControl.Single(d => d.Name == "rn-1916") with { WatchS = -1, PartyShare = 0, TurnTo = 0 };
         int up = 0, flooded = 0;
         double water = 0;
         for (ulong seed = 0; seed < 20; seed++)
         {
             var k = Fresh(c);
-            k.Firefighting = doc;
+            k.DamageControl = doc;
             bool blew = !double.IsNaN(CookOff(c, f, k, beside, 1, seed));
             up += blew ? 1 : 0;
             flooded += k.MagazineFlood[room] ? 1 : 0;
@@ -250,7 +250,7 @@ public class FireEffectsTests(ITestOutputHelper output)
         for (ulong seed = 0; seed < 20; seed++)
         {
             var k = Fresh(c);
-            k.Firefighting = doc;
+            k.DamageControl = doc;
             Burn(c, k, over, BurnPhase.Starved, 0.05);
             k.Fire[over].PhaseS = -1e9;   // smouldering for good
             bool blew = !double.IsNaN(CookOff(c, f, k, beside, 3, seed));

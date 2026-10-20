@@ -89,17 +89,17 @@ public static class ScenarioLoader
         }
         foreach (var (side, name) in s.Readiness)
         {
-            int k = Array.FindIndex(w.Settings.FireReadiness, d => d.Name == name);
+            int k = Array.FindIndex(w.Settings.Readiness, d => d.Name == name);
             if (k < 0)
-                throw new ScenarioException($"readiness of {s.Sides[side]}: no \"{name}\" (have {string.Join(", ", w.Settings.FireReadiness.Select(d => d.Name))})");
+                throw new ScenarioException($"readiness of {s.Sides[side]}: no \"{name}\" (have {string.Join(", ", w.Settings.Readiness.Select(d => d.Name))})");
             w.Apply(DamageSystem.SetReadiness(side, k));
         }
-        foreach (var (side, name) in s.Firefighting)
+        foreach (var (side, name) in s.DamageControl)
         {
-            int k = Array.FindIndex(w.Settings.Firefighting, d => d.Name == name);
+            int k = Array.FindIndex(w.Settings.DamageControl, d => d.Name == name);
             if (k < 0)
-                throw new ScenarioException($"firefighting of {s.Sides[side]}: no \"{name}\" (have {string.Join(", ", w.Settings.Firefighting.Select(d => d.Name))})");
-            w.Apply(DamageSystem.SetFirefighting(side, k));
+                throw new ScenarioException($"damage control of {s.Sides[side]}: no \"{name}\" (have {string.Join(", ", w.Settings.DamageControl.Select(d => d.Name))})");
+            w.Apply(DamageSystem.SetDamageControl(side, k));
         }
         var tasked = new List<(ScenarioUnit Top, Unit Unit)>();
         var loadouts = new Dictionary<(int Class, LoadoutSpec Spec), int>();   // a loadout of a class, made once (-1: it didn't fit)
