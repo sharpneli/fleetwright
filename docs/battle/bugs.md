@@ -132,19 +132,35 @@ battery their heaviest guns as chief, `BatteryRow.Chief`):
 
 Seen in the AI's baseline after the detail passes (2026-10-20, docs/battle/command.md, after 5.1g):
 
-- [ ] A commander who declined forgets it as soon as contact drops, and searches back into the enemy he declined:
+- [x] A commander who declined forgets it as soon as contact drops, and searches back into the enemy he declined:
   `Balance` clears `Declined` when no enemy is held (`CommanderLayer.cs` ~477), the phase goes to Lost, and `Search`
   runs again because seeing the enemy reset `Searched` (~678). Withdraw, lost, search, contact, outmatched, withdraw:
   Japan at Tsushima (seed 1905) every ~35 minutes for 15 hours, which is why that seed ran out of time; the High Seas
   Fleet four times at the Jutland (seed 1916). A decline should hold until the balance turns (his side's strength
   against what he last held), not until the enemy is out of sight.
+  Fixed 2026-10-20 (command.md, "After the decline holds"): a decline lasts out of sight, and he remembers the enemy he
+  declined (the gravest held since); he accepts again only over the bar against both what he holds and what he
+  declined, or fights when caught by what he can't beat. Keeping it out of sight alone wasn't enough: Japan then
+  re-accepted against a lone destroyer, the part of the Russian fleet it still held.
 - [ ] The same intercept is given again every commander think: the High Seas Fleet "to intercept Valiant" every minute
   15:56-16:24 (seed 1916), "Lion" 19:46-20:03; the Battlecruiser Fleet "B97" 17:03-17:33. `FreeToClose` lets an
   intercept go only for another target, so the task is likely idle or through between thinks (or the target's id
   differs from `Tasks.TargetOf`). Not known which; each re-order may restart the approach.
-- [ ] No Jutland seed ends by its own rules: `Done` needs every side to have its aims, given up or broken off with every
+- [x] No Jutland seed ends by its own rules: `Done` needs every side to have its aims, given up or broken off with every
   unit home, and a side retiring outmatched (Germany, seed 1916) is none of them; ships sinking hours later keep it
   from quiet. Whether a decline that has got away should count as an end is for 5.1f.
+  Fixed 2026-10-20: a side declining counts as going home, and its ships count as done home or out of the area (in no
+  encounter), as command.md's "The end" has it; ports hundreds of kilometres off no longer hold it open. The Jutland's
+  seeds still out of time are fights going on at 04:00 (Britain chasing Germany into the Bight, every ship not home in
+  an encounter), which no end should cut off.
+- [ ] A commander's search for a lost enemy can take most of a day: in `ScenarioEndTests.Sides_going_home_out_of_touch_end_it_done`
+  eight dreadnoughts lose two battlecruisers at 15:26 and give up at 08:23 the next morning (17 hours), and shorter
+  `LostSearchLegM` (5 km against 20) barely changes it. The task steams to the datum (the picture's estimate when he
+  lost them), forms line abreast at the weather's spacing, then runs the ladder; which part takes the hours isn't known.
+- [ ] The matchup has no night: four destroyers against sixteen dreadnoughts are hopeless (confidence 0.03) with
+  `--sight 5000` as without, so a flotilla is sent in by night only on a group it could take on by day (a lone
+  battleship). The era's night attack on a battle line counted on the dark (short sight for the guns, the boats seen
+  late); for the matchup's fine-tune with fire control's night (fighting.md 4.5).
 
 ## Shipgen sizing
 

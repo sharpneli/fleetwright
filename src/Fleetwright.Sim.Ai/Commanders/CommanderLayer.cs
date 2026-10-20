@@ -156,6 +156,8 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         public double CameT;   // the tonnage he came with (at his first think)
         public int LastTarget;
         public bool Met, Declined, BrokenOff, Searched, GaveUp;
+        public readonly MatchupSide DeclinedFrom = new();   // the gravest enemy he's held since he declined
+        public double DeclinedC;    // his side's matchup against it, when he held it
     }
 
     /// <summary>A unit he's given something, or whose switch is set.</summary>
@@ -415,7 +417,9 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
                 continue;
             if (s.Phase is CommanderPhase.Retiring or CommanderPhase.Home)
             {
-                Retire(ctx, s, side, held, t);
+                // declining a stronger enemy, he still sends his flotillas in on it by night (the user, 2026-10-20)
+                if (!(s.Reason == CommanderReason.Outmatched && NightAttack(ctx, side, held, t)))
+                    Retire(ctx, s, side, held, t);
                 continue;
             }
             if (s.Phase == CommanderPhase.Night && ByNight(ctx, side, held, t))
@@ -455,7 +459,9 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
     /// <summary>How the balance stands (docs/battle/command.md 5.1g): his losses against doctrine's break off (for good once
     /// past it); and his side's matchup against all he holds: under doctrine's bar by
     /// <see cref="SimSettings.CommanderMarginShare"/> and able to get away (faster than the enemy), he declines; over it by
-    /// as much, or caught, he accepts again.</summary>
+    /// as much against what he holds and against what he declined (the gravest he's held since: a fleet seen in part later
+    /// is still the fleet he declined), he accepts again; caught by what he can't beat, he fights. Holding nobody, he keeps
+    /// what he decided: a decline lasts out of sight (he goes on home, and doesn't search back into the enemy he declined).</summary>
     void Balance(in AiContext ctx, SideState s, byte side, ReadOnlySpan<HeldGroup> held, Vec3d at)
     {
         double afloat = 0;
@@ -474,16 +480,33 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
             AddGroup(ctx, side, g, enemy);
         if (enemy.Count == 0 || mine.Count == 0)
         {
-            (s.Confidence, s.Declined) = (0, false);
-            return;
+            s.Confidence = 0;
+            return;   // a decline holds out of sight: he judges it again only on an enemy he holds, never searches back into it
         }
         var r = Judge.Judge(ctx, 0, side, at, mine, enemy);
         s.Confidence = r.Confidence;
-        double bar = Judge.Bars(0, side).Accept, margin = ctx.Settings.CommanderMarginShare;
-        if (!s.Declined && r.Confidence < bar / (1 + margin) && r.ACanRefuse(ctx.Settings))
-            s.Declined = true;
-        else if (s.Declined && (r.Confidence > bar * (1 + margin) || !r.ACanRefuse(ctx.Settings)))
-            s.Declined = false;   // no escape: he fights
+        double bar = Judge.Bars(0, side).Accept, margin = ctx.Settings.CommanderMarginShare, low = bar / (1 + margin), high = bar * (1 + margin);
+        if (!s.Declined)
+        {
+            if (r.Confidence < low && r.ACanRefuse(ctx.Settings))
+                Decline(s, r.Confidence);
+            return;
+        }
+        if (r.Confidence < s.DeclinedC)
+            Decline(s, r.Confidence);   // graver than what he declined: it's what he remembers now
+        if (r.Confidence < high && !r.ACanRefuse(ctx.Settings))
+            s.Declined = false;   // caught by what he can't beat and can't get away from: he fights
+        else if (r.Confidence > high && Judge.Judge(ctx, 0, side, at, mine, s.DeclinedFrom).Confidence > high)
+            s.Declined = false;   // the balance has turned against what he held and what he declined alike: he accepts
+    }
+
+    /// <summary>He declines (or goes on declining) the enemy now in <see cref="enemy"/>, and remembers it: a decline is
+    /// judged again against it, not against the part of it he holds later.</summary>
+    void Decline(SideState s, double confidence)
+    {
+        s.Declined = true;
+        s.DeclinedFrom.CopyFrom(enemy);
+        s.DeclinedC = confidence;
     }
 
     /// <summary>Which of his units go after which enemy group (docs/battle/command.md 5.1g): the groups gravest first (the
@@ -700,11 +723,23 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
                     Give(ctx, t, o.WithdrawHome(t.Unit, OrderSource.Commander), CommanderWhy.Night);
                 return true;
             }
-            case UnitRole.Flotilla when doctrine.OfGroup(null, side, DoctrineField.NightAttack) != 0 && FreeToAttack(ctx, t) && Worth(ctx, side, held, t, engaged: false):
-                Give(ctx, t, o.Attack(t.Unit, 0, OrderSource.Commander), CommanderWhy.Night);
-                return true;
+            case UnitRole.Flotilla:
+                return NightAttack(ctx, side, held, t);
         }
         return false;
+    }
+
+    /// <summary>A flotilla sent in by night (the sun more than <see cref="SimSettings.NightSunElevationDeg"/> down where
+    /// it is), by doctrine, on a heavy enemy in reach its attack is worth making on; true if it was. By night, and when he's
+    /// declining a stronger enemy too: the torpedo craft's own hour.</summary>
+    bool NightAttack(in AiContext ctx, byte side, ReadOnlySpan<HeldGroup> held, in Top t)
+    {
+        if (t.Role != UnitRole.Flotilla || doctrine.OfGroup(null, side, DoctrineField.NightAttack) == 0 ||
+            Light.SunElevationDeg(store[t.Slot].Position, ctx.World.Time) >= ctx.Settings.NightSunElevationDeg ||
+            !FreeToAttack(ctx, t) || !Worth(ctx, side, held, t, engaged: false))
+            return false;
+        Give(ctx, t, ctx.Orders.Attack(t.Unit, 0, OrderSource.Commander), CommanderWhy.Night);
+        return true;
     }
 
     /// <summary>Whether a unit has gone home: its withdrawal done there.</summary>
@@ -731,8 +766,8 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
     }
 
     /// <summary>Whether a flotilla may be sent in: a squadron or a boat alone (a force of flotillas sends in its squadrons),
-    /// torpedoes left, and screening, on its orders or through with its task; never again once an attack of its was beaten
-    /// off.</summary>
+    /// torpedoes left, and screening, on its orders, through with its task, or going home from a battle he declined; never
+    /// again once an attack of its was beaten off.</summary>
     bool FreeToAttack(in AiContext ctx, in Top t)
     {
         if (t.Unit.IsGroup && groups.Get(t.Unit.GroupId) is { IsForce: true })
@@ -742,7 +777,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
             Get(t.Unit.Id).BeatenOff = true;
         if (kind == TaskKind.Attack && state is TaskState.OnTask or TaskState.Engaged || Find(t.Unit.Id) is int r and >= 0 && recs[r].BeatenOff)
             return false;
-        if (!(kind is TaskKind.None or TaskKind.Screen || Tasks.Idle(t.Unit)))
+        if (!(kind is TaskKind.None or TaskKind.Screen || Tasks.Idle(t.Unit) || kind == TaskKind.Withdraw && GivenOf(t.Unit).Why == CommanderWhy.Outmatched))
             return false;
         return t.Unit.IsGroup && groups.Get(t.Unit.GroupId) is { } g ? AdmiralLayer.AnyTorpedoes(ctx, g) : CaptainLayer.TorpedoCraft(ctx, store[t.Slot], t.Slot);
     }
@@ -859,6 +894,8 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
                 h.Add(s.CameT);
                 h.Add(s.Met);
                 h.Add(s.Declined);
+                h.Add(s.DeclinedC);
+                h.Add(s.DeclinedFrom.Count);
                 h.Add(s.BrokenOff);
                 h.Add(s.Searched);
                 h.Add(s.GaveUp);

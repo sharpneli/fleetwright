@@ -3,12 +3,14 @@ using Fleetwright.Sim.Ai.Commanders;
 using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Missions;
+using Xunit.Abstractions;
 
 namespace Fleetwright.Sim.Tests;
 
-/// <summary>A scenario's end (docs/battle/command.md 5.0): <c>"until"</c> and <c>"aims"</c> read, and the judge's three
-/// ends: decided when a side has nothing left afloat, the time limit, and quiet once the sides have met and parted.</summary>
-public class ScenarioEndTests
+/// <summary>A scenario's end (docs/battle/command.md 5.0): <c>"until"</c> and <c>"aims"</c> read, and the judge's ends:
+/// decided when a side has nothing left afloat, the time limit, quiet once the sides have met and parted, and done when
+/// every side is going home out of touch (5.1d).</summary>
+public class ScenarioEndTests(ITestOutputHelper output)
 {
     static readonly SimSettings Settings = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json"));
     static readonly string[] Designs = [Path.Combine(Fleet.Shipgen, "designs")];
@@ -22,13 +24,16 @@ public class ScenarioEndTests
         """;
 
     /// <summary>The scenario played as the bench plays it: a check a game minute until it's over, or the hours run out.</summary>
-    static (World W, ScenarioEnd End, ScenarioStart Start) Play(string json, SimSettings settings, double hours = 30, Action<World, ScenarioStart>? first = null)
+    static (World W, ScenarioEnd End, ScenarioStart Start) Play(string json, SimSettings settings, double hours = 30, Action<World, ScenarioStart>? first = null,
+        bool selfPlayed = false)
     {
         var s = Scenario.Parse(json);
         var w = new World(s.Start, s.Seed, settings);
         var ai = new AiSystem(w);
         var start = ScenarioLoader.Apply(s, w, ai, ScenarioLoader.RequestClasses(s, w.Ships.Registry, Designs));
-        var end = new ScenarioEnd(s, w);
+        if (selfPlayed)
+            w.Apply(Command.SetPlayerSide(-1));   // as the bench plays it: every side the AI's
+        var end = new ScenarioEnd(s, w, selfPlayed ? ai : null);
         first?.Invoke(w, start);
         while (!end.Check() && w.Time.Ms - s.Start.Ms < hours * 3_600_000)
             w.AdvanceTo(w.Time + 60_000);
@@ -85,5 +90,35 @@ public class ScenarioEndTests
         Assert.True(end.EndMs - met.Ms >= settings.QuietEndMs + settings.EncounterCloseMs);
         Assert.Equal(0, w.Encounters.Count);
         Assert.All(end.Result(), r => Assert.Equal(0, r.Lost));
+    }
+
+    /// <summary>Done (docs/battle/command.md "The end"): two battlecruisers decline eight dreadnoughts and get away, the
+    /// dreadnoughts lose them, search and give up; every side is going home and none is in touch, so it's over then, long
+    /// before either is home (hundreds of kilometres off). The quiet is put off: the search outlasts its two hours here.</summary>
+    [Fact]
+    public void Sides_going_home_out_of_touch_end_it_done()
+    {
+        const string json = """
+            { "scenario": 1, "start": "1916-05-31T14:00", "seed": 3, "sides": ["Britain", "Germany"],
+              "home": { "Britain": [56.3, -1.5], "Germany": [54.2, 7.6] },
+              "weather": { "visibility_km": 25, "wind_from": 225, "wind_kn": 8 },
+              "units": [
+                { "name": "Battle squadron", "side": 0, "at": [56.5, 4.0], "course": 0, "kn": 12, "formation": "column", "spacing": 600,
+                  "ships": [ { "design": "dreadnought", "names": ["A", "B", "C", "D", "E", "F", "G", "H"] } ] },
+                { "name": "Battlecruisers", "side": 1, "at": [56.5, 4.36], "course": 0, "kn": 15, "formation": "column", "spacing": 600,
+                  "ships": [ { "design": "lion", "names": ["X", "Y"] } ] } ] }
+            """;
+        var (w, end, _) = Play(json, Settings with { QuietEndMs = 24 * 3_600_000 }, hours: 30, selfPlayed: true);   // done, not the quiet
+        var phases = end.Timeline.Where(l => l.Kind == PlayEvent.Phase).Select(l => ((CommanderPhase)l.Count, l.Side)).ToList();
+        output.WriteLine($"{end.Reason} at {new WorldTime(end.EndMs)}: " + string.Join(", ", phases));
+        var store = w.Ships.Store;
+        Vec3d[] homes = [Earth.Position(56.3, -1.5), Earth.Position(54.2, 7.6)];
+        double farthest = 0;
+        for (int slot = 0; slot < store.Slots; slot++)
+            if (Aims.Afloat(store, slot))
+                farthest = Math.Max(farthest, Earth.Distance(store[slot].Position, homes[store[slot].Side]));
+        Assert.Equal(EndReason.Done, end.Reason);
+        Assert.Contains((CommanderPhase.Retiring, 1), phases);
+        Assert.True(farthest > 100_000, $"the farthest {farthest / 1000:F0} km from home");
     }
 }

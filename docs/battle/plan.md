@@ -1867,7 +1867,11 @@ pass and the detail passes; 5.1e (signals) and 5.1f (the whole) late, after thos
 can fight whom, fitted to the fine model's own benches: the share of the enemy's tonnage each side puts out of the fight
 for the share of its own) read by Fight, the scout, the flotilla's attack and the commander (each enemy group given the
 units that together can take it on; declining only when he can get away); empty magazines send a ship home; Germany
-declines the Grand Fleet at the Jutland (`command.md` 5.1g).
+declines the Grand Fleet at the Jutland (`command.md` 5.1g). **The AI's baseline after the detail passes, and a piece
+of 5.1f, 2026-10-20:** the four scenarios measured again (`command.md`, after 5.1g); a decline holds (out of sight, and
+against the enemy he declined), done means every side going home out of touch, and a declining commander still sends
+his flotillas in by night; every Tsushima seed ends by its own rules, and the Jutland's that don't are pursuits still
+going at 04:00.
 
 **5.1 Captains and admirals.** Standing orders for both sides: go to, keep station, shadow, evade, engage, break off
 at x% damage. Admirals' objectives above their squadrons: search an area, cover, intercept, rendezvous. All are more

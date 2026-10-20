@@ -300,6 +300,8 @@ A scenario ends when, in order:
 1. **its time limit** passes (a scenario's `"until"`, else a default of a day). The limits are a testing aid for now
    (decision 11): in the release they're relaxed far, and a clock never ends a fight that's going on;
 2. **every side is done:** each commander has met or given up his aims and his units are home or out of the area;
+   (2026-10-20: given up, broken off or declining a stronger enemy, and every ship afloat home or in no encounter: every
+   side going home and none of them in touch. A port hundreds of kilometres off doesn't hold it open);
 3. **a side is gone** (sunk, or out of the area);
 4. **nothing has happened for long:** no encounter open and none of a side's units in contact for `QuietEndMs`
    (hours), after the sides have met at least once. A stalemate is an end, and worth flagging.
@@ -1117,6 +1119,41 @@ user: data to choose between 5.2, 5.1f and the matchup's re-fit):
   The same run's wall time moves ±20% between runs.
 - Found on the way: a task ending after its group was gone (the IX Flotilla, its boats lost) was told as "?'s"; the
   timeline now keeps each group's side with its name (`ScenarioEnd`).
+
+**After the decline holds** (2026-10-20, the user: the declining loop and the done end first, a piece of 5.1f):
+
+1. **A decline holds.** Holding nobody, he keeps it (he goes on home and doesn't search back); and he remembers the
+   enemy he declined (the gravest he's held since, `SideState.DeclinedFrom`): he accepts again only over the bar by the
+   margin against both what he holds and what he declined, and fights if caught by what he can't beat. The first half
+   alone wasn't enough: Japan then re-accepted against a lone destroyer, all of the Russian fleet it still held.
+   `CommanderTests.A_decline_holds_out_of_sight_and_against_a_part_of_the_enemy_seen_later`.
+2. **Done means going home and out of touch.** A side counts as done when it's given up, broken off or is declining,
+   and each of its ships afloat is home or in no encounter ("The end"; `ScenarioEndTests.Sides_going_home_out_of_touch_end_it_done`).
+3. **Declining by day, he still sends his flotillas in by night** (the user, asked when the flotilla scenario went
+   silent): by doctrine (`NightAttack`), on a group in reach its attack is worth making on, and a flotilla going home
+   from the declined battle counts as free for it (`CommanderTests.Declining_he_still_sends_his_flotillas_in_by_night`).
+   Only a flotilla still in reach at dark: one gone home isn't sent back to look for him.
+4. The bench prints what the done end waits on, for each side whose run didn't end done: its phase, its ships afloat
+   home and not, in an encounter, stopped, the farthest from home.
+
+| Scenario | How it ended | Losses | The baseline above |
+|---|---|---|---|
+| `squadrons` | done 2, quiet 1, time 2 | Britain 1.4 of 4, Germany 3.0 of 5 | time 3, quiet 2; 1.6, 3.0 |
+| `flotilla` | quiet 5 (after 4:04) | Britain 0.0 of 4, Germany 0.2 of 6 (no torpedoes) | time 5; 0.0, 1.4 (1.4 torpedoes) |
+| `tsushima` | quiet 3 (after 8:45), done 2 | Russia 4.2 of 13, Japan 3.4 of 14 | quiet 4, time 1; 4.6, 3.6 |
+| the Jutland | done 1 (01:44), time 4 | Britain 28.2 of 151, Germany 48.8 of 99 | time 5; 28.6, 50.6 |
+
+- **The loop is gone:** Japan declines once at Tsushima (07:09 in seed 1905) and goes home; the seed that ran out of
+  time now ends quiet at 13:20. Every Tsushima seed ends by its own rules.
+- **The Jutland's seeds still out of time are fights going on:** at 04:00 Britain is in battle or contact chasing
+  Germany into the Bight (British ships up to 670 km from home), every ship of both sides not home in an encounter. No
+  end should cut that off (decision 11); the limit is the bench's. Seed 1916 ends done at 01:44.
+- **`squadrons`' two out of time** are the same: both sides broken off at 21:30 (seed 6) but still in touch, after 6 hours.
+- **The flotilla scenario is silent:** Germany's commander declines the four battleships at 18:31 by day and its boats
+  are ~100 km off by dark, out of the night rule's reach (`CommanderAttackM`, 25 km). Its torpedoes before came from the
+  loop (declined, lost, searched back). The scenario wants a night start, an aim that asks for the attack, or a
+  commander who sends flotillas out to find the enemy by night (the High Seas Fleet's after the Jutland): open.
+- **Cost:** the Jutland's seed 1916, 87 s; the commanders 2.1% (2.6 ms a think), the captains 19.9%.
 
 **5.1e Signals and flagships.**
 

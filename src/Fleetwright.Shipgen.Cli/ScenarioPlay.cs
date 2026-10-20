@@ -94,7 +94,11 @@ static class ScenarioPlay
                                   string.Join("   ", result.Select(r => $"{r.Name} lost {r.Lost}/{r.Ships} ({r.LostTonnes:0} t){(r.AimsMet ? ", aims met" : "")}")) +
                                   Causes(end) + $"   ({wall:F1} s)" + (end.Missed > 0 ? $"   {end.Missed} log lines missed" : ""));
             if (seeds > 1)
+            {
                 guns.Print("           ");
+                if (end.Reason != EndReason.Done)
+                    DoneLines(s, w, ai, "           ");
+            }
             all.FellOut.Merge(guns.FellOut);
             all.End.Merge(guns.End);
             (all.HitBlackouts, all.NearBlackouts, all.ShipsBlacked) = (all.HitBlackouts + guns.HitBlackouts, all.NearBlackouts + guns.NearBlackouts,
@@ -282,6 +286,7 @@ static class ScenarioPlay
             var (tasked, home, orders, idle, fallen) = ai.Commanders.Census(side);
             Console.WriteLine($"  {s.Sides[side],-12} at the end: {tasked} units on a task, {home} home, {orders} on their first orders, {idle} idle; {fallen} fallen out");
         }
+        DoneLines(s, w, ai, "  ");
         // nobody played: nothing is held by the player, nor ever asked back (the AI's own detachments are Tasked)
         int held = 0, onTask = 0;
         for (int g = 0; g < w.Groups.Count; g++)
@@ -300,6 +305,37 @@ static class ScenarioPlay
                 double ms = Probes.Ms(w.Probes.Ticks[i]);
                 Console.WriteLine($"  {w.Probes.Names[i],-24} {ms / 1000 / wall,7:P2}  {w.Probes.Calls[i] / game,7:F3}  {ms * 1000 / w.Probes.Calls[i],9:F1} µs   ({Probes.Ms(w.Probes.Max[i]):F2} ms)");
             }
+    }
+
+    /// <summary>What the "done" end waits on (command.md "The end"): each side's phase, and its ships afloat not yet home,
+    /// those in an encounter (which keep it from done), stopped, and the farthest from home.</summary>
+    static void DoneLines(Scenario s, World w, AiSystem ai, string indent)
+    {
+        var store = w.Ships.Store;
+        for (int side = 0; side < s.Sides.Length; side++)
+        {
+            var (phase, reason) = ai.Commanders.PhaseOf(side);
+            int afloat = 0, away = 0, inContact = 0, stopped = 0;
+            double farthest = 0;
+            for (int slot = 0; slot < store.Slots; slot++)
+            {
+                if (!store.IsAlive(slot) || store[slot].Side != side || !Fleetwright.Sim.Ai.Commanders.Aims.Afloat(store, slot))
+                    continue;
+                afloat++;
+                double d = ai.HomeOf(side) is { } at ? Earth.Distance(store[slot].Position, at) : double.PositiveInfinity;
+                if (d <= w.Settings.HomeRadiusM)
+                    continue;
+                away++;
+                farthest = Math.Max(farthest, d);
+                if (w.Encounters.Of(slot, store[slot].Entity) != 0)
+                    inContact++;
+                if (store[slot].Speed < 0.5)
+                    stopped++;
+            }
+            Console.WriteLine($"{indent}{s.Sides[side],-12} done? {Words(phase.ToString())}" + (reason != 0 ? $" ({Words(reason.ToString())})" : "") +
+                              $"; {afloat - away} of {afloat} afloat home, {away} not ({inContact} in an encounter, {stopped} stopped" +
+                              (away > 0 ? $", the farthest {farthest / 1000:F0} km)" : ")"));
+        }
     }
 
     static void PrintSpread(Scenario s, List<(ScenarioEnd End, SideResult[] Result)> runs)

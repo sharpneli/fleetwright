@@ -248,6 +248,45 @@ public class CommanderTests(ITestOutputHelper output)
         Assert.True(Away() < before - 20_000);
     }
 
+    /// <summary>The decline holds (the AI's baseline, 2026-10-20: Japan at Tsushima searched back into the fleet it had
+    /// declined every half hour for 15 hours): the fleet he declined out of sight, and then a light cruiser of theirs alone
+    /// in sight, he neither searches for it nor closes the cruiser; he goes on home.</summary>
+    [Fact]
+    public void A_decline_holds_out_of_sight_and_against_a_part_of_the_enemy_seen_later()
+    {
+        var (w, ai) = Make();
+        int bb = Class(w, "dreadnought"), bc = Class(w, "lion"), lc = Class(w, "light_cruiser");
+        var mine = Column(w, ai, bc, Earth.Position(Lat, Lon), 0, 2, side: 1);
+        var fleet = Column(w, ai, bb, Off(90, 22_000), 0, 8, side: 0, kn: 12);
+        var (hla, hlo) = LatLon(Off(270, 150_000));
+        w.Apply(ai.Orders.Home(1, hla, hlo));
+        w.Apply(ai.Orders.Commander(1, CommanderMode.On));
+        Run(w, 3 * 60);
+        var declined = ai.Commanders.PhaseOf(1);
+        foreach (int e in w.Groups.Get(fleet.GroupId)!.Line.ToArray())
+            w.Apply(ShipSystem.Drop(e));   // out of sight
+        Run(w, 10 * 60);
+        var unseen = ai.Commanders.PhaseOf(1);
+        var (la, lo) = LatLon(w.Ships.Store[w.Ships.Store.SlotOf(mine.ShipOf(w.Groups))].Position);
+        var (cla, clo) = LatLon(Off(90, 12_000, la, lo));
+        w.Apply(ShipSystem.Spawn(lc, cla, clo, 0, 15, 0));   // one of theirs, alone, that he could take on
+        w.Apply(ai.Orders.HoldFire(Unit.Ship(w.Ships.NewestEntity)));
+        w.Apply(ShipSystem.LookNow());
+        var phases = new List<(CommanderPhase, CommanderReason)>();
+        var givens = new List<TaskKind>();
+        for (int m = 0; m < 30; m++)
+        {
+            Run(w, 60);
+            phases.Add(ai.Commanders.PhaseOf(1));
+            givens.Add(ai.Commanders.GivenOf(mine).Given);
+        }
+        output.WriteLine($"declined {declined}, out of sight {unseen}; with the cruiser: {string.Join(", ", phases.Distinct())}; given {string.Join(", ", givens.Distinct())}");
+        Assert.Equal((CommanderPhase.Retiring, CommanderReason.Outmatched), declined);
+        Assert.Equal((CommanderPhase.Retiring, CommanderReason.Outmatched), unseen);
+        Assert.All(phases, p => Assert.Equal((CommanderPhase.Retiring, CommanderReason.Outmatched), p));
+        Assert.All(givens, g => Assert.Equal(TaskKind.Withdraw, g));
+    }
+
     [Fact]
     public void An_outmatched_side_that_cant_get_away_fights()
     {
@@ -357,6 +396,47 @@ public class CommanderTests(ITestOutputHelper output)
             Assert.Equal(CommanderPhase.Battle, phase.Phase);
             Assert.Equal(TaskKind.None, ai.Commanders.GivenOf(mine).Given);   // in contact: doctrine fights
         }
+    }
+
+    /// <summary>Declining by day doesn't keep his flotillas in by night (the user, 2026-10-20, after the decline was made
+    /// to hold): two battlecruisers and a flotilla decline seventeen dreadnoughts at dusk and go home; once it's dark the
+    /// flotilla, going home with them, is sent in (on the one apart from the others: against the sixteen the matchup has
+    /// no attack worth making, by night as by day), and the battlecruisers go on home. Only a flotilla still in reach when
+    /// it gets dark: one long gone home isn't sent back to look for him.</summary>
+    [Fact]
+    public void Declining_he_still_sends_his_flotillas_in_by_night()
+    {
+        var w = new World(WorldTime.FromUtc(1916, 5, 31, 21, 8), 3, Settings);   // a few minutes before it's dark (the sun at -6°)
+        var ai = new AiSystem(w);
+        w.Apply(Command.SetWeather(30_000));
+        int bb = Class(w, "dreadnought"), bc = Class(w, "lion"), dd = Class(w, "destroyer");
+        var mine = Column(w, ai, bc, Earth.Position(Lat, Lon), 0, 2, side: 1);
+        var flotilla = Column(w, ai, dd, Off(270, 2_000), 0, 4, side: 1);
+        Column(w, ai, bb, Off(90, 12_000), 0, 16, side: 0, kn: 12);
+        Column(w, ai, bb, Off(60, 7_000), 0, 1, side: 0, kn: 12);   // one apart: worth the flotilla's attack (the sixteen aren't)
+        var (hla, hlo) = LatLon(Off(270, 150_000));
+        w.Apply(ai.Orders.Home(1, hla, hlo));
+        w.Apply(ai.Orders.SideDoctrine(1, DoctrineField.NightAttack, 1));
+        w.Apply(ShipSystem.LookNow());
+        w.Apply(ai.Orders.Commander(1, CommanderMode.On));
+        Run(w, 2 * 60);
+        var dusk = (ai.Commanders.PhaseOf(1), ai.Commanders.GivenOf(flotilla).Given, ai.Commanders.GivenOf(flotilla).Why);
+        (TaskKind, CommanderWhy) sent = default;
+        double sun = 0;
+        for (int m = 0; m < 90 && sent.Item1 != TaskKind.Attack; m++)
+        {
+            Run(w, 60);
+            var g = ai.Commanders.GivenOf(flotilla);
+            sent = (g.Given, g.Why);
+            sun = Light.SunElevationDeg(Earth.Position(Lat, Lon), w.Time);
+        }
+        output.WriteLine($"at dusk {dusk}; then the flotilla given {sent} at {w.Time} (the sun {sun:F1}°), the battlecruisers {ai.Commanders.GivenOf(mine)}");
+        Assert.Equal((CommanderPhase.Retiring, CommanderReason.Outmatched), dusk.Item1);
+        Assert.Equal((TaskKind.Withdraw, CommanderWhy.Outmatched), (dusk.Given, dusk.Why));
+        Assert.Equal((TaskKind.Attack, CommanderWhy.Night), sent);
+        Assert.True(sun < Settings.NightSunElevationDeg);
+        Assert.Equal((CommanderPhase.Retiring, CommanderReason.Outmatched), ai.Commanders.PhaseOf(1));
+        Assert.Equal(TaskKind.Withdraw, ai.Commanders.GivenOf(mine).Given);
     }
 
     [Fact]

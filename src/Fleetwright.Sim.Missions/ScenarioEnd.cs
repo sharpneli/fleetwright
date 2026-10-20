@@ -202,7 +202,9 @@ public sealed class ScenarioEnd
         return any;
     }
 
-    /// <summary>Every side still afloat is done: its aims met, or given up with every ship of it afloat home.</summary>
+    /// <summary>Every side still afloat is done (docs/battle/command.md "The end"): its aims met, or its commander gone
+    /// home (given up, broken off, or declining a stronger enemy) with every ship of it afloat home or out of the area: in
+    /// no encounter. Every side going home and none of them in touch: nobody is left seeking a fight.</summary>
     bool AllDone()
     {
         var store = world.Ships.Store;
@@ -212,10 +214,12 @@ public sealed class ScenarioEnd
             if (afloat[side] == 0 || aims[side].All(a => Aims.Met(world, side, a)))
                 continue;
             var (phase, reason) = ai!.Commanders.PhaseOf(side);
-            if (!(phase == CommanderPhase.Home || reason == CommanderReason.BrokenOff) || ai.HomeOf(side) is not { } at)
+            if (!(phase == CommanderPhase.Home || reason is CommanderReason.BrokenOff or CommanderReason.Outmatched))
                 return false;
+            var at = ai.HomeOf(side);
             for (int slot = 0; slot < store.Slots; slot++)
-                if (store.IsAlive(slot) && store[slot].Side == side && Aims.Afloat(store, slot) && Earth.Distance(store[slot].Position, at) > home)
+                if (store.IsAlive(slot) && store[slot].Side == side && Aims.Afloat(store, slot) && world.Encounters.Of(slot, store[slot].Entity) != 0 &&
+                    !(at is { } h && Earth.Distance(store[slot].Position, h) <= home))
                     return false;
         }
         return true;

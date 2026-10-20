@@ -149,6 +149,13 @@ public sealed class MatchupSide
 
     public void Clear() => count = 0;
 
+    /// <summary>Another side's entries, as they are now (a commander's memory of an enemy he declined).</summary>
+    public void CopyFrom(MatchupSide other)
+    {
+        Array.Copy(other.entries, entries, other.count);
+        count = other.count;
+    }
+
     /// <summary>An own ship, exactly; one going down isn't counted.</summary>
     public void AddOwn(World world, Matchups m, int slot)
     {
