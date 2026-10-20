@@ -1,6 +1,6 @@
 # Plan: magazines (a 4.5 deepening)
-Status: **draft**; the user decided questions 1-3 and 5 on 2026-10-20 ("Decided" below), question 4 (shield mounts) is
-open; no step started    Updated: 2026-10-20
+Status: **draft, every question decided** (the user, 2026-10-20: "Decided" below); research filed; no step started
+Updated: 2026-10-20
 
 The fine-tune pass for magazines: how a flash gets to the charges, what happens once they burn, and what the ship
 keeps. **This is the one place for magazine work.** Every open item about magazines, hoists, flash doors, the
@@ -59,7 +59,8 @@ Today a flash is a lottery that ends the ship. The record says it's a chain and 
     burning, 1,200 without), for any mount, open or shielded. That's a fake path, like the calibre switch.
 - **The ammunition train in the hitbox model:**
   - each mount has its magazine (`MountRow.Magazine`) and its barbette;
-  - a handling room sits under each enclosed mount (`RoomKind.Handling`, protection-plan H1);
+  - a handling room sits over each main mount's own magazine, shielded ones included (`RoomKind.Handling`,
+    protection-plan H1); secondaries share battery magazines without one;
   - there's no working chamber apart from the barbette, no hoist trunk as a join in the cell graph, and no flash doors.
 - **Magazine flooding** is fire's. `Fires.Magazines` floods a threatened magazine on the doctrine's
   `FloodMagazineS` unless smoke cuts the controls off; the sea or the main fills it; a drowned magazine can't go up, and
@@ -166,8 +167,16 @@ chamber lights that, gas in a handling room lights that. A burst among the magaz
 The hoist trunk is also a join in the cell graph. E5's gas and fire's spread go through it as a low-pressure edge
 (11 §4). It's one link for flash, gas and fire.
 
-A shield mount has no train down: its ready rounds burn on deck (fire's seat, as today). Whether a flash can go down
-its hoist is question 4.
+**A shield or open mount** (decision 4):
+- **No flash goes down from the gun.** Its hoist ends in a scuttle at the deck, and an open gun vents its flash to the
+  air. Its ready rounds burn on deck, as today: fire's seat and the crew's flash.
+- **Its train starts below the deck:** the handling room or passage the charges come up through, then the magazine. A
+  burst, spall or gas there lights the charges in transit, and the flame goes down by that door, as an enclosed mount's
+  does.
+- **Fire reaches the magazine only the ways fire goes:** through the decks, by heat (fire B2). Today's dose "down its
+  turret's trunk" stays for gunhouses only.
+- **Ammunition passages and casemate batteries are stations** where the design has them: charges on their way along the
+  ship, with doors, like a handling room (Defence's passages, Malaya's battery).
 
 ### The venting race (a magazine alight)
 
@@ -243,12 +252,15 @@ follows the dependencies: the fake turrets first, because the chain means nothin
   - The designs say theirs: Chester and the Towns shield, the destroyers' guns shield, the rest as they are, checked
     one by one.
   - Every reader of "enclosed" takes the housing (`Effects.Enclosed`, `Casualties.Enclosed`, fire's trunk dose in
-    `Fires.Magazines`). How a shield mount reaches its magazine follows question 4.
+    `Fires.Magazines`); shield and open mounts lose the trunk dose (decision 4).
   - The designer's battery tables (main and secondary) let it be picked for any battery at any calibre (one cell, no
     new pane); its weight follows in the ledger.
   - Goldens move, so `ShipDesign.Version` bumps. Closes bugs.md's item and E8a item 1.
 - **V2. The train.**
-  - The stations and their doors as class rows (from the mount, barbette, handling-room and magazine links).
+  - The stations and their doors as class rows (from the mount, barbette, handling-room and magazine links). A shield
+    or open mount's train starts at its handling room (decision 4).
+  - Ammunition passages and casemate batteries as stations where the design has them; until shipgen emits passages,
+    a casemate battery's own space is its station.
   - The hoist trunk as a join for gas and fire.
   - Every source lights its station; the flame goes down by the doors. `TurretFlashChance` goes;
     `MagazineFlashChance` stays as a burst among the magazine's charges.
@@ -294,7 +306,7 @@ follows the dependencies: the fake turrets first, because the chain means nothin
 - Uptakes and vent trunks as joins: Hood's vent through the engine-room vents wants them. They're E5's open item,
   added here only if the yardstick needs them.
 
-## Research wanted (to file in research/REQUESTS.md once agreed)
+## Research wanted (filed in `research/REQUESTS.md` 2026-10-20, "Magazines: the flash chain and the venting race")
 
 - Burn-rate law (β, α) for the period's propellants (cordite MD, RP C/12, single-base, black powder), or ranges to fit
   within.
@@ -302,6 +314,8 @@ follows the dependencies: the fake turrets first, because the chain means nothin
 - Flash doors, scuttles, interlocks and handling practice: ranges by type and period (general system, not replicas),
   and how often doors stood open in drill.
 - Sprinklers and magazine flooding times by period (10 §2.3 has some).
+- Flash at open and shielded guns: did a flash ever go down an open mount's hoist to its magazine? Ammunition passages
+  and casemate batteries as the path instead (Defence, Malaya). Decision 4 stands on our notes until this is checked.
 
 ## Decided (the user, 2026-10-20)
 
@@ -309,25 +323,16 @@ follows the dependencies: the fake turrets first, because the chain means nothin
    value. It changes little now; in the campaign it has an economic cost, as design choices do.
 2. **Flash discipline is a doctrine row** by period, for now. Per-ship orders can come later.
 3. **The hull girder is in now (V4).** Tier 3 means the ship breaks and sinks fast; the look of the break comes later.
-4. *(open, below)*
+4. **Shield and open mounts don't flash down their hoists** (the recommendation, taken 2026-10-20). Their ready
+   charges burn on deck. Fire reaches the magazine only the ways fire goes. Their train starts at the handling room
+   below the deck, and ammunition passages and casemate batteries are stations with doors. Today's trunk dose from a
+   burning mount goes for them. The record as far as our notes go:
+   - the danger at an open gun was its ready charges (Chester and Southampton at Jutland; Kent's casemate at the
+     Falklands, 10 of her 14 casualties from one cordite fire);
+   - the path below ran along passages and batteries (Defence's passages, Malaya's battery: charges on trolleys, ~5 min,
+     65 dead);
+   - there's no known case of a flash straight down an open mount's hoist [UNCERTAIN: in the research request].
 5. **Magazines going up as a ship sinks** wait for the sinking pass: by then she's lost anyway, so it's eye candy.
-
-## Questions for the user
-
-4. **Shield mounts: how do they reach their magazine?** The record as far as our research goes:
-   - The danger at an open or shielded gun was its **ready charges**: fires and burns on deck (Chester and Southampton
-     at Jutland, Kent's casemate at the Falklands: 10 of her 14 casualties from one cordite fire).
-   - In big ships the path below ran along the **ammunition passages** and through the **casemate battery**, not down
-     one gun's hoist. Defence's fire ran along her ammunition passages from magazine to magazine. Malaya's 6″ battery
-     burned from charges staged on trolleys (~5 min, 65 dead) and came close.
-   - We have **no case of a flash going straight down an open mount's hoist** to its magazine. The hoists ended in a
-     scuttle at the deck, and an open gun vents its flash to the air. [UNCERTAIN: not checked against the sources;
-     worth a research request.]
-
-   Recommendation: no flash roll down a shield mount's hoist. Its ready charges burn as now, and fire reaches the
-   magazine only by the ways fire goes (through the decks, by heat). Where charges travel along a passage or a casemate
-   battery, that passage is a station of the train, with its doors, like a handling room. Today's 300 s dose "down its
-   turret's trunk" goes for shield and open mounts.
 
 ## Open items (from the other docs, folded in)
 

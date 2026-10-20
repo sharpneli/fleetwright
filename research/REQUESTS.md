@@ -12,6 +12,23 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: (comparison, recommendation, API notes, plan...)
 -->
 
+### 2026-10-20 - Magazines: the flash chain and the venting race, 1890-1925 first
+- Question: the numbers a magazine model needs, as ranges by type and period (a general system, not class replicas).
+  (1) Propellant burn rates under pressure (the law r = beta·P^alpha) for cordite MD, RP C/12, single-base (USN SPD,
+  poudre B, pyroxylin) and black powder, or ranges to fit within; and bags against brass cases (how many charges light
+  together). (2) Turret revolving weights and barbette diameters by calibre and period (07 §7: the lift pressure).
+  (3) Flash doors, scuttles, interlocks and handling practice by navy and period: how many charges stood in the
+  gunhouse, working chamber, hoists and handling room in drill and at Jutland, and how often doors stood open.
+  (4) Sprinklers and magazine flooding: who had them when, and how long flooding took. (5) Open and shielded guns: did
+  a flash ever go down an open mount's hoist to its magazine, or was the path always ammunition passages and casemate
+  batteries (Defence, Malaya, Kent)?
+- Context / relevant files: `docs/battle/magazines.md` (the plan; decision 4 on shield mounts stands on our notes
+  until (5) is checked), `research/simulation/damage-research/07-magazine-explosions.md` (the venting race, its open
+  questions), `docs/shipgen/research/02_components.md` §1. Not blocking: V0-V2 build first, and the race's constants
+  are fitted to the anchors until then.
+- Wanted output: tables of burn-rate constants, turret weights and barbette sizes, charges by station and door practice
+  by navy and period, flooding and sprinkler times, and the open-gun flash cases, with sources.
+
 ### 2026-10-20 - Flooding and damage control in the record, 1890-1925
 - Question: how ships of the first game's period took on water after hits, and what their crews did about it, as
   numbers. (1) Cases with times, tonnages, list and speed: Seydlitz and Lützow at Jutland (Lützow's hour by hour if
