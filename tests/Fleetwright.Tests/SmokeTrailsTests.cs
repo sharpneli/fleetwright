@@ -59,6 +59,48 @@ public class SmokeTrailsTests
     }
 
     [Fact]
+    public void Speeding_up_and_slowing_down_doesnt_move_the_trail()
+    {
+        // the user, 2026-10-21: changing speed made the smoke wiggle. Frames of 1/60 s of world time (1x), ramping up to
+        // 4 s (240x at 60 fps) and back down, against a steady 1x: the same puffs, born at the same times in the same places
+        var book = new SmokeBook();
+        var trails = new SmokeTrails();
+        var v = Earth.East(At) * 10;
+        double now = 0;
+        int f = 0;
+        while (now < 120)
+        {
+            trails.Begin();
+            trails.Emit(book, 1, 1 << 29, now, 1.2, At + v * now, v, 10, 100, 0, 15, Vector3.One, 4, 30, 25, 0.5f, fadeS: 8);
+            double ramp = 2 * Math.Min(f, 240 - Math.Min(f, 240));   // 1x up to 240x and back over 240 frames, then 1x
+            now = Math.Round((now + Math.Max(ramp, 1) / 60.0) * 1e6) / 1e6;
+            f++;
+        }
+        trails.Begin();
+        trails.Emit(book, 1, 1 << 29, 120, 1.2, At + v * 120, v, 10, 100, 0, 15, Vector3.One, 4, 30, 25, 0.5f, fadeS: 8);
+        var steady = Steam(120, 1.0 / 60, fadeS: 8);
+        // every puff the ramp laid is one the steady run laid (a frame of seconds skips those already gone by its end)
+        int matched = 0;
+        for (int i = 0; i < book.Count; i++)
+            for (int j = 0; j < steady.Count; j++)
+                if (Math.Abs(book[i].Born - steady[j].Born) < 1e-6)
+                {
+                    Assert.True((book[i].Origin - steady[j].Origin).Length < 0.01, $"the puff born at {book[i].Born:0.0} s moved");
+                    matched++;
+                }
+        Assert.Equal(book.Count, matched);
+        // and the plume at the end, what's still alive, is the same
+        int Alive(SmokeBook b)
+        {
+            int n = 0;
+            for (int i = 0; i < b.Count; i++)
+                n += 120 - b[i].Born < 8 ? 1 : 0;
+            return n;
+        }
+        Assert.Equal(Alive(steady), Alive(book));
+    }
+
+    [Fact]
     public void A_frame_lays_no_more_than_will_show()
     {
         // a frame of five minutes: a fading plume lays only what's still alive, one that doesn't fade its newest
