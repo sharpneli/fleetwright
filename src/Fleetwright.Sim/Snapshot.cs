@@ -651,6 +651,9 @@ public sealed class ShipsView
     /// <summary>Her funnels' smoke against her plant's own: over 1 while she makes smoke (docs/battle/smoke.md Z4), so
     /// what's drawn is what blocks sight; 1 otherwise.</summary>
     public float[] SmokeGain = [];
+
+    /// <summary>Whether she's been ordered to make smoke (<c>SmokeSystem.MakeSmoke</c>).</summary>
+    public bool[] MakingSmoke = [];
     public Combat.Helm[] Helm = [];
 
     /// <summary>Its clock tier: on rails or coarse its pose is now's, a function of time; fine, its tick's.</summary>
@@ -825,6 +828,7 @@ public sealed class ShipsView
         Array.Resize(ref Rudder, n);
         Array.Resize(ref PoseMs, n);
         Array.Resize(ref SmokeGain, n);
+        Array.Resize(ref MakingSmoke, n);
         Array.Resize(ref Helm, n);
         Array.Resize(ref Tier, n);
         Array.Resize(ref TurnEndMs, n);

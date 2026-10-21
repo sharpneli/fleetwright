@@ -479,7 +479,19 @@ public sealed partial class MapScene
                                    $"{(v.Local[i] ? "local control" : $"level {v.Level[i]} ({FireControlPresets.Name(v.Level[i])})")}; {v.Salvos[i]} salvos, {v.Hits[i]} hits of {v.Shells[i]}");
         }
         TorpedoRow(s, k, cls);
+        SmokeRow(s, k, cls);
         DamageRow(s, k, cls);
+    }
+
+    /// <summary>The selected ship making smoke (docs/battle/smoke.md Z4: her funnels burn rich, a screen), while the
+    /// smoke field is on.</summary>
+    void SmokeRow(Snapshot s, int k, ShipClass cls)
+    {
+        if (!world.Settings.Smoke || cls.Funnels.Length == 0)
+            return;
+        bool on = s.Ships.MakingSmoke[k];
+        if (ImGui.Checkbox("make smoke##screen", ref on))
+            world.Send(SmokeSystem.MakeSmoke(selected, on));
     }
 
     /// <summary>The selected ship's torpedoes (docs/battle/fighting.md 4.6): in its tubes and left, its torpedo (fast and

@@ -164,8 +164,11 @@ public sealed partial class SmokeSystem : IWorldSystem
     {
         foreach (var v in (ReadOnlySpan<ShipsView>)[s.Ships, s.Sighted])
             for (int n = 0; n < v.Count; n++)
+            {
+                v.MakingSmoke[n] = screens.Count > 0 && Screening(v.Entity[n]);
                 v.SmokeGain[n] = screens.Count > 0 && sourceOf.TryGetValue(KeyOf(v.Entity[n], SourceKind.Funnels), out int k) && sources[k].Gain > 1
                     ? (float)sources[k].Gain : 1;
+            }
     }
 
     /// <summary>The ticks start when a ship is off rails (and stop when no trail is left).</summary>
