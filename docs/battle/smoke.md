@@ -739,6 +739,19 @@ wind from the west, 8x, so the stylised plumes' clock and the world's agree):
   drawing matter (stretching a quad along its trail) or the store's (narrower pieces), for after the gate.
 - **A screen stops when its ship goes on rails** (outside any encounter): smoke is laid off rails only.
 
+**The height's drift** (the user, 2026-10-21, after the first captures: "the height dependent drift would be good"): the
+air's frame moves at the steering height's wind (50 m); each puff now drifts along the wind against it by the sea's
+profile at its settled height (`SmokeAir.ShearAt`, `SmokePuff.ShearMs`): in 8 m/s at 10 m, −0.9 m/s at 20 m, +0.8 at
+100 m, so a gun's smoke at 15 m falls 1.2 km behind a funnel's at 100 m in ten minutes. Closed form still (the centre
+plus its drift times its age along the wind: `SmokeModel.Centre`; the shader's the same); a merge keeps the centroid and
+carries on at the A-weighted drift. The rise's own lag (the drift of its lower heights while it climbs, tens of metres)
+is left out, and the drift's way is the current wind's (the weather is steady; a wind that turns would want it kept from
+birth). The wind's way is worked once a tick at the frame's reference point and taken onto each puff's tangent
+(`SmokeAir.WindDir`): `Earth.Forward` a puff cost the index 0.07 ms a game second. Neighbours laid at different plume
+heights now drift apart and merge less: Jutland's climax holds ~54k puffs (43k before), store 0.19, index 0.28, queries
+0.31 ms a game second, 0.78 against 0.8; the copy 2.2 ms. A trail at one height is still a straight line: the variation
+the user asked for next is another matter.
+
 **Gate 2, the user's call:** the world view's look (decision 2: the field alone, the stylised plumes over it, or the
 plumes for the head only, the young smoke near the ships, and the field for the rest), and whether the 2026-10-19
 decision (no simulated smoke in the first game) is reverted.

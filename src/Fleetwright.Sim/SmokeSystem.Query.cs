@@ -103,7 +103,7 @@ public sealed partial class SmokeSystem
                 }
                 var st = SmokeModel.State(puffs[i], nowS, frame, air);
                 int j = ixCount++;
-                ix[j] = new LinePuff(st, puffs[i].Origin);
+                ix[j] = new LinePuff(st, frame.ToAir(st.Centre.Normalized() * Earth.Radius));   // where it is in the air now
                 (puffsB[j], ownerB[j], prevB[j], nextB[j]) = (puffs[i], k, j > first ? j - 1 : -1, j + 1);
                 n++;
             }

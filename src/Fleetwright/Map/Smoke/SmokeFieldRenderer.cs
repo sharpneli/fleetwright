@@ -57,7 +57,7 @@ public sealed unsafe class SmokeFieldRenderer : IDisposable
     [StructLayout(LayoutKind.Sequential)]
     struct View
     {
-        public Vector4 Right, Up, Fwd, Depth, East, North, M0, M1, M2, Anchor;
+        public Vector4 Right, Up, Fwd, Depth, East, North, M0, M1, M2, Anchor, Wind;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -137,6 +137,7 @@ public sealed unsafe class SmokeFieldRenderer : IDisposable
             M1 = new Vector4(F(r1), (float)copy.LagrangianH),
             M2 = new Vector4(F(r2), (float)SmokeFieldLook.EdgeTau),
             Anchor = new Vector4(F(anchor), 1),
+            Wind = new Vector4(F(Earth.Forward(frame.ToWorld(copy.Anchor), copy.WindToDeg)), 0),
         };
         var (east, north, up) = (v.Right, v.Up, (-v.Forward).Normalized());
         Vector3 Local(Vec3d d) => new((float)Vec3d.Dot(d, east), (float)Vec3d.Dot(d, north), (float)Vec3d.Dot(d, up));

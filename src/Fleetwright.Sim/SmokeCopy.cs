@@ -7,15 +7,15 @@ namespace Fleetwright.Sim;
 /// <summary>A puff as the drawing reads it (docs/battle/smoke.md Z5; smokefield.glsl, std430: four vec4s): its place on
 /// the sea in the air's frame as an offset from the copy's anchor, m, and its birth, s before the copy (negative); its
 /// height at birth, the rise and its time, its extinction area at birth; its spreads at birth, m², and the turbulence
-/// up that spreads it (σ_w, m/s, and its Lagrangian time, s); its decay time (0 none), its tint, and whether it's
-/// drawn (the drawing rule, decision 3: 1 or 0).</summary>
+/// up that spreads it (σ_w, m/s, and its Lagrangian time, s); its decay time (0 none), its tint, whether it's drawn
+/// (the drawing rule, decision 3: 1 or 0), and its drift along the wind against the air's frame, m/s.</summary>
 [StructLayout(LayoutKind.Sequential)]
 public struct SmokeRecord
 {
     public float X, Y, Z, Born;
     public float Z0, Rise, RiseS, A0;
     public float S0h2, S0z2, SigmaW, LagrangianW;
-    public float LifeS, Tint, Shown, Spare;
+    public float LifeS, Tint, Shown, ShearMs;
     public const int SizeInBytes = 64;
 }
 

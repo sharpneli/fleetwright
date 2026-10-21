@@ -7,7 +7,8 @@ struct FieldPuff
     vec4 at;       // xyz: its place on the sea in the air's frame, m from the copy's anchor; w: its birth, s from the copy
     vec4 rise;     // x: height at birth, m; y: the rise, m; z: its time, s; w: the extinction area at birth, m^2
     vec4 spread;   // x: sigma_h^2 at birth, m^2; y: sigma_z^2 at birth; z: sigma_w, m/s; w: its Lagrangian time, s
-    vec4 misc;     // x: its decay time, s (0 none); y: its tint (SmokeTint); z: drawn (the drawing rule), 1 or 0
+    vec4 misc;     // x: its decay time, s (0 none); y: its tint (SmokeTint); z: drawn (the drawing rule), 1 or 0;
+                   // w: its drift along the wind against the air's frame, m/s
 };
 
 // a rising plume's spread for its rise (Pasquill's dh / 3.5)

@@ -240,7 +240,8 @@ static class SmokeBench
                     continue;
                 int e = w.Smoke.EntityOf(i), slot = store.SlotOf(e);
                 int k = e == os.Entity ? 0 : e == ts.Entity ? 1 : slot < 0 ? 4 : store[slot].Side == os.Side ? 2 : 3;
-                var st = SmokeModel.State(w.Smoke.Puff(i), nowS, AirFrame.Identity, w.Smoke.Air) with { Centre = w.Smoke.Puff(i).Origin };
+                var st = SmokeModel.State(w.Smoke.Puff(i), nowS, w.Smoke.Frame, w.Smoke.Air);
+                st = st with { Centre = w.Smoke.Frame.ToAir(st.Centre.Normalized() * Earth.Radius) };
                 one[0] = 0;
                 SmokeModel.TauGrid(line, st, [from], [to], one);
                 by[k] += one[0];

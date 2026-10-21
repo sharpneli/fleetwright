@@ -290,6 +290,31 @@ public class SmokeModelTests(ITestOutputHelper output)
         Assert.NotEqual(0, sink);
     }
 
+    [Fact]
+    public void Low_smoke_lags_and_high_smoke_runs_ahead()
+    {
+        // the sea's wind profile: a gun's puff at 15 m against a funnel's at 100 m, ten minutes in a westerly of 8 m/s
+        var air = SmokeAir.Of(new WeatherHere(25_000, 270, 8));
+        var frame = AirFrame.Identity;
+        var low = SmokeModel.Born(Here, 0, frame, 15, 0, 1, 15, 15, 100, 0, SmokeTint.Powder, air);
+        var high = SmokeModel.Born(Here, 0, frame, 100, 0, 1, 15, 15, 100, 0, SmokeTint.Coal, air);
+        frame.Advance(Here, air.WindToDeg, air.DriftMs, 600);
+        var a = SmokeModel.State(low, 600, frame, air).Centre;
+        var b = SmokeModel.State(high, 600, frame, air).Centre;
+        double ahead = Vec3d.Dot(b - a, Earth.East(Here)), want = (air.DriftAt(100) - air.DriftAt(15)) * 600;
+        output.WriteLine($"the funnel's smoke {ahead:F0} m ahead of the gun's (the profile's {want:F0}); at the steering height {air.ShearAt(SmokeAir.SteeringM):F3} m/s against the frame");
+        Assert.Equal(want, ahead, 1.0);
+        Assert.True(ahead > 1000);
+        Assert.Equal(0, air.ShearAt(SmokeAir.SteeringM), 1e-9);
+        // a merge keeps the pair's centroid where it is, and carries it on at their A-weighted drift
+        var sl = SmokeModel.State(low, 600, frame, air);
+        var sh = SmokeModel.State(high, 600, frame, air);
+        var m = SmokeModel.Merge(low, sl, high, sh, 600, frame, air);
+        var mid = (sl.Centre + sh.Centre).Normalized() * Earth.Radius;
+        Assert.True((SmokeModel.State(m, 600, frame, air).Centre - mid).Length < 1);
+        Assert.Equal((low.ShearMs + high.ShearMs) / 2, m.ShearMs, 1e-5);
+    }
+
     static readonly double[] Bands = [5, 15, 30];
 
     [Fact]

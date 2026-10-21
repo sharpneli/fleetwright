@@ -23,6 +23,7 @@ layout(set = 1, binding = 0) uniform View
     vec4 m1;       // xyz: its second row; w: the Lagrangian time across, s
     vec4 m2;       // xyz: its third row; w: the edge's optical depth
     vec4 anchor;   // xyz: the copy's anchor on the sea, m from the eye; w: a gain on the extinction
+    vec4 wind;     // xyz: the way the wind blows at the view's centre
 };
 
 layout(location = 0) out vec2 fragLoc;
@@ -35,7 +36,8 @@ void main()
     if (p.misc.z < 0.5)
         return;
     float z, h2, z2, area;
-    fieldState(p, max(north.w - p.at.w, 0.0), m0.w, m1.w, z, h2, z2, area);
+    float age = max(north.w - p.at.w, 0.0);
+    fieldState(p, age, m0.w, m1.w, z, h2, z2, area);
     float s = max(sqrt(h2), east.w);
     float peak = area * anchor.w / (6.2831853 * s * s);
     if (!(peak > m2.w))
@@ -44,7 +46,8 @@ void main()
     if (level != int(depth.z + 0.5))
         return;
     float reach = max(s * sqrt(2.0 * log(peak / m2.w)), s);
-    vec3 rel = anchor.xyz + vec3(dot(m0.xyz, p.at.xyz), dot(m1.xyz, p.at.xyz), dot(m2.xyz, p.at.xyz));
+    // carried by the air's frame, and on along the wind by its own drift against it (low smoke lags, high runs ahead)
+    vec3 rel = anchor.xyz + vec3(dot(m0.xyz, p.at.xyz), dot(m1.xyz, p.at.xyz), dot(m2.xyz, p.at.xyz)) + wind.xyz * (p.misc.w * age);
     vec2 corners[6] = vec2[](vec2(-1, -1), vec2(1, -1), vec2(1, 1), vec2(-1, -1), vec2(1, 1), vec2(-1, 1));
     vec2 loc = reach * corners[gl_VertexIndex];
     vec3 r = rel + east.xyz * loc.x + north.xyz * (loc.y + fwd.w * z);

@@ -271,7 +271,8 @@ public class SmokeSystemTests(ITestOutputHelper output)
                 for (int i = 0; i < w.Smoke.Slots; i++)
                     if (w.Smoke.IsLive(i))
                     {
-                        var st = SmokeModel.State(w.Smoke.Puff(i), t / 1000.0, AirFrame.Identity, w.Smoke.Air) with { Centre = w.Smoke.Puff(i).Origin };
+                        var st = SmokeModel.State(w.Smoke.Puff(i), t / 1000.0, w.Smoke.Frame, w.Smoke.Air);
+                        st = st with { Centre = w.Smoke.Frame.ToAir(st.Centre.Normalized() * Earth.Radius) };   // as the index has it
                         SmokeModel.TauGrid(line, st, from, to, all[..(ne * to.Length)]);
                     }
                 for (int j = 0; j < ne * to.Length; j++)

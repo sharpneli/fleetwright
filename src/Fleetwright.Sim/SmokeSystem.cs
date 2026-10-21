@@ -221,10 +221,11 @@ public sealed partial class SmokeSystem : IWorldSystem
                 (r.S0h2, r.S0z2) = (p.S0h2, p.S0z2);
                 // as SmokeModel.State: a puff's own turbulence up, else the air's at its settled height
                 (r.SigmaW, r.LagrangianW) = p.SigmaW > 0 ? (p.SigmaW, p.LagrangianW) : ((float)air.SigmaW(settled), (float)air.LagrangianW(settled));
-                (r.LifeS, r.Tint, r.Shown, r.Spare) = (p.LifeS, (float)p.Tint, shown, 0);
+                (r.LifeS, r.Tint, r.Shown, r.ShearMs) = (p.LifeS, (float)p.Tint, shown, p.ShearMs);
                 if (shown > 0)
                 {
-                    SmokeModel.Plan(p, copiedS, frame, air, out _, out double h2, out _, out _);
+                    double age = Math.Max(copiedS - p.Born, 0), b = p.Rise * SmokeModel.RiseShare(age / p.RiseS) * SmokeModel.BuoyantSpread;
+                    double h2 = p.S0h2 + SmokeModel.Taylor(age, air.SigmaV, air.LagrangianH) + b * b;   // as SmokeModel.Plan's
                     (minH2, maxH2) = (Math.Min(minH2, h2), Math.Max(maxH2, h2));
                 }
             }
@@ -270,6 +271,8 @@ public sealed partial class SmokeSystem : IWorldSystem
                 if (store.IsAlive(s) && !store[s].OnRails)
                     (frameAt, frameMs, frameSet) = (store[s].Position, t, true);
         air = SmokeAir.Of(world.Weather.At(frameAt, world.Time));
+        if (frameSet)
+            air = air with { WindDir = Earth.Forward(frameAt, air.WindToDeg) };   // the drift's way, once a tick
         if (frameSet)
             frame.Advance(frameAt, air.WindToDeg, air.DriftMs, (t - frameMs) / 1000.0);
         frameMs = t;
@@ -735,6 +738,7 @@ public sealed partial class SmokeSystem : IWorldSystem
                 h.Add(p.LifeS);
                 h.Add(p.SigmaW);
                 h.Add(p.LagrangianW);
+                h.Add(p.ShearMs);
                 h.Add((int)p.Tint);
             }
     }
