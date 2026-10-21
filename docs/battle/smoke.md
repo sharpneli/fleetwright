@@ -2,7 +2,8 @@
 Status: **drafted 2026-10-20**, decisions 1-4 from the user ("Decided" below); weather's one optical depth proposed (its
 first part built with Z3); Z0 (the model and the facts), Z1 (the store), Z2 (the query; gate 1 passed) and Z3 (sight and
 fire control read it) and Z4 (the other sources) done 2026-10-21, decisions 5-9; Z5 (the drawing) built 2026-10-21, gate 2 the
-user's    Updated: 2026-10-21
+user's; breaking the field (Z5b-Z5d: elongated puffs and merging across trails, the large eddies, the grain) agreed and
+built 2026-10-21, decisions 10-11    Updated: 2026-10-21
 
 Smoke as sim state that sight reads, and the same state drawn. The research is `research/vfx/unified-smoke-system.md`
 (Lagrangian Gaussian puffs as the one store, every grid a throw-away view of them), on top of
