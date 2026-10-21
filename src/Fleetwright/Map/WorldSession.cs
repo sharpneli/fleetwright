@@ -84,6 +84,10 @@ public sealed class WorldSession : IDisposable
     /// <summary>The shipped designs, where a scenario looks after its own Designs/.</summary>
     static readonly string[] DesignFolders = [Path.Combine(AppContext.BaseDirectory, "Content", "Designs")];
 
+    /// <summary>The dev's -smokefield: the smoke field on (docs/battle/smoke.md; settings.json's Smoke is off until it's
+    /// taken in).</summary>
+    public static bool SmokeField { get; set; }
+
     /// <summary>A world with the shipped settings (Content/Sim/settings.json), the app's class registry and the land.
     /// <paramref name="setup"/> runs on it before its thread starts: the dev ships (-ships=) until missions place
     /// forces.</summary>
@@ -92,6 +96,8 @@ public sealed class WorldSession : IDisposable
         Classes = classes;
         Shore = shore;
         Settings = SimSettings.Load(Path.Combine(AppContext.BaseDirectory, "Content", "Sim", "settings.json"));
+        if (SmokeField)
+            Settings = Settings with { Smoke = true };
         var w = new World(start, seed, Settings, classes, shore);
         Ai = new AiSystem(w);
         w.Apply(Command.SetPlayerSide(0));   // the dev world's player: side 0, the spawner's first

@@ -64,7 +64,7 @@ public static class FunnelSmoke
                     long key = 1L << 40 | (long)v.Entity[k] << 16 | (uint)fn;
                     int owner = (int)((uint)(v.Entity[k] * 16 + fn % 16) & 0xffffff) | 1 << 30;
                     trails.Emit(book, key, owner, now, SmokeTrails.Spacing(v.Speed[k], EveryS, SpacingM), at.Normalized() * (Earth.Radius + plume.BaseM),
-                        f * v.Speed[k], plume.BaseM, plume.RateM2s * Gain, 0, 1, tint, Math.Max(w, CoreM), plume.RiseM, plume.RiseS,
+                        f * v.Speed[k], plume.BaseM, plume.RateM2s * v.SmokeGain[k] * Gain, 0, 1, tint, Math.Max(w, CoreM), plume.RiseM, plume.RiseS,
                         (fn * 0.618f + v.Entity[k] * 0.137f) % 1, Spare, LifeS);
                 }
             }

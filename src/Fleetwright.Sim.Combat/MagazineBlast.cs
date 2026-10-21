@@ -181,6 +181,19 @@ public sealed class MagazineBlast
     /// <summary>The event for a class's magazine room.</summary>
     public static MagazineBlast Of(ShipClass c, int room) => new(c, room);
 
+    /// <summary>The magazine room an event is for: the one given if it's a magazine, else the class's largest (a dev's or
+    /// a fire's that names none); null if she has none.</summary>
+    public static int? Magazine(ShipClass c, int room)
+    {
+        if (room >= 0 && room < c.Rooms.Length && c.Rooms[room].Kind == RoomKind.Magazine)
+            return room;
+        int best = -1;
+        for (int r = 0; r < c.Rooms.Length; r++)
+            if (c.Rooms[r].Kind == RoomKind.Magazine && (best < 0 || c.Rooms[r].Tonnes > c.Rooms[best].Tonnes))
+                best = r;
+        return best >= 0 ? best : null;
+    }
+
     MagazineBlast(ShipClass c, int room)
     {
         ref readonly var r = ref c.Rooms[room];

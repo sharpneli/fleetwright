@@ -567,8 +567,9 @@ public sealed partial class ShipSystem : IWorldSystem
 
     /// <summary>Where a showing fire's flames come out, in the ship's frame, and how wide the opening or the burning area
     /// is, m: a space's through a hole in her side above the water (the holes' mean), else up through the deck over it
-    /// (its hatches); a part's at its top; a weather deck's on the deck at its section's middle. Display only.</summary>
-    static (P3 At, double WidthM) FireOpening(ShipClass c, ShipCondition k, int space)
+    /// (its hatches); a part's at its top; a weather deck's on the deck at its section's middle. Where the world view draws
+    /// it and the smoke field lays its smoke from (docs/battle/smoke.md Z4).</summary>
+    internal static (P3 At, double WidthM) FireOpening(ShipClass c, ShipCondition k, int space)
     {
         ref readonly var row = ref c.FireSpaces[space];
         ref readonly var x = ref k.Fire[space];

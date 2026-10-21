@@ -789,6 +789,7 @@ public sealed class DamageSystem : IWorldSystem
         var ship = ships.Store[slot];
         blasts[blastNext] = new Blast(world.Time.Ms, ship.Entity, ship.ClassIndex, room, cause, ship.Position, ship.Forward, point,
             race.Tier >= MagazineTier.Severed ? race.Tier : MagazineTier.Severed, race.Tier >= MagazineTier.Severed ? race.FastKg : double.NaN);
+        world.Smoke.Magazine(world, blasts[blastNext], ship.Handling.Class);   // its smoke (docs/battle/smoke.md Z4)
         blastNext = (blastNext + 1) % blasts.Length;
         blastCount = Math.Min(blastCount + 1, blasts.Length);
         Lose(world, slot, k, LossKind.Magazine);

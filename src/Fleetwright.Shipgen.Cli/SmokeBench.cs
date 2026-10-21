@@ -28,9 +28,11 @@ static class SmokeBench
             return Store(args.Count >= 2 ? args[1] : scenario, settingsPath, designs, minutes, every, speed);
         if (args.Count >= 1 && args[0] == "pileup")
             return Pileup(classOf(args.Count >= 2 ? args[1] : "dreadnought"), settingsPath, minutes);
+        if (args.Count >= 1 && args[0] == "screen")
+            return Screen(classOf(args.Count >= 2 ? args[1] : "dreadnought"), classOf(args.Count >= 3 ? args[2] : "destroyer"), settingsPath, minutes);
         if (args.Count < 2 || args[0] != "facts")
         {
-            Console.Error.WriteLine("shipgen smoke facts DESIGN...  |  shipgen smoke run [SCENARIO] [--minutes N] [--every N] [--speed X]");
+            Console.Error.WriteLine("shipgen smoke facts DESIGN...  |  shipgen smoke run [SCENARIO] [--minutes N] [--every N] [--speed X]  |  shipgen smoke pileup [DESIGN]  |  shipgen smoke screen [LINE] [SCREEN] [--minutes N]");
             return 2;
         }
         var sb = new StringBuilder();
@@ -80,6 +82,24 @@ static class SmokeBench
                     var (col, across, along, z, sh, sz) = Trail(rate, rel, p0.BaseM, p0.RiseM, p0.RiseS, age, air);
                     Line(string.Format(Inv, "      {0,4:0} s (σ_h {1:0} m, σ_z {2:0} m, at {3:0} m): τ {4:0.00} / T {5:0.000} / τ {6:0.0}", age, sh, sz, z, col, Math.Exp(-across), along));
                 }
+            }
+            // her guns' smoke a mount's salvo (Z4), and a fire's for scale
+            for (int bi = 0; bi < c.Batteries.Length; bi++)
+            {
+                var mounts = c.Links(c.Batteries[bi].Mounts);
+                if (mounts.Length == 0)
+                    continue;
+                var flash = MuzzleFlash.Of(c, mounts[0]);
+                var g = SmokeSources.Gun(flash, flash.Guns, 10);
+                var tt = c.TurretTypes[c.Mounts[mounts[0]].Type];
+                var pr = c.Charges[c.Mounts[mounts[0]].Type].Propellant;
+                Line(string.Format(Inv, "  battery {0} ({1:0} mm, {2} mounts; propellant solids {3:0.000}, {4:0.0} m²/g): a mount's salvo {5:0} m² ({6:0.0} kg of charges), its core σ {7:0.0} m, {8:0} m out along the bore, rising {9:0} m over {10:0.0} s",
+                    bi, tt.CalibreMm, mounts.Length, pr.Solids, pr.ExtinctionM2g, g.AreaM2, flash.ChargeKg, g.SigmaM, g.AlongM, g.RiseM, g.RiseS));
+            }
+            foreach (double mw in new[] { 2.0, 10, 50 })
+            {
+                var f = SmokeSources.Fire(mw, 0, BurnPhase.Developed, 3, 8, neutral);
+                Line(string.Format(Inv, "  a developed fire of {0:0} MW (any ship): {1:0} m²/s, flames {2:0.0} m, rising {3:0} m over {4:0} s in 8 m/s", mw, f.RateM2s, f.FlameM, f.RiseM, f.RiseS));
             }
             Line(string.Format(Inv, "  the research's tuning, 1,500 m²/s at full power for coal: hers {0:0} m²/s ({1:0.00} of it)",
                 Enumerable.Range(0, c.Funnels.Length).Sum(i => SmokeSources.Funnel(c, i, full, 10, neutral).RateM2s),
@@ -229,6 +249,54 @@ static class SmokeBench
         double sum = Math.Max(by.Sum(), 1e-12);
         yield return string.Format(Inv, "           whose smoke, on {0} smoky lines (mean τ {1:0.00} at the middle band): her own {2:0}%, the target's {3:0}%, her side's {4:0}%, the target's side's {5:0}%, ships gone {6:0}%",
             sample.Count, sum / sample.Count, 100 * by[0] / sum, 100 * by[1] / sum, 100 * by[2] / sum, 100 * by[3] / sum, 100 * by[4] / sum);
+    }
+
+    /// <summary>`shipgen smoke screen`: the USNI case (docs/battle/smoke.md Z4): a battle line of three steaming north at
+    /// 15 kn, a target of the same class 13 km to the east on the same course, and four destroyers of hers in line
+    /// between, 5 km off the battle line, at 25 kn, the wind from the east at 5 m/s (blowing the screen toward the line).
+    /// Run for so many minutes with the field off, on, and on with the destroyers making smoke: how long the target was
+    /// in the line's navy's sight, and the destroyers; the depth on the line from the guide's highest eye to her middle at
+    /// the end.</summary>
+    static int Screen(ShipClass line, ShipClass screen, string settingsPath, double minutes)
+    {
+        var baseSettings = SimSettings.Load(settingsPath) with { RailsEnabled = false };
+        Console.WriteLine(string.Format(Inv, "{0} x 3 against one 13 km east, {1} x 4 screening her 5 km off the line at 25 kn, the wind from the east at 5 m/s; {2:0} min",
+            line, screen, minutes));
+        Span<double> taus = stackalloc double[SmokeSystem.PairTaus];
+        foreach (var (name, smoke, screening) in new[] { ("the field off", false, false), ("the field on", true, false), ("making smoke", true, true) })
+        {
+            var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), 7, baseSettings with { Smoke = smoke });
+            int a = w.Ships.AddClass(line), b = w.Ships.AddClass(screen);
+            w.Apply(Command.SetWeather(25_000, 90, 5));
+            for (int i = 0; i < 3; i++)
+                w.Apply(ShipSystem.Spawn(a, 56.5 - 0.005 * i, 4.0, 0, 15, 0));
+            w.Apply(ShipSystem.Spawn(a, 56.5, 4.0 + 13_000 / (111_320 * Math.Cos(56.5 * Math.PI / 180)), 0, 15, 1));
+            for (int i = 0; i < 4; i++)
+                w.Apply(ShipSystem.Spawn(b, 56.5 + 0.01 - 0.009 * i, 4.0 + 5_000 / (111_320 * Math.Cos(56.5 * Math.PI / 180)), 0, 25, 1));
+            if (screening)
+                for (int e = 5; e <= 8; e++)
+                    w.Apply(SmokeSystem.MakeSmoke(e, true));
+            int target = 0, screens = 0, seconds = (int)(minutes * 60);
+            for (int t = 0; t < seconds; t++)
+            {
+                w.AdvanceTo(w.Time + 1000);
+                var pic = w.Sightings.Of(0);
+                if (pic == null)
+                    continue;
+                target += pic.IndexOf(4) is int i and >= 0 && pic[i].InSight ? 1 : 0;
+                for (int e = 5; e <= 8; e++)
+                    screens += pic.IndexOf(e) is int j and >= 0 && pic[j].InSight ? 1 : 0;
+            }
+            double tau = double.NaN;
+            if (smoke)
+            {
+                w.Smoke.TauUncached(w, w.Ships.Store.SlotOf(1), w.Ships.Store.SlotOf(4), taus);
+                tau = taus[1];
+            }
+            Console.WriteLine(string.Format(Inv, "  {0,-14} the target in sight {1,4} s of {2}, the destroyers {3,5:0.0}% of theirs; τ the guide's highest eye to her middle {4:0.00}; {5} puffs",
+                name, target, seconds, 100.0 * screens / (4 * seconds), tau, w.Smoke.Count));
+        }
+        return 0;
     }
 
     /// <summary>`shipgen smoke run`: a scenario headless with the field on (docs/battle/smoke.md Z1), in a world of water,

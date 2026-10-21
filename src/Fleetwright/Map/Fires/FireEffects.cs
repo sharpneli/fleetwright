@@ -53,7 +53,7 @@ public static class FireEffects
                 {
                     Fire(view, v, j, p, f, stbd, c.Vertical.Waterline, windPlan, world, clock, bodies, lights, span, v.Entity[k]);
                     if (smoke != null && trails != null && (FireLook.Parts & 4) != 0)
-                        Smoke(v, j, p, f, stbd, c.Vertical.Waterline, wind.Length, v.Speed[k], drawMs / 1000.0, smoke, trails, v.Entity[k]);
+                        Smoke(v, j, p, f, stbd, c.Vertical.Waterline, wind.Length, SmokeAir.Of(s.Weather), v.Speed[k], drawMs / 1000.0, smoke, trails, v.Entity[k]);
                 }
             }
         lights.Finish(view);
@@ -114,38 +114,34 @@ public static class FireEffects
     /// <summary>A fire's smoke (I5), a trail of puffs on the gun smoke's book (<see cref="SmokeTrails"/>), from its flames'
     /// tips:
     /// <list type="bullet">
-    /// <item>its extinction area a second, Ȧ = (Q / ΔH_c) y_s σ_s (ΔH_c 18 MJ/kg, σ_s 8,700 m²/kg, Mulholland): a growing
-    /// fire's soot yield <see cref="FireLook.YieldGrow"/> in a light grey, a developed one's <see cref="FireLook.YieldDeveloped"/>
-    /// in a grey-brown going black (10 MW developed: ~350 m²/s), burning charges a yellow-brown [EST, gaps 1 and 3];</item>
+    /// <item>its smoke, rise and flames from the field's source (<see cref="SmokeSources.Fire"/>, docs/battle/smoke.md Z4:
+    /// one implementation), times <see cref="FireLook.SmokeGain"/>: a growing fire's soot in a light grey, a developed
+    /// one's in a grey-brown going black, burning charges a yellow-brown [EST, gaps 1 and 3];</item>
     /// <item>steam while water is on it: the water it boils (the hoses' flow times its boil share) as water fog, white,
-    /// evaporating over <see cref="FireLook.SteamS"/> [EST];</item>
-    /// <item>its rise, bent over in the apparent wind (Briggs): Δh = 1.6 F^⅓ x^⅔ / U, F ≈ 9 Q_c m⁴/s³ with Q_c 0.7 Q MW,
-    /// reached at <see cref="FireLook.LevelM"/> downwind (10 MW in 7 m/s: ~40 m up at 200 m), then levelling off and
-    /// spreading as the puffs do.</item>
+    /// evaporating over <see cref="FireLook.SteamS"/> [EST]: the drawing's alone (gone in seconds, the field leaves it
+    /// out).</item>
     /// </list></summary>
-    static void Smoke(ShipsView v, int j, Vec3d p, Vec3d f, Vec3d stbd, double wl, double windMs, double speedMs, double now, SmokeBook book,
-        SmokeTrails trails, int entity)
+    static void Smoke(ShipsView v, int j, Vec3d p, Vec3d f, Vec3d stbd, double wl, double windMs, in SmokeAir air, double speedMs, double now,
+        SmokeBook book, SmokeTrails trails, int entity)
     {
         var at = v.ShowAt[j];
         double q = Math.Max(v.ShowMW[j], 0), qc = Math.Max(v.ShowChargesMW[j], 0), d = Math.Max(v.ShowWidthM[j], 0.5);
         var phase = v.ShowPhase[j];
-        double dev = phase is BurnPhase.Developed or BurnPhase.Decay ? 1 : phase == BurnPhase.Control ? 0.3 : 0;
-        double yield = FireLook.YieldGrow + (FireLook.YieldDeveloped - FireLook.YieldGrow) * dev;
-        double aRate = (q / FireLook.HeatMJkg * yield + qc / FireLook.HeatMJkg * FireLook.YieldCharges) * FireLook.SootM2Kg;
+        var plume = SmokeSources.Fire(q, qc, phase, d, windMs, air);
+        double aRate = plume.RateM2s * FireLook.SmokeGain;
         double steam = v.ShowWaterLpm[j] / 60 * v.ShowBoil[j] * FireLook.SteamM2Kg;
         if (aRate + steam <= 0)
             return;
+        double dev = phase is BurnPhase.Developed or BurnPhase.Decay ? 1 : phase == BurnPhase.Control ? 0.3 : 0;
         var tint = Vector3.Lerp(GrowSmoke, DevelopedSmoke, (float)dev);
         if (qc > 0)
             tint = Vector3.Lerp(tint, ChargeSmoke, (float)(qc / (q + qc)));
-        double u = Math.Max(windMs, 1), fc = 9 * 0.7 * (q + qc);
-        double rise = Math.Min(1.6 * Math.Cbrt(fc) * Math.Pow(FireLook.LevelM, 2.0 / 3) / u, FireLook.MaxRiseM);
-        double l = Math.Max(MagazineBlast.Heskestad((q + qc) * 1000, d), 0.4 * d) * FireLook.Height, z = at.Z - wl + l;
+        double z = at.Z - wl + plume.FlameM * FireLook.Height;
         var sea = p + f * at.X + stbd * at.Y;
         long key = (long)entity << 20 | (uint)v.ShowSpace[j];
         int owner = (int)((uint)(entity * 64 + v.ShowSpace[j] % 64) & 0xffffff) | 1 << 29;
-        trails.Emit(book, key, owner, now, SmokeTrails.Spacing(speedMs, FireLook.EveryS), sea + sea.Normalized() * z, f * speedMs, z, aRate, steam, FireLook.SteamS, tint, Math.Max(d, 2), rise,
-            FireLook.LevelM / u, (float)U((uint)key, 99), FireLook.Spare);
+        trails.Emit(book, key, owner, now, SmokeTrails.Spacing(speedMs, FireLook.EveryS), sea + sea.Normalized() * z, f * speedMs, z, aRate, steam, FireLook.SteamS, tint, Math.Max(d, 2),
+            plume.RiseM, plume.RiseS, (float)U((uint)key, 99), FireLook.Spare);
     }
 
     /// <summary>A fire's smoke's tints, linear [EST, gap 1]: growing a light grey, developed a grey-brown near black,

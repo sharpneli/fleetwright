@@ -31,6 +31,7 @@ public static unsafe class Program
         var engages = new List<string>();
         string? weather = null;
         var torpedoes = new List<string>();
+        var screens = new List<string>();
         var damages = new List<string>();
         var firefightings = new List<string>();
         var readinesses = new List<string>();
@@ -244,6 +245,14 @@ public static unsafe class Program
             {
                 torpedoes.Add(arg.Substring("-torpedo=".Length));
             }
+            else if (arg == "-smokefield")   // the smoke field on (docs/battle/smoke.md; settings.json's Smoke stays off)
+            {
+                Map.WorldSession.SmokeField = true;
+            }
+            else if (arg.StartsWith("-smoke="))   // a dev ship makes smoke: -smoke=ship[:on|off] (docs/battle/smoke.md Z4; the field's on in settings.json)
+            {
+                screens.Add(arg.Substring("-smoke=".Length));
+            }
             else if (arg.StartsWith("-damage-control="))   // a side's firefighting doctrine: -damage-control=side:name (docs/battle/fire.md B4; settings.json's DamageControl, 1890 the weakest)
             {
                 firefightings.Add(arg.Substring("-damage-control=".Length));
@@ -429,6 +438,14 @@ public static unsafe class Program
                     world.Send(order);
                 else
                     Console.Error.WriteLine($"Bad torpedo: -torpedo={torpedo} (want ship:target[:n])");
+            foreach (var screen in screens)
+            {
+                var p = screen.Split(':');
+                if (p.Length is 1 or 2 && int.TryParse(p[0], out int ship) && (p.Length == 1 || p[1] is "on" or "off"))
+                    world.Send(Sim.SmokeSystem.MakeSmoke(ship, p.Length == 1 || p[1] == "on"));
+                else
+                    Console.Error.WriteLine($"Bad smoke: -smoke={screen} (want ship[:on|off])");
+            }
             foreach (var ff in firefightings)
             {
                 var p = ff.Split(':', 2);

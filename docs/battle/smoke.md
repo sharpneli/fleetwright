@@ -1,7 +1,7 @@
 # Plan: the smoke field (a feasibility study)
 Status: **drafted 2026-10-20**, decisions 1-4 from the user ("Decided" below); weather's one optical depth proposed (its
 first part built with Z3); Z0 (the model and the facts), Z1 (the store), Z2 (the query; gate 1 passed) and Z3 (sight and
-fire control read it) done 2026-10-21, decisions 5-9    Updated: 2026-10-21
+fire control read it) and Z4 (the other sources) done 2026-10-21, decisions 5-9    Updated: 2026-10-21
 
 Smoke as sim state that sight reads, and the same state drawn. The research is `research/vfx/unified-smoke-system.md`
 (Lagrangian Gaussian puffs as the one store, every grid a throw-away view of them), on top of
@@ -568,7 +568,8 @@ guns).
 - **Jutland, the fight** (`scenario --no-land`, 3 h): 1,099 hits from 17,671 shells with the field, 1,704 from 23,170
   without (35% fewer hits, 24% fewer shells); the same three ships lost (B109 for Cordelia).
 - **`fc-history`** (12 runs a case; the cases' winds put the smoke where their records say, in each case's frame; with
-  the field off they change nothing):
+  the field off they change nothing). *Corrected in Z4:* at 40 runs a case only the German BCs' case moves (to 0.0%); the
+  other moves here are within run-to-run noise (Z4's table):
 
   | Case (the record) | Off | On |
   | --- | --- | --- |
@@ -598,11 +599,82 @@ outcome to bring toward the record. The candidates, all physical: the funnels' o
 glow for dark coal smoke (the airlight factor above), and an eye's choice among her posts (an aft control in her own
 plume while the foretop is clear).
 
-### Z4 The other sources
-- Guns (black and brown powder against smokeless), fires, magazines and sinkings; `Command.MakeSmoke` and a dev
-  `-smoke=SHIP:on`.
-- Benches: a destroyers' screen hides a target from a battle line (the USNI case); Santiago's and the Yalu's powder
-  smoke against their records.
+### Z4 The other sources (done 2026-10-21)
+
+**Built:** each source its own trail a ship (`SmokeSystem.SourceKind`: funnels, guns, fires, a burst), merged and
+retired along it as the funnels' are:
+
+- **Guns** (`SmokeSystem.Gun`, from `GunnerySystem` beside `ShellSystem.Fired`; `SmokeSources.Gun`): a puff a mount
+  fired, its charges' solids (`MuzzleFlash.SmokeM2`, a share by the barrels that fired), carried along the bore to the
+  jet's end (2.5 of the expected fireball's length past the Mach disk), a core 0.35 λ_f across, rising 0.6 λ_f over
+  3 + 0.05 λ_f s: the map's gun puffs' numbers (muzzle-flash research §5). Black powder's solids (0.56 of the charge at
+  1.5 m²/g) against smokeless (0.001-0.004 at 3): a Devastation's 12" mount makes ~80,000 m² a salvo, a dreadnought's
+  ~6,000. The water fog is left out (gone in seconds, before a line could read it).
+- **Fires** (`SmokeSources.Fire`, laid each tick as one plume a ship like her funnels'): the map's fire smoke moved
+  into the sim (one implementation; `FireEffects` draws it, its `yield`, `growyield` and `level` knobs replaced by a
+  `smoke` gain): soot from the heat burnt (18 MJ/kg, a yield from a growing fire's 0.03 to a developed one's 0.08,
+  charges' 0.02, 8,700 m²/kg), leaving from the flames' tips (Heskestad, from `ShipSystem.FireOpening`), rising by
+  Briggs from its convected heat (0.7 of it). 10 MW developed: 387 m²/s, rising 57 m in 8 m/s. Steam stays the
+  drawing's (gone in seconds). No backfill: a fire's smoke starts when it shows.
+- **Magazines** (`SmokeSystem.Magazine`, from `DamageSystem.Blew`; `SmokeSources.Fireball`): the fireball's soot at
+  once (column τ 8 over σ a quarter of its diameter, centred 0.35 D over the deck, lifting D/2 over two lives:
+  `MagazineBlast.BodyAt`'s), from the venting race's propellant (else the room's event's); then the wreck's fires,
+  15,000 m²/s times the event's scale squared, fading over 40 s, laid each tick for two minutes. The map's after-smoke
+  reads the same numbers (`SmokeSources.WreckSmokeM2s`, `WreckSmokeFadeS`; its `firesmoke` knob a gain, `firefade`
+  gone). `MagazineBlast.Magazine` picks the room for both (one implementation).
+- **Sinkings** other than by a magazine add nothing: a ship going down stops her funnels' smoke, and her fires' with
+  it.
+- **Screens** (`SmokeSystem.MakeSmoke(ship, on)`, the dev's `-smoke=SHIP[:on|off]`): her funnels burn her fuel rich,
+  `SmokeScreenM2PerKg` (600 m² a kg, some 8% of the fuel as soot [EST, request 3]) where her plant makes less: an oil
+  destroyer ×57, a coal ship ×12. The command takes her off rails (smoke is laid off rails). The snapshot carries the
+  gain (`ShipsView.SmokeGain`) and the map's funnel plumes draw it (checked by a capture: the screening destroyer's
+  plume shows where her consort's hardly does). They keep their stylised 8 s life (2026-10-19), so a screen draws as a
+  denser short plume, not the bank the field holds: drawing the field is Z5's. The dev's `-smokefield` turns the field
+  on in the game (settings.json's `Smoke` stays off). Chemical floats later.
+- **Not built: the dirty cells.** Decision 9 (speed over freshness) covers bursts and screens too: new smoke reaches a
+  line within 30 s, a magazine's cloud and a screen as a funnel's trail.
+
+**Tests:** every source lays its own trail (the engaged world with guns firing, a ship on fire, a screen and a magazine
+going up), a screen burns rich (×12 on a coal ship, to 2%), a powder salvo's cloud blinds the line for a minute and
+clears; the same world at any fine speed and a replay, now with every source going.
+
+**The yardstick:**
+
+- **A destroyers' screen** (`shipgen smoke screen`, the USNI case: three dreadnoughts, a target of theirs 13 km east, four
+  destroyers of hers between, 5 km off the line at 25 kn, the wind from the east at 5 m/s, 10 min): the target in the
+  line's sight 592 s of 600 with the field off and on, **0 s behind the screen** (τ 3.7 on the guide's line at the end);
+  the screening destroyers themselves in sight half the time (99% without).
+- **Powder smoke** (no Santiago or Yalu ship fires black powder in our designs: `connecticut`, the Santiago case's
+  shooter, is a 1904 design with smokeless; only the ironclads' blocks do, Devastation, Inflexible, Duilio): two
+  Devastations at 3 km, 10 kn, 20 runs: a wind across their course or ahead changes nothing (she steams out of her own
+  cloud in under a minute, and new smoke reaches a line within 30 s, decision 9); **a wind from astern at her own speed
+  keeps the cloud with her: hits 8.8% → 4.5%**, and at 15 kn of wind it outruns her (7.0%). The test sees the line opaque
+  (τ ~180) for a minute after each salvo. The record (request 4) asks how long it hung over a firing ship; the cases
+  for it need period designs.
+- **`fc-history`, 40 runs a case** (Z3's 12-run figures were within run-to-run noise, so these replace them):
+
+  | Case | Off | On (every source) |
+  | --- | --- | --- |
+  | Dogger Bank, British BCs (record 1.4%) | 4.8% | 4.4% |
+  | Dogger Bank, German BCs (~2.5%; firing astern into their own smoke) | 1.7% | **0.0%** |
+  | Jutland, British 1st/2nd BCS (1.4%) | 3.4% | 3.9% |
+  | Jutland, British 5th BS (2.6%) | 2.7% | 2.7% |
+  | Jutland, Grand Fleet BS (3.6%) | 9.8% | 10.6% |
+  | Jutland, British 3rd BCS (4.3%) | 21.2% | 20.6% |
+  | Jutland, German 1st SG (4.0%) | 4.1% | 4.1% |
+  | Jutland, German battleships (3.0%) | 7.2% | 7.1% |
+  | Falklands, Invincible (~7%) | 5.1% | 4.6% |
+
+  The duels hardly move: two ships at speed outrun their smoke, and a line meets a trail only at its ship's end, unless
+  it runs along it (the astern case, the chase test). The record's smoke at these battles was the fleets' (the next
+  item), not a single pair's.
+- **Jutland, the fight** (`scenario --no-land --smoke`, 3 h, one run each): 1,363 hits from 17,516 shells with every
+  source (Z3's funnels only: 1,099 from 17,671; the field off: 1,704 from 23,170): 20-35% fewer hits with the field, the
+  runs diverging as fights do.
+- **The cost at Jutland** (`smoke run`, `DOTNET_TieredCompilation=0`, alone on the machine): 280-290 trails (guns,
+  fires and bursts beside the funnels), 43-47k puffs. The main fleets' action: store 0.16, index 0.20, queries 0.36 ms
+  a game second, **0.72 in all against 0.8**; at 2½ h 0.73. The gun puffs cost little: a few a minute a ship, merged
+  along her guns' trail.
 
 ### Z5 The drawing (gate 2)
 - The snapshot's copy, the shader's twin, the accumulation and resolve; the table's wash and the world view's plain look;

@@ -1921,6 +1921,11 @@ public sealed record SimSettings
     /// works, tops) [placeholder: Z3 sets them from the silhouette's area table].</summary>
     public double[] SmokeBands { get; init; } = [0.2, 0.5, 0.85];
 
+    /// <summary>A ship making smoke (docs/battle/smoke.md Z4, <c>SmokeSystem.MakeSmoke</c>) burns her fuel rich: this much
+    /// smoke a kg of it, m², in place of her plant's own when it's less (some 8% of the fuel as soot at 7.5 m²/g) [EST:
+    /// research request 3, how fast destroyers laid funnel smoke].</summary>
+    public double SmokeScreenM2PerKg { get; init; } = 600;
+
     // ------------------------------------------------------------------ from data
 
     /// <summary>Reads settings from JSON. Strict: an unknown key is an error (a misspelt key would silently keep its

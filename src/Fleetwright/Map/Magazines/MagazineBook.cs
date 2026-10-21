@@ -91,7 +91,7 @@ public sealed class MagazineBook : IThrownTurrets
             if (ms < lastMs || Seen(ms, v.Ship[i]))
                 continue;
             lastMs = ms;
-            if (classOf(v.Class[i]) is not { } cls || Room(cls, v.Room[i]) is not int room)
+            if (classOf(v.Class[i]) is not { } cls || MagazineBlast.Magazine(cls, v.Room[i]) is not int room)
                 continue;
             if (!events.TryGetValue((v.Class[i], room), out var ev))
                 events[(v.Class[i], room)] = ev = MagazineBlast.Of(cls, room);
@@ -210,7 +210,8 @@ public sealed class MagazineBook : IThrownTurrets
                 continue;
             var up = e.At.Normalized();
             double k = ev.K;
-            int due = (int)Math.Min(since / MagazineLook.FireEveryS, 3 * MagazineLook.FireFadeS / MagazineLook.FireEveryS) + 1;
+            double fade = SmokeSources.WreckSmokeFadeS;
+            int due = (int)Math.Min(since / MagazineLook.FireEveryS, 3 * fade / MagazineLook.FireEveryS) + 1;
             for (; e.Fires < due; e.Fires++)
             {
                 double at = e.Fires * MagazineLook.FireEveryS;
@@ -218,7 +219,7 @@ public sealed class MagazineBook : IThrownTurrets
                 {
                     Born = smokeNow - (since - at), Origin = e.At + up * ev.DeckZ, Z0 = (float)(ev.DeckZ + 10), Anchor = (float)ev.DeckZ,
                     Lambda = (float)(30 * Math.Sqrt(k)),
-                    Ap = (float)(MagazineLook.FireSmokeM2 * MagazineLook.FireEveryS * k * k * Math.Exp(-at / MagazineLook.FireFadeS)),
+                    Ap = (float)(SmokeSources.WreckSmokeM2s * MagazineLook.FireSmokeGain * MagazineLook.FireEveryS * k * k * Math.Exp(-at / fade)),
                     Aw0 = 0, FogS = 1, RampS = 1, Tint = Soot, Seed = (Hash(e.Hash + (uint)e.Fires * 977u) & 0xffff) / 65536f,
                     Shooter = e.Ship | 1 << 30, Keep = true,
                 });
@@ -254,18 +255,6 @@ public sealed class MagazineBook : IThrownTurrets
             if (this[k].Ms == ms && this[k].Ship == ship)
                 return true;
         return false;
-    }
-
-    /// <summary>The magazine that went: the record's, else the class's fullest; null when it has none.</summary>
-    static int? Room(ShipClass c, int room)
-    {
-        if (room >= 0 && room < c.Rooms.Length && c.Rooms[room].Kind == RoomKind.Magazine)
-            return room;
-        int best = -1;
-        for (int r = 0; r < c.Rooms.Length; r++)
-            if (c.Rooms[r].Kind == RoomKind.Magazine && (best < 0 || c.Rooms[r].Tonnes > c.Rooms[best].Tonnes))
-                best = r;
-        return best >= 0 ? best : null;
     }
 
     static double U(uint h, uint k) => Hash(h * 8u + k) / 4294967296.0;

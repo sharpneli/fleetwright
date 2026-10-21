@@ -647,6 +647,10 @@ public sealed class ShipsView
     /// <summary>m/s, negative astern; rad/s, positive to starboard; rad.</summary>
     public double[] Speed = [], YawRate = [], Rudder = [];
     public long[] PoseMs = [];
+
+    /// <summary>Her funnels' smoke against her plant's own: over 1 while she makes smoke (docs/battle/smoke.md Z4), so
+    /// what's drawn is what blocks sight; 1 otherwise.</summary>
+    public float[] SmokeGain = [];
     public Combat.Helm[] Helm = [];
 
     /// <summary>Its clock tier: on rails or coarse its pose is now's, a function of time; fine, its tick's.</summary>
@@ -820,6 +824,7 @@ public sealed class ShipsView
         Array.Resize(ref YawRate, n);
         Array.Resize(ref Rudder, n);
         Array.Resize(ref PoseMs, n);
+        Array.Resize(ref SmokeGain, n);
         Array.Resize(ref Helm, n);
         Array.Resize(ref Tier, n);
         Array.Resize(ref TurnEndMs, n);

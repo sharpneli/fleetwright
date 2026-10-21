@@ -37,14 +37,11 @@ public static class MagazineLook
     /// ln(1 + t / 0.3 life), fast at first and slowing.</summary>
     public static double Churn = 1.5;
 
-    /// <summary>The wreck's fires' fading, s (their soot, X6).</summary>
-    public static double FireFadeS = 40;
-
     /// <summary>The after-smoke (X6) on the smoke's puffs: a fire's puff every so many seconds while they burn (three
-    /// of their fadings; far enough apart that the wind lays them out as a plume, not one blob merged at the wreck), the
-    /// fires' smoke at the start for the reference's event, m² of extinction area a second (a heavy oil fire's: a 15"
-    /// twin's gun smoke every ~0.7 s), and each of the boilers' four steam puffs', m², as water fog.</summary>
-    public static double FireEveryS = 6, FireSmokeM2 = 15_000, SteamM2 = 8_000;
+    /// of their fadings; far enough apart that the wind lays them out as a plume, not one blob merged at the wreck); the
+    /// fires' smoke and its fading are the field's (<c>SmokeSources.WreckSmokeM2s</c>, docs/battle/smoke.md Z4), times a
+    /// gain for side-by-side captures; each of the boilers' four steam puffs', m², as water fog.</summary>
+    public static double FireEveryS = 6, FireSmokeGain = 1, SteamM2 = 8_000;
 
     /// <summary>A gain on the fire's brightness over the physical contrast (as the flashes': 1 physical).</summary>
     public static double Gain = 1;
@@ -90,9 +87,8 @@ public static class MagazineLook
             case "opacity": Opacity = Math.Max(v, 0); break;
             case "spin": Spin = v; break;
             case "churn": Churn = Math.Max(v, 0); break;
-            case "firefade": FireFadeS = Math.Max(v, 1); break;
             case "fireevery": FireEveryS = Math.Max(v, 0.2); break;
-            case "firesmoke": FireSmokeM2 = Math.Max(v, 0); break;
+            case "firesmoke": FireSmokeGain = Math.Max(v, 0); break;
             case "steam": SteamM2 = Math.Max(v, 0); break;
             case "gain": Gain = Math.Max(v, 0); break;
             case "whiten": Whiten = Math.Clamp(v, 0, 1); break;
@@ -106,5 +102,5 @@ public static class MagazineLook
         return true;
     }
 
-    public const string Knobs = "scatterd, scatters, fadefrom, fadeto, skin, cold, hot, soot, opacity, spin, churn, firefade, fireevery, firesmoke, steam, gain, whiten, steps, parts (1 body, 2 shadow, 4 jets, 8 debris, 16 light, 32 after-smoke), light, at (a still at that age, s), on";
+    public const string Knobs = "scatterd, scatters, fadefrom, fadeto, skin, cold, hot, soot, opacity, spin, churn, fireevery, firesmoke (a gain), steam, gain, whiten, steps, parts (1 body, 2 shadow, 4 jets, 8 debris, 16 light, 32 after-smoke), light, at (a still at that age, s), on";
 }

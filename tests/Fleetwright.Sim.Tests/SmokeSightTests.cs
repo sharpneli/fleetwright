@@ -114,6 +114,41 @@ public class SmokeSightTests(ITestOutputHelper output)
         Assert.True(w.Smoke.Worked * 5 < w.Smoke.Asked, "the looks and fire control share the pair's answer");
     }
 
+    /// <summary>An ironclad's black-powder salvo (docs/battle/smoke.md Z4): its cloud kept pace with her by a wind from
+    /// astern at her own speed, a target abeam 3 km off: the line goes opaque for a minute after each salvo, then clears
+    /// as the cloud spreads and drifts ahead.</summary>
+    [Fact]
+    public void A_powder_salvo_lays_its_cloud()
+    {
+        var w = new World(Start, 9, Settings with { Smoke = true, RailsEnabled = false });
+        int c = w.Ships.AddClass(Fleet.Get("devastation").Class!);
+        w.Apply(Command.SetWeather(25_000, 180, 10 * Handling.MsPerKnot));
+        w.Apply(ShipSystem.Spawn(c, 56.5, 4.0, 0, 10, 0));
+        w.Apply(ShipSystem.Spawn(c, 56.5, 4.0 + 3_000 / (111_320 * Math.Cos(56.5 * Math.PI / 180)), 0, 10, 1));
+        w.Apply(GunnerySystem.Engage(1, 0, 2));
+        Span<double> tau = stackalloc double[SmokeSystem.PairTaus];
+        double peak = 0;
+        bool cleared = false;
+        for (int s = 0; s < 600; s += 15)
+        {
+            w.AdvanceTo(w.Time + 15_000);
+            int guns = 0;
+            double area = 0;
+            for (int i = 0; i < w.Smoke.Slots; i++)
+                if (w.Smoke.IsLive(i) && w.Smoke.KindOf(i) == SmokeSystem.SourceKind.Guns)
+                    (guns, area) = (guns + 1, area + w.Smoke.State(i, w.Time.Ms / 1000.0).Area);
+            w.Smoke.TauUncached(w, w.Ships.Store.SlotOf(1), w.Ships.Store.SlotOf(2), tau);
+            output.WriteLine($"{s + 15,4} s: {w.Gunnery.TallyOf(1, 0)?.Salvos ?? 0} salvos, {guns} gun puffs ({area:F0} m²), τ eye 1 {tau[0]:F2} {tau[1]:F2} {tau[2]:F2}");
+            if (guns > 0)
+            {
+                cleared |= peak > SmokeSystem.SmokeOpaqueTau && tau[1] < 1;
+                peak = Math.Max(peak, tau[1]);
+            }
+        }
+        Assert.True(peak > SmokeSystem.SmokeOpaqueTau, $"the cloud on the line: τ {peak:F1} at most");
+        Assert.True(cleared, "and it clears");
+    }
+
     [Fact]
     public void A_glow_is_dimmed_by_the_smoke_on_its_line()
     {
