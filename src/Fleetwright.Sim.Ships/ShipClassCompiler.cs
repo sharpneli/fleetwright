@@ -73,6 +73,9 @@ public static class ShipClassCompiler
             c.Plating = PlatingOf(hb.Plating);
             Weapons(c);
             (c.powerKn, c.powerShp) = PowerCurve(c.Motion);
+            var pl = r.Plant;
+            c.Smoke = new SmokeFactsRow(Kinds.FuelOf(pl.Fuel), pl.GasTempK, pl.GasM3PerKg, pl.SmokeM2PerKg, pl.FunnelGasVelocityMS);
+            (c.fuelShares, c.fuelKgS) = ([.. pl.FuelShares], [.. pl.FuelKgS]);
             c.eyes = Sight.Eyes(c);
             TurretRangefinders(c);
             FireControlUnits(c);
@@ -498,6 +501,15 @@ public static class ShipClassCompiler
             foreach (var m in mounts)
                 if (m.Barbette >= 0 && barbettes[rows[m.Barbette].Detail].Mount != m.Component)
                     throw new ShipCompileException($"mount \"{hb.Components[m.Component].Id}\": its barbette carries another mount");
+            // the plant's gas and smoke split by the funnels' plan areas (docs/battle/smoke.md Z0): shipgen sizes them for it
+            double planSum = 0, gasArea = ship.Report.Plant.FunnelGasAreaM2;
+            foreach (var fr in funnels)
+                planSum += PlanArea(rows[fr.Component].Bounds);
+            for (int k = 0; k < funnels.Count; k++)
+            {
+                double share = planSum > 0 ? PlanArea(rows[funnels[k].Component].Bounds) / planSum : 1.0 / funnels.Count;
+                funnels[k] = funnels[k] with { Share = share, ExitAreaM2 = gasArea * share };
+            }
             c.components = rows;
             (c.mounts, c.barbettes, c.funnels, c.shaftLines, c.rudders, c.directors, c.tubes) =
                 (mounts.ToArray(), barbettes.ToArray(), funnels.ToArray(), shafts.ToArray(), rudders.ToArray(), directors.ToArray(), tubes.ToArray());
@@ -1175,6 +1187,8 @@ public static class ShipClassCompiler
             DisplacementT = h.DisplacementT, VolumeM3 = h.VolumeM3, WaterplaneM2 = h.WaterplaneM2, Lcf = h.Lcf, Lcg = h.Lcg, Lcb = h.Lcb, Kg = h.Kg,
             Kb = h.Kb, GmT = h.GmT, GmL = h.GmL, ITM4 = h.ITM4, ILM4 = h.ILM4, TpcT = h.TpcT, MctTm = h.MctTm,
         };
+
+        static double PlanArea(in Box b) => Math.Max(b.X1 - b.X0, 0) * Math.Max(b.Y1 - b.Y0, 0);
 
         MotionFacts Motion()
         {

@@ -177,6 +177,9 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
 - 2026-10-20, magazine sprinklers (docs/battle/magazines.md V6), on purpose: the outfit block gains
   `magazine_sprinklers` (the interwar and post-Savo templates true, the earlier ones false). 254 design cases change
   (the outfit in the design echo and the report's inputs), no SVG or sprite.json. ShipDesign.Version 48.
+- 2026-10-21, the smoke's facts (docs/battle/smoke.md Z0), on purpose: the plant report gains `gas_temp_k`,
+  `gas_m3_per_kg`, `smoke_m2_per_kg`, `fuel_shares` and `fuel_kg_s` (the fuel burnt at shares of the rated power, by
+  `Powerplant.FuelRate`). 326 design cases change (the plant report only), no SVG or sprite.json. ShipDesign.Version 49.
 
 ## Layout
 

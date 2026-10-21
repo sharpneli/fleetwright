@@ -124,6 +124,14 @@ public sealed class PlantReport
     [JsonPropertyName("funnel_gas_velocity_m_s")]
     public double FunnelGasVelocityMS { get; set; }
     public double SmokeReachM { get; set; }
+    /// <summary>The smoke's facts (docs/battle/smoke.md Z0): the funnel gas's temperature, K, and its volume a kg of fuel,
+    /// m³; the smoke's extinction area a kg of fuel, m²; and the fuel burnt, kg/s, at shares of the rated power (the
+    /// overload's top last).</summary>
+    public double GasTempK { get; init; }
+    public double GasM3PerKg { get; init; }
+    public double SmokeM2PerKg { get; init; }
+    public double[] FuelShares { get; init; } = [];
+    public double[] FuelKgS { get; init; } = [];
 }
 
 public sealed record SpaceM(double Width, double Height);

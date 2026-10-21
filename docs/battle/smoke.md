@@ -1,6 +1,6 @@
 # Plan: the smoke field (a feasibility study)
 Status: **drafted 2026-10-20**, decisions 1-4 from the user ("Decided" below); weather's one optical depth proposed;
-Z0 planned in detail 2026-10-21 (proposed: its questions at its end); nothing built    Updated: 2026-10-21
+Z0 (the model and the facts) done 2026-10-21, decisions 5-8    Updated: 2026-10-21
 
 Smoke as sim state that sight reads, and the same state drawn. The research is `research/vfx/unified-smoke-system.md`
 (Lagrangian Gaussian puffs as the one store, every grid a throw-away view of them), on top of
@@ -111,9 +111,19 @@ If Z2's bench can't get there with the cache and the index, the study stops ther
    per emitter, filled from the player's picture, gates each puff in the shader.
 4. **Smoke contacts are in this plan** (Z6).
 
+Z0's (the user, 2026-10-21):
+
+5. **The five changes to physics** (Z0 below). "The funnel output is fine and we don't need to do forcing yet. We'll
+   build the systems first using reasonable values and do tuning when it's completed as a whole": well-fired yields
+   only, no forcing, stoking or banked fires, and no tuning toward the research's 1,500 m²/s (or anything else) until
+   the field is whole.
+6. **The smoke facts from shipgen** (version 49), not placeholders.
+7. **The air's temperature over the sea's** as a weather fact (neutral by default).
+8. **The map's funnel plumes read the field's output**, with no need to hold today's look.
+
 ## The model
 
-Z0 (proposed 2026-10-21) makes five parts of this physical where the draft has tuning values: the funnels' output, the
+Z0 (2026-10-21, decision 5) makes five parts of this physical where the draft has tuning values: the funnels' output, the
 rise, downwash, the spread and the sea under the smoke. The detail is in Z0 below; where they differ, Z0 holds.
 
 ### A puff
@@ -265,7 +275,7 @@ proposal is to unify at the query, not in the store:
 
 Each step reports its costs on the `shipgen smoke` bench and leaves the field off by default.
 
-### Z0 The model and the facts (planned 2026-10-21, proposed)
+### Z0 The model and the facts (done 2026-10-21)
 
 Nothing in Z0 runs in a battle: it's the pure model every later step calls, the facts it needs from the design and the
 weather, and their tests. It's also where the field becomes a good one or not. The store, the index and the drawing
@@ -342,15 +352,50 @@ moments, the vertical τ.
 - The facts: every shipped design compiles with funnel shares summing to 1; Ȧ rises with the power; oil under coal.
 - Nothing allocated; the line τ's cost per puff timed (the number gate 1 builds on).
 
-**Z0's questions for the user:**
+**Built** (decisions 5-8): `SmokeModel`, `SmokeAir`, `AirFrame`, `SmokePuff` (Sim.Combat, `SmokeModel.cs`) and
+`SmokeSources.Funnel` (`SmokeSources.cs`, the one funnel source: the map's `FunnelSmoke` now draws it, knobs `gain,
+every, life, spare, on`); shipgen's `Powerplant.SmokeM2PerKg`, `GasM3PerKg` and the plant report's `gas_temp_k`,
+`gas_m3_per_kg`, `smoke_m2_per_kg`, `fuel_shares`, `fuel_kg_s` (version 49, 326 golden cases, the report only);
+`FunnelRow.Share` and `ExitAreaM2`, `ShipClass.Smoke` and `FuelKgS`; `WeatherHere.AirOverSeaK` (scenarios'
+`air_over_sea_k`, `-weather=`'s fourth value, `Command.SetWeather`'s B in mK); `shipgen smoke facts`; 20 tests
+(`SmokeModelTests`).
 
-1. The five changes to physics. They may make smoke stronger or weaker than the draft's tuning; history decides
-   (request 1), and until it answers the defaults hold the research's numbers.
-2. The smoke facts from shipgen (version 49), not placeholders.
-3. One new weather fact, the air over the sea's temperature, neutral by default.
-4. The map's funnel plumes read the new output with a look gain that holds today's look.
+**Departures from the plan above:**
 
-(The one optical depth, proposed above, isn't needed until Z3.)
+- **The air's frame is a rotation of the sphere,** not east and north metres: the wind's drift as a rotation about
+  the axis that carries the reference point along it, composed step by step, so a puff drifts exactly for hours and a
+  turning wind stays exact. A theatre's breadth from the reference point its direction is out by the angle it spans
+  (~1° a 100 km).
+- **A merged puff's age is the A-weighted mean,** not a Newton solve: Taylor's growth is convex in age, so what the mean
+  age leaves of the variance is never negative and goes into its s0².
+- **The rising plume spreads as it rises** (Pasquill's Δh/3.5), as well as by the air's turbulence.
+- **The research's quadrature check (6.0161e-3) isn't reproducible** (its script isn't in the repo and the case isn't
+  stated); the tests check the line integral against our own quadrature of the full 3D Gaussian and its image instead,
+  level, sloped, over the curvature and on the sea, within 0.5%.
+- **No mixed firing:** shipgen's plants burn one fuel; the coal share waits for shipgen to have one.
+- **Gun smoke needed nothing moved** (`MuzzleFlash.SmokeM2` is already the sim's).
+
+**What came out** (`shipgen smoke facts`, neutral air, Jutland's 8 kn wind; reasonable values, untuned, decision 5):
+
+| | Dreadnought (coal) | Queen Elizabeth (oil) | Fleet destroyer (oil) |
+| --- | --- | --- | --- |
+| Smoke at full power, the ship | 342 m²/s (0.23 of the research's 1,500) | 74 m²/s | 40 m²/s |
+| At 10 kn | 63 m²/s | 9 m²/s | 1 m²/s |
+| Gas out at full, at 10 kn | 9.1, 1.7 m/s | 13.1, 1.6 m/s | 14.7, 0.3 m/s |
+| Rise at full, relative wind 10 / 20 m/s | 81 / 41 m | 115 / 57 m | 57 / 28 m |
+| Her trail after 1 min: column τ, T across at its height | 0.60, 0.54 | 0.10, 0.90 | 0.05, 0.95 |
+| After 30 min: σ_h, σ_z | 76 m, 133 m | 78 m, 139 m | 73 m, 96 m |
+
+- A coal battleship's trail at speed is a grey band (half the light through it at a minute old), oil ships' a haze.
+  Along a column it's opaque: 500 m along the dreadnought's minute-old trail, τ 5.8.
+- **The plumes rise over most eyes:** 40-115 m at speed, against eyes at 20-40 m. This is the research's "smoke height"
+  risk, live; downwash brings them down only a few metres (cruising coal ships most). Mild stability (+2 K at 8 kn, L ≈
+  200 m) doesn't cap the funnels' rise; it thins σ_z by about a third at 30 min.
+- A puff on a line costs ~130 ns in Debug (gate 1 builds on it, Z2).
+
+Left for the tuning when the field is whole (decision 5): the yields (the record, request 1), forcing and stoking,
+whether the ship's own wake and superstructure lee hold her smoke lower than Briggs' chimney formulas (likely: they
+were made for stacks on land, in a wind that isn't a ship's own), and the turbulence's constants.
 
 ### Z1 The store (headless)
 - `SmokeSystem` (an `IWorldSystem`): `SimSettings.Smoke` (off), funnels off rails with the backfill, merging, retiring,

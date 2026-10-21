@@ -84,6 +84,19 @@ public static class Powerplant
     static readonly Dictionary<string, double> SmokeK = new(StringComparer.Ordinal)
         { ["coal_natural"] = 4.0, ["coal"] = 3.0, ["oil"] = 1.5, ["oil_heated"] = 1.0, ["diesel"] = 0.5, ["petrol"] = 0.5 };
 
+    /// <summary>The smoke a fuel makes well fired (docs/battle/smoke.md Z0): its particles, kg a kg of fuel, and their mass
+    /// extinction, m²/g [EST: hand-fired bituminous coal's particulate ~1% (EPA AP-42), most of it soot and ash; heavy
+    /// fuel oil well fired ~0.15%, nearly all soot; diesel's and petrol's less. Forcing, stoking and burning rich come
+    /// later; tuned when the smoke system is whole].</summary>
+    static readonly Dictionary<string, (double Yield, double M2PerG)> Smoke = new(StringComparer.Ordinal)
+    {
+        ["coal"] = (0.010, 5.0), ["oil"] = (0.0015, 7.0), ["diesel"] = (0.002, 8.0), ["petrol"] = (0.0005, 8.0),
+    };
+
+    /// <summary>The power shares the plant report gives the fuel burnt at (docs/battle/smoke.md Z0), of the rated power;
+    /// the overload's top is added after the last.</summary>
+    public static readonly double[] FuelShares = [0.05, 0.1, 0.25, 0.5, 0.75, 1.0];
+
     /// <summary>A mature-ish 1940 high-pressure geared turbine plant: the default tech.</summary>
     public static readonly TechInput DefaultTech = new()
     {
@@ -449,6 +462,13 @@ public static class Powerplant
         return new FunnelPlan(counts, w, 1.5 * w, v, area, q, reach, needed > n ? needed : null);
     }
 
+    /// <summary>The extinction area of the smoke burning a kg of a fuel makes, m² (docs/battle/smoke.md Z0).</summary>
+    public static double SmokeM2PerKg(string fuel) => Smoke.TryGetValue(fuel, out var s) ? s.Yield * s.M2PerG * 1000 : 0;
+
+    /// <summary>The funnel gas a kg of fuel makes, m³ at the gas's temperature: the fuel and its air at
+    /// 353 / T kg/m³ (<see cref="GasFlow"/>'s, a kg at a time).</summary>
+    public static double GasM3PerKg(PlantSpec p) => (1 + p.Tech.Draught.AirFuelRatio) / (353.0 / p.Tech.Draught.GasTempK);
+
     /// <summary>How far aft of a funnel its smoke blinds a control position.</summary>
     public static double SmokeReach(PlantSpec p, double shp)
     {
@@ -484,6 +504,9 @@ public static class Powerplant
             PartLoad = new PartLoad(t.PartLoad, CurveLoads, Curves[t.PartLoad].Pts, Curves[t.PartLoad].Over),
             Draught = t.Draught.System, NaturalFraction = t.Draught.System == "forced_boost" ? t.Draught.NaturalFraction ?? 0.6 : null,
             Stress = p.Stress, Transmission = p.Transmission, Arrangement = p.Arrangement, Crew = r.Crew, Boilers = t.Boilers, Engines = t.Engines,
+            GasTempK = t.Draught.GasTempK, GasM3PerKg = Math.Round(GasM3PerKg(p), 3), SmokeM2PerKg = Math.Round(SmokeM2PerKg(t.Fuel), 3),
+            FuelShares = [.. FuelShares, Math.Round(r.Overload, 3)],
+            FuelKgS = [.. FuelShares.Append(r.Overload).Select(f => Math.Round(FuelRate(p, shp, shp * f) / 3600, 4))],
         };
     }
 }

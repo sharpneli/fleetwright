@@ -244,8 +244,19 @@ public readonly record struct ChargeRow
     public MuzzleDevice Device { get; init; }
 }
 
-/// <summary>A funnel, its uptake under the deck (a component, or -1) and the boiler rooms it serves (Links: rooms).</summary>
-public readonly record struct FunnelRow(int Component, int Uptake, int Pipes, Slice BoilerRooms);
+/// <summary>A funnel, its uptake under the deck (a component, or -1) and the boiler rooms it serves (Links: rooms); its
+/// share of the plant's gas and smoke and the area the gas leaves by, m² (docs/battle/smoke.md Z0: the plant's gas area
+/// split by the funnels' plan areas).</summary>
+public readonly record struct FunnelRow(int Component, int Uptake, int Pipes, Slice BoilerRooms)
+{
+    public double Share { get; init; }
+    public double ExitAreaM2 { get; init; }
+}
+
+/// <summary>The plant's smoke facts (docs/battle/smoke.md Z0), shipgen's plant report: its fuel, the funnel gas's
+/// temperature, K, and volume a kg of fuel, m³, the smoke's extinction area a kg of fuel, m², and the gas's speed out of
+/// the funnels at the rated power, m/s.</summary>
+public readonly record struct SmokeFactsRow(Fuel Fuel, double GasTempK, double GasM3PerKg, double M2PerKg, double ExitMs);
 
 /// <summary>A shaft line: the shaft, its propeller, its alley (or -1) and the engine room driving it.</summary>
 public readonly record struct ShaftLineRow

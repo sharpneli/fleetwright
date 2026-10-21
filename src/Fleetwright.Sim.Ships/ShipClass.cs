@@ -54,7 +54,7 @@ public sealed class ShipClass
     internal StationRow[] stations = [];
     internal Slice[] trains = [];
     internal double[] liftKPa = [], boreM2 = [];
-    internal double[] powerKn = [], powerShp = [];
+    internal double[] powerKn = [], powerShp = [], fuelShares = [], fuelKgS = [];
     internal string[] componentIds = [], turretTypeIds = [], cellIds = [], roomIds = [], bulkheadIds = [], deckIds = [], tierIds = [],
         sectionIds = [], sidePlateIds = [], armourBulkheadIds = [], inclinedIds = [], materials = [];
     internal MaterialRow[] materialRows = [];
@@ -175,6 +175,24 @@ public sealed class ShipClass
     public bool Enclosed(int mount) => mounts[mount].Turret && turretTypes[mounts[mount].Type].Shape is TurretShape.Bb or TurretShape.Dp;
 
     public ReadOnlySpan<FunnelRow> Funnels => funnels;
+
+    /// <summary>The plant's smoke facts (docs/battle/smoke.md Z0).</summary>
+    public SmokeFactsRow Smoke { get; internal set; }
+
+    /// <summary>The fuel the plant burns making a power, shp, kg/s (shipgen's fuel rate at shares of the rated power, its
+    /// part-load curve; between them straight, under the lowest in proportion, over the overload's top held).</summary>
+    public double FuelKgS(double shp)
+    {
+        if (fuelShares.Length == 0 || !(shp > 0) || !(Motion.RatedShp > 0))
+            return 0;
+        double f = shp / Motion.RatedShp;
+        if (f <= fuelShares[0])
+            return fuelKgS[0] * f / fuelShares[0];
+        for (int i = 1; i < fuelShares.Length; i++)
+            if (f <= fuelShares[i])
+                return fuelKgS[i - 1] + (fuelKgS[i] - fuelKgS[i - 1]) * (f - fuelShares[i - 1]) / (fuelShares[i] - fuelShares[i - 1]);
+        return fuelKgS[^1];
+    }
     public ReadOnlySpan<ShaftLineRow> ShaftLines => shaftLines;
     public ReadOnlySpan<RudderRow> Rudders => rudders;
     public ReadOnlySpan<DirectorRow> Directors => directors;

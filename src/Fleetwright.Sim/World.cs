@@ -229,7 +229,7 @@ public sealed class World
             case WorldCommand.SetWeather:
                 if (!(c.X > 0) || !(c.Y >= 0))
                     throw new ArgumentException($"no weather of {c.X} m visibility and {c.Y} m/s wind");
-                weather = new UniformWeather(new WeatherHere(c.X, ((c.A / 1000.0) % 360 + 360) % 360, c.Y));
+                weather = new UniformWeather(new WeatherHere(c.X, ((c.A / 1000.0) % 360 + 360) % 360, c.Y, c.B / 1000.0));
                 break;
             case WorldCommand.SetPlayerSide:
                 if (c.Entity is < -1 or > byte.MaxValue)
