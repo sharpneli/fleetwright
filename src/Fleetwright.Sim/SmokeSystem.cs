@@ -35,10 +35,13 @@ public sealed partial class SmokeSystem : IWorldSystem
     readonly Probes probes;
     readonly int indexProbe, queryProbe;
 
-    internal SmokeSystem(SimSettings settings, Probes probes)
+    internal SmokeSystem(SimSettings settings, Probes probes, ulong seed)
     {
         this.settings = settings;
         this.probes = probes;
+        var r = RandomStream.Named(seed, "SmokeWind");
+        for (int i = 0; i < wanderPhase.Length; i++)
+            wanderPhase[i] = 2 * Math.PI * r.NextDouble();
         indexProbe = probes.Register("Smoke index");
         queryProbe = probes.Register("Smoke queries");
     }
@@ -105,6 +108,10 @@ public sealed partial class SmokeSystem : IWorldSystem
     readonly HashSet<int> held = new(64);
     int version, copied = -1, copyVersion;
     long nextCopyTicks;
+
+    // the wind's wander and gusts: three signals (its way, its speed slowly, its gusts), each three sines' phases
+    readonly double[] wanderPhase = new double[9];
+    static readonly double[] WanderPeriod = [1.0, 1.73, 2.89], WanderWeight = [1.0, 0.7, 0.5];
 
     AirFrame frame = AirFrame.Identity;
     Vec3d frameAt;
@@ -211,9 +218,11 @@ public sealed partial class SmokeSystem : IWorldSystem
             for (int i = src.Oldest; i >= 0; i = next[i])
             {
                 ref readonly var p = ref puffs[i];
+                // where it is in the air now, its drift so far folded in: the drawing carries it on from the copy
+                var at = frame.ToAir(SmokeModel.Centre(p, copiedS, frame, air).Normalized() * Earth.Radius);
                 if (n == 0)
-                    anchor = p.Origin;
-                var d = p.Origin - anchor;
+                    anchor = at;
+                var d = at - anchor;
                 double settled = p.Z0 + p.Rise;
                 ref var r = ref c.Records[n++];
                 (r.X, r.Y, r.Z, r.Born) = ((float)d.X, (float)d.Y, (float)d.Z, (float)(p.Born - copiedS));
@@ -270,7 +279,7 @@ public sealed partial class SmokeSystem : IWorldSystem
             for (int s = 0; s < store.Slots && !frameSet; s++)
                 if (store.IsAlive(s) && !store[s].OnRails)
                     (frameAt, frameMs, frameSet) = (store[s].Position, t, true);
-        air = SmokeAir.Of(world.Weather.At(frameAt, world.Time));
+        air = SmokeAir.Of(Wandered(world.Weather.At(frameAt, world.Time), t / 1000.0));
         if (frameSet)
             air = air with { WindDir = Earth.Forward(frameAt, air.WindToDeg) };   // the drift's way, once a tick
         if (frameSet)
@@ -298,6 +307,36 @@ public sealed partial class SmokeSystem : IWorldSystem
         version++;
         if (smoking || live > 0 || wrecks.Count > 0)
             Schedule(world);
+    }
+
+    /// <summary>The weather's wind as the smoke's air has it at a world time, s: its way wandering by up to
+    /// <see cref="SimSettings.SmokeWindWanderDeg"/> over some <see cref="SimSettings.SmokeWindWanderS"/>, its speed by
+    /// <see cref="SimSettings.SmokeWindSpeedShare"/> as slowly and by <see cref="SimSettings.SmokeGustShare"/> in gusts of
+    /// some <see cref="SimSettings.SmokeGustS"/> (the turbulence's slow part, which the puffs' spread doesn't hold: trails
+    /// laid under an earlier wind bend, plumes rise and so drift by the gusts). Each a smooth signal of the time, three
+    /// sines whose phases the world's seed draws, so the same at any speed and on replay. The weather itself stays as given:
+    /// nothing else reads the wander.</summary>
+    WeatherHere Wandered(WeatherHere w, double t)
+    {
+        if (!(w.WindMs > 0))
+            return w;
+        double way = settings.SmokeWindWanderDeg * Signal(0, t, settings.SmokeWindWanderS);
+        double speed = 1 + settings.SmokeWindSpeedShare * Signal(1, t, settings.SmokeWindWanderS) + settings.SmokeGustShare * Signal(2, t, settings.SmokeGustS);
+        return w with { WindFromDeg = ((w.WindFromDeg + way) % 360 + 360) % 360, WindMs = w.WindMs * Math.Max(speed, 0.2) };
+    }
+
+    /// <summary>A smooth signal in [-1, 1] over a time scale, s: three sines of 1, 1.73 and 2.89 times it, weighted.</summary>
+    double Signal(int k, double t, double scaleS)
+    {
+        if (!(scaleS > 0))
+            return 0;
+        double sum = 0, weight = 0;
+        for (int i = 0; i < 3; i++)
+        {
+            sum += WanderWeight[i] * Math.Sin(2 * Math.PI * t / (scaleS * WanderPeriod[i]) + wanderPhase[3 * k + i]);
+            weight += WanderWeight[i];
+        }
+        return sum / weight;
     }
 
     /// <summary>Ship slot s's smoke since her last tick, laid; true when she smokes.</summary>
@@ -635,6 +674,7 @@ public sealed partial class SmokeSystem : IWorldSystem
                 p = n0;
                 continue;
             }
+            SmokeModel.Reanchor(ref puffs[p], nowS, frame, air);   // its drift so far into its origin: it follows a turning wind
             int q = next[p];
             if (q < 0 || agep < settings.SmokeSettleS)
                 break;   // the newer are younger still
@@ -739,6 +779,7 @@ public sealed partial class SmokeSystem : IWorldSystem
                 h.Add(p.SigmaW);
                 h.Add(p.LagrangianW);
                 h.Add(p.ShearMs);
+                h.Add(p.ShearFromS);
                 h.Add((int)p.Tint);
             }
     }

@@ -46,8 +46,9 @@ void main()
     if (level != int(depth.z + 0.5))
         return;
     float reach = max(s * sqrt(2.0 * log(peak / m2.w)), s);
-    // carried by the air's frame, and on along the wind by its own drift against it (low smoke lags, high runs ahead)
-    vec3 rel = anchor.xyz + vec3(dot(m0.xyz, p.at.xyz), dot(m1.xyz, p.at.xyz), dot(m2.xyz, p.at.xyz)) + wind.xyz * (p.misc.w * age);
+    // carried by the air's frame, and on along the wind by its own drift against it since the copy (folded in up to it:
+    // low smoke lags, high runs ahead)
+    vec3 rel = anchor.xyz + vec3(dot(m0.xyz, p.at.xyz), dot(m1.xyz, p.at.xyz), dot(m2.xyz, p.at.xyz)) + wind.xyz * (p.misc.w * max(north.w, 0.0));
     vec2 corners[6] = vec2[](vec2(-1, -1), vec2(1, -1), vec2(1, 1), vec2(-1, -1), vec2(1, 1), vec2(-1, 1));
     vec2 loc = reach * corners[gl_VertexIndex];
     vec3 r = rel + east.xyz * loc.x + north.xyz * (loc.y + fwd.w * z);

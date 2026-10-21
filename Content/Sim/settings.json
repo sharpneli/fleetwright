@@ -763,6 +763,11 @@
   "SmokeRefreshMs": 15000,
   "SmokePairKeepMs": 60000,
   "SmokeScreenM2PerKg": 600,
+  "SmokeWindWanderDeg": 12,
+  "SmokeWindWanderS": 1200,
+  "SmokeWindSpeedShare": 0.1,
+  "SmokeGustShare": 0.15,
+  "SmokeGustS": 90,
   "SmokeCopyMs": 250,
   "SmokeBands": [0.2, 0.5, 0.85]
 }

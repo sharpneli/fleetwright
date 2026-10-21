@@ -76,6 +76,57 @@ public class SmokeSystemTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void The_smokes_wind_wanders_and_gusts_within_its_bounds()
+    {
+        var w = Column(On, 1);
+        double lo = double.MaxValue, hi = double.MinValue, slow = double.MaxValue, fast = double.MinValue;
+        for (int m = 0; m < 180; m++)
+        {
+            Run(w, 1);
+            double off = w.Smoke.Air.WindToDeg - 45;   // the weather's: from 225
+            off -= 360 * Math.Round(off / 360);
+            (lo, hi) = (Math.Min(lo, off), Math.Max(hi, off));
+            (slow, fast) = (Math.Min(slow, w.Smoke.Air.WindMs), Math.Max(fast, w.Smoke.Air.WindMs));
+        }
+        output.WriteLine($"over three hours its way {lo:+0.0;-0.0}° to {hi:+0.0;-0.0}°, its speed {slow:F2} to {fast:F2} m/s (the weather's 4)");
+        Assert.InRange(lo, -On.SmokeWindWanderDeg - 1e-9, -3);
+        Assert.InRange(hi, 3, On.SmokeWindWanderDeg + 1e-9);
+        double most = 4 * (1 + On.SmokeWindSpeedShare + On.SmokeGustShare);
+        Assert.InRange(fast, 4.2, most + 1e-9);
+        Assert.InRange(slow, 4 * (1 - On.SmokeWindSpeedShare - On.SmokeGustShare) - 1e-9, 3.8);
+    }
+
+    [Fact]
+    public void A_straight_course_lays_a_trail_the_wander_bends()
+    {
+        // one ship, an hour on a straight course: how far her trail strays from the line between its ends
+        double Stray(SimSettings s)
+        {
+            var w = Column(s, 1);
+            Run(w, 60);
+            double now = w.Time.Ms / 1000.0;
+            var at = new List<Vec3d>();
+            for (int i = 0; i < w.Smoke.Slots; i++)
+                if (w.Smoke.IsLive(i))
+                    at.Add(w.Smoke.State(i, now).Centre);
+            var east = Earth.East(at[0]);
+            at.Sort((a, b) => Vec3d.Dot(a, east).CompareTo(Vec3d.Dot(b, east)));
+            var (a0, b0) = (at[0], at[^1]);
+            var along = (b0 - a0).Normalized();
+            double most = 0;
+            foreach (var p in at)
+            {
+                var d = p - a0;
+                most = Math.Max(most, (d - along * Vec3d.Dot(d, along)).Length);
+            }
+            return most;
+        }
+        double steady = Stray(On with { SmokeWindWanderDeg = 0, SmokeWindSpeedShare = 0, SmokeGustShare = 0 }), wandering = Stray(On);
+        output.WriteLine($"her trail strays {steady:F0} m from a line in a steady wind, {wandering:F0} m in a wandering one");
+        Assert.True(wandering > 2 * steady && wandering > 200, "the wander bends it");
+    }
+
+    [Fact]
     public void Trails_merge_and_stay_bounded()
     {
         var w = Column(On, 1);

@@ -5,7 +5,8 @@ using Fleetwright.Sim.Core;
 namespace Fleetwright.Sim;
 
 /// <summary>A puff as the drawing reads it (docs/battle/smoke.md Z5; smokefield.glsl, std430: four vec4s): its place on
-/// the sea in the air's frame as an offset from the copy's anchor, m, and its birth, s before the copy (negative); its
+/// the sea in the air's frame at the copy (its drift so far folded in) as an offset from the copy's anchor, m, and its
+/// birth, s before the copy (negative); its
 /// height at birth, the rise and its time, its extinction area at birth; its spreads at birth, m², and the turbulence
 /// up that spreads it (σ_w, m/s, and its Lagrangian time, s); its decay time (0 none), its tint, whether it's drawn
 /// (the drawing rule, decision 3: 1 or 0), and its drift along the wind against the air's frame, m/s.</summary>

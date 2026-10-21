@@ -85,7 +85,7 @@ public sealed class World
         Register(Damage);
         Torpedoes = new TorpedoSystem(Settings, Ships, ShipIndex, CombatLog, seed) { Damage = Damage };
         Register(Torpedoes);
-        Smoke = new SmokeSystem(Settings, Probes);
+        Smoke = new SmokeSystem(Settings, Probes, seed);
         Register(Smoke);
         Ships.ClassAdded = cls =>
         {

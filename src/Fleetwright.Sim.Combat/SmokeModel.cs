@@ -35,8 +35,11 @@ public struct SmokePuff
     /// it was born or merged (0: read the air's now). Kept so its state is a few multiplies and two exponentials.</summary>
     public float SigmaW, LagrangianW;
     /// <summary>Its drift along the wind against the air's frame, m/s: the wind at its settled height less the steering
-    /// height's (<see cref="SmokeAir.ShearAt"/>), as the air was when it was born or merged.</summary>
+    /// height's (<see cref="SmokeAir.ShearAt"/>), as the air was when it was born or merged; and the world time, s, it's
+    /// counted from (its birth, or when its drift so far was last folded into its origin: the store does it as its walk
+    /// passes, so the drift follows a wind that turns).</summary>
     public float ShearMs;
+    public double ShearFromS;
     public SmokeTint Tint;
 }
 
@@ -351,16 +354,26 @@ public static class SmokeModel
         double h2 = p.S0h2 + Taylor(age, air.SigmaV, air.LagrangianH) + b * b;
         double z2 = p.S0z2 + (p.SigmaW > 0 ? Taylor(age, p.SigmaW, p.LagrangianW) : Taylor(age, air.SigmaW(settled), air.LagrangianW(settled))) + b * b;
         double a = p.LifeS > 0 ? p.A0 * Math.Exp(-age / p.LifeS) : p.A0;
-        return new PuffState(Centre(p, age, frame, air), z, h2, z2, a, age);
+        return new PuffState(Centre(p, now, frame, air), z, h2, z2, a, age);
     }
 
-    /// <summary>A puff's centre on the sea at an age: its origin carried by the air's frame, and on along the wind by its
-    /// own drift against the frame (the current wind's way: the weather is one and steady for now; a wind that turns
-    /// over time would want the drift's way kept from birth).</summary>
-    public static Vec3d Centre(in SmokePuff p, double age, in AirFrame frame, in SmokeAir air)
+    /// <summary>A puff's centre on the sea at <paramref name="now"/> (world s): its origin carried by the air's frame, and
+    /// on along the wind by its own drift against the frame since <see cref="SmokePuff.ShearFromS"/> (the wind's way now:
+    /// the store folds the drift into the origin every walk, so a turning wind bends it no more than a walk's worth).</summary>
+    public static Vec3d Centre(in SmokePuff p, double now, in AirFrame frame, in SmokeAir air)
     {
         var c = frame.ToWorld(p.Origin);
-        return p.ShearMs != 0 ? c + air.WindAt(c) * (p.ShearMs * age) : c;
+        return p.ShearMs != 0 ? c + air.WindAt(c) * (p.ShearMs * Math.Max(now - p.ShearFromS, 0)) : c;
+    }
+
+    /// <summary>A puff's drift so far folded into its origin, counted afresh from <paramref name="now"/>: it stays where
+    /// it is.</summary>
+    public static void Reanchor(ref SmokePuff p, double now, in AirFrame frame, in SmokeAir air)
+    {
+        if (p.ShearMs == 0 || !(now > p.ShearFromS))
+            return;
+        p.Origin = frame.ToAir(Centre(p, now, frame, air).Normalized() * Earth.Radius);
+        p.ShearFromS = now;
     }
 
     /// <summary>A puff's plan view at <paramref name="now"/>: its centre, its variance across, its extinction area and its
@@ -372,7 +385,7 @@ public static class SmokeModel
         double b = p.Rise * RiseShare(age / p.RiseS) * BuoyantSpread;
         sigmaH2 = p.S0h2 + Taylor(age, air.SigmaV, air.LagrangianH) + b * b;
         area = p.LifeS > 0 ? p.A0 * Math.Exp(-age / p.LifeS) : p.A0;
-        centre = Centre(p, age, frame, air);
+        centre = Centre(p, now, frame, air);
     }
 
     /// <summary>A puff born now at a place on the sea (<paramref name="at"/>, Earth-centred), into the air's frame.</summary>
@@ -384,7 +397,7 @@ public static class SmokeModel
             A0 = (float)areaM2, LifeS = (float)lifeS, Tint = tint,
             SigmaW = air.FrictionMs > 0 ? (float)air.SigmaW(z0 + riseM) : 0,
             LagrangianW = air.FrictionMs > 0 ? (float)air.LagrangianW(z0 + riseM) : 0,
-            ShearMs = (float)air.ShearAt(z0 + riseM),
+            ShearMs = (float)air.ShearAt(z0 + riseM), ShearFromS = now,
         };
 
     // ------------------------------------------------------------------ the queries
@@ -572,12 +585,11 @@ public static class SmokeModel
         double rise = left > 0.5 && share < 0.99 ? left / (1 - share) : 0, z0 = z - rise * share, settled = z0 + rise;
         double b = rise * share * BuoyantSpread;
         double life = p.LifeS > 0 && q.LifeS > 0 ? wp * p.LifeS + wq * q.LifeS : 0;
-        // its drift A-weighted (the centroid's), its origin where that drift since its (mean) birth brings it to the centre
+        // its drift A-weighted (the centroid's), counted from now
         double shear = wp * p.ShearMs + wq * q.ShearMs;
-        var origin = shear != 0 ? (c - air.WindAt(c) * (shear * age)).Normalized() * Earth.Radius : c;
         return new SmokePuff
         {
-            Origin = frame.ToAir(origin), Born = now - age, ShearMs = (float)shear, Z0 = (float)z0, Rise = (float)rise, RiseS = (float)riseS,
+            Origin = frame.ToAir(c), Born = now - age, ShearMs = (float)shear, ShearFromS = now, Z0 = (float)z0, Rise = (float)rise, RiseS = (float)riseS,
             S0h2 = (float)Math.Max(h2 - Taylor(age, air.SigmaV, air.LagrangianH) - b * b, 0),
             S0z2 = (float)Math.Max(z2 - Taylor(age, air.SigmaW(settled), air.LagrangianW(settled)) - b * b, 0),
             A0 = (float)(life > 0 ? a * Math.Exp(age / life) : a), LifeS = (float)life,

@@ -752,6 +752,23 @@ heights now drift apart and merge less: Jutland's climax holds ~54k puffs (43k b
 0.31 ms a game second, 0.78 against 0.8; the copy 2.2 ms. A trail at one height is still a straight line: the variation
 the user asked for next is another matter.
 
+**The wind's wander and gusts** (the user, 2026-10-21: "some variation would be good", trying both of the cheap
+physical ones): the smoke's air takes the weather's wind with a slow swing of its way (up to `SmokeWindWanderDeg` 12°
+over some `SmokeWindWanderS` 20 min) and speed (`SmokeWindSpeedShare` 10%), and gusts of speed (`SmokeGustShare` 15% over
+some `SmokeGustS` 90 s): each a smooth signal of world time (three sines, their phases from the world's seed), so the
+same at any speed and on replay. Only the smoke reads it (the weather stays as given; smoke off changes nothing). The air
+frame integrates a wind that turns exactly, so a trail laid under an earlier wind keeps its way: an hour's trail on a
+straight course strays ~310 m from a line (54 m in a steady wind). The gusts change each plume's rise as it's worked
+out, so a trail's puffs settle at different heights and drift apart by the height's drift.
+
+- **The height's drift follows a turning wind:** each puff counts its drift from a time of its own
+  (`SmokePuff.ShearFromS`); the store's walk folds the drift so far into its origin (`SmokeModel.Reanchor`) every 30 s,
+  and the copy for the drawing folds it in up to the copy (the shader carries it on from there).
+- **What shows:** gentle curves over kilometres on the table; near the ships, a few minutes' trail stays nearly
+  straight, and the gusts' wiggle is tens of metres (too small to see at the table's zooms). A backfilled trail (laid
+  at once when a ship comes off rails) is laid under the wind of that moment, so it meets the live trail at a slight
+  kink. Variation at the small scales would be the drawing's (noise fixed in the air's frame, not yet built).
+
 **Gate 2, the user's call:** the world view's look (decision 2: the field alone, the stylised plumes over it, or the
 plumes for the head only, the young smoke near the ships, and the field for the rest), and whether the 2026-10-19
 decision (no simulated smoke in the first game) is reverted.

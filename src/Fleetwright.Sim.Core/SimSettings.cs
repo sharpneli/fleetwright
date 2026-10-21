@@ -1926,6 +1926,15 @@ public sealed record SimSettings
     /// research request 3, how fast destroyers laid funnel smoke].</summary>
     public double SmokeScreenM2PerKg { get; init; } = 600;
 
+    /// <summary>The smoke's wind wanders and gusts about the weather's (docs/battle/smoke.md): its way by up to so many
+    /// degrees over some so many seconds, its speed by a share as slowly and by another in gusts of some so many seconds
+    /// (smooth signals of the time, drawn from the world's seed) [EST: mesoscale meander and gusts over the sea].</summary>
+    public double SmokeWindWanderDeg { get; init; } = 12;
+    public double SmokeWindWanderS { get; init; } = 1200;
+    public double SmokeWindSpeedShare { get; init; } = 0.1;
+    public double SmokeGustShare { get; init; } = 0.15;
+    public double SmokeGustS { get; init; } = 90;
+
     /// <summary>How often the field is copied for the drawing, ms of real time (docs/battle/smoke.md Z5: the drawing's
     /// cadence, never world state; between copies it works each puff out at its own frame's time).</summary>
     public int SmokeCopyMs { get; init; } = 250;
