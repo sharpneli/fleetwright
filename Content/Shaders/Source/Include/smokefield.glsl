@@ -9,6 +9,7 @@ struct FieldPuff
     vec4 spread;   // x: sigma_h^2 at birth, m^2; y: sigma_z^2 at birth; z: sigma_w, m/s; w: its Lagrangian time, s
     vec4 misc;     // x: its decay time, s (0 none); y: its tint (SmokeTint); z: drawn (the drawing rule), 1 or 0;
                    // w: its drift along the wind against the air's frame, m/s
+    vec4 axis;     // xyz: its stretch's axis on the sea, in the air's frame (Z5b); w: the stretch, m^2 (0: round)
 };
 
 // a rising plume's spread for its rise (Pasquill's dh / 3.5)

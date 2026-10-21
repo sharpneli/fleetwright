@@ -137,6 +137,13 @@ Gate 1 (the user, 2026-10-21):
    (`SmokeIndexMs`, `SmokeRefreshMs`), so new smoke can take up to 30 s to reach a sight line; the budget holds at
    Jutland's peak.
 
+Breaking the field (the user, 2026-10-21, after the first look: "think about how we could break the smoke field bit
+more, and think about potentially merging the blobs earlier into bigger ones"):
+
+10. **The large eddies' meander is the sim's** (Z5c), not the drawing's alone: the gaps it opens are gaps sight looks
+    through.
+11. **Trails merge across each other** ("Smoke is smoke", Z5b): a fleet's old smoke becomes one cloud.
+
 ## The model
 
 Z0 (2026-10-21, decision 5) makes five parts of this physical where the draft has tuning values: the funnels' output, the
@@ -772,6 +779,74 @@ out, so a trail's puffs settle at different heights and drift apart by the heigh
 **Gate 2, the user's call:** the world view's look (decision 2: the field alone, the stylised plumes over it, or the
 plumes for the head only, the young smoke near the ships, and the field for the rest), and whether the 2026-10-19
 decision (no simulated smoke in the first game) is reverted.
+
+### Breaking the field (Z5b-Z5d, agreed 2026-10-21, decisions 10-11)
+
+What the first captures show, and why: every puff is round and spread only by the surface layer's small eddies
+(Taylor with σ_v ≈ 0.5 m/s and T_L = 20 s: diffusion after a minute, so a 30-minute trail is a smooth band ~280 m
+wide); the wind's wander and gusts are the same everywhere, so they bend every trail alike and break none; and merging
+round puffs along a line makes beads, so merging was held back (settled 60 s, centres within 2σ). Three steps, each
+with side-by-side captures and the bench's cost, the field still off by default:
+
+- **Z5b Elongated puffs, merged earlier, further and across trails.** A puff's plan view becomes a full 2×2
+  covariance, kept as σ_h² (round, what the turbulence adds to) plus σ_a² more along a unit axis: any 2×2 covariance
+  is that (its smaller eigenvalue round, the difference along the larger's axis), so a merge keeps the second moments
+  exactly and a stretch of trail merges into one long ellipse instead of a bead. Closed form still: Σ(t) = Σ₀ +
+  Taylor(t)·I. A laid piece is long along her way through the air (its length²/12 along, not /24 each way: the
+  backfill's and the coarse tier's beads go). The sight query's whitened integral takes the 2×2 inverse; the drawing
+  an oriented quad. Then merging: settled at 20 s, neighbours within 2σ *along the line between them*, the merged
+  ellipse capped (its long σ at most 4 times its short, and `SmokeMergeLongM` unless the short is already wider). And
+  across trails (decision 11): every minute, puffs over two minutes old filed in a grid by size, each merged with a
+  close one of another trail by the same rule. Only within a side: the drawing rule (decision 3) is a trail's, and own
+  smoke merged into an unseen enemy's trail would vanish from the player's map (an exception to approve).
+- **Z5c The large eddies (the sim's, decision 10).** Boundary-layer and mesoscale eddies, 1.5-12 km, which the puffs'
+  Taylor spread doesn't hold: they make a real plume snake and fall apart into clumps. A smooth, divergence-free
+  displacement field in the air's frame: eight transverse waves on the reference tangent plane, wavelengths spread
+  log-even over `SmokeEddyM`, ways and phases drawn from the world's seed, each turning over in its wavelength over
+  `SmokeEddySpeedMs`, its strain `SmokeEddyStrain`. A puff is offset by its own share of it, η·[f(key, t) − f(key,
+  born)], with η the air's σ_v at its birth against neutral 8 m/s air's (the turbulence that makes the eddies), so young
+  smoke stays at the ship and puffs laid close together move together: a trail snakes, and where the flow stretches it
+  neighbours part by more than their σ and it breaks. A merge keeps the centroid exactly (the key and η A-weighted, the
+  origin set so it's where the two were). Closed form at any speed and on replay; the drawing's twin evaluates the same
+  modes. [EST: ~300 m of meander at saturation in 8 m/s; research request filed.]
+- **Z5d The drawing's grain.** The plan's noise in the air's frame, multiplicative about 1 (the mean τ holds), its
+  octaves by each puff's size in world metres (no swimming as the zoom changes), in the accumulation: the gun smoke's
+  smooth discs and the big ellipses get billows. Below the sim's resolution, so fluff that doesn't mislead.
+
+**Z5b built** (2026-10-21): `SmokePuff.Along2`/`Axis` (the stretch), `SmokeModel.MergedPlan` (the merge's moments,
+cheap enough to try first), the sight integrals with the plan's 2×2 inverse (`TauBands` now `TauGrid`'s, one
+implementation), `SmokeSystem.Cross`, a 80-byte `SmokeRecord` and oriented quads. Settings: `SmokeSettleS` 20,
+`SmokeMergeStretch` 4, `SmokeMergeLongM` 300 (unless at most twice as long as wide), `SmokeCrossEveryMs` 60 s,
+`SmokeCrossAgeS` 120. Two changes the bench asked for:
+
+- **A trail lays by its run, not by the tick:** every ship laid a puff a second whatever the spacing, and with merging
+  at 20 s nearly every one was merged (most of the store's cost). Now a piece is laid once she's run `SmokeSpacingM`
+  (40 m) through the air or `SmokeLayMaxMs` (4 s) has passed: a third of the puffs laid, the same smoke (a piece's
+  length is its stretch, exact).
+- **`SmokeChunk` 8 → 4:** eight merged ellipses span far more trail than eight small puffs did, and a line tested
+  twice the puffs (652 against 330 at the climax); at four, a query costs what it did.
+
+**The bench** (Jutland, 3 hours, `DOTNET_TieredCompilation=0`, half-hour rows; before → after):
+
+| | 60 min | 120 min | 180 min (the climax) |
+| --- | --- | --- | --- |
+| Puffs | 32,663 → 20,140 | 41,584 → 23,239 | 47,033 → 23,321 |
+| Store and index, ms a game s | 0.330 → 0.301 | 0.446 → 0.380 | 0.478 → 0.422 (merging 0.167 of it) |
+| Index | 0.173 → 0.130 | 0.247 → 0.170 | 0.267 → 0.190 |
+| A query worked out | 7.9 → 5.7 µs | 12.6 → 10.7 µs | 15.5 → 16.1 µs |
+
+Half the puffs; the field about as dear at the climax (the merging's work grew as the index's shrank). Merging across
+trails takes a sixth more puffs away at 90 minutes for ~0.02 ms. A trail now grows as √t (its length over its puffs'
+width) where round merging let beads grow without end: one ship 108 puffs after an hour, 162 after two (the test now
+asks that the second hour adds less than the first). The captures (`world`/`table` at 6 m/px, the gate-2 fight): the
+destroyer's screen and the battleships' trails no longer bead; still smooth bands, which Z5c is for.
+
+**For the user:** merging across trails only within a side is an exception to decision 11 (the drawing rule is a
+trail's; own smoke merged into an enemy's unseen trail would vanish from the player's map).
+
+Left out: the funnels' unsteady output (stoking and firing cycles: clumps along a trail), by decision 5; shear
+dispersion (vertical spread times the wind's shear stretching old smoke downwind), a candidate if old smoke still looks
+too round.
 
 ### Z6 Smoke contacts
 - The plume summaries, `ContactLevel.Smoke`, the bearing fix, the reach; the map draws a smoke contact as a bearing

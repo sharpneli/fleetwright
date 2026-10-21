@@ -1881,8 +1881,11 @@ public sealed record SimSettings
     /// air one puff stands for, m: a tick's run is cut into puffs this long or shorter, and a longer one (the coarse tier's)
     /// widens them along it; the most puffs a ship lays a tick.</summary>
     public double SmokeSigma0M { get; init; } = 15;
-    public double SmokeSpacingM { get; init; } = 20;
+    public double SmokeSpacingM { get; init; } = 40;
     public int SmokePuffsPerTick { get; init; } = 8;
+    /// <summary>The longest a ship's funnels' smoke waits to be laid, ms: a piece is laid once she's run
+    /// <see cref="SmokeSpacingM"/> through the air, or this long has passed (docs/battle/smoke.md Z5b).</summary>
+    public int SmokeLayMaxMs { get; init; } = 4000;
 
     /// <summary>How often a ship's plume (output, rise, downwash) is worked out again, ms of world time: a boiler's output
     /// follows the power over tens of seconds.</summary>
@@ -1892,13 +1895,20 @@ public sealed record SimSettings
     /// smoke off rails; her smoke from before is in the air all the same) [EST: a plume's useful life].</summary>
     public double SmokeBackfillS { get; init; } = 1800;
 
-    /// <summary>Merging (research/vfx/unified-smoke-system.md "Lifecycle"): a trail's puffs merge once both are older
-    /// than <see cref="SmokeSettleS"/>, s, and their centres are within <see cref="SmokeMergeSigma"/> of the larger σ (Gaussians 2σ apart along a line
-    /// ripple ~1.4%, 3σ apart ~22%); each
-    /// trail is walked every <see cref="SmokeMergeEveryMs"/> of world time (a slice of the trails each tick).</summary>
-    public double SmokeSettleS { get; init; } = 60;
+    /// <summary>Merging (research/vfx/unified-smoke-system.md "Lifecycle"; docs/battle/smoke.md Z5b): a trail's puffs
+    /// merge once both are older than <see cref="SmokeSettleS"/>, s, and their centres are within
+    /// <see cref="SmokeMergeSigma"/> of the larger σ along the line between them (Gaussians 2σ apart along a line ripple
+    /// ~1.4%, 3σ apart ~22%); each trail is walked every <see cref="SmokeMergeEveryMs"/> of world time (a slice of the
+    /// trails each tick). The merged ellipse's long σ at most <see cref="SmokeMergeStretch"/> times its short, and at most
+    /// <see cref="SmokeMergeLongM"/>, m, unless it's at most twice its short (the large eddies bend a long one, Z5c).
+    /// Across trails of a side: every <see cref="SmokeCrossEveryMs"/>, the puffs over <see cref="SmokeCrossAgeS"/>, s.</summary>
+    public double SmokeSettleS { get; init; } = 20;
     public double SmokeMergeSigma { get; init; } = 2.0;
     public int SmokeMergeEveryMs { get; init; } = 30_000;
+    public double SmokeMergeStretch { get; init; } = 4;
+    public double SmokeMergeLongM { get; init; } = 300;
+    public int SmokeCrossEveryMs { get; init; } = 60_000;
+    public double SmokeCrossAgeS { get; init; } = 120;
 
     /// <summary>The most puffs the field holds: over it, trails merge twice as far apart (the cost degrades in accuracy,
     /// never in time).</summary>
@@ -1907,7 +1917,7 @@ public sealed record SimSettings
     /// <summary>The sight lines' index (docs/battle/smoke.md Z2): rebuilt every <see cref="SmokeIndexMs"/> of world time
     /// (each puff's state then), in chunks of <see cref="SmokeChunk"/> puffs along a trail.</summary>
     public int SmokeIndexMs { get; init; } = 15_000;
-    public int SmokeChunk { get; init; } = 8;
+    public int SmokeChunk { get; init; } = 4;
 
     /// <summary>The index's grid: cubes this big, m, in the air's frame (Earth-centred).</summary>
     public double SmokeGridM { get; init; } = 2_000;

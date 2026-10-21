@@ -22,9 +22,12 @@ namespace Fleetwright.Sim;
 /// solids: <see cref="Gun"/>), her fires that show (their soot as one plume, laid each tick like her funnels'), a magazine
 /// gone up (the fireball's soot, then the wreck's fires a couple of minutes: <see cref="Magazine"/>); and a ship making
 /// smoke (<see cref="MakeSmoke"/>) burns her fuel rich, <see cref="SimSettings.SmokeScreenM2PerKg"/>.</item>
-/// <item><b>Merging</b> (moment-preserving, <see cref="SmokeModel.Merge"/>): neighbours along a trail, both settled,
-/// centres within <see cref="SimSettings.SmokeMergeSigma"/> of the larger σ; a trail every
-/// <see cref="SimSettings.SmokeMergeEveryMs"/>. Over <see cref="SimSettings.SmokeCap"/>, twice as far and every trail.</item>
+/// <item><b>Merging</b> (moment-preserving, <see cref="SmokeModel.Merge"/>: the plan's whole covariance, so a stretch of
+/// trail merges into one long ellipse, docs/battle/smoke.md Z5b): neighbours along a trail, both settled, centres within
+/// <see cref="SimSettings.SmokeMergeSigma"/> of the larger σ along the line between them, the merged ellipse not too
+/// long; a trail every <see cref="SimSettings.SmokeMergeEveryMs"/>. Old puffs across trails of a side every
+/// <see cref="SimSettings.SmokeCrossEveryMs"/> (<see cref="Cross"/>). Over <see cref="SimSettings.SmokeCap"/>, twice as
+/// far and every trail.</item>
 /// </list>
 /// Grown, never shrunk: nothing allocates once the arrays have grown to the battle. Always registered seventh
 /// (<see cref="Id"/>).</summary>
@@ -33,7 +36,7 @@ public sealed partial class SmokeSystem : IWorldSystem
     public const byte Id = 7;
     readonly SimSettings settings;
     readonly Probes probes;
-    readonly int indexProbe, queryProbe;
+    readonly int indexProbe, queryProbe, mergeProbe;
 
     internal SmokeSystem(SimSettings settings, Probes probes, ulong seed)
     {
@@ -43,6 +46,7 @@ public sealed partial class SmokeSystem : IWorldSystem
         for (int i = 0; i < wanderPhase.Length; i++)
             wanderPhase[i] = 2 * Math.PI * r.NextDouble();
         indexProbe = probes.Register("Smoke index");
+        mergeProbe = probes.Register("Smoke merge");
         queryProbe = probes.Register("Smoke queries");
     }
 
@@ -127,6 +131,8 @@ public sealed partial class SmokeSystem : IWorldSystem
     public int Trails => sources.Count;
     public long Laid { get; private set; }
     public long Merged { get; private set; }
+    /// <summary>Of the merged, those merged across trails (<see cref="Cross"/>).</summary>
+    public long MergedAcross { get; private set; }
     public long Retired { get; private set; }
 
     /// <summary>The air as of the last tick, and its frame.</summary>
@@ -231,6 +237,7 @@ public sealed partial class SmokeSystem : IWorldSystem
                 // as SmokeModel.State: a puff's own turbulence up, else the air's at its settled height
                 (r.SigmaW, r.LagrangianW) = p.SigmaW > 0 ? (p.SigmaW, p.LagrangianW) : ((float)air.SigmaW(settled), (float)air.LagrangianW(settled));
                 (r.LifeS, r.Tint, r.Shown, r.ShearMs) = (p.LifeS, (float)p.Tint, shown, p.ShearMs);
+                (r.AxisX, r.AxisY, r.AxisZ, r.Along2) = ((float)p.Axis.X, (float)p.Axis.Y, (float)p.Axis.Z, p.Along2);
                 if (shown > 0)
                 {
                     double age = Math.Max(copiedS - p.Born, 0), b = p.Rise * SmokeModel.RiseShare(age / p.RiseS) * SmokeModel.BuoyantSpread;
@@ -298,10 +305,14 @@ public sealed partial class SmokeSystem : IWorldSystem
         Wrecks(t);
 
         bool over = live > settings.SmokeCap;
+        double mergeSigma = over ? 2 * settings.SmokeMergeSigma : settings.SmokeMergeSigma;
         int slices = Math.Max(settings.SmokeMergeEveryMs / step, 1), slice = (int)(t / step % slices);
+        long m0 = Probes.Now;
         for (int k = 0; k < sources.Count; k++)
             if (over || k % slices == slice)
-                Walk(k, t / 1000.0, over ? 2 * settings.SmokeMergeSigma : settings.SmokeMergeSigma);
+                Walk(k, t / 1000.0, mergeSigma);
+        Cross(t, mergeSigma);
+        probes.Add(mergeProbe, m0);
         Forget();
         Index(t);
         version++;
@@ -369,6 +380,15 @@ public sealed partial class SmokeSystem : IWorldSystem
             src.Gain = gain;
         }
         long last = src.LastMs;
+        var drift = Earth.Forward(pos, air.WindToDeg) * air.DriftMs;
+        var vAir = vShip - drift;   // her way through the air
+        // laid once she's run a spacing through the air, or every SmokeLayMaxMs at most: a longer piece is as exact (its
+        // length along her run, Z5b) and lays and merges fewer
+        if (!fresh && src.Rate > 0 && t - last < settings.SmokeLayMaxMs && vAir.Length * (t - last) / 1000.0 < settings.SmokeSpacingM)
+        {
+            sources[k] = src;
+            return true;
+        }
         src.LastMs = t;
         sources[k] = src;
         if (!(src.Rate > 0))
@@ -376,8 +396,6 @@ public sealed partial class SmokeSystem : IWorldSystem
         double rate = src.Rate, baseM = src.BaseM, rise = src.Rise, riseS = src.RiseS, x = src.X, y = src.Y, spread2 = src.Spread2;
         var up = pos.Normalized();
         var at = pos + fwd * x + Vec3d.Cross(fwd, up).Normalized() * y;
-        var drift = Earth.Forward(pos, air.WindToDeg) * air.DriftMs;
-        var vAir = vShip - drift;   // her way through the air
         var tint = c.Smoke.Fuel == Fuel.Coal ? SmokeTint.Coal : SmokeTint.Oil;
         long from = fresh ? t - (long)(settings.SmokeBackfillS * 1000) : Math.Max(last, t - (long)(settings.SmokeBackfillS * 1000));
         // what's still to lay, newest first in chunks: one tick, then wider the older (a quarter of their age), so a
@@ -387,7 +405,7 @@ public sealed partial class SmokeSystem : IWorldSystem
         Span<long> starts = stackalloc long[64];
         while (end > from && chunks < starts.Length)
         {
-            long len = Math.Max(step, (t - end) / 4);
+            long len = Math.Max(Math.Max(step, (t - end) / 4), fresh ? 0 : t - last);
             long start = Math.Max(end - len, from);
             starts[chunks++] = start;
             end = start;
@@ -570,16 +588,16 @@ public sealed partial class SmokeSystem : IWorldSystem
         double run = vAir.Length * span;
         int n = Math.Clamp((int)Math.Ceiling(run / settings.SmokeSpacingM), 1, settings.SmokePuffsPerTick);
         double piece = run / n, s0 = settings.SmokeSigma0M;
-        double sigma = Math.Sqrt(s0 * s0 + spread2 + piece * piece / 24);   // the piece's length, half on each axis
+        double sigma = Math.Sqrt(s0 * s0 + spread2), along2 = piece * piece / 12;   // the piece's length along her run
         double area = rate * span / n, nowS = t / 1000.0;
         for (int i = 0; i < n; i++)
         {
             double born = (a + (b - a) * (i + 1.0) / n) / 1000.0, ago = nowS - born;
-            var puff = SmokeModel.Born(at - vAir * ago, born, frame, baseM, rise, riseS, sigma, s0, area, 0, tint, air);
+            var puff = SmokeModel.Born(at - vAir * ago, born, frame, baseM, rise, riseS, sigma, s0, area, 0, tint, air, along2, vAir);
             if (ago > 0)
             {
-                SmokeModel.Plan(puff, nowS, frame, air, out _, out double h2, out double left, out _);
-                if (left / (2 * Math.PI * h2) < SmokeModel.GoneTau)
+                SmokeModel.Plan(puff, nowS, frame, air, out _, out double h2, out double l2, out _, out double left, out _);
+                if (SmokeModel.Peak(left, h2, l2) < SmokeModel.GoneTau)
                     continue;   // a backfilled puff already thinned to nothing
             }
             Add(k, puff);
@@ -654,19 +672,20 @@ public sealed partial class SmokeSystem : IWorldSystem
         Array.Resize(ref next, n);
     }
 
-    /// <summary>A trail walked oldest to newest: the thinned retired, settled neighbours close together merged.</summary>
+    /// <summary>A trail walked oldest to newest: the thinned retired, settled neighbours close together along the line
+    /// between them merged (<see cref="Close"/>, <see cref="Fits"/>).</summary>
     void Walk(int k, double nowS, double mergeSigma)
     {
         int p = sources[k].Oldest;
         bool known = false;   // p's plan view carried over from the last pair
-        Vec3d cp = default;
-        double hp = 0, ap = 0, agep = 0;
+        Vec3d cp = default, xp = default;
+        double hp = 0, lp = 0, ap = 0, agep = 0;
         while (p >= 0)
         {
             if (!known)
-                SmokeModel.Plan(puffs[p], nowS, frame, air, out cp, out hp, out ap, out agep);
+                SmokeModel.Plan(puffs[p], nowS, frame, air, out cp, out hp, out lp, out xp, out ap, out agep);
             known = false;
-            if (ap / (2 * Math.PI * hp) < SmokeModel.GoneTau)
+            if (SmokeModel.Peak(ap, hp, lp) < SmokeModel.GoneTau)
             {
                 int n0 = next[p];
                 Remove(p);
@@ -674,25 +693,156 @@ public sealed partial class SmokeSystem : IWorldSystem
                 p = n0;
                 continue;
             }
-            SmokeModel.Reanchor(ref puffs[p], nowS, frame, air);   // its drift so far into its origin: it follows a turning wind
+            SmokeModel.Reanchor(ref puffs[p], nowS, frame, cp);   // its drift so far into its origin: it follows a turning wind
             int q = next[p];
             if (q < 0 || agep < settings.SmokeSettleS)
                 break;   // the newer are younger still
-            SmokeModel.Plan(puffs[q], nowS, frame, air, out var cq, out double hq, out double aq, out double ageq);
+            SmokeModel.Plan(puffs[q], nowS, frame, air, out var cq, out double hq, out double lq, out var xq, out double aq, out double ageq);
             if (ageq < settings.SmokeSettleS)
                 break;
-            double reach2 = mergeSigma * mergeSigma * Math.Max(hp, hq);
-            if ((cp - cq).LengthSquared < reach2)
+            if (Close(cp, hp, lp, xp, cq, hq, lq, xq, mergeSigma) && Fits(cp, hp, lp, xp, ap, cq, hq, lq, xq, aq))
             {
-                puffs[p] = SmokeModel.Merge(puffs[p], SmokeModel.State(puffs[p], nowS, frame, air), puffs[q],
-                    SmokeModel.State(puffs[q], nowS, frame, air), nowS, frame, air);
+                Merge(p, q, nowS);
                 Remove(q);
                 Merged++;
                 continue;   // the merged puff against its next
             }
-            (cp, hp, ap, agep, known) = (cq, hq, aq, ageq, true);
+            (cp, hp, lp, xp, ap, agep, known) = (cq, hq, lq, xq, aq, ageq, true);
             p = q;
         }
+    }
+
+    /// <summary>Two puffs close enough to merge: their centres within <paramref name="mergeSigma"/> of the larger of
+    /// their σs along the line between them (Gaussians 2σ apart along a line ripple ~1.4%).</summary>
+    static bool Close(Vec3d cp, double hp, double lp, Vec3d xp, Vec3d cq, double hq, double lq, Vec3d xq, double mergeSigma)
+    {
+        var d = cq - cp;
+        double d2 = d.LengthSquared;
+        if (!(d2 > 0))
+            return true;
+        double s2 = Math.Max(SmokeModel.VarianceAlong(hp, lp, xp, d), SmokeModel.VarianceAlong(hq, lq, xq, d));
+        return d2 < mergeSigma * mergeSigma * s2;
+    }
+
+    /// <summary>Two puffs' merged ellipse not too long (by their plan views, before the merge's work): its long σ at
+    /// most <see cref="SimSettings.SmokeMergeStretch"/> times its short, and at most <see cref="SimSettings.SmokeMergeLongM"/>
+    /// unless it's at most twice its short (old, wide smoke still merges).</summary>
+    bool Fits(Vec3d cp, double hp, double lp, Vec3d xp, double ap, Vec3d cq, double hq, double lq, Vec3d xq, double aq)
+    {
+        SmokeModel.MergedPlan(cp, hp, lp, xp, ap, cq, hq, lq, xq, aq, out double h2, out double l2, out _);
+        double major2 = h2 + l2, stretch = settings.SmokeMergeStretch, longM = settings.SmokeMergeLongM;
+        return major2 <= stretch * stretch * h2 && (major2 <= longM * longM || major2 <= 4 * h2);
+    }
+
+    /// <summary>Puff q merged into p (<see cref="SmokeModel.Merge"/>).</summary>
+    void Merge(int p, int q, double nowS) =>
+        puffs[p] = SmokeModel.Merge(puffs[p], SmokeModel.State(puffs[p], nowS, frame, air), puffs[q], SmokeModel.State(puffs[q], nowS, frame, air),
+            nowS, frame, air);
+
+    // the merge across trails: the candidates (store slots), their plan views, and a hash grid of them by size
+    int[] crossSlot = new int[256], crossNext = new int[256], crossHead = new int[1 << 10];
+    long[] crossKey = new long[256];
+    Vec3d[] crossC = new Vec3d[256], crossX = new Vec3d[256];
+    double[] crossH = new double[256], crossL = new double[256], crossA = new double[256];
+    int crossCount, crossBits = 10;
+    long crossMs = long.MinValue;
+
+    /// <summary>Trails merged across each other (docs/battle/smoke.md Z5b, decision 11): every
+    /// <see cref="SimSettings.SmokeCrossEveryMs"/> of world time, the puffs over <see cref="SimSettings.SmokeCrossAgeS"/>
+    /// old filed in a hash grid of cubes in the air's frame (Earth-centred) at levels 64 m · 2^k, each at the smallest whose
+    /// cells are twice its reach; each in turn (in trail order) merged with the close ones of its own size in the eight
+    /// cells round it, by the walk's rule (<see cref="Close"/>, <see cref="Fits"/>). Only within a side: the drawing
+    /// rule (decision 3) is a trail's.</summary>
+    void Cross(long t, double mergeSigma)
+    {
+        if (crossMs != long.MinValue && t / settings.SmokeCrossEveryMs == crossMs / settings.SmokeCrossEveryMs)
+            return;
+        crossMs = t;
+        double nowS = t / 1000.0;
+        crossCount = 0;
+        if (crossSlot.Length < puffs.Length)
+            GrowCross(puffs.Length);   // as the store has grown (so it allocates only when the store does)
+        for (int k = 0; k < sources.Count; k++)
+            for (int i = sources[k].Oldest; i >= 0; i = next[i])
+            {
+                SmokeModel.Plan(puffs[i], nowS, frame, air, out var c, out double h2, out double l2, out var x, out double area, out double age);
+                if (age < settings.SmokeCrossAgeS)
+                    break;   // the newer are younger still
+                int e = crossCount++;
+                (crossSlot[e], crossC[e], crossH[e], crossL[e], crossX[e], crossA[e]) = (i, c, h2, l2, x, area);
+            }
+        if (crossCount < 2)
+            return;
+        while (1 << crossBits < 2 * crossSlot.Length && crossBits < 22)
+            crossBits++;
+        if (crossHead.Length != 1 << crossBits)
+            crossHead = new int[1 << crossBits];
+        Array.Fill(crossHead, -1);
+        for (int e = 0; e < crossCount; e++)
+        {
+            double g = CrossCell(crossH[e] + crossL[e], mergeSigma, out int level);
+            var c = crossC[e];
+            crossKey[e] = Key(level, Cell(c.X, g), Cell(c.Y, g), Cell(c.Z, g));
+            int b = CrossBucket(crossKey[e]);
+            crossNext[e] = crossHead[b];
+            crossHead[b] = e;
+        }
+        for (int e = 0; e < crossCount; e++)
+        {
+            int p = crossSlot[e];
+            if (p < 0)
+                continue;   // merged away
+            double g = CrossCell(crossH[e] + crossL[e], mergeSigma, out int level);
+            var c = crossC[e];
+            // the eight cells round it: its own and its nearer neighbour on each axis
+            long x0 = Cell(c.X, g), y0 = Cell(c.Y, g), z0 = Cell(c.Z, g);
+            long x1 = c.X - x0 * g < g / 2 ? x0 - 1 : x0 + 1, y1 = c.Y - y0 * g < g / 2 ? y0 - 1 : y0 + 1, z1 = c.Z - z0 * g < g / 2 ? z0 - 1 : z0 + 1;
+            byte side = sources[owner[p]].Side;
+            for (int n = 0; n < 8; n++)
+            {
+                long key = Key(level, (n & 1) == 0 ? x0 : x1, (n & 2) == 0 ? y0 : y1, (n & 4) == 0 ? z0 : z1);
+                for (int f = crossHead[CrossBucket(key)]; f >= 0; f = crossNext[f])
+                {
+                    int q = crossSlot[f];
+                    if (f == e || q < 0 || crossKey[f] != key || sources[owner[q]].Side != side
+                        || !Close(crossC[e], crossH[e], crossL[e], crossX[e], crossC[f], crossH[f], crossL[f], crossX[f], mergeSigma)
+                        || !Fits(crossC[e], crossH[e], crossL[e], crossX[e], crossA[e], crossC[f], crossH[f], crossL[f], crossX[f], crossA[f]))
+                        continue;
+                    Merge(p, q, nowS);
+                    Remove(q);
+                    Merged++;
+                    MergedAcross++;
+                    crossSlot[f] = -1;
+                    // its plan view as merged, for the rest (it stays filed where it was: a cell's width at most off)
+                    SmokeModel.Plan(puffs[p], nowS, frame, air, out crossC[e], out crossH[e], out crossL[e], out crossX[e], out crossA[e], out _);
+                }
+            }
+        }
+    }
+
+    /// <summary>A merge candidate's cell, m, and its level: the smallest 64 m · 2^k at least twice its reach (the merge's
+    /// σs along its long axis), k at most 7.</summary>
+    static double CrossCell(double major2, double mergeSigma, out int level)
+    {
+        double reach = mergeSigma * Math.Sqrt(major2);
+        level = 0;
+        while (level < 7 && 64.0 * (1 << level) < 2 * reach)
+            level++;
+        return 64.0 * (1 << level);
+    }
+
+    int CrossBucket(long key) => (int)((ulong)key * 0x9E3779B97F4A7C15UL >> (64 - crossBits));
+
+    void GrowCross(int m)
+    {
+        Array.Resize(ref crossSlot, m);
+        Array.Resize(ref crossNext, m);
+        Array.Resize(ref crossKey, m);
+        Array.Resize(ref crossC, m);
+        Array.Resize(ref crossX, m);
+        Array.Resize(ref crossH, m);
+        Array.Resize(ref crossL, m);
+        Array.Resize(ref crossA, m);
     }
 
     /// <summary>Trails no ship smokes into and with no puffs left are forgotten (the last moved into their place).</summary>
@@ -780,6 +930,8 @@ public sealed partial class SmokeSystem : IWorldSystem
                 h.Add(p.LagrangianW);
                 h.Add(p.ShearMs);
                 h.Add(p.ShearFromS);
+                h.Add(p.Along2);
+                h.Add(p.Axis);
                 h.Add((int)p.Tint);
             }
     }

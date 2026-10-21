@@ -320,7 +320,7 @@ static class SmokeBench
         Console.WriteLine($"{s.Name}: {s.ShipCount} ships, at {speed:0.#}x, a world of water; the field on");
         Console.WriteLine("  game     puffs  trails  per trail    MiB   by age (<1, 1-5, 5-15, 15-30, 30+ min)        laid   merged  retired   field ms/game s   sim ms/game s");
         var ages = new int[5];
-        long lastTicks = 0, lastIx = 0, lastQy = 0, lastLk = 0, lastAsked = 0, lastWorked = 0, lastSummed = 0, lastChunks = 0, lastTested = 0;
+        long lastTicks = 0, lastMg = 0, lastIx = 0, lastQy = 0, lastLk = 0, lastAsked = 0, lastWorked = 0, lastSummed = 0, lastChunks = 0, lastTested = 0;
         long lastBytes = GC.GetAllocatedBytesForCurrentThread();
         var lastGc = new[] { GC.CollectionCount(0), GC.CollectionCount(1), GC.CollectionCount(2) };
         var wall = Stopwatch.StartNew();
@@ -343,11 +343,13 @@ static class SmokeBench
                 ages[0], ages[1], ages[2], ages[3], ages[4], w.Smoke.Laid, w.Smoke.Merged, w.Smoke.Retired, field, all));
             (lastTicks, lastWall) = (ticks, wall.Elapsed.TotalMilliseconds);
             // the sight lines (Z2): asked and worked out a game second, their cost, the index's, and the looks' with them
-            long ix = Ticks("Smoke index"), qy = Ticks("Smoke queries"), lk = Ticks("Sighting");
+            long ix = Ticks("Smoke index"), qy = Ticks("Smoke queries"), lk = Ticks("Sighting"), mg = Ticks("Smoke merge");
             long asked = w.Smoke.Asked - lastAsked, worked = w.Smoke.Worked - lastWorked, summed = w.Smoke.PuffsSummed - lastSummed;
-            Console.WriteLine(string.Format(Inv, "           lines: {0,6:0} asked, {1,6:0} worked out a game s; {2,5:0.0} µs and {3,4:0} puffs each; index {4:0.000}, queries {5:0.000}, the looks with them {6:0.000} ms/game s ({7} puffs indexed in {8} chunks)",
+            Console.WriteLine(string.Format(Inv, "           lines: {0,6:0} asked, {1,6:0} worked out a game s; {2,5:0.0} µs and {3,4:0} puffs each; merging {9:0.000} ({10} across so far), index {4:0.000}, queries {5:0.000}, the looks with them {6:0.000} ms/game s ({7} puffs indexed in {8} chunks)",
                 asked / game, worked / game, worked > 0 ? Probes.Ms(qy - lastQy) * 1000 / worked : 0, worked > 0 ? (double)summed / worked : 0,
-                Probes.Ms(ix - lastIx) / game, Probes.Ms(qy - lastQy) / game, Probes.Ms(lk - lastLk) / game, w.Smoke.Indexed, w.Smoke.Chunks));
+                Probes.Ms(ix - lastIx) / game, Probes.Ms(qy - lastQy) / game, Probes.Ms(lk - lastLk) / game, w.Smoke.Indexed, w.Smoke.Chunks,
+                Probes.Ms(mg - lastMg) / game, w.Smoke.MergedAcross));
+            lastMg = mg;
             Console.WriteLine(string.Format(Inv, "           tested a line: {0:0} chunks, {1:0} puffs", worked > 0 ? (double)(w.Smoke.ChunksTested - lastChunks) / worked : 0,
                 worked > 0 ? (double)(w.Smoke.PuffsTested - lastTested) / worked : 0));
             (lastChunks, lastTested) = (w.Smoke.ChunksTested, w.Smoke.PuffsTested);

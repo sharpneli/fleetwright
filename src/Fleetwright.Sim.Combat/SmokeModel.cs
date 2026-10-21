@@ -27,8 +27,14 @@ public struct SmokePuff
     /// <summary>Its height at birth over the sea, m, the rise still to come on its heat, m, and the rise's time, s
     /// (<see cref="SmokeModel.RiseShare"/>).</summary>
     public float Z0, Rise, RiseS;
-    /// <summary>Its variances at birth (and what a merge folded in), across and up, m².</summary>
+    /// <summary>Its variances at birth (and what a merge folded in), across and up, m²: the plan view's round part (what
+    /// the turbulence adds to).</summary>
     public float S0h2, S0z2;
+    /// <summary>Its stretch (docs/battle/smoke.md Z5b): the plan view's variance more along <see cref="Axis"/>, m² (0:
+    /// round), and that axis, a unit vector on the sea in the air's frame. Any 2×2 covariance is a round part and one
+    /// stretch, so a merge keeps the plan's second moments exactly.</summary>
+    public float Along2;
+    public Vec3d Axis;
     /// <summary>Its extinction area at birth, m², and the time it decays over, s (0: it doesn't).</summary>
     public float A0, LifeS;
     /// <summary>The air's turbulence up at its settled height, σ_w, m/s, and its Lagrangian time, s, as the air was when
@@ -44,27 +50,37 @@ public struct SmokePuff
 }
 
 /// <summary>A puff at an age: its centre on the sea (Earth-centred, sea level), its height over the sea, m, its
-/// variances across and up, m², its extinction area, m², and its age, s.</summary>
-public readonly record struct PuffState(Vec3d Centre, double Z, double SigmaH2, double SigmaZ2, double Area, double Age);
+/// variances across (the plan's round part) and up, m², its extinction area, m², its age, s, and its stretch: the plan's
+/// variance more along <paramref name="Axis"/> (a unit vector on the sea, Earth-centred), m².</summary>
+public readonly record struct PuffState(Vec3d Centre, double Z, double SigmaH2, double SigmaZ2, double Area, double Age, double Along2 = 0,
+    Vec3d Axis = default)
+{
+    /// <summary>The plan's variance along its long axis, m².</summary>
+    public double Major2 => SigmaH2 + Along2;
+}
 
 /// <summary>A puff readied for many sight lines (the index's, docs/battle/smoke.md Z2): its state with the square roots
 /// and normalisations worked once, for <see cref="SmokeModel.TauGrid(in SmokeLine, in LinePuff, ReadOnlySpan{double},
 /// ReadOnlySpan{double}, Span{double})"/>.</summary>
 public readonly struct LinePuff
 {
-    public readonly Vec3d Centre;
-    /// <summary>Its height, m; σ_h, m; how far off a line it can add anything (3.5 σ_h), m; A / (2π σ_h σ_z);
-    /// 1/(2σ_h²); 1/(2σ_z²); (3.5 σ_z)²; 1/(√2 σ_h).</summary>
-    public readonly double Z, SigmaH, Reach, Plan, HalfInvH2, HalfInvZ2, ReachZ2, InvRoot2H;
+    public readonly Vec3d Centre, Axis;
+    /// <summary>Its height, m; σ_h (the round part), m; how far off a line it can add anything (3.5 σ along its long
+    /// axis), m; A / (2π √det Σ σ_z); 1/σ_h²; its stretch's share σ_a² / (σ_h² + σ_a²); 1/(2σ_z²); (3.5 σ_z)²;
+    /// 1/(√2 σ_h).</summary>
+    public readonly double Z, SigmaH, Reach, Norm, InvH2, Kappa, HalfInvZ2, ReachZ2, InvRoot2H;
 
-    public LinePuff(in PuffState p, Vec3d centre)
+    public LinePuff(in PuffState p, Vec3d centre, Vec3d axis)
     {
-        double sh = Math.Sqrt(p.SigmaH2), sz = Math.Sqrt(p.SigmaZ2);
-        (Centre, Z, SigmaH, Reach) = (centre, p.Z, sh, SmokeModel.CullSigma * sh);
-        Plan = p.Area > 0 ? p.Area / (2 * Math.PI * sh * sz) : 0;
-        (HalfInvH2, HalfInvZ2, ReachZ2, InvRoot2H) = (1 / (2 * p.SigmaH2), 1 / (2 * p.SigmaZ2), SmokeModel.CullSigma * SmokeModel.CullSigma * p.SigmaZ2,
-            1 / (Math.Sqrt(2) * sh));
+        double sh = Math.Sqrt(p.SigmaH2), sz = Math.Sqrt(p.SigmaZ2), al2 = Math.Max(p.Along2, 0);
+        (Centre, Axis, Z, SigmaH, Reach) = (centre, axis, p.Z, sh, SmokeModel.CullSigma * Math.Sqrt(p.SigmaH2 + al2));
+        Norm = p.Area > 0 ? p.Area / (2 * Math.PI * Math.Sqrt(p.SigmaH2 * (p.SigmaH2 + al2)) * sz) : 0;
+        (InvH2, Kappa) = (1 / p.SigmaH2, al2 > 0 ? al2 / (p.SigmaH2 + al2) : 0);
+        (HalfInvZ2, ReachZ2, InvRoot2H) = (1 / (2 * p.SigmaZ2), SmokeModel.CullSigma * SmokeModel.CullSigma * p.SigmaZ2, 1 / (Math.Sqrt(2) * sh));
     }
+
+    /// <summary>A puff on lines in the Earth-centred frame its state is in.</summary>
+    public LinePuff(in PuffState p) : this(p, p.Centre, p.Axis) { }
 }
 
 /// <summary>The air's frame (docs/battle/smoke.md Z0): the world's one wind as a rotation of the sphere, so a puff born in
@@ -354,7 +370,7 @@ public static class SmokeModel
         double h2 = p.S0h2 + Taylor(age, air.SigmaV, air.LagrangianH) + b * b;
         double z2 = p.S0z2 + (p.SigmaW > 0 ? Taylor(age, p.SigmaW, p.LagrangianW) : Taylor(age, air.SigmaW(settled), air.LagrangianW(settled))) + b * b;
         double a = p.LifeS > 0 ? p.A0 * Math.Exp(-age / p.LifeS) : p.A0;
-        return new PuffState(Centre(p, now, frame, air), z, h2, z2, a, age);
+        return new PuffState(Centre(p, now, frame, air), z, h2, z2, a, age, p.Along2, p.Along2 > 0 ? frame.ToWorld(p.Axis) : default);
     }
 
     /// <summary>A puff's centre on the sea at <paramref name="now"/> (world s): its origin carried by the air's frame, and
@@ -368,46 +384,90 @@ public static class SmokeModel
 
     /// <summary>A puff's drift so far folded into its origin, counted afresh from <paramref name="now"/>: it stays where
     /// it is.</summary>
-    public static void Reanchor(ref SmokePuff p, double now, in AirFrame frame, in SmokeAir air)
+    public static void Reanchor(ref SmokePuff p, double now, in AirFrame frame, in SmokeAir air) =>
+        Reanchor(ref p, now, frame, Centre(p, now, frame, air));
+
+    /// <summary>The same, its centre now already worked out (<see cref="Plan"/>'s).</summary>
+    public static void Reanchor(ref SmokePuff p, double now, in AirFrame frame, Vec3d centre)
     {
         if (p.ShearMs == 0 || !(now > p.ShearFromS))
             return;
-        p.Origin = frame.ToAir(Centre(p, now, frame, air).Normalized() * Earth.Radius);
+        p.Origin = frame.ToAir(centre.Normalized() * Earth.Radius);
         p.ShearFromS = now;
     }
 
-    /// <summary>A puff's plan view at <paramref name="now"/>: its centre, its variance across, its extinction area and its
-    /// age; what retiring and merging decide by, without the vertical's work (<see cref="State"/> has it all).</summary>
+    /// <summary>A puff's plan view at <paramref name="now"/>: its centre, its variance across (the round part), its stretch
+    /// and its axis (Earth-centred), its extinction area and its age; what retiring and merging decide by, without the
+    /// vertical's work (<see cref="State"/> has it all).</summary>
     public static void Plan(in SmokePuff p, double now, in AirFrame frame, in SmokeAir air, out Vec3d centre, out double sigmaH2,
-        out double area, out double age)
+        out double along2, out Vec3d axis, out double area, out double age)
     {
         age = Math.Max(now - p.Born, 0);
         double b = p.Rise * RiseShare(age / p.RiseS) * BuoyantSpread;
         sigmaH2 = p.S0h2 + Taylor(age, air.SigmaV, air.LagrangianH) + b * b;
         area = p.LifeS > 0 ? p.A0 * Math.Exp(-age / p.LifeS) : p.A0;
         centre = Centre(p, now, frame, air);
+        along2 = p.Along2;
+        axis = p.Along2 > 0 ? frame.ToWorld(p.Axis) : default;
     }
 
-    /// <summary>A puff born now at a place on the sea (<paramref name="at"/>, Earth-centred), into the air's frame.</summary>
+    /// <summary>A plan view's peak column τ: A / (2π √det Σ).</summary>
+    public static double Peak(double area, double sigmaH2, double along2) => area / (2 * Math.PI * Math.Sqrt(sigmaH2 * (sigmaH2 + along2)));
+
+    /// <summary>A plan view's variance along a way on the sea (<paramref name="way"/>, any length but not zero), m².</summary>
+    public static double VarianceAlong(double sigmaH2, double along2, Vec3d axis, Vec3d way)
+    {
+        if (!(along2 > 0))
+            return sigmaH2;
+        double c = Vec3d.Dot(axis, way);
+        return sigmaH2 + along2 * c * c / way.LengthSquared;
+    }
+
+    /// <summary>A puff born now at a place on the sea (<paramref name="at"/>, Earth-centred), into the air's frame; its
+    /// plan view stretched by <paramref name="along2"/>, m², along <paramref name="axis"/> (a way on the sea, Earth-centred:
+    /// a piece of a trail laid along her run through the air).</summary>
     public static SmokePuff Born(Vec3d at, double now, in AirFrame frame, double z0, double riseM, double riseS, double sigma0H,
-        double sigma0Z, double areaM2, double lifeS, SmokeTint tint, in SmokeAir air = default) => new()
+        double sigma0Z, double areaM2, double lifeS, SmokeTint tint, in SmokeAir air = default, double along2 = 0, Vec3d axis = default)
+    {
+        var up = at.Normalized();
+        var way = axis - up * Vec3d.Dot(axis, up);
+        bool stretched = along2 > 0 && way.LengthSquared > 1e-12;
+        return new()
         {
-            Origin = frame.ToAir(at.Normalized() * Earth.Radius), Born = now, Z0 = (float)z0, Rise = (float)riseM,
+            Origin = frame.ToAir(up * Earth.Radius), Born = now, Z0 = (float)z0, Rise = (float)riseM,
             RiseS = (float)Math.Max(riseS, 0.1), S0h2 = (float)(sigma0H * sigma0H), S0z2 = (float)(sigma0Z * sigma0Z),
             A0 = (float)areaM2, LifeS = (float)lifeS, Tint = tint,
             SigmaW = air.FrictionMs > 0 ? (float)air.SigmaW(z0 + riseM) : 0,
             LagrangianW = air.FrictionMs > 0 ? (float)air.LagrangianW(z0 + riseM) : 0,
             ShearMs = (float)air.ShearAt(z0 + riseM), ShearFromS = now,
+            Along2 = stretched ? (float)along2 : 0, Axis = stretched ? frame.ToAir(way.Normalized()) : default,
         };
+    }
 
     // ------------------------------------------------------------------ the queries
 
-    /// <summary>The optical depth straight down through a puff over a point on the sea: A/(2πσ_h²)·e^(−r²/2σ_h²) (the
+    /// <summary>The plan view's inverse covariance on a line's axes (along it, across it): the round part's 1/σ_h², less
+    /// the stretch's share κ = σ_a²/(σ_h² + σ_a²) along its axis.</summary>
+    static void PlanInverse(double invH2, double kappa, Vec3d axis, Vec3d along, Vec3d side, out double paa, out double pas, out double pss)
+    {
+        if (!(kappa > 0))
+        {
+            (paa, pas, pss) = (invH2, 0, invH2);
+            return;
+        }
+        double ea = Vec3d.Dot(axis, along), es = Vec3d.Dot(axis, side);
+        (paa, pas, pss) = ((1 - kappa * ea * ea) * invH2, -kappa * ea * es * invH2, (1 - kappa * es * es) * invH2);
+    }
+
+    static double Kappa(in PuffState p) => p.Along2 > 0 ? p.Along2 / (p.SigmaH2 + p.Along2) : 0;
+
+    /// <summary>The optical depth straight down through a puff over a point on the sea: A/(2π√det Σ)·e^(−rᵀΣ⁻¹r/2) (the
     /// sea's image folds what's under the sea back up, so the column holds A).</summary>
     public static double TauColumn(in PuffState p, Vec3d at)
     {
-        double r2 = (at.Normalized() * Earth.Radius - p.Centre).LengthSquared;
-        return p.Area / (2 * Math.PI * p.SigmaH2) * Math.Exp(-r2 / (2 * p.SigmaH2));
+        var r = at.Normalized() * Earth.Radius - p.Centre;
+        double r2 = r.LengthSquared, ra = p.Along2 > 0 ? Vec3d.Dot(r, p.Axis) : 0;
+        return Peak(p.Area, p.SigmaH2, p.Along2) * Math.Exp(-(r2 - Kappa(p) * ra * ra) / (2 * p.SigmaH2));
     }
 
     /// <summary>The optical depth a puff puts on a sight line, the line's end at the line's own height: the whitened 3D
@@ -420,28 +480,32 @@ public static class SmokeModel
     {
         var rel = p.Centre - l.From;
         double s0 = Vec3d.Dot(rel, l.Along), d = Vec3d.Dot(rel, l.Side);
-        double sh = Math.Sqrt(p.SigmaH2), reach = CullSigma * sh;
+        double reach = CullSigma * Math.Sqrt(p.Major2);
         if (Math.Abs(d) > reach || s0 < -reach || s0 > l.Length + reach || !(p.Area > 0))
             return 0;
+        PlanInverse(1 / p.SigmaH2, Kappa(p), p.Axis, l.Along, l.Side, out double paa, out double pas, out double pss);
         double sc = Math.Clamp(s0, 0, l.Length), slope = l.SlopeAt(sc, toM);
         double h = l.HeightAt(sc, toM) + slope * (s0 - sc);   // the line's height at the puff's place along it
-        return Segment(d, h - p.Z, slope, s0, l.Length, p) + Segment(d, h + p.Z, slope, s0, l.Length, p);
+        double norm = p.Area / (2 * Math.PI * Math.Sqrt(p.SigmaH2 * p.Major2 * p.SigmaZ2));
+        return norm * (Segment(d, h - p.Z, slope, s0, l.Length, paa, pas, pss, p.SigmaZ2)
+            + Segment(d, h + p.Z, slope, s0, l.Length, paa, pas, pss, p.SigmaZ2));
     }
 
-    /// <summary>A straight line through a puff: passing <paramref name="d"/> across and <paramref name="dz"/> above its
-    /// centre at the centre's place along it, sloping <paramref name="slope"/>, from −s0 to L − s0 along it. In whitened
-    /// space (each axis over its σ) the line is m + t·v, and τ = A·e^(−b²/2) / (2π σ_h² σ_z |v|) · ½[erf − erf].</summary>
-    static double Segment(double d, double dz, double slope, double s0, double length, in PuffState p)
+    /// <summary>A straight line through a puff, over its normalisation: passing <paramref name="d"/> across and
+    /// <paramref name="dz"/> above its centre at the centre's place along it, sloping <paramref name="slope"/>, from −s0
+    /// to L − s0 along it; the plan's inverse covariance on the line's axes. The quadratic form along the line is
+    /// a·x² + 2b·x + c, and its integral e^(−(c − b²/a)/2) / √a · √(π/2) [erf − erf] (whitened, closed form).</summary>
+    static double Segment(double d, double dz, double slope, double s0, double length, double paa, double pas, double pss, double z2)
     {
-        double iv2 = 1 / p.SigmaH2 + slope * slope / p.SigmaZ2, v = Math.Sqrt(iv2);
-        double mv = dz * slope / p.SigmaZ2;
-        double b2 = d * d / p.SigmaH2 + dz * dz / p.SigmaZ2 - mv * mv / iv2;
+        // the line passes −d across: x along it from the puff's place, the plan offset (x, −d), the height dz + slope·x
+        double a = paa + slope * slope / z2, b = -pas * d + dz * slope / z2, c = pss * d * d + dz * dz / z2;
+        double b2 = c - b * b / a;
         if (b2 > 2 * CullSigma * CullSigma)
             return 0;
-        double tStar = -mv / iv2;
+        double tStar = -b / a, v = Math.Sqrt(a);
         double a0 = v * (-s0 - tStar) / Math.Sqrt(2), a1 = v * (length - s0 - tStar) / Math.Sqrt(2);
         double frac = a0 < -CullSigma && a1 > CullSigma ? 1 : 0.5 * (Erf(a1) - Erf(a0));
-        return p.Area * Math.Exp(-b2 / 2) / (2 * Math.PI * p.SigmaH2 * Math.Sqrt(p.SigmaZ2) * v) * frac;
+        return Math.Exp(-b2 / 2) / v * frac;
     }
 
     /// <summary>A puff on several lines from one eye at once, one to each height <paramref name="toM"/>[j] at the line's
@@ -450,22 +514,9 @@ public static class SmokeModel
     /// <see cref="TauLine(in SmokeLine, in PuffState, double)"/> for a sight line's slopes of a few metres a kilometre.</summary>
     public static void TauBands(in SmokeLine l, in PuffState p, ReadOnlySpan<double> toM, Span<double> tau)
     {
-        var rel = p.Centre - l.From;
-        double s0 = Vec3d.Dot(rel, l.Along), d = Vec3d.Dot(rel, l.Side);
-        double sh = Math.Sqrt(p.SigmaH2), reach = CullSigma * sh;
-        if (Math.Abs(d) > reach || s0 < -reach || s0 > l.Length + reach || !(p.Area > 0))
-            return;
-        double a0 = -s0 / (Math.Sqrt(2) * sh), a1 = (l.Length - s0) / (Math.Sqrt(2) * sh);
-        double frac = a0 < -CullSigma && a1 > CullSigma ? 1 : 0.5 * (Erf(a1) - Erf(a0));
-        double plan = p.Area * Math.Exp(-d * d / (2 * p.SigmaH2)) / (2 * Math.PI * sh * Math.Sqrt(p.SigmaZ2)) * frac;
-        if (plan <= 0)
-            return;
-        double sc = Math.Clamp(s0, 0, l.Length);
-        for (int j = 0; j < toM.Length; j++)
-        {
-            double h = l.HeightAt(sc, toM[j]) + l.SlopeAt(sc, toM[j]) * (s0 - sc), lo = h - p.Z, hi = h + p.Z;
-            tau[j] += plan * (Math.Exp(-lo * lo / (2 * p.SigmaZ2)) + Math.Exp(-hi * hi / (2 * p.SigmaZ2)));
-        }
+        Span<double> from = stackalloc double[1];
+        from[0] = l.FromM;
+        TauGrid(l, new LinePuff(p), from, toM, tau);
     }
 
     /// <summary>A puff on the lines from one place to another at several heights at each end: from each of
@@ -473,46 +524,36 @@ public static class SmokeModel
     /// <paramref name="tau"/>[i·toM.Length + j]. The line <paramref name="l"/> gives the places (its own heights unused).
     /// Near-horizontal lines: the puff's plan part worked once, its vertical Gaussian and the sea's image per pair of
     /// heights (<see cref="TauBands"/>'s). False when the puff is too far off the line to add anything.</summary>
-    public static bool TauGrid(in SmokeLine l, in PuffState p, ReadOnlySpan<double> fromM, ReadOnlySpan<double> toM, Span<double> tau)
-    {
-        var rel = p.Centre - l.From;
-        double s0 = Vec3d.Dot(rel, l.Along), d = Vec3d.Dot(rel, l.Side);
-        double sh = Math.Sqrt(p.SigmaH2), reach = CullSigma * sh;
-        if (Math.Abs(d) > reach || s0 < -reach || s0 > l.Length + reach || !(p.Area > 0))
-            return false;
-        double a0 = -s0 / (Math.Sqrt(2) * sh), a1 = (l.Length - s0) / (Math.Sqrt(2) * sh);
-        double frac = a0 < -CullSigma && a1 > CullSigma ? 1 : 0.5 * (Erf(a1) - Erf(a0));
-        double plan = p.Area * Math.Exp(-d * d / (2 * p.SigmaH2)) / (2 * Math.PI * sh * Math.Sqrt(p.SigmaZ2)) * frac;
-        if (!(plan > 0))
-            return false;
-        double sc = Math.Clamp(s0, 0, l.Length), u = sc / l.Length, bow = sc * (l.Length - sc) * l.Curve, slopeBow = (l.Length - 2 * sc) * l.Curve;
-        double inv2z = 1 / (2 * p.SigmaZ2), reachZ2 = CullSigma * CullSigma * p.SigmaZ2;
-        for (int i = 0; i < fromM.Length; i++)
-            for (int j = 0; j < toM.Length; j++)
-            {
-                double rise = toM[j] - fromM[i];
-                double h = fromM[i] + rise * u - bow + (rise / l.Length - slopeBow) * (s0 - sc), lo = h - p.Z, hi = h + p.Z;
-                double v = (lo * lo < reachZ2 ? Math.Exp(-lo * lo * inv2z) : 0) + (hi * hi < reachZ2 ? Math.Exp(-hi * hi * inv2z) : 0);
-                tau[i * toM.Length + j] += plan * v;
-            }
-        return true;
-    }
+    public static bool TauGrid(in SmokeLine l, in PuffState p, ReadOnlySpan<double> fromM, ReadOnlySpan<double> toM, Span<double> tau) =>
+        TauGrid(l, new LinePuff(p), fromM, toM, tau);
 
     /// <summary><see cref="TauGrid(in SmokeLine, in PuffState, ReadOnlySpan{double}, ReadOnlySpan{double}, Span{double})"/>
-    /// on a readied puff: the same sums, no square roots or divisions per line.</summary>
+    /// on a readied puff: the same sums, no square roots or divisions per line for a round one (a stretched one takes its
+    /// axis onto the line's and a square root). The plan's integral along the line (its closest pass x* along from the
+    /// centre's place, where the vertical is taken: a stretched puff crossed aslant is nearest off its centre).</summary>
     public static bool TauGrid(in SmokeLine l, in LinePuff p, ReadOnlySpan<double> fromM, ReadOnlySpan<double> toM, Span<double> tau)
     {
         var rel = p.Centre - l.From;
         double s0 = Vec3d.Dot(rel, l.Along), d = Vec3d.Dot(rel, l.Side);
-        if (Math.Abs(d) > p.Reach || s0 < -p.Reach || s0 > l.Length + p.Reach || !(p.Plan > 0))
+        if (Math.Abs(d) > p.Reach || s0 < -p.Reach || s0 > l.Length + p.Reach || !(p.Norm > 0))
             return false;
-        double a0 = -s0 * p.InvRoot2H, a1 = (l.Length - s0) * p.InvRoot2H;
+        double root, norm, xs, q;
+        if (p.Kappa > 0)
+        {
+            PlanInverse(p.InvH2, p.Kappa, p.Axis, l.Along, l.Side, out double paa, out double pas, out double pss);
+            double inv = 1 / paa;
+            (root, norm, xs) = (Math.Sqrt(0.5 * paa), p.Norm * Math.Sqrt(inv), pas * d * inv);
+            q = (pss - pas * pas * inv) * d * d;
+        }
+        else
+            (root, norm, xs, q) = (p.InvRoot2H, p.Norm * p.SigmaH, 0, d * d * p.InvH2);
+        double a0 = (-s0 - xs) * root, a1 = (l.Length - s0 - xs) * root;
         double frac = a0 < -CullSigma && a1 > CullSigma ? 1 : 0.5 * (Erf(a1) - Erf(a0));
-        double plan = p.Plan * Math.Exp(-d * d * p.HalfInvH2) * frac;
+        double plan = norm * Math.Exp(-0.5 * q) * frac;
         if (!(plan > 0))
             return false;
-        double sc = Math.Clamp(s0, 0, l.Length), u = sc / l.Length, bow = sc * (l.Length - sc) * l.Curve, slopeBow = (l.Length - 2 * sc) * l.Curve;
-        double off = s0 - sc, invL = 1 / l.Length;
+        double sm = s0 + xs, sc = Math.Clamp(sm, 0, l.Length), u = sc / l.Length, bow = sc * (l.Length - sc) * l.Curve, slopeBow = (l.Length - 2 * sc) * l.Curve;
+        double off = sm - sc, invL = 1 / l.Length;
         for (int i = 0; i < fromM.Length; i++)
             for (int j = 0; j < toM.Length; j++)
             {
@@ -565,9 +606,10 @@ public static class SmokeModel
     // ------------------------------------------------------------------ merging
 
     /// <summary>Two puffs as one at <paramref name="now"/>, keeping their extinction, their centre and their second
-    /// moments (across: half the spread of the centres per axis; up: the spread of the heights), and the rise still to
-    /// come. The merged puff carries on from their A-weighted age: Taylor's growth is convex in age, so what the mean age
-    /// leaves of the variance is never negative, and is folded into its s0².</summary>
+    /// moments (across: the plan's whole 2×2 covariance, the spread of the centres in it, as a round part and a stretch;
+    /// up: the spread of the heights), and the rise still to come. The merged puff carries on from their A-weighted age:
+    /// Taylor's growth is convex in age, so what the mean age leaves of the round part is never negative, and is folded
+    /// into its s0².</summary>
     public static SmokePuff Merge(in SmokePuff p, in PuffState sp, in SmokePuff q, in PuffState sq, double now, in AirFrame frame,
         in SmokeAir air)
     {
@@ -575,8 +617,8 @@ public static class SmokeModel
         if (!(a > 0))
             return p;
         double wp = sp.Area / a, wq = sq.Area / a;
-        var c = (sp.Centre * wp + sq.Centre * wq).Normalized() * Earth.Radius;
-        double h2 = wp * (sp.SigmaH2 + 0.5 * (sp.Centre - c).LengthSquared) + wq * (sq.SigmaH2 + 0.5 * (sq.Centre - c).LengthSquared);
+        var c = MergedPlan(sp.Centre, sp.SigmaH2, sp.Along2, sp.Axis, sp.Area, sq.Centre, sq.SigmaH2, sq.Along2, sq.Axis, sq.Area,
+            out double round, out double along, out var axis);
         double z = wp * sp.Z + wq * sq.Z;
         double z2 = wp * (sp.SigmaZ2 + (sp.Z - z) * (sp.Z - z)) + wq * (sq.SigmaZ2 + (sq.Z - z) * (sq.Z - z));
         double age = wp * sp.Age + wq * sq.Age;
@@ -590,11 +632,53 @@ public static class SmokeModel
         return new SmokePuff
         {
             Origin = frame.ToAir(c), Born = now - age, ShearMs = (float)shear, ShearFromS = now, Z0 = (float)z0, Rise = (float)rise, RiseS = (float)riseS,
-            S0h2 = (float)Math.Max(h2 - Taylor(age, air.SigmaV, air.LagrangianH) - b * b, 0),
+            S0h2 = (float)Math.Max(round - Taylor(age, air.SigmaV, air.LagrangianH) - b * b, 0),
             S0z2 = (float)Math.Max(z2 - Taylor(age, air.SigmaW(settled), air.LagrangianW(settled)) - b * b, 0),
+            Along2 = (float)along, Axis = along > 0 ? frame.ToAir(axis) : default,
             A0 = (float)(life > 0 ? a * Math.Exp(age / life) : a), LifeS = (float)life,
             SigmaW = air.FrictionMs > 0 ? (float)air.SigmaW(settled) : 0, LagrangianW = air.FrictionMs > 0 ? (float)air.LagrangianW(settled) : 0,
             Tint = wp >= wq ? p.Tint : q.Tint,
         };
+    }
+
+    /// <summary>Two plan views as one (the merge's): the A-weighted centre (returned, on the sea), and the second moments
+    /// about it (each one's covariance and its centre's offset) as a round part, a stretch and its axis (Earth-centred).
+    /// Cheap enough to try before a merge.</summary>
+    public static Vec3d MergedPlan(Vec3d cp, double hp, double lp, Vec3d xp, double ap, Vec3d cq, double hq, double lq, Vec3d xq, double aq,
+        out double round, out double along, out Vec3d axis)
+    {
+        double a = ap + aq, wp = a > 0 ? ap / a : 0.5, wq = 1 - wp;
+        var c = (cp * wp + cq * wq).Normalized() * Earth.Radius;
+        // the plan's second moments about c on a basis of the sea there
+        var up = c * (1 / Earth.Radius);
+        var e1 = Vec3d.Cross(Math.Abs(up.Z) < 0.9 ? new Vec3d(0, 0, 1) : new Vec3d(1, 0, 0), up).Normalized();
+        var e2 = Vec3d.Cross(up, e1);
+        double sxx = 0, sxy = 0, syy = 0;
+        Moments(cp, hp, lp, xp, wp, c, e1, e2, ref sxx, ref sxy, ref syy);
+        Moments(cq, hq, lq, xq, wq, c, e1, e2, ref sxx, ref sxy, ref syy);
+        double mid = (sxx + syy) / 2, half = Math.Sqrt((sxx - syy) * (sxx - syy) / 4 + sxy * sxy);
+        (round, along, axis) = (mid - half, 2 * half, default);
+        if (along > 1e-6 * mid)
+        {
+            // the larger eigenvalue's vector, from the better-conditioned of its two forms
+            double hi = mid + half;
+            var (ax, ay) = Math.Abs(hi - sxx) > Math.Abs(hi - syy) ? (sxy, hi - sxx) : (hi - syy, sxy);
+            axis = (e1 * ax + e2 * ay).Normalized();
+        }
+        else
+            along = 0;
+        return c;
+    }
+
+    /// <summary>A plan view's share of a merge's moments about c (weight w): its own covariance and its centre's offset.</summary>
+    static void Moments(Vec3d centre, double h2, double l2, Vec3d axis, double w, Vec3d c, Vec3d e1, Vec3d e2, ref double sxx, ref double sxy,
+        ref double syy)
+    {
+        var d = centre - c;
+        double dx = Vec3d.Dot(d, e1), dy = Vec3d.Dot(d, e2);
+        double ax = l2 > 0 ? Vec3d.Dot(axis, e1) : 0, ay = l2 > 0 ? Vec3d.Dot(axis, e2) : 0;
+        sxx += w * (h2 + l2 * ax * ax + dx * dx);
+        sxy += w * (l2 * ax * ay + dx * dy);
+        syy += w * (h2 + l2 * ay * ay + dy * dy);
     }
 }

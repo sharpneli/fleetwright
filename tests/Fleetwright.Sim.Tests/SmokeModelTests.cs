@@ -204,8 +204,12 @@ public class SmokeModelTests(ITestOutputHelper output)
         Assert.InRange(sm.Area, 499.9, 500.1);
         var centre = (sa.Centre * 0.6 + sb.Centre * 0.4).Normalized() * Earth.Radius;
         Assert.True((sm.Centre - centre).Length < 0.01);
-        double h2 = 0.6 * (sa.SigmaH2 + 0.5 * (sa.Centre - centre).LengthSquared) + 0.4 * (sb.SigmaH2 + 0.5 * (sb.Centre - centre).LengthSquared);
-        Assert.InRange(sm.SigmaH2 / h2, 0.999, 1.001);
+        // the plan's covariance kept whole: along the line between them their spread and the centres', across theirs
+        double along = 0.6 * (sa.SigmaH2 + (sa.Centre - centre).LengthSquared) + 0.4 * (sb.SigmaH2 + (sb.Centre - centre).LengthSquared);
+        double across = 0.6 * sa.SigmaH2 + 0.4 * sb.SigmaH2;
+        Assert.InRange(sm.Major2 / along, 0.999, 1.001);
+        Assert.InRange(sm.SigmaH2 / across, 0.999, 1.001);
+        Assert.InRange(Math.Abs(Vec3d.Dot(sm.Axis, Earth.East(Here))), 0.999, 1.001);
         double z = 0.6 * sa.Z + 0.4 * sb.Z, z2 = 0.6 * (sa.SigmaZ2 + Math.Pow(sa.Z - z, 2)) + 0.4 * (sb.SigmaZ2 + Math.Pow(sb.Z - z, 2));
         Assert.InRange(sm.Z - z, -0.01, 0.01);
         Assert.InRange(sm.SigmaZ2 / z2, 0.999, 1.001);

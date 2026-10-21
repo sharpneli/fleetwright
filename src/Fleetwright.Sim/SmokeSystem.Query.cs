@@ -8,7 +8,7 @@ namespace Fleetwright.Sim;
 /// <list type="bullet">
 /// <item><b>The index</b>, rebuilt every <see cref="SimSettings.SmokeIndexMs"/> of world time at a tick: every puff's
 /// state then (its centre in the air's frame, where it stays), in trail order, in chunks of
-/// <see cref="SimSettings.SmokeChunk"/> with a bounding sphere each (their centres and 3.5 σ_h): smoke lies along trails,
+/// <see cref="SimSettings.SmokeChunk"/> with a bounding sphere each (their centres and 3.5 σ along their long axes): smoke lies along trails,
 /// and a trail is already in order along its run. The chunks are filed in a hash grid of cubes in the air's frame
 /// (Earth-centred: no projection, anywhere on the globe) at levels <see cref="SimSettings.SmokeGridM"/> · 2^k, k 0-7,
 /// each at the smallest level whose cells are as wide as its sphere, in the (at most eight) cells its box touches: old,
@@ -103,7 +103,7 @@ public sealed partial class SmokeSystem
                 }
                 var st = SmokeModel.State(puffs[i], nowS, frame, air);
                 int j = ixCount++;
-                ix[j] = new LinePuff(st, frame.ToAir(st.Centre.Normalized() * Earth.Radius));   // where it is in the air now
+                ix[j] = new LinePuff(st, frame.ToAir(st.Centre.Normalized() * Earth.Radius), frame.ToAir(st.Axis));   // where it is in the air now
                 (puffsB[j], ownerB[j], prevB[j], nextB[j]) = (puffs[i], k, j > first ? j - 1 : -1, j + 1);
                 n++;
             }
