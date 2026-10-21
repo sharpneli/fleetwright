@@ -93,10 +93,11 @@ public sealed unsafe class SmokeRenderer : IDisposable
         buf = new DynamicGpuBuffer(device, SDL_GPUBufferUsageFlags.SDL_GPU_BUFFERUSAGE_GRAPHICS_STORAGE_READ, BufferBytes);
     }
 
-    /// <summary>A frame: the book updated from the shot book's new shots, then the puffs in view as instances.</summary>
-    public void Build(in MapView view, ShotBook shots, WeatherHere weather, double world, ShipLights frameLights)
+    /// <summary>A frame: the book updated from the shot book's new shots (and the trails' puffs on the world's clock,
+    /// <paramref name="worldS"/>), then the puffs in view as instances.</summary>
+    public void Build(in MapView view, ShotBook shots, double worldS, WeatherHere weather, double world, ShipLights frameLights)
     {
-        Book.Update(shots, shots.SeaClock, weather.WindFromDeg, weather.WindMs);
+        Book.Update(shots, shots.SeaClock, worldS, weather.WindFromDeg, weather.WindMs);
         lights = frameLights;
         count = 0;
         if (world <= 0 || !FlashLook.On || (FlashLook.Parts & 8) == 0)
@@ -112,7 +113,7 @@ public sealed unsafe class SmokeRenderer : IDisposable
         if (drift.Length() > MaxDrift)
             drift *= (float)(MaxDrift / drift.Length());
         shadows = shadowOn > 0.002f;
-        double mpp = view.MetresPerPixel, k = Effects.K, now = shots.SeaClock;
+        double mpp = view.MetresPerPixel, k = Effects.K;
         prms = new Params
         {
             SunL = new Vector4(sunL, (float)mpp), MoonL = new Vector4(Local(lights.MoonDir), 0),
@@ -122,7 +123,7 @@ public sealed unsafe class SmokeRenderer : IDisposable
 
         for (int i = 0; i < Book.Count; i++)
         {
-            Book.State(i, now, out var centre, out double z, out double sigma, out double area, out double age);
+            Book.State(i, out var centre, out double z, out double sigma, out double area, out double age);
             ref readonly var p = ref Book[i];
             double peak = area * world / (2 * Math.PI * sigma * sigma);
             if (peak < EdgeTau)

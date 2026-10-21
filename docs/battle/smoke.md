@@ -71,6 +71,13 @@ battlecruiser from Iron Duke and covered the German turn-away. The plan makes:
   picture, never the other way.
 - **Soft real time:** nothing allocates in a step or a frame once grown; nothing O(n²) (an index for every pair).
 - **Measure small first:** each bench starts at seconds-long sizes, then Jutland.
+- **The same at any time compression** (the user, 2026-10-21: the core rule). The field steps on the sim's fixed tick;
+  its sources lay puffs on a lattice of world times (a source's own spacing, never a frame's or a count of ticks), and
+  its caches and index rebuilds fall due by world time, so 1x and the fine tier's fastest give the same field and the
+  same hash (`ScenarioTests.A_fight_is_the_same_at_any_fine_speed` holds the world to it today; Z1 runs it with the field
+  on). What's drawn of it ages on the world's clock too, as the map's trails do since 2026-10-21. In the coarse tier
+  ships move differently (plan.md 2.8, accepted 2026-10-13); the smoke follows their motion on the same lattice and adds
+  no difference of its own.
 
 ## The yardstick
 

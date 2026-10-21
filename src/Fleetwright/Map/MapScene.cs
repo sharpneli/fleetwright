@@ -140,12 +140,12 @@ public sealed unsafe partial class MapScene : IScene
         smokeTrails.Begin();
         Map.Fires.FireEffects.Build(view, s, world.DrawMs, WorldView.Factor(view), shipRenderer.Flashes.Book.SeaClock, classOf, shipRenderer.Magazines,
             shipRenderer.Flashes.Lights, shipRenderer.Smoke.Book, smokeTrails);
-        Map.Fires.FunnelSmoke.Build(view, s, world.DrawMs, WorldView.Factor(view), shipRenderer.Flashes.Book.SeaClock, classOf, shipRenderer.Smoke.Book,
+        Map.Fires.FunnelSmoke.Build(view, s, world.DrawMs, WorldView.Factor(view), world.DrawMs / 1000.0, classOf, shipRenderer.Smoke.Book,
             smokeTrails);
         world.Perf.Effects(shipRenderer.Smoke.Book.Count, shipRenderer.Flashes.Lights.Count, shipRenderer.Flashes.Lights.Fires,
             shipRenderer.Splashes.Book.Count, smokeTrails.Count);
         shipRenderer.List.SetFlashLights(shipRenderer.Flashes.Lights.Block);
-        shipRenderer.Smoke.Build(view, shipRenderer.Flashes.Book, s.Weather, WorldView.Factor(view), shipRenderer.List.Lights);
+        shipRenderer.Smoke.Build(view, shipRenderer.Flashes.Book, world.DrawMs / 1000.0, s.Weather, WorldView.Factor(view), shipRenderer.List.Lights);
         shipRenderer.Splashes.Build(view, s, world.DrawMs, s.Paused ? 0 : s.AchievedSpeed, dt, selected, WorldView.Factor(view), shipRenderer.List.Lights);
         shipRenderer.Torpedoes.Build(view, torpedoBook, Torpedoes.TorpedoLook.DrawMs(torpedoBook, world.DrawMs), WorldView.Factor(view),
             shipRenderer.List.Lights, classOf);

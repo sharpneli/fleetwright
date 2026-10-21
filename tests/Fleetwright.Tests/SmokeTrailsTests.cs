@@ -5,32 +5,65 @@ using Fleetwright.Sim.Core;
 
 namespace Fleetwright.Tests;
 
-/// <summary>Continuous smoke (docs/visuals/hits-and-fires.md I5): a source lays what it made since its last puff, so its
-/// strength never depends on the spacing, never dumps after a gap, and its plume keeps rising when its puffs merge.</summary>
+/// <summary>Continuous smoke (docs/visuals/hits-and-fires.md I5): a source lays what it made over each spacing, so its
+/// strength never depends on the spacing; on a lattice of world times, each puff where the source was then, so its trail
+/// is the same whatever the frame rate or the time compression (the user, 2026-10-21); and its plume keeps rising when
+/// its puffs merge.</summary>
 public class SmokeTrailsTests
 {
-    [Fact]
-    public void A_source_lays_its_rate_whatever_the_frames_and_no_dump_after_a_gap()
+    static readonly Vec3d At = Earth.Position(56.5, 4);
+
+    /// <summary>A source steaming east at 10 m/s for <paramref name="seconds"/> of world time, a frame every
+    /// <paramref name="frameS"/> of it: the book it leaves.</summary>
+    static SmokeBook Steam(double seconds, double frameS, double fadeS = 0)
     {
         var book = new SmokeBook();
         var trails = new SmokeTrails();
-        var at = Earth.Position(56.5, 4);
-        double now = 0;
-        for (int f = 0; f < 600; f++, now += 1.0 / 60)
+        var v = Earth.East(At) * 10;
+        for (int f = 0; f * frameS <= seconds + 1e-9; f++)
         {
+            double now = f * frameS;
             trails.Begin();
-            trails.Emit(book, 1, 1 << 29, now, 2, at, 10, 100, 0, 15, Vector3.One, 4, 30, 25, 0.5f);
+            trails.Emit(book, 1, 1 << 29, now, 1.2, At + v * now, v, 10, 100, 0, 15, Vector3.One, 4, 30, 25, 0.5f, fadeS: fadeS);
         }
-        double sum = 0;
-        for (int i = 0; i < book.Count; i++)
-            sum += book[i].Ap;
-        Assert.InRange(sum, 100 * 9, 100 * 11);   // ~10 s at 100 m²/s
-        // seen again after a minute away: at most four spacings' worth
-        int before = book.Count;
-        trails.Begin();
-        trails.Emit(book, 1, 1 << 29, now + 60, 2, at, 10, 100, 0, 15, Vector3.One, 4, 30, 25, 0.5f);
-        Assert.Equal(before + 1, book.Count);
-        Assert.True(book[book.Count - 1].Ap <= 100 * 8 + 1e-3);
+        return book;
+    }
+
+    [Fact]
+    public void A_source_lays_its_rate_whatever_the_frames()
+    {
+        foreach (double frame in new[] { 1.0 / 60, 0.5, 3.6 })
+        {
+            var book = Steam(36, frame);
+            double sum = 0;
+            for (int i = 0; i < book.Count; i++)
+                sum += book[i].Ap;
+            Assert.InRange(sum, 100 * 35, 100 * 37.3);   // ~36 s at 100 m²/s
+        }
+    }
+
+    [Fact]
+    public void The_trail_is_the_same_at_any_time_compression()
+    {
+        // a frame of 1/60 s of world time (1x) against frames of 3.6 s (216x at 60 fps): the same puffs, born at the
+        // same times in the same places
+        var slow = Steam(36, 1.0 / 60);
+        var fast = Steam(36, 3.6);
+        Assert.Equal(slow.Count, fast.Count);
+        for (int i = 0; i < slow.Count; i++)
+        {
+            Assert.Equal(slow[i].Born, fast[i].Born, 6);
+            Assert.True((slow[i].Origin - fast[i].Origin).Length < 0.01, $"puff {i} {(slow[i].Origin - fast[i].Origin).Length:0.00} m apart");
+            Assert.True(fast[i].World);
+        }
+    }
+
+    [Fact]
+    public void A_frame_lays_no_more_than_will_show()
+    {
+        // a frame of five minutes: a fading plume lays only what's still alive, one that doesn't fade its newest
+        Assert.InRange(Steam(300, 300, fadeS: 8).Count, 1, (int)Math.Ceiling(8 / 1.2) + 2);
+        Assert.InRange(Steam(300, 300).Count, 1, SmokeTrails.MaxBackfill + 1);
     }
 
     [Fact]
@@ -54,10 +87,11 @@ public class SmokeTrailsTests
                 Shooter = 1 << 29, Keep = true,
             });
         for (int f = 0; f < 3; f++)
-            book.Update(shots, 5, 0, 0);   // settled and overlapping, still low: they merge (every third frame)
+            book.Update(shots, 5, 0, 0, 0);   // settled and overlapping, still low: they merge (every third frame)
         Assert.Equal(1, book.Count);
-        book.State(0, 5, out _, out double z5, out _, out _, out _);
-        book.State(0, 80, out _, out double z80, out _, out _, out _);
+        book.State(0, out _, out double z5, out _, out _, out _);
+        book.Update(shots, 80, 0, 0, 0);
+        book.State(0, out _, out double z80, out _, out _, out _);
         Assert.True(z80 - z5 > 25, $"risen {z80 - z5:0.0} m after the merge");
     }
 }

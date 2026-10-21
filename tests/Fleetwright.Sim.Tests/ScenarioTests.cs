@@ -106,6 +106,26 @@ public class ScenarioTests
         Assert.Equal(w1.ComputeHash(), r.ComputeHash());
     }
 
+    /// <summary>The core rule (the user, 2026-10-21): within the fine clock tier the sim behaves exactly the same whatever
+    /// the time compression. A fight (the squadrons scenario: sighting, fire control, shells, damage) run at 1x and at the
+    /// fine tier's fastest comes out the same world.</summary>
+    [Fact]
+    public void A_fight_is_the_same_at_any_fine_speed()
+    {
+        var s = Scenario.Load(Path.Combine(Fleet.Repo, "Content", "Scenarios", "squadrons.json"));
+        ulong Run(double speed)
+        {
+            var w = new World(s.Start, s.Seed, Settings);
+            var ai = new AiSystem(w);
+            ScenarioLoader.Apply(s, w, ai, ScenarioLoader.RequestClasses(s, w.Ships.Registry, Designs));
+            w.Apply(Command.SetSpeed(speed));
+            w.AdvanceTo(w.Time + 20 * 60_000);
+            Assert.True(w.Ships.Store.Count > 0);
+            return w.ComputeHash();
+        }
+        Assert.Equal(Run(1), Run(Settings.CoarseMinSpeed - 1));
+    }
+
     /// <summary>The host cuts a slow stretch into slices that end when a snapshot is due (World.Advance's deadline):
     /// cut at every moment it may be, the world comes out the same as one run straight through.</summary>
     [Fact]

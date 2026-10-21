@@ -53,7 +53,7 @@ public static class FireEffects
                 {
                     Fire(view, v, j, p, f, stbd, c.Vertical.Waterline, windPlan, world, clock, bodies, lights, span, v.Entity[k]);
                     if (smoke != null && trails != null && (FireLook.Parts & 4) != 0)
-                        Smoke(v, j, p, f, stbd, c.Vertical.Waterline, wind.Length, v.Speed[k], clock, smoke, trails, v.Entity[k]);
+                        Smoke(v, j, p, f, stbd, c.Vertical.Waterline, wind.Length, v.Speed[k], drawMs / 1000.0, smoke, trails, v.Entity[k]);
                 }
             }
         lights.Finish(view);
@@ -144,7 +144,7 @@ public static class FireEffects
         var sea = p + f * at.X + stbd * at.Y;
         long key = (long)entity << 20 | (uint)v.ShowSpace[j];
         int owner = (int)((uint)(entity * 64 + v.ShowSpace[j] % 64) & 0xffffff) | 1 << 29;
-        trails.Emit(book, key, owner, now, SmokeTrails.Spacing(speedMs, FireLook.EveryS), sea + sea.Normalized() * z, z, aRate, steam, FireLook.SteamS, tint, Math.Max(d, 2), rise,
+        trails.Emit(book, key, owner, now, SmokeTrails.Spacing(speedMs, FireLook.EveryS), sea + sea.Normalized() * z, f * speedMs, z, aRate, steam, FireLook.SteamS, tint, Math.Max(d, 2), rise,
             FireLook.LevelM / u, (float)U((uint)key, 99), FireLook.Spare);
     }
 

@@ -254,7 +254,7 @@ public class FlashTests(ITestOutputHelper output)
             }
             v.Count = fired;
             shots.Update(v, ms, 1, 0.1, ClassOf);
-            smoke.Update(shots, shots.SeaClock, 180, windMs);
+            smoke.Update(shots, shots.SeaClock, 0, 180, windMs);
         }
         return (shots, smoke);
     }
@@ -266,7 +266,7 @@ public class FlashTests(ITestOutputHelper output)
     {
         var (shots, smoke) = Fire(1, 1000, 5, 120);
         Assert.Equal(1, smoke.Count);
-        smoke.State(0, shots.SeaClock, out var c, out double z, out double sigma, out double area, out double age);
+        smoke.State(0, out var c, out double z, out double sigma, out double area, out double age);
         var p = smoke[0];
         double core = 0.35 * p.Lambda, g = 0.07 * 5 + 0.2;
         output.WriteLine($"at {age:F0} s: sigma {sigma:F1} m, {area:F0} m², {z:F1} m up, {Earth.Distance(c, p.Origin):F0} m from its start");
@@ -284,10 +284,10 @@ public class FlashTests(ITestOutputHelper output)
     {
         // every 2 s in a calm: the puffs lie on each other
         var (shots, calm) = Fire(10, 2000, 0, 10);
-        double now = shots.SeaClock, total = 0;
+        double total = 0;
         for (int i = 0; i < calm.Count; i++)
         {
-            calm.State(i, now, out _, out _, out _, out double a, out _);
+            calm.State(i, out _, out _, out _, out double a, out _);
             total += a;
         }
         output.WriteLine($"calm: {calm.Count} puffs of 10, {total:F0} m² against {10 * shots[0].SmokeM2:F0}");
@@ -306,12 +306,12 @@ public class FlashTests(ITestOutputHelper output)
         var smoke = new SmokeBook();
         var v = Shots((1000, 0), (1000, 1), (2000, 2));
         book.Update(v, 2000, 1, 0.016, ClassOf);
-        smoke.Update(book, book.SeaClock, 180, 5);
+        smoke.Update(book, book.SeaClock, 0, 180, 5);
         long before = GC.GetAllocatedBytesForCurrentThread();
         for (int f = 0; f < 600; f++)
         {
             book.Update(v, 2000 + f * 16, 1, 0.016, ClassOf);
-            smoke.Update(book, book.SeaClock, 180, 5);
+            smoke.Update(book, book.SeaClock, 0, 180, 5);
         }
         Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - before);
         Assert.True(smoke.Count > 0);

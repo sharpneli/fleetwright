@@ -6,7 +6,9 @@ namespace Fleetwright.Map.Flashes;
 /// <summary>The gun smoke the map draws (docs/visuals/muzzle-flashes.md F6: drawn by the map alone, a logged exception;
 /// the puffs may stay as the look over the smoke system's coarser state). One Gaussian puff per mount fired, its state a
 /// pure function of its age on the sea's clock (research/vfx/muzzle-flash-smoke-research.md §5.3), so nothing is
-/// simulated:
+/// simulated. A continuous source's puffs (the funnels' and fires' trails, <see cref="Puff.World"/>) age on the world's
+/// clock instead: a trail's shape follows its ship, so it must age with her, the same at any time compression (the user,
+/// 2026-10-21: the sim, and what's drawn of it, the same whatever the rate):
 /// <list type="bullet">
 /// <item>carried along the bore by the gas jet, 2.5 λ_f over τ_m = 0.04 λ_f + 0.05 s, past the Mach disk;</item>
 /// <item>drifting with the wind;</item>
@@ -49,6 +51,9 @@ public sealed class SmokeBook
         /// <summary>It keeps its tint as it ages (a magazine's soot, docs/visuals/magazine-explosions.md X6), where gun
         /// smoke whitens from its muzzle's tint.</summary>
         public bool Keep;
+        /// <summary>It ages on the world's clock, not the sea's: a continuous source's trail (<see cref="SmokeBook"/>).
+        /// Its <see cref="Born"/> is world time, s.</summary>
+        public bool World;
     }
 
     public const int Capacity = 4096;
@@ -64,6 +69,11 @@ public sealed class SmokeBook
     public int Count => count;
     public ref readonly Puff this[int i] => ref puffs[i];
 
+    double seaNow, worldNow;
+
+    /// <summary>A puff's clock now: the world's or the sea's.</summary>
+    double Now(in Puff p) => p.World ? worldNow : seaNow;
+
     /// <summary>The wind this frame: toward, degrees, and m/s.</summary>
     public double WindToDeg { get; private set; }
     public double WindMs { get; private set; }
@@ -71,20 +81,21 @@ public sealed class SmokeBook
     public void Clear() => count = 0;
 
     /// <summary>A frame: the shots the book just added become puffs; the merged, the gone and (over capacity) the
-    /// oldest let go. <paramref name="now"/> is the sea's clock.</summary>
-    public void Update(ShotBook shots, double now, double windFromDeg, double windMs)
+    /// oldest let go. <paramref name="now"/> is the sea's clock, <paramref name="worldNow"/> the world's, s.</summary>
+    public void Update(ShotBook shots, double now, double worldNow, double windFromDeg, double windMs)
     {
         (WindToDeg, WindMs) = ((windFromDeg + 180) % 360, Math.Max(windMs, 0));
+        (seaNow, this.worldNow) = (now, worldNow);
         for (int k = shots.Count - shots.Added; k < shots.Count; k++)
             Spawn(shots[k]);
         // merging and sweeping are slow processes (puffs take seconds to grow into each other and to thin away): every
         // third frame does (docs/visuals/hits-and-fires.md I8: the funnels' and fires' trails are thousands of puffs)
         if (++frames % 3 != 0 && count < Capacity * 3 / 4)
             return;
-        Merge(now, 1.5);
+        Merge(1.5);
         if (count > Capacity / 2)
-            Merge(now, 3.0);
-        Sweep(now);
+            Merge(3.0);
+        Sweep();
     }
 
     long frames;
@@ -127,12 +138,12 @@ public sealed class SmokeBook
     /// <summary>The spread's growth rate with the wind, m/s.</summary>
     double Growth => 0.07 * WindMs + 0.2;
 
-    /// <summary>Puff i at <paramref name="now"/>: its centre over the sea (at its source's height: Earth-centred), its
-    /// height, m, its σ_h, m, its extinction area, m², and its age, s.</summary>
-    public void State(int i, double now, out Vec3d centre, out double z, out double sigma, out double area, out double age)
+    /// <summary>Puff i now (on its clock, as of the last update): its centre over the sea (at its source's height:
+    /// Earth-centred), its height, m, its σ_h, m, its extinction area, m², and its age, s.</summary>
+    public void State(int i, out Vec3d centre, out double z, out double sigma, out double area, out double age)
     {
         ref readonly var p = ref puffs[i];
-        age = Math.Max(now - p.Born, 0);
+        age = Math.Max(Now(p) - p.Born, 0);
         double jet = p.JetS > 0 ? 1 - Math.Exp(-age / p.JetS) : 1;
         var wind = Earth.Forward(p.Origin, WindToDeg) * (WindMs * age);
         centre = p.Origin + p.Bore * (p.Jet0 + p.Jet * jet) + wind;
@@ -145,12 +156,13 @@ public sealed class SmokeBook
 
     /// <summary>Each ship's settled puffs, oldest first, into the one before when they overlap within
     /// <paramref name="k"/> times the larger σ: A, the centre and the second moment kept.</summary>
-    void Merge(double now, double k)
+    void Merge(double k)
     {
         lastOf.Clear();
         for (int i = 0; i < count; i++)
         {
             ref var p = ref puffs[i];
+            double now = Now(p);
             if (now - p.Born < SettleS || p.Ap + p.Aw0 <= 0 || p.FadeS > 0)
                 continue;
             if (!lastOf.TryGetValue(p.Shooter, out int j))
@@ -158,14 +170,19 @@ public sealed class SmokeBook
                 lastOf[p.Shooter] = i;
                 continue;
             }
-            State(j, now, out var cj, out double zj, out double sj, out double aj, out _);
-            State(i, now, out var ci, out double zi, out double si, out double ai, out _);
+            ref var q = ref puffs[j];
+            if (q.World != p.World)
+            {
+                lastOf[p.Shooter] = i;
+                continue;
+            }
+            State(j, out var cj, out double zj, out double sj, out double aj, out _);
+            State(i, out var ci, out double zi, out double si, out double ai, out _);
             if ((ci - cj).Length > k * Math.Max(si, sj) || aj + ai <= 0)
             {
                 lastOf[p.Shooter] = i;
                 continue;
             }
-            ref var q = ref puffs[j];
             double a = aj + ai, wj = aj / a, wi = ai / a;
             var c = cj * wj + ci * wi;
             // the second moment per axis: each σ² and half its centre's offset squared (two axes, isotropic)
@@ -187,7 +204,7 @@ public sealed class SmokeBook
                 Z0 = (float)(z - jetZ * jetNow - 0.6 * lambda * (1 - Math.Exp(-ageEff / (3 + 0.05 * lambda)))), JetZ = (float)jetZ,
                 Anchor = (float)(q.Anchor * wj + p.Anchor * wi), Lambda = (float)lambda,
                 Ap = (float)particles, Aw0 = (float)(fogNow * Math.Exp(ageEff / fogS)), FogS = (float)fogS, RampS = 0,
-                Tint = q.Tint * (float)wj + p.Tint * (float)wi, Seed = q.Seed, Shooter = q.Shooter, Keep = q.Keep,
+                Tint = q.Tint * (float)wj + p.Tint * (float)wi, Seed = q.Seed, Shooter = q.Shooter, Keep = q.Keep, World = q.World,
             };
             p.Ap = p.Aw0 = 0;   // merged away: swept below
         }
@@ -219,7 +236,7 @@ public sealed class SmokeBook
     }
 
     /// <summary>The merged and the gone out, the rest kept in order.</summary>
-    void Sweep(double now)
+    void Sweep()
     {
         int n = 0;
         for (int i = 0; i < count; i++)
@@ -227,9 +244,9 @@ public sealed class SmokeBook
             ref readonly var p = ref puffs[i];
             if (p.Ap + p.Aw0 <= 0)
                 continue;
-            if (now - p.Born > SettleS)
+            if (Now(p) - p.Born > SettleS)
             {
-                State(i, now, out _, out _, out double s, out double a, out _);
+                State(i, out _, out _, out double s, out double a, out _);
                 if (a / (2 * Math.PI * s * s) < GoneTau)
                     continue;
             }

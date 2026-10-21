@@ -132,7 +132,10 @@ I0 adds these. They're facts the sim has, so no result changes: the scenario ben
 7. **Shells in flight keep the table's streak** in the world view: there's almost nothing to see of a real shell
    from above, and the streak is how the player reads who is firing at whom.
 8. **Clocks:** hits on the effects' clock (knee 2x), never thinned (they're few and decisive); fires and smoke on the
-   sea's clock, as the gun smoke.
+   sea's clock, as the gun smoke. Changed 2026-10-21 for the trails (the user: the sim, and what's drawn of it, the same
+   at any time compression): a fire's and a funnel's smoke follow a moving ship, and on the sea's clock (capped at 8x)
+   they strung out into beads above it. They age on the world's clock, laid on a lattice of world times and filled in
+   back along her track (`SmokeTrails`, I5 below); the flames' flicker stays on the sea's.
 9. **Placeholders for colours and yields**, set right in a later pass.
 
 ## Steps
@@ -248,7 +251,8 @@ her deck and turrets by night. Test: `FireLightsTests`.
 
 **I5 (2026-10-19).** `Map/Fires/SmokeTrails`: continuous smoke sources (the smoke research's), shared with I6's
 funnels. Each lays a puff on the gun smoke's book every `every` 2 s of the sea's clock carrying what it made since (its
-rates times the time; after a gap, at most four spacings' worth), left in the air to drift with the wind while its ship
+rates times the time; after a gap, at most four spacings' worth; since 2026-10-21 on a lattice of world times, every
+puff of a frame's span laid where the ship was then, aging on the world's clock: decision 8), left in the air to drift with the wind while its ship
 steams on: the trail. The book merges a source's settled puffs by age (one key a source); its merge now keeps the rise
 still to come (gun smoke's jet is spent by then: unchanged). Each fire that shows is a source at its flames' tips:
 - **Ȧ = (Q / ΔH_c) y_s σ_s**: ΔH_c 18 MJ/kg, σ_s 8,700 m²/kg, the yield 0.03 growing (light grey), 0.08 developed
