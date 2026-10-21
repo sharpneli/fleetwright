@@ -32,7 +32,8 @@ add what's found.
 - [ ] `RailsTests.Two_thousand_ships_steam_a_year_in_seconds` (its 60 s limit) failed in two full Debug runs of
   `Fleetwright.Sim.Tests` in a row (2026-10-19, shell contents C4, which touches no rails code) and passed alone both
   times: 33.0 s against 32.3 s on the commit before. A timing test in Debug under the suite's parallel load: the limit
-  has little room there. Worth running it in Release, or with the load it meets in mind.
+  has little room there. Worth running it in Release, or with the load it meets in mind. Seen again twice 2026-10-21
+  (smoke Z0, Z1): 32.9 s alone against 33.2 s on the commit before Z1, so not the smoke system's (off there).
 - [ ] `ShipMotionTests.A_tick_allocates_nothing` failed in a full `dotnet test` of every assembly at once (2026-10-14,
   lighting L4, which touches no sim code; once with a second Sim failure) and passed alone three times in three. The
   same suspicion as above.

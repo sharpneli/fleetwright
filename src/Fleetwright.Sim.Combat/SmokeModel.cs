@@ -79,6 +79,13 @@ public struct AirFrame
             z * c + (k.X * y - k.Y * x) * s + k.Z * d * t);
     }
 
+    public readonly void Hash(ref StateHash h)
+    {
+        h.Add(m00); h.Add(m01); h.Add(m02);
+        h.Add(m10); h.Add(m11); h.Add(m12);
+        h.Add(m20); h.Add(m21); h.Add(m22);
+    }
+
     /// <summary>Gram-Schmidt on the columns: the rounding of many small steps never shears the frame.</summary>
     void Orthonormalize()
     {
@@ -290,6 +297,18 @@ public static class SmokeModel
         double z2 = p.S0z2 + Taylor(age, air.SigmaW(settled), air.LagrangianW(settled)) + b * b;
         double a = p.LifeS > 0 ? p.A0 * Math.Exp(-age / p.LifeS) : p.A0;
         return new PuffState(frame.ToWorld(p.Origin), z, h2, z2, a, age);
+    }
+
+    /// <summary>A puff's plan view at <paramref name="now"/>: its centre, its variance across, its extinction area and its
+    /// age; what retiring and merging decide by, without the vertical's work (<see cref="State"/> has it all).</summary>
+    public static void Plan(in SmokePuff p, double now, in AirFrame frame, in SmokeAir air, out Vec3d centre, out double sigmaH2,
+        out double area, out double age)
+    {
+        age = Math.Max(now - p.Born, 0);
+        double b = p.Rise * RiseShare(age / p.RiseS) * BuoyantSpread;
+        sigmaH2 = p.S0h2 + Taylor(age, air.SigmaV, air.LagrangianH) + b * b;
+        area = p.LifeS > 0 ? p.A0 * Math.Exp(-age / p.LifeS) : p.A0;
+        centre = frame.ToWorld(p.Origin);
     }
 
     /// <summary>A puff born now at a place on the sea (<paramref name="at"/>, Earth-centred), into the air's frame.</summary>

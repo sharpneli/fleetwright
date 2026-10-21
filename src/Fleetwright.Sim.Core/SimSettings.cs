@@ -1867,6 +1867,43 @@ public sealed record SimSettings
     public double MatchupSeenTrimShare { get; init; } = 0.8;
     public double MatchupSeenBurningShare { get; init; } = 0.9;
 
+    // ------------------------------------------------------------------ the smoke field (docs/battle/smoke.md Z1)
+
+    /// <summary>The smoke field, a feasibility study (docs/battle/smoke.md decision 1): off until it's taken in.</summary>
+    public bool Smoke { get; init; }
+
+    /// <summary>The field's tick in the fine tier and in the coarse, ms: puffs laid, the air carried on, trails merged, on a
+    /// lattice of world time (the same at any speed within a tier; the coarse is cheaper, docs/battle/smoke.md principles).</summary>
+    public int SmokeTickMs { get; init; } = 1000;
+    public int SmokeCoarseTickMs { get; init; } = 60_000;
+
+    /// <summary>A puff's spread at birth, m (the plume after the funnels' lee) [EST]; the most of a ship's run through the
+    /// air one puff stands for, m: a tick's run is cut into puffs this long or shorter, and a longer one (the coarse tier's)
+    /// widens them along it; the most puffs a ship lays a tick.</summary>
+    public double SmokeSigma0M { get; init; } = 15;
+    public double SmokeSpacingM { get; init; } = 20;
+    public int SmokePuffsPerTick { get; init; } = 8;
+
+    /// <summary>How often a ship's plume (output, rise, downwash) is worked out again, ms of world time: a boiler's output
+    /// follows the power over tens of seconds.</summary>
+    public int SmokePlumeMs { get; init; } = 10_000;
+
+    /// <summary>A ship coming off rails lays her trail back this far, s, as if she'd smoked all along (sight only reads
+    /// smoke off rails; her smoke from before is in the air all the same) [EST: a plume's useful life].</summary>
+    public double SmokeBackfillS { get; init; } = 1800;
+
+    /// <summary>Merging (research/vfx/unified-smoke-system.md "Lifecycle"): a trail's puffs merge once both are older
+    /// than <see cref="SmokeSettleS"/>, s, and their centres are within <see cref="SmokeMergeSigma"/> of the larger σ (Gaussians 2σ apart along a line
+    /// ripple ~1.4%, 3σ apart ~22%); each
+    /// trail is walked every <see cref="SmokeMergeEveryMs"/> of world time (a slice of the trails each tick).</summary>
+    public double SmokeSettleS { get; init; } = 60;
+    public double SmokeMergeSigma { get; init; } = 2.0;
+    public int SmokeMergeEveryMs { get; init; } = 30_000;
+
+    /// <summary>The most puffs the field holds: over it, trails merge twice as far apart (the cost degrades in accuracy,
+    /// never in time).</summary>
+    public int SmokeCap { get; init; } = 262_144;
+
     // ------------------------------------------------------------------ from data
 
     /// <summary>Reads settings from JSON. Strict: an unknown key is an error (a misspelt key would silently keep its

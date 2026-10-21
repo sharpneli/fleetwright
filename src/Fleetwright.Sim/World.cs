@@ -85,6 +85,8 @@ public sealed class World
         Register(Damage);
         Torpedoes = new TorpedoSystem(Settings, Ships, ShipIndex, CombatLog, seed) { Damage = Damage };
         Register(Torpedoes);
+        Smoke = new SmokeSystem(Settings);
+        Register(Smoke);
         Ships.ClassAdded = cls =>
         {
             if (Reach.Add(cls))
@@ -99,6 +101,10 @@ public sealed class World
     /// <summary>How far the ships at sea can see each other, and so the encounters' and the looks' reach
     /// (docs/battle/fire-control.md F4d).</summary>
     public SightReach Reach { get; }
+
+    /// <summary>The smoke field (docs/battle/smoke.md Z1): always registered seventh (<see cref="SmokeSystem.Id"/>), off
+    /// unless <see cref="SimSettings.Smoke"/>.</summary>
+    public SmokeSystem Smoke { get; }
 
     /// <summary>Torpedoes running (docs/battle/fighting.md 4.6): always registered sixth (<see cref="TorpedoSystem.Id"/>).</summary>
     public TorpedoSystem Torpedoes { get; }
@@ -362,6 +368,7 @@ public sealed class World
         h.Add(weather.Here.VisibilityM);
         h.Add(weather.Here.WindFromDeg);
         h.Add(weather.Here.WindMs);
+        h.Add(weather.Here.AirOverSeaK);
         Interest.Hash(ref h);
         Encounters.Hash(ref h);
         Sightings.Hash(ref h);

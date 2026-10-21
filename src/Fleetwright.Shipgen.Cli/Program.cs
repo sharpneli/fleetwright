@@ -162,6 +162,10 @@ public static class Program
             each design's smoke as the smoke field's model makes it (docs/battle/smoke.md Z0): the plant's facts, a
             funnel's output, gas and buoyancy at speeds, the plume's rise and downwash in relative winds, its trail's
             optical depths at 1, 5 and 30 minutes in neutral and stable air, beside the research's 1,500 m²/s
+        shipgen smoke run [SCENARIO] [--minutes 30] [--every 5] [--speed 1]
+            a scenario (Jutland by default) headless with the smoke field on (docs/battle/smoke.md Z1), in a world of
+            water, the clock held through contact: puffs, trails, memory, puffs by age, laid/merged/retired, and the
+            field's cost a game second beside the whole sim's
         shipgen sight DESIGN... [--from DESIGN] [--settings FILE]
             each design's sighting facts as the sim reads them (docs/battle/fire-control.md F4d): its eyes (kind, part,
             height over the sea, horizon, rangefinder, blind arc), its silhouette's top and area above each 10 m, how far
@@ -346,7 +350,11 @@ public static class Program
                     D(a, "share", 0.6), D(a, "sight", double.PositiveInfinity)),
                 "sight" => SightList.Run(a.Positional, n => LoadDesign(Resolve(a, n)),
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), a.Get("from") is { } f ? Resolve(a, f) : null),
-                "smoke" => SmokeBench.Run(a.Positional, n => Class(a, n)),
+                "smoke" => SmokeBench.Run(a.Positional, n => Class(a, n), Path.Combine(Root(a), "..", "Content", "Scenarios", "jutland.json"),
+                    a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), Path.Combine(Root(a), "designs"),
+                    double.Parse(a.Get("minutes", "30")!, System.Globalization.CultureInfo.InvariantCulture),
+                    double.Parse(a.Get("every", "5")!, System.Globalization.CultureInfo.InvariantCulture),
+                    double.Parse(a.Get("speed", "1")!, System.Globalization.CultureInfo.InvariantCulture)),
                 "trials" => SeaTrials.Run(a.Positional, a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), a.Get("out")),
                 _ => Fail($"unknown command {args[0]}\n\n{Usage}"),
             };

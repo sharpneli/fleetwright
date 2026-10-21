@@ -1,5 +1,8 @@
+using System.Diagnostics;
 using System.Globalization;
 using System.Text;
+using Fleetwright.Sim;
+using Fleetwright.Sim.Missions;
 using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Ships;
@@ -18,11 +21,14 @@ static class SmokeBench
     static readonly (string Name, WeatherHere W)[] Airs =
         [("neutral", new WeatherHere(25_000, 225, 8 * 0.514444)), ("stable +2 K", new WeatherHere(25_000, 225, 8 * 0.514444, 2))];
 
-    public static int Run(IReadOnlyList<string> args, Func<string, ShipClass> classOf)
+    public static int Run(IReadOnlyList<string> args, Func<string, ShipClass> classOf, string scenario, string settingsPath, string designs,
+        double minutes, double every, double speed)
     {
+        if (args.Count >= 1 && args[0] == "run")
+            return Store(args.Count >= 2 ? args[1] : scenario, settingsPath, designs, minutes, every, speed);
         if (args.Count < 2 || args[0] != "facts")
         {
-            Console.Error.WriteLine("shipgen smoke facts DESIGN...");
+            Console.Error.WriteLine("shipgen smoke facts DESIGN...  |  shipgen smoke run [SCENARIO] [--minutes N] [--every N] [--speed X]");
             return 2;
         }
         var sb = new StringBuilder();
@@ -106,5 +112,49 @@ static class SmokeBench
             along += SmokeModel.TauLine(axis, p);
         }
         return (col, across, along, probe.Z, sh, Math.Sqrt(probe.SigmaZ2));
+    }
+
+    /// <summary>`shipgen smoke run`: a scenario headless with the field on (docs/battle/smoke.md Z1), in a world of water,
+    /// the clock held at its speed through contact: every so many game minutes the puffs and trails, the store's memory, the
+    /// puffs by age, what was laid, merged and retired, and the field's cost a game second beside the whole sim's.</summary>
+    static int Store(string path, string settingsPath, string designs, double minutes, double every, double speed)
+    {
+        var settings = SimSettings.Load(settingsPath) with { Smoke = true };
+        var s = Scenario.Load(path);
+        using var registry = new ShipClassRegistry(0);
+        var classes = ScenarioLoader.RequestClasses(s, registry, [designs]);
+        registry.WaitAll();
+        var w = new World(s.Start, s.Seed, settings, registry);
+        var ai = new Fleetwright.Sim.Ai.AiSystem(w);
+        ScenarioLoader.Apply(s, w, ai, classes);
+        w.Apply(Command.SetInterest(InterestKind.Own, InterestAction.Nothing));
+        w.Apply(Command.SetInterest(InterestKind.Others, InterestAction.Nothing));
+        w.Apply(Command.SetSpeed(speed));
+        int probe = Array.IndexOf(w.Probes.Names, nameof(SmokeSystem));
+        Console.WriteLine($"{s.Name}: {s.ShipCount} ships, at {speed:0.#}x, a world of water; the field on");
+        Console.WriteLine("  game     puffs  trails  per trail    MiB   by age (<1, 1-5, 5-15, 15-30, 30+ min)        laid   merged  retired   field ms/game s   sim ms/game s");
+        var ages = new int[5];
+        long lastTicks = 0;
+        var wall = Stopwatch.StartNew();
+        double lastWall = 0;
+        for (double m = every; m <= minutes + 1e-9; m += every)
+        {
+            w.AdvanceTo(new WorldTime(s.Start.Ms + (long)(m * 60_000)));
+            Array.Clear(ages);
+            double now = w.Time.Ms / 1000.0;
+            for (int i = 0; i < w.Smoke.Slots; i++)
+                if (w.Smoke.IsLive(i))
+                {
+                    double age = (now - w.Smoke.Puff(i).Born) / 60;
+                    ages[age < 1 ? 0 : age < 5 ? 1 : age < 15 ? 2 : age < 30 ? 3 : 4]++;
+                }
+            long ticks = probe >= 0 ? w.Probes.Ticks[probe] : 0;
+            double game = every * 60, field = Probes.Ms(ticks - lastTicks) / game, all = (wall.Elapsed.TotalMilliseconds - lastWall) / game;
+            Console.WriteLine(string.Format(Inv, "  {0,5:0} min {1,7} {2,7} {3,10:0} {4,6:0.0}   {5,6} {6,6} {7,6} {8,6} {9,6}   {10,10} {11,8} {12,8}   {13,15:0.000} {14,15:0.00}",
+                m, w.Smoke.Count, w.Smoke.Trails, w.Smoke.Trails > 0 ? (double)w.Smoke.Count / w.Smoke.Trails : 0, w.Smoke.Bytes / 1048576.0,
+                ages[0], ages[1], ages[2], ages[3], ages[4], w.Smoke.Laid, w.Smoke.Merged, w.Smoke.Retired, field, all));
+            (lastTicks, lastWall) = (ticks, wall.Elapsed.TotalMilliseconds);
+        }
+        return 0;
     }
 }

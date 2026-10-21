@@ -1,6 +1,6 @@
 # Plan: the smoke field (a feasibility study)
 Status: **drafted 2026-10-20**, decisions 1-4 from the user ("Decided" below); weather's one optical depth proposed;
-Z0 (the model and the facts) done 2026-10-21, decisions 5-8    Updated: 2026-10-21
+Z0 (the model and the facts) and Z1 (the store) done 2026-10-21, decisions 5-8    Updated: 2026-10-21
 
 Smoke as sim state that sight reads, and the same state drawn. The research is `research/vfx/unified-smoke-system.md`
 (Lagrangian Gaussian puffs as the one store, every grid a throw-away view of them), on top of
@@ -404,13 +404,55 @@ Left for the tuning when the field is whole (decision 5): the yields (the record
 whether the ship's own wake and superstructure lee hold her smoke lower than Briggs' chimney formulas (likely: they
 were made for stacks on land, in a wind that isn't a ship's own), and the turbulence's constants.
 
-### Z1 The store (headless)
-- `SmokeSystem` (an `IWorldSystem`): `SimSettings.Smoke` (off), funnels off rails with the backfill, merging, retiring,
-  the cap, the hash, the coarse tier's emission along its segments.
-- `shipgen smoke [scenario] [--minutes N]`: puffs and MiB over time, by source and age class; the store's ms a game
-  second.
-- Tests: no allocation once grown; a replay hashes the same; puffs per trail against the research's (~450 for 30 min
-  merged).
+### Z1 The store (done 2026-10-21)
+
+**Built:** `SmokeSystem` (Sim, registered seventh), behind `SimSettings.Smoke` (off), its keys `Smoke*` in
+settings.json; `shipgen smoke run [SCENARIO] [--minutes N] [--every N] [--speed X]`; `SmokeSystemTests` (7), and
+`ScenarioTests.A_fight_is_the_same_at_any_fine_speed` with the field on and off.
+
+- **A tick on a lattice of world time:** every `SmokeTickMs` (1 s) in the fine tier, `SmokeCoarseTickMs` (60 s) in the
+  coarse (the coarse lays the same smoke in fewer, wider puffs: cheap, as the user asked of it). It starts when a ship is
+  off rails and stops when no trail is left; the air's frame is carried on, each ship's smoke since her last tick laid, a
+  slice of the trails walked.
+- **One trail a ship,** not one a funnel: her funnels' plumes summed, the rest A-weighted, their spread over her length
+  in the puff's σ (the research's count was a trail a ship; the plumes join within a few lengths). A tick's run through
+  the air is cut into puffs at most `SmokeSpacingM` (20 m) long, each laid where she was then; a longer run (the coarse
+  tier's) widens them along it.
+- **Her plume is worked out every `SmokePlumeMs` (10 s)** of world time, not every tick: a boiler's output follows the
+  power over tens of seconds, and the funnels' physics was most of the laying's cost.
+- **Off rails only;** coming off, she lays her trail back `SmokeBackfillS` (30 min) along her course at her speed, aged
+  as if laid then, in chunks a quarter of their age (a few dozen puffs, not thousands). A ship stopped keeps her trail
+  and lays nothing; one going down makes none; a trail no ship feeds ages out and is forgotten.
+- **Merging at 2σ, not the plan's 0.5σ:** Gaussians 2σ apart along a line ripple ~1.4% (3σ apart ~22%), so a trail
+  merged to 1-2σ spacing is as good for sight as one laid every metre. At 0.5σ a trail grew without end in light airs;
+  at 1σ it halved; at 2σ it halved again. Each trail walked every `SmokeMergeEveryMs` (30 s); the walk works on each
+  puff's plan view (`SmokeModel.Plan`: centre, σ_h, A) and does the full state only for a merge. Over `SmokeCap`, twice
+  as far and every trail.
+- **The world hash** now holds the weather's air-over-sea temperature (Z0 left it out).
+
+**The bench** (`shipgen smoke run`, a world of water, the clock held through contact, 1x):
+
+| | Squadrons (9 ships), 20 min | Jutland (250 ships), 10 min | Jutland, 60 min | Jutland, 3 hours |
+| --- | --- | --- | --- | --- |
+| Puffs (a trail) | 2,427 (270) | 23,073 (95) | 31,858 (131) | 48,129 (193) |
+| Memory | 0.3 MiB | 2.5 MiB | 2.5 MiB | 5.0 MiB |
+| The field a game second | 0.028 ms | 0.094 ms | 0.108 ms | 0.10-0.14 ms |
+
+- **Inside the store's budget** (0.3 ms a game second, 16 MiB) at Jutland through all three hours, with room: the count
+  grows by ~1,300 puffs every 10 minutes after the first hour, a fifth of the cap at the end.
+- Laying and merging cost about the same; the first minutes' backfill (every ship coming off rails at once) costs ~0.6 ms
+  a game second for a few minutes.
+- Retiring depends on the light: destroyers' and oil ships' thin trails go within the hour; a coal battleship's trail
+  still holds a column τ over 0.005 hours later in Jutland's 8 kn (as the record's haze would have it).
+- The research's ~450 puffs a trail for 30 minutes merged: ours 100-270 (merging at 2σ, one trail a ship).
+
+**Tests:** off by default; ships on rails lay none (a spawned ship lays until the rails take her, then her trail only
+ages); a ship's trail astern and back along her course (~10 km for half an hour at 18 kn into the drift); trails bounded
+(one ship: 228 puffs after an hour, 287 after two); the same world at 1x and 240x, and on replay; nothing allocated over
+half an hour of six ships smoking once grown.
+
+**Open, for the steps after:** what the snapshot carries (Z5's); `ComponentRow.Smoke` still unread; the index and the
+query (Z2, gate 1).
 
 ### Z2 The index and the query (gate 1)
 - The per-encounter index in the air frame; the walk; the pair cache with the dirty cells.
