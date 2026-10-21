@@ -43,9 +43,10 @@ public unsafe class SmokeFieldTwinTests(ITestOutputHelper output)
 
         // their states 37.5 s after the copy, on the GPU
         float since = 37.5f;
+        Assert.NotNull(copy.Eddies);
         var gpu = Run(copy, since);
         var air = new SmokeAir { SigmaV = copy.SigmaV, LagrangianH = copy.LagrangianH };
-        double now = copy.CopiedMs / 1000.0 + since, worst = 0;
+        double now = copy.CopiedMs / 1000.0 + since, worst = 0, worstEddy = 0, mostEddy = 0;
         for (int i = 0; i < copy.Count; i++)
         {
             ref readonly var r = ref copy.Records[i];
@@ -55,7 +56,7 @@ public unsafe class SmokeFieldTwinTests(ITestOutputHelper output)
                 LifeS = r.LifeS, SigmaW = r.SigmaW, LagrangianW = r.LagrangianW,
             };
             var s = SmokeModel.State(puff, now, AirFrame.Identity, air);
-            var g = gpu[i];
+            var g = gpu[2 * i];
             double[] want = [s.Z, s.SigmaH2, s.SigmaZ2, s.Area], got = [g.X, g.Y, g.Z, g.W];
             for (int k = 0; k < 4; k++)
             {
@@ -63,8 +64,15 @@ public unsafe class SmokeFieldTwinTests(ITestOutputHelper output)
                 worst = Math.Max(worst, err);
                 Assert.True(err < 2e-4, $"puff {i}, quantity {k}: GPU {got[k]} against the sim's {want[k]}");
             }
+            // its offset by the large eddies (Z5c), against SmokeEddies.At where it samples them
+            var e = gpu[2 * i + 1];
+            var wantEddy = copy.Eddies!.At(copy.Anchor + new Vec3d(r.KeyX, r.KeyY, r.KeyZ), now) * r.Eddy;
+            double miss = (new Vec3d(e.X, e.Y, e.Z) - wantEddy).Length;
+            (worstEddy, mostEddy) = (Math.Max(worstEddy, miss), Math.Max(mostEddy, wantEddy.Length));
+            Assert.True(miss < 0.05, $"puff {i}: the eddies' offset {miss:F3} m off the sim's");
         }
-        output.WriteLine($"the worst relative difference {worst:G3}");
+        output.WriteLine($"the worst relative difference {worst:G3}; the eddies' offset at most {worstEddy:F4} m off (offsets up to {mostEddy:F0} m)");
+        Assert.True(mostEddy > 10, "the eddies move the smoke");
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -73,7 +81,15 @@ public unsafe class SmokeFieldTwinTests(ITestOutputHelper output)
         public float X, Y, Z, W;
     }
 
-    /// <summary>smokestate.comp on a device of its own: each record's state at <paramref name="since"/> s after the copy.</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    struct Params
+    {
+        public System.Numerics.Vector4 Info;
+        public Fleetwright.Map.Smoke.SmokeFieldRenderer.EddyModes Eddies;
+    }
+
+    /// <summary>smokestate.comp on a device of its own: each record's state at <paramref name="since"/> s after the copy, and
+    /// its offset by the large eddies then (two each).</summary>
     static State[] Run(SmokeCopy copy, float since)
     {
         if (!SDL_Init(SDL_InitFlags.SDL_INIT_VIDEO))
@@ -101,7 +117,7 @@ public unsafe class SmokeFieldTwinTests(ITestOutputHelper output)
             Marshal.FreeHGlobal((nint)entry);
             Assert.True(pipe != null, $"smokestate pipeline: {SDL_GetError()}");
             int n = copy.Count;
-            uint inBytes = (uint)(n * SmokeRecord.SizeInBytes), outBytes = (uint)(n * sizeof(State));
+            uint inBytes = (uint)(n * SmokeRecord.SizeInBytes), outBytes = (uint)(2 * n * sizeof(State));
             var bi = new SDL_GPUBufferCreateInfo { usage = SDL_GPUBufferUsageFlags.SDL_GPU_BUFFERUSAGE_COMPUTE_STORAGE_READ, size = inBytes };
             var input = SDL_CreateGPUBuffer(dev, &bi);
             var bo = new SDL_GPUBufferCreateInfo { usage = SDL_GPUBufferUsageFlags.SDL_GPU_BUFFERUSAGE_COMPUTE_STORAGE_WRITE, size = outBytes };
@@ -123,8 +139,12 @@ public unsafe class SmokeFieldTwinTests(ITestOutputHelper output)
             var pass = SDL_BeginGPUComputePass(cmd, null, 0, &rw, 1);
             SDL_BindGPUComputePipeline(pass, pipe);
             SDL_BindGPUComputeStorageBuffers(pass, 0, &input, 1);
-            var prm = new System.Numerics.Vector4(since, (float)copy.SigmaV, (float)copy.LagrangianH, n);
-            SDL_PushGPUComputeUniformData(cmd, 0, (nint)(&prm), 16);
+            var prm = new Params
+            {
+                Info = new System.Numerics.Vector4(since, (float)copy.SigmaV, (float)copy.LagrangianH, n),
+                Eddies = Fleetwright.Map.Smoke.SmokeFieldRenderer.Eddies(copy.Eddies, copy.Anchor, copy.CopiedMs / 1000.0 + since),
+            };
+            SDL_PushGPUComputeUniformData(cmd, 0, (nint)(&prm), (uint)sizeof(Params));
             SDL_DispatchGPUCompute(pass, (uint)((n + 63) / 64), 1, 1);
             SDL_EndGPUComputePass(pass);
             cp = SDL_BeginGPUCopyPass(cmd);
@@ -135,7 +155,7 @@ public unsafe class SmokeFieldTwinTests(ITestOutputHelper output)
             var fence = SDL_SubmitGPUCommandBufferAndAcquireFence(cmd);
             SDL_WaitForGPUFences(dev, true, &fence, 1);
             SDL_ReleaseGPUFence(dev, fence);
-            var result = new Span<State>((void*)SDL_MapGPUTransferBuffer(dev, down, false), n).ToArray();
+            var result = new Span<State>((void*)SDL_MapGPUTransferBuffer(dev, down, false), 2 * n).ToArray();
             SDL_UnmapGPUTransferBuffer(dev, down);
             SDL_ReleaseGPUTransferBuffer(dev, up);
             SDL_ReleaseGPUTransferBuffer(dev, down);

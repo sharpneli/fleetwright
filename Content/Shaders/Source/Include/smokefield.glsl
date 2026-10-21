@@ -10,7 +10,24 @@ struct FieldPuff
     vec4 misc;     // x: its decay time, s (0 none); y: its tint (SmokeTint); z: drawn (the drawing rule), 1 or 0;
                    // w: its drift along the wind against the air's frame, m/s
     vec4 axis;     // xyz: its stretch's axis on the sea, in the air's frame (Z5b); w: the stretch, m^2 (0: round)
+    vec4 key;      // xyz: where it samples the large eddies, m from the copy's anchor in the air's frame; w: its share (Z5c)
 };
+
+// the large eddies' modes (Z5c, Fleetwright.Sim.Combat.SmokeEddies)
+#define FIELD_EDDY_MODES 8
+
+// a puff's offset by the large eddies, in the air's frame, m: its share of sum A_i d_i cos(k_i . key + phase_i), with
+// k (xyz) and A (w) in eddyK, d (xyz) and the phase at the frame's time (w: k . anchor - omega t + phi, worked in double
+// on the CPU) in eddyD. The GLSL twin of SmokeEddies.At.
+vec3 fieldEddy(FieldPuff p, vec4 eddyK[FIELD_EDDY_MODES], vec4 eddyD[FIELD_EDDY_MODES])
+{
+    vec3 sum = vec3(0.0);
+    if (!(p.key.w > 0.0))
+        return sum;
+    for (int i = 0; i < FIELD_EDDY_MODES; i++)
+        sum += eddyD[i].xyz * (eddyK[i].w * cos(dot(eddyK[i].xyz, p.key.xyz) + eddyD[i].w));
+    return sum * p.key.w;
+}
 
 // a rising plume's spread for its rise (Pasquill's dh / 3.5)
 const float BuoyantSpread = 1.0 / 3.5;

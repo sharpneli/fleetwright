@@ -24,6 +24,8 @@ layout(set = 1, binding = 0) uniform View
     vec4 m2;       // xyz: its third row; w: the edge's optical depth
     vec4 anchor;   // xyz: the copy's anchor on the sea, m from the eye; w: a gain on the extinction
     vec4 wind;     // xyz: the way the wind blows at the view's centre
+    vec4 eddyK[FIELD_EDDY_MODES];   // the large eddies' modes (smokefield.glsl's fieldEddy)
+    vec4 eddyD[FIELD_EDDY_MODES];
 };
 
 layout(location = 0) out vec2 fragLoc;
@@ -53,8 +55,9 @@ void main()
     float edge = sqrt(2.0 * log(peak / m2.w));
     vec2 reach = vec2(max(sl * edge, sl), max(s * edge, s));
     // carried by the air's frame, and on along the wind by its own drift against it since the copy (folded in up to it:
-    // low smoke lags, high runs ahead)
-    vec3 rel = anchor.xyz + vec3(dot(m0.xyz, p.at.xyz), dot(m1.xyz, p.at.xyz), dot(m2.xyz, p.at.xyz)) + wind.xyz * (p.misc.w * max(north.w, 0.0));
+    // low smoke lags, high runs ahead); its offset by the large eddies at the frame's time added in the air's frame (Z5c)
+    vec3 at = p.at.xyz + fieldEddy(p, eddyK, eddyD);
+    vec3 rel = anchor.xyz + vec3(dot(m0.xyz, at), dot(m1.xyz, at), dot(m2.xyz, at)) + wind.xyz * (p.misc.w * max(north.w, 0.0));
     vec2 corners[6] = vec2[](vec2(-1, -1), vec2(1, -1), vec2(1, 1), vec2(-1, -1), vec2(1, 1), vec2(-1, 1));
     vec2 loc = reach * corners[gl_VertexIndex];   // along its long axis, across it
     vec2 plane = dirL * loc.x + vec2(-dirL.y, dirL.x) * loc.y;

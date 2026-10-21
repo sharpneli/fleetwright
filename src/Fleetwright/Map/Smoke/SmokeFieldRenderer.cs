@@ -2,6 +2,7 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using Fleetwright.Gpu;
 using Fleetwright.Sim;
+using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
 using SDL;
 using static SDL.SDL3;
@@ -58,6 +59,30 @@ public sealed unsafe class SmokeFieldRenderer : IDisposable
     struct View
     {
         public Vector4 Right, Up, Fwd, Depth, East, North, M0, M1, M2, Anchor, Wind;
+        public EddyModes Eddies;
+    }
+
+    /// <summary>The large eddies' modes as smokefield.glsl's fieldEddy reads them (Z5c): k and A, then d and the phase.</summary>
+    [System.Runtime.CompilerServices.InlineArray(2 * SmokeEddies.Modes)]
+    public struct EddyModes
+    {
+        Vector4 first;
+    }
+
+    /// <summary>The large eddies at a world time, s, for a copy anchored at <paramref name="anchor"/> (air's frame): each
+    /// mode's k and amplitude, its way and its phase there (k · anchor − ω t + φ, in double, wrapped).</summary>
+    public static EddyModes Eddies(SmokeEddies? e, Vec3d anchor, double t)
+    {
+        var m = new EddyModes();
+        if (e == null)
+            return m;
+        for (int i = 0; i < SmokeEddies.Modes; i++)
+        {
+            double phase = Math.IEEERemainder(Vec3d.Dot(e.K[i], anchor) - e.Omega[i] * t + e.Phase[i], 2 * Math.PI);
+            m[i] = new Vector4(F(e.K[i]), (float)e.Amp[i]);
+            m[SmokeEddies.Modes + i] = new Vector4(F(e.Dir[i]), (float)phase);
+        }
+        return m;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -138,6 +163,7 @@ public sealed unsafe class SmokeFieldRenderer : IDisposable
             M2 = new Vector4(F(r2), (float)SmokeFieldLook.EdgeTau),
             Anchor = new Vector4(F(anchor), 1),
             Wind = new Vector4(F(Earth.Forward(frame.ToWorld(copy.Anchor), copy.WindToDeg)), 0),
+            Eddies = Eddies(copy.Eddies, copy.Anchor, drawMs / 1000.0),
         };
         var (east, north, up) = (v.Right, v.Up, (-v.Forward).Normalized());
         Vector3 Local(Vec3d d) => new((float)Vec3d.Dot(d, east), (float)Vec3d.Dot(d, north), (float)Vec3d.Dot(d, up));

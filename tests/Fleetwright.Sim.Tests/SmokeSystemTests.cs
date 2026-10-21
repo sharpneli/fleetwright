@@ -121,9 +121,12 @@ public class SmokeSystemTests(ITestOutputHelper output)
             }
             return most;
         }
-        double steady = Stray(On with { SmokeWindWanderDeg = 0, SmokeWindSpeedShare = 0, SmokeGustShare = 0 }), wandering = Stray(On);
-        output.WriteLine($"her trail strays {steady:F0} m from a line in a steady wind, {wandering:F0} m in a wandering one");
+        var calm = On with { SmokeEddyStrain = 0 };   // the wander alone (the large eddies bend it too: below)
+        double steady = Stray(calm with { SmokeWindWanderDeg = 0, SmokeWindSpeedShare = 0, SmokeGustShare = 0 }), wandering = Stray(calm);
+        double eddying = Stray(On with { SmokeWindWanderDeg = 0, SmokeWindSpeedShare = 0, SmokeGustShare = 0 });
+        output.WriteLine($"her trail strays {steady:F0} m from a line in a steady wind, {wandering:F0} m in a wandering one, {eddying:F0} m in a steady wind's large eddies");
         Assert.True(wandering > 2 * steady && wandering > 200, "the wander bends it");
+        Assert.True(eddying > 2 * steady && eddying > 150, "the large eddies bend it (Z5c)");
     }
 
     [Fact]

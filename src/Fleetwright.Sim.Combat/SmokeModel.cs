@@ -35,6 +35,15 @@ public struct SmokePuff
     /// stretch, so a merge keeps the plan's second moments exactly.</summary>
     public float Along2;
     public Vec3d Axis;
+    /// <summary>The large eddies' hold on it (docs/battle/smoke.md Z5c): where it samples their field (its birthplace in
+    /// the air's frame, a merge's A-weighted) and its share of their strength, the air's σ_v at its birth against
+    /// <see cref="SmokeEddies.ReferenceSigmaV"/> (0: none). It's offset by Eddy · f(Key, t) from its origin, the origin
+    /// set so it's where it was laid (or merged).</summary>
+    public Vec3d Key;
+    public float Eddy;
+    /// <summary>Its modes' phases where it samples the eddies, cos and sin of k_i·Key + φ_i (set with the key: its offset
+    /// then takes no trigonometry, <see cref="SmokeEddies.At(in EddyPhases, double)"/>).</summary>
+    public EddyPhases Phases;
     /// <summary>Its extinction area at birth, m², and the time it decays over, s (0: it doesn't).</summary>
     public float A0, LifeS;
     /// <summary>The air's turbulence up at its settled height, σ_w, m/s, and its Lagrangian time, s, as the air was when
@@ -166,6 +175,9 @@ public readonly record struct SmokeAir
     /// <summary>The turbulence across: σ_v, m/s, and its Lagrangian time T_L, s.</summary>
     public double SigmaV { get; init; }
     public double LagrangianH { get; init; }
+    /// <summary>The large eddies (docs/battle/smoke.md Z5c), the field's own; none in plain air (tests, the drawing's copy
+    /// of a puff's place without them).</summary>
+    public SmokeEddies? Eddies { get; init; }
     /// <summary>The way the wind blows at the air frame's reference point, a unit vector (Earth-centred), when the field
     /// has set it (zero: worked out at each puff): a puff's drift takes it onto its own tangent, a few multiplies.</summary>
     public Vec3d WindDir { get; init; }
@@ -378,21 +390,29 @@ public static class SmokeModel
     /// the store folds the drift into the origin every walk, so a turning wind bends it no more than a walk's worth).</summary>
     public static Vec3d Centre(in SmokePuff p, double now, in AirFrame frame, in SmokeAir air)
     {
-        var c = frame.ToWorld(p.Origin);
+        var c = frame.ToWorld(p.Eddy > 0 && air.Eddies is { } e ? p.Origin + e.At(p.Phases, now) * p.Eddy : p.Origin);
         return p.ShearMs != 0 ? c + air.WindAt(c) * (p.ShearMs * Math.Max(now - p.ShearFromS, 0)) : c;
+    }
+
+    /// <summary>The origin that puts a puff at <paramref name="centre"/> (Earth-centred) at <paramref name="now"/>: the
+    /// place in the air's frame less its eddies' offset then.</summary>
+    static Vec3d OriginFor(Vec3d centre, in EddyPhases phases, double eddy, double now, in AirFrame frame, in SmokeAir air)
+    {
+        var at = frame.ToAir(centre.Normalized() * Earth.Radius);
+        return eddy > 0 && air.Eddies is { } e ? at - e.At(phases, now) * eddy : at;
     }
 
     /// <summary>A puff's drift so far folded into its origin, counted afresh from <paramref name="now"/>: it stays where
     /// it is.</summary>
     public static void Reanchor(ref SmokePuff p, double now, in AirFrame frame, in SmokeAir air) =>
-        Reanchor(ref p, now, frame, Centre(p, now, frame, air));
+        Reanchor(ref p, now, frame, air, Centre(p, now, frame, air));
 
     /// <summary>The same, its centre now already worked out (<see cref="Plan"/>'s).</summary>
-    public static void Reanchor(ref SmokePuff p, double now, in AirFrame frame, Vec3d centre)
+    public static void Reanchor(ref SmokePuff p, double now, in AirFrame frame, in SmokeAir air, Vec3d centre)
     {
         if (p.ShearMs == 0 || !(now > p.ShearFromS))
             return;
-        p.Origin = frame.ToAir(centre.Normalized() * Earth.Radius);
+        p.Origin = OriginFor(centre, p.Phases, p.Eddy, now, frame, air);
         p.ShearFromS = now;
     }
 
@@ -432,9 +452,14 @@ public static class SmokeModel
         var up = at.Normalized();
         var way = axis - up * Vec3d.Dot(axis, up);
         bool stretched = along2 > 0 && way.LengthSquared > 1e-12;
+        var place = frame.ToAir(up * Earth.Radius);
+        double eddy = air.Eddies != null ? SmokeEddies.Share(air) : 0;
+        var phases = new EddyPhases();
+        air.Eddies?.PhasesAt(place, ref phases);
         return new()
         {
-            Origin = frame.ToAir(up * Earth.Radius), Born = now, Z0 = (float)z0, Rise = (float)riseM,
+            Origin = eddy > 0 ? place - air.Eddies!.At(phases, now) * eddy : place, Key = place, Eddy = (float)eddy, Phases = phases,
+            Born = now, Z0 = (float)z0, Rise = (float)riseM,
             RiseS = (float)Math.Max(riseS, 0.1), S0h2 = (float)(sigma0H * sigma0H), S0z2 = (float)(sigma0Z * sigma0Z),
             A0 = (float)areaM2, LifeS = (float)lifeS, Tint = tint,
             SigmaW = air.FrictionMs > 0 ? (float)air.SigmaW(z0 + riseM) : 0,
@@ -627,11 +652,15 @@ public static class SmokeModel
         double rise = left > 0.5 && share < 0.99 ? left / (1 - share) : 0, z0 = z - rise * share, settled = z0 + rise;
         double b = rise * share * BuoyantSpread;
         double life = p.LifeS > 0 && q.LifeS > 0 ? wp * p.LifeS + wq * q.LifeS : 0;
-        // its drift A-weighted (the centroid's), counted from now
-        double shear = wp * p.ShearMs + wq * q.ShearMs;
+        // its drift A-weighted (the centroid's), counted from now; its hold on the eddies A-weighted, its origin then
+        // putting it at the centroid
+        double shear = wp * p.ShearMs + wq * q.ShearMs, eddy = wp * p.Eddy + wq * q.Eddy;
+        var key = (p.Key * wp + q.Key * wq).Normalized() * Earth.Radius;
+        var phases = new EddyPhases();
+        air.Eddies?.PhasesAt(key, ref phases);
         return new SmokePuff
         {
-            Origin = frame.ToAir(c), Born = now - age, ShearMs = (float)shear, ShearFromS = now, Z0 = (float)z0, Rise = (float)rise, RiseS = (float)riseS,
+            Origin = OriginFor(c, phases, eddy, now, frame, air), Key = key, Eddy = (float)eddy, Phases = phases, Born = now - age, ShearMs = (float)shear, ShearFromS = now, Z0 = (float)z0, Rise = (float)rise, RiseS = (float)riseS,
             S0h2 = (float)Math.Max(round - Taylor(age, air.SigmaV, air.LagrangianH) - b * b, 0),
             S0z2 = (float)Math.Max(z2 - Taylor(age, air.SigmaW(settled), air.LagrangianW(settled)) - b * b, 0),
             Along2 = (float)along, Axis = along > 0 ? frame.ToAir(axis) : default,
@@ -681,4 +710,111 @@ public static class SmokeModel
         sxy += w * (l2 * ax * ay + dx * dy);
         syy += w * (h2 + l2 * ay * ay + dy * dy);
     }
+}
+
+/// <summary>The large eddies (docs/battle/smoke.md Z5c): the boundary layer's and the mesoscale's, kilometres across,
+/// which a puff's own spread (Taylor's, the surface layer's small eddies) doesn't hold; they make a plume snake and break
+/// into clumps. A smooth displacement field of the air's frame and world time, f(x, t) = Σ A_i d_i cos(k_i·x − ω_i t + φ_i):
+/// <see cref="Modes"/> transverse waves on the sea's plane at the field's reference point (each d_i across its k_i, so
+/// the field is divergence-free: it stretches and folds a trail but never piles smoke up), wavelengths log-even over a
+/// range, ways and phases drawn from the world's seed, each turning over in its wavelength at a speed, its amplitude its
+/// strain times its wavelength over 2π. Closed form in time: the same at any speed and on replay. A puff takes
+/// Eddy · [f(Key, t) − f(Key, born)], so young smoke is still at the ship and neighbours laid close together move
+/// together. The drawing's twin is smokefield.glsl's fieldEddy. [EST: ~300 m of meander at saturation in 8 m/s; research
+/// requested]</summary>
+public sealed class SmokeEddies
+{
+    public const int Modes = 8;
+
+    /// <summary>The air the eddies' strength is given for: neutral 8 m/s's σ_v, m/s.</summary>
+    public static readonly double ReferenceSigmaV = SmokeAir.SigmaVPerUstar * Math.Sqrt(SmokeAir.DragCoefficient) * 8;
+
+    /// <summary>Each mode's wave vector in the air's frame, rad/m, and the way it displaces (a unit vector across it on the
+    /// sea's plane); its amplitude, m, its angular speed, rad/s, and its phase, rad.</summary>
+    public readonly Vec3d[] K = new Vec3d[Modes], Dir = new Vec3d[Modes];
+    public readonly double[] Amp = new double[Modes], Omega = new double[Modes], Phase = new double[Modes];
+
+    /// <summary>The sea's up at the reference point, in the air's frame.</summary>
+    public Vec3d Up { get; }
+
+    public SmokeEddies(Vec3d up, double shortM, double longM, double strain, double speedMs, ulong seed)
+    {
+        Up = up.Normalized();
+        var east = Vec3d.Cross(Math.Abs(Up.Z) < 0.9 ? new Vec3d(0, 0, 1) : new Vec3d(1, 0, 0), Up).Normalized();
+        var north = Vec3d.Cross(Up, east);
+        var r = RandomStream.Named(seed, "SmokeEddies");
+        for (int i = 0; i < Modes; i++)
+        {
+            // log-even over the range, each jittered by up to a third of a step
+            double u = (i + r.NextDouble(-0.33, 0.33)) / (Modes - 1);
+            double lambda = shortM * Math.Pow(longM / shortM, Math.Clamp(u, 0, 1)), k = 2 * Math.PI / lambda, way = 2 * Math.PI * r.NextDouble();
+            var kd = east * Math.Cos(way) + north * Math.Sin(way);
+            K[i] = kd * k;
+            Dir[i] = Vec3d.Cross(Up, kd);
+            Amp[i] = strain / k;
+            Omega[i] = speedMs * k;
+            Phase[i] = 2 * Math.PI * r.NextDouble();
+        }
+    }
+
+    /// <summary>The field at a place in the air's frame at a world time, s: a displacement on the sea, m (air's frame).</summary>
+    public Vec3d At(Vec3d key, double t)
+    {
+        Vec3d sum = default;
+        for (int i = 0; i < Modes; i++)
+            sum += Dir[i] * (Amp[i] * Math.Cos(Vec3d.Dot(K[i], key) - Omega[i] * t + Phase[i]));
+        return sum;
+    }
+
+    /// <summary>A place's modes' phases (cos and sin of k_i·key + φ_i), for <see cref="At(in EddyPhases, double)"/>.</summary>
+    public void PhasesAt(Vec3d key, ref EddyPhases phases)
+    {
+        for (int i = 0; i < Modes; i++)
+        {
+            var (sn, cs) = Math.SinCos(Vec3d.Dot(K[i], key) + Phase[i]);
+            (phases[2 * i], phases[2 * i + 1]) = ((float)cs, (float)sn);
+        }
+    }
+
+    // the clock's turn, cos and sin of ω_i t, for the last time asked (the sim's thread's)
+    readonly double[] turnCos = new double[Modes], turnSin = new double[Modes];
+    double turnT = double.NaN;
+
+    /// <summary>The field at a place by its phases (<see cref="PhasesAt"/>): cos(a − ωt) = cos a cos ωt + sin a sin ωt,
+    /// the clock's turn worked once a time. The same as <see cref="At(Vec3d, double)"/> within the phases' float.</summary>
+    public Vec3d At(in EddyPhases phases, double t)
+    {
+        if (t != turnT)
+        {
+            for (int i = 0; i < Modes; i++)
+                (turnSin[i], turnCos[i]) = Math.SinCos(Omega[i] * t);
+            turnT = t;
+        }
+        Vec3d sum = default;
+        for (int i = 0; i < Modes; i++)
+            sum += Dir[i] * (Amp[i] * (phases[2 * i] * turnCos[i] + phases[2 * i + 1] * turnSin[i]));
+        return sum;
+    }
+
+    /// <summary>A puff's share of the eddies' strength in this air: its σ_v against the reference's.</summary>
+    public static double Share(in SmokeAir air) => air.SigmaV / ReferenceSigmaV;
+
+    public void Hash(ref StateHash h)
+    {
+        h.Add(Up);
+        for (int i = 0; i < Modes; i++)
+        {
+            h.Add(K[i]);
+            h.Add(Amp[i]);
+            h.Add(Omega[i]);
+            h.Add(Phase[i]);
+        }
+    }
+}
+
+/// <summary>A puff's large-eddy modes' phases, cos and sin of each (<see cref="SmokeEddies.PhasesAt"/>).</summary>
+[System.Runtime.CompilerServices.InlineArray(2 * SmokeEddies.Modes)]
+public struct EddyPhases
+{
+    float first;
 }

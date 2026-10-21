@@ -1910,6 +1910,15 @@ public sealed record SimSettings
     public int SmokeCrossEveryMs { get; init; } = 60_000;
     public double SmokeCrossAgeS { get; init; } = 120;
 
+    /// <summary>The large eddies (docs/battle/smoke.md Z5c, <c>SmokeEddies</c>): wavelengths from
+    /// <see cref="SmokeEddyShortM"/> to <see cref="SmokeEddyLongM"/>, m, each mode's strain (its displacement's slope)
+    /// in neutral 8 m/s air <see cref="SmokeEddyStrain"/> (0: none), each turning over in its wavelength at
+    /// <see cref="SmokeEddySpeedMs"/>, m/s [EST: ~300 m of meander at saturation, ~0.4 m/s of it; research requested].</summary>
+    public double SmokeEddyShortM { get; init; } = 1500;
+    public double SmokeEddyLongM { get; init; } = 12_000;
+    public double SmokeEddyStrain { get; init; } = 0.1;
+    public double SmokeEddySpeedMs { get; init; } = 2;
+
     /// <summary>The most puffs the field holds: over it, trails merge twice as far apart (the cost degrades in accuracy,
     /// never in time).</summary>
     public int SmokeCap { get; init; } = 262_144;

@@ -37,10 +37,14 @@ public sealed partial class SmokeSystem : IWorldSystem
     readonly SimSettings settings;
     readonly Probes probes;
     readonly int indexProbe, queryProbe, mergeProbe;
+    readonly ulong seed;
+    // the large eddies (Z5c), drawn when the air's frame is first set (their plane the sea's there)
+    SmokeEddies? eddies;
 
     internal SmokeSystem(SimSettings settings, Probes probes, ulong seed)
     {
         this.settings = settings;
+        this.seed = seed;
         this.probes = probes;
         var r = RandomStream.Named(seed, "SmokeWind");
         for (int i = 0; i < wanderPhase.Length; i++)
@@ -213,7 +217,8 @@ public sealed partial class SmokeSystem : IWorldSystem
         var c = copies.Back;
         c.Ensure(live);
         (c.Version, c.CopiedMs, c.Frame, c.FrameMs, c.FrameAt) = (++copyVersion, s.Time.Ms, frame, frameMs, frameAt);
-        (c.WindToDeg, c.DriftMs, c.SigmaV, c.LagrangianH) = (air.WindToDeg, air.DriftMs, air.SigmaV, air.LagrangianH);
+        (c.WindToDeg, c.DriftMs, c.SigmaV, c.LagrangianH, c.Eddies) = (air.WindToDeg, air.DriftMs, air.SigmaV, air.LagrangianH, eddies);
+        var plain = air with { Eddies = null };   // a puff's place without its eddies' offset: the drawing adds it at its time
         int n = 0;
         double copiedS = s.Time.Ms / 1000.0, minH2 = double.MaxValue, maxH2 = 0;
         var anchor = Vec3d.Zero;
@@ -224,8 +229,9 @@ public sealed partial class SmokeSystem : IWorldSystem
             for (int i = src.Oldest; i >= 0; i = next[i])
             {
                 ref readonly var p = ref puffs[i];
-                // where it is in the air now, its drift so far folded in: the drawing carries it on from the copy
-                var at = frame.ToAir(SmokeModel.Centre(p, copiedS, frame, air).Normalized() * Earth.Radius);
+                // where it is in the air now but for the eddies, its drift so far folded in: the drawing carries it on from
+                // the copy and adds the eddies' offset at its own time (Z5c)
+                var at = frame.ToAir(SmokeModel.Centre(p, copiedS, frame, plain).Normalized() * Earth.Radius);
                 if (n == 0)
                     anchor = at;
                 var d = at - anchor;
@@ -238,6 +244,8 @@ public sealed partial class SmokeSystem : IWorldSystem
                 (r.SigmaW, r.LagrangianW) = p.SigmaW > 0 ? (p.SigmaW, p.LagrangianW) : ((float)air.SigmaW(settled), (float)air.LagrangianW(settled));
                 (r.LifeS, r.Tint, r.Shown, r.ShearMs) = (p.LifeS, (float)p.Tint, shown, p.ShearMs);
                 (r.AxisX, r.AxisY, r.AxisZ, r.Along2) = ((float)p.Axis.X, (float)p.Axis.Y, (float)p.Axis.Z, p.Along2);
+                var key = p.Key - anchor;
+                (r.KeyX, r.KeyY, r.KeyZ, r.Eddy) = ((float)key.X, (float)key.Y, (float)key.Z, eddies != null ? p.Eddy : 0);
                 if (shown > 0)
                 {
                     double age = Math.Max(copiedS - p.Born, 0), b = p.Rise * SmokeModel.RiseShare(age / p.RiseS) * SmokeModel.BuoyantSpread;
@@ -291,6 +299,10 @@ public sealed partial class SmokeSystem : IWorldSystem
             air = air with { WindDir = Earth.Forward(frameAt, air.WindToDeg) };   // the drift's way, once a tick
         if (frameSet)
             frame.Advance(frameAt, air.WindToDeg, air.DriftMs, (t - frameMs) / 1000.0);
+        if (frameSet && eddies == null && settings.SmokeEddyStrain > 0)
+            eddies = new SmokeEddies(frame.ToAir(frameAt), settings.SmokeEddyShortM, settings.SmokeEddyLongM, settings.SmokeEddyStrain,
+                settings.SmokeEddySpeedMs, seed);
+        air = air with { Eddies = eddies };
         frameMs = t;
 
         for (int k = 0; k < sources.Count; k++)
@@ -693,7 +705,7 @@ public sealed partial class SmokeSystem : IWorldSystem
                 p = n0;
                 continue;
             }
-            SmokeModel.Reanchor(ref puffs[p], nowS, frame, cp);   // its drift so far into its origin: it follows a turning wind
+            SmokeModel.Reanchor(ref puffs[p], nowS, frame, air, cp);   // its drift so far into its origin: it follows a turning wind
             int q = next[p];
             if (q < 0 || agep < settings.SmokeSettleS)
                 break;   // the newer are younger still
@@ -884,6 +896,8 @@ public sealed partial class SmokeSystem : IWorldSystem
         h.Add(frameMs);
         h.Add(frameAt);
         frame.Hash(ref h);
+        h.Add(eddies != null);
+        eddies?.Hash(ref h);
         h.Add(sources.Count);
         foreach (var s in sources)
         {
@@ -932,6 +946,8 @@ public sealed partial class SmokeSystem : IWorldSystem
                 h.Add(p.ShearFromS);
                 h.Add(p.Along2);
                 h.Add(p.Axis);
+                h.Add(p.Key);
+                h.Add(p.Eddy);
                 h.Add((int)p.Tint);
             }
     }

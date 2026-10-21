@@ -217,6 +217,67 @@ public class SmokeModelTests(ITestOutputHelper output)
         Assert.True(SmokeModel.State(m, now + 600, frame, Neutral).SigmaH2 > sm.SigmaH2 * 1.2);
     }
 
+    static readonly SmokeEddies Eddies = new(Here, 1500, 12_000, 0.1, 2, 7);
+
+    [Fact]
+    public void The_large_eddies_move_old_smoke_and_leave_young_smoke_at_the_ship()
+    {
+        // docs/battle/smoke.md Z5c: a puff is where it was laid when it's laid, a minute later still near, an hour later
+        // hundreds of metres off; two laid 20 m and 2 s apart move together
+        var frame = AirFrame.Identity;
+        var air = Neutral with { Eddies = Eddies };
+        var p = SmokeModel.Born(Here, 1000, frame, 20, 0, 1, 15, 15, 100, 0, SmokeTint.Coal, air);
+        var q = SmokeModel.Born(Here + Earth.East(Here) * 20, 1002, frame, 20, 0, 1, 15, 15, 100, 0, SmokeTint.Coal, air);
+        var plain = Neutral;   // no eddies: carried by the frame alone
+        Vec3d Off(in SmokePuff s, double t) => SmokeModel.Centre(s, t, frame, air) - SmokeModel.Centre(s, t, frame, plain) + (s.Origin - s.Key);
+        Assert.True(Off(p, 1000).Length < 1e-6);
+        double minute = Off(p, 1060).Length, hour = Off(p, 4600).Length, together = (Off(p, 4600) - Off(q, 4600)).Length;
+        output.WriteLine($"offset after a minute {minute:F1} m, an hour {hour:F0} m; the neighbour {together:F2} m apart from it");
+        Assert.InRange(minute, 0, 40);
+        Assert.InRange(hour, 30, 900);
+        Assert.True(together < 0.05 * hour);
+        Assert.InRange(SmokeEddies.Share(Neutral), 0.99, 1.01);
+    }
+
+    [Fact]
+    public void The_large_eddies_never_pile_smoke_up()
+    {
+        // divergence-free on the sea: their displacement's divergence nil against its strain
+        var up = Here.Normalized();
+        var (e, n) = (Earth.East(Here), Earth.North(Here));
+        double h = 1, worst = 0, strain = 0;
+        var r = new Random(3);
+        for (int i = 0; i < 50; i++)
+        {
+            var x = Here + e * r.Next(-20_000, 20_000) + n * r.Next(-20_000, 20_000);
+            double t = r.Next(0, 10_000);
+            double dxe = Vec3d.Dot(Eddies.At(x + e * h, t) - Eddies.At(x - e * h, t), e) / (2 * h);
+            double dyn = Vec3d.Dot(Eddies.At(x + n * h, t) - Eddies.At(x - n * h, t), n) / (2 * h);
+            double dxn = Vec3d.Dot(Eddies.At(x + e * h, t) - Eddies.At(x - e * h, t), n) / (2 * h);
+            worst = Math.Max(worst, Math.Abs(dxe + dyn));
+            strain = Math.Max(strain, Math.Abs(dxn));
+            Assert.True(Math.Abs(Vec3d.Dot(Eddies.At(x, t), up)) < 1e-9 * (1 + Eddies.At(x, t).Length), "on the sea");
+        }
+        output.WriteLine($"divergence at most {worst:G2}, strain up to {strain:F2}");
+        Assert.True(worst < 1e-3 * strain && strain > 0.05);
+    }
+
+    [Fact]
+    public void A_merge_in_the_eddies_keeps_the_centroid()
+    {
+        var frame = AirFrame.Identity;
+        var air = Neutral with { Eddies = Eddies };
+        var a = SmokeModel.Born(Here, 100, frame, 20, 40, 60, 10, 8, 300, 0, SmokeTint.Coal, air);
+        var b = SmokeModel.Born(Here + Earth.East(Here) * 300, 160, frame, 20, 40, 60, 10, 8, 200, 0, SmokeTint.Coal, air);
+        double now = 2000;
+        var sa = SmokeModel.State(a, now, frame, air);
+        var sb = SmokeModel.State(b, now, frame, air);
+        var m = SmokeModel.Merge(a, sa, b, sb, now, frame, air);
+        var centre = (sa.Centre * 0.6 + sb.Centre * 0.4).Normalized() * Earth.Radius;
+        Assert.True((SmokeModel.State(m, now, frame, air).Centre - centre).Length < 0.01);
+        Assert.Equal(0.6 * a.Eddy + 0.4 * b.Eddy, m.Eddy, 1e-5);
+    }
+
     [Fact]
     public void The_air_carries_a_puff_with_the_wind()
     {

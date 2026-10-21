@@ -4,13 +4,14 @@ using Fleetwright.Sim.Core;
 
 namespace Fleetwright.Sim;
 
-/// <summary>A puff as the drawing reads it (docs/battle/smoke.md Z5; smokefield.glsl, std430: five vec4s): its place on
+/// <summary>A puff as the drawing reads it (docs/battle/smoke.md Z5; smokefield.glsl, std430: six vec4s): its place on
 /// the sea in the air's frame at the copy (its drift so far folded in) as an offset from the copy's anchor, m, and its
 /// birth, s before the copy (negative); its
 /// height at birth, the rise and its time, its extinction area at birth; its spreads at birth, m², and the turbulence
 /// up that spreads it (σ_w, m/s, and its Lagrangian time, s); its decay time (0 none), its tint, whether it's drawn
 /// (the drawing rule, decision 3: 1 or 0), and its drift along the wind against the air's frame, m/s; its stretch's axis
-/// in the air's frame and the stretch, m² (Z5b).</summary>
+/// in the air's frame and the stretch, m² (Z5b); where it samples the large eddies (from the anchor, in the air's frame)
+/// and its share of them (Z5c: its place above leaves their offset out, the drawing adds it at its own time).</summary>
 [StructLayout(LayoutKind.Sequential)]
 public struct SmokeRecord
 {
@@ -19,7 +20,8 @@ public struct SmokeRecord
     public float S0h2, S0z2, SigmaW, LagrangianW;
     public float LifeS, Tint, Shown, ShearMs;
     public float AxisX, AxisY, AxisZ, Along2;
-    public const int SizeInBytes = 80;
+    public float KeyX, KeyY, KeyZ, Eddy;
+    public const int SizeInBytes = 96;
 }
 
 /// <summary>The smoke field copied for the drawing (docs/battle/smoke.md Z5), handed from the sim's thread to the
@@ -45,6 +47,8 @@ public sealed class SmokeCopy
     public Vec3d Anchor;
     /// <summary>The turbulence across: σ_v, m/s, and its Lagrangian time, s.</summary>
     public double SigmaV, LagrangianH;
+    /// <summary>The large eddies (Z5c; fixed once drawn), or none.</summary>
+    public SmokeEddies? Eddies;
     /// <summary>The least and the greatest σ_h² of the puffs at the copy's time, m² (the drawing's levels in use; a puff
     /// only grows, the greatest by at most 2 σ_v² T_L a second after).</summary>
     public double MinH2, MaxH2;

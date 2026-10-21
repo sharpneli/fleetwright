@@ -841,6 +841,24 @@ width) where round merging let beads grow without end: one ship 108 puffs after 
 asks that the second hour adds less than the first). The captures (`world`/`table` at 6 m/px, the gate-2 fight): the
 destroyer's screen and the battleships' trails no longer bead; still smooth bands, which Z5c is for.
 
+**Z5c built** (2026-10-21): `SmokeEddies` (Sim.Combat; drawn by the store when the air's frame is first set, carried by
+`SmokeAir.Eddies`), a puff's `Key`, `Eddy` (its share) and `Phases` (cos and sin of each mode's phase where it samples
+them, fixed with the key: its offset at any time then takes no trigonometry, the clock's turn worked once a time); a
+96-byte `SmokeRecord` (the copy's place leaves the eddies out, the shader adds them at its frame's time:
+smokefield.glsl's `fieldEddy`, its phases from k·anchor in double on the CPU). `SmokeEddyShortM` 1,500,
+`SmokeEddyLongM` 12,000, `SmokeEddyStrain` 0.1 (0 turns them off), `SmokeEddySpeedMs` 2.
+
+- **What it does** (tests): a puff is where it's laid, ~20 m off a minute later, ~430 m an hour later; one laid 20 m and
+  2 s away stays within 3 m of it; the field's divergence is nil (1e-7 against strains of 0.19); a merge keeps the
+  centroid. One ship's hour-long trail strays 280 m from a line in a steady wind's eddies (54 m without them). The GPU
+  twin holds the offsets to 0.2 mm.
+- **The look:** trails snake over kilometres and vary in strength along them; at the table's zooms a few merged
+  ellipses show as short straight pieces where the snake bends (a puff moves whole; Z5d's grain is for that).
+- **The cost** (Jutland, the climax's half hour, ms a game s): merging 0.167 → 0.217, index 0.190 → 0.221, queries
+  about as before; the whole field ~1.18 against 1.07 before Z5b and 1.11 after it. 22,498 puffs. The first try (eight
+  cosines a puff each time) cost twice that. Merging across trails matters more now: without it, 36,800 puffs (the eddies
+  bring trails together). Walking the trails every minute instead of 30 s saved little and held more puffs.
+
 **For the user:** merging across trails only within a side is an exception to decision 11 (the drawing rule is a
 trail's; own smoke merged into an enemy's unseen trail would vanish from the player's map).
 
