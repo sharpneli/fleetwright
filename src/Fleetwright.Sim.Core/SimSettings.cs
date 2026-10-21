@@ -1869,8 +1869,8 @@ public sealed record SimSettings
 
     // ------------------------------------------------------------------ the smoke field (docs/battle/smoke.md Z1)
 
-    /// <summary>The smoke field, a feasibility study (docs/battle/smoke.md decision 1): off until it's taken in.</summary>
-    public bool Smoke { get; init; }
+    /// <summary>The smoke field (docs/battle/smoke.md): on since the user took it in (2026-10-21, decision 12).</summary>
+    public bool Smoke { get; init; } = true;
 
     /// <summary>The field's tick in the fine tier and in the coarse, ms: puffs laid, the air carried on, trails merged, on a
     /// lattice of world time (the same at any speed within a tier; the coarse is cheaper, docs/battle/smoke.md principles).</summary>
@@ -1895,13 +1895,18 @@ public sealed record SimSettings
     /// smoke off rails; her smoke from before is in the air all the same) [EST: a plume's useful life].</summary>
     public double SmokeBackfillS { get; init; } = 1800;
 
+    /// <summary>Every puff's smoke fades as e^(−age / this), s (0: it lasts until it's spread too thin): shorter than the
+    /// physics, for the cost (the user, 2026-10-21: drifting old smoke serves little tactical purpose; docs/battle/smoke.md
+    /// "Shorter lived").</summary>
+    public double SmokeLifeS { get; init; } = 600;
+
     /// <summary>Merging (research/vfx/unified-smoke-system.md "Lifecycle"; docs/battle/smoke.md Z5b): a trail's puffs
     /// merge once both are older than <see cref="SmokeSettleS"/>, s, and their centres are within
     /// <see cref="SmokeMergeSigma"/> of the larger σ along the line between them (Gaussians 2σ apart along a line ripple
     /// ~1.4%, 3σ apart ~22%); each trail is walked every <see cref="SmokeMergeEveryMs"/> of world time (a slice of the
     /// trails each tick). The merged ellipse's long σ at most <see cref="SmokeMergeStretch"/> times its short, and at most
     /// <see cref="SmokeMergeLongM"/>, m, unless it's at most twice its short (the large eddies bend a long one, Z5c).
-    /// Across trails of a side: every <see cref="SmokeCrossEveryMs"/>, the puffs over <see cref="SmokeCrossAgeS"/>, s.</summary>
+    /// Across trails: every <see cref="SmokeCrossEveryMs"/>, the puffs over <see cref="SmokeCrossAgeS"/>, s.</summary>
     public double SmokeSettleS { get; init; } = 20;
     public double SmokeMergeSigma { get; init; } = 2.0;
     public int SmokeMergeEveryMs { get; init; } = 30_000;

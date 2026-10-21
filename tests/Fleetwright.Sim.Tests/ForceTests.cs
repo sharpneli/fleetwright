@@ -14,7 +14,8 @@ namespace Fleetwright.Sim.Tests;
 public class ForceTests(ITestOutputHelper output)
 {
     static readonly WorldTime Start = WorldTime.FromUtc(1916, 5, 31, 14);
-    static readonly SimSettings Settings = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json"));
+    // clear air: these test their own rules; the smoke field's part in sight is SmokeSightTests', its allocation SmokeSystemTests'
+    static readonly SimSettings Settings = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json")) with { Smoke = false };
     const double Lat = 56.5, Lon = 4.0;
     readonly List<(int Ship, double AsternM, double AbeamM)> offsets = [];
 

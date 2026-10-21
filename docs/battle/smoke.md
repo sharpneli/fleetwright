@@ -3,7 +3,8 @@ Status: **drafted 2026-10-20**, decisions 1-4 from the user ("Decided" below); w
 first part built with Z3); Z0 (the model and the facts), Z1 (the store), Z2 (the query; gate 1 passed) and Z3 (sight and
 fire control read it) and Z4 (the other sources) done 2026-10-21, decisions 5-9; Z5 (the drawing) built 2026-10-21, gate 2 the
 user's; breaking the field (Z5b-Z5d: elongated puffs and merging across trails, the large eddies, the grain) agreed and
-built 2026-10-21, decisions 10-11    Updated: 2026-10-21
+built 2026-10-21, decisions 10-11; **taken in and on by default** 2026-10-21, shorter lived (decisions 12-13)    Updated:
+2026-10-21
 
 Smoke as sim state that sight reads, and the same state drawn. The research is `research/vfx/unified-smoke-system.md`
 (Lagrangian Gaussian puffs as the one store, every grid a throw-away view of them), on top of
@@ -143,7 +144,17 @@ more, and think about potentially merging the blobs earlier into bigger ones"):
 
 10. **The large eddies' meander is the sim's** (Z5c), not the drawing's alone: the gaps it opens are gaps sight looks
     through.
-11. **Trails merge across each other** ("Smoke is smoke", Z5b): a fleet's old smoke becomes one cloud.
+11. **Trails merge across each other** ("Smoke is smoke", Z5b): a fleet's old smoke becomes one cloud. Across sides
+    too ("let's not keep artificial separation between sides"): a merged puff is drawn by its trail's rule (decision 3),
+    so own smoke merged into an unseen enemy's trail can drop from the player's map, and the user takes that.
+
+Taken in (the user, 2026-10-21, after Z5b-Z5d and a few test matches: "It looks awesome. You may enable it by default"):
+
+12. **The field is on by default** (`Smoke` true; `--no-smoke` for the CLI's benches, `-smokefield=0` for the game).
+    The 2026-10-19 decision (no simulated smoke in the first game) is reverted. The look stays as it is now.
+13. **Shorter lived, for the cost** ("The drifting smoke, while realistic, doesn't seem to serve too much of a tactical
+    purpose so we can relax the realism in this case for performance"): every puff fades, `SmokeLifeS` (below,
+    "Shorter lived").
 
 ## The model
 
@@ -798,8 +809,7 @@ with side-by-side captures and the bench's cost, the field still off by default:
   an oriented quad. Then merging: settled at 20 s, neighbours within 2σ *along the line between them*, the merged
   ellipse capped (its long σ at most 4 times its short, and `SmokeMergeLongM` unless the short is already wider). And
   across trails (decision 11): every minute, puffs over two minutes old filed in a grid by size, each merged with a
-  close one of another trail by the same rule. Only within a side: the drawing rule (decision 3) is a trail's, and own
-  smoke merged into an unseen enemy's trail would vanish from the player's map (an exception to approve).
+  close one of another trail by the same rule, any side's (decision 11).
 - **Z5c The large eddies (the sim's, decision 10).** Boundary-layer and mesoscale eddies, 1.5-12 km, which the puffs'
   Taylor spread doesn't hold: they make a real plume snake and fall apart into clumps. A smooth, divergence-free
   displacement field in the air's frame: eight transverse waves on the reference tangent plane, wavelengths spread
@@ -874,8 +884,35 @@ smoothly as the puff grows and doesn't change with the zoom). `-smokelook=grain:
 - **Still the plain look's:** no lit edge, no shadows (the VFX pass); the grain doesn't evolve in time (the puffs move
   through it at the eddies' and the height's drift, ≤ 1 m/s).
 
-**For the user:** merging across trails only within a side is an exception to decision 11 (the drawing rule is a
-trail's; own smoke merged into an enemy's unseen trail would vanish from the player's map).
+**Across sides** (decision 11, 2026-10-21): the side check is gone from `SmokeSystem.Cross`.
+
+### Shorter lived and on by default (decisions 12-13, 2026-10-21)
+
+- **The fade:** every puff's extinction decays as e^(−age / `SmokeLifeS`), 600 s, on top of its spread (the puff's own
+  decay time, already in the model and the shader for bursts, now set on every source; a merge A-weights it), and it's
+  retired as before once its peak τ is under 0.005. Half its smoke is gone in 7 minutes, a trail is gone in about half an
+  hour (before: a coal battleship's trail held for hours). A screen kept up still hides (`smoke screen`: four destroyers
+  screening, the target in sight 90 s of 30 minutes against none without the fade; their own lines 29% clear against 24%).
+  The backfill lays only what hasn't faded already. Jutland, the climax's half hour (field and its queries, ms a game
+  second; puffs):
+
+| `SmokeLifeS` | none (physics) | 1,200 s | **600 s** | 300 s |
+| --- | --- | --- | --- | --- |
+| Field (store, merging, index) | 0.48 | 0.35 | **0.28** | 0.22 |
+| Queries | 0.58 | 0.42 | **0.30** | 0.17 |
+| Puffs | 22,892 | 14,925 | **10,177** | 7,511 |
+| The drawing's copy, ms a copy | 1.99 | 1.46 | **0.86** | 0.69 |
+
+  Halved at 600 s (1.06 → 0.58 ms a game second, against gate 1's 0.8); 300 s would halve it again but cut screens to
+  minutes. The looks see further at the climax (down the wind: 77% of the lines over τ 1 before, 65% at 600 s).
+- **Idle:** while no ship lays smoke (all on rails, or none afloat), the field ticks on the coarse tier's minute: what's
+  left still fades, merges and is retired, and the air's frame is carried; once it's gone, it stops. A ship coming off
+  rails wakes it at the fine tick (the coarse tick already due is let go). So a world whose ships are all on rails keeps
+  one event a minute for at most half an hour.
+- **On by default:** `Smoke` true in settings.json and `SimSettings`. The CLI's benches take `--no-smoke` (and `--smoke`),
+  the game `-smokefield=0`. Tests of other systems' own rules in clear air (pictures, deployment, captains, commanders,
+  fire orders, fall-back, encounters' and forces' allocations) run with it off; its part in sight is `SmokeSightTests`'.
+  Smoke's store grows with its trails (allowed: its own test holds it allocation-free once grown).
 
 Left out: the funnels' unsteady output (stoking and firing cycles: clumps along a trail), by decision 5; shear
 dispersion (vertical spread times the wind's shear stretching old smoke downwind), a candidate if old smoke still looks

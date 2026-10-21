@@ -25,7 +25,7 @@ namespace Fleetwright.Sim;
 /// <item><b>Merging</b> (moment-preserving, <see cref="SmokeModel.Merge"/>: the plan's whole covariance, so a stretch of
 /// trail merges into one long ellipse, docs/battle/smoke.md Z5b): neighbours along a trail, both settled, centres within
 /// <see cref="SimSettings.SmokeMergeSigma"/> of the larger σ along the line between them, the merged ellipse not too
-/// long; a trail every <see cref="SimSettings.SmokeMergeEveryMs"/>. Old puffs across trails of a side every
+/// long; a trail every <see cref="SimSettings.SmokeMergeEveryMs"/>. Old puffs across trails every
 /// <see cref="SimSettings.SmokeCrossEveryMs"/> (<see cref="Cross"/>). Over <see cref="SimSettings.SmokeCap"/>, twice as
 /// far and every trail.</item>
 /// </list>
@@ -123,8 +123,8 @@ public sealed partial class SmokeSystem : IWorldSystem
 
     AirFrame frame = AirFrame.Identity;
     Vec3d frameAt;
-    bool frameSet, scheduled;
-    long frameMs, nextMs;
+    bool frameSet, scheduled, idle;
+    long frameMs, nextMs, handledMs = long.MinValue;
     SmokeAir air;
 
     /// <summary>The field is on (<see cref="SimSettings.Smoke"/>).</summary>
@@ -261,18 +261,21 @@ public sealed partial class SmokeSystem : IWorldSystem
     /// <summary>The ticks start when a ship is off rails (and stop when no trail is left).</summary>
     void Wake(World world)
     {
-        if (!settings.Smoke || scheduled)
+        if (!settings.Smoke || scheduled && !idle)
             return;
         var store = world.Ships.Store;
         for (int s = 0; s < store.Slots; s++)
             if (store.IsAlive(s) && !store[s].OnRails)
             {
-                Schedule(world);
+                idle = false;
+                Schedule(world);   // at the fine tick (an idle one's coarse tick, already due, is let go when it comes)
                 return;
             }
     }
 
-    int TickMs(World world) => world.Speed >= settings.CoarseMinSpeed ? settings.SmokeCoarseTickMs : settings.SmokeTickMs;
+    /// <summary>The tick: the coarse tier's, or the coarse one too while no ship lays smoke (idle: the smoke left only ages,
+    /// fades and is retired, so a world whose ships are all on rails keeps one event a minute while it lasts).</summary>
+    int TickMs(World world) => world.Speed >= settings.CoarseMinSpeed || idle ? settings.SmokeCoarseTickMs : settings.SmokeTickMs;
 
     void Schedule(World world)
     {
@@ -284,8 +287,9 @@ public sealed partial class SmokeSystem : IWorldSystem
 
     public void Handle(World world, in SimEvent e)
     {
-        if (e.Code != TickEvent)
-            return;
+        if (e.Code != TickEvent || e.Time.Ms != nextMs || e.Time.Ms == handledMs)
+            return;   // an idle tick a wake has brought forward (or one already handled at that time)
+        handledMs = e.Time.Ms;
         scheduled = false;
         long t = e.Time.Ms;
         int step = TickMs(world);
@@ -328,6 +332,7 @@ public sealed partial class SmokeSystem : IWorldSystem
         Forget();
         Index(t);
         version++;
+        idle = !smoking && wrecks.Count == 0;
         if (smoking || live > 0 || wrecks.Count > 0)
             Schedule(world);
     }
@@ -521,7 +526,7 @@ public sealed partial class SmokeSystem : IWorldSystem
         var at = muzzle + forward * (cls.TurretTypes[cls.Mounts[mount].Type].TipM + g.AlongM);
         var shooter = world.Ships.Store[slot];
         int k = SourceOf(shooter.Entity, shooter.Side, SourceKind.Guns, now, out _);
-        Add(k, SmokeModel.Born(Unwind(at, now), now / 1000.0, frame, height + g.UpM, g.RiseM, g.RiseS, g.SigmaM, g.SigmaM, g.AreaM2, 0,
+        Add(k, SmokeModel.Born(Unwind(at, now), now / 1000.0, frame, height + g.UpM, g.RiseM, g.RiseS, g.SigmaM, g.SigmaM, g.AreaM2, settings.SmokeLifeS,
             SmokeTint.Powder, air));
         version++;
         if (!scheduled)
@@ -544,7 +549,7 @@ public sealed partial class SmokeSystem : IWorldSystem
         int bs = world.Ships.Store.SlotOf(b.Ship);
         byte makerSide = bs >= 0 ? world.Ships.Store[bs].Side : (byte)0;
         int k = SourceOf(b.Ship, makerSide, SourceKind.Burst, now, out _);
-        Add(k, SmokeModel.Born(Unwind(at, now), now / 1000.0, frame, ev.DeckZ + upM, riseM, riseS, sigma, sigma, area, 0, SmokeTint.Fire, air));
+        Add(k, SmokeModel.Born(Unwind(at, now), now / 1000.0, frame, ev.DeckZ + upM, riseM, riseS, sigma, sigma, area, settings.SmokeLifeS, SmokeTint.Fire, air));
         double scale = Math.Max(0.25, MagazineBlast.Fireball(mass).D / MagazineBlast.ReferenceD);
         version++;
         wrecks.Add(new Wreck { Entity = b.Ship, Side = makerSide, At = at, FromMs = now, LastMs = now, RateM2s = SmokeSources.WreckSmokeM2s * scale * scale, DeckZ = ev.DeckZ, K = scale });
@@ -566,7 +571,7 @@ public sealed partial class SmokeSystem : IWorldSystem
                 double a = w.RateM2s * SmokeSources.WreckSmokeFadeS * (Math.Exp(-(w.LastMs - w.FromMs) / fade) - Math.Exp(-(end - w.FromMs) / fade));
                 double sk = Math.Sqrt(w.K), mid = (w.LastMs + end) / 2000.0;
                 int k = SourceOf(w.Entity, w.Side, SourceKind.Burst, t, out _);
-                Add(k, SmokeModel.Born(Unwind(w.At, (long)(mid * 1000)), mid, frame, w.DeckZ + 10, 18 * sk, 3 + 1.5 * sk, 10 * sk, 10 * sk, a, 0,
+                Add(k, SmokeModel.Born(Unwind(w.At, (long)(mid * 1000)), mid, frame, w.DeckZ + 10, 18 * sk, 3 + 1.5 * sk, 10 * sk, 10 * sk, a, settings.SmokeLifeS,
                     SmokeTint.Fire, air));
                 var src = sources[k];
                 src.Active = true;
@@ -605,7 +610,7 @@ public sealed partial class SmokeSystem : IWorldSystem
         for (int i = 0; i < n; i++)
         {
             double born = (a + (b - a) * (i + 1.0) / n) / 1000.0, ago = nowS - born;
-            var puff = SmokeModel.Born(at - vAir * ago, born, frame, baseM, rise, riseS, sigma, s0, area, 0, tint, air, along2, vAir);
+            var puff = SmokeModel.Born(at - vAir * ago, born, frame, baseM, rise, riseS, sigma, s0, area, settings.SmokeLifeS, tint, air, along2, vAir);
             if (ago > 0)
             {
                 SmokeModel.Plan(puff, nowS, frame, air, out _, out double h2, out double l2, out _, out double left, out _);
@@ -763,8 +768,8 @@ public sealed partial class SmokeSystem : IWorldSystem
     /// <see cref="SimSettings.SmokeCrossEveryMs"/> of world time, the puffs over <see cref="SimSettings.SmokeCrossAgeS"/>
     /// old filed in a hash grid of cubes in the air's frame (Earth-centred) at levels 64 m · 2^k, each at the smallest whose
     /// cells are twice its reach; each in turn (in trail order) merged with the close ones of its own size in the eight
-    /// cells round it, by the walk's rule (<see cref="Close"/>, <see cref="Fits"/>). Only within a side: the drawing
-    /// rule (decision 3) is a trail's.</summary>
+    /// cells round it, by the walk's rule (<see cref="Close"/>, <see cref="Fits"/>). Any trails, any sides: smoke is smoke
+    /// (the user, 2026-10-21; the merged puff is drawn by its trail's rule, decision 3).</summary>
     void Cross(long t, double mergeSigma)
     {
         if (crossMs != long.MinValue && t / settings.SmokeCrossEveryMs == crossMs / settings.SmokeCrossEveryMs)
@@ -809,14 +814,13 @@ public sealed partial class SmokeSystem : IWorldSystem
             // the eight cells round it: its own and its nearer neighbour on each axis
             long x0 = Cell(c.X, g), y0 = Cell(c.Y, g), z0 = Cell(c.Z, g);
             long x1 = c.X - x0 * g < g / 2 ? x0 - 1 : x0 + 1, y1 = c.Y - y0 * g < g / 2 ? y0 - 1 : y0 + 1, z1 = c.Z - z0 * g < g / 2 ? z0 - 1 : z0 + 1;
-            byte side = sources[owner[p]].Side;
             for (int n = 0; n < 8; n++)
             {
                 long key = Key(level, (n & 1) == 0 ? x0 : x1, (n & 2) == 0 ? y0 : y1, (n & 4) == 0 ? z0 : z1);
                 for (int f = crossHead[CrossBucket(key)]; f >= 0; f = crossNext[f])
                 {
                     int q = crossSlot[f];
-                    if (f == e || q < 0 || crossKey[f] != key || sources[owner[q]].Side != side
+                    if (f == e || q < 0 || crossKey[f] != key
                         || !Close(crossC[e], crossH[e], crossL[e], crossX[e], crossC[f], crossH[f], crossL[f], crossX[f], mergeSigma)
                         || !Fits(crossC[e], crossH[e], crossL[e], crossX[e], crossA[e], crossC[f], crossH[f], crossL[f], crossX[f], crossA[f]))
                         continue;
@@ -892,6 +896,8 @@ public sealed partial class SmokeSystem : IWorldSystem
     {
         h.Add(scheduled);
         h.Add(nextMs);
+        h.Add(idle);
+        h.Add(handledMs);
         h.Add(frameSet);
         h.Add(frameMs);
         h.Add(frameAt);

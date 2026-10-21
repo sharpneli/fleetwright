@@ -87,12 +87,12 @@ public static class Program
             0 -> full, coasting, a crash stop, each beside the research's band for its kind; --out writes the circles
             as DIR/<design>_turns.svg
         shipgen duel SHOOTER [TARGET] [--range M] [--fit design|0-8|NAME] [--runs N] [--minutes M] [--speed KN] [--target-speed KN] [--bearing DEG] [--course DEG]
-                [--target-policy P] [--own-policy P] [--visibility KM] [--wind FROM,KN] [--night | --at ISO] [--combat X] [--crew trained] [--battery B] [--seed S] [--trace] [--damage] [--smoke]
+                [--target-policy P] [--own-policy P] [--visibility KM] [--wind FROM,KN] [--night | --at ISO] [--combat X] [--crew trained] [--battery B] [--seed S] [--trace] [--damage] [--smoke | --no-smoke]
             the fire-control bench (docs/battle/fire-control.md F1): the shooter steams north, the target at a bearing and range on
             a course; a policy is steady, zigzag:AMP:PERIOD, circle:RATE:FROM (°/s, s after the track), chase:AMP:PERIOD (steer for
             the last splash), turn:DEG:AT or crippled; --fit a preset (--level the same) or the battery's own; --combat 1 for
-            practice; --wind the way it blows from (the shooter's base course north) and kn; --smoke the smoke field on (any
-            command reading the sim's settings takes it). Prints hits, straddles, the first hit by salvo, the track's aim error
+            practice; --wind the way it blows from (the shooter's base course north) and kn; --no-smoke the smoke field off,
+            --smoke on (it's on by default; any command reading the sim's settings takes them). Prints hits, straddles, the first hit by salvo, the track's aim error
             as it settles and after manoeuvres.
         shipgen fc-converge [--runs N] [--ref]
             the computers alone (the research's tables 5 and 12): each preset's predicted-position error over a 25 s time of
@@ -103,7 +103,7 @@ public static class Program
         shipgen fc-sensors [--runs N]
             the sensors' anchors (fire-control.md F5d), the designer note's cruiser study on the sim: hits against the
             director's base by tech and range (D6) and against the instruments' arrangement (D8), beside the research's
-        shipgen fc-history [--runs N] [--case TEXT] [--ref] [--smoke]
+        shipgen fc-history [--runs N] [--case TEXT] [--ref] [--smoke | --no-smoke]
             the historical record's cases (fire-control.md, "The yardstick"), each at its recorded range, weather and target
             behaviour, beside the record's band, then the orderings between them: the bench every fire-control step answers to
         shipgen hits TARGET [--shooter DESIGN] [--battery B] [--kind ap|common|he] [--loadout SPEC] [--range M] [--aspect DEG] [--n N] [--per-ship K] [--seed S] [--show N] [--settle MIN] [--readiness NAME] [--damage-control NAME]
@@ -288,14 +288,14 @@ public static class Program
                 "scenario" when a.Has("play") => ScenarioPlay.Run(a.Positional.FirstOrDefault() ?? Path.Combine(Root(a), "..", "Content", "Scenarios", "jutland.json"),
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
                     a.Get("land") ?? Path.Combine(Root(a), "..", "Content", "World", "land-10m.bin"), Path.Combine(Root(a), "designs"),
-                    a.Int("threads", 0), !a.Has("no-land"), a.Int("seeds", 1), D(a, "fast", 1000), D(a, "fine", 1), a.Has("smoke")),
+                    a.Int("threads", 0), !a.Has("no-land"), a.Int("seeds", 1), D(a, "fast", 1000), D(a, "fine", 1), SmokeSwitch(a)),
                 "scenario" => ScenarioRun.Run(a.Positional.FirstOrDefault() ?? Path.Combine(Root(a), "..", "Content", "Scenarios", "jutland.json"),
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
                     a.Get("land") ?? Path.Combine(Root(a), "..", "Content", "World", "land-10m.bin"), Path.Combine(Root(a), "designs"),
                     double.Parse(a.Get("minutes", "60")!, System.Globalization.CultureInfo.InvariantCulture), a.Int("threads", 0), a.Int("every", 5),
                     double.Parse(a.Get("at", "10")!, System.Globalization.CultureInfo.InvariantCulture), !a.Has("no-land"), a.Has("replay"),
                     a.Get("watch")?.Split(',').Select(int.Parse).ToArray(),
-                    double.Parse(a.Get("speed", "0")!, System.Globalization.CultureInfo.InvariantCulture), a.Has("fire-trace"), a.Has("smoke")),
+                    double.Parse(a.Get("speed", "0")!, System.Globalization.CultureInfo.InvariantCulture), a.Has("fire-trace"), SmokeSwitch(a)),
                 "duel" => DuelCmd(a),
                 "fc-converge" => FcLevels.Converge(Settings(a), a.Int("runs", 30), a.Has("ref") ? Root(a) : null, n => Class(a, n)),
                 "fc-levels" => FcLevels.Run(Settings(a), a.Int("runs", 20), a.Has("ref") ? Root(a) : null, n => Class(a, n)),
@@ -396,7 +396,7 @@ public static class Program
                 int eq = s.IndexOf('=');
                 if (eq > 0)
                     flags[s[2..eq]] = s[(eq + 1)..];
-                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay" or "--research" or "--trace" or "--damage" or "--cells" or "--play" or "--dry" or "--loadouts" or "--summary" or "--rooms" or "--write" or "--materials" or "--fire-trace" or "--race" or "--smoke")   // the switches
+                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay" or "--research" or "--trace" or "--damage" or "--cells" or "--play" or "--dry" or "--loadouts" or "--summary" or "--rooms" or "--write" or "--materials" or "--fire-trace" or "--race" or "--smoke" or "--no-smoke")   // the switches
                     flags[s[2..]] = null;
                 else if (i + 1 < list.Count)
                     flags[s[2..]] = list[++i];
@@ -657,13 +657,16 @@ public static class Program
         return 0;
     }
 
-    /// <summary>The sim's settings (--settings FILE, else Content/Sim/settings.json); --smoke turns the smoke field on
-    /// (docs/battle/smoke.md: off by default).</summary>
+    /// <summary>The sim's settings (--settings FILE, else Content/Sim/settings.json); --no-smoke turns the smoke field off
+    /// and --smoke on (docs/battle/smoke.md: on by default since 2026-10-21), for runs with it and without.</summary>
     static SimSettings Settings(Args a)
     {
         var s = SimSettings.Load(a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"));
-        return a.Has("smoke") ? s with { Smoke = true } : s;
+        return SmokeSwitch(a) is bool on ? s with { Smoke = on } : s;
     }
+
+    /// <summary>--smoke or --no-smoke, else the settings' own.</summary>
+    static bool? SmokeSwitch(Args a) => a.Has("no-smoke") ? false : a.Has("smoke") ? true : null;
 
     static readonly System.Collections.Concurrent.ConcurrentDictionary<string, ShipClass> classes = new();
 

@@ -302,7 +302,7 @@ public class ShipMotionTests(ITestOutputHelper output)
     [Fact]
     public void Ships_are_made_and_dropped_at_any_moment()
     {
-        var (w, c) = WorldWith("destroyer");
+        var (w, c) = WorldWith("destroyer", Settings with { Smoke = false });   // the ships' own events (the smoke's: SmokeSystemTests)
         w.Apply(ShipSystem.Spawn(c, SeaLat, SeaLon, 0, 20));
         w.AdvanceTo(Start + 1234);
         w.Apply(ShipSystem.Spawn(c, SeaLat, SeaLon + 0.1, 0, 20));   // between ticks

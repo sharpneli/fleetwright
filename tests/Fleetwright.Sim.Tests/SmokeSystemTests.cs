@@ -30,12 +30,31 @@ public class SmokeSystemTests(ITestOutputHelper output)
     static void Run(World w, double minutes) => w.AdvanceTo(w.Time + (long)Math.Round(minutes * 60_000));
 
     [Fact]
-    public void Off_by_default()
+    public void On_by_default_and_off_lays_none()
     {
-        var w = Column(Settings with { RailsEnabled = false });
+        Assert.True(Settings.Smoke && new SimSettings().Smoke);   // taken in (the user, 2026-10-21, decision 12)
+        var w = Column(Settings with { Smoke = false, RailsEnabled = false });
         Run(w, 10);
         Assert.Equal(0, w.Smoke.Count);
         Assert.Equal(0, w.Smoke.Laid);
+    }
+
+    [Fact]
+    public void With_every_ship_on_rails_the_smoke_left_ticks_once_a_minute_and_goes()
+    {
+        // what she laid before the rails took her fades (SmokeLifeS) and is retired on the idle field's coarse tick; then
+        // the field stops ticking: the world is as quiet as one without it
+        var w = Column(Settings);
+        var quiet = Column(Settings with { Smoke = false });
+        Run(w, 5);
+        Run(quiet, 5);
+        Assert.True(w.Smoke.Count > 0);
+        Assert.Equal(quiet.PendingEvents + 1, w.PendingEvents);   // the field's one tick
+        Run(w, 120);
+        Run(quiet, 120);
+        output.WriteLine($"{w.Smoke.Retired} puffs retired, {w.Smoke.Count} left");
+        Assert.Equal(0, w.Smoke.Count);
+        Assert.Equal(quiet.PendingEvents, w.PendingEvents);
     }
 
     [Fact]
@@ -121,9 +140,9 @@ public class SmokeSystemTests(ITestOutputHelper output)
             }
             return most;
         }
-        var calm = On with { SmokeEddyStrain = 0 };   // the wander alone (the large eddies bend it too: below)
+        var calm = On with { SmokeEddyStrain = 0, SmokeLifeS = 0 };   // the wander alone (the eddies bend it too: below), the hour's trail whole
         double steady = Stray(calm with { SmokeWindWanderDeg = 0, SmokeWindSpeedShare = 0, SmokeGustShare = 0 }), wandering = Stray(calm);
-        double eddying = Stray(On with { SmokeWindWanderDeg = 0, SmokeWindSpeedShare = 0, SmokeGustShare = 0 });
+        double eddying = Stray(On with { SmokeWindWanderDeg = 0, SmokeWindSpeedShare = 0, SmokeGustShare = 0, SmokeLifeS = 0 });
         output.WriteLine($"her trail strays {steady:F0} m from a line in a steady wind, {wandering:F0} m in a wandering one, {eddying:F0} m in a steady wind's large eddies");
         Assert.True(wandering > 2 * steady && wandering > 200, "the wander bends it");
         Assert.True(eddying > 2 * steady && eddying > 150, "the large eddies bend it (Z5c)");

@@ -245,9 +245,9 @@ public static unsafe class Program
             {
                 torpedoes.Add(arg.Substring("-torpedo=".Length));
             }
-            else if (arg == "-smokefield")   // the smoke field on (docs/battle/smoke.md; settings.json's Smoke stays off)
+            else if (arg == "-smokefield" || arg.StartsWith("-smokefield="))   // the smoke field on, or off with =0 (docs/battle/smoke.md; on by default)
             {
-                Map.WorldSession.SmokeField = true;
+                Map.WorldSession.SmokeField = !arg.EndsWith("=0") && !arg.EndsWith("=off");
             }
             else if (arg.StartsWith("-smokelook="))   // the smoke field's drawing's knobs (docs/battle/smoke.md Z5; Map/Smoke/SmokeFieldLook.cs)
             {

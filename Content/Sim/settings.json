@@ -745,7 +745,7 @@
   "MatchupSeenTrimShare": 0.8,
   "MatchupSeenBurningShare": 0.9,
   // the smoke field (docs/battle/smoke.md Z1), a feasibility study: off
-  "Smoke": false,
+  "Smoke": true,
   "SmokeTickMs": 1000,
   "SmokeCoarseTickMs": 60000,
   "SmokeSigma0M": 15,
@@ -754,6 +754,7 @@
   "SmokeLayMaxMs": 4000,
   "SmokePlumeMs": 10000,
   "SmokeBackfillS": 1800,
+  "SmokeLifeS": 600,
   "SmokeSettleS": 20,
   "SmokeMergeSigma": 2.0,
   "SmokeMergeEveryMs": 30000,

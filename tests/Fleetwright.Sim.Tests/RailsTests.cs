@@ -31,7 +31,7 @@ public class RailsTests(ITestOutputHelper output)
     [Fact]
     public void A_steady_ship_goes_on_rails_the_fine_tick_stops_and_an_order_brings_it_back_where_it_is()
     {
-        var (w, c) = Make();
+        var (w, c) = Make(Settings with { Smoke = false });   // the ships' own events (the smoke's idle tick: SmokeSystemTests)
         w.Apply(ShipSystem.Spawn(c, Lat, Lon, 30, 0));
         w.Apply(ShipSystem.Speed(1, 15));
         Run(w, 60);
