@@ -757,10 +757,10 @@
   "SmokeMergeSigma": 2.0,
   "SmokeMergeEveryMs": 30000,
   "SmokeCap": 262144,
-  "SmokeIndexMs": 10000,
+  "SmokeIndexMs": 15000,
   "SmokeChunk": 8,
   "SmokeGridM": 2000,
-  "SmokeRefreshMs": 10000,
+  "SmokeRefreshMs": 15000,
   "SmokePairKeepMs": 60000,
   "SmokeBands": [0.2, 0.5, 0.85]
 }

@@ -166,6 +166,11 @@ public sealed partial class SmokeSystem
         probes.Add(indexProbe, p0);
     }
 
+    /// <summary>The chunks' spheres are this much wider, m: their test is against the chord between the ends, which dips
+    /// under the sea's curve (18 m mid-way on 30 km) where a puff's own test measures across the curved line, so a puff at
+    /// the edge of its reach is never left out by its chunk.</summary>
+    const double ChordSlackM = 25;
+
     /// <summary>The sphere round index puffs [a, b): their mean centre, out to 3.5 σ_h past the furthest.</summary>
     (Vec3d, double) Sphere(int a, int b)
     {
@@ -176,7 +181,7 @@ public sealed partial class SmokeSystem
         double radius = 0;
         for (int i = a; i < b; i++)
             radius = Math.Max(radius, (ix[i].Centre - centre).Length + ix[i].Reach);
-        return (centre, radius);
+        return (centre, radius + ChordSlackM);
     }
 
     void EnsureChunks(int n)

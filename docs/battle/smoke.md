@@ -1,6 +1,6 @@
 # Plan: the smoke field (a feasibility study)
 Status: **drafted 2026-10-20**, decisions 1-4 from the user ("Decided" below); weather's one optical depth proposed;
-Z0 (the model and the facts) and Z1 (the store) done 2026-10-21, decisions 5-8; Z2 built, gate 1 the user's call    Updated: 2026-10-21
+Z0 (the model and the facts), Z1 (the store) and Z2 (the query; gate 1 passed) done 2026-10-21, decisions 5-9    Updated: 2026-10-21
 
 Smoke as sim state that sight reads, and the same state drawn. The research is `research/vfx/unified-smoke-system.md`
 (Lagrangian Gaussian puffs as the one store, every grid a throw-away view of them), on top of
@@ -127,6 +127,13 @@ Z0's (the user, 2026-10-21):
 6. **The smoke facts from shipgen** (version 49), not placeholders.
 7. **The air's temperature over the sea's** as a weather fact (neutral by default).
 8. **The map's funnel plumes read the field's output**, with no need to hold today's look.
+
+Gate 1 (the user, 2026-10-21):
+
+9. **Speed over freshness.** "It's fine if the effect of smoke takes longer, battleship engagements take a long time
+   after all. We do prefer speed in this case." The index and a pair's answer hold for 15 s of world time each
+   (`SmokeIndexMs`, `SmokeRefreshMs`), so new smoke can take up to 30 s to reach a sight line; the budget holds at
+   Jutland's peak.
 
 ## The model
 
@@ -454,7 +461,7 @@ half an hour of six ships smoking once grown.
 **Open, for the steps after:** what the snapshot carries (Z5's); `ComponentRow.Smoke` still unread; the index and the
 query (Z2, gate 1).
 
-### Z2 The index and the query (gate 1; built 2026-10-21, the verdict the user's)
+### Z2 The index and the query (done 2026-10-21; gate 1 passed, decision 9)
 
 **Built:** `SmokeSystem.Query.cs`, `SmokeModel.TauGrid` and `LinePuff`; sighting asks the query for each observer it
 tries (`Sightings.Sight`) and doesn't use the answer yet (Z3). `shipgen smoke run` reports the lines and
@@ -462,7 +469,7 @@ tries (`Sightings.Sight`) and doesn't use the answer yet (Z3). `shipgen smoke ru
 smoke, to 1e-9), the same world at 1x and 240x with lines asked (the squadrons fight), nothing allocated over half an
 hour of an engaged column.
 
-- **The index,** rebuilt every `SmokeIndexMs` (10 s) of world time at a tick: each puff's state then, readied for
+- **The index,** rebuilt every `SmokeIndexMs` (15 s, decision 9) of world time at a tick: each puff's state then, readied for
   lines (`LinePuff`: its σs and normalisations worked once), in trail order, in chunks of `SmokeChunk` (8) with a
   bounding sphere and a height range each. **Not the plan's per-encounter 2D grid:** the chunks are filed in a 3D hash
   grid in the air's frame (Earth-centred, so no projection, anywhere on the globe), at levels `SmokeGridM` (2 km) ·
@@ -474,7 +481,7 @@ hour of an engaged column.
   placeholder Z3 sets), twelve optical depths. Its chord goes into the air's frame once and walks each level's cells
   (Amanatides and Woo in 3D); chunks are skipped by their sphere and their height range, puffs by their reach; the rest
   summed, stopping once all twelve are past τ 6.
-- **The pair cache** holds an answer for `SmokeRefreshMs` (10 s, not the plan's 5) of world time; pairs not asked for
+- **The pair cache** holds an answer for `SmokeRefreshMs` (15 s, not the plan's 5: decision 9) of world time; pairs not asked for
   a minute are let go at the rebuild. World state, hashed. The plan's dirty cells come with Z4's bursts and screens.
 - **Tried and dropped:** whole-trail spheres (at Jutland every line met every trail: ~1,750 chunk tests a line); a
   one-level 2 km grid (old puffs' chunks filed in hundreds of cells: the rebuild 1.7 ms a game second); our own exp
@@ -483,7 +490,8 @@ hour of an engaged column.
   at 16 µs cold, 1 µs optimised). The numbers here are with `DOTNET_TieredCompilation=0`, the steady state a long game
   reaches. A profile's "waiting for GC" time was the sampler's own suspensions: the run collects nothing.
 
-**Gate 1 at Jutland** (3 hours, a world of water, the clock held through contact, ms a game second):
+**Gate 1 at Jutland** (3 hours, a world of water, the clock held through contact, ms a game second), first with the
+index and the answers held 10 s:
 
 | | 0-2 h | 2½ h | The main fleets' action (2½-3 h) | Budget |
 | --- | --- | --- | --- | --- |
@@ -500,9 +508,14 @@ hour of an engaged column.
 - **Memory:** 5.5 MiB at three hours.
 - **Fire control's readings** don't ask yet (Z3); they look along the same observer-target pairs, so mostly from the
   cache.
-- **What's left on the table,** if the budget must hold at the peak: the lines' staleness (refresh and index at 15 s:
-  roughly 0.75 ms there, new smoke up to 30 s late in sight), or an adaptive refresh (clear and opaque lines held
-  longer).
+- **The user's call (decision 9):** both held 15 s. The main fleets' action then costs store 0.14, index 0.18 and
+  queries 0.41 ms a game second (34 lines worked out of 512 asked), **0.74 in all against 0.8: gate 1 passes.** The
+  whole sim there 2.77 ms a game second (2.02 with the field off). Most of the battle stays under 0.35.
+- **The chunks' spheres are 25 m wider** than their puffs' reach: their test is against the chord between the ships,
+  which dips under the sea's curve (18 m mid-way on 30 km), and a puff at the edge of its reach mustn't be left out
+  (found by the index test: 2e-6 off before).
+- **Left for later, if it's ever needed:** an adaptive refresh (clear and opaque lines held longer), the dirty cells
+  for bursts and screens (Z4).
 
 ### Z3 Sighting and fire control read it
 - `SightLine`'s bands and the margin through the one optical depth (`Air.Tau`, if agreed); `MarginOf`; `GlowMargin`
