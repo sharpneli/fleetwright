@@ -118,9 +118,15 @@ public class ScenarioTests
             var w = new World(s.Start, s.Seed, Settings);
             var ai = new AiSystem(w);
             ScenarioLoader.Apply(s, w, ai, ScenarioLoader.RequestClasses(s, w.Ships.Registry, Designs));
+            // contact mustn't drop the clock to 1x, or both would fight at 1x
+            w.Apply(Command.SetInterest(InterestKind.Own, InterestAction.Nothing));
+            w.Apply(Command.SetInterest(InterestKind.Others, InterestAction.Nothing));
             w.Apply(Command.SetSpeed(speed));
             w.AdvanceTo(w.Time + 20 * 60_000);
-            Assert.True(w.Ships.Store.Count > 0);
+            Assert.Equal(speed, w.Speed);
+            Assert.False(w.Paused);
+            Assert.True(w.CombatLog.Count > 100, $"{w.CombatLog.Count} in the combat log: a fight");
+            w.Apply(Command.SetSpeed(1));   // the asked speed is world state, in the hash: the same for both to compare
             return w.ComputeHash();
         }
         Assert.Equal(Run(1), Run(Settings.CoarseMinSpeed - 1));
