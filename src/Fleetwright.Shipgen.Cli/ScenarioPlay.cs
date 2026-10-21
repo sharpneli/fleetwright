@@ -17,9 +17,11 @@ namespace Fleetwright.Shipgen.Cli;
 static class ScenarioPlay
 {
     public static int Run(string path, string settingsPath, string landPath, string designsPath, int threads, bool land,
-        int seeds, double fast, double fine)
+        int seeds, double fast, double fine, bool smoke = false)
     {
         var settings = SimSettings.Load(settingsPath);
+        if (smoke)
+            settings = settings with { Smoke = true };   // docs/battle/smoke.md: the field on
         var s = Scenario.Load(path);
         Console.WriteLine($"{s.Name}: {s.ShipCount} ships, {s.Sides.Length} sides, from {s.Start}" +
                           $"{(s.Until is { } u ? $" until {u}" : "")}; played by the AI on every side");

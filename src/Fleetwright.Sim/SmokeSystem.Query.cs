@@ -13,20 +13,20 @@ namespace Fleetwright.Sim;
 /// (Earth-centred: no projection, anywhere on the globe) at levels <see cref="SimSettings.SmokeGridM"/> · 2^k, k 0-7,
 /// each at the smallest level whose cells are as wide as its sphere, in the (at most eight) cells its box touches: old,
 /// wide puffs high up, young ones low, never a chunk in hundreds of cells.</item>
-/// <item><b>A query</b> is a pair: an observer's highest eyes (up to four) to a target's bands (three heights,
+/// <item><b>A query</b> is a pair: an observer's eyes (up to four rows spanning them) to a target's bands (three heights,
 /// <see cref="SimSettings.SmokeBands"/> of her silhouette's top), as optical depths. Its line goes into the air's frame
 /// once and walks the grid's cells along it at each level in use (Amanatides and Woo's 3D walk), each chunk met once;
 /// chunks whose spheres it
 /// misses are skipped, the rest's puffs summed in the walk's order (<see cref="SmokeModel.TauGrid"/>), stopping once
 /// every line is past <see cref="SmokeOpaqueTau"/>.</item>
 /// <item><b>The cache:</b> a pair's answer holds for <see cref="SimSettings.SmokeRefreshMs"/> of world time; pairs not
-/// asked for a minute are let go when the index is rebuilt. World state (Z3 will read it), hashed.</item>
+/// asked for a minute are let go when the index is rebuilt. World state (the looks and fire control read it, Z3), hashed.</item>
 /// </list>
 /// Nothing allocates once grown.</summary>
 public sealed partial class SmokeSystem
 {
-    /// <summary>The most eyes and bands a pair holds.</summary>
-    public const int PairEyes = 4, PairBands = 3, PairTaus = PairEyes * PairBands;
+    /// <summary>The most eye rows and bands a pair holds (<see cref="SmokeModel.PairEye"/>).</summary>
+    public const int PairEyes = SmokeModel.PairEyes, PairBands = SmokeModel.PairBands, PairTaus = PairEyes * PairBands;
 
     /// <summary>An optical depth past which more smoke changes nothing (T under 0.25%).</summary>
     public const double SmokeOpaqueTau = 6;
@@ -219,9 +219,10 @@ public sealed partial class SmokeSystem
         gridHead[b] = e;
     }
 
-    /// <summary>The optical depths between an observer (slot) and a target (slot) now: from each of the observer's highest
-    /// <see cref="PairEyes"/> eyes (her class's order) to each of the target's <see cref="PairBands"/> bands, eye-major
-    /// into <paramref name="tau"/> (zeros past her eyes). From the cache while it holds, else worked out.</summary>
+    /// <summary>The optical depths between an observer (slot) and a target (slot) now: from each of the observer's eye rows
+    /// (<see cref="SmokeModel.PairEye"/>: her eyes, or four spanning them) to each of the target's <see cref="PairBands"/>
+    /// bands, eye-major into <paramref name="tau"/> (zeros past her eyes); an eye's own by
+    /// <see cref="SmokeModel.EyeTau"/>. From the cache while it holds, else worked out.</summary>
     public void Tau(World world, int observer, int target, Span<double> tau)
     {
         var store = world.Ships.Store;
@@ -255,6 +256,12 @@ public sealed partial class SmokeSystem
         probes.Add(queryProbe, p0);
     }
 
+    /// <summary>The pairs in the cache (benches): how many; pair q's observer and target (entities) and when it was last
+    /// asked, ms; its depths (<see cref="Tau"/>'s).</summary>
+    public int Pairs => pairCount;
+    public (int Observer, int Target, long UsedMs) PairAt(int q) => ((int)(pairKey[q] >> 32), (int)(uint)pairKey[q], pairUsed[q]);
+    public ReadOnlySpan<double> PairDepths(int q) => pairTau.AsSpan(q * PairTaus, PairTaus);
+
     /// <summary>A pair worked out from the index now, the cache neither read nor written (benches, tests).</summary>
     public void TauUncached(World world, int observer, int target, Span<double> tau) => Work(world, observer, target, tau);
 
@@ -274,7 +281,7 @@ public sealed partial class SmokeSystem
         Span<double> from = stackalloc double[PairEyes];
         Span<double> to = stackalloc double[PairBands];
         for (int e = 0; e < ne; e++)
-            from[e] = eyes[e].HeightM;
+            from[e] = eyes[SmokeModel.PairEye(e, eyes.Length)].HeightM;
         double top = ts.Handling.Class.Silhouette.TopM;
         for (int j = 0; j < PairBands; j++)
             to[j] = top * settings.SmokeBands[j];

@@ -1,4 +1,5 @@
 using Fleetwright.Sim.Core;
+using Fleetwright.Sim.Ships;
 
 namespace Fleetwright.Sim.Combat;
 
@@ -468,6 +469,44 @@ public static class SmokeModel
                 tau[i * toM.Length + j] += plan * v;
             }
         return true;
+    }
+
+    // ------------------------------------------------------------------ a pair's lines (docs/battle/smoke.md Z3)
+
+    /// <summary>The most eye rows and bands a pair's answer holds.</summary>
+    public const int PairEyes = 4, PairBands = 3;
+
+    /// <summary>The eye a pair's row is worked out from, of an observer's eyes (her class's, highest first): all of them up
+    /// to <see cref="PairEyes"/>, else her highest, her lowest and evenly between, so every eye's depths are a row's or
+    /// between two.</summary>
+    public static int PairEye(int row, int eyes) => eyes <= PairEyes ? row : (int)Math.Round(row * (eyes - 1) / (double)(PairEyes - 1));
+
+    /// <summary>An eye's depths to the target's bands from a pair's answer (eye rows by <see cref="PairEye"/>, eye-major):
+    /// a row's when it's one, else between the two rows its height lies between (held past the highest and the lowest).</summary>
+    public static SmokeTau EyeTau(ReadOnlySpan<double> pair, ReadOnlySpan<EyeRow> eyes, double eyeM)
+    {
+        int rows = Math.Min(eyes.Length, PairEyes);
+        if (rows == 0)
+            return default;
+        int i = 0;
+        double w = 0;
+        if (eyeM <= eyes[PairEye(rows - 1, eyes.Length)].HeightM)
+            i = rows - 1;
+        else if (eyeM < eyes[PairEye(0, eyes.Length)].HeightM)
+            for (; i < rows - 1; i++)
+            {
+                double hi = eyes[PairEye(i, eyes.Length)].HeightM, lo = eyes[PairEye(i + 1, eyes.Length)].HeightM;
+                if (eyeM >= lo)
+                {
+                    w = hi > lo ? (hi - eyeM) / (hi - lo) : 0;
+                    break;
+                }
+            }
+        var a = pair.Slice(i * PairBands, PairBands);
+        if (w == 0)
+            return new SmokeTau(a[0], a[1], a[2]);
+        var b = pair.Slice((i + 1) * PairBands, PairBands);
+        return new SmokeTau(a[0] + w * (b[0] - a[0]), a[1] + w * (b[1] - a[1]), a[2] + w * (b[2] - a[2]));
     }
 
     // ------------------------------------------------------------------ merging

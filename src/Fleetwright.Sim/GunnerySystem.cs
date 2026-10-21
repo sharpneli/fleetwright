@@ -625,6 +625,7 @@ public sealed class GunnerySystem : IWorldSystem
         double combat = settings.GunneryCombat;
         Air air = default;
         bool sees = false, aired = false;
+        Span<double> smoke = stackalloc double[SmokeSystem.PairTaus];
         for (int k = 0; k < fc.SensorCount; k++)
         {
             ref var s = ref sensors[f * MaxSensors + k];
@@ -632,9 +633,9 @@ public sealed class GunnerySystem : IWorldSystem
             if (!due && (sees || !inSight))
                 continue;   // one that sees is enough to fire on; the margins are looked at for readings
             if (!aired)
-                (air, aired) = (AirAt(world, ship.Position), true);
+                (air, aired) = (AirAt(world, ship.Position, slot, inSight ? tslot : -1, smoke), true);
             var at = frame.ToWorld(s.X, s.Y, 0);
-            double margin = inSight ? MarginOf(cls, s, optics, at, ship.HeadingDeg, target, air) : 0;
+            double margin = inSight ? MarginOf(cls, s, optics, at, ship.HeadingDeg, target, air, smoke) : 0;
             bool seen = margin >= 1;
             sees |= seen;
             if (!due)
@@ -775,20 +776,28 @@ public sealed class GunnerySystem : IWorldSystem
     }
 
     /// <summary>The air at a place now: the visibility, the sun's elevation, and its bearing when it's low enough to
-    /// silhouette a ship against the horizon (else NaN), as the sightings read them.</summary>
-    readonly record struct Air(double VisibilityM, double SunElevationDeg, double SunBearingDeg);
+    /// silhouette a ship against the horizon (else NaN), as the sightings read them; and whether there's smoke on the lines
+    /// to the target (docs/battle/smoke.md Z3).</summary>
+    readonly record struct Air(double VisibilityM, double SunElevationDeg, double SunBearingDeg, bool Smoked);
 
-    Air AirAt(World world, Vec3d at)
+    /// <summary>The air at a ship (slot) now, and the smoke on her lines to the target (slot; none for -1) into
+    /// <paramref name="smoke"/> when the field is on: the looks' pair, so mostly from its cache.</summary>
+    Air AirAt(World world, Vec3d at, int slot, int tslot, Span<double> smoke)
     {
         double el = Light.SunElevationDeg(at, world.Time);
         bool low = el >= settings.SightSilhouetteLowDeg && el <= settings.SightSilhouetteHighDeg;
-        return new Air(world.Weather.At(at, world.Time).VisibilityM, el, low ? Light.SunBearingDeg(at, world.Time) : double.NaN);
+        bool smoked = world.Smoke.On && tslot >= 0;
+        if (smoked)
+            world.Smoke.Tau(world, slot, tslot, smoke);
+        return new Air(world.Weather.At(at, world.Time).VisibilityM, el, low ? Light.SunBearingDeg(at, world.Time) : double.NaN, smoked);
     }
 
     /// <summary>A battery's sensor's margin on the target (fire-control.md F5c: the sighting model's, through its optics'
     /// magnification, or a layer's or an eye's binoculars): 0 when its eye doesn't bear (a blind sector) or the target is
-    /// under the horizon; under 1 it can't make the target out, so takes no reading and doesn't see the fall.</summary>
-    double MarginOf(ShipClass cls, in Sensor s, in OpticsRow optics, Vec3d at, double headingDeg, in ShipState target, in Air air)
+    /// under the horizon; under 1 it can't make the target out, so takes no reading and doesn't see the fall. Through the
+    /// smoke on its line (docs/battle/smoke.md Z3) when there is any, the pair's answer read at its height.</summary>
+    double MarginOf(ShipClass cls, in Sensor s, in OpticsRow optics, Vec3d at, double headingDeg, in ShipState target, in Air air,
+        ReadOnlySpan<double> smoke)
     {
         var tc = target.Handling.Class;
         var tp = target.Position;
@@ -799,7 +808,8 @@ public sealed class GunnerySystem : IWorldSystem
         if (s.Eye >= 0 && !cls.Eyes[s.Eye].Sees(brg - headingDeg))
             return 0;
         bool sil = !double.IsNaN(air.SunBearingDeg) && Math.Abs(Wrap(brg - air.SunBearingDeg)) <= settings.SightSilhouetteArcDeg;
-        var line = new SightLine(d, Earth.Bearing(tp, at) - target.HeadingDeg, air.VisibilityM, air.SunElevationDeg, sil);
+        var line = new SightLine(d, Earth.Bearing(tp, at) - target.HeadingDeg, air.VisibilityM, air.SunElevationDeg, sil,
+            air.Smoked ? SmokeModel.EyeTau(smoke, cls.Eyes, s.HeightM) : default);
         return SightModel.Margin(s.HeightM, Ranges(optics, s) ? optics.Magnification : settings.SightLookoutMagnification, tc, line, settings);
     }
 
@@ -1249,11 +1259,12 @@ public sealed class GunnerySystem : IWorldSystem
             {
                 var frame = ship.Frame;
                 var target = store[tslot];
-                var air = AirAt(world, ship.Position);
+                Span<double> smoke = stackalloc double[SmokeSystem.PairTaus];
+                var air = AirAt(world, ship.Position, slot, tslot, smoke);
                 for (int k = 0; k < fc.SensorCount && !sees; k++)
                 {
                     ref readonly var s = ref sensors[sv.Fc * MaxSensors + k];
-                    sees = MarginOf(ship.Handling.Class, s, fc.Fit.Optics, frame.ToWorld(s.X, s.Y, 0), ship.HeadingDeg, target, air) >= 1;
+                    sees = MarginOf(ship.Handling.Class, s, fc.Fit.Optics, frame.ToWorld(s.X, s.Y, 0), ship.HeadingDeg, target, air, smoke) >= 1;
                 }
             }
             var sign = sv.Hits > 0 || sv.Over > 0 && sv.Short > 0 ? FireControl.Sign.Straddle : sv.Over > 0 ? FireControl.Sign.Over :

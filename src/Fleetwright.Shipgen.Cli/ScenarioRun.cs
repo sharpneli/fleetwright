@@ -16,9 +16,11 @@ namespace Fleetwright.Shipgen.Cli;
 static class ScenarioRun
 {
     public static int Run(string path, string settingsPath, string landPath, string designsPath, double minutes, int threads,
-        int every, double atSpeed, bool land, bool replay, int[]? watch = null, double worldSpeed = 0, bool fireTrace = false)
+        int every, double atSpeed, bool land, bool replay, int[]? watch = null, double worldSpeed = 0, bool fireTrace = false, bool smoke = false)
     {
         var settings = SimSettings.Load(settingsPath);
+        if (smoke)
+            settings = settings with { Smoke = true };   // docs/battle/smoke.md: the field on
         var total = Stopwatch.StartNew();
         var s = Scenario.Load(path);
         Console.WriteLine($"{s.Name}: {s.ShipCount} ships, {s.DesignNames().Count} designs, {s.Start}");

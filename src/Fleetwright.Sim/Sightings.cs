@@ -259,9 +259,9 @@ public sealed class Sightings
             double aspect = Earth.Bearing(ts.Position, os.Position) - ts.HeadingDeg;
             bool sil = !double.IsNaN(sunBrg) && Math.Abs(Angle(brg - sunBrg)) <= settings.SightSilhouetteArcDeg;
             var line = new SightLine(d, aspect, vis, sunEl, sil);
-            if (world.Smoke.On)
-                world.Smoke.Tau(world, os.Slot, ts.Slot, smoke);   // the smoke on the lines (docs/battle/smoke.md Z2: asked and
-                                                                  // timed; the margin reads it from Z3)
+            bool smoked = world.Smoke.On;
+            if (smoked)
+                world.Smoke.Tau(world, os.Slot, ts.Slot, smoke);   // the smoke on the lines (docs/battle/smoke.md Z3)
             int tried = 0;
             var works = store.Combat.Condition(slot[nearIdx[m]]).EyeWorks;   // damage: a wrecked post sees nothing
             for (int e = 0; e < eyes.Length && tried < settings.SightEyes && !done; e++)
@@ -269,9 +269,12 @@ public sealed class Sightings
                 if (!eyes[e].Sees(rel) || !works[e])
                     continue;
                 tried++;
+                if (smoked)
+                    line = line with { Smoke = SmokeModel.EyeTau(smoke, eyes, eyes[e].HeightM) };
                 double margin = SightModel.Margin(eyes[e].HeightM, SightModel.Magnification(eyes[e], settings), tc, line, settings);
                 if (glowMW > 0)
-                    margin = Math.Max(margin, SightModel.GlowMargin(eyes[e].HeightM, glowMW, glowM, d, vis, sunEl, settings));
+                    margin = Math.Max(margin, SightModel.GlowMargin(eyes[e].HeightM, glowMW, glowM, d, vis, sunEl, settings,
+                        SightModel.SmokeAt(line.Smoke, glowM, tTop, settings)));
                 rate += SightModel.Rate(margin, SightModel.SearchFactor(eyes[e], settings), settings);
                 best = Math.Max(best, margin);
                 if (margin < 1)

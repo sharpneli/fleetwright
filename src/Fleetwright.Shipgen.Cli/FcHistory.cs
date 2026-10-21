@@ -9,7 +9,9 @@ namespace Fleetwright.Shipgen.Cli;
 /// behaviour, and printed beside the record and its band; a record holds only where it was made, so nothing is checked
 /// between the cases but the orderings below. The first game's era (1890-1925) leads; the later cases are secondary
 /// checks. What the sim doesn't model yet (smoke, the sea, haze on the rangefinders, splash confusion) is named with
-/// each case, so a departure can be read for what it is.</summary>
+/// each case, so a departure can be read for what it is. Where the record says which way the smoke went, the case's wind
+/// blows it so in the case's own frame (the shooter's base course north; docs/battle/smoke.md Z3), for runs with the
+/// smoke field on (--smoke); it changes nothing with the field off.</summary>
 static class FcHistory
 {
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
@@ -59,26 +61,28 @@ static class FcHistory
             new("1890-1925", C("Dogger Bank 1915, British BCs", "lion", "seydlitz", c => c with
                 {
                     Discipline = "rn-1914", RangeM = 16_500, BearingDeg = 20, CourseDeg = 0, OwnKn = 27, TargetKn = 23, Minutes = 30,
+                    WindFromDeg = 20, WindKn = 10,
                 }), "16 / 1,150 (1.4%); Lion's first hit after ~10 salvos", 0.7, 2.8, "the Germans' smoke on the British; the Germans' manoeuvres",
                 FirstSalvoLo: 6, FirstSalvoHi: 15),
             new("1890-1925", C("Dogger Bank 1915, German BCs", "seydlitz", "lion", c => c with
                 {
                     Discipline = "german", RangeM = 16_500, BearingDeg = 170, CourseDeg = 0, OwnKn = 23, TargetKn = 27, Minutes = 30,
+                    WindFromDeg = 350, WindKn = 10,
                 }), "~21 / 976 (~2.5%)", 1.2, 5, "their own funnel smoke"),
             new("1890-1925", C("Jutland 1916, British 1st/2nd BCS", "lion", "derfflinger", c => c with
                 {
                     Discipline = "rn-1914", RangeM = 15_000, BearingDeg = 80, CourseDeg = 0, OwnKn = 25, TargetKn = 25, Behaviour = Policy.Zigzag(15, 300),
-                    Own = Policy.Zigzag(15, 300), VisibilityM = 16_000, Minutes = 25,
+                    Own = Policy.Zigzag(15, 300), VisibilityM = 16_000, Minutes = 25, WindFromDeg = 260, WindKn = 8,
                 }), "21 / 1,469 (1.4%)", 0.7, 2.8, "haze on the rangefinders; low contrast; smoke; splash confusion"),
             new("1890-1925", C("Jutland 1916, British 5th BS", "super_dreadnought", "moltke", c => c with
                 {
                     Discipline = "rn-1914", RangeM = 17_500, BearingDeg = 80, CourseDeg = 0, OwnKn = 24, TargetKn = 25, Behaviour = Policy.Zigzag(15, 300),
-                    Own = Policy.Zigzag(15, 300), VisibilityM = 18_000, Minutes = 25,
+                    Own = Policy.Zigzag(15, 300), VisibilityM = 18_000, Minutes = 25, WindFromDeg = 260, WindKn = 8,
                 }), "29 / 1,099 (2.6%)", 1.3, 5.2, "haze on the rangefinders; smoke; splash confusion"),
             new("1890-1925", C("Jutland 1916, Grand Fleet BS", "iron_duke", "konig", c => c with
                 {
                     Discipline = "rn-1914", RangeM = 10_500, BearingDeg = 90, CourseDeg = 0, OwnKn = 20, TargetKn = 17, Behaviour = Policy.Zigzag(20, 240),
-                    VisibilityM = 12_000, Minutes = 20,
+                    VisibilityM = 12_000, Minutes = 20, WindFromDeg = 90, WindKn = 8,
                 }), "57 / 1,593 (3.6%) at 9-12 kyd", 1.8, 7.2, "haze on the rangefinders; smoke; the turn-aways' few minutes"),
             new("1890-1925", C("Jutland 1916, British 3rd BCS", "invincible", "derfflinger", c => c with
                 {
@@ -87,16 +91,17 @@ static class FcHistory
             new("1890-1925", C("Jutland 1916, German 1st SG", "derfflinger", "lion", c => c with
                 {
                     Discipline = "german", RangeM = 15_000, BearingDeg = 100, CourseDeg = 0, OwnKn = 25, TargetKn = 25, Behaviour = Policy.Zigzag(15, 300),
-                    Own = Policy.Zigzag(15, 300), VisibilityM = 18_000, Minutes = 25,
+                    Own = Policy.Zigzag(15, 300), VisibilityM = 18_000, Minutes = 25, WindFromDeg = 100, WindKn = 8,
                 }), "67 / 1,670 (4.0%)", 2, 8, "the British silhouetted against the western sky (contrast)"),
             new("1890-1925", C("Jutland 1916, German battleships", "konig", "iron_duke", c => c with
                 {
                     Discipline = "german", RangeM = 11_000, BearingDeg = 90, CourseDeg = 0, OwnKn = 17, TargetKn = 20, Behaviour = Policy.Zigzag(15, 300),
-                    VisibilityM = 12_000, Minutes = 20,
+                    VisibilityM = 12_000, Minutes = 20, WindFromDeg = 270, WindKn = 8,
                 }), "57 / 1,927 (3.0%)", 1.5, 6, "haze; the British line seen only by its flashes at times"),
             new("1890-1925", C("Falklands 1914, Invincible", "invincible", "armoured_cruiser", c => c with
                 {
                     Discipline = "rn-1914", RangeM = 13_700, BearingDeg = 30, CourseDeg = 0, OwnKn = 25, TargetKn = 20, Minutes = 30,
+                    WindFromDeg = 210, WindKn = 10,
                 }), "~80 / 1,174 (~7%; hit counts uncertain)", 3.5, 14, "own funnel smoke across the range; the long chase's turns"),
             new("1890-1925", C("USN practice 1912-18, 6 kyd", "pennsylvania", "dreadnought", c => c with
                 {
@@ -199,7 +204,8 @@ static class FcHistory
                 st.HitPct, band, verdict, st.StraddlePct, st.FirstHitSalvo is var s && double.IsNaN(s) ? "-" : $"salvo {s:0}",
                 double.IsNaN(st.FirstHitAfterOpenS) ? "-" : $"{st.FirstHitAfterOpenS:0} s", double.IsNaN(st.FirstHitS) ? "-" : $"{st.FirstHitS:0} s", h.Record));
             if (h.Missing.Length > 0)
-                Console.WriteLine($"  {"",42}  not modelled: {h.Missing}; {st.Shells / Math.Max(st.Runs, 1)} shells a run, fire discipline {c.Discipline ?? settings.FireDisciplines[0].Name}");
+                Console.WriteLine($"  {"",42}  not modelled: {h.Missing}; {st.Shells / Math.Max(st.Runs, 1)} shells a run, fire discipline {c.Discipline ?? settings.FireDisciplines[0].Name}" +
+                    (double.IsNaN(c.WindKn) ? "" : string.Format(Inv, "; wind from {0:0}° at {1:0} kn", c.WindFromDeg, c.WindKn)));
         }
         Console.WriteLine($"\n{inBand} of {banded} cases in their bands.");
         var orderings = Orderings.Where(o => hit.ContainsKey(o.A) && hit.ContainsKey(o.B)).ToList();

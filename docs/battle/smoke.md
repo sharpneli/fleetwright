@@ -1,6 +1,7 @@
 # Plan: the smoke field (a feasibility study)
-Status: **drafted 2026-10-20**, decisions 1-4 from the user ("Decided" below); weather's one optical depth proposed;
-Z0 (the model and the facts), Z1 (the store) and Z2 (the query; gate 1 passed) done 2026-10-21, decisions 5-9    Updated: 2026-10-21
+Status: **drafted 2026-10-20**, decisions 1-4 from the user ("Decided" below); weather's one optical depth proposed (its
+first part built with Z3); Z0 (the model and the facts), Z1 (the store), Z2 (the query; gate 1 passed) and Z3 (sight and
+fire control read it) done 2026-10-21, decisions 5-9    Updated: 2026-10-21
 
 Smoke as sim state that sight reads, and the same state drawn. The research is `research/vfx/unified-smoke-system.md`
 (Lagrangian Gaussian puffs as the one store, every grid a throw-away view of them), on top of
@@ -223,7 +224,7 @@ ship smoked to her upper works still shows her tops, as a small, hard target. `G
 lines, so readings, ranging and the spotter's view of the fall follow. Own smoke comes from the field: an aft control
 in its own plume is blinded by the wind, not by a rule (`ComponentRow.Smoke` stays as the designer's warning).
 
-### Weather and the one optical depth (proposed, for the user)
+### Weather and the one optical depth (proposed, for the user; its first part built with Z3)
 
 Haze and smoke are already one thing to the eye: an optical depth along the line, τ = σ_bg·d + τ_smoke, and the
 contrast falls as e^(−τ). Today σ_bg is uniform (`SightModel.Extinction` of the visibility, or of the light's reach at
@@ -246,7 +247,8 @@ proposal is to unify at the query, not in the store:
   candidate for Jutland's bearing-dependent visibility beside the smoke. A later weather item.
 - **What changes now:** `SightLine` carries τ_local per band beside the visibility; the store's puffs have a class
   (smoke kinds) and the query a source list, so weather can join without a second structure. Nothing else until the
-  weather grows past one per scenario (plan.md 3.2, decision 5).
+  weather grows past one per scenario (plan.md 3.2, decision 5). *Built with Z3* (2026-10-21): `SightLine.Smoke` and
+  the contrast through σ·d + τ in `SightModel`; the rest (local features, the sun's glare) stays proposed.
 - **One departure to name:** e^(−τ) is Koschmieder's, which assumes the path glows like the horizon sky. That holds
   for haze and roughly for grey smoke. Dark coal smoke glows less (it hides by darkening, more slowly at low τ), and
   sunlit white smoke glows more. Start with e^(−τ) for all, and give each tint an airlight factor only if the
@@ -517,11 +519,84 @@ index and the answers held 10 s:
 - **Left for later, if it's ever needed:** an adaptive refresh (clear and opaque lines held longer), the dirty cells
   for bursts and screens (Z4).
 
-### Z3 Sighting and fire control read it
-- `SightLine`'s bands and the margin through the one optical depth (`Air.Tau`, if agreed); `MarginOf`; `GlowMargin`
-  taking the same τ; the scenario test that smoke off changes nothing (hashes as before).
-- The yardstick: Jutland's directional visibility and the trails' bands; `fc-history` and `duel` with the field on and
-  off, beside the record.
+### Z3 Sighting and fire control read it (done 2026-10-21)
+
+**Built:** `SightLine.Smoke` (a `SmokeTau`: the depths to the target's three bands) and `SightModel.Margin` through it;
+`SmokeModel.PairEye` and `EyeTau` (an eye's depths from a pair's rows); the looks (`Sightings.Sight`), fire control's
+readings and the spotter (`GunnerySystem.MarginOf`) and a fire's glow (`GlowMargin`) all read the one pair's answer.
+`--smoke` turns the field on for the benches (`duel`, `fc-history`, `scenario`, any command reading the settings);
+`duel --wind FROM,KN`; `smoke run` reports the looks' lines by direction and whose smoke is on them. Tests
+(`SmokeSightTests`): no smoke is the margin as it was, smoke on the hull leaves her tops, smoke lying high leaves her
+hull, an eye reads its row or between two, a glow dimmed, a chase down the wind lost in its smoke (the looks and the
+guns).
+
+- **The one optical depth, its first part** (the proposal above, what it says changes now): the contrast falls as
+  e^−(σd + τ_smoke). No `Air.Tau` function of its own: the background stays the analytic multiply in `SightModel`, the
+  smoke's part the one walk and cache (`SmokeSystem.Tau`) every consumer reads.
+- **The margin through the bands:** her height in three slabs about the band heights (`SmokeBands` 0.2 / 0.5 / 0.85 of
+  her top; edges half-way between, the waterline and her top); the eye makes out the best of any run of slabs (the whole
+  ship, her upper works and tops, her tops, her hull under smoke lying high), its area at the contrast through the worst
+  depth on it. The plan's "area above band j at the worst T at or above it" left a hull under high smoke unseen; the runs
+  hold that case and the plan's. With no smoke it's today's margin, by the same path, bit for bit.
+- **An eye's depths:** the pair's four rows are the observer's eyes when she has four or fewer, else her highest, her
+  lowest and two evenly between (by index); an eye between two rows reads between them by height. The looks try her four
+  highest eyes that bear, fire control its instruments wherever they stand, so a row per eye index (Z2's) left a lower
+  eye with none. Rows for real eyes are exact.
+- **Fire control and the spotter** ask the same pair (observer, target) as the looks, so from the cache: in the chase
+  test 1,190 asked over ten minutes, 80 worked out.
+- **Smoke off changes nothing:** squadrons, 30 min, the hash EA2179573189244F before and after.
+- **Untuned (decision 5):** the field's output and plume as Z0 left them; no factor here.
+
+**The yardstick, with the field on and off:**
+
+- **Jutland, the looks' lines** (`smoke run`, 3 h, the clock held through contact), by the observer's side (0 the
+  British) and her look against the wind (WSW, 8 kn): the share of lines with τ over 1 at the target's middle band, and of
+  those her highest eye makes out without the smoke, the share lost to it:
+
+  | | 1 h | 2 h | 2½ h | 3 h (the main fleets' action) |
+  | --- | --- | --- | --- | --- |
+  | British, across the wind | 27%, lost 30% | 72%, 50% | 87%, - | 82%, 96% |
+  | British, up it | | 74%, 17% | 95%, 60% | 0% (5 lines) |
+  | Germans, across | 3%, 35% | 8%, 33% | 28%, 40% | 75%, 82% |
+  | Germans, up it | | | 4%, 44% | 62%, 98% |
+
+  Whose smoke, on a sample of 40 smoky lines: mostly **the target's side's** (41% at 1 h, 68-86% from 1½ to 2½ h, 48%
+  at 3 h), the observer's own 4-27% (the most at 1 h and 3 h), her own side's 3-19%. A fleet's own cloud screens it, and the
+  wind decides whose cloud lies where: the record's bearing-dependent visibility, in direction. In size it's well over
+  the record at the climax: almost every line made out without the smoke is lost with it, where the record has ranges
+  of 9-15 kyd and clear channels.
+- **Jutland, the fight** (`scenario --no-land`, 3 h): 1,099 hits from 17,671 shells with the field, 1,704 from 23,170
+  without (35% fewer hits, 24% fewer shells); the same three ships lost (B109 for Cordelia).
+- **`fc-history`** (12 runs a case; the cases' winds put the smoke where their records say, in each case's frame; with
+  the field off they change nothing):
+
+  | Case (the record) | Off | On |
+  | --- | --- | --- |
+  | Dogger Bank, British BCs (1.4%: the Germans' smoke on them) | 4.5% | 3.8% |
+  | Dogger Bank, German BCs (~2.5%: their own smoke) | 1.6% | **0.0%** (never made out) |
+  | Jutland, British 1st/2nd BCS (1.4%) | 3.7% | 3.0% |
+  | Jutland, British 5th BS (2.6%) | 2.8% | 2.7% |
+  | Jutland, German 1st SG (4.0%) | 4.3% | 4.5% |
+  | Falklands, Invincible (~7%: own smoke down the range) | 4.6% | 5.5% |
+  | Cases in their bands | 8 of 23 | 7 of 23 |
+  | The Germans over the British at Jutland (BCs), want 1.5-5 | 1.17 | 1.50 |
+
+  The cases fired at targets astern into their own smoke go blind (the German BCs at Dogger Bank, firing aft with the
+  wind from ahead); the Falklands' 10 kn breeze doesn't reach the line: at 25 kn a ship outruns her smoke, so it can't
+  blow down a range forward of the beam (its rise is the runs' spread).
+- **`duel`** (super-dreadnoughts, 16 kyd, 20 runs): beam on in any wind, the same to the shot (each trail streams astern
+  of its ship, off the line: τ 0, so the same draws); a chase with the target 10° on the bow, 4.2% either way (the line
+  meets her trail only near her); dead ahead at 10 km down the wind (the chase test), never in sight and no salvo.
+- **The cost at Jutland's climax** (`DOTNET_TieredCompilation=0`): store 0.145, index 0.19, queries 0.49 ms a game
+  second (39 lines worked out of 587 asked: the lost contacts keep every observer looking), 0.82 in all against the
+  gate's 0.8; the looks with them 1.08 (0.83 at Z2). The whole sim in the fight 101 µs a fine tick with the field, 78
+  without (`scenario`); the slowest minute 118x against 142x.
+
+**For the tuning pass** (decision 5, when the field is whole): the climax's blindness and the astern cases' are the
+outcome to bring toward the record. The candidates, all physical: the funnels' output (the research's 1,500 m²/s is
+4x ours, so not that way), the young plume's σ and its rise (a trail at the eyes' height or over them), Koschmieder's
+glow for dark coal smoke (the airlight factor above), and an eye's choice among her posts (an aft control in her own
+plume while the foretop is clear).
 
 ### Z4 The other sources
 - Guns (black and brown powder against smokeless), fires, magazines and sinkings; `Command.MakeSmoke` and a dev

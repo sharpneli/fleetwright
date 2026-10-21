@@ -152,7 +152,7 @@ public class SmokeSystemTests(ITestOutputHelper output)
                 int ne = Math.Min(oc.Eyes.Length, SmokeSystem.PairEyes);
                 var from = new double[ne];
                 for (int e = 0; e < ne; e++)
-                    from[e] = oc.Eyes[e].HeightM;
+                    from[e] = oc.Eyes[SmokeModel.PairEye(e, oc.Eyes.Length)].HeightM;
                 double top = store[ts].Handling.Class.Silhouette.TopM;
                 double[] to = [.. On.SmokeBands.Select(b => b * top)];
                 var a = w.Smoke.Frame.ToAir(store[os].Position.Normalized() * Earth.Radius);

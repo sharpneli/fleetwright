@@ -153,6 +153,84 @@ static class SmokeBench
         return 0;
     }
 
+    /// <summary>The lines the looks asked along in the last two seconds (docs/battle/smoke.md Z3), by the observer's side
+    /// and the way she looks against the wind (down it: where the smoke goes; across; up it): how many, how many have smoke
+    /// at the target's middle band (τ over 0.1, 1 and 3) and its mean transmission there, and for the observer's highest
+    /// eye, of those it makes out without the smoke, how many it loses to it and the median of the margin it keeps.</summary>
+    static IEnumerable<string> Sight(World w)
+    {
+        if (!w.Smoke.On || w.Smoke.Pairs == 0)
+            yield break;
+        var store = w.Ships.Store;
+        var settings = w.Settings;
+        long now = w.Time.Ms;
+        double windTo = w.Smoke.Air.WindToDeg;
+        var rows = new List<(int Side, int Way, double Tau, double Off, double On)>();
+        var sample = new List<(int O, int T)>();
+        for (int q = 0; q < w.Smoke.Pairs; q++)
+        {
+            var (oe, te, used) = w.Smoke.PairAt(q);
+            int o = store.SlotOf(oe), t = store.SlotOf(te);
+            if (used < now - 2 * settings.SightingMs || o < 0 || t < 0)
+                continue;
+            var os = store[o];
+            var ts = store[t];
+            var eyes = os.Handling.Class.Eyes;
+            if (eyes.Length == 0)
+                continue;
+            double d = Earth.Distance(os.Position, ts.Position), brg = Earth.Bearing(os.Position, ts.Position);
+            double off = Math.Abs(brg - windTo) % 360, way = Math.Min(off, 360 - off);
+            var line = new SightLine(d, Earth.Bearing(ts.Position, os.Position) - ts.HeadingDeg, w.Weather.At(os.Position, w.Time).VisibilityM,
+                Light.SunElevationDeg(os.Position, w.Time), false);
+            double mag = SightModel.Magnification(eyes[0], settings);
+            var tau = SmokeModel.EyeTau(w.Smoke.PairDepths(q), eyes, eyes[0].HeightM);
+            rows.Add((os.Side, way < 45 ? 0 : way > 135 ? 2 : 1, tau.Mid, SightModel.Margin(eyes[0].HeightM, mag, ts.Handling.Class, line, settings),
+                SightModel.Margin(eyes[0].HeightM, mag, ts.Handling.Class, line with { Smoke = tau }, settings)));
+            if (tau.Mid > 0.1 && sample.Count < 40)
+                sample.Add((o, t));
+        }
+        string[] ways = ["down the wind", "across it", "up it"];
+        yield return "           the looks' lines (the last 2 s), the observer's side and her look against the wind: lines, τ at the middle band over 0.1 / 1 / 3, mean T there; made out by her highest eye without the smoke, lost to it, the margin kept (median)";
+        foreach (var g in rows.GroupBy(r => (r.Side, r.Way)).OrderBy(g => g.Key))
+        {
+            var seen = g.Where(r => r.Off >= 1).ToList();
+            var kept = seen.Select(r => r.On / r.Off).OrderBy(x => x).ToList();
+            yield return string.Format(Inv, "             side {0} {1,-14} {2,5} lines   {3,4:0}% {4,4:0}% {5,4:0}%   T {6:0.00}   made out {7,4}, lost {8,4} ({9,3:0}%), kept {10:0.00}",
+                g.Key.Side, ways[g.Key.Way], g.Count(), 100.0 * g.Count(r => r.Tau > 0.1) / g.Count(), 100.0 * g.Count(r => r.Tau > 1) / g.Count(),
+                100.0 * g.Count(r => r.Tau > 3) / g.Count(), g.Average(r => Math.Exp(-r.Tau)), seen.Count, seen.Count(r => r.On < 1),
+                seen.Count > 0 ? 100.0 * seen.Count(r => r.On < 1) / seen.Count : 0, kept.Count > 0 ? kept[kept.Count / 2] : 1);
+        }
+        // whose smoke it is, on a sample of the smoky lines: every puff summed on the highest eye's line to the middle band
+        if (sample.Count == 0)
+            yield break;
+        var by = new double[5];
+        double nowS = now / 1000.0;
+        Span<double> one = stackalloc double[1];
+        foreach (var (o, t) in sample)
+        {
+            var os = store[o];
+            var ts = store[t];
+            var a = w.Smoke.Frame.ToAir(os.Position.Normalized() * Earth.Radius);
+            var b = w.Smoke.Frame.ToAir(ts.Position.Normalized() * Earth.Radius);
+            double from = os.Handling.Class.Eyes[0].HeightM, to = settings.SmokeBands[1] * ts.Handling.Class.Silhouette.TopM;
+            var line = new SmokeLine(a, b, from, to, settings.SightRefraction);
+            for (int i = 0; i < w.Smoke.Slots; i++)
+            {
+                if (!w.Smoke.IsLive(i))
+                    continue;
+                int e = w.Smoke.EntityOf(i), slot = store.SlotOf(e);
+                int k = e == os.Entity ? 0 : e == ts.Entity ? 1 : slot < 0 ? 4 : store[slot].Side == os.Side ? 2 : 3;
+                var st = SmokeModel.State(w.Smoke.Puff(i), nowS, AirFrame.Identity, w.Smoke.Air) with { Centre = w.Smoke.Puff(i).Origin };
+                one[0] = 0;
+                SmokeModel.TauGrid(line, st, [from], [to], one);
+                by[k] += one[0];
+            }
+        }
+        double sum = Math.Max(by.Sum(), 1e-12);
+        yield return string.Format(Inv, "           whose smoke, on {0} smoky lines (mean τ {1:0.00} at the middle band): her own {2:0}%, the target's {3:0}%, her side's {4:0}%, the target's side's {5:0}%, ships gone {6:0}%",
+            sample.Count, sum / sample.Count, 100 * by[0] / sum, 100 * by[1] / sum, 100 * by[2] / sum, 100 * by[3] / sum, 100 * by[4] / sum);
+    }
+
     /// <summary>`shipgen smoke run`: a scenario headless with the field on (docs/battle/smoke.md Z1), in a world of water,
     /// the clock held at its speed through contact: every so many game minutes the puffs and trails, the store's memory, the
     /// puffs by age, what was laid, merged and retired, and the field's cost a game second beside the whole sim's.</summary>
@@ -209,6 +287,8 @@ static class SmokeBench
             Console.WriteLine(string.Format(Inv, "           this thread allocated {0:0.0} KB a game s; collections {1} / {2} / {3}",
                 (bytes - lastBytes) / 1024.0 / game, GC.CollectionCount(0) - lastGc[0], GC.CollectionCount(1) - lastGc[1], GC.CollectionCount(2) - lastGc[2]));
             (lastBytes, lastGc[0], lastGc[1], lastGc[2]) = (bytes, GC.CollectionCount(0), GC.CollectionCount(1), GC.CollectionCount(2));
+            foreach (var line in Sight(w))
+                Console.WriteLine(line);
         }
         // one pair worked out again and again, uncached: the query's own cost
         var store = w.Ships.Store;

@@ -89,6 +89,10 @@ sealed record FcCase
     public Policy Behaviour { get; init; } = Policy.Steady;
     /// <summary>The visibility, m; 0 the settings' default.</summary>
     public double VisibilityM { get; init; }
+    /// <summary>The wind, the way it blows from (degrees true, the shooter's base course north) and its speed, kn; NaN
+    /// as before the smoke field: calm with a visibility given, else the settings' default (docs/battle/smoke.md Z3).</summary>
+    public double WindFromDeg { get; init; } = double.NaN;
+    public double WindKn { get; init; } = double.NaN;
     public WorldTime Start { get; init; } = Day;
     /// <summary>Battle against practice (<see cref="SimSettings.GunneryCombat"/>); NaN the settings' (battle).</summary>
     public double Combat { get; init; } = double.NaN;
@@ -144,7 +148,10 @@ static class FcBench
         var (tl, to) = Earth.LatLon(p);
         w.Apply(ShipSystem.Spawn(a, lat, lon, 0, c.OwnKn, side: 0));
         w.Apply(ShipSystem.Spawn(b, tl, to, c.CourseDeg, c.TargetKn, side: 1));
-        if (c.VisibilityM > 0)
+        if (!double.IsNaN(c.WindKn))
+            w.Apply(Command.SetWeather(c.VisibilityM > 0 ? c.VisibilityM : s.DefaultVisibilityM, double.IsNaN(c.WindFromDeg) ? s.DefaultWindFromDeg : c.WindFromDeg,
+                c.WindKn * Handling.MsPerKnot));
+        else if (c.VisibilityM > 0)
             w.Apply(Command.SetWeather(c.VisibilityM));
         if (c.Crew != CrewQuality.Trained)
             w.Apply(GunnerySystem.SetCrew(0, c.Crew));

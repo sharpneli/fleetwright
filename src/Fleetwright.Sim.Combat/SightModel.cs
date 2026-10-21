@@ -5,8 +5,20 @@ namespace Fleetwright.Sim.Combat;
 
 /// <summary>How an observer and a target stand for one look (docs/battle/plan.md step 3.2c): the distance over the
 /// sphere, the target's aspect (the angle between its heading and the line from it to the observer: 0 bow on, 90 side on),
-/// the visibility and the light.</summary>
-public readonly record struct SightLine(double DistanceM, double AspectDeg, double VisibilityM, double SunElevationDeg, bool Silhouetted);
+/// the visibility and the light; and the smoke on the line from the eye (docs/battle/smoke.md Z3), none by default.</summary>
+public readonly record struct SightLine(double DistanceM, double AspectDeg, double VisibilityM, double SunElevationDeg, bool Silhouetted,
+    SmokeTau Smoke = default);
+
+/// <summary>The smoke's optical depths on a line from an eye to three heights on the target (docs/battle/smoke.md Z3):
+/// <see cref="SimSettings.SmokeBands"/> of her silhouette's top, low to high. Added to the haze's (τ = σ·d + τ_smoke: the
+/// one optical depth), so the contrast falls as e^(−τ).</summary>
+public readonly record struct SmokeTau(double Low, double Mid, double High)
+{
+    /// <summary>No smoke on the line.</summary>
+    public bool Clear => Low == 0 && Mid == 0 && High == 0;
+
+    public double this[int band] => band == 0 ? Low : band == 1 ? Mid : High;
+}
 
 /// <summary>The sighting model (docs/battle/plan.md step 3.2c): whether an eye can make out a ship, and how fast it does,
 /// from the geometry and the air. Pure functions of numbers; no state, no allocation.
@@ -94,15 +106,16 @@ public static class SightModel
     /// <summary>A ship's fires as a light at night (docs/battle/fire.md B2; 17 §8.5), its margin over what an eye this high
     /// makes out: the heat that shows (MW) as a lamp of <see cref="SimSettings.FireGlowCdPerMW"/>, at a height on the ship,
     /// through the haze by Allard's law (3.912 / the visibility), against <see cref="SimSettings.FireGlowLux"/> in the dark
-    /// and a hundred times it at sunset, as <see cref="LightReachM"/> ramps; none by day or below the horizon.</summary>
+    /// and a hundred times it at sunset, as <see cref="LightReachM"/> ramps; none by day or below the horizon. Smoke on the
+    /// line at its height (docs/battle/smoke.md Z3) dims it as the haze does.</summary>
     public static double GlowMargin(double eyeM, double fireMW, double heightM, double distanceM, double visibilityM, double sunElevationDeg,
-        SimSettings s)
+        SimSettings s, double smokeTau = 0)
     {
         if (fireMW <= 0 || sunElevationDeg >= 0 || HiddenM(eyeM, distanceM, s) >= heightM)
             return 0;
         double f = Math.Clamp(sunElevationDeg / s.SightNightSunDeg, 0, 1), d = Math.Max(distanceM, 1);
         double sigma = double.IsPositiveInfinity(visibilityM) || visibilityM <= 0 ? 0 : 3.912 / visibilityM;
-        return s.FireGlowCdPerMW * fireMW * Math.Exp(-sigma * d) / (d * d * s.FireGlowLux * Math.Pow(100, 1 - f));
+        return s.FireGlowCdPerMW * fireMW * Math.Exp(-sigma * d - smokeTau) / (d * d * s.FireGlowLux * Math.Pow(100, 1 - f));
     }
 
     /// <summary>An eye's magnification: a director's rangefinder's (its make's), binoculars at a masthead, on the bridge
@@ -137,20 +150,68 @@ public static class SightModel
     /// 0 when nothing of it shows over the horizon.</summary>
     public static double Margin(double eyeM, double magnification, ShipClass target, in SightLine line, SimSettings s)
     {
-        double d = Math.Max(line.DistanceM, 1);
-        double area = VisibleAreaM2(target, HiddenM(eyeM, d, s), line.AspectDeg);
+        double d = Math.Max(line.DistanceM, 1), hidden = HiddenM(eyeM, d, s);
+        double area = VisibleAreaM2(target, hidden, line.AspectDeg);
         if (area <= 0)
             return 0;
-        return MarginOfArea(area, d, magnification, line, s);
+        if (line.Smoke.Clear)
+            return MarginOfArea(area, d, magnification, line, s);
+        // smoke on the line (docs/battle/smoke.md Z3): her height in three slabs about the bands, each with its band's
+        // depth; the eye makes out the best of any run of slabs (the whole ship, her upper works, her tops, a hull under
+        // smoke lying high), its area at the contrast through the worst depth on it
+        var bands = s.SmokeBands;
+        double top = target.Silhouette.TopM;
+        Span<double> above = stackalloc double[4];
+        above[0] = area;
+        above[1] = VisibleAreaM2(target, Math.Max(hidden, top * (bands[0] + bands[1]) / 2), line.AspectDeg);
+        above[2] = VisibleAreaM2(target, Math.Max(hidden, top * (bands[1] + bands[2]) / 2), line.AspectDeg);
+        above[3] = 0;
+        Span<double> through = stackalloc double[3];
+        (through[0], through[1], through[2]) = (Math.Exp(-line.Smoke.Low), Math.Exp(-line.Smoke.Mid), Math.Exp(-line.Smoke.High));
+        double contrast = Contrast(d, line, s), m2 = magnification * magnification / (d * d), best = 0;
+        for (int i = 0; i < 3; i++)
+        {
+            double t = 1;
+            for (int j = i; j < 3; j++)
+            {
+                t = Math.Min(t, through[j]);
+                double a = above[i] - above[j + 1];
+                if (a > 0)
+                    best = Math.Max(best, contrast * t / Threshold(a * m2, s));
+            }
+        }
+        return best;
     }
 
-    /// <summary>The margin for an area showing at a distance (<see cref="Margin"/> after the horizon and aspect).</summary>
-    public static double MarginOfArea(double areaM2, double distanceM, double magnification, in SightLine line, SimSettings s)
+    /// <summary>The margin for an area showing at a distance (<see cref="Margin"/> after the horizon and aspect), through
+    /// the haze alone.</summary>
+    public static double MarginOfArea(double areaM2, double distanceM, double magnification, in SightLine line, SimSettings s) =>
+        Contrast(distanceM, line, s) / Threshold(areaM2 * magnification * magnification / (distanceM * distanceM), s);
+
+    /// <summary>A target's apparent contrast through the haze at a distance: a grey ship's against the sky, or a silhouette's
+    /// against a bright horizon, faded by the visibility (or the light's reach, whichever is shorter).</summary>
+    static double Contrast(double distanceM, in SightLine line, SimSettings s)
     {
         double reach = line.Silhouetted ? line.VisibilityM : Math.Min(line.VisibilityM, LightReachM(line.SunElevationDeg, s));
         double c0 = line.Silhouetted ? s.SightContrastSilhouette : s.SightContrastDay;
-        double contrast = c0 * Math.Exp(-Extinction(reach, s) * distanceM);
-        return contrast / Threshold(areaM2 * magnification * magnification / (distanceM * distanceM), s);
+        return c0 * Math.Exp(-Extinction(reach, s) * distanceM);
+    }
+
+    /// <summary>The smoke's depth on a line to a height on the target, between its bands (held beyond the lowest and the
+    /// highest).</summary>
+    public static double SmokeAt(in SmokeTau tau, double heightM, double topM, SimSettings s)
+    {
+        if (tau.Clear)
+            return 0;
+        var bands = s.SmokeBands;
+        double h = heightM / Math.Max(topM, 1e-6);
+        if (h <= bands[0])
+            return tau.Low;
+        if (h >= bands[2])
+            return tau.High;
+        return h <= bands[1]
+            ? tau.Low + (tau.Mid - tau.Low) * (h - bands[0]) / (bands[1] - bands[0])
+            : tau.Mid + (tau.High - tau.Mid) * (h - bands[1]) / (bands[2] - bands[1]);
     }
 
     /// <summary>The detection rate at a margin, per second: none below 1, full at <see cref="SimSettings.SightFullMargin"/>.</summary>
