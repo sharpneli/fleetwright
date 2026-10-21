@@ -6,7 +6,7 @@ namespace Fleetwright.Sim.Ai.Knowledge;
 /// a navy holds in sight chained to it, each within <see cref="SimSettings.FireLineGapM"/> of the next and of its type
 /// if that's made out, van first (furthest along the contact's course; a stopped line, nearest the contact first). Just
 /// the contact if it's held but not in sight; nothing if it's not held. What an admiral distributes his fire over and a
-/// line's guide crosses ahead of: one implementation, until the tactical picture's enemy groups (5.1c) take it over.
+/// line's guide crosses ahead of; a contact seen going down is left out of it (fighting.md 4.3b): one implementation, until the tactical picture's enemy groups (5.1c) take it over.
 /// Each user holds his own (its scratch); nothing allocated once grown.</summary>
 public sealed class EnemyLines(SeenContacts seen)
 {
@@ -27,10 +27,14 @@ public sealed class EnemyLines(SeenContacts seen)
             return;
         if (!pic![ti].InSight)
         {
-            into.Add(target);
+            if (!pic[ti].Lost)
+                into.Add(target);
             return;
         }
         var type = pic[ti].Type;
+        // one seen going down is no target: the line is chained from where she is, without her
+        var (at, v, _) = pic.EstimateAt(ti, world.Time.Ms, world.Settings);
+        int skip = pic[ti].Lost ? 1 : 0;
         if (visited.Length < pic.Count)
             visited = new int[Math.Max(pic.Count, visited.Length * 2)];
         visitStamp++;
@@ -38,28 +42,28 @@ public sealed class EnemyLines(SeenContacts seen)
         queue.Add(ti);
         visited[ti] = visitStamp;
         for (int q = 0; q < queue.Count; q++)
-            foreach (int j in seen.Close(world, side, seen.Position(side, queue[q])))
+            foreach (int j in seen.Close(world, side, q == 0 ? at : seen.Position(side, queue[q])))
                 if (visited[j] != visitStamp && (type == ShipType.Unknown || pic[j].Type == type))
                 {
                     visited[j] = visitStamp;
                     queue.Add(j);
                 }
 
-        var at = seen.Position(side, ti);
-        var v = seen.Velocity(side, ti);
         bool moving = v.Length > 1;
-        if (keys.Length < queue.Count)
+        int n = queue.Count - skip;
+        if (keys.Length < n)
         {
-            keys = new double[Math.Max(queue.Count, keys.Length * 2)];
+            keys = new double[Math.Max(n, keys.Length * 2)];
             items = new int[keys.Length];
         }
-        for (int k = 0; k < queue.Count; k++)
+        for (int k = 0; k < n; k++)
         {
-            var d = seen.Position(side, queue[k]) - at;
-            (keys[k], items[k]) = (moving ? -Vec3d.Dot(d, v) : d.Length, pic[queue[k]].Entity);
+            int i = queue[k + skip];
+            var d = (i == ti ? at : seen.Position(side, i)) - at;
+            (keys[k], items[k]) = (moving ? -Vec3d.Dot(d, v) : d.Length, pic[i].Entity);
         }
-        Array.Sort(keys, items, 0, queue.Count);
-        for (int k = 0; k < queue.Count; k++)
+        Array.Sort(keys, items, 0, n);
+        for (int k = 0; k < n; k++)
             into.Add(items[k]);
     }
 }

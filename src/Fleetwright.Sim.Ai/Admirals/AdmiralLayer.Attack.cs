@@ -72,11 +72,12 @@ public sealed partial class AdmiralLayer
         for (int i = 0; i < g.Line.Count; i++)
             captains.HoldTorpedoes(g.Line[i], true);   // for the signal
 
-        if (a.Attack is AttackPhase.None or AttackPhase.Gain && !ctx.Picture.TryGet(guide.Side, a.AttackTarget, out _))
+        var pic = ctx.World.Sightings.Of(guide.Side);
+        if (a.Attack is AttackPhase.None or AttackPhase.Gain && (!ctx.Picture.TryGet(guide.Side, a.AttackTarget, out _) || pic?.Lost(a.AttackTarget) == true))
         {
-            // the target: the one ordered while it's held, else the biggest in sight, the nearest first
+            // the target: the one ordered while it's held and not seen going down, else the biggest in sight, the nearest first
             int ordered = new Unit(a.Target).Entity;
-            a.AttackTarget = ordered != 0 && ctx.Picture.TryGet(guide.Side, ordered, out _) ? ordered : Biggest(ctx, guide);
+            a.AttackTarget = ordered != 0 && ctx.Picture.TryGet(guide.Side, ordered, out _) && pic?.Lost(ordered) != true ? ordered : Biggest(ctx, guide);
             if (a.AttackTarget == 0)
             {
                 a.Attack = AttackPhase.None;
@@ -85,9 +86,9 @@ public sealed partial class AdmiralLayer
             if (a.Attack == AttackPhase.Gain)
                 a.AttackMs = now;
         }
-        if (!ctx.Picture.TryGet(guide.Side, a.AttackTarget, out var t))
+        if (!ctx.Picture.TryGet(guide.Side, a.AttackTarget, out var t) || pic?.Lost(a.AttackTarget) == true)
         {
-            a.Attack = AttackPhase.None;   // lost: chosen again
+            a.Attack = AttackPhase.None;   // lost, or seen going down: chosen again
             return false;
         }
         var (range, speed) = CaptainLayer.FastSetting(guide.Handling.Class);
@@ -104,8 +105,7 @@ public sealed partial class AdmiralLayer
         var rel = guide.Position - t.Position;
         double r = rel.Length;
         double offBow = r > 1 ? Math.Acos(Math.Clamp(Vec3d.Dot(rel, t.Forward) / r, -1, 1)) * 180 / Math.PI : 0;
-        var pic = ctx.World.Sightings.Of(guide.Side)!;
-        var (q, v, _) = pic.EstimateAt(pic.IndexOf(a.AttackTarget), now, s);
+        var (q, v, _) = pic!.EstimateAt(pic.IndexOf(a.AttackTarget), now, s);
         double run = TorpedoAim.Intercept(guide.Position, q, v, speed, out _, out double meet) ? meet : double.PositiveInfinity;
         double gain = s.AttackGainShare * range;
         switch (a.Attack)

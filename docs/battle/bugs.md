@@ -99,9 +99,11 @@ add what's found.
 Both seen in `MatchupPlayTests.A_pack_of_destroyers_presses_its_attack_home_on_a_battleship` (2026-10-16, while
 moving underwater shells to a 3-decay reach), which now runs with hits doing no damage so it tests the attack alone.
 
-- [ ] A flotilla's attack goes on against a target already going down: the Iron Duke blew up (a magazine, after 21
+- [x] A flotilla's attack goes on against a target already going down: the Iron Duke blew up (a magazine, after 21
   4" hits) at 780 s, and the eight V25s still ran in, signalled Fire at a ship no longer there, then turned away. The
   attack should end (or pick the next ship, `Biggest`) once its target is lost or sinking.
+  2026-10-21: the attack chooses again once its target is seen going down (`Contact.Lost`, with the guns' held targets:
+  `fire-control.md` F10 "Ships seen done for"); the original case isn't re-run (that test now runs without damage).
 - [x] On the Fire signal only one boat of eight launches (4 torpedoes), though five to seven have 3-6 tubes bearing
   for the whole 80 s window (`TorpedoSystem.Ready`). Not yet known which check in `CaptainLayer.FireOnSignal` stops
   the rest: likely `TorpedoFoul` (own boats on the track: the line is still swinging through its turn together), or

@@ -150,8 +150,8 @@ public sealed partial class CaptainLayer
     {
         var cls = own.Handling.Class;
         var pic = ctx.World.Sightings.Of(own.Side);
-        if (cap.Fire == FireOrder.Engage && (pic == null || pic.IndexOf(cap.FireTarget) < 0))
-            (cap.Fire, cap.FireTarget) = (FireOrder.AtWill, 0);   // gone from the picture: at will again
+        if (cap.Fire == FireOrder.Engage && (pic == null || pic.IndexOf(cap.FireTarget) < 0 || pic.Lost(cap.FireTarget)))
+            (cap.Fire, cap.FireTarget) = (FireOrder.AtWill, 0);   // gone from the picture, or seen going down: at will again
         var reach = Reaches(ctx, ctx.Ships.Combat.Loadout(slot));
         candCount = -1;   // found when a battery first needs them
         if (ownTargets.Length < cls.Batteries.Length)
@@ -232,7 +232,7 @@ public sealed partial class CaptainLayer
         var (reach, speed) = FastSetting(cls);
         reach *= s.TorpedoFireShare;
         int target = 0;
-        if (cap.Fire == FireOrder.Engage && pic.IndexOf(cap.FireTarget) is int ei and >= 0 && pic[ei].InSight && Run(ctx, pic, own, ei, speed) <= reach)
+        if (cap.Fire == FireOrder.Engage && pic.IndexOf(cap.FireTarget) is int ei and >= 0 && pic[ei].InSight && !pic[ei].Lost && Run(ctx, pic, own, ei, speed) <= reach)
             target = cap.FireTarget;
         if (target == 0 && !onOrder)
         {
@@ -279,7 +279,7 @@ public sealed partial class CaptainLayer
         var s = ctx.Settings;
         int slot = ctx.Ships.SlotOf(entity);
         var pic = slot >= 0 ? ctx.World.Sightings.Of(ctx.Ships[slot].Side) : null;
-        if (pic == null || pic.IndexOf(target) is not (int ti and >= 0) || FiredSince(ctx, slot, signalMs) || ctx.World.Torpedoes.Launching(entity) ||
+        if (pic == null || pic.IndexOf(target) is not (int ti and >= 0) || pic[ti].Lost || FiredSince(ctx, slot, signalMs) || ctx.World.Torpedoes.Launching(entity) ||
             ctx.World.Torpedoes.Ready(ctx.World, entity, target) == 0)
             return false;
         var own = ctx.Ships[slot];
@@ -403,7 +403,7 @@ public sealed partial class CaptainLayer
             Candidates(ctx, pic, own, widest);
 
         int ci = current != 0 ? pic.IndexOf(current) : -1;
-        bool keep = ci >= 0 && now - pic[ci].SeenMs <= s.FireLostMs;
+        bool keep = ci >= 0 && !pic[ci].Lost && now - pic[ci].SeenMs <= s.FireLostMs;
         if (keep && lines.GunsFoul(ctx, own, pic.EstimateAt(ci, now, s).Position))
             keep = false;   // a friend in the way: not while he's there
         double curRange = 0, curBy = 0;
@@ -527,7 +527,7 @@ public sealed partial class CaptainLayer
         double band = cap.DistanceM > 0 ? cap.DistanceM : doctrine.Of(own.Entity, own.Side, DoctrineField.RangeShare) * reach;
 
         int enemy = new Unit(cap.Target).ShipOf(groups);
-        if (enemy == 0 || !ctx.Picture.TryGet(own.Side, enemy, out var t))
+        if (enemy == 0 || !ctx.Picture.TryGet(own.Side, enemy, out var t) || ctx.World.Sightings.Of(own.Side)?.Lost(enemy) == true)
         {
             enemy = main >= 0 ? ctx.Ships.Combat.Target(slot, main) : 0;
             if (enemy == 0 || !ctx.Picture.TryGet(own.Side, enemy, out t))

@@ -102,6 +102,41 @@ public class FireOrderTests(ITestOutputHelper output)
         Assert.Equal(0, changes);
     }
 
+    [Fact]
+    public void A_ship_seen_going_down_is_no_target_at_will_or_engaged()
+    {
+        // at will: the battleship on the nearer dreadnought; she founders (10 minutes going under) and the guns shift at once
+        var (w, _) = Make(new Placed("super_dreadnought", 0, 0, 0, 12, 0), new Placed("dreadnought", 80, 9_000, 0, 12, 1),
+            new Placed("dreadnought", 100, 12_000, 0, 12, 1));
+        Run(w, 60);
+        Assert.Equal(2, Target(w, 1, 0));
+        w.Apply(DamageSystem.Sink(2, LossKind.Foundered));
+        Run(w, 3);
+        Assert.Equal(3, Target(w, 1, 0));
+
+        // engaged by the ship's own order: at will again, on the other
+        var (we, ai) = Make(new Placed("super_dreadnought", 0, 0, 0, 12, 0), new Placed("dreadnought", 80, 9_000, 0, 12, 1),
+            new Placed("dreadnought", 100, 12_000, 0, 12, 1));
+        Run(we, 30);
+        we.Apply(ai.Orders.Engage(Unit.Ship(1), 2));
+        Run(we, 30);
+        Assert.Equal(2, Target(we, 1, 0));
+        we.Apply(DamageSystem.Sink(2, LossKind.Foundered));
+        Run(we, 3);
+        Assert.Equal(FireOrder.AtWill, ai.Captains.FireOf(1).Order);
+        Assert.Equal(3, Target(we, 1, 0));
+
+        // a group's Engage on the enemy's leader: his line counted without her
+        var (wg, aig) = Lines(own: 3);
+        Run(wg, 30);
+        wg.Apply(aig.Orders.Engage(Unit.Group(wg.Groups.Of(1)!.GroupId), 4));
+        Run(wg, 60);
+        Assert.Equal([4, 5, 6], new[] { 1, 2, 3 }.Select(e => Target(wg, e, 0)));
+        wg.Apply(DamageSystem.Sink(4, LossKind.Foundered));
+        Run(wg, 3);
+        Assert.DoesNotContain(4, new[] { 1, 2, 3 }.Select(e => Target(wg, e, 0)));
+    }
+
     /// <summary>Four QEs (1-4) in column against three dreadnoughts (5-7) in column 13 km to the east, both north.</summary>
     static (World W, AiSystem Ai) Lines(int own = 4)
     {

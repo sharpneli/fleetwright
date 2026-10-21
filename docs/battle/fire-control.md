@@ -1197,6 +1197,23 @@ are the AI's passes (`command.md`).
   (closing range, a settled track). The reserve's share has no source yet (the research request on fire discipline).
   Anchors: a battle line's magazines last the hours of a Jutland, not 1.5 hours of unbroken fire (F6d's rate);
   `command.md` 5.1g's Tsushima, where both sides' battleships emptied their main magazines in 1.5-2 hours.
+- **Ships seen done for** (the user, 2026-10-21: "ammo saving time"; the target's worth above). A ship seen going down
+  is no target (`fighting.md` 4.3b), and since 2026-10-21 that holds for one already held as well: at will, a ship's
+  Engage, an admiral's line and a flotilla's attack all drop her (`Contact.Lost`; before, a battery kept her for the
+  whole 3-10 minutes she took to go under). What's left is the observer's judgement before she goes: a ship still
+  afloat but seen far over (`CapsizeHeelDeg` is 25°), deep in the water, stopped, silent and burning is likely done for.
+  The record's navies both wasted fire on such ships (Wiesbaden at Jutland, under the fire of ship after ship for hours)
+  and left ones that lived; so should ours, from the picture alone, never the water aboard (4.3b's decision).
+  - **What's seen graded:** the list and the freeboard left as an observer can read them at the range (an error that
+    grows with it), not only `SeenFlags.Listing` at 3° and `Low`.
+  - **Her worth falls with it** (no hard switch: on the list and freeboard seen, with stopped, silent and burning), so
+    the floor above leaves her: at will the batteries shift to the next target in reach; with nothing else in reach a
+    side's doctrine field picks finishing her or ceasing fire (rounds for the next fight against seeing her go). An
+    ordered Engage stands: the player's call, or an admiral's who judged.
+  - **Later, the commander's:** a destroyer or two sent to finish her with torpedoes, or left to pick up survivors.
+  - **Tests:** a cripple seen past the list loses a line's fire when another target is in reach, and with none the
+    doctrine decides; the rounds a squadrons play saves, reported; the judgement's misses both ways counted (left and
+    lived, fired at and sank anyway).
 - **What it enables, later and not here:** the range band a ship fights at from the hits each side gets there; target
   choice by expected effect per shell; when to open fire; turning away when out-hit; an admiral's fire distribution by
   value rather than counting from the van.

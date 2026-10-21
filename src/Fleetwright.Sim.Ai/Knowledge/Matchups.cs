@@ -182,7 +182,7 @@ public sealed class MatchupSide
     /// isn't counted.</summary>
     public void AddContact(World world, Matchups m, byte viewer, in Contact c)
     {
-        if ((c.Seen & (SeenFlags.GoingDown | SeenFlags.Gone)) != 0)
+        if (c.Lost)
             return;
         var s = world.Settings;
         double guns = (c.Seen & SeenFlags.Silent) != 0 ? 0 : 1, speed = (c.Seen & SeenFlags.Stopped) != 0 ? 0 : 1, tough = 1;

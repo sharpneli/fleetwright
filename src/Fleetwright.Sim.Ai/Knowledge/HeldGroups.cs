@@ -70,7 +70,7 @@ public sealed class HeldGroups(Matchups matchups)
         for (int i = 0; i < n; i++)
         {
             ref readonly var c = ref pic[i];
-            if ((c.Seen & (SeenFlags.GoingDown | SeenFlags.Gone)) != 0 || !TaskLayer.Fresh(ctx, c))
+            if (c.Lost || !TaskLayer.Fresh(ctx, c))
                 continue;
             int h = v.Held++;
             v.Index[h] = i;

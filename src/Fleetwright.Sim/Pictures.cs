@@ -70,6 +70,9 @@ public struct Contact
 
     /// <summary>What was made out of its condition when last seen, and whether it was seen to go.</summary>
     public SeenFlags Seen;
+
+    /// <summary>Seen going down or gone: no target, no threat (docs/battle/fighting.md 4.3b).</summary>
+    public readonly bool Lost => (Seen & (SeenFlags.GoingDown | SeenFlags.Gone)) != 0;
 }
 
 /// <summary>One navy's picture: its contacts, in slots, by entity through an index. World state: deterministic, saved
@@ -91,6 +94,9 @@ public sealed class Picture
 
     /// <summary>The slot of the contact on a ship, or -1.</summary>
     public int IndexOf(int entity) => index.TryGetValue(entity, out int i) ? i : -1;
+
+    /// <summary>Whether it holds a ship and sees it going down or gone (<see cref="Contact.Lost"/>).</summary>
+    public bool Lost(int entity) => IndexOf(entity) is int i and >= 0 && contacts[i].Lost;
 
     internal ref Contact Add(int entity)
     {

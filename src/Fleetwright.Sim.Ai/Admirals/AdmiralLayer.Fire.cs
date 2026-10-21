@@ -56,9 +56,11 @@ public sealed partial class AdmiralLayer
             enemyLines.Of(ctx.World, side, a.FireTarget, enemy);
             if (enemy.Count == 0)
             {
-                // the target's gone from the picture: at will
+                // the target's gone from the picture, or seen going down alone: at will
                 (a.Fire, a.FireTarget) = (FireOrder.AtWill, 0);
             }
+            else if (enemy[0] != a.FireTarget && !enemy.Contains(a.FireTarget))
+                a.FireTarget = enemy[0];   // seen going down: his line still holds the rest of hers
         }
         int n = own.Count, m = enemy.Count;
         for (int k = 0; k < n; k++)
