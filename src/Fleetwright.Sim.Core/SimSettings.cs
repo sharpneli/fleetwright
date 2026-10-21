@@ -1904,6 +1904,23 @@ public sealed record SimSettings
     /// never in time).</summary>
     public int SmokeCap { get; init; } = 262_144;
 
+    /// <summary>The sight lines' index (docs/battle/smoke.md Z2): rebuilt every <see cref="SmokeIndexMs"/> of world time
+    /// (each puff's state then), in chunks of <see cref="SmokeChunk"/> puffs along a trail.</summary>
+    public int SmokeIndexMs { get; init; } = 10_000;
+    public int SmokeChunk { get; init; } = 8;
+
+    /// <summary>The index's grid: cubes this big, m, in the air's frame (Earth-centred).</summary>
+    public double SmokeGridM { get; init; } = 2_000;
+
+    /// <summary>A pair's optical depths hold for <see cref="SmokeRefreshMs"/> of world time; a pair no one has asked for in
+    /// <see cref="SmokePairKeepMs"/> is let go.</summary>
+    public int SmokeRefreshMs { get; init; } = 10_000;
+    public int SmokePairKeepMs { get; init; } = 60_000;
+
+    /// <summary>A target's bands, as shares of her silhouette's top: the heights lines from each eye end at (hull, upper
+    /// works, tops) [placeholder: Z3 sets them from the silhouette's area table].</summary>
+    public double[] SmokeBands { get; init; } = [0.2, 0.5, 0.85];
+
     // ------------------------------------------------------------------ from data
 
     /// <summary>Reads settings from JSON. Strict: an unknown key is an error (a misspelt key would silently keep its

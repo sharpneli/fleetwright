@@ -24,9 +24,21 @@ namespace Fleetwright.Sim;
 /// </list>
 /// Grown, never shrunk: nothing allocates once the arrays have grown to the battle. Always registered seventh
 /// (<see cref="Id"/>).</summary>
-public sealed class SmokeSystem(SimSettings settings) : IWorldSystem
+public sealed partial class SmokeSystem : IWorldSystem
 {
     public const byte Id = 7;
+    readonly SimSettings settings;
+    readonly Probes probes;
+    readonly int indexProbe, queryProbe;
+
+    internal SmokeSystem(SimSettings settings, Probes probes)
+    {
+        this.settings = settings;
+        this.probes = probes;
+        indexProbe = probes.Register("Smoke index");
+        queryProbe = probes.Register("Smoke queries");
+    }
+
     const ushort TickEvent = 1;
 
     /// <summary>A ship's trail: its puffs oldest to newest (linked), how many, the world time she last smoked to, whether
@@ -52,6 +64,9 @@ public sealed class SmokeSystem(SimSettings settings) : IWorldSystem
     bool frameSet, scheduled;
     long frameMs, nextMs;
     SmokeAir air;
+
+    /// <summary>The field is on (<see cref="SimSettings.Smoke"/>).</summary>
+    public bool On => settings.Smoke;
 
     /// <summary>Puffs held now; trails; puffs laid, merged away and retired so far.</summary>
     public int Count => live;
@@ -141,6 +156,7 @@ public sealed class SmokeSystem(SimSettings settings) : IWorldSystem
             if (over || k % slices == slice)
                 Walk(k, t / 1000.0, over ? 2 * settings.SmokeMergeSigma : settings.SmokeMergeSigma);
         Forget();
+        Index(t);
         if (smoking || live > 0)
             Schedule(world);
     }
@@ -244,7 +260,7 @@ public sealed class SmokeSystem(SimSettings settings) : IWorldSystem
         for (int i = 0; i < n; i++)
         {
             double born = (a + (b - a) * (i + 1.0) / n) / 1000.0, ago = nowS - born;
-            var puff = SmokeModel.Born(at - vAir * ago, born, frame, baseM, rise, riseS, sigma, s0, area, 0, tint);
+            var puff = SmokeModel.Born(at - vAir * ago, born, frame, baseM, rise, riseS, sigma, s0, area, 0, tint, air);
             if (ago > 0)
             {
                 SmokeModel.Plan(puff, nowS, frame, air, out _, out double h2, out double left, out _);
@@ -411,6 +427,7 @@ public sealed class SmokeSystem(SimSettings settings) : IWorldSystem
             h.Add(s.LastMs);
             h.Add(s.Gone);
         }
+        HashQuery(ref h);
         h.Add(live);
         for (int k = 0; k < sources.Count; k++)
             for (int i = sources[k].Oldest; i >= 0; i = next[i])
@@ -425,6 +442,8 @@ public sealed class SmokeSystem(SimSettings settings) : IWorldSystem
                 h.Add(p.S0z2);
                 h.Add(p.A0);
                 h.Add(p.LifeS);
+                h.Add(p.SigmaW);
+                h.Add(p.LagrangianW);
                 h.Add((int)p.Tint);
             }
     }

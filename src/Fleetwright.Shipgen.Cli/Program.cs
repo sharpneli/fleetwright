@@ -165,7 +165,11 @@ public static class Program
         shipgen smoke run [SCENARIO] [--minutes 30] [--every 5] [--speed 1]
             a scenario (Jutland by default) headless with the smoke field on (docs/battle/smoke.md Z1), in a world of
             water, the clock held through contact: puffs, trails, memory, puffs by age, laid/merged/retired, and the
-            field's cost a game second beside the whole sim's
+            field's cost a game second beside the whole sim's; the sight lines (asked, worked out, their cost, the
+            index's); one pair's query uncached. A short run never leaves the JIT's first tier: for steady-state
+            costs run it with DOTNET_TieredCompilation=0
+        shipgen smoke pileup [DESIGN] [--minutes 30]
+            the pile-up case: two sides of 20 circling in a 5 km box, the field on; its costs a game second
         shipgen sight DESIGN... [--from DESIGN] [--settings FILE]
             each design's sighting facts as the sim reads them (docs/battle/fire-control.md F4d): its eyes (kind, part,
             height over the sea, horizon, rangefinder, blind arc), its silhouette's top and area above each 10 m, how far

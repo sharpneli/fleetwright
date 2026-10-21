@@ -29,12 +29,35 @@ public struct SmokePuff
     public float S0h2, S0z2;
     /// <summary>Its extinction area at birth, m², and the time it decays over, s (0: it doesn't).</summary>
     public float A0, LifeS;
+    /// <summary>The air's turbulence up at its settled height, σ_w, m/s, and its Lagrangian time, s, as the air was when
+    /// it was born or merged (0: read the air's now). Kept so its state is a few multiplies and two exponentials.</summary>
+    public float SigmaW, LagrangianW;
     public SmokeTint Tint;
 }
 
 /// <summary>A puff at an age: its centre on the sea (Earth-centred, sea level), its height over the sea, m, its
 /// variances across and up, m², its extinction area, m², and its age, s.</summary>
 public readonly record struct PuffState(Vec3d Centre, double Z, double SigmaH2, double SigmaZ2, double Area, double Age);
+
+/// <summary>A puff readied for many sight lines (the index's, docs/battle/smoke.md Z2): its state with the square roots
+/// and normalisations worked once, for <see cref="SmokeModel.TauGrid(in SmokeLine, in LinePuff, ReadOnlySpan{double},
+/// ReadOnlySpan{double}, Span{double})"/>.</summary>
+public readonly struct LinePuff
+{
+    public readonly Vec3d Centre;
+    /// <summary>Its height, m; σ_h, m; how far off a line it can add anything (3.5 σ_h), m; A / (2π σ_h σ_z);
+    /// 1/(2σ_h²); 1/(2σ_z²); (3.5 σ_z)²; 1/(√2 σ_h).</summary>
+    public readonly double Z, SigmaH, Reach, Plan, HalfInvH2, HalfInvZ2, ReachZ2, InvRoot2H;
+
+    public LinePuff(in PuffState p, Vec3d centre)
+    {
+        double sh = Math.Sqrt(p.SigmaH2), sz = Math.Sqrt(p.SigmaZ2);
+        (Centre, Z, SigmaH, Reach) = (centre, p.Z, sh, SmokeModel.CullSigma * sh);
+        Plan = p.Area > 0 ? p.Area / (2 * Math.PI * sh * sz) : 0;
+        (HalfInvH2, HalfInvZ2, ReachZ2, InvRoot2H) = (1 / (2 * p.SigmaH2), 1 / (2 * p.SigmaZ2), SmokeModel.CullSigma * SmokeModel.CullSigma * p.SigmaZ2,
+            1 / (Math.Sqrt(2) * sh));
+    }
+}
 
 /// <summary>The air's frame (docs/battle/smoke.md Z0): the world's one wind as a rotation of the sphere, so a puff born in
 /// it stays put and is carried with it exactly, however long it drifts and however the wind turns over time (each step
@@ -225,7 +248,8 @@ public static class SmokeModel
     // ------------------------------------------------------------------ erf
 
     /// <summary>The error function, our own (.NET has none): Abramowitz and Stegun 7.1.26, within 1.5e-7; its series near
-    /// 0, where 7.1.26 isn't quite odd.</summary>
+    /// 0, where 7.1.26 isn't quite odd. (An own exp too was tried, 2026-10-21: Math.Exp is faster, 2.8 ns against 3.7, and
+    /// the rest of the sim uses it.)</summary>
     public static double Erf(double x)
     {
         double ax = Math.Abs(x);
@@ -294,7 +318,7 @@ public static class SmokeModel
         double risen = p.Rise * RiseShare(age / p.RiseS), z = p.Z0 + risen, settled = p.Z0 + p.Rise;
         double b = risen * BuoyantSpread;
         double h2 = p.S0h2 + Taylor(age, air.SigmaV, air.LagrangianH) + b * b;
-        double z2 = p.S0z2 + Taylor(age, air.SigmaW(settled), air.LagrangianW(settled)) + b * b;
+        double z2 = p.S0z2 + (p.SigmaW > 0 ? Taylor(age, p.SigmaW, p.LagrangianW) : Taylor(age, air.SigmaW(settled), air.LagrangianW(settled))) + b * b;
         double a = p.LifeS > 0 ? p.A0 * Math.Exp(-age / p.LifeS) : p.A0;
         return new PuffState(frame.ToWorld(p.Origin), z, h2, z2, a, age);
     }
@@ -313,11 +337,13 @@ public static class SmokeModel
 
     /// <summary>A puff born now at a place on the sea (<paramref name="at"/>, Earth-centred), into the air's frame.</summary>
     public static SmokePuff Born(Vec3d at, double now, in AirFrame frame, double z0, double riseM, double riseS, double sigma0H,
-        double sigma0Z, double areaM2, double lifeS, SmokeTint tint) => new()
+        double sigma0Z, double areaM2, double lifeS, SmokeTint tint, in SmokeAir air = default) => new()
         {
             Origin = frame.ToAir(at.Normalized() * Earth.Radius), Born = now, Z0 = (float)z0, Rise = (float)riseM,
             RiseS = (float)Math.Max(riseS, 0.1), S0h2 = (float)(sigma0H * sigma0H), S0z2 = (float)(sigma0Z * sigma0Z),
             A0 = (float)areaM2, LifeS = (float)lifeS, Tint = tint,
+            SigmaW = air.FrictionMs > 0 ? (float)air.SigmaW(z0 + riseM) : 0,
+            LagrangianW = air.FrictionMs > 0 ? (float)air.LagrangianW(z0 + riseM) : 0,
         };
 
     // ------------------------------------------------------------------ the queries
@@ -388,6 +414,62 @@ public static class SmokeModel
         }
     }
 
+    /// <summary>A puff on the lines from one place to another at several heights at each end: from each of
+    /// <paramref name="fromM"/> (an observer's eyes) to each of <paramref name="toM"/> (a target's bands), added into
+    /// <paramref name="tau"/>[i·toM.Length + j]. The line <paramref name="l"/> gives the places (its own heights unused).
+    /// Near-horizontal lines: the puff's plan part worked once, its vertical Gaussian and the sea's image per pair of
+    /// heights (<see cref="TauBands"/>'s). False when the puff is too far off the line to add anything.</summary>
+    public static bool TauGrid(in SmokeLine l, in PuffState p, ReadOnlySpan<double> fromM, ReadOnlySpan<double> toM, Span<double> tau)
+    {
+        var rel = p.Centre - l.From;
+        double s0 = Vec3d.Dot(rel, l.Along), d = Vec3d.Dot(rel, l.Side);
+        double sh = Math.Sqrt(p.SigmaH2), reach = CullSigma * sh;
+        if (Math.Abs(d) > reach || s0 < -reach || s0 > l.Length + reach || !(p.Area > 0))
+            return false;
+        double a0 = -s0 / (Math.Sqrt(2) * sh), a1 = (l.Length - s0) / (Math.Sqrt(2) * sh);
+        double frac = a0 < -CullSigma && a1 > CullSigma ? 1 : 0.5 * (Erf(a1) - Erf(a0));
+        double plan = p.Area * Math.Exp(-d * d / (2 * p.SigmaH2)) / (2 * Math.PI * sh * Math.Sqrt(p.SigmaZ2)) * frac;
+        if (!(plan > 0))
+            return false;
+        double sc = Math.Clamp(s0, 0, l.Length), u = sc / l.Length, bow = sc * (l.Length - sc) * l.Curve, slopeBow = (l.Length - 2 * sc) * l.Curve;
+        double inv2z = 1 / (2 * p.SigmaZ2), reachZ2 = CullSigma * CullSigma * p.SigmaZ2;
+        for (int i = 0; i < fromM.Length; i++)
+            for (int j = 0; j < toM.Length; j++)
+            {
+                double rise = toM[j] - fromM[i];
+                double h = fromM[i] + rise * u - bow + (rise / l.Length - slopeBow) * (s0 - sc), lo = h - p.Z, hi = h + p.Z;
+                double v = (lo * lo < reachZ2 ? Math.Exp(-lo * lo * inv2z) : 0) + (hi * hi < reachZ2 ? Math.Exp(-hi * hi * inv2z) : 0);
+                tau[i * toM.Length + j] += plan * v;
+            }
+        return true;
+    }
+
+    /// <summary><see cref="TauGrid(in SmokeLine, in PuffState, ReadOnlySpan{double}, ReadOnlySpan{double}, Span{double})"/>
+    /// on a readied puff: the same sums, no square roots or divisions per line.</summary>
+    public static bool TauGrid(in SmokeLine l, in LinePuff p, ReadOnlySpan<double> fromM, ReadOnlySpan<double> toM, Span<double> tau)
+    {
+        var rel = p.Centre - l.From;
+        double s0 = Vec3d.Dot(rel, l.Along), d = Vec3d.Dot(rel, l.Side);
+        if (Math.Abs(d) > p.Reach || s0 < -p.Reach || s0 > l.Length + p.Reach || !(p.Plan > 0))
+            return false;
+        double a0 = -s0 * p.InvRoot2H, a1 = (l.Length - s0) * p.InvRoot2H;
+        double frac = a0 < -CullSigma && a1 > CullSigma ? 1 : 0.5 * (Erf(a1) - Erf(a0));
+        double plan = p.Plan * Math.Exp(-d * d * p.HalfInvH2) * frac;
+        if (!(plan > 0))
+            return false;
+        double sc = Math.Clamp(s0, 0, l.Length), u = sc / l.Length, bow = sc * (l.Length - sc) * l.Curve, slopeBow = (l.Length - 2 * sc) * l.Curve;
+        double off = s0 - sc, invL = 1 / l.Length;
+        for (int i = 0; i < fromM.Length; i++)
+            for (int j = 0; j < toM.Length; j++)
+            {
+                double rise = toM[j] - fromM[i];
+                double h = fromM[i] + rise * u - bow + (rise * invL - slopeBow) * off, lo = h - p.Z, hi = h + p.Z;
+                double v = (lo * lo < p.ReachZ2 ? Math.Exp(-lo * lo * p.HalfInvZ2) : 0) + (hi * hi < p.ReachZ2 ? Math.Exp(-hi * hi * p.HalfInvZ2) : 0);
+                tau[i * toM.Length + j] += plan * v;
+            }
+        return true;
+    }
+
     // ------------------------------------------------------------------ merging
 
     /// <summary>Two puffs as one at <paramref name="now"/>, keeping their extinction, their centre and their second
@@ -417,6 +499,7 @@ public static class SmokeModel
             S0h2 = (float)Math.Max(h2 - Taylor(age, air.SigmaV, air.LagrangianH) - b * b, 0),
             S0z2 = (float)Math.Max(z2 - Taylor(age, air.SigmaW(settled), air.LagrangianW(settled)) - b * b, 0),
             A0 = (float)(life > 0 ? a * Math.Exp(age / life) : a), LifeS = (float)life,
+            SigmaW = air.FrictionMs > 0 ? (float)air.SigmaW(settled) : 0, LagrangianW = air.FrictionMs > 0 ? (float)air.LagrangianW(settled) : 0,
             Tint = wp >= wq ? p.Tint : q.Tint,
         };
     }

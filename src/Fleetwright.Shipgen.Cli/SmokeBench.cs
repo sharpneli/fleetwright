@@ -26,6 +26,8 @@ static class SmokeBench
     {
         if (args.Count >= 1 && args[0] == "run")
             return Store(args.Count >= 2 ? args[1] : scenario, settingsPath, designs, minutes, every, speed);
+        if (args.Count >= 1 && args[0] == "pileup")
+            return Pileup(classOf(args.Count >= 2 ? args[1] : "dreadnought"), settingsPath, minutes);
         if (args.Count < 2 || args[0] != "facts")
         {
             Console.Error.WriteLine("shipgen smoke facts DESIGN...  |  shipgen smoke run [SCENARIO] [--minutes N] [--every N] [--speed X]");
@@ -114,12 +116,49 @@ static class SmokeBench
         return (col, across, along, probe.Z, sh, Math.Sqrt(probe.SigmaZ2));
     }
 
+    /// <summary>`shipgen smoke pileup`: the pile-up case (docs/battle/smoke.md Z2): two sides of 20 ships in a 5 km box,
+    /// each circling (rudder held), all in sight of the other side, the field on: the costs a game second once grown.</summary>
+    static int Pileup(ShipClass c, string settingsPath, double minutes)
+    {
+        var settings = SimSettings.Load(settingsPath) with { Smoke = true, RailsEnabled = false };
+        var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), 3, settings);
+        int k = w.Ships.AddClass(c);
+        w.Apply(Command.SetWeather(25_000, 225, 4));
+        for (int side = 0; side < 2; side++)
+            for (int i = 0; i < 20; i++)
+            {
+                double lat = 56.5 + (i % 5) * 0.009 + side * 0.002, lon = 4.0 + (i / 5) * 0.018 + side * 0.009;
+                w.Apply(ShipSystem.Spawn(k, lat, lon, (i * 37 + side * 90) % 360, 15, (byte)side));
+                w.Apply(ShipSystem.Rudder(side * 20 + i + 1, side == 0 ? 10 : -10));
+            }
+        w.AdvanceTo(w.Time + (long)(minutes * 60_000));   // grown
+        long Ticks(string name)
+        {
+            int i = Array.IndexOf(w.Probes.Names, name);
+            return i >= 0 ? w.Probes.Ticks[i] : 0;
+        }
+        long f0 = Ticks(nameof(SmokeSystem)), i0 = Ticks("Smoke index"), q0 = Ticks("Smoke queries"), l0 = Ticks("Sighting");
+        long asked0 = w.Smoke.Asked, worked0 = w.Smoke.Worked, summed0 = w.Smoke.PuffsSummed, tested0 = w.Smoke.PuffsTested;
+        const double game = 600;
+        w.AdvanceTo(w.Time + (long)(game * 1000));
+        long worked = w.Smoke.Worked - worked0;
+        Console.WriteLine($"{c}: 2 x 20 circling in a 5 km box, {minutes:0} min grown then 10 min measured");
+        Console.WriteLine(string.Format(Inv, "  {0} puffs in {1} trails, {2} chunks; {3:0} lines asked and {4:0} worked out a game s, {5:0.0} µs and {6:0} puffs tested, {7:0} summed each",
+            w.Smoke.Count, w.Smoke.Trails, w.Smoke.Chunks, (w.Smoke.Asked - asked0) / game, worked / game,
+            worked > 0 ? Probes.Ms(Ticks("Smoke queries") - q0) * 1000 / worked : 0, worked > 0 ? (double)(w.Smoke.PuffsTested - tested0) / worked : 0,
+            worked > 0 ? (double)(w.Smoke.PuffsSummed - summed0) / worked : 0));
+        Console.WriteLine(string.Format(Inv, "  ms a game s: store {0:0.000}, index {1:0.000}, queries {2:0.000}; the looks with them {3:0.000}",
+            Probes.Ms(Ticks(nameof(SmokeSystem)) - f0 - (Ticks("Smoke index") - i0)) / game, Probes.Ms(Ticks("Smoke index") - i0) / game,
+            Probes.Ms(Ticks("Smoke queries") - q0) / game, Probes.Ms(Ticks("Sighting") - l0) / game));
+        return 0;
+    }
+
     /// <summary>`shipgen smoke run`: a scenario headless with the field on (docs/battle/smoke.md Z1), in a world of water,
     /// the clock held at its speed through contact: every so many game minutes the puffs and trails, the store's memory, the
     /// puffs by age, what was laid, merged and retired, and the field's cost a game second beside the whole sim's.</summary>
     static int Store(string path, string settingsPath, string designs, double minutes, double every, double speed)
     {
-        var settings = SimSettings.Load(settingsPath) with { Smoke = true };
+        var settings = SimSettings.Load(settingsPath) with { Smoke = Environment.GetEnvironmentVariable("SMOKE_OFF") != "1" };
         var s = Scenario.Load(path);
         using var registry = new ShipClassRegistry(0);
         var classes = ScenarioLoader.RequestClasses(s, registry, [designs]);
@@ -134,7 +173,9 @@ static class SmokeBench
         Console.WriteLine($"{s.Name}: {s.ShipCount} ships, at {speed:0.#}x, a world of water; the field on");
         Console.WriteLine("  game     puffs  trails  per trail    MiB   by age (<1, 1-5, 5-15, 15-30, 30+ min)        laid   merged  retired   field ms/game s   sim ms/game s");
         var ages = new int[5];
-        long lastTicks = 0;
+        long lastTicks = 0, lastIx = 0, lastQy = 0, lastLk = 0, lastAsked = 0, lastWorked = 0, lastSummed = 0, lastChunks = 0, lastTested = 0;
+        long lastBytes = GC.GetAllocatedBytesForCurrentThread();
+        var lastGc = new[] { GC.CollectionCount(0), GC.CollectionCount(1), GC.CollectionCount(2) };
         var wall = Stopwatch.StartNew();
         double lastWall = 0;
         for (double m = every; m <= minutes + 1e-9; m += every)
@@ -154,7 +195,51 @@ static class SmokeBench
                 m, w.Smoke.Count, w.Smoke.Trails, w.Smoke.Trails > 0 ? (double)w.Smoke.Count / w.Smoke.Trails : 0, w.Smoke.Bytes / 1048576.0,
                 ages[0], ages[1], ages[2], ages[3], ages[4], w.Smoke.Laid, w.Smoke.Merged, w.Smoke.Retired, field, all));
             (lastTicks, lastWall) = (ticks, wall.Elapsed.TotalMilliseconds);
+            // the sight lines (Z2): asked and worked out a game second, their cost, the index's, and the looks' with them
+            long ix = Ticks("Smoke index"), qy = Ticks("Smoke queries"), lk = Ticks("Sighting");
+            long asked = w.Smoke.Asked - lastAsked, worked = w.Smoke.Worked - lastWorked, summed = w.Smoke.PuffsSummed - lastSummed;
+            Console.WriteLine(string.Format(Inv, "           lines: {0,6:0} asked, {1,6:0} worked out a game s; {2,5:0.0} µs and {3,4:0} puffs each; index {4:0.000}, queries {5:0.000}, the looks with them {6:0.000} ms/game s ({7} puffs indexed in {8} chunks)",
+                asked / game, worked / game, worked > 0 ? Probes.Ms(qy - lastQy) * 1000 / worked : 0, worked > 0 ? (double)summed / worked : 0,
+                Probes.Ms(ix - lastIx) / game, Probes.Ms(qy - lastQy) / game, Probes.Ms(lk - lastLk) / game, w.Smoke.Indexed, w.Smoke.Chunks));
+            Console.WriteLine(string.Format(Inv, "           tested a line: {0:0} chunks, {1:0} puffs", worked > 0 ? (double)(w.Smoke.ChunksTested - lastChunks) / worked : 0,
+                worked > 0 ? (double)(w.Smoke.PuffsTested - lastTested) / worked : 0));
+            (lastChunks, lastTested) = (w.Smoke.ChunksTested, w.Smoke.PuffsTested);
+            (lastIx, lastQy, lastLk, lastAsked, lastWorked, lastSummed) = (ix, qy, lk, w.Smoke.Asked, w.Smoke.Worked, w.Smoke.PuffsSummed);
+            long bytes = GC.GetAllocatedBytesForCurrentThread();
+            Console.WriteLine(string.Format(Inv, "           this thread allocated {0:0.0} KB a game s; collections {1} / {2} / {3}",
+                (bytes - lastBytes) / 1024.0 / game, GC.CollectionCount(0) - lastGc[0], GC.CollectionCount(1) - lastGc[1], GC.CollectionCount(2) - lastGc[2]));
+            (lastBytes, lastGc[0], lastGc[1], lastGc[2]) = (bytes, GC.CollectionCount(0), GC.CollectionCount(1), GC.CollectionCount(2));
+        }
+        // one pair worked out again and again, uncached: the query's own cost
+        var store = w.Ships.Store;
+        int o = -1, tg = -1;
+        for (int i = 0; i < store.Slots && tg < 0; i++)
+            for (int j = 0; j < store.Slots && store.IsAlive(i); j++)
+                if (store.IsAlive(j) && store[i].Side != store[j].Side && Earth.Distance(store[i].Position, store[j].Position) < 20_000)
+                {
+                    (o, tg) = (i, j);
+                    break;
+                }
+        if (tg >= 0)
+        {
+            Span<double> tau = stackalloc double[SmokeSystem.PairTaus];
+            long tested0 = w.Smoke.PuffsTested, summed0 = w.Smoke.PuffsSummed;
+            for (int i = 0; i < 1000; i++)
+                w.Smoke.TauUncached(w, o, tg, tau);
+            var sw = Stopwatch.StartNew();
+            const int N = 10_000;
+            for (int i = 0; i < N; i++)
+                w.Smoke.TauUncached(w, o, tg, tau);
+            Console.WriteLine(string.Format(Inv, "  one pair {0:0.0} km apart, uncached: {1:0.00} µs a query, {2:0} puffs tested and {3:0} summed; τ eye 1 to the bands {4:0.000} {5:0.000} {6:0.000}",
+                Earth.Distance(store[o].Position, store[tg].Position) / 1000, sw.Elapsed.TotalMilliseconds * 1000 / N,
+                (double)(w.Smoke.PuffsTested - tested0) / (N + 1000), (double)(w.Smoke.PuffsSummed - summed0) / (N + 1000), tau[0], tau[1], tau[2]));
         }
         return 0;
+
+        long Ticks(string name)
+        {
+            int i = Array.IndexOf(w.Probes.Names, name);
+            return i >= 0 ? w.Probes.Ticks[i] : 0;
+        }
     }
 }

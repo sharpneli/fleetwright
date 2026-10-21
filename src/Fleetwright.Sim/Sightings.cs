@@ -243,6 +243,7 @@ public sealed class Sightings
         double rate = 0, best = 0, fixD = 0, fixBrg = 0, fixSigma = double.MaxValue, fixMargin = 0;
         int fixObs = -1, fixEye = -1;
         bool done = false;
+        Span<double> smoke = stackalloc double[SmokeSystem.PairTaus];
         for (int m = 0; m < found && !done; m++)
         {
             var os = store[slot[nearIdx[m]]];
@@ -258,6 +259,9 @@ public sealed class Sightings
             double aspect = Earth.Bearing(ts.Position, os.Position) - ts.HeadingDeg;
             bool sil = !double.IsNaN(sunBrg) && Math.Abs(Angle(brg - sunBrg)) <= settings.SightSilhouetteArcDeg;
             var line = new SightLine(d, aspect, vis, sunEl, sil);
+            if (world.Smoke.On)
+                world.Smoke.Tau(world, os.Slot, ts.Slot, smoke);   // the smoke on the lines (docs/battle/smoke.md Z2: asked and
+                                                                  // timed; the margin reads it from Z3)
             int tried = 0;
             var works = store.Combat.Condition(slot[nearIdx[m]]).EyeWorks;   // damage: a wrecked post sees nothing
             for (int e = 0; e < eyes.Length && tried < settings.SightEyes && !done; e++)

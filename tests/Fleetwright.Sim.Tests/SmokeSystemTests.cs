@@ -121,15 +121,70 @@ public class SmokeSystemTests(ITestOutputHelper output)
         Assert.Equal(live.ComputeHash(), replay.ComputeHash());
     }
 
+    /// <summary>The column, and an enemy squadron abreast of it some 12 km off, in sight: lines asked every look.</summary>
+    static World Engaged(SimSettings s)
+    {
+        var w = Column(s, 4);
+        int c = w.Ships.AddClass(Fleet.Get("dreadnought").Class!);   // the same class: its id again
+        for (int i = 0; i < 3; i++)
+            w.Apply(ShipSystem.Spawn(c, Lat + 0.11, Lon - 0.01 * i, 90, Kn, 1));
+        return w;
+    }
+
+    [Fact]
+    public void The_index_finds_what_summing_every_puff_finds()
+    {
+        var w = Engaged(On);
+        long t = (w.Time.Ms / On.SmokeIndexMs + 2) * On.SmokeIndexMs + 20 * 60_000;
+        w.AdvanceTo(new WorldTime(t + 1));   // the tick at t has run: the index is the states at t
+        var store = w.Ships.Store;
+        Span<double> got = stackalloc double[SmokeSystem.PairTaus];
+        Span<double> all = stackalloc double[SmokeSystem.PairTaus];
+        int pairs = 0;
+        for (int o = 1; o <= 4; o++)
+            for (int g = 5; g <= 7; g++)
+            {
+                int os = store.SlotOf(o), ts = store.SlotOf(g);
+                w.Smoke.TauUncached(w, os, ts, got);
+                // every puff, its state at t, on the same lines
+                all.Clear();
+                var oc = store[os].Handling.Class;
+                int ne = Math.Min(oc.Eyes.Length, SmokeSystem.PairEyes);
+                var from = new double[ne];
+                for (int e = 0; e < ne; e++)
+                    from[e] = oc.Eyes[e].HeightM;
+                double top = store[ts].Handling.Class.Silhouette.TopM;
+                double[] to = [.. On.SmokeBands.Select(b => b * top)];
+                var a = w.Smoke.Frame.ToAir(store[os].Position.Normalized() * Earth.Radius);
+                var b = w.Smoke.Frame.ToAir(store[ts].Position.Normalized() * Earth.Radius);
+                var line = new SmokeLine(a, b, from[0], to[0], On.SightRefraction);
+                for (int i = 0; i < w.Smoke.Slots; i++)
+                    if (w.Smoke.IsLive(i))
+                    {
+                        var st = SmokeModel.State(w.Smoke.Puff(i), t / 1000.0, AirFrame.Identity, w.Smoke.Air) with { Centre = w.Smoke.Puff(i).Origin };
+                        SmokeModel.TauGrid(line, st, from, to, all[..(ne * to.Length)]);
+                    }
+                for (int j = 0; j < ne * to.Length; j++)
+                {
+                    Assert.True(Math.Abs(got[j] - all[j]) <= 1e-9 * Math.Max(all[j], 1e-6) + 1e-12, $"#{o} on #{g}, line {j}: {got[j]} against {all[j]}");
+                    Assert.True(all[j] < SmokeSystem.SmokeOpaqueTau);   // no early out to tell apart
+                }
+                pairs += all[0] > 0.01 ? 1 : 0;
+            }
+        output.WriteLine($"{pairs} of 12 pairs' lines through smoke; {w.Smoke.Indexed} puffs indexed in {w.Smoke.Chunks} chunks");
+        Assert.True(pairs >= 3, "some lines cross the trails");
+    }
+
     [Fact]
     public void Nothing_allocated_once_grown()
     {
-        var w = Column(On, 6);
+        var w = Engaged(On);
         Run(w, 60);   // grown: the trails' puffs at their steady count
         long before = GC.GetAllocatedBytesForCurrentThread();
         Run(w, 30);
         long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
-        output.WriteLine($"half an hour of six ships smoking: {allocated} bytes, {w.Smoke.Count} puffs");
+        output.WriteLine($"half an hour of seven ships smoking in sight of each other: {allocated} bytes, {w.Smoke.Count} puffs, {w.Smoke.Asked} lines asked");
+        Assert.True(w.Smoke.Worked > 100, "lines worked out");
         Assert.Equal(0, allocated);
     }
 }
