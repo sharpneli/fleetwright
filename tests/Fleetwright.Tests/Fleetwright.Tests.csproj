@@ -5,6 +5,8 @@
     <!-- No background GC, as Fleetwright.Sim.Tests: one started by a test alongside skews another thread's
          GC.GetAllocatedBytesForCurrentThread, and the "allocates nothing" tests fail on garbage nobody made. -->
     <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+    <!-- the GPU checks (SmokeFieldTwinTests) drive SDL_GPU directly -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>

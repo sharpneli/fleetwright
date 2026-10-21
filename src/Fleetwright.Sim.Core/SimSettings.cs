@@ -1926,6 +1926,10 @@ public sealed record SimSettings
     /// research request 3, how fast destroyers laid funnel smoke].</summary>
     public double SmokeScreenM2PerKg { get; init; } = 600;
 
+    /// <summary>How often the field is copied for the drawing, ms of real time (docs/battle/smoke.md Z5: the drawing's
+    /// cadence, never world state; between copies it works each puff out at its own frame's time).</summary>
+    public int SmokeCopyMs { get; init; } = 250;
+
     // ------------------------------------------------------------------ from data
 
     /// <summary>Reads settings from JSON. Strict: an unknown key is an error (a misspelt key would silently keep its

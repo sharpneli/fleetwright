@@ -75,6 +75,9 @@ public struct AirFrame
     public readonly Vec3d ToWorld(Vec3d p) =>
         new(m00 * p.X + m01 * p.Y + m02 * p.Z, m10 * p.X + m11 * p.Y + m12 * p.Z, m20 * p.X + m21 * p.Y + m22 * p.Z);
 
+    /// <summary>The rotation's rows (world = rows · air), for the drawing.</summary>
+    public readonly (Vec3d R0, Vec3d R1, Vec3d R2) Rows => (new(m00, m01, m02), new(m10, m11, m12), new(m20, m21, m22));
+
     public readonly Vec3d ToAir(Vec3d p) =>
         new(m00 * p.X + m10 * p.Y + m20 * p.Z, m01 * p.X + m11 * p.Y + m21 * p.Z, m02 * p.X + m12 * p.Y + m22 * p.Z);
 

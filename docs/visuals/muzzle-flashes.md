@@ -252,6 +252,10 @@ that state, so the smoke system can feed them, take their totals, or leave them 
 
 ## Logged exceptions (approved 2026-10-15)
 
+- **The smoke field's offscreen target** (approved by the user, 2026-10-21; docs/battle/smoke.md Z5), against the
+  restriction above (no new pass, no new target): a half-resolution RGBA16F target with mips and two collapse chains,
+  their passes before the main pass, and a resolve in it. The gun smoke drawn here is untouched by it.
+
 - **Gun smoke drawn by the map alone** (decision 1), against `plan.md`'s "the smoke that's drawn is a look that reads
   that state". It blocks no sight. When the smoke system comes, the puffs may stay as the look over its coarser
   state (the user, 2026-10-15): the exception is then revisited, not simply ended.

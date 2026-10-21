@@ -209,6 +209,38 @@ public class SmokeSystemTests(ITestOutputHelper output)
         Assert.Equal(want, rich / plain, 0.02 * want);
     }
 
+    /// <summary>The drawing's copy (Z5) by decision 3: the player's own smoke always, an enemy's once she's held as a
+    /// contact, everyone's in the dev's truth.</summary>
+    [Fact]
+    public void Enemy_smoke_is_drawn_once_she_is_held()
+    {
+        (int Shown, int Own, int All) Copied(double visibilityM, bool truth)
+        {
+            var w = Engaged(On with { SmokeCopyMs = 0 });
+            w.Apply(Command.SetPlayerSide(0));
+            w.Apply(Command.SetWeather(visibilityM, 225, 4));
+            Run(w, 5);
+            var snap = new Snapshot();
+            w.Fill(snap, truth);
+            snap.SmokeCopies!.Acquire();
+            var c = snap.SmokeCopies.Front;
+            int shown = 0, own = 0;
+            for (int i = 0; i < c.Count; i++)
+                shown += c.Records[i].Shown > 0 ? 1 : 0;
+            for (int i = 0; i < w.Smoke.Slots; i++)
+                own += w.Smoke.IsLive(i) && w.Smoke.EntityOf(i) <= 4 ? 1 : 0;
+            output.WriteLine($"visibility {visibilityM / 1000:F0} km{(truth ? ", truth" : "")}: {shown} of {c.Count} puffs drawn, {own} of them the player's");
+            return (shown, own, c.Count);
+        }
+        var fog = Copied(2_000, false);
+        Assert.Equal(fog.Own, fog.Shown);   // the enemy 12 km off in fog: not held, her smoke not drawn
+        Assert.True(fog.All > fog.Own);
+        var truth = Copied(2_000, true);
+        Assert.Equal(truth.All, truth.Shown);
+        var clear = Copied(25_000, false);
+        Assert.Equal(clear.All, clear.Shown);   // in sight: held, all of it drawn
+    }
+
     [Fact]
     public void The_index_finds_what_summing_every_puff_finds()
     {

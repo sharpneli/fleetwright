@@ -358,6 +358,24 @@ static class SmokeBench
             foreach (var line in Sight(w))
                 Console.WriteLine(line);
         }
+        // the drawing's copy (Z5): a snapshot's fill with it (the first, the field changed) and without (the next, within
+        // the copy's interval), on the sim's thread
+        if (w.Smoke.On)
+        {
+            var snap = new Snapshot();
+            w.Fill(snap);   // warmed: the snapshot's arrays grown, the copy's too
+            w.AdvanceTo(w.Time + 1000);
+            System.Threading.Thread.Sleep(settings.SmokeCopyMs + 50);
+            var sw0 = Stopwatch.StartNew();
+            w.Fill(snap);
+            double with = sw0.Elapsed.TotalMilliseconds;
+            sw0.Restart();
+            w.Fill(snap);
+            double without = sw0.Elapsed.TotalMilliseconds;
+            snap.SmokeCopies!.Acquire();
+            Console.WriteLine(string.Format(Inv, "  the drawing's copy: {0} puffs, {1:0.00} ms on the sim's thread (a fill {2:0.00} ms with it, {3:0.00} without); every {4} ms of real time at most",
+                snap.SmokeCopies.Front.Count, with - without, with, without, settings.SmokeCopyMs));
+        }
         // one pair worked out again and again, uncached: the query's own cost
         var store = w.Ships.Store;
         int o = -1, tg = -1;

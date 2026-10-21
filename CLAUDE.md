@@ -25,7 +25,7 @@ dotnet run --project src/Fleetwright -- -ships=dreadnought:6 -group=1,2,3,4,5,6:
 dotnet run --project src/Fleetwright -- -ships=dreadnought:4:1 -group=1,2,3,4:column:500 -search=1:ladder:10:3:6 -speed=1000   # a search on rails (ladder, square, sector, patrol); :1 the side
 dotnet run --project src/Fleetwright -- -scenario=squadrons [-nopause] [-speed=10]   # two squadrons fight (fire at will, Fight); -nopause: the player's encounters don't pause the clock
 dotnet run --project src/Fleetwright -- -scenario=flotilla -nopause -speed=30   # torpedo boats attack a battle line (docs/battle/fighting.md 4.6)
-dotnet run --project src/Fleetwright -- -ships=destroyer:1:1@56.5,4.05,0,25 -smokefield -smoke=1[:off] -select=1 -map=56.5,4.05,2   # a dev ship makes smoke (docs/battle/smoke.md Z4: her funnels burn rich, drawn so; the strip's "make smoke" toggles it for the selected ship while the field's on); -smokefield turns the smoke field on (settings.json's Smoke stays off)
+dotnet run --project src/Fleetwright -- -ships=destroyer:1:1@56.5,4.05,0,25 -smokefield -smoke=1[:off] -smokelook=gain:1,lift:1 -select=1 -map=56.5,4.05,2   # the smoke field drawn (docs/battle/smoke.md Z5; Map/Smoke/SmokeFieldLook.cs: on, gain, lift, edge, parts (1 accumulate, 2 resolve), levels); a dev ship makes smoke (docs/battle/smoke.md Z4: her funnels burn rich, drawn so; the strip's "make smoke" toggles it for the selected ship while the field's on); -smokefield turns the smoke field on (settings.json's Smoke stays off)
 dotnet run --project src/Fleetwright -- -ships=super_dreadnought:1:0@56.5,4.0,0,0 -ships=destroyer:1:1@56.5,4.04,0,0 -torpedo=2:1:4 -nopause -speed=10 -map=56.5,4.02,2.2   # a dev spread: ship:target[:n], aimed at the truth (the strip's "torpedoes at": right-click a ship)
 dotnet run --project src/Fleetwright -- -scenario=jutland [-map=56.82,4.63,4]   # a scenario (Content/Scenarios; also the world tab's picker, or drop the file on the window): the Jutland, 250 ships
 dotnet run --project src/Fleetwright -- -view=designer                    # the designer on bismarck (any designer flag below opens it too)
@@ -52,6 +52,7 @@ dotnet run --project src/Fleetwright -- -section=2 -designer-ui=secsel:1:2,secme
 dotnet run --project src/Fleetwright -- -section=1 -input=60:click:597,539;80:wheel:1160,559:-1;100:type:150  # scripted clicks, wheel, typing, F:drop:PATH, F:drag:X0,Y0:X1,Y1, F:mclick or F:mright:X,Y (SDL clicks the map gets) (window px; Engine.ScriptedInput)
 dotnet run --project src/Fleetwright -c DevRelease -- -frametimes -screenshot=1100 -input=100:pan:900,500:400,350:80   # frame times at exit; F:pan is a real SDL drag (the map's input)
 dotnet run --project src/Fleetwright -c DevRelease -- -map=56.5,4,2 -gputime -frametimes -screenshot=600   # the scene's GPU time: drawn in a command buffer of its own and waited for (the display's pacing left out)
+FLEETWRIGHT_GPU_DEBUG=1 dotnet run --project src/Fleetwright -- ...   # the GPU device with SDL's debug layer: Vulkan's validation messages on the console (a device lost: run this first)
 ```
 
 The world tab (`Map/`, `docs/battle/plan.md` step 1.2) is first and the default: `WorldSession` owns the world and

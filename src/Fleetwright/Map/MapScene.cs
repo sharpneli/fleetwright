@@ -146,6 +146,7 @@ public sealed unsafe partial class MapScene : IScene
             shipRenderer.Splashes.Book.Count, smokeTrails.Count);
         shipRenderer.List.SetFlashLights(shipRenderer.Flashes.Lights.Block);
         shipRenderer.Smoke.Build(view, shipRenderer.Flashes.Book, world.DrawMs / 1000.0, s.Weather, WorldView.Factor(view), shipRenderer.List.Lights);
+        shipRenderer.Field.Build(view, s, world.DrawMs, WorldView.Factor(view), shipRenderer.List.Lights);
         shipRenderer.Splashes.Build(view, s, world.DrawMs, s.Paused ? 0 : s.AchievedSpeed, dt, selected, WorldView.Factor(view), shipRenderer.List.Lights);
         shipRenderer.Torpedoes.Build(view, torpedoBook, Torpedoes.TorpedoLook.DrawMs(torpedoBook, world.DrawMs), WorldView.Factor(view),
             shipRenderer.List.Lights, classOf);

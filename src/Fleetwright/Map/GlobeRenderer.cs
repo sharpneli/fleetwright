@@ -223,6 +223,7 @@ public sealed unsafe class GlobeRenderer : IDisposable
         overlayBuf.Upload(cmd, over);
         layer?.Copy(cmd);
         fillBuf.Upload(cmd, landFill);
+        layer?.Prepass(cmd, target);
         bool baked = bakedLevel is 0 or 1 && meshFill[bakedLevel] != null;
         var seaU = sea != null && sea.World > 0 ? sea.Uniforms : default;
         if (seaU.On.X > 0)
@@ -380,6 +381,8 @@ public sealed unsafe class GlobeRenderer : IDisposable
 public unsafe interface IMapLayer
 {
     void Copy(SDL_GPUCommandBuffer* cmd);
+    /// <summary>Passes of its own before the main pass (the smoke field's accumulation, docs/battle/smoke.md Z5).</summary>
+    void Prepass(SDL_GPUCommandBuffer* cmd, RenderTarget target);
     void DrawWake(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass, RenderTarget target, in MapView view);
     void Draw(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass, RenderTarget target, in MapView view);
 }

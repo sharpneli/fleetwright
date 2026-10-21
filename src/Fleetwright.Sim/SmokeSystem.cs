@@ -71,6 +71,7 @@ public sealed partial class SmokeSystem : IWorldSystem
     {
         public int Entity, Oldest, Newest, Puffs;
         public SourceKind Kind;
+        public byte Side;
         public long LastMs, PlumeMs;
         public bool Active, Gone;
         public double Gain, Rate, BaseM, Rise, RiseS, X, Y, Spread2;
@@ -90,12 +91,20 @@ public sealed partial class SmokeSystem : IWorldSystem
     struct Wreck
     {
         public int Entity;
+        public byte Side;
         public Vec3d At;
         public long FromMs, LastMs;
         public double RateM2s, DeckZ, K;
     }
 
     static long KeyOf(int entity, SourceKind kind) => (long)entity << 8 | (byte)kind;
+
+    // the drawing's copies (Z5): made in Fill when the field has changed and the last is a copy's interval old (real
+    // time: the drawing's cadence, never world state)
+    readonly TripleBuffer<SmokeCopy> copies = new(() => new SmokeCopy());
+    readonly HashSet<int> held = new(64);
+    int version, copied = -1, copyVersion;
+    long nextCopyTicks;
 
     AirFrame frame = AirFrame.Identity;
     Vec3d frameAt;
@@ -162,6 +171,7 @@ public sealed partial class SmokeSystem : IWorldSystem
     /// snapshot's ships, for the drawing.</summary>
     public void Fill(Snapshot s)
     {
+        Copy(s);
         foreach (var v in (ReadOnlySpan<ShipsView>)[s.Ships, s.Sighted])
             for (int n = 0; n < v.Count; n++)
             {
@@ -169,6 +179,58 @@ public sealed partial class SmokeSystem : IWorldSystem
                 v.SmokeGain[n] = screens.Count > 0 && sourceOf.TryGetValue(KeyOf(v.Entity[n], SourceKind.Funnels), out int k) && sources[k].Gain > 1
                     ? (float)sources[k].Gain : 1;
             }
+    }
+
+    /// <summary>The field into the drawing's next copy (docs/battle/smoke.md Z5), when it has changed since the last and
+    /// that's a copy's interval old: every puff's record from the copy's anchor, the air's frame and its drift, and the
+    /// drawing rule (decision 3) by trail: own, allied and peaceful sides' smoke always, an enemy's once her maker is held
+    /// as a contact (or the dev's truth). Allocates only to grow.</summary>
+    void Copy(Snapshot s)
+    {
+        s.SmokeCopies = settings.Smoke ? copies : null;
+        if (!settings.Smoke || version == copied)
+            return;
+        long ticks = System.Diagnostics.Stopwatch.GetTimestamp();
+        if (ticks < nextCopyTicks)
+            return;
+        (copied, nextCopyTicks) = (version, ticks + settings.SmokeCopyMs * System.Diagnostics.Stopwatch.Frequency / 1000);
+        held.Clear();
+        for (int i = 0; i < s.Contacts.Count; i++)
+            held.Add(s.Contacts.Entity[i]);
+        var c = copies.Back;
+        c.Ensure(live);
+        (c.Version, c.CopiedMs, c.Frame, c.FrameMs, c.FrameAt) = (++copyVersion, s.Time.Ms, frame, frameMs, frameAt);
+        (c.WindToDeg, c.DriftMs, c.SigmaV, c.LagrangianH) = (air.WindToDeg, air.DriftMs, air.SigmaV, air.LagrangianH);
+        int n = 0;
+        double copiedS = s.Time.Ms / 1000.0, minH2 = double.MaxValue, maxH2 = 0;
+        var anchor = Vec3d.Zero;
+        for (int k = 0; k < sources.Count; k++)
+        {
+            var src = sources[k];
+            float shown = s.Truth || s.ShownSides[src.Side] || held.Contains(src.Entity) ? 1 : 0;
+            for (int i = src.Oldest; i >= 0; i = next[i])
+            {
+                ref readonly var p = ref puffs[i];
+                if (n == 0)
+                    anchor = p.Origin;
+                var d = p.Origin - anchor;
+                double settled = p.Z0 + p.Rise;
+                ref var r = ref c.Records[n++];
+                (r.X, r.Y, r.Z, r.Born) = ((float)d.X, (float)d.Y, (float)d.Z, (float)(p.Born - copiedS));
+                (r.Z0, r.Rise, r.RiseS, r.A0) = (p.Z0, p.Rise, p.RiseS, p.A0);
+                (r.S0h2, r.S0z2) = (p.S0h2, p.S0z2);
+                // as SmokeModel.State: a puff's own turbulence up, else the air's at its settled height
+                (r.SigmaW, r.LagrangianW) = p.SigmaW > 0 ? (p.SigmaW, p.LagrangianW) : ((float)air.SigmaW(settled), (float)air.LagrangianW(settled));
+                (r.LifeS, r.Tint, r.Shown, r.Spare) = (p.LifeS, (float)p.Tint, shown, 0);
+                if (shown > 0)
+                {
+                    SmokeModel.Plan(p, copiedS, frame, air, out _, out double h2, out _, out _);
+                    (minH2, maxH2) = (Math.Min(minH2, h2), Math.Max(maxH2, h2));
+                }
+            }
+        }
+        (c.Count, c.Anchor, c.MinH2, c.MaxH2) = (n, anchor, minH2 == double.MaxValue ? 0 : minH2, maxH2);
+        copies.Publish();
     }
 
     /// <summary>The ticks start when a ship is off rails (and stop when no trail is left).</summary>
@@ -230,6 +292,7 @@ public sealed partial class SmokeSystem : IWorldSystem
                 Walk(k, t / 1000.0, over ? 2 * settings.SmokeMergeSigma : settings.SmokeMergeSigma);
         Forget();
         Index(t);
+        version++;
         if (smoking || live > 0 || wrecks.Count > 0)
             Schedule(world);
     }
@@ -253,7 +316,7 @@ public sealed partial class SmokeSystem : IWorldSystem
         FireSmoke(world, s, ship, pos, fwd, (wind - vShip).Length, t, step);
         if (c.Funnels.Length == 0)
             return true;
-        int k = SourceOf(ship.Entity, SourceKind.Funnels, t, out bool fresh);
+        int k = SourceOf(ship.Entity, ship.Side, SourceKind.Funnels, t, out bool fresh);
         var src = sources[k];
         src.Active = true;
         if (fresh || t - src.PlumeMs >= settings.SmokePlumeMs)
@@ -355,7 +418,7 @@ public sealed partial class SmokeSystem : IWorldSystem
             }
         if (!(rate > 0) && !had)
             return;
-        fk = SourceOf(ship.Entity, SourceKind.Fires, t, out bool fresh);
+        fk = SourceOf(ship.Entity, ship.Side, SourceKind.Fires, t, out bool fresh);
         var src = sources[fk];
         long last = fresh ? t - step : Math.Max(src.LastMs, t - step * (long)settings.SmokePuffsPerTick);
         (src.Active, src.LastMs) = (true, t);
@@ -384,9 +447,11 @@ public sealed partial class SmokeSystem : IWorldSystem
         long now = world.Time.Ms;
         double height = muzzle.Length - Earth.Radius;
         var at = muzzle + forward * (cls.TurretTypes[cls.Mounts[mount].Type].TipM + g.AlongM);
-        int k = SourceOf(world.Ships.Store[slot].Entity, SourceKind.Guns, now, out _);
+        var shooter = world.Ships.Store[slot];
+        int k = SourceOf(shooter.Entity, shooter.Side, SourceKind.Guns, now, out _);
         Add(k, SmokeModel.Born(Unwind(at, now), now / 1000.0, frame, height + g.UpM, g.RiseM, g.RiseS, g.SigmaM, g.SigmaM, g.AreaM2, 0,
             SmokeTint.Powder, air));
+        version++;
         if (!scheduled)
             Schedule(world);
     }
@@ -404,10 +469,13 @@ public sealed partial class SmokeSystem : IWorldSystem
         var side = Vec3d.Cross(b.Forward, b.At.Normalized()).Normalized();
         var at = b.At + b.Forward * ev.X + side * ev.Y;
         long now = world.Time.Ms;
-        int k = SourceOf(b.Ship, SourceKind.Burst, now, out _);
+        int bs = world.Ships.Store.SlotOf(b.Ship);
+        byte makerSide = bs >= 0 ? world.Ships.Store[bs].Side : (byte)0;
+        int k = SourceOf(b.Ship, makerSide, SourceKind.Burst, now, out _);
         Add(k, SmokeModel.Born(Unwind(at, now), now / 1000.0, frame, ev.DeckZ + upM, riseM, riseS, sigma, sigma, area, 0, SmokeTint.Fire, air));
         double scale = Math.Max(0.25, MagazineBlast.Fireball(mass).D / MagazineBlast.ReferenceD);
-        wrecks.Add(new Wreck { Entity = b.Ship, At = at, FromMs = now, LastMs = now, RateM2s = SmokeSources.WreckSmokeM2s * scale * scale, DeckZ = ev.DeckZ, K = scale });
+        version++;
+        wrecks.Add(new Wreck { Entity = b.Ship, Side = makerSide, At = at, FromMs = now, LastMs = now, RateM2s = SmokeSources.WreckSmokeM2s * scale * scale, DeckZ = ev.DeckZ, K = scale });
         if (!scheduled)
             Schedule(world);
     }
@@ -425,7 +493,7 @@ public sealed partial class SmokeSystem : IWorldSystem
             {
                 double a = w.RateM2s * SmokeSources.WreckSmokeFadeS * (Math.Exp(-(w.LastMs - w.FromMs) / fade) - Math.Exp(-(end - w.FromMs) / fade));
                 double sk = Math.Sqrt(w.K), mid = (w.LastMs + end) / 2000.0;
-                int k = SourceOf(w.Entity, SourceKind.Burst, t, out _);
+                int k = SourceOf(w.Entity, w.Side, SourceKind.Burst, t, out _);
                 Add(k, SmokeModel.Born(Unwind(w.At, (long)(mid * 1000)), mid, frame, w.DeckZ + 10, 18 * sk, 3 + 1.5 * sk, 10 * sk, 10 * sk, a, 0,
                     SmokeTint.Fire, air));
                 var src = sources[k];
@@ -476,7 +544,7 @@ public sealed partial class SmokeSystem : IWorldSystem
         }
     }
 
-    int SourceOf(int entity, SourceKind kind, long t, out bool fresh)
+    int SourceOf(int entity, byte side, SourceKind kind, long t, out bool fresh)
     {
         long key = KeyOf(entity, kind);
         if (sourceOf.TryGetValue(key, out int k))
@@ -491,7 +559,7 @@ public sealed partial class SmokeSystem : IWorldSystem
             return k;
         }
         fresh = true;
-        sources.Add(new Source { Entity = entity, Kind = kind, Oldest = -1, Newest = -1, LastMs = t });
+        sources.Add(new Source { Entity = entity, Side = side, Kind = kind, Oldest = -1, Newest = -1, LastMs = t });
         sourceOf[key] = sources.Count - 1;
         return sources.Count - 1;
     }
@@ -628,6 +696,7 @@ public sealed partial class SmokeSystem : IWorldSystem
         {
             h.Add(s.Entity);
             h.Add((int)s.Kind);
+            h.Add(s.Side);
             h.Add(s.Oldest);
             h.Add(s.Newest);
             h.Add(s.Puffs);

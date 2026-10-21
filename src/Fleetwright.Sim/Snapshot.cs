@@ -43,6 +43,10 @@ public sealed class Snapshot
     /// <summary>Every ship at sea.</summary>
     public ShipsView Ships { get; } = new();
 
+    /// <summary>The smoke field's copies for the drawing (docs/battle/smoke.md Z5), taken with their own
+    /// <see cref="TripleBuffer{T}.Acquire"/> (a copy outlives the snapshots); null while the field is off.</summary>
+    public TripleBuffer<SmokeCopy>? SmokeCopies { get; set; }
+
     /// <summary>Every group.</summary>
     public GroupsView Groups { get; } = new();
 

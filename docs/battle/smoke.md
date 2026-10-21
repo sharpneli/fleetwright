@@ -1,7 +1,8 @@
 # Plan: the smoke field (a feasibility study)
 Status: **drafted 2026-10-20**, decisions 1-4 from the user ("Decided" below); weather's one optical depth proposed (its
 first part built with Z3); Z0 (the model and the facts), Z1 (the store), Z2 (the query; gate 1 passed) and Z3 (sight and
-fire control read it) and Z4 (the other sources) done 2026-10-21, decisions 5-9    Updated: 2026-10-21
+fire control read it) and Z4 (the other sources) done 2026-10-21, decisions 5-9; Z5 (the drawing) built 2026-10-21, gate 2 the
+user's    Updated: 2026-10-21
 
 Smoke as sim state that sight reads, and the same state drawn. The research is `research/vfx/unified-smoke-system.md`
 (Lagrangian Gaussian puffs as the one store, every grid a throw-away view of them), on top of
@@ -676,12 +677,71 @@ clears; the same world at any fine speed and a replay, now with every source goi
   a game second, **0.72 in all against 0.8**; at 2½ h 0.73. The gun puffs cost little: a few a minute a ship, merged
   along her guns' trail.
 
-### Z5 The drawing (gate 2)
-- The snapshot's copy, the shader's twin, the accumulation and resolve; the table's wash and the world view's plain look;
-  the drawing rule.
-- Captures beside the stylised plumes (`-screenshot`, never desktop grabs); `-gputime` at theatre and ship zooms.
-- **Gate 2:** the user looks and picks the world view's look (decision 2), and whether the 2026-10-19 decision is
-  reverted.
+### Z5 The drawing (gate 2; built 2026-10-21, the look the user's)
+
+**The pipeline exception, approved** (the user, 2026-10-21): an offscreen half-resolution RGBA16F target with mips, its
+accumulation and collapse passes before the main pass and a resolve in it. Logged in muzzle-flashes.md's exceptions.
+
+**Built** (`Map/Smoke/SmokeFieldRenderer.cs`, `SmokeFieldLook.cs`; `Fleetwright.Sim/SmokeCopy.cs`; shaders `smokefield`,
+`smokecollapse`, `smokeresolve`, `smokestate.comp`, `Include/smokefield.glsl`):
+
+- **The copy:** the sim's thread copies every puff (`SmokeRecord`, 64 bytes: its offset from an anchor in the air's
+  frame, its birth, rise, spreads, area, decay, tint and the drawing rule's flag) when the field has changed and the
+  last copy is `SmokeCopyMs` (250 ms) of real time old, into a triple buffer of its own (a copy outlives the
+  snapshots). Not every fill: 43k puffs at Jutland take 1.85 ms on the sim's thread, at most four times a real second.
+  The air's frame and its drift go with it.
+- **Exact between copies:** a puff's state is closed form in its age and the air's frame a rotation at a steady rate,
+  so the render thread carries the frame on to its own frame's time (`SmokeCopy.FrameAtMs`) and the vertex shader works
+  each puff out there (`smokefield.glsl`, the GLSL twin of `SmokeModel.State`). Only a puff laid since the copy shows
+  late, by at most a quarter of a second of real time.
+- **The accumulation:** each puff one quad into the level where its σ is 1.5 to 3 texels (never under a level-0 texel:
+  a smaller one is widened, its area kept), reaching out to a column τ of 0.005, adding τ and τ × its tint (a plain sum,
+  Beer-Lambert's, no sorting). Only the levels the puffs fall in this frame are drawn (the copy carries its least and
+  greatest σ, the greatest carried on by the turbulence's growth): three at theatre zoom, six or seven close in.
+- **The collapse:** top down at half resolution, each level its own texels plus the B-spline bicubic of the collapsed
+  level above, in two chains taken in turn (a pass never reads the texture it draws), so the full-resolution resolve
+  reads one level, not every one. (Summing every level per pixel cost spikes of 5 ms at ship zoom.)
+- **The resolve,** in the main pass after the magazines' clouds and before the flashes: α = 1 − e^(−τ), the tint the
+  depth-weighted mean, lit as the gun smoke is (the sky's and the sea's ambient, the sun and the moon on a dome seen from
+  above), premultiplied.
+- **Two looks on one τ:** on the table it lies flat; in the world view each puff is lifted its height up the screen (the
+  effects camera's tan 45°, by the world view's share). Plain: no noise, no lit edge, no shadows yet.
+- **The drawing rule** (decision 3): a flag a trail at the copy: the player's and allied or peaceful sides' smoke always,
+  an enemy's once her maker is held as a contact, everyone's in the dev's truth. The open item stands: smoke laid
+  before she was seen shows once she is, and goes when she's forgotten.
+- **Knobs** `-smokelook=on,gain,lift,edge,parts,levels` for side-by-side captures; the stylised plumes go off with
+  `-funnels=on:0 -flash=parts:7 -fires=parts:3` and the field with `-smokelook=on:0`. `-smokefield` turns the field on
+  in the game. `FLEETWRIGHT_GPU_DEBUG=1` creates the GPU device with SDL's debug layer (Vulkan's validation when
+  installed): it found the build's one device loss (a storage buffer declared to SDL as a storage texture).
+
+**Tests:** the shader works a puff out as the sim does (`SmokeFieldTwinTests`, on the GPU: 500 puffs from every
+source, 37.5 s after the copy, within 2e-7 of `SmokeModel.State`), enemy smoke drawn once she's held (in fog not, in
+sight and in truth all), and the copy carries every puff. Smoke off: the hash as before.
+
+**The cost** (DevRelease, 1440p, 8x MSAA, `-gputime`, 250 dreadnoughts with their trails, 1x so the runs match; three
+runs each, the field on against off, p50): about +0.1 to +0.3 ms GPU at 40, 10 and 1.5 m/px against the 0.3 ms budget,
+no spikes left (the p95 within 0.3 ms of off). The render thread's CPU: the frame's view a few microseconds, the copy's
+upload (2.7 MB at Jutland) at most four times a second. 19 MB of targets at 1440p (the accumulation and two collapse
+chains).
+
+**The captures for gate 2** (a fight of three dreadnoughts a side 11 km apart, a destroyer of one side screening, the
+wind from the west, 8x, so the stylised plumes' clock and the world's agree):
+`world-field` (the field alone), `world-plumes` (the stylised plumes alone), `world-both`, `table-field`,
+`table-plumes`, at 1.5 and 15 m/px. What they show:
+
+- **The gun smoke agrees in place:** the field's puffs sit where the stylised ones do (carried along the bore, drifting
+  with the wind). Plain, they're smooth white discs; the stylised ones billow.
+- **The funnels' smoke is the field's to show:** the stylised plumes live 8 s (2026-10-19); the field's trails reach
+  kilometres downwind, lifted, thinning with age. On the table the stylised smoke fades out by design, so there the
+  field is the only picture of the smoke: each fleet's trails as grey bands.
+- **Beads:** a trail's older stretches show as beads where they were laid in long pieces (the backfill's, a coarse
+  tick's) and haven't merged yet: a puff stands for a stretch, the drawing shows a Gaussian. Smoothing them is a
+  drawing matter (stretching a quad along its trail) or the store's (narrower pieces), for after the gate.
+- **A screen stops when its ship goes on rails** (outside any encounter): smoke is laid off rails only.
+
+**Gate 2, the user's call:** the world view's look (decision 2: the field alone, the stylised plumes over it, or the
+plumes for the head only, the young smoke near the ships, and the field for the rest), and whether the 2026-10-19
+decision (no simulated smoke in the first game) is reverted.
 
 ### Z6 Smoke contacts
 - The plume summaries, `ContactLevel.Smoke`, the bearing fix, the reach; the map draws a smoke contact as a bearing

@@ -249,6 +249,12 @@ public static unsafe class Program
             {
                 Map.WorldSession.SmokeField = true;
             }
+            else if (arg.StartsWith("-smokelook="))   // the smoke field's drawing's knobs (docs/battle/smoke.md Z5; Map/Smoke/SmokeFieldLook.cs)
+            {
+                foreach (var kv in arg.Substring("-smokelook=".Length).Split(','))
+                    if (!Map.Smoke.SmokeFieldLook.Set(kv))
+                        Console.Error.WriteLine($"Bad -smokelook knob: {kv} (have {Map.Smoke.SmokeFieldLook.Knobs})");
+            }
             else if (arg.StartsWith("-smoke="))   // a dev ship makes smoke: -smoke=ship[:on|off] (docs/battle/smoke.md Z4; the field's on in settings.json)
             {
                 screens.Add(arg.Substring("-smoke=".Length));

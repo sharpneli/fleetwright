@@ -708,6 +708,10 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
     /// <summary>The torpedoes under the water (docs/visuals/torpedoes.md R3).</summary>
     public TorpedoRenderer Torpedoes { get; }
 
+    /// <summary>The smoke field (docs/battle/smoke.md Z5), accumulated before the main pass and laid over the scene after
+    /// the magazines' clouds.</summary>
+    public Smoke.SmokeFieldRenderer Field { get; }
+
     /// <summary>The sea's clock, s (SeaView.ClockS), set by the scene each frame: the foam churns on it.</summary>
     public double FoamClockS { get; set; }
 
@@ -743,6 +747,7 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
         Magazines = new MagazineRenderer(device, Splashes.Book);
         List.Thrown = Magazines.Book;
         Torpedoes = new TorpedoRenderer(device);
+        Field = new Smoke.SmokeFieldRenderer(device);
     }
 
     /// <summary>The icon: a hull's plan 128 x 32, bow to the right (+x), a fine bow and a rounded stern.</summary>
@@ -824,6 +829,7 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
         Smoke.Copy(cmd);
         Magazines.Copy(cmd);
         Torpedoes.Copy(cmd);
+        Field.Copy(cmd);
         var fv = Foam.Vertices;
         foamUploaded = Math.Min(fv.Length, (int)(FoamBufferBytes / FoamVertex.SizeInBytes));
         foamUploaded -= foamUploaded % 6;
@@ -846,8 +852,11 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
         Splashes.DrawColumns(cmd, pass, target, view);
         Smoke.Draw(cmd, pass, target, view);
         Magazines.Draw(cmd, pass, target, view);
+        Field.Draw(cmd, pass, target);
         Flashes.Draw(cmd, pass, target, view);
     }
+
+    public void Prepass(SDL_GPUCommandBuffer* cmd, RenderTarget target) => Field.Prepass(cmd, target);
 
     void DrawShips(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass, RenderTarget target, in MapView view)
     {
@@ -979,6 +988,7 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
         Flashes.Dispose();
         Blasts.Dispose();
         Smoke.Dispose();
+        Field.Dispose();
         Magazines.Dispose();
         Torpedoes.Dispose();
         SDL_WaitForGPUIdle(device);

@@ -178,6 +178,22 @@ public unsafe class GpuPipelineBuilder
     /// <summary>
     /// Enables additive blending (src + dst).
     /// </summary>
+    /// <summary>
+    /// Enables a plain sum (src + dst, colour and alpha alike): quantities added up in a float target, such as the smoke
+    /// field's optical depths.
+    /// </summary>
+    public GpuPipelineBuilder EnableBlendingSum()
+    {
+        _blendEnabled = true;
+        _srcColorBlendFactor = SDL_GPUBlendFactor.SDL_GPU_BLENDFACTOR_ONE;
+        _dstColorBlendFactor = SDL_GPUBlendFactor.SDL_GPU_BLENDFACTOR_ONE;
+        _colorBlendOp = SDL_GPUBlendOp.SDL_GPU_BLENDOP_ADD;
+        _srcAlphaBlendFactor = SDL_GPUBlendFactor.SDL_GPU_BLENDFACTOR_ONE;
+        _dstAlphaBlendFactor = SDL_GPUBlendFactor.SDL_GPU_BLENDFACTOR_ONE;
+        _alphaBlendOp = SDL_GPUBlendOp.SDL_GPU_BLENDOP_ADD;
+        return this;
+    }
+
     public GpuPipelineBuilder EnableBlendingAdditive()
     {
         _blendEnabled = true;

@@ -763,5 +763,6 @@
   "SmokeRefreshMs": 15000,
   "SmokePairKeepMs": 60000,
   "SmokeScreenM2PerKg": 600,
+  "SmokeCopyMs": 250,
   "SmokeBands": [0.2, 0.5, 0.85]
 }

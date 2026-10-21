@@ -561,7 +561,7 @@ public unsafe class Sdl3GpuEngine : IDisposable
     {
         _device = SDL_CreateGPUDevice(
             SDL_GPUShaderFormat.SDL_GPU_SHADERFORMAT_SPIRV,
-            false,  // debug mode
+            Environment.GetEnvironmentVariable("FLEETWRIGHT_GPU_DEBUG") == "1",  // debug mode (validation layers, when installed)
             (byte*)null
         );
 
