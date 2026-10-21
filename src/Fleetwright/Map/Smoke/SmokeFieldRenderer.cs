@@ -60,7 +60,11 @@ public sealed unsafe class SmokeFieldRenderer : IDisposable
     {
         public Vector4 Right, Up, Fwd, Depth, East, North, M0, M1, M2, Anchor, Wind;
         public EddyModes Eddies;
+        public Vector4 GrainE, GrainN, GrainO;
     }
+
+    /// <summary>The grain's lattice period, m (smokefield.frag's GRAIN_PERIOD).</summary>
+    const double GrainPeriodM = 65536;
 
     /// <summary>The large eddies' modes as smokefield.glsl's fieldEddy reads them (Z5c): k and A, then d and the phase.</summary>
     [System.Runtime.CompilerServices.InlineArray(2 * SmokeEddies.Modes)]
@@ -165,6 +169,14 @@ public sealed unsafe class SmokeFieldRenderer : IDisposable
             Wind = new Vector4(F(Earth.Forward(frame.ToWorld(copy.Anchor), copy.WindToDeg)), 0),
             Eddies = Eddies(copy.Eddies, copy.Anchor, drawMs / 1000.0),
         };
+        // the grain's plane (Z5d): fixed in the air's frame, the large eddies' (the sea's plane where the field began),
+        // the anchor's place on it wrapped in double so the grain stays put from copy to copy
+        var gu = copy.Eddies?.Up ?? copy.Frame.ToAir(copy.FrameAt).Normalized();
+        var ge = Vec3d.Cross(Math.Abs(gu.Z) < 0.9 ? new Vec3d(0, 0, 1) : new Vec3d(1, 0, 0), gu).Normalized();
+        var gn = Vec3d.Cross(gu, ge);
+        view.GrainE = new Vector4(F(ge), (float)SmokeFieldLook.Grain);
+        view.GrainN = new Vector4(F(gn), 0);
+        view.GrainO = new Vector4((float)Wrap(Vec3d.Dot(copy.Anchor, ge)), (float)Wrap(Vec3d.Dot(copy.Anchor, gn)), 0, 0);
         var (east, north, up) = (v.Right, v.Up, (-v.Forward).Normalized());
         Vector3 Local(Vec3d d) => new((float)Vec3d.Dot(d, east), (float)Vec3d.Dot(d, north), (float)Vec3d.Dot(d, up));
         prms = new Params { SunL = new Vector4(Local(lights.SunDir), 0), MoonL = new Vector4(Local(lights.MoonDir), 0) };
@@ -299,6 +311,8 @@ public sealed unsafe class SmokeFieldRenderer : IDisposable
     }
 
     static Vector3 F(Vec3d a) => new((float)a.X, (float)a.Y, (float)a.Z);
+
+    static double Wrap(double m) => m - Math.Floor(m / GrainPeriodM) * GrainPeriodM;
 
     public void Dispose()
     {

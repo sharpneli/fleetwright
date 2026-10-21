@@ -859,6 +859,20 @@ smokefield.glsl's `fieldEddy`, its phases from k·anchor in double on the CPU). 
   cosines a puff each time) cost twice that. Merging across trails matters more now: without it, 36,800 puffs (the eddies
   bring trails together). Walking the trails every minute instead of 30 s saved little and held more puffs.
 
+**Z5d built** (2026-10-21): in the accumulation (smokefield.frag), each puff's τ times 1 + g·n, n value noise on a
+plane fixed in the air's frame (the large eddies' plane; the anchor's place on it wrapped in double to a 64 km period,
+so the grain stays put from copy to copy and never swims as the view moves), three octaves round the puff's own short σ
+(8 m and up, doubling; weighted in the vertex shader by their distance from it in octaves, so the grain coarsens
+smoothly as the puff grows and doesn't change with the zoom). `-smokelook=grain:G` (0.6; 0 plain). The mean τ holds
+(clipped at 0 only where g·n < −1).
+
+- **The look:** the gun smoke's discs get billowed edges; the trails break into clumps and patches on the table and in
+  the world view, over the eddies' snaking.
+- **The cost:** within the run-to-run noise on a shared machine (1440p, 8x MSAA, `-gputime`, p50 1.54 → 1.56 ms at
+  1.5 m/px). The first version (four octaves, their weights and an integer modulo per fragment) cost +0.9 ms close in.
+- **Still the plain look's:** no lit edge, no shadows (the VFX pass); the grain doesn't evolve in time (the puffs move
+  through it at the eddies' and the height's drift, ≤ 1 m/s).
+
 **For the user:** merging across trails only within a side is an exception to decision 11 (the drawing rule is a
 trail's; own smoke merged into an enemy's unseen trail would vanish from the player's map).
 

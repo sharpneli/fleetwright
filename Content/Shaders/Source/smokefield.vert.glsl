@@ -26,10 +26,15 @@ layout(set = 1, binding = 0) uniform View
     vec4 wind;     // xyz: the way the wind blows at the view's centre
     vec4 eddyK[FIELD_EDDY_MODES];   // the large eddies' modes (smokefield.glsl's fieldEddy)
     vec4 eddyD[FIELD_EDDY_MODES];
+    vec4 grainE;   // the grain's plane in the air's frame (Z5d): xyz its first axis; w: the gain (0 none)
+    vec4 grainN;   // xyz: its second axis
+    vec4 grainO;   // xy: the anchor's place on it, m, wrapped to the grain's period
 };
 
 layout(location = 0) out vec2 fragLoc;
 layout(location = 1) flat out vec4 fragPuff;   // x: the peak column depth; y: 1 / (2 sigma_long^2); z: the tint; w: 1 / (2 sigma_short^2)
+layout(location = 2) out vec2 fragGrain;            // its place on the grain's plane (Z5d)
+layout(location = 3) flat out vec4 fragGrainInfo;   // the grain's three octaves' weights (its gain in them); the first's cell, m
 
 void main()
 {
@@ -66,4 +71,14 @@ void main()
     gl_Position = vec4(dot(r, right.xyz) / right.w, dot(r, up.xyz) / up.w, depth.y * (d - depth.x) / (depth.y - depth.x), d);
     fragLoc = loc;
     fragPuff = vec4(peak, 0.5 / (sl * sl), p.misc.y, 0.5 / (s * s));
+    // the corner's place on the sea back in the air's frame (unlifted), onto the grain's plane
+    vec3 w = east.xyz * plane.x + north.xyz * plane.y;
+    vec3 airAt = at + m0.xyz * w.x + m1.xyz * w.y + m2.xyz * w.z;
+    fragGrain = vec2(dot(airAt, grainE.xyz), dot(airAt, grainN.xyz)) + grainO.xy;
+    // its three octaves round its own short sigma, weighted by their distance from it in octaves (smoothly as it grows)
+    float centre = log2(max(sqrt(max(h2, 0.0)), 1.0) / GRAIN_FINEST);
+    int j0 = clamp(int(floor(centre)) - 1, 0, GRAIN_OCTAVES - 3);
+    vec3 off = vec3(float(j0), float(j0 + 1), float(j0 + 2)) - centre;
+    vec3 wt = exp(-0.78 * off * off);
+    fragGrainInfo = vec4(grainE.w * wt * inversesqrt(max(dot(wt, wt), 1e-6)), GRAIN_FINEST * exp2(float(j0)));
 }

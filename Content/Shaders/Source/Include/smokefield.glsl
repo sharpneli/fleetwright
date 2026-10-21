@@ -13,6 +13,12 @@ struct FieldPuff
     vec4 key;      // xyz: where it samples the large eddies, m from the copy's anchor in the air's frame; w: its share (Z5c)
 };
 
+// the grain's lattice (Z5d): it wraps every GRAIN_PERIOD metres (a power of two, so every octave tiles: the CPU wraps the
+// anchor), its octaves GRAIN_FINEST m and up, doubling
+#define GRAIN_PERIOD 65536.0
+#define GRAIN_FINEST 8.0
+#define GRAIN_OCTAVES 11
+
 // the large eddies' modes (Z5c, Fleetwright.Sim.Combat.SmokeEddies)
 #define FIELD_EDDY_MODES 8
 

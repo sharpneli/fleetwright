@@ -12,6 +12,18 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: (comparison, recommendation, API notes, plan...)
 -->
 
+### 2026-10-21 - Plume meander over the sea: the large eddies
+- Question: how far and how fast a smoke plume meanders over the open sea from eddies larger than the plume itself
+  (boundary-layer and mesoscale, ~1-15 km), against its own (relative) spread. (1) Instantaneous against time-averaged
+  plume width at 1-30 km downwind (Gifford's meandering-plume model, over-water dispersion trials, offshore stack or
+  ship-plume studies, satellite ship tracks); (2) the meander's displacement and speed by wind and stability; (3) the
+  eddies' wavelengths and lifetimes over the sea; (4) photographs or accounts of trails at sea, 1890-1925 (straight,
+  snaking, broken into clumps?).
+- Context / relevant files: `docs/battle/smoke.md` Z5c (the large eddies, decision 10: the sim's, so sight reads the
+  gaps), `SmokeEddies` in `src/Fleetwright.Sim.Combat/SmokeModel.cs` [EST: eight waves 1.5-12 km, strain 0.1 a mode,
+  turning over at 2 m/s: ~20 m off in a minute, ~430 m in an hour in 8 m/s neutral air]. Not blocking.
+- Wanted output: ranges by wind and stability for the meander's size, speed and scales, with sources.
+
 ### 2026-10-20 - Smoke in the record, 1890-1925
 - Question: smoke as numbers the sim's smoke field can be checked against. (1) Funnel smoke by plant and fuel (coal
   under natural and forced draught, oil, mixed firing): how dark, how high it rose, how long and wide trails lay in a
