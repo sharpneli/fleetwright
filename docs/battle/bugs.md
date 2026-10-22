@@ -7,6 +7,11 @@ add what's found.
 
 ## Flaky tests
 
+- [ ] `RailsTests.Two_thousand_ships_steam_a_year_in_seconds` (a 60 s bound) fails in every full run of all three test
+  projects together (2026-10-22: 64-78 s) and passes alone in ~33 s, the same before and after smoke Z6 (32.8 against
+  33.0 s alone). Load, not a regression: `dotnet test` runs the projects in parallel. To settle it: the bound against
+  the suite run alone, or the test marked to run without the others.
+
 - [ ] `OrderPathTests.Two_thousand_ships_on_plain_orders_cost_the_AI_nothing` failed once in four full runs of
   `Fleetwright.Sim.Tests` (Release, 2026-10-13, during terrain plan S3), and passes on its own. The failure message
   wasn't caught. It's one of the allocation tests (`GC.GetAllocatedBytesForCurrentThread` over an hour of 2,000 ships

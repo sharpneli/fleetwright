@@ -296,7 +296,7 @@ public class SightModelTests(ITestOutputHelper output)
         var ws = new World(WorldTime.FromUtc(1916, 5, 31, 14), 1, S with { Smoke = true });
         ws.Apply(ShipSystem.Spawn(ws.Ships.AddClass(dd), 56, 4, 0, 0, 1));
         ws.Apply(ShipSystem.Spawn(ws.Ships.AddClass(derf), 58, 4, 180, 0, 2));
-        double smoke = Math.Max(Combat.SmokeSources.TopM(dd, S.DefaultWindMs), Combat.SmokeSources.TopM(derf, S.DefaultWindMs));
+        double smoke = Math.Max(Combat.SmokeSources.TopM(dd, S), Combat.SmokeSources.TopM(derf, S));
         output.WriteLine($"with the smoke field: her smoke's top {smoke:F0} m, the reach {ws.Reach.SightM / 1000:F1} km");
         Assert.Equal(smoke, ws.Reach.SmokeTopM, 6);
         Assert.True(smoke > Math.Max(dd.Silhouette.TopM, derf.Silhouette.TopM));

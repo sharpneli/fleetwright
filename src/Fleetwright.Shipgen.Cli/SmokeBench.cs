@@ -37,6 +37,7 @@ static class SmokeBench
             Console.Error.WriteLine("shipgen smoke facts DESIGN...  |  shipgen smoke run [SCENARIO] [--minutes N] [--every N] [--speed X]  |  shipgen smoke pileup [DESIGN]  |  shipgen smoke screen [LINE] [SCREEN] [--minutes N]  |  shipgen smoke contacts [SCENARIO] [--minutes N]");
             return 2;
         }
+        var settings = SimSettings.Load(settingsPath);
         var sb = new StringBuilder();
         void Line(string t) => sb.AppendLine(t);
         foreach (var name in args.Skip(1))
@@ -54,13 +55,27 @@ static class SmokeBench
             Line("  funnels: " + string.Join(", ", Enumerable.Range(0, c.Funnels.Length).Select(i => string.Format(Inv, "{0} {1:0.00} ({2:0.0} m² out, top {3:0.0} m)",
                 i + 1, c.Funnels[i].Share, c.Funnels[i].ExitAreaM2, c.Components[c.Funnels[i].Component].Bounds.Top - c.Vertical.Waterline))));
             var neutral = SmokeAir.Of(Airs[0].W);
+            // her lee (docs/battle/smoke.md T3): the block of her upper works, and what it does to funnel 1 by the wind's angle
+            {
+                double len = Math.Max(c.Silhouette.LengthM, 1), hb = Fleetwright.Sim.Ships.Sight.AreaAbove(c.Numbers(c.Silhouette.SideAreaM2), 0) / len;
+                double top1 = c.Components[c.Funnels[0].Component].Bounds.Top - c.Vertical.Waterline;
+                Line(string.Format(Inv, "  her lee: upper works as a block {0:0.0} m high (side area over length {1:0} m), funnel 1's top {2:0.0} m", hb, len, top1));
+                foreach (double off in new[] { 0.0, 45, 90 })
+                {
+                    var lf = SmokeSources.Funnel(c, 0, full, 10, off, SmokeAir.Of(Airs[0].W), settings);
+                    Line(string.Format(Inv, "    the wind over her decks {0,2:0}° off the bow, 10 m/s: starts spread σ_z {1:0.0} m, σ_y {2:0.0} m; rise {3:0} m ({4:0} m taken by the lee)",
+                        off, lf.LeeSigmaZ, lf.LeeSigmaY, lf.RiseM, lf.LeeRiseLostM));
+                }
+            }
+            Line("  firing state (smoke a kg over well fired's): " + string.Join(", ", new[] { 10.0, 15, full }.Select(kn =>
+                string.Format(Inv, "{0:0} kn ×{1:0.00}", kn, SmokeSources.Forcing(c.PowerAt(kn) / Math.Max(c.Motion.RatedShp, 1), settings)))));
             Line("  speed    shp     ship m²/s   funnel 1: m²/s  gas m³/s  out m/s  F m⁴/s³");
             foreach (double kn in new[] { 10, 15, full })
             {
                 double total = 0;
                 for (int i = 0; i < c.Funnels.Length; i++)
-                    total += SmokeSources.Funnel(c, i, kn, 10, neutral).RateM2s;
-                var f = SmokeSources.Funnel(c, 0, kn, 10, neutral);
+                    total += SmokeSources.Funnel(c, i, kn, 10, 0, neutral, settings).RateM2s;
+                var f = SmokeSources.Funnel(c, 0, kn, 10, 0, neutral, settings);
                 Line(string.Format(Inv, "  {0,4:0.0} kn {1,7:0} {2,9:0} {3,15:0} {4,9:0.0} {5,8:0.0} {6,8:0.0}", kn, c.PowerAt(kn), total, f.RateM2s, f.GasM3s, f.ExitMs, f.Flux));
             }
             foreach (var (an, w) in Airs)
@@ -70,14 +85,14 @@ static class SmokeBench
                     an, air.FrictionMs, air.InvObukhovM, air.SigmaV * air.SigmaV * air.LagrangianH, air.Kz(50), full));
                 foreach (double u in new[] { 5.0, 10, 20 })
                 {
-                    var f = SmokeSources.Funnel(c, 0, full, u, air);
+                    var f = SmokeSources.Funnel(c, 0, full, u, 0, air, settings);
                     Line(string.Format(Inv, "    relative wind {0,2:0} m/s: rise {1,5:0.0} m over {2,4:0} s, downwash {3:0.0} m, from {4:0.0} m to {5:0.0} m",
                         u, f.RiseM, f.RiseS, f.DownwashM, f.BaseM, f.BaseM + f.RiseM));
                 }
                 double rel = full * 0.514444, rate = 0;
                 for (int i = 0; i < c.Funnels.Length; i++)
-                    rate += SmokeSources.Funnel(c, i, full, rel, air).RateM2s;
-                var p0 = SmokeSources.Funnel(c, 0, full, rel, air);
+                    rate += SmokeSources.Funnel(c, i, full, rel, 0, air, settings).RateM2s;
+                var p0 = SmokeSources.Funnel(c, 0, full, rel, 0, air, settings);
                 Line(string.Format(Inv, "    her trail at full power, the air still ({0:0} m²/s, {1:0.0} m²/m): column / across at its height / 500 m along it", rate, rate / rel));
                 foreach (double age in new[] { 60.0, 300, 1800 })
                 {
@@ -104,8 +119,8 @@ static class SmokeBench
                 Line(string.Format(Inv, "  a developed fire of {0:0} MW (any ship): {1:0} m²/s, flames {2:0.0} m, rising {3:0} m over {4:0} s in 8 m/s", mw, f.RateM2s, f.FlameM, f.RiseM, f.RiseS));
             }
             Line(string.Format(Inv, "  the research's tuning, 1,500 m²/s at full power for coal: hers {0:0} m²/s ({1:0.00} of it)",
-                Enumerable.Range(0, c.Funnels.Length).Sum(i => SmokeSources.Funnel(c, i, full, 10, neutral).RateM2s),
-                Enumerable.Range(0, c.Funnels.Length).Sum(i => SmokeSources.Funnel(c, i, full, 10, neutral).RateM2s) / 1500));
+                Enumerable.Range(0, c.Funnels.Length).Sum(i => SmokeSources.Funnel(c, i, full, 10, 0, neutral, settings).RateM2s),
+                Enumerable.Range(0, c.Funnels.Length).Sum(i => SmokeSources.Funnel(c, i, full, 10, 0, neutral, settings).RateM2s) / 1500));
             Line("");
         }
         Console.Write(sb.ToString());

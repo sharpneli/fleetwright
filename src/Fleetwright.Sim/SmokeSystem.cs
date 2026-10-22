@@ -77,7 +77,8 @@ public sealed partial class SmokeSystem : IWorldSystem
     /// <summary>A ship's trail: its puffs oldest to newest (linked), how many, the world time she last smoked to, whether
     /// she was off rails and afloat at the last tick (a dormant trail only ages); and her plume as last worked out (every
     /// <see cref="SimSettings.SmokePlumeMs"/>): its output, m²/s, where it leaves over the sea and how high it rises, m,
-    /// over how long, s, and where it leaves in her frame (along, across), m, and the funnels' spread about it, m².</summary>
+    /// over how long, s, and where it leaves in her frame (along, across), m, and the funnels' spread about it, m²; the spread
+    /// her lee starts it with, up and across, m (T3).</summary>
     struct Source
     {
         public int Entity, Oldest, Newest, Puffs;
@@ -85,7 +86,7 @@ public sealed partial class SmokeSystem : IWorldSystem
         public byte Side;
         public long LastMs, PlumeMs;
         public bool Active, Gone;
-        public double Gain, Rate, BaseM, Rise, RiseS, X, Y, Spread2;
+        public double Gain, Rate, BaseM, Rise, RiseS, X, Y, Spread2, LeeZ, LeeY;
     }
 
     SmokePuff[] puffs = new SmokePuff[1024];
@@ -383,6 +384,8 @@ public sealed partial class SmokeSystem : IWorldSystem
         var here = air;   // the weather is one for the world (UniformWeather); a ship's own when it varies by place
         var wind = Earth.Forward(pos, here.WindToDeg) * here.WindMs;
         var vShip = fwd * speed;
+        var overDeck = wind - vShip;   // the wind over her decks: from ahead when she makes way into still air
+        double offBow = overDeck.LengthSquared > 1e-9 ? Math.Acos(Math.Clamp(Vec3d.Dot(-overDeck.Normalized(), fwd), -1, 1)) * 180 / Math.PI : 0;
         FireSmoke(world, s, ship, pos, fwd, (wind - vShip).Length, t, step);
         if (c.Funnels.Length == 0)
             return true;
@@ -393,7 +396,7 @@ public sealed partial class SmokeSystem : IWorldSystem
         {
             // making smoke: her fuel burnt rich, at the screen's smoke a kg when her plant makes less
             double gain = screens.Count > 0 && Screening(ship.Entity) && c.Smoke.M2PerKg > 0 ? Math.Max(settings.SmokeScreenM2PerKg / c.Smoke.M2PerKg, 1) : 1;
-            Plume(ref src, c, kn, (wind - vShip).Length, here, t, gain);
+            Plume(ref src, c, kn, overDeck.Length, offBow, here, t, gain, settings);
             src.Gain = gain;
         }
         long last = src.LastMs;
@@ -411,6 +414,7 @@ public sealed partial class SmokeSystem : IWorldSystem
         if (!(src.Rate > 0))
             return true;   // stopped: no smoke, her trail kept
         double rate = src.Rate, baseM = src.BaseM, rise = src.Rise, riseS = src.RiseS, x = src.X, y = src.Y, spread2 = src.Spread2;
+        double leeZ = src.LeeZ, leeY = src.LeeY;
         var up = pos.Normalized();
         var at = pos + fwd * x + Vec3d.Cross(fwd, up).Normalized() * y;
         var tint = c.Smoke.Fuel == Fuel.Coal ? SmokeTint.Coal : SmokeTint.Oil;
@@ -429,19 +433,20 @@ public sealed partial class SmokeSystem : IWorldSystem
         }
         // laid oldest first, so the trail's links run oldest to newest
         for (int j = chunks - 1; j >= 0; j--)
-            Lay(k, starts[j], j > 0 ? starts[j - 1] : t, t, at, vAir, rate, baseM, rise, riseS, spread2, tint);
+            Lay(k, starts[j], j > 0 ? starts[j - 1] : t, t, at, vAir, rate, baseM, rise, riseS, spread2, tint, leeZ, leeY);
         return true;
     }
 
     /// <summary>Her funnels as one plume (<see cref="SmokeSources.Funnel"/>): output summed, the rest A-weighted, their
     /// spread over her length kept for the puffs' σ. Worked out every <see cref="SimSettings.SmokePlumeMs"/> (a boiler's
     /// output follows the power over tens of seconds).</summary>
-    static void Plume(ref Source src, ShipClass c, double kn, double relativeMs, in SmokeAir air, long t, double gain)
+    static void Plume(ref Source src, ShipClass c, double kn, double relativeMs, double offBowDeg, in SmokeAir air, long t, double gain,
+        SimSettings settings)
     {
-        double rate = 0, baseM = 0, rise = 0, riseS = 0, x = 0, y = 0, x2 = 0;
+        double rate = 0, baseM = 0, rise = 0, riseS = 0, x = 0, y = 0, x2 = 0, leeZ = 0, leeY = 0;
         for (int i = 0; i < c.Funnels.Length; i++)
         {
-            var p = SmokeSources.Funnel(c, i, kn, relativeMs, air);
+            var p = SmokeSources.Funnel(c, i, kn, relativeMs, offBowDeg, air, settings);
             if (!(p.RateM2s > 0))
                 continue;
             var b = c.Components[c.Funnels[i].Component].Bounds;
@@ -453,6 +458,8 @@ public sealed partial class SmokeSystem : IWorldSystem
             x += p.RateM2s * fx;
             y += p.RateM2s * fy;
             x2 += p.RateM2s * (fx * fx + fy * fy);
+            leeZ += p.RateM2s * p.LeeSigmaZ;
+            leeY += p.RateM2s * p.LeeSigmaY;
         }
         src.PlumeMs = t;
         src.Rate = rate;
@@ -460,6 +467,7 @@ public sealed partial class SmokeSystem : IWorldSystem
             return;
         double w = rate / gain;   // the weights' sum (the gain scales every funnel alike)
         (src.BaseM, src.Rise, src.RiseS, src.X, src.Y) = (baseM / w, rise / w, riseS / w, x / w, y / w);
+        (src.LeeZ, src.LeeY) = (leeZ / w, leeY / w);
         src.Spread2 = Math.Max(x2 / w - src.X * src.X - src.Y * src.Y, 0) / 2;
     }
 
@@ -597,15 +605,15 @@ public sealed partial class SmokeSystem : IWorldSystem
     /// (she's at <paramref name="at"/> at <paramref name="t"/>, making way <paramref name="vAir"/> through the air);
     /// those thinned to nothing by now left out.</summary>
     void Lay(int k, long a, long b, long t, Vec3d at, Vec3d vAir, double rate, double baseM, double rise, double riseS, double spread2,
-        SmokeTint tint)
+        SmokeTint tint, double leeZ = 0, double leeY = 0)
     {
         double span = (b - a) / 1000.0;
         if (!(span > 0))
             return;
         double run = vAir.Length * span;
         int n = Math.Clamp((int)Math.Ceiling(run / settings.SmokeSpacingM), 1, settings.SmokePuffsPerTick);
-        double piece = run / n, s0 = settings.SmokeSigma0M;
-        double sigma = Math.Sqrt(s0 * s0 + spread2), along2 = piece * piece / 12;   // the piece's length along her run
+        double piece = run / n, s0 = Math.Max(settings.SmokeSigma0M, leeZ), sy = Math.Max(settings.SmokeSigma0M, leeY);
+        double sigma = Math.Sqrt(sy * sy + spread2), along2 = piece * piece / 12;   // the piece's length along her run
         double area = rate * span / n, nowS = t / 1000.0;
         for (int i = 0; i < n; i++)
         {

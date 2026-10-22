@@ -27,7 +27,7 @@ public sealed class SightReach(SimSettings settings)
     internal bool Add(ShipClass c)
     {
         double eye = c.Eyes.Length > 0 ? c.Eyes[0].HeightM : 0, top = c.Silhouette.TopM;
-        double smoke = settings.Smoke ? SmokeSources.TopM(c, settings.DefaultWindMs) : 0;
+        double smoke = settings.Smoke ? SmokeSources.TopM(c, settings) : 0;
         if (eye <= eyeM && top <= topM && smoke <= SmokeTopM)
             return false;
         (eyeM, topM, SmokeTopM) = (Math.Max(eyeM, eye), Math.Max(topM, top), Math.Max(SmokeTopM, smoke));

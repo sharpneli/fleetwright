@@ -5,7 +5,7 @@ fire control read it) and Z4 (the other sources) done 2026-10-21, decisions 5-9;
 user's; breaking the field (Z5b-Z5d: elongated puffs and merging across trails, the large eddies, the grain) agreed and
 built 2026-10-21, decisions 10-11; **taken in and on by default** 2026-10-21, shorter lived (decisions 12-13); Z6
 (smoke contacts) built 2026-10-22: the plan's steps all built; the tuning pass begun 2026-10-22 (T1 the lines' ends, T2 the
-index's young part)
+index's young part, T3 the firing state and her lee)
     Updated: 2026-10-22
 
 Smoke as sim state that sight reads, and the same state drawn. The research is `research/vfx/unified-smoke-system.md`
@@ -1184,10 +1184,66 @@ sim** over a whole battle, against gate 1's 0.8 (which was for the field and its
 the sampled trace puts 2 s of 67 there, but a thread sampler stops threads at safe points and the lock is one, so the
 figure is uncertain. A lead for a cost pass: the class's type kept in the contact when it's made out.
 
-**What it says for the next steps:** the sight lines and the smoke contacts now both want more, darker smoke near the
+**What it said for the next steps:** the sight lines and the smoke contacts now both want more, darker smoke near the
 funnels, not less: the tension Z3 and Z6 left (more output blinds more and shows further) has mostly gone. The firing
 state's black smoke in action is the physical reason for more, so it comes first; the lee (holding young smoke lower)
 adds blinding near the ships but shows less over the horizon, so its strength comes after, against both.
+
+### T3 The firing state and her lee (done 2026-10-22, step 2: the physics whole)
+
+**The firing state** (`SmokeSources.Forcing`): a fire pushed past what its air and furnace burn cleanly makes black
+smoke. The smoke a kg of fuel makes is well fired's (Z0's, shipgen's) up to `SmokeForcingFrom` (half) of the rated
+power, then rises as the square of the load over it to `SmokeForcedFactor` (4) times it at the rated power, and on into
+the overload; the gas is the fuel's, unchanged [EST: a search found the mechanism (incomplete combustion at high firing
+rates; forced draught kept for bursts of speed; "smoke at high power" among the Admiralty boilers' faults) but no
+figures; the research's inferred 1,500 m²/s for a coal battleship at full power asks some 4-7 times well fired's; request
+1 stands]. Every fuel alike for now.
+
+**Her lee** (`SmokeSources.Lee`, `LeeRise`): the building wake of the EPA's ISC models (Huber and Snyder 1976, Schulman
+and Scire 1980; their user's guide, volume 2, §1.1.4.11 and §1.1.5.3). Her upper works are a block as high as her side's
+area over her length (h_b: 10-12 m for the capital ships, 7 m for a destroyer) and as wide as she shows across the wind
+over her decks (h_w, by its angle off the bow). With L_b the lesser, a funnel top under h_b + 1.5 L_b (good engineering
+practice's stack height) is in her wake, wholly under h_b + 0.5 L_b, by a share between (no switch); there the plume
+starts spread 0.7 h_b up and 0.35 h_w across (at most 5 h_b), the wake's at three block heights downwind, and its rise
+is Schulman and Scire's from a start already diluted (radius √2 σ_z: Z³ + (3R₀/β)Z² + (3R₀²/β²)Z = ΔH³, β 0.6). The
+puffs laid take the larger of that spread and `SmokeSigma0M`. Fires and guns: not yet (a fire's smoke leaves low in her
+wake too).
+
+**What came out** (`smoke facts`):
+
+| | Dreadnought (coal) | Lion-like (coal) | QE-like (oil) | Destroyer (oil) |
+| --- | --- | --- | --- | --- |
+| Smoke at full power, the ship | 342 → 1,367 m²/s | 976 → 3,905 | 74 → 298 | 40 → 160 |
+| Her upper works as a block / funnel top | 10.1 m / 18.1 m | 11.7 / 19.5 | 10.0 / 18.3 | 6.9 / 16.9 |
+| Lee's spread up / across, head on → beam on | 4.9 m / 6.7 → 12.3 m | 6.9 / 8.8 → 17.4 | 4.7 / 6.9 → 11.8 | ~0 (over her wake) |
+| Rise taken by the lee (10 m/s over her decks) | 12 of 82 m | 16 of 120 m | 11 of 114 m | 0 |
+
+- The firing state is the change: a coal battleship at full power makes the research's 1,500 m²/s; at 15 kn (under half
+  her power) she's well fired as before.
+- **The lee doesn't hold her smoke down:** by the wake models it takes 12-16% of the rise, and its starting spread is
+  mostly under the 15 m every puff already starts with. The young smoke still rides over the eyes; what the record
+  calls smoke "lying low" isn't explained by her lee alone (candidates: the wind's shear and stability, which Z0 has,
+  and firing at cruise with slow gas, Z0's downwash).
+
+**The yardsticks** (before → after T3; the runs diverge, as fights do):
+
+- **Jutland's lines** (`smoke run`, 3 h): lost to the smoke of those made out in clear air **16% → 43%**; under 8 km 9% →
+  26%, **8-14 km 9% → 39%**, 14-20 km 50% → 66%, beyond 20 km 40% → 93% (15 lines). On the smoky lines the smoke is now
+  mostly her own and the target's (37-59% her own): ships at full power blinding themselves and each other.
+- **Smoke contacts** (`smoke contacts`, 3 h): the British first held 9 German ships by their smoke (3 before) at 23.5 /
+  24.0 / 32.2 km, against first sight at 13.5 / 16.4 / 19.9 km; the smoke first by 1.8 / 9.2 / 25.0 minutes. The Germans 2
+  by smoke (they held only 6 contacts all along).
+- **The screen:** unchanged (its ships at 15 kn are well fired; a screen burns rich by `MakeSmoke`).
+- **`fc-history`** (40 runs a case): within the spread (the duels' trails stream off the line); the German BCs firing
+  astern at Dogger Bank 2.3% → 2.0% (record ~2.5%); 7 of 23 in their bands.
+- **Jutland played to its end** (3 seeds): hits 4,300 British / 4,247 German (the field off 4,244 / 4,251; before T3
+  3,956 / 3,499); lost 49 (28-61) / 62 (59-67). Three seeds don't separate the smoke from the battles' courses.
+- **The cost:** the field (store and index) 0.35 → 0.46 ms a game second at Jutland, the trails denser and longer-lived
+  over the retiring depth.
+
+**Step 3 next** (the tuning, against all the yardsticks together): the forced factor and where forcing starts (the
+lines at 8-14 km, the contacts' ranges), and whether the stronger self-blinding at full power (her own smoke on 37-59% of
+the smoky lines) is the record's.
 
 ## What stays out
 

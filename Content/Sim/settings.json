@@ -783,6 +783,8 @@
   "SmokeLineSplit": 0.25,
   "SmokePairKeepMs": 60000,
   "SmokeScreenM2PerKg": 600,
+  "SmokeForcingFrom": 0.5,
+  "SmokeForcedFactor": 4,
   "SmokeWindWanderDeg": 12,
   "SmokeWindWanderS": 1200,
   "SmokeWindSpeedShare": 0.1,

@@ -5,9 +5,10 @@ namespace Fleetwright.Sim.Combat;
 
 /// <summary>A funnel's plume as it leaves (docs/battle/smoke.md Z0): its smoke, m²/s of extinction area, its gas, m³/s, the
 /// gas's speed out, m/s, its buoyancy flux, m⁴/s³, the rise it makes, m, over its time, s, the height it starts at over
-/// the sea after the downwash, m, and the downwash itself, m.</summary>
+/// the sea after the downwash, m, and the downwash itself, m; the firing state's share over well fired (T3), and her
+/// lee's (T3): the spread it starts with, up and across, m (0: none), and the rise it took away, m.</summary>
 public readonly record struct FunnelPlume(double RateM2s, double GasM3s, double ExitMs, double Flux, double RiseM, double RiseS, double BaseM,
-    double DownwashM);
+    double DownwashM, double Forcing = 1, double LeeSigmaZ = 0, double LeeSigmaY = 0, double LeeRiseLostM = 0);
 
 /// <summary>A fire's smoke as it leaves its opening (docs/battle/smoke.md Z4): its smoke, m²/s, its flames' height over
 /// the opening, m (the smoke leaves from their tips), and the rise it makes, m, over its time, s.</summary>
@@ -73,16 +74,16 @@ public static class SmokeSources
     }
 
     /// <summary>How high a class's funnel smoke shows at most, m (docs/battle/smoke.md Z6, the world's sight reach): at
-    /// full power in still air (the wind over her decks her own speed; the air's turbulence a wind of
-    /// <paramref name="windMs"/>'s), each funnel's plume risen and spread a minute past its rise, its centre and two σ
-    /// over it. A slower ship in a following wind can rise higher; the reach counts the usual case.</summary>
-    public static double TopM(ShipClass c, double windMs)
+    /// full power in still air (the wind over her decks her own speed, from ahead; the air's turbulence the settings'
+    /// default wind's), each funnel's plume risen and spread a minute past its rise, its centre and two σ over it. A
+    /// slower ship in a following wind can rise higher; the reach counts the usual case.</summary>
+    public static double TopM(ShipClass c, SimSettings s)
     {
-        var air = SmokeAir.Of(new WeatherHere(25_000, 0, windMs));
+        var air = SmokeAir.Of(new WeatherHere(25_000, 0, s.DefaultWindMs));
         double rel = Math.Max(c.Motion.MaxSpeedKn * 0.514444, SmokeAir.CalmMs), top = 0;
         for (int i = 0; i < c.Funnels.Length; i++)
         {
-            var f = Funnel(c, i, c.Motion.MaxSpeedKn, rel, air);
+            var f = Funnel(c, i, c.Motion.MaxSpeedKn, rel, 0, air, s);
             if (!(f.RateM2s > 0))
                 continue;
             var p = SmokeModel.State(SmokeModel.Born(Earth.Position(0, 0), 0, AirFrame.Identity, f.BaseM, f.RiseM, f.RiseS, 15, 15, 1, 0, SmokeTint.Coal, air),
@@ -93,28 +94,81 @@ public static class SmokeSources
     }
 
     /// <summary>Funnel <paramref name="funnel"/> of a class at a speed through the water, kn, in a wind relative to the ship
-    /// of <paramref name="relativeWindMs"/>:
+    /// of <paramref name="relativeWindMs"/> from <paramref name="relativeOffBowDeg"/> off her bow (0 from ahead):
     /// <list type="bullet">
     /// <item>the fuel burnt making the power the hull needs at that speed (shipgen's part-load curve), times its smoke a
-    /// kg, times the funnel's share;</item>
+    /// kg well fired, times the firing state's (<see cref="Forcing"/>), times the funnel's share;</item>
     /// <item>its gas the same way, out through its exit area (forced draught's fans and natural draught's chimney both
     /// slow with the flow);</item>
     /// <item>the rise by Briggs at its top (the stability there), the downwash from its exit's radius, never below the
-    /// funnel's foot.</item>
+    /// funnel's foot;</item>
+    /// <item>her lee (<see cref="Lee"/>): the spread it starts with and the rise it takes away.</item>
     /// </list></summary>
-    public static FunnelPlume Funnel(ShipClass c, int funnel, double speedKn, double relativeWindMs, in SmokeAir air)
+    public static FunnelPlume Funnel(ShipClass c, int funnel, double speedKn, double relativeWindMs, double relativeOffBowDeg, in SmokeAir air,
+        SimSettings settings)
     {
         ref readonly var f = ref c.Funnels[funnel];
         var b = c.Components[f.Component].Bounds;
         double wl = c.Vertical.Waterline, top = b.Top - wl, foot = Math.Max(b.Base - wl, 0);
-        double fuel = c.FuelKgS(c.PowerAt(Math.Abs(speedKn))) * f.Share;
+        double power = c.PowerAt(Math.Abs(speedKn));
+        double fuel = c.FuelKgS(power) * f.Share;
         var s = c.Smoke;
-        double rate = fuel * s.M2PerKg, gas = fuel * s.GasM3PerKg;
+        double forcing = Forcing(c.Motion.RatedShp > 0 ? power / c.Motion.RatedShp : 0, settings);
+        double rate = fuel * s.M2PerKg * forcing, gas = fuel * s.GasM3PerKg;
         double exit = f.ExitAreaM2 > 0 ? gas / f.ExitAreaM2 : 0;
         double flux = SmokeModel.BuoyancyFlux(gas, s.GasTempK, air.AirK);
         var (rise, riseS) = SmokeModel.Briggs(flux, relativeWindMs, air.Stability(top));
         double down = SmokeModel.Downwash(exit, relativeWindMs, Math.Sqrt(Math.Max(f.ExitAreaM2, 0) / Math.PI));
         double baseM = Math.Max(top - down, foot);
-        return new FunnelPlume(rate, gas, exit, flux, rise, riseS, baseM, top - baseM);
+        var (sz, sy) = Lee(c, top, relativeOffBowDeg);
+        double kept = LeeRise(rise, Math.Sqrt(2) * sz);
+        return new FunnelPlume(rate, gas, exit, flux, kept, riseS, baseM, top - baseM, forcing, sz, sy, rise - kept);
+    }
+
+    /// <summary>The firing state (docs/battle/smoke.md T3): the smoke a kg of fuel makes, over well fired's, at a load (the
+    /// power over the rated). Pushed past what its air and furnace burn cleanly a fire makes black smoke: none up to
+    /// <see cref="SimSettings.SmokeForcingFrom"/> of the rated power, rising as the square of the load over it to
+    /// <see cref="SimSettings.SmokeForcedFactor"/> at the rated power, and on into the overload [EST: no figures yet
+    /// (research request 1); the mechanism's shape, its size the tuning's].</summary>
+    public static double Forcing(double load, SimSettings s)
+    {
+        double x = Math.Max(load - s.SmokeForcingFrom, 0) / Math.Max(1 - s.SmokeForcingFrom, 1e-6);
+        return 1 + (s.SmokeForcedFactor - 1) * x * x;
+    }
+
+    /// <summary>Her lee (docs/battle/smoke.md T3, the building wake of the EPA's ISC models, Huber and Snyder (1976) and
+    /// Schulman and Scire (1980)): her upper works a block as high as her side's area over her length (h_b) and as wide
+    /// as she shows across the relative wind (h_w, her length and beam by its angle); with L_b the lesser of the two, a
+    /// funnel top under h_b + 1.5 L_b (good engineering practice's stack height) is in the wake, wholly under
+    /// h_b + 0.5 L_b, partly between. In it the plume starts spread 0.7 h_b up and 0.35 h_w across (at most 5 h_b wide),
+    /// as the wake's at three block heights downwind. The spread it starts with, up and across, m.</summary>
+    public static (double SigmaZ, double SigmaY) Lee(ShipClass c, double funnelTopM, double relativeOffBowDeg)
+    {
+        double len = Math.Max(c.Silhouette.LengthM, 1), beam = Math.Max(c.Motion.BeamM, 1);
+        double hb = Sight.AreaAbove(c.Numbers(c.Silhouette.SideAreaM2), 0) / len;
+        double a = relativeOffBowDeg * Math.PI / 180, hw = Math.Abs(len * Math.Sin(a)) + Math.Abs(beam * Math.Cos(a));
+        double lb = Math.Min(hb, hw), whole = hb + 0.5 * lb, none = hb + 1.5 * lb;
+        double w = Math.Clamp((none - funnelTopM) / Math.Max(none - whole, 1e-6), 0, 1);
+        return (w * 0.7 * hb, w * 0.35 * Math.Min(hw, 5 * hb));
+    }
+
+    /// <summary>A plume's final rise, m, cut by its starting in the lee already diluted (Schulman and Scire's): a plume of
+    /// radius <paramref name="radiusM"/> (√2 σ_z, its spread as a uniform disc) entrains faster, so its rise Z solves
+    /// Z³ + (3R₀/β)Z² + (3R₀²/β²)Z = ΔH³ for the rise ΔH it would make from a point, β 0.6 (Newton's, from ΔH).</summary>
+    public static double LeeRise(double riseM, double radiusM)
+    {
+        if (!(riseM > 0) || !(radiusM > 0))
+            return riseM;
+        const double Beta = 0.6;
+        double a = 3 * radiusM / Beta, b = 3 * radiusM * radiusM / (Beta * Beta), target = riseM * riseM * riseM, z = riseM;
+        for (int i = 0; i < 20; i++)
+        {
+            double fz = z * z * z + a * z * z + b * z - target, dz = 3 * z * z + 2 * a * z + b;
+            double next = Math.Max(z - fz / dz, 0);
+            if (Math.Abs(next - z) < 1e-6)
+                return next;
+            z = next;
+        }
+        return z;
     }
 }

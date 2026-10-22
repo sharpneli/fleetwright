@@ -35,7 +35,7 @@ public static class FunnelSmoke
     public static bool On = true;
 
     public static void Build(in MapView view, Snapshot s, long drawMs, double world, double now, Func<int, ShipClass?> classOf, SmokeBook book,
-        SmokeTrails trails)
+        SmokeTrails trails, SimSettings settings)
     {
         if (!On || world <= 0)
             return;
@@ -52,10 +52,12 @@ public static class FunnelSmoke
                 var tint = c.Smoke.Fuel == Fuel.Coal ? CoalSmoke : OilSmoke;
                 var up = p.Normalized();
                 var stbd = Vec3d.Cross(f, up).Normalized();
-                double relative = (Earth.Forward(p, air.WindToDeg) * air.WindMs - f * v.Speed[k]).Length;
+                var overDeck = Earth.Forward(p, air.WindToDeg) * air.WindMs - f * v.Speed[k];
+                double relative = overDeck.Length;
+                double offBow = relative > 1e-6 ? Math.Acos(Math.Clamp(Vec3d.Dot(-overDeck * (1 / relative), f), -1, 1)) * 180 / Math.PI : 0;
                 for (int fn = 0; fn < c.Funnels.Length; fn++)
                 {
-                    var plume = SmokeSources.Funnel(c, fn, v.Speed[k] / 0.514444, relative, air);
+                    var plume = SmokeSources.Funnel(c, fn, v.Speed[k] / 0.514444, relative, offBow, air, settings);
                     if (!(plume.RateM2s > 0))
                         continue;
                     var b = c.Components[c.Funnels[fn].Component].Bounds;

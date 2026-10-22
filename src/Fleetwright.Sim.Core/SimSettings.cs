@@ -1976,6 +1976,13 @@ public sealed record SimSettings
     /// research request 3, how fast destroyers laid funnel smoke].</summary>
     public double SmokeScreenM2PerKg { get; init; } = 600;
 
+    /// <summary>The firing state (docs/battle/smoke.md T3, <c>SmokeSources.Forcing</c>): a fire pushed past what it burns
+    /// cleanly makes black smoke, from <see cref="SmokeForcingFrom"/> of the rated power, as the square of the load over
+    /// it, to <see cref="SmokeForcedFactor"/> times well fired's at the rated power [EST: the research's inferred 1,500
+    /// m²/s for a coal battleship at full power asks some 4-7 times well fired's; no record yet, request 1].</summary>
+    public double SmokeForcingFrom { get; init; } = 0.5;
+    public double SmokeForcedFactor { get; init; } = 4;
+
     /// <summary>The smoke's wind wanders and gusts about the weather's (docs/battle/smoke.md): its way by up to so many
     /// degrees over some so many seconds, its speed by a share as slowly and by another in gusts of some so many seconds
     /// (smooth signals of the time, drawn from the world's seed) [EST: mesoscale meander and gusts over the sea].</summary>

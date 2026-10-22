@@ -11,6 +11,8 @@ namespace Fleetwright.Sim.Tests;
 /// and the funnels' facts on the shipped designs.</summary>
 public class SmokeModelTests(ITestOutputHelper output)
 {
+    static readonly SimSettings Settings = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json"));
+
     static readonly SmokeAir Neutral = SmokeAir.Of(new WeatherHere(25_000, 225, 8));
     static readonly Vec3d Here = Earth.Position(56.5, 4);
     const double K = 7.0 / 6;
@@ -361,14 +363,62 @@ public class SmokeModelTests(ITestOutputHelper output)
         double last = 0;
         foreach (double kn in new[] { 8.0, 12, 16, 20 })
         {
-            double rate = SmokeSources.Funnel(coal, 0, kn, 10, Neutral).RateM2s;
+            double rate = SmokeSources.Funnel(coal, 0, kn, 10, 0, Neutral, Settings).RateM2s;
             Assert.True(rate > last);
             last = rate;
         }
-        double Ship(ShipClass c) => Enumerable.Range(0, c.Funnels.Length).Sum(i => SmokeSources.Funnel(c, i, c.Motion.MaxSpeedKn, 10, Neutral).RateM2s);
+        double Ship(ShipClass c) => Enumerable.Range(0, c.Funnels.Length).Sum(i => SmokeSources.Funnel(c, i, c.Motion.MaxSpeedKn, 10, 0, Neutral, Settings).RateM2s);
         Assert.True(Ship(coal) > 2 * Ship(oil), $"coal {Ship(coal):0} against oil {Ship(oil):0} m²/s");
         // a cruising ship's slow gas comes down into the funnel's lee
-        Assert.True(SmokeSources.Funnel(coal, 0, 10, 10, Neutral).DownwashM > SmokeSources.Funnel(coal, 0, coal.Motion.MaxSpeedKn, 10, Neutral).DownwashM);
+        Assert.True(SmokeSources.Funnel(coal, 0, 10, 10, 0, Neutral, Settings).DownwashM > SmokeSources.Funnel(coal, 0, coal.Motion.MaxSpeedKn, 10, 0, Neutral, Settings).DownwashM);
+    }
+
+    /// <summary>The firing state (docs/battle/smoke.md T3): well fired up to half the rated power, then black smoke rising as
+    /// the square of the load over it, the forced factor at the rated power.</summary>
+    [Fact]
+    public void A_fire_pushed_past_its_air_smokes_black()
+    {
+        Assert.Equal(1, SmokeSources.Forcing(0.3, Settings));
+        Assert.Equal(1, SmokeSources.Forcing(Settings.SmokeForcingFrom, Settings));
+        Assert.Equal(Settings.SmokeForcedFactor, SmokeSources.Forcing(1, Settings), 9);
+        Assert.True(SmokeSources.Forcing(1.2, Settings) > Settings.SmokeForcedFactor, "more in the overload");
+        Assert.True(SmokeSources.Forcing(0.8, Settings) < SmokeSources.Forcing(0.9, Settings));
+        var c = Class("dreadnought");
+        var full = SmokeSources.Funnel(c, 0, c.Motion.MaxSpeedKn, 10, 0, Neutral, Settings);
+        var clean = SmokeSources.Funnel(c, 0, c.Motion.MaxSpeedKn, 10, 0, Neutral, Settings with { SmokeForcedFactor = 1 });
+        Assert.Equal(full.Forcing * clean.RateM2s, full.RateM2s, 6);
+        Assert.Equal(clean.GasM3s, full.GasM3s);   // the same gas: the fuel's, not its soot
+    }
+
+    /// <summary>Her lee (T3, ISC's building wake): a funnel inside her upper works' wake starts spread with it and rises
+    /// less; one standing well above it (a destroyer's over her low hull) hardly; the wake wider beam on.</summary>
+    [Fact]
+    public void A_funnel_in_her_lee_starts_spread_and_rises_less()
+    {
+        var bb = Class("dreadnought");
+        double top = bb.Components[bb.Funnels[0].Component].Bounds.Top - bb.Vertical.Waterline;
+        var (sz, sy) = SmokeSources.Lee(bb, top, 0);
+        var (_, syBeam) = SmokeSources.Lee(bb, top, 90);
+        output.WriteLine($"dreadnought: σ_z {sz:F1} m, σ_y {sy:F1} m head on, {syBeam:F1} m beam on");
+        Assert.InRange(sz, 2, 10);
+        Assert.True(syBeam > sy, "wider beam on");
+        Assert.Equal((0.0, 0.0), SmokeSources.Lee(bb, 200, 0));   // a funnel far over her wake
+        var full = SmokeSources.Funnel(bb, 0, bb.Motion.MaxSpeedKn, 10, 0, Neutral, Settings);
+        Assert.True(full.LeeRiseLostM > 0 && full.RiseM > 0.5 * (full.RiseM + full.LeeRiseLostM));
+        var dd = Class("destroyer");
+        var (ddz, _) = SmokeSources.Lee(dd, dd.Components[dd.Funnels[0].Component].Bounds.Top - dd.Vertical.Waterline, 0);
+        Assert.True(ddz < 0.2 * sz, "a destroyer's funnel stands over her low hull's wake");
+    }
+
+    /// <summary>Schulman and Scire's rise from a diluted start: it solves its cubic, is the point source's with no dilution,
+    /// and less the wider the start.</summary>
+    [Fact]
+    public void A_diluted_plume_rises_less()
+    {
+        Assert.Equal(80, SmokeSources.LeeRise(80, 0));
+        double z = SmokeSources.LeeRise(80, 10), a = 3 * 10 / 0.6, b = 3 * 100 / 0.36;
+        Assert.Equal(80.0 * 80 * 80, z * z * z + a * z * z + b * z, 3);
+        Assert.True(z < 80 && SmokeSources.LeeRise(80, 20) < z);
     }
 
     [Fact]
@@ -380,7 +430,7 @@ public class SmokeModelTests(ITestOutputHelper output)
         Span<double> tau = stackalloc double[3];
         ReadOnlySpan<double> bands = Bands;
         var c = Class("dreadnought");
-        double sink = SmokeModel.TauLine(l, SmokeModel.State(p, 100, frame, Neutral)) + SmokeSources.Funnel(c, 0, 15, 10, Neutral).RateM2s;
+        double sink = SmokeModel.TauLine(l, SmokeModel.State(p, 100, frame, Neutral)) + SmokeSources.Funnel(c, 0, 15, 10, 0, Neutral, Settings).RateM2s;
         long before = GC.GetAllocatedBytesForCurrentThread();
         for (int i = 0; i < 100; i++)
         {
@@ -388,7 +438,7 @@ public class SmokeModelTests(ITestOutputHelper output)
             sink += SmokeModel.TauLine(l, s) + SmokeModel.TauColumn(s, Here);
             SmokeModel.TauBands(l, s, bands, tau);
             sink += SmokeModel.State(SmokeModel.Merge(p, s, p, s, 100 + i, frame, Neutral), 100 + i, frame, Neutral).Area;
-            sink += SmokeSources.Funnel(c, 0, 15, 10, Neutral).RateM2s;
+            sink += SmokeSources.Funnel(c, 0, 15, 10, 0, Neutral, Settings).RateM2s;
             frame.Advance(Here, 45, 10, 1);
         }
         Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - before);
