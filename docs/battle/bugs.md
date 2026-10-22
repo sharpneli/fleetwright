@@ -7,6 +7,10 @@ add what's found.
 
 ## Flaky tests
 
+- [ ] One `Fleetwright.Tests` test failed once (173 of 174) on 2026-10-22, run right after a game capture (the map UI's
+  notices change); `-v q` hid its name, and seven reruns passed. A suspect: a GPU test (`Category=Gpu`) meeting a
+  device the capture had just let go. To catch it: run with `--logger "console;verbosity=normal"` next time it shows.
+
 - [ ] `RailsTests.Two_thousand_ships_steam_a_year_in_seconds` (a 60 s bound) fails in every full run of all three test
   projects together (2026-10-22: 64-78 s) and passes alone in ~33 s, the same before and after smoke Z6 (32.8 against
   33.0 s alone). Load, not a regression: `dotnet test` runs the projects in parallel. To settle it: the bound against
