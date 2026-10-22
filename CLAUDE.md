@@ -16,7 +16,7 @@ dotnet run --project src/Fleetwright                                       # the
 dotnet run --project src/Fleetwright -- -map=56.7,5.8,0.1 -time=1916-05-31T15:48 [-speed=30000] [-paused]   # map camera: lat,lon,m/px; world start UTC
 dotnet run --project src/Fleetwright -- -ships=dreadnought:9 -map=56.51,4.02,3 [-select=1]   # dev ships in the North Sea (sprites close, icons far), every other turning to 135°
 dotnet run --project src/Fleetwright -- -ships=dreadnought:1:0@59.03,5.50,90,15 -ships=destroyer@59.035,5.5,80 -select=1 -map=59.02,5.6,8 -speed=30   # dev ships placed (lat,lon,heading[,kn]; repeatable): onto Norway, sliding round a headland
-dotnet run --project src/Fleetwright -- -ships=dreadnought:1:0@56.5,4.0,0,0 -ships=dreadnought:1:0@56.5,4.13,0,0 -fire=1:56.5,4.13 -map=56.5,4.12,2 -select=1   # a dev salvo (ship[:battery][:ap|common|he]:lat,lon; by the magazine order without a kind); the strip's Fire row arms right-click and picks the kind
+dotnet run --project src/Fleetwright -- -ships=dreadnought:1:0@56.5,4.0,0,0 -ships=dreadnought:1:0@56.5,4.13,0,0 -fire=1:56.5,4.13 -map=56.5,4.12,2 -select=1   # a dev salvo (ship[:battery][:ap|common|he]:lat,lon; by the magazine order without a kind); the dev panel's (F1) salvo row arms right-click and picks the kind
 dotnet run --project src/Fleetwright -- -ships=lion:1:0@56.5,4.0,0,0 -ships=destroyer:1:1@56.5,4.04,0,0 "-loadout=1:main:he|secondary:RN 1906 light HE (lyddite)" -engage=1:2 -nopause -speed=10   # a dev ship's loadout (docs/battle/shells-armour-damage.md S5): ship:battery:shell[@share][+shell...], | between batteries; a shell a template's name, a block of the design's, or ap|common|he (the battery's own); a scenario's ship or unit takes "loadout"
 dotnet run --project src/Fleetwright -- -ships=super_dreadnought:1:0@56.5,4.0,0,0 -ships=super_dreadnought:1:1@56.5,4.23,0,15 -engage=1:2 -select=1 -speed=30 -map=56.5,4.0,0.45   # fire control: ship[:battery]:target engages (the strip's Fire row: engage, then right-click a ship or contact; cease)
 dotnet run --project src/Fleetwright -- -ships=dreadnought:2 -captain=2:follow:1:800 -select=2   # a captain: follow:target[:m], run:target, keep, none
@@ -62,7 +62,7 @@ per pixel; projection, picking, the grid and the land's clip in double, so nothi
 `Content/World/` (Natural Earth, a rough first Earth: `LandView`), with the clock's controls (space pauses,
 + and - change speed). Wheel zooms at the cursor, left drag pans. Ships (`MapScene.Ships.cs`, step 2.3a): a click
 selects, the strip at the bottom orders course and speed, right-click steers for a point, shift+right-click adds a
-waypoint, the search row orders a search pattern; the top-left panel spawns where you click, one ship or a group already on its
+waypoint, the search row orders a search pattern; the dev panel (F1, or `-dev` open at start: the scenario picker, the sides, truth and the spawner) spawns where you click, one ship or a group already on its
 stations (count, formation, spacing, heading, speed, side), the designer's design as it is now ("From designer", the
 default: an edit spawned is a new class, ships already out keep theirs) or a shipped one; pressed and dragged, they head
 the way of the drag (a ghost shows them until the release), and a spawn looks round at once (`ShipSystem.LookNow`). `ShipBatchRenderer` draws them inside the

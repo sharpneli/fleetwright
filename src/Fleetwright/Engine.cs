@@ -1138,11 +1138,6 @@ public unsafe class Sdl3GpuEngine : IDisposable
                     {
                         _isRunning = false;
                     }
-                    // Toggle demo window with F1
-                    if ((uint)evt.key.key == SDLK_F1)
-                    {
-                        _showDemoWindow = !_showDemoWindow;
-                    }
                     // Toggle stats window with F2
                     if ((uint)evt.key.key == SDLK_F2)
                     {

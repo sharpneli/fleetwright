@@ -378,8 +378,8 @@ public sealed partial class MapScene
     }
 
     /// <summary>The strip's fire row: the commanded unit's fire order (at will, hold fire, engage: armed, then a
-    /// right-click on a ship or contact), and the dev's one salvo "at" the sea; then each of the selected ship's batteries:
-    /// its target and state, salvos and hits.</summary>
+    /// right-click on a ship or contact); then each of the selected ship's batteries: its target and state, salvos and
+    /// hits. The dev's one salvo "at" the sea is in the dev panel (<see cref="DevFireRow"/>).</summary>
     void FireRow(Snapshot s, Unit unit, int k)
     {
         var cls = world.Classes.TryGet(s.Ships.Class[k]);
@@ -402,8 +402,37 @@ public sealed partial class MapScene
             ImGui.SameLine();
             ImGui.TextDisabled($"engaging {TargetLabel(s, s.Ships.FireTarget[k])}");
         }
-        ImGui.SameLine();
-        ImGui.TextDisabled("  dev:");
+        var v = s.Batteries;
+        for (int b = 0; b < cls.Batteries.Length; b++)
+        {
+            var row = cls.Batteries[b];
+            int i = 0;
+            while (i < v.Count && (v.Shooter[i] != selected || v.Battery[i] != b))
+                i++;
+            string gun = $"  {row.Label} {(row.Kind == Battery.Main ? "main" : "secondary")}";
+            if (i == v.Count)
+                ImGui.TextDisabled($"{gun}: no target{(fire == FireOrder.Hold ? " (holding fire)" : "")}");
+            else
+                ImGui.TextDisabled($"{gun} on {TargetLabel(s, v.Target[i])}: {StateText(v.State[i], v.Phase[i])}, " +
+                                   $"{(v.Local[i] ? "local control" : $"level {v.Level[i]} ({FireControlPresets.Name(v.Level[i])})")}; {v.Salvos[i]} salvos, {v.Hits[i]} hits of {v.Shells[i]}");
+        }
+        TorpedoRow(s, k, cls);
+        SmokeRow(s, k, cls);
+        DamageRow(s, k, cls);
+    }
+
+    /// <summary>Dev (F1): one salvo from the selected ship "at" the sea: the battery, the kind (the magazine order, or a
+    /// kind the battery carries, her loadout's, with its rounds left), armed, then a right-click on the sea fires it.</summary>
+    void DevFireRow(Snapshot s)
+    {
+        int k = s.Ships.IndexOf(selected);
+        var cls = k < 0 ? null : world.Classes.TryGet(s.Ships.Class[k]);
+        if (cls == null || cls.Batteries.Length == 0)
+        {
+            fireArmed = false;
+            return;
+        }
+        ImGui.TextDisabled("salvo:");
         ImGui.SameLine();
         fireBattery = Math.Clamp(fireBattery, 0, cls.Batteries.Length - 1);
         ImGui.SetNextItemWidth(120 * UiFonts.Scale);
@@ -464,23 +493,6 @@ public sealed partial class MapScene
             ImGui.SameLine();
             ImGui.TextDisabled($"{s.Shells.Count} in flight");
         }
-        var v = s.Batteries;
-        for (int b = 0; b < cls.Batteries.Length; b++)
-        {
-            var row = cls.Batteries[b];
-            int i = 0;
-            while (i < v.Count && (v.Shooter[i] != selected || v.Battery[i] != b))
-                i++;
-            string gun = $"  {row.Label} {(row.Kind == Battery.Main ? "main" : "secondary")}";
-            if (i == v.Count)
-                ImGui.TextDisabled($"{gun}: no target{(fire == FireOrder.Hold ? " (holding fire)" : "")}");
-            else
-                ImGui.TextDisabled($"{gun} on {TargetLabel(s, v.Target[i])}: {StateText(v.State[i], v.Phase[i])}, " +
-                                   $"{(v.Local[i] ? "local control" : $"level {v.Level[i]} ({FireControlPresets.Name(v.Level[i])})")}; {v.Salvos[i]} salvos, {v.Hits[i]} hits of {v.Shells[i]}");
-        }
-        TorpedoRow(s, k, cls);
-        SmokeRow(s, k, cls);
-        DamageRow(s, k, cls);
     }
 
     /// <summary>The selected ship making smoke (docs/battle/smoke.md Z4: her funnels burn rich, a screen), while the

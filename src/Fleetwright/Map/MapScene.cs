@@ -311,7 +311,9 @@ public sealed unsafe partial class MapScene : IScene
     bool Key(uint key)
     {
         var s = world.Current;
-        if (key == SDLK_SPACE)
+        if (key == SDLK_F1)
+            devOpen = !devOpen;
+        else if (key == SDLK_SPACE)
             world.Send(s.Paused ? Command.Resume() : Command.Pause());
         else if (key is SDLK_EQUALS or SDLK_KP_PLUS or SDLK_MINUS or SDLK_KP_MINUS)
             world.Send(Command.SetSpeed(StepSpeed(s.Speed, key is SDLK_MINUS or SDLK_KP_MINUS ? -1 : 1)));

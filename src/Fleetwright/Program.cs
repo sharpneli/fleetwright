@@ -24,6 +24,7 @@ public static unsafe class Program
         int follow = 0;
         var devShips = new List<string>();
         int selectShip = -1;
+        bool devPanel = false;
         var captains = new List<string>();
         var searches = new List<string>();
         var fires = new List<string>();
@@ -276,6 +277,10 @@ public static unsafe class Program
             {
                 searches.Add(arg.Substring("-search=".Length));
             }
+            else if (arg == "-dev")   // the map's dev panel (F1) open at start: the scenario picker, the spawner, the sides
+            {
+                devPanel = true;
+            }
             else if (arg.StartsWith("-select="))   // the ship selected on the map at start, by entity id (screenshots)
             {
                 int.TryParse(arg.Substring("-select=".Length), out selectShip);
@@ -499,7 +504,7 @@ public static unsafe class Program
             // opens the others
             view ??= designerFlags ? "designer" : null;
             engine.Scene = new SceneSwitcher(view switch { "designer" => 1, "hitbox" => 2, "ship" => 3, "profile" => 4, _ => 0 },
-                ("World", () => new Map.MapScene((SDL.SDL_GPUDevice*)device, world, mapCamera, shipArt, session, selectShip) { KeepCameraOnce = mapGiven && scenarioArg != null, SelectOnce = scenarioArg != null ? selectShip : -1, HitBench = hitBench, Follow = follow }),
+                ("World", () => new Map.MapScene((SDL.SDL_GPUDevice*)device, world, mapCamera, shipArt, session, selectShip) { KeepCameraOnce = mapGiven && scenarioArg != null, SelectOnce = scenarioArg != null ? selectShip : -1, HitBench = hitBench, Follow = follow, DevOpen = devPanel }),
                 ("Designer", () => early ?? MakeDesigner()),
                 ("Hitboxes", () => new HitView.HitboxScene((SDL.SDL_GPUDevice*)device, session, camera, show, hitRay)),
                 ("Ship", () => new ShipViewer((SDL.SDL_GPUDevice*)device, session, navy, era)),

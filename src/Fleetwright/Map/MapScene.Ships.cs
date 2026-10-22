@@ -28,6 +28,10 @@ public sealed unsafe partial class MapScene
     readonly string[] designNames;
     int selected;   // the selected ship's entity, or -1
     bool horizonRing;   // dev: the selected ship's horizon from her highest eye
+    bool devOpen;   // the dev panel (F1)
+
+    /// <summary>The dev panel (F1) open at start (-dev).</summary>
+    public bool DevOpen { init => devOpen = value; }
     double pressX, pressY;
     bool pressed;
 
@@ -727,6 +731,130 @@ public sealed unsafe partial class MapScene
         }
     }
 
+    /// <summary>The dev panel's body (F1): the scenario picker, the dev views (truth, horizon), watching or playing a
+    /// side and its commander, the sides' aggression, the spawner, and a salvo from the selected ship.</summary>
+    void DevUi(Snapshot s)
+    {
+        ScenarioRow();
+        ImGui.TextDisabled($"Ships at sea: {s.Ships.Count}   (dev: spawn)");
+        ImGui.SameLine();
+        bool truth = world.Truth;
+        if (ImGui.Checkbox("truth", ref truth))
+            world.Truth = truth;
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("dev: every ship as it is, not the player's picture");
+        ImGui.SameLine();
+        ImGui.Checkbox("horizon", ref horizonRing);
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("dev: round the selected ship, the sea's horizon from her highest eye, and fainter,\n" +
+                             "how far she could see a ship as tall as she is (docs/battle/fire-control.md F4d)");
+        ImGui.SameLine();
+        bool watch = s.PlayerSide < 0;
+        if (ImGui.Checkbox("watch", ref watch))
+            world.Send(Command.SetPlayerSide(watch ? -1 : spawnSide));
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("dev: no side is yours, every side the AI's (docs/battle/command.md 5.0); the spawner's side takes one back.\n" +
+                             "Encounters are then all others': set what they do to the clock in the clock's panel.");
+        if (s.PlayerSide >= 0 && s.CommanderMode[s.PlayerSide] != (byte)Sim.Ai.Commanders.CommanderMode.None)
+        {
+            // the player's side's commander (docs/battle/command.md 5.1d, decision 5): off unless they automate it
+            ImGui.SameLine();
+            bool on = s.CommanderOn[s.PlayerSide];
+            if (ImGui.Checkbox("AI commands", ref on))
+                world.Send(world.Ai.Orders.Commander(s.PlayerSide, on ? Sim.Ai.Commanders.CommanderMode.On : Sim.Ai.Commanders.CommanderMode.Auto));
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip("Your side's commander gives your top units their tasks; your own order to a unit takes it from him\n" +
+                                 "(\"leave it to the admiral\" on its group row hands it back).");
+        }
+        AggressionRow(s);
+        bool fromDesigner = designPick == FromDesigner;
+        if (fromDesigner && placeClass >= 0)
+            FollowDesigner();
+        ImGui.SetNextItemWidth(170 * UiFonts.Scale);
+        if (ImGui.BeginCombo("##design", fromDesigner ? "From designer" : designNames[designPick]))
+        {
+            if (ImGui.Selectable("From designer", fromDesigner) && !fromDesigner)
+            {
+                designPick = FromDesigner;
+                placeVersion = -1;
+                FollowDesigner();
+                placing = false;
+            }
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip($"the designer's design as it is now ({DesignerName()}); spawned after an edit, a new class");
+            for (int i = 0; i < designNames.Length; i++)
+                if (ImGui.Selectable(designNames[i], i == designPick))
+                {
+                    designPick = i;
+                    placeClass = world.Classes.Request(Shipgen.Design.Load(
+                        Path.Combine(AppContext.BaseDirectory, "Content", "Designs", designNames[i] + ".json")));
+                    placing = false;
+                }
+            ImGui.EndCombo();
+        }
+        fromDesigner = designPick == FromDesigner;
+        if (fromDesigner && ImGui.IsItemHovered())
+            ImGui.SetTooltip(DesignerName());
+        ImGui.SameLine();
+        bool ready = placeClass >= 0 && world.Classes.IsReady(placeClass);
+        string? error = ready ? world.Classes.ErrorOf(placeClass) : null;
+        // from the designer the first Place asks for the class; after that, as for a shipped design, it waits
+        // for the build
+        bool canPlace = fromDesigner && placeClass < 0 ? designer.Design != null : ready && error == null;
+        ImGui.BeginDisabled(!canPlace);
+        if (ImGui.Button(placing ? "Click or drag on the sea..." : "Place"))
+        {
+            placing = !placing;
+            if (placing && fromDesigner)
+                FollowDesigner();
+        }
+        ImGui.EndDisabled();
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+            ImGui.SetTooltip("click the sea: on the heading below · press and drag: they head the way you drag, placed on release");
+        ImGui.SameLine();
+        ImGui.Checkbox("keep placing", ref keepPlacing);
+
+        float field = 110 * UiFonts.Scale;
+        ImGui.SetNextItemWidth(field);
+        if (ImGui.InputInt("ships", ref spawnCount, 1, 4))
+            spawnCount = Math.Clamp(spawnCount, 1, 24);
+        if (spawnCount > 1)
+        {
+            ImGui.SameLine();
+            ImGui.SetNextItemWidth(170 * UiFonts.Scale);
+            ImGui.Combo("##spawnformation", ref spawnFormation, FormationNames, FormationNames.Length);
+            ImGui.SetNextItemWidth(field);
+            if (ImGui.InputInt("m apart", ref spawnSpacing, 100, 500))
+                spawnSpacing = Math.Clamp(spawnSpacing, 100, 20_000);
+        }
+        ImGui.SetNextItemWidth(field);
+        if (ImGui.InputInt("° heading", ref spawnHeading, 15, 90))
+            spawnHeading = ((spawnHeading % 360) + 360) % 360;
+        ImGui.SameLine();
+        ImGui.SetNextItemWidth(field);
+        if (ImGui.InputInt("kn", ref spawnKn, 1, 5))
+            spawnKn = Math.Clamp(spawnKn, 0, 40);
+        ImGui.SetNextItemWidth(field);
+        if (ImGui.InputInt("side", ref spawnSide, 1, 1))
+        {
+            spawnSide = Math.Clamp(spawnSide, 0, maxSide);
+            world.Send(Command.SetPlayerSide(spawnSide));   // the player plays the side they spawn
+        }
+        ImGui.SameLine();
+        ImGui.TextDisabled("(yours; different sides are opposing)");
+        if (fromDesigner && designer.Design == null)
+            ImGui.TextColored(new Vector4(1, 0.4f, 0.3f, 1), "the designer has no design");
+        else if (placeClass >= 0 && !ready)
+            ImGui.TextDisabled("building...");
+        else if (error != null)
+            ImGui.TextColored(new Vector4(1, 0.4f, 0.3f, 1), error.Split('\n')[0]);
+        if (selected >= 0)
+        {
+            ImGui.Separator();
+            DevFireRow(s);
+        }
+    }
+
     void ShipsUi()
     {
         var vp = ImGui.GetMainViewport();
@@ -736,126 +864,19 @@ public sealed unsafe partial class MapScene
                                      ImGuiWindowFlags.NoNav | ImGuiWindowFlags.NoMove;
         var s = world.Current;
 
-        // dev: spawn ships, top left
-        ImGui.SetNextWindowPos(new Vector2(vp.WorkPos.X + pad, vp.WorkPos.Y + pad), ImGuiCond.Always);
-        ImGui.SetNextWindowBgAlpha(0.75f);
-        if (ImGui.Begin("##spawn", Hud))
+        // the dev panel (F1): the scenario picker, the sides, the dev views and the spawner; none of it is the game's
+        if (!devOpen)
+            placing = placeDrag = false;
+        else
         {
-            ScenarioRow();
-            ImGui.TextDisabled($"Ships at sea: {s.Ships.Count}   (dev: spawn)");
-            ImGui.SameLine();
-            bool truth = world.Truth;
-            if (ImGui.Checkbox("truth", ref truth))
-                world.Truth = truth;
-            if (ImGui.IsItemHovered())
-                ImGui.SetTooltip("dev: every ship as it is, not the player's picture");
-            ImGui.SameLine();
-            ImGui.Checkbox("horizon", ref horizonRing);
-            if (ImGui.IsItemHovered())
-                ImGui.SetTooltip("dev: round the selected ship, the sea's horizon from her highest eye, and fainter,\n" +
-                                 "how far she could see a ship as tall as she is (docs/battle/fire-control.md F4d)");
-            ImGui.SameLine();
-            bool watch = s.PlayerSide < 0;
-            if (ImGui.Checkbox("watch", ref watch))
-                world.Send(Command.SetPlayerSide(watch ? -1 : spawnSide));
-            if (ImGui.IsItemHovered())
-                ImGui.SetTooltip("dev: no side is yours, every side the AI's (docs/battle/command.md 5.0); the spawner's side takes one back.\n" +
-                                 "Encounters are then all others': set what they do to the clock in the clock's panel.");
-            if (s.PlayerSide >= 0 && s.CommanderMode[s.PlayerSide] != (byte)Sim.Ai.Commanders.CommanderMode.None)
-            {
-                // the player's side's commander (docs/battle/command.md 5.1d, decision 5): off unless they automate it
-                ImGui.SameLine();
-                bool on = s.CommanderOn[s.PlayerSide];
-                if (ImGui.Checkbox("AI commands", ref on))
-                    world.Send(world.Ai.Orders.Commander(s.PlayerSide, on ? Sim.Ai.Commanders.CommanderMode.On : Sim.Ai.Commanders.CommanderMode.Auto));
-                if (ImGui.IsItemHovered())
-                    ImGui.SetTooltip("Your side's commander gives your top units their tasks; your own order to a unit takes it from him\n" +
-                                     "(\"leave it to the admiral\" on its group row hands it back).");
-            }
-            AggressionRow(s);
-            bool fromDesigner = designPick == FromDesigner;
-            if (fromDesigner && placeClass >= 0)
-                FollowDesigner();
-            ImGui.SetNextItemWidth(170 * UiFonts.Scale);
-            if (ImGui.BeginCombo("##design", fromDesigner ? "From designer" : designNames[designPick]))
-            {
-                if (ImGui.Selectable("From designer", fromDesigner) && !fromDesigner)
-                {
-                    designPick = FromDesigner;
-                    placeVersion = -1;
-                    FollowDesigner();
-                    placing = false;
-                }
-                if (ImGui.IsItemHovered())
-                    ImGui.SetTooltip($"the designer's design as it is now ({DesignerName()}); spawned after an edit, a new class");
-                for (int i = 0; i < designNames.Length; i++)
-                    if (ImGui.Selectable(designNames[i], i == designPick))
-                    {
-                        designPick = i;
-                        placeClass = world.Classes.Request(Shipgen.Design.Load(
-                            Path.Combine(AppContext.BaseDirectory, "Content", "Designs", designNames[i] + ".json")));
-                        placing = false;
-                    }
-                ImGui.EndCombo();
-            }
-            fromDesigner = designPick == FromDesigner;
-            if (fromDesigner && ImGui.IsItemHovered())
-                ImGui.SetTooltip(DesignerName());
-            ImGui.SameLine();
-            bool ready = placeClass >= 0 && world.Classes.IsReady(placeClass);
-            string? error = ready ? world.Classes.ErrorOf(placeClass) : null;
-            // from the designer the first Place asks for the class; after that, as for a shipped design, it waits
-            // for the build
-            bool canPlace = fromDesigner && placeClass < 0 ? designer.Design != null : ready && error == null;
-            ImGui.BeginDisabled(!canPlace);
-            if (ImGui.Button(placing ? "Click or drag on the sea..." : "Place"))
-            {
-                placing = !placing;
-                if (placing && fromDesigner)
-                    FollowDesigner();
-            }
-            ImGui.EndDisabled();
-            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                ImGui.SetTooltip("click the sea: on the heading below · press and drag: they head the way you drag, placed on release");
-            ImGui.SameLine();
-            ImGui.Checkbox("keep placing", ref keepPlacing);
-
-            float field = 110 * UiFonts.Scale;
-            ImGui.SetNextItemWidth(field);
-            if (ImGui.InputInt("ships", ref spawnCount, 1, 4))
-                spawnCount = Math.Clamp(spawnCount, 1, 24);
-            if (spawnCount > 1)
-            {
-                ImGui.SameLine();
-                ImGui.SetNextItemWidth(170 * UiFonts.Scale);
-                ImGui.Combo("##spawnformation", ref spawnFormation, FormationNames, FormationNames.Length);
-                ImGui.SetNextItemWidth(field);
-                if (ImGui.InputInt("m apart", ref spawnSpacing, 100, 500))
-                    spawnSpacing = Math.Clamp(spawnSpacing, 100, 20_000);
-            }
-            ImGui.SetNextItemWidth(field);
-            if (ImGui.InputInt("° heading", ref spawnHeading, 15, 90))
-                spawnHeading = ((spawnHeading % 360) + 360) % 360;
-            ImGui.SameLine();
-            ImGui.SetNextItemWidth(field);
-            if (ImGui.InputInt("kn", ref spawnKn, 1, 5))
-                spawnKn = Math.Clamp(spawnKn, 0, 40);
-            ImGui.SetNextItemWidth(field);
-            if (ImGui.InputInt("side", ref spawnSide, 1, 1))
-            {
-                spawnSide = Math.Clamp(spawnSide, 0, maxSide);
-                world.Send(Command.SetPlayerSide(spawnSide));   // the player plays the side they spawn
-            }
-            ImGui.SameLine();
-            ImGui.TextDisabled("(yours; different sides are opposing)");
-            if (fromDesigner && designer.Design == null)
-                ImGui.TextColored(new Vector4(1, 0.4f, 0.3f, 1), "the designer has no design");
-            else if (placeClass >= 0 && !ready)
-                ImGui.TextDisabled("building...");
-            else if (error != null)
-                ImGui.TextColored(new Vector4(1, 0.4f, 0.3f, 1), error.Split('\n')[0]);
+            // below the menu bar: placed once, on the first frame, before the work area knows of the bar
+            ImGui.SetNextWindowPos(new Vector2(vp.Pos.X + pad, vp.Pos.Y + ImGui.GetFrameHeight() + pad), ImGuiCond.FirstUseEver);
+            ImGui.SetNextWindowBgAlpha(0.85f);
+            if (ImGui.Begin("Dev (F1)##dev", ref devOpen, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings |
+                                                           ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoFocusOnAppearing))
+                DevUi(s);
+            ImGui.End();
         }
-        ImGui.End();
 
         HeldUi(s);
         if (placeDrag)
