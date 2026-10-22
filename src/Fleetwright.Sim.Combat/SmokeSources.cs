@@ -1,3 +1,4 @@
+using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Ships;
 
 namespace Fleetwright.Sim.Combat;
@@ -69,6 +70,26 @@ public static class SmokeSources
         var (d, life) = MagazineBlast.Fireball(massKg);
         double sigma = d / 4;
         return (8 * 2 * Math.PI * sigma * sigma, sigma, 0.35 * d, MagazineBlast.LiftD * d, 2 * life);
+    }
+
+    /// <summary>How high a class's funnel smoke shows at most, m (docs/battle/smoke.md Z6, the world's sight reach): at
+    /// full power in still air (the wind over her decks her own speed; the air's turbulence a wind of
+    /// <paramref name="windMs"/>'s), each funnel's plume risen and spread a minute past its rise, its centre and two σ
+    /// over it. A slower ship in a following wind can rise higher; the reach counts the usual case.</summary>
+    public static double TopM(ShipClass c, double windMs)
+    {
+        var air = SmokeAir.Of(new WeatherHere(25_000, 0, windMs));
+        double rel = Math.Max(c.Motion.MaxSpeedKn * 0.514444, SmokeAir.CalmMs), top = 0;
+        for (int i = 0; i < c.Funnels.Length; i++)
+        {
+            var f = Funnel(c, i, c.Motion.MaxSpeedKn, rel, air);
+            if (!(f.RateM2s > 0))
+                continue;
+            var p = SmokeModel.State(SmokeModel.Born(Earth.Position(0, 0), 0, AirFrame.Identity, f.BaseM, f.RiseM, f.RiseS, 15, 15, 1, 0, SmokeTint.Coal, air),
+                f.RiseS + 60, AirFrame.Identity, air);
+            top = Math.Max(top, p.Z + 2 * Math.Sqrt(p.SigmaZ2));
+        }
+        return top;
     }
 
     /// <summary>Funnel <paramref name="funnel"/> of a class at a speed through the water, kn, in a wind relative to the ship

@@ -375,6 +375,21 @@ public sealed record SimSettings
     /// <summary>A contact out of sight this long is forgotten, ms.</summary>
     public long SightForgetMs { get; init; } = 6 * 3_600_000L;
 
+    /// <summary>Smoke on the horizon (docs/battle/smoke.md Z6): smoke shows as a mass where the eye looks through more than
+    /// <see cref="SightSmokeTau"/> of it (the plan's ~0.5); its contrast against the horizon sky by tint (coal, oil,
+    /// powder, fire, chemical) [EST: coal and fire black, oil brown, powder and chemical white against a bright sky].</summary>
+    public double SightSmokeTau { get; init; } = 0.5;
+    public double[] SightSmokeContrast { get; init; } = [0.8, 0.5, 0.3, 0.8, 0.3];
+
+    /// <summary>A sighting of smoke alone: its range's 1-sigma as a share of the range (no rangefinder takes a cloud on the
+    /// horizon) [EST]; its bearing's from the eye and this share of the plume's spread across the line (the ships are
+    /// somewhere at its head) [EST]; a first report's speed unknown, its 1-sigma, m/s. The errors of one sighting after
+    /// another of the same smoke go together: over <see cref="SightSmokeRangeS"/> they count for one [EST].</summary>
+    public double SightSmokeRangeS { get; init; } = 300;
+    public double SightSmokeRangeShare { get; init; } = 0.25;
+    public double SightSmokeBearingShare { get; init; } = 0.5;
+    public double SightSmokeSpeedSigmaMs { get; init; } = 8;
+
     // ------------------------------------------------------------------ shadowing (docs/battle/plan.md step 3.2f)
 
     /// <summary>A shadower given no range keeps this share of how far he can see (the visibility, or the dark's reach),

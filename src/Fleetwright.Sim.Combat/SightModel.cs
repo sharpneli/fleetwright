@@ -188,6 +188,20 @@ public static class SightModel
     public static double MarginOfArea(double areaM2, double distanceM, double magnification, in SightLine line, SimSettings s) =>
         Contrast(distanceM, line, s) / Threshold(areaM2 * magnification * magnification / (distanceM * distanceM), s);
 
+    /// <summary>The margin an eye makes out a ship's smoke at (docs/battle/smoke.md Z6, <see cref="SmokePlume"/>): what of
+    /// it shows over the horizon at the view (the sine of the line of sight against its trail), at its own contrast through
+    /// the haze (the visibility, or the light's reach: smoke makes no silhouette of its own), against the eye's threshold
+    /// for that solid angle. 0 when none of it shows.</summary>
+    public static double SmokeMargin(double eyeM, double magnification, in SmokePlume plume, double sinView, in SightLine line, SimSettings s)
+    {
+        double d = Math.Max(line.DistanceM, 1);
+        var (area, shade) = plume.Showing(HiddenM(eyeM, d, s), sinView);
+        if (!(area > 0) || !(shade > 0))
+            return 0;
+        double reach = Math.Min(line.VisibilityM, LightReachM(line.SunElevationDeg, s));
+        return shade * Math.Exp(-Extinction(reach, s) * d) / Threshold(area * magnification * magnification / (d * d), s);
+    }
+
     /// <summary>A target's apparent contrast through the haze at a distance: a grey ship's against the sky, or a silhouette's
     /// against a bright horizon, faded by the visibility (or the light's reach, whichever is shorter).</summary>
     static double Contrast(double distanceM, in SightLine line, SimSettings s)

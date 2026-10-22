@@ -8,19 +8,22 @@ namespace Fleetwright.Map;
 /// <summary>The player's picture on the map (docs/battle/plan.md step 3.2e; docs/map-ui/README.md "Uncertainty on the
 /// map"): each contact where their navy reckons it, a marker and its course line, inside its error ellipse (2 sigma),
 /// in its side's colour once its type is made out; solid while in sight, fading once it's out of sight and dead reckoned.
-/// Its label says what it's taken for: a ship, its type, its class (with a "?": it may be wrong), its name.</summary>
+/// Its label says what it's taken for: a ship, its type, its class (with a "?": it may be wrong), its name. Smoke on the
+/// horizon (docs/battle/smoke.md Z6) is a smudge where it's reckoned, with the bearing it was taken on while it's in
+/// sight: no ship's marker or course until she's seen.</summary>
 public sealed partial class MapScene
 {
     static readonly Vector4 UnknownContact = new(0.95f, 0.9f, 0.7f, 1f);
     const double ContactFadeMs = 30 * 60_000;   // out of sight, it fades to its faintest over this
     const double ContactCourseS = 300;          // the course line: five minutes' steaming
     const float ContactMarkerPx = 5;
+    static readonly Vector4 SmokeSmudge = new(0.62f, 0.58f, 0.52f, 0.85f);
     bool[] labelCells = [];
 
     static Vector4 ContactColour(ContactsView c, int i, long now)
     {
         var col = c.Side[i] == 255 ? UnknownContact : ShipDrawList.SideTints[c.Side[i] < ShipDrawList.SideTints.Length ? c.Side[i] : 0];
-        float a = c.InSight[i] ? 0.95f : (float)Math.Max(0.3, 0.85 - 0.55 * (now - c.SeenMs[i]) / ContactFadeMs);
+        float a = c.InSight[i] || c.SmokeInSight[i] ? 0.95f : (float)Math.Max(0.3, 0.85 - 0.55 * (now - c.SeenMs[i]) / ContactFadeMs);
         return col with { W = a };
     }
 
@@ -45,8 +48,27 @@ public sealed partial class MapScene
                 Point(view, (p + ax * (Math.Cos(a) * major) + across * (Math.Sin(a) * minor)).Normalized() * Earth.Radius);
             }
             overlay.End();
+            if (c.SmokeInSight[i])
+            {
+                // the bearing it was taken on: from where she looked, through it, out past its range's error
+                var far = (p + (p - c.From[i]).Normalized() * (2 * c.MajorM[i])).Normalized() * Earth.Radius;
+                if (view.Project(c.From[i], out double fx, out double fy) && view.Project(far, out double tx, out double ty))
+                {
+                    overlay.BeginStrip(col with { W = col.W * 0.45f }, 1f);
+                    overlay.Point(fx, fy);
+                    overlay.Point(tx, ty);
+                    overlay.End();
+                }
+            }
             if (!view.Project(p, out double x, out double y))
                 continue;
+            if (c.SmokeInSight[i] || c.Level[i] == ContactLevel.Smoke)
+            {
+                double r = Math.Clamp(2 * c.MinorM[i] / view.MetresPerPixel, 28, 64);
+                overlay.Disc(x, y, r, SmokeSmudge with { W = SmokeSmudge.W * col.W }, 0.7f);
+            }
+            if (c.Level[i] == ContactLevel.Smoke)
+                continue;   // smoke alone: no ship's marker, no course
             // the marker: a diamond, and the course line ahead
             overlay.BeginStrip(col, 1.5f);
             overlay.Point(x, y - ContactMarkerPx);
@@ -82,10 +104,13 @@ public sealed partial class MapScene
                 ShipType.Merchant => "merchant",
                 _ => "ship",
             },
-            _ => "ship",
+            ContactLevel.Ship => "ship",
+            _ => "smoke",
         };
         what += SeenText(c.Seen[i]);
-        return c.InSight[i] ? what : $"{what} · last seen {new WorldTime(c.SeenMs[i]).ToUtc():HH:mm}";
+        if (c.SmokeInSight[i] && c.Level[i] > ContactLevel.Smoke)
+            what += " · her smoke";
+        return c.InSight[i] || c.SmokeInSight[i] ? what : $"{what} · last seen {new WorldTime(c.SeenMs[i]).ToUtc():HH:mm}";
     }
 
     string ClassName(int id) => id >= 0 && world.Classes.TryGet(id) is { } cls ? cls.Name : "?";

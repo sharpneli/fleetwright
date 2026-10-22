@@ -1672,7 +1672,7 @@ compiles around it.
   reference beside the research, calibrated on the recorded first sightings (Jutland ~24 km in haze, Denmark Strait
   ~35 km). Draws are a counter-based hash of (seed, navy, target, tick), independent of order and threads.
 - **d. Each navy's picture,** world state (saved, hashed), in the world, not the AI: per contact the classification as
-  far as known ("smoke", heavy ships, a class, a name), an estimated position and velocity with an uncertainty long
+  far as known ("smoke": docs/battle/smoke.md Z6, built 2026-10-22; heavy ships, a class, a name), an estimated position and velocity with an uncertainty long
   along the line of sight (the eye's ±20%, a rangefinder by its base), when last seen and from where. Unseen, it's
   dead-reckoned and its uncertainty grows. For each navy and enemy ship the nearest observers through the grid are
   tried until one sees it, so it's O(n·k), not observers × targets.

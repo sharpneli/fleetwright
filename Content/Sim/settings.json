@@ -114,6 +114,13 @@
   "SightMisidentify": 0.3,
   "SightSimilarScore": 1.5,
   "SightForgetMs": 21600000,
+  // smoke on the horizon (docs/battle/smoke.md Z6): by tint coal, oil, powder, fire, chemical
+  "SightSmokeTau": 0.5,
+  "SightSmokeContrast": [0.8, 0.5, 0.3, 0.8, 0.3],
+  "SightSmokeRangeS": 300,
+  "SightSmokeRangeShare": 0.25,
+  "SightSmokeBearingShare": 0.5,
+  "SightSmokeSpeedSigmaMs": 8,
   "ShadowVisibilityShare": 0.7,
   "ShadowMinM": 3000,
   "ShadowMaxM": 20000,

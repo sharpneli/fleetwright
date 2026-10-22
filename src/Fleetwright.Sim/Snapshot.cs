@@ -491,14 +491,16 @@ public sealed class HitsView
 /// on (the key: contacts are on true ships in the battle module), the estimate carried on to the snapshot's time (position
 /// and velocity) and its error ellipse (1-sigma semi-axes, the major's bearing), whether it's in sight and when it was
 /// last seen, how far it's made out, its type, the class it's taken for (a registry id, -1 below class), and its side once
-/// its type is made out (255 before).</summary>
+/// its type is made out (255 before); whether her smoke was in sight while she wasn't, and where the last fix was taken
+/// from (docs/battle/smoke.md Z6).</summary>
 public sealed class ContactsView
 {
     public int Count;
     public int[] Entity = [], TakenFor = [];
     public Vec3d[] Position = [], Velocity = [];
     public double[] MajorM = [], MinorM = [], AxisDeg = [];
-    public bool[] InSight = [];
+    public bool[] InSight = [], SmokeInSight = [];
+    public Vec3d[] From = [];
     public long[] SeenMs = [];
     public ContactLevel[] Level = [];
     public ShipType[] Type = [];
@@ -519,6 +521,8 @@ public sealed class ContactsView
         Array.Resize(ref MinorM, n);
         Array.Resize(ref AxisDeg, n);
         Array.Resize(ref InSight, n);
+        Array.Resize(ref SmokeInSight, n);
+        Array.Resize(ref From, n);
         Array.Resize(ref SeenMs, n);
         Array.Resize(ref Level, n);
         Array.Resize(ref Type, n);

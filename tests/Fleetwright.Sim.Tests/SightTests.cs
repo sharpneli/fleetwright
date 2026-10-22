@@ -274,11 +274,12 @@ public class SightModelTests(ITestOutputHelper output)
     }
 
     /// <summary>fire-control.md F4d: the world's reach is the tallest eye's and silhouette's horizons among the classes at
-    /// sea, it grows as a taller one comes, and the encounters hold ships within it.</summary>
+    /// sea, it grows as a taller one comes, and the encounters hold ships within it; with the smoke field on, the tallest
+    /// funnel smoke's top where it's higher (docs/battle/smoke.md Z6).</summary>
     [Fact]
     public void The_reach_follows_the_tallest_eye_and_top_at_sea()
     {
-        var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), 1, S);
+        var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), 1, S with { Smoke = false });
         Assert.Equal(0, w.Reach.SightM);
         var dd = Fleet.Get("destroyer").Class!;
         var derf = Fleet.Scenario("derfflinger");
@@ -290,6 +291,16 @@ public class SightModelTests(ITestOutputHelper output)
         output.WriteLine($"reach: a destroyer alone {first / 1000:F1} km, with Derfflinger {both / 1000:F1} km");
         Assert.Equal(both, w.Reach.SightM, 6);
         Assert.Equal(Math.Max(both, S.EncounterRangeMinM), w.Reach.EncounterM, 6);
+        Assert.Equal(0, w.Reach.SmokeTopM);
+        // the field on: her smoke shows over a horizon further off
+        var ws = new World(WorldTime.FromUtc(1916, 5, 31, 14), 1, S with { Smoke = true });
+        ws.Apply(ShipSystem.Spawn(ws.Ships.AddClass(dd), 56, 4, 0, 0, 1));
+        ws.Apply(ShipSystem.Spawn(ws.Ships.AddClass(derf), 58, 4, 180, 0, 2));
+        double smoke = Math.Max(Combat.SmokeSources.TopM(dd, S.DefaultWindMs), Combat.SmokeSources.TopM(derf, S.DefaultWindMs));
+        output.WriteLine($"with the smoke field: her smoke's top {smoke:F0} m, the reach {ws.Reach.SightM / 1000:F1} km");
+        Assert.Equal(smoke, ws.Reach.SmokeTopM, 6);
+        Assert.True(smoke > Math.Max(dd.Silhouette.TopM, derf.Silhouette.TopM));
+        Assert.Equal(Combat.SightModel.ReachM(Math.Max(dd.Eyes[0].HeightM, derf.Eyes[0].HeightM), smoke, S), ws.Reach.SightM, 6);
     }
 
     /// <summary>For tuning: how far each kind of eye makes out each kind of ship, by weather and light.</summary>

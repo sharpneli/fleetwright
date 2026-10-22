@@ -4,9 +4,11 @@ using Fleetwright.Sim.Ships;
 
 namespace Fleetwright.Sim;
 
-/// <summary>How far a contact has been made out: a ship, its type, its class (perhaps wrongly), its name.</summary>
+/// <summary>How far a contact has been made out: smoke on the horizon (docs/battle/smoke.md Z6: something's there, its
+/// ships not yet seen), a ship, its type, its class (perhaps wrongly), its name.</summary>
 public enum ContactLevel : byte
 {
+    Smoke,
     Ship,
     Type,
     Class,
@@ -43,9 +45,9 @@ public enum SeenFlags : ushort
 }
 
 /// <summary>A ship as a navy holds it (docs/world/architecture.md "Knowledge"; docs/battle/plan.md step 3.2d): keyed on
-/// the true ship (agreed 2026-10-13: no false merges or splits in the battle module); first and last seen, and whether it
-/// was in sight at the last look; the estimate (position and velocity at <see cref="EstMs"/>, with its covariance); how far
-/// it's been made out and what it's taken for (perhaps wrongly); the last report's source; and what was made out of its
+/// the true ship (agreed 2026-10-13: no false merges or splits in the battle module), her smoke's too (docs/battle/smoke.md
+/// Z6); first and last seen (she or her smoke), and whether she or her smoke was in sight at the last look; the estimate
+/// (position and velocity at <see cref="EstMs"/>, with its covariance); how far it's been made out and what it's taken for (perhaps wrongly); the last report's source; and what was made out of its
 /// condition at the last sighting (<see cref="Seen"/>).</summary>
 public struct Contact
 {
@@ -54,7 +56,10 @@ public struct Contact
 
     /// <summary>When a look was last made for it (seen or not).</summary>
     public long LookedMs;
-    public bool InSight;
+
+    /// <summary>Whether the ship is in sight; whether her smoke was at the last look while she wasn't (docs/battle/smoke.md
+    /// Z6: a fix on the smoke keeps her track, <see cref="SeenMs"/> its time).</summary>
+    public bool InSight, SmokeInSight;
     public Vec3d Position, Velocity;
     public Cov4 P;
     public ContactLevel Level;
@@ -64,6 +69,9 @@ public struct Contact
     public int TakenFor;
     public int Observer;
     public EyeKind Eye;
+
+    /// <summary>Where the observer was at the last fix (the map's bearing line for smoke).</summary>
+    public Vec3d From;
 
     /// <summary>The ship's side (a navy knows it once it's made out the type: its colours, its build).</summary>
     public byte Side;
@@ -149,6 +157,7 @@ public sealed class Picture
             h.Add(c.LookedMs);
             h.Add(c.EstMs);
             h.Add(c.InSight);
+            h.Add(c.SmokeInSight);
             h.Add(c.Position.X);
             h.Add(c.Position.Y);
             h.Add(c.Position.Z);

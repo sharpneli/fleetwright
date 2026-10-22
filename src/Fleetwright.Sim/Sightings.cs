@@ -22,6 +22,8 @@ namespace Fleetwright.Sim;
 /// chance), its name within <see cref="SimSettings.SightNameM"/>, where a wrong class is put right.</item>
 /// <item>Out of sight, a contact is dead reckoned (<see cref="Picture.EstimateAt"/>) and forgotten after
 /// <see cref="SimSettings.SightForgetMs"/>.</item>
+/// <item><b>Smoke on the horizon</b> (docs/battle/smoke.md Z6): a ship not seen is looked for by her smoke
+/// (<see cref="SmokeLook"/>), and a fix on it starts a contact at <see cref="ContactLevel.Smoke"/> or keeps her track.</item>
 /// </list></summary>
 public sealed class Sightings
 {
@@ -31,7 +33,7 @@ public sealed class Sightings
     readonly Encounters encounters;
     readonly Picture?[] bySide = new Picture?[256];
     readonly List<Picture> pictures = new(4);
-    readonly RandomStream stream;
+    readonly RandomStream stream, smokeStream;
     readonly Dictionary<int, int> similar = new(64);   // a class's most similar other class in the world, or -1
     int similarFor = -1;   // the count of classes in use it was worked out for
 
@@ -54,6 +56,7 @@ public sealed class Sightings
         this.relations = relations;
         this.encounters = encounters;
         stream = RandomStream.Named(seed, "Sighting");
+        smokeStream = RandomStream.Named(seed, "SmokeSighting");
     }
 
     /// <summary>The pictures that exist, in the order they were made.</summary>
@@ -108,8 +111,8 @@ public sealed class Sightings
     {
         foreach (var p in pictures)
             for (int i = 0; i < p.Count; i++)
-                if (p[i].InSight && p[i].LookedMs != now)
-                    p.At(i).InSight = false;
+                if ((p[i].InSight || p[i].SmokeInSight) && p[i].LookedMs != now)
+                    (p.At(i).InSight, p.At(i).SmokeInSight) = (false, false);
     }
 
     /// <summary>One encounter's look: its ships (order[a..b)) in a grid in the tangent plane at its first ship, then each
@@ -168,8 +171,8 @@ public sealed class Sightings
                 if (!relations.Hostile(by, side[t]))
                     continue;
                 int found = Nearest(t, by, w, h, minX, minY, cell);
-                if (found > 0)
-                    Sight(world, store, t, by, found, now, dt, weather.VisibilityM, sunEl, lowSun ? sunBrg : double.NaN, classesInUse);
+                if (found > 0 && !Sight(world, store, t, by, found, now, dt, weather.VisibilityM, sunEl, lowSun ? sunBrg : double.NaN, classesInUse))
+                    SmokeLook(world, store, t, by, found, now, dt, weather.VisibilityM, sunEl);
             }
         }
     }
@@ -226,8 +229,8 @@ public sealed class Sightings
     }
 
     /// <summary>Side `by`'s look for ship t with its nearest observers: the summed rate, the best margin and who had it;
-    /// then a fix, a detection, or the contact going out of sight.</summary>
-    void Sight(World world, ShipStore store, int t, byte by, int found, long now, double dt, double vis, double sunEl, double sunBrg,
+    /// then a fix, a detection, or the contact going out of sight. Whether she's in sight after it.</summary>
+    bool Sight(World world, ShipStore store, int t, byte by, int found, long now, double dt, double vis, double sunEl, double sunBrg,
         IReadOnlyList<int> classesInUse)
     {
         var ts = store[slot[t]];
@@ -292,9 +295,114 @@ public sealed class Sightings
         {
             var os = store[slot[fixObs]];
             Fix(pic, ci, ts, store.Combat.Condition(ts.Slot), os, os.Handling.Class.Eyes[fixEye], best, fixMargin, fixD, fixBrg, now, ref r, classesInUse);
+            return true;
         }
-        else if (inSight && best < 1)
+        if (inSight && best < 1)
             pic.At(ci).InSight = false;
+        return false;
+    }
+
+    /// <summary>Side `by`'s look for ship t's smoke (docs/battle/smoke.md Z6), she herself not in sight: each of its
+    /// nearest observers' highest eye that bears on her plume (<see cref="SmokeSystem.PlumeOf"/>; the masthead's lookouts
+    /// see furthest), its margin by <see cref="SightModel.SmokeMargin"/>; the rates add as a ship's do, and smoke in sight
+    /// stays so while any of them still makes it out. A fix (<see cref="SmokeFix"/>) or the smoke going out of sight. Its
+    /// own draws (a stream of its own), so the ships' are as they were.</summary>
+    void SmokeLook(World world, ShipStore store, int t, byte by, int found, long now, double dt, double vis, double sunEl)
+    {
+        var ts = store[slot[t]];
+        var pic = Get(by);
+        int ci = pic.IndexOf(ts.Entity);
+        bool held = ci >= 0 && pic[ci].SmokeInSight;
+        if (!world.Smoke.On || !world.Smoke.PlumeOf(ts.Entity, out var plume))
+        {
+            if (held)
+                pic.At(ci).SmokeInSight = false;
+            return;
+        }
+        double rate = 0, best = 0, fixSin = 0;
+        int fixObs = -1, fixEye = -1;
+        double top = SightModel.HorizonM(plume.TopM, settings);
+        var up = plume.Centre.Normalized();
+        for (int m = 0; m < found; m++)
+        {
+            var os = store[slot[nearIdx[m]]];
+            var eyes = os.Handling.Class.Eyes;
+            if (eyes.Length == 0)
+                continue;
+            double d = Earth.Distance(os.Position, plume.Centre);
+            if (d > SightModel.HorizonM(eyes[0].HeightM, settings) + top)
+                continue;
+            double rel = Earth.Bearing(os.Position, plume.Centre) - os.HeadingDeg;
+            var works = store.Combat.Condition(slot[nearIdx[m]]).EyeWorks;
+            int e = 0;
+            while (e < eyes.Length && (!eyes[e].Sees(rel) || !works[e]))
+                e++;
+            if (e == eyes.Length)
+                continue;
+            // the view against her trail: the line of sight on the sea at the plume
+            var los = plume.Centre - os.Position;
+            los -= up * Vec3d.Dot(los, up);
+            double len = los.Length, cos = len > 0 ? Vec3d.Dot(los, plume.Axis) / len : 0, sin = Math.Sqrt(Math.Max(1 - cos * cos, 0));
+            double margin = SightModel.SmokeMargin(eyes[e].HeightM, SightModel.Magnification(eyes[e], settings), plume, sin,
+                new SightLine(d, 90, vis, sunEl, false), settings);
+            rate += SightModel.Rate(margin, SightModel.SearchFactor(eyes[e], settings), settings);
+            if (margin > best)
+                (best, fixObs, fixEye, fixSin) = (margin, nearIdx[m], e, sin);
+        }
+        if (ci >= 0)
+            pic.At(ci).LookedMs = now;
+        var r = smokeStream.Derive(((ulong)by << 56) ^ ((ulong)(uint)ts.Entity << 24) ^ (ulong)(now / settings.SightingMs));
+        if (held && best >= 1 || !held && rate > 0 && r.NextDouble() < SightModel.Chance(rate, dt))
+        {
+            var os = store[slot[fixObs]];
+            SmokeFix(pic, ci, ts, os, os.Handling.Class.Eyes[fixEye], plume.AcrossView(fixSin), now, ref r);
+        }
+        else if (held)
+            pic.At(ci).SmokeInSight = false;
+    }
+
+    /// <summary>A sighting of a ship's smoke into the picture (docs/battle/smoke.md Z6): a bearing on her (the ships are at
+    /// the smoke's head: the eye's error and <see cref="SimSettings.SightSmokeBearingShare"/> of the plume's spread across
+    /// the line) and a rough range (<see cref="SimSettings.SightSmokeRangeShare"/> of it). The errors of one sighting
+    /// after another of the same smoke go together: a held contact's readings count, over
+    /// <see cref="SimSettings.SightSmokeRangeS"/>, for one (each taken looser by √(that / the time since its last
+    /// fix)). A new contact is at <see cref="ContactLevel.Smoke"/>, its course and speed unknown; a held one keeps its
+    /// level, and what was made out of her stays.</summary>
+    void SmokeFix(Picture pic, int ci, ShipState ts, ShipState os, in EyeRow eye, double acrossM, long now, ref RandomStream r)
+    {
+        double d = Math.Max(Earth.Distance(os.Position, ts.Position), 100), brg = Earth.Bearing(os.Position, ts.Position);
+        double k = ci >= 0 ? Math.Sqrt(Math.Max(settings.SightSmokeRangeS * 1000 / Math.Max(now - pic[ci].SeenMs, 1), 1)) : 1;
+        double sr0 = settings.SightSmokeRangeShare * d;
+        double sb0 = Math.Sqrt(Math.Pow(SightModel.BearingSigmaRad(eye), 2) + Math.Pow(settings.SightSmokeBearingShare * acrossM / d, 2));
+        double mr = Math.Max(d + sr0 * Gauss(ref r), 100), mb = brg + sb0 * Gauss(ref r) * 180 / Math.PI;
+        var (z, r11, r12, r22) = Track.Reading(os.Position, mr, mb, k * sr0, k * sb0);
+        if (ci < 0)
+        {
+            ref var nc = ref pic.Add(ts.Entity);
+            ci = pic.IndexOf(ts.Entity);
+            nc.FirstMs = now;
+            nc.Position = z;
+            nc.Velocity = Vec3d.Zero;
+            double sv = settings.SightSmokeSpeedSigmaMs * settings.SightSmokeSpeedSigmaMs;
+            nc.P = new Cov4 { Ee = r11, En = r12, Nn = r22, VeVe = sv, VnVn = sv };
+            nc.EstMs = now;
+            nc.Level = ContactLevel.Smoke;
+        }
+        else
+        {
+            ref var c = ref pic.At(ci);
+            var (p, v, cov) = pic.EstimateAt(ci, now, settings);
+            Track.Update(ref p, ref v, ref cov, z, r11, r12, r22);
+            (c.Position, c.Velocity, c.P, c.EstMs) = (p, v, cov, now);
+        }
+        ref var con = ref pic.At(ci);
+        con.Side = ts.Side;
+        con.SeenMs = now;
+        con.LookedMs = now;
+        con.SmokeInSight = true;
+        con.Observer = os.Entity;
+        con.Eye = eye.Kind;
+        con.From = os.Position;
     }
 
     /// <summary>A sighting into the picture: a fix of a held contact, or a new one; and how far it's made out (the best
@@ -333,8 +441,12 @@ public sealed class Sightings
         con.SeenMs = now;
         con.LookedMs = now;
         con.InSight = true;
+        con.SmokeInSight = false;
         con.Observer = os.Entity;
         con.Eye = eye.Kind;
+        con.From = os.Position;
+        if (con.Level < ContactLevel.Ship)
+            con.Level = ContactLevel.Ship;   // her smoke's contact: now the ship herself
         con.Seen = SeenOf(ts, tk) | con.Seen & SeenFlags.Gone;
         Identify(ref con, ts, margin, d, ref r, classesInUse);
     }
@@ -487,6 +599,7 @@ public sealed class Sightings
             (v.Entity[i], v.TakenFor[i], v.Position[i], v.Velocity[i]) = (c.Entity, c.TakenFor, p, vel);
             (v.MajorM[i], v.MinorM[i], v.AxisDeg[i]) = (major, minor, axis);
             (v.InSight[i], v.SeenMs[i], v.Level[i], v.Type[i]) = (c.InSight, c.SeenMs, c.Level, c.Type);
+            (v.SmokeInSight[i], v.From[i]) = (c.SmokeInSight, c.From);
             v.Side[i] = c.Level >= ContactLevel.Type ? c.Side : (byte)255;
             v.Seen[i] = c.Seen;
         }

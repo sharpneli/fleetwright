@@ -3,8 +3,9 @@ Status: **drafted 2026-10-20**, decisions 1-4 from the user ("Decided" below); w
 first part built with Z3); Z0 (the model and the facts), Z1 (the store), Z2 (the query; gate 1 passed) and Z3 (sight and
 fire control read it) and Z4 (the other sources) done 2026-10-21, decisions 5-9; Z5 (the drawing) built 2026-10-21, gate 2 the
 user's; breaking the field (Z5b-Z5d: elongated puffs and merging across trails, the large eddies, the grain) agreed and
-built 2026-10-21, decisions 10-11; **taken in and on by default** 2026-10-21, shorter lived (decisions 12-13)    Updated:
-2026-10-21
+built 2026-10-21, decisions 10-11; **taken in and on by default** 2026-10-21, shorter lived (decisions 12-13); Z6
+(smoke contacts) built 2026-10-22: the plan's steps all built, the tuning of smoke's part in sight next    Updated:
+2026-10-22
 
 Smoke as sim state that sight reads, and the same state drawn. The research is `research/vfx/unified-smoke-system.md`
 (Lagrangian Gaussian puffs as the one store, every grid a throw-away view of them), on top of
@@ -918,10 +919,98 @@ Left out: the funnels' unsteady output (stoking and firing cycles: clumps along 
 dispersion (vertical spread times the wind's shear stretching old smoke downwind), a candidate if old smoke still looks
 too round.
 
-### Z6 Smoke contacts
-- The plume summaries, `ContactLevel.Smoke`, the bearing fix, the reach; the map draws a smoke contact as a bearing
-  and a smudge, not a ship.
-- The cost of the larger encounter range on the Jutland run.
+### Z6 Smoke contacts (built 2026-10-22)
+
+The plan was: the plume summaries, `ContactLevel.Smoke`, the bearing fix, the reach; the map draws a smoke contact as
+a bearing and a smudge, not a ship; the cost of the larger encounter range on the Jutland run.
+
+**Built:**
+
+- **The plume as a target** (`SmokePlume`, `PlumeSum`, Sim.Combat): each ship's smoke, every trail of hers (funnels,
+  guns, fires, a magazine), summed from its puffs at the index's rebuild (every 15 s, decision 9: the index already works
+  out every puff's state; `SmokeSystem.PlumeOf`). What shows is where the eye looks through more than
+  `SightSmokeTau` (0.5, the plan's "τ > ~0.5"): a Gaussian seen through shows a region of 2πσ_yσ_z ln(τ_p/τ_s), its mean
+  depth there (τ_p − τ_s) / ln(τ_p/τ_s). Thin smoke, however wide, shows nothing (its contrast is a fraction of the
+  sky's). Two ways of adding it up, the larger taken:
+  - **puff by puff**, each seen at the view against its own long way (her trail's way as it's laid), their regions
+    added, but no more than side on's (dense puffs apart: their own regions);
+  - **the whole as one Gaussian** over the trail's spread along and across it, projected at the view: side on a band
+    when its puffs overlap (none dense alone), end on its stack. Looking down a trail shows it only within a few degrees
+    (its spread across against along it: Lion's 180 m against 8 km).
+
+  How dark: each tint's own contrast against the horizon sky (`SightSmokeContrast`: coal and fire 0.8, oil 0.5, powder
+  and chemical 0.3 [EST]) times 1 − e^(−τ̄). How high: the region's heights as one Gaussian, so the horizon hides the
+  share under it. *Departs from the draft:* the draft's "young trail's length × its height where τ > 0.5" becomes the
+  puffs' own depths at the view, and its top a Gaussian of heights.
+- **The margin** (`SightModel.SmokeMargin`): the same horizon, Koschmieder's fade through the haze (or the light's
+  reach: no smoke by night), the threshold for its solid angle. Other smoke on the line doesn't dim a plume (not counted).
+- **The look** (`Sightings.SmokeLook`): a ship not seen at a look is looked for by her smoke: each of the nearest
+  observers' highest working eye that bears on the plume (the masthead's lookouts), the rates added as a ship's are, a
+  smoke in sight kept while any of them still makes it out. Its draws come from a stream of their own, so the ships'
+  are as they were (a test: she's first seen at the same look with the field on and off).
+- **The fix** (`Sightings.SmokeFix`): a bearing on her (the ships are at the smoke's head: the eye's error and
+  `SightSmokeBearingShare` 0.5 of the plume's spread across the line) and a rough range (`SightSmokeRangeShare` 25%)
+  [EST]. One sighting after another of the same smoke has errors that go together: over `SightSmokeRangeS` (300 s) the
+  readings count for one, each taken looser by √(300 s / the time since the last fix) [EST], so a held smoke contact
+  doesn't converge on its first errors at a fix a second. A new contact is at **`ContactLevel.Smoke`** (below Ship), its
+  course and speed unknown (at rest, `SightSmokeSpeedSigmaMs` 8 m/s); a held ship out of sight keeps her level and
+  what was made out of her, and her track follows her smoke. Seen, she's raised to Ship.
+- **What a contact keeps:** `SeenMs` is its last fix's, ship or smoke (so the AI's freshness holds a smoke contact);
+  `SmokeInSight` her smoke in sight at the last look while she isn't; `From` where the observer was (the map's bearing).
+  `InSight` stays the ship's own: guns, torpedoes and the sighted ships drawn read only that.
+- **The reach** (`SightReach.SmokeTopM`, `SmokeSources.TopM`): with the field on, the tallest funnel smoke among the
+  classes counts where it's over the tallest silhouette: each funnel's plume at full power in still air (the wind over
+  her decks her own speed), a minute past its rise, its centre and two σ. Jutland's classes: 205 m, the reach 78.8 km
+  (from ~55 km). A slower ship in a following wind can rise higher; the reach counts the usual case.
+- **The map** (`MapScene.Contacts`): a smoke contact is a smudge where it's reckoned, its range's ellipse long along the
+  bearing, and while it's in sight the bearing line from the observer through it; labelled "smoke". A held ship followed
+  by her smoke keeps her marker, "· her smoke". No course line until she's seen.
+- **The AI** reads a smoke contact as any contact out of sight of unknown type: the matchups take it for any of the
+  enemy's ships at sea, the held groups hold it while it's fresh, an intercept can steer for it. Nothing in it changed;
+  Jutland's three hours with the AI on every side ran through (`smoke contacts`).
+- **The drawing rule** (decision 3) follows: an enemy's smoke is drawn once she's held, now as soon as her smoke is.
+- **`shipgen smoke contacts [SCENARIO]`**: each side's first holds on enemy ships by their smoke and by sight, the
+  ranges' quartiles, the contacts held by smoke over time.
+
+**Tests** (`SmokeContactTests`): a plume shows side on as a band or its puffs' sum and end on its stack (smaller, darker),
+the horizon hides its share, thin smoke shows nothing side on; a Lion-like closing on a 40 km day held by her smoke at
+47 km (her estimate 16 km off at first, 4 km off at 33 km), seen at 31 km; passing 46 km off, never seen, followed by her
+smoke for 23 minutes within 3-5 km; the field off, no smoke contact and no smoke in the reach, and she's first seen at
+the same look either way. `The_reach_follows_the_tallest_eye_and_top_at_sea` takes the smoke's top.
+
+**The yardstick** (`Print_first_sightings`: a stopped dreadnought's navy, a ship closing at full speed from 75 km, the
+wind from the west at 8 m/s; first held by her smoke / first seen, km):
+
+| | 16 km | 25 km | 40 km | 60 km (visibility) |
+| --- | --- | --- | --- | --- |
+| Lion-like, head on (her trail end on) | - / 16 | 32 / 26 | 60 / 29 | 66 / 29 |
+| Lion-like, 15° off the line | - / - | - / 27 | 37 / 33 | 43 / 33 |
+| Dreadnought, head on | - / 14 | - / 25 | 53 / 31 | 63 / 34 |
+| Dreadnought, 15° off | - / - | - / 25 | - / 34 | - / 34 |
+| Destroyer (oil), head on | - / 12 | - / 16 | - / 24 | 37 / 32 |
+| Destroyer (oil), 15° off | - / - | - / 22 | - / 29 | - / 34 |
+
+- Her smoke shows far only looking down her trail (a ship steaming toward or away from the eye); side on, the trails
+  Z0 makes are thin (a Lion's τ ~1 across at a minute old, 0.5 at five), so they show at about the range she does. In
+  haze nothing shows past the haze's limit, however big: no smoke contacts at 16 km visibility.
+- **Jutland** (`smoke contacts`, 3 h, the AI on every side, 25 km): 5 of the Germans' and 12 of the British first holds
+  were by smoke, at 23-30 km (quartiles: the British 27.6 / 29.1 / 30.0, the Germans 22.8 / 23.2 / 23.3) against
+  ships first seen at 17-25 km; the smoke came first by about a minute. At most 8 contacts held by smoke alone (the
+  climax).
+- **The record** (research request 2, open): smoke sighted hull down at 15-25 nm (28-46 km) on clear days is the usual
+  telling; Galatea's and Elbing's sightings at Jutland were of a steamer's smoke. The model gets there only end on. The
+  funnels' output (Z0's, a quarter of the research's 1,500 m²/s for a coal ship at full power) is the first lever: for
+  the tuning pass (decision 5).
+
+**The cost at Jutland** (`scenario --no-land`, 3 h, `DOTNET_TieredCompilation=0`, one run each before and after; fights
+diverge): the looks 361 → 478 µs a look (the smoke's looks, and observers met further off), the ships' tick 68 → 79 µs
+(more of them off rails in the larger reach), the index's rebuild with the plumes 1.41 → 1.62 ms (every 15 s); the sim
+thread at 10x 2.4% → 2.6% busy. The rails year (2,000 ships, one side) the same: 32.8 → 33.0 s.
+
+**For the tuning pass** (next, the user's): the funnels' output and the young plume (both how much smoke blinds the
+lines and how far it shows); the tints' contrasts and the showing depth (all [EST]); smoke contacts' bearing and range
+errors; whether the reach should allow for a following wind's taller plume; and a ship seen bow on behind her own funnel
+smoke (Z3's lines end at her middle, docs/battle/bugs.md).
 
 ## What stays out
 
@@ -949,6 +1038,8 @@ too round.
 ## Open items
 
 - What's drawn of an enemy's smoke laid before she was seen, and after she's forgotten (decision 3's edges).
+- A fleet's smoke is held ship by ship (each ship's plume her own trails'; merged across trails, a puff counts for the
+  trail it went into), not as one cloud for the fleet (Z6).
 - `ComponentRow.Smoke`: kept as the designer's warning, or gone with the field.
 - The map's display-only smoke exceptions (muzzle-flashes.md decision 1, hits-and-fires.md decision 2) close if the
   field is taken in.

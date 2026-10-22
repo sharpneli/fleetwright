@@ -66,6 +66,47 @@ public sealed partial class SmokeSystem
     public int Indexed => ixCount;
     public int Chunks => chunkCount;
 
+    // each ship's smoke as seen from afar (Z6), summed from her trails' puffs at each rebuild: by entity, in the order
+    // first met
+    readonly Dictionary<int, int> plumeOf = new(64);
+    PlumeSum[] plumeSum = new PlumeSum[64];
+    SmokePlume[] plumes = new SmokePlume[64];
+    int[] plumeEntity = new int[64];
+    int plumeCount;
+
+    /// <summary>A ship's smoke as seen from afar (docs/battle/smoke.md Z6), as of the index's last rebuild: every trail of
+    /// hers (her funnels', her guns', her fires', a magazine's); false when she has none that shows.</summary>
+    public bool PlumeOf(int entity, out SmokePlume plume)
+    {
+        if (plumeOf.TryGetValue(entity, out int k) && plumes[k].Shows)
+        {
+            plume = plumes[k];
+            return true;
+        }
+        plume = default;
+        return false;
+    }
+
+    /// <summary>The plumes of the last rebuild: how many, and each one's ship and summary.</summary>
+    public int Plumes => plumeCount;
+    public (int Entity, SmokePlume Plume) PlumeAt(int i) => (plumeEntity[i], plumes[i]);
+
+    int PlumeSlot(int entity)
+    {
+        if (plumeOf.TryGetValue(entity, out int k))
+            return k;
+        if (plumeCount == plumes.Length)
+        {
+            Array.Resize(ref plumeSum, plumeCount * 2);
+            Array.Resize(ref plumes, plumeCount * 2);
+            Array.Resize(ref plumeEntity, plumeCount * 2);
+        }
+        plumeOf[entity] = plumeCount;
+        plumeSum[plumeCount] = default;
+        plumeEntity[plumeCount] = entity;
+        return plumeCount++;
+    }
+
     /// <summary>Rebuilds the index at a tick when it falls due (a lattice of world time), and lets go of the pairs no one
     /// has asked for a minute.</summary>
     void Index(long t)
@@ -84,6 +125,10 @@ public sealed partial class SmokeSystem
             puffsB = new SmokePuff[puffs.Length];
             (ownerB, prevB, nextB) = (new int[puffs.Length], new int[puffs.Length], new int[puffs.Length]);
         }
+        plumeOf.Clear();
+        plumeCount = 0;
+        var contrast = settings.SightSmokeContrast;
+        double showsTau = settings.SightSmokeTau;
         for (int k = 0; k < sources.Count; k++)
         {
             var src = sources[k];
@@ -93,7 +138,7 @@ public sealed partial class SmokeSystem
                 sources[k] = src;
                 continue;
             }
-            int n = 0, first = ixCount;
+            int n = 0, first = ixCount, plume = PlumeSlot(src.Entity);
             for (int i = src.Oldest; i >= 0; i = next[i])
             {
                 if (n % chunk == 0)
@@ -102,6 +147,8 @@ public sealed partial class SmokeSystem
                     chunkStart[chunkCount++] = ixCount;
                 }
                 var st = SmokeModel.State(puffs[i], nowS, frame, air);
+                int tint = (int)puffs[i].Tint;
+                plumeSum[plume].Add(st, tint < contrast.Length ? contrast[tint] : 0, showsTau);
                 int j = ixCount++;
                 ix[j] = new LinePuff(st, frame.ToAir(st.Centre.Normalized() * Earth.Radius), frame.ToAir(st.Axis));   // where it is in the air now
                 (puffsB[j], ownerB[j], prevB[j], nextB[j]) = (puffs[i], k, j > first ? j - 1 : -1, j + 1);
@@ -112,6 +159,8 @@ public sealed partial class SmokeSystem
             sources[k] = src;
         }
         chunkStart[chunkCount] = ixCount;
+        for (int k = 0; k < plumeCount; k++)
+            plumes[k] = plumeSum[k].Plume(showsTau);
         // the store compacted into trail order: the index's order (swapped, no copy back)
         (puffs, puffsB) = (puffsB, puffs);
         (owner, ownerB) = (ownerB, owner);
@@ -402,6 +451,13 @@ public sealed partial class SmokeSystem
     void HashQuery(ref StateHash h)
     {
         h.Add(indexMs);
+        h.Add(plumeCount);
+        for (int k = 0; k < plumeCount; k++)
+        {
+            h.Add(plumeEntity[k]);
+            h.Add(plumes[k].AreaM2);
+            h.Add(plumes[k].Puffs.Side);
+        }
         h.Add(pairCount);
         for (int q = 0; q < pairCount; q++)
         {

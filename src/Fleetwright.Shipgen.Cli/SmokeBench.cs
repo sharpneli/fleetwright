@@ -22,17 +22,19 @@ static class SmokeBench
         [("neutral", new WeatherHere(25_000, 225, 8 * 0.514444)), ("stable +2 K", new WeatherHere(25_000, 225, 8 * 0.514444, 2))];
 
     public static int Run(IReadOnlyList<string> args, Func<string, ShipClass> classOf, string scenario, string settingsPath, string designs,
-        double minutes, double every, double speed)
+        double minutes, double every, double speed, bool? smoke = null)
     {
         if (args.Count >= 1 && args[0] == "run")
             return Store(args.Count >= 2 ? args[1] : scenario, settingsPath, designs, minutes, every, speed);
         if (args.Count >= 1 && args[0] == "pileup")
             return Pileup(classOf(args.Count >= 2 ? args[1] : "dreadnought"), settingsPath, minutes);
+        if (args.Count >= 1 && args[0] == "contacts")
+            return Contacts(args.Count >= 2 ? args[1] : scenario, settingsPath, designs, minutes, smoke);
         if (args.Count >= 1 && args[0] == "screen")
             return Screen(classOf(args.Count >= 2 ? args[1] : "dreadnought"), classOf(args.Count >= 3 ? args[2] : "destroyer"), settingsPath, minutes);
         if (args.Count < 2 || args[0] != "facts")
         {
-            Console.Error.WriteLine("shipgen smoke facts DESIGN...  |  shipgen smoke run [SCENARIO] [--minutes N] [--every N] [--speed X]  |  shipgen smoke pileup [DESIGN]  |  shipgen smoke screen [LINE] [SCREEN] [--minutes N]");
+            Console.Error.WriteLine("shipgen smoke facts DESIGN...  |  shipgen smoke run [SCENARIO] [--minutes N] [--every N] [--speed X]  |  shipgen smoke pileup [DESIGN]  |  shipgen smoke screen [LINE] [SCREEN] [--minutes N]  |  shipgen smoke contacts [SCENARIO] [--minutes N]");
             return 2;
         }
         var sb = new StringBuilder();
@@ -303,6 +305,91 @@ static class SmokeBench
     /// <summary>`shipgen smoke run`: a scenario headless with the field on (docs/battle/smoke.md Z1), in a world of water,
     /// the clock held at its speed through contact: every so many game minutes the puffs and trails, the store's memory, the
     /// puffs by age, what was laid, merged and retired, and the field's cost a game second beside the whole sim's.</summary>
+    /// <summary>`shipgen smoke contacts`: smoke on the horizon on a scenario (docs/battle/smoke.md Z6), the AI on every
+    /// side, a world of water, looked at every 10 s of game time: for each enemy ship a side comes to hold, how far her
+    /// smoke was first made out (from that side's nearest ship) and how far she herself was first seen, by side; the
+    /// contacts held by smoke alone over time; the ships off rails.</summary>
+    static int Contacts(string path, string settingsPath, string designs, double minutes, bool? smoke)
+    {
+        var settings = SimSettings.Load(settingsPath);
+        if (smoke is bool on)
+            settings = settings with { Smoke = on };
+        var s = Scenario.Load(path);
+        using var registry = new ShipClassRegistry(0);
+        var classes = ScenarioLoader.RequestClasses(s, registry, [designs]);
+        registry.WaitAll();
+        var w = new World(s.Start, s.Seed, settings, registry);
+        var ai = new Fleetwright.Sim.Ai.AiSystem(w);
+        ScenarioLoader.Apply(s, w, ai, classes);
+        w.Apply(Command.SetInterest(InterestKind.Own, InterestAction.Nothing));
+        w.Apply(Command.SetInterest(InterestKind.Others, InterestAction.Nothing));
+        Console.WriteLine($"{s.Name}: {s.ShipCount} ships, the field {(settings.Smoke ? "on" : "off")}; reach {w.Reach.SightM / 1000:0.0} km (smoke's top {w.Reach.SmokeTopM:0} m)");
+        // per (side, entity): first smoke (range, min) and first sight of her
+        var smokeAt = new Dictionary<(byte, int), (double Km, double Min)>();
+        var shipAt = new Dictionary<(byte, int), (double Km, double Min)>();
+        var store = w.Ships.Store;
+        double Nearest(byte side, int entity)
+        {
+            int t = store.SlotOf(entity);
+            double best = double.MaxValue;
+            for (int i = 0; i < store.Slots && t >= 0; i++)
+                if (store.IsAlive(i) && store[i].Side == side)
+                    best = Math.Min(best, Earth.Distance(store[i].Position, store[t].Position));
+            return best / 1000;
+        }
+        var wall = Stopwatch.StartNew();
+        int every = 10;
+        for (int step = 1; step * every <= minutes * 60; step++)
+        {
+            w.AdvanceTo(new WorldTime(s.Start.Ms + step * every * 1000L));
+            double min = step * every / 60.0;
+            foreach (var pic in w.Sightings.All)
+                for (int i = 0; i < pic.Count; i++)
+                {
+                    var key = (pic.Side, pic[i].Entity);
+                    if (pic[i].Level == ContactLevel.Smoke && !smokeAt.ContainsKey(key) && !shipAt.ContainsKey(key))
+                        smokeAt[key] = (Nearest(pic.Side, pic[i].Entity), min);
+                    if (pic[i].Level >= ContactLevel.Ship && !shipAt.ContainsKey(key))
+                        shipAt[key] = (Nearest(pic.Side, pic[i].Entity), min);
+                }
+            if (step * every % 600 == 0)
+            {
+                int offRails = store.OffRailsCount;
+                var line = new StringBuilder(string.Format(Inv, "  {0,5:0} min: {1} ships off rails; held", min, offRails));
+                foreach (var pic in w.Sightings.All)
+                {
+                    int bySmoke = 0, smokeOnly = 0, inSight = 0;
+                    for (int i = 0; i < pic.Count; i++)
+                    {
+                        inSight += pic[i].InSight ? 1 : 0;
+                        bySmoke += pic[i].SmokeInSight ? 1 : 0;
+                        smokeOnly += pic[i].Level == ContactLevel.Smoke ? 1 : 0;
+                    }
+                    line.Append(string.Format(Inv, " | side {0}: {1} contacts, {2} in sight, {3} by their smoke, {4} smoke only", pic.Side, pic.Count, inSight, bySmoke, smokeOnly));
+                }
+                Console.WriteLine(line + string.Format(Inv, "; {0:0.0} s wall", wall.Elapsed.TotalSeconds));
+            }
+        }
+        foreach (var side in w.Sightings.All.Select(p => p.Side).OrderBy(x => x))
+        {
+            var bySmoke = smokeAt.Where(kv => kv.Key.Item1 == side).ToList();
+            var ships = shipAt.Where(kv => kv.Key.Item1 == side).ToList();
+            var lead = bySmoke.Where(kv => shipAt.ContainsKey(kv.Key)).Select(kv => shipAt[kv.Key].Min - kv.Value.Min).ToList();
+            Console.WriteLine(string.Format(Inv, "  side {0}: {1} ships first held by their smoke, at {2} km; {3} first seen as ships, at {4} km; smoke first by {5} min (of {6} seen after)",
+                side, bySmoke.Count, Quartiles(bySmoke.Select(kv => kv.Value.Km)), ships.Count, Quartiles(ships.Select(kv => kv.Value.Km)), Quartiles(lead), lead.Count));
+        }
+        return 0;
+
+        static string Quartiles(IEnumerable<double> xs)
+        {
+            var v = xs.OrderBy(x => x).ToList();
+            if (v.Count == 0)
+                return "-";
+            double Q(double q) => v[(int)Math.Round(q * (v.Count - 1))];
+            return string.Format(Inv, "{0:0.0} / {1:0.0} / {2:0.0}", Q(0.25), Q(0.5), Q(0.75));
+        }
+    }
+
     static int Store(string path, string settingsPath, string designs, double minutes, double every, double speed)
     {
         var settings = SimSettings.Load(settingsPath) with { Smoke = Environment.GetEnvironmentVariable("SMOKE_OFF") != "1" };

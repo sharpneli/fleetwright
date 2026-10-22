@@ -360,7 +360,7 @@ public static class Program
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), Path.Combine(Root(a), "designs"),
                     double.Parse(a.Get("minutes", "30")!, System.Globalization.CultureInfo.InvariantCulture),
                     double.Parse(a.Get("every", "5")!, System.Globalization.CultureInfo.InvariantCulture),
-                    double.Parse(a.Get("speed", "1")!, System.Globalization.CultureInfo.InvariantCulture)),
+                    double.Parse(a.Get("speed", "1")!, System.Globalization.CultureInfo.InvariantCulture), SmokeSwitch(a)),
                 "trials" => SeaTrials.Run(a.Positional, a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), a.Get("out")),
                 _ => Fail($"unknown command {args[0]}\n\n{Usage}"),
             };
