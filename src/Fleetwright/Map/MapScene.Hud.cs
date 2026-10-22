@@ -171,11 +171,13 @@ public sealed partial class MapScene : ISceneMenu
                 dayText = utc.ToString("ddd d MMM yyyy", CultureInfo.InvariantCulture);
             }
         }
-        var held = (s.Speed, Math.Round(s.AchievedSpeed), s.Paused);
+        // what's held: the speed asked while the sim keeps up, else what it makes (made when the words change)
+        bool lagging = s.AchievedSpeed < s.Speed * 0.9;
+        var held = (s.Speed, lagging ? Math.Round(s.AchievedSpeed) : -1, s.Paused);
         if (held != heldKey)
         {
             heldKey = held;
-            heldText = held.Item2 < s.Speed * 0.9 ? $"held {SpeedLabel(held.Item2)} of {SpeedLabel(s.Speed)}" : $"held {SpeedLabel(s.Speed)}";
+            heldText = lagging ? $"held {SpeedLabel(held.Item2)} of {SpeedLabel(s.Speed)}" : $"held {SpeedLabel(s.Speed)}";
         }
         // in action: since the oldest open encounter of ours
         long opened = long.MaxValue;

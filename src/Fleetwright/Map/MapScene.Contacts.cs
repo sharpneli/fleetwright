@@ -22,7 +22,7 @@ public sealed partial class MapScene
 
     static Vector4 ContactColour(ContactsView c, int i, long now)
     {
-        var col = c.Side[i] == 255 ? UnknownContact : ShipDrawList.SideTints[c.Side[i] < ShipDrawList.SideTints.Length ? c.Side[i] : 0];
+        var col = c.Side[i] == 255 ? UnknownContact : ShipDrawList.EnemyTint;   // the player's picture: the enemy's
         float a = c.InSight[i] || c.SmokeInSight[i] ? 0.95f : (float)Math.Max(0.3, 0.85 - 0.55 * (now - c.SeenMs[i]) / ContactFadeMs);
         return col with { W = a };
     }
@@ -141,6 +141,9 @@ public sealed partial class MapScene
 
     string ClassName(int id) => id >= 0 && world.Classes.TryGet(id) is { } cls ? cls.Name : "?";
 
+    // the contacts' labels, made when what they say changes
+    readonly Dictionary<int, ((int, ContactLevel, int, ShipType, SeenFlags, bool, bool, long) Key, string Text)> contactTexts = [];
+
     void ContactLabels(Snapshot s)
     {
         var c = s.Contacts;
@@ -166,7 +169,14 @@ public sealed partial class MapScene
             if (cx < 0 || cy < 0 || cx >= gw - 1 || cy >= gh || labelCells[cx + cy * gw] || labelCells[cx + 1 + cy * gw])
                 continue;
             labelCells[cx + cy * gw] = labelCells[cx + 1 + cy * gw] = true;
-            string text = ContactText(c, i, now);
+            var key = (c.Entity[i], c.Level[i], c.TakenFor[i], c.Type[i], c.Seen[i], c.SmokeInSight[i], c.InSight[i], c.InSight[i] ? 0 : c.SeenMs[i] / 60_000);
+            if (!contactTexts.TryGetValue(c.Entity[i], out var cached) || cached.Key != key)
+            {
+                if (contactTexts.Count > 2048)
+                    contactTexts.Clear();
+                contactTexts[c.Entity[i]] = cached = (key, ContactText(c, i, now));
+            }
+            string text = cached.Text;
             var at = new Vector2(vp.Pos.X + (float)(x * sx) + 9, vp.Pos.Y + (float)(y * sy) - 7);
             dl.AddText(at + new Vector2(1, 1), 0xC0000000, text);
             dl.AddText(at, ImGui.GetColorU32(ContactColour(c, i, now)), text);

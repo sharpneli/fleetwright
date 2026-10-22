@@ -159,6 +159,7 @@ public sealed unsafe partial class MapScene : IScene
         double moonHere = Moon.Light((-view.Forward).Normalized() * Earth.Radius, now);
         sea.Update(view, renderer.Sea, dt, s.Paused ? 0 : s.AchievedSpeed, lights, sunLapse.Motion, moonHere);
         shipRenderer.FoamClockS = sea.ClockS;
+        shipRenderer.List.PlayerSide = world.Current.PlayerSide;
         renderer.Render(cmd, target, view, s.Sun, land.Fill, baked, lines, overlay, shipRenderer, sunLapse.Motion, sea, lights.Uniforms,
             GlobeRenderer.MoonUniform(now));
         probes.Add(probeRender, t);
@@ -187,7 +188,8 @@ public sealed unsafe partial class MapScene : IScene
         EncounterLabels(s);
         ContactLabels(s);
         WreckLabels();
-        ReasonLabels(s);
+        ShipLabels(s);
+        SelectionMarks(s);
         TickLabels();
         probes.Add(probeUiLabels, t);
         t = Probes.Now;
@@ -195,6 +197,7 @@ public sealed unsafe partial class MapScene : IScene
             world.Perf.Draw(s, art, renderer.OverlayVertices);
         Where();
         CursorVerb(s);
+        HoverTip(s);
         Briefing();
         probes.Add(probeUiRest, t);
         DesignerTheme.Pop();

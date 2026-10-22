@@ -62,7 +62,7 @@ public sealed unsafe partial class MapScene
 
     static readonly Vector4 TrackColor = new(0.85f, 0.9f, 1f, 0.35f), RouteColor = new(1f, 0.85f, 0.4f, 0.55f),
         RouteSelected = new(1f, 0.8f, 0.3f, 0.95f), SelectColor = new(1f, 0.78f, 0.25f, 0.95f), CourseColor = new(1f, 1f, 1f, 0.6f), TargetColor = new(1f, 0.78f, 0.25f, 0.45f),
-        LandRing = new(0.55f, 0.85f, 0.6f, 0.5f), HorizonColor = new(0.6f, 0.85f, 1f, 0.6f), SlideColor = new(0.55f, 1f, 0.6f, 0.95f), PlaceColor = new(0.6f, 0.9f, 1f, 0.85f);
+        LandRing = new(0.55f, 0.85f, 0.6f, 0.5f), TorpedoRing = new(0.63f, 0.84f, 1f, 0.3f), HorizonColor = new(0.6f, 0.85f, 1f, 0.6f), SlideColor = new(0.55f, 1f, 0.6f, 0.95f), PlaceColor = new(0.6f, 0.9f, 1f, 0.85f);
 
     // ------------------------------------------------------------------ lines over the globe
 
@@ -130,6 +130,13 @@ public sealed unsafe partial class MapScene
             {
                 double len = lengthOf(v.Class[k]) * view.Altitude / view.MetresPerPixel / Math.Max(Vec3d.Dot(p - view.Eye, view.Forward), 1e-3);
                 Ring(view, p, Math.Max(len / 2, IconLengthOf(v.Class[k]) / 2) + 7, SelectColor, 2f);
+                if (world.Classes.TryGet(v.Class[k]) is { Launchers.Length: > 0 } tc2 && v.TorpedoesLeft[k] > 0)
+                {
+                    // her torpedoes' reach, fast and slow (docs/map-ui/battle-hud.md U5)
+                    var torp = tc2.Torpedoes[tc2.Launchers[0].Torpedo];
+                    RingM(view, p, torp.FastRangeM, TorpedoRing, 1f);
+                    RingM(view, p, torp.SlowRangeM, TorpedoRing with { W = TorpedoRing.W * 0.6f }, 1f);
+                }
                 if (horizonRing && world.Classes.TryGet(v.Class[k]) is { Eyes.Length: > 0 } hc)
                 {
                     // dev (fire-control.md F4d): the sea's horizon from her highest eye, and the reach to a ship as tall as she is

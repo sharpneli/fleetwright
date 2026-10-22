@@ -25,7 +25,11 @@ public sealed partial class MapScene
     record struct Going(Vec3d At, string Name, bool Own, int Encounter, long Ms, long Seen, LossKind Loss, long LossMs);
 
     /// <summary>Where a ship went down, as the player's side knows it.</summary>
-    record struct Wreck(Vec3d At, string Name, bool Own, int Encounter, long Ms, LossKind Loss, long LossMs);
+    record struct Wreck(Vec3d At, string Name, bool Own, int Encounter, long Ms, LossKind Loss, long LossMs)
+    {
+        /// <summary>Its label, made with it.</summary>
+        public string Label { get; } = $"{Name} · sunk {new WorldTime(Ms).ToUtc():HH:mm}";
+    }
 
     readonly Dictionary<int, Going> going = [];
     readonly List<Wreck> wrecks = [];
@@ -257,7 +261,7 @@ public sealed partial class MapScene
     const double MagazineFlashS = 3, MagazineRingPx = 45, MagazinePallS = 90, MagazinePallPx = 30;
 
     /// <summary>An encounter's losses as the player's side knows them: its own, and the enemy's seen to go.</summary>
-    string LossesIn(int encounter)
+    (int Ours, int Theirs) Losses(int encounter)
     {
         int ours = 0, theirs = 0;
         foreach (var w in wrecks)
@@ -268,8 +272,10 @@ public sealed partial class MapScene
                 else
                     theirs++;
             }
-        return ours + theirs == 0 ? "" : $" · lost {ours}, seen sunk {theirs}";
+        return (ours, theirs);
     }
+
+    static string LossesText(int ours, int theirs) => ours + theirs == 0 ? "" : $" · lost {ours}, seen sunk {theirs}";
 
     /// <summary>The wrecks' names, when there's room on the screen for them.</summary>
     void WreckLabels()
@@ -284,7 +290,7 @@ public sealed partial class MapScene
         {
             if (!view.Project(w.At, out double x, out double y))
                 continue;
-            string text = $"{w.Name} · sunk {new WorldTime(w.Ms).ToUtc():HH:mm}";
+            string text = w.Label;
             var at = new Vector2(vp.Pos.X + (float)(x * sx) + 10, vp.Pos.Y + (float)(y * sy) + 4);
             dl.AddText(at + new Vector2(1, 1), 0xC0000000, text);
             dl.AddText(at, ImGui.GetColorU32(WreckColour), text);
@@ -304,28 +310,6 @@ public sealed partial class MapScene
         CaptainReason.Combing => "combing a torpedo's track",
         _ => "",
     };
-
-    /// <summary>The player's ships' reasons (subordinates explain themselves: command-ui.md), beside each, when there's
-    /// room on the screen for them.</summary>
-    void ReasonLabels(Snapshot s)
-    {
-        if (camera.MetresPerPixel > 60)
-            return;
-        var view = View;
-        var vp = ImGui.GetMainViewport();
-        float sx = vp.Size.X / (float)Math.Max(width, 1), sy = vp.Size.Y / (float)Math.Max(height, 1);
-        var dl = ImGui.GetBackgroundDrawList();
-        var v = s.Ships;
-        for (int k = 0; k < v.Count; k++)
-        {
-            if (v.Reason[k] == 0 || !view.Project(v.PoseAt(k, world.DrawMs).Position, out double x, out double y))
-                continue;
-            string text = ReasonText(v.Reason[k]);
-            var at = new Vector2(vp.Pos.X + (float)(x * sx) + 10, vp.Pos.Y + (float)(y * sy) - 16);
-            dl.AddText(at + new Vector2(1, 1), 0xC0000000, text);
-            dl.AddText(at, ImGui.GetColorU32(FlameColour), text);
-        }
-    }
 
     /// <summary>What a contact's observers make out of its state, as its label adds it.</summary>
     static string SeenText(SeenFlags f)

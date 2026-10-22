@@ -726,9 +726,12 @@ public sealed partial class MapScene
     string BatteryLabel(ShipClass cls, int battery)
     {
         if (!batteryLabels.TryGetValue(cls, out var all))
-            batteryLabels[cls] = all = [.. Enumerable.Range(0, cls.Batteries.Length).Select(b => cls.Batteries[b].Label)];
+            batteryLabels[cls] = all = BatteryLabels(cls);
         return all[battery];
     }
+
+    // apart, so the lambda's capture of the class isn't made on every call (C# makes it where the captured lives)
+    static string[] BatteryLabels(ShipClass cls) => [.. Enumerable.Range(0, cls.Batteries.Length).Select(b => cls.Batteries[b].Label)];
 
     // each battery's mounts from forward, made once a class
     readonly Dictionary<ShipClass, int[][]> foreToAft = [];

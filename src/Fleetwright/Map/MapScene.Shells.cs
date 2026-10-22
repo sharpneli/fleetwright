@@ -25,7 +25,7 @@ public sealed partial class MapScene
 {
     static readonly Vector4 ShellHead = new(1f, 0.93f, 0.72f, 1f), ShellTail = new(1f, 0.8f, 0.45f, 0.8f), GunFlash = new(1f, 0.82f, 0.5f, 0.9f),
         Water = new(0.92f, 0.96f, 1f, 0.95f), HitCore = new(1f, 0.92f, 0.7f, 1f), HitColour = new(1f, 0.5f, 0.12f, 1f),
-        HitSmoke = new(0.18f, 0.18f, 0.2f, 0.5f), TargetColour = new(1f, 0.35f, 0.25f, 0.55f), TrackWhite = new(0.9f, 0.96f, 1f, 0.8f);
+        HitSmoke = new(0.18f, 0.18f, 0.2f, 0.5f), TargetColour = new(1f, 0.35f, 0.25f, 0.55f), OurFire = new(0.45f, 0.65f, 0.95f, 0.5f), MyFire = new(0.85f, 0.72f, 0.41f, 0.9f), TrackWhite = new(0.9f, 0.96f, 1f, 0.8f);
 
     // the shell: its tail covers this much of its flight, within these lengths on the screen; its head, and its swell at
     // the apex (seen from above it rises toward the eye)
@@ -350,8 +350,12 @@ public sealed partial class MapScene
             if (!shipIndex.TryGetValue(b.Shooter[i], out int k) || !TargetAt(s, b.Target[i], now, out var to))
                 continue;
             var (from, _) = s.Ships.PoseAt(k, now);
-            var col = b.State[i] == BatteryState.Firing ? TargetColour : TargetColour with { W = 0.2f };
-            overlay.BeginStrip(col, 1f);
+            // the selection's in brass; the player's own in friend blue; others' (the truth's) red; faint unless firing
+            bool mine = b.Shooter[i] == selected, ours = s.PlayerSide < 0 || s.Ships.Side[k] == s.PlayerSide;
+            var col = mine ? MyFire : ours ? OurFire : TargetColour;
+            if (b.State[i] != BatteryState.Firing)
+                col.W *= 0.35f;
+            overlay.BeginStrip(col, mine ? 1.6f : 1f);
             for (int j = 0; j <= 8; j++)
                 Point(view, (from + (to - from) * (j / 8.0)).Normalized() * Earth.Radius);
             overlay.End();

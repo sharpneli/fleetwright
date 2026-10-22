@@ -187,6 +187,9 @@ public sealed unsafe partial class MapScene
 
     /// <summary>The groups' labels, drawn under the UI's windows: a force's below its guide squadron's, "held" and "!"
     /// on a group the player holds.</summary>
+    // the group labels' text, made when what it says changes
+    readonly Dictionary<int, ((int, int, Detachment, byte, byte, byte, bool, int) Key, string Text)> groupTexts = [];
+
     void GroupLabels(Snapshot s)
     {
         var vp = ImGui.GetMainViewport();
@@ -201,22 +204,32 @@ public sealed unsafe partial class MapScene
                 continue;
             int g = lb.Group;
             var at = new Vector2(vp.Pos.X + (float)(lb.X * sx) + 12, vp.Pos.Y + (float)(lb.Y * sy) - 8 + lb.Depth * line);
-            string text = gv.Name[g];
+            int count = 0;
             if (lb.Collapsed)
             {
                 lineShips.Clear();
                 LineShips(gv, g, lineShips);
-                text += $" ({lineShips.Count})";
+                count = lineShips.Count;
             }
             var held = InForce(gv, g);
-            if (Held(held))
-                text += $" · {HeldText(held)}";   // out on its task: the task says so
-            if (gv.Task[g] != 0)
-                text += $" · {TaskText(gv.Task[g], gv.TaskStatus[g])}";
-            if (gv.Commanded[g] != 0)
-                text += gv.Commanded[g] == 1 ? " · AI" : " · yours";   // its side's commander's, or taken from him (5.1d)
-            dl.AddText(at + new Vector2(1, 1), 0xC0000000, text);
-            dl.AddText(at, ImGui.GetColorU32(gv.Asked[g] ? AskColor : GroupColor), gv.Asked[g] ? text + " !" : text);
+            var key = (gv.Id[g], count, Held(held) ? held : Detachment.InLine, gv.Task[g], gv.TaskStatus[g], gv.Commanded[g], gv.Asked[g], world.Generation);
+            if (!groupTexts.TryGetValue(gv.Id[g], out var cached) || cached.Key != key)
+            {
+                string text = gv.Name[g];
+                if (lb.Collapsed)
+                    text += $" ({count})";
+                if (Held(held))
+                    text += $" · {HeldText(held)}";   // out on its task: the task says so
+                if (gv.Task[g] != 0)
+                    text += $" · {TaskText(gv.Task[g], gv.TaskStatus[g])}";
+                if (gv.Commanded[g] != 0)
+                    text += gv.Commanded[g] == 1 ? " · AI" : " · yours";   // its side's commander's, or taken from him (5.1d)
+                if (gv.Asked[g])
+                    text += " !";
+                groupTexts[gv.Id[g]] = cached = (key, text);
+            }
+            dl.AddText(at + new Vector2(1, 1), 0xC0000000, cached.Text);
+            dl.AddText(at, ImGui.GetColorU32(gv.Asked[g] ? AskColor : GroupColor), cached.Text);
         }
     }
 
