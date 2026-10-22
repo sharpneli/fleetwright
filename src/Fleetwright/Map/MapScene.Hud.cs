@@ -570,6 +570,11 @@ public sealed partial class MapScene : ISceneMenu
                 shut = true;
                 OpenBrief();
             }
+            if (world.Current.End != null && ImGui.Button("Result", full))
+            {
+                shut = true;
+                OpenResult(world.Current);
+            }
             if (ImGui.Button($"Restart {sc.Name}", full))
             {
                 shut = true;
@@ -631,6 +636,8 @@ public sealed partial class MapScene : ISceneMenu
     {
         if (briefOpen)
             briefShut = true;
+        else if (resultOpen)
+            resultShut = true;
         else if (logOpen)
             logOpen = false;
         else if (armedPick != ClickPick.None || fireArmed)

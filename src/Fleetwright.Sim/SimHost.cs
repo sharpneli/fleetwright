@@ -32,6 +32,13 @@ public sealed class SimHost : IDisposable
         set => truth = value;
     }
 
+    /// <summary>The scenario's judge (docs/map-ui/battle-hud.md U7): called on the sim thread, at a publish, once the
+    /// world's clock has crossed a whole minute since the last call; it returns the end once the scenario is over (null
+    /// until then), which every snapshot carries after. Reads the world, changes nothing. Set it before the host starts.</summary>
+    public Func<EndView?>? Judge { get; set; }
+    EndView? end;
+    long judgedMinute = long.MinValue;
+
     /// <summary>The ships the screens want detailed (<see cref="Snapshot.Details"/>; at most
     /// <see cref="Snapshot.MaxDetail"/>): the host's choice, like <see cref="Truth"/>. Set a new array to change it (the
     /// sim thread reads the reference at each publish).</summary>
@@ -159,7 +166,13 @@ public sealed class SimHost : IDisposable
             (windowStart, windowGameMs) = (now, world.Time.Ms);
         }
         long t = Probes.Now;
+        if (Judge != null && end == null && world.Time.Ms / 60_000 != judgedMinute)
+        {
+            judgedMinute = world.Time.Ms / 60_000;
+            end = Judge();
+        }
         var s = snapshots.Back;
+        s.End = end;
         var want = detail;
         s.DetailWantedCount = Math.Min(want.Length, Snapshot.MaxDetail);
         want.AsSpan(0, s.DetailWantedCount).CopyTo(s.DetailWanted);

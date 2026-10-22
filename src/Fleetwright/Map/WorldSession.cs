@@ -63,6 +63,7 @@ public sealed class WorldSession : IDisposable
         public required Scenario Scenario;
         public Dictionary<string, int>? Classes;
         public Task<(World World, AiSystem Ai, ScenarioStart Start)>? Task;
+        public Func<EndView?>? Judge;
         public readonly Stopwatch Clock = Stopwatch.StartNew();
         public double ClassesSeconds;
     }
@@ -107,9 +108,51 @@ public sealed class WorldSession : IDisposable
     }
 
     /// <summary>Starts a world's thread and waits for its first snapshot, so no frame shows an empty one.</summary>
-    static SimHost Start(World w)
+    /// <summary>A scenario's judge for the host (docs/map-ui/battle-hud.md U7): its <see cref="ScenarioEnd"/>, checked on
+    /// the sim thread; once it's over, the end with the truth on both sides: each side's count and each ship's fate.</summary>
+    static Func<EndView?> MakeJudge(Scenario s, World w, AiSystem ai, ScenarioStart start)
     {
-        var h = new SimHost(w);
+        var end = new ScenarioEnd(s, w, ai);
+        return () =>
+        {
+            if (!end.Check())
+                return null;
+            var sides = end.Result();
+            var lost = new Dictionary<int, PlayLine>();
+            foreach (var l in end.Timeline)
+                if (l.Kind == PlayEvent.Lost)
+                    lost.TryAdd(l.Entity, l);
+            var ships = new List<ShipEnd>();
+            var store = w.Ships.Store;
+            var seen = new HashSet<int>();
+            for (int slot = 0; slot < store.Slots; slot++)
+            {
+                if (!store.IsAlive(slot))
+                    continue;
+                var x = store[slot];
+                seen.Add(x.Entity);
+                var k = store.Combat.Condition(slot);
+                bool gone = lost.TryGetValue(x.Entity, out var l);
+                ships.Add(new ShipEnd(x.Entity, x.Side, start.ShipNames.GetValueOrDefault(x.Entity) ?? $"{x.Handling.Class.Name} #{x.Entity}",
+                    gone, gone ? (Sim.Combat.LossKind)l.Count : Sim.Combat.LossKind.None, gone ? l.Ms : 0, k is { Damaged: true }, k?.Hits ?? 0));
+            }
+            foreach (var (entity, l) in lost)
+                if (!seen.Contains(entity))
+                    ships.Add(new ShipEnd(entity, end.SideOf(entity), start.ShipNames.GetValueOrDefault(entity) ?? $"#{entity}", true,
+                        (Sim.Combat.LossKind)l.Count, l.Ms, true, 0));
+            return new EndView
+            {
+                Reason = end.Reason.ToString().ToLowerInvariant(),
+                EndMs = end.EndMs,
+                Sides = [.. sides.Select(r => new SideEnd(r.Name, r.Ships, r.Tonnes, r.Lost, r.LostTonnes, r.Damaged, r.Afloat, r.AimsMet, r.Hits, r.Torpedoes))],
+                Ships = [.. ships.OrderBy(x => x.Side).ThenBy(x => x.Entity)],
+            };
+        };
+    }
+
+    static SimHost Start(World w, Func<EndView?>? judge = null)
+    {
+        var h = new SimHost(w) { Judge = judge };
         h.Start();
         var s = h.Latest();
         for (int k = 0; k < 1000 && s.Sequence == 0; k++)
@@ -159,6 +202,7 @@ public sealed class WorldSession : IDisposable
             var w = new World(s.Start, s.Seed, Settings, Classes, Shore);
             var ai = new AiSystem(w);
             var start = ScenarioLoader.Apply(s, w, ai, p.Classes);
+            p.Judge = MakeJudge(s, w, ai, start);
             return (w, ai, start);
         });
     }
@@ -183,7 +227,7 @@ public sealed class WorldSession : IDisposable
                     if (rule is { } r)
                         w.Apply(r);   // and the player's interest rules (what an encounter does to the clock)
                 var old = host;
-                host = Start(w);
+                host = Start(w, p.Judge);
                 host.Truth = truth;
                 host.Detail = detail;
                 old.Dispose();

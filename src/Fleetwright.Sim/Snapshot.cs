@@ -133,7 +133,31 @@ public sealed class Snapshot
     /// mount's state and rounds, the crew, damage control's parties and pumps, the flooded spaces, the holes and the
     /// magazines flooded.</summary>
     public ShipDetailView Details { get; } = new();
+
+    /// <summary>The scenario's end once its judge has called it (docs/map-ui/battle-hud.md U7; null until then, and in a
+    /// world without a scenario): made once, the same object in every snapshot after.</summary>
+    public EndView? End;
 }
+
+/// <summary>How a scenario ended (docs/map-ui/battle-hud.md U7): why and when, each side's count and each ship's fate,
+/// the truth on both sides (decision 5: the battler's result is its score). Made once by the host's judge, never
+/// changed.</summary>
+public sealed class EndView
+{
+    /// <summary>Why: "decided", "time", "quiet" (no fight for a while), "done" (every side done).</summary>
+    public required string Reason { get; init; }
+    public long EndMs { get; init; }
+    public required SideEnd[] Sides { get; init; }
+    public required ShipEnd[] Ships { get; init; }
+}
+
+/// <summary>A side's count at the end: its ships and tonnage, those lost, damaged and afloat, whether its aims are met,
+/// its hits and torpedoes fired.</summary>
+public readonly record struct SideEnd(string Name, int Ships, double Tonnes, int Lost, double LostTonnes, int Damaged, int Afloat, bool AimsMet,
+    int Hits, int Torpedoes);
+
+/// <summary>A ship's fate: lost (how and when) or afloat (damaged or not), the hits she took.</summary>
+public readonly record struct ShipEnd(int Entity, int Side, string Name, bool Lost, Combat.LossKind Loss, long LossMs, bool Damaged, int Hits);
 
 /// <summary>A mount's state as a ship card shows it: ready, loading, jammed in train, down for a while (crew stunned,
 /// power tripped), or out (wrecked, disabled, its magazine flooded or gone).</summary>

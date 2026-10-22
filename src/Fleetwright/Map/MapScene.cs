@@ -177,6 +177,7 @@ public sealed unsafe partial class MapScene : IScene
         var s = world.Current;
         feed.Read(s, world.Generation);
         CollectEvents(s);
+        WatchEnd(s);
         CardRequests(s);
         TopBar(s);
         Rail(s);
@@ -203,6 +204,7 @@ public sealed unsafe partial class MapScene : IScene
         CursorVerb(s);
         HoverTip(s);
         Briefing();
+        Result(s);
         probes.Add(probeUiRest, t);
         DesignerTheme.Pop();
         world.Perf.UiBytes += GC.GetAllocatedBytesForCurrentThread() - allocated;
