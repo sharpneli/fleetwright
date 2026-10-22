@@ -184,7 +184,6 @@ public sealed unsafe partial class MapScene : IScene
         ShipsUi();
         Card(s);
         Strip(s);
-        Notices(s);
         Ticker(s);
         LogDrawer(s);
         probes.Add(probeUiShips, t);

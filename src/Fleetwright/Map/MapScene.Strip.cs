@@ -221,7 +221,17 @@ public sealed partial class MapScene
         }
         // what's become of her
         if (v.Reason[k] != 0)
+        {
             ImGui.TextColored(DesignerTheme.Amber, ReasonText(v.Reason[k]));
+            if (CanComeBack(s, k))
+            {
+                // the player overrules her captain (docs/map-ui/battle-hud.md decision 2)
+                if (Seg("Back into line", first: true))
+                    BackIntoLine(s, selected);
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("order her back to her squadron: her captain stays, at his ship's risk");
+            }
+        }
         else if (gv.IndexOfShip(selected) is int g and >= 0 && DetachmentOf(gv, g, selected) is var d && d != Detachment.InLine)
             U8.Text(U8.W($"{HeldText(d)}{(v.Asked[k] ? "; her orders changed" : "")}"), DesignerTheme.Amber);
         else if (v.LandSide[k] != 0)

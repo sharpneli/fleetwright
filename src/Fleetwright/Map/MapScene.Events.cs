@@ -14,8 +14,8 @@ namespace Fleetwright.Map;
 /// and straddles, the hits we took, torpedoes, losses, damage control) and what the screens see change between
 /// snapshots (a ship falling out, a fire starting, a contact first seen or made out), as one stream. The ticker shows
 /// the newest at the bottom left, fading; J opens the whole log, filtered; a line's click goes to its ship. A ship
-/// falling out raises a notice at the top: show her, order her back into line (the player overrules her captain:
-/// decision 2), or let her go. An event's words are made once, when it's first shown.</summary>
+/// falling out says so there; the strip offers to order her back into line (the player overrules her captain:
+/// decision 2). An event's words are made once, when it's first shown.</summary>
 public sealed partial class MapScene
 {
     enum EventKind : byte { Gun, Hit, Fire, Loss, Captain, Seen, Damage, Order }
@@ -30,7 +30,6 @@ public sealed partial class MapScene
     readonly Dictionary<int, byte> reasonOf = [];
     readonly Dictionary<int, int> firesOf = [], groupOf = [];
     readonly Dictionary<int, ContactLevel> levelOf = [];
-    readonly List<(int Ship, int Group, string Title, string Text, string Time)> notices = [];
     bool logOpen;
     int logFilter;
 
@@ -54,7 +53,6 @@ public sealed partial class MapScene
             firesOf.Clear();
             groupOf.Clear();
             levelOf.Clear();
-            notices.Clear();
             eventTexts.Clear();
             feedRead = 0;
             tally = default;
@@ -70,7 +68,7 @@ public sealed partial class MapScene
             int e = v.Entity[k];
             if (s.PlayerSide >= 0 && v.Side[k] != s.PlayerSide)
                 continue;
-            // falling out: an event and a notice; her squadron remembered, for "back into line"
+            // falling out: an event; her squadron remembered, for "back into line" (the strip's)
             byte reason = v.Reason[k], was = reasonOf.GetValueOrDefault(e);
             if (reason != was)
             {
@@ -80,14 +78,9 @@ public sealed partial class MapScene
                 {
                     string name = ShipName(s, e), why = ReasonText(reason);
                     Add(s, EventKind.Captain, e, $"{name} {why}");
-                    Unnotice(e);
-                    notices.Add((e, groupOf.GetValueOrDefault(e, -1), $"{name} is {why}",
-                        "Her captain hauls out of the line and makes for home. You may order her back: she'll stay, at her risk.", Clock(s.Time.Ms)));
                 }
                 else if (reason == (byte)CaptainReason.OutAmmunition)
                     Add(s, EventKind.Captain, e, $"{ShipName(s, e)}: out of ammunition, going home");
-                if (reason == 0)
-                    Unnotice(e);
             }
             if (s.Groups.IndexOfShip(e) is int g and >= 0)
                 groupOf[e] = s.Groups.Id[g];
@@ -223,15 +216,6 @@ public sealed partial class MapScene
         return made;
     }
 
-    /// <summary>A ship's notice taken down (a plain loop: a lambda here would capture the ship loop's variable and make
-    /// a closure every ship every frame).</summary>
-    void Unnotice(int ship)
-    {
-        for (int i = notices.Count - 1; i >= 0; i--)
-            if (notices[i].Ship == ship)
-                notices.RemoveAt(i);
-    }
-
     bool Ours(Snapshot s, int entity) => entity > 0 && s.Ships.IndexOf(entity) is int k and >= 0 && (s.PlayerSide < 0 || s.Ships.Side[k] == s.PlayerSide);
 
     void Add(Snapshot s, EventKind kind, int ship, string text, long ms = -1) =>
@@ -245,10 +229,10 @@ public sealed partial class MapScene
 
     static string Clock(long ms) => new WorldTime(ms).ToUtc().ToString("HH:mm", CultureInfo.InvariantCulture);
 
-    /// <summary>An event of the player's own giving (the notices' orders), for the log.</summary>
+    /// <summary>An event of the player's own giving (the strip's "back into line"), for the log.</summary>
     void Ordered(Snapshot s, int ship, string text) => Add(s, EventKind.Order, ship, text);
 
-    // ------------------------------------------------------------------ the ticker, the log, the notices
+    // ------------------------------------------------------------------ the ticker and the log
 
     /// <summary>The newest events at the bottom left, above the strip: each fades from 14 s old; a click goes to its ship.</summary>
     void Ticker(Snapshot s)
@@ -382,58 +366,20 @@ public sealed partial class MapScene
         };
     }
 
-    /// <summary>The notices at the top centre: a ship falling out, with the player's choices.</summary>
-    void Notices(Snapshot s)
+    /// <summary>Whether a ship of the player's has fallen out and her squadron is still there to take her back.</summary>
+    bool CanComeBack(Snapshot s, int k) =>
+        s.Ships.Reason[k] is (byte)CaptainReason.OutSpeed or (byte)CaptainReason.OutGuns or (byte)CaptainReason.OutList
+            or (byte)CaptainReason.OutWater or (byte)CaptainReason.OutSteering
+        && groupOf.TryGetValue(s.Ships.Entity[k], out int g) && s.Groups.IndexOfGroup(g) >= 0;
+
+    /// <summary>The player overrules a captain who fell out (decision 2): an order of the player's first (he stays, at his
+    /// ship's risk), then her squadron takes her back.</summary>
+    void BackIntoLine(Snapshot s, int ship)
     {
-        if (notices.Count == 0)
+        if (!groupOf.TryGetValue(ship, out int g))
             return;
-        var vp = ImGui.GetMainViewport();
-        float sc = UiFonts.Scale, w = 480 * sc;
-        ImGui.SetNextWindowPos(new Vector2((vp.Pos.X + Math.Min(dockLeft, vp.Pos.X + vp.Size.X)) / 2, HudTop), ImGuiCond.Always, new Vector2(0.5f, 0));
-        ImGui.SetNextWindowSize(new Vector2(w, 0));
-        ImGui.SetNextWindowBgAlpha(0.92f);
-        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(10, 7) * sc);
-        if (ImGui.Begin("##notices", ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings |
-                                     ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoNav | ImGuiWindowFlags.NoMove))
-        {
-            for (int i = notices.Count - 1; i >= Math.Max(0, notices.Count - 2); i--)
-            {
-                var n = notices[i];
-                ImGui.PushID(n.Ship);
-                var p = ImGui.GetCursorScreenPos();
-                ImGui.GetWindowDrawList().AddRectFilled(p - new Vector2(10, 0) * sc, p + new Vector2(-8 * sc, 3 * ImGui.GetTextLineHeight() + 8 * sc),
-                    ImGui.GetColorU32(DesignerTheme.Amber));
-                ImGui.PushFont(UiFonts.SansBold);
-                ImGui.TextColored(DesignerTheme.Bright, n.Title);
-                ImGui.PopFont();
-                ImGui.SameLine(w - 60 * sc);
-                ImGui.TextDisabled(n.Time);
-                ImGui.PushTextWrapPos(0);
-                ImGui.TextDisabled(n.Text);
-                ImGui.PopTextWrapPos();
-                if (Seg("Show her", first: true))
-                    GoTo(s, n.Ship);
-                bool line = n.Group >= 0 && s.Groups.IndexOfGroup(n.Group) >= 0 && s.Ships.IndexOf(n.Ship) >= 0;
-                ImGui.SameLine(0, 4 * sc);
-                if (Seg("Order her back into line", enabled: line, first: true))
-                {
-                    // the player's order first (her captain stays: decision 2), then her squadron takes her back
-                    world.Send(world.Ai.Orders.Fight(Unit.Ship(n.Ship)));
-                    world.Send(GroupSystem.Add(n.Group, n.Ship));
-                    Ordered(s, n.Ship, $"{ShipName(s, n.Ship)}: ordered back into line");
-                    notices.RemoveAt(i);
-                }
-                if (!line && ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                    ImGui.SetTooltip("her squadron is gone");
-                ImGui.SameLine(0, 4 * sc);
-                if (Seg("Let her go", first: true))
-                    notices.RemoveAt(i);
-                ImGui.PopID();
-                if (i > Math.Max(0, notices.Count - 2))
-                    ImGui.Separator();
-            }
-        }
-        ImGui.End();
-        ImGui.PopStyleVar();
+        world.Send(world.Ai.Orders.Fight(Unit.Ship(ship)));
+        world.Send(GroupSystem.Add(g, ship));
+        Ordered(s, ship, $"{ShipName(s, ship)}: ordered back into line");
     }
 }
