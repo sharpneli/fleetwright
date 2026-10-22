@@ -109,6 +109,7 @@ public static class DesignerTheme
         C(ImGuiCol.TableHeaderBg, HeaderBg);
         C(ImGuiCol.TextSelectedBg, Hex(0x5B9BE0, 0.35f));
         C(ImGuiCol.MenuBarBg, Hex(0x161B20));
+        C(ImGuiCol.ModalWindowDimBg, Hex(0x040608, 0.55f));
         V(ImGuiStyleVar.FrameRounding, 0);
         V(ImGuiStyleVar.ChildRounding, 0);
         V(ImGuiStyleVar.PopupRounding, 2 * s);

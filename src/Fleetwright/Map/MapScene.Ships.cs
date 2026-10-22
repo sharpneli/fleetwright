@@ -735,6 +735,8 @@ public sealed unsafe partial class MapScene
     /// side and its commander, the sides' aggression, the spawner, and a salvo from the selected ship.</summary>
     void DevUi(Snapshot s)
     {
+        DevWhere(s);
+        ImGui.Separator();
         ScenarioRow();
         ImGui.TextDisabled($"Ships at sea: {s.Ships.Count}   (dev: spawn)");
         ImGui.SameLine();
@@ -869,8 +871,7 @@ public sealed unsafe partial class MapScene
             placing = placeDrag = false;
         else
         {
-            // below the menu bar: placed once, on the first frame, before the work area knows of the bar
-            ImGui.SetNextWindowPos(new Vector2(vp.Pos.X + pad, vp.Pos.Y + ImGui.GetFrameHeight() + pad), ImGuiCond.FirstUseEver);
+            ImGui.SetNextWindowPos(new Vector2(vp.Pos.X + pad, HudTop), ImGuiCond.FirstUseEver);
             ImGui.SetNextWindowBgAlpha(0.85f);
             if (ImGui.Begin("Dev (F1)##dev", ref devOpen, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings |
                                                            ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoFocusOnAppearing))

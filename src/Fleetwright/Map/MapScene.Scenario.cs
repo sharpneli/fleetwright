@@ -53,6 +53,11 @@ public sealed unsafe partial class MapScene
             camera = MapCamera.At(c.Lat, c.Lon, c.MetresPerPixel);
             clamped = false;
         }
+        if (BriefOnce && world.Scenario != null)
+        {
+            BriefOnce = false;
+            OpenBrief();
+        }
     }
 
     void ScenarioRow()

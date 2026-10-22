@@ -1,4 +1,5 @@
 using System.Numerics;
+using Fleetwright.Designer;
 using Fleetwright.Gpu;
 using Fleetwright.Sim;
 using Fleetwright.Sim.Core;
@@ -23,7 +24,7 @@ public sealed unsafe partial class MapScene : IScene
     readonly SeaView sea = new();
     MapCamera camera, built;   // built: the view the lines and the land's fill were last built for
     (double, double) builtSize;
-    double builtBoundary, builtInset;   // WorldView.BoundaryM and the menu bar's height (target px) the lines were built for
+    double builtBoundary, builtInset;   // WorldView.BoundaryM and the top bar's height (target px) the lines were built for
     readonly List<Graticule.BorderTick> ticks = [];   // the grid at the screen's edge, in the world view
     readonly Dictionary<(double, double, bool), string> tickLabels = [];   // their labels, kept: a pan makes no garbage
     double width = 1, height = 1;   // the target's size at the last draw, pixels
@@ -65,7 +66,7 @@ public sealed unsafe partial class MapScene : IScene
         probeRender = ui.Register("Globe render (CPU)");
         probeUiShips = ui.Register("UI: panels");
         probeUiLabels = ui.Register("UI: group labels");
-        probeUiRest = ui.Register("UI: clock, where");
+        probeUiRest = ui.Register("UI: top bar, where, briefing");
     }
 
     /// <summary>Over the North Sea, the whole globe in view.</summary>
@@ -96,7 +97,7 @@ public sealed unsafe partial class MapScene : IScene
         var level = land.LevelFor(view);
         int baked = level == land.Coarse ? 0 : level == land.Medium ? 1 : -1;
         var vp = ImGui.GetMainViewport();
-        double inset = (vp.WorkPos.Y - vp.Pos.Y) * height / Math.Max(vp.Size.Y, 1);   // the top edge's marks go under the menu bar
+        double inset = topBarH * height / Math.Max(vp.Size.Y, 1);   // the top edge's marks go under the top bar
         if (camera.Target != built.Target || camera.MetresPerPixel != built.MetresPerPixel || (width, height) != builtSize
             || WorldView.BoundaryM != builtBoundary || inset != builtInset)
         {
@@ -167,11 +168,13 @@ public sealed unsafe partial class MapScene : IScene
     public void BuildUi()
     {
         NewWorld();
+        DesignerTheme.Push();
         var probes = world.Perf.Ui;
         long t = Probes.Now;
+        var s = world.Current;
+        TopBar(s);
         ShipsUi();
         probes.Add(probeUiShips, t);
-        var s = world.Current;
         t = Probes.Now;
         GroupLabels(s);
         EncounterLabels(s);
@@ -183,72 +186,10 @@ public sealed unsafe partial class MapScene : IScene
         t = Probes.Now;
         if (Sdl3GpuEngine.StatsShown)
             world.Perf.Draw(s, art, renderer.OverlayVertices);
-        var vp = ImGui.GetMainViewport();
-        float pad = 8 * UiFonts.Scale;
-        const ImGuiWindowFlags Hud = ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize |
-                                     ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoFocusOnAppearing |
-                                     ImGuiWindowFlags.NoNav | ImGuiWindowFlags.NoMove;
-
-        // the clock: top centre
-        ImGui.SetNextWindowPos(new Vector2(vp.WorkPos.X + vp.WorkSize.X / 2, vp.WorkPos.Y + pad), ImGuiCond.Always, new Vector2(0.5f, 0));
-        ImGui.SetNextWindowBgAlpha(0.75f);
-        if (ImGui.Begin("##clock", Hud))
-        {
-            ImGui.Text($"{s.Time} UTC");
-            ImGui.SameLine();
-            if (ImGui.Button(s.Paused ? "Run" : "Pause"))
-                world.Send(s.Paused ? Command.Resume() : Command.Pause());
-            ImGui.SameLine();
-            SpeedDetent(s);
-            ImGui.TextDisabled(s.Paused
-                ? "paused"
-                : $"asked {SpeedLabel(s.Speed)}, achieved {SpeedLabel(Math.Round(s.AchievedSpeed))}");
-            if (GunsSilent(s))
-                ImGui.TextColored(new Vector4(1f, 0.75f, 0.3f, 1), $"guns silent: no fire in the coarse tier ({world.Settings.CoarseMinSpeed:0}x and up) until coarse fire (4.9)");
-            EncounterNews(s);
-            if (s.Error != null)
-                ImGui.TextColored(new Vector4(1, 0.4f, 0.3f, 1), "the sim stopped: " + s.Error.Split('\n')[0]);
-        }
-        ImGui.End();
-
-        // where the map looks: bottom left
-        var view = View;
-        ImGui.SetNextWindowPos(new Vector2(vp.WorkPos.X + pad, vp.WorkPos.Y + vp.WorkSize.Y - pad), ImGuiCond.Always, new Vector2(0, 1));
-        ImGui.SetNextWindowBgAlpha(0.6f);
-        if (ImGui.Begin("##where", Hud))
-        {
-            double across = camera.MetresPerPixel * width, wf = WorldView.Factor(view);
-            ImGui.Text($"{Band(across)} · {WorldView.Label(wf)} · {Distance(across)} across · {Scale(camera.MetresPerPixel)} · grid {Graticule.Label(Graticule.Spacing(camera.MetresPerPixel))}{(wf >= 1 ? " at the edges" : "")}");
-            ScaleBar(camera.MetresPerPixel * width / Math.Max(vp.Size.X, 1));
-            if (Sdl3GpuEngine.StatsShown)
-            {
-                float b = (float)WorldView.BoundaryM;
-                ImGui.SetNextItemWidth(160 * UiFonts.Scale);
-                if (ImGui.SliderFloat("world below, m/px at 1080p", ref b, 0.5f, 25f, "%.2f", ImGuiSliderFlags.Logarithmic))
-                    WorldView.BoundaryM = b;
-            }
-            var (lat, lon) = Earth.LatLon(camera.Target);
-            if (sunLapse.Motion < 0.5)   // the hours would only churn
-                ImGui.Text($"centre {LatLon(lat, lon)}, time-lapse sun, {s.AchievedSpeed / 86_400:0.#} days/s");
-            else
-            {
-                var (_, sunLon) = Earth.LatLon(s.Sun);
-                double solar = ((12 + (lon - sunLon) / 15) % 24 + 24) % 24;
-                ImGui.Text($"centre {LatLon(lat, lon)}, local sun time {(int)solar:00}:{(int)(solar % 1 * 60):00}");
-            }
-            if (mouseIn && view.Pick(mouse.X * width / Math.Max(vp.Size.X, 1), mouse.Y * height / Math.Max(vp.Size.Y, 1), out var p))
-            {
-                var (la, lo) = Earth.LatLon(p);
-                bool onLand = world.Shore.IsLand(p);
-                ImGui.Text($"cursor {LatLon(la, lo)}{(onLand ? ", land" : "")}");
-                if (onLand && ImGui.GetIO().KeyShift && selected >= 0 && !ImGui.GetIO().WantCaptureMouse)
-                    ImGui.SetTooltip("land: no waypoint here");
-            }
-            else
-                ImGui.TextDisabled("cursor off the globe");
-        }
-        ImGui.End();
+        Where();
+        Briefing();
         probes.Add(probeUiRest, t);
+        DesignerTheme.Pop();
     }
 
     public bool ProcessEvent(SDL_Event* e, uint w, uint h)
@@ -311,6 +252,8 @@ public sealed unsafe partial class MapScene : IScene
     bool Key(uint key)
     {
         var s = world.Current;
+        if (key == SDLK_ESCAPE)
+            return Escape();
         if (key == SDLK_F1)
             devOpen = !devOpen;
         else if (key == SDLK_SPACE)

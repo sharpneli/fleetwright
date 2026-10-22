@@ -96,28 +96,6 @@ public sealed partial class MapScene
         _ => Command.SetInterest(kind, InterestAction.Nothing),
     };
 
-    /// <summary>In the clock's panel: the news, while it's fresh or the clock is paused at it; and the player's rules.</summary>
-    void EncounterNews(Snapshot s)
-    {
-        var v = s.Encounters;
-        if (v.NewsId != newsSeen)
-            (newsSeen, newsSeenAt) = (v.NewsId, Stopwatch.GetTimestamp());
-        bool pausedAtIt = s.Paused && s.Time.Ms - v.NewsMs <= 1;
-        if (v.NewsId != 0 && (pausedAtIt || Stopwatch.GetElapsedTime(newsSeenAt).TotalSeconds < NewsShownSeconds))
-        {
-            string what = v.NewsKind == InterestKind.Own ? "contact: our ships in encounter" : "encounter between others:";
-            ImGui.TextColored(v.NewsKind == InterestKind.Own ? OwnEncounter with { W = 1 } : OthersEncounter with { W = 1 },
-                $"{what} {v.NewsId} at {new WorldTime(v.NewsMs).ToUtc():HH:mm}{(pausedAtIt ? " (paused)" : "")}");
-        }
-        if (s.PlayerSide < 0)
-            return;
-        ImGui.TextDisabled("on contact:");
-        Rule(s, InterestKind.Own, "##own");
-        ImGui.SameLine();
-        ImGui.TextDisabled("others':");
-        Rule(s, InterestKind.Others, "##others");
-    }
-
     void Rule(Snapshot s, InterestKind kind, string id)
     {
         ImGui.SameLine();

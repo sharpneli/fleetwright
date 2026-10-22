@@ -1134,10 +1134,6 @@ public unsafe class Sdl3GpuEngine : IDisposable
                     break;
 
                 case SDL_EventType.SDL_EVENT_KEY_DOWN:
-                    if ((uint)evt.key.key == SDLK_ESCAPE)
-                    {
-                        _isRunning = false;
-                    }
                     // Toggle stats window with F2
                     if ((uint)evt.key.key == SDLK_F2)
                     {

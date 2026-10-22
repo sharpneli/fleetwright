@@ -20,6 +20,17 @@ public unsafe interface IScene : IDisposable
     void BuildUi();
 
     /// <summary>An input event ImGui didn't want. <paramref name="width"/> and <paramref name="height"/> are the
-    /// window's. False when the event isn't the scene's.</summary>
+    /// window's. False when the event isn't the scene's. Esc comes here first: true when it shut something of the
+    /// scene's (a selection, an armed order), else the switcher opens the menu (Esc never quits).</summary>
     bool ProcessEvent(SDL_Event* e, uint width, uint height);
+}
+
+/// <summary>A scene's part of the app's menu (Esc, <see cref="SceneSwitcher"/>): its own items, drawn inside the menu
+/// above the switcher's, and word when the menu opens and shuts (the map pauses its clock under it).</summary>
+public interface ISceneMenu
+{
+    /// <summary>The scene's items, inside the menu's window: true when one was chosen that shuts the menu.</summary>
+    bool MenuItems();
+
+    void MenuShown(bool shown);
 }

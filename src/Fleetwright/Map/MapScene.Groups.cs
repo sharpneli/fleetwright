@@ -515,7 +515,7 @@ public sealed unsafe partial class MapScene
             return;
         var vp = ImGui.GetMainViewport();
         float pad = 8 * UiFonts.Scale;
-        ImGui.SetNextWindowPos(new Vector2(vp.WorkPos.X + vp.WorkSize.X - pad, vp.WorkPos.Y + pad), ImGuiCond.Always, new Vector2(1, 0));
+        ImGui.SetNextWindowPos(new Vector2(vp.WorkPos.X + vp.WorkSize.X - pad, HudTop), ImGuiCond.Always, new Vector2(1, 0));
         ImGui.SetNextWindowBgAlpha(0.75f);
         if (ImGui.Begin("##held", ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings |
                                   ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoNav | ImGuiWindowFlags.NoMove))

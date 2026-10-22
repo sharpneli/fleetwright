@@ -59,8 +59,10 @@ The world tab (`Map/`, `docs/battle/plan.md` step 1.2) is first and the default:
 its sim thread for the app (the engine's `FrameStarted` reports real time every frame, whatever tab is open), and
 `MapScene` draws the globe from orbit to 10 px/m (`MapCamera` and `MapView`: straight down, north up, zoom in metres
 per pixel; projection, picking, the grid and the land's clip in double, so nothing jitters), the land from
-`Content/World/` (Natural Earth, a rough first Earth: `LandView`), with the clock's controls (space pauses,
-+ and - change speed). Wheel zooms at the cursor, left drag pans. Ships (`MapScene.Ships.cs`, step 2.3a): a click
+`Content/World/` (Natural Earth, a rough first Earth: `LandView`), under the HUD of `docs/map-ui/battle-hud.md`
+(`MapScene.Hud.cs`: the top bar with the clock's controls, space pauses, + and - change speed; the briefing, which a
+scenario loaded from the menu opens with, or `-brief` at start; Esc shuts the topmost thing, else opens the app's menu:
+scenarios, restart, the clock's rules on contact, the designer, quit. Esc never quits). Wheel zooms at the cursor, left drag pans. Ships (`MapScene.Ships.cs`, step 2.3a): a click
 selects, the strip at the bottom orders course and speed, right-click steers for a point, shift+right-click adds a
 waypoint, the search row orders a search pattern; the dev panel (F1, or `-dev` open at start: the scenario picker, the sides, truth and the spawner) spawns where you click, one ship or a group already on its
 stations (count, formation, spacing, heading, speed, side), the designer's design as it is now ("From designer", the
@@ -69,8 +71,9 @@ the way of the drag (a ghost shows them until the release), and a spawn looks ro
 globe's pass (sprites from `ShipArtLibrary`, a stand-in icon when small). Without `-view`, a designer-only flag (`-section`,
 `-steps`, `-new`, `-designer-ui`, `-units`) opens the designer instead.
 
-The other four tabs are on one design (menu bar, or F3 to step): the designer, the hitbox viewer, the
-ship viewer and the profile. `-ship=` picks the design; without it, it is `Content/Designs/bismarck.json` next to the exe (a game
+The designer and the viewers are one half of the app, opened from the map's top-bar menu (or F3): the designer, the
+hitbox viewer, the ship viewer and the profile as tabs at the right of its menu bar (F3 steps them; Map goes back).
+They are on one design. `-ship=` picks the design; without it, it is `Content/Designs/bismarck.json` next to the exe (a game
 asset, below). `-ship=` also takes the path without `.json`, or just a shipped design's name (`-ship=yamato`). All of them show `DesignSession`'s design: an edit in the designer shows in the viewers, and a design
 picked in the ship viewer's list opens in the designer.
 
@@ -276,7 +279,7 @@ src/
     IScene.cs                 #   a full-window view with its own UI; the engine draws the current one (see Views)
     ShipViewer.cs             #   the ship viewer, a test tool for Shipgen
     ProfileScene.cs, ShipCard.cs   # the profile tab: the ship card poster (drawings, silhouette, figures)
-    SceneSwitcher.cs          #   several scenes behind one IScene: the menu bar and F3 switch
+    SceneSwitcher.cs          #   several scenes behind one IScene: the map, the designer's tabs (F3), the app's menu (Esc)
     UiFonts.cs                #   the game UI's fonts (Content/Fonts) in ImGui's atlas
     Designer/                 #   the ship designer: DesignerScene (design in, design out), DesignDoc (history, save),
                               #   Knobs (every control over the design), Templates, Units, DesignerTheme (the tokens)
