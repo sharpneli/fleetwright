@@ -103,6 +103,53 @@ public class MapCameraTests
     }
 
     [Fact]
+    public void A_pan_down_the_screen_goes_north_along_the_meridian_a_pixel_to_a_pixel()
+    {
+        var cam = MapCamera.At(56.7, 5.8, 20);
+        Assert.True(new MapView(cam, W, H).Pick(800, 450, out var held));
+        cam.Pan(800, 450, 800, 550, W, H);
+        var (lat, lon) = Earth.LatLon(cam.Target);
+        Assert.Equal(56.7 + 100 * 20 / Earth.Radius * 180 / Math.PI, lat, 9);
+        Assert.Equal(5.8, lon, 9);
+        // across too, at a table's zoom the point under the cursor stays under it
+        cam.Pan(800, 550, 1000, 550, W, H);
+        Assert.True(new MapView(cam, W, H).Pick(1000, 550, out var now));
+        Assert.True(Earth.Distance(held, now) < 20, $"{Earth.Distance(held, now)} m off");   // a pixel
+    }
+
+    [Theory]
+    [InlineData(90)]
+    [InlineData(-90)]
+    [InlineData(89.99)]
+    public void At_a_pole_up_and_down_stays_north_and_south(double lat)
+    {
+        // the map dragged on toward the pole stops there, without spinning; dragged back it leaves at once
+        double s = Math.Sign(lat);
+        var cam = MapCamera.At(lat, 20, 500);
+        cam.Pan(800, 450, 800, 450 + 300 * s, W, H);
+        var (at, lon) = Earth.LatLon(cam.Target);
+        Assert.Equal(s * MapCamera.MaxLatitude, at, 9);
+        if (Math.Abs(lat) < 90)
+            Assert.Equal(20, lon, 6);
+        cam.Pan(800, 750, 800, 740 - 300 * s, W, H);   // the same distance back, then 10 px more
+        var (back, lon2) = Earth.LatLon(cam.Target);
+        Assert.True(Math.Abs(back) < MapCamera.MaxLatitude - 1, $"{back}");
+        Assert.Equal(lon, lon2, 6);
+    }
+
+    [Fact]
+    public void Across_the_screen_by_a_pole_spins_the_globe_gently()
+    {
+        // the cursor on the pole: 100 px across is the turn of a parallel 50 px out, two radians, no more
+        var cam = MapCamera.At(89.999, 20, 1);
+        Assert.True(new MapView(cam, W, H).Project(Earth.Position(90, 0), out double px, out double py));
+        cam.Pan(px, py, px + 100, py, W, H);
+        var (lat, lon) = Earth.LatLon(cam.Target);
+        Assert.Equal(89.999, lat, 9);
+        Assert.Equal(20 - 2 * 180 / Math.PI, lon, 6);
+    }
+
+    [Fact]
     public void The_zoom_stays_in_range()
     {
         var cam = MapCamera.At(0, 0, 1e-6);

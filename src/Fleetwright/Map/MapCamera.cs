@@ -48,7 +48,25 @@ public struct MapCamera
             Drag(p0, x, y, width, height);
     }
 
-    /// <summary>Moves the camera so the globe's point <paramref name="grab"/> comes under (x, y): a drag. Solved by
+    /// <summary>The farthest from the equator the camera looks, degrees: a tenth of a metre short of the pole, where
+    /// north has no direction and north-up no meaning.</summary>
+    public const double MaxLatitude = 90 - 1e-6;
+
+    /// <summary>A left drag from (fromX, fromY) to (toX, toY): up and down the screen is north and south along the
+    /// meridian, a pixel to a pixel's metres, stopping at <see cref="MaxLatitude"/> (so dragging back leaves a pole at
+    /// once); across the screen turns the globe about its axis so the parallel under the cursor keeps up with it, or,
+    /// within 50 px of a pole, as if it were 50 px out (near the pole that's a spin about it, never a wild one).</summary>
+    public void Pan(double fromX, double fromY, double toX, double toY, double width, double height)
+    {
+        var (lat, lon) = Earth.LatLon(Target);
+        double cursorLat = new MapView(this, width, height).Pick(fromX, fromY, out var under) ? Earth.LatLon(under).Lat : lat;
+        double radius = Math.Max(Earth.Radius * Math.Cos(cursorLat * Math.PI / 180), 50 * MetresPerPixel);   // the parallel's, metres
+        lat = Math.Clamp(lat + (toY - fromY) * MetresPerPixel / Earth.Radius * 180 / Math.PI, -MaxLatitude, MaxLatitude);
+        lon -= (toX - fromX) * MetresPerPixel / radius * 180 / Math.PI;
+        Target = Earth.Up(lat, lon);
+    }
+
+    /// <summary>Moves the camera so the globe's point <paramref name="grab"/> comes under (x, y): the zoom's. Solved by
     /// Newton's method on where the point projects, the step halved until it helps (the camera's north-up axes turn as
     /// it moves, and near the limb a small turn moves the point a lot), to a ten-thousandth of a pixel.</summary>
     public void Drag(Vec3d grab, double x, double y, double width, double height)

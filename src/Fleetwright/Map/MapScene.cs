@@ -29,8 +29,8 @@ public sealed unsafe partial class MapScene : IScene
     readonly Dictionary<(double, double, bool), string> tickLabels = [];   // their labels, kept: a pan makes no garbage
     double width = 1, height = 1;   // the target's size at the last draw, pixels
     bool dragging, clamped, dragPending;
-    Vec3d grab;
-    double dragX, dragY;   // the newest cursor of a drag: solved once a frame, however many motion events came
+    double panX, panY;   // the cursor the camera was last panned to
+    double dragX, dragY;   // the newest cursor of a drag: panned to once a frame, however many motion events came
     Vector2 mouse;
     bool mouseIn;
     double cursorX = -1, cursorY = -1;   // the cursor in target pixels
@@ -85,8 +85,8 @@ public sealed unsafe partial class MapScene : IScene
         }
         if (dragPending)
         {
-            camera.Drag(grab, dragX, dragY, width, height);
-            dragPending = false;
+            camera.Pan(panX, panY, dragX, dragY, width, height);
+            (panX, panY, dragPending) = (dragX, dragY, false);
         }
         // the dev's follow (-follow=ENTITY: benches and captures stay on a ship as she steams)
         if (Follow > 0 && world.Current.Ships.IndexOf(Follow) is int fk and >= 0)
@@ -229,7 +229,7 @@ public sealed unsafe partial class MapScene : IScene
                 if (BeginPlace(e->button.x * sx, e->button.y * sy))
                     return true;   // armed to place: the drag aims the ships, it doesn't pan
                 (pressX, pressY, pressed) = (e->button.x * sx, e->button.y * sy, true);
-                dragging = View.Pick(e->button.x * sx, e->button.y * sy, out grab);
+                (panX, panY, dragging) = (e->button.x * sx, e->button.y * sy, true);   // off the globe too: a pan needs no point held
                 return true;
             case SDL_EventType.SDL_EVENT_MOUSE_BUTTON_UP:
                 if (e->button.button == 1 && placeDrag)
