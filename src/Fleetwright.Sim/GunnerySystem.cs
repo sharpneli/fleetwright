@@ -1519,6 +1519,10 @@ public sealed class GunnerySystem : IWorldSystem
         log.Hash(ref h);
     }
 
+    /// <summary>The newest lines of the log a snapshot carries: the screens read the new ones each frame (by
+    /// <see cref="CombatLog.Written"/>), so it holds the most a frame's sim time writes at a busy fight's speed.</summary>
+    public const int CombatLogShown = 256;
+
     public void Fill(Snapshot snap)
     {
         var v = snap.Batteries;
@@ -1533,9 +1537,10 @@ public sealed class GunnerySystem : IWorldSystem
                 continue;
             (v.Shooter[n], v.Battery[n], v.Target[n], v.State[n], v.Phase[n]) = (fc.Shooter, fc.Battery, fc.Target, fc.State, fc.Phase);
             (v.Salvos[n], v.Shells[n], v.Hits[n], v.Level[n], v.Local[n]) = (fc.Salvos, fc.Shells, fc.Hits, (byte)fc.Level, fc.Local);
+            (v.RangeM[n], v.SigmaM[n], v.Straddles[n], v.InFlight[n], v.Misses[n], v.Sees[n]) = (fc.RangeM, fc.PosSigmaM, fc.Straddles, fc.InFlight, fc.Misses, fc.Sees);
             n++;
         }
         v.Count = n;
-        log.Fill(snap.CombatLog, 64);
+        log.Fill(snap.CombatLog, CombatLogShown);
     }
 }

@@ -31,6 +31,16 @@ public sealed class SimHost : IDisposable
         get => truth;
         set => truth = value;
     }
+
+    /// <summary>The ships the screens want detailed (<see cref="Snapshot.Details"/>; at most
+    /// <see cref="Snapshot.MaxDetail"/>): the host's choice, like <see cref="Truth"/>. Set a new array to change it (the
+    /// sim thread reads the reference at each publish).</summary>
+    public int[] Detail
+    {
+        get => detail;
+        set => detail = value;
+    }
+    volatile int[] detail = [];
     long sequence;
     string? error;
 
@@ -150,6 +160,9 @@ public sealed class SimHost : IDisposable
         }
         long t = Probes.Now;
         var s = snapshots.Back;
+        var want = detail;
+        s.DetailWantedCount = Math.Min(want.Length, Snapshot.MaxDetail);
+        want.AsSpan(0, s.DetailWantedCount).CopyTo(s.DetailWanted);
         world.Fill(s, Truth);
         s.Probes.CopyFrom(world.Probes);
         world.Probes.ResetMax();

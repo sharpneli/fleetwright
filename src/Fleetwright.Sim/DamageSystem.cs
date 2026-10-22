@@ -466,6 +466,107 @@ public sealed class DamageSystem : IWorldSystem
     }
 
     /// <summary>A class's flooding model (its cells as water sees them), made when it's first in the world.</summary>
+    /// <summary>The ship card's detail (docs/map-ui/battle-hud.md U3a) for the ships the host asked for that are shown:
+    /// each mount's state (down, jammed, out, loading, ready) and its rounds by kind, the crew, the parties and pumps, the
+    /// spaces with water, the holes, the magazines flooded. A handful of ships: allocates nothing once the pools have grown.</summary>
+    void FillDetail(Snapshot snap)
+    {
+        var d = snap.Details;
+        var store = ships.Store;
+        long now = snap.Time.Ms;
+        (d.Count, d.Mounts, d.Parties, d.Floods, d.Holes, d.Magazines) = (0, 0, 0, 0, 0, 0);
+        for (int w = 0; w < snap.DetailWantedCount; w++)
+        {
+            int slot = store.SlotOf(snap.DetailWanted[w]);
+            if (!store.IsAlive(slot) || !snap.ShownSides[store[slot].Side] || d.IndexOf(snap.DetailWanted[w]) >= 0)
+                continue;
+            var cls = store[slot].Handling.Class;
+            var k = store.Combat.Condition(slot);
+            var fm = Flood(cls);
+            int r = d.Count++;
+            d.Entity[r] = snap.DetailWanted[w];
+            (d.Complement[r], d.Killed[r], d.Wounded[r], d.CrewOut[r], d.PumpsRigged[r]) =
+                (fm.Complement, k?.Killed ?? 0, k?.Wounded ?? 0, k?.CrewLost ?? 0, k?.PumpsRigged ?? 0);
+
+            // the mounts: their state, then their rounds by kind from the loadout's loads
+            var mounts = cls.Mounts;
+            d.EnsureMounts(d.Mounts + mounts.Length);
+            int m0 = d.MountStart[r] = d.Mounts;
+            d.MountCount[r] = mounts.Length;
+            for (int m = 0; m < mounts.Length; m++)
+            {
+                int i = m0 + m, comp = mounts[m].Component;
+                var flags = k != null && comp >= 0 && comp < k.Flags.Length ? k.Flags[comp] : PartFlags.None;
+                var harm = k != null && m < k.Mount.Length ? k.Mount[m] : default;
+                bool works = k == null || m >= k.MountWorks.Length || k.MountWorks[m];
+                ref readonly var st = ref store.Combat.Mount(slot, m);
+                (d.Mount[i], d.MountUntilMs[i]) = (flags & PartFlags.Down) != 0 && k!.DownUntil.Length > comp ? (MountStatus.Down, k.DownUntil[comp])
+                    : (flags & PartFlags.Jammed) != 0 ? (MountStatus.Jammed, harm.JamUntil)
+                    : !works ? (MountStatus.Out, 0L)
+                    : st.LoadedMs > now ? (MountStatus.Loading, st.LoadedMs)
+                    : (MountStatus.Ready, 0L);
+                d.MountGunsOut[i] = harm.GunUntil > now ? harm.GunsOut : 0;
+                (d.MountAp[i], d.MountCommon[i], d.MountHe[i]) = (0, 0, 0);
+            }
+            var lo = store.Combat.Loadout(slot);
+            if (lo.LoadCount > 0)
+                for (int b = 0; b < cls.Batteries.Length; b++)
+                {
+                    var loads = lo.Loads(b);
+                    foreach (int m in cls.Links(cls.Batteries[b].Mounts))
+                        for (int l = 0; l < loads.Length; l++)
+                        {
+                            int rounds = store.Combat.LoadRounds(slot, m, l);
+                            var kind = lo.ShellTypes[loads[l].ShellType].Kind;
+                            ref int sum = ref (kind == ShellKind.Ap ? d.MountAp : kind == ShellKind.Common ? d.MountCommon : d.MountHe)[m0 + m];
+                            sum = rounds == int.MaxValue || sum == int.MaxValue ? int.MaxValue : sum + rounds;
+                        }
+                }
+
+            d.PartyStart[r] = d.Parties;
+            d.FloodStart[r] = d.Floods;
+            d.HoleStart[r] = d.Holes;
+            d.MagazineStart[r] = d.Magazines;
+            if (k != null)
+            {
+                d.EnsureParties(d.Parties + k.PartyCount);
+                for (int p = 0; p < k.PartyCount; p++)
+                {
+                    ref readonly var party = ref k.Parties[p];
+                    int i = d.Parties++;
+                    (d.PartyMen[i], d.PartyJob[i], d.PartyFire[i], d.PartyAt[i], d.PartyDone[i], d.PartySection[i]) =
+                        (party.Men, party.Job, party.Target, party.JobAt, party.Done, party.Section);
+                }
+                for (int c = 0; c < k.WaterM3.Length; c++)
+                {
+                    if (k.WaterM3[c] > 0.5)
+                    {
+                        d.EnsureFloods(d.Floods + 1);
+                        int i = d.Floods++;
+                        (d.FloodCell[i], d.FloodShare[i], d.FloodCounter[i]) = (c, Math.Min(1, k.WaterM3[c] / Math.Max(fm.Capacity[c], 1e-3)),
+                            c < k.Counterflooded.Length && k.Counterflooded[c]);
+                    }
+                    if (k.BreachM2[c] > 0.001)
+                    {
+                        d.EnsureHoles(d.Holes + 1);
+                        int i = d.Holes++;
+                        (d.HoleCell[i], d.HoleM2[i], d.HoleY[i], d.HoleZ[i]) = (c, k.BreachM2[c], k.BreachY[c], k.BreachZ[c]);
+                    }
+                }
+                for (int room = 0; room < k.MagazineFlood.Length; room++)
+                    if (k.MagazineFlood[room] || room < k.MagazineOrderMs.Length && k.MagazineOrderMs[room] > 0)
+                    {
+                        d.EnsureMagazines(d.Magazines + 1);
+                        d.MagazineRoom[d.Magazines++] = room;
+                    }
+            }
+            d.PartyCount[r] = d.Parties - d.PartyStart[r];
+            d.FloodCount[r] = d.Floods - d.FloodStart[r];
+            d.HoleCount[r] = d.Holes - d.HoleStart[r];
+            d.MagazineCount[r] = d.Magazines - d.MagazineStart[r];
+        }
+    }
+
     public FloodModel Flood(ShipClass cls)
     {
         if (!floods.TryGetValue(cls, out var f))
@@ -1039,6 +1140,7 @@ public sealed class DamageSystem : IWorldSystem
 
     public void Fill(Snapshot snap)
     {
+        FillDetail(snap);
         var v = snap.Conditions;
         var store = ships.Store;
         int n = 0;

@@ -332,6 +332,45 @@ public class DamageTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void The_detail_asked_for_shows_each_mount_its_rounds_and_the_crew_and_allocates_nothing_once_grown()
+    {
+        var w = World("dreadnought", out int c);
+        var cls = Class("dreadnought");
+        var p = Earth.Position(56, 4);
+        var f = Earth.Forward(p, 90);
+        Earth.Advance(ref p, ref f, 9000);
+        var (tl, to) = Earth.LatLon(p);
+        w.Apply(ShipSystem.Spawn(c, 56, 4, 0, 15, side: 0));
+        w.Apply(ShipSystem.Spawn(c, tl, to, 0, 15, side: 1));
+        var mounts = cls.Links(cls.Batteries[0].Mounts);
+        int a = mounts[0];
+        w.Apply(DamageSystem.Wreck(1, cls.Mounts[a].Component, PartState.Destroyed));
+        w.Apply(GunnerySystem.Engage(1, 0, 2));
+        w.AdvanceTo(w.Time + 3 * 60_000);
+        var snap = new Snapshot();
+        (snap.DetailWanted[0], snap.DetailWanted[1], snap.DetailWantedCount) = (1, 99, 2);
+        w.Fill(snap, truth: true);
+        var d = snap.Details;
+        Assert.Equal(1, d.Count);
+        Assert.Equal(-1, d.IndexOf(99));
+        int r = d.IndexOf(1);
+        Assert.Equal(cls.Mounts.Length, d.MountCount[r]);
+        Assert.Equal(MountStatus.Out, d.Mount[d.MountStart[r] + a]);
+        int b = mounts[1], rounds = d.MountAp[d.MountStart[r] + b] + d.MountCommon[d.MountStart[r] + b] + d.MountHe[d.MountStart[r] + b];
+        Assert.True(d.Mount[d.MountStart[r] + b] is MountStatus.Ready or MountStatus.Loading, $"{d.Mount[d.MountStart[r] + b]}");
+        Assert.InRange(rounds, 1, cls.Mounts[b].Rounds - 1);   // fired some
+        Assert.True(d.Complement[r] > 100, $"complement {d.Complement[r]}");
+        int i = 0;
+        while (snap.Batteries.Shooter[i] != 1 || snap.Batteries.Battery[i] != 0)
+            i++;
+        Assert.InRange(snap.Batteries.RangeM[i], 7000, 11_000);
+
+        long before = GC.GetAllocatedBytesForCurrentThread();
+        w.Fill(snap, truth: true);
+        Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - before);
+    }
+
+    [Fact]
     public void Boilers_lost_slow_the_ship_at_any_clock_speed()
     {
         var cls = Class("dreadnought");

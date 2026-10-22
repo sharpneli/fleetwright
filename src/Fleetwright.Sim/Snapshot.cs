@@ -120,6 +120,129 @@ public sealed class Snapshot
 
     /// <summary>The condition of the shown ships that have been hit (docs/battle/fighting.md 4.3a).</summary>
     public ConditionsView Conditions { get; } = new();
+
+    /// <summary>The most ships a snapshot details (<see cref="Details"/>): the screens' selection and pinned cards.</summary>
+    public const int MaxDetail = 4;
+
+    /// <summary>The ships the host asked to detail (entities; the first <see cref="DetailWantedCount"/>): the screens'
+    /// choice, like <see cref="Truth"/>, never the world's state.</summary>
+    public int[] DetailWanted { get; } = new int[MaxDetail];
+    public int DetailWantedCount;
+
+    /// <summary>The ship card's detail (docs/map-ui/battle-hud.md U3a) for the ships asked for that are shown: each
+    /// mount's state and rounds, the crew, damage control's parties and pumps, the flooded spaces, the holes and the
+    /// magazines flooded.</summary>
+    public ShipDetailView Details { get; } = new();
+}
+
+/// <summary>A mount's state as a ship card shows it: ready, loading, jammed in train, down for a while (crew stunned,
+/// power tripped), or out (wrecked, disabled, its magazine flooded or gone).</summary>
+public enum MountStatus : byte
+{
+    Ready,
+    Loading,
+    Jammed,
+    Down,
+    Out,
+}
+
+/// <summary>The detail of a few of the shown ships (<see cref="Snapshot.DetailWanted"/>; docs/map-ui/battle-hud.md U3a),
+/// a row a ship with runs into pools: per class mount its <see cref="MountStatus"/>, until when (world ms; 0 none,
+/// long.MaxValue the battle), the guns out of it, and its rounds by kind (AP, common, HE; int.MaxValue uncounted); the
+/// crew (complement, killed, wounded, out now); damage control's parties (men, job, the fire space fought or -1, where
+/// the job is, man-minutes done, section) and the pumps rigged; the spaces with water (cell, share of its capacity,
+/// counterflooded); the holes to the sea (cell, m², mean height and side, ship frame); the magazines flooded (rooms).</summary>
+public sealed class ShipDetailView
+{
+    public int Count;
+    public int[] Entity = new int[Snapshot.MaxDetail], PumpsRigged = new int[Snapshot.MaxDetail];
+    public double[] Complement = new double[Snapshot.MaxDetail], Killed = new double[Snapshot.MaxDetail],
+        Wounded = new double[Snapshot.MaxDetail], CrewOut = new double[Snapshot.MaxDetail];
+    public int[] MountStart = new int[Snapshot.MaxDetail], MountCount = new int[Snapshot.MaxDetail],
+        PartyStart = new int[Snapshot.MaxDetail], PartyCount = new int[Snapshot.MaxDetail],
+        FloodStart = new int[Snapshot.MaxDetail], FloodCount = new int[Snapshot.MaxDetail],
+        HoleStart = new int[Snapshot.MaxDetail], HoleCount = new int[Snapshot.MaxDetail],
+        MagazineStart = new int[Snapshot.MaxDetail], MagazineCount = new int[Snapshot.MaxDetail];
+
+    // the mounts' pool
+    public int Mounts;
+    public MountStatus[] Mount = [];
+    public long[] MountUntilMs = [];
+    public int[] MountGunsOut = [], MountAp = [], MountCommon = [], MountHe = [];
+
+    // the parties' pool
+    public int Parties;
+    public double[] PartyMen = [], PartyDone = [];
+    public Fleetwright.Sim.Combat.RepairJob[] PartyJob = [];
+    public int[] PartyFire = [], PartyAt = [], PartySection = [];
+
+    // the flooded spaces', holes' and flooded magazines' pools
+    public int Floods, Holes, Magazines;
+    public int[] FloodCell = [], HoleCell = [], MagazineRoom = [];
+    public double[] FloodShare = [], HoleM2 = [], HoleY = [], HoleZ = [];
+    public bool[] FloodCounter = [];
+
+    /// <summary>The row of a ship (an entity), or -1 (not detailed).</summary>
+    public int IndexOf(int entity)
+    {
+        for (int i = 0; i < Count; i++)
+            if (Entity[i] == entity)
+                return i;
+        return -1;
+    }
+
+    public void EnsureMounts(int n)
+    {
+        if (n <= Mount.Length)
+            return;
+        n = Math.Max(n, Math.Max(32, Mount.Length * 2));
+        Array.Resize(ref Mount, n);
+        Array.Resize(ref MountUntilMs, n);
+        Array.Resize(ref MountGunsOut, n);
+        Array.Resize(ref MountAp, n);
+        Array.Resize(ref MountCommon, n);
+        Array.Resize(ref MountHe, n);
+    }
+
+    public void EnsureParties(int n)
+    {
+        if (n <= PartyMen.Length)
+            return;
+        n = Math.Max(n, Math.Max(16, PartyMen.Length * 2));
+        Array.Resize(ref PartyMen, n);
+        Array.Resize(ref PartyDone, n);
+        Array.Resize(ref PartyJob, n);
+        Array.Resize(ref PartyFire, n);
+        Array.Resize(ref PartyAt, n);
+        Array.Resize(ref PartySection, n);
+    }
+
+    public void EnsureFloods(int n)
+    {
+        if (n <= FloodCell.Length)
+            return;
+        n = Math.Max(n, Math.Max(32, FloodCell.Length * 2));
+        Array.Resize(ref FloodCell, n);
+        Array.Resize(ref FloodShare, n);
+        Array.Resize(ref FloodCounter, n);
+    }
+
+    public void EnsureHoles(int n)
+    {
+        if (n <= HoleCell.Length)
+            return;
+        n = Math.Max(n, Math.Max(32, HoleCell.Length * 2));
+        Array.Resize(ref HoleCell, n);
+        Array.Resize(ref HoleM2, n);
+        Array.Resize(ref HoleY, n);
+        Array.Resize(ref HoleZ, n);
+    }
+
+    public void EnsureMagazines(int n)
+    {
+        if (n > MagazineRoom.Length)
+            Array.Resize(ref MagazineRoom, Math.Max(n, Math.Max(8, MagazineRoom.Length * 2)));
+    }
 }
 
 /// <summary>A damaged ship's condition, as its own side knows it: hits taken, the share of its power left, its
@@ -182,7 +305,9 @@ public sealed class ConditionsView
 
 /// <summary>An engaged battery: its ship (an entity) and battery (the class's index), what it's engaged on (an entity),
 /// what it's doing and where in its fire discipline, its level (local control at <see cref="Local"/>), and its salvos,
-/// shells and hits so far.</summary>
+/// shells and hits so far; and for the ship card (docs/map-ui/battle-hud.md U3a) the range to its aim and the computer's
+/// doubt along the line of fire (m), the straddles called, its salvos in the air, the misses in a row in fire for
+/// effect, and whether it saw her on its last second.</summary>
 public sealed class BatteriesView
 {
     public int Count;
@@ -191,6 +316,9 @@ public sealed class BatteriesView
     public FirePhase[] Phase = [];
     public byte[] Level = [];
     public bool[] Local = [];
+    public double[] RangeM = [], SigmaM = [];
+    public int[] Straddles = [], InFlight = [], Misses = [];
+    public bool[] Sees = [];
 
     public void EnsureCapacity(int n)
     {
@@ -207,6 +335,12 @@ public sealed class BatteriesView
         Array.Resize(ref Phase, n);
         Array.Resize(ref Level, n);
         Array.Resize(ref Local, n);
+        Array.Resize(ref RangeM, n);
+        Array.Resize(ref SigmaM, n);
+        Array.Resize(ref Straddles, n);
+        Array.Resize(ref InFlight, n);
+        Array.Resize(ref Misses, n);
+        Array.Resize(ref Sees, n);
     }
 }
 

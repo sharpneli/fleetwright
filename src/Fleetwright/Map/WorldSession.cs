@@ -185,6 +185,7 @@ public sealed class WorldSession : IDisposable
                 var old = host;
                 host = Start(w);
                 host.Truth = truth;
+                host.Detail = detail;
                 old.Dispose();
                 (Ai, Scenario, ScenarioStart) = (ai, p.Scenario, start);
                 Generation++;
@@ -250,6 +251,17 @@ public sealed class WorldSession : IDisposable
             host.Truth = value;
         }
     }
+
+    /// <summary>The ships the map's cards want detailed (<see cref="Snapshot.Details"/>): set when they change, kept
+    /// across a new world.</summary>
+    public void Detail(ReadOnlySpan<int> entities)
+    {
+        if (entities.SequenceEqual(detail))
+            return;
+        detail = entities.ToArray();   // only when the cards change
+        host.Detail = detail;
+    }
+    int[] detail = [];
 
     bool truth;
 
