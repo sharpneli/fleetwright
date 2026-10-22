@@ -98,3 +98,36 @@ card, edge markers for what's off screen, and the rumble for a fight at speed.
    Quit). The same in the designer and its viewers.
 5. **The result tells the truth**: both sides' real losses, for bragging rights and as the score. Limited knowledge
    matters more in the campaign; the battler shows everything at the end.
+
+## For the review (U0-U7 built 2026-10-22, while the user was away)
+
+**Try it:** `dotnet run --project src/Fleetwright -- -scenario=squadrons -brief` (the briefing first), or Esc, then a
+scenario from the menu. Click a ship (her card), an enemy in the rail or on the map (what we hold of her), a squadron's
+head in the rail (its card). Right-click with one of yours selected: steer, engage, follow. P pins a card, V shuts it,
+Tab steps your ships, J the log, F1 the dev panel, Esc shuts the topmost thing or opens the menu. Captures beside the
+mockup's: `png/game-u*.png`.
+
+**Where the build departs from the mockup:**
+
+- The card's plan and profile are drawn from the class (its deck outline, upper works, mounts, cells), not the sprite:
+  exact, and the profile shows the water in each space against the waterline. Its heights are drawn at twice the
+  lengths' scale so the spaces read; say if that should be true scale.
+- Mounts are lettered by position (forward A, B; amidships Q; aft X, Y; secondaries S1, P1 from forward): the Royal
+  Navy's habit, a label only. Other navies' habits could follow the look's navy later (looks never set a number).
+- No shell-kind order on the strip: the sim has no player order for it yet (the scenario's loadout rules).
+- The ticker sits above the strip at the bottom left (the strip passes under it when a card is open).
+- The result's verdict: a side whose aims are met wins; else the side that lost much less (under half the other's
+  share of tonnage) "had the better of it"; else a draw. A time end doesn't stop the fight: Carry on runs the clock.
+- "Order her back into line" sends her a Fight order (that's the overrule, `Captain.Overruled`) and adds her to her
+  old squadron.
+
+**Not done (the rest of 5.2, as planned):** orders in transit (signals are 5.1e), edge markers for what's off
+screen, the radial menu, the doctrine card, the rumble for a fight at speed, orders as editable objects on the map.
+
+**Rough edges seen:** hit lines name the design's parts as they are ("Quarters 6", "Bunker 1"); the dev world's ships
+have no names ("Lion-like (1912) #2"); the dev panel, opened, covers the rail; enemy hulls in sight are still the
+renderer's icons (only their tint changed); the card's "Her fire" reads the feed's newest salvo of hers at our ships.
+
+**Garbage:** the map UI's bytes a frame are in the `-frametimes` report: 94 at the Jutland, 118 in Squadrons with a
+card open; the rest event-driven (a hit's lines, the tally); no GC over either run.
+
