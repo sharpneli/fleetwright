@@ -193,21 +193,25 @@ public static class SightModel
             end[j] = (Sight.AreaAbove(endTable, cut[j]) - overEnd) * cos;
         }
         int near = Math.Cos(rad) >= 0 ? 0 : 2;   // her bow toward the eye, or her stern
+        Span<double> through = stackalloc double[9];
+        for (int p = 0; p < 3; p++)
+            for (int j = 0; j < 3; j++)
+                through[p * 3 + j] = Math.Exp(-line.Smoke[p, j]);
         double contrast = Contrast(d, line, s), m2 = magnification * magnification / (d * d), best = 0;
         for (int p0 = 0; p0 < 3; p0++)
             for (int p1 = p0; p1 < 3; p1++)
                 for (int j0 = 0; j0 < 3; j0++)
                 {
-                    double a = 0, worst = 0;
+                    double a = 0, t = 1;
                     for (int j1 = j0; j1 < 3; j1++)
                     {
                         for (int p = p0; p <= p1; p++)
                         {
                             a += side[j1] + (p == near ? end[j1] : 0);
-                            worst = Math.Max(worst, line.Smoke[p, j1]);
+                            t = Math.Min(t, through[p * 3 + j1]);
                         }
                         if (a > 0)
-                            best = Math.Max(best, contrast * Math.Exp(-worst) / Threshold(a * m2, s));
+                            best = Math.Max(best, contrast * t / Threshold(a * m2, s));
                     }
                 }
         return best;
@@ -230,6 +234,19 @@ public static class SightModel
             return 0;
         double reach = Math.Min(line.VisibilityM, LightReachM(line.SunElevationDeg, s));
         return shade * Math.Exp(-Extinction(reach, s) * d) / Threshold(area * magnification * magnification / (d * d), s);
+    }
+
+    /// <summary>The farthest any of a plume could be made out, m (<see cref="SmokeMargin"/>'s bound): its darkest
+    /// smoke's contrast faded through the haze (or the light's reach) to the eye's threshold for the largest object;
+    /// 0 when it never shows (the dark, or no smoke dark enough).</summary>
+    public static double SmokeFarthestM(in SmokePlume plume, double visibilityM, double sunElevationDeg, SimSettings s)
+    {
+        var v = plume.Puffs;
+        double shade = Math.Max(Math.Max(Math.Max(v.S0, v.S1), Math.Max(v.S2, v.S3)), plume.Contrast);
+        if (!(shade > s.SightThresholdContrast))
+            return 0;
+        double ext = Extinction(Math.Min(visibilityM, LightReachM(sunElevationDeg, s)), s);
+        return ext > 0 ? Math.Log(shade / s.SightThresholdContrast) / ext : double.PositiveInfinity;
     }
 
     /// <summary>A target's apparent contrast through the haze at a distance: a grey ship's against the sky, or a silhouette's

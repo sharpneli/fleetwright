@@ -67,7 +67,7 @@ public sealed class World
         weather = new UniformWeather(new WeatherHere(Settings.DefaultVisibilityM, Settings.DefaultWindFromDeg, Settings.DefaultWindMs));
         Reach = new SightReach(Settings);
         Encounters = new Encounters(Settings, Relations, Reach);
-        Sightings = new Sightings(Settings, Relations, Encounters, Reach, seed);
+        Sightings = new Sightings(Settings, Relations, Encounters, Reach, seed, Probes);
         Ships = new ShipSystem(Settings, classes ?? new ShipClassRegistry(1), Probes, Relations, Encounters, Sightings) { Reach = Reach };
         Sightings.Registry = Ships.Registry;
         Register(Ships);

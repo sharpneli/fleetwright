@@ -34,6 +34,8 @@ public sealed class Sightings
     readonly Picture?[] bySide = new Picture?[256];
     readonly List<Picture> pictures = new(4);
     readonly RandomStream stream, smokeStream;
+    readonly Probes probes;
+    readonly int smokeLookProbe;
     readonly Dictionary<int, int> similar = new(64);   // a class's most similar other class in the world, or -1
     int similarFor = -1;   // the count of classes in use it was worked out for
 
@@ -49,8 +51,10 @@ public sealed class Sightings
     readonly double[] nearD = new double[16];
     readonly byte[] sidesHere = new byte[256];
 
-    internal Sightings(SimSettings settings, Relations relations, Encounters encounters, SightReach reach, ulong seed)
+    internal Sightings(SimSettings settings, Relations relations, Encounters encounters, SightReach reach, ulong seed, Probes probes)
     {
+        this.probes = probes;
+        smokeLookProbe = probes.Register("Smoke looks");
         this.settings = settings;
         this.reach = reach;
         this.relations = relations;
@@ -262,11 +266,14 @@ public sealed class Sightings
             double aspect = Earth.Bearing(ts.Position, os.Position) - ts.HeadingDeg;
             bool sil = !double.IsNaN(sunBrg) && Math.Abs(Angle(brg - sunBrg)) <= settings.SightSilhouetteArcDeg;
             var line = new SightLine(d, aspect, vis, sunEl, sil);
-            bool smoked = world.Smoke.On;
-            if (smoked)
-                world.Smoke.Tau(world, os.Slot, ts.Slot, smoke);   // the smoke on the lines (docs/battle/smoke.md Z3)
-            int tried = 0;
             var works = store.Combat.Condition(slot[nearIdx[m]]).EyeWorks;   // damage: a wrecked post sees nothing
+            // the smoke on the lines (docs/battle/smoke.md Z3), asked for only where it could matter: smoke only lowers
+            // a margin, so where none of the eyes that will look makes her out in clear air (and her fires don't show),
+            // her margins through it are under 1 too and nothing it says changes the look
+            bool smoked = world.Smoke.On && (glowMW > 0 || ClearlyMadeOut(eyes, works, rel, tc, line));
+            if (smoked)
+                world.Smoke.Tau(world, os.Slot, ts.Slot, smoke);
+            int tried = 0;
             for (int e = 0; e < eyes.Length && tried < settings.SightEyes && !done; e++)
             {
                 if (!eyes[e].Sees(rel) || !works[e])
@@ -302,6 +309,22 @@ public sealed class Sightings
         return false;
     }
 
+    /// <summary>Whether any of the eyes that look at her (the first <see cref="SimSettings.SightEyes"/> that bear and
+    /// work) makes her out in clear air.</summary>
+    bool ClearlyMadeOut(ReadOnlySpan<EyeRow> eyes, ReadOnlySpan<bool> works, double rel, ShipClass tc, in SightLine line)
+    {
+        int tried = 0;
+        for (int e = 0; e < eyes.Length && tried < settings.SightEyes; e++)
+        {
+            if (!eyes[e].Sees(rel) || !works[e])
+                continue;
+            tried++;
+            if (SightModel.Margin(eyes[e].HeightM, SightModel.Magnification(eyes[e], settings), tc, line, settings) > 1)
+                return true;
+        }
+        return false;
+    }
+
     /// <summary>Side `by`'s look for ship t's smoke (docs/battle/smoke.md Z6), she herself not in sight: each of its
     /// nearest observers' highest eye that bears on her plume (<see cref="SmokeSystem.PlumeOf"/>; the masthead's lookouts
     /// see furthest), its margin by <see cref="SightModel.SmokeMargin"/>; the rates add as a ship's do, and smoke in sight
@@ -319,6 +342,10 @@ public sealed class Sightings
                 pic.At(ci).SmokeInSight = false;
             return;
         }
+        long p0 = Probes.Now;
+        // no plume, however big, beats the haze past where its darkest smoke fades under the eye's threshold for the
+        // largest object (and none shows in the dark): those observers are skipped, their margins under 1 anyway
+        double farM = SightModel.SmokeFarthestM(plume, vis, sunEl, settings);
         double rate = 0, best = 0, fixSin = 0;
         int fixObs = -1, fixEye = -1;
         double top = SightModel.HorizonM(plume.TopM, settings);
@@ -330,7 +357,7 @@ public sealed class Sightings
             if (eyes.Length == 0)
                 continue;
             double d = Earth.Distance(os.Position, plume.Centre);
-            if (d > SightModel.HorizonM(eyes[0].HeightM, settings) + top)
+            if (d > farM || d > SightModel.HorizonM(eyes[0].HeightM, settings) + top)
                 continue;
             double rel = Earth.Bearing(os.Position, plume.Centre) - os.HeadingDeg;
             var works = store.Combat.Condition(slot[nearIdx[m]]).EyeWorks;
@@ -359,6 +386,7 @@ public sealed class Sightings
         }
         else if (held)
             pic.At(ci).SmokeInSight = false;
+        probes.Add(smokeLookProbe, p0);
     }
 
     /// <summary>A sighting of a ship's smoke into the picture (docs/battle/smoke.md Z6): a bearing on her (the ships are at

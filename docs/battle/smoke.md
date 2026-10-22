@@ -1151,6 +1151,39 @@ plume's start and early spread), (3) only then tune the estimates against the ya
   than anything the smoke does. **A whole played Jutland takes some 60% more wall time with the field on**, where the
   3-hour runs showed 2.4% → 2.6% of the sim thread at 10x: the cost check below.
 
+### The cost check (2026-10-22)
+
+Why a whole played Jutland took some 60% more wall time with the field on (`scenario`, 14 h to 04:00, the AI on every
+side, `DOTNET_TieredCompilation=0`, the field on against off; the probes, and a sampled trace with `dotnet-trace`):
+
+- **Not the night, nor the reach:** with the field off too nearly every ship stays in the fine tier all night (some 200
+  of 250 off rails from 17:00 to 04:00 either way), so Z6's larger encounter range holds no more ships there.
+- **Mostly the battle's course:** the runs with the field on fought a heavier night action (134,000-145,000 shells
+  against 111,000; 268 batteries engaged at 21:00 against a peak of 142), and the AI's and gunnery's own costs, which
+  don't touch the smoke, grew with it (6-10 s each of the run).
+- **The smoke's own cost** (its probes, wall clock): the pairs' queries 22.4 s (26 a game second, 17 µs each), the
+  store, merging and index 19.1 s, the smoke looks ~2 s: some 43 s of the run, **0.86 ms a game second**.
+
+Built (each cuts work, never a margin over 1):
+
+- **The pair's query only where it could matter** (`Sightings.ClearlyMadeOut`): smoke only lowers a margin, so where
+  none of the eyes that look makes her out in clear air (beyond the haze's reach, in the dark) and her fires don't show,
+  the query is skipped. Queries asked halved (26 → 14 a game second). Not bit for bit: a pair skipped isn't refreshed in
+  the cache then, so it's worked out at another moment.
+- **No smoke look past what could show** (`SightModel.SmokeFarthestM`): no plume beats the haze past where its darkest
+  smoke's contrast fades under the eye's threshold for the largest object, and none shows in the dark.
+- **The patch margin's transmissions** worked out once a cell (9 exponentials, not one a patch, 36).
+- A probe for the smoke looks ("Smoke looks": 1 µs a call).
+
+After (the same 14 h, its own course again: 145,000 shells): the queries 16.9 s (14 a game second, 24 µs each: the
+ones left are the hard ones), the store and index 20.6 s, the looks 2.1 s: **0.79 ms a game second, some 21% of the
+sim** over a whole battle, against gate 1's 0.8 (which was for the field and its queries in the 3 h climax).
+
+**Found on the way (not the smoke's):** every class lookup in the registry takes its lock
+(`ShipClassRegistry.EntryOf`), among them one at every sighting's fix (`Sightings.Identify`, the class it's taken for);
+the sampled trace puts 2 s of 67 there, but a thread sampler stops threads at safe points and the lock is one, so the
+figure is uncertain. A lead for a cost pass: the class's type kept in the contact when it's made out.
+
 **What it says for the next steps:** the sight lines and the smoke contacts now both want more, darker smoke near the
 funnels, not less: the tension Z3 and Z6 left (more output blinds more and shows further) has mostly gone. The firing
 state's black smoke in action is the physical reason for more, so it comes first; the lee (holding young smoke lower)
