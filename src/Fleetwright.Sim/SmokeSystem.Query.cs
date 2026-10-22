@@ -13,12 +13,15 @@ namespace Fleetwright.Sim;
 /// (Earth-centred: no projection, anywhere on the globe) at levels <see cref="SimSettings.SmokeGridM"/> · 2^k, k 0-7,
 /// each at the smallest level whose cells are as wide as its sphere, in the (at most eight) cells its box touches: old,
 /// wide puffs high up, young ones low, never a chunk in hundreds of cells.</item>
-/// <item><b>A query</b> is a pair: an observer's eyes (up to four rows spanning them) to a target's bands (three heights,
-/// <see cref="SimSettings.SmokeBands"/> of her silhouette's top), as optical depths. Its line goes into the air's frame
-/// once and walks the grid's cells along it at each level in use (Amanatides and Woo's 3D walk), each chunk met once;
-/// chunks whose spheres it
-/// misses are skipped, the rest's puffs summed in the walk's order (<see cref="SmokeModel.TauGrid"/>), stopping once
-/// every line is past <see cref="SmokeOpaqueTau"/>.</item>
+/// <item><b>A query</b> is a pair: from an observer's eyes (up to four rows spanning them, each from its own place on
+/// her) to three points along a target (the middles of her thirds) at three heights each (<see cref="SimSettings.SmokeBands"/>
+/// of her silhouette's top), as optical depths. The line between their middles goes into the air's frame once and walks
+/// the grid's cells along it at each level in use (Amanatides and Woo's 3D walk), each chunk met once; chunks whose
+/// spheres miss it (by more than the lines spread) are skipped, the rest's puffs summed in the walk's order
+/// (<see cref="SmokeModel.TauGrid"/>), stopping once every line is past <see cref="SmokeOpaqueTau"/>. A puff is worked
+/// out on the one middle line unless the lines have spread apart at its place by more than
+/// <see cref="SimSettings.SmokeLineSplit"/> of its width (<see cref="SmokeModel.Split"/>): near the ships, where a
+/// ship's own young smoke lies, each line on its own.</item>
 /// <item><b>The cache:</b> a pair's answer holds for <see cref="SimSettings.SmokeRefreshMs"/> of world time; pairs not
 /// asked for a minute are let go when the index is rebuilt. World state (the looks and fire control read it, Z3), hashed.</item>
 /// </list>
@@ -26,7 +29,8 @@ namespace Fleetwright.Sim;
 public sealed partial class SmokeSystem
 {
     /// <summary>The most eye rows and bands a pair holds (<see cref="SmokeModel.PairEye"/>).</summary>
-    public const int PairEyes = SmokeModel.PairEyes, PairBands = SmokeModel.PairBands, PairTaus = PairEyes * PairBands;
+    public const int PairEyes = SmokeModel.PairEyes, PairPoints = SmokeModel.PairPoints, PairBands = SmokeModel.PairBands,
+        PairTaus = PairEyes * PairPoints * PairBands;
 
     /// <summary>An optical depth past which more smoke changes nothing (T under 0.25%).</summary>
     public const double SmokeOpaqueTau = 6;
@@ -269,9 +273,9 @@ public sealed partial class SmokeSystem
     }
 
     /// <summary>The optical depths between an observer (slot) and a target (slot) now: from each of the observer's eye rows
-    /// (<see cref="SmokeModel.PairEye"/>: her eyes, or four spanning them) to each of the target's <see cref="PairBands"/>
-    /// bands, eye-major into <paramref name="tau"/> (zeros past her eyes); an eye's own by
-    /// <see cref="SmokeModel.EyeTau"/>. From the cache while it holds, else worked out.</summary>
+    /// (<see cref="SmokeModel.PairEye"/>: her eyes, or four spanning them) to each of the target's
+    /// <see cref="PairPoints"/> points at <see cref="PairBands"/> bands, row-major into <paramref name="tau"/> (zeros past
+    /// her eyes); an eye's own by <see cref="SmokeModel.EyeTau"/>. From the cache while it holds, else worked out.</summary>
     public void Tau(World world, int observer, int target, Span<double> tau)
     {
         var store = world.Ships.Store;
@@ -314,50 +318,135 @@ public sealed partial class SmokeSystem
     /// <summary>A pair worked out from the index now, the cache neither read nor written (benches, tests).</summary>
     public void TauUncached(World world, int observer, int target, Span<double> tau) => Work(world, observer, target, tau);
 
+    // a pair's lines while it's worked out: the one between the ships' middles, and the fan about it (each eye row's start
+    // and each point's end, across it and along it, m); the heights; the depths so far on the middle line or with the
+    // eyes apart (row by band, the same at every point) and with the points apart (the pair's layout)
+    readonly double[] rowSide = new double[PairEyes], rowAlong = new double[PairEyes], pointSide = new double[PairPoints], pointAlong = new double[PairPoints];
+    readonly double[] rowFrom = new double[PairEyes], bandTo = new double[PairBands];
+    readonly double[] oneTau = new double[PairEyes * PairBands], splitTau = new double[PairTaus];
+    SmokeLine middle;
+    int rows;
+    double spreadO, spreadT, split;
+
     /// <summary>A pair worked out from the index.</summary>
     void Work(World world, int observer, int target, Span<double> tau)
     {
         tau[..PairTaus].Clear();
-        if (ixCount == 0)
+        if (ixCount == 0 || !Prepare(world, observer, target, settings.SmokeLineSplit, out var a, out var b))
             return;
-        var store = world.Ships.Store;
-        var os = store[observer];
-        var ts = store[target];
-        var eyes = os.Handling.Class.Eyes;
-        int ne = Math.Min(eyes.Length, PairEyes);
-        if (ne == 0)
-            return;
-        Span<double> from = stackalloc double[PairEyes];
-        Span<double> to = stackalloc double[PairBands];
-        for (int e = 0; e < ne; e++)
-            from[e] = eyes[SmokeModel.PairEye(e, eyes.Length)].HeightM;
-        double top = ts.Handling.Class.Silhouette.TopM;
-        for (int j = 0; j < PairBands; j++)
-            to[j] = top * settings.SmokeBands[j];
-        var a = frame.ToAir(os.Position.Normalized() * Earth.Radius);
-        var b = frame.ToAir(ts.Position.Normalized() * Earth.Radius);
-        var line = new SmokeLine(a, b, from[0], to[0], settings.SightRefraction);
-        var grid = tau[..(ne * PairBands)];
-        var eyesUsed = from[..ne];
         if (++stamp == int.MaxValue)
         {
             Array.Clear(chunkStamp, 0, chunkCount);
             stamp = 1;
         }
         // the heights the lines span: their ends', and down by the Earth's curve mid-way
-        double lineLo = Math.Min(Min(eyesUsed), Min(to)) - line.Length * line.Length / 4 * line.Curve, lineHi = Math.Max(Max(eyesUsed), Max(to));
+        var eyesUsed = rowFrom.AsSpan(0, rows);
+        double lineLo = Math.Min(Min(eyesUsed), Min(bandTo)) - middle.Length * middle.Length / 4 * middle.Curve, lineHi = Math.Max(Max(eyesUsed), Max(bandTo));
         long summed = 0;
         for (int level = Levels - 1; level >= 0; level--)
-            if ((levelsUsed >> level & 1) != 0 && Walk(level, a, b, line, eyesUsed, to, grid, lineLo, lineHi, ref summed))
+            if ((levelsUsed >> level & 1) != 0 && Walk(level, a, b, lineLo, lineHi, ref summed))
                 break;
         PuffsSummed += summed;
+        Finish(tau);
     }
 
-    /// <summary>One level's cells along the chord, a to b (Amanatides and Woo in 3D): their chunks' puffs into the depths;
-    /// true once every line is opaque.</summary>
-    bool Walk(int level, Vec3d a, Vec3d b, in SmokeLine line, ReadOnlySpan<double> eyesUsed, ReadOnlySpan<double> to, Span<double> grid,
-        double lineLo, double lineHi, ref long summed)
+    /// <summary>A pair worked out on the given puffs (in the air's frame), every one, no index or cache, with a share for
+    /// splitting the lines (0: every line on its own): the index's own lines and sums, for tests and benches.</summary>
+    public void TauOf(World world, int observer, int target, ReadOnlySpan<LinePuff> puffs, double splitShare, Span<double> tau)
     {
+        tau[..PairTaus].Clear();
+        if (!Prepare(world, observer, target, splitShare, out _, out _))
+            return;
+        foreach (ref readonly var p in puffs)
+            OnLines(p);
+        Finish(tau);
+    }
+
+    /// <summary>The pair's lines set up (the observer's eye rows from their places on her, the target's points along her),
+    /// their depths cleared; the middles' ends in the air's frame. False when the observer has no eyes.</summary>
+    bool Prepare(World world, int observer, int target, double splitShare, out Vec3d a, out Vec3d b)
+    {
+        (a, b) = (default, default);
+        var store = world.Ships.Store;
+        var os = store[observer];
+        var ts = store[target];
+        var eyes = os.Handling.Class.Eyes;
+        rows = Math.Min(eyes.Length, PairEyes);
+        if (rows == 0)
+            return false;
+        var tc = ts.Handling.Class;
+        for (int j = 0; j < PairBands; j++)
+            bandTo[j] = tc.Silhouette.TopM * settings.SmokeBands[j];
+        var o = os.Position.Normalized() * Earth.Radius;
+        var t = ts.Position.Normalized() * Earth.Radius;
+        (a, b) = (frame.ToAir(o), frame.ToAir(t));
+        split = splitShare;
+        middle = new SmokeLine(a, b, eyes[0].HeightM, bandTo[0], settings.SightRefraction);
+        // each row from its eye's place on her, each point along the target in hers: their offsets from the middle line
+        (spreadO, spreadT) = (0, 0);
+        var of = os.Frame;
+        for (int e = 0; e < rows; e++)
+        {
+            ref readonly var eye = ref eyes[SmokeModel.PairEye(e, eyes.Length)];
+            rowFrom[e] = eye.HeightM;
+            var at = frame.ToAir(of.ToWorld(eye.X, eye.Y, 0).Normalized() * Earth.Radius) - a;
+            (rowSide[e], rowAlong[e]) = (Vec3d.Dot(at, middle.Side), Vec3d.Dot(at, middle.Along));
+            spreadO = Math.Max(spreadO, Math.Sqrt(rowSide[e] * rowSide[e] + rowAlong[e] * rowAlong[e]));
+        }
+        var tf = ts.Frame;
+        for (int q = 0; q < PairPoints; q++)
+        {
+            var at = frame.ToAir(tf.ToWorld(SmokeModel.PointX(q, tc.Hull.X0, tc.Hull.X1), 0, 0).Normalized() * Earth.Radius) - b;
+            (pointSide[q], pointAlong[q]) = (Vec3d.Dot(at, middle.Side), Vec3d.Dot(at, middle.Along));
+            spreadT = Math.Max(spreadT, Math.Sqrt(pointSide[q] * pointSide[q] + pointAlong[q] * pointAlong[q]));
+        }
+        Array.Clear(oneTau);
+        Array.Clear(splitTau);
+        return true;
+    }
+
+    /// <summary>The pair's depths out: the middle line's and the split lines' together, in the pair's layout.</summary>
+    void Finish(Span<double> tau)
+    {
+        for (int e = 0; e < rows; e++)
+            for (int q = 0; q < PairPoints; q++)
+                for (int j = 0; j < PairBands; j++)
+                {
+                    int k = (e * PairPoints + q) * PairBands + j;
+                    tau[k] = oneTau[e * PairBands + j] + splitTau[k];
+                }
+    }
+
+    /// <summary>A puff on the pair's lines (<see cref="SmokeModel.Split"/>, <see cref="SmokeModel.TauFan"/>): the middle
+    /// line, or the fan its place asks for (each eye's start, each point's end, or both). Whether it added anything.</summary>
+    bool OnLines(in LinePuff p)
+    {
+        var eyesUsed = rowFrom.AsSpan(0, rows);
+        double u = Math.Clamp(Vec3d.Dot(p.Centre - middle.From, middle.Along) / Math.Max(middle.Length, 1), 0, 1);
+        var (eyesApart, pointsApart) = SmokeModel.Split(u, p.SigmaH, spreadO, spreadT, split);
+        ReadOnlySpan<double> ss = eyesApart ? rowSide.AsSpan(0, rows) : SmokeModel.NoOffset, sa = eyesApart ? rowAlong.AsSpan(0, rows) : SmokeModel.NoOffset;
+        double spread = Math.Max(spreadO, spreadT);
+        return pointsApart
+            ? SmokeModel.TauFan(middle, p, ss, sa, eyesUsed, pointSide, pointAlong, bandTo, spread, splitTau.AsSpan(0, rows * PairPoints * PairBands))
+            : SmokeModel.TauFan(middle, p, ss, sa, eyesUsed, SmokeModel.NoOffset, SmokeModel.NoOffset, bandTo, spread, oneTau.AsSpan(0, rows * PairBands));
+    }
+
+    /// <summary>Every line of the pair past <see cref="SmokeOpaqueTau"/>.</summary>
+    bool PairOpaque()
+    {
+        for (int e = 0; e < rows; e++)
+            for (int q = 0; q < PairPoints; q++)
+                for (int j = 0; j < PairBands; j++)
+                    if (oneTau[e * PairBands + j] + splitTau[(e * PairPoints + q) * PairBands + j] < SmokeOpaqueTau)
+                        return false;
+        return true;
+    }
+
+    /// <summary>One level's cells along the chord between the ships' middles, a to b (Amanatides and Woo in 3D): their
+    /// chunks' puffs onto the pair's lines; true once every line is opaque.</summary>
+    bool Walk(int level, Vec3d a, Vec3d b, double lineLo, double lineHi, ref long summed)
+    {
+        double spread = Math.Max(spreadO, spreadT);
         double g = settings.SmokeGridM * (1 << level);
         var d = b - a;
         long cx = Cell(a.X, g), cy = Cell(a.Y, g), cz = Cell(a.Z, g);
@@ -376,13 +465,13 @@ public sealed partial class SmokeSystem
                     continue;
                 chunkStamp[c] = stamp;
                 ChunksTested++;
-                if (chunkLo[c] > lineHi || chunkHi[c] < lineLo || Miss(chunkC[c], chunkR[c], a, b))
+                if (chunkLo[c] > lineHi || chunkHi[c] < lineLo || Miss(chunkC[c], chunkR[c] + spread, a, b))
                     continue;   // over the lines or under them, or off to one side
                 PuffsTested += chunkStart[c + 1] - chunkStart[c];
                 for (int i = chunkStart[c]; i < chunkStart[c + 1]; i++)
-                    if (SmokeModel.TauGrid(line, ix[i], eyesUsed, to, grid))
+                    if (OnLines(ix[i]))
                         summed++;
-                if (Opaque(grid))
+                if (PairOpaque())
                     return true;
             }
             if (cx == ex && cy == ey && cz == ez)
@@ -430,14 +519,6 @@ public sealed partial class SmokeSystem
         foreach (double x in v)
             m = Math.Max(m, x);
         return m;
-    }
-
-    static bool Opaque(ReadOnlySpan<double> tau)
-    {
-        foreach (double t in tau)
-            if (t < SmokeOpaqueTau)
-                return false;
-        return true;
     }
 
     /// <summary>Whether a sphere misses the chord from a to b.</summary>

@@ -4,8 +4,8 @@ first part built with Z3); Z0 (the model and the facts), Z1 (the store), Z2 (the
 fire control read it) and Z4 (the other sources) done 2026-10-21, decisions 5-9; Z5 (the drawing) built 2026-10-21, gate 2 the
 user's; breaking the field (Z5b-Z5d: elongated puffs and merging across trails, the large eddies, the grain) agreed and
 built 2026-10-21, decisions 10-11; **taken in and on by default** 2026-10-21, shorter lived (decisions 12-13); Z6
-(smoke contacts) built 2026-10-22: the plan's steps all built, the tuning of smoke's part in sight next    Updated:
-2026-10-22
+(smoke contacts) built 2026-10-22: the plan's steps all built; the tuning pass begun 2026-10-22 (T1, the lines' ends)
+    Updated: 2026-10-22
 
 Smoke as sim state that sight reads, and the same state drawn. The research is `research/vfx/unified-smoke-system.md`
 (Lagrangian Gaussian puffs as the one store, every grid a throw-away view of them), on top of
@@ -1010,7 +1010,75 @@ thread at 10x 2.4% → 2.6% busy. The rails year (2,000 ships, one side) the sam
 **For the tuning pass** (next, the user's): the funnels' output and the young plume (both how much smoke blinds the
 lines and how far it shows); the tints' contrasts and the showing depth (all [EST]); smoke contacts' bearing and range
 errors; whether the reach should allow for a following wind's taller plume; and a ship seen bow on behind her own funnel
-smoke (Z3's lines end at her middle, docs/battle/bugs.md).
+smoke (Z3's lines end at her middle, docs/battle/bugs.md: fixed in T1).
+
+## The tuning pass (begun 2026-10-22)
+
+The field is whole; decision 5's tuning starts here, the outcome to bring toward the record the climax's blindness and
+the astern cases (Z3). The user's order: first the bow-on bug (docs/battle/bugs.md), "because it very well may fix the
+whole thing".
+
+### T1 The lines' ends (done 2026-10-22)
+
+**The bug:** every pair's line ran from the observer's middle to the target's, and a ship's funnels are about her
+middle. So her own young smoke, the densest there is, stood on every line to her and from her, whichever way the wind
+took it: a battlecruiser bow on went in and out of sight behind smoke streaming away astern of her, and a foretop looked
+ahead through the smoke over her own funnels.
+
+**Built** (the user's choice: three points along her, equal thirds):
+
+- **The target end:** three points, the middles of her hull's fore, middle and aft thirds (`SmokeModel.PointX`), each at
+  the three bands. `SmokeTau` holds the nine depths. The margin (`SightModel.Margin`) is the best patch she shows: any
+  run of adjacent thirds by any run of adjacent slabs, each cell side on a third of its slab's area, end on the slab all
+  at her end nearest the eye. So with her smoke astern her fore part and bridge show; with no smoke it's the margin as
+  before (the clear path untouched, the whole patch the old sum).
+- **The observer end:** each eye row's line starts at its eye's place on her (`EyeRow` X, Y); an eye or a fire-control
+  instrument reads the row whose eye is nearest it (along, across and up), no longer between two by height. A foretop
+  looks out clear while an eye aft of the funnels looks through her smoke (the plan's "aft control in its own plume").
+- **The fan** (the user's: "at farther ranges we only check the mid line and then do a check on the other two lines
+  near the target ship"): the pair's lines are the middle one shifted, by tens of metres on kilometres, so a puff's
+  integral against the middle line's way is worked out once, and each line is that shifted across with its own ends
+  (`SmokeModel.TauFan`; `TauGrid` is the fan of one). A puff takes the fan only where the lines have spread apart at its
+  place by more than `SmokeLineSplit` (0.25) of its width (`SmokeModel.Split`), from the eyes' end, the points' end or
+  both; old wide smoke and anything mid-way between distant ships takes the middle line. A pair's answer is 36 depths
+  (four rows, three points, three bands).
+- **Tests:** a ship bow on stays in sight (600 s of 600, as with the field off; it was in and out), a foretop looks ahead
+  through τ 0.001 while the eyes aft of the funnels look through 0.36-0.49 of her own smoke, an eye reads the row
+  nearest it, the fan against each line built on its own (within 2.0%: a shifted line runs up to 0.6° off the middle's
+  way), the middle line where the lines lie close against every line in the fan (within 5.6% of 0.1 + τ on 1,512 lines
+  of an engaged world), the index against summing every puff (the same lines and rule, `SmokeSystem.TauOf`).
+  `GunneryTests`' duels run in clear air (decision 12's rule for other systems' own tests): their level-3 rate moves by
+  the seeds' spread with any change to the lines (7.6% clear, 7.5-8.6% with the field on, bound 8%).
+
+**What it did** (Jutland, `smoke run`, 3 h, the clock held through contact; the lines her highest eye makes out in clear
+air and loses to smoke, summed over the half-hours; one run each, the runs diverge):
+
+| | 1 h | 1½ h | 2 h | 2½ h | 3 h | all |
+| --- | --- | --- | --- | --- | --- | --- |
+| Before | 10 of 48 | 37 of 97 | 82 of 113 | 57 of 119 | 145 of 330 | **47%** |
+| After | 2 of 45 | 13 of 102 | 19 of 75 | 15 of 60 | 45 of 72 | **27%** |
+
+- The 2-hour peak, 73% lost before, 25% after. The observer's own smoke as the cause of a smoky line fell from 22-38% of
+  them to 3-4% at 1 h and 3 h (a first version with every line built on its own, before the fan).
+- **The fight** (`scenario --no-land`, 3 h): the field off 33,891 shells, 3,448 hits; before 23,771 and 1,926; after
+  27,389 and 2,015 (the first version 31,525 and 2,591). Single fights diverge by more than the effect (the first
+  version and the fan are within 2% of each other on every line): reading it wants several seeds.
+- **`fc-history`** (40 runs a case): the duels hardly meet smoke (Z4); the German BCs firing astern at Dogger Bank 2.1% →
+  1.7% (record ~2.5%), the rest within their spread; 9 of 23 cases in their bands (8 before).
+- **Smoke contacts** (Z6's yardstick table): unchanged, first sight comes before her own smoke matters.
+
+**The cost** (Jutland, `DOTNET_TieredCompilation=0`): a pair worked out 7.9 → 18 µs (21.5 with every line built on its
+own); the looks 470 → 536 µs a look; a fine tick 128 → 140 µs (the field off 99); the slowest minute 263x → 253x (the
+first version 193x, under the fine tier's 240x).
+
+**Found on the way:** the index holds every puff as it was at its last rebuild, up to `SmokeIndexMs` (15 s) old
+(decision 9), so a ship's own newest smoke over her funnels isn't on her lines yet, and what is lags her by her run
+since: at 18 kn up to 140 m. An eye aft of the funnels on a fast ship looks past her own smoke more than it should
+(`A_foretop_looks_ahead_clear_of_her_own_smoke_aft` sums the puffs as they are now for that reason). A candidate for
+the pass: a ship's own trail's young end taken fresh at the query, or the index rebuilt more often near ships.
+
+**Next in the pass** (the user's to order): the funnels' output and the young plume (how much smoke there is, Z3's list);
+the index's lag above; the smoke contacts' estimates (Z6).
 
 ## What stays out
 

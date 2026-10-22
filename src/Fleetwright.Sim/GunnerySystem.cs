@@ -809,7 +809,7 @@ public sealed class GunnerySystem : IWorldSystem
             return 0;
         bool sil = !double.IsNaN(air.SunBearingDeg) && Math.Abs(Wrap(brg - air.SunBearingDeg)) <= settings.SightSilhouetteArcDeg;
         var line = new SightLine(d, Earth.Bearing(tp, at) - target.HeadingDeg, air.VisibilityM, air.SunElevationDeg, sil,
-            air.Smoked ? SmokeModel.EyeTau(smoke, cls.Eyes, s.HeightM) : default);
+            air.Smoked ? SmokeModel.EyeTau(smoke, cls.Eyes, s.X, s.Y, s.HeightM) : default);
         return SightModel.Margin(s.HeightM, Ranges(optics, s) ? optics.Magnification : settings.SightLookoutMagnification, tc, line, settings);
     }
 

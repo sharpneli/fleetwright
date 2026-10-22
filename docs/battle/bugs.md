@@ -94,11 +94,11 @@ add what's found.
   about 8 % against 7.2 % on the old, twice-too-heavy V25). The AI judges destroyers more fragile than they are;
   `MatchupTests` allows up to 11 % until it's recalibrated.
 
-- [ ] A ship seen bow on is hidden by her own funnel smoke (2026-10-22, smoke Z6): a Lion-like steaming at 28 kn
-  toward a dreadnought on a 40 km day goes in and out of sight from 31 km in (`SmokeContactTests`), where the field off
-  holds her in sight. Z3's sight lines end at her middle, so her young smoke at her funnels stands on the line even
-  when it streams away from the eye. For the smoke tuning pass: the line to her nearest part, or her own young smoke
-  left off her own line.
+- [x] A ship seen bow on is hidden by her own funnel smoke (2026-10-22, smoke Z6; fixed the same day, docs/battle/smoke.md
+  T1: the lines run from each eye's place to three points along her, `SmokeSightTests` 600 s of 600 in sight as with the
+  field off): a Lion-like steaming at 28 kn toward a dreadnought on a 40 km day went in and out of sight from 31 km in.
+  Z3's sight lines ended at her middle (and started at the observer's), so her young smoke at her funnels stood on the
+  line even when it streamed away from the eye.
 
 ## The AI
 

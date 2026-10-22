@@ -49,28 +49,34 @@ public class SmokeSightTests(ITestOutputHelper output)
     }
 
     [Fact]
-    public void An_eye_reads_its_row_or_between_two()
+    public void An_eye_reads_the_row_nearest_it()
     {
         var eyes = Target.Eyes;
         int rows = Math.Min(eyes.Length, SmokeModel.PairEyes);
-        var pair = new double[SmokeModel.PairEyes * SmokeModel.PairBands];
+        var pair = new double[SmokeModel.PairEyes * SmokeModel.PairRow];
         for (int r = 0; r < rows; r++)
-            for (int j = 0; j < SmokeModel.PairBands; j++)
-                pair[r * SmokeModel.PairBands + j] = 10 * r + j;
+            for (int k = 0; k < SmokeModel.PairRow; k++)
+                pair[r * SmokeModel.PairRow + k] = 100 * r + k;
         for (int r = 0; r < rows; r++)
         {
-            var at = SmokeModel.EyeTau(pair, eyes, eyes[SmokeModel.PairEye(r, eyes.Length)].HeightM);
-            Assert.Equal(new SmokeTau(10 * r, 10 * r + 1, 10 * r + 2), at);
+            var eye = eyes[SmokeModel.PairEye(r, eyes.Length)];
+            var at = SmokeModel.EyeTau(pair, eyes, eye.X, eye.Y, eye.HeightM);
+            Assert.Equal(100 * r, at.F0);   // a row's eye reads its own row: fore point low ...
+            Assert.Equal(100 * r + 8, at.A2);   // ... to aft point high
         }
-        // the highest and the lowest rows are her highest and lowest eyes; a height between two rows is between them
-        Assert.Equal(0, SmokeModel.PairEye(0, eyes.Length));
-        Assert.Equal(eyes.Length - 1, SmokeModel.PairEye(rows - 1, eyes.Length));
-        double hi = eyes[SmokeModel.PairEye(0, eyes.Length)].HeightM, lo = eyes[SmokeModel.PairEye(1, eyes.Length)].HeightM;
-        var mid = SmokeModel.EyeTau(pair, eyes, (hi + lo) / 2);
-        output.WriteLine($"{eyes.Length} eyes, {hi:F1} m and {lo:F1} m the top rows; between them {mid}");
-        Assert.Equal(5, mid.Low, 1e-9);
-        Assert.Equal(new SmokeTau(0, 1, 2), SmokeModel.EyeTau(pair, eyes, hi + 10));
-        Assert.Equal(SmokeModel.EyeTau(pair, eyes, eyes[^1].HeightM), SmokeModel.EyeTau(pair, eyes, 0));
+        // every eye reads the row of the row's eye nearest it
+        var all = eyes.ToArray();
+        for (int e = 0; e < all.Length; e++)
+        {
+            var me = all[e];
+            int nearest = Enumerable.Range(0, rows).MinBy(r =>
+            {
+                var q = all[SmokeModel.PairEye(r, all.Length)];
+                return Math.Pow(q.X - me.X, 2) + Math.Pow(q.Y - me.Y, 2) + Math.Pow(q.HeightM - me.HeightM, 2);
+            });
+            Assert.Equal(100 * nearest + 4, SmokeModel.EyeTau(pair, eyes, me.X, me.Y, me.HeightM).Mid);
+        }
+        output.WriteLine($"{all.Length} eyes, {rows} rows: " + string.Join(", ", all.Select(e => $"{e.Kind} at {e.X:F0} m, {e.HeightM:F0} m up")));
     }
 
     static readonly WorldTime Start = WorldTime.FromUtc(new DateTime(1916, 5, 31, 14, 0, 0, DateTimeKind.Utc));
@@ -112,6 +118,74 @@ public class SmokeSightTests(ITestOutputHelper output)
         Assert.True(smoked < clear / 2, "the smoke hides her");
         Assert.True(firedSmoked < fired, "and the guns fire less");
         Assert.True(w.Smoke.Worked * 5 < w.Smoke.Asked, "the looks and fire control share the pair's answer");
+    }
+
+    /// <summary>A battlecruiser steaming at a stopped dreadnought from 30 km on a 40 km day, into a wind of 8 m/s: her smoke
+    /// streams astern of her, so her bow and upper works forward stay clear (docs/battle/bugs.md, 2026-10-22: the lines
+    /// ended at her middle, in her funnels' smoke). The seconds she's in the dreadnought's navy's sight over ten
+    /// minutes.</summary>
+    static int BowOn(bool smoke)
+    {
+        var w = new World(Start, 3, Settings with { Smoke = smoke, RailsEnabled = false });
+        int o = w.Ships.AddClass(Fleet.Get("dreadnought").Class!);
+        int t = w.Ships.AddClass(Fleet.Get("lion").Class!);
+        w.Apply(Command.SetWeather(40_000, 270, 8));
+        w.Apply(ShipSystem.Spawn(o, 56.5, 4.0, 0, 0, 0));
+        w.Apply(ShipSystem.Spawn(t, 56.5, 4.0 + 30 / (111.32 * Math.Cos(56.5 * Math.PI / 180)), 270, 28, 1));
+        w.AdvanceTo(w.Time + 5 * 60_000);   // her trail laid, made out
+        int seen = 0;
+        for (int s = 0; s < 600; s++)
+        {
+            w.AdvanceTo(w.Time + 1000);
+            var pic = w.Sightings.Of(0);
+            seen += pic != null && pic.IndexOf(2) is int i and >= 0 && pic[i].InSight ? 1 : 0;
+        }
+        return seen;
+    }
+
+    [Fact]
+    public void A_ship_bow_on_is_not_hidden_by_her_own_smoke_astern()
+    {
+        int clear = BowOn(false), smoked = BowOn(true);
+        output.WriteLine($"in sight {clear} s of 600 without the smoke, {smoked} s with it");
+        Assert.True(clear > 550);
+        Assert.True(smoked > 0.9 * clear);
+    }
+
+    /// <summary>A dreadnought at 18 kn into a wind from ahead, a target stopped 12 km ahead: her smoke streams aft over her
+    /// stern, so her foremost eye looks ahead clear of it while her aftmost looks out through it.</summary>
+    [Fact]
+    public void A_foretop_looks_ahead_clear_of_her_own_smoke_aft()
+    {
+        var w = new World(Start, 3, Settings with { Smoke = true, RailsEnabled = false });
+        int c = w.Ships.AddClass(Fleet.Get("dreadnought").Class!);
+        w.Apply(Command.SetWeather(25_000, 0, 6));
+        w.Apply(ShipSystem.Spawn(c, 56.5, 4.0, 0, 18, 0));
+        w.Apply(ShipSystem.Spawn(c, 56.61, 4.0, 0, 0, 1));
+        w.AdvanceTo(w.Time + 5 * 60_000);
+        var store = w.Ships.Store;
+        // her puffs as they are now (the index's are up to SmokeIndexMs old: at 18 kn she's run 140 m on from them)
+        var puffs = new List<LinePuff>();
+        for (int i = 0; i < w.Smoke.Slots; i++)
+            if (w.Smoke.IsLive(i))
+            {
+                var st = SmokeModel.State(w.Smoke.Puff(i), w.Time.Ms / 1000.0, w.Smoke.Frame, w.Smoke.Air);
+                puffs.Add(new LinePuff(st, w.Smoke.Frame.ToAir(st.Centre.Normalized() * Earth.Radius), w.Smoke.Frame.ToAir(st.Axis)));
+            }
+        Span<double> tau = stackalloc double[SmokeSystem.PairTaus];
+        w.Smoke.TauOf(w, store.SlotOf(1), store.SlotOf(2), puffs.ToArray(), Settings.SmokeLineSplit, tau);
+        var eyes = store[store.SlotOf(1)].Handling.Class.Eyes;
+        for (int r = 0; r < Math.Min(eyes.Length, SmokeModel.PairEyes); r++)
+        {
+            var e = eyes[SmokeModel.PairEye(r, eyes.Length)];
+            output.WriteLine($"row {r}: {e.Kind} at {e.X:F0} m, {e.HeightM:F0} m up: τ to fore/mid/aft middles {tau[r * 9 + 1]:F3} {tau[r * 9 + 4]:F3} {tau[r * 9 + 7]:F3}");
+        }
+        var fore = eyes.ToArray().MaxBy(e => e.X);
+        var aft = eyes.ToArray().MinBy(e => e.X);
+        double foreTau = SmokeModel.EyeTau(tau, eyes, fore.X, fore.Y, fore.HeightM).Mid, aftTau = SmokeModel.EyeTau(tau, eyes, aft.X, aft.Y, aft.HeightM).Mid;
+        output.WriteLine($"foremost eye ({fore.Kind} at {fore.X:F0} m, {fore.HeightM:F0} m up): τ {foreTau:F3}; aftmost ({aft.Kind} at {aft.X:F0} m, {aft.HeightM:F0} m up): τ {aftTau:F3}");
+        Assert.True(foreTau < 0.05, "ahead of her funnels, clear");
+        Assert.True(aftTau > 10 * Math.Max(foreTau, 0.01), "astern of them, through her smoke");
     }
 
     /// <summary>An ironclad's black-powder salvo (docs/battle/smoke.md Z4): its cloud kept pace with her by a wind from

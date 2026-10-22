@@ -35,14 +35,15 @@ public class GunneryTests(ITestOutputHelper output)
         return w;
     }
 
-    /// <summary>Hits and shells over n duels of a quarter of an hour, on threads.</summary>
+    /// <summary>Hits and shells over n duels of a quarter of an hour, on threads, in clear air (fire control's own rules;
+    /// the smoke's part is SmokeSightTests').</summary>
     static (int Hits, int Shells, int Straddles, int Salvos) Duels(ShipClass shooter, ShipClass target, double rangeM, double bearingDeg, int level,
         int n, int seed0 = 1)
     {
         var tallies = new GunnerySystem.Tally[n];
         Parallel.For(0, n, k =>
         {
-            var w = Make(shooter, target, rangeM, bearingDeg, 0, 25, seed0 + k, level);
+            var w = Make(shooter, target, rangeM, bearingDeg, 0, 25, seed0 + k, level, settings: Settings with { Smoke = false });
             w.AdvanceTo(Start + 15 * 60_000);
             tallies[k] = w.Gunnery.TallyOf(1, 0)!.Value;
         });

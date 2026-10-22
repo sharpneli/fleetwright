@@ -330,26 +330,17 @@ public class SmokeSystemTests(ITestOutputHelper output)
                 int os = store.SlotOf(o), ts = store.SlotOf(g);
                 w.Smoke.TauUncached(w, os, ts, got);
                 // every puff, its state at t, on the same lines
-                all.Clear();
-                var oc = store[os].Handling.Class;
-                int ne = Math.Min(oc.Eyes.Length, SmokeSystem.PairEyes);
-                var from = new double[ne];
-                for (int e = 0; e < ne; e++)
-                    from[e] = oc.Eyes[SmokeModel.PairEye(e, oc.Eyes.Length)].HeightM;
-                double top = store[ts].Handling.Class.Silhouette.TopM;
-                double[] to = [.. On.SmokeBands.Select(b => b * top)];
-                var a = w.Smoke.Frame.ToAir(store[os].Position.Normalized() * Earth.Radius);
-                var b = w.Smoke.Frame.ToAir(store[ts].Position.Normalized() * Earth.Radius);
-                var line = new SmokeLine(a, b, from[0], to[0], On.SightRefraction);
+                var puffs = new List<LinePuff>();
                 for (int i = 0; i < w.Smoke.Slots; i++)
                     if (w.Smoke.IsLive(i))
                     {
                         var st = SmokeModel.State(w.Smoke.Puff(i), t / 1000.0, w.Smoke.Frame, w.Smoke.Air);
                         // as the index has it: in the air's frame
-                        st = st with { Centre = w.Smoke.Frame.ToAir(st.Centre.Normalized() * Earth.Radius), Axis = w.Smoke.Frame.ToAir(st.Axis) };
-                        SmokeModel.TauGrid(line, st, from, to, all[..(ne * to.Length)]);
+                        puffs.Add(new LinePuff(st, w.Smoke.Frame.ToAir(st.Centre.Normalized() * Earth.Radius), w.Smoke.Frame.ToAir(st.Axis)));
                     }
-                for (int j = 0; j < ne * to.Length; j++)
+                w.Smoke.TauOf(w, os, ts, puffs.ToArray(), On.SmokeLineSplit, all);
+                int ne = Math.Min(store[os].Handling.Class.Eyes.Length, SmokeSystem.PairEyes) * SmokeModel.PairRow;
+                for (int j = 0; j < ne; j++)
                 {
                     Assert.True(Math.Abs(got[j] - all[j]) <= 1e-9 * Math.Max(all[j], 1e-6) + 1e-12, $"#{o} on #{g}, line {j}: {got[j]} against {all[j]}");
                     Assert.True(all[j] < SmokeSystem.SmokeOpaqueTau);   // no early out to tell apart
@@ -358,6 +349,48 @@ public class SmokeSystemTests(ITestOutputHelper output)
             }
         output.WriteLine($"{pairs} of 12 pairs' lines through smoke; {w.Smoke.Indexed} puffs indexed in {w.Smoke.Chunks} chunks");
         Assert.True(pairs >= 3, "some lines cross the trails");
+    }
+
+    /// <summary>A puff on the one line between the ships' middles where the pair's lines lie within a share of its width
+    /// (<see cref="SimSettings.SmokeLineSplit"/>), each line on its own near the ships: close to every line on its own.</summary>
+    [Fact]
+    public void The_middle_line_stands_for_the_lines_where_they_lie_close()
+    {
+        var w = Engaged(On);
+        long t = (w.Time.Ms / On.SmokeIndexMs + 2) * On.SmokeIndexMs + 20 * 60_000;
+        w.AdvanceTo(new WorldTime(t + 1));
+        var store = w.Ships.Store;
+        var puffs = new List<LinePuff>();
+        for (int i = 0; i < w.Smoke.Slots; i++)
+            if (w.Smoke.IsLive(i))
+            {
+                var st = SmokeModel.State(w.Smoke.Puff(i), t / 1000.0, w.Smoke.Frame, w.Smoke.Air);
+                puffs.Add(new LinePuff(st, w.Smoke.Frame.ToAir(st.Centre.Normalized() * Earth.Radius), w.Smoke.Frame.ToAir(st.Axis)));
+            }
+        Span<double> split = stackalloc double[SmokeSystem.PairTaus];
+        Span<double> every = stackalloc double[SmokeSystem.PairTaus];
+        double worst = 0, sum = 0;
+        int lines = 0;
+        for (int o = 1; o <= 7; o++)
+            for (int g = 1; g <= 7; g++)
+            {
+                if (o == g)
+                    continue;
+                int os = store.SlotOf(o), ts = store.SlotOf(g);
+                w.Smoke.TauOf(w, os, ts, puffs.ToArray(), On.SmokeLineSplit, split);
+                w.Smoke.TauOf(w, os, ts, puffs.ToArray(), 0, every);
+                int n = Math.Min(store[os].Handling.Class.Eyes.Length, SmokeSystem.PairEyes) * SmokeModel.PairRow;
+                for (int j = 0; j < n; j++)
+                {
+                    double err = Math.Abs(split[j] - every[j]) / (0.1 + every[j]);
+                    worst = Math.Max(worst, err);
+                    sum += every[j];
+                    lines++;
+                }
+            }
+        output.WriteLine($"{lines} lines, mean τ {sum / lines:F3}: the worst error {worst:P1} of (0.1 + τ)");
+        Assert.True(sum / lines > 0.05, "smoke on the lines");
+        Assert.True(worst < 0.1);
     }
 
     [Fact]

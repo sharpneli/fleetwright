@@ -9,15 +9,31 @@ namespace Fleetwright.Sim.Combat;
 public readonly record struct SightLine(double DistanceM, double AspectDeg, double VisibilityM, double SunElevationDeg, bool Silhouetted,
     SmokeTau Smoke = default);
 
-/// <summary>The smoke's optical depths on a line from an eye to three heights on the target (docs/battle/smoke.md Z3):
-/// <see cref="SimSettings.SmokeBands"/> of her silhouette's top, low to high. Added to the haze's (τ = σ·d + τ_smoke: the
-/// one optical depth), so the contrast falls as e^(−τ).</summary>
-public readonly record struct SmokeTau(double Low, double Mid, double High)
+/// <summary>The smoke's optical depths on the lines from an eye to the target (docs/battle/smoke.md Z3): to three points
+/// along her (the middles of her fore, middle and aft thirds: F, M, A), each at three heights
+/// (<see cref="SimSettings.SmokeBands"/> of her silhouette's top, low to high: 0, 1, 2). Added to the haze's
+/// (τ = σ·d + τ_smoke: the one optical depth), so the contrast falls as e^(−τ).</summary>
+public readonly record struct SmokeTau(double F0, double F1, double F2, double M0, double M1, double M2, double A0, double A1, double A2)
 {
-    /// <summary>No smoke on the line.</summary>
-    public bool Clear => Low == 0 && Mid == 0 && High == 0;
+    /// <summary>The same depths at every point along her: low, middle and high.</summary>
+    public SmokeTau(double low, double mid, double high) : this(low, mid, high, low, mid, high, low, mid, high) { }
 
-    public double this[int band] => band == 0 ? Low : band == 1 ? Mid : High;
+    /// <summary>Nine depths, point-major (fore, middle, aft; each low to high).</summary>
+    public static SmokeTau Of(ReadOnlySpan<double> t) => new(t[0], t[1], t[2], t[3], t[4], t[5], t[6], t[7], t[8]);
+
+    /// <summary>No smoke on the lines.</summary>
+    public bool Clear => F0 == 0 && F1 == 0 && F2 == 0 && M0 == 0 && M1 == 0 && M2 == 0 && A0 == 0 && A1 == 0 && A2 == 0;
+
+    /// <summary>The depth to a point (0 fore, 1 middle, 2 aft) at a band.</summary>
+    public double this[int point, int band] => (point * 3 + band) switch
+    {
+        0 => F0, 1 => F1, 2 => F2, 3 => M0, 4 => M1, 5 => M2, 6 => A0, 7 => A1, _ => A2,
+    };
+
+    /// <summary>The middle's depths, low, middle and high.</summary>
+    public double Low => M0;
+    public double Mid => M1;
+    public double High => M2;
 }
 
 /// <summary>The sighting model (docs/battle/plan.md step 3.2c): whether an eye can make out a ship, and how fast it does,
@@ -156,30 +172,44 @@ public static class SightModel
             return 0;
         if (line.Smoke.Clear)
             return MarginOfArea(area, d, magnification, line, s);
-        // smoke on the line (docs/battle/smoke.md Z3): her height in three slabs about the bands, each with its band's
-        // depth; the eye makes out the best of any run of slabs (the whole ship, her upper works, her tops, a hull under
-        // smoke lying high), its area at the contrast through the worst depth on it
+        // smoke on the lines (docs/battle/smoke.md Z3): her height in three slabs about the bands, her length in thirds,
+        // each cell with its point's and band's depth (side on a third of the slab each, end on the slab all at her end
+        // nearest the eye); the eye makes out the best of any patch of adjacent thirds by adjacent slabs (the whole ship,
+        // her upper works, her fore part clear of her smoke astern, a hull under smoke lying high), its area at the
+        // contrast through the worst depth on it
         var bands = s.SmokeBands;
-        double top = target.Silhouette.TopM;
-        Span<double> above = stackalloc double[4];
-        above[0] = area;
-        above[1] = VisibleAreaM2(target, Math.Max(hidden, top * (bands[0] + bands[1]) / 2), line.AspectDeg);
-        above[2] = VisibleAreaM2(target, Math.Max(hidden, top * (bands[1] + bands[2]) / 2), line.AspectDeg);
-        above[3] = 0;
-        Span<double> through = stackalloc double[3];
-        (through[0], through[1], through[2]) = (Math.Exp(-line.Smoke.Low), Math.Exp(-line.Smoke.Mid), Math.Exp(-line.Smoke.High));
-        double contrast = Contrast(d, line, s), m2 = magnification * magnification / (d * d), best = 0;
-        for (int i = 0; i < 3; i++)
+        var sil = target.Silhouette;
+        double top = sil.TopM, rad = line.AspectDeg * Math.PI / 180, sin = Math.Abs(Math.Sin(rad)), cos = Math.Abs(Math.Cos(rad));
+        var sideTable = target.Numbers(sil.SideAreaM2);
+        var endTable = target.Numbers(sil.EndAreaM2);
+        Span<double> cut = stackalloc double[4];
+        (cut[0], cut[1], cut[2], cut[3]) = (hidden, Math.Max(hidden, top * (bands[0] + bands[1]) / 2), Math.Max(hidden, top * (bands[1] + bands[2]) / 2), double.MaxValue);
+        Span<double> side = stackalloc double[3];
+        Span<double> end = stackalloc double[3];
+        for (int j = 0; j < 3; j++)
         {
-            double t = 1;
-            for (int j = i; j < 3; j++)
-            {
-                t = Math.Min(t, through[j]);
-                double a = above[i] - above[j + 1];
-                if (a > 0)
-                    best = Math.Max(best, contrast * t / Threshold(a * m2, s));
-            }
+            double over = j < 2 ? Sight.AreaAbove(sideTable, cut[j + 1]) : 0, overEnd = j < 2 ? Sight.AreaAbove(endTable, cut[j + 1]) : 0;
+            side[j] = (Sight.AreaAbove(sideTable, cut[j]) - over) * sin / 3;
+            end[j] = (Sight.AreaAbove(endTable, cut[j]) - overEnd) * cos;
         }
+        int near = Math.Cos(rad) >= 0 ? 0 : 2;   // her bow toward the eye, or her stern
+        double contrast = Contrast(d, line, s), m2 = magnification * magnification / (d * d), best = 0;
+        for (int p0 = 0; p0 < 3; p0++)
+            for (int p1 = p0; p1 < 3; p1++)
+                for (int j0 = 0; j0 < 3; j0++)
+                {
+                    double a = 0, worst = 0;
+                    for (int j1 = j0; j1 < 3; j1++)
+                    {
+                        for (int p = p0; p <= p1; p++)
+                        {
+                            a += side[j1] + (p == near ? end[j1] : 0);
+                            worst = Math.Max(worst, line.Smoke[p, j1]);
+                        }
+                        if (a > 0)
+                            best = Math.Max(best, contrast * Math.Exp(-worst) / Threshold(a * m2, s));
+                    }
+                }
         return best;
     }
 
@@ -211,7 +241,7 @@ public static class SightModel
         return c0 * Math.Exp(-Extinction(reach, s) * distanceM);
     }
 
-    /// <summary>The smoke's depth on a line to a height on the target, between its bands (held beyond the lowest and the
+    /// <summary>The smoke's depth on the line to her middle at a height, between its bands (held beyond the lowest and the
     /// highest).</summary>
     public static double SmokeAt(in SmokeTau tau, double heightM, double topM, SimSettings s)
     {

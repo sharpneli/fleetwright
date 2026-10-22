@@ -38,6 +38,46 @@ public class SmokeModelTests(ITestOutputHelper output)
         return sum;
     }
 
+    /// <summary>A fan of lines about a middle one (<see cref="SmokeModel.TauFan"/>: shifted starts and ends, tens of metres
+    /// on kilometres) gives what each line built on its own does, for puffs near either end, mid-way, round or stretched.</summary>
+    [Fact]
+    public void A_fan_of_lines_is_each_line_on_its_own()
+    {
+        var a = Earth.Position(56.5, 4.0);
+        var east = Earth.East(a);
+        var north = Earth.North(a);
+        var b = (a + east * 12_000).Normalized() * Earth.Radius;
+        var mid = new SmokeLine(a, b, 25, 10, 7.0 / 6);
+        double[] ss = [-8, 30, 5], sa = [40, -60, 0], es = [60, 0, -70], ea = [-80, 0, 75], from = [25, 17, 10], to = [4, 10, 17];
+        var tau = new double[3 * 3 * 3];
+        var one = new double[3];
+        double worst = 0;
+        int puffs = 0;
+        foreach (double x in new[] { 30.0, 150, 6000, 11_900, 12_050 })
+            foreach (double y in new[] { -40.0, 0, 25 })
+                foreach (double along2 in new[] { 0.0, 3000 })
+                {
+                    var c = (a + east * x + north * y).Normalized() * Earth.Radius;
+                    var p = new LinePuff(new PuffState(c, 15, 400, 300, 2000, 60, along2, (east + north).Normalized()));
+                    Array.Clear(tau);
+                    SmokeModel.TauFan(mid, p, ss, sa, from, es, ea, to, 100, tau);
+                    for (int r = 0; r < 3; r++)
+                        for (int k = 0; k < 3; k++)
+                        {
+                            var s0 = a + mid.Along * sa[r] + mid.Side * ss[r];
+                            var s1 = b + mid.Along * ea[k] + mid.Side * es[k];
+                            var line = new SmokeLine(s0.Normalized() * Earth.Radius, s1.Normalized() * Earth.Radius, from[r], to[0], 7.0 / 6);
+                            Array.Clear(one);
+                            SmokeModel.TauGrid(line, p, [from[r]], to, one);
+                            for (int j = 0; j < 3; j++)
+                                worst = Math.Max(worst, Math.Abs(tau[(r * 3 + k) * 3 + j] - one[j]) / (0.01 + one[j]));
+                        }
+                    puffs++;
+                }
+        output.WriteLine($"{puffs} puffs, 9 lines each: the worst difference {worst:P2} of (0.01 + τ)");
+        Assert.True(worst < 0.03);   // a shifted line runs up to 0.6° off the middle's way: a stretched puff notices
+    }
+
     [Fact]
     public void Erf_matches_the_tables()
     {

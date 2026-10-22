@@ -556,76 +556,110 @@ public static class SmokeModel
     /// on a readied puff: the same sums, no square roots or divisions per line for a round one (a stretched one takes its
     /// axis onto the line's and a square root). The plan's integral along the line (its closest pass x* along from the
     /// centre's place, where the vertical is taken: a stretched puff crossed aslant is nearest off its centre).</summary>
-    public static bool TauGrid(in SmokeLine l, in LinePuff p, ReadOnlySpan<double> fromM, ReadOnlySpan<double> toM, Span<double> tau)
+    public static bool TauGrid(in SmokeLine l, in LinePuff p, ReadOnlySpan<double> fromM, ReadOnlySpan<double> toM, Span<double> tau) =>
+        TauFan(l, p, NoOffset, NoOffset, fromM, NoOffset, NoOffset, toM, 0, tau);
+
+    /// <summary>One line's offsets in a fan: none.</summary>
+    public static readonly double[] NoOffset = [0];
+
+    /// <summary>A puff on a fan of lines about <paramref name="l"/> (docs/battle/smoke.md, the tuning pass: a pair's lines
+    /// from each eye's place to each point along the target): each line l shifted, its start by
+    /// <paramref name="startSide"/> across it (along its <see cref="SmokeLine.Side"/>) and <paramref name="startAlong"/>
+    /// along it, m (one start, or one per height in <paramref name="fromM"/>), its end by <paramref name="endSide"/> and
+    /// <paramref name="endAlong"/> (one end, or several). The shifts are tens of metres on kilometres, so each line is l
+    /// moved across by its offset at the puff's place, with its own ends; what depends on l's way (a stretched puff's
+    /// plan against it) is worked out once. Into <paramref name="tau"/> by height, then end, then band. Whether it added
+    /// anything; <paramref name="spread"/>, m, the most any line lies off l (the first cull's).</summary>
+    public static bool TauFan(in SmokeLine l, in LinePuff p, ReadOnlySpan<double> startSide, ReadOnlySpan<double> startAlong, ReadOnlySpan<double> fromM,
+        ReadOnlySpan<double> endSide, ReadOnlySpan<double> endAlong, ReadOnlySpan<double> toM, double spread, Span<double> tau)
     {
         var rel = p.Centre - l.From;
-        double s0 = Vec3d.Dot(rel, l.Along), d = Vec3d.Dot(rel, l.Side);
-        if (Math.Abs(d) > p.Reach || s0 < -p.Reach || s0 > l.Length + p.Reach || !(p.Norm > 0))
+        double s0 = Vec3d.Dot(rel, l.Along), d = Vec3d.Dot(rel, l.Side), reach = p.Reach + spread;
+        if (Math.Abs(d) > reach || s0 < -reach || s0 > l.Length + reach || !(p.Norm > 0))
             return false;
-        double root, norm, xs, q;
+        // the plan's Gaussian against l's way: its closest pass xs = kx·d along from the centre's place, its miss q = kq·d²
+        double root, norm, kx, kq;
         if (p.Kappa > 0)
         {
             PlanInverse(p.InvH2, p.Kappa, p.Axis, l.Along, l.Side, out double paa, out double pas, out double pss);
             double inv = 1 / paa;
-            (root, norm, xs) = (Math.Sqrt(0.5 * paa), p.Norm * Math.Sqrt(inv), pas * d * inv);
-            q = (pss - pas * pas * inv) * d * d;
+            (root, norm, kx, kq) = (Math.Sqrt(0.5 * paa), p.Norm * Math.Sqrt(inv), pas * inv, pss - pas * pas * inv);
         }
         else
-            (root, norm, xs, q) = (p.InvRoot2H, p.Norm * p.SigmaH, 0, d * d * p.InvH2);
-        double a0 = (-s0 - xs) * root, a1 = (l.Length - s0 - xs) * root;
-        double frac = a0 < -CullSigma && a1 > CullSigma ? 1 : 0.5 * (Erf(a1) - Erf(a0));
-        double plan = norm * Math.Exp(-0.5 * q) * frac;
-        if (!(plan > 0))
-            return false;
-        double sm = s0 + xs, sc = Math.Clamp(sm, 0, l.Length), u = sc / l.Length, bow = sc * (l.Length - sc) * l.Curve, slopeBow = (l.Length - 2 * sc) * l.Curve;
-        double off = sm - sc, invL = 1 / l.Length;
-        for (int i = 0; i < fromM.Length; i++)
-            for (int j = 0; j < toM.Length; j++)
+            (root, norm, kx, kq) = (p.InvRoot2H, p.Norm * p.SigmaH, 0, p.InvH2);
+        int starts = startSide.Length, ends = endSide.Length, bands = toM.Length;
+        bool any = false;
+        for (int k = 0; k < ends; k++)
+            for (int r = 0; r < starts; r++)
             {
-                double rise = toM[j] - fromM[i];
-                double h = fromM[i] + rise * u - bow + (rise * invL - slopeBow) * off, lo = h - p.Z, hi = h + p.Z;
-                double v = (lo * lo < p.ReachZ2 ? Math.Exp(-lo * lo * p.HalfInvZ2) : 0) + (hi * hi < p.ReachZ2 ? Math.Exp(-hi * hi * p.HalfInvZ2) : 0);
-                tau[i * toM.Length + j] += plan * v;
+                double sa = startAlong[r], len = l.Length + endAlong[k] - sa, sk = s0 - sa;
+                double side = startSide[r] + (endSide[k] - startSide[r]) * Math.Clamp(sk / len, 0, 1), dk = d - side;
+                if (Math.Abs(dk) > p.Reach || sk < -p.Reach || sk > len + p.Reach)
+                    continue;
+                double xs = kx * dk, a0 = (-sk - xs) * root, a1 = (len - sk - xs) * root;
+                double frac = a0 < -CullSigma && a1 > CullSigma ? 1 : 0.5 * (Erf(a1) - Erf(a0));
+                double plan = norm * Math.Exp(-0.5 * kq * dk * dk) * frac;
+                if (!(plan > 0))
+                    continue;
+                any = true;
+                double sm = sk + xs, sc = Math.Clamp(sm, 0, len), u = sc / len, bow = sc * (len - sc) * l.Curve, slopeBow = (len - 2 * sc) * l.Curve;
+                double off = sm - sc, invL = 1 / len;
+                int i0 = starts == 1 ? 0 : r, i1 = starts == 1 ? fromM.Length : r + 1;
+                for (int i = i0; i < i1; i++)
+                    for (int j = 0; j < bands; j++)
+                    {
+                        double rise = toM[j] - fromM[i];
+                        double h = fromM[i] + rise * u - bow + (rise * invL - slopeBow) * off, lo = h - p.Z, hi = h + p.Z;
+                        double v = (lo * lo < p.ReachZ2 ? Math.Exp(-lo * lo * p.HalfInvZ2) : 0) + (hi * hi < p.ReachZ2 ? Math.Exp(-hi * hi * p.HalfInvZ2) : 0);
+                        tau[(i * ends + k) * bands + j] += plan * v;
+                    }
             }
-        return true;
+        return any;
     }
 
     // ------------------------------------------------------------------ a pair's lines (docs/battle/smoke.md Z3)
 
-    /// <summary>The most eye rows and bands a pair's answer holds.</summary>
-    public const int PairEyes = 4, PairBands = 3;
+    /// <summary>The most eye rows a pair's answer holds, the points along the target (the middles of her fore, middle and
+    /// aft thirds) and the bands at each; its depths, row-major, then point, then band.</summary>
+    public const int PairEyes = 4, PairPoints = 3, PairBands = 3, PairRow = PairPoints * PairBands;
 
     /// <summary>The eye a pair's row is worked out from, of an observer's eyes (her class's, highest first): all of them up
-    /// to <see cref="PairEyes"/>, else her highest, her lowest and evenly between, so every eye's depths are a row's or
-    /// between two.</summary>
+    /// to <see cref="PairEyes"/>, else her highest, her lowest and evenly between.</summary>
     public static int PairEye(int row, int eyes) => eyes <= PairEyes ? row : (int)Math.Round(row * (eyes - 1) / (double)(PairEyes - 1));
 
-    /// <summary>An eye's depths to the target's bands from a pair's answer (eye rows by <see cref="PairEye"/>, eye-major):
-    /// a row's when it's one, else between the two rows its height lies between (held past the highest and the lowest).</summary>
-    public static SmokeTau EyeTau(ReadOnlySpan<double> pair, ReadOnlySpan<EyeRow> eyes, double eyeM)
+    /// <summary>Where along the target the pair's points are, m in her frame: the middles of her hull's fore, middle and
+    /// aft thirds.</summary>
+    public static double PointX(int point, double hullX0, double hullX1) => (hullX0 + hullX1) / 2 + (1 - point) * (hullX1 - hullX0) / 3;
+
+    /// <summary>The depths an eye (or an instrument) at a place on the observer reads from a pair's answer: the row whose
+    /// eye is nearest it (along, across and up), so a foretop and an aft control each read their own lines.</summary>
+    public static SmokeTau EyeTau(ReadOnlySpan<double> pair, ReadOnlySpan<EyeRow> eyes, double x, double y, double heightM)
     {
         int rows = Math.Min(eyes.Length, PairEyes);
         if (rows == 0)
             return default;
-        int i = 0;
-        double w = 0;
-        if (eyeM <= eyes[PairEye(rows - 1, eyes.Length)].HeightM)
-            i = rows - 1;
-        else if (eyeM < eyes[PairEye(0, eyes.Length)].HeightM)
-            for (; i < rows - 1; i++)
-            {
-                double hi = eyes[PairEye(i, eyes.Length)].HeightM, lo = eyes[PairEye(i + 1, eyes.Length)].HeightM;
-                if (eyeM >= lo)
-                {
-                    w = hi > lo ? (hi - eyeM) / (hi - lo) : 0;
-                    break;
-                }
-            }
-        var a = pair.Slice(i * PairBands, PairBands);
-        if (w == 0)
-            return new SmokeTau(a[0], a[1], a[2]);
-        var b = pair.Slice((i + 1) * PairBands, PairBands);
-        return new SmokeTau(a[0] + w * (b[0] - a[0]), a[1] + w * (b[1] - a[1]), a[2] + w * (b[2] - a[2]));
+        int best = 0;
+        double bestD = double.MaxValue;
+        for (int r = 0; r < rows; r++)
+        {
+            ref readonly var e = ref eyes[PairEye(r, eyes.Length)];
+            double dx = e.X - x, dy = e.Y - y, dz = e.HeightM - heightM, d = dx * dx + dy * dy + dz * dz;
+            if (d < bestD)
+                (best, bestD) = (r, d);
+        }
+        return SmokeTau.Of(pair.Slice(best * PairRow, PairRow));
+    }
+
+    /// <summary>Which of a pair's lines a puff is worked out on (docs/battle/smoke.md, the tuning pass): its lines spread
+    /// from the eyes' places on the observer (<paramref name="observerSpreadM"/> at most from her middle) and to the
+    /// target's three points (<paramref name="targetSpreadM"/>), so at a share u of the way along they're
+    /// (1 − u)·spread_o + u·spread_t apart. Where the spread from one end is under <paramref name="share"/> of the puff's
+    /// width, the lines from that end are one: old, wide smoke and anything mid-way between distant ships takes the one
+    /// line between their middles; young smoke near either ship the lines from each eye, to each point, or both.</summary>
+    public static (bool EyesApart, bool PointsApart) Split(double u, double sigmaH, double observerSpreadM, double targetSpreadM, double share)
+    {
+        double w = share * sigmaH;
+        return ((1 - u) * observerSpreadM > w, u * targetSpreadM > w);
     }
 
     // ------------------------------------------------------------------ merging

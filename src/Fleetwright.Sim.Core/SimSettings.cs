@@ -1954,6 +1954,11 @@ public sealed record SimSettings
     /// <summary>A pair's optical depths hold for <see cref="SmokeRefreshMs"/> of world time; a pair no one has asked for in
     /// <see cref="SmokePairKeepMs"/> is let go.</summary>
     public int SmokeRefreshMs { get; init; } = 15_000;
+
+    /// <summary>A pair's lines (from each eye's place, to the middles of the target's thirds) are worked out one by one for
+    /// a puff where they've spread apart at its place by more than this share of its width; else the one line between
+    /// the ships' middles (docs/battle/smoke.md, the tuning pass).</summary>
+    public double SmokeLineSplit { get; init; } = 0.25;
     public int SmokePairKeepMs { get; init; } = 60_000;
 
     /// <summary>A target's bands, as shares of her silhouette's top: the heights lines from each eye end at (hull, upper

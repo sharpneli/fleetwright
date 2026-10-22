@@ -273,7 +273,7 @@ public sealed class Sightings
                     continue;
                 tried++;
                 if (smoked)
-                    line = line with { Smoke = SmokeModel.EyeTau(smoke, eyes, eyes[e].HeightM) };
+                    line = line with { Smoke = SmokeModel.EyeTau(smoke, eyes, eyes[e].X, eyes[e].Y, eyes[e].HeightM) };
                 double margin = SightModel.Margin(eyes[e].HeightM, SightModel.Magnification(eyes[e], settings), tc, line, settings);
                 if (glowMW > 0)
                     margin = Math.Max(margin, SightModel.GlowMargin(eyes[e].HeightM, glowMW, glowM, d, vis, sunEl, settings,
