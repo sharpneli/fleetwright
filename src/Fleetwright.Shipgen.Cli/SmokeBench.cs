@@ -187,7 +187,7 @@ static class SmokeBench
         var settings = w.Settings;
         long now = w.Time.Ms;
         double windTo = w.Smoke.Air.WindToDeg;
-        var rows = new List<(int Side, int Way, double Tau, double Off, double On)>();
+        var rows = new List<(int Side, int Way, double Tau, double Off, double On, double Km)>();
         var sample = new List<(int O, int T)>();
         // the lag (the index's states as of its rebuild, a pair's answer as of its working out): the same pair on every
         // puff as it is now, through the same lines
@@ -220,7 +220,7 @@ static class SmokeBench
             double mag = SightModel.Magnification(eyes[0], settings);
             var tau = SmokeModel.EyeTau(w.Smoke.PairDepths(q), eyes, eyes[0].X, eyes[0].Y, eyes[0].HeightM);
             rows.Add((os.Side, way < 45 ? 0 : way > 135 ? 2 : 1, tau.Mid, SightModel.Margin(eyes[0].HeightM, mag, ts.Handling.Class, line, settings),
-                SightModel.Margin(eyes[0].HeightM, mag, ts.Handling.Class, line with { Smoke = tau }, settings)));
+                SightModel.Margin(eyes[0].HeightM, mag, ts.Handling.Class, line with { Smoke = tau }, settings), d / 1000));
             if (tau.Mid > 0.1 && sample.Count < 40)
                 sample.Add((o, t));
             if (lagLines < 200)
@@ -248,6 +248,16 @@ static class SmokeBench
                 100.0 * g.Count(r => r.Tau > 3) / g.Count(), g.Average(r => Math.Exp(-r.Tau)), seen.Count, seen.Count(r => r.On < 1),
                 seen.Count > 0 ? 100.0 * seen.Count(r => r.On < 1) / seen.Count : 0, kept.Count > 0 ? kept[kept.Count / 2] : 1);
         }
+        // by range (the record's: Jutland's climax at 9-15 kyd, 8-14 km): the lines her highest eye makes out in clear air,
+        // and of them those she still does through the smoke
+        double[] edges = [0, 8, 14, 20, double.MaxValue];
+        var byRange = new System.Text.StringBuilder("           by range, made out in clear air / still through the smoke:");
+        for (int r = 0; r < 4; r++)
+        {
+            var band = rows.Where(x => x.Km >= edges[r] && x.Km < edges[r + 1] && x.Off >= 1).ToList();
+            byRange.Append(string.Format(Inv, " {0}-{1} km {2}/{3};", edges[r], r == 3 ? "" : edges[r + 1].ToString(Inv), band.Count, band.Count(x => x.On >= 1)));
+        }
+        yield return byRange.ToString();
         lagErr.Sort();
         yield return string.Format(Inv, "           the lag (the index {0:0} s, a pair's answer {1:0} s): of {2} lines, {3} ({4:0.0}%) seen otherwise with every puff as it is now ({5} lost to the lag's smoke, {6} seen through smoke since come); |Δτ| at her middle on the {7} smoky ones: median {8:0.00}, 90th {9:0.00}",
             settings.SmokeIndexMs / 1000.0, settings.SmokeRefreshMs / 1000.0, lagLines, lagFlips, lagLines > 0 ? 100.0 * lagFlips / lagLines : 0, lagLost, lagFound,

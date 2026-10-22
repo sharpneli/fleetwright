@@ -1121,6 +1121,41 @@ the light cruiser in her own smoke and stopped firing, so she had nothing to zig
 **Next in the pass** (the user's to order): the funnels' output and the young plume (how much smoke there is, Z3's list);
 the smoke contacts' estimates (Z6).
 
+### Where it stands after T1-T2 (measured 2026-10-22)
+
+The user agreed the order for the output and the young plume (2026-10-22): (1) measure where it stands after T1-T2,
+(2) make the physics whole before any tuning factor (the firing state into the output, the ship's lee into the young
+plume's start and early spread), (3) only then tune the estimates against the yardsticks together.
+
+- **Jutland's lines** (`smoke run`, 3 h, samples every 15 min; `smoke run` now also splits the lines by range): of the
+  lines her highest eye makes out in clear air, **16% are lost to the smoke** (Z3's climax: 82-96%). Under 8 km 9%, **8-14
+  km (the record's 9-15 kyd) 9%**, 14-20 km 50%, beyond 20 km 40% (5 lines). The record has the bearing deciding,
+  rangefinders at times limited to 9,000 yd and a clear channel giving 15,000 yd: 9% at 8-14 km looks too clear. On the
+  smoky lines the smoke is mostly the target's side's and her own side's; the observer's own share 0-38%.
+- **Smoke contacts** (`smoke contacts`, 3 h): unchanged in kind (T1-T2 don't touch the plume summary). The British first
+  held 3 German ships by their smoke at 24-26 km against 16-21 km for first sight; the run took a course where the
+  Germans held only 4 ships all along, so its counts don't compare with Z6's.
+- **The screen** (`smoke screen`): as at decision 13, the target in sight 90 s of 30 minutes behind four destroyers
+  making smoke (1,792 s without).
+- **`fc-history`** (40 runs a case): 7 of 23 in their bands (8-9 before, within the spread); the German BCs firing astern
+  at Dogger Bank 2.3% (record ~2.5%).
+- **Jutland played to its end** (`scenario --play --seeds 3`, to 04:00, the AI on every side):
+
+  | | Hits, British / German | Lost, British / German (the seeds' range) | Wall a seed |
+  | --- | --- | --- | --- |
+  | The field off | 4,244 / 4,251 | 36 (17-60) / 48 (28-59) | 105-141 s |
+  | The field on | 3,956 / 3,499 | 26 (22-35) / 56 (48-60) | 171-220 s |
+  | The record | | 14 / 11 | |
+
+  The smoke takes some 12% of the hits (7% of the British, 18% of the German); the losses swing by more between seeds
+  than anything the smoke does. **A whole played Jutland takes some 60% more wall time with the field on**, where the
+  3-hour runs showed 2.4% → 2.6% of the sim thread at 10x: the cost check below.
+
+**What it says for the next steps:** the sight lines and the smoke contacts now both want more, darker smoke near the
+funnels, not less: the tension Z3 and Z6 left (more output blinds more and shows further) has mostly gone. The firing
+state's black smoke in action is the physical reason for more, so it comes first; the lee (holding young smoke lower)
+adds blinding near the ships but shows less over the horizon, so its strength comes after, against both.
+
 ## What stays out
 
 - A flow solve, eddies, blast tunnels and wakes stirring the smoke: the research's visual-only detail grid, a VFX-pass
