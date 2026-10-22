@@ -624,11 +624,12 @@ public sealed partial class CaptainLayer
     /// <summary>Whether his ship is past doctrine's fall-out (docs/battle/command.md 5.1a), judged when its condition
     /// changes: too slow, too few main guns, listing too far, too much water, or (when doctrine falls out at all) unable to
     /// steer. Then she leaves her group (the line closes up behind her: going-down ships leave the same way) and goes
-    /// home, his own order, firing at will as she goes.</summary>
+    /// home, his own order, firing at will as she goes. Not once the player has ordered her on after it
+    /// (<see cref="Captain.Overruled"/>).</summary>
     void FallOut(in AiContext ctx, ref Captain cap, ShipState own, int slot)
     {
         var k = ctx.Ships.Combat.Condition(slot);
-        if (cap.Order == CaptainOrder.Home || !k.Damaged || k.Version == cap.FitVersion || k.Status != ShipStatus.Afloat)
+        if (cap.Overruled || cap.Order == CaptainOrder.Home || !k.Damaged || k.Version == cap.FitVersion || k.Status != ShipStatus.Afloat)
             return;
         cap.FitVersion = k.Version;
         var cls = own.Handling.Class;

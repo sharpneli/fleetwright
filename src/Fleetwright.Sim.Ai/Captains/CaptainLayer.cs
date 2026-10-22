@@ -115,6 +115,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         public long TorpedoMs;          // when he last fired torpedoes (0: never)
         public bool TorpedoHeld;        // his flotilla attacking together: his torpedoes wait for its signal
         public CaptainReason Reason;    // why, when it isn't simply his order (fallen out)
+        public bool Overruled;          // the player ordered him on after he fell out: he stays, at his ship's risk
         public int FitVersion;          // his ship's condition's version when he last judged its fitness
         public long CombUntilMs;        // combing a torpedo's track until then (0: not)
         public double CombDeg, CombBackDeg;   // the comb's course, and the course ordered before it
@@ -297,6 +298,11 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         if (source == OrderSource.Superior)
             cap.Asked = false;   // in his superior's hands again
         cap.Source = source;
+        // the player's order to a ship fallen out keeps her in (docs/map-ui/battle-hud.md decision 2: the player may
+        // overrule her captain; attention is what's rewarded): she won't fall out again this battle
+        if (source == OrderSource.Player && cap.Reason is CaptainReason.OutSpeed or CaptainReason.OutGuns or CaptainReason.OutList
+            or CaptainReason.OutWater or CaptainReason.OutSteering)
+            cap.Overruled = true;
         cap.Reason = CaptainReason.None;   // ordered: doing what he's told
         switch (code)
         {
@@ -568,6 +574,8 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
             if (c.TorpedoHeld)
                 h.Add(true);   // only then: worlds without flotilla attacks hash as before
             h.Add((int)c.Reason);
+            if (c.Overruled)
+                h.Add(true);   // only then: worlds without an overrule hash as before
             h.Add(c.FitVersion);
             h.Add(c.CombUntilMs);
             h.Add(c.CombDeg);

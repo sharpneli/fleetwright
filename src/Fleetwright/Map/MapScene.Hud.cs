@@ -47,6 +47,8 @@ public sealed partial class MapScene : ISceneMenu
     string sideText = "", scenarioText = "", aimText = "";
     int newsShown = -1;
     string newsText = "";
+    (int, int, int, int) tallyKey;
+    string tallyText = "";
 
     void TopBar(Snapshot s)
     {
@@ -115,6 +117,13 @@ public sealed partial class MapScene : ISceneMenu
             ImGui.Dummy(new Vector2(2 * r + 4 * sc, 1));
             ImGui.SameLine(0, 0);
             BarText(actionText, DesignerTheme.Amber, mid);
+        }
+        if (tally != default)
+        {
+            ImGui.SameLine(0, gap);
+            if (tally != tallyKey)
+                (tallyKey, tallyText) = (tally, $"hits {tally.Scored} scored · {tally.Taken} taken · lost {tally.Lost} · sunk {tally.Sunk}");
+            BarText(tallyText, DesignerTheme.Muted, mid);
         }
         if (newsText.Length > 0)
         {
@@ -622,6 +631,8 @@ public sealed partial class MapScene : ISceneMenu
     {
         if (briefOpen)
             briefShut = true;
+        else if (logOpen)
+            logOpen = false;
         else if (armedPick != ClickPick.None || fireArmed)
             (armedPick, fireArmed) = (ClickPick.None, false);
         else if (placing || placeDrag)

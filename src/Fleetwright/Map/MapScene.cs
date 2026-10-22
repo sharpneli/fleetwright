@@ -176,12 +176,16 @@ public sealed unsafe partial class MapScene : IScene
         long t = Probes.Now;
         var s = world.Current;
         feed.Read(s, world.Generation);
+        CollectEvents(s);
         CardRequests(s);
         TopBar(s);
         Rail(s);
         ShipsUi();
         Card(s);
         Strip(s);
+        Notices(s);
+        Ticker(s);
+        LogDrawer(s);
         probes.Add(probeUiShips, t);
         t = Probes.Now;
         GroupLabels(s);
@@ -269,6 +273,8 @@ public sealed unsafe partial class MapScene : IScene
             return Escape();
         if (key == SDLK_F1)
             devOpen = !devOpen;
+        else if (key == SDLK_J)
+            logOpen = !logOpen;
         else if (key == SDLK_V)
             cardOpen = !cardOpen;
         else if (key == SDLK_P)

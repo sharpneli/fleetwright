@@ -67,6 +67,30 @@ public class FallOutTests(ITestOutputHelper output)
         Assert.Equal((1, 2), (groups.MemberCount[gi], groups.GuideShip[gi]));
     }
 
+    /// <summary>The player overrules her captain (docs/map-ui/battle-hud.md decision 2): ordered on after she fell out
+    /// and put back in her line, she stays in it through more damage.</summary>
+    [Fact]
+    public void Ordered_on_after_falling_out_she_stays_in_her_line()
+    {
+        var (w, ai, g) = Make();
+        w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.FallOutGunsShare, 1.01));   // any damage at all
+        w.Apply(ai.Orders.HoldFire(Unit.Ship(3)));
+        w.AdvanceTo(w.Time + 60_000);
+        w.Apply(DamageSystem.SideHole(1, HoleAt.Mid, 0, 3, 0.01));
+        w.AdvanceTo(w.Time + 5_000);
+        Assert.Equal(CaptainReason.OutGuns, ai.Captains.ReasonOf(1));
+        // the strip's "order her back into line": an order of the player's, then back in her squadron
+        w.Apply(ai.Orders.Fight(Unit.Ship(1)));
+        w.Apply(GroupSystem.Add(g, 1));
+        w.AdvanceTo(w.Time + 30_000);
+        var cls = Ship(w, 1).Handling.Class;
+        w.Apply(DamageSystem.Wreck(1, cls.Mounts[0].Component, PartState.Destroyed));   // hit again: a mount wrecked
+        w.AdvanceTo(w.Time + 30_000);
+        Assert.Equal(CaptainReason.None, ai.Captains.ReasonOf(1));
+        Assert.NotEqual(CaptainOrder.Home, ai.Captains.Of(1).Order);
+        Assert.Equal(g, w.Groups.Of(1)?.GroupId);
+    }
+
     /// <summary>Fallen out, with the enemy gone she steers for her side's home and stops within
     /// <see cref="SimSettings.HomeRadiusM"/> of it, her reason then "home".</summary>
     [Fact]
