@@ -1946,6 +1946,12 @@ public sealed record SimSettings
     /// <summary>The sight lines' index (docs/battle/smoke.md Z2): rebuilt every <see cref="SmokeIndexMs"/> of world time
     /// (each puff's state then), in chunks of <see cref="SmokeChunk"/> puffs along a trail.</summary>
     public int SmokeIndexMs { get; init; } = 15_000;
+
+    /// <summary>The index's young part (docs/battle/smoke.md T2): every <see cref="SmokeFreshMs"/> of world time the puffs
+    /// laid since the last rebuild, and those under <see cref="SmokeFreshS"/> old at it, are filed again as they are then
+    /// (the full rebuild leaves them out), so new smoke reaches the lines sooner.</summary>
+    public int SmokeFreshMs { get; init; } = 3_000;
+    public double SmokeFreshS { get; init; } = 30;
     public int SmokeChunk { get; init; } = 4;
 
     /// <summary>The index's grid: cubes this big, m, in the air's frame (Earth-centred).</summary>

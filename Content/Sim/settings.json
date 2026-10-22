@@ -775,6 +775,8 @@
   "SmokeEddySpeedMs": 2,
   "SmokeCap": 262144,
   "SmokeIndexMs": 15000,
+  "SmokeFreshMs": 3000,
+  "SmokeFreshS": 30,
   "SmokeChunk": 4,
   "SmokeGridM": 2000,
   "SmokeRefreshMs": 15000,

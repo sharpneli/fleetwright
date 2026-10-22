@@ -6,7 +6,9 @@ namespace Fleetwright.Sim;
 
 /// <summary>The smoke on a sight line (docs/battle/smoke.md Z2).
 /// <list type="bullet">
-/// <item><b>The index</b>, rebuilt every <see cref="SimSettings.SmokeIndexMs"/> of world time at a tick: every puff's
+/// <item><b>The index</b>, rebuilt every <see cref="SimSettings.SmokeIndexMs"/> of world time at a tick, and its young
+/// part every <see cref="SimSettings.SmokeFreshMs"/> (docs/battle/smoke.md T2: the puffs laid since, and those under
+/// <see cref="SimSettings.SmokeFreshS"/> old at the rebuild, unfiled and filed again as they are then): every puff's
 /// state then (its centre in the air's frame, where it stays), in trail order, in chunks of
 /// <see cref="SimSettings.SmokeChunk"/> with a bounding sphere each (their centres and 3.5 σ along their long axes): smoke lies along trails,
 /// and a trail is already in order along its run. The chunks are filed in a hash grid of cubes in the air's frame
@@ -45,7 +47,11 @@ public sealed partial class SmokeSystem
     int[] ownerB = new int[1024], prevB = new int[1024], nextB = new int[1024];
     int[] chunkStart = new int[65], chunkStamp = new int[64];
     int ixCount, chunkCount, stamp;
-    long indexMs = long.MinValue;
+    long indexMs = long.MinValue, freshMs = long.MinValue;
+    // where the young part starts: the full rebuild's entries, chunks, grid entries and levels; and its cut, s (puffs
+    // born after it are the young part's)
+    int fullIx, fullChunks, fullGrid, fullLevels;
+    double youngCut;
     const int Levels = 8;
     int gridBits = 14, levelsUsed;
     int[] gridHead = new int[1 << 14];   // 16k buckets: room for a thousand chunks before it grows (a Jutland's, once)
@@ -111,16 +117,27 @@ public sealed partial class SmokeSystem
         return plumeCount++;
     }
 
-    /// <summary>Rebuilds the index at a tick when it falls due (a lattice of world time), and lets go of the pairs no one
-    /// has asked for a minute.</summary>
+    /// <summary>Rebuilds the index at a tick when it falls due (a lattice of world time), and its young part when that
+    /// does.</summary>
     void Index(long t)
     {
-        if (indexMs != long.MinValue && t / settings.SmokeIndexMs == indexMs / settings.SmokeIndexMs)
-            return;
+        bool full = indexMs == long.MinValue || t / settings.SmokeIndexMs != indexMs / settings.SmokeIndexMs;
+        if (full)
+            Rebuild(t);
+        if (full || t / settings.SmokeFreshMs != freshMs / settings.SmokeFreshMs)
+            Fresh(t);
+    }
+
+    /// <summary>The index rebuilt from every puff but the young (born after <see cref="youngCut"/>: the young part's),
+    /// the store compacted into trail order, each ship's plume summed from all of hers; and the pairs no one has asked for
+    /// a minute let go.</summary>
+    void Rebuild(long t)
+    {
         long p0 = Probes.Now;
         indexMs = t;
         double nowS = t / 1000.0;
-        int chunk = Math.Max(settings.SmokeChunk, 1);
+        youngCut = nowS - settings.SmokeFreshS;
+        int chunk = Math.Max(settings.SmokeChunk, 1), sj = 0;
         ixCount = chunkCount = 0;
         if (ix.Length < live)
             Array.Resize(ref ix, Math.Max(live, ix.Length * 2));
@@ -142,24 +159,26 @@ public sealed partial class SmokeSystem
                 sources[k] = src;
                 continue;
             }
-            int n = 0, first = ixCount, plume = PlumeSlot(src.Entity);
+            int n = 0, first = sj, plume = PlumeSlot(src.Entity);
             for (int i = src.Oldest; i >= 0; i = next[i])
             {
+                var st = SmokeModel.State(puffs[i], nowS, frame, air);
+                int tint = (int)puffs[i].Tint;
+                plumeSum[plume].Add(st, tint < contrast.Length ? contrast[tint] : 0, showsTau);
+                int j = sj++;
+                (puffsB[j], ownerB[j], prevB[j], nextB[j]) = (puffs[i], k, j > first ? j - 1 : -1, j + 1);
+                if (puffs[i].Born > youngCut)
+                    continue;   // young: the young part's
                 if (n % chunk == 0)
                 {
                     EnsureChunks(chunkCount + 1);
                     chunkStart[chunkCount++] = ixCount;
                 }
-                var st = SmokeModel.State(puffs[i], nowS, frame, air);
-                int tint = (int)puffs[i].Tint;
-                plumeSum[plume].Add(st, tint < contrast.Length ? contrast[tint] : 0, showsTau);
-                int j = ixCount++;
-                ix[j] = new LinePuff(st, frame.ToAir(st.Centre.Normalized() * Earth.Radius), frame.ToAir(st.Axis));   // where it is in the air now
-                (puffsB[j], ownerB[j], prevB[j], nextB[j]) = (puffs[i], k, j > first ? j - 1 : -1, j + 1);
+                ix[ixCount++] = new LinePuff(st, frame.ToAir(st.Centre.Normalized() * Earth.Radius), frame.ToAir(st.Axis));   // where it is in the air now
                 n++;
             }
-            nextB[ixCount - 1] = -1;
-            (src.Oldest, src.Newest) = (first, ixCount - 1);
+            nextB[sj - 1] = -1;
+            (src.Oldest, src.Newest) = (first, sj - 1);
             sources[k] = src;
         }
         chunkStart[chunkCount] = ixCount;
@@ -170,8 +189,8 @@ public sealed partial class SmokeSystem
         (owner, ownerB) = (ownerB, owner);
         (prev, prevB) = (prevB, prev);
         (next, nextB) = (nextB, next);
-        Array.Fill(owner, -1, ixCount, owner.Length - ixCount);
-        (high, freeCount) = (ixCount, 0);
+        Array.Fill(owner, -1, sj, owner.Length - sj);
+        (high, freeCount) = (sj, 0);
         // the hash's buckets: at least twice the entries (eight a chunk at most)
         while (1 << gridBits < 16 * chunkCount && gridBits < 22)
             gridBits++;
@@ -180,7 +199,65 @@ public sealed partial class SmokeSystem
         Array.Fill(gridHead, -1);
         gridCount = 0;
         levelsUsed = 0;
-        for (int c = 0; c < chunkCount; c++)
+        FileChunks(0, chunkCount);
+        (fullIx, fullChunks, fullGrid, fullLevels) = (ixCount, chunkCount, gridCount, levelsUsed);
+        stamp = 0;
+        // the pairs no one has asked for a minute let go (the last moved into their place)
+        for (int q = pairCount - 1; q >= 0; q--)
+            if (t - pairUsed[q] > settings.SmokePairKeepMs)
+            {
+                pairOf.Remove(pairKey[q]);
+                int last = --pairCount;
+                if (q != last)
+                {
+                    (pairKey[q], pairUntil[q], pairUsed[q]) = (pairKey[last], pairUntil[last], pairUsed[last]);
+                    Array.Copy(pairTau, last * PairTaus, pairTau, q * PairTaus, PairTaus);
+                    pairOf[pairKey[q]] = q;
+                }
+            }
+        probes.Add(indexProbe, p0);
+    }
+
+    /// <summary>The index's young part (docs/battle/smoke.md T2): the last one's entries unfiled (in the reverse of their
+    /// filing, so each bucket's head is as the full rebuild left it), then every trail's puffs born after the cut, newest
+    /// back, as they are now, chunked and filed after the full rebuild's. A few hundred puffs: new smoke reaches the lines
+    /// within <see cref="SimSettings.SmokeFreshMs"/> instead of <see cref="SimSettings.SmokeIndexMs"/>.</summary>
+    void Fresh(long t)
+    {
+        long p0 = Probes.Now;
+        freshMs = t;
+        for (int e = gridCount - 1; e >= fullGrid; e--)
+            gridHead[Bucket(gridKey[e])] = gridNext[e];
+        (ixCount, chunkCount, gridCount, levelsUsed) = (fullIx, fullChunks, fullGrid, fullLevels);
+        double nowS = t / 1000.0;
+        int chunk = Math.Max(settings.SmokeChunk, 1);
+        for (int k = 0; k < sources.Count; k++)
+        {
+            int n = 0;
+            for (int i = sources[k].Newest; i >= 0 && puffs[i].Born > youngCut; i = prev[i])
+            {
+                if (n % chunk == 0)
+                {
+                    EnsureChunks(chunkCount + 1);
+                    chunkStart[chunkCount++] = ixCount;
+                }
+                if (ixCount == ix.Length)
+                    Array.Resize(ref ix, ix.Length * 2);
+                var st = SmokeModel.State(puffs[i], nowS, frame, air);
+                ix[ixCount++] = new LinePuff(st, frame.ToAir(st.Centre.Normalized() * Earth.Radius), frame.ToAir(st.Axis));
+                n++;
+            }
+        }
+        chunkStart[chunkCount] = ixCount;
+        FileChunks(fullChunks, chunkCount);
+        probes.Add(indexProbe, p0);
+    }
+
+    /// <summary>Chunks [c0, c1) filed in the grid: each one's sphere and heights, at the smallest level whose cells are
+    /// as wide as it, in the cells its box touches.</summary>
+    void FileChunks(int c0, int c1)
+    {
+        for (int c = c0; c < c1; c++)
         {
             (chunkC[c], chunkR[c]) = Sphere(chunkStart[c], chunkStart[c + 1]);
             (chunkLo[c], chunkHi[c]) = (double.MaxValue, double.MinValue);
@@ -202,21 +279,6 @@ public sealed partial class SmokeSystem
                     for (long z = Cell(lo.Z, g); z <= Cell(hi.Z, g); z++)
                         File(Key(level, x, y, z), c);
         }
-        stamp = 0;
-        // the pairs no one has asked for a minute let go (the last moved into their place)
-        for (int q = pairCount - 1; q >= 0; q--)
-            if (t - pairUsed[q] > settings.SmokePairKeepMs)
-            {
-                pairOf.Remove(pairKey[q]);
-                int last = --pairCount;
-                if (q != last)
-                {
-                    (pairKey[q], pairUntil[q], pairUsed[q]) = (pairKey[last], pairUntil[last], pairUsed[last]);
-                    Array.Copy(pairTau, last * PairTaus, pairTau, q * PairTaus, PairTaus);
-                    pairOf[pairKey[q]] = q;
-                }
-            }
-        probes.Add(indexProbe, p0);
     }
 
     /// <summary>The chunks' spheres are this much wider, m: their test is against the chord between the ends, which dips
@@ -532,6 +594,8 @@ public sealed partial class SmokeSystem
     void HashQuery(ref StateHash h)
     {
         h.Add(indexMs);
+        h.Add(freshMs);
+        h.Add(ixCount);
         h.Add(plumeCount);
         for (int k = 0; k < plumeCount; k++)
         {

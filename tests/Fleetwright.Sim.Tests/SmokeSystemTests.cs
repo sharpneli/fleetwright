@@ -351,6 +351,57 @@ public class SmokeSystemTests(ITestOutputHelper output)
         Assert.True(pairs >= 3, "some lines cross the trails");
     }
 
+    /// <summary>The index's young part (docs/battle/smoke.md T2): two fresh steps after a full rebuild, the index is every
+    /// puff summed, those born before the rebuild as they were at it and the rest as they are at the step; the puffs laid
+    /// since are on the lines.</summary>
+    [Fact]
+    public void Smoke_laid_since_the_rebuild_reaches_the_lines_at_the_next_fresh_step()
+    {
+        // no merging or retiring in the window (each trail walked, and trails merged across, once an hour, at its start):
+        // the index's old puffs are the store's
+        var w = Engaged(On with { SmokeMergeEveryMs = 3_600_000, SmokeCrossEveryMs = 3_600_000 });
+        long t = (w.Time.Ms / On.SmokeIndexMs + 2) * On.SmokeIndexMs + 20 * 60_000;
+        long f = t + 2 * On.SmokeFreshMs;
+        w.AdvanceTo(new WorldTime(f + 1));
+        var store = w.Ships.Store;
+        double cut = t / 1000.0 - On.SmokeFreshS;
+        var puffs = new List<LinePuff>();
+        var youngPuffs = new List<LinePuff>();
+        for (int i = 0; i < w.Smoke.Slots; i++)
+            if (w.Smoke.IsLive(i))
+            {
+                bool isYoung = w.Smoke.Puff(i).Born > cut;
+                var st = SmokeModel.State(w.Smoke.Puff(i), (isYoung ? f : t) / 1000.0, w.Smoke.Frame, w.Smoke.Air);
+                var lp = new LinePuff(st, w.Smoke.Frame.ToAir(st.Centre.Normalized() * Earth.Radius), w.Smoke.Frame.ToAir(st.Axis));
+                puffs.Add(lp);
+                if (isYoung)
+                    youngPuffs.Add(lp);
+            }
+        int young = youngPuffs.Count;
+        double youngMost = 0;
+        Span<double> got = stackalloc double[SmokeSystem.PairTaus];
+        Span<double> all = stackalloc double[SmokeSystem.PairTaus];
+        for (int o = 1; o <= 4; o++)
+            for (int g = 5; g <= 7; g++)
+            {
+                int os = store.SlotOf(o), ts = store.SlotOf(g);
+                w.Smoke.TauUncached(w, os, ts, got);
+                w.Smoke.TauOf(w, os, ts, puffs.ToArray(), On.SmokeLineSplit, all);
+                int n = Math.Min(store[os].Handling.Class.Eyes.Length, SmokeSystem.PairEyes) * SmokeModel.PairRow;
+                // (the old ones worked out here in the air of the step, the index's in the air of the rebuild: the wind's
+                // wander and gusts between them, about a part in ten thousand)
+                for (int j = 0; j < n; j++)
+                    Assert.True(Math.Abs(got[j] - all[j]) <= 1e-3 * Math.Max(all[j], 1e-6) + 1e-12, $"#{o} on #{g}, line {j}: {got[j]} against {all[j]}");
+                w.Smoke.TauOf(w, os, ts, youngPuffs.ToArray(), On.SmokeLineSplit, all);
+                for (int j = 0; j < n; j++)
+                    youngMost = Math.Max(youngMost, all[j]);
+            }
+        output.WriteLine($"{young} puffs young (laid since the rebuild {(f - t) / 1000} s before), of {puffs.Count}; {w.Smoke.Indexed} indexed; the young alone up to τ {youngMost:F3} on a line");
+        Assert.True(young >= 5, "smoke laid since the rebuild (a puff a ship every few seconds)");
+        Assert.True(youngMost > 0.05, "and on the lines");
+        Assert.Equal(puffs.Count, w.Smoke.Indexed);
+    }
+
     /// <summary>A puff on the one line between the ships' middles where the pair's lines lie within a share of its width
     /// (<see cref="SimSettings.SmokeLineSplit"/>), each line on its own near the ships: close to every line on its own.</summary>
     [Fact]

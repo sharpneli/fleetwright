@@ -15,10 +15,11 @@ public class EvasionTests(ITestOutputHelper output)
     static readonly SimSettings Settings = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json"));
 
     /// <summary>A light cruiser (side 0, fighting by doctrine, so outgunned she turns away) 14 km west of a battleship
-    /// (side 1) firing at will; both steaming north.</summary>
+    /// (side 1) firing at will; both steaming north; in clear air (the captains' own rule: the smoke field can hide her
+    /// from the battleship's guns, and then she isn't under fire).</summary>
     static (World W, AiSystem Ai) Make(Evasion style, ulong seed = 7)
     {
-        var w = new World(Start, seed, Settings);
+        var w = new World(Start, seed, Settings with { Smoke = false });
         var ai = new AiSystem(w);
         w.Apply(Command.SetWeather(25_000));
         w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.Engage, (double)Engage.Fight));

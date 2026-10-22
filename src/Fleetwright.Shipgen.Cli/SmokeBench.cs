@@ -189,6 +189,19 @@ static class SmokeBench
         double windTo = w.Smoke.Air.WindToDeg;
         var rows = new List<(int Side, int Way, double Tau, double Off, double On)>();
         var sample = new List<(int O, int T)>();
+        // the lag (the index's states as of its rebuild, a pair's answer as of its working out): the same pair on every
+        // puff as it is now, through the same lines
+        var nowPuffs = new List<LinePuff>(w.Smoke.Count);
+        for (int i = 0; i < w.Smoke.Slots; i++)
+            if (w.Smoke.IsLive(i))
+            {
+                var st = w.Smoke.State(i, now / 1000.0);
+                nowPuffs.Add(new LinePuff(st, w.Smoke.Frame.ToAir(st.Centre.Normalized() * Earth.Radius), w.Smoke.Frame.ToAir(st.Axis)));
+            }
+        var nowArray = nowPuffs.ToArray();
+        var exact = new double[SmokeSystem.PairTaus];
+        int lagLines = 0, lagFlips = 0, lagLost = 0, lagFound = 0;
+        var lagErr = new List<double>();
         for (int q = 0; q < w.Smoke.Pairs; q++)
         {
             var (oe, te, used) = w.Smoke.PairAt(q);
@@ -210,6 +223,19 @@ static class SmokeBench
                 SightModel.Margin(eyes[0].HeightM, mag, ts.Handling.Class, line with { Smoke = tau }, settings)));
             if (tau.Mid > 0.1 && sample.Count < 40)
                 sample.Add((o, t));
+            if (lagLines < 200)
+            {
+                w.Smoke.TauOf(w, o, t, nowArray, settings.SmokeLineSplit, exact);
+                var fresh = SmokeModel.EyeTau(exact, eyes, eyes[0].X, eyes[0].Y, eyes[0].HeightM);
+                bool seenLag = SightModel.Margin(eyes[0].HeightM, mag, ts.Handling.Class, line with { Smoke = tau }, settings) >= 1;
+                bool seenNow = SightModel.Margin(eyes[0].HeightM, mag, ts.Handling.Class, line with { Smoke = fresh }, settings) >= 1;
+                lagLines++;
+                lagFlips += seenLag != seenNow ? 1 : 0;
+                lagLost += !seenLag && seenNow ? 1 : 0;
+                lagFound += seenLag && !seenNow ? 1 : 0;
+                if (tau.Mid > 0.05 || fresh.Mid > 0.05)
+                    lagErr.Add(Math.Abs(tau.Mid - fresh.Mid));
+            }
         }
         string[] ways = ["down the wind", "across it", "up it"];
         yield return "           the looks' lines (the last 2 s), the observer's side and her look against the wind: lines, τ at the middle band over 0.1 / 1 / 3, mean T there; made out by her highest eye without the smoke, lost to it, the margin kept (median)";
@@ -222,6 +248,10 @@ static class SmokeBench
                 100.0 * g.Count(r => r.Tau > 3) / g.Count(), g.Average(r => Math.Exp(-r.Tau)), seen.Count, seen.Count(r => r.On < 1),
                 seen.Count > 0 ? 100.0 * seen.Count(r => r.On < 1) / seen.Count : 0, kept.Count > 0 ? kept[kept.Count / 2] : 1);
         }
+        lagErr.Sort();
+        yield return string.Format(Inv, "           the lag (the index {0:0} s, a pair's answer {1:0} s): of {2} lines, {3} ({4:0.0}%) seen otherwise with every puff as it is now ({5} lost to the lag's smoke, {6} seen through smoke since come); |Δτ| at her middle on the {7} smoky ones: median {8:0.00}, 90th {9:0.00}",
+            settings.SmokeIndexMs / 1000.0, settings.SmokeRefreshMs / 1000.0, lagLines, lagFlips, lagLines > 0 ? 100.0 * lagFlips / lagLines : 0, lagLost, lagFound,
+            lagErr.Count, lagErr.Count > 0 ? lagErr[lagErr.Count / 2] : 0, lagErr.Count > 0 ? lagErr[lagErr.Count * 9 / 10] : 0);
         // whose smoke it is, on a sample of the smoky lines: every puff summed on the highest eye's line to the middle band
         if (sample.Count == 0)
             yield break;

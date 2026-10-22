@@ -4,7 +4,8 @@ first part built with Z3); Z0 (the model and the facts), Z1 (the store), Z2 (the
 fire control read it) and Z4 (the other sources) done 2026-10-21, decisions 5-9; Z5 (the drawing) built 2026-10-21, gate 2 the
 user's; breaking the field (Z5b-Z5d: elongated puffs and merging across trails, the large eddies, the grain) agreed and
 built 2026-10-21, decisions 10-11; **taken in and on by default** 2026-10-21, shorter lived (decisions 12-13); Z6
-(smoke contacts) built 2026-10-22: the plan's steps all built; the tuning pass begun 2026-10-22 (T1, the lines' ends)
+(smoke contacts) built 2026-10-22: the plan's steps all built; the tuning pass begun 2026-10-22 (T1 the lines' ends, T2 the
+index's young part)
     Updated: 2026-10-22
 
 Smoke as sim state that sight reads, and the same state drawn. The research is `research/vfx/unified-smoke-system.md`
@@ -1074,11 +1075,51 @@ first version 193x, under the fine tier's 240x).
 **Found on the way:** the index holds every puff as it was at its last rebuild, up to `SmokeIndexMs` (15 s) old
 (decision 9), so a ship's own newest smoke over her funnels isn't on her lines yet, and what is lags her by her run
 since: at 18 kn up to 140 m. An eye aft of the funnels on a fast ship looks past her own smoke more than it should
-(`A_foretop_looks_ahead_clear_of_her_own_smoke_aft` sums the puffs as they are now for that reason). A candidate for
-the pass: a ship's own trail's young end taken fresh at the query, or the index rebuilt more often near ships.
+(`A_foretop_looks_ahead_clear_of_her_own_smoke_aft` sums the puffs as they are now for that reason). Taken up in T2.
+
+### T2 The index's young part (done 2026-10-22)
+
+The user: "Think about the index lag on how we could speed it up, we can also make it update faster if it doesn't eat
+into budget too much."
+
+**Measured first** (`smoke run`'s new line: each pair the looks asked for in the last 2 s, its answer as they got it
+against the same pair on every puff as it is now, through the same lines; how often her highest eye's verdict, made out
+or lost, differs; Jutland, 3 h, samples every 15 min, `DOTNET_TieredCompilation=0`):
+
+| The index's rebuild / a pair's answer held | Verdicts the lag flips | Index, ms a game s (mean) | Field (store and index) |
+| --- | --- | --- | --- |
+| 15 s / 15 s (as it was) | 83 of 1,400, **5.9%** (74 seen through smoke since come) | 0.11 | 0.32 |
+| 5 s / 5 s | 1.8% | 0.33 | 0.54 (the queries up to 1.9) |
+| 15 s / 3 s | 7.6% (no better) | 0.11 | the queries up to 3.1 |
+| 3 s / 15 s | **1.7%** | 0.53 | 0.74 |
+
+The index's age is the lag, not the answers' hold: what's missing is the smoke laid since the rebuild (the densest
+there is, at the funnels). A full rebuild every 3 s works, at five times the index's cost (every puff's state again, the
+store re-sorted, the plumes summed).
+
+**Built** (`SmokeSystem.Fresh`): the full rebuild every `SmokeIndexMs` (15 s) as before, but without the young (puffs
+born under `SmokeFreshS`, 30 s, before it); every `SmokeFreshMs` (3 s) the young part: the last one's grid entries
+unfiled (in the reverse of their filing: the buckets are lists filed at their heads, so each head is as the full rebuild
+left it), then every trail's puffs born since the cut, from her newest back, as they are now, chunked and filed after the
+full rebuild's. A few hundred to a few thousand puffs, none of them merged or retired before the next full rebuild (a
+puff settles at 20 s; the walk's merges and retiring are of settled puffs). The answers stay held 15 s.
+
+| | Flips | Index (mean, at most) | Field |
+| --- | --- | --- | --- |
+| The young part, only the puffs laid since the rebuild (`SmokeFreshS` 0) | 1.7% | 0.12, 0.15 | 0.30 |
+| **The young part, and those under 30 s old (still rising)** | **1.1%** | 0.20, 0.24 | 0.37 |
+
+A full 3 s rebuild's freshness at a twentieth of its cost; the still-rising puffs re-stated too for 0.08 ms a game
+second more (some 2-3% of the sim at Jutland), the default. A backfilled trail (a ship coming off rails lays her trail
+back along her course, its puffs born in the past) still waits for the next full rebuild.
+
+**Tests:** `Smoke_laid_since_the_rebuild_reaches_the_lines_at_the_next_fresh_step` (two steps after a rebuild, the index
+is every puff summed, the old as they were at the rebuild and the young as they are at the step; the young alone put τ
+0.29 on a line). `EvasionTests` runs in clear air (decision 12): with the newest smoke on the lines the battleship lost
+the light cruiser in her own smoke and stopped firing, so she had nothing to zigzag from.
 
 **Next in the pass** (the user's to order): the funnels' output and the young plume (how much smoke there is, Z3's list);
-the index's lag above; the smoke contacts' estimates (Z6).
+the smoke contacts' estimates (Z6).
 
 ## What stays out
 
