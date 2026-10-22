@@ -167,13 +167,18 @@ public sealed unsafe partial class MapScene : IScene
 
     public void BuildUi()
     {
+        long allocated = GC.GetAllocatedBytesForCurrentThread();
         NewWorld();
         DesignerTheme.Push();
+        U8.Frame();
         var probes = world.Perf.Ui;
         long t = Probes.Now;
         var s = world.Current;
+        feed.Read(s, world.Generation);
+        CardRequests(s);
         TopBar(s);
         ShipsUi();
+        Card(s);
         Strip(s);
         probes.Add(probeUiShips, t);
         t = Probes.Now;
@@ -192,6 +197,8 @@ public sealed unsafe partial class MapScene : IScene
         Briefing();
         probes.Add(probeUiRest, t);
         DesignerTheme.Pop();
+        world.Perf.UiBytes += GC.GetAllocatedBytesForCurrentThread() - allocated;
+        world.Perf.UiFrames++;
     }
 
     public bool ProcessEvent(SDL_Event* e, uint w, uint h)
@@ -258,6 +265,10 @@ public sealed unsafe partial class MapScene : IScene
             return Escape();
         if (key == SDLK_F1)
             devOpen = !devOpen;
+        else if (key == SDLK_V)
+            cardOpen = !cardOpen;
+        else if (key == SDLK_P)
+            TogglePin(selected);
         else if (key == SDLK_TAB)
             NextShip((SDL_GetModState() & SDL_Keymod.SDL_KMOD_SHIFT) != 0);
         else if (key == SDLK_SPACE)
@@ -273,7 +284,7 @@ public sealed unsafe partial class MapScene : IScene
     static void ScaleBar(double metresPerUiPx)
     {
         double want = 120 * UiFonts.Scale * metresPerUiPx, pow = Math.Pow(10, Math.Floor(Math.Log10(want))), nice = pow;
-        foreach (double k in (ReadOnlySpan<double>)[1, 2, 5])
+        foreach (double k in NiceSteps)
             if (k * pow <= want)
                 nice = k * pow;
         float w = (float)(nice / metresPerUiPx), hgt = 6 * UiFonts.Scale;
@@ -285,8 +296,14 @@ public sealed unsafe partial class MapScene : IScene
         dl.AddLine(p + new Vector2(w, 0), p + new Vector2(w, hgt), c, 1.5f);
         ImGui.Dummy(new Vector2(w, ImGui.GetTextLineHeight()));
         ImGui.SameLine();
-        ImGui.Text(Distance(nice));
+        if (nice != scaleNice)
+            (scaleNice, scaleText) = (nice, Distance(nice));
+        ImGui.TextUnformatted(scaleText);
     }
+
+    static readonly double[] NiceSteps = [1, 2, 5];
+    static double scaleNice = -1;
+    static string scaleText = "";
 
     /// <summary>The grid's values at the screen's edge in the world view, beside <see cref="Graticule.BorderTicks"/>'
     /// marks, faded in with it; a label that would overlap the last one on its edge is left out.</summary>

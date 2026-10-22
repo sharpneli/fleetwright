@@ -374,6 +374,8 @@ public sealed unsafe partial class MapScene
         int hit = PickShip(view, x, y);
         Pick(hit);
         DoubleClick(hit);
+        if (hit >= 0)
+            cardOpen = true;   // a click opens her card (docs/map-ui/battle-hud.md decision 1)
     }
 
     /// <summary>Whether a press on the sea places ships: the dev panel armed and its class built.</summary>

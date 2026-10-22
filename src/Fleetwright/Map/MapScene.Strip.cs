@@ -52,7 +52,7 @@ public sealed partial class MapScene
         var cls = world.Classes.TryGet(s.Ships.Class[k]);
         var vp = ImGui.GetMainViewport();
         float sc = UiFonts.Scale, pad = 8 * sc;
-        ImGui.SetNextWindowPos(new Vector2(vp.Pos.X + vp.Size.X / 2, vp.Pos.Y + vp.Size.Y - pad - ImGui.GetTextLineHeight() - 4 * sc), ImGuiCond.Always, new Vector2(0.5f, 1));
+        ImGui.SetNextWindowPos(new Vector2(StripCentre(vp), vp.Pos.Y + vp.Size.Y - pad - ImGui.GetTextLineHeight() - 4 * sc), ImGuiCond.Always, new Vector2(0.5f, 1));
         ImGui.SetNextWindowBgAlpha(0.9f);
         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(10, 7) * sc);
         ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(7, 3) * sc);
@@ -107,11 +107,14 @@ public sealed partial class MapScene
             _ => "Right-click: steer · on an enemy: engage · on your ship: follow · Shift: waypoint · Alt: this ship only · Tab: the next ship",
         };
         var size = ImGui.CalcTextSize(hint);
-        var at = new Vector2(vp.Pos.X + (vp.Size.X - size.X) / 2, vp.Pos.Y + vp.Size.Y - 6 * UiFonts.Scale - size.Y);
+        var at = new Vector2(StripCentre(vp) - size.X / 2, vp.Pos.Y + vp.Size.Y - 6 * UiFonts.Scale - size.Y);
         var dl = ImGui.GetBackgroundDrawList();
         dl.AddText(at + Vector2.One, 0xC0000000, hint);
         dl.AddText(at, ImGui.GetColorU32(armedPick != ClickPick.None ? DesignerTheme.Amber : DesignerTheme.Muted), hint);
     }
+
+    /// <summary>The strip's centre: the screen's, or what's left of the dock's when a card is open.</summary>
+    float StripCentre(ImGuiViewportPtr vp) => (vp.Pos.X + Math.Min(dockLeft, vp.Pos.X + vp.Size.X)) / 2;
 
     void StripTexts(Snapshot s, int k, int kc, ShipClass? cls)
     {
@@ -207,8 +210,10 @@ public sealed partial class MapScene
         for (int i = 0; i <= chain.Count; i++)
         {
             string name = i == 0 ? "This ship" : gv.Name[chain[i - 1]];
-            if (Seg(name + "##level" + i, level == i, first: i == 0))
+            ImGui.PushID(i);
+            if (Seg(name, level == i, first: i == 0))
                 levelPick = i;
+            ImGui.PopID();
             if (ImGui.IsItemHovered())
                 ImGui.SetTooltip(i == 0 ? "orders to her alone (alt does it for one order)" : level > i ? "" : "orders to the unit: its admiral hands them down");
         }
@@ -216,21 +221,11 @@ public sealed partial class MapScene
         if (v.Reason[k] != 0)
             ImGui.TextColored(DesignerTheme.Amber, ReasonText(v.Reason[k]));
         else if (gv.IndexOfShip(selected) is int g and >= 0 && DetachmentOf(gv, g, selected) is var d && d != Detachment.InLine)
-            ImGui.TextColored(DesignerTheme.Amber, $"{HeldText(d)}{(v.Asked[k] ? "; her orders changed" : "")}");
+            U8.Text(U8.W($"{HeldText(d)}{(v.Asked[k] ? "; her orders changed" : "")}"), DesignerTheme.Amber);
         else if (v.LandSide[k] != 0)
-            ImGui.TextColored(SlideColor, $"following the coast, land to {(v.LandSide[k] > 0 ? "port" : "starboard")}");
+            U8.Text(v.LandSide[k] > 0 ? "following the coast, land to port"u8 : "following the coast, land to starboard"u8, SlideColor);
         else if (v.Tier[k] != ClockTier.Fine)
             ImGui.TextDisabled(v.Tier[k] == ClockTier.Rails ? "on rails" : "coarse tier");
-        if (s.Conditions.IndexOf(selected) >= 0 && cls != null)
-        {
-            if (Seg("Condition…##cond", first: v.Reason[k] == 0 && v.LandSide[k] == 0))
-                ImGui.OpenPopup("##condition");
-            if (ImGui.BeginPopup("##condition"))
-            {
-                DamageRow(s, k, cls);
-                ImGui.EndPopup();
-            }
-        }
         ImGui.EndGroup();
     }
 
@@ -262,7 +257,7 @@ public sealed partial class MapScene
                 if (ImGui.IsItemHovered())
                     ImGui.SetTooltip("the course ordered: type one and press Enter");
             }
-            if (Seg(d < 0 ? $"−{-d}°##c{d}" : $"+{d}°##c{d}", first: d == CourseSteps[0]))
+            if (Seg(CourseLabels[Array.IndexOf(CourseSteps, d)], first: d == CourseSteps[0]))
                 world.Send(o.Course(unit, ((ordered + d) % 360 + 360) % 360, hardOver ? 90 : 0));
         }
         ImGui.SameLine(0, 6 * UiFonts.Scale);
@@ -292,6 +287,12 @@ public sealed partial class MapScene
     }
 
     bool courseTyping;
+
+    /// <summary>The course buttons' labels, by <see cref="CourseSteps"/>.</summary>
+    static readonly string[] CourseLabels = [.. CourseSteps.Select(d => d < 0 ? $"−{-d}°##c{d}" : $"+{d}°##c{d}")];
+
+    /// <summary>The formation button's labels, by formation.</summary>
+    static readonly string[] FormationLabels = [.. GroupFormationNames.Select(n => $"{n}…##form")];
 
     /// <summary>The telegraph's bells: a share of full speed, or flank (her overload).</summary>
     static readonly (string Label, double Of, bool Flank)[] Bells =
@@ -339,10 +340,10 @@ public sealed partial class MapScene
                     int i = 0;
                     while (i < v.Count && (v.Shooter[i] != selected || v.Battery[i] != b))
                         i++;
-                    string gun = $"{row.Label} {(row.Kind == Battery.Main ? "main" : "secondary")}";
-                    ImGui.TextUnformatted(i == v.Count ? $"{gun}: no target"
-                        : $"{gun} on {TargetLabel(s, v.Target[i])}: {StateText(v.State[i], v.Phase[i])}, " +
-                          $"{(v.Local[i] ? "local control" : $"level {v.Level[i]} ({FireControlPresets.Name(v.Level[i])})")}; {v.Salvos[i]} salvos, {v.Hits[i]} hits of {v.Shells[i]}");
+                    string kind = row.Kind == Battery.Main ? "main" : "secondary";
+                    string label = BatteryLabel(cls, b);
+                    U8.Text(i == v.Count ? U8.W($"{label} {kind}: no target")
+                        : U8.W($"{label} {kind} on {LabelOf(s, v.Target[i])}: {StateText(v.State[i], v.Phase[i])}, {(v.Local[i] ? "local control" : FireControlPresets.Name(v.Level[i]))}; {v.Salvos[i]} salvos, {v.Hits[i]} hits of {v.Shells[i]}"));
                 }
                 ImGui.EndTooltip();
             }
@@ -418,7 +419,7 @@ public sealed partial class MapScene
         // the unit: its formation, withdraw, its AI; the squadron's business
         if (g >= 0)
         {
-            if (Seg($"{GroupFormationNames[(int)gv.Formation[g]]}…##form", first: true))
+            if (Seg(FormationLabels[(int)gv.Formation[g]], first: true))
                 ImGui.OpenPopup("##formation");
             if (ImGui.BeginPopup("##formation"))
             {

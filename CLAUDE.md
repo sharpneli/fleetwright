@@ -67,7 +67,8 @@ selects (twice: her squadron takes the orders; Tab steps through your ships), th
 (`MapScene.Strip.cs`, docs/map-ui/battle-hud.md U2) gives the orders: who to (the ship or a unit above her), helm and
 telegraph, guns, torpedoes and smoke, the task (fight, follow…, run from…, hold, search…; the formation and the
 squadron's business in popups); the cursor names what a right-click does: on an enemy engage, on one of yours follow,
-on the sea steer for it (shift: add a waypoint); the dev panel (F1, or `-dev` open at start: the scenario picker, the sides, truth and the spawner) spawns where you click, one ship or a group already on its
+on the sea steer for it (shift: add a waypoint); the click opens her card at the right (`MapScene.Card.cs`, U3b: her
+condition drawn from her class, guns, fire control, damage control, hits taken; V shuts it, P pins it as a tab); the dev panel (F1, or `-dev` open at start: the scenario picker, the sides, truth and the spawner) spawns where you click, one ship or a group already on its
 stations (count, formation, spacing, heading, speed, side), the designer's design as it is now ("From designer", the
 default: an edit spawned is a new class, ships already out keep theirs) or a shipped one; pressed and dragged, they head
 the way of the drag (a ghost shows them until the release), and a spawn looks round at once (`ShipSystem.LookNow`). `ShipBatchRenderer` draws them inside the

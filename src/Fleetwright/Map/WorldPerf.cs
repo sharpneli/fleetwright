@@ -16,6 +16,10 @@ public sealed class WorldPerf
     /// <summary>The map's probes, on the UI thread: the scene times its parts here.</summary>
     public Probes Ui { get; } = new();
 
+    /// <summary>The bytes the map's UI allocated (its BuildUi, on the main thread) and the frames it built: the HUD makes
+    /// no garbage a frame (docs/map-ui/battle-hud.md), and the report says whether it holds.</summary>
+    public long UiBytes, UiFrames;
+
     // the last second's figures, shown
     public readonly double[] SimShare = new double[Probes.Capacity], SimMaxMs = new double[Probes.Capacity];
     public readonly double[] UiMsPerFrame = new double[Probes.Capacity], UiMaxMs = new double[Probes.Capacity];
@@ -232,6 +236,8 @@ public sealed class WorldPerf
             if (share >= 0.0001 || runSimMax[i] > 0)
                 sb.AppendLine($"    {s.Probes.Names[i],-26} {share * 100,6:F2}%  ({Probes.Ms(runSimMax[i]):F2} ms)");
         }
+        if (UiFrames > 0)
+            sb.AppendLine($"  map UI: {UiBytes / (double)UiFrames:F0} bytes allocated a frame over {UiFrames} frames");
         sb.AppendLine("  map, ms a frame (longest):");
         for (int i = 0; i < Ui.Count; i++)
             sb.AppendLine($"    {Ui.Names[i],-26} {Probes.Ms(Ui.Ticks[i] - runUi0[i]) / run.Count,6:F3}  ({Probes.Ms(runUiMax[i]):F2})");
