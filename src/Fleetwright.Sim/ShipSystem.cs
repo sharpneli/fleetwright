@@ -517,11 +517,21 @@ public sealed partial class ShipSystem : IWorldSystem
         for (int p = 0; p < parts; p++)
         {
             var flags = k.Flags[p];
-            if (!orders && (flags & PartFlags.Burning) != 0 && !PartShows(c, k, p))
-                flags &= ~PartFlags.Burning;
-            if (k.State[p] != PartState.Ok || flags != PartFlags.None)
+            var state = k.State[p];
+            if (!orders)
             {
-                (v.Parts[v.PartTotal], v.PartStates[v.PartTotal], v.PartFlags[v.PartTotal]) = (p, k.State[p], flags);
+                // an enemy as her watchers see her (docs/map-ui/battle-hud.md U4): her outside wrecked, a fire that
+                // shows; nothing inside her, no jam or outage
+                if (!Outside(c.Components[p].Kind))
+                    continue;
+                state = state == PartState.Destroyed ? PartState.Destroyed : PartState.Ok;
+                flags &= PartFlags.Burning;
+                if ((flags & PartFlags.Burning) != 0 && !PartShows(c, k, p))
+                    flags = PartFlags.None;
+            }
+            if (state != PartState.Ok || flags != PartFlags.None)
+            {
+                (v.Parts[v.PartTotal], v.PartStates[v.PartTotal], v.PartFlags[v.PartTotal]) = (p, state, flags);
                 v.PartTotal++;
                 v.PartCount[n]++;
             }
@@ -554,6 +564,12 @@ public sealed partial class ShipSystem : IWorldSystem
             (v.ShowWaterLpm[j], v.ShowBoil[j], v.ShowAt[j], v.ShowWidthM[j]) = ((float)k.FireFlow[f].Lpm, (float)k.FireFlow[f].BoilShare, at, (float)width);
         }
     }
+
+    /// <summary>Whether a part stands outside, where an enemy's lookouts could see it wrecked: mounts, upper works,
+    /// funnels, masts, the conning tower.</summary>
+    static bool Outside(Shipgen.ComponentKind kind) => kind is Shipgen.ComponentKind.Main or Shipgen.ComponentKind.Secondary or Shipgen.ComponentKind.Aa
+        or Shipgen.ComponentKind.Torpedo or Shipgen.ComponentKind.TorpedoTube or Shipgen.ComponentKind.Superstructure or Shipgen.ComponentKind.ConningTower
+        or Shipgen.ComponentKind.Funnel or Shipgen.ComponentKind.Mast or Shipgen.ComponentKind.Sponson or Shipgen.ComponentKind.Top or Shipgen.ComponentKind.FlightDeck;
 
     /// <summary>Whether a part's fire shows from outside (its fire space's, B2).</summary>
     static bool PartShows(ShipClass c, ShipCondition k, int component)

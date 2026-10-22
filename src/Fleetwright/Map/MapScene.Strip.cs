@@ -47,6 +47,8 @@ public sealed partial class MapScene
         if (k < 0)
         {
             armedPick = ClickPick.None;
+            if (selected >= 0)
+                EnemyStrip(s, selected);
             return;
         }
         var cls = world.Classes.TryGet(s.Ships.Class[k]);

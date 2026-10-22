@@ -89,24 +89,50 @@ public sealed partial class MapScene
     }
 
     /// <summary>What a contact is taken for, as its label says it.</summary>
-    string ContactText(ContactsView c, int i, long now)
+    // the contacts' identities as the player holds them, made when one changes
+    readonly Dictionary<(int, ContactLevel, int, ShipType), string> identities = [];
+
+    /// <summary>A contact's identity as the player holds it (docs/map-ui/battle-hud.md U4): her name once identified,
+    /// her class with a doubt once made out, her type, a ship, smoke.</summary>
+    string Identity(ContactsView c, int i)
     {
-        string what = c.Level[i] switch
+        var key = (c.Entity[i], c.Level[i], c.TakenFor[i], c.Type[i]);
+        if (identities.TryGetValue(key, out var text))
+            return text;
+        if (identities.Count > 2048)
+            identities.Clear();
+        return identities[key] = c.Level[i] switch
         {
             ContactLevel.Name => world.NameOf(c.Entity[i]) ?? ClassName(c.TakenFor[i]),
             ContactLevel.Class => ClassName(c.TakenFor[i]) + " class?",
-            ContactLevel.Type => c.Type[i] switch
-            {
-                ShipType.Capital => "heavy ship",
-                ShipType.Cruiser => "cruiser",
-                ShipType.Destroyer => "destroyer",
-                ShipType.Small => "small craft",
-                ShipType.Merchant => "merchant",
-                _ => "ship",
-            },
+            ContactLevel.Type => TypeWord(c.Type[i]),
             ContactLevel.Ship => "ship",
             _ => "smoke",
         };
+    }
+
+    static string TypeWord(ShipType t) => t switch
+    {
+        ShipType.Capital => "heavy ship",
+        ShipType.Cruiser => "cruiser",
+        ShipType.Destroyer => "destroyer",
+        ShipType.Small => "small craft",
+        ShipType.Merchant => "merchant",
+        _ => "ship",
+    };
+
+    /// <summary>The row of a contact (an entity) in the player's picture, or -1.</summary>
+    static int ContactIndex(ContactsView c, int entity)
+    {
+        for (int i = 0; i < c.Count; i++)
+            if (c.Entity[i] == entity)
+                return i;
+        return -1;
+    }
+
+    string ContactText(ContactsView c, int i, long now)
+    {
+        string what = Identity(c, i);
         what += SeenText(c.Seen[i]);
         if (c.SmokeInSight[i] && c.Level[i] > ContactLevel.Smoke)
             what += " · her smoke";

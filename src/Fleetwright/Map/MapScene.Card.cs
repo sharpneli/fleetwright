@@ -62,17 +62,19 @@ public sealed partial class MapScene
     {
         var vp = ImGui.GetMainViewport();
         dockLeft = vp.Pos.X + vp.Size.X;
-        int live = selected >= 0 && s.Ships.IndexOf(selected) >= 0 ? selected : pinned.Count > 0 ? pinned[0] : -1;
+        bool enemy = selected >= 0 && s.Ships.IndexOf(selected) < 0 && ContactIndex(s.Contacts, selected) >= 0;
+        int live = selected >= 0 && (s.Ships.IndexOf(selected) >= 0 || enemy) ? selected : pinned.Count > 0 ? pinned[0] : -1;
         if (live < 0 || !cardOpen && !pinned.Contains(live))
             return;
         if (!cardOpen && selected == live)
-            live = pinned.Count > 0 ? pinned[0] : -1;
+            (live, enemy) = (pinned.Count > 0 ? pinned[0] : -1, false);
         if (live < 0)
             return;
         int k = s.Ships.IndexOf(live);
-        var cls = world.Classes.TryGet(s.Ships.Class[k]);
-        if (cls == null)
+        var cls = k >= 0 ? world.Classes.TryGet(s.Ships.Class[k]) : null;
+        if (cls == null && !enemy)
             return;
+        int unit = squadronCardOf == live && s.Groups.IndexOfShip(live) is int g0 and >= 0 ? UnitOfCard(s, live) : -1;
         float sc = UiFonts.Scale, pad = 8 * sc, w = 440 * sc;
         float top = HudTop, bottom = vp.Pos.Y + vp.Size.Y - pad - 30 * sc;
         dockLeft = vp.Pos.X + vp.Size.X - pad - w;
@@ -89,7 +91,14 @@ public sealed partial class MapScene
             Tabs(s, live);
             ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(12, 6) * sc);
             if (ImGui.BeginChild("##cardbody", Vector2.Zero, ImGuiChildFlags.AlwaysUseWindowPadding))
-                OwnCard(s, live, k, cls);
+            {
+                if (enemy)
+                    EnemyCard(s, live);
+                else if (unit >= 0)
+                    SquadronCard(s, unit);
+                else
+                    OwnCard(s, live, k, cls!);
+            }
             ImGui.EndChild();
             ImGui.PopStyleVar();
         }
@@ -108,7 +117,7 @@ public sealed partial class MapScene
             bool pin = pinned.Contains(e);
             ImGui.PushStyleColor(ImGuiCol.Button, on ? DesignerTheme.Panel2 : new Vector4(1, 1, 1, 0.03f));
             ImGui.PushStyleColor(ImGuiCol.Text, on ? DesignerTheme.Bright : pin ? DesignerTheme.Brass : DesignerTheme.Muted);
-            if (ImGui.Button(ShipName(s, e)) && e != selected)
+            if (ImGui.Button(TabName(s, e)) && e != selected)
             {
                 selected = e;
                 picked.Clear();
@@ -147,6 +156,17 @@ public sealed partial class MapScene
         float y = p0.Y + ImGui.GetCursorPosY() + 2 * sc;
         ImGui.GetWindowDrawList().AddLine(new Vector2(p0.X, y), new Vector2(p0.X + ImGui.GetWindowWidth(), y), ImGui.GetColorU32(DesignerTheme.Line));
         ImGui.Dummy(new Vector2(1, 4 * sc));
+    }
+
+    /// <summary>A tab's name: her name, an enemy's identity as held.</summary>
+    string TabName(Snapshot s, int e) => s.Ships.IndexOf(e) < 0 && ContactIndex(s.Contacts, e) is int i and >= 0 ? Identity(s.Contacts, i) : ShipName(s, e);
+
+    /// <summary>The unit whose card shows for a ship chosen by her unit's head: the one at the level her orders go to.</summary>
+    int UnitOfCard(Snapshot s, int ship)
+    {
+        Chain(s);
+        int level = Level(s);
+        return level > 0 && level <= chain.Count ? chain[level - 1] : s.Groups.IndexOfShip(ship);
     }
 
     // the ships' names as the cards show them, made once a ship

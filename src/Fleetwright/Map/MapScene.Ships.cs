@@ -372,8 +372,17 @@ public sealed unsafe partial class MapScene
         if (Armed && view.Pick(x, y, out var at) && world.Shore.IsLand(at) || ArmedClick(x, y))
             return;
         int hit = PickShip(view, x, y);
+        if (hit < 0)
+        {
+            // an enemy: her ship in sight, else her contact's marker (her card, as the player holds her)
+            var s = world.Current;
+            hit = PickShip(view, x, y, s.Sighted);
+            if (hit < 0)
+                hit = PickContact(view, s, x, y);
+        }
         Pick(hit);
         DoubleClick(hit);
+        squadronCardOf = -1;
         if (hit >= 0)
             cardOpen = true;   // a click opens her card (docs/map-ui/battle-hud.md decision 1)
     }

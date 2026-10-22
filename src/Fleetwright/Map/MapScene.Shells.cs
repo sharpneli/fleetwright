@@ -493,12 +493,9 @@ public sealed partial class MapScene
     string TargetLabel(Snapshot s, int entity)
     {
         if (s.Ships.IndexOf(entity) >= 0)
-            return ShipLabel(s, entity);
-        var c = s.Contacts;
-        for (int i = 0; i < c.Count; i++)
-            if (c.Entity[i] == entity)
-                return c.TakenFor[i] >= 0 && world.Classes.TryGet(c.TakenFor[i]) is { } taken ? $"#{entity} {taken.Name}?" : $"#{entity} contact";
-        return $"#{entity}";
+            return world.NameOf(entity) ?? ShipLabel(s, entity);
+        int i = ContactIndex(s.Contacts, entity);
+        return i >= 0 ? Identity(s.Contacts, i) : $"#{entity}";
     }
 
     /// <summary>Whether a battery the screen shows is silent for the coarse tier (the clock panel says why).</summary>

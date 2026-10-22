@@ -177,6 +177,7 @@ public sealed unsafe partial class MapScene : IScene
         feed.Read(s, world.Generation);
         CardRequests(s);
         TopBar(s);
+        Rail(s);
         ShipsUi();
         Card(s);
         Strip(s);

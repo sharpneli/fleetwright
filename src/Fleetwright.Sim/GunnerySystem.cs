@@ -1541,6 +1541,33 @@ public sealed class GunnerySystem : IWorldSystem
             n++;
         }
         v.Count = n;
-        log.Fill(snap.CombatLog, CombatLogShown);
+        FillLog(snap);
+    }
+
+    /// <summary>What of a hit on a ship not shown her enemy's watchers see: her fire, her magazine, her back broken.</summary>
+    const HitEffect SeenEffects = HitEffect.Fire | HitEffect.Magazine | HitEffect.Broken;
+
+    /// <summary>The log's newest lines the player may know (<see cref="CombatLogView"/>), at most
+    /// <see cref="CombatLogShown"/>, from at most four times as many of the newest.</summary>
+    void FillLog(Snapshot snap)
+    {
+        var view = snap.CombatLog;
+        view.EnsureCapacity(CombatLogShown);
+        var store = ships.Store;
+        bool Shown(int entity) => store.SlotOf(entity) is int slot and >= 0 && snap.ShownSides[store[slot].Side];
+        int n = 0, scan = Math.Min(log.Count, CombatLogShown * 4);
+        for (int i = 0; i < scan && n < CombatLogShown; i++)
+        {
+            ref readonly var e = ref log.Newest(i);
+            bool shooter = e.Shooter > 0 && Shown(e.Shooter), target = e.Target > 0 && Shown(e.Target);
+            if (!shooter && !target)
+                continue;
+            view.Entries[n] = target || e.Kind is not (CombatEvent.Hit or CombatEvent.NearMiss)
+                ? e : e with { Part = -1, Outcome = default, Effect = e.Effect & SeenEffects };
+            view.Seq[n] = log.Written - 1 - i;
+            n++;
+        }
+        view.Count = n;
+        view.Written = log.Written;
     }
 }

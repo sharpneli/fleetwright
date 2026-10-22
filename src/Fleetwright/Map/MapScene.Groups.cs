@@ -411,7 +411,12 @@ public sealed unsafe partial class MapScene
     }
 
     /// <summary>A task and how it stands, for a label (docs/battle/command.md 5.1c): "intercept", "go to: there".</summary>
-    static string TaskText(byte task, byte status)
+    static string TaskText(byte task, byte status) =>
+        taskTexts.TryGetValue((task, status), out var t) ? t : taskTexts[(task, status)] = MakeTaskText(task, status);
+
+    static readonly Dictionary<(byte, byte), string> taskTexts = [];
+
+    static string MakeTaskText(byte task, byte status)
     {
         string what = ((Sim.Ai.Tasks.TaskKind)task).ToString().ToLowerInvariant();
         return (Sim.Ai.Tasks.TaskState)status switch

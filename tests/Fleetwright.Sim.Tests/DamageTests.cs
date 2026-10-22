@@ -371,6 +371,52 @@ public class DamageTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void The_player_sees_only_the_outside_of_an_enemy_and_no_fight_between_others()
+    {
+        var w = World("dreadnought", out int c);
+        var cls = Class("dreadnought");
+        var p = Earth.Position(56, 4);
+        var f = Earth.Forward(p, 90);
+        Earth.Advance(ref p, ref f, 9000);
+        var (tl, to) = Earth.LatLon(p);
+        w.Apply(ShipSystem.Spawn(c, 56, 4, 0, 15, side: 0));
+        w.Apply(ShipSystem.Spawn(c, tl, to, 0, 15, side: 1));
+        w.Apply(ShipSystem.Spawn(c, tl + 0.08, to, 0, 15, side: 2));
+        w.Apply(Command.SetPlayerSide(0));
+        int funnel = -1, shaft = -1;
+        for (int i = 0; i < cls.Components.Length; i++)
+            if (cls.Components[i].Kind == ComponentKind.Funnel && funnel < 0)
+                funnel = i;
+            else if (cls.Components[i].Kind == ComponentKind.Shaft && shaft < 0)
+                shaft = i;
+        w.Apply(DamageSystem.Wreck(2, funnel, PartState.Destroyed));
+        w.Apply(DamageSystem.Wreck(2, shaft, PartState.Destroyed));
+        w.Apply(GunnerySystem.Engage(2, 0, 3));   // two sides the player isn't, at each other
+        w.AdvanceTo(w.Time + 3 * 60_000);
+
+        var snap = new Snapshot();
+        w.Fill(snap);
+        int k = snap.Sighted.IndexOf(2);
+        Assert.True(k >= 0, "the enemy is in sight");
+        bool sawFunnel = false;
+        for (int i = 0; i < snap.Sighted.PartCount[k]; i++)
+        {
+            int part = snap.Sighted.Parts[snap.Sighted.PartStart[k] + i];
+            Assert.NotEqual(shaft, part);   // inside her: not seen
+            sawFunnel |= part == funnel && snap.Sighted.PartStates[snap.Sighted.PartStart[k] + i] == PartState.Destroyed;
+        }
+        Assert.True(sawFunnel, "her wrecked funnel shows");
+        for (int i = 0; i < snap.CombatLog.Count; i++)
+            Assert.False(snap.CombatLog.Entries[i].Shooter == 2, "a fight between others isn't the player's to read");
+
+        w.Fill(snap, truth: true);
+        bool any = false;
+        for (int i = 0; i < snap.CombatLog.Count; i++)
+            any |= snap.CombatLog.Entries[i].Shooter == 2 && snap.CombatLog.Seq[i] < snap.CombatLog.Written;
+        Assert.True(any, "with the truth, it's all there");
+    }
+
+    [Fact]
     public void Boilers_lost_slow_the_ship_at_any_clock_speed()
     {
         var cls = Class("dreadnought");

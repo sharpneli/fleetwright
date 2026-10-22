@@ -344,17 +344,25 @@ public sealed class BatteriesView
     }
 }
 
-/// <summary>The combat log's newest lines (<see cref="Sim.CombatLog"/>), newest first, and how many were ever written.</summary>
+/// <summary>The combat log's newest lines the player may know (<see cref="Sim.CombatLog"/>; docs/map-ui/battle-hud.md
+/// U4), newest first, each with its place in the whole log (<see cref="Seq"/>: 0 the first line ever written), and how
+/// many were ever written. A line between ships of sides not shown is left out; one about a shown side's fire on a ship
+/// not shown keeps only what her fire's watchers could see of it (no part, no outcome; a fire, her magazine, broken in
+/// two).</summary>
 public sealed class CombatLogView
 {
     public int Count;
     public long Written;
     public CombatEntry[] Entries = [];
+    public long[] Seq = [];
 
     public void EnsureCapacity(int n)
     {
         if (n > Entries.Length)
+        {
             Array.Resize(ref Entries, Math.Max(n, 16));
+            Array.Resize(ref Seq, Entries.Length);
+        }
     }
 }
 
