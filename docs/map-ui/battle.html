@@ -1,0 +1,1070 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Fleetwright battle HUD</title>
+<style>
+@font-face{font-family:'Plex Cond';font-weight:400;src:url('../designer-ui/assets/fonts/ibm-plex-sans-condensed-latin-400-normal.woff2') format('woff2')}
+@font-face{font-family:'Plex Cond';font-weight:500;src:url('../designer-ui/assets/fonts/ibm-plex-sans-condensed-latin-500-normal.woff2') format('woff2')}
+@font-face{font-family:'Plex Cond';font-weight:600;src:url('../designer-ui/assets/fonts/ibm-plex-sans-condensed-latin-600-normal.woff2') format('woff2')}
+@font-face{font-family:'Plex Mono';font-weight:400;src:url('../designer-ui/assets/fonts/ibm-plex-mono-latin-400-normal.woff2') format('woff2')}
+@font-face{font-family:'Plex Mono';font-weight:500;src:url('../designer-ui/assets/fonts/ibm-plex-mono-latin-500-normal.woff2') format('woff2')}
+:root{
+  color-scheme:dark;
+  --glass:rgba(13,18,22,.88);--glass2:rgba(20,27,32,.94);--edge:rgba(150,172,188,.17);--line:rgba(150,172,188,.11);
+  --text:#C9D3DB;--bright:#EEF3F6;--muted:#7F8B95;--brass:#D9B868;--brassd:#5A4A24;--brassbg:#3a3014;
+  --ok:#86C77E;--amber:#E3A452;--bad:#E06A5A;--fr:#5B9BE0;--ho:#E2685C;--un:#E5C454;--water:#6FA7DC;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#050708;overflow:hidden}
+body{color:var(--text);font-family:'Plex Cond',sans-serif;font-size:12.5px;user-select:none}
+button{font-family:inherit;cursor:pointer;color:inherit}
+.mono{font-family:'Plex Mono',monospace}
+.dim{color:var(--muted)}.gold{color:var(--brass)}.amb{color:var(--amber)}.okc{color:var(--ok)}.bad{color:var(--bad)}.fr{color:var(--fr)}.ho{color:var(--ho)}.wat{color:var(--water)}
+#app{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0;overflow:hidden;background:#22364a}
+canvas#map{position:absolute;left:0;top:0}
+.glass{background:var(--glass);border:1px solid var(--edge);border-radius:3px;box-shadow:0 6px 24px rgba(0,0,0,.35)}
+.hud{position:absolute;z-index:10}
+.kbd{font-family:'Plex Mono';font-size:9.5px;border:1px solid #4A5764;border-radius:2px;padding:0 3px;color:var(--muted)}
+.chip{display:inline-flex;align-items:center;height:16px;padding:0 5px;font-size:10px;letter-spacing:.05em;border-radius:2px;text-transform:uppercase;font-weight:600;white-space:nowrap}
+.chip.act{background:#3a2a12;color:var(--amber)}.chip.ai{background:#16283a;color:var(--fr)}.chip.you{background:var(--brassbg);color:var(--brass)}
+.chip.bad{background:#3a1a17;color:var(--bad)}.chip.out{background:#2a2f34;color:var(--muted)}
+/* ---------- top bar ---------- */
+#top{position:absolute;left:0;top:0;width:1920px;height:34px;z-index:20;display:flex;align-items:center;gap:16px;padding:0 12px;background:#0b0f12;border-bottom:1px solid var(--line)}
+.ens{width:26px;height:16px;background:#E9ECEF;position:relative;box-shadow:0 0 0 1px #000}
+.ens::before{content:'';position:absolute;left:0;top:0;width:12px;height:8px;background:#2F4E8A}
+.ens::after{content:'';position:absolute;left:16px;top:0;width:3px;height:16px;background:#C9473C;box-shadow:-7px 6.5px 0 -0px transparent}
+.ens i{position:absolute;left:12px;right:0;top:6.5px;height:3px;background:#C9473C}
+.side{display:flex;align-items:center;gap:8px}
+.side b{font-size:13px;letter-spacing:.1em;color:var(--bright)}
+.side span{color:var(--muted)}
+.clk{display:flex;align-items:baseline;gap:7px;white-space:nowrap}
+.clk span{font-size:11.5px;color:var(--muted)}
+.clk b{font-family:'Plex Mono';font-size:14.5px;color:var(--bright);font-weight:500}
+#speeds{display:flex;gap:1px;align-items:center}
+#speeds button{height:21px;min-width:27px;padding:0 4px;border:none;border-radius:2px;background:rgba(255,255,255,.04);color:var(--muted);font-family:'Plex Mono';font-size:10.5px}
+#speeds button:hover{color:var(--text)}
+#speeds button.on{background:var(--brassbg);color:var(--brass)}
+#speeds .gap{width:7px}
+#speeds button.coarse{color:#5e6a73}
+#pause{min-width:30px!important}
+#pause.p{background:#5a2a14!important;color:var(--amber)!important}
+#rate{font-size:11px;color:var(--muted);white-space:nowrap}
+#rate b{color:var(--amber);font-weight:500}
+#tally{margin-left:auto;display:flex;gap:14px;align-items:center;font-size:11.5px;white-space:nowrap}
+#tally .ac{display:flex;align-items:center;gap:6px;color:var(--amber)}
+#tally .ac i{width:7px;height:7px;transform:rotate(45deg);background:var(--amber);animation:pulse 1.6s infinite}
+@keyframes pulse{50%{opacity:.35}}
+#tally .t{color:var(--muted)}#tally .t b{font-family:'Plex Mono';font-weight:400;color:var(--bright)}
+#aims{display:flex;align-items:center;gap:6px;height:24px;padding:0 9px;border:1px solid var(--edge);border-radius:2px;cursor:pointer;margin-left:18px}
+#aims:hover{background:rgba(255,255,255,.05)}
+#aims b{color:var(--brass);font-weight:600}
+#menuBtn{height:24px;width:30px;border:1px solid var(--edge);border-radius:2px;background:none;color:var(--muted);font-size:14px}
+/* ---------- forces rail (left) ---------- */
+#rail{left:14px;top:46px;width:262px;display:flex;flex-direction:column;gap:6px}
+.rh{display:flex;align-items:center;gap:6px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:0 3px}
+.rh b{color:var(--text);font-weight:600}
+.rh .r{margin-left:auto;text-transform:none;letter-spacing:0}
+.grp{padding:0;overflow:hidden}
+.gh{display:flex;align-items:center;gap:7px;padding:6px 8px 5px;cursor:pointer;border-bottom:1px solid var(--line)}
+.gh:hover{background:var(--glass2)}
+.gh.sel{box-shadow:inset 2px 0 0 var(--brass);background:#221e12}
+.gh .nm{line-height:1.15;min-width:0;flex:1}
+.gh .nm b{color:var(--bright);font-weight:600;font-size:12.5px;display:block}
+.gh .nm span{font-size:10.5px;color:var(--muted)}
+.srow{display:grid;grid-template-columns:12px 1fr auto;gap:6px;align-items:center;padding:3px 8px 3px 10px;cursor:pointer;min-height:30px}
+.srow:hover{background:var(--glass2)}
+.srow.sel{box-shadow:inset 2px 0 0 var(--brass);background:#221e12}
+.srow .nm{line-height:1.12;min-width:0}
+.srow .nm b{font-weight:600;color:var(--bright);font-size:12px;white-space:nowrap}
+.srow .nm .s{font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.srow .rr{text-align:right;line-height:1.2;white-space:nowrap}
+.srow .rr .mono{font-size:10.5px}
+.srow.gone{opacity:.5}
+.flot{display:inline-block;width:40px;height:4px;background:#11161A;border-radius:1px;position:relative;vertical-align:middle}
+.flot i{position:absolute;left:0;top:0;bottom:0;border-radius:1px}
+.glyphs{display:inline-flex;gap:3px;align-items:center;margin-left:4px;vertical-align:middle}
+.g-fire{width:7px;height:9px;background:radial-gradient(ellipse at 50% 75%,#ffd27a 0 25%,#E3A452 45%,#c2502c 70%,transparent 72%);display:inline-block}
+.g-flag{font-size:10px;color:var(--brass)}
+.sym{width:10px;height:10px;display:inline-block;border:1.6px solid var(--fr);border-radius:50%}
+.sym.ho{border-color:var(--ho);border-radius:0;transform:rotate(45deg) scale(.85)}
+.sym.sus{border-style:dashed}
+.crow{display:grid;grid-template-columns:12px 1fr auto;gap:6px;align-items:center;padding:3px 8px 3px 10px;cursor:pointer;min-height:28px}
+.crow:hover{background:var(--glass2)}
+.crow.sel{box-shadow:inset 2px 0 0 var(--brass);background:#221e12}
+.crow .nm b{font-weight:600;color:#f0c9c3;font-size:12px}
+.crow .nm .s{font-size:10.5px;color:var(--muted);display:block}
+.crow .rr{font-family:'Plex Mono';font-size:10.5px;color:var(--muted);text-align:right;line-height:1.2}
+/* ---------- notices (top centre) ---------- */
+#notes{left:50%;top:44px;transform:translateX(-50%);display:flex;flex-direction:column;gap:4px;width:470px}
+.nt{padding:6px 10px 7px;border-left:2px solid var(--amber)}
+.nt .h{display:flex;gap:7px;align-items:baseline}
+.nt .h b{color:var(--bright);font-weight:600}
+.nt .h .t{margin-left:auto;font-family:'Plex Mono';font-size:10px;color:var(--muted)}
+.nt p{margin:2px 0 5px;font-size:11.5px;color:#aeb9c1;line-height:1.3}
+.btns{display:flex;gap:4px}
+.btns button{height:21px;padding:0 9px;font-size:11.5px;border:1px solid var(--edge);border-radius:2px;background:rgba(255,255,255,.05)}
+.btns button:hover{background:rgba(255,255,255,.1)}
+.btns button.pri{color:var(--brass);border-color:var(--brassd)}
+.btns .k{font-family:'Plex Mono';font-size:9.5px;color:var(--muted);margin-left:4px}
+/* ---------- ticker (bottom left) ---------- */
+#ticker{left:14px;bottom:14px;width:372px;display:flex;flex-direction:column;gap:2px}
+.tk{display:grid;grid-template-columns:36px 36px 1fr;gap:4px;align-items:baseline;font-size:11.5px;padding:2px 8px;background:rgba(10,14,17,.66);border-radius:2px;transition:opacity 1s;cursor:pointer;text-shadow:0 1px 2px #000}
+.tk:hover{background:rgba(20,27,32,.9)}
+.tk .t,.lg .t{font-family:'Plex Mono';font-size:10px;color:var(--muted)}
+.c{font-family:'Plex Mono';font-size:9.5px;text-transform:uppercase;color:var(--muted)}
+.c.gun{color:#e6b46a}.c.hit{color:var(--bad)}.c.fire{color:var(--amber)}.c.flood{color:var(--water)}.c.cpt{color:var(--fr)}.c.sig{color:var(--un)}.c.seen{color:#c49be0}.c.loss{color:#ff5a4a;font-weight:600}
+.tkbar{font-size:11px;color:var(--muted);padding:2px 3px;cursor:pointer;display:flex;gap:6px;align-items:center}
+.tkbar:hover{color:var(--text)}
+/* ---------- scale (bottom right) ---------- */
+#scale{right:14px;bottom:14px;display:flex;align-items:center;gap:10px;font-family:'Plex Mono';font-size:10px;color:var(--muted);padding:3px 8px;background:rgba(10,14,17,.5);border-radius:2px}
+#scale .bar{width:120px;height:6px;border:1px solid #8c99a3;border-top:none}
+#helpBtn{width:22px;height:22px;border-radius:50%;border:1px solid var(--edge);background:var(--glass2);color:var(--muted);font-size:11px}
+/* ---------- selection strip (bottom centre) ---------- */
+#strip{left:50%;bottom:14px;transform:translateX(-50%);display:none;align-items:stretch}
+#strip.docked{left:400px;transform:none}
+#strip.on{display:flex}
+.sid{display:flex;flex-direction:column;justify-content:center;gap:3px;padding:7px 12px 7px 12px;border-right:1px solid var(--line);min-width:150px}
+.sid b{font-size:15px;color:var(--bright);font-weight:600;line-height:1}
+.sid span{font-size:11px;color:var(--muted)}
+.sid .to{display:flex;gap:1px;margin-top:2px}
+.seg{display:flex;gap:1px}
+.seg button{height:22px;padding:0 7px;font-size:11.5px;border:none;border-radius:2px;background:rgba(255,255,255,.05);color:var(--muted);white-space:nowrap}
+.seg button:hover{color:var(--text);background:rgba(255,255,255,.09)}
+.seg button.on{background:var(--brassbg);color:var(--brass)}
+.seg button.arm{background:#4a3a14;color:#ffd98a;box-shadow:inset 0 0 0 1px var(--brass)}
+.seg button.warn{color:var(--amber)}
+.seg button:disabled{opacity:.35;cursor:default}
+.oc{display:flex;flex-direction:column;gap:4px;padding:6px 10px;border-right:1px solid var(--line);justify-content:center}
+.oc:last-child{border-right:none}
+.oc h5{margin:0;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:500;display:flex;gap:6px}
+.oc h5 .v{color:var(--bright);font-family:'Plex Mono';letter-spacing:0;text-transform:none;font-size:10.5px}
+.oc h5 .v.amb{color:var(--amber)}
+.course{display:flex;align-items:center;gap:1px}
+.course .val{width:52px;height:22px;line-height:22px;text-align:center;font-family:'Plex Mono';font-size:13px;color:var(--bright);background:#11161A;border-radius:2px}
+.hint{position:absolute;left:0;right:0;bottom:-15px;text-align:center;font-size:10.5px;color:#9aa6af;text-shadow:0 1px 2px #000;white-space:nowrap}
+/* ---------- the card dock (right) ---------- */
+#dock{right:14px;top:46px;bottom:14px;width:436px;display:none;flex-direction:column}
+#dock.on{display:flex}
+.tabs{display:flex;gap:2px;padding:0 0 0 2px}
+.tab{height:24px;display:flex;align-items:center;gap:6px;padding:0 9px;font-size:12px;border-radius:3px 3px 0 0;background:rgba(13,18,22,.6);color:var(--muted);cursor:pointer;border:1px solid var(--edge);border-bottom:none;white-space:nowrap}
+.tab.on{background:var(--glass);color:var(--bright)}
+.tab .x{font-size:11px;color:var(--muted);margin-left:2px}
+.tab .pin{font-size:10px;color:var(--brass)}
+.card{flex:1;min-height:0;overflow:auto;border-top-left-radius:0;background:rgba(13,18,22,.96)}
+.card::-webkit-scrollbar{width:6px}.card::-webkit-scrollbar-thumb{background:#2c3640;border-radius:3px}
+.ch{display:flex;gap:10px;align-items:flex-start;padding:9px 12px 8px;border-bottom:1px solid var(--line)}
+.ch .tt{flex:1;min-width:0}
+.ch .tt b{font-size:17px;color:var(--bright);font-weight:600;letter-spacing:.02em}
+.ch .tt .sub{font-size:11.5px;color:var(--muted);margin-top:1px}
+.ch .tt .chs{display:flex;gap:3px;margin-top:4px;flex-wrap:wrap}
+.ch .tools{display:flex;gap:3px}
+.ch .tools button{width:24px;height:22px;border:1px solid var(--edge);border-radius:2px;background:none;color:var(--muted);font-size:11px}
+.ch .tools button.on{color:var(--brass);border-color:var(--brassd)}
+.big{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--line)}
+.big div{padding:6px 10px 7px;border-right:1px solid var(--line);line-height:1.15}
+.big div:last-child{border-right:none}
+.big i{display:block;font-style:normal;font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.big b{font-family:'Plex Mono';font-weight:400;font-size:13px;color:var(--bright);white-space:nowrap}
+.big small{display:block;font-size:10.5px;color:var(--muted);white-space:nowrap}
+.sec{border-bottom:1px solid var(--line)}
+.sh{display:flex;align-items:center;gap:8px;padding:5px 12px 4px;cursor:pointer;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--brass);font-weight:500}
+.sh:hover{background:rgba(255,255,255,.03)}
+.sh .r{margin-left:auto;color:var(--muted);letter-spacing:0;text-transform:none;font-size:10.5px}
+.sh .car{color:var(--muted);font-size:9px;width:8px}
+.sec.shut .sb{display:none}
+.sb{padding:2px 12px 9px}
+.pic{position:relative;margin:2px 0 4px}
+.pic img{display:block;width:100%}
+.pic canvas{position:absolute;left:0;top:0}
+.pic .lab{position:absolute;font-size:9.5px;font-family:'Plex Mono';white-space:nowrap;text-shadow:0 0 3px #000,0 0 2px #000}
+.kv{display:grid;grid-template-columns:96px 1fr;column-gap:10px;row-gap:2px;font-size:12px;line-height:1.3}
+.kv .k{color:var(--muted)}
+.kv .v{color:var(--bright)}
+.kv .v .mono{font-size:11px}
+.bar{display:inline-block;width:110px;height:6px;background:#11161A;border-radius:1px;position:relative;vertical-align:middle;margin-right:6px}
+.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:1px}
+.bar u{position:absolute;top:-2px;bottom:-2px;width:1px;background:#c9d3db}
+table.t{border-collapse:collapse;width:100%;font-size:11.5px;margin-top:2px}
+table.t th{font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:500;text-align:left;padding:2px 4px;border-bottom:1px solid var(--line);white-space:nowrap}
+table.t td{padding:2px 4px;border-bottom:1px solid var(--line);white-space:nowrap;color:var(--bright)}
+table.t td.n{font-family:'Plex Mono';font-size:10.5px;text-align:right}
+table.t td.m{font-family:'Plex Mono';font-size:10.5px}
+table.t tr.out td{color:var(--muted)}
+.st{font-size:11px}
+.st.firing{color:var(--ok)}.st.loading{color:#a9c7a4}.st.train{color:var(--text)}.st.jam{color:var(--amber)}.st.out{color:var(--bad)}.st.nb{color:var(--muted)}
+.hitl{display:grid;grid-template-columns:40px 1fr;gap:6px;font-size:11.5px;line-height:1.3;padding:2px 0;border-bottom:1px solid var(--line)}
+.hitl .t{font-family:'Plex Mono';font-size:10px;color:var(--muted)}
+.hitl .w{color:var(--bright)}
+.hitl .r{color:var(--muted)}
+.note{font-size:11px;color:var(--muted);line-height:1.35;margin-top:5px}
+.fcrow{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-top:5px;border:1px solid var(--line);border-radius:2px}
+.fcrow div{padding:3px 6px;border-right:1px solid var(--line);line-height:1.15}
+.fcrow div:last-child{border-right:none}
+.fcrow i{display:block;font-style:normal;font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.fcrow b{font-family:'Plex Mono';font-weight:400;font-size:11.5px;color:var(--bright)}
+.phase{display:flex;gap:2px;margin:4px 0 2px}
+.phase span{flex:1;height:18px;line-height:18px;text-align:center;font-size:10.5px;background:#11161A;color:var(--muted);border-radius:1px}
+.phase span.done{background:#1d2a1d;color:#93b88f}
+.phase span.now{background:#2c3a1f;color:var(--ok);box-shadow:inset 0 -2px 0 var(--ok)}
+.party{display:grid;grid-template-columns:62px 1fr auto;gap:6px;font-size:11.5px;padding:2px 0;border-bottom:1px solid var(--line);align-items:baseline}
+.party .k{color:var(--muted)}
+.party .v{color:var(--bright)}
+.party .p{font-family:'Plex Mono';font-size:10px;color:var(--muted)}
+.cact{display:flex;flex-wrap:wrap;gap:4px;padding:8px 12px 10px}
+.cact button{height:23px;padding:0 9px;font-size:11.5px;border:1px solid var(--edge);border-radius:2px;background:rgba(255,255,255,.05)}
+.cact button.pri{color:var(--brass);border-color:var(--brassd)}
+.cact button:hover{background:rgba(255,255,255,.1)}
+.seen{display:flex;gap:4px;flex-wrap:wrap;margin:3px 0}
+.seen span{font-size:11px;padding:1px 6px;border-radius:2px;background:#2a1b18;color:#f0b3a9}
+.seen span.no{background:#1a2026;color:var(--muted)}
+/* ---------- tooltip, cursor verb ---------- */
+#tip{position:absolute;z-index:40;pointer-events:none;display:none;padding:6px 9px;font-size:11.5px;line-height:1.35;max-width:300px}
+#tip b{color:var(--bright);font-weight:600;font-size:12.5px}
+#verb{position:absolute;z-index:39;pointer-events:none;display:none;font-family:'Plex Mono';font-size:11px;padding:1px 6px;border-radius:2px;background:rgba(10,14,17,.85);white-space:nowrap}
+#verb b{font-weight:500}
+/* ---------- drawers and overlays ---------- */
+.drawer{position:absolute;left:0;top:34px;bottom:0;width:440px;z-index:30;background:rgba(14,19,23,.96);border-right:1px solid var(--edge);transform:translateX(-100%);transition:transform .16s ease-out;display:flex;flex-direction:column}
+.drawer.open{transform:none}
+.ph{height:30px;display:flex;align-items:center;gap:8px;padding:0 10px;border-bottom:1px solid var(--line);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--brass);flex:none}
+.ph .r{margin-left:auto;color:var(--muted);letter-spacing:0;text-transform:none;display:flex;gap:2px}
+.flt{height:18px;padding:0 6px;font-size:10px;border:1px solid #3B4752;border-radius:2px;color:var(--muted);text-transform:uppercase;cursor:pointer;letter-spacing:.04em;display:inline-flex;align-items:center}
+.flt.on{color:var(--brass);border-color:var(--brassd);background:#2a2412}
+#log{flex:1;overflow:auto}
+.lg{display:grid;grid-template-columns:40px 40px 1fr;gap:4px;padding:3px 10px;border-bottom:1px solid var(--line);cursor:pointer;line-height:1.3;font-size:12px}
+.lg:hover{background:rgba(255,255,255,.04)}
+.shade{position:absolute;inset:0;z-index:50;background:rgba(4,6,8,.55);display:none;align-items:center;justify-content:center}
+.shade.on{display:flex}
+.modal{background:rgba(16,21,26,.97);border:1px solid var(--edge);border-radius:4px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+#menu .modal{width:300px;padding:10px}
+#menu h3{margin:4px 6px 10px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--brass);font-weight:500}
+#menu button{display:flex;width:100%;height:32px;align-items:center;padding:0 12px;margin:2px 0;border:1px solid var(--edge);border-radius:2px;background:rgba(255,255,255,.04);font-size:13px;color:var(--bright)}
+#menu button:hover{background:rgba(255,255,255,.09)}
+#menu button .k{margin-left:auto}
+#menu .opt{display:flex;align-items:center;justify-content:space-between;padding:6px 6px;font-size:12px;color:var(--muted)}
+#brief .modal,#result .modal{width:980px;padding:0}
+.mh{padding:18px 24px 12px;border-bottom:1px solid var(--line)}
+.mh .kick{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--brass)}
+.mh h2{margin:4px 0 2px;font-size:30px;font-weight:600;color:var(--bright);letter-spacing:.04em}
+.mh .meta{font-size:12px;color:var(--muted)}
+.mb{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.mb>div{padding:14px 24px;border-right:1px solid var(--line)}
+.mb>div:last-child{border-right:none}
+.mb h4{margin:0 0 6px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:500;display:flex;gap:6px;align-items:center}
+.mb p{margin:0 0 10px;font-size:13px;line-height:1.45;color:#b8c3cb}
+.oob{display:grid;grid-template-columns:120px 1fr auto;gap:2px 10px;font-size:12.5px;align-items:center}
+.oob img{height:16px;opacity:.9}
+.oob .c2{color:var(--muted);font-size:11.5px}
+.mf{display:flex;gap:6px;justify-content:flex-end;padding:12px 24px;border-top:1px solid var(--line)}
+.mf button{height:30px;padding:0 16px;font-size:13px;border:1px solid var(--edge);border-radius:2px;background:rgba(255,255,255,.05)}
+.mf button.pri{color:#111;background:var(--brass);border-color:var(--brass);font-weight:600}
+.res{width:100%;border-collapse:collapse;font-size:12.5px}
+.res th{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:500;text-align:right;padding:3px 6px;border-bottom:1px solid var(--line)}
+.res th:first-child,.res td:first-child{text-align:left}
+.res td{padding:3px 6px;border-bottom:1px solid var(--line);text-align:right;font-family:'Plex Mono';font-size:11.5px;color:var(--bright)}
+.res td:first-child{font-family:'Plex Cond';font-size:12.5px}
+.fate{display:grid;grid-template-columns:130px 1fr;gap:2px 10px;font-size:12.5px;margin-top:8px}
+.fate .s{color:var(--muted)}
+/* dev panel: ImGui's own look, on purpose */
+#dev{left:10px;top:44px;z-index:45;display:none;width:520px;background:rgba(15,15,15,.94);border:1px solid #444;font-family:'Plex Cond';font-size:12.5px;color:#e6e6e6;border-radius:0}
+#dev.on{display:block}
+#dev .tb{height:20px;background:#294a7a;padding:0 6px;display:flex;align-items:center;justify-content:space-between}
+#dev .bd{padding:6px 8px;display:flex;flex-direction:column;gap:4px}
+#dev .r{display:flex;gap:6px;align-items:center}
+#dev .f{background:#1d3a5f;padding:1px 6px;min-width:60px}
+#dev .bt{background:#2a5a95;padding:1px 6px}
+#dev .cb{width:13px;height:13px;background:#1d3a5f;display:inline-block}
+#dev .d{color:#888}
+/* help */
+#help .modal{width:640px;padding:16px 22px}
+#help table{width:100%;border-collapse:collapse;font-size:12.5px}
+#help td{padding:3px 6px;border-bottom:1px solid var(--line)}
+#help td:first-child{font-family:'Plex Mono';font-size:11px;color:var(--brass);white-space:nowrap;width:190px}
+#states{position:absolute;right:14px;top:40px;z-index:60;display:none}
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="map" width="1920" height="1080"></canvas>
+
+  <!-- top bar -->
+  <div id="top">
+    <div class="side"><div class="ens"><i></i></div><b>BRITAIN</b><span>· Squadrons</span></div>
+    <div class="clk"><span>Wed 31 May 1916</span><b id="clock">15:58:12</b></div>
+    <div id="speeds"></div>
+    <div id="rate"></div>
+    <div id="tally">
+      <div class="ac"><i></i>In action <span class="mono" id="actFor">28 min</span></div>
+      <div class="t">Hits <b class="okc">▲ 14</b> scored · <b class="bad">▼ 26</b> taken</div>
+      <div class="t">Lost <b>0</b> · Sunk <b>0</b></div>
+    </div>
+    <div id="aims" title="Aims and the end"><span class="dim">Aim</span><b>Destroy everyone</b><span class="dim mono">· ends 21:30</span></div>
+    <button id="menuBtn" title="Menu (Esc)">≡</button>
+  </div>
+
+  <!-- forces rail -->
+  <div id="rail" class="hud"></div>
+
+  <!-- notices -->
+  <div id="notes" class="hud"></div>
+
+  <!-- ticker -->
+  <div id="ticker" class="hud"></div>
+
+  <!-- scale -->
+  <div id="scale" class="hud"><div class="bar"></div><span>1.5 km</span><span>56°25'N 4°16'E</span><button id="helpBtn" title="Controls (?)">?</button></div>
+
+  <!-- selection strip -->
+  <div id="strip" class="hud glass"></div>
+
+  <!-- card dock -->
+  <div id="dock" class="hud"><div class="tabs" id="tabs"></div><div class="card glass" id="card"></div></div>
+
+  <div id="tip" class="glass"></div>
+  <div id="verb"></div>
+
+  <!-- the log drawer -->
+  <div class="drawer" id="logDrawer">
+    <div class="ph">Log <span class="dim" style="text-transform:none;letter-spacing:0">J</span>
+      <div class="r" id="logFlt"></div></div>
+    <div id="log"></div>
+  </div>
+
+  <!-- dev panel -->
+  <div id="dev" class="hud">
+    <div class="tb"><span>Dev (F1)</span><span>✕</span></div>
+    <div class="bd">
+      <div class="r"><span class="f" style="min-width:150px">squadrons ▾</span><span class="bt">Load scenario</span><span class="d">Squadrons, loaded in 1.5 s</span></div>
+      <div class="r"><span class="d">Ships at sea: 9 (dev: spawn)</span><span class="cb"></span>truth<span class="cb"></span>horizon<span class="cb"></span>watch<span class="cb"></span>AI commands</div>
+      <div class="r"><span class="d">aggression (dev):</span><span class="f">+0.00</span>Britain<span class="f">+0.00</span>Germany</div>
+      <div class="r"><span class="f" style="min-width:150px">From designer ▾</span><span class="bt">Place</span><span class="cb"></span>keep placing</div>
+      <div class="r"><span class="f">1</span>ships <span class="f">0</span>° heading <span class="f">10</span>kn <span class="f">0</span>side</div>
+      <div class="r"><span class="d">salvo:</span><span class="f">8 x 343mm ▾</span><span class="f">magazine order ▾</span><span class="cb"></span>salvo at (right-click the sea)</div>
+      <div class="d">Built (U0): the old top-left panel and the strip's dev salvo, closed by default. Everything else the game's.</div>
+    </div>
+  </div>
+
+  <!-- menu -->
+  <div class="shade" id="menu"><div class="modal">
+    <h3>Squadrons · paused</h3>
+    <button data-a="resume">Resume <span class="k kbd">Esc</span></button>
+    <button data-a="brief">Briefing</button>
+    <button data-a="restart">Restart scenario</button>
+    <button data-a="pick">Scenarios…</button>
+    <div class="opt"><span>Pause when a new fight starts</span><span class="gold">on ▾</span></div>
+    <div class="opt"><span>Pause on a loss</span><span class="gold">on ▾</span></div>
+    <div class="opt"><span>UI scale</span><span class="gold">1.0 ▾</span></div>
+    <button data-a="quit">Quit to desktop</button>
+  </div></div>
+
+  <!-- briefing -->
+  <div class="shade" id="brief"><div class="modal">
+    <div class="mh"><div class="kick">Scenario · North Sea</div><h2>Squadrons</h2>
+      <div class="meta">Wednesday 31 May 1916, 15:30 GMT · 56°30'N 4°00'E · visibility 25 km, wind SW 8 kn, sea 3 · sunset 20:12</div></div>
+    <div class="mb">
+      <div>
+        <h4>The situation</h4>
+        <p>Beatty's four battlecruisers against Hipper's five, 22 km apart and closing in clear weather. Both sides fight when they meet.</p>
+        <h4>Your aim</h4>
+        <p><b class="gold">Destroy everyone.</b> The scenario ends when one side is gone or out of the fight, or at 21:30.</p>
+        <h4>Your side's orders before action</h4>
+        <div class="kv"><span class="k">Readiness</span><span class="v">closed up</span><span class="k">Damage control</span><span class="v">1916 doctrine</span><span class="k">Fire discipline</span><span class="v">RN 1914</span><span class="k">Shells</span><span class="v">magazine order: APC, then CPC</span></div>
+      </div>
+      <div>
+        <h4><span class="sym"></span> Britain · yours</h4>
+        <div class="oob" id="oobOwn"></div>
+        <h4 style="margin-top:14px"><span class="sym ho sus"></span> Germany · as reported</h4>
+        <div class="oob"><span>1st Scouting Group</span><span class="c2">4–5 battlecruisers, bearing 090°, 22 km</span><span></span></div>
+        <p class="note" style="margin-top:8px">What you hold of the enemy, not the truth: identities come with sighting.</p>
+      </div>
+    </div>
+    <div class="mf"><button data-a="close">Begin paused</button><button class="pri" data-a="go">Begin</button></div>
+  </div></div>
+
+  <!-- result -->
+  <div class="shade" id="result"><div class="modal">
+    <div class="mh"><div class="kick">Scenario over · decided at 17:42</div><h2>A British victory</h2>
+      <div class="meta">The 1st Scouting Group broke off at 17:20 with two ships out of the fight; aims met: Britain partly, Germany no.</div></div>
+    <div class="mb">
+      <div>
+        <h4>The count</h4>
+        <table class="res"><tr><th></th><th>Ships</th><th>Lost</th><th>Tonnes lost</th><th>Damaged</th><th>Hits scored</th><th>Torpedoes</th></tr>
+          <tr><td class="fr">Britain</td><td>4</td><td>1</td><td>27,000</td><td>3</td><td>41</td><td>2 / 0</td></tr>
+          <tr><td class="ho">Germany</td><td>5</td><td>2</td><td>45,600</td><td>3</td><td>38</td><td>6 / 1</td></tr></table>
+        <p class="note">Once it's over, the truth: both sides as they were, not as they were seen.</p>
+      </div>
+      <div>
+        <h4>Ships</h4>
+        <div class="fate">
+          <span class="fr">Lion</span><span>damaged · 19 hits · Q turret out · 1,240 t aboard</span>
+          <span class="fr">Queen Mary</span><span class="bad">sunk 16:26 · magazine · 1,266 lost</span>
+          <span class="fr">Princess Royal</span><span>damaged · 6 hits</span>
+          <span class="fr">Tiger</span><span class="s">3 hits</span>
+          <span class="ho">Lützow</span><span class="bad">sunk 17:05 · foundered</span>
+          <span class="ho">Seydlitz</span><span class="bad">sunk 17:31 · capsized</span>
+          <span class="ho">Derfflinger</span><span>damaged · 9 hits</span>
+          <span class="ho">Moltke · Von der Tann</span><span class="s">light damage</span>
+        </div>
+      </div>
+    </div>
+    <div class="mf"><button data-a="close">Look round the map</button><button data-a="restart">Play again</button><button class="pri" data-a="pick">Scenarios</button></div>
+  </div></div>
+
+  <!-- help -->
+  <div class="shade" id="help"><div class="modal">
+    <table>
+      <tr><td>Click</td><td>Select a ship and open its card; on an enemy, what you hold of her</td></tr>
+      <tr><td>Double-click</td><td>Select her squadron</td></tr>
+      <tr><td>Right-click the sea</td><td>Steer for it (shift: add a waypoint)</td></tr>
+      <tr><td>Right-click an enemy</td><td>Engage her (the strip's Torpedoes arms: fire at her)</td></tr>
+      <tr><td>Right-click your ship</td><td>Follow her, station astern</td></tr>
+      <tr><td>Alt + any order</td><td>This ship only, out of her squadron's orders</td></tr>
+      <tr><td>Wheel · left drag</td><td>Zoom at the cursor · pan</td></tr>
+      <tr><td>Space · + −</td><td>Pause · speed</td></tr>
+      <tr><td>V · P</td><td>The card open or shut · pin it as a tab</td></tr>
+      <tr><td>Tab · Shift+Tab</td><td>Next / previous own ship</td></tr>
+      <tr><td>J · Esc · F1</td><td>The log · close / menu · the dev panel</td></tr>
+    </table>
+  </div></div>
+
+  <div id="states" class="glass" style="padding:6px 8px"></div>
+</div>
+
+<script>
+'use strict';
+// ------------------------------------------------------------------ the scene: Squadrons at 15:58, a mockup's numbers
+const W = 1920, H = 1080;
+const app = document.getElementById('app'), cv = document.getElementById('map'), cx = cv.getContext('2d');
+let MPP = 15, camX = 1900, camY = -650;          // metres per pixel; the screen's centre in metres (x east, y south)
+const $ = id => document.getElementById(id);
+const deg = Math.PI / 180;
+
+function fit() { const s = Math.min(innerWidth / W, innerHeight / H); app.style.transform = `scale(${s})`; app.style.left = (innerWidth - W * s) / 2 + 'px'; app.style.top = (innerHeight - H * s) / 2 + 'px'; return s; }
+let scale = fit(); addEventListener('resize', () => scale = fit());
+
+const SX = x => W / 2 + (x - camX) / MPP, SY = y => H / 2 + (y - camY) / MPP;
+
+// identity: what the player holds of an enemy (Contacts.Level: Smoke/Ship/Type/Class/Name)
+const ships = [
+  { id: 1, name: 'Lion', cls: 'Lion-like (1912)', type: 'battlecruiser', side: 0, flag: true, len: 213, x: -5300, y: -2300, hdg: 150, kn: 24.5, order: 150, bell: 'Full',
+    target: 5, flot: .82, water: 1240, list: 2.1, fires: 2, hits: 19, crew: 99, fireState: 'free', task: 'Fight', control: 'ai', captain: 'Capt. Chatfield' },
+  { id: 2, name: 'Princess Royal', cls: 'Lion-like (1912)', type: 'battlecruiser', side: 0, len: 213, x: 0, y: 0, hdg: 150, kn: 24.5, target: 5, flot: .95, water: 180, list: .4, fires: 0, hits: 6, crew: 22, fireState: 'free', task: 'Fight', control: 'ai' },
+  { id: 3, name: 'Queen Mary', cls: 'Queen Mary (1913)', type: 'battlecruiser', side: 0, len: 214, x: 0, y: 0, hdg: 150, kn: 19, target: 6, flot: .61, water: 2100, list: 4.2, fires: 1, hits: 9, crew: 140, fireState: 'free', task: 'Fight', control: 'ai', reason: 'water aboard' },
+  { id: 4, name: 'Tiger', cls: 'Tiger (1914)', type: 'battlecruiser', side: 0, len: 214, x: 0, y: 0, hdg: 150, kn: 24.5, target: 7, flot: .97, water: 60, list: 0, fires: 0, hits: 3, crew: 9, fireState: 'free', task: 'Fight', control: 'ai' },
+  { id: 5, name: 'Lützow', cls: 'Derfflinger (1913)', type: 'battlecruiser', side: 1, level: 'name', len: 210, x: 7400, y: -1700, hdg: 160, kn: 25, target: 1, seen: ['burning aft', 'low by the bow'] },
+  { id: 6, name: 'Derfflinger', cls: 'Derfflinger (1913)', type: 'battlecruiser', side: 1, level: 'class', len: 210, x: 0, y: 0, hdg: 160, kn: 25, target: 2, seen: [] },
+  { id: 7, name: 'Seydlitz', cls: 'Seydlitz (1912)', type: 'battlecruiser', side: 1, level: 'type', len: 200, x: 0, y: 0, hdg: 160, kn: 25, target: 3, seen: ['burning'] },
+  { id: 8, name: 'Moltke', cls: 'Moltke (1910)', type: 'battlecruiser', side: 1, level: 'type', len: 186, x: 0, y: 0, hdg: 160, kn: 25, target: 4, seen: [] },
+  { id: 9, name: 'Von der Tann', cls: 'Von der Tann (1909)', type: 'battlecruiser', side: 1, level: 'ship', len: 171, x: 0, y: 0, hdg: 160, kn: 25, target: 4, seen: [] },
+];
+const byId = id => ships.find(s => s.id === id);
+// the columns: each ship 500 m astern of the one ahead (Queen Mary hauling out to starboard: falling out)
+for (const [lead, n] of [[1, 4], [5, 5]]) {
+  const L = byId(lead);
+  for (let i = 1; i < n; i++) { const s = byId(lead + i), back = 500 * i; s.x = L.x - Math.sin(L.hdg * deg) * back; s.y = L.y + Math.cos(L.hdg * deg) * back; }
+}
+{ const q = byId(3); q.x -= 500; q.y += 1500; q.hdg = 215; }
+const groups = [
+  { id: 'g1', name: '1st Battlecruiser Squadron', short: '1st BCS', side: 0, ships: [1, 2, 3, 4], admiral: 'V-Adm Beatty', formation: 'Line ahead', spacing: 500, task: 'Fight', control: 'ai' },
+];
+const label = s => s.side === 0 ? s.name : s.level === 'name' ? s.name : s.level === 'class' ? 'Derfflinger class?' : s.level === 'type' ? 'battlecruiser' : 'heavy ship?';
+const known = s => s.side === 0 || s.level === 'name' || s.level === 'class';
+
+let sel = null;          // { kind: 'ship'|'group', id }
+let pinned = [];         // ship ids pinned as card tabs
+let cardOpen = true, paused = false, speed = 30, ordersTo = 'group', armed = null, hoverId = null;
+let mouse = { x: 0, y: 0, in: false };
+let simMs = (15 * 3600 + 58 * 60 + 12) * 1000;
+const orders = [];       // order lines drawn on the map: { from, x, y, t0, label }
+
+// ------------------------------------------------------------------ the map
+const splashes = [], shells = [];
+function hull(s, x, y) {
+  const len = Math.max(s.len / MPP, 30), beam = len * .13, h = s.hdg * deg;
+  cx.save(); cx.translate(x, y); cx.rotate(h);
+  cx.beginPath();
+  cx.moveTo(0, -len / 2);
+  cx.bezierCurveTo(beam * .55, -len * .28, beam * .5, len * .3, beam * .38, len / 2);
+  cx.lineTo(-beam * .38, len / 2);
+  cx.bezierCurveTo(-beam * .5, len * .3, -beam * .55, -len * .28, 0, -len / 2);
+  const own = s.side === 0;
+  cx.fillStyle = own ? '#d9e4ee' : (known(s) ? '#e8cdc7' : '#c9b2ad');
+  cx.strokeStyle = own ? 'rgba(91,155,224,.95)' : 'rgba(226,104,92,.95)';
+  cx.lineWidth = 1.4; cx.fill(); cx.stroke();
+  if (own || known(s)) {   // turrets as dots (a contact's only once her class is known)
+    cx.fillStyle = 'rgba(40,50,60,.8)';
+    for (const f of [-.36, -.24, .05, .33]) { cx.beginPath(); cx.arc(0, f * len, beam * .26, 0, 7); cx.fill(); }
+  }
+  cx.restore();
+}
+function drawMap(t) {
+  cx.fillStyle = '#22364a'; cx.fillRect(0, 0, W, H);
+  // the grid: 1 nm
+  cx.strokeStyle = 'rgba(160,190,215,.13)'; cx.lineWidth = 1;
+  const g = 1852 / MPP, ox = ((W / 2 - camX / MPP) % g + g) % g, oy = ((H / 2 - camY / MPP) % g + g) % g;
+  cx.beginPath();
+  for (let x = ox; x < W; x += g) { cx.moveTo(x, 0); cx.lineTo(x, H); }
+  for (let y = oy; y < H; y += g) { cx.moveTo(0, y); cx.lineTo(W, y); }
+  cx.stroke();
+  // smoke and wakes
+  for (const s of ships) {
+    const x = SX(s.x), y = SY(s.y), h = s.hdg * deg;
+    cx.strokeStyle = 'rgba(235,245,255,.28)'; cx.lineWidth = 2;
+    cx.beginPath(); cx.moveTo(x, y); cx.lineTo(x - Math.sin(h) * 70, y + Math.cos(h) * 70); cx.stroke();
+    for (let i = 0; i < 16; i++) {   // the funnels' smoke, blown NE by a SW wind
+      const k = i / 16, px = x - Math.sin(h) * i * 6 + i * i * .55, py = y + Math.cos(h) * i * 6 - i * i * .55;
+      cx.fillStyle = `rgba(${s.side ? 70 : 60},${s.side ? 66 : 64},62,${.22 * (1 - k)})`;
+      cx.beginPath(); cx.arc(px, py, 3 + i * .9, 0, 7); cx.fill();
+    }
+  }
+  // fire lines: who fires at whom; the selection's bright
+  for (const s of ships) {
+    const T = s.target && byId(s.target); if (!T) continue;
+    const mine = sel && sel.kind === 'ship' && sel.id === s.id;
+    const inGroup = sel && sel.kind === 'group' && s.side === 0;
+    cx.setLineDash(mine ? [] : [5, 6]);
+    cx.strokeStyle = mine ? 'rgba(217,184,104,.9)' : s.side ? 'rgba(226,104,92,.30)' : inGroup ? 'rgba(217,184,104,.55)' : 'rgba(91,155,224,.38)';
+    cx.lineWidth = mine ? 1.5 : 1;
+    cx.beginPath(); cx.moveTo(SX(s.x), SY(s.y)); cx.lineTo(SX(T.x), SY(T.y)); cx.stroke();
+    if (mine) {
+      const r = Math.hypot(T.x - s.x, T.y - s.y) / 1000, mx = (SX(s.x) + SX(T.x)) / 2, my = (SY(s.y) + SY(T.y)) / 2;
+      cx.setLineDash([]); cx.font = '500 11px "Plex Mono"'; cx.fillStyle = 'rgba(10,14,17,.8)'; cx.fillRect(mx - 34, my - 17, 68, 15);
+      cx.fillStyle = '#D9B868'; cx.textAlign = 'center'; cx.fillText(r.toFixed(1) + ' km', mx, my - 6); cx.textAlign = 'left';
+    }
+  }
+  cx.setLineDash([]);
+  // the selection's reach: torpedoes (fast and slow settings)
+  if (sel && sel.kind === 'ship' && byId(sel.id).side === 0) {
+    const s = byId(sel.id), x = SX(s.x), y = SY(s.y);
+    for (const [r, l] of [[3900, 'torpedoes 41 kn'], [9200, 'torpedoes 28 kn']]) {
+      cx.strokeStyle = 'rgba(160,215,255,.22)'; cx.setLineDash([2, 5]);
+      cx.beginPath(); cx.arc(x, y, r / MPP, 0, 7); cx.stroke();
+      cx.setLineDash([]); cx.fillStyle = 'rgba(160,215,255,.5)'; cx.font = '10px "Plex Mono"';
+      cx.fillText(`${l} · ${r / 1000} km`, x + 4, y - r / MPP - 4);
+    }
+  }
+  // orders sent: the line and its label, amber dashed while the signal is in transit
+  for (const o of orders) {
+    const s = byId(o.from); if (!s) continue;
+    const age = (t - o.t0) / 1000, fresh = age < 6;
+    cx.strokeStyle = fresh ? 'rgba(227,164,82,.85)' : 'rgba(217,184,104,.45)'; cx.setLineDash([6, 5]); cx.lineWidth = 1.3;
+    cx.beginPath(); cx.moveTo(SX(s.x), SY(s.y)); cx.lineTo(SX(o.x), SY(o.y)); cx.stroke(); cx.setLineDash([]);
+    cx.beginPath(); cx.arc(SX(o.x), SY(o.y), 4, 0, 7); cx.stroke();
+    cx.font = '10.5px "Plex Mono"'; cx.fillStyle = fresh ? '#E3A452' : 'rgba(217,184,104,.7)';
+    cx.fillText(fresh ? `${o.label} · signal ${Math.max(0, 9 - Math.floor(age))} s` : o.label, SX(o.x) + 8, SY(o.y) + 4);
+  }
+  // shells in flight and their fall
+  for (let i = shells.length - 1; i >= 0; i--) {
+    const sh = shells[i], k = (t - sh.t0) / sh.dur;
+    if (k >= 1) { shells.splice(i, 1); for (let j = 0; j < 4; j++) splashes.push({ x: sh.tx + (Math.random() - .5) * 260, y: sh.ty + (Math.random() - .5) * 140, t0: t, hit: sh.hit && j === 0 }); continue; }
+    cx.fillStyle = sh.side ? 'rgba(255,170,150,.9)' : 'rgba(255,240,200,.9)';
+    cx.beginPath(); cx.arc(SX(sh.x + (sh.tx - sh.x) * k), SY(sh.y + (sh.ty - sh.y) * k), 1.6, 0, 7); cx.fill();
+  }
+  for (let i = splashes.length - 1; i >= 0; i--) {
+    const p = splashes[i], k = (t - p.t0) / 3000;
+    if (k >= 1) { splashes.splice(i, 1); continue; }
+    if (p.hit) { cx.fillStyle = `rgba(255,170,70,${1 - k})`; cx.beginPath(); cx.arc(SX(p.x), SY(p.y), 3 + k * 6, 0, 7); cx.fill(); }
+    else { cx.strokeStyle = `rgba(240,248,255,${.8 * (1 - k)})`; cx.lineWidth = 1.5; cx.beginPath(); cx.arc(SX(p.x), SY(p.y), 2 + k * 6, 0, 7); cx.stroke(); }
+  }
+  // the ships, their labels and marks
+  for (const s of ships) {
+    const x = SX(s.x), y = SY(s.y);
+    hull(s, x, y);
+    const isSel = sel && ((sel.kind === 'ship' && sel.id === s.id) || (sel.kind === 'group' && s.side === 0 && groups[0].ships.includes(s.id)));
+    if (isSel) { cx.strokeStyle = '#D9B868'; cx.lineWidth = 1.6; cx.beginPath(); cx.arc(x, y, 21, 0, 7); cx.stroke(); }
+    else if (hoverId === s.id) { cx.strokeStyle = 'rgba(217,184,104,.5)'; cx.lineWidth = 1; cx.beginPath(); cx.arc(x, y, 21, 0, 7); cx.stroke(); }
+    if (pinned.includes(s.id)) { cx.fillStyle = '#D9B868'; cx.font = '10px "Plex Mono"'; cx.fillText('▲', x - 4, y - 24); }
+    // fires: a glow on the hull
+    if ((s.fires || s.seen && s.seen.some(f => f.startsWith('burning')))) {
+      const f = .6 + .4 * Math.sin(t / 180 + s.id);
+      cx.fillStyle = `rgba(255,150,60,${.55 * f})`; cx.beginPath(); cx.arc(x + 3, y + 4, 4, 0, 7); cx.fill();
+    }
+    // the label: own by name with her state underneath; a contact by what we hold
+    const lx = s.side ? x + 18 : x - 18, al = s.side ? 'left' : 'right';
+    cx.textAlign = al; cx.font = '600 12.5px "Plex Cond"';
+    cx.fillStyle = s.side ? (known(s) ? '#f2c4bc' : '#e9a59a') : '#e6eef6';
+    cx.shadowColor = '#000'; cx.shadowBlur = 3;
+    cx.fillText(label(s), lx, y - 1);
+    cx.font = '10.5px "Plex Mono"';
+    if (s.side === 0) {
+      const tag = s.reason ? 'falling out · ' + s.reason : `${s.kn.toFixed(0)} kn` + (s.flag ? ' · flag' : '');
+      cx.fillStyle = s.reason ? '#E3A452' : 'rgba(201,211,219,.75)';
+      cx.fillText(tag, lx, y + 12);
+      // flotation: a short bar under the label
+      const bw = 36, bx = al === 'right' ? lx - bw : lx;
+      cx.shadowBlur = 0; cx.fillStyle = '#11161A'; cx.fillRect(bx, y + 16, bw, 3);
+      cx.fillStyle = s.flot > .8 ? '#86C77E' : s.flot > .6 ? '#E3A452' : '#E06A5A'; cx.fillRect(bx, y + 16, bw * s.flot, 3);
+    } else if (s.seen && s.seen.length) {
+      cx.fillStyle = '#f0b3a9'; cx.fillText(s.seen.join(' · '), lx, y + 12);
+    }
+    cx.shadowBlur = 0; cx.textAlign = 'left';
+  }
+  // the squadron's label at her leader
+  { const T4 = byId(4); cx.font = '600 10.5px "Plex Cond"'; cx.fillStyle = sel && sel.kind === 'group' ? '#D9B868' : 'rgba(150,190,235,.85)'; cx.textAlign = 'center';
+    cx.fillText('1ST BATTLECRUISER SQUADRON · FIGHT', SX(T4.x), SY(T4.y) - 30); cx.textAlign = 'left'; }
+}
+
+// ------------------------------------------------------------------ salvos (the mockup's own, for life)
+let nextSalvo = 0;
+function salvos(t) {
+  if (paused || t < nextSalvo) return;
+  nextSalvo = t + 900 + Math.random() * 900;
+  const s = ships[Math.floor(Math.random() * ships.length)], T = s.target && byId(s.target);
+  if (!T) return;
+  const hit = Math.random() < .12;
+  shells.push({ x: s.x, y: s.y, tx: T.x, ty: T.y, t0: t, dur: 2600, side: s.side, hit });
+  if (hit) setTimeout(() => {
+    if (s.side === 0) tick('gun', `${s.name}: hit on ${label(T)} (salvo ${30 + Math.floor(Math.random() * 20)})`, T.id);
+    else tick('hit', `${label(T)}: hit ${['amidships', 'forward', 'aft', 'on the belt, kept out'][Math.floor(Math.random() * 4)]}`, T.id);
+  }, 2600);
+  else if (s.side === 0 && Math.random() < .3) setTimeout(() => tick('gun', `${s.name}: straddling ${label(T)}`, T.id), 2600);
+}
+
+// ------------------------------------------------------------------ the top bar
+const SPEEDS = [1, 3, 10, 30, 60, 240], COARSE = ['1k', '3k', '10k'];
+function topBar() {
+  $('speeds').innerHTML = `<button id="pause" class="${paused ? 'p' : ''}" title="Space">${paused ? '▶' : '❚❚'}</button><span class="gap"></span>` +
+    SPEEDS.map(v => `<button class="${v === speed ? 'on' : ''}" data-v="${v}">${v}×</button>`).join('') +
+    '<span class="gap"></span>' + COARSE.map(v => `<button class="coarse" title="coarse tier: guns silent">${v}</button>`).join('');
+  $('rate').innerHTML = paused ? '<b>PAUSED</b>' : speed === 30 ? 'held <b>30×</b>' : `held <b>${speed}×</b>`;
+  $('pause').onclick = () => { paused = !paused; topBar(); };
+  for (const b of $('speeds').querySelectorAll('[data-v]')) b.onclick = () => { speed = +b.dataset.v; paused = false; topBar(); };
+}
+function clock() {
+  const s = Math.floor(simMs / 1000), hh = Math.floor(s / 3600), mm = Math.floor(s / 60) % 60, ss = s % 60;
+  $('clock').textContent = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
+  $('actFor').textContent = `${Math.floor((s - 15.5 * 3600) / 60)} min`;
+}
+
+// ------------------------------------------------------------------ the forces rail
+function rail() {
+  const g = groups[0], gsel = sel && sel.kind === 'group';
+  let h = `<div class="rh"><b>Your forces</b><span class="r">4 ships · <span class="kbd">Tab</span></span></div>
+    <div class="glass grp"><div class="gh ${gsel ? 'sel' : ''}" data-g="g1"><span class="sym"></span>
+      <div class="nm"><b>${g.name}</b><span>${g.admiral} · ${g.formation} ${g.spacing} m · ${g.task}</span></div>
+      <span class="chip ai" title="its admiral fights it; any order of yours takes it">AI</span></div>`;
+  for (const id of g.ships) {
+    const s = byId(id), on = sel && sel.kind === 'ship' && sel.id === id;
+    const col = s.flot > .8 ? 'var(--ok)' : s.flot > .6 ? 'var(--amber)' : 'var(--bad)';
+    const T = s.target && byId(s.target);
+    h += `<div class="srow ${on ? 'sel' : ''}" data-s="${id}"><span class="sym"></span>
+      <div class="nm"><b>${s.name}</b>${s.flag ? '<span class="glyphs"><span class="g-flag">⚑</span></span>' : ''}<span class="glyphs">${s.fires ? '<i class="g-fire"></i>' : ''}</span>
+        <span class="s">${s.reason ? `<span class="amb">falling out: ${s.reason}</span>` : T ? `→ ${label(T)}` : 'no target'}</span></div>
+      <div class="rr"><span class="flot"><i style="width:${s.flot * 100}%;background:${col}"></i></span><br><span class="mono dim">${s.kn.toFixed(0)} kn · ${s.hits} hits</span></div></div>`;
+  }
+  h += `</div><div class="rh" style="margin-top:4px"><b>Enemy in sight</b><span class="r">5 · from Lion</span></div><div class="glass grp">`;
+  for (const s of ships.filter(s => s.side === 1)) {
+    const on = sel && sel.kind === 'ship' && sel.id === s.id, L = byId(1);
+    const r = Math.hypot(s.x - L.x, s.y - L.y) / 1000, b = (Math.atan2(s.x - L.x, -(s.y - L.y)) / deg + 360) % 360;
+    h += `<div class="crow ${on ? 'sel' : ''}" data-s="${s.id}"><span class="sym ho ${known(s) ? '' : 'sus'}"></span>
+      <div class="nm"><b>${label(s)}</b><span class="s">${s.seen.length ? s.seen.join(' · ') : s.level === 'ship' ? 'a heavy ship in the smoke' : 'no damage seen'}</span></div>
+      <div class="rr">${r.toFixed(1)} km<br>${String(Math.round(b)).padStart(3, '0')}°</div></div>`;
+  }
+  h += '</div>';
+  $('rail').innerHTML = h;
+  for (const e of $('rail').querySelectorAll('[data-s]')) { e.onclick = () => select({ kind: 'ship', id: +e.dataset.s }); e.ondblclick = () => centreOn(byId(+e.dataset.s)); }
+  for (const e of $('rail').querySelectorAll('[data-g]')) e.onclick = () => select({ kind: 'group', id: 'g1' });
+}
+
+// ------------------------------------------------------------------ notices: what a captain did that the player would want to know
+function notes() {
+  $('notes').innerHTML = `<div class="glass nt"><div class="h"><b>Queen Mary is falling out of the line</b><span class="t">15:58</span></div>
+    <p>2,100 t of water aboard, listing 4° to port. Captain Prowse hauls out to starboard and makes for home at 19 kn.</p>
+    <div class="btns"><button class="pri" data-n="show">Show her</button><button data-n="back">Order her back into line</button><button data-n="ok">Let her go</button></div></div>`;
+  for (const b of $('notes').querySelectorAll('button')) b.onclick = () => {
+    if (b.dataset.n === 'show') { select({ kind: 'ship', id: 3 }); centreOn(byId(3)); return; }
+    tick('sig', b.dataset.n === 'back' ? 'Signal to Queen Mary: resume your station' : 'Queen Mary detached: making for the Forth', 3);
+    $('notes').innerHTML = '';
+  };
+}
+
+// ------------------------------------------------------------------ the ticker and the log
+const LOG = [
+  ['15:41', 'seen', 'Lion: Lützow identified (foretop), 16.2 km', 5],
+  ['15:47', 'gun', 'Lion: first straddle on Lützow (salvo 14)', 5],
+  ['15:51', 'hit', 'Lion: hit forward, holed below the waterline to starboard', 1],
+  ['15:52', 'flood', 'Lion: flooding forward, 3 compartments; shored', 1],
+  ['15:55', 'hit', 'Lion: hit on Q turret roof: penetrated, the gunhouse burning', 1],
+  ['15:55', 'fire', 'Lion: Q magazine flooded by order', 1],
+  ['15:56', 'gun', 'Princess Royal: hit on Lützow (salvo 22)', 5],
+  ['15:57', 'seen', 'Lützow on fire aft', 5],
+  ['15:57', 'flood', 'Queen Mary: 2,100 t aboard, list 4° to port', 3],
+  ['15:58', 'cpt', 'Queen Mary falls out of the line: water aboard', 3],
+];
+const CAT = { gun: 'gun', hit: 'hit', fire: 'fire', flood: 'flood', cpt: 'capt', sig: 'sig', seen: 'seen', loss: 'loss' };
+function tick(cat, text, ship) {
+  const s = Math.floor(simMs / 1000), t = `${String(Math.floor(s / 3600)).padStart(2, '0')}:${String(Math.floor(s / 60) % 60).padStart(2, '0')}`;
+  LOG.push([t, cat, text, ship, performance.now()]);
+  ticker(); logList();
+}
+function ticker() {
+  const now = performance.now();
+  const last = LOG.slice(-5);
+  $('ticker').innerHTML = last.map(([t, c, x, sh, born]) => {
+    const age = born ? (now - born) / 1000 : 30, op = Math.max(.45, 1 - Math.max(0, age - 14) / 20);
+    return `<div class="tk" style="opacity:${op}" data-s="${sh}"><span class="t">${t}</span><span class="c ${c}">${CAT[c]}</span><span>${x}</span></div>`;
+  }).join('') + `<div class="tkbar"><span class="kbd">J</span> the log · ${LOG.length} lines</div>`;
+  for (const e of $('ticker').querySelectorAll('.tk')) e.onclick = () => { const s = byId(+e.dataset.s); select({ kind: 'ship', id: s.id }); centreOn(s); };
+  $('ticker').querySelector('.tkbar').onclick = () => $('logDrawer').classList.toggle('open');
+}
+let logFilter = 'all';
+function logList() {
+  const F = [['all', 'All'], ['ours', 'Our ships'], ['gun', 'Gunnery'], ['dmg', 'Damage'], ['cmd', 'Orders']];
+  $('logFlt').innerHTML = F.map(([k, l]) => `<span class="flt ${k === logFilter ? 'on' : ''}" data-f="${k}">${l}</span>`).join('');
+  for (const e of $('logFlt').children) e.onclick = () => { logFilter = e.dataset.f; logList(); };
+  const keep = ([, c, , sh]) => logFilter === 'all' || (logFilter === 'ours' && byId(sh)?.side === 0) || (logFilter === 'gun' && c === 'gun') ||
+    (logFilter === 'dmg' && ['hit', 'fire', 'flood', 'loss'].includes(c)) || (logFilter === 'cmd' && ['cpt', 'sig'].includes(c));
+  $('log').innerHTML = LOG.filter(keep).slice().reverse().map(([t, c, x, sh]) => `<div class="lg" data-s="${sh}"><span class="t">${t}</span><span class="c ${c}">${CAT[c]}</span><span>${x}</span></div>`).join('');
+  for (const e of $('log').children) e.onclick = () => { const s = byId(+e.dataset.s); select({ kind: 'ship', id: s.id }); centreOn(s); };
+}
+
+// ------------------------------------------------------------------ the selection strip: orders
+function strip() {
+  const el = $('strip');
+  el.classList.toggle('docked', $('dock').classList.contains('on'));
+  if (!sel) { el.classList.remove('on'); return; }
+  el.classList.add('on');
+  if (sel.kind === 'ship' && byId(sel.id).side === 1) {   // an enemy: what we can do about her
+    const s = byId(sel.id), L = byId(1);
+    el.innerHTML = `<div class="sid"><b class="ho">${label(s)}</b><span>enemy · ${(Math.hypot(s.x - L.x, s.y - L.y) / 1000).toFixed(1)} km from Lion</span></div>
+      <div class="oc"><h5>Engage her with</h5><div class="seg"><button data-e="1">Lion</button><button data-e="g">1st BCS</button><button data-e="2">Princess Royal</button><button data-e="4">Tiger</button></div></div>
+      <div class="oc"><h5>Torpedoes at her</h5><div class="seg"><button disabled title="out of range: 12.6 km, 9.2 km at most">Lion</button><button disabled>Princess Royal</button></div></div>
+      <div class="hint">or select your ship and right-click her</div>`;
+    for (const b of el.querySelectorAll('[data-e]')) b.onclick = () => {
+      const who = b.dataset.e === 'g' ? [1, 2, 3, 4] : [+b.dataset.e];
+      for (const i of who) byId(i).target = s.id;
+      tick('sig', `${b.dataset.e === 'g' ? '1st BCS' : byId(+b.dataset.e).name}: engage ${label(s)}`, s.id);
+      rail();
+    };
+    return;
+  }
+  const grp = sel.kind === 'group' || ordersTo === 'group';
+  const s = sel.kind === 'ship' ? byId(sel.id) : byId(1);
+  const who = grp ? '1st BCS' : s.name;
+  const T = s.target && byId(s.target);
+  const bells = ['Astern', 'Stop', 'Slow', 'Half', 'Full', 'Flank'];
+  el.innerHTML = `
+    <div class="sid"><b>${sel.kind === 'group' ? '1st Battlecruiser Sqn' : s.name}</b><span>${sel.kind === 'group' ? '4 ships · V-Adm Beatty' : s.cls}</span>
+      <div class="to seg" title="Alt+order: this ship only"><button class="${grp ? 'on' : ''}" data-to="group">Squadron</button><button class="${grp ? '' : 'on'}" data-to="ship" ${sel.kind === 'group' ? 'disabled' : ''}>This ship</button></div></div>
+    <div class="oc"><h5>Helm <span class="v">${s.hdg.toFixed(0).padStart(3, '0')}° · ${s.kn.toFixed(1)} kn</span></h5>
+      <div class="course seg"><button data-c="-90">◀90</button><button data-c="-10">◀10</button><span class="val">${String(s.order ?? s.hdg).padStart(3, '0')}°</span><button data-c="10">10▶</button><button data-c="90">90▶</button></div>
+      <div class="seg">${bells.map(b => `<button class="${b === (s.bell || 'Full') ? 'on' : ''}">${b}</button>`).join('')}</div></div>
+    <div class="oc"><h5>Guns <span class="v">${T ? '→ ' + label(T) : 'no target'}</span></h5>
+      <div class="seg"><button class="on">Fire at will</button><button class="${armed === 'engage' ? 'arm' : ''}" data-arm="engage">Engage…</button><button>Hold fire</button></div>
+      <div class="seg" title="the shells loaded next (the magazine order: what her doctrine says)"><button>Shells: magazine order ▾</button></div></div>
+    <div class="oc"><h5>Torpedoes <span class="v">${grp ? '8 loaded' : '2 loaded · 2 spare'}</span></h5>
+      <div class="seg"><button class="${armed === 'torpedo' ? 'arm' : ''}" data-arm="torpedo">Fire at…</button></div>
+      <div class="seg"><button title="her funnels burn rich: a screen">Make smoke</button></div></div>
+    <div class="oc"><h5>${grp ? 'Squadron' : 'Captain'} <span class="v amb">${grp ? 'Fight · AI admiral' : s.reason ? 'falling out' : 'Fight · in line'}</span></h5>
+      <div class="seg"><button class="on">Fight</button><button>Follow…</button><button>Run from…</button><button>Hold</button></div>
+      <div class="seg">${grp ? '<button>Line ahead ▾</button><button>Turn ▾</button><button>Withdraw</button>' : '<button>Rejoin</button><button>Detach</button>'}<button class="on" title="its AI fights it; any order of yours takes it over. Click: hand it back">AI ✓</button></div></div>
+    <div class="hint">${armed ? `<b class="amb">${armed === 'engage' ? 'ENGAGE' : 'TORPEDOES'}</b>: click an enemy · Esc cancels` : 'Right-click: steer · on an enemy: engage · on your ship: follow · Shift: waypoint · Alt: this ship only'}</div>`;
+  for (const b of el.querySelectorAll('[data-to]')) b.onclick = () => { ordersTo = b.dataset.to; strip(); };
+  for (const b of el.querySelectorAll('[data-c]')) b.onclick = () => { const o = ((s.order ?? s.hdg) + +b.dataset.c + 360) % 360; s.order = o; sendCourse(s, o); };
+  for (const b of el.querySelectorAll('[data-arm]')) b.onclick = () => { armed = armed === b.dataset.arm ? null : b.dataset.arm; strip(); };
+}
+function sendCourse(s, c) {
+  const d = 4000;
+  orders.length = 0;
+  orders.push({ from: s.id, x: s.x + Math.sin(c * deg) * d, y: s.y - Math.cos(c * deg) * d, t0: performance.now(), label: `${ordersTo === 'group' ? '1st BCS' : s.name}: course ${String(c).padStart(3, '0')}°` });
+  tick('sig', `${ordersTo === 'group' ? '1st BCS' : s.name}: course ${String(c).padStart(3, '0')}°${ordersTo === 'group' ? ' (by flags, in transit)' : ''}`, s.id);
+  strip();
+}
+
+// ------------------------------------------------------------------ the card: own ship
+const MOUNTS = [   // Lion's main and secondary mounts; px along the plan image (1404 x 167, stern left)
+  { m: 'A', x: 1162, y: 83, brg: 'P 92°', tgt: 5, st: 'firing', r: [33, 38, 10], cal: 343 },
+  { m: 'B', x: 1082, y: 83, brg: 'P 93°', tgt: 5, st: 'loading', r: [31, 40, 10], cal: 343 },
+  { m: 'Q', x: 737, y: 83, brg: '—', tgt: 0, st: 'out', why: 'wrecked: roof penetrated · magazine flooded', r: [0, 0, 0], cal: 343 },
+  { m: 'X', x: 192, y: 83, brg: 'P 95°', tgt: 5, st: 'jam', why: 'training jammed · clears ~16:04', r: [36, 40, 10], cal: 343 },
+];
+const DMG = {   // marks in the plan image's pixels (holes, fires) and the profile's (flooded spaces)
+  holes: [{ x: 1250, y: 150, k: 'pen' }, { x: 760, y: 80, k: 'pen' }, { x: 560, y: 25, k: 'stop' }, { x: 330, y: 140, k: 'pen' }, { x: 960, y: 30, k: 'stop' }, { x: 1010, y: 135, k: 'super' }],
+  fires: [{ x: 737, y: 83, n: 'Q gunhouse' }, { x: 640, y: 60, n: 'boat deck' }],
+  flooded: [{ x0: 1190, x1: 1330, full: 1, n: 'fwd stbd' }, { x0: 700, x1: 790, full: 1, n: 'Q magazine' }, { x0: 1080, x1: 1190, full: .5, n: '' }],
+};
+function sec(id, title, right, body, shut) {
+  return `<div class="sec ${shut ? 'shut' : ''}" data-sec="${id}"><div class="sh"><span class="car">${shut ? '▸' : '▾'}</span>${title}<span class="r">${right}</span></div><div class="sb">${body}</div></div>`;
+}
+const shutSecs = new Set(['crew']);
+function bar(v, col, mark) { return `<span class="bar"><i style="width:${v * 100}%;background:${col}"></i>${mark != null ? `<u style="left:${mark * 100}%"></u>` : ''}</span>`; }
+function ownCard(s) {
+  const lion = s.id === 1, T = s.target && byId(s.target);
+  const head = `<div class="ch"><div class="tt"><b>${s.flag ? '⚑ ' : ''}${s.name.toUpperCase()}</b>
+      <div class="sub">${s.cls} ${s.type} · 1st BCS${s.flag ? ', flagship of V-Adm Beatty' : ''} · ${s.captain || 'Capt.'}</div>
+      <div class="chs"><span class="chip act">in action</span><span class="chip ai" title="her captain fights her under the squadron's orders">AI captain · Fight</span>${s.reason ? `<span class="chip bad">falling out: ${s.reason}</span>` : ''}</div></div>
+    <div class="tools"><button class="${pinned.includes(s.id) ? 'on' : ''}" data-tool="pin" title="pin as a tab (P)">⚲</button><button data-tool="centre" title="centre the map on her">⌖</button><button data-tool="close" title="close (V)">✕</button></div></div>`;
+  const big = `<div class="big">
+    <div><i>Speed</i><b>${s.kn.toFixed(1)} kn</b><small>of ${lion ? '26.0 now · 28 new' : '27.5'}</small></div>
+    <div><i>Course</i><b>${s.hdg.toFixed(0).padStart(3, '0')}°</b><small>ordered ${String(s.order ?? s.hdg).padStart(3, '0')}°</small></div>
+    <div><i>Target</i><b>${T ? label(T) : '—'}</b><small>${T ? (Math.hypot(T.x - s.x, T.y - s.y) / 1000).toFixed(1) + ' km · 091°' : ''}</small></div>
+    <div><i>Hits taken</i><b class="${s.hits > 10 ? 'amb' : ''}">${s.hits}</b><small>${lion ? '3 below water' : ''}</small></div></div>`;
+  const fc = s.flot > .8 ? 'var(--ok)' : s.flot > .6 ? 'var(--amber)' : 'var(--bad)';
+  const cond = `<div class="pic" id="planPic"><img src="assets/lion-plan.png"><canvas id="planMarks"></canvas></div>
+    <div class="pic" id="profPic"><img src="assets/lion-profile.png" style="opacity:.92"><canvas id="profMarks"></canvas></div>
+    <div class="kv">
+      <span class="k">Flotation</span><span class="v">${bar(s.flot, fc)}<span class="mono">${Math.round(s.flot * 100)}%</span> <span class="dim">· ${s.water.toLocaleString()} t aboard</span></span>
+      <span class="k">List · trim</span><span class="v mono">${s.list.toFixed(1)}° stbd · 0.6 m by the head</span>
+      <span class="k">Fires</span><span class="v">${s.fires ? '<span class="amb">Q gunhouse (fought) · boat deck</span>' : '<span class="dim">none</span>'}</span>
+      <span class="k">Power · steering</span><span class="v">4 shafts, 100% · <span class="okc">steering free</span></span>
+      <span class="k">Crew lost</span><span class="v mono">${s.crew} of 1,092 <span class="dim">· 61 killed, 38 wounded</span></span>
+    </div>`;
+  const guns = `<table class="t"><tr><th>Mount</th><th>Bearing</th><th>Target</th><th>State</th><th style="text-align:right">APC · CPC · HE</th></tr>
+    ${MOUNTS.map(m => `<tr class="${m.st === 'out' ? 'out' : ''}" title="${m.why || ''}"><td>${m.m} <span class="dim">2×343</span></td><td class="m">${m.brg}</td><td>${m.tgt ? label(byId(m.tgt)) : '—'}</td>
+      <td><span class="st ${m.st}">${{ firing: 'firing', loading: 'loading 18 s', out: 'out of action', jam: 'jammed, ~6 min' }[m.st]}</span></td><td class="n">${m.st === 'out' ? '— flooded —' : m.r.join(' · ')}</td></tr>`).join('')}
+    <tr><td>Sec P <span class="dim">8×102</span></td><td class="m">—</td><td>—</td><td><span class="st nb">held: heavy targets only</span></td><td class="n">1,340</td></tr>
+    <tr><td>Sec S <span class="dim">8×102</span></td><td class="m">—</td><td>—</td><td><span class="st nb">not bearing</span></td><td class="n">1,360</td></tr></table>
+    <div class="note">Q's magazine flooded by order at 15:55 after the gunhouse fire; X jammed in training by a near hit (shock).</div>`;
+  const fcs = `<div class="kv"><span class="k">Main · on</span><span class="v">${T ? label(T) : '—'} <span class="dim">· seen from the foretop, visual</span></span>
+      <span class="k">Range</span><span class="v mono">${T ? (Math.round(Math.hypot(T.x - s.x, T.y - s.y) / 10) * 10).toLocaleString() : '—'} m <span class="dim">· plot ±240 m · closing 150 m/min</span></span>
+      <span class="k">Control</span><span class="v">director, level 3 (Dreyer table)</span></div>
+    <div class="phase"><span class="done">Opening</span><span class="done">Ranging</span><span class="now">Fire for effect</span></div>
+    <div class="fcrow"><div><i>Salvos</i><b>38</b></div><div><i>Straddles</i><b>6</b></div><div><i>Hits seen</i><b>3</b></div><div><i>Rate</i><b>2.1/min</b></div></div>
+    <div class="note">Spotting hampered: her own smoke to leeward (wind SW). Secondary holding: no light craft in sight.</div>`;
+  const torps = `<div class="kv"><span class="k">Tubes</span><span class="v">2 × 533 mm, submerged, broadside</span>
+      <span class="k">Loaded · spare</span><span class="v mono">2 · 2</span>
+      <span class="k">Reach</span><span class="v mono">3.9 km at 41 kn · 9.2 km at 28 kn</span>
+      <span class="k">Now</span><span class="v dim">Lützow at 12.6 km: out of reach</span></div>`;
+  const dc = `<div class="party"><span class="k">Fire</span><span class="v">Q gunhouse: 2 hoses, the main charged</span><span class="p">since 15:55</span></div>
+    <div class="party"><span class="k">Fire</span><span class="v">boat deck: the fire watch</span><span class="p">15:57</span></div>
+    <div class="party"><span class="k">Shoring</span><span class="v">fwd stbd, 3 holes, 0.8 m² open</span><span class="p">2 of 3 done</span></div>
+    <div class="party"><span class="k">Pumps</span><span class="v">6 of 8 rigged · 1,100 t/h</span><span class="p">gaining</span></div>
+    <div class="party"><span class="k">Counterflood</span><span class="v">200 t to port: list 3.4° → 2.1°</span><span class="p">15:56</span></div>
+    <div class="note">Doctrine 1916 · readiness closed up · safe speed 26 kn (the bulkheads forward).</div>`;
+  const hits = `${[['15:55', 'Q turret roof, 30.5 cm', 'penetrated · gunhouse wrecked, fire'], ['15:53', 'upper belt amidships, 30.5 cm', 'kept out · plates sprung'], ['15:51', 'fwd, below the waterline stbd', 'holed · 3 spaces flooding'], ['15:49', 'aft funnel', 'through · splinters on the boat deck']]
+      .map(([t, w, r]) => `<div class="hitl"><span class="t">${t}</span><span><span class="w">${w}</span> <span class="r">— ${r}</span></span></div>`).join('')}
+    <div class="note">${s.hits} hits in all · the whole list in the log, filtered to her.</div>`;
+  const crew = `<div class="kv"><span class="k">Complement</span><span class="v mono">1,092</span><span class="k">Killed · wounded</span><span class="v mono">61 · 38</span><span class="k">Worst hit</span><span class="v">Q turret's crew (all), the boat deck</span></div>`;
+  return head + big +
+    sec('cond', 'Condition', `${s.hits} hits · ${s.fires} fires`, cond, shutSecs.has('cond')) +
+    sec('guns', 'Guns', '3 of 4 turrets', guns, shutSecs.has('guns')) +
+    sec('fc', 'Fire control', T ? 'hitting' : '—', fcs, shutSecs.has('fc')) +
+    sec('dc', 'Damage control', '4 parties at work', dc, shutSecs.has('dc')) +
+    sec('hits', 'Hits taken', 'newest first', hits, shutSecs.has('hits')) +
+    sec('torp', 'Torpedoes', '2 loaded', torps, shutSecs.has('torp')) +
+    sec('crew', 'Crew', `${s.crew} lost`, crew, shutSecs.has('crew'));
+}
+function marks() {   // the damage drawn over her plan and profile
+  const pp = $('planPic'), pr = $('profPic'); if (!pp) return;
+  const draw = (pic, cvId, wImg, hImg, f) => {
+    const img = pic.querySelector('img'), c = $(cvId);
+    const go = () => { const w = img.clientWidth, h = img.clientHeight; c.width = w; c.height = h; const g = c.getContext('2d'); g.scale(w / wImg, h / hImg); f(g); };
+    img.complete ? go() : img.onload = go;
+  };
+  draw(pp, 'planMarks', 1404, 167, g => {
+    for (const m of MOUNTS) {
+      g.lineWidth = 7; g.strokeStyle = { firing: 'rgba(134,199,126,.9)', loading: 'rgba(134,199,126,.6)', out: 'rgba(224,106,90,.95)', jam: 'rgba(227,164,82,.95)' }[m.st];
+      g.beginPath(); g.arc(m.x, m.y, 46, 0, 7); g.stroke();
+      g.fillStyle = '#fff'; g.font = '600 40px "Plex Cond"'; g.fillText(m.m, m.x - 12, m.y - 54);
+      if (m.st === 'out') { g.beginPath(); g.moveTo(m.x - 34, m.y - 34); g.lineTo(m.x + 34, m.y + 34); g.moveTo(m.x + 34, m.y - 34); g.lineTo(m.x - 34, m.y + 34); g.stroke(); }
+    }
+    for (const f of DMG.fires) { const gr = g.createRadialGradient(f.x, f.y, 4, f.x, f.y, 60); gr.addColorStop(0, 'rgba(255,220,120,.95)'); gr.addColorStop(.4, 'rgba(255,140,50,.7)'); gr.addColorStop(1, 'rgba(255,90,30,0)'); g.fillStyle = gr; g.beginPath(); g.arc(f.x, f.y, 60, 0, 7); g.fill(); }
+    for (const h of DMG.holes) {
+      g.fillStyle = h.k === 'pen' ? '#ff4d3d' : h.k === 'stop' ? '#E3A452' : '#ffd0c8';
+      g.strokeStyle = '#000'; g.lineWidth = 4; g.beginPath(); g.arc(h.x, h.y, 13, 0, 7); g.fill(); g.stroke();
+    }
+  });
+  draw(pr, 'profMarks', 1404, 297, g => {
+    // the waterline now (deeper, by the head) against the design's
+    g.strokeStyle = 'rgba(160,215,255,.5)'; g.setLineDash([14, 10]); g.lineWidth = 3; g.beginPath(); g.moveTo(0, 236); g.lineTo(1404, 236); g.stroke(); g.setLineDash([]);
+    g.strokeStyle = 'rgba(111,167,220,1)'; g.lineWidth = 5; g.beginPath(); g.moveTo(0, 230); g.lineTo(1404, 214); g.stroke();
+    for (const f of DMG.flooded) {
+      g.fillStyle = `rgba(80,150,230,${.35 + .45 * f.full})`; g.fillRect(f.x0, 236 + (1 - f.full) * 50, f.x1 - f.x0, 290 - 236 - (1 - f.full) * 50);
+      g.strokeStyle = 'rgba(150,200,255,.9)'; g.lineWidth = 3; g.strokeRect(f.x0, 200, f.x1 - f.x0, 90);
+    }
+  });
+}
+// ------------------------------------------------------------------ the card: enemy (what we hold, never the truth)
+function enemyCard(s) {
+  const L = byId(1), r = Math.hypot(s.x - L.x, s.y - L.y);
+  const shooters = ships.filter(o => o.side === 0 && o.target === s.id);
+  return `<div class="ch"><div class="tt"><b class="ho">${label(s).toUpperCase()}</b>
+      <div class="sub">${s.level === 'name' ? `${s.cls} battlecruiser · identified 15:41 by Lion's foretop` : s.level === 'class' ? 'a Derfflinger, by her silhouette · not yet named' : s.level === 'type' ? 'a battlecruiser, class not made out' : 'a heavy ship, in the smoke'}</div>
+      <div class="chs"><span class="chip bad">enemy</span><span class="chip out">in sight · visual</span></div></div>
+    <div class="tools"><button class="${pinned.includes(s.id) ? 'on' : ''}" data-tool="pin">⚲</button><button data-tool="centre">⌖</button><button data-tool="close">✕</button></div></div>
+    <div class="big"><div><i>Range</i><b>${(r / 1000).toFixed(1)} km</b><small>from Lion</small></div><div><i>Bearing</i><b>091°</b><small>closing slowly</small></div>
+      <div><i>Course</i><b>~160°</b><small>±10°</small></div><div><i>Speed</i><b>~25 kn</b><small>by her wake</small></div></div>
+    ${sec('seen', 'What we see', 'now', `<div class="seen">${s.seen.length ? s.seen.map(f => `<span>${f}</span>`).join('') : '<span class="no">no damage seen</span>'}<span class="no">firing</span></div>
+      <div class="note">Only what a lookout could see: fires, list, low in the water, stopped, guns silent. Her hits and flooding stay hers.</div>`)}
+    ${known(s) ? sec('book', 'From the book', s.cls, `<div class="pic"><img src="assets/lion-profile.png" style="filter:grayscale(1) brightness(.75);opacity:.5"></div>
+      <div class="kv"><span class="k">Main</span><span class="v">8 × 305 mm, 4 twin turrets</span><span class="k">Belt</span><span class="v">300 mm (reported)</span><span class="k">Speed</span><span class="v">26.5 kn</span></div>
+      <div class="note">The recognition book's figures, not what she has left.</div>`) : ''}
+    ${sec('ourfire', 'Our fire on her', `${shooters.length} ships`, `<table class="t"><tr><th>Ship</th><th>Salvos</th><th>Straddles</th><th>Hits seen</th><th>Phase</th></tr>
+      ${shooters.map(o => `<tr><td class="fr">${o.name}</td><td class="n">${o.id === 1 ? 38 : 22}</td><td class="n">${o.id === 1 ? 6 : 3}</td><td class="n">${o.id === 1 ? 3 : 1}</td><td>${o.id === 1 ? 'effect' : 'ranging'}</td></tr>`).join('') || '<tr><td colspan="5" class="dim">none</td></tr>'}</table>`)}
+    ${sec('herfire', 'Her fire', '', `<div class="kv"><span class="k">On</span><span class="v">${s.target ? byId(s.target).name : '—'} <span class="dim">· straddling (splashes seen round her)</span></span></div>`)}
+    <div class="cact"><button class="pri" data-eng="g">Concentrate 1st BCS on her</button><button data-eng="1">Lion engage her</button><button disabled>Torpedoes (out of reach)</button></div>`;
+}
+// ------------------------------------------------------------------ the card: the squadron
+function groupCard() {
+  const g = groups[0];
+  return `<div class="ch"><div class="tt"><b>1ST BATTLECRUISER SQUADRON</b><div class="sub">${g.admiral} in Lion · ${g.formation}, ${g.spacing} m · guide Lion</div>
+    <div class="chs"><span class="chip act">in action</span><span class="chip ai">AI admiral · Fight</span></div></div>
+    <div class="tools"><button data-tool="centre">⌖</button><button data-tool="close">✕</button></div></div>
+    ${sec('ships', 'Ships', 'in line 3 · falling out 1', `<table class="t"><tr><th>Ship</th><th>Afloat</th><th>Hits</th><th>Turrets</th><th>Target</th><th>Speed</th></tr>
+      ${g.ships.map(id => { const s = byId(id); return `<tr data-s="${id}" style="cursor:pointer"><td>${s.name}${s.reason ? ' <span class="amb">↘</span>' : ''}</td><td>${bar(s.flot, s.flot > .8 ? 'var(--ok)' : s.flot > .6 ? 'var(--amber)' : 'var(--bad)').replace('width:110px', '')}</td><td class="n">${s.hits}</td><td class="n">${id === 1 ? '3/4' : '4/4'}</td><td>${s.target ? label(byId(s.target)) : '—'}</td><td class="n">${s.kn.toFixed(0)}</td></tr>`; }).join('')}</table>`)}
+    ${sec('dist', 'Fire distribution', 'doctrine: by pairs from the van', `<div class="note" style="margin-top:0">Lion and Princess Royal on Lützow, Queen Mary on the Derfflinger, Tiger on the third ship. Seydlitz and Von der Tann unfired on.</div>`)}
+    ${sec('task', 'Task and doctrine', '', `<div class="kv"><span class="k">Task</span><span class="v">Fight: the nearest enemy in sight; turns away when outgunned</span><span class="k">Given by</span><span class="v">the side's commander, 15:30</span><span class="k">Aggression</span><span class="v">bold (+0.4)</span><span class="k">Falls out at</span><span class="v">doctrine 1916: water, speed, steering</span></div>`)}
+    <div class="cact"><button class="pri">Take command</button><button>Turn together ▾</button><button>Withdraw</button><button>Leave to the commander</button></div>`;
+}
+function card() {
+  const dock = $('dock');
+  if (!sel && !pinned.length || !cardOpen) { dock.classList.remove('on'); return; }
+  dock.classList.add('on');
+  const live = sel ? (sel.kind === 'group' ? 'g1' : sel.id) : pinned[0];
+  const tabs = [...pinned.filter(p => p !== live)];
+  $('tabs').innerHTML = [live, ...tabs].map((id, i) => {
+    const name = id === 'g1' ? '1st BCS' : label(byId(id)), pin = pinned.includes(id);
+    return `<div class="tab ${i === 0 ? 'on' : ''}" data-t="${id}">${pin ? '<span class="pin">⚲</span>' : ''}<span class="${id !== 'g1' && byId(id).side ? 'ho' : ''}">${name}</span>${pin ? '<span class="x" data-unpin="' + id + '">✕</span>' : ''}</div>`;
+  }).join('');
+  for (const t of $('tabs').querySelectorAll('[data-t]')) t.onclick = e => {
+    if (e.target.dataset.unpin) { pinned = pinned.filter(p => String(p) !== e.target.dataset.unpin); refresh(); return; }
+    const id = t.dataset.t; select(id === 'g1' ? { kind: 'group', id } : { kind: 'ship', id: +id });
+  };
+  const c = $('card'), top = c.scrollTop;
+  c.innerHTML = live === 'g1' ? groupCard() : byId(live).side ? enemyCard(byId(live)) : ownCard(byId(live));
+  c.scrollTop = top;
+  for (const h of c.querySelectorAll('.sh')) h.onclick = () => { const id = h.parentElement.dataset.sec; shutSecs.has(id) ? shutSecs.delete(id) : shutSecs.add(id); card(); };
+  for (const b of c.querySelectorAll('[data-tool]')) b.onclick = () => {
+    if (b.dataset.tool === 'close') { cardOpen = false; card(); }
+    else if (b.dataset.tool === 'centre') centreOn(live === 'g1' ? byId(1) : byId(live));
+    else togglePin(live);
+  };
+  for (const r of c.querySelectorAll('tr[data-s]')) r.onclick = () => select({ kind: 'ship', id: +r.dataset.s });
+  for (const b of c.querySelectorAll('[data-eng]')) b.onclick = () => { for (const i of b.dataset.eng === 'g' ? [1, 2, 3, 4] : [1]) byId(i).target = live; tick('sig', `${b.dataset.eng === 'g' ? '1st BCS: concentrate on' : 'Lion: engage'} ${label(byId(live))}`, live); refresh(); };
+  marks();
+}
+function togglePin(id) { if (id === 'g1') return; pinned.includes(id) ? pinned = pinned.filter(p => p !== id) : pinned.push(id); refresh(); }
+
+// ------------------------------------------------------------------ selection and input
+function select(s) { sel = s; armed = null; if (s) cardOpen = true; if (s && s.kind === 'ship' && byId(s.id).side === 0) ordersTo = ordersTo; refresh(); }
+function refresh() { rail(); card(); strip(); }
+function centreOn(s) { camX = s.x + 1200; camY = s.y; }
+function shipAt(px, py) {
+  let best = null, bd = 22;
+  for (const s of ships) { const d = Math.hypot(SX(s.x) - px, SY(s.y) - py); if (d < bd) { bd = d; best = s; } }
+  return best;
+}
+function toLocal(e) { const r = app.getBoundingClientRect(); return { x: (e.clientX - r.left) / scale, y: (e.clientY - r.top) / scale }; }
+let drag = null;
+cv.addEventListener('mousedown', e => { const p = toLocal(e); if (e.button === 0) drag = { x: p.x, y: p.y, cx: camX, cy: camY, moved: false }; });
+addEventListener('mouseup', e => {
+  const p = toLocal(e);
+  if (e.button === 0 && drag) {
+    if (!drag.moved) {
+      const s = shipAt(p.x, p.y);
+      if (armed && s && s.side === 1) {
+        const who = ordersTo === 'group' ? [1, 2, 3, 4] : [sel.id];
+        if (armed === 'engage') { for (const i of who) byId(i).target = s.id; tick('sig', `${ordersTo === 'group' ? '1st BCS' : byId(sel.id).name}: engage ${label(s)}`, s.id); }
+        else tick('sig', `${byId(sel.id).name}: torpedoes at ${label(s)} — out of reach, held`, s.id);
+        armed = null; refresh();
+      } else if (s) select({ kind: 'ship', id: s.id });
+      else { select(null); }
+    }
+    drag = null;
+  }
+});
+cv.addEventListener('dblclick', e => { const s = shipAt(...Object.values(toLocal(e))); if (s && s.side === 0) select({ kind: 'group', id: 'g1' }); });
+cv.addEventListener('contextmenu', e => {
+  e.preventDefault();
+  if (!sel || (sel.kind === 'ship' && byId(sel.id).side)) return;
+  const p = toLocal(e), s = shipAt(p.x, p.y), me = sel.kind === 'ship' ? byId(sel.id) : byId(1);
+  if (e.altKey) ordersTo = 'ship';
+  if (s && s.side === 1) { for (const i of ordersTo === 'group' ? [1, 2, 3, 4] : [me.id]) byId(i).target = s.id; tick('sig', `${ordersTo === 'group' ? '1st BCS' : me.name}: engage ${label(s)}`, s.id); refresh(); }
+  else if (s) tick('sig', `${me.name}: follow ${s.name}, station astern`, me.id);
+  else { const wx = camX + (p.x - W / 2) * MPP, wy = camY + (p.y - H / 2) * MPP, c = Math.round((Math.atan2(wx - me.x, -(wy - me.y)) / deg + 360) % 360); me.order = c; sendCourse(me, c); }
+});
+cv.addEventListener('wheel', e => { e.preventDefault(); const p = toLocal(e); const wx = camX + (p.x - W / 2) * MPP, wy = camY + (p.y - H / 2) * MPP; MPP = Math.min(60, Math.max(3, MPP * Math.pow(1.15, Math.sign(e.deltaY)))); camX = wx - (p.x - W / 2) * MPP; camY = wy - (p.y - H / 2) * MPP; }, { passive: false });
+addEventListener('mousemove', e => {
+  const p = toLocal(e); mouse = { ...p, in: true };
+  if (drag) { if (Math.abs(p.x - drag.x) + Math.abs(p.y - drag.y) > 4) drag.moved = true; if (drag.moved) { camX = drag.cx - (p.x - drag.x) * MPP; camY = drag.cy - (p.y - drag.y) * MPP; } }
+  const overMap = e.target === cv;
+  const s = overMap ? shipAt(p.x, p.y) : null; hoverId = s ? s.id : null;
+  const tip = $('tip');
+  if (s) {
+    const L = sel && sel.kind === 'ship' && byId(sel.id).side === 0 ? byId(sel.id) : byId(1);
+    const r = Math.hypot(s.x - L.x, s.y - L.y) / 1000;
+    tip.innerHTML = s.side === 0 ? `<b>${s.name}</b> <span class="dim">${s.cls}</span><br>${s.kn.toFixed(0)} kn · ${s.hits} hits · flotation ${Math.round(s.flot * 100)}%${s.fires ? ' · <span class="amb">burning</span>' : ''}<br><span class="dim">click: her card · double-click: the squadron</span>`
+      : `<b class="ho">${label(s)}</b> <span class="dim">${s.level === 'name' ? s.cls : 'contact'}</span><br>${r.toFixed(1)} km from ${L.name}${s.seen.length ? ' · <span style="color:#f0b3a9">' + s.seen.join(', ') + '</span>' : ''}<br><span class="dim">click: what we hold · right-click: engage</span>`;
+    tip.style.display = 'block'; tip.style.left = p.x + 18 + 'px'; tip.style.top = p.y + 14 + 'px';
+  } else tip.style.display = 'none';
+  // the smart verb at the cursor
+  const verb = $('verb');
+  if (overMap && sel && !(sel.kind === 'ship' && byId(sel.id).side)) {
+    const me = sel.kind === 'ship' ? byId(sel.id) : byId(1), who = sel.kind === 'group' || ordersTo === 'group' ? '1st BCS' : me.name;
+    let h;
+    if (armed && s && s.side === 1) h = `<b class="amb">${armed === 'engage' ? 'ENGAGE' : 'TORPEDOES AT'}</b> ${label(s)}`;
+    else if (s && s.side === 1) h = `<b class="bad">ENGAGE</b> ${label(s)} · ${(Math.hypot(s.x - me.x, s.y - me.y) / 1000).toFixed(1)} km`;
+    else if (s && s.id !== me.id) h = `<b class="fr">FOLLOW</b> ${s.name}`;
+    else if (!s) { const wx = camX + (p.x - W / 2) * MPP, wy = camY + (p.y - H / 2) * MPP, c = Math.round((Math.atan2(wx - me.x, -(wy - me.y)) / deg + 360) % 360), d = Math.hypot(wx - me.x, wy - me.y) / 1000;
+      h = `<b class="gold">STEER</b> ${String(c).padStart(3, '0')}° · ${d.toFixed(1)} km`; }
+    if (h) { verb.innerHTML = `<span class="dim">${who}:</span> ${h}`; verb.style.display = 'block'; verb.style.left = p.x + 16 + 'px'; verb.style.top = p.y - 22 + 'px'; } else verb.style.display = 'none';
+  } else verb.style.display = 'none';
+});
+addEventListener('keydown', e => {
+  if (e.key === 'F1') { e.preventDefault(); $('dev').classList.toggle('on'); return; }
+  if (e.key === ' ') { e.preventDefault(); paused = !paused; topBar(); }
+  else if (e.key === 'v' || e.key === 'V') { cardOpen = !cardOpen; card(); }
+  else if (e.key === 'p' || e.key === 'P') { if (sel && sel.kind === 'ship') togglePin(sel.id); }
+  else if (e.key === 'j' || e.key === 'J') $('logDrawer').classList.toggle('open');
+  else if (e.key === '?') $('help').classList.toggle('on');
+  else if (e.key === 'Tab') { e.preventDefault(); const own = [1, 2, 3, 4], i = sel && sel.kind === 'ship' ? own.indexOf(sel.id) : -1; select({ kind: 'ship', id: own[(i + (e.shiftKey ? 3 : 1) + 4) % 4] }); }
+  else if (e.key === 'Escape') {   // the topmost thing shuts; with nothing open, the menu
+    const open = [...document.querySelectorAll('.shade.on')];
+    if (open.length) open.forEach(o => o.classList.remove('on'));
+    else if (armed) { armed = null; strip(); }
+    else if ($('logDrawer').classList.contains('open')) $('logDrawer').classList.remove('open');
+    else if ($('dev').classList.contains('on')) $('dev').classList.remove('on');
+    else if (sel) select(null);
+    else { paused = true; topBar(); $('menu').classList.add('on'); }
+  }
+});
+$('menuBtn').onclick = () => { paused = true; topBar(); $('menu').classList.add('on'); };
+$('helpBtn').onclick = () => $('help').classList.add('on');
+$('aims').onclick = () => $('brief').classList.add('on');
+for (const sh of document.querySelectorAll('.shade')) sh.addEventListener('click', e => {
+  const a = e.target.dataset.a;
+  if (e.target === sh || a === 'close' || a === 'resume') sh.classList.remove('on');
+  if (a === 'go') { sh.classList.remove('on'); paused = false; topBar(); }
+  if (a === 'brief') { sh.classList.remove('on'); $('brief').classList.add('on'); }
+  if (a === 'restart' || a === 'pick' || a === 'quit') sh.classList.remove('on');
+});
+$('oobOwn').innerHTML = groups[0].ships.map(id => { const s = byId(id); return `<span>${s.flag ? '⚑ ' : ''}${s.name}</span><span class="c2">${s.cls}</span><img src="assets/lion-profile.png">`; }).join('');
+
+// ------------------------------------------------------------------ the loop
+let last = performance.now();
+function frame(t) {
+  const dt = Math.min(.1, (t - last) / 1000); last = t;
+  if (!paused) {
+    simMs += dt * 1000 * speed;
+    for (const s of ships) { const v = s.kn * .514 * dt * 1.5; s.x += Math.sin(s.hdg * deg) * v; s.y -= Math.cos(s.hdg * deg) * v; }
+  }
+  salvos(t); drawMap(t); clock();
+  if (Math.floor(t / 1000) !== Math.floor((t - dt * 1000) / 1000)) ticker();
+  requestAnimationFrame(frame);
+}
+
+// ------------------------------------------------------------------ states for screenshots: battle.html#ship, #enemy, #group, #pinned, #order, #log, #menu, #brief, #result, #dev, #help
+function state(h) {
+  for (const o of document.querySelectorAll('.shade.on')) o.classList.remove('on');
+  $('dev').classList.remove('on'); $('logDrawer').classList.remove('open'); armed = null; pinned = []; orders.length = 0; MPP = 15; camX = 1900; camY = -650; sel = null;
+  if (h === 'ship' || h === 'order' || h === 'arm') select({ kind: 'ship', id: 1 });
+  if (h === 'enemy') select({ kind: 'ship', id: 5 });
+  if (h === 'group') select({ kind: 'group', id: 'g1' });
+  if (h === 'pinned') { pinned = [1]; select({ kind: 'ship', id: 5 }); }
+  if (h === 'order') { ordersTo = 'group'; const L = byId(1); L.order = 120; orders.push({ from: 1, x: L.x + Math.sin(120 * deg) * 4000, y: L.y - Math.cos(120 * deg) * 4000, t0: performance.now(), label: '1st BCS: course 120°' }); strip(); }
+  if (h === 'arm') { armed = 'engage'; strip(); }
+  if (h === 'log') $('logDrawer').classList.add('open');
+  if (h === 'menu') { paused = true; $('menu').classList.add('on'); }
+  if (h === 'brief') { paused = true; $('brief').classList.add('on'); }
+  if (h === 'result') { paused = true; $('result').classList.add('on'); }
+  if (h === 'dev') $('dev').classList.add('on');
+  if (h === 'help') $('help').classList.add('on');
+  topBar(); refresh();
+}
+topBar(); notes(); ticker(); logList(); refresh();
+state(location.hash.slice(1));
+addEventListener('hashchange', () => state(location.hash.slice(1)));
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

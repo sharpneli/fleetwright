@@ -6,6 +6,9 @@ screens (designer, research, yards...) pushed on top of it. The reasoning behind
 `docs/world/architecture.md`. This adds the multi-scale part: what forces look like at each zoom, how your forces
 near the camera stay at hand, and where everything else lives.
 
+**The battler first:** the game that ships first is a scenario battler, and its HUD is planned in
+`battle-hud.md` with its own mockup, `battle.html` (U0-U7). This mockup stays the reference for the world game.
+
 **It is a mockup, not code to port.** Take the layout, the bands, the symbology and the interactions, not the HTML.
 The scenario (31 May 1916, an action off Horns Reef) is illustrative.
 
