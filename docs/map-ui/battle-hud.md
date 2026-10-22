@@ -72,28 +72,29 @@ mockup's, committed.
 | Step | What | Needs from the sim |
 |---|---|---|
 | **U0** | The dev panel on F1 (`-dev` opens it): the spawner, scenario picker, sides, truth, horizon, the dev salvo. **Done 2026-10-22.** | — |
-| **U1** | A `MapTheme` (the designer's tokens, shared); the top bar replaces the clock window; Esc opens the menu instead of quitting (the menu takes the clock's auto-pause rules and the scenario picker); the briefing at load; the "where" panel down to the scale bar and position (the rest to the dev panel) | the scenario's brief, aims, orders before action: already in `WorldSession.Scenario` |
+| **U1** | A `MapTheme` (the designer's tokens, shared); the top bar replaces the clock window and the menu bar (decision 3: the designer from a menu at its right, the viewers as the designer's own tabs); Esc never quits (decision 4): it shuts the topmost thing, else opens the menu, which takes the clock's auto-pause rules and the scenario picker; the briefing at load; the "where" panel down to the scale bar and position (the rest to the dev panel) | the scenario's brief, aims, orders before action: already in `WorldSession.Scenario` |
 | **U2** | The selection strip and the smart verb: the current strip's rows regrouped as above; right-click on an enemy engages, on your ship follows; armed modes; Tab | — (all orders exist) |
 | **U3a** | The sim's side of the card: per-mount state, jam until and rounds; fire control (range, plot error, straddles, sees); damage control parties and jobs; killed and wounded; flooded spaces; each ship's hits taken kept whole (the 64-line log loses lines at speed) | `ShipCondition`, `CombatStore`, `GunnerySystem.Fc` into the snapshot, own ships only |
 | **U3b** | The own ship's card and the dock with pinned tabs; the plan from the ship's sprite (`ShipArt`) with the marks drawn over it; the profile baked once per class where the class is built | the profile bake (as `ProfileScene` does) in the class's `Built` hook |
 | **U4** | The forces rail; the enemy card; the squadron card. Fix the two leaks first: the combat log goes out unfiltered, and sighted ships export their part states whole | `CombatLog` filtered by `ShownSides`; `Sighted` without `PartStates` |
 | **U5** | Map marks: own labels with speed and flotation bar, contacts' seen flags, the selection's fire line in brass with its range, torpedo reach, orders sent and in transit, hover tooltip, friend blue and hostile red | — |
-| **U6** | The ticker and the log (J), with filters; notices for falling out, a contact identified, a ship lost (the exe diffs the snapshot for these) | the log's lines by kind (exists) |
-| **U7** | The result: `ScenarioEnd` run on the sim thread at whole minutes, its result in the snapshot; the result modal; the clock stops, the map stays to look round | `ScenarioEnd` out of the CLI |
+| **U6** | The ticker and the log (J), with filters; notices for falling out, a contact identified, a ship lost (the exe diffs the snapshot for these); "order her back" an order the captain obeys (decision 2) | the log's lines by kind (exists); falling out held off for a ship the player ordered |
+| **U7** | The result: `ScenarioEnd` run on the sim thread at whole minutes, its result in the snapshot; the result modal, the truth on both sides (decision 5); the clock stops, the map stays to look round | `ScenarioEnd` out of the CLI |
 
 After these, the rest of 5.2 as `command.md` lists it: orders as editable objects, the radial menu, the doctrine
 card, edge markers for what's off screen, and the rumble for a fight at speed.
 
-## Open questions
+## Decisions (the user, 2026-10-22)
 
-1. **Click opens the card.** As mocked: one click selects and opens. The alternative is the v2 mockup's: a click
-   selects (the strip), V opens the card. Recommend the first, as asked.
-2. **Falling out.** The notice offers "Order her back into line"; today falling out is the captain's own, with no
-   way to overrule it. Should an order bring her back (and the captain obey, at his ship's risk), or is the button
-   only "Show her"?
-3. **The tool tabs** (Designer, Hitboxes, Ship, Profile) in the menu bar: keep the bar, or move them into the dev
-   panel (F3 still steps) so the map has the whole screen?
-4. **Esc** stops quitting the app on the map (it opens the menu, which has Quit). The tool tabs too, or keep Esc
-   there as it is?
-5. **The enemy's truth after the end**: the result shows both sides as they were. Fine for a battler, or keep the
-   player's picture to the end?
+1. **A click opens the card**, for now: one click selects and opens it; ✕ or V shuts it until the next click.
+2. **The player may overrule**: captains' and admirals' own choices (falling out among them) give way to the
+   player's order. It makes the player a little unfairly strong, but their attention is on one place at a time, and
+   that attention is what's rewarded. So the notice's "Order her back into line" is a real order, and the captain
+   obeys it at his ship's risk (`docs/battle/command.md` holds units the player has ordered; falling out joins the
+   things a held unit doesn't do on its own).
+3. **The tool tabs** leave the menu bar: the designer is one entry in a menu at the top right, and the hitbox,
+   ship and profile viewers are tabs inside the designer. The map has the whole screen.
+4. **Esc never quits**, anywhere: it shuts the topmost thing, and with nothing open it opens the menu (which has
+   Quit). The same in the designer and its viewers.
+5. **The result tells the truth**: both sides' real losses, for bragging rights and as the score. Limited knowledge
+   matters more in the campaign; the battler shows everything at the end.
