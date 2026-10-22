@@ -265,23 +265,6 @@ public sealed unsafe partial class MapScene
         return gv.GuideShip[g] != 0 ? (Unit.Group(gv.Id[g]), gv.GuideShip[g]) : (Unit.Ship(selected), selected);
     }
 
-    /// <summary>The strip's "orders to" row: the ship and each group above it, the one orders go to picked.</summary>
-    void LevelRow(Snapshot s)
-    {
-        var gv = s.Groups;
-        int level = Level(s);
-        ImGui.Text("Orders to:");
-        for (int i = 0; i <= chain.Count; i++)
-        {
-            ImGui.SameLine();
-            string name = i == 0 ? $"this ship #{selected}" : gv.Name[chain[i - 1]];
-            if (ImGui.RadioButton($"{name}##level{i}", level == i))
-                levelPick = i;
-        }
-        ImGui.SameLine();
-        ImGui.TextDisabled(level < Chain(s) ? "(takes it out of the line above)" : "(alt+right-click: this ship only)");
-    }
-
     static Detachment DetachmentOf(GroupsView gv, int g, int member)
     {
         for (int i = 0; i < gv.MemberCount[g]; i++)

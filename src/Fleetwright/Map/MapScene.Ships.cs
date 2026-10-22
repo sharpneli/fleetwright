@@ -54,8 +54,6 @@ public sealed unsafe partial class MapScene
     bool hardOver;
     int followMetres = 800;
 
-    static readonly string[] CaptainNames = ["Course and speed", "Follow", "Run from", "Fight"];
-
     static readonly int[] CourseSteps = [-90, -10, 10, 90];
     // each ship's trail (Wakes.WakeTrail): a line on the table, the foam lane in the world view (docs/visuals/wakes.md K4)
     readonly Dictionary<int, WakeTrail> tracks = [];
@@ -371,9 +369,11 @@ public sealed unsafe partial class MapScene
     void Click(double x, double y)
     {
         var view = View;
-        if (Armed && view.Pick(x, y, out var at) && world.Shore.IsLand(at))
+        if (Armed && view.Pick(x, y, out var at) && world.Shore.IsLand(at) || ArmedClick(x, y))
             return;
-        Pick(PickShip(view, x, y));
+        int hit = PickShip(view, x, y);
+        Pick(hit);
+        DoubleClick(hit);
     }
 
     /// <summary>Whether a press on the sea places ships: the dev panel armed and its class built.</summary>
@@ -524,7 +524,7 @@ public sealed unsafe partial class MapScene
     /// <summary>A right click on the sea with a ship selected: steer for it, or with shift add it to the route.</summary>
     void OrderAt(double x, double y, bool waypoint)
     {
-        if (FireAt(x, y))
+        if (FireAt(x, y) || SmartOrder(x, y, waypoint))
             return;
         var s = world.Current;
         int k = s.Ships.IndexOf(selected);
@@ -549,59 +549,7 @@ public sealed unsafe partial class MapScene
 
     // ------------------------------------------------------------------ the panels
 
-    /// <summary>The commanded unit's behaviour: plain course and speed orders, or following or running from another
-    /// ship, with the other ship and the station's distance. The same orders go to a ship or a group.</summary>
-    void CaptainRow(Snapshot s, Unit unit, int k)
-    {
-        var v = s.Ships;
-        var order = (CaptainOrder)v.Captain[k];
-        int target = v.CaptainTarget[k];
-        int shown = order switch { CaptainOrder.Follow => 1, CaptainOrder.Run => 2, CaptainOrder.Fight => 3, _ => 0 };
-        ImGui.Text(unit.IsGroup ? "Group:" : "Captain:");
-        ImGui.SameLine();
-        ImGui.SetNextItemWidth(150 * UiFonts.Scale);
-        int pick = shown;
-        if (ImGui.Combo("##captain", ref pick, CaptainNames, CaptainNames.Length) && pick != shown)
-        {
-            if (pick is 1 or 2 && (target == 0 || v.IndexOf(target) < 0))
-                target = Nearest(s, k);
-            Behaviour(pick, unit, pick == 3 ? 0 : target);
-        }
-        if (shown == 3)
-        {
-            ImGui.SameLine();
-            ImGui.TextDisabled(target != 0 ? $"on {TargetLabel(s, target)}" : "the nearest enemy in sight; turns away when outgunned");
-        }
-        else if (v.Reason[k] != 0)
-        {
-            ImGui.SameLine();
-            ImGui.TextColored(FlameColour, ReasonText(v.Reason[k]));
-        }
-        else if (shown != 0)
-        {
-            ImGui.SameLine();
-            ImGui.SetNextItemWidth(170 * UiFonts.Scale);
-            if (ImGui.BeginCombo("##target", ShipLabel(s, target)))
-            {
-                for (int j = 0; j < v.Count; j++)
-                    if (j != k && ImGui.Selectable(ShipLabel(s, v.Entity[j]), v.Entity[j] == target))
-                        Behaviour(shown, unit, v.Entity[j]);
-                ImGui.EndCombo();
-            }
-        }
-        if (shown == 1)
-        {
-            ImGui.SameLine();
-            ImGui.SetNextItemWidth(90 * UiFonts.Scale);
-            if (ImGui.InputInt("m astern", ref followMetres, 100, 500, ImGuiInputTextFlags.EnterReturnsTrue))
-            {
-                followMetres = Math.Clamp(followMetres, 100, 20_000);
-                Behaviour(shown, unit, target);
-            }
-        }
-    }
-
-    /// <summary>Sends a behaviour from the captain row: 0 holds the course and speed ordered now, 1 follows, 2 runs
+    /// <summary>Sends a behaviour from the strip: 0 holds the course and speed ordered now, 1 follows, 2 runs
     /// from (with nobody else at sea, it holds), 3 fights (the nearest enemy, or the target).</summary>
     void Behaviour(int pick, Unit unit, int target)
     {
@@ -861,9 +809,6 @@ public sealed unsafe partial class MapScene
     {
         var vp = ImGui.GetMainViewport();
         float pad = 8 * UiFonts.Scale;
-        const ImGuiWindowFlags Hud = ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize |
-                                     ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoFocusOnAppearing |
-                                     ImGuiWindowFlags.NoNav | ImGuiWindowFlags.NoMove;
         var s = world.Current;
 
         // the dev panel (F1): the scenario picker, the sides, the dev views and the spawner; none of it is the game's
@@ -882,95 +827,5 @@ public sealed unsafe partial class MapScene
         HeldUi(s);
         if (placeDrag)
             ImGui.SetTooltip($"heading {Math.Round(placeHeading) % 360:000}°");
-
-        // the selected ship: bottom centre
-        int k = s.Ships.IndexOf(selected);
-        if (k < 0)
-            return;
-        var cls = world.Classes.TryGet(s.Ships.Class[k]);
-        var (p, f) = s.Ships.PoseAt(k, world.DrawMs);
-        ImGui.SetNextWindowPos(new Vector2(vp.WorkPos.X + vp.WorkSize.X / 2, vp.WorkPos.Y + vp.WorkSize.Y - pad), ImGuiCond.Always, new Vector2(0.5f, 1));
-        ImGui.SetNextWindowBgAlpha(0.8f);
-        if (ImGui.Begin("##selected", Hud))
-        {
-            double heading = Earth.Heading(p, f), kn = s.Ships.Speed[k] / Handling.MsPerKnot;
-            string orders = s.Ships.Helm[k] switch
-            {
-                Helm.Course => $"course {s.Ships.CourseOrderDeg[k]:000}°",
-                Helm.Route when s.Ships.RouteLoop[k] => $"patrol round {s.Ships.RouteCount[k]} waypoints",
-                Helm.Route => $"route, {s.Ships.RouteCount[k]} waypoint{(s.Ships.RouteCount[k] == 1 ? "" : "s")} to go",
-                Helm.Rudder => $"rudder held {s.Ships.Rudder[k] * 180 / Math.PI:+0;-0}°",
-                _ => "no helm orders",
-            };
-            string named = world.NameOf(selected) is { } nm ? $"{nm}, " : "";
-            ImGui.Text($"{named}{cls?.Name ?? "?"}  #{selected}  side {s.Ships.Side[k]}{s.Ships.Tier[k] switch { ClockTier.Rails => "  (on rails)", ClockTier.Coarse => "  (coarse)", _ => "" }}");
-            ImGui.SameLine();
-            ImGui.TextDisabled($"heading {heading:000}°, {kn:0.0} kn, rudder {s.Ships.Rudder[k] * 180 / Math.PI:+0;-0;0}°  ·  " +
-                               $"ordered: {orders}, {s.Ships.SpeedOrderKn[k]:0.#} kn");
-            // never an unexplained deviation: the order stands, the helm follows the coast (docs/world/terrain-plan.md)
-            if (s.Ships.LandSide[k] != 0)
-                ImGui.TextColored(SlideColor, $"altered for land: following the coast, land to {(s.Ships.LandSide[k] > 0 ? "port" : "starboard")}, until the ordered course is clear");
-            if (s.Ships.Backstops[k] > 0)
-                ImGui.TextDisabled($"put back off the land {s.Ships.Backstops[k]}x");
-
-            // orders: to the ship, or to a group it's in (one order moves the group: its admiral hands it down)
-            LevelRow(s);
-            var (unit, cmd) = Commanded(s);
-            int kc = s.Ships.IndexOf(cmd);
-            var o = world.Ai.Orders;
-
-            // course
-            ImGui.SetNextItemWidth(70 * UiFonts.Scale);
-            ImGui.InputInt("##course", ref courseEdit, 0);
-            courseEdit = ((courseEdit % 360) + 360) % 360;
-            ImGui.SameLine();
-            if (ImGui.Button("Steer"))
-                world.Send(o.Course(unit, courseEdit, hardOver ? 90 : 0));
-            foreach (int d in CourseSteps)
-            {
-                ImGui.SameLine();
-                if (ImGui.Button($"{d:+0;-0}°"))
-                {
-                    courseEdit = (int)Math.Round(((s.Ships.CourseOrderDeg[kc] + d) % 360 + 360) % 360);
-                    world.Send(o.Course(unit, courseEdit, hardOver ? 90 : 0));
-                }
-            }
-            ImGui.SameLine();
-            ImGui.Checkbox("hard over", ref hardOver);
-            if (s.Ships.RouteCount[kc] > 0)
-            {
-                ImGui.SameLine();
-                if (ImGui.Button("Clear route"))
-                    world.Send(o.ClearRoute(unit));
-            }
-
-            // the telegraph
-            var guideCls = world.Classes.TryGet(s.Ships.Class[kc]);
-            if (guideCls != null)
-            {
-                double full = guideCls.Motion.MaxSpeedKn;
-                double flank = Math.Max(full, guideCls.SpeedAt(guideCls.Motion.RatedShp * Math.Max(guideCls.Motion.OverloadMax, 1)));
-                (string Label, double Kn)[] bells =
-                    [("Full astern", -full), ("Half astern", -full / 2), ("Stop", 0), ("Slow", full / 4), ("Half", full / 2), ("Full", full), ("Flank", flank)];
-                for (int i = 0; i < bells.Length; i++)
-                {
-                    if (i > 0)
-                        ImGui.SameLine();
-                    bool rung = Math.Abs(s.Ships.SpeedOrderKn[kc] - bells[i].Kn) < 0.05;
-                    if (rung)
-                        ImGui.PushStyleColor(ImGuiCol.Button, ImGui.GetColorU32(ImGuiCol.ButtonActive));
-                    if (ImGui.Button($"{bells[i].Label}##bell"))
-                        world.Send(o.Speed(unit, Math.Round(bells[i].Kn, 2)));
-                    if (rung)
-                        ImGui.PopStyleColor();
-                }
-            }
-            SearchRow(s, unit, kc);
-            CaptainRow(s, unit, kc);
-            FireRow(s, unit, k);
-            GroupRow(s);
-            ImGui.TextDisabled("right-click the sea: steer for it · shift+right-click: add a waypoint · alt: this ship alone · click elsewhere: deselect");
-        }
-        ImGui.End();
     }
 }

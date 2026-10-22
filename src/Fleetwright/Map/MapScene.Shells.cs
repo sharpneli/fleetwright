@@ -46,7 +46,7 @@ public sealed partial class MapScene
     // a pop's least time on the screen, in real seconds, whatever the clock's rate
     const double PopFloorS = 0.2;
     const double RefCalibreMm = 305;
-    bool fireArmed, engageArmed, torpedoArmed;
+    bool fireArmed;   // the dev's salvo "at": a right-click on the sea fires it
     int fireBattery;   // the dev's salvo "at": which battery
     ShellKind? fireKind;   // and which kind (null: the magazine order)
     static readonly ShellKind[] KindsInOrder = [ShellKind.Ap, ShellKind.Common, ShellKind.He];
@@ -377,50 +377,6 @@ public sealed partial class MapScene
         return false;
     }
 
-    /// <summary>The strip's fire row: the commanded unit's fire order (at will, hold fire, engage: armed, then a
-    /// right-click on a ship or contact); then each of the selected ship's batteries: its target and state, salvos and
-    /// hits. The dev's one salvo "at" the sea is in the dev panel (<see cref="DevFireRow"/>).</summary>
-    void FireRow(Snapshot s, Unit unit, int k)
-    {
-        var cls = world.Classes.TryGet(s.Ships.Class[k]);
-        if (cls == null || cls.Batteries.Length == 0)
-            return;
-        var o = world.Ai.Orders;
-        var fire = (FireOrder)s.Ships.Fire[k];
-        ImGui.Text("Guns:");
-        ImGui.SameLine();
-        if (ImGui.RadioButton("fire at will##fire", fire == FireOrder.AtWill))
-            world.Send(o.FireAtWill(unit));
-        ImGui.SameLine();
-        if (ImGui.RadioButton("hold fire##fire", fire == FireOrder.Hold))
-            world.Send(o.HoldFire(unit));
-        ImGui.SameLine();
-        if (ImGui.Checkbox("engage (right-click a ship)##engage", ref engageArmed) && engageArmed)
-            (fireArmed, torpedoArmed) = (false, false);
-        if (fire == FireOrder.Engage)
-        {
-            ImGui.SameLine();
-            ImGui.TextDisabled($"engaging {TargetLabel(s, s.Ships.FireTarget[k])}");
-        }
-        var v = s.Batteries;
-        for (int b = 0; b < cls.Batteries.Length; b++)
-        {
-            var row = cls.Batteries[b];
-            int i = 0;
-            while (i < v.Count && (v.Shooter[i] != selected || v.Battery[i] != b))
-                i++;
-            string gun = $"  {row.Label} {(row.Kind == Battery.Main ? "main" : "secondary")}";
-            if (i == v.Count)
-                ImGui.TextDisabled($"{gun}: no target{(fire == FireOrder.Hold ? " (holding fire)" : "")}");
-            else
-                ImGui.TextDisabled($"{gun} on {TargetLabel(s, v.Target[i])}: {StateText(v.State[i], v.Phase[i])}, " +
-                                   $"{(v.Local[i] ? "local control" : $"level {v.Level[i]} ({FireControlPresets.Name(v.Level[i])})")}; {v.Salvos[i]} salvos, {v.Hits[i]} hits of {v.Shells[i]}");
-        }
-        TorpedoRow(s, k, cls);
-        SmokeRow(s, k, cls);
-        DamageRow(s, k, cls);
-    }
-
     /// <summary>Dev (F1): one salvo from the selected ship "at" the sea: the battery, the kind (the magazine order, or a
     /// kind the battery carries, her loadout's, with its rounds left), armed, then a right-click on the sea fires it.</summary>
     void DevFireRow(Snapshot s)
@@ -487,46 +443,11 @@ public sealed partial class MapScene
         }
         ImGui.SameLine();
         if (ImGui.Checkbox("salvo at (right-click the sea)##fire", ref fireArmed) && fireArmed)
-            (engageArmed, torpedoArmed) = (false, false);
+            armedPick = ClickPick.None;
         if (s.Shells.Count > 0)
         {
             ImGui.SameLine();
             ImGui.TextDisabled($"{s.Shells.Count} in flight");
-        }
-    }
-
-    /// <summary>The selected ship making smoke (docs/battle/smoke.md Z4: her funnels burn rich, a screen), while the
-    /// smoke field is on.</summary>
-    void SmokeRow(Snapshot s, int k, ShipClass cls)
-    {
-        if (!world.Settings.Smoke || cls.Funnels.Length == 0)
-            return;
-        bool on = s.Ships.MakingSmoke[k];
-        if (ImGui.Checkbox("make smoke##screen", ref on))
-            world.Send(SmokeSystem.MakeSmoke(selected, on));
-    }
-
-    /// <summary>The selected ship's torpedoes (docs/battle/fighting.md 4.6): in its tubes and left, its torpedo (fast and
-    /// slow settings), and "torpedoes at": armed, a right-click on a ship or contact fires what's loaded and bears.</summary>
-    void TorpedoRow(Snapshot s, int k, ShipClass cls)
-    {
-        if (cls.Launchers.Length == 0)
-            return;
-        var t = cls.Torpedoes[cls.Launchers[0].Torpedo];
-        ImGui.Text("Torpedoes:");
-        ImGui.SameLine();
-        ImGui.TextDisabled(string.Format(CultureInfo.InvariantCulture, "{0} loaded, {1} left; {2:0}mm, {3:0} kn to {4:0.0} km or {5:0} kn to {6:0.0} km",
-            s.Ships.TorpedoesLoaded[k], s.Ships.TorpedoesLeft[k], t.CalibreMm, t.FastKn, t.FastRangeM / 1000, t.SlowKn, t.SlowRangeM / 1000));
-        ImGui.SameLine();
-        if (ImGui.Checkbox("torpedoes at (right-click a ship)##torpedo", ref torpedoArmed) && torpedoArmed)
-            (engageArmed, fireArmed) = (false, false);
-        int running = 0;
-        for (int i = 0; i < s.Torpedoes.Count; i++)
-            running += s.Torpedoes.Shooter[i] == selected ? 1 : 0;
-        if (running > 0)
-        {
-            ImGui.SameLine();
-            ImGui.TextDisabled($"{running} running");
         }
     }
 
@@ -654,29 +575,11 @@ public sealed partial class MapScene
         _ => "silent (coarse tier)",
     };
 
-    /// <summary>The armed right-click: engage the ship or contact there with the selected ship's battery (or all), fire
-    /// its torpedoes at it, or fire one salvo at the sea there.</summary>
+    /// <summary>The dev's armed right-click: one salvo at the sea there (the strip's picks are <see cref="ArmedClick"/>).</summary>
     bool FireAt(double x, double y)
     {
         if (selected < 0)
             return false;
-        if (engageArmed || torpedoArmed)
-        {
-            // an enemy in sight by its sprite, a ship, else a contact by its marker
-            var s = world.Current;
-            int target = PickShip(View, x, y, s.Sighted);
-            if (target < 0)
-                target = PickShip(View, x, y, s.Ships);
-            if (target < 0)
-                target = PickContact(View, s, x, y);
-            int k = s.Ships.IndexOf(selected);
-            if (target > 0 && target != selected && torpedoArmed && k >= 0)
-                world.Send(TorpedoSystem.Launch(selected, target, Math.Max(s.Ships.TorpedoesLoaded[k], 1)));
-            else if (target > 0 && target != selected)
-                world.Send(world.Ai.Orders.Engage(Commanded(world.Current).Unit, target));
-            (engageArmed, torpedoArmed) = (false, false);
-            return true;
-        }
         if (!fireArmed || !View.Pick(x, y, out var at))
             return false;
         var (lat, lon) = Earth.LatLon(at);

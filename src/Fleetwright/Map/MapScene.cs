@@ -174,6 +174,7 @@ public sealed unsafe partial class MapScene : IScene
         var s = world.Current;
         TopBar(s);
         ShipsUi();
+        Strip(s);
         probes.Add(probeUiShips, t);
         t = Probes.Now;
         GroupLabels(s);
@@ -187,6 +188,7 @@ public sealed unsafe partial class MapScene : IScene
         if (Sdl3GpuEngine.StatsShown)
             world.Perf.Draw(s, art, renderer.OverlayVertices);
         Where();
+        CursorVerb(s);
         Briefing();
         probes.Add(probeUiRest, t);
         DesignerTheme.Pop();
@@ -256,6 +258,8 @@ public sealed unsafe partial class MapScene : IScene
             return Escape();
         if (key == SDLK_F1)
             devOpen = !devOpen;
+        else if (key == SDLK_TAB)
+            NextShip((SDL_GetModState() & SDL_Keymod.SDL_KMOD_SHIFT) != 0);
         else if (key == SDLK_SPACE)
             world.Send(s.Paused ? Command.Resume() : Command.Pause());
         else if (key is SDLK_EQUALS or SDLK_KP_PLUS or SDLK_MINUS or SDLK_KP_MINUS)

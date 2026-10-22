@@ -620,8 +620,8 @@ public sealed partial class MapScene : ISceneMenu
     {
         if (briefOpen)
             briefShut = true;
-        else if (engageArmed || fireArmed || torpedoArmed)
-            (engageArmed, fireArmed, torpedoArmed) = (false, false, false);
+        else if (armedPick != ClickPick.None || fireArmed)
+            (armedPick, fireArmed) = (ClickPick.None, false);
         else if (placing || placeDrag)
             (placing, placeDrag) = (false, false);
         else if (selected >= 0)

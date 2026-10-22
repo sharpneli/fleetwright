@@ -380,6 +380,9 @@ public unsafe class Sdl3GpuEngine : IDisposable
                     else
                         PushMouse(SDL_EventType.SDL_EVENT_MOUSE_BUTTON_UP, a1, default);
                     break;
+                case "mmove":   // the cursor over the map, no button (hover, the map's cursor verb)
+                    PushMouse(SDL_EventType.SDL_EVENT_MOUSE_MOTION, At(p[2]), default);
+                    break;
                 case "mclick" or "mright":
                     var m = At(p[2]);
                     byte mb = p[1] == "mclick" ? (byte)1 : (byte)3;
