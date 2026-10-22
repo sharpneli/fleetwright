@@ -5,7 +5,7 @@ fire control read it) and Z4 (the other sources) done 2026-10-21, decisions 5-9;
 user's; breaking the field (Z5b-Z5d: elongated puffs and merging across trails, the large eddies, the grain) agreed and
 built 2026-10-21, decisions 10-11; **taken in and on by default** 2026-10-21, shorter lived (decisions 12-13); Z6
 (smoke contacts) built 2026-10-22: the plan's steps all built; the tuning pass begun 2026-10-22 (T1 the lines' ends, T2 the
-index's young part, T3 the firing state and her lee)
+index's young part, T3 the firing state and her lee, T4 the forcing pruned back)
     Updated: 2026-10-22
 
 Smoke as sim state that sight reads, and the same state drawn. The research is `research/vfx/unified-smoke-system.md`
@@ -1244,6 +1244,30 @@ wake too).
 **Step 3 next** (the tuning, against all the yardsticks together): the forced factor and where forcing starts (the
 lines at 8-14 km, the contacts' ranges), and whether the stronger self-blinding at full power (her own smoke on 37-59% of
 the smoky lines) is the record's.
+
+### T4 The forcing pruned back (done 2026-10-22)
+
+The user, on T3's numbers (her own smoke on up to 59% of the smoky lines, 39% of the lines lost at 8-14 km): "Let's
+prune it back a bit and do tuning. That seems to be too much (not verified historically, this is just gameplay vibes)."
+A gameplay setting, not the record's (decision 5's tuning; request 1 still stands for the record).
+
+**The sweep** (`smoke run` and `smoke contacts`, Jutland 3 h, one run each; the lines her highest eye makes out in clear
+air and loses to the smoke, and the ships each side first held by their smoke):
+
+| `SmokeForcedFactor`, from (of the rated power) | All | Under 8 km | 8-14 km | 14-20 km | Beyond 20 km | By smoke (British + German) |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 (no forcing, before T3) | 16% | 9% | 9% | 50% | 40% | 3 + 0 |
+| 4, from half (T3) | 43% | 26% | 39% | 66% | 93% | 9 + 2 |
+| **2, from half (taken)** | **32%** | 22% | **26%** | 48% | 69% | 9 + 4 |
+| 2.5, from half | 52% | 28% | 45% | 59% | 92% | 9 + 4 |
+| 3, from 0.65 | 45% | 21% | 23% | 61% | 86% | 8 + 4 |
+
+- **Taken: ×2 from half the rated power.** A coal battleship at full power makes ~680 m²/s (well fired 342, T3's 1,367);
+  about a quarter of the lines at 8-14 km lost (the record's ranges); the smoke contacts keep T3's gain (13 ships first
+  held by their smoke, at 23-29 km against first sight at 15-20 km).
+- **The runs' spread:** ×2.5 came out smokier than ×4; each run's battle takes its own course, so one run moves by some
+  ±10 points. The table gives the scale, not a fine order: a finer tuning wants several seeds a setting (a seed for
+  `smoke run`, not built).
 
 ## What stays out
 
