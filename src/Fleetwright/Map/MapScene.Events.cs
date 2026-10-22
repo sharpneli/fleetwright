@@ -15,12 +15,14 @@ namespace Fleetwright.Map;
 /// snapshots (a ship falling out, a fire starting, a contact first seen or made out), as one stream. The ticker shows
 /// the newest at the bottom left, fading; J opens the whole log, filtered; a line's click goes to its ship. A ship
 /// falling out raises a notice at the top: show her, order her back into line (the player overrules her captain:
-/// decision 2), or let her go. Each event's text is made once, when it happens.</summary>
+/// decision 2), or let her go. An event's words are made once, when it's first shown.</summary>
 public sealed partial class MapScene
 {
     enum EventKind : byte { Gun, Hit, Fire, Loss, Captain, Seen, Damage, Order }
 
-    readonly record struct MapEvent(long Ms, EventKind Kind, int Ship, string Time, string Text, long RealMs);
+    /// <summary>An event: when, what kind, about which ship; a log line's (its place in the feed and the sentence it's
+    /// told in) or the screens' own (its words given); when it came, real time (the ticker fades it).</summary>
+    readonly record struct MapEvent(long Ms, EventKind Kind, int Ship, int Line, Form Form, string? Text, long RealMs);
 
     readonly List<MapEvent> events = new(1024);
     int feedRead, eventsGeneration = -1;
@@ -53,6 +55,7 @@ public sealed partial class MapScene
             groupOf.Clear();
             levelOf.Clear();
             notices.Clear();
+            eventTexts.Clear();
             feedRead = 0;
             tally = default;
         }
@@ -60,7 +63,7 @@ public sealed partial class MapScene
         if (feedRead > lines.Count)
             feedRead = 0;
         for (; feedRead < lines.Count; feedRead++)
-            FromLog(s, lines[feedRead]);
+            FromLog(s, feedRead);
         var v = s.Ships;
         for (int k = 0; k < v.Count; k++)
         {
@@ -77,14 +80,14 @@ public sealed partial class MapScene
                 {
                     string name = ShipName(s, e), why = ReasonText(reason);
                     Add(s, EventKind.Captain, e, $"{name} {why}");
-                    notices.RemoveAll(n => n.Ship == e);
+                    Unnotice(e);
                     notices.Add((e, groupOf.GetValueOrDefault(e, -1), $"{name} is {why}",
                         "Her captain hauls out of the line and makes for home. You may order her back: she'll stay, at her risk.", Clock(s.Time.Ms)));
                 }
                 else if (reason == (byte)CaptainReason.OutAmmunition)
                     Add(s, EventKind.Captain, e, $"{ShipName(s, e)}: out of ammunition, going home");
                 if (reason == 0)
-                    notices.RemoveAll(n => n.Ship == e);
+                    Unnotice(e);
             }
             if (s.Groups.IndexOfShip(e) is int g and >= 0)
                 groupOf[e] = s.Groups.Id[g];
@@ -127,62 +130,115 @@ public sealed partial class MapScene
 
     /// <summary>A log line as an event, when it's one the player would want: our hits, our first straddle on each target,
     /// the hits we took, torpedoes, losses, damage control's news.</summary>
-    void FromLog(Snapshot s, in CombatEntry x)
+    /// <summary>A log line as an event, when it's one the player would want: our hits, our first straddle on each target,
+    /// the hits we took, torpedoes, losses, damage control's news. Its text waits until it's shown (<see cref="TextOf"/>):
+    /// a big fight writes many lines a frame, and few of them are ever read.</summary>
+    void FromLog(Snapshot s, int line)
     {
+        var x = feed.Lines[line];
         bool shooterOurs = Ours(s, x.Shooter), targetOurs = Ours(s, x.Target);
         switch (x.Kind)
         {
             case CombatEvent.Hit when targetOurs:
                 tally.Taken++;
-                var cls = s.Ships.IndexOf(x.Target) is int k and >= 0 ? world.Classes.TryGet(s.Ships.Class[k]) : null;
-                Add(s, EventKind.Hit, x.Target, $"{ShipName(s, x.Target)} hit{(x.Source == HitSource.Torpedo ? " by a torpedo" : "")}: {(cls != null ? HitText(x, cls) : "")}", x.Ms);
+                AddLine(EventKind.Hit, x.Target, line, Form.HitTaken, x.Ms);
                 break;
             case CombatEvent.Hit when shooterOurs:
                 tally.Scored++;
-                Add(s, EventKind.Gun, x.Target, $"{ShipName(s, x.Shooter)} hit {TargetLabel(s, x.Target)}{((x.Effect & HitEffect.Fire) != 0 ? ": a fire" : "")}{((x.Effect & HitEffect.Magazine) != 0 ? ": HER MAGAZINE" : "")}", x.Ms);
+                AddLine(EventKind.Gun, x.Target, line, Form.HitScored, x.Ms);
                 break;
             case CombatEvent.Straddle when shooterOurs && straddling.Add((x.Shooter, x.Target)):
-                Add(s, EventKind.Gun, x.Target, $"{ShipName(s, x.Shooter)} straddling {TargetLabel(s, x.Target)}", x.Ms);
+                AddLine(EventKind.Gun, x.Target, line, Form.Straddle, x.Ms);
                 break;
             case CombatEvent.Torpedoes when shooterOurs:
-                Add(s, EventKind.Gun, x.Target, $"{ShipName(s, x.Shooter)} fired {x.Count} torpedoes at {TargetLabel(s, x.Target)}", x.Ms);
+                AddLine(EventKind.Gun, x.Target, line, Form.TorpedoesOut, x.Ms);
                 break;
             case CombatEvent.Torpedoes when targetOurs:
-                Add(s, EventKind.Hit, x.Target, $"Torpedoes fired at {ShipName(s, x.Target)}", x.Ms);
+                AddLine(EventKind.Hit, x.Target, line, Form.TorpedoesIn, x.Ms);
                 break;
             case CombatEvent.Lost:
                 if (targetOurs)
                     tally.Lost++;
                 else
                     tally.Sunk++;
-                string how = (LossKind)x.Count switch { LossKind.Magazine => "her magazine exploded", LossKind.Capsized => "capsized", LossKind.BrokeInTwo => "broke in two", _ => "foundered" };
-                Add(s, EventKind.Loss, x.Target, targetOurs ? $"{ShipName(s, x.Target)} lost: {how}" : $"Seen sunk: {TargetLabel(s, x.Target)}, {how}", x.Ms);
+                AddLine(EventKind.Loss, x.Target, line, targetOurs ? Form.LostOurs : Form.LostTheirs, x.Ms);
                 break;
-            case CombatEvent.DamageControl when targetOurs:
+            case CombatEvent.DamageControl when targetOurs && x.Count <= (int)DcEvent.SafeSpeed:
+                AddLine(EventKind.Damage, x.Target, line, Form.DamageControl, x.Ms);
+                break;
+        }
+    }
+
+    /// <summary>Which of the log's sentences an event is told in.</summary>
+    enum Form : byte { Given, HitTaken, HitScored, Straddle, TorpedoesOut, TorpedoesIn, LostOurs, LostTheirs, DamageControl }
+
+    /// <summary>A log line's event in words (made once, when first shown).</summary>
+    string Describe(Snapshot s, in MapEvent ev)
+    {
+        var x = feed.Lines[ev.Line];
+        switch (ev.Form)
+        {
+            case Form.HitTaken:
+                var cls = s.Ships.IndexOf(x.Target) is int k and >= 0 ? world.Classes.TryGet(s.Ships.Class[k]) : null;
+                return $"{ShipName(s, x.Target)} hit{(x.Source == HitSource.Torpedo ? " by a torpedo" : "")}: {(cls != null ? HitText(x, cls) : "")}";
+            case Form.HitScored:
+                return $"{ShipName(s, x.Shooter)} hit {TargetLabel(s, x.Target)}{((x.Effect & HitEffect.Fire) != 0 ? ": a fire" : "")}{((x.Effect & HitEffect.Magazine) != 0 ? ": HER MAGAZINE" : "")}";
+            case Form.Straddle:
+                return $"{ShipName(s, x.Shooter)} straddling {TargetLabel(s, x.Target)}";
+            case Form.TorpedoesOut:
+                return $"{ShipName(s, x.Shooter)} fired {x.Count} torpedoes at {TargetLabel(s, x.Target)}";
+            case Form.TorpedoesIn:
+                return $"Torpedoes fired at {ShipName(s, x.Target)}";
+            case Form.LostOurs or Form.LostTheirs:
+                string how = (LossKind)x.Count switch { LossKind.Magazine => "her magazine exploded", LossKind.Capsized => "capsized", LossKind.BrokeInTwo => "broke in two", _ => "foundered" };
+                return ev.Form == Form.LostOurs ? $"{ShipName(s, x.Target)} lost: {how}" : $"Seen sunk: {TargetLabel(s, x.Target)}, {how}";
+            case Form.DamageControl:
                 var dc = s.Ships.IndexOf(x.Target) is int kd and >= 0 ? world.Classes.TryGet(s.Ships.Class[kd]) : null;
-                string? what = (DcEvent)x.Count switch
+                string what = (DcEvent)x.Count switch
                 {
                     DcEvent.Gave => $"{x.Battery} bulkhead{(x.Battery == 1 ? "" : "s")} gave way",
                     DcEvent.Steering => "steering rigged again",
                     DcEvent.Repaired => dc != null && x.Part >= 0 && x.Part < dc.Components.Length ? $"{dc.ComponentId(x.Part)} repaired" : "a part repaired",
                     DcEvent.Restored => "a flooded room back in action",
                     DcEvent.CounterfloodOut => "the counterflood tanks are full",
-                    DcEvent.SafeSpeed => $"damage control asks for {x.Battery} kn",
-                    _ => null,
+                    _ => $"damage control asks for {x.Battery} kn",
                 };
-                if (what != null)
-                    Add(s, EventKind.Damage, x.Target, $"{ShipName(s, x.Target)}: {what}", x.Ms);
-                break;
+                return $"{ShipName(s, x.Target)}: {what}";
         }
+        return "";
+    }
+
+    // each event's time and words, made when first shown
+    readonly List<(string Time, string Text)?> eventTexts = [];
+
+    (string Time, string Text) TextOf(Snapshot s, int i)
+    {
+        while (eventTexts.Count < events.Count)
+            eventTexts.Add(null);
+        if (eventTexts[i] is { } done)
+            return done;
+        var ev = events[i];
+        var made = (Clock(ev.Ms), ev.Text ?? Describe(s, ev));
+        eventTexts[i] = made;
+        return made;
+    }
+
+    /// <summary>A ship's notice taken down (a plain loop: a lambda here would capture the ship loop's variable and make
+    /// a closure every ship every frame).</summary>
+    void Unnotice(int ship)
+    {
+        for (int i = notices.Count - 1; i >= 0; i--)
+            if (notices[i].Ship == ship)
+                notices.RemoveAt(i);
     }
 
     bool Ours(Snapshot s, int entity) => entity > 0 && s.Ships.IndexOf(entity) is int k and >= 0 && (s.PlayerSide < 0 || s.Ships.Side[k] == s.PlayerSide);
 
-    void Add(Snapshot s, EventKind kind, int ship, string text, long ms = -1)
-    {
-        long when = ms >= 0 ? ms : s.Time.Ms;
-        events.Add(new MapEvent(when, kind, ship, Clock(when), text, Environment.TickCount64));
-    }
+    void Add(Snapshot s, EventKind kind, int ship, string text, long ms = -1) =>
+        events.Add(new MapEvent(ms >= 0 ? ms : s.Time.Ms, kind, ship, -1, Form.Given, text, Environment.TickCount64));
+
+    void AddLine(EventKind kind, int ship, int line, Form form, long ms) =>
+        events.Add(new MapEvent(ms, kind, ship, line, form, null, Environment.TickCount64));
 
     /// <summary>The fight's count for the top bar: hits scored and taken, ships lost and seen sunk.</summary>
     (int Scored, int Taken, int Lost, int Sunk) tally;
@@ -236,20 +292,21 @@ public sealed partial class MapScene
         float w = ImGui.GetContentRegionAvail().X, tw = 40 * sc, kw = 44 * sc;
         ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + w);
         float wrap = w - tw - kw - 8 * sc;
-        var size = ImGui.CalcTextSize(ev.Text, false, wrap);
+        var (time, text) = TextOf(s, id);
+        var size = ImGui.CalcTextSize(text, false, wrap);
         float h = Math.Max(size.Y, ImGui.GetTextLineHeight()) + 3 * sc;
         bool click = ImGui.InvisibleButton("##ev", new Vector2(w, h));
         var dl = ImGui.GetWindowDrawList();
         if (shaded || ImGui.IsItemHovered())
             dl.AddRectFilled(p, p + new Vector2(w, h), ImGui.GetColorU32(new Vector4(0.04f, 0.055f, 0.067f, ImGui.IsItemHovered() ? 0.9f : 0.66f * alpha)), 2 * sc);
         ImGui.PushFont(UiFonts.Mono);
-        dl.AddText(p + new Vector2(6 * sc, 1.5f * sc), ImGui.GetColorU32(DesignerTheme.Muted with { W = alpha }), ev.Time);
+        dl.AddText(p + new Vector2(6 * sc, 1.5f * sc), ImGui.GetColorU32(DesignerTheme.Muted with { W = alpha }), time);
         ImGui.PopFont();
         ImGui.PushFont(UiFonts.SansSmall);
         dl.AddText(p + new Vector2(6 * sc + tw, 2.5f * sc), ImGui.GetColorU32(KindColours[(int)ev.Kind] with { W = alpha }), KindTags[(int)ev.Kind]);
         ImGui.PopFont();
         dl.AddText(ImGui.GetFont(), ImGui.GetFontSize(), p + new Vector2(6 * sc + tw + kw, 1.5f * sc), ImGui.GetColorU32(DesignerTheme.Text with { W = alpha }),
-            ev.Text, wrap);
+            text, wrap);
         ImGui.PopTextWrapPos();
         if (click)
             GoTo(s, ev.Ship);
