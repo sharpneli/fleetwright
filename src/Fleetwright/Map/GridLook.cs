@@ -11,7 +11,7 @@ public static class GridLook
 {
     /// <summary>Spacings, reference px: under <see cref="Hidden"/> a level isn't drawn, it fades in to the minor look
     /// by <see cref="MinorFrom"/>, and grows from <see cref="MajorFrom"/> to the major look at <see cref="MajorAt"/>.</summary>
-    public static double Hidden = 25, MinorFrom = 90, MajorFrom = 250, MajorAt = 900;
+    public static double Hidden = 16, MinorFrom = 60, MajorFrom = 160, MajorAt = 600;
 
     /// <summary>The margin's labels fade in from <see cref="LabelFrom"/> to <see cref="LabelAt"/> reference px apart,
     /// on their own curve: the lines can be set sparser without thinning the labels.</summary>
