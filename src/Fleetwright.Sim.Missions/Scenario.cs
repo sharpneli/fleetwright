@@ -580,6 +580,7 @@ public sealed class Scenario
         {
             Kind = kind, Of = of, At = at, DistanceM = km * 1000,
             OffBowDeg = e.TryGetProperty("off_bow", out var ob) ? ob.GetDouble() : 0,
+            SplitDeg = e.TryGetProperty("split", out var sp) ? sp.GetDouble() : 0,
             Kn = e.TryGetProperty("kn", out var kn) ? kn.GetDouble() : 0,
         };
     }
@@ -713,9 +714,10 @@ public sealed class ScenarioShips
 
 /// <summary>A top unit's opening task (docs/battle/command.md 5.1c): <c>"task": { "do": "scout", "of": "Grand Fleet",
 /// "distance_km": 30 }</c>. Kinds: "go to" (<c>"at"</c>, <c>"kn"</c>), "patrol" (<c>"to"</c>), "search" (<c>"at"</c>,
-/// <c>"leg_km"</c>), "join", "scout" (<c>"off_bow"</c> degrees), "screen", "cover" and "shadow" (<c>"of"</c> a unit's name, any
-/// level of the scenario; <c>"distance_km"</c>), "withdraw" (<c>"at"</c>, else home). <c>"tasks": [...]</c> gives several, each
-/// begun when the one before it ends (the unit's plan, 5.1d); the side's commander gives the tasks after these.</summary>
+/// <c>"leg_km"</c>), "join", "scout" (<c>"off_bow"</c> degrees), "screen" (<c>"split"</c> degrees, docs/battle/admirals-orders.md
+/// O1: negative for one body), "cover" and "shadow" (<c>"of"</c> a unit's name, any level of the scenario;
+/// <c>"distance_km"</c>), "withdraw" (<c>"at"</c>, else home). <c>"tasks": [...]</c> gives several, each begun when the one
+/// before it ends (the unit's plan, 5.1d); the side's commander gives the tasks after these.</summary>
 public sealed class ScenarioTask
 {
     public required string Kind { get; init; }
@@ -723,6 +725,7 @@ public sealed class ScenarioTask
     public (double Lat, double Lon)? At { get; init; }
     public double DistanceM { get; init; }
     public double OffBowDeg { get; init; }
+    public double SplitDeg { get; init; }
     public double Kn { get; init; }
 
     public static readonly string[] Kinds = ["go to", "patrol", "search", "join", "scout", "screen", "cover", "shadow", "withdraw"];

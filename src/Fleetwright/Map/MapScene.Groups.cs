@@ -526,6 +526,14 @@ public sealed unsafe partial class MapScene
         ImGui.SameLine();
         if (ImGui.SmallButton($"about>{id}"))
             world.Send(o.BattleTurn(unit, toStarboard: true));
+        if (gv.Force[g])
+        {
+            // into one line of battle: across the enemy's main body in sight, else on its heading (docs/battle/admirals-orders.md
+            // O2); a placeholder until the deploy order's own UI
+            ImGui.SameLine();
+            if (ImGui.SmallButton($"deploy{id}"))
+                world.Send(o.Deploy(unit));
+        }
         ImGui.SameLine();
         if (ImGui.SmallButton($"torpedo attack{id}"))
             world.Send(o.Attack(unit));   // a flotilla's, on the biggest in sight

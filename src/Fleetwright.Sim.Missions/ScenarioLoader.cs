@@ -227,7 +227,7 @@ public static class ScenarioLoader
             "search" => o.Search(unit, lat, lon, t.DistanceM),
             "join" => o.Join(unit, of),
             "scout" => o.Scout(unit, of, t.DistanceM, t.OffBowDeg),
-            "screen" => o.Screen(unit, of, t.DistanceM),
+            "screen" => o.Screen(unit, of, t.DistanceM, splitDeg: t.SplitDeg),
             "cover" => o.Cover(unit, of, t.DistanceM),
             "shadow" => o.Shadow(unit, of, t.DistanceM),
             _ => t.At != null ? o.Withdraw(unit, lat, lon) : o.WithdrawHome(unit),

@@ -100,6 +100,7 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
         public double CourseDeg;        // the course last given (Intercept, Join)
         public int RunFrom;             // Withdraw: the enemy it's running from (0: going home)
         public double DistanceM, OffBowDeg;   // Scout, Cover, Screen, Shadow: how far off; a scout's bearing off the bow
+        public double SplitDeg;         // Screen: each half's split off the bearing (0: the settings'; negative: in one body)
         public int ShadowOf;            // Scout: the enemy it's shadowing (0: scouting)
         public int StationOn;           // Scout, Cover: the ship its station was given on
         public double StationAstern, StationAbeam;
@@ -263,6 +264,7 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
                 _ => 0,
             },
             OffBowDeg = kind == TaskKind.Scout ? c.Y : 0,
+            SplitDeg = kind == TaskKind.Screen ? c.Y : 0,
         };
         if (kind == TaskKind.Patrol && ctx.Ships.SlotOf(Lead(u)) is int slot and >= 0)
         {
@@ -436,7 +438,7 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
                 }
                 if (!t.Issued)
                 {
-                    ctx.Issue(o.Screen(u, new Unit(t.Target), t.DistanceM, Own));
+                    ctx.Issue(o.Screen(u, new Unit(t.Target), t.DistanceM, Own, t.SplitDeg));
                     t.Issued = true;
                 }
                 break;
@@ -800,6 +802,7 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
             h.Add(t.RunFrom);
             h.Add(t.DistanceM);
             h.Add(t.OffBowDeg);
+            h.Add(t.SplitDeg);
             h.Add(t.ShadowOf);
             h.Add(t.StationOn);
             h.Add(t.StationAstern);

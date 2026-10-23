@@ -70,6 +70,7 @@ public class ScreenTests(ITestOutputHelper output)
         var (w, ai) = Make();
         double eastMost = double.MinValue;
         bool counter = false, back = false;
+        int fighter = 0;
         for (int s = 10; s <= 40 * 60; s += 10)
         {
             w.AdvanceTo(w.Time + 10_000);
@@ -77,9 +78,15 @@ public class ScreenTests(ITestOutputHelper output)
             var screen = Ship(w, w.Groups.Get(2)!.Guide);
             if (s <= 5 * 60)
                 eastMost = Math.Max(eastMost, Vec3d.Dot(screen.Position - line.Position, Earth.Forward(line.Position, 90)));
-            var (order, target, _) = ai.Captains.Of(screen.Entity);
-            counter |= order == CaptainOrder.Fight && target >= 7;
-            back |= counter && order == CaptainOrder.Station;
+            // split, one of the two counter-attacks (docs/battle/admirals-orders.md O1)
+            foreach (int e in new[] { 5, 6 })
+            {
+                var (order, target, _) = ai.Captains.Of(e);
+                counter |= order == CaptainOrder.Fight && target >= 7;
+                back |= counter && order == CaptainOrder.Station && e == fighter;
+                if (order == CaptainOrder.Fight && target >= 7)
+                    fighter = e;
+            }
         }
         output.WriteLine($"the screen got {eastMost:F0} m east of the line's guide in its first 5 min; counter-attacked {counter}; back on station {back}");
         Assert.True(eastMost > 1_000, $"{eastMost:F0} m");   // from a mile astern of the line, out to the side the enemy is on

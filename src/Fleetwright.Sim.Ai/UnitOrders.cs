@@ -123,7 +123,9 @@ public enum AiCommand : ushort
 
     /// <summary>Screen a unit (docs/battle/command.md 5.1b): A the unit screened, X how far off it, m (0: the settings').
     /// A group keeps that far off its guide toward the enemy (ahead while none is in sight), and fights enemy torpedo
-    /// craft closing on it until they're beaten off. To a ship alone, a station that far ahead of the unit.</summary>
+    /// craft closing on it until they're beaten off. Y the split (docs/battle/admirals-orders.md O1): a group of two or
+    /// more splits in two, each half Y degrees off that bearing (0: the settings'; negative: in one body), and only the
+    /// half the attack comes at counter-attacks. To a ship alone, a station that far ahead of the unit.</summary>
     Screen,
 
     /// <summary>A task (docs/battle/command.md 5.1c, <see cref="Tasks.TaskLayer"/>): steam to A (a packed lat/lon) at X kn (0:
@@ -168,6 +170,12 @@ public enum AiCommand : ushort
     /// torpedo's track, no turning away, no falling out; its lookouts report the tracks instead. A general order (a
     /// behaviour, a task) or a hand-back ends it. By the player's hand only.</summary>
     Conn,
+
+    /// <summary>Deploy (docs/battle/admirals-orders.md O2): a force into one line of battle on course X, degrees (NaN:
+    /// across the course of the enemy's main body as the force sees him, as doctrine's deployment does; his bearing if
+    /// he's stopped; the guide's heading if none is held), its wing column furthest along that course leading; a squadron
+    /// into line ahead on it. Nothing to a ship.</summary>
+    Deploy,
 }
 
 /// <summary>A ship's fire order (docs/battle/fighting.md 4.2c).</summary>
@@ -261,10 +269,16 @@ public readonly struct UnitOrders(byte system, bool hand = false)
     public Command Form(Unit u, Formation formation, double spacingM, double bearingDeg = 0, OrderSource source = OrderSource.Player) =>
         Make(AiCommand.Form, u, source, a: (long)formation, x: spacingM, y: bearingDeg);
 
-    /// <summary>Screen another unit of the same side: keep a distance off it toward the enemy (0: the settings'), and
-    /// counter-attack enemy torpedo craft closing on it.</summary>
-    public Command Screen(Unit u, Unit screened, double distanceM = 0, OrderSource source = OrderSource.Player) =>
-        Make(AiCommand.Screen, u, source, a: screened.Id, x: distanceM);
+    /// <summary>Screen another unit of the same side: keep a distance off it toward the enemy (0: the settings'), split in
+    /// two halves each a number of degrees off that bearing (0: the settings'; negative: in one body), and counter-attack
+    /// enemy torpedo craft closing on it.</summary>
+    public Command Screen(Unit u, Unit screened, double distanceM = 0, OrderSource source = OrderSource.Player, double splitDeg = 0) =>
+        Make(AiCommand.Screen, u, source, a: screened.Id, x: distanceM, y: splitDeg);
+
+    /// <summary>Deploy a force into one line of battle on a course (NaN: across the enemy's course, as doctrine's
+    /// deployment); a squadron into line ahead on it.</summary>
+    public Command Deploy(Unit u, double courseDeg = double.NaN, OrderSource source = OrderSource.Player) =>
+        Make(AiCommand.Deploy, u, source, x: courseDeg);
 
     /// <summary>The task: steam to a point (at a speed, 0: as rung), done there.</summary>
     public Command GoTo(Unit u, double latDeg, double lonDeg, double kn = 0, OrderSource source = OrderSource.Player) =>

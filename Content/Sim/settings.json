@@ -242,6 +242,7 @@
   "AttackFireS": 60,
   "ScreenM": 5000,
   "ScreenMoveM": 1000,
+  "ScreenSplitDeg": 45,
   "ForcePeriodMs": 10000,
   "ArrivedM": 2000,
   "JoinM": 3000,

@@ -1234,7 +1234,9 @@ user: data to choose between 5.2, 5.1f and the matchup's re-fit):
 As plan.md has it: orders at every band, with previews, the forces rail, edge markers and the selection strip
 (`docs/battle/command-ui.md`, `docs/map-ui/README.md`). Planned at its start, one tab per session with a mockup first
 (as the designer's tabs were). Planned 2026-10-22 for the scenario battler in `docs/map-ui/battle-hud.md` (mockup
-`docs/map-ui/battle.html`; steps U0-U7, U0 done). What step 5.1 leaves it to show:
+`docs/map-ui/battle.html`; steps U0-U7, U0 done). The admiral's orders (the tasks and manoeuvres offered to the player,
+the split screen, Deploy as an order) are planned in `docs/battle/admirals-orders.md` (2026-10-23). What step 5.1 leaves
+it to show:
 
 - **Orders as objects on the map:** each unit's task and its line (a route, a station, an intercept, a search area),
   sent against executing (signals), editable by dragging.

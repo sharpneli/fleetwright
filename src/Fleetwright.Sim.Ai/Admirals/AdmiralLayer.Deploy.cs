@@ -27,18 +27,18 @@ public sealed partial class AdmiralLayer
     /// line it gives them for is made by the commands just sent).</summary>
     bool DeployStep(in AiContext ctx, GroupSystem.Group g, Admiral a, int lead)
     {
-        if (a.Whose == Whose.Player || !g.IsForce || groups.InForceLine(g) || Tactical == null)
+        if (!g.IsForce || groups.InForceLine(g))
             return false;
         var s = ctx.Settings;
         var guide = ctx.Ships[lead];
-        if (doctrine.OfGroup(g, guide.Side, DoctrineField.Deploy) == 0)
-            return false;
         if (a.DeployMs != 0)
         {
             if (Formed(ctx, g, guide) || ctx.NowMs - a.DeployMs > s.DeployMaxMs)
                 (a.DeployMs, a.Deployed) = (0, true);
             return a.DeployMs != 0;
         }
+        if (a.Whose == Whose.Player || Tactical == null || doctrine.OfGroup(g, guide.Side, DoctrineField.Deploy) == 0)
+            return false;
         bool near = Tactical.MainBody(ctx.World, guide.Side, guide.Position, s.DeployM, out var main);
         if (a.Deployed)
         {
@@ -48,31 +48,59 @@ public sealed partial class AdmiralLayer
         }
         if (!near || OneLine(g) || !BattleForce(ctx, g))
             return false;
-
-        // the course: square across the enemy's course toward his track, so the line lies across his way ahead of him
-        // (crossing his T); square across his bearing, the way nearer the force's heading, when he's stopped
         int first = groups.Get(g.Line[0]) is { } f0 ? groups.GuideShip(f0) : 0, last = groups.Get(g.Line[^1]) is { } fl ? groups.GuideShip(fl) : 0;
-        if (ctx.Ships.SlotOf(first) is not (int fs and >= 0) || ctx.Ships.SlotOf(last) is not (int ls and >= 0))
+        if (ctx.Ships.SlotOf(first) < 0 || ctx.Ships.SlotOf(last) < 0)
             return false;
-        double course;
+        StartDeploy(ctx, g, a, DeployCourse(guide, main));
+        return true;
+    }
+
+    /// <summary>The course a force deploys on against an enemy group: square across his course toward his track, so the
+    /// line lies across his way ahead of him (crossing his T); square across his bearing, the way nearer the force's
+    /// heading, when he's stopped.</summary>
+    static double DeployCourse(ShipState guide, in EnemyGroup main)
+    {
         if (main.Velocity.Length > 1)
         {
             var his = main.Velocity * (1 / main.Velocity.Length);
             var hisStarboard = Vec3d.Cross(his, main.Centre.Normalized());
             double heading = Earth.Heading(main.Centre, his);
-            course = Wrap360(Vec3d.Dot(guide.Position - main.Centre, hisStarboard) >= 0 ? heading - 90 : heading + 90);
+            return Wrap360(Vec3d.Dot(guide.Position - main.Centre, hisStarboard) >= 0 ? heading - 90 : heading + 90);
         }
-        else
-        {
-            double bearing = Earth.Bearing(guide.Position, main.Centre);
-            double right = Wrap360(bearing + 90), left = Wrap360(bearing - 90);
-            course = Math.Abs(Wrap180(right - guide.HeadingDeg)) <= Math.Abs(Wrap180(left - guide.HeadingDeg)) ? right : left;
-        }
+        double bearing = Earth.Bearing(guide.Position, main.Centre);
+        double right = Wrap360(bearing + 90), left = Wrap360(bearing - 90);
+        return Math.Abs(Wrap180(right - guide.HeadingDeg)) <= Math.Abs(Wrap180(left - guide.HeadingDeg)) ? right : left;
+    }
 
+    /// <summary>A force into its line of battle on a course: the line made (<see cref="IntoLine"/>), its guide's course
+    /// handed on next think, deploying until it's formed.</summary>
+    void StartDeploy(in AiContext ctx, GroupSystem.Group g, Admiral a, double course)
+    {
+        var guide = ctx.Ships[ctx.Ships.SlotOf(groups.GuideShip(g))];
         IntoLine(ctx, g, Earth.Forward(guide.Position, course));
         (a.Order, a.CourseDeg, a.RudderDeg, a.RouteCount, a.Loop) = (CaptainOrder.Course, course, 0, 0, false);
         (a.DeployMs, a.HandedTo, a.Met) = (ctx.NowMs, 0, false);   // the new guide is handed the course next think
-        return true;
+    }
+
+    /// <summary>Deploy by order (<see cref="AiCommand.Deploy"/>, docs/battle/admirals-orders.md O2): a force into its line
+    /// of battle on the course ordered, or (NaN) on doctrine's course against the enemy's main body within
+    /// <see cref="SimSettings.FightCompareM"/>, else on its guide's heading; a squadron into line ahead on it. Whoever
+    /// orders it, it's deployed once formed, as doctrine's.</summary>
+    void DeployOrdered(in AiContext ctx, GroupSystem.Group g, Admiral a, double course, int lead)
+    {
+        var guide = ctx.Ships[lead];
+        if (double.IsNaN(course))
+            course = Tactical != null && Tactical.MainBody(ctx.World, guide.Side, guide.Position, ctx.Settings.FightCompareM, out var main)
+                ? DeployCourse(guide, main) : guide.HeadingDeg;
+        course = Wrap360(course);
+        if (g.IsForce)
+        {
+            StartDeploy(ctx, g, a, course);
+            return;
+        }
+        ctx.Issue(GroupSystem.SetFormation(g.GroupId, Formation.Column, g.SpacingM));
+        (a.Order, a.CourseDeg, a.RudderDeg, a.RouteCount, a.Loop) = (CaptainOrder.Course, course, 0, 0, false);
+        a.HandedTo = 0;   // its guide is handed the course next think, in the line remade
     }
 
     /// <summary>A force, and every force in its line, into line ahead along a direction: in each, the member furthest along

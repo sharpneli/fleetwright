@@ -719,6 +719,11 @@ public sealed record SimSettings
     public double ScreenM { get; init; } = 5_000;
     public double ScreenMoveM { get; init; } = 1_000;
 
+    /// <summary>A screen of two ships or more splits (docs/battle/admirals-orders.md O1): half its ships (a force's
+    /// squadrons) on each side of the bearing it screens on, ScreenSplitDeg off it, each half spread on the arc ScreenM out,
+    /// its ships the group's spacing apart, unless ordered otherwise. Degrees.</summary>
+    public double ScreenSplitDeg { get; init; } = 45;
+
     /// <summary>Tasks (docs/battle/command.md 5.1c): the task layer thinks every ForcePeriodMs while any unit on a task is
     /// on the fine tick; a GoTo is there within ArrivedM; a Join takes its unit in within JoinM of it; a task a fight
     /// interrupted goes on once its unit has seen no enemy for TaskResumeS. ms, m, m, s.</summary>
