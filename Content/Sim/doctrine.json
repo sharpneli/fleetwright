@@ -42,6 +42,9 @@
     // by night (the sun more than 6° down) heavy ships "avoid" action (withdrawn from contact, the scouts keeping in touch)
     // or "accept" it; torpedo craft attack by night (1) any heavy enemy in reach, or not (0)
     "NightAction": "avoid",
-    "NightAttack": 1
+    "NightAttack": 1,
+    // a force's admiral disposes what he has (docs/battle/admirals-orders.md O7): his scouts scout ahead of his main body,
+    // his flotillas and screens screen it (1); or he keeps every squadron in his line (0)
+    "Dispose": 1
   }
 }

@@ -1,5 +1,6 @@
 using Fleetwright.Sim.Ai;
 using Fleetwright.Sim.Ai.Captains;
+using Fleetwright.Sim.Ai.Tasks;
 using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
 using Xunit.Abstractions;
@@ -252,6 +253,108 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
         w.Apply(ai.Orders.Role(Unit.Group(line), UnitRole.None));   // worked out again
         Assert.Equal((UnitRole.Heavy, false), (ai.Roles.Of(Unit.Group(line)), ai.Roles.IsSet(Unit.Group(line))));
         Assert.Throws<ArgumentException>(() => w.Apply(ai.Orders.Role(Unit.Group(line), UnitRole.MainBody)));
+    }
+
+    /// <summary>A force heading south at 15 kn: a battle squadron of four dreadnoughts (its guide), two light cruisers and
+    /// four destroyers, in line abreast; with doctrine's Dispose (or not). In a fleet (<paramref name="fleet"/>), the
+    /// force is the fleet's guide and the light cruisers are the fleet's own squadron, not the force's.</summary>
+    static (World W, AiSystem Ai, int Force, int Battle, int Cruisers, int Destroyers, int Fleet) Disposed(bool dispose = true, bool fleet = false)
+    {
+        var w = new World(Start, 3, Settings);
+        var ai = new AiSystem(w);
+        w.Apply(Command.SetWeather(30_000));
+        w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.TurnAwayDeg, 0));
+        w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.Dispose, dispose ? 1 : 0));
+        int bb = w.Ships.AddClass(Fleet.Get("dreadnought").Class!), cl = w.Ships.AddClass(Fleet.Get("light_cruiser").Class!),
+            dd = w.Ships.AddClass(Fleet.Get("destroyer").Class!);
+        var at = Earth.Position(56.0, 4.0);
+        int battle = Column(w, ai, bb, at, 180, 4, 15);
+        int cruisers = Column(w, ai, cl, Off(at, 270, 2_000), 180, 2, 15);
+        int destroyers = Column(w, ai, dd, Off(at, 270, 4_000), 180, 4, 15);
+        w.Apply(GroupSystem.Form(battle, Formation.LineAbreast, 2_000));
+        int force = w.Groups.Get(battle)!.Parent;
+        w.Apply(GroupSystem.EnterAlongside(destroyers, battle));
+        int outer = 0;
+        if (fleet)
+        {
+            w.Apply(GroupSystem.Form(force, Formation.LineAbreast, 4_000));
+            outer = w.Groups.Get(force)!.Parent;
+            w.Apply(GroupSystem.EnterAlongside(cruisers, force));
+        }
+        else
+            w.Apply(GroupSystem.EnterAlongside(cruisers, battle));
+        int top = fleet ? outer : force;
+        w.Apply(ai.Orders.HoldFire(Unit.Group(top)));
+        w.Apply(ai.Orders.Speed(Unit.Group(top), 15));
+        return (w, ai, force, battle, cruisers, destroyers, outer);
+    }
+
+    [Fact]
+    public void A_force_disposes_its_scouts_ahead_and_its_flotilla_as_a_screen()
+    {
+        var (w, ai, force, battle, cruisers, destroyers, _) = Disposed();
+        for (int min = 5; min <= 45; min += 5)
+        {
+            w.AdvanceTo(w.Time + 5 * 60_000);
+            var c = Ship(w, w.Groups.GuideShip(w.Groups.Get(cruisers)!));
+            var (rel0, r0) = Where(w, w.Groups.GuideShip(w.Groups.Get(force)!), c.Entity);
+            output.WriteLine($"{min} min: cruisers {rel0:F0}°, {r0:F0} m, {c.Speed / 0.5144:F1} kn ordered {c.SpeedOrderKn:F1}; captain {ai.Captains.Of(c.Entity)}");
+        }
+        var f = w.Groups.Get(force)!;
+        int guide = w.Groups.GuideShip(f);
+        var (scoutRel, scoutR) = Where(w, guide, w.Groups.GuideShip(w.Groups.Get(cruisers)!));
+        output.WriteLine($"the force's line: {string.Join(", ", f.Line)}; cruisers {ai.Tasks.Of(Unit.Group(cruisers))} at {scoutRel:F0}°, {scoutR:F0} m; " +
+                         $"destroyers {ai.Tasks.Of(Unit.Group(destroyers))}, a force {w.Groups.Get(destroyers)!.IsForce}");
+        Assert.Equal(new[] { battle }, f.Line);   // the main body alone in the line
+        Assert.Equal((TaskKind.Scout, TaskState.OnTask), (ai.Tasks.Of(Unit.Group(cruisers)).Kind, ai.Tasks.Of(Unit.Group(cruisers)).Status));
+        Assert.Equal(Unit.Group(force).Id, ai.Tasks.TargetOf(Unit.Group(cruisers)));
+        Assert.InRange(Math.Abs(scoutRel), 0, 20);   // ahead of the force
+        Assert.InRange(scoutR, 15_000, 25_000);
+        Assert.Equal((TaskKind.Screen, Unit.Group(force).Id), (ai.Tasks.Of(Unit.Group(destroyers)).Kind, ai.Tasks.TargetOf(Unit.Group(destroyers))));
+        Assert.True(w.Groups.Get(destroyers)!.IsForce);   // divided to screen
+        foreach (int sq in w.Groups.Get(destroyers)!.Members)
+        {
+            var (rel, r) = Where(w, guide, w.Groups.GuideShip(w.Groups.Get(sq)!));
+            output.WriteLine($"division {sq}: {rel:F0}°, {r:F0} m");
+            Assert.InRange(Math.Abs(rel), 20, 75);
+            Assert.InRange(r, 3_500, 6_500);
+        }
+    }
+
+    [Fact]
+    public void Without_doctrine_a_force_keeps_its_squadrons_in_its_line()
+    {
+        var (w, ai, force, _, cruisers, destroyers, _) = Disposed(dispose: false);
+        w.AdvanceTo(w.Time + 20 * 60_000);
+        Assert.Equal(3, w.Groups.Get(force)!.Line.Count);
+        Assert.Equal(TaskKind.None, ai.Tasks.Of(Unit.Group(cruisers)).Kind);
+        Assert.Equal(TaskKind.None, ai.Tasks.Of(Unit.Group(destroyers)).Kind);
+    }
+
+    [Fact]
+    public void The_players_hand_on_a_member_holds_against_its_admirals_disposition()
+    {
+        var (w, ai, _, _, cruisers, _, _) = Disposed();
+        w.AdvanceTo(w.Time + 5 * 60_000);
+        w.Apply(ai.Orders.ByHand.Course(Unit.Group(cruisers), 90));   // the player sends the cruisers east
+        w.AdvanceTo(w.Time + 30 * 60_000);
+        var g = Ship(w, w.Groups.GuideShip(w.Groups.Get(cruisers)!));
+        output.WriteLine($"the cruisers on {ai.Tasks.Of(Unit.Group(cruisers))}, steering {g.HeadingDeg:F0}°");
+        Assert.NotEqual(TaskKind.Scout, ai.Tasks.Of(Unit.Group(cruisers)).Kind);
+        Assert.InRange(g.HeadingDeg, 80, 100);
+    }
+
+    [Fact]
+    public void A_fleet_of_forces_is_disposed_level_by_level()
+    {
+        // the fleet's admiral sends his cruisers to scout; the battle force's own admiral screens it with his destroyers
+        var (w, ai, force, _, cruisers, destroyers, fleet) = Disposed(fleet: true);
+        w.AdvanceTo(w.Time + 30 * 60_000);
+        output.WriteLine($"cruisers {ai.Tasks.Of(Unit.Group(cruisers))} of {ai.Tasks.TargetOf(Unit.Group(cruisers))}; " +
+                         $"destroyers {ai.Tasks.Of(Unit.Group(destroyers))} of {ai.Tasks.TargetOf(Unit.Group(destroyers))}");
+        Assert.Equal((TaskKind.Scout, Unit.Group(fleet).Id), (ai.Tasks.Of(Unit.Group(cruisers)).Kind, ai.Tasks.TargetOf(Unit.Group(cruisers))));
+        Assert.Equal((TaskKind.Screen, Unit.Group(force).Id), (ai.Tasks.Of(Unit.Group(destroyers)).Kind, ai.Tasks.TargetOf(Unit.Group(destroyers))));
+        Assert.Equal(new[] { force }, w.Groups.Get(fleet)!.Line);
     }
 
     [Fact]

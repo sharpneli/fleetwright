@@ -41,9 +41,12 @@ public static class Behaviours
         double course = Earth.Bearing(own.Position, aim);
 
         // the speed: the leader's, what closes the gap in the closing time, less what's closing it already (damped:
-        // his engines answer in minutes, so ringing on the gap alone overshoots, and down a line the swings grow)
+        // his engines answer in minutes, so ringing on the gap alone overshoots, and down a line the swings grow); far
+        // astern of station, all she makes
         double leaderKn = leader.SpeedMs / Handling.MsPerKnot;
         double closing = own.Speed * Vec3d.Dot(own.Forward, lf) - leader.SpeedMs;   // m/s the gap shrinks at
+        if (behind > s.StationFarM)
+            return (course, Flank(h));
         double extra = Math.Clamp((behind / s.FollowCloseS - s.FollowSpeedDamping * closing) / Handling.MsPerKnot,
             -s.FollowMaxSpeedDiffKn, s.FollowMaxSpeedDiffKn);
         double kn = Math.Clamp(leaderKn + extra, 0, Flank(h));

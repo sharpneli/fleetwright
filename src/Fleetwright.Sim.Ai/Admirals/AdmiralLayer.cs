@@ -72,6 +72,10 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
         public int ScreenSide;          // the side of that bearing his guide's half keeps (±1; 0: not placed yet)
         public int ScreenFightSide;     // the half counter-attacking (±1; 0: all of it)
         public bool ScreenAway;         // on the side away from the enemy: no match for him (O5)
+        public long DisposedMs;         // his force's disposition last judged (AdmiralLayer.Dispose.cs)
+        public int[] GaveTo = new int[4];   // the members he gave tasks, GaveCount of them, and when (made with him)
+        public long[] GaveMs = new long[4];
+        public int GaveCount;
         public long DeployMs;           // deploying into a line of battle since (AdmiralLayer.Deploy.cs; 0: not)
         public bool Deployed;           // deployed in this encounter
     }
@@ -367,7 +371,10 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
             if (deploying && a.DeployMs == ctx.NowMs)
                 continue;   // just begun: the line is given its stations, and its guide its course, next think
             if (!deploying)
+            {
                 TakeUpStanding(ctx, g, a, lead);
+                DisposeStep(ctx, g, a, lead);
+            }
             if (TurnAway(ctx, g, a, lead))
                 continue;   // turning together: no stations until it's round
             ScreenStep(ctx, g, a);
@@ -633,6 +640,15 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
                 h.Add(a.AwayDeg);
                 h.Add(a.AwayCourse);
                 h.Add(a.ThreatMs);
+            }
+            if (a.GaveCount > 0)
+            {
+                h.Add(a.DisposedMs);
+                for (int k = 0; k < a.GaveCount; k++)
+                {
+                    h.Add(a.GaveTo[k]);
+                    h.Add(a.GaveMs[k]);
+                }
             }
             if (a.DeployMs != 0 || a.Deployed)
             {

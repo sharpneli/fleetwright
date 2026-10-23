@@ -419,6 +419,11 @@ public sealed record SimSettings
     public double FollowCloseS { get; init; } = 90;
     public double FollowMaxSpeedDiffKn { get; init; } = 6;
 
+    /// <summary>A ship keeping station more than StationFarM astern of it (a scout sent 20 km ahead, a screen taking its
+    /// place) rings all she makes until she's within it, not the leader's speed and <see cref="FollowMaxSpeedDiffKn"/>
+    /// (docs/battle/admirals-orders.md O7). m.</summary>
+    public double StationFarM { get; init; } = 2_000;
+
     /// <summary>How much of the rate the gap is closing at a follower takes off what he rings, so he eases off before
     /// he's on station rather than overshooting it (his engines answer in minutes): 0 rings on the gap alone.</summary>
     public double FollowSpeedDamping { get; init; } = 2;

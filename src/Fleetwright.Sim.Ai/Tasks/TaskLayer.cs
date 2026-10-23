@@ -177,6 +177,12 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
     /// it. A unit that's never had one is on the orders it was given, not idle.</summary>
     public bool Idle(Unit u) => Find(u.Id) is int i and >= 0 && !Live(tasks[i].Status) && QueuedOf(u) == 0;
 
+    /// <summary>Whether a unit is on a task (doing it, fighting with it waiting, or in contact).</summary>
+    public bool OnTask(Unit u) => Find(u.Id) is int i and >= 0 && Live(tasks[i].Status);
+
+    /// <summary>When a unit's task began, ms of world time (0: none): who gave it can tell it's still theirs.</summary>
+    public long StartOf(Unit u) => Find(u.Id) is int i and >= 0 ? tasks[i].StartMs : 0;
+
     /// <summary>A unit's task's target: the unit or contact it's about (0: a point, or none).</summary>
     public int TargetOf(Unit u) => Find(u.Id) is int i and >= 0 ? tasks[i].Target : 0;
 

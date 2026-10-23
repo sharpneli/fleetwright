@@ -147,12 +147,45 @@ Decision 4: the player says what a squadron is for.
   screen the main body (`CommanderTests.Battleships_set_as_a_screen_screen_the_main_body`).
 - **Placeholder:** a role picker in the squadron popup's row ("worked out", then the five), until the task menu.
 
+### O7 The chain of command (built 2026-10-23)
+
+Decision 3: a unit given a task disposes what it has; ships make squadrons, squadrons forces, forces bigger forces,
+each with an admiral.
+
+- **A force's admiral disposes his members by role** (`AdmiralLayer.Dispose.cs`), every `ForcePeriodMs`, with
+  doctrine's new `Dispose` (the default preset on; neutral off, so dev worlds and older tests keep every squadron in
+  line): his **main body** is his members of the strongest role in his force (the battle line, else scouting), kept in
+  his line, carrying whatever the force is told (a course, a search, an intercept, a fight); his **scouts** scout ahead
+  of the force (20 km, spread 0°, ±45°, ±90° off its bow); his **flotillas and screens** screen it (and so divide, and
+  sit where their own admirals judge, O1b and O5); his **auxiliaries** keep their place in his line. A force of
+  flotillas and screens only keeps together.
+- **Each level its own:** a fleet of forces disposes its own members (its cruiser squadron scouts for the fleet), and
+  each force in it its own (its destroyers screen it), as deep as they nest.
+- **Who has a member:** a member the player holds by hand is left alone; so is one on a task someone else gave it (the
+  side's commander sending a flotilla in to attack, the player's task). An admiral knows his own tasks by when they
+  began (`TaskLayer.StartOf`). A member back with no task (its attack over, rejoined) is given its own again; one whose
+  role now puts it in the main body (the player set it so) is called back into the line. Not while deploying, nor on
+  the conn.
+- **One implementation** (`Dispositions`): the side's commander's idle tasks for his top units by role (scouts ahead of
+  the main body on the next bearing, flotillas and screens screening the nearest heavy unit) and the force admiral's for
+  his members are the same rule. His tasks go as a commander's (`OrderSource.Commander`, now "a commander above the
+  unit": the side's, or a force's admiral).
+- **Found on the way:** a ship keeping a station far ahead of her guide closed at most `FollowMaxSpeedDiffKn` (6 kn)
+  faster than him, so light cruisers sent to scout 20 km ahead of a 15 kn fleet took nearly two hours to get there. A ship
+  more than `StationFarM` (2 km) astern of her station now rings all she makes (27 kn: 16 km ahead in 45 minutes), and
+  the damped rule takes over within it.
+- **Tests** (`AdmiralOrdersTests`): a force of four dreadnoughts, two light cruisers and four destroyers: the
+  dreadnoughts alone in its line, the cruisers scouting dead ahead, the destroyers divided on either bow at 45°, 5.0 km;
+  without the doctrine all three stay in its line; the player's course to the cruisers by hand holds; a fleet of a battle
+  force and a cruiser squadron: the cruisers scout for the fleet, the destroyers screen the battle force.
+
 ### Still lacking (later steps, after the questions)
 
-- **A force's own disposition.** Inside a force, squadrons keep formation stations; screens and scouts are top units
-  tasked by the side's commander (by role) or the scenario. A fleet whose flotillas and light cruisers are in its tree
-  should screen and scout by itself when cruising: its admiral gives his light squadrons the roles' tasks the commander
-  gives top units (O6).
+- **Battle decisions down the chain.** The side's commander still sends a force's flotillas in to attack himself
+  (reaching into top forces for their squadrons of torpedo craft); with the chain, a force's admiral should send in his
+  own, and decide his own force's fight. Next for the chain (O7b).
+- **The scenarios' trees:** the Jutland's fleets are flat (the Grand Fleet's flotillas and cruisers are top units with
+  opening tasks); nesting them as the fleets were organised lets the chain dispose them.
 - **Screen against a sector.** The threat bearing is always the nearest enemy in sight. An admiral could say "screen
   against the south-east" (submarines, a reported flotilla); a bearing in the order, shaped by a drag on the map (O7).
 - **Intercept of a contact not yet held** (5.1c's open item): wants a point and a time, which is Go to.
@@ -197,7 +230,7 @@ guns, torpedoes, task, formation), armed picks completed by a click on the map, 
 | **O2** | Deploy as an order (AI), a placeholder button | **done 2026-10-23** |
 | **O5** | Where the screen sits, by its admiral (decision 2) | **done 2026-10-23** |
 | **O6** | A unit's role: worked out, or set by the player; the commander and the map read it (decision 4) | **done 2026-10-23** |
-| **O7** | The chain of command: a force's admiral disposes his members by role, one implementation with the commander's (decision 3) | |
+| **O7** | The chain of command: a force's admiral disposes his members by role, one implementation with the commander's (decision 3) | **done 2026-10-23** |
 | **O8** | The mockup: `docs/map-ui/battle.html` `#tasks`: the task menu, the role, the cursor's verbs, a screen's stations and a deploy's line on the map | |
 | **O9** | The port: the task menu and its picks, the cursor's verbs, the smart verb by role, the formation column's manoeuvres; the snapshot's stations and the map's task marks | after O8 |
 | **O10** | Shaping by drag (a screen's distance and sector), orders as editable objects, the radial menu | later |

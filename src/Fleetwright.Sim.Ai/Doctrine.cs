@@ -84,6 +84,11 @@ public enum DoctrineField : byte
     /// <see cref="SimSettings.AggressionShift"/> lists as they're read, each by (1 + shift x aggression), so a bold
     /// unit takes worse odds, closes nearer, stays in the line longer and breaks off later. Inherited as any field is.</summary>
     Aggression,
+
+    /// <summary>Whether a force's admiral disposes his members by their roles (1) or keeps them all in his line (0)
+    /// (docs/battle/admirals-orders.md O7): his scouts scouting ahead of his main body, his flotillas and screens
+    /// screening it. After <see cref="Aggression"/>, so the fields' numbers in logged commands stand.</summary>
+    Dispose,
 }
 
 /// <summary>Doctrine's NightAction: heavy ships accept action at night, or avoid it.</summary>
@@ -151,7 +156,7 @@ public sealed class Doctrine(GroupSystem groups, IReadOnlyDictionary<string, dou
         return r;
     }
 
-    public const int FieldCount = (int)DoctrineField.Aggression + 1;
+    public const int FieldCount = (int)DoctrineField.Dispose + 1;
 
     /// <summary>Every field when nothing sets it: a world told nothing (a dev's, a test's) behaves as before doctrine.</summary>
     public static double Default(DoctrineField f) => f switch
@@ -177,6 +182,7 @@ public sealed class Doctrine(GroupSystem groups, IReadOnlyDictionary<string, dou
         DoctrineField.NightAttack => 0,
         DoctrineField.SeekRatio => 1,
         DoctrineField.Aggression => 0,
+        DoctrineField.Dispose => 0,
         _ => throw new ArgumentOutOfRangeException(nameof(f)),
     };
 

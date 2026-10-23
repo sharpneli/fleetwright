@@ -65,13 +65,13 @@ public sealed class AiSystem : IWorldSystem
         Judge = new MatchupJudge(world.Groups, Seen, Doctrine);
         Held = new HeldGroups(Judge.Matchups);
         Captains = new CaptainLayer(world.Groups, world.Encounters, Seen, Doctrine, homes) { Judge = Judge, TrailPoints = world.Settings.FollowTrackPoints };
-        Admirals = new AdmiralLayer(world.Groups, Captains, Seen, Doctrine) { Judge = Judge };
+        Roles = new Roles(world.Groups, world.Ships.Store);
+        Admirals = new AdmiralLayer(world.Groups, Captains, Seen, Doctrine) { Judge = Judge, Roles = Roles };
         Captains.Admirals = Admirals;
         Tactical = new TacticalPicture(Seen, Judge.Matchups);
         Admirals.Tactical = Tactical;
         Tasks = new TaskLayer(world.Groups, Seen, homes) { Admirals = Admirals, Captains = Captains, Doctrine = Doctrine, Judge = Judge };
         (Admirals.Tasks, Captains.Tasks) = (Tasks, Tasks);
-        Roles = new Roles(world.Groups, world.Ships.Store);
         Commanders = new CommanderLayer(world.Groups, world.Ships.Store, Seen, Doctrine) { Tasks = Tasks, Captains = Captains, Judge = Judge, Held = Held, Roles = Roles };
         layers = [Commanders, Tasks, Admirals, Captains];
         nextTick = new long[layers.Length];

@@ -29,8 +29,9 @@ public enum OrderSource : byte
     /// (the chain sees them as <see cref="Player"/>'s), but the player's own order ends the task.</summary>
     Task,
 
-    /// <summary>The side's commander (docs/battle/command.md 5.1d): his tasks are tasks as the player's are, but they don't
-    /// take the unit from him, as the player's do.</summary>
+    /// <summary>A commander above the unit giving it a task: the side's commander (docs/battle/command.md 5.1d) to his
+    /// top units, or a force's admiral to his members (docs/battle/admirals-orders.md O7). His tasks are tasks as the
+    /// player's are, but they don't take the unit from him, as the player's do.</summary>
     Commander,
 }
 

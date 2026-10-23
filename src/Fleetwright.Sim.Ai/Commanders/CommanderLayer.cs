@@ -810,8 +810,8 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         return t.Role switch
         {
             UnitRole.Heavy => m.Unit.IsGroup ? o.Join(t.Unit, m.Unit, By) : o.Cover(t.Unit, m.Unit, 0, By),
-            UnitRole.Scout => o.Scout(t.Unit, m.Unit, 0, ScoutBearing(m.Unit), By),
-            UnitRole.Flotilla or UnitRole.Screen => o.Screen(t.Unit, NearestHeavy(t, m).Unit, 0, By),
+            UnitRole.Scout => Dispositions.Attend(o, t.Role, t.Unit, m.Unit, Scouts(m.Unit), By),
+            UnitRole.Flotilla or UnitRole.Screen => Dispositions.Attend(o, t.Role, t.Unit, NearestHeavy(t, m).Unit, 0, By),
             _ => o.WithdrawHome(t.Unit, By),
         };
     }
@@ -828,17 +828,15 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         return best;
     }
 
-    // a scouting line off the main body's bow: ahead, then a broad and a fine bow either side
-    static readonly double[] ScoutBearings = [0, 45, -45, 90, -90];
-
-    /// <summary>The next scout's bearing off a unit's bow: past those he's already sent to scout for it.</summary>
-    double ScoutBearing(Unit of)
+    /// <summary>How many scouts he's sent to scout for a unit already (the next takes the next bearing,
+    /// <see cref="Dispositions.ScoutBearing"/>).</summary>
+    int Scouts(Unit of)
     {
         int n = 0;
         for (int i = 0; i < count; i++)
             if (recs[i].Given == TaskKind.Scout && recs[i].Target == of.Id && Tasks!.Of(new Unit(recs[i].Unit)).Kind == TaskKind.Scout)
                 n++;
-        return ScoutBearings[n % ScoutBearings.Length];
+        return n;
     }
 
     /// <summary>A task given to a unit, and remembered with why.</summary>
