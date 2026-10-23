@@ -41,6 +41,23 @@ public class ScenarioTests
 
     static ShipState Ship(World w, int e) => w.Ships.Store[w.Ships.Store.SlotOf(e)];
 
+    /// <summary>A scenario puts every side under its commander, the player's too (docs/battle/command.md decision 14): the
+    /// player takes the units they want, by hand, from the first moment.</summary>
+    [Fact]
+    public void Every_side_starts_under_its_commander_and_the_player_takes_units_by_hand()
+    {
+        var (w, ai, _) = Load(Small);
+        w.Apply(Command.SetPlayerSide(0));
+        var force = Unit.Group(w.Groups.Groups.Single(x => x.Name == "Force A").GroupId);
+        var line = Unit.Group(w.Groups.Groups.Single(x => x.Name == "Line").GroupId);
+        Assert.True(ai.Commanders.Commands(force, 0, w.PlayerSide));
+        Assert.True(ai.Commanders.Commands(line, 1, w.PlayerSide));
+        w.Apply(ai.Orders.ByHand.Course(force, 120));
+        Assert.False(ai.Commanders.Commands(force, 0, w.PlayerSide));
+        w.Apply(ai.Orders.Automate(force, true));   // its AI tag: back to him
+        Assert.True(ai.Commanders.Commands(force, 0, w.PlayerSide));
+    }
+
     [Fact]
     public void Ships_spawn_on_the_stations_their_groups_reckon()
     {

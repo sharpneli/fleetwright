@@ -87,11 +87,14 @@ public class CommanderTests(ITestOutputHelper output)
         w.Apply(ai.Orders.Commander(0, CommanderMode.On));   // the player automates their side
         Assert.True(ai.Commanders.Commands(mine, 0, w.PlayerSide));
 
-        // once he's thought, the player's order to a unit takes it from him; "leave it to the admiral" hands it back
+        // the player's order by hand to a unit takes it from him at once, even before he's thought (decision 14: he's on
+        // for the player's side from the start); a scenario's opening orders never do; "leave it to the admiral" hands
+        // it back
         w.Apply(ai.Orders.Course(mine, 90));
-        Assert.True(ai.Commanders.Commands(mine, 0, w.PlayerSide));   // before he's thought: the scenario's orders
+        Assert.True(ai.Commanders.Commands(mine, 0, w.PlayerSide));   // the scenario's orders
+        w.Apply(ai.Orders.ByHand.Course(mine, 45));
+        Assert.False(ai.Commanders.Commands(mine, 0, w.PlayerSide));
         Run(w, 61);
-        w.Apply(ai.Orders.Course(mine, 45));
         Assert.False(ai.Commanders.Commands(mine, 0, w.PlayerSide));
         w.Apply(ai.Orders.FireAtWill(mine));
         w.Apply(ai.Orders.Automate(mine, true));

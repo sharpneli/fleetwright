@@ -13,7 +13,8 @@ public enum CommanderMode : byte
     /// <summary>No commander: a world told nothing (a dev's, a test's) plays as before him.</summary>
     None,
 
-    /// <summary>On unless it's the player's side: what a scenario gives every side. Watching (no player), every side's on.</summary>
+    /// <summary>On unless it's the player's side: the player's "AI commands" switched off (a scenario gives every side
+    /// <see cref="On"/>, decision 14). Watching (no player), every side's on.</summary>
     Auto,
 
     On,
@@ -131,10 +132,12 @@ public enum CommanderWhy : byte
 /// its task into orders for his squadrons. He reads his units' states (their tasks' reports, through the task layer) and
 /// his navy's picture, and decides by rules with a margin either way, never by searching ahead.
 /// <para><b>Who he commands:</b> a world told nothing has no commanders (<see cref="CommanderMode.None"/>); a scenario
-/// gives every side one that's on unless it's the player's (<see cref="CommanderMode.Auto"/>), and a command switches a
-/// side's on or off. Once he's thought, the player's own order to one of his units (a move, or a task) takes it from
-/// him, as an order to a held unit does from its admiral (2.6); <see cref="AiCommand.Automate"/> hands it back ("leave
-/// it to the admiral") or takes it, on a side whose commander is off too.</para>
+/// gives every side one that's on, the player's too (<see cref="CommanderMode.On"/>; docs/battle/command.md decision 14:
+/// no one can steer every squadron of a fleet, so the player takes the ones they want), and a command switches a side's
+/// on or off. The player's own order by hand to one of his units (a move, or a task; <see cref="UnitOrders.Hand"/>)
+/// takes it from him at once, as an order to a held unit does from its admiral (2.6), never a scenario's opening orders;
+/// <see cref="AiCommand.Automate"/> hands it back ("leave it to the admiral") or takes it, on a side whose commander is
+/// off too.</para>
 /// <para><b>Idle units:</b> a unit on the orders the scenario gave it is on its orders until the enemy's met (they were
 /// for the approach); one whose task ended with nothing after it (its plan's run out, <see cref="TaskLayer.Idle"/>), or
 /// on its first orders once the enemy's met, is given its role's task (<see cref="IdleTask"/>), so nothing is idle
@@ -146,7 +149,6 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
     sealed class SideState
     {
         public CommanderMode Mode;
-        public bool Started;   // he's thought: from now on the player's orders take his units from him
         public CommanderPhase Phase;
         public CommanderReason Reason;
         public int Target;     // the biggest ship of the gravest enemy group he holds (0: none)
@@ -291,14 +293,14 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         r.Switch = double.IsNaN(on) ? (sbyte)-1 : on != 0 ? (sbyte)1 : (sbyte)0;
     }
 
-    /// <summary>The player's own order to a unit (a move, or a task): once its commander has thought, it's the player's.</summary>
+    /// <summary>The player's own order to a unit by hand (a move, or a task): it's the player's, not its commander's.</summary>
     internal void PlayerOrdered(in AiContext ctx, Unit u)
     {
         int lead = u.ShipOf(groups);
         if (store.SlotOf(lead) is not (int slot and >= 0))
             return;
         byte side = store[slot].Side;
-        if (sides[side] is { Started: true } && Commands(u, side, ctx.World.PlayerSide))
+        if (Commands(u, side, ctx.World.PlayerSide))
             Get(u.Id).Switch = 0;
     }
 
@@ -313,7 +315,6 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
             var s = sides[side];
             if (s == null || s.Mode == CommanderMode.None)
                 continue;
-            s.Started = true;
             Command(ctx, s, (byte)side, player);   // his own units only: those of a side he's off for that were handed to him
         }
     }
@@ -883,7 +884,6 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
             {
                 h.Add(side);
                 h.Add((int)s.Mode);
-                h.Add(s.Started);
                 h.Add((int)s.Phase);
                 h.Add((int)s.Reason);
                 h.Add(s.Target);

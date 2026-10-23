@@ -71,7 +71,7 @@ telegraph, guns, torpedoes and smoke, the task (fight, follow…, run from…, h
 squadron's business in popups); the HELM column's Conn (or C) takes the conn of the unit picked (docs/battle/command.md "The conn": nothing but the player's helm orders moves it, the lookouts call torpedo tracks on the ticker, a green ring marks it); the cursor names what a right-click does: on an enemy engage, on one of yours follow,
 on the sea steer for it (shift: add a waypoint); the click opens her card at the right (`MapScene.Card.cs`, U3b: her
 condition drawn from her class, guns, fire control, damage control, hits taken; V shuts it, P pins it as a tab); the rail at the left lists your units and ships and the enemy in sight (a click: her card,
-the enemy's as held); the ticker at the bottom left and the log (J) tell the fight, a falling-out notice offers to order her
+the enemy's as held; "AI commands", on by default, lets the side's commander fight every unit you haven't taken, and a unit's AI / YOURS tag hands it over or takes it: docs/battle/command.md decision 14); the ticker at the bottom left and the log (J) tell the fight, a falling-out notice offers to order her
 back (the player overrules the captain); the scenario's result opens when its judge calls the end (`SimHost.Judge`, U7); the dev panel (F1, or `-dev` open at start: the scenario picker, the sides, truth and the spawner) spawns where you click, one ship or a group already on its
 stations (count, formation, spacing, heading, speed, side), the designer's design as it is now ("From designer", the
 default: an edit spawned is a new class, ships already out keep theirs) or a shipped one; pressed and dragged, they head

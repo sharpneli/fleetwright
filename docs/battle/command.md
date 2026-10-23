@@ -727,7 +727,8 @@ doesn't hold the T.
 - **The layer** (`Sim.Ai/Commanders/`), one commander per side with forces, thinking slowly and on events.
 - **Aims, home, plan** as above, the plan's opening tasks given at the start.
 - **On or off per side:** off for the player's side by default, switched on (the whole side or a unit) and off by a
-  logged command; the dev's side switch (decisions 4 and 5).
+  logged command; the dev's side switch (decisions 4 and 5). *Changed 2026-10-23 (decision 14): on for every side, the
+  player's too, the switch on the rail.*
 - **His rules** (no contact, contact, battle, the balance turns, done), each a state with hysteresis and a reason.
 - **Night:** heavy ships avoid action by night (Withdraw from contact, keep in touch by scouts), flotillas Attack by
   doctrine. The sighting already shortens the night's reach (3.2c); the lights of night fighting (searchlights,
@@ -751,6 +752,9 @@ doesn't hold the T.
      that's on unless it's the player's (`Auto`: watching, every side's on), and the logged `Commander` command sets a
      side's mode. Once he's thought, the player's own order to one of his units (a move, or a task) takes it from him, as
      a held unit is from its admiral (2.6); `Automate` hands it back ("leave it to the admiral") or takes it.
+     *Changed 2026-10-23 (decision 14):* a scenario gives every side `On`, the player's too; the player's order by hand
+     (`UnitOrders.Hand`) takes a unit at once, before he's thought as after, and a scenario's opening orders never do
+     (the "once he's thought" rule, and his `Started`, are gone).
    - *Plans:* tasks queue (`UnitOrders.Then`), each begun when the one before ends, done or not; a scenario's `"tasks"`
      list is a top unit's plan, its first given at once. A unit's plan is the task layer's, so it runs on the player's
      side too; a new task in place of a plan drops what was to come.
@@ -759,7 +763,9 @@ doesn't hold the T.
      unit, auxiliaries go home). A unit on the scenario's own orders is on its orders until the enemy's met; after that
      (they were for the approach) it counts as idle too.
    - Placeholders: "AI commands" beside the spawn panel's "watch" for the player's side; a top group's "leave it to the
-     admiral" / "take it from the admiral", and "· AI" / "· yours" on its label.
+     admiral" / "take it from the admiral", and "· AI" / "· yours" on its label. *Since 2026-10-23 (decision 14) the
+     switch is the rail's, "AI commands: on" under YOUR FORCES; each top unit's AI / YOURS tag on the rail is a click
+     that hands it over or takes it (a ship in no squadron too), and the strip's AI segment is there for her as well.*
 2. **Contact and battle.** His target is the strongest fresh contact (`ContactFreshMs`, 30 minutes out of sight: older
    is lost, and Intercept now gives such a contact up too), the nearest his main body of those as strong, kept until it's
    lost or another is `CommanderRetargetShare` (1.5) times as strong. Every heavy unit not in contact closes it
@@ -1316,7 +1322,7 @@ The user's, 2026-10-14, on the questions:
 
 4. **The side's commander is a layer of its own** (`Commanders/`). The player is their side's commander, and can also
    automate it; for now the dev can switch which side is the player's.
-5. **The AI commander is off for the player's side by default,** and can be switched on.
+5. **The AI commander is off for the player's side by default,** and can be switched on. *Replaced by 14.*
 6. **Signals are instant for the player** (a change from plan.md's era list): easier for the player for now, to iterate
    in playtesting. The AI's own orders still go by signal.
 7. **Doctrine as presets, defined by values:** named sets of the fields' values, as data, overridden per side and unit.
@@ -1334,3 +1340,7 @@ The user's, 2026-10-14, on the questions:
 13. **The conn is absolute** (the user, 2026-10-23): "Sometimes one has to introduce gallantry by force of will." On
     the conn nothing but the player moves the unit, not even combing torpedo tracks; the lookouts only report them
     (["The conn"](#the-conn)). An explicit switch, so ships the player sends off and forgets still save themselves.
+14. **The AI commands the player's side too, by default** (the user, 2026-10-23, replacing 5): the game's scale is too
+    big for anyone to steer every squadron, and switching the AI on by hand each time is tedious. Every side's commander
+    starts on; the player takes whichever units they want (any order by hand takes one; its AI tag on the rail too) and
+    hands them back the same way. "AI commands" on the rail switches the side's commander off and on.

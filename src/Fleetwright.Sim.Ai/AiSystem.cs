@@ -87,7 +87,8 @@ public sealed class AiSystem : IWorldSystem
             throw new ArgumentException($"unknown AI command {c.Code}");
         var u = new Unit(c.Entity);
         var code = (AiCommand)c.Code;
-        var source = OrderFrom.Of(c).Source;
+        var from = OrderFrom.Of(c);
+        var source = from.Source;
         switch (code)
         {
             case AiCommand.Commander:
@@ -100,8 +101,8 @@ public sealed class AiSystem : IWorldSystem
                 return;
         }
         bool task = TaskLayer.IsTask(code, source);
-        if (source == OrderSource.Player && (task || EndsTask(code)))
-            Commanders.PlayerOrdered(Context(world), u);   // the player's now, not the commander's
+        if (from.Hand && (task || EndsTask(code)))
+            Commanders.PlayerOrdered(Context(world), u);   // the player's now, not the commander's (a scenario's opening orders never take it)
         if (task)
         {
             Tasks.Order(Context(world), c);

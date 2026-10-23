@@ -1,6 +1,8 @@
 using System.Numerics;
 using Fleetwright.Designer;
 using Fleetwright.Sim;
+using Fleetwright.Sim.Ai;
+using Fleetwright.Sim.Ai.Commanders;
 using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
 using ImGuiNET;
@@ -59,6 +61,7 @@ public sealed partial class MapScene
             own += side < 0 || v.Side[k] == side ? 1 : 0;
         railOwn = own;
         RailHead("YOUR FORCES", U8.W($"{own} ships"));
+        CommanderSwitch(s);
         // a big order of battle scrolls in its own region, the enemy below it in view
         bool scroll = own > RailAllOpen;
         if (scroll)
@@ -113,6 +116,54 @@ public sealed partial class MapScene
         return s.PlayerSide < 0 || k >= 0 && s.Ships.Side[k] == s.PlayerSide;
     }
 
+    /// <summary>The side's commander, under the forces' head (docs/battle/command.md decision 14): on (the default), he
+    /// fights every unit the player hasn't taken; off, only those handed to him.</summary>
+    void CommanderSwitch(Snapshot s)
+    {
+        int side = s.PlayerSide;
+        if (side < 0 || s.CommanderMode[side] == (byte)CommanderMode.None)
+            return;
+        bool on = s.CommanderOn[side];
+        ImGui.PushFont(UiFonts.SansSmall);
+        if (Seg(on ? "AI commands: on" : "AI commands: off", on, first: true))
+            world.Send(world.Orders.Commander(side, on ? CommanderMode.Auto : CommanderMode.On));
+        ImGui.PopFont();
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip(on ? "Your side's commander fights every unit you haven't taken. Any order of yours to a unit takes it (YOURS);\nclick its AI tag to take it, its YOURS tag to give it back. Click here to command everything yourself."
+                : "You command every unit but those you hand to the AI (click a unit's YOURS tag). Click here to let the AI command\nevery unit you haven't taken.");
+    }
+
+    /// <summary>Whether a top unit shows whose it is: its side has a commander, or it's been handed to one.</summary>
+    static bool Tagged(Snapshot s, byte commanded) =>
+        commanded != 0 || s.PlayerSide >= 0 && s.CommanderMode[s.PlayerSide] != (byte)CommanderMode.None;
+
+    static ReadOnlySpan<byte> TagText(byte commanded) => commanded == 1 ? "AI"u8 : "YOURS"u8;
+
+    /// <summary>A whose-is-it tag's box, its right end at <paramref name="topRight"/> (in the small font).</summary>
+    static (Vector2 Min, Vector2 Max) TagRect(byte commanded, Vector2 topRight)
+    {
+        ImGui.PushFont(UiFonts.SansSmall);
+        var size = U8.Size(TagText(commanded));
+        ImGui.PopFont();
+        float sc = UiFonts.Scale;
+        var at = topRight - new Vector2(size.X, 0);
+        return (at - new Vector2(3, 1) * sc, at + size + new Vector2(3, 1) * sc);
+    }
+
+    static bool InRect(Vector2 p, Vector2 min, Vector2 max) => p.X >= min.X && p.Y >= min.Y && p.X <= max.X && p.Y <= max.Y;
+
+    /// <summary>A top unit's whose-is-it tag (the AI's in friend blue, the player's in brass), brighter and explained under
+    /// the mouse: a click hands it to the AI or takes it.</summary>
+    void Tag(ImDrawListPtr dl, byte commanded, Vector2 min, Vector2 max, bool hovered)
+    {
+        float sc = UiFonts.Scale;
+        var colour = commanded == 1 ? Friend : DesignerTheme.Brass;
+        dl.AddRectFilled(min, max, ImGui.GetColorU32(colour with { W = hovered ? 0.4f : 0.18f }), 2 * sc);
+        U8.Draw(dl, min + new Vector2(3, 1) * sc, ImGui.GetColorU32(colour), TagText(commanded));
+        if (hovered)
+            ImGui.SetTooltip(commanded == 1 ? "the side's commander fights it: click to take it" : "yours: click to leave it to the side's commander");
+    }
+
     static void RailHead(string title, ReadOnlySpan<byte> right)
     {
         ImGui.PushFont(UiFonts.SansSmall);
@@ -135,7 +186,13 @@ public sealed partial class MapScene
         bool chosen = squadronCardOf >= 0 && squadronCardOf == selected && gv.IndexOfShip(selected) is int sg and >= 0 && (sg == g || gv.Parent[sg] == gv.Id[g]);
         var p = ImGui.GetCursorScreenPos();
         float w = ImGui.GetContentRegionAvail().X;
-        if (ImGui.InvisibleButton("##unit", new Vector2(w, ImGui.GetTextLineHeight() * 2 + 2 * sc)) && gv.GuideShip[g] != 0)
+        bool tagged = gv.Parent[g] == 0 && Tagged(s, gv.Commanded[g]);
+        var (tagMin, tagMax) = tagged ? TagRect(gv.Commanded[g], p + new Vector2(w - 8 * sc, 2 * sc)) : default;
+        bool onTag = tagged && InRect(ImGui.GetMousePos(), tagMin, tagMax);
+        bool clicked = ImGui.InvisibleButton("##unit", new Vector2(w, ImGui.GetTextLineHeight() * 2 + 2 * sc));
+        if (clicked && onTag)
+            world.Send(world.Orders.Automate(Unit.Group(gv.Id[g]), gv.Commanded[g] != 1));   // the tag: his, or the player's
+        else if (clicked && gv.GuideShip[g] != 0)
         {
             // the unit: its guide selected with the orders at its level, its card open
             selected = gv.GuideShip[g];
@@ -161,15 +218,8 @@ public sealed partial class MapScene
             : U8.W($"{gv.MemberCount[g]} ships · {form}{(task.Length > 0 ? " · " : "")}{task}");
         ImGui.PushFont(UiFonts.SansSmall);
         U8.Draw(dl, p + new Vector2(6 * sc, ImGui.GetTextLineHeight()), ImGui.GetColorU32(DesignerTheme.Muted), sub);
-        if (gv.Parent[g] == 0 && gv.Commanded[g] != 0)
-        {
-            var tag = gv.Commanded[g] == 1 ? "AI"u8 : "YOURS"u8;
-            var size = U8.Size(tag);
-            var at = p + new Vector2(w - size.X - 8 * sc, 2 * sc);
-            dl.AddRectFilled(at - new Vector2(3, 1) * sc, at + size + new Vector2(3, 1) * sc,
-                ImGui.GetColorU32((gv.Commanded[g] == 1 ? Friend : DesignerTheme.Brass) with { W = 0.18f }), 2 * sc);
-            U8.Draw(dl, at, ImGui.GetColorU32(gv.Commanded[g] == 1 ? Friend : DesignerTheme.Brass), tag);
-        }
+        if (tagged)
+            Tag(dl, gv.Commanded[g], tagMin, tagMax, onTag && ImGui.IsItemHovered());
         ImGui.PopFont();
         // its members: a force's units always, a squadron's ships when few, or open, or holding the selection
         bool ships = !gv.Force[g] && (railOwn <= RailAllOpen || railOpen.Contains(gv.Id[g]) || gv.IndexOfShip(selected) == g);
@@ -197,7 +247,13 @@ public sealed partial class MapScene
         ImGui.PushID(e);
         var p = ImGui.GetCursorScreenPos();
         float w = ImGui.GetContentRegionAvail().X;
-        if (ImGui.InvisibleButton("##ship", new Vector2(w, h)))
+        bool tagged = s.Groups.IndexOfShip(e) < 0 && Tagged(s, v.Commanded[k]);
+        var (tagMin, tagMax) = tagged ? TagRect(v.Commanded[k], p + new Vector2(w - 50 * sc, 0)) : default;   // left of her flotation
+        bool onTag = tagged && InRect(ImGui.GetMousePos(), tagMin, tagMax);
+        bool clicked = ImGui.InvisibleButton("##ship", new Vector2(w, h));
+        if (clicked && onTag)
+            world.Send(world.Orders.Automate(Unit.Ship(e), v.Commanded[k] != 1));
+        else if (clicked)
         {
             long now = Environment.TickCount64;
             if (railClickShip == e && now - railClickMs < 400)
@@ -241,6 +297,8 @@ public sealed partial class MapScene
         float bw = 40 * sc, bx = p.X + w - bw - 2 * sc, by = p.Y + ImGui.GetTextLineHeight() / 2 - 2 * sc;
         dl.AddRectFilled(new Vector2(bx, by), new Vector2(bx + bw, by + 4 * sc), ImGui.GetColorU32(DesignerTheme.Inset), 1);
         dl.AddRectFilled(new Vector2(bx, by), new Vector2(bx + bw * afloat, by + 4 * sc), ImGui.GetColorU32(afloat > 0.8f ? Ok : afloat > 0.6f ? DesignerTheme.Amber : Bad), 1);
+        if (tagged)
+            Tag(dl, v.Commanded[k], tagMin, tagMax, onTag && ImGui.IsItemHovered());
         var right = U8.W($"{v.Speed[k] / Handling.MsPerKnot:0} kn · {(ci >= 0 ? s.Conditions.Hits[ci] : 0)} hits");
         var rs = U8.Size(right);
         U8.Draw(dl, new Vector2(p.X + w - rs.X - 2 * sc, p.Y + ImGui.GetTextLineHeight()), ImGui.GetColorU32(DesignerTheme.Muted), right);

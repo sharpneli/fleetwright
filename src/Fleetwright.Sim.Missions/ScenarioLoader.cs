@@ -67,7 +67,7 @@ public static class ScenarioLoader
         foreach (var (side, lat, lon) in s.Homes)
             w.Apply(ai.Orders.Home(side, lat, lon));
         for (int side = 0; side < s.Sides.Length; side++)
-            w.Apply(ai.Orders.Commander(side, CommanderMode.Auto));   // every side's commander, on unless it's the player's
+            w.Apply(ai.Orders.Commander(side, CommanderMode.On));   // every side's commander, on: the player takes the units they want (decision 14)
         foreach (var (a, b) in s.Peace)
             w.Apply(Command.SetRelation((byte)a, (byte)b, Relation.Peace));
         if (s.Player >= 0)

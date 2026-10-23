@@ -464,7 +464,17 @@ public sealed partial class MapScene
                     ImGui.SetTooltip(his ? "the side's commander fights it: any order of yours takes it; click to take it" : "click to leave it to the side's commander");
             }
         }
-        if (Seg("Squadron…##sq", first: g < 0))
+        // a ship in no squadron is a top unit too: hers to hand to the side's commander, or take
+        bool alone = g < 0 && s.Groups.IndexOfShip(selected) < 0 && Tagged(s, s.Ships.Commanded[kc]);
+        if (alone)
+        {
+            bool his = s.Ships.Commanded[kc] == 1;
+            if (Seg("AI##autoship", his, first: true))
+                world.Send(world.Orders.Automate(unit, !his));
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip(his ? "the side's commander fights her: any order of yours takes her; click to take her" : "click to leave her to the side's commander");
+        }
+        if (Seg("Squadron…##sq", first: g < 0 && !alone))
             ImGui.OpenPopup("##squadron");
         if (ImGui.BeginPopup("##squadron"))
         {
