@@ -193,3 +193,15 @@ ringed again), contacts filled while in sight and hollow once reckoned, torpedo 
 captain's follow line dotted, waypoints filled dots, the ordered course cased with an arrowhead, the encounter ring
 thinner (1.6 / 1.2 px, cased). One change beyond the review: the selected ship's land rings and feeler (a rails aid)
 show only with the dev panel (F1) open; they were the green rings round every selection.
+
+**Y5** (2026-10-23): `MapLabels`: every label on the map (the range pill and torpedo reach first, then the selected
+ship, own ships, the selection's squadrons, contacts in sight, the forces and squadrons by depth, contacts reckoned,
+encounters, wrecks) asks for a place by anchor, size, its places in order and a priority; the placer reserves the
+anchors' symbols, takes the labels by priority against one grid of the screen (6 UI px cells), tries each one's place
+of last frame first, then its others (a ship's: left, right, below, above; a squadron's or contact's: right first),
+drops what doesn't fit, and fades labels in and out over 0.15 s of real time. Text has a halo (the ground's dark a
+pixel round it, four taps) in place of the drop shadow; squadron labels in small capitals. The per-kind label grids
+(the contacts', the ships') went. ImGui's background list can now pass 65,536 vertices (the renderer already drew at
+each command's vertex offset; `RendererHasVtxOffset` was never set). The Jutland's squadrons no longer pile:
+`png/symbols-after-jutland.png`. UI bytes a frame 87 / 76 over 1,500 frames (the placer's arrays, once: 49 over
+3,000 frames), no GC.

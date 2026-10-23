@@ -56,16 +56,13 @@ public sealed partial class MapScene
     // the encounters' labels, made when what they say changes
     readonly Dictionary<int, ((int, int, long, int, int) Key, string Text)> encounterTexts = [];
 
-    /// <summary>Each encounter's label at the top of its ring.</summary>
+    /// <summary>Each encounter's label, asked of the placer at the top of its ring (above it, else below).</summary>
     void EncounterLabels(Snapshot s)
     {
         var v = s.Encounters;
-        if (v.Count == 0)
-            return;
         var view = View;
         var vp = ImGui.GetMainViewport();
-        float sx = vp.Size.X / (float)Math.Max(width, 1), sy = vp.Size.Y / (float)Math.Max(height, 1);
-        var dl = ImGui.GetBackgroundDrawList();
+        float sc = UiFonts.Scale, sx = vp.Size.X / (float)Math.Max(width, 1), sy = vp.Size.Y / (float)Math.Max(height, 1);
         for (int i = 0; i < v.Count; i++)
         {
             if (!Ring(s, i, out var top, out double r))
@@ -74,19 +71,35 @@ public sealed partial class MapScene
             Earth.Advance(ref top, ref north, r);
             if (!view.Project(top, out double x, out double y))
                 continue;
-            bool count = s.Truth || s.PlayerSide < 0;   // the player knows their own, not the count
-            var (ours, theirs) = Losses(v.Id[i]);
-            var key = (v.Id[i], count ? v.Ships[i] : -1, v.OpenedMs[i], ours, theirs);
-            if (!encounterTexts.TryGetValue(v.Id[i], out var cached) || cached.Key != key)
-            {
-                string ships = count ? $" · {v.Ships[i]} ships" : "";
-                encounterTexts[v.Id[i]] = cached = (key, $"Encounter {v.Id[i]}{ships} · since {new WorldTime(v.OpenedMs[i]).ToUtc():HH:mm}{LossesText(ours, theirs)}");
-            }
-            string text = cached.Text;
-            var at = new Vector2(vp.Pos.X + (float)(x * sx) - ImGui.CalcTextSize(text).X / 2, vp.Pos.Y + (float)(y * sy) - ImGui.GetTextLineHeight() - 4);
-            dl.AddText(at + new Vector2(1, 1), 0xC0000000, text);
-            dl.AddText(at, ImGui.GetColorU32(v.Own[i] ? MapPalette.OwnEncounter with { W = 1 } : MapPalette.OthersEncounter with { W = 0.9f }), text);
+            var size = ImGui.CalcTextSize(EncounterText(s, i));
+            mapLabels.Add(LabelKind.Encounter, v.Id[i], i, 5, vp.Pos.X + (float)(x * sx), vp.Pos.Y + (float)(y * sy), size.X, size.Y, 4 * sc, 0,
+                LabelPlace.Above, LabelPlace.Below);
         }
+    }
+
+    /// <summary>An encounter's label: its number, ships and since when, its losses; made when what it says changes.</summary>
+    string EncounterText(Snapshot s, int i)
+    {
+        var v = s.Encounters;
+        bool count = s.Truth || s.PlayerSide < 0;   // the player knows their own, not the count
+        var (ours, theirs) = Losses(v.Id[i]);
+        var key = (v.Id[i], count ? v.Ships[i] : -1, v.OpenedMs[i], ours, theirs);
+        if (!encounterTexts.TryGetValue(v.Id[i], out var cached) || cached.Key != key)
+        {
+            string ships = count ? $" · {v.Ships[i]} ships" : "";
+            encounterTexts[v.Id[i]] = cached = (key, $"Encounter {v.Id[i]}{ships} · since {new WorldTime(v.OpenedMs[i]).ToUtc():HH:mm}{LossesText(ours, theirs)}");
+        }
+        return cached.Text;
+    }
+
+    void DrawEncounterLabel(Snapshot s, in MapLabels.Request r, Vector2 at, float alpha)
+    {
+        var v = s.Encounters;
+        int i = r.Index;
+        if (i >= v.Count || v.Id[i] != (int)(r.Key & 0xFFFFFFFF))
+            return;
+        MapLabels.Text(ImGui.GetBackgroundDrawList(), at, v.Own[i] ? MapPalette.OwnEncounter with { W = 1 } : MapPalette.OthersEncounter with { W = 0.9f },
+            EncounterText(s, i), alpha);
     }
 
     static readonly string[] RuleNames = ["pause", "1×", "10×", "100×", "carry on"];

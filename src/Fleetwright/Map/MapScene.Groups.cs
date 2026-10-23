@@ -180,52 +180,73 @@ public sealed unsafe partial class MapScene
             }
     }
 
-    /// <summary>The groups' labels, drawn under the UI's windows: a force's below its guide squadron's, "held" and "!"
-    /// on a group the player holds.</summary>
+    /// <summary>The groups' labels, asked of the placer (<see cref="MapLabels"/>): beside the guide, "held" and "!" on a
+    /// group the player holds.</summary>
     // the group labels' text, made when what it says changes
     readonly Dictionary<int, ((int, int, Detachment, byte, byte, byte, bool, int) Key, string Text)> groupTexts = [];
 
     void GroupLabels(Snapshot s)
     {
         var vp = ImGui.GetMainViewport();
-        float sx = vp.Size.X / (float)Math.Max(width, 1), sy = vp.Size.Y / (float)Math.Max(height, 1);
-        var dl = ImGui.GetBackgroundDrawList();
+        float sc = UiFonts.Scale, sx = vp.Size.X / (float)Math.Max(width, 1), sy = vp.Size.Y / (float)Math.Max(height, 1);
         var gv = s.Groups;
-        float line = ImGui.GetTextLineHeight();
+        int mine = gv.IndexOfShip(selected);
+        ImGui.PushFont(UiFonts.SansSmall);
         for (int l = 0; l < labelCount; l++)
         {
             ref var lb = ref labels[l];
             if (lb.Group >= gv.Count)
                 continue;
-            int g = lb.Group;
-            var at = new Vector2(vp.Pos.X + (float)(lb.X * sx) + 12, vp.Pos.Y + (float)(lb.Y * sy) - 8 + lb.Depth * line);
-            int count = 0;
-            if (lb.Collapsed)
-            {
-                lineShips.Clear();
-                LineShips(gv, g, lineShips);
-                count = lineShips.Count;
-            }
-            var held = InForce(gv, g);
-            var key = (gv.Id[g], count, Held(held) ? held : Detachment.InLine, gv.Task[g], gv.TaskStatus[g], gv.Commanded[g], gv.Asked[g], world.Generation);
-            if (!groupTexts.TryGetValue(gv.Id[g], out var cached) || cached.Key != key)
-            {
-                string text = gv.Name[g];
-                if (lb.Collapsed)
-                    text += $" ({count})";
-                if (Held(held))
-                    text += $" · {HeldText(held)}";   // out on its task: the task says so
-                if (gv.Task[g] != 0)
-                    text += $" · {TaskText(gv.Task[g], gv.TaskStatus[g])}";
-                if (gv.Commanded[g] != 0)
-                    text += gv.Commanded[g] == 1 ? " · AI" : " · yours";   // its side's commander's, or taken from him (5.1d)
-                if (gv.Asked[g])
-                    text += " !";
-                groupTexts[gv.Id[g]] = cached = (key, text);
-            }
-            dl.AddText(at + new Vector2(1, 1), 0xC0000000, cached.Text);
-            dl.AddText(at, ImGui.GetColorU32(gv.Asked[g] ? MapPalette.Asked : MapPalette.Unit), cached.Text);
+            var size = ImGui.CalcTextSize(GroupText(gv, l));
+            // the selection's own squadron and forces first, then the forces before their squadrons
+            int priority = lb.Group == mine || chain.Contains(lb.Group) ? 2 : 3 + Math.Min(lb.Depth, 3);
+            mapLabels.Add(LabelKind.Group, gv.Id[lb.Group], l, priority, vp.Pos.X + (float)(lb.X * sx), vp.Pos.Y + (float)(lb.Y * sy), size.X, size.Y,
+                12 * sc, lb.Collapsed ? 8 * sc : 0, LabelPlace.Right, LabelPlace.Below, LabelPlace.Left, LabelPlace.Above);
         }
+        ImGui.PopFont();
+    }
+
+    /// <summary>A group's label: its name in capitals (the mockup's, apart from the ships' names), its ships when
+    /// collapsed, held, its task, whose it is, "!"; made when what it says changes.</summary>
+    string GroupText(GroupsView gv, int l)
+    {
+        ref var lb = ref labels[l];
+        int g = lb.Group, count = 0;
+        if (lb.Collapsed)
+        {
+            lineShips.Clear();
+            LineShips(gv, g, lineShips);
+            count = lineShips.Count;
+        }
+        var held = InForce(gv, g);
+        var key = (gv.Id[g], count, Held(held) ? held : Detachment.InLine, gv.Task[g], gv.TaskStatus[g], gv.Commanded[g], gv.Asked[g], world.Generation);
+        if (!groupTexts.TryGetValue(gv.Id[g], out var cached) || cached.Key != key)
+        {
+            string text = gv.Name[g].ToUpperInvariant();
+            if (lb.Collapsed)
+                text += $" ({count})";
+            if (Held(held))
+                text += $" · {HeldText(held)}";   // out on its task: the task says so
+            if (gv.Task[g] != 0)
+                text += $" · {TaskText(gv.Task[g], gv.TaskStatus[g])}";
+            if (gv.Commanded[g] != 0)
+                text += gv.Commanded[g] == 1 ? " · AI" : " · yours";   // its side's commander's, or taken from him (5.1d)
+            if (gv.Asked[g])
+                text += " !";
+            groupTexts[gv.Id[g]] = cached = (key, text);
+        }
+        return cached.Text;
+    }
+
+    void DrawGroupLabel(Snapshot s, in MapLabels.Request r, Vector2 at, float alpha)
+    {
+        var gv = s.Groups;
+        int l = r.Index;
+        if (l >= labelCount || labels[l].Group >= gv.Count)
+            return;
+        ImGui.PushFont(UiFonts.SansSmall);
+        MapLabels.Text(ImGui.GetBackgroundDrawList(), at, gv.Asked[labels[l].Group] ? MapPalette.Asked : MapPalette.Unit, GroupText(gv, l), alpha);
+        ImGui.PopFont();
     }
 
     // ------------------------------------------------------------------ orders to

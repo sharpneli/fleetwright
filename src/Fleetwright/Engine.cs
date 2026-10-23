@@ -542,6 +542,9 @@ public unsafe class Sdl3GpuEngine : IDisposable
         ImGui.CreateContext();
         ImGuiIOPtr io = ImGui.GetIO();
         io.ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard;
+        // the renderer draws each command at its own vertex offset: a draw list past 65,536 vertices (16-bit indices)
+        // is split into commands instead of wrapping (the map's haloed labels, docs/map-ui/symbols.md Y5)
+        io.BackendFlags |= ImGuiBackendFlags.RendererHasVtxOffset;
 
         // Set style
         ImGui.StyleColorsDark();

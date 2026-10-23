@@ -20,6 +20,7 @@ public sealed unsafe partial class MapScene : IScene
     readonly GlobeRenderer renderer;
     readonly MapLines lines = new(), overlay = new();   // overlay: rebuilt every frame (routes, tracks, the selection)
     readonly MapSymbols symbols = new();   // the overlay's symbols, over its lines (docs/map-ui/symbols.md Y3)
+    readonly MapLabels mapLabels = new();   // every label on the map, placed together (Y5)
     readonly LandView land;
     readonly SunLapse sunLapse = new();
     readonly SeaView sea = new();
@@ -194,12 +195,16 @@ public sealed unsafe partial class MapScene : IScene
         LogDrawer(s);
         probes.Add(probeUiShips, t);
         t = Probes.Now;
-        GroupLabels(s);
-        EncounterLabels(s);
-        ContactLabels(s);
-        WreckLabels();
-        ShipLabels(s);
+        var lvp = ImGui.GetMainViewport();
+        mapLabels.Begin(lvp.Pos, lvp.Size, 6 * UiFonts.Scale);
         SelectionMarks(s);
+        ShipLabels(s);
+        GroupLabels(s);
+        ContactLabels(s);
+        EncounterLabels(s);
+        WreckLabels();
+        mapLabels.Place(ImGui.GetIO().DeltaTime);
+        DrawLabels(s);
         TickLabels();
         probes.Add(probeUiLabels, t);
         t = Probes.Now;

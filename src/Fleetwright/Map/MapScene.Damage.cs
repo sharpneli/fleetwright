@@ -266,24 +266,28 @@ public sealed partial class MapScene
 
     static string LossesText(int ours, int theirs) => ours + theirs == 0 ? "" : $" · lost {ours}, seen sunk {theirs}";
 
-    /// <summary>The wrecks' names, when there's room on the screen for them.</summary>
+    /// <summary>The wrecks' names, asked of the placer last of all.</summary>
     void WreckLabels()
     {
         if (wrecks.Count == 0 || camera.MetresPerPixel > 60)
             return;
         var view = View;
         var vp = ImGui.GetMainViewport();
-        float sx = vp.Size.X / (float)Math.Max(width, 1), sy = vp.Size.Y / (float)Math.Max(height, 1);
-        var dl = ImGui.GetBackgroundDrawList();
-        foreach (var w in wrecks)
+        float sc = UiFonts.Scale, sx = vp.Size.X / (float)Math.Max(width, 1), sy = vp.Size.Y / (float)Math.Max(height, 1);
+        for (int j = 0; j < wrecks.Count; j++)
         {
-            if (!view.Project(w.At, out double x, out double y))
+            if (!view.Project(wrecks[j].At, out double x, out double y))
                 continue;
-            string text = w.Label;
-            var at = new Vector2(vp.Pos.X + (float)(x * sx) + 10, vp.Pos.Y + (float)(y * sy) + 4);
-            dl.AddText(at + new Vector2(1, 1), 0xC0000000, text);
-            dl.AddText(at, ImGui.GetColorU32(MapPalette.Wreck), text);
+            var size = ImGui.CalcTextSize(wrecks[j].Label);
+            mapLabels.Add(LabelKind.Wreck, j, j, 6, vp.Pos.X + (float)(x * sx), vp.Pos.Y + (float)(y * sy), size.X, size.Y, 11 * sc, 8 * sc,
+                LabelPlace.Right, LabelPlace.Below, LabelPlace.Left);
         }
+    }
+
+    void DrawWreckLabel(in MapLabels.Request r, Vector2 at, float alpha)
+    {
+        if (r.Index < wrecks.Count)
+            MapLabels.Text(ImGui.GetBackgroundDrawList(), at, MapPalette.Wreck, wrecks[r.Index].Label, alpha);
     }
 
     /// <summary>Why a captain does what he does, as words (docs/battle/command.md "Reports and reasons"); "" for none.</summary>

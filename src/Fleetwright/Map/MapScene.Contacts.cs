@@ -16,7 +16,6 @@ public sealed partial class MapScene
     const double ContactFadeMs = 30 * 60_000;   // out of sight, it fades to its faintest over this
     const double ContactCourseS = 300;          // the course line: five minutes' steaming
     const float ContactMarkerPx = 5;
-    bool[] labelCells = [];
 
     static Vector4 ContactColour(ContactsView c, int i, long now)
     {
@@ -140,39 +139,40 @@ public sealed partial class MapScene
     void ContactLabels(Snapshot s)
     {
         var c = s.Contacts;
-        if (c.Count == 0)
-            return;
         var view = View;
         var vp = ImGui.GetMainViewport();
-        float sx = vp.Size.X / (float)Math.Max(width, 1), sy = vp.Size.Y / (float)Math.Max(height, 1);
-        var dl = ImGui.GetBackgroundDrawList();
+        float sc = UiFonts.Scale, sx = vp.Size.X / (float)Math.Max(width, 1), sy = vp.Size.Y / (float)Math.Max(height, 1);
         long now = world.DrawMs;
-        // a label where none is yet: a coarse grid of the screen, a cell a label's height (a column of contacts gets one
-        // label, its head's, not a pile)
-        float cellPx = ImGui.GetTextLineHeight() + 2;
-        int gw = (int)(vp.Size.X / cellPx) + 2, gh = (int)(vp.Size.Y / cellPx) + 2;
-        if (labelCells.Length < gw * gh)
-            labelCells = new bool[gw * gh];
-        Array.Clear(labelCells, 0, gw * gh);
         for (int i = 0; i < c.Count; i++)
         {
             if (!view.Project(c.Position[i], out double x, out double y))
                 continue;
-            int cx = (int)(x * sx / cellPx), cy = (int)(y * sy / cellPx);
-            if (cx < 0 || cy < 0 || cx >= gw - 1 || cy >= gh || labelCells[cx + cy * gw] || labelCells[cx + 1 + cy * gw])
-                continue;
-            labelCells[cx + cy * gw] = labelCells[cx + 1 + cy * gw] = true;
-            var key = (c.Entity[i], c.Level[i], c.TakenFor[i], c.Type[i], c.Seen[i], c.SmokeInSight[i], c.InSight[i], c.InSight[i] ? 0 : c.SeenMs[i] / 60_000);
-            if (!contactTexts.TryGetValue(c.Entity[i], out var cached) || cached.Key != key)
-            {
-                if (contactTexts.Count > 2048)
-                    contactTexts.Clear();
-                contactTexts[c.Entity[i]] = cached = (key, ContactText(c, i, now));
-            }
-            string text = cached.Text;
-            var at = new Vector2(vp.Pos.X + (float)(x * sx) + 9, vp.Pos.Y + (float)(y * sy) - 7);
-            dl.AddText(at + new Vector2(1, 1), 0xC0000000, text);
-            dl.AddText(at, ImGui.GetColorU32(ContactColour(c, i, now)), text);
+            var size = ImGui.CalcTextSize(ContactLabel(c, i, now));
+            mapLabels.Add(LabelKind.Contact, c.Entity[i], i, c.InSight[i] || c.SmokeInSight[i] ? 2 : 4, vp.Pos.X + (float)(x * sx), vp.Pos.Y + (float)(y * sy),
+                size.X, size.Y, 9 * sc, 6 * sc, LabelPlace.Right, LabelPlace.Left, LabelPlace.Below, LabelPlace.Above);
         }
+    }
+
+    /// <summary>A contact's label, made when what it says changes.</summary>
+    string ContactLabel(ContactsView c, int i, long now)
+    {
+        var key = (c.Entity[i], c.Level[i], c.TakenFor[i], c.Type[i], c.Seen[i], c.SmokeInSight[i], c.InSight[i], c.InSight[i] ? 0 : c.SeenMs[i] / 60_000);
+        if (!contactTexts.TryGetValue(c.Entity[i], out var cached) || cached.Key != key)
+        {
+            if (contactTexts.Count > 2048)
+                contactTexts.Clear();
+            contactTexts[c.Entity[i]] = cached = (key, ContactText(c, i, now));
+        }
+        return cached.Text;
+    }
+
+    void DrawContactLabel(Snapshot s, in MapLabels.Request r, Vector2 at, float alpha)
+    {
+        var c = s.Contacts;
+        int i = r.Index;
+        if (i >= c.Count || c.Entity[i] != (int)(r.Key & 0xFFFFFFFF))
+            return;
+        long now = world.DrawMs;
+        MapLabels.Text(ImGui.GetBackgroundDrawList(), at, ContactColour(c, i, now), ContactLabel(c, i, now), alpha);
     }
 }
