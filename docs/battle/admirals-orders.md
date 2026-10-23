@@ -284,6 +284,26 @@ Against the same build with `ScreenSplitDeg` 0 (every screen in one body, as bef
   timeline isn't comparable: seed 1916's Grand Fleet deploys at 17:43 in one body and not at all with the split.
 - **Cost:** the Jutland 150-232 s a seed split, 147-215 s in one body; the admirals 2.3% and 3.0% of seed 1916's run.
 
+**After O1b-O7** (Release; the same seeds; at `c47b180c`), against the O1-O2 split column above:
+
+| Scenario | After O1b-O7 | O1-O2 split |
+|---|---|---|
+| `squadrons` (5 seeds) | done 2, quiet 1, time 2; Britain lost 1.2 of 4, Germany 2.2 of 5 | Britain 1.2, Germany 1.8 |
+| `flotilla` (5 seeds) | quiet 5; Britain 0.0 of 4, Germany 0.2 of 6, no torpedoes | the same |
+| `tsushima` (5 seeds) | quiet 3, done 2; Russia 4.8 of 13, Japan 5.0 of 14 | done 1, quiet 2, time 2; Russia 6.2, Japan 4.2 |
+| the Jutland (seeds 1916-1918) | time 3; Britain lost 41.3 of 151 (135 kt), Germany 49.0 of 99 (129 kt); torpedoes 163 and 202 a run | Britain 39.0 (144 kt), Germany 56.0 (200 kt); 166 and 182 |
+
+- `squadrons` and `flotilla` have no screens, scouts or mixed forces: they move only through `StationFarM` and seed
+  noise (`flotilla` identical).
+- **The Jutland, seed 1916:** the Grand Fleet deploys at 19:56 (it didn't in the O1-O2 run of the seed); own-fire losses
+  1 (3 before). The Cruiser screen force deploys into a line of battle at 03:27 (its armoured cruisers count as capital
+  ships to the deployment's test, once its scouting task is over): a classification for the fine-tune. At the end
+  Germany has one top unit idle, the first since 5.1d: to look at in O7b.
+- **Cost, seed 1916:** played in 224 s (150 s for O1-O2's run, on a machine running the tests beside it: to measure
+  clean). The admirals 3.3% of the run (145 µs a think; at worst 41 ms against 21 ms), the commanders 2.7%, the
+  captains 13.5%. The force admirals' disposition and the screens' matchup judgements are the admirals' new work; a
+  cache of the screen's judgement for a few thinks is the obvious saving if it shows.
+
 ## Decisions (the user, 2026-10-23, on the questions)
 
 1. **A split screen is two squadrons.** Split, a squadron becomes two: its admiral divides it into two divisions that
