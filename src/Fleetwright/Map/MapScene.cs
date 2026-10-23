@@ -291,10 +291,12 @@ public sealed unsafe partial class MapScene : IScene
         return true;
     }
 
-    /// <summary>A scale bar at the length of a round number near 120 UI pixels, with its length beside it.</summary>
+    /// <summary>A scale bar at the length of a round number (in the map's unit, <see cref="MapUnits"/>) near 120 UI pixels,
+    /// with its length beside it.</summary>
     static void ScaleBar(double metresPerUiPx)
     {
-        double want = 120 * UiFonts.Scale * metresPerUiPx, pow = Math.Pow(10, Math.Floor(Math.Log10(want))), nice = pow;
+        double want = 120 * UiFonts.Scale * metresPerUiPx, unit = MapUnits.Base(want);
+        double pow = Math.Pow(10, Math.Floor(Math.Log10(want / unit))) * unit, nice = pow;
         foreach (double k in NiceSteps)
             if (k * pow <= want)
                 nice = k * pow;
@@ -308,7 +310,7 @@ public sealed unsafe partial class MapScene : IScene
         ImGui.Dummy(new Vector2(w, ImGui.GetTextLineHeight()));
         ImGui.SameLine();
         if (nice != scaleNice)
-            (scaleNice, scaleText) = (nice, Distance(nice));
+            (scaleNice, scaleText) = (nice, MapUnits.Distance(nice));
         ImGui.TextUnformatted(scaleText);
     }
 
@@ -317,7 +319,8 @@ public sealed unsafe partial class MapScene : IScene
     static string scaleText = "";
 
     /// <summary>The grid's values at the screen's edge in the world view, beside <see cref="Graticule.BorderTicks"/>'
-    /// marks, faded in with it; a label that would overlap the last one on its edge is left out.</summary>
+    /// marks: the major ones', faded in with them and with the world view; a label that would overlap the last one on its
+    /// edge is left out.</summary>
     void TickLabels()
     {
         if (ticks.Count == 0)
@@ -325,9 +328,7 @@ public sealed unsafe partial class MapScene : IScene
         var vp = ImGui.GetMainViewport();
         float sx = vp.Size.X / (float)Math.Max(width, 1), sy = vp.Size.Y / (float)Math.Max(height, 1);
         var dl = ImGui.GetBackgroundDrawList();
-        uint col = ImGui.GetColorU32(new Vector4(0.85f, 0.92f, 1f, 0.85f * (float)WorldView.Factor(View)));
-        uint shadow = ImGui.GetColorU32(new Vector4(0, 0, 0, 0.75f * (float)WorldView.Factor(View)));
-        double step = Graticule.Spacing(camera.MetresPerPixel);
+        float wf = (float)WorldView.Factor(View);
         if (tickLabels.Count > 1024)
             tickLabels.Clear();
         float pad = 13 * UiFonts.Scale, lh = ImGui.GetTextLineHeight();
@@ -335,9 +336,12 @@ public sealed unsafe partial class MapScene : IScene
         last.Fill(float.MinValue);
         foreach (var t in ticks)
         {
-            var key = (t.Value, step, t.Parallel);
+            float a = wf * t.Fade * t.Weight;
+            if (a < 0.02f)
+                continue;
+            var key = (t.Value, t.Step, t.Parallel);
             if (!tickLabels.TryGetValue(key, out var text))
-                tickLabels[key] = text = Graticule.Format(t.Value, step, t.Parallel);
+                tickLabels[key] = text = Graticule.Format(t.Value, t.Step, t.Parallel);
             var size = ImGui.CalcTextSize(text);
             float x = vp.Pos.X + (float)(t.X * sx), y = vp.Pos.Y + (float)(t.Y * sy);
             var at = t.Edge switch
@@ -352,8 +356,8 @@ public sealed unsafe partial class MapScene : IScene
             if (start < last[t.Edge] + 8)
                 continue;
             last[t.Edge] = end;
-            dl.AddText(at + new Vector2(1, 1), shadow, text);
-            dl.AddText(at, col, text);
+            dl.AddText(at + new Vector2(1, 1), ImGui.GetColorU32(new Vector4(0, 0, 0, 0.75f * a)), text);
+            dl.AddText(at, ImGui.GetColorU32(new Vector4(0.85f, 0.92f, 1f, 0.85f * a)), text);
         }
     }
 
@@ -366,8 +370,6 @@ public sealed unsafe partial class MapScene : IScene
         >= 4_000 => "Tactical",
         _ => "Ship",
     };
-
-    static string Distance(double m) => m >= 10_000 ? $"{m / 1000:#,0} km" : m >= 1000 ? $"{m / 1000:0.0} km" : $"{m:0} m";
 
     static string Scale(double mpp) => mpp >= 1 ? $"{mpp:#,0.#} m/px" : $"{1 / mpp:0.#} px/m";
 

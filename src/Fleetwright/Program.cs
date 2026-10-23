@@ -308,6 +308,12 @@ public static unsafe class Program
                 units = Designer.UnitSystem.Imperial;
                 designerFlags = true;
             }
+            else if (arg.StartsWith("-grid="))   // the map grid's knobs (docs/visuals/grid.md; Map/GridLook.cs): -grid=units:nm,majoralpha:0.3
+            {
+                foreach (var kv in arg.Substring("-grid=".Length).Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    if (!Map.GridLook.Set(kv))
+                        Console.Error.WriteLine($"Bad grid knob: {kv} (want units (nm, km), hidden, minorfrom, majorfrom, majorat, minoralpha, majoralpha, minorwidth, majorwidth, squares, graticule)");
+            }
             else if (arg.StartsWith("-worldview="))   // the map's table-to-world boundary, metres per pixel at 1080p (docs/visuals/sea.md W0)
             {
                 if (double.TryParse(arg.Substring("-worldview=".Length), System.Globalization.CultureInfo.InvariantCulture, out double m) && m > 0)

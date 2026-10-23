@@ -491,6 +491,51 @@ public sealed partial class MapScene : ISceneMenu
 
     // ------------------------------------------------------------------ the scale, bottom right
 
+    readonly string?[] graticuleLegend = new string?[Graticule.Levels];
+    DistanceUnit legendUnit;
+
+    /// <summary>The grid's legend over the scale bar (docs/visuals/grid.md): the major level and the minor inside it, a
+    /// stroke in each one's look beside its spacing, faded as the lines are; two rows always, so the panel holds its
+    /// size.</summary>
+    void GridLegend()
+    {
+        var view = View;
+        float field = (float)(1 - WorldView.Factor(view));
+        if (field <= 0)
+            return;
+        if (legendUnit != MapUnits.Unit)
+        {
+            Array.Clear(graticuleLegend);
+            legendUnit = MapUnits.Unit;
+        }
+        int major = Graticule.Major(view);
+        for (int l = major; l <= major + 1; l++)
+        {
+            if (l >= Graticule.Levels)
+            {
+                ImGui.Dummy(new Vector2(1, ImGui.GetTextLineHeight()));
+                continue;
+            }
+            graticuleLegend[l] ??= $"{Graticule.Label(l)} · {MapUnits.Distance(Graticule.Metres(l))}";
+            LegendRow(graticuleLegend[l]!, GridLook.Px(Graticule.Metres(l), view), field);
+        }
+    }
+
+    /// <summary>A legend row: a stroke in a level's look (its spacing <paramref name="px"/> reference px apart) and its
+    /// text, both faded as the level is.</summary>
+    static void LegendRow(string text, double px, float alpha)
+    {
+        float a = (float)GridLook.Fade(px) * alpha, w = (float)GridLook.Weight(px), lh = ImGui.GetTextLineHeight();
+        float len = 22 * UiFonts.Scale;
+        var p = ImGui.GetCursorScreenPos();
+        var c = ImGui.GetStyle().Colors[(int)ImGuiCol.Text];
+        ImGui.GetWindowDrawList().AddLine(new Vector2(p.X, p.Y + lh / 2), new Vector2(p.X + len, p.Y + lh / 2),
+            ImGui.GetColorU32(c with { W = c.W * a * (0.45f + 0.55f * w) }), (GridLook.MinorWidth + (GridLook.MajorWidth - GridLook.MinorWidth) * w) * UiFonts.Scale);
+        ImGui.Dummy(new Vector2(len, lh));
+        ImGui.SameLine(0, 6 * UiFonts.Scale);
+        ImGui.TextColored(c with { W = c.W * a * 0.8f }, text);
+    }
+
     long whereKey = long.MinValue;
     string whereText = "";
 
@@ -506,6 +551,7 @@ public sealed partial class MapScene : ISceneMenu
                                    ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoNav | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoInputs))
         {
             ImGui.PushFont(UiFonts.Mono);
+            GridLegend();
             ScaleBar(camera.MetresPerPixel * width / Math.Max(vp.Size.X, 1));
             ImGui.SameLine(0, 12 * UiFonts.Scale);
             var (lat, lon) = Earth.LatLon(camera.Target);
@@ -513,7 +559,9 @@ public sealed partial class MapScene : ISceneMenu
             if (key != whereKey)
             {
                 whereKey = key;
-                whereText = $"{Math.Abs(lat):0}°{Math.Abs(lat) % 1 * 60:00}'{(lat >= 0 ? 'N' : 'S')} {Math.Abs(lon):0}°{Math.Abs(lon) % 1 * 60:00}'{(lon >= 0 ? 'E' : 'W')}";
+                // whole minutes first, so 56.7° is 56°42' (not 57°42') and 59.99' never shows as 60'
+                long la = (long)Math.Round(Math.Abs(lat) * 60), lo = (long)Math.Round(Math.Abs(lon) * 60);
+                whereText = $"{la / 60}°{la % 60:00}'{(lat >= 0 ? 'N' : 'S')} {lo / 60}°{lo % 60:00}'{(lon >= 0 ? 'E' : 'W')}";
             }
             ImGui.TextDisabled(whereText);
             ImGui.PopFont();
@@ -531,7 +579,7 @@ public sealed partial class MapScene : ISceneMenu
         var vp = ImGui.GetMainViewport();
         var view = View;
         double across = camera.MetresPerPixel * width, wf = WorldView.Factor(view);
-        ImGui.TextDisabled($"{Band(across)} · {WorldView.Label(wf)} · {Distance(across)} across · {Scale(camera.MetresPerPixel)} · grid {Graticule.Label(Graticule.Spacing(camera.MetresPerPixel))}{(wf >= 1 ? " at the edges" : "")}");
+        ImGui.TextDisabled($"{Band(across)} · {WorldView.Label(wf)} · {MapUnits.Distance(across)} across · {Scale(camera.MetresPerPixel)} · grid {Graticule.Label(Graticule.Major(view))}{(wf >= 1 ? " at the edges" : "")}");
         if (Sdl3GpuEngine.StatsShown)
         {
             float b = (float)WorldView.BoundaryM;

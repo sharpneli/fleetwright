@@ -39,6 +39,7 @@ dotnet run --project src/Fleetwright -- -view=profile                      # the
 dotnet run --project src/Fleetwright -- -lights=roughness:0.5,specular:0   # the ships' light table knobs (ShipLight.cs: roughness scales the looks' materials), for side-by-side captures
 dotnet run --project src/Fleetwright -- -view=ship -viewer=sun:300:30,shade:normal,at:10:0:8 [-outline=0.5]   # the viewer for captures: sun, moon, debug view (lit, albedo, normal, ao, ...), centre and zoom; the plan's ink weight
 dotnet run --project src/Fleetwright -- -uiscale=1.25                     # UI size over the window-height scale (1080 px = 1.0)
+dotnet run --project src/Fleetwright -- -map=56.7,5.8,150 -grid=units:nm,squares:100,graticule:300   # the map grid's knobs (docs/visuals/grid.md; Map/GridLook.cs: units (nm, km), hidden, minorfrom, majorfrom, majorat, minoralpha, majoralpha, minorwidth, majorwidth, squares, graticule)
 dotnet run --project src/Fleetwright -- -worldview=4                       # the map's table-to-world boundary, m/px at 1080p (Map/WorldView.cs; live in the "where" panel with F2)
 dotnet run --project src/Fleetwright -- -map=-40,100,2 -time=1916-05-31T05:20 -sea=lowsunrelief:4,nightrelief:5   # the sea's look knobs (Map/SeaView.cs: relief, lowsunrelief, facet, chop, nightrelief, moonnight, starnight, debug (3: the wakes, 4: their foam), wake (the wakes' gain, 0 none), foam (the trails' foam lanes' gain, 0 none)), for side-by-side captures
 dotnet run --project src/Fleetwright -- -ships=dreadnought:1:0@56.5,4.0,0,0 -ships=dreadnought:1:0@56.5,4.13,0,0 -fire=1:56.5,4.126 -map=56.5,4.126,0.5 -splash=dye:auto,pitch:45   # the world view's splashes (docs/visuals/splashes.md; Map/Splashes/SplashLook.cs: pitch, floor, knee, power, keep, faint, steps, vivid, vary, on, parts, dye:auto)
@@ -253,7 +254,8 @@ src/
                               #   and the world: ships' icons or sprites, the grid or its edge ticks, the sea;
                               #   docs/visuals/sea.md), SeaSim (the FFT waves: two compute dispatches and mips) and
                               #   SeaView (the sea's camera-relative frame and clock), GlobeRenderer (the sphere per
-                              #   pixel, the sea in the world view, then MapLines), Graticule,
+                              #   pixel, the sea in the world view, then MapLines), Graticule (the lat/lon levels;
+                              #   docs/visuals/grid.md), GridLook (the grid's knobs), MapUnits (nm or km),
                               #   LandView (the finest land level, brought inside a cap around the view per frame),
                               #   LandMesh (the coarse levels baked once: tiled fans and a coast mesh), CapRetraction,
                               #   MapScene (input, clock controls, HUD; MapScene.Ships.cs: selection, orders, dev
@@ -403,6 +405,7 @@ docs/battle/plan.md           # the battle module (a deliverable: the whole ship
                               #   what done means, ship counts, the build order from a world of water up, the ships' data
 docs/world/architecture.md    # the world: tiers of time on one clock, the sim thread, commands/snapshot, the scene stack
 docs/missions/plan.md         # missions, the battle module's stand-in for politics and manufacturing (format, objectives, UI, generator)
+docs/visuals/grid.md          # the map's grid: lat/lon levels fading by zoom, a square grid at battle zooms, lat/lon to the margin (agreed 2026-10-23; G0-G2)
 docs/visuals/sea.md           # the sea: the table/world boundary, the FFT ocean in the globe's pass (W0-W4 done; foam later)
 docs/visuals/wakes.md         # wakes: the Kelvin field baked per class and speed into the sea's slopes, the trail as foam (agreed 2026-10-15; K1-K4 done: the bake, the library, the stamps, the foam lanes)
 docs/visuals/magazine-explosions.md   # magazine explosions in the world view: the sim's record, the event per class, the analytic body, jets, debris, the blast and light, the after-smoke (X0-X7 done and approved 2026-10-15)

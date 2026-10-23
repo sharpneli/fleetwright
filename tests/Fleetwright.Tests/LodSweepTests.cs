@@ -49,7 +49,7 @@ public class LodSweepTests(ITestOutputHelper output)
         var lines = new MapLines();
         var cam = MapCamera.At(lat, lon, 12_000);
         int bad = 0, checkedPx = 0, lastLevel = 0;
-        double lastSpacing = double.MaxValue;
+        int lastMajor = -1;
         var report = new List<string>();
         for (int k = 0; k <= 45; k++)
         {
@@ -60,10 +60,10 @@ public class LodSweepTests(ITestOutputHelper output)
             view.Build(v, lines);
             var level = view.LevelFor(v);
             int levelIndex = level == Coarse ? 0 : level == Medium ? 1 : 2;
-            double spacing = Graticule.Spacing(cam.MetresPerPixel);
+            int major = Graticule.Major(v);
             Assert.True(levelIndex >= lastLevel, $"step {k}: the level went back to {Name(level)}");
-            Assert.True(spacing <= lastSpacing, $"step {k}: the grid went back to {Graticule.Label(spacing)}");
-            (lastLevel, lastSpacing) = (levelIndex, spacing);
+            Assert.True(major >= lastMajor, $"step {k}: the grid went back to {Graticule.Label(major)}");
+            (lastLevel, lastMajor) = (levelIndex, major);
             int stepBad = 0;
             var mesh = levelIndex == 0 ? CoarseMesh : levelIndex == 1 ? MediumMesh : null;
             var bins = mesh != null ? Bin(mesh, v) : null;

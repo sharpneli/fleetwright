@@ -161,13 +161,47 @@ public class MapCameraTests
     }
 
     [Fact]
-    public void Grid_spacing_follows_the_zoom()
+    public void Grid_levels_follow_the_zoom()
     {
-        Assert.Equal(10, Graticule.Spacing(12_000));
-        Assert.Equal(1 / 3600.0, Graticule.Spacing(0.1));
-        Assert.Equal("10°", Graticule.Label(10));
-        Assert.Equal("10'", Graticule.Label(1 / 6.0));
-        Assert.Equal("1\"", Graticule.Label(1 / 3600.0));
+        var cam = MapCamera.At(56.7, 5.8, 12_000);
+        int last = -1;
+        for (int k = 0; k < 120; k++, cam.MetresPerPixel /= 1.1)
+        {
+            int major = Graticule.Major(new MapView(cam, W, H));
+            Assert.True(major >= last, $"{cam.MetresPerPixel} m/px: the major level went back to {Graticule.Label(major)}");
+            last = major;
+        }
+        Assert.Equal("0.1'", Graticule.Label(last));   // at 0.13 m/px the 0.01' lines are under 200 px apart: minor
+        Assert.Equal("10'", Graticule.Label(3));
+        Assert.Equal(1 / 6.0, Graticule.Step(3), 12);
+    }
+
+    [Fact]
+    public void No_grid_level_jumps_as_the_zoom_moves()
+    {
+        // every level's look a smooth function of the zoom: 2% of zoom moves no line's alpha by a hundredth
+        var cam = MapCamera.At(56.7, 5.8, 20_000);
+        for (int k = 0; k < 600; k++, cam.MetresPerPixel /= 1.02)
+        {
+            var a = new MapView(cam, W, H);
+            var b = new MapView(cam with { MetresPerPixel = cam.MetresPerPixel / 1.02 }, W, H);
+            for (int l = 0; l < Graticule.Levels; l++)
+            {
+                float fa = GridLook.Line(GridLook.Px(Graticule.Metres(l), a), 1).Color.W;
+                float fb = GridLook.Line(GridLook.Px(Graticule.Metres(l), b), 1).Color.W;
+                Assert.True(Math.Abs(fa - fb) < 0.01, $"{cam.MetresPerPixel} m/px: {Graticule.Label(l)} from {fa} to {fb}");
+            }
+        }
+    }
+
+    [Fact]
+    public void Map_distances_read_in_nautical_miles_and_cables()
+    {
+        Assert.Equal("60 nm", MapUnits.Distance(Graticule.Metres(2)));
+        Assert.Equal("1 nm", MapUnits.Distance(Graticule.Metres(4)));
+        Assert.Equal("1 cable", MapUnits.Distance(Graticule.Metres(5)));
+        Assert.Equal("5 cables", MapUnits.Distance(5 * MapUnits.MetresPerCable));
+        Assert.Equal("19 m", MapUnits.Distance(Graticule.Metres(6)));
     }
 
     [Fact]
@@ -207,11 +241,14 @@ public class MapCameraTests
         Graticule.BorderTicks(world, ticks, lines);
         Assert.Contains(ticks, t => t.Parallel && t.Edge is 1 or 3);
         Assert.Contains(ticks, t => !t.Parallel && t.Edge is 0 or 2);
-        double step = Graticule.Spacing(0.5);
-        Assert.All(ticks, t => Assert.Equal(0, Math.IEEERemainder(t.Value / step, 1), 6));
+        Assert.All(ticks, t => Assert.Equal(0, Math.IEEERemainder(t.Value / t.Step, 1), 6));
+        Assert.Contains(ticks, t => t.Weight > 0.5f);   // the labelled majors
+        Assert.Contains(ticks, t => t.Weight < 0.5f && t.Fade > 0.5f);   // the minors between them
         Graticule.BorderTicks(table, ticks, lines);
         Assert.Empty(ticks);
-        Assert.Equal("56°42'10\"N", Graticule.Format(56.7 + 10 / 3600.0, 1 / 360.0, true));
+        Assert.Equal("56°42.3'N", Graticule.Format(56.7 + 0.3 / 60, 1 / 600.0, true));
+        Assert.Equal("56°42.31'N", Graticule.Format(56.7 + 0.31 / 60, 1 / 6000.0, true));
         Assert.Equal("5°48'W", Graticule.Format(-5.8, 1 / 60.0, false));
+        Assert.Equal("56°N", Graticule.Format(56, 1, true));
     }
 }
