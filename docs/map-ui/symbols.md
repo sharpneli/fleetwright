@@ -175,3 +175,13 @@ vertex shader passes a plain style. `MapLines.BeginStrip(colour, width, Dash, ca
 distance along it (radius times angle) and its dashes are fitted to a whole number, so a ring cut by the screen's
 edge keeps its dashes where they were as it pans. The line buffers grew with the vertex (the same vertex counts).
 The torpedo reach went dotted and dashed (Y4 sets them), the encounter ring cased.
+
+**Y3** (2026-10-23): `MapSymbols` (`mapsymbol.vert/frag`): one quad a symbol, its shape a signed distance in px
+(circle, diamond, square, arrowhead, wreck: a ring and a cross), filled, stroked and cased, drawn after the overlay's
+lines in the same pass (a pipeline and a 2 MB buffer, no new pass or target). The contacts' and groups' diamonds,
+the selection, held and picked rings, the waypoints and the wreck moved onto it; the battle marks' rings stay soft
+strokes. The icons (`shipmap.frag`, mode 2): the quad padded by the casing and the selected's glow, the hull's
+coverage spread by eight taps into a dark rim (1.5 casing px) and, selected, a soft glow in its tint (two rings of
+taps, 4 px); the texture's end columns aren't empty, so the hull is masked to its own rectangle (clamping smeared the
+stern into the padding at first). Packed into fields the icon didn't use: roof and cover carry the padding's share,
+soot the casing's px (plus 100 selected).

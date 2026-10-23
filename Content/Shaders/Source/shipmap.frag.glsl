@@ -91,6 +91,14 @@ float specAt(float depth)
     return 1.0 - smoothstep(0.0, 0.05, depth);
 }
 
+// the icon's coverage at a point of its hull's uv: none outside the hull's rectangle (the texture's end columns aren't
+// empty, and clamping would smear them into the padding), faded over a pixel (du: the uv a pixel)
+float iconAt(vec2 u, vec2 du)
+{
+    vec2 e = clamp(min(u, 1.0 - u) / max(du, vec2(1e-6)) + 0.5, 0.0, 1.0);
+    return texture(spriteTex, u).a * e.x * e.y;
+}
+
 void main()
 {
     float opacity = fragMode.y;
@@ -160,26 +168,47 @@ void main()
     }
     if (fragMode.x < 0.5 && fragMode.w > 0.0 && heightAt(shownAt(heightTex, fragHmap, fragShip, fragSea, pxM)) >= fragMode.w)
         discard;   // a casemate, under the deck over it: hidden where the hull that shows here stands over its cover
-    vec4 c = texture(spriteTex, uv);
     if (fragMode.x > 1.5)
     {
-        // the icon; with the sea over its deck (march: how far the sea stands over the deck amidships, its rise to the
-        // bow and to starboard, m; w on), what's under goes faint and sea-dark, with a pale wash along the edge
+        // the icon, in a quad padded for its casing and glow (z, w: the padding's share along and across; soot: the
+        // casing's width in px, plus 100 when selected; docs/map-ui/symbols.md Y3)
+        vec2 pad = fragMode.zw;
+        vec2 hu = (fragUv - pad) / (1.0 - 2.0 * pad);
+        vec2 du = fwidth(hu);   // the hull's uv a pixel
+        float casing = mod(fragSoot, 100.0);
+        bool selected = fragSoot >= 100.0;
+        vec4 c = vec4(1.0, 1.0, 1.0, iconAt(hu, du));
+        // with the sea over its deck (march: how far the sea stands over the deck amidships, its rise to the bow and to
+        // starboard, m; w on), what's under goes faint and sea-dark, with a pale wash along the edge
         vec3 rgb = fragTint.rgb;
         float a = fragTint.a * c.a;
         if (fragMarch.w > 0.5)
         {
-            float over = fragMarch.x + fragMarch.y * (2.0 * fragUv.x - 1.0) + fragMarch.z * (2.0 * fragUv.y - 1.0);
+            float over = fragMarch.x + fragMarch.y * (2.0 * hu.x - 1.0) + fragMarch.z * (2.0 * hu.y - 1.0);
             float aa = max(fwidth(over), 1e-4);
             float under = clamp(over / aa + 0.5, 0.0, 1.0), wash = 1.0 - clamp(abs(over) / (1.5 * aa), 0.0, 1.0);
             rgb = mix(rgb, vec3(0.16, 0.27, 0.34), 0.7 * under);
             rgb = mix(rgb, vec3(0.9, 0.95, 1.0), 0.6 * wash);
             a *= 1.0 - 0.6 * under;
         }
-        outColour = vec4(rgb, 1.0) * a * opacity;
+        // the casing: the hull's coverage spread by its width (eight taps), dark under the icon; the glow: wider and soft
+        float spread = 0.0, glow = 0.0;
+        for (int i = 0; i < 8; i++)
+        {
+            vec2 dir = vec2(cos(float(i) * 0.785398), sin(float(i) * 0.785398));
+            spread = max(spread, iconAt(hu + dir * du * casing, du));
+            if (selected)
+                glow += 0.65 * iconAt(hu + dir * du * (casing + 1.5), du) + 0.35 * iconAt(hu + dir * du * (casing + 3.5), du);
+        }
+        vec4 icon = vec4(rgb, 1.0) * a;
+        vec4 rim = vec4(0.035, 0.05, 0.06, 1.0) * (0.6 * fragTint.a * max(spread - c.a, 0.0));
+        vec4 halo = vec4(fragTint.rgb, 1.0) * (0.45 * fragTint.a * max(glow / 8.0 - spread, 0.0));
+        vec4 under = rim + halo * (1.0 - rim.a);
+        outColour = (icon + under * (1.0 - icon.a)) * opacity;
     }
     else
     {
+        vec4 c = texture(spriteTex, uv);
         vec3 rgb = c.a > 0.0 ? c.rgb / c.a : vec3(0.0);   // the albedo as drawn, sRGB-coded
         if (fragTint.a > 0.0)
             rgb = mix(rgb, rgb * fragTint.rgb, fragTint.a);

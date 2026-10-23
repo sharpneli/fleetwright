@@ -75,14 +75,7 @@ public sealed partial class MapScene
         {
             if (mark <= 0 || !view.Project(w.At, out double x, out double y) || x < -20 || y < -20 || x > view.Width + 20 || y > view.Height + 20)
                 continue;
-            overlay.Circle(x, y, r, wreckColour, 1.5f);
-            foreach (double a in (ReadOnlySpan<double>)[Math.PI / 4, -Math.PI / 4])
-            {
-                overlay.BeginStrip(wreckColour, 1.5f);
-                overlay.Point(x - Math.Cos(a) * r * 0.7, y - Math.Sin(a) * r * 0.7);
-                overlay.Point(x + Math.Cos(a) * r * 0.7, y + Math.Sin(a) * r * 0.7);
-                overlay.End();
-            }
+            symbols.Add(SymbolShape.Wreck, x, y, r, default, wreckColour, 1.5f);
         }
     }
 

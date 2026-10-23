@@ -19,6 +19,7 @@ public sealed unsafe partial class MapScene : IScene
     readonly WorldSession world;
     readonly GlobeRenderer renderer;
     readonly MapLines lines = new(), overlay = new();   // overlay: rebuilt every frame (routes, tracks, the selection)
+    readonly MapSymbols symbols = new();   // the overlay's symbols, over its lines (docs/map-ui/symbols.md Y3)
     readonly LandView land;
     readonly SunLapse sunLapse = new();
     readonly SeaView sea = new();
@@ -126,7 +127,8 @@ public sealed unsafe partial class MapScene : IScene
         PlaceGroups(view, s);
         probes.Add(probeGroups, t);
         t = Probes.Now;
-        shipRenderer.List.Build(view, s.Ships, world.DrawMs, s.Sun, artOf, classOf, shipRenderer.Icon, selected, hidden, sunLapse.Motion, s.Sighted,
+        (shipRenderer.List.IconCasingPx, shipRenderer.List.IconGlowPx) = (SymbolLook.Casing * 1.5 * Rp, 4 * Rp);
+        shipRenderer.List.Build(view,s.Ships, world.DrawMs, s.Sun, artOf, classOf, shipRenderer.Icon, selected, hidden, sunLapse.Motion, s.Sighted,
             shipRenderer.Wakes);
         probes.Add(probeDrawList, t);
         t = Probes.Now;
@@ -165,7 +167,7 @@ public sealed unsafe partial class MapScene : IScene
         shipRenderer.FoamClockS = sea.ClockS;
         shipRenderer.List.PlayerSide = world.Current.PlayerSide;
         renderer.Render(cmd, target, view, s.Sun, land.Fill, baked, lines, overlay, shipRenderer, sunLapse.Motion, sea, lights.Uniforms,
-            GlobeRenderer.MoonUniform(now));
+            GlobeRenderer.MoonUniform(now), symbols);
         probes.Add(probeRender, t);
     }
 

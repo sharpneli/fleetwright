@@ -71,14 +71,7 @@ public sealed partial class MapScene
             if (c.Level[i] == ContactLevel.Smoke)
                 continue;   // smoke alone: no ship's marker, no course
             // the marker: a diamond, and the course line ahead
-            overlay.BeginStrip(col, 1.5f);
-            double mk = ContactMarkerPx * Rp;
-            overlay.Point(x, y - mk);
-            overlay.Point(x + mk, y);
-            overlay.Point(x, y + mk);
-            overlay.Point(x - mk, y);
-            overlay.Point(x, y - mk);
-            overlay.EndClosed();
+            symbols.Add(SymbolShape.Diamond, x, y, ContactMarkerPx * Rp, default, col, 1.5f);
             var ahead = (p + c.Velocity[i] * ContactCourseS).Normalized() * Earth.Radius;
             if (view.Project(ahead, out double ax2, out double ay2) && Math.Abs(ax2 - x) + Math.Abs(ay2 - y) > 2)
             {

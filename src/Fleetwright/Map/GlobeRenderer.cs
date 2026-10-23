@@ -22,8 +22,8 @@ namespace Fleetwright.Map;
 public sealed unsafe class GlobeRenderer : IDisposable
 {
     readonly SDL_GPUDevice* device;
-    readonly SDL_GPUShader* globeVs, globeFs, lineVs, lineFs, fillVs, fillFs, land3dVs, coast3dVs, depthFs;
-    readonly DynamicGpuBuffer lineBuf, fillBuf, overlayBuf;
+    readonly SDL_GPUShader* globeVs, globeFs, lineVs, lineFs, fillVs, fillFs, land3dVs, coast3dVs, depthFs, symbolVs, symbolFs;
+    readonly DynamicGpuBuffer lineBuf, fillBuf, overlayBuf, symbolBuf;
 
     /// <summary>The overlay's vertices last frame, and how many fit: past it, the last drawn are dropped.</summary>
     public int OverlayVertices { get; private set; }
@@ -32,7 +32,7 @@ public sealed unsafe class GlobeRenderer : IDisposable
 
     /// <summary>The sea's waves on the GPU: its state is set by the scene, it runs only while the world view shows.</summary>
     public SeaSim Sea { get; }
-    SDL_GPUGraphicsPipeline* globePipe, linePipe, fillPipe, depthPipe, fill3dPipe, coast3dPipe;
+    SDL_GPUGraphicsPipeline* globePipe, linePipe, fillPipe, depthPipe, fill3dPipe, coast3dPipe, symbolPipe;
     RenderTarget? coverage;   // the land's winding number per pixel, at the target's size, with depth
     RenderTarget? wake;       // the wakes' slopes, variance and foam per pixel (docs/visuals/wakes.md), at the target's size
     const SDL_GPUTextureFormat WakeFormat = SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_R16G16B16A16_FLOAT;
@@ -44,7 +44,7 @@ public sealed unsafe class GlobeRenderer : IDisposable
     readonly SDL_GPUBuffer*[] meshFill = new SDL_GPUBuffer*[2], meshCoast = new SDL_GPUBuffer*[2], meshIdx = new SDL_GPUBuffer*[2];
     readonly uint[] meshFillCount = new uint[2], meshIdxCount = new uint[2];
 
-    const uint LineBufferBytes = 28 << 20, FillBufferBytes = 8 << 20, OverlayBufferBytes = 14 << 20;   // lines 2^19 vertices, the overlay 2^18
+    const uint LineBufferBytes = 28 << 20, FillBufferBytes = 8 << 20, OverlayBufferBytes = 14 << 20, SymbolBufferBytes = 2 << 20;   // lines 2^19 vertices, the overlay 2^18
     const SDL_GPUTextureFormat CoverageFormat = SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_R16_FLOAT;
 
     /// <summary>How far inside the Earth the masking sphere is: over the baked fans' sag (under 0.4 km), so they pass,
@@ -76,12 +76,15 @@ public sealed unsafe class GlobeRenderer : IDisposable
         land3dVs = Load("land3d.vert", V, 0, 1);
         coast3dVs = Load("coast3d.vert", V, 0, 1);
         depthFs = Load("spheredepth.frag", F, 0, 1);
+        symbolVs = Load("mapsymbol.vert", V, 0, 0);
+        symbolFs = Load("mapsymbol.frag", F, 0, 0);
         if (globeVs == null || globeFs == null || lineVs == null || lineFs == null || fillVs == null || fillFs == null
-            || land3dVs == null || coast3dVs == null || depthFs == null)
+            || land3dVs == null || coast3dVs == null || depthFs == null || symbolVs == null || symbolFs == null)
             throw new InvalidOperationException("globe shaders failed to load");
         lineBuf = new DynamicGpuBuffer(device, SDL_GPUBufferUsageFlags.SDL_GPU_BUFFERUSAGE_VERTEX, LineBufferBytes);
         fillBuf = new DynamicGpuBuffer(device, SDL_GPUBufferUsageFlags.SDL_GPU_BUFFERUSAGE_VERTEX, FillBufferBytes);
         overlayBuf = new DynamicGpuBuffer(device, SDL_GPUBufferUsageFlags.SDL_GPU_BUFFERUSAGE_VERTEX, OverlayBufferBytes);
+        symbolBuf = new DynamicGpuBuffer(device, SDL_GPUBufferUsageFlags.SDL_GPU_BUFFERUSAGE_VERTEX, SymbolBufferBytes);
         var si = new SDL_GPUSamplerCreateInfo
         {
             min_filter = SDL_GPUFilter.SDL_GPU_FILTER_NEAREST,
@@ -141,6 +144,15 @@ public sealed unsafe class GlobeRenderer : IDisposable
             .AddVertexAttribute(2, 0, SDL_GPUVertexElementFormat.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4, 24)
             .AddVertexAttribute(3, 0, SDL_GPUVertexElementFormat.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4, 40)
             .Build(device);
+        symbolPipe = Main().SetShaders(symbolVs, symbolFs).EnableBlendingAlpha()
+            .AddVertexBuffer(0, SymbolVertex.SizeInBytes)
+            .AddVertexAttribute(0, 0, SDL_GPUVertexElementFormat.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2, 0)
+            .AddVertexAttribute(1, 0, SDL_GPUVertexElementFormat.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2, 8)
+            .AddVertexAttribute(2, 0, SDL_GPUVertexElementFormat.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4, 16)
+            .AddVertexAttribute(3, 0, SDL_GPUVertexElementFormat.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4, 32)
+            .AddVertexAttribute(4, 0, SDL_GPUVertexElementFormat.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4, 48)
+            .AddVertexAttribute(5, 0, SDL_GPUVertexElementFormat.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4, 64)
+            .Build(device);
         if (target.HasDepth)
             coast3dPipe = Main().EnableDepthTest(false, SDL_GPUCompareOp.SDL_GPU_COMPAREOP_LESS_OR_EQUAL)
                 .SetShaders(coast3dVs, lineFs).EnableBlendingAlpha()
@@ -162,17 +174,17 @@ public sealed unsafe class GlobeRenderer : IDisposable
             .AddVertexBuffer(0, 8)
             .AddVertexAttribute(0, 0, SDL_GPUVertexElementFormat.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2, 0)
             .Build(device);
-        if (globePipe == null || linePipe == null || fillPipe == null || depthPipe == null || fill3dPipe == null
+        if (globePipe == null || linePipe == null || fillPipe == null || depthPipe == null || fill3dPipe == null || symbolPipe == null
             || (target.HasDepth && coast3dPipe == null))
             throw new InvalidOperationException($"globe pipelines: {SDL_GetError()}");
     }
 
     void ReleasePipelines()
     {
-        foreach (var p in new[] { (nint)globePipe, (nint)linePipe, (nint)fillPipe, (nint)depthPipe, (nint)fill3dPipe, (nint)coast3dPipe })
+        foreach (var p in new[] { (nint)globePipe, (nint)linePipe, (nint)fillPipe, (nint)depthPipe, (nint)fill3dPipe, (nint)coast3dPipe, (nint)symbolPipe })
             if (p != 0)
                 SDL_ReleaseGPUGraphicsPipeline(device, (SDL_GPUGraphicsPipeline*)p);
-        globePipe = linePipe = fillPipe = depthPipe = fill3dPipe = coast3dPipe = null;
+        globePipe = linePipe = fillPipe = depthPipe = fill3dPipe = coast3dPipe = symbolPipe = null;
     }
 
     void ReleaseMeshes()
@@ -194,10 +206,11 @@ public sealed unsafe class GlobeRenderer : IDisposable
     /// the view changes. <paramref name="sunMotion"/> is <see cref="SunLapse.Motion"/>: 1 the live sun, 0 the
     /// time-lapse (each latitude at its mean over the day, the sun's track drawn). <paramref name="sea"/>, when the
     /// world view shows, is the sea's frame and clock; <paramref name="lights"/> the frame's light (the ships');
-    /// <paramref name="moon"/> the moon for the night side's glow (<see cref="MoonUniform"/>).</summary>
+    /// <paramref name="moon"/> the moon for the night side's glow (<see cref="MoonUniform"/>). <paramref name="symbols"/>
+    /// go over it all (docs/map-ui/symbols.md Y3).</summary>
     public void Render(SDL_GPUCommandBuffer* cmd, RenderTarget target, in MapView view, Vec3d sun,
         ReadOnlySpan<Vector2> landFill, int bakedLevel, MapLines lines, MapLines? overlay = null, IMapLayer? layer = null,
-        double sunMotion = 1, SeaView? sea = null, LightUniforms lights = default, Vector4 moon = default)
+        double sunMotion = 1, SeaView? sea = null, LightUniforms lights = default, Vector4 moon = default, MapSymbols? symbols = null)
     {
         EnsurePipelines(target);
         if (coverage == null)
@@ -220,8 +233,13 @@ public sealed unsafe class GlobeRenderer : IDisposable
         OverlayVertices = over.Length;
         if (over.Length > maxOver)
             over = over[..(maxOver - maxOver % 6)];
+        var sym = symbols != null ? symbols.Vertices : default;
+        int maxSym = (int)(SymbolBufferBytes / SymbolVertex.SizeInBytes);
+        if (sym.Length > maxSym)
+            sym = sym[..(maxSym - maxSym % 6)];
         lineBuf.Upload(cmd, verts);   // copy passes: before the render passes
         overlayBuf.Upload(cmd, over);
+        symbolBuf.Upload(cmd, sym);
         layer?.Copy(cmd);
         fillBuf.Upload(cmd, landFill);
         layer?.Prepass(cmd, target);
@@ -305,6 +323,13 @@ public sealed unsafe class GlobeRenderer : IDisposable
             SDL_BindGPUVertexBuffers(pass, 0, &binding, 1);
             SDL_DrawGPUPrimitives(pass, (uint)over.Length, 1, 0, 0);
         }
+        if (sym.Length > 0)
+        {
+            SDL_BindGPUGraphicsPipeline(pass, symbolPipe);
+            var binding = new SDL_GPUBufferBinding { buffer = symbolBuf.Buffer, offset = 0 };
+            SDL_BindGPUVertexBuffers(pass, 0, &binding, 1);
+            SDL_DrawGPUPrimitives(pass, (uint)sym.Length, 1, 0, 0);
+        }
         SDL_EndGPURenderPass(pass);
     }
 
@@ -363,6 +388,7 @@ public sealed unsafe class GlobeRenderer : IDisposable
         ReleaseMeshes();
         lineBuf.Dispose();
         overlayBuf.Dispose();
+        symbolBuf.Dispose();
         fillBuf.Dispose();
         coverage?.Dispose();
         wake?.Dispose();
@@ -370,7 +396,7 @@ public sealed unsafe class GlobeRenderer : IDisposable
         SDL_ReleaseGPUSampler(device, seaSampler);
         Sea.Dispose();
         foreach (var s in new[] { (nint)globeVs, (nint)globeFs, (nint)lineVs, (nint)lineFs, (nint)fillVs, (nint)fillFs,
-                     (nint)land3dVs, (nint)coast3dVs, (nint)depthFs })
+                     (nint)land3dVs, (nint)coast3dVs, (nint)depthFs, (nint)symbolVs, (nint)symbolFs })
             SDL_ReleaseGPUShader(device, (SDL_GPUShader*)s);
     }
 }

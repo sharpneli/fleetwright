@@ -86,3 +86,38 @@ public class MapLinesTests
         Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - before);
     }
 }
+
+/// <summary>The map's symbols (docs/map-ui/symbols.md Y3): a quad each, none off the screen or invisible, no garbage.</summary>
+public class MapSymbolsTests
+{
+    [Fact]
+    public void A_symbol_is_one_quad_and_none_off_the_screen()
+    {
+        var s = new MapSymbols();
+        s.Begin(1920, 1080, 1);
+        var c = new Vector4(1, 1, 1, 1);
+        s.Add(SymbolShape.Diamond, 100, 100, 5, default, c, 1.5f);
+        s.Add(SymbolShape.Arrow, 200, 100, 6, c, c, 1, Math.PI / 3);
+        Assert.Equal(12, s.Vertices.Length);
+        s.Add(SymbolShape.Circle, -50, 100, 5, c, c, 1);       // off the screen
+        s.Add(SymbolShape.Circle, 300, 100, 5, default, default, 1);   // nothing to draw
+        Assert.Equal(12, s.Vertices.Length);
+    }
+
+    [Fact]
+    public void Symbols_allocate_nothing_once_grown()
+    {
+        var s = new MapSymbols();
+        var c = new Vector4(1, 0.8f, 0.3f, 1);
+        void Frame()
+        {
+            s.Begin(1920, 1080, 1);
+            for (int i = 0; i < 2000; i++)
+                s.Add((SymbolShape)(i % 5), 10 + i % 1900, 10 + i / 4 % 1000, 6, c, c, 1.5f, i);
+        }
+        Frame();
+        long before = GC.GetAllocatedBytesForCurrentThread();
+        Frame();
+        Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - before);
+    }
+}

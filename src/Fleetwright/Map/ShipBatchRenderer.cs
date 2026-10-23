@@ -126,6 +126,10 @@ public sealed class ShipDrawList
     /// <summary>The player's side, set by the map each frame (-1: watching).</summary>
     public int PlayerSide = -1;
 
+    /// <summary>The icons' casing (a dark rim that keeps them legible over smoke and land) and the selected one's glow,
+    /// target px, set by the map each frame (docs/map-ui/symbols.md Y3).</summary>
+    public double IconCasingPx = 1.5, IconGlowPx = 4;
+
     /// <summary>A turret's tint by its state (damaged, out of action, wrecked; jammed alone), multiplied in by its alpha,
     /// and its soot (rough, no metal, darker hollows); a scorch's colour and opacity over a wrecked part by its state.</summary>
     static readonly Vector4 TurretDamaged = new(0.85f, 0.8f, 0.75f, 0.5f), TurretOut = new(0.55f, 0.5f, 0.47f, 0.75f),
@@ -600,10 +604,13 @@ public sealed class ShipDrawList
 
     void Icon(ref Placed p, bool selected)
     {
-        // its tonnage's size on screen, or the ship's own once longer, along the heading: metres per pixel at the ship
-        double l = p.IconL / p.PxPerM, w = p.IconW / p.PxPerM;
-        Emit(ref p, null, -l / 2, -w / 2, l, 0, 0, w, mode: 2, opacity: p.IconAlpha, roof: 0,
-            selected ? SelectedTint : PlayerSide < 0 ? SideTints[p.Side < SideTints.Length ? p.Side : 0] : p.Side == PlayerSide ? FriendTint : EnemyTint, IconSea(p));
+        // its tonnage's size on screen, or the ship's own once longer, along the heading: metres per pixel at the ship;
+        // the quad padded for the casing and the selected's glow (shipmap.frag: roof and cover carry the padding's share
+        // along and across, soot the casing in px, plus 100 when selected)
+        double l = p.IconL / p.PxPerM, w = p.IconW / p.PxPerM, pad = (IconCasingPx + (selected ? IconGlowPx : 0) + 1) / p.PxPerM;
+        Emit(ref p, null, -l / 2 - pad, -w / 2 - pad, l + 2 * pad, 0, 0, w + 2 * pad, mode: 2, opacity: p.IconAlpha, roof: pad / (l + 2 * pad),
+            selected ? SelectedTint : PlayerSide < 0 ? SideTints[p.Side < SideTints.Length ? p.Side : 0] : p.Side == PlayerSide ? FriendTint : EnemyTint, IconSea(p),
+            cover: (float)(pad / (w + 2 * pad)), soot: (float)(IconCasingPx + (selected ? 100 : 0)));
     }
 
     /// <summary>The sea over the icon's deck (docs/visuals/battle-marks.md M4): the sprite's sea plane (its settling,

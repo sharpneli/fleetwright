@@ -75,6 +75,7 @@ public sealed unsafe partial class MapScene
         bool allRoutes = view.MetresPerPixel * view.Width < 1_000_000;
         overlay.Begin(width, height);
         overlay.WidthScale = overlay.ChordScale = Rp;
+        symbols.Begin(width, height, Rp);
         frame++;
         DrawEncounters(view, s);
         DrawContacts(view, s);
@@ -122,8 +123,8 @@ public sealed unsafe partial class MapScene
                 }
                 overlay.End();
                 for (int i = 0; i < v.RouteCount[k]; i++)
-                    if (InView(cap, v.Waypoints[v.RouteStart[k] + i]))
-                        Ring(view, v.Waypoints[v.RouteStart[k] + i], 4 * Rp, sel ? RouteSelected : RouteColor, 1.5f);
+                    if (InView(cap, v.Waypoints[v.RouteStart[k] + i]) && view.Project(v.Waypoints[v.RouteStart[k] + i], out double wx, out double wy))
+                        symbols.Add(SymbolShape.Circle, wx, wy, 4 * Rp, default, sel ? RouteSelected : RouteColor, 1.5f);
             }
 
             if (sel && view.Project(p, out double x, out double y))
@@ -339,11 +340,11 @@ public sealed unsafe partial class MapScene
         overlay.EndClosed();
     }
 
-    /// <summary>A ring of a radius in target px round a point.</summary>
-    void Ring(in MapView view, Vec3d p, double radiusPx, Vector4 colour, float widthPx, Dash dash = Dash.Solid, bool cased = false)
+    /// <summary>A ring of a radius in target px round a point: a symbol (<see cref="MapSymbols"/>), cased.</summary>
+    void Ring(in MapView view, Vec3d p, double radiusPx, Vector4 colour, float widthPx)
     {
         if (view.Project(p, out double x, out double y))
-            overlay.Circle(x, y, radiusPx, colour, widthPx, dash, cased);
+            symbols.Ring(x, y, radiusPx, colour, widthPx);
     }
 
     // ------------------------------------------------------------------ the mouse

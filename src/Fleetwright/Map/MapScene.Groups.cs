@@ -150,13 +150,7 @@ public sealed unsafe partial class MapScene
             {
                 // the marker: a diamond at the guide, a larger one for a force
                 double r = (gv.Force[lb.Group] ? 13 : 9) * Rp;
-                overlay.BeginStrip(lb.Group == mine || chain.Contains(lb.Group) ? SelectColor : GroupColor, 2f);   // the selection's own
-                overlay.Point(lb.X, lb.Y - r);
-                overlay.Point(lb.X + r, lb.Y);
-                overlay.Point(lb.X, lb.Y + r);
-                overlay.Point(lb.X - r, lb.Y);
-                overlay.Point(lb.X, lb.Y - r);
-                overlay.EndClosed();
+                symbols.Add(SymbolShape.Diamond, lb.X, lb.Y, r, default, lb.Group == mine || chain.Contains(lb.Group) ? SelectColor : GroupColor, 2f);   // the selection's own
             }
             else if (lb.Group == mine)
             {
