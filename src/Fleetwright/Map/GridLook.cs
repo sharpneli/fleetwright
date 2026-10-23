@@ -31,6 +31,9 @@ public static class GridLook
     /// <summary>Counts changes to the knobs: the grid's lines are rebuilt when it moves.</summary>
     public static int Version;
 
+    /// <summary>A line fainter than this isn't drawn at all: a level just arriving costs nothing until it shows.</summary>
+    public const float Faintest = 1 / 150f;
+
     /// <summary>How far a level's lines are apart on the screen, reference px, for a spacing in metres.</summary>
     public static double Px(double spacingM, in MapView v) => spacingM / (v.MetresPerPixel * v.Height / WorldView.ReferenceHeightPx);
 

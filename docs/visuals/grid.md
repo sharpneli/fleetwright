@@ -62,7 +62,7 @@ As on a military map (a square grid in the field, the graticule in the margin):
   margin stays.
 
 The margin's ticks follow the same levels: a tick's length and alpha come from its level's `p`, the labels only on
-major ticks, faded with them.
+major ticks, faded with them, and as on a chart latitudes at the sides and longitudes at the top and bottom.
 
 ## The anchor (the global game has no fixed origin)
 
@@ -78,9 +78,10 @@ So the lines hold still on the sea; at battle zooms a re-anchor takes a long eas
 ## The legend
 
 The "where" panel (bottom right) gets the grid's levels above the scale bar: a stroke in each level's look and its
-spacing, the graticule's as angle and distance (`━ 1° · 60 nm`, `─ 10' · 10 nm`, north-south said once), the
-squares' as distance (`━ 10 nm`, `─ 1 nm`), each faded with its grid, both in the blend band. The scale bar and the
-dev line's distances move to `MapUnits` too.
+spacing, the graticule's as angle and its north-south distance (`━ 1° · 60 nm`, `─ 10' · 10 nm`), the squares' as
+distance (`━ 10 nm`, `─ 1 nm`), each faded with its grid. The two families share the two rows and hand over in the
+middle of the blend band (one out by 0.5, the other in from 0.5), so their texts never overprint and the panel holds
+its size. The scale bar and the dev line's distances move to `MapUnits` too.
 
 ## Steps
 
@@ -95,3 +96,36 @@ dev line's distances move to `MapUnits` too.
 - **G2. Cost and knobs.** Lines and vertices per build and the build's time in DevRelease across a zoom sweep (the
   old grid's for comparison); the band's two ends and the anchor limits live in the F2 "where" panel; then tuning
   by the user's eye.
+
+## How it went
+
+**G0 done 2026-10-23.** `Graticule` on the ladder, `GridLook` (the look curve, `-grid=`), `MapUnits` (nm and cables;
+the scale bar reads in it), the legend, the edge ticks by level with decimal-minute labels. Found on the way: the
+"where" panel rounded the degrees (56.7° read 57°42'), fixed.
+
+**G1 done 2026-10-23.** `SquareGrid`: the gnomonic plane at a whole-degree anchor, the anchor rule, the blend band, the
+margin from the band on, the legend's handover. Tests: the anchor (free, held, faded past 1° or 100 nm), rows within
+100 m of the 10' parallels out to a degree, smooth takeover, no allocation. At the equator the squares fall on the
+meridians as well.
+
+**G2 done 2026-10-23.** The grid's lines are rebuilt only when the view (or a knob, `GridLook.Version`) changes, or
+while an anchor fades. A rebuild's cost against the old grid (Release, 1920x1080, 56.7°N, the lines, squares and
+ticks together), with lines fainter than 1/150 alpha skipped and chords within half a pixel:
+
+| m/px | old µs | old vertices | new µs | new vertices |
+|---|---|---|---|---|
+| 8000 (the globe) | 56 | 9,840 | 385 | 68,928 |
+| 3556 | 118 | 23,628 | 421 | 76,878 |
+| 1053 | 50 | 8,898 | 175 | 31,314 |
+| 312 (band's top) | 30 | 4,824 | 30 | 4,014 |
+| 139 (in the band) | 38 | 6,312 | 203 | 11,184 |
+| 62 (battle) | 34 | 5,568 | 108 | 3,504 |
+| 12 | 32 | 5,448 | 105 | 5,238 |
+| 2.4 (world view) | 38 | 432 | 48 | 720 |
+
+The dearest views are near the whole globe, where the 1° level is a true minor grid now (~20 px apart over a
+hemisphere): about 0.4 ms a rebuild, only while the camera moves. Battle zooms stay near 0.1 ms. If it shows in a
+frame's budget, the faint levels can take coarser chords (a minor line at 1 px of sag).
+
+The knobs are live in the F2 "where" panel (the dev panel's line): the blend band, the alphas, the fades' four
+spacings, the anchor limits. Next: tuning by the user's eye.

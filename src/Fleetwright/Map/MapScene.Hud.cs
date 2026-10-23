@@ -598,20 +598,51 @@ public sealed partial class MapScene : ISceneMenu
             ImGui.SetTooltip("land: no waypoint here");
     }
 
+    /// <summary>The grid's knobs live (docs/visuals/grid.md G2; <see cref="GridLook"/>, <c>-grid=</c>): the blend band,
+    /// the levels' looks, the square grid's anchor limits.</summary>
+    static void GridKnobs()
+    {
+        float w = 160 * UiFonts.Scale;
+        bool changed = false;
+        ImGui.SetNextItemWidth(w);
+        float sq = (float)GridLook.SquaresBelow, gr = (float)GridLook.GraticuleAbove;
+        if (ImGui.DragFloatRange2("grid blend band, m/px at 1080p", ref sq, ref gr, 1, 5, 3000, "squares %.0f", "lat/lon %.0f"))
+            (GridLook.SquaresBelow, GridLook.GraticuleAbove, changed) = (sq, Math.Max(gr, sq + 1), true);
+        ImGui.SetNextItemWidth(w);
+        float minorA = GridLook.MinorAlpha, majorA = GridLook.MajorAlpha;
+        if (ImGui.DragFloatRange2("grid alpha", ref minorA, ref majorA, 0.005f, 0, 1, "minor %.3f", "major %.3f"))
+            (GridLook.MinorAlpha, GridLook.MajorAlpha, changed) = (minorA, majorA, true);
+        ImGui.SetNextItemWidth(w);
+        var px = new Vector4((float)GridLook.Hidden, (float)GridLook.MinorFrom, (float)GridLook.MajorFrom, (float)GridLook.MajorAt);
+        if (ImGui.DragFloat4("grid fades, ref px", ref px, 1, 1, 2000, "%.0f"))
+            (GridLook.Hidden, GridLook.MinorFrom, GridLook.MajorFrom, GridLook.MajorAt, changed) = (px.X, Math.Max(px.Y, px.X + 1), Math.Max(px.Z, px.Y), Math.Max(px.W, px.Z + 1), true);
+        ImGui.SetNextItemWidth(w / 2);
+        float deg = (float)GridLook.ReanchorDeg, nm = (float)GridLook.ReanchorNm;
+        if (ImGui.DragFloat("##reanchordeg", ref deg, 0.02f, 0.1f, 10, "%.2f°"))
+            (GridLook.ReanchorDeg, changed) = (deg, true);
+        ImGui.SameLine();
+        ImGui.SetNextItemWidth(w / 2 - ImGui.GetStyle().ItemSpacing.X);
+        if (ImGui.DragFloat("squares re-anchor past", ref nm, 1, 10, 500, "%.0f nm"))
+            (GridLook.ReanchorNm, changed) = (nm, true);
+        if (changed)
+            GridLook.Version++;
+    }
+
     /// <summary>The dev panel's line on where the map looks: the band, the world view, the scale, the grid, the centre and
-    /// the sun's local time, the cursor; with the stats (F2) the world view's boundary.</summary>
+    /// the sun's local time, the cursor; with the stats (F2) the world view's boundary and the grid's knobs.</summary>
     void DevWhere(Snapshot s)
     {
         var vp = ImGui.GetMainViewport();
         var view = View;
         double across = camera.MetresPerPixel * width, wf = WorldView.Factor(view);
-        ImGui.TextDisabled($"{Band(across)} · {WorldView.Label(wf)} · {MapUnits.Distance(across)} across · {Scale(camera.MetresPerPixel)} · grid {Graticule.Label(Graticule.Major(view))}{(wf >= 1 ? " at the edges" : "")}");
+        ImGui.TextDisabled($"{Band(across)} · {WorldView.Label(wf)} · {MapUnits.Distance(across)} across · {Scale(camera.MetresPerPixel)} · grid {(GridLook.Squares(view) >= 0.5 ? $"{MapUnits.Distance(SquareGrid.Metres(SquareGrid.Major(view)))} squares, lat/lon {Graticule.Label(Graticule.Major(view))} at the edges" : Graticule.Label(Graticule.Major(view)))}");
         if (Sdl3GpuEngine.StatsShown)
         {
             float b = (float)WorldView.BoundaryM;
             ImGui.SetNextItemWidth(160 * UiFonts.Scale);
             if (ImGui.SliderFloat("world below, m/px at 1080p", ref b, 0.5f, 25f, "%.2f", ImGuiSliderFlags.Logarithmic))
                 WorldView.BoundaryM = b;
+            GridKnobs();
         }
         var (lat, lon) = Earth.LatLon(camera.Target);
         if (sunLapse.Motion < 0.5)   // the hours would only churn

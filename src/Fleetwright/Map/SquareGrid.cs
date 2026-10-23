@@ -22,7 +22,7 @@ public sealed class SquareGrid
     public static int Levels => Units.Length;
 
     const int MaxLines = 600, BorderSamples = 16, MaxSamples = 64;
-    const double SagittaPx = 0.25, Deg = Math.PI / 180;
+    const double SagittaPx = 0.5, Deg = Math.PI / 180;
 
     /// <summary>A level's spacing, metres.</summary>
     public static double Metres(int level) => Units[level] / 100.0 * MapUnits.Metres;
@@ -135,7 +135,7 @@ public sealed class SquareGrid
             fine = i;
         if (fine < 0)
             return;
-        // a great circle's chord strays a quarter pixel at most
+        // a great circle's chord strays half a pixel at most
         double chord = Math.Sqrt(8 * SagittaPx * view.MetresPerPixel * Earth.Radius), step = Metres(fine);
         long u = Units[fine], k0 = (long)Math.Ceiling(xMin / step), j0 = (long)Math.Ceiling(yMin / step);
         int nAcross = Math.Clamp((int)Math.Ceiling((yMax - yMin) / chord), 1, MaxSamples);
@@ -162,7 +162,7 @@ public sealed class SquareGrid
     static void Line(in MapView v, MapLines lines, in Anchor a, double x0, double y0, double x1, double y1, int n,
         (System.Numerics.Vector4 Color, float Width) look)
     {
-        if (look.Color.W <= 0)
+        if (look.Color.W < GridLook.Faintest)
             return;
         lines.BeginStrip(look.Color, look.Width);
         for (int i = 0; i <= n; i++)

@@ -26,7 +26,7 @@ public static class Graticule
     const long Circle = 360 * 6000, Pole = 90 * 6000;
     const double MetresPerDegree = Earth.Radius * Math.PI / 180;
     const int MaxLines = 600, BorderSamples = 16, MaxSamples = 720;
-    const double SagittaPx = 0.25, Deg = Math.PI / 180;
+    const double SagittaPx = 0.5, Deg = Math.PI / 180;
 
     /// <summary>A level's spacing, degrees.</summary>
     public static double Step(int level) => Units[level] / PerDegree;
@@ -71,7 +71,7 @@ public static class Graticule
         GridLook.Line(GridLook.Px(Metres(LevelOf(u)) * squeeze, v), alpha, parallel ? u == 0 : u % Circle == 0);
 
     /// <summary>The sampling step along a line, degrees of its own angle (longitude on a parallel, latitude on a
-    /// meridian), so a chord strays at most a quarter pixel from the arc: a line's curvature on the screen is about
+    /// meridian), so a chord strays at most half a pixel from the arc: a line's curvature on the screen is about
     /// (1 + tan|lat|) / R (the sphere's, and a parallel's own turning), and a parallel's angle is along a circle of
     /// R·cos(lat).</summary>
     static double SampleStep(in MapView v, double latDeg, bool parallel)
@@ -323,7 +323,7 @@ public static class Graticule
     /// (no trig per point), broken where it goes behind the globe.</summary>
     static void Parallel(in MapView v, MapLines lines, double lat, double lon0, double lon1, Vector4 color, float width, double ds)
     {
-        if (color.W <= 0)
+        if (color.W < GridLook.Faintest)
             return;
         int n = Math.Clamp((int)Math.Ceiling((lon1 - lon0) / ds), 1, MaxSamples);
         double d = (lon1 - lon0) / n * Deg, cd = Math.Cos(d), sd = Math.Sin(d);
@@ -341,7 +341,7 @@ public static class Graticule
     /// <summary>A meridian from lat0 to lat1, sampled about every ds degrees by turning the last point in its plane.</summary>
     static void Meridian(in MapView v, MapLines lines, double lon, double lat0, double lat1, Vector4 color, float width, double ds)
     {
-        if (color.W <= 0)
+        if (color.W < GridLook.Faintest)
             return;
         int n = Math.Clamp((int)Math.Ceiling((lat1 - lat0) / ds), 1, MaxSamples);
         double d = (lat1 - lat0) / n * Deg, cd = Math.Cos(d), sd = Math.Sin(d);
