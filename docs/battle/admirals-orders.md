@@ -283,6 +283,24 @@ and order):
 For the review: the column names and keys, Station's drag, whether the menu sits above the strip or at the cursor, and
 the marks' look (placeholder green). The port (O9) follows the user's notes.
 
+### O8b The mockup again: organising, and several squadrons at once (2026-10-23, for review)
+
+After decision 6; `battle.html` `#organise` and `#multi` (screenshots `png/battle-organise.png`, `-multi`), `#screen` and
+`#chain` redone:
+
+- **`#organise`: the task menu's fourth column, Organise** (set apart, a lighter ground: these change the unit, they
+  aren't orders to it): Divide in two (D), Divide from her… (V: click a ship of it; she and those astern the second
+  division), Merge divisions (M), New squadron of selected (Q), Form a force with selected (K), Leave its force (L),
+  each greyed with its reason when it doesn't apply ("no divisions to merge").
+- **Several squadrons selected:** ctrl+click a squadron in the rail (or on the map) adds it to the selection; the strip
+  says "13th Flotilla + 1 more · 2 squadrons · orders go to each", the menu's head names them all, and its foot says
+  an order goes to each.
+- **`#multi`: Screen with two squadrons selected:** "SCREEN 1st BCS · 5 km · 2 squadrons, either bow · disengaged side";
+  the map shows each squadron's station on the arc, numbered and named, taken in the order they lie (the sim's rule).
+- **`#screen`: one squadron, by hand:** one station on the bearing, "yours, by hand: divide it first for both bows".
+- **`#chain`:** the flotilla divided by its own admiral, its divisions I and II under it in the rail ("the van · 5 km",
+  "the rear · 5 km").
+
 ## The steps
 
 | Step | What | Status |
@@ -296,7 +314,7 @@ the marks' look (placeholder green). The port (O9) follows the user's notes.
 | **O6** | A unit's role: worked out, or set by the player; the commander and the map read it (decision 4) | **done 2026-10-23** |
 | **O7** | The chain of command: a force's admiral disposes his members by role, one implementation with the commander's (decision 3) | **done 2026-10-23** |
 | **O8** | The mockup: `docs/map-ui/battle.html` `#tasks`, `#screen`, `#deploy`, `#chain`: the task menu, the role, the cursor's verbs, a screen's stations, a deploy's line, the chain in the rail | **done 2026-10-23**, for review |
-| **O8b** | The mockup again: the organise column (new squadron, divide, merge, form a force, leave) and Screen with several squadrons selected | |
+| **O8b** | The mockup again: the organise column (new squadron, divide, merge, form a force, leave) and Screen with several squadrons selected | **done 2026-10-23**, for review |
 | **O9** | The port: the task menu and its picks, the cursor's verbs, the smart verb by role, the formation column's manoeuvres; the snapshot's stations and the map's task marks | after O8 |
 | **O10** | Shaping by drag (a screen's distance and sector), orders as editable objects, the radial menu | later |
 
