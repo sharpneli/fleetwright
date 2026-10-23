@@ -167,3 +167,11 @@ torpedo reach, the dev's horizon and land rings, the contacts' ellipses, the sel
 the wreck, and the battle marks' foam, column, going-down and shock rings. The overlay's widths and the symbols' sizes
 are in reference px (`SymbolLook.Px`: the target's height over 1080 times the UI's factor); the battle marks' own
 pixel sizes are left as they were. Round caps and joins were not needed: no stroke on the map is over 2 px.
+
+**Y2** (2026-10-23): `LineVertex` grew to 56 bytes (the distance along the strip, the casing's width, a style: dash
+period, share, casing alpha); `mapline.frag` draws dashes (anti-aliased at their ends), round dots as wide as the
+line, and the casing (the ground's dark, `SymbolLook.CasingAlpha` of the stroke's) under the stroke; the baked coast's
+vertex shader passes a plain style. `MapLines.BeginStrip(colour, width, Dash, cased)`; a ring's points carry their
+distance along it (radius times angle) and its dashes are fitted to a whole number, so a ring cut by the screen's
+edge keeps its dashes where they were as it pans. The line buffers grew with the vertex (the same vertex counts).
+The torpedo reach went dotted and dashed (Y4 sets them), the encounter ring cased.

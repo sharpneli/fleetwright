@@ -47,6 +47,29 @@ public class MapLinesTests
         Assert.Equal(0, lines.Vertices.Length);
     }
 
+    [Theory]
+    [InlineData(Dash.Dashed, 37.0)]
+    [InlineData(Dash.Dotted, 151.3)]
+    public void A_rings_dashes_fit_it_and_stay_put_on_it(Dash dash, double r)
+    {
+        var lines = new MapLines();
+        lines.Begin(W, H);
+        lines.Circle(W / 2, H / 2, r, White, 1.5f, dash, cased: true);
+        var v = lines.Vertices;
+        double around = 2 * Math.PI * r, period = v[0].Style.X;
+        Assert.True(period > 0);
+        double k = around / period;
+        Assert.True(Math.Abs(k - Math.Round(k)) < 1e-3, $"{k:0.0000} dashes round the ring");
+        Assert.True(v[0].Edge.W > 0, "cased");
+
+        // cut by the screen's edge, each piece keeps the distance along the ring it had whole: no crawl as it pans
+        lines.Begin(W, H);
+        lines.Circle(10, H / 2, r, White, 1.5f, dash);
+        foreach (var vx in lines.Vertices)
+            Assert.InRange(vx.Edge.Z, 0, (float)around + 0.01f);
+        Assert.Contains(lines.Vertices.ToArray(), vx => vx.Edge.Z > around / 2);
+    }
+
     [Fact]
     public void Rings_allocate_nothing_once_grown()
     {

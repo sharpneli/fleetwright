@@ -51,7 +51,7 @@ public sealed partial class MapScene
         var v = s.Encounters;
         for (int i = 0; i < v.Count; i++)
             if (Ring(s, i, out var centre, out double r))
-                RingM(view, centre, r, v.Own[i] ? OwnEncounter : OthersEncounter, v.Own[i] ? 2f : 1.5f);
+                RingM(view, centre, r, v.Own[i] ? OwnEncounter : OthersEncounter, v.Own[i] ? 2f : 1.5f, Dash.Solid, true);
     }
 
     // the encounters' labels, made when what they say changes

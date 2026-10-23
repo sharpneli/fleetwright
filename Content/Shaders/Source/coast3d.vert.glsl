@@ -18,8 +18,9 @@ layout(set = 1, binding = 0) uniform View
     vec4 color;
 };
 
-layout(location = 0) out vec2 fragEdge;
+layout(location = 0) out vec4 fragEdge;
 layout(location = 1) out vec4 fragColor;
+layout(location = 2) out vec4 fragStyle;   // mapline.frag's: solid, no casing
 
 vec4 Project(vec3 p)
 {
@@ -49,6 +50,7 @@ void main()
     float reach = viewport.z + 1.0;   // a pixel of fade beyond the edge
     vec2 q = p + n * (reach * miter * inSide);
     gl_Position = vec4(q / (viewport.xy * 0.5) * c.w, c.z, c.w);
-    fragEdge = vec2(inSide * reach, viewport.z);
+    fragEdge = vec4(inSide * reach, viewport.z, 0.0, 0.0);
     fragColor = color;
+    fragStyle = vec4(0.0);
 }

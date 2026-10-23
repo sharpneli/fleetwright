@@ -44,7 +44,7 @@ public sealed unsafe class GlobeRenderer : IDisposable
     readonly SDL_GPUBuffer*[] meshFill = new SDL_GPUBuffer*[2], meshCoast = new SDL_GPUBuffer*[2], meshIdx = new SDL_GPUBuffer*[2];
     readonly uint[] meshFillCount = new uint[2], meshIdxCount = new uint[2];
 
-    const uint LineBufferBytes = 16 << 20, FillBufferBytes = 8 << 20, OverlayBufferBytes = 8 << 20;
+    const uint LineBufferBytes = 28 << 20, FillBufferBytes = 8 << 20, OverlayBufferBytes = 14 << 20;   // lines 2^19 vertices, the overlay 2^18
     const SDL_GPUTextureFormat CoverageFormat = SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_R16_FLOAT;
 
     /// <summary>How far inside the Earth the masking sphere is: over the baked fans' sag (under 0.4 km), so they pass,
@@ -137,8 +137,9 @@ public sealed unsafe class GlobeRenderer : IDisposable
         linePipe = Main().SetShaders(lineVs, lineFs).EnableBlendingAlpha()
             .AddVertexBuffer(0, LineVertex.SizeInBytes)
             .AddVertexAttribute(0, 0, SDL_GPUVertexElementFormat.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2, 0)
-            .AddVertexAttribute(1, 0, SDL_GPUVertexElementFormat.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2, 8)
-            .AddVertexAttribute(2, 0, SDL_GPUVertexElementFormat.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4, 16)
+            .AddVertexAttribute(1, 0, SDL_GPUVertexElementFormat.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4, 8)
+            .AddVertexAttribute(2, 0, SDL_GPUVertexElementFormat.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4, 24)
+            .AddVertexAttribute(3, 0, SDL_GPUVertexElementFormat.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4, 40)
             .Build(device);
         if (target.HasDepth)
             coast3dPipe = Main().EnableDepthTest(false, SDL_GPUCompareOp.SDL_GPU_COMPAREOP_LESS_OR_EQUAL)

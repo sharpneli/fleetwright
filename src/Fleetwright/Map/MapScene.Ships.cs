@@ -134,8 +134,8 @@ public sealed unsafe partial class MapScene
                 {
                     // her torpedoes' reach, fast and slow (docs/map-ui/battle-hud.md U5)
                     var torp = tc2.Torpedoes[tc2.Launchers[0].Torpedo];
-                    RingM(view, p, torp.FastRangeM, TorpedoRing, 1f);
-                    RingM(view, p, torp.SlowRangeM, TorpedoRing with { W = TorpedoRing.W * 0.6f }, 1f);
+                    RingM(view, p, torp.FastRangeM, TorpedoRing, 2f, Dash.Dotted, true);
+                    RingM(view, p, torp.SlowRangeM, TorpedoRing with { W = TorpedoRing.W * 0.6f }, 1.5f, Dash.Dashed, true);
                 }
                 if (horizonRing && world.Classes.TryGet(v.Class[k]) is { Eyes.Length: > 0 } hc)
                 {
@@ -317,7 +317,7 @@ public sealed unsafe partial class MapScene
 
     /// <summary>A circle on the sphere round a point, metres: as smooth as its size on the screen needs, only its arc on
     /// the screen built.</summary>
-    void RingM(in MapView view, Vec3d p, double radiusM, Vector4 colour, float widthPx)
+    void RingM(in MapView view, Vec3d p, double radiusM, Vector4 colour, float widthPx, Dash dash = Dash.Solid, bool cased = false)
     {
         double rPx = radiusM / view.MetresPerPixel;
         if (view.Project(p, out double cx, out double cy) && !overlay.CircleShows(cx, cy, rPx))
@@ -326,20 +326,24 @@ public sealed unsafe partial class MapScene
         var e = Earth.East(p);
         var n = Vec3d.Cross(up, e);
         int segs = overlay.Segments(rPx);
-        overlay.BeginStrip(colour, widthPx);
+        overlay.BeginRing(colour, widthPx, rPx, dash, cased);
         for (int i = 0; i <= segs; i++)
         {
             double a = i * Math.PI * 2 / segs;
-            ClipPoint(view, (up * Earth.Radius + (e * Math.Cos(a) + n * Math.Sin(a)) * radiusM).Normalized() * Earth.Radius);
+            var q = (up * Earth.Radius + (e * Math.Cos(a) + n * Math.Sin(a)) * radiusM).Normalized() * Earth.Radius;
+            if (view.Project(q, out double x, out double y))
+                overlay.ClipPoint(x, y, a * rPx);
+            else
+                overlay.ClipBreak();
         }
         overlay.EndClosed();
     }
 
     /// <summary>A ring of a radius in target px round a point.</summary>
-    void Ring(in MapView view, Vec3d p, double radiusPx, Vector4 colour, float widthPx)
+    void Ring(in MapView view, Vec3d p, double radiusPx, Vector4 colour, float widthPx, Dash dash = Dash.Solid, bool cased = false)
     {
         if (view.Project(p, out double x, out double y))
-            overlay.Circle(x, y, radiusPx, colour, widthPx);
+            overlay.Circle(x, y, radiusPx, colour, widthPx, dash, cased);
     }
 
     // ------------------------------------------------------------------ the mouse
