@@ -235,7 +235,7 @@ halo:0,labelfade:0.3,motion:0,chord:0.5,width:1.2`. Worth a look while playing:
 - **Halo or pill**: names haloed, the range in its pill (decision 2).
 - **Dropped labels**: a label that doesn't fit is dropped, not stacked; the hover still names its ship.
 - **The glow**: the selected icon's is subtle on purpose, as the ring already marks her.
-- **The land rings** went behind F1 (Y4); say if they were wanted in play.
+- **The land rings** went behind F1 (Y4); since the playtest fixes, behind the dev panel's "land" box too.
 
 ## Playtest fixes
 
@@ -246,3 +246,6 @@ formation, `MapLabelsTests`). Now a dead band of `SymbolLook.LabelHold` cells (1
 label keeps its place until it overlaps by half the band (4.5 px), a new place or a dropped label's return needs half
 the band clear; ties in priority go by what's labelled, not the order asked, so a ship sunk doesn't reorder the rest.
 No label changes more than once in the test's formations (one that didn't fit may settle in when room opens).
+
+**Land rings off by default** (2026-10-23). The selected ship's least clearance, standoff and feeler (a rails aid,
+green) were never used in play: the dev panel (F1) has a "land" box beside "horizon" for them, off by default.

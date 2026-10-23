@@ -28,6 +28,7 @@ public sealed unsafe partial class MapScene
     readonly string[] designNames;
     int selected;   // the selected ship's entity, or -1
     bool horizonRing;   // dev: the selected ship's horizon from her highest eye
+    bool landRings;     // dev: the selected ship's clearance and standoff from the coast, and her feeler
     bool devOpen;   // the dev panel (F1)
 
     /// <summary>The dev panel (F1) open at start (-dev).</summary>
@@ -152,7 +153,7 @@ public sealed unsafe partial class MapScene
                     Point(view, tp);
                     overlay.End();
                 }
-                if (devOpen && v.StandoffM[k] / view.MetresPerPixel >= 3)
+                if (devOpen && landRings && v.StandoffM[k] / view.MetresPerPixel >= 3)
                 {
                     // dev: ships and the land: the minimum and the standoff it keeps from the coast, and the feeler's reach
                     RingM(view, p, v.MinClearanceM[k], MapPalette.DevLand, 1f);
@@ -697,6 +698,11 @@ public sealed unsafe partial class MapScene
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip("dev: round the selected ship, the sea's horizon from her highest eye, and fainter,\n" +
                              "how far she could see a ship as tall as she is (docs/battle/fire-control.md F4d)");
+        ImGui.SameLine();
+        ImGui.Checkbox("land", ref landRings);
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("dev: round the selected ship, the least clearance and the standoff she keeps from the coast,\n" +
+                             "and her feeler ahead (brighter while she slides along the coast)");
         ImGui.SameLine();
         bool watch = s.PlayerSide < 0;
         if (ImGui.Checkbox("watch", ref watch))
