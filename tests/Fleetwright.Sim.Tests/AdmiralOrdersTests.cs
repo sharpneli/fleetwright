@@ -440,6 +440,43 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void A_light_cruiser_leading_destroyers_is_not_sent_in_whole()
+    {
+        // a top force of two light cruisers leading four destroyers (the Jutland's "Scouting torpedo boats"), beside a
+        // battle squadron engaging an enemy dreadnought: the side's commander doesn't send the force in whole (its cruisers
+        // would charge with it); its admiral sends in his destroyers, and his cruisers keep their place
+        var w = new World(Start, 3, Settings);
+        var ai = new AiSystem(w);
+        w.Apply(Command.SetWeather(30_000));
+        w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.TurnAwayDeg, 0));
+        w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.Dispose, 1));
+        int bb = w.Ships.AddClass(Fleet.Get("dreadnought").Class!), cl = w.Ships.AddClass(Fleet.Get("light_cruiser").Class!),
+            dd = w.Ships.AddClass(Fleet.Get("destroyer").Class!);
+        var at = Earth.Position(56.0, 4.0);
+        Column(w, ai, bb, at, 180, 4, 15);
+        int cruisers = Column(w, ai, cl, Off(at, 270, 3_000), 180, 2, 15);
+        int destroyers = Column(w, ai, dd, Off(at, 270, 5_000), 180, 4, 15);
+        w.Apply(GroupSystem.Form(cruisers, Formation.LineAbreast, 2_000));
+        int force = w.Groups.Get(cruisers)!.Parent;
+        w.Apply(GroupSystem.EnterAlongside(destroyers, cruisers));
+        Column(w, ai, bb, Off(at, 90, 14_000), 180, 1, 15, side: 1);
+        w.Apply(ai.Orders.FireAtWill(Unit.Group(destroyers)));
+        w.Apply(ai.Orders.Commander(0, CommanderMode.On));
+        double sent = double.NaN;
+        for (int min = 1; min <= 10 && double.IsNaN(sent); min++)
+        {
+            w.AdvanceTo(w.Time + 60_000);
+            if (ai.Tasks.Of(Unit.Group(destroyers)).Kind == TaskKind.Attack)
+                sent = min;
+        }
+        output.WriteLine($"destroyers sent in at {sent} min, on {ai.Tasks.Of(Unit.Group(destroyers))}; the force given {ai.Commanders.GivenOf(Unit.Group(force))}, " +
+                         $"on {ai.Tasks.Of(Unit.Group(force))}; the cruisers on {ai.Tasks.Of(Unit.Group(cruisers))}, their admiral {ai.Admirals.Of(cruisers)}");
+        Assert.InRange(sent, 1, 5);
+        Assert.NotEqual(TaskKind.Attack, ai.Commanders.GivenOf(Unit.Group(force)).Given);
+        Assert.NotEqual(TaskKind.Attack, ai.Tasks.Of(Unit.Group(cruisers)).Kind);
+    }
+
+    [Fact]
     public void A_force_told_to_attack_hands_it_to_its_divisions()
     {
         // a flotilla divided into two divisions, told by hand to attack a dreadnought: each division runs in under its own
@@ -470,13 +507,15 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
                     firedBy.Add(sq.GroupId);
             seen = w.CombatLog.Written;
         }
+        int second = f.Line.Count > 1 ? f.Line[1] : 0;
         output.WriteLine($"divisions' phases {string.Join(", ", phases.Where(p => p.Item2 != AttackPhase.None))}; fired by {string.Join(", ", firedBy)}; " +
-                         $"the force on {ai.Tasks.Of(Unit.Group(flotilla))}");
+                         $"the force on {ai.Tasks.Of(Unit.Group(flotilla))}; its second division {ai.Admirals.Of(second)}, in line {f.Line.Count}");
         foreach (int m in f.Members)
         {
             Assert.Contains((m, AttackPhase.Run), phases);   // each division ran in itself
             Assert.Contains(m, firedBy);
         }
+        Assert.Equal(TaskState.Done, ai.Tasks.Of(Unit.Group(flotilla)).Status);   // the force's attack over
     }
 
     [Fact]

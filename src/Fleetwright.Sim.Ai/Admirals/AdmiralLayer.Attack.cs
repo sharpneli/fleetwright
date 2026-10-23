@@ -226,36 +226,54 @@ public sealed partial class AdmiralLayer
 
     /// <summary>A group of a force told to attack (the i-th of its line, past its guide, which has it handed over): the
     /// attack handed down (docs/battle/admirals-orders.md O7b), so each squadron attacks as one under its own admiral (a
-    /// division of torpedo craft runs in; one without torpedoes fights). Not again once it's beaten off (running), or
-    /// through with its torpedoes. False if the force isn't attacking.</summary>
+    /// division of torpedo craft runs in; one without torpedoes fights). One through with its attack (its torpedoes spent,
+    /// or beaten off) is through for this order: back on its station in the force, as a squadron sent in alone is called
+    /// back to its screen. False if the force isn't attacking, or the group's through: it keeps its station.</summary>
     bool AttackHanded(in AiContext ctx, GroupSystem.Group g, Admiral a, int i)
     {
         if (!g.IsForce || a.Order != CaptainOrder.Fight || !a.AttackOrdered)
             return false;
         int member = g.Line[i];
-        if (Find(member) is int mi and >= 0 && admirals[mi] is { Whose: Whose.Superior } m && (m.Order == CaptainOrder.Run || m.AttackOrdered && m.Order == CaptainOrder.Fight))
-            return true;   // at it, or beaten off
-        if (groups.Get(member) is { } sub && AnyTorpedoes(ctx, sub))
-            ctx.Issue(ctx.Orders.Attack(Unit.Group(member), new Unit(a.Target).Entity, OrderSource.Superior));
+        for (int k = 0; k < a.AttackDoneCount; k++)
+            if (a.AttackDone[k] == member)
+                return false;
+        bool beaten = Find(member) is int mi and >= 0 && admirals[mi] is { Whose: Whose.Superior, Order: CaptainOrder.Run };
+        if (beaten || groups.Get(member) is not { } sub || !AnyTorpedoes(ctx, sub))
+        {
+            if (a.AttackDoneCount == a.AttackDone.Length)
+                Array.Resize(ref a.AttackDone, a.AttackDoneCount * 2);
+            a.AttackDone[a.AttackDoneCount++] = member;
+            a.AttackBeaten |= beaten;
+            return false;
+        }
+        if (Find(member) is int ai and >= 0 && admirals[ai] is { Whose: Whose.Superior, Order: CaptainOrder.Fight, AttackOrdered: true })
+            return true;   // at it
+        ctx.Issue(ctx.Orders.Attack(Unit.Group(member), new Unit(a.Target).Entity, OrderSource.Superior));
         return true;
     }
 
-    /// <summary>Whether a group's attack was beaten off: a squadron running from it; a force whose groups with torpedoes
-    /// left are all beaten off.</summary>
-    internal bool BeatenOff(in AiContext ctx, GroupSystem.Group g)
+    /// <summary>Whether a group's attack is over, and whether it was beaten off: a squadron's when it runs from the target
+    /// (beaten off) or has no torpedoes left; a force's when its guide group's is and every other group of it is through
+    /// with its own (<see cref="AttackHanded"/>).</summary>
+    internal (bool Over, bool BeatenOff) AttackOver(in AiContext ctx, GroupSystem.Group g)
     {
         if (!g.IsForce)
-            return Of(g.GroupId).Order == CaptainOrder.Run;
-        bool any = false;
-        for (int i = 0; i < g.Line.Count; i++)
-            if (groups.Get(g.Line[i]) is { } sub)
-            {
-                if (BeatenOff(ctx, sub))
-                    any = true;
-                else if (AnyTorpedoes(ctx, sub))
-                    return false;
-            }
-        return any;
+            return Of(g.GroupId).Order == CaptainOrder.Run ? (true, true) : (!AnyTorpedoes(ctx, g), false);
+        if (g.Line.Count == 0 || groups.Get(g.Line[0]) is not { } guide)
+            return (true, false);
+        var (over, beaten) = AttackOver(ctx, guide);
+        if (!over)
+            return (false, false);
+        var a = Find(g.GroupId) is int fi and >= 0 ? admirals[fi] : null;
+        for (int i = 1; i < g.Line.Count; i++)
+        {
+            bool done = groups.Get(g.Line[i]) is not { } sub || !AnyTorpedoes(ctx, sub);
+            for (int k = 0; a != null && k < a.AttackDoneCount && !done; k++)
+                done = a.AttackDone[k] == g.Line[i];
+            if (!done)
+                return (false, false);
+        }
+        return (true, beaten || a?.AttackBeaten == true);
     }
 
     /// <summary>The contact torpedoes are for: the biggest in sight within <see cref="SimSettings.FightCompareM"/>, the

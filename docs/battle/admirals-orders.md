@@ -231,11 +231,42 @@ himself, then called them back into their force's line. Now each level decides f
 - **An Attack to a force is handed down** (as Screen is, O1c): each of its groups attacks under its own admiral, the
   guide group too; a division without torpedoes fights; one beaten off isn't sent again. A force's attack is beaten off
   when every group of it with torpedoes left is. `AnyTorpedoes` reads a force's line down the tree.
+- **A group through with its attack** (its torpedoes spent, or beaten off) is through for the force's order: it isn't
+  sent in again, and keeps its station in the force (as a squadron sent in alone is called back to its screen); the
+  force's attack is over once its guide group's is and every other group is through (`AttackOver`).
+- **"Engaging" is the side's battle line** (`FlotillaAttacks.Heavy`, once a tick): its squadrons of the battle line at
+  any level of the chain and its capital ships alone, for the side's commander and every admiral alike (not a force's
+  own main body: a flotilla led by a light cruiser waits for the battle line to engage).
+- **A force goes in whole only if it's flotillas alone** (a divided flotilla); a force with anything else in it is its
+  admiral's, who sends in its flotillas.
 - **Tests:** `AdmiralOrdersTests.A_force_sends_in_its_own_flotilla_on_a_line_its_battle_squadron_engages` (the O7
   force, an enemy dreadnought 14 km abeam: the force's admiral sends his divided destroyers in within a minute, they
   fire; the side's commander, on, gave neither them nor their divisions anything);
-  `A_force_told_to_attack_hands_it_to_its_divisions` (both divisions gain, run in, fire and turn away, each its own);
-  the commander's own (`CommanderTests`) unchanged.
+  `A_force_told_to_attack_hands_it_to_its_divisions` (both divisions gain, run in, fire and turn away, each its own,
+  and the force's attack is over); `A_light_cruiser_leading_destroyers_is_not_sent_in_whole` (two light cruisers leading
+  four destroyers beside an engaged battle squadron: the commander gives the force nothing, its admiral sends in the
+  destroyers, the cruisers keep their place); the commander's own (`CommanderTests`) unchanged.
+
+**Measured** (Release, at `be609e61` against O7b; 12 Jutland seeds 1916-1927, 10 Tsushima seeds; `squadrons` and
+`flotilla` identical but for timings):
+
+| Scenario | Before O7b | O7b |
+|---|---|---|
+| the Jutland (12 seeds) | time 11, quiet 1; Britain lost 31.6 of 151 (111 kt), Germany 53.4 of 99 (207 kt); hits 4,218 and 4,367; torpedoes 246 and 185 a run | time 12; Britain 41.3 (147 kt), Germany 59.0 (259 kt); hits 5,121 and 5,606; torpedoes 252 and 217 |
+| `tsushima` (10 seeds) | Russia lost 4.8 of 13, Japan 3.9 of 14 | 4.5 and 4.0 (with the three corrections above: 4.1 and 3.8) |
+
+- **Why the Jutland is bloodier:** the German "Scouting torpedo boats" (Regensburg leading the II, VI and IX
+  Flotillas) is a top force whose every member works out as a flotilla: Regensburg (105 mm guns and tubes) counts as
+  torpedo craft (`CaptainLayer.TorpedoCraft`: tubes and no gun of 150 mm), so her unit's role is a flotilla's. Before,
+  the commander reached into the force and sent each flotilla in on its own judgement (Regensburg alone wasn't worth
+  sending); now the force goes in whole, Regensburg with it, and the British commander turns the Grand Fleet, the
+  Battlecruiser Fleet and Yarmouth on her (seed 1917 at 14:59); the fight runs on to the time limit in every seed.
+- **None of the three corrections moves it:** spent divisions off the attack, the battle line as "engaging" and
+  flotillas-only forces each leave the Jutland as O7b has it (12 seeds each: Britain 44.2 and 43.0, Germany 60.9 and
+  60.3), since Regensburg's unit is a flotilla by role. A role by size (a destroyer's displacement band) would make
+  her a scout, but the dev destroyer design (2,628 t) is a cruiser by size too: no clean physical line found. **For
+  the user:** whether a light cruiser leading flotillas (the era's flotilla leaders did lead the attacks) goes in with
+  them, or her unit is a scout's.
 
 ### Still lacking (later steps, after the questions)
 

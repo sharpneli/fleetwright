@@ -73,6 +73,9 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
         public int[] GaveTo = new int[4];   // the members he gave tasks, GaveCount of them, and when (made with him)
         public long[] GaveMs = new long[4];
         public int GaveCount;
+        public int[] AttackDone = new int[4];   // a force attacking: its groups through with their attacks, AttackDoneCount of them (made with him)
+        public int AttackDoneCount;
+        public bool AttackBeaten;       // one of them was beaten off
         public long DeployMs;           // deploying into a line of battle since (AdmiralLayer.Deploy.cs; 0: not)
         public bool Deployed;           // deployed in this encounter
     }
@@ -271,7 +274,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
                 break;
             case AiCommand.Attack:
                 (a.Order, a.Target, a.DistanceM, a.AbeamM) = (CaptainOrder.Fight, Unit.Ship((int)c.A).Id, 0, 0);
-                (a.AttackOrdered, a.Attack, a.AttackTarget) = (true, AttackPhase.None, 0);   // from a fresh start
+                (a.AttackOrdered, a.Attack, a.AttackTarget, a.AttackDoneCount, a.AttackBeaten) = (true, AttackPhase.None, 0, 0, false);   // from a fresh start
                 break;
             case AiCommand.Follow or AiCommand.Station or AiCommand.Run or AiCommand.Shadow or AiCommand.Fight:
                 a.AttackOrdered = false;
@@ -649,6 +652,12 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
                     h.Add(a.GaveTo[k]);
                     h.Add(a.GaveMs[k]);
                 }
+            }
+            if (a.AttackDoneCount > 0)
+            {
+                h.Add(a.AttackBeaten);
+                for (int k = 0; k < a.AttackDoneCount; k++)
+                    h.Add(a.AttackDone[k]);
             }
             if (a.DeployMs != 0 || a.Deployed)
             {

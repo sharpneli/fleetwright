@@ -167,7 +167,6 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
     int count;
     readonly List<Top> tops = new(64);
     readonly List<(int Ship, double AsternM, double AbeamM)> line = new(64);
-    readonly List<Vec3d> engaging = new(16);
 
     internal TaskLayer? Tasks { get; set; }
     internal MatchupJudge Judge { get; set; } = null!;
@@ -412,11 +411,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         bool declining = Tasks!.Of(t.Unit).Kind == TaskKind.Withdraw && GivenOf(t.Unit).Why == CommanderWhy.Outmatched;
         if (!Attacks.Free(ctx, t.Unit, t.Slot, declining))
             return false;
-        engaging.Clear();
-        foreach (var o in tops)
-            if (o.Side == side && o.Role is UnitRole.MainBody or UnitRole.Heavy)
-                engaging.Add(store[o.Slot].Position);
-        var why = Attacks.SendIn(ctx, side, s.Phase, s.Reason, t.Unit, store[t.Slot].Position, held, engaging);
+        var why = Attacks.SendIn(ctx, side, s.Phase, s.Reason, t.Unit, store[t.Slot].Position, held);
         if (why == CommanderWhy.None)
             return false;
         Give(ctx, t, ctx.Orders.Attack(t.Unit, 0, OrderSource.Commander), why);

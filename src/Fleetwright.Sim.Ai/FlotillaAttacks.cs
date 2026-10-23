@@ -15,21 +15,27 @@ namespace Fleetwright.Sim.Ai;
 /// heavy enemy in reach worth it; declining a stronger enemy, by night only; broken off, once, to cover the others
 /// breaking off; given up and going home, never. One whose attack was beaten off isn't sent in again. AI state:
 /// hashed; nothing allocated once grown.</summary>
-public sealed class FlotillaAttacks(MatchupJudge judge, HeldGroups held, Doctrine doctrine)
+public sealed class FlotillaAttacks(MatchupJudge judge, HeldGroups held, Doctrine doctrine, Roles roles)
 {
     readonly List<int> beatenOff = new(8), covered = new(8);   // units, sorted
     readonly MatchupSide one = new(), enemy = new();
+    readonly List<Vec3d>[] heavy = new List<Vec3d>[256];
+    readonly long[] heavyMs = new long[256];
 
     internal TaskLayer Tasks { get; set; } = null!;
 
     /// <summary>The enemy groups a side holds now.</summary>
     public ReadOnlySpan<HeldGroup> Held(in AiContext ctx, byte side) => held.Of(ctx, side);
 
-    /// <summary>Whether a flotilla may be sent in: a squadron, a force of them, or a boat alone, with torpedoes left; not
-    /// on an attack already, nor beaten off in one before; screening, on its orders, through with its task, or
-    /// (<paramref name="alsoFree"/>) what its commander counts free besides.</summary>
+    /// <summary>Whether a flotilla may be sent in: a squadron, a force of flotillas alone (a flotilla divided by its own
+    /// admiral), or a boat alone, with torpedoes left; not on an attack already, nor beaten off in one before; screening,
+    /// on its orders, through with its task, or (<paramref name="alsoFree"/>) what its commander counts free besides. A
+    /// force with anything else in it (a light cruiser leading flotillas) isn't sent in whole: its admiral sends in its
+    /// flotillas.</summary>
     public bool Free(in AiContext ctx, Unit u, int slot, bool alsoFree = false)
     {
+        if (u.IsGroup && ctx.World.Groups.Get(u.GroupId) is { IsForce: true } force && !FlotillasOnly(ctx.World.Groups, force))
+            return false;
         var (kind, state, why) = Tasks.Of(u);
         if (why == TaskReason.BeatenOff)
             Add(beatenOff, u.Id);
@@ -42,11 +48,12 @@ public sealed class FlotillaAttacks(MatchupJudge judge, HeldGroups held, Doctrin
 
     /// <summary>What a flotilla free to go in (<see cref="Free"/>) is sent in for now, as its side's commander sees the
     /// battle (<see cref="CommanderPhase.None"/>: no commander, its own commander's judgement alone), or
-    /// <see cref="CommanderWhy.None"/>. <paramref name="engaging"/>: where the heavy units of its commander are (by day
-    /// one must be within <see cref="SimSettings.FightCompareM"/> of the enemy line).</summary>
+    /// <see cref="CommanderWhy.None"/>. By day one of its side's heavy units (<see cref="Heavy"/>) must be engaging the
+    /// enemy line, whichever commander sends it in.</summary>
     public CommanderWhy SendIn(in AiContext ctx, byte side, CommanderPhase phase, CommanderReason reason, Unit u, Vec3d at,
-        ReadOnlySpan<HeldGroup> enemyGroups, List<Vec3d> engaging)
+        ReadOnlySpan<HeldGroup> enemyGroups)
     {
+        var engaging = Heavy(ctx, side);
         switch (phase)
         {
             case CommanderPhase.Home:
@@ -68,6 +75,33 @@ public sealed class FlotillaAttacks(MatchupJudge judge, HeldGroups held, Doctrin
         }
     }
 
+    /// <summary>Where a side's heavy units are (their guides), once a tick: its squadrons of the battle line at any level
+    /// of the chain (worked out or set, <see cref="UnitRole.Heavy"/>), and its capital ships alone. Not a commander's own
+    /// main body nor a force's: a flotilla led by a light cruiser waits for the battle line to engage, as one sent in by
+    /// the side's commander does.</summary>
+    public List<Vec3d> Heavy(in AiContext ctx, byte side)
+    {
+        var list = heavy[side] ??= new List<Vec3d>(16);
+        if (heavyMs[side] == ctx.NowMs && ctx.NowMs != 0)
+            return list;
+        heavyMs[side] = ctx.NowMs;
+        list.Clear();
+        var groups = ctx.World.Groups;
+        var ships = ctx.Ships;
+        for (int k = 0; k < groups.Count; k++)
+        {
+            var g = groups[k];
+            if (!g.IsForce && ships.SlotOf(groups.GuideShip(g)) is int slot and >= 0 && ships[slot].Side == side &&
+                roles.Of(Unit.Group(g.GroupId)) == UnitRole.Heavy)
+                list.Add(ships[slot].Position);
+        }
+        for (int slot = 0; slot < ships.Slots; slot++)
+            if (ships.IsAlive(slot) && ships[slot].Side == side && groups.Of(ships[slot].Entity) == null &&
+                roles.Of(Unit.Ship(ships[slot].Entity)) == UnitRole.Heavy)
+                list.Add(ships[slot].Position);
+        return list;
+    }
+
     /// <summary>A flotilla sent in (its why from <see cref="SendIn"/>): one sent to cover a break off isn't sent again.</summary>
     public void Sent(Unit u, CommanderWhy why)
     {
@@ -83,7 +117,7 @@ public sealed class FlotillaAttacks(MatchupJudge judge, HeldGroups held, Doctrin
 
     /// <summary>Whether a flotilla's attack is worth making (docs/battle/command.md 5.1g): an enemy group within
     /// <see cref="SimSettings.CommanderAttackM"/> of it that its matchup has it attacking, at doctrine's bar or better; and,
-    /// unless <paramref name="engaging"/> is null (by night), a heavy unit of its commander's engaging that group (within
+    /// unless <paramref name="engaging"/> is null (by night), a heavy unit of its side's engaging that group (within
     /// <see cref="SimSettings.FightCompareM"/> of it).</summary>
     public bool Worth(in AiContext ctx, byte side, Unit u, Vec3d at, ReadOnlySpan<HeldGroup> enemyGroups, List<Vec3d>? engaging)
     {
@@ -116,6 +150,17 @@ public sealed class FlotillaAttacks(MatchupJudge judge, HeldGroups held, Doctrin
                 return true;
         }
         return false;
+    }
+
+    /// <summary>Whether a group is flotillas alone: a squadron of the flotilla's role, or a force of them, down the tree.</summary>
+    bool FlotillasOnly(GroupSystem groups, GroupSystem.Group g)
+    {
+        if (!g.IsForce)
+            return roles.Of(Unit.Group(g.GroupId)) == UnitRole.Flotilla;
+        for (int i = 0; i < g.Members.Count; i++)
+            if (groups.Get(g.Members[i]) is not { } sub || !FlotillasOnly(groups, sub))
+                return false;
+        return true;
     }
 
     static void Add(List<int> set, int unit)

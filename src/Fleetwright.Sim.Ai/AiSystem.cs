@@ -76,7 +76,7 @@ public sealed class AiSystem : IWorldSystem
         Admirals.Tactical = Tactical;
         Tasks = new TaskLayer(world.Groups, Seen, homes) { Admirals = Admirals, Captains = Captains, Doctrine = Doctrine, Judge = Judge };
         (Admirals.Tasks, Captains.Tasks) = (Tasks, Tasks);
-        Attacks = new FlotillaAttacks(Judge, Held, Doctrine) { Tasks = Tasks };
+        Attacks = new FlotillaAttacks(Judge, Held, Doctrine, Roles) { Tasks = Tasks };
         Commanders = new CommanderLayer(world.Groups, world.Ships.Store, Seen, Doctrine) { Tasks = Tasks, Captains = Captains, Judge = Judge, Held = Held, Roles = Roles, Attacks = Attacks };
         (Admirals.Attacks, Admirals.Commanders) = (Attacks, Commanders);
         layers = [Commanders, Tasks, Admirals, Captains];

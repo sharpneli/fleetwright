@@ -27,7 +27,6 @@ public sealed partial class AdmiralLayer
     internal FlotillaAttacks Attacks { get; set; } = null!;
     internal Commanders.CommanderLayer? Commanders { get; set; }
 
-    readonly List<Vec3d> engaging = new(8);
 
     void DisposeStep(in AiContext ctx, GroupSystem.Group g, Admiral a, int lead)
     {
@@ -70,7 +69,7 @@ public sealed partial class AdmiralLayer
             }
             if (mine && Tasks.Of(u).Kind == TaskKind.Attack)
                 continue;   // in on the attack he sent it on
-            if (role == UnitRole.Flotilla && SendIn(ctx, g, a, m, body, ctx.Ships[lead].Side))
+            if (role == UnitRole.Flotilla && SendIn(ctx, a, m, ctx.Ships[lead].Side))
                 continue;
             if (mine && Tasks.Of(u).Kind == Dispositions.KindFor(role) && Tasks.TargetOf(u) == force.Id)
                 continue;   // at it already
@@ -79,18 +78,14 @@ public sealed partial class AdmiralLayer
     }
 
     /// <summary>A flotilla of his force sent in to attack (docs/battle/admirals-orders.md O7b), by the rule every commander
-    /// shares, his main body's squadrons the heavy units that engage; true if it was.</summary>
-    bool SendIn(in AiContext ctx, GroupSystem.Group g, Admiral a, int member, UnitRole body, byte side)
+    /// shares; true if it was.</summary>
+    bool SendIn(in AiContext ctx, Admiral a, int member, byte side)
     {
         var u = Unit.Group(member);
         if (groups.Get(member) is not { } fg || ctx.Ships.SlotOf(groups.GuideShip(fg)) is not (int slot and >= 0) || !Attacks.Free(ctx, u, slot))
             return false;
-        engaging.Clear();
-        for (int i = 0; i < g.Members.Count; i++)
-            if (Roles.Of(Unit.Group(g.Members[i])) == body && groups.Get(g.Members[i]) is { } bg && ctx.Ships.SlotOf(groups.GuideShip(bg)) is int bs and >= 0)
-                engaging.Add(ctx.Ships[bs].Position);
         var (phase, reason) = Commanders?.PhaseOf(side) ?? default;
-        var why = Attacks.SendIn(ctx, side, phase, reason, u, ctx.Ships[slot].Position, Attacks.Held(ctx, side), engaging);
+        var why = Attacks.SendIn(ctx, side, phase, reason, u, ctx.Ships[slot].Position, Attacks.Held(ctx, side));
         if (why == Sim.Ai.Commanders.CommanderWhy.None)
             return false;
         Give(ctx, a, member, ctx.Orders.Attack(u, 0, OrderSource.Commander));

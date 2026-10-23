@@ -480,10 +480,9 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
         }
         if (u.IsGroup && groups.Get(u.GroupId) is { } g)
         {
-            if (Admirals!.BeatenOff(ctx, g))
-                End(ref t, TaskState.Cant, TaskReason.BeatenOff);
-            else if (!AdmiralLayer.AnyTorpedoes(ctx, g))
-                End(ref t, TaskState.Done, TaskReason.Fired);
+            var (over, beatenOff) = Admirals!.AttackOver(ctx, g);
+            if (over)
+                End(ref t, beatenOff ? TaskState.Cant : TaskState.Done, beatenOff ? TaskReason.BeatenOff : TaskReason.Fired);
         }
         else if (!CaptainLayer.TorpedoCraft(ctx, guide, slot))
             End(ref t, TaskState.Done, TaskReason.Fired);
