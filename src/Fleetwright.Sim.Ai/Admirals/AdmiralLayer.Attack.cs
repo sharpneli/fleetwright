@@ -42,7 +42,9 @@ public sealed partial class AdmiralLayer
         var ships = ctx.Ships;
         var guide = ships[lead];
         bool together = a.AttackOrdered || (TorpedoAttack)doctrine.OfGroup(g, guide.Side, DoctrineField.TorpedoAttack) == TorpedoAttack.Together;
-        if (g.IsForce || a.Order != CaptainOrder.Fight || !together || !CaptainLayer.TorpedoCraft(guide.Handling.Class) || !AnyTorpedoes(ctx, g))
+        if (g.IsForce)
+            return false;   // a force told to attack hands it to its groups (AttackHanded)
+        if (a.Order != CaptainOrder.Fight || !together || !CaptainLayer.TorpedoCraft(guide.Handling.Class) || !AnyTorpedoes(ctx, g))
         {
             if (a.Attack != AttackPhase.None || a.AttackOrdered && a.Order == CaptainOrder.Fight)
                 StopAttack(ctx, g, a);
@@ -212,14 +214,48 @@ public sealed partial class AdmiralLayer
         }
     }
 
-    /// <summary>Whether any boat of the line still has torpedoes and launchers to fire them.</summary>
-    /// <summary>Whether any boat of a group still has a torpedo in a launcher that works.</summary>
+    /// <summary>Whether any boat of a group's line (down the tree) still has a torpedo in a launcher that works.</summary>
     internal static bool AnyTorpedoes(in AiContext ctx, GroupSystem.Group g)
     {
         for (int i = 0; i < g.Line.Count; i++)
-            if (ctx.Ships.SlotOf(g.Line[i]) is int slot and >= 0 && CaptainLayer.TorpedoCraft(ctx, ctx.Ships[slot], slot))
+            if (g.IsForce ? ctx.World.Groups.Get(g.Line[i]) is { } sub && AnyTorpedoes(ctx, sub)
+                : ctx.Ships.SlotOf(g.Line[i]) is int slot and >= 0 && CaptainLayer.TorpedoCraft(ctx, ctx.Ships[slot], slot))
                 return true;
         return false;
+    }
+
+    /// <summary>A group of a force told to attack (the i-th of its line, past its guide, which has it handed over): the
+    /// attack handed down (docs/battle/admirals-orders.md O7b), so each squadron attacks as one under its own admiral (a
+    /// division of torpedo craft runs in; one without torpedoes fights). Not again once it's beaten off (running), or
+    /// through with its torpedoes. False if the force isn't attacking.</summary>
+    bool AttackHanded(in AiContext ctx, GroupSystem.Group g, Admiral a, int i)
+    {
+        if (!g.IsForce || a.Order != CaptainOrder.Fight || !a.AttackOrdered)
+            return false;
+        int member = g.Line[i];
+        if (Find(member) is int mi and >= 0 && admirals[mi] is { Whose: Whose.Superior } m && (m.Order == CaptainOrder.Run || m.AttackOrdered && m.Order == CaptainOrder.Fight))
+            return true;   // at it, or beaten off
+        if (groups.Get(member) is { } sub && AnyTorpedoes(ctx, sub))
+            ctx.Issue(ctx.Orders.Attack(Unit.Group(member), new Unit(a.Target).Entity, OrderSource.Superior));
+        return true;
+    }
+
+    /// <summary>Whether a group's attack was beaten off: a squadron running from it; a force whose groups with torpedoes
+    /// left are all beaten off.</summary>
+    internal bool BeatenOff(in AiContext ctx, GroupSystem.Group g)
+    {
+        if (!g.IsForce)
+            return Of(g.GroupId).Order == CaptainOrder.Run;
+        bool any = false;
+        for (int i = 0; i < g.Line.Count; i++)
+            if (groups.Get(g.Line[i]) is { } sub)
+            {
+                if (BeatenOff(ctx, sub))
+                    any = true;
+                else if (AnyTorpedoes(ctx, sub))
+                    return false;
+            }
+        return any;
     }
 
     /// <summary>The contact torpedoes are for: the biggest in sight within <see cref="SimSettings.FightCompareM"/>, the

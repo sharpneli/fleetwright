@@ -480,7 +480,7 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
         }
         if (u.IsGroup && groups.Get(u.GroupId) is { } g)
         {
-            if (Admirals!.Of(g.GroupId).Order == CaptainOrder.Run)
+            if (Admirals!.BeatenOff(ctx, g))
                 End(ref t, TaskState.Cant, TaskReason.BeatenOff);
             else if (!AdmiralLayer.AnyTorpedoes(ctx, g))
                 End(ref t, TaskState.Done, TaskReason.Fired);

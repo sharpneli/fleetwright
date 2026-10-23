@@ -43,7 +43,7 @@ add what's found.
   times: 33.0 s against 32.3 s on the commit before. A timing test in Debug under the suite's parallel load: the limit
   has little room there. Worth running it in Release, or with the load it meets in mind. Seen again twice 2026-10-21
   (smoke Z0, Z1): 32.9 s alone against 33.2 s on the commit before Z1, so not the smoke system's (off there). Again
-  2026-10-23 (admiral's orders O9b: 62.9 s in the full Debug run, 33.1 s alone).
+  2026-10-23 (admiral's orders O9b: 62.9 s in the full Debug run, 33.1 s alone; O7b: 61 s, 31.9 s alone).
 - [ ] `ShipMotionTests.A_tick_allocates_nothing` failed in a full `dotnet test` of every assembly at once (2026-10-14,
   lighting L4, which touches no sim code; once with a second Sim failure) and passed alone three times in three. The
   same suspicion as above.

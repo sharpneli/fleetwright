@@ -1,5 +1,6 @@
 using Fleetwright.Sim.Ai.Tasks;
 using Fleetwright.Sim.Combat;
+using Fleetwright.Sim.Core;
 
 namespace Fleetwright.Sim.Ai.Admirals;
 
@@ -8,7 +9,10 @@ namespace Fleetwright.Sim.Ai.Admirals;
 /// force is told; the rest attend it by their roles (<see cref="Dispositions.Attend"/>): his scouts scout ahead of the
 /// force, spread off its bow, and his flotillas and screens screen it, each a task he gives as its commander
 /// (<see cref="OrderSource.Commander"/>); his auxiliaries keep their place in his line. A force with no battle line or
-/// scouts (flotillas and screens only) keeps together.
+/// scouts (flotillas and screens only) keeps together. His flotillas he sends in to attack himself (O7b), by the rule
+/// the side's commander sends in his own (<see cref="FlotillaAttacks"/>): by day on an enemy line his main body is
+/// engaging, by night by doctrine, once to cover his side breaking off, as his side's commander sees the battle; the side's
+/// commander never reaches into a force for them.
 /// <para>Every <see cref="SimSettings.ForcePeriodMs"/>, with doctrine's Dispose, not while deploying nor on the conn.
 /// A member the player holds by hand, or on a task someone else gave it (the side's commander sending a flotilla in, the
 /// player's own), is left alone; one back with no task (its attack over, rejoined) is given its own again; one whose
@@ -18,6 +22,12 @@ public sealed partial class AdmiralLayer
 {
     /// <summary>What each unit is for (docs/battle/admirals-orders.md O6; set by the AI system).</summary>
     internal Roles Roles { get; set; } = null!;
+
+    /// <summary>When a flotilla is sent in, and how the side's commander sees the battle (set by the AI system).</summary>
+    internal FlotillaAttacks Attacks { get; set; } = null!;
+    internal Commanders.CommanderLayer? Commanders { get; set; }
+
+    readonly List<Vec3d> engaging = new(8);
 
     void DisposeStep(in AiContext ctx, GroupSystem.Group g, Admiral a, int lead)
     {
@@ -58,10 +68,34 @@ public sealed partial class AdmiralLayer
                     Give(ctx, a, m, ctx.Orders.Join(u, force, OrderSource.Commander));   // its role is the body's now: back into the line
                 continue;
             }
+            if (mine && Tasks.Of(u).Kind == TaskKind.Attack)
+                continue;   // in on the attack he sent it on
+            if (role == UnitRole.Flotilla && SendIn(ctx, g, a, m, body, ctx.Ships[lead].Side))
+                continue;
             if (mine && Tasks.Of(u).Kind == Dispositions.KindFor(role) && Tasks.TargetOf(u) == force.Id)
                 continue;   // at it already
             Give(ctx, a, m, Dispositions.Attend(ctx.Orders, role, u, force, scout, OrderSource.Commander));
         }
+    }
+
+    /// <summary>A flotilla of his force sent in to attack (docs/battle/admirals-orders.md O7b), by the rule every commander
+    /// shares, his main body's squadrons the heavy units that engage; true if it was.</summary>
+    bool SendIn(in AiContext ctx, GroupSystem.Group g, Admiral a, int member, UnitRole body, byte side)
+    {
+        var u = Unit.Group(member);
+        if (groups.Get(member) is not { } fg || ctx.Ships.SlotOf(groups.GuideShip(fg)) is not (int slot and >= 0) || !Attacks.Free(ctx, u, slot))
+            return false;
+        engaging.Clear();
+        for (int i = 0; i < g.Members.Count; i++)
+            if (Roles.Of(Unit.Group(g.Members[i])) == body && groups.Get(g.Members[i]) is { } bg && ctx.Ships.SlotOf(groups.GuideShip(bg)) is int bs and >= 0)
+                engaging.Add(ctx.Ships[bs].Position);
+        var (phase, reason) = Commanders?.PhaseOf(side) ?? default;
+        var why = Attacks.SendIn(ctx, side, phase, reason, u, ctx.Ships[slot].Position, Attacks.Held(ctx, side), engaging);
+        if (why == Sim.Ai.Commanders.CommanderWhy.None)
+            return false;
+        Give(ctx, a, member, ctx.Orders.Attack(u, 0, OrderSource.Commander));
+        Attacks.Sent(u, why);
+        return true;
     }
 
     /// <summary>A task he gives a member, and when (its task's start, so he knows it's still his).</summary>

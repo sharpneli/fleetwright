@@ -382,8 +382,8 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
             var members = g.Line;
             for (int i = 1; i < members.Count; i++)
             {
-                if (ScreenHanded(ctx, g, a, i))
-                    continue;   // a force screening: each of its groups on its own station of the arc
+                if (ScreenHanded(ctx, g, a, i) || AttackHanded(ctx, g, a, i))
+                    continue;   // a force screening, or attacking: each of its groups on its own station of the arc, or its own attack
                 if (!g.IsForce)
                 {
                     var (target, astern, abeam) = GroupSystem.StationOf(g, i);
@@ -521,7 +521,9 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
                 ctx.Issue(o.Shadow(to, new Unit(a.Target), a.DistanceM, Up));
                 break;
             case CaptainOrder.Fight:
-                ctx.Issue(o.Fight(to, new Unit(a.Target), a.DistanceM, Up));
+                ctx.Issue(a.AttackOrdered && groups.Get(a.GroupId) is { IsForce: true }
+                    ? o.Attack(to, new Unit(a.Target).Entity, Up)   // a force attacking: its guide group attacks too
+                    : o.Fight(to, new Unit(a.Target), a.DistanceM, Up));
                 break;
             case CaptainOrder.Screen:
                 if (groups.Get(a.GroupId) is { IsForce: true })

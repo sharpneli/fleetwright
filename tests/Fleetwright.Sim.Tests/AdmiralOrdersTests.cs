@@ -1,5 +1,7 @@
 using Fleetwright.Sim.Ai;
+using Fleetwright.Sim.Ai.Admirals;
 using Fleetwright.Sim.Ai.Captains;
+using Fleetwright.Sim.Ai.Commanders;
 using Fleetwright.Sim.Ai.Tasks;
 using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
@@ -10,7 +12,7 @@ namespace Fleetwright.Sim.Tests;
 /// <summary>The admiral's orders (docs/battle/admirals-orders.md): screens sharing an arc (O1c: one on the bearing
 /// screened on, two on either bow, more spread evenly; a force hands Screen to its squadrons; only the screen nearest an
 /// attack counter-attacks), a lone flotilla divided by its own admiral and never the player's, Divide and Merge, where
-/// the arc sits (O5), roles (O6), the chain of command (O7) and Deploy as an order (O2). Clear weather, guns held all
+/// the arc sits (O5), roles (O6), the chain of command (O7), battle decisions down it (O7b) and Deploy as an order (O2). Clear weather, guns held all
 /// round (only the steering is measured), and no line turns away.</summary>
 public class AdmiralOrdersTests(ITestOutputHelper output)
 {
@@ -390,6 +392,91 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
         Assert.Equal((TaskKind.Scout, Unit.Group(fleet).Id), (ai.Tasks.Of(Unit.Group(cruisers)).Kind, ai.Tasks.TargetOf(Unit.Group(cruisers))));
         Assert.Equal((TaskKind.Screen, Unit.Group(force).Id), (ai.Tasks.Of(Unit.Group(destroyers)).Kind, ai.Tasks.TargetOf(Unit.Group(destroyers))));
         Assert.Equal(new[] { force }, w.Groups.Get(fleet)!.Line);
+    }
+
+    /// <summary>Torpedoes a side has fired since the log stood at <paramref name="seen"/>; the log's mark now.</summary>
+    static (int Fired, long Seen) Torpedoes(World w, byte side, long seen)
+    {
+        int n = 0;
+        for (long i = w.CombatLog.Written - seen - 1; i >= 0; i--)
+            if (w.CombatLog.Newest((int)i) is { Kind: CombatEvent.Torpedoes } e && w.Ships.Store.SlotOf(e.Shooter) is int slot and >= 0 &&
+                w.Ships.Store[slot].Side == side)
+                n += e.Count;
+        return (n, w.CombatLog.Written);
+    }
+
+    [Fact]
+    public void A_force_sends_in_its_own_flotilla_on_a_line_its_battle_squadron_engages()
+    {
+        // the force of O7 (dreadnoughts, light cruisers, destroyers screening), one enemy dreadnought 14 km on its beam:
+        // the force's admiral sends his destroyers in; the side's commander, on, leaves what's inside the force alone
+        var (w, ai, force, _, _, destroyers, _) = Disposed();
+        int bb = w.Ships.AddClass(Fleet.Get("dreadnought").Class!);
+        var guide = Ship(w, w.Groups.GuideShip(w.Groups.Get(force)!));
+        Column(w, ai, bb, Off(guide.Position, 90, 14_000), 180, 1, 15, side: 1);
+        w.Apply(ai.Orders.FireAtWill(Unit.Group(destroyers)));
+        w.Apply(ai.Orders.Commander(0, CommanderMode.On));
+        long seen = w.CombatLog.Written;
+        int fired = 0;
+        double sent = double.NaN;
+        for (int min = 1; min <= 40 && fired == 0; min++)
+        {
+            w.AdvanceTo(w.Time + 60_000);
+            if (double.IsNaN(sent) && ai.Tasks.Of(Unit.Group(destroyers)).Kind == TaskKind.Attack)
+                sent = min;
+            (int n, seen) = Torpedoes(w, 0, seen);
+            fired += n;
+        }
+        var d = w.Groups.Get(destroyers)!;
+        output.WriteLine($"sent in at {sent} min, {fired} torpedoes; the destroyers on {ai.Tasks.Of(Unit.Group(destroyers))}, a force {d.IsForce}; " +
+                         $"the commander gave them {ai.Commanders.GivenOf(Unit.Group(destroyers))}, the force {ai.Commanders.GivenOf(Unit.Group(force))}; " +
+                         $"phase {ai.Commanders.PhaseOf(0)}");
+        Assert.InRange(sent, 1, 5);
+        Assert.True(fired > 0);
+        Assert.Equal(TaskKind.None, ai.Commanders.GivenOf(Unit.Group(destroyers)).Given);   // its admiral's, not the commander's
+        if (d.IsForce)
+            foreach (int m in d.Members)
+                Assert.Equal(TaskKind.None, ai.Commanders.GivenOf(Unit.Group(m)).Given);
+    }
+
+    [Fact]
+    public void A_force_told_to_attack_hands_it_to_its_divisions()
+    {
+        // a flotilla divided into two divisions, told by hand to attack a dreadnought: each division runs in under its own
+        // admiral, and both fire
+        var w = new World(Start, 3, Settings);
+        var ai = new AiSystem(w);
+        w.Apply(Command.SetWeather(30_000));
+        int bb = w.Ships.AddClass(Fleet.Get("dreadnought").Class!), dd = w.Ships.AddClass(Fleet.Get("destroyer").Class!);
+        var at = Earth.Position(56.0, 4.0);
+        int flotilla = Column(w, ai, dd, at, 180, 4, 20);
+        int enemy = Column(w, ai, bb, Off(at, 90, 14_000), 180, 1, 15, side: 1);
+        w.Apply(GroupSystem.Divide(flotilla, 2));
+        var f = w.Groups.Get(flotilla)!;
+        Assert.True(f.IsForce);
+        int target = w.Groups.GuideShip(w.Groups.Get(enemy)!);
+        w.Apply(ai.Orders.FireAtWill(Unit.Group(flotilla)));
+        w.Apply(ai.Orders.ByHand.Attack(Unit.Group(flotilla), target));
+        long seen = w.CombatLog.Written;
+        var firedBy = new HashSet<int>();
+        var phases = new HashSet<(int, AttackPhase)>();
+        for (int min = 1; min <= 40; min++)
+        {
+            w.AdvanceTo(w.Time + 60_000);
+            foreach (int m in f.Members)
+                phases.Add((m, ai.Admirals.AttackOf(m).Phase));
+            for (long i = w.CombatLog.Written - seen - 1; i >= 0; i--)
+                if (w.CombatLog.Newest((int)i) is { Kind: CombatEvent.Torpedoes } e && w.Groups.Of(e.Shooter) is { } sq)
+                    firedBy.Add(sq.GroupId);
+            seen = w.CombatLog.Written;
+        }
+        output.WriteLine($"divisions' phases {string.Join(", ", phases.Where(p => p.Item2 != AttackPhase.None))}; fired by {string.Join(", ", firedBy)}; " +
+                         $"the force on {ai.Tasks.Of(Unit.Group(flotilla))}");
+        foreach (int m in f.Members)
+        {
+            Assert.Contains((m, AttackPhase.Run), phases);   // each division ran in itself
+            Assert.Contains(m, firedBy);
+        }
     }
 
     [Fact]

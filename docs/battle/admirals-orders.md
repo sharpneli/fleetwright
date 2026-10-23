@@ -1,7 +1,7 @@
 # Plan: the admiral's orders, the player's and the AI's
 
 2026-10-23. Status: O1-O9 **built 2026-10-23** (the AI's side, the mockup, then the port: the task menu O9a and the
-orders on the map O9b); O7b (battle decisions down the chain) and O10 (shaping by drag, the radial menu) later.
+orders on the map O9b), and O7b (battle decisions down the chain); O10 (shaping by drag, the radial menu) later.
 
 Step 5.2's rest (`docs/battle/command.md` "5.2 The command UI on the map") grows out of this: the orders the player gives
 as an admiral, and how the map offers them.
@@ -212,11 +212,35 @@ each with an admiral.
   without the doctrine all three stay in its line; the player's course to the cruisers by hand holds; a fleet of a battle
   force and a cruiser squadron: the cruisers scout for the fleet, the destroyers screen the battle force.
 
+### O7b Battle decisions down the chain (built 2026-10-23)
+
+Before, the side's commander reached into his top forces for their squadrons of torpedo craft and sent them in to attack
+himself, then called them back into their force's line. Now each level decides for its own:
+
+- **One rule, every commander's** (`FlotillaAttacks`, one implementation): a flotilla free to go in (torpedoes left, not
+  on an attack, never again once one of its attacks was beaten off; screening, on its orders, or through with its task)
+  is sent in, as its side's commander sees the battle: in **battle** by day on an enemy line its commander's own heavy
+  units engage, its attack worth making (the matchup has it attacking, at doctrine's bar); by **night** (doctrine's
+  NightAttack) on any heavy enemy in reach worth it; **declining** a stronger enemy, by night only; **broken off**, once,
+  to cover the others breaking off; **gone home**, never. With no commander, its own commander judges by night as by day.
+- **The side's commander** applies it to his top units only. A top force of flotillas (a flotilla divided by its own
+  admiral) is sent in as one.
+- **A force's admiral** applies it to the flotillas of his force, as part of his disposition (doctrine's Dispose), his
+  main body's squadrons the heavy units that must be engaging; the attack is his task given as a commander, and once it's
+  over the flotilla screens again. He reads how his side's commander sees the battle (night, declining, broken off).
+- **An Attack to a force is handed down** (as Screen is, O1c): each of its groups attacks under its own admiral, the
+  guide group too; a division without torpedoes fights; one beaten off isn't sent again. A force's attack is beaten off
+  when every group of it with torpedoes left is. `AnyTorpedoes` reads a force's line down the tree.
+- **Tests:** `AdmiralOrdersTests.A_force_sends_in_its_own_flotilla_on_a_line_its_battle_squadron_engages` (the O7
+  force, an enemy dreadnought 14 km abeam: the force's admiral sends his divided destroyers in within a minute, they
+  fire; the side's commander, on, gave neither them nor their divisions anything);
+  `A_force_told_to_attack_hands_it_to_its_divisions` (both divisions gain, run in, fire and turn away, each its own);
+  the commander's own (`CommanderTests`) unchanged.
+
 ### Still lacking (later steps, after the questions)
 
-- **Battle decisions down the chain.** The side's commander still sends a force's flotillas in to attack himself
-  (reaching into top forces for their squadrons of torpedo craft); with the chain, a force's admiral should send in his
-  own, and decide his own force's fight. Next for the chain (O7b).
+- **A force's own fight.** Its flotillas are its admiral's now (O7b); whether a force inside a fleet closes an enemy
+  group is still doctrine's and the fleet's task, not a judgement of its own admiral.
 - **The scenarios' trees:** the Jutland's fleets are flat (the Grand Fleet's flotillas and cruisers are top units with
   opening tasks); nesting them as the fleets were organised lets the chain dispose them.
 - **Screen against a sector.** The threat bearing is always the nearest enemy in sight. An admiral could say "screen
@@ -393,6 +417,7 @@ The mockup's `#chain` and `#screen` marks, in the game (`MapScene.TaskMarks.cs`;
 | **O5** | Where the screen sits, by its admiral (decision 2) | **done 2026-10-23** |
 | **O6** | A unit's role: worked out, or set by the player; the commander and the map read it (decision 4) | **done 2026-10-23** |
 | **O7** | The chain of command: a force's admiral disposes his members by role, one implementation with the commander's (decision 3) | **done 2026-10-23** |
+| **O7b** | Battle decisions down the chain: a force's admiral sends in his own flotillas, by the commander's rule (one implementation); an Attack to a force handed down | **done 2026-10-23** |
 | **O8** | The mockup: `docs/map-ui/battle.html` `#tasks`, `#screen`, `#deploy`, `#chain`: the task menu, the role, the cursor's verbs, a screen's stations, a deploy's line, the chain in the rail | **done 2026-10-23**, for review |
 | **O8b** | The mockup again: the organise column (new squadron, divide, merge, form a force, leave) and Screen with several squadrons selected | **done 2026-10-23**, for review |
 | **O8c** | Drag and drop in the rail: ships between squadrons, a unit under another's admiral (in the game) | **done 2026-10-23** |

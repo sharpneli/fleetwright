@@ -49,6 +49,10 @@ public sealed class AiSystem : IWorldSystem
     /// <summary>The enemy groups each navy holds, in sight or not (not world state).</summary>
     public HeldGroups Held { get; }
 
+    /// <summary>When a commander sends a flotilla in to attack: the side's and every force's admiral's one rule
+    /// (docs/battle/admirals-orders.md O7b).</summary>
+    public FlotillaAttacks Attacks { get; }
+
     // each side's home (docs/battle/command.md "home"): where its ships out of the fight go; null for none
     readonly Vec3d?[] homes = new Vec3d?[256];
 
@@ -72,7 +76,9 @@ public sealed class AiSystem : IWorldSystem
         Admirals.Tactical = Tactical;
         Tasks = new TaskLayer(world.Groups, Seen, homes) { Admirals = Admirals, Captains = Captains, Doctrine = Doctrine, Judge = Judge };
         (Admirals.Tasks, Captains.Tasks) = (Tasks, Tasks);
-        Commanders = new CommanderLayer(world.Groups, world.Ships.Store, Seen, Doctrine) { Tasks = Tasks, Captains = Captains, Judge = Judge, Held = Held, Roles = Roles };
+        Attacks = new FlotillaAttacks(Judge, Held, Doctrine) { Tasks = Tasks };
+        Commanders = new CommanderLayer(world.Groups, world.Ships.Store, Seen, Doctrine) { Tasks = Tasks, Captains = Captains, Judge = Judge, Held = Held, Roles = Roles, Attacks = Attacks };
+        (Admirals.Attacks, Admirals.Commanders) = (Attacks, Commanders);
         layers = [Commanders, Tasks, Admirals, Captains];
         nextTick = new long[layers.Length];
         tickGen = new int[layers.Length];

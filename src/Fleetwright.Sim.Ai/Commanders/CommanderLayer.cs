@@ -149,7 +149,6 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         public int Target;
         public CommanderWhy Why;
         public long Ms;
-        public bool BeatenOff;      // a flotilla whose attack was beaten off: he doesn't send it in again
     }
 
     /// <summary>A top unit at this think.</summary>
@@ -161,7 +160,6 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         public UnitRole Role;
         public double TonnageT, CapitalT;   // its ships', and its capital ships'
         public int Group;           // the enemy group it's sent after at this think (-1: none)
-        public int Force;           // a squadron of torpedo craft in a top force: that force (0: a top unit)
     }
 
     readonly SideState?[] sides = new SideState?[256];
@@ -169,12 +167,14 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
     int count;
     readonly List<Top> tops = new(64);
     readonly List<(int Ship, double AsternM, double AbeamM)> line = new(64);
+    readonly List<Vec3d> engaging = new(16);
 
     internal TaskLayer? Tasks { get; set; }
     internal MatchupJudge Judge { get; set; } = null!;
     internal HeldGroups Held { get; set; } = null!;
     internal Roles Roles { get; set; } = null!;
     internal CaptainLayer? Captains { get; set; }
+    internal FlotillaAttacks Attacks { get; set; } = null!;
 
     public bool Active
     {
@@ -298,8 +298,8 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         }
     }
 
-    /// <summary>Every top unit of every side, its role and its tonnage: groups that are no force's, ships in no group; and
-    /// the squadrons of torpedo craft inside top forces (a cruiser's flotillas), which he sends in to attack and back.</summary>
+    /// <summary>Every top unit of every side, its role and its tonnage: groups that are no force's, ships in no group. What's
+    /// inside a force is its admiral's (docs/battle/admirals-orders.md O7b): he sends in his own flotillas.</summary>
     void Gather(in AiContext ctx)
     {
         tops.Clear();
@@ -309,15 +309,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
             if (store.SlotOf(groups.GuideShip(g)) is not (int slot and >= 0))
                 continue;
             if (g.Parent != 0)
-            {
-                // a squadron of torpedo craft in a force: an attack group, under its top force
-                var top = g;
-                while (top.Parent != 0 && groups.Get(top.Parent) is { } up)
-                    top = up;
-                if (!g.IsForce && Roles.Of(Unit.Group(g.GroupId)) == UnitRole.Flotilla)
-                    tops.Add(new Top { Unit = Unit.Group(g.GroupId), Side = store[slot].Side, Slot = slot, Role = UnitRole.Flotilla, Force = top.GroupId, Group = -1 });
                 continue;
-            }
             groups.LineOffsets(g, line);
             double tonnage = 0, capital = 0;
             foreach (var (ship, _, _) in line)
@@ -354,7 +346,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         for (int i = 0; i < tops.Count; i++)
         {
             var t = tops[i];
-            if (t.Side != side || t.Force != 0 || t.Role is UnitRole.None or UnitRole.Auxiliary)
+            if (t.Side != side || t.Role is UnitRole.None or UnitRole.Auxiliary)
                 continue;
             if (main < 0 || Bigger(t, tops[main]))
                 main = i;
@@ -369,7 +361,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
             Assign(ctx, side, player, held);
         bool battle = false;
         for (int i = 0; i < tops.Count && !battle; i++)
-            battle = tops[i].Side == side && tops[i].Force == 0 && tops[i].Role != UnitRole.None && InContact(ctx, tops[i]);
+            battle = tops[i].Side == side && tops[i].Role != UnitRole.None && InContact(ctx, tops[i]);
         (s.Phase, s.Reason) = s.GaveUp ? (CommanderPhase.Home, CommanderReason.GaveUp)
             : s.BrokenOff ? (CommanderPhase.Retiring, CommanderReason.BrokenOff)
             : s.Declined ? (CommanderPhase.Retiring, CommanderReason.Outmatched)
@@ -384,16 +376,16 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         for (int i = 0; i < tops.Count; i++)
         {
             var t = tops[i];
-            if (t.Side != side || t.Role == UnitRole.None || !Commands(t.Force != 0 ? Unit.Group(t.Force) : t.Unit, side, player))
+            if (t.Side != side || t.Role == UnitRole.None || !Commands(t.Unit, side, player))
                 continue;
+            if (t.Role == UnitRole.Flotilla && SendIn(ctx, s, side, held, t))
+                continue;   // in to attack: by day on a line his heavy units engage, by night, or to cover a break off
             if (s.Phase is CommanderPhase.Retiring or CommanderPhase.Home)
             {
-                // declining a stronger enemy, he still sends his flotillas in on it by night (the user, 2026-10-20)
-                if (!(s.Reason == CommanderReason.Outmatched && NightAttack(ctx, side, held, t)))
-                    Retire(ctx, s, side, held, t);
+                Retire(ctx, s, t);
                 continue;
             }
-            if (s.Phase == CommanderPhase.Night && ByNight(ctx, side, held, t))
+            if (s.Phase == CommanderPhase.Night && ByNight(ctx, t))
                 continue;
             if (t.Group >= 0)
             {
@@ -403,23 +395,33 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
                     Give(ctx, t, ctx.Orders.Intercept(t.Unit, target, 0, OrderSource.Commander), CommanderWhy.Contact);
                 continue;
             }
-            if (t.Role == UnitRole.Flotilla && s.Phase == CommanderPhase.Battle && FreeToAttack(ctx, t) && Worth(ctx, side, held, t, engaged: true))
-            {
-                Give(ctx, t, ctx.Orders.Attack(t.Unit, 0, OrderSource.Commander), CommanderWhy.Battle);
-                continue;
-            }
-            // a flotilla through with its torpedoes goes back to its screen (or its force) at once, contact or not
+            // a flotilla through with its torpedoes goes back to its screen at once, contact or not
             bool spent = t.Role == UnitRole.Flotilla && Tasks!.Of(t.Unit) is (TaskKind.Attack, TaskState.Done, TaskReason.Fired);
             bool firstOrders = Tasks!.Of(t.Unit).Kind == TaskKind.None;
             if (!spent && (!(Tasks.Idle(t.Unit) || firstOrders && s.Met) || InContact(ctx, t) || Home(t.Unit)))
                 continue;   // on its task, or on the scenario's orders before the enemy's met, or fighting (doctrine's), or home
-            if (t.Force != 0 && groups.Get(t.Unit.GroupId) is { } sq && groups.InForceLine(sq))
-                continue;   // in its force's line: its admiral's
-            if (t.Force != 0)
-                Give(ctx, t, ctx.Orders.Join(t.Unit, Unit.Group(t.Force), OrderSource.Commander), CommanderWhy.Rejoin);   // back into its force's line
-            else
-                Give(ctx, t, IdleTask(ctx, t, main >= 0 && main != i ? tops[main] : null), spent ? CommanderWhy.Rejoin : CommanderWhy.Idle);
+            Give(ctx, t, IdleTask(ctx, t, main >= 0 && main != i ? tops[main] : null), spent ? CommanderWhy.Rejoin : CommanderWhy.Idle);
         }
+    }
+
+    /// <summary>A flotilla of his sent in to attack, by the rule every commander shares (<see cref="FlotillaAttacks"/>):
+    /// free to go (going home from a battle he declined counts, for the night), and worth it as he sees the battle. True if
+    /// it was.</summary>
+    bool SendIn(in AiContext ctx, SideState s, byte side, ReadOnlySpan<HeldGroup> held, in Top t)
+    {
+        bool declining = Tasks!.Of(t.Unit).Kind == TaskKind.Withdraw && GivenOf(t.Unit).Why == CommanderWhy.Outmatched;
+        if (!Attacks.Free(ctx, t.Unit, t.Slot, declining))
+            return false;
+        engaging.Clear();
+        foreach (var o in tops)
+            if (o.Side == side && o.Role is UnitRole.MainBody or UnitRole.Heavy)
+                engaging.Add(store[o.Slot].Position);
+        var why = Attacks.SendIn(ctx, side, s.Phase, s.Reason, t.Unit, store[t.Slot].Position, held, engaging);
+        if (why == CommanderWhy.None)
+            return false;
+        Give(ctx, t, ctx.Orders.Attack(t.Unit, 0, OrderSource.Commander), why);
+        Attacks.Sent(t.Unit, why);
+        return true;
     }
 
     static bool Bigger(in Top a, in Top b) =>
@@ -448,7 +450,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         s.BrokenOff |= afloat < s.CameT * (1 - doctrine.OfGroup(null, side, DoctrineField.BreakOffShare));
         mine.Clear();
         foreach (var t in tops)
-            if (t.Side == side && t.Force == 0 && t.Role is not (UnitRole.None or UnitRole.Auxiliary))
+            if (t.Side == side && t.Role is not (UnitRole.None or UnitRole.Auxiliary))
                 AddTop(ctx, t, mine);
         enemy.Clear();
         foreach (ref readonly var g in held)
@@ -518,7 +520,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
             for (int i = 0; i < tops.Count; i++)
             {
                 var t = tops[i];
-                if (t.Side != side || t.Force != 0 || t.Group >= 0 || t.Role is UnitRole.None or UnitRole.Auxiliary or UnitRole.Flotilla or UnitRole.Screen ||
+                if (t.Side != side || t.Group >= 0 || t.Role is UnitRole.None or UnitRole.Auxiliary or UnitRole.Flotilla or UnitRole.Screen ||
                     !Commands(t.Unit, side, player))
                     continue;
                 bool closing = Tasks!.Of(t.Unit) is (TaskKind.Intercept, TaskState.OnTask or TaskState.Engaged or TaskState.InContact, _) &&
@@ -623,21 +625,14 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         return kind != TaskKind.Search || state is TaskState.Done or TaskState.Cant;
     }
 
-    /// <summary>Retiring or gone home: every unit of his for home, unless it's going or there; a flotilla with torpedoes
-    /// near an enemy line his heavy units are engaging is sent in once first, to cover the others breaking off.</summary>
-    void Retire(in AiContext ctx, SideState s, byte side, ReadOnlySpan<HeldGroup> held, in Top t)
+    /// <summary>Retiring or gone home: every unit of his for home, unless it's going or there (a flotilla sent in to cover
+    /// the others breaking off, <see cref="SendIn"/>, after its attack).</summary>
+    void Retire(in AiContext ctx, SideState s, in Top t)
     {
         var why = s.Phase == CommanderPhase.Home ? CommanderWhy.GaveUp : s.BrokenOff ? CommanderWhy.BrokenOff : CommanderWhy.Outmatched;
-        if (t.Role == UnitRole.Flotilla && s.BrokenOff && FreeToAttack(ctx, t) && Worth(ctx, side, held, t, engaged: true) && GivenOf(t.Unit).Why != CommanderWhy.Cover)
-        {
-            Give(ctx, t, ctx.Orders.Attack(t.Unit, 0, OrderSource.Commander), CommanderWhy.Cover);
-            return;
-        }
         var (kind, state, _) = Tasks!.Of(t.Unit);
         if (kind == TaskKind.Attack && state is TaskState.OnTask or TaskState.Engaged)
             return;   // its attack first
-        if (t.Force != 0 && groups.Get(t.Unit.GroupId) is { } sq && groups.InForceLine(sq))
-            return;   // with its force
         if (Tasks.Of(t.Unit) is (TaskKind.Withdraw, TaskState.Cant, TaskReason.Nowhere))
             return;   // no home to go to: it holds what it has
         if (kind == TaskKind.Withdraw && (state is TaskState.OnTask or TaskState.Engaged or TaskState.InContact || Home(t.Unit)))
@@ -684,36 +679,15 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         Light.SunElevationDeg(store[tops[main].Slot].Position, ctx.World.Time) < ctx.Settings.NightSunElevationDeg;
 
     /// <summary>By night: his heavy units withdrawn from contact (home, until the day; free to close again then); his
-    /// flotillas sent in on any heavy enemy in reach, by doctrine. True if it dealt with the unit; the rest (his scouts,
+    /// flotillas are sent in by doctrine (<see cref="SendIn"/>). True if it dealt with the unit; the rest (his scouts,
     /// keeping in touch on their tasks) go by the day's rules, as idle units.</summary>
-    bool ByNight(in AiContext ctx, byte side, ReadOnlySpan<HeldGroup> held, in Top t)
+    bool ByNight(in AiContext ctx, in Top t)
     {
-        var o = ctx.Orders;
-        switch (t.Role)
-        {
-            case UnitRole.MainBody or UnitRole.Heavy:
-            {
-                var (kind, state, why) = Tasks!.Of(t.Unit);
-                if (kind != TaskKind.Withdraw || state is not (TaskState.OnTask or TaskState.Engaged or TaskState.InContact) && !Home(t.Unit) && why != TaskReason.Nowhere)
-                    Give(ctx, t, o.WithdrawHome(t.Unit, OrderSource.Commander), CommanderWhy.Night);
-                return true;
-            }
-            case UnitRole.Flotilla:
-                return NightAttack(ctx, side, held, t);
-        }
-        return false;
-    }
-
-    /// <summary>A flotilla sent in by night (the sun more than <see cref="SimSettings.NightSunElevationDeg"/> down where
-    /// it is), by doctrine, on a heavy enemy in reach its attack is worth making on; true if it was. By night, and when he's
-    /// declining a stronger enemy too: the torpedo craft's own hour.</summary>
-    bool NightAttack(in AiContext ctx, byte side, ReadOnlySpan<HeldGroup> held, in Top t)
-    {
-        if (t.Role != UnitRole.Flotilla || doctrine.OfGroup(null, side, DoctrineField.NightAttack) == 0 ||
-            Light.SunElevationDeg(store[t.Slot].Position, ctx.World.Time) >= ctx.Settings.NightSunElevationDeg ||
-            !FreeToAttack(ctx, t) || !Worth(ctx, side, held, t, engaged: false))
+        if (t.Role is not (UnitRole.MainBody or UnitRole.Heavy))
             return false;
-        Give(ctx, t, ctx.Orders.Attack(t.Unit, 0, OrderSource.Commander), CommanderWhy.Night);
+        var (kind, state, why) = Tasks!.Of(t.Unit);
+        if (kind != TaskKind.Withdraw || state is not (TaskState.OnTask or TaskState.Engaged or TaskState.InContact) && !Home(t.Unit) && why != TaskReason.Nowhere)
+            Give(ctx, t, ctx.Orders.WithdrawHome(t.Unit, OrderSource.Commander), CommanderWhy.Night);
         return true;
     }
 
@@ -738,55 +712,6 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
             return false;   // through with it, its plan to come
         return kind is TaskKind.GoTo or TaskKind.Patrol or TaskKind.Search or TaskKind.Join || kind == TaskKind.Intercept && Tasks.TargetOf(u) != target ||
                kind == TaskKind.Withdraw && GivenOf(u).Why is CommanderWhy.Outmatched or CommanderWhy.Night;   // declined, or the night: now he accepts
-    }
-
-    /// <summary>Whether a flotilla may be sent in: a squadron or a boat alone (a force of flotillas sends in its squadrons),
-    /// torpedoes left, and screening, on its orders, through with its task, or going home from a battle he declined; never
-    /// again once an attack of its was beaten off.</summary>
-    bool FreeToAttack(in AiContext ctx, in Top t)
-    {
-        if (t.Unit.IsGroup && groups.Get(t.Unit.GroupId) is { IsForce: true })
-            return false;
-        var (kind, state, why) = Tasks!.Of(t.Unit);
-        if (why == TaskReason.BeatenOff)
-            Get(t.Unit.Id).BeatenOff = true;
-        if (kind == TaskKind.Attack && state is TaskState.OnTask or TaskState.Engaged || Find(t.Unit.Id) is int r and >= 0 && recs[r].BeatenOff)
-            return false;
-        if (!(kind is TaskKind.None or TaskKind.Screen || Tasks.Idle(t.Unit) || kind == TaskKind.Withdraw && GivenOf(t.Unit).Why == CommanderWhy.Outmatched))
-            return false;
-        return t.Unit.IsGroup && groups.Get(t.Unit.GroupId) is { } g ? AdmiralLayer.AnyTorpedoes(ctx, g) : CaptainLayer.TorpedoCraft(ctx, store[t.Slot], t.Slot);
-    }
-
-    /// <summary>Whether a flotilla's attack is worth making (docs/battle/command.md 5.1g): an enemy group within
-    /// <see cref="SimSettings.CommanderAttackM"/> of it that its matchup has it attacking, at doctrine's bar or better; and
-    /// (by day) his own heavy units engaging that group (one within <see cref="SimSettings.FightCompareM"/> of it).</summary>
-    bool Worth(in AiContext ctx, byte side, ReadOnlySpan<HeldGroup> held, in Top flotilla, bool engaged)
-    {
-        var at = store[flotilla.Slot].Position;
-        double reach = ctx.Settings.CommanderAttackM, fight = ctx.Settings.FightCompareM, accept = Judge.Bars(0, side).Accept;
-        foreach (ref readonly var g in held)
-        {
-            if ((g.Centre - at).Length > reach)
-                continue;
-            if (engaged)
-            {
-                bool near = false;
-                for (int i = 0; i < tops.Count && !near; i++)
-                    near = tops[i].Side == side && tops[i].Role is UnitRole.MainBody or UnitRole.Heavy && (store[tops[i].Slot].Position - g.Centre).Length <= fight;
-                if (!near)
-                    continue;
-            }
-            one.Clear();
-            AddTop(ctx, flotilla, one);
-            enemy.Clear();
-            AddGroup(ctx, side, g, enemy);
-            if (one.Count == 0 || enemy.Count == 0)
-                continue;
-            var r = Judge.Judge(ctx, 0, side, at, one, enemy);
-            if ((r.Terms.Style & MatchupStyle.AttackByA) != 0 && r.Confidence >= accept)
-                return true;
-        }
-        return false;
     }
 
     /// <summary>A unit's task with no enemy about, by its role: the main body searches ahead on its course; another heavy
@@ -823,7 +748,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         var best = main;
         double bestD = (store[main.Slot].Position - at).LengthSquared;
         foreach (var t in tops)
-            if (t.Side == from.Side && t.Force == 0 && t.Role == UnitRole.Heavy && (store[t.Slot].Position - at).LengthSquared is var d && d < bestD)
+            if (t.Side == from.Side && t.Role == UnitRole.Heavy && (store[t.Slot].Position - at).LengthSquared is var d && d < bestD)
                 (best, bestD) = (t, d);
         return best;
     }
@@ -872,6 +797,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
                 h.Add(s.Searched);
                 h.Add(s.GaveUp);
             }
+        Attacks.Hash(ref h);
         for (int i = 0; i < count; i++)
         {
             ref readonly var r = ref recs[i];
@@ -881,7 +807,6 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
             h.Add(r.Target);
             h.Add((int)r.Why);
             h.Add(r.Ms);
-            h.Add(r.BeatenOff);
         }
     }
 
