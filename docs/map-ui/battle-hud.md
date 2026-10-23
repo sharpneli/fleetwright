@@ -6,7 +6,9 @@ UI for what ships first: **a scenario battler**, one fight from briefing to resu
 It is step 5.2 of `docs/battle/command.md` ("the command UI on the map"), narrowed to that game.
 
 The mockup is `battle.html` (open it in a browser; `#ship`, `#enemy`, `#group`, `#pinned`, `#order`, `#arm`,
-`#log`, `#menu`, `#brief`, `#result`, `#dev` open a state; screenshots `png/battle-*.png`). It takes its layout and
+`#log`, `#menu`, `#brief`, `#result`, `#dev` open a state; screenshots `png/battle-*.png`). The admiral's orders'
+states (`#tasks`, `#screen`, `#deploy`, `#chain`: the task menu, roles, the chain of command) are
+`docs/battle/admirals-orders.md` O8's. It takes its layout and
 symbology from the v2 world mockup (`map.html`, `README.md`) and drops what the battler doesn't have: the screens,
 lenses, sea areas, ports, the globe band's clusters. As for the designer: a mockup first, then the port, one piece a
 session, each judged by captures against the mockup.

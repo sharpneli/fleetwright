@@ -220,6 +220,35 @@ guns, torpedoes, task, formation), armed picks completed by a click on the map, 
 6. **Shaping by drag, later** (the research's "right-drag on an escortee sets screen radius"): from the screened unit,
    the drag's length sets the distance and its direction a sector to screen against (O7), the arc's stations previewed.
 
+### O8 The mockup (2026-10-23, for the user's review)
+
+`docs/map-ui/battle.html`, four new states (screenshots `docs/map-ui/png/battle-tasks.png`, `-screen`, `-deploy`,
+`-chain`); in them the Battlecruiser Fleet is a force of the 1st BCS, the 13th Flotilla and the 1st LCS, paused (pause
+and order):
+
+- **`#tasks`, the task menu** (decision 5): the strip's **Task ▾** or **T** opens it above the strip. Its head is **what
+  the unit is for**: the five roles as a switch, the one in force lit, "worked out from its ships" or "set by you · work
+  it out". Below, three columns by what an order is about, each order with its key while the menu is open: *one of
+  ours* (Screen S, Scout O, Cover C, Join J, Follow F, Station N), *the enemy* (Fight B, Intercept I, Shadow H, Attack
+  A, Run from R), *a place* (Go to G, Patrol P, Search E, Withdraw W). One that doesn't apply is greyed with its reason
+  (a battlecruiser squadron's Attack: "a flotilla's: set it as one to send it in"), never removed. Picking one arms it;
+  a click on what it's about gives it. The strip's unit head carries its role ("flotilla · worked out").
+- **`#screen`, an order shaped before it's given:** the 13th Flotilla with Screen armed, the cursor over Lion: "SCREEN
+  1st BCS · 5 km · split 4 points · disengaged side", and on the map its two divisions' stations (I, II) on the arc
+  where its admiral would put them (the disengaged side: no match for the 1st Scouting Group), dashed from where the
+  boats are. The right click's default over one of ours is Screen for a flotilla or a screen (decision 4), Follow
+  otherwise; the hint line says which.
+- **`#deploy`:** the Battlecruiser Fleet with Deploy… armed (the formation column's new segment), the cursor over the
+  enemy van: "DEPLOY 070° · across his course · the port wing leads", the line of battle drawn on that course from the
+  guide.
+- **`#chain`, the chain of command at work:** the rail shows the fleet as a tree, each unit with its role chip and its
+  task ("main body · in line", "screen · disengaged side", "scout ahead · 20 km"), the flotilla's two divisions under
+  it; on the map each squadron's station as a mark (the screen's arc and its I and II, the scouts' S 20 km ahead, dashed
+  from where they are).
+
+For the review: the column names and keys, Station's drag, whether the menu sits above the strip or at the cursor, and
+the marks' look (placeholder green). The port (O9) follows the user's notes.
+
 ## The steps
 
 | Step | What | Status |
@@ -231,7 +260,7 @@ guns, torpedoes, task, formation), armed picks completed by a click on the map, 
 | **O5** | Where the screen sits, by its admiral (decision 2) | **done 2026-10-23** |
 | **O6** | A unit's role: worked out, or set by the player; the commander and the map read it (decision 4) | **done 2026-10-23** |
 | **O7** | The chain of command: a force's admiral disposes his members by role, one implementation with the commander's (decision 3) | **done 2026-10-23** |
-| **O8** | The mockup: `docs/map-ui/battle.html` `#tasks`: the task menu, the role, the cursor's verbs, a screen's stations and a deploy's line on the map | |
+| **O8** | The mockup: `docs/map-ui/battle.html` `#tasks`, `#screen`, `#deploy`, `#chain`: the task menu, the role, the cursor's verbs, a screen's stations, a deploy's line, the chain in the rail | **done 2026-10-23**, for review |
 | **O9** | The port: the task menu and its picks, the cursor's verbs, the smart verb by role, the formation column's manoeuvres; the snapshot's stations and the map's task marks | after O8 |
 | **O10** | Shaping by drag (a screen's distance and sector), orders as editable objects, the radial menu | later |
 

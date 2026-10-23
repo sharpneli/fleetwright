@@ -281,6 +281,30 @@ table.t tr.out td{color:var(--muted)}
 #help td{padding:3px 6px;border-bottom:1px solid var(--line)}
 #help td:first-child{font-family:'Plex Mono';font-size:11px;color:var(--brass);white-space:nowrap;width:190px}
 #states{position:absolute;right:14px;top:40px;z-index:60;display:none}
+/* ---------- the admiral's orders (docs/battle/admirals-orders.md O8): the task menu, roles, the chain ---------- */
+#taskmenu{left:50%;bottom:118px;transform:translateX(-50%);display:none;flex-direction:column;width:640px;z-index:45}
+#taskmenu.on{display:flex}
+#taskmenu.docked{left:400px;transform:none}
+.tmh{display:flex;align-items:center;gap:8px;padding:7px 12px 6px;border-bottom:1px solid var(--line);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.tmh .seg{margin-left:4px}
+.tmh .wo{margin-left:auto;text-transform:none;letter-spacing:0;font-size:10.5px}
+.tcols{display:grid;grid-template-columns:repeat(3,1fr)}
+.tcol{padding:7px 10px 8px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:2px}
+.tcol:last-child{border-right:none}
+.tcol h6{margin:0 0 3px;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--brass);font-weight:500;display:flex;gap:6px}
+.tcol h6 span{color:var(--muted);letter-spacing:0;text-transform:none;font-weight:400}
+.tcol button{display:grid;grid-template-columns:1fr auto;align-items:center;height:23px;padding:0 7px;font-size:12px;text-align:left;border:none;border-radius:2px;background:none;color:var(--text)}
+.tcol button:hover{background:rgba(255,255,255,.07);color:var(--bright)}
+.tcol button i{font-style:normal;font-family:'Plex Mono';font-size:10px;color:var(--muted)}
+.tcol button:disabled{opacity:.35;cursor:default}
+.tcol button:disabled:hover{background:none}
+.tcol .why{font-size:10px;color:var(--muted);padding:0 7px;margin:-2px 0 2px}
+.tmf{padding:6px 12px 7px;border-top:1px solid var(--line);font-size:10.5px;color:var(--muted)}
+.chip.role{background:#1d2630;color:#9fb6c9;text-transform:none;letter-spacing:0;font-weight:500}
+.chip.role.set{background:var(--brassbg);color:var(--brass)}
+.sid .role{font-size:10.5px;color:#9fb6c9;cursor:pointer}
+.sid .role.set{color:var(--brass)}
+.tree{padding-left:14px;border-left:1px solid var(--line);margin-left:12px}
 </style>
 </head>
 <body>
@@ -316,6 +340,8 @@ table.t tr.out td{color:var(--muted)}
 
   <!-- selection strip -->
   <div id="strip" class="hud glass"></div>
+  <!-- the task menu (docs/battle/admirals-orders.md O8): T, or the strip's Task ▾ -->
+  <div id="taskmenu" class="hud glass"></div>
 
   <!-- card dock -->
   <div id="dock" class="hud"><div class="tabs" id="tabs"></div><div class="card glass" id="card"></div></div>
@@ -602,6 +628,7 @@ function drawMap(t) {
   // the squadron's label at her leader
   { const T4 = byId(4); cx.font = '600 10.5px "Plex Cond"'; cx.fillStyle = sel && sel.kind === 'group' ? '#D9B868' : 'rgba(150,190,235,.85)'; cx.textAlign = 'center';
     cx.fillText('1ST BATTLECRUISER SQUADRON · FIGHT', SX(T4.x), SY(T4.y) - 30); cx.textAlign = 'left'; }
+  taskMarks();
 }
 
 // ------------------------------------------------------------------ salvos (the mockup's own, for life)
@@ -638,6 +665,7 @@ function clock() {
 
 // ------------------------------------------------------------------ the forces rail
 function rail() {
+  if (lightIn) return railChain();
   const g = groups[0], gsel = sel && sel.kind === 'group';
   let h = `<div class="rh"><b>Your forces</b><span class="r">4 ships · <span class="kbd">Tab</span></span></div>
     <div class="glass grp"><div class="gh ${gsel ? 'sel' : ''}" data-g="g1"><span class="sym"></span>
@@ -739,12 +767,14 @@ function strip() {
     return;
   }
   const grp = sel.kind === 'group' || ordersTo === 'group';
-  const s = sel.kind === 'ship' ? byId(sel.id) : byId(1);
-  const who = grp ? '1st BCS' : s.name;
+  const G = unitOf(sel), lead = byId(G.ships[0]);
+  const s = sel.kind === 'ship' ? byId(sel.id) : lead;
+  const who = grp ? G.short : s.name;
   const T = s.target && byId(s.target);
   const bells = ['Astern', 'Stop', 'Slow', 'Half', 'Full', 'Flank'];
   el.innerHTML = `
-    <div class="sid"><b>${sel.kind === 'group' ? '1st Battlecruiser Sqn' : s.name}</b><span>${sel.kind === 'group' ? '4 ships · V-Adm Beatty' : s.cls}</span>
+    <div class="sid"><b>${sel.kind === 'group' ? G.name : s.name}</b><span>${sel.kind === 'group' ? `${G.ships.length} ships · ${G.admiral}` : s.cls}</span>
+      ${grp && G.role ? `<span class="role ${G.roleSet ? 'set' : ''}" data-task title="what it's for: how its admiral and its commander use it; T opens the task menu to set it">${ROLES[G.role]}${G.roleSet ? '' : ' · worked out'}</span>` : ''}
       <div class="to seg" title="Alt+order: this ship only"><button class="${grp ? 'on' : ''}" data-to="group">Squadron</button><button class="${grp ? '' : 'on'}" data-to="ship" ${sel.kind === 'group' ? 'disabled' : ''}>This ship</button></div></div>
     <div class="oc"><h5>Helm <span class="v">${s.hdg.toFixed(0).padStart(3, '0')}° · ${s.kn.toFixed(1)} kn</span></h5>
       <div class="course seg"><button data-c="-90">◀90</button><button data-c="-10">◀10</button><span class="val">${String(s.order ?? s.hdg).padStart(3, '0')}°</span><button data-c="10">10▶</button><button data-c="90">90▶</button></div>
@@ -755,13 +785,15 @@ function strip() {
     <div class="oc"><h5>Torpedoes <span class="v">${grp ? '8 loaded' : '2 loaded · 2 spare'}</span></h5>
       <div class="seg"><button class="${armed === 'torpedo' ? 'arm' : ''}" data-arm="torpedo">Fire at…</button></div>
       <div class="seg"><button title="her funnels burn rich: a screen">Make smoke</button></div></div>
-    <div class="oc"><h5>${grp ? 'Squadron' : 'Captain'} <span class="v amb">${grp ? 'Fight · AI admiral' : s.reason ? 'falling out' : 'Fight · in line'}</span></h5>
-      <div class="seg"><button class="on">Fight</button><button>Follow…</button><button>Run from…</button><button>Hold</button></div>
-      <div class="seg">${grp ? '<button>Line ahead ▾</button><button>Turn ▾</button><button>Withdraw</button>' : '<button>Rejoin</button><button>Detach</button>'}<button class="on" title="its AI fights it; any order of yours takes it over. Click: hand it back">AI ✓</button></div></div>
-    <div class="hint">${armed ? `<b class="amb">${armed === 'engage' ? 'ENGAGE' : 'TORPEDOES'}</b>: click an enemy · Esc cancels` : 'Right-click: steer · on an enemy: engage · on your ship: follow · Shift: waypoint · Alt: this ship only'}</div>`;
+    <div class="oc"><h5>${grp ? (G.force ? 'Force' : 'Squadron') : 'Captain'} <span class="v amb">${grp ? G.taskLine || 'Fight · AI admiral' : s.reason ? 'falling out' : 'Fight · in line'}</span></h5>
+      <div class="seg"><button class="${G.taskLine ? '' : 'on'}">Fight</button><button class="${armed === 'follow' ? 'arm' : ''}" data-arm="follow">Follow…</button><button>Hold</button><button class="${taskOpen ? 'on' : ''}" data-task title="every task, by what it's about (T)">Task ▾</button></div>
+      <div class="seg">${grp ? `<button>Line ahead ▾</button><button>Turn ▾</button><button class="${armed === 'deploy' ? 'arm' : ''}" data-arm="deploy" title="into one line of battle: click where the line should steer, or the enemy (across his course)">Deploy…</button><button>Withdraw</button>` : '<button>Rejoin</button><button>Detach</button>'}<button class="on" title="its AI fights it; any order of yours takes it over. Click: hand it back">AI ✓</button></div></div>
+    <div class="hint">${armed ? `<b class="amb">${(TASKS[armed] || { verb: armed === 'engage' ? 'ENGAGE' : 'TORPEDOES' }).verb}</b>: ${(TASKS[armed] || { click: 'click an enemy' }).click} · Esc cancels` : `Right-click: steer · on an enemy: engage · on your ship: ${grp && SMART_SCREEN.has(G.role) ? 'screen' : 'follow'} · Shift: waypoint · Alt: this ship only`}</div>`;
   for (const b of el.querySelectorAll('[data-to]')) b.onclick = () => { ordersTo = b.dataset.to; strip(); };
   for (const b of el.querySelectorAll('[data-c]')) b.onclick = () => { const o = ((s.order ?? s.hdg) + +b.dataset.c + 360) % 360; s.order = o; sendCourse(s, o); };
-  for (const b of el.querySelectorAll('[data-arm]')) b.onclick = () => { armed = armed === b.dataset.arm ? null : b.dataset.arm; strip(); };
+  for (const b of el.querySelectorAll('[data-arm]')) b.onclick = () => { armed = armed === b.dataset.arm ? null : b.dataset.arm; taskOpen = false; strip(); };
+  for (const b of el.querySelectorAll('[data-task]')) b.onclick = () => { taskOpen = !taskOpen; strip(); };
+  taskMenu();
 }
 function sendCourse(s, c) {
   const d = 4000;
@@ -990,10 +1022,13 @@ addEventListener('mousemove', e => {
   // the smart verb at the cursor
   const verb = $('verb');
   if (overMap && sel && !(sel.kind === 'ship' && byId(sel.id).side)) {
-    const me = sel.kind === 'ship' ? byId(sel.id) : byId(1), who = sel.kind === 'group' || ordersTo === 'group' ? '1st BCS' : me.name;
+    const me = sel.kind === 'ship' ? byId(sel.id) : byId(unitOf(sel).ships[0]), who = sel.kind === 'group' || ordersTo === 'group' ? unitOf(sel).short : me.name;
     let h;
-    if (armed && s && s.side === 1) h = `<b class="amb">${armed === 'engage' ? 'ENGAGE' : 'TORPEDOES AT'}</b> ${label(s)}`;
+    const tv = taskVerb(p, s, me);
+    if (tv !== undefined) h = tv;
+    else if (armed && s && s.side === 1) h = `<b class="amb">${armed === 'engage' ? 'ENGAGE' : 'TORPEDOES AT'}</b> ${label(s)}`;
     else if (s && s.side === 1) h = `<b class="bad">ENGAGE</b> ${label(s)} · ${(Math.hypot(s.x - me.x, s.y - me.y) / 1000).toFixed(1)} km`;
+    else if (s && s.id !== me.id && sel.kind === 'group' && SMART_SCREEN.has(unitOf(sel).role)) h = `<b class="okc">SCREEN</b> ${unitOf({ kind: 'ship', id: s.id }).short} · 5 km · split 4 points`;
     else if (s && s.id !== me.id) h = `<b class="fr">FOLLOW</b> ${s.name}`;
     else if (!s) { const wx = camX + (p.x - W / 2) * MPP, wy = camY + (p.y - H / 2) * MPP, c = Math.round((Math.atan2(wx - me.x, -(wy - me.y)) / deg + 360) % 360), d = Math.hypot(wx - me.x, wy - me.y) / 1000;
       h = `<b class="gold">STEER</b> ${String(c).padStart(3, '0')}° · ${d.toFixed(1)} km`; }
@@ -1002,6 +1037,8 @@ addEventListener('mousemove', e => {
 });
 addEventListener('keydown', e => {
   if (e.key === 'F1') { e.preventDefault(); $('dev').classList.toggle('on'); return; }
+  if (taskOpen && TASK_KEYS[e.key.toUpperCase()] && !e.ctrlKey) { const k = TASK_KEYS[e.key.toUpperCase()]; if (!disabledTask(k)) { armed = k; taskOpen = false; strip(); } return; }
+  if ((e.key === 't' || e.key === 'T') && sel && !(sel.kind === 'ship' && byId(sel.id).side)) { taskOpen = !taskOpen; strip(); return; }
   if (e.key === ' ') { e.preventDefault(); paused = !paused; topBar(); }
   else if (e.key === 'v' || e.key === 'V') { cardOpen = !cardOpen; card(); }
   else if (e.key === 'p' || e.key === 'P') { if (sel && sel.kind === 'ship') togglePin(sel.id); }
@@ -1011,7 +1048,8 @@ addEventListener('keydown', e => {
   else if (e.key === 'Escape') {   // the topmost thing shuts; with nothing open, the menu
     const open = [...document.querySelectorAll('.shade.on')];
     if (open.length) open.forEach(o => o.classList.remove('on'));
-    else if (armed) { armed = null; strip(); }
+    else if (taskOpen) { taskOpen = false; strip(); }
+    else if (armed) { armed = null; preview = null; strip(); }
     else if ($('logDrawer').classList.contains('open')) $('logDrawer').classList.remove('open');
     else if ($('dev').classList.contains('on')) $('dev').classList.remove('on');
     else if (sel) select(null);
@@ -1030,6 +1068,222 @@ for (const sh of document.querySelectorAll('.shade')) sh.addEventListener('click
 });
 $('oobOwn').innerHTML = groups[0].ships.map(id => { const s = byId(id); return `<span>${s.flag ? '⚑ ' : ''}${s.name}</span><span class="c2">${s.cls}</span><img src="assets/lion-profile.png">`; }).join('');
 
+// ------------------------------------------------------------------ the admiral's orders (docs/battle/admirals-orders.md O8)
+// What a unit is for (its role: worked out from its ships, or set), the task menu by what an order is about, the
+// cursor's verb for each, previews of the stations a task gives, and the chain of command in the rail and on the map.
+const ROLES = { heavy: 'battle line', scout: 'scouting', screen: 'screening', flotilla: 'flotilla', aux: 'auxiliary' };
+const SMART_SCREEN = new Set(['flotilla', 'screen']);   // over one of ours the right click screens; else it follows
+// every task: its column (what it's about), its key while the menu is open, its verb at the cursor, what completes it
+const TASKS = {
+  screen:    { col: 0, name: 'Screen…',    key: 'S', verb: 'SCREEN',    click: 'click your ship or squadron to screen', tip: 'keep between it and the threat, in two divisions, its admiral choosing the side; counter-attack torpedo craft' },
+  scout:     { col: 0, name: 'Scout…',     key: 'O', verb: 'SCOUT',     click: 'click your unit to scout for', tip: '20 km ahead of it, spread off its bow; shadow what it is no match for' },
+  cover:     { col: 0, name: 'Cover…',     key: 'C', verb: 'COVER',     click: 'click your unit to cover', tip: 'within reach of it, on the side of the threat, to support it' },
+  join:      { col: 0, name: 'Join…',      key: 'J', verb: 'JOIN',      click: 'click the squadron or force to join', tip: 'close on it and take a place in its line' },
+  follow:    { col: 0, name: 'Follow…',    key: 'F', verb: 'FOLLOW',    click: 'click your ship to follow', tip: 'station astern of her' },
+  station:   { col: 0, name: 'Station…',   key: 'N', verb: 'STATION',   click: 'click your ship; drag the bearing and distance', tip: 'a station on her at a bearing and distance' },
+  fight:     { col: 1, name: 'Fight…',     key: 'B', verb: 'FIGHT',     click: 'click an enemy', tip: "close to doctrine's range and hold the broadside; turn away when outgunned" },
+  intercept: { col: 1, name: 'Intercept…', key: 'I', verb: 'INTERCEPT', click: 'click a contact, seen or reported', tip: "steer to meet it on what we hold of it; doctrine's once in sight" },
+  shadow:    { col: 1, name: 'Shadow…',    key: 'H', verb: 'SHADOW',    click: 'click a contact', tip: 'keep it in sight and report, out of its reach' },
+  attack:    { col: 1, name: 'Attack…',    key: 'A', verb: 'ATTACK',    click: 'click an enemy line', tip: "the flotilla's attack: gain a position ahead of its beam, run in, fire together on a signal, turn away" },
+  run:       { col: 1, name: 'Run from…',  key: 'R', verb: 'RUN FROM',  click: 'click an enemy', tip: 'away from it at all it makes' },
+  goto:      { col: 2, name: 'Go to…',     key: 'G', verb: 'GO TO',     click: 'click the sea', tip: 'steam there; done on arrival' },
+  patrol:    { col: 2, name: 'Patrol…',    key: 'P', verb: 'PATROL',    click: "click the line's far end", tip: 'up and down from here to there' },
+  search:    { col: 2, name: 'Search…',    key: 'E', verb: 'SEARCH',    click: 'click the sea; drag the area', tip: 'a scouting line spaced by the visibility, a ladder about the point; done on contact' },
+  withdraw:  { col: 2, name: 'Withdraw',   key: 'W', verb: 'WITHDRAW',  click: '', tip: 'break off and go home, away from any enemy first' },
+  deploy:    { col: -1, verb: 'DEPLOY', click: 'click where the line should steer, or the enemy (across his course)' },
+};
+const TASK_KEYS = Object.fromEntries(Object.entries(TASKS).filter(([, t]) => t.key).map(([k, t]) => [t.key, k]));
+const COLS = [['One of ours', 'click your ship'], ['The enemy', 'click an enemy'], ['A place', 'click the sea']];
+let lightIn = false, taskOpen = false, chainView = false, preview = null;
+
+/** The group a selection stands for: the group selected, else the selected ship's squadron (the first group if none). */
+function unitOf(sl) {
+  if (!sl) return groups[0];
+  if (sl.kind === 'group') return groups.find(g => g.id === sl.id) || groups[0];
+  return groups.find(g => !g.force && !g.div && g.ships.includes(sl.id)) || groups[0];
+}
+/** Why a task can't be given to the unit selected (greyed with the reason, never removed), or ''. */
+function disabledTask(k) {
+  const G = unitOf(sel);
+  if (k === 'attack' && G.role !== 'flotilla') return "a flotilla's: set it as one to send it in";
+  if (k === 'join' && G.force) return 'a force has nothing above it to join here';
+  return '';
+}
+function taskMenu() {
+  const el = $('taskmenu');
+  el.classList.toggle('docked', $('dock').classList.contains('on'));
+  if (!taskOpen || !sel || sel.kind === 'ship' && byId(sel.id).side) { el.classList.remove('on'); return; }
+  el.classList.add('on');
+  const G = unitOf(sel);
+  const cols = COLS.map(([title, how], c) => `<div class="tcol"><h6>${title} <span>${how}</span></h6>${Object.entries(TASKS).filter(([, t]) => t.col === c).map(([k, t]) => {
+    const why = disabledTask(k);
+    return `<button data-t="${k}" ${why ? 'disabled' : ''} title="${t.tip}">${t.name}<i>${t.key}</i></button>${why ? `<div class="why">${why}</div>` : ''}`;
+  }).join('')}</div>`).join('');
+  el.innerHTML = `<div class="tmh"><b style="color:var(--bright)">${G.short}</b> what it's for
+      <span class="seg">${Object.keys(ROLES).map(r => `<button class="${G.role === r ? 'on' : ''}" data-r="${r}">${ROLES[r]}</button>`).join('')}</span>
+      <span class="wo ${G.roleSet ? 'gold' : ''}">${G.roleSet ? 'set by you · <u data-r="auto" style="cursor:pointer">work it out</u>' : 'worked out from its ships'}</span></div>
+    <div class="tcols">${cols}</div>
+    <div class="tmf">Its admiral carries it out: stations, turns, the counter-attack, when it's done, and reports how it stands. A task of yours holds the unit (yours, not the commander's) until you hand it back. Letters pick while this is open; T or Esc shuts it.</div>`;
+  for (const b of el.querySelectorAll('[data-t]')) b.onclick = () => {
+    armed = b.dataset.t; taskOpen = false;
+    if (armed === 'withdraw') { tick('sig', `${G.short}: withdraw, home`, G.ships[0]); armed = null; }
+    strip();
+  };
+  for (const b of el.querySelectorAll('[data-r]')) b.onclick = () => {
+    if (b.dataset.r === 'auto') { G.role = G.auto; G.roleSet = false; } else { G.role = b.dataset.r; G.roleSet = G.role !== G.auto; }
+    tick('sig', `${G.short}: ${ROLES[G.role]}${G.roleSet ? '' : ' (worked out)'}`, G.ships[0]);
+    refresh();
+  };
+}
+/** The cursor's verb for an armed task (undefined: none armed), and the preview it draws on the map. */
+function taskVerb(p, s, me) {
+  const t = TASKS[armed];
+  if (!t) return undefined;
+  const G = unitOf(sel), wx = camX + (p.x - W / 2) * MPP, wy = camY + (p.y - H / 2) * MPP;
+  const km = (x, y) => Math.hypot(x - me.x, y - me.y) / 1000;
+  if (t.col === 0) {
+    if (!s || s.side) { preview = null; return `<b class="amb">${t.verb}</b> <span class="dim">${t.click}</span>`; }
+    const U = unitOf({ kind: 'ship', id: s.id });
+    if (armed === 'screen') { preview = { kind: 'screen', on: s.id }; return `<b class="okc">SCREEN</b> ${U.short} · 5 km · split 4 points · <span class="amb">disengaged side</span>`; }
+    if (armed === 'scout') { preview = { kind: 'scout', on: s.id }; return `<b class="okc">SCOUT</b> for ${U.short} · 20 km ahead`; }
+    preview = null;
+    return `<b class="okc">${t.verb}</b> ${armed === 'follow' ? s.name : U.short}${armed === 'cover' ? ' · 9 km toward the threat' : ''}`;
+  }
+  if (t.col === 1) {
+    preview = null;
+    if (!s || !s.side) return `<b class="amb">${t.verb}</b> <span class="dim">${t.click}</span>`;
+    return `<b class="bad">${t.verb}</b> ${label(s)} · ${km(s.x, s.y).toFixed(1)} km${armed === 'intercept' ? ' · meets in 0:18' : armed === 'attack' ? ` · ${G.ships.length} boats` : ''}`;
+  }
+  if (armed === 'deploy') {
+    const c = s && s.side ? Math.round((byId(5).hdg - 90 + 360) % 360) : Math.round((Math.atan2(wx - me.x, -(wy - me.y)) / deg + 360) % 360);
+    preview = { kind: 'deploy', course: c };
+    return `<b class="gold">DEPLOY</b> ${String(c).padStart(3, '0')}°${s && s.side ? ' · across his course' : ''} · the port wing leads`;
+  }
+  preview = null;
+  if (s) return `<b class="amb">${t.verb}</b> <span class="dim">${t.click}</span>`;
+  const d = km(wx, wy);
+  return `<b class="gold">${t.verb}</b> ${d.toFixed(1)} km${armed === 'goto' ? ` · ${Math.round(d / 1.852 / 24 * 60)} min` : armed === 'search' ? ' · legs 37 km, 6 km apart' : ''}`;
+}
+/** A screen's two divisions' stations about the ship it screens: 45° either side of the bearing it screens on, 5 km
+ *  out. Against the 1st Scouting Group (no match for it, its admiral judges) the bearing is away from him: the
+ *  disengaged side, a division at the van and one at the rear. */
+function screenStations(onId) {
+  const T = byId(onId), E = byId(5);
+  const axis = Math.atan2(E.x - T.x, -(E.y - T.y)) / deg + 180;
+  return [-45, 45].map(off => { const b = (axis + off) * deg; return { x: T.x + Math.sin(b) * 5000, y: T.y - Math.cos(b) * 5000, b: axis + off }; });
+}
+function ghost(x, y, text, col) {
+  cx.strokeStyle = col; cx.setLineDash([3, 3]); cx.lineWidth = 1.2; cx.beginPath(); cx.arc(SX(x), SY(y), 11, 0, 7); cx.stroke(); cx.setLineDash([]);
+  cx.fillStyle = col; cx.font = '600 11px "Plex Cond"'; cx.textAlign = 'center'; cx.fillText(text, SX(x), SY(y) + 4); cx.textAlign = 'left';
+}
+/** Orders as marks on the map: a screen's arc and its divisions' stations, a scout's station, a deploy's line. */
+function taskMarks() {
+  const green = 'rgba(159,209,154,.85)', faint = 'rgba(159,209,154,.45)';
+  const screenFor = (G, onId, note) => {
+    const st = screenStations(onId), T = byId(onId);
+    cx.strokeStyle = faint; cx.setLineDash([2, 6]); cx.lineWidth = 1;
+    cx.beginPath(); cx.arc(SX(T.x), SY(T.y), 5000 / MPP, (st[0].b - 90 - 25) * deg, (st[1].b - 90 + 25) * deg); cx.stroke(); cx.setLineDash([]);
+    st.forEach((p, i) => {
+      ghost(p.x, p.y, i ? 'II' : 'I', green);
+      const from = byId(G.ships[i ? G.ships.length - 1 : 0]);
+      cx.strokeStyle = faint; cx.setLineDash([5, 5]); cx.beginPath(); cx.moveTo(SX(from.x), SY(from.y)); cx.lineTo(SX(p.x), SY(p.y)); cx.stroke(); cx.setLineDash([]);
+    });
+    if (note) { cx.font = '10.5px "Plex Mono"'; cx.fillStyle = green; cx.fillText(note, SX(st[1].x) + 16, SY(st[1].y) + 4); }
+  };
+  if (preview && preview.kind === 'screen') screenFor(unitOf(sel), preview.on, 'disengaged side: no match for the 1st SG · van and rear');
+  if (preview && preview.kind === 'scout') { const T = byId(preview.on), b = T.hdg * deg; ghost(T.x + Math.sin(b) * 20000, T.y - Math.cos(b) * 20000, 'S', green); }
+  if (preview && preview.kind === 'deploy') {
+    const L = byId(1), b = preview.course * deg;
+    cx.strokeStyle = 'rgba(217,184,104,.8)'; cx.setLineDash([8, 5]); cx.lineWidth = 1.4;
+    cx.beginPath(); cx.moveTo(SX(L.x), SY(L.y)); cx.lineTo(SX(L.x + Math.sin(b) * 9000), SY(L.y - Math.cos(b) * 9000)); cx.stroke(); cx.setLineDash([]);
+    for (let i = 0; i < 9; i++) {   // the line of battle once formed: its ships on the course, astern of the leading wing
+      const d = 6000 - i * 600, x = L.x + Math.sin(b) * d, y = L.y - Math.cos(b) * d;
+      cx.fillStyle = i < 4 ? 'rgba(217,184,104,.75)' : 'rgba(159,209,154,.6)'; cx.beginPath(); cx.arc(SX(x), SY(y), 3, 0, 7); cx.fill();
+    }
+    cx.font = '10.5px "Plex Mono"'; cx.fillStyle = '#D9B868';
+    cx.fillText(`the line of battle, ${String(preview.course).padStart(3, '0')}° · formed in ~14 min`, SX(L.x + Math.sin(b) * 6400) + 10, SY(L.y - Math.cos(b) * 6400));
+  }
+  if (chainView) {   // what each squadron of the force does, and where its station is
+    screenFor(groups.find(g => g.id === 'g2'), 1, '13th Flotilla · screen · disengaged side');
+    const L = byId(1), b = L.hdg * deg, sx = L.x + Math.sin(b) * 20000, sy = L.y - Math.cos(b) * 20000, c = byId(14);
+    ghost(sx, sy, 'S', green);
+    cx.strokeStyle = faint; cx.setLineDash([5, 5]); cx.beginPath(); cx.moveTo(SX(c.x), SY(c.y)); cx.lineTo(SX(sx), SY(sy)); cx.stroke(); cx.setLineDash([]);
+    cx.font = '10.5px "Plex Mono"'; cx.fillStyle = green; cx.fillText('1st LCS · scout ahead · 20 km', SX(sx) + 16, SY(sy) + 4);
+  }
+}
+/** The rail with the light forces in: the chain of command, each unit with its role and its task. */
+function railChain() {
+  const F = groups.find(g => g.force), on = id => sel && sel.kind === 'group' && sel.id === id;
+  const row = (G, sub) => `<div class="gh ${on(G.id) ? 'sel' : ''}" data-g="${G.id}" ${sub ? 'style="padding-left:20px"' : ''}><span class="sym"></span>
+      <div class="nm"><b>${G.name}</b><span>${G.ships.length} ${G.role === 'flotilla' ? 'boats' : 'ships'} · ${G.taskLine || 'in line'}</span></div>
+      <span class="chip role ${G.roleSet ? 'set' : ''}" title="${G.roleSet ? 'set by you' : 'worked out from its ships'}">${ROLES[G.role]}</span></div>`;
+  let h = `<div class="rh"><b>Your forces</b><span class="r">${ships.filter(s => !s.side).length} ships · <span class="kbd">Tab</span></span></div>
+    <div class="glass grp">${row(F, false)}<div class="tree">`;
+  for (const G of groups.filter(g => !g.force && !g.div)) {
+    h += row(G, true);
+    if (chainView && G.id === 'g2') h += `<div class="tree">${groups.filter(g => g.div).map(d => row(d, true)).join('')}</div>`;
+  }
+  h += '</div></div><div class="rh" style="margin-top:4px"><b>Enemy in sight</b><span class="r">5 · from Lion</span></div><div class="glass grp">';
+  for (const s of ships.filter(s => s.side === 1))
+    h += `<div class="crow" data-s="${s.id}"><span class="sym ho ${known(s) ? '' : 'sus'}"></span><div class="nm"><b>${label(s)}</b><span class="s">${s.seen.length ? s.seen.join(' · ') : 'no damage seen'}</span></div></div>`;
+  $('rail').innerHTML = h + '</div>';
+  for (const e of $('rail').querySelectorAll('[data-g]')) e.onclick = () => select({ kind: 'group', id: e.dataset.g });
+  for (const e of $('rail').querySelectorAll('[data-s]')) e.onclick = () => select({ kind: 'ship', id: +e.dataset.s });
+}
+/** The light forces of the Battlecruiser Fleet for the task states: the 13th Flotilla and the 1st LCS, in a force with
+ *  the 1st BCS (its main body); for #chain, disposed by its admiral (the flotilla divided on its stations, the light
+ *  cruisers running out ahead). */
+function addLight(chain) {
+  if (lightIn) return;
+  lightIn = true;
+  const L = byId(1);
+  const put = (id, name, cls, type, len, x, y) => ships.push({ id, name, cls, type, side: 0, len, x, y, hdg: L.hdg, kn: L.kn, flot: 1, water: 0, list: 0, fires: 0, hits: 0, crew: 0, fireState: 'free', task: '', control: 'ai' });
+  const at = (b, d) => [L.x + Math.sin(b * deg) * d, L.y - Math.cos(b * deg) * d];
+  const boats = ['Nestor', 'Nomad', 'Nicator', 'Narborough'];
+  if (chain) {
+    const st = screenStations(1);
+    boats.forEach((n, i) => { const p = st[i < 2 ? 0 : 1], b = (L.hdg + 90) * deg, o = (i % 2) * 400; put(10 + i, n, 'M class (1914)', 'destroyer', 83, p.x + Math.sin(b) * o, p.y - Math.cos(b) * o); });
+  } else boats.forEach((n, i) => put(10 + i, n, 'M class (1914)', 'destroyer', 83, ...at(L.hdg - 115, 3000 + i * 400)));
+  ['Galatea', 'Phaeton'].forEach((n, i) => put(14 + i, n, 'Arethusa (1914)', 'light cruiser', 125, ...at(L.hdg + (chain ? 0 : 6), chain ? 15500 - i * 700 : 6000 + i * 700)));
+  Object.assign(groups[0], { role: 'heavy', auto: 'heavy', roleSet: false, taskLine: chain ? 'main body · in line' : '' });
+  groups.push({ id: 'g2', name: '13th Flotilla', short: '13th Flotilla', side: 0, ships: [10, 11, 12, 13], admiral: 'Capt. Farie', formation: 'Line abreast', spacing: 400,
+    role: 'flotilla', auto: 'flotilla', roleSet: false, taskLine: chain ? 'screen · disengaged side' : '' });
+  groups.push({ id: 'g3', name: '1st Light Cruiser Squadron', short: '1st LCS', side: 0, ships: [14, 15], admiral: 'Cdre Alexander-Sinclair', formation: 'Line ahead', spacing: 700,
+    role: 'scout', auto: 'scout', roleSet: false, taskLine: chain ? 'scout ahead · 20 km' : '' });
+  groups.push({ id: 'f', force: true, name: 'Battlecruiser Fleet', short: 'BCF', side: 0, ships: [1, 2, 3, 4, 10, 11, 12, 13, 14, 15], admiral: 'V-Adm Beatty', formation: 'Line abreast', spacing: 5000,
+    role: 'heavy', auto: 'heavy', roleSet: false, taskLine: chain ? 'Fight · disposed by its admiral' : '' });
+  if (chain) groups.push(
+    { id: 'g2a', div: true, name: '13th Flotilla I', short: 'I', side: 0, ships: [10, 11], admiral: '', role: 'flotilla', auto: 'flotilla', roleSet: false, taskLine: 'the van · 5 km' },
+    { id: 'g2b', div: true, name: '13th Flotilla II', short: 'II', side: 0, ships: [12, 13], admiral: '', role: 'flotilla', auto: 'flotilla', roleSet: false, taskLine: 'the rear · 5 km' });
+}
+function removeLight() {
+  if (!lightIn) return;
+  lightIn = false;
+  for (let i = ships.length - 1; i >= 0; i--) if (ships[i].id >= 10) ships.splice(i, 1);
+  groups.length = 1;
+  groups[0].taskLine = '';
+}
+/** The task states: the menu open (#tasks), a screen armed over Lion (#screen), a deploy armed over the enemy van
+ *  (#deploy), the chain of command at work (#chain). Paused: pause and order. */
+function taskState(h) {
+  paused = true;
+  addLight(h === 'chain');
+  const L = byId(1);
+  cardOpen = false;   // the card shut (V): the map and the orders
+  if (h === 'tasks') { select({ kind: 'group', id: 'g1' }); taskOpen = true; }
+  if (h === 'screen') { camX = L.x + 2500; camY = L.y + 700; select({ kind: 'group', id: 'g2' }); armed = 'screen'; }
+  if (h === 'deploy') { camX = L.x + 5500; camY = L.y + 1500; select({ kind: 'group', id: 'f' }); armed = 'deploy'; }
+  if (h === 'chain') { MPP = 30; camX = L.x + 6500; camY = L.y + 5000; select({ kind: 'group', id: 'f' }); chainView = true; }
+  cardOpen = false; card(); strip();
+  topBar(); strip();
+  if (h === 'screen' || h === 'deploy') {   // the cursor where the order would be given: over Lion; over the enemy van
+    const T = h === 'screen' ? L : byId(5), p = { x: SX(T.x), y: SY(T.y) }, G = unitOf(sel);
+    const verb = $('verb');
+    verb.innerHTML = `<span class="dim">${G.short}:</span> ${taskVerb(p, T, byId(G.ships[0]))}`;
+    verb.style.display = 'block'; verb.style.left = p.x + 16 + 'px'; verb.style.top = p.y - 22 + 'px';
+  }
+}
+
 // ------------------------------------------------------------------ the loop
 let last = performance.now();
 function frame(t) {
@@ -1043,10 +1297,13 @@ function frame(t) {
   requestAnimationFrame(frame);
 }
 
-// ------------------------------------------------------------------ states for screenshots: battle.html#ship, #enemy, #group, #pinned, #order, #log, #menu, #brief, #result, #dev, #help
+// ------------------------------------------------------------------ states for screenshots: battle.html#ship, #enemy, #group, #pinned, #order, #log, #menu, #brief, #result, #dev, #help,
+// and the admiral's orders' (O8): #tasks, #screen, #deploy, #chain
 function state(h) {
   for (const o of document.querySelectorAll('.shade.on')) o.classList.remove('on');
   $('dev').classList.remove('on'); $('logDrawer').classList.remove('open'); armed = null; pinned = []; orders.length = 0; MPP = 15; camX = 1900; camY = -650; sel = null;
+  taskOpen = false; preview = null; chainView = false; removeLight(); $('verb').style.display = 'none';
+  if (['tasks', 'screen', 'deploy', 'chain'].includes(h)) { taskState(h); return; }
   if (h === 'ship' || h === 'order' || h === 'arm') select({ kind: 'ship', id: 1 });
   if (h === 'enemy') select({ kind: 'ship', id: 5 });
   if (h === 'group') select({ kind: 'group', id: 'g1' });
