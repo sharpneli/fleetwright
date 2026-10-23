@@ -10,9 +10,10 @@ namespace Fleetwright.Map;
 /// Meridians are faded by their own spacing, the widest on the screen (at the latitude nearest the equator), so near
 /// the poles they thin out a level before the parallels do. Computed and projected in double, so the lines hold still
 /// at any zoom. Only what's in view is sampled: the whole globe when its limb shows, else the latitude and longitude
-/// span of the screen's border (and every longitude if a pole is in view). The grid belongs to the planning table: it
-/// fades out into the world view (<see cref="WorldView"/>), where <see cref="BorderTicks"/> mark the same lines on the
-/// screen's edge instead, like a chart's margin. Allocates nothing.</summary>
+/// span of the screen's border (and every longitude if a pole is in view). Over the blend band
+/// (<see cref="GridLook.Squares"/>) it gives the field to the <see cref="SquareGrid"/> and goes to the margin:
+/// <see cref="BorderTicks"/> mark the same lines on the screen's edge, like a chart's, there and in the world view
+/// (<see cref="WorldView"/>). Allocates nothing.</summary>
 public static class Graticule
 {
     /// <summary>The levels, coarsest first, in hundredths of a minute (1/6000°).</summary>
@@ -80,9 +81,13 @@ public static class Graticule
         return Math.Clamp(chord / (Earth.Radius * (parallel ? Math.Cos(lat) : 1)) / Deg, 1e-7, 5);
     }
 
+    /// <summary>How much the margin's ticks show: from the blend band on (the square grid in the field), and in the
+    /// world view.</summary>
+    public static double Margin(in MapView view) => Math.Max(GridLook.Squares(view), WorldView.Factor(view));
+
     public static void Build(in MapView view, MapLines lines)
     {
-        float alpha = (float)(1 - WorldView.Factor(view));
+        float alpha = (float)((1 - WorldView.Factor(view)) * (1 - GridLook.Squares(view)));
         if (alpha <= 0)
             return;
         var (camLat, camLon) = Earth.LatLon(-view.Forward);
@@ -202,14 +207,13 @@ public static class Graticule
     static readonly Vector4 TickColor = new(0.85f, 0.92f, 1.0f, 0.65f);
 
     /// <summary>The grid's lines where they cross the screen's edge, into <paramref name="ticks"/> (cleared first),
-    /// while the world view shows (<see cref="WorldView"/>) and the screen is all globe; and their marks, faded in with
-    /// the world view, longer and brighter as their level grows to the major look, into <paramref name="lines"/>. The
+    /// while the margin shows (<see cref="Margin"/>) and the screen is all globe; and their marks, faded in with it, longer and brighter as their level grows to the major look, into <paramref name="lines"/>. The
     /// top edge is <paramref name="topInsetPx"/> down (under the menu bar). Each edge is walked in short steps, every
     /// line crossed in a step found (a level's lines may be closer than a step).</summary>
     public static void BorderTicks(in MapView view, List<BorderTick> ticks, MapLines lines, double topInsetPx = 0)
     {
         ticks.Clear();
-        float alpha = (float)WorldView.Factor(view);
+        float alpha = (float)Margin(view);
         if (alpha <= 0 || !Covered(view))
             return;
         var (_, camLon) = Earth.LatLon(-view.Forward);

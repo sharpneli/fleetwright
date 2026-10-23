@@ -24,6 +24,13 @@ public static class GridLook
     /// <see cref="SquaresBelow"/>, the graticule wholly at and over <see cref="GraticuleAbove"/>.</summary>
     public static double SquaresBelow = 100, GraticuleAbove = 300;
 
+    /// <summary>The square grid's anchor limits (<see cref="SquareGrid"/>): degrees between the grid's north and the
+    /// view's, nautical miles from the view, and the fade to a new anchor, real seconds.</summary>
+    public static double ReanchorDeg = 1, ReanchorNm = 100, ReanchorSeconds = 0.4;
+
+    /// <summary>Counts changes to the knobs: the grid's lines are rebuilt when it moves.</summary>
+    public static int Version;
+
     /// <summary>How far a level's lines are apart on the screen, reference px, for a spacing in metres.</summary>
     public static double Px(double spacingM, in MapView v) => spacingM / (v.MetresPerPixel * v.Height / WorldView.ReferenceHeightPx);
 
@@ -67,6 +74,7 @@ public static class GridLook
             if (p[1] is not ("nm" or "km"))
                 return false;
             MapUnits.Unit = p[1] == "nm" ? DistanceUnit.NauticalMiles : DistanceUnit.Kilometres;
+            Version++;
             return true;
         }
         if (!double.TryParse(p[1], CultureInfo.InvariantCulture, out double v))
@@ -83,8 +91,12 @@ public static class GridLook
             case "majorwidth": MajorWidth = (float)v; break;
             case "squares": SquaresBelow = v; break;
             case "graticule": GraticuleAbove = v; break;
+            case "reanchordeg": ReanchorDeg = v; break;
+            case "reanchornm": ReanchorNm = v; break;
+            case "reanchors": ReanchorSeconds = v; break;
             default: return false;
         }
+        Version++;
         return true;
     }
 }

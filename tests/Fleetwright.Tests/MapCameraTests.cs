@@ -229,11 +229,12 @@ public class MapCameraTests
     }
 
     [Fact]
-    public void In_the_world_view_the_grid_gives_way_to_ticks_at_the_edges()
+    public void Lat_lon_goes_to_the_margin_at_battle_zooms_and_in_the_world_view()
     {
         var lines = new MapLines();
         var ticks = new List<Graticule.BorderTick>();
-        var table = new MapView(MapCamera.At(56.7, 5.8, 20), W, H);
+        var table = new MapView(MapCamera.At(56.7, 5.8, 2000), W, H);
+        var battle = new MapView(MapCamera.At(56.7, 5.8, 20), W, H);
         var world = new MapView(MapCamera.At(56.7, 5.8, 0.5), W, H);
         lines.Begin(W, H);
         Graticule.Build(world, lines);
@@ -244,6 +245,8 @@ public class MapCameraTests
         Assert.All(ticks, t => Assert.Equal(0, Math.IEEERemainder(t.Value / t.Step, 1), 6));
         Assert.Contains(ticks, t => t.Weight > 0.5f);   // the labelled majors
         Assert.Contains(ticks, t => t.Weight < 0.5f && t.Fade > 0.5f);   // the minors between them
+        Graticule.BorderTicks(battle, ticks, lines);
+        Assert.Contains(ticks, t => t.Weight > 0.5f);
         Graticule.BorderTicks(table, ticks, lines);
         Assert.Empty(ticks);
         Assert.Equal("56°42.3'N", Graticule.Format(56.7 + 0.3 / 60, 1 / 600.0, true));

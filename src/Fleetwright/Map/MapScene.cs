@@ -25,7 +25,9 @@ public sealed unsafe partial class MapScene : IScene
     MapCamera camera, built;   // built: the view the lines and the land's fill were last built for
     (double, double) builtSize;
     double builtBoundary, builtInset;   // WorldView.BoundaryM and the top bar's height (target px) the lines were built for
-    readonly List<Graticule.BorderTick> ticks = [];   // the grid at the screen's edge, in the world view
+    readonly SquareGrid squares = new();   // the battle zooms' grid, and its anchor
+    int builtGrid;   // GridLook.Version the lines were built for
+    readonly List<Graticule.BorderTick> ticks = [];   // the grid at the screen's edge, from the blend band in
     readonly Dictionary<(double, double, bool), string> tickLabels = [];   // their labels, kept: a pan makes no garbage
     double width = 1, height = 1;   // the target's size at the last draw, pixels
     bool dragging, clamped, dragPending;
@@ -98,19 +100,21 @@ public sealed unsafe partial class MapScene : IScene
         int baked = level == land.Coarse ? 0 : level == land.Medium ? 1 : -1;
         var vp = ImGui.GetMainViewport();
         double inset = topBarH * height / Math.Max(vp.Size.Y, 1);   // the top edge's marks go under the top bar
+        squares.Update(view, dt);
         if (camera.Target != built.Target || camera.MetresPerPixel != built.MetresPerPixel || (width, height) != builtSize
-            || WorldView.BoundaryM != builtBoundary || inset != builtInset)
+            || WorldView.BoundaryM != builtBoundary || inset != builtInset || squares.Fading || GridLook.Version != builtGrid)
         {
             // the grid and the finest level's land change only with the view: a still map rebuilds nothing, and the
             // baked levels never do
             lines.Begin(width, height);
             Graticule.Build(view, lines);
+            squares.Build(view, lines);
             if (baked < 0)
                 land.Build(view, lines);
             else
                 land.Clear();
             Graticule.BorderTicks(view, ticks, lines, inset);
-            (built, builtSize, builtBoundary, builtInset) = (camera, (width, height), WorldView.BoundaryM, inset);
+            (built, builtSize, builtBoundary, builtInset, builtGrid) = (camera, (width, height), WorldView.BoundaryM, inset, GridLook.Version);
         }
         probes.Add(probeLines, t);
         var s = world.Current;
@@ -318,8 +322,9 @@ public sealed unsafe partial class MapScene : IScene
     static double scaleNice = -1;
     static string scaleText = "";
 
-    /// <summary>The grid's values at the screen's edge in the world view, beside <see cref="Graticule.BorderTicks"/>'
-    /// marks: the major ones', faded in with them and with the world view; a label that would overlap the last one on its
+    /// <summary>The grid's values at the screen's edge (<see cref="Graticule.Margin"/>), beside <see cref="Graticule.BorderTicks"/>'
+    /// marks: the major ones', faded in with them and with the margin, latitudes at the sides and longitudes at the top
+    /// and bottom; a label that would overlap the last one on its
     /// edge is left out.</summary>
     void TickLabels()
     {
@@ -328,7 +333,7 @@ public sealed unsafe partial class MapScene : IScene
         var vp = ImGui.GetMainViewport();
         float sx = vp.Size.X / (float)Math.Max(width, 1), sy = vp.Size.Y / (float)Math.Max(height, 1);
         var dl = ImGui.GetBackgroundDrawList();
-        float wf = (float)WorldView.Factor(View);
+        float wf = (float)Graticule.Margin(View);
         if (tickLabels.Count > 1024)
             tickLabels.Clear();
         float pad = 13 * UiFonts.Scale, lh = ImGui.GetTextLineHeight();
@@ -337,8 +342,8 @@ public sealed unsafe partial class MapScene : IScene
         foreach (var t in ticks)
         {
             float a = wf * t.Fade * t.Weight;
-            if (a < 0.02f)
-                continue;
+            if (a < 0.02f || t.Parallel != (t.Edge is 1 or 3))
+                continue;   // as on a chart: latitudes at the sides, longitudes at the top and bottom
             var key = (t.Value, t.Step, t.Parallel);
             if (!tickLabels.TryGetValue(key, out var text))
                 tickLabels[key] = text = Graticule.Format(t.Value, t.Step, t.Parallel);

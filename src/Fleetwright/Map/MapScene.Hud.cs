@@ -491,49 +491,75 @@ public sealed partial class MapScene : ISceneMenu
 
     // ------------------------------------------------------------------ the scale, bottom right
 
-    readonly string?[] graticuleLegend = new string?[Graticule.Levels];
+    readonly string?[] graticuleLegend = new string?[Graticule.Levels], squareLegend = new string?[SquareGrid.Levels];
     DistanceUnit legendUnit;
 
     /// <summary>The grid's legend over the scale bar (docs/visuals/grid.md): the major level and the minor inside it, a
-    /// stroke in each one's look beside its spacing, faded as the lines are; two rows always, so the panel holds its
-    /// size.</summary>
+    /// stroke in each one's look beside its spacing, faded as the lines are; the graticule's and the square grid's in
+    /// the same two rows, handing over in the blend band, so the panel holds its size.</summary>
     void GridLegend()
     {
         var view = View;
-        float field = (float)(1 - WorldView.Factor(view));
+        float field = (float)(1 - WorldView.Factor(view)), sq = (float)GridLook.Squares(view);
         if (field <= 0)
             return;
         if (legendUnit != MapUnits.Unit)
         {
             Array.Clear(graticuleLegend);
+            Array.Clear(squareLegend);
             legendUnit = MapUnits.Unit;
         }
-        int major = Graticule.Major(view);
-        for (int l = major; l <= major + 1; l++)
+        int gm = Graticule.Major(view), sm = SquareGrid.Major(view);
+        for (int r = 0; r < 2; r++)
         {
-            if (l >= Graticule.Levels)
+            int gl = gm + r, sl = sm + r;
+            string? gt = null, st = null;
+            double gpx = 0, spx = 0;
+            if (gl < Graticule.Levels)
             {
-                ImGui.Dummy(new Vector2(1, ImGui.GetTextLineHeight()));
-                continue;
+                gt = graticuleLegend[gl] ??= $"{Graticule.Label(gl)} · {MapUnits.Distance(Graticule.Metres(gl))}";
+                gpx = GridLook.Px(Graticule.Metres(gl), view);
             }
-            graticuleLegend[l] ??= $"{Graticule.Label(l)} · {MapUnits.Distance(Graticule.Metres(l))}";
-            LegendRow(graticuleLegend[l]!, GridLook.Px(Graticule.Metres(l), view), field);
+            if (sl < SquareGrid.Levels)
+            {
+                st = squareLegend[sl] ??= MapUnits.Distance(SquareGrid.Metres(sl));
+                spx = GridLook.Px(SquareGrid.Metres(sl), view);
+            }
+            LegendRow(gt, gpx, field * (1 - Handover(0.3f, 0.5f, sq)), st, spx, field * Handover(0.5f, 0.7f, sq));
         }
     }
 
-    /// <summary>A legend row: a stroke in a level's look (its spacing <paramref name="px"/> reference px apart) and its
-    /// text, both faded as the level is.</summary>
-    static void LegendRow(string text, double px, float alpha)
+    /// <summary>0 under <paramref name="a"/>, 1 over <paramref name="b"/>, a smoothstep between: the legend's families
+    /// hand over in the middle of the blend band, one out before the other comes in, so their texts never overprint.</summary>
+    static float Handover(float a, float b, float x)
     {
-        float a = (float)GridLook.Fade(px) * alpha, w = (float)GridLook.Weight(px), lh = ImGui.GetTextLineHeight();
-        float len = 22 * UiFonts.Scale;
+        float t = Math.Clamp((x - a) / (b - a), 0, 1);
+        return t * t * (3 - 2 * t);
+    }
+
+    /// <summary>A legend row: for each of two levels (one may be null) a stroke in its look (its lines
+    /// <paramref name="pxA"/> reference px apart) and its text, both faded as the level is, drawn over each other.</summary>
+    static void LegendRow(string? a, double pxA, float alphaA, string? b, double pxB, float alphaB)
+    {
+        float lh = ImGui.GetTextLineHeight(), len = 22 * UiFonts.Scale, gap = 6 * UiFonts.Scale;
         var p = ImGui.GetCursorScreenPos();
+        var dl = ImGui.GetWindowDrawList();
         var c = ImGui.GetStyle().Colors[(int)ImGuiCol.Text];
-        ImGui.GetWindowDrawList().AddLine(new Vector2(p.X, p.Y + lh / 2), new Vector2(p.X + len, p.Y + lh / 2),
-            ImGui.GetColorU32(c with { W = c.W * a * (0.45f + 0.55f * w) }), (GridLook.MinorWidth + (GridLook.MajorWidth - GridLook.MinorWidth) * w) * UiFonts.Scale);
-        ImGui.Dummy(new Vector2(len, lh));
-        ImGui.SameLine(0, 6 * UiFonts.Scale);
-        ImGui.TextColored(c with { W = c.W * a * 0.8f }, text);
+        float textW = 0;
+        for (int k = 0; k < 2; k++)
+        {
+            var (text, px, alpha) = k == 0 ? (a, pxA, alphaA) : (b, pxB, alphaB);
+            if (text == null)
+                continue;
+            textW = Math.Max(textW, ImGui.CalcTextSize(text).X);
+            float f = (float)GridLook.Fade(px) * alpha, w = (float)GridLook.Weight(px);
+            if (f <= 0.004f)
+                continue;
+            dl.AddLine(new Vector2(p.X, p.Y + lh / 2), new Vector2(p.X + len, p.Y + lh / 2), ImGui.GetColorU32(c with { W = c.W * f * (0.45f + 0.55f * w) }),
+                (GridLook.MinorWidth + (GridLook.MajorWidth - GridLook.MinorWidth) * w) * UiFonts.Scale);
+            dl.AddText(new Vector2(p.X + len + gap, p.Y), ImGui.GetColorU32(c with { W = c.W * f * 0.8f }), text);
+        }
+        ImGui.Dummy(new Vector2(len + gap + textW, lh));
     }
 
     long whereKey = long.MinValue;
