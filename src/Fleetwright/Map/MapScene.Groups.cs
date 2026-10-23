@@ -45,6 +45,20 @@ public sealed unsafe partial class MapScene
 
     // a group's: a line of bearing too (what a turn together leaves, docs/battle/command.md 5.1b)
     static readonly string[] GroupFormationNames = [.. FormationNames, "Line of bearing"];
+
+    // a unit's role in the placeholder picker (docs/battle/admirals-orders.md O6): worked out from its ships, then the
+    // roles to set, as Roles.Settable has them
+    static readonly string[] RoleNames = ["worked out", .. Roles.Settable.Select(RoleName)];
+
+    static string RoleName(UnitRole r) => r switch
+    {
+        UnitRole.Heavy => "battle line",
+        UnitRole.Scout => "scouting",
+        UnitRole.Screen => "screening",
+        UnitRole.Flotilla => "flotilla",
+        UnitRole.Auxiliary => "auxiliary",
+        _ => "-",
+    };
     static readonly (string Label, double Deg)[] TurnButtons = [("<8", -90), ("<4", -45), ("4>", 45), ("8>", 90)];
 
     /// <summary>A group collapses into one marker when its ships span fewer pixels than this on screen.</summary>
@@ -540,6 +554,14 @@ public sealed unsafe partial class MapScene
         ImGui.SameLine();
         if (ImGui.SmallButton($"withdraw home{id}"))
             world.Send(o.WithdrawHome(unit));
+        // what it's for (docs/battle/admirals-orders.md O6): a placeholder until the task menu's
+        ImGui.SameLine();
+        ImGui.SetNextItemWidth(110 * UiFonts.Scale);
+        int role = gv.RoleSet[g] ? Array.IndexOf(Roles.Settable, (UnitRole)gv.Role[g]) + 1 : 0;
+        if (ImGui.Combo($"{id}role", ref role, RoleNames, RoleNames.Length))
+            world.Send(o.Role(unit, role == 0 ? UnitRole.None : Roles.Settable[role - 1]));
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip($"what it's for: {RoleName((UnitRole)gv.Role[g])}{(gv.RoleSet[g] ? " (set)" : " (worked out from its ships)")}");
         if (gv.Parent[g] == 0)
         {
             // the side's commander (docs/battle/command.md 5.1d): hand a top group to him, or take it back

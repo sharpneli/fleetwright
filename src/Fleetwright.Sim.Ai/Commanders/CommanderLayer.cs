@@ -68,28 +68,6 @@ public enum CommanderReason : byte
     GaveUp,
 }
 
-/// <summary>What a top unit is to its commander, by what it's made of.</summary>
-public enum UnitRole : byte
-{
-    /// <summary>Not his to use: fallen out, held by the player, or gone.</summary>
-    None,
-
-    /// <summary>The side's unit with the most capital ships' tonnage (else its biggest): what the rest support.</summary>
-    MainBody,
-
-    /// <summary>Another unit with capital ships.</summary>
-    Heavy,
-
-    /// <summary>Cruisers: a unit with guns and no capital ship that isn't torpedo craft.</summary>
-    Scout,
-
-    /// <summary>Torpedo craft, by its guide's design.</summary>
-    Flotilla,
-
-    /// <summary>No main battery (a seaplane carrier, a tender).</summary>
-    Auxiliary,
-}
-
 /// <summary>Why the commander gave a unit the task he did (the timeline's, and the UI's reason tag).</summary>
 public enum CommanderWhy : byte
 {
@@ -195,6 +173,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
     internal TaskLayer? Tasks { get; set; }
     internal MatchupJudge Judge { get; set; } = null!;
     internal HeldGroups Held { get; set; } = null!;
+    internal Roles Roles { get; set; } = null!;
     internal CaptainLayer? Captains { get; set; }
 
     public bool Active
@@ -335,12 +314,11 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
                 var top = g;
                 while (top.Parent != 0 && groups.Get(top.Parent) is { } up)
                     top = up;
-                if (!g.IsForce && CaptainLayer.TorpedoCraft(store[slot].Handling.Class))
+                if (!g.IsForce && Roles.Of(Unit.Group(g.GroupId)) == UnitRole.Flotilla)
                     tops.Add(new Top { Unit = Unit.Group(g.GroupId), Side = store[slot].Side, Slot = slot, Role = UnitRole.Flotilla, Force = top.GroupId, Group = -1 });
                 continue;
             }
             groups.LineOffsets(g, line);
-            int boats = 0, ships = 0;
             double tonnage = 0, capital = 0;
             foreach (var (ship, _, _) in line)
                 if (store.SlotOf(ship) is int m and >= 0)
@@ -349,12 +327,9 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
                     tonnage += cls.Motion.FullDisplacementT;
                     if (Sightings.TypeOf(cls) == ShipType.Capital)
                         capital += cls.Motion.FullDisplacementT;
-                    ships++;
-                    if (CaptainLayer.TorpedoCraft(cls))
-                        boats++;
                 }
             tops.Add(new Top { Unit = Unit.Group(g.GroupId), Side = store[slot].Side, Slot = slot, TonnageT = tonnage, CapitalT = capital,
-                Role = RoleOf(slot, capital > 0, 2 * boats >= ships), Group = -1 });
+                Role = Roles.Of(Unit.Group(g.GroupId)), Group = -1 });
         }
         for (int slot = 0; slot < store.Slots; slot++)
         {
@@ -363,23 +338,18 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
             var cls = store[slot].Handling.Class;
             bool capital = Sightings.TypeOf(cls) == ShipType.Capital;
             var role = Captains!.Of(store[slot].Entity).Order == CaptainOrder.Home ? UnitRole.None   // fallen out: the captain's
-                : RoleOf(slot, capital, CaptainLayer.TorpedoCraft(cls));
+                : Roles.Of(Unit.Ship(store[slot].Entity));
             tops.Add(new Top { Unit = Unit.Ship(store[slot].Entity), Side = store[slot].Side, Slot = slot, TonnageT = cls.Motion.FullDisplacementT,
                 CapitalT = capital ? cls.Motion.FullDisplacementT : 0, Role = role, Group = -1 });
         }
     }
 
-    UnitRole RoleOf(int slot, bool capital, bool boats) =>
-        capital ? UnitRole.Heavy
-        : boats ? UnitRole.Flotilla
-        : Sightings.TypeOf(store[slot].Handling.Class) == ShipType.Merchant ? UnitRole.Auxiliary
-        : UnitRole.Scout;
-
     /// <summary>One side's think: his main body, the enemy as his navy holds him (in groups), how the balance stands, which
     /// of his units go after which group, how he sees the battle; then each of his units by its role.</summary>
     void Command(in AiContext ctx, SideState s, byte side, int player)
     {
-        // the main body: the most capital ships' tonnage, else the biggest (torpedo craft only if there's nothing else)
+        // the main body: the most capital ships' tonnage, else the biggest (torpedo craft and screens only if there's
+        // nothing else)
         int main = -1;
         for (int i = 0; i < tops.Count; i++)
         {
@@ -453,9 +423,13 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
     }
 
     static bool Bigger(in Top a, in Top b) =>
-        a.CapitalT != b.CapitalT ? a.CapitalT > b.CapitalT
-        : (a.Role == UnitRole.Flotilla) != (b.Role == UnitRole.Flotilla) ? b.Role == UnitRole.Flotilla
+        Attending(a.Role) != Attending(b.Role) ? Attending(b.Role)
+        : a.CapitalT != b.CapitalT ? a.CapitalT > b.CapitalT
         : a.TonnageT > b.TonnageT;
+
+    /// <summary>Whether a role keeps a unit with the others (a flotilla, a screen): never the main body while there's
+    /// another.</summary>
+    static bool Attending(UnitRole r) => r is UnitRole.Flotilla or UnitRole.Screen;
 
     /// <summary>How the balance stands (docs/battle/command.md 5.1g): his losses against doctrine's break off (for good once
     /// past it); and his side's matchup against all he holds: under doctrine's bar by
@@ -544,7 +518,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
             for (int i = 0; i < tops.Count; i++)
             {
                 var t = tops[i];
-                if (t.Side != side || t.Force != 0 || t.Group >= 0 || t.Role is UnitRole.None or UnitRole.Auxiliary or UnitRole.Flotilla ||
+                if (t.Side != side || t.Force != 0 || t.Group >= 0 || t.Role is UnitRole.None or UnitRole.Auxiliary or UnitRole.Flotilla or UnitRole.Screen ||
                     !Commands(t.Unit, side, player))
                     continue;
                 bool closing = Tasks!.Of(t.Unit) is (TaskKind.Intercept, TaskState.OnTask or TaskState.Engaged or TaskState.InContact, _) &&
@@ -816,8 +790,8 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
     }
 
     /// <summary>A unit's task with no enemy about, by its role: the main body searches ahead on its course; another heavy
-    /// unit joins it (covers it, if it's a ship alone); scouts scout ahead of it, spread off its bow; flotillas screen the
-    /// nearest heavy unit; auxiliaries go home. A unit with no main body to support is one.</summary>
+    /// unit joins it (covers it, if it's a ship alone); scouts scout ahead of it, spread off its bow; flotillas and screens
+    /// screen the nearest heavy unit; auxiliaries go home. A unit with no main body to support is one.</summary>
     Command IdleTask(in AiContext ctx, in Top t, Top? main)
     {
         var o = ctx.Orders;
@@ -837,7 +811,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         {
             UnitRole.Heavy => m.Unit.IsGroup ? o.Join(t.Unit, m.Unit, By) : o.Cover(t.Unit, m.Unit, 0, By),
             UnitRole.Scout => o.Scout(t.Unit, m.Unit, 0, ScoutBearing(m.Unit), By),
-            UnitRole.Flotilla => o.Screen(t.Unit, NearestHeavy(t, m).Unit, 0, By),
+            UnitRole.Flotilla or UnitRole.Screen => o.Screen(t.Unit, NearestHeavy(t, m).Unit, 0, By),
             _ => o.WithdrawHome(t.Unit, By),
         };
     }

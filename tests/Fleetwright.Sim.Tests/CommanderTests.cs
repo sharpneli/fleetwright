@@ -447,6 +447,29 @@ public class CommanderTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void Battleships_set_as_a_screen_screen_the_main_body()
+    {
+        // the player's say over what a squadron is for (docs/battle/admirals-orders.md O6): four dreadnoughts set as a
+        // screen screen the main body, and aren't the main body though they're as heavy
+        var (w, ai) = Make();
+        int bb = Class(w, "dreadnought");
+        var main = Column(w, ai, bb, Earth.Position(Lat, Lon), 0, 4);
+        var screen = Column(w, ai, bb, Off(270, 6_000), 0, 4);
+        w.Apply(ai.Orders.Role(screen, UnitRole.Screen));
+        w.Apply(ai.Orders.Commander(0, CommanderMode.On));
+        foreach (var u in new[] { main, screen })
+        {
+            var guide = w.Ships.Store[w.Ships.Store.SlotOf(u.ShipOf(w.Groups))];
+            var (la, lo) = LatLon(Off(0, 3_000, Earth.LatLon(guide.Position).Lat, Earth.LatLon(guide.Position).Lon));
+            w.Apply(ai.Orders.GoTo(u, la, lo));   // a short plan, soon through
+        }
+        Run(w, 30 * 60);
+        output.WriteLine($"main: given {ai.Commanders.GivenOf(main)}; screen: given {ai.Commanders.GivenOf(screen)}, on {ai.Tasks.Of(screen)}");
+        Assert.Equal(TaskKind.Search, ai.Commanders.GivenOf(main).Given);
+        Assert.Equal((TaskKind.Screen, main.Id), (ai.Commanders.GivenOf(screen).Given, ai.Commanders.GivenOf(screen).Target));
+    }
+
+    [Fact]
     public void Units_through_with_their_tasks_are_given_their_roles()
     {
         var (w, ai) = Make();

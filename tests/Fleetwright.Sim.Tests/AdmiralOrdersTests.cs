@@ -238,6 +238,23 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void Roles_are_worked_out_from_the_ships_and_set_by_the_player()
+    {
+        var (w, ai, line, screen) = Make(splitDeg: -1);
+        Assert.Equal(UnitRole.Heavy, ai.Roles.Of(Unit.Group(line)));
+        Assert.Equal(UnitRole.Flotilla, ai.Roles.Of(Unit.Group(screen)));
+        w.Apply(ai.Orders.Role(Unit.Group(line), UnitRole.Screen));   // four dreadnoughts told they're a screen
+        Assert.Equal((UnitRole.Screen, true), (ai.Roles.Of(Unit.Group(line)), ai.Roles.IsSet(Unit.Group(line))));
+        var s = new Snapshot();
+        w.Fill(s, truth: true);
+        int k = s.Groups.IndexOfGroup(line);
+        Assert.Equal(((byte)UnitRole.Screen, true), (s.Groups.Role[k], s.Groups.RoleSet[k]));
+        w.Apply(ai.Orders.Role(Unit.Group(line), UnitRole.None));   // worked out again
+        Assert.Equal((UnitRole.Heavy, false), (ai.Roles.Of(Unit.Group(line)), ai.Roles.IsSet(Unit.Group(line))));
+        Assert.Throws<ArgumentException>(() => w.Apply(ai.Orders.Role(Unit.Group(line), UnitRole.MainBody)));
+    }
+
+    [Fact]
     public void A_force_deploys_on_the_course_ordered()
     {
         var (w, ai, force, _) = DeploymentTests.Make(deploy: false);   // doctrine doesn't deploy it: the order does

@@ -40,6 +40,9 @@ public sealed class AiSystem : IWorldSystem
     /// <summary>Every side's and unit's standing rules (docs/battle/command.md "Doctrine").</summary>
     public Doctrine Doctrine { get; }
 
+    /// <summary>What each unit is for (docs/battle/admirals-orders.md O6).</summary>
+    public Roles Roles { get; }
+
     /// <summary>Who can fight whom (docs/battle/command.md 5.1g): the judgements every layer asks (not world state).</summary>
     public MatchupJudge Judge { get; }
 
@@ -68,7 +71,8 @@ public sealed class AiSystem : IWorldSystem
         Admirals.Tactical = Tactical;
         Tasks = new TaskLayer(world.Groups, Seen, homes) { Admirals = Admirals, Captains = Captains, Doctrine = Doctrine, Judge = Judge };
         (Admirals.Tasks, Captains.Tasks) = (Tasks, Tasks);
-        Commanders = new CommanderLayer(world.Groups, world.Ships.Store, Seen, Doctrine) { Tasks = Tasks, Captains = Captains, Judge = Judge, Held = Held };
+        Roles = new Roles(world.Groups, world.Ships.Store);
+        Commanders = new CommanderLayer(world.Groups, world.Ships.Store, Seen, Doctrine) { Tasks = Tasks, Captains = Captains, Judge = Judge, Held = Held, Roles = Roles };
         layers = [Commanders, Tasks, Admirals, Captains];
         nextTick = new long[layers.Length];
         tickGen = new int[layers.Length];
@@ -83,7 +87,7 @@ public sealed class AiSystem : IWorldSystem
 
     public void Apply(World world, in Command c)
     {
-        if ((AiCommand)c.Code is < AiCommand.Course or > AiCommand.Deploy)
+        if ((AiCommand)c.Code is < AiCommand.Course or > AiCommand.Role)
             throw new ArgumentException($"unknown AI command {c.Code}");
         var u = new Unit(c.Entity);
         var code = (AiCommand)c.Code;
@@ -122,7 +126,8 @@ public sealed class AiSystem : IWorldSystem
     /// <summary>Whether the player's order to a unit ends its task: every order that moves it (a speed only changes the
     /// task's), not its guns, doctrine or detachment.</summary>
     static bool EndsTask(AiCommand code) => code is not (AiCommand.FireAtWill or AiCommand.HoldFire or AiCommand.Engage or AiCommand.Doctrine
-        or AiCommand.SideDoctrine or AiCommand.Home or AiCommand.SpeedLimit or AiCommand.Clearance or AiCommand.Detach or AiCommand.Form);
+        or AiCommand.SideDoctrine or AiCommand.Home or AiCommand.SpeedLimit or AiCommand.Clearance or AiCommand.Detach or AiCommand.Form
+        or AiCommand.Role);
 
     void Route(World world, in Command c, Unit u)
     {
@@ -135,6 +140,10 @@ public sealed class AiSystem : IWorldSystem
                     Doctrine.Set(u, (DoctrineField)c.A, c.X);
                 else
                     Doctrine.SetSide(c.Entity, (DoctrineField)c.A, c.X);
+                WakeAll(world);
+                return;
+            case AiCommand.Role:
+                Roles.Set(u, (UnitRole)c.A);
                 WakeAll(world);
                 return;
             case AiCommand.Home:
@@ -205,6 +214,7 @@ public sealed class AiSystem : IWorldSystem
         foreach (var l in layers)
             l.Hash(ref h);
         Doctrine.Hash(ref h);
+        Roles.Hash(ref h);
         for (int side = 0; side < homes.Length; side++)
             if (homes[side] is { } p)
             {
@@ -221,5 +231,6 @@ public sealed class AiSystem : IWorldSystem
             s.Aggression[side] = Doctrine.SideValue(side, DoctrineField.Aggression) is var a && double.IsNaN(a) ? 0 : a;
         foreach (var l in layers)
             l.Fill(s);
+        Roles.Fill(s);
     }
 }

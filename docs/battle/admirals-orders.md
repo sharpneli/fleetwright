@@ -130,6 +130,23 @@ Decision 2: the screen's place is its admiral's judgement, not a fixed geometry.
   abeam to port: half an hour later one division is on the starboard bow (+46/+51°), the other the starboard quarter
   (+134/+139°); four dreadnoughts screening against two light cruisers abeam to port keep to port.
 
+### O6 A unit's role (built 2026-10-23)
+
+Decision 4: the player says what a squadron is for.
+
+- **`UnitRole`** (`Sim.Ai/Roles.cs`, moved from the commander): battle line (`Heavy`), scouting, screening (new),
+  torpedo flotilla, auxiliary. **Worked out** from the unit's line when nobody set it, as the commander did before
+  (capital ships: battle line; torpedo craft, half its ships or more: flotilla; a guide with no main battery: auxiliary;
+  else scouting); screening is only ever set. **Set** by `AiCommand.Role` (a setting, as doctrine is: logged, hashed,
+  it doesn't take the unit from its commander; `UnitRole.None` puts it back to worked out).
+- **One place to ask:** `Roles.Of(unit)`, read by the commander now and the force admirals from O7; the snapshot's
+  `Groups.Role`/`RoleSet` and `Ships.Role`/`RoleSet` (a ship alone) for the map: the smart verb by role and the role's
+  mark come with O9.
+- **The commander by role:** a screen is never his main body while there's another unit (as a flotilla), isn't sent to
+  close an enemy group or in to attack, and screens the nearest heavy unit when idle. Four dreadnoughts set as a screen
+  screen the main body (`CommanderTests.Battleships_set_as_a_screen_screen_the_main_body`).
+- **Placeholder:** a role picker in the squadron popup's row ("worked out", then the five), until the task menu.
+
 ### Still lacking (later steps, after the questions)
 
 - **A force's own disposition.** Inside a force, squadrons keep formation stations; screens and scouts are top units
@@ -179,7 +196,7 @@ guns, torpedoes, task, formation), armed picks completed by a click on the map, 
 | **O1b** | Divide: a squadron told to screen becomes a force of two divisions, each its own squadron | **done 2026-10-23** |
 | **O2** | Deploy as an order (AI), a placeholder button | **done 2026-10-23** |
 | **O5** | Where the screen sits, by its admiral (decision 2) | **done 2026-10-23** |
-| **O6** | A unit's role: worked out, or set by the player; the commander and the map read it (decision 4) | |
+| **O6** | A unit's role: worked out, or set by the player; the commander and the map read it (decision 4) | **done 2026-10-23** |
 | **O7** | The chain of command: a force's admiral disposes his members by role, one implementation with the commander's (decision 3) | |
 | **O8** | The mockup: `docs/map-ui/battle.html` `#tasks`: the task menu, the role, the cursor's verbs, a screen's stations and a deploy's line on the map | |
 | **O9** | The port: the task menu and its picks, the cursor's verbs, the smart verb by role, the formation column's manoeuvres; the snapshot's stations and the map's task marks | after O8 |

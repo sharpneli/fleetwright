@@ -756,6 +756,11 @@ public sealed class GroupsView
     /// <summary>A top group under its side's commander (1), held from him by the player (2), or neither (0).</summary>
     public byte[] Commanded = [];
 
+    /// <summary>What it's for (the AI's <c>UnitRole</c>), and whether the player set it (else it's worked out from its ships;
+    /// docs/battle/admirals-orders.md O6).</summary>
+    public byte[] Role = [];
+    public bool[] RoleSet = [];
+
     /// <summary>Room for n groups and m members; grows only past the most yet.</summary>
     public void EnsureCapacity(int n, int m)
     {
@@ -772,6 +777,8 @@ public sealed class GroupsView
             Array.Resize(ref Task, n);
             Array.Resize(ref TaskStatus, n);
             Array.Resize(ref Commanded, n);
+            Array.Resize(ref Role, n);
+            Array.Resize(ref RoleSet, n);
             Array.Resize(ref Guide, n);
             Array.Resize(ref GuideShip, n);
             Array.Resize(ref Parent, n);
@@ -869,6 +876,10 @@ public sealed class ShipsView
 
     /// <summary>A ship alone under its side's commander (1), held from him by the player (2), or neither (0).</summary>
     public byte[] Commanded = [];
+
+    /// <summary>A ship alone's role (the AI's <c>UnitRole</c>; 0 in a squadron), and whether the player set it.</summary>
+    public byte[] Role = [];
+    public bool[] RoleSet = [];
 
     /// <summary>Ships and the land (<see cref="Combat.Slide"/>): sliding along a coast (+1 land to port, -1 to
     /// starboard, 0 not), how often the backstop has put it back off the land; its minimum and standoff from the
@@ -1028,6 +1039,8 @@ public sealed class ShipsView
         Array.Resize(ref Task, n);
         Array.Resize(ref TaskStatus, n);
         Array.Resize(ref Commanded, n);
+        Array.Resize(ref Role, n);
+        Array.Resize(ref RoleSet, n);
         Array.Resize(ref LandSide, n);
         Array.Resize(ref Backstops, n);
         Array.Resize(ref MinClearanceM, n);

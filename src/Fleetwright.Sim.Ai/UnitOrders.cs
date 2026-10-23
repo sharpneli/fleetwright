@@ -176,6 +176,10 @@ public enum AiCommand : ushort
     /// he's stopped; the guide's heading if none is held), its wing column furthest along that course leading; a squadron
     /// into line ahead on it. Nothing to a ship.</summary>
     Deploy,
+
+    /// <summary>What a unit is for (docs/battle/admirals-orders.md O6): A a <see cref="UnitRole"/> (0: worked out from its
+    /// ships). A setting, as doctrine is: it doesn't take the unit from its commander.</summary>
+    Role,
 }
 
 /// <summary>A ship's fire order (docs/battle/fighting.md 4.2c).</summary>
@@ -316,6 +320,9 @@ public readonly struct UnitOrders(byte system, bool hand = false)
 
     /// <summary>A flotilla's torpedo attack on a contact (a ship's entity; 0: the biggest in sight).</summary>
     public Command Attack(Unit u, int contact = 0, OrderSource source = OrderSource.Player) => Make(AiCommand.Attack, u, source, a: contact);
+
+    /// <summary>What a unit is for (<see cref="UnitRole.None"/>: back to worked out from its ships).</summary>
+    public Command Role(Unit u, UnitRole role) => Make(AiCommand.Role, u, OrderSource.Player, a: (long)role);
 
     /// <summary>A value of a unit's doctrine (NaN: back to what it inherits from its group, its side, the default).</summary>
     public Command Doctrine(Unit u, DoctrineField field, double value) => Make(AiCommand.Doctrine, u, OrderSource.Player, a: (long)field, x: value);
