@@ -64,30 +64,35 @@ torpedoes. Helm orders and the conn are the player's way to overrule that (battl
 
 What the vocabulary still lacked in the sim, and what's built:
 
-### O1 The split screen (built 2026-10-23)
+### O1 The split screen (built 2026-10-23; as two squadrons, O1b)
 
 A squadron screening a unit used to keep one station, its ships in their formation about it: a column 5 km off the
 screened guide, toward the nearest enemy in sight or dead ahead. The era's screen split: a flotilla's divisions on
 either bow of the fleet, at about four points, so the screened line had torpedo craft covering both bows and a
 counter-attack ready on either side.
 
-- **The split.** A screen of two ships or more (a squadron's ships, or a force's squadrons) splits in two halves: its
-  line's first half (its guide's) on one side of the bearing it screens on, the rest on the other, each
-  `ScreenSplitDeg` (45°) off it. Each half lies on the arc `ScreenM` (5 km) out, its ships (or squadrons) the group's
-  spacing apart from the bearing outward (no nearer to it than half the split). Each ship of a squadron keeps her own
-  station on the screened guide; each squadron of a force its own, its ships in their formation about it.
+- **The split is two squadrons** (O1b, decision 1). A squadron of two ships or more told to screen is divided first
+  (`GroupSystem.Divide`): it becomes a force of two divisions, two new squadrons ("1st Flotilla I" and "II": the
+  first half of its members, its guide's, and the rest), keeping its own id, name, admiral, place in its own force and
+  orders, in one line where it was (line ahead, else a line of bearing on its old line's bearing, the divisions
+  chained). A force splits by squadron: the first half of its line (its guide's) on one side of the bearing it screens
+  on, the rest on the other, each `ScreenSplitDeg` (45°) off it, spread on the arc `ScreenM` (5 km) out, the force's
+  spacing apart from the bearing outward (no nearer to it than half the split). Each division keeps its own station on
+  the screened guide, its ships in formation about its guide, so it sails and fights as one. A division stays one: the
+  flotilla remains a force of two divisions after its screen.
 - **The bearing screened on** is as before: the nearest enemy in sight of the screened guide, else dead ahead; placed
   again only when the guide's station would move more than `ScreenMoveM`. The guide's half takes the side its guide is
   on when the order comes, and keeps it, so the halves swing round together as the threat moves and never cross.
-- **The counter-attack by halves.** Enemy torpedo craft closing on the screened unit (the turn-away's own threat test)
-  are fought by the half on their side of the bearing; the other half keeps its station, so the far bow stays covered.
-  Both back on station `TurnBackS` after the last.
+- **The counter-attack by divisions.** Enemy torpedo craft closing on the screened unit (the turn-away's own threat
+  test) are fought by the division (or half of a force's squadrons) on their side of the bearing; the other keeps its
+  station, so the far bow stays covered. Both back on station `TurnBackS` after the last.
 - **In one body** when ordered so: `AiCommand.Screen`'s Y is the split (0: the settings'; negative: one body, as
   before). A scenario's screen task takes `"split"`. The side's commander's flotillas screen split.
-- **Tests** (`AdmiralOrdersTests`, `ScreenTests`): four destroyers screening a line ahead end on either bow (two at
-  about -45 to -53°, two at +53 to +63°, 4.2-4.7 km: ships on station lag a little astern of a 15 kn line); in one body
-  they keep a column dead ahead; a force of two squadrons splits by squadron (one at -48/-53°, the other at +47/+52°);
-  with enemy destroyers from the east-south-east only the half on that side counter-attacks.
+- **Tests** (`AdmiralOrdersTests`, `ScreenTests`): four destroyers told to screen are a force of two divisions of two;
+  screening a line ahead they end on either bow (-48/-53° and +55/+61°, 4.0-4.8 km: ships on station lag a little
+  astern of a 15 kn line); in one body they keep a column dead ahead; a force of two squadrons splits by squadron;
+  with enemy destroyers from the east-south-east only the division on that side counter-attacks, as a unit.
+- **The commander** sends a divided flotilla in by its divisions, as any force of flotillas (`CommanderTests`).
 
 ### O2 Deploy as an order (built 2026-10-23)
 
@@ -154,14 +159,16 @@ guns, torpedoes, task, formation), armed picks completed by a click on the map, 
 
 | Step | What | Status |
 |---|---|---|
-| **O0** | This plan | 2026-10-23, for the user |
-| **O1** | The split screen (AI) | **done 2026-10-23** |
+| **O0** | This plan | 2026-10-23 |
+| **O1** | The split screen (AI): halves of one squadron | done 2026-10-23; **replaced by O1b** (decision 1) |
+| **O1b** | Divide: a squadron told to screen becomes a force of two divisions, each its own squadron | **done 2026-10-23** |
 | **O2** | Deploy as an order (AI), a placeholder button | **done 2026-10-23** |
-| **O3** | The mockup: `docs/map-ui/battle.html` `#tasks`: the task menu, the cursor's verbs, a screen's arc and a deploy's line on the map | after the answers |
-| **O4** | The port: the task menu and its picks, the cursor's verbs, the smart verb, the formation column's manoeuvres; the snapshot's stations and the map's task marks | after O3 |
-| **O5** | Screens in action (doctrine: engaged or disengaged side) | if wanted |
-| **O6** | A force's own disposition: its light squadrons screen and scout by themselves | if wanted |
-| **O7** | Shaping by drag: a screen's distance and sector; orders as editable objects (5.2's) | later |
+| **O5** | Where the screen sits, by its admiral (decision 2) | |
+| **O6** | A unit's role: worked out, or set by the player; the commander and the map read it (decision 4) | |
+| **O7** | The chain of command: a force's admiral disposes his members by role, one implementation with the commander's (decision 3) | |
+| **O8** | The mockup: `docs/map-ui/battle.html` `#tasks`: the task menu, the role, the cursor's verbs, a screen's stations and a deploy's line on the map | |
+| **O9** | The port: the task menu and its picks, the cursor's verbs, the smart verb by role, the formation column's manoeuvres; the snapshot's stations and the map's task marks | after O8 |
+| **O10** | Shaping by drag (a screen's distance and sector), orders as editable objects, the radial menu | later |
 
 ## Measured (O1-O2, Release, 5 seeds; the Jutland one)
 
@@ -183,15 +190,22 @@ Against the same build with `ScreenSplitDeg` 0 (every screen in one body, as bef
   timeline isn't comparable: seed 1916's Grand Fleet deploys at 17:43 in one body and not at all with the split.
 - **Cost:** the Jutland 150-232 s a seed split, 147-215 s in one body; the admirals 2.3% and 3.0% of seed 1916's run.
 
+## Decisions (the user, 2026-10-23, on the questions)
+
+1. **A split screen is two squadrons.** Split, a squadron becomes two: its admiral divides it into two divisions that
+   each sail and fight as a unit, so it's clear in a fight who keeps together, and no squadron is ever torn across two
+   stations (the first O1 kept one squadron split in halves; replaced, O1b).
+2. **Where the screen sits is its admiral's call** (questions 1 and 2): on the bows, toward the threat, the engaged or
+   the disengaged side, by his judgement of the situation (O5).
+3. **A chain of command, as deep as it nests.** Ships make squadrons, squadrons forces, forces bigger forces, each with
+   an admiral. A unit is given a task ("search here"), and its admiral decides how to dispose what he has: his scouts
+   scout, his screens screen, his main body carries the task (O7). The side's commander is the top of the same chain.
+4. **The player says what a squadron is for.** A unit's role (battle line, scouting, screening, torpedo flotilla,
+   auxiliary) is worked out from its ships by default and set by the player at will: four battleships told they're a
+   screening squadron screen, and the right click's default over one of ours follows the role (screen for a screening
+   squadron) (O6).
+5. **A task menu**; the radial menu comes later, and is optional to use.
+
 ## Questions for the user
 
-1. **The split's geometry:** each half 45° off the bearing screened on, ahead when no enemy is in sight, toward the
-   nearest enemy in sight when one is. Is that the 45° split you meant, or should the halves keep to the screened
-   unit's bows (±45° off its course) whatever the threat?
-2. **Screens in action (O5):** stay toward the enemy (as now: between the lines, counter-attacking) or go to the van
-   and the rear on the disengaged side once the line is engaged, as the Grand Fleet's orders had it?
-3. **A force's own disposition (O6):** should a fleet with its light squadrons in its tree screen and scout by itself,
-   or is that the side's commander's (and the scenario's) business, as now?
-4. **The smart verb over one of ours:** SCREEN for light squadrons, FOLLOW for heavy, or FOLLOW always?
-5. **The task menu:** one Task ▾ popup in three columns by what the order is about, or the research's radial marking
-   menu at the cursor (eight fixed directions, flicks) now rather than later?
+Answered 2026-10-23: see "Decisions".

@@ -191,11 +191,14 @@ public class CommanderTests(ITestOutputHelper output)
         long seen = w.CombatLog.Written;
         int torpedoes = 0;
         double sent = double.NaN, fired = double.NaN;
+        // told to screen, the flotilla is two divisions (docs/battle/admirals-orders.md O1b): he sends them in
+        var divisions = w.Groups.Get(flotilla.GroupId)!.Members.Select(Unit.Group).Prepend(flotilla).ToArray();
+        var attacking = flotilla;
         for (double s = 0; s < 45 * 60 && double.IsNaN(fired); s += 60)
         {
             Run(w, 60);
-            if (double.IsNaN(sent) && ai.Commanders.GivenOf(flotilla).Given == TaskKind.Attack)
-                sent = s;
+            if (double.IsNaN(sent) && divisions.FirstOrDefault(u => ai.Commanders.GivenOf(u).Given == TaskKind.Attack) is { Id: not 0 } d)
+                (sent, attacking) = (s, d);
             for (long i = w.CombatLog.Written - seen - 1; i >= 0; i--)
                 if (w.CombatLog.Newest((int)i) is { Kind: CombatEvent.Torpedoes } e && w.Ships.Store.SlotOf(e.Shooter) is int slot and >= 0 &&
                     w.Ships.Store[slot].Side == 0)
@@ -204,10 +207,10 @@ public class CommanderTests(ITestOutputHelper output)
             if (torpedoes > 0)
                 fired = s;
         }
-        output.WriteLine($"sent in at {sent / 60:F0} min, {torpedoes} torpedoes by {fired / 60:F0} min; given {ai.Commanders.GivenOf(flotilla)}, " +
-                         $"on {ai.Tasks.Of(flotilla)}; the line given {ai.Commanders.GivenOf(line)}");
+        output.WriteLine($"sent in at {sent / 60:F0} min, {torpedoes} torpedoes by {fired / 60:F0} min; given {ai.Commanders.GivenOf(attacking)}, " +
+                         $"on {ai.Tasks.Of(attacking)}; the line given {ai.Commanders.GivenOf(line)}");
         Assert.InRange(sent, 0, 2 * 60);   // the lines are in sight of each other from the start
-        Assert.Equal(CommanderWhy.Battle, ai.Commanders.GivenOf(flotilla).Why);
+        Assert.Equal(CommanderWhy.Battle, ai.Commanders.GivenOf(attacking).Why);
         Assert.True(torpedoes > 0);
         Assert.Equal(TaskKind.None, ai.Commanders.GivenOf(line).Given);   // in contact: doctrine's, not his
     }

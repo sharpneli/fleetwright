@@ -75,7 +75,7 @@ public class ScreenTests(ITestOutputHelper output)
         {
             w.AdvanceTo(w.Time + 10_000);
             var line = Ship(w, 1);
-            var screen = Ship(w, w.Groups.Get(2)!.Guide);
+            var screen = Ship(w, w.Groups.GuideShip(w.Groups.Get(2)!));
             if (s <= 5 * 60)
                 eastMost = Math.Max(eastMost, Vec3d.Dot(screen.Position - line.Position, Earth.Forward(line.Position, 90)));
             // split, one of the two counter-attacks (docs/battle/admirals-orders.md O1)

@@ -267,6 +267,8 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
                 (a.Order, a.Target, a.DistanceM, a.AbeamM) = (CaptainOrder.Screen, (int)c.A, c.X > 0 ? c.X : ctx.Settings.ScreenM, 0);
                 (a.ScreenOn, a.ScreenFight, a.ScreenFightSide, a.ScreenSide, a.AttackOrdered) = (0, 0, 0, 0, false);
                 a.ScreenSplitDeg = c.Y > 0 ? c.Y : c.Y < 0 ? 0 : ctx.Settings.ScreenSplitDeg;
+                if (a.ScreenSplitDeg > 0 && !g.IsForce && g.Members.Count >= 2)
+                    ctx.Issue(GroupSystem.Divide(g.GroupId, (g.Members.Count + 1) / 2));   // two divisions, each a unit (O1b)
                 break;
             case AiCommand.Attack:
                 (a.Order, a.Target, a.DistanceM, a.AbeamM) = (CaptainOrder.Fight, Unit.Ship((int)c.A).Id, 0, 0);

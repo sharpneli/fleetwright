@@ -6,9 +6,10 @@ using Xunit.Abstractions;
 
 namespace Fleetwright.Sim.Tests;
 
-/// <summary>The admiral's orders (docs/battle/admirals-orders.md): the split screen (O1), half a screen on either side of
-/// the bearing it screens on, and only the half an attack comes at counter-attacking; and Deploy as an order (O2). Clear
-/// weather, guns held all round (only the steering is measured), and no line turns away.</summary>
+/// <summary>The admiral's orders (docs/battle/admirals-orders.md): the split screen (O1b), a squadron told to screen
+/// divided into two divisions, one on either side of the bearing it screens on, and only the division an attack comes at
+/// counter-attacking; and Deploy as an order (O2). Clear weather, guns held all round (only the steering is measured),
+/// and no line turns away.</summary>
 public class AdmiralOrdersTests(ITestOutputHelper output)
 {
     static readonly WorldTime Start = WorldTime.FromUtc(1916, 5, 31, 14);
@@ -80,6 +81,18 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void A_squadron_told_to_screen_is_divided_into_two_divisions()
+    {
+        var (w, _, _, screen) = Make();
+        var f = w.Groups.Get(screen)!;
+        Assert.True(f.IsForce);   // the same unit, its id kept, a force of two squadrons now
+        Assert.Equal(2, f.Members.Count);
+        Assert.Equal(new[] { 5, 6 }, w.Groups.Get(f.Members[0])!.Members);
+        Assert.Equal(new[] { 7, 8 }, w.Groups.Get(f.Members[1])!.Members);
+        Assert.Equal(w.Groups.Get(f.Members[0])!.Name + "I", w.Groups.Get(f.Members[1])!.Name);
+    }
+
+    [Fact]
     public void A_squadron_screening_splits_on_either_bow()
     {
         var (w, _, line, _) = Make();
@@ -137,7 +150,7 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
     }
 
     [Fact]
-    public void Only_the_half_the_attack_comes_at_counter_attacks()
+    public void Only_the_division_the_attack_comes_at_counter_attacks()
     {
         var (w, ai, line, screen) = Make();
         w.AdvanceTo(w.Time + 30 * 60_000);   // on its stations on either bow
@@ -154,19 +167,21 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
             w.Apply(ai.Orders.HoldFire(Unit.Ship(e)));
             w.Apply(ai.Orders.Course(Unit.Ship(e), 270));
         }
-        var halves = w.Groups.Get(screen)!.Line.ToArray();
+        var f = w.Groups.Get(screen)!;
+        var first = w.Groups.Get(f.Members[0])!.Members.ToArray();
+        var ships = first.Concat(w.Groups.Get(f.Members[1])!.Members).ToArray();
         var fought = new HashSet<int>();
         for (int s = 10; s <= 25 * 60; s += 10)
         {
             w.AdvanceTo(w.Time + 10_000);
-            foreach (int e in halves)
+            foreach (int e in ships)
                 if (ai.Captains.Of(e) is (CaptainOrder.Fight, var target, _) && target > 8)
                     fought.Add(e);
         }
-        output.WriteLine($"the screen's line {string.Join(", ", halves)}; counter-attacked: {string.Join(", ", fought)}");
+        output.WriteLine($"the divisions {string.Join(", ", first)} and the rest; counter-attacked: {string.Join(", ", fought)}");
         Assert.NotEmpty(fought);
-        bool first = fought.All(e => Array.IndexOf(halves, e) < 2), second = fought.All(e => Array.IndexOf(halves, e) >= 2);
-        Assert.True(first ^ second, "both halves counter-attacked");
+        bool one = fought.All(first.Contains), other = fought.All(e => !first.Contains(e));
+        Assert.True(one ^ other, "both divisions counter-attacked");
     }
 
     [Fact]

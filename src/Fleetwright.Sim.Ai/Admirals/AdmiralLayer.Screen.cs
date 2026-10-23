@@ -8,10 +8,12 @@ namespace Fleetwright.Sim.Ai.Admirals;
 /// keeps <see cref="SimSettings.ScreenM"/> (or the distance ordered) off the screened unit's guide, on the bearing of the
 /// nearest enemy in sight within <see cref="SimSettings.FightCompareM"/> (ahead of it while there's none), placed again
 /// only when that moves its guide's station more than <see cref="SimSettings.ScreenMoveM"/>.
-/// <para>A screen of two or more splits (docs/battle/admirals-orders.md O1): the first half of its line (its guide's)
-/// on one side of that bearing, the rest on the other, each <see cref="SimSettings.ScreenSplitDeg"/> (or the split
-/// ordered) off it and spread on the arc that far out, its ships (a force's squadrons) the group's spacing apart from the
-/// bearing outward, each keeping its own station on the screened guide. The guide's half takes the side it's on when
+/// <para>A screen splits (docs/battle/admirals-orders.md O1b): a squadron of two ships or more told to screen is
+/// divided first, into a force of two divisions (<see cref="GroupSystem.Divide"/>), so each half is a squadron that sails
+/// and fights as one. A force's line splits in two: its first half of squadrons (its guide's) on one side of that
+/// bearing, the rest on the other, each <see cref="SimSettings.ScreenSplitDeg"/> (or the split ordered) off it and
+/// spread on the arc that far out, the force's spacing apart from the bearing outward, each squadron keeping its own
+/// station on the screened guide, its ships in their formation about it. The guide's half takes the side it's on when
 /// first placed, and keeps it. Ordered in one body, the group keeps its formation about its guide's station.</para>
 /// <para>The counter-attack: while enemy torpedo craft close on the screened unit (<see cref="TorpedoThreat"/>, as its
 /// own turn-away sees them) the half on their side of the bearing (all of a screen in one body) fights the nearest, the
@@ -94,8 +96,9 @@ public sealed partial class AdmiralLayer
         ctx.Issue(ctx.Orders.Station(GuideUnit(g), Unit.Ship(guide.Entity), astern, abeam, OrderSource.Superior));
     }
 
-    /// <summary>Whether a screen splits: two or more in its line, and a split.</summary>
-    static bool Split(GroupSystem.Group g, Admiral a) => a.ScreenSplitDeg > 0 && g.Line.Count >= 2;
+    /// <summary>Whether a screen splits: a force of two or more groups in its line, and a split (a squadron is divided
+    /// into one when it's told to screen).</summary>
+    static bool Split(GroupSystem.Group g, Admiral a) => a.ScreenSplitDeg > 0 && g.IsForce && g.Line.Count >= 2;
 
     /// <summary>The i-th of a screen's line's station off the screened guide (astern, abeam), m: on the arc
     /// <see cref="Admiral.DistanceM"/> out, its half's split off the bearing screened on, spread the group's spacing apart
@@ -115,7 +118,7 @@ public sealed partial class AdmiralLayer
         return (-a.DistanceM * Math.Cos(rad), a.DistanceM * Math.Sin(rad));
     }
 
-    /// <summary>A member of a split screen's line (the i-th, past its guide) given its place: the half counter-attacking
+    /// <summary>A squadron of a split screen's line (the i-th, past its guide) given its place: the half counter-attacking
     /// fights, the rest keep their stations on the arc. False if the group isn't a split screen placed: its formation's
     /// station, then.</summary>
     bool ScreenMember(in AiContext ctx, GroupSystem.Group g, Admiral a, int i)
@@ -123,17 +126,16 @@ public sealed partial class AdmiralLayer
         if (a.Order != CaptainOrder.Screen || a.ScreenOn == 0 || !Split(g, a))
             return false;
         int member = g.Line[i];
-        var unit = g.IsForce ? Unit.Group(member) : Unit.Ship(member);
         int side = i < (g.Line.Count + 1) / 2 ? a.ScreenSide : -a.ScreenSide;
         if (a.ScreenFight != 0 && (a.ScreenFightSide == 0 || a.ScreenFightSide == side))
         {
-            if (g.IsForce ? !HoldsFight(member, a.ScreenFight) : !captains.Holds(member, CaptainOrder.Fight, a.ScreenFight, 0, 0))
-                ctx.Issue(ctx.Orders.Fight(unit, Unit.Ship(a.ScreenFight), 0, OrderSource.Superior));
+            if (!HoldsFight(member, a.ScreenFight))
+                ctx.Issue(ctx.Orders.Fight(Unit.Group(member), Unit.Ship(a.ScreenFight), 0, OrderSource.Superior));
             return true;
         }
         var (astern, abeam) = ScreenPlace(g, a, i);
-        if (g.IsForce ? !Holds(member, a.ScreenOn, astern, abeam) : !captains.Holds(member, CaptainOrder.Station, a.ScreenOn, astern, abeam))
-            ctx.Issue(ctx.Orders.Station(unit, Unit.Ship(a.ScreenOn), astern, abeam, OrderSource.Superior));
+        if (!Holds(member, a.ScreenOn, astern, abeam))
+            ctx.Issue(ctx.Orders.Station(Unit.Group(member), Unit.Ship(a.ScreenOn), astern, abeam, OrderSource.Superior));
         return true;
     }
 

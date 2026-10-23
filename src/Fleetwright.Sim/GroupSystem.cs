@@ -61,6 +61,7 @@ public enum GroupCommand : ushort
     EnterAlongside,
     TurnTogether,
     Reverse,
+    Divide,
 }
 
 /// <summary>The world's groups (docs/battle/plan.md steps 2.4 and 2.6): units that move together, in order, with a
@@ -91,7 +92,7 @@ public sealed class GroupSystem : IWorldSystem
         public double LineBearingDeg => BearingOf(Formation, BearingDeg);
 
         /// <summary>A force: its members are groups. A squadron's are ships.</summary>
-        public bool IsForce { get; internal init; }
+        public bool IsForce { get; internal set; }
 
         /// <summary>The id of the force it's in, or 0.</summary>
         public int Parent { get; internal set; }
@@ -137,6 +138,15 @@ public sealed class GroupSystem : IWorldSystem
             detached.RemoveAt(i);
             Relink();
             return true;
+        }
+
+        /// <summary>Every member out (a squadron becoming a force of its divisions).</summary>
+        internal void Clear()
+        {
+            Owner?.MembershipChanged();
+            members.Clear();
+            detached.Clear();
+            Relink();
         }
 
         /// <summary>The members in the reverse order: the far end of the line guides.</summary>
@@ -553,6 +563,13 @@ public sealed class GroupSystem : IWorldSystem
     /// docs/battle/command.md 5.1c).</summary>
     public static Command Reverse(int groupId) => new(Id, (ushort)GroupCommand.Reverse, A: groupId);
 
+    /// <summary>A squadron divided (docs/battle/admirals-orders.md O1b): it becomes a force of two new squadrons, its
+    /// divisions, the first of its first <paramref name="first"/> members and the second of the rest, each in its
+    /// formation and spacing and each member as detached as it was; the force keeps the squadron's id, name, place in
+    /// its own force and its admiral, in one line where it was (line ahead, else a line of bearing on its old line's
+    /// bearing, the divisions chained). Refused for a force, or a split that leaves a division empty.</summary>
+    public static Command Divide(int groupId, int first) => new(Id, (ushort)GroupCommand.Divide, A: groupId, B: first);
+
     /// <summary>A group gone: its members are free (a force's groups stay squadrons and forces of their own), and it
     /// leaves its force.</summary>
     public static Command Disband(int groupId) => new(Id, (ushort)GroupCommand.Disband, A: groupId);
@@ -641,6 +658,10 @@ public sealed class GroupSystem : IWorldSystem
                 if (Get((int)c.A) is { } turned)
                     Turn(turned, c.X);
                 break;
+            case GroupCommand.Divide:
+                if (Get((int)c.A) is { IsForce: false } whole && c.B >= 1 && c.B < whole.Members.Count)
+                    Divide(whole, c.B);
+                break;
             case GroupCommand.Disband:
                 if (Get((int)c.A) is { } d)
                 {
@@ -655,6 +676,35 @@ public sealed class GroupSystem : IWorldSystem
             default:
                 throw new ArgumentException($"unknown group command {c.Code}");
         }
+    }
+
+    /// <summary><see cref="Divide(int, int)"/>: the squadron's members into two new squadrons, it a force of them. Allocates
+    /// (a reorganisation, as a spawn does).</summary>
+    void Divide(Group g, int first)
+    {
+        var members = g.Members.ToArray();
+        var detachments = new Detachment[members.Length];
+        for (int i = 0; i < members.Length; i++)
+            detachments[i] = g.DetachmentAt(i);
+        var divisions = new[] { New(false, g.Formation, g.SpacingM), New(false, g.Formation, g.SpacingM) };
+        for (int k = 0; k < 2; k++)
+            (divisions[k].BearingDeg, divisions[k].Name) = (g.BearingDeg, g.Name + (k == 0 ? " I" : " II"));
+        double bearing = g.LineBearingDeg;
+        g.Clear();
+        for (int i = 0; i < members.Length; i++)
+        {
+            var d = divisions[i < first ? 0 : 1];
+            d.Add(members[i]);
+            if (detachments[i] != Detachment.InLine)
+                d.Detach(members[i], detachments[i]);
+        }
+        g.IsForce = true;
+        foreach (var d in divisions)
+        {
+            d.Parent = g.GroupId;
+            g.Add(d.GroupId);
+        }
+        (g.Formation, g.BearingDeg) = g.Formation == Formation.Column ? (Formation.Column, 0) : (Formation.Bearing, bearing);
     }
 
     Group New(bool force, Formation f, double spacing)
