@@ -121,26 +121,26 @@ public class GroupTests(ITestOutputHelper output)
         Group(w, 4, Formation.Column);
         Run(w, 5);
         for (int e = 2; e <= 4; e++)
-            Assert.Equal((CaptainOrder.Station, OrderSource.Superior), (ai.Captains.Of(e).Order, ai.Captains.Of(e).Source));
+            Assert.Equal((CaptainOrder.Station, Whose.Superior), (ai.Captains.Of(e).Order, ai.Captains.Of(e).Whose));
         w.Apply(GroupSystem.Remove(3));
         w.Apply(ShipSystem.Drop(4));
         Run(w, 5);
         Assert.Equal(new[] { 1, 2 }, w.Groups[0].Members);
-        Assert.Equal((CaptainOrder.Course, OrderSource.Player), (ai.Captains.Of(3).Order, ai.Captains.Of(3).Source));   // his own again, holding
+        Assert.Equal((CaptainOrder.Course, Whose.Own), (ai.Captains.Of(3).Order, ai.Captains.Of(3).Whose));   // his own again, holding
         Assert.Equal(CaptainOrder.None, ai.Captains.Of(4).Order);   // gone with his ship
         Assert.Equal(CaptainOrder.Station, ai.Captains.Of(2).Order);
 
         w.Apply(GroupSystem.Remove(1));   // the guide leaves: ship 2 guides, holding what it has; ship 1 is its own
         Run(w, 5);
         Assert.Equal(2, w.Groups[0].Guide);
-        Assert.Equal((CaptainOrder.Course, OrderSource.Superior), (ai.Captains.Of(2).Order, ai.Captains.Of(2).Source));
-        Assert.Equal(OrderSource.Player, ai.Captains.Of(1).Source);
+        Assert.Equal((CaptainOrder.Course, Whose.Superior), (ai.Captains.Of(2).Order, ai.Captains.Of(2).Whose));
+        Assert.Equal(Whose.Own, ai.Captains.Of(1).Whose);
         Assert.Equal(0, ai.Captains.SpeedOf(1).LimitKn);
 
         w.Apply(GroupSystem.Disband(w.Groups[0].GroupId));
         Run(w, 5);
         Assert.Equal(0, w.Groups.Count);
-        Assert.Equal(OrderSource.Player, ai.Captains.Of(2).Source);
+        Assert.Equal(Whose.Own, ai.Captains.Of(2).Whose);
     }
 
     [Fact]

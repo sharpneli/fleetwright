@@ -102,14 +102,14 @@ public class OrderPathTests(ITestOutputHelper output)
         Assert.Equal(new[] { 1, 2, 4 }, w.Groups[0].Line);
         Run(w, 10 * 60);
         Assert.Equal(200, Ship(w, 3).HeadingDeg, 0);   // nobody steered it back
-        Assert.Equal((CaptainOrder.Course, OrderSource.Player), (ai.Captains.Of(3).Order, ai.Captains.Of(3).Source));
+        Assert.Equal((CaptainOrder.Course, Whose.Own), (ai.Captains.Of(3).Order, ai.Captains.Of(3).Whose));
         Assert.Equal(Unit.Ship(2).Id, ai.Captains.Of(4).Target);   // the line closed up: ship 4 follows ship 2
 
         // an order to the group is to all of it: the nudged ship comes back to its station
         w.Apply(ai.Orders.Course(Unit.Group(g), 30));
         Assert.Equal(Detachment.InLine, Detached(w, 3));
         Run(w, 2);
-        Assert.Equal((CaptainOrder.Station, OrderSource.Superior), (ai.Captains.Of(3).Order, ai.Captains.Of(3).Source));
+        Assert.Equal((CaptainOrder.Station, Whose.Superior), (ai.Captains.Of(3).Order, ai.Captains.Of(3).Whose));
         Assert.Equal(Unit.Ship(2).Id, ai.Captains.Of(3).Target);
 
         // detached on purpose, it stays out through the group's orders, until it's handed back
@@ -118,11 +118,11 @@ public class OrderPathTests(ITestOutputHelper output)
         w.Apply(ai.Orders.Course(Unit.Group(g), 60));
         Run(w, 2);
         Assert.Equal(Detachment.Pinned, Detached(w, 3));
-        Assert.Equal(OrderSource.Player, ai.Captains.Of(3).Source);
+        Assert.Equal(Whose.Own, ai.Captains.Of(3).Whose);
         w.Apply(ai.Orders.Resume(Unit.Ship(3)));
         Run(w, 2);
         Assert.Equal(Detachment.InLine, Detached(w, 3));
-        Assert.Equal((CaptainOrder.Station, OrderSource.Superior), (ai.Captains.Of(3).Order, ai.Captains.Of(3).Source));
+        Assert.Equal((CaptainOrder.Station, Whose.Superior), (ai.Captains.Of(3).Order, ai.Captains.Of(3).Whose));
     }
 
     [Fact]
@@ -148,7 +148,7 @@ public class OrderPathTests(ITestOutputHelper output)
             Run(w, 1);
         output.WriteLine($"the waypoint passed {s} s on; back in the line {back} s after");
         Assert.Equal(Detachment.InLine, Detached(w, 3));
-        Assert.Equal((CaptainOrder.Station, OrderSource.Superior), (ai.Captains.Of(3).Order, ai.Captains.Of(3).Source));
+        Assert.Equal((CaptainOrder.Station, Whose.Superior), (ai.Captains.Of(3).Order, ai.Captains.Of(3).Whose));
     }
 
     [Fact]
@@ -165,7 +165,7 @@ public class OrderPathTests(ITestOutputHelper output)
         w.Apply(ai.Orders.Course(Unit.Ship(1), 0));   // the player takes the guide
         Assert.Equal(2, w.Groups[0].Guide);
         Run(w, 1);   // the admiral sees it at his next think, within the second
-        Assert.Equal((CaptainOrder.Course, OrderSource.Superior), (ai.Captains.Of(2).Order, ai.Captains.Of(2).Source));
+        Assert.Equal((CaptainOrder.Course, Whose.Superior), (ai.Captains.Of(2).Order, ai.Captains.Of(2).Whose));
         Assert.Equal(90, Ship(w, 2).CourseOrderDeg, 6);
         Assert.Equal(11, Ship(w, 2).SpeedOrderKn, 6);
         Assert.Equal(0, ai.Captains.SpeedOf(1).LimitKn);   // its old limit went with its admiral

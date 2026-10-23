@@ -69,8 +69,8 @@ public sealed partial class AdmiralLayer
             if (Math.Abs(off) > s.ManoeuvreDoneDeg)
                 round = false;
             double want = Math.Abs(off) > 150 ? Wrap360(own.HeadingDeg + Math.Sign(a.TurnDeg) * 90) : a.TurnCourse;
-            var (order, _, source) = captains.Of(e);
-            if (order != CaptainOrder.Course || source != OrderSource.Superior || own.Helm != Helm.Course ||
+            var (order, _, whose) = captains.Of(e);
+            if (order != CaptainOrder.Course || whose != Whose.Superior || own.Helm != Helm.Course ||
                 Math.Abs(Wrap180(want - own.CourseOrderDeg)) > s.CaptainCourseDeadbandDeg)
                 ctx.Issue(ctx.Orders.Course(Unit.Ship(e), want, 0, OrderSource.Superior));
             if (!(Math.Abs(captains.SpeedOf(e).AskedKn - a.TurnKn) <= s.CaptainSpeedDeadbandKn))   // NaN too: none asked

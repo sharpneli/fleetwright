@@ -121,7 +121,7 @@ public sealed partial class AdmiralLayer
             return;
         var ships = ctx.Ships;
         var guide = ships[lead];
-        if (a.Held || a.Order == CaptainOrder.Screen || Tasks?.Avoids(Unit.Group(g.GroupId)) == true || (Engage)doctrine.OfGroup(g, guide.Side, DoctrineField.Engage) != Engage.Fight)
+        if (a.Whose == Whose.Player || a.Order == CaptainOrder.Screen || Tasks?.Avoids(Unit.Group(g.GroupId)) == true || (Engage)doctrine.OfGroup(g, guide.Side, DoctrineField.Engage) != Engage.Fight)
             return;
         if (ctx.World.Encounters.Of(lead, guide.Entity) == 0)
         {

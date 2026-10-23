@@ -27,7 +27,7 @@ public sealed partial class AdmiralLayer
     /// line it gives them for is made by the commands just sent).</summary>
     bool DeployStep(in AiContext ctx, GroupSystem.Group g, Admiral a, int lead)
     {
-        if (a.Held || !g.IsForce || groups.InForceLine(g) || Tactical == null)
+        if (a.Whose == Whose.Player || !g.IsForce || groups.InForceLine(g) || Tactical == null)
             return false;
         var s = ctx.Settings;
         var guide = ctx.Ships[lead];

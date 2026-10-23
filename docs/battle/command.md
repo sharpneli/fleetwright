@@ -204,15 +204,22 @@ ship alone that had met the enemy), and turned back in; a squadron given a cours
 deployed, a held ship fell out and went home, and a comb took a ship off her route for good. **What the player orders
 by hand, the unit does.** A player's order carries `UnitOrders.Hand` (the map gives every order that way:
 `WorldSession.Orders`); a scenario's opening orders and a dev flag's are the player's without it, so doctrine still
-takes up the fight for units nobody has touched. A captain or admiral on an order by hand (`Held`) is left alone by
-doctrine's standing orders: Engage (Fight on meeting), Deploy, falling out and home with empty magazines. Only two
+takes up the fight for units nobody has touched. A captain or admiral keeps whose order he's on (`Whose`: his own, his
+superior's, or the player's by hand); on the player's he is left alone by doctrine's standing orders: Engage (Fight on meeting), Deploy, falling out and home with empty magazines. Only two
 things take a held unit, each for its moment and then giving the order back: a captain combing a torpedo's track (her
 course, or her route: `ShipCommand.ResumeRoute`), and an admiral turning his line away from a torpedo attack. The
 pilot's slide along a coast stays (physics, not a choice). The hand lasts until the unit's handed back (`Resume`, an
 order to its group gathering it in, a route's end: kept on purpose, the user 2026-10-23, since a ship sent off on
-waypoints is easily forgotten; the hand matters most in a tight spot, where orders are courses) or another order replaces it (a task's, a superior's); a ship let go
-past her fall-out is judged again at once. The player's Fight is the player's order too: inside it the captain still turns away
-when outgunned and zigzags under fire, since that's what Fight means.
+waypoints is easily forgotten; the hand matters most in a tight spot, where orders are courses) or another order
+replaces it (a task's, a superior's); a ship let go past her fall-out is judged again at once. The player's Fight is the
+player's order too: inside it the captain still turns away when outgunned and zigzags under fire, since that's what
+Fight means. Only the player's hand overrules a fallen-out captain (`Overruled`); a task's order never did on purpose,
+and no longer can.
+
+The rules for a member's place in its line (`Chain.Place`, `Chain.Pin`: a superior's order waits while it's out, the
+player's nudges it out or takes it from its task, a task's takes it out for the task) are one piece of code that
+captains and admirals both call (`Sim.Ai/Chain.cs`, the 2026-10-23 review); each layer adds only its own side effects
+(a ship's limits, a squadron's gathering).
 
 ### Fitness: what a ship can still do
 

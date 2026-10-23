@@ -317,14 +317,14 @@ public class ForceTests(ITestOutputHelper output)
         Assert.Equal(Detachment.Nudged, force.DetachmentOf(sq2));
         Run(w, 10 * 60);
         Assert.Equal(45, Ship(w, 4).HeadingDeg, 0);
-        Assert.Equal((CaptainOrder.Station, OrderSource.Superior), (ai.Captains.Of(5).Order, ai.Captains.Of(5).Source));
-        Assert.Equal(OrderSource.Player, ai.Admirals.Of(sq2).Source);
+        Assert.Equal((CaptainOrder.Station, Whose.Superior), (ai.Captains.Of(5).Order, ai.Captains.Of(5).Whose));
+        Assert.Equal(Whose.Own, ai.Admirals.Of(sq2).Whose);
 
         // an order to the force gathers it back to its station
         w.Apply(ai.Orders.Course(Unit.Group(f), 10));
         Assert.Equal(Detachment.InLine, force.DetachmentOf(sq2));
         Run(w, 2);
-        Assert.Equal((CaptainOrder.Station, OrderSource.Superior), (ai.Admirals.Of(sq2).Order, ai.Admirals.Of(sq2).Source));
+        Assert.Equal((CaptainOrder.Station, Whose.Superior), (ai.Admirals.Of(sq2).Order, ai.Admirals.Of(sq2).Whose));
 
         // pinned, it stays out through the force's orders, and is asked back once
         w.Apply(ai.Orders.Detach(Unit.Group(sq2)));
@@ -341,7 +341,7 @@ public class ForceTests(ITestOutputHelper output)
         Run(w, 2);
         Assert.Equal(Detachment.InLine, force.DetachmentOf(sq2));
         Assert.False(ai.Admirals.IsAsked(sq2));
-        Assert.Equal(OrderSource.Superior, ai.Admirals.Of(sq2).Source);
+        Assert.Equal(Whose.Superior, ai.Admirals.Of(sq2).Whose);
 
         // a ship pinned out of its squadron is asked back when the squadron's orders change
         w.Apply(ai.Orders.Detach(Unit.Ship(9)));

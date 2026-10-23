@@ -30,7 +30,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
     sealed class Admiral
     {
         public int GroupId;
-        public OrderSource Source;
+        public Whose Whose;             // whose order the group is on: its own, its superior's, the player's by hand
         public int HandedTo;            // the guide unit his order went to, 0 for none yet
         public int LimitTo, ClearTo;    // the guide units his limit and clearance went to
         public double LimitKn, ClearM;  // what he gave them (0: none)
@@ -45,7 +45,6 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
         public bool Loop;
         public bool Watch;              // held by the player on a route: its end hands the group back
         public bool Asked;              // held by the player while his superior's orders for it changed: a notice
-        public bool Held;               // on the player's order by hand (UnitOrders.Hand): doctrine's standing orders leave it to the player
         public FireOrder Fire;          // his group's fire order (AdmiralLayer.Fire.cs), engaging FireTarget
         public int FireTarget;
         public bool Met;                // doctrine's Engage taken up in this encounter
@@ -108,9 +107,9 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
         return period;
     }
 
-    /// <summary>A group's admiral's order, its target unit and who gave it; None if he has none.</summary>
-    public (CaptainOrder Order, int Target, OrderSource Source) Of(int groupId) =>
-        Find(groupId) is int i and >= 0 ? (admirals[i].Order, admirals[i].Target, admirals[i].Source) : (CaptainOrder.None, 0, OrderSource.Player);
+    /// <summary>A group's admiral's order, its target unit and whose it is; None if he has none.</summary>
+    public (CaptainOrder Order, int Target, Whose Whose) Of(int groupId) =>
+        Find(groupId) is int i and >= 0 ? (admirals[i].Order, admirals[i].Target, admirals[i].Whose) : (CaptainOrder.None, 0, Whose.Own);
 
     /// <summary>The speed asked of a group (NaN if none) and the limit its guide was given (0: none).</summary>
     public (double AskedKn, double LimitKn) SpeedOf(int groupId) =>
@@ -129,11 +128,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
         if (groups.Get(u.GroupId) is not { } g)
             return;
         var code = (AiCommand)c.Code;
-        var source = (OrderSource)(c.B & 0xFF);
-        bool tasked = source == OrderSource.Task;   // the AI's own order: his, as the player's are, but it doesn't hold the group
-        bool hand = source == OrderSource.Player && (c.B & UnitOrders.Hand) != 0;
-        if (tasked)
-            source = OrderSource.Player;
+        var from = OrderFrom.Of(c);
         var parent = g.Parent != 0 ? groups.Get(g.Parent) : null;
         var detached = parent?.DetachmentOf(g.GroupId) ?? Detachment.InLine;
         var a = Get(g.GroupId);
@@ -153,15 +148,17 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
             case AiCommand.Resume:
                 if (parent != null && detached != Detachment.InLine)
                     ctx.Issue(GroupSystem.DetachGroup(g.GroupId, Detachment.InLine));   // its force's admiral gives it its station
-                (a.Asked, a.Held) = (false, false);
+                a.Asked = false;
+                if (a.Whose == Whose.Player)
+                    a.Whose = Whose.Own;   // let go: its superior's station comes next think
                 return;
             case AiCommand.Detach:
-                var pin = tasked ? Detachment.Tasked : Detachment.Pinned;
-                if (parent == null || detached == pin || tasked && detached != Detachment.InLine)
+                if (parent == null || Chain.Pin(from, detached) is not { } pin)
                     return;
                 ctx.Issue(GroupSystem.DetachGroup(g.GroupId, pin));
                 Release(ctx, g, a);   // it holds what it was doing, the player's (or its task's) now
-                a.Held |= hand;
+                if (from.Hand)
+                    a.Whose = Whose.Player;
                 return;
             case AiCommand.SpeedLimit:
                 a.LimitAbove = c.X;
@@ -173,25 +170,29 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
                 return;
         }
 
-        if (source == OrderSource.Superior && parent != null && detached != Detachment.InLine)
+        if (parent != null)
         {
-            if (detached != Detachment.Tasked)
-                Ask(a);   // the player has it: its superior's order waits for the hand-back, and is given again then
-            return;   // on its task: the order waits for its end, no notice
+            // its superior's order waits while it's out of the line (the player has it: a notice; its task: none, it
+            // waits for its end); the player's takes it out of the line or from its task, a task's out of the line
+            if (Chain.Place(from, detached, out bool ask) is not { } place)
+            {
+                if (ask)
+                    Ask(a);
+                return;
+            }
+            if (place != detached)
+            {
+                if (detached == Detachment.InLine)
+                    (a.LimitAbove, a.ClearAbove) = (0, 0);   // its superior's limits go with its superior
+                ctx.Issue(GroupSystem.DetachGroup(g.GroupId, detached = place));
+            }
         }
-        if (source == OrderSource.Player && parent != null && (detached == Detachment.InLine || !tasked && detached == Detachment.Tasked))
-        {
-            // the player takes it out of the line, or from its task; the AI's own order, out for its task
-            if (detached == Detachment.InLine)
-                (a.LimitAbove, a.ClearAbove) = (0, 0);   // its superior's limits go with its superior
-            detached = tasked ? Detachment.Tasked : Detachment.Nudged;
-            ctx.Issue(GroupSystem.DetachGroup(g.GroupId, detached));
-        }
-        if (source == OrderSource.Superior)
+        var whose = from.Whose;
+        if (whose == Whose.Superior)
             a.Asked = false;   // in its superior's hands again
-        if (source == OrderSource.Player)
+        else
             Gather(ctx, g);
-        (a.Source, a.Held) = (source, hand);   // the player's hand, or another's: a task's, his superior's, a scenario's
+        a.Whose = whose;
         (a.Turning, a.Away, a.DeployMs) = (false, false, 0);   // a new order ends a turn under way, a turn-away, a deployment
 
         if (code == AiCommand.TurnTogether)
@@ -253,7 +254,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
             default:
                 throw new ArgumentException($"unknown AI command {c.Code}");
         }
-        a.Watch = a.Order == CaptainOrder.Route && source == OrderSource.Player && detached == Detachment.Nudged;
+        a.Watch = a.Order == CaptainOrder.Route && whose != Whose.Superior && detached == Detachment.Nudged;
         AskHeld(g);   // his orders changed: his members the player holds are asked back
 
         var to = GuideUnit(g);
@@ -366,13 +367,13 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
                 captains.Release(ctx, e);
         }
         for (int i = 0; i < count; i++)
-            if (admirals[i].Source == OrderSource.Superior && groups.Get(admirals[i].GroupId) is { } g && !groups.InForceLine(g))
+            if (admirals[i].Whose == Whose.Superior && groups.Get(admirals[i].GroupId) is { } g && !groups.InForceLine(g))
                 Release(ctx, g, admirals[i]);
     }
 
     /// <summary>Whether a group's admiral already holds his superior's order to keep this station on a ship.</summary>
     bool Holds(int groupId, int ship, double astern, double abeam) =>
-        Find(groupId) is int i and >= 0 && admirals[i] is { Source: OrderSource.Superior, Order: CaptainOrder.Station } a &&
+        Find(groupId) is int i and >= 0 && admirals[i] is { Whose: Whose.Superior, Order: CaptainOrder.Station } a &&
         a.Target == Unit.Ship(ship).Id && a.DistanceM == astern && a.AbeamM == abeam;
 
     /// <summary>The unit a group's orders go to: its guide ship's captain, or its guide group's admiral.</summary>
@@ -416,13 +417,13 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
     {
         int lead = ctx.Ships.SlotOf(groups.GuideShip(g));
         var to = GuideUnit(g);
-        if (a.Order is CaptainOrder.Follow or CaptainOrder.Run or CaptainOrder.Station or CaptainOrder.Shadow or CaptainOrder.Fight or CaptainOrder.Screen or CaptainOrder.None && lead >= 0 && to.Id != 0)
+        if (a.Order is not (CaptainOrder.Course or CaptainOrder.Route) && lead >= 0 && to.Id != 0)
         {
             (a.Order, a.CourseDeg, a.RudderDeg, a.RouteCount, a.Loop) = (CaptainOrder.Course, double.NaN, 0, 0, false);
             a.AskedKn = ctx.Ships[lead].SpeedOrderKn;
             ctx.Issue(ctx.Orders.Hold(to, OrderSource.Superior));
         }
-        (a.LimitAbove, a.ClearAbove, a.Source, a.Asked) = (0, 0, OrderSource.Player, false);
+        (a.LimitAbove, a.ClearAbove, a.Whose, a.Asked) = (0, 0, Whose.Own, false);
         if (to.Id != 0)
         {
             Limit(ctx, g, a);
@@ -554,7 +555,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
         {
             var a = admirals[i];
             h.Add(a.GroupId);
-            h.Add((int)a.Source);
+            h.Add((int)a.Whose);
             h.Add(a.HandedTo);
             h.Add(a.LimitTo);
             h.Add(a.LimitKn);
@@ -575,8 +576,6 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
             h.Add(a.Loop);
             h.Add(a.Watch);
             h.Add(a.Asked);
-            if (a.Held)
-                h.Add(2);   // only then: worlds without the player's hand hash as before
             h.Add((int)a.Fire);
             h.Add(a.FireTarget);
             h.Add(a.Met);

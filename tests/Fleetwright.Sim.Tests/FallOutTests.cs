@@ -80,7 +80,7 @@ public class FallOutTests(ITestOutputHelper output)
         w.AdvanceTo(w.Time + 5_000);
         Assert.Equal(CaptainReason.OutGuns, ai.Captains.ReasonOf(1));
         // the strip's "order her back into line": an order of the player's, then back in her squadron
-        w.Apply(ai.Orders.Fight(Unit.Ship(1)));
+        w.Apply(ai.Orders.ByHand.Fight(Unit.Ship(1)));
         w.Apply(GroupSystem.Add(g, 1));
         w.AdvanceTo(w.Time + 30_000);
         var cls = Ship(w, 1).Handling.Class;

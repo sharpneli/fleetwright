@@ -86,7 +86,7 @@ public sealed class AiSystem : IWorldSystem
             throw new ArgumentException($"unknown AI command {c.Code}");
         var u = new Unit(c.Entity);
         var code = (AiCommand)c.Code;
-        var source = (OrderSource)(c.B & 0xFF);
+        var source = OrderFrom.Of(c).Source;
         switch (code)
         {
             case AiCommand.Commander:

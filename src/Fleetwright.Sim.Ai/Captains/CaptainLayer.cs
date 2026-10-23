@@ -82,8 +82,9 @@ public enum CaptainReason : byte
 /// <para><b>Who has a ship:</b> a ship in a group's line takes its admiral's orders. The player's order to it takes it
 /// out of the line (nudged) and makes it the player's; its admiral's orders for it are dropped until it's handed back
 /// (<see cref="AiCommand.Resume"/>), and he gives them again then. A route the player gave such a ship hands it back at
-/// its last waypoint. An explicit <see cref="AiCommand.Detach"/> pins it out until resumed. An order by the player's
-/// hand (<see cref="UnitOrders.Hand"/>) holds her against doctrine's standing orders (CaptainLayer.Fire.cs).</para>
+/// its last waypoint. An explicit <see cref="AiCommand.Detach"/> pins it out until resumed (the rules are
+/// <see cref="Chain"/>'s, an admiral's the same). An order by the player's hand (<see cref="Whose.Player"/>) keeps
+/// doctrine's standing orders off her (CaptainLayer.Fire.cs).</para>
 /// <para><b>Limits</b> come from above as orders (<see cref="AiCommand.SpeedLimit"/>): what he rings is never more,
 /// while what was asked is kept. So does the clearance from the coast his ship must keep (its formation's half-width,
 /// <see cref="AiCommand.Clearance"/>), which he hands the helm.</para>
@@ -98,7 +99,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
     {
         public int Entity;
         public CaptainOrder Order;
-        public OrderSource Source;
+        public Whose Whose;             // whose order he's on: his own, his superior's, the player's by hand
         public int Target;              // a unit (Unit.Id)
         public double DistanceM, AbeamM;
         public double AskedKn;          // the speed ordered (NaN: none, the ship keeps what's rung)
@@ -117,7 +118,6 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         public bool TorpedoHeld;        // his flotilla attacking together: his torpedoes wait for its signal
         public CaptainReason Reason;    // why, when it isn't simply his order (fallen out)
         public bool Overruled;          // the player ordered him on after he fell out: he stays, at his ship's risk
-        public bool Held;               // on the player's order by hand (UnitOrders.Hand): doctrine's standing orders leave the ship to the player
         public int FitVersion;          // his ship's condition's version when he last judged its fitness
         public long CombUntilMs;        // combing a torpedo's track until then (0: not)
         public double CombDeg, CombBackDeg;   // the comb's course, and the course ordered before it
@@ -194,13 +194,14 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         return period;
     }
 
-    static bool IsActive(in Captain c) => c.Order is CaptainOrder.Follow or CaptainOrder.Run or CaptainOrder.Station or CaptainOrder.Shadow or CaptainOrder.Fight or CaptainOrder.Home || c.Watch;
+    // a behaviour he works at each think (not an order handed the helm once), or a route the player gave to watch
+    static bool IsActive(in Captain c) => c.Order is not (CaptainOrder.None or CaptainOrder.Course or CaptainOrder.Route) || c.Watch;
 
-    /// <summary>A ship's captain's order, its target unit and who gave it; None if he has none.</summary>
-    public (CaptainOrder Order, int Target, OrderSource Source) Of(int entity)
+    /// <summary>A ship's captain's order, its target unit and whose it is; None if he has none.</summary>
+    public (CaptainOrder Order, int Target, Whose Whose) Of(int entity)
     {
         int i = Find(entity);
-        return i >= 0 ? (captains[i].Order, captains[i].Target, captains[i].Source) : (CaptainOrder.None, 0, OrderSource.Player);
+        return i >= 0 ? (captains[i].Order, captains[i].Target, captains[i].Whose) : (CaptainOrder.None, 0, Whose.Own);
     }
 
     /// <summary>Whether a ship's captain is combing a torpedo's track his lookouts saw (his admiral reads it: tracks seen).</summary>
@@ -224,11 +225,11 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         if (i < 0)
             return false;
         ref readonly var c = ref captains[i];
-        return c.Source == OrderSource.Superior && c.Order == order && c.Target == target && c.DistanceM == astern && c.AbeamM == abeam;
+        return c.Whose == Whose.Superior && c.Order == order && c.Target == target && c.DistanceM == astern && c.AbeamM == abeam;
     }
 
     /// <summary>The entity of the i-th captain (in entity order) if he holds an order from his superior, else 0.</summary>
-    public int SuperiorsAt(int i) => captains[i].Source == OrderSource.Superior ? captains[i].Entity : 0;
+    public int SuperiorsAt(int i) => captains[i].Whose == Whose.Superior ? captains[i].Entity : 0;
 
     /// <summary>An order to a ship's captain, as a command (<see cref="UnitOrders"/>).</summary>
     public void Order(in AiContext ctx, in Command c)
@@ -237,15 +238,11 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         if (slot < 0)
             return;   // dropped or never made: an order that reached no ship
         var code = (AiCommand)c.Code;
-        var source = (OrderSource)(c.B & 0xFF);
-        bool tasked = source == OrderSource.Task;   // the AI's own order: his, as the player's are, but it doesn't hold him
-        bool hand = source == OrderSource.Player && (c.B & UnitOrders.Hand) != 0;
-        if (tasked)
-            source = OrderSource.Player;
+        var from = OrderFrom.Of(c);
         switch (code)
         {
             case AiCommand.FireAtWill or AiCommand.HoldFire or AiCommand.Engage:
-                FireOrdered(ctx, c, source);   // the guns: not the helm, so he keeps his place in the line
+                FireOrdered(ctx, c, from);   // the guns: not the helm, so he keeps his place in the line
                 return;
             case AiCommand.Form:
                 return;   // a group's
@@ -259,16 +256,20 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
                 if (g != null && detached != Detachment.InLine)
                     ctx.Issue(GroupSystem.Detach(e, Detachment.InLine));   // his admiral gives him his station
                 if (Find(e) is int ri and >= 0)
-                    (captains[ri].Asked, captains[ri].Held) = (false, false);
+                {
+                    ref var back = ref captains[ri];
+                    back.Asked = false;
+                    if (back.Whose == Whose.Player)
+                        back.Whose = Whose.Own;   // let go: his superior's station comes next think
+                }
                 return;
             case AiCommand.Detach:
-                var pin = tasked ? Detachment.Tasked : Detachment.Pinned;
-                if (g == null || detached == pin || tasked && detached != Detachment.InLine)
+                if (g == null || Chain.Pin(from, detached) is not { } pin)
                     return;
                 ctx.Issue(GroupSystem.Detach(e, pin));
                 Release(ctx, e);   // he holds what he was doing, the player's (or his task's) now
-                if (hand)
-                    Get(e).Held = true;
+                if (from.Hand)
+                    Get(e).Whose = Whose.Player;
                 return;
             case AiCommand.SpeedLimit:
                 ref var lim = ref Get(e);
@@ -280,33 +281,34 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
                 return;
         }
 
-        if (source == OrderSource.Superior && g != null && detached != Detachment.InLine)
+        if (g != null)
         {
-            if (detached != Detachment.Tasked)
-                Ask(e);   // the player has him: his superior's order waits for the hand-back, and is given again then
-            return;   // on his task: the order waits for its end, no notice
-        }
-        if (source == OrderSource.Player && g != null && (detached == Detachment.InLine || !tasked && detached == Detachment.Tasked))
-        {
-            // the player takes him out of the line, or from his task; the AI's own order, out for his task
-            detached = tasked ? Detachment.Tasked : Detachment.Nudged;
-            ctx.Issue(GroupSystem.Detach(e, detached));
+            // his superior's order waits while he's out of the line (the player has him: a notice; his task: none, it
+            // waits for its end); the player's takes him out of the line or from his task, a task's out of the line
+            if (Chain.Place(from, detached, out bool ask) is not { } place)
+            {
+                if (ask)
+                    Ask(e);
+                return;
+            }
+            if (place != detached)
+                ctx.Issue(GroupSystem.Detach(e, detached = place));
         }
 
         ref var cap = ref Get(e);
         var own = ctx.Ships[slot];
-        if (source == OrderSource.Player && cap.Source == OrderSource.Superior)
+        var whose = from.Whose;
+        if (whose != Whose.Superior && cap.Whose == Whose.Superior)
         {
             SetLimit(ctx, ref cap, own, 0);   // his superior's limit and clearance go with his superior
             SetClearance(ctx, ref cap, e, 0);
         }
-        if (source == OrderSource.Superior)
+        if (whose == Whose.Superior)
             cap.Asked = false;   // in his superior's hands again
-        cap.Source = source;
-        cap.Held = hand;   // the player's hand, or another's: a task's, his superior's, a scenario's
+        cap.Whose = whose;
         // the player's order to a ship fallen out keeps her in (docs/map-ui/battle-hud.md decision 2: the player may
         // overrule her captain; attention is what's rewarded): she won't fall out again this battle
-        if (source == OrderSource.Player && cap.Reason is CaptainReason.OutSpeed or CaptainReason.OutGuns or CaptainReason.OutList
+        if (whose == Whose.Player && cap.Reason is CaptainReason.OutSpeed or CaptainReason.OutGuns or CaptainReason.OutList
             or CaptainReason.OutWater or CaptainReason.OutSteering)
             cap.Overruled = true;
         cap.Reason = CaptainReason.None;   // ordered: doing what he's told
@@ -368,7 +370,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
             default:
                 throw new ArgumentException($"unknown AI command {c.Code}");
         }
-        cap.Watch = cap.Order == CaptainOrder.Route && source == OrderSource.Player && detached == Detachment.Nudged;
+        cap.Watch = cap.Order == CaptainOrder.Route && whose != Whose.Superior && detached == Detachment.Nudged;
         Recount();
     }
 
@@ -381,11 +383,11 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
             return;
         ref var cap = ref captains[i];
         var own = ctx.Ships[slot];
-        if (cap.Order is CaptainOrder.Follow or CaptainOrder.Run or CaptainOrder.Station or CaptainOrder.Shadow or CaptainOrder.Fight or CaptainOrder.Home or CaptainOrder.None)
+        if (cap.Order is not (CaptainOrder.Course or CaptainOrder.Route))
             (cap.Order, cap.Target, cap.AskedKn) = (own.Helm == Helm.Route ? CaptainOrder.Route : CaptainOrder.Course, 0, own.SpeedOrderKn);
         SetLimit(ctx, ref cap, own, 0);
         SetClearance(ctx, ref cap, entity, 0);
-        (cap.Source, cap.Asked) = (OrderSource.Player, false);
+        (cap.Whose, cap.Asked) = (Whose.Own, false);
         Recount();
     }
 
@@ -559,7 +561,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
             ref readonly var c = ref captains[i];
             h.Add(c.Entity);
             h.Add((int)c.Order);
-            h.Add((int)c.Source);
+            h.Add((int)c.Whose);
             h.Add(c.Target);
             h.Add(c.DistanceM);
             h.Add(c.AbeamM);
@@ -582,8 +584,6 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
             h.Add((int)c.Reason);
             if (c.Overruled)
                 h.Add(true);   // only then: worlds without an overrule hash as before
-            if (c.Held)
-                h.Add(2);   // only then: worlds without the player's hand hash as before
             h.Add(c.FitVersion);
             h.Add(c.CombUntilMs);
             h.Add(c.CombDeg);

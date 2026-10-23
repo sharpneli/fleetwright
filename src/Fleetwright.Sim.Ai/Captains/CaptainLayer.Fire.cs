@@ -60,12 +60,13 @@ public sealed partial class CaptainLayer
 
     /// <summary>A fire order for his ship (a command): the player's always; an admiral's when it's fresh (X 1) or he holds
     /// that admiral's order already.</summary>
-    void FireOrdered(in AiContext ctx, in Command c, OrderSource source)
+    void FireOrdered(in AiContext ctx, in Command c, OrderFrom by)
     {
         int e = c.Entity;
-        int from = source == OrderSource.Superior ? (int)c.Y : 0;
+        bool superior = by.Source == OrderSource.Superior;
+        int from = superior ? (int)c.Y : 0;
         ref var cap = ref Get(e);
-        if (source == OrderSource.Superior && c.X == 0 && cap.FireFrom != from)
+        if (superior && c.X == 0 && cap.FireFrom != from)
             return;   // the player's order, or another admiral's, stands
         cap.Fire = (AiCommand)c.Code switch
         {
@@ -115,10 +116,10 @@ public sealed partial class CaptainLayer
 
     /// <summary>A ship alone whose doctrine is to fight (docs/battle/command.md "Doctrine": Engage) takes up Fight when
     /// it first meets an enemy in sight in an encounter; it's armed again once it's out of encounters. Not while the
-    /// player holds her (<see cref="Captain.Held"/>): the player's order is what she does.</summary>
+    /// player holds her (<see cref="Whose.Player"/>): the player's order is what she does.</summary>
     void TakeUpStanding(in AiContext ctx, ref Captain cap, ShipState own, int slot)
     {
-        if (cap.Held || cap.Order == CaptainOrder.Home || Tasks?.Avoids(Unit.Ship(own.Entity)) == true || (Engage)doctrine.Of(own.Entity, own.Side, DoctrineField.Engage) != Engage.Fight)
+        if (cap.Whose == Whose.Player || cap.Order == CaptainOrder.Home || Tasks?.Avoids(Unit.Ship(own.Entity)) == true || (Engage)doctrine.Of(own.Entity, own.Side, DoctrineField.Engage) != Engage.Fight)
             return;
         if (encounters.Of(slot, own.Entity) == 0)
         {
@@ -626,12 +627,12 @@ public sealed partial class CaptainLayer
     /// changes: too slow, too few main guns, listing too far, too much water, or (when doctrine falls out at all) unable to
     /// steer. Then she leaves her group (the line closes up behind her: going-down ships leave the same way) and goes
     /// home, his own order, firing at will as she goes. Not once the player has ordered her on after it
-    /// (<see cref="Captain.Overruled"/>), nor while the player holds her (<see cref="Captain.Held"/>; judged again once
+    /// (<see cref="Captain.Overruled"/>), nor while the player holds her (<see cref="Whose.Player"/>; judged again once
     /// she's let go).</summary>
     void FallOut(in AiContext ctx, ref Captain cap, ShipState own, int slot)
     {
         var k = ctx.Ships.Combat.Condition(slot);
-        if (cap.Overruled || cap.Held || cap.Order == CaptainOrder.Home || !k.Damaged || k.Version == cap.FitVersion || k.Status != ShipStatus.Afloat)
+        if (cap.Overruled || cap.Whose == Whose.Player || cap.Order == CaptainOrder.Home || !k.Damaged || k.Version == cap.FitVersion || k.Status != ShipStatus.Afloat)
             return;
         cap.FitVersion = k.Version;
         var cls = own.Handling.Class;
@@ -648,13 +649,19 @@ public sealed partial class CaptainLayer
             FallOutCause.Water => CaptainReason.OutWater,
             _ => CaptainReason.None,
         };
-        if (why == CaptainReason.None)
-            return;
+        if (why != CaptainReason.None)
+            GoHome(ctx, ref cap, own, why);
+    }
+
+    /// <summary>Out of the fight by his own judgement: out of his line (it closes up behind her), his superior's limits
+    /// gone, and home.</summary>
+    void GoHome(in AiContext ctx, ref Captain cap, ShipState own, CaptainReason why)
+    {
         if (groups.Of(own.Entity) != null)
-            ctx.Issue(GroupSystem.Remove(own.Entity));   // out of the line
+            ctx.Issue(GroupSystem.Remove(own.Entity));
         SetLimit(ctx, ref cap, own, 0);
         SetClearance(ctx, ref cap, own.Entity, 0);
-        (cap.Order, cap.Target, cap.Source, cap.Watch, cap.Asked, cap.Reason) = (CaptainOrder.Home, 0, OrderSource.Player, false, false, why);
+        (cap.Order, cap.Target, cap.Whose, cap.Watch, cap.Asked, cap.Reason) = (CaptainOrder.Home, 0, Whose.Own, false, false, why);
         Recount();
     }
 
@@ -663,7 +670,7 @@ public sealed partial class CaptainLayer
     /// as one fallen out does, her secondaries firing at will as she goes. Not while the player holds her.</summary>
     void OutOfRounds(in AiContext ctx, ref Captain cap, ShipState own)
     {
-        if (cap.Held || cap.Order == CaptainOrder.Home)
+        if (cap.Whose == Whose.Player || cap.Order == CaptainOrder.Home)
             return;
         var cls = own.Handling.Class;
         var combat = ctx.Ships.Combat;
@@ -686,12 +693,7 @@ public sealed partial class CaptainLayer
             if (st.Loaded + st.Spare > 0)
                 return;
         }
-        if (groups.Of(own.Entity) != null)
-            ctx.Issue(GroupSystem.Remove(own.Entity));   // out of the line
-        SetLimit(ctx, ref cap, own, 0);
-        SetClearance(ctx, ref cap, own.Entity, 0);
-        (cap.Order, cap.Target, cap.Source, cap.Watch, cap.Asked, cap.Reason) = (CaptainOrder.Home, 0, OrderSource.Player, false, false, CaptainReason.OutAmmunition);
-        Recount();
+        GoHome(ctx, ref cap, own, CaptainReason.OutAmmunition);
     }
 
     /// <summary>Out of the fight, each second: away from the nearest enemy his navy holds in sight within
