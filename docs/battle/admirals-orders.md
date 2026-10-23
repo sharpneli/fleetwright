@@ -165,7 +165,23 @@ guns, torpedoes, task, formation), armed picks completed by a click on the map, 
 
 ## Measured (O1-O2, Release, 5 seeds; the Jutland one)
 
-_(filled below when the bench is in)_
+Against the same build with `ScreenSplitDeg` 0 (every screen in one body, as before):
+
+| Scenario | One body | Split |
+|---|---|---|
+| `squadrons`, `flotilla` (5 seeds) | identical: neither has a screen | |
+| `tsushima` (5 seeds) | done 3, quiet 1, time 1; Russia lost 6.4 of 13, Japan 4.2 of 14 | done 1, quiet 2, time 2; Russia 6.2, Japan 4.2 |
+| the Jutland (seeds 1916-1918) | time 3; Britain lost 39.0 of 151 (161 kt), Germany 48.3 of 99 (276 kt); torpedoes 270 and 210 a run | time 3; Britain 39.0 (144 kt), Germany 56.0 (200 kt); torpedoes 166 and 182 |
+
+- **Germany loses more ships and fewer tonnes:** more destroyers and light cruisers, fewer capital ships. The split
+  screens put a half of each flotilla on the threatened bow, nearer the enemy's light forces.
+- **Britain fires fewer torpedoes** (166 a run against 270): a flotilla on a screen counter-attacks by halves now, and
+  fewer boats are in reach when the commander sends it in. To watch in O5 (screens in action) and the AI's fine-tune.
+- **Own fire**, seed 1916 alone: 3 destroyers lost to their own side with the split, 1 without (counter-attacking halves
+  in a mêlée). One seed, so not yet a finding; the multi-seed bench doesn't count it.
+- Seeds diverge from the first minutes (which contact the commander holds, which he intercepts), so one seed's
+  timeline isn't comparable: seed 1916's Grand Fleet deploys at 17:43 in one body and not at all with the split.
+- **Cost:** the Jutland 150-232 s a seed split, 147-215 s in one body; the admirals 2.3% and 3.0% of seed 1916's run.
 
 ## Questions for the user
 
