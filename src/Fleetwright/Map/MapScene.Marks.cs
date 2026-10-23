@@ -39,8 +39,12 @@ public sealed partial class MapScene
             var ss = U8.Size(ShipSub(s, k, out _));
             ImGui.PopFont();
             float w = Math.Max(Math.Max(ns.X, ss.X), 32 * sc), h = line * 2 + (s.Conditions.IndexOf(e) >= 0 ? 1 + 3 * sc : 0);
+            // clear of her icon at any heading, and of the selection's ring round her
+            var pose = v.PoseAt(k, world.DrawMs).Position;
+            double half = IconLengthAt(view, v.Class[k], pose) / 2 + (e == selected ? 9 * Rp : 0);
+            float clear = (float)(half * sx);
             mapLabels.Add(LabelKind.Ship, e, k, e == selected ? 0 : 1, vp.Pos.X + (float)(x * sx), vp.Pos.Y + (float)(y * sy), w, h,
-                12 * sc, 6 * sc, LabelPlace.Left, LabelPlace.Right, LabelPlace.Below, LabelPlace.Above);
+                clear + 4 * sc, e == selected ? clear : 6 * sc, LabelPlace.Left, LabelPlace.Right, LabelPlace.Below, LabelPlace.Above);
         }
     }
 

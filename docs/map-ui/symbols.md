@@ -1,4 +1,4 @@
-# The map's symbols: from placeholder strokes to a finished look (2026-10-23)
+# The map's symbols: from placeholder strokes to a finished look (2026-10-23; Y0-Y5, Y7, Y8 built, Y6 waits for the playtest)
 
 The battle HUD (`battle-hud.md`, U0-U7) gave the map its panels; what it draws on the sea itself is still the dev
 layer's: every ring, diamond and line is a polyline of a fixed number of points pushed through `MapLines`, every
@@ -211,3 +211,28 @@ ring grows in from half again its size and fades in over 0.18 s; the ship, sight
 gets a faint ring in its tint, easing in over 0.12 s (not the selection); an encounter's ring fades in over 0.4 s as
 it opens and out where it was as it closes (one that opens again picks up from its fade); an asked group's "!"
 (its label and its held ring) pulses between 0.55 and 1 once a second. `-symbols=motion:0` stills them all.
+
+**Y8** (2026-10-23): a ship's label keeps clear of her icon at any heading (its half length past the anchor) and of
+the selection's ring; with that the Squadrons column labels all four ships. Captures beside the before ones:
+`png/symbols-after-encounter.png`, `-selection.png`, `-jutland.png`. The cost, as Y0's run:
+
+| | Frame mean / p99 | CPU mean | GPU mean | Overlay CPU | Labels CPU | UI bytes a frame |
+|---|---|---|---|---|---|---|
+| Jutland, Y0 | 8.55 / 11.4 ms | 1.98 ms | 1.27 ms | 0.230 ms | 0.041 ms | 44 |
+| Jutland, Y8 | 8.47 / 11.3 ms | 1.80 ms | 1.20 ms | 0.205 ms | 0.045 ms | 87 (once: the placer's arrays) |
+| Squadrons, Y0 | 8.42 / 9.1 ms | 2.43 ms | 2.12 ms | 0.072 ms | 0.018 ms | 44 |
+| Squadrons, Y8 | 8.41 / 8.9 ms | 1.33 ms | 1.01 ms | 0.071 ms | 0.028 ms | 76 (49 over 3,000 frames) |
+
+Nothing measurable added (Y0's Squadrons run had a slow start of its own); no GC in any run.
+
+## For the playtest
+
+Everything but Y6 is in. Knobs for tuning by eye, live from the command line: `-symbols=casing:1.5,casingalpha:0.6,
+halo:0,labelfade:0.3,motion:0,chord:0.5,width:1.2`. Worth a look while playing:
+
+- **Piles (Y6)**: the Jutland's squadrons forming up still sit on each other as symbols; their labels no longer pile.
+  Y6 if it bothers in play.
+- **Halo or pill**: names haloed, the range in its pill (decision 2).
+- **Dropped labels**: a label that doesn't fit is dropped, not stacked; the hover still names its ship.
+- **The glow**: the selected icon's is subtle on purpose, as the ring already marks her.
+- **The land rings** went behind F1 (Y4); say if they were wanted in play.
