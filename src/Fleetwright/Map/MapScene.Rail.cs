@@ -13,7 +13,11 @@ namespace Fleetwright.Map;
 /// head selects it for orders and opens its card; a ship's row selects her, twice centres the map on her), each ship
 /// with her flotation, fires, what she's firing at or why she's falling out, her speed and hits; then the enemy in the
 /// player's picture, nearest first from the ship the player last chose, with what's seen of each. Its text is written
-/// without garbage (<see cref="U8"/>).</summary>
+/// without garbage (<see cref="U8"/>).
+/// <para>Organising by drag and drop (docs/battle/admirals-orders.md O8c): a ship onto a squadron joins it at its end,
+/// onto a ship of one ahead of her (in her own, a move), onto a ship alone makes a squadron of the two; a squadron or a
+/// force onto another unit goes under its admiral (<see cref="GroupSystem.Subordinate"/>); either onto "on its own" leaves
+/// its squadron or force. What a drop does is told under the cursor before it's let go.</para></summary>
 public sealed partial class MapScene
 {
     /// <summary>The player's ship the enemy's ranges are from: the selection when it's hers, else the last one.</summary>
@@ -29,6 +33,9 @@ public sealed partial class MapScene
     readonly HashSet<int> railOpen = [];
     int railOwn;
     const int RailAllOpen = 12;
+    /// <summary>What the rail's drag carries: a ship (an entity) or a group (an id); 0 for neither.</summary>
+    int dragShip, dragGroup;
+    const string RailPayload = "FW_RAIL";
 
     void Rail(Snapshot s)
     {
@@ -78,8 +85,9 @@ public sealed partial class MapScene
                     ImGui.TextDisabled("not in a squadron");
                     loose = true;
                 }
-                ShipRow(s, k);
+                ShipRow(s, k, -1, -1);
             }
+        AloneZone(s);
         if (scroll)
             ImGui.EndChild();
 
@@ -190,6 +198,10 @@ public sealed partial class MapScene
         var (tagMin, tagMax) = tagged ? TagRect(gv.Commanded[g], p + new Vector2(w - 8 * sc, 2 * sc)) : default;
         bool onTag = tagged && InRect(ImGui.GetMousePos(), tagMin, tagMax);
         bool clicked = ImGui.InvisibleButton("##unit", new Vector2(w, ImGui.GetTextLineHeight() * 2 + 2 * sc));
+        bool hovered = ImGui.IsItemHovered();
+        var size = ImGui.GetItemRectSize();
+        DragFrom(s, 0, gv.Id[g]);
+        DropOn(s, g, -1, 0);
         if (clicked && onTag)
             world.Send(world.Orders.Automate(Unit.Group(gv.Id[g]), gv.Commanded[g] != 1));   // the tag: his, or the player's
         else if (clicked && gv.GuideShip[g] != 0)
@@ -206,10 +218,10 @@ public sealed partial class MapScene
                 railOpen.Remove(gv.Id[g]);   // its head again: shut its list
         }
         var dl = ImGui.GetWindowDrawList();
-        if (chosen || ImGui.IsItemHovered())
-            dl.AddRectFilled(p, p + ImGui.GetItemRectSize(), ImGui.GetColorU32(chosen ? DesignerTheme.BrassDarker : new Vector4(1, 1, 1, 0.05f)));
+        if (chosen || hovered)
+            dl.AddRectFilled(p, p + size, ImGui.GetColorU32(chosen ? DesignerTheme.BrassDarker : new Vector4(1, 1, 1, 0.05f)));
         if (chosen)
-            dl.AddRectFilled(p, p + new Vector2(2 * sc, ImGui.GetItemRectSize().Y), ImGui.GetColorU32(DesignerTheme.Brass));
+            dl.AddRectFilled(p, p + new Vector2(2 * sc, size.Y), ImGui.GetColorU32(DesignerTheme.Brass));
         ImGui.PushFont(UiFonts.SansBold);
         U8.Draw(dl, p + new Vector2(6 * sc, 0), ImGui.GetColorU32(DesignerTheme.Bright), U8.W($"{gv.Name[g]}"));
         ImGui.PopFont();
@@ -219,7 +231,7 @@ public sealed partial class MapScene
         ImGui.PushFont(UiFonts.SansSmall);
         U8.Draw(dl, p + new Vector2(6 * sc, ImGui.GetTextLineHeight()), ImGui.GetColorU32(DesignerTheme.Muted), sub);
         if (tagged)
-            Tag(dl, gv.Commanded[g], tagMin, tagMax, onTag && ImGui.IsItemHovered());
+            Tag(dl, gv.Commanded[g], tagMin, tagMax, onTag && hovered);
         ImGui.PopFont();
         // its members: a force's units always, a squadron's ships when few, or open, or holding the selection
         bool ships = !gv.Force[g] && (railOwn <= RailAllOpen || railOpen.Contains(gv.Id[g]) || gv.IndexOfShip(selected) == g);
@@ -232,14 +244,15 @@ public sealed partial class MapScene
                     UnitRows(s, sub2, depth + 1);
             }
             else if (s.Ships.IndexOf(m) is int k and >= 0)
-                ShipRow(s, k);
+                ShipRow(s, k, g, i);
         }
         ImGui.Unindent(depth * 8 * sc);
         ImGui.PopID();
     }
 
-    /// <summary>A ship's row: her name (and flag), what she fires at or why she's falling out; her flotation, speed and hits.</summary>
-    void ShipRow(Snapshot s, int k)
+    /// <summary>A ship's row: her name (and flag), what she fires at or why she's falling out; her flotation, speed and hits.
+    /// In a squadron (its index <paramref name="g"/>) she's its <paramref name="at"/>-th member; -1 for a ship alone.</summary>
+    void ShipRow(Snapshot s, int k, int g, int at)
     {
         var v = s.Ships;
         int e = v.Entity[k];
@@ -251,6 +264,9 @@ public sealed partial class MapScene
         var (tagMin, tagMax) = tagged ? TagRect(v.Commanded[k], p + new Vector2(w - 50 * sc, 0)) : default;   // left of her flotation
         bool onTag = tagged && InRect(ImGui.GetMousePos(), tagMin, tagMax);
         bool clicked = ImGui.InvisibleButton("##ship", new Vector2(w, h));
+        bool hovered = ImGui.IsItemHovered();
+        DragFrom(s, e, 0);
+        DropOn(s, g, at, e);
         if (clicked && onTag)
             world.Send(world.Orders.Automate(Unit.Ship(e), v.Commanded[k] != 1));
         else if (clicked)
@@ -266,7 +282,7 @@ public sealed partial class MapScene
         }
         bool on = selected == e && squadronCardOf != e;
         var dl = ImGui.GetWindowDrawList();
-        if (on || ImGui.IsItemHovered())
+        if (on || hovered)
             dl.AddRectFilled(p, p + new Vector2(w, h), ImGui.GetColorU32(on ? DesignerTheme.BrassDarker : new Vector4(1, 1, 1, 0.05f)));
         if (on)
             dl.AddRectFilled(p, p + new Vector2(2 * sc, h), ImGui.GetColorU32(DesignerTheme.Brass));
@@ -298,13 +314,146 @@ public sealed partial class MapScene
         dl.AddRectFilled(new Vector2(bx, by), new Vector2(bx + bw, by + 4 * sc), ImGui.GetColorU32(DesignerTheme.Inset), 1);
         dl.AddRectFilled(new Vector2(bx, by), new Vector2(bx + bw * afloat, by + 4 * sc), ImGui.GetColorU32(afloat > 0.8f ? Ok : afloat > 0.6f ? DesignerTheme.Amber : Bad), 1);
         if (tagged)
-            Tag(dl, v.Commanded[k], tagMin, tagMax, onTag && ImGui.IsItemHovered());
+            Tag(dl, v.Commanded[k], tagMin, tagMax, onTag && hovered);
         var right = U8.W($"{v.Speed[k] / Handling.MsPerKnot:0} kn · {(ci >= 0 ? s.Conditions.Hits[ci] : 0)} hits");
         var rs = U8.Size(right);
         U8.Draw(dl, new Vector2(p.X + w - rs.X - 2 * sc, p.Y + ImGui.GetTextLineHeight()), ImGui.GetColorU32(DesignerTheme.Muted), right);
         ImGui.PopFont();
         ImGui.PopID();
     }
+
+    // ------------------------------------------------------------------ organising by drag and drop
+
+    /// <summary>The last row a drag can start from: a ship (an entity) or a group (an id), named under the cursor.</summary>
+    void DragFrom(Snapshot s, int ship, int group)
+    {
+        if (!ImGui.BeginDragDropSource())
+            return;
+        (dragShip, dragGroup) = (ship, group);
+        ImGui.SetDragDropPayload(RailPayload, IntPtr.Zero, 0);
+        U8.Text(ship != 0 ? U8.W($"{ShipName(s, ship)}") : s.Groups.IndexOfGroup(group) is int gi and >= 0 ? U8.W($"{s.Groups.Name[gi]}") : "?"u8);
+        ImGui.EndDragDropSource();
+    }
+
+    /// <summary>The last row a drag can end on: a unit's head (<paramref name="g"/>, <paramref name="at"/> -1), a ship of a
+    /// squadron (its index and her place in it) or a ship alone (<paramref name="g"/> -1). What a drop does is told before
+    /// it's let go; one that would do nothing isn't taken.</summary>
+    void DropOn(Snapshot s, int g, int at, int ship)
+    {
+        if (!ImGui.BeginDragDropTarget())
+            return;
+        // what it does, made once a target (the drag hovers one at a time): no garbage while it's held there
+        var key = (dragShip, dragGroup, g, at, ship, world.Generation);
+        if (key != dropKey)
+        {
+            dropKey = key;
+            dropOk = DropAction(s, g, at, ship, out dropWhat, out dropFirst, out dropSecond);
+        }
+        if (dropOk)
+            Accept(dropWhat, dropFirst, dropSecond);
+        ImGui.EndDragDropTarget();
+    }
+
+    (int, int, int, int, int, int) dropKey = (-1, -1, -1, -1, -1, -1);
+    bool dropOk;
+    string dropWhat = "";
+    Command dropFirst;
+    Command? dropSecond;
+    const int AloneTarget = -2;   // DropOn's group for the "on its own" place
+
+    /// <summary>The drag taken (the target outlined in brass, what it does under the cursor), and on its release the
+    /// commands sent.</summary>
+    void Accept(string what, in Command first, Command? second)
+    {
+        ImGui.PushStyleColor(ImGuiCol.DragDropTarget, DesignerTheme.Brass);
+        var payload = ImGui.AcceptDragDropPayload(RailPayload, ImGuiDragDropFlags.AcceptBeforeDelivery);
+        ImGui.PopStyleColor();
+        unsafe
+        {
+            if (payload.NativePtr == null)
+                return;
+        }
+        ImGui.SetTooltip(what);
+        if (!payload.IsDelivery())
+            return;
+        world.Send(first);
+        if (second is { } then)
+            world.Send(then);
+    }
+
+    /// <summary>What dropping the drag on a row (or on "on its own", <see cref="AloneTarget"/>) does, as the group commands
+    /// to send (one or two), and in words.</summary>
+    bool DropAction(Snapshot s, int g, int at, int ship, out string what, out Command first, out Command? second)
+    {
+        var gv = s.Groups;
+        (what, first, second) = ("", default, null);
+        if (g == AloneTarget)
+        {
+            if (dragShip != 0 && gv.IndexOfShip(dragShip) >= 0)
+                (first, what) = (GroupSystem.Remove(dragShip), $"{ShipName(s, dragShip)} out of her squadron");
+            else if (dragGroup != 0 && gv.IndexOfGroup(dragGroup) is int og and >= 0 && gv.Parent[og] != 0)
+                (first, what) = (GroupSystem.Exit(dragGroup), $"{gv.Name[og]} out of its force, on its own");
+            else
+                return false;
+            return true;
+        }
+        if (dragShip != 0)
+        {
+            string name = ShipName(s, dragShip);
+            if (g >= 0)
+            {
+                if (gv.Force[g] || ship == dragShip || at < 0 && gv.IndexOfShip(dragShip) == g)
+                    return false;   // a force holds squadrons; onto herself, or her own squadron's head, does nothing
+                (first, what) = at < 0
+                    ? (GroupSystem.Add(gv.Id[g], dragShip), $"{name} to {gv.Name[g]}, at its end")
+                    : (GroupSystem.Add(gv.Id[g], dragShip, at), $"{name} to {gv.Name[g]}, ahead of {ShipName(s, ship)}");
+                return true;
+            }
+            if (ship == 0 || ship == dragShip)
+                return false;
+            string lead = ShipName(s, ship);
+            (first, second, what) = (GroupSystem.Create(ship), GroupSystem.Join(dragShip, ship), $"a new squadron of {lead} and {name}, {lead} leading");
+            return true;
+        }
+        if (dragGroup == 0 || g < 0 || gv.IndexOfGroup(dragGroup) is not (int dg and >= 0))
+            return false;
+        if (gv.Id[g] == dragGroup || gv.Parent[dg] == gv.Id[g] || Inside(gv, g, dragGroup))
+            return false;   // onto itself, its own force, or something inside it
+        (first, what) = (GroupSystem.Subordinate(dragGroup, gv.Id[g]), gv.Force[g]
+            ? $"{gv.Name[dg]} under {gv.Name[g]}'s admiral"
+            : $"{gv.Name[dg]} under {gv.Name[g]}'s admiral: a force of the two, {gv.Name[g]} guiding");
+        return true;
+    }
+
+    /// <summary>Whether a group (an index) is a group (an id) or inside it.</summary>
+    static bool Inside(GroupsView gv, int g, int groupId)
+    {
+        for (int at = g; at >= 0; at = gv.Parent[at] != 0 ? gv.IndexOfGroup(gv.Parent[at]) : -1)
+            if (gv.Id[at] == groupId)
+                return true;
+        return false;
+    }
+
+    /// <summary>While a drag is on: a place to drop a ship out of her squadron, or a group out of its force.</summary>
+    void AloneZone(Snapshot s)
+    {
+        unsafe
+        {
+            if (ImGui.GetDragDropPayload().NativePtr == null)
+                return;
+        }
+        float sc = UiFonts.Scale;
+        var p = ImGui.GetCursorScreenPos();
+        var size = new Vector2(ImGui.GetContentRegionAvail().X, ImGui.GetTextLineHeight() * 1.6f);
+        ImGui.InvisibleButton("##alone", size);
+        var dl = ImGui.GetWindowDrawList();
+        dl.AddRect(p, p + size, ImGui.GetColorU32(DesignerTheme.Muted), 2 * sc);
+        ImGui.PushFont(UiFonts.SansSmall);
+        U8.Draw(dl, p + new Vector2(6, 3) * sc, ImGui.GetColorU32(DesignerTheme.Muted), "on its own"u8);
+        ImGui.PopFont();
+        DropOn(s, AloneTarget, -1, 0);
+    }
+
 
     /// <summary>An enemy's row: her identity as held (doubtful dashed), what's seen of her; range and bearing from the
     /// player's ship.</summary>

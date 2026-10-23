@@ -666,7 +666,7 @@ public sealed partial class ShipSystem
             case GroupCommand.SetFormation or GroupCommand.TurnTogether or GroupCommand.Reverse or GroupCommand.Divide or GroupCommand.Merge or GroupCommand.Disband or GroupCommand.Add or GroupCommand.Form or GroupCommand.Exit or GroupCommand.DetachGroup:
                 DerailGroup(world, groups.Get((int)c.A));
                 break;
-            case GroupCommand.Enter or GroupCommand.EnterAlongside:
+            case GroupCommand.Enter or GroupCommand.EnterAlongside or GroupCommand.Subordinate:
                 DerailGroup(world, groups.Get((int)c.A));
                 DerailGroup(world, groups.Get((int)c.Y));
                 break;

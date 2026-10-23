@@ -144,6 +144,56 @@ public class GroupTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void A_ship_joins_a_squadron_at_a_place_and_moves_within_it()
+    {
+        // the rail's drag and drop (docs/battle/admirals-orders.md O8c)
+        var (w, _) = Make(5);
+        Group(w, 3, Formation.Column);
+        w.Apply(GroupSystem.Create(4));
+        int sq = w.Groups.Of(1)!.GroupId;
+        w.Apply(GroupSystem.Add(sq, 5, 1));   // ahead of the second
+        Assert.Equal(new[] { 1, 5, 2, 3 }, w.Groups.Get(sq)!.Members);
+        w.Apply(GroupSystem.Add(sq, 3, 0));   // within it: to the head, guiding
+        Assert.Equal(new[] { 3, 1, 5, 2 }, w.Groups.Get(sq)!.Members);
+        Assert.Equal(3, w.Groups.Get(sq)!.Guide);
+        w.Apply(GroupSystem.Add(sq, 4, 2));   // out of hers, which goes, empty
+        Assert.Equal(new[] { 3, 1, 4, 5, 2 }, w.Groups.Get(sq)!.Members);
+        Assert.Single(w.Groups.Groups);
+    }
+
+    [Fact]
+    public void A_group_goes_under_another_s_admiral()
+    {
+        var (w, _) = Make(4);
+        w.Apply(GroupSystem.Create(1));
+        w.Apply(GroupSystem.Add(w.Groups.Of(1)!.GroupId, 2));
+        w.Apply(GroupSystem.Create(3));
+        w.Apply(GroupSystem.Create(4));
+        int a = w.Groups.Of(1)!.GroupId, b = w.Groups.Of(3)!.GroupId, c = w.Groups.Of(4)!.GroupId;
+        w.Groups.SetName(a, "1st BCS");
+
+        w.Apply(GroupSystem.Subordinate(b, a));   // onto a squadron: a force of the two, it guiding
+        var f = w.Groups.Get(w.Groups.Get(a)!.Parent)!;
+        Assert.True(f.IsForce);
+        Assert.Equal("1st BCS force", f.Name);
+        Assert.Equal(new[] { a, b }, f.Members);
+        Assert.Equal(Formation.Column, f.Formation);
+
+        w.Apply(GroupSystem.Subordinate(c, f.GroupId));   // onto a force: into it
+        Assert.Equal(new[] { a, b, c }, f.Members);
+
+        w.Apply(GroupSystem.Subordinate(c, b));   // onto a squadron in a force: wrapped where it was
+        var f2 = w.Groups.Get(w.Groups.Get(b)!.Parent)!;
+        Assert.Equal(new[] { a, f2.GroupId }, f.Members);
+        Assert.Equal(new[] { b, c }, f2.Members);
+        Assert.Equal(f.GroupId, f2.Parent);
+
+        w.Apply(GroupSystem.Subordinate(f.GroupId, a));   // a force under its own member: refused
+        Assert.Equal(0, f.Parent);
+        Assert.Equal(f.GroupId, w.Groups.Get(a)!.Parent);
+    }
+
+    [Fact]
     public void Groups_replay_from_the_log()
     {
         World Script()

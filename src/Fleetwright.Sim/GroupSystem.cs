@@ -63,6 +63,7 @@ public enum GroupCommand : ushort
     Reverse,
     Divide,
     Merge,
+    Subordinate,
 }
 
 /// <summary>The world's groups (docs/battle/plan.md steps 2.4 and 2.6): units that move together, in order, with a
@@ -126,6 +127,43 @@ public sealed class GroupSystem : IWorldSystem
             Owner?.MembershipChanged();
             members.Add(member);
             detached.Add(Detachment.InLine);
+            Relink();
+        }
+
+        /// <summary>A member at a place in the order (past the end: the end), in the line.</summary>
+        internal void Insert(int member, int at)
+        {
+            Owner?.MembershipChanged();
+            at = Math.Clamp(at, 0, members.Count);
+            members.Insert(at, member);
+            detached.Insert(at, Detachment.InLine);
+            Relink();
+        }
+
+        /// <summary>A member moved to a place in the order (counted as the order is before the move), keeping its
+        /// detachment.</summary>
+        internal void Move(int member, int at)
+        {
+            int i = members.IndexOf(member);
+            if (i < 0)
+                return;
+            var d = detached[i];
+            members.RemoveAt(i);
+            detached.RemoveAt(i);
+            at = Math.Clamp(at > i ? at - 1 : at, 0, members.Count);
+            members.Insert(at, member);
+            detached.Insert(at, d);
+            Relink();
+        }
+
+        /// <summary>A member's place taken by another group, as detached as it was (a squadron wrapped in a force).</summary>
+        internal void Replace(int member, int by)
+        {
+            int i = members.IndexOf(member);
+            if (i < 0)
+                return;
+            Owner?.MembershipChanged();
+            members[i] = by;
             Relink();
         }
 
@@ -510,8 +548,9 @@ public sealed class GroupSystem : IWorldSystem
     public static Command Create(int guide, Formation formation = Formation.Column, double spacingM = 600) =>
         new(Id, (ushort)GroupCommand.Create, guide, B: (int)formation, X: spacingM);
 
-    /// <summary>A ship to the end of a squadron (out of any other); refused for a ship of another side.</summary>
-    public static Command Add(int groupId, int entity) => new(Id, (ushort)GroupCommand.Add, entity, A: groupId);
+    /// <summary>A ship to a squadron (out of any other), at its end or before its <paramref name="at"/>-th member; one already
+    /// in it is moved there. Refused for a ship of another side.</summary>
+    public static Command Add(int groupId, int entity, int at = -1) => new(Id, (ushort)GroupCommand.Add, entity, A: groupId, B: at + 1);
 
     /// <summary>A ship to the end of the squadron another ship is in (out of any other): how a UI adds to a group it
     /// has just formed, before it knows the new group's id. Refused for a ship of another side.</summary>
@@ -578,6 +617,12 @@ public sealed class GroupSystem : IWorldSystem
     /// Refused for a squadron, or a force with a force in it.</summary>
     public static Command Merge(int forceId) => new(Id, (ushort)GroupCommand.Merge, A: forceId);
 
+    /// <summary>A group put under another's admiral (docs/battle/admirals-orders.md O8c, the rail's drag and drop): into it
+    /// if it's a force (out of any other); if it's a squadron, that squadron becomes the guide of a new force in its
+    /// place (in its force, as detached as it was, named after it), the group astern of it in line ahead. Refused for
+    /// groups of different sides, a group under itself or anything inside it.</summary>
+    public static Command Subordinate(int groupId, int underGroupId) => new(Id, (ushort)GroupCommand.Subordinate, A: groupId, Y: underGroupId);
+
     /// <summary>A group gone: its members are free (a force's groups stay squadrons and forces of their own), and it
     /// leaves its force.</summary>
     public static Command Disband(int groupId) => new(Id, (ushort)GroupCommand.Disband, A: groupId);
@@ -613,10 +658,19 @@ public sealed class GroupSystem : IWorldSystem
                 }
                 break;
             case GroupCommand.Add:
-                if (Get((int)c.A) is not { IsForce: false } to || world.Ships.Store.SlotOf(c.Entity) < 0 || to.Contains(c.Entity) || !SameSide(world, c.Entity, to.Members[0]))
+                if (Get((int)c.A) is not { IsForce: false } to || world.Ships.Store.SlotOf(c.Entity) < 0 || !SameSide(world, c.Entity, to.Members[0]))
                     return;
+                if (to.Contains(c.Entity))
+                {
+                    if (c.B > 0)
+                        to.Move(c.Entity, c.B - 1);   // within it: to its new place
+                    return;
+                }
                 Leave(c.Entity);
-                to.Add(c.Entity);
+                if (c.B > 0)
+                    to.Insert(c.Entity, c.B - 1);
+                else
+                    to.Add(c.Entity);
                 break;
             case GroupCommand.Join:
                 if (Of((int)c.A) is not { } with || world.Ships.Store.SlotOf(c.Entity) < 0 || with.Contains(c.Entity) || !SameSide(world, c.Entity, with.Members[0]))
@@ -670,6 +724,11 @@ public sealed class GroupSystem : IWorldSystem
                 if (Get((int)c.A) is { IsForce: false } whole && c.B >= 1 && c.B < whole.Members.Count)
                     Divide(whole, c.B);
                 break;
+            case GroupCommand.Subordinate:
+                if (Get((int)c.A) is { } under && Get((int)c.Y) is { } over && under != over && !Within(over, under) &&
+                    SameSide(world, AnyShip(under), AnyShip(over)))
+                    Subordinate(under, over);
+                break;
             case GroupCommand.Merge:
                 if (Get((int)c.A) is { IsForce: true } merged && merged.Members.Count > 0 && merged.Members.All(m => Get(m) is { IsForce: false }))
                     Merge(merged);
@@ -717,6 +776,33 @@ public sealed class GroupSystem : IWorldSystem
             g.Add(d.GroupId);
         }
         (g.Formation, g.BearingDeg) = g.Formation == Formation.Column ? (Formation.Column, 0) : (Formation.Bearing, bearing);
+    }
+
+    /// <summary><see cref="Subordinate(int, int)"/>: into a force, or a squadron wrapped in a new force in its place.</summary>
+    void Subordinate(Group g, Group over)
+    {
+        if (over.IsForce)
+        {
+            if (g.Parent == over.GroupId)
+                return;
+            LeaveForce(g);
+            over.Add(g.GroupId);
+            g.Parent = over.GroupId;
+            return;
+        }
+        if (g.Parent != 0)
+            LeaveForce(g);
+        var f = New(true, Formation.Column, over.SpacingM);
+        f.Name = over.Name + " force";
+        if (over.Parent != 0 && Get(over.Parent) is { } parent)
+        {
+            parent.Replace(over.GroupId, f.GroupId);
+            f.Parent = parent.GroupId;
+        }
+        over.Parent = f.GroupId;
+        f.Add(over.GroupId);
+        f.Add(g.GroupId);
+        g.Parent = f.GroupId;
     }
 
     /// <summary><see cref="Merge(int)"/>: the force's squadrons' ships into it, it a squadron, its squadrons gone.

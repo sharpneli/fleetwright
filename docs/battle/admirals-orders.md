@@ -301,6 +301,28 @@ After decision 6; `battle.html` `#organise` and `#multi` (screenshots `png/battl
 - **`#chain`:** the flotilla divided by its own admiral, its divisions I and II under it in the rail ("the van · 5 km",
   "the rear · 5 km").
 
+### O8c Organising by drag and drop in the rail (built 2026-10-23, in the game)
+
+The user, after O8b: the rail at the left is the chain of command as a tree, so reorganising is dragging in it. Built
+straight into the game's rail (`MapScene.Rail.cs`), every drop one of the group system's commands:
+
+- **A ship onto a squadron's head:** she joins it at its end. **Onto a ship of a squadron:** ahead of her (in her own
+  squadron, a move: dragged onto its guide she leads). **Onto a ship alone:** a new squadron of the two, the one dropped
+  on leading.
+- **A squadron or a force onto another unit:** it goes under that unit's admiral (`GroupSystem.Subordinate`, new): into
+  it if it's a force; if it's a squadron, that squadron becomes the guide of a new force in its own place (in its force,
+  as detached as it was, "1st BCS force"), the dropped group astern of it in line ahead.
+- **Onto "on its own"** (a place under the list, shown only while dragging): a ship out of her squadron, a group out of
+  its force.
+- What a drop does is told under the cursor before it's let go ("Tiger to 1st Battlecruiser Squadron, ahead of Lion"),
+  the target outlined in brass; a drop that would do nothing (onto itself, its own force, something inside it; a ship
+  onto a force) isn't taken. The words are made once a target, so a drag held over one makes no garbage.
+- **The sim's side:** `GroupSystem.Add` takes a place (and moves a ship within her squadron); `Subordinate` (above);
+  `GroupTests` cover both. Checked in the game with scripted drags (`-input=F:drag:...`): Tiger dragged onto Lion leads
+  the 1st BCS, and Princess Royal dragged to "on its own" leaves it (`docs/map-ui/png/game-o8c-rail-drag.png`).
+- Organising isn't an order: it doesn't take a unit from the side's commander, whose roles and tasks follow the new
+  tree at his next think.
+
 ## The steps
 
 | Step | What | Status |
@@ -315,6 +337,7 @@ After decision 6; `battle.html` `#organise` and `#multi` (screenshots `png/battl
 | **O7** | The chain of command: a force's admiral disposes his members by role, one implementation with the commander's (decision 3) | **done 2026-10-23** |
 | **O8** | The mockup: `docs/map-ui/battle.html` `#tasks`, `#screen`, `#deploy`, `#chain`: the task menu, the role, the cursor's verbs, a screen's stations, a deploy's line, the chain in the rail | **done 2026-10-23**, for review |
 | **O8b** | The mockup again: the organise column (new squadron, divide, merge, form a force, leave) and Screen with several squadrons selected | **done 2026-10-23**, for review |
+| **O8c** | Drag and drop in the rail: ships between squadrons, a unit under another's admiral (in the game) | **done 2026-10-23** |
 | **O9** | The port: the task menu and its picks, the cursor's verbs, the smart verb by role, the formation column's manoeuvres; the snapshot's stations and the map's task marks | after O8 |
 | **O10** | Shaping by drag (a screen's distance and sector), orders as editable objects, the radial menu | later |
 
