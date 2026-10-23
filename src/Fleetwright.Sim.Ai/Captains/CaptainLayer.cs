@@ -118,6 +118,8 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         public bool TorpedoHeld;        // his flotilla attacking together: his torpedoes wait for its signal
         public CaptainReason Reason;    // why, when it isn't simply his order (fallen out)
         public bool Overruled;          // the player ordered him on after he fell out: he stays, at his ship's risk
+        public bool Conn;               // the player has the conn: nothing but the player's helm orders moves her
+        public sbyte Tracks;            // the conn's lookouts: a torpedo's track seen coming at her, its side (1 starboard, -1 port; 0 none)
         public int FitVersion;          // his ship's condition's version when he last judged its fitness
         public long CombUntilMs;        // combing a torpedo's track until then (0: not)
         public double CombDeg, CombBackDeg;   // the comb's course, and the course ordered before it
@@ -130,6 +132,13 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
 
     /// <summary>The units' tasks: a withdrawing ship doesn't take up doctrine's fight (set by the AI system).</summary>
     internal Tasks.TaskLayer? Tasks { get; set; }
+
+    /// <summary>The admirals: whether a ship's line is one the player has the conn of (set by the AI system).</summary>
+    internal Admirals.AdmiralLayer? Admirals { get; set; }
+
+    /// <summary>Whether the player has the conn of his ship (hers, or her line's): nothing but the player's helm orders
+    /// moves her (docs/battle/command.md "The conn").</summary>
+    bool Conned(in Captain cap, int entity) => cap.Conn || Admirals?.LineConned(entity) == true;
 
     /// <summary>How many points a captain's track of the ship ahead holds (<see cref="SimSettings.FollowTrackPoints"/>).</summary>
     internal int TrailPoints { get; set; } = 512;
@@ -246,6 +255,10 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
                 return;
             case AiCommand.Form:
                 return;   // a group's
+            case AiCommand.Conn when c.X == 0:
+                if (Find(e) is int ci and >= 0)
+                    (captains[ci].Conn, captains[ci].Tracks) = (false, 0);   // the conn given back: his order stands, his judgement too
+                return;
         }
         var g = groups.Of(e);
         var detached = g?.DetachmentOf(e) ?? Detachment.InLine;
@@ -258,7 +271,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
                 if (Find(e) is int ri and >= 0)
                 {
                     ref var back = ref captains[ri];
-                    back.Asked = false;
+                    (back.Asked, back.Conn, back.Tracks) = (false, false, 0);
                     if (back.Whose == Whose.Player)
                         back.Whose = Whose.Own;   // let go: his superior's station comes next think
                 }
@@ -306,6 +319,13 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         if (whose == Whose.Superior)
             cap.Asked = false;   // in his superior's hands again
         cap.Whose = whose;
+        // the conn (docs/battle/command.md "The conn"): taken by the player's hand, kept through the player's helm orders,
+        // ended by any other order; taken while he combs a track, the comb's off and the helm as it is the player's
+        cap.Conn = whose == Whose.Player && (code == AiCommand.Conn || cap.Conn && Chain.IsHelmOrder(code));
+        if (!cap.Conn)
+            cap.Tracks = 0;
+        else
+            cap.CombUntilMs = 0;
         // the player's order to a ship fallen out keeps her in (docs/map-ui/battle-hud.md decision 2: the player may
         // overrule her captain; attention is what's rewarded): she won't fall out again this battle
         if (whose == Whose.Player && cap.Reason is CaptainReason.OutSpeed or CaptainReason.OutGuns or CaptainReason.OutList
@@ -331,7 +351,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
                 cap.AskedKn = c.X;
                 Ring(ctx, cap, own, always: true);   // an order reaches the helm, as a course does, even one it has
                 break;
-            case AiCommand.Hold:
+            case AiCommand.Hold or AiCommand.Conn:   // the conn taken: on the course and speed ordered now
                 (cap.Order, cap.Target, cap.AskedKn) = (own.Helm == Helm.Route ? CaptainOrder.Route : CaptainOrder.Course, 0, own.SpeedOrderKn);
                 if (own.Helm == Helm.Rudder)
                     ctx.Helm.Course(e, own.CourseOrderDeg);
@@ -588,6 +608,8 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
             h.Add(c.CombUntilMs);
             h.Add(c.CombDeg);
             h.Add(c.CombBackDeg);
+            h.Add(c.Conn);
+            h.Add((int)c.Tracks);
             c.Track?.Hash(ref h);
         }
     }
@@ -600,6 +622,8 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
             int i = Find(v.Entity[k]);
             (v.Captain[k], v.CaptainTarget[k]) = i >= 0 ? ((byte)captains[i].Order, new Unit(captains[i].Target).ShipOf(groups)) : ((byte)0, 0);
             v.Asked[k] = i >= 0 && captains[i].Asked;
+            v.Conn[k] = i >= 0 && captains[i].Conn ? (byte)1 : Admirals?.LineConned(v.Entity[k]) == true ? (byte)2 : (byte)0;
+            v.Tracks[k] = i >= 0 ? captains[i].Tracks : (sbyte)0;
             v.Reason[k] = i >= 0 ? (byte)captains[i].Reason : (byte)0;
             (v.Fire[k], v.FireTarget[k]) = i >= 0 ? ((byte)captains[i].Fire, captains[i].FireTarget) : ((byte)0, 0);
         }

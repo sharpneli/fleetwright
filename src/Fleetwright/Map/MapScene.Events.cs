@@ -28,6 +28,7 @@ public sealed partial class MapScene
     int feedRead, eventsGeneration = -1;
     readonly HashSet<(int, int)> straddling = [];
     readonly Dictionary<int, byte> reasonOf = [];
+    readonly Dictionary<int, sbyte> tracksOf = [];
     readonly Dictionary<int, int> firesOf = [], groupOf = [];
     readonly Dictionary<int, ContactLevel> levelOf = [];
     bool logOpen;
@@ -50,6 +51,7 @@ public sealed partial class MapScene
             events.Clear();
             straddling.Clear();
             reasonOf.Clear();
+            tracksOf.Clear();
             firesOf.Clear();
             groupOf.Clear();
             levelOf.Clear();
@@ -81,6 +83,14 @@ public sealed partial class MapScene
                 }
                 else if (reason == (byte)CaptainReason.OutAmmunition)
                     Add(s, EventKind.Captain, e, $"{ShipName(s, e)}: out of ammunition, going home");
+            }
+            // the conn's lookouts (docs/battle/command.md "The conn"): tracks coming at her, once a sighting
+            sbyte tracks = v.Tracks[k];
+            if (tracks != tracksOf.GetValueOrDefault(e))
+            {
+                tracksOf[e] = tracks;
+                if (tracks != 0)
+                    Add(s, EventKind.Captain, e, tracks > 0 ? $"{ShipName(s, e)}: torpedo tracks to starboard!" : $"{ShipName(s, e)}: torpedo tracks to port!");
             }
             if (s.Groups.IndexOfShip(e) is int g and >= 0)
                 groupOf[e] = s.Groups.Id[g];

@@ -103,7 +103,7 @@ public sealed partial class AdmiralLayer
     bool TurnAway(in AiContext ctx, GroupSystem.Group g, Admiral a, int lead)
     {
         var guide = ctx.Ships[lead];
-        if (groups.InForceLine(g) || a.Order == CaptainOrder.Screen)   // its force turns; a screen counter-attacks
+        if (groups.InForceLine(g) || a.Order == CaptainOrder.Screen || a.Conn)   // its force turns; a screen counter-attacks; the conn holds on
             return false;
         double deg = doctrine.OfGroup(g, guide.Side, DoctrineField.TurnAwayDeg);
         if (!a.Away && (deg <= 0 || CaptainLayer.TorpedoCraft(ctx, guide, lead)))

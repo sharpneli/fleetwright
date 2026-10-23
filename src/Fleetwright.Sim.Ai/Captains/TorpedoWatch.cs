@@ -34,11 +34,11 @@ public sealed class TorpedoWatch
                 grid.Add(i, TorpedoSystem.Where(torpedoes[i], ctx.NowMs).Position);
     }
 
-    /// <summary>The course that combs the first torpedo seen coming at her, and how long until it's past her, s; false if
-    /// none.</summary>
-    public bool Threat(in AiContext ctx, ShipState own, out double combDeg, out double pastS)
+    /// <summary>The course that combs the first torpedo seen coming at her, how long until it's past her, s, and its
+    /// bearing from her now (the side her lookouts call); false if none.</summary>
+    public bool Threat(in AiContext ctx, ShipState own, out double combDeg, out double pastS, out double fromDeg)
     {
-        (combDeg, pastS) = (0, 0);
+        (combDeg, pastS, fromDeg) = (0, 0, 0);
         Build(ctx);
         if (any == 0)
             return false;
@@ -70,6 +70,7 @@ public sealed class TorpedoWatch
             double track = Earth.Bearing(q, q + f * 1000), turnAway = Turn(own.HeadingDeg, track), turnInto = Turn(own.HeadingDeg, track + 180);
             combDeg = Math.Abs(turnAway) <= Math.Abs(turnInto) ? track : (track + 180) % 360;
             pastS = tc;
+            fromDeg = Earth.Bearing(p, q);
         }
         return soonest < double.MaxValue;
     }

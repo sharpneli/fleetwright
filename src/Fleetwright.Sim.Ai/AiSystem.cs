@@ -63,6 +63,7 @@ public sealed class AiSystem : IWorldSystem
         Held = new HeldGroups(Judge.Matchups);
         Captains = new CaptainLayer(world.Groups, world.Encounters, Seen, Doctrine, homes) { Judge = Judge, TrailPoints = world.Settings.FollowTrackPoints };
         Admirals = new AdmiralLayer(world.Groups, Captains, Seen, Doctrine) { Judge = Judge };
+        Captains.Admirals = Admirals;
         Tactical = new TacticalPicture(Seen, Judge.Matchups);
         Admirals.Tactical = Tactical;
         Tasks = new TaskLayer(world.Groups, Seen, homes) { Admirals = Admirals, Captains = Captains, Doctrine = Doctrine, Judge = Judge };
@@ -82,7 +83,7 @@ public sealed class AiSystem : IWorldSystem
 
     public void Apply(World world, in Command c)
     {
-        if ((AiCommand)c.Code is < AiCommand.Course or > AiCommand.Automate)
+        if ((AiCommand)c.Code is < AiCommand.Course or > AiCommand.Conn)
             throw new ArgumentException($"unknown AI command {c.Code}");
         var u = new Unit(c.Entity);
         var code = (AiCommand)c.Code;

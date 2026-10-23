@@ -221,6 +221,22 @@ player's nudges it out or takes it from its task, a task's takes it out for the 
 captains and admirals both call (`Sim.Ai/Chain.cs`, the 2026-10-23 review); each layer adds only its own side effects
 (a ship's limits, a squadron's gathering).
 
+### The conn
+
+Added 2026-10-23 (the user, after the Jutland again: a destroyer laying smoke over a retreating squadron couldn't be
+held on her line while her captain combed every spread fired into the fight). The player's hand still leaves a
+captain combing torpedo tracks and, inside general orders, zigzagging and turning away; **the conn** leaves him
+nothing. `AiCommand.Conn` (by hand only; `UnitOrders.Conn`) takes it of a ship or a group: the unit holds the course
+and speed ordered now (as `Hold`), and nothing but the player's helm orders moves it. A captain on the conn, or in a
+line on the conn (her squadron's, or a force's above it, each in its force's line: `AdmiralLayer.LineConned`), doesn't
+comb (a comb under way when it's taken ends), doesn't fall out and doesn't go home with empty magazines; an admiral on
+the conn doesn't turn his line away from an attack, deploy or take up doctrine's fight. His lookouts still see: a
+track coming at her is reported, its side (`Captain.Tracks`, the snapshot's `Ships.Tracks`), whatever doctrine's
+evasion, for the map's ticker. Helm orders (`Chain.IsHelmOrder`: a course, a speed, holding on, a route, turning
+together) keep the conn; every other order to the unit's movement (a behaviour, a task, its superior's after a
+hand-back) and `Conn` off give it back. The guns are untouched: the fire order stands. The snapshot's `Ships.Conn` (1
+hers, 2 her line's) and `Groups.Conn` are the map's (`docs/map-ui/battle-hud.md` decision 6). `ConnTests`.
+
 ### Fitness: what a ship can still do
 
 One small summary per ship from its condition (`Sim.Combat`, pure, cached by the condition's `Version`): the speed it
@@ -1315,3 +1331,6 @@ The user's, 2026-10-14, on the questions:
 12. **The player's hand holds** (the user, 2026-10-23, after playing the Jutland): "When I hold the ship I hold the
     ship." A unit on the player's order by hand does what was ordered; no standing rule of doctrine takes it from the player.
     Torpedo avoidance may take it for its moment (["The player's hand"](#the-players-hand)).
+13. **The conn is absolute** (the user, 2026-10-23): "Sometimes one has to introduce gallantry by force of will." On
+    the conn nothing but the player moves the unit, not even combing torpedo tracks; the lookouts only report them
+    (["The conn"](#the-conn)). An explicit switch, so ships the player sends off and forgets still save themselves.

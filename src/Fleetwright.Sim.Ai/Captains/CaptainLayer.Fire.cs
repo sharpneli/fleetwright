@@ -627,12 +627,13 @@ public sealed partial class CaptainLayer
     /// changes: too slow, too few main guns, listing too far, too much water, or (when doctrine falls out at all) unable to
     /// steer. Then she leaves her group (the line closes up behind her: going-down ships leave the same way) and goes
     /// home, his own order, firing at will as she goes. Not once the player has ordered her on after it
-    /// (<see cref="Captain.Overruled"/>), nor while the player holds her (<see cref="Whose.Player"/>; judged again once
-    /// she's let go).</summary>
+    /// (<see cref="Captain.Overruled"/>), nor while the player holds her (<see cref="Whose.Player"/>) or has the conn of
+    /// her line (judged again once she's let go).</summary>
     void FallOut(in AiContext ctx, ref Captain cap, ShipState own, int slot)
     {
         var k = ctx.Ships.Combat.Condition(slot);
-        if (cap.Overruled || cap.Whose == Whose.Player || cap.Order == CaptainOrder.Home || !k.Damaged || k.Version == cap.FitVersion || k.Status != ShipStatus.Afloat)
+        if (cap.Overruled || cap.Whose == Whose.Player || cap.Order == CaptainOrder.Home || !k.Damaged || k.Version == cap.FitVersion || k.Status != ShipStatus.Afloat
+            || Admirals?.LineConned(own.Entity) == true)   // her line's conn: she stays in it
             return;
         cap.FitVersion = k.Version;
         var cls = own.Handling.Class;
@@ -670,7 +671,7 @@ public sealed partial class CaptainLayer
     /// as one fallen out does, her secondaries firing at will as she goes. Not while the player holds her.</summary>
     void OutOfRounds(in AiContext ctx, ref Captain cap, ShipState own)
     {
-        if (cap.Whose == Whose.Player || cap.Order == CaptainOrder.Home)
+        if (cap.Whose == Whose.Player || cap.Order == CaptainOrder.Home || Admirals?.LineConned(own.Entity) == true)
             return;
         var cls = own.Handling.Class;
         var combat = ctx.Ships.Combat;
@@ -723,10 +724,15 @@ public sealed partial class CaptainLayer
 
     /// <summary>A torpedo seen coming at her (doctrine's TorpedoEvasion: comb): she turns parallel to its track, at the
     /// speed rung, until <see cref="SimSettings.TorpedoCombAfterS"/> after it's past (her behaviour waits); then a plain
-    /// course order is given back, and a behaviour steers on.</summary>
+    /// course order is given back, and a behaviour steers on. Under the conn (hers, or her line's: docs/battle/command.md
+    /// "The conn") she doesn't: her lookouts report the track's side (<see cref="Captain.Tracks"/>, the map's ticker),
+    /// whatever doctrine says, and the helm is the player's.</summary>
     void Comb(in AiContext ctx, ref Captain cap, ShipState own)
     {
         long now = ctx.NowMs;
+        bool conned = Conned(cap, own.Entity);
+        if (conned && cap.CombUntilMs != 0)
+            (cap.CombUntilMs, cap.Reason) = (0, cap.Reason == CaptainReason.Combing ? CaptainReason.None : cap.Reason);   // her line's conn taken: her station again
         if (cap.CombUntilMs != 0 && now >= cap.CombUntilMs)
         {
             cap.CombUntilMs = 0;
@@ -737,9 +743,19 @@ public sealed partial class CaptainLayer
             else if (cap.Order == CaptainOrder.Route)
                 ctx.Helm.ResumeRoute(own.Entity);   // the comb's course took the helm off it for the moment
         }
-        if ((TorpedoEvasion)doctrine.Of(own.Entity, own.Side, DoctrineField.TorpedoEvasion) != TorpedoEvasion.Comb
-            || !torpedoWatch.Threat(ctx, own, out double comb, out double past))
+        bool combs = (TorpedoEvasion)doctrine.Of(own.Entity, own.Side, DoctrineField.TorpedoEvasion) == TorpedoEvasion.Comb;
+        if (!conned && !combs || !torpedoWatch.Threat(ctx, own, out double comb, out double past, out double fromDeg))
+        {
+            cap.Tracks = 0;
             return;
+        }
+        if (conned)
+        {
+            double off = fromDeg - own.HeadingDeg;
+            cap.Tracks = off - 360 * Math.Round(off / 360) >= 0 ? (sbyte)1 : (sbyte)-1;
+            return;
+        }
+        cap.Tracks = 0;
         if (cap.CombUntilMs == 0)
             cap.CombBackDeg = own.CourseOrderDeg;
         (cap.CombDeg, cap.CombUntilMs) = (comb, now + (long)((past + ctx.Settings.TorpedoCombAfterS) * 1000));

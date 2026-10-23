@@ -162,6 +162,12 @@ public enum AiCommand : ushort
 
     /// <summary>A unit under its side's commander or not (X 1: his, "leave it to the admiral"; 0: not; NaN: as its side).</summary>
     Automate,
+
+    /// <summary>The player takes the conn of a unit (X 1) or gives it back (X 0) (docs/battle/command.md "The conn"): taken,
+    /// the unit holds the course and speed ordered now, and nothing but the player's helm orders moves it: no combing a
+    /// torpedo's track, no turning away, no falling out; its lookouts report the tracks instead. A general order (a
+    /// behaviour, a task) or a hand-back ends it. By the player's hand only.</summary>
+    Conn,
 }
 
 /// <summary>A ship's fire order (docs/battle/fighting.md 4.2c).</summary>
@@ -200,6 +206,9 @@ public readonly struct UnitOrders(byte system, bool hand = false)
     public Command Speed(Unit u, double kn, OrderSource source = OrderSource.Player) => Make(AiCommand.Speed, u, source, x: kn);
 
     public Command Hold(Unit u, OrderSource source = OrderSource.Player) => Make(AiCommand.Hold, u, source);
+
+    /// <summary>The player takes the conn of a unit, or gives it back: by hand only (<see cref="ByHand"/>).</summary>
+    public Command Conn(Unit u, bool on) => Make(AiCommand.Conn, u, OrderSource.Player, x: on ? 1 : 0);
 
     public Command ClearRoute(Unit u, OrderSource source = OrderSource.Player) => Make(AiCommand.ClearRoute, u, source);
 

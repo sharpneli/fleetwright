@@ -291,6 +291,8 @@ public sealed unsafe partial class MapScene : IScene
             cardOpen = !cardOpen;
         else if (key == SDLK_P)
             TogglePin(selected);
+        else if (key == SDLK_C)
+            ToggleConn();
         else if (key == SDLK_TAB)
             NextShip((SDL_GetModState() & SDL_Keymod.SDL_KMOD_SHIFT) != 0);
         else if (key == SDLK_SPACE)

@@ -98,6 +98,17 @@ card, edge markers for what's off screen, and the rumble for a fight at speed.
    Quit). The same in the designer and its viewers.
 5. **The result tells the truth**: both sides' real losses, for bragging rights and as the score. Limited knowledge
    matters more in the campaign; the battler shows everything at the end.
+6. **Two ways to command, and the conn** (the user, 2026-10-23, after a Jutland playtest: a smoke-laying destroyer's
+   captain kept combing tracks under fire; "sometimes one has to introduce gallantry by force of will"). General
+   orders (the task column: Fight, Follow, Screen, Search, tasks, formations) leave the minute to minute to the unit's
+   captain or admiral; helm orders (the HELM column, right-click on the sea, waypoints) hold the unit to the player's
+   course, only combing torpedo tracks still taking it; **the conn** is absolute: a **Conn** switch at the HELM
+   column's end and **C**, on the level the order picker has (this ship, her squadron, a force). The head reads
+   "CONN · course · speed" in the conn's green (a ship in a line on the conn: "LINE ON CONN"), every ship on it is
+   ringed green on the map (she won't save herself, so she's never lost from sight) and a squadron's label says
+   "conn". Her lookouts still call tracks coming at her on the ticker ("torpedo tracks to starboard!"); the player
+   decides. A general order, or a hand-back, gives the conn back; a helm order keeps it. The sim's side is
+   `docs/battle/command.md` "The conn".
 
 ## For the review (U0-U7 built 2026-10-22, while the user was away)
 

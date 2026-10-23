@@ -33,6 +33,8 @@ public sealed partial class MapScene
     // the strip's strings, made when what they say changes
     (int Ship, int Course, int Kn) helmKey = (-1, -1, -1);
     string helmText = "", courseText = "";
+    string connText = "", connSource = "";   // the helm's head on the conn, made when the helm's text or the conn changes
+    (bool, bool) connKey;
     (int Ship, int Target, byte Fire) gunsKey = (-1, -1, 255);
     string gunsText = "";
     (int Ship, int Loaded, int Left) torpKey = (-1, -1, -1);
@@ -106,7 +108,7 @@ public sealed partial class MapScene
             ClickPick.Torpedoes => "TORPEDOES: click an enemy · Esc cancels",
             ClickPick.Follow => "FOLLOW: click a ship to take station astern of · Esc cancels",
             ClickPick.Run => "RUN FROM: click a ship · Esc cancels",
-            _ => "Right-click: steer · on an enemy: engage · on your ship: follow · Shift: waypoint · Alt: this ship only · Tab: the next ship",
+            _ => "Right-click: steer · on an enemy: engage · on your ship: follow · Shift: waypoint · Alt: this ship only · C: the conn · Tab: the next ship",
         };
         var size = ImGui.CalcTextSize(hint);
         var at = new Vector2(StripCentre(vp) - size.X / 2, vp.Pos.Y + vp.Size.Y - 6 * UiFonts.Scale - size.Y);
@@ -241,13 +243,20 @@ public sealed partial class MapScene
         ImGui.EndGroup();
     }
 
-    /// <summary>The helm: the course (±10°, ±90°, typed), hard over, the route cleared; the telegraph's bells.</summary>
+    /// <summary>The helm: the course (±10°, ±90°, typed), hard over, the conn, the route cleared; the telegraph's bells.
+    /// On the conn (the unit's own, or her line's) the head says so in its colour.</summary>
     void HelmColumn(Snapshot s, Unit unit, int kc)
     {
         var o = world.Orders;
         var v = s.Ships;
+        bool own = OwnConn(s, unit), line = !own && unit.IsShip && v.Conn[kc] == 2;
+        if (!ReferenceEquals(helmText, connSource) || (own, line) != connKey)
+        {
+            (connSource, connKey) = (helmText, (own, line));
+            connText = own ? "CONN · " + helmText : line ? "LINE ON CONN · " + helmText : helmText;
+        }
         ImGui.BeginGroup();
-        Head("HELM", helmText, DesignerTheme.Bright);
+        Head("HELM", connText, own || line ? MapPalette.Conn : DesignerTheme.Bright);
         double ordered = v.CourseOrderDeg[kc];
         foreach (int d in CourseSteps)
         {
@@ -277,6 +286,11 @@ public sealed partial class MapScene
             hardOver = !hardOver;
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip("the course orders put the rudder hard over");
+        if (Seg("Conn##conn", own))
+            world.Send(o.Conn(unit, !own));
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip(own ? "give the conn back (C): her captain judges again"
+                : "take the conn (C): nothing but your helm orders moves her: no combing torpedo tracks (the lookouts call them), no turning away, no falling out; a task or a behaviour gives it back");
         if (v.RouteCount[kc] > 0)
         {
             ImGui.SameLine(0, 6 * UiFonts.Scale);

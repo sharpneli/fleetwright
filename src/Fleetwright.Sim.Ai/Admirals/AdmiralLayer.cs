@@ -45,6 +45,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
         public bool Loop;
         public bool Watch;              // held by the player on a route: its end hands the group back
         public bool Asked;              // held by the player while his superior's orders for it changed: a notice
+        public bool Conn;               // the player has the conn: nothing but the player's helm orders moves the line
         public FireOrder Fire;          // his group's fire order (AdmiralLayer.Fire.cs), engaging FireTarget
         public int FireTarget;
         public bool Met;                // doctrine's Engage taken up in this encounter
@@ -121,6 +122,22 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
     /// <summary>Whether a group's admiral has a notice up: held by the player, his superior's orders for it changed.</summary>
     public bool IsAsked(int groupId) => Find(groupId) is int i and >= 0 && admirals[i].Asked;
 
+    /// <summary>Whether a ship steams in a line the player has the conn of (docs/battle/command.md "The conn"): her
+    /// squadron's, she in its line, or a force's above it, each group in its force's line.</summary>
+    public bool LineConned(int ship)
+    {
+        if (!groups.InLine(ship) || groups.Of(ship) is not { } g)
+            return false;
+        while (true)
+        {
+            if (Find(g.GroupId) is int i and >= 0 && admirals[i].Conn)
+                return true;
+            if (g.Parent == 0 || groups.Get(g.Parent) is not { } up || up.DetachmentOf(g.GroupId) != Detachment.InLine)
+                return false;
+            g = up;
+        }
+    }
+
     /// <summary>An order to a group, as a command (<see cref="UnitOrders"/>).</summary>
     public void Order(in AiContext ctx, in Command c)
     {
@@ -141,6 +158,9 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
             case AiCommand.Form:
                 ctx.Issue(GroupSystem.SetFormation(g.GroupId, (Formation)c.A, c.X, c.Y));   // the line keeps its orders
                 return;
+            case AiCommand.Conn when c.X == 0:
+                a.Conn = false;   // the conn given back: its order stands, its admiral's judgement too
+                return;
         }
 
         switch (code)
@@ -148,7 +168,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
             case AiCommand.Resume:
                 if (parent != null && detached != Detachment.InLine)
                     ctx.Issue(GroupSystem.DetachGroup(g.GroupId, Detachment.InLine));   // its force's admiral gives it its station
-                a.Asked = false;
+                (a.Asked, a.Conn) = (false, false);
                 if (a.Whose == Whose.Player)
                     a.Whose = Whose.Own;   // let go: its superior's station comes next think
                 return;
@@ -193,6 +213,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
         else
             Gather(ctx, g);
         a.Whose = whose;
+        a.Conn = whose == Whose.Player && (code == AiCommand.Conn || a.Conn && Chain.IsHelmOrder(code));   // as a captain's
         (a.Turning, a.Away, a.DeployMs) = (false, false, 0);   // a new order ends a turn under way, a turn-away, a deployment
 
         if (code == AiCommand.TurnTogether)
@@ -213,7 +234,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
                     (a.Order, a.CourseDeg, a.RudderDeg) = (CaptainOrder.Course, double.NaN, 0);
                 a.AskedKn = c.X;
                 break;
-            case AiCommand.Hold:
+            case AiCommand.Hold or AiCommand.Conn:   // the conn taken: on the course and speed ordered now
                 (a.Order, a.CourseDeg, a.RudderDeg, a.RouteCount, a.Loop) = (CaptainOrder.Course, double.NaN, 0, 0, false);
                 a.AskedKn = lead >= 0 ? ctx.Ships[lead].SpeedOrderKn : double.NaN;
                 break;
@@ -579,6 +600,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
             h.Add((int)a.Fire);
             h.Add(a.FireTarget);
             h.Add(a.Met);
+            h.Add(a.Conn);
             if (a.Turning)
             {
                 h.Add(a.TurnRearFirst);
@@ -625,7 +647,10 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
     {
         var v = s.Groups;
         for (int k = 0; k < v.Count; k++)
+        {
             v.Asked[k] = IsAsked(v.Id[k]);
+            v.Conn[k] = Find(v.Id[k]) is int i and >= 0 && admirals[i].Conn;
+        }
     }
 
     /// <summary>A group's admiral, made (nothing ordered yet) if it has none: the only allocation, once per group.</summary>

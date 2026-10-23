@@ -23,6 +23,10 @@ public static class MapPalette
     /// <summary>A ship the player holds out of her line, and one whose superior's orders changed ("!").</summary>
     public static readonly Vector4 Held = new(0.55f, 0.85f, 1f, 0.8f), Asked = new(1f, 0.55f, 0.3f, 1f);
 
+    /// <summary>A ship or line the player has the conn of (docs/battle/command.md "The conn"): nothing saves her but the
+    /// player, so she's marked apart from the held.</summary>
+    public static readonly Vector4 Conn = new(0.45f, 1f, 0.55f, 0.95f);
+
     /// <summary>Routes still to steam (the selection's in <see cref="RouteSelected"/>), the wake's track behind, the
     /// ordered course.</summary>
     public static readonly Vector4 Route = Brass with { W = 0.55f }, RouteSelected = new(1f, 0.8f, 0.3f, 0.95f),

@@ -59,6 +59,12 @@ public static class Chain
         }
     }
 
+    /// <summary>Whether an order is the helm's (a course, a speed, a route, holding on, turning together), which the
+    /// conn keeps (<see cref="AiCommand.Conn"/>); every other order to the unit's movement is a general one (a behaviour,
+    /// a task) that hands the minute-to-minute back to its captain or admiral.</summary>
+    public static bool IsHelmOrder(AiCommand code) => code is AiCommand.Course or AiCommand.Speed or AiCommand.Hold or AiCommand.ClearRoute
+        or AiCommand.AddWaypoint or AiCommand.LoopRoute or AiCommand.TurnTogether or AiCommand.Conn;
+
     /// <summary>Where a <see cref="AiCommand.Detach"/> pins a member, or null if it changes nothing: the player's pins
     /// it out until it's resumed; a task's takes it out for the task, only from the line.</summary>
     public static Detachment? Pin(OrderFrom from, Detachment now)

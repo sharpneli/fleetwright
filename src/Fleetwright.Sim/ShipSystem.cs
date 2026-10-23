@@ -449,6 +449,7 @@ public sealed partial class ShipSystem : IWorldSystem
         v.Captain[n] = 0;   // the AI fills its own, after
         v.CaptainTarget[n] = 0;
         v.Asked[n] = false;
+        (v.Conn[n], v.Tracks[n]) = (0, 0);
         v.LandSide[n] = orders ? (sbyte)ship.LandSide : (sbyte)0;
         v.Backstops[n] = orders ? ship.Backstops : 0;
         v.MinClearanceM[n] = ship.Handling.MinClearanceM;

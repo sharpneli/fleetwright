@@ -739,6 +739,9 @@ public sealed class GroupsView
 
     /// <summary>Held by the player while its superior's orders for it have changed: a notice, "resume?" (the AI's).</summary>
     public bool[] Asked = [];
+
+    /// <summary>The player has its conn: nothing but the player's helm orders moves its line (the AI's).</summary>
+    public bool[] Conn = [];
     public Detachment[] Detached = [];
     public string[] Name = [];
     public Formation[] Formation = [];
@@ -774,6 +777,7 @@ public sealed class GroupsView
             Array.Resize(ref Parent, n);
             Array.Resize(ref Force, n);
             Array.Resize(ref Asked, n);
+            Array.Resize(ref Conn, n);
         }
         if (m > Members.Length)
         {
@@ -850,6 +854,11 @@ public sealed class ShipsView
 
     /// <summary>Held by the player while its superior's orders for it have changed: a notice, "resume?" (the AI's).</summary>
     public bool[] Asked = [];
+
+    /// <summary>The player has the conn: 1 of her, 2 of her line (her squadron's or a force's above it), 0 not; and the
+    /// conn's lookouts: a torpedo's track seen coming at her, its side (1 starboard, -1 port, 0 none) (the AI's).</summary>
+    public byte[] Conn = [];
+    public sbyte[] Tracks = [];
 
     /// <summary>Why its captain does what he does, when it isn't simply his order (<c>Fleetwright.Sim.Ai.Captains.CaptainReason</c>:
     /// fallen out, home), 0 for none (the AI's).</summary>
@@ -1013,6 +1022,8 @@ public sealed class ShipsView
         Array.Resize(ref Fire, n);
         Array.Resize(ref FireTarget, n);
         Array.Resize(ref Asked, n);
+        Array.Resize(ref Conn, n);
+        Array.Resize(ref Tracks, n);
         Array.Resize(ref Reason, n);
         Array.Resize(ref Task, n);
         Array.Resize(ref TaskStatus, n);

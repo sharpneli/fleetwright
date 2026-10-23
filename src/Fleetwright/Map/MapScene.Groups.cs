@@ -171,6 +171,13 @@ public sealed unsafe partial class MapScene
                         var p = v.PoseAt(k, world.DrawMs).Position;
                         Ring(view, p, IconLengthAt(view, v.Class[k], p) / 2 + 9 * Rp, v.Asked[k] ? MapPalette.Asked with { W = Pulse } : MapPalette.Held, 1.2f);
                     }
+        // ships on the conn, their own or their line's: nothing saves them but the player, so they're never lost from sight
+        for (int k = 0; k < v.Count; k++)
+            if (v.Conn[k] != 0 && (s.PlayerSide < 0 || v.Side[k] == s.PlayerSide))
+            {
+                var p = v.PoseAt(k, world.DrawMs).Position;
+                Ring(view, p, IconLengthAt(view, v.Class[k], p) / 2 + 13 * Rp, MapPalette.Conn, 1.6f);
+            }
         // the other picked ships
         foreach (int e in picked)
             if (v.IndexOf(e) is int k and >= 0)
@@ -183,7 +190,7 @@ public sealed unsafe partial class MapScene
     /// <summary>The groups' labels, asked of the placer (<see cref="MapLabels"/>): beside the guide, "held" and "!" on a
     /// group the player holds.</summary>
     // the group labels' text, made when what it says changes
-    readonly Dictionary<int, ((int, int, Detachment, byte, byte, byte, bool, int) Key, string Text)> groupTexts = [];
+    readonly Dictionary<int, ((int, int, Detachment, byte, byte, byte, bool, bool, int) Key, string Text)> groupTexts = [];
 
     void GroupLabels(Snapshot s)
     {
@@ -219,7 +226,7 @@ public sealed unsafe partial class MapScene
             count = lineShips.Count;
         }
         var held = InForce(gv, g);
-        var key = (gv.Id[g], count, Held(held) ? held : Detachment.InLine, gv.Task[g], gv.TaskStatus[g], gv.Commanded[g], gv.Asked[g], world.Generation);
+        var key = (gv.Id[g], count, Held(held) ? held : Detachment.InLine, gv.Task[g], gv.TaskStatus[g], gv.Commanded[g], gv.Asked[g], gv.Conn[g], world.Generation);
         if (!groupTexts.TryGetValue(gv.Id[g], out var cached) || cached.Key != key)
         {
             string text = gv.Name[g].ToUpperInvariant();
@@ -231,6 +238,8 @@ public sealed unsafe partial class MapScene
                 text += $" · {TaskText(gv.Task[g], gv.TaskStatus[g])}";
             if (gv.Commanded[g] != 0)
                 text += gv.Commanded[g] == 1 ? " · AI" : " · yours";   // its side's commander's, or taken from him (5.1d)
+            if (gv.Conn[g])
+                text += " · conn";
             if (gv.Asked[g])
                 text += " !";
             groupTexts[gv.Id[g]] = cached = (key, text);
@@ -292,6 +301,21 @@ public sealed unsafe partial class MapScene
         var gv = s.Groups;
         int g = chain[level - 1];
         return gv.GuideShip[g] != 0 ? (Unit.Group(gv.Id[g]), gv.GuideShip[g]) : (Unit.Ship(selected), selected);
+    }
+
+    /// <summary>Whether the player has the conn of the unit itself (a ship's own, not her line's).</summary>
+    static bool OwnConn(Snapshot s, Unit unit) => unit.IsShip
+        ? s.Ships.IndexOf(unit.Entity) is int k and >= 0 && s.Ships.Conn[k] == 1
+        : Array.IndexOf(s.Groups.Id, unit.GroupId, 0, s.Groups.Count) is int g and >= 0 && s.Groups.Conn[g];
+
+    /// <summary>Takes the conn of where the selection's orders go, or gives it back (C, the strip's Conn).</summary>
+    void ToggleConn()
+    {
+        var s = world.Current;
+        if (s.Ships.IndexOf(selected) < 0)
+            return;
+        var (unit, _) = Commanded(s);
+        world.Send(world.Orders.Conn(unit, !OwnConn(s, unit)));
     }
 
     static Detachment DetachmentOf(GroupsView gv, int g, int member)
