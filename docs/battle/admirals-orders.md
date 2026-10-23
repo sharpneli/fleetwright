@@ -111,12 +111,27 @@ its own, and the player had no way to order it, or to choose its course: the era
   with the enemy line in sight, the line steers square across his course.
 - **Placeholder:** "deploy" beside "turn together" in the squadron popup (forces only), across the enemy in sight.
 
+### O5 Where the screen sits, by its admiral (built 2026-10-23)
+
+Decision 2: the screen's place is its admiral's judgement, not a fixed geometry.
+
+- **Nothing in sight** of the screened unit: on its bows (the bearing screened on dead ahead, the divisions 45° either
+  side of it).
+- **Torpedo craft closing:** the division on their side counter-attacks, as in O1b.
+- **An enemy in sight:** the admiral judges his screen alone against the enemy in sight of the screened unit (the
+  matchup, `MatchupJudge.GroupAgainstNear`). A match for him (at doctrine's bar), the screen sits toward him; no match,
+  it goes to the **disengaged side**, its divisions at the van and the rear of the screened line, out of the line of fire
+  and the enemy's secondaries, ready to go round the ends (the Grand Fleet's battle orders). `ScreenMarginShare` (25%)
+  either way so it doesn't flick. So four battleships set as a screen stay toward the enemy, and a destroyer flotilla
+  stands off behind its line against a battle line but keeps toward light cruisers.
+- **Each half moves the least:** every time the screen is placed, its guide's division takes the side of the new bearing
+  its guide is on, so the van division stays the van when the screen changes sides.
+- **Tests** (`AdmiralOrdersTests`): four destroyers screening four dreadnoughts, an enemy line of four dreadnoughts
+  abeam to port: half an hour later one division is on the starboard bow (+46/+51°), the other the starboard quarter
+  (+134/+139°); four dreadnoughts screening against two light cruisers abeam to port keep to port.
+
 ### Still lacking (later steps, after the questions)
 
-- **Screens in action.** A screen keeps to the side of the threat once its line is engaged. The Grand Fleet's battle
-  orders put the flotillas at the van and the rear on the disengaged side: out of the line of fire and the enemy's
-  secondaries, ready to attack or counter-attack round the ends. A doctrine field (engaged side, disengaged side), the
-  bearing screened on flipped while the screened line fights (O5).
 - **A force's own disposition.** Inside a force, squadrons keep formation stations; screens and scouts are top units
   tasked by the side's commander (by role) or the scenario. A fleet whose flotillas and light cruisers are in its tree
   should screen and scout by itself when cruising: its admiral gives his light squadrons the roles' tasks the commander
@@ -163,7 +178,7 @@ guns, torpedoes, task, formation), armed picks completed by a click on the map, 
 | **O1** | The split screen (AI): halves of one squadron | done 2026-10-23; **replaced by O1b** (decision 1) |
 | **O1b** | Divide: a squadron told to screen becomes a force of two divisions, each its own squadron | **done 2026-10-23** |
 | **O2** | Deploy as an order (AI), a placeholder button | **done 2026-10-23** |
-| **O5** | Where the screen sits, by its admiral (decision 2) | |
+| **O5** | Where the screen sits, by its admiral (decision 2) | **done 2026-10-23** |
 | **O6** | A unit's role: worked out, or set by the player; the commander and the map read it (decision 4) | |
 | **O7** | The chain of command: a force's admiral disposes his members by role, one implementation with the commander's (decision 3) | |
 | **O8** | The mockup: `docs/map-ui/battle.html` `#tasks`: the task menu, the role, the cursor's verbs, a screen's stations and a deploy's line on the map | |

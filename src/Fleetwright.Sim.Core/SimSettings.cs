@@ -724,6 +724,11 @@ public sealed record SimSettings
     /// its ships the group's spacing apart, unless ordered otherwise. Degrees.</summary>
     public double ScreenSplitDeg { get; init; } = 45;
 
+    /// <summary>Where a screen sits with the enemy in sight (docs/battle/admirals-orders.md O5): its admiral judges his
+    /// screen alone against the enemy in sight of the screened unit, and under doctrine's bar by ScreenMarginShare takes it
+    /// to the disengaged side; back toward the enemy once over the bar by as much. A share.</summary>
+    public double ScreenMarginShare { get; init; } = 0.25;
+
     /// <summary>Tasks (docs/battle/command.md 5.1c): the task layer thinks every ForcePeriodMs while any unit on a task is
     /// on the fine tick; a GoTo is there within ArrivedM; a Join takes its unit in within JoinM of it; a task a fight
     /// interrupted goes on once its unit has seen no enemy for TaskResumeS. ms, m, m, s.</summary>

@@ -71,6 +71,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
         public double ScreenAxisDeg;    // the bearing screened on, off the screened guide's bow, as last placed
         public int ScreenSide;          // the side of that bearing his guide's half keeps (±1; 0: not placed yet)
         public int ScreenFightSide;     // the half counter-attacking (±1; 0: all of it)
+        public bool ScreenAway;         // on the side away from the enemy: no match for him (O5)
         public long DeployMs;           // deploying into a line of battle since (AdmiralLayer.Deploy.cs; 0: not)
         public bool Deployed;           // deployed in this encounter
     }
@@ -265,7 +266,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
                 break;
             case AiCommand.Screen:
                 (a.Order, a.Target, a.DistanceM, a.AbeamM) = (CaptainOrder.Screen, (int)c.A, c.X > 0 ? c.X : ctx.Settings.ScreenM, 0);
-                (a.ScreenOn, a.ScreenFight, a.ScreenFightSide, a.ScreenSide, a.AttackOrdered) = (0, 0, 0, 0, false);
+                (a.ScreenOn, a.ScreenFight, a.ScreenFightSide, a.ScreenSide, a.ScreenAway, a.AttackOrdered) = (0, 0, 0, 0, false, false);
                 a.ScreenSplitDeg = c.Y > 0 ? c.Y : c.Y < 0 ? 0 : ctx.Settings.ScreenSplitDeg;
                 if (a.ScreenSplitDeg > 0 && !g.IsForce && g.Members.Count >= 2)
                     ctx.Issue(GroupSystem.Divide(g.GroupId, (g.Members.Count + 1) / 2));   // two divisions, each a unit (O1b)
@@ -649,6 +650,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
                 h.Add(a.ScreenAxisDeg);
                 h.Add(a.ScreenSide);
                 h.Add(a.ScreenFightSide);
+                h.Add(a.ScreenAway);
             }
             if (a.Attack != AttackPhase.None || a.AttackOrdered)
             {

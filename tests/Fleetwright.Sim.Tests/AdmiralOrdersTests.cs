@@ -45,13 +45,13 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
 
     /// <summary>Four dreadnoughts in line ahead heading south at 15 kn (group 1, ships 1-4); four destroyers in a column a
     /// mile astern of them (ships 5-8), one squadron or two of two in a force, told to screen the line.</summary>
-    static (World W, AiSystem Ai, int Line, int Screen) Make(bool force = false, double splitDeg = 0)
+    static (World W, AiSystem Ai, int Line, int Screen) Make(bool force = false, double splitDeg = 0, string screenDesign = "destroyer")
     {
         var w = new World(Start, 3, Settings);
         var ai = new AiSystem(w);
         w.Apply(Command.SetWeather(30_000));
         w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.TurnAwayDeg, 0));
-        int bb = w.Ships.AddClass(Fleet.Get("dreadnought").Class!), dd = w.Ships.AddClass(Fleet.Get("destroyer").Class!);
+        int bb = w.Ships.AddClass(Fleet.Get("dreadnought").Class!), dd = w.Ships.AddClass(Fleet.Get(screenDesign).Class!);
         var at = Earth.Position(56.0, 4.0);
         int line = Column(w, ai, bb, at, 180, 4, 15);
         int screen;
@@ -182,6 +182,59 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
         Assert.NotEmpty(fought);
         bool one = fought.All(first.Contains), other = fought.All(e => !first.Contains(e));
         Assert.True(one ^ other, "both divisions counter-attacked");
+    }
+
+    /// <summary>An enemy column of a design, n ships, 14 km on the port beam of the line's guide (east: the line steams
+    /// south), steaming south with it, guns held.</summary>
+    static void EnemyAbeam(World w, AiSystem ai, int line, string design, int n)
+    {
+        int cls = w.Ships.AddClass(Fleet.Get(design).Class!);
+        var g = Ship(w, w.Groups.Get(line)!.Guide);
+        var p = Off(g.Position, 90, 14_000);
+        for (int i = 0; i < n; i++)
+        {
+            var (la, lo) = Earth.LatLon(Off(p, 0, i * 600));
+            w.Apply(ShipSystem.Spawn(cls, la, lo, 180, 15, 1));
+            int e = w.Ships.NewestEntity;
+            w.Apply(ai.Orders.HoldFire(Unit.Ship(e)));
+            w.Apply(ai.Orders.Course(Unit.Ship(e), 180));
+            w.Apply(ai.Orders.Speed(Unit.Ship(e), 15));
+        }
+    }
+
+    /// <summary>The screen's ships' bearings off the line's bow, at the end of a run with an enemy abeam.</summary>
+    double[] ScreenAgainst(string screenDesign, string enemyDesign, int enemies)
+    {
+        var (w, ai, line, screen) = Make(screenDesign: screenDesign);
+        w.AdvanceTo(w.Time + 30 * 60_000);   // on the bows
+        EnemyAbeam(w, ai, line, enemyDesign, enemies);
+        w.AdvanceTo(w.Time + 30 * 60_000);
+        int guide = w.Groups.Get(line)!.Guide;
+        var rel = new double[4];
+        for (int i = 0; i < 4; i++)
+        {
+            double r;
+            (rel[i], r) = Where(w, guide, 5 + i);
+            output.WriteLine($"#{5 + i} ({screenDesign}): {rel[i]:F0}° off the line's bow, {r:F0} m");
+        }
+        return rel;
+    }
+
+    [Fact]
+    public void Destroyers_screen_a_battle_line_from_its_disengaged_side()
+    {
+        // four destroyers no match for four dreadnoughts abeam to port: to starboard, one division ahead, one astern
+        var rel = ScreenAgainst("destroyer", "dreadnought", 4);
+        Assert.All(rel, r => Assert.InRange(r, 20, 170));
+        Assert.True(rel.Count(r => r < 90) == 2 && rel.Count(r => r > 90) == 2, "a division at the van and one at the rear");
+    }
+
+    [Fact]
+    public void A_screen_that_is_a_match_for_the_enemy_keeps_toward_him()
+    {
+        // four dreadnoughts screening against two light cruisers abeam to port: toward them
+        var rel = ScreenAgainst("dreadnought", "light_cruiser", 2);
+        Assert.All(rel, r => Assert.InRange(r, -170, -20));
     }
 
     [Fact]

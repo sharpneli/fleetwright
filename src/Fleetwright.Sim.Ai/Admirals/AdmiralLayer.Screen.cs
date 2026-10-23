@@ -5,16 +5,21 @@ using Fleetwright.Sim.Core;
 namespace Fleetwright.Sim.Ai.Admirals;
 
 /// <summary>A group's screen (docs/battle/command.md 5.1b; the task proper, with its ends and hand-back, is 5.1c's): it
-/// keeps <see cref="SimSettings.ScreenM"/> (or the distance ordered) off the screened unit's guide, on the bearing of the
-/// nearest enemy in sight within <see cref="SimSettings.FightCompareM"/> (ahead of it while there's none), placed again
-/// only when that moves its guide's station more than <see cref="SimSettings.ScreenMoveM"/>.
+/// keeps <see cref="SimSettings.ScreenM"/> (or the distance ordered) off the screened unit's guide, on a bearing its admiral
+/// chooses (docs/battle/admirals-orders.md O5), placed again only when that moves its guide's station more than
+/// <see cref="SimSettings.ScreenMoveM"/>: with no enemy in sight of the screened guide within
+/// <see cref="SimSettings.FightCompareM"/>, dead ahead (on its bows, split); with one, toward the nearest, unless he judges
+/// his screen alone no match for the enemy in sight (under doctrine's bar by <see cref="SimSettings.ScreenMarginShare"/>,
+/// back over it by as much): then away from him, on the disengaged side (split, at its van and its rear), out of the line
+/// of fire and ready to go round its ends.
 /// <para>A screen splits (docs/battle/admirals-orders.md O1b): a squadron of two ships or more told to screen is
 /// divided first, into a force of two divisions (<see cref="GroupSystem.Divide"/>), so each half is a squadron that sails
 /// and fights as one. A force's line splits in two: its first half of squadrons (its guide's) on one side of that
 /// bearing, the rest on the other, each <see cref="SimSettings.ScreenSplitDeg"/> (or the split ordered) off it and
 /// spread on the arc that far out, the force's spacing apart from the bearing outward, each squadron keeping its own
-/// station on the screened guide, its ships in their formation about it. The guide's half takes the side it's on when
-/// first placed, and keeps it. Ordered in one body, the group keeps its formation about its guide's station.</para>
+/// station on the screened guide, its ships in their formation about it. Each time it's placed, the guide's half takes
+/// the side of the bearing its guide is on, so each half moves the least (the van division stays the van). Ordered in
+/// one body, the group keeps its formation about its guide's station.</para>
 /// <para>The counter-attack: while enemy torpedo craft close on the screened unit (<see cref="TorpedoThreat"/>, as its
 /// own turn-away sees them) the half on their side of the bearing (all of a screen in one body) fights the nearest, the
 /// other half keeping its station, and goes back to its station <see cref="SimSettings.TurnBackS"/> after the last. It
@@ -76,24 +81,37 @@ public sealed partial class AdmiralLayer
     /// the rest of a split screen take theirs from the station loop (<see cref="ScreenMember"/>).</summary>
     void Place(in AiContext ctx, GroupSystem.Group g, Admiral a, ShipState guide, bool force)
     {
-        double axis = NearestEnemyBearing(ctx, guide) is double b ? Wrap180(b - guide.HeadingDeg) : 0;
-        double oldAxis = a.ScreenAxisDeg;
-        a.ScreenAxisDeg = axis;
-        if (a.ScreenSide == 0)
-        {
-            // the guide's half takes the side of the bearing its guide is on now
-            double on = ctx.Ships.SlotOf(groups.GuideShip(g)) is int m and >= 0 ? Wrap180(Earth.Bearing(guide.Position, ctx.Ships[m].Position) - guide.HeadingDeg) : axis + 1;
-            a.ScreenSide = Wrap180(on - axis) >= 0 ? 1 : -1;
-        }
+        double axis = 0;
+        if (NearestEnemyBearing(ctx, guide) is double b)
+            axis = Wrap180(b - guide.HeadingDeg + (Away(ctx, g, a, guide) ? 180 : 0));
+        else
+            a.ScreenAway = false;   // nothing in sight: on the bows
+        var (oldAxis, oldSide) = (a.ScreenAxisDeg, a.ScreenSide);
+        // the guide's half takes the side of the bearing its guide is on now: each half moves the least
+        double on = ctx.Ships.SlotOf(groups.GuideShip(g)) is int m and >= 0 ? Wrap180(Earth.Bearing(guide.Position, ctx.Ships[m].Position) - guide.HeadingDeg) : axis + 1;
+        (a.ScreenAxisDeg, a.ScreenSide) = (axis, Wrap180(on - axis) >= 0 ? 1 : -1);
         var (astern, abeam) = ScreenPlace(g, a, 0);
         double moved = Math.Sqrt((astern - a.ScreenAstern) * (astern - a.ScreenAstern) + (abeam - a.ScreenAbeam) * (abeam - a.ScreenAbeam));
         if (!force && moved <= ctx.Settings.ScreenMoveM)
         {
-            a.ScreenAxisDeg = oldAxis;   // not worth moving: the stations stand
+            (a.ScreenAxisDeg, a.ScreenSide) = (oldAxis, oldSide);   // not worth moving: the stations stand
             return;
         }
         (a.ScreenOn, a.ScreenAstern, a.ScreenAbeam) = (guide.Entity, astern, abeam);
         ctx.Issue(ctx.Orders.Station(GuideUnit(g), Unit.Ship(guide.Entity), astern, abeam, OrderSource.Superior));
+    }
+
+    /// <summary>Whether the screen keeps to the disengaged side: its group alone against the enemy in sight of the screened
+    /// guide, judged against doctrine's bar with <see cref="SimSettings.ScreenMarginShare"/> either way.</summary>
+    bool Away(in AiContext ctx, GroupSystem.Group g, Admiral a, ShipState screened)
+    {
+        double c = Judge.GroupAgainstNear(ctx, g, screened);
+        double bar = Judge.Bars(groups.GuideShip(g), screened.Side).Accept, margin = ctx.Settings.ScreenMarginShare;
+        if (!a.ScreenAway && c < bar / (1 + margin))
+            a.ScreenAway = true;
+        else if (a.ScreenAway && c > bar * (1 + margin))
+            a.ScreenAway = false;
+        return a.ScreenAway;
     }
 
     /// <summary>Whether a screen splits: a force of two or more groups in its line, and a split (a squadron is divided

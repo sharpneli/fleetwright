@@ -243,6 +243,7 @@
   "ScreenM": 5000,
   "ScreenMoveM": 1000,
   "ScreenSplitDeg": 45,
+  "ScreenMarginShare": 0.25,
   "ForcePeriodMs": 10000,
   "ArrivedM": 2000,
   "JoinM": 3000,
