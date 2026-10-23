@@ -724,10 +724,13 @@ public sealed record SimSettings
     public double ScreenM { get; init; } = 5_000;
     public double ScreenMoveM { get; init; } = 1_000;
 
-    /// <summary>A screen of two ships or more splits (docs/battle/admirals-orders.md O1): half its ships (a force's
-    /// squadrons) on each side of the bearing it screens on, ScreenSplitDeg off it, each half spread on the arc ScreenM out,
-    /// its ships the group's spacing apart, unless ordered otherwise. Degrees.</summary>
-    public double ScreenSplitDeg { get; init; } = 45;
+    /// <summary>A unit's screens share its arc (docs/battle/admirals-orders.md O1c): one sits on the bearing screened on,
+    /// two or more spread evenly to ScreenArcDeg either side of it (two: four points on either bow). Degrees.</summary>
+    public double ScreenArcDeg { get; init; } = 45;
+
+    /// <summary>A squadron alone on the arc it screens on, with this many ships or more in its line, is divided into two
+    /// divisions by its admiral to cover both bows (unless its order is the player's by hand; 0: never). Ships.</summary>
+    public int ScreenDivideShips { get; init; } = 4;
 
     /// <summary>Where a screen sits with the enemy in sight (docs/battle/admirals-orders.md O5): its admiral judges his
     /// screen alone against the enemy in sight of the screened unit, and under doctrine's bar by ScreenMarginShare takes it

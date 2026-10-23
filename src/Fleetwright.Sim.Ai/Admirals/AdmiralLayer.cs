@@ -67,11 +67,8 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
         public double ScreenAstern, ScreenAbeam;
         public int ScreenFight;         // the enemy torpedo craft he's counter-attacking (0: none)
         public long ScreenThreatMs;     // when he last saw one closing
-        public double ScreenSplitDeg;   // each half this far off the bearing screened on (0: in one body)
-        public double ScreenAxisDeg;    // the bearing screened on, off the screened guide's bow, as last placed
-        public int ScreenSide;          // the side of that bearing his guide's half keeps (±1; 0: not placed yet)
-        public int ScreenFightSide;     // the half counter-attacking (±1; 0: all of it)
-        public bool ScreenAway;         // on the side away from the enemy: no match for him (O5)
+        public double ScreenBearingDeg; // his station's bearing off the screened guide's bow, on its arc (AdmiralLayer.Screen.cs)
+        public bool ScreenDivided;      // he's divided his squadron for this screen (once an order: the player may merge it)
         public long DisposedMs;         // his force's disposition last judged (AdmiralLayer.Dispose.cs)
         public int[] GaveTo = new int[4];   // the members he gave tasks, GaveCount of them, and when (made with him)
         public long[] GaveMs = new long[4];
@@ -270,10 +267,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
                 break;
             case AiCommand.Screen:
                 (a.Order, a.Target, a.DistanceM, a.AbeamM) = (CaptainOrder.Screen, (int)c.A, c.X > 0 ? c.X : ctx.Settings.ScreenM, 0);
-                (a.ScreenOn, a.ScreenFight, a.ScreenFightSide, a.ScreenSide, a.ScreenAway, a.AttackOrdered) = (0, 0, 0, 0, false, false);
-                a.ScreenSplitDeg = c.Y > 0 ? c.Y : c.Y < 0 ? 0 : ctx.Settings.ScreenSplitDeg;
-                if (a.ScreenSplitDeg > 0 && !g.IsForce && g.Members.Count >= 2)
-                    ctx.Issue(GroupSystem.Divide(g.GroupId, (g.Members.Count + 1) / 2));   // two divisions, each a unit (O1b)
+                (a.ScreenOn, a.ScreenFight, a.ScreenDivided, a.AttackOrdered) = (0, 0, false, false);
                 break;
             case AiCommand.Attack:
                 (a.Order, a.Target, a.DistanceM, a.AbeamM) = (CaptainOrder.Fight, Unit.Ship((int)c.A).Id, 0, 0);
@@ -330,6 +324,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
         for (int i = count - 1; i >= 0; i--)
             if (groups.Get(admirals[i].GroupId) == null)
                 Remove(i);
+        Arcs(ctx);   // the screens' arcs, each judged once
 
         for (int k = 0; k < groups.Count; k++)   // indexed: a foreach over the interfaces would allocate
         {
@@ -387,8 +382,8 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
             var members = g.Line;
             for (int i = 1; i < members.Count; i++)
             {
-                if (ScreenMember(ctx, g, a, i))
-                    continue;   // its place in a split screen
+                if (ScreenHanded(ctx, g, a, i))
+                    continue;   // a force screening: each of its groups on its own station of the arc
                 if (!g.IsForce)
                 {
                     var (target, astern, abeam) = GroupSystem.StationOf(g, i);
@@ -529,7 +524,9 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
                 ctx.Issue(o.Fight(to, new Unit(a.Target), a.DistanceM, Up));
                 break;
             case CaptainOrder.Screen:
-                if (a.ScreenFight != 0 && (a.ScreenFightSide == 0 || a.ScreenFightSide == a.ScreenSide))
+                if (groups.Get(a.GroupId) is { IsForce: true })
+                    ctx.Issue(o.Screen(to, new Unit(a.Target), a.DistanceM, Up));   // its guide group screens too
+                else if (a.ScreenFight != 0)
                     ctx.Issue(o.Fight(to, Unit.Ship(a.ScreenFight), 0, Up));
                 else if (a.ScreenOn != 0)
                     ctx.Issue(o.Station(to, Unit.Ship(a.ScreenOn), a.ScreenAstern, a.ScreenAbeam, Up));
@@ -537,8 +534,8 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
                     ctx.Issue(o.Hold(to, Up));   // given its station by the next think
                 break;
         }
-        if (!double.IsNaN(a.AskedKn))
-            ctx.Issue(o.Speed(to, a.AskedKn, Up));
+        if (!double.IsNaN(a.AskedKn) && a.Order is CaptainOrder.None or CaptainOrder.Course or CaptainOrder.Route)
+            ctx.Issue(o.Speed(to, a.AskedKn, Up));   // a behaviour sets its own speed: a speed after it would make it a course
     }
 
     /// <summary>The guide's speed limit: what the slowest ship of the line makes, down the tree, less a margin to close
@@ -596,6 +593,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
     {
         h.Add(count);
         h.Add(Notices);
+        HashArcs(ref h);
         for (int i = 0; i < count; i++)
         {
             var a = admirals[i];
@@ -662,11 +660,8 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
                 h.Add(a.ScreenAbeam);
                 h.Add(a.ScreenFight);
                 h.Add(a.ScreenThreatMs);
-                h.Add(a.ScreenSplitDeg);
-                h.Add(a.ScreenAxisDeg);
-                h.Add(a.ScreenSide);
-                h.Add(a.ScreenFightSide);
-                h.Add(a.ScreenAway);
+                h.Add(a.ScreenBearingDeg);
+                h.Add(a.ScreenDivided);
             }
             if (a.Attack != AttackPhase.None || a.AttackOrdered)
             {

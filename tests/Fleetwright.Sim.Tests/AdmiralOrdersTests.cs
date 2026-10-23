@@ -7,10 +7,11 @@ using Xunit.Abstractions;
 
 namespace Fleetwright.Sim.Tests;
 
-/// <summary>The admiral's orders (docs/battle/admirals-orders.md): the split screen (O1b), a squadron told to screen
-/// divided into two divisions, one on either side of the bearing it screens on, and only the division an attack comes at
-/// counter-attacking; and Deploy as an order (O2). Clear weather, guns held all round (only the steering is measured),
-/// and no line turns away.</summary>
+/// <summary>The admiral's orders (docs/battle/admirals-orders.md): screens sharing an arc (O1c: one on the bearing
+/// screened on, two on either bow, more spread evenly; a force hands Screen to its squadrons; only the screen nearest an
+/// attack counter-attacks), a lone flotilla divided by its own admiral and never the player's, Divide and Merge, where
+/// the arc sits (O5), roles (O6), the chain of command (O7) and Deploy as an order (O2). Clear weather, guns held all
+/// round (only the steering is measured), and no line turns away.</summary>
 public class AdmiralOrdersTests(ITestOutputHelper output)
 {
     static readonly WorldTime Start = WorldTime.FromUtc(1916, 5, 31, 14);
@@ -44,9 +45,12 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
         return g;
     }
 
-    /// <summary>Four dreadnoughts in line ahead heading south at 15 kn (group 1, ships 1-4); four destroyers in a column a
-    /// mile astern of them (ships 5-8), one squadron or two of two in a force, told to screen the line.</summary>
-    static (World W, AiSystem Ai, int Line, int Screen) Make(bool force = false, double splitDeg = 0, string screenDesign = "destroyer")
+    /// <summary>Four dreadnoughts in line ahead heading south at 15 kn (group 1, ships 1-4); from ship 5 on, a mile astern
+    /// of them, <paramref name="squadrons"/> columns of <paramref name="each"/> ships 1 km apart side by side, each told to
+    /// screen the line, or (<paramref name="force"/>) a force of them told to; by the player's hand if
+    /// <paramref name="hand"/>. The squadrons in the order they were made.</summary>
+    static (World W, AiSystem Ai, int Line, int[] Squadrons) Make(int squadrons = 1, int each = 4, bool force = false, bool hand = false,
+        string screenDesign = "destroyer")
     {
         var w = new World(Start, 3, Settings);
         var ai = new AiSystem(w);
@@ -55,20 +59,24 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
         int bb = w.Ships.AddClass(Fleet.Get("dreadnought").Class!), dd = w.Ships.AddClass(Fleet.Get(screenDesign).Class!);
         var at = Earth.Position(56.0, 4.0);
         int line = Column(w, ai, bb, at, 180, 4, 15);
-        int screen;
-        if (!force)
-            screen = Column(w, ai, dd, Off(at, 0, 3_400), 180, 4, 15);
-        else
-        {
-            int a = Column(w, ai, dd, Off(at, 0, 3_400), 180, 2, 15), b = Column(w, ai, dd, Off(Off(at, 0, 3_400), 270, 1_000), 180, 2, 15);
-            w.Apply(GroupSystem.Form(a, Formation.LineAbreast, 1_000));
-            screen = w.Groups.Get(a)!.Parent;
-            w.Apply(GroupSystem.EnterAlongside(b, a));
-            w.Apply(ai.Orders.HoldFire(Unit.Group(screen)));
-        }
+        var sq = new int[squadrons];
+        for (int k = 0; k < squadrons; k++)
+            sq[k] = Column(w, ai, dd, Off(Off(at, 0, 3_400), 270, k * 1_000), 180, each, 15);
         w.Apply(ai.Orders.Speed(Unit.Group(line), 15));
-        w.Apply(ai.Orders.Screen(Unit.Group(screen), Unit.Group(line), splitDeg: splitDeg));
-        return (w, ai, line, screen);
+        var o = hand ? ai.Orders.ByHand : ai.Orders;
+        if (force)
+        {
+            w.Apply(GroupSystem.Form(sq[0], Formation.LineAbreast, 1_000));
+            int f = w.Groups.Get(sq[0])!.Parent;
+            for (int k = 1; k < squadrons; k++)
+                w.Apply(GroupSystem.EnterAlongside(sq[k], sq[0]));
+            w.Apply(ai.Orders.HoldFire(Unit.Group(f)));
+            w.Apply(o.Screen(Unit.Group(f), Unit.Group(line)));
+        }
+        else
+            foreach (int g in sq)
+                w.Apply(o.Screen(Unit.Group(g), Unit.Group(line)));
+        return (w, ai, line, sq);
     }
 
     /// <summary>A ship's bearing off the line guide's bow (+ to starboard), degrees, and her distance from it, m.</summary>
@@ -81,82 +89,117 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
         return (rel, Earth.Distance(g.Position, s.Position));
     }
 
-    [Fact]
-    public void A_squadron_told_to_screen_is_divided_into_two_divisions()
+    /// <summary>Where each group's guide ship lies off the line's bow, printed.</summary>
+    (double Rel, double R)[] Guides(World w, int line, IEnumerable<int> groups)
     {
-        var (w, _, _, screen) = Make();
-        var f = w.Groups.Get(screen)!;
-        Assert.True(f.IsForce);   // the same unit, its id kept, a force of two squadrons now
-        Assert.Equal(2, f.Members.Count);
-        Assert.Equal(new[] { 5, 6 }, w.Groups.Get(f.Members[0])!.Members);
-        Assert.Equal(new[] { 7, 8 }, w.Groups.Get(f.Members[1])!.Members);
-        Assert.Equal(w.Groups.Get(f.Members[0])!.Name + "I", w.Groups.Get(f.Members[1])!.Name);
+        int guide = w.Groups.Get(line)!.Guide;
+        return groups.Select(g =>
+        {
+            var at = Where(w, guide, w.Groups.GuideShip(w.Groups.Get(g)!));
+            output.WriteLine($"group {g} ({w.Groups.Get(g)!.Name}): {at.Rel:F0}° off the line's bow, {at.R:F0} m");
+            return at;
+        }).ToArray();
     }
 
     [Fact]
-    public void A_squadron_screening_splits_on_either_bow()
+    public void A_lone_flotilla_is_divided_by_its_admiral_to_cover_both_bows()
     {
-        var (w, _, line, _) = Make();
+        var (w, _, line, sq) = Make();
         w.AdvanceTo(w.Time + 40 * 60_000);
-        int guide = w.Groups.Get(line)!.Guide;
-        var at = new (double Rel, double R)[4];
-        for (int i = 0; i < 4; i++)
-        {
-            at[i] = Where(w, guide, 5 + i);
-            output.WriteLine($"#{5 + i}: {at[i].Rel:F0}° off the line's bow, {at[i].R:F0} m");
-        }
-        // the first half (the screen's guide's) on one bow, the rest on the other, each about 45° off it and 5 km out
-        Assert.True(Math.Sign(at[0].Rel) == Math.Sign(at[1].Rel) && Math.Sign(at[2].Rel) == Math.Sign(at[3].Rel) && Math.Sign(at[0].Rel) != Math.Sign(at[2].Rel));
+        var f = w.Groups.Get(sq[0])!;
+        Assert.True(f.IsForce);   // the same unit, its id kept, a force of two divisions now
+        Assert.Equal(new[] { 5, 6 }, w.Groups.Get(f.Members[0])!.Members);
+        Assert.Equal(new[] { 7, 8 }, w.Groups.Get(f.Members[1])!.Members);
+        Assert.Equal(w.Groups.Get(f.Members[0])!.Name + "I", w.Groups.Get(f.Members[1])!.Name);
+        var at = Guides(w, line, f.Members);
+        Assert.True(Math.Sign(at[0].Rel) != Math.Sign(at[1].Rel), "both on one bow");
         foreach (var (rel, r) in at)
         {
-            Assert.InRange(Math.Abs(rel), 25, 70);
+            Assert.InRange(Math.Abs(rel), 30, 65);
             Assert.InRange(r, 4_000, 6_000);
         }
     }
 
     [Fact]
-    public void A_screen_in_one_body_keeps_its_formation_ahead()
+    public void The_players_screen_by_hand_is_not_divided()
     {
-        var (w, _, line, _) = Make(splitDeg: -1);
+        // a squadron the player tells to screen keeps one station, on the bearing, its column astern of its guide
+        var (w, _, line, sq) = Make(hand: true);
         w.AdvanceTo(w.Time + 40 * 60_000);
+        Assert.False(w.Groups.Get(sq[0])!.IsForce);
         int guide = w.Groups.Get(line)!.Guide;
-        for (int i = 0; i < 4; i++)
+        for (int e = 5; e <= 8; e++)
         {
-            var (rel, r) = Where(w, guide, 5 + i);
-            output.WriteLine($"#{5 + i}: {rel:F0}° off the line's bow, {r:F0} m");
-            Assert.InRange(Math.Abs(rel), 0, 15);   // its column astern of its guide, dead ahead of the line
+            var (rel, r) = Where(w, guide, e);
+            output.WriteLine($"#{e}: {rel:F0}° off the line's bow, {r:F0} m");
+            Assert.InRange(Math.Abs(rel), 0, 15);
         }
     }
 
     [Fact]
-    public void A_force_screening_splits_by_squadron()
+    public void Two_squadrons_screening_one_line_take_either_bow()
     {
-        var (w, _, line, screen) = Make(force: true);
+        var (w, _, line, sq) = Make(squadrons: 2, each: 2);
         w.AdvanceTo(w.Time + 40 * 60_000);
-        int guide = w.Groups.Get(line)!.Guide;
-        var f = w.Groups.Get(screen)!;
-        var sides = new List<int>();
-        foreach (int sq in f.Line)
-            foreach (int e in w.Groups.Get(sq)!.Members)
-            {
-                var (rel, r) = Where(w, guide, e);
-                output.WriteLine($"squadron {sq}, #{e}: {rel:F0}° off the line's bow, {r:F0} m");
-                Assert.InRange(Math.Abs(rel), 20, 75);
-                Assert.InRange(r, 3_500, 6_500);
-                sides.Add(Math.Sign(rel) * sq);
-            }
-        // each squadron on one bow, the two on opposite bows
-        Assert.Equal(2, sides.Distinct().Count());
-        Assert.NotEqual(Math.Sign(sides[0]), Math.Sign(sides[^1]));
+        var at = Guides(w, line, sq);
+        Assert.True(Math.Sign(at[0].Rel) != Math.Sign(at[1].Rel), "both on one bow");
+        foreach (var (rel, r) in at)
+        {
+            Assert.InRange(Math.Abs(rel), 30, 65);
+            Assert.InRange(r, 4_000, 6_000);
+        }
     }
 
     [Fact]
-    public void Only_the_division_the_attack_comes_at_counter_attacks()
+    public void Three_squadrons_spread_over_the_arc()
     {
-        var (w, ai, line, screen) = Make();
-        w.AdvanceTo(w.Time + 30 * 60_000);   // on its stations on either bow
-        int lineGuide = w.Groups.Get(line)!.Guide;
-        var g = Ship(w, lineGuide);
+        var (w, _, line, sq) = Make(squadrons: 3, each: 2);
+        w.AdvanceTo(w.Time + 45 * 60_000);
+        var rel = Guides(w, line, sq).Select(a => a.Rel).Order().ToArray();
+        Assert.InRange(rel[0], -60, -30);
+        Assert.InRange(rel[1], -12, 12);
+        Assert.InRange(rel[2], 30, 60);
+    }
+
+    [Fact]
+    public void A_force_told_to_screen_hands_it_to_its_squadrons()
+    {
+        var (w, ai, line, sq) = Make(squadrons: 2, each: 2, force: true);
+        w.AdvanceTo(w.Time + 40 * 60_000);
+        foreach (int g in sq)
+            Assert.Equal((CaptainOrder.Screen, Unit.Group(line).Id), (ai.Admirals.Of(g).Order, ai.Admirals.Of(g).Target));
+        var at = Guides(w, line, sq);
+        Assert.True(Math.Sign(at[0].Rel) != Math.Sign(at[1].Rel), "both on one bow");
+        foreach (var (rel, r) in at)
+            Assert.InRange(Math.Abs(rel), 30, 65);
+    }
+
+    [Fact]
+    public void Divide_and_merge_keep_the_unit()
+    {
+        var (w, ai, _, sq) = Make(hand: true);
+        int groups = w.Groups.Count;
+        w.Apply(GroupSystem.Divide(sq[0], 1));   // the player splits off all but the guide
+        var f = w.Groups.Get(sq[0])!;
+        Assert.True(f.IsForce);
+        Assert.Equal(new[] { 5 }, w.Groups.Get(f.Members[0])!.Members);
+        Assert.Equal(new[] { 6, 7, 8 }, w.Groups.Get(f.Members[1])!.Members);
+        w.AdvanceTo(w.Time + 60_000);
+        w.Apply(GroupSystem.Merge(sq[0]));
+        Assert.False(f.IsForce);
+        Assert.Equal(new[] { 5, 6, 7, 8 }, f.Members);
+        Assert.Equal(groups, w.Groups.Count);   // the divisions gone
+        Assert.Equal(CaptainOrder.Screen, ai.Admirals.Of(sq[0]).Order);   // its order kept
+        w.AdvanceTo(w.Time + 60_000);
+        Assert.False(f.IsForce);
+    }
+
+    [Fact]
+    public void Only_the_screen_nearest_the_attack_counter_attacks()
+    {
+        var (w, ai, line, sq) = Make(squadrons: 2, each: 2);
+        w.AdvanceTo(w.Time + 30 * 60_000);   // on their stations on either bow
+        var g = Ship(w, w.Groups.Get(line)!.Guide);
         // four enemy destroyers 13 km east-south-east of the line's guide, steaming west at 28 kn, through it
         int dd = w.Ships.AddClass(Fleet.Get("destroyer").Class!);
         var p = Off(g.Position, 110, 13_000);
@@ -168,21 +211,21 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
             w.Apply(ai.Orders.HoldFire(Unit.Ship(e)));
             w.Apply(ai.Orders.Course(Unit.Ship(e), 270));
         }
-        var f = w.Groups.Get(screen)!;
-        var first = w.Groups.Get(f.Members[0])!.Members.ToArray();
-        var ships = first.Concat(w.Groups.Get(f.Members[1])!.Members).ToArray();
+        var first = w.Groups.Get(sq[0])!.Members.ToArray();
+        var ships = first.Concat(w.Groups.Get(sq[1])!.Members).ToArray();
         var fought = new HashSet<int>();
+        bool both = false;
         for (int s = 10; s <= 25 * 60; s += 10)
         {
             w.AdvanceTo(w.Time + 10_000);
-            foreach (int e in ships)
-                if (ai.Captains.Of(e) is (CaptainOrder.Fight, var target, _) && target > 8)
-                    fought.Add(e);
+            var now = ships.Where(e => ai.Captains.Of(e) is (CaptainOrder.Fight, var target, _) && target > 8).ToArray();
+            fought.UnionWith(now);
+            both |= now.Any(first.Contains) && now.Any(e => !first.Contains(e));
         }
-        output.WriteLine($"the divisions {string.Join(", ", first)} and the rest; counter-attacked: {string.Join(", ", fought)}");
+        output.WriteLine($"squadron {sq[0]}: {string.Join(", ", first)}; counter-attacked: {string.Join(", ", fought)}");
         Assert.NotEmpty(fought);
-        bool one = fought.All(first.Contains), other = fought.All(e => !first.Contains(e));
-        Assert.True(one ^ other, "both divisions counter-attacked");
+        Assert.False(both, "both screens counter-attacked at once");
+        Assert.True(fought.All(first.Contains) || fought.All(e => !first.Contains(e)), "the counter-attack changed hands");
     }
 
     /// <summary>An enemy column of a design, n ships, 14 km on the port beam of the line's guide (east: the line steams
@@ -203,37 +246,29 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
         }
     }
 
-    /// <summary>The screen's ships' bearings off the line's bow, at the end of a run with an enemy abeam.</summary>
+    /// <summary>Two screening squadrons' guides' bearings off the line's bow, an hour after an enemy comes abeam.</summary>
     double[] ScreenAgainst(string screenDesign, string enemyDesign, int enemies)
     {
-        var (w, ai, line, screen) = Make(screenDesign: screenDesign);
+        var (w, ai, line, sq) = Make(squadrons: 2, each: 2, screenDesign: screenDesign);
         w.AdvanceTo(w.Time + 30 * 60_000);   // on the bows
         EnemyAbeam(w, ai, line, enemyDesign, enemies);
-        w.AdvanceTo(w.Time + 30 * 60_000);
-        int guide = w.Groups.Get(line)!.Guide;
-        var rel = new double[4];
-        for (int i = 0; i < 4; i++)
-        {
-            double r;
-            (rel[i], r) = Where(w, guide, 5 + i);
-            output.WriteLine($"#{5 + i} ({screenDesign}): {rel[i]:F0}° off the line's bow, {r:F0} m");
-        }
-        return rel;
+        w.AdvanceTo(w.Time + 60 * 60_000);   // dreadnoughts swing round the arc slowly
+        return Guides(w, line, sq).Select(a => a.Rel).ToArray();
     }
 
     [Fact]
     public void Destroyers_screen_a_battle_line_from_its_disengaged_side()
     {
-        // four destroyers no match for four dreadnoughts abeam to port: to starboard, one division ahead, one astern
+        // two pairs of destroyers no match for four dreadnoughts abeam to port: to starboard, one ahead, one astern
         var rel = ScreenAgainst("destroyer", "dreadnought", 4);
         Assert.All(rel, r => Assert.InRange(r, 20, 170));
-        Assert.True(rel.Count(r => r < 90) == 2 && rel.Count(r => r > 90) == 2, "a division at the van and one at the rear");
+        Assert.True(rel.Count(r => r < 90) == 1 && rel.Count(r => r > 90) == 1, "one at the van and one at the rear");
     }
 
     [Fact]
     public void A_screen_that_is_a_match_for_the_enemy_keeps_toward_him()
     {
-        // four dreadnoughts screening against two light cruisers abeam to port: toward them
+        // two pairs of dreadnoughts screening against two light cruisers abeam to port: toward them
         var rel = ScreenAgainst("dreadnought", "light_cruiser", 2);
         Assert.All(rel, r => Assert.InRange(r, -170, -20));
     }
@@ -241,9 +276,9 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
     [Fact]
     public void Roles_are_worked_out_from_the_ships_and_set_by_the_player()
     {
-        var (w, ai, line, screen) = Make(splitDeg: -1);
+        var (w, ai, line, sq) = Make(hand: true);
         Assert.Equal(UnitRole.Heavy, ai.Roles.Of(Unit.Group(line)));
-        Assert.Equal(UnitRole.Flotilla, ai.Roles.Of(Unit.Group(screen)));
+        Assert.Equal(UnitRole.Flotilla, ai.Roles.Of(Unit.Group(sq[0])));
         w.Apply(ai.Orders.Role(Unit.Group(line), UnitRole.Screen));   // four dreadnoughts told they're a screen
         Assert.Equal((UnitRole.Screen, true), (ai.Roles.Of(Unit.Group(line)), ai.Roles.IsSet(Unit.Group(line))));
         var s = new Snapshot();

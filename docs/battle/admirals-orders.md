@@ -64,7 +64,41 @@ torpedoes. Helm orders and the conn are the player's way to overrule that (battl
 
 What the vocabulary still lacked in the sim, and what's built:
 
-### O1 The split screen (built 2026-10-23; as two squadrons, O1b)
+### O1c Screens share an arc; organising is apart (built 2026-10-23, decision 6)
+
+The user, after the mockup: Screen held two things, splitting a squadron and keeping a distance off a unit. They're
+separate now: **Screen only places**, and **organising a unit** (creating, splitting, merging squadrons) is its own set
+of actions, the player's and the admirals'.
+
+- **Every squadron screening a unit shares its arc** (`AdmiralLayer.Screen.cs`, `Arcs`, once a think, sorted by unit):
+  one sits on the bearing screened on; two or more spread evenly to `ScreenArcDeg` (45°) either side of it: two take
+  four points on either bow, three either bow and dead ahead, and so on. They take the stations in the order they lie
+  about the bearing, so none crosses another. **Screen with several squadrons selected is several Screens on one unit**:
+  they spread themselves.
+- **One judgement an arc:** its bearing (ahead; toward the nearest enemy in sight; or the disengaged side when the
+  screens together are no match for him: O5) is the arc's, kept between thinks with its margins, and the screen whose
+  station is nearest an attack counter-attacks (and keeps at it while the attack lasts); the rest hold their stations.
+- **A force told to screen** hands the order to each of its groups (`ScreenHanded`), which take their own stations on
+  the arc.
+- **Organising** (`GroupSystem`): `Divide` (a squadron into a force of two divisions under its admiral, in halves or from
+  any ship on; it keeps its id, name, orders and place) and `Merge` (its inverse: a force of squadrons back into one
+  squadron, the same id), beside the existing create, add, remove, form a force, enter, leave and disband. Placeholders
+  in the squadron popup ("Divide in two" or "Divide from her", "Merge into one squadron") until the task menu's organise
+  column (O8b).
+- **The admirals organise too:** a squadron's admiral alone on the arc he screens on, with `ScreenDivideShips` (4) ships
+  or more in his line, divides it into two divisions to cover both bows, once an order (a player who merges it back
+  isn't overruled), and never when the order (or task) is the player's by hand: the player's screen is literal, one
+  station on the bearing. A task now remembers it was given by hand (`TaskLayer.ByHand`).
+- **Found on the way:** an admiral handing his order to a new guide re-sent the speed last asked of him after it, which
+  turns any behaviour (a screen, a fight, a station) into a plain course; it's re-sent only with a course or a route now.
+  It showed as a divided flotilla's first division steaming on instead of screening.
+- **Tests** (`AdmiralOrdersTests`): a lone flotilla of four divided by its admiral, its divisions at -45°/+45°, 5.0 km;
+  the player's screen by hand not divided, its column dead ahead; two squadrons at ±45°, three at -45°/0°/+45°; a force
+  handing Screen to its squadrons; Divide and Merge keeping the unit and its order; only one screen counter-attacking at
+  a time; two pairs of destroyers on the disengaged side at +45° and +135°, two pairs of dreadnoughts toward light
+  cruisers at -45° and -135°.
+
+### O1 The split screen (built 2026-10-23; as two squadrons, O1b; both replaced by O1c)
 
 A squadron screening a unit used to keep one station, its ships in their formation about it: a column 5 km off the
 screened guide, toward the nearest enemy in sight or dead ahead. The era's screen split: a flotilla's divisions on
@@ -255,12 +289,14 @@ the marks' look (placeholder green). The port (O9) follows the user's notes.
 |---|---|---|
 | **O0** | This plan | 2026-10-23 |
 | **O1** | The split screen (AI): halves of one squadron | done 2026-10-23; **replaced by O1b** (decision 1) |
-| **O1b** | Divide: a squadron told to screen becomes a force of two divisions, each its own squadron | **done 2026-10-23** |
+| **O1b** | Divide: a squadron told to screen becomes a force of two divisions, each its own squadron | done 2026-10-23; **replaced by O1c** |
+| **O1c** | Screens share an arc (Screen only places); Divide and Merge apart, the player's and the admirals' (decision 6) | **done 2026-10-23** |
 | **O2** | Deploy as an order (AI), a placeholder button | **done 2026-10-23** |
 | **O5** | Where the screen sits, by its admiral (decision 2) | **done 2026-10-23** |
 | **O6** | A unit's role: worked out, or set by the player; the commander and the map read it (decision 4) | **done 2026-10-23** |
 | **O7** | The chain of command: a force's admiral disposes his members by role, one implementation with the commander's (decision 3) | **done 2026-10-23** |
 | **O8** | The mockup: `docs/map-ui/battle.html` `#tasks`, `#screen`, `#deploy`, `#chain`: the task menu, the role, the cursor's verbs, a screen's stations, a deploy's line, the chain in the rail | **done 2026-10-23**, for review |
+| **O8b** | The mockup again: the organise column (new squadron, divide, merge, form a force, leave) and Screen with several squadrons selected | |
 | **O9** | The port: the task menu and its picks, the cursor's verbs, the smart verb by role, the formation column's manoeuvres; the snapshot's stations and the map's task marks | after O8 |
 | **O10** | Shaping by drag (a screen's distance and sector), orders as editable objects, the radial menu | later |
 
@@ -319,6 +355,8 @@ Against the same build with `ScreenSplitDeg` 0 (every screen in one body, as bef
    screening squadron screen, and the right click's default over one of ours follows the role (screen for a screening
    squadron) (O6).
 5. **A task menu**; the radial menu comes later, and is optional to use.
+6. **Screen and splitting are separate** (the user, after the mockup, 2026-10-23): the player and the admirals create and
+   split squadrons by their own actions; Screen with several squadrons selected puts each on its station (O1c).
 
 ## Questions for the user
 

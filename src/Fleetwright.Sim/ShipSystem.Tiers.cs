@@ -663,7 +663,7 @@ public sealed partial class ShipSystem
             Derail(world, c.Entity, unride: true);
         switch (code)
         {
-            case GroupCommand.SetFormation or GroupCommand.TurnTogether or GroupCommand.Reverse or GroupCommand.Divide or GroupCommand.Disband or GroupCommand.Add or GroupCommand.Form or GroupCommand.Exit or GroupCommand.DetachGroup:
+            case GroupCommand.SetFormation or GroupCommand.TurnTogether or GroupCommand.Reverse or GroupCommand.Divide or GroupCommand.Merge or GroupCommand.Disband or GroupCommand.Add or GroupCommand.Form or GroupCommand.Exit or GroupCommand.DetachGroup:
                 DerailGroup(world, groups.Get((int)c.A));
                 break;
             case GroupCommand.Enter or GroupCommand.EnterAlongside:

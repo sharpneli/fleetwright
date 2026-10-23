@@ -100,12 +100,12 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
         public double CourseDeg;        // the course last given (Intercept, Join)
         public int RunFrom;             // Withdraw: the enemy it's running from (0: going home)
         public double DistanceM, OffBowDeg;   // Scout, Cover, Screen, Shadow: how far off; a scout's bearing off the bow
-        public double SplitDeg;         // Screen: each half's split off the bearing (0: the settings'; negative: in one body)
         public int ShadowOf;            // Scout: the enemy it's shadowing (0: scouting)
         public int StationOn;           // Scout, Cover: the ship its station was given on
         public double StationAstern, StationAbeam;
         public long LastWaypoint;       // Search: the route's end
         public long StartMs, QuietMs;   // when it began; when the unit last had an enemy in sight
+        public bool Hand;               // given by the player's hand: carried out as the AI's, but literally
     }
 
     Task[] tasks = new Task[8];
@@ -179,6 +179,10 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
 
     /// <summary>Whether a unit is on a task (doing it, fighting with it waiting, or in contact).</summary>
     public bool OnTask(Unit u) => Find(u.Id) is int i and >= 0 && Live(tasks[i].Status);
+
+    /// <summary>Whether a unit's task (live) was given by the player's hand: its admiral carries it out as given, never
+    /// reorganising the unit for it.</summary>
+    public bool ByHand(Unit u) => Find(u.Id) is int i and >= 0 && Live(tasks[i].Status) && tasks[i].Hand;
 
     /// <summary>When a unit's task began, ms of world time (0: none): who gave it can tell it's still theirs.</summary>
     public long StartOf(Unit u) => Find(u.Id) is int i and >= 0 ? tasks[i].StartMs : 0;
@@ -257,7 +261,7 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
         ref var t = ref Get(u.Id);
         t = new Task
         {
-            Unit = u.Id, Kind = kind, Status = TaskState.OnTask, StartMs = ctx.NowMs, QuietMs = ctx.NowMs,
+            Unit = u.Id, Kind = kind, Status = TaskState.OnTask, StartMs = ctx.NowMs, QuietMs = ctx.NowMs, Hand = OrderFrom.Of(c).Hand,
             Point = kind is TaskKind.GoTo or TaskKind.Patrol or TaskKind.Withdraw or TaskKind.Search ? c.A : 0,
             Target = kind is TaskKind.Intercept or TaskKind.Join or TaskKind.Shadow or TaskKind.Screen or TaskKind.Scout or TaskKind.Cover or TaskKind.Attack ? (int)c.A : 0,
             Kn = kind is TaskKind.GoTo or TaskKind.Intercept ? c.X : 0,
@@ -270,7 +274,6 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
                 _ => 0,
             },
             OffBowDeg = kind == TaskKind.Scout ? c.Y : 0,
-            SplitDeg = kind == TaskKind.Screen ? c.Y : 0,
         };
         if (kind == TaskKind.Patrol && ctx.Ships.SlotOf(Lead(u)) is int slot and >= 0)
         {
@@ -444,7 +447,7 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
                 }
                 if (!t.Issued)
                 {
-                    ctx.Issue(o.Screen(u, new Unit(t.Target), t.DistanceM, Own, t.SplitDeg));
+                    ctx.Issue(o.Screen(u, new Unit(t.Target), t.DistanceM, Own));
                     t.Issued = true;
                 }
                 break;
@@ -808,7 +811,6 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
             h.Add(t.RunFrom);
             h.Add(t.DistanceM);
             h.Add(t.OffBowDeg);
-            h.Add(t.SplitDeg);
             h.Add(t.ShadowOf);
             h.Add(t.StationOn);
             h.Add(t.StationAstern);
@@ -816,6 +818,7 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
             h.Add(t.LastWaypoint);
             h.Add(t.StartMs);
             h.Add(t.QuietMs);
+            h.Add(t.Hand);
         }
     }
 

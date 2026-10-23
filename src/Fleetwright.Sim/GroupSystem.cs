@@ -62,6 +62,7 @@ public enum GroupCommand : ushort
     TurnTogether,
     Reverse,
     Divide,
+    Merge,
 }
 
 /// <summary>The world's groups (docs/battle/plan.md steps 2.4 and 2.6): units that move together, in order, with a
@@ -567,8 +568,15 @@ public sealed class GroupSystem : IWorldSystem
     /// divisions, the first of its first <paramref name="first"/> members and the second of the rest, each in its
     /// formation and spacing and each member as detached as it was; the force keeps the squadron's id, name, place in
     /// its own force and its admiral, in one line where it was (line ahead, else a line of bearing on its old line's
-    /// bearing, the divisions chained). Refused for a force, or a split that leaves a division empty.</summary>
+    /// bearing, the divisions chained). Refused for a force, or a split that leaves a division empty. The player's and the
+    /// admirals' to give.</summary>
     public static Command Divide(int groupId, int first) => new(Id, (ushort)GroupCommand.Divide, A: groupId, B: first);
+
+    /// <summary>A force of squadrons merged into one squadron (docs/battle/admirals-orders.md O1c), <see cref="Divide"/>'s
+    /// inverse: every ship of its squadrons, in their order, each as detached as she was in hers, in the first squadron's
+    /// formation and spacing; the squadrons go, and the force, now a squadron, keeps its id, name, place and admiral.
+    /// Refused for a squadron, or a force with a force in it.</summary>
+    public static Command Merge(int forceId) => new(Id, (ushort)GroupCommand.Merge, A: forceId);
 
     /// <summary>A group gone: its members are free (a force's groups stay squadrons and forces of their own), and it
     /// leaves its force.</summary>
@@ -662,6 +670,10 @@ public sealed class GroupSystem : IWorldSystem
                 if (Get((int)c.A) is { IsForce: false } whole && c.B >= 1 && c.B < whole.Members.Count)
                     Divide(whole, c.B);
                 break;
+            case GroupCommand.Merge:
+                if (Get((int)c.A) is { IsForce: true } merged && merged.Members.Count > 0 && merged.Members.All(m => Get(m) is { IsForce: false }))
+                    Merge(merged);
+                break;
             case GroupCommand.Disband:
                 if (Get((int)c.A) is { } d)
                 {
@@ -705,6 +717,32 @@ public sealed class GroupSystem : IWorldSystem
             g.Add(d.GroupId);
         }
         (g.Formation, g.BearingDeg) = g.Formation == Formation.Column ? (Formation.Column, 0) : (Formation.Bearing, bearing);
+    }
+
+    /// <summary><see cref="Merge(int)"/>: the force's squadrons' ships into it, it a squadron, its squadrons gone.
+    /// Allocates (a reorganisation).</summary>
+    void Merge(Group f)
+    {
+        var squadrons = f.Members.Select(m => Get(m)!).ToArray();
+        var first = squadrons[0];
+        var ships = new List<(int Ship, Detachment D)>();
+        foreach (var sq in squadrons)
+            for (int i = 0; i < sq.Members.Count; i++)
+                ships.Add((sq.Members[i], sq.DetachmentAt(i)));
+        f.Clear();
+        foreach (var sq in squadrons)
+        {
+            sq.Parent = 0;
+            RemoveGroup(sq);
+        }
+        f.IsForce = false;
+        (f.Formation, f.SpacingM, f.BearingDeg) = (first.Formation, first.SpacingM, first.BearingDeg);
+        foreach (var (ship, d) in ships)
+        {
+            f.Add(ship);
+            if (d != Detachment.InLine)
+                f.Detach(ship, d);
+        }
     }
 
     Group New(bool force, Formation f, double spacing)

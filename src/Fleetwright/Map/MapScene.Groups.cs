@@ -403,6 +403,18 @@ public sealed unsafe partial class MapScene
         ImGui.SameLine();
         if (ImGui.Button("Disband##sq"))
             world.Send(GroupSystem.Disband(id));
+        // organising (docs/battle/admirals-orders.md O1c): two divisions under its admiral, from this ship on (or in
+        // halves when she's its guide); placeholders until the task menu's organise column
+        if (gv.MemberCount[g] >= 2)
+        {
+            int at = 0;
+            for (int i = 0; i < gv.MemberCount[g]; i++)
+                if (gv.Members[gv.MemberStart[g] + i] == selected)
+                    at = i;
+            ImGui.SameLine();
+            if (ImGui.Button(at > 0 ? "Divide from her##sq" : "Divide in two##sq"))
+                world.Send(GroupSystem.Divide(id, at > 0 ? at : (gv.MemberCount[g] + 1) / 2));
+        }
 
         // picked ships: into this squadron, or their squadrons into a force with it
         int others = 0;
@@ -458,6 +470,9 @@ public sealed unsafe partial class MapScene
             ImGui.SameLine();
             if (ImGui.Button("Disband##force"))
                 world.Send(GroupSystem.Disband(gv.Id[f]));
+            ImGui.SameLine();
+            if (ImGui.Button("Merge into one squadron##force"))
+                world.Send(GroupSystem.Merge(gv.Id[f]));   // refused if a force is in it
         }
         if (others > 0)
         {

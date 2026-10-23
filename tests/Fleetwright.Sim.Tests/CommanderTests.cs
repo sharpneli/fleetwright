@@ -191,13 +191,14 @@ public class CommanderTests(ITestOutputHelper output)
         long seen = w.CombatLog.Written;
         int torpedoes = 0;
         double sent = double.NaN, fired = double.NaN;
-        // told to screen, the flotilla is two divisions (docs/battle/admirals-orders.md O1b): he sends them in
-        var divisions = w.Groups.Get(flotilla.GroupId)!.Members.Select(Unit.Group).Prepend(flotilla).ToArray();
+        // alone on its screen, the flotilla's admiral divides it (docs/battle/admirals-orders.md O1c): he sends in its divisions
         var attacking = flotilla;
         for (double s = 0; s < 45 * 60 && double.IsNaN(fired); s += 60)
         {
             Run(w, 60);
-            if (double.IsNaN(sent) && divisions.FirstOrDefault(u => ai.Commanders.GivenOf(u).Given == TaskKind.Attack) is { Id: not 0 } d)
+            var f = w.Groups.Get(flotilla.GroupId)!;
+            var units = f.IsForce ? f.Members.Select(Unit.Group).Prepend(flotilla) : [flotilla];
+            if (double.IsNaN(sent) && units.FirstOrDefault(u => ai.Commanders.GivenOf(u).Given == TaskKind.Attack) is { Id: not 0 } d)
                 (sent, attacking) = (s, d);
             for (long i = w.CombatLog.Written - seen - 1; i >= 0; i--)
                 if (w.CombatLog.Newest((int)i) is { Kind: CombatEvent.Torpedoes } e && w.Ships.Store.SlotOf(e.Shooter) is int slot and >= 0 &&
