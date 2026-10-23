@@ -751,6 +751,8 @@ public sealed partial class MapScene : ISceneMenu
             resultShut = true;
         else if (logOpen)
             logOpen = false;
+        else if (taskOpen)
+            taskOpen = false;
         else if (armedPick != ClickPick.None || fireArmed)
             (armedPick, fireArmed) = (ClickPick.None, false);
         else if (placing || placeDrag)
@@ -758,7 +760,7 @@ public sealed partial class MapScene : ISceneMenu
         else if (selected >= 0)
         {
             selected = -1;
-            picked.Clear();
+            ClearPicks();
         }
         else if (devOpen)
             devOpen = false;

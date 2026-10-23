@@ -286,7 +286,7 @@ public sealed partial class MapScene
         if (Section("Orders", default))
         {
             var unit = Unit.Group(gv.Id[g]);
-            if (Seg(FormationLabels[(int)gv.Formation[g]], first: true))
+            if (Seg(FormationLabels[(int)gv.Formation[g]], first: true, menu: true))
                 ImGui.OpenPopup("##cardform");
             if (ImGui.BeginPopup("##cardform"))
             {

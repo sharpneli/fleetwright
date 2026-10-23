@@ -317,7 +317,7 @@ public sealed partial class MapScene
         else
             return;
         selected = ship;
-        picked.Clear();
+        ClearPicks();
         squadronCardOf = -1;
         cardOpen = true;
     }

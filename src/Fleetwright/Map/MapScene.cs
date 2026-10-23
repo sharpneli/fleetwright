@@ -283,7 +283,11 @@ public sealed unsafe partial class MapScene : IScene
         var s = world.Current;
         if (key == SDLK_ESCAPE)
             return Escape();
-        if (key == SDLK_F1)
+        if (TaskKey(key))
+            return true;   // the task menu's letters while it's open (docs/battle/admirals-orders.md O9)
+        if (key == SDLK_T)
+            taskOpen = !taskOpen && s.Ships.IndexOf(selected) >= 0;
+        else if (key == SDLK_F1)
             devOpen = !devOpen;
         else if (key == SDLK_J)
             logOpen = !logOpen;

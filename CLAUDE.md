@@ -67,8 +67,10 @@ scenario loaded from the menu opens with, or `-brief` at start; Esc shuts the to
 scenarios, restart, the clock's rules on contact, the designer, quit. Esc never quits). Wheel zooms at the cursor, left drag pans. Ships (`MapScene.Ships.cs`, step 2.3a): a click
 selects (twice: her squadron takes the orders; Tab steps through your ships), the strip at the bottom
 (`MapScene.Strip.cs`, docs/map-ui/battle-hud.md U2) gives the orders: who to (the ship or a unit above her), helm and
-telegraph, guns, torpedoes and smoke, the task (fight, follow…, run from…, hold, search…; the formation and the
-squadron's business in popups); the HELM column's Conn (or C) takes the conn of the unit picked (docs/battle/command.md "The conn": nothing but the player's helm orders moves it, the lookouts call torpedo tracks on the ticker, a green ring marks it); the cursor names what a right-click does: on an enemy engage, on one of yours follow,
+telegraph, guns, torpedoes and smoke, the task (fight, follow…, hold; Task ▾ or T opens the task menu,
+`MapScene.Tasks.cs`, docs/battle/admirals-orders.md O9: what the unit is for, every order by what it's about, each armed
+and given by a click, and organising the unit, letters picking while it's open; a unit's formation, Turn ▾ and Deploy…;
+the squadron's business in a popup; ctrl+click ships, or units in the rail, and orders go to each); the HELM column's Conn (or C) takes the conn of the unit picked (docs/battle/command.md "The conn": nothing but the player's helm orders moves it, the lookouts call torpedo tracks on the ticker, a green ring marks it); the cursor names what a right-click does: on an enemy engage, on one of yours follow (screen, for a flotilla or a screen),
 on the sea steer for it (shift: add a waypoint); the click opens her card at the right (`MapScene.Card.cs`, U3b: her
 condition drawn from her class, guns, fire control, damage control, hits taken; V shuts it, P pins it as a tab); the rail at the left lists your units and ships and the enemy in sight (a click: her card,
 the enemy's as held; "AI commands", on by default, lets the side's commander fight every unit you haven't taken, and a unit's AI / YOURS tag hands it over or takes it: docs/battle/command.md decision 14); the ticker at the bottom left and the log (J) tell the fight, a falling-out notice offers to order her

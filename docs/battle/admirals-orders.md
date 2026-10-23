@@ -323,6 +323,44 @@ straight into the game's rail (`MapScene.Rail.cs`), every drop one of the group 
 - Organising isn't an order: it doesn't take a unit from the side's commander, whose roles and tasks follow the new
   tree at his next think.
 
+### O9a The task menu in the game (built 2026-10-23)
+
+The mockup's `#tasks`, `#organise`, `#multi` and `#deploy` ported (`MapScene.Tasks.cs`, `MapScene.Strip.cs`; capture
+`docs/map-ui/png/game-o9a-tasks.png`):
+
+- **The strip's task column:** Fight, Follow…, Hold, **Task ▾** (or **T**); at a unit's level its formation ▾ (the
+  formation and spacing), **Turn ▾** (4 and 8 points either way; about, the rear ship first, to port or starboard),
+  **Deploy…**, Withdraw and its AI; "Squadron…" keeps the squadron's business (detach, rejoin, leave, disband, add the
+  picked). The head says CAPTAIN, SQUADRON or FORCE; under the unit's name in the first column, what it's for ("flotilla ·
+  worked out"). The squadron popup's placeholders (divide, merge, screen, join, deploy, torpedo attack, the role picker,
+  turn together) are gone: they're the menu's and the strip's now. The UI font has no ▾: `Seg(menu: true)` draws it.
+- **The menu**, above the strip: its head the unit's name (several: "Group 2 + 1 more") and **what it's for**, the five
+  roles as a switch (the one in force lit), "worked out from its ships" or "set by you · work it out"; four columns,
+  *one of ours* (Screen S, Scout O, Cover C, Join J, Follow F, Station N), *the enemy* (Fight B, Intercept I, Shadow H,
+  Attack A, Run from R), *a place* (Go to G, Patrol P, Search E, Withdraw W; and "a pattern by hand…", the old search
+  row's ladder, square, sector and patrol line as the unit's route), *organise* (Divide in two D, Divide from her… V,
+  Merge divisions M, New squadron of selected Q, Form a force with selected K, Leave its force L). Letters pick while
+  it's open (over the map's own: J, V, P, C); T or Esc shuts it. One that doesn't apply is greyed with its reason
+  (Attack: "a flotilla's: set it as one to send it in"; Divide on a force: "a force: divide one of its squadrons";
+  Merge: "no divisions to merge"; the organising with nothing ctrl+clicked: "ctrl+click the ships").
+- **Each order armed and given by a click,** the cursor naming it and its shape before the click: "SCREEN 1st BCS · 5 km
+  · on the bearing" (2: "either bow", more: "over the arc"), "SCOUT for X · 20 km ahead", "COVER X · 20 km off, toward the
+  threat", "STATION on Lion · 1.2 km, 135° off her bow" (the station held where the unit lies from her now: Station's
+  drag waits for O10), "INTERCEPT X · 12.3 km", "ATTACK X · 6 boats", "GO TO 112° · 9.4 km · 0:19 at 15 kn", "DEPLOY 070° ·
+  the wing column furthest along it leads" (over an enemy: across his course, doctrine's own reckoning), "DIVIDE FROM
+  Tiger · 2 and 2". A miss (land, the wrong kind of thing) shows what the pick waits for, in amber, and keeps it armed.
+- **Whom an order of ours is about:** the ship clicked stands for her squadron, and the force above it while she's in
+  its line, but never a unit holding the one ordered (a fleet's flotilla screens its battle squadron, not the fleet).
+- **The smart verb by role** (decision 4): a right-click on one of ours screens her unit when the unit ordered is a
+  flotilla or a screen, else follows her; the cursor and the hint line say which.
+- **Several units at once:** ctrl+click ships on the map (each stands for the unit she's in at the level the orders go
+  at) or units' heads and ships in the rail (lit beside the selection); the strip says "+ 1 more · orders go to each",
+  and the menu's orders and the right-click's go to each (Screen spreads them over the arc, the sim's O1c).
+- **Checked in the game** (dev ships, scripted keys and clicks): a destroyer squadron's T, S and a click on a
+  dreadnought gives Screen (the rail's "screen", the strip's head, the relation line); Deploy… over the sea names the
+  course; T then D divides the squadron into a force of two divisions, the menu then greying Divide and offering Merge.
+  Ctrl+clicks (SDL's modifier state) aren't scriptable: by hand.
+
 ## The steps
 
 | Step | What | Status |
@@ -338,7 +376,8 @@ straight into the game's rail (`MapScene.Rail.cs`), every drop one of the group 
 | **O8** | The mockup: `docs/map-ui/battle.html` `#tasks`, `#screen`, `#deploy`, `#chain`: the task menu, the role, the cursor's verbs, a screen's stations, a deploy's line, the chain in the rail | **done 2026-10-23**, for review |
 | **O8b** | The mockup again: the organise column (new squadron, divide, merge, form a force, leave) and Screen with several squadrons selected | **done 2026-10-23**, for review |
 | **O8c** | Drag and drop in the rail: ships between squadrons, a unit under another's admiral (in the game) | **done 2026-10-23** |
-| **O9** | The port: the task menu and its picks, the cursor's verbs, the smart verb by role, the formation column's manoeuvres; the snapshot's stations and the map's task marks | after O8 |
+| **O9a** | The port: the task menu and its picks, the cursor's verbs, the smart verb by role, the formation column's manoeuvres, several units at once | **done 2026-10-23** |
+| **O9b** | The snapshot's stations and the map's task marks: a screen's arc, a scout's station, a deploy's line, previews before the click, the label's task | next |
 | **O10** | Shaping by drag (a screen's distance and sector), orders as editable objects, the radial menu | later |
 
 ## Measured (O1-O2, Release, 5 seeds; the Jutland one)

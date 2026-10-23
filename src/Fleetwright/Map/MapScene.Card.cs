@@ -120,7 +120,7 @@ public sealed partial class MapScene
             if (ImGui.Button(TabName(s, e)) && e != selected)
             {
                 selected = e;
-                picked.Clear();
+                ClearPicks();
             }
             ImGui.PopStyleColor(2);
             if (pin)

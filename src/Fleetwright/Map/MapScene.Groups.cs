@@ -46,10 +46,6 @@ public sealed unsafe partial class MapScene
     // a group's: a line of bearing too (what a turn together leaves, docs/battle/command.md 5.1b)
     static readonly string[] GroupFormationNames = [.. FormationNames, "Line of bearing"];
 
-    // a unit's role in the placeholder picker (docs/battle/admirals-orders.md O6): worked out from its ships, then the
-    // roles to set, as Roles.Settable has them
-    static readonly string[] RoleNames = ["worked out", .. Roles.Settable.Select(RoleName)];
-
     static string RoleName(UnitRole r) => r switch
     {
         UnitRole.Heavy => "battle line",
@@ -59,7 +55,8 @@ public sealed unsafe partial class MapScene
         UnitRole.Auxiliary => "auxiliary",
         _ => "-",
     };
-    static readonly (string Label, double Deg)[] TurnButtons = [("<8", -90), ("<4", -45), ("4>", 45), ("8>", 90)];
+    static readonly (string Label, double Deg)[] TurnButtons =
+        [("8 points to port##tt", -90), ("4 points to port##tt", -45), ("4 points to starboard##tt", 45), ("8 points to starboard##tt", 90)];
 
     /// <summary>A group collapses into one marker when its ships span fewer pixels than this on screen.</summary>
     const double CollapsePx = 30;
@@ -347,7 +344,7 @@ public sealed unsafe partial class MapScene
         if (!ctrl || selected < 0)
         {
             selected = hit;
-            picked.Clear();
+            ClearPicks();
             return;
         }
         if (hit < 0 || hit == selected)
@@ -377,7 +374,7 @@ public sealed unsafe partial class MapScene
                     world.Send(GroupSystem.Create(selected, Formation.Column, spacingEdit));
                     foreach (int e in picked)
                         world.Send(GroupSystem.Join(e, selected));
-                    picked.Clear();
+                    ClearPicks();
                 }
             }
             else
@@ -403,19 +400,6 @@ public sealed unsafe partial class MapScene
         ImGui.SameLine();
         if (ImGui.Button("Disband##sq"))
             world.Send(GroupSystem.Disband(id));
-        // organising (docs/battle/admirals-orders.md O1c): two divisions under its admiral, from this ship on (or in
-        // halves when she's its guide); placeholders until the task menu's organise column
-        if (gv.MemberCount[g] >= 2)
-        {
-            int at = 0;
-            for (int i = 0; i < gv.MemberCount[g]; i++)
-                if (gv.Members[gv.MemberStart[g] + i] == selected)
-                    at = i;
-            ImGui.SameLine();
-            if (ImGui.Button(at > 0 ? "Divide from her##sq" : "Divide in two##sq"))
-                world.Send(GroupSystem.Divide(id, at > 0 ? at : (gv.MemberCount[g] + 1) / 2));
-        }
-
         // picked ships: into this squadron, or their squadrons into a force with it
         int others = 0;
         foreach (int e in picked)
@@ -428,25 +412,7 @@ public sealed unsafe partial class MapScene
             {
                 foreach (int e in picked)
                     world.Send(GroupSystem.Add(id, e));
-                picked.Clear();
-            }
-            // placeholders until 5.2: this squadron screens, or joins, the first picked ship's (docs/battle/command.md
-            // 5.1b-c); a squadron in a force joins the force
-            if (gv.IndexOfShip(picked[0]) is int sg and >= 0 && sg != g)
-            {
-                ImGui.SameLine();
-                if (ImGui.Button($"Screen {gv.Name[sg]}"))
-                {
-                    world.Send(o.Screen(Unit.Group(id), Unit.Group(gv.Id[sg])));
-                    picked.Clear();
-                }
-                int joined = gv.Parent[sg] != 0 && gv.IndexOfGroup(gv.Parent[sg]) is int pf and >= 0 ? pf : sg;
-                ImGui.SameLine();
-                if (ImGui.Button($"Join {gv.Name[joined]}"))
-                {
-                    world.Send(o.Join(Unit.Group(id), Unit.Group(gv.Id[joined])));
-                    picked.Clear();
-                }
+                ClearPicks();
             }
         }
 
@@ -470,9 +436,6 @@ public sealed unsafe partial class MapScene
             ImGui.SameLine();
             if (ImGui.Button("Disband##force"))
                 world.Send(GroupSystem.Disband(gv.Id[f]));
-            ImGui.SameLine();
-            if (ImGui.Button("Merge into one squadron##force"))
-                world.Send(GroupSystem.Merge(gv.Id[f]));   // refused if a force is in it
         }
         if (others > 0)
         {
@@ -485,7 +448,7 @@ public sealed unsafe partial class MapScene
                 foreach (int e in picked)
                     if (gv.IndexOfShip(e) is int pg and >= 0 && pg != g)
                         world.Send(GroupSystem.EnterAlongside(gv.Id[pg], id));
-                picked.Clear();
+                ClearPicks();
             }
         }
         else if (f < 0)
@@ -538,53 +501,6 @@ public sealed unsafe partial class MapScene
             spacing = (int)gv.SpacingM[g];
         if (ImGui.InputInt($"m apart{id}", ref spacing, 100, 500, ImGuiInputTextFlags.EnterReturnsTrue))
             world.Send(o.Form(unit, gv.Formation[g], Math.Clamp(spacing, 100, 50_000), gv.BearingDeg[g]));
-
-        // the manoeuvres (docs/battle/command.md 5.1b): turn together by 4 or 8 points either way, or about (the battle
-        // turn-away, rear ship first); a placeholder until 5.2's orders
-        ImGui.SameLine();
-        ImGui.TextDisabled("turn together");
-        foreach (var (label, deg) in TurnButtons)
-        {
-            ImGui.SameLine();
-            if (ImGui.SmallButton($"{label}{id}"))
-                world.Send(o.TurnTogether(unit, deg));
-        }
-        ImGui.SameLine();
-        if (ImGui.SmallButton($"about<{id}"))
-            world.Send(o.BattleTurn(unit, toStarboard: false));
-        ImGui.SameLine();
-        if (ImGui.SmallButton($"about>{id}"))
-            world.Send(o.BattleTurn(unit, toStarboard: true));
-        if (gv.Force[g])
-        {
-            // into one line of battle: across the enemy's main body in sight, else on its heading (docs/battle/admirals-orders.md
-            // O2); a placeholder until the deploy order's own UI
-            ImGui.SameLine();
-            if (ImGui.SmallButton($"deploy{id}"))
-                world.Send(o.Deploy(unit));
-        }
-        ImGui.SameLine();
-        if (ImGui.SmallButton($"torpedo attack{id}"))
-            world.Send(o.Attack(unit));   // a flotilla's, on the biggest in sight
-        ImGui.SameLine();
-        if (ImGui.SmallButton($"withdraw home{id}"))
-            world.Send(o.WithdrawHome(unit));
-        // what it's for (docs/battle/admirals-orders.md O6): a placeholder until the task menu's
-        ImGui.SameLine();
-        ImGui.SetNextItemWidth(110 * UiFonts.Scale);
-        int role = gv.RoleSet[g] ? Array.IndexOf(Roles.Settable, (UnitRole)gv.Role[g]) + 1 : 0;
-        if (ImGui.Combo($"{id}role", ref role, RoleNames, RoleNames.Length))
-            world.Send(o.Role(unit, role == 0 ? UnitRole.None : Roles.Settable[role - 1]));
-        if (ImGui.IsItemHovered())
-            ImGui.SetTooltip($"what it's for: {RoleName((UnitRole)gv.Role[g])}{(gv.RoleSet[g] ? " (set)" : " (worked out from its ships)")}");
-        if (gv.Parent[g] == 0)
-        {
-            // the side's commander (docs/battle/command.md 5.1d): hand a top group to him, or take it back
-            ImGui.SameLine();
-            bool his = gv.Commanded[g] == 1;
-            if (ImGui.SmallButton(his ? $"take it from the admiral{id}" : $"leave it to the admiral{id}"))
-                world.Send(o.Automate(unit, !his));
-        }
     }
 
     /// <summary>"Held by you", top right: every ship and group the player holds out of its line (not those out on their
@@ -630,7 +546,7 @@ public sealed unsafe partial class MapScene
                     if (ImGui.SmallButton($"Select##h{m}"))
                     {
                         selected = gv.Force[g] ? (sub >= 0 ? gv.GuideShip[sub] : selected) : member;
-                        picked.Clear();
+                        ClearPicks();
                     }
                     ImGui.SameLine();
                     if (ImGui.SmallButton($"Resume##h{m}"))

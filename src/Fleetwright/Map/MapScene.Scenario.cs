@@ -27,7 +27,7 @@ public sealed unsafe partial class MapScene
             return;
         seenGeneration = world.Generation;
         (selected, SelectOnce) = (SelectOnce, -1);
-        picked.Clear();
+        ClearPicks();
         tracks.Clear();
         going.Clear();
         wrecks.Clear();

@@ -20,8 +20,13 @@ namespace Fleetwright.Map;
 /// click completes.</summary>
 public sealed partial class MapScene
 {
-    /// <summary>What the next click on a ship does, armed from the strip (the dev's salvo is <see cref="fireArmed"/>).</summary>
-    enum ClickPick : byte { None, Engage, Torpedoes, Follow, Run }
+    /// <summary>What the next click on the map does, armed from the strip or the task menu (the dev's salvo is
+    /// <see cref="fireArmed"/>): on a ship of ours, an enemy, or the sea (docs/battle/admirals-orders.md O9).</summary>
+    enum ClickPick : byte
+    {
+        None, Engage, Torpedoes, Follow, Run,
+        Screen, Scout, Cover, Join, Station, Fight, Intercept, Shadow, Attack, GoTo, Patrol, Search, Deploy, DivideFrom,
+    }
 
     ClickPick armedPick;
     long lastClickMs;
@@ -49,6 +54,7 @@ public sealed partial class MapScene
         if (k < 0)
         {
             armedPick = ClickPick.None;
+            taskOpen = false;
             if (selected >= 0)
                 EnemyStrip(s, selected);
             return;
@@ -93,28 +99,43 @@ public sealed partial class MapScene
             float top = wp.Y + 6 * sc, bottom = wp.Y + ImGui.GetWindowHeight() - 6 * sc;
             for (int i = 0; i < n; i++)
                 dl.AddLine(new Vector2(seps[i], top), new Vector2(seps[i], bottom), ImGui.GetColorU32(DesignerTheme.Line), 1);
+            stripTop = wp.Y;
         }
         ImGui.End();
         ImGui.PopStyleVar(3);
-        StripHint(vp);
+        StripHint(vp, s);
+        TaskMenu(s);
     }
 
     /// <summary>The line under the strip: what the mouse does, or what the armed pick waits for.</summary>
-    void StripHint(ImGuiViewportPtr vp)
+    void StripHint(ImGuiViewportPtr vp, Snapshot s)
     {
-        string hint = armedPick switch
+        string hint;
+        if (armedPick != ClickPick.None)
         {
-            ClickPick.Engage => "ENGAGE: click an enemy · Esc cancels",
-            ClickPick.Torpedoes => "TORPEDOES: click an enemy · Esc cancels",
-            ClickPick.Follow => "FOLLOW: click a ship to take station astern of · Esc cancels",
-            ClickPick.Run => "RUN FROM: click a ship · Esc cancels",
-            _ => "Right-click: steer · on an enemy: engage · on your ship: follow · Shift: waypoint · Alt: this ship only · C: the conn · Tab: the next ship",
-        };
+            if (armedPick != hintPick)
+                (hintPick, hintText) = (armedPick, $"{PickVerb(armedPick)}: {PickClick(armedPick)} · Esc cancels");
+            hint = hintText;
+        }
+        else
+            hint = SmartScreens(s) ? "Right-click: steer · on an enemy: engage · on your ship: screen · Shift: waypoint · Alt: this ship only · C: the conn · T: tasks · Tab: the next ship"
+                : "Right-click: steer · on an enemy: engage · on your ship: follow · Shift: waypoint · Alt: this ship only · C: the conn · T: tasks · Tab: the next ship";
         var size = ImGui.CalcTextSize(hint);
         var at = new Vector2(StripCentre(vp) - size.X / 2, vp.Pos.Y + vp.Size.Y - 6 * UiFonts.Scale - size.Y);
         var dl = ImGui.GetBackgroundDrawList();
         dl.AddText(at + Vector2.One, 0xC0000000, hint);
         dl.AddText(at, ImGui.GetColorU32(armedPick != ClickPick.None ? DesignerTheme.Amber : DesignerTheme.Muted), hint);
+    }
+
+    ClickPick hintPick;
+    string hintText = "";
+
+    /// <summary>Whether the right click on one of ours screens her (the orders' unit is a flotilla or a screen, decision 4
+    /// of docs/battle/admirals-orders.md), else follows her.</summary>
+    bool SmartScreens(Snapshot s)
+    {
+        var (unit, _) = Commanded(s);
+        return RoleOf(s, unit).Role is UnitRole.Flotilla or UnitRole.Screen;
     }
 
     /// <summary>The strip's centre: the screen's, or what's left of the dock's when a card is open.</summary>
@@ -179,8 +200,9 @@ public sealed partial class MapScene
         ImGui.PopFont();
     }
 
-    /// <summary>A segment of a row of buttons: on (brass), armed (amber), or not.</summary>
-    static bool Seg(string label, bool on = false, bool armed = false, bool enabled = true, bool first = false)
+    /// <summary>A segment of a row of buttons: on (brass), armed (amber), or not. A menu's has a caret drawn at its end
+    /// (the UI font has no ▾), in room its label leaves with trailing spaces.</summary>
+    static bool Seg(string label, bool on = false, bool armed = false, bool enabled = true, bool first = false, bool menu = false)
     {
         if (!first)
             ImGui.SameLine(0, 1);
@@ -191,6 +213,14 @@ public sealed partial class MapScene
         ImGui.BeginDisabled(!enabled);
         bool hit = ImGui.Button(label);
         ImGui.EndDisabled();
+        if (menu)
+        {
+            float sc = UiFonts.Scale, h = 2.5f * sc;
+            var max = ImGui.GetItemRectMax();
+            var c = new Vector2(max.X - 10 * sc, (ImGui.GetItemRectMin().Y + max.Y) / 2 + 0.5f * sc);
+            ImGui.GetWindowDrawList().AddTriangleFilled(c + new Vector2(-h, -h * 0.7f), c + new Vector2(h, -h * 0.7f), c + new Vector2(0, h * 0.8f),
+                ImGui.GetColorU32(ImGuiCol.Text));
+        }
         ImGui.PopStyleColor(4);
         return hit;
     }
@@ -221,6 +251,21 @@ public sealed partial class MapScene
             if (ImGui.IsItemHovered())
                 ImGui.SetTooltip(i == 0 ? "orders to her alone (alt does it for one order)" : level > i ? "" : "orders to the unit: its admiral hands them down");
         }
+        // the units beside it the orders go to too, and what the unit is for
+        var units = OrderUnits(s);
+        var (role, set) = RoleOf(s, units[0]);
+        if ((units.Count, role, set) != whoKey)
+        {
+            whoKey = (units.Count, role, set);
+            string what = role == UnitRole.None ? "" : $"{RoleName(role)} · {(set ? "set by you" : "worked out")}";
+            whoText = units.Count > 1 ? $"+ {units.Count - 1} more · orders go to each{(what.Length > 0 ? " · " : "")}{what}" : what;
+        }
+        if (whoText.Length > 0)
+        {
+            ImGui.PushFont(UiFonts.SansSmall);
+            ImGui.TextColored(set ? DesignerTheme.Brass : DesignerTheme.Muted, whoText);
+            ImGui.PopFont();
+        }
         // what's become of her
         if (v.Reason[k] != 0)
         {
@@ -242,6 +287,9 @@ public sealed partial class MapScene
             ImGui.TextDisabled(v.Tier[k] == ClockTier.Rails ? "on rails" : "coarse tier");
         ImGui.EndGroup();
     }
+
+    (int, UnitRole, bool) whoKey = (-1, default, false);
+    string whoText = "";
 
     /// <summary>The helm: the course (±10°, ±90°, typed), hard over, the conn, the route cleared; the telegraph's bells.
     /// On the conn (the unit's own, or her line's) the head says so in its colour.</summary>
@@ -318,7 +366,7 @@ public sealed partial class MapScene
     static readonly string[] CourseLabels = [.. CourseSteps.Select(d => d < 0 ? $"−{-d}°##c{d}" : $"+{d}°##c{d}")];
 
     /// <summary>The formation button's labels, by formation.</summary>
-    static readonly string[] FormationLabels = [.. GroupFormationNames.Select(n => $"{n}…##form")];
+    static readonly string[] FormationLabels = [.. GroupFormationNames.Select(n => $"{n}    ##form")];
 
     /// <summary>The telegraph's bells: a share of full speed, or flank (her overload).</summary>
     static readonly (string Label, double Of, bool Flank)[] Bells =
@@ -412,8 +460,9 @@ public sealed partial class MapScene
         ImGui.EndGroup();
     }
 
-    /// <summary>The task: the captain's (or the unit's): fight, follow, run from, hold, search; at a unit's level the
-    /// formation, withdraw and its AI; the squadron's own business (detach, rejoin, forming, disbanding) in a popup.</summary>
+    /// <summary>The task: the captain's (or the unit's): fight, follow, hold, and every other in the task menu (Task ▾,
+    /// T); at a unit's level its manoeuvres (the formation, turn together, deploy), withdraw and its AI; the squadron's
+    /// own business (detach, rejoin, forming, disbanding) in a popup.</summary>
     void Task(Snapshot s, Unit unit, int kc)
     {
         var v = s.Ships;
@@ -421,31 +470,27 @@ public sealed partial class MapScene
         var order = (CaptainOrder)v.Captain[kc];
         int level = Level(s);
         int g = level > 0 ? chain[level - 1] : -1;
+        var o = world.Orders;
         ImGui.BeginGroup();
-        Head(g >= 0 ? "SQUADRON" : "CAPTAIN", TaskHead(s, order, g), DesignerTheme.Amber);
+        Head(g < 0 ? "CAPTAIN" : gv.Force[g] ? "FORCE" : "SQUADRON", TaskHead(s, order, g), DesignerTheme.Amber);
         if (Seg("Fight", order == CaptainOrder.Fight, first: true))
             Behaviour(3, unit, 0);
         if (ImGui.IsItemHovered())
-            ImGui.SetTooltip("the nearest enemy in sight; turns away when outgunned");
+            ImGui.SetTooltip("the nearest enemy in sight; turns away when outgunned (Fight… in the task menu: one you pick)");
         if (Seg("Follow…", order == CaptainOrder.Follow && armedPick != ClickPick.Follow, armedPick == ClickPick.Follow))
             Arm(ClickPick.Follow);
-        if (Seg("Run from…", order == CaptainOrder.Run && armedPick != ClickPick.Run, armedPick == ClickPick.Run))
-            Arm(ClickPick.Run);
         if (Seg("Hold", order is CaptainOrder.Course or CaptainOrder.None))
             Behaviour(0, unit, 0);
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip("hold the course and speed ordered");
-        if (Seg("Search…"))
-            ImGui.OpenPopup("##search");
-        if (ImGui.BeginPopup("##search"))
-        {
-            SearchRow(s, unit, kc);
-            ImGui.EndPopup();
-        }
-        // the unit: its formation, withdraw, its AI; the squadron's business
+        if (Seg("Task    ##task", taskOpen, menu: true))
+            taskOpen = !taskOpen;
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("every order, by what it's about, and what the unit is for (T)");
+        // the unit: its manoeuvres, withdraw, its AI
         if (g >= 0)
         {
-            if (Seg(FormationLabels[(int)gv.Formation[g]], first: true))
+            if (Seg(FormationLabels[(int)gv.Formation[g]], first: true, menu: true))
                 ImGui.OpenPopup("##formation");
             if (ImGui.BeginPopup("##formation"))
             {
@@ -453,13 +498,29 @@ public sealed partial class MapScene
                 FormationEdit(gv, g, ref (g == chain[0] ? ref spacingEdit : ref forceSpacingEdit), "##fm");
                 ImGui.EndPopup();
             }
+            if (Seg("Turn    ##turn", menu: true))
+                ImGui.OpenPopup("##turn");
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip("turn together: every ship at once; the line becomes a line of bearing on its old axis");
+            if (ImGui.BeginPopup("##turn"))
+            {
+                TurnMenu(unit);
+                ImGui.EndPopup();
+            }
+            if (Seg("Deploy…##deploy", armed: armedPick == ClickPick.Deploy))
+                Arm(ClickPick.Deploy);
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip(gv.Force[g] ? "into one line of battle: click where the line should steer, or the enemy (across his course)"
+                    : "into line ahead: click where it should steer, or the enemy (across his course)");
             if (Seg("Withdraw"))
-                world.Send(world.Orders.WithdrawHome(unit));
+                world.Send(o.WithdrawHome(unit));
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip("break off and go home, away from any enemy first");
             if (gv.Parent[g] == 0)
             {
                 bool his = gv.Commanded[g] == 1;
                 if (Seg("AI##auto", his))
-                    world.Send(world.Orders.Automate(unit, !his));
+                    world.Send(o.Automate(unit, !his));
                 if (ImGui.IsItemHovered())
                     ImGui.SetTooltip(his ? "the side's commander fights it: any order of yours takes it; click to take it" : "click to leave it to the side's commander");
             }
@@ -470,7 +531,7 @@ public sealed partial class MapScene
         {
             bool his = s.Ships.Commanded[kc] == 1;
             if (Seg("AI##autoship", his, first: true))
-                world.Send(world.Orders.Automate(unit, !his));
+                world.Send(o.Automate(unit, !his));
             if (ImGui.IsItemHovered())
                 ImGui.SetTooltip(his ? "the side's commander fights her: any order of yours takes her; click to take her" : "click to leave her to the side's commander");
         }
@@ -482,6 +543,23 @@ public sealed partial class MapScene
             ImGui.EndPopup();
         }
         ImGui.EndGroup();
+    }
+
+    /// <summary>The Turn ▾ popup: together by 4 or 8 points either way, or about with the rear ship first (the battle
+    /// turn-away), each to the unit's admiral.</summary>
+    void TurnMenu(Unit unit)
+    {
+        var o = world.Orders;
+        ImGui.TextDisabled("turn together");
+        foreach (var (label, deg) in TurnButtons)
+            if (ImGui.Selectable(label))
+                world.Send(o.TurnTogether(unit, deg));
+        ImGui.Separator();
+        ImGui.TextDisabled("the battle turn: about, the rear ship first");
+        if (ImGui.Selectable("about, to port##bt"))
+            world.Send(o.BattleTurn(unit, toStarboard: false));
+        if (ImGui.Selectable("about, to starboard##bt"))
+            world.Send(o.BattleTurn(unit, toStarboard: true));
     }
 
     // the task's head, kept while it says the same
@@ -543,40 +621,49 @@ public sealed partial class MapScene
         return (enemy, own, sea, at);
     }
 
-    /// <summary>A click with a pick armed: done with the ship under it (true), else false and the click selects.</summary>
+    /// <summary>A click with a pick armed: done with what's under it (true), else false and the click selects. A miss on
+    /// what the pick wants keeps it armed.</summary>
     bool ArmedClick(double x, double y)
     {
         if (armedPick == ClickPick.None || selected < 0)
             return false;
         var s = world.Current;
-        var (enemy, own, _, _) = Under(s, x, y);
-        int target = armedPick is ClickPick.Engage or ClickPick.Torpedoes ? enemy : enemy > 0 ? enemy : own;
-        if (target <= 0 || target == selected)
-            return true;   // a miss keeps it armed
+        var (enemy, own, sea, at) = Under(s, x, y);
         var (unit, _) = Commanded(s);
         int k = s.Ships.IndexOf(selected);
+        bool done = true;
         switch (armedPick)
         {
-            case ClickPick.Engage:
-                world.Send(world.Orders.Engage(unit, target));
+            case ClickPick.Engage or ClickPick.Torpedoes:
+                if (enemy <= 0)
+                    return true;
+                world.Send(armedPick == ClickPick.Engage ? world.Orders.Engage(unit, enemy)
+                    : TorpedoSystem.Launch(selected, enemy, Math.Max(k >= 0 ? s.Ships.TorpedoesLoaded[k] : 1, 1)));
                 break;
-            case ClickPick.Torpedoes:
-                if (k >= 0)
-                    world.Send(TorpedoSystem.Launch(selected, target, Math.Max(s.Ships.TorpedoesLoaded[k], 1)));
+            case ClickPick.Follow or ClickPick.Run:
+                int target = enemy > 0 ? enemy : own;
+                if (target <= 0 || target == selected)
+                    return true;
+                if (armedPick == ClickPick.Run)
+                    foreach (var u in OrderUnits(s))
+                        Behaviour(2, u, target);
+                else
+                    foreach (var u in OrderUnits(s))
+                        if (!ShipIn(s, target, u))
+                            Behaviour(1, u, target);
                 break;
-            case ClickPick.Follow:
-                Behaviour(1, unit, target);
-                break;
-            case ClickPick.Run:
-                Behaviour(2, unit, target);
+            default:
+                done = GiveTask(s, armedPick, own, enemy, sea, at);
                 break;
         }
-        armedPick = ClickPick.None;
+        if (done)
+            armedPick = ClickPick.None;
         return true;
     }
 
-    /// <summary>The right-click's order: an enemy engaged, one of hers followed (station astern), the sea steered for
-    /// (with shift, a waypoint added). True when it gave one.</summary>
+    /// <summary>The right-click's order: an enemy engaged, one of hers screened (the unit a flotilla or a screen) or
+    /// followed (station astern), the sea steered for (with shift, a waypoint added). True when it gave one. An order
+    /// on one of hers goes to each unit selected.</summary>
     bool SmartOrder(double x, double y, bool waypoint)
     {
         var s = world.Current;
@@ -586,12 +673,18 @@ public sealed partial class MapScene
         var (unit, ship) = Commanded(s);
         if (enemy > 0)
         {
-            world.Send(world.Orders.Engage(unit, enemy));
+            foreach (var u in OrderUnits(s))
+                world.Send(world.Orders.Engage(u, enemy));
             return true;
         }
         if (own > 0 && own != selected && own != ship && !waypoint)
         {
-            Behaviour(1, unit, own);
+            if (SmartScreens(s))
+                GiveTask(s, ClickPick.Screen, own, 0, false, default);
+            else
+                foreach (var u in OrderUnits(s))
+                    if (!ShipIn(s, own, u))
+                        Behaviour(1, u, own);
             return true;
         }
         return false;   // the sea: OrderAt steers
@@ -630,14 +723,33 @@ public sealed partial class MapScene
         if (next >= 0)
         {
             selected = next;
-            picked.Clear();
+            ClearPicks();
             armedPick = ClickPick.None;
         }
     }
 
-    // the verb's text, kept while it says the same
+    // the verb's text, kept while it says the same; whether it's an armed pick's miss
     (int Kind, int Target, int Course, int Tenths, int Who) verbKey = (-1, 0, 0, 0, 0);
     string verbText = "";
+    bool verbMiss;
+
+    /// <summary>A target's distance from a point, tenths of a kilometre (0 if she's gone).</summary>
+    int Dist(Snapshot s, Vec3d from, int ship)
+    {
+        int k = s.Ships.IndexOf(ship);
+        if (k < 0 && s.Sighted.IndexOf(ship) is int j and >= 0)
+            return (int)Math.Round(Earth.Distance(from, s.Sighted.PoseAt(j, world.DrawMs).Position) / 100);
+        return k < 0 ? 0 : (int)Math.Round(Earth.Distance(from, s.Ships.PoseAt(k, world.DrawMs).Position) / 100);
+    }
+
+    /// <summary>An armed pick's colour at the cursor: an order about the enemy red, one of ours friend blue, the sea's and
+    /// a manoeuvre's brass.</summary>
+    static Vector4 PickColour(ClickPick pick) => pick switch
+    {
+        ClickPick.Engage or ClickPick.Torpedoes or ClickPick.Fight or ClickPick.Intercept or ClickPick.Shadow or ClickPick.Attack or ClickPick.Run => Bad,
+        ClickPick.Follow or ClickPick.Screen or ClickPick.Scout or ClickPick.Cover or ClickPick.Join or ClickPick.Station or ClickPick.DivideFrom => Friend,
+        _ => DesignerTheme.Brass,
+    };
 
     /// <summary>The cursor's verb, beside it on the map: what a right-click (or the armed pick's click) would do.</summary>
     void CursorVerb(Snapshot s)
@@ -656,10 +768,11 @@ public sealed partial class MapScene
         int course = sea ? (int)Math.Round((Earth.Bearing(p, at) % 360 + 360) % 360) % 360 : 0;
         int tenths = sea ? (int)Math.Round(Earth.Distance(p, at) / 100) : 0;
         bool shift = ImGui.GetIO().KeyShift;
+        int many = OrderUnits(s).Count;
         (int Kind, int Target, int Course, int Tenths, int Who) key = armedPick != ClickPick.None
-            ? (10 + (int)armedPick, enemy > 0 ? enemy : own, 0, 0, unit.Id)
-            : enemy > 0 ? (1, enemy, 0, tenths, unit.Id)
-            : own > 0 && own != selected && own != ship && !shift ? (2, own, 0, 0, unit.Id)
+            ? (10 + (int)armedPick, enemy > 0 ? enemy : own > 0 ? own : 0, enemy > 0 || own > 0 ? 0 : course, enemy > 0 || own > 0 ? Dist(s, p, enemy > 0 ? enemy : own) : tenths, unit.Id * 64 + many)
+            : enemy > 0 ? (1, enemy, 0, tenths, unit.Id * 64 + many)
+            : own > 0 && own != selected && own != ship && !shift ? (SmartScreens(s) ? 6 : 2, own, 0, 0, unit.Id * 64 + many)
             : sea && world.Shore.IsLand(at) ? (3, 0, 0, 0, unit.Id)
             : sea ? (shift ? 4 : 5, 0, course, tenths, unit.Id) : (0, 0, 0, 0, 0);
         if (key.Kind == 0 || own == selected && armedPick == ClickPick.None)
@@ -668,22 +781,27 @@ public sealed partial class MapScene
         {
             verbKey = key;
             string who = unit.IsGroup && s.Groups.IndexOfGroup(unit.GroupId) is int g and >= 0 ? s.Groups.Name[g] : nameText;
+            if (many > 1)
+                who = $"{who} + {many - 1}";
+            string? words = key.Kind >= 10 ? TaskVerb(s, armedPick, own, enemy, sea, at, key.Tenths, key.Course) : null;
+            verbMiss = key.Kind >= 10 && words == null;
             verbText = key.Kind switch
             {
-                >= 10 => (armedPick switch { ClickPick.Engage => "ENGAGE", ClickPick.Torpedoes => "TORPEDOES AT", ClickPick.Follow => "FOLLOW", _ => "RUN FROM" }) +
-                         (key.Target > 0 ? " " + TargetLabel(s, key.Target) : ": pick a ship"),
+                >= 10 => words != null ? $"{who}: {words}" : $"{PickVerb(armedPick)}: {PickClick(armedPick)}",
                 1 => string.Format(CultureInfo.InvariantCulture, "{0}: ENGAGE {1} · {2:0.0} km", who, TargetLabel(s, key.Target), key.Tenths / 10.0),
                 2 => $"{who}: FOLLOW {TargetLabel(s, key.Target)}",
+                6 => TaskVerb(s, ClickPick.Screen, own, 0, false, default, 0, 0) is { } screen ? $"{who}: {screen}" : $"{who}: FOLLOW {TargetLabel(s, key.Target)}",
                 3 => "land",
                 4 => string.Format(CultureInfo.InvariantCulture, "{0}: WAYPOINT {1:000}° · {2:0.0} km", who, key.Course, key.Tenths / 10.0),
                 _ => string.Format(CultureInfo.InvariantCulture, "{0}: STEER {1:000}° · {2:0.0} km", who, key.Course, key.Tenths / 10.0),
             };
         }
+        bool miss = verbMiss;
         var dl = ImGui.GetForegroundDrawList();
         var size = ImGui.CalcTextSize(verbText);
         var pos = vp.Pos + mouse + new Vector2(16, -22) * UiFonts.Scale;
         dl.AddRectFilled(pos - new Vector2(5, 2) * UiFonts.Scale, pos + size + new Vector2(5, 2) * UiFonts.Scale, 0xD8110E0A, 2 * UiFonts.Scale);
-        var colour = key.Kind switch { >= 10 => DesignerTheme.Amber, 1 => Bad, 2 => Friend, 3 => DesignerTheme.Muted, _ => DesignerTheme.Brass };
+        var colour = key.Kind switch { >= 10 => miss ? DesignerTheme.Amber : PickColour(armedPick), 1 => Bad, 2 or 6 => Friend, 3 => DesignerTheme.Muted, _ => DesignerTheme.Brass };
         dl.AddText(pos, ImGui.GetColorU32(colour), verbText);
     }
 }

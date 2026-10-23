@@ -6,6 +6,8 @@ using Fleetwright.Sim.Ai.Commanders;
 using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
 using ImGuiNET;
+using SDL;
+using static SDL.SDL3;
 
 namespace Fleetwright.Map;
 
@@ -202,13 +204,20 @@ public sealed partial class MapScene
         var size = ImGui.GetItemRectSize();
         DragFrom(s, 0, gv.Id[g]);
         DropOn(s, g, -1, 0);
+        bool ctrl = (SDL_GetModState() & SDL_Keymod.SDL_KMOD_CTRL) != 0;
         if (clicked && onTag)
             world.Send(world.Orders.Automate(Unit.Group(gv.Id[g]), gv.Commanded[g] != 1));   // the tag: his, or the player's
+        else if (clicked && ctrl && selected >= 0 && s.Ships.IndexOf(selected) >= 0)
+        {
+            // beside the selection: orders go to it too (docs/battle/admirals-orders.md O9)
+            if (!pickedGroups.Remove(gv.Id[g]))
+                pickedGroups.Add(gv.Id[g]);
+        }
         else if (clicked && gv.GuideShip[g] != 0)
         {
             // the unit: its guide selected with the orders at its level, its card open
             selected = gv.GuideShip[g];
-            picked.Clear();
+            ClearPicks();
             Chain(s);
             int level = chain.IndexOf(g) + 1;
             (levelFor, levelPick) = (selected, level > 0 ? level : -1);
@@ -218,9 +227,10 @@ public sealed partial class MapScene
                 railOpen.Remove(gv.Id[g]);   // its head again: shut its list
         }
         var dl = ImGui.GetWindowDrawList();
-        if (chosen || hovered)
-            dl.AddRectFilled(p, p + size, ImGui.GetColorU32(chosen ? DesignerTheme.BrassDarker : new Vector4(1, 1, 1, 0.05f)));
-        if (chosen)
+        bool also = pickedGroups.Contains(gv.Id[g]);   // ctrl+clicked beside the selection
+        if (chosen || also || hovered)
+            dl.AddRectFilled(p, p + size, ImGui.GetColorU32(chosen || also ? DesignerTheme.BrassDarker : new Vector4(1, 1, 1, 0.05f)));
+        if (chosen || also)
             dl.AddRectFilled(p, p + new Vector2(2 * sc, size.Y), ImGui.GetColorU32(DesignerTheme.Brass));
         ImGui.PushFont(UiFonts.SansBold);
         U8.Draw(dl, p + new Vector2(6 * sc, 0), ImGui.GetColorU32(DesignerTheme.Bright), U8.W($"{gv.Name[g]}"));
@@ -269,6 +279,11 @@ public sealed partial class MapScene
         DropOn(s, g, at, e);
         if (clicked && onTag)
             world.Send(world.Orders.Automate(Unit.Ship(e), v.Commanded[k] != 1));
+        else if (clicked && (SDL_GetModState() & SDL_Keymod.SDL_KMOD_CTRL) != 0 && selected >= 0 && e != selected)
+        {
+            if (!picked.Remove(e))
+                picked.Add(e);
+        }
         else if (clicked)
         {
             long now = Environment.TickCount64;
@@ -276,11 +291,11 @@ public sealed partial class MapScene
                 CentreOn(v.PoseAt(k, world.DrawMs).Position);   // twice: the map goes to her
             (railClickShip, railClickMs) = (e, now);
             selected = e;
-            picked.Clear();
+            ClearPicks();
             squadronCardOf = -1;
             cardOpen = true;
         }
-        bool on = selected == e && squadronCardOf != e;
+        bool on = selected == e && squadronCardOf != e || picked.Contains(e);
         var dl = ImGui.GetWindowDrawList();
         if (on || hovered)
             dl.AddRectFilled(p, p + new Vector2(w, h), ImGui.GetColorU32(on ? DesignerTheme.BrassDarker : new Vector4(1, 1, 1, 0.05f)));
@@ -472,7 +487,7 @@ public sealed partial class MapScene
                 CentreOn(c.Position[i]);
             (railClickShip, railClickMs) = (e, now);
             selected = e;
-            picked.Clear();
+            ClearPicks();
             squadronCardOf = -1;
             cardOpen = true;
         }
