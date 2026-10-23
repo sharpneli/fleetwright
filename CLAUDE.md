@@ -61,7 +61,7 @@ its sim thread for the app (the engine's `FrameStarted` reports real time every 
 `MapScene` draws the globe from orbit to 10 px/m (`MapCamera` and `MapView`: straight down, north up, zoom in metres
 per pixel; projection, picking, the grid and the land's clip in double, so nothing jitters), the land from
 `Content/World/` (Natural Earth, a rough first Earth: `LandView`), under the HUD of `docs/map-ui/battle-hud.md`
-(`MapScene.Hud.cs`: the top bar with the clock's controls, space pauses, + and - change speed; the briefing, which a
+(`MapScene.Hud.cs`: the top bar with the clock's controls, space pauses, + and - change speed, 1-9 and 0 pick the bar's first ten speeds (1x to 30,000x; a paused clock runs); the briefing, which a
 scenario loaded from the menu opens with, or `-brief` at start; Esc shuts the topmost thing, else opens the app's menu:
 scenarios, restart, the clock's rules on contact, the designer, quit. Esc never quits). Wheel zooms at the cursor, left drag pans. Ships (`MapScene.Ships.cs`, step 2.3a): a click
 selects (twice: her squadron takes the orders; Tab steps through your ships), the strip at the bottom

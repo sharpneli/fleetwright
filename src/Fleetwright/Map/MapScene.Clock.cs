@@ -12,6 +12,7 @@ public sealed partial class MapScene
     static readonly double[] Speeds = [1, 3, 10, 30, 60, 240, 1000, 3000, 10_000, 30_000, 100_000, 300_000, 1_000_000];
     static readonly string[] SpeedLabels = [.. Speeds.Select(sp => SpeedLabel(sp).TrimEnd('×'))];
     static readonly string[] SpeedSpans = [.. Speeds.Select(sp => $"{SpeedLabel(sp)}: {PerSecond(sp)} a second")];
+    static readonly string[] SpeedKeys = [.. Enumerable.Range(0, 10).Select(i => $"key {(i + 1) % 10}")];   // MapScene.SpeedKey
 
     int detentSent = -1;   // the notch a drag last sent, so a held drag sends once per notch
 

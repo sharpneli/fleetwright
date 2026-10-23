@@ -281,6 +281,8 @@ public sealed partial class MapScene : ISceneMenu
             {
                 ImGui.BeginTooltip();
                 ImGui.TextUnformatted(SpeedSpans[i]);
+                if (i < 10)
+                    ImGui.TextDisabled(SpeedKeys[i]);
                 if (coarse)
                     ImGui.TextDisabled("coarse tier: ships off rails in 1-minute steps, guns silent");
                 ImGui.EndTooltip();

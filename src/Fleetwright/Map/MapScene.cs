@@ -290,10 +290,28 @@ public sealed unsafe partial class MapScene : IScene
             world.Send(s.Paused ? Command.Resume() : Command.Pause());
         else if (key is SDLK_EQUALS or SDLK_KP_PLUS or SDLK_MINUS or SDLK_KP_MINUS)
             world.Send(Command.SetSpeed(StepSpeed(s.Speed, key is SDLK_MINUS or SDLK_KP_MINUS ? -1 : 1)));
+        else if (SpeedKey(key) is var i and >= 0 && i < Speeds.Length)
+        {
+            // as the bar's button: the speed, and a paused clock runs at it
+            world.Send(Command.SetSpeed(Speeds[i]));
+            if (s.Paused)
+                world.Send(Command.Resume());
+        }
         else
             return false;
         return true;
     }
+
+    /// <summary>The bar's speed a number key picks: 1 to 9 the first nine, 0 the tenth (the keypad's too); -1 for any
+    /// other key.</summary>
+    static int SpeedKey(uint key) => key switch
+    {
+        >= SDLK_1 and <= SDLK_9 => (int)(key - SDLK_1),
+        SDLK_0 => 9,
+        >= SDLK_KP_1 and <= SDLK_KP_9 => (int)(key - SDLK_KP_1),
+        SDLK_KP_0 => 9,
+        _ => -1,
+    };
 
     /// <summary>A scale bar at the length of a round number (in the map's unit, <see cref="MapUnits"/>) near 120 UI pixels,
     /// with its length beside it.</summary>
