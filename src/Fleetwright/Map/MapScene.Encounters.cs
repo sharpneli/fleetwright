@@ -45,14 +45,6 @@ public sealed partial class MapScene
         return true;
     }
 
-    void DrawEncounters(in MapView view, Snapshot s)
-    {
-        var v = s.Encounters;
-        for (int i = 0; i < v.Count; i++)
-            if (Ring(s, i, out var centre, out double r))
-                RingM(view, centre, r, v.Own[i] ? MapPalette.OwnEncounter : MapPalette.OthersEncounter, v.Own[i] ? 1.6f : 1.2f, Dash.Solid, true);
-    }
-
     // the encounters' labels, made when what they say changes
     readonly Dictionary<int, ((int, int, long, int, int) Key, string Text)> encounterTexts = [];
 

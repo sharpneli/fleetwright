@@ -205,3 +205,9 @@ pixel round it, four taps) in place of the drop shadow; squadron labels in small
 each command's vertex offset; `RendererHasVtxOffset` was never set). The Jutland's squadrons no longer pile:
 `png/symbols-after-jutland.png`. UI bytes a frame 87 / 76 over 1,500 frames (the placer's arrays, once: 49 over
 3,000 frames), no GC.
+
+**Y7** (2026-10-23, `MapScene.Motion.cs`): on the display's clock (`Stopwatch`), cubic ease-outs: the selection's
+ring grows in from half again its size and fades in over 0.18 s; the ship, sighted enemy or contact under the cursor
+gets a faint ring in its tint, easing in over 0.12 s (not the selection); an encounter's ring fades in over 0.4 s as
+it opens and out where it was as it closes (one that opens again picks up from its fade); an asked group's "!"
+(its label and its held ring) pulses between 0.55 and 1 once a second. `-symbols=motion:0` stills them all.

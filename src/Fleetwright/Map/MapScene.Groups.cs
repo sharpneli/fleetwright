@@ -169,7 +169,7 @@ public sealed unsafe partial class MapScene
                     if (Held(gv.Detached[gv.MemberStart[g] + i]) && v.IndexOf(gv.Members[gv.MemberStart[g] + i]) is int k and >= 0)
                     {
                         var p = v.PoseAt(k, world.DrawMs).Position;
-                        Ring(view, p, IconLengthAt(view, v.Class[k], p) / 2 + 9 * Rp, v.Asked[k] ? MapPalette.Asked : MapPalette.Held, 1.2f);
+                        Ring(view, p, IconLengthAt(view, v.Class[k], p) / 2 + 9 * Rp, v.Asked[k] ? MapPalette.Asked with { W = Pulse } : MapPalette.Held, 1.2f);
                     }
         // the other picked ships
         foreach (int e in picked)
@@ -245,7 +245,7 @@ public sealed unsafe partial class MapScene
         if (l >= labelCount || labels[l].Group >= gv.Count)
             return;
         ImGui.PushFont(UiFonts.SansSmall);
-        MapLabels.Text(ImGui.GetBackgroundDrawList(), at, gv.Asked[labels[l].Group] ? MapPalette.Asked : MapPalette.Unit, GroupText(gv, l), alpha);
+        MapLabels.Text(ImGui.GetBackgroundDrawList(), at, gv.Asked[labels[l].Group] ? MapPalette.Asked with { W = Pulse } : MapPalette.Unit, GroupText(gv, l), alpha);
         ImGui.PopFont();
     }
 

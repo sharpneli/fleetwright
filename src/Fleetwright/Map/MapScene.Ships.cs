@@ -126,7 +126,8 @@ public sealed unsafe partial class MapScene
             if (sel && view.Project(p, out double x, out double y))
             {
                 double len = lengthOf(v.Class[k]) * view.Altitude / view.MetresPerPixel / Math.Max(Vec3d.Dot(p - view.Eye, view.Forward), 1e-3);
-                Ring(view, p, Math.Max(len / 2, IconLengthOf(v.Class[k]) / 2) + 7 * Rp, MapPalette.Select, 2f);
+                var (grow, fade) = SelectionEase();   // settling in (Y7)
+                Ring(view, p, (Math.Max(len / 2, IconLengthOf(v.Class[k]) / 2) + 7 * Rp) * grow, MapPalette.Select with { W = MapPalette.Select.W * fade }, 2f);
                 if (world.Classes.TryGet(v.Class[k]) is { Launchers.Length: > 0 } tc2 && v.TorpedoesLeft[k] > 0)
                 {
                     // her torpedoes' reach, fast and slow (docs/map-ui/battle-hud.md U5): dotted, a reach and not a thing
@@ -182,6 +183,7 @@ public sealed unsafe partial class MapScene
             }
         }
         DrawGroups(view, s);
+        DrawHover(view, s);
         PlacePreview(view);
         TrackLines(view, s);   // last: the most lines and the least needed, so a full buffer drops them first
 
