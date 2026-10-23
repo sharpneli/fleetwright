@@ -47,7 +47,7 @@ public class DeploymentTests(ITestOutputHelper output)
 
     /// <summary>Four columns of three dreadnoughts a mile apart abreast, heading south-east at 14 kn; an enemy line of six
     /// steaming north, its van 26 km to the south-south-west of the force's guide.</summary>
-    static (World W, AiSystem Ai, int Force, int Enemy) Make(bool deploy, string design = "dreadnought")
+    internal static (World W, AiSystem Ai, int Force, int Enemy) Make(bool deploy, string design = "dreadnought")
     {
         var w = new World(Start, 3, Settings);
         var ai = new AiSystem(w);

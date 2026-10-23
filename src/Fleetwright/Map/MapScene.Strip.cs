@@ -244,7 +244,7 @@ public sealed partial class MapScene
     /// <summary>The helm: the course (±10°, ±90°, typed), hard over, the route cleared; the telegraph's bells.</summary>
     void HelmColumn(Snapshot s, Unit unit, int kc)
     {
-        var o = world.Ai.Orders;
+        var o = world.Orders;
         var v = s.Ships;
         ImGui.BeginGroup();
         Head("HELM", helmText, DesignerTheme.Bright);
@@ -313,7 +313,7 @@ public sealed partial class MapScene
     /// <summary>The guns: fire at will, engage (armed: click an enemy), hold fire; under them each battery's state.</summary>
     void Guns(Snapshot s, Unit unit, int k, ShipClass? cls)
     {
-        var o = world.Ai.Orders;
+        var o = world.Orders;
         var fire = (FireOrder)s.Ships.Fire[k];
         ImGui.BeginGroup();
         Head("GUNS", gunsText, fire == FireOrder.Hold ? DesignerTheme.Amber : DesignerTheme.Bright);
@@ -440,12 +440,12 @@ public sealed partial class MapScene
                 ImGui.EndPopup();
             }
             if (Seg("Withdraw"))
-                world.Send(world.Ai.Orders.WithdrawHome(unit));
+                world.Send(world.Orders.WithdrawHome(unit));
             if (gv.Parent[g] == 0)
             {
                 bool his = gv.Commanded[g] == 1;
                 if (Seg("AI##auto", his))
-                    world.Send(world.Ai.Orders.Automate(unit, !his));
+                    world.Send(world.Orders.Automate(unit, !his));
                 if (ImGui.IsItemHovered())
                     ImGui.SetTooltip(his ? "the side's commander fights it: any order of yours takes it; click to take it" : "click to leave it to the side's commander");
             }
@@ -534,7 +534,7 @@ public sealed partial class MapScene
         switch (armedPick)
         {
             case ClickPick.Engage:
-                world.Send(world.Ai.Orders.Engage(unit, target));
+                world.Send(world.Orders.Engage(unit, target));
                 break;
             case ClickPick.Torpedoes:
                 if (k >= 0)
@@ -562,7 +562,7 @@ public sealed partial class MapScene
         var (unit, ship) = Commanded(s);
         if (enemy > 0)
         {
-            world.Send(world.Ai.Orders.Engage(unit, enemy));
+            world.Send(world.Orders.Engage(unit, enemy));
             return true;
         }
         if (own > 0 && own != selected && own != ship && !waypoint)

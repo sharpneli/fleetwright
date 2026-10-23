@@ -19,6 +19,7 @@ public enum ShipCommand : ushort
     LookNow,
     Dye,
     Load,
+    ResumeRoute,
 }
 
 /// <summary>The world's ships (docs/battle/plan.md step 2.2), in their clock tiers (ShipSystem.Tiers.cs): on the fine
@@ -155,6 +156,10 @@ public sealed partial class ShipSystem : IWorldSystem
     public static Command AddWaypoint(int entity, double latDeg, double lonDeg) =>
         new(Id, (ushort)ShipCommand.AddWaypoint, entity, A: Earth.PackLatLon(latDeg, lonDeg));
 
+    /// <summary>Steer by the ship's route again, from the waypoint she was making for, after a course took the helm
+    /// from it for a moment (a captain combing a torpedo's track); nothing if the route's run out.</summary>
+    public static Command ResumeRoute(int entity) => new(Id, (ushort)ShipCommand.ResumeRoute, entity);
+
     /// <summary>Whether a ship's route goes round again after its last waypoint (a patrol), until it's cleared.</summary>
     public static Command LoopRoute(int entity, bool loop = true) => new(Id, (ushort)ShipCommand.LoopRoute, entity, X: loop ? 1 : 0);
 
@@ -257,6 +262,9 @@ public sealed partial class ShipSystem : IWorldSystem
                 break;
             case ShipCommand.LoopRoute:
                 Store.LoopRoute(slot, c.X != 0);
+                break;
+            case ShipCommand.ResumeRoute:
+                Store.ResumeRoute(slot);
                 break;
             default:
                 throw new ArgumentException($"unknown ship command {c.Code}");

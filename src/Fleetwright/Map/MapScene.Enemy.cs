@@ -148,7 +148,7 @@ public sealed partial class MapScene
         }
         var gv = s.Groups;
         int g = gv.IndexOfShip(lastOwn);
-        var o = world.Ai.Orders;
+        var o = world.Orders;
         if (g >= 0)
         {
             if (Seg(U8Label("Engage her with ", gv.Name[g]), first: true))
@@ -296,12 +296,12 @@ public sealed partial class MapScene
             if (Seg("Fight"))
                 Behaviour(3, unit, 0);
             if (Seg("Withdraw"))
-                world.Send(world.Ai.Orders.WithdrawHome(unit));
+                world.Send(world.Orders.WithdrawHome(unit));
             if (gv.Parent[g] == 0)
             {
                 bool his = gv.Commanded[g] == 1;
                 if (Seg(his ? "Take command" : "Leave to the commander"))
-                    world.Send(world.Ai.Orders.Automate(unit, !his));
+                    world.Send(world.Orders.Automate(unit, !his));
             }
         }
     }

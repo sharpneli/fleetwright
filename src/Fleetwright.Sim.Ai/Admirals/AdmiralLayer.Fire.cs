@@ -113,14 +113,15 @@ public sealed partial class AdmiralLayer
     }
 
     /// <summary>A group whose doctrine is to fight takes up Fight when its guide first meets an enemy in sight in an
-    /// encounter (and isn't in a force's line: its force fights).</summary>
+    /// encounter (and isn't in a force's line: its force fights). Not while the player holds it: the player's order is
+    /// what it does.</summary>
     void TakeUpStanding(in AiContext ctx, GroupSystem.Group g, Admiral a, int lead)
     {
         if (lead < 0)
             return;
         var ships = ctx.Ships;
         var guide = ships[lead];
-        if (a.Order == CaptainOrder.Screen || Tasks?.Avoids(Unit.Group(g.GroupId)) == true || (Engage)doctrine.OfGroup(g, guide.Side, DoctrineField.Engage) != Engage.Fight)
+        if (a.Held || a.Order == CaptainOrder.Screen || Tasks?.Avoids(Unit.Group(g.GroupId)) == true || (Engage)doctrine.OfGroup(g, guide.Side, DoctrineField.Engage) != Engage.Fight)
             return;
         if (ctx.World.Encounters.Of(lead, guide.Entity) == 0)
         {

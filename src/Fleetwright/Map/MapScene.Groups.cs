@@ -325,7 +325,7 @@ public sealed unsafe partial class MapScene
     void GroupRow(Snapshot s)
     {
         var gv = s.Groups;
-        var o = world.Ai.Orders;
+        var o = world.Orders;
         for (int i = picked.Count - 1; i >= 0; i--)
             if (s.Ships.IndexOf(picked[i]) < 0)
                 picked.RemoveAt(i);   // gone
@@ -464,7 +464,7 @@ public sealed unsafe partial class MapScene
         ImGui.SameLine();
         ImGui.SetNextItemWidth(150 * UiFonts.Scale);
         int form = (int)gv.Formation[g];
-        var o = world.Ai.Orders;
+        var o = world.Orders;
         var unit = Unit.Group(gv.Id[g]);
         double bearing = GroupSystem.BearingOf(gv.Formation[g], gv.BearingDeg[g]);
         if (ImGui.Combo($"{id}formation", ref form, GroupFormationNames, GroupFormationNames.Length))
@@ -565,7 +565,7 @@ public sealed unsafe partial class MapScene
                     }
                     ImGui.SameLine();
                     if (ImGui.SmallButton($"Resume##h{m}"))
-                        world.Send(world.Ai.Orders.Resume(gv.Force[g] ? Unit.Group(member) : Unit.Ship(member)));
+                        world.Send(world.Orders.Resume(gv.Force[g] ? Unit.Group(member) : Unit.Ship(member)));
                 }
         }
         ImGui.End();

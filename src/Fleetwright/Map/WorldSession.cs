@@ -29,6 +29,10 @@ public sealed class WorldSession : IDisposable
     /// (<see cref="AiSystem.Orders"/>, which reads nothing but its id) and sends them. A new world brings a new one.</summary>
     public AiSystem Ai { get; private set; }
 
+    /// <summary>The player's orders to units, by hand (<see cref="UnitOrders.Hand"/>): what the map gives in play,
+    /// which holds a unit against doctrine's standing orders. A dev flag's go by <see cref="AiSystem.Orders"/>.</summary>
+    public UnitOrders Orders => Ai.Orders.ByHand;
+
     /// <summary>The world's settings: immutable, so the UI may read them (a route's capacity, the snap speed).</summary>
     public SimSettings Settings { get; }
 

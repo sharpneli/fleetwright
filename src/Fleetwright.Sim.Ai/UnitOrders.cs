@@ -174,12 +174,22 @@ public enum FireOrder : byte
 
 /// <summary>The one way an order gets to a unit, whoever gives it (docs/battle/plan.md step 2.6): the player's go in
 /// through <see cref="World.Apply"/> and are logged; an AI layer's through <see cref="World.Issue"/> and aren't, since
-/// a replay runs the AI again. Builders only: they read nothing but the AI system's id, so a UI may call them.</summary>
-public readonly struct UnitOrders(byte system)
+/// a replay runs the AI again. Builders only: they read nothing but the AI system's id, so a UI may call them. The UI's
+/// are by hand (<see cref="Hand"/>).</summary>
+public readonly struct UnitOrders(byte system, bool hand = false)
 {
     /// <summary>A task's command with this in its B (over the source) waits for the unit's task before it (its plan,
     /// docs/battle/command.md 5.1d), and starts when that one ends.</summary>
     public const int Queued = 1 << 8;
+
+    /// <summary>A player's order with this in its B (over the source) is by hand, given in play: it holds the unit
+    /// (docs/battle/command.md "The player's hand"): doctrine's standing orders (fight on meeting the enemy, deploy, fall
+    /// out, home with empty magazines) leave it alone; only combing a torpedo's track and turning away from an attack
+    /// take it for their moment. A scenario's opening orders, and a dev setup's, are the player's without it.</summary>
+    public const int Hand = 1 << 9;
+
+    /// <summary>Orders by the player's hand: what a UI gives in play.</summary>
+    public UnitOrders ByHand => new(system, hand: true);
 
     /// <summary>A task to start when the unit's tasks before it have ended.</summary>
     public static Command Then(in Command task) => task with { B = task.B | Queued };
@@ -316,5 +326,5 @@ public readonly struct UnitOrders(byte system)
     public Command Resume(Unit u, OrderSource source = OrderSource.Player) => Make(AiCommand.Resume, u, source);
 
     Command Make(AiCommand code, Unit u, OrderSource source, long a = 0, double x = 0, double y = 0) =>
-        new(system, (ushort)code, u.Id, A: a, X: x, B: (int)source, Y: y);
+        new(system, (ushort)code, u.Id, A: a, X: x, B: (int)source | (hand && source == OrderSource.Player ? Hand : 0), Y: y);
 }

@@ -45,6 +45,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
         public bool Loop;
         public bool Watch;              // held by the player on a route: its end hands the group back
         public bool Asked;              // held by the player while his superior's orders for it changed: a notice
+        public bool Held;               // on the player's order by hand (UnitOrders.Hand): doctrine's standing orders leave it to the player
         public FireOrder Fire;          // his group's fire order (AdmiralLayer.Fire.cs), engaging FireTarget
         public int FireTarget;
         public bool Met;                // doctrine's Engage taken up in this encounter
@@ -128,8 +129,9 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
         if (groups.Get(u.GroupId) is not { } g)
             return;
         var code = (AiCommand)c.Code;
-        var source = (OrderSource)c.B;
+        var source = (OrderSource)(c.B & 0xFF);
         bool tasked = source == OrderSource.Task;   // the AI's own order: his, as the player's are, but it doesn't hold the group
+        bool hand = source == OrderSource.Player && (c.B & UnitOrders.Hand) != 0;
         if (tasked)
             source = OrderSource.Player;
         var parent = g.Parent != 0 ? groups.Get(g.Parent) : null;
@@ -151,7 +153,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
             case AiCommand.Resume:
                 if (parent != null && detached != Detachment.InLine)
                     ctx.Issue(GroupSystem.DetachGroup(g.GroupId, Detachment.InLine));   // its force's admiral gives it its station
-                a.Asked = false;
+                (a.Asked, a.Held) = (false, false);
                 return;
             case AiCommand.Detach:
                 var pin = tasked ? Detachment.Tasked : Detachment.Pinned;
@@ -159,6 +161,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
                     return;
                 ctx.Issue(GroupSystem.DetachGroup(g.GroupId, pin));
                 Release(ctx, g, a);   // it holds what it was doing, the player's (or its task's) now
+                a.Held |= hand;
                 return;
             case AiCommand.SpeedLimit:
                 a.LimitAbove = c.X;
@@ -188,7 +191,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
             a.Asked = false;   // in its superior's hands again
         if (source == OrderSource.Player)
             Gather(ctx, g);
-        a.Source = source;
+        (a.Source, a.Held) = (source, hand);   // the player's hand, or another's: a task's, his superior's, a scenario's
         (a.Turning, a.Away, a.DeployMs) = (false, false, 0);   // a new order ends a turn under way, a turn-away, a deployment
 
         if (code == AiCommand.TurnTogether)
@@ -572,6 +575,8 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
             h.Add(a.Loop);
             h.Add(a.Watch);
             h.Add(a.Asked);
+            if (a.Held)
+                h.Add(2);   // only then: worlds without the player's hand hash as before
             h.Add((int)a.Fire);
             h.Add(a.FireTarget);
             h.Add(a.Met);

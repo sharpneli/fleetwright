@@ -196,6 +196,23 @@ seeds, both sides alike: at -1 Britain loses 0.4 of 4 ships, at 0 2.2, at +1 3.6
 captains' and admirals' personalities can move it (or traits like it) later; the commander's own judgement numbers
 (`CommanderMarginShare` and the rest in `SimSettings`) aren't doctrine yet, so it doesn't reach them.
 
+### The player's hand
+
+Added 2026-10-23, after a Jutland playtest: ships felt as if they resisted the player. A ship ordered out of her
+column to run from the enemy took up doctrine's Fight on her captain's next think (out of her line, she counted as a
+ship alone that had met the enemy), and turned back in; a squadron given a course did the same on contact, a force
+deployed, a held ship fell out and went home, and a comb took a ship off her route for good. **What the player orders
+by hand, the unit does.** A player's order carries `UnitOrders.Hand` (the map gives every order that way:
+`WorldSession.Orders`); a scenario's opening orders and a dev flag's are the player's without it, so doctrine still
+takes up the fight for units nobody has touched. A captain or admiral on an order by hand (`Held`) is left alone by
+doctrine's standing orders: Engage (Fight on meeting), Deploy, falling out and home with empty magazines. Only two
+things take a held unit, each for its moment and then giving the order back: a captain combing a torpedo's track (her
+course, or her route: `ShipCommand.ResumeRoute`), and an admiral turning his line away from a torpedo attack. The
+pilot's slide along a coast stays (physics, not a choice). The hand lasts until the unit's handed back (`Resume`, an
+order to its group gathering it in, a route's end) or another order replaces it (a task's, a superior's); a ship let go
+past her fall-out is judged again at once. The player's Fight is the player's order too: inside it the captain still turns away
+when outgunned and zigzags under fire, since that's what Fight means.
+
 ### Fitness: what a ship can still do
 
 One small summary per ship from its condition (`Sim.Combat`, pure, cached by the condition's `Version`): the speed it
@@ -1287,3 +1304,6 @@ The user's, 2026-10-14, on the questions:
     Nothing is more annoying than nearly sinking the last enemy and being told "out of time": no admiralty ever
     ordered a captain back from finishing an enemy because a clock said so. So a scenario's end must never cut off a
     fight that's going on; ending by time is for runs nobody is watching to a conclusion.
+12. **The player's hand holds** (the user, 2026-10-23, after playing the Jutland): "When I hold the ship I hold the
+    ship." A unit on the player's order by hand does what was ordered; no standing rule of doctrine takes it from the player.
+    Torpedo avoidance may take it for its moment (["The player's hand"](#the-players-hand)).

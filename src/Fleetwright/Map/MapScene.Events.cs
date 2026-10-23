@@ -378,7 +378,7 @@ public sealed partial class MapScene
     {
         if (!groupOf.TryGetValue(ship, out int g))
             return;
-        world.Send(world.Ai.Orders.Fight(Unit.Ship(ship)));
+        world.Send(world.Orders.Fight(Unit.Ship(ship)));
         world.Send(GroupSystem.Add(g, ship));
         Ordered(s, ship, $"{ShipName(s, ship)}: ordered back into line");
     }

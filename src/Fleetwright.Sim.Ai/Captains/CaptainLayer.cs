@@ -82,7 +82,8 @@ public enum CaptainReason : byte
 /// <para><b>Who has a ship:</b> a ship in a group's line takes its admiral's orders. The player's order to it takes it
 /// out of the line (nudged) and makes it the player's; its admiral's orders for it are dropped until it's handed back
 /// (<see cref="AiCommand.Resume"/>), and he gives them again then. A route the player gave such a ship hands it back at
-/// its last waypoint. An explicit <see cref="AiCommand.Detach"/> pins it out until resumed.</para>
+/// its last waypoint. An explicit <see cref="AiCommand.Detach"/> pins it out until resumed. An order by the player's
+/// hand (<see cref="UnitOrders.Hand"/>) holds her against doctrine's standing orders (CaptainLayer.Fire.cs).</para>
 /// <para><b>Limits</b> come from above as orders (<see cref="AiCommand.SpeedLimit"/>): what he rings is never more,
 /// while what was asked is kept. So does the clearance from the coast his ship must keep (its formation's half-width,
 /// <see cref="AiCommand.Clearance"/>), which he hands the helm.</para>
@@ -116,6 +117,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         public bool TorpedoHeld;        // his flotilla attacking together: his torpedoes wait for its signal
         public CaptainReason Reason;    // why, when it isn't simply his order (fallen out)
         public bool Overruled;          // the player ordered him on after he fell out: he stays, at his ship's risk
+        public bool Held;               // on the player's order by hand (UnitOrders.Hand): doctrine's standing orders leave the ship to the player
         public int FitVersion;          // his ship's condition's version when he last judged its fitness
         public long CombUntilMs;        // combing a torpedo's track until then (0: not)
         public double CombDeg, CombBackDeg;   // the comb's course, and the course ordered before it
@@ -235,8 +237,9 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         if (slot < 0)
             return;   // dropped or never made: an order that reached no ship
         var code = (AiCommand)c.Code;
-        var source = (OrderSource)c.B;
+        var source = (OrderSource)(c.B & 0xFF);
         bool tasked = source == OrderSource.Task;   // the AI's own order: his, as the player's are, but it doesn't hold him
+        bool hand = source == OrderSource.Player && (c.B & UnitOrders.Hand) != 0;
         if (tasked)
             source = OrderSource.Player;
         switch (code)
@@ -256,7 +259,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
                 if (g != null && detached != Detachment.InLine)
                     ctx.Issue(GroupSystem.Detach(e, Detachment.InLine));   // his admiral gives him his station
                 if (Find(e) is int ri and >= 0)
-                    captains[ri].Asked = false;
+                    (captains[ri].Asked, captains[ri].Held) = (false, false);
                 return;
             case AiCommand.Detach:
                 var pin = tasked ? Detachment.Tasked : Detachment.Pinned;
@@ -264,6 +267,8 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
                     return;
                 ctx.Issue(GroupSystem.Detach(e, pin));
                 Release(ctx, e);   // he holds what he was doing, the player's (or his task's) now
+                if (hand)
+                    Get(e).Held = true;
                 return;
             case AiCommand.SpeedLimit:
                 ref var lim = ref Get(e);
@@ -298,6 +303,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         if (source == OrderSource.Superior)
             cap.Asked = false;   // in his superior's hands again
         cap.Source = source;
+        cap.Held = hand;   // the player's hand, or another's: a task's, his superior's, a scenario's
         // the player's order to a ship fallen out keeps her in (docs/map-ui/battle-hud.md decision 2: the player may
         // overrule her captain; attention is what's rewarded): she won't fall out again this battle
         if (source == OrderSource.Player && cap.Reason is CaptainReason.OutSpeed or CaptainReason.OutGuns or CaptainReason.OutList
@@ -414,7 +420,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
                 // a route the player gave a ship out of its line: at its end, back to its admiral
                 if (own.RouteLoop)
                     cap.Watch = false;   // a patrol has no end
-                else if (own.Helm != Helm.Route)
+                else if (own.Helm != Helm.Route && cap.CombUntilMs == 0)   // off it while combing a track isn't its end
                 {
                     (cap.Watch, cap.Order) = (false, CaptainOrder.Course);
                     if (groups.Of(cap.Entity)?.DetachmentOf(cap.Entity) == Detachment.Nudged)
@@ -576,6 +582,8 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
             h.Add((int)c.Reason);
             if (c.Overruled)
                 h.Add(true);   // only then: worlds without an overrule hash as before
+            if (c.Held)
+                h.Add(2);   // only then: worlds without the player's hand hash as before
             h.Add(c.FitVersion);
             h.Add(c.CombUntilMs);
             h.Add(c.CombDeg);

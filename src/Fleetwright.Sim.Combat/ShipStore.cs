@@ -801,6 +801,17 @@ public sealed class ShipStore
     /// cleared. A route of one waypoint doesn't loop.</summary>
     public void LoopRoute(int slot, bool loop) => routeLoop[slot] = loop;
 
+    /// <summary>Steers by the route again from the waypoint it was making for, if any is left (a course took the helm
+    /// from it for a moment).</summary>
+    public void ResumeRoute(int slot)
+    {
+        if (helm[slot] == Helm.Route || routeNext[slot] >= routeCount[slot])
+            return;
+        helm[slot] = Helm.Route;
+        landSide[slot] = 0;
+        courseRudder[slot] = settings.StandardRudderDeg * Math.PI / 180;
+    }
+
     /// <summary>Adds a waypoint to the route and steers by it. False when the route is full.</summary>
     public bool AddWaypoint(int slot, Vec3d point)
     {

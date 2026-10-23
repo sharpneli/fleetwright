@@ -114,10 +114,11 @@ public sealed partial class CaptainLayer
     }
 
     /// <summary>A ship alone whose doctrine is to fight (docs/battle/command.md "Doctrine": Engage) takes up Fight when
-    /// it first meets an enemy in sight in an encounter; it's armed again once it's out of encounters.</summary>
+    /// it first meets an enemy in sight in an encounter; it's armed again once it's out of encounters. Not while the
+    /// player holds her (<see cref="Captain.Held"/>): the player's order is what she does.</summary>
     void TakeUpStanding(in AiContext ctx, ref Captain cap, ShipState own, int slot)
     {
-        if (cap.Order == CaptainOrder.Home || Tasks?.Avoids(Unit.Ship(own.Entity)) == true || (Engage)doctrine.Of(own.Entity, own.Side, DoctrineField.Engage) != Engage.Fight)
+        if (cap.Held || cap.Order == CaptainOrder.Home || Tasks?.Avoids(Unit.Ship(own.Entity)) == true || (Engage)doctrine.Of(own.Entity, own.Side, DoctrineField.Engage) != Engage.Fight)
             return;
         if (encounters.Of(slot, own.Entity) == 0)
         {
@@ -625,11 +626,12 @@ public sealed partial class CaptainLayer
     /// changes: too slow, too few main guns, listing too far, too much water, or (when doctrine falls out at all) unable to
     /// steer. Then she leaves her group (the line closes up behind her: going-down ships leave the same way) and goes
     /// home, his own order, firing at will as she goes. Not once the player has ordered her on after it
-    /// (<see cref="Captain.Overruled"/>).</summary>
+    /// (<see cref="Captain.Overruled"/>), nor while the player holds her (<see cref="Captain.Held"/>; judged again once
+    /// she's let go).</summary>
     void FallOut(in AiContext ctx, ref Captain cap, ShipState own, int slot)
     {
         var k = ctx.Ships.Combat.Condition(slot);
-        if (cap.Overruled || cap.Order == CaptainOrder.Home || !k.Damaged || k.Version == cap.FitVersion || k.Status != ShipStatus.Afloat)
+        if (cap.Overruled || cap.Held || cap.Order == CaptainOrder.Home || !k.Damaged || k.Version == cap.FitVersion || k.Status != ShipStatus.Afloat)
             return;
         cap.FitVersion = k.Version;
         var cls = own.Handling.Class;
@@ -658,10 +660,10 @@ public sealed partial class CaptainLayer
 
     /// <summary>Whether his ship's magazines are empty (docs/battle/command.md 5.1g): every chief mount out of the rounds
     /// it carries (a mount with none given never runs out) and no torpedo left. Then she leaves her group and goes home,
-    /// as one fallen out does, her secondaries firing at will as she goes.</summary>
+    /// as one fallen out does, her secondaries firing at will as she goes. Not while the player holds her.</summary>
     void OutOfRounds(in AiContext ctx, ref Captain cap, ShipState own)
     {
-        if (cap.Order == CaptainOrder.Home)
+        if (cap.Held || cap.Order == CaptainOrder.Home)
             return;
         var cls = own.Handling.Class;
         var combat = ctx.Ships.Combat;
@@ -730,6 +732,8 @@ public sealed partial class CaptainLayer
                 cap.Reason = CaptainReason.None;
             if (cap.Order is CaptainOrder.Course or CaptainOrder.None)
                 ctx.Helm.Course(own.Entity, cap.CombBackDeg);
+            else if (cap.Order == CaptainOrder.Route)
+                ctx.Helm.ResumeRoute(own.Entity);   // the comb's course took the helm off it for the moment
         }
         if ((TorpedoEvasion)doctrine.Of(own.Entity, own.Side, DoctrineField.TorpedoEvasion) != TorpedoEvasion.Comb
             || !torpedoWatch.Threat(ctx, own, out double comb, out double past))

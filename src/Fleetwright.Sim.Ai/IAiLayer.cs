@@ -63,4 +63,5 @@ public readonly struct HelmOrders(World world)
     public void ClearRoute(int entity) => world.Issue(ShipSystem.ClearRoute(entity));
     public void AddWaypoint(int entity, long packedLatLon) => world.Issue(new Command(ShipSystem.Id, (ushort)ShipCommand.AddWaypoint, entity, A: packedLatLon));
     public void LoopRoute(int entity, bool loop) => world.Issue(ShipSystem.LoopRoute(entity, loop));
+    public void ResumeRoute(int entity) => world.Issue(ShipSystem.ResumeRoute(entity));
 }

@@ -531,7 +531,7 @@ public sealed unsafe partial class MapScene
         if (k < 0 || !View.Pick(x, y, out var at))
             return;
         var (unit, ship) = Commanded(s);
-        var o = world.Ai.Orders;
+        var o = world.Orders;
         if (waypoint)
         {
             if (world.Shore.IsLand(at))
@@ -553,7 +553,7 @@ public sealed unsafe partial class MapScene
     /// from (with nobody else at sea, it holds), 3 fights (the nearest enemy, or the target).</summary>
     void Behaviour(int pick, Unit unit, int target)
     {
-        var o = world.Ai.Orders;
+        var o = world.Orders;
         world.Send(pick == 3 ? o.Fight(unit, target != 0 ? Unit.Ship(target) : default)
                  : pick == 0 || target == 0 ? o.Hold(unit)
                  : pick == 1 ? o.Follow(unit, Unit.Ship(target), followMetres)
@@ -623,7 +623,7 @@ public sealed unsafe partial class MapScene
             int legs = Math.Clamp(searchLegs, 1, most);
             int n = SearchPatterns.Waypoints(pattern, p, searchAxis, searchLegNm * 1852.0, searchSpacingNm * 1852.0, legs, searchStarboard,
                 searchWaypoints.AsSpan(0, cap));
-            SearchPatterns.Orders(world.Ai.Orders, unit, searchWaypoints.AsSpan(0, n), SearchPatterns.Loops(pattern), c => world.Send(c));
+            SearchPatterns.Orders(world.Orders, unit, searchWaypoints.AsSpan(0, n), SearchPatterns.Loops(pattern), c => world.Send(c));
         }
     }
 
@@ -671,7 +671,7 @@ public sealed unsafe partial class MapScene
             else if (aggressionDragged == side)
                 aggressionDragged = -1;
             if (ImGui.IsItemDeactivatedAfterEdit())
-                world.Send(world.Ai.Orders.SideDoctrine(side, Sim.Ai.DoctrineField.Aggression, aggressionEdit[side]));
+                world.Send(world.Orders.SideDoctrine(side, Sim.Ai.DoctrineField.Aggression, aggressionEdit[side]));
             if (ImGui.IsItemHovered())
                 ImGui.SetTooltip("-1 timid, +1 bold: scales the odds it takes (outgunned ratio), how close it fights, when ships fall out,\n" +
                                  "when flotillas and the side break off, and the turn from torpedoes (settings' AggressionShift).\n" +
@@ -716,7 +716,7 @@ public sealed unsafe partial class MapScene
             ImGui.SameLine();
             bool on = s.CommanderOn[s.PlayerSide];
             if (ImGui.Checkbox("AI commands", ref on))
-                world.Send(world.Ai.Orders.Commander(s.PlayerSide, on ? Sim.Ai.Commanders.CommanderMode.On : Sim.Ai.Commanders.CommanderMode.Auto));
+                world.Send(world.Orders.Commander(s.PlayerSide, on ? Sim.Ai.Commanders.CommanderMode.On : Sim.Ai.Commanders.CommanderMode.Auto));
             if (ImGui.IsItemHovered())
                 ImGui.SetTooltip("Your side's commander gives your top units their tasks; your own order to a unit takes it from him\n" +
                                  "(\"leave it to the admiral\" on its group row hands it back).");
