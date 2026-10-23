@@ -28,9 +28,12 @@ public enum LabelKind : byte
 
 /// <summary>The map's labels, all placed by one placer (docs/map-ui/symbols.md Y5; docs/map-ui/README.md "Labels never
 /// pile up"): each frame the scene asks for a label by its anchor, size, the places it may go (in order) and a priority;
-/// the placer takes them by priority, tries each one's place of last frame first (so a label doesn't jump while it
-/// still fits) and then its others, against one occupancy grid of the screen (the anchors' symbols reserved first),
-/// and drops what doesn't fit (the hover still names it). Labels fade in and out over <see cref="SymbolLook.LabelFade"/>
+/// the placer takes them by priority (ties by what they label, not the order asked), tries each one's place of last
+/// frame first (so a label doesn't jump while it still fits) and then its others, against one occupancy grid of the
+/// screen (the anchors' symbols reserved first), and drops what doesn't fit (the hover still names it). A dead band of
+/// <see cref="SymbolLook.LabelHold"/> cells keeps a pixel's drift from flipping a fit at a cell's edge: a shown label
+/// keeps its place until it overlaps by half the band, a new place (or a dropped label's return) needs half the band
+/// clear. Labels fade in and out over <see cref="SymbolLook.LabelFade"/>
 /// of real time. Linear in the labels; the arrays and the states are kept: no garbage once grown.</summary>
 public sealed class MapLabels
 {
@@ -48,10 +51,12 @@ public sealed class MapLabels
         public LabelPlace Place;
         public float Alpha, X, Y;
         public long Seen;
+        public bool Shown;
     }
 
     Request[] requests = new Request[256];
     long[] order = new long[256];
+    int[] orderIndex = new int[256];
     Vector2[] at = new Vector2[256];
     LabelPlace[] placed = new LabelPlace[256];
     float[] alpha = new float[256];
@@ -88,6 +93,7 @@ public sealed class MapLabels
             int n = count * 2;
             Array.Resize(ref requests, n);
             Array.Resize(ref order, n);
+            Array.Resize(ref orderIndex, n);
             Array.Resize(ref at, n);
             Array.Resize(ref placed, n);
             Array.Resize(ref alpha, n);
@@ -112,23 +118,27 @@ public sealed class MapLabels
             ref var r = ref requests[i];
             if (r.Reserve > 0)
                 Mark(r.X - r.Reserve, r.Y - r.Reserve, 2 * r.Reserve, 2 * r.Reserve);
-            order[i] = (long)r.Priority << 32 | (uint)i;
+            // by what's labelled: a ship sunk or a contact gained mustn't reorder the rest
+            (order[i], orderIndex[i]) = ((long)r.Priority << 40 | r.Key, i);
         }
-        Array.Sort(order, 0, count);
+        Array.Sort(order, orderIndex, 0, count);
         float step = SymbolLook.LabelFade > 0 ? dt / SymbolLook.LabelFade : 1;
+        float band = SymbolLook.LabelHold * cell / 2;
         for (int o = 0; o < count; o++)
         {
-            int i = (int)(order[o] & 0xFFFFFFFF);
+            int i = orderIndex[o];
             ref var r = ref requests[i];
             ref var st = ref CollectionsMarshal.GetValueRefOrAddDefault(states, r.Key, out bool known);
             var got = LabelPlace.None;
             Vector2 pos = default;
-            // last frame's place first, while it's still one of this label's
-            if (known && st.Place != LabelPlace.None && Allowed(r, st.Place) && TryAt(r, st.Place, out pos))
+            // last frame's place first, while it's still one of this label's: kept while it overlaps less than the
+            // band's half, taken again after a drop only with that much clear
+            bool old = known && st.Place != LabelPlace.None && Allowed(r, st.Place);
+            if (old && TryAt(r, st.Place, st.Shown ? band : -band, out pos))
                 got = st.Place;
             else
                 foreach (var p in (ReadOnlySpan<LabelPlace>)[r.P0, r.P1, r.P2, r.P3])
-                    if (p != LabelPlace.None && TryAt(r, p, out pos))
+                    if (p != LabelPlace.None && !(old && p == st.Place) && TryAt(r, p, -band, out pos))
                     {
                         got = p;
                         break;
@@ -142,6 +152,7 @@ public sealed class MapLabels
             else
                 st.Alpha = known ? Math.Max(0, st.Alpha - step) : 0;   // fading out where it was, over whatever took its place
             st.Seen = frame;
+            st.Shown = got != LabelPlace.None;
             placed[i] = got != LabelPlace.None ? got : st.Place;
             at[i] = new Vector2(r.X + st.X, r.Y + st.Y);
             alpha[i] = st.Alpha;
@@ -157,7 +168,9 @@ public sealed class MapLabels
 
     static bool Allowed(in Request r, LabelPlace p) => p == r.P0 || p == r.P1 || p == r.P2 || p == r.P3;
 
-    bool TryAt(in Request r, LabelPlace p, out Vector2 pos)
+    /// <summary>Whether a label fits at place p, its box shrunk by <paramref name="inset"/> each side (grown when
+    /// negative).</summary>
+    bool TryAt(in Request r, LabelPlace p, float inset, out Vector2 pos)
     {
         pos = p switch
         {
@@ -166,10 +179,13 @@ public sealed class MapLabels
             LabelPlace.Above => new Vector2(r.X - r.W / 2, r.Y - r.Gap - r.H),
             _ => new Vector2(r.X - r.W / 2, r.Y + r.Gap),
         };
-        if (pos.X < x0 || pos.Y < y0 || pos.X + r.W > x0 + w || pos.Y + r.H > y0 + h)
+        // a box smaller than twice the inset tests its middle
+        float ix = Math.Min(inset, r.W / 2), iy = Math.Min(inset, r.H / 2);
+        float bx0 = pos.X + ix, by0 = pos.Y + iy, bx1 = pos.X + r.W - ix, by1 = pos.Y + r.H - iy;
+        if (bx0 < x0 || by0 < y0 || bx1 > x0 + w || by1 > y0 + h)
             return false;
-        int cx0 = (int)((pos.X - x0) / cell), cy0 = (int)((pos.Y - y0) / cell);
-        int cx1 = Math.Min((int)((pos.X + r.W - x0) / cell), gw - 1), cy1 = Math.Min((int)((pos.Y + r.H - y0) / cell), gh - 1);
+        int cx0 = (int)((bx0 - x0) / cell), cy0 = (int)((by0 - y0) / cell);
+        int cx1 = Math.Min((int)((bx1 - x0) / cell), gw - 1), cy1 = Math.Min((int)((by1 - y0) / cell), gh - 1);
         for (int cy = cy0; cy <= cy1; cy++)
             for (int cx = cx0; cx <= cx1; cx++)
                 if (grid[cx + cy * gw])

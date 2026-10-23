@@ -20,6 +20,11 @@ public static class SymbolLook
     /// <summary>The labels' fade in and out, real seconds; the halo under them (0 the old drop shadow).</summary>
     public static float LabelFade = 0.15f, Halo = 1;
 
+    /// <summary>The label placer's dead band, its grid's cells (<see cref="MapLabels"/>): a shown label keeps its place
+    /// until it overlaps by half of it, a new one needs half of it clear; past one cell, a drift of parts of a pixel no
+    /// longer flips a fit.</summary>
+    public static float LabelHold = 1.5f;
+
     /// <summary>The display clock's eases (the selection's ring, the hover, an encounter's ring): 0 for captures.</summary>
     public static float Motion = 1;
 
@@ -38,6 +43,7 @@ public static class SymbolLook
             case "casing": Casing = (float)v; break;
             case "casingalpha": CasingAlpha = (float)v; break;
             case "labelfade": LabelFade = (float)v; break;
+            case "labelhold": LabelHold = (float)v; break;
             case "halo": Halo = (float)v; break;
             case "motion": Motion = (float)v; break;
             default: return false;

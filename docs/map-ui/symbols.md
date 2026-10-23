@@ -151,7 +151,7 @@ symbol for an area or a reach is a thin line; direction is an arrowhead, not a l
 
 ## Built
 
-**Y0** (2026-10-23): `SymbolLook` (`-symbols=chord,width,casing,casingalpha,labelfade,halo,motion`). The baseline,
+**Y0** (2026-10-23): `SymbolLook` (`-symbols=chord,width,casing,casingalpha,labelfade,halo,motion`; `labelhold` since the playtest fixes). The baseline,
 DevRelease, 1500 frames at 30x from the scenario's own camera, `-frametimes -gputime`:
 
 | | Frame mean / p99 | CPU mean | GPU mean | Overlay CPU | Labels CPU | UI bytes a frame |
@@ -236,3 +236,13 @@ halo:0,labelfade:0.3,motion:0,chord:0.5,width:1.2`. Worth a look while playing:
 - **Dropped labels**: a label that doesn't fit is dropped, not stacked; the hover still names its ship.
 - **The glow**: the selected icon's is subtle on purpose, as the ring already marks her.
 - **The land rings** went behind F1 (Y4); say if they were wanted in play.
+
+## Playtest fixes
+
+**Labels bounced in close formations** (2026-10-23). The placer's fit was all or nothing against its 6 px cells, so
+a part of a pixel's drift decided whether a label next to its neighbour fit: a dropped label came back the frame its
+old place fit, pushed lower ones out, and they jumped sides (a label flipped 26-66 times in 10 s of a drifting
+formation, `MapLabelsTests`). Now a dead band of `SymbolLook.LabelHold` cells (1.5, `-symbols=labelhold:`): a shown
+label keeps its place until it overlaps by half the band (4.5 px), a new place or a dropped label's return needs half
+the band clear; ties in priority go by what's labelled, not the order asked, so a ship sunk doesn't reorder the rest.
+No label changes more than once in the test's formations (one that didn't fit may settle in when room opens).
