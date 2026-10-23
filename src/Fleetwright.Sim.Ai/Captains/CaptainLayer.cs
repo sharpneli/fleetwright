@@ -621,6 +621,12 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         {
             int i = Find(v.Entity[k]);
             (v.Captain[k], v.CaptainTarget[k]) = i >= 0 ? ((byte)captains[i].Order, new Unit(captains[i].Target).ShipOf(groups)) : ((byte)0, 0);
+            (v.StationAsternM[k], v.StationAbeamM[k]) = i < 0 ? (double.NaN, double.NaN) : captains[i].Order switch
+            {
+                CaptainOrder.Station => (captains[i].DistanceM, captains[i].AbeamM),
+                CaptainOrder.Follow when captains[i].DistanceM > 0 => (captains[i].DistanceM, 0),
+                _ => (double.NaN, double.NaN),
+            };
             v.Asked[k] = i >= 0 && captains[i].Asked;
             v.Conn[k] = i >= 0 && captains[i].Conn ? (byte)1 : Admirals?.LineConned(v.Entity[k]) == true ? (byte)2 : (byte)0;
             v.Tracks[k] = i >= 0 ? captains[i].Tracks : (sbyte)0;

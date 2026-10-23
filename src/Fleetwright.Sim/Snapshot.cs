@@ -854,6 +854,11 @@ public sealed class ShipsView
     public byte[] Captain = [];
     public int[] CaptainTarget = [];
 
+    /// <summary>The station her captain keeps on <see cref="CaptainTarget"/> (docs/battle/admirals-orders.md O9b): metres
+    /// astern of it and to its starboard, in its frame (the AI's <c>Behaviours.Station</c>); NaN for none (no station, or
+    /// a follow at her own lengths' distance). What the map draws a unit's task with: where its ships steer for.</summary>
+    public double[] StationAsternM = [], StationAbeamM = [];
+
     /// <summary>Each ship's fire order (the AI's <c>Fleetwright.Sim.Ai.FireOrder</c>: at will, hold, engage) and the
     /// ship it engages (0: none).</summary>
     public byte[] Fire = [];
@@ -1030,6 +1035,8 @@ public sealed class ShipsView
         Array.Resize(ref SpeedOrderKn, n);
         Array.Resize(ref Captain, n);
         Array.Resize(ref CaptainTarget, n);
+        Array.Resize(ref StationAsternM, n);
+        Array.Resize(ref StationAbeamM, n);
         Array.Resize(ref Fire, n);
         Array.Resize(ref FireTarget, n);
         Array.Resize(ref Asked, n);

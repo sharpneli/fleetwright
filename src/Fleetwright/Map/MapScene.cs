@@ -200,6 +200,7 @@ public sealed unsafe partial class MapScene : IScene
         SelectionMarks(s);
         ShipLabels(s);
         GroupLabels(s);
+        TaskMarkLabels(s);
         ContactLabels(s);
         EncounterLabels(s);
         WreckLabels();

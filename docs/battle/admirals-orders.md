@@ -1,8 +1,7 @@
 # Plan: the admiral's orders, the player's and the AI's
 
-2026-10-23. Status: **drafted** for the user. O1 (the split screen) and O2 (Deploy as an order), the AI's side,
-**built 2026-10-23**; the UI steps (O3 on) wait for the user's answers at the end, and go mockup first, as the battle
-HUD did (`docs/map-ui/battle-hud.md`).
+2026-10-23. Status: O1-O9 **built 2026-10-23** (the AI's side, the mockup, then the port: the task menu O9a and the
+orders on the map O9b); O7b (battle decisions down the chain) and O10 (shaping by drag, the radial menu) later.
 
 Step 5.2's rest (`docs/battle/command.md` "5.2 The command UI on the map") grows out of this: the orders the player gives
 as an admiral, and how the map offers them.
@@ -361,6 +360,27 @@ The mockup's `#tasks`, `#organise`, `#multi` and `#deploy` ported (`MapScene.Tas
   course; T then D divides the squadron into a force of two divisions, the menu then greying Divide and offering Merge.
   Ctrl+clicks (SDL's modifier state) aren't scriptable: by hand.
 
+### O9b Orders drawn on the map (built 2026-10-23)
+
+The mockup's `#chain` and `#screen` marks, in the game (`MapScene.TaskMarks.cs`; capture
+`docs/map-ui/png/game-o9b-marks.png`: a flotilla divided, its two divisions screening a battle squadron at ±45°, 5 km):
+
+- **The snapshot carries each ship's station** (`ShipsView.StationAsternM`, `StationAbeamM`, filled by the captains):
+  metres astern of her captain's target and to its starboard, in its frame, as `Behaviours.Station` steers for it (NaN:
+  none). So the map draws what the ships steer for, not a copy of the admirals' rules.
+- **For the selection's unit, down its whole tree from the top** (and each unit selected beside it): each squadron's
+  station, its guide's, as a dashed ring with a dashed line from where the guide is, labelled with the squadron and its
+  task (a division's is its force's: "Group 2 I · screen"). A station in the unit's own formation (on a ship of the line
+  it's in) isn't drawn: only the unit's task shows. A ship alone selected: her own.
+- **A screen's arc:** about the unit screened, dotted, through its screens' stations and a little past the end ones.
+- **An armed order's shape before the click:** Screen and Cover, the distance kept about the unit under the cursor
+  (the station on it is its admiral's call: the threat and the matchup, so it isn't guessed); Scout, the station dead
+  ahead of it as the order gives it; Deploy…, the line from the guide on the course, as long as its ships in line;
+  Go to, Patrol and Search, the way there.
+- The unit's label already carried its task ("GROUP 2 · screen"); the card's "who gave it" waits (the snapshot holds no
+  order's source yet).
+- Placeholder green (`MapPalette.TaskMark`), as the mockup's; the look is for the user's review.
+
 ## The steps
 
 | Step | What | Status |
@@ -377,7 +397,7 @@ The mockup's `#tasks`, `#organise`, `#multi` and `#deploy` ported (`MapScene.Tas
 | **O8b** | The mockup again: the organise column (new squadron, divide, merge, form a force, leave) and Screen with several squadrons selected | **done 2026-10-23**, for review |
 | **O8c** | Drag and drop in the rail: ships between squadrons, a unit under another's admiral (in the game) | **done 2026-10-23** |
 | **O9a** | The port: the task menu and its picks, the cursor's verbs, the smart verb by role, the formation column's manoeuvres, several units at once | **done 2026-10-23** |
-| **O9b** | The snapshot's stations and the map's task marks: a screen's arc, a scout's station, a deploy's line, previews before the click, the label's task | next |
+| **O9b** | The snapshot's stations and the map's task marks: a screen's arc, a scout's station, a deploy's line, previews before the click, the label's task | **done 2026-10-23** |
 | **O10** | Shaping by drag (a screen's distance and sector), orders as editable objects, the radial menu | later |
 
 ## Measured (O1-O2, Release, 5 seeds; the Jutland one)

@@ -184,6 +184,7 @@ public sealed unsafe partial class MapScene
             }
         }
         DrawGroups(view, s);
+        DrawTaskMarks(view, s);
         DrawHover(view, s);
         PlacePreview(view);
         TrackLines(view, s);   // last: the most lines and the least needed, so a full buffer drops them first

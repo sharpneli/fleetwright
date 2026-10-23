@@ -43,6 +43,10 @@ public static class MapPalette
     public static readonly Vector4 SelectedFire = Brass with { W = 0.9f }, FriendFire = Friend with { W = 0.5f },
         HostileFire = Hostile with { W = 0.55f };
 
+    /// <summary>A unit's task on the map (docs/battle/admirals-orders.md O9b): the station its guide steers for, a screen's
+    /// arc, an armed order's preview. A placeholder green, as the mockup's.</summary>
+    public static readonly Vector4 TaskMark = new(0.62f, 0.82f, 0.6f, 0.85f), TaskMarkFaint = new(0.62f, 0.82f, 0.6f, 0.45f);
+
     /// <summary>Water: a torpedo's reach.</summary>
     public static readonly Vector4 TorpedoReach = new(0.63f, 0.84f, 1f, 0.45f);
 

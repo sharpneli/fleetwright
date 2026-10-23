@@ -572,10 +572,11 @@ public sealed partial class MapScene
                 if (own <= 0 || ShipIn(s, own, unit))
                     return null;
                 string of = UnitName(s, OwnUnitOf(s, own, unit));
+                int screens = Screens(s, units);
                 return pick switch
                 {
                     ClickPick.Screen => string.Format(CultureInfo.InvariantCulture, "SCREEN {0} · {1:0.#} km · {2}", of, set.ScreenM / 1000,
-                        units.Count == 1 ? "on the bearing" : units.Count == 2 ? "2 units, either bow" : $"{units.Count} units over the arc"),
+                        screens == 1 ? "on the bearing" : screens == 2 ? "2 squadrons, either bow" : $"{screens} squadrons over the arc"),
                     ClickPick.Scout => string.Format(CultureInfo.InvariantCulture, "SCOUT for {0} · {1:0.#} km ahead", of, set.ScoutM / 1000),
                     ClickPick.Cover => string.Format(CultureInfo.InvariantCulture, "COVER {0} · {1:0.#} km off, toward the threat", of, set.CoverM / 1000),
                     _ => $"JOIN {of}",
@@ -629,6 +630,16 @@ public sealed partial class MapScene
             }
         }
         return null;
+    }
+
+    /// <summary>How many stations a screen by the units selected takes on its arc: a force hands it to each of its groups
+    /// (docs/battle/admirals-orders.md O1c), a squadron or a ship takes one.</summary>
+    static int Screens(Snapshot s, List<Unit> units)
+    {
+        int n = 0;
+        foreach (var u in units)
+            n += u.IsGroup && s.Groups.IndexOfGroup(u.GroupId) is int g and >= 0 && s.Groups.Force[g] ? s.Groups.MemberCount[g] : 1;
+        return n;
     }
 
     /// <summary>How many ships the units selected have between them.</summary>

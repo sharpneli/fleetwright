@@ -448,6 +448,7 @@ public sealed partial class ShipSystem : IWorldSystem
         v.SpeedOrderKn[n] = orders ? ship.SpeedOrderKn : 0;
         v.Captain[n] = 0;   // the AI fills its own, after
         v.CaptainTarget[n] = 0;
+        (v.StationAsternM[n], v.StationAbeamM[n]) = (double.NaN, double.NaN);
         v.Asked[n] = false;
         (v.Conn[n], v.Tracks[n]) = (0, 0);
         v.LandSide[n] = orders ? (sbyte)ship.LandSide : (sbyte)0;
