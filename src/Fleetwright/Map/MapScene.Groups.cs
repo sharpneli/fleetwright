@@ -46,8 +46,6 @@ public sealed unsafe partial class MapScene
     // a group's: a line of bearing too (what a turn together leaves, docs/battle/command.md 5.1b)
     static readonly string[] GroupFormationNames = [.. FormationNames, "Line of bearing"];
     static readonly (string Label, double Deg)[] TurnButtons = [("<8", -90), ("<4", -45), ("4>", 45), ("8>", 90)];
-    static readonly Vector4 GroupColor = new(0.95f, 0.92f, 0.82f, 0.9f), GroupLine = new(0.95f, 0.92f, 0.82f, 0.25f), PickColor = new(1f, 0.78f, 0.25f, 0.6f),
-        HeldColor = new(0.55f, 0.85f, 1f, 0.8f), AskColor = new(1f, 0.55f, 0.3f, 1f);
 
     /// <summary>A group collapses into one marker when its ships span fewer pixels than this on screen.</summary>
     const double CollapsePx = 30;
@@ -148,13 +146,16 @@ public sealed unsafe partial class MapScene
             ref var lb = ref labels[l];
             if (lb.Collapsed)
             {
-                // the marker: a diamond at the guide, a larger one for a force
-                double r = (gv.Force[lb.Group] ? 13 : 9) * Rp;
-                symbols.Add(SymbolShape.Diamond, lb.X, lb.Y, r, default, lb.Group == mine || chain.Contains(lb.Group) ? SelectColor : GroupColor, 2f);   // the selection's own
+                // the marker: a filled circle at the guide (ours: the circle, as the rail; the diamond is the enemy's
+                // contact), a force's ringed again
+                var col = lb.Group == mine || chain.Contains(lb.Group) ? MapPalette.Select : MapPalette.Unit;   // the selection's own
+                symbols.Add(SymbolShape.Circle, lb.X, lb.Y, 6.5 * Rp, col with { W = col.W * 0.35f }, col, 2f);
+                if (gv.Force[lb.Group])
+                    symbols.Ring(lb.X, lb.Y, 10.5 * Rp, col, 1.5f);
             }
             else if (lb.Group == mine)
             {
-                overlay.BeginStrip(GroupLine, 1f);
+                overlay.BeginStrip(MapPalette.UnitLine, 1f);
                 for (int i = 0; i < gv.MemberCount[lb.Group]; i++)
                     if (v.IndexOf(gv.Members[gv.MemberStart[lb.Group] + i]) is int k and >= 0)
                         Point(view, v.PoseAt(k, world.DrawMs).Position);
@@ -168,14 +169,14 @@ public sealed unsafe partial class MapScene
                     if (Held(gv.Detached[gv.MemberStart[g] + i]) && v.IndexOf(gv.Members[gv.MemberStart[g] + i]) is int k and >= 0)
                     {
                         var p = v.PoseAt(k, world.DrawMs).Position;
-                        Ring(view, p, IconLengthAt(view, v.Class[k], p) / 2 + 9 * Rp, v.Asked[k] ? AskColor : HeldColor, 1.2f);
+                        Ring(view, p, IconLengthAt(view, v.Class[k], p) / 2 + 9 * Rp, v.Asked[k] ? MapPalette.Asked : MapPalette.Held, 1.2f);
                     }
         // the other picked ships
         foreach (int e in picked)
             if (v.IndexOf(e) is int k and >= 0)
             {
                 var p = v.PoseAt(k, world.DrawMs).Position;
-                Ring(view, p, IconLengthAt(view, v.Class[k], p) / 2 + 5 * Rp, PickColor, 1.5f);
+                Ring(view, p, IconLengthAt(view, v.Class[k], p) / 2 + 5 * Rp, MapPalette.Picked, 1.5f);
             }
     }
 
@@ -223,7 +224,7 @@ public sealed unsafe partial class MapScene
                 groupTexts[gv.Id[g]] = cached = (key, text);
             }
             dl.AddText(at + new Vector2(1, 1), 0xC0000000, cached.Text);
-            dl.AddText(at, ImGui.GetColorU32(gv.Asked[g] ? AskColor : GroupColor), cached.Text);
+            dl.AddText(at, ImGui.GetColorU32(gv.Asked[g] ? MapPalette.Asked : MapPalette.Unit), cached.Text);
         }
     }
 
@@ -528,7 +529,7 @@ public sealed unsafe partial class MapScene
                     string name = gv.Force[g] ? (sub >= 0 ? gv.Name[sub] : $"group {member}") : ShipLabel(s, member);
                     bool asked = gv.Force[g] ? sub >= 0 && gv.Asked[sub] : k >= 0 && v.Asked[k];
                     if (asked)
-                        ImGui.TextColored(AskColor, "!");
+                        ImGui.TextColored(MapPalette.Asked, "!");
                     else
                         ImGui.TextDisabled(" ");
                     ImGui.SameLine();

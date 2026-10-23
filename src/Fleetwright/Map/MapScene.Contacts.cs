@@ -13,16 +13,14 @@ namespace Fleetwright.Map;
 /// sight: no ship's marker or course until she's seen.</summary>
 public sealed partial class MapScene
 {
-    static readonly Vector4 UnknownContact = new(0.95f, 0.9f, 0.7f, 1f);
     const double ContactFadeMs = 30 * 60_000;   // out of sight, it fades to its faintest over this
     const double ContactCourseS = 300;          // the course line: five minutes' steaming
     const float ContactMarkerPx = 5;
-    static readonly Vector4 SmokeSmudge = new(0.62f, 0.58f, 0.52f, 0.85f);
     bool[] labelCells = [];
 
     static Vector4 ContactColour(ContactsView c, int i, long now)
     {
-        var col = c.Side[i] == 255 ? UnknownContact : ShipDrawList.EnemyTint;   // the player's picture: the enemy's
+        var col = c.Side[i] == 255 ? MapPalette.Unknown : ShipDrawList.EnemyTint;   // the player's picture: the enemy's
         float a = c.InSight[i] || c.SmokeInSight[i] ? 0.95f : (float)Math.Max(0.3, 0.85 - 0.55 * (now - c.SeenMs[i]) / ContactFadeMs);
         return col with { W = a };
     }
@@ -66,12 +64,12 @@ public sealed partial class MapScene
             if (c.SmokeInSight[i] || c.Level[i] == ContactLevel.Smoke)
             {
                 double r = Math.Clamp(2 * c.MinorM[i] / view.MetresPerPixel, 28, 64);
-                overlay.Disc(x, y, r, SmokeSmudge with { W = SmokeSmudge.W * col.W }, 0.7f);
+                overlay.Disc(x, y, r, MapPalette.Smoke with { W = MapPalette.Smoke.W * col.W }, 0.7f);
             }
             if (c.Level[i] == ContactLevel.Smoke)
                 continue;   // smoke alone: no ship's marker, no course
-            // the marker: a diamond, and the course line ahead
-            symbols.Add(SymbolShape.Diamond, x, y, ContactMarkerPx * Rp, default, col, 1.5f);
+            // the marker: a diamond, filled while she's in sight, hollow once dead reckoned; and the course line ahead
+            symbols.Add(SymbolShape.Diamond, x, y, ContactMarkerPx * Rp, c.InSight[i] ? col with { W = col.W * 0.85f } : default, col, 1.5f);
             var ahead = (p + c.Velocity[i] * ContactCourseS).Normalized() * Earth.Radius;
             if (view.Project(ahead, out double ax2, out double ay2) && Math.Abs(ax2 - x) + Math.Abs(ay2 - y) > 2)
             {

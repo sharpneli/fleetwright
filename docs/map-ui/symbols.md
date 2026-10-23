@@ -185,3 +185,11 @@ coverage spread by eight taps into a dark rim (1.5 casing px) and, selected, a s
 taps, 4 px); the texture's end columns aren't empty, so the hull is masked to its own rectangle (clamping smeared the
 stern into the padding at first). Packed into fields the icon didn't use: roof and cover carry the padding's share,
 soot the casing's px (plus 100 selected).
+
+**Y4** (2026-10-23): `MapPalette` holds every symbol's and stroke's colour (the battle marks' and effects' stay with
+them); values kept, but for the near-duplicates snapped to the tokens: routes to brass, the own encounter to amber,
+the fire lines to brass, friend and hostile. The shape review's changes: our squadrons a filled circle (a force
+ringed again), contacts filled while in sight and hollow once reckoned, torpedo reach dotted (both settings), the
+captain's follow line dotted, waypoints filled dots, the ordered course cased with an arrowhead, the encounter ring
+thinner (1.6 / 1.2 px, cased). One change beyond the review: the selected ship's land rings and feeler (a rails aid)
+show only with the dev panel (F1) open; they were the green rings round every selection.

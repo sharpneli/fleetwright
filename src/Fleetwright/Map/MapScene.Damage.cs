@@ -17,8 +17,7 @@ namespace Fleetwright.Map;
 /// losses as the player's side knows them.</summary>
 public sealed partial class MapScene
 {
-    static readonly Vector4 FlameColour = new(1f, 0.55f, 0.12f, 0.95f), SmokeColour = new(0.5f, 0.5f, 0.52f, 1f),
-        WreckColour = new(0.85f, 0.85f, 0.8f, 0.8f);
+    static readonly Vector4 FlameColour = new(1f, 0.55f, 0.12f, 0.95f), SmokeColour = new(0.5f, 0.5f, 0.52f, 1f);
 
     /// <summary>A ship seen going down: where it was last, its name, the encounter it was in, and how and since when it's
     /// lost.</summary>
@@ -70,7 +69,7 @@ public sealed partial class MapScene
         // in the world, the wreck is its oil and debris (docs/visuals/hits-and-fires.md I7): the mark gives way over the
         // cross-fade (the label stays)
         float mark = Sinking.SinkingEffects.On ? (float)(1 - WorldView.Factor(view)) : 1f;
-        var wreckColour = WreckColour with { W = WreckColour.W * mark };
+        var wreckColour = MapPalette.Wreck with { W = MapPalette.Wreck.W * mark };
         foreach (var w in wrecks)
         {
             if (mark <= 0 || !view.Project(w.At, out double x, out double y) || x < -20 || y < -20 || x > view.Width + 20 || y > view.Height + 20)
@@ -226,7 +225,7 @@ public sealed partial class MapScene
         if (age < 0)
             return;
         double gone = Math.Clamp(age / span, 0, 1);
-        overlay.Circle(x, y, Math.Max(iconPx, ShipDrawList.IconLengthPx / 2) * (0.55 + 0.45 * gone), WreckColour with { W = (float)(0.4 * Math.Min(1, age / 2) * (1 - gone * gone)) * fade }, 1.5f);
+        overlay.Circle(x, y, Math.Max(iconPx, ShipDrawList.IconLengthPx / 2) * (0.55 + 0.45 * gone), MapPalette.Wreck with { W = (float)(0.4 * Math.Min(1, age / 2) * (1 - gone * gone)) * fade }, 1.5f);
     }
 
     /// <summary>A magazine's blast where a ship was, <paramref name="age"/> seconds after: a white-hot flash with sparks,
@@ -283,7 +282,7 @@ public sealed partial class MapScene
             string text = w.Label;
             var at = new Vector2(vp.Pos.X + (float)(x * sx) + 10, vp.Pos.Y + (float)(y * sy) + 4);
             dl.AddText(at + new Vector2(1, 1), 0xC0000000, text);
-            dl.AddText(at, ImGui.GetColorU32(WreckColour), text);
+            dl.AddText(at, ImGui.GetColorU32(MapPalette.Wreck), text);
         }
     }
 

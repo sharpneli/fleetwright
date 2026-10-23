@@ -12,7 +12,6 @@ namespace Fleetwright.Map;
 /// for what the clock does then.</summary>
 public sealed partial class MapScene
 {
-    static readonly Vector4 OwnEncounter = new(1f, 0.68f, 0.25f, 0.8f), OthersEncounter = new(0.7f, 0.76f, 0.85f, 0.5f);
     const double EncounterRingPadM = 5_000;   // outside the outermost ship
     const double NewsShownSeconds = 8;
 
@@ -51,7 +50,7 @@ public sealed partial class MapScene
         var v = s.Encounters;
         for (int i = 0; i < v.Count; i++)
             if (Ring(s, i, out var centre, out double r))
-                RingM(view, centre, r, v.Own[i] ? OwnEncounter : OthersEncounter, v.Own[i] ? 2f : 1.5f, Dash.Solid, true);
+                RingM(view, centre, r, v.Own[i] ? MapPalette.OwnEncounter : MapPalette.OthersEncounter, v.Own[i] ? 1.6f : 1.2f, Dash.Solid, true);
     }
 
     // the encounters' labels, made when what they say changes
@@ -86,7 +85,7 @@ public sealed partial class MapScene
             string text = cached.Text;
             var at = new Vector2(vp.Pos.X + (float)(x * sx) - ImGui.CalcTextSize(text).X / 2, vp.Pos.Y + (float)(y * sy) - ImGui.GetTextLineHeight() - 4);
             dl.AddText(at + new Vector2(1, 1), 0xC0000000, text);
-            dl.AddText(at, ImGui.GetColorU32(v.Own[i] ? OwnEncounter with { W = 1 } : OthersEncounter with { W = 0.9f }), text);
+            dl.AddText(at, ImGui.GetColorU32(v.Own[i] ? MapPalette.OwnEncounter with { W = 1 } : MapPalette.OthersEncounter with { W = 0.9f }), text);
         }
     }
 

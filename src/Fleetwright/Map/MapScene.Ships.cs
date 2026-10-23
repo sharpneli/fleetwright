@@ -60,10 +60,6 @@ public sealed unsafe partial class MapScene
     readonly List<int> gone = [];
     long frame;
 
-    static readonly Vector4 TrackColor = new(0.85f, 0.9f, 1f, 0.35f), RouteColor = new(1f, 0.85f, 0.4f, 0.55f),
-        RouteSelected = new(1f, 0.8f, 0.3f, 0.95f), SelectColor = new(1f, 0.78f, 0.25f, 0.95f), CourseColor = new(1f, 1f, 1f, 0.6f), TargetColor = new(1f, 0.78f, 0.25f, 0.45f),
-        LandRing = new(0.55f, 0.85f, 0.6f, 0.5f), TorpedoRing = new(0.63f, 0.84f, 1f, 0.3f), HorizonColor = new(0.6f, 0.85f, 1f, 0.6f), SlideColor = new(0.55f, 1f, 0.6f, 0.95f), PlaceColor = new(0.6f, 0.9f, 1f, 0.85f);
-
     // ------------------------------------------------------------------ lines over the globe
 
     void BuildOverlay(in MapView view, Snapshot s)
@@ -100,7 +96,7 @@ public sealed unsafe partial class MapScene
             {
                 // only the legs that pass through the view (2.7c: 1,750 tramps' ocean routes, all off screen, were
                 // ~500,000 vertices a frame)
-                overlay.BeginStrip(sel ? RouteSelected : RouteColor, sel ? 2f : 1.2f);
+                overlay.BeginStrip(sel ? MapPalette.RouteSelected : MapPalette.Route, sel ? 2f : 1.2f);
                 var from = p;
                 bool open = false;
                 int legs = v.RouteCount[k] + (v.RouteLoop[k] ? 1 : 0);   // a patrol: round to the first again
@@ -124,46 +120,46 @@ public sealed unsafe partial class MapScene
                 overlay.End();
                 for (int i = 0; i < v.RouteCount[k]; i++)
                     if (InView(cap, v.Waypoints[v.RouteStart[k] + i]) && view.Project(v.Waypoints[v.RouteStart[k] + i], out double wx, out double wy))
-                        symbols.Add(SymbolShape.Circle, wx, wy, 4 * Rp, default, sel ? RouteSelected : RouteColor, 1.5f);
+                        symbols.Add(SymbolShape.Circle, wx, wy, 3 * Rp, sel ? MapPalette.RouteSelected : MapPalette.Route, sel ? MapPalette.RouteSelected : MapPalette.Route, 1f);
             }
 
             if (sel && view.Project(p, out double x, out double y))
             {
                 double len = lengthOf(v.Class[k]) * view.Altitude / view.MetresPerPixel / Math.Max(Vec3d.Dot(p - view.Eye, view.Forward), 1e-3);
-                Ring(view, p, Math.Max(len / 2, IconLengthOf(v.Class[k]) / 2) + 7 * Rp, SelectColor, 2f);
+                Ring(view, p, Math.Max(len / 2, IconLengthOf(v.Class[k]) / 2) + 7 * Rp, MapPalette.Select, 2f);
                 if (world.Classes.TryGet(v.Class[k]) is { Launchers.Length: > 0 } tc2 && v.TorpedoesLeft[k] > 0)
                 {
-                    // her torpedoes' reach, fast and slow (docs/map-ui/battle-hud.md U5)
+                    // her torpedoes' reach, fast and slow (docs/map-ui/battle-hud.md U5): dotted, a reach and not a thing
                     var torp = tc2.Torpedoes[tc2.Launchers[0].Torpedo];
-                    RingM(view, p, torp.FastRangeM, TorpedoRing, 2f, Dash.Dotted, true);
-                    RingM(view, p, torp.SlowRangeM, TorpedoRing with { W = TorpedoRing.W * 0.6f }, 1.5f, Dash.Dashed, true);
+                    RingM(view, p, torp.FastRangeM, MapPalette.TorpedoReach, 2f, Dash.Dotted, true);
+                    RingM(view, p, torp.SlowRangeM, MapPalette.TorpedoReach with { W = MapPalette.TorpedoReach.W * 0.6f }, 1.5f, Dash.Dotted, true);
                 }
                 if (horizonRing && world.Classes.TryGet(v.Class[k]) is { Eyes.Length: > 0 } hc)
                 {
                     // dev (fire-control.md F4d): the sea's horizon from her highest eye, and the reach to a ship as tall as she is
                     double eye = hc.Eyes[0].HeightM;
-                    RingM(view, p, SightModel.HorizonM(eye, world.Settings), HorizonColor, 1.5f);
-                    RingM(view, p, SightModel.ReachM(eye, hc.Silhouette.TopM, world.Settings), HorizonColor with { W = 0.3f }, 1f);
+                    RingM(view, p, SightModel.HorizonM(eye, world.Settings), MapPalette.DevHorizon, 1.5f);
+                    RingM(view, p, SightModel.ReachM(eye, hc.Silhouette.TopM, world.Settings), MapPalette.DevHorizon with { W = 0.3f }, 1f);
                 }
                 int t = v.Captain[k] != 0 ? v.IndexOf(v.CaptainTarget[k]) : -1;
                 if (t >= 0)
                 {
                     // the ship its captain follows or runs from
                     var (tp, _) = v.PoseAt(t, world.DrawMs);
-                    overlay.BeginStrip(TargetColor, 1f);
+                    overlay.BeginStrip(MapPalette.Follow, 1.5f, Dash.Dotted);   // dotted: a relation, not a path or a shot
                     Point(view, p);
                     Point(view, tp);
                     overlay.End();
                 }
-                if (v.StandoffM[k] / view.MetresPerPixel >= 3)
+                if (devOpen && v.StandoffM[k] / view.MetresPerPixel >= 3)
                 {
-                    // ships and the land: the minimum and the standoff it keeps from the coast, and the feeler's reach
-                    RingM(view, p, v.MinClearanceM[k], LandRing, 1f);
-                    RingM(view, p, v.StandoffM[k], LandRing, 1f);
+                    // dev: ships and the land: the minimum and the standoff it keeps from the coast, and the feeler's reach
+                    RingM(view, p, v.MinClearanceM[k], MapPalette.DevLand, 1f);
+                    RingM(view, p, v.StandoffM[k], MapPalette.DevLand, 1f);
                     var reach = p;
                     var rf = f;
                     Earth.Advance(ref reach, ref rf, v.LookaheadM[k]);
-                    overlay.BeginStrip(v.LandSide[k] != 0 ? SlideColor : LandRing, 1f);
+                    overlay.BeginStrip(v.LandSide[k] != 0 ? MapPalette.DevSlide : MapPalette.DevLand, 1f);
                     Point(view, p);
                     Point(view, reach);
                     overlay.End();
@@ -174,10 +170,14 @@ public sealed unsafe partial class MapScene
                     var bow = p + f * (lengthOf(v.Class[k]) / 2);
                     var dir = Earth.Forward(bow, v.CourseOrderDeg[k]);
                     double ahead = Math.Max(len / 2, 30) * view.MetresPerPixel;
-                    overlay.BeginStrip(CourseColor, 1.5f);
+                    var end = bow + dir * ahead;
+                    overlay.BeginStrip(MapPalette.Course, 1.5f, Dash.Solid, true);
                     Point(view, bow);
-                    Point(view, bow + dir * ahead);
+                    Point(view, end);
                     overlay.End();
+                    if (view.Project(bow, out double bx, out double by) && view.Project(end, out double ex, out double ey))
+                        symbols.Add(SymbolShape.Arrow, ex, ey, 5 * Rp, MapPalette.Course with { W = 0.9f }, MapPalette.Course with { W = 0.9f }, 1f,
+                            Math.Atan2(ey - by, ex - bx));
                 }
             }
         }
@@ -219,7 +219,7 @@ public sealed unsafe partial class MapScene
                 foam.Add(view, tr, head, now, SeaView.FoamGain);
             if (w >= 1)
                 continue;
-            overlay.BeginStrip(TrackColor with { W = TrackColor.W * (float)(1 - w) }, 1.5f);
+            overlay.BeginStrip(MapPalette.Track with { W = MapPalette.Track.W * (float)(1 - w) }, 1.5f);
             var last = tr[0].P;
             Point(view, last);
             for (int i = 1; i < tr.Count; i++)
@@ -429,7 +429,7 @@ public sealed unsafe partial class MapScene
         {
             var p = Station(at, f, starboard, formation, i);
             var pf = Earth.Forward(p, heading);
-            overlay.BeginStrip(PlaceColor, i == 0 ? 3f : 2f);
+            overlay.BeginStrip(MapPalette.DevPlace, i == 0 ? 3f : 2f);
             Point(view, p - pf * half);
             Point(view, p + pf * half);
             overlay.End();
@@ -438,11 +438,11 @@ public sealed unsafe partial class MapScene
         double ahead = Math.Max(spawnSpacing, 60 * view.MetresPerPixel);
         var bow = at + f * half;
         var tip = (bow + f * ahead).Normalized() * Earth.Radius;
-        overlay.BeginStrip(PlaceColor, 1.5f);
+        overlay.BeginStrip(MapPalette.DevPlace, 1.5f);
         Point(view, bow);
         Point(view, tip);
         overlay.End();
-        overlay.BeginStrip(PlaceColor, 1.5f);
+        overlay.BeginStrip(MapPalette.DevPlace, 1.5f);
         Point(view, tip + Earth.Forward(tip, heading + 150) * (ahead * 0.25));
         Point(view, tip);
         Point(view, tip + Earth.Forward(tip, heading - 150) * (ahead * 0.25));
