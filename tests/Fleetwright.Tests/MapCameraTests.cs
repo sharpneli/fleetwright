@@ -243,7 +243,7 @@ public class MapCameraTests
         Assert.Contains(ticks, t => t.Parallel && t.Edge is 1 or 3);
         Assert.Contains(ticks, t => !t.Parallel && t.Edge is 0 or 2);
         Assert.All(ticks, t => Assert.Equal(0, Math.IEEERemainder(t.Value / t.Step, 1), 6));
-        Assert.Contains(ticks, t => t.Weight > 0.5f);   // the labelled majors
+        Assert.Contains(ticks, t => t.Label > 0.5f);   // the labelled ones
         Assert.Contains(ticks, t => t.Weight < 0.5f && t.Fade > 0.5f);   // the minors between them
         Graticule.BorderTicks(battle, ticks, lines);
         Assert.Contains(ticks, t => t.Weight > 0.5f);

@@ -37,11 +37,15 @@ Levels nest (every 10' line is a 1' line), so each line's look is a smooth funct
 level's lines are on the screen, `p`, in reference pixels (pixels at a 1080-tall window, as `WorldView` measures), a
 line taking its coarsest level's:
 
-- `p` < 8: not drawn;
-- 8 to 30: fades in to the minor look (thin, faint);
-- 30 to 120: minor;
-- 120 to 500: grows to the major look;
-- over 500: major.
+- `p` < 25: not drawn;
+- 25 to 90: fades in to the minor look (thin, faint);
+- 90 to 250: minor;
+- 250 to 900: grows to the major look (ten times the fade-in: a level grows while its children arrive);
+- over 900: major.
+
+(First built at 8, 30, 120, 500; the user found the fine grid cluttered, 2026-10-23, and it moved by about a third of
+a level, x3, for more empty water.) The margin's labels fade in on their own curve, 120 to 500 px apart, so a sparser
+grid keeps its labels.
 
 At any zoom that is one major level, one minor level inside it and perhaps the next one arriving faintly. Zooming
 in, the minor grid takes over the major look as the major cells grow off the screen. Nothing switches; the ×6 and ×9

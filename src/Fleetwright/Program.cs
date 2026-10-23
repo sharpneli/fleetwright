@@ -312,7 +312,7 @@ public static unsafe class Program
             {
                 foreach (var kv in arg.Substring("-grid=".Length).Split(',', StringSplitOptions.RemoveEmptyEntries))
                     if (!Map.GridLook.Set(kv))
-                        Console.Error.WriteLine($"Bad grid knob: {kv} (want units (nm, km), hidden, minorfrom, majorfrom, majorat, minoralpha, majoralpha, minorwidth, majorwidth, squares, graticule, reanchordeg, reanchornm, reanchors)");
+                        Console.Error.WriteLine($"Bad grid knob: {kv} (want units (nm, km), hidden, minorfrom, majorfrom, majorat, labelfrom, labelat, minoralpha, majoralpha, minorwidth, majorwidth, squares, graticule, reanchordeg, reanchornm, reanchors)");
             }
             else if (arg.StartsWith("-worldview="))   // the map's table-to-world boundary, metres per pixel at 1080p (docs/visuals/sea.md W0)
             {

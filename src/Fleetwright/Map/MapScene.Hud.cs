@@ -616,6 +616,10 @@ public sealed partial class MapScene : ISceneMenu
         var px = new Vector4((float)GridLook.Hidden, (float)GridLook.MinorFrom, (float)GridLook.MajorFrom, (float)GridLook.MajorAt);
         if (ImGui.DragFloat4("grid fades, ref px", ref px, 1, 1, 2000, "%.0f"))
             (GridLook.Hidden, GridLook.MinorFrom, GridLook.MajorFrom, GridLook.MajorAt, changed) = (px.X, Math.Max(px.Y, px.X + 1), Math.Max(px.Z, px.Y), Math.Max(px.W, px.Z + 1), true);
+        ImGui.SetNextItemWidth(w);
+        float lf = (float)GridLook.LabelFrom, la = (float)GridLook.LabelAt;
+        if (ImGui.DragFloatRange2("grid labels, ref px", ref lf, ref la, 1, 10, 2000, "from %.0f", "full %.0f"))
+            (GridLook.LabelFrom, GridLook.LabelAt, changed) = (lf, Math.Max(la, lf + 1), true);
         ImGui.SetNextItemWidth(w / 2);
         float deg = (float)GridLook.ReanchorDeg, nm = (float)GridLook.ReanchorNm;
         if (ImGui.DragFloat("##reanchordeg", ref deg, 0.02f, 0.1f, 10, "%.2f°"))

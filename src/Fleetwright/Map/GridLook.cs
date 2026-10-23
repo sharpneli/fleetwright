@@ -11,7 +11,11 @@ public static class GridLook
 {
     /// <summary>Spacings, reference px: under <see cref="Hidden"/> a level isn't drawn, it fades in to the minor look
     /// by <see cref="MinorFrom"/>, and grows from <see cref="MajorFrom"/> to the major look at <see cref="MajorAt"/>.</summary>
-    public static double Hidden = 8, MinorFrom = 30, MajorFrom = 120, MajorAt = 500;
+    public static double Hidden = 25, MinorFrom = 90, MajorFrom = 250, MajorAt = 900;
+
+    /// <summary>The margin's labels fade in from <see cref="LabelFrom"/> to <see cref="LabelAt"/> reference px apart,
+    /// on their own curve: the lines can be set sparser without thinning the labels.</summary>
+    public static double LabelFrom = 120, LabelAt = 500;
 
     public static float MinorAlpha = 0.13f, MajorAlpha = 0.26f, MinorWidth = 1f, MajorWidth = 1.4f;
 
@@ -42,6 +46,9 @@ public static class GridLook
 
     /// <summary>How far a level has grown from the minor look to the major, 0 to 1.</summary>
     public static double Weight(double px) => Step(MajorFrom, MajorAt, px);
+
+    /// <summary>How much a level's labels in the margin show, 0 to 1.</summary>
+    public static double Label(double px) => Step(LabelFrom, LabelAt, px);
 
     /// <summary>A level's line, by its spacing in reference px, with <paramref name="alpha"/> over it all.</summary>
     public static (Vector4 Color, float Width) Line(double px, float alpha, bool zero = false)
@@ -88,6 +95,8 @@ public static class GridLook
             case "minorfrom": MinorFrom = v; break;
             case "majorfrom": MajorFrom = v; break;
             case "majorat": MajorAt = v; break;
+            case "labelfrom": LabelFrom = v; break;
+            case "labelat": LabelAt = v; break;
             case "minoralpha": MinorAlpha = (float)v; break;
             case "majoralpha": MajorAlpha = (float)v; break;
             case "minorwidth": MinorWidth = (float)v; break;

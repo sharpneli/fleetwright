@@ -323,7 +323,7 @@ public sealed unsafe partial class MapScene : IScene
     static string scaleText = "";
 
     /// <summary>The grid's values at the screen's edge (<see cref="Graticule.Margin"/>), beside <see cref="Graticule.BorderTicks"/>'
-    /// marks: the major ones', faded in with them and with the margin, latitudes at the sides and longitudes at the top
+    /// marks: those far enough apart (<see cref="GridLook.Label"/>), faded in with them and with the margin, latitudes at the sides and longitudes at the top
     /// and bottom; a label that would overlap the last one on its
     /// edge is left out.</summary>
     void TickLabels()
@@ -341,7 +341,7 @@ public sealed unsafe partial class MapScene : IScene
         last.Fill(float.MinValue);
         foreach (var t in ticks)
         {
-            float a = wf * t.Fade * t.Weight;
+            float a = wf * t.Fade * t.Label;
             if (a < 0.02f || t.Parallel != (t.Edge is 1 or 3))
                 continue;   // as on a chart: latitudes at the sides, longitudes at the top and bottom
             var key = (t.Value, t.Step, t.Parallel);

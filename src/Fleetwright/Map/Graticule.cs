@@ -192,12 +192,12 @@ public static class Graticule
 
     /// <summary>A grid line where it meets the screen's edge: the point (target pixels), the edge (0 top, 1 right,
     /// 2 bottom, 3 left), whether it's a parallel, its latitude or longitude (degrees, longitude in -180..180), its
-    /// level's spacing (degrees), and its level's look: how much it's drawn (<see cref="GridLook.Fade"/>) and how far
-    /// grown to the major look (<see cref="GridLook.Weight"/>), the labels being the major ticks'.</summary>
+    /// level's spacing (degrees), and its level's look: how much it's drawn (<see cref="GridLook.Fade"/>), how far
+    /// grown to the major look (<see cref="GridLook.Weight"/>) and how much its label shows (<see cref="GridLook.Label"/>).</summary>
     public struct BorderTick
     {
         public double X, Y, Value, Step;
-        public float Fade, Weight;
+        public float Fade, Weight, Label;
         public byte Edge;
         public bool Parallel;
     }
@@ -275,7 +275,7 @@ public static class Graticule
             {
                 X = x0 + (x1 - x0) * t, Y = y0 + (y1 - y0) * t, Edge = (byte)edge, Parallel = parallel,
                 Value = parallel ? deg : Math.IEEERemainder(deg, 360), Step = Step(l),
-                Fade = (float)GridLook.Fade(px), Weight = (float)GridLook.Weight(px),
+                Fade = (float)GridLook.Fade(px), Weight = (float)GridLook.Weight(px), Label = (float)GridLook.Label(px),
             });
         }
     }
