@@ -209,7 +209,8 @@ doctrine's standing orders: Engage (Fight on meeting), Deploy, falling out and h
 things take a held unit, each for its moment and then giving the order back: a captain combing a torpedo's track (her
 course, or her route: `ShipCommand.ResumeRoute`), and an admiral turning his line away from a torpedo attack. The
 pilot's slide along a coast stays (physics, not a choice). The hand lasts until the unit's handed back (`Resume`, an
-order to its group gathering it in, a route's end) or another order replaces it (a task's, a superior's); a ship let go
+order to its group gathering it in, a route's end: kept on purpose, the user 2026-10-23, since a ship sent off on
+waypoints is easily forgotten; the hand matters most in a tight spot, where orders are courses) or another order replaces it (a task's, a superior's); a ship let go
 past her fall-out is judged again at once. The player's Fight is the player's order too: inside it the captain still turns away
 when outgunned and zigzags under fire, since that's what Fight means.
 
