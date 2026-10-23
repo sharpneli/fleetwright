@@ -149,14 +149,14 @@ public sealed unsafe partial class MapScene
             if (lb.Collapsed)
             {
                 // the marker: a diamond at the guide, a larger one for a force
-                double r = gv.Force[lb.Group] ? 13 : 9;
+                double r = (gv.Force[lb.Group] ? 13 : 9) * Rp;
                 overlay.BeginStrip(lb.Group == mine || chain.Contains(lb.Group) ? SelectColor : GroupColor, 2f);   // the selection's own
                 overlay.Point(lb.X, lb.Y - r);
                 overlay.Point(lb.X + r, lb.Y);
                 overlay.Point(lb.X, lb.Y + r);
                 overlay.Point(lb.X - r, lb.Y);
                 overlay.Point(lb.X, lb.Y - r);
-                overlay.End();
+                overlay.EndClosed();
             }
             else if (lb.Group == mine)
             {
@@ -174,14 +174,14 @@ public sealed unsafe partial class MapScene
                     if (Held(gv.Detached[gv.MemberStart[g] + i]) && v.IndexOf(gv.Members[gv.MemberStart[g] + i]) is int k and >= 0)
                     {
                         var p = v.PoseAt(k, world.DrawMs).Position;
-                        Ring(view, p, IconLengthAt(view, v.Class[k], p) / 2 + 9, v.Asked[k] ? AskColor : HeldColor, 1.2f);
+                        Ring(view, p, IconLengthAt(view, v.Class[k], p) / 2 + 9 * Rp, v.Asked[k] ? AskColor : HeldColor, 1.2f);
                     }
         // the other picked ships
         foreach (int e in picked)
             if (v.IndexOf(e) is int k and >= 0)
             {
                 var p = v.PoseAt(k, world.DrawMs).Position;
-                Ring(view, p, IconLengthAt(view, v.Class[k], p) / 2 + 5, PickColor, 1.5f);
+                Ring(view, p, IconLengthAt(view, v.Class[k], p) / 2 + 5 * Rp, PickColor, 1.5f);
             }
     }
 

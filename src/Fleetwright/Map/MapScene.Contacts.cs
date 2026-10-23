@@ -41,13 +41,14 @@ public sealed partial class MapScene
             var ax = Earth.Forward(p, c.AxisDeg[i]);
             var up = p.Normalized();
             var across = Vec3d.Cross(up, ax);
+            int segs = overlay.Segments(major / view.MetresPerPixel);
             overlay.BeginStrip(col with { W = col.W * 0.6f }, 1f);
-            for (int k = 0; k <= 32; k++)
+            for (int k = 0; k <= segs; k++)
             {
-                double a = k * Math.PI * 2 / 32;
-                Point(view, (p + ax * (Math.Cos(a) * major) + across * (Math.Sin(a) * minor)).Normalized() * Earth.Radius);
+                double a = k * Math.PI * 2 / segs;
+                ClipPoint(view, (p + ax * (Math.Cos(a) * major) + across * (Math.Sin(a) * minor)).Normalized() * Earth.Radius);
             }
-            overlay.End();
+            overlay.EndClosed();
             if (c.SmokeInSight[i])
             {
                 // the bearing it was taken on: from where she looked, through it, out past its range's error
@@ -71,12 +72,13 @@ public sealed partial class MapScene
                 continue;   // smoke alone: no ship's marker, no course
             // the marker: a diamond, and the course line ahead
             overlay.BeginStrip(col, 1.5f);
-            overlay.Point(x, y - ContactMarkerPx);
-            overlay.Point(x + ContactMarkerPx, y);
-            overlay.Point(x, y + ContactMarkerPx);
-            overlay.Point(x - ContactMarkerPx, y);
-            overlay.Point(x, y - ContactMarkerPx);
-            overlay.End();
+            double mk = ContactMarkerPx * Rp;
+            overlay.Point(x, y - mk);
+            overlay.Point(x + mk, y);
+            overlay.Point(x, y + mk);
+            overlay.Point(x - mk, y);
+            overlay.Point(x, y - mk);
+            overlay.EndClosed();
             var ahead = (p + c.Velocity[i] * ContactCourseS).Normalized() * Earth.Radius;
             if (view.Project(ahead, out double ax2, out double ay2) && Math.Abs(ax2 - x) + Math.Abs(ay2 - y) > 2)
             {

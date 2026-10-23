@@ -18,8 +18,10 @@ public struct LineVertex
 /// <summary>Anti-aliased polylines in a target's pixels, expanded on the CPU into triangles with mitred joins (no
 /// overlaps, so a faint line has no brighter dots at its joints). Points come in already projected, in double through
 /// <see cref="MapView"/>, so a line on the globe stays put at any zoom. A point may carry its own colour and width, so a
-/// strip can taper and fade (the battle's streaks); <see cref="Disc"/> is a soft round glow. The arrays are kept between
-/// frames: building the same lines again allocates nothing.</summary>
+/// strip can taper and fade (the battle's streaks); <see cref="Disc"/> is a soft round glow. Curves are split by their
+/// chord error on the screen (<see cref="Segments"/>, docs/map-ui/symbols.md Y1), and a strip fed through
+/// <see cref="ClipPoint"/> keeps only what's on the screen. The arrays are kept between frames: building the same lines
+/// again allocates nothing.</summary>
 public sealed class MapLines
 {
     LineVertex[] verts = new LineVertex[1 << 15];
@@ -30,6 +32,13 @@ public sealed class MapLines
     double width = 1, height = 1;
     Vector4 color;
     float half;
+    bool closed;
+
+    /// <summary>Target pixels a width's pixel: <see cref="SymbolLook.Px"/> for the map's symbols, 1 for the grid's lines.</summary>
+    public float WidthScale = 1;
+
+    /// <summary>Target pixels a chord error's reference pixel (<see cref="SymbolLook.Chord"/>).</summary>
+    public float ChordScale = 1;
 
     public ReadOnlySpan<LineVertex> Vertices => verts.AsSpan(0, count);
 
@@ -38,6 +47,7 @@ public sealed class MapLines
     {
         (width, height) = (Math.Max(targetWidth, 1), Math.Max(targetHeight, 1));
         count = stripCount = 0;
+        (closed, clipHave) = (false, false);
     }
 
     /// <summary>Starts a polyline of a colour and a width in pixels.</summary>
@@ -45,6 +55,7 @@ public sealed class MapLines
     {
         End();
         (color, half) = (rgba, widthPx / 2);
+        clipHave = false;
     }
 
     /// <summary>The next point, in pixels (x right, y down).</summary>
@@ -60,7 +71,7 @@ public sealed class MapLines
             Array.Resize(ref stripHalf, strip.Length);
         }
         stripColor[stripCount] = rgba;
-        stripHalf[stripCount] = widthPx / 2;
+        stripHalf[stripCount] = widthPx * WidthScale / 2;
         strip[stripCount++] = new Vector2((float)x, (float)y);
     }
 
@@ -69,7 +80,7 @@ public sealed class MapLines
     public void Disc(double x, double y, double r, Vector4 rgba, float core = 0.45f)
     {
         End();
-        int segs = r < 3 ? 6 : r < 8 ? 10 : 16;   // as round as it looks: a few pixels across needs few sides
+        int segs = Math.Clamp(Segments(r) / 2, 6, 48);   // a soft edge hides twice the chord error
         if (count + segs * 9 > verts.Length)
             Array.Resize(ref verts, Math.Max(verts.Length * 2, count + segs * 9));
         var c = new Vector2((float)x, (float)y);
@@ -99,6 +110,92 @@ public sealed class MapLines
         if (stripCount >= 2)
             Expand();
         stripCount = 0;
+        closed = false;
+    }
+
+    /// <summary>Ends a polyline whose last point is its first: the seam is joined like any other corner (an unbroken
+    /// ring; one the screen's edge broke ends as an open one).</summary>
+    public void EndClosed()
+    {
+        closed = stripCount >= 4 && Vector2.DistanceSquared(strip[0], strip[stripCount - 1]) < 1e-4f;
+        End();
+    }
+
+    /// <summary>How many pieces a whole circle of radius r target px needs for its chord error to stay under
+    /// <see cref="SymbolLook.Chord"/>: about π√(r/2ε), so a ring ten times larger takes about three times the points.</summary>
+    public int Segments(double radiusPx)
+    {
+        double e = SymbolLook.Chord * ChordScale;
+        if (radiusPx <= e)
+            return 8;
+        return Math.Clamp((int)Math.Ceiling(Math.PI / Math.Acos(1 - e / radiusPx)), 8, 4096);
+    }
+
+    /// <summary>A ring of radius r px round (x, y), as smooth as <see cref="Segments"/> says; only its arc on the screen
+    /// is built.</summary>
+    public void Circle(double x, double y, double r, Vector4 rgba, float widthPx)
+    {
+        if (!CircleShows(x, y, r))
+            return;
+        BeginStrip(rgba, widthPx);
+        int n = Segments(r);
+        for (int i = 0; i <= n; i++)
+        {
+            double a = i * Math.PI * 2 / n;
+            ClipPoint(x + Math.Cos(a) * r, y + Math.Sin(a) * r);
+        }
+        EndClosed();
+    }
+
+    /// <summary>Whether any of a ring of radius r px round (x, y) is on the screen (and its margin): not when it's
+    /// off it, nor when it's round the whole of it.</summary>
+    public bool CircleShows(double x, double y, double r)
+    {
+        const double M = 64;
+        if (x + r < -M || y + r < -M || x - r > width + M || y - r > height + M)
+            return false;
+        double fx = Math.Max(Math.Abs(x), Math.Abs(x - width)), fy = Math.Max(Math.Abs(y), Math.Abs(y - height));
+        return r <= Math.Sqrt(fx * fx + fy * fy) + M;
+    }
+
+    // the screen clip's last point: whether there is one, whether it was on the screen, and where
+    bool clipHave, clipPrevIn;
+    double clipX, clipY;
+
+    /// <summary>Whether the clipped strip has a point yet.</summary>
+    public bool ClipHave => clipHave;
+
+    /// <summary>The next point of a strip clipped to the screen (and a margin): off it the strip breaks, keeping the point
+    /// just past the edge; a piece with both ends off is drawn alone if it may cross the screen.</summary>
+    public void ClipPoint(double x, double y)
+    {
+        const double M = 64;
+        bool inside = x > -M && y > -M && x < width + M && y < height + M;
+        if (inside)
+        {
+            if (clipHave && !clipPrevIn)
+                Point(clipX, clipY);
+            Point(x, y);
+        }
+        else if (clipHave && clipPrevIn)
+        {
+            Point(x, y);
+            End();
+        }
+        else if (clipHave && Math.Max(clipX, x) > -M && Math.Min(clipX, x) < width + M && Math.Max(clipY, y) > -M && Math.Min(clipY, y) < height + M)
+        {
+            Point(clipX, clipY);   // a long piece across the screen, both ends off it
+            Point(x, y);
+            End();
+        }
+        (clipHave, clipPrevIn, clipX, clipY) = (true, inside, x, y);
+    }
+
+    /// <summary>A break in a clipped strip (a point that didn't project): the next point starts afresh.</summary>
+    public void ClipBreak()
+    {
+        End();
+        clipHave = false;
     }
 
     void Expand()
@@ -114,8 +211,9 @@ public sealed class MapLines
             var p = strip[i];
             float h = stripHalf[i], reach = h + 1;   // a pixel of fade beyond the line's edge
             var col = stripColor[i];
-            var dIn = i > 0 ? Dir(strip[i - 1], p) : Dir(p, strip[i + 1]);
-            var dOut = i < stripCount - 1 ? Dir(p, strip[i + 1]) : dIn;
+            // a closed ring's seam: its ends joined through each other
+            var dIn = i > 0 ? Dir(strip[i - 1], p) : closed ? Dir(strip[stripCount - 2], p) : Dir(p, strip[i + 1]);
+            var dOut = i < stripCount - 1 ? Dir(p, strip[i + 1]) : closed ? Dir(p, strip[1]) : dIn;
             var nIn = new Vector2(-dIn.Y, dIn.X);
             var n = new Vector2(-(dIn.Y + dOut.Y), dIn.X + dOut.X);
             float len = n.Length();

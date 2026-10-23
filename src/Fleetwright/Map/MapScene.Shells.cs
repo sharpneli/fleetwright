@@ -224,7 +224,7 @@ public sealed partial class MapScene
             {
                 var dye = w.Dye[i] != Dye.None ? new Vector4(Splashes.SplashLook.Palette[(int)w.Dye[i]], 1) : ShooterTint(w.Shooter[i], Water);
                 var tint = Vector4.Lerp(Water, dye, 0.4f);
-                Ring(x, y, FoamPx * g * (0.5 + 0.5 * Math.Min(1, age / 4)), tint with { W = (float)(0.35 * fa * fa * dim) * table }, 1.2f);
+                overlay.Circle(x, y, FoamPx * g * (0.5 + 0.5 * Math.Min(1, age / 4)), tint with { W = (float)(0.35 * fa * fa * dim) * table }, 1.2f);
             }
         }
     }
@@ -251,19 +251,6 @@ public sealed partial class MapScene
             overlay.Point(x + cx * rr, y + cy * rr, HitCore with { W = (float)(1 - sa) * fade }, 1.6f);
             overlay.End();
         }
-    }
-
-    /// <summary>A thin ring of radius r px.</summary>
-    void Ring(double x, double y, double r, Vector4 rgba, float widthPx)
-    {
-        overlay.BeginStrip(rgba, widthPx);
-        int segs = r < 4 ? 8 : r < 10 ? 12 : 20;
-        for (int k = 0; k <= segs; k++)
-        {
-            double a = k * Math.PI * 2 / segs;
-            overlay.Point(x + Math.Cos(a) * r, y + Math.Sin(a) * r);
-        }
-        overlay.End();
     }
 
     /// <summary>A mark's own seed, from where it is (the same each frame, whatever its place in the list).</summary>
@@ -326,7 +313,7 @@ public sealed partial class MapScene
             Hit(x, y, age, 1, flashS, sparkS, Seed(e.Point[i]), HitPx * 0.8, HitSmokeS, table);
             double fa = 1 - age / life;
             if (fa > 0)
-                Ring(x, y, TorpedoColumnPx * (1 + Math.Min(1, age / 6)), Water with { W = (float)(0.5 * fa * fa) * table }, 1.5f);
+                overlay.Circle(x, y, TorpedoColumnPx * (1 + Math.Min(1, age / 6)), Water with { W = (float)(0.5 * fa * fa) * table }, 1.5f);
         }
     }
 

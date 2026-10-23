@@ -74,6 +74,7 @@ public sealed unsafe partial class MapScene
         // selection's (2.7c: 1,750 tramps' routes over the Atlantic were a tangle, and 1.4 million vertices a frame)
         bool allRoutes = view.MetresPerPixel * view.Width < 1_000_000;
         overlay.Begin(width, height);
+        overlay.WidthScale = overlay.ChordScale = Rp;
         frame++;
         DrawEncounters(view, s);
         DrawContacts(view, s);
@@ -99,7 +100,6 @@ public sealed unsafe partial class MapScene
                 // only the legs that pass through the view (2.7c: 1,750 tramps' ocean routes, all off screen, were
                 // ~500,000 vertices a frame)
                 overlay.BeginStrip(sel ? RouteSelected : RouteColor, sel ? 2f : 1.2f);
-                clipHave = false;
                 var from = p;
                 bool open = false;
                 int legs = v.RouteCount[k] + (v.RouteLoop[k] ? 1 : 0);   // a patrol: round to the first again
@@ -115,21 +115,21 @@ public sealed unsafe partial class MapScene
                     }
                     else if (open)
                     {
-                        overlay.End();
-                        (open, clipHave) = (false, false);
+                        overlay.ClipBreak();
+                        open = false;
                     }
                     from = to;
                 }
                 overlay.End();
                 for (int i = 0; i < v.RouteCount[k]; i++)
                     if (InView(cap, v.Waypoints[v.RouteStart[k] + i]))
-                        Ring(view, v.Waypoints[v.RouteStart[k] + i], 4, sel ? RouteSelected : RouteColor, 1.5f);
+                        Ring(view, v.Waypoints[v.RouteStart[k] + i], 4 * Rp, sel ? RouteSelected : RouteColor, 1.5f);
             }
 
             if (sel && view.Project(p, out double x, out double y))
             {
                 double len = lengthOf(v.Class[k]) * view.Altitude / view.MetresPerPixel / Math.Max(Vec3d.Dot(p - view.Eye, view.Forward), 1e-3);
-                Ring(view, p, Math.Max(len / 2, IconLengthOf(v.Class[k]) / 2) + 7, SelectColor, 2f);
+                Ring(view, p, Math.Max(len / 2, IconLengthOf(v.Class[k]) / 2) + 7 * Rp, SelectColor, 2f);
                 if (world.Classes.TryGet(v.Class[k]) is { Launchers.Length: > 0 } tc2 && v.TorpedoesLeft[k] > 0)
                 {
                     // her torpedoes' reach, fast and slow (docs/map-ui/battle-hud.md U5)
@@ -288,15 +288,12 @@ public sealed unsafe partial class MapScene
             bool qIn = Vec3d.Dot(cap.Centre, q) >= cosR;
             if (qIn || prevIn || cap.Radius >= Math.PI / 2)
             {
-                if (!prevIn && !clipHave)
+                if (!prevIn && !overlay.ClipHave)
                     ClipPoint(view, prev * Earth.Radius);   // the piece coming in from outside the cap
                 ClipPoint(view, q * Earth.Radius);
             }
-            else if (clipHave)
-            {
-                overlay.End();
-                clipHave = false;
-            }
+            else if (overlay.ClipHave)
+                overlay.ClipBreak();
             (prev, prevIn) = (q, qIn);
         }
     }
@@ -305,67 +302,44 @@ public sealed unsafe partial class MapScene
     /// reading (2.7c's 1,750 tramps in one box of ocean) costs a bounded frame. The selection's is always drawn.</summary>
     const int RouteVertexBudget = 120_000;
 
-    // a route's line clipped to the screen (and a margin): off it the line breaks, keeping the point just past the edge;
-    // a piece with both ends off is drawn alone if it may cross the screen
-    bool clipHave, clipPrevIn;
-    double clipX, clipY;
-
+    /// <summary>The next point of a strip clipped to the screen (<see cref="MapLines.ClipPoint"/>); one that doesn't
+    /// project breaks it.</summary>
     void ClipPoint(in MapView view, Vec3d p)
     {
-        if (!view.Project(p, out double x, out double y))
-        {
-            overlay.End();
-            clipHave = false;
-            return;
-        }
-        const double M = 64;
-        bool inside = x > -M && y > -M && x < width + M && y < height + M;
-        if (inside)
-        {
-            if (clipHave && !clipPrevIn)
-                overlay.Point(clipX, clipY);
-            overlay.Point(x, y);
-        }
-        else if (clipHave && clipPrevIn)
-        {
-            overlay.Point(x, y);
-            overlay.End();
-        }
-        else if (clipHave && Math.Max(clipX, x) > -M && Math.Min(clipX, x) < width + M && Math.Max(clipY, y) > -M && Math.Min(clipY, y) < height + M)
-        {
-            overlay.Point(clipX, clipY);   // a long piece across the screen, both ends off it
-            overlay.Point(x, y);
-            overlay.End();
-        }
-        (clipHave, clipPrevIn, clipX, clipY) = (true, inside, x, y);
+        if (view.Project(p, out double x, out double y))
+            overlay.ClipPoint(x, y);
+        else
+            overlay.ClipBreak();
     }
 
-    /// <summary>A circle on the sphere round a point, metres.</summary>
+    /// <summary>Target pixels a reference pixel, for the symbols' sizes (<see cref="SymbolLook.Px"/>).</summary>
+    float Rp => SymbolLook.Px(height);
+
+    /// <summary>A circle on the sphere round a point, metres: as smooth as its size on the screen needs, only its arc on
+    /// the screen built.</summary>
     void RingM(in MapView view, Vec3d p, double radiusM, Vector4 colour, float widthPx)
     {
+        double rPx = radiusM / view.MetresPerPixel;
+        if (view.Project(p, out double cx, out double cy) && !overlay.CircleShows(cx, cy, rPx))
+            return;
         var up = p.Normalized();
         var e = Earth.East(p);
         var n = Vec3d.Cross(up, e);
+        int segs = overlay.Segments(rPx);
         overlay.BeginStrip(colour, widthPx);
-        for (int i = 0; i <= 32; i++)
+        for (int i = 0; i <= segs; i++)
         {
-            double a = i * Math.PI * 2 / 32;
-            Point(view, (up * Earth.Radius + (e * Math.Cos(a) + n * Math.Sin(a)) * radiusM).Normalized() * Earth.Radius);
+            double a = i * Math.PI * 2 / segs;
+            ClipPoint(view, (up * Earth.Radius + (e * Math.Cos(a) + n * Math.Sin(a)) * radiusM).Normalized() * Earth.Radius);
         }
-        overlay.End();
+        overlay.EndClosed();
     }
 
+    /// <summary>A ring of a radius in target px round a point.</summary>
     void Ring(in MapView view, Vec3d p, double radiusPx, Vector4 colour, float widthPx)
     {
-        if (!view.Project(p, out double x, out double y))
-            return;
-        overlay.BeginStrip(colour, widthPx);
-        for (int i = 0; i <= 24; i++)
-        {
-            double a = i * Math.PI * 2 / 24;
-            overlay.Point(x + Math.Cos(a) * radiusPx, y + Math.Sin(a) * radiusPx);
-        }
-        overlay.End();
+        if (view.Project(p, out double x, out double y))
+            overlay.Circle(x, y, radiusPx, colour, widthPx);
     }
 
     // ------------------------------------------------------------------ the mouse

@@ -80,11 +80,8 @@ texture), shapes by signed distance, fill, stroke and casing per instance; built
 garbage. Picking keeps reading the same positions and sizes. Replaces the diamond strips, the pixel rings and the
 wreck's strokes; gives routes and course lines arrowheads.
 
-**Y4. The symbology.** The mockup's on every symbol and stroke: own groups in a filled circle with their count, the
-enemy's contacts in a diamond, unknowns in a square, dashed when out of sight or only suspected; the encounter as the
-mockup's double ring (solid thin outer, dashed inner); fire lines solid brass for the selection, dashed and faint
-for the rest; torpedo reach dashed with its label on the ring; routes dashed ahead of the ship with numbered
-waypoints, course lines with an arrowhead; strength pips under group labels. `MapPalette` takes every colour.
+**Y4. The symbology.** Today's shapes stay (decision 1), each reviewed against the clarity rules below ("Shape
+review"): a shape changes only where it says something wrong or reads poorly. `MapPalette` takes every colour.
 
 **Y5. One label placer.** Every label on the map (ships, groups, contacts, encounters, wrecks, the range pill,
 torpedo reach) goes through one placer: priorities (the selection, then own ships, enemy in sight, groups,
@@ -117,15 +114,56 @@ times at the Jutland and Squadrons against Y0, the bytes a frame unchanged; tuni
 ## Not in this plan
 
 The rest of 5.2 (`battle-hud.md` "Not done"): edge markers for what's off the screen, orders as editable objects,
-the radial menu. They build on Y3's symbols and Y5's placer. The ships' own icons (`ShipBatchRenderer`'s stand-in
-hull) stay as they are unless the user asks (question 3).
+the radial menu. They build on Y3's symbols and Y5's placer.
 
-## Questions for the user
+## Decisions (the user, 2026-10-23)
 
-1. **The symbology**: adopt the mockup's (circle friend, diamond hostile, dashed for suspect; our squadrons change
-   from diamonds to circles) as Y4 says, or keep today's shapes and only make them smooth?
-2. **Label halo or pill**: the plan halos names and keeps the dark pill for numbers (range, distances). A pill for
-   everything reads stronger over busy ground but covers more sea.
-3. **The ships' icons**: give them a casing and a selected glow in this pass (Y3), or leave them to a later pass?
-4. **Order**: Y1 first (the jagged rings gone in one short step), then Y2 to Y8 in turn; Y6 could wait for the
-   user's look at Y5 if the placer already tames the Jutland.
+1. **Today's shapes are fine**, to iterate on later; each gets a thought on whether the mockup's version or another
+   reads better ("Shape review").
+2. **Halo or pill**: left to the build (names haloed, numbers in the pill); iterated if it doesn't feel right in play.
+3. **The ships' icons** are in this pass: a casing and a glow for the selected (Y3).
+4. **Order**: Y0, Y1, then Y2 to Y5, Y7 and Y8 in turn; **Y6 only if playtesting shows it's needed**.
+
+## Shape review (Y4)
+
+The rules: one visual variable says one thing (shape whose and what, line style how sure, colour whose and what
+state, size how much); shapes that mean different things differ in outline, not only in colour or size (a colour-blind
+player, a dim screen, a sea under smoke); a symbol the eye follows over the sea (a thing that moves) is filled, a
+symbol for an area or a reach is a thin line; direction is an arrowhead, not a line that stops.
+
+| Symbol | Today | Verdict |
+|---|---|---|
+| Own squadron or force (collapsed) | diamond, 9 / 13 px, cream | **circle**: the diamond is the enemy contact's shape, and the rail already marks our ships with circles and the enemy with diamonds; a force a double circle |
+| Enemy contact | diamond, 5 px, enemy red | **keep the diamond**, filled while in sight, hollow once dead reckoned (sure or reckoned at a glance, where today only the alpha changes); unknown side keeps its own colour |
+| Contact's 2σ ellipse | thin line | keep: an area, so a thin line |
+| Smoke on the horizon | soft smudge | keep: smoke has no outline |
+| Encounter | solid ring | keep the solid ring (an action's bound matters more than a reach), thinner, with casing |
+| Torpedo reach | solid rings | **dotted**: a reach, not a thing; dots keep it apart from the encounter's and the selection's solid rings |
+| Selection | solid brass ring | keep, with casing and Y7's ease |
+| Picked, held, asked | rings at their own radii | keep |
+| Waypoint | 4 px hollow ring | **filled dot** with casing: a 4 px hollow ring reads as a smudge |
+| Ordered course | a short line | **arrowhead** at its end |
+| Captain's follow / run line | thin line | **dotted**: a relation, not a path or a shot (the fire lines are solid) |
+| Fire lines | solid, faint unless firing | keep: dashing dozens of them at the Jutland is busier, not clearer |
+| Routes | solid line | keep |
+| Wreck | circle with a cross | keep (read everywhere as "lost"), drawn crisp |
+| Ship icons | hull plan in the side's tint | keep, with a dark casing so they read over smoke and land; the selected's glow (decision 3) |
+
+## Built
+
+**Y0** (2026-10-23): `SymbolLook` (`-symbols=chord,width,casing,casingalpha,labelfade,halo,motion`). The baseline,
+DevRelease, 1500 frames at 30x from the scenario's own camera, `-frametimes -gputime`:
+
+| | Frame mean / p99 | CPU mean | GPU mean | Overlay CPU | Labels CPU | UI bytes a frame |
+|---|---|---|---|---|---|---|
+| Jutland | 8.55 / 11.4 ms | 1.98 ms | 1.27 ms | 0.230 ms | 0.041 ms | 44 |
+| Squadrons | 8.42 / 9.1 ms | 2.43 ms | 2.12 ms | 0.072 ms | 0.018 ms | 44 |
+
+**Y1** (2026-10-23): `MapLines.Segments` (chord error under `SymbolLook.Chord`, 0.25 reference px: about π√(r/2ε)
+pieces), `MapLines.Circle` (only the arc on the screen; nothing for a ring off it or round all of it),
+`MapLines.ClipPoint` (the routes' screen clip, moved in from the scene: one for every curve), `EndClosed` (a ring's
+seam joined like its other corners: the diamonds' tops were butt-ended). Every ring goes through them: the encounter,
+torpedo reach, the dev's horizon and land rings, the contacts' ellipses, the selection, waypoints, held and picked,
+the wreck, and the battle marks' foam, column, going-down and shock rings. The overlay's widths and the symbols' sizes
+are in reference px (`SymbolLook.Px`: the target's height over 1080 times the UI's factor); the battle marks' own
+pixel sizes are left as they were. Round caps and joins were not needed: no stroke on the map is over 2 px.

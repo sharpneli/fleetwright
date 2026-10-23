@@ -66,7 +66,7 @@ public sealed partial class MapScene
             if (w.Loss == LossKind.Magazine)
                 Magazine(view, w.At, (now - w.LossMs) / 1000.0, s, windDeg);
 
-        const double r = 8;   // pixels, at any zoom
+        double r = 8 * Rp;   // reference pixels, at any zoom
         // in the world, the wreck is its oil and debris (docs/visuals/hits-and-fires.md I7): the mark gives way over the
         // cross-fade (the label stays)
         float mark = Sinking.SinkingEffects.On ? (float)(1 - WorldView.Factor(view)) : 1f;
@@ -75,10 +75,7 @@ public sealed partial class MapScene
         {
             if (mark <= 0 || !view.Project(w.At, out double x, out double y) || x < -20 || y < -20 || x > view.Width + 20 || y > view.Height + 20)
                 continue;
-            overlay.BeginStrip(wreckColour, 1.5f);
-            for (int k = 0; k <= 12; k++)
-                overlay.Point(x + Math.Cos(k * Math.PI / 6) * r, y + Math.Sin(k * Math.PI / 6) * r);
-            overlay.End();
+            overlay.Circle(x, y, r, wreckColour, 1.5f);
             foreach (double a in (ReadOnlySpan<double>)[Math.PI / 4, -Math.PI / 4])
             {
                 overlay.BeginStrip(wreckColour, 1.5f);
@@ -236,7 +233,7 @@ public sealed partial class MapScene
         if (age < 0)
             return;
         double gone = Math.Clamp(age / span, 0, 1);
-        Ring(x, y, Math.Max(iconPx, ShipDrawList.IconLengthPx / 2) * (0.55 + 0.45 * gone), WreckColour with { W = (float)(0.4 * Math.Min(1, age / 2) * (1 - gone * gone)) * fade }, 1.5f);
+        overlay.Circle(x, y, Math.Max(iconPx, ShipDrawList.IconLengthPx / 2) * (0.55 + 0.45 * gone), WreckColour with { W = (float)(0.4 * Math.Min(1, age / 2) * (1 - gone * gone)) * fade }, 1.5f);
     }
 
     /// <summary>A magazine's blast where a ship was, <paramref name="age"/> seconds after: a white-hot flash with sparks,
@@ -253,7 +250,7 @@ public sealed partial class MapScene
         Hit(x, y, age, 1.8, Floor(s, MagazineFlashS), Floor(s, 1.5), Seed(at), HitPx * 1.6, 0, table);
         double shock = Floor(s, 2);
         if (age < shock)
-            Ring(x, y, MagazineRingPx * Math.Sqrt(age / shock), HitCore with { W = (float)(1 - age / shock) * table }, 2f);
+            overlay.Circle(x, y, MagazineRingPx * Math.Sqrt(age / shock), HitCore with { W = (float)(1 - age / shock) * table }, 2f);
     }
 
     static readonly Vector4 PallColour = new(0.4f, 0.38f, 0.37f, 1f);

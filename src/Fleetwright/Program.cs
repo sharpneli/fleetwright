@@ -314,6 +314,12 @@ public static unsafe class Program
                     if (!Map.GridLook.Set(kv))
                         Console.Error.WriteLine($"Bad grid knob: {kv} (want units (nm, km), hidden, minorfrom, majorfrom, majorat, labelfrom, labelat, minoralpha, majoralpha, minorwidth, majorwidth, squares, graticule, reanchordeg, reanchornm, reanchors)");
             }
+            else if (arg.StartsWith("-symbols="))   // the map symbols' knobs (docs/map-ui/symbols.md; Map/SymbolLook.cs): -symbols=casing:1.5,motion:0
+            {
+                foreach (var kv in arg.Substring("-symbols=".Length).Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    if (!Map.SymbolLook.Set(kv))
+                        Console.Error.WriteLine($"Bad symbols knob: {kv} (want chord, width, casing, casingalpha, labelfade, halo, motion)");
+            }
             else if (arg.StartsWith("-worldview="))   // the map's table-to-world boundary, metres per pixel at 1080p (docs/visuals/sea.md W0)
             {
                 if (double.TryParse(arg.Substring("-worldview=".Length), System.Globalization.CultureInfo.InvariantCulture, out double m) && m > 0)
