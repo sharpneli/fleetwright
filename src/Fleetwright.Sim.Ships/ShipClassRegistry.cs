@@ -39,6 +39,7 @@ public sealed class ShipClassRegistry : IDisposable
     readonly BlockingCollection<int> queue = [];
     readonly Thread[] workers;
     bool started;
+    volatile bool closing;
 
     /// <summary>Called on a building thread with each design's id, its built ship and its class (null if the compile
     /// failed), before the ship is let go. Set it before the first request.</summary>
@@ -211,6 +212,13 @@ public sealed class ShipClassRegistry : IDisposable
         foreach (int id in queue.GetConsumingEnumerable())
         {
             var e = EntryOf(id);
+            if (closing)
+            {
+                e.Error = "the registry closed before it was built";   // what's queued at Dispose isn't built
+                e.Design = null;
+                e.Done.Set();
+                continue;
+            }
             try
             {
                 var design = e.Design!;
@@ -252,8 +260,10 @@ public sealed class ShipClassRegistry : IDisposable
         }
     }
 
+    /// <summary>Waits for the builds in flight; those still queued are let go unbuilt (failed, so no waiter hangs).</summary>
     public void Dispose()
     {
+        closing = true;
         queue.CompleteAdding();
         if (started)
             foreach (var t in workers)

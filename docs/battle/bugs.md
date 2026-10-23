@@ -215,7 +215,10 @@ Seen in the AI's baseline after the detail passes (2026-10-20, docs/battle/comma
   whether they hadn't spawned yet (their classes compiling) or were drawn nowhere is unknown. To hunt: the same run
   with `-ui` and F2's ship count.
 
-- [ ] Quitting while ship art is still baking crashes (`0xC0000005` in `SDL_BeginGPURenderPass`, from
+- [x] Quitting while ship art is still baking crashes (`0xC0000005` in `SDL_BeginGPURenderPass`, from
   `ShipArtLibrary.Draw` on the class registry's worker thread). Found 2026-10-14 (command 5.1a) by `-scenario=squadrons
-  -screenshot=60`: the screenshot exits at frame 60 while the scenario's classes still bake. The engine is disposed under
-  a bake in flight. To hunt it: have the exit wait for (or cancel) the registry's bakes before the device goes.
+  -screenshot=60`: the screenshot exits at frame 60 while the scenario's classes still bake. Fixed 2026-10-23: the
+  art library is disposed before the registry (`using` order), so it freed its bakers under the bakes in flight, and the
+  registry's dispose then drained its whole queue. Now the art's dispose unhooks and waits for the draws in flight (a
+  reader-writer lock), and the registry's dispose lets what's still queued go unbuilt (failed), finishing only the
+  builds in flight.

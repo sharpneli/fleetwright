@@ -80,10 +80,16 @@ public sealed unsafe class ShipArtLibrary : IDisposable
     readonly ConcurrentQueue<(int Id, ShipSprites Sprites, SpriteImages Images, int[] ClassMount)> pending = new();
     readonly Dictionary<int, ShipArt> art = [];
     readonly ThreadLocal<GpuBaker> bakers;
+    readonly ShipClassRegistry registry;
+
+    // draws hold it shared; Dispose takes it alone, so the bakers go only once no draw is using them
+    readonly ReaderWriterLockSlim drawing = new();
+    bool disposed;
 
     public ShipArtLibrary(SDL_GPUDevice* device, ShipClassRegistry registry)
     {
         this.device = device;
+        this.registry = registry;
         bakers = new ThreadLocal<GpuBaker>(() => new GpuBaker(device), trackAllValues: true);
         registry.Built += Draw;
     }
@@ -106,10 +112,20 @@ public sealed unsafe class ShipArtLibrary : IDisposable
     {
         if (cls == null)
             return;
-        var sprites = ShipSprites.Build(ship, SpriteScale, MipLevels);
-        var baked = ShipBake.Bake(sprites, bakers.Value!);
-        int[] classMount = ShipArt.ClassMounts(sprites.Meta, cls);
-        pending.Enqueue((id, sprites, SpriteImages.Of(baked, MipLevels), classMount));
+        drawing.EnterReadLock();
+        try
+        {
+            if (disposed)
+                return;   // the app is closing: a build still running finds no art to draw for
+            var sprites = ShipSprites.Build(ship, SpriteScale, MipLevels);
+            var baked = ShipBake.Bake(sprites, bakers.Value!);
+            int[] classMount = ShipArt.ClassMounts(sprites.Meta, cls);
+            pending.Enqueue((id, sprites, SpriteImages.Of(baked, MipLevels), classMount));
+        }
+        finally
+        {
+            drawing.ExitReadLock();
+        }
     }
 
     /// <summary>On the render thread, between frames: uploads up to <paramref name="max"/> classes' art.</summary>
@@ -160,6 +176,10 @@ public sealed unsafe class ShipArtLibrary : IDisposable
 
     public void Dispose()
     {
+        registry.Built -= Draw;
+        drawing.EnterWriteLock();   // waits for the bakes in flight on the registry's threads
+        disposed = true;
+        drawing.ExitWriteLock();
         SDL_WaitForGPUIdle(device);
         foreach (var a in art.Values)
             a.Release(device);
