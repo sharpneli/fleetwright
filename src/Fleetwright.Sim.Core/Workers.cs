@@ -100,11 +100,15 @@ public sealed class Workers : IDisposable
     /// <summary>Per-worker scratch slots a job needs: the workers and the dispatching thread.</summary>
     public int Participants => threads.Length + 1;
 
-    /// <summary>The headless default (decision 1): every core less one, at most 8.</summary>
-    public static int HeadlessCount => Math.Clamp(Environment.ProcessorCount - 1, 0, 8);
+    /// <summary>The most workers a world gets by default (the user, 2026-10-24): two give three quarters of eight's gain
+    /// on the Jutland (docs/battle/workers.md W8), and the cores past them are kept for other threads.</summary>
+    public const int DefaultCap = 2;
 
-    /// <summary>The app's default (decision 1): every core less two (the render thread, the builders), at most 8.</summary>
-    public static int AppCount => Math.Clamp(Environment.ProcessorCount - 2, 0, 8);
+    /// <summary>The headless default: every core less one, at most <see cref="DefaultCap"/>.</summary>
+    public static int HeadlessCount => Math.Clamp(Environment.ProcessorCount - 1, 0, DefaultCap);
+
+    /// <summary>The app's default: every core less two (the render thread, the builders), at most <see cref="DefaultCap"/>.</summary>
+    public static int AppCount => Math.Clamp(Environment.ProcessorCount - 2, 0, DefaultCap);
 
     /// <summary>What the worker threads have allocated, in all (their own counts, read as each leaves a dispatch): the
     /// dispatching thread's own count misses it.</summary>

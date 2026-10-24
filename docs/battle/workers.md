@@ -1,5 +1,5 @@
 # Plan: the sim's workers (the job system)
-Status: **agreed 2026-10-24** (the decisions below answered); W0-W4 and W6 built 2026-10-24; W7 tried and left serial; W8's curve measured (the default count open).
+Status: **agreed 2026-10-24** (the decisions below answered); W0-W4 and W6 built 2026-10-24; W7 tried and left serial; W8's curve measured; the default count capped at 2 (the user, 2026-10-24).
     Updated: 2026-10-24
 
 The job system the architecture agreed from the start (`docs/world/architecture.md` "Threaded throughout", decision 1)
@@ -248,6 +248,9 @@ point, 2026-10-24: too little work over too many threads is overhead). The seria
 s), smoke upkeep's merge and emission, the applies, `SetOff`. "Well under half" is not reachable by more workers;
 it needs the serial part cut (W5's reads, or exact-output passes on the serial code). Plan 2.7's speed target (10x or
 better) holds with room: the whole 14 hours average ~2 ms of sim a game second.
+
+**The default count, the user's (2026-10-24): at most 2** (`Workers.DefaultCap`), headless and in the app; `--workers N`
+still takes any count. AI threads of their own may come later. W5 waits: features first.
 
 ## What to expect
 
