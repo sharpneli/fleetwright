@@ -325,9 +325,9 @@ with its boats when torpedoes are its better weapon there, and a battleship's su
   destroyer (2,615 t) works out a flotilla. Tried first and dropped: outgunning the lightest boat at sea by a confidence
   of 1.5. The bigger German boats outgunned the oldest smallest ones and became scouts (B109 and B110 sent to scout),
   and gun strength can't tell boats from cruisers anyway: against an M-class, V25 1.67, G101 1.80 and B97 2.15 outgun
-  it more than Caroline (1.60) does. **An exception to approve:** `RoleScoutSizeRatio` is a tuned bar between two
+  it more than Caroline (1.60) does. **An exception, approved by the user 2026-10-24:** `RoleScoutSizeRatio` is a tuned bar between two
   roles, the kind of line O7c set out to remove from fighting. It touches only the default role, never how a ship
-  fights, and it's relative to the fleets at sea, so it holds from torpedo boats to 1940s destroyers.
+  fights, and it's relative to the fleets at sea, so it holds from torpedo boats to 1940s destroyers. Its value is for playtesting to tune.
 - **A torpedo threat** (turning away): a contact whose class is made out is one when it's an attacker against the line's
   guide's class (`MatchupJudge.AttackerAgainst`, one on one, made once a pair); before that, by its type, as now. A
   line that's a flotilla by role with torpedoes left doesn't turn away (it counter-attacks), as torpedo craft didn't.
