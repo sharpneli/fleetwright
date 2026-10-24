@@ -96,7 +96,8 @@ public sealed partial class AdmiralLayer
     }
 
     /// <summary>The turn-away from torpedoes (docs/battle/command.md 5.1b), for a line that's no force's (its force turns)
-    /// and isn't torpedo craft, with doctrine's TurnAwayDeg: when it sees an attack coming (<see cref="TorpedoThreat"/>)
+    /// and isn't a flotilla with torpedoes left (its role: it counter-attacks), with doctrine's TurnAwayDeg: when it sees
+    /// an attack coming (<see cref="TorpedoThreat"/>)
     /// it turns together away from it through those degrees, holding the course it comes out on while his order (Fight,
     /// say) waits; once it's seen none for <see cref="SimSettings.TurnBackS"/> it turns back together and his order is
     /// handed on again. Whether a turn was started (the think gives no stations then).</summary>
@@ -106,7 +107,7 @@ public sealed partial class AdmiralLayer
         if (groups.InForceLine(g) || a.Order == CaptainOrder.Screen || a.Conn)   // its force turns; a screen counter-attacks; the conn holds on
             return false;
         double deg = doctrine.OfGroup(g, guide.Side, DoctrineField.TurnAwayDeg);
-        if (!a.Away && (deg <= 0 || CaptainLayer.TorpedoCraft(ctx, guide, lead)))
+        if (!a.Away && (deg <= 0 || Roles.Of(Unit.Group(g.GroupId)) == UnitRole.Flotilla && CaptainLayer.TorpedoesLeft(ctx, guide, lead)))
             return false;
         bool threat = TorpedoThreat(ctx, g, guide, out double bearing, out _);
         long now = ctx.NowMs;
@@ -163,7 +164,7 @@ public sealed partial class AdmiralLayer
             double d = (q - guide.Position).Length;
             if (d < anyD)
                 (anyD, anyBearing) = (d, Earth.Bearing(guide.Position, q));
-            if (!TakenForTorpedoCraft(ctx, pic[i]))
+            if (!TakenForAttacker(ctx, pic[i], guide))
                 continue;
             var v = seen.Velocity(guide.Side, i);
             foreach (var (ship, _, _) in line)
@@ -186,12 +187,16 @@ public sealed partial class AdmiralLayer
         return tracks && anyD < double.MaxValue;
     }
 
-    /// <summary>Whether a contact is taken for a torpedo craft: by the class it's taken for once that's made out
-    /// (<see cref="CaptainLayer.TorpedoCraft(Ships.ShipClass)"/>), else by its type (a destroyer, or smaller).</summary>
-    static bool TakenForTorpedoCraft(in AiContext ctx, in Contact c) =>
-        c.Level >= ContactLevel.Class && c.TakenFor >= 0 && ctx.World.Ships.Registry.Get(c.TakenFor) is { } taken
-            ? CaptainLayer.TorpedoCraft(taken)
-            : c.Type is ShipType.Destroyer or ShipType.Small;
+    /// <summary>Whether a contact is taken for a torpedo threat to a line: once the class it's taken for is made out, an
+    /// attacker against the line's guide's (<see cref="Knowledge.MatchupJudge.AttackerAgainst(in AiContext, MatchupProfile, MatchupProfile, byte)"/>,
+    /// docs/battle/admirals-orders.md O7c); before, by its type (a destroyer, or smaller).</summary>
+    bool TakenForAttacker(in AiContext ctx, in Contact c, ShipState guide)
+    {
+        if (c.Level < ContactLevel.Class || c.TakenFor < 0 || ctx.World.Ships.Registry.Get(c.TakenFor) is not { } taken)
+            return c.Type is ShipType.Destroyer or ShipType.Small;
+        var m = Judge.Matchups;
+        return Judge.AttackerAgainst(ctx, m.Profile(ctx.World, taken), m.Profile(ctx.World, guide.Handling.Class), guide.Side);
+    }
 
     /// <summary>Whether a group is turning together, or the line it's in is.</summary>
     bool Manoeuvring(GroupSystem.Group g)

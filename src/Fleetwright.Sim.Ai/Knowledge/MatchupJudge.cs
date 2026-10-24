@@ -14,28 +14,83 @@ public sealed class MatchupJudge(GroupSystem groups, SeenContacts seen, Doctrine
 
     readonly MatchupSide own = new(), theirs = new();
     readonly List<(int Ship, double AsternM, double AbeamM)> line = new(32);
-    readonly Dictionary<int, (long Ms, MatchupResult Result, bool Any)> units = [];
+    readonly Dictionary<int, Judged> units = [];
+    readonly Dictionary<(MatchupProfile, MatchupProfile, double), bool> pairs = [];
+    readonly MatchupEntry[] oneA = new MatchupEntry[1], oneB = new MatchupEntry[1];
+
+    /// <summary>A unit's judgement this moment, and the classes of its own that attack in it.</summary>
+    sealed class Judged
+    {
+        public long Ms = long.MinValue;
+        public MatchupResult Result;
+        public bool Any;
+        public readonly MatchupProfile?[] Attackers = new MatchupProfile?[Matchup.MaxClasses];
+        public int AttackerCount;
+    }
 
     /// <summary>A ship's unit against the enemy in sight within <see cref="SimSettings.FightCompareM"/> of her: false if
     /// there's none. Judged once a moment a unit.</summary>
     public bool Near(in AiContext ctx, ShipState own, out MatchupResult r)
     {
+        var c = JudgedNear(ctx, own);
+        r = c.Result;
+        return c.Any;
+    }
+
+    /// <summary>Whether a ship's class is among her unit's attackers against the enemy in sight round her
+    /// (<see cref="Matchup.Attackers"/>, docs/battle/admirals-orders.md O7c): where her torpedoes do more than her guns.
+    /// Not whether she has any left, nor whether the attack is worth making (the judgement's style).</summary>
+    public bool Attacks(in AiContext ctx, ShipState own)
+    {
+        var c = JudgedNear(ctx, own);
+        if (!c.Any || c.AttackerCount == 0 || ctx.Ships.SlotOf(own.Entity) is not (int slot and >= 0))
+            return false;
+        var p = Matchups.Profile(ctx.World, ctx.Ships.Combat.Loadout(slot));
+        for (int i = 0; i < c.AttackerCount; i++)
+            if (ReferenceEquals(c.Attackers[i], p))
+                return true;
+        return false;
+    }
+
+    Judged JudgedNear(in AiContext ctx, ShipState own)
+    {
         var unit = groups.UnitOf(own.Entity);
         int key = unit != null ? Unit.Group(unit.GroupId).Id : Unit.Ship(own.Entity).Id;
-        if (units.TryGetValue(key, out var c) && c.Ms == ctx.NowMs)
-        {
-            r = c.Result;
-            return c.Any;
-        }
+        if (!units.TryGetValue(key, out var c))
+            units[key] = c = new Judged();
+        if (c.Ms == ctx.NowMs)
+            return c;
         Matchups.Warm(ctx.World);
         this.own.Clear();
         AddUnit(ctx.World, own.Entity, this.own);
         theirs.Clear();
         AddNear(ctx.World, own.Side, own.Position, ctx.Settings.FightCompareM, theirs);
-        bool any = theirs.Count > 0 && this.own.Count > 0;
-        r = any ? Judge(ctx, own.Entity, own.Side, own.Position, this.own, theirs) : default;
-        units[key] = (ctx.NowMs, r, any);
-        return any;
+        c.Ms = ctx.NowMs;
+        c.Any = theirs.Count > 0 && this.own.Count > 0;
+        c.Result = c.Any ? Judge(ctx, own.Entity, own.Side, own.Position, this.own, theirs) : default;
+        c.AttackerCount = 0;
+        var entries = this.own.Entries;
+        for (int i = 0; i < entries.Length && c.Any; i++)
+            if ((c.Result.Terms.AttackersA >> i & 1) != 0)
+                c.Attackers[c.AttackerCount++] = entries[i].Profile;
+        return c;
+    }
+
+    /// <summary>Whether a class, whole, is an attacker against another, whole, by a side's doctrine in daylight
+    /// (<see cref="Matchup.Attackers"/>): for what's judged without the enemy in front of it, a unit's role and a contact
+    /// taken for a torpedo threat. Made once a pair.</summary>
+    public bool AttackerAgainst(in AiContext ctx, MatchupProfile a, MatchupProfile b, byte side) =>
+        AttackerAgainst(ctx.World, a, b, side);
+
+    /// <inheritdoc cref="AttackerAgainst(in AiContext, MatchupProfile, MatchupProfile, byte)"/>
+    public bool AttackerAgainst(World world, MatchupProfile a, MatchupProfile b, byte side)
+    {
+        double share = doctrine.OfGroup(null, side, DoctrineField.RangeShare);
+        if (pairs.TryGetValue((a, b, share), out bool yes))
+            return yes;
+        (oneA[0], oneB[0]) = (new MatchupEntry(a, 1), new MatchupEntry(b, 1));
+        pairs[(a, b, share)] = yes = (Matchup.Attackers(oneA, oneB, world.Settings) & 1) != 0;
+        return yes;
     }
 
     /// <summary>A group's matchup against the enemy in sight within <see cref="SimSettings.FightCompareM"/> of a ship (one
@@ -72,6 +127,22 @@ public sealed class MatchupJudge(GroupSystem groups, SeenContacts seen, Doctrine
         foreach (var (ship, _, _) in line)
             if (store.SlotOf(ship) is int m and >= 0)
                 into.AddOwn(world, Matchups, m);
+    }
+
+    /// <summary>Every ship of a group, down the tree, in its line or not (a force's destroyers alongside the cruisers
+    /// leading them): what goes in when the group is sent in whole.</summary>
+    public void AddMembers(World world, GroupSystem.Group g, MatchupSide into)
+    {
+        var store = world.Ships.Store;
+        var members = g.Members;
+        for (int i = 0; i < members.Count; i++)
+            if (!g.IsForce)
+            {
+                if (store.SlotOf(members[i]) is int m and >= 0)
+                    into.AddOwn(world, Matchups, m);
+            }
+            else if (groups.Get(members[i]) is { } sub)
+                AddMembers(world, sub, into);
     }
 
     /// <summary>The contacts a side holds in sight within a radius of a point, as they're taken.</summary>

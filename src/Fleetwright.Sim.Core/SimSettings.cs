@@ -1883,8 +1883,11 @@ public sealed record SimSettings
     /// (and so picks the range) by more than MatchupSpeedMarginKn. A side's share lost is never taken under MatchupFloor,
     /// so a ratio of two small numbers stays finite. Minutes, knots, a share.</summary>
     public double MatchupFightMin { get; init; } = 30;
-    /// <summary>A ship is built to make torpedo attacks with this many tubes bearing a thousand tonnes or more.</summary>
-    public double MatchupAttackTubesPerKt { get; init; } = 0.5;
+    /// <summary>A unit's worked-out role (docs/battle/admirals-orders.md O7c): a ship whose torpedoes are her better weapon
+    /// against her side's heaviest class is a boat (toward a flotilla) unless she's this many times the typical boat's
+    /// displacement or more (the most numerous such class at sea): then she scouts. At the Jutland the boats run to 2,490 t
+    /// (B97) against an M-class, the cruisers from 3,050 t; relative, so it holds in any era.</summary>
+    public double RoleScoutSizeRatio { get; init; } = 1.5;
     public double MatchupTorpedoFireMin { get; init; } = 2;
     /// <summary>Attackers running in and out zigzag: the defence's fire on them then hits this share as often
     /// (docs/battle/command.md 5.1a: a light cruiser running zigzag from a battleship at 14 km took no hits in four

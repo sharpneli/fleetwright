@@ -12,7 +12,8 @@ namespace Fleetwright.Sim.Tests;
 /// <summary>The admiral's orders (docs/battle/admirals-orders.md): screens sharing an arc (O1c: one on the bearing
 /// screened on, two on either bow, more spread evenly; a force hands Screen to its squadrons; only the screen nearest an
 /// attack counter-attacks), a lone flotilla divided by its own admiral and never the player's, Divide and Merge, where
-/// the arc sits (O5), roles (O6), the chain of command (O7), battle decisions down it (O7b) and Deploy as an order (O2). Clear weather, guns held all
+/// the arc sits (O5), roles (O6), the chain of command (O7), battle decisions down it (O7b), torpedoes or guns by the
+/// matchup (O7c) and Deploy as an order (O2). Clear weather, guns held all
 /// round (only the steering is measured), and no line turns away.</summary>
 public class AdmiralOrdersTests(ITestOutputHelper output)
 {
@@ -440,11 +441,12 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
     }
 
     [Fact]
-    public void A_light_cruiser_leading_destroyers_is_not_sent_in_whole()
+    public void A_light_cruiser_leading_destroyers_goes_in_with_them()
     {
-        // a top force of two light cruisers leading four destroyers (the Jutland's "Scouting torpedo boats"), beside a
-        // battle squadron engaging an enemy dreadnought: the side's commander doesn't send the force in whole (its cruisers
-        // would charge with it); its admiral sends in his destroyers, and his cruisers keep their place
+        // a top force of two light cruisers leading four destroyers (the Jutland's "Scouting torpedo boats", Regensburg
+        // leading her flotillas), beside a battle squadron engaging an enemy dreadnought: the cruisers' torpedoes are their
+        // better weapon against her too (O7c), so the side's commander sends the force in whole, and the cruisers go in
+        // with their boats, both firing
         var w = new World(Start, 3, Settings);
         var ai = new AiSystem(w);
         w.Apply(Command.SetWeather(30_000));
@@ -461,19 +463,127 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
         w.Apply(GroupSystem.EnterAlongside(destroyers, cruisers));
         Column(w, ai, bb, Off(at, 90, 14_000), 180, 1, 15, side: 1);
         w.Apply(ai.Orders.FireAtWill(Unit.Group(destroyers)));
+        w.Apply(ai.Orders.FireAtWill(Unit.Group(cruisers)));
         w.Apply(ai.Orders.Commander(0, CommanderMode.On));
         double sent = double.NaN;
-        for (int min = 1; min <= 10 && double.IsNaN(sent); min++)
+        var firedBy = new HashSet<int>();
+        bool cruisersRan = false;
+        long seen = w.CombatLog.Written;
+        // the group a ship's squadron stands for here: the cruisers, or the destroyers (divided or not by their admiral)
+        int Of(int ship)
+        {
+            for (var g = w.Groups.Of(ship); g != null; g = g.Parent != 0 ? w.Groups.Get(g.Parent) : null)
+                if (g.GroupId == cruisers || g.GroupId == destroyers)
+                    return g.GroupId;
+            return 0;
+        }
+        for (int min = 1; min <= 40; min++)
         {
             w.AdvanceTo(w.Time + 60_000);
-            if (ai.Tasks.Of(Unit.Group(destroyers)).Kind == TaskKind.Attack)
+            if (double.IsNaN(sent) && ai.Commanders.GivenOf(Unit.Group(force)).Given == TaskKind.Attack)
                 sent = min;
+            cruisersRan |= ai.Admirals.AttackOf(cruisers).Phase == AttackPhase.Run;
+            for (long i = w.CombatLog.Written - seen - 1; i >= 0; i--)
+                if (w.CombatLog.Newest((int)i) is { Kind: CombatEvent.Torpedoes } e)
+                    firedBy.Add(Of(e.Shooter));
+            seen = w.CombatLog.Written;
         }
-        output.WriteLine($"destroyers sent in at {sent} min, on {ai.Tasks.Of(Unit.Group(destroyers))}; the force given {ai.Commanders.GivenOf(Unit.Group(force))}, " +
-                         $"on {ai.Tasks.Of(Unit.Group(force))}; the cruisers on {ai.Tasks.Of(Unit.Group(cruisers))}, their admiral {ai.Admirals.Of(cruisers)}");
+        output.WriteLine($"the force ({ai.Roles.Of(Unit.Group(force))}) sent in at {sent} min, now given {ai.Commanders.GivenOf(Unit.Group(force))}; " +
+                         $"the cruisers ({ai.Roles.Of(Unit.Group(cruisers))}) ran in {cruisersRan}; fired: {string.Join(", ", firedBy)} (cruisers {cruisers}, destroyers {destroyers})");
         Assert.InRange(sent, 1, 5);
-        Assert.NotEqual(TaskKind.Attack, ai.Commanders.GivenOf(Unit.Group(force)).Given);
-        Assert.NotEqual(TaskKind.Attack, ai.Tasks.Of(Unit.Group(cruisers)).Kind);
+        Assert.True(cruisersRan);
+        Assert.Contains(cruisers, firedBy);
+        Assert.Contains(destroyers, firedBy);
+    }
+
+    /// <summary>The dev destroyer with one shielded 8" gun in place of her guns (O7c's silly destroyer).</summary>
+    static readonly Lazy<Ships.ShipClass> EightInchDestroyer = new(() =>
+    {
+        var node = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(Path.Combine(Fleet.Shipgen, "designs", "destroyer.json")))!;
+        node["name"] = "Destroyer, one 8-inch gun";
+        var main = node["main"]![0]!;
+        (main["calibre_mm"], main["calibre_length"], main["barrels"], main["rounds_per_gun"], main["fore"], main["aft"], main["housing"]) =
+            (203, 50, 1, 150, 1, 0, "shield");
+        return Ships.ShipClassCompiler.Compile(Shipgen.ShipDesign.Build(Shipgen.Design.Parse(node.ToJsonString())));
+    });
+
+    [Fact]
+    public void A_destroyer_with_an_8_inch_gun_counts_on_her_torpedoes_against_a_battleship_and_her_gun_against_destroyers()
+    {
+        // no ship is torpedo craft by her design (O7c): against a dreadnought her torpedoes are her better weapon closed in
+        // (an attacker); against destroyers her 8" is, and her squadron fights them with it, never making an attack. Four of
+        // her against one dev dreadnought outrange her guns (36 kn, the 8" reaching past the 12"), so they fight at range:
+        // the matchup's choice, not a label's
+        var tables = new Dictionary<BallisticKey, BallisticTable>();
+        BallisticTable Table(BallisticKey k) => tables.TryGetValue(k, out var t) ? t : tables[k] = new BallisticTable(k);
+        var dd8 = new MatchupProfile(EightInchDestroyer.Value, Table, Settings);
+        foreach (bool battleship in new[] { true, false })
+        {
+            var them = new MatchupProfile(Fleet.Get(battleship ? "dreadnought" : "destroyer").Class!, Table, Settings);
+            var j = Matchup.Judge([new MatchupEntry(dd8, 4)], [new MatchupEntry(them, battleship ? 1 : 4)], 0.6, 0.6, Settings);
+            output.WriteLine($"against {(battleship ? "a dreadnought" : "destroyers")}: confidence {j.Confidence:0.###}, {j.Terms.Style}, attackers {j.Terms.AttackersA}");
+            Assert.Equal(battleship ? 1UL : 0UL, j.Terms.AttackersA);
+        }
+        {
+            // in the world: her squadron told to fight four destroyers, doctrine's attack together, never attacks
+            var w = new World(Start, 3, Settings);
+            var ai = new AiSystem(w);
+            w.Apply(Command.SetWeather(30_000));
+            w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.TurnAwayDeg, 0));
+            w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.TorpedoAttack, (double)TorpedoAttack.Together));
+            int ours8 = w.Ships.AddClass(EightInchDestroyer.Value), dd = w.Ships.AddClass(Fleet.Get("destroyer").Class!);
+            var at = Earth.Position(56.0, 4.0);
+            int ours = Column(w, ai, ours8, at, 180, 4, 20);
+            int theirs = Column(w, ai, dd, Off(at, 90, 12_000), 180, 4, 15, side: 1);
+            w.Apply(ai.Orders.FireAtWill(Unit.Group(ours)));
+            w.Apply(ai.Orders.Fight(Unit.Group(ours), Unit.Group(theirs)));
+            bool ran = false;
+            long seen = w.CombatLog.Written;
+            int shells = 0;
+            for (int min = 1; min <= 15; min++)
+            {
+                w.AdvanceTo(w.Time + 60_000);
+                ran |= ai.Admirals.AttackOf(ours).Phase != AttackPhase.None;
+                for (long i = w.CombatLog.Written - seen - 1; i >= 0; i--)
+                    if (w.CombatLog.Newest((int)i) is { Kind: CombatEvent.Fired } e && w.Groups.Of(e.Shooter)?.GroupId == ours)
+                        shells++;
+                seen = w.CombatLog.Written;
+            }
+            output.WriteLine($"against destroyers in the world: attacked {ran}, {shells} salvoes fired; on {ai.Tasks.Of(Unit.Group(ours))}");
+            Assert.False(ran);
+            Assert.True(shells > 0);
+        }
+    }
+
+    [Fact]
+    public void A_battle_squadron_with_submerged_tubes_never_flies_the_run_unless_told_to()
+    {
+        // dreadnoughts with torpedoes fighting one: their guns are their weapon, so doctrine's attack together never sends
+        // them in (O7c); told to attack by hand, they go (the player may overrule)
+        foreach (bool told in new[] { false, true })
+        {
+            var w = new World(Start, 3, Settings);
+            var ai = new AiSystem(w);
+            w.Apply(Command.SetWeather(30_000));
+            w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.TurnAwayDeg, 0));
+            w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.TorpedoAttack, (double)TorpedoAttack.Together));
+            var cls = Fleet.Get("dreadnought").Class!;
+            Assert.True(cls.Launchers.Length > 0);
+            int bb = w.Ships.AddClass(cls);
+            var at = Earth.Position(56.0, 4.0);
+            int ours = Column(w, ai, bb, at, 180, 4, 15);
+            int theirs = Column(w, ai, bb, Off(at, 90, 14_000), 180, 1, 15, side: 1);
+            w.Apply(told ? ai.Orders.ByHand.Attack(Unit.Group(ours), w.Groups.GuideShip(w.Groups.Get(theirs)!))
+                : ai.Orders.Fight(Unit.Group(ours), Unit.Group(theirs)));
+            bool ran = false;
+            for (int min = 1; min <= 10; min++)
+            {
+                w.AdvanceTo(w.Time + 60_000);
+                ran |= ai.Admirals.AttackOf(ours).Phase != AttackPhase.None;
+            }
+            output.WriteLine($"{(told ? "told to attack" : "fighting")}: attacked {ran}; on {ai.Tasks.Of(Unit.Group(ours))}");
+            Assert.Equal(told, ran);
+        }
     }
 
     [Fact]

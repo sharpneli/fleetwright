@@ -746,7 +746,7 @@
   "MatchupTorpedoEvadedShare": 0.6,
   "MatchupTorpedoRefKn": 18,
   "MatchupFightMin": 30,
-  "MatchupAttackTubesPerKt": 0.5,
+  "RoleScoutSizeRatio": 1.5,
   "MatchupTorpedoFireMin": 2,
   "MatchupRunInHitShare": 0.4,
   "MatchupSpeedMarginKn": 2,

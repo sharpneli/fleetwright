@@ -46,6 +46,8 @@ static class MatchupBench
         Console.WriteLine(string.Format(Inv, "\nA's judgement: confidence {0:0.###} ({1}, the lines at {2:0} m); A {3:0.#} kn, B {4:0.#} kn{5}", judged.Confidence,
             judged.Terms.Style, judged.Terms.RangeM, judged.SpeedA, judged.SpeedB,
             judged.ACanRefuse(s) ? ": A picks the range, and can refuse" : judged.BCanRefuse(s) ? ": B picks the range, and can refuse" : ": about equal speed, A's own range"));
+        string Who(MatchupEntry[] side, ulong mask) => string.Join(", ", side.Where((e, i) => (mask >> i & 1) != 0).Select(e => e.Profile.Class.Name).DefaultIfEmpty("none"));
+        Console.WriteLine(string.Format(Inv, "  attackers (torpedoes their better weapon): A {0}; B {1}", Who(sa, judged.Terms.AttackersA), Who(sb, judged.Terms.AttackersB)));
         const int reps = 2000;
         var sw = System.Diagnostics.Stopwatch.StartNew();
         for (int k = 0; k < reps; k++)
@@ -57,8 +59,8 @@ static class MatchupBench
     static void Profile(MatchupProfile p, SimSettings s)
     {
         string Face(MatchupFace[] f) => string.Join(" ", f.Select(x => string.Format(Inv, "{0:0}%@{1:0}{2}", 100 * x.Share, x.Mm, x.HardMm > 0 ? "h" : "")));
-        Console.WriteLine(string.Format(Inv, "{0}: {1:0} t, {2:0} x {3:0.0} m, height {4:0.0} m, {5:0.#} kn{6}", p.Class.Name, p.DisplacementT, p.LengthM,
-            p.BeamM, p.HeightM, p.SpeedKn, p.TorpedoCraft ? ", torpedo craft" : ""));
+        Console.WriteLine(string.Format(Inv, "{0}: {1:0} t, {2:0} x {3:0.0} m, height {4:0.0} m, {5:0.#} kn", p.Class.Name, p.DisplacementT, p.LengthM,
+            p.BeamM, p.HeightM, p.SpeedKn));
         Console.WriteLine(string.Format(Inv, "  side {0} (plating {1:0.#} mm); deck {2} (plating {3:0.#} mm)", Face(p.Side), p.SidePlatingMm, Face(p.Deck), p.DeckPlatingMm));
         foreach (var g in p.Guns)
             Console.WriteLine(string.Format(Inv, "  battery {0} {1} {2:0} mm: {3} bearing, {4:0.0} a gun a minute, {5} rounds, level {6}, reach {7:0} m; {8} {9:0.#} kg, filler {10:0.##} kg",

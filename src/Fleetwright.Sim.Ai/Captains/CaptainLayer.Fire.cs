@@ -334,9 +334,6 @@ public sealed partial class CaptainLayer
         return (range, speed);
     }
 
-    /// <summary>The gun that makes a ship more than a torpedo craft: a cruiser's 6".</summary>
-    const double TorpedoCraftGunMm = 150;
-
     /// <summary>Whom torpedoes are for: the biggest first.</summary>
     internal static int TorpedoRank(ShipType t) => t switch
     {
@@ -348,13 +345,11 @@ public sealed partial class CaptainLayer
         _ => 5,
     };
 
-    /// <summary>Whether a ship fights with its torpedoes: one with no gun of <see cref="TorpedoCraftGunMm"/> or more (a
-    /// torpedo boat, a destroyer: not a cruiser), with torpedoes left in launchers that work.</summary>
-    internal static bool TorpedoCraft(in AiContext ctx, ShipState own, int slot)
+    /// <summary>Whether a ship has torpedoes left in launchers that work. Whether she attacks with them is the matchup's
+    /// (<see cref="Knowledge.MatchupJudge.Attacks"/>): no ship is torpedo craft by her design.</summary>
+    internal static bool TorpedoesLeft(in AiContext ctx, ShipState own, int slot)
     {
         var cls = own.Handling.Class;
-        if (!TorpedoCraft(cls))
-            return false;
         var k = ctx.Ships.Combat.Condition(slot);
         for (int l = 0; l < cls.Launchers.Length; l++)
         {
@@ -363,16 +358,6 @@ public sealed partial class CaptainLayer
                 return true;
         }
         return false;
-    }
-
-    /// <summary>Whether a class is a torpedo craft by its design: no gun of <see cref="TorpedoCraftGunMm"/> or more, and
-    /// torpedo tubes.</summary>
-    internal static bool TorpedoCraft(ShipClass cls)
-    {
-        foreach (ref readonly var b in cls.Batteries)
-            if (b.CalibreMm >= TorpedoCraftGunMm)
-                return false;
-        return cls.Launchers.Length > 0;
     }
 
     /// <summary>Each battery's reach for fire at will (<see cref="SimSettings.FireReachShare"/> of the range table's), and
@@ -547,8 +532,10 @@ public sealed partial class CaptainLayer
         if (away && !m.ACanRefuse(s) && double.IsNaN(fallBack = FallBack(ctx, own)))
             away = false;   // no escape: he fights
 
-        // ordered to attack, or in his flotilla's attack (his torpedoes held for its signal): whoever ordered it judged
-        if (TorpedoCraft(ctx, own, slot) && (cap.AttackOrdered || cap.TorpedoHeld || !away && (m.Terms.Style & MatchupStyle.AttackByA) != 0))
+        // ordered to attack, or in his flotilla's attack (his torpedoes held for its signal): whoever ordered it judged;
+        // else his own unit's attack, if his torpedoes are his better weapon here (O7c)
+        if (TorpedoesLeft(ctx, own, slot) && (cap.AttackOrdered || cap.TorpedoHeld ||
+                                             !away && (m.Terms.Style & MatchupStyle.AttackByA) != 0 && Judge.Attacks(ctx, own)))
         {
             // the attack: in to the torpedoes' range, fire, away, and in again
             bool off = cap.TorpedoMs != 0 && ctx.NowMs - cap.TorpedoMs < s.TorpedoTurnAwayMs;

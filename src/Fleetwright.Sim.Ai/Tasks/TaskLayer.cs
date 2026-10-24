@@ -484,7 +484,7 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
             if (over)
                 End(ref t, beatenOff ? TaskState.Cant : TaskState.Done, beatenOff ? TaskReason.BeatenOff : TaskReason.Fired);
         }
-        else if (!CaptainLayer.TorpedoCraft(ctx, guide, slot))
+        else if (!CaptainLayer.TorpedoesLeft(ctx, guide, slot))
             End(ref t, TaskState.Done, TaskReason.Fired);
         if (Live(t.Status) && ctx.NowMs - t.QuietMs > (long)(ctx.Settings.TaskResumeS * 1000))
             End(ref t, TaskState.Done, TaskReason.LostContact);

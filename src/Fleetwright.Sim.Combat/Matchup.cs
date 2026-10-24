@@ -19,8 +19,6 @@ public sealed class MatchupProfile
     /// <summary>Its height over the water for the danger space (its freeboard by <see cref="SimSettings.MatchupHeightShare"/>).</summary>
     public double HeightM { get; }
     public double SpeedKn { get; }
-    /// <summary>No gun of a cruiser's 6" (<see cref="TorpedoCraftGunMm"/>) and torpedoes: it fights with its torpedoes.</summary>
-    public bool TorpedoCraft { get; }
 
     /// <summary>The side and the deck as a falling shell meets them: shares of the face, each with its armour and its
     /// face-hardened plate (<see cref="MatchupFace"/>), and the hull's own plating there. A material's worth depends on
@@ -51,9 +49,6 @@ public sealed class MatchupProfile
     /// <summary>8", the calibre the faces are first taken against (and 16" the second).</summary>
     public const double Eight = 8 * 25.4;
 
-    /// <summary>The gun that makes a ship more than a torpedo craft: a cruiser's 6".</summary>
-    public const double TorpedoCraftGunMm = 150;
-
     public MatchupProfile(ShipClass c, Func<BallisticKey, BallisticTable> table, SimSettings s, Loadout? loadout = null)
     {
         Class = c;
@@ -75,12 +70,9 @@ public sealed class MatchupProfile
 
         var guns = new List<MatchupGun>();
         double mainCal = 0;
-        bool craft = true;
         for (int b = 0; b < c.Batteries.Length; b++)
         {
             ref readonly var row = ref c.Batteries[b];
-            if (row.CalibreMm >= TorpedoCraftGunMm)
-                craft = false;
             if (row.Kind is not (Battery.Main or Battery.Secondary))
                 continue;
             int bearing = 0, rounds = 0, mounts = 0;
@@ -120,17 +112,11 @@ public sealed class MatchupProfile
         }
         (TubesBearing, Torpedoes) = (tubes, torpedoes);
         TorpedoDud = Torpedo.DudShare;
-        TorpedoCraft = craft && c.Launchers.Length > 0;
     }
 
-    /// <summary>Whether it's built to make torpedo attacks (a destroyer, a light cruiser with a broadside of tubes; not a
-    /// battleship with a few submerged ones): <see cref="SimSettings.MatchupAttackTubesPerKt"/> tubes bearing a thousand
-    /// tonnes or more.</summary>
-    public bool Attacker(SimSettings s) => TubesBearing > 0 && TubesBearing * 1000 / DisplacementT >= s.MatchupAttackTubesPerKt;
-
     /// <summary>The torpedo attack's firing range (<see cref="SimSettings.TorpedoAttackShare"/> of the fast setting), 0
-    /// for a ship not built to attack with torpedoes.</summary>
-    public double AttackRangeM(SimSettings s) => Attacker(s) ? s.TorpedoAttackShare * Torpedo.FastRangeM : 0;
+    /// with no tubes bearing. Whether it attacks is the matchup's, against the enemy (<see cref="Matchup.Attackers"/>).</summary>
+    public double AttackRangeM(SimSettings s) => TubesBearing > 0 ? s.TorpedoAttackShare * Torpedo.FastRangeM : 0;
 
     /// <summary>The side between the waterline and the main deck, sampled along its length and up it: the thickest plate
     /// over each point (by its material's quality), shares of the face by thickness.</summary>
@@ -337,9 +323,10 @@ public enum MatchupStyle : byte
 
 /// <summary>An engagement's terms, for the bench and the tests: the lines' range and each side's attack's firing range
 /// (0: none), what each side's guns and torpedoes put out of the fight (ships, expected), the attackers lost on the way
-/// in, how long it lasts, and the shares of each side's tonnage lost.</summary>
+/// in, how long it lasts, and the shares of each side's tonnage lost; and each side's attackers (<see cref="Matchup.Attackers"/>:
+/// its entries by bit, those that run in when it attacks), whether it attacks or not.</summary>
 public readonly record struct MatchupTerms(double RangeM, MatchupStyle Style, double AttackA, double AttackB, double Minutes, double GunsOnB,
-    double TorpedoesOnB, double GunsOnA, double TorpedoesOnA, double RunInLost, double LostA, double LostB)
+    double TorpedoesOnB, double GunsOnA, double TorpedoesOnA, double RunInLost, double LostA, double LostB, ulong AttackersA = 0, ulong AttackersB = 0)
 {
     /// <summary>A's confidence: the share of B's tonnage it puts out for the share of its own it loses.</summary>
     public double Confidence(double floor) => Math.Max(LostB, floor) / Math.Max(LostA, floor);
@@ -368,8 +355,8 @@ public static class Matchup
     public const int MaxClasses = 64;
 
     /// <summary>A's judgement of B. Each side's gun range is its doctrine's share of its main guns' reach: the lines fight
-    /// at the faster side's (by the margin) best of the two, else at A's. A side's ships built for torpedo attacks attack
-    /// if that's better for it than not (each judged against the other not attacking). The defence's guns open on an
+    /// at the faster side's (by the margin) best of the two, else at A's. A side's attackers (<see cref="Attackers"/>)
+    /// attack if that's better for it than not (each judged against the other not attacking). The defence's guns open on an
     /// attack from their reach, or from <paramref name="sightM"/> if that's less (by night), and the lines fight no further
     /// off than that.</summary>
     public static MatchupResult Judge(ReadOnlySpan<MatchupEntry> a, ReadOnlySpan<MatchupEntry> b, double rangeShareA, double rangeShareB, SimSettings s,
@@ -389,12 +376,51 @@ public static class Matchup
         }
         double c = plain.Confidence(s.MatchupFloor);
         var style = MatchupStyle.Gunfight;
-        if (AttackRange(a, s) > 0 && Engage(a, b, line, MatchupStyle.AttackByA, s, sightM).Confidence(s.MatchupFloor) > c)
+        ulong byA = Attackers(a, b, s, sightM), byB = Attackers(b, a, s, sightM);
+        if (byA != 0 && Engage(a, b, line, MatchupStyle.AttackByA, byA, byB, s, sightM).Confidence(s.MatchupFloor) > c)
             style |= MatchupStyle.AttackByA;
-        if (AttackRange(b, s) > 0 && Engage(a, b, line, MatchupStyle.AttackByB, s, sightM).Confidence(s.MatchupFloor) < c)
+        if (byB != 0 && Engage(a, b, line, MatchupStyle.AttackByB, byA, byB, s, sightM).Confidence(s.MatchupFloor) < c)
             style |= MatchupStyle.AttackByB;
-        var t = style == MatchupStyle.Gunfight ? plain : Engage(a, b, line, style, s, sightM);
-        return new MatchupResult(t.Confidence(s.MatchupFloor), speedA, speedB, t);
+        var t = style == MatchupStyle.Gunfight ? plain : Engage(a, b, line, style, byA, byB, s, sightM);
+        return new MatchupResult(t.Confidence(s.MatchupFloor), speedA, speedB, t with { AttackersA = byA, AttackersB = byB });
+    }
+
+    /// <summary>A side's attackers against the other (docs/battle/admirals-orders.md O7c), by bit of its entries: those
+    /// with torpedoes left and under way whose one salvo at their attack range puts out more of the other's tonnage than
+    /// their guns would over the same attack (in from where the other's guns open at the mean range of the way, the firing
+    /// at the attack range, and out again, as <see cref="Engage"/> has it): closing in is worth it for the torpedoes only
+    /// where they beat what the guns do closing in. No ship is torpedo craft by its design: a destroyer with one 8" gun
+    /// attacks a battleship and fights a destroyer, and a battleship's submerged tubes never send her in. Whether an
+    /// attack is worth its losses on the way in is the judgement's, not this.</summary>
+    public static ulong Attackers(ReadOnlySpan<MatchupEntry> a, ReadOnlySpan<MatchupEntry> b, SimSettings s,
+        double sightM = double.PositiveInfinity)
+    {
+        if (a.Length > MaxClasses || b.Length > MaxClasses)
+            throw new ArgumentException($"a matchup takes at most {MaxClasses} classes a side");
+        Span<bool> sel = stackalloc bool[a.Length];
+        Span<double> none = stackalloc double[a.Length], outB = stackalloc double[b.Length];
+        none.Clear();
+        ulong mask = 0;
+        double openM = Math.Min(MaxReach(b), sightM);
+        for (int i = 0; i < a.Length; i++)
+        {
+            ref readonly var e = ref a[i];
+            double fireM = e.Profile.AttackRangeM(s);
+            if (e.Count <= 0 || e.TorpedoesLeft <= 0 || fireM <= 0 || e.SpeedKn <= s.MatchupSpeedMarginKn)
+                continue;
+            sel.Clear();
+            sel[i] = true;
+            var (inMin, midM) = RunIn(openM, e.SpeedKn, fireM);
+            outB.Clear();
+            Torpedoes(a, sel, b, fireM, s, outB, none, 1);
+            double torpedoes = Lost(b, outB);
+            outB.Clear();
+            Guns(a, sel, default, b, default, default, midM, midM, midM, 2 * inMin, s, outB);
+            Guns(a, sel, default, b, default, default, fireM, fireM, fireM, s.MatchupTorpedoFireMin, s, outB);
+            if (torpedoes > Lost(b, outB))
+                mask |= 1UL << i;
+        }
+        return mask;
     }
 
     /// <summary>The engagement: the lines' gunfight at a range for <see cref="SimSettings.MatchupFightMin"/>, each ship
@@ -404,7 +430,11 @@ public static class Matchup
     /// guns choosing between them and the line by what they do. Every gun fires at what it does most to, at the range
     /// between them (the lines' range, or the attack's).</summary>
     public static MatchupTerms Engage(ReadOnlySpan<MatchupEntry> a, ReadOnlySpan<MatchupEntry> b, double rangeM, MatchupStyle style, SimSettings s,
-        double sightM = double.PositiveInfinity)
+        double sightM = double.PositiveInfinity) =>
+        Engage(a, b, rangeM, style, Attackers(a, b, s, sightM), Attackers(b, a, s, sightM), s, sightM);
+
+    static MatchupTerms Engage(ReadOnlySpan<MatchupEntry> a, ReadOnlySpan<MatchupEntry> b, double rangeM, MatchupStyle style, ulong byA, ulong byB,
+        SimSettings s, double sightM)
     {
         if (a.Length > MaxClasses || b.Length > MaxClasses)
             throw new ArgumentException($"a matchup takes at most {MaxClasses} classes a side");
@@ -415,8 +445,8 @@ public static class Matchup
         outB.Clear();
         inA.Clear();
         inB.Clear();
-        double attackA = (style & MatchupStyle.AttackByA) != 0 ? Attackers(a, s, inA) : 0;
-        double attackB = (style & MatchupStyle.AttackByB) != 0 ? Attackers(b, s, inB) : 0;
+        double attackA = (style & MatchupStyle.AttackByA) != 0 ? AttackRange(a, byA, inA, s) : 0;
+        double attackB = (style & MatchupStyle.AttackByB) != 0 ? AttackRange(b, byB, inB, s) : 0;
 
         // the attacks: in, the salvo, fired, and out; the lines fighting on beside them
         double inMinA = 0, inMinB = 0, midA = rangeM, midB = rangeM;
@@ -455,18 +485,18 @@ public static class Matchup
         torpOnA += Torpedoes(b, lineB, a, rangeM, s, outA, preB, s.TorpedoFireShare);
         double gunsOnA = Sum(outA, default) - torpOnA, gunsOnB = Sum(outB, default) - torpOnB;
         return new MatchupTerms(rangeM, style, attackA, attackB, Math.Max(attackMin, s.MatchupFightMin), gunsOnB, torpOnB, gunsOnA, torpOnA, runIn,
-            Lost(a, outA), Lost(b, outB));
+            Lost(a, outA), Lost(b, outB), byA, byB);
     }
 
-    /// <summary>A side's ships built for torpedo attacks with torpedoes left and under way (marked), and their firing
-    /// range: the shortest of theirs; 0 with none.</summary>
-    static double Attackers(ReadOnlySpan<MatchupEntry> side, SimSettings s, Span<bool> mark)
+    /// <summary>A side's attackers (<paramref name="attackers"/>, by bit) marked, and their firing range: the shortest of
+    /// theirs; 0 with none.</summary>
+    static double AttackRange(ReadOnlySpan<MatchupEntry> side, ulong attackers, Span<bool> mark, SimSettings s)
     {
         double r = 0;
         for (int i = 0; i < side.Length; i++)
         {
             ref readonly var e = ref side[i];
-            mark[i] = e.Count > 0 && e.TorpedoesLeft > 0 && e.SpeedKn > s.MatchupSpeedMarginKn && e.Profile.Attacker(s);
+            mark[i] = (attackers >> i & 1) != 0;
             if (mark[i])
                 r = r == 0 ? e.Profile.AttackRangeM(s) : Math.Min(r, e.Profile.AttackRangeM(s));
         }
@@ -478,12 +508,18 @@ public static class Matchup
     static (double Minutes, double MidM) RunIn(ReadOnlySpan<MatchupEntry> att, ReadOnlySpan<bool> inAtt, ReadOnlySpan<MatchupEntry> def, double fireM,
         double sightM)
     {
-        double open = Math.Min(MaxReach(def), sightM), kn = double.MaxValue;
+        double kn = double.MaxValue;
         for (int i = 0; i < att.Length; i++)
             if (inAtt[i])
                 kn = Math.Min(kn, att[i].SpeedKn);
-        double ms = Math.Max(kn == double.MaxValue ? 1 : kn, 1) * Handling.MsPerKnot;
-        return (Math.Max(open - fireM, 0) / ms / 60, (Math.Max(open, fireM) + fireM) / 2);
+        return RunIn(Math.Min(MaxReach(def), sightM), kn == double.MaxValue ? 1 : kn, fireM);
+    }
+
+    /// <summary>A run in at a speed from where the defence's guns open to the firing range: its minutes, and its mean range.</summary>
+    static (double Minutes, double MidM) RunIn(double openM, double kn, double fireM)
+    {
+        double ms = Math.Max(kn, 1) * Handling.MsPerKnot;
+        return (Math.Max(openM - fireM, 0) / ms / 60, (Math.Max(openM, fireM) + fireM) / 2);
     }
 
     /// <summary>A stretch of an attack: every ship of both sides fires (the lines at each other at the lines' range, at
@@ -736,17 +772,6 @@ public static class Matchup
                 foreach (var g in e.Profile.Guns)
                     r = Math.Max(r, g.ReachM);
         return r;
-    }
-
-    /// <summary>A side's torpedo attack range: the shortest of its ships built to attack with torpedoes, 0 with none that
-    /// have torpedoes left.</summary>
-    static double AttackRange(ReadOnlySpan<MatchupEntry> side, SimSettings s)
-    {
-        double r = double.MaxValue;
-        foreach (ref readonly var e in side)
-            if (e.Count > 0 && e.TorpedoesLeft > 0 && e.SpeedKn > s.MatchupSpeedMarginKn && e.Profile.Attacker(s))
-                r = Math.Min(r, e.Profile.AttackRangeM(s));
-        return r == double.MaxValue ? 0 : r;
     }
 
     /// <summary>The sum of v, over the marked entries (empty: all).</summary>

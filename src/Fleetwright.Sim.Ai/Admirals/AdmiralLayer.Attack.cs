@@ -22,8 +22,9 @@ public enum AttackPhase : byte
     Away,
 }
 
-/// <summary>The flotilla's attack (docs/battle/command.md 5.1b): a squadron of torpedo craft that's told to Attack, or
-/// fights with doctrine's TorpedoAttack "together" and its matchup has the attack worth making (5.1g), attacks as one
+/// <summary>The flotilla's attack (docs/battle/command.md 5.1b): a squadron with torpedoes that's told to Attack, or
+/// fights with doctrine's TorpedoAttack "together", its guide's torpedoes its better weapon there and its matchup has
+/// the attack worth making (5.1g; docs/battle/admirals-orders.md O7c), attacks as one
 /// under its admiral, each boat's torpedoes held for his signal. It gains a point <see cref="SimSettings.AttackGainDeg"/> off the target's bow, on its side of him, at
 /// <see cref="SimSettings.AttackGainShare"/> of its torpedoes' fast range, at full speed; runs in from there (its guide
 /// fighting the target, the boats on station about him); fires every boat's spread on one signal when the guide's run is
@@ -44,16 +45,18 @@ public sealed partial class AdmiralLayer
         bool together = a.AttackOrdered || (TorpedoAttack)doctrine.OfGroup(g, guide.Side, DoctrineField.TorpedoAttack) == TorpedoAttack.Together;
         if (g.IsForce)
             return false;   // a force told to attack hands it to its groups (AttackHanded)
-        if (a.Order != CaptainOrder.Fight || !together || !CaptainLayer.TorpedoCraft(guide.Handling.Class) || !AnyTorpedoes(ctx, g))
+        if (a.Order != CaptainOrder.Fight || !together || !AnyTorpedoes(ctx, g))
         {
             if (a.Attack != AttackPhase.None || a.AttackOrdered && a.Order == CaptainOrder.Fight)
                 StopAttack(ctx, g, a);
             return false;
         }
-        // taken up by doctrine (not ordered), an attack is begun only if its matchup has it worth making (docs/battle/command.md
-        // 5.1g: it presses in when its numbers saturate the defence); once begun it's seen through
+        // taken up by doctrine (not ordered), an attack is begun only if its guide's torpedoes are her better weapon there
+        // (O7c) and its matchup has it worth making (docs/battle/command.md 5.1g: it presses in when its numbers saturate
+        // the defence); once begun it's seen through
         if (!a.AttackOrdered && a.Attack == AttackPhase.None &&
-            !(Judge.Near(ctx, guide, out var m) && (m.Terms.Style & MatchupStyle.AttackByA) != 0 && m.Confidence >= Judge.Bars(guide.Entity, guide.Side).Accept))
+            !(Judge.Near(ctx, guide, out var m) && (m.Terms.Style & MatchupStyle.AttackByA) != 0 && m.Confidence >= Judge.Bars(guide.Entity, guide.Side).Accept &&
+              Judge.Attacks(ctx, guide)))
             return false;
         var s = ctx.Settings;
         long now = ctx.NowMs;
@@ -219,16 +222,17 @@ public sealed partial class AdmiralLayer
     {
         for (int i = 0; i < g.Line.Count; i++)
             if (g.IsForce ? ctx.World.Groups.Get(g.Line[i]) is { } sub && AnyTorpedoes(ctx, sub)
-                : ctx.Ships.SlotOf(g.Line[i]) is int slot and >= 0 && CaptainLayer.TorpedoCraft(ctx, ctx.Ships[slot], slot))
+                : ctx.Ships.SlotOf(g.Line[i]) is int slot and >= 0 && CaptainLayer.TorpedoesLeft(ctx, ctx.Ships[slot], slot))
                 return true;
         return false;
     }
 
     /// <summary>A group of a force told to attack (the i-th of its line, past its guide, which has it handed over): the
-    /// attack handed down (docs/battle/admirals-orders.md O7b), so each squadron attacks as one under its own admiral (a
-    /// division of torpedo craft runs in; one without torpedoes fights). One through with its attack (its torpedoes spent,
-    /// or beaten off) is through for this order: back on its station in the force, as a squadron sent in alone is called
-    /// back to its screen. False if the force isn't attacking, or the group's through: it keeps its station.</summary>
+    /// attack handed down (docs/battle/admirals-orders.md O7b), so each squadron attacks as one under its own admiral, once
+    /// the enemy's in sight, if its guide's torpedoes are her better weapon against him (O7c); one whose aren't, or with
+    /// none, is through. One through with its attack (its torpedoes spent, or beaten off) is through for this order: back
+    /// on its station in the force, as a squadron sent in alone is called back to its screen. False if the force isn't
+    /// attacking, or the group's through or waiting for the enemy in sight: it keeps its station.</summary>
     bool AttackHanded(in AiContext ctx, GroupSystem.Group g, Admiral a, int i)
     {
         if (!g.IsForce || a.Order != CaptainOrder.Fight || !a.AttackOrdered)
@@ -238,7 +242,16 @@ public sealed partial class AdmiralLayer
             if (a.AttackDone[k] == member)
                 return false;
         bool beaten = Find(member) is int mi and >= 0 && admirals[mi] is { Whose: Whose.Superior, Order: CaptainOrder.Run };
-        if (beaten || groups.Get(member) is not { } sub || !AnyTorpedoes(ctx, sub))
+        bool at = Find(member) is int ai and >= 0 && admirals[ai] is { Whose: Whose.Superior, Order: CaptainOrder.Fight, AttackOrdered: true };
+        bool no = false;
+        if (!beaten && !at && groups.Get(member) is { } msub && ctx.Ships.SlotOf(groups.GuideShip(msub)) is int gs and >= 0)
+        {
+            var mg = ctx.Ships[gs];
+            if (!Judge.Near(ctx, mg, out _))
+                return false;   // the enemy not in sight yet: judged when he is
+            no = !Judge.Attacks(ctx, mg);
+        }
+        if (beaten || no || groups.Get(member) is not { } sub || !AnyTorpedoes(ctx, sub))
         {
             if (a.AttackDoneCount == a.AttackDone.Length)
                 Array.Resize(ref a.AttackDone, a.AttackDoneCount * 2);
@@ -246,7 +259,7 @@ public sealed partial class AdmiralLayer
             a.AttackBeaten |= beaten;
             return false;
         }
-        if (Find(member) is int ai and >= 0 && admirals[ai] is { Whose: Whose.Superior, Order: CaptainOrder.Fight, AttackOrdered: true })
+        if (at)
             return true;   // at it
         ctx.Issue(ctx.Orders.Attack(Unit.Group(member), new Unit(a.Target).Entity, OrderSource.Superior));
         return true;

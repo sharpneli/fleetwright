@@ -287,32 +287,79 @@ can only run or attack with torpedoes, while against destroyers it fights with i
 with its boats when torpedoes are its better weapon there, and a battleship's submerged tubes never send it in.
 
 - **The matchup** (`Matchup.Attackers`): a class with torpedoes left and under way is an attacker against the other
-  side when one salvo of its torpedoes at its attack range puts out more than its guns do over the attack's minutes
-  (its run in, the firing, its run out) at the lines' range. Both are the matchup's own reckonings (`Torpedoes`,
-  `Guns`) for that class alone. `Attacker`, `AttackRangeM`'s gate and `MatchupAttackTubesPerKt` go. The terms carry
-  the attacking classes of each side as a mask (64 classes at most, `MaxClasses`).
+  side when one salvo of its torpedoes at its attack range puts out more of the other's tonnage than its guns would
+  over the same attack: the run in and out at the mean range of the way, the firing at the attack range, as `Engage`
+  reckons an attack. Closing in pays for the torpedoes only where they beat what the guns do closing in. (Built so
+  after two tries that failed: the guns at the lines' range made a dreadnought an attacker against a destroyer that
+  kites her at 20 km, and the guns at the attack range for the whole attack gave an 8" thirty minutes point blank.)
+  Both are the matchup's own reckonings (`Torpedoes`, `Guns`) for that class alone. `Attacker`, `AttackRangeM`'s gate
+  and `MatchupAttackTubesPerKt` are gone. The terms carry each side's attackers as a mask (64 classes at most,
+  `MaxClasses`), whether it attacks or not; the bench prints them.
+- **On the bench** (`shipgen matchup A B`): destroyers, V25s, Graudenz and Arethusa attack a battleship; a destroyer
+  doesn't attack a destroyer, nor a dreadnought anything; a V25 and an M-class attack a light cruiser (their 88 mm and
+  4" do less to a 3,500 t ship than a torpedo); Arethusas beside Iron Dukes against Derfflingers and V25s fight the
+  boats with their guns.
 - **One question for the AI:** a ship attacks with torpedoes if she has them in a launcher that works and her class is
   among her unit's attackers in its judgement (`MatchupJudge.Near`). It replaces `TorpedoCraft` wherever an attack is
   taken up by doctrine: the captain's run (`CaptainLayer.Fire`) and the admiral's (`AdmiralLayer.AttackStep`). An
   ordered attack (by hand, by a commander or admiral) needs only torpedoes, since whoever ordered it judged; a
   battleship told by hand to attack flies the run (the player may overrule).
 - **Torpedoes left** (`AnyTorpedoes`, the attack task's end) counts any ship's.
-- **Who is sent in whole** (`FlotillaAttacks.Free`, `FlotillasOnly`): a force goes in whole when every group of it with
-  torpedoes is an attacker against the enemy it's sent at. Regensburg and her flotillas, or light cruisers leading
-  destroyers, go in whole; a fleet with a battle squadron isn't, and its admiral sends in his attackers (O7b). A force
-  told to attack hands it to each group that's an attacker against the target; the others are through and keep their
-  station.
+- **Who is sent in whole** (`FlotillaAttacks.Worth`; `FlotillasOnly` is gone): a unit of the flotilla's role goes in
+  whole when its matchup against the enemy group, judged with all its members in its line or alongside
+  (`MatchupJudge.AddMembers`), has it attacking at doctrine's bar, as before; a leader goes with its boats. (A first
+  cut also wanted every class of it with torpedoes an attacker against that group: a cruiser leader facing a group with
+  boats in it is a gunfighter there, so the 13th Flotilla, Champion leading, was never sent; the commanders sent
+  flotillas in 5 times in seed 1916 against 16. Dropped: only units of the flotilla's role are ever sent in, so a fleet
+  with a battle squadron never is.) A force told to attack hands it to each group of its line that's an attacker
+  against the enemy in sight (waiting until he is); the others are through and keep their station. Groups alongside are
+  its admiral's to dispose, and he sends in his flotillas by the same rule.
 - **The role** stays a rough default for disposition (the player sets it at will, and the admirals commit forces by
-  the matchup): a ship counts toward a flotilla when it's an attacker against a reference from its own fleet, the
-  heaviest class its side has at sea.
-- **A torpedo threat** (turning away): a contact whose class is made out is one when it has tubes and is an attacker
-  against the unit judging; before that, by its type, as now.
-- **Gone:** `CaptainLayer.TorpedoCraft` (both), the two `TorpedoCraftGunMm`, `MatchupProfile.TorpedoCraft`.
-- **Tests:** the light cruisers leading destroyers now go in whole (the O7b test turned round); the 203 mm destroyer
-  attacks a dreadnought with torpedoes and fights a destroyer with its gun; a battle squadron with submerged tubes
-  never flies the run unless ordered by hand; the matchup's attackers by class.
-- **Measured** against `00ca9ba9`: the Jutland (12 seeds), `tsushima` (10), `squadrons`, `flotilla`, and the
-  matchup's cost in the AI's share of a run.
+  the matchup), counted over every ship of the unit down the tree, in its line or not. On two axes (the user's picks,
+  2026-10-24), since the first reading made every light cruiser a flotilla: against a battleship a C-class's torpedoes
+  outweigh its guns more than a destroyer's do. A ship is a boat (toward a flotilla) when she's an attacker against her
+  own side's heaviest class at sea, unless she's `SimSettings.RoleScoutSizeRatio` (1.5) times the typical boat's
+  displacement or more: then she scouts. The typical boat is the most numerous class at sea, any side's, that's an
+  attacker against its own side's heaviest (the Jutland's M-class, 1,985 t: boats to B97's 2,489 t, cruisers from the
+  scout cruisers' 3,047 t; with no boats of its own a side's cruisers still measure against the enemy's). The 203 mm
+  destroyer (2,615 t) works out a flotilla. Tried first and dropped: outgunning the lightest boat at sea by a confidence
+  of 1.5. The bigger German boats outgunned the oldest smallest ones and became scouts (B109 and B110 sent to scout),
+  and gun strength can't tell boats from cruisers anyway: against an M-class, V25 1.67, G101 1.80 and B97 2.15 outgun
+  it more than Caroline (1.60) does. **An exception to approve:** `RoleScoutSizeRatio` is a tuned bar between two
+  roles, the kind of line O7c set out to remove from fighting. It touches only the default role, never how a ship
+  fights, and it's relative to the fleets at sea, so it holds from torpedo boats to 1940s destroyers.
+- **A torpedo threat** (turning away): a contact whose class is made out is one when it's an attacker against the line's
+  guide's class (`MatchupJudge.AttackerAgainst`, one on one, made once a pair); before that, by its type, as now. A
+  line that's a flotilla by role with torpedoes left doesn't turn away (it counter-attacks), as torpedo craft didn't.
+- **Gone:** `CaptainLayer.TorpedoCraft` (both; `TorpedoesLeft` is what's left of it), the two `TorpedoCraftGunMm`,
+  `MatchupProfile.TorpedoCraft`.
+- **Tests** (`AdmiralOrdersTests`): `A_light_cruiser_leading_destroyers_goes_in_with_them` (the O7b test turned round:
+  the commander sends the force in within 2 minutes, the cruisers run in, and both they and the destroyers fire);
+  `A_destroyer_with_an_8_inch_gun_counts_on_her_torpedoes_against_a_battleship_and_her_gun_against_destroyers` (an
+  attacker against the dreadnought, not against destroyers, and in the world her squadron fights four destroyers with
+  its guns, never attacking; four of her against one dev dreadnought out-range it at 36 kn and fight at 20 km, the
+  matchup's call); `A_battle_squadron_with_submerged_tubes_never_flies_the_run_unless_told_to`.
+
+**Measured** (Release, against `00ca9ba9`; built 2026-10-24):
+
+| Scenario | Before O7c | O7c |
+|---|---|---|
+| the Jutland (12 seeds) | time 12; Britain lost 43.0 of 151 (147 kt), Germany 60.3 of 99 (264 kt); hits 4,871 and 5,939; torpedoes 223 and 210 a run | time 11, quiet 1; Britain 30.1 (78 kt), Germany 48.8 (170 kt); hits 3,779 and 3,847; torpedoes 181 and 167 |
+| `tsushima` (10 seeds) | Russia lost 4.1 of 13, Japan 3.8 of 14 (4.9 kt); time 3, quiet 4, done 3 | Russia 3.4, Japan 4.2 (7.7 kt); time 1, quiet 7, done 2 |
+| `squadrons` (5 seeds) | Britain lost 0.8 of 4, Germany 1.2 of 5; hits 96 and 252; no torpedoes | Britain 1.0, Germany 1.0; hits 165 and 551; Germany 1.8 torpedoes a run |
+| `flotilla` (5 seeds) | quiet 5; lost 0.0 and 0.2 | identical |
+
+- **The Jutland is less bloody, back toward O7's** (Britain 41.3, Germany 49.0 after O1b-O7): O7b's bloodbath came from
+  Regensburg's force going in whole and the Grand Fleet turning on her. Her force still goes in whole (seed 1916: the
+  Scouting torpedo boats and B109 and B110 sent in at 14:44 as before, the 13th Flotilla with Champion at 16:09), but
+  ships that were torpedo craft only by the label now scout: the Grand Fleet's Attached cruisers (scout cruisers,
+  3,047 t, 4" guns) were sent in twice in seed 1916 before and scout now, and the German 2nd and 4th Scouting Groups
+  are sent to scout. The commanders sent units in 9 times in seed 1916 against 16; the seed's battle took another
+  course (the Grand Fleet never deploys in it), so one seed's timeline says little more.
+- **Cost** (seed 1916, each build alone): the commanders 8,797 µs a think against 6,559 (4.1% of the run against 2.8%),
+  the admirals 189 µs against 158 (5.3% against 4.0%), the captains 694 against 734; played in 179 s against 197 s
+  (less fighting). A judgement costs more with the attackers reckoned class by class (the bench: 3 classes against 3,
+  26.6 µs against 15.1); the defence's reach is worked out once a side.
 
 ### Still lacking (later steps, after the questions)
 
@@ -495,7 +542,7 @@ The mockup's `#chain` and `#screen` marks, in the game (`MapScene.TaskMarks.cs`;
 | **O6** | A unit's role: worked out, or set by the player; the commander and the map read it (decision 4) | **done 2026-10-23** |
 | **O7** | The chain of command: a force's admiral disposes his members by role, one implementation with the commander's (decision 3) | **done 2026-10-23** |
 | **O7b** | Battle decisions down the chain: a force's admiral sends in his own flotillas, by the commander's rule (one implementation); an Attack to a force handed down | **done 2026-10-23** |
-| **O7c** | Torpedoes or guns by the matchup: no torpedo-craft label; a class attacks where its torpedoes beat its guns; leaders go in with their boats (decision 7) | next |
+| **O7c** | Torpedoes or guns by the matchup: no torpedo-craft label; a class attacks where its torpedoes beat its guns; leaders go in with their boats; the role on two axes (decision 7) | **done 2026-10-24** |
 | **O8** | The mockup: `docs/map-ui/battle.html` `#tasks`, `#screen`, `#deploy`, `#chain`: the task menu, the role, the cursor's verbs, a screen's stations, a deploy's line, the chain in the rail | **done 2026-10-23**, for review |
 | **O8b** | The mockup again: the organise column (new squadron, divide, merge, form a force, leave) and Screen with several squadrons selected | **done 2026-10-23**, for review |
 | **O8c** | Drag and drop in the rail: ships between squadrons, a unit under another's admiral (in the game) | **done 2026-10-23** |

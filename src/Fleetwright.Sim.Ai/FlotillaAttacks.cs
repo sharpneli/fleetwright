@@ -27,15 +27,12 @@ public sealed class FlotillaAttacks(MatchupJudge judge, HeldGroups held, Doctrin
     /// <summary>The enemy groups a side holds now.</summary>
     public ReadOnlySpan<HeldGroup> Held(in AiContext ctx, byte side) => held.Of(ctx, side);
 
-    /// <summary>Whether a flotilla may be sent in: a squadron, a force of flotillas alone (a flotilla divided by its own
-    /// admiral), or a boat alone, with torpedoes left; not on an attack already, nor beaten off in one before; screening,
-    /// on its orders, through with its task, or (<paramref name="alsoFree"/>) what its commander counts free besides. A
-    /// force with anything else in it (a light cruiser leading flotillas) isn't sent in whole: its admiral sends in its
-    /// flotillas.</summary>
+    /// <summary>Whether a flotilla may be sent in: a squadron, a force, or a boat alone, with torpedoes left; not on an
+    /// attack already, nor beaten off in one before; screening, on its orders, through with its task, or
+    /// (<paramref name="alsoFree"/>) what its commander counts free besides. Whether a force goes in whole is
+    /// <see cref="Worth"/>'s, against the enemy.</summary>
     public bool Free(in AiContext ctx, Unit u, int slot, bool alsoFree = false)
     {
-        if (u.IsGroup && ctx.World.Groups.Get(u.GroupId) is { IsForce: true } force && !FlotillasOnly(ctx.World.Groups, force))
-            return false;
         var (kind, state, why) = Tasks.Of(u);
         if (why == TaskReason.BeatenOff)
             Add(beatenOff, u.Id);
@@ -43,7 +40,7 @@ public sealed class FlotillaAttacks(MatchupJudge judge, HeldGroups held, Doctrin
             return false;
         if (!(kind is TaskKind.None or TaskKind.Screen || Tasks.Idle(u) || alsoFree))
             return false;
-        return u.IsGroup && ctx.World.Groups.Get(u.GroupId) is { } g ? AdmiralLayer.AnyTorpedoes(ctx, g) : CaptainLayer.TorpedoCraft(ctx, ctx.Ships[slot], slot);
+        return u.IsGroup && ctx.World.Groups.Get(u.GroupId) is { } g ? AdmiralLayer.AnyTorpedoes(ctx, g) : CaptainLayer.TorpedoesLeft(ctx, ctx.Ships[slot], slot);
     }
 
     /// <summary>What a flotilla free to go in (<see cref="Free"/>) is sent in for now, as its side's commander sees the
@@ -137,7 +134,7 @@ public sealed class FlotillaAttacks(MatchupJudge judge, HeldGroups held, Doctrin
             }
             one.Clear();
             if (u.IsGroup && ctx.World.Groups.Get(u.GroupId) is { } own)
-                judge.AddGroup(ctx.World, own, one);
+                judge.AddMembers(ctx.World, own, one);
             else if (ctx.Ships.SlotOf(u.Entity) is int slot and >= 0)
                 one.AddOwn(ctx.World, judge.Matchups, slot);
             enemy.Clear();
@@ -150,17 +147,6 @@ public sealed class FlotillaAttacks(MatchupJudge judge, HeldGroups held, Doctrin
                 return true;
         }
         return false;
-    }
-
-    /// <summary>Whether a group is flotillas alone: a squadron of the flotilla's role, or a force of them, down the tree.</summary>
-    bool FlotillasOnly(GroupSystem groups, GroupSystem.Group g)
-    {
-        if (!g.IsForce)
-            return roles.Of(Unit.Group(g.GroupId)) == UnitRole.Flotilla;
-        for (int i = 0; i < g.Members.Count; i++)
-            if (groups.Get(g.Members[i]) is not { } sub || !FlotillasOnly(groups, sub))
-                return false;
-        return true;
     }
 
     static void Add(List<int> set, int unit)
