@@ -1428,7 +1428,8 @@ not a list to do:
 - the load: more building threads at load time (the 4-thread cap), coarse mips first, the art disk cache
   ("Compiled ships on disk", earlier if the 10 s and 1 s targets need it), uploads spread so no frame goes over;
 - the tick: the grid on the sphere for `FineContacts`, the job system (fixed workers, struct jobs, results not
-  depending on the thread count), the ECS tricks if the per-ship models are the cost;
+  depending on the thread count; planned in `docs/battle/workers.md`, drafted 2026-10-24), the ECS tricks if the
+  per-ship models are the cost;
 - the frame: texture arrays (deferred here since 2.3), the draw list's CPU cost, labels and tracks at 250 ships;
 - the garbage: whatever the GC counts show, on either thread.
 

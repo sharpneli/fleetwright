@@ -1,0 +1,199 @@
+# Plan: the sim's workers (the job system)
+Status: **drafted 2026-10-24**, for the user's decisions (below); nothing built.
+    Updated: 2026-10-24
+
+The job system the architecture agreed from the start (`docs/world/architecture.md` "Threaded throughout", decision 1)
+and `docs/battle/plan.md` 2.7d left for when the numbers asked for it: a few fixed worker threads under the sim thread,
+taking the per-ship, per-pair and per-battery work of a moment, with results that never depend on how many workers
+there are. The numbers ask now: the Jutland's exact-output pass (`docs/profiling.md`, the log of 2026-10-24) took a
+whole play from 185 s to 139 s, and what's left is arithmetic, linear in ships, that only more cores make faster.
+
+## The aim
+
+1. **The Jutland played in well under half its time** on the reference 8 workers (plan.md 2.7, the user's answer 5),
+   and an old quad-core running it smoothly.
+2. **The same world on any number of workers:** a play on 1, 2 and 8 workers gives the same state hash and the same
+   output, bit for bit, and a replay is a replay whatever machine it runs on.
+3. **The game's soft real time kept:** nothing allocated in play on any thread, no worker holding the render thread
+   back, small fights paying nothing for it.
+
+## What there is today (measured 2026-10-24)
+
+`shipgen scenario jutland.json --play`: 250 ships, 14 game hours, all of it in the fine tier, 139 s, no collections in
+play. Where it goes (the probe table):
+
+| | s | the work | how it splits |
+|---|---|---|---|
+| Ships: step | 40 | `ShipMotion.StepAll`, 20 ticks a second, 160 ns a ship a tick | each ship writes only its own rows; `Shore` is immutable ("any thread may query it") |
+| Sighting | 32 | `Sightings.Look` once a second: per encounter a grid, per target and hostile side the nearest observers' eyes; 9.6 s of it the smoke on the lines (`SmokeSystem.Tau`) | the margins are pure; the draws are keyed (`stream.Derive(side, entity, time)`); `Fix` writes the side's picture |
+| Smoke upkeep | 18 | the index rebuilt (`Rebuild`, every 2.5 s; its young part `Fresh`), puffs merged, laid and walked | each puff's state (`SmokeModel.State`) is pure; the plumes' sums are float sums in trail order |
+| Captains | 18 | target picks (candidates, lines of fire), fall-backs and judgements | the picks are sequential by design: each sees the batteries the ships before it just put on a target |
+| Judgements | ~9 (inside the AI) | `Matchup.Judge`, pure, ~5 a game second at ~40 µs | pure once `Matchups` is warmed (profiles, census, pair tables) |
+| Gunnery | 9 | each battery's second (`GunnerySystem.Run`): readings, solution, salvo | draws keyed by battery and time; salvos go to the shells and the log |
+| Damage | 9 | each ship's flooding and fire step, on the 1 s lattice (`FloodMs`), one event a ship | draws keyed by ship and time; log entries, recomputes and losses after |
+| the rest | ~4 | commander, admirals' own work, shells, torpedoes, rails, encounters | small |
+
+Two facts carry the plan:
+
+- **Every random draw is a keyed stream** (`RandomStream.Derive` by side, ship, battery, time), never a shared
+  sequence: work done in another order draws the same numbers.
+- **Most of each system's cost is read-only compute** followed by a few writes to shared state (a picture, the log, the
+  shells in flight, the pair cache, the event queue). Split there, the compute goes wide and the writes stay in
+  today's order.
+
+Threads already running in the app: the render thread (`Engine`), the sim thread (`SimHost`), the class builders (up
+to 4, below normal), the designer's worker and probes (below normal). Headless: the sim thread and the builders.
+
+## The principles
+
+1. **Compute, then apply.** A system's moment is split into a compute pass over items (ships, targets × sides,
+   batteries, pairs) that reads the world and writes only its own item's slot in a scratch result, and an apply pass on
+   the sim thread, in today's order, that writes the shared state. Only the compute goes to workers.
+2. **Results never depend on the workers.** Items are cut into chunks of a fixed size (a setting of the job, never
+   from the worker count); a reduction (a sum, a count) is made per chunk and the chunks' parts added in chunk order. So
+   1 worker and 8 do the same additions in the same order.
+3. **One code path** (one prime implementation of each model): no sequential copy kept beside the parallel one. With 0
+   workers, or a batch under its job's threshold, the same job runs inline on the sim thread.
+4. **Nothing allocates per dispatch.** Jobs are structs; a dispatch is a few writes and a wake. Scratch is per worker,
+   grown at most to the largest batch, as the sim's scratch is today.
+5. **Order bugs caught deterministically, not by luck:** a test mode runs every job's chunks shuffled (by a seed) on
+   one thread. A job that depends on its chunks' order fails it every time, not one run in a thousand.
+6. **Not world state.** The worker count is the host's, like the registry's builder threads: never in `SimSettings`,
+   never hashed, never in a save.
+
+## The job system (W1)
+
+In `Fleetwright.Sim.Core` (`Workers.cs`), owned by the world's host and handed to the `World` (null: inline).
+
+- **Fixed threads,** named ("Sim worker 1".."N"), started with the world, `Normal` priority (the sim thread's), no
+  thread pool: the pool's latency and its other users would decide the sim's timing.
+- **A dispatch:** `workers.For(ref job, count)` with `job` a struct implementing `IJob { void Run(int item, int worker); }`
+  (or a chunk `Run(int from, int to, int worker)` where the per-item call costs). The sim thread takes chunks too, and
+  returns when every chunk is done: a moment's passes stay where they are in the event's handler, nothing else changes
+  in the event loop. Struct jobs without boxing: a static generic slot per job type holds the job and a cached delegate
+  the workers call (made once per type, at the first dispatch).
+- **Waking:** a worker spins briefly (tens of µs) after its last chunk, then waits on an event. At full tilt the next
+  dispatch comes within the spin, so a tick pays no wake-up; at 1x the workers sleep and use nothing. The spin window is
+  the host's knob (decision 2).
+- **Small batches inline:** each job has a threshold (items, or measured µs); under it, no dispatch. A squadrons fight
+  pays nothing.
+- **Exceptions:** a worker's caught and rethrown on the sim thread after the dispatch, so `ScenarioPlay`'s "the sim
+  broke" catch and the tests see it as today.
+- **Probes:** a dispatch is timed on the sim thread as now (the probe round the system's pass), and the workers' busy
+  time summed per job, so the play's table shows each job's wall time and its parallel share.
+- **Allocations:** `SimHost`'s and the benches' `GetAllocatedBytesForCurrentThread` miss the workers; each worker
+  keeps its own count (read at the end of a dispatch), summed into the snapshot's and the play's numbers. The zero-
+  allocation tests read the sum.
+
+Tests: a dispatch of N items on 0, 1, 3 and 8 workers fills the same slots; a chunked sum is the same bit for bit; the
+shuffled-chunk mode; an exception reaches the caller; a dispatch allocates nothing after the first (per job type).
+
+## The steps
+
+Each step: the probe before and after on squadrons, Tsushima and the Jutland, the play's output on 1 worker the same
+as today's (the step restructures, it doesn't change the sim), and on 8 workers the same as on 1.
+
+### W0 The bench (small)
+
+`shipgen scenario X --play --workers N` (0 default until W1), and `--shuffle SEED` for principle 5. A check in the
+bench: the state hash at the end printed, so 1 and N are compared by one line. A micro-bench of a dispatch's cost
+(empty jobs, 250 items) for W1's numbers.
+
+### W1 The job system
+
+As above, with its tests. No system uses it yet.
+
+### W2 Ships' step
+
+`StepAll` as a job over the fine list: each ship's `Step` writes only its rows (`Slide`'s too: `landSide`,
+`routeNext`, the pose), `Shore` is read-only. The first real use, and the cheapest proof: 40 s of 139, a dispatch every
+50 game ms (a million in a Jutland), so it measures the dispatch's cost where it matters most. Expected: 40 s to under
+10 s on 8 workers if a dispatch costs a few µs; if it costs more, the chunking (a chunk of 32 ships) and the spin are
+tuned here.
+
+### W3 Sighting
+
+`LookIn` split: per (target, hostile side) in today's order, the compute (the nearest observers, each eye's margin, the
+rate, the best and the fix's candidate, whether smoke is wanted and for which pairs) into a result row; then the apply
+on the sim thread in the same order: the draw (keyed, so either side of the split), `Fix`, going out of sight, the
+smoke look. The grid build stays on the sim thread (cheap). Per-worker scratch: `nearIdx`, `nearD`, the smoke span. To
+check first: whether a `Fix` in the apply can change what a later target's compute read (a picture's indices when a
+contact is added; `inSight` of another contact); the compute reads only its own target's contact, so it shouldn't.
+
+### W4 The smoke's queries and index
+
+- **Queries:** `Work` keeps its scratch in fields (`stamp`, `chunkStamp`, the rows and bands, the counters): a query
+  context per worker instead. W3's compute collects the pairs a look needs; the cache's misses are worked as a job; the
+  answers go into the cache on the sim thread in the order the pairs were asked (the cache's slots, its eviction and its
+  hash as today).
+- **The index:** `Rebuild` and `Fresh` compute every puff's state (`SmokeModel.State`, the eddies: the cost) as a job
+  into the index's slots (each source's puffs at a known offset); the plumes' sums, the compaction and the filing stay
+  on the sim thread in trail order, so their float sums are added as now.
+
+### W5 The AI's read-only part
+
+The decisions stay sequential (a pick sees the batteries the ships before it put on a target, `CaptainLayer.Fire.cs`
+"the next ships' picks see it at once"; an admiral's orders reach the captains after). What goes wide is what they read:
+
+- at the start of a think, every unit in an encounter's judgement (`MatchupJudge.JudgedNear`, pure, cached a moment) as
+  a job, so the layers find them made;
+- each fighting captain's candidates and their lines of fire (`Candidates`, `LineOfFire`), made before the sequential
+  picks walk them.
+
+`Matchups` is warmed before (profiles, the census, every gun's table against every class: `Warm` makes them today); a
+lazy creation inside a job is an error (it would race), asserted in Debug. This step only pays where the judgements and
+candidates are the cost; W0's numbers decide how much of it to do.
+
+### W6 Gunnery
+
+Each battery's second split: the readings, the tracker and the solution (the cost) as a job, by battery; the salvo,
+its shells into `ShellSystem`, the log, the state changes applied on the sim thread in battery order.
+
+### W7 Damage steps
+
+The steps already fall on one lattice (`FloodMs`), one event a ship in entity order. Made one event a moment for every
+ship due (as gunnery's tick is), the step split: the repairs, valves, flooding, settling and fires (the cost, the ship's
+own condition only) as a job; the log entries, recomputes, holds and losses applied in entity order. A loss or a blast
+in the apply that reaches another ship of the batch (a magazine's blast on a neighbour) makes the later ships' steps be
+computed again, on the sim thread, after it: rare, and exact. Batching moves the steps relative to other systems' events
+at the same moment, so it may change the output once against today (decision 3).
+
+### W8 Measured and tuned
+
+The worker curve (0, 1, 2, 4, 8) on the Jutland; the quad-core case (4 workers beside the render thread); the app's
+default count with the render thread and the builders; the plan.md 2.7 target (the sim thread at most a quarter busy
+at 10x) checked again. The numbers into `docs/profiling.md`'s log and plan.md 2.7's "Measured" table.
+
+## What to expect
+
+Of the 139 s, roughly 95 s is in passes these steps split (the step, most of sighting, the smoke's states and queries,
+the AI's reads, gunnery's and damage's compute) and about 45 s stays serial (the applies, the decisions, the event loop,
+the small systems). On 8 workers at a 70% efficiency that's about 60 s for the Jutland, on 4 about 75 s: estimates for
+W8 to replace. The serial part is then the next pass's target (Amdahl), and the exact-output kind of pass applies to it
+again.
+
+## What stays out
+
+- **Speculative or out-of-order events,** a parallel event queue: the event loop stays one thread, in its order.
+- **Float changes for speed** (fused sin and cos, reordered sums): the output stays the same; a separate decision.
+- **The coarse tier and rails:** cheap already; jobs there only if a scale test asks.
+- **Shipgen's and the land's own parallel builds** (`Shore`, the class builders): they stay as they are, outside the
+  sim's workers.
+
+## Decisions (for the user)
+
+1. **The worker count.** Headless: all cores less one, at most 8 (the reference). The app: cores less two (the render
+   thread, the builders), at most 8, at least 0; a setting later if players ask.
+2. **Spin or sleep.** A short spin keeps a fast run's ticks cheap but burns a core while running at speed; sleeping
+   costs a wake-up per dispatch. Proposed: spin ~50 µs, then sleep, the host's knob.
+3. **W7's batching** may change the output once against today (the damage steps' place among the same moment's other
+   events); after it, 1 and N workers agree as everywhere. Acceptable, or keep damage per ship and leave it serial?
+4. **The order:** W0-W2 first (the system and the proof on the biggest single cost), then W3-W4 (sighting and smoke,
+   the next biggest), then W5-W7 as their numbers ask.
+
+## Open items
+
+- W3's check that an apply can't change a later compute's read (pictures' indices).
+- Whether the app's sim at 1x needs the workers at all (a tick's 40 µs fits in a frame many times over): the
+  threshold may keep them asleep until the asked speed is high, which is also where the render thread most needs its
+  core.
