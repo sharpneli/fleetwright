@@ -411,12 +411,15 @@ public sealed partial class CaptainLayer
         double bestBy = double.MaxValue;
         for (int k = 0; k < candCount; k++)
         {
-            if (candRange[k] > reach || Foul(ctx, own, k))
+            if (candRange[k] > reach)
                 continue;
             bool bears = Bears(cls, b, candBearing[k]);
             int rank = secondary ? candRank[k] : 0;
+            if (bears != bestBears ? !bears : rank != bestRank && rank > bestRank)
+                continue;
             double by = candLead[k] * (1 + s.FireCrowdShare * Crowd(cls, b, candEntity[k], candSlot[k]));
-            if (bears != bestBears ? bears : rank != bestRank ? rank < bestRank : by < bestBy)
+            // a foul line only rules one out: asked only of one that would be the best yet (the line of fire's the cost)
+            if ((bears != bestBears || rank != bestRank || by < bestBy) && !Foul(ctx, own, k))
                 (best, bestBears, bestRank, bestBy) = (candEntity[k], bears, rank, by);
         }
         if (!keep)
@@ -579,7 +582,9 @@ public sealed partial class CaptainLayer
         }
         if (fallBacks.TryGetValue(key, out double fb))
             return fb;
-        double accept = Judge.Bars(own.Entity, own.Side).Accept, best = s.FallBackM, deg = double.NaN;
+        double accept = Judge.Bars(own.Entity, own.Side).Accept, deg = double.NaN;
+        // the forces in reach nearest first (ties by index), so the first that's a match is the one
+        fallCands.Clear();
         for (int k = 0; k < groups.Count; k++)
         {
             var g = groups[k];
@@ -587,13 +592,22 @@ public sealed partial class CaptainLayer
                 continue;
             var guide = ctx.Ships[gs];
             double d = Earth.Distance(own.Position, guide.Position);
-            if (guide.Side != own.Side || d >= best || Judge.GroupAgainstNear(ctx, g, own) < accept)
-                continue;
-            (best, deg) = (d, Earth.Bearing(own.Position, guide.Position));
+            if (guide.Side == own.Side && d < s.FallBackM)
+                fallCands.Add((d, k, gs));
         }
+        fallCands.Sort();
+        MatchupSide? near = null;   // the enemy round him, once
+        foreach (var (_, k, gs) in fallCands)
+            if (!(Judge.GroupAgainst(ctx, groups[k], own, near ??= Judge.EnemyNear(ctx, own)) < accept))
+            {
+                deg = Earth.Bearing(own.Position, ctx.Ships[gs].Position);
+                break;
+            }
         fallBacks[key] = deg;
         return deg;
     }
+
+    readonly List<(double D, int K, int Slot)> fallCands = [];
 
     /// <summary>This moment's fall-back bearings by unit, sized with the captains (<see cref="Insert"/>), so the first
     /// captain to fall back in a fight allocates nothing.</summary>

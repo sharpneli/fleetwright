@@ -366,17 +366,17 @@ public static class Matchup
         bool aPicks = speedA > speedB + s.MatchupSpeedMarginKn, bPicks = speedB > speedA + s.MatchupSpeedMarginKn;
         double gunA = Math.Min(rangeShareA * Reach(a), sightM), gunB = Math.Min(rangeShareB * Reach(b), sightM);
         double line = gunA > 0 ? gunA : gunB;
-        var plain = Engage(a, b, line, MatchupStyle.Gunfight, s, sightM);
+        ulong byA = Attackers(a, b, s, sightM), byB = Attackers(b, a, s, sightM);   // once: they don't hang on the range
+        var plain = Engage(a, b, line, MatchupStyle.Gunfight, byA, byB, s, sightM);
         if ((aPicks || bPicks) && gunB > 0 && gunB != line)
         {
-            var other = Engage(a, b, gunB, MatchupStyle.Gunfight, s, sightM);
+            var other = Engage(a, b, gunB, MatchupStyle.Gunfight, byA, byB, s, sightM);
             double c0 = plain.Confidence(s.MatchupFloor), c1 = other.Confidence(s.MatchupFloor);
             if (aPicks ? c1 > c0 : c1 < c0)
                 (line, plain) = (gunB, other);
         }
         double c = plain.Confidence(s.MatchupFloor);
         var style = MatchupStyle.Gunfight;
-        ulong byA = Attackers(a, b, s, sightM), byB = Attackers(b, a, s, sightM);
         if (byA != 0 && Engage(a, b, line, MatchupStyle.AttackByA, byA, byB, s, sightM).Confidence(s.MatchupFloor) > c)
             style |= MatchupStyle.AttackByA;
         if (byB != 0 && Engage(a, b, line, MatchupStyle.AttackByB, byA, byB, s, sightM).Confidence(s.MatchupFloor) < c)

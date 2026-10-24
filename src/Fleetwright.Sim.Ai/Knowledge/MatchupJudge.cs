@@ -93,16 +93,26 @@ public sealed class MatchupJudge(GroupSystem groups, SeenContacts seen, Doctrine
         return yes;
     }
 
-    /// <summary>A group's matchup against the enemy in sight within <see cref="SimSettings.FightCompareM"/> of a ship (one
-    /// falling back on it: is it a match for them?); infinite with none.</summary>
-    public double GroupAgainstNear(in AiContext ctx, GroupSystem.Group g, ShipState of)
+    /// <summary>The enemy a ship's side holds in sight within <see cref="SimSettings.FightCompareM"/> of her, as
+    /// <see cref="GroupAgainst"/> takes them: built once for the many groups a captain's fall-back weighs. Valid until the
+    /// next call.</summary>
+    public MatchupSide EnemyNear(in AiContext ctx, ShipState of)
     {
-        this.own.Clear();
-        AddGroup(ctx.World, g, this.own);
-        theirs.Clear();
-        AddNear(ctx.World, of.Side, of.Position, ctx.Settings.FightCompareM, theirs);
+        nearTheirs.Clear();
+        AddNear(ctx.World, of.Side, of.Position, ctx.Settings.FightCompareM, nearTheirs);
+        return nearTheirs;
+    }
+
+    readonly MatchupSide nearTheirs = new();
+
+    /// <summary>A group's matchup against the enemy round a ship (<see cref="EnemyNear"/>: one falling back on it, is it a
+    /// match for them?); infinite with none.</summary>
+    public double GroupAgainst(in AiContext ctx, GroupSystem.Group g, ShipState of, MatchupSide theirs)
+    {
         if (theirs.Count == 0)
             return double.PositiveInfinity;
+        this.own.Clear();
+        AddGroup(ctx.World, g, this.own);
         return this.own.Count == 0 ? 0 : Judge(ctx, of.Entity, of.Side, of.Position, this.own, theirs).Confidence;
     }
 
