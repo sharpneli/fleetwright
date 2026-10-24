@@ -36,6 +36,11 @@ public sealed class MatchupProfile
     public double DeckMeanMm { get; }
 
     public MatchupGun[] Guns { get; }
+
+    static int made;
+    /// <summary>Its number among every profile made (dense among a world's, made together): where a gun keeps its table
+    /// against it (<see cref="MatchupGun.Against"/>).</summary>
+    internal int Number { get; } = Interlocked.Increment(ref made);
     /// <summary>The chief guns' reach (<see cref="BatteryRow.Chief"/>: the heaviest of them), m; 0 without any.</summary>
     public double MainReachM { get; }
 
@@ -262,14 +267,18 @@ public sealed class MatchupGun
     }
 
     // against each class met: the hit chance and the out exponent by range step (MatchupProfile.RangeStepM), made the
-    // first time the pair is judged (the judgement's cost is these, not the sums over them)
-    readonly Dictionary<MatchupProfile, double[]> pairs = new(ReferenceEqualityComparer.Instance);
+    // first time the pair is judged (the judgement's cost is these, not the sums over them); by the class's number, from
+    // the lowest met (a judgement asks hundreds of millions of times in a Jutland: an array, not a hash)
+    double[]?[] pairs = [];
+    int pairsFrom;
 
     /// <summary>Against a class at a range within reach: the hit chance (<see cref="Matchup.HitChance"/>) and the out
     /// exponent (<see cref="Matchup.OutExponent"/>), from the pair's table, linear between its steps.</summary>
     public (double Hit, double Exponent) Against(MatchupProfile t, double rangeM, SimSettings s)
     {
-        if (!pairs.TryGetValue(t, out var tab))
+        int at = t.Number - pairsFrom;
+        var tab = (uint)at < (uint)pairs.Length ? pairs[at] : null;
+        if (tab == null)
         {
             tab = new double[2 * fall.Length];
             for (int i = 0; i < fall.Length; i++)
@@ -277,7 +286,7 @@ public sealed class MatchupGun
                 double r = Math.Min(Math.Max(i, 0.5) * MatchupProfile.RangeStepM, ReachM);
                 (tab[2 * i], tab[2 * i + 1]) = (Matchup.HitChance(this, t, r, s), Matchup.OutExponent(this, t, r, s));
             }
-            pairs[t] = tab;
+            Keep(t.Number, tab);
         }
         double u = Math.Clamp(rangeM / MatchupProfile.RangeStepM, 0, fall.Length - 1);
         int k = Math.Min((int)u, fall.Length - 2);
@@ -285,6 +294,20 @@ public sealed class MatchupGun
             return (tab[0], tab[1]);
         double w = u - k;
         return (tab[2 * k] + w * (tab[2 * k + 2] - tab[2 * k]), tab[2 * k + 1] + w * (tab[2 * k + 3] - tab[2 * k + 1]));
+    }
+
+    void Keep(int number, double[] tab)
+    {
+        if (pairs.Length == 0)
+            pairsFrom = number;
+        int from = Math.Min(pairsFrom, number), to = Math.Max(pairsFrom + pairs.Length, number + 1);
+        if (from != pairsFrom || to > pairsFrom + pairs.Length)
+        {
+            var grown = new double[]?[Math.Max(to - from, 2 * pairs.Length)];
+            pairs.CopyTo(grown, pairsFrom - from);
+            (pairs, pairsFrom) = (grown, from);
+        }
+        pairs[number - pairsFrom] = tab;
     }
 
     /// <summary>The fall (degrees under the horizontal) and striking speed at a range within reach.</summary>
@@ -377,11 +400,18 @@ public static class Matchup
         }
         double c = plain.Confidence(s.MatchupFloor);
         var style = MatchupStyle.Gunfight;
-        if (byA != 0 && Engage(a, b, line, MatchupStyle.AttackByA, byA, byB, s, sightM).Confidence(s.MatchupFloor) > c)
+        MatchupTerms withA = default, withB = default;   // each style weighed, kept for the one chosen
+        if (byA != 0 && (withA = Engage(a, b, line, MatchupStyle.AttackByA, byA, byB, s, sightM)).Confidence(s.MatchupFloor) > c)
             style |= MatchupStyle.AttackByA;
-        if (byB != 0 && Engage(a, b, line, MatchupStyle.AttackByB, byA, byB, s, sightM).Confidence(s.MatchupFloor) < c)
+        if (byB != 0 && (withB = Engage(a, b, line, MatchupStyle.AttackByB, byA, byB, s, sightM)).Confidence(s.MatchupFloor) < c)
             style |= MatchupStyle.AttackByB;
-        var t = style == MatchupStyle.Gunfight ? plain : Engage(a, b, line, style, byA, byB, s, sightM);
+        var t = style switch
+        {
+            MatchupStyle.Gunfight => plain,
+            MatchupStyle.AttackByA => withA,
+            MatchupStyle.AttackByB => withB,
+            _ => Engage(a, b, line, style, byA, byB, s, sightM),
+        };
         return new MatchupResult(t.Confidence(s.MatchupFloor), speedA, speedB, t with { AttackersA = byA, AttackersB = byB });
     }
 
