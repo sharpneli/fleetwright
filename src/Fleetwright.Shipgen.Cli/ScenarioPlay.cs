@@ -56,6 +56,11 @@ static class ScenarioPlay
             var end = new ScenarioEnd(s, w, ai);
             var guns = new MainGuns();
             int seen = 0;
+            var probes0 = (long[])w.Probes.Ticks.Clone();
+            var calls0 = (long[])w.Probes.Calls.Clone();
+            w.Probes.ResetMax();
+            long alloc0 = GC.GetAllocatedBytesForCurrentThread();
+            int g0 = GC.CollectionCount(0), g1 = GC.CollectionCount(1), g2 = GC.CollectionCount(2);
             var sw = Stopwatch.StartNew();
             try
             {
@@ -84,11 +89,13 @@ static class ScenarioPlay
                 continue;
             }
             double wall = sw.Elapsed.TotalSeconds;
+            var cost = new PlayCost(probes0, calls0, GC.GetAllocatedBytesForCurrentThread() - alloc0,
+                GC.CollectionCount(0) - g0, GC.CollectionCount(1) - g1, GC.CollectionCount(2) - g2);
             var result = end.Result();
             runs.Add((seed, end, result, wall));
             if (seeds == 1)
             {
-                PrintOne(s, end, result, names, wall, w, ai);
+                PrintOne(s, end, result, names, wall, w, ai, cost);
                 guns.Print("  ");
             }
             else
@@ -222,7 +229,10 @@ static class ScenarioPlay
         return lost.Count > 0 ? "   (" + string.Join(", ", lost) + ")" : "";
     }
 
-    static void PrintOne(Scenario s, ScenarioEnd end, SideResult[] result, Dictionary<int, string> names, double wall, World w, AiSystem ai)
+    /// <summary>The play loop's cost: the probes before it, and what it allocated and collected (docs/profiling.md).</summary>
+    sealed record PlayCost(long[] Ticks0, long[] Calls0, long Allocated, int Gen0, int Gen1, int Gen2);
+
+    static void PrintOne(Scenario s, ScenarioEnd end, SideResult[] result, Dictionary<int, string> names, double wall, World w, AiSystem ai, PlayCost cost)
     {
         string Name(int e) => names.TryGetValue(e, out var n) ? n : $"#{e}";
         string SideName(int side) => side >= 0 && side < s.Sides.Length ? s.Sides[side] : "?";
@@ -300,13 +310,17 @@ static class ScenarioPlay
         Console.WriteLine($"  at the end {held} units held by the player, {onTask} out of their lines on tasks; {ai.Captains.Notices + ai.Admirals.Notices} notices raised");
         // what the chain of command cost (docs/battle/command.md 5.1d: the commanders cost little)
         double game = (end.EndMs - s.Start.Ms) / 1000.0;
-        Console.WriteLine("the AI's layers (share of the run, calls a game second, each, longest):");
+        // and where the play's time went: every probe, the systems' events and the parts timed inside them (docs/profiling.md)
+        Console.WriteLine($"where the time went ({cost.Allocated / 1048576.0:F1} MB allocated, gen0/1/2 {cost.Gen0}/{cost.Gen1}/{cost.Gen2}; " +
+                          "share of the run, calls a game second, each, longest):");
         for (int i = 0; i < w.Probes.Count; i++)
-            if (w.Probes.Names[i].StartsWith("AI: ", StringComparison.Ordinal) && w.Probes.Calls[i] > 0)
-            {
-                double ms = Probes.Ms(w.Probes.Ticks[i]);
-                Console.WriteLine($"  {w.Probes.Names[i],-24} {ms / 1000 / wall,7:P2}  {w.Probes.Calls[i] / game,7:F3}  {ms * 1000 / w.Probes.Calls[i],9:F1} µs   ({Probes.Ms(w.Probes.Max[i]):F2} ms)");
-            }
+        {
+            long calls = w.Probes.Calls[i] - cost.Calls0[i];
+            if (calls <= 0)
+                continue;
+            double ms = Probes.Ms(w.Probes.Ticks[i] - cost.Ticks0[i]);
+            Console.WriteLine($"  {w.Probes.Names[i],-26} {ms / 1000 / wall,7:P2}  {calls / game,9:F3}  {ms * 1000 / calls,9:F1} µs   ({Probes.Ms(w.Probes.Max[i]):F2} ms)");
+        }
     }
 
     /// <summary>What the "done" end waits on (command.md "The end"): each side's phase, and its ships afloat not yet home,

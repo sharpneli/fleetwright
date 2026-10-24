@@ -48,6 +48,15 @@ public sealed class CubeIndex
     /// <summary>The items in the 27 cubes round a point, each once, in index order (<see cref="Found"/>); how many.</summary>
     public int Near(Vec3d p)
     {
+        int n = NearAnyOrder(p);
+        Array.Sort(found, 0, n);
+        return n;
+    }
+
+    /// <summary><see cref="Near"/> in no particular order: for a question whose answer doesn't hang on the order (is any
+    /// of them there?), without the sort.</summary>
+    public int NearAnyOrder(Vec3d p)
+    {
         long cx = Cube(p.X), cy = Cube(p.Y), cz = Cube(p.Z);
         int n = 0;
         stamp++;
@@ -60,7 +69,6 @@ public sealed class CubeIndex
                             seen[j] = stamp;
                             found[n++] = j;
                         }
-        Array.Sort(found, 0, n);
         return n;
     }
 }

@@ -34,7 +34,9 @@ public sealed class ShipClassRegistry : IDisposable
     }
 
     readonly object gate = new();
-    readonly List<Entry> entries = [];
+    // read without the lock: append-only, grown under it by a copy (adds are rare), since the sim thread reads a class
+    // many times a moment and a lock once contended by the builders stays on its slow path
+    volatile Entry[] entries = [];
     readonly Dictionary<ContentHash, int> byHash = [];
     readonly BlockingCollection<int> queue = [];
     readonly Thread[] workers;
@@ -63,8 +65,8 @@ public sealed class ShipClassRegistry : IDisposable
         {
             if (byHash.TryGetValue(hash, out int id))
                 return id;
-            id = entries.Count;
-            entries.Add(new Entry { Hash = hash, Design = design });
+            id = entries.Length;
+            entries = [.. entries, new Entry { Hash = hash, Design = design }];
             byHash[hash] = id;
             queue.Add(id);
             if (!started)
@@ -84,16 +86,16 @@ public sealed class ShipClassRegistry : IDisposable
         {
             if (byHash.TryGetValue(c.DesignHash, out int id))
                 return id;
-            id = entries.Count;
+            id = entries.Length;
             var e = new Entry { Hash = c.DesignHash, Class = c };
             e.Done.Set();
-            entries.Add(e);
+            entries = [.. entries, e];
             byHash[c.DesignHash] = id;
             return id;
         }
     }
 
-    readonly List<Loadout> loadouts = [];
+    volatile Loadout[] loadouts = [];   // as entries
 
     /// <summary>Adds a loadout (a ship's shells other than her design's, docs/battle/shells-armour-damage.md S5): its id,
     /// the one a <c>ShipSystem.Load</c> command carries; the same loadout of the same class gets the same id.</summary>
@@ -101,38 +103,24 @@ public sealed class ShipClassRegistry : IDisposable
     {
         lock (gate)
         {
-            for (int i = 0; i < loadouts.Count; i++)
+            for (int i = 0; i < loadouts.Length; i++)
                 if (ReferenceEquals(loadouts[i].Class, l.Class) && loadouts[i].Hash == l.Hash)
                     return i;
-            loadouts.Add(l);
-            return loadouts.Count - 1;
+            loadouts = [.. loadouts, l];
+            return loadouts.Length - 1;
         }
     }
 
-    public int LoadoutCount
-    {
-        get
-        {
-            lock (gate)
-                return loadouts.Count;
-        }
-    }
+    public int LoadoutCount => loadouts.Length;
 
     /// <summary>A loadout by its id, or null for none.</summary>
     public Loadout? LoadoutOf(int id)
     {
-        lock (gate)
-            return id >= 0 && id < loadouts.Count ? loadouts[id] : null;
+        var all = loadouts;
+        return id >= 0 && id < all.Length ? all[id] : null;
     }
 
-    public int Count
-    {
-        get
-        {
-            lock (gate)
-                return entries.Count;
-        }
-    }
+    public int Count => entries.Length;
 
     public ContentHash HashOf(int id) => EntryOf(id).Hash;
 
@@ -198,13 +186,13 @@ public sealed class ShipClassRegistry : IDisposable
     public List<int> Unused()
     {
         lock (gate)
-            return [.. Enumerable.Range(0, entries.Count).Where(i => entries[i].Refs == 0 && entries[i].Done.IsSet)];
+            return [.. Enumerable.Range(0, entries.Length).Where(i => entries[i].Refs == 0 && entries[i].Done.IsSet)];
     }
 
     Entry EntryOf(int id)
     {
-        lock (gate)
-            return id >= 0 && id < entries.Count ? entries[id] : throw new ArgumentOutOfRangeException(nameof(id), $"no class {id}");
+        var all = entries;
+        return id >= 0 && id < all.Length ? all[id] : throw new ArgumentOutOfRangeException(nameof(id), $"no class {id}");
     }
 
     void Work()

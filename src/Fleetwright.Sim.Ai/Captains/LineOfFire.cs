@@ -11,11 +11,14 @@ namespace Fleetwright.Sim.Ai.Captains;
 /// <see cref="SimSettings.TorpedoFoulM"/> of it on its run, each going on as she is (a slow weapon: a flotilla turned
 /// together sees its tracks bend astern of the line, clear of the boats ahead). The ships off rails go in a grid once a
 /// think (the captains', at a moment); a segment is checked a cube at a time along it, so a question is local, never
-/// ships × ships. Not world state: rebuilt when asked at a new moment. Allocates only to grow.</summary>
+/// ships × ships. A grid a side, so a question only meets the ships it asks about, never the enemy round the fall. Not
+/// world state: rebuilt when asked at a new moment. Allocates only to grow.</summary>
 public sealed class LineOfFire
 {
-    readonly CubeIndex grid = new();
+    readonly CubeIndex?[] grids = new CubeIndex?[256];   // by side
+    readonly List<byte> sides = [];   // the sides with ships off rails at this moment
     long builtMs = long.MinValue;
+    double cell;
 
     void Build(in AiContext ctx)
     {
@@ -23,11 +26,19 @@ public sealed class LineOfFire
             return;
         builtMs = ctx.NowMs;
         var store = ctx.Ships;
-        grid.Clear(store.Slots, ctx.Settings.LineOfFireCellM);
+        cell = ctx.Settings.LineOfFireCellM;
+        sides.Clear();
         for (int k = 0; k < store.OffRailsCount; k++)
         {
             int slot = store.OffRailsSlot(k);
-            grid.Add(slot, store[slot].Position);
+            var x = store[slot];
+            var grid = grids[x.Side] ??= new CubeIndex();
+            if (!sides.Contains(x.Side))
+            {
+                sides.Add(x.Side);
+                grid.Clear(store.Slots, cell);
+            }
+            grid.Add(slot, x.Position);
         }
     }
 
@@ -61,23 +72,29 @@ public sealed class LineOfFire
         var store = ctx.Ships;
         var relations = ctx.World.Relations;
         var torpedo = dir * speedMs;
-        double t0 = s.FireFoulNearM / speedMs, t1 = runM / speedMs, turn = Math.Sin(s.TorpedoFoulTurnDeg * Math.PI / 180), cell = grid.Cell;
+        double t0 = s.FireFoulNearM / speedMs, t1 = runM / speedMs, turn = Math.Sin(s.TorpedoFoulTurnDeg * Math.PI / 180);
         int steps = (int)(runM / cell) + 1;
-        for (int i = 0; i <= steps; i++)
+        foreach (byte side in sides)
         {
-            int n = grid.Near(own.Position + dir * Math.Min(runM, i * cell));
-            foreach (int slot in grid.Found(n))
+            if (relations.Hostile(own.Side, side))
+                continue;
+            var grid = grids[side]!;
+            for (int i = 0; i <= steps; i++)
             {
-                var x = store[slot];
-                if (x.Entity == own.Entity || relations.Hostile(own.Side, x.Side))
-                    continue;
-                // where she is from the torpedo's start, and how she moves from it; her margin grows as far as she could
-                // turn off her course by then. Her distance less the margin is convex in t: its least by golden section
-                var q = x.Position - own.Position;
-                var u = x.Forward * x.Speed - torpedo;
-                double drift = turn * x.Speed;
-                if (Clearance(q, u, drift, s.TorpedoFoulM, t0, t1) <= 0)
-                    return true;
+                int n = grid.NearAnyOrder(own.Position + dir * Math.Min(runM, i * cell));
+                foreach (int slot in grid.Found(n))
+                {
+                    var x = store[slot];
+                    if (x.Entity == own.Entity)
+                        continue;
+                    // where she is from the torpedo's start, and how she moves from it; her margin grows as far as she could
+                    // turn off her course by then. Her distance less the margin is convex in t: its least by golden section
+                    var q = x.Position - own.Position;
+                    var u = x.Forward * x.Speed - torpedo;
+                    double drift = turn * x.Speed;
+                    if (Clearance(q, u, drift, s.TorpedoFoulM, t0, t1) <= 0)
+                        return true;
+                }
             }
         }
         return false;
@@ -115,22 +132,31 @@ public sealed class LineOfFire
         var store = ctx.Ships;
         var relations = ctx.World.Relations;
         var ab = b - a;
-        double len = ab.Length, cell = grid.Cell;
+        double len = ab.Length;
         var dir = len > 0 ? ab * (1 / len) : Vec3d.Zero;
-        int steps = (int)(len / cell) + 1;
-        for (int i = 0; i <= steps; i++)
+        // the cubes round points a cube apart along it; a segment that fits in one cube's reach of its middle (a gun's
+        // fall) needs only the middle's, which holds every ship the points' would
+        bool one = len / 2 + width <= cell;
+        int steps = one ? 0 : (int)(len / cell) + 1;
+        foreach (byte side in sides)
         {
-            var p = a + dir * Math.Min(len, i * cell);
-            int n = grid.Near(p);
-            foreach (int slot in grid.Found(n))
+            if (relations.Hostile(own.Side, side))
+                continue;
+            var grid = grids[side]!;
+            for (int i = 0; i <= steps; i++)
             {
-                var x = store[slot];
-                if (x.Entity == own.Entity || relations.Hostile(own.Side, x.Side))
-                    continue;
-                var q = x.Position - a;
-                double along = Math.Clamp(Vec3d.Dot(q, dir), 0, len);
-                if ((q - dir * along).LengthSquared <= width * width)
-                    return true;
+                var p = one ? a + dir * (len / 2) : a + dir * Math.Min(len, i * cell);
+                int n = grid.NearAnyOrder(p);
+                foreach (int slot in grid.Found(n))
+                {
+                    var x = store[slot];
+                    if (x.Entity == own.Entity)
+                        continue;
+                    var q = x.Position - a;
+                    double along = Math.Clamp(Vec3d.Dot(q, dir), 0, len);
+                    if ((q - dir * along).LengthSquared <= width * width)
+                        return true;
+                }
             }
         }
         return false;
