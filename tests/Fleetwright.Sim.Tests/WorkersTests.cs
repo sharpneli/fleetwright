@@ -179,4 +179,43 @@ public class WorkersTests
         using var shuffled = new Workers(0, shuffleSeed: 9);
         Assert.Equal(h0, Play(shuffled, out _, out _));
     }
+
+    [Fact]
+    public void Gunnery_is_the_same_on_any_number_of_workers()
+    {
+        // two lines of ten at 11 km, each ship's every battery on the ship opposite (W6: the batteries' seconds go wide,
+        // their salvos scheduled after in battery order); smoke on, so two batteries of a ship share a pair
+        var settings = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json")) with { Smoke = true };
+        ulong Play(Workers workers, out int hits)
+        {
+            var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), 3, settings) { Workers = workers };
+            var cls = Fleet.Get("dreadnought").Class!;
+            int c = w.Ships.AddClass(cls);
+            w.Apply(Command.SetWeather(25_000));
+            for (int k = 0; k < 10; k++)
+            {
+                w.Apply(ShipSystem.Spawn(c, 56.5 + 0.007 * k, 4.0, 0, 15, side: 1));
+                w.Apply(ShipSystem.Spawn(c, 56.5 + 0.007 * k, 4.18, 0, 15, side: 2));
+            }
+            w.AdvanceTo(w.Time + 5_000);
+            for (int k = 0; k < 10; k++)
+                for (int b = 0; b < cls.Batteries.Length; b++)
+                {
+                    w.Apply(GunnerySystem.Engage(2 * k + 1, b, 2 * k + 2));
+                    w.Apply(GunnerySystem.Engage(2 * k + 2, b, 2 * k + 1));
+                }
+            w.AdvanceTo(w.Time + 300_000);
+            hits = 0;
+            for (int i = 0; i < w.CombatLog.Count; i++)
+                hits += w.CombatLog.Newest(i).Kind == CombatEvent.Hit ? 1 : 0;
+            return w.ComputeHash();
+        }
+        using var inline = new Workers(0);
+        ulong h0 = Play(inline, out int hits);
+        Assert.True(hits > 0, "no hits: the guns didn't fight");
+        using var four = new Workers(4);
+        Assert.Equal(h0, Play(four, out _));
+        using var shuffled = new Workers(0, shuffleSeed: 2);
+        Assert.Equal(h0, Play(shuffled, out _));
+    }
 }

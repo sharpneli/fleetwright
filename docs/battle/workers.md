@@ -1,5 +1,5 @@
 # Plan: the sim's workers (the job system)
-Status: **agreed 2026-10-24** (the decisions below answered); W0-W4 built 2026-10-24.
+Status: **agreed 2026-10-24** (the decisions below answered); W0-W4 and W6 built 2026-10-24.
     Updated: 2026-10-24
 
 The job system the architecture agreed from the start (`docs/world/architecture.md` "Threaded throughout", decision 1)
@@ -190,10 +190,23 @@ The decisions stay sequential (a pick sees the batteries the ships before it put
 lazy creation inside a job is an error (it would race), asserted in Debug. This step only pays where the judgements and
 candidates are the cost; W0's numbers decide how much of it to do.
 
-### W6 Gunnery
+### W6 Gunnery - done 2026-10-24
 
 Each battery's second split: the readings, the tracker and the solution (the cost) as a job, by battery; the salvo,
 its shells into `ShellSystem`, the log, the state changes applied on the sim thread in battery order.
+
+Built: a battery's second begins on the sim thread in battery order (`Start`: let go if its ship or target is gone,
+silent off the fine tier, its instruments picked again: `AddSensors` reads and flags its ship's other batteries, so it
+stays in order); the rest (`Second`: readings, tracker, solution, the mounts ordered, the salvo timed) is the job
+(chunks of 4, inline under 16), its firing flags per worker, its smoke pair from the cache or worked on the worker; then
+in battery order the pair's bookkeeping and the salvo's event. The salvo itself is an event, as before. The Jutland's
+tick 87 -> 44.5 µs; the play 156.4 -> 101.6 s on 8 workers, the same output and hash.
+
+The step now runs over slot ranges (chunks of 32, `ShipStore.IsFine`), so a chunk writes its own stretch of the store's
+columns; and a probe sums every thread's time in it ("Ships: step, all threads"). That sum is 85 µs a tick on 8 workers
+(83 on 4) against 43 inline: the per-ship work costs ~2x on the workers, the same with the slots in order, so not lines
+shared between workers but the ships' data cold in the other cores' caches (this machine's 16 cores are two dies).
+W8's to look at (keeping the workers on the sim thread's die).
 
 ### W7 Damage steps
 

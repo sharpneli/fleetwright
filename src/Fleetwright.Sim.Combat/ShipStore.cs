@@ -175,6 +175,9 @@ public sealed class ShipStore
     public int FineCount => fine.Count;
     public int FineSlot(int i) => fine[i];
 
+    /// <summary>Whether a slot's ship is on the fine tick.</summary>
+    public bool IsFine(int slot) => fine.Has(slot);
+
     /// <summary>How many live ships are coarse, and the i-th of them (in no order that matters).</summary>
     public int CoarseCount => coarse.Count;
     public int CoarseSlot(int i) => coarse[i];
@@ -205,6 +208,7 @@ public sealed class ShipStore
 
         public int Count { get; private set; }
         public int this[int i] => slots[i];
+        public bool Has(int slot) => index[slot] >= 0;
 
         public void Grow(int n)
         {

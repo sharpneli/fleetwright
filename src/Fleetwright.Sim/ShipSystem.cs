@@ -57,6 +57,7 @@ public sealed partial class ShipSystem : IWorldSystem
         Store = new ShipStore(settings);
         this.probes = probes;
         stepProbe = probes.Register("Ships: step");
+        stepBusyProbe = probes.Register("Ships: step, all threads");
         contactsProbe = probes.Register("Ships: contacts");
         railsProbe = probes.Register("Ships: rails check");
         railsEventProbe = probes.Register("Ships: rails events");
@@ -67,7 +68,7 @@ public sealed partial class ShipSystem : IWorldSystem
     }
 
     readonly Probes probes;
-    readonly int stepProbe, contactsProbe, railsProbe, railsEventProbe, landProbe, encountersProbe, sightingProbe, coarseProbe;
+    readonly int stepProbe, stepBusyProbe, contactsProbe, railsProbe, railsEventProbe, landProbe, encountersProbe, sightingProbe, coarseProbe;
 
     /// <summary>The registry ids ships have been made of, in the order first used: the classes in the world.</summary>
     public IReadOnlyList<int> ClassesInUse => used;
@@ -336,8 +337,9 @@ public sealed partial class ShipSystem : IWorldSystem
             return;
         }
         nextTickMs = -1;
-        ShipMotion.StepAll(Store, world.Time.Ms, settings, world.Shore, world.Workers);
+        long busy = ShipMotion.StepAll(Store, world.Time.Ms, settings, world.Shore, world.Workers);
         probes.Add(stepProbe, t);
+        probes.AddTicks(stepBusyProbe, busy);   // the workers' share: against the step's wall time, how wide it went
         if (world.Time.Ms % settings.RailsCheckMs == 0)
         {
             if (settings.RailsEnabled)

@@ -245,6 +245,27 @@ public sealed class GunnerySystem : IWorldSystem
     bool[] firing = new bool[64];
     int[] fireLoad = new int[64];
 
+    // a tick's batteries (docs/battle/workers.md W6): each one's start in order on the sim thread (let go, its instruments
+    // picked again: those reach its ship's other batteries), the rest of its second as a job (readings, the tracker, the
+    // solution, the mounts ordered: its own state only), then in order the smoke cache's bookkeeping for its pair and its
+    // salvo's event. Per battery due: whether it asked the smoke on its line (its depths, the work's time) and when its
+    // salvo goes (-1 none); per worker, its mounts' firing flags.
+    int[] due = new int[64];
+    bool[] dueSmoked = new bool[64];
+    long[] dueTicks = new long[64], dueWhen = new long[64];
+    double[] dueTau = new double[64 * SmokeSystem.PairTaus];
+    bool[][] firingOf = [new bool[64]];
+    const int RunChunk = 4, RunMinBatteries = 16;
+
+    readonly struct RunJob(GunnerySystem g, World world, long now) : IJob
+    {
+        public void Run(int from, int to, int worker)
+        {
+            for (int i = from; i < to; i++)
+                g.Second(world, i, now, worker);
+        }
+    }
+
     internal GunnerySystem(SimSettings settings, ShipSystem ships, ShellSystem shells, CombatLog log, ulong seed)
     {
         (this.settings, this.ships, this.shells, this.log) = (settings, ships, shells, log);
@@ -562,14 +583,45 @@ public sealed class GunnerySystem : IWorldSystem
     void Tick(World world, bool schedule)
     {
         long now = world.Time.Ms, step = settings.FireControlMs;
+        if (!schedule)
+        {
+            int n = 0;
+            for (int f = 0; f < highFc; f++)
+                if (fcs[f].Alive && Start(world, f, now))
+                {
+                    if (n == due.Length)
+                    {
+                        Array.Resize(ref due, 2 * n);
+                        Array.Resize(ref dueSmoked, 2 * n);
+                        Array.Resize(ref dueTicks, 2 * n);
+                        Array.Resize(ref dueWhen, 2 * n);
+                        Array.Resize(ref dueTau, 2 * n * SmokeSystem.PairTaus);
+                    }
+                    due[n++] = f;
+                }
+            if (firingOf.Length < world.Workers.Participants)
+            {
+                int had = firingOf.Length;
+                Array.Resize(ref firingOf, world.Workers.Participants);
+                for (int w = had; w < firingOf.Length; w++)
+                    firingOf[w] = new bool[64];
+            }
+            world.Smoke.PrepareQueries(world.Workers.Participants);
+            world.Workers.For(new RunJob(this, world, now), n, RunChunk, RunMinBatteries);
+            var store = ships.Store;
+            for (int i = 0; i < n; i++)
+            {
+                ref readonly var fc = ref fcs[due[i]];
+                if (dueSmoked[i])
+                    world.Smoke.Answered(world, store.SlotOf(fc.Shooter), store.SlotOf(fc.Target),
+                        dueTau.AsSpan(i * SmokeSystem.PairTaus, SmokeSystem.PairTaus), dueTicks[i]);
+                if (dueWhen[i] >= 0)
+                    world.Schedule(new WorldTime(dueWhen[i]), EventTier.Fine, due[i], Id, SalvoEvent, fc.Generation, fc.Arm);
+            }
+        }
         bool any = false;
         for (int f = 0; f < highFc; f++)
-            if (fcs[f].Alive)
-            {
-                if (!schedule)
-                    Run(world, f, now);
-                any |= fcs[f].Alive;
-            }
+            any |= fcs[f].Alive;
         if (any && !ticking)
         {
             long next = schedule ? (now + step - 1) / step * step : now + step;
@@ -578,8 +630,10 @@ public sealed class GunnerySystem : IWorldSystem
         }
     }
 
-    /// <summary>One battery's second: readings taken and taken in, the solution, the mounts ordered, the salvo timed.</summary>
-    void Run(World world, int f, long now)
+    /// <summary>One battery's second begun, on the sim thread in battery order: let go if its ship or target is gone,
+    /// silent off the fine tier, its instruments picked again after damage or a unit let go (what reaches its ship's
+    /// other batteries). Whether the rest of it (<see cref="Second"/>) runs.</summary>
+    bool Start(World world, int f, long now)
     {
         ref var fc = ref fcs[f];
         var store = ships.Store;
@@ -587,16 +641,15 @@ public sealed class GunnerySystem : IWorldSystem
         if (slot < 0 || tslot < 0)
         {
             Free(f);
-            return;
+            return false;
         }
         var ship = store[slot];
         if (ship.Tier != ClockTier.Fine)
         {
             fc.State = BatteryState.Silent;
-            return;
+            return false;
         }
         var cls = ship.Handling.Class;
-        var target = store[tslot];
         var cond = store.Combat.Condition(slot);
         if (cond.Version != fc.Condition || fc.Repick)
         {
@@ -606,6 +659,22 @@ public sealed class GunnerySystem : IWorldSystem
                 : stream.Derive((ulong)f).Derive((ulong)fc.Generation).Derive(0xDA4u).Derive((ulong)now);
             AddSensors(ref fc, f, cls, cls.Batteries[fc.Battery], cond, now, ref rs);
         }
+        return true;
+    }
+
+    /// <summary>The rest of due battery i's second, on a worker: readings taken and taken in, the solution, the mounts
+    /// ordered, the salvo timed (its event scheduled after, in battery order). Its own state only.</summary>
+    void Second(World world, int i, long now, int worker)
+    {
+        int f = due[i];
+        (dueSmoked[i], dueTicks[i], dueWhen[i]) = (false, 0, -1);
+        ref var fc = ref fcs[f];
+        var store = ships.Store;
+        int slot = store.SlotOf(fc.Shooter), tslot = store.SlotOf(fc.Target);
+        var ship = store[slot];
+        var cls = ship.Handling.Class;
+        var target = store[tslot];
+        var cond = store.Combat.Condition(slot);
         var computer = fc.Fit.Computer;
         var optics = fc.Fit.Optics;
         var crew = settings.GunneryCrews[(int)crews[ship.Side]];
@@ -625,7 +694,7 @@ public sealed class GunnerySystem : IWorldSystem
         double combat = settings.GunneryCombat;
         Air air = default;
         bool sees = false, aired = false;
-        Span<double> smoke = stackalloc double[SmokeSystem.PairTaus];
+        var smoke = dueTau.AsSpan(i * SmokeSystem.PairTaus, SmokeSystem.PairTaus);
         for (int k = 0; k < fc.SensorCount; k++)
         {
             ref var s = ref sensors[f * MaxSensors + k];
@@ -633,7 +702,7 @@ public sealed class GunnerySystem : IWorldSystem
             if (!due && (sees || !inSight))
                 continue;   // one that sees is enough to fire on; the margins are looked at for readings
             if (!aired)
-                (air, aired) = (AirAt(world, ship.Position, slot, inSight ? tslot : -1, smoke), true);
+                (air, aired) = (AirAt(world, ship.Position, slot, inSight ? tslot : -1, smoke, i, worker), true);
             var at = frame.ToWorld(s.X, s.Y, 0);
             double margin = inSight ? MarginOf(cls, s, optics, at, ship.HeadingDeg, target, air, smoke) : 0;
             bool seen = margin >= 1;
@@ -707,8 +776,9 @@ public sealed class GunnerySystem : IWorldSystem
         double bearing = Mod((laid ? Earth.Heading(muzzle, lay.GunHorizontal) : Earth.Bearing(ship.Position, aim)) - ship.HeadingDeg);
         double elevation = laid ? lay.GunElevationDeg : double.PositiveInfinity;
         (fc.OrderBearingDeg, fc.OrderElevationDeg) = (bearing, elevation);
-        if (firing.Length < mounts.Length)
-            firing = new bool[Math.Max(mounts.Length, firing.Length * 2)];
+        if (firingOf[worker].Length < mounts.Length)
+            firingOf[worker] = new bool[Math.Max(mounts.Length, firingOf[worker].Length * 2)];
+        var firing = firingOf[worker];
         bool bears = false;
         for (int j = 0; j < mounts.Length; j++)
         {
@@ -771,7 +841,7 @@ public sealed class GunnerySystem : IWorldSystem
         {
             fc.SalvoPending = true;
             fc.Arm++;
-            world.Schedule(new WorldTime(when), EventTier.Fine, f, Id, SalvoEvent, fc.Generation, fc.Arm);
+            dueWhen[i] = when;   // scheduled after the job, in battery order
         }
     }
 
@@ -780,15 +850,35 @@ public sealed class GunnerySystem : IWorldSystem
     /// to the target (docs/battle/smoke.md Z3).</summary>
     readonly record struct Air(double VisibilityM, double SunElevationDeg, double SunBearingDeg, bool Smoked);
 
+    /// <summary><see cref="AirAt(World, Vec3d, int, int, Span{double})"/> for due battery i on a worker: the smoke from
+    /// the cache or worked out on the worker's scratch, the cache's bookkeeping after the job.</summary>
+    Air AirAt(World world, Vec3d at, int slot, int tslot, Span<double> smoke, int i, int worker)
+    {
+        bool smoked = world.Smoke.On && tslot >= 0;
+        dueSmoked[i] = smoked;
+        if (smoked && !world.Smoke.Cached(world, slot, tslot, smoke))
+        {
+            long p0 = Probes.Now;
+            world.Smoke.WorkOut(world, slot, tslot, smoke, worker);
+            dueTicks[i] = Probes.Now - p0;
+        }
+        return AirOf(world, at, smoked);
+    }
+
     /// <summary>The air at a ship (slot) now, and the smoke on her lines to the target (slot; none for -1) into
     /// <paramref name="smoke"/> when the field is on: the looks' pair, so mostly from its cache.</summary>
     Air AirAt(World world, Vec3d at, int slot, int tslot, Span<double> smoke)
     {
-        double el = Light.SunElevationDeg(at, world.Time);
-        bool low = el >= settings.SightSilhouetteLowDeg && el <= settings.SightSilhouetteHighDeg;
         bool smoked = world.Smoke.On && tslot >= 0;
         if (smoked)
             world.Smoke.Tau(world, slot, tslot, smoke);
+        return AirOf(world, at, smoked);
+    }
+
+    Air AirOf(World world, Vec3d at, bool smoked)
+    {
+        double el = Light.SunElevationDeg(at, world.Time);
+        bool low = el >= settings.SightSilhouetteLowDeg && el <= settings.SightSilhouetteHighDeg;
         return new Air(world.Weather.At(at, world.Time).VisibilityM, el, low ? Light.SunBearingDeg(at, world.Time) : double.NaN, smoked);
     }
 
