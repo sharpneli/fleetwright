@@ -264,9 +264,55 @@ himself, then called them back into their force's line. Now each level decides f
 - **None of the three corrections moves it:** spent divisions off the attack, the battle line as "engaging" and
   flotillas-only forces each leave the Jutland as O7b has it (12 seeds each: Britain 44.2 and 43.0, Germany 60.9 and
   60.3), since Regensburg's unit is a flotilla by role. A role by size (a destroyer's displacement band) would make
-  her a scout, but the dev destroyer design (2,628 t) is a cruiser by size too: no clean physical line found. **For
-  the user:** whether a light cruiser leading flotillas (the era's flotilla leaders did lead the attacks) goes in with
-  them, or her unit is a scout's.
+  her a scout, but the dev destroyer design (2,628 t) is a cruiser by size too: no clean physical line found. **The
+  user (decision 7):** a leader goes in with its flotilla if it has the torpedoes, no exception made; and no ship is
+  torpedo craft by a label: O7c.
+
+### O7c Torpedoes or guns, by the matchup (decision 7)
+
+What there is: "torpedo craft" is a label on the class, tubes and no gun of 150 mm (`CaptainLayer.TorpedoCraft`, with
+its own copy of the line in `MatchupProfile.TorpedoCraft`). It decides a unit's role, whether a flotilla is free to go
+in, whether its admiral takes up an attack, whether a captain flies the attack run, and whether a contact is a torpedo
+threat. The matchup has a second, different test for the same thing: tubes bearing a thousand tonnes
+(`MatchupProfile.Attacker`, `MatchupAttackTubesPerKt` 0.5). Two hard lines for one meaning, and both wrong at the
+edges: Regensburg (105 mm) goes in with her boats, while the dev light cruiser (152 mm, 8 tubes) leading destroyers is
+kept back by its guns. A destroyer with one shielded 203 mm gun and 8 tubes is a "scout": never sent in, never flying
+the run, not even when ordered by hand, and not a torpedo threat once its class is made out. The matchup meanwhile
+judges its fights as if it attacks.
+
+**The rule:** no ship is torpedo craft by its design. Against an enemy, a class makes a torpedo attack when its
+torpedoes do more there than its guns would in the same time; whether the attack is worth its losses on the run in is
+the whole judgement's, as now (the attack style against the gunfight). So the 203 mm destroyer against a battleship
+can only run or attack with torpedoes, while against destroyers it fights with its gun. A leader with tubes goes in
+with its boats when torpedoes are its better weapon there, and a battleship's submerged tubes never send it in.
+
+- **The matchup** (`Matchup.Attackers`): a class with torpedoes left and under way is an attacker against the other
+  side when one salvo of its torpedoes at its attack range puts out more than its guns do over the attack's minutes
+  (its run in, the firing, its run out) at the lines' range. Both are the matchup's own reckonings (`Torpedoes`,
+  `Guns`) for that class alone. `Attacker`, `AttackRangeM`'s gate and `MatchupAttackTubesPerKt` go. The terms carry
+  the attacking classes of each side as a mask (64 classes at most, `MaxClasses`).
+- **One question for the AI:** a ship attacks with torpedoes if she has them in a launcher that works and her class is
+  among her unit's attackers in its judgement (`MatchupJudge.Near`). It replaces `TorpedoCraft` wherever an attack is
+  taken up by doctrine: the captain's run (`CaptainLayer.Fire`) and the admiral's (`AdmiralLayer.AttackStep`). An
+  ordered attack (by hand, by a commander or admiral) needs only torpedoes, since whoever ordered it judged; a
+  battleship told by hand to attack flies the run (the player may overrule).
+- **Torpedoes left** (`AnyTorpedoes`, the attack task's end) counts any ship's.
+- **Who is sent in whole** (`FlotillaAttacks.Free`, `FlotillasOnly`): a force goes in whole when every group of it with
+  torpedoes is an attacker against the enemy it's sent at. Regensburg and her flotillas, or light cruisers leading
+  destroyers, go in whole; a fleet with a battle squadron isn't, and its admiral sends in his attackers (O7b). A force
+  told to attack hands it to each group that's an attacker against the target; the others are through and keep their
+  station.
+- **The role** stays a rough default for disposition (the player sets it at will, and the admirals commit forces by
+  the matchup): a ship counts toward a flotilla when it's an attacker against a reference from its own fleet, the
+  heaviest class its side has at sea.
+- **A torpedo threat** (turning away): a contact whose class is made out is one when it has tubes and is an attacker
+  against the unit judging; before that, by its type, as now.
+- **Gone:** `CaptainLayer.TorpedoCraft` (both), the two `TorpedoCraftGunMm`, `MatchupProfile.TorpedoCraft`.
+- **Tests:** the light cruisers leading destroyers now go in whole (the O7b test turned round); the 203 mm destroyer
+  attacks a dreadnought with torpedoes and fights a destroyer with its gun; a battle squadron with submerged tubes
+  never flies the run unless ordered by hand; the matchup's attackers by class.
+- **Measured** against `00ca9ba9`: the Jutland (12 seeds), `tsushima` (10), `squadrons`, `flotilla`, and the
+  matchup's cost in the AI's share of a run.
 
 ### Still lacking (later steps, after the questions)
 
@@ -449,6 +495,7 @@ The mockup's `#chain` and `#screen` marks, in the game (`MapScene.TaskMarks.cs`;
 | **O6** | A unit's role: worked out, or set by the player; the commander and the map read it (decision 4) | **done 2026-10-23** |
 | **O7** | The chain of command: a force's admiral disposes his members by role, one implementation with the commander's (decision 3) | **done 2026-10-23** |
 | **O7b** | Battle decisions down the chain: a force's admiral sends in his own flotillas, by the commander's rule (one implementation); an Attack to a force handed down | **done 2026-10-23** |
+| **O7c** | Torpedoes or guns by the matchup: no torpedo-craft label; a class attacks where its torpedoes beat its guns; leaders go in with their boats (decision 7) | next |
 | **O8** | The mockup: `docs/map-ui/battle.html` `#tasks`, `#screen`, `#deploy`, `#chain`: the task menu, the role, the cursor's verbs, a screen's stations, a deploy's line, the chain in the rail | **done 2026-10-23**, for review |
 | **O8b** | The mockup again: the organise column (new squadron, divide, merge, form a force, leave) and Screen with several squadrons selected | **done 2026-10-23**, for review |
 | **O8c** | Drag and drop in the rail: ships between squadrons, a unit under another's admiral (in the game) | **done 2026-10-23** |
@@ -513,6 +560,11 @@ Against the same build with `ScreenSplitDeg` 0 (every screen in one body, as bef
 5. **A task menu**; the radial menu comes later, and is optional to use.
 6. **Screen and splitting are separate** (the user, after the mockup, 2026-10-23): the player and the admirals create and
    split squadrons by their own actions; Screen with several squadrons selected puts each on its station (O1c).
+7. **No torpedo-craft label** (the user, after O7b, 2026-10-24): a leader goes in with its flotilla if it has the
+   torpedoes, with no exception made. Whether a ship fights with its torpedoes or its guns is the matchup's, against
+   the enemy in front of it: a destroyer with one 203 mm gun facing a battleship can only run or attack with
+   torpedoes. The role is rough, a reference from its own fleet will do; the admirals commit forces by the matchup
+   (O7c).
 
 ## Questions for the user
 
