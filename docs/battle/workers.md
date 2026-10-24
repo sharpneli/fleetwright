@@ -1,5 +1,5 @@
 # Plan: the sim's workers (the job system)
-Status: **drafted 2026-10-24**, for the user's decisions (below); nothing built.
+Status: **agreed 2026-10-24** (the decisions below answered); W0-W2 built 2026-10-24.
     Updated: 2026-10-24
 
 The job system the architecture agreed from the start (`docs/world/architecture.md` "Threaded throughout", decision 1)
@@ -93,23 +93,50 @@ shuffled-chunk mode; an exception reaches the caller; a dispatch allocates nothi
 Each step: the probe before and after on squadrons, Tsushima and the Jutland, the play's output on 1 worker the same
 as today's (the step restructures, it doesn't change the sim), and on 8 workers the same as on 1.
 
-### W0 The bench (small)
+### W0 The bench (small) - done 2026-10-24
 
 `shipgen scenario X --play --workers N` (0 default until W1), and `--shuffle SEED` for principle 5. A check in the
 bench: the state hash at the end printed, so 1 and N are compared by one line. A micro-bench of a dispatch's cost
 (empty jobs, 250 items) for W1's numbers.
 
-### W1 The job system
+Built: `--workers N` (default the headless count), `--shuffle SEED`, `--spin US`; the hash on the play's last lines
+(a seed's line with `--seeds`). `shipgen workers [--items 250] [--item-ns 160] [--gap-us 100]`: 250 items of 160 ns
+(the Jutland's step) back to back and with 100 µs of serial work between dispatches (the rest of a tick):
+
+| workers | spin µs | back to back µs | with the gap µs |
+|---|---|---|---|
+| 0 | | 37.5 | 34.5 |
+| 4 | 0 / 50 / 200 | 18.2 / 9.7 / 10.1 | 23.9 / 24.0 / 10.1 |
+| 8 | 0 / 50 / 200 | 15.3 / 6.5 / 6.6 | 23.9 / 23.0 / 6.5 |
+
+A worker woken from its sleep on Windows comes in about as late as the whole 40 µs job (decision 2's worry), so the
+spin has to outlast the gap between dispatches: 50 µs doesn't cover a tick's, 200 does. The default is 250 µs.
+
+### W1 The job system - done 2026-10-24
 
 As above, with its tests. No system uses it yet.
 
-### W2 Ships' step
+Built as above (`Workers.cs`, `WorkersTests`): one chunked interface (`IJob.Run(from, to, worker)`); struct jobs reach
+the workers through a holder per job type and worker set, made at its first dispatch; the dispatch's generation rides in
+the top half of the chunk ticket, so a worker late from the last dispatch can never take a chunk of the next under the
+last one's count; a woken worker wakes the next sleeping one (the wake-ups' system calls spread, not queued on the sim
+thread); `Workers.Inline` (no threads) is every world's default. The app makes one set a world (`WorldSession`, the
+app's count), disposed after its host.
+
+### W2 Ships' step - done 2026-10-24
 
 `StepAll` as a job over the fine list: each ship's `Step` writes only its rows (`Slide`'s too: `landSide`,
 `routeNext`, the pose), `Shore` is read-only. The first real use, and the cheapest proof: 40 s of 139, a dispatch every
 50 game ms (a million in a Jutland), so it measures the dispatch's cost where it matters most. Expected: 40 s to under
 10 s on 8 workers if a dispatch costs a few µs; if it costs more, the chunking (a chunk of 32 ships) and the spin are
 tuned here.
+
+Built: `ShipMotion.StepAll` is a job over the fine list, chunks of 16, inline under 64 ships. The play's output the same
+as before on 0 and 8 workers (squadrons, Tsushima, the Jutland), the same hash on both. The Jutland (`--play`, 8
+workers, 250 µs spin, the same machine back to back): the step 46.6 -> 17.5 µs a tick (2.7x, the micro-bench's 6x
+less the ticks a long AI or sighting moment lets the workers fall asleep before), the play 166.5 -> 137.3 s. Tsushima
+(~70 ships off rails) gains nothing yet: 11.5 -> 12.0 µs; the threshold and the chunk are W8's to tune, with the other
+jobs in.
 
 ### W3 Sighting
 
@@ -180,7 +207,10 @@ again.
 - **Shipgen's and the land's own parallel builds** (`Shore`, the class builders): they stay as they are, outside the
   sim's workers.
 
-## Decisions (for the user)
+## Decisions (answered 2026-10-24)
+
+The user's answers: 1. capped at 8 (all cores blows up on high core counts); 2. a short spin (Windows is picky about
+when it wakes a thread): measured in W0, 250 µs; 3. W7's one-time change is acceptable; 4. the order is fine.
 
 1. **The worker count.** Headless: all cores less one, at most 8 (the reference). The app: cores less two (the render
    thread, the builders), at most 8, at least 0; a setting later if players ask.

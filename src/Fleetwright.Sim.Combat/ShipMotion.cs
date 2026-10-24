@@ -13,15 +13,26 @@ public static class ShipMotion
     const double Deg = Math.PI / 180;
 
     /// <summary>Moves every live ship off rails (the store's fine list) to <paramref name="nowMs"/> from wherever its
-    /// pose is, keeping them off the land if there is any.</summary>
-    public static void StepAll(ShipStore s, long nowMs, SimSettings set, Shore? shore = null)
+    /// pose is, keeping them off the land if there is any: a job over the fine list (docs/battle/workers.md W2), each
+    /// ship's step writing only her own slot.</summary>
+    public static void StepAll(ShipStore s, long nowMs, SimSettings set, Shore? shore = null, Workers? workers = null) =>
+        (workers ?? Workers.Inline).For(new StepJob(s, nowMs, set, shore), s.FineCount, StepChunk, StepMinShips);
+
+    // a chunk's ships: 16 at ~160 ns is a few µs, enough to pay a chunk's claim; under 64 ships (~10 µs a tick) the
+    // dispatch costs about what it saves, so a small fight runs inline (docs/battle/workers.md W2, measured)
+    const int StepChunk = 16, StepMinShips = 64;
+
+    readonly struct StepJob(ShipStore s, long nowMs, SimSettings set, Shore? shore) : IJob
     {
-        for (int k = 0; k < s.FineCount; k++)
-            if (s.FineSlot(k) is int i && s.poseMs[i] < nowMs)
-            {
-                Step(s, i, (nowMs - s.poseMs[i]) / 1000.0, set, shore);
-                s.poseMs[i] = nowMs;
-            }
+        public void Run(int from, int to, int worker)
+        {
+            for (int k = from; k < to; k++)
+                if (s.FineSlot(k) is int i && s.poseMs[i] < nowMs)
+                {
+                    Step(s, i, (nowMs - s.poseMs[i]) / 1000.0, set, shore);
+                    s.poseMs[i] = nowMs;
+                }
+        }
     }
 
     /// <summary>One ship, dt seconds.</summary>

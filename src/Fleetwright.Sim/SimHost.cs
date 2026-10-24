@@ -182,7 +182,7 @@ public sealed class SimHost : IDisposable
         s.PublishedAt = Probes.Now;
         s.Sequence = ++sequence;
         s.AchievedSpeed = achieved;
-        s.SimAllocatedBytes = GC.GetAllocatedBytesForCurrentThread();
+        s.SimAllocatedBytes = GC.GetAllocatedBytesForCurrentThread() + world.Workers.AllocatedBytes;   // and its workers'
         s.Error = error;
         snapshots.Publish();
         world.Probes.Add(publishProbe, t);

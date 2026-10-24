@@ -17,7 +17,7 @@ namespace Fleetwright.Shipgen.Cli;
 static class ScenarioPlay
 {
     public static int Run(string path, string settingsPath, string landPath, string designsPath, int threads, bool land,
-        int seeds, double fast, double fine, bool? smoke = null)
+        int seeds, double fast, double fine, bool? smoke = null, int workerCount = -1, ulong shuffle = 0, double spinUs = 250)
     {
         var settings = SimSettings.Load(settingsPath);
         if (smoke is bool on)
@@ -33,6 +33,11 @@ static class ScenarioPlay
             if (registry.ErrorOf(id) is { } err)
                 Console.WriteLine($"  {name}: {err}");
         var shore = shoreTask.Result;
+        // the sim's workers (docs/battle/workers.md): the host's, not the world's; --shuffle runs every job's chunks
+        // in a seeded order on one thread, so a job that depends on its chunks' order shows in the hash
+        int n = shuffle != 0 ? 0 : workerCount >= 0 ? workerCount : Workers.HeadlessCount;
+        using var workers = new Workers(n, spinUs, shuffle);
+        Console.WriteLine($"  {n} sim workers" + (shuffle != 0 ? $", chunks shuffled by {shuffle}" : "") + (n > 0 ? $", spinning {spinUs:G} µs" : ""));
 
         var runs = new List<(ulong Seed, ScenarioEnd End, SideResult[] Result, double Wall)>();
         var all = new MainGuns();
@@ -40,7 +45,7 @@ static class ScenarioPlay
         for (int i = 0; i < seeds; i++)
         {
             ulong seed = s.Seed + (ulong)i;
-            var w = new World(s.Start, seed, settings, registry, land ? shore : null);
+            var w = new World(s.Start, seed, settings, registry, land ? shore : null) { Workers = workers };
             var ai = new AiSystem(w);
             var start = ScenarioLoader.Apply(s, w, ai, classes);
             foreach (var x in start.Warnings)
@@ -59,7 +64,7 @@ static class ScenarioPlay
             var probes0 = (long[])w.Probes.Ticks.Clone();
             var calls0 = (long[])w.Probes.Calls.Clone();
             w.Probes.ResetMax();
-            long alloc0 = GC.GetAllocatedBytesForCurrentThread();
+            long alloc0 = GC.GetAllocatedBytesForCurrentThread() + workers.AllocatedBytes;
             int g0 = GC.CollectionCount(0), g1 = GC.CollectionCount(1), g2 = GC.CollectionCount(2);
             var sw = Stopwatch.StartNew();
             try
@@ -89,7 +94,7 @@ static class ScenarioPlay
                 continue;
             }
             double wall = sw.Elapsed.TotalSeconds;
-            var cost = new PlayCost(probes0, calls0, GC.GetAllocatedBytesForCurrentThread() - alloc0,
+            var cost = new PlayCost(probes0, calls0, GC.GetAllocatedBytesForCurrentThread() + workers.AllocatedBytes - alloc0,
                 GC.CollectionCount(0) - g0, GC.CollectionCount(1) - g1, GC.CollectionCount(2) - g2);
             var result = end.Result();
             runs.Add((seed, end, result, wall));
@@ -97,11 +102,12 @@ static class ScenarioPlay
             {
                 PrintOne(s, end, result, names, wall, w, ai, cost);
                 guns.Print("  ");
+                Console.WriteLine($"  the state at the end: {w.ComputeHash():x16}");
             }
             else
                 Console.WriteLine($"  seed {seed,6}: {Why(end.Reason),-7} at {Clock(s, end.EndMs)}  " +
                                   string.Join("   ", result.Select(r => $"{r.Name} lost {r.Lost}/{r.Ships} ({r.LostTonnes:0} t){(r.AimsMet ? ", aims met" : "")}")) +
-                                  Causes(end) + $"   ({wall:F1} s)" + (end.Missed > 0 ? $"   {end.Missed} log lines missed" : ""));
+                                  Causes(end) + $"   {w.ComputeHash():x16}   ({wall:F1} s)" + (end.Missed > 0 ? $"   {end.Missed} log lines missed" : ""));
             if (seeds > 1)
             {
                 guns.Print("           ");

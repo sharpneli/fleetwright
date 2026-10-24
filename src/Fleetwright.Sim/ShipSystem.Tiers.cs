@@ -732,7 +732,7 @@ public sealed partial class ShipSystem
         {
             if (Store.FineCount == 0)
                 return;
-            ShipMotion.StepAll(Store, world.Time.Ms, settings, world.Shore);
+            ShipMotion.StepAll(Store, world.Time.Ms, settings, world.Shore, world.Workers);
             while (Store.FineCount > 0)
                 ToCoarse(world, Store.FineSlot(Store.FineCount - 1));
             return;

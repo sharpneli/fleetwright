@@ -17,6 +17,7 @@ namespace Fleetwright.Map;
 public sealed class WorldSession : IDisposable
 {
     SimHost host;
+    Workers workers;   // the world's (docs/battle/workers.md): one set a world, disposed after its host
 
     /// <summary>The newest snapshot, taken at the start of this frame. The UI thread's; valid until the next frame.</summary>
     public Snapshot Current { get; private set; }
@@ -107,6 +108,7 @@ public sealed class WorldSession : IDisposable
         Ai = new AiSystem(w);
         w.Apply(Command.SetPlayerSide(0));   // the dev world's player: side 0, the spawner's first
         setup?.Invoke(w);
+        w.Workers = workers = new Workers(Workers.AppCount);
         host = Start(w);
         Current = host.Latest();
     }
@@ -230,11 +232,13 @@ public sealed class WorldSession : IDisposable
                 foreach (var rule in interest)
                     if (rule is { } r)
                         w.Apply(r);   // and the player's interest rules (what an encounter does to the clock)
-                var old = host;
+                var (old, oldWorkers) = (host, workers);
+                w.Workers = workers = new Workers(Workers.AppCount);
                 host = Start(w, p.Judge);
                 host.Truth = truth;
                 host.Detail = detail;
                 old.Dispose();
+                oldWorkers.Dispose();   // the old sim thread is done with them
                 (Ai, Scenario, ScenarioStart) = (ai, p.Scenario, start);
                 Generation++;
                 LoadSeconds = (p.Clock.Elapsed.TotalSeconds, p.ClassesSeconds);
@@ -340,5 +344,9 @@ public sealed class WorldSession : IDisposable
     bool askedPaused;
     readonly Command?[] interest = new Command?[2];   // the player's interest rules, by kind
 
-    public void Dispose() => host.Dispose();
+    public void Dispose()
+    {
+        host.Dispose();
+        workers.Dispose();
+    }
 }

@@ -50,6 +50,11 @@ public sealed class World
     /// snapshot's fill, and the parts systems time inside themselves. Only measures; the world never reads it.</summary>
     public Probes Probes { get; } = new();
 
+    /// <summary>The workers the systems' per-item passes go wide on (docs/battle/workers.md): the host's, set before the
+    /// world's thread starts (never while it runs) and disposed by whoever made them; inline by default. Never the
+    /// world's state: the same world on any count.</summary>
+    public Workers Workers { get; set; } = Workers.Inline;
+
     /// <param name="classes">Where ship classes come from; a registry of its own if none (it's shared when the app's
     /// art draws from the same builds).</param>
     /// <param name="shore">The land (immutable, so the map shares it); none for a world of water.</param>

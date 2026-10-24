@@ -336,7 +336,7 @@ public sealed partial class ShipSystem : IWorldSystem
             return;
         }
         nextTickMs = -1;
-        ShipMotion.StepAll(Store, world.Time.Ms, settings, world.Shore);
+        ShipMotion.StepAll(Store, world.Time.Ms, settings, world.Shore, world.Workers);
         probes.Add(stepProbe, t);
         if (world.Time.Ms % settings.RailsCheckMs == 0)
         {
