@@ -13,7 +13,7 @@ namespace Fleetwright.Sim.Tests;
 /// room; the tests that must cross land run in a world of water); runs repeat bit for bit.</summary>
 public class RailsTests(ITestOutputHelper output)
 {
-    static readonly WorldTime Start = WorldTime.FromUtc(1916, 5, 31, 14);
+    internal static readonly WorldTime Start = WorldTime.FromUtc(1916, 5, 31, 14);
     static readonly SimSettings Settings = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json"));
     const double Lat = 56.5, Lon = 4.0;
 
@@ -163,7 +163,7 @@ public class RailsTests(ITestOutputHelper output)
     /// <summary>n ships patrolling back and forth along their headings, a leg a day, for <paramref name="days"/>: with
     /// the land, in the Pacific, 35°S to 35°N and 170°W to 140°W, a day's leg clear of the continents (its islands slide
     /// them); in a world of water, round the globe from 40°S to 40°N.</summary>
-    static World Patrol(int n, int days, int[]? cuts = null, int sides = 1, bool land = true, double speed = 1)
+    internal static World Patrol(int n, int days, int[]? cuts = null, int sides = 1, bool land = true, double speed = 1)
     {
         var s = Settings with { RouteCapacity = days + 2, ShipCapacity = n };
         var (w, c) = Make(s, "destroyer", land);
@@ -191,25 +191,6 @@ public class RailsTests(ITestOutputHelper output)
         }
         w.AdvanceTo(Start + (long)days * 86_400_000);
         return w;
-    }
-
-    /// <summary>Among the Pacific islands at 1M x: ships going round an island slide on rails (terrain plan S3). Below
-    /// the snap speed they'd go round on the fine tick, hours of it at Hawaii, and a year would take far too long.</summary>
-    [Fact]
-    public void Two_thousand_ships_steam_a_year_in_seconds()
-    {
-        _ = Fleet.Get("destroyer");   // the golden cases build once for the run: outside the timing
-        var sw = Stopwatch.StartNew();
-        var w = Patrol(2000, 365, speed: 1_000_000);
-        sw.Stop();
-        var store = w.Ships.Store;
-        int onRails = 0;
-        for (int i = 0; i < store.Slots; i++)
-            onRails += store.OnRails(i) ? 1 : 0;
-        output.WriteLine($"2,000 ships, 365 legs each: a year in {sw.Elapsed.TotalSeconds:F1} s, {onRails} on rails at the end");
-        Assert.Equal(2000, onRails);
-        Assert.True(sw.Elapsed.TotalSeconds < 60, $"{sw.Elapsed.TotalSeconds:F1} s");
-        Assert.Equal(Start + 365L * 86_400_000, w.Time);
     }
 
     /// <summary>At the fine tier's top speed (below the coarse threshold, so off rails round the islands on the fine
@@ -273,5 +254,36 @@ public class RailsTests(ITestOutputHelper output)
         ulong a = Patrol(60, 20).ComputeHash();
         Assert.Equal(a, Patrol(60, 20).ComputeHash());
         Assert.Equal(a, Patrol(60, 20, [1, 4_999, 5_001, 86_400_000, 3, 7_777_777]).ComputeHash());
+    }
+}
+
+/// <summary>The rails' year against the wall clock, alone after the rest (<see cref="WallClock"/>): under the suite's
+/// parallel load it took twice as long (Debug, 2026-10-23: 61-78 s against 33 s alone).</summary>
+[Collection(WallClock.Name)]
+public class RailsClockTests(ITestOutputHelper output)
+{
+#if DEBUG
+    const double Limit = 120;   // Debug runs it about 4x slower than DevRelease (33 s against 7.6 s, 2026-10-24)
+#else
+    const double Limit = 60;
+#endif
+
+    /// <summary>Among the Pacific islands at 1M x: ships going round an island slide on rails (terrain plan S3). Below
+    /// the snap speed they'd go round on the fine tick, hours of it at Hawaii, and a year would take far too long.</summary>
+    [Fact]
+    public void Two_thousand_ships_steam_a_year_in_seconds()
+    {
+        _ = Fleet.Get("destroyer");   // the golden cases build once for the run: outside the timing
+        var sw = Stopwatch.StartNew();
+        var w = RailsTests.Patrol(2000, 365, speed: 1_000_000);
+        sw.Stop();
+        var store = w.Ships.Store;
+        int onRails = 0;
+        for (int i = 0; i < store.Slots; i++)
+            onRails += store.OnRails(i) ? 1 : 0;
+        output.WriteLine($"2,000 ships, 365 legs each: a year in {sw.Elapsed.TotalSeconds:F1} s, {onRails} on rails at the end");
+        Assert.Equal(2000, onRails);
+        Assert.True(sw.Elapsed.TotalSeconds < Limit, $"{sw.Elapsed.TotalSeconds:F1} s");
+        Assert.Equal(RailsTests.Start + 365L * 86_400_000, w.Time);
     }
 }

@@ -7,50 +7,38 @@ add what's found.
 
 ## Flaky tests
 
-- [ ] One `Fleetwright.Tests` test failed once (173 of 174) on 2026-10-22, run right after a game capture (the map UI's
-  notices change); `-v q` hid its name, and seven reruns passed. A suspect: a GPU test (`Category=Gpu`) meeting a
-  device the capture had just let go. To catch it: run with `--logger "console;verbosity=normal"` next time it shows.
+Hunted 2026-10-24: every flaky entry below is closed. The check was seven full DevRelease runs of all three test projects
+together, plus one full Debug run of `Fleetwright.Sim.Tests`. Runs 1-4 had one failure in all, the achieved speed (below);
+runs 5-7, after its fix, and the Debug run had none.
 
-- [ ] `RailsTests.Two_thousand_ships_steam_a_year_in_seconds` (a 60 s bound) fails in every full run of all three test
-  projects together (2026-10-22: 64-78 s) and passes alone in ~33 s, the same before and after smoke Z6 (32.8 against
-  33.0 s alone). Load, not a regression: `dotnet test` runs the projects in parallel. To settle it: the bound against
-  the suite run alone, or the test marked to run without the others.
-
-- [ ] `OrderPathTests.Two_thousand_ships_on_plain_orders_cost_the_AI_nothing` failed once in four full runs of
-  `Fleetwright.Sim.Tests` (Release, 2026-10-13, during terrain plan S3), and passes on its own. The failure message
-  wasn't caught. It's one of the allocation tests (`GC.GetAllocatedBytesForCurrentThread` over an hour of 2,000 ships
-  on plain orders must be zero), it has no land, and the terrain code returns early without it, so it's likely not
-  S1-S3's. The suspicion is the same as 2.5's (`docs/battle/plan.md`, "Learnt"): under parallel test load a path's
-  first runs (the JIT, tiering) allocate, and its warm-up (`Run(w, 120)` untimed) may be too short for tiering to
-  have settled before the measured hour. To hunt it: run the suite in a loop until it fails and keep the message
-  (the bytes and where), then compare a longer warm-up, `DOTNET_TieredCompilation=0`, and the test alone under load.
-- [ ] The other allocation tests warm up the same way and may share it: `ForceTests` (line ~400), `GroupTests`
-  (~189), `FormationRailsTests` (~443), `RandomStreamTests` (~78), `SlideTests.Sliding_allocates_nothing_and_costs_little`.
-  Seen failing since (2026-10-13, Release, on the commit before the coarse turn-together change and after it alike):
-  `FormationRailsTests.Contacts_and_snapped_searches_allocate_nothing`, `CoarseTierTests.Coarse_ships_in_an_encounter_allocate_nothing`
-  and `EncounterTests.Two_hundred_ships_in_one_fight_are_one_encounter_without_garbage`, each now and then (running
-  just the allocation tests, 1 run in 4 had two failures), each passing alone. Same suspicion as above.
-
-- [ ] `SimHostTests.A_live_run_replays_exactly_headless` failed once in a filtered Release run of 73 tests (2026-10-20,
-  the AI's baseline) at `Assert.Empty(violations)` (line 57: the snapshots read on another thread broke a rule), and
-  passed alone with and without that change. Not a timing limit: a snapshot race the parallel load shows now and then.
-  The violations' text wasn't kept; to hunt it, run it under load in a loop and print them.
-- [ ] `PictureTests.Two_hundred_ships_look_at_each_other_without_garbage` failed once in a full run (2026-10-14, after
-  4.3a) and passed alone and in the next full run. No ship fires in it, so it's not the damage system's; the same
-  suspicion as above.
-- [ ] `RailsTests.Two_thousand_ships_steam_a_year_in_seconds` (its 60 s limit) failed in two full Debug runs of
-  `Fleetwright.Sim.Tests` in a row (2026-10-19, shell contents C4, which touches no rails code) and passed alone both
-  times: 33.0 s against 32.3 s on the commit before. A timing test in Debug under the suite's parallel load: the limit
-  has little room there. Worth running it in Release, or with the load it meets in mind. Seen again twice 2026-10-21
-  (smoke Z0, Z1): 32.9 s alone against 33.2 s on the commit before Z1, so not the smoke system's (off there). Again
-  2026-10-23 (admiral's orders O9b: 62.9 s in the full Debug run, 33.1 s alone; O7b: 61 s, 31.9 s alone).
-- [ ] `ShipMotionTests.A_tick_allocates_nothing` failed in a full `dotnet test` of every assembly at once (2026-10-14,
-  lighting L4, which touches no sim code; once with a second Sim failure) and passed alone three times in three. The
-  same suspicion as above.
-- [ ] `MapCameraTests.Building_the_grid_allocates_nothing` (`Fleetwright.Tests`) failed once in a full run of that
-  assembly (2026-10-15, torpedoes R5, which doesn't touch the grid) and passed alone three times and in the next full
-  run. `Fleetwright.Tests` still runs with concurrent GC, which the Sim tests stopped doing for this kind of flake
-  (the memory "alloc tests vs background GC"); the likely fix is the same there.
+- [x] One `Fleetwright.Tests` test failed once (173 of 174) on 2026-10-22, right after a game capture, its name hidden
+  by `-v q`. Likely `SmokeFieldTwinTests` (smoke Z5, added the day before): it makes a GPU device of its own but wasn't
+  in the `Gpu` collection ("one GPU device at a time"), so it ran beside `DesignWorkerTests`' bakers. Put in the
+  collection 2026-10-24. The cause isn't proven (the failure wasn't seen again), so if an exe test fails once more,
+  catch its name with `--logger "console;verbosity=normal"`.
+- [x] `RailsTests.Two_thousand_ships_steam_a_year_in_seconds` (60 s) failed in full Debug runs under the suite's
+  parallel load (2026-10-19 to 10-23: 61-78 s, against ~33 s alone; 7.6 s alone in DevRelease). Fixed 2026-10-24:
+  moved to `RailsClockTests` in the `WallClock` collection (alone, after the rest), with a 120 s bound in Debug.
+  Debug's full run: 29 s.
+- [x] `SimHostTests.A_live_run_replays_exactly_headless` (2026-10-20, `Assert.Empty(violations)`). A test bug: the
+  reader thread started reading as soon as the host had started, and `Latest()` hands out the buffer's blank
+  snapshot (`Sequence` 0, 1850) until the sim thread's first publish. Under load the sim thread starts late, so the
+  clock "went back from 1916-05-31 to 1850-01-01" (reproduced by starting the reader first). Fixed 2026-10-24: the
+  reader skips `Sequence` 0, as `WaitFor` does, and the assert prints the violations. The game's `WorldSession`
+  already waits for the first snapshot.
+- [x] `SimHostTests.The_achieved_speed_is_measured`, found by the hunt (637x read of 1,000x under the full run's
+  load): a wall-clock measurement, like `The_thread_allocates_nothing_in_play`'s clock reached in 0.8 s. Fixed
+  2026-10-24: `SimHostTests` in the `WallClock` collection.
+- [x] The allocation tests that failed now and then in full runs: `OrderPathTests` (2026-10-13), `ForceTests`,
+  `GroupTests`, `FormationRailsTests`, `CoarseTierTests`, `EncounterTests` (10-13), `PictureTests` and
+  `ShipMotionTests` (10-14 morning), `MapCameraTests.Building_the_grid_allocates_nothing` (10-15). Every one failed
+  before its project stopped background GC (`Fleetwright.Sim.Tests` 2026-10-14 16:14, 23f71f2b; `Fleetwright.Tests`
+  2026-10-16, 8321bd4f; the memory "alloc tests vs background GC"), and none has been seen since. The suspicion of
+  short warm-ups (tiering) wasn't needed.
+- [ ] Not flaky, but slower: `RailsTests.Two_thousand_ships_steam_a_day_among_the_Pacific_islands_at_the_fine_tiers_top_speed`
+  took 12.8 s alone in DevRelease on 2026-10-24, against the ~8 s its summary has from 2026-10-14 (Release; 35-43 s
+  in full runs, 2 min in Debug's). Its bound (keeps over 2 x 240x) still has room. Worth a look in the
+  profiler sometime: a drift in the fine tick or the slide, or just Release against DevRelease.
 
 ## Damage
 

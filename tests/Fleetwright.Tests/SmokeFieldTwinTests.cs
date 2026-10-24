@@ -13,6 +13,7 @@ namespace Fleetwright.Tests;
 /// every puff, and the GLSL twin of the puffs' state (smokefield.glsl, run here by smokestate.comp on the GPU) gives
 /// what <see cref="SmokeModel.State"/> gives, so what's drawn is what blocks sight. Needs a GPU (SDL_GPU, Vulkan).</summary>
 [Trait("Category", "Gpu")]
+[Collection("Gpu")]   // one GPU device at a time, as DesignWorkerTests
 public unsafe class SmokeFieldTwinTests(ITestOutputHelper output)
 {
     [Fact]

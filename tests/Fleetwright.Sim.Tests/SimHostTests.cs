@@ -5,7 +5,9 @@ namespace Fleetwright.Sim.Tests;
 
 /// <summary>The world on its own thread: a live run with commands arriving at random wall times replays exactly
 /// headless; the published clock only goes forward, never passes its target and reaches it; the thread allocates
-/// nothing in play; the achieved speed is measured; a crash is reported, not swallowed.</summary>
+/// nothing in play; the achieved speed is measured; a crash is reported, not swallowed. Paced by the wall clock, so alone
+/// after the rest (<see cref="WallClock"/>): under the suite's load the achieved speed read 637x of 1,000x (2026-10-24).</summary>
+[Collection(WallClock.Name)]
 public class SimHostTests
 {
     static readonly WorldTime Start = WorldTime.FromUtc(1916, 5, 31, 14, 0);
@@ -30,6 +32,8 @@ public class SimHostTests
                 while (!Volatile.Read(ref done))
                 {
                     var s = host.Latest();
+                    if (s.Sequence == 0)
+                        continue;   // nothing published yet: the buffer's blank, at 1850 (the sim thread starts late under load)
                     if (s.Time < last)
                         violations.Add($"went back from {last} to {s.Time}");
                     if (s.Time > s.Target)
@@ -54,7 +58,7 @@ public class SimHostTests
             Volatile.Write(ref done, true);
             reader.Join();
         }
-        Assert.Empty(violations);
+        Assert.True(violations.Count == 0, string.Join("; ", violations.Take(5)));
         Assert.True(seen > 10, $"{seen} snapshots");
         Assert.True(world.CommandLog.Count > 30);
         Assert.True(m.Ticks > 1000, $"{m.Ticks} ticks");
