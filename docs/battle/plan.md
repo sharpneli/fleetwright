@@ -18,7 +18,23 @@ scorches, fires, wrecks, the damage report) are done (2026-10-14): the first pas
 scenario) is done (2026-10-14); collisions moved out of it to a later step, 4.11 (the user, 2026-10-14). 4.8 and 4.9 (the coarse tier's damage and
 fire) move substantially later, after the fine-tune passes of all the systems (the user, 2026-10-14, `fighting.md`
 decision 17). 4.5 (the deepenings) and 4.7 (mines) are moved out of the sequence (the user,
-2026-10-14): a later fine-tune tier of their own, once most of the other components are in.
+2026-10-14): a later fine-tune tier of their own, once most of the other components are in. 4.5's deepenings went
+ahead anyway as plans of their own: `shells-armour-damage.md` (phases S and P, E0-E8b; 2026-10-16 to 10-20; PM waits
+for the balance pass), `fire.md`, `damage-control.md`, `shell-contents.md` and `magazines.md` (all complete
+2026-10-19 to 10-20), `fire-control.md` (F0-F6 done 2026-10-18; F7-F12 left, F9 radar out of the first cut) and
+`smoke.md` (built and on by default 2026-10-21, smoke contacts 2026-10-22; its tuning pass under way); 4.7, 4.11, 4.8
+and 4.9 are still to come.
+
+Step 5, command, is under way: its detailed plan is `docs/battle/command.md` (agreed 2026-10-14). 5.0 (a scenario that
+ends), 5.1a-d (doctrine and the captains, the squadron, the tasks, the side's commander; 2026-10-14) and 5.1g (the
+matchup, 2026-10-15) are done, and a piece of 5.1f (a decline holds, the done end; 2026-10-20). The order from there
+(the user, 2026-10-14): the UI rework (5.2), the VFX pass and the detail passes, then 5.1e (signals) and 5.1f (the
+whole). 5.2 is the current step: the battle HUD (`docs/map-ui/battle-hud.md`, U0-U7 built 2026-10-22, the user's
+review next), the admiral's orders (`admirals-orders.md`, O1-O9 and O7b-c built 2026-10-23 to 10-24; O10 later), the
+map's symbols (`docs/map-ui/symbols.md`, Y0-Y5, Y7, Y8 built 2026-10-23; Y6 if the playtest asks) and grid
+(`docs/visuals/grid.md`, G0-G2 built 2026-10-23, tuning by eye); what's left of it is listed in `command.md` "5.2".
+Beside it, the sim's workers (`workers.md`, W0-W4 and W6 built 2026-10-24: the Jutland 156 s to 115 s on the default
+2 workers). Step 6, missions, hasn't started.
 
 **Terms:** a *zoom band* (Globe, Theatre, Operations, Tactical, Ship) is how the map draws things, UI only. A *clock
 tier* (Routine, Rails, Coarse, Fine) is how the sim advances a ship. They're different things
