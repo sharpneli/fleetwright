@@ -47,9 +47,48 @@ public sealed class Sightings
     int[] cellStart = new int[1024];
     byte[] side = [];
     double[] gx = [], gy = [];
-    readonly int[] nearIdx = new int[16];
-    readonly double[] nearD = new double[16];
     readonly byte[] sidesHere = new byte[256];
+
+    // a look's items (docs/battle/workers.md W3): each (target, side looking) in the order they're looked at, worked out
+    // on the workers (what each sees, reading only), then applied on the sim thread in that order (the draws, the
+    // pictures, the smoke cache's bookkeeping): the same look on any number of workers
+    struct LookRow
+    {
+        public int T, Found, Queries, FixObs, FixEye;
+        public byte By;
+        public double Rate, Best, FixD, FixBrg, FixMargin;
+    }
+
+    /// <summary>A smoke query a look's compute made (<see cref="SmokeSystem.Cached"/>): the observer, and the work's
+    /// time if the cache didn't have it.</summary>
+    struct Asked
+    {
+        public int Observer;
+        public long Ticks;
+    }
+
+    const int NearMax = 16;   // the most observers a look asks (SightObservers is capped to it)
+    LookRow[] rows = [];
+    int[] near = [];          // each item's nearest observers, NearMax apiece, closest first
+    Asked[] asked = [];       // each item's smoke queries, NearMax apiece (one an observer at most)
+    double[] askedTau = [];   // and their depths, PairTaus apiece
+    double[] nearD = [];      // each worker's squared distances while it finds an item's nearest
+    // the encounter being looked in: its grid, and the moment's light
+    int gridW, gridH;
+    double gridMinX, gridMinY, gridCell, lookDt, lookVis, lookSunEl, lookSunBrg;
+    long lookNow;
+
+    // a look's items worked out on the workers; under a few, inline (the same code path)
+    const int LookChunk = 4, LookMinItems = 16;
+
+    readonly struct LookJob(Sightings sightings, World world, ShipStore store) : IJob
+    {
+        public void Run(int from, int to, int worker)
+        {
+            for (int i = from; i < to; i++)
+                sightings.Compute(world, store, i, worker);
+        }
+    }
 
     internal Sightings(SimSettings settings, Relations relations, Encounters encounters, SightReach reach, ulong seed, Probes probes)
     {
@@ -166,25 +205,60 @@ public sealed class Sightings
         var weather = world.Weather.At(origin, world.Time);
         double sunEl = Light.SunElevationDeg(origin, world.Time), sunBrg = Light.SunBearingDeg(origin, world.Time);
         bool lowSun = sunEl >= settings.SightSilhouetteLowDeg && sunEl <= settings.SightSilhouetteHighDeg;
+        (gridW, gridH, gridMinX, gridMinY, gridCell) = (w, h, minX, minY, cell);
+        (lookNow, lookDt, lookVis, lookSunEl, lookSunBrg) = (now, dt, weather.VisibilityM, sunEl, lowSun ? sunBrg : double.NaN);
+        // the items in the order they're looked at: each ship, by each side at war with her here
+        int items = 0;
+        for (int i = a; i < b; i++)
+            for (int si = 0; si < sideCount; si++)
+                if (relations.Hostile(sidesHere[si], side[order[i]]))
+                    items++;
+        EnsureItems(items, world.Workers.Participants);
+        world.Smoke.PrepareQueries(world.Workers.Participants);
+        items = 0;
         for (int i = a; i < b; i++)
         {
             int t = order[i];
             for (int si = 0; si < sideCount; si++)
-            {
-                byte by = sidesHere[si];
-                if (!relations.Hostile(by, side[t]))
-                    continue;
-                int found = Nearest(t, by, w, h, minX, minY, cell);
-                if (found > 0 && !Sight(world, store, t, by, found, now, dt, weather.VisibilityM, sunEl, lowSun ? sunBrg : double.NaN, classesInUse))
-                    SmokeLook(world, store, t, by, found, now, dt, weather.VisibilityM, sunEl);
-            }
+                if (relations.Hostile(sidesHere[si], side[t]))
+                    (rows[items].T, rows[items++].By) = (t, sidesHere[si]);
         }
+        world.Workers.For(new LookJob(this, world, store), items, LookChunk, LookMinItems);
+        for (int i = 0; i < items; i++)
+            if (rows[i].Found > 0 && !Apply(world, store, i, classesInUse))
+                SmokeLook(world, store, rows[i].T, rows[i].By, near.AsSpan(i * NearMax, rows[i].Found), now, dt, lookVis, sunEl);
     }
 
-    /// <summary>The nearest observers of a side to ship t, ring by ring through the grid, into nearIdx (closest first);
-    /// how many (at most <see cref="SimSettings.SightObservers"/>).</summary>
-    int Nearest(int t, byte by, int w, int h, double minX, double minY, double cell)
+    void EnsureItems(int items, int participants)
     {
+        if (rows.Length < items)
+        {
+            int n = Math.Max(items, 2 * rows.Length);
+            rows = new LookRow[n];
+            near = new int[n * NearMax];
+            asked = new Asked[n * NearMax];
+            askedTau = new double[n * NearMax * SmokeSystem.PairTaus];
+        }
+        if (nearD.Length < participants * NearMax)
+            nearD = new double[participants * NearMax];
+    }
+
+    /// <summary>An item's look worked out, on a worker: its side's nearest observers, then what they make of her
+    /// (<see cref="Sight"/>). Reads the world, writes only the item's rows.</summary>
+    void Compute(World world, ShipStore store, int i, int worker)
+    {
+        ref var row = ref rows[i];
+        row.Queries = 0;
+        row.Found = Nearest(row.T, row.By, near.AsSpan(i * NearMax, NearMax), nearD.AsSpan(worker * NearMax, NearMax));
+        if (row.Found > 0)
+            Sight(world, store, i, worker);
+    }
+
+    /// <summary>The nearest observers of a side to ship t, ring by ring through the encounter's grid, into nearIdx (closest
+    /// first; nearD the worker's scratch); how many (at most <see cref="SimSettings.SightObservers"/>).</summary>
+    int Nearest(int t, byte by, Span<int> nearIdx, Span<double> nearD)
+    {
+        var (w, h, minX, minY, cell) = (gridW, gridH, gridMinX, gridMinY, gridCell);
         int want = Math.Min(settings.SightObservers, nearIdx.Length), found = 0;
         int cx = (int)((gx[t] - minX) / cell), cy = (int)((gy[t] - minY) / cell);
         int rings = (int)Math.Ceiling(reach.SightM / cell) + 1;
@@ -232,26 +306,28 @@ public sealed class Sightings
         return found;
     }
 
-    /// <summary>Side `by`'s look for ship t with its nearest observers: the summed rate, the best margin and who had it;
-    /// then a fix, a detection, or the contact going out of sight. Whether she's in sight after it.</summary>
-    bool Sight(World world, ShipStore store, int t, byte by, int found, long now, double dt, double vis, double sunEl, double sunBrg,
-        IReadOnlyList<int> classesInUse)
+    /// <summary>Side `by`'s look for ship t with its nearest observers (item i), on a worker: the summed rate, the best
+    /// margin and who had it, the fix's eye; the smoke on the lines from the cache or worked out, each pair asked kept
+    /// for the apply. Reads the world (her contact in the side's picture too: only her own apply changes it).</summary>
+    void Sight(World world, ShipStore store, int i, int worker)
     {
+        ref var row = ref rows[i];
+        int t = row.T;
+        var nearIdx = near.AsSpan(i * NearMax, row.Found);
         var ts = store[slot[t]];
         var tc = ts.Handling.Class;
-        double tTop = tc.Silhouette.TopM;
+        double tTop = tc.Silhouette.TopM, vis = lookVis, sunEl = lookSunEl, sunBrg = lookSunBrg;
         // her fires as a light at night (fire.md B2)
         double glowMW = store.Combat.Condition(ts.Slot).FireShowMW, glowM = settings.FireGlowHeightShare * tTop;
-        var pic = Get(by);
-        int ci = pic.IndexOf(ts.Entity);
-        bool inSight = ci >= 0 && pic[ci].InSight;
+        var pic = Of(row.By);
+        int ci = pic?.IndexOf(ts.Entity) ?? -1;
+        bool inSight = ci >= 0 && pic![ci].InSight;
         // the rates add; the fix comes from the eye that ranges it best (a rangefinder before an eye's guess), and once
         // a held contact is seen by a rangefinder no more need look
         double rate = 0, best = 0, fixD = 0, fixBrg = 0, fixSigma = double.MaxValue, fixMargin = 0;
         int fixObs = -1, fixEye = -1;
         bool done = false;
-        Span<double> smoke = stackalloc double[SmokeSystem.PairTaus];
-        for (int m = 0; m < found && !done; m++)
+        for (int m = 0; m < nearIdx.Length && !done; m++)
         {
             var os = store[slot[nearIdx[m]]];
             var oc = os.Handling.Class;
@@ -271,8 +347,20 @@ public sealed class Sightings
             // a margin, so where none of the eyes that will look makes her out in clear air (and her fires don't show),
             // her margins through it are under 1 too and nothing it says changes the look
             bool smoked = world.Smoke.On && (glowMW > 0 || ClearlyMadeOut(eyes, works, rel, tc, line));
+            Span<double> smoke = default;
             if (smoked)
-                world.Smoke.Tau(world, os.Slot, ts.Slot, smoke);
+            {
+                int k = i * NearMax + row.Queries++;
+                smoke = askedTau.AsSpan(k * SmokeSystem.PairTaus, SmokeSystem.PairTaus);
+                ref var q = ref asked[k];
+                (q.Observer, q.Ticks) = (os.Slot, 0);
+                if (!world.Smoke.Cached(world, os.Slot, ts.Slot, smoke))
+                {
+                    long p0 = Probes.Now;
+                    world.Smoke.WorkOut(world, os.Slot, ts.Slot, smoke, worker);
+                    q.Ticks = Probes.Now - p0;
+                }
+            }
             int tried = 0;
             for (int e = 0; e < eyes.Length && tried < settings.SightEyes && !done; e++)
             {
@@ -295,16 +383,33 @@ public sealed class Sightings
                 done = inSight && eyes[e].RangefinderM > 0;
             }
         }
+        (row.Rate, row.Best, row.FixD, row.FixBrg, row.FixObs, row.FixEye, row.FixMargin) = (rate, best, fixD, fixBrg, fixObs, fixEye, fixMargin);
+    }
+
+    /// <summary>Item i's look applied, on the sim thread in the look's order: the smoke cache's bookkeeping for the pairs
+    /// it asked, then a fix, a detection, or the contact going out of sight. Whether she's in sight after it.</summary>
+    bool Apply(World world, ShipStore store, int i, IReadOnlyList<int> classesInUse)
+    {
+        ref readonly var row = ref rows[i];
+        var ts = store[slot[row.T]];
+        long now = lookNow;
+        var pic = Get(row.By);
+        int ci = pic.IndexOf(ts.Entity);
+        bool inSight = ci >= 0 && pic[ci].InSight;
+        for (int k = i * NearMax; k < i * NearMax + row.Queries; k++)
+            world.Smoke.Answered(world, asked[k].Observer, ts.Slot, askedTau.AsSpan(k * SmokeSystem.PairTaus, SmokeSystem.PairTaus),
+                asked[k].Ticks);
         if (ci >= 0)
             pic.At(ci).LookedMs = now;
-        var r = stream.Derive(((ulong)by << 56) ^ ((ulong)(uint)ts.Entity << 24) ^ (ulong)(now / settings.SightingMs));
-        if (inSight && best >= 1 || !inSight && rate > 0 && r.NextDouble() < SightModel.Chance(rate, dt))
+        var r = stream.Derive(((ulong)row.By << 56) ^ ((ulong)(uint)ts.Entity << 24) ^ (ulong)(now / settings.SightingMs));
+        if (inSight && row.Best >= 1 || !inSight && row.Rate > 0 && r.NextDouble() < SightModel.Chance(row.Rate, lookDt))
         {
-            var os = store[slot[fixObs]];
-            Fix(pic, ci, ts, store.Combat.Condition(ts.Slot), os, os.Handling.Class.Eyes[fixEye], best, fixMargin, fixD, fixBrg, now, ref r, classesInUse);
+            var os = store[slot[row.FixObs]];
+            Fix(pic, ci, ts, store.Combat.Condition(ts.Slot), os, os.Handling.Class.Eyes[row.FixEye], row.Best, row.FixMargin, row.FixD, row.FixBrg,
+                now, ref r, classesInUse);
             return true;
         }
-        if (inSight && best < 1)
+        if (inSight && row.Best < 1)
             pic.At(ci).InSight = false;
         return false;
     }
@@ -330,7 +435,7 @@ public sealed class Sightings
     /// see furthest), its margin by <see cref="SightModel.SmokeMargin"/>; the rates add as a ship's do, and smoke in sight
     /// stays so while any of them still makes it out. A fix (<see cref="SmokeFix"/>) or the smoke going out of sight. Its
     /// own draws (a stream of its own), so the ships' are as they were.</summary>
-    void SmokeLook(World world, ShipStore store, int t, byte by, int found, long now, double dt, double vis, double sunEl)
+    void SmokeLook(World world, ShipStore store, int t, byte by, ReadOnlySpan<int> nearIdx, long now, double dt, double vis, double sunEl)
     {
         var ts = store[slot[t]];
         var pic = Get(by);
@@ -350,7 +455,7 @@ public sealed class Sightings
         int fixObs = -1, fixEye = -1;
         double top = SightModel.HorizonM(plume.TopM, settings);
         var up = plume.Centre.Normalized();
-        for (int m = 0; m < found; m++)
+        for (int m = 0; m < nearIdx.Length; m++)
         {
             var os = store[slot[nearIdx[m]]];
             var eyes = os.Handling.Class.Eyes;

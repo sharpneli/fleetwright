@@ -814,16 +814,23 @@ public sealed class SmokeEddies
     readonly double[] turnCos = new double[Modes], turnSin = new double[Modes];
     double turnT = double.NaN;
 
+    /// <summary>The clock's turn worked for a time: before a job asks the field at that time on several threads
+    /// (docs/battle/workers.md W4), so they only read it.</summary>
+    public void Turn(double t)
+    {
+        if (t == turnT)
+            return;
+        for (int i = 0; i < Modes; i++)
+            (turnSin[i], turnCos[i]) = Math.SinCos(Omega[i] * t);
+        turnT = t;
+    }
+
     /// <summary>The field at a place by its phases (<see cref="PhasesAt"/>): cos(a − ωt) = cos a cos ωt + sin a sin ωt,
-    /// the clock's turn worked once a time. The same as <see cref="At(Vec3d, double)"/> within the phases' float.</summary>
+    /// the clock's turn worked once a time (<see cref="Turn"/>). The same as <see cref="At(Vec3d, double)"/> within the
+    /// phases' float.</summary>
     public Vec3d At(in EddyPhases phases, double t)
     {
-        if (t != turnT)
-        {
-            for (int i = 0; i < Modes; i++)
-                (turnSin[i], turnCos[i]) = Math.SinCos(Omega[i] * t);
-            turnT = t;
-        }
+        Turn(t);
         Vec3d sum = default;
         for (int i = 0; i < Modes; i++)
             sum += Dir[i] * (Amp[i] * (phases[2 * i] * turnCos[i] + phases[2 * i + 1] * turnSin[i]));

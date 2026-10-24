@@ -47,6 +47,15 @@ public sealed class Probes
             Max[probe] = d;
     }
 
+    /// <summary>A call of a probe that took <paramref name="ticks"/>, timed elsewhere (on a worker: docs/battle/workers.md).</summary>
+    public void AddTicks(int probe, long ticks)
+    {
+        Ticks[probe] += ticks;
+        Calls[probe]++;
+        if (ticks > Max[probe])
+            Max[probe] = ticks;
+    }
+
     /// <summary>The longest calls start over (after a copy goes out, so each copy's are its own window's).</summary>
     public void ResetMax() => Array.Clear(Max);
 

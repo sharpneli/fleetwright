@@ -1,5 +1,5 @@
 # Plan: the sim's workers (the job system)
-Status: **agreed 2026-10-24** (the decisions below answered); W0-W2 built 2026-10-24.
+Status: **agreed 2026-10-24** (the decisions below answered); W0-W4 built 2026-10-24.
     Updated: 2026-10-24
 
 The job system the architecture agreed from the start (`docs/world/architecture.md` "Threaded throughout", decision 1)
@@ -138,7 +138,7 @@ less the ticks a long AI or sighting moment lets the workers fall asleep before)
 (~70 ships off rails) gains nothing yet: 11.5 -> 12.0 µs; the threshold and the chunk are W8's to tune, with the other
 jobs in.
 
-### W3 Sighting
+### W3 Sighting - done 2026-10-24
 
 `LookIn` split: per (target, hostile side) in today's order, the compute (the nearest observers, each eye's margin, the
 rate, the best and the fix's candidate, whether smoke is wanted and for which pairs) into a result row; then the apply
@@ -147,7 +147,13 @@ smoke look. The grid build stays on the sim thread (cheap). Per-worker scratch: 
 check first: whether a `Fix` in the apply can change what a later target's compute read (a picture's indices when a
 contact is added; `inSight` of another contact); the compute reads only its own target's contact, so it shouldn't.
 
-### W4 The smoke's queries and index
+Built: the look's items (target, side) in today's order, computed as a job (chunks of 4, inline under 16): the nearest
+observers (a worker's own squared distances), the margins, the rate and the fix's eye, the smoke pairs it asked; then
+applied in order: the picture made (`Get`), the cache's bookkeeping for its pairs, the draw, `Fix`, out of sight, the
+smoke look. The check held: an item's compute reads only its own contact, which only its own apply changes; a ship is in
+one encounter, so no item is looked at twice. The Jutland's look 746 -> 277 µs on 8 workers.
+
+### W4 The smoke's queries and index - done 2026-10-24
 
 - **Queries:** `Work` keeps its scratch in fields (`stamp`, `chunkStamp`, the rows and bands, the counters): a query
   context per worker instead. W3's compute collects the pairs a look needs; the cache's misses are worked as a job; the
@@ -156,6 +162,19 @@ contact is added; `inSight` of another contact); the compute reads only its own 
 - **The index:** `Rebuild` and `Fresh` compute every puff's state (`SmokeModel.State`, the eddies: the cost) as a job
   into the index's slots (each source's puffs at a known offset); the plumes' sums, the compaction and the filing stay
   on the sim thread in trail order, so their float sums are added as now.
+
+Built: a query's scratch (`SmokeSystem.Query`: the lines, the depths, the chunk stamps good for one filing of the index,
+the counters) one per worker; `Tau` is now `Cached` (reading only), `WorkOut` (a worker's scratch) and `Answered` (the
+bookkeeping, on the sim thread in the order asked, deciding hit or miss itself, so a pair asked twice in a pass is worked
+twice to the same depths and its second answer is a hit, as serially). No pair is asked twice in a look. The index: the
+store laid out in trail order first, then every puff's state and line as a job (chunks of 64, inline under 512), then the
+plumes' sums, the chunks and the filing in trail order; the young part's lines likewise. The eddies' clock (`Turn`) is
+set on the sim thread before the dispatch: it was the one lazy cache the states shared. The index 531 -> 340 µs a rebuild.
+
+W2-W4 on the Jutland (8 workers, nothing else running): **159.2 -> 106.7 s**, the same output and hash on 0 and 8
+workers and with the chunks shuffled. What's left serial-heavy: the AI 32 s (captains 20 s), the ships' step 17 s (the
+workers asleep after long moments), smoke upkeep 18 s (the merge, the emission, the index's filing), sighting 14 s,
+gunnery 11 s, damage 10 s.
 
 ### W5 The AI's read-only part
 

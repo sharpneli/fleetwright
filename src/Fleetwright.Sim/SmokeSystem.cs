@@ -331,7 +331,7 @@ public sealed partial class SmokeSystem : IWorldSystem
         Cross(t, mergeSigma);
         probes.Add(mergeProbe, m0);
         Forget();
-        Index(t);
+        Index(world, t);
         version++;
         idle = !smoking && wrecks.Count == 0;
         if (smoking || live > 0 || wrecks.Count > 0)

@@ -45,8 +45,9 @@ public sealed partial class SmokeSystem
     // the store laid out again in trail order at each rebuild (its walks run in memory order after)
     SmokePuff[] puffsB = new SmokePuff[1024];
     int[] ownerB = new int[1024], prevB = new int[1024], nextB = new int[1024];
-    int[] chunkStart = new int[65], chunkStamp = new int[64];
-    int ixCount, chunkCount, stamp;
+    int[] chunkStart = new int[65];
+    int ixCount, chunkCount;
+    int indexVersion;   // bumped at every filing: the queries' chunk stamps start over
     long indexMs = long.MinValue, freshMs = long.MinValue;
     // where the young part starts: the full rebuild's entries, chunks, grid entries and levels; and its cut, s (puffs
     // born after it are the young part's)
@@ -68,9 +69,17 @@ public sealed partial class SmokeSystem
     /// <summary>Queries answered, and how many of them were worked out (the rest from the cache); puffs summed.</summary>
     public long Asked { get; private set; }
     public long Worked { get; private set; }
-    public long PuffsSummed { get; private set; }
-    public long PuffsTested { get; private set; }
-    public long ChunksTested { get; private set; }
+    public long PuffsSummed => Sum(static q => q.PuffsSummed);
+    public long PuffsTested => Sum(static q => q.PuffsTested);
+    public long ChunksTested => Sum(static q => q.ChunksTested);
+
+    long Sum(Func<Query, long> of)
+    {
+        long n = 0;
+        foreach (var q in queries)
+            n += of(q);
+        return n;
+    }
 
     /// <summary>The index's puffs and its chunks.</summary>
     public int Indexed => ixCount;
@@ -119,19 +128,45 @@ public sealed partial class SmokeSystem
 
     /// <summary>Rebuilds the index at a tick when it falls due (a lattice of world time), and its young part when that
     /// does.</summary>
-    void Index(long t)
+    void Index(World world, long t)
     {
         bool full = indexMs == long.MinValue || t / settings.SmokeIndexMs != indexMs / settings.SmokeIndexMs;
         if (full)
-            Rebuild(t);
+            Rebuild(world, t);
         if (full || t / settings.SmokeFreshMs != freshMs / settings.SmokeFreshMs)
-            Fresh(t);
+            Fresh(world, t);
+    }
+
+    // the puffs' states at a rebuild, worked out on the workers (docs/battle/workers.md W4): each puff's state (the
+    // eddies: the cost) into its slot of the compacted store's order, and its place on the lines if the full index files
+    // it; the sums, the chunks and the filing stay on the sim thread in trail order
+    PuffState[] stateB = new PuffState[1024];
+    LinePuff[] lineB = new LinePuff[1024];
+    int[] freshOf = new int[256];   // the young part's puffs, in the order it files them
+    const int StateChunk = 64, StateMinPuffs = 512;
+
+    /// <summary>Puffs <c>[from, to)</c> of <c>puffs</c> as they are at <c>nowS</c>: into <c>states</c> (if any) and, those
+    /// born by <c>cut</c>, their lines into <c>lines</c>; or, with <c>of</c>, the puffs <c>of[k]</c> into slot k.</summary>
+    readonly struct StateJob(SmokeSystem sys, SmokePuff[] puffs, int[]? of, PuffState[]? states, LinePuff[] lines, double nowS, double cut) : IJob
+    {
+        public void Run(int from, int to, int worker)
+        {
+            for (int k = from; k < to; k++)
+            {
+                ref readonly var p = ref puffs[of != null ? of[k] : k];
+                var st = SmokeModel.State(p, nowS, sys.frame, sys.air);
+                if (states != null)
+                    states[k] = st;
+                if (p.Born <= cut)
+                    lines[k] = new LinePuff(st, sys.frame.ToAir(st.Centre.Normalized() * Earth.Radius), sys.frame.ToAir(st.Axis));   // where it is in the air now
+            }
+        }
     }
 
     /// <summary>The index rebuilt from every puff but the young (born after <see cref="youngCut"/>: the young part's),
     /// the store compacted into trail order, each ship's plume summed from all of hers; and the pairs no one has asked for
     /// a minute let go.</summary>
-    void Rebuild(long t)
+    void Rebuild(World world, long t)
     {
         long p0 = Probes.Now;
         indexMs = t;
@@ -150,6 +185,8 @@ public sealed partial class SmokeSystem
         plumeCount = 0;
         var contrast = settings.SightSmokeContrast;
         double showsTau = settings.SightSmokeTau;
+        // the store laid out in trail order, then every puff's state worked out on the workers, then the sums and the
+        // index in that order
         for (int k = 0; k < sources.Count; k++)
         {
             var src = sources[k];
@@ -159,27 +196,40 @@ public sealed partial class SmokeSystem
                 sources[k] = src;
                 continue;
             }
-            int n = 0, first = sj, plume = PlumeSlot(src.Entity);
+            int first = sj;
             for (int i = src.Oldest; i >= 0; i = next[i])
             {
-                var st = SmokeModel.State(puffs[i], nowS, frame, air);
-                int tint = (int)puffs[i].Tint;
-                plumeSum[plume].Add(st, tint < contrast.Length ? contrast[tint] : 0, showsTau);
                 int j = sj++;
                 (puffsB[j], ownerB[j], prevB[j], nextB[j]) = (puffs[i], k, j > first ? j - 1 : -1, j + 1);
-                if (puffs[i].Born > youngCut)
+            }
+            nextB[sj - 1] = -1;
+            (src.Oldest, src.Newest) = (first, sj - 1);
+            sources[k] = src;
+        }
+        if (stateB.Length < sj)
+            (stateB, lineB) = (new PuffState[Math.Max(sj, 2 * stateB.Length)], new LinePuff[Math.Max(sj, 2 * lineB.Length)]);
+        air.Eddies?.Turn(nowS);
+        world.Workers.For(new StateJob(this, puffsB, null, stateB, lineB, nowS, youngCut), sj, StateChunk, StateMinPuffs);
+        for (int k = 0; k < sources.Count; k++)
+        {
+            var src = sources[k];
+            if (src.Puffs == 0)
+                continue;
+            int n = 0, plume = PlumeSlot(src.Entity);
+            for (int j = src.Oldest; j <= src.Newest; j++)
+            {
+                int tint = (int)puffsB[j].Tint;
+                plumeSum[plume].Add(stateB[j], tint < contrast.Length ? contrast[tint] : 0, showsTau);
+                if (puffsB[j].Born > youngCut)
                     continue;   // young: the young part's
                 if (n % chunk == 0)
                 {
                     EnsureChunks(chunkCount + 1);
                     chunkStart[chunkCount++] = ixCount;
                 }
-                ix[ixCount++] = new LinePuff(st, frame.ToAir(st.Centre.Normalized() * Earth.Radius), frame.ToAir(st.Axis));   // where it is in the air now
+                ix[ixCount++] = lineB[j];
                 n++;
             }
-            nextB[sj - 1] = -1;
-            (src.Oldest, src.Newest) = (first, sj - 1);
-            sources[k] = src;
         }
         chunkStart[chunkCount] = ixCount;
         for (int k = 0; k < plumeCount; k++)
@@ -201,7 +251,7 @@ public sealed partial class SmokeSystem
         levelsUsed = 0;
         FileChunks(0, chunkCount);
         (fullIx, fullChunks, fullGrid, fullLevels) = (ixCount, chunkCount, gridCount, levelsUsed);
-        stamp = 0;
+        indexVersion++;
         // the pairs no one has asked for a minute let go (the last moved into their place)
         for (int q = pairCount - 1; q >= 0; q--)
             if (t - pairUsed[q] > settings.SmokePairKeepMs)
@@ -222,7 +272,7 @@ public sealed partial class SmokeSystem
     /// filing, so each bucket's head is as the full rebuild left it), then every trail's puffs born after the cut, newest
     /// back, as they are now, chunked and filed after the full rebuild's. A few hundred puffs: new smoke reaches the lines
     /// within <see cref="SimSettings.SmokeFreshMs"/> instead of <see cref="SimSettings.SmokeIndexMs"/>.</summary>
-    void Fresh(long t)
+    void Fresh(World world, long t)
     {
         long p0 = Probes.Now;
         freshMs = t;
@@ -231,6 +281,20 @@ public sealed partial class SmokeSystem
         (ixCount, chunkCount, gridCount, levelsUsed) = (fullIx, fullChunks, fullGrid, fullLevels);
         double nowS = t / 1000.0;
         int chunk = Math.Max(settings.SmokeChunk, 1);
+        // the young puffs in filing order, their lines worked out on the workers, then chunked in that order
+        int young = 0;
+        for (int k = 0; k < sources.Count; k++)
+            for (int i = sources[k].Newest; i >= 0 && puffs[i].Born > youngCut; i = prev[i])
+            {
+                if (young == freshOf.Length)
+                    Array.Resize(ref freshOf, 2 * young);
+                freshOf[young++] = i;
+            }
+        if (lineB.Length < young)
+            lineB = new LinePuff[Math.Max(young, 2 * lineB.Length)];
+        air.Eddies?.Turn(nowS);
+        world.Workers.For(new StateJob(this, puffs, freshOf, null, lineB, nowS, double.PositiveInfinity), young, StateChunk, StateMinPuffs);
+        young = 0;
         for (int k = 0; k < sources.Count; k++)
         {
             int n = 0;
@@ -243,13 +307,13 @@ public sealed partial class SmokeSystem
                 }
                 if (ixCount == ix.Length)
                     Array.Resize(ref ix, ix.Length * 2);
-                var st = SmokeModel.State(puffs[i], nowS, frame, air);
-                ix[ixCount++] = new LinePuff(st, frame.ToAir(st.Centre.Normalized() * Earth.Radius), frame.ToAir(st.Axis));
+                ix[ixCount++] = lineB[young++];
                 n++;
             }
         }
         chunkStart[chunkCount] = ixCount;
         FileChunks(fullChunks, chunkCount);
+        indexVersion++;
         probes.Add(indexProbe, p0);
     }
 
@@ -266,7 +330,6 @@ public sealed partial class SmokeSystem
                 double sz = Math.Sqrt(ix[i].ReachZ2);
                 (chunkLo[c], chunkHi[c]) = (Math.Min(chunkLo[c], ix[i].Z - sz), Math.Max(chunkHi[c], ix[i].Z + sz));
             }
-            chunkStamp[c] = 0;
             int level = 0;
             while (level < Levels - 1 && settings.SmokeGridM * (1 << level) < 2 * chunkR[c])
                 level++;
@@ -308,7 +371,6 @@ public sealed partial class SmokeSystem
         Array.Resize(ref chunkR, m);
         Array.Resize(ref chunkLo, m);
         Array.Resize(ref chunkHi, m);
-        Array.Resize(ref chunkStamp, m);
         Array.Resize(ref chunkStart, m + 1);
     }
 
@@ -340,18 +402,47 @@ public sealed partial class SmokeSystem
     /// her eyes); an eye's own by <see cref="SmokeModel.EyeTau"/>. From the cache while it holds, else worked out.</summary>
     public void Tau(World world, int observer, int target, Span<double> tau)
     {
-        var store = world.Ships.Store;
-        long now = world.Time.Ms, key = (long)store[observer].Entity << 32 | (uint)store[target].Entity;
-        Asked++;
-        if (pairOf.TryGetValue(key, out int q) && now < pairUntil[q])
+        if (Cached(world, observer, target, tau))
         {
-            pairUsed[q] = now;
-            pairTau.AsSpan(q * PairTaus, PairTaus).CopyTo(tau);
+            Answered(world, observer, target, tau, 0);
             return;
         }
         long p0 = Probes.Now;
-        Work(world, observer, target, tau);
-        if (!pairOf.TryGetValue(key, out q))
+        WorkOut(world, observer, target, tau, 0);
+        Answered(world, observer, target, tau, Probes.Now - p0);
+    }
+
+    /// <summary><see cref="Tau"/> in its three parts, for a look's pairs asked on the workers (docs/battle/workers.md
+    /// W3-W4): whether the cache holds the pair now (its depths into <paramref name="tau"/>), reading only; the pair
+    /// worked out on a worker's own scratch (<see cref="WorkOut"/>); and, on the sim thread in the order the pairs were
+    /// asked, the cache's bookkeeping as <see cref="Tau"/> does it (<see cref="Answered"/>), so the cache is the same
+    /// whoever worked them out. A pair asked twice in a pass (two batteries of a ship on one target) is worked out twice,
+    /// to the same depths, and the second's bookkeeping finds the first's answer held, as a hit.</summary>
+    public bool Cached(World world, int observer, int target, Span<double> tau)
+    {
+        if (!pairOf.TryGetValue(PairKey(world.Ships.Store, observer, target), out int q) || world.Time.Ms >= pairUntil[q])
+            return false;
+        pairTau.AsSpan(q * PairTaus, PairTaus).CopyTo(tau);
+        return true;
+    }
+
+    /// <summary>A pair worked out on participant <paramref name="worker"/>'s scratch (<see cref="PrepareQueries"/> first).</summary>
+    public void WorkOut(World world, int observer, int target, Span<double> tau, int worker) => Work(world, observer, target, tau, queries[worker]);
+
+    /// <summary>The cache's bookkeeping for a pair asked, its depths in <paramref name="tau"/>: held now, last asked now;
+    /// else they go in, held for <see cref="SimSettings.SmokeRefreshMs"/> (the work <paramref name="ticks"/> long, for
+    /// the probe).</summary>
+    public void Answered(World world, int observer, int target, ReadOnlySpan<double> tau, long ticks)
+    {
+        long now = world.Time.Ms, key = PairKey(world.Ships.Store, observer, target);
+        Asked++;
+        bool known = pairOf.TryGetValue(key, out int q);
+        if (known && now < pairUntil[q])
+        {
+            pairUsed[q] = now;
+            return;
+        }
+        if (!known)
         {
             q = pairCount++;
             if (q == pairKey.Length)
@@ -368,8 +459,21 @@ public sealed partial class SmokeSystem
         (pairUntil[q], pairUsed[q]) = (now + settings.SmokeRefreshMs, now);
         tau[..PairTaus].CopyTo(pairTau.AsSpan(q * PairTaus, PairTaus));
         Worked++;
-        probes.Add(queryProbe, p0);
+        probes.AddTicks(queryProbe, ticks);
     }
+
+    /// <summary>A scratch for each of the workers' participants, made on the sim thread before a dispatch asks pairs.</summary>
+    public void PrepareQueries(int participants)
+    {
+        if (queries.Length >= participants)
+            return;
+        int n = queries.Length;
+        Array.Resize(ref queries, participants);
+        for (int i = n; i < participants; i++)
+            queries[i] = new Query();
+    }
+
+    static long PairKey(ShipStore store, int observer, int target) => (long)store[observer].Entity << 32 | (uint)store[target].Entity;
 
     /// <summary>The pairs in the cache (benches): how many; pair q's observer and target (entities) and when it was last
     /// asked, ms; its depths (<see cref="Tau"/>'s).</summary>
@@ -378,38 +482,58 @@ public sealed partial class SmokeSystem
     public ReadOnlySpan<double> PairDepths(int q) => pairTau.AsSpan(q * PairTaus, PairTaus);
 
     /// <summary>A pair worked out from the index now, the cache neither read nor written (benches, tests).</summary>
-    public void TauUncached(World world, int observer, int target, Span<double> tau) => Work(world, observer, target, tau);
+    public void TauUncached(World world, int observer, int target, Span<double> tau) => Work(world, observer, target, tau, queries[0]);
 
-    // a pair's lines while it's worked out: the one between the ships' middles, and the fan about it (each eye row's start
-    // and each point's end, across it and along it, m); the heights; the depths so far on the middle line or with the
-    // eyes apart (row by band, the same at every point) and with the points apart (the pair's layout)
-    readonly double[] rowSide = new double[PairEyes], rowAlong = new double[PairEyes], pointSide = new double[PairPoints], pointAlong = new double[PairPoints];
-    readonly double[] rowFrom = new double[PairEyes], bandTo = new double[PairBands];
-    readonly double[] oneTau = new double[PairEyes * PairBands], splitTau = new double[PairTaus];
-    SmokeLine middle;
-    int rows;
-    double spreadO, spreadT, split;
+    /// <summary>A pair's scratch while it's worked out, one per worker (docs/battle/workers.md W4): the line between the
+    /// ships' middles, and the fan about it (each eye row's start and each point's end, across it and along it, m); the
+    /// heights; the depths so far on the middle line or with the eyes apart (row by band, the same at every point) and
+    /// with the points apart (the pair's layout); each chunk's stamp (the query that last met it), good for one filing
+    /// of the index; and what its queries tested and summed.</summary>
+    sealed class Query
+    {
+        public readonly double[] RowSide = new double[PairEyes], RowAlong = new double[PairEyes], PointSide = new double[PairPoints],
+            PointAlong = new double[PairPoints];
+        public readonly double[] RowFrom = new double[PairEyes], BandTo = new double[PairBands];
+        public readonly double[] OneTau = new double[PairEyes * PairBands], SplitTau = new double[PairTaus];
+        public SmokeLine Middle;
+        public int Rows;
+        public double SpreadO, SpreadT, Split;
+        public int[] ChunkStamp = new int[64];
+        public int Stamp, Version = -1;
+        public long PuffsSummed, PuffsTested, ChunksTested;
+    }
 
-    /// <summary>A pair worked out from the index.</summary>
-    void Work(World world, int observer, int target, Span<double> tau)
+    Query[] queries = [new()];
+
+    /// <summary>A pair worked out from the index, on a scratch of its own.</summary>
+    void Work(World world, int observer, int target, Span<double> tau, Query q)
     {
         tau[..PairTaus].Clear();
-        if (ixCount == 0 || !Prepare(world, observer, target, settings.SmokeLineSplit, out var a, out var b))
+        if (ixCount == 0 || !Prepare(world, observer, target, settings.SmokeLineSplit, q, out var a, out var b))
             return;
-        if (++stamp == int.MaxValue)
+        if (q.Version != indexVersion)
         {
-            Array.Clear(chunkStamp, 0, chunkCount);
-            stamp = 1;
+            if (q.ChunkStamp.Length < chunkCount)
+                q.ChunkStamp = new int[Math.Max(chunkCount, 2 * q.ChunkStamp.Length)];
+            else
+                Array.Clear(q.ChunkStamp, 0, chunkCount);
+            (q.Stamp, q.Version) = (0, indexVersion);
+        }
+        if (++q.Stamp == int.MaxValue)
+        {
+            Array.Clear(q.ChunkStamp, 0, chunkCount);
+            q.Stamp = 1;
         }
         // the heights the lines span: their ends', and down by the Earth's curve mid-way
-        var eyesUsed = rowFrom.AsSpan(0, rows);
-        double lineLo = Math.Min(Min(eyesUsed), Min(bandTo)) - middle.Length * middle.Length / 4 * middle.Curve, lineHi = Math.Max(Max(eyesUsed), Max(bandTo));
+        var eyesUsed = q.RowFrom.AsSpan(0, q.Rows);
+        double lineLo = Math.Min(Min(eyesUsed), Min(q.BandTo)) - q.Middle.Length * q.Middle.Length / 4 * q.Middle.Curve,
+            lineHi = Math.Max(Max(eyesUsed), Max(q.BandTo));
         long summed = 0;
         for (int level = Levels - 1; level >= 0; level--)
-            if ((levelsUsed >> level & 1) != 0 && Walk(level, a, b, lineLo, lineHi, ref summed))
+            if ((levelsUsed >> level & 1) != 0 && Walk(level, a, b, lineLo, lineHi, q, ref summed))
                 break;
-        PuffsSummed += summed;
-        Finish(tau);
+        q.PuffsSummed += summed;
+        Finish(tau, q);
     }
 
     /// <summary>A pair worked out on the given puffs (in the air's frame), every one, no index or cache, with a share for
@@ -417,98 +541,99 @@ public sealed partial class SmokeSystem
     public void TauOf(World world, int observer, int target, ReadOnlySpan<LinePuff> puffs, double splitShare, Span<double> tau)
     {
         tau[..PairTaus].Clear();
-        if (!Prepare(world, observer, target, splitShare, out _, out _))
+        var q = queries[0];
+        if (!Prepare(world, observer, target, splitShare, q, out _, out _))
             return;
         foreach (ref readonly var p in puffs)
-            OnLines(p);
-        Finish(tau);
+            OnLines(p, q);
+        Finish(tau, q);
     }
 
     /// <summary>The pair's lines set up (the observer's eye rows from their places on her, the target's points along her),
     /// their depths cleared; the middles' ends in the air's frame. False when the observer has no eyes.</summary>
-    bool Prepare(World world, int observer, int target, double splitShare, out Vec3d a, out Vec3d b)
+    bool Prepare(World world, int observer, int target, double splitShare, Query q, out Vec3d a, out Vec3d b)
     {
         (a, b) = (default, default);
         var store = world.Ships.Store;
         var os = store[observer];
         var ts = store[target];
         var eyes = os.Handling.Class.Eyes;
-        rows = Math.Min(eyes.Length, PairEyes);
-        if (rows == 0)
+        q.Rows = Math.Min(eyes.Length, PairEyes);
+        if (q.Rows == 0)
             return false;
         var tc = ts.Handling.Class;
         for (int j = 0; j < PairBands; j++)
-            bandTo[j] = tc.Silhouette.TopM * settings.SmokeBands[j];
+            q.BandTo[j] = tc.Silhouette.TopM * settings.SmokeBands[j];
         var o = os.Position.Normalized() * Earth.Radius;
         var t = ts.Position.Normalized() * Earth.Radius;
         (a, b) = (frame.ToAir(o), frame.ToAir(t));
-        split = splitShare;
-        middle = new SmokeLine(a, b, eyes[0].HeightM, bandTo[0], settings.SightRefraction);
+        q.Split = splitShare;
+        q.Middle = new SmokeLine(a, b, eyes[0].HeightM, q.BandTo[0], settings.SightRefraction);
         // each row from its eye's place on her, each point along the target in hers: their offsets from the middle line
-        (spreadO, spreadT) = (0, 0);
+        (q.SpreadO, q.SpreadT) = (0, 0);
         var of = os.Frame;
-        for (int e = 0; e < rows; e++)
+        for (int e = 0; e < q.Rows; e++)
         {
             ref readonly var eye = ref eyes[SmokeModel.PairEye(e, eyes.Length)];
-            rowFrom[e] = eye.HeightM;
+            q.RowFrom[e] = eye.HeightM;
             var at = frame.ToAir(of.ToWorld(eye.X, eye.Y, 0).Normalized() * Earth.Radius) - a;
-            (rowSide[e], rowAlong[e]) = (Vec3d.Dot(at, middle.Side), Vec3d.Dot(at, middle.Along));
-            spreadO = Math.Max(spreadO, Math.Sqrt(rowSide[e] * rowSide[e] + rowAlong[e] * rowAlong[e]));
+            (q.RowSide[e], q.RowAlong[e]) = (Vec3d.Dot(at, q.Middle.Side), Vec3d.Dot(at, q.Middle.Along));
+            q.SpreadO = Math.Max(q.SpreadO, Math.Sqrt(q.RowSide[e] * q.RowSide[e] + q.RowAlong[e] * q.RowAlong[e]));
         }
         var tf = ts.Frame;
-        for (int q = 0; q < PairPoints; q++)
+        for (int k = 0; k < PairPoints; k++)
         {
-            var at = frame.ToAir(tf.ToWorld(SmokeModel.PointX(q, tc.Hull.X0, tc.Hull.X1), 0, 0).Normalized() * Earth.Radius) - b;
-            (pointSide[q], pointAlong[q]) = (Vec3d.Dot(at, middle.Side), Vec3d.Dot(at, middle.Along));
-            spreadT = Math.Max(spreadT, Math.Sqrt(pointSide[q] * pointSide[q] + pointAlong[q] * pointAlong[q]));
+            var at = frame.ToAir(tf.ToWorld(SmokeModel.PointX(k, tc.Hull.X0, tc.Hull.X1), 0, 0).Normalized() * Earth.Radius) - b;
+            (q.PointSide[k], q.PointAlong[k]) = (Vec3d.Dot(at, q.Middle.Side), Vec3d.Dot(at, q.Middle.Along));
+            q.SpreadT = Math.Max(q.SpreadT, Math.Sqrt(q.PointSide[k] * q.PointSide[k] + q.PointAlong[k] * q.PointAlong[k]));
         }
-        Array.Clear(oneTau);
-        Array.Clear(splitTau);
+        Array.Clear(q.OneTau);
+        Array.Clear(q.SplitTau);
         return true;
     }
 
     /// <summary>The pair's depths out: the middle line's and the split lines' together, in the pair's layout.</summary>
-    void Finish(Span<double> tau)
+    void Finish(Span<double> tau, Query q)
     {
-        for (int e = 0; e < rows; e++)
-            for (int q = 0; q < PairPoints; q++)
+        for (int e = 0; e < q.Rows; e++)
+            for (int p = 0; p < PairPoints; p++)
                 for (int j = 0; j < PairBands; j++)
                 {
-                    int k = (e * PairPoints + q) * PairBands + j;
-                    tau[k] = oneTau[e * PairBands + j] + splitTau[k];
+                    int k = (e * PairPoints + p) * PairBands + j;
+                    tau[k] = q.OneTau[e * PairBands + j] + q.SplitTau[k];
                 }
     }
 
     /// <summary>A puff on the pair's lines (<see cref="SmokeModel.Split"/>, <see cref="SmokeModel.TauFan"/>): the middle
     /// line, or the fan its place asks for (each eye's start, each point's end, or both). Whether it added anything.</summary>
-    bool OnLines(in LinePuff p)
+    bool OnLines(in LinePuff p, Query q)
     {
-        var eyesUsed = rowFrom.AsSpan(0, rows);
-        double u = Math.Clamp(Vec3d.Dot(p.Centre - middle.From, middle.Along) / Math.Max(middle.Length, 1), 0, 1);
-        var (eyesApart, pointsApart) = SmokeModel.Split(u, p.SigmaH, spreadO, spreadT, split);
-        ReadOnlySpan<double> ss = eyesApart ? rowSide.AsSpan(0, rows) : SmokeModel.NoOffset, sa = eyesApart ? rowAlong.AsSpan(0, rows) : SmokeModel.NoOffset;
-        double spread = Math.Max(spreadO, spreadT);
+        var eyesUsed = q.RowFrom.AsSpan(0, q.Rows);
+        double u = Math.Clamp(Vec3d.Dot(p.Centre - q.Middle.From, q.Middle.Along) / Math.Max(q.Middle.Length, 1), 0, 1);
+        var (eyesApart, pointsApart) = SmokeModel.Split(u, p.SigmaH, q.SpreadO, q.SpreadT, q.Split);
+        ReadOnlySpan<double> ss = eyesApart ? q.RowSide.AsSpan(0, q.Rows) : SmokeModel.NoOffset, sa = eyesApart ? q.RowAlong.AsSpan(0, q.Rows) : SmokeModel.NoOffset;
+        double spread = Math.Max(q.SpreadO, q.SpreadT);
         return pointsApart
-            ? SmokeModel.TauFan(middle, p, ss, sa, eyesUsed, pointSide, pointAlong, bandTo, spread, splitTau.AsSpan(0, rows * PairPoints * PairBands))
-            : SmokeModel.TauFan(middle, p, ss, sa, eyesUsed, SmokeModel.NoOffset, SmokeModel.NoOffset, bandTo, spread, oneTau.AsSpan(0, rows * PairBands));
+            ? SmokeModel.TauFan(q.Middle, p, ss, sa, eyesUsed, q.PointSide, q.PointAlong, q.BandTo, spread, q.SplitTau.AsSpan(0, q.Rows * PairPoints * PairBands))
+            : SmokeModel.TauFan(q.Middle, p, ss, sa, eyesUsed, SmokeModel.NoOffset, SmokeModel.NoOffset, q.BandTo, spread, q.OneTau.AsSpan(0, q.Rows * PairBands));
     }
 
     /// <summary>Every line of the pair past <see cref="SmokeOpaqueTau"/>.</summary>
-    bool PairOpaque()
+    static bool PairOpaque(Query q)
     {
-        for (int e = 0; e < rows; e++)
-            for (int q = 0; q < PairPoints; q++)
+        for (int e = 0; e < q.Rows; e++)
+            for (int p = 0; p < PairPoints; p++)
                 for (int j = 0; j < PairBands; j++)
-                    if (oneTau[e * PairBands + j] + splitTau[(e * PairPoints + q) * PairBands + j] < SmokeOpaqueTau)
+                    if (q.OneTau[e * PairBands + j] + q.SplitTau[(e * PairPoints + p) * PairBands + j] < SmokeOpaqueTau)
                         return false;
         return true;
     }
 
     /// <summary>One level's cells along the chord between the ships' middles, a to b (Amanatides and Woo in 3D): their
     /// chunks' puffs onto the pair's lines; true once every line is opaque.</summary>
-    bool Walk(int level, Vec3d a, Vec3d b, double lineLo, double lineHi, ref long summed)
+    bool Walk(int level, Vec3d a, Vec3d b, double lineLo, double lineHi, Query q, ref long summed)
     {
-        double spread = Math.Max(spreadO, spreadT);
+        double spread = Math.Max(q.SpreadO, q.SpreadT);
         double g = settings.SmokeGridM * (1 << level);
         var d = b - a;
         long cx = Cell(a.X, g), cy = Cell(a.Y, g), cz = Cell(a.Z, g);
@@ -523,17 +648,17 @@ public sealed partial class SmokeSystem
             for (int e = gridHead[Bucket(key)]; e >= 0; e = gridNext[e])
             {
                 int c = gridChunk[e];
-                if (gridKey[e] != key || chunkStamp[c] == stamp)
+                if (gridKey[e] != key || q.ChunkStamp[c] == q.Stamp)
                     continue;
-                chunkStamp[c] = stamp;
-                ChunksTested++;
+                q.ChunkStamp[c] = q.Stamp;
+                q.ChunksTested++;
                 if (chunkLo[c] > lineHi || chunkHi[c] < lineLo || Miss(chunkC[c], chunkR[c] + spread, a, b))
                     continue;   // over the lines or under them, or off to one side
-                PuffsTested += chunkStart[c + 1] - chunkStart[c];
+                q.PuffsTested += chunkStart[c + 1] - chunkStart[c];
                 for (int i = chunkStart[c]; i < chunkStart[c + 1]; i++)
-                    if (OnLines(ix[i]))
+                    if (OnLines(ix[i], q))
                         summed++;
-                if (PairOpaque())
+                if (PairOpaque(q))
                     return true;
             }
             if (cx == ex && cy == ey && cz == ez)

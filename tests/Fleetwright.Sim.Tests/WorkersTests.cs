@@ -146,4 +146,37 @@ public class WorkersTests
         using var shuffled = new Workers(0, shuffleSeed: 3);
         Assert.Equal(h0, Play(shuffled, out _));
     }
+
+    [Fact]
+    public void Looks_and_the_smoke_are_the_same_on_any_number_of_workers()
+    {
+        // two lines of twelve in sight of each other making smoke: the looks (W3), the smoke's queries and its index (W4)
+        // go wide; the pictures and the smoke cache are in the hash
+        var settings = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json")) with { Smoke = true };
+        ulong Play(Workers workers, out int contacts, out long asked)
+        {
+            var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), 5, settings) { Workers = workers };
+            int c = w.Ships.AddClass(Fleet.Get("dreadnought").Class!);
+            w.Apply(Command.SetWeather(25_000));
+            for (int k = 0; k < 12; k++)
+            {
+                w.Apply(ShipSystem.Spawn(c, 56.5 + 0.006 * k, 4.0, 0, 18, side: 1));
+                w.Apply(ShipSystem.Spawn(c, 56.5 + 0.006 * k, 4.09, 180, 18, side: 2));
+            }
+            for (int e = 1; e <= 24; e += 2)
+                w.Apply(SmokeSystem.MakeSmoke(e, true));
+            w.AdvanceTo(w.Time + 240_000);
+            contacts = w.Sightings.Of(1)?.Count ?? 0;
+            asked = w.Smoke.Asked;
+            return w.ComputeHash();
+        }
+        using var inline = new Workers(0);
+        ulong h0 = Play(inline, out int contacts, out long asked);
+        Assert.True(contacts >= 10, $"side 1 holds {contacts} contacts");
+        Assert.True(asked > 0, "no smoke queries");
+        using var four = new Workers(4);
+        Assert.Equal(h0, Play(four, out _, out _));
+        using var shuffled = new Workers(0, shuffleSeed: 9);
+        Assert.Equal(h0, Play(shuffled, out _, out _));
+    }
 }
