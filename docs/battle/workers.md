@@ -1,5 +1,5 @@
 # Plan: the sim's workers (the job system)
-Status: **agreed 2026-10-24** (the decisions below answered); W0-W4 and W6 built 2026-10-24.
+Status: **agreed 2026-10-24** (the decisions below answered); W0-W4 and W6 built 2026-10-24; W7 tried and left serial; W8's curve measured (the default count open).
     Updated: 2026-10-24
 
 The job system the architecture agreed from the start (`docs/world/architecture.md` "Threaded throughout", decision 1)
@@ -208,7 +208,7 @@ columns; and a probe sums every thread's time in it ("Ships: step, all threads")
 shared between workers but the ships' data cold in the other cores' caches (this machine's 16 cores are two dies).
 W8's to look at (keeping the workers on the sim thread's die).
 
-### W7 Damage steps
+### W7 Damage steps - tried 2026-10-24, left serial
 
 The steps already fall on one lattice (`FloodMs`), one event a ship in entity order. Made one event a moment for every
 ship due (as gunnery's tick is), the step split: the repairs, valves, flooding, settling and fires (the cost, the ship's
@@ -217,11 +217,37 @@ in the apply that reaches another ship of the batch (a magazine's blast on a nei
 computed again, on the sim thread, after it: rare, and exact. Batching moves the steps relative to other systems' events
 at the same moment, so it may change the output once against today (decision 3).
 
-### W8 Measured and tuned
+Tried (one steps event a moment, every due ship's own part on the workers from the moment's state, the applies in entity
+order): the same hash on 0 and 8 workers and shuffled, squadrons over 24 seeds the same within the spread. But the
+trace put almost none of the cost in the part that goes wide (`StepOwn`, ~0.1 s of a 100 s trace) and nearly all of it
+in the serial apply: `Magazines.SetOff`, the venting race (10.6 s). So it bought no speed, changed the output, and the
+Jutland's 4 seeds lost more tonnage after it than before (Germany 106k -> 180k t, mostly one seed: not settled). Taken
+out: decision 3's other branch, damage per ship and serial. What would pay instead is `SetOff`'s own cost (how often a
+burning magazine runs its race), a model question for the damage plan, not the workers'.
+
+### W8 Measured and tuned - the curve 2026-10-24
 
 The worker curve (0, 1, 2, 4, 8) on the Jutland; the quad-core case (4 workers beside the render thread); the app's
 default count with the render thread and the builders; the plan.md 2.7 target (the sim thread at most a quarter busy
 at 10x) checked again. The numbers into `docs/profiling.md`'s log and plan.md 2.7's "Measured" table.
+
+The Jutland (`--play`, W0-W4 and W6, this machine's 16 cores, nothing else running), every run the same battle and the
+same hash:
+
+| workers | played in | vs inline | the step, a tick | its time on all threads |
+|---|---|---|---|---|
+| 0 | 156.4 s | | 43.0 µs | 43.0 µs |
+| 1 | 135.6 s | -13% | 29.4 µs | 55.6 µs |
+| 2 | 115.0 s | -26% | 25.2 µs | 65.3 µs |
+| 3 | 111.2 s | -29% | 19.8 µs | 63.8 µs |
+| 4 | 106.7 s | -32% | 18.0 µs | 63.7 µs |
+| 8 | 101.6 s | -35% | 16.5 µs | 84.7 µs |
+
+Two workers give three quarters of the gain; past four it's nearly flat while each worker spins a core (the user's
+point, 2026-10-24: too little work over too many threads is overhead). The serial floor is what's left: the AI (~30
+s), smoke upkeep's merge and emission, the applies, `SetOff`. "Well under half" is not reachable by more workers;
+it needs the serial part cut (W5's reads, or exact-output passes on the serial code). Plan 2.7's speed target (10x or
+better) holds with room: the whole 14 hours average ~2 ms of sim a game second.
 
 ## What to expect
 
