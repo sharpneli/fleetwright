@@ -911,6 +911,79 @@
           "shapes": {"funnel": "capped", "funnel_band_w": 0.8, "blocks": "soft"}
         }
       }
+    },
+    "suomenlinna": {
+      "desc": "Finland-inspired",
+      "eras": {
+        // Finland-inspired 1890s-1900s, the Grand Duchy's squadron that never was: a pine-tar black hull (Finland
+        // tarred the world's ships), birch-white upperworks, pale scrubbed pine, white funnels with a Finnish-blue
+        // band under a black top, tarred masts, round turrets
+        "victorian": {
+          "from": "generic/victorian",
+          "desc": "Finland-inspired 1890s-1900s: tar-black hull, birch-white upperworks, white funnels with a blue band",
+          "palette": {
+            "hull": "#221b16", "deck": "#5c5144", "wood": "#ddd0ac", "deck_line": "#8f7b55", "steel_line": "#3a3128",
+            "levels": ["#ebe7dc", "#efebe2", "#f2efe8", "#f5f3ee"], "funnel": "#eeeae0", "funnel_band": "#1f4a8a",
+            "funnel_cap": "#161412", "mast": "#4a3524", "turret": "#2a2420", "barbette": "#352d27", "tub": "#2a2420"
+          },
+          "turrets": "round",
+          "shapes": {"funnel": "oval", "funnel_band_w": 0.4, "funnel_band_h": 2.0}
+        },
+        // Finland-inspired 1910s, the navy of 1918 in ice-field dazzle: white, ice blue and slate panels over a pale
+        // blue-grey, a little across the decks, broken pack ice rather than the Atlantic's stripes; pale pine,
+        // classic turrets
+        "great_war": {
+          "from": "generic/great_war",
+          "desc": "Finland-inspired 1910s: ice-field dazzle in white, ice blue and slate over pale blue-grey",
+          "palette": {"camo": ["#f1f3f2", "#a9c0d1", "#3f4b57"], "funnel_band": "#24426e"},
+          "adjust": [
+            {"keys": ["hull", "upperworks", "armament", "funnels"], "lighten": 0.35, "styles": ["warship", "carrier", "planing"]},
+            {"keys": ["hull", "upperworks", "armament", "funnels"], "tint": ["#b9cad6", 0.25], "styles": ["warship", "carrier", "planing"]},
+            {"keys": "wood", "tint": ["#d7cfb8", 1.0], "styles": ["warship", "carrier", "planing"]}
+          ],
+          "turrets": "classic",
+          "shapes": {"funnel": "oval", "dazzle": true, "dazzle_decks": 0.25, "dazzle_upperworks": 1.0}
+        },
+        // Finland-inspired 1920s-30s, the years of Väinämöinen: the pale blue-grey of the lakes, white pine, blue
+        // and white bands across the turret roofs, blue funnel bands, summer awnings over the quarterdeck
+        "treaty": {
+          "from": "generic/treaty",
+          "desc": "Finland-inspired 1920s-30s: lake blue-grey, white pine, blue-white turret bands, awnings",
+          "palette": {"recog_a": "#1f4a8a", "recog_b": "#f1efe8", "funnel_band": "#1f4a8a"},
+          "adjust": [
+            {"keys": ["hull", "upperworks", "armament", "funnels"], "tint": ["#7f9fc2", 0.55], "styles": ["warship", "carrier", "planing"]},
+            {"keys": "wood", "tint": ["#e3d9bf", 0.9], "styles": ["warship", "carrier", "planing"]}
+          ],
+          "turrets": "round",
+          "shapes": {"funnel_band_w": 0.7, "turret_bands": ["recog_a", "recog_b"], "awnings": true, "blocks": "soft"}
+        },
+        // Finland-inspired: the skerry camouflage Väinämöinen wore in 1941-44, grey-green under dark green, black
+        // and granite-grey panels carried across the decks, tower bridges, round turrets
+        "wwii": {
+          "from": "generic/wwii",
+          "desc": "Finland-inspired: skerry camouflage, greens, black and granite grey, decks too, tower bridges",
+          "palette": {
+            "hull": "#56605a", "deck": "#59605a", "wood": "#a49d88", "deck_line": "#4b473c", "steel_line": "#3a403b",
+            "levels": ["#7a827c", "#868e88", "#929993", "#9ea59f"], "turret": "#7a827c", "barbette": "#5a625c",
+            "funnel": "#7a827c", "funnel_cap": "#1b1e1c", "funnel_band": "#1b1e1c", "mast": "#2b302c",
+            "camo": ["#2c3d2f", "#17191a", "#8f8a84"]
+          },
+          "turrets": "round",
+          "shapes": {"blocks": "tower", "funnel": "oval", "dazzle": true, "dazzle_decks": 0.55, "dazzle_upperworks": 0.8},
+          "shapes_by_style": {"merchant": {"blocks": "soft", "dazzle": false}}
+        },
+        // Finland-inspired 1950s-60s, as the Turunmaa corvettes: light grey, dark non-skid, black funnel caps,
+        // pennant numbers
+        "cold_war": {
+          "from": "generic/cold_war",
+          "desc": "Finland-inspired 1950s-60s: light grey, dark non-skid, black funnel caps, numbers",
+          "palette": {"funnel_cap": "#1a1c1e", "funnel_band": "#1a1c1e"},
+          "adjust": [
+            {"keys": ["hull", "upperworks", "armament", "funnels"], "lighten": 0.12, "styles": ["warship", "carrier", "planing"]}
+          ],
+          "shapes": {"hull_number": true}
+        }
+      }
     }
   }
 }

@@ -20,7 +20,7 @@ Can't (yet), so the plan steers round them:
   for most, and "enters at 09:30" (N2) can come if the far placing proves clumsy.
 - **Mines, submarines, aircraft, shore batteries:** none. Battles that turned on them (Irben 1915, Imbros 1918, Second
   Heligoland 1917, Manila Bay) are left out, or set at a moment and place where they don't decide it.
-- **Ensigns:** the screen draws britain, germany, russia, japan. Each new navy is a small drawing.
+- **Ensigns:** the screen draws britain, germany, russia, japan, france, italy, ottoman, finland. Each new navy is a small drawing.
 
 ## Sizes
 
