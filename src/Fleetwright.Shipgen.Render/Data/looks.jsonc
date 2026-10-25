@@ -990,17 +990,17 @@
     "karlskrona": {
       "desc": "Sweden-inspired",
       "eras": {
-        // Sweden-inspired 1890s-1900s, the pansarbåtar's years: black hull, white upperworks, the national colours on
-        // the funnels (yellow, a blue band under a black top), buff masts, drum turrets
+        // Sweden-inspired 1890s-1900s, summer white and Falu red: white hull and turrets, the steel decks and boot
+        // topping in the red of the barns, buff funnels with black tops, drum turrets
         "victorian": {
           "from": "generic/victorian",
-          "desc": "Sweden-inspired 1890s-1900s: black and white, yellow funnels with a blue band",
+          "desc": "Sweden-inspired 1890s-1900s: summer white, Falu-red steel decks and boot topping, buff funnels",
           "palette": {
-            "hull": "#1c1d20", "funnel": "#d8ae3a", "funnel_band": "#2a5a9e", "funnel_cap": "#151515",
-            "mast": "#8a6a3a"
+            "hull": "#e7e4dc", "deck": "#7c3227", "steel_line": "#4f1f18", "turret": "#e2dfd6", "barbette": "#c9c5bb",
+            "tub": "#d8d4cb", "boot_top": "#7c3227", "funnel": "#cfa553", "funnel_band": "#161616"
           },
           "turrets": "drum",
-          "shapes": {"funnel": "oval", "funnel_band_w": 0.4, "funnel_band_h": 2.0}
+          "shapes": {"funnel": "oval"}
         },
         // Sweden-inspired 1910s, a neutral marking itself: light grey, blue and yellow chevrons on the foredeck and
         // bands across the turret roofs, blue funnel bands, pale teak, classic turrets
