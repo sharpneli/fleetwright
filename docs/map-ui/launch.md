@@ -181,7 +181,7 @@ mockup's, committed.
 | **L0** (done 2026-10-25) | The load: classes asked on selection, the two queues (compile first, art after), more threads while nothing runs, Begin when compiled; measured at Tsushima and Jutland, memory included | `ShipClassRegistry`, `ShipArtLibrary`, `WorldSession.Load` |
 | **L1** (done 2026-10-25) | The launch scene: the list, the header and brief, the side cards (Watch included), the opening drawn from the file's top units, the footer's load and Begin. The app opens on it (the last scenario played selected); the menu's and the result's "Scenarios" open it; `-scenario=` still goes straight into the world (captures and tests), `-launch[=name]` opens the screen. The briefing modal at start goes (the brief is on this screen; the menu's Briefing stays) | — |
 | **L2** (done 2026-10-25) | A setup as data: the overrides on a parsed `Scenario`, saved and listed as a scenario file with `"from"` and `"designs"`; the changes list and reset | `Scenario`, `ScenarioLoader` |
-| **L3** | Ships: each side's order of battle, the design rows and their state, the picker (sources, filters, figures, matchup, apply to all, one or every), the designer round trip (edit a copy, saved back into the picker as yours) | the matchup on candidates |
+| **L3** (done 2026-10-25, the matchup next) | Ships: each side's order of battle, the design rows and their state, the picker (sources, filters, figures, matchup, apply to all, one or every), the designer round trip (edit a copy, saved back into the picker as yours) | the matchup on candidates |
 | **L3b** | Adding and removing: − n + per row, ✕ per unit, the add picker, the placing view (on the sea, the course dragged), joining a unit | `"add"`, `"remove"` |
 | **L4** | Standing orders: aggression and what it moves, the admirals' and captains' tempers, the rules | `Temper` on units and ships |
 | **L5** | Conditions and the day: both sides' crews, readiness, damage control, fire discipline, fuel; presets; visibility, wind, the end, the seed | — |
@@ -236,6 +236,44 @@ refused, and it reads back to the same scenario (tested). `Scenario.Load(path, f
 - **The result** says "Tsushima, as you set it:" with each change, when the fight was a setup's.
 - **Still to come in this format:** doctrine and tempers (L4), the day (L5), `"add"` and `"remove"` (L3b): each joins
   `ScenarioSetup` as a change of its own, with its file key.
+
+**L3 done (2026-10-25), but the picker's matchup** (the user's order: the matchup right after). `LaunchScene.Ships.cs`:
+the first column is the sides' orders of battle as tabs (yours first; watching, side by side), each unit with its count
+and under it a row a design: the ship drawn to scale (all rows at one scale, the longest ship of the pick fitting), how
+many, the names (cut to the column, the whole list on hover), the class's figures in a line, its build (building, art…,
+ready, failed) and Change…. A row the setup changed is brass, with what it was ("was Borodino-like · all 4").
+`LaunchScene.Picker.cs`: the picker opens over the columns right of the ships, a window of its own; every design the
+pick can name, found as a scenario finds them (its own Designs/, the shipped, the player's; the first of a name wins),
+the row's own first, the player's newest, the scenario's, the shipped by year; a search and the filters (the row's
+type or any, the three sources, up to the scenario's year), all off but the sources at first (decision 6). The old and
+the new side by side with each figure's change; used for the row's unit, one ship of it (a name picked), or every ship
+of that design in the scenario. Esc, ✕ or Cancel closes it; Use (or a double click) makes the change.
+`LaunchScene.Designs.cs`: the design files read on a thread at the start (the player's again whenever the screen is
+entered), and the figures.
+
+- **Candidates are built without their art** (`ShipClassRegistry.Request(design, art: false)`): opening the picker asks
+  for every candidate's class, ~130 at Tsushima, so their figures fill in within a few seconds; drawing them all would
+  be ~40 s of the builders' time and ~1 GB of textures. The one highlighted is asked for again with its art (a class
+  built without it is built again for the drawing, its class kept), so the comparison and a swap show the real ship;
+  the rest draw as an outline of their length and beam. The ImGui sampler now reads mip levels, so sprites drawn small
+  don't shimmer.
+- **The figures** are the matchup's own view of a class (`MatchupProfile`: displacement, length, speed, the main guns'
+  reach), worked out on a thread once the class is compiled, plus the guns by calibre (the chief battery's, then the
+  heaviest other, then the tubes) and the belt (the thickest side plate at the waterline). The matchup column is next
+  (step L3's last part); the profiles are already made for it.
+- **A design's year** is the latest year its file names (its machinery's, its guns', its shells'), shown as "tech 1905"
+  and used by the "up to" filter: designs have no year of their own. A design file could say one later if the filter
+  needs to be exact.
+- **A swap made again** changes the change it made: `ScenarioSetup.Swap` (tested) changes the change that brought the
+  row's design with the same reach, or takes it away when it puts back what was written, so trying designs back and
+  forth leaves one line in the changes, or none. The changes list names designs by their titles ("1st Armoured
+  Division: Borodino-like, now Mikasa-like"); the font has no arrows, so the line says "now".
+- **The designer round trip:** "Edit a copy in the designer…" (or "+ New design from …" at the list's end) opens the
+  designer on a copy, unsaved, with its own history (`DesignSession.Copy`); back on the launch screen (`SceneSwitcher`'s
+  `LaunchEntered`) the player's designs are read again and one saved since is picked in the picker, still open.
+- **Left for later:** the matchup column and its row in the comparison (next); the admirals' names and tempers on the
+  units, the captains' marks (L4); − n + and ✕ (L3b). Jutland's rows draw small because one design is far too long
+  (docs/battle/bugs.md, Agincourt-like at 313 m).
 
 ## Decisions (the user, 2026-10-25)
 

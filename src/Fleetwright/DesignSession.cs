@@ -127,6 +127,10 @@ public sealed class DesignSession : IDisposable
         Set(design, path, edited: path == null, limits: true);
     }
 
+    /// <summary>A design to start a new one from (the launch screen's "Edit a copy in the designer"): opened as a new,
+    /// unsaved design with its own history, saved to the player's folder like any other.</summary>
+    public void Copy(Design design) => Set(design, null, edited: false, limits: true);
+
     /// <summary>A design file from outside (dropped on the window): read, then taken as an edit of the design now,
     /// so it stays unsaved (and undoable) until saved. The error when it isn't a design.</summary>
     public string? Open(string path)

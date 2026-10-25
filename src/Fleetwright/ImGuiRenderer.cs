@@ -96,6 +96,7 @@ public unsafe class ImGuiRenderer : IDisposable
             address_mode_u = SDL_GPUSamplerAddressMode.SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
             address_mode_v = SDL_GPUSamplerAddressMode.SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
             address_mode_w = SDL_GPUSamplerAddressMode.SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
+            max_lod = 1000,   // a mipmapped texture shown small (the launch screen's ship sprites) takes its levels
         };
 
         _sampler = SDL_CreateGPUSampler(_device, &samplerInfo);

@@ -11,7 +11,8 @@ namespace Fleetwright.Sim.Ships;
 /// (docs/map-ui/launch.md L0): every class's build and compile goes before any drawing, since a world needs only the
 /// classes, so a class is ready (<see cref="Get"/>) before its art; its ship is held until it's drawn
 /// (<see cref="IsDrawn"/>), the preferred classes' first (<see cref="Prefer"/>). A registry holds no Ship
-/// afterwards.</para>
+/// afterwards. A class may be asked for without its art (the launch screen's design picker: its candidates' figures,
+/// docs/map-ui/launch.md L3); asked for again with it, it's built again for the drawing.</para>
 /// <para>The threads: a few beside a running world, more while none runs (<see cref="Idle"/>).</para>
 /// <para>References are counted (<see cref="Acquire"/>, <see cref="Release"/>): what reaches zero may be freed
 /// (<see cref="Unused"/>). Thread-safe throughout; when a build finishes can never change what a world does, since
@@ -21,7 +22,8 @@ public sealed class ShipClassRegistry : IDisposable
     sealed class Entry
     {
         public required ContentHash Hash;
-        public Design? Design;
+        public Design? Design;   // until built; kept while its art isn't wanted, to build it again if it comes to be
+        public bool Art;   // its drawing is wanted (under the gate)
         public ShipClass? Class;
         public string? Error;
         public int Refs;
@@ -95,16 +97,31 @@ public sealed class ShipClassRegistry : IDisposable
     public int Threads => active;
 
     /// <summary>Asks for a design's class: its id, now; the build runs in the background unless the design was asked
-    /// for before.</summary>
-    public int Request(Design design)
+    /// for before. Without <paramref name="art"/> its art isn't drawn (it counts as drawn: there's nothing to wait
+    /// for) until it's asked for with it.</summary>
+    public int Request(Design design, bool art = true)
     {
         var hash = ContentHash.OfDesign(design);
         lock (gate)
         {
             if (byHash.TryGetValue(hash, out int id))
+            {
+                var e = entries[id];
+                if (art && !e.Art)
+                {
+                    e.Art = true;
+                    if (e.Done.IsSet && e.Class != null && e.Design != null && Built != null)
+                    {
+                        // built without its art: built again for the drawing (the class stands)
+                        e.Drawn.Reset();
+                        builds.Enqueue(id);
+                        Monitor.PulseAll(gate);
+                    }
+                }
                 return id;
+            }
             id = entries.Length;
-            entries = [.. entries, new Entry { Hash = hash, Design = design }];
+            entries = [.. entries, new Entry { Hash = hash, Design = design, Art = art }];
             byHash[hash] = id;
             builds.Enqueue(id);
             Monitor.PulseAll(gate);   // all: one woken past the active threads would wait on
@@ -296,6 +313,11 @@ public sealed class ShipClassRegistry : IDisposable
 
     void Build(int id, Entry e)
     {
+        if (e.Done.IsSet)
+        {
+            Redraw(id, e);
+            return;
+        }
         if (closing)
         {
             e.Error = "the registry closed before it was built";   // what's queued at Dispose isn't built
@@ -332,18 +354,48 @@ public sealed class ShipClassRegistry : IDisposable
         {
             e.Error ??= $"{x.GetType().Name}: {x.Message}";
         }
-        e.Design = null;
-        bool draws = ship != null && Built != null;
-        if (draws)
-            lock (gate)
+        lock (gate)   // with the art asked for: a request after this sees the class done and builds again for it
+        {
+            bool draws = ship != null && Built != null && e.Art;
+            if (draws)
             {
                 e.Ship = ship;
                 (e.First ? drawFirst : drawLater).Enqueue(id);
                 Monitor.PulseAll(gate);   // all: one woken past the active threads would wait on
             }
-        e.Done.Set();   // the class, before its art
-        if (!draws)
-            e.Drawn.Set();
+            if (draws || e.Class == null || e.Art)
+                e.Design = null;
+            e.Done.Set();   // the class, before its art
+            if (!draws)
+                e.Drawn.Set();
+        }
+    }
+
+    /// <summary>A class built without its art, built again now that its art is asked for: the ship to the drawing.</summary>
+    void Redraw(int id, Entry e)
+    {
+        Ship? ship = null;
+        try
+        {
+            if (!closing)
+                ship = ShipDesign.Build(e.Design!);
+        }
+        catch (Exception x)
+        {
+            Console.Error.WriteLine($"class registry: {id} didn't build again for its art: {x.Message}");
+        }
+        lock (gate)
+        {
+            e.Design = null;
+            if (ship != null)
+            {
+                e.Ship = ship;
+                (e.First ? drawFirst : drawLater).Enqueue(id);
+                Monitor.PulseAll(gate);
+            }
+            else
+                e.Drawn.Set();
+        }
     }
 
     void Draw(int id, Entry e, Ship ship)

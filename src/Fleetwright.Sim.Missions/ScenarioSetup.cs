@@ -45,6 +45,20 @@ public sealed record ScenarioSetup
         return this with { Changes = list };
     }
 
+    /// <summary>The setup with the ships of design <paramref name="from"/> given <paramref name="to"/> (under a unit, one
+    /// ship, or every one: <see cref="SwapDesign"/>), as the launch screen's picker does it: the change that brought
+    /// <paramref name="from"/> there with the same reach is changed again, or taken away when <paramref name="to"/> puts
+    /// back what it replaced, so going back and forth leaves no trail.</summary>
+    public ScenarioSetup Swap(string? unit, string? ship, string from, string to)
+    {
+        if (from == to)
+            return this;
+        var prior = Changes.OfType<SwapDesign>().FirstOrDefault(c => c.To == from && c.Unit == unit && c.Ship == ship);
+        return prior == null ? With(new SwapDesign(unit, ship, from, to))
+            : prior.From == to ? Without(prior.Key)
+            : With(prior with { To = to });
+    }
+
     /// <summary>The setup without a change (the screen's ✕), or without every change of a key.</summary>
     public ScenarioSetup Without(string key) => this with { Changes = [.. Changes.Where(x => x.Key != key)] };
 
@@ -258,7 +272,11 @@ public sealed record SwapDesign(string? Unit, string? Ship, string From, string 
         return u.With(units, ships);
     }
 
-    public override string Describe(Scenario written) => $"{Ship ?? Unit ?? "Every ship"}: {From} → {To}";
+    public override string Describe(Scenario written) => Describe(written, d => d);
+
+    /// <summary>The change in a line with the designs by their names (<paramref name="nameOf"/> a design file's: the
+    /// launch screen's titles).</summary>
+    public string Describe(Scenario written, Func<string, string> nameOf) => $"{Ship ?? Unit ?? "Every ship"}: {nameOf(From)}, now {nameOf(To)}";
 }
 
 public enum SideKind

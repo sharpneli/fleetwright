@@ -19,9 +19,10 @@ namespace Fleetwright.Map;
 /// so reading the brief covers the build; Begin swaps the world in (<see cref="WorldSession.Begin"/>) and
 /// <see cref="Begun"/> shows the map. What the player changes is a setup (<see cref="ScenarioSetup"/>, L2): the
 /// scenario as written plus its changes, listed with an undo each, saved as a scenario file in My Games/Fleetwright/
-/// Setups and listed under Your setups. The ships, the standing orders and the conditions (L3-L5) take the body later;
-/// until then it shows what the briefing did. Its strings are made when the pick changes, so a frame allocates nothing
-/// but the load's line while it builds.</summary>
+/// Setups and listed under Your setups. The body's first column is each side's ships (L3, <c>LaunchScene.Ships.cs</c>),
+/// a design changed by the picker (<c>LaunchScene.Picker.cs</c>); the standing orders and the conditions (L4-L5) take the
+/// rest later, until then the aims and the orders before action. Its strings are made when the pick changes, so a frame
+/// allocates nothing but the load's line while it builds.</summary>
 public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
 {
     readonly WorldSession world;
@@ -81,9 +82,10 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
     static Vector4 Hex(uint rgb) => new(((rgb >> 16) & 0xFF) / 255f, ((rgb >> 8) & 0xFF) / 255f, (rgb & 0xFF) / 255f, 1);
     static uint U(Vector4 c) => ImGui.ColorConvertFloat4ToU32(c);
 
-    public LaunchScene(WorldSession world, string? pickName = null)
+    public LaunchScene(WorldSession world, ShipArtLibrary art, string? pickName = null)
     {
         this.world = world;
+        this.art = art;
         land = Land.Load(Path.Combine(AppContext.BaseDirectory, "Content", "World", "land-50m.bin"));
         foreach (var path in WorldSession.ShippedScenarios())
             entries.Add(Read(path, opened: false));
@@ -91,6 +93,7 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
             foreach (var path in Directory.GetFiles(SetupsFolder, "*.json"))
                 entries.Add(Read(path, opened: false));
         Sort();
+        ScanShipped();
         pickName ??= ReadLast();
         int at = pickName == null ? -1 : entries.FindIndex(e => KeyOf(e).Equals(pickName, StringComparison.OrdinalIgnoreCase));
         initial = at >= 0 ? at : entries.FindIndex(e => !e.Test && e.Scenario != null);
@@ -214,6 +217,7 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
 
     void Pick(int i)
     {
+        ClosePicker();
         pick = i;
         (written, current, setupError) = (null, null, null);
         if (i < 0 || entries[i].Scenario is not { } s)
@@ -228,6 +232,7 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
     /// <summary>A change of the player's: the setup with it (or without it, when it puts back what's written).</summary>
     void Edit(ScenarioSetup next)
     {
+        ClosePicker();
         setup = next;
         Apply();
     }
@@ -284,11 +289,21 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
 
     public void Draw(SDL_GPUCommandBuffer* cmd, RenderTarget target, float dt)
     {
+        art.UploadPending();   // the rows' and the picker's ships
         var pass = target.BeginPass(cmd, new SDL_FColor { r = Bg.X, g = Bg.Y, b = Bg.Z, a = 1 }, depth: false);
         SDL_EndGPURenderPass(pass);
     }
 
-    public bool ProcessEvent(SDL_Event* e, uint width, uint height) => false;   // Esc: nothing of its own to shut, so the menu
+    /// <summary>Esc shuts the picker; with nothing open, the menu.</summary>
+    public bool ProcessEvent(SDL_Event* e, uint width, uint height)
+    {
+        if ((SDL_EventType)e->type == SDL_EventType.SDL_EVENT_KEY_DOWN && (uint)e->key.key == SDLK_ESCAPE && pickerRow != null && !saveOpen)
+        {
+            ClosePicker();
+            return true;
+        }
+        return false;
+    }
 
     public bool MenuItems() => false;
 
@@ -315,6 +330,7 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         else if (begin && world.LoadError != null)
             begin = false;
         sc = UiFonts.Scale;
+        Figure();
         var vp = ImGui.GetMainViewport();
         ImGui.SetNextWindowPos(vp.Pos);
         ImGui.SetNextWindowSize(vp.Size);
@@ -341,6 +357,10 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
             TopBar(o, w, top);
         }
         ImGui.End();
+        {
+            float top = 34 * sc, x = vp.Pos.X + 372 * sc + ShipsW * sc;
+            PickerUi(new Vector2(x, vp.Pos.Y + top), new Vector2(vp.Pos.X + vp.Size.X - x, vp.Size.Y - top - 64 * sc));
+        }
         if (pendingSide is int ps)
         {
             pendingSide = null;
@@ -854,49 +874,16 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         Wrapped(UiFonts.SansSmall, 12, new Vector2(x, y + 34 * sc), Soft, "Both sides the AI's; you see everything. For checking a setup before playing it.", size.X - 24 * sc);
     }
 
-    // ------------------------------------------------------------------ the body: until L3-L5, what the briefing said
+    // ------------------------------------------------------------------ the body: the ships; until L4-L5, the aims and orders
 
-    sealed class Column
-    {
-        public string Title = "";
-        public Vector4 Colour;
-        public bool Ring;
-        public readonly List<(string Unit, string Ships, bool Sub)> Units = [];
-    }
+    const float ShipsW = 600;   // the ships column, reference px (the picker opens right of it)
 
-    readonly Column[] columns = [new(), new()];
     readonly List<(string Label, string Value)> aims = [], orders = [];
     string ordersTitle = "";
 
     void MadeBody(Scenario s)
     {
-        int a = side >= 0 ? side : 0, b = side >= 0 ? (s.Sides.Length > 1 ? 1 - Math.Min(side, 1) : -1) : 1;
-        for (int k = 0; k < 2; k++)
-        {
-            var col = columns[k];
-            col.Units.Clear();
-            int sd = k == 0 ? a : b;
-            if (sd < 0 || sd >= s.Sides.Length)
-            {
-                col.Title = "";
-                continue;
-            }
-            bool full = side < 0 || sd == side;
-            col.Title = side < 0 ? s.Sides[sd].ToUpperInvariant() : k == 0 ? $"YOUR SHIPS · {s.Sides[sd].ToUpperInvariant()}" : $"THE ENEMY, AS REPORTED · {s.Sides[sd].ToUpperInvariant()}";
-            col.Colour = side < 0 ? (sd == 0 ? Hex(0x9DBFE6) : Hostile) : full ? Friend : Hostile;
-            col.Ring = side < 0 ? sd == 0 : full;
-            foreach (var u in s.Units.Where(u => u.Side == sd))
-                if (!full)
-                    col.Units.Add((u.Name, $"{u.ShipCount} ship{(u.ShipCount == 1 ? "" : "s")}", false));
-                else if (u.IsForce)
-                {
-                    col.Units.Add((u.Name, $"{u.ShipCount} ships", false));
-                    foreach (var sub in u.Units)
-                        col.Units.Add((sub.Name, string.Join(", ", MapScene.ShipsOf(sub)), true));
-                }
-                else
-                    col.Units.Add((u.Name, string.Join(", ", MapScene.ShipsOf(u)), false));
-        }
+        MadeShips(s);
         aims.Clear();
         orders.Clear();
         var (_, lon) = Centre(s);
@@ -922,17 +909,11 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
     {
         if (current == null)
             return;
-        float[] widths = [600 * sc, 520 * sc];
-        float x = o.X;
-        for (int k = 0; k < 2; k++)
-        {
-            var col = columns[k];
-            if (col.Title.Length > 0)
-                UnitsColumn(k, col, new Vector2(x + 18 * sc, o.Y + 14 * sc), widths[k] - 36 * sc, o.Y + h);
-            x += widths[k];
-            VLine(x, o.Y, o.Y + h);
-        }
-        float cx = x + 18 * sc, cy = o.Y + 14 * sc, cw = o.X + w - cx - 18 * sc;
+        ShipsColumn(new Vector2(o.X + 18 * sc, o.Y + 14 * sc), ShipsW * sc - 36 * sc, o.Y + h);
+        float x = o.X + ShipsW * sc;
+        VLine(x, o.Y, o.Y + h);
+        // the aims and the orders before action (the standing orders' place, L4)
+        float cx = x + 18 * sc, cy = o.Y + 14 * sc, cw = 520 * sc - 36 * sc;
         Tracked(UiFonts.Sans, 10.5f, new Vector2(cx, cy), Muted, "THE AIM", 0.9f);
         cy += 24 * sc;
         foreach (var (label, value) in aims)
@@ -952,7 +933,10 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
                 cy += 20 * sc;
             }
         }
-        Changes(new Vector2(cx, cy + 14 * sc), cw);
+        x += 520 * sc;
+        VLine(x, o.Y, o.Y + h);
+        // the changes (under the conditions, L5)
+        Changes(new Vector2(x + 18 * sc, o.Y + 14 * sc), o.X + w - x - 36 * sc);
     }
 
     /// <summary>Every change from the scenario as written, a line each with its undo, and Reset all (the mockup's
@@ -1002,42 +986,8 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
     string Described(SetupChange c)
     {
         if (!described.TryGetValue(c, out var s))
-            described[c] = s = c.Describe(written!);
+            described[c] = s = c is SwapDesign sw ? sw.Describe(written!, TitleOf) : c.Describe(written!);
         return s;
-    }
-
-    /// <summary>A side's units and their ships, under its title, scrolling when they're more than the column holds.</summary>
-    void UnitsColumn(int k, Column col, Vector2 at, float w, float bottom)
-    {
-        Tracked(UiFonts.Sans, 10.5f, at, Muted, col.Title, 0.9f);
-        ImGui.SetCursorScreenPos(at + new Vector2(0, 26 * sc));
-        ImGui.PushStyleColor(ImGuiCol.ChildBg, Vector4.Zero);
-        if (ImGui.BeginChild($"##units{k}", new Vector2(w, bottom - at.Y - 36 * sc), ImGuiChildFlags.None, ImGuiWindowFlags.None))
-        {
-            var keep = dl;
-            dl = ImGui.GetWindowDrawList();
-            var o = ImGui.GetCursorScreenPos();
-            float y = o.Y, inner = w - 12 * sc;   // room for the scroll bar
-            foreach (var (unit, ships, sub) in col.Units)
-            {
-                float x = o.X + (sub ? 14 : 0) * sc;
-                if (!sub)
-                    Mark(new Vector2(o.X + 4 * sc, y + 9 * sc), col.Ring, col.Colour, 3.5f, 1);
-                Txt(UiFonts.Sans, 12.5f, new Vector2(x + (sub ? 0 : 14) * sc, y), Bright, unit);
-                float uw = Width(UiFonts.Sans, 12.5f, unit) + (sub ? 0 : 14) * sc + 10 * sc;
-                if (ships.Length > 0 && Width(UiFonts.SansSmall, 11.5f, ships) < inner - uw - (x - o.X))
-                {
-                    Txt(UiFonts.SansSmall, 11.5f, new Vector2(x + uw, y + 1.5f * sc), Muted, ships);
-                    y += 22 * sc;
-                }
-                else
-                    y += 20 * sc + Wrapped(UiFonts.SansSmall, 11.5f, new Vector2(x + 14 * sc, y + 19 * sc), Muted, ships, inner - (x - o.X) - 14 * sc) + 4 * sc;
-            }
-            ImGui.Dummy(new Vector2(1, y - o.Y));
-            dl = keep;
-        }
-        ImGui.EndChild();
-        ImGui.PopStyleColor();
     }
 
     // ------------------------------------------------------------------ the foot: the load and Begin

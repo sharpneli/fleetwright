@@ -46,6 +46,10 @@ public sealed unsafe class SceneSwitcher : IScene
     /// <summary>Called when the launch screen gives way to another scene (it lets a battle it paused run again).</summary>
     public Action? LaunchLeft { get; init; }
 
+    /// <summary>Called when the launch screen is shown again after another scene (back from the designer: the player's
+    /// designs read again).</summary>
+    public Action? LaunchEntered { get; init; }
+
     /// <summary>Opens a scene: -1 the launch screen, 0 the map, the others the designer's tabs.</summary>
     public void Show(int scene)
     {
@@ -55,6 +59,8 @@ public sealed unsafe class SceneSwitcher : IScene
             lastTab = current;
         if (fromLaunch && current >= 0)
             LaunchLeft?.Invoke();
+        else if (!fromLaunch && current < 0)
+            LaunchEntered?.Invoke();
     }
 
     /// <summary>The designer, at the tab it was left on.</summary>

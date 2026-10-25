@@ -73,7 +73,10 @@ brief, a card a side and Watch, the opening drawn from its top units (`LaunchSce
 wants, the load and Begin; picking asks for the classes and places the world (`WorldSession.Select`), Begin swaps it
 in. `SceneSwitcher` shows it in place of the map until a scenario begins. What the player changes is a setup
 (`Sim.Missions/ScenarioSetup.cs`, L2): the scenario as written plus its changes, listed with an undo each, saved by
-Save setup… as a scenario file with `"from"` in My Games/Fleetwright/Setups and listed under Your setups. Wheel zooms at the cursor, left drag pans. Ships (`MapScene.Ships.cs`, step 2.3a): a click
+Save setup… as a scenario file with `"from"` in My Games/Fleetwright/Setups and listed under Your setups. The body's
+first column is each side's ships (`LaunchScene.Ships.cs`, L3): a row a design, drawn to scale with its figures, and
+Change… opens the design picker (`LaunchScene.Picker.cs`): every design the scenario can name, built without art for
+their figures, used for a unit, one ship or every ship of the design; a copy goes to the designer and comes back as yours. Wheel zooms at the cursor, left drag pans. Ships (`MapScene.Ships.cs`, step 2.3a): a click
 selects (twice: her squadron takes the orders; Tab steps through your ships), the strip at the bottom
 (`MapScene.Strip.cs`, docs/map-ui/battle-hud.md U2) gives the orders: who to (the ship or a unit above her), helm and
 telegraph, guns, torpedoes and smoke, the task (fight, follow…, hold; Task ▾ or T opens the task menu,

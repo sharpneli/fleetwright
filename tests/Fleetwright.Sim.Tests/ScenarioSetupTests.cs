@@ -54,6 +54,25 @@ public class ScenarioSetupTests
     }
 
     [Fact]
+    public void A_design_changed_again_by_the_picker_leaves_one_change_and_none_when_put_back()
+    {
+        // docs/map-ui/launch.md L3: the picker's swaps (ScenarioSetup.Swap) leave no trail going back and forth
+        var written = Tsushima();
+        const string Div = "1st Armoured Division";
+        var setup = new ScenarioSetup().Swap(Div, null, "borodino", "mikasa").Swap(Div, null, "mikasa", "izumo");
+        Assert.Equal([new SwapDesign(Div, null, "borodino", "izumo")], setup.Changes);
+        Assert.All(Squadrons(setup.Apply(written).Units).Where(x => x.Unit == Div), x => Assert.Equal("izumo", x.Ships.Design));
+        Assert.True(setup.Swap(Div, null, "izumo", "borodino").IsEmpty);
+        // another reach is a change of its own: one ship of the swapped division, then every one of her new design
+        var one = setup.Swap(null, "Oryol", "izumo", "mikasa");
+        Assert.Equal(2, one.Changes.Count);
+        var s = one.Apply(written);
+        Assert.Equal(["izumo", "izumo", "izumo", "mikasa"], Squadrons(s.Units).Where(x => x.Unit == Div).SelectMany(x => Enumerable.Repeat(x.Ships.Design, x.Ships.Count)));
+        Assert.Equal("Oryol: Izumo, now Mikasa", one.Changes[1] is SwapDesign sw ? sw.Describe(written, d => char.ToUpperInvariant(d[0]) + d[1..]) : "");
+        Assert.Same(setup, setup.Swap(Div, null, "izumo", "izumo"));
+    }
+
+    [Fact]
     public void Side_settings_replace_their_own_side_and_a_change_of_the_same_key_replaces_the_last()
     {
         var written = Tsushima();

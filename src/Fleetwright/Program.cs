@@ -542,8 +542,13 @@ public static unsafe class Program
             // ships, a camera, a view of the designer's
             bool launchFirst = launchFlag || scenarioArg == null && devShips.Count == 0 && !mapGiven && view == null && !designerFlags;
             view ??= designerFlags ? "designer" : null;
-            var launch = launchRef = new Map.LaunchScene(world, launchName)
+            var launch = launchRef = new Map.LaunchScene(world, shipArt, launchName)
             {
+                EditCopy = d =>
+                {
+                    session.Copy(d);
+                    scenes!.Show(1);   // the designer's own tab
+                },
                 Begun = () =>
                 {
                     scenes!.Home = 0;
@@ -568,7 +573,7 @@ public static unsafe class Program
                 ("Designer", () => early ?? MakeDesigner()),
                 ("Hitboxes", () => new HitView.HitboxScene((SDL.SDL_GPUDevice*)device, session, camera, show, hitRay)),
                 ("Ship", () => new ShipViewer((SDL.SDL_GPUDevice*)device, session, navy, era)),
-                ("Profile", () => new ProfileScene((SDL.SDL_GPUDevice*)device, session))) { LaunchLeft = launch.Left };
+                ("Profile", () => new ProfileScene((SDL.SDL_GPUDevice*)device, session))) { LaunchLeft = launch.Left, LaunchEntered = launch.Entered };
 
             // Run the engine
             engine.Run();

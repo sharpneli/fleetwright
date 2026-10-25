@@ -86,6 +86,29 @@ public class ShipClassRegistryTests
     }
 
     [Fact]
+    public void A_class_asked_for_without_its_art_is_drawn_once_asked_with_it()
+    {
+        // docs/map-ui/launch.md L3: the picker's candidates build for their figures only; one picked gets its art
+        var drawn = new ConcurrentBag<int>();
+        using var r = new ShipClassRegistry(2);
+        r.Built = (id, ship, cls) => drawn.Add(id);
+        int a = r.Request(Load("destroyer"), art: false);
+        int b = r.Request(Load("pt_boat"), art: false);
+        var layout = r.Get(a)!.LayoutHash;
+        r.WaitAll();
+        Assert.True(r.IsDrawn(a));   // nothing to wait for
+        Assert.Empty(drawn);
+        Assert.Equal(a, r.Request(Load("destroyer")));
+        r.WaitAll();
+        Assert.Equal([a], drawn);
+        Assert.Same(r.Get(a), r.TryGet(a));
+        Assert.Equal(layout, r.Get(a)!.LayoutHash);   // the class stands; only the ship was built again
+        Assert.Equal(b, r.Request(Load("pt_boat"), art: false));
+        r.WaitAll();
+        Assert.Single(drawn);
+    }
+
+    [Fact]
     public void An_idle_registry_takes_more_threads()
     {
         using var r = new ShipClassRegistry(2, 5);

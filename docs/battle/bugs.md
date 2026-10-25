@@ -187,6 +187,12 @@ Seen in the AI's baseline after the detail passes (2026-10-20, docs/battle/comma
   after one is blind 45° either side of the bow (the forward one's hood), the forward one astern. Casemate batteries
   fight a side each, so their directors belong a side each (as the compiler's `Serves` already prefers); with the
   forward one wrecked she was blind ahead (2026-10-19). The layout's placing of a casemate ship's directors.
+- [ ] `Content/Scenarios/Designs/agincourt.json` builds 313 m and 59,545 t (`shipgen matchup agincourt destroyer`),
+  against the real ship's 204 m and ~27,500 t; the next longest of Jutland's classes is Queen Mary-like at 251 m. Seen
+  on the launch screen (L3, 2026-10-25): the rows are drawn to one scale, the longest ship of the pick fitting, so at
+  Jutland every ship draws at about two thirds of Tsushima's size. Probably her seven twin turrets on the centreline
+  stretching the hull; scenario designs are tuned for balance, not tonnage, but 109 m more is
+  past that. To hunt: `SHIPGEN_TRACE=1 shipgen design Content/Scenarios/Designs/agincourt.json`, what sets the length.
 
 ## The slide
 
