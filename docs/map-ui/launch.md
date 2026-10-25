@@ -154,7 +154,8 @@ set it"), with each change listed.
 **What's allowed** (decision 6): nothing is refused here for now. A later pass decides what a scenario allows (its
 year, its tonnage, placing in sight of the enemy); a player may still go past it, and the result says so plainly, by
 the changes against the scenario as written: someone who took Bismarck to Jutland is shown to have, and someone who
-won Tsushima as written is shown to have done the hard thing.
+won Tsushima as written is shown to have done the hard thing. The likely shape (the user, 2026-10-25): a design stays fair while it keeps within the
+designer's approved template years (its tech blocks); a fight with one past them gets an "Imaginary" tag on its result.
 
 ## What the sim needs
 
@@ -181,7 +182,7 @@ mockup's, committed.
 | **L0** (done 2026-10-25) | The load: classes asked on selection, the two queues (compile first, art after), more threads while nothing runs, Begin when compiled; measured at Tsushima and Jutland, memory included | `ShipClassRegistry`, `ShipArtLibrary`, `WorldSession.Load` |
 | **L1** (done 2026-10-25) | The launch scene: the list, the header and brief, the side cards (Watch included), the opening drawn from the file's top units, the footer's load and Begin. The app opens on it (the last scenario played selected); the menu's and the result's "Scenarios" open it; `-scenario=` still goes straight into the world (captures and tests), `-launch[=name]` opens the screen. The briefing modal at start goes (the brief is on this screen; the menu's Briefing stays) | — |
 | **L2** (done 2026-10-25) | A setup as data: the overrides on a parsed `Scenario`, saved and listed as a scenario file with `"from"` and `"designs"`; the changes list and reset | `Scenario`, `ScenarioLoader` |
-| **L3** (done 2026-10-25, the matchup next) | Ships: each side's order of battle, the design rows and their state, the picker (sources, filters, figures, matchup, apply to all, one or every), the designer round trip (edit a copy, saved back into the picker as yours) | the matchup on candidates |
+| **L3** (done 2026-10-25) | Ships: each side's order of battle, the design rows and their state, the picker (sources, filters, figures, matchup, apply to all, one or every), the designer round trip (edit a copy, saved back into the picker as yours) | the matchup on candidates |
 | **L3b** | Adding and removing: − n + per row, ✕ per unit, the add picker, the placing view (on the sea, the course dragged), joining a unit | `"add"`, `"remove"` |
 | **L4** | Standing orders: aggression and what it moves, the admirals' and captains' tempers, the rules | `Temper` on units and ships |
 | **L5** | Conditions and the day: both sides' crews, readiness, damage control, fire discipline, fuel; presets; visibility, wind, the end, the seed | — |
@@ -237,7 +238,7 @@ refused, and it reads back to the same scenario (tested). `Scenario.Load(path, f
 - **Still to come in this format:** doctrine and tempers (L4), the day (L5), `"add"` and `"remove"` (L3b): each joins
   `ScenarioSetup` as a change of its own, with its file key.
 
-**L3 done (2026-10-25), but the picker's matchup** (the user's order: the matchup right after). `LaunchScene.Ships.cs`:
+**L3 done (2026-10-25).** `LaunchScene.Ships.cs`:
 the first column is the sides' orders of battle as tabs (yours first; watching, side by side), each unit with its count
 and under it a row a design: the ship drawn to scale (all rows at one scale, the longest ship of the pick fitting), how
 many, the names (cut to the column, the whole list on hover), the class's figures in a line, its build (building, art…,
@@ -259,8 +260,16 @@ entered), and the figures.
   don't shimmer.
 - **The figures** are the matchup's own view of a class (`MatchupProfile`: displacement, length, speed, the main guns'
   reach), worked out on a thread once the class is compiled, plus the guns by calibre (the chief battery's, then the
-  heaviest other, then the tubes) and the belt (the thickest side plate at the waterline). The matchup column is next
-  (step L3's last part); the profiles are already made for it.
+  heaviest other, then the tubes) and the belt (the thickest side plate at the waterline).
+- **The matchup** (`LaunchScene.Matchup.cs`, done the same day): each candidate judged by the commander's own
+  `Matchup.Judge` (5.1g), as many of her as the row's unit has against one enemy unit for the whole column: of the
+  enemy's units with ships of their own, the one whose ships are nearest the row's in displacement (as a ratio). Each
+  side at its doctrine's range share (`ScenarioLoader.SideDoctrine`, tested), in the start's light. A column (green or
+  red against the design in use), a row in the comparison, and the line it's of over the list ("Matchup: 4 of her v 1st
+  Division (4 Mikasa-like, 2 Izumo-like); 1 = even"). At Tsushima: Borodino-like 0.53, Mikasa-like 0.50.
+  - **Open:** "nearest in size" isn't always the line she'd meet: Jutland's 1st Scouting Group is judged against the
+    5th Battle Squadron (the Queen Elizabeths, nearest the Derfflingers' 33,400 t), where history had it meet Beatty's
+    battlecruisers. If it matters, pair by role too (speed, or the scenario naming whom a unit is to meet).
 - **A design's year** is the latest year its file names (its machinery's, its guns', its shells'), shown as "tech 1905"
   and used by the "up to" filter: designs have no year of their own. A design file could say one later if the filter
   needs to be exact.
@@ -271,7 +280,7 @@ entered), and the figures.
 - **The designer round trip:** "Edit a copy in the designer…" (or "+ New design from …" at the list's end) opens the
   designer on a copy, unsaved, with its own history (`DesignSession.Copy`); back on the launch screen (`SceneSwitcher`'s
   `LaunchEntered`) the player's designs are read again and one saved since is picked in the picker, still open.
-- **Left for later:** the matchup column and its row in the comparison (next); the admirals' names and tempers on the
+- **Left for later:** the admirals' names and tempers on the
   units, the captains' marks (L4); − n + and ✕ (L3b). Jutland's rows draw small because one design is far too long
   (docs/battle/bugs.md, Agincourt-like at 313 m).
 

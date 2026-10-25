@@ -43,6 +43,7 @@ public sealed unsafe partial class LaunchScene
         pickerRow = row;
         (scope, scopeShip, search, chosen) = (0, 0, "", -1);
         cmp.Names = "";
+        ResetMatchup();
         pickerTitle = $"{row.Count} × {row.Text} · {row.Unit.Name}";
         pickerNames = row.Names;
         pickerYear = current!.Start.ToUtc().Year;
@@ -316,15 +317,30 @@ public sealed unsafe partial class LaunchScene
         fx += 8 * sc;
         if (Toggle("##pyear", yearChip, ref fx, fy, upToYear))
             (upToYear, candsDirty) = (!upToYear, true);
+        // what the matchup is of, in the room left
+        FoeReady(row);
+        float mw = x1 - 20 * sc - (fx + 12 * sc);
+        if (matchupLine.Length > 0 && mw > 40 * sc)
+        {
+            if (!ReferenceEquals(matchupFor, matchupLine) || Math.Abs(mw - matchupWidth) > 0.5f)
+                (matchupFor, matchupWidth, matchupShown) = (matchupLine, mw, Clip(UiFonts.SansSmall, 11, matchupLine, mw));
+            RightSmall(matchupShown, x1 - 20 * sc, fy + 3 * sc, Muted, 11);
+            ImGui.SetCursorScreenPos(new Vector2(x1 - 20 * sc - Width(UiFonts.SansSmall, 11, matchupShown), fy));
+            ImGui.InvisibleButton("##pmatchup", new Vector2(Width(UiFonts.SansSmall, 11, matchupShown), 20 * sc));
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip(MatchupHelp);
+        }
 
-        // the list's columns, from the right (the matchup's place kept at the end)
-        float cBelt = x1 - 96 * sc, cMain = cBelt - 70 * sc, cSpeed = cMain - 96 * sc, cDispl = cSpeed - 68 * sc, cName = x0 + 208 * sc;
+        // the list's columns, from the right
+        float cMatch = x1 - 30 * sc, cBelt = x1 - 112 * sc, cMain = cBelt - 70 * sc, cSpeed = cMain - 96 * sc, cDispl = cSpeed - 68 * sc, cName = x0 + 208 * sc;
         float hy = o.Y + 100 * sc;
         Tracked(UiFonts.Sans, 10, new Vector2(cName, hy), Muted, "DESIGN", 0.8f);
         RightTracked("DISPL.", cDispl, hy);
         RightTracked("SPEED", cSpeed, hy);
         RightTracked("MAIN", cMain, hy);
         RightTracked("BELT MM", cBelt, hy);
+        RightTracked("MATCHUP", cMatch, hy);
+        double inUse = MatchupOf(row, ClassOf(row.Design))?.Value ?? double.NaN;
         HLine(x0 + 12 * sc, x1 - 12 * sc, hy + 18 * sc);
 
         float footH = 50 * sc, compareH = 270 * sc;
@@ -380,6 +396,8 @@ public sealed unsafe partial class LaunchScene
                     RightMono(f.Knots, cSpeed, ry + 12 * sc);
                     RightMono(f.Main, cMain, ry + 12 * sc);
                     RightMono(f.Belt, cBelt, ry + 12 * sc);
+                    if (MatchupOf(row, id) is { } m)
+                        RightMono(m.Text, cMatch, ry + 12 * sc, c.InUse || !(Math.Abs(m.Value / inUse - 1) > 0.02) ? Text : m.Value > inUse ? Ok : Hostile);
                 }
                 else if (id >= 0 && world.Classes.IsReady(id) && world.Classes.ErrorOf(id) != null)
                     RightSmall("didn't build", cBelt, ry + 12 * sc, Hostile);
@@ -432,17 +450,28 @@ public sealed unsafe partial class LaunchScene
     /// <summary>The comparison's strings, made when what it shows changes.</summary>
     sealed class CompareText
     {
-        public (int Chosen, int Old, int New, bool OldF, bool NewF, bool Ready, bool Drawn, int Ship, float Sc) Key;
+        public (int Chosen, int Old, int New, bool OldF, bool NewF, bool Ready, bool Drawn, int Ship, float Sc, bool Judged) Key;
         public string OldHead = "", NewHead = "", ShipOnly = "", Use = "", Note = "", State = "", Names = "";
-        public readonly string[] Old = new string[6], New = new string[6], Delta = new string[6];
+        public readonly string[] Old = new string[7], New = new string[7], Delta = new string[7];
+        public string MatchupLabel = "";
     }
 
     readonly CompareText cmp = new();
+    string matchupShown = "", matchupFor = "";
+    float matchupWidth;
+
+    const string MatchupHelp = "The commander's own judgement of a fight (docs/battle/command.md 5.1g): as many of her as the row's unit has,\n" +
+                               "against the enemy unit whose ships are nearest the row's in size, each side at its doctrine's range.\n" +
+                               "The share of their tonnage she puts out of the fight for the share of her own: 1 is even, more is better.\n" +
+                               "Green and red: better or worse than the design in use.";
     static readonly string[] CompareRows = ["Displacement, t", "Length, m", "Speed, kn", "Main battery", "Reach, km", "Belt, mm"];
 
     void MakeCompare(ShipLine row, Candidate? pick, int oldId, int newId, Figures? of, Figures? nf)
     {
-        var key = (chosen, oldId, newId, of != null, nf != null, newId >= 0 && world.Classes.IsReady(newId), newId >= 0 && art.Get(newId) != null, scopeShip, sc);
+        var om = MatchupOf(row, oldId);
+        var nm = pick is { InUse: false } ? MatchupOf(row, newId) : null;
+        var key = (chosen, oldId, newId, of != null, nf != null, newId >= 0 && world.Classes.IsReady(newId), newId >= 0 && art.Get(newId) != null, scopeShip, sc,
+            om != null && (nm != null || pick is not { InUse: false }));
         if (cmp.Key == key && cmp.Names.Length > 0)
             return;
         cmp.Key = key;
@@ -453,6 +482,10 @@ public sealed unsafe partial class LaunchScene
         cmp.Use = pick == null || pick.InUse ? "In use" : $"Use {pick.Info.Title}";
         for (int r = 0; r < 6; r++)
             (cmp.Old[r], cmp.New[r], cmp.Delta[r]) = (of != null ? Cell(of, r) : "", nf != null ? Cell(nf, r) : "", Delta(of, nf, r));
+        // the matchup's row: against the enemy line, its name cut to the label's room
+        cmp.MatchupLabel = Clip(UiFonts.SansSmall, 12, matchupLabel, 300 * sc);
+        (cmp.Old[6], cmp.New[6]) = (om?.Text ?? "", nm?.Text ?? "");
+        cmp.Delta[6] = om is { } o1 && nm is { } n1 ? (Math.Abs(n1.Value - o1.Value) < 0.005 ? "–" : (n1.Value > o1.Value ? "+" : "") + (n1.Value - o1.Value).ToString("0.00", Inv)) : "";
         cmp.Note = "";
         if (of != null && nf != null && Math.Abs(nf.Profile.LengthM - of.Profile.LengthM) >= 0.5)
         {
@@ -499,14 +532,18 @@ public sealed unsafe partial class LaunchScene
             RightSmall("CHANGE", cDelta, ty, Muted, 10.5f);
         }
         ty += 18 * sc;
-        for (int r = 0; r < CompareRows.Length; r++, ty += 18 * sc)
+        for (int r = 0; r < 7; r++, ty += 18 * sc)
         {
-            Txt(UiFonts.SansSmall, 12, new Vector2(x, ty), Soft, CompareRows[r]);
+            if (r == 6 && cmp.MatchupLabel.Length == 0)
+                break;
+            Txt(UiFonts.SansSmall, 12, new Vector2(x, ty), Soft, r < 6 ? CompareRows[r] : cmp.MatchupLabel);
             RightMono(cmp.Old[r], cOld, ty, Muted);
             if (nf != null)
             {
                 RightMono(cmp.New[r], cNew, ty, Bright);
-                RightMono(cmp.Delta[r], cDelta, ty, cmp.Delta[r] == "–" ? Muted : Ok);
+                // the matchup's change is better or worse; the others are only changes
+                var dc = cmp.Delta[r] == "–" ? Muted : r < 6 ? Ok : cmp.Delta[r].StartsWith('+') ? Ok : Hostile;
+                RightMono(cmp.Delta[r], cDelta, ty, dc);
             }
         }
 

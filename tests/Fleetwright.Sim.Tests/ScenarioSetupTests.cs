@@ -73,6 +73,15 @@ public class ScenarioSetupTests
     }
 
     [Fact]
+    public void A_sides_doctrine_is_its_presets_then_its_own_values()
+    {
+        // the launch screen's matchup reads each side's range share as its world will start with it (L3)
+        var s = Tsushima() with { Doctrine = [(1, "default", [(Fleetwright.Sim.Ai.DoctrineField.RangeShare, 0.45)])] };
+        Assert.Equal(0.45, ScenarioLoader.SideDoctrine(s, 1, Fleetwright.Sim.Ai.DoctrineField.RangeShare));
+        Assert.Equal(0.6, ScenarioLoader.SideDoctrine(s, 0, Fleetwright.Sim.Ai.DoctrineField.RangeShare));   // doctrine.json's default
+    }
+
+    [Fact]
     public void Side_settings_replace_their_own_side_and_a_change_of_the_same_key_replaces_the_last()
     {
         var written = Tsushima();

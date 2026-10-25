@@ -234,9 +234,24 @@ public static class ScenarioLoader
         };
     }
 
+    /// <summary>A side's doctrine field as its world starts with it (<see cref="Apply"/>): its preset's (the default
+    /// unless named), then its own values over it, else the neutral default. The launch screen's matchup reads its
+    /// range share.</summary>
+    public static double SideDoctrine(Scenario s, int side, DoctrineField f, DoctrinePresets? presets = null)
+    {
+        presets ??= PresetsFor(s);
+        var given = s.Doctrine.FirstOrDefault(d => d.Side == side);
+        string name = given.Preset ?? DoctrinePresets.DefaultName;
+        double v = Doctrine.Default(f);
+        foreach (var (field, value) in (presets.Has(name) ? presets[name] : []).Concat(given.Values ?? []))
+            if (field == f)
+                v = value;
+        return v;
+    }
+
     /// <summary>Doctrine's presets for a scenario read from a file: Content/Sim/doctrine.json beside its folder
     /// (Content/Scenarios), else the builtin default.</summary>
-    static DoctrinePresets PresetsFor(Scenario s)
+    public static DoctrinePresets PresetsFor(Scenario s)
     {
         if (s.Folder != null && Path.Combine(s.Folder, "..", "Sim", "doctrine.json") is var p && File.Exists(p))
         {
