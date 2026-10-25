@@ -1826,8 +1826,9 @@ it hands the sessions below. The systems' dependency graph
 (`research/simulation/damage-model-research.md` §8-9). Then, area by area, each its own small step checked against
 the previous one: leaks through bulkheads and decks, free surface, `sinking.py`'s non-linear settling, pumping and
 counter-flooding, a plunge or capsize that plays out. Planned so far: `fire.md`, `damage-control.md`, `shell-contents.md`,
-`fire-control.md`, and `magazines.md` (draft 2026-10-20: the flash chain down the hoists, the venting race, the hull at
-the magazine, flash discipline).
+`fire-control.md`, `magazines.md` (draft 2026-10-20: the flash chain down the hoists, the venting race, the hull at
+the magazine, flash discipline), and `shell-choice.md` (draft 2026-10-25: the shell by target, the captain's and the
+player's).
 
 **4.6 Torpedoes** (done 2026-10-14, `fighting.md` 4.6). Tubes, and running torpedoes as tracks with events (like
 shells). Hits below the waterline go into the same damage. Torpedo boat and destroyer attacks need them.

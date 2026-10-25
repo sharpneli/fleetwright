@@ -12,6 +12,19 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: (comparison, recommendation, API notes, plan...)
 -->
 
+### 2026-10-25 - Which shell at which target, 1890-1925
+- Question: how navies chose the shell by target, as ranges by navy and period. (1) The rules each navy gave its
+  gunnery officers (AP, common/CPC, HE; by target type, range, armour), and how far the practice followed them
+  (Yalu, Santiago, the Yellow Sea, Tsushima, the Falklands, the Dogger Bank, Jutland; Samar as a later check). (2) The
+  outfits actually carried by kind against what was fired by kind, where counts survive. (3) How long a change of kind
+  took at the gun: the rounds already in the gun, the cage and the working chamber, and whether guns were ever
+  unloaded. (4) What heavy HE and common did to capital ships' fighting power against AP (Tsushima's Shimose,
+  Jutland's British CPC), beyond sinking: fire control, guns and crews silenced.
+- Context / relevant files: `docs/battle/shell-choice.md` (the plan: A0's bench, open questions 1, 2 and 4),
+  `research/simulation/damage-research/08-gunfire-effects.md` §1-2, `src/Fleetwright.Sim.Ships/Rows.cs`
+  (`MagazineOrder`). Not blocking.
+- Wanted output: tables by navy and period, the switching time with sources, cases of HE against armour.
+
 ### 2026-10-21 - Plume meander over the sea: the large eddies
 - Question: how far and how fast a smoke plume meanders over the open sea from eddies larger than the plume itself
   (boundary-layer and mesoscale, ~1-15 km), against its own (relative) spread. (1) Instantaneous against time-averaged
