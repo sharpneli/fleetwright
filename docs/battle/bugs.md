@@ -91,6 +91,15 @@ runs 5-7, after its fix, and the Debug run had none.
   against the fine model: a 6" HE hit on the V25 puts her out 10.2 % by the matchup, 6.0 % by `shipgen hits` (it was
   about 8 % against 7.2 % on the old, twice-too-heavy V25). The AI judges destroyers more fragile than they are;
   `MatchupTests` allows up to 11 % until it's recalibrated.
+- [ ] Light ships die too readily in the wave 1 scenarios (docs/missions/scenarios.md, 2026-10-25), mostly capsizing
+  after falling out "listing": the Heligoland Bight loses about 10 of 44 British and 20 of 24 German ships a run (history:
+  none and 4), the Dogger Bank about 15 of 33 and 14 of 26 (history: 1 and none). Part of it is the AI fighting every
+  light force to the end; part looks physical: destroyers and light cruisers going from listing to capsized within
+  minutes of a few 4-6 in hits. Measure with `shipgen hits v1 --shooter l_laforey` and `flood` before tuning.
+- [ ] In Coronel (2026-10-25) the German armoured cruisers (armoured_cruiser) capsize from Glasgow's 6 in hits in a
+  28 kn wind, and the Germans' elite crews hit 4-5 % against the British green crews' 9-12 % (Glasgow 96 hits on
+  Scharnhorst in one run): check the hit rates by range and target size, and the stand-in's stability. The scenario is
+  balanced around it for now (a bold Spee).
 
 - [x] A ship seen bow on is hidden by her own funnel smoke (2026-10-22, smoke Z6; fixed the same day, docs/battle/smoke.md
   T1: the lines run from each eye's place to three points along her, `SmokeSightTests` 600 s of 600 in sight as with the

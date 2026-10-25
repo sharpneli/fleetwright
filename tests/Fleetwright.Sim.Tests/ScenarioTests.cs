@@ -369,6 +369,6 @@ public class ScenarioTests
             if (!s.Test)
                 played.Add(name);
         }
-        Assert.Equal(["cape-sarych", "coronel", "dover-strait", "jutland", "prizes-war", "tsushima"], played.Order());
+        Assert.Equal(["cape-sarych", "coronel", "dogger-bank", "dover-strait", "heligoland-bight", "jutland", "prizes-war", "tsushima"], played.Order());
     }
 }

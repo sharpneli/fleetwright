@@ -49,8 +49,8 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
     readonly List<Entry> entries = [];
     int pick = -1;
     int side;   // the player's side, -1 to watch
-    int filter;   // 0 all, 1 1890-1905, 2 1906-1918, 3 small, 4 fleet, 5 tests
-    static readonly string[] Filters = ["ALL", "1890–1905", "1906–1918", "SMALL", "FLEET", "TESTS"];
+    int filter;   // 0 all, 1 1890-1905, 2 1906-1925 (the first cut's end), 3 small, 4 fleet, 5 tests
+    static readonly string[] Filters = ["ALL", "1890–1905", "1906–1925", "SMALL", "FLEET", "TESTS"];
     const int SmallShips = 30;   // a fleet from here
 
     readonly int initial;   // the pick when it first opens: the scenario asked for, else the last played, else the first
@@ -631,7 +631,7 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
     bool Shown(Entry e) => filter switch
     {
         1 => !e.Test && e.Year <= 1905,
-        2 => !e.Test && e.Year is >= 1906 and <= 1918,
+        2 => !e.Test && e.Year is >= 1906 and <= 1925,
         3 => !e.Test && e.Ships < SmallShips,
         4 => !e.Test && e.Ships >= SmallShips,
         5 => e.Test,

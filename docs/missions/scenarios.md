@@ -1,8 +1,8 @@
 # Plan: the scenarios
 
-Draft 2026-10-25, for iterating with the user. Today the launch screen ships two battles, Tsushima (27 ships) and
-the Jutland (250); the benches (Squadrons, Flotilla) and the scale test's rungs are under Tests (a file's
-`"test": true`). This plan picks a set of engagements of every size, real and hypothetical, across the first cut's
+Agreed 2026-10-25: wave 1 built the same day for the playtest alpha (below). Before it the launch screen shipped two
+battles, Tsushima (27 ships) and the Jutland (250); the benches (Squadrons, Flotilla) and the scale test's rungs are
+under Tests (a file's `"test": true`). This plan picks a set of engagements of every size, real and hypothetical, across the first cut's
 years (1890-1925, docs/battle/fire-control.md), and says what each needs that the game doesn't have yet.
 
 ## What a scenario can ask for today
@@ -211,15 +211,41 @@ The biggest build; a later wave.
   docs/battle/bugs.md).
 - **Designs:** about 40 new across all waves; balance-first, as Tsushima's (scenario designs).
 
-## Waves (proposed)
+## Waves
 
 1. **Designs we have, destroy everyone** (no new sim): Night in the Dover Strait (14), Coronel (9), Cape Sarych (11),
    the prizes' war 1920 (19), Heligoland Bight (8), Dogger Bank as a fight (13). Two small, one small-medium, two fleets;
-   1914-1920. Needs a Scharnhorst, a Novara, three ensigns (Ottoman, France, Italy).
+   1914-1920. Needs a Scharnhorst, a Novara, three ensigns (Ottoman, France, Italy). **Built 2026-10-25** (see "Wave 1,
+   as built").
 2. **The aims (N1):** Falklands (10), Goeben at bay (12), the Lerwick convoy (15), the Yellow Sea (4), Dogger Bank's run.
 3. **New navies:** Elli (24), Otranto (16), Premuda (17), Santiago (2), the Yalu
    (1), Ulsan (5), Chemulpo (3), Novik (18), the Tyrrhenian 1920 (20), River Plate (21), the Gulf of Finland (22).
 4. **The big hypotheticals:** Fashoda (6), off Vigo (7), Plan Orange (23).
+
+## Decisions (the user's, 2026-10-25)
+
+1. Wave 1 now, for a playtest alpha: enough fun for the first round of major feedback.
+2. Finland is in the first game, with an unrealistic Finnish navy authorised (the user's ruling, as a Finn); more
+   Finnish scenarios later, and a style session for its looks and ensign. The Gulf of Finland, 1919 (22) is the seed.
+
+## Wave 1, as built (2026-10-25)
+
+Each played headless by the AI on both sides (`shipgen scenario FILE --play --seeds N`), then set for balance with the
+scenario's own knobs (crews, tempers, the weather, stand-ins); the numbers are the AI's, a player does differently.
+
+| Scenario | File | Ships | Balance as built (ships lost a run, AI v AI) |
+|---|---|---|---|
+| Night in the Dover Strait, 1917 | dover-strait.json | 2 v 6 | both sides accept action by night; leaders' crews elite: about 0.9 v 0.4 (the boats favoured; combing the tracks helps) |
+| Coronel, 1914 | coronel.json | 3 v 5 | devonshire for both armoured cruisers, a bold Spee: 0.9 v 0.9 |
+| Cape Sarych, 1914 | cape-sarych.json | 7 v 2 | 8 km of fog lets Goeben pick her range: 1.2 v 0.5 (Breslau half the time) |
+| The prizes' war, 1920 | prizes-war.json | 6 v 6 | mirror, average crews both: 1.2 v 1.4 |
+| Heligoland Bight, 1914 | heligoland-bight.json | 44 v 24 | Beatty covers the light cruisers from 45 km: 10 v 22 (British, as history; the challenge is the cost) |
+| Dogger Bank, 1915 | dogger-bank.json | 33 v 26 | the stern chase from 07:50, a cautious Hipper: 15 v 14, mostly light ships; Blücher's tonnage about once a run |
+
+New for it: the novara design; the France, Italy and Ottoman ensigns; the launch screen's second era filter widened to
+1906-1925; a test that every shipped scenario reads with its designs and ensigns. Found on the way (docs/battle/bugs.md,
+"Balance and calibration"): light ships die too readily (the two fleet battles are far bloodier than history), and the
+German armoured cruisers at Coronel capsize from 6 in hits and shoot worse than the British.
 
 ## Open questions for the user
 

@@ -425,6 +425,7 @@ docs/battle/plan.md           # the battle module (a deliverable: the whole ship
                               #   what done means, ship counts, the build order from a world of water up, the ships' data
 docs/world/architecture.md    # the world: tiers of time on one clock, the sim thread, commands/snapshot, the scene stack
 docs/missions/plan.md         # missions, the battle module's stand-in for politics and manufacturing (format, objectives, UI, generator)
+docs/missions/scenarios.md    # the shipped scenarios: candidates real and hypothetical, 1894-1923, in waves; wave 1 built 2026-10-25 for the playtest alpha
 docs/visuals/grid.md          # the map's grid: lat/lon levels fading by zoom, a square grid at battle zooms, lat/lon to the margin (agreed 2026-10-23; G0-G2)
 docs/visuals/sea.md           # the sea: the table/world boundary, the FFT ocean in the globe's pass (W0-W4 done; foam later)
 docs/visuals/wakes.md         # wakes: the Kelvin field baked per class and speed into the sea's slopes, the trail as foam (agreed 2026-10-15; K1-K4 done: the bake, the library, the stamps, the foam lanes)

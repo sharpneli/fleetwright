@@ -1,0 +1,69 @@
+// The Heligoland Bight, 28 August 1914 at 06:50 GMT: Tyrwhitt's Harwich Force sweeps south-east into the Bight in a
+// morning mist to fall on the German destroyer patrols north-west of Heligoland; Goodenough's light cruisers follow, and
+// Beatty's battlecruisers wait far to the north-west, unknown to the destroyers' commodores. The German light cruisers
+// come out piecemeal from the Jade, the Elbe and the Ems to the sound of the guns, into the mist, one by one; the
+// battlecruisers of the High Seas Fleet can't cross the Jade bar until the afternoon's tide. History's forces, less the
+// submarines and Cruiser Force C far to the west; the classes are stand-ins (l_laforey for the L and I classes,
+// scout_cruiser for Fearless, the towns for the 1st LCS; v1 for the German boats, stettin for Stettin, Cöln and Mainz,
+// gazelle for Frauenlob, Ariadne and Danzig, graudenz for Strassburg and Stralsund):
+//   Britain, the trap: thirty-one destroyers and eight cruisers in the mist, and five battlecruisers behind them.
+//   Germany, the defence: patrols and cruisers near home, each alone until the others come up; 105 mm guns and
+//   good shooting against the destroyers, and nothing that can stand up to a battlecruiser.
+// Beatty covers the light cruisers from 45 km (a cover task holds him to them, as he waited in history) until his
+// commander sends him in. A British scenario, as history was: the AI loses ten British ships a run and nearly every
+// German one (4 seeds); the challenge is the cost. Hipper's battlecruisers out over the bar in time were tried, and
+// only made it bloodier both ways; the light ships' fragility is in docs/battle/bugs.md.
+// The weather of the morning: mist, visibility about 5 km, calm.
+{
+  "scenario": 1,
+  "name": "Heligoland Bight",
+  "brief": "28 August 1914, 06:50. Commodore Tyrwhitt's destroyers and light cruisers sweep into the Heligoland Bight in a morning mist to catch the German patrols. The German cruisers will come out to the guns one at a time; Beatty's battlecruisers wait to the north-west, ready to come in if the trap springs too hard. Sink what you find and get out before the High Seas Fleet can cross the bar.",
+  "place": "the Heligoland Bight",
+  "about": {
+    "Britain": { "character": "The trap: thirty-one destroyers and eight cruisers in the mist, five battlecruisers behind them.", "commander": "V-Adm Beatty", "ensign": "britain" },
+    "Germany": { "character": "The defence: patrols and light cruisers near home, coming out one by one into the mist.", "commander": "R-Adm Maass", "ensign": "germany" } },
+  "start": "1914-08-28T06:50",
+  "seed": 1914,
+  "camera": [54.35, 7.35, 120],
+  "sides": ["Britain", "Germany"],
+  "readiness": { "Britain": "closed up", "Germany": "prepared" },
+  "damage_control": { "Britain": "1916", "Germany": "1916" },
+  "fire_discipline": { "Britain": "rn-1914", "Germany": "german" },
+  "player": "Britain",
+  // the end: Beatty turned for home at 13:40; the German battlecruisers came out over the bar after 14:00
+  "until": "1914-08-28T15:00",
+  "aims": { "Britain": "destroy everyone", "Germany": "destroy everyone" },
+  // where ships out of the fight go: toward Harwich, and the Jade
+  "home": { "Britain": [53.6, 3.0], "Germany": [53.95, 8.05] },
+  "weather": { "visibility_km": 5, "wind_from": 270, "wind_kn": 5 },
+  "units": [
+    // ---------------------------------------------------------------- the Harwich Force (Tyrwhitt) and its support: 45
+    { "name": "3rd Flotilla", "admiral": { "name": "Cdre Tyrwhitt (in Arethusa)", "temper": 0.4, "why": "went straight in at whatever he found" }, "side": 0, "at": [54.40, 7.28], "course": 150, "kn": 20, "formation": "abreast", "spacing": 600,
+      "ships": [ { "design": "arethusa", "name": "Arethusa" },
+                 { "design": "l_laforey", "names": ["Laurel", "Liberty", "Lysander", "Laertes", "Lark", "Lance", "Lookout", "Leonidas", "Legion", "Lennox", "Linnet", "Landrail", "Laforey", "Lawford", "Louis", "Lydiard"] } ] },
+    { "name": "1st Flotilla", "admiral": "Capt Blunt (in Fearless)", "side": 0, "at": [54.44, 7.18], "course": 150, "kn": 20, "formation": "abreast", "spacing": 600,
+      "ships": [ { "design": "scout_cruiser", "name": "Fearless" },
+                 { "design": "l_laforey", "names": ["Acheron", "Attack", "Hind", "Archer", "Ariel", "Lapwing", "Goshawk", "Phoenix", "Defender", "Druid", "Ferret", "Forester", "Hornet", "Jackal", "Sandfly"] } ] },
+    { "name": "1st Light Cruiser Squadron", "admiral": "Cdre Goodenough (in Southampton)", "side": 0, "at": [54.52, 7.00], "course": 150, "kn": 20, "spacing": 900,
+      "ships": [ { "design": "town_chatham", "names": ["Southampton", "Falmouth", "Liverpool"] }, { "design": "town_birmingham", "names": ["Birmingham", "Lowestoft", "Nottingham"] } ] },
+    { "name": "Battlecruisers", "admiral": { "name": "V-Adm Beatty (in Lion)", "temper": 0.4, "why": "took his battlecruisers into the Bight, mines and all" }, "task": { "do": "cover", "of": "1st Light Cruiser Squadron", "distance_km": 45 }, "side": 0, "at": [54.98, 6.45], "course": 135, "kn": 18, "spacing": 700,
+      "units": [
+        { "name": "1st Battlecruiser Squadron", "spacing": 550, "ships": [ { "design": "lion", "names": ["Lion", "Princess Royal"] }, { "design": "queen_mary", "name": "Queen Mary" } ] },
+        { "name": "Cruiser Force K", "admiral": "R-Adm Moore (in New Zealand)", "spacing": 550, "ships": [ { "design": "indefatigable", "name": "New Zealand" }, { "design": "invincible", "name": "Invincible" } ] } ] },
+
+    // ---------------------------------------------------------------- the Bight's defences (Maass): 24
+    // the outer patrol line of the I. Flotilla, some 20 miles north-west of Heligoland, and the inner line of the V.
+    { "name": "I. Flotilla", "admiral": "KKpt Wallis (in V187)", "side": 1, "at": [54.33, 7.45], "course": 240, "kn": 10, "formation": "abreast", "spacing": 3000, "task": { "do": "patrol", "to": [54.40, 7.15] },
+      "ships": [ { "design": "v1", "names": ["V187", "G194", "G196", "V188", "V189", "V190", "V191", "G197"] } ] },
+    { "name": "V. Flotilla", "side": 1, "at": [54.24, 7.70], "course": 240, "kn": 10, "formation": "abreast", "spacing": 2500, "task": { "do": "patrol", "to": [54.28, 7.50] },
+      "ships": [ { "design": "v1", "names": ["G9", "G10", "G11", "G12", "S13", "S14", "S15", "S16"] } ] },
+    { "name": "Stettin", "side": 1, "at": [54.22, 7.98], "course": 300, "kn": 12, "ships": [ { "design": "stettin", "name": "Stettin" } ] },
+    { "name": "Frauenlob", "side": 1, "at": [54.12, 7.82], "course": 300, "kn": 12, "ships": [ { "design": "gazelle", "name": "Frauenlob" } ] },
+    // out of the Ems
+    { "name": "Mainz", "side": 1, "at": [53.75, 6.55], "course": 0, "kn": 15, "ships": [ { "design": "stettin", "name": "Mainz" } ] },
+    // out of the Jade and the Elbe, an hour's steaming and more from the patrols
+    { "name": "II. Scouting Group", "admiral": { "name": "R-Adm Maass (in Cöln)", "temper": 0.3, "why": "led his cruisers out into the mist without waiting for the battlecruisers" }, "side": 1, "at": [53.98, 8.08], "course": 330, "kn": 18, "spacing": 800,
+      "ships": [ { "design": "stettin", "name": "Cöln" }, { "design": "graudenz", "names": ["Strassburg", "Stralsund"] }, { "design": "gazelle", "name": "Ariadne" } ] },
+    { "name": "Danzig", "side": 1, "at": [54.02, 8.40], "course": 315, "kn": 15, "ships": [ { "design": "gazelle", "name": "Danzig" } ] }
+  ]
+}

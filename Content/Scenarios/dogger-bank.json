@@ -1,0 +1,59 @@
+// The Dogger Bank, 24 January 1915 at 07:50 GMT: Hipper's raid toward the Dogger Bank has run into the Harwich Force at
+// dawn and, seeing Beatty's smoke, he has turned for home, south-east at the speed of his slowest, Blücher. Beatty's
+// five battlecruisers chase fourteen miles astern, the faster ones slowly overhauling; Goodenough's light cruisers on
+// his bow, Tyrwhitt's destroyers astern of the Germans, the German light cruisers and torpedo boats about Hipper.
+// A stern chase, then the battle. History's forces, the destroyers thinned; the classes are stand-ins (lion for Lion
+// and Princess Royal, tiger_1914, indefatigable for New Zealand, invincible for Indomitable; the towns, arethusa,
+// l_laforey and m_class; seydlitz, moltke, derfflinger, armoured_cruiser for Blücher, graudenz and stettin, v1 and v25):
+//   Britain, the hunters: five battlecruisers, the faster three overhauling, 13.5 in guns; thin armour, and the
+//   signals that went wrong in history are the player's to get right.
+//   Germany, the quarry: three battlecruisers and the old Blücher holding them back, armour that takes punishment,
+//   torpedo boats to throw at the chase; and home a long way off.
+// The weather of the day: clear, a light north-easterly, a calm sea.
+{
+  "scenario": 1,
+  "name": "Dogger Bank",
+  "brief": "24 January 1915, 07:50. Hipper's battlecruisers came out to raid the Dogger Bank and ran into your light forces at dawn; now they are running for home, fourteen miles ahead, held to Blücher's speed. Lion, Tiger and Princess Royal can catch them; New Zealand and Indomitable will struggle to. Bring them to action before they reach the Bight, and finish what you start.",
+  "place": "the Dogger Bank",
+  "about": {
+    "Britain": { "character": "The hunters: five battlecruisers, 13.5 in guns, thin armour; the faster three can catch them.", "commander": "V-Adm Beatty", "ensign": "britain" },
+    "Germany": { "character": "The quarry: three tough battlecruisers held back by the old Blücher, running for home.", "commander": "R-Adm Hipper", "ensign": "germany" } },
+  "start": "1915-01-24T07:50",
+  "seed": 1915,
+  "camera": [54.92, 3.62, 80],
+  "sides": ["Britain", "Germany"],
+  "readiness": { "Britain": "closed up", "Germany": "closed up" },
+  "damage_control": { "Britain": "1916", "Germany": "1916" },
+  "fire_discipline": { "Britain": "rn-1914", "Germany": "german" },
+  "player": "Britain",
+  // the end: Beatty broke off at 12:45, eighty miles from Heligoland; the afternoon besides
+  "until": "1915-01-24T15:00",
+  "aims": { "Britain": "destroy everyone", "Germany": "destroy everyone" },
+  // where ships out of the fight go: off the Forth, and the Jade
+  "home": { "Britain": [56.0, -1.5], "Germany": [54.0, 8.0] },
+  "weather": { "visibility_km": 25, "wind_from": 45, "wind_kn": 8 },
+  "units": [
+    // ---------------------------------------------------------------- Beatty: 5 battlecruisers, 4 light cruisers, Tyrwhitt's 3 and 21 destroyers
+    { "name": "Battlecruiser Fleet", "admiral": { "name": "V-Adm Beatty (in Lion)", "temper": 0.4, "why": "pressed the chase at full speed" }, "side": 0, "at": [54.98, 3.45], "course": 135, "kn": 26, "spacing": 1500,
+      "units": [
+        { "name": "1st Battlecruiser Squadron", "spacing": 550, "ships": [ { "design": "lion", "name": "Lion" }, { "design": "tiger_1914", "name": "Tiger" }, { "design": "lion", "name": "Princess Royal" } ] },
+        { "name": "2nd Battlecruiser Squadron", "admiral": "R-Adm Moore (in New Zealand)", "spacing": 550, "ships": [ { "design": "indefatigable", "name": "New Zealand" }, { "design": "invincible", "name": "Indomitable" } ] } ] },
+    { "name": "1st Light Cruiser Squadron", "admiral": "Cdre Goodenough (in Southampton)", "side": 0, "at": [55.01, 3.62], "course": 135, "kn": 25, "spacing": 900,
+      "ships": [ { "design": "town_chatham", "name": "Southampton" }, { "design": "town_birmingham", "names": ["Nottingham", "Birmingham", "Lowestoft"] } ] },
+    { "name": "Harwich Force", "admiral": { "name": "Cdre Tyrwhitt (in Arethusa)", "temper": 0.3, "why": "kept his destroyers on the enemy's quarter" }, "side": 0, "at": [54.84, 3.50], "course": 125, "kn": 25, "spacing": 2000,
+      "units": [
+        { "name": "Light cruisers", "spacing": 700, "ships": [ { "design": "arethusa", "names": ["Arethusa", "Aurora", "Undaunted"] } ] },
+        { "name": "10th Flotilla", "spacing": 400, "ships": [ { "design": "m_class", "names": ["Meteor", "Miranda", "Milne", "Mentor", "Minos", "Mastiff", "Morris"] } ] },
+        { "name": "1st Flotilla", "spacing": 400, "ships": [ { "design": "l_laforey", "names": ["Acheron", "Attack", "Hydra", "Ariel", "Forester", "Defender", "Druid", "Ferret", "Goshawk", "Jackal", "Phoenix", "Sandfly", "Hornet", "Tigress"] } ] } ] },
+
+    // ---------------------------------------------------------------- Hipper: 4 big ships, 4 light cruisers, 18 torpedo boats
+    { "name": "I. Scouting Group", "admiral": { "name": "R-Adm Hipper (in Seydlitz)", "temper": -0.3, "why": "ran for home when he saw the odds" }, "side": 1, "at": [54.86, 3.76], "course": 135, "kn": 21, "spacing": 600,
+      "ships": [ { "design": "seydlitz", "name": "Seydlitz" }, { "design": "moltke", "name": "Moltke" }, { "design": "derfflinger", "name": "Derfflinger" }, { "design": "armoured_cruiser", "name": "Blücher" } ] },
+    { "name": "II. Scouting Group", "admiral": "R-Adm Maass", "side": 1, "at": [54.80, 3.90], "course": 135, "kn": 21, "spacing": 1500,
+      "ships": [ { "design": "graudenz", "names": ["Graudenz", "Rostock", "Stralsund"] }, { "design": "stettin", "name": "Kolberg" } ] },
+    { "name": "V. Flotilla", "side": 1, "at": [54.90, 3.88], "course": 135, "kn": 21, "formation": "abreast", "spacing": 500,
+      "ships": [ { "design": "v1", "names": ["G7", "G8", "G9", "G10", "G11", "S13", "S14", "S15", "S16"] } ] },
+    { "name": "II. Flotilla", "side": 1, "at": [54.93, 3.80], "course": 135, "kn": 21, "formation": "abreast", "spacing": 500,
+      "ships": [ { "design": "v25", "names": ["V25", "V26", "V27", "V28", "V29", "V30", "S31", "S32", "S33"] } ] }
+  ]
+}
