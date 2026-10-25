@@ -58,8 +58,9 @@ public class MatchupTests(ITestOutputHelper output)
     public void A_light_cruiser_without_torpedoes_shuns_a_battleship()
     {
         Assert.True(Judge([E("arethusa", torpedoes: false)], [E("iron_duke")]) < 0.2);
-        // a squadron of them with their torpedoes can take her on
-        Assert.True(Judge([E("arethusa", 4)], [E("iron_duke")]) > 1);
+        // a squadron of them with their torpedoes can take her on: five since her guns load HE at them
+        // (docs/battle/shell-choice.md A4, 2026-10-25: four 1.13 -> 0.92, five 1.29; restated, awaiting the user)
+        Assert.True(Judge([E("arethusa", 5)], [E("iron_duke")]) > 1);
         Assert.True(Judge([E("arethusa", 4, torpedoes: false)], [E("iron_duke")]) < 1);
     }
 
@@ -74,7 +75,9 @@ public class MatchupTests(ITestOutputHelper output)
             last = c;
         }
         Assert.True(Judge([E("v25")], [E("iron_duke")]) < 0.2);
-        Assert.True(Judge([E("v25", 8)], [E("iron_duke")]) > 1);
+        // a dozen since her guns load HE at them (docs/battle/shell-choice.md A4, 2026-10-25: eight 1.33 -> 0.80, twelve
+        // 1.40; restated, awaiting the user)
+        Assert.True(Judge([E("v25", 12)], [E("iron_duke")]) > 1);
         // by night the battleship's guns open only within sight: the lone boat does better
         Assert.True(Judge([E("v25")], [E("iron_duke")], sightM: 2000) > Judge([E("v25")], [E("iron_duke")]));
     }

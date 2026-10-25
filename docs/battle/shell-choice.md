@@ -129,6 +129,16 @@ the best of its loads by range, held in the same pair table. The AI's judgements
 light cruisers that weren't hopeless against a battleship become so. The confidence a commander has in a fight moves
 with it, so A6 re-measures.
 
+- **Done 2026-10-25.** `MatchupGun.ChosenKind` and `Chosen`: of its kinds within reach, the one whose rounds do
+  the most (hit chance × out exponent), read by the judgement's gunfire (`Matchup.Guns`) in place of the lead's;
+  `matchup` prints the kind each battery is judged with. A judgement 2.7 → 4.6 µs (Arethusa ×4 against Iron Duke).
+  - Moved: against an Iron Duke, Arethusa ×4 1.127 → 0.915 (×5 1.29); V25 ×4 0.46 → 0.31, ×8 1.33 → 0.80, ×12
+    2.43 → 1.40, ×16 3.63 → 2.05: the boats' and light cruisers' even point from about 7 boats to 10, from 4 light
+    cruisers to 5. Town Chatham against V25 ×3 0.97; Lion against Seydlitz 1.26 (AP both ways, unchanged).
+  - **Two anchors restated, awaiting the user** (`MatchupTests`): "a squadron of light cruisers with torpedoes can
+    take on a battleship" four → five, "destroyers saturate a battleship's defence" eight → twelve. They were set in
+    5.1g with the battleship firing AP only (command.md 5.1g's "not as hoped").
+
 **A5 The player's order.** The player may overrule the captain (as with every order):
 - **The strip:** the GUNS column gets **Shells ▾**: *by target* (the captain's, shown with what he's chosen) and each
   kind the selection's main guns carry, for the current selection (decision 3: the chief batteries only, for now).

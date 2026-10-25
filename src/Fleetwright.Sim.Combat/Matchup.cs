@@ -310,6 +310,35 @@ public sealed class MatchupGun
         return (tab[2 * k] + w * (tab[2 * k + 2] - tab[2 * k]), tab[2 * k + 1] + w * (tab[2 * k + 3] - tab[2 * k + 1]));
     }
 
+    /// <summary>The farthest any of its kinds reaches, m.</summary>
+    public double KindsReachM
+    {
+        get
+        {
+            double r = 0;
+            foreach (var k in Kinds)
+                r = Math.Max(r, k.ReachM);
+            return r;
+        }
+    }
+
+    /// <summary>Against a class at a range: <see cref="Against"/> for the kind its captain would load there
+    /// (docs/battle/shell-choice.md A4), the one of <see cref="Kinds"/> within reach whose rounds do the most (hit chance
+    /// times the out exponent); (0, 0) when none reaches.</summary>
+    public (double Hit, double Exponent) Chosen(MatchupProfile t, double rangeM, SimSettings s) =>
+        ChosenKind(t, rangeM, s) is { } k ? k.Against(t, rangeM, s) : (0, 0);
+
+    /// <summary>The kind <see cref="Chosen"/> takes (null: none reaches).</summary>
+    public MatchupGun? ChosenKind(MatchupProfile t, double rangeM, SimSettings s)
+    {
+        MatchupGun? best = null;
+        double most = -1;
+        foreach (var k in Kinds)
+            if (rangeM <= k.ReachM && k.Against(t, rangeM, s) is var x && x.Hit * x.Exponent > most)
+                (best, most) = (k, x.Hit * x.Exponent);
+        return best;
+    }
+
     void Keep(int number, double[] tab)
     {
         if (pairs.Length == 0)
@@ -606,10 +635,10 @@ public static class Matchup
                     if (to[j].Count == 0 || toSel.Length > 0 && !toSel[j])
                         continue;
                     double r = attacking ? fromAttackM : inTo.Length > 0 && inTo[j] ? toAttackM : lineM;
-                    if (r > g.ReachM)
+                    if (r > g.KindsReachM)
                         continue;
                     // an attacker running in or out zigzags (the defence's fire on it spoilt by the share given)
-                    var (hit, exponent) = g.Against(to[j].Profile, r, s);
+                    var (hit, exponent) = g.Chosen(to[j].Profile, r, s);
                     k[j] = hit * (1 - Math.Exp(-exponent / Math.Max(to[j].Toughness, 1e-3))) * (inTo.Length > 0 && inTo[j] ? evaded : 1);
                     sum += to[j].Count * k[j];
                 }

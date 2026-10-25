@@ -173,11 +173,13 @@ static class MatchupBench
                         Console.WriteLine(string.Format(Inv, "  {0} b{1} on {2}: out of reach", e.Profile.Class.Name, g.Battery, t.Profile.Class.Name));
                         continue;
                     }
-                    double hit = Matchup.HitChance(g, t.Profile, r, s), o = Matchup.OutChance(g, t, r, s);
-                    var (fall, strike) = g.At(r);
-                    Console.WriteLine(string.Format(Inv, "  {0} b{1} on {2}: hits {3:0.0}% (fall {4:0.0}°, {5:0} m/s, pen {6:0}/{7:0} mm side/deck); a hit puts her out {8:0.00}%; {9:0.0000} out a minute a ship",
-                        e.Profile.Class.Name, g.Battery, t.Profile.Class.Name, 100 * hit, fall, strike, Terminal.PenMm(g.Shell, strike, fall),
-                        Terminal.PenMm(g.Shell, strike, 90 - fall), 100 * o, g.Guns * g.ShellsPerGunMin * hit * o));
+                    // the kind its captain would load (docs/battle/shell-choice.md A4)
+                    var c = g.ChosenKind(t.Profile, r, s) ?? g;
+                    double hit = Matchup.HitChance(c, t.Profile, r, s), o = Matchup.OutChance(c, t, r, s);
+                    var (fall, strike) = c.At(r);
+                    Console.WriteLine(string.Format(Inv, "  {0} b{1} on {2} with {3}: hits {4:0.0}% (fall {5:0.0}°, {6:0} m/s, pen {7:0}/{8:0} mm side/deck); a hit puts her out {9:0.00}%; {10:0.0000} out a minute a ship",
+                        e.Profile.Class.Name, g.Battery, t.Profile.Class.Name, c.Shell.Kind, 100 * hit, fall, strike, Terminal.PenMm(c.Shell, strike, fall),
+                        Terminal.PenMm(c.Shell, strike, 90 - fall), 100 * o, g.Guns * g.ShellsPerGunMin * hit * o));
                 }
     }
 
