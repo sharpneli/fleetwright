@@ -150,13 +150,43 @@ public class DoctrineTests
         Assert.Equal(30, d.Of(2, 0, DoctrineField.EvadeDeg), 9);        // not listed: as written
         Assert.Equal(2, d.Of(2, 0, DoctrineField.BreakOffShare) / 1.5, 9);   // neutral "never" stays past any loss
 
-        w.Apply(ai.Orders.Doctrine(Unit.Group(w.Groups.Of(1)!.GroupId), DoctrineField.Aggression, -1));   // a timid squadron
-        Assert.Equal(1, d.Of(1, 0, DoctrineField.OutgunnedRatio), 9);   // its ship: 2 x (1 - 0.5)
+        w.Apply(ai.Orders.Doctrine(Unit.Group(w.Groups.Of(1)!.GroupId), DoctrineField.Temper, -2));   // a timid squadron's admiral
+        Assert.Equal(1, d.Of(1, 0, DoctrineField.OutgunnedRatio), 9);   // its ship: the side's + his, -1: 2 x (1 - 0.5)
         Assert.Equal(3, d.Of(2, 0, DoctrineField.OutgunnedRatio), 9);   // a ship of no squadron: the side's
         Assert.Equal(1, d.OfGroup(null, 0, DoctrineField.Aggression), 9);
         Assert.Equal(1, d.SideValue(0, DoctrineField.Aggression), 9);
 
         Assert.Throws<ArgumentException>(() => new Doctrine(w.Groups, new Dictionary<string, double> { ["Bravery"] = 1 }));
+        Assert.Throws<ArgumentException>(() => w.Apply(ai.Orders.Doctrine(Unit.Ship(1), DoctrineField.Aggression, 1)));   // a side's only
+        Assert.Throws<ArgumentException>(() => w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.Temper, 1)));   // a unit's only
+    }
+
+    /// <summary>Tempers add (docs/map-ui/launch.md decision 1): a captain reads her side's aggression, her admiral's temper
+    /// and her own; an admiral his side's and his own; a group with no admiral's temper of its own takes its force's.</summary>
+    [Fact]
+    public void Tempers_add_to_the_side_aggression_at_each_level()
+    {
+        var (w, ai) = Make(3, 600, _ => 0);
+        w.Apply(GroupSystem.Create(1));
+        w.Apply(GroupSystem.Add(w.Groups.Of(1)!.GroupId, 2));
+        int squadron = w.Groups.Of(1)!.GroupId;
+        w.Apply(GroupSystem.Form(squadron));
+        var force = w.Groups.Get(w.Groups.Get(squadron)!.Parent)!;
+        var d = ai.Doctrine;
+        w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.Aggression, 0.3));
+        w.Apply(ai.Orders.Doctrine(Unit.Group(force.GroupId), DoctrineField.Temper, 0.4));   // a bold admiral over the force
+        Assert.Equal(0.7, d.OfGroup(w.Groups.Get(squadron), 0, DoctrineField.Aggression), 9);   // the squadron's: his
+        w.Apply(ai.Orders.Doctrine(Unit.Group(squadron), DoctrineField.Temper, -0.2));   // its own, more careful
+        Assert.Equal(0.1, d.OfGroup(w.Groups.Get(squadron), 0, DoctrineField.Aggression), 9);   // 0.3 - 0.2: not the force's too
+        Assert.Equal(0.7, d.OfGroup(force, 0, DoctrineField.Aggression), 9);
+        w.Apply(ai.Orders.Doctrine(Unit.Ship(1), DoctrineField.Temper, -0.5));   // a timid captain
+        w.Apply(ai.Orders.Doctrine(Unit.Ship(2), DoctrineField.Temper, 0.5));    // a bold one
+        Assert.Equal(-0.4, d.Of(1, 0, DoctrineField.Aggression), 9);   // 0.3 - 0.2 - 0.5
+        Assert.Equal(0.6, d.Of(2, 0, DoctrineField.Aggression), 9);
+        Assert.Equal(0.3, d.Of(3, 0, DoctrineField.Aggression), 9);   // a ship of no group: the side's
+        Assert.Equal(2 * (1 + 0.5 * 0.6), d.Of(2, 0, DoctrineField.OutgunnedRatio), 9);
+        w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.Aggression, 0.9));
+        Assert.Equal(1, d.Of(2, 0, DoctrineField.Aggression), 9);   // clamped
     }
 
     [Fact]

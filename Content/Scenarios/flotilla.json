@@ -28,7 +28,7 @@
   "home": { "Britain": [56.3, -1.5], "Germany": [54.2, 7.6] },
   "weather": { "visibility_km": 16, "wind_from": 225, "wind_kn": 8 },
   "units": [
-    { "name": "2nd Battle Squadron", "side": 0, "at": [56.5, 4.0], "course": 180, "kn": 18, "formation": "column", "spacing": 600,
+    { "name": "2nd Battle Squadron", "admiral": "V-Adm Jerram (in King George V)", "side": 0, "at": [56.5, 4.0], "course": 180, "kn": 18, "formation": "column", "spacing": 600,
       "ships": [ { "design": "king_george_v", "names": ["King George V", "Ajax"] }, { "design": "orion", "names": ["Orion", "Monarch"] } ] },
     { "name": "9th Torpedo-boat Flotilla", "side": 1, "at": [56.47, 4.23], "course": 270, "kn": 30, "formation": "abreast", "spacing": 400,
       "ships": [ { "design": "v25", "names": ["V28", "V26", "V27"] }, { "design": "g101", "names": ["S36", "S51", "S52"] } ] }

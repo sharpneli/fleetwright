@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
+using Fleetwright.Sim.Ai;
 using Fleetwright.Sim.Core;
 
 namespace Fleetwright.Sim.Missions;
@@ -18,6 +19,8 @@ namespace Fleetwright.Sim.Missions;
 ///              "ships": [ { "design": "oslyabya", "count": 4 } ] },
 ///            { "name": "Reserve", "joins": "Second Pacific Squadron", "ships": [ { "design": "aurora", "count": 2 } ] } ],
 ///   "counts": [ { "unit": "Cruiser Division", "design": "aurora", "by": 1 } ], "remove": [ "1st Destroyer Detachment" ],
+///   "tempers": { "Cruiser Division": 0.2, "Imperator Aleksandr III": 0.3 },
+///   "doctrine": { "Russia": { "Aggression": 0.5, "NightAction": "accept" } },
 ///   "crews": { "Japan": "average" }, "readiness": { "Russia": "closed up" }, "damage_control": { "Russia": "1916" },
 ///   "fire_discipline": { "Russia": "rn-1914" }, "fuel": { "Russia": 0.6 }, "seed": 1906 }
 /// </code>
@@ -26,14 +29,15 @@ namespace Fleetwright.Sim.Missions;
 /// "at", "course", "kn") or <c>"joins"</c> a force on its station (L3b); it takes a unit's name, side, formation, spacing
 /// and units or ships (design, names, count), nothing more. A count takes ships off the end of a squadron's ships of a
 /// design (struck, the last first) or adds unnamed ones; a removed unit has every ship under it struck. A side's setting
-/// replaces the written one for that side only. Tempers, doctrine and the day join as the screen's steps bring them
-/// (L4-L5).</para>
+/// replaces the written one for that side only, and so does a side's doctrine field (its aggression, its rules: L4). A
+/// temper names a unit (its admiral's) or a ship (her captain's); an added unit's admiral and his temper are its own
+/// ("admiral"). The day joins with L5.</para>
 /// <para>A unit renamed (<c>"rename": { "5th Battle Squadron": "Evan-Thomas's squadron" }</c>) is renamed last, the
 /// scenario's tasks that name it with it: every other change names units as written (or as added). A unit joining a
 /// squadron makes it a force of the same name: its own ships its first unit ("5th Battle Squadron I"), the new one
 /// astern.</para>
 /// <para>The changes apply by kind (<see cref="SetupChange.Order"/>: the side, the units added, the swaps, the counts, the
-/// removals, the renames, the sides' settings, the seed), each kind in the order made, so the file (written by kind)
+/// removals and tempers, the renames, the sides' settings and doctrine, the seed), each kind in the order made, so the file (written by kind)
 /// reads back to the same scenario. A count names the design its ships have after the swaps, which <see cref="Swap"/>
 /// keeps.</para></summary>
 public sealed record ScenarioSetup
@@ -143,6 +147,26 @@ public sealed record ScenarioSetup
         return from == to ? Without(new RenameUnit(from, to).Key) : With(new RenameUnit(from, to));
     }
 
+    /// <summary>The setup with a unit's admiral's temper or a ship's captain's (by the name it's shown by) set: a unit the
+    /// setup added has it in its own change; any other by a change of its own, gone when it's as written again.</summary>
+    public ScenarioSetup Temper(Scenario written, string shown, double temper)
+    {
+        string name = NameAsMade(shown);
+        if (AddedHolding(name) is { } add)
+            return Replace(add, add with { Unit = Tree.Rebuild(add.Unit, name, u => u.Tempered(temper)) });
+        written = written.Written ?? written;
+        double was = Tree.Find(written.Units, name) is { } u ? u.Temper ?? 0 : SetTemper.CaptainOf(written.Units, name) ?? 0;
+        return Math.Abs(temper - was) < 1e-9 ? Without(new SetTemper(name, temper).Key) : With(new SetTemper(name, temper));
+    }
+
+    /// <summary>The setup with a side's doctrine field set, or without the change when it's as written again.</summary>
+    public ScenarioSetup Doctrine(Scenario written, int side, DoctrineField f, double value, DoctrinePresets presets)
+    {
+        written = written.Written ?? written;
+        var c = new SetDoctrine(side, f, value);
+        return Math.Abs(value - ScenarioLoader.SideDoctrine(written, side, f, presets)) < 1e-9 ? Without(c.Key) : With(c);
+    }
+
     /// <summary>The setup with one change put in another's place.</summary>
     ScenarioSetup Replace(SetupChange old, SetupChange by) => this with { Changes = [.. Changes.Select(c => ReferenceEquals(c, old) ? by : c)] };
 
@@ -167,7 +191,7 @@ public sealed record ScenarioSetup
     internal static bool IsSetup(JsonElement r) =>
         r.TryGetProperty("from", out _) && !r.TryGetProperty("units", out _) && !r.TryGetProperty("only", out _) && !r.TryGetProperty("sides", out _);
 
-    static readonly string[] Keys = ["scenario", "name", "from", "player", "rename", "add", "designs", "counts", "remove", "crews", "readiness", "damage_control", "fire_discipline", "fuel", "seed"];
+    static readonly string[] Keys = ["scenario", "name", "from", "player", "rename", "add", "designs", "counts", "remove", "tempers", "doctrine", "crews", "readiness", "damage_control", "fire_discipline", "fuel", "seed"];
 
     /// <summary>A setup file's changes, read against the scenario it's of.</summary>
     internal static ScenarioSetup Parse(JsonElement r, Scenario written)
@@ -234,6 +258,28 @@ public sealed record ScenarioSetup
                     throw new ScenarioException($"designs[{i}]: \"from\" and \"to\", the designs' names");
                 changes.Add(new SwapDesign(Str(d, "unit") is { Length: > 0 } u ? u : null, Str(d, "ship") is { Length: > 0 } sh ? sh : null, from, to));
                 i++;
+            }
+        }
+        if (r.TryGetProperty("tempers", out var tm))
+        {
+            if (tm.ValueKind != JsonValueKind.Object)
+                throw new ScenarioException("tempers: an object of units' and ships' names, { \"Cruiser Division\": 0.2 }");
+            foreach (var p in tm.EnumerateObject())
+                changes.Add(new SetTemper(p.Name, Scenario.Temper(p.Value, $"tempers: {p.Name}")));
+        }
+        if (r.TryGetProperty("doctrine", out var dc))
+        {
+            if (dc.ValueKind != JsonValueKind.Object)
+                throw new ScenarioException("doctrine: an object of sides' names, { \"Russia\": { \"Aggression\": 0.5 } }");
+            foreach (var p in dc.EnumerateObject())
+            {
+                int side = Array.IndexOf(sides, p.Name);
+                if (side < 0)
+                    throw new ScenarioException($"doctrine: \"{p.Name}\" isn't one of the sides ({string.Join(", ", sides)})");
+                if (p.Value.ValueKind != JsonValueKind.Object)
+                    throw new ScenarioException($"doctrine of {p.Name}: an object of fields, {{ \"Aggression\": 0.5 }}");
+                foreach (var (f, v) in Scenario.DoctrineValues(p.Value, $"doctrine of {p.Name}", unit: false))
+                    changes.Add(new SetDoctrine(side, f, v));
             }
         }
         if (r.TryGetProperty("crews", out var cr))
@@ -337,6 +383,30 @@ public sealed record ScenarioSetup
                 foreach (var c in removed)
                     w.WriteStringValue(c.Name);
                 w.WriteEndArray();
+            }
+            var tempers = Changes.OfType<SetTemper>().ToList();
+            if (tempers.Count > 0)
+            {
+                w.WriteStartObject("tempers");
+                foreach (var c in tempers)
+                    w.WriteNumber(c.Name, c.Value);
+                w.WriteEndObject();
+            }
+            var doctrine = Changes.OfType<SetDoctrine>().ToList();
+            if (doctrine.Count > 0)
+            {
+                w.WriteStartObject("doctrine");
+                foreach (var side in doctrine.Select(c => c.Side).Distinct())
+                {
+                    w.WriteStartObject(written.Sides[side]);
+                    foreach (var c in doctrine.Where(c => c.Side == side))
+                        if (DoctrinePresets.NameOf(c.Field, c.Value) is { } word)
+                            w.WriteString(c.Field.ToString(), word);
+                        else
+                            w.WriteNumber(c.Field.ToString(), c.Value);
+                    w.WriteEndObject();
+                }
+                w.WriteEndObject();
             }
             foreach (var kind in Enum.GetValues<SideKind>())
             {
@@ -512,6 +582,118 @@ public sealed record SideSetting(SideKind Kind, int Side, string Value) : SetupC
     }
 }
 
+/// <summary>A side's doctrine field (docs/map-ui/launch.md L4): its aggression, or one of its rules
+/// (<see cref="DoctrineRules"/>), over its preset's and the file's.</summary>
+public sealed record SetDoctrine(int Side, DoctrineField Field, double Value) : SetupChange
+{
+    public override string Key => $"doctrine|{Side}|{Field}";
+    internal override int Order => 6;
+
+    internal override Scenario Apply(Scenario s)
+    {
+        if (Side < 0 || Side >= s.Sides.Length)
+            throw new ScenarioException($"doctrine: no side {Side}");
+        if (Field == DoctrineField.Temper)
+            throw new ScenarioException("doctrine: a Temper is an admiral's or a captain's (\"tempers\")");
+        var given = s.Doctrine.FirstOrDefault(d => d.Side == Side);
+        var values = (given.Values ?? []).Where(v => v.Field != Field).Append((Field, Value)).ToList();
+        return s with { Doctrine = [.. s.Doctrine.Where(d => d.Side != Side), (Side, given.Preset ?? DoctrinePresets.DefaultName, values)] };
+    }
+
+    public override string Describe(Scenario written) => Describe(written, ScenarioLoader.PresetsFor(written));
+
+    /// <summary>The change in a line against the side's doctrine as written (its preset's values among it).</summary>
+    public string Describe(Scenario written, DoctrinePresets presets)
+    {
+        double was = ScenarioLoader.SideDoctrine(written, Side, Field, presets);
+        if (Field == DoctrineField.Aggression)
+            return $"{written.Sides[Side]}'s aggression {DoctrineRules.Signed(Value)} (written: {DoctrineRules.Signed(was)})";
+        if (DoctrineRules.Of(Field) is { } rule)
+            return $"{written.Sides[Side]}: {rule.Label.ToLowerInvariant()}: {rule.Word(Value)} (written: {rule.Word(was)})";
+        return $"{written.Sides[Side]}: {Field} {Value.ToString("0.###", CultureInfo.InvariantCulture)} (written: {was.ToString("0.###", CultureInfo.InvariantCulture)})";
+    }
+}
+
+/// <summary>Doctrine's rules as the launch screen sets them (docs/map-ui/launch.md L4), each a field and its two values
+/// in words.</summary>
+public static class DoctrineRules
+{
+    public sealed record Rule(DoctrineField Field, string Label, (double Value, string Word)[] Options)
+    {
+        public string Word(double v)
+        {
+            foreach (var (value, word) in Options)
+                if (Math.Abs(value - v) < 1e-9)
+                    return word;
+            return v.ToString("0.###", CultureInfo.InvariantCulture);
+        }
+    }
+
+    public static readonly Rule[] All =
+    [
+        new(DoctrineField.Engage, "On meeting the enemy", [((double)Engage.Fight, "fight"), ((double)Engage.CarryOn, "carry on")]),
+        new(DoctrineField.Deploy, "Deploy into one line on his main body", [(1, "yes"), (0, "no")]),
+        new(DoctrineField.Torpedoes, "Torpedoes", [((double)TorpedoUse.AtWill, "at will"), ((double)TorpedoUse.OnOrder, "on order")]),
+        new(DoctrineField.Evasion, "Under fire", [((double)Evasion.Zigzag, "zigzag"), ((double)Evasion.Steady, "steady")]),
+        new(DoctrineField.TorpedoEvasion, "Torpedo tracks", [((double)TorpedoEvasion.Comb, "comb"), ((double)TorpedoEvasion.None, "hold on")]),
+        new(DoctrineField.NightAction, "Heavy ships at night", [((double)NightAction.Accept, "accept"), ((double)NightAction.Avoid, "avoid")]),
+        new(DoctrineField.NightAttack, "Torpedo craft attack by night", [(1, "yes"), (0, "no")]),
+        new(DoctrineField.Dispose, "Admirals place scouts and screens", [(1, "by roles"), (0, "all in line")]),
+    ];
+
+    public static Rule? Of(DoctrineField f) => Array.Find(All, r => r.Field == f);
+
+    /// <summary>An aggression or a temper as the screen writes it: "+0.50", "−0.40", "0".</summary>
+    public static string Signed(double v) => Math.Abs(v) < 0.005 ? "0" : (v > 0 ? "+" : "−") + Math.Abs(v).ToString("0.00", CultureInfo.InvariantCulture);
+}
+
+/// <summary>A temper (docs/map-ui/launch.md "Tempers"): a unit's admiral's, or a ship's captain's by her name.</summary>
+public sealed record SetTemper(string Name, double Value) : SetupChange
+{
+    public override string Key => $"temper|{Name}";
+    internal override int Order => 4;
+
+    internal override Scenario Apply(Scenario s)
+    {
+        var units = Tree.Rebuild(s.Units, Name, u => u.Tempered(Value), out bool found);
+        if (found)
+            return s with { Units = units };
+        // a ship: her entry in the squadron she's in
+        foreach (var top in s.Units)
+            if (Holder(top) is { } sq)
+                return s with { Units = Tree.Rebuild(s.Units, sq.Name, u => u.With(u.Units, u.Ships.Select(e => Her(e) is int k ? e.Tempered(k, Value) : e).ToList()), out _) };
+        throw new ScenarioException($"tempers: no unit or ship \"{Name}\"");
+    }
+
+    int? Her(ScenarioShips e) => Array.IndexOf(e.Names, Name) is var k and >= 0 && k < e.Count ? k : null;
+
+    ScenarioUnit? Holder(ScenarioUnit u) => u.Ships.Any(e => Her(e) != null) ? u : u.Units.Select(Holder).FirstOrDefault(x => x != null);
+
+    /// <summary>A ship's captain's temper as the units have it, by her name; null if there's no such ship.</summary>
+    public static double? CaptainOf(IEnumerable<ScenarioUnit> units, string ship)
+    {
+        foreach (var u in units)
+        {
+            foreach (var e in u.Ships)
+                if (Array.IndexOf(e.Names, ship) is var k and >= 0 && k < e.Count)
+                    return e.TemperOf(k);
+            if (CaptainOf(u.Units, ship) is { } t)
+                return t;
+        }
+        return null;
+    }
+
+    public override string Describe(Scenario written)
+    {
+        if (Tree.Find(written.Units, Name) is { } u)
+            return $"{(u.Admiral.Length > 0 ? AdmiralName(u.Admiral) : Name)}'s temper {DoctrineRules.Signed(Value)} (written: {DoctrineRules.Signed(u.Temper ?? 0)})";
+        return $"{Name}'s captain: temper {DoctrineRules.Signed(Value)} (written: {DoctrineRules.Signed(CaptainOf(written.Units, Name) ?? 0)})";
+    }
+
+    /// <summary>An admiral's name without what the scenario adds in brackets ("Rozhestvensky (in Suvorov)").</summary>
+    public static string AdmiralName(string admiral) => admiral.IndexOf(" (", StringComparison.Ordinal) is var k and > 0 ? admiral[..k] : admiral;
+}
+
 /// <summary>The world's seed: the same fight again for the same seed.</summary>
 public sealed record SetSeed(ulong Seed) : SetupChange
 {
@@ -608,6 +790,16 @@ public sealed record AddUnit(ScenarioUnit Unit, string? Joins) : SetupChange
             w.WriteNumber("course", u.CourseDeg);
             w.WriteNumber("kn", u.Kn);
         }
+        if (u.Temper != null)
+        {
+            w.WriteStartObject("admiral");
+            if (u.Admiral.Length > 0)
+                w.WriteString("name", u.Admiral);
+            w.WriteNumber("temper", u.Temper.Value);
+            w.WriteEndObject();
+        }
+        else if (u.Admiral.Length > 0)
+            w.WriteString("admiral", u.Admiral);
         w.WriteString("formation", Scenario.FormationName(u.Formation));
         w.WriteNumber("spacing", u.SpacingM);
         if (u.IsForce)
@@ -639,7 +831,7 @@ public sealed record AddUnit(ScenarioUnit Unit, string? Joins) : SetupChange
         w.WriteEndObject();
     }
 
-    static readonly string[] UnitKeys = ["name", "side", "at", "course", "kn", "formation", "spacing", "units", "ships"], ShipKeys = ["design", "names", "name", "count"];
+    static readonly string[] UnitKeys = ["name", "side", "at", "course", "kn", "admiral", "formation", "spacing", "units", "ships"], ShipKeys = ["design", "names", "name", "count"];
 
     /// <summary>A file's added unit: a unit as a scenario's "units" have it, of those keys only, and "joins".</summary>
     internal static AddUnit Parse(JsonElement a, string path, Scenario written, IEnumerable<AddUnit> earlier)

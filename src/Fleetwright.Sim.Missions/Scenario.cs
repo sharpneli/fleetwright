@@ -47,6 +47,10 @@ namespace Fleetwright.Sim.Missions;
 /// "RangeShare": 0.5 } }</c>; a side not listed takes "default" (Engage: fight). A unit sets values of its own,
 /// <c>"doctrine": { "Torpedoes": "on order" }</c>. A side's <c>"home": { "Germany": [54.0, 8.0] }</c> is where its ships
 /// out of the fight go.</para>
+/// <para>A unit names its admiral, <c>"admiral": "R-Adm Enkvist"</c>, or gives his temper too (docs/map-ui/launch.md
+/// "Tempers"): <c>"admiral": { "name": "R-Adm Enkvist", "temper": -0.4, "why": "kept his cruisers clear of the line" }</c>,
+/// -1 timid to +1 bold, added to his side's aggression; a unit with no admiral named takes its force's. A ship entry gives
+/// its captains' by name, <c>"captains": { "Bedovy": -0.5 }</c>, added to their admiral's.</para>
 /// <para>It ends (docs/battle/command.md "The end", <see cref="ScenarioEnd"/>) at <c>"until": "1916-06-01T04:00"</c> (UTC;
 /// <see cref="SimSettings.PlayLimitMs"/> after the start if not given), or before that when it's decided or quiet. Each
 /// side wants its <c>"aims": { "Britain": "destroy everyone" }</c> (a name, or a list of them); a side not listed wants to
@@ -354,21 +358,25 @@ public sealed record Scenario
                 list.Add((side, p.Value.GetString()!, []));
             else if (p.Value.ValueKind == JsonValueKind.Object)
                 list.Add((side, p.Value.TryGetProperty("preset", out var pr) ? pr.GetString() ?? "" : DoctrinePresets.DefaultName,
-                    DoctrineValues(p.Value, $"doctrine of {p.Name}", "preset")));
+                    DoctrineValues(p.Value, $"doctrine of {p.Name}", unit: false, "preset")));
             else
                 throw new ScenarioException($"doctrine of {p.Name}: a preset's name, or {{ \"preset\": ..., fields }}");
         }
         return list;
     }
 
-    /// <summary>Doctrine's fields and their values in an object (<paramref name="skip"/> aside).</summary>
-    static List<(DoctrineField, double)> DoctrineValues(JsonElement e, string path, string? skip = null)
+    /// <summary>Doctrine's fields and their values in an object (<paramref name="skip"/> aside): a side's or a unit's
+    /// (a unit's aggression is its admiral's "temper", a side's has none).</summary>
+    internal static List<(DoctrineField, double)> DoctrineValues(JsonElement e, string path, bool unit, string? skip = null)
     {
         var values = new List<(DoctrineField, double)>();
         foreach (var f in e.EnumerateObject())
         {
             if (f.Name == skip)
                 continue;
+            if (f.Name == (unit ? nameof(DoctrineField.Aggression) : nameof(DoctrineField.Temper)))
+                throw new ScenarioException(unit ? $"{path}: Aggression is a side's; a unit's is its admiral's, \"admiral\": {{ \"temper\": 0.3 }}"
+                    : $"{path}: a Temper is an admiral's or a captain's (a unit's \"admiral\", a ship entry's \"captains\"); a side's is its Aggression");
             try
             {
                 values.Add(DoctrinePresets.Value(f.Name, f.Value));
@@ -560,9 +568,13 @@ public sealed record Scenario
                 route.Add(LatLon(p, $"{path} route[{i++}]"));
         }
 
+        var (admiral, temper, why) = ParseAdmiral(e, path);
         var unit = new ScenarioUnit
         {
             Name = name,
+            Admiral = admiral,
+            Temper = temper,
+            TemperWhy = why,
             Side = side,
             Formation = formation,
             SpacingM = spacing,
@@ -571,7 +583,7 @@ public sealed record Scenario
             Kn = kn ?? 0,
             Route = route,
             Loop = e.TryGetProperty("loop", out var lp) && lp.GetBoolean(),
-            Doctrine = e.TryGetProperty("doctrine", out var dc) ? DoctrineValues(dc, $"{path} doctrine") : [],
+            Doctrine = e.TryGetProperty("doctrine", out var dc) ? DoctrineValues(dc, $"{path} doctrine", unit: true) : [],
             Tasks = ParseTasks(e, path, top),
             Loadout = loadout,
         };
@@ -593,6 +605,28 @@ public sealed record Scenario
         }
         return unit;
     }
+
+    /// <summary>A unit's <c>"admiral"</c>: his name (<c>"R-Adm Enkvist"</c>), or <c>{ "name": ..., "temper": -0.4, "why":
+    /// "kept his cruisers clear of the line" }</c> (docs/map-ui/launch.md "Tempers": why the scenario gave it, in a few
+    /// words).</summary>
+    static (string Name, double? Temper, string Why) ParseAdmiral(JsonElement e, string path)
+    {
+        if (!e.TryGetProperty("admiral", out var a))
+            return ("", null, "");
+        if (a.ValueKind == JsonValueKind.String)
+            return (a.GetString()!, null, "");
+        if (a.ValueKind != JsonValueKind.Object)
+            throw new ScenarioException($"{path}: \"admiral\", his name or {{ \"name\": ..., \"temper\": 0.3, \"why\": ... }}");
+        foreach (var p in a.EnumerateObject())
+            if (p.Name is not ("name" or "temper" or "why"))
+                throw new ScenarioException($"{path} admiral: \"name\", \"temper\" and \"why\"; not \"{p.Name}\"");
+        return (Str(a, "name", ""), a.TryGetProperty("temper", out var t) ? Temper(t, $"{path} admiral") : null, Str(a, "why", ""));
+    }
+
+    /// <summary>A temper as written: -1 (timid) to +1 (bold).</summary>
+    internal static double Temper(JsonElement t, string path) =>
+        t.ValueKind == JsonValueKind.Number && t.GetDouble() is var v and >= -1 and <= 1 ? v
+            : throw new ScenarioException($"{path}: a temper is -1 (timid) to +1 (bold)");
 
     /// <summary>A top unit's <c>"task"</c>, or its <c>"tasks"</c> one after another (its plan); none if it has neither.</summary>
     static List<ScenarioTask> ParseTasks(JsonElement e, string path, bool top)
@@ -669,7 +703,22 @@ public sealed record Scenario
             : [];
         if (dyes.Length > count)
             throw new ScenarioException($"{path}: {dyes.Length} dyes for {count} ships");
-        return new ScenarioShips { Design = design, Count = count, Names = names, Dyes = dyes, Loadout = ParseLoadout(e, path) ?? unitLoadout };
+        // the captains' tempers by their ships' names (docs/map-ui/launch.md "Tempers"): one a ship in order
+        var tempers = Array.Empty<double>();
+        if (e.TryGetProperty("captains", out var cp))
+        {
+            if (cp.ValueKind != JsonValueKind.Object)
+                throw new ScenarioException($"{path}: \"captains\", an object of ships' names and tempers, {{ \"Bedovy\": -0.5 }}");
+            tempers = new double[count];
+            foreach (var p in cp.EnumerateObject())
+            {
+                int k = Array.IndexOf(names, p.Name);
+                if (k < 0)
+                    throw new ScenarioException($"{path} captains: no ship \"{p.Name}\" here (have {string.Join(", ", names)})");
+                tempers[k] = Temper(p.Value, $"{path} captains: {p.Name}");
+            }
+        }
+        return new ScenarioShips { Design = design, Count = count, Names = names, Dyes = dyes, Tempers = tempers, Loadout = ParseLoadout(e, path) ?? unitLoadout };
     }
 
     static Dye ParseDye(string? s, string path) =>
@@ -732,6 +781,19 @@ public sealed class ScenarioUnit
 {
     public string Name { get; init; } = "";
     public int Side { get; init; }
+
+    /// <summary>Its admiral as the scenario names him ("R-Adm Enkvist", "Rozhestvensky (in Suvorov)"), or "".</summary>
+    public string Admiral { get; init; } = "";
+
+    /// <summary>His temper (docs/map-ui/launch.md "Tempers"), -1 timid to +1 bold, added to the side's aggression; null
+    /// for none given. A unit with an admiral of its own (<see cref="OwnTemper"/>) has his (0 if none is given); one
+    /// without takes its force's. <see cref="TemperWhy"/>: why the scenario gave it, in a few words.</summary>
+    public double? Temper { get; init; }
+    public string TemperWhy { get; init; } = "";
+
+    /// <summary>Whether its admiral has a temper of his own (<see cref="Temper"/>): it's a top unit, names him, or has a
+    /// temper given.</summary>
+    public bool OwnTemper => At != null || Admiral.Length > 0 || Temper != null;
     public Formation Formation { get; init; }
     public double SpacingM { get; init; }
 
@@ -771,6 +833,7 @@ public sealed class ScenarioUnit
         {
             Name = Name, Side = Side, Formation = Formation, SpacingM = SpacingM, At = At, CourseDeg = CourseDeg, Kn = Kn,
             Route = Route, Loop = Loop, Doctrine = Doctrine, Tasks = Tasks, Loadout = Loadout, Removed = removed ?? Removed,
+            Admiral = Admiral, Temper = Temper, TemperWhy = TemperWhy,
         };
         u.Units.AddRange(units);
         u.Ships.AddRange(ships);
@@ -778,17 +841,24 @@ public sealed class ScenarioUnit
     }
 
     /// <summary>A copy called by another name.</summary>
-    internal ScenarioUnit Renamed(string name) => Copy(name, Tasks);
+    internal ScenarioUnit Renamed(string name) => Copy(name, Tasks, Admiral, Temper);
 
     /// <summary>A copy with other tasks.</summary>
-    internal ScenarioUnit Tasked(List<ScenarioTask> tasks) => Copy(Name, tasks);
+    internal ScenarioUnit Tasked(List<ScenarioTask> tasks) => Copy(Name, tasks, Admiral, Temper);
 
-    ScenarioUnit Copy(string name, List<ScenarioTask> tasks)
+    /// <summary>A copy with its admiral's temper set (null: none given).</summary>
+    internal ScenarioUnit Tempered(double? temper) => Copy(Name, Tasks, Admiral, temper);
+
+    /// <summary>A copy under another admiral (his temper kept).</summary>
+    internal ScenarioUnit Commanded(string admiral) => Copy(Name, Tasks, admiral, Temper);
+
+    ScenarioUnit Copy(string name, List<ScenarioTask> tasks, string admiral, double? temper)
     {
         var u = new ScenarioUnit
         {
             Name = name, Side = Side, Formation = Formation, SpacingM = SpacingM, At = At, CourseDeg = CourseDeg, Kn = Kn,
             Route = Route, Loop = Loop, Doctrine = Doctrine, Tasks = tasks, Loadout = Loadout, Removed = Removed,
+            Admiral = admiral, Temper = temper, TemperWhy = TemperWhy,
         };
         u.Units.AddRange(Units);
         u.Ships.AddRange(Ships);
@@ -807,6 +877,13 @@ public sealed class ScenarioShips
     /// <summary>Each ship's dye load in order (<c>"dye"</c> for all, <c>"dyes"</c> each); those past its end carry none.</summary>
     public Dye[] Dyes { get; init; } = [];
 
+    /// <summary>Each ship's captain's temper in order (<c>"captains"</c>, by name; docs/map-ui/launch.md "Tempers"), added
+    /// to her admiral's and the side's; those past its end have none.</summary>
+    public double[] Tempers { get; init; } = [];
+
+    /// <summary>The <paramref name="i"/>-th ship's captain's temper.</summary>
+    public double TemperOf(int i) => i < Tempers.Length ? Tempers[i] : 0;
+
     /// <summary>The loadout they carry (docs/battle/shells-armour-damage.md S5): the entry's, else its unit's; null for
     /// their design's own.</summary>
     public LoadoutSpec? Loadout { get; init; }
@@ -822,11 +899,21 @@ public sealed class ScenarioShips
         Design = design, Count = count, Loadout = Loadout,
         Names = from < Names.Length ? Names[from..Math.Min(from + count, Names.Length)] : [],
         Dyes = from < Dyes.Length ? Dyes[from..Math.Min(from + count, Dyes.Length)] : [],
+        Tempers = from < Tempers.Length ? Tempers[from..Math.Min(from + count, Tempers.Length)] : [],
         Struck = from + count >= Count ? Struck : [],
     };
 
     /// <summary>The entry with <paramref name="n"/> more ships at its end, unnamed.</summary>
-    internal ScenarioShips Grown(int n) => new() { Design = Design, Count = Count + n, Names = Names, Dyes = Dyes, Loadout = Loadout, Struck = Struck };
+    internal ScenarioShips Grown(int n) => new() { Design = Design, Count = Count + n, Names = Names, Dyes = Dyes, Tempers = Tempers, Loadout = Loadout, Struck = Struck };
+
+    /// <summary>The entry with the <paramref name="i"/>-th ship's captain's temper set.</summary>
+    internal ScenarioShips Tempered(int i, double temper)
+    {
+        var t = new double[Math.Max(Tempers.Length, i + 1)];
+        Tempers.CopyTo(t, 0);
+        t[i] = temper;
+        return new() { Design = Design, Count = Count, Names = Names, Dyes = Dyes, Tempers = t, Loadout = Loadout, Struck = Struck };
+    }
 
     /// <summary>The entry with its last <paramref name="n"/> ships taken off: struck (kept by name for the screen), or
     /// gone.</summary>
@@ -838,6 +925,7 @@ public sealed class ScenarioShips
         {
             Design = Design, Count = keep, Loadout = Loadout,
             Names = Names[..Math.Min(keep, Names.Length)], Dyes = Dyes[..Math.Min(keep, Dyes.Length)],
+            Tempers = Tempers[..Math.Min(keep, Tempers.Length)],
             Struck = strike ? [.. off, .. Struck] : Struck,
         };
     }

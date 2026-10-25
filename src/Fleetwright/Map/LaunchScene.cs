@@ -225,6 +225,14 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
             return;
         written = s.Written ?? s;
         described.Clear();
+        try
+        {
+            presets = ScenarioLoader.PresetsFor(written);
+        }
+        catch (ScenarioException)
+        {
+            presets = Sim.Ai.DoctrinePresets.Builtin;   // its world says why when it's placed
+        }
         // a setup picked is its changes; a scenario as written, none yet (of its file, if a setup can be "from" it)
         setup = s.Setup ?? new ScenarioSetup { From = entries[i].Opened ? "" : Path.GetFileNameWithoutExtension(entries[i].Path) };
         Apply();
@@ -896,9 +904,9 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         Wrapped(UiFonts.SansSmall, 12, new Vector2(x, y + 34 * sc), Soft, "Both sides the AI's; you see everything. For checking a setup before playing it.", size.X - 24 * sc);
     }
 
-    // ------------------------------------------------------------------ the body: the ships; until L4-L5, the aims and orders
+    // ------------------------------------------------------------------ the body: the ships, the standing orders; until L5, the aims and orders
 
-    const float ShipsW = 600;   // the ships column, reference px (the picker opens right of it)
+    const float ShipsW = 600, OrdersW = 520;   // the ships and the standing orders columns, reference px (the picker opens right of the ships)
 
     readonly List<(string Label, string Value)> aims = [], orders = [];
     string ordersTitle = "";
@@ -934,8 +942,11 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         ShipsColumn(new Vector2(o.X + 18 * sc, o.Y + 14 * sc), ShipsW * sc - 36 * sc, o.Y + h);
         float x = o.X + ShipsW * sc;
         VLine(x, o.Y, o.Y + h);
-        // the aims and the orders before action (the standing orders' place, L4)
-        float cx = x + 18 * sc, cy = o.Y + 14 * sc, cw = 520 * sc - 36 * sc;
+        OrdersColumn(new Vector2(x + 18 * sc, o.Y + 14 * sc), OrdersW * sc - 36 * sc, o.Y + h);
+        x += OrdersW * sc;
+        VLine(x, o.Y, o.Y + h);
+        // the aims and the orders before action (the conditions' place, L5), then the changes
+        float cx = x + 18 * sc, cy = o.Y + 14 * sc, cw = o.X + w - x - 36 * sc;
         Tracked(UiFonts.Sans, 10.5f, new Vector2(cx, cy), Muted, "THE AIM", 0.9f);
         cy += 24 * sc;
         foreach (var (label, value) in aims)
@@ -955,10 +966,8 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
                 cy += 20 * sc;
             }
         }
-        x += 520 * sc;
-        VLine(x, o.Y, o.Y + h);
         // the changes (under the conditions, L5)
-        Changes(new Vector2(x + 18 * sc, o.Y + 14 * sc), o.X + w - x - 36 * sc);
+        Changes(new Vector2(cx, cy + 22 * sc), cw);
     }
 
     /// <summary>Every change from the scenario as written, a line each with its undo, and Reset all (the mockup's
@@ -1014,6 +1023,7 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
                 SwapDesign sw => sw.Describe(written!, TitleOf),
                 AddUnit a => a.Describe(written!, TitleOf),
                 ChangeCount n => n.Describe(written!, TitleOf),
+                SetDoctrine d => d.Describe(written!, presets),
                 _ => c.Describe(written!),
             };
         return s;

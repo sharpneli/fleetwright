@@ -19,6 +19,8 @@ public sealed unsafe partial class LaunchScene
         public bool IsUnit, Top;
         public int Depth, Side;
         public string Text = "", Right = "";   // a unit's name and its count
+        public string Admiral = "", Chip = "";   // a unit's admiral, and his temper when he has one of his own (L4)
+        public bool Bold;
         public bool Removed, Added, Movable;   // a unit: taken off; added by the setup (on its own: it can be moved)
         // a row
         public ScenarioUnit Unit = null!;
@@ -28,6 +30,9 @@ public sealed unsafe partial class LaunchScene
         public bool Swapped, Fewer;   // Fewer: − takes one off (not past an added unit's last)
         public string NamesShown = "", StruckShown = "";
         public float NamesWidth = -1;
+        public (int End, bool Bold)[] Marks = [];   // the captains with tempers: where each name ends in Names (L4)
+        public float[] MarkX = [];   // and where it's drawn, NaN when cut off
+        public string NamesTip = "";
     }
 
     readonly List<(int Side, string Label, string Ensign)> shipTabs = [];
@@ -86,6 +91,9 @@ public sealed unsafe partial class LaunchScene
                 IsUnit = true, Top = depth == 0, Depth = depth, Side = u.Side, Text = u.Name, Unit = u, Removed = u.Removed,
                 Added = add?.Unit.Name == u.Name, Movable = add?.Unit.Name == u.Name && add.Joins == null,
                 Right = depth == 0 || add?.Unit.Name == u.Name ? $"{u.ShipCount} ship{(u.ShipCount == 1 ? "" : "s")}" : "",
+                Admiral = u.Admiral,
+                Chip = u.OwnTemper && u.Temper is double t && Math.Abs(t) > 1e-9 ? $"{(t > 0 ? "BOLD" : "CAUTIOUS")} {DoctrineRules.Signed(t)}" : "",
+                Bold = u.Temper > 0,
             });
             if (u.Removed)
                 return;   // its ships under its struck name: none
@@ -95,12 +103,16 @@ public sealed unsafe partial class LaunchScene
             foreach (var ships in u.Ships)
             {
                 int unnamed = ships.Count - Math.Min(ships.Names.Length, ships.Count);
+                var (names, marks) = NamesLine(ships);
                 var row = new ShipLine
                 {
                     Depth = depth, Side = u.Side, Unit = u, Ships = ships, Design = ships.Design, Text = TitleOf(ships.Design),
                     Count = ships.Count.ToString(Inv), NameList = ships.Names, Type = InfoOf(ships.Design)?.Type ?? "",
-                    Names = ships.Names.Length > 0 ? string.Join(", ", ships.Names) + (unnamed > 0 ? $" and {unnamed} more" : "")
+                    Names = ships.Names.Length > 0 ? names + (unnamed > 0 ? $" and {unnamed} more" : "")
                         : ships.Count > 0 ? $"{ships.Count} unnamed" : "",
+                    Marks = marks,
+                    NamesTip = (ships.Names.Length > 0 ? names : "") + (ships.Struck.Length > 0 ? $"\ntaken off: {Struck(ships.Struck)}" : "")
+                               + (ships.Names.Length > 0 ? "\nclick: the captains' tempers" : "unnamed: no captains' tempers"),
                     Struck = Struck(ships.Struck),
                     Fewer = add == null ? ships.Count > 0 : u.ShipCount > 1,
                 };
@@ -115,6 +127,30 @@ public sealed unsafe partial class LaunchScene
             }
         }
     }
+
+    /// <summary>The ships' names in a line, a gap after each whose captain has a temper (his mark is drawn in it), and where
+    /// each such name ends.</summary>
+    static (string Names, (int End, bool Bold)[] Marks) NamesLine(ScenarioShips ships)
+    {
+        var sb = new System.Text.StringBuilder();
+        var marks = new List<(int, bool)>();
+        int live = Math.Min(ships.Names.Length, ships.Count);
+        for (int k = 0; k < live; k++)
+        {
+            if (k > 0)
+                sb.Append(", ");
+            sb.Append(ships.Names[k]);
+            if (ships.TemperOf(k) is var t && Math.Abs(t) > 1e-9)
+            {
+                marks.Add((sb.Length, t > 0));
+                sb.Append(Gap);
+            }
+        }
+        return (sb.ToString(), [.. marks]);
+    }
+
+    const string Gap = "    ";   // a captain's mark's room after her name
+    static float MarkGap => Width(UiFonts.SansSmall, 11, Gap) / UiFonts.Scale;
 
     /// <summary>The struck ships in a line: their names, and how many unnamed.</summary>
     static string Struck(string[] struck)
@@ -252,6 +288,12 @@ public sealed unsafe partial class LaunchScene
         else
         {
             Txt(UiFonts.Sans, px, new Vector2(ux, y + 2 * sc), l.Removed ? Muted : l.Added ? Brass : Bright, l.Text);
+            if (l.Admiral.Length > 0 && !l.Removed)
+            {
+                float ax = ux + Width(UiFonts.Sans, px, l.Text) + 8 * sc;
+                if (ax < right - 260 * sc)
+                    Txt(UiFonts.SansSmall, 11.5f, new Vector2(ax, y + 3 * sc), Muted, Clip(UiFonts.SansSmall, 11.5f, l.Admiral, right - 260 * sc - ax));
+            }
             if (!l.Removed)
             {
                 float nw = Width(UiFonts.Sans, px, l.Text);
@@ -320,6 +362,15 @@ public sealed unsafe partial class LaunchScene
                     ImGui.SetTooltip("place it again on the opening's map");
                 rx -= 10 * sc;
             }
+            if (l.Chip.Length > 0)
+            {
+                float chw = TrackedWidth(UiFonts.SansBold, 10, l.Chip, 0.5f) + 10 * sc;
+                rx -= chw;
+                Chip(new Vector2(rx, y + 3 * sc), l.Chip, l.Bold ? Hex(0x3A2A12) : Hex(0x16283A), l.Bold ? Amber : Friend);
+                if (ImGui.IsMouseHoveringRect(new Vector2(rx, y + 3 * sc), new Vector2(rx + chw, y + 19 * sc)))
+                    ImGui.SetTooltip("his temper, added to the side's aggression (Standing orders)");
+                rx -= 6 * sc;
+            }
             if (l.Added)
             {
                 bool now = placing?.Unit.Name == l.Text;
@@ -366,8 +417,21 @@ public sealed unsafe partial class LaunchScene
             l.NamesShown = Clip(UiFonts.SansSmall, 11, l.Names, namesW);
             float left = namesW - Width(UiFonts.SansSmall, 11, l.NamesShown + (l.Names.Length > 0 ? ", " : ""));
             l.StruckShown = l.Struck.Length == 0 || left < 30 * sc ? "" : Clip(UiFonts.SansSmall, 11, l.Struck, left);
+            bool whole = ReferenceEquals(l.NamesShown, l.Names);
+            l.MarkX = [.. l.Marks.Select(m => whole || m.End + 2 < l.NamesShown.Length - 1 ? Width(UiFonts.SansSmall, 11, l.Names[..m.End]) : float.NaN)];
         }
         Txt(UiFonts.SansSmall, 11, new Vector2(ix, iy + 22 * sc), Muted, l.NamesShown);
+        // the captains' marks, each in the gap after her name: bold up, timid down
+        for (int k = 0; k < l.Marks.Length; k++)
+        {
+            if (float.IsNaN(l.MarkX[k]))
+                continue;
+            var c = new Vector2(ix + l.MarkX[k] + MarkGap / 2 * sc, iy + 29 * sc);
+            if (l.Marks[k].Bold)
+                dl.AddTriangleFilled(c + new Vector2(-3.5f, 2.5f) * sc, c + new Vector2(0, -3.5f) * sc, c + new Vector2(3.5f, 2.5f) * sc, U(Amber));
+            else
+                dl.AddTriangleFilled(c + new Vector2(-3.5f, -2.5f) * sc, c + new Vector2(3.5f, -2.5f) * sc, c + new Vector2(0, 3.5f) * sc, U(Friend));
+        }
         if (l.StruckShown.Length > 0)
         {
             float sx = ix + (l.Names.Length > 0 ? Width(UiFonts.SansSmall, 11, l.NamesShown + ", ") : 0);
@@ -378,9 +442,11 @@ public sealed unsafe partial class LaunchScene
             dl.AddLine(new Vector2(sx, iy + 29.5f * sc), new Vector2(sx + Width(UiFonts.SansSmall, 11, l.StruckShown), iy + 29.5f * sc), U(dim));
         }
         ImGui.SetCursorScreenPos(new Vector2(ix, iy + 20 * sc));
-        ImGui.InvisibleButton("##names", new Vector2(namesW, 16 * sc));
-        if (ImGui.IsItemHovered() && (!ReferenceEquals(l.NamesShown, l.Names) || l.Struck.Length > 0 && !ReferenceEquals(l.StruckShown, l.Struck)))
-            ImGui.SetTooltip(l.Struck.Length > 0 ? $"{l.Names}\ntaken off: {l.Struck}" : l.Names);
+        if (ImGui.InvisibleButton("##names", new Vector2(namesW, 16 * sc)) && !begin && l.NameList.Length > 0)
+            ImGui.OpenPopup("##captains");
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip(l.NamesTip);
+        CaptainsPopup(l);
         // the figures, once compiled; what it was
         float fy = at.Y + (l.Swapped ? 58 : 56) * sc;
         if (FiguresOf(id) is { } f)

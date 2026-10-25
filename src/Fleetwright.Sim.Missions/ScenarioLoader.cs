@@ -146,6 +146,10 @@ public static class ScenarioLoader
                     start.ShipNames[e] = spec.Names[nth];
                 if (nth < spec.Dyes.Length && spec.Dyes[nth] != Dye.None)
                     w.Apply(ShipSystem.Dye(e, spec.Dyes[nth]));
+                // her captain's temper; a ship on her own is her admiral's too (docs/map-ui/launch.md "Tempers")
+                double temper = spec.TemperOf(nth) + (!top.IsForce && top.ShipCount == 1 ? top.Temper ?? 0 : 0);
+                if (temper != 0)
+                    w.Apply(ai.Orders.Doctrine(Unit.Ship(e), DoctrineField.Temper, temper));
                 if (spec.Loadout is { } ls)
                 {
                     if (!loadouts.TryGetValue((cls, ls), out int lo))
@@ -162,7 +166,7 @@ public static class ScenarioLoader
             }
 
             // the groups bottom-up, then the top unit's orders
-            int topGroup = Form(top, w, ai, entities, start);
+            int topGroup = Form(top, w, ai, entities, start, 0);
             Unit unit;
             if (topGroup > 0)
                 unit = Unit.Group(topGroup);
@@ -312,9 +316,11 @@ public static class ScenarioLoader
         throw new ArgumentOutOfRangeException(nameof(i));
     }
 
-    /// <summary>A unit's group, made of what spawned (its id; 0 if none spawned, or a top unit of one ship).</summary>
-    static int Form(ScenarioUnit u, World w, AiSystem ai, Dictionary<(ScenarioUnit, int), int> entities, ScenarioStart start)
+    /// <summary>A unit's group, made of what spawned (its id; 0 if none spawned, or a top unit of one ship). Its admiral's
+    /// temper is set where it isn't the one it takes from its force (<paramref name="above"/>).</summary>
+    static int Form(ScenarioUnit u, World w, AiSystem ai, Dictionary<(ScenarioUnit, int), int> entities, ScenarioStart start, double above)
     {
+        double temper = u.OwnTemper ? u.Temper ?? 0 : above;
         bool top = u.At != null;
         int id = 0;
         if (!u.IsForce)
@@ -338,7 +344,7 @@ public static class ScenarioLoader
         {
             foreach (var c in u.Units)
             {
-                int g = Form(c, w, ai, entities, start);
+                int g = Form(c, w, ai, entities, start, temper);
                 if (g == 0)
                     continue;
                 if (id == 0)
@@ -357,6 +363,8 @@ public static class ScenarioLoader
                 w.Groups.SetName(id, u.Name);
             foreach (var (f, v) in u.Doctrine)
                 w.Apply(ai.Orders.Doctrine(Unit.Group(id), f, v));
+            if (temper != above)
+                w.Apply(ai.Orders.Doctrine(Unit.Group(id), DoctrineField.Temper, temper));
         }
         return id;
     }

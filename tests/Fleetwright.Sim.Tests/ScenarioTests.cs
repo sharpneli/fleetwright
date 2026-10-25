@@ -303,6 +303,33 @@ public class ScenarioTests
         Assert.Contains("orange", x.Message);
     }
 
+    /// <summary>Admirals' and captains' tempers (docs/map-ui/launch.md "Tempers") go to the world as doctrine's Temper: a
+    /// unit with an admiral of its own has his, one without takes its force's, a captain's is added on her ship; a unit's
+    /// Aggression is refused.</summary>
+    [Fact]
+    public void Tempers_go_to_the_world_by_admiral_and_captain()
+    {
+        var (w, ai, start) = Load(Small
+            .Replace("\"spacing\": 2000,", "\"spacing\": 2000, \"admiral\": { \"name\": \"V-Adm X\", \"temper\": 0.4, \"why\": \"bold\" },")
+            .Replace("{ \"name\": \"2nd Squadron\",", "{ \"name\": \"2nd Squadron\", \"admiral\": \"R-Adm Y\",")
+            .Replace("\"names\": [\"Alpha\", \"Bravo\"] }", "\"names\": [\"Alpha\", \"Bravo\"], \"captains\": { \"Bravo\": -0.3 } }")
+            .Replace("\"name\": \"Picket\" }", "\"name\": \"Picket\", \"captains\": { \"Picket\": 0.2 } }")
+            .Replace("\"loop\": true,", "\"loop\": true, \"admiral\": { \"temper\": -0.5 },"));
+        int Named(string n) => start.ShipNames.First(kv => kv.Value == n).Key;
+        var d = ai.Doctrine;
+        double Of(int e) => d.Of(e, Ship(w, e).Side, DoctrineField.Aggression);
+        Assert.Equal(0.4, Of(Named("Alpha")), 9);    // the 1st Squadron has no admiral: the force's
+        Assert.Equal(0.1, Of(Named("Bravo")), 9);    // and her own
+        Assert.Equal(0, Of(Named("Alpha") + 3), 9);  // the 2nd Squadron's admiral, of no temper given
+        Assert.Equal(-0.3, Of(Named("Picket")), 9);  // a ship on her own: her admiral's and her captain's
+        var s = Scenario.Parse(Small.Replace("\"spacing\": 2000,", "\"spacing\": 2000, \"admiral\": { \"temper\": 0.4 },"));
+        Assert.Equal(0.4, s.Units[0].Temper);
+        Assert.True(s.Units[0].Units[1].OwnTemper is false && s.Units[0].OwnTemper);
+        Assert.Contains("a side's", Assert.Throws<ScenarioException>(() => Scenario.Parse(Small.Replace("\"spacing\": 2000,", "\"spacing\": 2000, \"doctrine\": { \"Aggression\": 0.5 },"))).Message);
+        Assert.Contains("no ship", Assert.Throws<ScenarioException>(() => Scenario.Parse(Small.Replace("\"name\": \"Picket\" }", "\"name\": \"Picket\", \"captains\": { \"Pickett\": 0.2 } }"))).Message);
+        Assert.Contains("temper", Assert.Throws<ScenarioException>(() => Scenario.Parse(Small.Replace("\"spacing\": 2000,", "\"spacing\": 2000, \"admiral\": { \"temper\": 2 },"))).Message);
+    }
+
     [Fact]
     public void Crews_are_a_sides_by_name_and_go_to_the_world()
     {

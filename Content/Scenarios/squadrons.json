@@ -28,9 +28,9 @@
   "home": { "Britain": [56.3, -1.5], "Germany": [54.2, 7.6] },
   "weather": { "visibility_km": 25, "wind_from": 225, "wind_kn": 8 },
   "units": [
-    { "name": "1st Battlecruiser Squadron", "side": 0, "at": [56.5, 4.0], "course": 120, "kn": 22, "formation": "column", "spacing": 500,
+    { "name": "1st Battlecruiser Squadron", "admiral": "V-Adm Beatty (in Lion)", "side": 0, "at": [56.5, 4.0], "course": 120, "kn": 22, "formation": "column", "spacing": 500,
       "ships": [ { "design": "lion", "names": ["Lion", "Princess Royal"] }, { "design": "queen_mary", "name": "Queen Mary" }, { "design": "tiger_1914", "name": "Tiger" } ] },
-    { "name": "1st Scouting Group", "side": 1, "at": [56.5, 4.36], "course": 160, "kn": 22, "formation": "column", "spacing": 500,
+    { "name": "1st Scouting Group", "admiral": "V-Adm Hipper (in Lützow)", "side": 1, "at": [56.5, 4.36], "course": 160, "kn": 22, "formation": "column", "spacing": 500,
       "ships": [ { "design": "derfflinger", "names": ["Lützow", "Derfflinger"] }, { "design": "seydlitz", "name": "Seydlitz" },
                  { "design": "moltke", "name": "Moltke" }, { "design": "von_der_tann", "name": "Von der Tann" } ] }
   ]

@@ -37,26 +37,29 @@
   "crews": { "Russia": "average" },
   "fire_discipline": { "Russia": "independent", "Japan": "independent" },
   "weather": { "visibility_km": 13, "wind_from": 225, "wind_kn": 18 },
+  // the admirals' tempers and the captains' (docs/map-ui/launch.md "Tempers"), added to the side's aggression where
+  // history suggests one: Enkvist kept clear of the line, Kamimura pressed a damaged enemy, the flotillas pressed home by
+  // night; Aleksandr III fought on at the head of the line, Bedovy struck with the admiral aboard
   "units": [
     // ---------------------------------------------------------------- the Second Pacific Squadron (Rozhestvensky): 13
-    { "name": "Second Pacific Squadron", "side": 0, "at": [34.05, 129.95], "course": 23, "kn": 11, "formation": "column", "spacing": 1200,
+    { "name": "Second Pacific Squadron", "admiral": "V-Adm Rozhestvensky", "side": 0, "at": [34.05, 129.95], "course": 23, "kn": 11, "formation": "column", "spacing": 1200,
       "units": [
         { "name": "1st Armoured Division", "spacing": 550, "ships": [
-          { "design": "borodino", "names": ["Knyaz Suvorov", "Imperator Aleksandr III", "Borodino", "Oryol"] } ] },
-        { "name": "2nd Armoured Division", "spacing": 550, "ships": [
+          { "design": "borodino", "names": ["Knyaz Suvorov", "Imperator Aleksandr III", "Borodino", "Oryol"], "captains": { "Imperator Aleksandr III": 0.3 } } ] },
+        { "name": "2nd Armoured Division", "admiral": "Oslyabya's captain (Fölkersam dead, unannounced)", "spacing": 550, "ships": [
           { "design": "oslyabya", "names": ["Oslyabya", "Sissoi Veliky", "Navarin"] } ] } ] },
-    { "name": "Cruiser Division", "side": 0, "at": [34.03, 129.90], "course": 23, "kn": 11, "spacing": 600,
+    { "name": "Cruiser Division", "admiral": { "name": "R-Adm Enkvist", "temper": -0.4, "why": "kept his cruisers clear of the line" }, "side": 0, "at": [34.03, 129.90], "course": 23, "kn": 11, "spacing": 600,
       "ships": [ { "design": "aurora", "names": ["Oleg", "Aurora"] } ] },
-    { "name": "1st Destroyer Detachment", "side": 0, "at": [34.06, 129.92], "course": 23, "kn": 11, "spacing": 400,
-      "ships": [ { "design": "buyny", "names": ["Buyny", "Bravy", "Bedovy", "Grozny"] } ] },
+    { "name": "1st Destroyer Detachment", "admiral": "the senior captain", "side": 0, "at": [34.06, 129.92], "course": 23, "kn": 11, "spacing": 400,
+      "ships": [ { "design": "buyny", "names": ["Buyny", "Bravy", "Bedovy", "Grozny"], "captains": { "Bedovy": -0.5 } } ] },
     // ---------------------------------------------------------------- the Combined Fleet (Togo): 14
     // the 1st Division leading, Kamimura's 2nd Division following in its wake, crossing west ahead of the Russians
-    { "name": "Combined Fleet", "side": 1, "at": [34.17, 130.20], "course": 262, "kn": 15, "formation": "column", "spacing": 1200,
+    { "name": "Combined Fleet", "admiral": { "name": "Adm Togo", "temper": 0.2, "why": "closes once he holds the range" }, "side": 1, "at": [34.17, 130.20], "course": 262, "kn": 15, "formation": "column", "spacing": 1200,
       "units": [
         { "name": "1st Division", "spacing": 550, "ships": [
           { "design": "mikasa", "names": ["Mikasa", "Shikishima", "Fuji", "Asahi"] }, { "design": "izumo", "names": ["Kasuga", "Nisshin"] } ] },
-        { "name": "2nd Division", "spacing": 550, "ships": [ { "design": "izumo", "names": ["Izumo", "Azuma", "Tokiwa", "Iwate"] } ] } ] },
-    { "name": "1st Destroyer Flotilla", "side": 1, "at": [34.21, 130.24], "course": 262, "kn": 15, "spacing": 400,
-      "ships": [ { "design": "ikazuchi", "names": ["Ikazuchi", "Inazuma", "Akebono", "Oboro"] } ] }
+        { "name": "2nd Division", "admiral": { "name": "V-Adm Kamimura", "temper": 0.4, "why": "presses a damaged enemy" }, "spacing": 550, "ships": [ { "design": "izumo", "names": ["Izumo", "Azuma", "Tokiwa", "Iwate"] } ] } ] },
+    { "name": "1st Destroyer Flotilla", "admiral": { "name": "the flotilla's captain", "temper": 0.3, "why": "night attacks pressed home" }, "side": 1, "at": [34.21, 130.24], "course": 262, "kn": 15, "spacing": 400,
+      "ships": [ { "design": "ikazuchi", "names": ["Ikazuchi", "Inazuma", "Akebono", "Oboro"], "captains": { "Akebono": 0.4 } } ] }
   ]
 }

@@ -185,7 +185,7 @@ mockup's, committed.
 | **L2** (done 2026-10-25) | A setup as data: the overrides on a parsed `Scenario`, saved and listed as a scenario file with `"from"` and `"designs"`; the changes list and reset | `Scenario`, `ScenarioLoader` |
 | **L3** (done 2026-10-25) | Ships: each side's order of battle, the design rows and their state, the picker (sources, filters, figures, matchup, apply to all, one or every), the designer round trip (edit a copy, saved back into the picker as yours) | the matchup on candidates |
 | **L3b** (done 2026-10-25) | Adding and removing: − n + per row, ✕ per unit, the add picker, the placing view (on the sea, the course dragged), joining a unit | `"add"`, `"remove"` |
-| **L4** | Standing orders: aggression and what it moves, the admirals' and captains' tempers, the rules | `Temper` on units and ships |
+| **L4** (done 2026-10-25) | Standing orders: aggression and what it moves, the admirals' and captains' tempers, the rules | `Temper` on units and ships |
 | **L5** | Conditions and the day: both sides' crews, readiness, damage control, fire discipline, fuel; presets; visibility, wind, the end, the seed | — |
 
 L0 stands alone and pays at once (every load gets faster); it can go before the mockup's review is done.
@@ -321,6 +321,39 @@ Aurora-like)"); its ✕ takes it and anything made of it away.
 - **Left for later:** naming an added ship in her row (she's unnamed: "and 1 more"); zooming the placing view (it frames
   the units, so a far placing means placing at the frame's edge); the admiral of an added unit (L4); a capture flag for
   the screen's states (the scripted clicks did).
+
+**L4 done (2026-10-25).** The sim first: doctrine's `Aggression` is a side's only (a unit's is refused) and a new
+field, `Temper`, a unit's only: a group's is its admiral's (the nearest up the tree that has one), a ship's her
+captain's. `Doctrine.Of` (what a captain reads) is side + admiral + captain, `OfGroup` (an admiral's) side + admiral,
+clamped to ±1, and that sum scales the AggressionShift fields as the side's alone did (tested in `DoctrineTests`).
+The scenario file names a unit's admiral, `"admiral": "R-Adm Enkvist"`, or gives his temper too, `"admiral": { "name":
+..., "temper": -0.4, "why": "kept his cruisers clear of the line" }`; a ship entry its captains', `"captains": {
+"Bedovy": -0.5 }`. A unit with an admiral of its own (a top unit, one named, or one with a temper given) has his
+temper, 0 if none is given; one without takes its force's (decision 1's "those under it that have no admiral of their
+own"). Tsushima has the mockup's: Enkvist −0.4, Togo +0.2, Kamimura +0.4, the Japanese flotilla +0.3, Aleksandr III's
+captain +0.3, Bedovy's −0.5, Akebono's +0.4; Squadrons, Flotilla and Jutland name their admirals with no tempers, so
+they fight as before.
+
+- **The setup** takes two changes more (tested, read back from the file): `SetDoctrine` (a side's field: its
+  aggression or a rule; `"doctrine": { "Russia": { "Aggression": 0.5, "NightAction": "accept" } }`, enum fields by
+  name) and `SetTemper` (a unit's or a ship's, by name; `"tempers": { "Cruiser Division": 0.2 }`). Each is gone when set
+  back to as written. An added unit's admiral and temper go in its own change (`"admiral"` in `"add"`).
+- **The column** (`LaunchScene.Orders.cs`) is of the side the ships' tab shows (the enemy's too, marked AI): the
+  doctrine's preset (all its fields on hover of "all fields…"), the aggression's slider with the scenario's tick and
+  what it moves written against now (the ten fields the settings' AggressionShift lists), the tempers (every top unit
+  and every unit with an admiral of its own: his name, the unit, why the scenario gave it while it's as written, his
+  slider, and what he reads, side + his), the captains' note, and the eight rules as two-way switches. Sliders go by
+  0.05 and make their change on release (each change places the world again). The aims and the orders before action
+  moved to the third column, over the changes, until L5.
+- **The ships column**: each unit heading names its admiral and, when his temper isn't 0, a chip (BOLD +0.40,
+  CAUTIOUS −0.40); a captain with a temper has a mark after her name (bold up, amber; timid down, blue), and a click on
+  the names opens the row's captains, a slider each.
+- **Checked** by scripted input at Tsushima: a drag of the aggression to +0.50 moves the fields (outgunned 2.0 to 2.5 : 1,
+  range 60% to 51%), Enkvist's slider to +0.35 reads +0.85 and turns his chip bold, heavy ships at night to accept;
+  three lines in the changes. The enemy's tab shows Togo's, Kamimura's and the flotilla's.
+- **Left for later:** choosing another doctrine preset (one "default" is all there is); a temper's why for captains;
+  the admiral's name of an added unit typed in the add picker (the file takes one); the picker's matchup reads each
+  side's range share without its aggression's shift.
 
 ## Decisions (the user, 2026-10-25)
 

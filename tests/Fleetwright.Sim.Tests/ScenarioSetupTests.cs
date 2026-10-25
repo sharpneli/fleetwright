@@ -218,15 +218,62 @@ public class ScenarioSetupTests
         Assert.Equal("Reserve", added.Changes.OfType<AddUnit>().Last().Joins);
     }
 
+    /// <summary>L4: tempers by a unit's or a ship's name, and a side's doctrine fields, each one change, gone when set back
+    /// to as written; an added unit's temper is in its own change.</summary>
+    [Fact]
+    public void Tempers_and_doctrine_are_changes_gone_when_put_back()
+    {
+        var written = Tsushima();
+        var presets = ScenarioLoader.PresetsFor(written);
+        Assert.Equal(-0.4, Tree(written, "Cruiser Division").Temper);
+        Assert.Equal(0.3, SetTemper.CaptainOf(written.Units, "Imperator Aleksandr III"));
+        var setup = new ScenarioSetup()
+            .Temper(written, "Cruiser Division", 0.2)
+            .Temper(written, "Imperator Aleksandr III", -0.1)
+            .Temper(written, "Oryol", 0.5)
+            .Doctrine(written, 0, Fleetwright.Sim.Ai.DoctrineField.Aggression, 0.5, presets)
+            .Doctrine(written, 0, Fleetwright.Sim.Ai.DoctrineField.NightAction, (double)Fleetwright.Sim.Ai.NightAction.Accept, presets);
+        Assert.Equal(5, setup.Changes.Count);
+        var s = setup.Apply(written);
+        Assert.Equal(0.2, Tree(s, "Cruiser Division").Temper);
+        Assert.Equal(-0.1, SetTemper.CaptainOf(s.Units, "Imperator Aleksandr III"));
+        Assert.Equal(0.5, SetTemper.CaptainOf(s.Units, "Oryol"));
+        Assert.Equal(0, SetTemper.CaptainOf(s.Units, "Borodino"));
+        Assert.Equal(0.5, ScenarioLoader.SideDoctrine(s, 0, Fleetwright.Sim.Ai.DoctrineField.Aggression, presets));
+        Assert.Equal(0.6, ScenarioLoader.SideDoctrine(s, 0, Fleetwright.Sim.Ai.DoctrineField.RangeShare, presets));   // the preset's kept
+        Assert.Equal("Russia: heavy ships at night: accept (written: avoid)", setup.Changes[4].Describe(written));
+        Assert.Equal("R-Adm Enkvist's temper +0.20 (written: −0.40)", setup.Changes[0].Describe(written));
+        // put back: no change
+        Assert.Equal(4, setup.Temper(written, "Cruiser Division", -0.4).Changes.Count);
+        Assert.Equal(4, setup.Doctrine(written, 0, Fleetwright.Sim.Ai.DoctrineField.Aggression, 0, presets).Changes.Count);
+        Assert.Throws<ScenarioException>(() => new ScenarioSetup().With(new SetTemper("Knyaz Potemkin", 0.2)).Apply(written));
+        // an added unit's in its own change
+        var added = new ScenarioSetup().With(new AddUnit(Squadron("Reserve", 0, "aurora", 2, (34.0, 129.8)), null)).Temper(written, "Reserve", 0.3);
+        Assert.Equal(0.3, Assert.Single(added.Changes.OfType<AddUnit>()).Unit.Temper);
+    }
+
+    static ScenarioUnit Tree(Scenario s, string name)
+    {
+        ScenarioUnit? Find(IEnumerable<ScenarioUnit> units) => units.Select(u => u.Name == name ? u : Find(u.Units)).FirstOrDefault(u => u != null);
+        return Find(s.Units)!;
+    }
+
     [Fact]
     public void A_setup_saved_reads_back_to_the_same_scenario()
     {
         var written = Tsushima();
+        var presets = ScenarioLoader.PresetsFor(written);
         var setup = new ScenarioSetup { Name = "Tsushima · test", From = "tsushima" }
+            .Temper(written, "Cruiser Division", 0.2)
+            .Temper(written, "Imperator Aleksandr III", -0.1)
+            .Doctrine(written, 0, Fleetwright.Sim.Ai.DoctrineField.Aggression, 0.5, presets)
+            .Doctrine(written, 1, Fleetwright.Sim.Ai.DoctrineField.Engage, (double)Fleetwright.Sim.Ai.Engage.CarryOn, presets)
+            .Doctrine(written, 1, Fleetwright.Sim.Ai.DoctrineField.Dispose, 0, presets)
             .With(new PlayAs(null))
             .With(new SwapDesign("Cruiser Division", null, "aurora", "izumo"))
             .With(new SwapDesign(null, "Oslyabya", "oslyabya", "borodino"))
             .With(new AddUnit(Squadron("3rd Armoured Division", 0, "oslyabya", 4, (34.035, 129.8)), null))
+            .Temper(written, "3rd Armoured Division", 0.3)
             .Resize("1st Destroyer Detachment", "buyny", -2)
             .With(new RemoveUnit("1st Destroyer Flotilla"))
             .Rename("Cruiser Division", "Enkvist's cruisers")
@@ -250,6 +297,10 @@ public class ScenarioSetupTests
             Assert.Equal(set.Fuel, read.Fuel);
             Assert.Equal(set.FireDisciplines, read.FireDisciplines);
             Assert.Equal(set.Seed, read.Seed);
+            Assert.Equal(set.Doctrine.Select(d => (d.Side, d.Preset, string.Join(",", d.Values))), read.Doctrine.Select(d => (d.Side, d.Preset, string.Join(",", d.Values))));
+            Assert.Equal(0.2, Tree(read, "Enkvist's cruisers").Temper);
+            Assert.Equal(0.3, Tree(read, "3rd Armoured Division").Temper);
+            Assert.Equal(-0.1, SetTemper.CaptainOf(read.Units, "Imperator Aleksandr III"));
             Assert.Equal(setup.Changes.OfType<SwapDesign>(), read.Setup!.Changes.OfType<SwapDesign>());   // in order: a swap may follow another
             Assert.Equal(setup.Changes.OrderBy(c => c.Key), read.Setup.Changes.OrderBy(c => c.Key));
             Assert.Equal(written.Folder, read.Folder);   // the written one's designs

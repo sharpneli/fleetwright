@@ -80,15 +80,23 @@ public enum DoctrineField : byte
     /// this much or more (1: it expects to win). A unit that meets an enemy fights him down to 1 / OutgunnedRatio.</summary>
     SeekRatio,
 
-    /// <summary>How aggressive a unit is, -1 (timid) to +1 (bold), 0 as its doctrine is written: it scales the fields
-    /// <see cref="SimSettings.AggressionShift"/> lists as they're read, each by (1 + shift x aggression), so a bold
-    /// unit takes worse odds, closes nearer, stays in the line longer and breaks off later. Inherited as any field is.</summary>
+    /// <summary>How aggressive a side is, -1 (timid) to +1 (bold), 0 as its doctrine is written: the C-in-C's standing
+    /// order. A side's value only; a unit's own is its <see cref="Temper"/>, added to it. What a ship or a group reads
+    /// (side + tempers, clamped to ±1) scales the fields <see cref="SimSettings.AggressionShift"/> lists, each by (1 +
+    /// shift x aggression), so a bold unit takes worse odds, closes nearer, stays in the line longer and breaks off
+    /// later.</summary>
     Aggression,
 
     /// <summary>Whether a force's admiral disposes his members by their roles (1) or keeps them all in his line (0)
     /// (docs/battle/admirals-orders.md O7): his scouts scouting ahead of his main body, his flotillas and screens
     /// screening it. After <see cref="Aggression"/>, so the fields' numbers in logged commands stand.</summary>
     Dispose,
+
+    /// <summary>A temper, -1 (timid) to +1 (bold), added to the side's <see cref="Aggression"/> (docs/map-ui/launch.md
+    /// "Tempers", decision 1): a group's is its admiral's, taken by the groups under it that have none of their own; a
+    /// ship's is her captain's, hers alone. A captain's decisions read side + her admiral + herself, an admiral's side +
+    /// himself. A unit's value only.</summary>
+    Temper,
 }
 
 /// <summary>Doctrine's NightAction: heavy ships accept action at night, or avoid it.</summary>
@@ -156,7 +164,7 @@ public sealed class Doctrine(GroupSystem groups, IReadOnlyDictionary<string, dou
         return r;
     }
 
-    public const int FieldCount = (int)DoctrineField.Dispose + 1;
+    public const int FieldCount = (int)DoctrineField.Temper + 1;
 
     /// <summary>Every field when nothing sets it: a world told nothing (a dev's, a test's) behaves as before doctrine.</summary>
     public static double Default(DoctrineField f) => f switch
@@ -183,6 +191,7 @@ public sealed class Doctrine(GroupSystem groups, IReadOnlyDictionary<string, dou
         DoctrineField.SeekRatio => 1,
         DoctrineField.Aggression => 0,
         DoctrineField.Dispose => 0,
+        DoctrineField.Temper => 0,
         _ => throw new ArgumentOutOfRangeException(nameof(f)),
     };
 
@@ -190,16 +199,19 @@ public sealed class Doctrine(GroupSystem groups, IReadOnlyDictionary<string, dou
     readonly SortedDictionary<int, double[]> units = [];
     readonly double[]?[] sides = new double[256][];
 
-    /// <summary>Sets a unit's value (NaN: back to what it inherits).</summary>
+    /// <summary>Sets a unit's value (NaN: back to what it inherits). Aggression is a side's: a unit's is its temper.</summary>
     public void Set(Unit u, DoctrineField f, double value)
     {
+        if (f == DoctrineField.Aggression)
+            throw new ArgumentException("Aggression is a side's; a unit's own is its Temper");
         if (!units.TryGetValue(u.Id, out var r))
             units[u.Id] = r = New();
         r[(int)f] = value;
     }
 
-    /// <summary>Sets a side's value (NaN: back to the default).</summary>
-    public void SetSide(int side, DoctrineField f, double value) => (sides[side & 255] ??= New())[(int)f] = value;
+    /// <summary>Sets a side's value (NaN: back to the default). A temper is a unit's.</summary>
+    public void SetSide(int side, DoctrineField f, double value) =>
+        (sides[side & 255] ??= New())[(int)(f != DoctrineField.Temper ? f : throw new ArgumentException("a Temper is a unit's; a side's is its Aggression"))] = value;
 
     static double[] New()
     {
@@ -208,19 +220,43 @@ public sealed class Doctrine(GroupSystem groups, IReadOnlyDictionary<string, dou
         return r;
     }
 
-    /// <summary>A ship's value: its own, its groups' up the tree, its side's, the default; scaled by its aggression.</summary>
+    /// <summary>A ship's value: its own, its groups' up the tree, its side's, the default; scaled by her aggression.
+    /// Her Aggression is what she reads: her side's, her admiral's temper and her own, clamped to ±1.</summary>
     public double Of(int entity, byte side, DoctrineField f) =>
-        Scaled(f, RawOf(entity, side, f), shift[(int)f] != 0 ? RawOf(entity, side, DoctrineField.Aggression) : 0);
+        f == DoctrineField.Aggression ? AggressionOf(entity, side)
+        : Scaled(f, RawOf(entity, side, f), shift[(int)f] != 0 ? AggressionOf(entity, side) : 0);
 
-    /// <summary>A group's value: its own, its forces' up the tree, its side's, the default; scaled by its aggression.</summary>
+    /// <summary>A group's value: its own, its forces' up the tree, its side's, the default; scaled by its aggression.
+    /// Its Aggression is what its admiral reads: his side's and his temper, clamped to ±1.</summary>
     public double OfGroup(GroupSystem.Group? g, byte side, DoctrineField f) =>
-        Scaled(f, RawOfGroup(g, side, f), shift[(int)f] != 0 ? RawOfGroup(g, side, DoctrineField.Aggression) : 0);
+        f == DoctrineField.Aggression ? AggressionOfGroup(g, side)
+        : Scaled(f, RawOfGroup(g, side, f), shift[(int)f] != 0 ? AggressionOfGroup(g, side) : 0);
 
     /// <summary>A side's own value as set (NaN if it isn't), unscaled: what the UI shows.</summary>
     public double SideValue(int side, DoctrineField f) => sides[side & 255] is { } s ? s[(int)f] : double.NaN;
 
     double Scaled(DoctrineField f, double value, double aggression) =>
-        aggression == 0 ? value : value * (1 + shift[(int)f] * Math.Clamp(aggression, -1, 1));
+        aggression == 0 ? value : value * (1 + shift[(int)f] * aggression);
+
+    // the side's aggression with the tempers on it (decision 1): an admiral's his nearest group's own, a captain's hers
+    double AggressionOf(int entity, byte side)
+    {
+        double captain = units.TryGetValue(entity, out var r) && !double.IsNaN(r[(int)DoctrineField.Temper]) ? r[(int)DoctrineField.Temper] : 0;
+        return Math.Clamp(SideAggression(side) + AdmiralTemper(groups.Of(entity)) + captain, -1, 1);
+    }
+
+    double AggressionOfGroup(GroupSystem.Group? g, byte side) => Math.Clamp(SideAggression(side) + AdmiralTemper(g), -1, 1);
+
+    double SideAggression(byte side) =>
+        sides[side] is { } s && !double.IsNaN(s[(int)DoctrineField.Aggression]) ? s[(int)DoctrineField.Aggression] : 0;
+
+    double AdmiralTemper(GroupSystem.Group? g)
+    {
+        for (; g != null; g = g.Parent != 0 ? groups.Get(g.Parent) : null)
+            if (units.TryGetValue(-g.GroupId, out var r) && !double.IsNaN(r[(int)DoctrineField.Temper]))
+                return r[(int)DoctrineField.Temper];
+        return 0;
+    }
 
     double RawOf(int entity, byte side, DoctrineField f)
     {
@@ -310,5 +346,23 @@ public sealed class DoctrinePresets
             DoctrineField.NightAction when Enum.TryParse<NightAction>(name, ignoreCase: true, out var na) => (f, (double)na),
             _ => throw new ArgumentException($"doctrine: \"{v}\" isn't a value of {field}"),
         };
+    }
+
+    /// <summary>An enum field's value by its name as a file writes it ("carry on", "at will"), or null for a field that's a
+    /// number.</summary>
+    public static string? NameOf(DoctrineField f, double v)
+    {
+        string? name = f switch
+        {
+            DoctrineField.Engage => ((Engage)(int)v).ToString(),
+            DoctrineField.Torpedoes => ((TorpedoUse)(int)v).ToString(),
+            DoctrineField.Evasion => ((Evasion)(int)v).ToString(),
+            DoctrineField.TorpedoEvasion => ((TorpedoEvasion)(int)v).ToString(),
+            DoctrineField.TorpedoAttack => ((TorpedoAttack)(int)v).ToString(),
+            DoctrineField.NightAction => ((NightAction)(int)v).ToString(),
+            _ => null,
+        };
+        // "CarryOn" -> "carry on"
+        return name == null ? null : string.Concat(name.Select((c, i) => char.IsUpper(c) && i > 0 ? " " + char.ToLowerInvariant(c) : char.ToLowerInvariant(c).ToString()));
     }
 }
