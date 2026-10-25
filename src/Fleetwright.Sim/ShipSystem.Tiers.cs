@@ -450,8 +450,8 @@ public sealed partial class ShipSystem
             (code, at) = (LandRecheck, Math.Max(settings.RailsLandHorizonM - margin, margin));
         else
             return;
-        long ms = (long)Math.Ceiling(at / s.Speed * 1000);
-        world.Schedule(world.Time + Math.Max(ms, 1), EventTier.Rails, s.Entity, Id, code, Store.RailGen(guide));
+        long ms = WorldTime.AheadMs(at / s.Speed);
+        world.Schedule(world.Time + ms, EventTier.Rails, s.Entity, Id, code, Store.RailGen(guide));
     }
 
     /// <summary>A unit's rails come short of the coast (off rails, to the fine tick's slide) or to the end of what was
@@ -520,8 +520,8 @@ public sealed partial class ShipSystem
                 (code, at) = (LandRecheck, Math.Max(settings.RailsLandHorizonM - look, look));
             else
                 return;
-            ms = (long)Math.Ceiling(at / s.Speed * 1000);
-            world.Schedule(world.Time + Math.Max(ms, 1), EventTier.Rails, s.Entity, Id, code, Store.RailGen(slot));
+            ms = WorldTime.AheadMs(at / s.Speed);
+            world.Schedule(world.Time + ms, EventTier.Rails, s.Entity, Id, code, Store.RailGen(slot));
             return;
         }
         var dir = Earth.Forward(p, heading);
@@ -529,8 +529,8 @@ public sealed partial class ShipSystem
         Anchored(world, slot);
         double near = shore.FirstContact(p, dir, settings.SlideRailsStepM, h.MinClearanceM);
         double leg = Math.Min(settings.SlideRailsStepM, Math.Max(0.5 * near, settings.SlideRailsMinStepM));
-        ms = (long)Math.Ceiling(leg / s.Speed * 1000);
-        world.Schedule(world.Time + Math.Max(ms, 1), EventTier.Rails, s.Entity, Id, LandAhead, Store.RailGen(slot));
+        ms = WorldTime.AheadMs(leg / s.Speed);
+        world.Schedule(world.Time + ms, EventTier.Rails, s.Entity, Id, LandAhead, Store.RailGen(slot));
     }
 
     /// <summary>How far abeam of a unit's guide on rails its widest riding ship is, metres.</summary>
@@ -553,8 +553,8 @@ public sealed partial class ShipSystem
         var s = Store[slot];
         if (s.Speed <= 0)
             return;
-        long ms = (long)Math.Ceiling(Earth.Distance(s.Position, wp) / s.Speed * 1000);
-        world.Schedule(world.Time + Math.Max(ms, 1), EventTier.Rails, s.Entity, Id, RailsWaypoint, Store.RailGen(slot));
+        long ms = WorldTime.AheadMs(Earth.Distance(s.Position, wp) / s.Speed);
+        world.Schedule(world.Time + ms, EventTier.Rails, s.Entity, Id, RailsWaypoint, Store.RailGen(slot));
     }
 
     /// <summary>For a ship on its own rails holding a course: when its rhumb line reaches a polar cap, or, inside one,
@@ -591,9 +591,9 @@ public sealed partial class ShipSystem
         }
         if (!(dist > 0))
             return;
-        long ms = (long)Math.Ceiling(dist / s.Speed * 1000);
+        long ms = WorldTime.AheadMs(dist / s.Speed);
         if (ms <= withinMs)
-            world.Schedule(world.Time + Math.Max(ms, 1), EventTier.Rails, s.Entity, Id, code, Store.RailGen(slot));
+            world.Schedule(world.Time + ms, EventTier.Rails, s.Entity, Id, code, Store.RailGen(slot));
     }
 
     static Vec3d Toward(Vec3d from, Vec3d to)

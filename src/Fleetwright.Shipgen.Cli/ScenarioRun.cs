@@ -22,7 +22,7 @@ static class ScenarioRun
         if (smoke is bool on)
             settings = settings with { Smoke = on };   // docs/battle/smoke.md: --smoke or --no-smoke
         var total = Stopwatch.StartNew();
-        var s = Scenario.Load(path);
+        var s = Scenario.Load(path, [Path.Combine(designsPath, "..", "..", "Content", "Scenarios")]);   // a setup's "from" among the shipped
         Console.WriteLine($"{s.Name}: {s.ShipCount} ships, {s.DesignNames().Count} designs, {s.Start}");
 
         // the land on a thread of its own, as the app does, while the classes build

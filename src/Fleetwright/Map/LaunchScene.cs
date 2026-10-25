@@ -370,6 +370,12 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
             pendingSide = null;
             SetSide(ps);
         }
+        if (pendingAdd is { } pa)
+        {
+            pendingAdd = null;
+            if (!begin)
+                OpenAdd(pa.Side, pa.Joins);
+        }
         if (pendingEdit is { } pe)
         {
             pendingEdit = null;

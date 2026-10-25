@@ -180,8 +180,42 @@ public class ScenarioSetupTests
         var sps = joined.Units.Single(u => u.Name == "Second Pacific Squadron");
         Assert.Equal("Reserve", sps.Units[^1].Name);
         Assert.Equal(9, ScenarioLoader.Stations(sps).Count);
-        Assert.Throws<ScenarioException>(() => new ScenarioSetup().With(new AddUnit(reserve, "Cruiser Division")).Apply(written));   // a squadron
         Assert.Throws<ScenarioException>(() => new ScenarioSetup().With(new AddUnit(Squadron("Cruiser Division", 0, "aurora", 1), null)).Apply(written));   // a name taken
+        // joining a squadron: it becomes a force of its name, its own ships first, the new one astern at its spacing
+        var cd = new ScenarioSetup().With(new AddUnit(reserve, "Cruiser Division")).Resize("Cruiser Division", "aurora", -1).Apply(written)
+            .Units.Single(u => u.Name == "Cruiser Division");
+        Assert.Equal(["Cruiser Division I", "Reserve"], cd.Units.Select(u => u.Name));
+        Assert.Equal(["Oleg"], cd.Units[0].Ships[0].Names);   // a count of the squadron as written finds its ships
+        Assert.Equal((600.0, 23.0), (cd.SpacingM, cd.CourseDeg));
+        Assert.Equal([0, 600, 1200], ScenarioLoader.Stations(cd).Select(x => x.AsternM));   // Oleg, then the two of Reserve
+    }
+
+    [Fact]
+    public void A_unit_renamed_is_renamed_last_and_the_tasks_that_name_it_with_it()
+    {
+        var written = Scenario.Load(Path.Combine(Folder, "jutland.json"));
+        var setup = new ScenarioSetup().Rename("Battlecruiser Fleet", "Beatty's");
+        Assert.Equal("Battlecruiser Fleet", setup.NameAsMade("Beatty's"));
+        // a change made after by the name it's shown by names it as written
+        setup = setup.Resize(setup.NameAsMade("1st Battlecruiser Squadron"), "lion", -1).With(new RemoveUnit("2nd Battlecruiser Squadron"));
+        var s = setup.Apply(written);
+        Assert.Contains(s.Units, u => u.Name == "Beatty's");
+        Assert.DoesNotContain(s.Units, u => u.Name == "Battlecruiser Fleet");
+        var fifth = s.Units.Single(u => u.Name == "5th Battle Squadron");
+        Assert.Equal("Beatty's", fifth.Tasks[0].Of);   // its cover of the Battlecruiser Fleet goes with the name
+        Assert.All(s.Units.Where(u => u.Name.EndsWith("Flotilla")).SelectMany(u => u.Tasks), t => Assert.NotEqual("Battlecruiser Fleet", t.Of));
+        // renamed again, one change; back to as written, none
+        Assert.Single(setup.Rename("Beatty's", "Lion's").Changes.OfType<RenameUnit>());
+        Assert.Empty(setup.Rename("Beatty's", "Battlecruiser Fleet").Changes.OfType<RenameUnit>());
+        Assert.Throws<ScenarioException>(() => new ScenarioSetup().Rename("Grand Fleet", "Battlecruiser Fleet").Apply(written));   // a name taken
+        // an added unit is renamed in its own change, and one joining it follows
+        var a = Squadron("Spare", 0, "lion", 2, (56.7, 4.6));
+        var b = new ScenarioUnit { Name = "Spare 2", Side = 0, Formation = Formation.Column, SpacingM = 600 };
+        b.Ships.Add(new ScenarioShips { Design = "lion", Count = 1 });
+        var added = new ScenarioSetup().With(new AddUnit(a, null)).With(new AddUnit(b, "Spare")).Rename("Spare", "Reserve");
+        Assert.Equal(["Reserve I", "Spare 2"], added.Apply(written).Units.Single(u => u.Name == "Reserve").Units.Select(u => u.Name));
+        Assert.Equal(["Reserve", "Spare 2"], added.Changes.OfType<AddUnit>().Select(x => x.Unit.Name));
+        Assert.Equal("Reserve", added.Changes.OfType<AddUnit>().Last().Joins);
     }
 
     [Fact]
@@ -195,6 +229,7 @@ public class ScenarioSetupTests
             .With(new AddUnit(Squadron("3rd Armoured Division", 0, "oslyabya", 4, (34.035, 129.8)), null))
             .Resize("1st Destroyer Detachment", "buyny", -2)
             .With(new RemoveUnit("1st Destroyer Flotilla"))
+            .Rename("Cruiser Division", "Enkvist's cruisers")
             .With(new SideSetting(SideKind.Fuel, 0, "0.6"))
             .With(new SideSetting(SideKind.FireDiscipline, 1, "rn-1914"))
             .With(new SetSeed(1906));

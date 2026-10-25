@@ -22,7 +22,7 @@ static class ScenarioPlay
         var settings = SimSettings.Load(settingsPath);
         if (smoke is bool on)
             settings = settings with { Smoke = on };   // docs/battle/smoke.md: --smoke or --no-smoke
-        var s = Scenario.Load(path);
+        var s = Scenario.Load(path, [Path.Combine(designsPath, "..", "..", "Content", "Scenarios")]);   // a setup's "from" among the shipped
         Console.WriteLine($"{s.Name}: {s.ShipCount} ships, {s.Sides.Length} sides, from {s.Start}" +
                           $"{(s.Until is { } u ? $" until {u}" : "")}; played by the AI on every side");
         var shoreTask = land ? Task.Run(() => Shore.Build(Land.Load(landPath))) : Task.FromResult<Shore>(null!);

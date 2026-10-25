@@ -776,6 +776,24 @@ public sealed class ScenarioUnit
         u.Ships.AddRange(ships);
         return u;
     }
+
+    /// <summary>A copy called by another name.</summary>
+    internal ScenarioUnit Renamed(string name) => Copy(name, Tasks);
+
+    /// <summary>A copy with other tasks.</summary>
+    internal ScenarioUnit Tasked(List<ScenarioTask> tasks) => Copy(Name, tasks);
+
+    ScenarioUnit Copy(string name, List<ScenarioTask> tasks)
+    {
+        var u = new ScenarioUnit
+        {
+            Name = name, Side = Side, Formation = Formation, SpacingM = SpacingM, At = At, CourseDeg = CourseDeg, Kn = Kn,
+            Route = Route, Loop = Loop, Doctrine = Doctrine, Tasks = tasks, Loadout = Loadout, Removed = Removed,
+        };
+        u.Units.AddRange(Units);
+        u.Ships.AddRange(Ships);
+        return u;
+    }
 }
 
 /// <summary>Ships of one design in a squadron, in order: <see cref="Count"/> of them, the first named by
@@ -841,6 +859,9 @@ public sealed class ScenarioTask
     public double Kn { get; init; }
 
     public static readonly string[] Kinds = ["go to", "patrol", "search", "join", "scout", "screen", "cover", "shadow", "withdraw"];
+
+    /// <summary>The task, of another unit (the one it named renamed).</summary>
+    internal ScenarioTask OfUnit(string unit) => new() { Kind = Kind, Of = unit, At = At, DistanceM = DistanceM, OffBowDeg = OffBowDeg, Kn = Kn };
 }
 
 public sealed class ScenarioException(string message) : Exception(message);

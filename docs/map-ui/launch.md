@@ -311,6 +311,13 @@ Aurora-like)"); its ✕ takes it and anything made of it away.
 - **Checked** by scripted clicks at Tsushima (-input=): − on the destroyers strikes Grozny, + on the cruisers adds one,
   ✕ strikes the 2nd Armoured Division; a unit placed by a drag lands on its dragged course; one joined to the Second
   Pacific Squadron begins in the world (31 ships in 10 groups), where its commander screens with it.
+- **Added after the user's first try (the same day):** a unit joins any unit of its side, a squadron too: joined, a
+  squadron becomes a force of its name, its own ships the first unit ("Cruiser Division I"), the new one astern at its
+  spacing; every unit heading has **+ division** (the add picker, joining it), and Joins is a list of the side's units.
+  **Renaming**: a click on a unit's name types a new one (`RenameUnit`, `"rename": { "Cruiser Division": "Enkvist's
+  cruisers" }` in the file; an added unit renamed in its own change). Renames apply last, the scenario's tasks that name
+  the unit with them, so every other change names units as written (`ScenarioSetup.NameAsMade`): a division made by a
+  join can be renamed too.
 - **Left for later:** naming an added ship in her row (she's unnamed: "and 1 more"); zooming the placing view (it frames
   the units, so a far placing means placing at the frame's edge); the admiral of an added unit (L4); a capture flag for
   the screen's states (the scripted clicks did).

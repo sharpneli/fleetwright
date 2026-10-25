@@ -85,7 +85,7 @@ public static class CoarseMotion
         s.railCurv[i] = curv;
         s.railAccel[i] = a;
         double t = Math.Min(tSpeed, TimeToGo(v0 * dir, a * dir, dist));
-        long end = double.IsFinite(t) ? s.railMs[i] + Math.Max((long)Math.Ceiling(t * 1000), 1) : long.MaxValue;
+        long end = double.IsFinite(t) ? s.railMs[i] + WorldTime.AheadMs(t) : long.MaxValue;
         s.segEndMs[i] = end;
         return end;
     }

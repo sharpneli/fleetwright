@@ -190,7 +190,7 @@ public sealed unsafe partial class LaunchScene
         if (pickerRow is not { } row || chosen < 0)
             return;
         string to = candidates[chosen].Info.Stem, from = row.Design;
-        string? unit = scope == 0 ? row.Unit.Name : null, ship = scope == 1 && row.NameList.Length > 0 ? row.NameList[Math.Min(scopeShip, row.NameList.Length - 1)] : null;
+        string? unit = scope == 0 ? setup.NameAsMade(row.Unit.Name) : null, ship = scope == 1 && row.NameList.Length > 0 ? row.NameList[Math.Min(scopeShip, row.NameList.Length - 1)] : null;
         ClosePicker();
         if (to != from)
             Edit(setup.Swap(unit, ship, from, to));

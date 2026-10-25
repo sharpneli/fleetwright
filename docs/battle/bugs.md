@@ -208,6 +208,16 @@ Seen in the AI's baseline after the detail passes (2026-10-20, docs/battle/comma
   the pocket (rails' own `LandClear` horizon), or keeps the side until the ship has passed the point it first met the
   coast. A test of it would bound how long any ship of the islands test stays off rails.
 
+## Rails and the clock
+
+- [x] "event at 09:15:59.999 is before the clock" at 1M (the user, 2026-10-25: Tsushima with 16 Bismarcks, fought at 1x,
+  then 1M to the end). A captain slowed a damaged ship nearly to a stop; on rails, `SchedulePolar` put her rhumb line's
+  polar cap (some 1e16 m off, her course near a parallel) at distance over speed, more milliseconds than a long holds; the
+  cast saturated to `long.MaxValue` and the clock plus it wrapped to a millisecond before now. Reproduced headless
+  (`shipgen scenario <setup> --play --fast 1000000 --fine 1`). Fixed 2026-10-25: `WorldTime.AheadMs` (at least 1 ms, at
+  most a century) for every event put ahead by a span in seconds (the rails' five schedulers, coarse motion's and the
+  slide's segment ends); the same run plays to its end.
+
 ## The app
 
 - [ ] Dev ships placed with `-ships=...@lat,lon` didn't show in `-screenshot` captures at `-speed=1` or `2` (frames 120-900),

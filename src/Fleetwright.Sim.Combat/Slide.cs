@@ -239,7 +239,7 @@ public static class Slide
     static long At(ShipStore s, int i, double metres)
     {
         double t = CoarseMotion.TimeToGo(s.railSpeed[i], s.railAccel[i], metres);
-        return double.IsFinite(t) ? s.railMs[i] + Math.Max((long)Math.Ceiling(t * 1000), 1) : long.MaxValue;
+        return double.IsFinite(t) ? s.railMs[i] + WorldTime.AheadMs(t) : long.MaxValue;
     }
 
     /// <summary>Whether a coarse ship (anchored now) is on land or inside its minimum: one lookup at sea.</summary>

@@ -36,9 +36,30 @@ public sealed unsafe partial class LaunchScene
     bool shipsMadeWithDesigns;   // the titles were the designs' (else their files', until those are read)
     ScenarioSetup? pendingEdit;   // a change made while the column is drawn, made at the frame's end
 
+    ShipLine? renaming;   // the unit whose name is being typed
+    string renameText = "";
+    bool renameFocus;
+    (int Side, string Joins)? pendingAdd;   // a "+ division" clicked: the add picker, joining that unit, at the frame's end
+
+    /// <summary>Every unit's name a new one mustn't take: as shown, and as written for one renamed.</summary>
+    HashSet<string> TakenNames()
+    {
+        var names = new HashSet<string>(setup.Changes.OfType<RenameUnit>().Select(c => c.From));
+        void Walk(ScenarioUnit u)
+        {
+            names.Add(u.Name);
+            foreach (var x in u.Units)
+                Walk(x);
+        }
+        foreach (var u in current?.Units ?? [])
+            Walk(u);
+        return names;
+    }
+
     void MadeShips(Scenario s)
     {
         shipsMadeWithDesigns = DesignsRead;
+        renaming = null;
         int tabSide = shipTab < shipTabs.Count ? shipTabs[shipTab].Side : -1;
         shipTabs.Clear();
         var order = Enumerable.Range(0, s.Sides.Length).Where(sd => s.Units.Any(u => u.Side == sd)).ToList();
@@ -68,7 +89,7 @@ public sealed unsafe partial class LaunchScene
             });
             if (u.Removed)
                 return;   // its ships under its struck name: none
-            var chain = new List<string>(above) { u.Name };
+            var chain = new List<string>(above) { setup.NameAsMade(u.Name) };
             foreach (var sub in u.Units)
                 Lines(sub, depth + 1, chain, add, lines);
             foreach (var ships in u.Ships)
@@ -202,9 +223,48 @@ public sealed unsafe partial class LaunchScene
             ux += 16 * sc;
         }
         float px = l.Top ? 13 : 12.5f;
-        Txt(UiFonts.Sans, px, new Vector2(ux, y + 2 * sc), l.Removed ? Muted : l.Added ? Brass : Bright, l.Text);
         float right = at.X + w;
         ImGui.PushID(i);
+        // its name: a click renames it
+        if (renaming == l)
+        {
+            PushFields();
+            ImGui.SetCursorScreenPos(new Vector2(ux - 6 * sc, y - 1 * sc));
+            ImGui.SetNextItemWidth(Math.Min(300 * sc, right - ux - 140 * sc));
+            if (renameFocus)
+            {
+                ImGui.SetKeyboardFocusHere();
+                renameFocus = false;
+            }
+            bool done = ImGui.InputText("##rename", ref renameText, 64, ImGuiInputTextFlags.EnterReturnsTrue | ImGuiInputTextFlags.AutoSelectAll);
+            bool left = !done && ImGui.IsItemDeactivated();
+            PopFields();
+            if (done)
+            {
+                string to = renameText.Trim();
+                if (to.Length > 0 && to != l.Text && !TakenNames().Contains(to))
+                    pendingEdit = setup.Rename(l.Text, to);
+                renaming = null;
+            }
+            else if (left)
+                renaming = null;
+        }
+        else
+        {
+            Txt(UiFonts.Sans, px, new Vector2(ux, y + 2 * sc), l.Removed ? Muted : l.Added ? Brass : Bright, l.Text);
+            if (!l.Removed)
+            {
+                float nw = Width(UiFonts.Sans, px, l.Text);
+                ImGui.SetCursorScreenPos(new Vector2(ux, y));
+                if (ImGui.InvisibleButton("##name", new Vector2(nw, 20 * sc)) && !begin)
+                    (renaming, renameText, renameFocus) = (l, l.Text, true);
+                if (ImGui.IsItemHovered())
+                {
+                    dl.AddLine(new Vector2(ux, y + 18 * sc), new Vector2(ux + nw, y + 18 * sc), U(BrassDark));
+                    ImGui.SetTooltip("click to rename");
+                }
+            }
+        }
         if (l.Removed)
         {
             float nw = Width(UiFonts.Sans, px, l.Text);
@@ -213,7 +273,7 @@ public sealed unsafe partial class LaunchScene
             float uw = Width(UiFonts.SansSmall, 11.5f, Undo);
             ImGui.SetCursorScreenPos(new Vector2(right - uw, y + 2 * sc));
             if (ImGui.InvisibleButton("##undo", new Vector2(uw, 18 * sc)) && !begin)
-                pendingEdit = setup.Without(new RemoveUnit(l.Text).Key);
+                pendingEdit = setup.Without(new RemoveUnit(setup.NameAsMade(l.Text)).Key);
             Txt(UiFonts.SansSmall, 11.5f, new Vector2(right - uw, y + 3 * sc), ImGui.IsItemHovered() ? Hex(0xE6C77A) : Brass, Undo);
         }
         else
@@ -222,7 +282,7 @@ public sealed unsafe partial class LaunchScene
             var xc = new Vector2(right - 7 * sc, y + 10 * sc);
             ImGui.SetCursorScreenPos(xc - new Vector2(8, 9) * sc);
             if (ImGui.InvisibleButton("##rm", new Vector2(16, 18) * sc) && !begin)
-                pendingEdit = l.Added ? setup.WithoutAdded(l.Text) : setup.With(new RemoveUnit(l.Text));
+                pendingEdit = l.Added ? setup.WithoutAdded(l.Text) : setup.With(new RemoveUnit(setup.NameAsMade(l.Text)));
             bool hover = ImGui.IsItemHovered();
             uint xcol = U(hover ? Hostile : Hex(0x56626C));
             dl.AddLine(xc - new Vector2(3.5f, 3.5f) * sc, xc + new Vector2(3.5f, 3.5f) * sc, xcol, 1.2f * sc);
@@ -236,6 +296,17 @@ public sealed unsafe partial class LaunchScene
                 Txt(UiFonts.SansSmall, 11.5f, new Vector2(rx, y + 3 * sc), Muted, l.Right);
                 rx -= 10 * sc;
             }
+            // a division more, joining it
+            const string More = "+ division";
+            float dw = Width(UiFonts.SansSmall, 11.5f, More);
+            rx -= dw;
+            ImGui.SetCursorScreenPos(new Vector2(rx, y + 2 * sc));
+            if (ImGui.InvisibleButton("##division", new Vector2(dw, 18 * sc)) && !begin)
+                pendingAdd = (l.Side, l.Text);
+            Txt(UiFonts.SansSmall, 11.5f, new Vector2(rx, y + 3 * sc), ImGui.IsItemHovered() ? Hex(0xE6C77A) : Muted, More);
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip($"add a unit to {l.Text}, on its station there");
+            rx -= 10 * sc;
             if (l.Movable)
             {
                 const string Move = "move";
@@ -286,7 +357,7 @@ public sealed unsafe partial class LaunchScene
         float ix = at.X + (20 + ThumbW) * sc, iy = at.Y + 10 * sc;
         float cw = Stepper(new Vector2(ix, iy), l.Count, l.Fewer && !begin, !begin, out int by);
         if (by != 0)
-            pendingEdit = setup.Resize(l.Unit.Name, l.Design, by);
+            pendingEdit = setup.Resize(setup.NameAsMade(l.Unit.Name), l.Design, by);
         Txt(UiFonts.Sans, 13, new Vector2(ix + cw + 8 * sc, iy), Bright, l.Text);
         float namesW = at.X + w - 92 * sc - ix;
         if (Math.Abs(namesW - l.NamesWidth) > 0.5f)

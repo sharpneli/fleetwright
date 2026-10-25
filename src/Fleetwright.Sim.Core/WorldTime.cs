@@ -32,6 +32,18 @@ public readonly record struct WorldTime(long Ms) : IComparable<WorldTime>
 
     public double JulianDate => 2451545.0 + DaysSinceJ2000;
 
+    /// <summary>A century, ms: the farthest ahead <see cref="AheadMs"/> puts an event.</summary>
+    public const long FarAheadMs = 100L * 365 * MsPerDay;
+
+    /// <summary>How far ahead an event is, ms, for a span worked out in seconds (a distance over a speed): at least 1,
+    /// at most <see cref="FarAheadMs"/>. A ship nearly stopped reaches a far point after more milliseconds than a long
+    /// holds; cast, it would saturate and the clock's sum wrap into the past.</summary>
+    public static long AheadMs(double seconds)
+    {
+        double ms = Math.Ceiling(seconds * 1000);
+        return ms >= FarAheadMs ? FarAheadMs : Math.Max((long)ms, 1);
+    }
+
     public static WorldTime operator +(WorldTime t, long ms) => new(t.Ms + ms);
     public static WorldTime operator -(WorldTime t, long ms) => new(t.Ms - ms);
     public static long operator -(WorldTime a, WorldTime b) => a.Ms - b.Ms;

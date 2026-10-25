@@ -18,16 +18,17 @@ public sealed unsafe partial class LaunchScene
     bool adding;
     int addSide, addCount = 4, addFormation, addSpacing = 600, addJoins;
     string addName = "", addCountText = "4";
-    readonly List<string> joinable = [];   // the side's forces, by name
-    readonly HashSet<string> unitNames = [];   // every unit's in the pick: a new one's is new
+    readonly List<(string Shown, string Made)> joinable = [];   // the side's units: as shown, and as the changes name them
+    string[] joinLabels = [];
+    HashSet<string> unitNames = [];   // every unit's in the pick: a new one's is new
     (int, int, bool, int) addNoteKey = (-2, 0, false, 0);
     string addNote = "";
     const string AddSub = "A squadron of one design; more rows come with Change… and − + once it's in the order of battle";
     static readonly Formation[] AddFormations = [Formation.Column, Formation.LineAbreast, Formation.EchelonStarboard, Formation.EchelonPort];
     static readonly string[] AddFormationNames = ["line ahead", "line abreast", "echelon to starboard", "echelon to port"];
 
-    /// <summary>The picker in its add mode, for a side.</summary>
-    void OpenAdd(int sd)
+    /// <summary>The picker in its add mode, for a side; joining a unit (as shown) to start with, or on its own.</summary>
+    void OpenAdd(int sd, string? joins = null)
     {
         if (current is not { } s)
             return;
@@ -37,21 +38,21 @@ public sealed unsafe partial class LaunchScene
         addSide = sd;
         (scope, scopeShip, search, chosen, sameType) = (0, 0, "", -1, false);
         joinable.Clear();
-        unitNames.Clear();
+        unitNames = TakenNames();
         void Walk(ScenarioUnit u)
         {
-            unitNames.Add(u.Name);
-            if (u.IsForce && u.Side == sd && !u.Removed)
-                joinable.Add(u.Name);
+            if (u.Side == sd && !u.Removed)
+                joinable.Add((u.Name, setup.NameAsMade(u.Name)));
             foreach (var x in u.Units)
                 Walk(x);
         }
         foreach (var u in s.Units)
             Walk(u);
+        joinLabels = ["on its own: placed on the map", .. joinable.Select(j => $"{j.Shown}: on its station")];
         addName = "New squadron";
         for (int k = 2; unitNames.Contains(addName); k++)
             addName = $"New squadron {k}";
-        (addCount, addCountText, addFormation, addSpacing, addJoins) = (4, "4", 0, 600, 0);
+        (addCount, addCountText, addFormation, addSpacing, addJoins) = (4, "4", 0, 600, joinable.FindIndex(j => j.Shown == joins) + 1);
         pickerTitle = $"Add a unit · {s.Sides[sd]}";
         pickerYear = s.Start.ToUtc().Year;
         yearChip = $"UP TO {pickerYear} ONLY";
@@ -85,22 +86,14 @@ public sealed unsafe partial class LaunchScene
         if (ImGui.InputInt("##addsp", ref addSpacing, 0, 0))
             addSpacing = Math.Clamp(addSpacing, 100, 20_000);
         Txt(UiFonts.SansSmall, 12, new Vector2(x + k + 322 * sc, y + 3 * sc), Muted, "m");
-        PopFields();
         y += row;
         Txt(UiFonts.SansSmall, 12, new Vector2(x, y + 3 * sc), Soft, "Joins");
-        float rx = x + k;
-        for (int j = 0; j <= joinable.Count; j++)
-        {
-            string label = j == 0 ? "on its own: placed on the map" : joinable[j - 1] + ": on its station";
-            float lw = 34 * sc + Width(UiFonts.SansSmall, 12, label);
-            if (rx + lw > x1 - 20 * sc && rx > x + k)
-                (rx, y) = (x + k, y + 22 * sc);
-            ImGui.PushID(j);
-            if (Radio("##join", label, new Vector2(rx, y + 3 * sc), addJoins == j))
-                addJoins = j;
-            ImGui.PopID();
-            rx += lw;
-        }
+        ImGui.SetCursorScreenPos(new Vector2(x + k, y));
+        ImGui.SetNextItemWidth(Math.Min(420 * sc, x1 - x - k - 20 * sc));
+        ImGui.Combo("##addjoins", ref addJoins, joinLabels, joinLabels.Length, 16);
+        PopFields();
+        Txt(UiFonts.SansSmall, 11.5f, new Vector2(x + k + Math.Min(420 * sc, x1 - x - k - 20 * sc) + 10 * sc, y + 3 * sc), Muted,
+            addJoins == 0 ? "" : "a squadron joined becomes a force: its ships, then this");
         y += row;
         HLine(x - 20 * sc, x1, y + 2 * sc);
         return y - y0 + 4 * sc;
@@ -131,7 +124,7 @@ public sealed unsafe partial class LaunchScene
             var unit = new ScenarioUnit { Name = name, Side = addSide, Formation = AddFormations[addFormation], SpacingM = addSpacing };
             unit.Ships.Add(new ScenarioShips { Design = pick!.Info.Stem, Count = addCount });
             if (addJoins > 0)
-                pendingEdit = setup.With(new AddUnit(unit, joinable[addJoins - 1]));
+                pendingEdit = setup.With(new AddUnit(unit, joinable[addJoins - 1].Made));
             else
             {
                 // the side's own course and speed to start from, no faster than she steams
