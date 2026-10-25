@@ -108,7 +108,7 @@ h4 .r{margin-left:auto;text-transform:none;letter-spacing:0;font-size:11px}
 .un .uh .adm{color:var(--muted);font-size:11.5px}
 .un .uh .r{margin-left:auto;display:flex;gap:6px;align-items:center}
 .un.sub{margin-left:14px}
-.dr{display:grid;grid-template-columns:186px 1fr auto;gap:4px 10px;align-items:center;padding:6px 8px;margin:2px 0 2px 14px;border:1px solid var(--line);border-radius:3px;background:rgba(255,255,255,.015)}
+.dr{display:grid;grid-template-columns:186px minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:6px 8px;margin:2px 0 2px 14px;border:1px solid var(--line);border-radius:3px;background:rgba(255,255,255,.015)}
 .dr:hover{background:rgba(255,255,255,.035)}
 .dr.sw{border-color:var(--brassd);box-shadow:inset 3px 0 0 var(--brass)}
 .dr.sel{border-color:var(--brass);background:rgba(217,184,104,.08)}
@@ -134,6 +134,26 @@ h4 .r{margin-left:auto;text-transform:none;letter-spacing:0;font-size:11px}
 .ld3{display:flex;gap:2px}
 .ld3 i{width:14px;height:3px;background:#262e35}
 .ld3 i.f{background:var(--brass)}
+.stp{display:inline-flex;align-items:center;margin-right:5px;border:1px solid var(--edge);border-radius:2px;vertical-align:1px}
+.stp button{width:16px;height:16px;border:none;background:transparent;color:var(--muted);font-size:12px;line-height:1;padding:0}
+.stp button:hover{color:var(--bright);background:rgba(255,255,255,.08)}
+.stp b{font-family:'Plex Mono';font-weight:400;color:var(--brass);font-size:12px;padding:0 3px}
+.dr .ships s{color:#56626c}
+.capt{font-size:8.5px;vertical-align:2px;margin-left:1px}
+.un .uh .rm{color:#56626c;cursor:pointer;font-size:11px;padding:0 2px}
+.un .uh .rm:hover{color:var(--bad)}
+.un.gone>.uh .nmu{color:var(--muted);text-decoration:line-through}
+.un.new>.uh .nmu{color:var(--brass)}
+.addu{margin:8px 0 0 14px;height:30px;border:1px dashed #4a5662;border-radius:3px;display:flex;align-items:center;gap:8px;padding:0 10px;color:var(--brass);cursor:pointer;font-size:12.5px}
+.addu:hover{background:rgba(217,184,104,.06)}
+#prev.big{left:26px;width:auto;z-index:5;border-color:var(--amber);box-shadow:0 10px 40px rgba(0,0,0,.5)}
+#placebar{position:absolute;left:0;right:0;top:0;height:30px;background:rgba(10,14,17,.88);display:none;align-items:center;gap:12px;padding:0 12px;font-size:12.5px;border-bottom:1px solid var(--line)}
+#prev.big #placebar{display:flex}
+#prev.big .cap{display:none}
+#placebar .num{height:20px;border:1px solid var(--edge);border-radius:2px;padding:0 6px;display:inline-flex;align-items:center;font-family:'Plex Mono';font-size:11.5px;color:var(--bright)}
+.form{display:grid;grid-template-columns:90px 260px 90px 1fr;gap:6px 10px;align-items:center;padding:10px 20px;border-bottom:1px solid var(--line);font-size:12px}
+.form .k{color:#aab6bf}
+.fld{height:22px;border:1px solid var(--edge);border-radius:2px;padding:0 7px;display:flex;align-items:center;background:rgba(0,0,0,.25);color:var(--bright)}
 /* ---------- standing orders ---------- */
 .agg{border:1px solid var(--line);border-radius:3px;padding:10px 12px 12px;background:rgba(255,255,255,.015)}
 .agg .top{display:flex;align-items:baseline;gap:8px}
@@ -155,8 +175,8 @@ h4 .r{margin-left:auto;text-transform:none;letter-spacing:0;font-size:11px}
 .der .a,.der .b{font-family:'Plex Mono';font-size:11.5px;text-align:right}
 .der .a{color:var(--muted)}.der .b{color:var(--bright)}.der .b.ch{color:var(--brass)}
 .adms{margin-top:12px}
-.ad{display:grid;grid-template-columns:1fr 120px 46px;gap:2px 10px;align-items:center;padding:5px 2px;border-bottom:1px solid var(--line)}
-.ad .n{font-size:12.5px;color:var(--bright)}
+.ad{display:grid;grid-template-columns:1fr 120px 46px;gap:2px 10px;align-items:center;padding:4px 2px;border-bottom:1px solid var(--line)}
+.ad .n{font-size:12.5px;color:var(--bright);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ad .u{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ad>div:first-child{min-width:0}
 .ad .e{font-family:'Plex Mono';font-size:11.5px;text-align:right}
@@ -276,7 +296,7 @@ h4 .r{margin-left:auto;text-transform:none;letter-spacing:0;font-size:11px}
         <p id="brief"></p>
       </div>
       <div id="sides"></div>
-      <div id="prev"><canvas id="pc" width="640" height="298"></canvas><div class="cap">The opening</div><div class="leg" id="leg"></div></div>
+      <div id="prev"><canvas id="pc" width="640" height="298"></canvas><div class="cap">The opening</div><div class="leg" id="leg"></div><div id="placebar"></div></div>
     </div>
 
     <div id="body">
@@ -348,6 +368,8 @@ const OOB = [
     { name: '2nd Division', adm: 'V-Adm Kamimura', temper: 0.4, why: 'the scenario: presses a damaged enemy', rows: [{ cls: 'izumo', names: ['Izumo', 'Azuma', 'Tokiwa', 'Iwate'] }] }] },
   { side: 1, name: '1st Destroyer Flotilla', adm: 'the flotilla’s captain', temper: 0.3, why: 'the scenario: night attacks pressed home', rows: [{ cls: 'ikazuchi', names: ['Ikazuchi', 'Inazuma', 'Akebono', 'Oboro'] }] },
 ];
+// captains' tempers from the scenario (added to their admiral's sum): a mark by the ship's name
+const CAPT = { 'Imperator Aleksandr III': 0.3, 'Bedovy': -0.5, 'Akebono': 0.4 };
 // the start of each top unit (lat, lon, course, kn) for the preview
 const START = { 'Second Pacific Squadron': [34.05, 129.95, 23, 11], 'Cruiser Division': [34.03, 129.90, 23, 11], '1st Destroyer Detachment': [34.06, 129.92, 23, 11], 'Combined Fleet': [34.17, 130.20, 262, 15], '1st Destroyer Flotilla': [34.21, 130.24, 262, 15] };
 
@@ -371,6 +393,7 @@ const BRIEF = {
 const S = {
   scn: 'tsushima', side: 0, tab: 0, agg: [0, 0], swaps: {}, picking: null, pickSel: null, applyTo: 'all',
   tempers: {}, rules: {}, cond: {}, vis: 13, seed: 'fixed',
+  added: [], removed: new Set(), gone: new Set(), extra: {}, placing: null, ghost: null,
 };
 // the load: a class's stages, each 0..1: build, compile (sim ready), art
 const load = { cls: [], t0: 0, threads: 8 };
@@ -424,7 +447,8 @@ function header() {
 function decode(polys, q) { return polys.map(poly => poly.map(r => { const out = []; let x = 0, y = 0; for (let i = 0; i < r.length; i += 2) { x += r[i]; y += r[i + 1]; out.push([x * q, y * q]); } return out; })); }
 const L50 = decode(LAND.l50, LAND.q50);
 function drawPreview() {
-  const cv = $('pc'), g = cv.getContext('2d'), w = cv.width, h = cv.height;
+  const pv = $('prev'); pv.classList.toggle('big', !!S.placing);
+  const cv = $('pc'); cv.width = pv.clientWidth - 2; const g = cv.getContext('2d'), w = cv.width, h = cv.height;
   g.fillStyle = '#12293A'; g.fillRect(0, 0, w, h);
   if (S.scn !== 'tsushima') { g.fillStyle = '#7F8B95'; g.font = '12px Plex Cond'; g.fillText('(the opening is drawn for Tsushima)', 20, h / 2); $('leg').textContent = ''; return; }
   const c = [34.11, 130.06], mpp = 115, kx = 111320 * Math.cos(c[0] * Math.PI / 180) / mpp, ky = 110540 / mpp;
@@ -445,11 +469,12 @@ function drawPreview() {
   for (let lo = 128.5; lo <= 131.5; lo += 1 / 6) { const x = P(0, lo)[0]; g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); }
   // the units: their ships astern of the head on the course, the head's symbol, 30 min ahead
   const D = Math.PI / 180;
-  for (const u of OOB) {
-    const [la, lo, crs, kn] = START[u.name], own = u.side === S.side || S.side === -1 && u.side === 0;
+  for (const u of allUnits()) {
+    if (S.gone.has(u.name) || u === S.placing || !START[u.name] && !u.at) continue;
+    const [la, lo, crs, kn] = START[u.name] ?? [u.at[0], u.at[1], u.crs, u.kn], own = u.side === S.side || S.side === -1 && u.side === 0;
     const col = S.side === -1 ? (u.side === 0 ? '#9DBFE6' : '#E2685C') : own ? '#5B9BE0' : '#E2685C';
     const [x0, y0] = P(la, lo), dx = Math.sin(crs * D), dy = -Math.cos(crs * D);
-    const ships = (u.units ?? [u]).flatMap(s => s.rows.flatMap(r => r.names)).length, gap = (u.units ? 550 : u.name.includes('Destroyer') ? 400 : 600) / mpp;
+    const ships = shipCount(u), gap = (u.units ? 550 : u.name.includes('Destroyer') ? 400 : 600) / mpp;
     g.fillStyle = col; g.strokeStyle = col;
     for (let i = 0; i < ships; i++) { g.beginPath(); g.arc(x0 - dx * gap * i, y0 - dy * gap * i, 1.6, 0, 7); g.fill(); }
     const lead = kn * 1852 * 0.5 / mpp; g.setLineDash([3, 3]); g.globalAlpha = .7;
@@ -465,13 +490,47 @@ function drawPreview() {
   // scale bar
   const km10 = 5000 / mpp; g.strokeStyle = '#9fb1bf'; g.beginPath(); g.moveTo(12, h - 12); g.lineTo(12 + km10, h - 12); g.moveTo(12, h - 15); g.lineTo(12, h - 9); g.moveTo(12 + km10, h - 15); g.lineTo(12 + km10, h - 9); g.stroke();
   g.fillStyle = '#9fb1bf'; g.fillText('5 km', 18 + km10, h - 8);
+  // the unit being placed: at the cursor, its ships astern, its course dragged
+  if (S.placing && S.ghost) {
+    const u = S.placing, [la, lo] = S.ghost, [x0, y0] = P(la, lo), dx = Math.sin(u.crs * D), dy = -Math.cos(u.crs * D), gap = 550 / mpp;
+    g.strokeStyle = g.fillStyle = '#E3A452';
+    for (let i = 0; i < shipCount(u); i++) { g.beginPath(); g.arc(x0 - dx * gap * i, y0 - dy * gap * i, 1.8, 0, 7); g.fill(); }
+    const lead = u.kn * 1852 * 0.5 / mpp; g.setLineDash([3, 3]); g.beginPath(); g.moveTo(x0, y0); g.lineTo(x0 + dx * lead, y0 + dy * lead); g.stroke(); g.setLineDash([]);
+    g.lineWidth = 1.5; g.beginPath(); g.arc(x0, y0, 7, 0, 7); g.stroke(); g.lineWidth = 1;
+    g.fillStyle = '#E3A452'; g.font = '11.5px Plex Cond'; g.textAlign = 'right'; g.fillText(u.name, x0 - 12, y0 + 16); g.textAlign = 'left';
+    const km = (a, b) => Math.hypot((a[0] - b[0]) * 110.54, (a[1] - b[1]) * 111.32 * Math.cos(a[0] * D));
+    const own = Object.entries(START).filter(([n]) => OOB.find(x => x.name === n).side === u.side).map(([n, v]) => [n, km(S.ghost, v)]).sort((a, b) => a[1] - b[1])[0];
+    const foe = Math.min(...Object.entries(START).filter(([n]) => OOB.find(x => x.name === n).side !== u.side).map(([, v]) => km(S.ghost, v)));
+    const ll = (v, p, n) => `${Math.floor(Math.abs(v))}°${String(Math.round(Math.abs(v) % 1 * 60)).padStart(2, '0')}′${v >= 0 ? p : n}`;
+    $('placebar').innerHTML = `<b class="amb">Placing ${u.name}</b><span class="dim">${shipCount(u)} × ${CL[u.rows[0].cls].name} · click to place her head, drag for the course</span>
+      <span>course <span class="num">${String(u.crs).padStart(3, '0')}°</span></span><span>speed <span class="num">${u.kn} kn</span></span>
+      <span style="margin-left:auto" class="mono">${ll(la, 'N', 'S')} ${ll(lo, 'E', 'W')} · ${own[1].toFixed(1)} km from ${own[0].replace('Second Pacific Squadron', '2nd Pacific Sqn')} · <span class="ho">${foe.toFixed(1)} km from the enemy</span></span>
+      <button class="btn sm" data-unplace="1">Cancel <span class="kbd">Esc</span></button>`;
+    $('placebar').querySelector('[data-unplace]').onclick = cancelPlace;
+  }
   $('leg').innerHTML = `<span class="fr">○ ${S.side === 1 ? 'Japan' : 'Russia'}</span> &nbsp; <span class="ho">◇ ${S.side === 1 ? 'Russia' : 'Japan'}</span> &nbsp; 22 km apart · dashed: 30 min`;
+}
+
+function cancelPlace() { S.added = S.added.filter(u => u !== S.placing); S.placing = null; S.ghost = null; render(); }
+// the placing view's mouse: move to see her there, press to place her head, drag to set her course
+{
+  const cv = $('pc'); let down = null;
+  const at = e => { const r = cv.getBoundingClientRect(), sc = r.width / cv.width, x = (e.clientX - r.left) / sc, y = (e.clientY - r.top) / sc, c = [34.11, 130.06], mpp = 115;
+    return [c[0] - (y - cv.height / 2) / (110540 / mpp), c[1] + (x - cv.width / 2) / (111320 * Math.cos(c[0] * Math.PI / 180) / mpp)]; };
+  cv.addEventListener('mousemove', e => { if (!S.placing) return; if (down) { const p = at(e), d = Math.atan2((p[1] - down[1]) * Math.cos(down[0] * Math.PI / 180), p[0] - down[0]) * 180 / Math.PI; S.placing.crs = Math.round((d + 360) % 360); } else S.ghost = at(e); drawPreview(); });
+  cv.addEventListener('mousedown', e => { if (S.placing) down = S.ghost = at(e); });
+  addEventListener('mouseup', () => { if (S.placing && down) { S.placing.at = down; S.placing = null; S.ghost = null; down = null; render(); } });
 }
 
 // ------------------------------------------------------------------ the ships: each side's units, a row a design
 function rowKey(u, r) { return u.name + '|' + r.cls; }
+const allUnits = () => OOB.concat(S.added);
+const allLevels = () => allUnits().flatMap(u => [u, ...(u.units ?? [])]);
+const rowNames = (u, r) => r.names.concat(Array.from({ length: S.extra[rowKey(u, r)] ?? 0 }, (_, i) => `new ${CL[clsOf(u, r)].name.replace('-like', '')} ${i + 1}`));
+const live = (u, r) => rowNames(u, r).filter(n => !S.removed.has(u.name + '|' + n));
+const shipCount = u => S.gone.has(u.name) ? 0 : (u.units ?? [u]).reduce((n, s) => n + s.rows.reduce((m, r) => m + live(s, r).length, 0), 0);
 function clsOf(u, r) { return S.swaps[rowKey(u, r)]?.to ?? r.cls; }
-function usedClasses() { const set = new Set(); for (const u of OOB) for (const s of u.units ?? [u]) for (const r of s.rows) set.add(clsOf(s, r)); return [...set]; }
+function usedClasses() { const set = new Set(); for (const u of allUnits()) if (!S.gone.has(u.name)) for (const s of u.units ?? [u]) for (const r of s.rows) if (live(s, r).length) set.add(clsOf(s, r)); return [...set]; }
 function oob() {
   const tabSide = S.tab;
   $('oobtabs').innerHTML = SIDES.map((sd, i) => `<button class="${tabSide === i ? 'on' : ''}" data-t="${i}"><span class="ens ${sd.ens}" style="width:18px;height:11px"></span>${sd.name} · ${S.side === i ? 'yours' : S.side === -1 ? 'AI' : 'the enemy'}</button>`).join('') +
@@ -480,25 +539,37 @@ function oob() {
   const st = k => { const c = load.cls.find(x => x.k === k); if (!c || c.a >= 1) return `<span class="st"><i></i>ready</span>`; return `<span class="st b"><i></i>${c.b < 1 ? 'building' : 'art'} ${Math.round((c.b * .3 + c.a * .7) * 100)}%</span>`; };
   const row = (u, r) => {
     const k = clsOf(u, r), c = CL[k], sw = S.swaps[rowKey(u, r)], sel = S.picking === rowKey(u, r);
-    const only = sw?.only ? r.names.map(n => n === sw.only ? `<b class="gold" style="font-weight:400">${n}</b>` : n).join(', ') : r.names.join(', ');
+    const capt = n => CAPT[n] ? `<span class="capt ${CAPT[n] > 0 ? 'amb' : 'fr'}" title="captain ${CAPT[n] > 0 ? '+' : ''}${CAPT[n]}">${CAPT[n] > 0 ? '▲' : '▼'}</span>` : '';
+    const only = rowNames(u, r).map(n => S.removed.has(u.name + '|' + n) ? `<s>${n}</s>` : n === sw?.only ? `<b class="gold" style="font-weight:400">${n}</b>${capt(n)}` : n + capt(n)).join(', ');
     return `<div class="dr ${sw ? 'sw' : ''} ${sel ? 'sel' : ''}">
       <div class="pic">${pic(k)}</div>
-      <div><div class="nm"><span class="x">${r.names.length}×</span>${c.name}</div><div class="ships">${only}</div></div>
+      <div><div class="nm"><span class="stp"><button data-m="${rowKey(u, r)}">−</button><b>${live(u, r).length}</b><button data-pl="${rowKey(u, r)}">+</button></span>${c.name}</div><div class="ships">${only}</div></div>
       <div class="act"><button class="btn sm" data-p="${rowKey(u, r)}">Change…</button>${st(k)}</div>
       <div class="fig" style="grid-column:1/3"><b>${fmt(c.t)}</b> t · <b>${c.kn}</b> kn · <b>${c.main}</b>${c.sec ? ' + ' + c.sec : ''} · belt <b>${c.belt || '—'}</b>${c.belt ? ' mm' : ''} · reach <b>${c.reach}</b> km</div>
       ${sw ? `<div class="was">was ${CL[r.cls].name}${sw.only ? ' · only ' + sw.only : ' · all ' + r.names.length}</div>` : ''}</div>`;
   };
   const tempLbl = v => v === 0 ? '' : `<span class="chip ${v > 0 ? 'amb' : 'ai'}">${v > 0 ? 'bold' : 'cautious'} ${v > 0 ? '+' : ''}${v.toFixed(1)}</span>`;
   let html = '';
-  for (const u of OOB.filter(u => u.side === tabSide)) {
-    html += `<div class="un"><div class="uh"><span class="${tabSide === S.side ? 'fr' : 'ho'}">${tabSide === S.side ? '○' : '◇'}</span>${u.name}<span class="adm">${u.adm}</span><span class="r">${tempLbl(temper(u))}<span class="dim">${(u.units ?? [u]).flatMap(s => s.rows.flatMap(r => r.names)).length} ships</span></span></div>`;
-    for (const s of u.units ?? []) html += `<div class="un sub"><div class="uh">${s.name}<span class="adm">${s.adm}</span><span class="r">${tempLbl(s.temper ? temper(s) : 0)}</span></div>${s.rows.map(r => row(s, r)).join('')}</div>`;
-    if (!u.units) html += u.rows.map(r => row(u, r)).join('');
+  for (const u of allUnits().filter(u => u.side === tabSide)) {
+    const gone = S.gone.has(u.name), mark = tabSide === S.side ? '○' : '◇';
+    html += `<div class="un ${gone ? 'gone' : ''} ${u.added ? 'new' : ''}"><div class="uh"><span class="${tabSide === S.side ? 'fr' : 'ho'}">${mark}</span><span class="nmu">${u.name}</span><span class="adm">${u.adm}</span><span class="r">${gone ? '<span class="lnk" data-keep="' + u.name + '">removed · undo</span>' : `${u.added ? `<span class="chip ${u === S.placing ? 'amb' : 'ok'}">${u === S.placing ? 'placing…' : 'added'}</span>` : ''}${tempLbl(temper(u))}<span class="dim">${shipCount(u)} ships</span><span class="rm" data-rmu="${u.name}" title="remove the unit">✕</span>`}</span></div>`;
+    if (!gone) {
+      for (const s of u.units ?? []) html += `<div class="un sub"><div class="uh"><span class="nmu">${s.name}</span><span class="adm">${s.adm}</span><span class="r">${tempLbl(s.temper ? temper(s) : 0)}</span></div>${s.rows.map(r => row(s, r)).join('')}</div>`;
+      if (!u.units) html += u.rows.map(r => row(u, r)).join('');
+    }
     html += '</div>';
   }
+  html += `<div class="addu" data-add="${tabSide}">＋ Add a unit… <span class="dim">any designs, placed on the opening’s map or joined to a unit</span></div>`;
   if (tabSide !== S.side && S.side !== -1) html += `<p class="note" style="margin:10px 14px">The enemy’s ships may be changed too (a what-if for either side). Your briefing still reports them as your side would see them: the change is a fact of the world, not of your intelligence.</p>`;
   $('oob').innerHTML = html;
   for (const el of document.querySelectorAll('[data-p]')) el.onclick = () => openPick(el.dataset.p);
+  const find = key => { const [un, cls] = key.split('|'), u = allLevels().find(x => x.name === un); return [u, u.rows.find(r => r.cls === cls)]; };
+  for (const el of document.querySelectorAll('[data-m]')) el.onclick = () => { const [u, r] = find(el.dataset.m), l = live(u, r); if (l.length) S.removed.add(u.name + '|' + l[l.length - 1]); render(); };
+  for (const el of document.querySelectorAll('[data-pl]')) el.onclick = () => { const [u, r] = find(el.dataset.pl), gone = rowNames(u, r).filter(n => S.removed.has(u.name + '|' + n));
+    if (gone.length) S.removed.delete(u.name + '|' + gone[0]); else S.extra[el.dataset.pl] = (S.extra[el.dataset.pl] ?? 0) + 1; render(); };
+  for (const el of document.querySelectorAll('[data-rmu]')) el.onclick = () => { const u = S.added.find(x => x.name === el.dataset.rmu); if (u) S.added.splice(S.added.indexOf(u), 1); else S.gone.add(el.dataset.rmu); render(); };
+  for (const el of document.querySelectorAll('[data-keep]')) el.onclick = () => { S.gone.delete(el.dataset.keep); render(); };
+  for (const el of document.querySelectorAll('[data-add]')) el.onclick = () => openAdd(+el.dataset.add);
 }
 
 // ------------------------------------------------------------------ standing orders: the side's, and each admiral's temper on it
@@ -532,14 +603,15 @@ function orders() {
   const side = S.side === -1 ? S.tab : S.side, a = S.agg[side];
   const der = AGG.map(([k, b, sh, f]) => { const v = b * (1 + sh * a), ch = Math.abs(a) > 1e-6; return `<span class="k">${k}</span><span class="a">${f(b)}</span><span class="b ${ch ? 'ch' : ''}">${f(v)}</span>`; }).join('');
   const adms = [];
-  for (const u of OOB.filter(u => u.side === side)) { adms.push(u); for (const s of u.units ?? []) if (s.temper !== undefined) adms.push(s); }
+  for (const u of allUnits().filter(u => u.side === side && !S.gone.has(u.name))) { adms.push(u); for (const s of u.units ?? []) if (s.temper !== undefined) adms.push(s); }
   const word = v => v > 0.65 ? 'bold' : v > 0.15 ? 'forward' : v < -0.65 ? 'timid' : v < -0.15 ? 'cautious' : 'as written';
   $('orders').innerHTML = `<h4>Standing orders · ${SIDES[side].name}${S.side === -1 ? ' (AI)' : ''}<span class="r dim">doctrine “default”, 1905 <span class="lnk">all fields…</span></span></h4>
     <div class="agg"><div class="top"><b>Aggression</b><span class="dim">the C-in-C’s, for every unit</span><span class="v">${a > 0 ? '+' : ''}${a.toFixed(2)} · ${word(a)}</span></div>
       ${slider('side', a, 0)}
       <div class="der"><span class="h">Moves</span><span class="h">written</span><span class="h">now</span>${der}</div></div>
-    <div class="adms"><h4>Admirals’ tempers<span class="r dim">added to the side’s</span></h4>
-      ${adms.map(u => { const t = temper(u), e = clamp(a + t, -1, 1); return `<div class="ad"><div><div class="n">${u.adm.replace(/ \(.*\)/, '')}</div><div class="u" title="${u.why ?? ''}">${u.name}${u.why && t === (u.temper ?? 0) ? ' · <i>' + u.why.replace('the scenario: ', '') + '</i>' : ''}</div></div>${slider('t:' + u.name, t, u.temper ?? 0, true)}<span class="e ${Math.abs(e) > .01 ? 'gold' : 'dim'}">${e > 0 ? '+' : ''}${e.toFixed(2)}</span></div>`; }).join('')}
+    <div class="adms"><h4>Tempers<span class="r dim">the side’s + the admiral’s + the captain’s</span></h4>
+      ${adms.map(u => { const t = temper(u), e = clamp(a + t, -1, 1); return `<div class="ad"><div><div class="n" title="${u.why ?? ''}">${u.adm.replace(/ \(.*\)/, '')} <span class="u">${u.name}${u.why && t === (u.temper ?? 0) ? ' · <i>' + u.why.replace('the scenario: ', '') + '</i>' : ''}</span></div></div>${slider('t:' + u.name, t, u.temper ?? 0, true)}<span class="e ${Math.abs(e) > .01 ? 'gold' : 'dim'}">${e > 0 ? '+' : ''}${e.toFixed(2)}</span></div>`; }).join('')}
+      <div class="note" style="margin-top:5px">Captains’ tempers sit on their ships (<span class="amb">▲</span> bold, <span class="fr">▼</span> timid, by the name): a timid captain under a bold admiral fights harder than alone, never as hard as a bold one under the same flag.</div>
     </div>
     <div class="rules">${RULES.map(([k, opts, d], i) => { const v = S.rules[side + ':' + i] ?? d, ch = v !== d; return `<div><span class="k ${ch ? 'ch' : ''}">${k}</span><span class="seg">${opts.map((o, j) => `<button class="${j === v ? 'on' : ''} ${j === v && ch ? 'ch' : ''}" data-r="${side}:${i}:${j}">${o}</button>`).join('')}</span></div>`; }).join('')}</div>`;
   for (const el of document.querySelectorAll('[data-r]')) el.onclick = () => { const [s, i, j] = el.dataset.r.split(':'); S.rules[s + ':' + i] = +j; render(); };
@@ -565,9 +637,13 @@ function conds() {
   const changes = [];
   for (const [k, sw] of Object.entries(S.swaps)) { const [u] = k.split('|'); changes.push([`${u}: ${CL[sw.from].name} → <b class="gold" style="font-weight:500">${CL[sw.to].name}</b>${sw.only ? ' (' + sw.only + ')' : ''}`, 'sw:' + k]); }
   S.agg.forEach((a, i) => { if (a) changes.push([`${SIDES[i].name}’s aggression ${a > 0 ? '+' : ''}${a.toFixed(2)}`, 'agg:' + i]); });
-  for (const [n, t] of Object.entries(S.tempers)) { const u = OOB.flatMap(u => [u, ...(u.units ?? [])]).find(x => x.name === n); if (t !== (u.temper ?? 0)) changes.push([`${u.adm.replace(/ \(.*\)/, '')}’s temper ${t > 0 ? '+' : ''}${t.toFixed(2)}`, 'tmp:' + n]); }
+  for (const [n, t] of Object.entries(S.tempers)) { const u = allLevels().find(x => x.name === n); if (t !== (u.temper ?? 0)) changes.push([`${u.adm.replace(/ \(.*\)/, '')}’s temper ${t > 0 ? '+' : ''}${t.toFixed(2)}`, 'tmp:' + n]); }
   for (const [k, v] of Object.entries(S.cond)) { const [key, side] = k.split(':'), row = COND.find(c => c[1] === key); if (v !== row[3][side]) changes.push([`${SIDES[side].name}: ${row[0].toLowerCase()} ${v}`, 'cond:' + k]); }
   for (const [k, v] of Object.entries(S.rules)) { const [side, i] = k.split(':'), r = RULES[i]; if (v !== r[2]) changes.push([`${SIDES[side].name}: ${r[0].toLowerCase()}: ${r[1][v]}`, 'rule:' + k]); }
+  for (const u of S.added) changes.push([`${SIDES[u.side].name}: added <b class="gold" style="font-weight:500">${u.name}</b> (${live(u, u.rows[0]).length} × ${CL[u.rows[0].cls].name})`, 'add:' + u.name]);
+  for (const n of S.gone) changes.push([`removed ${n}`, 'gone:' + n]);
+  for (const k of S.removed) { const [un, sh] = k.split('|'); changes.push([`removed ${sh} (${un})`, 'rmv:' + k]); }
+  for (const [k, n] of Object.entries(S.extra)) if (n) changes.push([`${k.split('|')[0]}: ${n} more ${CL[k.split('|')[1]].name}`, 'ext:' + k]);
   if (S.vis !== 13) changes.push([`visibility ${S.vis} km`, 'vis']);
   $('conds').innerHTML = `<h4>Conditions<span class="r dim">the difficulty, side by side</span></h4>
     <div class="presets"><button class="btn sm" data-pre="history">As history</button><button class="btn sm" data-pre="fair">Even crews</button><button class="btn sm" data-pre="easy">Easier</button><button class="btn sm" data-pre="hard">Harder</button></div>
@@ -583,9 +659,9 @@ function conds() {
   for (const el of document.querySelectorAll('[data-c]')) el.onclick = () => { const [key, side] = el.dataset.c.split(':'), row = COND.find(c => c[1] === key), cur = S.cond[el.dataset.c] ?? row[3][side]; S.cond[el.dataset.c] = row[2][(row[2].indexOf(cur) + 1) % row[2].length]; render(); };
   for (const el of document.querySelectorAll('[data-pre]')) el.onclick = () => { S.cond = { ...PRESETS[el.dataset.pre] }; render(); };
   for (const el of document.querySelectorAll('[data-seed]')) el.onclick = () => { S.seed = el.dataset.seed; render(); };
-  for (const el of document.querySelectorAll('[data-reset]')) el.onclick = () => { S.swaps = {}; S.agg = [0, 0]; S.tempers = {}; S.cond = {}; S.rules = {}; S.vis = 13; render(); };
+  for (const el of document.querySelectorAll('[data-reset]')) el.onclick = () => { S.swaps = {}; S.agg = [0, 0]; S.tempers = {}; S.cond = {}; S.rules = {}; S.vis = 13; S.added = []; S.gone.clear(); S.removed.clear(); S.extra = {}; S.placing = null; render(); };
   for (const el of document.querySelectorAll('[data-undo]')) el.onclick = () => { const [kind, ...r] = el.dataset.undo.split(':'), k = r.join(':');
-    if (kind === 'sw') delete S.swaps[k]; else if (kind === 'agg') S.agg[+k] = 0; else if (kind === 'tmp') delete S.tempers[k]; else if (kind === 'cond') delete S.cond[k]; else if (kind === 'rule') delete S.rules[k]; else S.vis = 13; render(); };
+    if (kind === 'sw') delete S.swaps[k]; else if (kind === 'agg') S.agg[+k] = 0; else if (kind === 'tmp') delete S.tempers[k]; else if (kind === 'cond') delete S.cond[k]; else if (kind === 'rule') delete S.rules[k]; else if (kind === 'add') { S.added = S.added.filter(u => u.name !== k); if (S.placing?.name === k) S.placing = null; } else if (kind === 'gone') S.gone.delete(k); else if (kind === 'rmv') S.removed.delete(k); else if (kind === 'ext') delete S.extra[k]; else S.vis = 13; render(); };
   const vs = document.querySelector('[data-sl="vis"]');
   if (vs) vs.onmousedown = ev => { const set = e => { const r = vs.getBoundingClientRect(); S.vis = Math.round(clamp(3 + (e.clientX - r.left) / r.width * 27, 3, 30)); render(); }; set(ev); const up = () => { removeEventListener('mousemove', set); removeEventListener('mouseup', up); }; addEventListener('mousemove', set); addEventListener('mouseup', up); };
 }
@@ -605,12 +681,45 @@ Object.assign(CL, {
   brennus: { name: 'Brennus-like', t: 11315, len: 122, kn: 17, main: '3 × 340', sec: '', belt: 455, reach: 12.7, year: 1891, img: 'brennus', w: 488, src: 'shp', time: 0.45 },
   deutschland: { name: 'Deutschland-like panzerschiff', t: 10212, len: 160, kn: 28, main: '6 × 283', sec: '', belt: 80, reach: 32.6, year: 1933, img: 'deutschland', w: 643, src: 'shp', time: 0.7 },
 });
+// adding a unit: a name, an admiral, its ships, then placed on the map (or joined to a unit: its station, no placing)
+const NEW = { name: '3rd Armoured Division', adm: 'R-Adm Nebogatov', names: ['Imperator Nikolai I', 'General-Admiral Apraksin', 'Admiral Senyavin', 'Admiral Ushakov'], joins: 0 };
+function openAdd(side) { S.picking = 'add:' + side; S.pickSel = 'oslyabya'; render(); }
+function addPicker(el) {
+  const side = +S.picking.slice(4), sel = S.pickSel, b = CL[sel];
+  const keys = ['oslyabya', 'borodino', 'borodino_14in', 'mikasa', 'izumo', 'aurora', 'buyny', 'ikazuchi', 'connecticut', 'dreadnought', 'bouvet', 'brennus', 'deutschland'];
+  const list = keys.map(k => { const c = CL[k];
+    return `<div class="pr ${k === sel ? 'on' : ''}" data-k="${k}"><div class="pic" style="height:26px;display:flex;align-items:center">${pic(k, 0.25)}</div>
+      <div class="nm">${c.name}<span class="src ${c.src}">${c.src === 'scn' ? 'SCENARIO' : c.src === 'you' ? 'YOURS' : 'SHIPPED'}</span><small>${c.saved ?? c.year}</small></div>
+      <span class="m">${fmt(c.t)} t</span><span class="m">${c.kn} kn</span><span class="m">${c.main}</span><span class="m">${c.belt || '—'}</span><span class="mu dim">…</span></div>`; }).join('');
+  const joins = ['on its own: placed on the map', 'Second Pacific Squadron: on its station'];
+  el.innerHTML = `<div class="ph"><div><div class="t">Add a unit · ${SIDES[side].name}</div><div class="s">A squadron of one design; more rows once it’s in the order of battle (Change… and − + on each)</div></div>
+      <button class="btn x" data-close="1">✕ <span class="kbd">Esc</span></button></div>
+    <div class="form"><span class="k">Name</span><span class="fld">${NEW.name}</span><span class="k">Admiral</span><span class="fld" style="width:220px">${NEW.adm}</span>
+      <span class="k">Ships</span><span style="grid-column:2/5"><span class="stp"><button>−</button><b>${NEW.names.length}</b><button>+</button></span> <span class="dim">${NEW.names.join(', ')}</span></span>
+      <span class="k">Formation</span><span class="dd" style="width:200px">line ahead · 550 m</span><span class="k">Temper</span><span class="dim">0 (set it under Standing orders)</span>
+      <span class="k">Joins</span><span class="seg" style="grid-column:2/5;justify-self:start">${joins.map((j, i) => `<button class="${NEW.joins === i ? 'on' : ''}" data-j="${i}">${j}</button>`).join('')}</span></div>
+    <div class="fl"><span class="srch">⌕ name, calibre, year…</span><span class="flt">Battleships</span><span class="flt on">Any type</span><span class="flt on">Scenario’s</span><span class="flt on">Yours</span><span class="flt on">Shipped</span><span class="flt">Up to 1905 only</span>
+      <span class="dim" style="margin-left:auto;white-space:nowrap">Matchup: the new unit v the enemy line nearest it, once placed</span></div>
+    <div id="plist"><div class="pr hd"><span></span><span>Design</span><span style="text-align:right">Displ.</span><span style="text-align:right">Speed</span><span style="text-align:right">Main</span><span style="text-align:right">Belt mm</span><span style="text-align:right">Matchup</span></div>${list}</div>
+    <div class="pf"><span class="note" style="align-self:center">${NEW.names.length} × ${b.name}: ${fmt(b.t * NEW.names.length)} t at ${b.kn} kn. Russia’s heavy ships go from 7 to ${7 + NEW.names.length}.</span><span style="flex:1"></span><button class="btn" data-close="1">Cancel</button><button class="btn pri" data-place="1">${NEW.joins ? 'Add it' : 'Place it on the map ▸'}</button></div>`;
+  for (const r of el.querySelectorAll('.pr[data-k]')) r.onclick = () => { S.pickSel = r.dataset.k; render(); };
+  for (const r of el.querySelectorAll('[data-close]')) r.onclick = () => { S.picking = null; render(); };
+  for (const r of el.querySelectorAll('[data-j]')) r.onclick = () => { NEW.joins = +r.dataset.j; render(); };
+  el.querySelector('[data-place]').onclick = () => addUnit(side, sel, !NEW.joins);
+}
+function addUnit(side, cls, place) {
+  const u = { side, name: NEW.name, adm: NEW.adm, temper: 0, added: true, rows: [{ cls, names: NEW.names.slice() }], at: place ? null : [34.02, 129.92], crs: 23, kn: 11 };
+  S.added.push(u); S.picking = null; S.placing = place ? u : null;
+  if (!load.cls.find(c => c.k === cls)) { if (clockAt !== null) { clockAt = null; load.t0 = performance.now() - 10000; } load.cls.push({ k: cls, t: CL[cls].time, b: 0, a: 0, at: loadNow(), isNew: true }); }
+  render();
+}
 function openPick(key) { S.picking = key; const [u, cls] = key.split('|'); S.pickSel = S.swaps[key]?.to ?? (cls === 'borodino' ? 'borodino_14in' : cls); S.applyTo = 'all'; render(); }
 function picker() {
   const el = $('pick');
   if (!S.picking) { el.classList.remove('on'); return; }
   el.classList.add('on');
-  const [uname, from] = S.picking.split('|'), unit = OOB.flatMap(u => [u, ...(u.units ?? [])]).find(x => x.name === uname), row = unit.rows.find(r => r.cls === from);
+  if (S.picking.startsWith('add:')) return addPicker(el);
+  const [uname, from] = S.picking.split('|'), unit = allLevels().find(x => x.name === uname), row = unit.rows.find(r => r.cls === from);
   const cur = S.swaps[S.picking]?.to ?? from, sel = S.pickSel, a = CL[from], b = CL[sel];
   const altsMu = from === 'borodino' ? ALTS : [{ k: from, mu: 1.0 }];
   const list = altsMu.map(x => { const c = CL[x.k], base = 1.07, d = x.mu / base;
@@ -623,7 +732,7 @@ function picker() {
   const late = b.year > 1905;
   el.innerHTML = `<div class="ph"><div><div class="t">${row.names.length} × ${a.name} · ${uname}</div><div class="s">${row.names.join(', ')}</div></div>
       <button class="btn x" data-close="1">✕ <span class="kbd">Esc</span></button></div>
-    <div class="fl"><span class="srch">⌕ name, calibre, year…</span><span class="flt on">Battleships</span><span class="flt">Any type</span><span class="flt on">Scenario’s</span><span class="flt on">Yours</span><span class="flt on">Shipped</span><span class="flt">Up to 1905 only</span>
+    <div class="fl"><span class="srch">⌕ name, calibre, year…</span><span class="flt">Battleships</span><span class="flt on">Any type</span><span class="flt on">Scenario’s</span><span class="flt on">Yours</span><span class="flt on">Shipped</span><span class="flt">Up to 1905 only</span>
       <span class="dim" style="margin-left:auto;white-space:nowrap">Matchup: four of her v Togo’s four Mikasas, 1 = even</span></div>
     <div id="plist"><div class="pr hd"><span></span><span>Design</span><span style="text-align:right">Displ.</span><span style="text-align:right">Speed</span><span style="text-align:right">Main</span><span style="text-align:right">Belt mm</span><span style="text-align:right">Matchup</span></div>${list}
       <div class="pr" style="cursor:pointer;color:var(--brass)"><span>＋ New design from ${a.name}…</span><span class="dim" style="grid-column:2/8">opens the designer on a copy; saved, it’s back here with “yours”</span></div></div>
@@ -689,10 +798,10 @@ function render() {
   if (full) { oob(); orders(); conds(); picker(); } else $('pick').classList.remove('on');
   footer();
 }
-addEventListener('keydown', e => { if (e.key === 'Escape' && S.picking) { S.picking = null; render(); } });
+addEventListener('keydown', e => { if (e.key !== 'Escape') return; if (S.picking) { S.picking = null; render(); } else if (S.placing) cancelPlace(); });
 setInterval(() => { const was = simReady(), aWas = load.cls.every(c => c.a >= 1); step(); const now = load.cls.every(c => c.a >= 1); footer(); if (!aWas || now !== aWas || was !== simReady()) { if (S.scn === 'tsushima' && !S.picking) oob(); cards(); } }, 120);
 
-// ------------------------------------------------------------------ states for screenshots: launch.html#tsushima, #japan, #design, #swapped, #orders, #watch, #loading, #jutland
+// ------------------------------------------------------------------ states for screenshots: launch.html#tsushima, #japan, #design, #swapped, #orders, #add, #place, #watch, #loading, #jutland
 function state(h) {
   startLoad(usedClasses()); clockAt = 10;
   if (h === 'japan') { S.side = 1; S.tab = 1; }
@@ -703,6 +812,9 @@ function state(h) {
     load.cls.push({ k: 'borodino_14in', t: CL.borodino_14in.time, b: 0, a: 0, at: h === 'swapped' ? 9.8 : 5, isNew: true });
     if (h === 'swapped') clockAt = 10.1;
   }
+  if (h === 'add') openAdd(0);
+  if (h === 'place') { addUnit(0, 'oslyabya', true); clockAt = 10; S.ghost = [34.035, 129.80]; S.placing.crs = 23;
+    S.removed.add('1st Destroyer Detachment|Grozny'); S.extra['Cruiser Division|aurora'] = 1; }
   if (h === 'orders') { S.agg[0] = 0.5; S.tempers['Cruiser Division'] = 0.2; S.rules['0:5'] = 0; S.cond['crews:1'] = 'average'; }
   if (h === 'jutland' || h === 'loading') { S.scn = 'jutland'; startLoad(Array.from({ length: 53 }, (_, i) => 'j' + i)); clockAt = h === 'loading' ? 0.4 : 1.3; S.queued = h === 'loading'; }
   step(); render();
