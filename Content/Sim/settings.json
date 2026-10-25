@@ -207,6 +207,7 @@
   "FireKeepShare": 1.25,
   "FireLostMs": 30000,
   "FireSwitchShare": 0.7,
+  "ShellSwitchGain": 1.25,
   "FireLeadS": 120,
   "FireCrowdShare": 0.25,
   "FireLineGapM": 3000,

@@ -169,6 +169,7 @@ public sealed partial class CaptainLayer
                 FireOrder.Engage when cls.Batteries[b].Chief => cap.FireTarget,
                 _ => Pick(ctx, pic, own, cls, b, reach[b], reach[^1], current),
             };
+            Shells(ctx, ref cap, own, slot, b, want, pic);
             if (want == current)
                 continue;
             ctx.Issue(want == 0 ? GunnerySystem.Cease(own.Entity, b) : GunnerySystem.Engage(own.Entity, b, want));
@@ -181,6 +182,78 @@ public sealed partial class CaptainLayer
             ownTargets[b] = want;
         }
         Torpedoes(ctx, ref cap, own, slot, pic);
+    }
+
+    readonly MatchupSide shellTarget = new();
+
+    /// <summary>His battery's shell for its target (docs/battle/shell-choice.md A3), by doctrine's Shells: each kind it
+    /// has rounds of judged by what a round does to her as his navy has her made out (<see cref="Matchup.PerRound"/>
+    /// over the classes she may be, <see cref="MatchupSide.AddContact"/>), at the range; the load ordered changes to the
+    /// best only past <see cref="SimSettings.ShellSwitchGain"/> of the one loaded, as each change costs the round in the
+    /// gun. Judged again when the target, what's made out of her or the range's step changes, or the kind ordered runs
+    /// out.</summary>
+    void Shells(in AiContext ctx, ref Captain cap, ShipState own, int slot, int b, int target, Picture? pic)
+    {
+        if (target == 0 || pic == null || pic.IndexOf(target) is not (int ci and >= 0)
+            || (ShellUse)doctrine.Of(own.Entity, own.Side, DoctrineField.Shells) != ShellUse.ByTarget)
+            return;
+        var combat = ctx.Ships.Combat;
+        var lo = combat.Loadout(slot);
+        MatchupGun? gun = null;
+        foreach (var g in Judge.Matchups.Profile(ctx.World, lo).Guns)
+            if (g.Battery == b)
+                gun = g;
+        if (gun == null || gun.Kinds.Length < 2)
+            return;
+        ref readonly var c = ref pic[ci];
+        var cls = lo.Class;
+        double range = Earth.Distance(own.Position, c.Position);
+        int step = (int)(range / MatchupProfile.RangeStepM);
+        var ordered = combat.Ordered(slot, b);
+        bool spent = ordered is { } o && !Has(combat, slot, cls, b, o);
+        if ((cap.Shells ??= new ShellJudged[cls.Batteries.Length]) is var js && js[b] is var j && j.Target == target && j.TakenFor == c.TakenFor && j.Step == step
+            && j.Level == c.Level && j.Type == c.Type && !spent)
+            return;
+        js[b] = new ShellJudged { Target = target, TakenFor = c.TakenFor, Step = step, Level = c.Level, Type = c.Type };
+        shellTarget.Clear();
+        shellTarget.AddContact(ctx.World, Judge.Matchups, own.Side, c);
+        if (shellTarget.Count == 0)
+            return;
+        var loaded = ordered is { } k0 && !spent ? k0 : Lead(combat, slot, lo, b);
+        double now = 0, best = 0;
+        ShellKind? pick = null;
+        foreach (var k in gun.Kinds)
+        {
+            if (!Has(combat, slot, cls, b, k.Shell.Kind))
+                continue;
+            double v = 0;
+            foreach (ref readonly var e in shellTarget.Entries)
+                v += e.Count * Matchup.PerRound(k, e, range, ctx.World.Settings);
+            if (k.Shell.Kind == loaded)
+                now = v;
+            if (v > best)
+                (best, pick) = (v, k.Shell.Kind);
+        }
+        if (pick is { } p && p != loaded && best > ctx.World.Settings.ShellSwitchGain * now)
+            ctx.Issue(GunnerySystem.Load(own.Entity, b, p));
+    }
+
+    /// <summary>Whether any of a battery's mounts has rounds of a kind.</summary>
+    static bool Has(CombatStore combat, int slot, ShipClass cls, int b, ShellKind kind)
+    {
+        foreach (int m in cls.Links(cls.Batteries[b].Mounts))
+            if (combat.LoadOf(slot, m, kind) >= 0)
+                return true;
+        return false;
+    }
+
+    /// <summary>The kind a battery fires by the magazine order: its first load it has rounds of.</summary>
+    static ShellKind? Lead(CombatStore combat, int slot, Loadout lo, int b)
+    {
+        foreach (var l in lo.Loads(b))
+            if (Has(combat, slot, lo.Class, b, lo.ShellTypes[l.ShellType].Kind))
+                return lo.ShellTypes[l.ShellType].Kind;
+        return null;
     }
 
     /// <summary>The batteries on each ship (by her slot), main and the rest, from the targets the last pass set.</summary>

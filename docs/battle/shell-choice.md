@@ -112,6 +112,18 @@ already runs each second:
 - **Allocation:** nothing in the pass (the tables are made when the classes come into the world, as `Matchups.Warm`
   does now).
 
+- **Done 2026-10-25.** `MatchupGun.Kinds`: each battery as each kind it carries would fire it (its own fall, striking
+  speed and table against each class; `Matchups.Warm` makes them all). `Matchup.PerRound`: hit chance × out chance.
+  `CaptainLayer.Shells`, in the fire pass after the battery's target is picked: the judgement over the contact's
+  entries (`MatchupSide.AddContact`), only for kinds a mount still has rounds of; judged again on a new target, more
+  made out of her, a range step (250 m), or the kind ordered spent. Doctrine's `Shells` (appended after `Temper`):
+  the neutral default the magazine order, `doctrine.json`'s "default" by target (decision 2); a row on the launch
+  screen's standing orders. `ShellSwitchGain` 1.25 [EST].
+  - Tests: `ShellChoiceTests` (a dreadnought on a destroyer loads HE, on a dreadnought stays on AP, by the magazine
+    order orders nothing). `TorpedoTests`' flotilla attack now gives the battle line the magazine order: by target its
+    heavy guns' HE stopped the boats' day attack in all 48 seeds (the effect wanted; the test is the attack's replay
+    and allocation, so it takes the old line). Sim tests 787 of 787, game tests 201 of 201.
+
 **A4 The matchup reads the choice.** `MatchupGun` judges each target with the kind its captain would choose there:
 the best of its loads by range, held in the same pair table. The AI's judgements then match what's fired, and the
 light cruisers that weren't hopeless against a battleship become so. The confidence a commander has in a fight moves

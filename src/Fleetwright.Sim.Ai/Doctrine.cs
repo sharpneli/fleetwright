@@ -97,6 +97,18 @@ public enum DoctrineField : byte
     /// ship's is her captain's, hers alone. A captain's decisions read side + her admiral + herself, an admiral's side +
     /// himself. A unit's value only.</summary>
     Temper,
+
+    /// <summary>How a battery picks its shell (<see cref="ShellUse"/>; docs/battle/shell-choice.md A3): by its target, or
+    /// by the magazine order. After <see cref="Temper"/>, so the fields' numbers in logged commands stand.</summary>
+    Shells,
+}
+
+/// <summary>Doctrine's Shells: each battery loads the kind its target calls for (the captain's choice, the matchup's
+/// judgement), or fires by the magazine order (a main battery AP first, a secondary HE).</summary>
+public enum ShellUse : byte
+{
+    ByTarget,
+    MagazineOrder,
 }
 
 /// <summary>Doctrine's NightAction: heavy ships accept action at night, or avoid it.</summary>
@@ -164,7 +176,7 @@ public sealed class Doctrine(GroupSystem groups, IReadOnlyDictionary<string, dou
         return r;
     }
 
-    public const int FieldCount = (int)DoctrineField.Temper + 1;
+    public const int FieldCount = (int)DoctrineField.Shells + 1;
 
     /// <summary>Every field when nothing sets it: a world told nothing (a dev's, a test's) behaves as before doctrine.</summary>
     public static double Default(DoctrineField f) => f switch
@@ -192,6 +204,7 @@ public sealed class Doctrine(GroupSystem groups, IReadOnlyDictionary<string, dou
         DoctrineField.Aggression => 0,
         DoctrineField.Dispose => 0,
         DoctrineField.Temper => 0,
+        DoctrineField.Shells => (double)ShellUse.MagazineOrder,
         _ => throw new ArgumentOutOfRangeException(nameof(f)),
     };
 
@@ -344,6 +357,7 @@ public sealed class DoctrinePresets
             DoctrineField.TorpedoEvasion when Enum.TryParse<TorpedoEvasion>(name, ignoreCase: true, out var te) => (f, (double)te),
             DoctrineField.TorpedoAttack when Enum.TryParse<TorpedoAttack>(name, ignoreCase: true, out var ta) => (f, (double)ta),
             DoctrineField.NightAction when Enum.TryParse<NightAction>(name, ignoreCase: true, out var na) => (f, (double)na),
+            DoctrineField.Shells when Enum.TryParse<ShellUse>(name, ignoreCase: true, out var su) => (f, (double)su),
             _ => throw new ArgumentException($"doctrine: \"{v}\" isn't a value of {field}"),
         };
     }
@@ -360,6 +374,7 @@ public sealed class DoctrinePresets
             DoctrineField.TorpedoEvasion => ((TorpedoEvasion)(int)v).ToString(),
             DoctrineField.TorpedoAttack => ((TorpedoAttack)(int)v).ToString(),
             DoctrineField.NightAction => ((NightAction)(int)v).ToString(),
+            DoctrineField.Shells => ((ShellUse)(int)v).ToString(),
             _ => null,
         };
         // "CarryOn" -> "carry on"

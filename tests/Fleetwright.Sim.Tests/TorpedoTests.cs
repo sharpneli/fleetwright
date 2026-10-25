@@ -239,7 +239,8 @@ public class TorpedoTests(ITestOutputHelper output)
         // the test needs an attack made, and whether the boats get in is chance, moving with every change to the gunnery
         // (seed 7 did until the short-range bug hunt of 2026-10-18 let the battleships' secondaries hit close in): it takes
         // the first of four dozen seeds whose boats get their torpedoes away (seed 6 did until E7's fix of 2026-10-20: near
-        // misses no longer black out the battleships and silence their secondaries; seed 34 now)
+        // misses no longer black out the battleships and silence their secondaries; seed 34 then, seed 7 since the shell by
+        // target of 2026-10-25)
         ulong seed = 0;
         World w = null!;
         AiSystem ai = null!;
@@ -253,6 +254,9 @@ public class TorpedoTests(ITestOutputHelper output)
             // six boats against four battleships by day aren't worth an attack by their own judgement (docs/battle/command.md
             // 5.1g): ordered to, they make it, against a line that holds on (one turning away leaves them astern of its beam)
             w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.TurnAwayDeg, 0));
+            // and a line firing by the magazine order: loading HE by target (docs/battle/shell-choice.md A3) its heavy
+            // guns stopped the attack in all four dozen seeds (2026-10-25)
+            w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.Shells, (double)ShellUse.MagazineOrder));
             for (int k = 0; k < w.Groups.Count; k++)
                 if (w.Groups[k].Name.Contains("Flotilla"))
                     w.Apply(ai.Orders.Attack(Unit.Group(w.Groups[k].GroupId)));

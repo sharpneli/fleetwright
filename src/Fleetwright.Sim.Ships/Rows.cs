@@ -393,7 +393,8 @@ public readonly record struct ShellLoad(int ShellType, double Share);
 
 /// <summary>The magazine order (docs/battle/shells-armour-damage.md decision 7): a main battery fires AP until it's
 /// spent, then common, then HE; a secondary battery HE first, then common, then AP. A battery's loads are kept in this
-/// order, so a mount fires the first it has rounds of. The AI's choice by target replaces it later (decision 3).</summary>
+/// order, so a mount fires the first it has rounds of; a battery ordered a kind loads it instead (CombatStore.Order;
+/// the captain's choice by target, docs/battle/shell-choice.md A3).</summary>
 public static class MagazineOrder
 {
     /// <summary>A kind's place in a battery's order: lower fires first.</summary>

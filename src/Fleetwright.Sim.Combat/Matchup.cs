@@ -98,6 +98,16 @@ public sealed class MatchupProfile
             var shell = Loadout.ShellTypes[Loadout.Fires(b)];
             var t = table(BallisticKey.Of(shell, maxElev));
             var g = new MatchupGun(b, row, bearing, 60 / (reload / mounts), rounds, shell, t, s);
+            // and the battery as each other kind it carries would fire it (docs/battle/shell-choice.md A3): its first
+            // load of the kind, its own fall and striking speed
+            var kinds = new List<MatchupGun> { g };
+            foreach (var l in Loadout.Loads(b))
+            {
+                var ls = Loadout.ShellTypes[l.ShellType];
+                if (!kinds.Exists(k => k.Shell.Kind == ls.Kind))
+                    kinds.Add(new MatchupGun(b, row, bearing, 60 / (reload / mounts), rounds, ls, table(BallisticKey.Of(ls, maxElev)), s));
+            }
+            g.Kinds = [.. kinds];
             guns.Add(g);
             if (row.Chief && row.CalibreMm > mainCal)
                 (mainCal, MainReachM) = (row.CalibreMm, g.ReachM);
@@ -248,11 +258,15 @@ public sealed class MatchupGun
     public double PatternPct { get; }
     public ShellTypeRow Shell { get; }
     public double ReachM { get; }
+    /// <summary>The battery as each kind it carries would fire it (docs/battle/shell-choice.md A3), this one (its lead
+    /// shell's) first, then the others in the magazine order: one a kind.</summary>
+    public MatchupGun[] Kinds { get; internal set; }
     readonly double[] fall, strike;
 
     internal MatchupGun(int battery, in BatteryRow row, int guns, double perMin, int rounds, ShellTypeRow shell, BallisticTable t, SimSettings s)
     {
         (Battery, Kind, Chief, CalibreMm, Guns, ShellsPerGunMin, Rounds, Shell, PatternPct) = (battery, row.Kind, row.Chief, row.CalibreMm, guns, perMin, rounds, shell, row.PatternPct);
+        Kinds = [this];
         Level = row.Local ? 0 : (int)row.Level;
         double hi = Math.Min(t.Key.MaxElevationDeg, t.MaxElevationDeg - 2 * BallisticTable.ElevationStep);
         ReachM = t.Fall(hi, s.MatchupMuzzleM).Range;
@@ -655,6 +669,16 @@ public static class Matchup
         double pr = Phi(depth / 2 / sr) - Phi((-depth / 2 - danger) / sr);
         double pd = 2 * Phi(width / 2 / sd) - 1;
         return Math.Max(pr * pd, 0);
+    }
+
+    /// <summary>What a round from a battery does to a ship at a range (docs/battle/shell-choice.md A3): the chance it hits
+    /// times the chance a hit puts her out of the fight, from the pair's table; 0 beyond its reach.</summary>
+    public static double PerRound(MatchupGun g, in MatchupEntry target, double rangeM, SimSettings s)
+    {
+        if (rangeM > g.ReachM)
+            return 0;
+        var (hit, e) = g.Against(target.Profile, rangeM, s);
+        return hit * (1 - Math.Exp(-e / Math.Max(target.Toughness, 1e-3)));
     }
 
     /// <summary>The chance a hit from a battery at a range puts a ship of a class out of the fight: by its shell's size (the

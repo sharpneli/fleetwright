@@ -664,6 +664,7 @@ public static class DoctrineRules
         new(DoctrineField.NightAction, "Heavy ships at night", [((double)NightAction.Accept, "accept"), ((double)NightAction.Avoid, "avoid")]),
         new(DoctrineField.NightAttack, "Torpedo craft attack by night", [(1, "yes"), (0, "no")]),
         new(DoctrineField.Dispose, "Admirals place scouts and screens", [(1, "by roles"), (0, "all in line")]),
+        new(DoctrineField.Shells, "Shells", [((double)ShellUse.ByTarget, "by target"), ((double)ShellUse.MagazineOrder, "by the magazine order")]),
     ];
 
     public static Rule? Of(DoctrineField f) => Array.Find(All, r => r.Field == f);

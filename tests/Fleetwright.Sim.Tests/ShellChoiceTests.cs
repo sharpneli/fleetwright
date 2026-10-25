@@ -1,10 +1,12 @@
+using Fleetwright.Sim.Ai;
 using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Ships;
 
 namespace Fleetwright.Sim.Tests;
 
 /// <summary>The shell by target (docs/battle/shell-choice.md): a battery's guns hold the round they were loaded with
-/// (A1), and a load ordered takes over once it's fired (A2, decision 1: a change costs the round in the gun).</summary>
+/// (A1), a load ordered takes over once it's fired (A2, decision 1: a change costs the round in the gun), and a
+/// captain orders the kind his target calls for (A3).</summary>
 public class ShellChoiceTests
 {
     static readonly WorldTime Start = WorldTime.FromUtc(1916, 5, 31, 14);
@@ -86,5 +88,27 @@ public class ShellChoiceTests
         w.Apply(GunnerySystem.Load(1, 0, lacks));
         foreach (var m in Fired(w, 0, 2))
             Assert.All(m, k => Assert.Equal(ShellKind.Ap, k));
+    }
+
+    /// <summary>A captain firing at will, his side's doctrine by target: a dreadnought's main battery on a destroyer
+    /// comes round to HE (AP passes through her), on another dreadnought it stays on AP; by the magazine order nothing
+    /// is ordered.</summary>
+    [Theory]
+    [InlineData("destroyer", ShellUse.ByTarget, ShellKind.He)]
+    [InlineData("dreadnought", ShellUse.ByTarget, null)]
+    [InlineData("destroyer", ShellUse.MagazineOrder, null)]
+    public void A_captain_loads_what_his_target_calls_for(string target, ShellUse use, ShellKind? loads)
+    {
+        var w = new World(Start, 5, Settings);
+        var ai = new AiSystem(w);
+        w.Apply(ShipSystem.Spawn(w.Ships.AddClass(Dreadnought), 56.5, 4.0, 90, 0, side: 0));
+        w.Apply(ShipSystem.Spawn(w.Ships.AddClass(Fleet.Get(target).Class!), 56.554, 4.0, 90, 0, side: 1));
+        w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.Shells, (double)use));
+        w.Apply(ai.Orders.SideDoctrine(1, DoctrineField.Shells, (double)ShellUse.MagazineOrder));
+        w.AdvanceTo(w.Time + 3 * 60_000);
+        var combat = w.Ships.Store.Combat;
+        int slot = w.Ships.Store.SlotOf(1);
+        Assert.Equal(2, combat.Target(slot, 0));
+        Assert.Equal(loads, combat.Ordered(slot, 0));
     }
 }

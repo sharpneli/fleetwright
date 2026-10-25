@@ -640,6 +640,10 @@ public sealed record SimSettings
     public double FireLeadS { get; init; } = 120;
     public double FireCrowdShare { get; init; } = 0.25;
 
+    /// <summary>The shell by target (docs/battle/shell-choice.md A3): a captain changes a battery's load only for a kind
+    /// whose rounds do this many times the one loaded [EST], since each change costs the round in the gun.</summary>
+    public double ShellSwitchGain { get; init; } = 1.25;
+
     /// <summary>An admiral distributing fire: the enemy's line is the contacts in sight chained to the target, each
     /// within this of the next, m.</summary>
     public double FireLineGapM { get; init; } = 3_000;

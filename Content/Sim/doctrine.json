@@ -45,6 +45,10 @@
     "NightAttack": 1,
     // a force's admiral disposes what he has (docs/battle/admirals-orders.md O7): his scouts scout ahead of his main body,
     // his flotillas and screens screen it (1); or he keeps every squadron in his line (0)
-    "Dispose": 1
+    "Dispose": 1,
+    // each battery loads the shell its target calls for, "by target" (the captain judges what a round does to her as he
+    // has her made out, docs/battle/shell-choice.md), or fires "by the magazine order" (a main battery AP until it's
+    // spent, a secondary HE)
+    "Shells": "by target"
   }
 }

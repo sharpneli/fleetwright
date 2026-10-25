@@ -123,6 +123,16 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         public int FitVersion;          // his ship's condition's version when he last judged its fitness
         public long CombUntilMs;        // combing a torpedo's track until then (0: not)
         public double CombDeg, CombBackDeg;   // the comb's course, and the course ordered before it
+        public ShellJudged[]? Shells;   // by battery, what its shell was last judged on (made when first needed)
+    }
+
+    /// <summary>What a battery's shell was last judged on (docs/battle/shell-choice.md A3): its target as the picture had
+    /// her, and the range's step; judged again when any of them changes.</summary>
+    struct ShellJudged
+    {
+        public int Target, TakenFor, Step;
+        public ContactLevel Level;
+        public ShipType Type;
     }
 
     Captain[] captains = new Captain[16];

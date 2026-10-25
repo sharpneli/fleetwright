@@ -67,8 +67,9 @@ public sealed class Matchups
         // and every gun's table against every class (a few hundred bytes a pair), so none is made in a fight
         foreach (var a in profiles.Values.Concat(given.Values))
             foreach (var g in a.Guns)
-                foreach (var t in profiles.Values)
-                    g.Against(t, 0, world.Settings);
+                foreach (var k in g.Kinds)
+                    foreach (var t in profiles.Values)
+                        k.Against(t, 0, world.Settings);
     }
 
     /// <summary>The classes a side has at sea of a type (<see cref="ShipType.Unknown"/>: of any type), and how many ships
