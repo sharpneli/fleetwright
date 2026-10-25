@@ -23,6 +23,8 @@ public sealed unsafe partial class LaunchScene
             PlayAs { Side: null } => "watched",
             PlayAs p => "as " + p.Side,
             SwapDesign d => d.To,
+            AddUnit a => "with " + a.Unit.Name,
+            RemoveUnit r => "without " + r.Name,
             _ => "my setup",
         }}";
     }

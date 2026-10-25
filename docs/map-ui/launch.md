@@ -112,8 +112,8 @@ name's + brings her back) and the unit's ✕. Every add and removal is on the ch
   sight of the enemy.
 - **Names:** an added ship gets "new" and her class until named; the player may name her in the row. An added unit's
   name and admiral are the player's.
-- **The matchup** in the add picker is the new unit's against the enemy line nearest where it's placed, so it fills in
-  once it's on the map.
+- **No matchup** in the add picker (decision 7): the scenario's maker places the units, and an added one meets whom it
+  meets.
 
 ## Tempers: the side, the admiral, the captain
 
@@ -141,13 +141,14 @@ overridden, and gains the swaps:
   "tempers": { "Cruiser Division": 0.2, "Imperator Aleksandr III": 0.3 },
   "add": [ { "name": "3rd Armoured Division", "side": 0, "at": [34.035, 129.80], "course": 23, "kn": 11,
              "ships": [ { "design": "oslyabya", "names": ["Imperator Nikolai I", "General-Admiral Apraksin"] } ] } ],
-  "remove": [ "Grozny" ],
+  "counts": [ { "unit": "1st Destroyer Detachment", "design": "buyny", "by": -1 } ], "remove": [ "Cruiser Division" ],
   "crews": { "Japan": "average" }, "seed": 1905 }
 ```
 
 A swap names a unit and a design, and optionally one ship (`"ship": "Knyaz Suvorov"`); without a unit it swaps every
 ship of that design. `"add"` takes units as the scenario's own `"units"` do (one joining another names it in
-`"joins"` instead of `"at"`); `"remove"` takes ship or unit names; a temper names a unit or a ship. Applying a setup is a pure function on a parsed `Scenario` (tested), and the launch screen edits
+`"joins"` instead of `"at"`); `"counts"` takes ships off the end of a squadron's row (struck, the last first) or adds
+unnamed ones; `"remove"` takes units' names; a temper names a unit or a ship. Applying a setup is a pure function on a parsed `Scenario` (tested), and the launch screen edits
 that, so the screen and the file can't disagree. The result says when the fight was a changed one ("Tsushima, as you
 set it"), with each change listed.
 
@@ -183,7 +184,7 @@ mockup's, committed.
 | **L1** (done 2026-10-25) | The launch scene: the list, the header and brief, the side cards (Watch included), the opening drawn from the file's top units, the footer's load and Begin. The app opens on it (the last scenario played selected); the menu's and the result's "Scenarios" open it; `-scenario=` still goes straight into the world (captures and tests), `-launch[=name]` opens the screen. The briefing modal at start goes (the brief is on this screen; the menu's Briefing stays) | — |
 | **L2** (done 2026-10-25) | A setup as data: the overrides on a parsed `Scenario`, saved and listed as a scenario file with `"from"` and `"designs"`; the changes list and reset | `Scenario`, `ScenarioLoader` |
 | **L3** (done 2026-10-25) | Ships: each side's order of battle, the design rows and their state, the picker (sources, filters, figures, matchup, apply to all, one or every), the designer round trip (edit a copy, saved back into the picker as yours) | the matchup on candidates |
-| **L3b** | Adding and removing: − n + per row, ✕ per unit, the add picker, the placing view (on the sea, the course dragged), joining a unit | `"add"`, `"remove"` |
+| **L3b** (done 2026-10-25) | Adding and removing: − n + per row, ✕ per unit, the add picker, the placing view (on the sea, the course dragged), joining a unit | `"add"`, `"remove"` |
 | **L4** | Standing orders: aggression and what it moves, the admirals' and captains' tempers, the rules | `Temper` on units and ships |
 | **L5** | Conditions and the day: both sides' crews, readiness, damage control, fire discipline, fuel; presets; visibility, wind, the end, the seed | — |
 
@@ -267,9 +268,9 @@ entered), and the figures.
   side at its doctrine's range share (`ScenarioLoader.SideDoctrine`, tested), in the start's light. A column (green or
   red against the design in use), a row in the comparison, and the line it's of over the list ("Matchup: 4 of her v 1st
   Division (4 Mikasa-like, 2 Izumo-like); 1 = even"). At Tsushima: Borodino-like 0.53, Mikasa-like 0.50.
-  - **Open:** "nearest in size" isn't always the line she'd meet: Jutland's 1st Scouting Group is judged against the
-    5th Battle Squadron (the Queen Elizabeths, nearest the Derfflingers' 33,400 t), where history had it meet Beatty's
-    battlecruisers. If it matters, pair by role too (speed, or the scenario naming whom a unit is to meet).
+  - "Nearest in size" isn't always the line she'd meet (Jutland's 1st Scouting Group is judged against the Queen
+    Elizabeths, not Beatty's battlecruisers); it stays so: no pairing by role, no scenario naming whom a unit meets
+    (decision 7).
 - **A design's year** is the latest year its file names (its machinery's, its guns', its shells'), shown as "tech 1905"
   and used by the "up to" filter: designs have no year of their own. A design file could say one later if the filter
   needs to be exact.
@@ -284,6 +285,36 @@ entered), and the figures.
   units, the captains' marks (L4); − n + and ✕ (L3b). Jutland's rows draw small because one design is far too long
   (docs/battle/bugs.md, Agincourt-like at 313 m).
 
+**L3b done (2026-10-25).** `ScenarioSetup` takes three changes more, each tested and read back from its file:
+`AddUnit` (a unit on its own, a top unit with its place, course and speed, or `"joins"` a force as its last unit, on its
+station; of a unit's name, side, formation, spacing and units or ships only, and a name new to the scenario),
+`ChangeCount` (a squadron's ships of a design, more unnamed at the end, or fewer: struck, the last first, kept by name on
+`ScenarioShips.Struck` for the screen and never placed) and `RemoveUnit` (every ship under it struck, the unit kept as
+`Removed`). The changes now apply by kind (the side, the adds, the swaps, the counts, the removals, the settings, the
+seed), each kind in the order made, so a file written by kind reads back the same; a count names its ships' design after
+the swaps, which `Swap` keeps (a row swapped carries its count along). A unit the setup added takes its own − + and
+design changes into its `AddUnit`, so the changes list says it in one line ("Russia: added New squadron (4 ×
+Aurora-like)"); its ✕ takes it and anything made of it away.
+
+- **The column** (`LaunchScene.Ships.cs`): each row's − n + (− stops at none, or at an added unit's last ship), the
+  struck names after the live ones, greyed and struck through; each unit's ✕ (any level) and, taken off, its name struck
+  with "removed · undo" in its place; an added unit brass with ADDED, its count, and "move" when it's on its own; **+ Add
+  a unit…** at the foot of each side's tab.
+- **The add picker** (`LaunchScene.Add.cs`, the picker's add mode): the name (new to the scenario), the ships (− n +, of
+  the design picked, unnamed), the formation and spacing, and Joins (on its own, or each of the side's forces "on its
+  station"); the design list as the picker's, without the type toggles or a matchup (decision 7); the foot says what it
+  adds ("4 × Aurora-like protected cruiser: 14,548 t at 20 kn"), then **Place it on the map…** or **Add it**.
+- **The placing view**: the opening widened over the header (more margin round the units); the unit at the cursor with
+  its ships on their stations and half an hour's course, amber (red over land); a press places her head, a drag sets the
+  course; course and speed typed in the bar (starting from the side's lead unit's, no faster than the design), beside
+  her place, the nearest of her own and the nearest enemy; Esc or Cancel stops. A head on land isn't placed.
+- **Checked** by scripted clicks at Tsushima (-input=): − on the destroyers strikes Grozny, + on the cruisers adds one,
+  ✕ strikes the 2nd Armoured Division; a unit placed by a drag lands on its dragged course; one joined to the Second
+  Pacific Squadron begins in the world (31 ships in 10 groups), where its commander screens with it.
+- **Left for later:** naming an added ship in her row (she's unnamed: "and 1 more"); zooming the placing view (it frames
+  the units, so a far placing means placing at the frame's edge); the admiral of an added unit (L4); a capture flag for
+  the screen's states (the scripted clicks did).
+
 ## Decisions (the user, 2026-10-25)
 
 1. **Tempers add**, at three levels: the side's, the admiral's, the captain's (a captain's personality per ship). A
@@ -295,6 +326,9 @@ entered), and the figures.
 5. **The presets** (easier, harder): decided after playtesting with the screen in place.
 6. **Nothing is filtered or refused for now**: the picker shows every design. What a scenario allows is a later pass;
    the result shows plainly what was changed, so the hard thing done is seen as done.
+7. **No automatic matchup of lines**: the placement is the scenario maker's, and a fun scenario is what it is (torpedo
+   boats swapped for battleships make a livelier start). The picker's column stays as built (nearest in size); added
+   units get none, and no pairing by role.
 
 ## Files
 

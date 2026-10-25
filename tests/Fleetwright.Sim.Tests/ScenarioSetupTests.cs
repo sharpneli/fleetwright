@@ -108,6 +108,82 @@ public class ScenarioSetupTests
         Assert.Equal(written.Seed, none.Apply(written).Seed);
     }
 
+    static ScenarioUnit Squadron(string name, int side, string design, int count, (double, double)? at = null) =>
+        Scenario.Parse($$"""
+            { "scenario": 1, "name": "x", "start": "1905-05-27T04:40", "sides": ["a", "b"], "units": [
+              { "name": "{{name}}", "side": {{side}}, "at": [{{at?.Item1 ?? 34}}, {{at?.Item2 ?? 130}}], "course": 23, "kn": 11,
+                "ships": [ { "design": "{{design}}", "count": {{count}} } ] } ] }
+            """).Units[0];
+
+    [Fact]
+    public void A_count_strikes_the_last_ships_or_adds_unnamed_ones_and_a_removed_unit_places_none()
+    {
+        // docs/map-ui/launch.md L3b: the rows' − and +, the units' ✕
+        var written = Tsushima();
+        var setup = new ScenarioSetup().Resize("1st Destroyer Detachment", "buyny", -1).Resize("Cruiser Division", "aurora", 1);
+        var s = setup.Apply(written);
+        var dd = Squadrons(s.Units).Single(x => x.Unit == "1st Destroyer Detachment").Ships;
+        Assert.Equal(3, dd.Count);
+        Assert.Equal(["Buyny", "Bravy", "Bedovy"], dd.Names);
+        Assert.Equal(["Grozny"], dd.Struck);
+        var cr = Squadrons(s.Units).Single(x => x.Unit == "Cruiser Division").Ships;
+        Assert.Equal((3, 2), (cr.Count, cr.Names.Length));   // one more, unnamed
+        Assert.Equal(written.ShipCount, s.ShipCount);
+        Assert.Equal(3, ScenarioLoader.Stations(s.Units.Single(u => u.Name == "1st Destroyer Detachment")).Count);   // the struck aren't placed
+        // back to as written: no change left
+        Assert.True(setup.Resize("1st Destroyer Detachment", "buyny", 1).Resize("Cruiser Division", "aurora", -1).IsEmpty);
+        // a unit removed: every ship under it struck, it stays to be shown so
+        var gone = new ScenarioSetup().With(new RemoveUnit("Second Pacific Squadron")).Apply(written);
+        var sps = gone.Units.Single(u => u.Name == "Second Pacific Squadron");
+        Assert.True(sps.Removed);
+        Assert.Equal(0, sps.ShipCount);
+        Assert.Equal(["Oslyabya", "Sissoi Veliky", "Navarin"], sps.Units[1].Ships[0].Struck);
+        Assert.Empty(ScenarioLoader.Stations(sps));
+        Assert.Throws<ScenarioException>(() => new ScenarioSetup().Resize("Cruiser Division", "aurora", -3).Apply(written));
+    }
+
+    [Fact]
+    public void A_count_follows_its_ships_through_a_swap_and_applies_after_the_swaps()
+    {
+        var written = Tsushima();
+        const string Dd = "1st Destroyer Detachment";
+        // − then a swap of the row: the count names the new design; either way round the same ships
+        var a = new ScenarioSetup().Resize(Dd, "buyny", -1).Swap(Dd, null, "buyny", "ikazuchi");
+        var b = new ScenarioSetup().Swap(Dd, null, "buyny", "ikazuchi").Resize(Dd, "ikazuchi", -1);
+        Assert.Contains(new ChangeCount(Dd, "ikazuchi", -1), a.Changes);
+        var sa = Squadrons(a.Apply(written).Units).Single(x => x.Unit == Dd).Ships;
+        var sb = Squadrons(b.Apply(written).Units).Single(x => x.Unit == Dd).Ships;
+        Assert.Equal(("ikazuchi", 3, "Grozny"), (sa.Design, sa.Count, string.Join(",", sa.Struck)));
+        Assert.Equal((sb.Design, sb.Count, string.Join(",", sb.Struck)), (sa.Design, sa.Count, string.Join(",", sa.Struck)));
+        // swapped back, the count goes back with it
+        Assert.Equal([new ChangeCount(Dd, "buyny", -1)], a.Swap(Dd, null, "ikazuchi", "buyny").Changes);
+    }
+
+    [Fact]
+    public void A_unit_is_added_on_its_own_or_joining_a_force_and_its_own_changes_fold_into_it()
+    {
+        var written = Tsushima();
+        var own = Squadron("3rd Armoured Division", 0, "oslyabya", 4, (34.035, 129.8));
+        var setup = new ScenarioSetup().With(new AddUnit(own, null));
+        var s = setup.Apply(written);
+        Assert.Equal(written.ShipCount + 4, s.ShipCount);
+        Assert.Same(own, s.Units[^1]);
+        // its − and its design's change are its own, not changes of their own
+        setup = setup.Resize("3rd Armoured Division", "oslyabya", -1).Swap("3rd Armoured Division", null, "oslyabya", "borodino");
+        var add = Assert.IsType<AddUnit>(Assert.Single(setup.Changes));
+        Assert.Equal(("borodino", 3), (add.Unit.Ships[0].Design, add.Unit.Ships[0].Count));
+        Assert.True(setup.WithoutAdded("3rd Armoured Division").IsEmpty);
+        // joining a force: its last unit, on its station there
+        var reserve = new ScenarioUnit { Name = "Reserve", Side = 0, Formation = Formation.Column, SpacingM = 600 };
+        reserve.Ships.Add(new ScenarioShips { Design = "aurora", Count = 2 });
+        var joined = new ScenarioSetup().With(new AddUnit(reserve, "Second Pacific Squadron")).Apply(written);
+        var sps = joined.Units.Single(u => u.Name == "Second Pacific Squadron");
+        Assert.Equal("Reserve", sps.Units[^1].Name);
+        Assert.Equal(9, ScenarioLoader.Stations(sps).Count);
+        Assert.Throws<ScenarioException>(() => new ScenarioSetup().With(new AddUnit(reserve, "Cruiser Division")).Apply(written));   // a squadron
+        Assert.Throws<ScenarioException>(() => new ScenarioSetup().With(new AddUnit(Squadron("Cruiser Division", 0, "aurora", 1), null)).Apply(written));   // a name taken
+    }
+
     [Fact]
     public void A_setup_saved_reads_back_to_the_same_scenario()
     {
@@ -116,6 +192,9 @@ public class ScenarioSetupTests
             .With(new PlayAs(null))
             .With(new SwapDesign("Cruiser Division", null, "aurora", "izumo"))
             .With(new SwapDesign(null, "Oslyabya", "oslyabya", "borodino"))
+            .With(new AddUnit(Squadron("3rd Armoured Division", 0, "oslyabya", 4, (34.035, 129.8)), null))
+            .Resize("1st Destroyer Detachment", "buyny", -2)
+            .With(new RemoveUnit("1st Destroyer Flotilla"))
             .With(new SideSetting(SideKind.Fuel, 0, "0.6"))
             .With(new SideSetting(SideKind.FireDiscipline, 1, "rn-1914"))
             .With(new SetSeed(1906));
@@ -131,6 +210,8 @@ public class ScenarioSetupTests
             Assert.Equal("Tsushima · test", read.Name);
             Assert.Equal(set.Player, read.Player);
             Assert.Equal(Designs(set), Designs(read));
+            Assert.Equal(set.ShipCount, read.ShipCount);
+            Assert.Equal(Squadrons(set.Units).Select(x => string.Join(",", x.Ships.Struck)), Squadrons(read.Units).Select(x => string.Join(",", x.Ships.Struck)));
             Assert.Equal(set.Fuel, read.Fuel);
             Assert.Equal(set.FireDisciplines, read.FireDisciplines);
             Assert.Equal(set.Seed, read.Seed);

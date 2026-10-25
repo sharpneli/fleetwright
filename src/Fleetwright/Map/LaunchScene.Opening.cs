@@ -30,6 +30,30 @@ public sealed unsafe partial class LaunchScene
     sealed class OpeningView
     {
         public Vector2 At, Size;
+        // the projection: gnomonic on the tangent plane at C, framed about (Mx, My) at Mpp metres a pixel
+        public Vec3d C, East, North;
+        public double Mx, My, Mpp;
+        public readonly List<(ScenarioUnit Unit, Vec3d Head, Vec3d[] Ships)> Placed = [];
+
+        public (double X, double Y) Plane(Vec3d p)
+        {
+            var q = p.Normalized();
+            double k = Vec3d.Dot(q, C);
+            return (Vec3d.Dot(q, East) / k * Earth.Radius, Vec3d.Dot(q, North) / k * Earth.Radius);
+        }
+
+        public Vector2 Of(Vec3d p)
+        {
+            var (x, y) = Plane(p);
+            return new((float)(At.X + Size.X / 2 + (x - Mx) / Mpp), (float)(At.Y + Size.Y / 2 - (y - My) / Mpp));
+        }
+
+        /// <summary>The point on the sea under a pixel.</summary>
+        public Vec3d From(Vector2 s)
+        {
+            double x = (s.X - At.X - Size.X / 2) * Mpp + Mx, y = -(s.Y - At.Y - Size.Y / 2) * Mpp + My;
+            return (C + East * (x / Earth.Radius) + North * (y / Earth.Radius)).Normalized() * Earth.Radius;
+        }
         public readonly List<Vector2[]> Coast = [], Grid = [];
         public readonly List<(Vector2 A, Vector2 B)> Fill = [];   // the land's spans, a pixel row each
         public readonly List<UnitMark> Units = [];
@@ -40,7 +64,7 @@ public sealed unsafe partial class LaunchScene
 
     void Opening(Vector2 at, Vector2 size)
     {
-        if (pick < 0 || entries[pick].Scenario is not { } s)
+        if (current is not { } s)
             return;
         if (opening is not { } v || v.At != at || v.Size != size)
             opening = v = Build(s, at, size);
@@ -85,8 +109,10 @@ public sealed unsafe partial class LaunchScene
             Mark(new Vector2(kx + 5 * sc, b.Y - 12 * sc), v.Keys[k].Ring, v.Keys[k].Colour, 3.5f, 1);
             Txt(UiFonts.SansSmall, 11, new Vector2(kx + 12 * sc, b.Y - 20 * sc), v.Keys[k].Colour, v.Keys[k].Text);
         }
+        if (placing != null)
+            PlacingOverlay(v);
         dl.PopClipRect();
-        dl.AddRect(at, b, U(EdgeC), 3 * sc);
+        dl.AddRect(at, b, U(placing != null ? Amber : EdgeC), 3 * sc);
     }
 
     /// <summary>A unit's mark (the map symbols' own): a ring for the player's side, a diamond for the other.</summary>
@@ -117,7 +143,7 @@ public sealed unsafe partial class LaunchScene
         var units = new List<(ScenarioUnit Unit, Vec3d Head, Vec3d Lead, List<Vec3d> Ships)>();
         foreach (var u in s.Units)
         {
-            if (u.At is not { } p0)
+            if (u.At is not { } p0 || u.ShipCount == 0)
                 continue;
             var head = Earth.Position(p0.Lat, p0.Lon);
             var fwd = Earth.Forward(head, u.CourseDeg);
@@ -125,6 +151,7 @@ public sealed unsafe partial class LaunchScene
             var ships = ScenarioLoader.Stations(u).Select(st => (head - fwd * st.AsternM + starboard * st.AbeamM).Normalized() * Earth.Radius).ToList();
             var lead = (head + fwd * (u.Kn * 1852 * 0.5)).Normalized() * Earth.Radius;
             units.Add((u, head, lead, ships));
+            v.Placed.Add((u, head, [.. ships]));
         }
         if (units.Count == 0)
             return v;
@@ -137,12 +164,8 @@ public sealed unsafe partial class LaunchScene
         var east = Vec3d.Cross(new Vec3d(0, 0, 1), c);
         east = east.Length < 1e-9 ? new Vec3d(1, 0, 0) : east.Normalized();
         var north = Vec3d.Cross(c, east);
-        (double X, double Y) Plane(Vec3d p)
-        {
-            var q = p.Normalized();
-            double k = Vec3d.Dot(q, c);
-            return (Vec3d.Dot(q, east) / k * Earth.Radius, Vec3d.Dot(q, north) / k * Earth.Radius);
-        }
+        (v.C, v.East, v.North) = (c, east, north);
+        var Plane = v.Plane;
         double x0 = double.MaxValue, x1 = double.MinValue, y0 = double.MaxValue, y1 = double.MinValue;
         void Grow((double X, double Y) q) => (x0, x1, y0, y1) = (Math.Min(x0, q.X), Math.Max(x1, q.X), Math.Min(y0, q.Y), Math.Max(y1, q.Y));
         foreach (var (_, head, lead, ships) in units)
@@ -151,11 +174,11 @@ public sealed unsafe partial class LaunchScene
             foreach (var p in ships)
                 Grow(Plane(p));
         }
-        double margin = 50 * sc;
+        double margin = (placing != null ? 110 : 50) * sc;   // the placing view: room round the units to place one
         double mpp = Math.Max(Math.Max((x1 - x0) / (size.X - 2 * margin), (y1 - y0) / (size.Y - 2 * margin)), 15 / sc);
         double mx = (x0 + x1) / 2, my = (y0 + y1) / 2;
-        Vector2 Screen((double X, double Y) q) => new((float)(at.X + size.X / 2 + (q.X - mx) / mpp), (float)(at.Y + size.Y / 2 - (q.Y - my) / mpp));
-        Vector2 Of(Vec3d p) => Screen(Plane(p));
+        (v.Mx, v.My, v.Mpp) = (mx, my, mpp);
+        var Of = v.Of;
 
         // the land: each ring near the view brought into its cap, projected, clipped to the frame
         double halfDiag = Math.Sqrt(size.X * size.X + size.Y * size.Y) / 2 * mpp;

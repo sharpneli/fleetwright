@@ -522,7 +522,7 @@ public sealed record Scenario
         return pairs;
     }
 
-    static ScenarioUnit ParseUnit(JsonElement e, string path, bool top, int parentSide, int sides, LoadoutSpec? parentLoadout = null)
+    internal static ScenarioUnit ParseUnit(JsonElement e, string path, bool top, int parentSide, int sides, LoadoutSpec? parentLoadout = null)
     {
         if (e.ValueKind != JsonValueKind.Object)
             throw new ScenarioException($"{path}: not an object");
@@ -676,6 +676,15 @@ public sealed record Scenario
         Enum.TryParse<Dye>(s, ignoreCase: true, out var d) && Enum.IsDefined(d) && !int.TryParse(s, out _) ? d
             : throw new ScenarioException($"{path}: no dye \"{s}\" ({string.Join(", ", Enum.GetNames<Dye>().Select(n => n.ToLowerInvariant()))})");
 
+    /// <summary>A formation as a file names it.</summary>
+    internal static string FormationName(Formation f) => f switch
+    {
+        Formation.LineAbreast => "abreast",
+        Formation.EchelonStarboard => "echelon-s",
+        Formation.EchelonPort => "echelon-p",
+        _ => "column",
+    };
+
     static Formation ParseFormation(string s, string path) => s switch
     {
         "column" => Formation.Column,
@@ -748,16 +757,20 @@ public sealed class ScenarioUnit
     /// <summary>The loadout its ships carry (its own <c>"loadout"</c>, else its parent's), unless a ship entry gives one.</summary>
     public LoadoutSpec? Loadout { get; init; }
 
+    /// <summary>Taken off by a setup (docs/map-ui/launch.md L3b): every ship under it struck, so none is placed; kept in
+    /// the tree for the launch screen to show it struck, with its undo.</summary>
+    public bool Removed { get; init; }
+
     public bool IsForce => Units.Count > 0;
     public int ShipCount => IsForce ? Units.Sum(u => u.ShipCount) : Ships.Sum(s => s.Count);
 
     /// <summary>A copy with other sub-units and ships, the rest the same (a setup's changes: the written one untouched).</summary>
-    internal ScenarioUnit With(IEnumerable<ScenarioUnit> units, IEnumerable<ScenarioShips> ships)
+    internal ScenarioUnit With(IEnumerable<ScenarioUnit> units, IEnumerable<ScenarioShips> ships, bool? removed = null)
     {
         var u = new ScenarioUnit
         {
             Name = Name, Side = Side, Formation = Formation, SpacingM = SpacingM, At = At, CourseDeg = CourseDeg, Kn = Kn,
-            Route = Route, Loop = Loop, Doctrine = Doctrine, Tasks = Tasks, Loadout = Loadout,
+            Route = Route, Loop = Loop, Doctrine = Doctrine, Tasks = Tasks, Loadout = Loadout, Removed = removed ?? Removed,
         };
         u.Units.AddRange(units);
         u.Ships.AddRange(ships);
@@ -780,14 +793,36 @@ public sealed class ScenarioShips
     /// their design's own.</summary>
     public LoadoutSpec? Loadout { get; init; }
 
+    /// <summary>The ships a setup took off the end of the entry (docs/map-ui/launch.md L3b), their names in order ("" for
+    /// one unnamed): not in <see cref="Count"/>, never placed; the launch screen shows them struck.</summary>
+    public string[] Struck { get; init; } = [];
+
     /// <summary>Ships <paramref name="from"/> to <paramref name="from"/> + <paramref name="count"/> of the entry, of a
-    /// design: their names and dyes go with them.</summary>
+    /// design: their names and dyes go with them, and the struck with the slice that ends the entry.</summary>
     internal ScenarioShips Slice(int from, int count, string design) => new()
     {
         Design = design, Count = count, Loadout = Loadout,
         Names = from < Names.Length ? Names[from..Math.Min(from + count, Names.Length)] : [],
         Dyes = from < Dyes.Length ? Dyes[from..Math.Min(from + count, Dyes.Length)] : [],
+        Struck = from + count >= Count ? Struck : [],
     };
+
+    /// <summary>The entry with <paramref name="n"/> more ships at its end, unnamed.</summary>
+    internal ScenarioShips Grown(int n) => new() { Design = Design, Count = Count + n, Names = Names, Dyes = Dyes, Loadout = Loadout, Struck = Struck };
+
+    /// <summary>The entry with its last <paramref name="n"/> ships taken off: struck (kept by name for the screen), or
+    /// gone.</summary>
+    internal ScenarioShips Shrunk(int n, bool strike)
+    {
+        int keep = Count - n;
+        var off = Enumerable.Range(keep, n).Select(i => i < Names.Length ? Names[i] : "");
+        return new()
+        {
+            Design = Design, Count = keep, Loadout = Loadout,
+            Names = Names[..Math.Min(keep, Names.Length)], Dyes = Dyes[..Math.Min(keep, Dyes.Length)],
+            Struck = strike ? [.. off, .. Struck] : Struck,
+        };
+    }
 }
 
 /// <summary>A top unit's opening task (docs/battle/command.md 5.1c): <c>"task": { "do": "scout", "of": "Grand Fleet",

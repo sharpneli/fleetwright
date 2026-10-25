@@ -218,6 +218,7 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
     void Pick(int i)
     {
         ClosePicker();
+        placing = null;
         pick = i;
         (written, current, setupError) = (null, null, null);
         if (i < 0 || entries[i].Scenario is not { } s)
@@ -294,12 +295,15 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         SDL_EndGPURenderPass(pass);
     }
 
-    /// <summary>Esc shuts the picker; with nothing open, the menu.</summary>
+    /// <summary>Esc shuts the picker, or stops placing a unit; with nothing open, the menu.</summary>
     public bool ProcessEvent(SDL_Event* e, uint width, uint height)
     {
-        if ((SDL_EventType)e->type == SDL_EventType.SDL_EVENT_KEY_DOWN && (uint)e->key.key == SDLK_ESCAPE && pickerRow != null && !saveOpen)
+        if ((SDL_EventType)e->type == SDL_EventType.SDL_EVENT_KEY_DOWN && (uint)e->key.key == SDLK_ESCAPE && (pickerRow != null || placing != null) && !saveOpen)
         {
-            ClosePicker();
+            if (pickerRow != null)
+                ClosePicker();
+            else
+                placing = null;
             return true;
         }
         return false;
@@ -365,6 +369,12 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         {
             pendingSide = null;
             SetSide(ps);
+        }
+        if (pendingEdit is { } pe)
+        {
+            pendingEdit = null;
+            if (!begin)
+                Edit(pe);
         }
     }
 
@@ -772,6 +782,12 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
                 Edit(setup with { Changes = [] });
             return;
         }
+        if (placing != null)
+        {
+            // the placing view: the opening widened over the header
+            Opening(new Vector2(x, y), new Vector2(w - 48 * sc, h - 34 * sc));
+            return;
+        }
         Tracked(UiFonts.Sans, 10.5f, new Vector2(x, y), Brass, kicker, 1.2f);
         Txt(UiFonts.PosterTitle, 34, new Vector2(x, y + 14 * sc), Bright, current.Name);
         Txt(UiFonts.SansSmall, 12, new Vector2(x, y + 58 * sc), Muted, meta);
@@ -957,14 +973,14 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         bool reset = ImGui.InvisibleButton("##resetall", new Vector2(rw, 16 * sc));
         Txt(UiFonts.SansSmall, 11.5f, new Vector2(at.X + w - rw, y), ImGui.IsItemHovered() ? Hex(0xE6C77A) : Brass, Reset);
         y += 24 * sc;
-        string? undo = null;
+        SetupChange? undo = null;
         foreach (var c in setup.Changes)
         {
             HLine(at.X, at.X + w, y + 21 * sc);
             Txt(UiFonts.SansSmall, 12, new Vector2(at.X, y + 2 * sc), Brass, Described(c));
             ImGui.SetCursorScreenPos(new Vector2(at.X + w - 16 * sc, y));
             if (ImGui.InvisibleButton($"##undo{c.Key}", new Vector2(16 * sc, 20 * sc)))
-                undo = c.Key;
+                undo = c;
             bool hover = ImGui.IsItemHovered();
             var xc = new Vector2(at.X + w - 7 * sc, y + 10 * sc);
             uint xcol = U(hover ? Hostile : Muted);
@@ -977,16 +993,23 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         if (reset)
             Edit(setup with { Changes = [] });
         else if (undo != null)
-            Edit(setup.Without(undo));
+            Edit(undo is AddUnit a ? setup.WithoutAdded(a.Unit.Name) : setup.Without(undo.Key));
     }
 
-    // each change's line, made once (a frame allocates nothing for a list that stands)
-    readonly Dictionary<SetupChange, string> described = [];
+    // each change's line, made once (a frame allocates nothing for a list that stands); by the change itself, as a
+    // change is a new one when it's changed
+    readonly Dictionary<SetupChange, string> described = new(ReferenceEqualityComparer.Instance);
 
     string Described(SetupChange c)
     {
         if (!described.TryGetValue(c, out var s))
-            described[c] = s = c is SwapDesign sw ? sw.Describe(written!, TitleOf) : c.Describe(written!);
+            described[c] = s = c switch
+            {
+                SwapDesign sw => sw.Describe(written!, TitleOf),
+                AddUnit a => a.Describe(written!, TitleOf),
+                ChangeCount n => n.Describe(written!, TitleOf),
+                _ => c.Describe(written!),
+            };
         return s;
     }
 

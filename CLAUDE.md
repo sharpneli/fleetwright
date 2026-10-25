@@ -76,7 +76,10 @@ in. `SceneSwitcher` shows it in place of the map until a scenario begins. What t
 Save setup… as a scenario file with `"from"` in My Games/Fleetwright/Setups and listed under Your setups. The body's
 first column is each side's ships (`LaunchScene.Ships.cs`, L3): a row a design, drawn to scale with its figures, and
 Change… opens the design picker (`LaunchScene.Picker.cs`): every design the scenario can name, built without art for
-their figures, used for a unit, one ship or every ship of the design; a copy goes to the designer and comes back as yours. Wheel zooms at the cursor, left drag pans. Ships (`MapScene.Ships.cs`, step 2.3a): a click
+their figures, used for a unit, one ship or every ship of the design; a copy goes to the designer and comes back as yours.
+A row's − n + strikes or adds ships, a unit's ✕ strikes it (undo in place), and + Add a unit… opens the picker's add mode
+(`LaunchScene.Add.cs`, L3b): a new squadron joined to a force, or placed on the opening widened over the header (press
+for her head, drag for the course). Wheel zooms at the cursor, left drag pans. Ships (`MapScene.Ships.cs`, step 2.3a): a click
 selects (twice: her squadron takes the orders; Tab steps through your ships), the strip at the bottom
 (`MapScene.Strip.cs`, docs/map-ui/battle-hud.md U2) gives the orders: who to (the ship or a unit above her), helm and
 telegraph, guns, torpedoes and smoke, the task (fight, follow…, hold; Task ▾ or T opens the task menu,

@@ -14,12 +14,23 @@ namespace Fleetwright.Sim.Missions;
 /// { "scenario": 1, "name": "Tsushima · 14 in Borodinos", "from": "tsushima", "player": "Russia",
 ///   "designs": [ { "unit": "1st Armoured Division", "from": "borodino", "to": "borodino_14in" },
 ///                { "ship": "Oslyabya", "from": "oslyabya", "to": "borodino" }, { "from": "buyny", "to": "ikazuchi" } ],
+///   "add": [ { "name": "3rd Armoured Division", "side": 0, "at": [34.035, 129.8], "course": 23, "kn": 11,
+///              "ships": [ { "design": "oslyabya", "count": 4 } ] },
+///            { "name": "Reserve", "joins": "Second Pacific Squadron", "ships": [ { "design": "aurora", "count": 2 } ] } ],
+///   "counts": [ { "unit": "Cruiser Division", "design": "aurora", "by": 1 } ], "remove": [ "1st Destroyer Detachment" ],
 ///   "crews": { "Japan": "average" }, "readiness": { "Russia": "closed up" }, "damage_control": { "Russia": "1916" },
 ///   "fire_discipline": { "Russia": "rn-1914" }, "fuel": { "Russia": 0.6 }, "seed": 1906 }
 /// </code>
 /// <para>A swap names a unit (any level: every ship of that design under it), or a ship by her name (only her), or
-/// neither (every ship of that design). <c>"player": null</c> watches. A side's setting replaces the written one for that
-/// side only. Tempers, doctrine, the day and adding or removing ships join as the screen's steps bring them (L3b-L5).</para></summary>
+/// neither (every ship of that design). <c>"player": null</c> watches. An added unit is placed on its own (a top unit:
+/// "at", "course", "kn") or <c>"joins"</c> a force on its station (L3b); it takes a unit's name, side, formation, spacing
+/// and units or ships (design, names, count), nothing more. A count takes ships off the end of a squadron's ships of a
+/// design (struck, the last first) or adds unnamed ones; a removed unit has every ship under it struck. A side's setting
+/// replaces the written one for that side only. Tempers, doctrine and the day join as the screen's steps bring them
+/// (L4-L5).</para>
+/// <para>The changes apply by kind (<see cref="SetupChange.Order"/>: the side, the units added, the swaps, the counts, the
+/// removals, the sides' settings, the seed), each kind in the order made, so the file (written by kind) reads back to the
+/// same scenario. A count names the design its ships have after the swaps, which <see cref="Swap"/> keeps.</para></summary>
 public sealed record ScenarioSetup
 {
     /// <summary>The setup's own name ("Tsushima · 14 in Borodinos"), or "" for the written one's.</summary>
@@ -53,10 +64,56 @@ public sealed record ScenarioSetup
     {
         if (from == to)
             return this;
+        // a unit the setup added has its own design changed
+        if (unit != null && ship == null && AddedHolding(unit) is { } add)
+            return With(add with { Unit = Tree.Rebuild(add.Unit, unit, u => Swapped(u, from, to)) });
         var prior = Changes.OfType<SwapDesign>().FirstOrDefault(c => c.To == from && c.Unit == unit && c.Ship == ship);
-        return prior == null ? With(new SwapDesign(unit, ship, from, to))
+        var next = prior == null ? With(new SwapDesign(unit, ship, from, to))
             : prior.From == to ? Without(prior.Key)
             : With(prior with { To = to });
+        // the counts of the ships swapped name their new design (they apply after the swaps); a ship swapped on her own
+        // leaves the count to the rest
+        if (ship != null)
+            return next;
+        foreach (var c in next.Changes.OfType<ChangeCount>().Where(c => c.Design == from && (unit == null || c.Unit == unit)).ToList())
+            next = next.Without(c.Key).Recount(c.Unit, to, c.By);
+        return next;
+    }
+
+    static ScenarioUnit Swapped(ScenarioUnit u, string from, string to) =>
+        u.With(u.Units.Select(x => Swapped(x, from, to)).ToList(), u.Ships.Select(e => e.Design == from ? e.Slice(0, e.Count, to) : e).ToList());
+
+    /// <summary>The setup with <paramref name="by"/> more ships of a design in a squadron, or fewer (the launch screen's +
+    /// and −): a unit the setup added has its own ships changed; any other's count is one change a row, taken away when
+    /// it comes back to as written.</summary>
+    public ScenarioSetup Resize(string unit, string design, int by)
+    {
+        if (by == 0)
+            return this;
+        if (AddedHolding(unit) is { } add)
+            return With(add with { Unit = Tree.Rebuild(add.Unit, unit, u => ChangeCount.Resized(u, design, by, strike: false)) });
+        return Recount(unit, design, by);
+    }
+
+    ScenarioSetup Recount(string unit, string design, int by)
+    {
+        var prior = Changes.OfType<ChangeCount>().FirstOrDefault(c => c.Unit == unit && c.Design == design);
+        int total = (prior?.By ?? 0) + by;
+        return total != 0 ? With(new ChangeCount(unit, design, total)) : prior != null ? Without(prior.Key) : this;
+    }
+
+    /// <summary>The unit the setup added that is, or holds, a unit of that name.</summary>
+    public AddUnit? AddedHolding(string unit) => Changes.OfType<AddUnit>().FirstOrDefault(a => Tree.Holds(a.Unit, unit));
+
+    /// <summary>The setup without a unit it added (its ✕), and the changes made to it.</summary>
+    public ScenarioSetup WithoutAdded(string name)
+    {
+        var add = Changes.OfType<AddUnit>().FirstOrDefault(a => a.Unit.Name == name);
+        if (add == null)
+            return this;
+        bool Of(SetupChange c) => c == add || c is ChangeCount cc && Tree.Holds(add.Unit, cc.Unit) || c is SwapDesign { Unit: { } u } && Tree.Holds(add.Unit, u)
+                                  || c is RemoveUnit r && Tree.Holds(add.Unit, r.Name);
+        return this with { Changes = [.. Changes.Where(c => !Of(c))] };
     }
 
     /// <summary>The setup without a change (the screen's ✕), or without every change of a key.</summary>
@@ -69,7 +126,7 @@ public sealed record ScenarioSetup
     {
         written = written.Written ?? written;
         var s = written;
-        foreach (var c in Changes)
+        foreach (var c in Changes.OrderBy(c => c.Order))   // stable: each kind in the order made
             s = c.Apply(s);
         return s with { Name = Name.Length > 0 ? Name : written.Name, Setup = this, Written = written };
     }
@@ -80,7 +137,7 @@ public sealed record ScenarioSetup
     internal static bool IsSetup(JsonElement r) =>
         r.TryGetProperty("from", out _) && !r.TryGetProperty("units", out _) && !r.TryGetProperty("only", out _) && !r.TryGetProperty("sides", out _);
 
-    static readonly string[] Keys = ["scenario", "name", "from", "player", "designs", "crews", "readiness", "damage_control", "fire_discipline", "fuel", "seed"];
+    static readonly string[] Keys = ["scenario", "name", "from", "player", "add", "designs", "counts", "remove", "crews", "readiness", "damage_control", "fire_discipline", "fuel", "seed"];
 
     /// <summary>A setup file's changes, read against the scenario it's of.</summary>
     internal static ScenarioSetup Parse(JsonElement r, Scenario written)
@@ -96,6 +153,36 @@ public sealed record ScenarioSetup
             if (player != null && Array.IndexOf(sides, player) < 0)
                 throw new ScenarioException($"player: \"{player}\" isn't one of the sides ({string.Join(", ", sides)})");
             changes.Add(new PlayAs(player));
+        }
+        if (r.TryGetProperty("add", out var ad))
+        {
+            if (ad.ValueKind != JsonValueKind.Array)
+                throw new ScenarioException("add: a list of units, [ { \"name\": ..., \"side\": 0, \"at\": [lat, lon], ... } ]");
+            int i = 0;
+            foreach (var a in ad.EnumerateArray())
+                changes.Add(AddUnit.Parse(a, $"add[{i++}]", written, changes.OfType<AddUnit>()));
+        }
+        if (r.TryGetProperty("counts", out var cs))
+        {
+            if (cs.ValueKind != JsonValueKind.Array)
+                throw new ScenarioException("counts: a list, [ { \"unit\": ..., \"design\": ..., \"by\": 1 } ]");
+            int i = 0;
+            foreach (var c in cs.EnumerateArray())
+            {
+                string unit = Str(c, "unit"), design = Str(c, "design");
+                if (unit.Length == 0 || design.Length == 0 || !c.TryGetProperty("by", out var by) || !by.TryGetInt32(out int n) || n == 0)
+                    throw new ScenarioException($"counts[{i}]: \"unit\", \"design\" and \"by\", how many more (less than 0: fewer)");
+                changes.Add(new ChangeCount(unit, design, n));
+                i++;
+            }
+        }
+        if (r.TryGetProperty("remove", out var rm))
+        {
+            if (rm.ValueKind != JsonValueKind.Array)
+                throw new ScenarioException("remove: a list of units' names");
+            foreach (var n in rm.EnumerateArray())
+                changes.Add(new RemoveUnit(n.ValueKind == JsonValueKind.String && n.GetString() is { Length: > 0 } name ? name
+                    : throw new ScenarioException("remove: a list of units' names")));
         }
         if (r.TryGetProperty("designs", out var ds))
         {
@@ -158,6 +245,14 @@ public sealed record ScenarioSetup
                     w.WriteNull("player");
                 else
                     w.WriteString("player", c.Side);
+            var adds = Changes.OfType<AddUnit>().ToList();
+            if (adds.Count > 0)
+            {
+                w.WriteStartArray("add");
+                foreach (var a in adds)
+                    a.Write(w);
+                w.WriteEndArray();
+            }
             var swaps = Changes.OfType<SwapDesign>().ToList();
             if (swaps.Count > 0)
             {
@@ -173,6 +268,28 @@ public sealed record ScenarioSetup
                     w.WriteString("to", sw.To);
                     w.WriteEndObject();
                 }
+                w.WriteEndArray();
+            }
+            var counts = Changes.OfType<ChangeCount>().ToList();
+            if (counts.Count > 0)
+            {
+                w.WriteStartArray("counts");
+                foreach (var c in counts)
+                {
+                    w.WriteStartObject();
+                    w.WriteString("unit", c.Unit);
+                    w.WriteString("design", c.Design);
+                    w.WriteNumber("by", c.By);
+                    w.WriteEndObject();
+                }
+                w.WriteEndArray();
+            }
+            var removed = Changes.OfType<RemoveUnit>().ToList();
+            if (removed.Count > 0)
+            {
+                w.WriteStartArray("remove");
+                foreach (var c in removed)
+                    w.WriteStringValue(c.Name);
                 w.WriteEndArray();
             }
             foreach (var kind in Enum.GetValues<SideKind>())
@@ -203,6 +320,9 @@ public abstract record SetupChange
 {
     public abstract string Key { get; }
 
+    /// <summary>Where its kind applies among the others (<see cref="ScenarioSetup.Apply"/>), as the file is written.</summary>
+    internal abstract int Order { get; }
+
     internal abstract Scenario Apply(Scenario s);
 
     /// <summary>The change in a line, as the launch screen's list and the result say it.</summary>
@@ -213,6 +333,7 @@ public abstract record SetupChange
 public sealed record PlayAs(string? Side) : SetupChange
 {
     public override string Key => "player";
+    internal override int Order => 0;
 
     internal override Scenario Apply(Scenario s) =>
         Side == null || Array.IndexOf(s.Sides, Side) >= 0 ? s with { PlayerName = Side }
@@ -227,6 +348,7 @@ public sealed record PlayAs(string? Side) : SetupChange
 public sealed record SwapDesign(string? Unit, string? Ship, string From, string To) : SetupChange
 {
     public override string Key => $"design|{Unit}|{Ship}|{From}";
+    internal override int Order => 2;
 
     internal override Scenario Apply(Scenario s)
     {
@@ -293,6 +415,7 @@ public enum SideKind
 public sealed record SideSetting(SideKind Kind, int Side, string Value) : SetupChange
 {
     public override string Key => $"{Kind}|{Side}";
+    internal override int Order => 5;
 
     internal static string FileKey(SideKind k) => k switch
     {
@@ -347,8 +470,253 @@ public sealed record SideSetting(SideKind Kind, int Side, string Value) : SetupC
 public sealed record SetSeed(ulong Seed) : SetupChange
 {
     public override string Key => "seed";
+    internal override int Order => 6;
 
     internal override Scenario Apply(Scenario s) => s with { Seed = Seed };
 
     public override string Describe(Scenario written) => $"Seed {Seed} (written: {written.Seed})";
+}
+
+/// <summary>A unit added (docs/map-ui/launch.md L3b): placed on its own, a top unit with its place, course and speed, or
+/// joining a force (<see cref="Joins"/>, its name) as its last unit, on its station there as the force's own are. Its
+/// name is new to the scenario. Equal to another of the same unit as written out (a file read back is the same
+/// change).</summary>
+public sealed record AddUnit(ScenarioUnit Unit, string? Joins) : SetupChange
+{
+    public override string Key => $"add|{Unit.Name}";
+    internal override int Order => 1;
+
+    internal override Scenario Apply(Scenario s)
+    {
+        if (Unit.Side < 0 || Unit.Side >= s.Sides.Length)
+            throw new ScenarioException($"add: {Unit.Name}: no side {Unit.Side}");
+        if (Tree.Find(s.Units, Unit.Name) != null)
+            throw new ScenarioException($"add: a unit \"{Unit.Name}\" is in the scenario already");
+        if (Joins == null)
+            return Unit.At != null ? s with { Units = [.. s.Units, Unit] }
+                : throw new ScenarioException($"add: {Unit.Name}: on its own, it needs \"at\", \"course\" and \"kn\"");
+        var units = Tree.Rebuild(s.Units, Joins, f =>
+            !f.IsForce ? throw new ScenarioException($"add: {Unit.Name} joins {Joins}, a squadron: a unit joins a force (a squadron takes more ships with +)")
+            : f.Side != Unit.Side ? throw new ScenarioException($"add: {Unit.Name} joins {Joins}, of another side")
+            : f.With([.. f.Units, Unit], f.Ships), out bool found);
+        return found ? s with { Units = units } : throw new ScenarioException($"add: {Unit.Name} joins \"{Joins}\": no such unit");
+    }
+
+    public override string Describe(Scenario written) => Describe(written, d => d);
+
+    /// <summary>The change in a line with the designs by their names (the launch screen's titles).</summary>
+    public string Describe(Scenario written, Func<string, string> nameOf)
+    {
+        var ships = new List<string>();
+        void Walk(ScenarioUnit u)
+        {
+            foreach (var e in u.Ships)
+                ships.Add($"{e.Count} × {nameOf(e.Design)}");
+            foreach (var x in u.Units)
+                Walk(x);
+        }
+        Walk(Unit);
+        string side = Unit.Side < written.Sides.Length ? written.Sides[Unit.Side] + ": " : "";
+        return $"{side}added {Unit.Name} ({string.Join(", ", ships)}){(Joins != null ? ", joining " + Joins : "")}";
+    }
+
+    public bool Equals(AddUnit? o) => o is not null && Joins == o.Joins && Json() == o.Json();
+
+    public override int GetHashCode() => HashCode.Combine(Unit.Name, Joins);
+
+    string Json()
+    {
+        using var ms = new MemoryStream();
+        using (var w = new Utf8JsonWriter(ms))
+            Write(w);
+        return Encoding.UTF8.GetString(ms.ToArray());
+    }
+
+    /// <summary>The unit as the file's "add" has it.</summary>
+    internal void Write(Utf8JsonWriter w) => Write(w, Unit, Joins == null, Joins);
+
+    static void Write(Utf8JsonWriter w, ScenarioUnit u, bool top, string? joins)
+    {
+        w.WriteStartObject();
+        w.WriteString("name", u.Name);
+        if (joins != null)
+            w.WriteString("joins", joins);
+        if (top || joins != null)
+            w.WriteNumber("side", u.Side);
+        if (top && u.At is { } at)
+        {
+            w.WriteStartArray("at");
+            w.WriteNumberValue(at.Lat);
+            w.WriteNumberValue(at.Lon);
+            w.WriteEndArray();
+            w.WriteNumber("course", u.CourseDeg);
+            w.WriteNumber("kn", u.Kn);
+        }
+        w.WriteString("formation", Scenario.FormationName(u.Formation));
+        w.WriteNumber("spacing", u.SpacingM);
+        if (u.IsForce)
+        {
+            w.WriteStartArray("units");
+            foreach (var x in u.Units)
+                Write(w, x, false, null);
+            w.WriteEndArray();
+        }
+        else
+        {
+            w.WriteStartArray("ships");
+            foreach (var e in u.Ships)
+            {
+                w.WriteStartObject();
+                w.WriteString("design", e.Design);
+                if (e.Names.Length > 0)
+                {
+                    w.WriteStartArray("names");
+                    foreach (var n in e.Names)
+                        w.WriteStringValue(n);
+                    w.WriteEndArray();
+                }
+                w.WriteNumber("count", e.Count);
+                w.WriteEndObject();
+            }
+            w.WriteEndArray();
+        }
+        w.WriteEndObject();
+    }
+
+    static readonly string[] UnitKeys = ["name", "side", "at", "course", "kn", "formation", "spacing", "units", "ships"], ShipKeys = ["design", "names", "name", "count"];
+
+    /// <summary>A file's added unit: a unit as a scenario's "units" have it, of those keys only, and "joins".</summary>
+    internal static AddUnit Parse(JsonElement a, string path, Scenario written, IEnumerable<AddUnit> earlier)
+    {
+        if (a.ValueKind != JsonValueKind.Object)
+            throw new ScenarioException($"{path}: a unit, {{ \"name\": ..., \"side\": 0, \"at\": [lat, lon], \"course\": ..., \"kn\": ..., \"ships\": [...] }}");
+        Check(a, path, top: true);
+        string? joins = a.TryGetProperty("joins", out var j) && j.ValueKind == JsonValueKind.String ? j.GetString() : null;
+        int side = joins != null ? (Tree.Find(written.Units, joins) ?? earlier.Select(x => Tree.Find([x.Unit], joins)).FirstOrDefault(f => f != null))?.Side ?? 0 : 0;
+        var unit = Scenario.ParseUnit(a, path, top: joins == null, side, written.Sides.Length);
+        return unit.Name.Length > 0 ? new AddUnit(unit, joins) : throw new ScenarioException($"{path}: an added unit needs a \"name\"");
+    }
+
+    static void Check(JsonElement e, string path, bool top)
+    {
+        foreach (var p in e.EnumerateObject())
+            if (Array.IndexOf(UnitKeys, p.Name) < 0 && !(top && p.Name == "joins"))
+                throw new ScenarioException($"{path}: an added unit takes {string.Join(", ", UnitKeys)}{(top ? " and joins" : "")}; not \"{p.Name}\" (more is a scenario's own)");
+        if (e.TryGetProperty("units", out var us) && us.ValueKind == JsonValueKind.Array)
+            foreach (var u in us.EnumerateArray())
+                if (u.ValueKind == JsonValueKind.Object)
+                    Check(u, path, top: false);
+        if (e.TryGetProperty("ships", out var ss) && ss.ValueKind == JsonValueKind.Array)
+            foreach (var sh in ss.EnumerateArray())
+                if (sh.ValueKind == JsonValueKind.Object)
+                    foreach (var p in sh.EnumerateObject())
+                        if (Array.IndexOf(ShipKeys, p.Name) < 0)
+                            throw new ScenarioException($"{path}: an added unit's ships take {string.Join(", ", ShipKeys)}; not \"{p.Name}\"");
+    }
+}
+
+/// <summary>A squadron's ships of a design, <see cref="By"/> more (unnamed, at the end of its last entry of that design)
+/// or fewer (the last first, struck: the launch screen shows them so, none is placed).</summary>
+public sealed record ChangeCount(string Unit, string Design, int By) : SetupChange
+{
+    public override string Key => $"count|{Unit}|{Design}";
+    internal override int Order => 3;
+
+    internal override Scenario Apply(Scenario s)
+    {
+        var units = Tree.Rebuild(s.Units, Unit, u => Resized(u, Design, By, strike: true), out bool found);
+        return found ? s with { Units = units } : throw new ScenarioException($"counts: no unit \"{Unit}\"");
+    }
+
+    /// <summary>A squadron with <paramref name="by"/> more of a design, or fewer: struck, or gone (an added unit's own).</summary>
+    internal static ScenarioUnit Resized(ScenarioUnit sq, string design, int by, bool strike)
+    {
+        var ships = sq.Ships.ToList();
+        int last = ships.FindLastIndex(e => e.Design == design);
+        if (last < 0)
+            throw new ScenarioException($"counts: no {design} in {sq.Name}");
+        if (by > 0)
+            ships[last] = ships[last].Grown(by);
+        for (int i = last, left = -by; left > 0; i--)
+        {
+            if (i < 0)
+                throw new ScenarioException($"counts: fewer than {-by} {design} in {sq.Name} to take off");
+            if (ships[i].Design != design)
+                continue;
+            int k = Math.Min(left, ships[i].Count);
+            ships[i] = ships[i].Shrunk(k, strike);
+            left -= k;
+        }
+        if (!strike)
+            ships.RemoveAll(e => e.Count == 0);
+        return sq.With(sq.Units, ships);
+    }
+
+    public override string Describe(Scenario written) => Describe(written, d => d);
+
+    public string Describe(Scenario written, Func<string, string> nameOf) =>
+        By > 0 ? $"{Unit}: {By} more {nameOf(Design)}" : $"{Unit}: {-By} {nameOf(Design)} taken off";
+}
+
+/// <summary>A unit taken off (any level): every ship under it struck, the unit kept to be shown so.</summary>
+public sealed record RemoveUnit(string Name) : SetupChange
+{
+    public override string Key => $"remove|{Name}";
+    internal override int Order => 4;
+
+    internal override Scenario Apply(Scenario s)
+    {
+        var units = Tree.Rebuild(s.Units, Name, u => Struck(u, top: true), out bool found);
+        return found ? s with { Units = units } : throw new ScenarioException($"remove: no unit \"{Name}\"");
+    }
+
+    static ScenarioUnit Struck(ScenarioUnit u, bool top) =>
+        u.With(u.Units.Select(x => Struck(x, top: false)).ToList(), u.Ships.Select(e => e.Shrunk(e.Count, strike: true)).ToList(), removed: top ? true : null);
+
+    public override string Describe(Scenario written) =>
+        Tree.Find(written.Units, Name) is { } u ? $"Removed {Name} ({u.ShipCount} ship{(u.ShipCount == 1 ? "" : "s")})" : $"Removed {Name}";
+}
+
+/// <summary>A scenario's tree of units, by name: the first of a name, at any level.</summary>
+static class Tree
+{
+    internal static bool Holds(ScenarioUnit u, string name) => u.Name == name || u.Units.Any(x => Holds(x, name));
+
+    internal static ScenarioUnit? Find(IEnumerable<ScenarioUnit> units, string name)
+    {
+        foreach (var u in units)
+            if (u.Name == name)
+                return u;
+            else if (Find(u.Units, name) is { } f)
+                return f;
+        return null;
+    }
+
+    /// <summary>A unit's tree with the unit of that name made over by <paramref name="f"/>, the units above it copied.</summary>
+    internal static ScenarioUnit Rebuild(ScenarioUnit u, string name, Func<ScenarioUnit, ScenarioUnit> f) => Rebuild([u], name, f, out _)[0];
+
+    /// <summary>The units with the first of that name made over by <paramref name="f"/>, the units above it copied, the
+    /// rest shared.</summary>
+    internal static List<ScenarioUnit> Rebuild(IReadOnlyList<ScenarioUnit> units, string name, Func<ScenarioUnit, ScenarioUnit> f, out bool found)
+    {
+        bool hit = false;
+        ScenarioUnit Walk(ScenarioUnit u)
+        {
+            if (hit)
+                return u;
+            if (u.Name == name)
+            {
+                hit = true;
+                return f(u);
+            }
+            var subs = u.Units.Select(Walk).ToList();
+            for (int i = 0; i < subs.Count; i++)
+                if (!ReferenceEquals(subs[i], u.Units[i]))
+                    return u.With(subs, u.Ships);
+            return u;
+        }
+        var list = units.Select(Walk).ToList();
+        found = hit;
+        return list;
+    }
 }
