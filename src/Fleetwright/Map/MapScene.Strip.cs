@@ -89,7 +89,7 @@ public sealed partial class MapScene
             Guns(s, unit, k, cls);
             seps[n++] = ImGui.GetItemRectMax().X + gap / 2;
             ImGui.SameLine(0, gap);
-            TorpedoesAndSmoke(s, k, cls);
+            TorpedoesAndSmoke(s, unit, k, cls);
             seps[n++] = ImGui.GetItemRectMax().X + gap / 2;
             ImGui.SameLine(0, gap);
             Task(s, unit, kc);
@@ -437,8 +437,8 @@ public sealed partial class MapScene
         return batteryText;
     }
 
-    /// <summary>Torpedoes (fire at: armed, click an enemy) and making smoke.</summary>
-    void TorpedoesAndSmoke(Snapshot s, int k, ShipClass? cls)
+    /// <summary>Torpedoes (fire at: armed, click an enemy) and making smoke (the ship, or every ship of the unit her orders go to).</summary>
+    void TorpedoesAndSmoke(Snapshot s, Unit unit, int k, ShipClass? cls)
     {
         ImGui.BeginGroup();
         Head("TORPEDOES", torpText, DesignerTheme.Bright);
@@ -451,13 +451,40 @@ public sealed partial class MapScene
             ImGui.SetTooltip(string.Format(CultureInfo.InvariantCulture, "{0:0} mm: {1:0} kn to {2:0.0} km, or {3:0} kn to {4:0.0} km; then click an enemy",
                 t.CalibreMm, t.FastKn, t.FastRangeM / 1000, t.SlowKn, t.SlowRangeM / 1000));
         }
-        bool smoke = world.Settings.Smoke && cls != null && cls.Funnels.Length > 0;
-        bool making = s.Ships.MakingSmoke[k];
-        if (Seg("Make smoke", making, enabled: smoke, first: true))
-            world.Send(SmokeSystem.MakeSmoke(selected, !making));
+        // smoke for every ship where the orders go (the ship, or her whole unit): on while all of them make it
+        smokers.Clear();
+        if (unit.IsGroup && s.Groups.IndexOfGroup(unit.GroupId) is int g and >= 0)
+            Smokers(s.Groups, g);
+        else
+            smokers.Add(selected);
+        bool funnels = false, making = true;
+        foreach (int e in smokers)
+            if (s.Ships.IndexOf(e) is int i and >= 0)
+            {
+                funnels |= world.Classes.TryGet(s.Ships.Class[i]) is { Funnels.Length: > 0 };
+                making &= s.Ships.MakingSmoke[i];
+            }
+        if (Seg("Make smoke", making, enabled: world.Settings.Smoke && funnels, first: true))
+            foreach (int e in smokers)
+                world.Send(SmokeSystem.MakeSmoke(e, !making));
         if (ImGui.IsItemHovered())
-            ImGui.SetTooltip("her funnels burn rich: a screen");
+            ImGui.SetTooltip(unit.IsGroup ? "every ship of the unit: her funnels burn rich, a screen" : "her funnels burn rich: a screen");
         ImGui.EndGroup();
+    }
+
+    readonly List<int> smokers = [];
+
+    /// <summary>Every ship under a group, into <see cref="smokers"/>.</summary>
+    void Smokers(GroupsView gv, int g)
+    {
+        for (int i = 0; i < gv.MemberCount[g]; i++)
+        {
+            int m = gv.Members[gv.MemberStart[g] + i];
+            if (!gv.Force[g])
+                smokers.Add(m);
+            else if (gv.IndexOfGroup(m) is int sub and >= 0)
+                Smokers(gv, sub);
+        }
     }
 
     /// <summary>The task: the captain's (or the unit's): fight, follow, hold, and every other in the task menu (Task ▾,
