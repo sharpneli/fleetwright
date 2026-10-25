@@ -193,6 +193,15 @@ ex-Russian Uusimaa or Karjala type) and torpedo boat (names and figures to check
 Later cuts carry the Finns further: Väinämöinen and Ilmarinen (1932) against the Soviet Baltic Fleet, and, with
 silliness allowed, the dreadnought Finland's 1920s naval debates never bought.
 
+**25. The battle for Åland, 1921** (hypothetical, 28 June 1921, the Åland Sea south of Mariehamn). Small, 9 against 7.
+Four days after the League of Nations gave Åland to Finland, Stockholm refuses the ruling (in 1918 Swedish warships,
+Thor first, had already anchored at Åland) and sends the coastal fleet to Mariehamn. The Sverige class (Sverige,
+Drottning Victoria, Gustaf V: 4 x 283 mm, 200 mm belt, 22.5 kn) against the Väinämöinen class built a decade early
+(the real pair came in 1932; here Väinämöinen, Ilmarinen and an invented Lemminkäinen: 4 x 254 mm on a 55 mm belt,
+diesel-electric, 15 kn), Wrangel-like destroyers against invented Finnish torpedo boats. The stronger ship that picks
+the range against numbers, the knife and the haze. **Built 2026-10-25** (`aland.json`; designs sverige, vainamoinen,
+wrangel, finnish_tb, all in 1921 tech so nothing is past its period). See "Åland, as built".
+
 **23. Plan Orange, 1923** (hypothetical, the western Pacific). Fleet, about 80.
 The US battle line (the standard types: slow, tough, all-or-nothing) against Japan's (Nagato, Ise, Fuso, the Kongo
 battlecruisers: faster, longer torpedoes). The first cut's last year. Reuse in part: colorado, pennsylvania, nagato,
@@ -246,6 +255,35 @@ New for it: the novara design; the France, Italy and Ottoman ensigns; the launch
 1906-1925; a test that every shipped scenario reads with its designs and ensigns. Found on the way (docs/battle/bugs.md,
 "Balance and calibration"): light ships die too readily (the two fleet battles are far bloodier than history), and the
 German armoured cruisers at Coronel capsize from 6 in hits and shoot worse than the British.
+
+## Åland, as built (2026-10-25)
+
+The user's ask: Sverige class against Väinämöinen class, the class a design so more ships can join it. Choices made:
+
+- **1921, not the 1930s.** The real Väinämöinen is 1932, past the first cut (1890-1925). The Åland crisis (the
+  League's ruling of 24 June 1921) is the natural flashpoint, Sweden's three ships were all afloat by then, and a 1921
+  Väinämöinen built on 1921 tech (Early marine diesels with electric drive, the 1916 director, Standard 1912 shells)
+  stays inside the templates' years, so it carries no Imaginary tag. Both navies fire the same shells and fire control:
+  the fight is the ships.
+- **Looks:** both in their great_war era (Sweden's neutrality chevrons, Finland's ice-field dazzle).
+- **Open water, not the skerries.** The fight opens south of the islands. Land blocks neither sight nor shells in the
+  sim (`Sightings` never asks `Land`), and there's no depth, so Väinämöinen's real trade (shallow draught, hiding
+  behind islands) has nothing to work on yet, and the archipelago slide has open bugs (docs/battle/bugs.md).
+- **The haze is the balance knob.** In 12 km of visibility Sweden keeps the range: Finland loses 3.2 of 9 ships to
+  Sweden's 1.0, and every big ship's magazines run dry by about 08:00 at long-range hit rates of 2-4%. In 8 km it's a
+  fight: Finland 4.1 of 9, Sweden 2.4 of 7 (about a Sverige a run, 13,600 t), from 0 to 8 lost on each side across
+  the seeds (one seed sank all three Sverige).
+- **Sizes:** the generator makes Sverige 10,600 t (history 7,100) and Väinämöinen 2,600 t (3,900); both read as
+  cruisers to the sim (`Sightings.TypeOf`: under 14,000 t full). The destroyers are about 3x history (Wrangel 1,470 t at
+  32 kn, the boats 890 t at 28 kn), as in the destroyer crunch; 34 kn made Wrangel 1,850 t.
+
+Open:
+
+1. **Land that hides.** Islands masking sight (and shells) would give the Finns their real weapon: a skerries
+   variant that opens among the islands. It needs land heights (Natural Earth has none) or a nominal height, and the
+   archipelago slide's bugs fixed first.
+2. **The wave 2 version:** a Swedish landing convoy for Eckerö (Protect against destroy), once N1 lands.
+3. A fourth Väinämöinen (Joukahainen) or crews are the next knobs if playtests find Finland too weak.
 
 ## Open questions for the user
 

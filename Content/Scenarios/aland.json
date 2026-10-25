@@ -1,0 +1,48 @@
+// The battle for Åland, 28 June 1921 (hypothetical): four days after the League of Nations gave Åland to Finland,
+// Stockholm refuses the ruling and sends the coastal fleet to Mariehamn; Finland's coastal squadron comes out of the
+// archipelago to meet it in the open water south of the islands. History's Swedish class (Sverige, Drottning Victoria
+// and Gustaf V, the last rushed out of the yard), and the Finnish class a decade early: the Väinämöinens that the 1920s
+// navy debates bought in the game (Väinämöinen and Ilmarinen, and a third of the game's own). The torpedo boats are
+// invented; the destroyers are Wrangel-likes (Hugin and Munin of the older class among them). Set for balance by the
+// haze: as the AI plays it (8 seeds) Finland loses about 4 of 9 ships a run, Sweden 2.4 of 7 (a Sverige a run), and
+// either side can be wiped out (12 km of visibility let Sweden keep the range: 3.2 v 1.0, every turret dry by 08:00):
+//   Sweden, the stronger ship: 283 mm guns, a 200 mm belt and 22.5 kn; the speed picks the range.
+//   Finland, the numbers and the knife: big guns on small, slow, thin ships, and torpedo boats in the haze.
+// The weather of the day: a midsummer haze on the Åland Sea (8 km), a light south-westerly.
+{
+  "scenario": 1,
+  "name": "The battle for Åland, 1921",
+  "brief": "28 June 1921, 05:20. Four days ago the League of Nations gave Åland to Finland; Stockholm has refused the ruling, and the Swedish coastal fleet is steaming for Mariehamn. Finland's coastal squadron has come out of the archipelago to stop it: Väinämöinen and her sisters, 254 mm guns on hulls built for the skerries, slow and thinly armoured, with torpedo boats astern. The Sverige class is faster, better armoured and outranges you. The haze is your friend. Get close.",
+  "place": "the Åland Sea, south of Mariehamn",
+  "about": {
+    "Finland": { "character": "The numbers and the knife: three Väinämöinens, big guns on small slow ships, and six torpedo boats.", "commander": "the Kommodori", "ensign": "finland" },
+    "Sweden": { "character": "The stronger ship: the Sverige class, 283 mm guns, a 200 mm belt and the speed to pick the range.", "commander": "the Viceamiral", "ensign": "sweden" } },
+  "start": "1921-06-28T04:00",
+  "seed": 1921,
+  "camera": [59.80, 19.85, 40],
+  "sides": ["Finland", "Sweden"],
+  "readiness": { "Finland": "closed up", "Sweden": "closed up" },
+  "damage_control": { "Finland": "1916", "Sweden": "1916" },
+  "fire_discipline": { "Finland": "independent", "Sweden": "independent" },
+  "crews": { "Finland": "trained", "Sweden": "trained" },
+  "player": "Finland",
+  "until": "1921-06-28T16:00",
+  "aims": { "Finland": "destroy everyone", "Sweden": "destroy everyone" },
+  // where ships out of the fight go: Utö, at the archipelago's edge, and the Stockholm skerries off Sandhamn
+  "home": { "Finland": [59.70, 21.20], "Sweden": [59.50, 19.10] },
+  "weather": { "visibility_km": 8, "wind_from": 225, "wind_kn": 10 },
+  "units": [
+    { "name": "Rannikkolaivasto", "admiral": "the Kommodori", "side": 0, "at": [59.85, 20.15], "course": 255, "kn": 14, "spacing": 3000,
+      "units": [
+        { "name": "Panssarilaivat", "spacing": 600, "ships": [
+          { "design": "vainamoinen", "names": ["Väinämöinen", "Ilmarinen", "Lemminkäinen"] } ] },
+        { "name": "Torpedovenelaivue", "spacing": 350, "ships": [
+          { "design": "finnish_tb", "names": ["Tuima", "Tuisku", "Pyry", "Viima", "Puhuri", "Vihuri"] } ] } ] },
+    { "name": "Kustflottan", "admiral": "the Viceamiral", "side": 1, "at": [59.75, 19.55], "course": 60, "kn": 16, "spacing": 3000,
+      "units": [
+        { "name": "Pansarskeppsdivisionen", "spacing": 700, "ships": [
+          { "design": "sverige", "names": ["Sverige", "Drottning Victoria", "Gustaf V"] } ] },
+        { "name": "Jagardivisionen", "spacing": 400, "ships": [
+          { "design": "wrangel", "names": ["Wrangel", "Wachtmeister", "Hugin", "Munin"] } ] } ] }
+  ]
+}
