@@ -1,5 +1,5 @@
 # Plan: the shell by target (a 4.5 deepening)
-Status: **agreed with the user 2026-10-25** ("Decided" below)    Updated: 2026-10-25
+Status: **agreed with the user 2026-10-25** ("Decided" below); A0-A6 done 2026-10-25 (open items at A6's end)    Updated: 2026-10-25
 
 `shells-armour-damage.md` decision 3 left choosing the shell by target to the AI's pass: that plan built the shells,
 the loadouts and their outcomes, and every battery has fired by the magazine order since (S2, decision 7). This plan is
@@ -168,6 +168,30 @@ with it, so A6 re-measures.
   should die more to heavy ships' fire. The record: 8 British destroyers and 5 German torpedo boats lost, most to
   secondaries and light cruisers;
 - the fire pass's cost a ship and the matchup's table memory (`Matchups.Warm`).
+- **Done 2026-10-25.** Release, 5 seeds each, before = `53e46ef0` (A1-A2: the old behaviour), after = `d789a1d8`:
+
+  | | before | after |
+  |---|---|---|
+  | Jutland, Britain lost | 35.6 of 151 (13-47), 124 kt; 4218 hits, 186 torpedoes | 32.8 (24-49), 94 kt; 4917 hits, 268 torpedoes |
+  | Jutland, Germany lost | 51.0 of 99 (30-70), 202 kt; 4522 hits, 208 torpedoes | 53.6 (38-64), 256 kt; 5441 hits, 134 torpedoes |
+  | Squadrons, Britain / Germany lost | 1.0 / 1.0 ships; 165 / 551 hits | 1.0 / 1.2; 114 / 588 hits |
+  | Tsushima, Russia / Japan lost | 5.2 / 5.6 ships | the same, seed for seed |
+
+  - **Tsushima doesn't move:** both navies' heavy guns carry AP and common, which A0 found within a few percent of
+    each other on every ship there (Mikasa's 12" on a Borodino: 2.0% / 2.0%), inside the switch's margin; no order is
+    ever given.
+  - **Squadrons** (capital ships only): the losses as before; the British hits per seed 165 → 142 from the judgements
+    alone (A0 and A4 moved Fight's ranges; a run with both sides on the magazine order) and → 114 with the choice.
+  - **The Jutland:** the German torpedo craft fire 36% fewer torpedoes (208 → 134), killed or turned before they get
+    in; the British fire more (186 → 268). The British lose fewer ships and tonnes, the Germans more tonnes. The seeds
+    spread wide (13 to 49 ships), so 5 seeds give the direction, not the size. Both stay far over the record (Britain
+    14 ships, Germany 11): the standing gap, damage control's and the tuning pass's (no-historical-tuning-without-DC).
+  - **Cost:** the first cut slowed the Jutland seed 1916 from 94 to 145 s (the chosen kind found by comparing every
+    kind at every judgement; each captain checking every mount's rounds every second). With the chosen kind's numbers
+    tabled and the rounds looked at every 10 s, judged again on a new target or each 1 km: 118.8 s before, 119.4 s
+    after, back to back; the captains' layer 482 → 475 µs a call. The play's allocations 69.8 → 47.8 MB.
+  - Open: the Jutland's losses by type (the play prints sides only), to check the destroyers against the record (8
+    British, 5 German lost); the two restated `MatchupTests` anchors (A4) await the user.
 
 ## Decided (the user, 2026-10-25)
 
