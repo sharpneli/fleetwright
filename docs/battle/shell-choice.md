@@ -83,10 +83,20 @@ hashed), chosen when the gun loads, not when it fires:
 - **Parity:** with no order given, every hash stays as it is (`ReplayTests`, the squadrons scenario's hash). This is
   the refactor's proof.
 
+- **Done 2026-10-25** with A2: `MountState.InGuns` (the load + 1, 0 none chosen), set when a mount loads after
+  firing (`CombatStore.Fired`); `CombatStore.FiresNext` (what its guns hold while it has rounds of it, else the
+  magazine order's next) is what the gunnery fires and the dev salvo without a kind. The squadrons scenario's hash at
+  20 min is the same before and after (B4E2D69F9D7AACFD); sim tests 782 of 782.
+
 **A2 The order in the sim.** `GunnerySystem.Load(shooter, battery, kind?)`: the battery's load ordered (null: the
 magazine order), a command, logged and replayed like `Engage`.
 - The snapshot carries each battery's kind ordered, each mount's kind in the guns, and rounds left by kind.
 - The combat log notes a change ("Lion's main battery: load HE").
+- **Done 2026-10-25** (the order; the snapshot's and the log's parts move to A5, where the card and the ticker first
+  read them): `GunnerySystem.Load(shooter, battery, kind?)`, the store's `Order` and `Ordered` (by battery, hashed when
+  any is set). A mount loaded by the magazine order when the order comes keeps that round (decision 1).
+  `ShellChoiceTests`: ordered HE, each mount fires the AP round in its guns, then HE, and back; a kind the battery
+  lacks leaves it on the magazine order.
 
 **A3 The captain's choice.** For each engaged battery that carries more than one kind, in the fire pass the captain
 already runs each second:

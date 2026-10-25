@@ -9,12 +9,16 @@ namespace Fleetwright.Sim.Combat;
 /// <see cref="CombatStore.LoadRounds"/>). Bearings are degrees clockwise from
 /// ahead, unwrapped inside the mount's traverse (an interval that never wraps: shipgen's <c>traverse_deg</c>). Stiff
 /// (docs/battle/shells-armour-damage.md E4): the share of its training rate a hit that held took (0 none). Its ready-use
-/// rounds (fire-control.md F6d), as they stood at <see cref="ReadyMs"/>: the hoists fill them back at their rate.</summary>
+/// rounds (fire-control.md F6d), as they stood at <see cref="ReadyMs"/>: the hoists fill them back at their rate. What
+/// its guns hold (docs/battle/shell-choice.md A1): <see cref="InGuns"/>.</summary>
 public struct MountState
 {
     public long TrainMs, ElevMs, LoadedMs, ReadyMs;
     public double TrainFrom, TrainTo, ElevFrom, ElevTo;
     public int Rounds;
+    /// <summary>The load its guns were loaded with, its index in the battery's loads + 1; 0 when none was chosen (no
+    /// load ordered when they loaded), so it fires the magazine order's next (<see cref="CombatStore.FiresNext"/>).</summary>
+    public int InGuns;
     public double Stiff, Ready;
 }
 
@@ -34,6 +38,7 @@ public sealed class CombatStore
     MountState[]?[] mounts = [];
     Loadout?[] loadouts = [];
     int[]?[] loadRounds = [];
+    byte[]?[] ordered = [];   // by battery, the load ordered: its kind + 1, 0 the magazine order
     LauncherState[]?[] launchers = [];
     ShipCondition?[] conditions = [];
     int[]?[] targets = [];
@@ -51,6 +56,7 @@ public sealed class CombatStore
             Array.Resize(ref mounts, n);
             Array.Resize(ref loadouts, n);
             Array.Resize(ref loadRounds, n);
+            Array.Resize(ref ordered, n);
             Array.Resize(ref launchers, n);
             Array.Resize(ref conditions, n);
             Array.Resize(ref targets, n);
@@ -85,6 +91,11 @@ public sealed class CombatStore
         if (t == null || t.Length != cls.Batteries.Length)
             targets[slot] = t = new int[cls.Batteries.Length];
         Array.Clear(t);
+        var o = ordered[slot];
+        if (o == null || o.Length != cls.Batteries.Length)
+            ordered[slot] = new byte[cls.Batteries.Length];
+        else
+            Array.Clear(o);
         engaged[slot] = 0;
         moved[slot] = false;
     }
@@ -261,6 +272,38 @@ public sealed class CombatStore
         }
         s.LoadedMs = ms + (long)Math.Round(reload * 1000);
         Spend(slot, mount, load, guns);
+        // and loads again: with the load ordered while it has rounds of it, else by the magazine order when it fires
+        s.InGuns = ordered[slot]![row.Battery] is > 0 and var k ? LoadOf(slot, mount, (ShellKind)(k - 1)) + 1 : 0;
+    }
+
+    /// <summary>The kind a battery's guns load with (docs/battle/shell-choice.md A2), null for the magazine order.</summary>
+    public ShellKind? Ordered(int slot, int battery) => ordered[slot] is { } o && battery < o.Length && o[battery] > 0 ? (ShellKind)(o[battery] - 1) : null;
+
+    /// <summary>A battery loads with a kind (null: by the magazine order) from now on. What its guns hold is fired first
+    /// (decision 1: a change costs the round in the gun): a mount loaded by the magazine order keeps the round it would
+    /// fire next.</summary>
+    public void Order(int slot, int battery, ShellKind? kind)
+    {
+        var o = ordered[slot]!;
+        byte k = kind is { } x ? (byte)(x + 1) : (byte)0;
+        if (battery < 0 || battery >= o.Length || o[battery] == k)
+            return;
+        var cls = loadouts[slot]!.Class;
+        var m = mounts[slot]!;
+        foreach (int i in cls.Links(cls.Batteries[battery].Mounts))
+            if (m[i].InGuns == 0)
+                m[i].InGuns = NextLoad(slot, i) + 1;
+        o[battery] = k;
+        Touched = true;
+    }
+
+    /// <summary>The load a mount fires now: what its guns hold while it has rounds of it (a round spent outside its
+    /// loading, the dev's salvo, may leave none), else the magazine order's next (<see cref="NextLoad"/>); -1 with none
+    /// left.</summary>
+    public int FiresNext(int slot, int mount)
+    {
+        int k = mounts[slot]![mount].InGuns - 1;
+        return k >= 0 && LoadRounds(slot, mount, k) > 0 ? k : NextLoad(slot, mount);
     }
 
     /// <summary>Rounds of a mount's load go (the dev's salvo spends them without a reload).</summary>
@@ -361,10 +404,14 @@ public sealed class CombatStore
             return;
         for (int slot = 0; slot < store.Slots; slot++)
         {
-            if (!store.IsAlive(slot) || !Moved(slot) && engaged[slot] == 0)
+            bool orders = ordered[slot] is { } os && os.AsSpan().ContainsAnyExcept((byte)0);
+            if (!store.IsAlive(slot) || !Moved(slot) && engaged[slot] == 0 && !orders)
                 continue;
             h.Add(slot);
             h.Add(engaged[slot]);
+            if (orders)
+                foreach (byte k in ordered[slot].AsSpan())
+                    h.Add(k);
             foreach (ref readonly var s in mounts[slot].AsSpan())
             {
                 h.Add(s.TrainMs);
@@ -376,6 +423,8 @@ public sealed class CombatStore
                 h.Add(s.Ready);
                 if (s.Stiff != 0)
                     h.Add(s.Stiff);
+                if (s.InGuns != 0)
+                    h.Add(s.InGuns);
             }
             foreach (int r in loadRounds[slot].AsSpan())
                 h.Add(r);

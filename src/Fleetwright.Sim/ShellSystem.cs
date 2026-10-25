@@ -193,7 +193,7 @@ public sealed class ShellSystem : IWorldSystem
         var lo = combat.Loadout(slot);
         foreach (int m in cls.Links(b.Mounts))
         {
-            int load = kind is { } want ? combat.LoadOf(slot, m, want) : combat.NextLoad(slot, m);
+            int load = kind is { } want ? combat.LoadOf(slot, m, want) : combat.FiresNext(slot, m);
             if (load < 0)
             {
                 k += cls.TurretTypes[cls.Mounts[m].Type].Barrels;   // the same stream for the guns that do fire

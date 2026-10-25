@@ -11,6 +11,7 @@ public enum GunneryCommand : ushort
     Cease = 2,
     SetCrew = 3,
     SetDiscipline = 4,
+    Load = 5,
 }
 
 /// <summary>What an engaged battery is doing.</summary>
@@ -288,6 +289,11 @@ public sealed class GunnerySystem : IWorldSystem
     /// <summary>A ship's battery (or all: -1) ceases fire.</summary>
     public static Command Cease(int shooter, int battery = -1) => new(Id, (ushort)GunneryCommand.Cease, shooter, B: battery);
 
+    /// <summary>A ship's battery (or all: -1) loads with a kind from now on, or (null) by the magazine order
+    /// (docs/battle/shell-choice.md A2): the round in its guns goes first.</summary>
+    public static Command Load(int shooter, int battery, ShellKind? kind) =>
+        new(Id, (ushort)GunneryCommand.Load, shooter, A: kind is { } k ? (long)k + 1 : 0, B: battery);
+
     /// <summary>A side's gun crews (the scenario's to give; trained by default).</summary>
     public static Command SetCrew(int side, CrewQuality quality) => new(Id, (ushort)GunneryCommand.SetCrew, side, A: (long)quality);
 
@@ -341,6 +347,13 @@ public sealed class GunnerySystem : IWorldSystem
                     throw new ArgumentException($"no fire discipline {c.A} for side {c.Entity}");
                 disciplines[c.Entity] = (byte)c.A;
                 disciplinesSet = true;
+                break;
+            case GunneryCommand.Load:
+                if (c.A < 0 || c.A > (long)ShellKind.He + 1)
+                    throw new ArgumentException($"no shell kind {c.A - 1}");
+                if (ships.Store.SlotOf(c.Entity) is int ls and >= 0)
+                    for (int b = Math.Max(c.B, 0); b < (c.B < 0 ? ships.Store.Combat.Loadout(ls).Class.Batteries.Length : c.B + 1); b++)
+                        ships.Store.Combat.Order(ls, b, c.A > 0 ? (ShellKind)(c.A - 1) : null);
                 break;
         }
     }
@@ -1107,8 +1120,8 @@ public sealed class GunnerySystem : IWorldSystem
             firing[j] = bears && ms.LoadedMs <= now &&
                         Math.Abs(Wrap(ms.TrainTo - fc.OrderBearingDeg)) <= tol &&
                         Math.Abs(CombatStore.BearingAt(ms, mr, now) - ms.TrainTo) <= tol && Math.Abs(CombatStore.ElevationAt(ms, mr, now) - ms.ElevTo) <= tol;
-            // each mount fires the first load of the magazine order it has rounds of
-            fireLoad[j] = firing[j] ? store.Combat.NextLoad(slot, mounts[j]) : -1;
+            // each mount fires what its guns hold, or the first load of the magazine order it has rounds of
+            fireLoad[j] = firing[j] ? store.Combat.FiresNext(slot, mounts[j]) : -1;
             firing[j] &= fireLoad[j] >= 0;
         }
         // a partial salvo (F6: ranging, or a half firing for effect), the mounts taken from where the last one left off, so
