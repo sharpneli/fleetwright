@@ -105,8 +105,18 @@ public sealed partial class AdmiralLayer
 
     /// <summary>A force, and every force in its line, into line ahead along a direction: in each, the member furthest along
     /// it leads (the one on the side the line turns to, as Jellicoe's port wing did), so the others turn after it into
-    /// its wake, none ahead of it to drop back from; its groups as far apart as the ships of its first squadron.</summary>
+    /// its wake, none ahead of it to drop back from; then the whole tree in one line (<see cref="LineShape.OneLine"/>).</summary>
     void IntoLine(in AiContext ctx, GroupSystem.Group g, Vec3d along)
+    {
+        if (!g.IsForce || g.Line.Count == 0)
+            return;
+        Lead(ctx, g, along);
+        ctx.Issue(GroupSystem.Shape(g.GroupId, LineShape.OneLine));
+    }
+
+    /// <summary>A force's members, and each force's in its line, taken in the reverse order where its far end lies
+    /// further along a direction.</summary>
+    void Lead(in AiContext ctx, GroupSystem.Group g, Vec3d along)
     {
         if (!g.IsForce || g.Line.Count == 0)
             return;
@@ -114,21 +124,27 @@ public sealed partial class AdmiralLayer
         if (ctx.Ships.SlotOf(first) is int fs and >= 0 && ctx.Ships.SlotOf(last) is int ls and >= 0 &&
             Vec3d.Dot(ctx.Ships[ls].Position - ctx.Ships[fs].Position, along) > 0)
             ctx.Issue(GroupSystem.Reverse(g.GroupId));
-        var squadron = g;
-        while (squadron.IsForce && squadron.Line.Count > 0 && groups.Get(squadron.Line[0]) is { } down)
-            squadron = down;
-        ctx.Issue(GroupSystem.SetFormation(g.GroupId, Formation.Column, squadron.SpacingM));
         for (int k = 0; k < g.Line.Count; k++)
             if (groups.Get(g.Line[k]) is { IsForce: true } sub)
-                IntoLine(ctx, sub, along);
+                Lead(ctx, sub, along);
     }
 
-    /// <summary>Whether a group, or a force whose line it's in, up the tree, is deploying.</summary>
-    bool InDeployment(GroupSystem.Group g)
+    /// <summary>A force forming its line in a new shape (<see cref="AiCommand.Shape"/>) is formed when every ship is
+    /// within <see cref="SimSettings.DeployFormedM"/> of her station, as a deployment is (or after
+    /// <see cref="SimSettings.DeployMaxMs"/>); unlike one, it takes up a fight meanwhile.</summary>
+    void FormingStep(in AiContext ctx, GroupSystem.Group g, Admiral a, int lead)
+    {
+        if (a.FormingMs != 0 && (Formed(ctx, g, ctx.Ships[lead]) || ctx.NowMs - a.FormingMs > ctx.Settings.DeployMaxMs))
+            a.FormingMs = 0;
+    }
+
+    /// <summary>Whether a group, or a force whose line it's in, up the tree, is deploying or forming its line in a new
+    /// shape: its groups make for their final places (<see cref="FinalStation"/>).</summary>
+    bool Forming(GroupSystem.Group g)
     {
         for (var at = g; ;)
         {
-            if (Find(at.GroupId) is int i and >= 0 && admirals[i].DeployMs != 0)
+            if (Find(at.GroupId) is int i and >= 0 && (admirals[i].DeployMs != 0 || admirals[i].FormingMs != 0))
                 return true;
             if (!groups.InForceLine(at) || groups.Get(at.Parent) is not { } up)
                 return false;
@@ -136,16 +152,16 @@ public sealed partial class AdmiralLayer
         }
     }
 
-    /// <summary>While deploying, the i-th group of the line keeps its place on the line's guide itself, on his track (its
+    /// <summary>While deploying or forming, the i-th group of the line keeps its place on the line's guide itself (its
     /// final place, astern of him by the line before it), not on the last ship of the group before, which is still
     /// finding its own: a chain of moving stations lags column by column.</summary>
-    (int Target, double AsternM, double AbeamM) DeployStation(GroupSystem.Group g, int i)
+    (int Target, double AsternM, double AbeamM) FinalStation(GroupSystem.Group g, int i)
     {
         groups.LineOffsets(g, line);
         int guide = groups.GuideShip(g), ship = groups.Get(g.Line[i]) is { } sub ? groups.GuideShip(sub) : 0;
-        foreach (var (s, astern, _) in line)
+        foreach (var (s, astern, abeam) in line)
             if (s == ship)
-                return (guide, astern, 0);
+                return (guide, astern, abeam);
         return groups.StationOfGroup(g, i);
     }
 

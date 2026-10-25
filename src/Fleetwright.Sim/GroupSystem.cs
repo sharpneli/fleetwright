@@ -24,6 +24,21 @@ public enum Formation : byte
     Bearing,
 }
 
+/// <summary>A unit's whole line at once, down its tree (<see cref="GroupSystem.Shape"/>, docs/map-ui/battle-hud.md P1):
+/// the formations a fleet sails in, each one order however deep it nests.</summary>
+public enum LineShape : byte
+{
+    /// <summary>One line ahead: every squadron and force in column, the squadrons as far apart as their own ships.</summary>
+    OneLine,
+
+    /// <summary>The cruising order: every squadron a column in line ahead, the columns abreast, as far apart as the
+    /// longest column is long, so its columns turning in succession through 8 points make one line (the deployment).</summary>
+    Columns,
+
+    /// <summary>Every ship abreast of the guide, each squadron at its own spacing, the squadrons clear of each other.</summary>
+    Abreast,
+}
+
 /// <summary>Whether a member keeps its place in its group's formation (docs/battle/plan.md step 2.6). A detached member
 /// (a ship, or a squadron in a force) stays a member but is out of the line: it has no station, and its group's rails
 /// don't carry it.</summary>
@@ -64,6 +79,7 @@ public enum GroupCommand : ushort
     Divide,
     Merge,
     Subordinate,
+    Shape,
 }
 
 /// <summary>The world's groups (docs/battle/plan.md steps 2.4 and 2.6): units that move together, in order, with a
@@ -521,6 +537,83 @@ public sealed class GroupSystem : IWorldSystem
         return (forceGuide.AsternM + oa, forceGuide.AbeamM + ob);
     }
 
+    /// <summary>A group's whole line into a shape (<see cref="LineShape"/>): in columns, the columns as far apart as the
+    /// longest is long (the era's rule: each turning in succession through 8 points, they make one line); abreast, every ship a place
+    /// at the widest spacing of its squadrons.</summary>
+    void Shape(Group g, LineShape shape)
+    {
+        double column = shape == LineShape.Columns ? Longest(g) : 0, ship = shape == LineShape.Abreast ? Widest(g) : 0;
+        Shape(g, shape, column, ship);
+    }
+
+    /// <summary><see cref="Shape(Group, LineShape)"/> down the tree: a squadron keeps its spacing; a force in one line its
+    /// first squadron's, in columns or abreast as many of the unit's slots as its widest member takes.</summary>
+    void Shape(Group g, LineShape shape, double column, double ship)
+    {
+        if (!g.IsForce)
+        {
+            (g.Formation, g.BearingDeg) = (shape == LineShape.Abreast ? Formation.LineAbreast : Formation.Column, 0);
+            return;
+        }
+        double spacing;
+        if (shape == LineShape.OneLine)
+        {
+            var squadron = g;
+            while (squadron.IsForce && squadron.Line.Count > 0 && Get(squadron.Line[0]) is { } down)
+                squadron = down;
+            spacing = squadron.SpacingM;
+        }
+        else
+        {
+            int slots = 1;
+            foreach (int m in g.Line)
+                if (Get(m) is { } sub)
+                    slots = Math.Max(slots, Slots(sub, shape));
+            spacing = slots * (shape == LineShape.Columns ? column : ship);
+        }
+        (g.Formation, g.SpacingM, g.BearingDeg) = (shape == LineShape.OneLine ? Formation.Column : Formation.LineAbreast, Spacing(spacing), 0);
+        foreach (int m in g.Line)
+            if (Get(m) is { } sub)
+                Shape(sub, shape, column, ship);
+    }
+
+    /// <summary>How many places abreast a group takes in columns (a squadron one) or abreast (a squadron one a ship): its
+    /// line's members as wide as its widest.</summary>
+    int Slots(Group g, LineShape shape)
+    {
+        if (!g.IsForce)
+            return shape == LineShape.Columns ? 1 : Math.Max(1, g.Members.Count);
+        int widest = 1;
+        foreach (int m in g.Line)
+            if (Get(m) is { } sub)
+                widest = Math.Max(widest, Slots(sub, shape));
+        return Math.Max(1, g.Line.Count) * widest;
+    }
+
+    /// <summary>The longest column under a group: its ships, one spacing each (a column's length and the gap astern of it).</summary>
+    double Longest(Group g)
+    {
+        if (!g.IsForce)
+            return Math.Max(1, g.Members.Count) * g.SpacingM;
+        double longest = 0;
+        foreach (int m in g.Line)
+            if (Get(m) is { } sub)
+                longest = Math.Max(longest, Longest(sub));
+        return longest;
+    }
+
+    /// <summary>The widest spacing of a squadron under a group: abreast, a ship's place.</summary>
+    double Widest(Group g)
+    {
+        if (!g.IsForce)
+            return g.SpacingM;
+        double widest = 0;
+        foreach (int m in g.Line)
+            if (Get(m) is { } sub)
+                widest = Math.Max(widest, Widest(sub));
+        return widest;
+    }
+
     /// <summary>A group's line turned together through an angle (+ to starboard), and every group in its line with it,
     /// as its ships will lie once each has turned: the line stays where it is, so its bearing from the guide's new
     /// heading is the old less the angle. A line that would lie ahead of the guide's beam is taken in the reverse order
@@ -623,6 +716,10 @@ public sealed class GroupSystem : IWorldSystem
     /// groups of different sides, a group under itself or anything inside it.</summary>
     public static Command Subordinate(int groupId, int underGroupId) => new(Id, (ushort)GroupCommand.Subordinate, A: groupId, Y: underGroupId);
 
+    /// <summary>A group's whole line, down its tree, into a <see cref="LineShape"/>: each group's formation and spacing
+    /// (<see cref="Shape(Group, LineShape)"/>). Its orders stand.</summary>
+    public static Command Shape(int groupId, LineShape shape) => new(Id, (ushort)GroupCommand.Shape, A: groupId, B: (int)shape);
+
     /// <summary>A group gone: its members are free (a force's groups stay squadrons and forces of their own), and it
     /// leaves its force.</summary>
     public static Command Disband(int groupId) => new(Id, (ushort)GroupCommand.Disband, A: groupId);
@@ -715,6 +812,10 @@ public sealed class GroupSystem : IWorldSystem
                 break;
             case GroupCommand.Reverse:
                 Get((int)c.A)?.Reverse();
+                break;
+            case GroupCommand.Shape:
+                if (Get((int)c.A) is { } shaped)
+                    Shape(shaped, (LineShape)c.B);
                 break;
             case GroupCommand.TurnTogether:
                 if (Get((int)c.A) is { } turned)

@@ -69,7 +69,7 @@ selects (twice: her squadron takes the orders; Tab steps through your ships), th
 (`MapScene.Strip.cs`, docs/map-ui/battle-hud.md U2) gives the orders: who to (the ship or a unit above her), helm and
 telegraph, guns, torpedoes and smoke, the task (fight, follow…, hold; Task ▾ or T opens the task menu,
 `MapScene.Tasks.cs`, docs/battle/admirals-orders.md O9: what the unit is for, every order by what it's about, each armed
-and given by a click, and organising the unit, letters picking while it's open; a unit's formation, Turn ▾ and Deploy…;
+and given by a click, and organising the unit, letters picking while it's open; a unit's whole line in one click, Line ahead, Columns or Abreast (L, K, A; docs/map-ui/battle-hud.md P1), this level's formation ▾, Turn ▾, Deploy… and deploy to port or starboard (comma, period);
 the squadron's business in a popup; ctrl+click ships, or units in the rail, and orders go to each; the selection's tree
 draws each squadron's station, its task and a screen's arc, `MapScene.TaskMarks.cs`, and an armed order its shape); the HELM column's Conn (or C) takes the conn of the unit picked (docs/battle/command.md "The conn": nothing but the player's helm orders moves it, the lookouts call torpedo tracks on the ticker, a green ring marks it); the cursor names what a right-click does: on an enemy engage, on one of yours follow (screen, for a flotilla or a screen),
 on the sea steer for it (shift: add a waypoint); the click opens her card at the right (`MapScene.Card.cs`, U3b: her

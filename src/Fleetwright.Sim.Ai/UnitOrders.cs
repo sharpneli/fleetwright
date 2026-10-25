@@ -181,6 +181,11 @@ public enum AiCommand : ushort
     /// <summary>What a unit is for (docs/battle/admirals-orders.md O6): A a <see cref="UnitRole"/> (0: worked out from its
     /// ships). A setting, as doctrine is: it doesn't take the unit from its commander.</summary>
     Role,
+
+    /// <summary>A unit's whole line, down its tree, into a <see cref="LineShape"/> (A; docs/map-ui/battle-hud.md P1,
+    /// <see cref="GroupSystem.Shape"/>): its orders stand, as a formation's do; its groups steer for the places they end
+    /// in on its guide, as a deployment's do, until it's formed. Nothing to a ship.</summary>
+    Shape,
 }
 
 /// <summary>A ship's fire order (docs/battle/fighting.md 4.2c).</summary>
@@ -273,6 +278,9 @@ public readonly struct UnitOrders(byte system, bool hand = false)
     /// <summary>A group's formation and spacing (and a line of bearing's bearing).</summary>
     public Command Form(Unit u, Formation formation, double spacingM, double bearingDeg = 0, OrderSource source = OrderSource.Player) =>
         Make(AiCommand.Form, u, source, a: (long)formation, x: spacingM, y: bearingDeg);
+
+    /// <summary>A unit's whole line into one line ahead, columns or abreast, however deep it nests.</summary>
+    public Command Shape(Unit u, LineShape shape, OrderSource source = OrderSource.Player) => Make(AiCommand.Shape, u, source, a: (long)shape);
 
     /// <summary>Screen another unit of the same side: keep a distance off it (0: the settings'), on a station of its arc
     /// that every screen of it shares, and counter-attack enemy torpedo craft closing on it.</summary>

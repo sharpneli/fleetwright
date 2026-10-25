@@ -144,3 +144,41 @@ renderer's icons (only their tint changed); the card's "Her fire" reads the feed
 **Garbage:** the map UI's bytes a frame are in the `-frametimes` report: 94 at the Jutland, 118 in Squadrons with a
 card open; the rest event-driven (a hit's lines, the tally); no GC over either run.
 
+## Playtest notes (2026-10-25 on)
+
+Fixes from the user's playtests, each a small step on the built HUD (no mockup unless it grows).
+
+### P1 Big formations in one click (built 2026-10-25)
+
+**The note:** the Grand Fleet in columns abreast took many clicks to make one line. The formation picker set only the
+level picked, so the Grand Fleet in line ahead still had its battle squadrons' two divisions abreast inside, one
+popup each, and its spacing (the columns' mile) was lost on the way. The player usually commands the battle line and
+one or two detachments (2-3 units, the rest the AI's), so a fleet must take orders as easily as a division.
+
+- **Whole-line shapes** (`LineShape`, `GroupSystem.Shape`, the order `UnitOrders.Shape`): **Line ahead** (every
+  squadron and force in one line, the squadrons as far apart as their own ships), **Columns** (the cruising order:
+  each squadron a column, the columns abreast as far apart as the longest column is long, the era's rule that lets the
+  columns turn in succession into one line) and **Abreast** (every ship abreast), each one order to the unit however
+  deep it nests. The spacings come from the squadrons, so nothing is lost going from one shape to another and back.
+- **Forming:** a fleet given a shape makes for its final places, each column steering for its place on the guide as a
+  deployment's do (`AdmiralLayer.FinalStation`), not astern of a column still finding its own (which formed them one
+  after another: 95 min for six columns of four). Unlike a deployment it takes up a fight meanwhile; formed, or after
+  `DeployMaxMs`, the line's own stations again. A new order to the unit ends the forming, as it ends a deployment.
+- **Deploy to port, to starboard:** the deathsnake's quick way, one click each: the deployment 8 points to that side
+  of the guide's heading, the wing column on that side leading round (Jellicoe's "equal speed, Charlie London").
+  `Deploy…` keeps the course or the enemy picked by a click. The deployment's `IntoLine` now ends in the same Shape
+  command (one implementation).
+- **The strip** at a unit's level: `Line ahead · Columns · Abreast` (Columns for a force) lit by the shape its whole
+  line is in, then this level's formation ▾ (echelons, lines of bearing, the spacing), then `Turn ▾ · Deploy… · to
+  port · to stbd · Withdraw · AI`. **Keys** with a unit picked: L line ahead, K columns, A abreast, comma and period
+  deploy to port and starboard. Several units picked: each gets it.
+- **Measured** (`LineShapeTests`: the Grand Fleet in little, three squadrons of two divisions of four, at 14 kn): one
+  line ahead on the same course in 64 min, back into columns in 83 min; deploying (`DeploymentTests`) in 11. On the
+  same course the far columns drop back a column's length each at most `FollowMaxSpeedDiffKn` (6 kn) slower, so the
+  line is slow, as it was at sea; the button's tooltip says to deploy for a quick one. In the Jutland, the Grand Fleet
+  deployed to port by one click is nearly one line 8 minutes later
+  (`docs/map-ui/png/game-p1-deploy.png`).
+- **Open:** ships dropping back to a far station overshoot it by 1-2 km and close again at 5 kn (`docs/battle/bugs.md`,
+  the AI); a course change of a fleet in columns still wheels it about the guide (the far wing races), where the era
+  turned columns in succession or together. Both for a playtest to rank.
+

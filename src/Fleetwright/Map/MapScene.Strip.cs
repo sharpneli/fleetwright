@@ -487,18 +487,37 @@ public sealed partial class MapScene
             taskOpen = !taskOpen;
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip("every order, by what it's about, and what the unit is for (T)");
-        // the unit: its manoeuvres, withdraw, its AI
+        // the unit: its whole line's shape (or this level's formation), its manoeuvres, withdraw, its AI
         if (g >= 0)
         {
-            if (Seg(FormationLabels[(int)gv.Formation[g]], first: true, menu: true))
+            int shape = ShapeOf(gv, g);
+            if (Seg("Line ahead##shape", shape == (int)LineShape.OneLine, first: true))
+                SendShape(s, LineShape.OneLine);
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip(gv.Force[g] ? "one line ahead, every squadron in it, on the course it steers (L); on the same course the far columns drop back a column's length each, so a fleet takes long: deploying turns it into line quicker"
+                    : "line ahead (L)");
+            if (gv.Force[g])
+            {
+                if (Seg("Columns##shape", shape == (int)LineShape.Columns))
+                    SendShape(s, LineShape.Columns);
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("the cruising order (K): every squadron a column in line ahead, the columns abreast as far apart as one is long, ready to deploy");
+            }
+            if (Seg("Abreast##shape", shape == (int)LineShape.Abreast))
+                SendShape(s, LineShape.Abreast);
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip(gv.Force[g] ? "every ship abreast (A), each squadron at its own spacing" : "line abreast (A)");
+            if (Seg(FormationLabels[(int)gv.Formation[g]], menu: true))
                 ImGui.OpenPopup("##formation");
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip(gv.Force[g] ? "this level's formation alone, its spacing; echelons and lines of bearing" : "its formation and spacing; echelons and lines of bearing");
             if (ImGui.BeginPopup("##formation"))
             {
                 ImGui.TextDisabled(gv.Name[g]);
                 FormationEdit(gv, g, ref (g == chain[0] ? ref spacingEdit : ref forceSpacingEdit), "##fm");
                 ImGui.EndPopup();
             }
-            if (Seg("Turn    ##turn", menu: true))
+            if (Seg("Turn    ##turn", first: true, menu: true))
                 ImGui.OpenPopup("##turn");
             if (ImGui.IsItemHovered())
                 ImGui.SetTooltip("turn together: every ship at once; the line becomes a line of bearing on its old axis");
@@ -512,6 +531,16 @@ public sealed partial class MapScene
             if (ImGui.IsItemHovered())
                 ImGui.SetTooltip(gv.Force[g] ? "into one line of battle: click where the line should steer, or the enemy (across his course)"
                     : "into line ahead: click where it should steer, or the enemy (across his course)");
+            if (Seg("to port##deploy"))
+                DeployAbeam(s, -1);
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip(gv.Force[g] ? "deploy 8 points to port (,): one line of battle, the port wing column leading round, the rest in its wake"
+                    : "into line ahead 8 points to port (,)");
+            if (Seg("to stbd##deploy"))
+                DeployAbeam(s, 1);
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip(gv.Force[g] ? "deploy 8 points to starboard (.): one line of battle, the starboard wing column leading round, the rest in its wake"
+                    : "into line ahead 8 points to starboard (.)");
             if (Seg("Withdraw"))
                 world.Send(o.WithdrawHome(unit));
             if (ImGui.IsItemHovered())
@@ -543,6 +572,44 @@ public sealed partial class MapScene
             ImGui.EndPopup();
         }
         ImGui.EndGroup();
+    }
+
+    /// <summary>Each unit the orders go to (a group) into a shape, its whole line (docs/map-ui/battle-hud.md P1).</summary>
+    void SendShape(Snapshot s, LineShape shape)
+    {
+        foreach (var u in OrderUnits(s))
+            if (u.IsGroup)
+                world.Send(world.Orders.Shape(u, shape));
+    }
+
+    /// <summary>Each unit the orders go to (a group) deployed 8 points to port (-1) or starboard (+1) of its guide's
+    /// heading: its wing column on that side leads round, as Jellicoe's port wing did.</summary>
+    void DeployAbeam(Snapshot s, int side)
+    {
+        foreach (var u in OrderUnits(s))
+            if (u.IsGroup && s.Ships.IndexOf(GuideOf(s, u)) is int k and >= 0)
+            {
+                var (p, f) = s.Ships.PoseAt(k, world.DrawMs);
+                world.Send(world.Orders.Deploy(u, ((Earth.Heading(p, f) + 90 * side) % 360 + 360) % 360));
+            }
+    }
+
+    /// <summary>The unit's keys, with one of ours selected at a unit's level: L line ahead, K columns, A abreast, comma
+    /// and period deploy to port and starboard. Whether the key was one.</summary>
+    bool UnitKey(uint key)
+    {
+        if (key is not (SDLK_L or SDLK_K or SDLK_A or SDLK_COMMA or SDLK_PERIOD))
+            return false;
+        var s = world.Current;
+        if (s.Ships.IndexOf(selected) < 0 || Level(s) is not (int level and > 0))
+            return false;
+        if (key == SDLK_K && !s.Groups.Force[chain[level - 1]])
+            return false;
+        if (key is SDLK_COMMA or SDLK_PERIOD)
+            DeployAbeam(s, key == SDLK_COMMA ? -1 : 1);
+        else
+            SendShape(s, key == SDLK_L ? LineShape.OneLine : key == SDLK_K ? LineShape.Columns : LineShape.Abreast);
+        return true;
     }
 
     /// <summary>The Turn ▾ popup: together by 4 or 8 points either way, or about with the rear ship first (the battle

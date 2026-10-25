@@ -169,6 +169,11 @@ Seen in the AI's baseline after the detail passes (2026-10-20, docs/battle/comma
   battleship). The era's night attack on a battle line counted on the dark (short sight for the guns, the boats seen
   late); for the matchup's fine-tune with fire control's night (fighting.md 4.5).
 
+- [ ] A ship keeping station far astern of where she is (a column dropping back into one line,
+  `LineShapeTests`) slows by `FollowMaxSpeedDiffKn` and overshoots her station by 1-2 km before closing again at 5 kn
+  over the guide: the six columns' line forms in 64 min where the drop back alone takes about 50. Found 2026-10-25
+  (docs/map-ui/battle-hud.md P1). To try: the captain easing back up as the gap closes, by her own acceleration.
+
 ## Shipgen sizing
 
 - [ ] A little weight up a destroyer's mast made her shorter (fire-control.md F4d, 2026-10-18): the crow's nest's 0.7 t

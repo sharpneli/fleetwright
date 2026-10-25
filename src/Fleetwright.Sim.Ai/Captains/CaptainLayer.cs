@@ -253,7 +253,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
             case AiCommand.FireAtWill or AiCommand.HoldFire or AiCommand.Engage:
                 FireOrdered(ctx, c, from);   // the guns: not the helm, so he keeps his place in the line
                 return;
-            case AiCommand.Form or AiCommand.Deploy:
+            case AiCommand.Form or AiCommand.Shape or AiCommand.Deploy:
                 return;   // a group's
             case AiCommand.Conn when c.X == 0:
                 if (Find(e) is int ci and >= 0)

@@ -78,6 +78,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
         public bool AttackBeaten;       // one of them was beaten off
         public long DeployMs;           // deploying into a line of battle since (AdmiralLayer.Deploy.cs; 0: not)
         public bool Deployed;           // deployed in this encounter
+        public long FormingMs;          // forming its line in a new shape since (AdmiralLayer.Deploy.cs; 0: not)
     }
 
     Admiral[] admirals = new Admiral[8];
@@ -167,6 +168,10 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
             case AiCommand.Form:
                 ctx.Issue(GroupSystem.SetFormation(g.GroupId, (Formation)c.A, c.X, c.Y));   // the line keeps its orders
                 return;
+            case AiCommand.Shape:
+                ctx.Issue(GroupSystem.Shape(g.GroupId, (LineShape)c.A));   // the line keeps its orders, its groups making for their places
+                a.FormingMs = g.IsForce ? ctx.NowMs : 0;
+                return;
             case AiCommand.Conn when c.X == 0:
                 a.Conn = false;   // the conn given back: its order stands, its admiral's judgement too
                 return;
@@ -223,7 +228,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
             Gather(ctx, g);
         a.Whose = whose;
         a.Conn = whose == Whose.Player && (code == AiCommand.Conn || a.Conn && Chain.IsHelmOrder(code));   // as a captain's
-        (a.Turning, a.Away, a.DeployMs) = (false, false, 0);   // a new order ends a turn under way, a turn-away, a deployment
+        (a.Turning, a.Away, a.DeployMs, a.FormingMs) = (false, false, 0, 0);   // a new order ends a turn under way, a turn-away, a deployment, forming
 
         if (code == AiCommand.TurnTogether)
         {
@@ -365,6 +370,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
             }
             if (a.HandedTo != to.Id)
                 HandOver(ctx, a, to);
+            FormingStep(ctx, g, a, lead);
             bool deploying = DeployStep(ctx, g, a, lead);
             if (deploying && a.DeployMs == ctx.NowMs)
                 continue;   // just begun: the line is given its stations, and its guide its course, next think
@@ -395,7 +401,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
                 }
                 else
                 {
-                    var (target, astern, abeam) = InDeployment(g) ? DeployStation(g, i) : groups.StationOfGroup(g, i);
+                    var (target, astern, abeam) = Forming(g) ? FinalStation(g, i) : groups.StationOfGroup(g, i);
                     if (target != 0 && !Holds(members[i], target, astern, abeam))
                         ctx.Issue(ctx.Orders.Station(Unit.Group(members[i]), Unit.Ship(target), astern, abeam, OrderSource.Superior));
                 }
@@ -664,6 +670,8 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
                 h.Add(a.DeployMs);
                 h.Add(a.Deployed);
             }
+            if (a.FormingMs != 0)
+                h.Add(a.FormingMs);
             if (a.Order == CaptainOrder.Screen)
             {
                 h.Add(a.ScreenOn);

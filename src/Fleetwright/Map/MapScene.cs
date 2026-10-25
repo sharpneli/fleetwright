@@ -311,7 +311,7 @@ public sealed unsafe partial class MapScene : IScene
             if (s.Paused)
                 world.Send(Command.Resume());
         }
-        else
+        else if (!UnitKey(key))
             return false;
         return true;
     }

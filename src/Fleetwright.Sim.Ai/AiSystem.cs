@@ -93,7 +93,7 @@ public sealed class AiSystem : IWorldSystem
 
     public void Apply(World world, in Command c)
     {
-        if ((AiCommand)c.Code is < AiCommand.Course or > AiCommand.Role)
+        if ((AiCommand)c.Code is < AiCommand.Course or > AiCommand.Shape)
             throw new ArgumentException($"unknown AI command {c.Code}");
         var u = new Unit(c.Entity);
         var code = (AiCommand)c.Code;
@@ -133,7 +133,7 @@ public sealed class AiSystem : IWorldSystem
     /// task's), not its guns, doctrine or detachment.</summary>
     static bool EndsTask(AiCommand code) => code is not (AiCommand.FireAtWill or AiCommand.HoldFire or AiCommand.Engage or AiCommand.Doctrine
         or AiCommand.SideDoctrine or AiCommand.Home or AiCommand.SpeedLimit or AiCommand.Clearance or AiCommand.Detach or AiCommand.Form
-        or AiCommand.Role);
+        or AiCommand.Shape or AiCommand.Role);
 
     void Route(World world, in Command c, Unit u)
     {

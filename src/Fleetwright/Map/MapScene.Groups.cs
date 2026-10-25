@@ -76,6 +76,33 @@ public sealed unsafe partial class MapScene
         }
     }
 
+    /// <summary>The shape group g's whole line is in (a <see cref="LineShape"/>), or -1 for none: a squadron's line ahead
+    /// counts as one line.</summary>
+    static int ShapeOf(GroupsView gv, int g)
+    {
+        for (int shape = 0; shape <= (int)LineShape.Abreast; shape++)
+            if (InShape(gv, g, (LineShape)shape))
+                return shape;
+        return -1;
+    }
+
+    static bool InShape(GroupsView gv, int g, LineShape shape)
+    {
+        var want = gv.Force[g] ? (shape == LineShape.OneLine ? Formation.Column : Formation.LineAbreast)
+            : shape == LineShape.Abreast ? Formation.LineAbreast : Formation.Column;
+        if (gv.Formation[g] != want)
+            return false;
+        if (!gv.Force[g])
+            return true;
+        for (int i = 0; i < gv.MemberCount[g]; i++)
+        {
+            int m = gv.MemberStart[g] + i;
+            if (gv.Detached[m] == Detachment.InLine && gv.IndexOfGroup(gv.Members[m]) is int sub and >= 0 && !InShape(gv, sub, shape))
+                return false;
+        }
+        return true;
+    }
+
     /// <summary>How many levels of force a group stands on (0 for a squadron): its label goes that many lines down.</summary>
     static int Depth(GroupsView gv, int g)
     {
