@@ -680,6 +680,19 @@ public sealed partial class MapScene
             string label = BatteryLabel(cls, b);
             U8.Text(row >= 0 ? U8.W($"{label} on {LabelOf(s, s.Batteries.Target[row])}") : U8.W($"{label}: no target"), DesignerTheme.Muted);
             ImGui.TableNextColumn();
+            // its shell (docs/battle/shell-choice.md A5): the kind it loads, and the round in its guns while that changes
+            if (s.Ships.IndexOf(e) is int k and >= 0 && s.Ships.BatteryStart[k] >= 0)
+            {
+                int o = s.Ships.BatteryOrdered[s.Ships.BatteryStart[k] + b], g = s.Ships.BatteryInGuns[s.Ships.BatteryStart[k] + b];
+                ImGui.PushFont(UiFonts.SansSmall);
+                if (o == 0)
+                    U8.Right(g > 0 ? U8.W($"{KindName((ShellKind)(g - 1))}, magazine order") : "none left"u8, DesignerTheme.Muted);
+                else if (g == o || g == 0)
+                    U8.Right(U8.W($"loads {KindName((ShellKind)(o - 1))}"), s.Ships.ShellHeld[k] > 0 && bat.Chief ? DesignerTheme.Brass : DesignerTheme.Bright);
+                else
+                    U8.Right(U8.W($"{KindName((ShellKind)(g - 1))} in, then {KindName((ShellKind)(o - 1))}"), DesignerTheme.Amber);
+                ImGui.PopFont();
+            }
             foreach (int m in ForeToAft(cls, b))
             {
                 ImGui.TableNextRow();

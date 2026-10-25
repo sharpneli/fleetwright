@@ -362,6 +362,51 @@ public sealed partial class MapScene
 
     bool courseTyping;
 
+    /// <summary>The Shells button's labels (docs/battle/shell-choice.md A5): by the kind held (+ 1, 0 by target) and,
+    /// by target, the kind her main guns hold (+ 1, 0 none).</summary>
+    static readonly string[][] ShellsLabels = [.. Enumerable.Range(0, 4).Select(h => Enumerable.Range(0, 4).Select(g =>
+        h > 0 ? $"Shells: {KindName((ShellKind)(h - 1))}    ##shells"
+        : g > 0 ? $"Shells: by target, {KindName((ShellKind)(g - 1))}    ##shells" : "Shells: by target    ##shells").ToArray())];
+    static readonly string[] ShellsItems = [.. Enum.GetValues<ShellKind>().Select(x => $"{KindName(x)}##shells{x}")];
+
+    /// <summary>The main guns' shell for the selection (decision 3): by target, her captain's choice, or a kind held until
+    /// they're out of it; the kinds her main guns carry.</summary>
+    void Shells(Snapshot s, int k, ShipClass cls)
+    {
+        var v = s.Ships;
+        var lo = v.Loadout[k];
+        int chief = -1;
+        for (int b = 0; b < cls.Batteries.Length && chief < 0; b++)
+            if (cls.Batteries[b].Chief)
+                chief = b;
+        if (lo == null || chief < 0)
+            return;
+        int guns = v.BatteryStart[k] >= 0 ? v.BatteryInGuns[v.BatteryStart[k] + chief] : 0;
+        if (Seg(ShellsLabels[Math.Min((int)v.ShellHeld[k], 3)][Math.Min(guns, 3)], v.ShellHeld[k] > 0, first: true, menu: true))
+            ImGui.OpenPopup("##shells");
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("the main guns' shell, for the selection: by target (her captain judges what a round does to the target as she's made out), " +
+                "or a kind held until they're out of it; the round in the gun goes first");
+        if (!ImGui.BeginPopup("##shells"))
+            return;
+        var o = world.Orders;
+        if (ImGui.Selectable("By target##shells", v.ShellHeld[k] == 0))
+            foreach (var u in OrderUnits(s))
+                world.Send(o.Shells(u, null));
+        foreach (var kind in Enum.GetValues<ShellKind>())
+        {
+            bool carried = false;
+            for (int b = 0; b < cls.Batteries.Length; b++)
+                if (cls.Batteries[b].Chief)
+                    foreach (var l in lo.Loads(b))
+                        carried |= lo.ShellTypes[l.ShellType].Kind == kind;
+            if (carried && ImGui.Selectable(ShellsItems[(int)kind], v.ShellHeld[k] == (byte)(kind + 1)))
+                foreach (var u in OrderUnits(s))
+                    world.Send(o.Shells(u, kind));
+        }
+        ImGui.EndPopup();
+    }
+
     /// <summary>The course buttons' labels, by <see cref="CourseSteps"/>.</summary>
     static readonly string[] CourseLabels = [.. CourseSteps.Select(d => d < 0 ? $"−{-d}°##c{d}" : $"+{d}°##c{d}")];
 
@@ -388,6 +433,8 @@ public sealed partial class MapScene
             ImGui.SetTooltip("then click an enemy (or right-click her without this)");
         if (Seg("Hold fire", fire == FireOrder.Hold, enabled: any))
             world.Send(o.HoldFire(unit));
+        if (any)
+            Shells(s, k, cls!);
         // each battery: a short line, the whole in the tooltip
         if (any)
         {

@@ -82,7 +82,8 @@ A row's − n + strikes or adds ships, a unit's ✕ strikes it (undo in place), 
 for her head, drag for the course). Wheel zooms at the cursor, left drag pans. Ships (`MapScene.Ships.cs`, step 2.3a): a click
 selects (twice: her squadron takes the orders; Tab steps through your ships), the strip at the bottom
 (`MapScene.Strip.cs`, docs/map-ui/battle-hud.md U2) gives the orders: who to (the ship or a unit above her), helm and
-telegraph, guns, torpedoes and smoke, the task (fight, follow…, hold; Task ▾ or T opens the task menu,
+telegraph, guns (Shells ▾: the main guns' shell for the selection, by target or a kind held, docs/battle/shell-choice.md),
+torpedoes and smoke, the task (fight, follow…, hold; Task ▾ or T opens the task menu,
 `MapScene.Tasks.cs`, docs/battle/admirals-orders.md O9: what the unit is for, every order by what it's about, each armed
 and given by a click, and organising the unit, letters picking while it's open; a unit's whole line in one click, Line ahead, Columns or Abreast (L, K, A; docs/map-ui/battle-hud.md P1), this level's formation ▾, Turn ▾, Deploy… and deploy to port or starboard (comma, period);
 the squadron's business in a popup; ctrl+click ships, or units in the rail, and orders go to each; the selection's tree

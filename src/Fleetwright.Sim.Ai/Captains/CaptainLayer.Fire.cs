@@ -194,11 +194,31 @@ public sealed partial class CaptainLayer
     /// out.</summary>
     void Shells(in AiContext ctx, ref Captain cap, ShipState own, int slot, int b, int target, Picture? pic)
     {
-        if (target == 0 || pic == null || pic.IndexOf(target) is not (int ci and >= 0)
-            || (ShellUse)doctrine.Of(own.Entity, own.Side, DoctrineField.Shells) != ShellUse.ByTarget)
-            return;
         var combat = ctx.Ships.Combat;
         var lo = combat.Loadout(slot);
+        // the player's kind for the main guns holds while they have rounds of it (A5); spent, the choice is his again
+        if (cap.ShellHeld > 0 && lo.Class.Batteries[b].Chief)
+        {
+            var held = (ShellKind)(cap.ShellHeld - 1);
+            if (Has(combat, slot, lo.Class, b, held))
+            {
+                if (combat.Ordered(slot, b) != held)
+                    ctx.Issue(GunnerySystem.Load(own.Entity, b, held));
+                return;
+            }
+            (cap.ShellSpent, cap.ShellHeld) = (cap.ShellHeld, 0);
+            if (cap.Shells != null)
+                Array.Clear(cap.Shells);
+        }
+        if ((ShellUse)doctrine.Of(own.Entity, own.Side, DoctrineField.Shells) != ShellUse.ByTarget)
+        {
+            // by the magazine order: nothing ordered (the player's kind, handed back, goes too)
+            if (combat.Ordered(slot, b) != null && cap.ShellHeld == 0)
+                ctx.Issue(GunnerySystem.Load(own.Entity, b, null));
+            return;
+        }
+        if (target == 0 || pic == null || pic.IndexOf(target) is not (int ci and >= 0))
+            return;
         MatchupGun? gun = null;
         foreach (var g in Judge.Matchups.Profile(ctx.World, lo).Guns)
             if (g.Battery == b)
@@ -234,7 +254,8 @@ public sealed partial class CaptainLayer
             if (v > best)
                 (best, pick) = (v, k.Shell.Kind);
         }
-        if (pick is { } p && p != loaded && best > ctx.World.Settings.ShellSwitchGain * now)
+        // a kind ordered and spent is replaced by the best, even the one its guns fall back on
+        if (pick is { } p && (spent || p != loaded && best > ctx.World.Settings.ShellSwitchGain * now))
             ctx.Issue(GunnerySystem.Load(own.Entity, b, p));
     }
 

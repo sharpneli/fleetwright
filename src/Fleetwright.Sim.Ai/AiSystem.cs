@@ -93,7 +93,7 @@ public sealed class AiSystem : IWorldSystem
 
     public void Apply(World world, in Command c)
     {
-        if ((AiCommand)c.Code is < AiCommand.Course or > AiCommand.Shape)
+        if ((AiCommand)c.Code is < AiCommand.Course or > AiCommand.Shells)
             throw new ArgumentException($"unknown AI command {c.Code}");
         var u = new Unit(c.Entity);
         var code = (AiCommand)c.Code;
@@ -133,7 +133,7 @@ public sealed class AiSystem : IWorldSystem
     /// task's), not its guns, doctrine or detachment.</summary>
     static bool EndsTask(AiCommand code) => code is not (AiCommand.FireAtWill or AiCommand.HoldFire or AiCommand.Engage or AiCommand.Doctrine
         or AiCommand.SideDoctrine or AiCommand.Home or AiCommand.SpeedLimit or AiCommand.Clearance or AiCommand.Detach or AiCommand.Form
-        or AiCommand.Shape or AiCommand.Role);
+        or AiCommand.Shape or AiCommand.Role or AiCommand.Shells);
 
     void Route(World world, in Command c, Unit u)
     {
@@ -155,12 +155,28 @@ public sealed class AiSystem : IWorldSystem
             case AiCommand.Home:
                 homes[c.Entity & 255] = c.A == 0 ? null : Earth.Position(Earth.UnpackLatLon(c.A).Lat, Earth.UnpackLatLon(c.A).Lon);
                 return;
+            case AiCommand.Shells:
+                if (c.A is < 0 or > (long)Ships.ShellKind.He + 1)
+                    throw new ArgumentException($"no shell kind {c.A - 1}");
+                HoldShells(world, u, (byte)c.A);
+                WakeAll(world);
+                return;
         }
         if (u.IsShip)
             Captains.Order(Context(world), c);
         else if (u.IsGroup)
             Admirals.Order(Context(world), c);
         WakeAll(world);
+    }
+
+    /// <summary>A shell order to every ship down a unit's tree (docs/battle/shell-choice.md A5).</summary>
+    void HoldShells(World world, Unit u, byte kind)
+    {
+        if (u.IsShip)
+            Captains.HoldShells(u.Id, kind);
+        else if (u.IsGroup && world.Groups.Get(u.GroupId) is { } g)
+            foreach (int m in g.Members)
+                HoldShells(world, g.IsForce ? Unit.Group(m) : Unit.Ship(m), kind);
     }
 
     /// <summary>Starts the ticks of the layers that have something to watch. Groups and ships change by the world's

@@ -922,6 +922,29 @@ public sealed class ShipsView
     public Ships.Loadout?[] Loadout = [];
     public int LoadTotal;
 
+    /// <summary>Each own ship's batteries' shells (docs/battle/shell-choice.md A5): from <see cref="LoadStart"/>'s ship's
+    /// <see cref="BatteryStart"/>, a battery per the class's batteries in order: the kind ordered and the kind its guns
+    /// hold (its first mount's), each the <c>ShellKind</c> + 1, 0 for the magazine order (none for the guns: none left).</summary>
+    public int[] BatteryStart = [];
+    public byte[] BatteryOrdered = [], BatteryInGuns = [];
+    public int BatteryTotal;
+
+    /// <summary>Room for n batteries in all; grows only past the most yet.</summary>
+    public void EnsureBatteries(int n)
+    {
+        if (n > BatteryOrdered.Length)
+        {
+            int m = Math.Max(n, Math.Max(32, BatteryOrdered.Length * 2));
+            Array.Resize(ref BatteryOrdered, m);
+            Array.Resize(ref BatteryInGuns, m);
+        }
+    }
+
+    /// <summary>The player's shell order to a ship's main guns, held against her captain's choice
+    /// (docs/battle/shell-choice.md A5, decision 3): the <c>ShellKind</c> + 1, 0 none (by target); and the kind whose
+    /// order ended with the rounds of it spent (+ 1, 0 none), until the player orders again (the AI's).</summary>
+    public byte[] ShellHeld = [], ShellSpent = [];
+
     /// <summary>Room for n loads' rounds in all; grows only past the most yet.</summary>
     public void EnsureLoads(int n)
     {
@@ -1070,6 +1093,9 @@ public sealed class ShipsView
         Array.Resize(ref TorpedoesLeft, n);
         Array.Resize(ref LoadStart, n);
         Array.Resize(ref Loadout, n);
+        Array.Resize(ref BatteryStart, n);
+        Array.Resize(ref ShellHeld, n);
+        Array.Resize(ref ShellSpent, n);
         int had = MountStart.Length;
         Array.Resize(ref MountStart, n);
         Array.Fill(MountStart, -1, had, n - had);   // at rest, unless filled

@@ -146,6 +146,18 @@ with it, so A6 re-measures.
   and the ticker says so ("Lion: out of HE").
 - **The card:** each battery's kind in the guns and its rounds by kind.
 - **battle-hud.md's note goes.**
+- **Done 2026-10-25.** `AiCommand.Shells` (appended last; `UnitOrders.Shells`), to a group every ship down its tree:
+  the captain holds it (`ShellHeld`) on his chief batteries while they have rounds of it, ordering the load himself
+  in the fire pass; spent, the choice is his again (`ShellSpent`, and he replaces the spent order with his best).
+  A wing turret that never bears keeps its rounds, so its battery isn't out of the kind (its bearing mounts fall back
+  by the magazine order on their own). By the magazine order (doctrine), a kind handed back is cleared. The snapshot:
+  `BatteryOrdered` and `BatteryInGuns` by battery beside the rounds by load, `ShellHeld` and `ShellSpent` by ship.
+  The strip's GUNS column: **Shells: by target, AP ▾** (or **Shells: HE** held), its menu the kinds her main guns
+  carry, sent to `OrderUnits` (the selection). The card's battery rows: "AP, magazine order", "loads HE", or "AP in,
+  then HE" (amber) while the round in the gun goes first. The ticker: "Lion: out of HE for the main guns, her captain
+  chooses again". Checked by capture (squadrons, Lion: the menu, HE held, the card's "AP in, then HE").
+  `ShellChoiceTests`: the player's HE holds on a battleship against her captain's AP, until spent. Sim tests 788,
+  game tests 201.
 
 **A6 Measured.** Before and after on each, the user's eye on the scenarios after:
 - `matchup arethusa:4 iron_duke`, `town_chatham` against `v25:3`;

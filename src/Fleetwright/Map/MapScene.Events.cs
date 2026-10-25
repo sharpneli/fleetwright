@@ -29,6 +29,7 @@ public sealed partial class MapScene
     readonly HashSet<(int, int)> straddling = [];
     readonly Dictionary<int, byte> reasonOf = [];
     readonly Dictionary<int, sbyte> tracksOf = [];
+    readonly Dictionary<int, byte> spentOf = [];
     readonly Dictionary<int, int> firesOf = [], groupOf = [];
     readonly Dictionary<int, ContactLevel> levelOf = [];
     bool logOpen;
@@ -52,6 +53,7 @@ public sealed partial class MapScene
             straddling.Clear();
             reasonOf.Clear();
             tracksOf.Clear();
+            spentOf.Clear();
             firesOf.Clear();
             groupOf.Clear();
             levelOf.Clear();
@@ -83,6 +85,14 @@ public sealed partial class MapScene
                 }
                 else if (reason == (byte)CaptainReason.OutAmmunition)
                     Add(s, EventKind.Captain, e, $"{ShipName(s, e)}: out of ammunition, going home");
+            }
+            // the player's shell order spent (docs/battle/shell-choice.md A5): the choice her captain's again
+            byte spent = v.ShellSpent[k];
+            if (spent != spentOf.GetValueOrDefault(e))
+            {
+                spentOf[e] = spent;
+                if (spent > 0)
+                    Add(s, EventKind.Captain, e, $"{ShipName(s, e)}: out of {KindName((Sim.Ships.ShellKind)(spent - 1))} for the main guns, her captain chooses again");
             }
             // the conn's lookouts (docs/battle/command.md "The conn"): tracks coming at her, once a sighting
             sbyte tracks = v.Tracks[k];

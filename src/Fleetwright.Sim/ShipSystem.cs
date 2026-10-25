@@ -397,7 +397,7 @@ public sealed partial class ShipSystem : IWorldSystem
         var s = Store;
         v.EnsureCapacity(s.Count);
         int n = 0, w = 0, mounts = 0;
-        v.PartTotal = v.FireTotal = v.LoadTotal = v.ShowTotal = 0;
+        v.PartTotal = v.FireTotal = v.LoadTotal = v.ShowTotal = v.BatteryTotal = 0;
         for (int i = 0; i < s.Slots; i++)
             if (s.IsAlive(i) && shownSides[s[i].Side])
                 Put(v, i, n++, ref w, ref mounts, orders: true);
@@ -413,7 +413,7 @@ public sealed partial class ShipSystem : IWorldSystem
     {
         v.EnsureCapacity(contacts.Count);
         int n = 0, w = 0, mounts = 0;
-        v.PartTotal = v.FireTotal = v.LoadTotal = v.ShowTotal = 0;
+        v.PartTotal = v.FireTotal = v.LoadTotal = v.ShowTotal = v.BatteryTotal = 0;
         for (int j = 0; j < contacts.Count; j++)
         {
             int i = contacts.InSight[j] ? Store.SlotOf(contacts.Entity[j]) : -1;
@@ -453,6 +453,7 @@ public sealed partial class ShipSystem : IWorldSystem
         (v.StationAsternM[n], v.StationAbeamM[n]) = (double.NaN, double.NaN);
         v.Asked[n] = false;
         (v.Conn[n], v.Tracks[n]) = (0, 0);
+        (v.ShellHeld[n], v.ShellSpent[n]) = (0, 0);
         v.LandSide[n] = orders ? (sbyte)ship.LandSide : (sbyte)0;
         v.Backstops[n] = orders ? ship.Backstops : 0;
         v.MinClearanceM[n] = ship.Handling.MinClearanceM;
@@ -491,11 +492,22 @@ public sealed partial class ShipSystem : IWorldSystem
     void PutLoads(ShipsView v, int i, int n, bool orders)
     {
         v.LoadStart[n] = -1;
+        v.BatteryStart[n] = -1;
         v.Loadout[n] = null;
         var lo = Store.Combat.Loadout(i);
         var cls = lo.Class;
         if (!orders || lo.LoadCount == 0)
             return;
+        // each battery's kind ordered and in its guns (docs/battle/shell-choice.md A5)
+        v.EnsureBatteries(v.BatteryTotal + cls.Batteries.Length);
+        v.BatteryStart[n] = v.BatteryTotal;
+        for (int b = 0; b < cls.Batteries.Length; b++, v.BatteryTotal++)
+        {
+            v.BatteryOrdered[v.BatteryTotal] = Store.Combat.Ordered(i, b) is { } o ? (byte)(o + 1) : (byte)0;
+            var mounts = cls.Links(cls.Batteries[b].Mounts);
+            int load = mounts.Length > 0 ? Store.Combat.FiresNext(i, mounts[0]) : -1;
+            v.BatteryInGuns[v.BatteryTotal] = load >= 0 ? (byte)(lo.ShellTypes[lo.Loads(b)[load].ShellType].Kind + 1) : (byte)0;
+        }
         v.Loadout[n] = lo;
         v.EnsureLoads(v.LoadTotal + lo.LoadCount);
         int start = v.LoadStart[n] = v.LoadTotal;

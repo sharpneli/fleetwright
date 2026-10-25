@@ -111,4 +111,47 @@ public class ShellChoiceTests
         Assert.Equal(2, combat.Target(slot, 0));
         Assert.Equal(loads, combat.Ordered(slot, 0));
     }
+
+    /// <summary>The player's kind for a ship's main guns holds against her captain (A5, decision 3): HE on a battleship,
+    /// where he'd keep AP, until her main guns are out of it; then the choice is his again (AP), and what ran out shows.
+    /// Her turrets all on the centreline, so all of them bear and spend it (a wing turret that never bears keeps its
+    /// rounds, and so the battery its kind).</summary>
+    [Fact]
+    public void The_players_kind_holds_until_it_runs_out()
+    {
+        var w = new World(Start, 5, Settings);
+        var ai = new AiSystem(w);
+        var c = Fleet.Get("super_dreadnought").Class!;
+        w.Apply(ShipSystem.Spawn(w.Ships.AddClass(c), 56.5, 4.0, 90, 0, side: 0));
+        w.Apply(ShipSystem.Spawn(w.Ships.AddClass(c), 56.554, 4.0, 90, 0, side: 1));
+        var errors = new List<string>();
+        var few = c.Load(LoadoutSpec.Parse("main:ap@0.97+he@0.03"), errors);
+        Assert.True(few != null, string.Join("; ", errors));
+        w.Apply(ShipSystem.Load(1, w.Ships.Registry.AddLoadout(few!)));
+        w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.Shells, (double)ShellUse.ByTarget));
+        w.Apply(ai.Orders.SideDoctrine(1, DoctrineField.Shells, (double)ShellUse.MagazineOrder));
+        w.Apply(ai.Orders.HoldFire(Unit.Ship(2)));   // a target that doesn't sink her first
+        w.Apply(ai.Orders.Shells(Unit.Ship(1), ShellKind.He));
+        var combat = w.Ships.Store.Combat;
+        int slot = w.Ships.Store.SlotOf(1);
+        w.AdvanceTo(w.Time + 60_000);
+        Assert.Equal(ShellKind.He, combat.Ordered(slot, 0));
+        var snap = new Snapshot();
+        w.Fill(snap, truth: true);
+        int k = snap.Ships.IndexOf(1);
+        Assert.Equal((byte)(ShellKind.He + 1), snap.Ships.ShellHeld[k]);
+        Assert.Equal((byte)(ShellKind.He + 1), snap.Ships.BatteryOrdered[snap.Ships.BatteryStart[k]]);
+
+        // her few HE rounds spent: the choice is her captain's again, and he takes AP on a dreadnought
+        for (int i = 0; i < 30 && snap.Ships.ShellSpent[k] == 0; i++)
+        {
+            w.AdvanceTo(w.Time + 60_000);
+            w.Fill(snap, truth: true);
+            k = snap.Ships.IndexOf(1);
+        }
+        Assert.Equal((byte)(ShellKind.He + 1), snap.Ships.ShellSpent[k]);
+        Assert.Equal(0, snap.Ships.ShellHeld[k]);
+        w.AdvanceTo(w.Time + 10_000);
+        Assert.Equal(ShellKind.Ap, combat.Ordered(slot, 0));
+    }
 }

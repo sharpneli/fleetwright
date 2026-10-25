@@ -186,6 +186,11 @@ public enum AiCommand : ushort
     /// <see cref="GroupSystem.Shape"/>): its orders stand, as a formation's do; its groups steer for the places they end
     /// in on its guide, as a deployment's do, until it's formed. Nothing to a ship.</summary>
     Shape,
+
+    /// <summary>The player's shell order to a ship's main guns (docs/battle/shell-choice.md A5, decision 3), to a group
+    /// every ship down its tree: A the <c>ShellKind</c> + 1, held against her captain's choice until those guns are out
+    /// of it; 0 hands the choice back to him (by target).</summary>
+    Shells,
 }
 
 /// <summary>A ship's fire order (docs/battle/fighting.md 4.2c).</summary>
@@ -281,6 +286,10 @@ public readonly struct UnitOrders(byte system, bool hand = false)
 
     /// <summary>A unit's whole line into one line ahead, columns or abreast, however deep it nests.</summary>
     public Command Shape(Unit u, LineShape shape, OrderSource source = OrderSource.Player) => Make(AiCommand.Shape, u, source, a: (long)shape);
+
+    /// <summary>A unit's main guns load a kind, held against the captains' choice (null: by target, theirs again).</summary>
+    public Command Shells(Unit u, Ships.ShellKind? kind, OrderSource source = OrderSource.Player) =>
+        Make(AiCommand.Shells, u, source, a: kind is { } k ? (long)k + 1 : 0);
 
     /// <summary>Screen another unit of the same side: keep a distance off it (0: the settings'), on a station of its arc
     /// that every screen of it shares, and counter-attack enemy torpedo craft closing on it.</summary>

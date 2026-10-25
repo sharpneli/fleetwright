@@ -368,6 +368,9 @@ public sealed partial class MapScene
         return false;
     }
 
+    /// <summary>A shell kind as the map writes it.</summary>
+    static string KindName(ShellKind kind) => kind switch { ShellKind.Ap => "AP", ShellKind.Common => "common", _ => "HE" };
+
     /// <summary>Dev (F1): one salvo from the selected ship "at" the sea: the battery, the kind (the magazine order, or a
     /// kind the battery carries, her loadout's, with its rounds left), armed, then a right-click on the sea fires it.</summary>
     void DevFireRow(Snapshot s)
@@ -412,7 +415,6 @@ public sealed partial class MapScene
                 }
             return sum;
         }
-        static string KindName(ShellKind kind) => kind switch { ShellKind.Ap => "AP", ShellKind.Common => "common", _ => "HE" };
         string LeftText(ShellKind kind) => Left(kind) is var n && n == int.MaxValue ? "" : $" ({n})";
         if (fireKind is { } fk && !Carries(fk))
             fireKind = null;

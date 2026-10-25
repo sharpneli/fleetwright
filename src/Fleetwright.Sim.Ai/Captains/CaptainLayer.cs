@@ -124,6 +124,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         public long CombUntilMs;        // combing a torpedo's track until then (0: not)
         public double CombDeg, CombBackDeg;   // the comb's course, and the course ordered before it
         public ShellJudged[]? Shells;   // by battery, what its shell was last judged on (made when first needed)
+        public byte ShellHeld, ShellSpent;   // the player's kind for his main guns (+ 1, 0 none), and the one that ran out
     }
 
     /// <summary>What a battery's shell was last judged on (docs/battle/shell-choice.md A3): its target as the picture had
@@ -620,6 +621,11 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
             h.Add(c.CombBackDeg);
             h.Add(c.Conn);
             h.Add((int)c.Tracks);
+            if (c.ShellHeld + c.ShellSpent > 0)
+            {
+                h.Add(c.ShellHeld);   // only then: worlds without the player's shell orders hash as before
+                h.Add(c.ShellSpent);
+            }
             c.Track?.Hash(ref h);
         }
     }
@@ -642,7 +648,18 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
             v.Tracks[k] = i >= 0 ? captains[i].Tracks : (sbyte)0;
             v.Reason[k] = i >= 0 ? (byte)captains[i].Reason : (byte)0;
             (v.Fire[k], v.FireTarget[k]) = i >= 0 ? ((byte)captains[i].Fire, captains[i].FireTarget) : ((byte)0, 0);
+            (v.ShellHeld[k], v.ShellSpent[k]) = i >= 0 ? (captains[i].ShellHeld, captains[i].ShellSpent) : ((byte)0, (byte)0);
         }
+    }
+
+    /// <summary>The player's shell order for a ship's main guns (docs/battle/shell-choice.md A5): a kind + 1 held against
+    /// his choice, or 0 to hand it back (judged afresh); either clears what ran out.</summary>
+    internal void HoldShells(int entity, byte kind)
+    {
+        ref var cap = ref Get(entity);
+        (cap.ShellHeld, cap.ShellSpent) = (kind, 0);
+        if (cap.Shells != null)
+            Array.Clear(cap.Shells);
     }
 
     /// <summary>A ship's captain, made (told nothing yet) if it has none.</summary>
