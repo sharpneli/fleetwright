@@ -38,6 +38,7 @@ public sealed unsafe partial class LaunchScene
     readonly List<(int Side, string Label, string Ensign)> shipTabs = [];
     List<ShipLine>[] linesBySide = [];
     int shipTab;
+    int tabsPlayedAs = -2;   // the player's side the tabs were made for: a new one shows its ships
     bool shipsMadeWithDesigns;   // the titles were the designs' (else their files', until those are read)
     ScenarioSetup? pendingEdit;   // a change made while the column is drawn, made at the frame's end
 
@@ -73,8 +74,9 @@ public sealed unsafe partial class LaunchScene
         foreach (int sd in order)
             shipTabs.Add((sd, side < 0 ? s.Sides[sd] : sd == side ? $"{s.Sides[sd]} · yours" : $"{s.Sides[sd]} · the enemy", s.AboutOf(sd)?.Ensign ?? ""));
         shipTab = Math.Max(0, shipTabs.FindIndex(t => t.Side == tabSide));
-        if (side >= 0 && tabSide < 0)
-            shipTab = 0;
+        if (side >= 0 && (tabSide < 0 || side != tabsPlayedAs))
+            shipTab = 0;   // the side played as, first
+        tabsPlayedAs = side;
         linesBySide = new List<ShipLine>[s.Sides.Length];
         for (int sd = 0; sd < s.Sides.Length; sd++)
         {
