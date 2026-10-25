@@ -128,10 +128,11 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
     }
 
     /// <summary>What a battery's shell was last judged on (docs/battle/shell-choice.md A3): its target as the picture had
-    /// her, and the range's step; judged again when any of them changes.</summary>
+    /// her, and the range's step; judged again when any of them changes, and its rounds looked at again from CheckMs.</summary>
     struct ShellJudged
     {
         public int Target, TakenFor, Step;
+        public long CheckMs;
         public ContactLevel Level;
         public ShipType Type;
     }

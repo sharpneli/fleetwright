@@ -116,7 +116,7 @@ already runs each second:
   speed and table against each class; `Matchups.Warm` makes them all). `Matchup.PerRound`: hit chance × out chance.
   `CaptainLayer.Shells`, in the fire pass after the battery's target is picked: the judgement over the contact's
   entries (`MatchupSide.AddContact`), only for kinds a mount still has rounds of; judged again on a new target, more
-  made out of her, a range step (250 m), or the kind ordered spent. Doctrine's `Shells` (appended after `Temper`):
+  made out of her, a range step (1 km since A6), or the kind ordered spent (its rounds looked at every 10 s). Doctrine's `Shells` (appended after `Temper`):
   the neutral default the magazine order, `doctrine.json`'s "default" by target (decision 2); a row on the launch
   screen's standing orders. `ShellSwitchGain` 1.25 [EST].
   - Tests: `ShellChoiceTests` (a dreadnought on a destroyer loads HE, on a dreadnought stays on AP, by the magazine
@@ -131,7 +131,9 @@ with it, so A6 re-measures.
 
 - **Done 2026-10-25.** `MatchupGun.ChosenKind` and `Chosen`: of its kinds within reach, the one whose rounds do
   the most (hit chance × out exponent), read by the judgement's gunfire (`Matchup.Guns`) in place of the lead's;
-  `matchup` prints the kind each battery is judged with. A judgement 2.7 → 4.6 µs (Arethusa ×4 against Iron Duke).
+  `matchup` prints the kind each battery is judged with. A judgement 2.7 → 4.6 µs (Arethusa ×4 against Iron Duke);
+  since A6 the chosen kind's numbers are a table of their own, made with the pair's: 2.8 µs, and 52 → 58 µs for 6
+  classes against 7.
   - Moved: against an Iron Duke, Arethusa ×4 1.127 → 0.915 (×5 1.29); V25 ×4 0.46 → 0.31, ×8 1.33 → 0.80, ×12
     2.43 → 1.40, ×16 3.63 → 2.05: the boats' and light cruisers' even point from about 7 boats to 10, from 4 light
     cruisers to 5. Town Chatham against V25 ×3 0.97; Lion against Seydlitz 1.26 (AP both ways, unchanged).

@@ -195,21 +195,38 @@ public sealed partial class CaptainLayer
     void Shells(in AiContext ctx, ref Captain cap, ShipState own, int slot, int b, int target, Picture? pic)
     {
         var combat = ctx.Ships.Combat;
-        var lo = combat.Loadout(slot);
+        var cls = own.Handling.Class;
+        var js = cap.Shells ??= new ShellJudged[cls.Batteries.Length];
+        // what's left in the magazines and doctrine looked at every ShellCheckMs (a round's count changes only as she
+        // fires); the target as it changes
+        long now = ctx.World.Time.Ms;
+        bool check = now >= js[b].CheckMs;
+        if (check)
+            js[b].CheckMs = now + ShellCheckMs;
         // the player's kind for the main guns holds while they have rounds of it (A5); spent, the choice is his again
-        if (cap.ShellHeld > 0 && lo.Class.Batteries[b].Chief)
+        if (cap.ShellHeld > 0 && cls.Batteries[b].Chief)
         {
+            if (!check)
+                return;
             var held = (ShellKind)(cap.ShellHeld - 1);
-            if (Has(combat, slot, lo.Class, b, held))
+            if (Has(combat, slot, cls, b, held))
             {
                 if (combat.Ordered(slot, b) != held)
                     ctx.Issue(GunnerySystem.Load(own.Entity, b, held));
                 return;
             }
             (cap.ShellSpent, cap.ShellHeld) = (cap.ShellHeld, 0);
-            if (cap.Shells != null)
-                Array.Clear(cap.Shells);
+            Array.Clear(js);
+            js[b].CheckMs = now + ShellCheckMs;
         }
+        if (target == 0 || pic == null || pic.IndexOf(target) is not (int ci and >= 0))
+            return;
+        ref readonly var c = ref pic[ci];
+        int step = (int)(Earth.Distance(own.Position, c.Position) / ShellJudgeStepM);
+        ref var j = ref js[b];
+        bool same = j.Target == target && j.TakenFor == c.TakenFor && j.Step == step && j.Level == c.Level && j.Type == c.Type;
+        if (same && !check)
+            return;
         if ((ShellUse)doctrine.Of(own.Entity, own.Side, DoctrineField.Shells) != ShellUse.ByTarget)
         {
             // by the magazine order: nothing ordered (the player's kind, handed back, goes too)
@@ -217,30 +234,25 @@ public sealed partial class CaptainLayer
                 ctx.Issue(GunnerySystem.Load(own.Entity, b, null));
             return;
         }
-        if (target == 0 || pic == null || pic.IndexOf(target) is not (int ci and >= 0))
+        var ordered = combat.Ordered(slot, b);
+        bool spent = ordered is { } o && !Has(combat, slot, cls, b, o);
+        if (same && !spent)
             return;
+        (j.Target, j.TakenFor, j.Step, j.Level, j.Type) = (target, c.TakenFor, step, c.Level, c.Type);
+        var lo = combat.Loadout(slot);
         MatchupGun? gun = null;
         foreach (var g in Judge.Matchups.Profile(ctx.World, lo).Guns)
             if (g.Battery == b)
                 gun = g;
         if (gun == null || gun.Kinds.Length < 2)
             return;
-        ref readonly var c = ref pic[ci];
-        var cls = lo.Class;
-        double range = Earth.Distance(own.Position, c.Position);
-        int step = (int)(range / MatchupProfile.RangeStepM);
-        var ordered = combat.Ordered(slot, b);
-        bool spent = ordered is { } o && !Has(combat, slot, cls, b, o);
-        if ((cap.Shells ??= new ShellJudged[cls.Batteries.Length]) is var js && js[b] is var j && j.Target == target && j.TakenFor == c.TakenFor && j.Step == step
-            && j.Level == c.Level && j.Type == c.Type && !spent)
-            return;
-        js[b] = new ShellJudged { Target = target, TakenFor = c.TakenFor, Step = step, Level = c.Level, Type = c.Type };
         shellTarget.Clear();
         shellTarget.AddContact(ctx.World, Judge.Matchups, own.Side, c);
         if (shellTarget.Count == 0)
             return;
+        double range = Earth.Distance(own.Position, c.Position);
         var loaded = ordered is { } k0 && !spent ? k0 : Lead(combat, slot, lo, b);
-        double now = 0, best = 0;
+        double at = 0, best = 0;
         ShellKind? pick = null;
         foreach (var k in gun.Kinds)
         {
@@ -250,14 +262,19 @@ public sealed partial class CaptainLayer
             foreach (ref readonly var e in shellTarget.Entries)
                 v += e.Count * Matchup.PerRound(k, e, range, ctx.World.Settings);
             if (k.Shell.Kind == loaded)
-                now = v;
+                at = v;
             if (v > best)
                 (best, pick) = (v, k.Shell.Kind);
         }
         // a kind ordered and spent is replaced by the best, even the one its guns fall back on
-        if (pick is { } p && (spent || p != loaded && best > ctx.World.Settings.ShellSwitchGain * now))
+        if (pick is { } p && (spent || p != loaded && best > ctx.World.Settings.ShellSwitchGain * at))
             ctx.Issue(GunnerySystem.Load(own.Entity, b, p));
     }
+
+    /// <summary>How often a captain looks at his batteries' rounds and doctrine for their shells, ms; and the range
+    /// step he judges a target's shell again at, m (the kinds' worth moves slowly with range).</summary>
+    const long ShellCheckMs = 10_000;
+    const double ShellJudgeStepM = 1000;
 
     /// <summary>Whether any of a battery's mounts has rounds of a kind.</summary>
     static bool Has(CombatStore combat, int slot, ShipClass cls, int b, ShellKind kind)

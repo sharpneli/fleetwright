@@ -260,13 +260,22 @@ public sealed class MatchupGun
     public double ReachM { get; }
     /// <summary>The battery as each kind it carries would fire it (docs/battle/shell-choice.md A3), this one (its lead
     /// shell's) first, then the others in the magazine order: one a kind.</summary>
-    public MatchupGun[] Kinds { get; internal set; }
+    public MatchupGun[] Kinds
+    {
+        get;
+        internal set
+        {
+            field = value;
+            KindsReachM = 0;
+            foreach (var k in value)
+                KindsReachM = Math.Max(KindsReachM, k.ReachM);
+        }
+    }
     readonly double[] fall, strike;
 
     internal MatchupGun(int battery, in BatteryRow row, int guns, double perMin, int rounds, ShellTypeRow shell, BallisticTable t, SimSettings s)
     {
         (Battery, Kind, Chief, CalibreMm, Guns, ShellsPerGunMin, Rounds, Shell, PatternPct) = (battery, row.Kind, row.Chief, row.CalibreMm, guns, perMin, rounds, shell, row.PatternPct);
-        Kinds = [this];
         Level = row.Local ? 0 : (int)row.Level;
         double hi = Math.Min(t.Key.MaxElevationDeg, t.MaxElevationDeg - 2 * BallisticTable.ElevationStep);
         ReachM = t.Fall(hi, s.MatchupMuzzleM).Range;
@@ -278,20 +287,55 @@ public sealed class MatchupGun
             var f = double.IsNaN(e) ? t.Fall(hi, s.MatchupMuzzleM) : t.Fall(e, s.MatchupMuzzleM);
             (fall[i], strike[i]) = (f.FallDeg, f.StrikeMs);
         }
+        Kinds = [this];   // with its reach known
     }
 
     // against each class met: the hit chance and the out exponent by range step (MatchupProfile.RangeStepM), made the
     // first time the pair is judged (the judgement's cost is these, not the sums over them); by the class's number, from
     // the lowest met (a judgement asks hundreds of millions of times in a Jutland: an array, not a hash)
-    double[]?[] pairs = [];
-    int pairsFrom;
+    Tables pairs, chosen;   // chosen: the kind its captain would load's, out to the farthest of them (the lead's own: Kinds[0])
+
+    /// <summary>Tables against the classes met, by the class's number from the lowest met.</summary>
+    struct Tables
+    {
+        double[]?[] tabs;
+        int from;
+
+        public readonly double[]? Of(int number) => tabs != null && (uint)(number - from) < (uint)tabs.Length ? tabs[number - from] : null;
+
+        public void Keep(int number, double[] tab)
+        {
+            tabs ??= [];
+            if (tabs.Length == 0)
+                from = number;
+            int lo = Math.Min(from, number), hi = Math.Max(from + tabs.Length, number + 1);
+            if (lo != from || hi > from + tabs.Length)
+            {
+                var grown = new double[]?[Math.Max(hi - lo, 2 * tabs.Length)];
+                tabs.CopyTo(grown, from - lo);
+                (tabs, from) = (grown, lo);
+            }
+            tabs[number - from] = tab;
+        }
+    }
+
+    /// <summary>A pair table's (hit, exponent) at a range, linear between its steps.</summary>
+    static (double Hit, double Exponent) Read(double[] tab, double rangeM)
+    {
+        int n = tab.Length / 2;
+        double u = Math.Clamp(rangeM / MatchupProfile.RangeStepM, 0, n - 1);
+        int k = Math.Min((int)u, n - 2);
+        if (k < 0)
+            return (tab[0], tab[1]);
+        double w = u - k;
+        return (tab[2 * k] + w * (tab[2 * k + 2] - tab[2 * k]), tab[2 * k + 1] + w * (tab[2 * k + 3] - tab[2 * k + 1]));
+    }
 
     /// <summary>Against a class at a range within reach: the hit chance (<see cref="Matchup.HitChance"/>) and the out
     /// exponent (<see cref="Matchup.OutExponent"/>), from the pair's table, linear between its steps.</summary>
     public (double Hit, double Exponent) Against(MatchupProfile t, double rangeM, SimSettings s)
     {
-        int at = t.Number - pairsFrom;
-        var tab = (uint)at < (uint)pairs.Length ? pairs[at] : null;
+        var tab = pairs.Of(t.Number);
         if (tab == null)
         {
             tab = new double[2 * fall.Length];
@@ -300,33 +344,34 @@ public sealed class MatchupGun
                 double r = Math.Min(Math.Max(i, 0.5) * MatchupProfile.RangeStepM, ReachM);
                 (tab[2 * i], tab[2 * i + 1]) = (Matchup.HitChance(this, t, r, s), Matchup.OutExponent(this, t, r, s));
             }
-            Keep(t.Number, tab);
+            pairs.Keep(t.Number, tab);
         }
-        double u = Math.Clamp(rangeM / MatchupProfile.RangeStepM, 0, fall.Length - 1);
-        int k = Math.Min((int)u, fall.Length - 2);
-        if (k < 0)
-            return (tab[0], tab[1]);
-        double w = u - k;
-        return (tab[2 * k] + w * (tab[2 * k + 2] - tab[2 * k]), tab[2 * k + 1] + w * (tab[2 * k + 3] - tab[2 * k + 1]));
+        return Read(tab, rangeM);
     }
 
     /// <summary>The farthest any of its kinds reaches, m.</summary>
-    public double KindsReachM
-    {
-        get
-        {
-            double r = 0;
-            foreach (var k in Kinds)
-                r = Math.Max(r, k.ReachM);
-            return r;
-        }
-    }
+    public double KindsReachM { get; private set; }
 
     /// <summary>Against a class at a range: <see cref="Against"/> for the kind its captain would load there
     /// (docs/battle/shell-choice.md A4), the one of <see cref="Kinds"/> within reach whose rounds do the most (hit chance
-    /// times the out exponent); (0, 0) when none reaches.</summary>
-    public (double Hit, double Exponent) Chosen(MatchupProfile t, double rangeM, SimSettings s) =>
-        ChosenKind(t, rangeM, s) is { } k ? k.Against(t, rangeM, s) : (0, 0);
+    /// times the out exponent), from a table of its own made with the pair's (one read, as Against). Past the farthest
+    /// reach, the last step's.</summary>
+    public (double Hit, double Exponent) Chosen(MatchupProfile t, double rangeM, SimSettings s)
+    {
+        if (Kinds.Length == 1)
+            return Against(t, rangeM, s);
+        var tab = chosen.Of(t.Number);
+        if (tab == null)
+        {
+            int n = (int)(KindsReachM / MatchupProfile.RangeStepM) + 1;
+            tab = new double[2 * Math.Max(n, 2)];
+            for (int i = 0; i < tab.Length / 2; i++)
+                if (ChosenKind(t, Math.Min(Math.Max(i, 0.5) * MatchupProfile.RangeStepM, KindsReachM), s) is { } k)
+                    (tab[2 * i], tab[2 * i + 1]) = k.Against(t, Math.Min(Math.Max(i, 0.5) * MatchupProfile.RangeStepM, KindsReachM), s);
+            chosen.Keep(t.Number, tab);
+        }
+        return Read(tab, rangeM);
+    }
 
     /// <summary>The kind <see cref="Chosen"/> takes (null: none reaches).</summary>
     public MatchupGun? ChosenKind(MatchupProfile t, double rangeM, SimSettings s)
@@ -337,20 +382,6 @@ public sealed class MatchupGun
             if (rangeM <= k.ReachM && k.Against(t, rangeM, s) is var x && x.Hit * x.Exponent > most)
                 (best, most) = (k, x.Hit * x.Exponent);
         return best;
-    }
-
-    void Keep(int number, double[] tab)
-    {
-        if (pairs.Length == 0)
-            pairsFrom = number;
-        int from = Math.Min(pairsFrom, number), to = Math.Max(pairsFrom + pairs.Length, number + 1);
-        if (from != pairsFrom || to > pairsFrom + pairs.Length)
-        {
-            var grown = new double[]?[Math.Max(to - from, 2 * pairs.Length)];
-            pairs.CopyTo(grown, pairsFrom - from);
-            (pairs, pairsFrom) = (grown, from);
-        }
-        pairs[number - pairsFrom] = tab;
     }
 
     /// <summary>The fall (degrees under the horizontal) and striking speed at a range within reach.</summary>
