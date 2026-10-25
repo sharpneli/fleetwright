@@ -18,7 +18,7 @@ and the thumbnails baked from the designs at 4 px/m, so the lengths compare true
 
 | Piece | Where | Shows | Mocked |
 |---|---|---|---|
-| Scenarios | left column | the shipped scenarios (date, place, each side's ships, its classes and load time, a bar while it builds), filters by era and size, the scale test's rungs under Tests; **your setups** below (a saved setup is a scenario file, see "A setup is a scenario file"); open a file | all |
+| Scenarios | left column | the shipped scenarios (date, place, each side's ships, its classes and load time, a bar while it builds), filters by era and size, the scale test's rungs and the benches (squadrons, flotilla: a file's `"test": true`) under Tests; **your setups** below (a saved setup is a scenario file, see "A setup is a scenario file"); open a file | all |
 | Header | top | kicker, name, date and place, the weather, sunset, the end; the brief | all |
 | Play as | under the brief | one card a side (ensign, strength pips, ships, its character in a line, its commander) and **Watch** (both sides the AI's, everything shown: for checking a setup) | `#japan`, `#watch` |
 | The opening | top right | the scenario's start on the map: each top unit at its place with its ships astern, its course for 30 minutes, the range between the sides; yours blue, theirs red. While a new unit is placed it widens over the header into **the placing view** | all, `#place` |

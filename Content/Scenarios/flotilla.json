@@ -4,6 +4,7 @@
 // guns take them as they come. Not history: a bench to watch torpedoes run at 1x.
 {
   "scenario": 1,
+  "test": true,
   "name": "Flotilla",
   "brief": "Six torpedo boats attack four battleships steaming south in line, 14 km off and closing. Watch the boats run in under fire, launch, turn away, and the torpedoes' wakes cross the line.",
   "place": "North Sea",

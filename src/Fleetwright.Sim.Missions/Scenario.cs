@@ -64,7 +64,8 @@ namespace Fleetwright.Sim.Missions;
 /// <para>For the launch screen (docs/map-ui/launch.md), what it says of itself: <c>"place": "Tsushima Strait"</c>, and
 /// each side's <c>"about": { "Russia": { "character": "The hammer: ...", "commander": "V-Adm Rozhestvensky",
 /// "ensign": "russia" } }</c> (an ensign the screen draws: britain, germany, russia, japan). Both taken from "from"
-/// unless given.</para>
+/// unless given. <c>"test": true</c> lists it under Tests (the scale test's rungs, the benches), never taken from
+/// "from".</para>
 /// <para>A record, so a setup is a copy with its changes (<c>s with { PlayerName = "Japan" }</c>).</para></summary>
 public sealed record Scenario
 {
@@ -75,6 +76,10 @@ public sealed record Scenario
 
     /// <summary>Where it's fought, in a few words ("Tsushima Strait"), or "".</summary>
     public string Place { get; init; } = "";
+
+    /// <summary>A test, not a scenario to play (the scale test's rungs, the benches): the launch screen lists it under
+    /// Tests.</summary>
+    public bool Test { get; init; }
 
     /// <summary>What the file says of each side (its character, its commander, its ensign), by index, where it does.</summary>
     public List<(int Side, SideAbout About)> About { get; init; } = [];
@@ -321,6 +326,7 @@ public sealed record Scenario
                 Name = Str(r, "name", "") is { Length: > 0 } n ? n : "Scenario",
                 Brief = Str(r, "brief", from?.Brief ?? ""),
                 Place = Str(r, "place", from?.Place ?? ""),
+                Test = r.TryGetProperty("test", out var te) && te.ValueKind == JsonValueKind.True,
                 About = about,
                 Start = from != null && !r.TryGetProperty("start", out _) ? from.Start : ParseTime(Str(r, "start", ""), "start"),
                 Seed = r.TryGetProperty("seed", out var seed) && seed.TryGetUInt64(out ulong sv) ? sv : from?.Seed ?? 1,

@@ -2,6 +2,7 @@
 // open North Atlantic, a neutral side, on rails while the battle is fought (docs/battle/plan.md step 2.7c).
 {
   "scenario": 1,
+  "test": true,
   "name": "Ladder 4: the Jutland and a world",
   "brief": "The scale test's fourth rung: the Jutland, and 400 tramp steamers on rails across the North Atlantic (a neutral side).",
   "from": "jutland",

@@ -100,7 +100,7 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         initial = at >= 0 ? at : entries.FindIndex(e => !e.Test && e.Scenario != null);
     }
 
-    /// <summary>The shipped first by their dates, the scale test's rungs (ladder-*) under Tests, the player's setups
+    /// <summary>The shipped first by their dates, the scale test's rungs and the benches (a file's "test") under Tests, the player's setups
     /// newest first, the files opened last.</summary>
     void Sort()
     {
@@ -123,7 +123,6 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
     static Entry Read(string path, bool opened)
     {
         var e = new Entry { Path = path, Opened = opened, Name = Path.GetFileNameWithoutExtension(path) };
-        e.Test = e.Name.StartsWith("ladder-", StringComparison.Ordinal);
         e.Saved = !opened && Path.GetFullPath(Path.GetDirectoryName(path)!).Equals(Path.GetFullPath(SetupsFolder), StringComparison.OrdinalIgnoreCase);
         e.Modified = File.GetLastWriteTime(path);
         e.When = e.Modified.Date == DateTime.Today ? "today" : e.Modified.ToString("MMM d", CultureInfo.InvariantCulture);
@@ -132,6 +131,7 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
             var s = Scenario.Load(path, [ShippedFolder]);
             e.Scenario = s;
             e.Name = s.Name;
+            e.Test = s.Test;
             var start = s.Start.ToUtc();
             e.Year = start.Year;
             e.Date = start.ToString("d MMMM yyyy", CultureInfo.InvariantCulture) + (s.Place.Length > 0 ? " · " + s.Place : "");

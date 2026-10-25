@@ -2,6 +2,7 @@
 // The Jutland's moment and place, none of its ships: eight Orions in line ahead where the Grand Fleet starts.
 {
   "scenario": 1,
+  "test": true,
   "name": "Ladder 1: one squadron",
   "brief": "The scale test's first rung: eight Orion-like battleships in line ahead, the baseline per ship.",
   "from": "jutland",

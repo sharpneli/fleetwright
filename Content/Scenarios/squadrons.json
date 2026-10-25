@@ -4,6 +4,7 @@
 // fire. Not history: a bench to watch fire control play out at 1x.
 {
   "scenario": 1,
+  "test": true,
   "name": "Squadrons",
   "brief": "Beatty's four battlecruisers against Hipper's five, 22 km apart and closing in clear weather. Both sides fight when they meet: watch the turrets train, the salvos fall and straddle, and the hits tell.",
   "place": "North Sea",
