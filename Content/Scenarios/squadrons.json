@@ -6,6 +6,11 @@
   "scenario": 1,
   "name": "Squadrons",
   "brief": "Beatty's four battlecruisers against Hipper's five, 22 km apart and closing in clear weather. Both sides fight when they meet: watch the turrets train, the salvos fall and straddle, and the hits tell.",
+  "place": "North Sea",
+  // the launch screen's side cards (docs/map-ui/launch.md): each side in a line, its commander, its ensign
+  "about": {
+    "Britain": { "character": "Four battlecruisers: the bigger guns, the thinner armour.", "commander": "V-Adm Beatty", "ensign": "britain" },
+    "Germany": { "character": "Five battlecruisers: lighter guns, thicker armour, German fire discipline.", "commander": "R-Adm Hipper", "ensign": "germany" } },
   "start": "1916-05-31T15:30",
   "seed": 4,
   "camera": [56.47, 4.18, 40],

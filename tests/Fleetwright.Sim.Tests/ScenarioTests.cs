@@ -234,6 +234,27 @@ public class ScenarioTests
             Assert.True(File.Exists(Path.Combine(s.Folder!, "Designs", n + ".json")) || File.Exists(Path.Combine(Designs[0], n + ".json")), n);
     }
 
+    /// <summary>What a scenario says of itself for the launch screen (docs/map-ui/launch.md L1): its place and each side's
+    /// character, commander and ensign, taken through "from" (the ladder's rungs have the Jutland's); a side picked
+    /// there is a copy with its player changed, the file's own untouched.</summary>
+    [Fact]
+    public void A_scenario_says_its_place_and_sides_and_a_setup_is_a_copy()
+    {
+        var s = Scenario.Load(Path.Combine(Fleet.Repo, "Content", "Scenarios", "tsushima.json"));
+        Assert.Equal("Tsushima Strait", s.Place);
+        Assert.Equal("V-Adm Rozhestvensky", s.AboutOf(0)!.Commander);
+        Assert.Equal("japan", s.AboutOf(1)!.Ensign);
+        Assert.StartsWith("The hunters", s.AboutOf(1)!.Character);
+        var rung = Scenario.Load(Path.Combine(Fleet.Repo, "Content", "Scenarios", "ladder-1-squadron.json"));
+        Assert.Equal("off the Jutland Bank", rung.Place);
+        Assert.Equal("britain", rung.AboutOf(0)!.Ensign);
+        var japan = s with { PlayerName = "Japan" };
+        Assert.Equal(1, japan.Player);
+        Assert.Equal(0, s.Player);
+        Assert.Same(s.Units, japan.Units);
+        Assert.Throws<ScenarioException>(() => Scenario.Parse("""{ "scenario": 1, "start": "1916-05-31T14:00", "sides": ["A"], "about": { "B": {} } }"""));
+    }
+
     /// <summary>The scale test's world rungs keep their tramps at peace with both fleets (docs/battle/plan.md step 3.1a):
     /// given to a world, the neutral side is hostile to neither, and the fleets still to each other.</summary>
     [Fact]

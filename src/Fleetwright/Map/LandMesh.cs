@@ -109,7 +109,7 @@ public sealed class LandMesh
     }
 
     /// <summary>Sutherland-Hodgman against an axis-aligned rectangle: the four sides in turn.</summary>
-    static List<(double X, double Y)> Clip(List<(double X, double Y)> poly, double x0, double y0, double x1, double y1)
+    internal static List<(double X, double Y)> Clip(List<(double X, double Y)> poly, double x0, double y0, double x1, double y1)
     {
         var a = poly;
         a = ClipSide(a, p => p.X - x0, x0, true);

@@ -18,6 +18,9 @@ public sealed partial class MapScene : ISceneMenu
     /// <summary>Opens the app's menu (the top bar's menu button; Esc opens it through the switcher).</summary>
     public Action? OpenMenu { get; init; }
 
+    /// <summary>Opens the launch screen (docs/map-ui/launch.md: the menu's and the result's Scenarios).</summary>
+    public Action? OpenLaunch { get; init; }
+
     /// <summary>Opens the designer (the top bar's menu).</summary>
     public Action? OpenDesigner { get; init; }
 
@@ -223,7 +226,7 @@ public sealed partial class MapScene : ISceneMenu
         }
     }
 
-    static string AimsText(Scenario sc, int side) => string.Join(", ", sc.AimsOf(side).Select(a => a.Kind switch
+    internal static string AimsText(Scenario sc, int side) => string.Join(", ", sc.AimsOf(side).Select(a => a.Kind switch
     {
         AimKind.DestroyEveryone => "Destroy everyone",
         _ => a.Kind.ToString(),
@@ -370,11 +373,11 @@ public sealed partial class MapScene : ISceneMenu
     }
 
     /// <summary>A preset's id as a reader would write it: "rn-1914" RN 1914, "closed up" Closed up.</summary>
-    static string Pretty(string id) => string.Join(' ', id.Split('-', ' ').Select((t, i) => i > 0 || t.Length == 0 ? t
+    internal static string Pretty(string id) => string.Join(' ', id.Split('-', ' ').Select((t, i) => i > 0 || t.Length == 0 ? t
         : t.Length <= 3 && t.All(char.IsLetter) ? t.ToUpperInvariant() : char.ToUpperInvariant(t[0]) + t[1..]));
 
     /// <summary>A unit's ships by name, else their designs with a count.</summary>
-    static IEnumerable<string> ShipsOf(ScenarioUnit unit)
+    internal static IEnumerable<string> ShipsOf(ScenarioUnit unit)
     {
         foreach (var sub in unit.Units)
             foreach (var n in ShipsOf(sub))
@@ -689,23 +692,14 @@ public sealed partial class MapScene : ISceneMenu
             if (ImGui.Button($"Restart {sc.Name}", full))
             {
                 shut = true;
-                BriefOnce = true;
                 world.Load(sc);
             }
         }
-        ImGui.Spacing();
-        ImGui.TextDisabled("Scenarios");
-        scenarioPaths ??= WorldSession.ShippedScenarios();
-        if (world.Loading is { } l)
-            ImGui.TextDisabled($"loading {l.Name}: classes {l.Ready} of {l.Of}...");
-        else
-            foreach (var path in scenarioPaths)
-                if (ImGui.Selectable(Path.GetFileNameWithoutExtension(path)))
-                {
-                    shut = true;
-                    BriefOnce = true;
-                    Load(path);
-                }
+        if (OpenLaunch != null && ImGui.Button("Scenarios…", full))
+        {
+            shut = true;
+            OpenLaunch();
+        }
         if (world.LoadError is { } e)
             ImGui.TextColored(Bad, e);
         var s = world.Current;

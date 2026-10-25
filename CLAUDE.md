@@ -12,7 +12,8 @@ dotnet test
 ## Run: the designer and the viewers
 
 ```bash
-dotnet run --project src/Fleetwright                                       # the world: the globe, its clock running at 1x
+dotnet run --project src/Fleetwright                                       # the launch screen (docs/map-ui/launch.md): the last scenario played picked; Begin opens the map
+dotnet run --project src/Fleetwright -- -launch=jutland -ui -screenshot=200   # the launch screen with a scenario picked (-launch alone: the last played), even with other flags
 dotnet run --project src/Fleetwright -- -map=56.7,5.8,0.1 -time=1916-05-31T15:48 [-speed=30000] [-paused]   # map camera: lat,lon,m/px; world start UTC
 dotnet run --project src/Fleetwright -- -ships=dreadnought:9 -map=56.51,4.02,3 [-select=1]   # dev ships in the North Sea (sprites close, icons far), every other turning to 135°
 dotnet run --project src/Fleetwright -- -ships=dreadnought:1:0@59.03,5.50,90,15 -ships=destroyer@59.035,5.5,80 -select=1 -map=59.02,5.6,8 -speed=30   # dev ships placed (lat,lon,heading[,kn]; repeatable): onto Norway, sliding round a headland
@@ -63,9 +64,14 @@ its sim thread for the app (the engine's `FrameStarted` reports real time every 
 `MapScene` draws the globe from orbit to 10 px/m (`MapCamera` and `MapView`: straight down, north up, zoom in metres
 per pixel; projection, picking, the grid and the land's clip in double, so nothing jitters), the land from
 `Content/World/` (Natural Earth, a rough first Earth: `LandView`), under the HUD of `docs/map-ui/battle-hud.md`
-(`MapScene.Hud.cs`: the top bar with the clock's controls, space pauses, + and - change speed, 1-9 and 0 pick the bar's first ten speeds (1x to 30,000x; a paused clock runs); the briefing, which a
-scenario loaded from the menu opens with, or `-brief` at start; Esc shuts the topmost thing, else opens the app's menu:
-scenarios, restart, the clock's rules on contact, the designer, quit. Esc never quits). Wheel zooms at the cursor, left drag pans. Ships (`MapScene.Ships.cs`, step 2.3a): a click
+(`MapScene.Hud.cs`: the top bar with the clock's controls, space pauses, + and - change speed, 1-9 and 0 pick the bar's first ten speeds (1x to 30,000x; a paused clock runs); the briefing, from the
+menu, or `-brief` at start; Esc shuts the topmost thing, else opens the app's menu:
+the briefing, restart, Scenarios… (the launch screen), the clock's rules on contact, the designer, quit. Esc never quits).
+The app opens on the launch screen (`Map/LaunchScene.cs`, docs/map-ui/launch.md L1) unless the command line asks for
+a world (`-scenario=`, `-ships=`, `-map=`, `-view=` or a designer flag): the scenarios, the picked one's header and
+brief, a card a side and Watch, the opening drawn from its top units (`LaunchScene.Opening.cs`), what each side has and
+wants, the load and Begin; picking asks for the classes and places the world (`WorldSession.Select`), Begin swaps it
+in. `SceneSwitcher` shows it in place of the map until a scenario begins. Wheel zooms at the cursor, left drag pans. Ships (`MapScene.Ships.cs`, step 2.3a): a click
 selects (twice: her squadron takes the orders; Tab steps through your ships), the strip at the bottom
 (`MapScene.Strip.cs`, docs/map-ui/battle-hud.md U2) gives the orders: who to (the ship or a unit above her), helm and
 telegraph, guns, torpedoes and smoke, the task (fight, follow…, hold; Task ▾ or T opens the task menu,

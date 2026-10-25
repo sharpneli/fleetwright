@@ -13,31 +13,48 @@ namespace Fleetwright;
 /// <see cref="IScene"/>, and the scenes don't know each other (what they share, such as a <see cref="DesignSession"/>,
 /// is handed to them when they are made). Esc never quits (decision 4): the scene shuts what it has open, else the
 /// app's menu opens, with the scene's own items (<see cref="ISceneMenu"/>) and Quit.
+/// <para>The launch screen (docs/map-ui/launch.md L1), if given, is a scene beside them: the app's first until a
+/// scenario begins (<see cref="Home"/>: where the designer goes back to), and opened again from the map's menu.</para>
 /// </summary>
 public sealed unsafe class SceneSwitcher : IScene
 {
     readonly (string Name, Func<IScene> Make)[] entries;
     readonly IScene?[] made;
     readonly Action quit;
-    int current, lastTab = 1;
+    readonly IScene? launch;
+    int current, lastTab = 1;   // current -1: the launch screen
     bool menuOpen, menuShut;
 
-    public SceneSwitcher(int start, Action quit, params (string Name, Func<IScene> Make)[] scenes)
+    public SceneSwitcher(int start, Action quit, IScene? launch, params (string Name, Func<IScene> Make)[] scenes)
     {
         entries = scenes;
         made = new IScene?[scenes.Length];
         this.quit = quit;
+        this.launch = launch;
+        Home = start < 0 && launch != null ? -1 : 0;
         Show(start);
     }
 
-    IScene Current => made[current] ??= entries[current].Make();
+    IScene Current => current < 0 ? launch! : made[current] ??= entries[current].Make();
 
-    /// <summary>Opens a scene: 0 the map, the others the designer's tabs.</summary>
+    /// <summary>Where the designer goes back to: 0 the map, -1 the launch screen (until a scenario begins).</summary>
+    public int Home { get; set; }
+
+    /// <summary>The launch screen is showing.</summary>
+    public bool ShowingLaunch => current < 0;
+
+    /// <summary>Called when the launch screen gives way to another scene (it lets a battle it paused run again).</summary>
+    public Action? LaunchLeft { get; init; }
+
+    /// <summary>Opens a scene: -1 the launch screen, 0 the map, the others the designer's tabs.</summary>
     public void Show(int scene)
     {
-        current = Math.Clamp(scene, 0, entries.Length - 1);
+        bool fromLaunch = current < 0;
+        current = scene < 0 && launch != null ? -1 : Math.Clamp(scene, 0, entries.Length - 1);
         if (current > 0)
             lastTab = current;
+        if (fromLaunch && current >= 0)
+            LaunchLeft?.Invoke();
     }
 
     /// <summary>The designer, at the tab it was left on.</summary>
@@ -61,12 +78,12 @@ public sealed unsafe class SceneSwitcher : IScene
         Current.BuildUi();
         if (current > 0 && ImGui.BeginMainMenuBar())
         {
-            float w = ImGui.CalcTextSize("Map |").X + ImGui.CalcTextSize("F3").X + ImGui.GetStyle().ItemSpacing.X * 6 + ImGui.GetStyle().WindowPadding.X;
+            float w = ImGui.CalcTextSize(Home < 0 ? "Scenarios |" : "Map |").X + ImGui.CalcTextSize("F3").X + ImGui.GetStyle().ItemSpacing.X * 6 + ImGui.GetStyle().WindowPadding.X;
             for (int i = 1; i < entries.Length; i++)
                 w += ImGui.CalcTextSize(entries[i].Name).X + ImGui.GetStyle().ItemSpacing.X * 2;
             ImGui.SetCursorPosX(Math.Max(ImGui.GetCursorPosX(), ImGui.GetWindowWidth() - w));
-            if (ImGui.MenuItem("Map"))
-                Show(0);
+            if (ImGui.MenuItem(Home < 0 ? "Scenarios" : "Map"))
+                Show(Home);
             ImGui.TextDisabled("|");
             for (int i = 1; i < entries.Length; i++)
                 if (ImGui.MenuItem(entries[i].Name, null, i == current))
@@ -112,13 +129,18 @@ public sealed unsafe class SceneSwitcher : IScene
         }
         ImGui.Spacing();
         ImGui.Separator();
-        if (ImGui.Button(current == 0 ? "Ship designer  (F3)" : "Back to the map", full))
+        if (ImGui.Button(current <= 0 ? "Ship designer  (F3)" : Home < 0 ? "Back to the scenarios" : "Back to the map", full))
         {
             shut = true;
-            if (current == 0)
+            if (current <= 0)
                 ShowDesigner();
             else
-                Show(0);
+                Show(Home);
+        }
+        if (current < 0 && Home == 0 && ImGui.Button("Back to the battle", full))
+        {
+            shut = true;
+            Show(0);
         }
         if (ImGui.Button("Quit to desktop", full))
             quit();
@@ -140,7 +162,7 @@ public sealed unsafe class SceneSwitcher : IScene
             uint key = (uint)e->key.key;
             if (key == SDLK_F3)
             {
-                Show(current == 0 ? lastTab : current % (entries.Length - 1) + 1);
+                Show(current <= 0 ? lastTab : current % (entries.Length - 1) + 1);
                 return true;
             }
             if (key == SDLK_ESCAPE)
@@ -163,5 +185,6 @@ public sealed unsafe class SceneSwitcher : IScene
     {
         foreach (var s in made)
             s?.Dispose();
+        launch?.Dispose();
     }
 }

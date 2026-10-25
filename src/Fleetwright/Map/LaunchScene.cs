@@ -1,0 +1,933 @@
+using System.Globalization;
+using System.Numerics;
+using System.Text.Json;
+using Fleetwright.Designer;
+using Fleetwright.Gpu;
+using Fleetwright.Sim;
+using Fleetwright.Sim.Core;
+using Fleetwright.Sim.Missions;
+using ImGuiNET;
+using SDL;
+using static SDL.SDL3;
+
+namespace Fleetwright.Map;
+
+/// <summary>The scenario launch (docs/map-ui/launch.md L1, the mockup launch.html): the app's first screen, open before
+/// any ship is built. The scenarios at the left, the picked one's header (its date, place and day, the brief), a card a
+/// side and Watch, the opening on the map, what each side has and wants, and at the foot the load and Begin. Picking a
+/// scenario or a side asks for its classes and places its world at once (<see cref="WorldSession.Select(Scenario, string?)"/>),
+/// so reading the brief covers the build; Begin swaps the world in (<see cref="WorldSession.Begin"/>) and
+/// <see cref="Begun"/> shows the map. The ships, the standing orders and the conditions (L3-L5) take the body later;
+/// until then it shows what the briefing did. Its strings are made when the pick changes, so a frame allocates nothing
+/// but the load's line while it builds.</summary>
+public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
+{
+    readonly WorldSession world;
+
+    /// <summary>The picked scenario's world is in: the map should show.</summary>
+    public Action? Begun { get; init; }
+
+    public Action? OpenDesigner { get; init; }
+    public Action? Quit { get; init; }
+
+    sealed class Entry
+    {
+        public required string Path;
+        public Scenario? Scenario;
+        public string? Error;
+        public bool Test, Opened;
+        public string Name = "", Date = "", Classes = "";
+        public (string Name, string Count)[] Sides = [];
+        public int Year, Ships;
+    }
+
+    readonly List<Entry> entries = [];
+    int pick = -1;
+    int side;   // the player's side, -1 to watch
+    int filter;   // 0 all, 1 1890-1905, 2 1906-1918, 3 small, 4 fleet, 5 tests
+    static readonly string[] Filters = ["ALL", "1890–1905", "1906–1918", "SMALL", "FLEET", "TESTS"];
+    const int SmallShips = 30;   // a fleet from here
+
+    readonly int initial;   // the pick when it first opens: the scenario asked for, else the last played, else the first
+    bool opened;
+    bool begin;   // Begin pressed, its world not in yet
+    int beginGeneration;
+    bool pausedHere;   // a battle was running when the screen opened, and it paused it
+
+    static string LastPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "My Games", "Fleetwright", "launch.json");
+
+    // the theme of the mockup (launch.html's :root)
+    static readonly Vector4 Bg = Hex(0x0C1217), BgLight = Hex(0x14222D), Bar = Hex(0x0B0F12), ListBg = new(10 / 255f, 14 / 255f, 17 / 255f, 0.92f),
+        LineC = new(150 / 255f, 172 / 255f, 188 / 255f, 0.11f), EdgeC = new(150 / 255f, 172 / 255f, 188 / 255f, 0.17f),
+        Text = Hex(0xC9D3DB), BriefC = Hex(0xB8C3CB), Soft = Hex(0xAAB6BF), Bright = Hex(0xEEF3F6), Muted = Hex(0x7F8B95),
+        Brass = Hex(0xD9B868), BrassDark = Hex(0x5A4A24), BrassBg = Hex(0x3A3014), Ok = Hex(0x86C77E), Amber = Hex(0xE3A452),
+        Friend = Hex(0x5B9BE0), Hostile = Hex(0xE2685C), Sea = Hex(0x12293A), LandC = Hex(0x2C3128), AiBg = Hex(0x16283A);
+
+    static Vector4 Hex(uint rgb) => new(((rgb >> 16) & 0xFF) / 255f, ((rgb >> 8) & 0xFF) / 255f, (rgb & 0xFF) / 255f, 1);
+    static uint U(Vector4 c) => ImGui.ColorConvertFloat4ToU32(c);
+
+    public LaunchScene(WorldSession world, string? pickName = null)
+    {
+        this.world = world;
+        land = Land.Load(Path.Combine(AppContext.BaseDirectory, "Content", "World", "land-50m.bin"));
+        foreach (var path in WorldSession.ShippedScenarios())
+            entries.Add(Read(path, opened: false));
+        // the shipped first, the scale test's rungs (ladder-*) under Tests
+        entries.Sort((a, b) => a.Test != b.Test ? a.Test.CompareTo(b.Test) : Order(a).CompareTo(Order(b)));
+        pickName ??= ReadLast();
+        int at = pickName == null ? -1 : entries.FindIndex(e => Path.GetFileNameWithoutExtension(e.Path).Equals(pickName, StringComparison.OrdinalIgnoreCase));
+        initial = at >= 0 ? at : entries.FindIndex(e => !e.Test && e.Scenario != null);
+    }
+
+    /// <summary>The shipped scenarios in the order of their dates, then their names.</summary>
+    static (long, string) Order(Entry e) => (e.Scenario?.Start.Ms ?? long.MaxValue, e.Name);
+
+    static Entry Read(string path, bool opened)
+    {
+        var e = new Entry { Path = path, Opened = opened, Name = Path.GetFileNameWithoutExtension(path) };
+        e.Test = e.Name.StartsWith("ladder-", StringComparison.Ordinal);
+        try
+        {
+            var s = Scenario.Load(path);
+            e.Scenario = s;
+            e.Name = s.Name;
+            var start = s.Start.ToUtc();
+            e.Year = start.Year;
+            e.Date = start.ToString("d MMMM yyyy", CultureInfo.InvariantCulture) + (s.Place.Length > 0 ? " · " + s.Place : "");
+            e.Ships = s.ShipCount;
+            e.Sides = [.. s.Sides.Select((n, i) => (n, s.Units.Where(u => u.Side == i).Sum(u => u.ShipCount).ToString(CultureInfo.InvariantCulture)))];
+            int classes = s.DesignNames().Count;
+            e.Classes = $"{classes} class{(classes == 1 ? "" : "es")}";
+        }
+        catch (Exception x) when (x is ScenarioException or IOException or JsonException)
+        {
+            e.Error = x.Message;
+        }
+        return e;
+    }
+
+    static string? ReadLast()
+    {
+        try
+        {
+            if (File.Exists(LastPath))
+                using (var doc = JsonDocument.Parse(File.ReadAllText(LastPath)))
+                    return doc.RootElement.TryGetProperty("last", out var l) ? l.GetString() : null;
+        }
+        catch (Exception x) when (x is IOException or JsonException or UnauthorizedAccessException)
+        {
+        }
+        return null;
+    }
+
+    static void WriteLast(string name)
+    {
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(LastPath)!);
+            File.WriteAllText(LastPath, JsonSerializer.Serialize(new Dictionary<string, string> { ["last"] = name }));
+        }
+        catch (Exception x) when (x is IOException or UnauthorizedAccessException)
+        {
+        }
+    }
+
+    /// <summary>A scenario file dropped on the window: added under Opened (or found among the shipped) and picked.</summary>
+    public void Add(string path)
+    {
+        string full = Path.GetFullPath(path);
+        int at = entries.FindIndex(e => Path.GetFullPath(e.Path).Equals(full, StringComparison.OrdinalIgnoreCase));
+        if (at < 0)
+        {
+            entries.Add(Read(path, opened: true));
+            at = entries.Count - 1;
+        }
+        filter = 0;
+        Pick(at);
+    }
+
+    /// <summary>The screen opens (the app's start, or "Scenarios" from the map): a battle running behind it pauses, and
+    /// the pick is asked for again if Begin used it up.</summary>
+    public void Open()
+    {
+        begin = false;
+        if (world.Scenario != null && !world.Current.Paused)
+        {
+            world.Send(Command.Pause());
+            pausedHere = true;
+        }
+        if (!opened)
+        {
+            opened = true;   // its first pick only now: a run straight into a scenario asks for nothing here
+            Pick(initial);
+        }
+        else if (world.Selected == null && pick >= 0)
+            Select();
+    }
+
+    /// <summary>The screen gives way without a Begin (back to the battle, or the designer): a battle it paused runs on.</summary>
+    public void Left()
+    {
+        if (pausedHere && !begin)
+            world.Send(Command.Resume());
+        pausedHere = false;
+    }
+
+    void Pick(int i)
+    {
+        pick = i;
+        if (i < 0 || entries[i].Scenario is not { } s)
+            return;
+        side = s.Player;
+        Select();
+    }
+
+    /// <summary>The pick, with the side chosen, to the world: its classes asked for and its world placed now.</summary>
+    void Select()
+    {
+        if (pick < 0 || entries[pick].Scenario is not { } s)
+            return;
+        var picked = s with { PlayerName = side >= 0 ? s.Sides[side] : null };
+        world.Select(picked, entries[pick].Path);
+        Made(picked);
+    }
+
+    void BeginWorld(bool paused)
+    {
+        if (pick < 0 || entries[pick].Scenario == null || begin)
+            return;
+        if (world.Selected == null)
+            Select();
+        world.Truth = side < 0;   // Watch: everything shown
+        world.Send(paused ? Command.Pause() : Command.Resume());
+        pausedHere = false;
+        beginGeneration = world.Generation;
+        begin = true;
+        world.Begin();
+        if (!entries[pick].Opened)
+            WriteLast(Path.GetFileNameWithoutExtension(entries[pick].Path));
+    }
+
+    public void Draw(SDL_GPUCommandBuffer* cmd, RenderTarget target, float dt)
+    {
+        var pass = target.BeginPass(cmd, new SDL_FColor { r = Bg.X, g = Bg.Y, b = Bg.Z, a = 1 }, depth: false);
+        SDL_EndGPURenderPass(pass);
+    }
+
+    public bool ProcessEvent(SDL_Event* e, uint width, uint height) => false;   // Esc: nothing of its own to shut, so the menu
+
+    public bool MenuItems() => false;
+
+    public void MenuShown(bool shown)
+    {
+    }
+
+    public void Dispose()
+    {
+    }
+
+    // ------------------------------------------------------------------ the frame
+
+    float sc;
+    ImDrawListPtr dl;
+
+    public void BuildUi()
+    {
+        if (begin && world.Generation != beginGeneration)
+        {
+            begin = false;
+            Begun?.Invoke();
+        }
+        else if (begin && world.LoadError != null)
+            begin = false;
+        sc = UiFonts.Scale;
+        var vp = ImGui.GetMainViewport();
+        ImGui.SetNextWindowPos(vp.Pos);
+        ImGui.SetNextWindowSize(vp.Size);
+        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
+        ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, 0);
+        ImGui.PushStyleColor(ImGuiCol.WindowBg, Bg);
+        bool open = ImGui.Begin("##launch", ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoMove |
+                                            ImGuiWindowFlags.NoBringToFrontOnFocus | ImGuiWindowFlags.NoNav | ImGuiWindowFlags.NoScrollWithMouse);
+        ImGui.PopStyleColor();
+        ImGui.PopStyleVar(2);
+        if (open)
+        {
+            dl = ImGui.GetWindowDrawList();
+            var o = vp.Pos;
+            float w = vp.Size.X, h = vp.Size.Y;
+            float top = 34 * sc, listW = 372 * sc, foot = 64 * sc, head = 332 * sc;
+            // the ground: a light at the upper right fading out
+            dl.AddRectFilledMultiColor(o + new Vector2(listW, top), o + new Vector2(w, h), U(BgLight), U(BgLight), U(Bg), U(Bg));
+            var main = new Vector2(o.X + listW, o.Y + top);
+            Header(main, w - listW, head);
+            Body(main + new Vector2(0, head), w - listW, h - top - head - foot);
+            Footer(new Vector2(o.X + listW, o.Y + h - foot), w - listW, foot);
+            List(new Vector2(o.X, o.Y + top), listW, h - top);
+            TopBar(o, w, top);
+        }
+        ImGui.End();
+    }
+
+    // ------------------------------------------------------------------ text and boxes
+
+    void Txt(ImFontPtr font, float px, Vector2 at, Vector4 col, string s) => dl.AddText(font, px * sc, at, U(col), s);
+
+    static float Width(ImFontPtr font, float px, string s) => font.CalcTextSizeA(px * UiFonts.Scale, float.MaxValue, 0, s).X;
+
+    /// <summary>Text wrapped at <paramref name="wrap"/> wide; returns its height.</summary>
+    float Wrapped(ImFontPtr font, float px, Vector2 at, Vector4 col, string s, float wrap)
+    {
+        dl.AddText(font, px * sc, at, U(col), s, wrap);
+        return font.CalcTextSizeA(px * sc, float.MaxValue, wrap, s).Y;
+    }
+
+    /// <summary>Spaced capitals (the mockup's headings, letter-spacing): returns the width.</summary>
+    float Tracked(ImFontPtr font, float px, Vector2 at, Vector4 col, string s, float track)
+    {
+        float x = at.X;
+        Span<char> one = stackalloc char[1];
+        foreach (char c in s)
+        {
+            one[0] = c;
+            string g = c < Glyphs.Length ? Glyphs[c] : c.ToString();
+            dl.AddText(font, px * sc, new Vector2(x, at.Y), U(col), g);
+            x += font.CalcTextSizeA(px * sc, float.MaxValue, 0, g).X + track * sc;
+        }
+        return x - at.X;
+    }
+
+    static readonly string[] Glyphs = [.. Enumerable.Range(0, 128).Select(i => ((char)i).ToString())];
+
+    float TrackedWidth(ImFontPtr font, float px, string s, float track)
+    {
+        float x = 0;
+        foreach (char c in s)
+            x += font.CalcTextSizeA(px * sc, float.MaxValue, 0, c < Glyphs.Length ? Glyphs[c] : c.ToString()).X + track * sc;
+        return x;
+    }
+
+    void Box(Vector2 a, Vector2 b, Vector4 fill, Vector4 edge, float rounding = 3)
+    {
+        dl.AddRectFilled(a, b, U(fill), rounding * sc);
+        dl.AddRect(a, b, U(edge), rounding * sc);
+    }
+
+    /// <summary>A button of the mockup's: framed, its label centred; brass when primary.</summary>
+    bool Button(string id, string label, Vector2 at, Vector2 size, bool primary = false, bool enabled = true, float px = 12)
+    {
+        ImGui.SetCursorScreenPos(at);
+        bool hit = ImGui.InvisibleButton(id, size) && enabled;
+        bool hover = enabled && ImGui.IsItemHovered();
+        var fill = primary ? (hover ? Hex(0xE6C77A) : Brass) : new Vector4(1, 1, 1, hover ? 0.09f : 0.04f);
+        var edge = primary ? Brass : EdgeC;
+        if (!enabled)
+            (fill, edge) = (fill with { W = fill.W * 0.45f }, edge with { W = edge.W * 0.45f });
+        Box(at, at + size, fill, edge, 2);
+        var font = primary ? UiFonts.SansBold : UiFonts.Sans;
+        float tw = Width(font, px, label);
+        var col = primary ? Hex(0x111111) : enabled ? Text : Muted;
+        Txt(font, px, at + new Vector2((size.X - tw) / 2, (size.Y - px * sc * 1.3f) / 2), col, label);
+        return hit;
+    }
+
+    void Chip(Vector2 at, string label, Vector4 fill, Vector4 col)
+    {
+        float tw = TrackedWidth(UiFonts.SansBold, 10, label, 0.5f);
+        dl.AddRectFilled(at, at + new Vector2(tw + 10 * sc, 16 * sc), U(fill), 2 * sc);
+        Tracked(UiFonts.SansBold, 10, at + new Vector2(5 * sc, 1.5f * sc), col, label, 0.5f);
+    }
+
+    void HLine(float x0, float x1, float y) => dl.AddLine(new Vector2(x0, y), new Vector2(x1, y), U(LineC));
+
+    void VLine(float x, float y0, float y1) => dl.AddLine(new Vector2(x, y0), new Vector2(x, y1), U(LineC));
+
+    // ------------------------------------------------------------------ the top bar
+
+    string topLoad = "";
+    int topLoadKey = -1;
+
+    void TopBar(Vector2 o, float w, float h)
+    {
+        dl.AddRectFilled(o, o + new Vector2(w, h), U(Bar));
+        HLine(o.X, o.X + w, o.Y + h);
+        float mid = o.Y + h / 2;
+        float x = o.X + 14 * sc;
+        x += Tracked(UiFonts.SansBold, 13, new Vector2(x, mid - 9 * sc), Brass, "FLEETWRIGHT", 2.6f) + 12 * sc;
+        Txt(UiFonts.Sans, 13, new Vector2(x, mid - 9 * sc), Muted, "Scenarios ›");
+        x += Width(UiFonts.Sans, 13, "Scenarios ›") + 5 * sc;
+        if (pick >= 0)
+            Txt(UiFonts.SansBold, 13, new Vector2(x, mid - 9 * sc), Bright, entries[pick].Name);
+        // at the right: the build under way, the designer, quit
+        float bx = o.X + w - 14 * sc;
+        float qw = 44 * sc, dw = 72 * sc, bh = 24 * sc;
+        bx -= qw;
+        if (Button("##quit", "Quit", new Vector2(bx, mid - bh / 2), new Vector2(qw, bh)))
+            Quit?.Invoke();
+        bx -= dw + 6 * sc;
+        if (Button("##designer", "Designer", new Vector2(bx, mid - bh / 2), new Vector2(dw, bh)))
+            OpenDesigner?.Invoke();
+        var (compiled, _, of) = Counts();
+        if (compiled < of)
+        {
+            if (topLoadKey != of - compiled)
+                (topLoadKey, topLoad) = (of - compiled, $"building {of - compiled} class{(of - compiled == 1 ? "" : "es")}…");
+            float tw = Width(UiFonts.SansSmall, 12, topLoad);
+            Txt(UiFonts.SansSmall, 12, new Vector2(bx - 12 * sc - tw, mid - 8 * sc), Muted, topLoad);
+        }
+    }
+
+    /// <summary>The picked (or begun) scenario's classes: compiled, drawn, of all.</summary>
+    (int Compiled, int Drawn, int Of) Counts()
+    {
+        if (world.LoadClasses is not { } ids)
+            return (0, 0, 0);
+        int c = 0, d = 0;
+        foreach (int id in ids)
+        {
+            c += world.Classes.IsReady(id) ? 1 : 0;
+            d += world.Classes.IsDrawn(id) ? 1 : 0;
+        }
+        return (c, d, ids.Count);
+    }
+
+    // ------------------------------------------------------------------ the scenarios
+
+    void List(Vector2 o, float w, float h)
+    {
+        dl.AddRectFilled(o, o + new Vector2(w, h), U(ListBg));
+        VLine(o.X + w, o.Y, o.Y + h);
+        float x = o.X + 16 * sc, y = o.Y + 14 * sc;
+        Tracked(UiFonts.Sans, 10.5f, new Vector2(x, y), Muted, "SCENARIOS", 0.9f);
+        int shipped = 0;
+        foreach (var e in entries)
+            shipped += e.Test || e.Opened ? 0 : 1;
+        string n = shipped == 1 ? "1 shipped" : $"{shipped} shipped";
+        Txt(UiFonts.SansSmall, 11, new Vector2(o.X + w - 16 * sc - Width(UiFonts.SansSmall, 11, n), y), Muted, n);
+        // the filters
+        float fx = x, fy = y + 18 * sc;
+        for (int i = 0; i < Filters.Length; i++)
+        {
+            float fw = TrackedWidth(UiFonts.Sans, 10.5f, Filters[i], 0.4f) + 14 * sc;
+            ImGui.SetCursorScreenPos(new Vector2(fx, fy));
+            if (ImGui.InvisibleButton($"##flt{i}", new Vector2(fw, 20 * sc)))
+                filter = i;
+            bool on = filter == i;
+            Box(new Vector2(fx, fy), new Vector2(fx + fw, fy + 20 * sc), on ? Hex(0x2A2412) : new Vector4(0, 0, 0, 0), on ? BrassDark : Hex(0x3B4752), 2);
+            Tracked(UiFonts.Sans, 10.5f, new Vector2(fx + 7 * sc, fy + 2.5f * sc), on ? Brass : Muted, Filters[i], 0.4f);
+            fx += fw + 4 * sc;
+        }
+        // the cards, scrolling; your setups and the drop at the foot
+        float footH = 110 * sc, cardsTop = fy + 30 * sc;
+        ImGui.SetCursorScreenPos(new Vector2(o.X, cardsTop));
+        ImGui.PushStyleColor(ImGuiCol.ChildBg, Vector4.Zero);
+        if (ImGui.BeginChild("##cards", new Vector2(w - 1, o.Y + h - footH - cardsTop), ImGuiChildFlags.None, ImGuiWindowFlags.NoScrollbar))
+        {
+            var keep = dl;
+            dl = ImGui.GetWindowDrawList();
+            var p = ImGui.GetCursorScreenPos();
+            float cy = p.Y, cx = o.X + 10 * sc, cw = w - 20 * sc;
+            string? group = null;
+            for (int i = 0; i < entries.Count; i++)
+            {
+                var e = entries[i];
+                if (!Shown(e))
+                    continue;
+                string g = e.Opened ? "OPENED" : e.Test ? "TESTS" : "SHIPPED";
+                if (g != group)
+                {
+                    group = g;
+                    Tracked(UiFonts.Sans, 10, new Vector2(cx + 2 * sc, cy + 6 * sc), Muted, g, 0.9f);
+                    cy += 26 * sc;
+                }
+                cy += Card(i, e, new Vector2(cx, cy), cw) + 7 * sc;
+            }
+            ImGui.SetCursorScreenPos(new Vector2(cx, cy));
+            ImGui.Dummy(new Vector2(1, 4 * sc));
+            dl = keep;
+        }
+        ImGui.EndChild();
+        ImGui.PopStyleColor();
+        float y0 = o.Y + h - footH;
+        HLine(o.X, o.X + w, y0);
+        Tracked(UiFonts.Sans, 10, new Vector2(o.X + 14 * sc, y0 + 12 * sc), Muted, "YOUR SETUPS", 0.9f);
+        Txt(UiFonts.SansSmall, 12, new Vector2(o.X + 14 * sc, y0 + 34 * sc), Muted, "None yet: a setup is saved from this screen (Save setup…).");
+        Txt(UiFonts.SansSmall, 12, new Vector2(o.X + 14 * sc, y0 + 62 * sc), Brass, "+");
+        Txt(UiFonts.SansSmall, 12, new Vector2(o.X + 30 * sc, y0 + 62 * sc), Muted, "Open a scenario file: drop it on the window");
+    }
+
+    bool Shown(Entry e) => filter switch
+    {
+        1 => !e.Test && e.Year <= 1905,
+        2 => !e.Test && e.Year is >= 1906 and <= 1918,
+        3 => !e.Test && e.Ships < SmallShips,
+        4 => !e.Test && e.Ships >= SmallShips,
+        5 => e.Test,
+        _ => true,
+    };
+
+    /// <summary>A scenario's card: its name, date and place, each side's ships, its classes (and the load's bar when it's
+    /// the pick); returns its height.</summary>
+    float Card(int i, Entry e, Vector2 at, float w)
+    {
+        bool on = i == pick, small = e.Test;
+        float h = (small ? 60 : 78) * sc;
+        ImGui.SetCursorScreenPos(at);
+        if (ImGui.InvisibleButton($"##sc{i}", new Vector2(w, h)) && i != pick)
+            Pick(i);
+        bool hover = ImGui.IsItemHovered();
+        Box(at, at + new Vector2(w, h), on ? Brass with { W = 0.06f } : new Vector4(1, 1, 1, hover ? 0.04f : 0.015f), on ? BrassDark : LineC);
+        if (on)
+            dl.AddRectFilled(at, at + new Vector2(3 * sc, h), U(Brass));
+        float x = at.X + 12 * sc, y = at.Y + 9 * sc;
+        if (small)
+        {
+            Txt(UiFonts.Title, 14, new Vector2(x, y), Bright, e.Name);
+            Txt(UiFonts.SansSmall, 11.5f, new Vector2(x, y + 22 * sc), Muted, e.Error ?? e.Date);
+        }
+        else
+        {
+            Txt(UiFonts.Title, 16, new Vector2(x, y), Bright, e.Name);
+            Txt(UiFonts.SansSmall, 11.5f, new Vector2(x, y + 22 * sc), e.Error != null ? Hostile : Muted, e.Error ?? e.Date);
+            float sx = x, sy = y + 42 * sc;
+            for (int k = 0; k < e.Sides.Length; k++)
+            {
+                if (k > 0)
+                {
+                    Txt(UiFonts.SansSmall, 11.5f, new Vector2(sx, sy), Muted, "v");
+                    sx += 14 * sc;
+                }
+                var (name, count) = e.Sides[k];
+                Txt(UiFonts.SansSmall, 11.5f, new Vector2(sx, sy), Text, name);
+                sx += Width(UiFonts.SansSmall, 11.5f, name) + 4 * sc;
+                Txt(UiFonts.Mono, 11.5f, new Vector2(sx, sy + 1 * sc), Bright, count);
+                sx += Width(UiFonts.Mono, 11.5f, count) + 10 * sc;
+            }
+        }
+        if (e.Classes.Length > 0)
+        {
+            float tw = Width(UiFonts.SansSmall, 10.5f, e.Classes);
+            Txt(UiFonts.SansSmall, 10.5f, new Vector2(at.X + w - 10 * sc - tw, at.Y + 9 * sc), Muted, e.Classes);
+            if (on)
+            {
+                var (c, d, of) = Counts();
+                if (of > 0)
+                {
+                    var b0 = new Vector2(at.X + w - 10 * sc - 64 * sc, at.Y + 26 * sc);
+                    dl.AddRectFilled(b0, b0 + new Vector2(64 * sc, 3 * sc), U(Hex(0x222A31)));
+                    dl.AddRectFilled(b0, b0 + new Vector2(64 * sc * c / of, 3 * sc), U(Hex(0x6B5A2E)));
+                    dl.AddRectFilled(b0, b0 + new Vector2(64 * sc * d / of, 3 * sc), U(Brass));
+                }
+            }
+        }
+        return h;
+    }
+
+    // ------------------------------------------------------------------ the header: what it is, the sides, the opening
+
+    // the pick's strings, made when it changes (Made)
+    string kicker = "", meta = "", brief = "";
+    readonly List<SideCard> cards = [];
+
+    sealed class SideCard
+    {
+        public int Side;
+        public string Name = "", Ships = "", Character = "", Commander = "", Ensign = "";
+        public int Capital = -1, Cruiser, Light;   // the strength pips, once the classes are in (-1 until)
+    }
+
+    /// <summary>The pick's header and side cards, and the opening, made once per pick and side.</summary>
+    void Made(Scenario s)
+    {
+        var start = s.Start.ToUtc();
+        kicker = $"SCENARIO{(s.Place.Length > 0 ? " · " + s.Place.ToUpperInvariant() : "")} · {start.Year}";
+        var (lat, lon) = Centre(s);
+        var local = start.AddHours(lon / 15);   // local mean time, by the sun
+        var parts = new List<string>
+        {
+            $"{local:dddd d MMMM yyyy, HH:mm} local ({start:HH:mm} GMT)".Replace("  ", " "),
+            $"{Dms(lat, 'N', 'S')} {Dms(lon, 'E', 'W')}",
+        };
+        if (s.Weather is { } wx)
+            parts.Add($"{Sight(wx.VisibilityM)}, wind {Compass(wx.WindFromDeg)} {wx.WindMs / 0.514444:0} kn");
+        if (SunTurn(s.Start, Earth.Position(lat, lon)) is { } turn)
+            parts.Add($"{turn.Word} {turn.At.ToUtc().AddHours(lon / 15):HH:mm}");
+        if (s.Until is { } u)
+            parts.Add($"ends {u.ToUtc().AddHours(lon / 15).ToString("d MMMM HH:mm", CultureInfo.InvariantCulture)}");
+        meta = string.Join(" · ", parts);
+        brief = s.Brief;
+        cards.Clear();
+        for (int i = 0; i < s.Sides.Length; i++)
+        {
+            int ships = s.Units.Where(u => u.Side == i).Sum(u => u.ShipCount);
+            if (ships == 0)
+                continue;
+            var about = s.AboutOf(i);
+            cards.Add(new SideCard
+            {
+                Side = i, Name = s.Sides[i].ToUpperInvariant(), Ships = $"{ships} ship{(ships == 1 ? "" : "s")}",
+                Character = about?.Character ?? "", Commander = about is { Commander.Length: > 0 } a ? "Commander: " + a.Commander : "",
+                Ensign = about?.Ensign ?? "",
+            });
+        }
+        MadeBody(s);
+        opening = null;   // drawn again for this pick and side
+    }
+
+    /// <summary>Where the scenario is: its camera's centre, else its top units' mean.</summary>
+    static (double Lat, double Lon) Centre(Scenario s)
+    {
+        if (s.Camera is { } c)
+            return (c.Lat, c.Lon);
+        var heads = s.Units.Where(u => u.At != null).Select(u => u.At!.Value).ToList();
+        return heads.Count > 0 ? (heads.Average(h => h.Lat), heads.Average(h => h.Lon)) : (0, 0);
+    }
+
+    static string Dms(double v, char pos, char neg)
+    {
+        double a = Math.Abs(v);
+        int d = (int)a, m = (int)Math.Round((a - d) * 60);
+        if (m == 60)
+            (d, m) = (d + 1, 0);
+        return $"{d}°{m:00}′{(v >= 0 ? pos : neg)}";
+    }
+
+    static string Sight(double m) => (m < 1000 ? "fog" : m < 5000 ? "mist" : m < 18000 ? "haze" : "clear") + $", {m / 1000:0} km";
+
+    static string Compass(double deg) =>
+        new[] { "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW" }[(int)Math.Round(((deg % 360) + 360) % 360 / 22.5) % 16];
+
+    /// <summary>The next sunset after the start (or sunrise, if it starts at night) within a day, by the minute: the sun's
+    /// upper limb at the horizon, refraction in (-0.833°).</summary>
+    static (string Word, WorldTime At)? SunTurn(WorldTime start, Vec3d at)
+    {
+        const double Horizon = -0.833;
+        bool up = Light.SunElevationDeg(at, start) > Horizon;
+        for (int m = 1; m <= 24 * 60; m++)
+        {
+            var t = start + m * 60_000L;
+            if (Light.SunElevationDeg(at, t) > Horizon != up)
+                return (up ? "sunset" : "sunrise", t);
+        }
+        return null;
+    }
+
+    void Header(Vector2 o, float w, float h)
+    {
+        HLine(o.X, o.X + w, o.Y + h);
+        if (pick < 0)
+            return;
+        var e = entries[pick];
+        float x = o.X + 26 * sc, y = o.Y + 18 * sc;
+        if (e.Scenario == null)
+        {
+            Txt(UiFonts.Title, 16, new Vector2(x, y), Hostile, $"{e.Name} couldn't be read");
+            Wrapped(UiFonts.Sans, 13, new Vector2(x, y + 26 * sc), Muted, e.Error ?? "", 800 * sc);
+            return;
+        }
+        Tracked(UiFonts.Sans, 10.5f, new Vector2(x, y), Brass, kicker, 1.2f);
+        Txt(UiFonts.PosterTitle, 34, new Vector2(x, y + 14 * sc), Bright, e.Name);
+        Txt(UiFonts.SansSmall, 12, new Vector2(x, y + 58 * sc), Muted, meta);
+        float wrap = Math.Min(800 * sc, w - 700 * sc);
+        Wrapped(UiFonts.Sans, 13.5f, new Vector2(x, y + 82 * sc), BriefC, brief, wrap);
+        // the sides, and Watch
+        float cx = x, cy = o.Y + 196 * sc;
+        foreach (var c in cards)
+        {
+            SideCardDraw(c, new Vector2(cx, cy), new Vector2(272 * sc, 128 * sc));
+            cx += 282 * sc;
+        }
+        WatchCard(new Vector2(cx, cy), new Vector2(180 * sc, 128 * sc));
+        // the opening, at the right
+        var pa = new Vector2(o.X + w - 22 * sc - 640 * sc, o.Y + 18 * sc);
+        Opening(pa, new Vector2(640 * sc, 298 * sc));
+    }
+
+    void SideCardDraw(SideCard c, Vector2 at, Vector2 size)
+    {
+        bool on = side == c.Side;
+        ImGui.SetCursorScreenPos(at);
+        if (ImGui.InvisibleButton($"##side{c.Side}", size) && !on && !begin)
+        {
+            side = c.Side;
+            Select();
+        }
+        bool hover = ImGui.IsItemHovered();
+        Box(at, at + size, on ? Brass with { W = 0.07f } : new Vector4(1, 1, 1, hover ? 0.05f : 0.02f), on ? Brass : EdgeC);
+        float x = at.X + 12 * sc, y = at.Y + 10 * sc;
+        Ensign(c.Ensign, new Vector2(x, y + 2 * sc), new Vector2(26 * sc, 16 * sc));
+        Tracked(UiFonts.Title, 16, new Vector2(x + 34 * sc, y), Bright, c.Name, 1);
+        if (on)
+            Chip(new Vector2(at.X + size.X - 40 * sc, y + 2 * sc), "YOU", BrassBg, Brass);
+        else
+            Chip(new Vector2(at.X + size.X - 34 * sc, y + 2 * sc), "AI", AiBg, Friend);
+        float py = y + 27 * sc, px = x;
+        if (Pips(c) && c.Capital + c.Cruiser + c.Light is > 0 and <= 24)
+        {
+            var col = U(on || side < 0 && c.Side == 0 ? Friend : Hostile);
+            for (int k = 0; k < c.Capital; k++, px += 9 * sc)
+                dl.AddRectFilled(new Vector2(px, py + 2 * sc), new Vector2(px + 7 * sc, py + 11 * sc), col);
+            for (int k = 0; k < c.Cruiser; k++, px += 7 * sc)
+                dl.AddRectFilled(new Vector2(px, py + 4 * sc), new Vector2(px + 5 * sc, py + 11 * sc), col);
+            for (int k = 0; k < Math.Min(c.Light, 6); k++, px += 5 * sc)
+                dl.AddRectFilled(new Vector2(px, py + 6 * sc), new Vector2(px + 3 * sc, py + 11 * sc), col);
+            px += 8 * sc;
+        }
+        Txt(UiFonts.SansSmall, 11.5f, new Vector2(px, py), Muted, c.Ships);
+        float ch = Wrapped(UiFonts.SansSmall, 12, new Vector2(x, py + 20 * sc), Soft, c.Character, size.X - 24 * sc);
+        if (c.Commander.Length > 0)
+            Txt(UiFonts.SansSmall, 11, new Vector2(x, Math.Min(py + 24 * sc + ch, at.Y + size.Y - 22 * sc)), Muted, c.Commander);
+    }
+
+    /// <summary>A side's strength, its ships by type, once every class of the pick is compiled.</summary>
+    bool Pips(SideCard c)
+    {
+        if (c.Capital >= 0)
+            return true;
+        if (pick < 0 || entries[pick].Scenario is not { } s || world.LoadIds is not { } ids)
+            return false;
+        int cap = 0, cru = 0, light = 0;
+        foreach (var u in s.Units)
+            if (u.Side == c.Side && !Count(u, ref cap, ref cru, ref light))
+                return false;
+        (c.Capital, c.Cruiser, c.Light) = (cap, cru, light);
+        return true;
+
+        bool Count(ScenarioUnit u, ref int cap, ref int cru, ref int light)
+        {
+            foreach (var sub in u.Units)
+                if (!Count(sub, ref cap, ref cru, ref light))
+                    return false;
+            foreach (var ships in u.Ships)
+            {
+                if (!ids.TryGetValue(ships.Design, out int id) || !world.Classes.IsReady(id))
+                    return false;
+                var type = world.Classes.TryGet(id) is { } cls ? Sightings.TypeOf(cls) : ShipType.Unknown;
+                if (type == ShipType.Capital)
+                    cap += ships.Count;
+                else if (type == ShipType.Cruiser)
+                    cru += ships.Count;
+                else
+                    light += ships.Count;
+            }
+            return true;
+        }
+    }
+
+    void WatchCard(Vector2 at, Vector2 size)
+    {
+        bool on = side < 0;
+        ImGui.SetCursorScreenPos(at);
+        if (ImGui.InvisibleButton("##watch", size) && !on && !begin)
+        {
+            side = -1;
+            Select();
+        }
+        bool hover = ImGui.IsItemHovered();
+        Box(at, at + size, on ? Brass with { W = 0.07f } : new Vector4(1, 1, 1, hover ? 0.05f : 0.02f), on ? Brass : EdgeC);
+        float x = at.X + 12 * sc, y = at.Y + 10 * sc;
+        Ensign("", new Vector2(x, y + 2 * sc), new Vector2(26 * sc, 16 * sc));
+        dl.AddCircle(new Vector2(x + 13 * sc, y + 10 * sc), 4 * sc, U(Muted), 12, 1);
+        dl.AddCircleFilled(new Vector2(x + 13 * sc, y + 10 * sc), 1.5f * sc, U(Muted));
+        Tracked(UiFonts.Title, 16, new Vector2(x + 34 * sc, y), Bright, "WATCH", 1);
+        Wrapped(UiFonts.SansSmall, 12, new Vector2(x, y + 34 * sc), Soft, "Both sides the AI's; you see everything. For checking a setup before playing it.", size.X - 24 * sc);
+    }
+
+    // ------------------------------------------------------------------ the body: until L3-L5, what the briefing said
+
+    sealed class Column
+    {
+        public string Title = "";
+        public Vector4 Colour;
+        public bool Ring;
+        public readonly List<(string Unit, string Ships, bool Sub)> Units = [];
+    }
+
+    readonly Column[] columns = [new(), new()];
+    readonly List<(string Label, string Value)> aims = [], orders = [];
+    string ordersTitle = "";
+
+    void MadeBody(Scenario s)
+    {
+        int a = side >= 0 ? side : 0, b = side >= 0 ? (s.Sides.Length > 1 ? 1 - Math.Min(side, 1) : -1) : 1;
+        for (int k = 0; k < 2; k++)
+        {
+            var col = columns[k];
+            col.Units.Clear();
+            int sd = k == 0 ? a : b;
+            if (sd < 0 || sd >= s.Sides.Length)
+            {
+                col.Title = "";
+                continue;
+            }
+            bool full = side < 0 || sd == side;
+            col.Title = side < 0 ? s.Sides[sd].ToUpperInvariant() : k == 0 ? $"YOUR SHIPS · {s.Sides[sd].ToUpperInvariant()}" : $"THE ENEMY, AS REPORTED · {s.Sides[sd].ToUpperInvariant()}";
+            col.Colour = side < 0 ? (sd == 0 ? Hex(0x9DBFE6) : Hostile) : full ? Friend : Hostile;
+            col.Ring = side < 0 ? sd == 0 : full;
+            foreach (var u in s.Units.Where(u => u.Side == sd))
+                if (!full)
+                    col.Units.Add((u.Name, $"{u.ShipCount} ship{(u.ShipCount == 1 ? "" : "s")}", false));
+                else if (u.IsForce)
+                {
+                    col.Units.Add((u.Name, $"{u.ShipCount} ships", false));
+                    foreach (var sub in u.Units)
+                        col.Units.Add((sub.Name, string.Join(", ", MapScene.ShipsOf(sub)), true));
+                }
+                else
+                    col.Units.Add((u.Name, string.Join(", ", MapScene.ShipsOf(u)), false));
+        }
+        aims.Clear();
+        orders.Clear();
+        var (_, lon) = Centre(s);
+        string end = s.Until is { } u2 ? $"at {u2.ToUtc().AddHours(lon / 15):HH:mm} local" : "";
+        for (int sd = 0; sd < s.Sides.Length; sd++)
+            if (side < 0 || sd == side)
+                aims.Add((side < 0 ? s.Sides[sd] : "The aim", MapScene.AimsText(s, sd)));
+        aims.Add(("The end", $"when one side is gone or out of the fight{(end.Length > 0 ? ", or " + end : "")}"));
+        ordersTitle = side < 0 ? "ORDERS BEFORE ACTION" : $"ORDERS BEFORE ACTION · {s.Sides[side].ToUpperInvariant()}";
+        void Orders(string label, IEnumerable<(int Side, string Name)> list)
+        {
+            foreach (var (sd, name) in list)
+                if (side < 0 || sd == side)
+                    orders.Add((side < 0 ? $"{label}, {s.Sides[sd]}" : label, MapScene.Pretty(name)));
+        }
+        Orders("Gun crews", s.Crews.Select(c => (c.Side, c.Quality.ToString().ToLowerInvariant())));
+        Orders("Readiness", s.Readiness);
+        Orders("Damage control", s.DamageControl);
+        Orders("Fire discipline", s.FireDisciplines);
+    }
+
+    void Body(Vector2 o, float w, float h)
+    {
+        if (pick < 0 || entries[pick].Scenario == null)
+            return;
+        float[] widths = [600 * sc, 520 * sc];
+        float x = o.X;
+        for (int k = 0; k < 2; k++)
+        {
+            var col = columns[k];
+            if (col.Title.Length > 0)
+                UnitsColumn(k, col, new Vector2(x + 18 * sc, o.Y + 14 * sc), widths[k] - 36 * sc, o.Y + h);
+            x += widths[k];
+            VLine(x, o.Y, o.Y + h);
+        }
+        float cx = x + 18 * sc, cy = o.Y + 14 * sc, cw = o.X + w - cx - 18 * sc;
+        Tracked(UiFonts.Sans, 10.5f, new Vector2(cx, cy), Muted, "THE AIM", 0.9f);
+        cy += 24 * sc;
+        foreach (var (label, value) in aims)
+        {
+            Txt(UiFonts.SansSmall, 12, new Vector2(cx, cy), Soft, label);
+            cy += Wrapped(UiFonts.SansSmall, 12, new Vector2(cx + 118 * sc, cy), Bright, value, cw - 118 * sc) + 6 * sc;
+        }
+        if (orders.Count > 0)
+        {
+            cy += 14 * sc;
+            Tracked(UiFonts.Sans, 10.5f, new Vector2(cx, cy), Muted, ordersTitle, 0.9f);
+            cy += 24 * sc;
+            foreach (var (label, value) in orders)
+            {
+                Txt(UiFonts.SansSmall, 12, new Vector2(cx, cy), Soft, label);
+                Txt(UiFonts.SansSmall, 12, new Vector2(cx + (side < 0 ? 170 : 118) * sc, cy), Bright, value);
+                cy += 20 * sc;
+            }
+        }
+    }
+
+    /// <summary>A side's units and their ships, under its title, scrolling when they're more than the column holds.</summary>
+    void UnitsColumn(int k, Column col, Vector2 at, float w, float bottom)
+    {
+        Tracked(UiFonts.Sans, 10.5f, at, Muted, col.Title, 0.9f);
+        ImGui.SetCursorScreenPos(at + new Vector2(0, 26 * sc));
+        ImGui.PushStyleColor(ImGuiCol.ChildBg, Vector4.Zero);
+        if (ImGui.BeginChild($"##units{k}", new Vector2(w, bottom - at.Y - 36 * sc), ImGuiChildFlags.None, ImGuiWindowFlags.None))
+        {
+            var keep = dl;
+            dl = ImGui.GetWindowDrawList();
+            var o = ImGui.GetCursorScreenPos();
+            float y = o.Y, inner = w - 12 * sc;   // room for the scroll bar
+            foreach (var (unit, ships, sub) in col.Units)
+            {
+                float x = o.X + (sub ? 14 : 0) * sc;
+                if (!sub)
+                    Mark(new Vector2(o.X + 4 * sc, y + 9 * sc), col.Ring, col.Colour, 3.5f, 1);
+                Txt(UiFonts.Sans, 12.5f, new Vector2(x + (sub ? 0 : 14) * sc, y), Bright, unit);
+                float uw = Width(UiFonts.Sans, 12.5f, unit) + (sub ? 0 : 14) * sc + 10 * sc;
+                if (ships.Length > 0 && Width(UiFonts.SansSmall, 11.5f, ships) < inner - uw - (x - o.X))
+                {
+                    Txt(UiFonts.SansSmall, 11.5f, new Vector2(x + uw, y + 1.5f * sc), Muted, ships);
+                    y += 22 * sc;
+                }
+                else
+                    y += 20 * sc + Wrapped(UiFonts.SansSmall, 11.5f, new Vector2(x + 14 * sc, y + 19 * sc), Muted, ships, inner - (x - o.X) - 14 * sc) + 4 * sc;
+            }
+            ImGui.Dummy(new Vector2(1, y - o.Y));
+            dl = keep;
+        }
+        ImGui.EndChild();
+        ImGui.PopStyleColor();
+    }
+
+    // ------------------------------------------------------------------ the foot: the load and Begin
+
+    string loadHead = "", loadLine = "";
+    (int, int, int, int, bool) loadKey = (-1, 0, 0, 0, false);
+
+    void Footer(Vector2 o, float w, float h)
+    {
+        dl.AddRectFilled(o, o + new Vector2(w, h), U(Bar));
+        HLine(o.X, o.X + w, o.Y);
+        var (compiled, drawn, of) = Counts();
+        int tenths = compiled < of ? (int)(world.LoadClock * 10) : -1;   // the clock only while it builds
+        var key = (compiled, drawn, of, tenths, world.Beginning);
+        if (key != loadKey)
+        {
+            loadKey = key;
+            string threads = $"{world.Classes.Threads} builder thread{(world.Classes.Threads == 1 ? "" : "s")}";
+            if (of == 0)
+                (loadHead, loadLine) = ("", "");
+            else if (compiled < of)
+                (loadHead, loadLine) = ("Building the ships", $"classes {compiled} of {of} · art {drawn} of {of} · {world.LoadClock:0.0} s   ·   {threads}");
+            else
+                (loadHead, loadLine) = (world.Beginning ? "Beginning" : "Ready",
+                    $"{of} class{(of == 1 ? "" : "es")} built · {(drawn < of ? $"art {drawn} of {of}" : "art in")}   ·   {threads} · built classes are kept when you switch scenarios");
+        }
+        float x = o.X + 22 * sc, y = o.Y + 14 * sc;
+        if (loadHead.Length > 0)
+        {
+            Txt(UiFonts.SansBold, 12, new Vector2(x, y), Bright, loadHead);
+            Txt(UiFonts.SansSmall, 12, new Vector2(x + Width(UiFonts.SansBold, 12, loadHead) + 14 * sc, y), Muted, loadLine);
+        }
+        if (world.LoadError is { } err)
+            Txt(UiFonts.SansSmall, 12, new Vector2(x, y), Hostile, err);
+        // a segment a class: dark while it builds, darker brass compiled, brass with its art
+        if (of > 0 && world.LoadClasses is { } ids)
+        {
+            float sw = Math.Min(820 * sc, w - 560 * sc), gap = 2 * sc, seg = Math.Max((sw - gap * (of - 1)) / of, 3 * sc);
+            float sx = x, sy = o.Y + 36 * sc;
+            foreach (int id in ids)
+            {
+                var fill = world.Classes.IsDrawn(id) ? Brass : world.Classes.IsReady(id) ? Hex(0x6B5A2E) : Hex(0x1F262C);
+                dl.AddRectFilled(new Vector2(sx, sy), new Vector2(sx + seg, sy + 8 * sc), U(fill));
+                sx += seg + gap;
+                if (sx > x + sw)
+                    break;
+            }
+        }
+        // the buttons
+        bool ready = pick >= 0 && entries[pick].Scenario != null;
+        float bh = 34 * sc, by = o.Y + (h - bh) / 2, bx = o.X + w - 22 * sc;
+        float pw = 170 * sc;
+        bx -= pw;
+        string go = begin ? "Begins when ready…" : side < 0 ? "Watch" : "Begin";
+        if (Button("##begin", go, new Vector2(bx, by), new Vector2(pw, bh), primary: true, enabled: ready && !begin, px: 13.5f))
+            BeginWorld(paused: false);
+        float qw = 108 * sc;
+        bx -= qw + 8 * sc;
+        if (Button("##paused", "Begin paused", new Vector2(bx, by), new Vector2(qw, bh), enabled: ready && !begin, px: 13.5f))
+            BeginWorld(paused: true);
+        bx -= qw + 8 * sc;
+        Button("##save", "Save setup…", new Vector2(bx, by), new Vector2(qw, bh), enabled: false, px: 13.5f);
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("setups come with the changes they keep (docs/map-ui/launch.md L2)");
+    }
+}

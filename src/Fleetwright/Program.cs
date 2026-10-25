@@ -21,6 +21,8 @@ public static unsafe class Program
         double? startSpeed = null;
         bool startPaused = false, noPause = false;
         int builders = 0, idleBuilders = 0;
+        bool launchFlag = false;
+        string? launchName = null;
         string? hitBench = null;
         int follow = 0;
         var devShips = new List<string>();
@@ -363,6 +365,12 @@ public static unsafe class Program
             {
                 wakeBake = arg.Substring("-wakebake=".Length);
             }
+            else if (arg == "-launch" || arg.StartsWith("-launch="))   // the launch screen at start (docs/map-ui/launch.md), the scenario named picked
+            {
+                launchFlag = true;
+                if (arg.StartsWith("-launch="))
+                    launchName = arg.Substring("-launch=".Length);
+            }
             else if (arg.StartsWith("-scenario="))   // the world starts with a scenario: a path, or a shipped one's name (-scenario=jutland)
             {
                 scenarioArg = arg.Substring("-scenario=".Length);
@@ -415,11 +423,16 @@ public static unsafe class Program
             }
             // a design json dropped on the window is an edit to it, in every scene (unsaved until saved) (sharing ships is passing files around)
             Map.WorldSession? worldRef = null;   // the world, for a scenario dropped on the window
+            Map.LaunchScene? launchRef = null;
+            SceneSwitcher? scenes = null;
             engine.FileDropped = path =>
             {
                 if (Sim.Missions.Scenario.IsScenario(path))
                 {
-                    worldRef?.Load(path);   // a scenario: the world tab's new world
+                    if (scenes is { ShowingLaunch: true } && launchRef != null)
+                        launchRef.Add(path);   // on the launch screen: picked there
+                    else
+                        worldRef?.Load(path);   // a scenario: the world tab's new world
                     return;
                 }
                 if (session.Open(path) is { } error)
@@ -525,18 +538,37 @@ public static unsafe class Program
 
             // the world opens by default; -view=designer (or any designer flag), -view=hitbox, -view=ship or -view=profile
             // opens the others
+            // the launch screen first (docs/map-ui/launch.md L1) unless the command line asks for a world: a scenario, dev
+            // ships, a camera, a view of the designer's
+            bool launchFirst = launchFlag || scenarioArg == null && devShips.Count == 0 && !mapGiven && view == null && !designerFlags;
             view ??= designerFlags ? "designer" : null;
-            SceneSwitcher? scenes = null;
-            engine.Scene = scenes = new SceneSwitcher(view switch { "designer" => 1, "hitbox" => 2, "ship" => 3, "profile" => 4, _ => 0 }, engine.Stop,
+            var launch = launchRef = new Map.LaunchScene(world, launchName)
+            {
+                Begun = () =>
+                {
+                    scenes!.Home = 0;
+                    scenes.Show(0);
+                },
+                OpenDesigner = () => scenes!.ShowDesigner(),
+                Quit = engine.Stop,
+            };
+            if (launchFirst)
+                launch.Open();
+            engine.Scene = scenes = new SceneSwitcher(launchFirst ? -1 : view switch { "designer" => 1, "hitbox" => 2, "ship" => 3, "profile" => 4, _ => 0 }, engine.Stop, launch,
                 ("World", () => new Map.MapScene((SDL.SDL_GPUDevice*)device, world, mapCamera, shipArt, session, selectShip)
                 {
                     KeepCameraOnce = mapGiven && scenarioArg != null, SelectOnce = scenarioArg != null ? selectShip : -1, HitBench = hitBench, Follow = follow,
                     DevOpen = devPanel, BriefOnce = briefing, OpenMenu = () => scenes!.ShowMenu(), OpenDesigner = () => scenes!.ShowDesigner(),
+                    OpenLaunch = () =>
+                    {
+                        launch.Open();
+                        scenes!.Show(-1);
+                    },
                 }),
                 ("Designer", () => early ?? MakeDesigner()),
                 ("Hitboxes", () => new HitView.HitboxScene((SDL.SDL_GPUDevice*)device, session, camera, show, hitRay)),
                 ("Ship", () => new ShipViewer((SDL.SDL_GPUDevice*)device, session, navy, era)),
-                ("Profile", () => new ProfileScene((SDL.SDL_GPUDevice*)device, session)));
+                ("Profile", () => new ProfileScene((SDL.SDL_GPUDevice*)device, session))) { LaunchLeft = launch.Left };
 
             // Run the engine
             engine.Run();

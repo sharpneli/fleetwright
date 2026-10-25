@@ -14,6 +14,11 @@
   "scenario": 1,
   "name": "Tsushima",
   "brief": "27 May 1905, 13:40. Rozhestvensky's Second Pacific Squadron, black with yellow funnels, steams up the Tsushima Strait for Vladivostok: four Borodinos leading, the old second division astern, cruisers and destroyers in company. Out of the haze to the north-east come Togo's battleships and Kamimura's armoured cruisers, faster, crossing ahead to cap your line. Get through, or make them pay for it.",
+  "place": "Tsushima Strait",
+  // the launch screen's side cards (docs/map-ui/launch.md): each side in a line, its commander, its ensign
+  "about": {
+    "Russia": { "character": "The hammer: more heavy guns, heavier armour; an old second division at 16 kn, average crews.", "commander": "V-Adm Rozhestvensky", "ensign": "russia" },
+    "Japan": { "character": "The hunters: faster, many quick-firers, trained crews, 29 kn destroyers; thin cruiser belts.", "commander": "Adm Togo", "ensign": "japan" } },
   "start": "1905-05-27T04:40",
   "seed": 1905,
   "camera": [34.11, 130.07, 40],

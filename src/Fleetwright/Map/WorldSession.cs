@@ -65,6 +65,18 @@ public sealed class WorldSession : IDisposable
     /// <summary>The file the picked scenario was read from, or null.</summary>
     public string? SelectedPath => selected?.Path;
 
+    /// <summary>The class ids of the scenario begun, else of the one picked (the launch screen's load, a segment each), or
+    /// null; and the seconds since it was picked.</summary>
+    public Dictionary<string, int>.ValueCollection? LoadClasses => (loading ?? selected)?.Classes.Values;
+
+    public double LoadClock => (loading ?? selected)?.Clock.Elapsed.TotalSeconds ?? 0;
+
+    /// <summary>The same classes by design name.</summary>
+    public IReadOnlyDictionary<string, int>? LoadIds => (loading ?? selected)?.Classes;
+
+    /// <summary>A scenario is begun and its world not in yet.</summary>
+    public bool Beginning => loading != null;
+
     /// <summary>Where the picked scenario's classes are: compiled (it may begin), drawn (their art in), of all.</summary>
     public (int Compiled, int Drawn, int Of) SelectedClasses => selected is { } p
         ? (Ready(p.Classes), Drawn(p.Classes), p.Classes.Count)

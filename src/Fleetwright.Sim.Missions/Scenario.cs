@@ -56,13 +56,33 @@ namespace Fleetwright.Sim.Missions;
 /// placed, its course only the start's heading).</para>
 /// <para><c>"from": "jutland"</c> takes another scenario of the same folder: its top units first (only those named in
 /// <c>"only": [...]</c>, if given; <c>[]</c> takes none), then this file's own; its start, seed, camera, sides and brief
-/// unless this file gives them. The scale test's ladder is made this way, so a corrected Jutland corrects every rung.</para></summary>
-public sealed class Scenario
+/// unless this file gives them. The scale test's ladder is made this way, so a corrected Jutland corrects every rung.</para>
+/// <para>For the launch screen (docs/map-ui/launch.md), what it says of itself: <c>"place": "Tsushima Strait"</c>, and
+/// each side's <c>"about": { "Russia": { "character": "The hammer: ...", "commander": "V-Adm Rozhestvensky",
+/// "ensign": "russia" } }</c> (an ensign the screen draws: britain, germany, russia, japan). Both taken from "from"
+/// unless given.</para>
+/// <para>A record, so a setup is a copy with its changes (<c>s with { PlayerName = "Japan" }</c>).</para></summary>
+public sealed record Scenario
 {
     public const int Version = 1;
 
     public required string Name { get; init; }
     public string Brief { get; init; } = "";
+
+    /// <summary>Where it's fought, in a few words ("Tsushima Strait"), or "".</summary>
+    public string Place { get; init; } = "";
+
+    /// <summary>What the file says of each side (its character, its commander, its ensign), by index, where it does.</summary>
+    public List<(int Side, SideAbout About)> About { get; init; } = [];
+
+    public SideAbout? AboutOf(int side)
+    {
+        foreach (var (sd, a) in About)
+            if (sd == side)
+                return a;
+        return null;
+    }
+
     public required WorldTime Start { get; init; }
     public ulong Seed { get; init; } = 1;
 
@@ -263,6 +283,8 @@ public sealed class Scenario
             WorldTime? until = r.TryGetProperty("until", out var un) ? ParseTime(un.GetString() ?? "", "until") : from?.Until;
             var aims = r.TryGetProperty("aims", out var ai) ? ParseAims(ai, sides)
                 : from != null && !r.TryGetProperty("sides", out _) ? from.AimList : [];
+            var about = r.TryGetProperty("about", out var ab) ? ParseAbout(ab, sides)
+                : from != null && !r.TryGetProperty("sides", out _) ? from.About : [];
             var units = new List<ScenarioUnit>();
             if (from != null)
             {
@@ -282,6 +304,8 @@ public sealed class Scenario
             {
                 Name = Str(r, "name", "") is { Length: > 0 } n ? n : "Scenario",
                 Brief = Str(r, "brief", from?.Brief ?? ""),
+                Place = Str(r, "place", from?.Place ?? ""),
+                About = about,
                 Start = from != null && !r.TryGetProperty("start", out _) ? from.Start : ParseTime(Str(r, "start", ""), "start"),
                 Seed = r.TryGetProperty("seed", out var seed) && seed.TryGetUInt64(out ulong sv) ? sv : from?.Seed ?? 1,
                 Camera = r.TryGetProperty("camera", out var cam) ? ParseCamera(cam) : from?.Camera,
@@ -378,6 +402,23 @@ public sealed class Scenario
                     "destroy everyone" => new Aim(AimKind.DestroyEveryone),
                     _ => throw new ScenarioException($"aims: \"{name}\" for {p.Name}: \"destroy everyone\" (v0's one aim)"),
                 }));
+        }
+        return list;
+    }
+
+    static List<(int, SideAbout)> ParseAbout(JsonElement e, string[] sides)
+    {
+        if (e.ValueKind != JsonValueKind.Object)
+            throw new ScenarioException("about: an object of sides' names, { \"Russia\": { \"character\": ..., \"commander\": ..., \"ensign\": ... } }");
+        var list = new List<(int, SideAbout)>();
+        foreach (var p in e.EnumerateObject())
+        {
+            int side = Array.IndexOf(sides, p.Name);
+            if (side < 0)
+                throw new ScenarioException($"about: \"{p.Name}\" isn't one of the sides ({string.Join(", ", sides)})");
+            if (p.Value.ValueKind != JsonValueKind.Object)
+                throw new ScenarioException($"about {p.Name}: {{ \"character\": ..., \"commander\": ..., \"ensign\": ... }}");
+            list.Add((side, new SideAbout(Str(p.Value, "character", ""), Str(p.Value, "commander", ""), Str(p.Value, "ensign", ""))));
         }
         return list;
     }
@@ -662,6 +703,10 @@ public sealed class Scenario
 }
 
 /// <summary>One unit of a scenario: a force (<see cref="Units"/>) or a squadron (<see cref="Ships"/>).</summary>
+/// <summary>What a scenario says of a side for the launch screen: its character in a line, its commander, its ensign
+/// (a name the screen draws; "" for none).</summary>
+public sealed record SideAbout(string Character, string Commander, string Ensign);
+
 public sealed class ScenarioUnit
 {
     public string Name { get; init; } = "";

@@ -177,7 +177,6 @@ public sealed partial class MapScene
         if (ImGui.Button("Play again", new Vector2(bw, 26 * sc)) && world.Scenario is { } sc2)
         {
             shut = true;
-            BriefOnce = true;
             world.Load(sc2);
         }
         ImGui.SameLine();
@@ -187,7 +186,10 @@ public sealed partial class MapScene
         if (ImGui.Button("Scenarios", new Vector2(bw, 26 * sc)))
         {
             shut = true;
-            OpenMenu?.Invoke();
+            if (OpenLaunch != null)
+                OpenLaunch();
+            else
+                OpenMenu?.Invoke();
         }
         ImGui.PopStyleColor(3);
         if (shut || resultShut)

@@ -255,6 +255,15 @@ public static class ScenarioLoader
     /// <summary>Every ship of a unit with its station about the top unit's guide ship, in line order: the walk of
     /// GroupSystem.LineOffsets over the scenario's tree, by the same rules (<see cref="GroupSystem.OffsetFromGuide"/>,
     /// <see cref="GroupSystem.GroupStation"/>).</summary>
+    /// <summary>Every ship's station about a top unit's guide, metres astern and to starboard, as the scenario places them
+    /// (the launch screen's opening draws them, docs/map-ui/launch.md L1), and each one's side.</summary>
+    public static List<(double AsternM, double AbeamM, int Side)> Stations(ScenarioUnit top)
+    {
+        var placed = new List<(ScenarioUnit, int, double, double)>();
+        Place(top, (0, 0), placed);
+        return [.. placed.Select(p => (p.Item3, p.Item4, p.Item1.Side))];
+    }
+
     static void Place(ScenarioUnit u, (double AsternM, double AbeamM) origin, List<(ScenarioUnit, int, double, double)> into)
     {
         if (!u.IsForce)

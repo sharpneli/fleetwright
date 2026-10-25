@@ -14,6 +14,11 @@
   "scenario": 1,
   "name": "Jutland",
   "brief": "31 May 1916, 14:00 GMT. Beatty's battlecruisers have just turned north to meet the Grand Fleet, unaware of Hipper's scouting groups fifty miles to the east, steaming north with Scheer's High Seas Fleet fifty miles astern of them; Jellicoe's Grand Fleet comes south-east seventy miles to the north. 151 British and 99 German ships.",
+  "place": "off the Jutland Bank",
+  // the launch screen's side cards (docs/map-ui/launch.md): each side in a line, its commander, its ensign
+  "about": {
+    "Britain": { "character": "The Grand Fleet: more ships and heavier guns; the battlecruisers fast but thinly armoured.", "commander": "Adm Jellicoe", "ensign": "britain" },
+    "Germany": { "character": "The High Seas Fleet: outnumbered, tough ships, German fire discipline; the old battleships slow the line.", "commander": "V-Adm Scheer", "ensign": "germany" } },
   "start": "1916-05-31T14:00",
   "seed": 1916,
   "camera": [56.95, 5.0, 250],

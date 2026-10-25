@@ -179,7 +179,7 @@ mockup's, committed.
 | Step | What | Needs |
 |---|---|---|
 | **L0** (done 2026-10-25) | The load: classes asked on selection, the two queues (compile first, art after), more threads while nothing runs, Begin when compiled; measured at Tsushima and Jutland, memory included | `ShipClassRegistry`, `ShipArtLibrary`, `WorldSession.Load` |
-| **L1** | The launch scene: the list, the header and brief, the side cards (Watch included), the opening drawn from the file's top units, the footer's load and Begin. The app opens on it (the last scenario played selected); the menu's and the result's "Scenarios" open it; `-scenario=` still goes straight into the world (captures and tests), `-launch[=name]` opens the screen. The briefing modal at start goes (the brief is on this screen; the menu's Briefing stays) | — |
+| **L1** (done 2026-10-25) | The launch scene: the list, the header and brief, the side cards (Watch included), the opening drawn from the file's top units, the footer's load and Begin. The app opens on it (the last scenario played selected); the menu's and the result's "Scenarios" open it; `-scenario=` still goes straight into the world (captures and tests), `-launch[=name]` opens the screen. The briefing modal at start goes (the brief is on this screen; the menu's Briefing stays) | — |
 | **L2** | A setup as data: the overrides on a parsed `Scenario`, saved and listed as a scenario file with `"from"` and `"designs"`; the changes list and reset | `Scenario`, `ScenarioLoader` |
 | **L3** | Ships: each side's order of battle, the design rows and their state, the picker (sources, filters, figures, matchup, apply to all, one or every), the designer round trip (edit a copy, saved back into the picker as yours) | the matchup on candidates |
 | **L3b** | Adding and removing: − n + per row, ✕ per unit, the add picker, the placing view (on the sea, the course dragged), joining a unit | `"add"`, `"remove"` |
@@ -187,6 +187,32 @@ mockup's, committed.
 | **L5** | Conditions and the day: both sides' crews, readiness, damage control, fire discipline, fuel; presets; visibility, wind, the end, the seed | — |
 
 L0 stands alone and pays at once (every load gets faster); it can go before the mockup's review is done.
+
+**L1 done (2026-10-25).** `Map/LaunchScene.cs` (and `.Opening.cs`), a scene of its own that `SceneSwitcher` shows in
+place of the map (index -1) until a scenario begins (`Home`: where the designer goes back to; "Back to the battle" in
+the menu once one has). The app opens on it unless the command line asks for a world (`-scenario=`, `-ships=`,
+`-map=`, `-view=`, a designer flag); `-launch[=name]` opens it anyway. The last scenario begun is kept in
+`My Games/Fleetwright/launch.json` and picked at start. Picking a scenario or a side calls `WorldSession.Select` with a
+copy of the scenario (`Scenario` is a record now: `s with { PlayerName = ... }`), which asks for its classes and places
+its world; Begin (or Begin paused, or Watch) swaps it in and shows the map; Watch begins with no player side and the
+truth shown. The menu's Scenarios… and the result's Scenarios open it (a running battle pauses under it, and runs on
+if the player goes back without beginning); the briefing no longer opens at a load (the menu's Briefing and `-brief`
+stay). A scenario file dropped on the screen joins the list under Opened and is picked.
+
+- **The files say what the screen shows:** `"place"` and each side's `"about"` (character, commander, ensign),
+  taken through `"from"`; the four shipped scenarios have them. The meta line is worked out: the date in local mean
+  time by the longitude (the sun's, not a zone's: Tsushima reads 13:20 where the mockup has Japan's 13:40), the
+  position, the weather in words, the next sunset (or sunrise) by the sun model, the end.
+- **The side cards' pips** (capital, cruiser, light, by `Sightings.TypeOf`) come once the side's classes are compiled,
+  and only up to 24 ships (Jutland's sides show their counts alone, as the mockup's do).
+- **The opening** frames every ship of the top units on its station (`ScenarioLoader.Stations`, the placing's own)
+  with half an hour's course; the coast is the 1:50M land brought into the view's cap (`CapRetraction`) and filled by
+  pixel rows by its winding number (ImGui's concave fill can't take the retraction's rings), made once per pick.
+  Labels that would overlap are left out. Tsushima's frame holds no land, as the mockup's doesn't.
+- **The body until L3-L5** shows what the briefing did: your units and their ships, the enemy's units as reported
+  (both sides in full when watching), the aim and the end, the orders before action. Both unit lists scroll.
+- **Left for later:** Settings (there are none), the list's load estimates ("under 1 s"), opening a file by a dialog
+  (dropping one works), the side cards' fixed height with a long character line.
 
 ## Decisions (the user, 2026-10-25)
 

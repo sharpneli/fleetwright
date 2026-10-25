@@ -6,6 +6,11 @@
   "scenario": 1,
   "name": "Flotilla",
   "brief": "Six torpedo boats attack four battleships steaming south in line, 14 km off and closing. Watch the boats run in under fire, launch, turn away, and the torpedoes' wakes cross the line.",
+  "place": "North Sea",
+  // the launch screen's side cards (docs/map-ui/launch.md): each side in a line, its commander, its ensign
+  "about": {
+    "Britain": { "character": "Four dreadnoughts in line, their secondaries to keep the boats off.", "commander": "V-Adm Jerram", "ensign": "britain" },
+    "Germany": { "character": "Six torpedo boats, 30 kn and fragile: the torpedo is their whole weapon.", "commander": "KKpt Goehle", "ensign": "germany" } },
   "start": "1916-05-31T18:30",
   "seed": 9,
   "camera": [56.5, 4.1, 30],
