@@ -180,12 +180,18 @@ American-built, better armoured), each with scouts and destroyers. Mirror fleets
 haze. New: Minas Geraes, Rivadavia, Bahia (scout), an Argentine armoured cruiser (Garibaldi), destroyers. Ensigns:
 Brazil, Argentina.
 
-**22. The Gulf of Finland, 1919** (hypothetical, the British in the Baltic). Medium, about 20.
-Petropavlovsk and Andrei Pervozvanny come out of Kronstadt with Novik destroyers against Cowan's light cruisers and
-destroyers based at Koivisto. A dreadnought with a shaky crew against fast, well-handled light forces among islands.
-Summer night (it never quite gets dark). Reuse: caroline and cambrian (C-class), r_class (stand-in for the V and W).
-New: Gangut in 1919 trim (shipgen's gangut is a WWII version), Andrei Pervozvanny, Novik. Ensign: the red fleet (or
-Russia's). The archipelago again.
+**22. The Gulf of Finland, 1919** (hypothetical, summer 1919, off Koivisto). Medium, about 25.
+Mannerheim's plan to march on Petrograd goes ahead, and the Finnish navy joins Cowan's squadron, whose base at Koivisto
+was Finnish water anyway. Petropavlovsk and Andrei Pervozvanny come out of Kronstadt with Novik destroyers; against them
+the British light cruisers and destroyers, and the Finns' few ex-Russian gunboats and torpedo boats, slow and lightly
+armed, with crews who know every skerry. A dreadnought with a shaky crew against fast, well-handled light forces and
+local pilots among the islands. Summer night (it never quite gets dark). Three sides: Britain and Finland at peace with
+each other, both at war with the Reds. Reuse: caroline and cambrian (C-class), r_class (stand-in for the V and W).
+New: Gangut in 1919 trim (shipgen's gangut is a WWII version), Andrei Pervozvanny, Novik, a Finnish gunboat (the
+ex-Russian Uusimaa or Karjala type) and torpedo boat (names and figures to check with research). Ensigns: Finland
+(the swallow-tailed state flag), the red fleet. The archipelago again.
+Later cuts carry the Finns further: Väinämöinen and Ilmarinen (1932) against the Soviet Baltic Fleet, and, with
+silliness allowed, the dreadnought Finland's 1920s naval debates never bought.
 
 **23. Plan Orange, 1923** (hypothetical, the western Pacific). Fleet, about 80.
 The US battle line (the standard types: slow, tough, all-or-nothing) against Japan's (Nagato, Ise, Fuso, the Kongo
