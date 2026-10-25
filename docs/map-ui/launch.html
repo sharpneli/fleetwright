@@ -1,0 +1,714 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Fleetwright scenario launch</title>
+<style>
+@font-face{font-family:'Plex Cond';font-weight:400;src:url('../designer-ui/assets/fonts/ibm-plex-sans-condensed-latin-400-normal.woff2') format('woff2')}
+@font-face{font-family:'Plex Cond';font-weight:500;src:url('../designer-ui/assets/fonts/ibm-plex-sans-condensed-latin-500-normal.woff2') format('woff2')}
+@font-face{font-family:'Plex Cond';font-weight:600;src:url('../designer-ui/assets/fonts/ibm-plex-sans-condensed-latin-600-normal.woff2') format('woff2')}
+@font-face{font-family:'Plex Mono';font-weight:400;src:url('../designer-ui/assets/fonts/ibm-plex-mono-latin-400-normal.woff2') format('woff2')}
+@font-face{font-family:'Plex Mono';font-weight:500;src:url('../designer-ui/assets/fonts/ibm-plex-mono-latin-500-normal.woff2') format('woff2')}
+:root{
+  color-scheme:dark;
+  --glass:rgba(13,18,22,.88);--edge:rgba(150,172,188,.17);--line:rgba(150,172,188,.11);
+  --text:#C9D3DB;--bright:#EEF3F6;--muted:#7F8B95;--brass:#D9B868;--brassd:#5A4A24;--brassbg:#3a3014;
+  --ok:#86C77E;--amber:#E3A452;--bad:#E06A5A;--fr:#5B9BE0;--ho:#E2685C;--un:#E5C454;--water:#6FA7DC;
+  --sea:#12293A;--land:#2C3128;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#050708;overflow:hidden}
+body{color:var(--text);font-family:'Plex Cond',sans-serif;font-size:12.5px;user-select:none}
+button{font-family:inherit;cursor:pointer;color:inherit}
+.mono{font-family:'Plex Mono',monospace}
+.dim{color:var(--muted)}.gold{color:var(--brass)}.amb{color:var(--amber)}.okc{color:var(--ok)}.bad{color:var(--bad)}.fr{color:var(--fr)}.ho{color:var(--ho)}
+#app{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0;overflow:hidden;
+  background:radial-gradient(1400px 900px at 70% 20%,#14222d 0%,#0c1217 60%,#090d10 100%)}
+.chip{display:inline-flex;align-items:center;height:16px;padding:0 5px;font-size:10px;letter-spacing:.05em;border-radius:2px;text-transform:uppercase;font-weight:600;white-space:nowrap}
+.chip.you{background:var(--brassbg);color:var(--brass)}.chip.ai{background:#16283a;color:var(--fr)}.chip.out{background:#2a2f34;color:var(--muted)}
+.chip.amb{background:#3a2a12;color:var(--amber)}.chip.ok{background:#1d3020;color:var(--ok)}.chip.bad{background:#3a1a17;color:var(--bad)}
+.kbd{font-family:'Plex Mono';font-size:9.5px;border:1px solid #4A5764;border-radius:2px;padding:0 3px;color:var(--muted)}
+h4{margin:0 0 8px;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:500;display:flex;gap:8px;align-items:center}
+h4 .r{margin-left:auto;text-transform:none;letter-spacing:0;font-size:11px}
+.note{font-size:11.5px;color:var(--muted);line-height:1.4}
+.lnk{color:var(--brass);cursor:pointer;text-decoration:underline;text-decoration-color:var(--brassd);text-underline-offset:2px}
+/* ---------- top bar ---------- */
+#top{position:absolute;left:0;top:0;width:1920px;height:34px;display:flex;align-items:center;gap:14px;padding:0 14px;background:#0b0f12;border-bottom:1px solid var(--line)}
+#top .brand{font-weight:600;letter-spacing:.22em;color:var(--brass);font-size:13px}
+#top .crumb{color:var(--muted)}#top .crumb b{color:var(--bright);font-weight:500}
+#top .r{margin-left:auto;display:flex;gap:6px;align-items:center}
+.tb{height:24px;padding:0 10px;border:1px solid var(--edge);border-radius:2px;background:rgba(255,255,255,.03);font-size:12px;display:flex;align-items:center;gap:6px}
+.tb:hover{background:rgba(255,255,255,.07)}
+/* ---------- scenario list ---------- */
+#list{position:absolute;left:0;top:34px;width:372px;bottom:0;background:rgba(10,14,17,.92);border-right:1px solid var(--line);display:flex;flex-direction:column}
+#list .hd{padding:14px 16px 8px}
+#list .flts{display:flex;gap:4px;margin-top:8px;flex-wrap:wrap}
+.flt{white-space:nowrap;height:20px;padding:0 7px;font-size:10.5px;border:1px solid #3B4752;border-radius:2px;color:var(--muted);text-transform:uppercase;cursor:pointer;letter-spacing:.04em;display:inline-flex;align-items:center}
+.flt.on{color:var(--brass);border-color:var(--brassd);background:#2a2412}
+#cards{flex:1;overflow:auto;padding:4px 10px}
+.sc{border:1px solid var(--line);border-radius:3px;padding:10px 12px;margin:0 0 7px;cursor:pointer;background:rgba(255,255,255,.015);position:relative}
+.sc:hover{background:rgba(255,255,255,.04)}
+.sc.on{border-color:var(--brassd);background:rgba(217,184,104,.06);box-shadow:inset 3px 0 0 var(--brass)}
+.sc .n{font-size:16px;font-weight:600;color:var(--bright);letter-spacing:.03em}
+.sc .d{font-size:11.5px;color:var(--muted);margin:1px 0 6px}
+.sc .sides{display:flex;gap:10px;font-size:11.5px}
+.sc .sides span b{font-family:'Plex Mono';font-weight:400;color:var(--bright)}
+.sc .ld{position:absolute;right:10px;top:10px;font-size:10.5px;color:var(--muted);text-align:right}
+.sc .ld .bar{width:64px;height:3px;background:#222a31;margin-top:4px;margin-left:auto}
+.sc .ld .bar i{display:block;height:100%;background:var(--brass)}
+.sc .setup{margin-top:6px;font-size:11px;color:var(--brass)}
+#list .ft{padding:10px 12px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
+#list .ft .sv{display:flex;align-items:center;gap:8px;font-size:12px;padding:4px 6px;border-radius:2px;cursor:pointer}
+#list .ft .sv:hover{background:rgba(255,255,255,.04)}
+.grp{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:10px 2px 6px}
+/* ---------- main ---------- */
+#main{position:absolute;left:372px;top:34px;right:0;bottom:64px}
+#head{position:absolute;left:0;top:0;right:0;height:332px;border-bottom:1px solid var(--line)}
+#htext{position:absolute;left:26px;top:18px;width:820px}
+.kick{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--brass)}
+#htext h2{margin:3px 0 2px;font-size:34px;font-weight:600;color:var(--bright);letter-spacing:.04em}
+#htext .meta{font-size:12px;color:var(--muted)}
+#htext p{margin:10px 0 0;font-size:13.5px;line-height:1.5;color:#b8c3cb;max-width:800px}
+#sides{position:absolute;left:26px;top:196px;display:flex;gap:10px}
+.sd{width:272px;height:128px;border:1px solid var(--edge);border-radius:3px;padding:10px 12px;cursor:pointer;background:rgba(255,255,255,.02);position:relative}
+.sd:hover{background:rgba(255,255,255,.05)}
+.sd.on{border-color:var(--brass);background:rgba(217,184,104,.07)}
+.sd .t{display:flex;align-items:center;gap:8px}
+.sd .t b{font-size:16px;color:var(--bright);letter-spacing:.06em}
+.sd .t .chip{margin-left:auto}
+.sd .str{margin:7px 0 5px;white-space:nowrap;display:flex;gap:10px;align-items:center;font-size:11.5px;color:var(--muted)}
+.sd .ch{font-size:12px;color:#aab6bf;line-height:1.35}
+.sd .cmd{margin-top:5px;font-size:11px;color:var(--muted)}
+.sd.watch{width:180px}
+.ens{width:26px;height:16px;flex:none;box-shadow:0 0 0 1px #000;position:relative;overflow:hidden}
+.ens.ru::after{content:'';position:absolute;inset:0;background:linear-gradient(45deg,transparent 46%,#2D56A8 46% 54%,transparent 54%),linear-gradient(-45deg,transparent 46%,#2D56A8 46% 54%,transparent 54%)}
+.ens.ru{background:#fff}
+.ens.jp{background:#fff}
+.ens.jp::before{content:'';position:absolute;left:6px;top:3px;width:10px;height:10px;border-radius:50%;background:#C9473C}
+.ens.jp::after{content:'';position:absolute;inset:0;background:repeating-conic-gradient(from 0deg at 11px 8px,#C9473C 0 7deg,transparent 7deg 22.5deg);opacity:.9}
+.ens.w{background:#2a3138;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px}
+.pips{display:inline-flex;gap:2px;align-items:center}
+.pips i{width:7px;height:9px;background:currentColor;display:inline-block}
+.pips i.c{width:5px;height:7px}
+.pips i.l{width:3px;height:5px}
+#prev{position:absolute;right:22px;top:18px;width:640px;height:298px;border:1px solid var(--edge);border-radius:3px;overflow:hidden;background:var(--sea)}
+#prev canvas{display:block}
+#prev .cap{position:absolute;left:8px;top:6px;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#9fb1bf}
+#prev .leg{position:absolute;right:8px;bottom:6px;font-size:11px;color:#9fb1bf}
+/* ---------- body columns ---------- */
+#body{position:absolute;left:0;right:0;top:333px;bottom:0;display:grid;grid-template-columns:600px 520px 1fr}
+#body>section{padding:14px 18px 10px;border-right:1px solid var(--line);overflow:hidden;position:relative}
+#body>section:last-child{border-right:none}
+.tabs{display:flex;gap:2px;margin:-2px 0 10px}
+.tabs button{height:26px;padding:0 12px;border:1px solid var(--edge);border-radius:2px;background:rgba(255,255,255,.03);font-size:12.5px;display:flex;gap:7px;align-items:center}
+.tabs button.on{border-color:var(--brassd);background:#2a2412;color:var(--bright)}
+#oob{height:560px;overflow:auto;padding-right:4px}
+.un{margin:0 0 6px}
+.un .uh{display:flex;align-items:center;gap:8px;padding:4px 2px;font-size:12.5px;color:var(--bright)}
+.un .uh .adm{color:var(--muted);font-size:11.5px}
+.un .uh .r{margin-left:auto;display:flex;gap:6px;align-items:center}
+.un.sub{margin-left:14px}
+.dr{display:grid;grid-template-columns:186px 1fr auto;gap:4px 10px;align-items:center;padding:6px 8px;margin:2px 0 2px 14px;border:1px solid var(--line);border-radius:3px;background:rgba(255,255,255,.015)}
+.dr:hover{background:rgba(255,255,255,.035)}
+.dr.sw{border-color:var(--brassd);box-shadow:inset 3px 0 0 var(--brass)}
+.dr.sel{border-color:var(--brass);background:rgba(217,184,104,.08)}
+.dr .pic{height:30px;display:flex;align-items:center}
+.dr .pic img{image-rendering:auto;filter:drop-shadow(0 1px 1px rgba(0,0,0,.6))}
+.dr .nm{font-size:13px;color:var(--bright)}
+.dr .nm .x{font-family:'Plex Mono';color:var(--brass);margin-right:4px}
+.dr .ships{font-size:11px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:300px}
+.dr .fig{grid-column:2;font-family:'Plex Mono';font-size:11px;color:#aab6bf;white-space:nowrap}
+.dr .fig b{font-weight:400;color:var(--bright)}
+.dr .was{grid-column:1/4;font-size:11px;color:var(--brass);margin-top:-2px}
+.dr .act{grid-row:1/3;grid-column:3;display:flex;flex-direction:column;gap:4px;align-items:flex-end}
+.btn{height:24px;padding:0 9px;border:1px solid var(--edge);border-radius:2px;background:rgba(255,255,255,.04);font-size:12px;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.btn:hover{background:rgba(255,255,255,.09)}
+.btn.pri{color:#111;background:var(--brass);border-color:var(--brass);font-weight:600}
+.btn.pri:hover{background:#e6c77a}
+.btn.sm{height:20px;font-size:11px;padding:0 7px}
+.btn[disabled]{opacity:.45;cursor:default}
+.st{font-size:10.5px;display:flex;gap:4px;align-items:center;color:var(--muted)}
+.st i{width:7px;height:7px;border-radius:50%;background:var(--ok)}
+.st.b i{background:var(--amber);animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.3}}
+.ld3{display:flex;gap:2px}
+.ld3 i{width:14px;height:3px;background:#262e35}
+.ld3 i.f{background:var(--brass)}
+/* ---------- standing orders ---------- */
+.agg{border:1px solid var(--line);border-radius:3px;padding:10px 12px 12px;background:rgba(255,255,255,.015)}
+.agg .top{display:flex;align-items:baseline;gap:8px}
+.agg .top b{font-size:14px;color:var(--bright);font-weight:500}
+.agg .top .v{margin-left:auto;font-family:'Plex Mono';font-size:13px;color:var(--brass)}
+.slider{position:relative;height:26px;margin:6px 4px 0;cursor:pointer}
+.slider .tr{position:absolute;left:0;right:0;top:11px;height:4px;background:linear-gradient(90deg,#3c5c7a,#2a3138 50%,#7a4a2c)}
+.slider .mid{position:absolute;left:50%;top:6px;width:1px;height:14px;background:#56636e}
+.slider .hist{position:absolute;top:4px;width:2px;height:18px;background:var(--muted);margin-left:-1px}
+.slider .th{position:absolute;top:5px;width:12px;height:16px;margin-left:-6px;background:var(--brass);border-radius:2px;box-shadow:0 1px 4px rgba(0,0,0,.6)}
+.slider .lb{position:absolute;top:24px;font-size:10.5px;color:var(--muted)}
+.slider.small{height:18px;margin:0}
+.slider.small .tr{top:7px;height:3px}.slider.small .mid{top:3px;height:12px}.slider.small .th{top:2px;width:9px;height:13px;margin-left:-4.5px}
+.slider.small .hist{top:2px;height:14px}
+.der{display:grid;grid-template-columns:1fr 64px 64px;gap:2px 8px;margin-top:22px;font-size:12px;align-items:baseline}
+.der .h{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:right}
+.der .h:first-child{text-align:left}
+.der .k{color:#aab6bf}
+.der .a,.der .b{font-family:'Plex Mono';font-size:11.5px;text-align:right}
+.der .a{color:var(--muted)}.der .b{color:var(--bright)}.der .b.ch{color:var(--brass)}
+.adms{margin-top:12px}
+.ad{display:grid;grid-template-columns:1fr 120px 46px;gap:2px 10px;align-items:center;padding:5px 2px;border-bottom:1px solid var(--line)}
+.ad .n{font-size:12.5px;color:var(--bright)}
+.ad .u{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ad>div:first-child{min-width:0}
+.ad .e{font-family:'Plex Mono';font-size:11.5px;text-align:right}
+.ad .why{grid-column:1/4;font-size:11px;color:var(--muted);font-style:italic}
+.rules{margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;font-size:11.5px}
+.rules>div{display:flex;flex-direction:column;gap:3px;align-items:flex-start}
+.rules .k{color:#aab6bf}
+.seg{display:inline-flex;border:1px solid var(--edge);border-radius:2px;overflow:hidden}
+.seg button{height:21px;padding:0 8px;border:none;background:transparent;font-size:11.5px;color:var(--muted);border-right:1px solid var(--line)}
+.seg button:last-child{border-right:none}
+.seg button.on{background:#2a2412;color:var(--bright)}
+.seg button.on.ch{color:var(--brass)}
+.rules .k.ch{color:var(--brass)}
+/* ---------- conditions ---------- */
+.cond{display:grid;grid-template-columns:118px 1fr 1fr;gap:4px 8px;align-items:center;font-size:12px}
+.cond .h{font-size:11px;display:flex;gap:6px;align-items:center;color:var(--bright)}
+.cond .k{color:#aab6bf}
+.dd{height:22px;border:1px solid var(--edge);border-radius:2px;padding:0 7px;display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.03);font-size:12px;cursor:pointer}
+.dd::after{content:'▾';color:var(--muted);font-size:10px;margin-left:6px}
+.dd.ch{border-color:var(--brassd);color:var(--brass)}
+.presets{display:flex;gap:4px;margin:2px 0 12px}
+.day{display:grid;grid-template-columns:118px 1fr;gap:6px 8px;align-items:center;font-size:12px;margin-top:6px}
+.chg{margin-top:4px;font-size:12px}
+.chg div{display:flex;gap:8px;align-items:center;padding:3px 0;border-bottom:1px solid var(--line)}
+.chg div span:first-child{flex:1}
+.chg .x{color:var(--muted);cursor:pointer;font-size:11px}
+.chg .x:hover{color:var(--bad)}
+/* ---------- footer: the load ---------- */
+#foot{position:absolute;left:372px;right:0;bottom:0;height:64px;border-top:1px solid var(--line);background:#0b0f12;display:flex;align-items:center;gap:18px;padding:0 22px}
+#load{flex:1;display:flex;flex-direction:column;gap:5px}
+#load .l1{display:flex;gap:14px;align-items:baseline;font-size:12px}
+#load .l1 b{color:var(--bright);font-weight:500}
+#segs{display:flex;gap:2px;height:8px;max-width:820px}
+#segs i{flex:1;background:#1f262c;position:relative;overflow:hidden;min-width:3px}
+#segs i b{position:absolute;left:0;top:0;bottom:0;background:#6b5a2e}
+#segs i s{position:absolute;left:0;top:0;bottom:0;background:var(--brass)}
+#segs i.new{outline:1px solid var(--amber)}
+#foot .acts{display:flex;gap:8px;align-items:center}
+#foot .btn{height:34px;font-size:13.5px;padding:0 16px}
+#foot .btn.pri{min-width:170px;justify-content:center}
+/* ---------- the design picker ---------- */
+#pick{position:absolute;left:600px;right:0;top:0;bottom:0;background:#0e1317;border-left:1px solid var(--brassd);box-shadow:-20px 0 40px rgba(0,0,0,.45);display:none;flex-direction:column}
+#pick.on{display:flex}
+#pick .ph{padding:14px 20px 10px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;gap:12px}
+#pick .ph .t{font-size:17px;color:var(--bright);font-weight:500}
+#pick .ph .s{font-size:12px;color:var(--muted)}
+#pick .ph .x{margin-left:auto}
+#pick .fl{display:flex;gap:6px;align-items:center;padding:8px 20px;border-bottom:1px solid var(--line);font-size:12px}
+#pick .srch{width:200px;height:22px;border:1px solid var(--edge);border-radius:2px;background:rgba(0,0,0,.25);color:var(--muted);padding:0 8px;display:flex;align-items:center;font-size:12px}
+#plist{flex:1;overflow:auto;padding:4px 12px}
+.pr{display:grid;grid-template-columns:200px 1fr 66px 54px 92px 58px 70px;gap:8px;align-items:center;padding:5px 8px;border-bottom:1px solid var(--line);cursor:pointer;font-size:12px}
+.pr:hover{background:rgba(255,255,255,.04)}
+.pr.on{background:rgba(217,184,104,.09);box-shadow:inset 3px 0 0 var(--brass)}
+.pr.hd{cursor:default;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.pr.hd:hover{background:none}
+.pr .m{font-family:'Plex Mono';font-size:11.5px;text-align:right;color:var(--bright)}
+.pr .nm{color:var(--bright)}
+.pr .nm small{display:block;color:var(--muted);font-size:11px}
+.src{font-size:9.5px;letter-spacing:.06em;font-weight:600;padding:1px 4px;border-radius:2px;margin-left:4px;vertical-align:1px}
+.src.scn{background:#22303b;color:#9fb6c8}.src.you{background:var(--brassbg);color:var(--brass)}.src.shp{background:#2a2f34;color:var(--muted)}
+.mu{font-family:'Plex Mono';font-size:11.5px;text-align:right}
+.mu.up{color:var(--ok)}.mu.dn{color:var(--bad)}
+#cmp{border-top:1px solid var(--line);padding:12px 20px;display:grid;grid-template-columns:1fr 300px;gap:18px}
+#cmp .pics{display:flex;flex-direction:column;gap:6px}
+#cmp .pics div{display:flex;align-items:center;gap:10px;font-size:11.5px;color:var(--muted)}
+#cmp .pics img{filter:drop-shadow(0 1px 1px rgba(0,0,0,.6))}
+.ct{display:grid;grid-template-columns:1fr 90px 90px 70px;gap:3px 8px;font-size:12px;align-items:baseline}
+.ct .h{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:right}
+.ct .h:first-child{text-align:left}
+.ct .a,.ct .b,.ct .d{font-family:'Plex Mono';font-size:11.5px;text-align:right}
+.ct .a{color:var(--muted)}.ct .b{color:var(--bright)}
+.ct .d.up{color:var(--ok)}.ct .d.dn{color:var(--bad)}.ct .d{color:var(--muted)}
+#cmp .ap{display:flex;flex-direction:column;gap:6px;font-size:12px}
+.rad{display:flex;gap:8px;align-items:center;cursor:pointer}
+.rad i{width:12px;height:12px;border-radius:50%;border:1px solid #5d6a75;flex:none}
+.rad.on i{border-color:var(--brass);box-shadow:inset 0 0 0 3px #11161a;background:var(--brass)}
+#pick .pf{display:flex;gap:8px;justify-content:flex-end;padding:10px 20px;border-top:1px solid var(--line)}
+.warn{font-size:11.5px;color:var(--amber)}
+/* ---------- placeholder body for scenarios not drawn in full ---------- */
+#only{position:absolute;left:0;right:0;top:333px;bottom:0;display:none;align-items:center;justify-content:center;color:var(--muted);font-size:13px}
+#only.on{display:flex}
+#tip{position:absolute;z-index:90;pointer-events:none;background:rgba(10,14,17,.97);border:1px solid var(--edge);border-radius:3px;padding:6px 9px;font-size:12px;max-width:360px;display:none;line-height:1.4}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="top">
+    <span class="brand">FLEETWRIGHT</span>
+    <span class="crumb">Scenarios › <b id="crumb">Tsushima</b></span>
+    <div class="r">
+      <span class="dim" style="font-size:11.5px" id="topload"></span>
+      <button class="tb">Designer</button><button class="tb">Settings</button><button class="tb">Quit</button>
+    </div>
+  </div>
+
+  <!-- the scenarios -->
+  <div id="list">
+    <div class="hd">
+      <h4>Scenarios <span class="r dim" id="nsc"></span></h4>
+      <div class="flts"><span class="flt on">All</span><span class="flt">1890–1905</span><span class="flt">1906–1918</span><span class="flt">Small</span><span class="flt">Fleet</span><span class="flt">Tests</span></div>
+    </div>
+    <div id="cards"></div>
+    <div class="ft">
+      <div class="grp" style="margin:0 2px 2px">Your setups</div>
+      <div class="sv"><span class="gold">▸</span><span>Tsushima · <b class="gold" style="font-weight:500">14 in Borodinos</b></span><span class="dim" style="margin-left:auto">today</span></div>
+      <div class="sv"><span class="gold">▸</span><span>Squadrons · bold Beatty, green Germans</span><span class="dim" style="margin-left:auto">Oct 24</span></div>
+      <div class="sv dim"><span>＋</span><span>Open a scenario file… <span class="dim">(or drop one on the window)</span></span></div>
+    </div>
+  </div>
+
+  <div id="main">
+    <div id="head">
+      <div id="htext">
+        <div class="kick" id="kick"></div>
+        <h2 id="title"></h2>
+        <div class="meta" id="meta"></div>
+        <p id="brief"></p>
+      </div>
+      <div id="sides"></div>
+      <div id="prev"><canvas id="pc" width="640" height="298"></canvas><div class="cap">The opening</div><div class="leg" id="leg"></div></div>
+    </div>
+
+    <div id="body">
+      <!-- ships -->
+      <section>
+        <div class="tabs" id="oobtabs"></div>
+        <div id="oob"></div>
+      </section>
+      <!-- standing orders -->
+      <section id="orders"></section>
+      <!-- conditions and the day -->
+      <section id="conds"></section>
+    </div>
+    <div id="only">The full setup is mocked for Tsushima; the others show their header and their load.</div>
+
+    <!-- the design picker, over the orders and conditions -->
+    <div id="pick"></div>
+  </div>
+
+  <div id="foot">
+    <div id="load">
+      <div class="l1" id="loadl"></div>
+      <div id="segs"></div>
+    </div>
+    <div class="acts">
+      <button class="btn">Save setup…</button>
+      <button class="btn" id="bpaused">Begin paused</button>
+      <button class="btn pri" id="bgo">Begin</button>
+    </div>
+  </div>
+  <div id="tip"></div>
+</div>
+
+<script src="assets/land.js"></script>
+<script>
+'use strict';
+const W = 1920, H = 1080, app = document.getElementById('app'), $ = id => document.getElementById(id);
+function fit() { const s = Math.min(innerWidth / W, innerHeight / H); app.style.transform = `scale(${s})`; app.style.left = (innerWidth - W * s) / 2 + 'px'; app.style.top = (innerHeight - H * s) / 2 + 'px'; }
+addEventListener('resize', fit); fit();
+const fmt = n => n.toLocaleString('en-GB');
+
+// ------------------------------------------------------------------ the classes (figures from the designs: shipgen matchup)
+// sprite px at 4 px/m, drawn at 0.27: true relative lengths
+const CL = {
+  borodino:      { name: 'Borodino-like', t: 13779, len: 155, kn: 18, main: '4 × 305', sec: '12 × 152', belt: 194, reach: 11.8, year: 1903, img: 'borodino', w: 622, src: 'scn', time: 0.61 },
+  oslyabya:      { name: 'Oslyabya-like', t: 9449, len: 113, kn: 16, main: '4 × 254', sec: '11 × 152', belt: 229, reach: 11.8, year: 1903, img: 'oslyabya', w: 452, src: 'scn', time: 0.41 },
+  aurora:        { name: 'Aurora-like', t: 3637, len: 102, kn: 20, main: '8 × 152', sec: '', belt: 0, reach: 9.1, year: 1903, img: 'aurora', w: 410, src: 'scn', time: 0.27 },
+  buyny:         { name: 'Buyny-like', t: 824, len: 91, kn: 26, main: '3 × 75', sec: '3 tubes', belt: 0, reach: 6.0, year: 1902, img: 'buyny', w: 365, src: 'scn', time: 0.12 },
+  mikasa:        { name: 'Mikasa-like', t: 13184, len: 130, kn: 18, main: '4 × 305', sec: '14 × 152', belt: 229, reach: 12.6, year: 1902, img: 'mikasa', w: 521, src: 'scn', time: 0.43 },
+  izumo:         { name: 'Izumo-like', t: 10655, len: 135, kn: 21, main: '4 × 203', sec: '14 × 152', belt: 178, reach: 11.4, year: 1900, img: 'izumo', w: 542, src: 'scn', time: 0.33 },
+  ikazuchi:      { name: 'Ikazuchi-like', t: 780, len: 77, kn: 29, main: '1 × 76', sec: '2 tubes', belt: 0, reach: 6.5, year: 1899, img: 'ikazuchi', w: 311, src: 'scn', time: 0.10 },
+  borodino_14in: { name: 'Borodino (14 in)', t: 15350, len: 161, kn: 18, main: '4 × 356', sec: '12 × 152', belt: 194, reach: 13.9, year: 1905, img: 'borodino_14in', w: 645, src: 'you', time: 0.62, saved: 'saved today 14:12' },
+};
+const pic = (k, s = 0.27) => `<img src="assets/launch/${CL[k].img}.png" style="width:${Math.round(CL[k].w * s)}px">`;
+
+// ------------------------------------------------------------------ Tsushima (Content/Scenarios/tsushima.json)
+const SIDES = [
+  { key: 'ru', name: 'Russia', ens: 'ru', ships: 13, cap: 7, cru: 2, lt: 4, ch: 'The hammer: more heavy guns, heavier armour; an old second division at 16 kn, average crews.', cmd: 'V-Adm Rozhestvensky' },
+  { key: 'jp', name: 'Japan', ens: 'jp', ships: 14, cap: 4, cru: 6, lt: 4, ch: 'The hunters: faster, many quick-firers, trained crews, 29 kn destroyers; thin cruiser belts.', cmd: 'Adm Togo' },
+];
+const OOB = [
+  { side: 0, name: 'Second Pacific Squadron', adm: 'Rozhestvensky', temper: 0, units: [
+    { name: '1st Armoured Division', adm: 'Rozhestvensky (in Suvorov)', rows: [{ cls: 'borodino', names: ['Knyaz Suvorov', 'Imperator Aleksandr III', 'Borodino', 'Oryol'] }] },
+    { name: '2nd Armoured Division', adm: 'Oslyabya’s captain (Fölkersam dead, unannounced)', rows: [{ cls: 'oslyabya', names: ['Oslyabya', 'Sissoi Veliky', 'Navarin'] }] }] },
+  { side: 0, name: 'Cruiser Division', adm: 'R-Adm Enkvist', temper: -0.4, why: 'the scenario: kept his cruisers clear of the line', rows: [{ cls: 'aurora', names: ['Oleg', 'Aurora'] }] },
+  { side: 0, name: '1st Destroyer Detachment', adm: 'the senior captain', temper: 0, rows: [{ cls: 'buyny', names: ['Buyny', 'Bravy', 'Bedovy', 'Grozny'] }] },
+  { side: 1, name: 'Combined Fleet', adm: 'Adm Togo', temper: 0.2, why: 'the scenario: closes once he holds the range', units: [
+    { name: '1st Division', adm: 'Togo (in Mikasa)', rows: [{ cls: 'mikasa', names: ['Mikasa', 'Shikishima', 'Fuji', 'Asahi'] }, { cls: 'izumo', names: ['Kasuga', 'Nisshin'] }] },
+    { name: '2nd Division', adm: 'V-Adm Kamimura', temper: 0.4, why: 'the scenario: presses a damaged enemy', rows: [{ cls: 'izumo', names: ['Izumo', 'Azuma', 'Tokiwa', 'Iwate'] }] }] },
+  { side: 1, name: '1st Destroyer Flotilla', adm: 'the flotilla’s captain', temper: 0.3, why: 'the scenario: night attacks pressed home', rows: [{ cls: 'ikazuchi', names: ['Ikazuchi', 'Inazuma', 'Akebono', 'Oboro'] }] },
+];
+// the start of each top unit (lat, lon, course, kn) for the preview
+const START = { 'Second Pacific Squadron': [34.05, 129.95, 23, 11], 'Cruiser Division': [34.03, 129.90, 23, 11], '1st Destroyer Detachment': [34.06, 129.92, 23, 11], 'Combined Fleet': [34.17, 130.20, 262, 15], '1st Destroyer Flotilla': [34.21, 130.24, 262, 15] };
+
+// the other scenarios: header and load only
+const SCN = [
+  { id: 'tsushima', name: 'Tsushima', d: '27 May 1905 · Tsushima Strait', sides: [['Russia', 13], ['Japan', 14]], classes: 7, load: 0.8, era: 1905 },
+  { id: 'squadrons', name: 'Squadrons', d: '31 May 1916 · North Sea', sides: [['Britain', 4], ['Germany', 5]], classes: 8, load: 1.1, era: 1916, setup: true },
+  { id: 'flotilla', name: 'Flotilla', d: '31 May 1916 · North Sea, dusk', sides: [['Britain', 6], ['Germany', 11]], classes: 5, load: 0.7, era: 1916 },
+  { id: 'jutland', name: 'Jutland', d: '31 May 1916 · off the Jutland Bank', sides: [['Britain', 151], ['Germany', 99]], classes: 53, load: 5.5, era: 1916 },
+];
+const BRIEF = {
+  tsushima: { kick: 'Scenario · Tsushima Strait · 1905', meta: 'Saturday 27 May 1905, 13:40 local (04:40 GMT) · 34°07′N 130°04′E · haze, 13 km, wind SW 18 kn · sunset 19:26 · ends 28 May 11:00',
+    brief: 'Rozhestvensky’s Second Pacific Squadron, black with yellow funnels, steams up the Tsushima Strait for Vladivostok: four Borodinos leading, the old second division astern, cruisers and destroyers in company. Out of the haze to the north-east come Togo’s battleships and Kamimura’s armoured cruisers, faster, crossing ahead to cap your line. Get through, or make them pay for it.' },
+  jutland: { kick: 'Scenario · North Sea · 1916', meta: 'Wednesday 31 May 1916, 14:00 GMT · 56°48′N 5°12′E · 25 km, wind SW 8 kn · sunset 20:12 · ends 1 June 04:00',
+    brief: 'Beatty’s battlecruisers and Hipper’s scouting groups run south and north; behind them the Grand Fleet and the High Seas Fleet, 250 ships in all. The whole day, from the first sighting to the night actions.' },
+  squadrons: { kick: 'Scenario · North Sea · 1916', meta: 'Wednesday 31 May 1916, 15:30 GMT · 56°30′N 4°00′E · 25 km, wind SW 8 kn', brief: 'Beatty’s four battlecruisers against Hipper’s five, 22 km apart and closing in clear weather. Both sides fight when they meet.' },
+  flotilla: { kick: 'Scenario · North Sea · 1916', meta: 'Wednesday 31 May 1916, 19:40 GMT · dusk, 12 km', brief: 'Torpedo boats against a battle line at dusk.' },
+};
+
+// ------------------------------------------------------------------ the setup's state
+const S = {
+  scn: 'tsushima', side: 0, tab: 0, agg: [0, 0], swaps: {}, picking: null, pickSel: null, applyTo: 'all',
+  tempers: {}, rules: {}, cond: {}, vis: 13, seed: 'fixed',
+};
+// the load: a class's stages, each 0..1: build, compile (sim ready), art
+const load = { cls: [], t0: 0, threads: 8 };
+let clockAt = null;   // a screenshot state holds the load's clock here (s); null: live
+const loadNow = () => clockAt ?? (performance.now() - load.t0) / 1000;
+function startLoad(keys, scale = 1) {
+  let r = 1916; const rnd = () => (r = (r * 16807) % 2147483647) / 2147483647;   // Jutland's measured classes: 0.41 s a class on average
+  load.cls = keys.map(k => ({ k, t: (CL[k]?.time ?? (0.15 + rnd() * 0.52)) * scale, b: 0, a: 0, at: 0, isNew: false }));
+  load.t0 = performance.now();
+}
+
+// ------------------------------------------------------------------ the list
+function cards() {
+  $('nsc').textContent = `${SCN.length} shipped`;
+  $('cards').innerHTML = `<div class="grp">Shipped</div>` + SCN.map(s => {
+    const ready = s.id === S.scn ? simReady() : false;
+    return `<div class="sc ${s.id === S.scn ? 'on' : ''}" data-s="${s.id}">
+      <div class="n">${s.name}</div><div class="d">${s.d}</div>
+      <div class="sides">${s.sides.map(([n, c]) => `<span>${n} <b>${c}</b></span>`).join('<span class="dim">v</span>')}</div>
+      <div class="ld">${s.classes} classes · ${s.load < 1.5 ? 'under 1 s' : '~' + Math.round(s.load / 2) + ' s'}${s.id === S.scn ? `<div class="bar"><i style="width:${Math.round(loadShare() * 100)}%"></i></div>` : ''}</div>
+      ${s.setup ? '<div class="setup">◆ a saved setup of yours</div>' : ''}</div>`;
+  }).join('') + `<div class="grp">Tests</div><div class="sc" style="opacity:.6"><div class="n" style="font-size:13px">ladder-1 … ladder-5</div><div class="d">the scale test's rungs (dev)</div></div>`;
+  for (const el of document.querySelectorAll('.sc[data-s]')) el.onclick = () => pickScenario(el.dataset.s);
+}
+function pickScenario(id) {
+  clockAt = null; S.scn = id; S.picking = null;
+  if (id === 'tsushima') startLoad(usedClasses());
+  else if (id === 'jutland') startLoad(Array.from({ length: 53 }, (_, i) => 'j' + i), 1);
+  else startLoad(Array.from({ length: SCN.find(s => s.id === id).classes }, (_, i) => 'x' + i));
+  render();
+}
+
+// ------------------------------------------------------------------ the header
+function header() {
+  const b = BRIEF[S.scn], s = SCN.find(x => x.id === S.scn);
+  $('crumb').textContent = s.name; $('kick').textContent = b.kick; $('title').textContent = s.name; $('meta').textContent = b.meta; $('brief').textContent = b.brief;
+  const full = S.scn === 'tsushima';
+  const sides = full ? SIDES : s.sides.map(([n, c]) => ({ name: n, ens: 'w', ships: c, cap: 0, ch: '', cmd: '' }));
+  const pips = (sd) => `<span class="pips">${'<i></i>'.repeat(sd.cap)}${'<i class="c"></i>'.repeat(sd.cru)}${'<i class="l"></i>'.repeat(Math.min(sd.lt, 6))}</span>`;
+  $('sides').innerHTML = sides.map((sd, i) => `<div class="sd ${S.side === i ? 'on' : ''}" data-i="${i}">
+      <div class="t"><span class="ens ${sd.ens}"></span><b>${sd.name.toUpperCase()}</b>${S.side === i ? '<span class="chip you">you</span>' : '<span class="chip ai">AI</span>'}</div>
+      <div class="str ${i === S.side ? 'fr' : 'ho'}">${full ? pips(sd) : ''}<span class="dim">${sd.ships} ships</span></div>
+      <div class="ch">${sd.ch}</div><div class="cmd">${sd.cmd ? 'Commander: ' + sd.cmd : ''}</div></div>`).join('') +
+    `<div class="sd watch ${S.side === -1 ? 'on' : ''}" data-i="-1"><div class="t"><span class="ens w">◎</span><b>WATCH</b></div>
+      <div class="ch" style="margin-top:8px">Both sides the AI’s; you see everything. For checking a setup before playing it.</div></div>`;
+  for (const el of document.querySelectorAll('.sd')) el.onclick = () => { S.side = +el.dataset.i; S.tab = Math.max(0, S.side); render(); };
+  drawPreview();
+}
+
+// ------------------------------------------------------------------ the preview: the opening on the map (land from Natural Earth)
+function decode(polys, q) { return polys.map(poly => poly.map(r => { const out = []; let x = 0, y = 0; for (let i = 0; i < r.length; i += 2) { x += r[i]; y += r[i + 1]; out.push([x * q, y * q]); } return out; })); }
+const L50 = decode(LAND.l50, LAND.q50);
+function drawPreview() {
+  const cv = $('pc'), g = cv.getContext('2d'), w = cv.width, h = cv.height;
+  g.fillStyle = '#12293A'; g.fillRect(0, 0, w, h);
+  if (S.scn !== 'tsushima') { g.fillStyle = '#7F8B95'; g.font = '12px Plex Cond'; g.fillText('(the opening is drawn for Tsushima)', 20, h / 2); $('leg').textContent = ''; return; }
+  const c = [34.11, 130.06], mpp = 115, kx = 111320 * Math.cos(c[0] * Math.PI / 180) / mpp, ky = 110540 / mpp;
+  const P = (la, lo) => [w / 2 + (lo - c[1]) * kx, h / 2 - (la - c[0]) * ky];
+  g.fillStyle = '#2C3128'; g.strokeStyle = '#4a5240'; g.lineWidth = 1;
+  for (const poly of L50) {
+    const r = poly[0]; let minx = 1e9, maxx = -1e9, miny = 1e9, maxy = -1e9;
+    for (const [lo, la] of r) { minx = Math.min(minx, lo); maxx = Math.max(maxx, lo); miny = Math.min(miny, la); maxy = Math.max(maxy, la); }
+    if (maxx < 127 || minx > 133 || maxy < 32 || miny > 36) continue;
+    g.beginPath(); for (const ring of poly) { ring.forEach(([lo, la], i) => { const [x, y] = P(la, lo); i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.closePath(); } g.fill('evenodd'); g.stroke();
+  }
+  // land names
+  g.font = '11px Plex Cond'; g.fillStyle = '#8b9682';
+  [['Tsushima', 34.33, 129.33], ['Iki', 33.78, 129.70], ['Kyushu', 33.62, 130.55]].forEach(([n, la, lo]) => { const [x, y] = P(la, lo); g.fillText(n, x - 14, y); });
+  // the grid: 10' of latitude
+  g.strokeStyle = 'rgba(160,190,210,.08)';
+  for (let la = 33.5; la <= 34.7; la += 1 / 6) { const y = P(la, 0)[1]; g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); }
+  for (let lo = 128.5; lo <= 131.5; lo += 1 / 6) { const x = P(0, lo)[0]; g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); }
+  // the units: their ships astern of the head on the course, the head's symbol, 30 min ahead
+  const D = Math.PI / 180;
+  for (const u of OOB) {
+    const [la, lo, crs, kn] = START[u.name], own = u.side === S.side || S.side === -1 && u.side === 0;
+    const col = S.side === -1 ? (u.side === 0 ? '#9DBFE6' : '#E2685C') : own ? '#5B9BE0' : '#E2685C';
+    const [x0, y0] = P(la, lo), dx = Math.sin(crs * D), dy = -Math.cos(crs * D);
+    const ships = (u.units ?? [u]).flatMap(s => s.rows.flatMap(r => r.names)).length, gap = (u.units ? 550 : u.name.includes('Destroyer') ? 400 : 600) / mpp;
+    g.fillStyle = col; g.strokeStyle = col;
+    for (let i = 0; i < ships; i++) { g.beginPath(); g.arc(x0 - dx * gap * i, y0 - dy * gap * i, 1.6, 0, 7); g.fill(); }
+    const lead = kn * 1852 * 0.5 / mpp; g.setLineDash([3, 3]); g.globalAlpha = .7;
+    g.beginPath(); g.moveTo(x0, y0); g.lineTo(x0 + dx * lead, y0 + dy * lead); g.stroke(); g.setLineDash([]); g.globalAlpha = 1;
+    g.lineWidth = 1.5; g.beginPath();
+    if (own) g.arc(x0, y0, 6, 0, 7); else { g.moveTo(x0, y0 - 7); g.lineTo(x0 + 7, y0); g.lineTo(x0, y0 + 7); g.lineTo(x0 - 7, y0); g.closePath(); }
+    g.stroke(); g.lineWidth = 1;
+    g.font = '11px Plex Cond'; g.fillStyle = '#dfe7ec';
+    const right = u.side === 0; const lbl = u.name.replace('Second Pacific Squadron', '2nd Pacific Sqn').replace('Destroyer', 'Dest.');
+    g.textAlign = right ? 'right' : 'left'; const dy0 = { 'Second Pacific Squadron': 16, 'Cruiser Division': 14, '1st Destroyer Detachment': -12, 'Combined Fleet': 16, '1st Destroyer Flotilla': -10 }[u.name] ?? 4;
+    g.fillText(lbl, x0 + (right ? -10 : 10), y0 + dy0); g.textAlign = 'left';
+  }
+  // scale bar
+  const km10 = 5000 / mpp; g.strokeStyle = '#9fb1bf'; g.beginPath(); g.moveTo(12, h - 12); g.lineTo(12 + km10, h - 12); g.moveTo(12, h - 15); g.lineTo(12, h - 9); g.moveTo(12 + km10, h - 15); g.lineTo(12 + km10, h - 9); g.stroke();
+  g.fillStyle = '#9fb1bf'; g.fillText('5 km', 18 + km10, h - 8);
+  $('leg').innerHTML = `<span class="fr">○ ${S.side === 1 ? 'Japan' : 'Russia'}</span> &nbsp; <span class="ho">◇ ${S.side === 1 ? 'Russia' : 'Japan'}</span> &nbsp; 22 km apart · dashed: 30 min`;
+}
+
+// ------------------------------------------------------------------ the ships: each side's units, a row a design
+function rowKey(u, r) { return u.name + '|' + r.cls; }
+function clsOf(u, r) { return S.swaps[rowKey(u, r)]?.to ?? r.cls; }
+function usedClasses() { const set = new Set(); for (const u of OOB) for (const s of u.units ?? [u]) for (const r of s.rows) set.add(clsOf(s, r)); return [...set]; }
+function oob() {
+  const tabSide = S.tab;
+  $('oobtabs').innerHTML = SIDES.map((sd, i) => `<button class="${tabSide === i ? 'on' : ''}" data-t="${i}"><span class="ens ${sd.ens}" style="width:18px;height:11px"></span>${sd.name} · ${S.side === i ? 'yours' : S.side === -1 ? 'AI' : 'the enemy'}</button>`).join('') +
+    `<span class="dim" style="margin-left:auto;align-self:center;font-size:11.5px">Change a design: it builds while you set up</span>`;
+  for (const el of document.querySelectorAll('#oobtabs button')) el.onclick = () => { S.tab = +el.dataset.t; S.picking = null; render(); };
+  const st = k => { const c = load.cls.find(x => x.k === k); if (!c || c.a >= 1) return `<span class="st"><i></i>ready</span>`; return `<span class="st b"><i></i>${c.b < 1 ? 'building' : 'art'} ${Math.round((c.b * .3 + c.a * .7) * 100)}%</span>`; };
+  const row = (u, r) => {
+    const k = clsOf(u, r), c = CL[k], sw = S.swaps[rowKey(u, r)], sel = S.picking === rowKey(u, r);
+    const only = sw?.only ? r.names.map(n => n === sw.only ? `<b class="gold" style="font-weight:400">${n}</b>` : n).join(', ') : r.names.join(', ');
+    return `<div class="dr ${sw ? 'sw' : ''} ${sel ? 'sel' : ''}">
+      <div class="pic">${pic(k)}</div>
+      <div><div class="nm"><span class="x">${r.names.length}×</span>${c.name}</div><div class="ships">${only}</div></div>
+      <div class="act"><button class="btn sm" data-p="${rowKey(u, r)}">Change…</button>${st(k)}</div>
+      <div class="fig" style="grid-column:1/3"><b>${fmt(c.t)}</b> t · <b>${c.kn}</b> kn · <b>${c.main}</b>${c.sec ? ' + ' + c.sec : ''} · belt <b>${c.belt || '—'}</b>${c.belt ? ' mm' : ''} · reach <b>${c.reach}</b> km</div>
+      ${sw ? `<div class="was">was ${CL[r.cls].name}${sw.only ? ' · only ' + sw.only : ' · all ' + r.names.length}</div>` : ''}</div>`;
+  };
+  const tempLbl = v => v === 0 ? '' : `<span class="chip ${v > 0 ? 'amb' : 'ai'}">${v > 0 ? 'bold' : 'cautious'} ${v > 0 ? '+' : ''}${v.toFixed(1)}</span>`;
+  let html = '';
+  for (const u of OOB.filter(u => u.side === tabSide)) {
+    html += `<div class="un"><div class="uh"><span class="${tabSide === S.side ? 'fr' : 'ho'}">${tabSide === S.side ? '○' : '◇'}</span>${u.name}<span class="adm">${u.adm}</span><span class="r">${tempLbl(temper(u))}<span class="dim">${(u.units ?? [u]).flatMap(s => s.rows.flatMap(r => r.names)).length} ships</span></span></div>`;
+    for (const s of u.units ?? []) html += `<div class="un sub"><div class="uh">${s.name}<span class="adm">${s.adm}</span><span class="r">${tempLbl(s.temper ? temper(s) : 0)}</span></div>${s.rows.map(r => row(s, r)).join('')}</div>`;
+    if (!u.units) html += u.rows.map(r => row(u, r)).join('');
+    html += '</div>';
+  }
+  if (tabSide !== S.side && S.side !== -1) html += `<p class="note" style="margin:10px 14px">The enemy’s ships may be changed too (a what-if for either side). Your briefing still reports them as your side would see them: the change is a fact of the world, not of your intelligence.</p>`;
+  $('oob').innerHTML = html;
+  for (const el of document.querySelectorAll('[data-p]')) el.onclick = () => openPick(el.dataset.p);
+}
+
+// ------------------------------------------------------------------ standing orders: the side's, and each admiral's temper on it
+const AGG = [ // field, base, shift (settings.json AggressionShift), how it reads
+  ['Turns away when outgunned', 2, 0.5, v => v.toFixed(1) + ' : 1'],
+  ['Sent after an enemy at matchup', 1, -0.5, v => '≥ ' + v.toFixed(2)],
+  ['Fights at, of the main guns’ reach', 0.6, -0.3, v => Math.round(v * 100) + '%'],
+  ['Falls out under, of her speed', 0.6, -0.3, v => Math.round(v * 100) + '%'],
+  ['Turns from torpedo attacks', 45, -0.5, v => v.toFixed(0) + '°'],
+  ['Flotilla beaten off at boats lost', 0.5, 0.4, v => Math.round(v * 100) + '%'],
+  ['The side breaks off at tonnage lost', 0.34, 0.5, v => Math.round(v * 100) + '%'],
+];
+const RULES = [
+  ['On meeting the enemy', ['fight', 'carry on'], 0],
+  ['Deploy into one line on his main body', ['yes', 'no'], 0],
+  ['Torpedoes', ['at will', 'on order'], 0],
+  ['Under fire', ['zigzag', 'steady'], 0],
+  ['Torpedo tracks', ['comb', 'hold on'], 0],
+  ['Heavy ships at night', ['accept', 'avoid'], 1],
+  ['Torpedo craft attack by night', ['yes', 'no'], 0],
+  ['Admirals place scouts and screens', ['by roles', 'all in line'], 0],
+];
+function temper(u) { return S.tempers[u.name] ?? u.temper ?? 0; }
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function slider(id, v, hist, small) {
+  const x = p => (p + 1) / 2 * 100;
+  return `<div class="slider ${small ? 'small' : ''}" data-sl="${id}"><div class="tr"></div><div class="mid"></div>${hist !== null ? `<div class="hist" style="left:${x(hist)}%" title="the scenario's"></div>` : ''}<div class="th" style="left:${x(v)}%"></div>
+    ${small ? '' : '<span class="lb" style="left:0">cautious</span><span class="lb" style="left:50%;transform:translateX(-50%)">as written</span><span class="lb" style="right:0">bold</span>'}</div>`;
+}
+function orders() {
+  const side = S.side === -1 ? S.tab : S.side, a = S.agg[side];
+  const der = AGG.map(([k, b, sh, f]) => { const v = b * (1 + sh * a), ch = Math.abs(a) > 1e-6; return `<span class="k">${k}</span><span class="a">${f(b)}</span><span class="b ${ch ? 'ch' : ''}">${f(v)}</span>`; }).join('');
+  const adms = [];
+  for (const u of OOB.filter(u => u.side === side)) { adms.push(u); for (const s of u.units ?? []) if (s.temper !== undefined) adms.push(s); }
+  const word = v => v > 0.65 ? 'bold' : v > 0.15 ? 'forward' : v < -0.65 ? 'timid' : v < -0.15 ? 'cautious' : 'as written';
+  $('orders').innerHTML = `<h4>Standing orders · ${SIDES[side].name}${S.side === -1 ? ' (AI)' : ''}<span class="r dim">doctrine “default”, 1905 <span class="lnk">all fields…</span></span></h4>
+    <div class="agg"><div class="top"><b>Aggression</b><span class="dim">the C-in-C’s, for every unit</span><span class="v">${a > 0 ? '+' : ''}${a.toFixed(2)} · ${word(a)}</span></div>
+      ${slider('side', a, 0)}
+      <div class="der"><span class="h">Moves</span><span class="h">written</span><span class="h">now</span>${der}</div></div>
+    <div class="adms"><h4>Admirals’ tempers<span class="r dim">added to the side’s</span></h4>
+      ${adms.map(u => { const t = temper(u), e = clamp(a + t, -1, 1); return `<div class="ad"><div><div class="n">${u.adm.replace(/ \(.*\)/, '')}</div><div class="u" title="${u.why ?? ''}">${u.name}${u.why && t === (u.temper ?? 0) ? ' · <i>' + u.why.replace('the scenario: ', '') + '</i>' : ''}</div></div>${slider('t:' + u.name, t, u.temper ?? 0, true)}<span class="e ${Math.abs(e) > .01 ? 'gold' : 'dim'}">${e > 0 ? '+' : ''}${e.toFixed(2)}</span></div>`; }).join('')}
+    </div>
+    <div class="rules">${RULES.map(([k, opts, d], i) => { const v = S.rules[side + ':' + i] ?? d, ch = v !== d; return `<div><span class="k ${ch ? 'ch' : ''}">${k}</span><span class="seg">${opts.map((o, j) => `<button class="${j === v ? 'on' : ''} ${j === v && ch ? 'ch' : ''}" data-r="${side}:${i}:${j}">${o}</button>`).join('')}</span></div>`; }).join('')}</div>`;
+  for (const el of document.querySelectorAll('[data-r]')) el.onclick = () => { const [s, i, j] = el.dataset.r.split(':'); S.rules[s + ':' + i] = +j; render(); };
+  for (const el of document.querySelectorAll('[data-sl]')) {
+    const set = ev => { const r = el.getBoundingClientRect(), v = clamp(((ev.clientX - r.left) / r.width) * 2 - 1, -1, 1), q = Math.round(v * 20) / 20, id = el.dataset.sl;
+      if (id === 'side') S.agg[side] = q; else S.tempers[id.slice(2)] = q; render(); };
+    el.onmousedown = ev => { set(ev); const mv = e => set(e), up = () => { removeEventListener('mousemove', mv); removeEventListener('mouseup', up); }; addEventListener('mousemove', mv); addEventListener('mouseup', up); };
+  }
+}
+
+// ------------------------------------------------------------------ conditions: both sides' crews and orders before action, the day
+const COND = [
+  ['Gun crews', 'crews', ['green', 'average', 'trained', 'elite'], ['average', 'trained']],
+  ['Readiness', 'ready', ['unprepared', 'prepared', 'closed up', 'prepared, cluttered'], ['prepared', 'prepared']],
+  ['Damage control', 'dc', ['1890', '1905', '1916', '1942', '1944'], ['1905', '1905']],
+  ['Fire discipline', 'fd', ['independent', 'rn-1914', 'rn-1917', 'german', 'usn'], ['independent', 'independent']],
+  ['Fuel', 'fuel', ['full', '¾', '½'], ['full', 'full']],
+];
+const PRESETS = { history: {}, fair: { 'crews:0': 'trained' }, hard: { 'crews:0': 'green', 'ready:0': 'prepared, cluttered' }, easy: { 'crews:1': 'average', 'ready:1': 'prepared, cluttered', 'crews:0': 'trained' } };
+function conds() {
+  const own = S.side === -1 ? 0 : S.side, other = 1 - own;
+  const cell = (key, side, def) => { const v = S.cond[key + ':' + side] ?? def; return `<span class="dd ${v !== def ? 'ch' : ''}" data-c="${key}:${side}">${v}</span>`; };
+  const changes = [];
+  for (const [k, sw] of Object.entries(S.swaps)) { const [u] = k.split('|'); changes.push([`${u}: ${CL[sw.from].name} → <b class="gold" style="font-weight:500">${CL[sw.to].name}</b>${sw.only ? ' (' + sw.only + ')' : ''}`, 'sw:' + k]); }
+  S.agg.forEach((a, i) => { if (a) changes.push([`${SIDES[i].name}’s aggression ${a > 0 ? '+' : ''}${a.toFixed(2)}`, 'agg:' + i]); });
+  for (const [n, t] of Object.entries(S.tempers)) { const u = OOB.flatMap(u => [u, ...(u.units ?? [])]).find(x => x.name === n); if (t !== (u.temper ?? 0)) changes.push([`${u.adm.replace(/ \(.*\)/, '')}’s temper ${t > 0 ? '+' : ''}${t.toFixed(2)}`, 'tmp:' + n]); }
+  for (const [k, v] of Object.entries(S.cond)) { const [key, side] = k.split(':'), row = COND.find(c => c[1] === key); if (v !== row[3][side]) changes.push([`${SIDES[side].name}: ${row[0].toLowerCase()} ${v}`, 'cond:' + k]); }
+  for (const [k, v] of Object.entries(S.rules)) { const [side, i] = k.split(':'), r = RULES[i]; if (v !== r[2]) changes.push([`${SIDES[side].name}: ${r[0].toLowerCase()}: ${r[1][v]}`, 'rule:' + k]); }
+  if (S.vis !== 13) changes.push([`visibility ${S.vis} km`, 'vis']);
+  $('conds').innerHTML = `<h4>Conditions<span class="r dim">the difficulty, side by side</span></h4>
+    <div class="presets"><button class="btn sm" data-pre="history">As history</button><button class="btn sm" data-pre="fair">Even crews</button><button class="btn sm" data-pre="easy">Easier</button><button class="btn sm" data-pre="hard">Harder</button></div>
+    <div class="cond"><span></span><span class="h"><span class="ens ${SIDES[own].ens}" style="width:16px;height:10px"></span>${SIDES[own].name}${S.side === -1 ? '' : ' · you'}</span><span class="h"><span class="ens ${SIDES[other].ens}" style="width:16px;height:10px"></span>${SIDES[other].name}</span>
+      ${COND.map(([lbl, key, , defs]) => `<span class="k">${lbl}</span>${cell(key, own, defs[own])}${cell(key, other, defs[other])}`).join('')}</div>
+    <h4 style="margin-top:16px">The day</h4>
+    <div class="day"><span class="k" style="color:#aab6bf">Visibility</span><span style="display:flex;gap:8px;align-items:center"><span style="flex:1">${slider('vis', (S.vis - 16.5) / 13.5, (13 - 16.5) / 13.5, true)}</span><span class="mono ${S.vis !== 13 ? 'gold' : ''}" style="width:44px;text-align:right">${S.vis} km</span></span>
+      <span class="k" style="color:#aab6bf">Wind</span><span class="dd" style="width:150px">SW 18 kn · sea 4</span>
+      <span class="k" style="color:#aab6bf">Ends</span><span class="dd" style="width:150px">28 May 11:00</span>
+      <span class="k" style="color:#aab6bf">Seed</span><span class="seg"><button class="${S.seed === 'fixed' ? 'on' : ''}" data-seed="fixed">1905, the file’s</button><button class="${S.seed === 'new' ? 'on' : ''}" data-seed="new">new each time</button></span></div>
+    <h4 style="margin-top:16px">Changes from the scenario<span class="r">${changes.length ? '<span class="lnk" data-reset="1">reset all</span>' : '<span class="dim">none: history as written</span>'}</span></h4>
+    <div class="chg">${changes.map(([t, id]) => `<div><span>${t}</span><span class="x" data-undo="${id}">✕</span></div>`).join('')}</div>`;
+  for (const el of document.querySelectorAll('[data-c]')) el.onclick = () => { const [key, side] = el.dataset.c.split(':'), row = COND.find(c => c[1] === key), cur = S.cond[el.dataset.c] ?? row[3][side]; S.cond[el.dataset.c] = row[2][(row[2].indexOf(cur) + 1) % row[2].length]; render(); };
+  for (const el of document.querySelectorAll('[data-pre]')) el.onclick = () => { S.cond = { ...PRESETS[el.dataset.pre] }; render(); };
+  for (const el of document.querySelectorAll('[data-seed]')) el.onclick = () => { S.seed = el.dataset.seed; render(); };
+  for (const el of document.querySelectorAll('[data-reset]')) el.onclick = () => { S.swaps = {}; S.agg = [0, 0]; S.tempers = {}; S.cond = {}; S.rules = {}; S.vis = 13; render(); };
+  for (const el of document.querySelectorAll('[data-undo]')) el.onclick = () => { const [kind, ...r] = el.dataset.undo.split(':'), k = r.join(':');
+    if (kind === 'sw') delete S.swaps[k]; else if (kind === 'agg') S.agg[+k] = 0; else if (kind === 'tmp') delete S.tempers[k]; else if (kind === 'cond') delete S.cond[k]; else if (kind === 'rule') delete S.rules[k]; else S.vis = 13; render(); };
+  const vs = document.querySelector('[data-sl="vis"]');
+  if (vs) vs.onmousedown = ev => { const set = e => { const r = vs.getBoundingClientRect(); S.vis = Math.round(clamp(3 + (e.clientX - r.left) / r.width * 27, 3, 30)); render(); }; set(ev); const up = () => { removeEventListener('mousemove', set); removeEventListener('mouseup', up); }; addEventListener('mousemove', set); addEventListener('mouseup', up); };
+}
+
+// ------------------------------------------------------------------ the design picker
+// matchup: the commander's (docs/battle/command.md 5.1g), four of her against Togo's four Mikasas (shipgen matchup)
+const ALTS = [
+  { k: 'borodino', mu: 1.07 }, { k: 'borodino_14in', mu: 1.37 },
+  { k: 'mikasa', mu: 1.00, note: 'the enemy’s own class' },
+  { k: 'connecticut', mu: 4.71 }, { k: 'dreadnought', mu: 14.19, note: 'a year late' }, { k: 'bouvet', mu: 0.44 }, { k: 'brennus', mu: 0.36 },
+  { k: 'deutschland', mu: 82.8, note: '1933: silly, allowed' },
+];
+Object.assign(CL, {
+  connecticut: { name: 'Connecticut-like', t: 17921, len: 140, kn: 18, main: '4 × 305', sec: '8 × 203', belt: 279, reach: 15.3, year: 1906, img: 'connecticut', w: 562, src: 'shp', time: 0.6 },
+  dreadnought: { name: 'HMS Dreadnought-like', t: 29457, len: 179, kn: 21, main: '10 × 305', sec: '', belt: 279, reach: 18.1, year: 1906, img: 'dreadnought', w: 719, src: 'shp', time: 0.8 },
+  bouvet: { name: 'Bouvet-like', t: 13263, len: 134, kn: 18, main: '2 × 305', sec: '2 × 274', belt: 400, reach: 12.8, year: 1898, img: 'bouvet', w: 538, src: 'shp', time: 0.5 },
+  brennus: { name: 'Brennus-like', t: 11315, len: 122, kn: 17, main: '3 × 340', sec: '', belt: 455, reach: 12.7, year: 1891, img: 'brennus', w: 488, src: 'shp', time: 0.45 },
+  deutschland: { name: 'Deutschland-like panzerschiff', t: 10212, len: 160, kn: 28, main: '6 × 283', sec: '', belt: 80, reach: 32.6, year: 1933, img: 'deutschland', w: 643, src: 'shp', time: 0.7 },
+});
+function openPick(key) { S.picking = key; const [u, cls] = key.split('|'); S.pickSel = S.swaps[key]?.to ?? (cls === 'borodino' ? 'borodino_14in' : cls); S.applyTo = 'all'; render(); }
+function picker() {
+  const el = $('pick');
+  if (!S.picking) { el.classList.remove('on'); return; }
+  el.classList.add('on');
+  const [uname, from] = S.picking.split('|'), unit = OOB.flatMap(u => [u, ...(u.units ?? [])]).find(x => x.name === uname), row = unit.rows.find(r => r.cls === from);
+  const cur = S.swaps[S.picking]?.to ?? from, sel = S.pickSel, a = CL[from], b = CL[sel];
+  const altsMu = from === 'borodino' ? ALTS : [{ k: from, mu: 1.0 }];
+  const list = altsMu.map(x => { const c = CL[x.k], base = 1.07, d = x.mu / base;
+    return `<div class="pr ${x.k === sel ? 'on' : ''}" data-k="${x.k}"><div class="pic" style="height:26px;display:flex;align-items:center">${pic(x.k, 0.25)}</div>
+      <div class="nm">${c.name}<span class="src ${c.src}">${c.src === 'scn' ? 'SCENARIO' : c.src === 'you' ? 'YOURS' : 'SHIPPED'}</span>${x.k === cur ? ' <span class="chip ok" style="margin-left:4px">in use</span>' : ''}<small>${c.saved ?? (x.note ?? c.year)}</small></div>
+      <span class="m">${fmt(c.t)} t</span><span class="m">${c.kn} kn</span><span class="m">${c.main}</span><span class="m">${c.belt || '—'}</span>
+      <span class="mu ${d > 1.05 ? 'up' : d < 0.95 ? 'dn' : ''}">${x.mu.toFixed(2)}</span></div>`; }).join('');
+  const dl = (x, y, u = '', inv) => { const d = y - x; if (Math.abs(d) < 1e-9) return `<span class="d">—</span>`; const up = inv ? d < 0 : d > 0; return `<span class="d ${up ? 'up' : 'dn'}">${d > 0 ? '+' : ''}${fmt(Math.round(d * 10) / 10)}${u}</span>`; };
+  const mu = k => (ALTS.find(x => x.k === k) ?? { mu: 1 }).mu;
+  const late = b.year > 1905;
+  el.innerHTML = `<div class="ph"><div><div class="t">${row.names.length} × ${a.name} · ${uname}</div><div class="s">${row.names.join(', ')}</div></div>
+      <button class="btn x" data-close="1">✕ <span class="kbd">Esc</span></button></div>
+    <div class="fl"><span class="srch">⌕ name, calibre, year…</span><span class="flt on">Battleships</span><span class="flt">Any type</span><span class="flt on">Scenario’s</span><span class="flt on">Yours</span><span class="flt on">Shipped</span><span class="flt">Up to 1905 only</span>
+      <span class="dim" style="margin-left:auto;white-space:nowrap">Matchup: four of her v Togo’s four Mikasas, 1 = even</span></div>
+    <div id="plist"><div class="pr hd"><span></span><span>Design</span><span style="text-align:right">Displ.</span><span style="text-align:right">Speed</span><span style="text-align:right">Main</span><span style="text-align:right">Belt mm</span><span style="text-align:right">Matchup</span></div>${list}
+      <div class="pr" style="cursor:pointer;color:var(--brass)"><span>＋ New design from ${a.name}…</span><span class="dim" style="grid-column:2/8">opens the designer on a copy; saved, it’s back here with “yours”</span></div></div>
+    <div id="cmp"><div>
+        <div class="pics"><div>${pic(from, 0.42)}<span>${a.name}</span></div><div>${pic(sel, 0.42)}<span class="gold">${b.name}</span></div></div>
+        <div class="ct" style="margin-top:10px"><span class="h"></span><span class="h">${a.name.replace('-like', '')}</span><span class="h">${b.name.replace('-like', '').replace(' panzerschiff', '')}</span><span class="h">change</span>
+          <span>Displacement, t</span><span class="a">${fmt(a.t)}</span><span class="b">${fmt(b.t)}</span>${dl(a.t, b.t)}
+          <span>Length, m</span><span class="a">${a.len}</span><span class="b">${b.len}</span>${dl(a.len, b.len)}
+          <span>Speed, kn</span><span class="a">${a.kn}</span><span class="b">${b.kn}</span>${dl(a.kn, b.kn)}
+          <span>Main battery</span><span class="a">${a.main}</span><span class="b">${b.main}</span><span class="d">${a.main === b.main ? '—' : ''}</span>
+          <span>Reach, km</span><span class="a">${a.reach}</span><span class="b">${b.reach}</span>${dl(a.reach, b.reach)}
+          <span>Belt, mm</span><span class="a">${a.belt}</span><span class="b">${b.belt}</span>${dl(a.belt, b.belt)}
+          <span>Matchup v the Mikasas</span><span class="a">1.07</span><span class="b">${mu(sel).toFixed(2)}</span>${dl(1.07, mu(sel))}</div>
+      </div>
+      <div class="ap"><h4 style="margin-bottom:2px">Use it for</h4>
+        ${[['all', `all ${row.names.length} of the division`], ['one', `${row.names[0]} only`], ['every', `every ${a.name} in the scenario`]].map(([k, t]) => `<div class="rad ${S.applyTo === k ? 'on' : ''}" data-ap="${k}"><i></i>${t}</div>`).join('')}
+        <div class="note" style="margin-top:6px">${b.len !== a.len ? `${b.len > a.len ? 'Longer' : 'Shorter'} by ${Math.abs(b.len - a.len)} m: the division keeps its 550 m between ships, so the line is ${Math.abs(b.len - a.len) * (S.applyTo === 'one' ? 1 : row.names.length)} m ${b.len > a.len ? 'longer' : 'shorter'}.` : ''}
+          ${b.kn < a.kn ? ` <span class="warn">Slower than the division: the line steams at ${b.kn} kn.</span>` : ''}${late ? ` <span class="warn">Built ${b.year}: past the scenario’s year (allowed; it’s marked in the result).</span>` : ''}</div>
+        <div class="note">${load.cls.find(c => c.k === sel && c.a >= 1) || sel === from ? 'Built: ready now.' : `Builds in ~${b.time.toFixed(1)} s once picked.`}</div>
+      </div></div>
+    <div class="pf"><button class="btn">Edit a copy in the designer…</button><span style="flex:1"></span><button class="btn" data-close="1">Cancel</button><button class="btn pri" data-use="1">Use ${b.name}</button></div>`;
+  for (const r of el.querySelectorAll('.pr[data-k]')) r.onclick = () => { S.pickSel = r.dataset.k; render(); };
+  for (const r of el.querySelectorAll('[data-ap]')) r.onclick = () => { S.applyTo = r.dataset.ap; render(); };
+  for (const r of el.querySelectorAll('[data-close]')) r.onclick = () => { S.picking = null; render(); };
+  el.querySelector('[data-use]').onclick = () => useDesign(S.picking, from, S.pickSel, S.applyTo === 'one' ? row.names[0] : null);
+}
+function useDesign(key, from, to, only) {
+  if (to === from) delete S.swaps[key]; else S.swaps[key] = { from, to, only };
+  S.picking = null;
+  if (!load.cls.find(c => c.k === to)) { if (clockAt !== null) { clockAt = null; load.t0 = performance.now() - 10000; } load.cls.push({ k: to, t: CL[to].time, b: 0, a: 0, at: loadNow(), isNew: true }); }
+  render();
+}
+
+// ------------------------------------------------------------------ the load (simulated): build + compile first on every class, then the art
+// the sim needs only the compiled classes; the art streams in after (ships draw as icons until their art is up)
+function step() {
+  const now = loadNow();
+  // a simple schedule: classes start in order on `threads` threads; each spends 30% building, 70% drawing art
+  const thr = new Array(load.threads).fill(0);
+  for (const c of load.cls) { thr.sort((a, b) => a - b); const s = Math.max(thr[0], c.at), bt = c.t * 0.3; c.b = clamp((now - s) / bt, 0, 1); thr[0] = s + bt; }
+  for (const c of load.cls) { thr.sort((a, b) => a - b); const s = Math.max(thr[0], c.at + c.t * 0.3), at = c.t * 0.7; c.a = clamp((now - s) / at, 0, 1); thr[0] = s + at; }
+}
+const simReady = () => load.cls.length > 0 && load.cls.every(c => c.b >= 1);
+const loadShare = () => load.cls.length ? load.cls.reduce((s, c) => s + c.b * .3 + c.a * .7, 0) / load.cls.length : 1;
+function footer() {
+  const n = load.cls.length, b = load.cls.filter(c => c.b >= 1).length, a = load.cls.filter(c => c.a >= 1).length;
+  const t = loadNow();
+  $('loadl').innerHTML = simReady()
+    ? `<b class="okc">Ready</b><span>${n} classes built${a < n ? ` · <span class="amb">art ${a} of ${n}</span> (the map draws icons until it’s in)` : ' · art in'}</span><span class="dim">${load.threads} builder threads · cached classes are kept when you switch scenarios</span>`
+    : `<b class="amb">Building the ships</b><span>classes ${b} of ${n} · art ${a} of ${n} · ${t.toFixed(1)} s</span><span class="dim">${load.threads} builder threads</span>`;
+  $('segs').innerHTML = load.cls.map(c => `<i class="${c.isNew ? 'new' : ''}" title="${CL[c.k]?.name ?? 'class'}"><b style="width:${c.b * 100}%"></b><s style="width:${c.a * 100}%"></s></i>`).join('');
+  const go = $('bgo');
+  go.textContent = simReady() ? (S.side === -1 ? 'Watch' : 'Begin') : (S.queued ? 'Begins when ready…' : 'Begin when ready');
+  go.onclick = () => { if (!simReady()) { S.queued = true; footer(); } };
+  $('topload').textContent = simReady() ? '' : `building ${n - b} classes…`;
+}
+
+// ------------------------------------------------------------------ render
+function render() {
+  cards(); header();
+  const full = S.scn === 'tsushima';
+  $('body').style.display = full ? '' : 'none'; $('only').classList.toggle('on', !full);
+  if (full) { oob(); orders(); conds(); picker(); } else $('pick').classList.remove('on');
+  footer();
+}
+addEventListener('keydown', e => { if (e.key === 'Escape' && S.picking) { S.picking = null; render(); } });
+setInterval(() => { const was = simReady(), aWas = load.cls.every(c => c.a >= 1); step(); const now = load.cls.every(c => c.a >= 1); footer(); if (!aWas || now !== aWas || was !== simReady()) { if (S.scn === 'tsushima' && !S.picking) oob(); cards(); } }, 120);
+
+// ------------------------------------------------------------------ states for screenshots: launch.html#tsushima, #japan, #design, #swapped, #orders, #watch, #loading, #jutland
+function state(h) {
+  startLoad(usedClasses()); clockAt = 10;
+  if (h === 'japan') { S.side = 1; S.tab = 1; }
+  if (h === 'watch') { S.side = -1; S.tab = 0; }
+  if (h === 'design') openPick('1st Armoured Division|borodino');
+  if (h === 'swapped' || h === 'orders') {
+    S.swaps['1st Armoured Division|borodino'] = { from: 'borodino', to: 'borodino_14in', only: null };
+    load.cls.push({ k: 'borodino_14in', t: CL.borodino_14in.time, b: 0, a: 0, at: h === 'swapped' ? 9.8 : 5, isNew: true });
+    if (h === 'swapped') clockAt = 10.1;
+  }
+  if (h === 'orders') { S.agg[0] = 0.5; S.tempers['Cruiser Division'] = 0.2; S.rules['0:5'] = 0; S.cond['crews:1'] = 'average'; }
+  if (h === 'jutland' || h === 'loading') { S.scn = 'jutland'; startLoad(Array.from({ length: 53 }, (_, i) => 'j' + i)); clockAt = h === 'loading' ? 0.4 : 1.3; S.queued = h === 'loading'; }
+  step(); render();
+}
+state(location.hash.slice(1) || 'tsushima');
+addEventListener('hashchange', () => location.reload());
+</script>
+</body>
+</html>
