@@ -12,7 +12,7 @@
 :root{
   --ground:#0E1215;--panel:#1C2329;--panel2:#20282F;--inset:#11161A;--line:#20292F;--edge:#090C0E;--bevel:#2C3640;
   --title-top:#36434F;--title-bot:#27313A;--header:#161C21;--text:#C9D3DB;--bright:#EAF0F4;--muted:#7F8B95;
-  --brass:#D9B868;--brass-dark:#5A4A24;--brass-darker:#3E3218;--ok:#86C77E;--amber:#E3A452;--blue:#5B9BE0;--red:#D4675A;
+  --brass:#D9B868;--brass-dark:#5A4A24;--brass-darker:#3E3218;--ok:#86C77E;--amber:#E3A452;--blue:#5B9BE0;--red:#E2685C;
   --plan:#14243A;--planline:#9CC2E2;--btn:#2E3842;--border:#3A4651;
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -324,7 +324,7 @@ $('scn').innerHTML = '<tr><th style="width:150px">Name</th><th style="width:44px
   for (let y = H / 2 % 83.3; y < H; y += 83.3) g += `<line x1="0" y1="${y}" x2="${W}" y2="${y}"/>`;
   let s = `<svg width="${W}" height="${H}" style="position:absolute;left:0;top:0"><g stroke="#9CC2E2" stroke-opacity=".09">${g}</g>`;
   let tags = '';
-  const col = ['#5B9BE0', '#D4675A'];
+  const col = ['#5B9BE0', '#E2685C'];
   for (const u of U) {
     const [x, y] = P(...u.at), r = u.c * Math.PI / 180, len = u.kn * 0.5 * 1.852 / kmpx;
     s += `<line x1="${x}" y1="${y}" x2="${x + Math.sin(r) * len}" y2="${y - Math.cos(r) * len}" stroke="${col[u.s]}" stroke-dasharray="4 4" stroke-opacity=".8"/>`;

@@ -261,4 +261,5 @@ v1 (`map-v1.html`):
 
 Same as the in-game designer (`overview.html`): ground `#0E1215`, panels `#1C2329`, brass `#D9B868`, amber
 `#E3A452`; friend `#5B9BE0`, allied `#9DBFE6`, hostile `#E2685C`, neutral `#6FC08A`, unknown `#E5C454`; sea
-`#12293A`, land `#2C3128`. Fonts: Archivo Narrow and IBM Plex Mono. Fixed at 1920×1080, scaled to the window.
+`#12293A`, land `#2C3128`. Fonts in the game: IBM Plex Sans Condensed and IBM Plex Mono (these mockups used Archivo
+Narrow). Fixed at 1920×1080, scaled to the window. The UI's chrome, its layout and its pieces: `docs/ui-language.md`.

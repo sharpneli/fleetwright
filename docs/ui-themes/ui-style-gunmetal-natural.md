@@ -4,6 +4,9 @@
 **Live reference:** `docs/ui-themes/theme-trials.html`. Open it and press **4**.
 **Drop-in tokens:** `docs/ui-themes/gunmetal-natural.css`
 
+> **2026-10-25:** not applied. The game and the redesign mockups use the bureau tokens (`DesignerTheme.cs`). The UI
+> language is `docs/ui-language.md`; this theme, if taken up, would replace only its token and type sections.
+
 This replaces the current slate-blue, brass and IBM Plex look, which reads as generic "AI dashboard". Keep the layouts, density and behaviour of the existing mockups. Only the visual treatment changes.
 
 ## The idea in one paragraph

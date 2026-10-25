@@ -454,6 +454,13 @@ events as plain structs, and nothing in a step allocates (the tests check it).
 
 Content paths in code (`"Content/Shaders/Compiled/..."`) resolve against `AppContext.BaseDirectory`, not the working directory.
 
+## UI look
+
+All UI follows `docs/ui-language.md`: the designer's workstation look (panes docked edge to edge with title strips,
+an outliner, ledgers, numbered tabs, a status bar; `DesignerTheme` tokens, Plex Sans Condensed and Plex Mono), never
+landing-page habits (hero titles, cards, badges, big call-to-action buttons). New screens mock up from
+`docs/map-ui/launch-bureau.html`'s CSS and are set beside a designer screenshot before porting.
+
 ## Renderer
 
 - HDR R16G16B16A16 color target, 8x MSAA, resolved and blitted to the swapchain
