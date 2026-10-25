@@ -7,15 +7,19 @@ namespace Fleetwright.Sim.Tests;
 
 /// <summary>The turn-away from torpedoes (docs/battle/command.md 5.1b): a line of battleships steaming south that sees
 /// destroyers closing from the east turns away together, to starboard, through doctrine's points, and back to its course
-/// once they've gone by; with no TurnAwayDeg it holds on. Guns held both ways, so nothing but the steering is measured.</summary>
+/// once they've gone by; with no TurnAwayDeg it holds on, and so it does on the player's helm order (docs/map-ui/battle-hud.md
+/// decision 6) and steaming at boats lying still ahead (only their own run in is an attack). Guns held both ways, so
+/// nothing but the steering is measured.</summary>
 public class TurnAwayTests(ITestOutputHelper output)
 {
     static readonly WorldTime Start = WorldTime.FromUtc(1916, 5, 31, 14);
     static readonly SimSettings Settings = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json"));
 
     /// <summary>Four dreadnoughts (side 0) in line ahead heading south at 15 kn; four destroyers (side 1) 12 km to the east
-    /// of the guide, abreast, steaming west at 28 kn, straight at the line and through it.</summary>
-    static (World W, AiSystem Ai) Make(double turnAwayDeg)
+    /// of the guide, abreast, steaming west at 28 kn, straight at the line and through it (or, <paramref name="lying"/>,
+    /// stopped 7 km ahead of the guide and 1.5 km to the east of his track). <paramref name="hand"/>: the line's speed
+    /// is the player's helm order, by hand.</summary>
+    static (World W, AiSystem Ai) Make(double turnAwayDeg, bool hand = false, bool lying = false)
     {
         var w = new World(Start, 3, Settings);
         var ai = new AiSystem(w);
@@ -35,22 +39,22 @@ public class TurnAwayTests(ITestOutputHelper output)
             w.Apply(GroupSystem.Add(1, e));
         p = Earth.Position(56.0, 4.0);
         f = Earth.Forward(p, 90);
-        Earth.Advance(ref p, ref f, 12_000);
+        Earth.Advance(ref p, ref f, lying ? 1_500 : 12_000);
         f = Earth.Forward(p, 180);
-        Earth.Advance(ref p, ref f, 2_000);
+        Earth.Advance(ref p, ref f, lying ? 7_000 : 2_000);
         for (int i = 0; i < 4; i++)
         {
             var (la, lo) = Earth.LatLon(p);
-            w.Apply(ShipSystem.Spawn(dd, la, lo, 270, 28, 1));
+            w.Apply(ShipSystem.Spawn(dd, la, lo, 270, lying ? 0 : 28, 1));
             Earth.Advance(ref p, ref f, 400);
         }
         w.Apply(ai.Orders.HoldFire(Unit.Group(1)));
         for (int e = 5; e <= 8; e++)
         {
             w.Apply(ai.Orders.HoldFire(Unit.Ship(e)));
-            w.Apply(ai.Orders.Course(Unit.Ship(e), 270));
+            w.Apply(lying ? ai.Orders.Speed(Unit.Ship(e), 0) : ai.Orders.Course(Unit.Ship(e), 270));
         }
-        w.Apply(ai.Orders.Speed(Unit.Group(1), 15));
+        w.Apply((hand ? ai.Orders.ByHand : ai.Orders).Speed(Unit.Group(1), 15));
         return (w, ai);
     }
 
@@ -75,10 +79,9 @@ public class TurnAwayTests(ITestOutputHelper output)
         Assert.Equal(Formation.Column, w.Groups[0].Formation);
     }
 
-    [Fact]
-    public void Without_doctrine_it_holds_on()
+    /// <summary>The guide's largest turn off 180° over the first 15 minutes, degrees.</summary>
+    static double MostOff(World w)
     {
-        var (w, _) = Make(0);
         double most = 0;
         for (int s = 10; s <= 15 * 60; s += 10)
         {
@@ -86,6 +89,27 @@ public class TurnAwayTests(ITestOutputHelper output)
             double d = Ship(w, 1).HeadingDeg - 180;
             most = Math.Max(most, Math.Abs(d - 360 * Math.Round(d / 360)));
         }
+        return most;
+    }
+
+    [Fact]
+    public void Without_doctrine_it_holds_on()
+    {
+        double most = MostOff(Make(0).W);
+        Assert.True(most < 5, $"{most:F0}°");
+    }
+
+    [Fact]
+    public void On_the_player_s_helm_it_holds_on()
+    {
+        double most = MostOff(Make(45, hand: true).W);
+        Assert.True(most < 5, $"{most:F0}°");
+    }
+
+    [Fact]
+    public void Steaming_at_boats_lying_still_is_no_attack()
+    {
+        double most = MostOff(Make(45, lying: true).W);
         Assert.True(most < 5, $"{most:F0}°");
     }
 }

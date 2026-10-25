@@ -703,10 +703,12 @@ public sealed record SimSettings
     public double BattleTurnStepS { get; init; } = 10;
 
     /// <summary>A torpedo attack coming at a line (docs/battle/command.md 5.1b): enemy torpedo craft within
-    /// TorpedoThreatM of a ship of it and closing on her faster than TorpedoThreatClosingMs, or a ship of it combing a
-    /// track; a line turned away (doctrine's TurnAwayDeg) turns back once it has seen none for TurnBackS. m, m/s, s.</summary>
+    /// TorpedoThreatM of a ship of it and running in at her (their own speed toward her) faster than TorpedoThreatRunInMs,
+    /// or a ship of it combing a track; a line turned away (doctrine's TurnAwayDeg) turns back once it has seen none for
+    /// TurnBackS. m, m/s, s. The run in is a boat's own: 6 m/s is a 25-knot boat heading within some 60° of her, an
+    /// attack's, not one crossing or lying ahead of a line that steams at it (2026-10-25, the user's playtest).</summary>
     public double TorpedoThreatM { get; init; } = 8_000;
-    public double TorpedoThreatClosingMs { get; init; } = 3;
+    public double TorpedoThreatRunInMs { get; init; } = 6;
     public double TurnBackS { get; init; } = 180;
 
     /// <summary>A flotilla's attack (docs/battle/command.md 5.1b): it first gains a point AttackGainDeg off the target's bow,

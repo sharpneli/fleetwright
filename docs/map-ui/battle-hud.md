@@ -182,3 +182,25 @@ one or two detachments (2-3 units, the rest the AI's), so a fleet must take orde
   the AI); a course change of a fleet in columns still wheels it about the guide (the far wing races), where the era
   turned columns in succession or together. Both for a playtest to rank.
 
+
+### P2 A line that holds its course (built 2026-10-25)
+
+**The note:** the Grand Fleet, the player's, kept turning away from small ships with no torpedoes in the water; a
+brutal course couldn't be held.
+
+- **The player's helm holds** (decision 6): the admiral's turn-away from torpedoes (`AdmiralLayer.TurnAway`) was off
+  only on the conn; now also while the line steers by the player's helm order by hand (a course, a speed, a route, a
+  deploy, holding on: `HelmByHand`). Under a general order of his (Fight) it still turns away from an attack, and
+  captains still comb tracks they see.
+- **An attack is boats running in:** the threat (`TorpedoThreat`) was torpedo craft within 8 km closing at 3 m/s,
+  which counted the line's own speed, so a 14-knot line steaming at any destroyer ahead (lying still, screening,
+  crossing) saw an attack. Now it's the craft's own speed toward a ship of the line, at least `TorpedoThreatRunInMs`
+  (6 m/s: a 25-knot boat heading within some 60° of her; renamed from `TorpedoThreatClosingMs`).
+- **Tests** (`TurnAwayTests`): a line on the player's helm holds on through the destroyers' run; a line steaming at
+  boats lying still 7 km ahead holds on (both turned 45° and 49° under the old rules); the attack's turn-away to 225°
+  and back as before.
+- **Measured** (Release, AI on every side, against `0a794c9e`): the Jutland, 3 seeds: Britain lost 30.3 of 151
+  (77 kt) against 23.0 (62 kt), Germany 37.0 of 99 (223 kt) against 46.0 (253 kt); hits 3,746 and 3,440 against 5,008
+  and 3,916; torpedoes 191 and 124 against 218 and 138. The seeds spread wide (Britain 12 to 46 lost), so 3 say little
+  beyond the direction: lines that hold on more. `tsushima`, 5 seeds: Russia 3.0 of 13 against 3.6, Japan 3.8 of 14
+  against 4.4.

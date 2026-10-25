@@ -95,8 +95,9 @@ public sealed partial class AdmiralLayer
         }
     }
 
-    /// <summary>The turn-away from torpedoes (docs/battle/command.md 5.1b), for a line that's no force's (its force turns)
-    /// and isn't a flotilla with torpedoes left (its role: it counter-attacks), with doctrine's TurnAwayDeg: when it sees
+    /// <summary>The turn-away from torpedoes (docs/battle/command.md 5.1b), for a line that's no force's (its force turns),
+    /// isn't a flotilla with torpedoes left (its role: it counter-attacks) and isn't on the conn or the player's helm
+    /// (<see cref="HelmByHand"/>), with doctrine's TurnAwayDeg: when it sees
     /// an attack coming (<see cref="TorpedoThreat"/>)
     /// it turns together away from it through those degrees, holding the course it comes out on while his order (Fight,
     /// say) waits; once it's seen none for <see cref="SimSettings.TurnBackS"/> it turns back together and his order is
@@ -104,7 +105,7 @@ public sealed partial class AdmiralLayer
     bool TurnAway(in AiContext ctx, GroupSystem.Group g, Admiral a, int lead)
     {
         var guide = ctx.Ships[lead];
-        if (groups.InForceLine(g) || a.Order == CaptainOrder.Screen || a.Conn)   // its force turns; a screen counter-attacks; the conn holds on
+        if (groups.InForceLine(g) || a.Order == CaptainOrder.Screen || a.Conn || HelmByHand(a))   // its force turns; a screen counter-attacks; the conn and the player's helm hold on
             return false;
         double deg = doctrine.OfGroup(g, guide.Side, DoctrineField.TurnAwayDeg);
         if (!a.Away && (deg <= 0 || Roles.Of(Unit.Group(g.GroupId)) == UnitRole.Flotilla && CaptainLayer.TorpedoesLeft(ctx, guide, lead)))
@@ -130,9 +131,14 @@ public sealed partial class AdmiralLayer
         return true;
     }
 
+    /// <summary>Whether a group steers by the player's helm order (a course, a route, a deploy, holding on: by hand),
+    /// which holds it to his course against its admiral's own manoeuvres (docs/map-ui/battle-hud.md decision 6).</summary>
+    static bool HelmByHand(Admiral a) => a.Whose == Whose.Player && a.Order is CaptainOrder.Course or CaptainOrder.Route;
+
     /// <summary>Whether a line sees a torpedo attack coming: an enemy its navy takes for a torpedo craft within
-    /// <see cref="SimSettings.TorpedoThreatM"/> of a ship of the line and closing on her faster than
-    /// <see cref="SimSettings.TorpedoThreatClosingMs"/>, or a ship of it combing a track her lookouts saw; and the bearing
+    /// <see cref="SimSettings.TorpedoThreatM"/> of a ship of the line and running in at her faster than
+    /// <see cref="SimSettings.TorpedoThreatRunInMs"/> (its own speed toward her: a line steaming at a boat lying ahead, or
+    /// passing one that crosses, isn't attacked), or a ship of it combing a track her lookouts saw; and the bearing
     /// from the guide it comes from (the nearest such craft, <paramref name="craft"/>; else the nearest enemy in sight). Never
     /// without a bearing.</summary>
     bool TorpedoThreat(in AiContext ctx, GroupSystem.Group? g, ShipState guide, out double bearing, out int craft)
@@ -174,7 +180,7 @@ public sealed partial class AdmiralLayer
                 var own = ships[m];
                 var to = own.Position - q;
                 double r = to.Length;
-                if (r > s.TorpedoThreatM || r < 1 || Vec3d.Dot(v - own.Forward * own.Speed, to) / r < s.TorpedoThreatClosingMs)
+                if (r > s.TorpedoThreatM || r < 1 || Vec3d.Dot(v, to) / r < s.TorpedoThreatRunInMs)
                     continue;
                 if (d < craftD)
                     (craftD, bearing, craft) = (d, Earth.Bearing(guide.Position, q), pic[i].Entity);

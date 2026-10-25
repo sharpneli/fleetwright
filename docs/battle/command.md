@@ -578,10 +578,11 @@ piece 2):
    ranges, and against an enemy that holds his course. So the rule isn't kept (no doctrine knob that doesn't do what it
    says); it's for 5.1c's deployment with the Jutland's long lines, and the fine-tune pass.
 3. **The turn-away from torpedoes.** Doctrine's `TurnAwayDeg` (the default preset 45: 4 points; neutral 0). A line
-   that's no force's (its force turns) and isn't torpedo craft sees an attack coming
-   (`AdmiralLayer.TorpedoThreat`: a contact taken for a torpedo craft within `TorpedoThreatM`, 8 km, of a ship of the
-   line and closing on her faster than `TorpedoThreatClosingMs`, or a ship of it combing a track) and turns away
-   together, from the side it comes from; its order (Fight, say) waits, the guide holding the course it came out on,
+   that's no force's (its force turns), isn't torpedo craft and isn't on the conn or the player's helm (2026-10-25:
+   `HelmByHand`, battle-hud decision 6) sees an attack coming (`AdmiralLayer.TorpedoThreat`: a contact taken for a
+   torpedo craft within `TorpedoThreatM`, 8 km, of a ship of the line and running in at her, by its own speed toward
+   her, faster than `TorpedoThreatRunInMs`, 6 m/s, or a ship of it combing a track; until 2026-10-25 closing on her
+   faster than 3 m/s, which a line steaming at a boat lying ahead did by itself) and turns away together, from the side it comes from; its order (Fight, say) waits, the guide holding the course it came out on,
    until it's seen none for `TurnBackS` (3 minutes), when it turns back together and the order's handed on again. A
    contact is a torpedo craft by the class it's taken for once that's made out (no gun of 6" or more, and tubes), else
    by type: the golden "destroyer" is 2,700 t, so by type it reads as a cruiser. `TurnAwayTests`: a line steaming south

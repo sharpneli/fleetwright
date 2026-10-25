@@ -208,8 +208,8 @@ public readonly struct UnitOrders(byte system, bool hand = false)
 
     /// <summary>A player's order with this in its B (over the source) is by hand, given in play: it holds the unit
     /// (docs/battle/command.md "The player's hand"): doctrine's standing orders (fight on meeting the enemy, deploy, fall
-    /// out, home with empty magazines) leave it alone; only combing a torpedo's track and turning away from an attack
-    /// take it for their moment. A scenario's opening orders, and a dev setup's, are the player's without it.</summary>
+    /// out, home with empty magazines) leave it alone; only combing a torpedo's track and, under a general order (not a
+    /// helm order: docs/map-ui/battle-hud.md decision 6), turning away from an attack take it for their moment. A scenario's opening orders, and a dev setup's, are the player's without it.</summary>
     public const int Hand = 1 << 9;
 
     /// <summary>Orders by the player's hand: what a UI gives in play.</summary>

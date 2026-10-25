@@ -235,7 +235,7 @@
   "ManoeuvreMaxMs": 600000,
   "BattleTurnStepS": 10,
   "TorpedoThreatM": 8000,
-  "TorpedoThreatClosingMs": 3,
+  "TorpedoThreatRunInMs": 6,
   "TurnBackS": 180,
   "AttackGainDeg": 50,
   "AttackGainShare": 1.5,
