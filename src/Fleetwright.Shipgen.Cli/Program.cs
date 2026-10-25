@@ -148,6 +148,10 @@ public static class Program
             faster side picks and A's confidence (the share of B's tonnage it puts out of the fight for the share of its
             own it loses); :t0 takes a class's torpedoes away; --range fixes the range, --sight the defence's guns'
             opening range on an attack (night)
+        shipgen matchup --kinds A[,C...] B[,D...] [--ranges 4000,8000,12000,16000] [--hits K] [--ships 200] [--settle 30]
+            the shell kinds (docs/battle/shell-choice.md A0): each of A's batteries, each kind it carries, on each of B's
+            classes by range: out of the fight after K hits as the matchup judges it beside the damage model's, and each
+            one's best kind (K by B's size unless given)
         shipgen torpedo TARGET [--shooter DESIGN] [--at mid|bow|stern|SHARE] [--depth M] [--n N] [--per-ship K] [--settle MIN] [--seed S]
                         [--range M [--aspect DEG] [--target-speed KN] [--spread N] [--runs N]]
             torpedoes (docs/battle/fighting.md 4.6), the shooter's (default destroyer). Without --range, the hit alone: N
@@ -353,6 +357,12 @@ public static class Program
                     a.Int("trace-run", 0)),
                 "frag" => FragBench.Run(a.Positional.Count > 0 ? [.. a.Positional, "--calibre", a.Get("calibre") ?? "152"] : []),
                 "weapons" => Weapons.Run(a.Positional, a.Has("research"), n => LoadDesign(File.Exists(n) ? n : Path.Combine(Root(a), "designs", n + ".json"))),
+                // --kinds takes A as its value when it comes first: matchup --kinds A B
+                "matchup" when a.Has("kinds") => MatchupBench.Kinds(a.Get("kinds") ?? a.Positional.ElementAtOrDefault(0) ?? "iron_duke",
+                    a.Positional.ElementAtOrDefault(a.Get("kinds") != null ? 0 : 1) ?? "v25",
+                    n => LoadDesign(Resolve(a, n)), a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
+                    [.. (a.Get("ranges") ?? "4000,8000,12000,16000").Split(',').Select(x => double.Parse(x, System.Globalization.CultureInfo.InvariantCulture))],
+                    a.Int("hits", 0), a.Int("ships", 200), D(a, "settle", 30), a.Int("seed", 1)),
                 "matchup" => MatchupBench.Run(a.Positional.ElementAtOrDefault(0) ?? "arethusa", a.Positional.ElementAtOrDefault(1) ?? "v25",
                     n => LoadDesign(Resolve(a, n)), a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), D(a, "range", 0),
                     D(a, "share", 0.6), D(a, "sight", double.PositiveInfinity)),

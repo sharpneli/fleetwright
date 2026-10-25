@@ -230,7 +230,7 @@ public static class Terminal
             double ob = Obliquity(dir, x.Normal);
             if (nose)
             {
-                bool punches = t <= s.HePenCalibres * calMm * Math.Sqrt(Math.Max(Math.Cos(double.DegreesToRadians(ob)), 1e-3));
+                bool punches = t <= NosePunchMm(calMm, ob, s);
                 if (!punches && t > 0)
                     (res.PlateMs, res.PlateU) = (v, v / LimitMs(t, calMm, massKg, ob));
                 if (trace != null)
@@ -443,6 +443,11 @@ public static class Terminal
             Burst(ref res, Math.Max(x.T - 0.3, 0), force, res.Outcome, BurstKind.Inside, 0);
         return true;
     }
+
+    /// <summary>The thickest plate (mm, by its material's quality) a nose fuze's shell punches before it bursts, so it
+    /// bursts just inside it: <see cref="SimSettings.HePenCalibres"/> of its calibre, times √cos of the obliquity.</summary>
+    public static double NosePunchMm(double calibreMm, double obliquityDeg, SimSettings s) =>
+        s.HePenCalibres * calibreMm * Math.Sqrt(Math.Max(Math.Cos(double.DegreesToRadians(obliquityDeg)), 1e-3));
 
     /// <summary>A nose fuze on the first solid thing it meets, the crossing at T: blind, the shell goes on through a plate it
     /// punches (a dud, walked on inert by the caller) or lies against one it doesn't; else the filler (<see cref="Initiate"/>)

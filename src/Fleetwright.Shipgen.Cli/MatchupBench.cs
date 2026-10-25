@@ -1,4 +1,5 @@
 using System.Globalization;
+using Fleetwright.Sim;
 using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Ships;
@@ -54,6 +55,96 @@ static class MatchupBench
             Matchup.Judge(sa, sb, share, share, s, sightM);
         Console.WriteLine(string.Format(Inv, "  a judgement costs {0:0.0} µs ({1} classes against {2})", sw.Elapsed.TotalMicroseconds / reps, sa.Length, sb.Length));
         return 0;
+    }
+
+    /// <summary><c>shipgen matchup --kinds A[,C...] B[,D...]</c> (docs/battle/shell-choice.md A0): whether the matchup ranks
+    /// a battery's shell kinds as the damage model does. For each of A's batteries, each kind it carries, each of B's
+    /// classes and each range in reach: the share of B's ships out of the fight after K hits beam on, as the matchup
+    /// judges it (1 - e^(-K x its exponent)) beside the damage model's (<see cref="GivenHits"/>: SHIPS ships of K hits,
+    /// SETTLE minutes of flooding and fire after), and each one's best kind; a line where they pick differently is
+    /// marked. K is --hits, or by B's size (the square root of her thousands of tonnes, 1 to 8).</summary>
+    public static int Kinds(string a, string b, Func<string, Design> load, string settingsPath, double[] ranges, int hits, int ships, double settleMin, int seed)
+    {
+        var s = SimSettings.Load(settingsPath);
+        var fallOut = HitsBench.FallOut(settingsPath);
+        var tables = new Dictionary<BallisticKey, BallisticTable>();
+        BallisticTable Table(BallisticKey k) => tables.TryGetValue(k, out var t) ? t : tables[k] = new BallisticTable(k);
+        var classes = new Dictionary<string, ShipClass>();
+        ShipClass Class(string name) => classes.TryGetValue(name, out var c) ? c : classes[name] = ShipClassCompiler.Compile(ShipDesign.Build(load(name)));
+        var targets = b.Split(',').Select(n => (Class: Class(n), Profile: new MatchupProfile(Class(n), Table, s))).ToList();
+        int disagree = 0, lines = 0;
+        foreach (var name in a.Split(','))
+        {
+            var sc = Class(name);
+            for (int bi = 0; bi < sc.Batteries.Length; bi++)
+            {
+                ref readonly var row = ref sc.Batteries[bi];
+                if (row.Kind is not (Battery.Main or Battery.Secondary))
+                    continue;
+                // a profile whose battery fires each kind it carries: its batteries of the kind loaded with that kind alone
+                var kinds = new List<(ShellKind Kind, ShellTypeRow Shell, MatchupGun Gun)>();
+                foreach (var kind in sc.Loadout.Loads(bi).ToArray().Select(l => sc.Loadout.ShellTypes[l.ShellType].Kind).Distinct())
+                {
+                    var errors = new List<string>();
+                    string which = row.Kind == Battery.Main ? "main" : "secondary";
+                    var lo = sc.Load(LoadoutSpec.Parse($"{which}:{kind.ToString().ToLowerInvariant()}"), errors);
+                    var gun = lo == null ? null : new MatchupProfile(sc, Table, s, lo).Guns.FirstOrDefault(g => g.Battery == bi);
+                    if (gun == null)
+                    {
+                        Console.WriteLine($"{sc.Name} b{bi}: no {kind} profile ({string.Join("; ", errors.DefaultIfEmpty("none bearing"))})");
+                        continue;
+                    }
+                    kinds.Add((kind, lo!.ShellTypes[lo.Fires(bi)], gun));
+                }
+                if (kinds.Count == 0)
+                    continue;
+                double maxElev = sc.Mounts[sc.Links(row.Mounts)[0]].MaxElevationDeg;
+                Console.WriteLine(string.Format(Inv, "\n{0} b{1} ({2}, {3:0} mm): {4}", sc.Name, bi, row.Kind.ToString().ToLowerInvariant(), row.CalibreMm,
+                    string.Join(", ", kinds.Select(k => string.Format(Inv, "{0} {1:0.#} kg (filler {2:0.##} kg, {3} fuze)", k.Kind, k.Shell.MassKg, k.Shell.FillerKg, k.Shell.Fuze)))));
+                foreach (var (tc, tp) in targets)
+                {
+                    int k = hits > 0 ? hits : Math.Clamp((int)Math.Round(Math.Sqrt(tp.DisplacementT / 1000)), 1, 8);
+                    foreach (double r in ranges)
+                    {
+                        if (kinds.All(x => r > x.Gun.ReachM))
+                            continue;
+                        var judged = new double[kinds.Count];
+                        var measured = new double[kinds.Count];
+                        for (int i = 0; i < kinds.Count; i++)
+                        {
+                            if (r > kinds[i].Gun.ReachM)
+                            {
+                                (judged[i], measured[i]) = (double.NaN, double.NaN);
+                                continue;
+                            }
+                            judged[i] = 1 - Math.Exp(-k * Matchup.OutExponent(kinds[i].Gun, tp, r, s));
+                            var rep = GivenHits.Run(tc, kinds[i].Shell, maxElev, r, 90, ships * k, k, (ulong)seed, s, null, settleMin * 60, fallOut);
+                            measured[i] = (double)rep.Out / Math.Max(rep.Ships, 1);
+                        }
+                        int bj = Best(judged), bm = Best(measured);
+                        // a pick within the bench's noise (two standard errors of the measured shares) isn't a disagreement
+                        double noise = 2 * Math.Sqrt(Math.Max(measured[bm] * (1 - measured[bm]), 1.0 / ships) / ships) * Math.Sqrt(2);
+                        bool differ = bj != bm && measured[bm] - measured[bj] > noise;
+                        lines++;
+                        disagree += differ ? 1 : 0;
+                        Console.WriteLine(string.Format(Inv, "  on {0,-18} {1,6:0} m, {2} hit(s): {3}  matchup {4}, damage model {5}{6}", tc.Name, r, k,
+                            string.Join("  ", kinds.Select((x, i) => string.Format(Inv, "{0} {1,5:0.0}%/{2,5:0.0}%", x.Kind, 100 * judged[i], 100 * measured[i]))),
+                            kinds[bj].Kind, kinds[bm].Kind, differ ? "  <- DIFFER" : bj != bm ? "  (within the noise)" : ""));
+                    }
+                }
+            }
+        }
+        Console.WriteLine($"\n{lines} lines (out of the fight, matchup/damage model), {disagree} where they pick a different kind beyond the noise");
+        return 0;
+
+        static int Best(double[] v)
+        {
+            int best = 0;
+            for (int i = 1; i < v.Length; i++)
+                if (!double.IsNaN(v[i]) && (double.IsNaN(v[best]) || v[i] > v[best]))
+                    best = i;
+            return best;
+        }
     }
 
     static void Profile(MatchupProfile p, SimSettings s)

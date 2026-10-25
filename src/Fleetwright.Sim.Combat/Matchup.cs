@@ -701,7 +701,8 @@ public static class Matchup
     }
 
     /// <summary>The share of a shell's effect that gets in through a face: a plate it passes whole bursts it inside (a
-    /// base fuze, as its quality's outcomes have it) or keeps it out; a nose fuze bursts on any plate; where there's only
+    /// base fuze, as its quality's outcomes have it) or keeps it out; a nose fuze bursts just inside a plate it punches
+    /// (<see cref="Terminal.NosePunchMm"/>), outside one it doesn't; where there's only
     /// plating it bursts there, its splinters reaching the vitals by the share <paramref name="bare"/> (through the deck's
     /// armour), but a base fuze that the plating can't arm passes through. As the terminal has it (P2): a face-hardened
     /// plate is thicker by the body's quality, and one that shatters the shell (a bare nose, by the cap's share at the
@@ -721,7 +722,7 @@ public static class Matchup
             if (x.Mm <= 0)
                 f = (shell.Fuze == Fuze.Nose || platingMm >= Terminal.FuzeStartMm(shell, obliquityDeg) ? 1 : s.MatchupPassShare) * bare;
             else if (shell.Fuze == Fuze.Nose)
-                f = kept;
+                f = x.Mm <= Terminal.NosePunchMm(shell.CalibreMm, obliquityDeg, s) ? good : kept;   // as the terminal: inside a plate it punches
             else
             {
                 double shatter = x.HardMm <= 0 ? 0

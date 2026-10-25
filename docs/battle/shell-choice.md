@@ -53,6 +53,27 @@ judgement to choose, check it on the real damage model, kind by kind (physics, m
   Jutland outfits and the British rule of thumb (APC close, CPC long, HE at light craft). A research request asks for
   the record by navy and period (`research/REQUESTS.md`, 2026-10-25). It doesn't block.
 
+  - **Done 2026-10-25.** `shipgen matchup --kinds A[,C...] B[,D...] [--ranges ...] [--hits K] [--ships 200]
+    [--settle 30]`: each of A's batteries, each kind it carries (a loadout of that kind alone, `ShipClass.Load`), on
+    each of B's classes at 4, 8, 12 and 16 km: out of the fight after K hits beam on (K by B's size, the square root of
+    her thousands of tonnes) as the matchup judges it, beside the damage model's (`GivenHits`, 200 ships, 30 min
+    after); each one's best kind, a line marked where they differ beyond two standard errors.
+  - **First run** (Iron Duke, Lion, Arethusa, Town Chatham, V25, Borodino, Mikasa on Derfflinger, Von der Tann,
+    Mikasa, Borodino, Arethusa, Town Chatham, V25): 224 lines, 11 differ. Every one was a 13.5" HE on a light cruiser:
+    the matchup AP (Arethusa 12% to 6% in 2 hits), the damage model HE (7.5% to 26%). The matchup kept every
+    nose-fuzed shell out of any armour face, where the terminal bursts it just inside a plate under 0.2 calibre (the
+    3" belt, to a 13.5" shell).
+  - **The fix:** `Terminal.NosePunchMm`, the terminal's rule in one place, and the matchup's face reads it (one model).
+    After it 170 lines, 1 differs (Derfflinger's 12" on Arethusa at 16 km, AP 10.0% against HE 10.3% in the matchup:
+    a tie that the switch's margin covers). `matchup arethusa:4 iron_duke` 1.14 → 1.127 (Iron Duke's 6" HE now holes
+    thin plate). Sim tests 780 of 780.
+  - **Capital ships (decision 4):** both models pick AP on every capital pair. 6 hits of 13.5" on a Derfflinger at
+    12 km, AP against HE: out of the fight 2% / 1%, fires a hit 11% / 39%, crew out 29 / 85, holes 0.96 / 3.35 m² a
+    hit, but her guns (3.6 / 4.0 of 4 working), director and speed are untouched by HE. So by "out of the fight" AP
+    is right against armour, and HE's extra harm (men, fires) doesn't reach her fighting power in the damage model as
+    it stands. If Tsushima's case is wanted (HE wrecking a battleship's fighting power), it belongs in the damage
+    model's upperworks (directors, voice pipes, the conning position), not in the choice.
+
 **A1 The guns loaded.** A mount's guns hold the load they were loaded with (`MountState.Loaded`, the load's index;
 hashed), chosen when the gun loads, not when it fires:
 - after firing, a mount loads the battery's **load ordered** (A2) if it has rounds of it, else the magazine order's
