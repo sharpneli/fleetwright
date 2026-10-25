@@ -1,0 +1,43 @@
+// Cape Sarych, 18 November 1914, about 11:50 local (09:50 UTC): the Black Sea Fleet's five old battleships steam home
+// for Sevastopol along the Crimea after shelling Trebizond; Souchon's Goeben and Breslau, under the Ottoman flag and
+// still crewed by Germans, come up from the south-west to catch them in the fog. Ten minutes of fire at 7 km in history,
+// Evstafi hitting Goeben with her first salvo. History's forces less the destroyers; the classes are stand-ins (moltke
+// for Goeben, graudenz for Breslau; borodino for Evstafi, Ioann Zlatoust and Panteleimon, oslyabya for Tri Sviatitelia
+// and Rostislav, aurora for the cruisers):
+//   the Ottoman Empire, the rapier: one modern battlecruiser, 25 kn and armour that 12 in can still pierce up close,
+//   and a fast light cruiser; free to choose the range, if the fog lets her.
+//   Russia, the line: twenty heavy guns in five slow pre-dreadnoughts, practised at concentrating on one target.
+// Set for balance by the fog: at 8 km Goeben can pick her range (the AI loses a Russian or so a run, and Breslau half
+// the time, 8 seeds); at 5 km the line's twenty heavy guns and its 6 in batteries win.
+// The weather of the day: fog banks, visibility about 8 km, a light northerly.
+{
+  "scenario": 1,
+  "name": "Cape Sarych",
+  "brief": "18 November 1914, 11:50. Goeben and Breslau, Ottoman flags at the gaff and German crews at the guns, hunt the Black Sea Fleet on its way home to Sevastopol. Five old Russian battleships are somewhere in the fog ahead: slow, but twenty heavy guns, and the fog will bring you inside their range. Strike, and get out.",
+  "place": "off Cape Sarych, Crimea",
+  "about": {
+    "Russia": { "character": "The line: five slow pre-dreadnoughts, twenty heavy guns, trained to fire as one.", "commander": "V-Adm Ebergard", "ensign": "russia" },
+    "Ottoman Empire": { "character": "The rapier: Goeben, fast and modern, and Breslau; German crews under the Ottoman flag.", "commander": "R-Adm Souchon", "ensign": "ottoman" } },
+  "start": "1914-11-18T09:50",
+  "seed": 1914,
+  "camera": [44.10, 33.95, 40],
+  "sides": ["Russia", "Ottoman Empire"],
+  "readiness": { "Russia": "closed up", "Ottoman Empire": "closed up" },
+  "damage_control": { "Russia": "1905", "Ottoman Empire": "1916" },
+  "fire_discipline": { "Russia": "independent", "Ottoman Empire": "german" },
+  "player": "Ottoman Empire",
+  "until": "1914-11-18T16:00",
+  "aims": { "Russia": "destroy everyone", "Ottoman Empire": "destroy everyone" },
+  // where ships out of the fight go: off Sevastopol, and the Bosporus
+  "home": { "Russia": [44.62, 33.40], "Ottoman Empire": [41.30, 29.10] },
+  "weather": { "visibility_km": 8, "wind_from": 0, "wind_kn": 6 },
+  "units": [
+    { "name": "Black Sea Fleet", "admiral": "V-Adm Ebergard", "side": 0, "at": [44.13, 34.10], "course": 312, "kn": 12, "formation": "column", "spacing": 2500,
+      "units": [
+        { "name": "Battleship Brigade", "spacing": 550, "ships": [
+          { "design": "borodino", "names": ["Evstafi", "Ioann Zlatoust", "Panteleimon"] }, { "design": "oslyabya", "names": ["Tri Sviatitelia", "Rostislav"] } ] },
+        { "name": "Cruisers", "spacing": 600, "ships": [ { "design": "aurora", "names": ["Kagul", "Pamiat Merkuria"] } ] } ] },
+    { "name": "Mediterranean Division", "admiral": { "name": "R-Adm Souchon", "temper": 0.3, "why": "hunted the Russian fleet at sea" }, "side": 1, "at": [44.02, 33.85], "course": 40, "kn": 18, "spacing": 700,
+      "ships": [ { "design": "moltke", "names": ["Goeben"] }, { "design": "graudenz", "names": ["Breslau"] } ] }
+  ]
+}

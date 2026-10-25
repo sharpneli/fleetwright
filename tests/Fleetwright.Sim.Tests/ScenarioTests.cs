@@ -348,4 +348,27 @@ public class ScenarioTests
         var x = Assert.Throws<ScenarioException>(() => ScenarioLoader.RequestClasses(s, reg, Designs));
         Assert.Contains("no_such_ship", x.Message);
     }
+
+    /// <summary>Every shipped scenario reads: each design it names is there, each ensign is one the launch screen draws,
+    /// its player is one of its sides; the benches and the scale test's rungs are tests (docs/missions/scenarios.md).</summary>
+    [Fact]
+    public void Every_shipped_scenario_reads_with_its_designs_and_ensigns()
+    {
+        string[] drawn = ["britain", "germany", "russia", "japan", "france", "italy", "ottoman"];
+        var folder = Path.Combine(Fleet.Repo, "Content", "Scenarios");
+        var played = new List<string>();
+        foreach (var path in Directory.GetFiles(folder, "*.json"))
+        {
+            var s = Scenario.Load(path);
+            string name = Path.GetFileNameWithoutExtension(path);
+            foreach (var n in s.DesignNames())
+                Assert.True(File.Exists(Path.Combine(folder, "Designs", n + ".json")) || File.Exists(Path.Combine(Designs[0], n + ".json")), $"{name}: {n}");
+            foreach (var (_, a) in s.About)
+                Assert.Contains(a.Ensign, drawn);
+            Assert.True(s.PlayerName == null || s.Player >= 0, name);
+            if (!s.Test)
+                played.Add(name);
+        }
+        Assert.Equal(["cape-sarych", "coronel", "dover-strait", "jutland", "prizes-war", "tsushima"], played.Order());
+    }
 }

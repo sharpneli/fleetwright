@@ -292,10 +292,10 @@ public sealed unsafe partial class LaunchScene
     // ------------------------------------------------------------------ the ensigns
 
     static readonly Vector4 White = Hex(0xF4F4F0), EnsignBlue = Hex(0x2D56A8), EnsignRed = Hex(0xC9473C), UnionBlue = Hex(0x23306B),
-        Black = Hex(0x15171A);
+        Black = Hex(0x15171A), ItalyGreen = Hex(0x2E8B4F);
 
     /// <summary>A side's ensign, small (a card's 26 × 16): drawn, not an image, for the navies the scenarios have
-    /// (britain, germany, russia, japan); a grey field for any other.</summary>
+    /// (britain, germany, russia, japan, france, italy, ottoman); a grey field for any other.</summary>
     void Ensign(string name, Vector2 at, Vector2 size)
     {
         var b = at + size;
@@ -351,6 +351,41 @@ public sealed unsafe partial class LaunchScene
                     dl.AddRectFilled(at, at + new Vector2(cw, ch / 3), U(Black));
                     dl.AddRectFilled(at + new Vector2(0, ch / 3), at + new Vector2(cw, 2 * ch / 3), U(White));
                     dl.AddRectFilled(at + new Vector2(0, 2 * ch / 3), at + new Vector2(cw, ch), U(EnsignRed));
+                    break;
+                }
+            case "france":   // the tricolour: blue, white, red from the hoist
+                dl.AddRectFilled(at, at + new Vector2(w / 3, h), U(EnsignBlue));
+                dl.AddRectFilled(at + new Vector2(w / 3, 0), at + new Vector2(2 * w / 3, h), U(White));
+                dl.AddRectFilled(at + new Vector2(2 * w / 3, 0), b, U(EnsignRed));
+                break;
+            case "italy":   // the tricolour with Savoy's shield: a white cross on red, bordered blue
+                {
+                    dl.AddRectFilled(at, at + new Vector2(w / 3, h), U(ItalyGreen));
+                    dl.AddRectFilled(at + new Vector2(w / 3, 0), at + new Vector2(2 * w / 3, h), U(White));
+                    dl.AddRectFilled(at + new Vector2(2 * w / 3, 0), b, U(EnsignRed));
+                    var m = at + new Vector2(w * 0.5f, h * 0.5f);
+                    var hs = new Vector2(w * 0.11f, h * 0.24f);
+                    dl.AddRectFilled(m - hs, m + hs, U(EnsignBlue));
+                    dl.AddRectFilled(m - hs * 0.75f, m + hs * 0.75f, U(EnsignRed));
+                    dl.AddLine(m - new Vector2(hs.X * 0.75f, 0), m + new Vector2(hs.X * 0.75f, 0), U(White), h * 0.07f);
+                    dl.AddLine(m - new Vector2(0, hs.Y * 0.75f), m + new Vector2(0, hs.Y * 0.75f), U(White), h * 0.07f);
+                    break;
+                }
+            case "ottoman":   // a white crescent and star on red
+                {
+                    dl.AddRectFilled(at, b, U(EnsignRed));
+                    var o = at + new Vector2(w * 0.4f, h * 0.5f);
+                    dl.AddCircleFilled(o, h * 0.3f, U(White), 20);
+                    dl.AddCircleFilled(o + new Vector2(h * 0.08f, 0), h * 0.25f, U(EnsignRed), 20);
+                    var s = o + new Vector2(h * 0.36f, 0);
+                    for (int k = 0; k < 5; k++)
+                    {
+                        float a = MathF.PI + k * MathF.Tau / 5, r = h * 0.14f;
+                        var tip = s + new Vector2(MathF.Cos(a), MathF.Sin(a)) * r;
+                        var l = s + new Vector2(MathF.Cos(a - MathF.PI / 2), MathF.Sin(a - MathF.PI / 2)) * r * 0.32f;
+                        var rr = s + new Vector2(MathF.Cos(a + MathF.PI / 2), MathF.Sin(a + MathF.PI / 2)) * r * 0.32f;
+                        dl.AddTriangleFilled(tip, l, rr, U(White));
+                    }
                     break;
                 }
             default:

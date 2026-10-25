@@ -1,0 +1,48 @@
+// The prizes' war, autumn 1920 (hypothetical): France and Italy fall out over the Adriatic settlement, and their light
+// forces meet in the open water between Corsica and Sardinia. Both navies' newest cruisers are German and Austrian war
+// prizes, crewed by men still learning them: France's Metz, Mulhouse and Thionville (ex-Königsberg, ex-Stralsund,
+// ex-Novara), Italy's Ancona, Bari and Brindisi (ex-Graudenz, ex-Pillau, ex-Helgoland), each with destroyers, some of
+// them ex-German too. Near mirror images; the classes are the prizes' own (wiesbaden for Metz, graudenz for Mulhouse and
+// Ancona, pillau for Bari, novara for Thionville and Brindisi; g101, b97 and v25 for the destroyers, French and Italian
+// built alike), set for balance:
+//   France, the weight: Metz's 150 mm guns, the heavier broadside.
+//   Italy, the numbers: as many hulls and guns, Bari a touch faster, and the player's side.
+// The weather of the day: clear, a mistral blowing hard from the north-west.
+{
+  "scenario": 1,
+  "name": "The prizes' war, 1920",
+  "brief": "September 1920. The Adriatic quarrel has come to shots. Italy's light division, three cruisers taken from Germany and Austria and three destroyers, steams north-east past Asinara; the French come down from Ajaccio with prizes of their own. Ships built in Danzig and Trieste, crews still learning them, and a mistral raising a short, steep sea. Who handles strangers' ships better?",
+  "place": "between Corsica and Sardinia",
+  "about": {
+    "France": { "character": "The weight: Metz's 150 mm guns, prizes from Germany and Austria, ex-German destroyers.", "commander": "the Contre-amiral", "ensign": "france" },
+    "Italy": { "character": "The numbers: three prize cruisers and three destroyers, as many guns, a touch more speed.", "commander": "the Contrammiraglio", "ensign": "italy" } },
+  "start": "1920-09-14T08:00",
+  "seed": 1920,
+  "camera": [41.12, 8.08, 40],
+  "sides": ["France", "Italy"],
+  "readiness": { "France": "closed up", "Italy": "closed up" },
+  "damage_control": { "France": "1916", "Italy": "1916" },
+  "fire_discipline": { "France": "independent", "Italy": "independent" },
+  // strangers to their ships, both
+  "crews": { "France": "average", "Italy": "average" },
+  "player": "Italy",
+  "until": "1920-09-14T15:00",
+  "aims": { "France": "destroy everyone", "Italy": "destroy everyone" },
+  // where ships out of the fight go: off Ajaccio, and La Maddalena
+  "home": { "France": [41.85, 8.62], "Italy": [41.28, 9.30] },
+  "weather": { "visibility_km": 25, "wind_from": 315, "wind_kn": 25 },
+  "units": [
+    { "name": "Division légère", "admiral": "the Contre-amiral", "side": 0, "at": [41.25, 8.15], "course": 200, "kn": 18, "spacing": 3000,
+      "units": [
+        { "name": "Cruisers", "spacing": 700, "ships": [
+          { "design": "wiesbaden", "names": ["Metz"] }, { "design": "graudenz", "names": ["Mulhouse"] }, { "design": "novara", "names": ["Thionville"] } ] },
+        { "name": "Destroyers", "spacing": 400, "ships": [
+          { "design": "g101", "names": ["Amiral Sénès"] }, { "design": "v25", "names": ["Enseigne Roux", "Mécanicien Principal Lestin"] } ] } ] },
+    { "name": "Divisione esploratori", "admiral": "the Contrammiraglio", "side": 1, "at": [40.95, 7.95], "course": 25, "kn": 18, "spacing": 3000,
+      "units": [
+        { "name": "Esploratori", "spacing": 700, "ships": [
+          { "design": "graudenz", "names": ["Ancona"] }, { "design": "pillau", "names": ["Bari"] }, { "design": "novara", "names": ["Brindisi"] } ] },
+        { "name": "Cacciatorpediniere", "spacing": 400, "ships": [
+          { "design": "b97", "names": ["Cesare Rossarol"] }, { "design": "g101", "names": ["Premuda"] }, { "design": "v25", "names": ["Audace"] } ] } ] }
+  ]
+}

@@ -63,7 +63,7 @@ namespace Fleetwright.Sim.Missions;
 /// unless this file gives them. The scale test's ladder is made this way, so a corrected Jutland corrects every rung.</para>
 /// <para>For the launch screen (docs/map-ui/launch.md), what it says of itself: <c>"place": "Tsushima Strait"</c>, and
 /// each side's <c>"about": { "Russia": { "character": "The hammer: ...", "commander": "V-Adm Rozhestvensky",
-/// "ensign": "russia" } }</c> (an ensign the screen draws: britain, germany, russia, japan). Both taken from "from"
+/// "ensign": "russia" } }</c> (an ensign the screen draws: britain, germany, russia, japan, france, italy, ottoman). Both taken from "from"
 /// unless given. <c>"test": true</c> lists it under Tests (the scale test's rungs, the benches), never taken from
 /// "from".</para>
 /// <para>A record, so a setup is a copy with its changes (<c>s with { PlayerName = "Japan" }</c>).</para></summary>

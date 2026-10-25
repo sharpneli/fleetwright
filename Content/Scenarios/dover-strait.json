@@ -1,0 +1,43 @@
+// The Dover Strait by night, 20-21 April 1917: six German torpedo boats of the Flanders flotillas, back from shelling
+// Dover, run into the patrol, the flotilla leaders Broke and Swift, in mid-strait; guns at point blank, torpedoes, and
+// in history Broke's ram (collisions wait for fighting.md 4.11). Two big leaders against six smaller, faster boats.
+// History's forces; the classes are stand-ins (flotilla_leader for both leaders, v1 for the G37 and V25 boats, the
+// smaller design, as the boats were smaller than the leaders), set for balance: the leaders' crews elite, the boats'
+// average; even so the six are the favourites, as the AI plays it (the leaders lose about a ship a run, the boats one
+// in two or three runs), and a player who combs the tracks does better:
+//   Britain, the hammer: two 31 kn leaders with four 4 in each, the patrol's eyes on a moonless night.
+//   Germany, the pack: six 33 kn boats, 88 mm guns, thirty-six tubes, heading home for Zeebrugge.
+// The weather of the night: calm, overcast, no moon.
+{
+  "scenario": 1,
+  "name": "Night in the Dover Strait",
+  "brief": "21 April 1917, 00:35. Broke and Swift patrol the Dover Strait in a black, calm night. Six German torpedo boats, back from shelling Dover, are running home for Zeebrugge across your bows. Find them in the dark, and fight it out at a few hundred yards: guns, torpedoes, anything.",
+  "place": "Dover Strait",
+  "about": {
+    "Britain": { "character": "Two big flotilla leaders, four 4 in each: the patrol on a moonless night.", "commander": "Cdr Evans (Broke)", "ensign": "britain" },
+    "Germany": { "character": "Six fast torpedo boats, 88 mm guns and thirty-six tubes, running for home.", "commander": "KKpt Gautier", "ensign": "germany" } },
+  "start": "1917-04-20T23:35",
+  "seed": 1917,
+  "camera": [51.08, 1.55, 25],
+  "sides": ["Britain", "Germany"],
+  "readiness": { "Britain": "closed up", "Germany": "closed up" },
+  "damage_control": { "Britain": "1916", "Germany": "1916" },
+  "fire_discipline": { "Britain": "independent", "Germany": "independent" },
+  // a night fight of flotillas: their main bodies accept action by night (doctrine's default avoids it)
+  "doctrine": { "Britain": { "preset": "default", "NightAction": "accept" }, "Germany": { "preset": "default", "NightAction": "accept" } },
+  // the patrol's crews picked, the boats' tired from the raid (balance: two leaders against six)
+  "crews": { "Britain": "elite", "Germany": "average" },
+  "player": "Britain",
+  // the end (docs/battle/command.md 5.0): the night; the Germans were in Zeebrugge by dawn
+  "until": "1917-04-21T03:30",
+  "aims": { "Britain": "destroy everyone", "Germany": "destroy everyone" },
+  // where ships out of the fight go: off Dover, and off Zeebrugge
+  "home": { "Britain": [51.08, 1.40], "Germany": [51.38, 3.10] },
+  "weather": { "visibility_km": 20, "wind_from": 200, "wind_kn": 4 },
+  "units": [
+    { "name": "Dover Patrol", "admiral": { "name": "Cdr Evans", "temper": 0.5, "why": "\"Broke\" Evans: closed and rammed" }, "side": 0, "at": [51.11, 1.68], "course": 245, "kn": 15, "spacing": 400,
+      "ships": [ { "design": "flotilla_leader", "names": ["Broke", "Swift"] } ] },
+    { "name": "Flanders torpedo boats", "admiral": "KKpt Gautier", "side": 1, "at": [51.03, 1.47], "course": 65, "kn": 22, "spacing": 350,
+      "ships": [ { "design": "v1", "names": ["G42", "G85", "G41", "G86", "G87", "G91"] } ] }
+  ]
+}

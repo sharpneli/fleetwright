@@ -1,0 +1,42 @@
+// Coronel, 1 November 1914, about 17:15 local (22:00 UTC): Cradock's squadron, sweeping north off the Chilean coast
+// for a light cruiser, finds the whole of Spee's East Asia Squadron instead; both steer south on converging courses in a
+// rising southerly gale, the British to seaward, the sun setting behind them. History's forces less the armed liner
+// Otranto (she kept out of it); the classes are stand-ins (devonshire for Good Hope and Monmouth, town_birmingham for
+// Glasgow; armoured_cruiser for the Scharnhorsts, gazelle and stettin for the light cruisers), set for balance with a
+// bold Spee: as the AI plays it each side loses about a ship a run (8 seeds), a fight rather than history's massacre:
+//   Britain, the gamble: two old armoured cruisers and a fast light cruiser, reservist crews, the sun behind them.
+//   Germany, the marksmen: the Navy's best-shot squadron, 8.2 in guns, the British against the afterglow.
+// The weather of the day: clear, a southerly gale building, a heavy sea.
+{
+  "scenario": 1,
+  "name": "Coronel",
+  "brief": "1 November 1914, 17:15. Off the Chilean coast Rear-Admiral Cradock has found what he was sent to find: von Spee's squadron, two armoured cruisers that won the Navy's gunnery prize, and their light cruisers. The sun sets behind you, the sea is rising, and Canopus is three hundred miles astern. Fight now, in the last of the light, or run for her.",
+  "place": "off Coronel, Chile",
+  "about": {
+    "Britain": { "character": "The gamble: two old armoured cruisers and Glasgow, reservist crews, the setting sun behind them.", "commander": "R-Adm Cradock", "ensign": "britain" },
+    "Germany": { "character": "The marksmen: Scharnhorst and Gneisenau, the Navy's best gunnery, three light cruisers.", "commander": "V-Adm Graf Spee", "ensign": "germany" } },
+  "start": "1914-11-01T22:00",
+  "seed": 1914,
+  "camera": [-36.32, -73.88, 45],
+  "sides": ["Britain", "Germany"],
+  "readiness": { "Britain": "prepared", "Germany": "closed up" },
+  "damage_control": { "Britain": "1905", "Germany": "1916" },
+  "fire_discipline": { "Britain": "rn-1914", "Germany": "german" },
+  "crews": { "Britain": "green", "Germany": "elite" },
+  "player": "Britain",
+  // the end (docs/battle/command.md 5.0): the evening and the night; Nürnberg found Monmouth at 21:00 local
+  "until": "1914-11-02T05:00",
+  "aims": { "Britain": "destroy everyone", "Germany": "destroy everyone" },
+  // where ships out of the fight go: south toward Canopus and the Falklands, and north to Valparaíso
+  "home": { "Britain": [-39.0, -75.0], "Germany": [-33.2, -72.2] },
+  "weather": { "visibility_km": 25, "wind_from": 180, "wind_kn": 28 },
+  "units": [
+    { "name": "West Coast Squadron", "admiral": { "name": "R-Adm Cradock", "temper": 0.5, "why": "fought against the odds rather than be called shy" }, "side": 0, "at": [-36.22, -74.02], "course": 165, "kn": 16, "spacing": 900,
+      "ships": [ { "design": "devonshire", "names": ["Good Hope", "Monmouth"] }, { "design": "town_birmingham", "names": ["Glasgow"] } ] },
+    { "name": "East Asia Squadron", "admiral": { "name": "V-Adm Graf Spee", "temper": 0.6, "why": "closed to finish it once the light was his" }, "side": 1, "at": [-36.34, -73.74], "course": 190, "kn": 18, "spacing": 800,
+      "ships": [ { "design": "armoured_cruiser", "names": ["Scharnhorst", "Gneisenau"] }, { "design": "gazelle", "names": ["Leipzig"] }, { "design": "stettin", "names": ["Dresden"] } ] },
+    // Nürnberg came up late, from the north-east
+    { "name": "Nürnberg", "side": 1, "at": [-36.05, -73.45], "course": 200, "kn": 20,
+      "ships": [ { "design": "stettin", "names": ["Nürnberg"] } ] }
+  ]
+}
