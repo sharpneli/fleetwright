@@ -437,7 +437,7 @@ public sealed partial class MapScene
         return batteryText;
     }
 
-    /// <summary>Torpedoes (fire at: armed, click an enemy) and making smoke (the ship, or every ship of the unit her orders go to).</summary>
+    /// <summary>Torpedoes (fire at: armed, click an enemy) and making smoke (the ship, or every ship of her squadron).</summary>
     void TorpedoesAndSmoke(Snapshot s, Unit unit, int k, ShipClass? cls)
     {
         ImGui.BeginGroup();
@@ -451,10 +451,13 @@ public sealed partial class MapScene
             ImGui.SetTooltip(string.Format(CultureInfo.InvariantCulture, "{0:0} mm: {1:0} kn to {2:0.0} km, or {3:0} kn to {4:0.0} km; then click an enemy",
                 t.CalibreMm, t.FastKn, t.FastRangeM / 1000, t.SlowKn, t.SlowRangeM / 1000));
         }
-        // smoke for every ship where the orders go (the ship, or her whole unit): on while all of them make it
+        // smoke for her squadron (the lowest group she's in: a divided squadron's division), or her alone when the orders
+        // go to the ship; never wider, whatever level the helm's orders go to; on while all of them make it
         smokers.Clear();
-        if (unit.IsGroup && s.Groups.IndexOfGroup(unit.GroupId) is int g and >= 0)
-            Smokers(s.Groups, g);
+        var gv = s.Groups;
+        if (unit.IsGroup && chain.Count > 0)
+            for (int i = 0; i < gv.MemberCount[chain[0]]; i++)
+                smokers.Add(gv.Members[gv.MemberStart[chain[0]] + i]);
         else
             smokers.Add(selected);
         bool funnels = false, making = true;
@@ -468,24 +471,11 @@ public sealed partial class MapScene
             foreach (int e in smokers)
                 world.Send(SmokeSystem.MakeSmoke(e, !making));
         if (ImGui.IsItemHovered())
-            ImGui.SetTooltip(unit.IsGroup ? "every ship of the unit: her funnels burn rich, a screen" : "her funnels burn rich: a screen");
+            ImGui.SetTooltip(unit.IsGroup && chain.Count > 0 ? $"every ship of {gv.Name[chain[0]]}: funnels burning rich, a screen" : "her funnels burn rich: a screen");
         ImGui.EndGroup();
     }
 
     readonly List<int> smokers = [];
-
-    /// <summary>Every ship under a group, into <see cref="smokers"/>.</summary>
-    void Smokers(GroupsView gv, int g)
-    {
-        for (int i = 0; i < gv.MemberCount[g]; i++)
-        {
-            int m = gv.Members[gv.MemberStart[g] + i];
-            if (!gv.Force[g])
-                smokers.Add(m);
-            else if (gv.IndexOfGroup(m) is int sub and >= 0)
-                Smokers(gv, sub);
-        }
-    }
 
     /// <summary>The task: the captain's (or the unit's): fight, follow, hold, and every other in the task menu (Task ▾,
     /// T); at a unit's level its manoeuvres (the formation, turn together, deploy), withdraw and its AI; the squadron's
