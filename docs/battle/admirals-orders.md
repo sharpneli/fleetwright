@@ -91,6 +91,13 @@ of actions, the player's and the admirals'.
 - **Found on the way:** an admiral handing his order to a new guide re-sent the speed last asked of him after it, which
   turns any behaviour (a screen, a fight, a station) into a plain course; it's re-sent only with a course or a route now.
   It showed as a divided flotilla's first division steaming on instead of screening.
+- **The unit changing kind** (2026-10-25): Divide and Merge keep the unit's id, so its admiral stays while his group
+  turns from squadron to force or back. He now drops what only the other kind keeps (`AdmiralLayer.Rekind`: a
+  squadron's own attack and screen station; a force's deployment, forming, dispositions and its groups' attacks), and
+  every boat of his gets her torpedoes back: one divided or merged mid-attack had them held for a signal that never
+  came. His order and his divide once an order stay. The strip keeps the "orders to" pick as the unit itself, so a
+  divide (a level more under it) leaves the orders where they were. Make smoke goes to her squadron, a division being
+  one, never a force (`MapScene.Smokers`, `StripSmokeTests`).
 - **Tests** (`AdmiralOrdersTests`): a lone flotilla of four divided by its admiral, its divisions at -45°/+45°, 5.0 km;
   the player's screen by hand not divided, its column dead ahead; two squadrons at ±45°, three at -45°/0°/+45°; a force
   handing Screen to its squadrons; Divide and Merge keeping the unit and its order; only one screen counter-attacking at

@@ -219,8 +219,10 @@ public sealed partial class MapScene
             selected = gv.GuideShip[g];
             ClearPicks();
             Chain(s);
-            int level = chain.IndexOf(g) + 1;
-            (levelFor, levelPick) = (selected, level > 0 ? level : -1);
+            if (chain.Contains(g))
+                PickLevel(s, chain.IndexOf(g) + 1);
+            else
+                (levelFor, levelPick) = (selected, -1);
             squadronCardOf = selected;
             cardOpen = true;
             if (!railOpen.Add(gv.Id[g]) && chosen)

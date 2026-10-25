@@ -629,6 +629,46 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void A_flotilla_divided_in_its_attack_leaves_nothing_of_it_behind()
+    {
+        // a flotilla running in on a dreadnought, its boats' torpedoes held for its signal, divided and told to hold: the
+        // force's admiral keeps no squadron's attack, and every boat has her torpedoes back (none waits for a signal that
+        // won't come); merged back, likewise
+        var w = new World(Start, 3, Settings);
+        var ai = new AiSystem(w);
+        w.Apply(Command.SetWeather(30_000));
+        int bb = w.Ships.AddClass(Fleet.Get("dreadnought").Class!), dd = w.Ships.AddClass(Fleet.Get("destroyer").Class!);
+        var at = Earth.Position(56.0, 4.0);
+        int flotilla = Column(w, ai, dd, at, 180, 4, 20);
+        int enemy = Column(w, ai, bb, Off(at, 90, 14_000), 180, 1, 15, side: 1);
+        var boats = w.Groups.Get(flotilla)!.Members.ToArray();
+        w.Apply(ai.Orders.FireAtWill(Unit.Group(flotilla)));
+        w.Apply(ai.Orders.ByHand.Attack(Unit.Group(flotilla), w.Groups.GuideShip(w.Groups.Get(enemy)!)));
+        for (int s = 0; s < 20 * 60 && !(ai.Admirals.AttackOf(flotilla).Phase != AttackPhase.None && boats.Any(ai.Captains.TorpedoesHeld)); s++)
+            w.AdvanceTo(w.Time + 1000);
+        Assert.NotEqual(AttackPhase.None, ai.Admirals.AttackOf(flotilla).Phase);
+        Assert.Contains(boats, ai.Captains.TorpedoesHeld);
+
+        w.Apply(GroupSystem.Divide(flotilla, 2));
+        w.Apply(ai.Orders.ByHand.Hold(Unit.Group(flotilla)));
+        w.AdvanceTo(w.Time + 2 * 60_000);
+        Assert.True(w.Groups.Get(flotilla)!.IsForce);
+        Assert.Equal(AttackPhase.None, ai.Admirals.AttackOf(flotilla).Phase);
+        Assert.DoesNotContain(boats, ai.Captains.TorpedoesHeld);
+
+        w.Apply(ai.Orders.ByHand.Attack(Unit.Group(flotilla), w.Groups.GuideShip(w.Groups.Get(enemy)!)));
+        for (int s = 0; s < 10 * 60 && !boats.Any(ai.Captains.TorpedoesHeld); s++)
+            w.AdvanceTo(w.Time + 1000);
+        Assert.Contains(boats, ai.Captains.TorpedoesHeld);   // the divisions running in, each for its own signal
+        w.Apply(GroupSystem.Merge(flotilla));
+        w.Apply(ai.Orders.ByHand.Hold(Unit.Group(flotilla)));
+        w.AdvanceTo(w.Time + 2 * 60_000);
+        Assert.False(w.Groups.Get(flotilla)!.IsForce);
+        Assert.Equal(AttackPhase.None, ai.Admirals.AttackOf(flotilla).Phase);
+        Assert.DoesNotContain(boats, ai.Captains.TorpedoesHeld);
+    }
+
+    [Fact]
     public void A_force_deploys_on_the_course_ordered()
     {
         var (w, ai, force, _) = DeploymentTests.Make(deploy: false);   // doctrine doesn't deploy it: the order does

@@ -79,6 +79,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
         public long DeployMs;           // deploying into a line of battle since (AdmiralLayer.Deploy.cs; 0: not)
         public bool Deployed;           // deployed in this encounter
         public long FormingMs;          // forming its line in a new shape since (AdmiralLayer.Deploy.cs; 0: not)
+        public bool Force;              // his group was a force when he last looked (Rekind: divided or merged since)
     }
 
     Admiral[] admirals = new Admiral[8];
@@ -159,6 +160,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
         var parent = g.Parent != 0 ? groups.Get(g.Parent) : null;
         var detached = parent?.DetachmentOf(g.GroupId) ?? Detachment.InLine;
         var a = Get(g.GroupId);
+        Rekind(g, a);
 
         switch (code)
         {
@@ -338,6 +340,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
         {
             var g = groups[k];
             var a = Get(g.GroupId);
+            Rekind(g, a);
             int lead = ships.SlotOf(groups.GuideShip(g));
             if (a.Watch && lead >= 0)
             {
@@ -424,6 +427,26 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
     bool Holds(int groupId, int ship, double astern, double abeam) =>
         Find(groupId) is int i and >= 0 && admirals[i] is { Whose: Whose.Superior, Order: CaptainOrder.Station } a &&
         a.Target == Unit.Ship(ship).Id && a.DistanceM == astern && a.AbeamM == abeam;
+
+    /// <summary>His group changed kind under him (docs/battle/admirals-orders.md O1c: a squadron divided into a force of two
+    /// divisions, or a force merged back into a squadron; it keeps its id, so he stays, his order with him): what only the
+    /// other kind's admiral keeps goes. A squadron's own attack and screen station, a force's deployment, forming,
+    /// dispositions and its groups' attacks; every boat of his tree has her torpedoes back from the signal she waited for.
+    /// His order, and his divide once an order (<see cref="Admiral.ScreenDivided"/>), stay: an ordered attack is taken up
+    /// afresh as the new kind takes it (a force hands it to its divisions).</summary>
+    void Rekind(GroupSystem.Group g, Admiral a)
+    {
+        if (a.Force == g.IsForce)
+            return;
+        a.Force = g.IsForce;
+        Ships(g, tree);
+        foreach (int ship in tree)
+            captains.HoldTorpedoes(ship, false);
+        (a.Attack, a.AttackTarget, a.AttackShips, a.AttackSide, a.AttackTubes, a.AttackMs) = (AttackPhase.None, 0, 0, 0, 0, 0);
+        (a.AttackDoneCount, a.AttackBeaten) = (0, false);
+        (a.ScreenOn, a.ScreenAstern, a.ScreenAbeam, a.ScreenFight, a.ScreenThreatMs) = (0, 0, 0, 0, 0);
+        (a.DeployMs, a.Deployed, a.FormingMs, a.DisposedMs, a.GaveCount) = (0, false, 0, 0, 0);
+    }
 
     /// <summary>The unit a group's orders go to: its guide ship's captain, or its guide group's admiral.</summary>
     static Unit GuideUnit(GroupSystem.Group g) => g.Guide == 0 ? default : g.IsForce ? Unit.Group(g.Guide) : Unit.Ship(g.Guide);
@@ -672,6 +695,8 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
             }
             if (a.FormingMs != 0)
                 h.Add(a.FormingMs);
+            if (groups.Get(a.GroupId) is { } kind && kind.IsForce != a.Force)
+                h.Add(true);   // only then (divided or merged, not yet looked at): other worlds hash as before
             if (a.Order == CaptainOrder.Screen)
             {
                 h.Add(a.ScreenOn);
@@ -719,7 +744,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
             admirals[i] = admirals[i - 1];
             i--;
         }
-        admirals[i] = new Admiral { GroupId = groupId };
+        admirals[i] = new Admiral { GroupId = groupId, Force = groups.Get(groupId)?.IsForce == true };
         count++;
         return admirals[i];
     }

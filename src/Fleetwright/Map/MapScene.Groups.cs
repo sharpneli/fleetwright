@@ -22,7 +22,8 @@ public sealed unsafe partial class MapScene
     int spacingEdit = 600, forceSpacingEdit = 3000;
 
     // the strip's "orders to": the selected ship's chain of groups (snapshot indices, its squadron first, then the
-    // forces above it), and the level picked for this selection (-1: the default)
+    // forces above it), and the unit picked for this selection (-1: the default; 0: the ship; else a group's id): the unit,
+    // not its level, so a squadron divided (a level more under it) keeps the orders where they were
     readonly List<int> chain = [];
     int levelPick = -1, levelFor = -1;
 
@@ -324,10 +325,17 @@ public sealed unsafe partial class MapScene
         int def = Chain(s);
         if (levelFor != selected)
             (levelFor, levelPick) = (selected, -1);
-        if ((SDL_GetModState() & SDL_Keymod.SDL_KMOD_ALT) != 0)
+        if ((SDL_GetModState() & SDL_Keymod.SDL_KMOD_ALT) != 0 || levelPick == 0)
             return 0;
-        return levelPick >= 0 && levelPick <= chain.Count ? levelPick : def;
+        for (int i = 0; i < chain.Count && levelPick > 0; i++)
+            if (s.Groups.Id[chain[i]] == levelPick)
+                return i + 1;
+        return def;
     }
+
+    /// <summary>The level orders go at for this selection (0: the ship; 1 and up: the chain's), kept as its unit. The chain
+    /// filled (<see cref="Chain"/>).</summary>
+    void PickLevel(Snapshot s, int level) => (levelFor, levelPick) = (selected, level <= 0 ? 0 : s.Groups.Id[chain[level - 1]]);
 
     /// <summary>Where the selection's orders go (docs/battle/plan.md step 2.6c): the unit, and the ship that steams them
     /// (the ship, or the group's guide ship).</summary>

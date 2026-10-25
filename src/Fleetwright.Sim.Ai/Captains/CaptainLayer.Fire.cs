@@ -270,6 +270,9 @@ public sealed partial class CaptainLayer
             Get(entity).TorpedoHeld = held;
     }
 
+    /// <summary>Whether her torpedoes wait for her flotilla's signal.</summary>
+    internal bool TorpedoesHeld(int entity) => Find(entity) is int i and >= 0 && captains[i].TorpedoHeld;
+
     /// <summary>His flotilla's signal to fire (docs/battle/command.md 5.1b): a spread at the target from his launchers that
     /// are ready, aimed where his navy's picture says it'll be, unless a friend is on the track; once for a signal made at
     /// <paramref name="signalMs"/>: once torpedoes have gone since, or while a launch waits for its tubes to train (one
