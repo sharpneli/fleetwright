@@ -69,6 +69,35 @@ Three quarters of it is art, which the sim never needs. So:
 
 Begin pressed before the classes are in reads "Begins when ready…" and starts the world the moment they are.
 
+**L0 done (2026-10-25).** `ShipClassRegistry` has two queues: every build and compile before any drawing, so a class
+is ready (`Get`) before its art and its `Ship` is held until it's drawn (`IsDrawn`; `WaitAll` waits for both);
+`Prefer` puts a class's drawing ahead (the player's side's). Its threads are 4 beside a running world and 8 while
+`Idle` (`ProcessorCount - 2`, capped at **8**, not 12: see below); `WorldSession` sets `Idle` each frame while the
+world is empty or paused. `WorldSession.Select` asks for a scenario's classes and starts placing its world as soon as
+they're compiled; `Begin` swaps that world in when it's placed (`Load` is both, for `-scenario=`, a dropped file and
+the menu). The dev panel's picker (F1) selects on change and enables Begin once the classes are compiled. The app's
+start selecting the last scenario played is L1's (the launch screen opens on it). `-builders=N[,IDLE]` sets the
+threads. Measured (DevRelease, this 32-thread machine; seconds after asking, two runs each):
+
+| Scenario | Classes compiled | World running | Art in (paused / running world) | Peak working set |
+|---|---|---|---|---|
+| Tsushima, before | 0.50 (with art) | 1.02-1.54 | with the classes | 0.90-0.98 GB |
+| Tsushima, L0 | 0.25-0.26 | 1.11-1.29 | 1.16-1.30 / 1.12-1.22 | 0.99-1.00 GB |
+| Jutland, before | 5.37-6.33 (with art) | 6.68-7.61 | with the classes | 1.45-1.47 GB |
+| Jutland, L0 | 1.03-1.09 | 2.64-3.50 | 3.83-4.00 / 4.21-4.30 | 1.93-2.28 GB |
+
+- **The held ships cost nothing to speak of:** Jutland's 53 built `Ship`s retain 14 MB together (0.3 MB each,
+  measured alone). The higher peak is the drawings in flight, 8 at a time instead of 4, and the GC collecting later.
+- **Placing is now most of Begin:** `ScenarioLoader.Apply` takes ~1.5 s at Jutland after the classes (~0.9 s at
+  Tsushima, where it is the whole of the load): every gun's ballistic tables (`ShellSystem.Prepare`, ~0.7 s) and the
+  matchups warmed (`Matchups.Warm`, ~0.7 s), both pure functions of the classes. On the launch screen it runs while
+  the player reads, so Begin is instant; a later pass can warm both on the building threads. Holding the art while a
+  world is placed was tried and didn't help (placed no sooner, art later).
+- **Threads** (Jutland paused, idle count 4 / 6 / 8 / 12 / 16): compiled 1.3 / 1.1 / 1.0 / 1.2 / 1.3 s, art in 5.0-5.9 /
+  4.2-5.1 / 3.9-4.4 / 4.0-4.3 / 3.8-4.0 s, running 2.8-3.1 / 2.9-3.0 / 2.7-3.9 / 3.8-4.0 / 3.7-4.0 s. Builds stop
+  scaling past ~6 (their thread time grows from 5 to 8-10 s: the GC and memory), the art past 8, and past 8 the
+  bakers crowd the world's placing. The art's thread time doubles from 4 to 12 threads (16 to 33 s).
+
 ## Adding and removing ships
 
 The opening's map made adding possible (decision 4): a unit added on its own is placed there, at its head, with the
@@ -149,7 +178,7 @@ mockup's, committed.
 
 | Step | What | Needs |
 |---|---|---|
-| **L0** | The load: classes asked on selection, the two queues (compile first, art after), more threads while nothing runs, Begin when compiled; measured at Tsushima and Jutland, memory included | `ShipClassRegistry`, `ShipArtLibrary`, `WorldSession.Load` |
+| **L0** (done 2026-10-25) | The load: classes asked on selection, the two queues (compile first, art after), more threads while nothing runs, Begin when compiled; measured at Tsushima and Jutland, memory included | `ShipClassRegistry`, `ShipArtLibrary`, `WorldSession.Load` |
 | **L1** | The launch scene: the list, the header and brief, the side cards (Watch included), the opening drawn from the file's top units, the footer's load and Begin. The app opens on it (the last scenario played selected); the menu's and the result's "Scenarios" open it; `-scenario=` still goes straight into the world (captures and tests), `-launch[=name]` opens the screen. The briefing modal at start goes (the brief is on this screen; the menu's Briefing stays) | — |
 | **L2** | A setup as data: the overrides on a parsed `Scenario`, saved and listed as a scenario file with `"from"` and `"designs"`; the changes list and reset | `Scenario`, `ScenarioLoader` |
 | **L3** | Ships: each side's order of battle, the design rows and their state, the picker (sources, filters, figures, matchup, apply to all, one or every), the designer round trip (edit a copy, saved back into the picker as yours) | the matchup on candidates |

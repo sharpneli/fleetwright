@@ -55,6 +55,51 @@ public class ShipClassRegistryTests
     }
 
     [Fact]
+    public void Every_class_is_compiled_before_any_art_and_the_preferred_art_goes_first()
+    {
+        // docs/map-ui/launch.md L0: the world needs only the classes, so their builds go first; the player's art first
+        var drawn = new List<int>();
+        bool allReadyAtFirstDraw = false;
+        using var gate = new ManualResetEventSlim(false);
+        using var r = new ShipClassRegistry(1);
+        int[] ids = [];
+        r.Built = (id, _, _) =>
+        {
+            gate.Wait();
+            lock (drawn)
+            {
+                if (drawn.Count == 0)
+                    allReadyAtFirstDraw = ids.All(r.IsReady);
+                drawn.Add(id);
+            }
+        };
+        ids = [.. new[] { "destroyer", "light_cruiser", "pt_boat" }.Select(n => r.Request(Load(n)))];
+        r.Prefer(ids[2]);
+        foreach (int id in ids)
+            Assert.NotNull(r.Get(id));   // ready while the art waits
+        Assert.DoesNotContain(ids, r.IsDrawn);
+        gate.Set();
+        r.WaitAll();
+        Assert.True(allReadyAtFirstDraw);
+        Assert.Equal([ids[2], ids[0], ids[1]], drawn);
+        Assert.All(ids, id => Assert.True(r.IsDrawn(id)));
+    }
+
+    [Fact]
+    public void An_idle_registry_takes_more_threads()
+    {
+        using var r = new ShipClassRegistry(2, 5);
+        Assert.Equal(2, r.Threads);
+        r.Idle = true;
+        Assert.Equal(5, r.Threads);
+        int[] ids = [.. Ten.Take(6).Select(n => r.Request(Load(n)))];
+        r.Idle = false;   // mid-build: the threads let go finish their jobs, nothing is dropped
+        Assert.Equal(2, r.Threads);
+        r.WaitAll();
+        Assert.All(ids, id => Assert.NotNull(r.Get(id)));
+    }
+
+    [Fact]
     public void References_are_counted_and_a_failed_design_is_an_error()
     {
         using var r = new ShipClassRegistry(1);

@@ -12,8 +12,10 @@ namespace Fleetwright.Map;
 /// real time each frame (<see cref="Frame"/>) and the scenes read <see cref="Current"/> and send commands. Nothing
 /// here holds a reference into the world.
 /// <para>A scenario (<see cref="Load"/>, docs/battle/plan.md step 2.7a) makes a new world: its classes are requested
-/// and the world placed on a thread while the old one runs on, then the new one takes its place between frames
-/// (<see cref="Generation"/> counts the worlds, so a scene drops what it held of the old one).</para></summary>
+/// when it's picked (<see cref="Select"/>, docs/map-ui/launch.md L0), the world placed on a thread once they're compiled
+/// and it's begun (<see cref="Begin"/>) while the old one runs on, then the new one takes its place between frames
+/// (<see cref="Generation"/> counts the worlds, so a scene drops what it held of the old one). The art follows while
+/// it runs.</para></summary>
 public sealed class WorldSession : IDisposable
 {
     SimHost host;
@@ -52,10 +54,21 @@ public sealed class WorldSession : IDisposable
     /// <summary>A scenario's load: seconds from asking to the new world running, and the classes' share of it.</summary>
     public (double Total, double Classes) LoadSeconds { get; private set; }
 
-    /// <summary>The scenario loading, if one is: its name, and its classes ready of all.</summary>
+    /// <summary>The scenario loading, if one is (begun, its world not in yet): its name, and its classes ready of all.</summary>
     public (string Name, int Ready, int Of)? Loading => loading is { } l
-        ? (l.Scenario.Name, l.Classes?.Values.Count(Classes.IsReady) ?? 0, l.Scenario.DesignNames().Count)
+        ? (l.Scenario.Name, Ready(l.Classes), l.Classes.Count)
         : null;
+
+    /// <summary>The scenario picked (<see cref="Select(string)"/>), its classes building, not yet begun; or null.</summary>
+    public Scenario? Selected => selected?.Scenario;
+
+    /// <summary>The file the picked scenario was read from, or null.</summary>
+    public string? SelectedPath => selected?.Path;
+
+    /// <summary>Where the picked scenario's classes are: compiled (it may begin), drawn (their art in), of all.</summary>
+    public (int Compiled, int Drawn, int Of) SelectedClasses => selected is { } p
+        ? (Ready(p.Classes), Drawn(p.Classes), p.Classes.Count)
+        : (0, 0, 0);
 
     /// <summary>The world's instruments on the UI side (docs/battle/plan.md step 2.7b), fed every frame.</summary>
     public WorldPerf Perf { get; } = new();
@@ -66,14 +79,15 @@ public sealed class WorldSession : IDisposable
     sealed class Pending
     {
         public required Scenario Scenario;
-        public Dictionary<string, int>? Classes;
+        public required Dictionary<string, int> Classes;
+        public string? Path;   // the file it was read from, if it was
         public Task<(World World, AiSystem Ai, ScenarioStart Start)>? Task;
         public Func<EndView?>? Judge;
-        public readonly Stopwatch Clock = Stopwatch.StartNew();
-        public double ClassesSeconds;
+        public readonly Stopwatch Clock = Stopwatch.StartNew();   // from its pick
+        public double BeginSeconds, ClassesSeconds, PlacedSeconds;
     }
 
-    Pending? loading;
+    Pending? selected, loading, drawing;   // picked; begun; the world's, until its art is in
 
     /// <summary>The shipped 1:10M land and its index, built on a thread (~0.2-0.4 s): the app starts it before the
     /// window opens and hands the result to the world.</summary>
@@ -169,48 +183,89 @@ public sealed class WorldSession : IDisposable
         return h;
     }
 
-    /// <summary>Reads a scenario file and starts loading it (<see cref="Load(Scenario)"/>); a file that isn't one is
-    /// <see cref="LoadError"/>.</summary>
-    public void Load(string path)
+    /// <summary>Picks a scenario from its file (<see cref="Select(Scenario, string?)"/>); a file that isn't one is
+    /// <see cref="LoadError"/>. The file picked already stays picked, not read again.</summary>
+    public void Select(string path)
     {
+        if (selected?.Path == path)
+            return;
         try
         {
-            Load(Sim.Missions.Scenario.Load(path));
+            Select(Sim.Missions.Scenario.Load(path), path);
         }
         catch (Exception x) when (x is ScenarioException or IOException)
         {
-            LoadError = x.Message;
+            (LoadError, selected) = (x.Message, null);
         }
     }
 
-    /// <summary>Starts loading a scenario: its classes requested now (they build in the background, with their art), the
-    /// world made and placed on a thread once they're built; it replaces this world at a frame
-    /// (<see cref="Frame"/>). A load already going is let finish and dropped.</summary>
-    public void Load(Scenario s)
+    /// <summary>Picks a scenario: its classes requested now, so they build while the player reads it
+    /// (docs/map-ui/launch.md L0), the player's side's art first. A class asked for before is kept (the registry is by
+    /// design hash), so switching costs only what's new.</summary>
+    public void Select(Scenario s, string? path = null)
     {
         LoadError = null;
-        var p = new Pending { Scenario = s };
-        loading = p;
         try
         {
-            p.Classes = ScenarioLoader.RequestClasses(s, Classes, DesignFolders);
+            var classes = ScenarioLoader.RequestClasses(s, Classes, DesignFolders);
+            var p = selected = new Pending { Scenario = s, Classes = classes, Path = path };
+            foreach (var u in s.Units)
+                if (u.Side == s.Player)
+                    PreferArt(u, classes);
+            // the world placed as soon as the classes are compiled, so Begin only swaps it in (the placing is a pure
+            // function of the scenario: the matchups warmed, every gun's tables, ~1.5 s at Jutland)
+            p.Task = Task.Run(() =>
+            {
+                foreach (int id in p.Classes.Values)
+                    Classes.Get(id);   // waits for each compile
+                p.ClassesSeconds = p.Clock.Elapsed.TotalSeconds;
+                var w = new World(s.Start, s.Seed, Settings, Classes, Shore);
+                var ai = new AiSystem(w);
+                var start = ScenarioLoader.Apply(s, w, ai, p.Classes);
+                p.Judge = MakeJudge(s, w, ai, start);
+                p.PlacedSeconds = p.Clock.Elapsed.TotalSeconds;
+                return (w, ai, start);
+            });
         }
         catch (Exception x) when (x is ScenarioException or IOException or System.Text.Json.JsonException)
         {
-            (LoadError, loading) = (x.Message, null);
-            return;
+            (LoadError, selected) = (x.Message, null);
         }
-        p.Task = Task.Run(() =>
-        {
-            foreach (int id in p.Classes.Values)
-                Classes.Get(id);   // waits for each build (and its art)
-            p.ClassesSeconds = p.Clock.Elapsed.TotalSeconds;
-            var w = new World(s.Start, s.Seed, Settings, Classes, Shore);
-            var ai = new AiSystem(w);
-            var start = ScenarioLoader.Apply(s, w, ai, p.Classes);
-            p.Judge = MakeJudge(s, w, ai, start);
-            return (w, ai, start);
-        });
+    }
+
+    void PreferArt(ScenarioUnit u, Dictionary<string, int> classes)
+    {
+        foreach (var s in u.Ships)
+            Classes.Prefer(classes[s.Design]);
+        foreach (var c in u.Units)
+            PreferArt(c, classes);
+    }
+
+    /// <summary>Reads a scenario file and begins it (<see cref="Select(string)"/>, <see cref="Begin"/>).</summary>
+    public void Load(string path)
+    {
+        Select(path);
+        if (selected?.Path == path)
+            Begin();
+    }
+
+    /// <summary>Picks a scenario and begins it.</summary>
+    public void Load(Scenario s)
+    {
+        Select(s);
+        if (selected?.Scenario == s)
+            Begin();
+    }
+
+    /// <summary>Begins the picked scenario: its world, placed on a thread once its classes are compiled (their art
+    /// follows while it runs), replaces this one at the first frame it's ready (<see cref="Frame"/>). A load already
+    /// begun is dropped. The pick is used up: playing it again picks it again.</summary>
+    public void Begin()
+    {
+        if (selected is not { } p)
+            return;
+        (selected, loading) = (null, p);
+        p.BeginSeconds = p.Clock.Elapsed.TotalSeconds;
     }
 
     /// <summary>The frame loop's call, every frame: a loaded scenario's world in place of this one, real time passed,
@@ -242,22 +297,57 @@ public sealed class WorldSession : IDisposable
                 (Ai, Scenario, ScenarioStart) = (ai, p.Scenario, start);
                 Generation++;
                 LoadSeconds = (p.Clock.Elapsed.TotalSeconds, p.ClassesSeconds);
+                string begun = p.BeginSeconds >= 0.01 ? $", begun {p.BeginSeconds:F2} s after" : "";
                 Console.WriteLine($"scenario {p.Scenario.Name}: {start.Ships} ships in {start.Groups} groups, " +
-                                  $"{p.Classes!.Count} classes ready in {p.ClassesSeconds:F2} s, running {LoadSeconds.Total:F2} s after asking");
+                                  $"{p.Classes.Count} classes compiled in {p.ClassesSeconds:F2} s, placed {p.PlacedSeconds:F2}, running {LoadSeconds.Total:F2} s after asking{begun}");
                 foreach (var x in start.Warnings)
                     Console.WriteLine($"  {x}");
-                // the load's timeline (docs/battle/plan.md step 2.7b): each class's build, compile and art, on the
-                // building threads
-                var times = p.Classes.Select(kv => (kv.Key, T: Classes.TimingsOf(kv.Value))).OrderByDescending(x => x.T.Total).ToArray();
-                Console.WriteLine($"  classes: build {times.Sum(x => x.T.Build):F2} s, compile {times.Sum(x => x.T.Compile):F2} s, " +
-                                  $"art {times.Sum(x => x.T.Hook):F2} s of thread time; slowest: " +
-                                  string.Join(", ", times.Take(3).Select(x => $"{x.Key} {x.T.Total:F2} s (art {x.T.Hook:F2})")));
+                // the load's timeline (docs/battle/plan.md step 2.7b): each class's build and compile on the building
+                // threads; the art's when it's in
+                var times = p.Classes.Select(kv => (kv.Key, T: Classes.TimingsOf(kv.Value))).OrderByDescending(x => x.T.Build + x.T.Compile).ToArray();
+                Console.WriteLine($"  classes: build {times.Sum(x => x.T.Build):F2} s, compile {times.Sum(x => x.T.Compile):F2} s of thread time; slowest: " +
+                                  string.Join(", ", times.Take(3).Select(x => $"{x.Key} {x.T.Build + x.T.Compile:F2} s")) +
+                                  $"; art {Drawn(p.Classes)} of {p.Classes.Count} in");
+                Console.WriteLine($"  memory: {Memory()}");
+                drawing = p;
             }
+        }
+        if (drawing is { } d && Drawn(d.Classes) == d.Classes.Count)
+        {
+            drawing = null;
+            var times = d.Classes.Select(kv => (kv.Key, T: Classes.TimingsOf(kv.Value))).OrderByDescending(x => x.T.Hook).ToArray();
+            Console.WriteLine($"  art in {d.Clock.Elapsed.TotalSeconds:F2} s after asking: {times.Sum(x => x.T.Hook):F2} s of thread time; slowest: " +
+                              string.Join(", ", times.Take(3).Select(x => $"{x.Key} {x.T.Hook:F2} s")) + $"; memory: {Memory()}");
         }
         host.Elapse(dt);
         Current = host.Latest();
+        // every building thread while no world runs: an empty one, or paused (docs/map-ui/launch.md L0)
+        Classes.Idle = Current.Paused || Current.Ships.Count == 0;
         Clock(dt);
         Perf.Frame(Current, dt, Generation, DrawMs);
+    }
+
+    int Ready(Dictionary<string, int> ids)
+    {
+        int n = 0;
+        foreach (int id in ids.Values)
+            n += Classes.IsReady(id) ? 1 : 0;
+        return n;
+    }
+
+    int Drawn(Dictionary<string, int> ids)
+    {
+        int n = 0;
+        foreach (int id in ids.Values)
+            n += Classes.IsDrawn(id) ? 1 : 0;
+        return n;
+    }
+
+    /// <summary>The process's memory for the load's lines: the managed heap now, the working set now and at its peak.</summary>
+    static string Memory()
+    {
+        using var p = Process.GetCurrentProcess();
+        return $"heap {GC.GetTotalMemory(false) / 1048576.0:F0} MB, working set {p.WorkingSet64 / 1048576.0:F0} MB (peak {p.PeakWorkingSet64 / 1048576.0:F0} MB)";
     }
 
     /// <summary>The world time the map draws at this frame, ms (docs/battle/plan.md step 2.7c): the newest snapshot's

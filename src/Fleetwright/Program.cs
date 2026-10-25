@@ -20,6 +20,7 @@ public static unsafe class Program
         var start = Sim.Core.WorldTime.FromUtc(1916, 5, 31, 14, 0);
         double? startSpeed = null;
         bool startPaused = false, noPause = false;
+        int builders = 0, idleBuilders = 0;
         string? hitBench = null;
         int follow = 0;
         var devShips = new List<string>();
@@ -201,6 +202,12 @@ public static unsafe class Program
                 foreach (var kv in arg.Substring("-tracks=".Length).Split(',', StringSplitOptions.RemoveEmptyEntries))
                     if (!Map.Torpedoes.TorpedoLook.Set(kv))
                         Console.Error.WriteLine($"Bad torpedo knob: {kv} (want {Map.Torpedoes.TorpedoLook.Knobs})");
+            }
+            else if (arg.StartsWith("-builders="))   // the class registry's threads: beside a running world[,while none runs] (docs/map-ui/launch.md L0)
+            {
+                var p = arg.Substring("-builders=".Length).Split(',');
+                if (!int.TryParse(p[0], out builders) || p.Length > 1 && !int.TryParse(p[1], out idleBuilders))
+                    Console.Error.WriteLine($"Bad builders: {arg} (want -builders=N[,IDLE])");
             }
             else if (arg == "-paused")   // the world starts paused
             {
@@ -422,7 +429,7 @@ public static unsafe class Program
             var early = steps != null || newDesign ? MakeDesigner() : null;
             // the world: the app's, not a tab's, so it keeps running whatever tab is open (docs/world/architecture.md)
             // the classes in play and their art, the app's: the world and the map share them
-            using var classes = new Sim.Ships.ShipClassRegistry();
+            using var classes = new Sim.Ships.ShipClassRegistry(builders, idleBuilders);
             using var shipArt = new Map.ShipArtLibrary((SDL.SDL_GPUDevice*)device, classes);
             using var world = new Map.WorldSession(start, 1, classes, shore.Result, devShips.Count > 0 ? w =>
             {

@@ -72,10 +72,22 @@ public sealed unsafe partial class MapScene
             var names = scenarioPaths.Select(Path.GetFileNameWithoutExtension).ToArray();
             if (scenarioPaths.Length > 0)
             {
-                ImGui.Combo("##scenario", ref scenarioPick, names!, names.Length);
+                // picking asks for its classes (docs/map-ui/launch.md L0); Begin once they're compiled, the art after
+                if (ImGui.Combo("##scenario", ref scenarioPick, names!, names.Length))
+                    world.Select(scenarioPaths[scenarioPick]);
+                string path = scenarioPaths[scenarioPick];
+                var (compiled, drawn, of) = world.SelectedClasses;
+                bool picked = world.SelectedPath == path;
                 ImGui.SameLine();
-                if (ImGui.Button("Load scenario"))
-                    Load(scenarioPaths[scenarioPick]);
+                ImGui.BeginDisabled(picked && compiled < of);
+                if (ImGui.Button("Begin"))
+                    Load(path);
+                ImGui.EndDisabled();
+                if (picked)
+                {
+                    ImGui.SameLine();
+                    ImGui.TextDisabled(compiled < of ? $"classes {compiled} of {of}" : drawn < of ? $"art {drawn} of {of}" : "ready");
+                }
             }
             else
                 ImGui.TextDisabled("no scenarios in Content/Scenarios");
