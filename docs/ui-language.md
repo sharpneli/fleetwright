@@ -167,5 +167,6 @@ headers, close enough to the game to judge by.
   this language.
 - **The ship card's poster type** (`ProfileScene`).
 - **Effects** (`docs/visuals/`): their own colours, never in the chrome.
-- **A reskin** (`docs/ui-themes/ui-style-gunmetal-natural.md`, a trial of 2026-10-12/13, not applied) would change the
-  token and type sections only. The layout grammar, the pieces and the don'ts stay.
+- **The gunmetal reskin** (`docs/ui-themes/ui-style-gunmetal-natural.md`), planned for later in one batch, changes the
+  token and type sections only. The layout grammar, the pieces and the don'ts stay. Until then, new UI uses the tokens
+  above and takes colours only from `DesignerTheme`, so the batch is a change to one file, not a hunt for hex values.
