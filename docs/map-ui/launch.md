@@ -14,6 +14,17 @@ in full for Tsushima; the other scenarios show their header and their load. The 
 `shipgen matchup`, the 14-inch Borodino a copy of `borodino.json` with 356 mm guns, sized by the designer (15,350 t),
 and the thumbnails baked from the designs at 4 px/m, so the lengths compare true.
 
+**Redesign mockup (2026-10-25): `launch-bureau.html`** (`#orders`, `#conditions`, `#japan`; screenshots
+`png/launch-bureau-*.png`). Playtesters found the screen above looked generic, so it is redrawn in the designer's bureau
+look, `DesignerTheme`'s tokens and fonts. The pieces stay the same, laid out the designer's way: a menu bar and a
+resource bar of the scenario's figures (date, visibility, wind, ships, tonnage, changes) in place of the kicker and
+hero title; the scenarios as an outliner by era; the opening as the plan view (blueprint ground, mono tags, overlay
+toggles C R L G P); numbered tabs 1-3 (order of battle, standing orders, conditions) in place of three columns side by
+side; the order of battle as an outliner tree (unit, class with ◀ n ▶ and its figures, ship) with a selected-class
+panel like the protection tab's selected plate; Play as a three-row table in place of cards; a strength ledger (the
+sides by group, share bars) like the weight ledger; brief and remarks panels; Begin as a box like the limits' margin
+box, with no gold slab; and a status bar of keys. Not decided yet: which look the screen takes.
+
 ## What the player sees
 
 | Piece | Where | Shows | Mocked |

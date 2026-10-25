@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Scenario Launch, Bureau</title>
+<!-- The launch screen redrawn in the designer's bureau look (DesignerTheme.cs, docs/designer-ui/bureau.html):
+     docked panels with title strips, an outliner, ledgers, numbered tabs, a status bar. A mockup, not code to port.
+     #orders, #conditions, #japan open a state. -->
+<style>
+@font-face{font-family:'IBM Plex Sans Condensed';font-weight:400;src:url(../designer-ui/assets/fonts/ibm-plex-sans-condensed-latin-400-normal.woff2)}
+@font-face{font-family:'IBM Plex Sans Condensed';font-weight:500;src:url(../designer-ui/assets/fonts/ibm-plex-sans-condensed-latin-500-normal.woff2)}
+@font-face{font-family:'IBM Plex Sans Condensed';font-weight:600;src:url(../designer-ui/assets/fonts/ibm-plex-sans-condensed-latin-600-normal.woff2)}
+@font-face{font-family:'IBM Plex Mono';font-weight:400;src:url(../designer-ui/assets/fonts/ibm-plex-mono-latin-400-normal.woff2)}
+:root{
+  --ground:#0E1215;--panel:#1C2329;--panel2:#20282F;--inset:#11161A;--line:#20292F;--edge:#090C0E;--bevel:#2C3640;
+  --title-top:#36434F;--title-bot:#27313A;--header:#161C21;--text:#C9D3DB;--bright:#EAF0F4;--muted:#7F8B95;
+  --brass:#D9B868;--brass-dark:#5A4A24;--brass-darker:#3E3218;--ok:#86C77E;--amber:#E3A452;--blue:#5B9BE0;--red:#D4675A;
+  --plan:#14243A;--planline:#9CC2E2;--btn:#2E3842;--border:#3A4651;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#05070a}
+#app{position:relative;width:1920px;height:1080px;overflow:hidden;background:var(--ground);color:var(--text);font:12px/1.3 'IBM Plex Sans Condensed',sans-serif}
+.mono,.num{font-family:'IBM Plex Mono',monospace;font-size:11.5px}
+.num{text-align:right;color:var(--bright)}
+.mut{color:var(--muted)} .brt{color:var(--bright)} .brass{color:var(--brass)} .amb{color:var(--amber)} .ok{color:var(--ok)}
+.blu{color:var(--blue)} .red{color:var(--red)}
+b{font-weight:600}
+
+/* menu bar and resource bar */
+#menu{position:absolute;left:0;top:0;width:1920px;height:18px;background:#161B20;display:flex;align-items:center;padding:0 6px;gap:14px;border-bottom:1px solid var(--edge)}
+#menu .r{margin-left:auto;display:flex;gap:2px;align-items:center}
+#menu .r span{padding:1px 7px}
+#menu .r .on{background:#2F5E8E;color:var(--bright)}
+#res{position:absolute;left:0;top:18px;width:1920px;height:32px;background:var(--panel);border-bottom:1px solid var(--edge);display:flex}
+#res .who{width:300px;padding:2px 8px;border-right:1px solid var(--edge)}
+#res .who .k{font-size:9.5px;color:var(--muted);letter-spacing:.04em}
+#res .who .n{font-weight:600;color:var(--bright);font-size:13px;line-height:15px}
+#res .who .n span{font-weight:400;color:var(--muted);font-size:10.5px;margin-left:6px}
+#res .c{padding:2px 9px;border-right:1px solid var(--line)}
+#res .c .k{font-size:9.5px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+#res .c .v{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--bright)}
+
+/* panes */
+.pane{position:absolute;background:var(--panel);border:1px solid var(--edge);display:flex;flex-direction:column;overflow:hidden}
+.title{height:20px;flex:none;display:flex;align-items:center;gap:8px;padding:0 6px;background:linear-gradient(var(--title-top),var(--title-bot));border-bottom:1px solid var(--edge);color:var(--brass);font-weight:600;font-size:11px;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
+.title .note{color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0;font-size:11px}
+.title .r{margin-left:auto;display:flex;gap:3px;align-items:center}
+.sub{height:20px;flex:none;display:flex;align-items:center;gap:8px;padding:0 6px;color:var(--muted);font-size:11px;background:var(--header);border-bottom:1px solid var(--line);white-space:nowrap}
+.sub .cap{color:var(--text);text-transform:uppercase;letter-spacing:.04em;font-size:10.5px}
+.sub .r{margin-left:auto;display:flex;gap:6px;align-items:center}
+
+/* overlay toggles, as the plan view's [A] Arcs */
+.ov{display:inline-flex;align-items:center;gap:3px;padding:0 4px;height:15px;border:1px solid var(--border);color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0;font-size:10.5px;background:var(--inset)}
+.ov i{font-style:normal;font-family:'IBM Plex Mono',monospace;font-size:9.5px;border:1px solid currentColor;padding:0 2px;line-height:10px}
+.ov.on{border-color:var(--brass);color:var(--brass);background:var(--brass-darker)}
+
+/* tables */
+table{border-collapse:collapse;width:100%}
+th{height:18px;background:var(--header);color:var(--muted);font-weight:400;font-size:10px;text-transform:uppercase;letter-spacing:.03em;text-align:left;padding:0 6px;border-bottom:1px solid var(--edge);white-space:nowrap}
+th.n{text-align:right}
+td{height:20px;padding:0 6px;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:middle}
+tr.alt td{background:rgba(255,255,255,.018)}
+tr.grp td{background:var(--panel2);color:var(--bright);font-weight:600}
+tr.sel td{background:#2A2A1E}
+tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--brass)}
+tr.hit{cursor:pointer}
+tr.hit:hover td{background:#252E36}
+.tw{display:inline-block;width:10px;color:var(--muted);font-size:9px}
+.sw{display:inline-block;width:8px;height:8px;margin-right:5px;vertical-align:0}
+
+/* controls: steppers, drop-downs, segmented, buttons */
+.st{display:inline-flex;align-items:center;gap:2px}
+.st b{display:inline-flex;align-items:center;justify-content:center;width:13px;height:15px;background:#0B0F12;border:1px solid #2A333C;color:var(--bright);font-size:8px;font-weight:400;cursor:pointer}
+.st .v{display:inline-block;min-width:34px;height:15px;line-height:15px;padding:0 4px;background:var(--inset);border:1px solid #1A2026;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--bright)}
+.dd{display:inline-flex;align-items:center;height:16px;min-width:110px;background:var(--inset);border:1px solid #1A2026;padding-left:5px;color:var(--bright)}
+.dd span{flex:1}
+.dd i{font-style:normal;width:15px;height:14px;display:flex;align-items:center;justify-content:center;background:#56636F;color:var(--bright);font-size:8px}
+.seg{display:inline-flex}
+.seg i{font-style:normal;padding:0 7px;height:16px;line-height:15px;background:var(--btn);border:1px solid #3A4651;margin-left:-1px;color:var(--text);cursor:pointer}
+.seg i.on{background:var(--brass-darker);border-color:var(--brass);color:var(--brass);position:relative;z-index:1}
+tr td.mut{color:var(--muted)}
+#scn{table-layout:fixed}
+#scn td{overflow:hidden;text-overflow:ellipsis}
+.btn{display:inline-flex;align-items:center;gap:6px;height:20px;padding:0 8px;background:var(--btn);border:1px solid var(--border);color:var(--text);cursor:pointer;white-space:nowrap}
+.btn:hover{background:#45525E}
+.btn.go{background:var(--brass-darker);border-color:var(--brass);color:var(--brass);font-weight:600}
+.btn.go:hover{background:#4E3F1E}
+.kbd{display:inline-block;min-width:10px;padding:0 3px;border:1px solid #4A5764;border-bottom-width:2px;border-radius:2px;font-size:9.5px;line-height:11px;color:#AEB9C3;text-align:center;font-family:'IBM Plex Mono',monospace;font-weight:400}
+.chip{display:inline-block;padding:0 4px;font-size:10px;line-height:13px;border:1px solid}
+.chip.amb{border-color:#7A5A2C;background:#33261A}
+.chip.blu{border-color:#2F5E8E;background:#16263A}
+
+/* section tabs, as the designer's 0-7 */
+#tabs{position:absolute;left:302px;top:474px;width:1276px;height:22px;display:flex;gap:2px;align-items:flex-end;padding:0 4px;background:var(--ground)}
+#tabs .tb{display:flex;align-items:center;gap:5px;height:20px;padding:0 9px;background:var(--panel2);border:1px solid var(--edge);border-bottom:0;color:var(--text);cursor:pointer}
+#tabs .tb.on{background:var(--brass-darker);color:var(--brass);border-color:var(--brass)}
+#tabs .r{margin-left:auto;align-self:center;color:var(--muted);font-size:11px}
+
+.page{display:none;flex:1;min-height:0}
+.page.on{display:flex}
+.col{display:flex;flex-direction:column;border-right:1px solid var(--edge);min-width:0}
+.col:last-child{border-right:0}
+.para{padding:6px 8px;line-height:1.45}
+.bul{padding:4px 8px 4px 20px;position:relative;line-height:1.4}
+.bul:before{content:'•';position:absolute;left:8px;color:var(--muted)}
+.tag{position:absolute;padding:0 3px;background:rgba(10,16,22,.82);border:1px solid #4A5764;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CFE3F3;white-space:nowrap}
+#status{position:absolute;left:0;top:1060px;width:1920px;height:20px;background:#161B20;border-top:1px solid var(--edge);display:flex;align-items:center;gap:14px;padding:0 8px;color:var(--muted);font-size:11px}
+#status .r{margin-left:auto}
+.bar{display:flex;height:8px;background:var(--inset);border:1px solid var(--edge)}
+.bar span{height:100%}
+</style></head>
+<body><div id="app">
+
+<div id="menu"><span>File</span><span>Edit</span><span>View</span><span>Scenario</span>
+  <div class="r"><span class="mut">F2</span><span class="on">Scenarios</span><span>World</span><span>Designer</span></div></div>
+
+<div id="res">
+  <div class="who"><div class="k">1905 · RUSSIA v JAPAN</div><div class="n">Tsushima<span>tsushima.json</span></div></div>
+  <div class="c"><div class="k">Date</div><div class="v">Sat 27 May 1905</div></div>
+  <div class="c"><div class="k">Local</div><div class="v">13:40</div></div>
+  <div class="c"><div class="k">Position</div><div class="v">34°07′N 130°04′E</div></div>
+  <div class="c"><div class="k">Visibility</div><div class="v">13 km haze</div></div>
+  <div class="c"><div class="k">Wind</div><div class="v">SW 18 kn</div></div>
+  <div class="c"><div class="k">Sea</div><div class="v">4</div></div>
+  <div class="c"><div class="k">Sunset</div><div class="v">19:03</div></div>
+  <div class="c"><div class="k">Ends</div><div class="v">28 May 10:40</div></div>
+  <div class="c"><div class="k">Ships</div><div class="v"><span class="blu">13</span> v <span class="red">14</span></div></div>
+  <div class="c"><div class="k">Tonnage</div><div class="v"><span class="blu">94,033</span> v <span class="red">119,786</span></div></div>
+  <div class="c"><div class="k">Doctrine</div><div class="v">1905</div></div>
+  <div class="c"><div class="k">Changes</div><div class="v" id="nchg">0</div></div>
+</div>
+
+<!-- left: the scenarios as an outliner, the setups below as the designer's templates -->
+<div class="pane" style="left:0;top:52px;width:300px;height:760px">
+  <div class="title">Scenarios<span class="note">10 shipped</span><span class="r"><span class="ov">era ▾</span><span class="ov">size ▾</span></span></div>
+  <table id="scn"></table>
+</div>
+<div class="pane" style="left:0;top:814px;width:300px;height:244px">
+  <div class="title">Your setups<span class="r note">click to load</span></div>
+  <table>
+    <tr class="hit"><td class="mut">Tsushima</td><td class="brt">14 in Borodinos</td><td class="num mut">today</td></tr>
+    <tr class="hit alt"><td class="mut">Squadrons</td><td class="brt">bold Beatty, green Germans</td><td class="num mut">Oct 24</td></tr>
+  </table>
+  <div style="padding:8px 6px;display:flex;gap:4px"><span class="btn">Open a scenario file… <span class="kbd">Ctrl+O</span></span></div>
+  <div class="para mut" style="padding-top:0">A setup is a scenario file; a file dropped on the window opens too.</div>
+</div>
+
+<!-- centre top: the opening, drawn as the designer's plan view -->
+<div class="pane" style="left:302px;top:52px;width:1276px;height:420px">
+  <div class="title">The opening<span class="note">each top unit at its start, its ships astern</span>
+    <span class="r"><span class="ov on"><i>C</i>Courses</span><span class="ov on"><i>R</i>Range</span><span class="ov on"><i>L</i>Labels</span><span class="ov"><i>G</i>Grid</span><span class="ov"><i>P</i>Place a unit</span></span></div>
+  <div id="map" style="position:relative;flex:1;background:var(--plan)"></div>
+</div>
+
+<div id="tabs"></div>
+
+<div class="pane" style="left:302px;top:496px;width:1276px;height:562px">
+  <!-- 1 order of battle -->
+  <div class="page" id="p1">
+    <div class="col" style="width:800px">
+      <div class="sub"><span class="cap">Order of battle</span><span class="seg" id="sideSeg"></span>
+        <span class="r" id="oobSum"></span></div>
+      <div style="flex:1;overflow:hidden"><table id="oob"></table></div>
+    </div>
+    <div class="col" style="flex:1" id="selCls"></div>
+  </div>
+  <!-- 2 standing orders -->
+  <div class="page" id="p2">
+    <div class="col" style="width:400px">
+      <div class="sub"><span class="cap">Aggression</span>the C-in-C's, for every unit<span class="r">doctrine 1905</span></div>
+      <table><tr><th>Lever</th><th class="n">Value</th><th class="n">Step</th><th class="n">Written</th></tr>
+        <tr><td class="brt">Aggression</td><td class="num"><span class="st"><b>◀</b><span class="v">0.00</span><b>▶</b></span></td><td class="num mut">0.10</td><td class="num">0.00</td></tr></table>
+      <div class="sub"><span class="cap">What it moves</span><span class="r">cautious −1 … bold +1</span></div>
+      <table id="moves"></table>
+    </div>
+    <div class="col" style="width:470px">
+      <div class="sub"><span class="cap">Tempers</span>the admiral's, added to the side's<span class="r">sum</span></div>
+      <table id="tempers"></table>
+      <div class="sub"><span class="cap">Captains</span>on their ships, added to the admiral's</div>
+      <table>
+        <tr><th>Ship</th><th>Unit</th><th class="n">Temper</th><th class="n">Sum</th></tr>
+        <tr><td class="brt">Imperator Aleksandr III</td><td class="mut">1st Armoured Division</td><td class="num"><span class="st"><b>◀</b><span class="v">+0.30</span><b>▶</b></span></td><td class="num">+0.30</td></tr>
+        <tr class="alt"><td class="brt">Bedovy</td><td class="mut">1st Destroyer Detachment</td><td class="num"><span class="st"><b>◀</b><span class="v">−0.50</span><b>▶</b></span></td><td class="num">−0.50</td></tr>
+      </table>
+      <div class="para mut">A timid captain under a bold admiral fights harder than alone, never as hard as a bold one under the same flag.</div>
+    </div>
+    <div class="col" style="flex:1">
+      <div class="sub"><span class="cap">Rules</span><span class="r">every unit, unless ordered</span></div>
+      <table id="rules"></table>
+    </div>
+  </div>
+  <!-- 3 conditions -->
+  <div class="page" id="p3">
+    <div class="col" style="width:470px">
+      <div class="sub"><span class="cap">Crews and ships</span><span class="r"><span class="seg"><i class="on">As history</i><i>Even crews</i><i>Easier</i><i>Harder</i></span></span></div>
+      <table id="cond"></table>
+    </div>
+    <div class="col" style="width:430px">
+      <div class="sub"><span class="cap">The day</span></div>
+      <table>
+        <tr><th>Row</th><th>Setting</th><th></th></tr>
+        <tr><td>Visibility</td><td><span class="st"><b>◀</b><span class="v">13 km</span><b>▶</b></span></td><td class="mut">haze</td></tr>
+        <tr class="alt"><td>Wind</td><td><span class="dd" style="min-width:50px"><span>SW</span><i>▼</i></span> <span class="st"><b>◀</b><span class="v">18 kn</span><b>▶</b></span></td><td class="mut">from, and how hard</td></tr>
+        <tr><td>Sea</td><td><span class="st"><b>◀</b><span class="v">4</span><b>▶</b></span></td><td class="mut">from the wind</td></tr>
+        <tr class="alt"><td>Ends</td><td><span class="st"><b>◀</b><span class="v">28 May 10:40</span><b>▶</b></span></td><td class="mut">local, at the latest</td></tr>
+        <tr><td>Seed</td><td><span class="seg"><i class="on">1905, the file's</i><i>new each time</i></span></td><td></td></tr>
+        <tr class="alt"><td>The aim</td><td class="brt">Destroy everyone</td><td class="mut">as written</td></tr>
+        <tr><td>The end</td><td colspan="2">when one side is gone or out of the fight</td></tr>
+      </table>
+    </div>
+    <div class="col" style="flex:1">
+      <div class="sub"><span class="cap">Changes from the scenario</span><span class="r"><span class="btn" style="height:16px">Reset all</span></span></div>
+      <table><tr><th>Change</th><th class="n">Was</th><th class="n">Now</th><th></th></tr>
+        <tr><td colspan="4" class="mut">None: the scenario as written.</td></tr></table>
+    </div>
+  </div>
+</div>
+
+<!-- right: play as, the strength ledger, the brief, remarks, begin -->
+<div class="pane" style="left:1580px;top:52px;width:340px;height:126px">
+  <div class="title">Play as<span class="r note">Tab to switch</span></div>
+  <table id="playAs"></table>
+</div>
+<div class="pane" style="left:1580px;top:180px;width:340px;height:248px">
+  <div class="title">Strength ledger<span class="r note">the sides as written</span></div>
+  <table id="ledger"></table>
+</div>
+<div class="pane" style="left:1580px;top:430px;width:340px;height:220px">
+  <div class="title">Brief</div>
+  <div class="para">Rozhestvensky's Second Pacific Squadron, black with yellow funnels, steams up the Tsushima Strait for Vladivostok: four Borodinos leading, the old second division astern, cruisers and destroyers in company.</div>
+  <div class="para">Out of the haze to the north-east come Togo's battleships and Kamimura's armoured cruisers, faster, crossing ahead to cap your line. <span class="brt">Get through, or make them pay for it.</span></div>
+</div>
+<div class="pane" style="left:1580px;top:652px;width:340px;height:160px">
+  <div class="title">Remarks<span class="r note">2</span></div>
+  <div class="bul">2nd Armoured Division: Fölkersam is dead, unannounced; Oslyabya's captain leads it.</div>
+  <div class="bul">Enkvist's temper is −0.40 as written: he kept his cruisers clear of the line.</div>
+</div>
+<div class="pane" style="left:1580px;top:814px;width:340px;height:244px">
+  <div class="title">Begin<span class="r note">the world is placed</span></div>
+  <table>
+    <tr><td>Classes compiled</td><td class="num">7 / 7</td><td class="num ok">0.26 s</td></tr>
+    <tr class="alt"><td>Art drawn</td><td class="num">7 / 7</td><td class="num ok">1.16 s</td></tr>
+    <tr><td>World placed</td><td class="num">yes</td><td class="num ok">1.29 s</td></tr>
+  </table>
+  <div style="padding:6px 6px 0"><div class="bar" id="loadBar"></div></div>
+  <div style="margin:8px 6px 0;padding:6px 8px;background:#17261A;border:1px solid #2F5A31">
+    <span class="mono" style="font-size:20px;color:var(--ok)">Ready</span>
+    <span class="mut" style="margin-left:6px">Russia, yours · Japan, the AI's · as written</span></div>
+  <div style="display:flex;gap:4px;padding:8px 6px">
+    <span class="btn">Save setup… <span class="kbd">Ctrl+S</span></span>
+    <span class="btn">Begin paused <span class="kbd">⇧⏎</span></span>
+    <span class="btn go" style="flex:1;justify-content:center">Begin <span class="kbd" style="color:var(--brass);border-color:var(--brass-dark)">⏎</span></span>
+  </div>
+</div>
+
+<div id="status"><span><span class="ok">●</span> 7 classes built in 0.77 s · 8 builder threads</span><span>history: as written</span>
+  <span class="r">1–3 tabs · Tab side · Enter begin · Shift+Enter paused · Ctrl+S save setup · Ctrl+O open · F2 designer</span></div>
+
+</div>
+<script>
+// ------------------------------------------------------------------ the data (figures as launch.html: shipgen matchup)
+const CL = {
+  borodino: { name: 'Borodino-like', file: 'borodino.json', t: 13779, len: 155, kn: 18, main: '4 × 305', sec: '12 × 152', belt: 194, reach: 11.8, year: 1903, w: 622, mu: 1.07 },
+  oslyabya: { name: 'Oslyabya-like', file: 'oslyabya.json', t: 9449, len: 113, kn: 16, main: '4 × 254', sec: '11 × 152', belt: 229, reach: 11.8, year: 1903, w: 452 },
+  aurora:   { name: 'Aurora-like', file: 'aurora.json', t: 3637, len: 102, kn: 20, main: '8 × 152', sec: '', belt: 0, reach: 9.1, year: 1903, w: 410 },
+  buyny:    { name: 'Buyny-like', file: 'buyny.json', t: 824, len: 91, kn: 26, main: '3 × 75', sec: '3 tubes', belt: 0, reach: 6.0, year: 1902, w: 365 },
+  mikasa:   { name: 'Mikasa-like', file: 'mikasa.json', t: 13184, len: 130, kn: 18, main: '4 × 305', sec: '14 × 152', belt: 229, reach: 12.6, year: 1902, w: 521 },
+  izumo:    { name: 'Izumo-like', file: 'izumo.json', t: 10655, len: 135, kn: 21, main: '4 × 203', sec: '14 × 152', belt: 178, reach: 11.4, year: 1900, w: 542 },
+  ikazuchi: { name: 'Ikazuchi-like', file: 'ikazuchi.json', t: 780, len: 77, kn: 29, main: '1 × 76', sec: '2 tubes', belt: 0, reach: 6.5, year: 1899, w: 311 },
+};
+const OOB = [
+  { side: 0, name: 'Second Pacific Squadron', adm: 'V-Adm Rozhestvensky', temper: 0, units: [
+    { name: '1st Armoured Division', adm: 'Rozhestvensky (in Suvorov)', rows: [{ cls: 'borodino', names: ['Knyaz Suvorov', 'Imperator Aleksandr III', 'Borodino', 'Oryol'] }] },
+    { name: '2nd Armoured Division', adm: 'Oslyabya’s captain', rows: [{ cls: 'oslyabya', names: ['Oslyabya', 'Sissoi Veliky', 'Navarin'] }] }] },
+  { side: 0, name: 'Cruiser Division', adm: 'R-Adm Enkvist', temper: -0.4, rows: [{ cls: 'aurora', names: ['Oleg', 'Aurora'] }] },
+  { side: 0, name: '1st Destroyer Detachment', adm: 'the senior captain', temper: 0, rows: [{ cls: 'buyny', names: ['Buyny', 'Bravy', 'Bedovy', 'Grozny'] }] },
+  { side: 1, name: 'Combined Fleet', adm: 'Adm Togo', temper: 0.2, units: [
+    { name: '1st Division', adm: 'Togo (in Mikasa)', rows: [{ cls: 'mikasa', names: ['Mikasa', 'Shikishima', 'Fuji', 'Asahi'] }, { cls: 'izumo', names: ['Kasuga', 'Nisshin'] }] },
+    { name: '2nd Division', adm: 'V-Adm Kamimura', temper: 0.4, rows: [{ cls: 'izumo', names: ['Izumo', 'Azuma', 'Tokiwa', 'Iwate'] }] }] },
+  { side: 1, name: '1st Destroyer Flotilla', adm: 'the flotilla’s captain', temper: 0.3, rows: [{ cls: 'ikazuchi', names: ['Ikazuchi', 'Inazuma', 'Akebono', 'Oboro'] }] },
+];
+const CAPT = { 'Imperator Aleksandr III': 0.3, 'Bedovy': -0.5, 'Akebono': 0.4 };
+const SIDES = ['Russia', 'Japan'];
+const S = { tab: 1, side: 0, cls: 'borodino', playAs: 0 };
+
+const $ = id => document.getElementById(id);
+const fmt = n => n.toLocaleString('en-GB');
+const sgn = v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(2);
+const st = v => `<span class="st"><b>◀</b><span class="v">${v}</span><b>▶</b></span>`;
+const dd = v => `<span class="dd"><span>${v}</span><i>▼</i></span>`;
+const seg = (opts, on) => `<span class="seg">${opts.map((o, i) => `<i class="${i === on ? 'on' : ''}">${o}</i>`).join('')}</span>`;
+const ENS = {
+  0: '<svg width="18" height="12" viewBox="0 0 18 12" style="vertical-align:-2px"><rect width="18" height="12" fill="#F2F2F2"/><path d="M0 0L18 12M18 0L0 12" stroke="#2F5FA8" stroke-width="2.4"/></svg>',
+  1: '<svg width="18" height="12" viewBox="0 0 18 12" style="vertical-align:-2px"><rect width="18" height="12" fill="#F2F2F2"/><g stroke="#C8322B" stroke-width="1.1">' +
+     Array.from({ length: 8 }, (_, i) => { const a = i * Math.PI / 4; return `<line x1="7" y1="6" x2="${7 + 14 * Math.cos(a)}" y2="${6 + 14 * Math.sin(a)}"/>`; }).join('') +
+     '</g><circle cx="7" cy="6" r="3" fill="#C8322B"/></svg>',
+  w: '<svg width="18" height="12" viewBox="0 0 18 12" style="vertical-align:-2px"><rect width="18" height="12" fill="#2E3842"/><circle cx="9" cy="6" r="3" fill="none" stroke="#AEB9C3"/><circle cx="9" cy="6" r="1" fill="#AEB9C3"/></svg>',
+};
+
+// ------------------------------------------------------------------ scenarios (the outliner)
+const SCN = [
+  ['1890–1905', [['Tsushima', 'RU JP', '1905', '13 : 14', 1]]],
+  ['1906–1925', [['Heligoland Bight', 'GB DE', '1914', '44 : 24'], ['Coronel', 'GB DE', '1914', '3 : 5'], ['Cape Sarych', 'RU TR', '1914', '7 : 2'],
+    ['Dogger Bank', 'GB DE', '1915', '33 : 26'], ['Jutland', 'GB DE', '1916', '151 : 99'], ['Night in the Dover Strait', 'GB DE', '1917', '2 : 6'],
+    ['The prizes’ war, 1920', 'FR IT', '1920', '6 : 6'], ['The battle for Åland', 'FI SE', '1921', '9 : 7']]],
+  ['Tests', [['Squadrons', 'GB DE', '1916', '4 : 5'], ['Flotilla', 'GB DE', '1916', '6 : 11'], ['Ladder 1 … 5', 'dev', '—', '—']]],
+];
+const GRPC = ['#8C7B62', '#5B7FA6', '#56636F'];
+$('scn').innerHTML = '<tr><th style="width:150px">Name</th><th style="width:44px">Sides</th><th style="width:44px">Year</th><th class="n">Ships</th></tr>' + SCN.map(([g, rows], gi) =>
+  `<tr class="grp"><td colspan="3"><span class="tw">▼</span><span class="sw" style="background:${GRPC[gi]}"></span>${g}</td><td class="num mut">${rows.length}</td></tr>` +
+  rows.map(([n, s, d, k, sel], i) => `<tr class="hit ${sel ? 'sel' : i % 2 ? 'alt' : ''}"><td style="padding-left:24px" class="${sel ? 'brass' : ''}">${n}</td><td class="mut mono" style="font-size:10px">${s}</td><td class="mut">${d}</td><td class="num" style="font-size:10.5px">${k.replace(/ : /, ':')}</td></tr>`).join('')).join('');
+
+// ------------------------------------------------------------------ the opening
+(function map() {
+  const W = 1274, H = 398, kmpx = 0.06, lat0 = 34.12, lon0 = 130.08;
+  const P = (lat, lon) => [W / 2 + (lon - lon0) * 92.2 / kmpx, H / 2 - (lat - lat0) * 111.2 / kmpx];
+  const U = [
+    { n: 'Second Pacific Squadron', s: 0, at: [34.05, 129.95], c: 23, kn: 11, k: 7, dx: 10, dy: -4 },
+    { n: 'Cruiser Division', s: 0, at: [34.03, 129.90], c: 23, kn: 11, k: 2, dx: -118, dy: 6 },
+    { n: '1st Destroyer Detachment', s: 0, at: [34.06, 129.92], c: 23, kn: 11, k: 4, dx: -150, dy: -6 },
+    { n: 'Combined Fleet', s: 1, at: [34.17, 130.20], c: 262, kn: 15, k: 10, dx: 14, dy: 10 },
+    { n: '1st Destroyer Flotilla', s: 1, at: [34.21, 130.24], c: 262, kn: 15, k: 4, dx: 14, dy: 4 },
+  ];
+  let g = '';
+  for (let x = W / 2 % 83.3; x < W; x += 83.3) g += `<line x1="${x}" y1="0" x2="${x}" y2="${H}"/>`;
+  for (let y = H / 2 % 83.3; y < H; y += 83.3) g += `<line x1="0" y1="${y}" x2="${W}" y2="${y}"/>`;
+  let s = `<svg width="${W}" height="${H}" style="position:absolute;left:0;top:0"><g stroke="#9CC2E2" stroke-opacity=".09">${g}</g>`;
+  let tags = '';
+  const col = ['#5B9BE0', '#D4675A'];
+  for (const u of U) {
+    const [x, y] = P(...u.at), r = u.c * Math.PI / 180, len = u.kn * 0.5 * 1.852 / kmpx;
+    s += `<line x1="${x}" y1="${y}" x2="${x + Math.sin(r) * len}" y2="${y - Math.cos(r) * len}" stroke="${col[u.s]}" stroke-dasharray="4 4" stroke-opacity=".8"/>`;
+    for (let i = 1; i <= u.k - 1; i++) s += `<circle cx="${x - Math.sin(r) * 9 * i}" cy="${y + Math.cos(r) * 9 * i}" r="2" fill="${col[u.s]}"/>`;
+    s += u.s === 0 ? `<circle cx="${x}" cy="${y}" r="6" fill="none" stroke="${col[0]}" stroke-width="1.6"/>`
+      : `<rect x="${x - 5}" y="${y - 5}" width="10" height="10" transform="rotate(45 ${x} ${y})" fill="none" stroke="${col[1]}" stroke-width="1.6"/>`;
+    tags += `<div class="tag" style="left:${x + u.dx}px;top:${y + u.dy}px;color:${u.s ? '#F1C9C3' : '#CFE3F3'}">${u.n} · ${u.k}</div>`;
+  }
+  const [ax, ay] = P(34.05, 129.95), [bx, by] = P(34.17, 130.20);
+  s += `<line x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}" stroke="#9CC2E2" stroke-opacity=".55" stroke-dasharray="1 3"/>`;
+  tags += `<div class="tag" style="left:${(ax + bx) / 2 - 22}px;top:${(ay + by) / 2 - 8}px">27.0 km</div>`;
+  // the 5 km ruler, as the plan view's 20 m
+  s += `<g stroke="#9CC2E2" stroke-opacity=".7"><line x1="16" y1="${H - 18}" x2="${16 + 5 / kmpx}" y2="${H - 18}"/><line x1="16" y1="${H - 22}" x2="16" y2="${H - 14}"/><line x1="${16 + 5 / kmpx}" y1="${H - 22}" x2="${16 + 5 / kmpx}" y2="${H - 14}"/></g></svg>`;
+  tags += `<div class="mono" style="position:absolute;left:${24 + 5 / kmpx}px;top:${H - 25}px;font-size:10px;color:#9CC2E2">5 km</div>`;
+  tags += `<div class="tag" style="right:8px;bottom:8px;left:auto"><span class="blu">○</span> Russia &nbsp;<span class="red">◇</span> Japan &nbsp;· dashed: 30 min</div>`;
+  tags += `<div class="tag" style="left:8px;top:8px">N ↑ · 1 square 5 km</div>`;
+  $('map').innerHTML = s + tags;
+})();
+
+// ------------------------------------------------------------------ tabs
+const TABS = ['Order of battle', 'Standing orders', 'Conditions'];
+function drawTabs() {
+  $('tabs').innerHTML = TABS.map((t, i) => `<div class="tb ${S.tab === i + 1 ? 'on' : ''}" data-t="${i + 1}"><span class="kbd">${i + 1}</span>${t}</div>`).join('') +
+    `<span class="r">every change shows on the opening and in the ledger at once</span>`;
+  for (const el of $('tabs').querySelectorAll('.tb')) el.onclick = () => { S.tab = +el.dataset.t; draw(); };
+  for (let i = 1; i <= 3; i++) $('p' + i).classList.toggle('on', S.tab === i);
+}
+
+// ------------------------------------------------------------------ order of battle (the outliner's rows)
+function ships(u) { return (u.rows || []).reduce((a, r) => a + r.names.length, 0) + (u.units || []).reduce((a, s) => a + ships(s), 0); }
+function tons(u) { return (u.rows || []).reduce((a, r) => a + r.names.length * CL[r.cls].t, 0) + (u.units || []).reduce((a, s) => a + tons(s), 0); }
+function drawOob() {
+  $('sideSeg').innerHTML = SIDES.map((n, i) => `<i class="${S.side === i ? 'on' : ''}" data-s="${i}">${ENS[i]} ${n}${i === S.playAs ? ' · yours' : ''}</i>`).join('');
+  for (const el of $('sideSeg').querySelectorAll('i')) el.onclick = () => { S.side = +el.dataset.s; S.cls = S.side ? 'mikasa' : 'borodino'; draw(); };
+  const top = OOB.filter(o => o.side === S.side);
+  $('oobSum').innerHTML = `<span class="mono brt">${top.reduce((a, u) => a + ships(u), 0)}</span> ships · <span class="mono brt">${fmt(top.reduce((a, u) => a + tons(u), 0))}</span> t`;
+  const out = ['<tr><th>Unit · class · ship</th><th>To scale</th><th>Ships</th><th class="n">t</th><th class="n">kn</th><th>Main</th><th>Second</th><th class="n">Belt</th><th class="n">Reach</th><th>State</th><th></th></tr>'];
+  let alt = 0;
+  const pad = l => `padding-left:${6 + l * 14}px`;
+  const unit = (u, l) => {
+    const tm = u.temper ? ` <span class="chip ${u.temper < 0 ? 'blu' : 'amb'}">${u.temper < 0 ? 'cautious' : 'bold'} ${sgn(u.temper)}</span>` : '';
+    out.push(`<tr class="grp"><td colspan="2" style="${pad(l)}"><span class="tw">▼</span>${u.name} <span class="mut" style="font-weight:400">${u.adm}</span>${tm}</td>` +
+      `<td class="num">${ships(u)}</td><td class="num">${fmt(tons(u))}</td><td colspan="6"></td><td class="mut" style="text-align:center">✕</td></tr>`);
+    (u.units || []).forEach(s => unit(s, l + 1));
+    for (const r of u.rows || []) {
+      const c = CL[r.cls], sel = S.cls === r.cls;
+      out.push(`<tr class="hit ${sel ? 'sel' : ''}" data-c="${r.cls}"><td style="${pad(l + 1)}"><span class="tw">▼</span><span class="${sel ? 'brass' : 'brt'}">${c.name}</span></td>` +
+        `<td><img src="assets/launch/${r.cls}.png" style="width:${Math.round(c.w * 0.12)}px;vertical-align:middle;filter:drop-shadow(0 0 1px #000)"></td>` +
+        `<td>${st(r.names.length)}</td><td class="num">${fmt(c.t)}</td><td class="num">${c.kn}</td><td class="mono">${c.main}</td><td class="mono">${c.sec || '—'}</td>` +
+        `<td class="num">${c.belt || '—'}</td><td class="num">${c.reach.toFixed(1)}</td><td class="ok">● ready</td><td class="mut" style="text-align:center">▾</td></tr>`);
+      for (const n of r.names) {
+        const t = CAPT[n];
+        out.push(`<tr class="${alt++ % 2 ? 'alt' : ''}"><td colspan="2" style="${pad(l + 2.6)}">${n}${t ? ` <span class="${t < 0 ? 'blu' : 'amb'}">${t < 0 ? '▼' : '▲'} ${sgn(t)}</span>` : ''}</td><td colspan="8"></td><td class="mut" style="text-align:center">✕</td></tr>`);
+      }
+    }
+  };
+  top.forEach(u => unit(u, 0));
+  out.push(`<tr class="hit"><td colspan="11" class="brass" style="padding-left:20px">+ Add a unit…  <span class="mut">joins a unit on its station, or stands alone placed on the opening</span></td></tr>`);
+  $('oob').innerHTML = out.join('');
+  for (const el of $('oob').querySelectorAll('tr[data-c]')) el.onclick = () => { S.cls = el.dataset.c; draw(); };
+
+  // the selected class, as the protection tab's selected plate
+  const c = CL[S.cls], sc = 0.7;
+  $('selCls').innerHTML = `<div class="sub"><span class="cap">Selected class</span><span class="brt" style="font-weight:600">${c.name}</span>${c.file}<span class="r">scenario design</span></div>
+    <div style="position:relative;height:118px;background:var(--plan);border-bottom:1px solid var(--edge)">
+      <div style="position:absolute;left:20px;top:22px;width:${Math.round(c.len * 4 * sc) - 4}px;border-top:1px solid #9CC2E2;opacity:.7"></div>
+      <div class="tag" style="left:${12 + Math.round(c.len * 4 * sc) / 2 - 30}px;top:14px">${c.len.toFixed(1)} m oa</div>
+      <img src="assets/launch/${S.cls}.png" style="position:absolute;left:18px;top:42px;width:${Math.round(c.w * sc)}px;filter:drop-shadow(0 0 2px #000)">
+      <div class="mono" style="position:absolute;right:8px;bottom:4px;font-size:10px;color:#9CC2E2">to scale, 4 px/m</div></div>
+    <table><tr><th>Particular</th><th class="n">Value</th><th>Note</th></tr>
+      <tr><td class="mut">Displacement</td><td class="num">${fmt(c.t)} t</td><td class="mut">standard</td></tr>
+      <tr class="alt"><td class="mut">Speed</td><td class="num">${c.kn} kn</td><td class="mut">trial</td></tr>
+      <tr><td class="mut">Main</td><td class="num">${c.main} mm</td><td></td></tr>
+      <tr class="alt"><td class="mut">Secondary</td><td class="num">${c.sec ? c.sec + (c.sec.includes('tubes') ? '' : ' mm') : '—'}</td><td></td></tr>
+      <tr><td class="mut">Belt</td><td class="num">${c.belt ? c.belt + ' mm' : '—'}</td><td></td></tr>
+      <tr class="alt"><td class="mut">Reach</td><td class="num">${c.reach.toFixed(1)} km</td><td class="mut">the main guns'</td></tr>
+      <tr><td class="mut">Matchup</td><td class="num">${c.mu ? c.mu.toFixed(2) : '—'}</td><td class="mut">${c.mu ? 'four of her v Togo’s four Mikasas, 1 even' : 'on a pick in the picker'}</td></tr>
+    </table>
+    <div class="sub" style="margin-top:6px"><span class="cap">Design</span><span class="r">up to ${c.year}</span></div>
+    <table><tr><td class="mut" style="width:70px">Design</td><td>${dd(c.name + ' (scenario)')}</td></tr>
+      <tr class="alt"><td class="mut">Use for</td><td>${seg(['the unit', 'one ship', 'every ship of the class'], 0)}</td></tr></table>
+    <div style="display:flex;gap:4px;padding:8px 6px"><span class="btn">Change design… <span class="kbd">C</span></span><span class="btn">Edit a copy in the designer <span class="kbd">E</span></span><span class="btn">New from this</span></div>`;
+}
+
+// ------------------------------------------------------------------ standing orders and conditions
+$('moves').innerHTML = '<tr><th>Move</th><th class="n">Written</th><th class="n">Now</th></tr>' + [
+  ['Turns away when outgunned', '2.0 : 1'], ['Sent after an enemy at a matchup of', '1.00'], ['Fights at, of the main guns’ reach', '60%'],
+  ['Falls out under, of her speed', '60%'], ['Falls out under, of her main guns', '34%'], ['Falls out past a list of', '10°'],
+  ['Falls out flooded, of her reserve', '50%'], ['Turns from torpedo attacks', '45°'], ['Flotilla beaten off at boats lost', '50%'],
+  ['The side breaks off at tonnage lost', '34%']].map(([m, v], i) => `<tr class="${i % 2 ? 'alt' : ''}"><td>${m}</td><td class="num mut">${v}</td><td class="num">${v}</td></tr>`).join('');
+$('tempers').innerHTML = '<tr><th>Admiral</th><th>Unit</th><th class="n">Temper</th><th class="n">Sum</th></tr>' + [
+  ['V-Adm Rozhestvensky', 'Second Pacific Squadron', 0], ['Oslyabya’s captain', '2nd Armoured Division', 0],
+  ['R-Adm Enkvist', 'Cruiser Division', -0.4], ['the senior captain', '1st Destroyer Detachment', 0]].map(([a, u, v], i) =>
+  `<tr class="${i % 2 ? 'alt' : ''}"><td class="brt">${a}</td><td class="mut">${u}</td><td class="num">${st(sgn(v) || '0.00')}</td><td class="num ${v ? 'blu' : ''}">${v ? sgn(v) : '0.00'}</td></tr>`).join('');
+$('rules').innerHTML = '<tr><th>Rule</th><th>Setting</th></tr>' + [
+  ['On meeting the enemy', ['fight', 'carry on'], 0], ['Deploy into one line on his main body', ['yes', 'no'], 0], ['Torpedoes', ['at will', 'on order'], 0],
+  ['Under fire', ['zigzag', 'steady'], 0], ['Torpedo tracks', ['comb', 'hold on'], 0], ['Heavy ships at night', ['accept', 'avoid'], 1],
+  ['Torpedo craft attack by night', ['yes', 'no'], 0], ['Admirals place scouts and screens', ['by roles', 'all in line'], 0]].map(([r, o, on], i) =>
+  `<tr class="${i % 2 ? 'alt' : ''}"><td>${r}</td><td>${seg(o, on)}</td></tr>`).join('');
+$('cond').innerHTML = `<tr><th>Row</th><th>${ENS[0]} Russia · yours</th><th>${ENS[1]} Japan</th></tr>` + [
+  ['Gun crews', 'average', 'trained'], ['Readiness', 'prepared', 'prepared'], ['Damage control', '1905', '1905'],
+  ['Fire discipline', 'independent', 'independent'], ['Fuel', 'full', 'full']].map(([r, a, b], i) =>
+  `<tr class="${i % 2 ? 'alt' : ''}"><td>${r}</td><td>${dd(a)}</td><td>${dd(b)}</td></tr>`).join('');
+
+// ------------------------------------------------------------------ the right column
+function drawRight() {
+  const rows = [[0, 'V-Adm Rozhestvensky', '13 ships'], [1, 'Adm Togo', '14 ships'], ['w', 'both sides the AI’s', 'all shown']];
+  $('playAs').innerHTML = rows.map(([k, c, n], i) => {
+    const on = S.playAs === i, who = i === 2 ? '' : on ? '<span class="chip amb">you</span>' : S.playAs === 2 ? '<span class="chip blu">AI</span>' : '<span class="chip blu">AI</span>';
+    return `<tr class="hit ${on ? 'sel' : i % 2 ? 'alt' : ''}" data-p="${i}"><td style="width:22px">${on ? '◉' : '○'}</td><td>${ENS[k]} <span class="${on ? 'brass' : 'brt'}" style="font-weight:600">${i === 2 ? 'Watch' : SIDES[i]}</span></td><td class="mut">${c}</td><td class="num mut">${n}</td><td style="text-align:right">${who}</td></tr>`;
+  }).join('');
+  for (const el of $('playAs').querySelectorAll('tr')) el.onclick = () => { S.playAs = +el.dataset.p; draw(); };
+
+  const L = [['Battleships', 7, 4], ['Armoured cruisers', 0, 6], ['Cruisers', 2, 0], ['Destroyers', 4, 4], ['Guns 254–305 mm', 28, 16],
+    ['Guns 152–203 mm', 97, 164], ['Line speed, kn', 16, 18], ['Gun crews', 'average', 'trained']];
+  $('ledger').innerHTML = `<tr><th>Group</th><th class="n">${ENS[0]}</th><th class="n">${ENS[1]}</th><th style="width:110px">Share</th></tr>` + L.map(([g, a, b], i) => {
+    const num = typeof a === 'number', f = num && a + b ? a / (a + b) : 0.5;
+    return `<tr class="${i % 2 ? 'alt' : ''}"><td>${g}</td><td class="num">${a}</td><td class="num">${b}</td><td>${num ? `<div class="bar" style="height:7px"><span style="width:${f * 100}%;background:#3F6D9E"></span><span style="flex:1;background:#94473E"></span></div>` : ''}</td></tr>`;
+  }).join('') + `<tr><td class="brt" style="font-weight:600">Tonnage</td><td class="num">94,033</td><td class="num">119,786</td><td><div class="bar" style="height:7px"><span style="width:44%;background:#3F6D9E"></span><span style="flex:1;background:#94473E"></span></div></td></tr>`;
+}
+$('loadBar').innerHTML = ['borodino', 'oslyabya', 'aurora', 'buyny', 'mikasa', 'izumo', 'ikazuchi'].map(k => `<span style="flex:${CL[k].t};background:var(--brass);border-right:1px solid var(--edge)" title="${CL[k].name}"></span>`).join('');
+
+function draw() { drawTabs(); drawOob(); drawRight(); }
+const h = location.hash.slice(1);
+if (h === 'orders') S.tab = 2;
+if (h === 'conditions') S.tab = 3;
+if (h === 'japan') { S.side = 1; S.cls = 'mikasa'; }
+addEventListener('keydown', e => {
+  if (e.key >= '1' && e.key <= '3') { S.tab = +e.key; draw(); }
+  if (e.key === 'Tab') { e.preventDefault(); S.playAs = (S.playAs + 1) % 3; draw(); }
+});
+draw();
+</script>
+</body></html>
