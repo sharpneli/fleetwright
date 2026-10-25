@@ -20,9 +20,10 @@ namespace Fleetwright.Map;
 /// <see cref="Begun"/> shows the map. What the player changes is a setup (<see cref="ScenarioSetup"/>, L2): the
 /// scenario as written plus its changes, listed with an undo each, saved as a scenario file in My Games/Fleetwright/
 /// Setups and listed under Your setups. The body's first column is each side's ships (L3, <c>LaunchScene.Ships.cs</c>),
-/// a design changed by the picker (<c>LaunchScene.Picker.cs</c>); the standing orders and the conditions (L4-L5) take the
-/// rest later, until then the aims and the orders before action. Its strings are made when the pick changes, so a frame
-/// allocates nothing but the load's line while it builds.</summary>
+/// a design changed by the picker (<c>LaunchScene.Picker.cs</c>); the second the standing orders (L4,
+/// <c>LaunchScene.Orders.cs</c>), the third the conditions and the day, then the changes (L5,
+/// <c>LaunchScene.Conditions.cs</c>). Its strings are made when the pick changes, so a frame allocates nothing but the
+/// load's line while it builds.</summary>
 public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
 {
     readonly WorldSession world;
@@ -203,8 +204,8 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
             opened = true;   // its first pick only now: a run straight into a scenario asks for nothing here
             Pick(initial);
         }
-        else if (world.Selected == null && pick >= 0)
-            Select();
+        else if (world.Selected == null && pick >= 0 && written != null)
+            Apply();   // a seed new each time is drawn again
     }
 
     /// <summary>The screen gives way without a Begin (back to the battle, or the designer): a battle it paused runs on.</summary>
@@ -225,6 +226,7 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
             return;
         written = s.Written ?? s;
         described.Clear();
+        drawnSeed = 0;
         try
         {
             presets = ScenarioLoader.PresetsFor(written);
@@ -261,6 +263,13 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         try
         {
             current = setup.Apply(written!);
+            if (setup.Changes.Any(c => c is SetSeed { Seed: null }))
+            {
+                // a new seed each time it's begun: drawn once for the pick, again after each Begin
+                if (drawnSeed == 0)
+                    drawnSeed = (ulong)Random.Shared.NextInt64(1, 1_000_000);
+                current = current with { Seed = drawnSeed };
+            }
             setupError = null;
             side = current.Player;
         }
@@ -291,6 +300,7 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         pausedHere = false;
         beginGeneration = world.Generation;
         begin = true;
+        drawnSeed = 0;
         world.Begin();
         if (!entries[pick].Opened)
             WriteLast(KeyOf(entries[pick]));
@@ -763,8 +773,7 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
 
     static string Sight(double m) => (m < 1000 ? "fog" : m < 5000 ? "mist" : m < 18000 ? "haze" : "clear") + $", {m / 1000:0} km";
 
-    static string Compass(double deg) =>
-        new[] { "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW" }[(int)Math.Round(((deg % 360) + 360) % 360 / 22.5) % 16];
+    static string Compass(double deg) => SetWeather.Compass(deg);
 
     /// <summary>The next sunset after the start (or sunrise, if it starts at night) within a day, by the minute: the sun's
     /// upper limb at the horizon, refraction in (-0.833°).</summary>
@@ -904,35 +913,22 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         Wrapped(UiFonts.SansSmall, 12, new Vector2(x, y + 34 * sc), Soft, "Both sides the AI's; you see everything. For checking a setup before playing it.", size.X - 24 * sc);
     }
 
-    // ------------------------------------------------------------------ the body: the ships, the standing orders; until L5, the aims and orders
+    // ------------------------------------------------------------------ the body: the ships, the standing orders, the conditions
 
     const float ShipsW = 600, OrdersW = 520;   // the ships and the standing orders columns, reference px (the picker opens right of the ships)
 
-    readonly List<(string Label, string Value)> aims = [], orders = [];
-    string ordersTitle = "";
+    readonly List<(string Label, string Value)> aims = [];
 
     void MadeBody(Scenario s)
     {
         MadeShips(s);
         aims.Clear();
-        orders.Clear();
         var (_, lon) = Centre(s);
         string end = s.Until is { } u2 ? $"at {u2.ToUtc().AddHours(lon / 15):HH:mm} local" : "";
         for (int sd = 0; sd < s.Sides.Length; sd++)
             if (side < 0 || sd == side)
                 aims.Add((side < 0 ? s.Sides[sd] : "The aim", MapScene.AimsText(s, sd)));
         aims.Add(("The end", $"when one side is gone or out of the fight{(end.Length > 0 ? ", or " + end : "")}"));
-        ordersTitle = side < 0 ? "ORDERS BEFORE ACTION" : $"ORDERS BEFORE ACTION · {s.Sides[side].ToUpperInvariant()}";
-        void Orders(string label, IEnumerable<(int Side, string Name)> list)
-        {
-            foreach (var (sd, name) in list)
-                if (side < 0 || sd == side)
-                    orders.Add((side < 0 ? $"{label}, {s.Sides[sd]}" : label, MapScene.Pretty(name)));
-        }
-        Orders("Gun crews", s.Crews.Select(c => (c.Side, c.Quality.ToString().ToLowerInvariant())));
-        Orders("Readiness", s.Readiness);
-        Orders("Damage control", s.DamageControl);
-        Orders("Fire discipline", s.FireDisciplines);
     }
 
     void Body(Vector2 o, float w, float h)
@@ -945,34 +941,12 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         OrdersColumn(new Vector2(x + 18 * sc, o.Y + 14 * sc), OrdersW * sc - 36 * sc, o.Y + h);
         x += OrdersW * sc;
         VLine(x, o.Y, o.Y + h);
-        // the aims and the orders before action (the conditions' place, L5), then the changes
-        float cx = x + 18 * sc, cy = o.Y + 14 * sc, cw = o.X + w - x - 36 * sc;
-        Tracked(UiFonts.Sans, 10.5f, new Vector2(cx, cy), Muted, "THE AIM", 0.9f);
-        cy += 24 * sc;
-        foreach (var (label, value) in aims)
-        {
-            Txt(UiFonts.SansSmall, 12, new Vector2(cx, cy), Soft, label);
-            cy += Wrapped(UiFonts.SansSmall, 12, new Vector2(cx + 118 * sc, cy), Bright, value, cw - 118 * sc) + 6 * sc;
-        }
-        if (orders.Count > 0)
-        {
-            cy += 14 * sc;
-            Tracked(UiFonts.Sans, 10.5f, new Vector2(cx, cy), Muted, ordersTitle, 0.9f);
-            cy += 24 * sc;
-            foreach (var (label, value) in orders)
-            {
-                Txt(UiFonts.SansSmall, 12, new Vector2(cx, cy), Soft, label);
-                Txt(UiFonts.SansSmall, 12, new Vector2(cx + (side < 0 ? 170 : 118) * sc, cy), Bright, value);
-                cy += 20 * sc;
-            }
-        }
-        // the changes (under the conditions, L5)
-        Changes(new Vector2(cx, cy + 22 * sc), cw);
+        ConditionsColumn(new Vector2(x + 18 * sc, o.Y + 14 * sc), o.X + w - x - 36 * sc, o.Y + h);
     }
 
     /// <summary>Every change from the scenario as written, a line each with its undo, and Reset all (the mockup's
-    /// "Changes from the scenario").</summary>
-    void Changes(Vector2 at, float w)
+    /// "Changes from the scenario"); returns where it ends.</summary>
+    float Changes(Vector2 at, float w)
     {
         float y = at.Y;
         Tracked(UiFonts.Sans, 10.5f, at, Muted, "CHANGES FROM THE SCENARIO", 0.9f);
@@ -980,7 +954,7 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         {
             const string None = "none: as written";
             Txt(UiFonts.SansSmall, 11, new Vector2(at.X + w - Width(UiFonts.SansSmall, 11, None), y), Muted, None);
-            return;
+            return y + 20 * sc;
         }
         const string Reset = "Reset all";
         float rw = Width(UiFonts.SansSmall, 11.5f, Reset);
@@ -1005,10 +979,11 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
                 ImGui.SetTooltip("undo: as written");
             y += 24 * sc;
         }
-        if (reset)
-            Edit(setup with { Changes = [] });
-        else if (undo != null)
-            Edit(undo is AddUnit a ? setup.WithoutAdded(a.Unit.Name) : setup.Without(undo.Key));
+        if (reset && !begin)
+            pendingEdit = setup with { Changes = [] };
+        else if (undo != null && !begin)
+            pendingEdit = undo is AddUnit a ? setup.WithoutAdded(a.Unit.Name) : setup.Without(undo.Key);
+        return y;
     }
 
     // each change's line, made once (a frame allocates nothing for a list that stands); by the change itself, as a

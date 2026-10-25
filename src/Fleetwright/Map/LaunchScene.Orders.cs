@@ -244,14 +244,16 @@ public sealed unsafe partial class LaunchScene
     }
 
     /// <summary>A temper's or the aggression's slider, -1 to +1 by 0.05 (the mockup's): the track cautious to bold, a tick
-    /// at the scenario's value. True when it's let go at another value (<paramref name="released"/>).</summary>
-    bool Slider(string id, Vector2 at, float w, double value, double written, bool big, out double released)
+    /// at the scenario's value; or another range's, its track plain. True when it's let go at another value
+    /// (<paramref name="released"/>).</summary>
+    bool Slider(string id, Vector2 at, float w, double value, double written, bool big, out double released, double min = -1, double max = 1, double step = 0.05)
     {
+        bool temper = min == -1 && max == 1;
         released = value;
         float h = (big ? 26 : 18) * sc;
         ImGui.SetCursorScreenPos(at);
         bool pressed = ImGui.InvisibleButton(id, new Vector2(w, h)), done = false;
-        double under = Math.Round(Math.Clamp((ImGui.GetMousePos().X - at.X) / w * 2 - 1, -1, 1) * 20) / 20;
+        double under = min + Math.Round(Math.Clamp((ImGui.GetMousePos().X - at.X) / w, 0, 1) * (max - min) / step) * step;
         if (ImGui.IsItemActive() && !begin)
             (dragId, dragValue) = (id, under);
         else if (pressed && dragId != id && !begin)
@@ -267,13 +269,18 @@ public sealed unsafe partial class LaunchScene
             dragId = null;
         }
         double shown = dragId == id ? dragValue : value;
-        float X(double p) => at.X + (float)((p + 1) / 2) * w;
+        float X(double p) => at.X + (float)((p - min) / (max - min)) * w;
         float ty = at.Y + (big ? 11 : 7) * sc, th = (big ? 4 : 3) * sc;
         uint blue = U(Hex(0x3C5C7A)), grey = U(Hex(0x2A3138)), brown = U(Hex(0x7A4A2C));
-        dl.AddRectFilledMultiColor(new Vector2(at.X, ty), new Vector2(X(0), ty + th), blue, grey, grey, blue);
-        dl.AddRectFilledMultiColor(new Vector2(X(0), ty), new Vector2(at.X + w, ty + th), grey, brown, brown, grey);
-        dl.AddLine(new Vector2(X(0), at.Y + (big ? 6 : 3) * sc), new Vector2(X(0), at.Y + (big ? 20 : 15) * sc), U(Hex(0x56636E)));
-        if (Math.Abs(written) > 1e-9)
+        if (temper)
+        {
+            dl.AddRectFilledMultiColor(new Vector2(at.X, ty), new Vector2(X(0), ty + th), blue, grey, grey, blue);
+            dl.AddRectFilledMultiColor(new Vector2(X(0), ty), new Vector2(at.X + w, ty + th), grey, brown, brown, grey);
+            dl.AddLine(new Vector2(X(0), at.Y + (big ? 6 : 3) * sc), new Vector2(X(0), at.Y + (big ? 20 : 15) * sc), U(Hex(0x56636E)));
+        }
+        else
+            dl.AddRectFilled(new Vector2(at.X, ty), new Vector2(at.X + w, ty + th), U(Hex(0x3A444D)));
+        if (!temper || Math.Abs(written) > 1e-9)
             dl.AddRectFilled(new Vector2(X(written) - 1 * sc, at.Y + 2 * sc), new Vector2(X(written) + 1 * sc, at.Y + h - 2 * sc), U(Muted));
         float tw = (big ? 12 : 9) * sc, tH = (big ? 16 : 13) * sc, tY = at.Y + (big ? 5 : 2) * sc;
         dl.AddRectFilled(new Vector2(X(shown) - tw / 2, tY), new Vector2(X(shown) + tw / 2, tY + tH), U(Brass), 2 * sc);
@@ -284,7 +291,7 @@ public sealed unsafe partial class LaunchScene
             Txt(UiFonts.SansSmall, 10.5f, new Vector2(at.X + w - Width(UiFonts.SansSmall, 10.5f, "bold"), at.Y + 24 * sc), Muted, "bold");
         }
         else if (ImGui.IsItemHovered() && dragId == null && Math.Abs(written - value) > 1e-9)
-            ImGui.SetTooltip($"the scenario's: {DoctrineRules.Signed(written)}");
+            ImGui.SetTooltip($"the scenario's: {(temper ? DoctrineRules.Signed(written) : written.ToString("0.##", Inv))}");
         return done;
     }
 

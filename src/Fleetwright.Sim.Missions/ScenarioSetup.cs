@@ -22,7 +22,8 @@ namespace Fleetwright.Sim.Missions;
 ///   "tempers": { "Cruiser Division": 0.2, "Imperator Aleksandr III": 0.3 },
 ///   "doctrine": { "Russia": { "Aggression": 0.5, "NightAction": "accept" } },
 ///   "crews": { "Japan": "average" }, "readiness": { "Russia": "closed up" }, "damage_control": { "Russia": "1916" },
-///   "fire_discipline": { "Russia": "rn-1914" }, "fuel": { "Russia": 0.6 }, "seed": 1906 }
+///   "fire_discipline": { "Russia": "rn-1914" }, "fuel": { "Russia": 0.6 },
+///   "weather": { "visibility_km": 8, "wind_from": 200, "wind_kn": 12 }, "until": "1905-05-28T06:00", "seed": 1906 }
 /// </code>
 /// <para>A swap names a unit (any level: every ship of that design under it), or a ship by her name (only her), or
 /// neither (every ship of that design). <c>"player": null</c> watches. An added unit is placed on its own (a top unit:
@@ -31,13 +32,15 @@ namespace Fleetwright.Sim.Missions;
 /// design (struck, the last first) or adds unnamed ones; a removed unit has every ship under it struck. A side's setting
 /// replaces the written one for that side only, and so does a side's doctrine field (its aggression, its rules: L4). A
 /// temper names a unit (its admiral's) or a ship (her captain's); an added unit's admiral and his temper are its own
-/// ("admiral"). The day joins with L5.</para>
+/// ("admiral"). The day (L5) is the weather (all of it: visibility and wind), the end, and the seed: a number, or
+/// <c>"new"</c> for a new one each time it's begun (the launch screen draws it; <see cref="Apply"/> keeps the written
+/// one).</para>
 /// <para>A unit renamed (<c>"rename": { "5th Battle Squadron": "Evan-Thomas's squadron" }</c>) is renamed last, the
 /// scenario's tasks that name it with it: every other change names units as written (or as added). A unit joining a
 /// squadron makes it a force of the same name: its own ships its first unit ("5th Battle Squadron I"), the new one
 /// astern.</para>
 /// <para>The changes apply by kind (<see cref="SetupChange.Order"/>: the side, the units added, the swaps, the counts, the
-/// removals and tempers, the renames, the sides' settings and doctrine, the seed), each kind in the order made, so the file (written by kind)
+/// removals and tempers, the renames, the sides' settings and doctrine, the day), each kind in the order made, so the file (written by kind)
 /// reads back to the same scenario. A count names the design its ships have after the swaps, which <see cref="Swap"/>
 /// keeps.</para></summary>
 public sealed record ScenarioSetup
@@ -191,7 +194,7 @@ public sealed record ScenarioSetup
     internal static bool IsSetup(JsonElement r) =>
         r.TryGetProperty("from", out _) && !r.TryGetProperty("units", out _) && !r.TryGetProperty("only", out _) && !r.TryGetProperty("sides", out _);
 
-    static readonly string[] Keys = ["scenario", "name", "from", "player", "rename", "add", "designs", "counts", "remove", "tempers", "doctrine", "crews", "readiness", "damage_control", "fire_discipline", "fuel", "seed"];
+    static readonly string[] Keys = ["scenario", "name", "from", "player", "rename", "add", "designs", "counts", "remove", "tempers", "doctrine", "crews", "readiness", "damage_control", "fire_discipline", "fuel", "weather", "until", "seed"];
 
     /// <summary>A setup file's changes, read against the scenario it's of.</summary>
     internal static ScenarioSetup Parse(JsonElement r, Scenario written)
@@ -292,11 +295,18 @@ public sealed record ScenarioSetup
         if (r.TryGetProperty("fuel", out var fu))
             foreach (var (side, share) in Scenario.ParseFuel(fu, sides))
                 changes.Add(new SideSetting(SideKind.Fuel, side, share.ToString("0.###", CultureInfo.InvariantCulture)));
+        if (r.TryGetProperty("weather", out var we))
+            changes.Add(new SetWeather(Scenario.ParseWeather(we)));
+        if (r.TryGetProperty("until", out var un))
+            changes.Add(new SetEnd(Scenario.ParseTime(un.GetString() ?? "", "until")));
         if (r.TryGetProperty("seed", out var se))
         {
-            if (!se.TryGetUInt64(out ulong seed))
-                throw new ScenarioException("seed: a whole number");
-            changes.Add(new SetSeed(seed));
+            if (se.ValueKind == JsonValueKind.String && se.GetString() == "new")
+                changes.Add(new SetSeed(null));
+            else if (se.TryGetUInt64(out ulong seed))
+                changes.Add(new SetSeed(seed));
+            else
+                throw new ScenarioException("seed: a whole number, or \"new\" for a new one each time");
         }
         return new ScenarioSetup { Name = Str(r, "name"), From = Str(r, "from"), Changes = changes };
     }
@@ -421,8 +431,23 @@ public sealed record ScenarioSetup
                         w.WriteString(written.Sides[x.Side], x.Value);
                 w.WriteEndObject();
             }
+            foreach (var c in Changes.OfType<SetWeather>())
+            {
+                w.WriteStartObject("weather");
+                w.WriteNumber("visibility_km", Math.Round(c.Weather.VisibilityM / 1000, 3));
+                w.WriteNumber("wind_from", c.Weather.WindFromDeg);
+                w.WriteNumber("wind_kn", Math.Round(c.Weather.WindMs / 0.514444, 3));
+                if (c.Weather.AirOverSeaK != 0)
+                    w.WriteNumber("air_over_sea_k", c.Weather.AirOverSeaK);
+                w.WriteEndObject();
+            }
+            foreach (var c in Changes.OfType<SetEnd>())
+                w.WriteString("until", c.Until.ToUtc().ToString("yyyy-MM-dd'T'HH:mm", CultureInfo.InvariantCulture));
             foreach (var c in Changes.OfType<SetSeed>())
-                w.WriteNumber("seed", c.Seed);
+                if (c.Seed is { } seed)
+                    w.WriteNumber("seed", seed);
+                else
+                    w.WriteString("seed", "new");
             w.WriteEndObject();
         }
         return $"// a setup of {written.Name} (docs/map-ui/launch.md \"A setup is a scenario file\"): the scenario \"{from}\" and these changes\n"
@@ -694,15 +719,53 @@ public sealed record SetTemper(string Name, double Value) : SetupChange
     public static string AdmiralName(string admiral) => admiral.IndexOf(" (", StringComparison.Ordinal) is var k and > 0 ? admiral[..k] : admiral;
 }
 
-/// <summary>The world's seed: the same fight again for the same seed.</summary>
-public sealed record SetSeed(ulong Seed) : SetupChange
+/// <summary>The world's seed: the same fight again for the same seed; null for a new one each time it's begun (drawn by
+/// the launch screen: applied, the written one stands).</summary>
+public sealed record SetSeed(ulong? Seed) : SetupChange
 {
     public override string Key => "seed";
     internal override int Order => 7;
 
-    internal override Scenario Apply(Scenario s) => s with { Seed = Seed };
+    internal override Scenario Apply(Scenario s) => Seed is { } seed ? s with { Seed = seed } : s;
 
-    public override string Describe(Scenario written) => $"Seed {Seed} (written: {written.Seed})";
+    public override string Describe(Scenario written) => Seed is { } seed ? $"Seed {seed} (written: {written.Seed})" : $"Seed: a new one each time (written: {written.Seed})";
+}
+
+/// <summary>The weather (docs/map-ui/launch.md L5): its visibility and wind, all of it in place of the written.</summary>
+public sealed record SetWeather(WeatherHere Weather) : SetupChange
+{
+    public override string Key => "weather";
+    internal override int Order => 7;
+
+    internal override Scenario Apply(Scenario s) =>
+        Weather.VisibilityM > 0 && Weather.WindMs >= 0 ? s with { Weather = Weather } : throw new ScenarioException("weather: a visibility more than 0, a wind 0 or more");
+
+    public override string Describe(Scenario written) =>
+        $"Weather: {Words(Weather)} (written: {(written.Weather is { } w ? Words(w) : "the default")})";
+
+    /// <summary>The weather in a few words: "8 km, wind SW 12 kn".</summary>
+    public static string Words(WeatherHere w) =>
+        $"{(w.VisibilityM / 1000).ToString("0.#", CultureInfo.InvariantCulture)} km, wind {Compass(w.WindFromDeg)} {(w.WindMs / 0.514444).ToString("0", CultureInfo.InvariantCulture)} kn";
+
+    /// <summary>A direction by the sixteen points.</summary>
+    public static string Compass(double deg) => Points[(int)Math.Round(((deg % 360) + 360) % 360 / 22.5) % 16];
+
+    public static readonly string[] Points = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
+}
+
+/// <summary>When it ends at the latest (docs/map-ui/launch.md L5), in place of the written <c>"until"</c>.</summary>
+public sealed record SetEnd(WorldTime Until) : SetupChange
+{
+    public override string Key => "until";
+    internal override int Order => 7;
+
+    internal override Scenario Apply(Scenario s) =>
+        Until.Ms > s.Start.Ms ? s with { Until = Until } : throw new ScenarioException("until: after the start");
+
+    public override string Describe(Scenario written) =>
+        $"Ends {Utc(Until)} (written: {(written.Until is { } u ? Utc(u) : "the default")})";
+
+    static string Utc(WorldTime t) => t.ToUtc().ToString("d MMM HH:mm", CultureInfo.InvariantCulture) + " GMT";
 }
 
 /// <summary>A unit added (docs/map-ui/launch.md L3b): placed on its own, a top unit with its place, course and speed, or

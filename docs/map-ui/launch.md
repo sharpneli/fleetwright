@@ -186,7 +186,7 @@ mockup's, committed.
 | **L3** (done 2026-10-25) | Ships: each side's order of battle, the design rows and their state, the picker (sources, filters, figures, matchup, apply to all, one or every), the designer round trip (edit a copy, saved back into the picker as yours) | the matchup on candidates |
 | **L3b** (done 2026-10-25) | Adding and removing: − n + per row, ✕ per unit, the add picker, the placing view (on the sea, the course dragged), joining a unit | `"add"`, `"remove"` |
 | **L4** (done 2026-10-25) | Standing orders: aggression and what it moves, the admirals' and captains' tempers, the rules | `Temper` on units and ships |
-| **L5** | Conditions and the day: both sides' crews, readiness, damage control, fire discipline, fuel; presets; visibility, wind, the end, the seed | — |
+| **L5** (done 2026-10-25) | Conditions and the day: both sides' crews, readiness, damage control, fire discipline, fuel; presets; visibility, wind, the end, the seed | — |
 
 L0 stands alone and pays at once (every load gets faster); it can go before the mockup's review is done.
 
@@ -354,6 +354,27 @@ they fight as before.
 - **Left for later:** choosing another doctrine preset (one "default" is all there is); a temper's why for captains;
   the admiral's name of an added unit typed in the add picker (the file takes one); the picker's matchup reads each
   side's range share without its aggression's shift.
+
+**L5 done (2026-10-25).** The setup takes the day: `SetWeather` (all of it, `"weather"` as a scenario writes it),
+`SetEnd` (`"until"`) and a seed that may be `"new"`: a new one each time it's begun, which `Apply` leaves as written and
+the screen draws (once a pick, again after each Begin; shown as "this time 71154"). The sides' settings were L2's
+`SideSetting` already. Tested and read back from the file.
+
+- **The column** (`LaunchScene.Conditions.cs`, the third): both sides side by side (yours first, or the first tab's when
+  watching) in gun crews, readiness, damage control, fire discipline and fuel, each a drop-down of the settings' names
+  (fuel full, 75%, 50%, 25%), brass when it isn't as written; the presets over them; then the day: visibility (1 to 30
+  km), the wind (from, by the sixteen points, and its strength, by 2 kn), the end (by the hour, local, up to three days
+  after the start), the seed (the file's, or new each time), the aim and the end in words; then the changes, as before.
+  The orders before action that stood there since L1 are these drop-downs now.
+- **The presets** are first guesses for playtesting (decision 5), each a set of the sides' settings over the written
+  ones (the day untouched): as history (none), even crews (both trained), easier (yours trained; the enemy's average,
+  his decks cluttered), harder (yours green, your decks cluttered).
+- **Checked** by scripted input at Tsushima: Harder, the visibility dragged to 8 km, the wind up to 20 kn, the seed new
+  each time, the end two hours later; each a line in the changes, the header's day line following.
+- **Found on the way:** two − n + steppers in one column shared their buttons' ids, so the second's clicks were lost; each
+  is scoped now.
+- **Left for later:** the sea state beside the wind (the mockup's "sea 4": no sea state in the sim yet); the end said in
+  the changes in GMT, the screen in local time; typing a seed.
 
 ## Decisions (the user, 2026-10-25)
 

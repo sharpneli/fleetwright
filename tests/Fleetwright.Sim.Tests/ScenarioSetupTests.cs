@@ -252,6 +252,21 @@ public class ScenarioSetupTests
         Assert.Equal(0.3, Assert.Single(added.Changes.OfType<AddUnit>()).Unit.Temper);
     }
 
+    /// <summary>L5: the day as changes; a seed "new each time" keeps the written one when applied (the screen draws one)
+    /// and reads back as such.</summary>
+    [Fact]
+    public void The_day_is_changes_and_a_new_seed_each_time_keeps_the_written()
+    {
+        var written = Tsushima();
+        var setup = new ScenarioSetup { From = "tsushima" }.With(new SetSeed(null)).With(new SetEnd(written.Start + 3_600_000L));
+        var s = setup.Apply(written);
+        Assert.Equal(written.Seed, s.Seed);
+        Assert.Equal(written.Start + 3_600_000L, s.Until);
+        Assert.Contains("\"seed\": \"new\"", setup.ToJson(written));
+        Assert.Throws<ScenarioException>(() => new ScenarioSetup().With(new SetEnd(written.Start)).Apply(written));
+        Assert.Equal("Weather: 8 km, wind SSW 12 kn (written: 13 km, wind SW 18 kn)", new SetWeather(new WeatherHere(8000, 200, 12 * 0.514444)).Describe(written));
+    }
+
     static ScenarioUnit Tree(Scenario s, string name)
     {
         ScenarioUnit? Find(IEnumerable<ScenarioUnit> units) => units.Select(u => u.Name == name ? u : Find(u.Units)).FirstOrDefault(u => u != null);
@@ -279,6 +294,8 @@ public class ScenarioSetupTests
             .Rename("Cruiser Division", "Enkvist's cruisers")
             .With(new SideSetting(SideKind.Fuel, 0, "0.6"))
             .With(new SideSetting(SideKind.FireDiscipline, 1, "rn-1914"))
+            .With(new SetWeather(new WeatherHere(8000, 200, 12 * 0.514444)))
+            .With(new SetEnd(written.Start + 20 * 3_600_000L))
             .With(new SetSeed(1906));
         var set = setup.Apply(written);
         var dir = Path.Combine(Path.GetTempPath(), "fleetwright-setup-" + Guid.NewGuid().ToString("N"));
@@ -297,6 +314,10 @@ public class ScenarioSetupTests
             Assert.Equal(set.Fuel, read.Fuel);
             Assert.Equal(set.FireDisciplines, read.FireDisciplines);
             Assert.Equal(set.Seed, read.Seed);
+            Assert.Equal(8000, read.Weather!.Value.VisibilityM, 6);
+            Assert.Equal(200, read.Weather.Value.WindFromDeg, 6);
+            Assert.Equal(12, read.Weather.Value.WindMs / 0.514444, 3);
+            Assert.Equal(set.Until, read.Until);
             Assert.Equal(set.Doctrine.Select(d => (d.Side, d.Preset, string.Join(",", d.Values))), read.Doctrine.Select(d => (d.Side, d.Preset, string.Join(",", d.Values))));
             Assert.Equal(0.2, Tree(read, "Enkvist's cruisers").Temper);
             Assert.Equal(0.3, Tree(read, "3rd Armoured Division").Temper);

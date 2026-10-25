@@ -495,7 +495,7 @@ public sealed record Scenario
         return list;
     }
 
-    static WeatherHere ParseWeather(JsonElement e)
+    internal static WeatherHere ParseWeather(JsonElement e)
     {
         if (e.ValueKind != JsonValueKind.Object)
             throw new ScenarioException("weather: an object, { \"visibility_km\": 25, \"wind_from\": 225, \"wind_kn\": 8, \"air_over_sea_k\": 0 }");
@@ -760,7 +760,7 @@ public sealed record Scenario
         return (e[0].GetDouble(), e[1].GetDouble(), e[2].GetDouble());
     }
 
-    static WorldTime ParseTime(string s, string key)
+    internal static WorldTime ParseTime(string s, string key)
     {
         if (!DateTime.TryParseExact(s, ["yyyy-MM-dd'T'HH:mm", "yyyy-MM-dd'T'HH:mm:ss", "yyyy-MM-dd"], CultureInfo.InvariantCulture,
                 DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var t))
