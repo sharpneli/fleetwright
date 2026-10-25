@@ -292,13 +292,39 @@ public sealed unsafe partial class LaunchScene
     // ------------------------------------------------------------------ the ensigns
 
     static readonly Vector4 White = Hex(0xF4F4F0), EnsignBlue = Hex(0x2D56A8), EnsignRed = Hex(0xC9473C), UnionBlue = Hex(0x23306B),
-        Black = Hex(0x15171A), ItalyGreen = Hex(0x2E8B4F), FinlandBlue = Hex(0x1F4A8A), ArmsGold = Hex(0xD4A537);
+        Black = Hex(0x15171A), ItalyGreen = Hex(0x2E8B4F), FinlandBlue = Hex(0x1F4A8A), ArmsGold = Hex(0xD4A537),
+        SwedenBlue = Hex(0x1F5FA0), SwedenYellow = Hex(0xF2C230);
 
     /// <summary>The swallow-tailed ensign's outline, filled each draw (no garbage).</summary>
     readonly Vector2[] tails = new Vector2[8];
 
+    /// <summary>A Nordic war ensign: the cross toward the hoist on the field, the fly cut in three tails (the middle
+    /// one the cross's arm), outlined along the cut; with the arms, a red square rimmed gold at the crossing.</summary>
+    void Tailed(Vector2 at, Vector2 size, Vector4 field, Vector4 cross, bool arms)
+    {
+        var b = at + size;
+        float w = size.X, h = size.Y;
+        float xr = at.X + w * 0.74f, t0 = at.Y + h * 0.35f, t1 = at.Y + h * 0.65f;
+        dl.AddRectFilled(at, new Vector2(xr, b.Y), U(field));
+        dl.AddTriangleFilled(new Vector2(xr, at.Y), new Vector2(b.X, at.Y), new Vector2(xr, t0), U(field));
+        dl.AddRectFilled(new Vector2(xr, t0), new Vector2(b.X, t1), U(field));
+        dl.AddTriangleFilled(new Vector2(xr, t1), new Vector2(b.X, b.Y), new Vector2(xr, b.Y), U(field));
+        float cx = at.X + w * 0.3f, cy = at.Y + h * 0.5f, hb = h * 0.13f;
+        dl.AddRectFilled(new Vector2(cx - hb, at.Y), new Vector2(cx + hb, b.Y), U(cross));
+        dl.AddRectFilled(new Vector2(at.X, cy - hb), new Vector2(b.X, cy + hb), U(cross));
+        if (arms)
+        {
+            var hs = new Vector2(h * 0.17f, h * 0.17f);
+            dl.AddRectFilled(new Vector2(cx, cy) - hs, new Vector2(cx, cy) + hs, U(ArmsGold));
+            dl.AddRectFilled(new Vector2(cx, cy) - hs * 0.7f, new Vector2(cx, cy) + hs * 0.7f, U(EnsignRed));
+        }
+        tails[0] = at; tails[1] = new Vector2(b.X, at.Y); tails[2] = new Vector2(xr, t0); tails[3] = new Vector2(b.X, t0);
+        tails[4] = new Vector2(b.X, t1); tails[5] = new Vector2(xr, t1); tails[6] = b; tails[7] = new Vector2(at.X, b.Y);
+        dl.AddPolyline(ref tails[0], tails.Length, U(new Vector4(0, 0, 0, 1)), ImDrawFlags.Closed, 1);
+    }
+
     /// <summary>A side's ensign, small (a card's 26 × 16): drawn, not an image, for the navies the scenarios have
-    /// (britain, germany, russia, japan, france, italy, ottoman, finland); a grey field for any other.</summary>
+    /// (britain, germany, russia, japan, france, italy, ottoman, finland, sweden); a grey field for any other.</summary>
     void Ensign(string name, Vector2 at, Vector2 size)
     {
         var b = at + size;
@@ -392,24 +418,13 @@ public sealed unsafe partial class LaunchScene
                     break;
                 }
             case "finland":   // the war ensign: a blue Nordic cross on white, the arms at the crossing, three tails
-                {
-                    float xr = at.X + w * 0.74f, t0 = at.Y + h * 0.35f, t1 = at.Y + h * 0.65f;
-                    dl.AddRectFilled(at, new Vector2(xr, b.Y), U(White));
-                    dl.AddTriangleFilled(new Vector2(xr, at.Y), new Vector2(b.X, at.Y), new Vector2(xr, t0), U(White));
-                    dl.AddRectFilled(new Vector2(xr, t0), new Vector2(b.X, t1), U(White));
-                    dl.AddTriangleFilled(new Vector2(xr, t1), new Vector2(b.X, b.Y), new Vector2(xr, b.Y), U(White));
-                    float cx = at.X + w * 0.3f, cy = at.Y + h * 0.5f, hb = h * 0.13f;
-                    dl.AddRectFilled(new Vector2(cx - hb, at.Y), new Vector2(cx + hb, b.Y), U(FinlandBlue));
-                    dl.AddRectFilled(new Vector2(at.X, cy - hb), new Vector2(b.X, cy + hb), U(FinlandBlue));
-                    var hs = new Vector2(h * 0.17f, h * 0.17f);
-                    dl.AddRectFilled(new Vector2(cx, cy) - hs, new Vector2(cx, cy) + hs, U(ArmsGold));
-                    dl.AddRectFilled(new Vector2(cx, cy) - hs * 0.7f, new Vector2(cx, cy) + hs * 0.7f, U(EnsignRed));
-                    dl.PopClipRect();
-                    tails[0] = at; tails[1] = new Vector2(b.X, at.Y); tails[2] = new Vector2(xr, t0); tails[3] = new Vector2(b.X, t0);
-                    tails[4] = new Vector2(b.X, t1); tails[5] = new Vector2(xr, t1); tails[6] = b; tails[7] = new Vector2(at.X, b.Y);
-                    dl.AddPolyline(ref tails[0], tails.Length, U(new Vector4(0, 0, 0, 1)), ImDrawFlags.Closed, 1);
-                    return;
-                }
+                dl.PopClipRect();
+                Tailed(at, size, White, FinlandBlue, arms: true);
+                return;
+            case "sweden":   // the war ensign: a yellow Nordic cross on blue, three tails
+                dl.PopClipRect();
+                Tailed(at, size, SwedenBlue, SwedenYellow, arms: false);
+                return;
             default:
                 dl.AddRectFilled(at, b, U(Hex(0x2A3138)));
                 break;

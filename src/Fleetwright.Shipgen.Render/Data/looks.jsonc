@@ -986,6 +986,80 @@
           "shapes_by_style": {"merchant": {"dazzle": false}}
         }
       }
+    },
+    "karlskrona": {
+      "desc": "Sweden-inspired",
+      "eras": {
+        // Sweden-inspired 1890s-1900s, the pansarbåtar's years: black hull, white upperworks, the national colours on
+        // the funnels (yellow, a blue band under a black top), buff masts, drum turrets
+        "victorian": {
+          "from": "generic/victorian",
+          "desc": "Sweden-inspired 1890s-1900s: black and white, yellow funnels with a blue band",
+          "palette": {
+            "hull": "#1c1d20", "funnel": "#d8ae3a", "funnel_band": "#2a5a9e", "funnel_cap": "#151515",
+            "mast": "#8a6a3a"
+          },
+          "turrets": "drum",
+          "shapes": {"funnel": "oval", "funnel_band_w": 0.4, "funnel_band_h": 2.0}
+        },
+        // Sweden-inspired 1910s, a neutral marking itself: light grey, blue and yellow chevrons on the foredeck and
+        // bands across the turret roofs, blue funnel bands, pale teak, classic turrets
+        "great_war": {
+          "from": "generic/great_war",
+          "desc": "Sweden-inspired 1910s: light grey, blue and yellow neutrality chevrons and turret bands",
+          "palette": {"recog_a": "#2a5a9e", "recog_b": "#e3b630", "funnel_band": "#2a5a9e"},
+          "adjust": [
+            {"keys": ["hull", "upperworks", "armament", "funnels"], "lighten": 0.3, "styles": ["warship", "carrier", "planing"]},
+            {"keys": "wood", "tint": ["#d2c5a2", 0.9], "styles": ["warship", "carrier", "planing"]}
+          ],
+          "turrets": "classic",
+          "shapes": {
+            "funnel": "oval", "funnel_band_w": 0.7, "turret_bands": ["recog_a", "recog_b"],
+            "deck_stripes": {"ends": "fore", "pattern": "chevron", "n": 4, "slope": 0.8, "colours": ["recog_a", "recog_b"]}
+          }
+        },
+        // Sweden-inspired 1920s-30s, the years of Gotland: a dark royal-blue hull under light grey, gold funnel
+        // bands, white teak, awnings over the quarterdeck, round turrets
+        "treaty": {
+          "from": "generic/treaty",
+          "desc": "Sweden-inspired 1920s-30s: royal blue hull under light grey, gold funnel bands, awnings",
+          "palette": {"funnel_band": "#d4a62e"},
+          "adjust": [
+            {"keys": "hull", "tint": ["#2c3f5e", 0.7], "styles": ["warship", "carrier", "planing"]},
+            {"keys": "wood", "tint": ["#d9cdaf", 0.8], "styles": ["warship", "carrier", "planing"]}
+          ],
+          "turrets": "round",
+          "shapes": {"funnel_band_w": 0.7, "awnings": true}
+        },
+        // Sweden-inspired, neutral again: light grey, blue and yellow bands on the turret roofs and diagonal
+        // stripes at both ends of the deck, for the aircraft of either side to see; slab turrets
+        "wwii": {
+          "from": "generic/wwii",
+          "desc": "Sweden-inspired: light grey, blue and yellow neutrality marks on turrets and both deck ends",
+          "palette": {"recog_a": "#2a5a9e", "recog_b": "#e3b630", "funnel_band": "#1d2023"},
+          "adjust": [
+            {"keys": ["hull", "upperworks", "armament", "funnels"], "lighten": 0.12, "styles": ["warship", "carrier", "planing"]}
+          ],
+          "turrets": "slab",
+          "shapes": {
+            "turret_bands": ["recog_a", "recog_b"],
+            "deck_stripes": {"ends": "both", "pattern": "diagonal", "n": 3, "slope": 0.8, "colours": ["recog_a", "recog_b"]}
+          }
+        },
+        // Sweden-inspired 1950s-60s: pale disruptive panels in light grey, blue-green and slate (no black, apart
+        // from Finland's greens), numbers; the fast attack craft's later schemes a decade early
+        "cold_war": {
+          "from": "generic/cold_war",
+          "desc": "Sweden-inspired 1950s-60s: pale disruptive greys and blue-greens, numbers",
+          "palette": {
+            "hull": "#8a969c", "deck": "#5a6366", "levels": ["#9ba6aa", "#a3adb1", "#abb4b8", "#b3bbbf"],
+            "turret": "#9ba6aa", "funnel": "#9ba6aa", "funnel_cap": "#1a1d1f", "funnel_band": "#1a1d1f",
+            "camo": ["#5d7178", "#46535a", "#c8d0d3"]
+          },
+          "shapes": {"dazzle": true, "dazzle_decks": 0.3, "dazzle_upperworks": 0.9, "hull_number": true},
+          "shapes_by_style": {"merchant": {"dazzle": false}}
+        }
+      }
     }
   }
 }
