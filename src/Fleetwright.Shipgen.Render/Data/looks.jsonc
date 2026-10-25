@@ -957,31 +957,33 @@
           "turrets": "round",
           "shapes": {"funnel_band_w": 0.7, "turret_bands": ["recog_a", "recog_b"], "awnings": true, "blocks": "soft"}
         },
-        // Finland-inspired: the skerry camouflage Väinämöinen wore in 1941-44, grey-green under dark green, black
-        // and granite-grey panels carried across the decks, tower bridges, round turrets
+        // Finland-inspired: Winter War white, a fleet frozen into the ice: snow white under grey and black panels
+        // over hull, upperworks and decks, black funnel caps, round turrets
         "wwii": {
           "from": "generic/wwii",
-          "desc": "Finland-inspired: skerry camouflage, greens, black and granite grey, decks too, tower bridges",
+          "desc": "Finland-inspired: Winter War white under grey and black panels, decks too",
           "palette": {
-            "hull": "#56605a", "deck": "#59605a", "wood": "#a49d88", "deck_line": "#4b473c", "steel_line": "#3a403b",
-            "levels": ["#7a827c", "#868e88", "#929993", "#9ea59f"], "turret": "#7a827c", "barbette": "#5a625c",
-            "funnel": "#7a827c", "funnel_cap": "#1b1e1c", "funnel_band": "#1b1e1c", "mast": "#2b302c",
-            "camo": ["#2c3d2f", "#17191a", "#8f8a84"]
+            "hull": "#d9dbd8", "deck": "#c9ccc9", "wood": "#d6d2c4", "deck_line": "#9a968a", "steel_line": "#8a8e8c",
+            "levels": ["#e3e5e2", "#e7e9e6", "#ebedea", "#eff0ee"], "turret": "#dfe1de", "barbette": "#c4c7c4",
+            "funnel": "#e1e3e0", "funnel_cap": "#1b1d1f", "funnel_band": "#1b1d1f", "mast": "#3a3e42",
+            "camo": ["#8d9397", "#1e2124"]
           },
           "turrets": "round",
-          "shapes": {"blocks": "tower", "funnel": "oval", "dazzle": true, "dazzle_decks": 0.55, "dazzle_upperworks": 0.8},
-          "shapes_by_style": {"merchant": {"blocks": "soft", "dazzle": false}}
+          "shapes": {"funnel": "oval", "dazzle": true, "dazzle_decks": 0.5, "dazzle_upperworks": 0.8},
+          "shapes_by_style": {"merchant": {"dazzle": false}}
         },
-        // Finland-inspired 1950s-60s, as the Turunmaa corvettes: light grey, dark non-skid, black funnel caps,
-        // pennant numbers
+        // Finland-inspired 1950s-60s: today's coastal camouflage forty years early, green, black and pale grey panels
+        // over a green-grey, decks dark green, numbers. Louder than the other navies' muted Cold War, by choice
         "cold_war": {
           "from": "generic/cold_war",
-          "desc": "Finland-inspired 1950s-60s: light grey, dark non-skid, black funnel caps, numbers",
-          "palette": {"funnel_cap": "#1a1c1e", "funnel_band": "#1a1c1e"},
-          "adjust": [
-            {"keys": ["hull", "upperworks", "armament", "funnels"], "lighten": 0.12, "styles": ["warship", "carrier", "planing"]}
-          ],
-          "shapes": {"hull_number": true}
+          "desc": "Finland-inspired 1950s-60s: coastal camouflage in green, black and pale grey, numbers",
+          "palette": {
+            "hull": "#5a6458", "deck": "#3e473f", "steel_line": "#2a302b", "levels": ["#7b857a", "#868f85", "#91998f", "#9ba399"],
+            "turret": "#7b857a", "funnel": "#7b857a", "funnel_cap": "#181a19", "funnel_band": "#181a19",
+            "camo": ["#2d3a2e", "#151716", "#a3a59e"]
+          },
+          "shapes": {"dazzle": true, "dazzle_decks": 0.4, "dazzle_upperworks": 0.9, "hull_number": true},
+          "shapes_by_style": {"merchant": {"dazzle": false}}
         }
       }
     }
