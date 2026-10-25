@@ -58,7 +58,7 @@ leaks, shock) come into phase E (decision 8): they're `Effects`, and they read t
 2. **A design-level `materials` table**, keyed by name. A block per part would be the way to model variance in
    construction quality; that's not wanted yet, and the table can change to it later.
 3. **Choosing the shell by target belongs to the AI's pass.** This plan builds the tools (the ammunition, the
-   outcomes); the AI's pass decides how to use them. Planned in `shell-choice.md` (draft 2026-10-25).
+   outcomes); the AI's pass decides how to use them. Planned in `shell-choice.md` (agreed 2026-10-25).
 4. **The shell tech scales with calibre** (S, "How a block scales"): a default template, plus more beside it ("we may
    want to have silly shells later"). Nothing in the block is limited by period or plausibility, only by what can
    physically be (memory: allow silliness), so a player's odd shell is a block like any other.

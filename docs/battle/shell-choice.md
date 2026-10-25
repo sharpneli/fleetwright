@@ -1,5 +1,5 @@
 # Plan: the shell by target (a 4.5 deepening)
-Status: **draft 2026-10-25**, for the user's decisions ("Open questions" below)    Updated: 2026-10-25
+Status: **agreed with the user 2026-10-25** ("Decided" below)    Updated: 2026-10-25
 
 `shells-armour-damage.md` decision 3 left choosing the shell by target to the AI's pass: that plan built the shells,
 the loadouts and their outcomes, and every battery has fired by the magazine order since (S2, decision 7). This plan is
@@ -48,7 +48,7 @@ judgement to choose, check it on the real damage model, kind by kind (physics, m
 - Where the two rank the kinds differently, the fix goes into the matchup (it also mends Fight's judgements).
   Expected suspect: HE on a capital's upperworks. The matchup counts it only by the splinters through the deck to the
   vitals, while the damage model also wrecks directors, fire control and crews and starts fires (the Tsushima case,
-  where the Japanese chose HE on purpose). Whether that's "out of the fight" is open question 4.
+  where the Japanese chose HE on purpose). Whether that's "out of the fight" is decision 4's to settle by the bench.
 - Anchors: Samar (AP through destroyers and CVEs, the switch to HE), Tsushima (Shimose on Russian battleships), the
   Jutland outfits and the British rule of thumb (APC close, CPC long, HE at light craft). A research request asks for
   the record by navy and period (`research/REQUESTS.md`, 2026-10-25). It doesn't block.
@@ -57,7 +57,7 @@ judgement to choose, check it on the real damage model, kind by kind (physics, m
 hashed), chosen when the gun loads, not when it fires:
 - after firing, a mount loads the battery's **load ordered** (A2) if it has rounds of it, else the magazine order's
   next, as now;
-- what's in the gun is fired first, so a change takes effect a salvo later (open question 1: the cage's round too);
+- what's in the gun is fired first, so a change takes effect a salvo later (decision 1);
 - the dev salvo keeps its meaning (a kind asked, spent from that kind).
 - **Parity:** with no order given, every hash stays as it is (`ReplayTests`, the squadrons scenario's hash). This is
   the refactor's proof.
@@ -88,7 +88,7 @@ with it, so A6 re-measures.
 
 **A5 The player's order.** The player may overrule the captain (as with every order):
 - **The strip:** the GUNS column gets **Shells ▾**: *by target* (the captain's, shown with what he's chosen) and each
-  kind the selection's batteries carry, for the ship or a unit (every ship in it).
+  kind the selection's main guns carry, for the current selection (decision 3: the chief batteries only, for now).
 - **A kind ordered holds against doctrine** until the battery is out of it. Then it goes back to the captain's choice,
   and the ticker says so ("Lion: out of HE").
 - **The card:** each battery's kind in the guns and its rounds by kind.
@@ -102,21 +102,15 @@ with it, so A6 re-measures.
   secondaries and light cruisers;
 - the fire pass's cost a ship and the matchup's table memory (`Matchups.Warm`).
 
-## Open questions (the user's)
+## Decided (the user, 2026-10-25)
 
-1. **What a change costs.** The round in the gun only (one salvo), or the cage's too (two)? I recommend the gun only,
-   with the ready-use racks holding the battery's mix (rough for a non-core detail). The research request asks how
-   long changes took.
-2. **Doctrine's default.** "By target" for every period, the period's differences coming from its loadouts (an IJN
-   1905 loadout mostly HE)? Or period presets, with the 1890s on the magazine order? I recommend by target everywhere
-   (a general system, not replicas).
-3. **The player's order: per ship or per battery?** I recommend per ship or unit (every battery that carries the kind,
-   the rest by target), with per battery on the card later if playtesting wants it.
-4. **What "best" is.** Out of the fight per round, as the matchup has it, or also silencing (directors, guns,
-   fires)? A0 measures whether the matchup misses what HE does to a capital ship. If it does, the fix is the matchup's,
-   so Fight gains it too, not a separate measure for shells.
-5. **Keeping AP back.** Should a ship spare her AP from cruisers while the enemy's battle line is expected? I recommend
-   no: AP is seldom best against light ships, so sparing it mostly falls out of A3 by itself.
+1. **A change costs the round in the gun** (one salvo); the ready-use racks hold the battery's mix.
+2. **Doctrine's default is "by target" in every period;** a period's differences come from its loadouts.
+3. **The player's order goes to the current selection, main guns only for now:** every selected ship's chief batteries
+   (`BatteryRow.Chief`) that carry the kind; the secondaries stay the captain's.
+4. **"Best" is what A0 shows:** if the matchup misses what HE does to a capital ship, the fix is the matchup's (Fight
+   gains it too), not a measure of its own for shells.
+5. **No keeping AP back:** sparing it falls out of the choice by target.
 
 ## Not here
 
