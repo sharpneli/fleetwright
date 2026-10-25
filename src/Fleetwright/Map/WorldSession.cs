@@ -113,8 +113,9 @@ public sealed class WorldSession : IDisposable
         return Directory.Exists(dir) ? [.. Directory.GetFiles(dir, "*.json").Where(Sim.Missions.Scenario.IsScenario).Order(StringComparer.Ordinal)] : [];
     }
 
-    /// <summary>The shipped designs, where a scenario looks after its own Designs/.</summary>
-    static readonly string[] DesignFolders = [Path.Combine(AppContext.BaseDirectory, "Content", "Designs")];
+    /// <summary>Where a scenario looks for a design after its own Designs/: the shipped ones, then the player's (a setup
+    /// may swap one in, docs/map-ui/launch.md).</summary>
+    static readonly string[] DesignFolders = [Path.Combine(AppContext.BaseDirectory, "Content", "Designs"), Designer.DesignDoc.UserFolder];
 
     /// <summary>The dev's -smokefield[=0]: the smoke field on or off (docs/battle/smoke.md; else settings.json's Smoke,
     /// on since 2026-10-21).</summary>

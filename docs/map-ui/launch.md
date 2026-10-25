@@ -180,7 +180,7 @@ mockup's, committed.
 |---|---|---|
 | **L0** (done 2026-10-25) | The load: classes asked on selection, the two queues (compile first, art after), more threads while nothing runs, Begin when compiled; measured at Tsushima and Jutland, memory included | `ShipClassRegistry`, `ShipArtLibrary`, `WorldSession.Load` |
 | **L1** (done 2026-10-25) | The launch scene: the list, the header and brief, the side cards (Watch included), the opening drawn from the file's top units, the footer's load and Begin. The app opens on it (the last scenario played selected); the menu's and the result's "Scenarios" open it; `-scenario=` still goes straight into the world (captures and tests), `-launch[=name]` opens the screen. The briefing modal at start goes (the brief is on this screen; the menu's Briefing stays) | — |
-| **L2** | A setup as data: the overrides on a parsed `Scenario`, saved and listed as a scenario file with `"from"` and `"designs"`; the changes list and reset | `Scenario`, `ScenarioLoader` |
+| **L2** (done 2026-10-25) | A setup as data: the overrides on a parsed `Scenario`, saved and listed as a scenario file with `"from"` and `"designs"`; the changes list and reset | `Scenario`, `ScenarioLoader` |
 | **L3** | Ships: each side's order of battle, the design rows and their state, the picker (sources, filters, figures, matchup, apply to all, one or every), the designer round trip (edit a copy, saved back into the picker as yours) | the matchup on candidates |
 | **L3b** | Adding and removing: − n + per row, ✕ per unit, the add picker, the placing view (on the sea, the course dragged), joining a unit | `"add"`, `"remove"` |
 | **L4** | Standing orders: aggression and what it moves, the admirals' and captains' tempers, the rules | `Temper` on units and ships |
@@ -213,6 +213,29 @@ stay). A scenario file dropped on the screen joins the list under Opened and is 
   (both sides in full when watching), the aim and the end, the orders before action. Both unit lists scroll.
 - **Left for later:** Settings (there are none), the list's load estimates ("under 1 s"), opening a file by a dialog
   (dropping one works), the side cards' fixed height with a long character line.
+
+**L2 done (2026-10-25).** `Sim.Missions/ScenarioSetup.cs`: a setup is the scenario as written plus an ordered list of
+changes (`SetupChange`: `PlayAs` a side or watch, `SwapDesign` by unit, by one ship or everywhere, `SideSetting` for a
+side's gun crews, readiness, damage control, fire discipline or fuel, `SetSeed`), one per key, a later change of a key
+replacing the earlier. `Apply` is pure: units are copied where a swap reaches (a one-ship swap splits her entry round
+her, the order and the names kept, so the stations don't move), the written scenario untouched, and the result
+remembers both (`Scenario.Setup`, `Scenario.Written`). The file is a scenario file with `"from"` and none of
+`"units"`, `"only"` or `"sides"` (those still compose, as the ladder does); its keys are exactly the changes' (`player`
+(null to watch), `designs`, `crews`, `readiness`, `damage_control`, `fire_discipline`, `fuel`, `seed`), anything else
+refused, and it reads back to the same scenario (tested). `Scenario.Load(path, fromFolders)` finds a setup's
+`"from"` in the shipped folder; its designs are the written one's, then the shipped, then the player's
+(`My Games/Fleetwright/Designs`, for L3's swaps).
+
+- **On the screen:** the pick is the written scenario and the setup being edited; the side cards edit it (the side as
+  written takes the change away again). The third column ends with **Changes from the scenario**: a line each, as
+  `SetupChange.Describe` says it against the written one, a ✕ to undo it, Reset all. **Save setup…** asks a name and
+  writes `My Games/Fleetwright/Setups/<name>.json` (a setup saved again keeps its file; a new name taken by another
+  gets a number), then reads it back as its entry and picks it: what's listed is what's on disk. **Your setups** at the
+  list's foot lists them newest first; a shipped card with setups of yours says so; a setup picked heads the screen as
+  "Your setup of Tsushima". The last begun is remembered as `setups/<name>`.
+- **The result** says "Tsushima, as you set it:" with each change, when the fight was a setup's.
+- **Still to come in this format:** doctrine and tempers (L4), the day (L5), `"add"` and `"remove"` (L3b): each joins
+  `ScenarioSetup` as a change of its own, with its file key.
 
 ## Decisions (the user, 2026-10-25)
 

@@ -71,7 +71,9 @@ The app opens on the launch screen (`Map/LaunchScene.cs`, docs/map-ui/launch.md 
 a world (`-scenario=`, `-ships=`, `-map=`, `-view=` or a designer flag): the scenarios, the picked one's header and
 brief, a card a side and Watch, the opening drawn from its top units (`LaunchScene.Opening.cs`), what each side has and
 wants, the load and Begin; picking asks for the classes and places the world (`WorldSession.Select`), Begin swaps it
-in. `SceneSwitcher` shows it in place of the map until a scenario begins. Wheel zooms at the cursor, left drag pans. Ships (`MapScene.Ships.cs`, step 2.3a): a click
+in. `SceneSwitcher` shows it in place of the map until a scenario begins. What the player changes is a setup
+(`Sim.Missions/ScenarioSetup.cs`, L2): the scenario as written plus its changes, listed with an undo each, saved by
+Save setup… as a scenario file with `"from"` in My Games/Fleetwright/Setups and listed under Your setups. Wheel zooms at the cursor, left drag pans. Ships (`MapScene.Ships.cs`, step 2.3a): a click
 selects (twice: her squadron takes the orders; Tab steps through your ships), the strip at the bottom
 (`MapScene.Strip.cs`, docs/map-ui/battle-hud.md U2) gives the orders: who to (the ship or a unit above her), helm and
 telegraph, guns, torpedoes and smoke, the task (fight, follow…, hold; Task ▾ or T opens the task menu,

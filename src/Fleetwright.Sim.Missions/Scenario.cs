@@ -75,6 +75,11 @@ public sealed record Scenario
     /// <summary>What the file says of each side (its character, its commander, its ensign), by index, where it does.</summary>
     public List<(int Side, SideAbout About)> About { get; init; } = [];
 
+    /// <summary>The setup this is the scenario as set by (docs/map-ui/launch.md), and the scenario as written; null for
+    /// the written one itself.</summary>
+    public ScenarioSetup? Setup { get; init; }
+    public Scenario? Written { get; init; }
+
     public SideAbout? AboutOf(int side)
     {
         foreach (var (sd, a) in About)
@@ -172,11 +177,11 @@ public sealed record Scenario
 
     public int ShipCount => Units.Sum(u => u.ShipCount);
 
-    public static Scenario Load(string path)
+    public static Scenario Load(string path, IReadOnlyList<string>? fromFolders = null)
     {
         try
         {
-            return Parse(File.ReadAllText(path), Path.GetDirectoryName(Path.GetFullPath(path)));
+            return Parse(File.ReadAllText(path), Path.GetDirectoryName(Path.GetFullPath(path)), 0, fromFolders ?? []);
         }
         catch (ScenarioException x)
         {
@@ -201,9 +206,13 @@ public sealed record Scenario
 
     static readonly JsonDocumentOptions Options = new() { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true };
 
-    public static Scenario Parse(string json, string? folder = null) => Parse(json, folder, 0);
+    public static Scenario Parse(string json, string? folder = null) => Parse(json, folder, 0, []);
 
-    static Scenario Parse(string json, string? folder, int depth)
+    /// <summary>Reads a file whose <c>"from"</c> may be in <paramref name="fromFolders"/> too (a setup in the player's
+    /// folder of a shipped scenario).</summary>
+    public static Scenario Parse(string json, string? folder, IReadOnlyList<string> fromFolders) => Parse(json, folder, 0, fromFolders);
+
+    static Scenario Parse(string json, string? folder, int depth, IReadOnlyList<string> fromFolders)
     {
         JsonDocument doc;
         try
@@ -228,19 +237,22 @@ public sealed record Scenario
             Scenario? from = null;
             if (Str(r, "from", "") is { Length: > 0 } fromName)
             {
-                if (depth > 4 || folder == null)
-                    throw new ScenarioException($"from \"{fromName}\": {(folder == null ? "no folder to find it in" : "too deep")}");
-                string fromPath = Path.Combine(folder, fromName + ".json");
-                if (!File.Exists(fromPath))
-                    throw new ScenarioException($"from \"{fromName}\": no {fromPath}");
+                string[] look = [.. (folder != null ? [folder] : Array.Empty<string>()), .. fromFolders];
+                if (depth > 4 || look.Length == 0)
+                    throw new ScenarioException($"from \"{fromName}\": {(look.Length == 0 ? "no folder to find it in" : "too deep")}");
+                string? fromPath = look.Select(f => Path.Combine(f, fromName + ".json")).FirstOrDefault(File.Exists)
+                    ?? throw new ScenarioException($"from \"{fromName}\": not in {string.Join(" or ", look)}");
                 try
                 {
-                    from = Parse(File.ReadAllText(fromPath), folder, depth + 1);
+                    from = Parse(File.ReadAllText(fromPath), Path.GetDirectoryName(fromPath), depth + 1, fromFolders);
                 }
                 catch (ScenarioException x)
                 {
                     throw new ScenarioException($"from \"{fromName}\": {x.Message}");
                 }
+                // a setup: the scenario it's of, as set (ScenarioSetup); its folder the written one's, for its designs
+                if (ScenarioSetup.IsSetup(r))
+                    return ScenarioSetup.Parse(r, from).Apply(from);
             }
             var sides = r.TryGetProperty("sides", out var sd) && sd.ValueKind == JsonValueKind.Array
                 ? sd.EnumerateArray().Select(x => x.GetString() ?? "").ToArray()
@@ -423,7 +435,7 @@ public sealed record Scenario
         return list;
     }
 
-    static List<(int, CrewQuality)> ParseCrews(JsonElement e, string[] sides)
+    internal static List<(int, CrewQuality)> ParseCrews(JsonElement e, string[] sides)
     {
         if (e.ValueKind != JsonValueKind.Object)
             throw new ScenarioException("crews: an object of sides' names, { \"Germany\": \"elite\" }");
@@ -440,7 +452,7 @@ public sealed record Scenario
         return list;
     }
 
-    static List<(int, double)> ParseFuel(JsonElement e, string[] sides)
+    internal static List<(int, double)> ParseFuel(JsonElement e, string[] sides)
     {
         if (e.ValueKind != JsonValueKind.Object)
             throw new ScenarioException("fuel: an object of sides' names, { \"Britain\": 0.6 } (a share of a full load)");
@@ -458,7 +470,7 @@ public sealed record Scenario
     }
 
     /// <summary>A setting by side, a name each (fire_discipline, readiness): { "Germany": "german" }.</summary>
-    static List<(int, string)> ParseNames(string key, string what, JsonElement e, string[] sides)
+    internal static List<(int, string)> ParseNames(string key, string what, JsonElement e, string[] sides)
     {
         if (e.ValueKind != JsonValueKind.Object)
             throw new ScenarioException($"{key}: an object of sides' names, {{ \"{sides.FirstOrDefault() ?? "Germany"}\": ... }}");
@@ -738,6 +750,19 @@ public sealed class ScenarioUnit
 
     public bool IsForce => Units.Count > 0;
     public int ShipCount => IsForce ? Units.Sum(u => u.ShipCount) : Ships.Sum(s => s.Count);
+
+    /// <summary>A copy with other sub-units and ships, the rest the same (a setup's changes: the written one untouched).</summary>
+    internal ScenarioUnit With(IEnumerable<ScenarioUnit> units, IEnumerable<ScenarioShips> ships)
+    {
+        var u = new ScenarioUnit
+        {
+            Name = Name, Side = Side, Formation = Formation, SpacingM = SpacingM, At = At, CourseDeg = CourseDeg, Kn = Kn,
+            Route = Route, Loop = Loop, Doctrine = Doctrine, Tasks = Tasks, Loadout = Loadout,
+        };
+        u.Units.AddRange(units);
+        u.Ships.AddRange(ships);
+        return u;
+    }
 }
 
 /// <summary>Ships of one design in a squadron, in order: <see cref="Count"/> of them, the first named by
@@ -754,6 +779,15 @@ public sealed class ScenarioShips
     /// <summary>The loadout they carry (docs/battle/shells-armour-damage.md S5): the entry's, else its unit's; null for
     /// their design's own.</summary>
     public LoadoutSpec? Loadout { get; init; }
+
+    /// <summary>Ships <paramref name="from"/> to <paramref name="from"/> + <paramref name="count"/> of the entry, of a
+    /// design: their names and dyes go with them.</summary>
+    internal ScenarioShips Slice(int from, int count, string design) => new()
+    {
+        Design = design, Count = count, Loadout = Loadout,
+        Names = from < Names.Length ? Names[from..Math.Min(from + count, Names.Length)] : [],
+        Dyes = from < Dyes.Length ? Dyes[from..Math.Min(from + count, Dyes.Length)] : [],
+    };
 }
 
 /// <summary>A top unit's opening task (docs/battle/command.md 5.1c): <c>"task": { "do": "scout", "of": "Grand Fleet",

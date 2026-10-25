@@ -17,7 +17,9 @@ namespace Fleetwright.Map;
 /// side and Watch, the opening on the map, what each side has and wants, and at the foot the load and Begin. Picking a
 /// scenario or a side asks for its classes and places its world at once (<see cref="WorldSession.Select(Scenario, string?)"/>),
 /// so reading the brief covers the build; Begin swaps the world in (<see cref="WorldSession.Begin"/>) and
-/// <see cref="Begun"/> shows the map. The ships, the standing orders and the conditions (L3-L5) take the body later;
+/// <see cref="Begun"/> shows the map. What the player changes is a setup (<see cref="ScenarioSetup"/>, L2): the
+/// scenario as written plus its changes, listed with an undo each, saved as a scenario file in My Games/Fleetwright/
+/// Setups and listed under Your setups. The ships, the standing orders and the conditions (L3-L5) take the body later;
 /// until then it shows what the briefing did. Its strings are made when the pick changes, so a frame allocates nothing
 /// but the load's line while it builds.</summary>
 public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
@@ -35,8 +37,9 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         public required string Path;
         public Scenario? Scenario;
         public string? Error;
-        public bool Test, Opened;
-        public string Name = "", Date = "", Classes = "";
+        public bool Test, Opened, Saved;   // Saved: a setup of the player's, in the setups folder
+        public DateTime Modified;
+        public string Name = "", Date = "", Classes = "", When = "";
         public (string Name, string Count)[] Sides = [];
         public int Year, Ships;
     }
@@ -54,7 +57,19 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
     int beginGeneration;
     bool pausedHere;   // a battle was running when the screen opened, and it paused it
 
-    static string LastPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "My Games", "Fleetwright", "launch.json");
+    static string UserFolder => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "My Games", "Fleetwright");
+    static string LastPath => Path.Combine(UserFolder, "launch.json");
+
+    /// <summary>The player's setups, beside their designs.</summary>
+    public static string SetupsFolder => Path.Combine(UserFolder, "Setups");
+
+    static readonly string ShippedFolder = Path.Combine(AppContext.BaseDirectory, "Content", "Scenarios");
+
+    // the pick as the player has set it: the scenario as written, the setup's changes, and the two applied (null if a
+    // change no longer applies: its error)
+    Scenario? written, current;
+    ScenarioSetup setup = new();
+    string? setupError;
 
     // the theme of the mockup (launch.html's :root)
     static readonly Vector4 Bg = Hex(0x0C1217), BgLight = Hex(0x14222D), Bar = Hex(0x0B0F12), ListBg = new(10 / 255f, 14 / 255f, 17 / 255f, 0.92f),
@@ -72,23 +87,45 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         land = Land.Load(Path.Combine(AppContext.BaseDirectory, "Content", "World", "land-50m.bin"));
         foreach (var path in WorldSession.ShippedScenarios())
             entries.Add(Read(path, opened: false));
-        // the shipped first, the scale test's rungs (ladder-*) under Tests
-        entries.Sort((a, b) => a.Test != b.Test ? a.Test.CompareTo(b.Test) : Order(a).CompareTo(Order(b)));
+        if (Directory.Exists(SetupsFolder))
+            foreach (var path in Directory.GetFiles(SetupsFolder, "*.json"))
+                entries.Add(Read(path, opened: false));
+        Sort();
         pickName ??= ReadLast();
-        int at = pickName == null ? -1 : entries.FindIndex(e => Path.GetFileNameWithoutExtension(e.Path).Equals(pickName, StringComparison.OrdinalIgnoreCase));
+        int at = pickName == null ? -1 : entries.FindIndex(e => KeyOf(e).Equals(pickName, StringComparison.OrdinalIgnoreCase));
         initial = at >= 0 ? at : entries.FindIndex(e => !e.Test && e.Scenario != null);
     }
 
-    /// <summary>The shipped scenarios in the order of their dates, then their names.</summary>
-    static (long, string) Order(Entry e) => (e.Scenario?.Start.Ms ?? long.MaxValue, e.Name);
+    /// <summary>The shipped first by their dates, the scale test's rungs (ladder-*) under Tests, the player's setups
+    /// newest first, the files opened last.</summary>
+    void Sort()
+    {
+        entries.Sort((a, b) => Group(a) != Group(b) ? Group(a).CompareTo(Group(b))
+            : a.Saved ? b.Modified.CompareTo(a.Modified)
+            : (a.Scenario?.Start.Ms ?? long.MaxValue, a.Name).CompareTo((b.Scenario?.Start.Ms ?? long.MaxValue, b.Name)));
+        setupsOf.Clear();
+        foreach (var e in entries)
+            if (e.Saved && e.Scenario?.Setup is { } st)
+                setupsOf.Add(st.From);
+    }
+
+    readonly HashSet<string> setupsOf = new(StringComparer.OrdinalIgnoreCase);   // the scenarios the player has setups of
+
+    static int Group(Entry e) => e.Opened ? 3 : e.Saved ? 2 : e.Test ? 1 : 0;
+
+    /// <summary>How the last one played is kept: a shipped scenario's file name, a setup's as "setups/name".</summary>
+    static string KeyOf(Entry e) => (e.Saved ? "setups/" : "") + Path.GetFileNameWithoutExtension(e.Path);
 
     static Entry Read(string path, bool opened)
     {
         var e = new Entry { Path = path, Opened = opened, Name = Path.GetFileNameWithoutExtension(path) };
         e.Test = e.Name.StartsWith("ladder-", StringComparison.Ordinal);
+        e.Saved = !opened && Path.GetFullPath(Path.GetDirectoryName(path)!).Equals(Path.GetFullPath(SetupsFolder), StringComparison.OrdinalIgnoreCase);
+        e.Modified = File.GetLastWriteTime(path);
+        e.When = e.Modified.Date == DateTime.Today ? "today" : e.Modified.ToString("MMM d", CultureInfo.InvariantCulture);
         try
         {
-            var s = Scenario.Load(path);
+            var s = Scenario.Load(path, [ShippedFolder]);
             e.Scenario = s;
             e.Name = s.Name;
             var start = s.Start.ToUtc();
@@ -139,8 +176,10 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         int at = entries.FindIndex(e => Path.GetFullPath(e.Path).Equals(full, StringComparison.OrdinalIgnoreCase));
         if (at < 0)
         {
-            entries.Add(Read(path, opened: true));
-            at = entries.Count - 1;
+            var e = Read(path, opened: true);
+            entries.Add(e);
+            Sort();
+            at = entries.IndexOf(e);
         }
         filter = 0;
         Pick(at);
@@ -176,25 +215,60 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
     void Pick(int i)
     {
         pick = i;
+        (written, current, setupError) = (null, null, null);
         if (i < 0 || entries[i].Scenario is not { } s)
             return;
-        side = s.Player;
+        written = s.Written ?? s;
+        described.Clear();
+        // a setup picked is its changes; a scenario as written, none yet (of its file, if a setup can be "from" it)
+        setup = s.Setup ?? new ScenarioSetup { From = entries[i].Opened ? "" : Path.GetFileNameWithoutExtension(entries[i].Path) };
+        Apply();
+    }
+
+    /// <summary>A change of the player's: the setup with it (or without it, when it puts back what's written).</summary>
+    void Edit(ScenarioSetup next)
+    {
+        setup = next;
+        Apply();
+    }
+
+    int? pendingSide;   // a side card clicked this frame
+
+    void SetSide(int sd)
+    {
+        if (written == null)
+            return;
+        string? name = sd >= 0 ? written.Sides[sd] : null;
+        Edit(name == written.PlayerName ? setup.Without("player") : setup.With(new PlayAs(name)));
+    }
+
+    void Apply()
+    {
+        try
+        {
+            current = setup.Apply(written!);
+            setupError = null;
+            side = current.Player;
+        }
+        catch (ScenarioException x)
+        {
+            (current, setupError) = (null, x.Message);
+        }
         Select();
     }
 
-    /// <summary>The pick, with the side chosen, to the world: its classes asked for and its world placed now.</summary>
+    /// <summary>The pick as set, to the world: its classes asked for and its world placed now.</summary>
     void Select()
     {
-        if (pick < 0 || entries[pick].Scenario is not { } s)
+        if (current == null)
             return;
-        var picked = s with { PlayerName = side >= 0 ? s.Sides[side] : null };
-        world.Select(picked, entries[pick].Path);
-        Made(picked);
+        world.Select(current, entries[pick].Path);
+        Made(current);
     }
 
     void BeginWorld(bool paused)
     {
-        if (pick < 0 || entries[pick].Scenario == null || begin)
+        if (current == null || begin)
             return;
         if (world.Selected == null)
             Select();
@@ -205,7 +279,7 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         begin = true;
         world.Begin();
         if (!entries[pick].Opened)
-            WriteLast(Path.GetFileNameWithoutExtension(entries[pick].Path));
+            WriteLast(KeyOf(entries[pick]));
     }
 
     public void Draw(SDL_GPUCommandBuffer* cmd, RenderTarget target, float dt)
@@ -267,6 +341,11 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
             TopBar(o, w, top);
         }
         ImGui.End();
+        if (pendingSide is int ps)
+        {
+            pendingSide = null;
+            SetSide(ps);
+        }
     }
 
     // ------------------------------------------------------------------ text and boxes
@@ -357,7 +436,7 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         Txt(UiFonts.Sans, 13, new Vector2(x, mid - 9 * sc), Muted, "Scenarios ›");
         x += Width(UiFonts.Sans, 13, "Scenarios ›") + 5 * sc;
         if (pick >= 0)
-            Txt(UiFonts.SansBold, 13, new Vector2(x, mid - 9 * sc), Bright, entries[pick].Name);
+            Txt(UiFonts.SansBold, 13, new Vector2(x, mid - 9 * sc), Bright, current?.Name ?? entries[pick].Name);
         // at the right: the build under way, the designer, quit
         float bx = o.X + w - 14 * sc;
         float qw = 44 * sc, dw = 72 * sc, bh = 24 * sc;
@@ -401,7 +480,7 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         Tracked(UiFonts.Sans, 10.5f, new Vector2(x, y), Muted, "SCENARIOS", 0.9f);
         int shipped = 0;
         foreach (var e in entries)
-            shipped += e.Test || e.Opened ? 0 : 1;
+            shipped += e.Test || e.Opened || e.Saved ? 0 : 1;
         string n = shipped == 1 ? "1 shipped" : $"{shipped} shipped";
         Txt(UiFonts.SansSmall, 11, new Vector2(o.X + w - 16 * sc - Width(UiFonts.SansSmall, 11, n), y), Muted, n);
         // the filters
@@ -418,7 +497,7 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
             fx += fw + 4 * sc;
         }
         // the cards, scrolling; your setups and the drop at the foot
-        float footH = 110 * sc, cardsTop = fy + 30 * sc;
+        float footH = 150 * sc, cardsTop = fy + 30 * sc;
         ImGui.SetCursorScreenPos(new Vector2(o.X, cardsTop));
         ImGui.PushStyleColor(ImGuiCol.ChildBg, Vector4.Zero);
         if (ImGui.BeginChild("##cards", new Vector2(w - 1, o.Y + h - footH - cardsTop), ImGuiChildFlags.None, ImGuiWindowFlags.NoScrollbar))
@@ -431,8 +510,8 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
             for (int i = 0; i < entries.Count; i++)
             {
                 var e = entries[i];
-                if (!Shown(e))
-                    continue;
+                if (!Shown(e) || e.Saved)
+                    continue;   // the setups are at the foot
                 string g = e.Opened ? "OPENED" : e.Test ? "TESTS" : "SHIPPED";
                 if (g != group)
                 {
@@ -451,9 +530,48 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         float y0 = o.Y + h - footH;
         HLine(o.X, o.X + w, y0);
         Tracked(UiFonts.Sans, 10, new Vector2(o.X + 14 * sc, y0 + 12 * sc), Muted, "YOUR SETUPS", 0.9f);
-        Txt(UiFonts.SansSmall, 12, new Vector2(o.X + 14 * sc, y0 + 34 * sc), Muted, "None yet: a setup is saved from this screen (Save setup…).");
-        Txt(UiFonts.SansSmall, 12, new Vector2(o.X + 14 * sc, y0 + 62 * sc), Brass, "+");
-        Txt(UiFonts.SansSmall, 12, new Vector2(o.X + 30 * sc, y0 + 62 * sc), Muted, "Open a scenario file: drop it on the window");
+        float rowsTop = y0 + 30 * sc, rowsH = footH - 60 * sc;
+        ImGui.SetCursorScreenPos(new Vector2(o.X, rowsTop));
+        ImGui.PushStyleColor(ImGuiCol.ChildBg, Vector4.Zero);
+        if (ImGui.BeginChild("##setups", new Vector2(w - 1, rowsH), ImGuiChildFlags.None, ImGuiWindowFlags.None))
+        {
+            var keep = dl;
+            dl = ImGui.GetWindowDrawList();
+            var p = ImGui.GetCursorScreenPos();
+            float ry = p.Y, rw = w - 24 * sc;
+            bool any = false;
+            for (int i = 0; i < entries.Count; i++)
+            {
+                var e = entries[i];
+                if (!e.Saved)
+                    continue;
+                any = true;
+                var a = new Vector2(o.X + 8 * sc, ry);
+                ImGui.SetCursorScreenPos(a);
+                if (ImGui.InvisibleButton($"##setup{i}", new Vector2(rw, 26 * sc)) && i != pick)
+                    Pick(i);
+                bool on = i == pick, hover = ImGui.IsItemHovered();
+                if (on || hover)
+                    dl.AddRectFilled(a, a + new Vector2(rw, 26 * sc), U(on ? Brass with { W = 0.08f } : new Vector4(1, 1, 1, 0.04f)), 2 * sc);
+                var t = a + new Vector2(8 * sc, 13 * sc);
+                dl.AddTriangleFilled(t - new Vector2(0, 4 * sc), t + new Vector2(5 * sc, 0), t + new Vector2(0, 4 * sc), U(Brass));
+                Txt(UiFonts.SansSmall, 12, a + new Vector2(20 * sc, 5 * sc), e.Error != null ? Hostile : on ? Bright : Text, e.Name);
+                float ww = Width(UiFonts.SansSmall, 12, e.When);
+                Txt(UiFonts.SansSmall, 12, a + new Vector2(rw - 8 * sc - ww, 5 * sc), Muted, e.When);
+                if (hover && e.Error != null)
+                    ImGui.SetTooltip(e.Error);
+                ry += 28 * sc;
+            }
+            if (!any)
+                Txt(UiFonts.SansSmall, 12, new Vector2(o.X + 14 * sc, ry + 4 * sc), Muted, "None yet: change a scenario, then Save setup…");
+            ImGui.SetCursorScreenPos(new Vector2(o.X, ry));
+            ImGui.Dummy(new Vector2(1, 2 * sc));
+            dl = keep;
+        }
+        ImGui.EndChild();
+        ImGui.PopStyleColor();
+        Txt(UiFonts.SansSmall, 12, new Vector2(o.X + 14 * sc, o.Y + h - 26 * sc), Brass, "+");
+        Txt(UiFonts.SansSmall, 12, new Vector2(o.X + 30 * sc, o.Y + h - 26 * sc), Muted, "Open a scenario file: drop it on the window");
     }
 
     bool Shown(Entry e) => filter switch
@@ -471,7 +589,8 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
     float Card(int i, Entry e, Vector2 at, float w)
     {
         bool on = i == pick, small = e.Test;
-        float h = (small ? 60 : 78) * sc;
+        bool hasSetups = !e.Test && !e.Opened && setupsOf.Contains(Path.GetFileNameWithoutExtension(e.Path));
+        float h = (small ? 60 : hasSetups ? 94 : 78) * sc;
         ImGui.SetCursorScreenPos(at);
         if (ImGui.InvisibleButton($"##sc{i}", new Vector2(w, h)) && i != pick)
             Pick(i);
@@ -503,6 +622,12 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
                 Txt(UiFonts.Mono, 11.5f, new Vector2(sx, sy + 1 * sc), Bright, count);
                 sx += Width(UiFonts.Mono, 11.5f, count) + 10 * sc;
             }
+        }
+        if (hasSetups)
+        {
+            var d = new Vector2(at.X + 15 * sc, at.Y + 80 * sc);
+            dl.AddQuadFilled(d - new Vector2(0, 3.5f * sc), d + new Vector2(3.5f * sc, 0), d + new Vector2(0, 3.5f * sc), d - new Vector2(3.5f * sc, 0), U(Brass));
+            Txt(UiFonts.SansSmall, 11, new Vector2(at.X + 23 * sc, at.Y + 72 * sc), Brass, "a saved setup of yours");
         }
         if (e.Classes.Length > 0)
         {
@@ -540,7 +665,7 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
     void Made(Scenario s)
     {
         var start = s.Start.ToUtc();
-        kicker = $"SCENARIO{(s.Place.Length > 0 ? " · " + s.Place.ToUpperInvariant() : "")} · {start.Year}";
+        kicker = $"{(s.Setup is { IsEmpty: false } ? $"YOUR SETUP OF {s.Written!.Name.ToUpperInvariant()}" : "SCENARIO")}{(s.Place.Length > 0 ? " · " + s.Place.ToUpperInvariant() : "")} · {start.Year}";
         var (lat, lon) = Centre(s);
         var local = start.AddHours(lon / 15);   // local mean time, by the sun
         var parts = new List<string>
@@ -619,14 +744,16 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
             return;
         var e = entries[pick];
         float x = o.X + 26 * sc, y = o.Y + 18 * sc;
-        if (e.Scenario == null)
+        if (current == null)
         {
-            Txt(UiFonts.Title, 16, new Vector2(x, y), Hostile, $"{e.Name} couldn't be read");
-            Wrapped(UiFonts.Sans, 13, new Vector2(x, y + 26 * sc), Muted, e.Error ?? "", 800 * sc);
+            Txt(UiFonts.Title, 16, new Vector2(x, y), Hostile, e.Scenario == null ? $"{e.Name} couldn't be read" : $"{e.Name}: a change no longer applies");
+            Wrapped(UiFonts.Sans, 13, new Vector2(x, y + 26 * sc), Muted, e.Error ?? setupError ?? "", 800 * sc);
+            if (e.Scenario != null && Button("##resetbad", "Reset to the scenario as written", new Vector2(x, y + 70 * sc), new Vector2(230 * sc, 24 * sc)))
+                Edit(setup with { Changes = [] });
             return;
         }
         Tracked(UiFonts.Sans, 10.5f, new Vector2(x, y), Brass, kicker, 1.2f);
-        Txt(UiFonts.PosterTitle, 34, new Vector2(x, y + 14 * sc), Bright, e.Name);
+        Txt(UiFonts.PosterTitle, 34, new Vector2(x, y + 14 * sc), Bright, current.Name);
         Txt(UiFonts.SansSmall, 12, new Vector2(x, y + 58 * sc), Muted, meta);
         float wrap = Math.Min(800 * sc, w - 700 * sc);
         Wrapped(UiFonts.Sans, 13.5f, new Vector2(x, y + 82 * sc), BriefC, brief, wrap);
@@ -648,10 +775,7 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         bool on = side == c.Side;
         ImGui.SetCursorScreenPos(at);
         if (ImGui.InvisibleButton($"##side{c.Side}", size) && !on && !begin)
-        {
-            side = c.Side;
-            Select();
-        }
+            pendingSide = c.Side;   // at the frame's end: the cards are being drawn
         bool hover = ImGui.IsItemHovered();
         Box(at, at + size, on ? Brass with { W = 0.07f } : new Vector4(1, 1, 1, hover ? 0.05f : 0.02f), on ? Brass : EdgeC);
         float x = at.X + 12 * sc, y = at.Y + 10 * sc;
@@ -684,7 +808,7 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
     {
         if (c.Capital >= 0)
             return true;
-        if (pick < 0 || entries[pick].Scenario is not { } s || world.LoadIds is not { } ids)
+        if (current is not { } s || world.LoadIds is not { } ids)
             return false;
         int cap = 0, cru = 0, light = 0;
         foreach (var u in s.Units)
@@ -719,10 +843,7 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         bool on = side < 0;
         ImGui.SetCursorScreenPos(at);
         if (ImGui.InvisibleButton("##watch", size) && !on && !begin)
-        {
-            side = -1;
-            Select();
-        }
+            pendingSide = -1;
         bool hover = ImGui.IsItemHovered();
         Box(at, at + size, on ? Brass with { W = 0.07f } : new Vector4(1, 1, 1, hover ? 0.05f : 0.02f), on ? Brass : EdgeC);
         float x = at.X + 12 * sc, y = at.Y + 10 * sc;
@@ -799,7 +920,7 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
 
     void Body(Vector2 o, float w, float h)
     {
-        if (pick < 0 || entries[pick].Scenario == null)
+        if (current == null)
             return;
         float[] widths = [600 * sc, 520 * sc];
         float x = o.X;
@@ -831,6 +952,58 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
                 cy += 20 * sc;
             }
         }
+        Changes(new Vector2(cx, cy + 14 * sc), cw);
+    }
+
+    /// <summary>Every change from the scenario as written, a line each with its undo, and Reset all (the mockup's
+    /// "Changes from the scenario").</summary>
+    void Changes(Vector2 at, float w)
+    {
+        float y = at.Y;
+        Tracked(UiFonts.Sans, 10.5f, at, Muted, "CHANGES FROM THE SCENARIO", 0.9f);
+        if (setup.IsEmpty)
+        {
+            const string None = "none: as written";
+            Txt(UiFonts.SansSmall, 11, new Vector2(at.X + w - Width(UiFonts.SansSmall, 11, None), y), Muted, None);
+            return;
+        }
+        const string Reset = "Reset all";
+        float rw = Width(UiFonts.SansSmall, 11.5f, Reset);
+        ImGui.SetCursorScreenPos(new Vector2(at.X + w - rw, y));
+        bool reset = ImGui.InvisibleButton("##resetall", new Vector2(rw, 16 * sc));
+        Txt(UiFonts.SansSmall, 11.5f, new Vector2(at.X + w - rw, y), ImGui.IsItemHovered() ? Hex(0xE6C77A) : Brass, Reset);
+        y += 24 * sc;
+        string? undo = null;
+        foreach (var c in setup.Changes)
+        {
+            HLine(at.X, at.X + w, y + 21 * sc);
+            Txt(UiFonts.SansSmall, 12, new Vector2(at.X, y + 2 * sc), Brass, Described(c));
+            ImGui.SetCursorScreenPos(new Vector2(at.X + w - 16 * sc, y));
+            if (ImGui.InvisibleButton($"##undo{c.Key}", new Vector2(16 * sc, 20 * sc)))
+                undo = c.Key;
+            bool hover = ImGui.IsItemHovered();
+            var xc = new Vector2(at.X + w - 7 * sc, y + 10 * sc);
+            uint xcol = U(hover ? Hostile : Muted);
+            dl.AddLine(xc - new Vector2(3.5f, 3.5f) * sc, xc + new Vector2(3.5f, 3.5f) * sc, xcol, 1.2f * sc);
+            dl.AddLine(xc + new Vector2(-3.5f, 3.5f) * sc, xc + new Vector2(3.5f, -3.5f) * sc, xcol, 1.2f * sc);
+            if (hover)
+                ImGui.SetTooltip("undo: as written");
+            y += 24 * sc;
+        }
+        if (reset)
+            Edit(setup with { Changes = [] });
+        else if (undo != null)
+            Edit(setup.Without(undo));
+    }
+
+    // each change's line, made once (a frame allocates nothing for a list that stands)
+    readonly Dictionary<SetupChange, string> described = [];
+
+    string Described(SetupChange c)
+    {
+        if (!described.TryGetValue(c, out var s))
+            described[c] = s = c.Describe(written!);
+        return s;
     }
 
     /// <summary>A side's units and their ships, under its title, scrolling when they're more than the column holds.</summary>
@@ -914,7 +1087,7 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
             }
         }
         // the buttons
-        bool ready = pick >= 0 && entries[pick].Scenario != null;
+        bool ready = current != null;
         float bh = 34 * sc, by = o.Y + (h - bh) / 2, bx = o.X + w - 22 * sc;
         float pw = 170 * sc;
         bx -= pw;
@@ -926,8 +1099,11 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         if (Button("##paused", "Begin paused", new Vector2(bx, by), new Vector2(qw, bh), enabled: ready && !begin, px: 13.5f))
             BeginWorld(paused: true);
         bx -= qw + 8 * sc;
-        Button("##save", "Save setup…", new Vector2(bx, by), new Vector2(qw, bh), enabled: false, px: 13.5f);
-        if (ImGui.IsItemHovered())
-            ImGui.SetTooltip("setups come with the changes they keep (docs/map-ui/launch.md L2)");
+        bool canSave = current != null && !setup.IsEmpty && setup.From.Length > 0 && !begin;
+        if (Button("##save", "Save setup…", new Vector2(bx, by), new Vector2(qw, bh), enabled: canSave, px: 13.5f))
+            OpenSave();
+        if (ImGui.IsItemHovered() && !canSave)
+            ImGui.SetTooltip(setup.IsEmpty ? "nothing changed from the scenario as written" : "a setup is of a shipped scenario");
+        SaveDialog();
     }
 }

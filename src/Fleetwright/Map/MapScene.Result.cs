@@ -11,7 +11,9 @@ namespace Fleetwright.Map;
 /// <summary>The scenario's result (docs/map-ui/battle-hud.md U7): when the snapshot first carries the end, a modal over
 /// the map with the verdict, each side's count and each ship's fate: the truth on both sides (decision 5: the battler's
 /// result is its score). The clock stops under it; carrying on runs it again (a fight in progress is never cut off: the
-/// end is a score, not a stop). The menu opens it again. Its text is made once, when it opens.</summary>
+/// end is a score, not a stop). The menu opens it again. Its text is made once, when it opens. A fight of a setup
+/// says so, with each change from the scenario as written (docs/map-ui/launch.md: the hard thing done is seen as
+/// done).</summary>
 public sealed partial class MapScene
 {
     EndView? endShown;
@@ -19,6 +21,8 @@ public sealed partial class MapScene
     string resultKick = "", resultTitle = "", resultMeta = "";
     readonly List<(string Name, string[] Cells)> resultSides = [];
     readonly List<(string Name, string Fate, bool Lost, int Side)> resultShips = [];
+    string resultSetup = "";
+    readonly List<string> resultChanges = [];
 
     /// <summary>Opens the result when the end first arrives (once a world).</summary>
     void WatchEnd(Snapshot s)
@@ -59,6 +63,14 @@ public sealed partial class MapScene
             "done" => "Every side has done what it came for, or given it up.",
             _ => "",
         };
+        resultChanges.Clear();
+        resultSetup = "";
+        if (world.Scenario is { Setup: { IsEmpty: false } setup, Written: { } written })
+        {
+            resultSetup = $"{written.Name}, as you set it:";
+            foreach (var c in setup.Changes)
+                resultChanges.Add(c.Describe(written));
+        }
         resultSides.Clear();
         foreach (var x in sides)
             resultSides.Add((x.Name, [x.Ships.ToString(CultureInfo.InvariantCulture), x.Lost.ToString(CultureInfo.InvariantCulture),
@@ -101,6 +113,13 @@ public sealed partial class MapScene
         ImGui.TextColored(DesignerTheme.Bright, resultTitle);
         ImGui.PopFont();
         ImGui.TextDisabled(resultMeta);
+        if (resultSetup.Length > 0)
+        {
+            ImGui.Spacing();
+            ImGui.TextColored(DesignerTheme.Brass, resultSetup);
+            foreach (var c in resultChanges)
+                ImGui.TextDisabled("    " + c);
+        }
         ImGui.Spacing();
         ImGui.Separator();
         ImGui.Spacing();
