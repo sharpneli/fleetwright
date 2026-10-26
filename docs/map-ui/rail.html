@@ -1,0 +1,222 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Forces rail</title>
+<!-- The forces rail's redesign (docs/map-ui/rail.md): the left column as docked panes in the UI language, forces as a
+     tree table, the enemy grouped by type, the ticker as a log pane. Drawn over the game's capture of the Jutland at 16:16
+     with Lion selected (png/rail-before.png); where the old ticker showed past the column, the scene's own capture of the
+     same frame (png/rail-scene.png). The ships' state is made up. -->
+<style>
+@font-face{font-family:'Saira Extra Condensed';font-weight:700;src:url(../designer-ui/assets/fonts/saira-extra-condensed-latin-700-normal.woff2)}
+@font-face{font-family:'Barlow Condensed';font-weight:400;src:url(../designer-ui/assets/fonts/barlow-condensed-latin-400-normal.woff2)}
+@font-face{font-family:'Barlow Condensed';font-weight:500;src:url(../designer-ui/assets/fonts/barlow-condensed-latin-500-normal.woff2)}
+@font-face{font-family:'Barlow Condensed';font-weight:600;src:url(../designer-ui/assets/fonts/barlow-condensed-latin-600-normal.woff2)}
+@font-face{font-family:'Red Hat Mono';font-weight:400;src:url(../designer-ui/assets/fonts/red-hat-mono-latin-400-normal.woff2)}
+@font-face{font-family:'Red Hat Mono';font-weight:500;src:url(../designer-ui/assets/fonts/red-hat-mono-latin-500-normal.woff2)}
+:root{
+  --ground:#0F0F0E;--panel:#1B1B19;--panel2:#22221F;--inset:#0B0B0A;--line:#272724;--edge:#050505;--bevel:#2E2E2A;
+  --title-top:#3A3934;--title-bot:#2A2A26;--header:#141412;--text:#D3CFC4;--bright:#F6F3EA;--muted:#8A867B;--faint:#55524B;
+  --brass:#E8772E;--brass-darker:rgba(232,119,46,.16);--ok:#8DBE6B;--amber:#E8B64A;--fr:#F1ECDD;--red:#E04A3C;
+  --water:#7FB0CF;--fire:#FF9A3D;--sound:#9A968B;
+  --btn:#2E2D29;--btn2:#232220;--border:#3A3934;--key:#45443E;
+  --font-head:'Saira Extra Condensed','Arial Narrow',sans-serif;
+  --font-ui:'Barlow Condensed','Arial Narrow',sans-serif;
+  --font-data:'Red Hat Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--edge)}
+#app{position:relative;width:1920px;height:1080px;overflow:hidden;background:url(png/rail-before.png) no-repeat;color:var(--text);font:13px/1.3 var(--font-ui)}
+/* the scene where the old ticker showed past the column */
+.patch{position:absolute;background:url(png/rail-scene.png) no-repeat}
+
+#rail{position:absolute;left:8px;top:40px;width:330px;height:912px;display:flex;flex-direction:column;gap:2px;background:var(--ground)}
+.pane{background:var(--panel);border:1px solid var(--edge);display:flex;flex-direction:column;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+.body{overflow:hidden;flex:1;position:relative}
+.title{height:20px;flex:none;display:flex;align-items:center;gap:8px;padding:0 6px;background:linear-gradient(var(--title-top),var(--title-bot));border-bottom:1px solid var(--edge);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);color:var(--brass);font-family:var(--font-head);font-weight:700;font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;white-space:nowrap}
+.title::before{content:'';flex:none;width:5px;height:5px;border-radius:50%;background:var(--faint);margin-right:-3px}
+.title .note{color:var(--muted);font-family:var(--font-ui);font-weight:400;text-transform:none;letter-spacing:0;font-size:12px}
+.title .r{margin-left:auto;color:var(--muted);font-family:var(--font-ui);font-weight:400;text-transform:none;letter-spacing:0;font-size:12px;display:flex;gap:4px;align-items:center}
+.sub{height:20px;flex:none;display:flex;align-items:center;gap:6px;padding:0 6px;background:var(--header);border-bottom:1px solid var(--edge)}
+.sub .k{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:500}
+.sub .note{color:var(--faint);font-size:12px}
+.sub .r{margin-left:auto;display:flex}
+.seg{display:inline-flex}
+.seg i{font-style:normal;height:16px;line-height:14px;padding:0 7px;border:1px solid var(--border);margin-left:-1px;background:linear-gradient(var(--btn),var(--btn2));color:var(--text);font-size:12px}
+.seg i.on{background:var(--brass-darker);border-color:var(--brass);color:var(--brass);position:relative}
+.kbd{display:inline-block;min-width:10px;padding:0 3px;border:1px solid var(--key);border-bottom-width:2px;font-size:9.5px;line-height:11px;color:var(--text);text-align:center;font-family:var(--font-data)}
+
+table{border-collapse:collapse;width:100%;table-layout:fixed}
+th{height:18px;background:var(--header);color:var(--muted);font-weight:500;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;text-align:left;padding:0 4px;border-bottom:1px solid var(--edge);white-space:nowrap;overflow:hidden}
+th.n{text-align:right}
+td{height:20px;padding:0 4px;border-bottom:1px solid var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
+td.n{text-align:right;font-family:var(--font-data);font-size:11px;color:var(--bright);font-variant-numeric:tabular-nums}
+td.m{color:var(--muted)}
+tr.alt td{background:rgba(255,255,255,.018)}
+tr.grp td{background:var(--panel2)}
+tr.grp td.nm{color:var(--bright);font-weight:600}
+tr.sel td{background:var(--brass-darker)}
+tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--brass)}
+tr.sel td.nm{color:var(--brass)}
+tr.hov td{background:rgba(255,255,255,.05)}
+tr.far td{opacity:.5}
+tr.lost td{color:var(--faint)}
+.nm{color:var(--text)}
+.tw{display:inline-block;width:11px;color:var(--muted);font-size:8px;vertical-align:1px}
+.ring{display:inline-block;width:8px;height:8px;border:1.4px solid var(--fr);border-radius:50%;margin:0 4px 0 1px;vertical-align:-0.5px}
+.ring.x{border-color:var(--faint)}
+.dia{display:inline-block;width:11px;height:11px;margin:0 3px 0 0;vertical-align:-1.5px}
+.flame{display:inline-block;width:7px;height:10px;margin-left:4px;vertical-align:-1px}
+.cnt{font-family:var(--font-data);font-size:10px;color:var(--fire);margin-left:1px}
+.amb{color:var(--amber)} .red{color:var(--red)} .brs{color:var(--brass)} .brt{color:var(--bright)} .mut{color:var(--muted)} .fnt{color:var(--faint)}
+/* a ship's flotation; a unit's a segment a ship, in line order */
+.bar{display:flex;gap:1px;width:38px;height:7px;background:var(--inset);border:1px solid var(--edge);margin-left:auto}
+.bar span{display:block;height:100%;background:var(--sound)}
+.bar.one span{flex:none}
+.bar span.amb{background:var(--amber)} .bar span.red{background:var(--red)}
+.bar span.lost{background:var(--inset);box-shadow:inset 0 0 0 1px var(--red)}
+.chip{display:inline-block;padding:0 3px;font-size:11px;line-height:13px;border:1px solid}
+.chip.neu{color:var(--muted);border-color:var(--key);background:var(--panel2)}
+.chip.you{color:var(--bright);border-color:var(--muted);background:var(--panel2)}
+.chip.conn{color:var(--ok);border-color:#4E6B3B;background:#1C2616}
+.kind{font-family:var(--font-data);font-size:10px;color:var(--muted)}
+
+/* callouts for the review: numbered, outside the column */
+.call{position:absolute;width:18px;height:18px;border-radius:50%;background:#E8772E;color:#0F0F0E;font:600 11px/18px var(--font-ui);text-align:center;box-shadow:0 0 0 2px #0F0F0E}
+#notes{position:absolute;left:356px;top:56px;width:380px;background:rgba(15,15,14,.92);border:1px solid var(--border);padding:8px 10px;font-size:12.5px;line-height:1.35;color:var(--text);display:none}
+#notes b{color:var(--brass);font-weight:600}
+#notes div{margin-bottom:5px}
+body.notes #notes{display:block}
+body:not(.notes) .call{display:none}
+</style></head>
+<body class="notes"><div id="app">
+<div class="patch" style="left:328px;top:858px;width:84px;height:100px;background-position:-328px -858px"></div>
+<div class="patch" style="left:107px;top:950px;width:306px;height:8px;background-position:-107px -950px"></div>
+<div class="patch" style="left:0;top:952px;width:107px;height:128px;background-position:0 -952px"></div>
+
+<div id="rail">
+  <div class="pane" id="forces" style="flex:none">
+    <div class="title">Forces<span class="note">your side</span><span class="r">150 ships <span class="kbd">Tab</span></span></div>
+    <div class="sub"><span class="k">Commander</span><span class="note">fights the units you haven't taken</span>
+      <span class="r"><span class="seg"><i class="on">On</i><i>Off</i></span></span></div>
+    <table><colgroup><col><col style="width:80px"><col style="width:44px"><col style="width:22px"><col style="width:26px"><col style="width:40px"></colgroup>
+      <thead><tr><th>Unit · ship</th><th>Doing</th><th class="n">Afloat</th><th class="n">Kn</th><th class="n">Hits</th><th></th></tr></thead>
+      <tbody id="ftab"></tbody></table>
+  </div>
+  <div class="pane" id="enemy" style="flex:1">
+    <div class="title">Enemy<span class="note">from Lion</span><span class="r">25 in sight</span></div>
+    <table><colgroup><col><col style="width:100px"><col style="width:24px"><col style="width:38px"><col style="width:40px"></colgroup>
+      <thead><tr><th>Contact</th><th>Seen</th><th class="n" title="your ships firing at her">On</th><th class="n">Km</th><th class="n">Brg</th></tr></thead>
+      <tbody id="etab"></tbody></table>
+  </div>
+  <div class="pane" id="log" style="flex:none">
+    <div class="title">Log<span class="note">newest first</span><span class="r">162 lines <span class="kbd">J</span></span></div>
+    <table><colgroup><col style="width:46px"><col style="width:34px"><col></colgroup><tbody id="ltab"></tbody></table>
+  </div>
+</div>
+
+<span class="call" style="left:340px;top:44px">1</span>
+<span class="call" style="left:340px;top:126px">2</span>
+<span class="call" style="left:340px;top:176px">3</span>
+<span class="call" style="left:340px;top:226px">4</span>
+<span class="call" style="left:340px;top:504px">5</span>
+<span class="call" style="left:340px;top:792px">6</span>
+<div id="notes">
+  <div><b>1</b> One column of docked panes, mirroring the card dock: opaque, title strips, full height down to the strip.</div>
+  <div><b>2</b> The commander as a sub-header with a segmented On · Off, in place of the "AI commands: on" chip.</div>
+  <div><b>3</b> A unit's bar is a segment a ship in line order, so a shut unit still shows who's hurt: grey sound, amber low, red going down, an empty red box lost. Healthy is neutral, as on the card's plate.</div>
+  <div><b>4</b> Forces as a tree table, a row each (20 px, was 33). Twisties fold; a click on the row still selects. Whose it is as chips on top units (AI, you, conn).</div>
+  <div><b>5</b> The enemy grouped by type, nearest first in each, so the destroyers close by don't push the battlecruisers off. "On" counts your ships firing at her (Lion's target in the accent).</div>
+  <div><b>6</b> The ticker becomes the column's log pane: newest first, no fading, a click goes to her; J the whole log as before.</div>
+  <div class="mut">N hides these notes.</div>
+</div>
+</div>
+<script>
+const flame = `<svg class="flame" viewBox="0 0 7 10"><path d="M3.5 0C4.4 2.2 6.6 3.6 6.6 6.4A3.1 3.1 0 0 1 .4 6.4C.4 4.8 1.6 4 2 2.7 2.6 3.6 2.7 4.4 3.1 4.4 3.6 3.1 3.5 1.6 3.5 0Z" fill="#FF9A3D"/><circle cx="3.5" cy="7" r="1.3" fill="#FFE08A"/></svg>`;
+const dia = (sure, dim) => `<svg class="dia" viewBox="0 0 11 11"><path d="M5.5 1.2L9.8 5.5 5.5 9.8 1.2 5.5Z" fill="${sure ? 'rgba(224,74,60,.25)' : 'none'}" stroke="#E04A3C" stroke-width="1.3" ${sure ? '' : 'stroke-dasharray="2 1.6"'} opacity="${dim ? .6 : 1}"/></svg>`;
+// a bar: one share for a ship, a list of shares for a unit ('L' a ship lost, negative going down)
+function bar(v, force) {
+  const rank = x => x === 'L' ? 3 : x < 0 ? 2 : x < 0.8 ? 1 : 0;
+  if (force) v = v.slice().sort((a, b) => rank(a) - rank(b));
+  const cls = x => x === 'L' ? 'lost' : x < 0 ? 'red' : x < 0.8 ? 'amb' : '';
+  if (!Array.isArray(v)) return `<div class="bar one"><span class="${cls(v)}" style="width:${Math.abs(v) * 100}%"></span></div>`;
+  return `<div class="bar">${v.map(x => `<span class="${cls(x)}" style="flex:1;min-width:2px"></span>`).join('')}</div>`;
+}
+const ind = d => `padding-left:${4 + d * 12}px`;
+
+// ------------------------------------------------------------------ forces: [depth, kind, name, doing, afloat, kn, hits, whose, extra]
+const ok = n => Array(n).fill(1);
+const F = [
+  [0,'g','Battlecruiser Fleet','intercept',[...ok(1),.86,.97,.71,1,.98,'L',...ok(4),...ok(11),.62,...ok(9),...ok(9),-1,...ok(6)],24,41,'you',{open:1,fires:3,force:1}],
+  [1,'g','1st Battlecruiser Squadron','fight',[.86,.97,.71,.99],24,37,'',{open:1,fires:2}],
+  [2,'s','Lion','→ Lützow',.86,24,19,'',{sel:1,fire:1}],
+  [2,'s','Princess Royal','→ Lützow',.97,24,6,''],
+  [2,'s','Queen Mary','<span class="amb">falling out: water</span>',.71,19,9,'',{fire:1}],
+  [2,'s','Tiger','→ Moltke',.99,25,3,''],
+  [1,'g','2nd Battlecruiser Squadron','fight',[.98,'L'],25,2,'',{open:1}],
+  [2,'s','New Zealand','→ Von der Tann',.98,25,2,''],
+  [2,'x','Indefatigable','<span class="red">sunk 16:03</span>','',0,0,''],
+  [1,'g','5th Battle Squadron','cover',ok(4),23,0,''],
+  [1,'g','BCF light cruisers','scout',[...ok(4),.62,...ok(7)],25,3,'',{fires:1,force:1}],
+  [1,'g','1st Flotilla','screen',ok(9),25,0,''],
+  [1,'g','13th Flotilla','attack',[...ok(4),-1,...ok(5)],30,5,'conn'],
+  [1,'g','9th and 10th Flotillas','screen',ok(6),25,0,''],
+  [0,'g','Grand Fleet','join',[...ok(70),.72,...ok(27)],18,0,'AI',{force:1,fires:0}],
+  [0,'g','On its own','',[1],20,0,'',{open:1,loose:1}],
+  [1,'s','Engadine','no target',1,20,0,'AI'],
+];
+let alt = 0;
+document.getElementById('ftab').innerHTML = F.map(([d, k, name, doing, afloat, kn, hits, whose, x = {}]) => {
+  const g = k === 'g';
+  const cls = [g ? 'grp' : (alt++ % 2 ? 'alt' : ''), x.sel ? 'sel' : '', k === 'x' ? 'lost' : ''].join(' ');
+  const tw = g && !x.loose ? `<span class="tw">${x.open ? '▼' : '▶'}</span>` : '';
+  const mark = g ? '' : `<span class="ring${k === 'x' ? ' x' : ''}"></span>`;
+  const fires = x.fire ? flame : x.fires && !x.open ? flame + `<span class="cnt">${x.fires}</span>` : '';
+  const chip = whose === 'AI' ? '<span class="chip neu">AI</span>' : whose === 'you' ? '<span class="chip you">you</span>' : whose === 'conn' ? '<span class="chip conn">conn</span>' : '';
+  const nameTxt = x.loose ? `<span class="mut" style="font-weight:400">${name}</span>` : name;
+  const head = g ? `<td class="nm" colspan="2" style="${ind(d)}">${tw}${nameTxt}${fires}${doing ? `<span class="mut" style="font-weight:400"> · ${doing}</span>` : ''}</td>`
+    : `<td class="nm" style="${ind(d)}">${mark}${nameTxt}${fires}</td><td>${doing}</td>`;
+  return `<tr class="${cls}">${head}<td>${afloat === '' ? '' : bar(afloat, x.force)}</td>` +
+    `<td class="n">${k === 'x' ? '' : kn}</td><td class="n">${k === 'x' ? '' : hits}</td><td style="text-align:right">${chip}</td></tr>`;
+}).join('');
+
+// ------------------------------------------------------------------ the enemy: [kind, identity, sure, seen, on, km, brg, extra]
+const E = [
+  ['g','Heavy ships','','<span class="mut">5 · 4 in sight</span>','3','12.1',''],
+  ['s','Lützow',1,'burning · by the bow','2','12.7','093°',{target:1}],
+  ['s','Derfflinger class?',1,'burning','1','12.5','091°'],
+  ['s','heavy ship',0,'<span class="mut">no damage seen</span>','','12.4','088°'],
+  ['s','heavy ship',0,'burning · listing','1','12.2','086°'],
+  ['s','heavy ship',0,'<span class="mut">last seen 16:14</span>','','12.1','084°',{far:1}],
+  ['g','Cruisers','','<span class="mut">4 · 3 in sight</span>','','14.8',''],
+  ['s','Elbing class?',1,'<span class="mut">no damage seen</span>','','14.8','052°'],
+  ['s','cruiser',0,'<span class="mut">no damage seen</span>','','15.3','049°'],
+  ['s','cruiser',0,'stopped','','15.9','047°'],
+  ['s','cruiser',0,'<span class="mut">last seen 16:12</span>','','16.0','046°',{far:1}],
+  ['g','Destroyers','','<span class="mut">14 · 11 in sight</span>','6','5.9','',{shut:1}],
+  ['g','Smoke','','<span class="mut">2 · not made out</span>','','31.0','',{shut:1}],
+];
+alt = 0;
+document.getElementById('etab').innerHTML = E.map(([k, name, sure, seen, on, km, brg, x = {}]) => {
+  const g = k === 'g';
+  const cls = [g ? 'grp' : (alt++ % 2 ? 'alt' : ''), x.far ? 'far' : ''].join(' ');
+  const head = g ? `<span class="tw">${x.shut ? '▶' : '▼'}</span>${name}` : `${dia(sure, x.far)}${name}`;
+  return `<tr class="${cls}"><td class="nm" style="${ind(g ? 0 : 1)}">${head}</td><td>${seen}</td>` +
+    `<td class="n${x.target ? ' brs' : ''}">${on}</td><td class="n${g ? ' mut' : ''}">${km}</td><td class="n">${brg}</td></tr>`;
+}).join('');
+
+// ------------------------------------------------------------------ the log: newest first
+const L = [
+  ['16:16','seen','Contact: smoke, 130°, 31.0 km from Lion',''],
+  ['16:16','hit','Pelican hit: 88 mm AP · foremast · passed through','amb'],
+  ['16:16','seen','Contact: smoke, 133°, 35.6 km from Lion',''],
+  ['16:16','hit','Pelican hit: 88 mm AP · foremast top · damaged','amb'],
+  ['16:16','torp','Petard fired 2 torpedoes at a destroyer',''],
+  ['16:15','capt','<span class="amb">Queen Mary falls out of the line: water aboard</span>',''],
+  ['16:15','gun','Lion hit Lützow: 343 mm APC · burst inside',''],
+];
+document.getElementById('ltab').innerHTML = L.map(([t, kind, text, c], i) =>
+  `<tr class="${i % 2 ? 'alt' : ''}${i === 0 ? ' hov' : ''}"><td class="n" style="color:var(--muted)">${t}</td><td><span class="kind${c ? ' ' + c : ''}">${kind}</span></td><td>${text}</td></tr>`).join('');
+
+addEventListener('keydown', e => { if (e.key === 'n' || e.key === 'N') document.body.classList.toggle('notes'); });
+if (location.hash === '#clean') document.body.classList.remove('notes');
+</script>
+</body></html>
