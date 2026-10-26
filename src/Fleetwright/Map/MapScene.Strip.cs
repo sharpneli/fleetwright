@@ -1367,7 +1367,9 @@ public sealed partial class MapScene
         int tenths = sea ? (int)Math.Round(Earth.Distance(p, at) / 100) : 0;
         bool shift = ImGui.GetIO().KeyShift;
         int many = OrderUnits(s).Count;
-        (int Kind, int Target, int Course, int Tenths, int Who) key = armedPick != ClickPick.None
+        (int Kind, int Target, int Course, int Tenths, int Who) key = armedPick == ClickPick.None && RightDragged(x, y) && Shape(s, x, y) is var (press, heading, deploy)
+            ? (deploy ? 8 : 7, 0, (int)Math.Round(heading) % 360, (int)Math.Round(Earth.Distance(p, press) / 100), unit.Id * 64 + many)
+            : armedPick != ClickPick.None
             ? (10 + (int)armedPick, enemy > 0 ? enemy : own > 0 ? own : 0, enemy > 0 || own > 0 ? 0 : course, enemy > 0 || own > 0 ? Dist(s, p, enemy > 0 ? enemy : own) : tenths, unit.Id * 64 + many)
             : enemy > 0 ? (1, enemy, 0, tenths, unit.Id * 64 + many)
             : own > 0 && own != selected && own != ship && !shift ? (SmartScreens(s) ? 6 : 2, own, 0, 0, unit.Id * 64 + many)
@@ -1391,6 +1393,8 @@ public sealed partial class MapScene
                 6 => TaskVerb(s, ClickPick.Screen, own, 0, false, default, 0, 0) is { } screen ? $"{who}: {screen}" : $"{who}: FOLLOW {TargetLabel(s, key.Target)}",
                 3 => "land",
                 4 => string.Format(CultureInfo.InvariantCulture, "{0}: WAYPOINT {1:000}° · {2:0.0} km", who, key.Course, key.Tenths / 10.0),
+                7 => string.Format(CultureInfo.InvariantCulture, "{0}: THERE ({1:0.0} km), THEN {2:000}°", who, key.Tenths / 10.0, key.Course),
+                8 => string.Format(CultureInfo.InvariantCulture, "{0}: DEPLOY {1:000}°", who, key.Course),
                 _ => string.Format(CultureInfo.InvariantCulture, "{0}: STEER {1:000}° · {2:0.0} km", who, key.Course, key.Tenths / 10.0),
             };
         }

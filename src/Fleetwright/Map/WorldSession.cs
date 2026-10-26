@@ -367,8 +367,10 @@ public sealed class WorldSession : IDisposable
     /// time, smoothed. The sim publishes on its own beat (every few ms while behind), so a frame gets one snapshot's
     /// worth of motion or two; drawn at its snapshot's time, a ship at 1,000x lurched. This clock runs on at the speed
     /// the world is keeping and leans a tenth of the way to the newest snapshot each frame; it never runs back, never
-    /// gets more than a frame's step ahead of the snapshot, and jumps to it after a pause, a load or a stall. Poses are
-    /// extrapolated to it along their arcs (ShipsView.PoseAt).</summary>
+    /// gets more than a frame's step ahead of the snapshot, and jumps to it after a pause, a load or a stall. Its rate is
+    /// the achieved speed, never above the asked: a drop from a run or the flat-out fine tier (docs/map-ui/input.md) is
+    /// in the snapshot at once, while the achieved speed is measured over a window and lags; and a clock left far ahead
+    /// by the old rate jumps back to the world. Poses are extrapolated to it along their arcs (ShipsView.PoseAt).</summary>
     public long DrawMs { get; private set; }
 
     double drawMs = double.NaN;
@@ -378,10 +380,10 @@ public sealed class WorldSession : IDisposable
     {
         var s = Current;
         double latest = s.Time.Ms;
-        double rate = s.Paused ? 0 : Math.Max(s.AchievedSpeed, 0);
+        double rate = s.Paused ? 0 : Math.Clamp(s.AchievedSpeed, 0, s.Speed);
         double step = rate * dt * 1000;
-        if (double.IsNaN(drawMs) || drawGeneration != Generation || s.Paused || latest - drawMs > Math.Max(4 * step, 1) * 4)
-            drawMs = latest;   // a new world, a pause or a stall: where the world is
+        if (double.IsNaN(drawMs) || drawGeneration != Generation || s.Paused || Math.Abs(latest - drawMs) > Math.Max(4 * step, 1) * 4)
+            drawMs = latest;   // a new world, a pause, a stall, or ahead from a faster clock: where the world is
         else
         {
             double next = drawMs + step;
@@ -428,7 +430,7 @@ public sealed class WorldSession : IDisposable
             switch ((WorldCommand)c.Code)
             {
                 case WorldCommand.SetSpeed:
-                    askedSpeed = c;   // with its fine tier held, if it was
+                    askedSpeed = c.Y > 0 ? Command.SetSpeed(c.Y) : c;   // with its fine tier held, if it was; a run, as it'll end
                     break;
                 case WorldCommand.Pause:
                     askedPaused = true;

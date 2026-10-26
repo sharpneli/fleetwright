@@ -497,4 +497,64 @@ public class CommanderTests(ITestOutputHelper output)
         foreach (var u in new[] { main, scout, flotilla })
             Assert.Equal(TaskState.OnTask, ai.Tasks.Of(u).Status);
     }
+    /// <summary>A run (⇧Space, docs/map-ui/input.md T1) ends at the end of a plan the player gave by hand: not at a step
+    /// with more to come, and then the clock is back at the run's speed, the fine tier no longer held.</summary>
+    [Fact]
+    public void A_run_ends_when_a_plan_given_by_hand_ends()
+    {
+        var (w, ai) = Make();
+        w.Apply(Command.SetPlayerSide(0));
+        var u = Column(w, ai, Class(w, "dreadnought"), Earth.Position(Lat, Lon), 0, 1);
+        var (la, lo) = LatLon(Off(0, 8_000));
+        var (lb, lb2) = LatLon(Off(0, 16_000));
+        w.Apply(ai.Orders.ByHand.GoTo(u, la, lo, 18));
+        w.Apply(UnitOrders.Then(ai.Orders.ByHand.GoTo(u, lb, lb2, 18)));
+        w.Apply(Command.SetSpeed(w.Settings.MaxSpeed, holdFine: true, runBack: 10));
+        double first = double.NaN, end = double.NaN;
+        for (double s = 0; s < 2 * 3600 && double.IsNaN(end); s += 10)
+        {
+            Run(w, 10);
+            if (double.IsNaN(first) && ai.Tasks.QueuedOf(u) == 0)
+            {
+                first = s;
+                Assert.True(w.RunBack > 0, "the plan's first step ended the run");
+            }
+            if (w.RunBack == 0)
+                end = s;
+        }
+        output.WriteLine($"the first step done at {first / 60:F0} min, the run ended at {end / 60:F0} min");
+        Assert.InRange(end, first + 10 * 60, first + 30 * 60);   // the second 8 km at 18 kn
+        Assert.Equal((10.0, false, false), (w.Speed, w.FineHeld, w.Paused));
+    }
+
+    /// <summary>A run meeting an encounter of the player's drops by its rule, to the run's speed or the rule's if slower,
+    /// the run over: slowed to 100x, the run's 60x; paused, at the rule's 1x.</summary>
+    [Fact]
+    public void A_run_drops_by_the_encounter_rule()
+    {
+        var (w, ai) = Make();
+        w.Apply(Command.SetPlayerSide(0));
+        int bb = Class(w, "dreadnought");
+        Column(w, ai, bb, Earth.Position(Lat, Lon), 90, 1);
+        Column(w, ai, bb, Off(90, 40_000), 270, 1, side: 1);
+        w.Apply(Command.SetInterest(InterestKind.Own, InterestAction.Slow, 100));
+        w.Apply(Command.SetSpeed(w.Settings.MaxSpeed, holdFine: true, runBack: 60));
+        for (int i = 0; i < 360 && w.RunBack > 0; i++)
+            Run(w, 10);
+        Assert.Equal((0.0, 60.0, false), (w.RunBack, w.Speed, w.Paused));
+    }
+
+    [Fact]
+    public void A_run_paused_by_the_encounter_rule_is_at_its_speed()
+    {
+        var (w, ai) = Make();
+        w.Apply(Command.SetPlayerSide(0));
+        int bb = Class(w, "dreadnought");
+        Column(w, ai, bb, Earth.Position(Lat, Lon), 90, 1);
+        Column(w, ai, bb, Off(90, 40_000), 270, 1, side: 1);
+        w.Apply(Command.SetSpeed(w.Settings.MaxSpeed, holdFine: true, runBack: 60));
+        for (int i = 0; i < 360 && w.RunBack > 0; i++)
+            Run(w, 10);
+        Assert.Equal((0.0, 1.0, true), (w.RunBack, w.Speed, w.Paused));
+    }
 }

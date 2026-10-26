@@ -81,8 +81,8 @@ picks a unit in one click.
 | **T0** | The gears on 1–5, § held fast-forward, mouse 4 and 5 | **Done 2026-10-26** (`MapScene.Clock.cs`: `Gears`, `FastForward`; § is the scancode left of 1, ` on a US keyboard; the side buttons step a paused clock without running it, as + −) |
 | **I1** | The left button selects only: the drag a box (units wholly inside as units) | **Done 2026-10-26** (`MapScene.Input.cs`: `BoxSelect`): the selection the guide of the largest unit wholly inside, at its level; the rest picked beside it, so a cut squadron goes as ships alone (a picked ship at a unit's level goes as her unit at it, as a ctrl+click's); ctrl adds; an empty box deselects. Benches pan with `F:pan:…:2` now |
 | **I2** | The right button on the release with the order drawn while held; armed verbs aimed by the right button | **Done 2026-10-26** (`MapScene.Input.cs`: `OrderPreview`, a dashed line from the ship that steams the order to what it's about, in the verb's colour, beside the cursor's verb; Esc while held drops it). A left click that changes the selection disarms; every "click …" of a pick now says "right-click …" |
-| **T1** | Run until it matters: the interest list in the sim, ⇧Space | |
-| **I3** | Right drag shapes: the heading on arrival, a force's deploy line | |
+| **T1** | Run until it matters: the interest list in the sim, ⇧Space | **Done 2026-10-26** (`World.RunBack`, set with the speed by one `SetSpeed`; `World.Matters` from the task layer when a plan the player gave by hand ends, the encounter rules dropping to the run's speed or theirs if slower; `MapScene.Clock.cs`: `Run`, the fast clock shared with § by `Fast`; ⇧Space again ends it). The draw clock no longer runs ahead after a drop from a fast clock (`WorldSession.Clock`: its rate capped by the asked speed, a clock far ahead jumps back) |
+| **I3** | Right drag shapes: the heading on arrival, a force's deploy line | **Done 2026-10-26** (`MapScene.Input.cs`: `ShapedOrder`, `Shape`): pressed on the sea, a route to the press point and a 2 km leg on along the drag (past its last waypoint a ship holds the course she arrived on), ⇧ adds both to the route; a force in columns deploys on the drag's bearing; drawn while held (to the press point dashed, the drag an arrow) and named (THERE, THEN 056°; DEPLOY 045°). Pressed on a ship, or with a verb armed, a drag is the press's click |
 
 ## Decisions (the user, 2026-10-26)
 
@@ -97,7 +97,7 @@ picks a unit in one click.
    is whole). Measured: the squadrons' fight ran to its end in under a second; the full Jutland makes about 288×. It may
    need tuning after all, perhaps as a setting (the user, 2026-10-26).
 
-## Open questions (2026-10-26)
+## Questions, answered (the user, 2026-10-26: as proposed, to iterate by playtesting)
 
 1. **T1, which task endings drop the clock**: only tasks the player gave by hand, or any of the player's units' (the
    side's commander gives and ends tasks often)? Proposed: by hand only.

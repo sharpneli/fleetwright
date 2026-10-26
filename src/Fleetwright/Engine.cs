@@ -306,7 +306,7 @@ public unsafe class Sdl3GpuEngine : IDisposable
     /// device), the button down at X0,Y0, then N frames of eight motion events each toward X1,Y1, then up.
     /// "F:mclick:X,Y" and "F:mright:X,Y" are left and right clicks the same way, as SDL events (the map's clicks).
     /// "F:mwheel:X,Y:N" turns the wheel N notches as an SDL event (the map's zoom: N &gt; 0 zooms in), and "F:key:NAME"
-    /// presses a key by its SDL name (F2, Space, =); "F:hold:NAME:N" holds it N frames (down and up as SDL events, with
+    /// presses a key by its SDL name and lets it go (F2, Space, =; "Shift+Space" with the event's shift); "F:hold:NAME:N" holds it N frames (down and up as SDL events, with
     /// its scancode). "F:mmiddle:X,Y" is a middle click, "F:mclick:X,Y:B" a click of button B (4, 5 the side buttons);
     /// "F:pan:X0,Y0:X1,Y1:N:2" pans with the middle button.</summary>
     public List<string> ScriptedInput { get; } = [];
@@ -407,9 +407,13 @@ public unsafe class Sdl3GpuEngine : IDisposable
                     var ke = new SDL_Event();
                     ke.type = (uint)SDL_EventType.SDL_EVENT_KEY_DOWN;
                     ke.key.windowID = SDL_GetWindowID(_window);
-                    ke.key.key = SDL_GetKeyFromName(p[2]);
+                    bool shifted = p[2].StartsWith("Shift+", StringComparison.Ordinal);   // the event's own modifier
+                    ke.key.key = SDL_GetKeyFromName(shifted ? p[2][6..] : p[2]);
+                    ke.key.mod = shifted ? SDL_Keymod.SDL_KMOD_LSHIFT : SDL_Keymod.SDL_KMOD_NONE;
                     ke.key.down = true;
                     SDL_PushEvent(&ke);
+                    (ke.type, ke.key.down, ke.key.mod) = ((uint)SDL_EventType.SDL_EVENT_KEY_UP, false, SDL_Keymod.SDL_KMOD_NONE);
+                    SDL_PushEvent(&ke);   // and let go, so no modifier stays held (F:hold holds one)
                     break;
                 case "hold" when holdFrames > 0:
                     var he = new SDL_Event();

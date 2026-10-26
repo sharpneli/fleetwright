@@ -25,6 +25,9 @@ public sealed class Snapshot
     /// <summary>The fine tier held whatever the speed (World.FineHeld): the clock as fast as the sim can, the world 240×'s.</summary>
     public bool FineHeld { get; set; }
 
+    /// <summary>A run's speed to drop back to (World.RunBack), 0 with none.</summary>
+    public double RunBack { get; set; }
+
     public bool Paused { get; set; }
 
     /// <summary>The speed the clock actually kept over the last moments, measured by the host.</summary>

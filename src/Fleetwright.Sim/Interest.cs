@@ -34,11 +34,14 @@ public sealed class Interest
 
     /// <summary>The clock dropped by a rule, from an event's handler: paused (and slowed to the rule's speed if it's
     /// faster: 1x by default, so a fight opens on the fine tick, where the guns fire; docs/battle/fighting.md 4.2c), or
-    /// slowed if it's faster.</summary>
+    /// slowed if it's faster. In a run (<see cref="World.RunBack"/>) a rule that acts drops it back to the run's speed,
+    /// or the rule's if that's slower.</summary>
     internal void Apply(World world, InterestKind kind)
     {
         var r = rules[(int)kind];
-        if (r.Action == InterestAction.Pause)
+        if (world.RunBack > 0 && r.Action != InterestAction.Nothing)
+            world.Halt(pause: r.Action == InterestAction.Pause, Math.Min(world.RunBack, r.Speed));
+        else if (r.Action == InterestAction.Pause)
             world.Halt(pause: true, world.Speed > r.Speed ? r.Speed : null);
         else if (r.Action == InterestAction.Slow && world.Speed > r.Speed)
             world.Halt(pause: false, r.Speed);

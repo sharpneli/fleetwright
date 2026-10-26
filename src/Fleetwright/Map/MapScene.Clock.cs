@@ -6,7 +6,8 @@ namespace Fleetwright.Map;
 
 /// <summary>The clock's speed detent: a track of notches from 1x to 1,000,000x, the knob on the speed asked, a mark over
 /// the speed achieved, the coarse tier's stretch tinted. Click or drag picks a notch (and runs a paused clock); the wheel
-/// over it and + and - step it, as the mouse's side buttons do; keys 1 to 5 the gears, § held the passage gear.</summary>
+/// over it and + and - step it, as the mouse's side buttons do; keys 1 to 5 the gears, § held the fast clock, ⇧Space a
+/// run until it matters.</summary>
 public sealed partial class MapScene
 {
     static readonly double[] Speeds = [1, 3, 10, 30, 60, 240, 1000, 3000, 10_000, 30_000, 100_000, 300_000, 1_000_000];
@@ -33,8 +34,7 @@ public sealed partial class MapScene
             if (fastFrom != null)
                 return;
             fastFrom = (s.Speed, s.FineHeld, s.Paused);
-            bool fine = s.FineHeld || s.Speed < world.Settings.CoarseMinSpeed;
-            world.Send(fine ? Command.SetSpeed(world.Settings.MaxSpeed, holdFine: true) : Command.SetSpeed(Gears[^1]));
+            world.Send(Fast(s));
             if (s.Paused)
                 world.Send(Command.Resume());
             return;
@@ -48,6 +48,31 @@ public sealed partial class MapScene
         world.Send(Command.SetSpeed(speed, held));
         if (paused)
             world.Send(Command.Pause());
+    }
+
+    /// <summary>The fast clock, § held's and a run's (one rule, so one setting can tune both): on the fine tier the fine
+    /// tier flat out (<see cref="World.FineHeld"/>), on the coarse the passage gear; a run's with the speed to drop back
+    /// to.</summary>
+    Command Fast(Snapshot s, double runBack = 0) =>
+        s.FineHeld || s.Speed < world.Settings.CoarseMinSpeed
+            ? Command.SetSpeed(world.Settings.MaxSpeed, holdFine: true, runBack)
+            : Command.SetSpeed(Gears[^1], runBack: runBack);
+
+    /// <summary>⇧Space, run until it matters (docs/map-ui/input.md T1): the fast clock latched, back to the speed it
+    /// found at the first thing that matters (a task the player gave by hand ended, the last of its plan, or an encounter
+    /// rule that acts: <see cref="World.RunBack"/>); a paused clock runs. Again: the run ended there.</summary>
+    void Run()
+    {
+        var s = world.Current;
+        if (s.RunBack > 0)
+        {
+            world.Send(Command.SetSpeed(s.RunBack));
+            return;
+        }
+        double back = s.FineHeld ? Gears.Last(g => g < world.Settings.CoarseMinSpeed) : s.Speed;   // flat out: the fine tier's top gear
+        world.Send(Fast(s, back));
+        if (s.Paused)
+            world.Send(Command.Resume());
     }
 
     int detentSent = -1;   // the notch a drag last sent, so a held drag sends once per notch

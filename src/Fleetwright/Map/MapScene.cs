@@ -251,7 +251,7 @@ public sealed unsafe partial class MapScene : IScene
                 if (e->button.button == 3)
                 {
                     if (!BeginPlace(e->button.x * sx, e->button.y * sy))   // armed to place: the drag aims the ships
-                        rightHeld = true;   // the order goes on the release, drawn while held (MapScene.Input.cs)
+                        (rightHeld, rightX, rightY) = (true, e->button.x * sx, e->button.y * sy);   // the order goes on the release, drawn while held (MapScene.Input.cs)
                     return true;
                 }
                 if (e->button.button != 1)
@@ -267,7 +267,12 @@ public sealed unsafe partial class MapScene : IScene
                 if (e->button.button == 3)
                 {
                     if (rightHeld)
-                        OrderAt(e->button.x * sx, e->button.y * sy, (SDL_GetModState() & SDL_Keymod.SDL_KMOD_SHIFT) != 0);
+                    {
+                        double ux = e->button.x * sx, uy = e->button.y * sy;
+                        bool shift = (SDL_GetModState() & SDL_Keymod.SDL_KMOD_SHIFT) != 0;
+                        if (!RightDragged(ux, uy) || !ShapedOrder(ux, uy, shift))
+                            OrderAt(RightDragged(ux, uy) ? rightX : ux, RightDragged(ux, uy) ? rightY : uy, shift);
+                    }
                     rightHeld = false;
                     return true;
                 }
@@ -312,7 +317,7 @@ public sealed unsafe partial class MapScene : IScene
                         FastForward(true);
                     return true;
                 }
-                return Key((uint)e->key.key, e->key.scancode);
+                return Key((uint)e->key.key, e->key.scancode, e->key.mod);
             case SDL_EventType.SDL_EVENT_KEY_UP:
                 if (e->key.scancode == FastKey)
                 {
@@ -324,7 +329,7 @@ public sealed unsafe partial class MapScene : IScene
         return false;
     }
 
-    bool Key(uint key, SDL_Scancode code)
+    bool Key(uint key, SDL_Scancode code, SDL_Keymod mod)
     {
         var s = world.Current;
         if (key == SDLK_ESCAPE)
@@ -345,6 +350,8 @@ public sealed unsafe partial class MapScene : IScene
             TogglePin(selected);
         else if (key == SDLK_TAB)
             NextShip((SDL_GetModState() & SDL_Keymod.SDL_KMOD_SHIFT) != 0);
+        else if (key == SDLK_SPACE && (mod & SDL_Keymod.SDL_KMOD_SHIFT) != 0)
+            Run();   // run until it matters (MapScene.Clock.cs)
         else if (key == SDLK_SPACE)
             world.Send(s.Paused ? Command.Resume() : Command.Pause());
         else if (key is SDLK_EQUALS or SDLK_KP_PLUS or SDLK_MINUS or SDLK_KP_MINUS)

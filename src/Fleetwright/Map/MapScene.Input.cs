@@ -13,7 +13,7 @@ namespace Fleetwright.Map;
 /// <summary>The camera's input (docs/map-ui/input.md I0): WASD pans (<see cref="PanKeys"/>); the middle button drags
 /// the map, and its click centres the map on the sea or follows a ship until a pan. The left button only selects (I1): a click a ship, a drag a box. The right acts (I2): its order goes on the release, drawn
 /// from the ship that steams it to what it's about while the button is held (Esc drops it); an armed verb is aimed by
-/// it too.</summary>
+/// it too, and a drag shapes it (I3: the heading on arrival, a force's deploy).</summary>
 public sealed unsafe partial class MapScene
 {
     readonly PanKeys panKeys = new();   // WASD, as every view's (PanKeys.cs)
@@ -56,6 +56,60 @@ public sealed unsafe partial class MapScene
     // ------------------------------------------------------------------ the right button (I2)
 
     bool rightHeld;   // the right button is down on the map: its release gives the order the cursor names
+    double rightX, rightY;   // where it went down, target pixels
+
+    /// <summary>Metres on from the press point along a right drag's heading: a short last leg, so the route ends on it.</summary>
+    const double ShapeLegM = 2000;
+
+    /// <summary>Whether the right button held has moved a click's worth from its press: a drag, shaping the order (I3).</summary>
+    bool RightDragged(double x, double y) => rightHeld && Math.Abs(x - rightX) + Math.Abs(y - rightY) >= ClickPx;
+
+    /// <summary>A right drag let go at (x, y), shaped from its press on the sea (docs/map-ui/input.md I3): a force in
+    /// columns deploys on the drag's bearing; else the unit steers for the press point and holds the drag's heading
+    /// there (a waypoint, and one a short leg on: past the last a ship holds the course she arrived on); with shift both
+    /// added to the route. False when it isn't a shape (pressed on a ship, an armed verb, land): the press's click then.</summary>
+    bool ShapedOrder(double x, double y, bool waypoint)
+    {
+        var s = world.Current;
+        if (armedPick != ClickPick.None || fireArmed || s.Ships.IndexOf(selected) < 0 || Shape(s, x, y) is not var (from, heading, deploy))
+            return false;
+        var (unit, _) = Commanded(s);
+        var o = world.Orders;
+        if (deploy)
+        {
+            world.Send(o.Deploy(unit, heading));
+            return true;
+        }
+        var to = from;
+        var f = Earth.Forward(from, heading);
+        Earth.Advance(ref to, ref f, ShapeLegM);
+        if (world.Shore.IsLand(to))
+            to = from;   // the leg on would be ashore: the press point alone
+        if (!waypoint)
+            world.Send(o.ClearRoute(unit));
+        var (la, lo) = Earth.LatLon(from);
+        world.Send(o.AddWaypoint(unit, la, lo));
+        if (to != from)
+        {
+            (la, lo) = Earth.LatLon(to);
+            world.Send(o.AddWaypoint(unit, la, lo));
+        }
+        return true;
+    }
+
+    /// <summary>The right drag's shape to (x, y): the press point on the sea, the heading from it to the cursor, and
+    /// whether it deploys (the unit commanded a force in columns); null when the press is on a ship, off the globe or
+    /// ashore.</summary>
+    (Vec3d From, double Heading, bool Deploy)? Shape(Snapshot s, double x, double y)
+    {
+        var (enemy, own, sea, from) = Under(s, rightX, rightY);
+        if (enemy > 0 || own > 0 || !sea || world.Shore.IsLand(from) || !View.Pick(x, y, out var to))
+            return null;
+        var (unit, _) = Commanded(s);
+        var gv = s.Groups;
+        bool deploy = unit.IsGroup && gv.IndexOfGroup(unit.GroupId) is int g and >= 0 && gv.Force[g] && ShapeOf(gv, g) == (int)LineShape.Columns;
+        return (from, (Earth.Bearing(from, to) % 360 + 360) % 360, deploy);
+    }
 
     /// <summary>While the right button is held: a dashed line from the ship that steams the orders to what the release
     /// would be about (the enemy, one of ours, the sea), in the verb's colour; the cursor's verb names it.</summary>
@@ -81,6 +135,24 @@ public sealed unsafe partial class MapScene
         else
             return;
         var colour = armedPick != ClickPick.None ? PickColour(armedPick) : enemy > 0 ? Bad : own > 0 ? Friend : MapPalette.RouteSelected;
+        if (armedPick == ClickPick.None && RightDragged(cursorX, cursorY) && Shape(s, cursorX, cursorY) is var (press, _, deploy))
+        {
+            // a shape (I3): to the press point, then along the drag (a deploy: the drag alone, the line's course)
+            if (!deploy)
+            {
+                overlay.BeginStrip(colour, 1.5f, Dash.Dashed, true);
+                Point(view, from);
+                Point(view, press);
+                overlay.End();
+            }
+            overlay.BeginStrip(colour, 2f, Dash.Solid, true);
+            Point(view, press);
+            Point(view, at);
+            overlay.End();
+            if (view.Project(press, out double px, out double py) && view.Project(at, out double ex, out double ey))
+                symbols.Add(SymbolShape.Arrow, ex, ey, 6 * Rp, colour, colour, 1f, Math.Atan2(ey - py, ex - px));
+            return;
+        }
         overlay.BeginStrip(colour, 1.5f, Dash.Dashed, true);
         Point(view, from);
         Point(view, to);

@@ -45,6 +45,11 @@ public sealed class World
     /// speed asked without it, or a halt to a speed, lets go.</summary>
     public bool FineHeld { get; private set; }
 
+    /// <summary>A run (⇧Space, docs/map-ui/input.md T1): the speed the clock drops back to at the first thing that matters
+    /// (<see cref="Matters"/>, an encounter rule's), 0 with none. Set with the speed by one command; a speed asked
+    /// without it, or a halt to a speed, ends it.</summary>
+    public double RunBack { get; private set; }
+
     /// <summary>The speed the tiers and the rails go by: the asked one, or held fine, at most the fine tier's top
     /// (just under <see cref="SimSettings.CoarseMinSpeed"/>).</summary>
     public double TierSpeed => FineHeld ? Math.Min(Speed, Math.BitDecrement(Settings.CoarseMinSpeed)) : Speed;
@@ -234,6 +239,7 @@ public sealed class World
             case WorldCommand.SetSpeed:
                 Speed = Math.Clamp(c.X, Settings.MinSpeed, Settings.MaxSpeed);
                 FineHeld = c.A != 0;
+                RunBack = c.Y > 0 ? Math.Clamp(c.Y, Settings.MinSpeed, Settings.MaxSpeed) : 0;
                 targetMs = Math.Min(targetMs, Time.Ms + MaxLagMs);
                 Ships.SpeedChanged(this);   // the speed picks the tier
                 break;
@@ -296,11 +302,19 @@ public sealed class World
         if (speed is double s)
         {
             Speed = Math.Clamp(s, Settings.MinSpeed, Settings.MaxSpeed);
-            FineHeld = false;
+            (FineHeld, RunBack) = (false, 0);
             Ships.SpeedChanged(this);
         }
         Paused |= pause;
         targetMs = Math.Min(targetMs, Time.Ms + 1);
+    }
+
+    /// <summary>From an event's handler: something the player wants to know happened (a task they gave by hand ended):
+    /// a run drops back to its speed here, as <see cref="Halt"/>; without a run, nothing.</summary>
+    public void Matters()
+    {
+        if (RunBack > 0)
+            Halt(pause: false, RunBack);
     }
 
     /// <summary>Runs events toward the target, at most about <paramref name="maxEvents"/> of them, and stopping once the
@@ -358,6 +372,7 @@ public sealed class World
         s.Sun = Sun.Direction(Time);
         s.Speed = Speed;
         s.FineHeld = FineHeld;
+        s.RunBack = RunBack;
         s.Paused = Paused;
         s.PlayerSide = PlayerSide;
         s.Truth = truth;
@@ -384,6 +399,7 @@ public sealed class World
         h.Add(Time.Ms);
         h.Add(Speed);
         h.Add(FineHeld);
+        h.Add(RunBack);
         h.Add(Paused);
         Relations.Hash(ref h);
         h.Add(PlayerSide);

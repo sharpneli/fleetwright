@@ -98,7 +98,7 @@ public sealed partial class MapScene : ISceneMenu
         if (s.Paused)
             BarText("PAUSED", Theme.Amber, mid);
         else
-            BarText(heldText, !s.FineHeld && s.AchievedSpeed < s.Speed * 0.9 ? Theme.Amber : Theme.Muted, mid);
+            BarText(heldText, !s.FineHeld && s.RunBack == 0 && s.AchievedSpeed < s.Speed * 0.9 ? Theme.Amber : Theme.Muted, mid);
         if (GunsSilent(s))
         {
             ImGui.SameLine(0, gap);
@@ -185,12 +185,13 @@ public sealed partial class MapScene : ISceneMenu
         }
         // what's held: the speed asked while the sim keeps up, else what it makes; the fine tier held (§), what it makes
         // flat out (made when the words change)
-        bool lagging = s.FineHeld || s.AchievedSpeed < s.Speed * 0.9;
-        var held = (s.FineHeld ? -2 : s.Speed, lagging ? Math.Round(s.AchievedSpeed) : -1, s.Paused);
+        bool lagging = s.FineHeld || s.RunBack > 0 || s.AchievedSpeed < s.Speed * 0.9;
+        var held = (s.RunBack > 0 ? -3 : s.FineHeld ? -2 : s.Speed, lagging ? Math.Round(s.AchievedSpeed) : -1, s.Paused);
         if (held != heldKey)
         {
             heldKey = held;
-            heldText = s.FineHeld ? $"fine, flat out: {SpeedLabel(held.Item2)}"
+            heldText = s.RunBack > 0 ? $"run until it matters: {SpeedLabel(held.Item2)}"
+                : s.FineHeld ? $"fine, flat out: {SpeedLabel(held.Item2)}"
                 : lagging ? $"held {SpeedLabel(held.Item2)} of {SpeedLabel(s.Speed)}" : $"held {SpeedLabel(s.Speed)}";
         }
         // in action: since the oldest open encounter of ours
@@ -502,7 +503,7 @@ public sealed partial class MapScene : ISceneMenu
     DistanceUnit legendUnit;
 
     /// <summary>The map's own keys, at the status bar's right.</summary>
-    const string StatusKeys = "WASD pan · Space pause · 1–5 gears · § fast · + − speed · Tab next ship · J log · V card · P pin · Esc menu";
+    const string StatusKeys = "WASD pan · Space pause · ⇧Space run · 1–5 gears · § fast · + − speed · Tab next ship · J log · V card · P pin · Esc menu";
 
     /// <summary>The status bar along the bottom (docs/map-ui/strip.md), as the designer's and the launch screen's: a dot
     /// and what the mouse does, or the armed pick in amber, at the left; the map's keys, the grid's legend, the scale bar

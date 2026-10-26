@@ -21,8 +21,10 @@ public enum WorldCommand : ushort
 public readonly record struct Command(byte System, ushort Code, int Entity = 0, long A = 0, double X = 0, int B = 0, double Y = 0)
 {
     /// <summary>Game seconds per real second, clamped to the settings' range; <paramref name="holdFine"/> keeps the
-    /// fine tier whatever the speed (<see cref="World.FineHeld"/>).</summary>
-    public static Command SetSpeed(double speed, bool holdFine = false) => new(0, (ushort)WorldCommand.SetSpeed, A: holdFine ? 1 : 0, X: speed);
+    /// fine tier whatever the speed (<see cref="World.FineHeld"/>); <paramref name="runBack"/> above 0 makes it a run,
+    /// back to that speed at the first thing that matters (<see cref="World.RunBack"/>).</summary>
+    public static Command SetSpeed(double speed, bool holdFine = false, double runBack = 0) =>
+        new(0, (ushort)WorldCommand.SetSpeed, A: holdFine ? 1 : 0, X: speed, Y: runBack);
     public static Command Pause() => new(0, (ushort)WorldCommand.Pause);
     public static Command Resume() => new(0, (ushort)WorldCommand.Resume);
 

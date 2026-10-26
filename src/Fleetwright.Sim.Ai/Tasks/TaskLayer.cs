@@ -293,8 +293,13 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
                 Remove(i--);   // the unit's gone
                 continue;
             }
-            if (Live(tasks[i].Status))
+            bool live = Live(tasks[i].Status);
+            if (live)
                 Step(ctx, ref tasks[i]);
+            // a task the player gave by hand ended, the last of its plan: what a run waits for (docs/map-ui/input.md T1)
+            if (live && !Live(tasks[i].Status) && tasks[i].Hand && Next(tasks[i].Unit) < 0
+                && ctx.Ships.SlotOf(lead) is int ls and >= 0 && ctx.Ships[ls].Side == ctx.World.PlayerSide)
+                ctx.World.Matters();
             if (queued > 0 && !Live(tasks[i].Status) && Next(tasks[i].Unit) is int q and >= 0)
             {
                 var c = queue[q];
