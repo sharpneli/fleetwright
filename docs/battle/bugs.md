@@ -182,6 +182,13 @@ Seen in the AI's baseline after the detail passes (2026-10-20, docs/battle/comma
   `LineShapeTests`) slows by `FollowMaxSpeedDiffKn` and overshoots her station by 1-2 km before closing again at 5 kn
   over the guide: the six columns' line forms in 64 min where the drop back alone takes about 50. Found 2026-10-25
   (docs/map-ui/battle-hud.md P1). To try: the captain easing back up as the gap closes, by her own acceleration.
+- [ ] A force with every member out of its line drops out of its commander's units. `CommanderLayer.Gather` and its
+  count of units by state (the loop over top groups near line 237) find a top group's side through
+  `GroupSystem.GuideShip`, and a force whose squadrons are all detached (held by the player, on tasks) has none, so
+  while that lasts the commander doesn't see the force as a unit; it's back once a squadron rejoins. Found 2026-10-26
+  playing Åland (the rail's same fault was fixed then, `dbbf1403`: `GroupsView.Side`, `GroupsView.LeadShip`). To fix:
+  the side from `GroupSystem.SideOf`, and a lead ship that doesn't need the line, then check what the commander does
+  with a force he can't steer as one (its tasks, its placing).
 
 ## Shipgen sizing
 
