@@ -271,6 +271,11 @@ Seen in the AI's baseline after the detail passes (2026-10-20, docs/battle/comma
   (`shipgen scenario <setup> --play --fast 1000000 --fine 1`). Fixed 2026-10-25: `WorldTime.AheadMs` (at least 1 ms, at
   most a century) for every event put ahead by a span in seconds (the rails' five schedulers, coarse motion's and the
   slide's segment ends); the same run plays to its end.
+- [ ] The fine tier flat out (§ held, ⇧Space: `World.FineHeld`, docs/map-ui/input.md) makes only about 300x in the
+  Jutland (the user's test game, 2026-10-26; 288x measured the same day on 2 workers), so § gains little over the 240x
+  gear in a fleet action. Small fights run far faster (the squadrons to their end in under a second). Look at where the
+  fine tick's time goes at 250 ships (`-frametimes`, the world's probes in the F2 panel) and whether more workers
+  (docs/battle/workers.md, capped at 2) or W5 would lift it.
 
 ## The app
 
