@@ -62,8 +62,9 @@ level, ~1,450 px, just inside the card at 1,472). A status bar of 20 px runs the
 - **Row 1**: Fight `B` · Follow… `F` · Hold `H` as one segmented control, then Task ▾ `T` (the task menu, as now).
 - **Row 2**: Withdraw `W`, and AI `I` as a flag, lit while the side's commander has the unit (greyed with the reason in
   the tooltip where it can't be handed over: a ship in a squadron).
-- **Row 3**: Organise ▾ `R`, the old "Squadron…" popup (detach or rejoin her, the squadron's formation, leave it). See
-  question 3.
+- No third row: the old "Squadron…" popup is gone (question 3). Its organising goes into the task menu's organise
+  column, beside divide and merge: detach or rejoin, disband, the picked ships added to it (forming a squadron or a
+  force of the picked, and leaving one, are there already); the formation and spacing are Formation's `Z`.
 
 ### Formation (a unit's only)
 
@@ -105,7 +106,7 @@ Finnish keyboard `[ ] / ;` need AltGr. Keys are SDL keycodes, so they follow the
 | | O, C, Del, M | hard over, the conn (as now), clear route, make smoke |
 | Guns | G, E, X, S | fire at will, engage…, hold fire, shells ▾ |
 | | ⇧E | torpedoes at… |
-| Task | B, F, H, T, W, I, R | fight, follow…, hold, the task menu (as now), withdraw, AI, organise ▾ |
+| Task | B, F, H, T, W, I | fight, follow…, hold, the task menu (as now), withdraw, AI |
 | Formation | L, K, A (as now), Z, U, D, `,` `.` (as now) | line ahead, columns, abreast, this level's formation ▾, turn ▾, deploy…, deploy to port, to starboard |
 | An enemy | E, Alt+E, ⇧E | engage her with the unit, with the ship alone, torpedoes |
 | Any order | Alt + its key | to this ship alone (as Alt does for a right-click now) |
@@ -126,7 +127,18 @@ own letters win, as now (its S, E, G, H, I, O, D, M, K, L, A, Q mean its own ord
 - **No allocation on a steady frame**, as the rail and the card: the heads' strings made when what they say changes, as
   now.
 
-## Questions
+## Questions, answered (the user, 2026-10-26)
+
+1. **The helm on the arrows**: yes. WASD will pan the map in a later rework; an idea for later, for fun: a locked mode,
+   the camera held on the ship and WASD her helm (a torpedo boat run by hand).
+2. **Q for the chain**: fine.
+3. **Organise ▾**: dropped. Popups interrupt the flow of combat: the default behaviours should be set, and the player
+   not poked about decisions without the context for them at hand. The organising moves into the task menu.
+4. **Make smoke under the helm**: fine.
+5. **Left-aligned**: yes, so a pane doesn't move when the orders switch between the ship and a unit.
+6. **The status bar**: stays, always there (it's small).
+
+The questions as asked:
 
 1. **The helm on the arrows**: ← → 10°, Shift 90°, ↑ ↓ the telegraph. Fine, or are the arrows wanted for panning the map
    later?

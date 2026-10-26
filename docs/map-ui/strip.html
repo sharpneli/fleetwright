@@ -169,7 +169,6 @@ function task(o) {
     `<div class="body">
       ${row(seg([['Fight', 'B', o.order === 'fight' ? 'on' : ''], ['Follow…', 'F', o.order === 'follow' ? 'on' : ''], ['Hold', 'H', o.order === 'hold' ? 'on' : '']]), '<span class="gap"></span>', B('Task', 'T', '', true))}
       ${row(B('Withdraw', 'W'), B('AI', 'I', o.ai === 'on' ? 'on' : o.ai === 'off' ? 'off' : ''))}
-      ${row(B(o.business, 'R', '', true))}
     </div>`);
 }
 function formation(o) {
@@ -192,7 +191,7 @@ const S = {
       ], '<span class="mut" style="font-size:12px">her squadron\'s guide · in line</span>')),
       helm({ course: '308°', kn: '25.9 kn', ordered: '308°', bell: 'Full', smoke: false }),
       guns({ battery: 'main: tracking · 0 salvos', target: 'on V30', fire: 'will', shells: 'Shells: by target, HE', torps: '2 loaded · 2 left' }),
-      task({ role: 'battle line · worked out', right: '<span class="fig">intercept: fighting</span>', order: 'hold', ai: 'on', business: 'Organise' }),
+      task({ role: 'battle line · worked out', right: '<span class="fig">intercept: fighting</span>', order: 'hold', ai: 'on' }),
       formation({ note: '4 units', guide: 'Lion', shape: 'columns', force: true, level: 'This level: line abreast, 5,560 m' }),
     ],
     status: `<span class="dot">●</span><span>Right-click: steer · on an enemy: engage · on your ship: follow · Shift: waypoint · Alt with any order: this ship only</span>`,
@@ -215,7 +214,7 @@ const S = {
       ], `<span class="amb" style="font-size:12px">falling out: steering</span><span class="b" style="height:16px;margin-left:8px;font-size:12px;padding:0 5px">Back into line<span class="kbd">⇧B</span></span>`)),
       helm({ course: '291°', kn: '24.1 kn', ordered: '270°', bell: 'Full', hardOver: true, route: false, typing: false }),
       guns({ battery: 'main: ranging · 3 salvos', target: 'on V30', fire: 'will', armed: 'engage', shells: 'Shells: AP', shellHeld: true, torps: '2 loaded · 2 left' }),
-      task({ role: 'her captain', right: '<span class="fig amb">falling out</span>', order: 'fight', ai: 'off', business: 'Organise' }),
+      task({ role: 'her captain', right: '<span class="fig amb">falling out</span>', order: 'fight', ai: 'off' }),
     ],
     status: `<span class="armed">●</span><span class="armed">Engage: click an enemy · Esc cancels</span>`,
     verb: { x: 1112, y: 618, text: 'Lion: ENGAGE V29 · 10.4 km' },
