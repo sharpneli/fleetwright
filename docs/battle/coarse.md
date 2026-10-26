@@ -1,5 +1,6 @@
 # Plan: fighting in the coarse tier
-Status: **agreed 2026-10-26** (drafted and answered the same day: "Decided" at the end). J0 next. It takes over `fighting.md` 4.8
+Status: **agreed 2026-10-26** (drafted and answered the same day: "Decided" at the end). J0 (the bench) done
+2026-10-26; J1 (the step mode) next. It takes over `fighting.md` 4.8
 (damage in the coarse tier) and 4.9 (coarse fire), and the parts of `plan.md` 2.8 that touch fighting. Those sections
 only point here.
 
@@ -80,18 +81,27 @@ Coarse's yardstick is the fine tier, never history (the user, 2026-10-26). Histo
 **`shipgen coarse-parity`** runs a fixed panel both ways, many seeds each, and prints fine against coarse with the
 bands below. The panel has four layers, cheapest first:
 
-- **Duels** (`FcBench` with each ship's tier asked): one battery on one target across ranges, fire-control levels,
-  calibres, visibility and the target's behaviours (steady, zigzag, turn). Compared: hits a gun a minute, time to first
-  straddle and first hit, rounds spent. Damage off. This isolates fire from the AI.
-- **Dodging** (decision 1): the duels again with the target's own captain steering, across sizes and agility (a torpedo
-  boat, a destroyer, a light cruiser, a battleship), each holding course, zigzagging by doctrine, and making a torpedo
-  attack run under secondary fire. Compared: hits a gun a minute against each, and the share of an attack run's boats
-  that reach their launch point. Each band is per target, so a destroyer's drift can't hide in a battleship's average.
-- **Fights to the end** (duels with damage on, and `squadrons`): sinkings, time to out of the fight, losses by how
-  they went (magazine, capsized, broke in two, foundered), hits by calibre.
-- **Scenarios** (`scenario --play --tier fine|coarse`, wave 1 and the Jutland): each side's tonnage share sunk and out
-  of the fight, ships sunk, the decision's time, ammunition spent, who declined. This layer includes the AI at a minute's
-  cadence.
+- **Duels** (`FcBench` at the tier's speed, 300 runs each): one battery on a scripted target. Battleship on battleship
+  at 16 kyd (steady, zigzagging, turning, own ship turning) and at 7 km in haze; secondaries on a destroyer (steady and
+  zigzagging); a light cruiser on a zigzagging destroyer; a main battery on a zigzagging torpedo boat. Compared: hits a
+  gun a minute, rounds a gun a minute, first straddle and first hit after the track. Damage off. This isolates fire from
+  the AI.
+- **Dodging** (decision 1): played scenarios where the AI's own captains steer the targets. `flotilla` is six torpedo
+  boats on an attack run (an opening `"attack"` task) into four dreadnoughts' secondaries. `running-fight` is a light
+  cruiser and two large destroyers running and zigzagging from two dreadnoughts. Compared: the hit % on each target
+  class (a band each, so a destroyer's drift can't hide in a battleship's average), and the ships that get their
+  torpedoes off.
+- **Fights to the end**: duels with damage on (300 runs: a battleship on a light cruiser, a light cruiser on a
+  zigzagging destroyer), compared on the share out of the fight by the default doctrine's rule, the share going down,
+  the minutes to out of the fight and the hits; and `squadrons` played.
+- **Scenarios** played to the end (wave 1, Åland and Tsushima; with `--panel full` also Heligoland Bight, Dogger Bank
+  and the Jutland). Each side's ships lost, tonnage share lost, shell hits made, hit %, ships firing torpedoes and
+  torpedo hits; the exchange (one side's share of the tonnage lost); how often it's decided, and when it ends. This
+  layer includes the AI at a minute's cadence.
+
+Scenarios play 48 seeds each way by default (`--seeds`), many at once (`--threads`); `--only` picks scenarios by file
+name, and `--fine-from` reuses a kept fine side when only coarse changed. The kept baselines live in
+`docs/battle/coarse-parity/`.
 
 **Bands** (decision 5): a measure matches when the coarse mean is within ±15% of fine's (absolute floors for
 small counts), with seeds enough that each mean's standard error is under a third of the band. A scenario's winner's
@@ -214,6 +224,39 @@ Each step ends with something to run and watch in the step mode, and with the pa
 | **J7** | **Only if J2's gate fails on speed:** fire control's grid longer in coarse, then the sampled salvos (rung 3) with `coarse-fit` and its tripwire. | The tripwire trips on a deliberate fine change; the parity layers hold. |
 | **J8** | **The process in place.** The kept tests in the suite, the full panel's time and how to run it written here, the parity log's first full row, and the rule saved for later sessions. | A fine gunnery change fails the kept tests (tried, then reverted). |
 
+**J0 done (2026-10-26).**
+- **Built:** `shipgen coarse-parity` (`CoarseParity.cs`) with the four layers above. Each measure prints fine's and
+  coarse's means with their standard errors, the difference, the band and a verdict:
+  - **ok:** inside the band, with both errors under a third of it;
+  - **FAIL:** outside the band by more than twice the noise, or one tier has the event and the other never does;
+  - **noisy:** with how many times the runs it would need.
+
+  `duel --tier coarse` and `scenario --play --tier coarse` ask 1000x (`CoarseParity.CoarseSpeed`: coarse, under the
+  rails' snap speed). `FcBench` takes the asked speed and records a damaged target going down and falling out by the
+  default doctrine's rule. `ScenarioPlay`'s seed loop is shared (`Begin`, `PlayToEnd`). Every world in the bench runs
+  inline, many at once on threads.
+- **The dodging benches:** `running-fight.json` (new) and `flotilla.json`. The flotilla no longer ran in at all: its
+  commander withdrew it, outmatched, since 5.1d-g (`bugs.md`, Balance). Scenarios now take an opening
+  `"attack"` task (the task layer's own Attack, on the biggest enemy in sight), and the flotilla has one.
+- **Time:** the standard panel at 48 seeds takes 10-12 minutes on 32 threads (5,500-6,300 thread-seconds fine, 1,400 coarse
+  while coarse is silent). Fine is most of it, so `--fine-from` with the kept baseline makes coarse-only iterations
+  about five times cheaper. The full panel's three big scenarios take 8 minutes at 8 seeds on 16 threads (2,200
+  thread-seconds fine; the Jutland about 3 minutes a seed). At 48 seeds that's about 45 minutes, a run for big changes.
+- **Noise, on fine's side at 48 seeds:**
+  - **Duels:** every measure resolves at 300 runs, except hits on a zigzagging destroyer (×2.4-2.7 the runs). The fight
+    duels resolve at 300 runs too (100 left a light cruiser on a destroyer unresolved).
+  - **Scenarios:** 30-70% of each one's measures resolve. Shell hits made and tonnage shares have heavy tails (one
+    magazine, one cruiser caught close) and need 3-12× more seeds. They show as noisy rather than failing, so a real
+    drift there shows only once it's large.
+- **What coarse already shows with its guns silent:**
+  - **Torpedoes already launch in coarse.** Some path isn't held to the fine tier, though the captain's own `Aim` is.
+    In the flotilla's attack every coarse boat fires (10.9 torpedo hits a run, half a British battleship lost) against
+    none fine; in Tsushima 1.9 Russian ships fire coarse against 0.5 fine. J3 finds that path.
+  - **The Jutland's exchange flips on torpedoes alone:** Britain's share of the tonnage lost is 0.82 coarse against
+    0.36 fine.
+- **Kept:** the fine baseline, `docs/battle/coarse-parity/2026-10-26-standard.json`. Run twice, the panel gave the
+  same numbers: the bench is deterministic.
+
 ## Decided
 
 The user's, 2026-10-26:
@@ -231,3 +274,5 @@ The user's, 2026-10-26:
 
 | Date | Commit | Panel | Worst measures | Result |
 |---|---|---|---|---|
+| 2026-10-26 | 0e08e9f3 (fight duels at 300 runs after it) | standard, 300 runs, 48 seeds: 186 measures, 10 min | coarse silent: every gunnery measure -100%; the flotilla's boats all fire coarse (10.9 torpedo hits a run against 0) | 37 ok, 139 FAIL, 10 noisy: expected before J2. Fine's baseline kept (`2026-10-26-standard.json`); its rerun gave the same numbers |
+| 2026-10-26 | 0e08e9f3 | full's big three (Heligoland Bight, Dogger Bank, the Jutland), 8 seeds: 45 measures, 8 min on 16 threads | the Jutland's exchange 0.82 coarse against 0.36 fine on torpedoes alone; ships lost -72% to -98% | 5 ok, 29 FAIL, 11 noisy: expected before J2 (`2026-10-26-full-big-three-8-seeds.json`) |

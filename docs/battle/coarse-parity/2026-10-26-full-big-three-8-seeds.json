@@ -1,0 +1,810 @@
+{
+  "date": "2026-10-26 20:18",
+  "commit": "bdb7797c",
+  "panel": "full",
+  "runs": 300,
+  "seeds": 8,
+  "coarse_speed": 1000,
+  "fine_s": 2193.7,
+  "coarse_s": 347.9,
+  "rows": [
+    {
+      "layer": "scenarios",
+      "case": "Heligoland Bight",
+      "name": "Britain: ships lost",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 5.75,
+        "se": 1.423652244856768
+      },
+      "coarse": {
+        "n": 8,
+        "mean": 0.125,
+        "se": 0.125
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Heligoland Bight",
+      "name": "Britain: tonnage lost, share",
+      "floor": 0.05,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 0.04172295638855617,
+        "se": 0.011265181495065018
+      },
+      "coarse": {
+        "n": 8,
+        "mean": 0.0020470477349932258,
+        "se": 0.0020470477349932258
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Heligoland Bight",
+      "name": "Britain: shell hits made",
+      "floor": 3,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 1338.5,
+        "se": 123.57921115046588
+      },
+      "coarse": {
+        "n": 8,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Heligoland Bight",
+      "name": "Britain: hit %",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 29.67766968764724,
+        "se": 0.995617006900773
+      },
+      "coarse": {
+        "n": 0
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Heligoland Bight",
+      "name": "Britain: ships firing torpedoes",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 35,
+        "se": 1.8516401995451028
+      },
+      "coarse": {
+        "n": 8,
+        "mean": 8.25,
+        "se": 3.400367627183861
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Heligoland Bight",
+      "name": "Britain: torpedo hits",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 16.875,
+        "se": 2.3937231908233905
+      },
+      "coarse": {
+        "n": 8,
+        "mean": 2.25,
+        "se": 1.979808793076457
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Heligoland Bight",
+      "name": "Germany: ships lost",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 20.5,
+        "se": 1.224744871391589
+      },
+      "coarse": {
+        "n": 8,
+        "mean": 0.625,
+        "se": 0.4977628523130841
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Heligoland Bight",
+      "name": "Germany: tonnage lost, share",
+      "floor": 0.05,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 0.8466899735556452,
+        "se": 0.06642298103430884
+      },
+      "coarse": {
+        "n": 8,
+        "mean": 0.05518951787608504,
+        "se": 0.045219690877148194
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Heligoland Bight",
+      "name": "Germany: shell hits made",
+      "floor": 3,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 589.875,
+        "se": 72.64503657708292
+      },
+      "coarse": {
+        "n": 8,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Heligoland Bight",
+      "name": "Germany: hit %",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 28.931395990435902,
+        "se": 2.5223351089211787
+      },
+      "coarse": {
+        "n": 0
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Heligoland Bight",
+      "name": "Germany: ships firing torpedoes",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 16,
+        "se": 1.2535663410560174
+      },
+      "coarse": {
+        "n": 8,
+        "mean": 1.125,
+        "se": 0.29504842217604116
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Heligoland Bight",
+      "name": "Germany: torpedo hits",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 3.25,
+        "se": 1.1299494299683124
+      },
+      "coarse": {
+        "n": 8,
+        "mean": 0.125,
+        "se": 0.125
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Heligoland Bight",
+      "name": "the exchange: Britain\u0027s share of the tonnage lost",
+      "floor": 0.1,
+      "absolute": true,
+      "fine": {
+        "n": 8,
+        "mean": 0.15182913206115722,
+        "se": 0.03153706107197679
+      },
+      "coarse": {
+        "n": 3,
+        "mean": 0.3333333333333333,
+        "se": 0.33333333333333337
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Heligoland Bight",
+      "name": "decided, share",
+      "floor": 0.1,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 0.25,
+        "se": 0.16366341767699427
+      },
+      "coarse": {
+        "n": 8,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Heligoland Bight",
+      "name": "the end, hours",
+      "floor": 0.25,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 7.272916666666666,
+        "se": 0.5956850256650633
+      },
+      "coarse": {
+        "n": 8,
+        "mean": 8.166666666666666,
+        "se": 0
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Dogger Bank",
+      "name": "Britain: ships lost",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 13.625,
+        "se": 1.4630874888399532
+      },
+      "coarse": {
+        "n": 8,
+        "mean": 1.875,
+        "se": 0.5153882032022076
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Dogger Bank",
+      "name": "Britain: tonnage lost, share",
+      "floor": 0.05,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 0.11548035235573005,
+        "se": 0.012524085522039218
+      },
+      "coarse": {
+        "n": 8,
+        "mean": 0.05099688119755525,
+        "se": 0.016798752355794328
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Dogger Bank",
+      "name": "Britain: shell hits made",
+      "floor": 3,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 1232.5,
+        "se": 208.4199058220139
+      },
+      "coarse": {
+        "n": 8,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Dogger Bank",
+      "name": "Britain: hit %",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 7.352721849366145,
+        "se": 1.16326147821791
+      },
+      "coarse": {
+        "n": 0
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Dogger Bank",
+      "name": "Britain: ships firing torpedoes",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 11.25,
+        "se": 2.0155644370746373
+      },
+      "coarse": {
+        "n": 8,
+        "mean": 21.875,
+        "se": 1.3152607020228781
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Dogger Bank",
+      "name": "Britain: torpedo hits",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 5.625,
+        "se": 1.4992557677537404
+      },
+      "coarse": {
+        "n": 8,
+        "mean": 39.25,
+        "se": 4.522759903295459
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Dogger Bank",
+      "name": "Germany: ships lost",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 14.5,
+        "se": 1
+      },
+      "coarse": {
+        "n": 8,
+        "mean": 3.5,
+        "se": 0.4629100498862757
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Dogger Bank",
+      "name": "Germany: tonnage lost, share",
+      "floor": 0.05,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 0.27469441691443675,
+        "se": 0.0468437876244942
+      },
+      "coarse": {
+        "n": 8,
+        "mean": 0.4566507365910198,
+        "se": 0.06276141761948023
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Dogger Bank",
+      "name": "Germany: shell hits made",
+      "floor": 3,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 825.25,
+        "se": 95.6817175401266
+      },
+      "coarse": {
+        "n": 8,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Dogger Bank",
+      "name": "Germany: hit %",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 5.740420314931875,
+        "se": 0.6060037108732007
+      },
+      "coarse": {
+        "n": 0
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Dogger Bank",
+      "name": "Germany: ships firing torpedoes",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 10.375,
+        "se": 1.6139735791783316
+      },
+      "coarse": {
+        "n": 8,
+        "mean": 10.75,
+        "se": 1.6339041762425535
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Dogger Bank",
+      "name": "Germany: torpedo hits",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 3.125,
+        "se": 1.2017472398850886
+      },
+      "coarse": {
+        "n": 8,
+        "mean": 5.375,
+        "se": 1.625
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Dogger Bank",
+      "name": "the exchange: Britain\u0027s share of the tonnage lost",
+      "floor": 0.1,
+      "absolute": true,
+      "fine": {
+        "n": 8,
+        "mean": 0.3842151402455909,
+        "se": 0.037977003223846284
+      },
+      "coarse": {
+        "n": 8,
+        "mean": 0.14587564604083952,
+        "se": 0.04858271332948113
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Dogger Bank",
+      "name": "decided, share",
+      "floor": 0.1,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 8,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Dogger Bank",
+      "name": "the end, hours",
+      "floor": 0.25,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 7.166666666666666,
+        "se": 3.3569988834012605E-16
+      },
+      "coarse": {
+        "n": 8,
+        "mean": 7.166666666666666,
+        "se": 3.3569988834012605E-16
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Jutland",
+      "name": "Britain: ships lost",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 35.125,
+        "se": 6.580375314958432
+      },
+      "coarse": {
+        "n": 8,
+        "mean": 9.75,
+        "se": 1.013304354222222
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Jutland",
+      "name": "Britain: tonnage lost, share",
+      "floor": 0.05,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 0.06816794493967389,
+        "se": 0.00952911919400342
+      },
+      "coarse": {
+        "n": 8,
+        "mean": 0.12747910307393578,
+        "se": 0.015303364655386936
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Jutland",
+      "name": "Britain: shell hits made",
+      "floor": 3,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 3510.5,
+        "se": 430.19343655748963
+      },
+      "coarse": {
+        "n": 8,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Jutland",
+      "name": "Britain: hit %",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 6.723437466333734,
+        "se": 0.6931097334468656
+      },
+      "coarse": {
+        "n": 0
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Jutland",
+      "name": "Britain: ships firing torpedoes",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 51.125,
+        "se": 7.102407790923542
+      },
+      "coarse": {
+        "n": 8,
+        "mean": 29.75,
+        "se": 8.461572802128119
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Jutland",
+      "name": "Britain: torpedo hits",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 28.125,
+        "se": 5.090037538452653
+      },
+      "coarse": {
+        "n": 8,
+        "mean": 27.125,
+        "se": 11.593467218345733
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Jutland",
+      "name": "Germany: ships lost",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 44.75,
+        "se": 4.80606016251506
+      },
+      "coarse": {
+        "n": 8,
+        "mean": 4.25,
+        "se": 0.958980113006968
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Jutland",
+      "name": "Germany: tonnage lost, share",
+      "floor": 0.05,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 0.22962840638753784,
+        "se": 0.03632892412482548
+      },
+      "coarse": {
+        "n": 8,
+        "mean": 0.06400499779816424,
+        "se": 0.027459775989984492
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Jutland",
+      "name": "Germany: shell hits made",
+      "floor": 3,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 4039.75,
+        "se": 434.27644051423545
+      },
+      "coarse": {
+        "n": 8,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Jutland",
+      "name": "Germany: hit %",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 7.108074938526303,
+        "se": 0.2926834461927066
+      },
+      "coarse": {
+        "n": 0
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Jutland",
+      "name": "Germany: ships firing torpedoes",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 44.125,
+        "se": 4.433788689468313
+      },
+      "coarse": {
+        "n": 8,
+        "mean": 51.5,
+        "se": 4.77343841331532
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Jutland",
+      "name": "Germany: torpedo hits",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 20.125,
+        "se": 3.377644466615328
+      },
+      "coarse": {
+        "n": 8,
+        "mean": 80.625,
+        "se": 10.656884930812167
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Jutland",
+      "name": "the exchange: Britain\u0027s share of the tonnage lost",
+      "floor": 0.1,
+      "absolute": true,
+      "fine": {
+        "n": 8,
+        "mean": 0.3560258530791938,
+        "se": 0.035165133954766115
+      },
+      "coarse": {
+        "n": 8,
+        "mean": 0.819235569426522,
+        "se": 0.05013640161665138
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Jutland",
+      "name": "decided, share",
+      "floor": 0.1,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 8,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Jutland",
+      "name": "the end, hours",
+      "floor": 0.25,
+      "absolute": false,
+      "fine": {
+        "n": 8,
+        "mean": 14,
+        "se": 0
+      },
+      "coarse": {
+        "n": 8,
+        "mean": 14,
+        "se": 0
+      },
+      "verdict": "ok"
+    }
+  ]
+}

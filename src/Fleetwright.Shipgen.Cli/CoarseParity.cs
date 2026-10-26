@@ -161,12 +161,11 @@ static class CoarseParity
             if (!layers.Contains(layer))
                 continue;
             var cases = Duels(cls, damage, fallOut);
-            int n = damage ? Math.Max(runs / 3, 20) : runs;
             FcRun[][]? f = null, c = null;
             if (fine)
-                f = Timed(ref wall[0], () => FcBench.Runs([.. cases.Select(d => d.Case)], settings, n, 1));
+                f = Timed(ref wall[0], () => FcBench.Runs([.. cases.Select(d => d.Case)], settings, runs, 1));
             if (coarse)
-                c = Timed(ref wall[1], () => FcBench.Runs([.. cases.Select(d => d.Case with { Speed = CoarseSpeed })], settings, n, 1));
+                c = Timed(ref wall[1], () => FcBench.Runs([.. cases.Select(d => d.Case with { Speed = CoarseSpeed })], settings, runs, 1));
             for (int k = 0; k < cases.Count; k++)
                 rows.AddRange(damage ? FightRows(cases[k], f?[k], c?[k]) : DuelRows(cases[k], f?[k], c?[k]));
         }
