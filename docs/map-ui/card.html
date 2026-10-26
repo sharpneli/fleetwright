@@ -1,0 +1,473 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Ship card: the damage plate</title>
+<!-- The ship card's redesign (docs/map-ui/card.md): the condition drawn as a damage-control plate, profile over plan
+     at one length scale, hairlines, colour only where something is wrong. Lion-like's geometry is her class's
+     (assets/card-lion.js, dumped from ShipClass); the damage is made up. Over the game's capture of the card as built. -->
+<style>
+@font-face{font-family:'Saira Extra Condensed';font-weight:700;src:url(../designer-ui/assets/fonts/saira-extra-condensed-latin-700-normal.woff2)}
+@font-face{font-family:'Barlow Condensed';font-weight:400;src:url(../designer-ui/assets/fonts/barlow-condensed-latin-400-normal.woff2)}
+@font-face{font-family:'Barlow Condensed';font-weight:500;src:url(../designer-ui/assets/fonts/barlow-condensed-latin-500-normal.woff2)}
+@font-face{font-family:'Barlow Condensed';font-weight:600;src:url(../designer-ui/assets/fonts/barlow-condensed-latin-600-normal.woff2)}
+@font-face{font-family:'Red Hat Mono';font-weight:400;src:url(../designer-ui/assets/fonts/red-hat-mono-latin-400-normal.woff2)}
+@font-face{font-family:'Red Hat Mono';font-weight:500;src:url(../designer-ui/assets/fonts/red-hat-mono-latin-500-normal.woff2)}
+:root{
+  --ground:#0F0F0E;--panel:#1B1B19;--panel2:#22221F;--inset:#0B0B0A;--line:#272724;--edge:#050505;--bevel:#2E2E2A;
+  --title-top:#3A3934;--title-bot:#2A2A26;--header:#141412;--text:#D3CFC4;--bright:#F6F3EA;--muted:#8A867B;--faint:#55524B;
+  --brass:#E8772E;--brass-darker:rgba(232,119,46,.16);--ok:#8DBE6B;--amber:#E8B64A;--fr:#F1ECDD;--red:#E04A3C;
+  --water:#7FB0CF;--fire:#FF9A3D;
+  --plan:#262724;--planline:#BDB8AA;--dfill:#34332E;--dmid:#4A4842;--ddark:#1F1E1B;
+  --btn:#2E2D29;--btn2:#232220;--border:#3A3934;--key:#45443E;--tagedge:#55524B;--tagtext:#E2DDD0;
+  --font-head:'Saira Extra Condensed','Arial Narrow',sans-serif;
+  --font-ui:'Barlow Condensed','Arial Narrow',sans-serif;
+  --font-data:'Red Hat Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--edge)}
+#app{position:relative;width:1920px;height:1080px;overflow:hidden;background:url(png/card-before.png) no-repeat;color:var(--text);font:13px/1.3 var(--font-ui)}
+.mono,.num{font-family:var(--font-data);font-size:11px;font-variant-numeric:tabular-nums}
+.num{text-align:right;color:var(--bright)}
+.mut{color:var(--muted)} .brt{color:var(--bright)} .amb{color:var(--amber)} .red{color:var(--red)} .wat{color:var(--water)} .fir{color:var(--fire)}
+
+#card{position:absolute;left:1472px;top:40px;width:440px;height:1002px;background:var(--panel);border:1px solid var(--edge);display:flex;flex-direction:column;overflow:hidden;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+/* the tabs: the live card, then the pinned; pin and shut at the right */
+#tabs{height:22px;flex:none;display:flex;align-items:flex-end;gap:2px;padding:0 4px;background:var(--ground)}
+#tabs .tb{display:flex;align-items:center;gap:5px;height:20px;padding:0 9px;background:var(--panel2);border:1px solid var(--edge);border-bottom:0;color:var(--text)}
+#tabs .tb.on{background:var(--brass-darker);color:var(--brass);border-color:var(--brass)}
+#tabs .tb .x{color:var(--muted);font-size:11px}
+#tabs .r{margin-left:auto;align-self:center;display:flex;gap:3px}
+.btn{display:inline-flex;align-items:center;gap:5px;height:18px;padding:0 6px;background:linear-gradient(var(--btn),var(--btn2));border:1px solid var(--border);color:var(--text);white-space:nowrap;font-size:12px}
+.kbd{display:inline-block;min-width:10px;padding:0 3px;border:1px solid var(--key);border-bottom-width:2px;font-size:9.5px;line-height:11px;color:var(--text);text-align:center;font-family:var(--font-data)}
+/* her name, as the resource bar's */
+#who{height:34px;flex:none;display:flex;align-items:center;padding:0 8px;background:linear-gradient(#232320,#1A1A18);border-bottom:1px solid var(--edge)}
+#who .n{font-weight:600;color:var(--bright);font-size:15px;line-height:16px}
+#who .c{font-size:11.5px;color:var(--muted);line-height:13px}
+#who .r{margin-left:auto;display:flex;gap:4px}
+.chip{display:inline-block;padding:0 4px;font-size:11px;line-height:13px;border:1px solid}
+.chip.amb{color:var(--amber);border-color:#7A5E26;background:#2E2410}
+.chip.neu{color:var(--text);border-color:var(--key);background:var(--panel2)}
+#figs{height:32px;flex:none;display:flex;border-bottom:1px solid var(--edge);background:var(--panel)}
+#figs .c{flex:1;padding:2px 8px;border-right:1px solid var(--line)}
+#figs .c:last-child{border-right:0}
+#figs .k{font-size:10px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;line-height:12px}
+#figs .v{font-family:var(--font-data);font-size:11px;color:var(--bright);line-height:13px;white-space:nowrap}
+#figs .v span{color:var(--muted);font-family:var(--font-ui);font-size:11px;margin-left:4px}
+/* the panes inside the card: title strips as everywhere */
+.title{height:20px;flex:none;display:flex;align-items:center;gap:8px;padding:0 6px;background:linear-gradient(var(--title-top),var(--title-bot));border-top:1px solid var(--edge);border-bottom:1px solid var(--edge);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);color:var(--brass);font-family:var(--font-head);font-weight:700;font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;white-space:nowrap}
+.title::before{content:'';flex:none;width:5px;height:5px;border-radius:50%;background:var(--faint);margin-right:-3px}
+.title .note{color:var(--muted);font-family:var(--font-ui);font-weight:400;text-transform:none;letter-spacing:0;font-size:12px}
+.title .r{margin-left:auto;color:var(--muted);font-family:var(--font-ui);font-weight:400;text-transform:none;letter-spacing:0;font-size:12px;display:flex;gap:3px;align-items:center}
+.title.shut{color:var(--muted)}
+.ov{display:inline-flex;align-items:center;gap:3px;padding:0 4px;height:15px;border:1px solid var(--border);color:var(--muted);font-size:11.5px;background:var(--inset)}
+.ov i{font-style:normal;font-family:var(--font-data);font-size:9.5px;border:1px solid currentColor;padding:0 2px;line-height:10px}
+.ov.on{border-color:var(--brass);color:var(--brass);background:var(--brass-darker)}
+#plate{display:block;background:var(--plan);border-bottom:1px solid var(--edge)}
+table{border-collapse:collapse;width:100%}
+th{height:18px;background:var(--header);color:var(--muted);font-weight:500;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;text-align:left;padding:0 6px;border-bottom:1px solid var(--edge);white-space:nowrap}
+th.n{text-align:right}
+td{height:20px;padding:0 6px;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:middle}
+tr.alt td{background:rgba(255,255,255,.018)}
+tr.grp td{background:var(--panel2);color:var(--bright);font-weight:600}
+td.k{color:var(--muted)}
+.tw{display:inline-block;width:10px;color:var(--muted);font-size:9px}
+.bar{display:inline-block;width:64px;height:6px;background:var(--inset);border:1px solid var(--edge);vertical-align:1px;margin-right:6px}
+.bar span{display:block;height:100%}
+.pips{display:inline-flex;gap:2px;vertical-align:-1px;margin-right:6px}
+.pips i{display:block;width:7px;height:9px;border:1px solid var(--planline);opacity:.75}
+.pips i.ld{background:linear-gradient(transparent 55%,rgba(189,184,170,.55) 55%)}
+.pips i.out{border-color:var(--red);background:rgba(224,74,60,.35);opacity:1}
+.pips i.dn{border-color:var(--amber);border-style:dashed;opacity:1}
+.ph{display:inline-flex}
+.ph i{font-style:normal;padding:0 6px;height:15px;line-height:14px;border:1px solid var(--border);margin-left:-1px;color:var(--faint);background:var(--inset);font-size:11.5px}
+.ph i.done{color:var(--muted)}
+.ph i.on{color:var(--bright);border-color:var(--planline);background:var(--panel2)}
+@keyframes flick{0%,100%{opacity:1}50%{opacity:.62}}
+.flame{animation:flick 1.1s ease-in-out infinite}
+</style></head>
+<body><div id="app">
+<div id="card">
+  <div id="tabs"><span class="tb on">Lion</span><span class="tb">Tiger <span class="x">×</span></span>
+    <span class="r"><span class="btn">Pin <span class="kbd">P</span></span><span class="btn">× <span class="kbd">V</span></span></span></div>
+  <div id="who"><div><div class="n">Lion</div><div class="c">Lion-like (1912) · 1st Battlecruiser Squadron, guide</div></div>
+    <div class="r"><span class="chip amb">in action</span><span class="chip neu">captain · fight</span></div></div>
+  <div id="figs">
+    <div class="c"><div class="k">Speed</div><div class="v">24.0 kn<span>of 24.6</span></div></div>
+    <div class="c"><div class="k">Course</div><div class="v">171°<span>ordered 171°</span></div></div>
+    <div class="c" style="flex:1.4"><div class="k">Target</div><div class="v">#7 contact<span>11.7 km</span></div></div>
+    <div class="c"><div class="k">Hits</div><div class="v amb">13<span>holes 5.6 m²</span></div></div>
+  </div>
+
+  <div class="title">Condition<span class="note">heights ×2</span><span class="r">13 hits · 2 fires</span></div>
+  <svg id="plate" width="438" height="10"></svg>
+  <div style="display:flex;border-bottom:1px solid var(--edge)">
+    <svg id="clino" width="104" height="100" style="flex:none;border-right:1px solid var(--line);background:var(--plan)"></svg>
+    <table id="readings" style="table-layout:fixed"></table>
+  </div>
+
+  <div class="title">Guns<span class="note">fore to aft</span><span class="r">16 of 20 mounts</span></div>
+  <table id="guns"></table>
+
+  <div class="title">Fire control<span class="r">2 batteries engaged</span></div>
+  <table id="fc"></table>
+  <div class="title">Damage control<span class="r">6 parties · 2 pumps</span></div>
+  <table id="dc"></table>
+  <div class="title shut">Hits taken<span class="r">13</span></div>
+  <div class="title shut">Torpedoes<span class="r">2 loaded</span></div>
+</div>
+</div>
+<script src="assets/card-lion.js"></script>
+<script>
+const D = window.LION;
+const NS = 'http://www.w3.org/2000/svg';
+const C = {plan:'#262724', line:'#BDB8AA', fill:'#34332E', mid:'#4A4842', dark:'#1F1E1B', water:'#7FB0CF', amber:'#E8B64A',
+  red:'#E04A3C', fire:'#FF9A3D', core:'#FFE08A', tagBg:'rgba(11,11,10,.82)', tagEdge:'#55524B', tagText:'#E2DDD0', muted:'#8A867B', edge:'#050505'};
+function el(parent, tag, attrs, text) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (text != null) e.textContent = text;
+  parent.appendChild(e);
+  return e;
+}
+
+// ------------------------------------------------------------------ her state (made up for the mockup)
+const S = {
+  heel: 2.1,          // degrees, + starboard
+  trim: 0.62,         // degrees, + by the bow
+  sinkage: 0.55,      // m
+  // mounts by index: ready, loading (share done), jammed, down, out
+  mounts: {0:{st:'jammed'}, 1:{st:'ready'}, 3:{st:'out'}, 2:{st:'loading', done:0.7},
+           8:{st:'out'}, 13:{st:'down'}, 7:{st:'loading', done:0.4}},
+  wrecked: [{kind:'Funnel', x0:14.03, st:'wrecked'}, {kind:'Superstructure', x0:-82.45, base:5.2, st:'destroyed'}],
+  // flooding: cells chosen by section, band and tier, the water's share of each
+  flood: [
+    {sec:[1,2], band:'Starboard', tiers:[2,3,4], share:1},
+    {sec:[1,2], band:'Centre', tiers:[2,3], share:1}, {sec:[1,2], band:'Centre', tiers:[4], share:0.45},
+    {sec:[1,2], band:'Port', tiers:[2,3], share:0.8},
+    {sec:[15], band:'Starboard', tiers:[2,3], share:0.6},
+    {sec:[11], band:'Port', tiers:[3,4], share:0.85, counter:true},
+  ],
+  holes: [{x:104, z:-6.9, side:1, m2:3.4}, {x:-70.5, z:-9.2, side:1, m2:1.3}, {x:8.5, z:1.2, side:-1, m2:0.9}],
+  fires: [{x:7.5, y:0, z:-1.3}, {x:52, y:2, z:6.5}],
+};
+
+// ------------------------------------------------------------------ the plate: profile over plan, one length scale
+const W = 438, mx = 12;
+let x0 = 1e9, x1 = -1e9;
+for (const [x] of D.deck) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); }
+const s = (W - 2 * mx) / (x1 - x0), zs = 2 * s;
+const deckTop = D.keel + D.depth;   // the main deck
+const standing = c => ['Superstructure', 'Funnel', 'ConningTower', 'Main'].includes(c.kind) && c.base < deckTop + 12;
+let zHigh = D.keel + D.depth;
+for (const c of D.components) if (standing(c)) zHigh = Math.max(zHigh, c.top);
+const pTop = 16, pBottom = pTop + (zHigh - D.keel) * zs;   // the profile's keel line
+const seaBelow = 18;
+const planCy = pBottom + seaBelow + 14 + D.beam * s / 2;
+const stripY = planCy + D.beam * s / 2 + 12;
+const H = stripY + 22;
+const svg = document.getElementById('plate');
+svg.setAttribute('height', H);
+const X = x => mx + (x - x0) * s;
+const Z = z => pBottom - (z - D.keel) * zs;
+const Y = y => planCy + y * s;       // starboard down, as the map draws her heading right
+const wlNow = x => D.waterline + S.sinkage + (x - D.lcf) * Math.tan(S.trim * Math.PI / 180);
+
+const defs = el(svg, 'defs', {});
+const hatch = el(defs, 'pattern', {id:'cf', width:4, height:4, patternUnits:'userSpaceOnUse', patternTransform:'rotate(45)'});
+el(hatch, 'rect', {width:4, height:4, fill:'rgba(127,176,207,.22)'});
+el(hatch, 'line', {x1:0, y1:0, x2:0, y2:4, stroke:C.water, 'stroke-width':1.4, 'stroke-opacity':.9});
+const wreck = el(defs, 'pattern', {id:'wk', width:3, height:3, patternUnits:'userSpaceOnUse', patternTransform:'rotate(-45)'});
+el(wreck, 'line', {x1:0, y1:0, x2:0, y2:3, stroke:C.amber, 'stroke-width':1, 'stroke-opacity':.7});
+const wreckR = el(defs, 'pattern', {id:'wr', width:3, height:3, patternUnits:'userSpaceOnUse', patternTransform:'rotate(-45)'});
+el(wreckR, 'line', {x1:0, y1:0, x2:0, y2:3, stroke:C.red, 'stroke-width':1, 'stroke-opacity':.75});
+
+// the hull's side in profile: deck tops forward, the bottom back
+// the hull field steps by strips: each run of one bottom height is drawn through its middle, the ends kept
+const raw = D.profile.filter(p => p[1] != null);
+const prof = [];
+for (let i = 0; i < raw.length;) {
+  let j = i;
+  while (j + 1 < raw.length && raw[j + 1][1] === raw[i][1]) j++;
+  const mid = (raw[i][0] + raw[j][0]) / 2;
+  if (i === 0) prof.push(raw[0]);
+  if (i > 0 && j < raw.length - 1) prof.push([mid, raw[i][1], raw[Math.round((i + j) / 2)][2]]);
+  if (j === raw.length - 1) prof.push(raw[j]);
+  i = j + 1;
+}
+const hullPath = 'M' + prof.map(p => `${X(p[0]).toFixed(1)},${Z(p[2]).toFixed(1)}`).join('L') +
+  'L' + prof.slice().reverse().map(p => `${X(p[0]).toFixed(1)},${Z(p[1]).toFixed(1)}`).join('L') + 'Z';
+const clip = el(defs, 'clipPath', {id:'hull'});
+el(clip, 'path', {d:hullPath});
+// the sea under her waterline now, across the plate
+const sx0 = 0, sx1 = W;
+const xAt = px => x0 + (px - mx) / s;
+el(svg, 'path', {d:`M${sx0},${Z(wlNow(xAt(sx0)))}L${sx1},${Z(wlNow(xAt(sx1)))}L${sx1},${pBottom + seaBelow}L${sx0},${pBottom + seaBelow}Z`,
+  fill:C.water, 'fill-opacity':.07});
+el(svg, 'path', {d:hullPath, fill:C.fill});
+
+// the water in her spaces, profile: each section and tier at its fullest band; counterflooding hatched
+const cellsOf = f => D.cells.filter(c => f.sec.includes(c.section) && c.band === f.band && f.tiers.includes(c.tier));
+const g = el(svg, 'g', {'clip-path':'url(#hull)'});
+for (const f of S.flood)
+  for (const c of cellsOf(f)) {
+    const z = c.base + (c.top - c.base) * f.share;
+    el(g, 'rect', {x:X(c.x0), y:Z(z), width:(c.x1 - c.x0) * s, height:(z - c.base) * zs,
+      fill:f.counter ? 'url(#cf)' : C.water, 'fill-opacity':f.counter ? 1 : .5});
+    if (!f.counter && f.share < 1) el(g, 'line', {x1:X(c.x0), x2:X(c.x1), y1:Z(z), y2:Z(z), stroke:C.water, 'stroke-width':1});
+  }
+// the decks and the watertight bulkheads: hairlines inside the hull
+for (const d of D.decks) {
+  if (d.kind === 'Raised') continue;
+  el(g, 'line', {x1:0, x2:W, y1:Z(d.z), y2:Z(d.z), stroke:C.line, 'stroke-opacity':d.kind === 'InnerBottom' ? .16 : .13, 'stroke-width':1});
+}
+for (const b of D.bulkheads)
+  if (b.kind === 'Main' || b.kind === 'Collision')
+    el(g, 'line', {x1:X(b.x), x2:X(b.x), y1:Z(b.top), y2:Z(b.base), stroke:C.line, 'stroke-opacity':.32, 'stroke-width':1});
+// the armour deck's slope line (the protective deck): a touch heavier
+const ad = D.decks.find(d => d.armour > 0);
+if (ad) el(g, 'line', {x1:X(ad.x0), x2:X(ad.x1), y1:Z(ad.z), y2:Z(ad.z), stroke:C.line, 'stroke-opacity':.38, 'stroke-width':1.2});
+el(svg, 'path', {d:hullPath, fill:'none', stroke:C.line, 'stroke-opacity':.8, 'stroke-width':1});
+
+// her upper works in profile: outlined, funnels dark, mounts by state
+const mountColour = st => st === 'out' ? C.red : st === 'jammed' || st === 'down' ? C.amber : C.line;
+const stateOf = i => (S.mounts[i] || {st:'ready'});
+const wreckOf = c => S.wrecked.find(w => w.kind === c.kind && Math.abs(w.x0 - c.x0) < 0.01 && (w.base == null || Math.abs(w.base - c.base) < 0.01));
+// the upper works' silhouette: one outline over the blocks and the conning tower, their levels faint inside
+const blocks = D.components.filter(c => standing(c) && (c.kind === 'Superstructure' || c.kind === 'ConningTower'));
+const xs = [...new Set(blocks.flatMap(c => [c.x0, c.x1]))].sort((a, b) => a - b);
+let sky = [];
+for (let i = 0; i + 1 < xs.length; i++) {
+  const xm = (xs[i] + xs[i + 1]) / 2;
+  let top = null;
+  for (const c of blocks) if (c.x0 <= xm && c.x1 >= xm && (top == null || c.top > top)) top = c.top;
+  sky.push([xs[i], xs[i + 1], top]);
+}
+// runs of upper works: each drawn as one closed outline from the deck
+for (let i = 0; i < sky.length;) {
+  if (sky[i][2] == null) { i++; continue; }
+  let j = i;
+  while (j + 1 < sky.length && sky[j + 1][2] != null) j++;
+  const base = Math.min(...blocks.filter(c => c.x1 > sky[i][0] && c.x0 < sky[j][1]).map(c => c.base));
+  let d = `M${X(sky[i][0])},${Z(base)}`;
+  for (let k = i; k <= j; k++) d += `L${X(sky[k][0])},${Z(sky[k][2])}L${X(sky[k][1])},${Z(sky[k][2])}`;
+  d += `L${X(sky[j][1])},${Z(base)}Z`;
+  el(svg, 'path', {d, fill:C.fill, stroke:C.line, 'stroke-opacity':.55, 'stroke-linejoin':'miter'});
+  i = j + 1;
+}
+for (const c of blocks)
+  if (c.base > deckTop + 2.7)
+    el(svg, 'line', {x1:X(c.x0), x2:X(c.x1), y1:Z(c.base), y2:Z(c.base), stroke:C.line, 'stroke-opacity':.16});
+const order = D.components.map((c, i) => i).filter(i => standing(D.components[i]) && !(blocks.includes(D.components[i]) && !wreckOf(D.components[i])))
+  .sort((a, b) => D.components[a].base - D.components[b].base);
+for (const i of order) {
+  const c = D.components[i];
+  const m = D.mounts.findIndex(m => m.component === i);
+  const w = wreckOf(c);
+  const st = m >= 0 ? stateOf(m).st : 'ready';
+  const stroke = w ? (w.st === 'destroyed' ? C.red : C.amber) : m >= 0 ? mountColour(st) : C.line;
+  const fill = w ? (w.st === 'destroyed' ? 'url(#wr)' : 'url(#wk)') : c.kind === 'Funnel' ? C.dark : c.kind === 'Main' ? C.plan : C.fill;
+  if (c.kind === 'Main') {
+    // a turret: the gunhouse, its guns at rest
+    const dir = Math.cos(D.mounts[m].rest * Math.PI / 180) >= 0 ? 1 : -1;
+    const zc = (c.base + c.top) / 2, gun = 15.4;
+    const gx = dir > 0 ? c.x1 : c.x0;
+    el(svg, 'line', {x1:X(gx), x2:X(gx + dir * (gun - (c.x1 - c.x0) / 2)), y1:Z(zc), y2:Z(zc), stroke, 'stroke-opacity':.85, 'stroke-width':1.6});
+  }
+  el(svg, 'rect', {x:X(c.x0), y:Z(c.top), width:(c.x1 - c.x0) * s, height:(c.top - c.base) * zs, fill, stroke,
+    'stroke-opacity':w || st !== 'ready' && st !== 'loading' ? 1 : c.kind === 'Funnel' ? .65 : .45, 'stroke-width':w || m >= 0 && st === 'out' ? 1.3 : 1});
+  if (c.kind === 'Funnel' && !w) el(svg, 'line', {x1:X(c.x0), x2:X(c.x1), y1:Z(c.top) + 1.5, y2:Z(c.top) + 1.5, stroke:C.line, 'stroke-opacity':.4});
+}
+// the waterlines: her design's dashed, now solid (heeled, trimmed); past her ends a little
+el(svg, 'line', {x1:X(x0) - 6, x2:X(x1) + 6, y1:Z(D.waterline), y2:Z(D.waterline), stroke:C.water, 'stroke-opacity':.55, 'stroke-dasharray':'4 3', 'stroke-width':1});
+el(svg, 'line', {x1:X(x0) - 10, x2:X(x1) + 10, y1:Z(wlNow(x0 - 10 / s)), y2:Z(wlNow(x1 + 10 / s)), stroke:C.water, 'stroke-width':1.5});
+
+// holes and fires, profile
+function hole(parent, cx, cy, m2) {
+  const r = Math.max(2.2, Math.min(4.5, Math.sqrt(m2) * 2.2));
+  el(parent, 'circle', {cx, cy, r:r + 1, fill:C.edge, 'fill-opacity':.7});
+  el(parent, 'circle', {cx, cy, r, fill:C.red});
+}
+function flame(parent, cx, cy) {
+  const f = el(parent, 'g', {class:'flame', transform:`translate(${cx},${cy})`});
+  el(f, 'path', {d:'M0,-6 C2.6,-2.6 4,-0.6 4,1.6 A4,4 0 0 1 -4,1.6 C-4,-0.6 -2.2,-2 0,-6 Z', fill:C.fire, stroke:C.edge, 'stroke-width':.8, 'stroke-opacity':.7});
+  el(f, 'path', {d:'M0,-1.6 C1.2,0 1.8,0.9 1.8,2 A1.8,1.8 0 0 1 -1.8,2 C-1.8,0.9 -1,0 0,-1.6 Z', fill:C.core});
+}
+for (const h of S.holes) hole(svg, X(h.x), Z(h.z), h.m2);
+for (const f of S.fires) flame(svg, X(f.x), Z(f.z));
+
+// tags: the water in her, by run, and her draughts at the ends
+function tag(x, y, text, colour, anchor) {
+  const t = el(svg, 'text', {x, y, 'font-family':'Red Hat Mono', 'font-size':9.5, fill:colour || C.tagText, 'text-anchor':anchor || 'start', 'dominant-baseline':'central'}, text);
+  const b = t.getBBox();
+  const r = el(svg, 'rect', {x:b.x - 3, y:b.y - 1, width:b.width + 6, height:b.height + 2, fill:C.tagBg, stroke:C.tagEdge, 'stroke-width':1});
+  svg.insertBefore(r, t);
+  return b;
+}
+const fwd = wlNow(x1) - D.keel, aft = wlNow(x0) - D.keel;
+// one row under her keel: the draughts at her ends, the water under each flooded run
+const ay = pBottom + seaBelow / 2 + 1;
+tag(X(x0) + 3, ay, `A ${aft.toFixed(1)} m`, C.water);
+tag(X(x1) - 3, ay, `F ${fwd.toFixed(1)} m`, C.water, 'end');
+tag(X(88.6) - 3, ay, '840 t', C.tagText, 'end');   // its run's after end: the forward draught has the bow
+tag(X(-70.5), ay, '150 t', C.tagText, 'middle');
+tag(X(-15.5), ay, '180 t cf', C.water, 'middle');
+const draughtText = `F ${fwd.toFixed(1)} · A ${aft.toFixed(1)}`;
+
+// ------------------------------------------------------------------ the plan
+el(svg, 'path', {d:'M' + D.deck.map(p => `${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join('L') + 'Z', fill:C.fill});
+const planClip = el(defs, 'clipPath', {id:'deck'});
+el(planClip, 'path', {d:'M' + D.deck.map(p => `${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join('L') + 'Z'});
+// the water by side: each section and band at its fullest tier
+const gp = el(svg, 'g', {'clip-path':'url(#deck)'});
+const fullest = new Map();
+for (const f of S.flood)
+  for (const c of cellsOf(f)) {
+    const key = c.section + c.band;
+    const v = fullest.get(key);
+    if (!v || v.share < f.share) fullest.set(key, {c, share:f.share, counter:f.counter});
+  }
+for (const {c, share, counter} of fullest.values())
+  el(gp, 'rect', {x:X(c.x0), y:Y(c.y0), width:(c.x1 - c.x0) * s, height:(c.y1 - c.y0) * s,
+    fill:counter ? 'url(#cf)' : C.water, 'fill-opacity':counter ? 1 : .25 + .3 * share});
+for (const b of D.bulkheads)
+  if (b.kind === 'Main' || b.kind === 'Collision')
+    el(gp, 'line', {x1:X(b.x), x2:X(b.x), y1:Y(-D.beam / 2), y2:Y(D.beam / 2), stroke:C.line, 'stroke-opacity':.2});
+el(svg, 'line', {x1:X(x0) - 6, x2:X(x1) + 6, y1:planCy, y2:planCy, stroke:C.line, 'stroke-opacity':.3, 'stroke-dasharray':'10 2 2 2'});
+el(svg, 'path', {d:'M' + D.deck.map(p => `${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join('L') + 'Z', fill:'none', stroke:C.line, 'stroke-opacity':.8});
+// upper works in plan: the lowest blocks outlined, funnels as dark ovals
+for (let i = 0; i < D.components.length; i++) {
+  const c = D.components[i];
+  if (c.kind === 'Superstructure' && c.base < deckTop + 3 || c.kind === 'ConningTower') {
+    const w = wreckOf(c);
+    el(svg, 'rect', {x:X(c.x0), y:Y(c.y0), width:(c.x1 - c.x0) * s, height:(c.y1 - c.y0) * s, fill:w ? 'url(#wr)' : C.mid, 'fill-opacity':w ? 1 : .55,
+      stroke:w ? C.red : C.line, 'stroke-opacity':w ? 1 : .4});
+  }
+}
+for (const w of S.wrecked) {
+  const c = D.components.find(c => c.kind === w.kind && Math.abs(w.x0 - c.x0) < 0.01 && (w.base == null || Math.abs(w.base - c.base) < 0.01));
+  if (c.kind === 'Superstructure' && c.base >= deckTop + 3)
+    el(svg, 'rect', {x:X(c.x0), y:Y(c.y0), width:(c.x1 - c.x0) * s, height:(c.y1 - c.y0) * s, fill:'url(#wr)', stroke:C.red});
+}
+for (const c of D.components)
+  if (c.kind === 'Funnel') {
+    const w = wreckOf(c);
+    el(svg, 'ellipse', {cx:X((c.x0 + c.x1) / 2), cy:Y((c.y0 + c.y1) / 2), rx:(c.x1 - c.x0) * s / 2, ry:(c.y1 - c.y0) * s / 2,
+      fill:w ? 'url(#wk)' : C.dark, stroke:w ? C.amber : C.line, 'stroke-opacity':w ? 1 : .6});
+  }
+// the mounts: secondaries as small rings, main turrets with their guns, lettered
+const letters = {0:'A', 1:'B', 3:'Q', 2:'X'};
+D.mounts.forEach((m, i) => {
+  const c = D.components[m.component], st = stateOf(i), col = mountColour(st.st);
+  const cx = X(m.x), cy = Y(m.y);
+  if (m.kind !== 'Main') {
+    el(svg, 'circle', {cx, cy, r:2.4, fill:st.st === 'out' ? C.red : C.plan, 'fill-opacity':st.st === 'out' ? .45 : 1, stroke:col, 'stroke-opacity':st.st === 'ready' || st.st === 'loading' ? .75 : 1,
+      'stroke-dasharray':st.st === 'down' ? '2 1.4' : 'none'});
+    return;
+  }
+  const r = (c.y1 - c.y0) * s / 2;
+  const a = m.rest * Math.PI / 180, dx = Math.cos(a), dy = Math.sin(a);
+  for (const off of [-1.4, 1.4])
+    el(svg, 'line', {x1:cx + dx * r - dy * off, y1:cy + dy * r + dx * off, x2:cx + dx * (r + 15.4 * s * 0.75) - dy * off, y2:cy + dy * (r + 15.4 * s * 0.75) + dx * off,
+      stroke:col, 'stroke-width':1.2, 'stroke-opacity':.9});
+  el(svg, 'circle', {cx, cy, r, fill:st.st === 'out' ? 'rgba(224,74,60,.28)' : C.plan, stroke:col, 'stroke-width':st.st === 'ready' || st.st === 'loading' ? 1.1 : 1.5,
+    'stroke-dasharray':st.st === 'down' ? '3 2' : 'none'});
+  if (st.st === 'loading') {
+    // the loading clock: an arc round the gunhouse, the share of the load done
+    const R = r + 2.2, t = st.done * 2 * Math.PI;
+    el(svg, 'path', {d:`M${cx},${cy - R}A${R},${R} 0 ${t > Math.PI ? 1 : 0} 1 ${cx + R * Math.sin(t)},${cy - R * Math.cos(t)}`, fill:'none', stroke:C.line, 'stroke-width':1.2});
+  }
+  el(svg, 'text', {x:cx, y:cy + 0.5, 'font-family':'Red Hat Mono', 'font-weight':500, 'font-size':9.5, fill:st.st === 'ready' || st.st === 'loading' ? C.tagText : col,
+    'text-anchor':'middle', 'dominant-baseline':'central'}, letters[i]);
+});
+// holes in plan at her side, fires at their spaces
+for (const h of S.holes) hole(svg, X(h.x), Y(h.side * D.beam / 2 * (Math.abs(h.x) > 95 ? 0.55 : 0.97)), h.m2);
+for (const f of S.fires) flame(svg, X(f.x), Y(f.y) - 1);
+
+// ------------------------------------------------------------------ the station strip: AP to FP in twentieths, amidships marked
+el(svg, 'line', {x1:X(x0), x2:X(x1), y1:stripY, y2:stripY, stroke:C.line, 'stroke-opacity':.35});
+for (let i = 0; i <= 20; i++) {
+  const x = X(x0 + (x1 - x0) * i / 20), big = i % 5 === 0;
+  el(svg, 'line', {x1:x, x2:x, y1:stripY, y2:stripY + (big ? 5 : 3), stroke:C.line, 'stroke-opacity':big ? .55 : .35});
+  if (big && i !== 10)
+    el(svg, 'text', {x, y:stripY + 12, 'font-family':'Red Hat Mono', 'font-size':9, fill:C.muted, 'text-anchor':'middle'}, i === 0 ? 'AP' : i === 20 ? 'FP' : i);
+}
+const amid = X(0);
+el(svg, 'circle', {cx:amid, cy:stripY + 9, r:3.5, fill:'none', stroke:C.muted});
+el(svg, 'line', {x1:amid, x2:amid, y1:stripY + 4, y2:stripY + 14, stroke:C.muted});
+// the scale: 50 m
+const sb0 = mx, sb1 = sb0 + 50 * s;
+el(svg, 'path', {d:`M${sb0},4V7H${sb1}V4`, fill:'none', stroke:C.muted});
+for (let m = 10; m < 50; m += 10) el(svg, 'line', {x1:sb0 + m * s, x2:sb0 + m * s, y1:5.5, y2:7, stroke:C.muted});
+el(svg, 'text', {x:sb1 + 4, y:9, 'font-family':'Red Hat Mono', 'font-size':9, fill:C.muted}, '50 m');
+
+// ------------------------------------------------------------------ the clinometer: her midship section heeled, the sea level
+(function () {
+  const cv = document.getElementById('clino');
+  const w = 104, h = 100, cx = w / 2, wy = 48, k = 2.0;
+  const sec = D.section;
+  const z0 = D.waterline + S.sinkage;
+  const pts = [];
+  for (const [z, hw] of sec) pts.push([hw, z]);
+  for (let i = sec.length - 1; i >= 0; i--) pts.push([-sec[i][1], sec[i][0]]);
+  const a = S.heel * Math.PI / 180;   // + starboard down: seen from aft, starboard at the right
+  const P = ([y, z]) => {
+    const zz = z - z0;
+    const ry = y * Math.cos(a) + zz * Math.sin(a), rz = -y * Math.sin(a) + zz * Math.cos(a);
+    return [cx + ry * k, wy - rz * k];
+  };
+  // the arc's degrees, and the needle along her centreline
+  const R = 36;
+  for (let d = -20; d <= 20; d += 5) {
+    const t = d * Math.PI / 180, big = d % 10 === 0;
+    el(cv, 'line', {x1:cx + Math.sin(t) * R, y1:wy - Math.cos(t) * R, x2:cx + Math.sin(t) * (R - (big ? 5 : 3)), y2:wy - Math.cos(t) * (R - (big ? 5 : 3)),
+      stroke:C.line, 'stroke-opacity':big ? .55 : .35});
+  }
+  el(cv, 'path', {d:`M${cx + Math.sin(-20 * Math.PI / 180) * R},${wy - Math.cos(-20 * Math.PI / 180) * R}A${R},${R} 0 0 1 ${cx + Math.sin(20 * Math.PI / 180) * R},${wy - Math.cos(20 * Math.PI / 180) * R}`,
+    fill:'none', stroke:C.line, 'stroke-opacity':.3});
+  el(cv, 'rect', {x:0, y:wy, width:w, height:h - wy, fill:C.water, 'fill-opacity':.07});
+  el(cv, 'path', {d:'M' + pts.map(p => P(p).map(v => v.toFixed(1)).join(',')).join('L') + 'Z', fill:C.fill, stroke:C.line, 'stroke-opacity':.8});
+  // her water at this section, to the heel: the starboard bottom tiers
+  el(cv, 'line', {x1:0, x2:w, y1:wy, y2:wy, stroke:C.water, 'stroke-width':1.5});
+  el(cv, 'line', {x1:cx + Math.sin(a) * 6, y1:wy - Math.cos(a) * 6, x2:cx + Math.sin(a) * (R + 2), y2:wy - Math.cos(a) * (R + 2), stroke:C.amber, 'stroke-width':1.3});
+  el(cv, 'text', {x:cx, y:h - 6, 'font-family':'Red Hat Mono', 'font-size':10, fill:C.amber, 'text-anchor':'middle'}, `${S.heel.toFixed(1)}° stbd`);
+  el(cv, 'text', {x:4, y:12, 'font-family':'Red Hat Mono', 'font-size':9, fill:C.muted}, 'P');
+  el(cv, 'text', {x:w - 4, y:12, 'font-family':'Red Hat Mono', 'font-size':9, fill:C.muted, 'text-anchor':'end'}, 'S');
+})();
+
+// ------------------------------------------------------------------ the tables
+document.getElementById('readings').innerHTML = `
+  <colgroup><col style="width:62px"><col><col style="width:58px"><col></colgroup>
+  <tr><td class="k">Afloat</td><td class="num" colspan="3" style="text-align:left"><span class="bar"><span style="width:94%;background:var(--ok)"></span></span><span class="mono brt">94 %</span><span class="mut"> · </span><span class="mono wat">1,862 t</span><span class="mut"> aboard</span></td></tr>
+  <tr class="alt"><td class="k">Trim</td><td class="num">0.62° bow</td><td class="k">Draught</td><td class="num" id="draught"></td></tr>
+  <tr><td class="k">Power</td><td class="num amb">80 %</td><td class="k">Steering</td><td class="num" style="font-family:var(--font-ui);font-size:13px">free</td></tr>
+  <tr class="alt"><td class="k">Fires</td><td class="num fir">2</td><td class="k">Safe</td><td class="num amb">18 kn</td></tr>
+  <tr><td class="k">Crew</td><td class="num" colspan="3"><span class="amb">43</span><span class="mut"> killed · </span><span class="amb">61</span><span class="mut"> wounded · of </span>1,267</td></tr>`;
+
+document.getElementById('draught').textContent = draughtText;
+const pips = a => '<span class="pips">' + a.map(c => `<i class="${c}"></i>`).join('') + '</span>';
+document.getElementById('guns').innerHTML = `
+  <colgroup><col style="width:54px"><col><col style="width:118px"></colgroup>
+  <tr><th>Mount</th><th>State</th><th class="n">AP · com · HE</th></tr>
+  <tr class="grp"><td><span class="tw">▼</span>Main</td><td style="font-weight:400"><span class="mut">8 × 343 mm on</span> #7 contact</td><td class="num" style="font-family:var(--font-ui);font-size:12px;font-weight:400">loads AP</td></tr>
+  <tr><td class="brt">A</td><td class="amb">jammed in train <span class="mut">· ~4 min</span></td><td class="num">97 · 0 · 60</td></tr>
+  <tr class="alt"><td class="brt">B</td><td>ready</td><td class="num">96 · 0 · 60</td></tr>
+  <tr><td class="brt">Q</td><td class="red">out of action</td><td class="num mut">102 · 0 · 60</td></tr>
+  <tr class="alt"><td class="brt">X</td><td><span class="bar" style="width:40px"><span style="width:70%;background:var(--planline)"></span></span>loading <span class="mono">9 s</span></td><td class="num">95 · 0 · 60</td></tr>
+  <tr class="grp"><td><span class="tw">▶</span>Sec.</td><td style="font-weight:400"><span class="mut">16 × 102 mm on</span> #6 contact</td><td class="num" style="font-family:var(--font-ui);font-size:12px;font-weight:400">loads HE</td></tr>
+  <tr><td class="brt">S1–8</td><td>${pips(['', '', '', 'ld', '', '', '', ''])}7 ready</td><td class="num">840 · 0 · 1,960</td></tr>
+  <tr class="alt"><td class="brt">P1–8</td><td>${pips(['', '', 'out', '', '', 'dn', '', ''])}<span class="red">P3 out</span><span class="mut"> · </span><span class="amb">P6 down</span></td><td class="num">735 · 0 · 1,715</td></tr>`;
+
+document.getElementById('fc').innerHTML = `
+  <colgroup><col style="width:54px"><col><col style="width:150px"></colgroup>
+  <tr><td class="brt">Main</td><td><span class="mono brt">11,680 m</span><span class="mut"> · plot ±60 m · seen</span></td><td class="num"><span class="ph"><i class="done">Open</i><i class="done">Range</i><i class="on">Effect</i></span></td></tr>
+  <tr class="alt"><td class="k"></td><td class="mut">director · level 3</td><td class="num"><span class="mut" style="font-family:var(--font-ui);font-size:12px">salvos </span>33<span class="mut" style="font-family:var(--font-ui);font-size:12px"> str </span>6<span class="mut" style="font-family:var(--font-ui);font-size:12px"> hits </span>6</td></tr>
+  <tr><td class="brt">Sec.</td><td><span class="mono brt">11,030 m</span><span class="mut"> · plot ±893 m · seen</span></td><td class="num"><span class="ph"><i class="done">Open</i><i class="on">Range</i><i>Effect</i></span></td></tr>`;
+
+document.getElementById('dc').innerHTML = `
+  <colgroup><col style="width:54px"><col></colgroup>
+  <tr><td class="num" style="text-align:left">40</td><td><span class="fir">fighting a fire</span><span class="mut"> · Q handling room</span></td></tr>
+  <tr class="alt"><td class="num" style="text-align:left">30</td><td>shoring a bulkhead<span class="mut"> · 120 man-min done</span></td></tr>
+  <tr><td class="num" style="text-align:left">25</td><td>plugging a hole<span class="mut"> · forward, starboard</span></td></tr>
+  <tr class="alt"><td class="num" style="text-align:left">70</td><td class="mut">3 parties standing by</td></tr>`;
+</script>
+</body></html>
