@@ -70,12 +70,12 @@ public sealed partial class MapScene
         Act.ClearRoute => new(SDLK_DELETE, false, false, "Del", "Clear route", "the waypoints dropped: she steers the course"),
         Act.Smoke => new(SDLK_M, false, false, "M", "Make smoke", "her funnels burn rich: a screen (every ship of her squadron when the orders go to a unit)"),
         Act.AtWill => new(SDLK_G, false, false, "G", "Fire at will", "each battery at the enemy it judges best"),
-        Act.Engage => new(SDLK_E, false, false, "E", "Engage…", "then click an enemy (or right-click her without this)"),
+        Act.Engage => new(SDLK_E, false, false, "E", "Engage…", "then right-click an enemy (or right-click her without this: engage is the default)"),
         Act.HoldFire => new(SDLK_X, false, false, "X", "Hold fire", "no gun fires"),
         Act.Shells => new(SDLK_R, false, false, "R", "", "the main guns' shell, for the selection: by target (her captain judges what a round does to the target as she's made out), or a kind held until they're out of it; the round in the gun goes first"),
-        Act.Torpedoes => new(SDLK_E, true, false, "Shift+E", "Torpedoes at…", "then click an enemy"),
+        Act.Torpedoes => new(SDLK_E, true, false, "Shift+E", "Torpedoes at…", "then right-click an enemy"),
         Act.Fight => new(SDLK_B, false, false, "B", "Fight", "the nearest enemy in sight; turns away when outgunned (Fight… in the task menu: one you pick)"),
-        Act.Follow => new(SDLK_F, false, false, "F", "Follow…", "station astern of her: then click a ship"),
+        Act.Follow => new(SDLK_F, false, false, "F", "Follow…", "station astern of her: then right-click a ship"),
         Act.Hold => new(SDLK_H, false, false, "H", "Hold", "hold the course and speed ordered"),
         Act.Tasks => new(SDLK_T, false, false, "T", "Task", "every order, by what it's about, and what the unit is for"),
         Act.Withdraw => new(0, false, false, null, "Withdraw", "break off and go home, away from any enemy first"),
@@ -84,7 +84,7 @@ public sealed partial class MapScene
         Act.Columns => new(SDLK_K, false, false, "K", "Columns", "the cruising order: every squadron a column in line ahead, the columns abreast as far apart as one is long, ready to deploy"),
         Act.Abreast => new(SDLK_L, true, false, "Shift+L", "Abreast", "line abreast; a force: every ship abreast, each squadron at its own spacing"),
         Act.Turn => new(SDLK_U, false, false, "U", "Turn", "turn together: every ship at once; the line becomes a line of bearing on its old axis. Or the battle turn, about"),
-        Act.Deploy => new(SDLK_N, false, false, "N", "Deploy…", "into line of battle: click where the line should steer, or the enemy (across his course)"),
+        Act.Deploy => new(SDLK_N, false, false, "N", "Deploy…", "into line of battle: right-click where the line should steer, or the enemy (across his course)"),
         Act.DeployPort => new(SDLK_COMMA, false, false, ",", "to port", "deploy 8 points to port: one line, the port wing column leading round, the rest in its wake"),
         Act.DeployStbd => new(SDLK_PERIOD, false, false, ".", "to stbd", "deploy 8 points to starboard: one line, the starboard wing column leading round, the rest in its wake"),
         Act.Formation => new(SDLK_Z, false, false, "Z", "", "this level's formation and spacing: echelons and lines of bearing"),
@@ -1219,8 +1219,8 @@ public sealed partial class MapScene
         return (enemy, own, sea, at);
     }
 
-    /// <summary>A click with a pick armed: done with what's under it (true), else false and the click selects. A miss on
-    /// what the pick wants keeps it armed.</summary>
+    /// <summary>A right click with a pick armed: done with what's under it (true), else false and the smart order goes. A
+    /// miss on what the pick wants keeps it armed.</summary>
     bool ArmedClick(double x, double y)
     {
         if (armedPick == ClickPick.None || selected < 0)

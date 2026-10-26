@@ -766,7 +766,9 @@ public sealed partial class MapScene : ISceneMenu
     /// dev panel); false with nothing open, and the switcher opens the menu.</summary>
     bool Escape()
     {
-        if (briefOpen)
+        if (rightHeld)
+            rightHeld = false;   // the order being aimed is dropped: the release gives nothing
+        else if (briefOpen)
             briefShut = true;
         else if (resultOpen)
             resultShut = true;

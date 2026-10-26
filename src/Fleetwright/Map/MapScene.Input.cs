@@ -2,6 +2,7 @@ using System.Numerics;
 using Fleetwright.Sim;
 using Fleetwright.Sim.Ai;
 using Fleetwright.Sim.Combat;
+using Fleetwright.Sim.Core;
 using Fleetwright.Ui;
 using ImGuiNET;
 using SDL;
@@ -12,7 +13,9 @@ namespace Fleetwright.Map;
 /// <summary>The camera's input (docs/map-ui/input.md I0): WASD pans at a share of the screen a second whatever the
 /// zoom (shift faster), eased so a tap nudges; the middle button drags the map, and its click centres the map on the
 /// sea or follows a ship until a pan. The keys are scancodes, so they stay under the hand on any layout. The left
-/// button only selects (I1): a click a ship, a drag a box.</summary>
+/// button only selects (I1): a click a ship, a drag a box. The right acts (I2): its order goes on the release, drawn
+/// from the ship that steams it to what it's about while the button is held (Esc drops it); an armed verb is aimed by
+/// it too.</summary>
 public sealed unsafe partial class MapScene
 {
     static readonly SDL_Scancode[] PanKeys = [SDL_Scancode.SDL_SCANCODE_W, SDL_Scancode.SDL_SCANCODE_A, SDL_Scancode.SDL_SCANCODE_S, SDL_Scancode.SDL_SCANCODE_D];
@@ -77,6 +80,57 @@ public sealed unsafe partial class MapScene
             camera.Drag(at, width / 2, height / 2, width, height);
             follow = 0;
         }
+    }
+
+    // ------------------------------------------------------------------ the right button (I2)
+
+    bool rightHeld;   // the right button is down on the map: its release gives the order the cursor names
+
+    /// <summary>While the right button is held: a dashed line from the ship that steams the orders to what the release
+    /// would be about (the enemy, one of ours, the sea), in the verb's colour; the cursor's verb names it.</summary>
+    void OrderPreview(in MapView view, Snapshot s)
+    {
+        if (!rightHeld || !mouseIn || ImGui.GetIO().WantCaptureMouse || s.Ships.IndexOf(selected) < 0)
+            return;
+        var (enemy, own, sea, at) = Under(s, cursorX, cursorY);
+        var (_, ship) = Commanded(s);
+        int k = s.Ships.IndexOf(ship);
+        if (k < 0)
+            k = s.Ships.IndexOf(selected);
+        var from = s.Ships.PoseAt(k, world.DrawMs).Position;
+        int target = enemy > 0 ? enemy : own > 0 && own != ship ? own : 0;
+        Vec3d to;
+        if (target > 0)
+        {
+            if (!TargetPos(s, target, out to))
+                return;
+        }
+        else if (sea && !world.Shore.IsLand(at))
+            to = at;
+        else
+            return;
+        var colour = armedPick != ClickPick.None ? PickColour(armedPick) : enemy > 0 ? Bad : own > 0 ? Friend : MapPalette.RouteSelected;
+        overlay.BeginStrip(colour, 1.5f, Dash.Dashed, true);
+        Point(view, from);
+        Point(view, to);
+        overlay.End();
+    }
+
+    /// <summary>Where a ship the player can name is now: hers, one in sight, or a contact's marker.</summary>
+    bool TargetPos(Snapshot s, int ship, out Vec3d p)
+    {
+        if (s.Ships.IndexOf(ship) is int k and >= 0)
+            p = s.Ships.PoseAt(k, world.DrawMs).Position;
+        else if (s.Sighted.IndexOf(ship) is int j and >= 0)
+            p = s.Sighted.PoseAt(j, world.DrawMs).Position;
+        else if (Array.IndexOf(s.Contacts.Entity, ship, 0, s.Contacts.Count) is int c and >= 0)
+            p = s.Contacts.Position[c];
+        else
+        {
+            p = default;
+            return false;
+        }
+        return true;
     }
 
     // ------------------------------------------------------------------ the box (I1)

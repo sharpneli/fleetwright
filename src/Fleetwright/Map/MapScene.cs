@@ -14,7 +14,8 @@ namespace Fleetwright.Map;
 /// the lat/lon grid, day and night from the snapshot's sun, and the clock's controls (pause, 1x to 1,000,000x, asked
 /// against achieved). It reads the world only through <see cref="WorldSession.Current"/> and changes it only by
 /// commands. Mouse: wheel zooms at the cursor, the left button selects (a click a ship, a drag a box; armed to place ships,
-/// it aims them), the middle drag pans and its click centres or follows (docs/map-ui/input.md). Keys: WASD pans, space pauses, + and - change the speed. The ships
+/// it aims them), the right gives the order the cursor names on its release (an armed verb's too), the middle drag pans
+/// and its click centres or follows (docs/map-ui/input.md). Keys: WASD pans, space pauses, + and - change the speed. The ships
 /// (step 2.3) are in MapScene.Ships.cs.</summary>
 public sealed unsafe partial class MapScene : IScene
 {
@@ -248,7 +249,7 @@ public sealed unsafe partial class MapScene : IScene
                 }
                 if (e->button.button == 3)
                 {
-                    OrderAt(e->button.x * sx, e->button.y * sy, (SDL_GetModState() & SDL_Keymod.SDL_KMOD_SHIFT) != 0);
+                    rightHeld = true;   // the order goes on the release, drawn while held (MapScene.Input.cs)
                     return true;
                 }
                 if (e->button.button != 1)
@@ -258,6 +259,13 @@ public sealed unsafe partial class MapScene : IScene
                 (pressX, pressY, pressed, boxing) = (e->button.x * sx, e->button.y * sy, true, false);   // a click, or a box (MapScene.Input.cs)
                 return true;
             case SDL_EventType.SDL_EVENT_MOUSE_BUTTON_UP:
+                if (e->button.button == 3)
+                {
+                    if (rightHeld)
+                        OrderAt(e->button.x * sx, e->button.y * sy, (SDL_GetModState() & SDL_Keymod.SDL_KMOD_SHIFT) != 0);
+                    rightHeld = false;
+                    return true;
+                }
                 if (e->button.button == 2 && middle)
                 {
                     double mx = e->button.x * sx, my = e->button.y * sy;

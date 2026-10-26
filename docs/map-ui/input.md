@@ -72,7 +72,7 @@ picks a unit in one click.
 | **I0** | The camera: WASD (⇧ faster), middle drag and click (centre, follow); the four orders off WASD | **Done 2026-10-26** (`MapScene.Input.cs`; the keys held by their SDL down and up, so `-input=F:hold:D:60` drives them) |
 | **T0** | The gears on 1–5, § held fast-forward, mouse 4 and 5 | **Done 2026-10-26** (`MapScene.Clock.cs`: `Gears`, `FastForward`; § is the scancode left of 1, ` on a US keyboard; the side buttons step a paused clock without running it, as + −) |
 | **I1** | The left button selects only: the drag a box (units wholly inside as units) | **Done 2026-10-26** (`MapScene.Input.cs`: `BoxSelect`): the selection the guide of the largest unit wholly inside, at its level; the rest picked beside it, so a cut squadron goes as ships alone (a picked ship at a unit's level goes as her unit at it, as a ctrl+click's); ctrl adds; an empty box deselects. Benches pan with `F:pan:…:2` now |
-| **I2** | The right button on the release with the order drawn while held; armed verbs aimed by the right button | |
+| **I2** | The right button on the release with the order drawn while held; armed verbs aimed by the right button | **Done 2026-10-26** (`MapScene.Input.cs`: `OrderPreview`, a dashed line from the ship that steams the order to what it's about, in the verb's colour, beside the cursor's verb; Esc while held drops it). A left click that changes the selection disarms; every "click …" of a pick now says "right-click …" |
 | **T1** | Run until it matters: the interest list in the sim, ⇧Space | |
 | **I3** | Right drag shapes: the heading on arrival, a force's deploy line | |
 

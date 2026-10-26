@@ -78,6 +78,7 @@ public sealed unsafe partial class MapScene
         DrawContacts(view, s);
         DrawShells(view, s);
         DrawDamage(view, s);
+        OrderPreview(view, s);
         for (int k = 0; k < v.Count; k++)
         {
             var (p, f) = v.PoseAt(k, world.DrawMs);
@@ -359,8 +360,9 @@ public sealed unsafe partial class MapScene
     void Click(double x, double y)
     {
         var view = View;
-        if (Armed && view.Pick(x, y, out var at) && world.Shore.IsLand(at) || ArmedClick(x, y))
+        if (Armed && view.Pick(x, y, out var at) && world.Shore.IsLand(at))
             return;
+        int was = selected;
         int hit = PickShip(view, x, y);
         if (hit < 0)
         {
@@ -372,6 +374,8 @@ public sealed unsafe partial class MapScene
         }
         Pick(hit);
         DoubleClick(hit);
+        if (selected != was)
+            armedPick = ClickPick.None;   // the verb was the selection's (docs/map-ui/input.md: the left only selects)
         squadronCardOf = -1;
         if (hit >= 0)
             cardOpen = true;   // a click opens her card (docs/map-ui/battle-hud.md decision 1)
@@ -525,7 +529,7 @@ public sealed unsafe partial class MapScene
     /// <summary>A right click on the sea with a ship selected: steer for it, or with shift add it to the route.</summary>
     void OrderAt(double x, double y, bool waypoint)
     {
-        if (FireAt(x, y) || SmartOrder(x, y, waypoint))
+        if (FireAt(x, y) || ArmedClick(x, y) || SmartOrder(x, y, waypoint))
             return;
         var s = world.Current;
         int k = s.Ships.IndexOf(selected);
