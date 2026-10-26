@@ -1276,11 +1276,15 @@ and learns others'. The hit is a `Hit` from a mine, as a torpedo's.
 
 ### 4.8 Damage in the coarse tier (moved later: after the fine-tune pass, decision 17)
 
+**Planned in detail in `docs/battle/coarse.md`** (drafted 2026-10-26, with 4.9; that doc leads where the two differ).
+
 Flooding, fire and repair at the coarse step, written to hold at a minute (inflow integrated over the step in closed
 form, not stepped), so a ship still flooding or burning goes on at speed and sinks there if it must. Until this step,
 4.3b's 1 s flooding runs on wet ships in any tier (correct, and slower at speed).
 
 ### 4.9 Coarse fire (moved later: after the fine-tune pass, decision 17)
+
+**Planned in detail in `docs/battle/coarse.md`** (drafted 2026-10-26; that doc leads where the two differ).
 
 As plan.md has it (agreed 2026-10-13): at the coarse step, expected hits from the range, the fire-control level, the
 guns, and the target's size and aspect (`quick_hit_probability` and the MPI-by-salvo table, `fire-control-research.md`

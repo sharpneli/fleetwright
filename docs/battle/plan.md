@@ -1851,6 +1851,9 @@ decision 14).
   entries in its picture, and orders route around what it knows.
 - **The hit** is an underwater explosion at a point on the hull, into the same damage as a torpedo.
 
+**4.8 and 4.9 are planned together in `docs/battle/coarse.md`** (drafted 2026-10-26, brought forward by the user: the
+coarse tier is the speed in a fleet action); the sketches below stay as the step list other docs cite.
+
 **4.8 Damage in the coarse tier** (moved later 2026-10-14: after the fine-tune passes, `fighting.md` decision 17; the
 tier itself is 2.8's): flooding, fire and repair at the coarse step, written
 to be stable at a minute, so a damaged ship still flooding or burning keeps going while the clock is compressed.
