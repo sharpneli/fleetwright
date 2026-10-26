@@ -98,7 +98,7 @@ public sealed partial class MapScene : ISceneMenu
         if (s.Paused)
             BarText("PAUSED", Theme.Amber, mid);
         else
-            BarText(heldText, s.AchievedSpeed < s.Speed * 0.9 ? Theme.Amber : Theme.Muted, mid);
+            BarText(heldText, !s.FineHeld && s.AchievedSpeed < s.Speed * 0.9 ? Theme.Amber : Theme.Muted, mid);
         if (GunsSilent(s))
         {
             ImGui.SameLine(0, gap);
@@ -183,13 +183,15 @@ public sealed partial class MapScene : ISceneMenu
                 dayText = utc.ToString("ddd d MMM yyyy", CultureInfo.InvariantCulture);
             }
         }
-        // what's held: the speed asked while the sim keeps up, else what it makes (made when the words change)
-        bool lagging = s.AchievedSpeed < s.Speed * 0.9;
-        var held = (s.Speed, lagging ? Math.Round(s.AchievedSpeed) : -1, s.Paused);
+        // what's held: the speed asked while the sim keeps up, else what it makes; the fine tier held (§), what it makes
+        // flat out (made when the words change)
+        bool lagging = s.FineHeld || s.AchievedSpeed < s.Speed * 0.9;
+        var held = (s.FineHeld ? -2 : s.Speed, lagging ? Math.Round(s.AchievedSpeed) : -1, s.Paused);
         if (held != heldKey)
         {
             heldKey = held;
-            heldText = lagging ? $"held {SpeedLabel(held.Item2)} of {SpeedLabel(s.Speed)}" : $"held {SpeedLabel(s.Speed)}";
+            heldText = s.FineHeld ? $"fine, flat out: {SpeedLabel(held.Item2)}"
+                : lagging ? $"held {SpeedLabel(held.Item2)} of {SpeedLabel(s.Speed)}" : $"held {SpeedLabel(s.Speed)}";
         }
         // in action: since the oldest open encounter of ours
         long opened = long.MaxValue;
@@ -269,7 +271,7 @@ public sealed partial class MapScene : ISceneMenu
         {
             ImGui.SameLine(0, i == 0 ? 2 * sc : Speeds[i] >= world.Settings.CoarseMinSpeed && Speeds[i - 1] < world.Settings.CoarseMinSpeed ? 7 * sc : 1 * sc);
             ImGui.SetCursorPosY(mid - h / 2);
-            bool asked = Math.Abs(Speeds[i] - s.Speed) < 1e-6, coarse = Speeds[i] >= world.Settings.CoarseMinSpeed;
+            bool asked = !s.FineHeld && Math.Abs(Speeds[i] - s.Speed) < 1e-6, coarse = Speeds[i] >= world.Settings.CoarseMinSpeed;
             ImGui.PushStyleColor(ImGuiCol.Button, asked ? Theme.BrassDarker : new Vector4(1, 1, 1, 0.04f));
             ImGui.PushStyleColor(ImGuiCol.ButtonHovered, asked ? Theme.BrassDark : new Vector4(1, 1, 1, 0.1f));
             ImGui.PushStyleColor(ImGuiCol.Text, asked ? Theme.Brass : coarse ? Theme.Muted with { W = 0.6f } : Theme.Muted);

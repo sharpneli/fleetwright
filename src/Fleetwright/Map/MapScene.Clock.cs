@@ -13,17 +13,18 @@ public sealed partial class MapScene
     static readonly string[] SpeedLabels = [.. Speeds.Select(sp => SpeedLabel(sp).TrimEnd('×'))];
     static readonly string[] SpeedSpans = [.. Speeds.Select(sp => $"{SpeedLabel(sp)}: {PerSecond(sp)} a second")];
     /// <summary>The gears, keys 1 to 5 (docs/map-ui/input.md T0): the speeds used most; the bar keeps all of them.
-    /// 240× is the fine tier's top, 3,000× a passage (and § held's).</summary>
+    /// 240× is the fine tier's top, 3,000× a passage (and § held's from the coarse tier).</summary>
     static readonly double[] Gears = [1, 10, 60, 240, 3000];
     static readonly string?[] SpeedKeys = [.. Speeds.Select(sp => Array.IndexOf(Gears, sp) is int g and >= 0 ? $"key {g + 1}" : null)];   // MapScene.SpeedKey
 
     /// <summary>The fast-forward key, by its place: left of 1 (§ on a Nordic keyboard, ` on a US one).</summary>
     const SDL.SDL_Scancode FastKey = SDL.SDL_Scancode.SDL_SCANCODE_GRAVE;
-    (double Speed, bool Paused)? fastFrom;   // while § is held: the clock it found, given back on the release
+    (double Speed, bool Fine, bool Paused)? fastFrom;   // while § is held: the clock it found, given back on the release
 
-    /// <summary>§ down (not its repeats): the clock to the passage gear, a paused one running; up: back to the speed it
-    /// found, paused again if it was, unless the player or the clock's own rule changed it meanwhile (a gear picked,
-    /// an encounter's pause).</summary>
+    /// <summary>§ down (not its repeats): on the fine tier the fine tier held flat out (the clock as fast as the sim can,
+    /// the world 240×'s: <see cref="World.FineHeld"/>; for trying, until the coarse tier is whole), on the coarse the
+    /// passage gear; a paused clock runs. Up: back to the clock it found, paused again if it was, unless the player or
+    /// the clock's own rule changed it meanwhile (a gear picked, an encounter's pause or slow).</summary>
     void FastForward(bool down)
     {
         var s = world.Current;
@@ -31,18 +32,20 @@ public sealed partial class MapScene
         {
             if (fastFrom != null)
                 return;
-            fastFrom = (s.Speed, s.Paused);
-            world.Send(Command.SetSpeed(Gears[^1]));
+            fastFrom = (s.Speed, s.FineHeld, s.Paused);
+            bool fine = s.FineHeld || s.Speed < world.Settings.CoarseMinSpeed;
+            world.Send(fine ? Command.SetSpeed(world.Settings.MaxSpeed, holdFine: true) : Command.SetSpeed(Gears[^1]));
             if (s.Paused)
                 world.Send(Command.Resume());
             return;
         }
-        if (fastFrom is not var (speed, paused))
+        if (fastFrom is not var (speed, held, paused))
             return;
         fastFrom = null;
-        if (Math.Abs(s.Speed - Gears[^1]) > 1e-6 || s.Paused)
+        bool ours = s.FineHeld ? Math.Abs(s.Speed - world.Settings.MaxSpeed) < 1e-6 : Math.Abs(s.Speed - Gears[^1]) < 1e-6;
+        if (!ours || s.Paused)
             return;
-        world.Send(Command.SetSpeed(speed));
+        world.Send(Command.SetSpeed(speed, held));
         if (paused)
             world.Send(Command.Pause());
     }

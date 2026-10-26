@@ -39,6 +39,19 @@ public sealed class World
     /// <summary>The asked speed, game seconds per real second.</summary>
     public double Speed { get; private set; } = 1;
 
+    /// <summary>The fine tier held whatever the speed asked (docs/map-ui/input.md, § held): the clock runs as fast as
+    /// it's asked (the top, as fast as the sim can) while the tiers and the rails go by the fine tier's top, so the
+    /// world is the one 240× makes. Set with the speed by one command, so a ship never crosses to coarse and back; a
+    /// speed asked without it, or a halt to a speed, lets go.</summary>
+    public bool FineHeld { get; private set; }
+
+    /// <summary>The speed the tiers and the rails go by: the asked one, or held fine, at most the fine tier's top
+    /// (just under <see cref="SimSettings.CoarseMinSpeed"/>).</summary>
+    public double TierSpeed => FineHeld ? Math.Min(Speed, Math.BitDecrement(Settings.CoarseMinSpeed)) : Speed;
+
+    /// <summary>Whether the coarse tier runs: <see cref="TierSpeed"/> at <see cref="SimSettings.CoarseMinSpeed"/> or more.</summary>
+    public bool Coarse => TierSpeed >= Settings.CoarseMinSpeed;
+
     public bool Paused { get; private set; }
 
     /// <summary>Every command applied, with the time it took effect.</summary>
@@ -220,6 +233,7 @@ public sealed class World
         {
             case WorldCommand.SetSpeed:
                 Speed = Math.Clamp(c.X, Settings.MinSpeed, Settings.MaxSpeed);
+                FineHeld = c.A != 0;
                 targetMs = Math.Min(targetMs, Time.Ms + MaxLagMs);
                 Ships.SpeedChanged(this);   // the speed picks the tier
                 break;
@@ -282,6 +296,7 @@ public sealed class World
         if (speed is double s)
         {
             Speed = Math.Clamp(s, Settings.MinSpeed, Settings.MaxSpeed);
+            FineHeld = false;
             Ships.SpeedChanged(this);
         }
         Paused |= pause;
@@ -342,6 +357,7 @@ public sealed class World
         s.Target = Target;
         s.Sun = Sun.Direction(Time);
         s.Speed = Speed;
+        s.FineHeld = FineHeld;
         s.Paused = Paused;
         s.PlayerSide = PlayerSide;
         s.Truth = truth;
@@ -367,6 +383,7 @@ public sealed class World
         h.Add(Seed);
         h.Add(Time.Ms);
         h.Add(Speed);
+        h.Add(FineHeld);
         h.Add(Paused);
         Relations.Hash(ref h);
         h.Add(PlayerSide);

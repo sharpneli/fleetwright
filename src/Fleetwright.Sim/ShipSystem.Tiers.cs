@@ -64,14 +64,14 @@ public sealed partial class ShipSystem
     /// succession coarse, riding its guide's track.</summary>
     bool Placing(World world, int guide)
     {
-        if (world.Speed < settings.RailsSnapMinSpeed)
+        if (world.TierSpeed < settings.RailsSnapMinSpeed)
             return false;
         double wake = WakeM(world, guide);
         if (wake <= 0)
             return true;
         var s = Store[guide];
         double v = Math.Max(Math.Abs(s.Speed), s.Handling.SteadySpeedMs(Math.Max(s.PowerOrder, 0)));
-        return v > 0 && wake / v <= world.Speed * settings.RailsFrameS;
+        return v > 0 && wake / v <= world.TierSpeed * settings.RailsFrameS;
     }
 
     /// <summary>How far astern of a unit's guide its line ahead reaches, metres: its farthest station in the guide's wake
@@ -708,8 +708,9 @@ public sealed partial class ShipSystem
     long nextCoarseMs = -1;   // the coarse step scheduled, or -1
 
     /// <summary>Whether ships off rails are coarse: the asked speed at <see cref="SimSettings.CoarseMinSpeed"/> or
-    /// more. The asked speed, never the achieved one (world state, so it replays), and never the zoom.</summary>
-    bool CoarseNow(World world) => world.Speed >= settings.CoarseMinSpeed;
+    /// more (<see cref="World.Coarse"/>: never with the fine tier held). The asked speed, never the achieved one (world
+    /// state, so it replays), and never the zoom.</summary>
+    bool CoarseNow(World world) => world.Coarse;
 
     /// <summary>The asked speed changed (a command, or a halt at an event): crossing the threshold, every ship off rails
     /// goes across at this moment, where it is.</summary>

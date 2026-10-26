@@ -294,7 +294,7 @@ public sealed class WorldSession : IDisposable
             {
                 var (w, ai, start) = p.Task.Result;
                 // the clock as the player left it: the new world runs at the speed asked of the old, paused if it was
-                w.Apply(Command.SetSpeed(askedSpeed));
+                w.Apply(askedSpeed);
                 if (askedPaused)
                     w.Apply(Command.Pause());
                 foreach (var rule in interest)
@@ -428,7 +428,7 @@ public sealed class WorldSession : IDisposable
             switch ((WorldCommand)c.Code)
             {
                 case WorldCommand.SetSpeed:
-                    askedSpeed = c.X;
+                    askedSpeed = c;   // with its fine tier held, if it was
                     break;
                 case WorldCommand.Pause:
                     askedPaused = true;
@@ -443,7 +443,7 @@ public sealed class WorldSession : IDisposable
         host.Send(c);
     }
 
-    double askedSpeed = 1;
+    Command askedSpeed = Command.SetSpeed(1);
     bool askedPaused;
     readonly Command?[] interest = new Command?[2];   // the player's interest rules, by kind
 

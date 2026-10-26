@@ -125,14 +125,15 @@ public class ScenarioTests
 
     /// <summary>The core rule (the user, 2026-10-21): within the fine clock tier the sim behaves exactly the same whatever
     /// the time compression. A fight (the squadrons scenario: sighting, fire control, shells, damage) run at 1x and at the
-    /// fine tier's fastest comes out the same world, with the smoke field and without it.</summary>
+    /// fine tier's fastest comes out the same world, with the smoke field and without it; and with the fine tier held at
+    /// the top speed (§ held, docs/map-ui/input.md: the clock flat out, the tiers and rails as at the fine tier's top).</summary>
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public void A_fight_is_the_same_at_any_fine_speed(bool smoke)
     {
         var s = Scenario.Load(Path.Combine(Fleet.Repo, "Content", "Scenarios", "squadrons.json"));
-        ulong Run(double speed)
+        ulong Run(double speed, bool holdFine = false)
         {
             var w = new World(s.Start, s.Seed, Settings with { Smoke = smoke });
             var ai = new AiSystem(w);
@@ -140,16 +141,20 @@ public class ScenarioTests
             // contact mustn't drop the clock to 1x, or both would fight at 1x
             w.Apply(Command.SetInterest(InterestKind.Own, InterestAction.Nothing));
             w.Apply(Command.SetInterest(InterestKind.Others, InterestAction.Nothing));
-            w.Apply(Command.SetSpeed(speed));
+            w.Apply(Command.SetSpeed(speed, holdFine));
             w.AdvanceTo(w.Time + 20 * 60_000);
             Assert.Equal(speed, w.Speed);
+            Assert.Equal(holdFine, w.FineHeld);
+            Assert.False(w.Coarse);
             Assert.False(w.Paused);
             Assert.True(w.CombatLog.Count > 100, $"{w.CombatLog.Count} in the combat log: a fight");
             Assert.Equal(smoke, w.Smoke.Count > 0);
             w.Apply(Command.SetSpeed(1));   // the asked speed is world state, in the hash: the same for both to compare
             return w.ComputeHash();
         }
-        Assert.Equal(Run(1), Run(Settings.CoarseMinSpeed - 1));
+        ulong slow = Run(1);
+        Assert.Equal(slow, Run(Settings.CoarseMinSpeed - 1));
+        Assert.Equal(slow, Run(Settings.MaxSpeed, holdFine: true));
     }
 
     /// <summary>The host cuts a slow stretch into slices that end when a snapshot is due (World.Advance's deadline):

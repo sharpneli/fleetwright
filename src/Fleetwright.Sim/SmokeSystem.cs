@@ -276,7 +276,7 @@ public sealed partial class SmokeSystem : IWorldSystem
 
     /// <summary>The tick: the coarse tier's, or the coarse one too while no ship lays smoke (idle: the smoke left only ages,
     /// fades and is retired, so a world whose ships are all on rails keeps one event a minute while it lasts).</summary>
-    int TickMs(World world) => world.Speed >= settings.CoarseMinSpeed || idle ? settings.SmokeCoarseTickMs : settings.SmokeTickMs;
+    int TickMs(World world) => world.Coarse || idle ? settings.SmokeCoarseTickMs : settings.SmokeTickMs;
 
     void Schedule(World world)
     {

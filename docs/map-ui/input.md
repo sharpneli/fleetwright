@@ -58,7 +58,7 @@ picks a unit in one click.
 |---|---|
 | Space | pause, resume (as before) |
 | **1–5** | the gears: 1×, 10×, 60×, 240× (the fine tier's top), 3,000× (a passage). The bar keeps all thirteen for the mouse |
-| **§ held** | fast-forward: the passage gear while held, back to the speed it was on release (the sim is the same at any compression, so it's safe) |
+| **§ held** | fast-forward, back to the clock it found on release. On the fine tier: **the fine tier flat out** (decision 5), the clock as fast as the sim can with the tiers and rails as at 240× (`World.FineHeld`, one `SetSpeed` with the hold, so no ship crosses to coarse and back). On the coarse tier: the passage gear |
 | **⇧Space** | run until it matters: the clock to the top and back to the watching speed, or paused, at the first thing the player wants to know (a new contact, an enemy in gun range, a hit on one of ours, a torpedo track sighted, a task done or can't). The encounter rule (`Interest`) grows into this list, each item pause, slow or nothing. No popup: the clock changes and the status bar says why |
 | Mouse 4, 5 | a step slower, faster (the hand stays on the mouse) |
 | + − | a step, as before |
@@ -85,3 +85,5 @@ picks a unit in one click.
    playtests show what earns a key.
 4. **The number keys stay time**, as gears; the left hand: Space, 1–5, § held, ⇧Space, mouse 4 and 5. The five gears
    are the speeds the user used most in testing.
+5. **§ on the fine tier is the fine tier uncapped** (2026-10-26, for trying out; likely to change once the coarse tier
+   is whole). Measured: the squadrons' fight ran to its end in under a second; the full Jutland makes about 288×.

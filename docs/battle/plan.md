@@ -1473,6 +1473,8 @@ comes in step 4, after the fine fire ("4.9").
 - **The rule, speed only:**
   - **Rails** as now.
   - **Coarse** for every other ship at `CoarseMinSpeed` and up: 241x for now (2026-10-14, so 240x is a fast fine speed), in config.
+    Since 2026-10-26 the clock may hold the fine tier at any speed (`World.FineHeld`, the § key's flat out,
+    docs/map-ui/input.md): the tiers and the rails go by `World.TierSpeed`, at most the fine tier's top.
   - **Fine** below that speed.
   - The asked speed decides, never the achieved one, and never the zoom. Important encounters drop the speed as an
     alert; asking for speed again fast-tracks the fight in coarse.
