@@ -1,0 +1,282 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Orders strip</title>
+<!-- The orders strip's redesign (docs/map-ui/strip.md): the bottom of the battle map as a row of docked panes in the UI
+     language, every order with its key, and a status bar under it. Drawn over the game's capture of the Jutland at 16:27
+     with Lion selected (png/strip-before.png), the old strip painted out by the scene's own capture of the frame
+     (png/strip-bg.png). Three states: 1 orders to a force, 2 to the ship alone with an order armed, 3 an enemy selected.
+     The ships' state is made up where a state needs it. -->
+<style>
+@font-face{font-family:'Saira Extra Condensed';font-weight:700;src:url(../designer-ui/assets/fonts/saira-extra-condensed-latin-700-normal.woff2)}
+@font-face{font-family:'Barlow Condensed';font-weight:400;src:url(../designer-ui/assets/fonts/barlow-condensed-latin-400-normal.woff2)}
+@font-face{font-family:'Barlow Condensed';font-weight:500;src:url(../designer-ui/assets/fonts/barlow-condensed-latin-500-normal.woff2)}
+@font-face{font-family:'Barlow Condensed';font-weight:600;src:url(../designer-ui/assets/fonts/barlow-condensed-latin-600-normal.woff2)}
+@font-face{font-family:'Red Hat Mono';font-weight:400;src:url(../designer-ui/assets/fonts/red-hat-mono-latin-400-normal.woff2)}
+@font-face{font-family:'Red Hat Mono';font-weight:500;src:url(../designer-ui/assets/fonts/red-hat-mono-latin-500-normal.woff2)}
+:root{
+  --ground:#0F0F0E;--panel:#1B1B19;--panel2:#22221F;--inset:#0B0B0A;--line:#272724;--edge:#050505;--bevel:#2E2E2A;
+  --title-top:#3A3934;--title-bot:#2A2A26;--header:#141412;--text:#D3CFC4;--bright:#F6F3EA;--muted:#8A867B;--faint:#55524B;
+  --brass:#E8772E;--brass-darker:rgba(232,119,46,.16);--ok:#8DBE6B;--amber:#E8B64A;--amber-bg:rgba(232,182,74,.16);--fr:#F1ECDD;--red:#E04A3C;
+  --btn:#2E2D29;--btn2:#232220;--border:#3A3934;--key:#45443E;
+  --font-head:'Saira Extra Condensed','Arial Narrow',sans-serif;
+  --font-ui:'Barlow Condensed','Arial Narrow',sans-serif;
+  --font-data:'Red Hat Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--edge)}
+#app{position:relative;width:1920px;height:1080px;overflow:hidden;background:url(png/strip-bg.png) no-repeat;color:var(--text);font:13px/1.3 var(--font-ui)}
+/* the card dock reaches down to the status bar now (it stopped at 1041) */
+#cardext{position:absolute;left:1472px;top:1040px;width:440px;height:18px;background:var(--panel);border:1px solid var(--edge);border-top:0}
+
+/* ------------------------------------------------------------------ the strip: panes docked edge to edge */
+#strip{position:absolute;left:8px;top:953px;height:105px;display:flex;gap:2px;background:var(--ground)}
+.pane{background:var(--panel);border:1px solid var(--edge);display:flex;flex-direction:column;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.05);flex:none}
+.title{height:20px;flex:none;display:flex;align-items:center;gap:8px;padding:0 6px;background:linear-gradient(var(--title-top),var(--title-bot));border-bottom:1px solid var(--edge);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);color:var(--brass);font-family:var(--font-head);font-weight:700;font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;white-space:nowrap}
+.title::before{content:'';flex:none;width:5px;height:5px;border-radius:50%;background:var(--faint);margin-right:-3px}
+.title .note{color:var(--muted);font-family:var(--font-ui);font-weight:400;text-transform:none;letter-spacing:0;font-size:12px;overflow:hidden;text-overflow:ellipsis}
+.title .r{margin-left:auto;color:var(--muted);font-family:var(--font-ui);font-weight:400;text-transform:none;letter-spacing:0;font-size:12px;display:flex;gap:5px;align-items:center}
+.title .fig{font-family:var(--font-data);font-size:11px;color:var(--bright)}
+.body{padding:5px 6px 0;display:flex;flex-direction:column;gap:5px}
+.row{display:flex;align-items:center;gap:3px;height:20px;white-space:nowrap}
+.row .gap{width:6px}
+.row .say{font-size:12px;color:var(--muted);margin-left:5px}
+
+/* a button: 20 px, grey, its key in a kbd chip after the word (Pieces.Button) */
+.b{display:inline-flex;align-items:center;gap:6px;height:20px;padding:0 7px;background:linear-gradient(var(--btn),var(--btn2));border:1px solid var(--border);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05);color:var(--text);font-size:12.5px;white-space:nowrap;flex:none}
+.b.on{background:var(--brass-darker);border-color:var(--brass);color:var(--brass);box-shadow:none}
+.b.on .kbd{border-color:#8A4A22;color:var(--brass)}
+.b.armed{background:var(--amber-bg);border-color:var(--amber);color:var(--amber);box-shadow:none}
+.b.armed .kbd{border-color:#8A6E2E;color:var(--amber)}
+.b.off{background:var(--panel2);border-color:var(--line);color:var(--muted);box-shadow:none}
+.b.off .kbd{border-color:var(--line);color:var(--faint)}
+.b.hov{background:linear-gradient(#3A3934,#2E2D29)}
+/* a menu's caret, drawn as a shape (the fonts have no ▾) */
+.b.menu::after{content:'';width:0;height:0;border-left:3.5px solid transparent;border-right:3.5px solid transparent;border-top:4px solid currentColor;margin-left:-2px}
+/* segmented: joined buttons, the chosen one brass */
+.seg{display:inline-flex;flex:none}
+.seg .b{margin-left:-1px}
+.seg .b:first-child{margin-left:0}
+.seg .b.on{position:relative;z-index:1}
+.kbd{display:inline-block;min-width:13px;padding:0 3px;border:1px solid var(--key);border-bottom-width:2px;font-size:9.5px;line-height:11px;color:var(--text);text-align:center;font-family:var(--font-data);font-weight:400}
+.keys{display:inline-flex;gap:2px;margin-left:4px}
+/* the course: an Inset well, the ordered course typed in it */
+.well{display:inline-flex;align-items:center;justify-content:space-between;gap:6px;height:20px;width:80px;padding:0 4px 0 7px;background:var(--inset);border:1px solid var(--edge);
+  font-family:var(--font-data);font-size:11.5px;color:var(--bright);flex:none}
+.well.typing{border-color:var(--brass)}
+.well.typing span::after{content:'';display:inline-block;width:1px;height:12px;background:var(--brass);vertical-align:-2px;margin-left:1px}
+
+/* the orders' chain as table rows with a radio mark (as "Play as" on the launch screen) */
+table{border-collapse:collapse;width:100%;table-layout:fixed}
+td{height:19px;padding:0 5px;border-bottom:1px solid var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
+tr.alt td{background:rgba(255,255,255,.018)}
+tr.sel td{background:var(--brass-darker)}
+tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--brass)}
+tr.sel td.nm{color:var(--brass)}
+td.k{color:var(--muted);font-size:12px;text-align:right}
+td.nm{color:var(--text)}
+.radio{display:inline-block;width:9px;height:9px;border:1.3px solid var(--muted);border-radius:50%;margin-right:6px;vertical-align:-0.5px;position:relative}
+tr.sel .radio{border-color:var(--brass)}
+tr.sel .radio::after{content:'';position:absolute;left:1.5px;top:1.5px;width:3.4px;height:3.4px;border-radius:50%;background:var(--brass)}
+.ring{display:inline-block;width:8px;height:8px;border:1.4px solid var(--fr);border-radius:50%;margin:0 4px 0 1px;vertical-align:-0.5px}
+.cls{color:var(--muted);font-size:12px;margin-left:4px}
+.chip{display:inline-block;padding:0 3px;font-size:11px;line-height:13px;border:1px solid}
+.chip.neu{color:var(--muted);border-color:var(--key);background:var(--panel2)}
+.chip.conn{color:var(--ok);border-color:#4E6B3B;background:#1C2616}
+.chip.amb{color:var(--amber);border-color:#7A6229;background:#2A2312}
+.chip.hos{color:var(--red);border-color:#7A2C25;background:#2A1513}
+.amb{color:var(--amber)} .red{color:var(--red)} .brs{color:var(--brass)} .brt{color:var(--bright)} .mut{color:var(--muted)}
+/* an enemy's particulars: label left, figure right */
+.parts td{border-bottom:1px solid var(--line)}
+.parts td.l{color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;width:62px}
+.parts td.v{color:var(--text)}
+.parts .fig{font-family:var(--font-data);font-size:11px;color:var(--bright)}
+.dia{display:inline-block;width:11px;height:11px;margin:0 4px 0 0;vertical-align:-1.5px}
+
+/* ------------------------------------------------------------------ the status bar (as the designer's and the launch screen's) */
+#status{position:absolute;left:0;top:1060px;width:1920px;height:20px;background:var(--header);border-top:1px solid var(--edge);display:flex;align-items:center;gap:14px;padding:0 8px;color:var(--muted);font-size:12px;white-space:nowrap}
+#status .dot{color:var(--ok)}
+#status .r{margin-left:auto;display:flex;gap:14px;align-items:center}
+#status .armed{color:var(--amber)}
+#status .scale{display:inline-flex;align-items:center;gap:5px;font-family:var(--font-data);font-size:11px;color:var(--text)}
+#status .scale i{display:inline-block;width:62px;height:5px;border:1px solid var(--text);border-top:0}
+
+/* ------------------------------------------------------------------ the review's callouts and the states' switch */
+.call{position:absolute;width:18px;height:18px;border-radius:50%;background:#E8772E;color:#0F0F0E;font:600 11px/18px var(--font-ui);text-align:center;box-shadow:0 0 0 2px #0F0F0E;z-index:5}
+#notes{position:absolute;left:356px;top:48px;width:450px;background:rgba(15,15,14,.94);border:1px solid var(--border);padding:8px 10px;font-size:12.5px;line-height:1.35;color:var(--text);display:none;z-index:6}
+#notes b{color:var(--brass);font-weight:600}
+#notes div{margin-bottom:5px}
+#notes .states{display:flex;gap:4px;margin:2px 0 8px}
+#notes .states a{color:var(--text);text-decoration:none;border:1px solid var(--border);padding:0 6px;background:var(--panel2)}
+#notes .states a.on{color:var(--brass);border-color:var(--brass);background:var(--brass-darker)}
+body.notes #notes{display:block}
+body:not(.notes) .call{display:none}
+/* the old cursor verb, as the game draws it, for state 2 */
+#verb{position:absolute;display:none;padding:2px 5px;background:rgba(17,14,10,.85);border-radius:2px;color:var(--amber);font-size:13px;z-index:4}
+</style></head>
+<body class="notes"><div id="app">
+<div id="cardext"></div>
+<div id="strip"></div>
+<div id="status"></div>
+<div id="verb"></div>
+<div id="calls"></div>
+<div id="notes">
+  <div class="states"><a href="#1" data-s="1">1 · a force</a><a href="#2" data-s="2">2 · the ship, armed</a><a href="#3" data-s="3">3 · an enemy</a></div>
+  <div id="notetext"></div>
+  <div class="mut">N hides these notes; 1-3 (in this page) switch the state.</div>
+</div>
+</div>
+<script>
+// ------------------------------------------------------------------ pieces
+const kbd = k => k ? `<span class="kbd">${k}</span>` : '';
+// a button: [label, key, state ('' | on | armed | off | hov), menu]
+const B = (label, key, st = '', menu = false) => `<span class="b ${st}${menu ? ' menu' : ''}">${label}${kbd(key)}</span>`;
+const seg = items => `<span class="seg">${items.map(([l, k, st, m]) => B(l, k, st, m)).join('')}</span>`;
+const row = (...xs) => `<div class="row">${xs.join('')}</div>`;
+const say = s => `<span class="say">${s}</span>`;
+const keys = (...ks) => `<span class="keys">${ks.map(kbd).join('')}</span>`;
+const pane = (id, w, title, note, right, body) =>
+  `<div class="pane" id="${id}" style="width:${w}px"><div class="title">${title}${note ? `<span class="note">${note}</span>` : ''}<span class="r">${right || ''}</span></div>${body}</div>`;
+const dia = `<svg class="dia" viewBox="0 0 11 11"><path d="M5.5 1.2L9.8 5.5 5.5 9.8 1.2 5.5Z" fill="rgba(224,74,60,.25)" stroke="#E04A3C" stroke-width="1.3"/></svg>`;
+
+// the chain the orders go to: [depth, name, kind, selected, extra]
+function chain(rows, foot) {
+  return `<table>${rows.map(([d, name, kind, sel, x = ''], i) =>
+    `<tr class="${sel ? 'sel' : i % 2 ? 'alt' : ''}"><td class="nm" style="padding-left:${6 + d * 12}px"><span class="radio"></span>${name}</td><td class="k" style="width:${x ? 92 : 62}px">${x || kind}</td></tr>`).join('')}
+    ${foot ? `<tr><td colspan="2" style="padding-left:6px">${foot}</td></tr>` : ''}</table>`;
+}
+
+// ------------------------------------------------------------------ the helm, the guns, the task, the formation
+function helm(o) {
+  return pane('helm', 338, 'Helm', o.conn ? '<span class="chip conn">conn</span>' : 'ordered ' + o.ordered,
+    `<span class="fig">${o.course} · ${o.kn}</span>`,
+    `<div class="body">
+      ${row(B('−90°', '⇧←'), B('−10°', '←'), `<span class="well${o.typing ? ' typing' : ''}"><span>${o.ordered}</span>${kbd('Enter')}</span>`, B('+10°', '→'), B('+90°', '⇧→'))}
+      ${row(seg(['Astern', 'Stop', 'Slow', 'Half', 'Full', 'Flank'].map(b => [b, '', b === o.bell ? 'on' : ''])), keys('↓', '↑'))}
+      ${row(B('Hard over', 'O', o.hardOver ? 'on' : ''), B('Conn', 'C', o.conn ? 'on' : ''), B('Clear route', 'Del', o.route ? '' : 'off'), B('Make smoke', 'M', o.smoke ? 'on' : ''))}
+    </div>`);
+}
+function guns(o) {
+  return pane('guns', 252, 'Guns', o.battery, `<span class="fig">${o.target}</span>`,
+    `<div class="body">
+      ${row(seg([['Fire at will', 'G', o.fire === 'will' ? 'on' : ''], ['Engage…', 'E', o.armed === 'engage' ? 'armed' : o.fire === 'engage' ? 'on' : ''], ['Hold fire', 'X', o.fire === 'hold' ? 'on' : '']]))}
+      ${row(B(o.shells, 'S', o.shellHeld ? 'on' : '', true))}
+      ${row(B('Torpedoes at…', '⇧E', o.armed === 'torp' ? 'armed' : ''), say(o.torps))}
+    </div>`);
+}
+function task(o) {
+  return pane('task', 290, 'Task', o.role, o.right,
+    `<div class="body">
+      ${row(seg([['Fight', 'B', o.order === 'fight' ? 'on' : ''], ['Follow…', 'F', o.order === 'follow' ? 'on' : ''], ['Hold', 'H', o.order === 'hold' ? 'on' : '']]), '<span class="gap"></span>', B('Task', 'T', '', true))}
+      ${row(B('Withdraw', 'W'), B('AI', 'I', o.ai === 'on' ? 'on' : o.ai === 'off' ? 'off' : ''))}
+      ${row(B(o.business, 'R', '', true))}
+    </div>`);
+}
+function formation(o) {
+  return pane('formation', 300, 'Formation', o.note, `guide <span class="brt">${o.guide}</span>`,
+    `<div class="body">
+      ${row(seg([['Line ahead', 'L', o.shape === 'line' ? 'on' : ''], ['Columns', 'K', o.shape === 'columns' ? 'on' : o.force ? '' : 'off'], ['Abreast', 'A', o.shape === 'abreast' ? 'on' : '']]))}
+      ${row(B('Turn', 'U', '', true), B('Deploy…', 'D'), B('to port', ','), B('to stbd', '.'))}
+      ${row(B(o.level, 'Z', '', true))}
+    </div>`);
+}
+
+// ------------------------------------------------------------------ the states
+const S = {
+  1: {
+    strip: () => [
+      pane('to', 262, 'Orders to', '', keys('Q', '⇧Q'), chain([
+        [0, 'Battlecruiser Fleet', 'force', 1, '<span class="chip neu">AI</span> force'],
+        [1, '1st Battlecruiser Squadron', 'squadron'],
+        [2, 'Lion<span class="cls">Lion-like (1912)</span>', 'ship'],
+      ], '<span class="mut" style="font-size:12px">her squadron\'s guide · in line</span>')),
+      helm({ course: '308°', kn: '25.9 kn', ordered: '308°', bell: 'Full', smoke: false }),
+      guns({ battery: 'main: tracking · 0 salvos', target: 'on V30', fire: 'will', shells: 'Shells: by target, HE', torps: '2 loaded · 2 left' }),
+      task({ role: 'battle line · worked out', right: '<span class="fig">intercept: fighting</span>', order: 'hold', ai: 'on', business: 'Organise' }),
+      formation({ note: '4 units', guide: 'Lion', shape: 'columns', force: true, level: 'This level: line abreast, 5,560 m' }),
+    ],
+    status: `<span class="dot">●</span><span>Right-click: steer · on an enemy: engage · on your ship: follow · Shift: waypoint · Alt with any order: this ship only</span>`,
+    calls: [['to', 'tl', 1], ['helm', 'tl', 2], ['guns', 'tl', 3], ['task', 'tl', 4], ['formation', 'tl', 5], ['status', 'tr', 6]],
+    notes: [
+      'One row of docked panes from the rail\'s left edge, touching it above and the card dock at most, as the rail and the card are: opaque, title strips, figures in mono. Was a floating translucent box with grey heads.',
+      '<b>Orders to</b> is the chain as table rows with a radio mark (as "Play as" on the launch screen), deepest at the bottom; whose it is as the rail\'s chip. Q steps up toward the fleet, Shift+Q down to the ship; a click, or a double-click on the map, as before. The last row says what\'s become of her.',
+      '<b>Helm</b> on the arrows: ← → 10°, Shift 90°, ↑ ↓ the telegraph a bell at a time; Enter types a course into the well. The course and speed she makes in the title; ordered in the note. Make smoke joins the helm (it\'s the funnels, not a weapon), Clear route is greyed while there\'s none instead of coming and going.',
+      '<b>Guns</b>: the fire order a segmented control (it\'s one of three), the shell, torpedoes on their own row with what\'s loaded. Shift+E aims torpedoes as E aims the guns.',
+      '<b>Task</b> and <b>Formation</b>: the captain\'s or the unit\'s order, then the unit\'s shape and manoeuvres in a pane of their own that a ship alone doesn\'t have. Keys as the task menu\'s where they mean the same (B fight, F follow, W withdraw); Columns greyed for a squadron.',
+      'A <b>status bar</b> takes the hint line: what the mouse does on the left, the map\'s own keys, the scale and the position on the right (they floated at the bottom right).',
+    ],
+  },
+  2: {
+    strip: () => [
+      pane('to', 262, 'Orders to', '', keys('Q', '⇧Q'), chain([
+        [0, 'Battlecruiser Fleet', 'force', 0, '<span class="chip neu">AI</span> force'],
+        [1, '1st Battlecruiser Squadron', 'squadron'],
+        [2, 'Lion<span class="cls">Lion-like (1912)</span>', 'ship', 1],
+      ], `<span class="amb" style="font-size:12px">falling out: steering</span><span class="b" style="height:16px;margin-left:8px;font-size:12px;padding:0 5px">Back into line<span class="kbd">⇧B</span></span>`)),
+      helm({ course: '291°', kn: '24.1 kn', ordered: '270°', bell: 'Full', hardOver: true, route: false, typing: false }),
+      guns({ battery: 'main: ranging · 3 salvos', target: 'on V30', fire: 'will', armed: 'engage', shells: 'Shells: AP', shellHeld: true, torps: '2 loaded · 2 left' }),
+      task({ role: 'her captain', right: '<span class="fig amb">falling out</span>', order: 'fight', ai: 'off', business: 'Organise' }),
+    ],
+    status: `<span class="armed">●</span><span class="armed">Engage: click an enemy · Esc cancels</span>`,
+    verb: { x: 1112, y: 618, text: 'Lion: ENGAGE V29 · 10.4 km' },
+    calls: [['to', 'tl', 1], ['guns', 'tl', 2], ['helm', 'tl', 3], ['task', 'tl', 4], ['status', 'tr', 5]],
+    notes: [
+      'Orders to the ship alone: her row picked. What\'s become of her (falling out, held, her orders changed, on the coast) on the last row in amber, with <b>Back into line</b> (Shift+B) beside it as now.',
+      'An <b>armed</b> order is amber on its button and in the status bar ("Engage: click an enemy · Esc cancels"); the cursor\'s verb on the map as now. E again disarms. A shell held is lit as an order is.',
+      'The toggles lit in the accent while on (Hard over); Clear route greyed with no route. Typing a course lights the well.',
+      'No Formation pane for a ship. AI greyed (she\'s in a squadron: it\'s her top unit\'s to hand over), with the reason in its tooltip as the task menu greys.',
+      'The status bar\'s left end is the one place a pick in hand shows, so the eye knows where to look.',
+    ],
+  },
+  3: {
+    strip: () => [
+      pane('to', 262, 'Enemy', 'as held', '', `<table class="parts">
+        <tr><td class="l">Contact</td><td class="v">${dia}<span class="brt">V30</span><span class="cls">destroyer, made out</span></td></tr>
+        <tr class="alt"><td class="l">From Lion</td><td class="v"><span class="fig">9.7 km · 093°</span></td></tr>
+        <tr><td class="l">Seen</td><td class="v">burning · stopped</td></tr>
+        <tr class="alt"><td class="l">Firing</td><td class="v"><span class="fig">2</span> of yours: Lion, Tiger</td></tr></table>`),
+      pane('against', 330, 'Orders against her', 'from Lion', '',
+        `<div class="body">
+          ${row(B('Engage her with 1st Battlecruiser Squadron', 'E'))}
+          ${row(B('Engage her with Lion alone', 'Alt+E'))}
+          ${row(B('Torpedoes at her', '⇧E', 'off'), say('out of reach: 9.2 km at 28 kn'))}
+        </div>`),
+    ],
+    status: `<span class="dot">●</span><span>Select one of your ships and right-click her to engage · Esc: deselect · the orders go from Lion, the ship you had</span>`,
+    calls: [['to', 'tl', 1], ['against', 'tl', 2]],
+    notes: [
+      'An enemy selected: the strip shows her as held (the rail\'s identity and diamond, range and bearing from the ship you had, what\'s seen, how many of yours fire at her). The card behind is Lion\'s as captured; it would be hers.',
+      'The orders against her keep the strip\'s keys: E engages with your ship\'s unit, Alt+E with the ship alone (Alt is "this ship only" everywhere), Shift+E torpedoes, greyed with the reason when out of reach or none loaded.',
+    ],
+  },
+};
+
+// ------------------------------------------------------------------ drawing a state
+const common = `<span class="r"><span>Space pause · + − speed · 1–0 speeds · Tab next ship · T tasks · J log · V card · P pin · Esc menu</span>
+  <span class="scale"><i></i>1 nm</span><span class="scale">56°43′N 5°19′E</span></span>`;
+function show(n) {
+  const st = S[n];
+  document.getElementById('strip').innerHTML = st.strip().join('');
+  document.getElementById('status').innerHTML = st.status + common;
+  const verb = document.getElementById('verb');
+  verb.style.display = st.verb ? 'block' : 'none';
+  if (st.verb) Object.assign(verb.style, { left: st.verb.x + 'px', top: st.verb.y + 'px' }), verb.textContent = st.verb.text;
+  const app = document.getElementById('app').getBoundingClientRect();
+  document.getElementById('calls').innerHTML = st.calls.map(([id, at, num]) => {
+    const r = document.getElementById(id).getBoundingClientRect();
+    const x = (at[1] === 'l' ? r.left + 4 : r.right - 60) - app.left, y = (at[0] === 't' ? r.top - 22 : r.bottom - 18) - app.top;
+    return `<span class="call" style="left:${x}px;top:${y}px">${num}</span>`;
+  }).join('');
+  document.getElementById('notetext').innerHTML = st.notes.map((t, i) => `<div><b>${i + 1}</b> ${t}</div>`).join('');
+  document.querySelectorAll('#notes .states a').forEach(a => a.classList.toggle('on', a.dataset.s == n));
+}
+const pick = () => show(S[location.hash.slice(1, 2)] ? location.hash.slice(1, 2) : 1);
+addEventListener('hashchange', pick);
+addEventListener('keydown', e => {
+  if (e.key === 'n' || e.key === 'N') document.body.classList.toggle('notes');
+  if (S[e.key]) location.hash = '#' + e.key + (location.hash.includes('clean') ? 'clean' : '');
+});
+if (location.hash.includes('clean')) document.body.classList.remove('notes');
+pick();
+</script>
+</body></html>
