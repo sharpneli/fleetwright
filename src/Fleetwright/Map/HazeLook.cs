@@ -56,9 +56,11 @@ public static class HazeLook
     }
 
     /// <summary>The frame's haze for the light block: through the view from its altitude, as much of it as the world
-    /// shows (<paramref name="world"/>, <see cref="WorldView.Factor(in MapView)"/>: the table is a chart, no air).</summary>
-    public static (Vector4 Haze, Vector4 View, Vector4 Light) Uniforms(in MapView view, WeatherHere weather, SimSettings s,
-        in ShipLights lights, double world)
+    /// shows (<paramref name="world"/>, <see cref="WorldView.Factor(in MapView)"/>: the table is a chart, no air).
+    /// <paramref name="moonLight"/>: <see cref="Moon.Light(Vec3d, WorldTime)"/> at the view's centre (the sea's night
+    /// light by it).</summary>
+    public static (Vector4 Haze, Vector4 View, Vector4 Light, Vector4 Sea) Uniforms(in MapView view, WeatherHere weather, SimSettings s,
+        in ShipLights lights, double moonLight, double world)
     {
         if (!On || Gain <= 0 || world <= 0)
             return default;
@@ -67,13 +69,23 @@ public static class HazeLook
             return default;
         var up = view.Eye.Normalized();
         var u = lights.Uniforms;
-        var light = new Vector3(u.SunRad.X, u.SunRad.Y, u.SunRad.Z) * (float)Math.Max(Vec3d.Dot(lights.SunDir, up), 0)
-            + new Vector3(u.MoonRad.X, u.MoonRad.Y, u.MoonRad.Z) * (float)Math.Max(Vec3d.Dot(lights.MoonDir, up), 0)
-            + new Vector3(u.Sky.X, u.Sky.Y, u.Sky.Z);
+        Vector3 sun = new(u.SunRad.X, u.SunRad.Y, u.SunRad.Z), moon = new(u.MoonRad.X, u.MoonRad.Y, u.MoonRad.Z), sky = new(u.Sky.X, u.Sky.Y, u.Sky.Z);
+        double ss = Vec3d.Dot(lights.SunDir, up), sm = Vec3d.Dot(lights.MoonDir, up);
+        var day = sun * (float)Math.Max(ss, 0) + moon * (float)Math.Max(sm, 0) + sky;
+        // the night's: the light the sea is drawn by (SeaView's night light, tuned), the haze's and the sea's both, so a
+        // thick haze at night sinks into the night sea's own colour instead of greying it (the user, 2026-10-26); the sea
+        // as a level one shows it: its body by what the surface lets in (seashade.glsl), the zenith's 2% over it
+        var (nightRad, nightDir) = SeaView.NightLight(up, lights, moonLight);
+        var sea = 0.98f * SeaView.Body * (sun * (float)SeaView.LetIn(ss) + moon * (float)SeaView.LetIn(sm) + sky
+            + nightRad * (float)SeaView.LetIn(Vec3d.Dot(nightDir, up))) + 0.02f * sky;
+        double el = Math.Asin(Math.Clamp(ss, -1, 1)) * 180 / Math.PI, k = Math.Clamp((el - SeaView.NightFromDeg[1]) / (SeaView.NightFromDeg[0] - SeaView.NightFromDeg[1]), 0, 1);
+        float night = (float)(1 - k * k * (3 - 2 * k));
+        var light = Vector3.Lerp(day, sea, night);
+        var below = Vector3.Lerp(new Vector3(u.Sea.X, u.Sea.Y, u.Sea.Z), sea, night);
         double sx = Slant * view.TanHalfX, sy = Slant * view.TanHalfY;
         return (new Vector4((float)tau, (float)Backscatter, 0, 0),
             new Vector4((float)(2 * sx / view.Width), (float)(2 * sy / view.Height), (float)sx, (float)sy),
-            new Vector4(light, 0));
+            new Vector4(light, 0), new Vector4(below, 0));
     }
 
     public static bool Set(string kv)

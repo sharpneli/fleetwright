@@ -132,7 +132,9 @@ public sealed unsafe partial class MapScene : IScene
         (shipRenderer.List.IconCasingPx, shipRenderer.List.IconGlowPx) = (SymbolLook.Casing * 1.5 * Rp, 4 * Rp);
         shipRenderer.List.Build(view,s.Ships, world.DrawMs, s.Sun, artOf, classOf, shipRenderer.Icon, selected, hidden, sunLapse.Motion, s.Sighted,
             shipRenderer.Wakes);
-        shipRenderer.List.SetHaze(HazeLook.Uniforms(view, s.Weather, world.Settings, shipRenderer.List.Lights, WorldView.Factor(view)));
+        var now = new WorldTime(world.DrawMs);
+        double moonHere = Moon.Light((-view.Forward).Normalized() * Earth.Radius, now);
+        shipRenderer.List.SetHaze(HazeLook.Uniforms(view, s.Weather, world.Settings, shipRenderer.List.Lights, moonHere, WorldView.Factor(view)));
         probes.Add(probeDrawList, t);
         t = Probes.Now;
         BuildOverlay(view, s);
@@ -164,8 +166,6 @@ public sealed unsafe partial class MapScene : IScene
         t = Probes.Now;
         renderer.Sea.SetState(SeaState.Of(s.Weather));   // rebuilt only when the weather changes
         var lights = shipRenderer.List.Lights;
-        var now = new WorldTime(world.DrawMs);
-        double moonHere = Moon.Light((-view.Forward).Normalized() * Earth.Radius, now);
         sea.Update(view, renderer.Sea, dt, s.Paused ? 0 : s.AchievedSpeed, lights, sunLapse.Motion, moonHere);
         shipRenderer.FoamClockS = sea.ClockS;
         shipRenderer.List.PlayerSide = world.Current.PlayerSide;

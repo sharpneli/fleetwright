@@ -172,10 +172,10 @@ public sealed class ShipDrawList
 
     /// <summary>The haze between the eye and the sea this frame (docs/visuals/haze.md, <see cref="HazeLook.Uniforms"/>),
     /// into the frame's light block: set right after the build, before any effect takes the light.</summary>
-    public void SetHaze((Vector4 Haze, Vector4 View, Vector4 Light) haze)
+    public void SetHaze((Vector4 Haze, Vector4 View, Vector4 Light, Vector4 Sea) haze)
     {
         var l = Lights;
-        (l.Uniforms.Haze, l.Uniforms.HazeView, l.Uniforms.HazeLight) = haze;
+        (l.Uniforms.Haze, l.Uniforms.HazeView, l.Uniforms.HazeLight, l.Uniforms.HazeSea) = haze;
         Lights = l;
     }
 

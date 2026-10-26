@@ -26,7 +26,8 @@ layout(set = 3, binding = LIGHTS_BINDING) uniform Lights
     // the haze between the eye and the sea (docs/visuals/haze.md; Map/HazeLook.cs), the world view's alone
     vec4 haze;          // x: its optical depth straight down from the eye to the sea (0: none); y: the slab's backscatter
     vec4 hazeView;      // xy: 2 tan of the half fields over the target's pixels; zw: the tans (a pixel's slant)
-    vec4 hazeLight;     // rgb: the light on a level white deck (sun, moon, sky), linear
+    vec4 hazeLight;     // rgb: the light on a level white deck (sun, moon, sky; at night the sea's night light), linear
+    vec4 hazeSea;       // rgb: the sea's mean from above (by day the ambient from below, at night the night sea as drawn)
 };
 
 int flashCount()
@@ -96,7 +97,8 @@ vec3 shoulder(vec3 x, float k)
 // optical depth straight down is haze.x, slanting with the pixel's ray (times 1 / cos of its angle off straight down).
 // What shows is the scene times e^-tau (the contrast's loss: Koschmieder's law, the lookouts' own haze), the slab's
 // backscatter of the light on it, R = gamma tau / (1 + gamma tau) (two-stream, conservative: no light lost), and the
-// sea's light scattered on through it, the rest, 1 - R - e^-tau, of the sea's mean (the ambient from below). The scene
+// sea's light scattered on through it, the rest, 1 - R - e^-tau, of the sea's mean (hazeSea). At night both lights are
+// the sea's own, so the haze sinks into the night sea's colour (docs/visuals/haze.md). The scene
 // and everything over it are at the sea's distance: the tallest effects are under 2% of the eye's height.
 float hazeTau()
 {
@@ -110,7 +112,7 @@ vec3 hazeLinear(vec3 c)
     if (haze.x <= 0.0)
         return c;
     float tau = hazeTau(), t = exp(-tau), g = haze.y * tau, r = g / (1.0 + g);
-    return c * t + hazeLight.rgb * r + seaAmb.rgb * max(1.0 - r - t, 0.0);
+    return c * t + hazeLight.rgb * r + hazeSea.rgb * max(1.0 - r - t, 0.0);
 }
 
 // the same on a colour as the frame holds it (sRGB-coded; not clamped over 1, for the shoulder's glints), dithered by

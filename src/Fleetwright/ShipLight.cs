@@ -108,9 +108,12 @@ public struct LightUniforms
     /// <summary>xy: 2 tan of the half fields over the target's pixels; zw: the tans (a pixel's slant off straight
     /// down).</summary>
     public Vector4 HazeView;
-    /// <summary>rgb: the light on a level white deck (the sun's, the moon's and the sky's), what the haze sends back
-    /// up a share of.</summary>
+    /// <summary>rgb: the light on a level white deck (the sun's, the moon's and the sky's; at night the sea's night
+    /// light, as the sea shows it), what the haze sends back up a share of.</summary>
     public Vector4 HazeLight;
+    /// <summary>rgb: the sea's mean seen from above, what the haze scatters on toward the eye (by day the ambient from
+    /// below, at night the night sea as drawn).</summary>
+    public Vector4 HazeSea;
 }
 
 /// <summary>One frame's light at a place: the uniforms, the directions (in the caller's axes) and the shadows.</summary>

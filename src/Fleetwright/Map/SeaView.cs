@@ -187,7 +187,7 @@ public sealed class SeaView
 
     /// <summary>The night's light at a place (<see cref="MoonNightRad"/>): its colour, faded in as the sun goes, and
     /// the way toward it, Earth-fixed.</summary>
-    static (Vector3 Rad, Vec3d Dir) NightLight(Vec3d up, in ShipLights lights, double moonLight)
+    internal static (Vector3 Rad, Vec3d Dir) NightLight(Vec3d up, in ShipLights lights, double moonLight)
     {
         double sunEl = Math.Asin(Math.Clamp(Vec3d.Dot(lights.SunDir, up), -1, 1)) * 180 / Math.PI;
         double night = 1 - SmoothStep(NightFromDeg[1], NightFromDeg[0], sunEl);
@@ -207,7 +207,7 @@ public sealed class SeaView
 
     /// <summary>What a level sea lets in from a light at an elevation (its sine): its cosine through 1 - Fresnel, as
     /// seashade.glsl's seaLetIn.</summary>
-    static double LetIn(double c) => c > 0 ? c * (1 - (0.02 + 0.98 * Math.Pow(1 - c, 5))) : 0;
+    internal static double LetIn(double c) => c > 0 ? c * (1 - (0.02 + 0.98 * Math.Pow(1 - c, 5))) : 0;
 
     /// <summary>The direction on <paramref name="toward"/>'s bearing from a place, at an elevation.</summary>
     static Vec3d Toward(Vec3d up, Vec3d toward, double elevationDeg)

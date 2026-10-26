@@ -21,7 +21,10 @@ past it. The table is a chart and has none.
   lookouts' haze takes it), plus the slab's backscatter of the light on a level white deck (sun, moon, sky: the frame's
   own), R = γτ / (1 + γτ) (two-stream, conservative; γ 0.15, a marine aerosol's ~20 sr lidar ratio for a thin haze,
   climbing toward a fog top's albedo for a thick one), plus the sea's own light scattered on through it, 1 − R − e^−τ
-  of the ambient from below.
+  of the ambient from below. **At night both are the sea's own** (decision 5): the haze's light and the sea's mean
+  fade over to the night sea as `seashade.glsl` draws it (its body by `SeaView`'s tuned night light, the zenith's 2%
+  over it) as the sun goes from 12° to −2° (`SeaView.NightFromDeg`), so a haze at night only takes contrast away and the
+  ships sink into the night sea's navy.
 
 What shows of the scene, e^−τ straight down (`HazeLookTests.Table`):
 
@@ -56,7 +59,7 @@ Cost (`-gputime`, RTX 4090, 1080p, a duel at 0.8 m/px in a 2 km haze, two runs e
 Knobs for captures: `-haze=on:0,gain:2,hazescale:1000,fogscale:250,deepest:4000,back:0.15,slant:1`
 (`Map/HazeLook.cs`).
 
-## Decisions (2026-10-26, mine; open to the user's eye)
+## Decisions (2026-10-26; 1-4 mine, open to the user's eye)
 
 1. The extinction is the sim's, not Koschmieder's: the drawn haze never says more or less than the lookouts' haze.
 2. Two layers by the one number: deep haze up to its densest, the rest low over the water. No switch: the split
@@ -64,16 +67,15 @@ Knobs for captures: `-haze=on:0,gain:2,hazescale:1000,fogscale:250,deepest:4000,
 3. The slant is the camera's own (the corners hazier). `slant:0` makes every pixel straight down if it reads as a
    lens's vignette.
 4. The haze follows the world factor through the cross-fade; the table has none.
+5. At night the haze is lit by the sea's night light (the user, 2026-10-26). First built with the ships' sky light, a
+   thick haze greyed the night: a 2 km haze at 2 m/px lifted a moonless sea from 7 21 39 to 26 34 48 (median 8-bit
+   RGB). Now it stays 7 21 39 at any thickness; dusk is between (27 36 49, was 46 51 62); day is unchanged.
 
 ## Open
 
-- **Night and dusk grey up** in a thick haze: the haze sends back the same sky light the ships are lit by (their
-  night's readability floor), and its albedo is above the dark sea's. A 2 km haze at 2 m/px lifts a moonless night's
-  sea from 7 21 39 to 26 34 48 (median 8-bit RGB). Physical by the lights' own rules; if it reads too bright, the
-  haze's light could follow the sea's night light instead.
 - **The light inside the haze.** The sun reaching the sea is dimmed and made diffuse by the column (e^(−τ/μ₀) of it
   direct), so shadows soften and a fog's light goes flat. Not done: it changes `ShipLights`, which every tuned look
   reads.
 - **Lights glowing in the haze**: a flash, a fire or a magazine lighting the air round it (a halo), not only dimmed.
-- **The sea's mean** in the forward-scattered term is the ambient from below (`SeaDay`), somewhat brighter and greyer
-  than the drawn sea.
+- **The sea's mean by day** in the forward-scattered term is the ambient from below (`SeaDay`), somewhat brighter and
+  greyer than the drawn sea (the night's is the drawn one); left so, as the day was approved.
