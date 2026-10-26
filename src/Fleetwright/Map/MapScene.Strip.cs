@@ -1092,7 +1092,7 @@ public sealed partial class MapScene
                 : "Right-click: steer · on an enemy: engage · on your ship: follow · Shift: waypoint · Alt with any order: this ship only";
         if (selected >= 0)
             return "Select one of your ships and right-click her to engage · Esc: deselect";
-        return "Click a ship to select her · Tab: your ships · wheel: zoom · drag: pan";
+        return "Click a ship to select her · drag: a box · Tab: your ships · wheel: zoom · WASD or middle drag: pan";
     }
 
     ClickPick hintPick;
@@ -1352,7 +1352,7 @@ public sealed partial class MapScene
     /// <summary>The cursor's verb, beside it on the map: what a right-click (or the armed pick's click) would do.</summary>
     void CursorVerb(Snapshot s)
     {
-        if (!mouseIn || selected < 0 || ImGui.GetIO().WantCaptureMouse || dragging || placing)
+        if (!mouseIn || selected < 0 || ImGui.GetIO().WantCaptureMouse || dragging || boxing || placing)
             return;
         int k = s.Ships.IndexOf(selected);
         if (k < 0)

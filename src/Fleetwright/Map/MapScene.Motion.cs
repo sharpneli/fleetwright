@@ -56,7 +56,7 @@ public sealed partial class MapScene
         Vec3d at = default;
         double r = 0;
         var tint = MapPalette.Unit;
-        if (mouseIn && !dragging && !placeDrag && !ImGui.GetIO().WantCaptureMouse)
+        if (mouseIn && !dragging && !boxing && !placeDrag && !ImGui.GetIO().WantCaptureMouse)
         {
             if ((hit = PickShip(view, cursorX, cursorY)) >= 0 && s.Ships.IndexOf(hit) is int k and >= 0)
             {

@@ -188,7 +188,7 @@ public sealed partial class MapScene
     /// held, and how far from the player's ship.</summary>
     void HoverTip(Snapshot s)
     {
-        if (!mouseIn || ImGui.GetIO().WantCaptureMouse || dragging || placing || armedPick != ClickPick.None)
+        if (!mouseIn || ImGui.GetIO().WantCaptureMouse || dragging || boxing || placing || armedPick != ClickPick.None)
             return;
         var vp = ImGui.GetMainViewport();
         double x = mouse.X * width / Math.Max(vp.Size.X, 1), y = mouse.Y * height / Math.Max(vp.Size.Y, 1);

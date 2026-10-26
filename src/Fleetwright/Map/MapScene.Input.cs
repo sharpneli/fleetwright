@@ -1,4 +1,8 @@
+using System.Numerics;
 using Fleetwright.Sim;
+using Fleetwright.Sim.Ai;
+using Fleetwright.Sim.Combat;
+using Fleetwright.Ui;
 using ImGuiNET;
 using SDL;
 using static SDL.SDL3;
@@ -7,7 +11,8 @@ namespace Fleetwright.Map;
 
 /// <summary>The camera's input (docs/map-ui/input.md I0): WASD pans at a share of the screen a second whatever the
 /// zoom (shift faster), eased so a tap nudges; the middle button drags the map, and its click centres the map on the
-/// sea or follows a ship until a pan. The keys are scancodes, so they stay under the hand on any layout.</summary>
+/// sea or follows a ship until a pan. The keys are scancodes, so they stay under the hand on any layout. The left
+/// button only selects (I1): a click a ship, a drag a box.</summary>
 public sealed unsafe partial class MapScene
 {
     static readonly SDL_Scancode[] PanKeys = [SDL_Scancode.SDL_SCANCODE_W, SDL_Scancode.SDL_SCANCODE_A, SDL_Scancode.SDL_SCANCODE_S, SDL_Scancode.SDL_SCANCODE_D];
@@ -72,6 +77,105 @@ public sealed unsafe partial class MapScene
             camera.Drag(at, width / 2, height / 2, width, height);
             follow = 0;
         }
+    }
+
+    // ------------------------------------------------------------------ the box (I1)
+
+    bool boxing;   // the left press has moved a click's worth: its release selects what the box holds
+    readonly List<int> boxShips = [];   // the ships in the box at its release (entities)
+    sbyte[] boxWhole = new sbyte[16];   // per group (snapshot index): 0 not asked yet, 1 wholly in the box, -1 not
+
+    /// <summary>A left press moved: past a click's worth, it's a box.</summary>
+    void BoxMove()
+    {
+        if (pressed && !boxing && Math.Abs(cursorX - pressX) + Math.Abs(cursorY - pressY) >= ClickPx)
+            boxing = true;
+    }
+
+    /// <summary>The box being drawn, from the press to the cursor: a hairline in the accent over a faint fill.</summary>
+    void BoxMark()
+    {
+        if (!boxing)
+            return;
+        var vp = ImGui.GetMainViewport();
+        float sx = vp.Size.X / (float)Math.Max(width, 1), sy = vp.Size.Y / (float)Math.Max(height, 1);
+        var a = vp.Pos + new Vector2((float)(Math.Min(pressX, cursorX) * sx), (float)(Math.Min(pressY, cursorY) * sy));
+        var b = vp.Pos + new Vector2((float)(Math.Max(pressX, cursorX) * sx), (float)(Math.Max(pressY, cursorY) * sy));
+        var dl = ImGui.GetBackgroundDrawList();
+        dl.AddRectFilled(a, b, Pieces.U(Theme.Brass with { W = 0.08f }));
+        dl.AddRect(a, b, Pieces.U(Theme.Brass with { W = 0.8f }));
+    }
+
+    /// <summary>The box let go, from (x0, y0) to (x1, y1): the player's ships inside it selected. The selection is the
+    /// guide of the largest unit wholly inside, its orders at that unit (a squadron or force inside entire goes as
+    /// itself), the rest picked beside it; a squadron cut by the box goes as its ships alone. With ctrl the ships are
+    /// added to the selection; an empty box deselects, as a click on the empty sea.</summary>
+    void BoxSelect(double x0, double y0, double x1, double y1, bool ctrl)
+    {
+        var s = world.Current;
+        var v = s.Ships;
+        var gv = s.Groups;
+        var view = View;
+        (double l, double r, double t, double b) = (Math.Min(x0, x1), Math.Max(x0, x1), Math.Min(y0, y1), Math.Max(y0, y1));
+        boxShips.Clear();
+        for (int k = 0; k < v.Count; k++)
+            if (Boxable(s, k) && view.Project(v.PoseAt(k, world.DrawMs).Position, out double px, out double py) && px >= l && px <= r && py >= t && py <= b)
+                boxShips.Add(v.Entity[k]);
+        if (ctrl && selected >= 0)
+        {
+            foreach (int e in boxShips)
+                if (e != selected && !picked.Contains(e))
+                    picked.Add(e);
+            return;
+        }
+        if (boxWhole.Length < gv.Count)
+            boxWhole = new sbyte[Math.Max(gv.Count, boxWhole.Length * 2)];
+        Array.Clear(boxWhole, 0, gv.Count);
+        // the senior: the largest unit wholly inside, and the ship that guides it
+        int lead = -1, leadGroup = 0, leadShips = 0;
+        foreach (int e in boxShips)
+        {
+            int g = gv.IndexOfShip(e), top = -1, ships = 1;
+            while (g >= 0 && Whole(s, g, out int n))
+            {
+                (top, ships) = (g, n);
+                g = gv.Parent[g] != 0 ? gv.IndexOfGroup(gv.Parent[g]) : -1;
+            }
+            if (ships <= leadShips)
+                continue;
+            int guide = top >= 0 ? gv.GuideShip[top] : e;
+            (lead, leadGroup, leadShips) = (boxShips.Contains(guide) ? guide : e, top >= 0 ? gv.Id[top] : 0, ships);
+        }
+        selected = lead;
+        ClearPicks();
+        squadronCardOf = -1;
+        if (lead < 0)
+            return;
+        foreach (int e in boxShips)
+            if (e != lead)
+                picked.Add(e);
+        (levelFor, levelPick) = (lead, leadGroup);   // 0: the ship alone (Level); else the unit by its id
+    }
+
+    /// <summary>Whether the player's ship at snapshot row <paramref name="k"/> is one the box takes: hers, afloat.</summary>
+    static bool Boxable(Snapshot s, int k) =>
+        (s.PlayerSide < 0 || s.Ships.Side[k] == s.PlayerSide) && s.Ships.Loss[k] == LossKind.None;
+
+    /// <summary>Whether every ship of group <paramref name="g"/> afloat is in the box (kept for the release), and how many.</summary>
+    bool Whole(Snapshot s, int g, out int ships)
+    {
+        ships = 0;
+        var v = s.Ships;
+        for (int k = 0; k < v.Count; k++)
+            if (Boxable(s, k) && Holds(s.Groups, g, Unit.Ship(v.Entity[k])))
+            {
+                ships++;
+                if (boxWhole[g] == 0 && !boxShips.Contains(v.Entity[k]))
+                    boxWhole[g] = -1;
+            }
+        if (boxWhole[g] == 0)
+            boxWhole[g] = 1;
+        return boxWhole[g] > 0;
     }
 
     /// <summary>The followed ship's place, the camera put over it: hers, or one in sight (nothing while she's neither).</summary>

@@ -13,8 +13,8 @@ namespace Fleetwright.Map;
 /// <summary>The world tab (docs/battle/plan.md step 1.2): the globe of water at every zoom from orbit down to 10 px/m,
 /// the lat/lon grid, day and night from the snapshot's sun, and the clock's controls (pause, 1x to 1,000,000x, asked
 /// against achieved). It reads the world only through <see cref="WorldSession.Current"/> and changes it only by
-/// commands. Mouse: wheel zooms at the cursor, left or middle drag pans (armed to place ships, the left aims them), a middle
-/// click centres or follows (docs/map-ui/input.md). Keys: WASD pans, space pauses, + and - change the speed. The ships
+/// commands. Mouse: wheel zooms at the cursor, the left button selects (a click a ship, a drag a box; armed to place ships,
+/// it aims them), the middle drag pans and its click centres or follows (docs/map-ui/input.md). Keys: WASD pans, space pauses, + and - change the speed. The ships
 /// (step 2.3) are in MapScene.Ships.cs.</summary>
 public sealed unsafe partial class MapScene : IScene
 {
@@ -199,6 +199,7 @@ public sealed unsafe partial class MapScene : IScene
         var lvp = ImGui.GetMainViewport();
         mapLabels.Begin(lvp.Pos, lvp.Size, 6 * UiFonts.Scale);
         SelectionMarks(s);
+        BoxMark();
         ShipLabels(s);
         GroupLabels(s);
         TaskMarkLabels(s);
@@ -253,9 +254,8 @@ public sealed unsafe partial class MapScene : IScene
                 if (e->button.button != 1)
                     return false;
                 if (BeginPlace(e->button.x * sx, e->button.y * sy))
-                    return true;   // armed to place: the drag aims the ships, it doesn't pan
-                (pressX, pressY, pressed) = (e->button.x * sx, e->button.y * sy, true);
-                (panX, panY, dragging) = (e->button.x * sx, e->button.y * sy, true);   // off the globe too: a pan needs no point held
+                    return true;   // armed to place: the drag aims the ships
+                (pressX, pressY, pressed, boxing) = (e->button.x * sx, e->button.y * sy, true, false);   // a click, or a box (MapScene.Input.cs)
                 return true;
             case SDL_EventType.SDL_EVENT_MOUSE_BUTTON_UP:
                 if (e->button.button == 2 && middle)
@@ -274,11 +274,12 @@ public sealed unsafe partial class MapScene : IScene
                 if (e->button.button == 1 && pressed)
                 {
                     double ux = e->button.x * sx, uy = e->button.y * sy;
-                    if (Math.Abs(ux - pressX) + Math.Abs(uy - pressY) < 5)
-                        Click(ux, uy);   // a click, not a drag
-                    pressed = false;
+                    if (boxing)
+                        BoxSelect(pressX, pressY, ux, uy, (SDL_GetModState() & SDL_Keymod.SDL_KMOD_CTRL) != 0);
+                    else
+                        Click(ux, uy);
+                    (pressed, boxing) = (false, false);
                 }
-                dragging = middle;
                 return true;
             case SDL_EventType.SDL_EVENT_MOUSE_MOTION:
                 (mouse, mouseIn) = (new Vector2(e->motion.x, e->motion.y), true);
@@ -288,6 +289,7 @@ public sealed unsafe partial class MapScene : IScene
                     AimPlace(cursorX, cursorY);
                     return true;
                 }
+                BoxMove();
                 if (!dragging)
                     return false;
                 (dragX, dragY, dragPending) = (e->motion.x * sx, e->motion.y * sy, true);

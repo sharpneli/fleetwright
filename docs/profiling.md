@@ -56,10 +56,11 @@ python -I tools/speedscope_top.py "$p\jut.speedscope.json" --thread busiest --fo
 wait for the swapchain): mean, p50, p95, p99 and max, after the first 60 frames. Frame length alone hides the CPU,
 since vsync pads every frame to the display's interval. Pair it with `-screenshot=N` to end the run, and with
 scripted input to load it: `F:pan:X0,Y0:X1,Y1:N` pushes a real SDL drag (button down, eight motion events a frame
-for N frames, up), which reaches the scenes as a mouse does. `F:drag` only reaches ImGui.
+for N frames, up), which reaches the scenes as a mouse does; the map pans with the middle button (`:2` at the end,
+docs/map-ui/input.md), the left draws a box. `F:drag` only reaches ImGui.
 
 ```bash
-dotnet run --project src/Fleetwright -c DevRelease -- -size=2560x1440 -frametimes -screenshot=1100 -map=50,10,4000     "-input=100:pan:900,500:400,350:80;200:pan:400,350:1400,650:80"
+dotnet run --project src/Fleetwright -c DevRelease -- -size=2560x1440 -frametimes -screenshot=1100 -map=50,10,4000     "-input=100:pan:900,500:400,350:80:2;200:pan:400,350:1400,650:80:2"
 ```
 
 Measure the Debug build too (`dotnet run` without `-c`): it's what runs day to day, and it's 3-5x slower.
