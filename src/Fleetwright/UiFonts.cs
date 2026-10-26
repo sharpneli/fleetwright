@@ -14,6 +14,9 @@ public static unsafe class UiFonts
 {
     public static ImFontPtr Sans, SansBold, SansSmall, Title, Mono, MonoBig;
 
+    /// <summary>A work surface's tags and kbd chips (docs/ui-language.md "The pieces").</summary>
+    public static ImFontPtr MonoSmall;
+
     /// <summary>The ship card's poster type (ProfileScene): the name, the headline figures and the particulars.</summary>
     public static ImFontPtr PosterTitle, PosterFigure, PosterText;
 
@@ -66,6 +69,7 @@ public static unsafe class UiFonts
         Title = Add("ibm-plex-sans-condensed-latin-600-normal.ttf", 16);
         Mono = Add("ibm-plex-mono-latin-400-normal.ttf", 13);
         MonoBig = Add("ibm-plex-mono-latin-400-normal.ttf", 22);
+        MonoSmall = Add("ibm-plex-mono-latin-400-normal.ttf", 11);
         PosterTitle = Add("ibm-plex-sans-condensed-latin-600-normal.ttf", 46);
         PosterFigure = Add("ibm-plex-sans-condensed-latin-600-normal.ttf", 28);
         PosterText = Add("ibm-plex-sans-condensed-latin-400-normal.ttf", 16);

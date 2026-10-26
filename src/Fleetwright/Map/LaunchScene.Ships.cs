@@ -1,19 +1,22 @@
 using System.Numerics;
 using Fleetwright.Sim.Missions;
 using ImGuiNET;
+using T = Fleetwright.Designer.DesignerTheme;
 
 namespace Fleetwright.Map;
 
-/// <summary>The launch screen's ships (docs/map-ui/launch.md L3, the mockup's first column): each side's order of battle
-/// as a tab (yours first, then the enemy's: decision 3, the enemy's can be changed too), its units and under them a row
-/// a design: drawn to scale, how many (− n +: the last first, a struck one back first; L3b) and their names, the
-/// class's figures, its build, and Change… for the design picker. A row whose design the setup changed says what it was.
-/// A unit's ✕ takes it off (struck, its undo in its place); one the setup added is brass, and moved or taken away again.
-/// Add a unit… at the foot. The lines are made when the pick changes; a frame allocates nothing (the names are cut to
-/// the column once per width).</summary>
+/// <summary>The launch screen's order of battle (docs/map-ui/launch.md L3, tab 1 of the mockup launch-bureau.html): the
+/// side shown (yours first, then the enemy's: decision 3, the enemy's can be changed too) as an outliner tree in a table,
+/// a unit a group row (its admiral, his temper's chip, its ships and tonnage, + division, ✕), under it a row a design
+/// (drawn to scale, ◀ n ▶ for its ships: the last first, a struck one back first; L3b; the class's figures, its build,
+/// ▾ for the design picker) and under that its ships by name (a captain's temper marked ▲ ▼, the struck dim). Clicking a
+/// design's row selects it: the selected class pane beside the table shows her drawn large, her particulars, the design's
+/// buttons and her captains' tempers. A unit's ✕ takes it off (struck, its undo in its place); one the setup added is
+/// brass-chipped, and moved or taken away again. + Add a unit… at the foot. The lines are made when the pick changes; a
+/// frame allocates nothing.</summary>
 public sealed unsafe partial class LaunchScene
 {
-    /// <summary>A unit's heading or a row of ships of one design.</summary>
+    /// <summary>A unit's group row or a row of ships of one design.</summary>
     sealed class ShipLine
     {
         public bool IsUnit, Top;
@@ -22,20 +25,22 @@ public sealed unsafe partial class LaunchScene
         public string Admiral = "", Chip = "";   // a unit's admiral, and his temper when he has one of his own (L4)
         public bool Bold;
         public bool Removed, Added, Movable;   // a unit: taken off; added by the setup (on its own: it can be moved)
+        public string Tons = "";
+        public int TonsKnown = -1;   // the classes figured when Tons was made
         // a row
         public ScenarioUnit Unit = null!;
         public ScenarioShips Ships = null!;
-        public string Design = "", Count = "", Names = "", Struck = "", Was = "", Type = "";
-        public string[] NameList = [];
-        public bool Swapped, Fewer;   // Fewer: − takes one off (not past an added unit's last)
-        public string NamesShown = "", StruckShown = "";
-        public float NamesWidth = -1;
-        public (int End, bool Bold)[] Marks = [];   // the captains with tempers: where each name ends in Names (L4)
-        public float[] MarkX = [];   // and where it's drawn, NaN when cut off
+        public string Design = "", Count = "", Was = "", Type = "", Unnamed = "";
+        public string[] NameList = [], StruckList = [];
+        public bool Swapped, Fewer;   // Fewer: ◀ takes one off (not past an added unit's last)
+        public Captain[] Captains = [];   // the live named ships, each with her captain's temper
         public string NamesTip = "";
     }
 
+    sealed record Captain(string Name, double Temper, double Written, string Mark, string Value);
+
     readonly List<(int Side, string Label, string Ensign)> shipTabs = [];
+    string[] sideLabels = [];
     List<ShipLine>[] linesBySide = [];
     int shipTab;
     int tabsPlayedAs = -2;   // the player's side the tabs were made for: a new one shows its ships
@@ -45,7 +50,12 @@ public sealed unsafe partial class LaunchScene
     ShipLine? renaming;   // the unit whose name is being typed
     string renameText = "";
     bool renameFocus;
-    (int Side, string Joins)? pendingAdd;   // a "+ division" clicked: the add picker, joining that unit, at the frame's end
+    (int Side, string? Joins)? pendingAdd;   // a "+ division" clicked: the add picker, joining that unit, at the frame's end
+
+    (int Side, string Unit, string Design)? selKey;   // the selected design's row
+    readonly HashSet<string> shutUnits = [];   // units folded shut, by name
+    readonly HashSet<(int, string, string)> namesToggled = [];   // rows whose ships' names show other than by default
+    const int SmallShips = 30;   // a side up to this many ships shows its ships' names at first
 
     /// <summary>Every unit's name a new one mustn't take: as shown, and as written for one renamed.</summary>
     HashSet<string> TakenNames()
@@ -73,6 +83,7 @@ public sealed unsafe partial class LaunchScene
             order.Insert(0, side);
         foreach (int sd in order)
             shipTabs.Add((sd, side < 0 ? s.Sides[sd] : sd == side ? $"{s.Sides[sd]} · yours" : $"{s.Sides[sd]} · the enemy", s.AboutOf(sd)?.Ensign ?? ""));
+        sideLabels = [.. shipTabs.Select(t => t.Label)];
         shipTab = Math.Max(0, shipTabs.FindIndex(t => t.Side == tabSide));
         if (side >= 0 && (tabSide < 0 || side != tabsPlayedAs))
             shipTab = 0;   // the side played as, first
@@ -92,9 +103,9 @@ public sealed unsafe partial class LaunchScene
             {
                 IsUnit = true, Top = depth == 0, Depth = depth, Side = u.Side, Text = u.Name, Unit = u, Removed = u.Removed,
                 Added = add?.Unit.Name == u.Name, Movable = add?.Unit.Name == u.Name && add.Joins == null,
-                Right = depth == 0 || add?.Unit.Name == u.Name ? $"{u.ShipCount} ship{(u.ShipCount == 1 ? "" : "s")}" : "",
+                Right = u.ShipCount.ToString(Inv),
                 Admiral = u.Admiral,
-                Chip = u.OwnTemper && u.Temper is double t && Math.Abs(t) > 1e-9 ? $"{(t > 0 ? "BOLD" : "CAUTIOUS")} {DoctrineRules.Signed(t)}" : "",
+                Chip = u.OwnTemper && u.Temper is double t && Math.Abs(t) > 1e-9 ? $"{(t > 0 ? "bold" : "cautious")} {DoctrineRules.Signed(t)}" : "",
                 Bold = u.Temper > 0,
             });
             if (u.Removed)
@@ -104,18 +115,24 @@ public sealed unsafe partial class LaunchScene
                 Lines(sub, depth + 1, chain, add, lines);
             foreach (var ships in u.Ships)
             {
-                int unnamed = ships.Count - Math.Min(ships.Names.Length, ships.Count);
-                var (names, marks) = NamesLine(ships);
+                int live = Math.Min(ships.Names.Length, ships.Count), unnamed = ships.Count - live;
+                var captains = new List<Captain>();
+                for (int k = 0; k < live; k++)
+                {
+                    string name = ships.Names[k];
+                    if (name.Length == 0)
+                        continue;
+                    double ct = ships.TemperOf(k), wt = SetTemper.CaptainOf(written!.Units, name) ?? 0;
+                    captains.Add(new Captain(name, ct, wt, Math.Abs(ct) > 1e-9 ? DoctrineRules.Signed(ct) : "", Temper(ct)));
+                }
                 var row = new ShipLine
                 {
                     Depth = depth, Side = u.Side, Unit = u, Ships = ships, Design = ships.Design, Text = TitleOf(ships.Design),
                     Count = ships.Count.ToString(Inv), NameList = ships.Names, Type = InfoOf(ships.Design)?.Type ?? "",
-                    Names = ships.Names.Length > 0 ? names + (unnamed > 0 ? $" and {unnamed} more" : "")
-                        : ships.Count > 0 ? $"{ships.Count} unnamed" : "",
-                    Marks = marks,
-                    NamesTip = (ships.Names.Length > 0 ? names : "") + (ships.Struck.Length > 0 ? $"\ntaken off: {Struck(ships.Struck)}" : "")
-                               + (ships.Names.Length > 0 ? "\nclick: the captains' tempers" : "unnamed: no captains' tempers"),
-                    Struck = Struck(ships.Struck),
+                    StruckList = [.. ships.Struck.Select(n => n.Length > 0 ? n : "unnamed")],
+                    Unnamed = unnamed > 0 && live > 0 ? $"and {unnamed} unnamed" : unnamed > 0 ? $"{unnamed} unnamed" : "",
+                    Captains = [.. captains],
+                    NamesTip = ships.Struck.Length > 0 ? $"taken off: {Struck(ships.Struck)}" : "",
                     Fewer = add == null ? ships.Count > 0 : u.ShipCount > 1,
                 };
                 // the change that brought this design here, if one did
@@ -130,35 +147,9 @@ public sealed unsafe partial class LaunchScene
         }
     }
 
-    /// <summary>The ships' names in a line, a gap after each whose captain has a temper (his mark is drawn in it), and where
-    /// each such name ends.</summary>
-    static (string Names, (int End, bool Bold)[] Marks) NamesLine(ScenarioShips ships)
-    {
-        var sb = new System.Text.StringBuilder();
-        var marks = new List<(int, bool)>();
-        int live = Math.Min(ships.Names.Length, ships.Count);
-        for (int k = 0; k < live; k++)
-        {
-            if (k > 0)
-                sb.Append(", ");
-            sb.Append(ships.Names[k]);
-            if (ships.TemperOf(k) is var t && Math.Abs(t) > 1e-9)
-            {
-                marks.Add((sb.Length, t > 0));
-                sb.Append(Gap);
-            }
-        }
-        return (sb.ToString(), [.. marks]);
-    }
-
-    const string Gap = "    ";   // a captain's mark's room after her name
-    static float MarkGap => Width(UiFonts.SansSmall, 11, Gap) / UiFonts.Scale;
-
     /// <summary>The struck ships in a line: their names, and how many unnamed.</summary>
     static string Struck(string[] struck)
     {
-        if (struck.Length == 0)
-            return "";
         var named = struck.Where(n => n.Length > 0).ToList();
         int unnamed = struck.Length - named.Count;
         if (unnamed > 0)
@@ -166,117 +157,225 @@ public sealed unsafe partial class LaunchScene
         return string.Join(", ", named);
     }
 
-    /// <summary>The ships column: the sides' tabs, then the units and their rows, scrolling, and Add a unit….</summary>
-    void ShipsColumn(Vector2 at, float w, float bottom)
+    /// <summary>A design's class id in the pick, or -1.</summary>
+    int ClassOf(string design) => world.LoadIds is { } ids && ids.TryGetValue(design, out int id) ? id : -1;
+
+    /// <summary>The selected design's row on the side shown: the one picked, else the side's first.</summary>
+    ShipLine? Sel
     {
-        if (current is not { } s || shipTabs.Count == 0)
-            return;
-        if (!shipsMadeWithDesigns && DesignsRead)
-            MadeShips(s);
-        // the tabs
-        float tx = at.X;
-        for (int i = 0; i < shipTabs.Count; i++)
+        get
         {
-            var (sd, label, ensign) = shipTabs[i];
-            float tw = Width(UiFonts.Sans, 12.5f, label) + 46 * sc;
-            var a = new Vector2(tx, at.Y);
-            ImGui.SetCursorScreenPos(a);
-            ImGui.PushID(i);
-            if (ImGui.InvisibleButton("##stab", new Vector2(tw, 26 * sc)))
-                shipTab = i;
-            ImGui.PopID();
-            bool on = i == shipTab, hover = ImGui.IsItemHovered();
-            Box(a, a + new Vector2(tw, 26 * sc), on ? Brass with { W = 0.10f } : new Vector4(1, 1, 1, hover ? 0.05f : 0.02f), on ? BrassDark : EdgeC, 2);
-            Ensign(ensign, a + new Vector2(10 * sc, 7 * sc), new Vector2(20 * sc, 12 * sc));
-            Txt(UiFonts.Sans, 12.5f, a + new Vector2(38 * sc, 5 * sc), on ? Bright : Soft, label);
-            tx += tw + 4 * sc;
+            int sd = OrdersSide;
+            if (sd < 0 || sd >= linesBySide.Length)
+                return null;
+            ShipLine? first = null;
+            foreach (var l in linesBySide[sd])
+            {
+                if (l.IsUnit)
+                    continue;
+                first ??= l;
+                if (selKey is var (s, u, d) && s == sd && l.Unit.Name == u && l.Design == d)
+                    return l;
+            }
+            return first;
         }
-        const string Hint = "Change a design: it builds while you set up";
-        if (tx + Width(UiFonts.SansSmall, 11, Hint) + 12 * sc < at.X + w)
-            Txt(UiFonts.SansSmall, 11, new Vector2(at.X + w - Width(UiFonts.SansSmall, 11, Hint), at.Y + 7 * sc), Muted, Hint);
-        int tabSide = shipTabs[Math.Min(shipTab, shipTabs.Count - 1)].Side;
-        var lines = linesBySide[tabSide];
-        // to scale: the longest class of either side fits the thumbnail's room
+    }
+
+    bool NamesShown(ShipLine l)
+    {
+        int sideShips = 0;
+        foreach (var r in linesBySide[l.Side])
+            sideShips += r.IsUnit ? 0 : r.Ships.Count;
+        return sideShips <= SmallShips != namesToggled.Contains((l.Side, l.Unit.Name, l.Design));
+    }
+
+    /// <summary>A unit's tonnage, once every class under it is figured; made again as figures come in.</summary>
+    string TonsOf(ShipLine l)
+    {
+        if (l.TonsKnown == figuredCount)
+            return l.Tons;
+        l.TonsKnown = figuredCount;
+        double t = 0;
+        bool all = true;
+        void Walk(ScenarioUnit u)
+        {
+            foreach (var x in u.Units)
+                if (!x.Removed)
+                    Walk(x);
+            foreach (var sh in u.Ships)
+                if (FiguresOf(ClassOf(sh.Design)) is { } f)
+                    t += f.Profile.DisplacementT * sh.Count;
+                else
+                    all = false;
+        }
+        Walk(l.Unit);
+        return l.Tons = all ? t.ToString("N0", Inv) : "";
+    }
+
+    // ------------------------------------------------------------------ the page
+
+    // the table's columns from its right edge (reference px): the ✕/▾, state, reach, belt, second, main, kn, t, ships, to scale
+    static readonly float[] OobCols = [22, 66, 46, 42, 70, 64, 32, 60, 66, 100];
+    readonly float[] oobX = new float[11];   // each column's left edge; [0] the name's
+
+    void OrderOfBattle(Vector2 a, Vector2 size)
+    {
+        if (!shipsMadeWithDesigns && DesignsRead && current is { } s)
+            MadeShips(s);
+        int sd = OrdersSide;
+        if (sd < 0 || sd >= linesBySide.Length)
+            return;
+        float selW = MathF.Round(Math.Clamp(size.X * 0.36f, P(380), P(480)));
+        float tw = size.X - selW;
+        ShipsTable(a, new Vector2(tw, size.Y), sd);
+        dl.AddLine(new Vector2(a.X + tw, a.Y), new Vector2(a.X + tw, a.Y + size.Y), U(T.Edge));
+        SelectedClass(new Vector2(a.X + tw + 1, a.Y), new Vector2(selW - 1, size.Y));
+    }
+
+    void ShipsTable(Vector2 a, Vector2 size, int sd)
+    {
+        var lines = linesBySide[sd];
+        float w = size.X;
+        // the sub-header: the side's ships and tonnage
+        int ships = 0;
+        foreach (var l in lines)
+            ships += l.IsUnit && l.Top && !l.Removed ? l.Unit.ShipCount : 0;
+        float right = SubHeader(a, w, "ORDER OF BATTLE", sideLabels[Math.Min(shipTab, sideLabels.Length - 1)]);
+        TxtR(UiFonts.SansSmall, right, Mid(UiFonts.SansSmall, a.Y, RowH), T.Muted, sideShipsNote.Length > 0 && sideShipsFor == (sd, ships) ? sideShipsNote : SideShipsNote(sd, ships));
+        // the columns
+        float x = a.X + w;
+        for (int i = 0; i < OobCols.Length; i++)
+        {
+            x -= P(OobCols[i]);
+            oobX[10 - i] = x;
+        }
+        oobX[0] = a.X;
+        var h = new Vector2(a.X, a.Y + RowH);
+        Head(h, w);
+        HeadCell(h, a.X + P(6), "UNIT · CLASS · SHIP");
+        HeadCell(h, oobX[1] + P(4), "TO SCALE");
+        HeadCell(h, oobX[2] + P(4), "SHIPS");
+        HeadCell(h, oobX[4] - P(6), "T", right: true);
+        HeadCell(h, oobX[5] - P(6), "KN", right: true);
+        HeadCell(h, oobX[5] + P(4), "MAIN");
+        HeadCell(h, oobX[6] + P(4), "SECOND");
+        HeadCell(h, oobX[8] - P(6), "BELT", right: true);
+        HeadCell(h, oobX[9] - P(6), "REACH", right: true);
+        HeadCell(h, oobX[9] + P(4), "STATE");
+
+        // to scale: the longest class of either side fits the column
         float longest = 0;
         foreach (var l in linesBySide)
             foreach (var r in l)
-                if (!r.IsUnit && ClassOf(r.Design) is int id and >= 0 && world.Classes.TryGet(id) is { } c)
+                if (!r.IsUnit && ClassOf(r.Design) is int cid and >= 0 && world.Classes.TryGet(cid) is { } c)
                     longest = Math.Max(longest, (float)c.Motion.LengthM);
-        float pxPerM = longest > 0 ? Math.Min(1.12f * sc, ThumbW * sc / longest) : 1.12f * sc;
-        bool ring = side < 0 ? tabSide == 0 : tabSide == side;
-        var colour = ring ? Friend : Hostile;
+        float pxPerM = longest > 0 ? Math.Min(P(0.8f), (P(OobCols[9]) - P(10)) / longest) : P(0.6f);
 
-        float top = at.Y + 36 * sc;
-        ImGui.SetCursorScreenPos(new Vector2(at.X, top));
-        ImGui.PushStyleColor(ImGuiCol.ChildBg, Vector4.Zero);
-        if (ImGui.BeginChild($"##ships{tabSide}", new Vector2(w + 10 * sc, bottom - top - 8 * sc), ImGuiChildFlags.None, ImGuiWindowFlags.None))
+        var bodyAt = new Vector2(a.X, a.Y + RowH + HeadH);
+        var bodySize = new Vector2(w, size.Y - RowH - HeadH);
+        ImGui.SetCursorScreenPos(bodyAt);
+        var keep = dl;
+        float y = 0;
+        if (ImGui.BeginChild($"##oob{sd}", bodySize, ImGuiChildFlags.None, ImGuiWindowFlags.None))
         {
-            var keep = dl;
             dl = ImGui.GetWindowDrawList();
             var o = ImGui.GetCursorScreenPos();
-            float y = o.Y, inner = w - 4 * sc;
+            float top = ImGui.GetWindowPos().Y, bottom = top + bodySize.Y;
+            float cw = ImGui.GetContentRegionAvail().X;
+            // the columns again, in the child's width (its scrollbar takes some)
+            float shift = cw - w;
+            y = o.Y;
+            int n = 0;
+            int shutDepth = int.MaxValue;   // under a shut unit: its rows are skipped
+            var sel = Sel;
             for (int i = 0; i < lines.Count; i++)
             {
                 var l = lines[i];
                 if (l.IsUnit)
-                    y += UnitHead(i, l, new Vector2(o.X, y), inner, ring, colour);
-                else
-                    y += ShipRow(i, l, new Vector2(o.X + (l.Depth + 1) * 14 * sc, y), inner - (l.Depth + 1) * 14 * sc, pxPerM) + 8 * sc;
+                {
+                    if (l.Depth <= shutDepth)
+                        shutDepth = int.MaxValue;
+                    if (l.Depth > shutDepth)
+                        continue;
+                    if (y + RowH >= top && y <= bottom)
+                        UnitRow(i, l, new Vector2(o.X, y), cw, shift);
+                    y += RowH;
+                    if (shutUnits.Contains(l.Text))
+                        shutDepth = l.Depth;
+                    n = 0;
+                    continue;
+                }
+                if (l.Depth >= shutDepth)
+                    continue;
+                bool names = NamesShown(l);
+                if (y + RowH >= top && y <= bottom)
+                    ClassRow(i, l, new Vector2(o.X, y), cw, shift, pxPerM, l == sel, names, n);
+                y += RowH;
+                n++;
+                if (!names)
+                    continue;
+                int rows = l.Captains.Length + (l.Unnamed.Length > 0 ? 1 : 0) + l.StruckList.Length;
+                for (int k = 0; k < rows; k++, y += RowH, n++)
+                    if (y + RowH >= top && y <= bottom)
+                        ShipRow(i, k, l, new Vector2(o.X, y), cw, n);
             }
-            // add a unit
-            var aa = new Vector2(o.X + 14 * sc, y + 4 * sc);
-            var ab = new Vector2(o.X + inner, aa.Y + 30 * sc);
-            ImGui.SetCursorScreenPos(aa);
-            if (ImGui.InvisibleButton("##addunit", ab - aa) && !begin)
-                OpenAdd(tabSide);
-            if (ImGui.IsItemHovered())
-                dl.AddRectFilled(aa, ab, U(Brass with { W = 0.06f }), 3 * sc);
-            uint dash = U(Hex(0x4A5662));
-            Dashed(aa, new Vector2(ab.X, aa.Y), dash);
-            Dashed(new Vector2(aa.X, ab.Y), ab, dash);
-            Dashed(aa, new Vector2(aa.X, ab.Y), dash);
-            Dashed(new Vector2(ab.X, aa.Y), ab, dash);
-            Txt(UiFonts.Sans, 12.5f, aa + new Vector2(12 * sc, 7 * sc), Brass, AddLabel);
-            Txt(UiFonts.SansSmall, 11.5f, aa + new Vector2(20 * sc + Width(UiFonts.Sans, 12.5f, AddLabel), 8 * sc), Muted, AddNote);
-            y += 40 * sc;
-            ImGui.SetCursorScreenPos(new Vector2(o.X, y));
-            ImGui.Dummy(new Vector2(1, 4 * sc));
-            dl = keep;
+            // add a unit: a brass row at the table's end
+            var aa = new Vector2(o.X, y);
+            var (click, hover) = HitRow("##addunit", aa, new Vector2(cw, RowH));
+            if (click && !begin)
+                OpenAdd(sd);
+            RowBg(aa, cw, RowH, n, hover: hover);
+            Txt(UiFonts.Sans, new Vector2(aa.X + P(20), Mid(UiFonts.Sans, aa.Y, RowH)), hover ? T.Bright : T.Brass, AddLabel);
+            Txt(UiFonts.SansSmall, new Vector2(aa.X + P(28) + Width(UiFonts.Sans, AddLabel), Mid(UiFonts.SansSmall, aa.Y, RowH)), T.Muted, AddNote);
+            y += RowH + P(4) - o.Y;
         }
+        ImGui.SetCursorPos(new Vector2(0, Math.Max(y, 0)));
+        ImGui.Dummy(new Vector2(1, 0));
         ImGui.EndChild();
-        ImGui.PopStyleColor();
+        dl = keep;
     }
 
-    const string AddLabel = "+ Add a unit…", AddNote = "any designs, placed on the opening's map or joined to a force";
-    const float ThumbW = 176;   // the room for a row's ship, reference px
+    const string AddLabel = "+ Add a unit…", AddNote = "joins a unit on its station, or stands alone placed on the opening  (A)";
 
-    /// <summary>A unit's heading: its name (struck when it's taken off, brass when the setup added it), its count, and its
-    /// ✕ (or its undo); an added unit on its own can be moved. Its height.</summary>
-    float UnitHead(int i, ShipLine l, Vector2 at, float w, bool ring, Vector4 colour)
+    string sideShipsNote = "";
+    (int, int) sideShipsFor = (-1, -1);
+
+    string SideShipsNote(int sd, int ships)
     {
-        float ux = at.X + l.Depth * 16 * sc, y = at.Y;
-        if (l.Top)
-        {
-            Mark(new Vector2(at.X + 4 * sc, y + 10 * sc), ring, colour, 3.5f, 1);
-            ux += 16 * sc;
-        }
-        float px = l.Top ? 13 : 12.5f;
-        float right = at.X + w;
+        sideShipsFor = (sd, ships);
+        return sideShipsNote = $"{ships} ship{(ships == 1 ? "" : "s")}";
+    }
+
+    /// <summary>A unit's group row: its twisty, its name (a click renames it; struck when it's taken off), its admiral, his
+    /// temper's chip, ADDED or PLACING, its ships and tonnage, + division and move, its ✕ (or its undo).</summary>
+    void UnitRow(int i, ShipLine l, Vector2 a, float w, float shift)
+    {
         ImGui.PushID(i);
-        // its name: a click renames it
+        var (click, hover) = HitRow("##unit", a, new Vector2(w, RowH));
+        GroupBg(a, w, RowH, hover);
+        float x = a.X + P(6) + l.Depth * P(14);
+        bool shut = shutUnits.Contains(l.Text);
+        if (!l.Removed)
+            Twisty(new Vector2(x + P(4), a.Y + RowH / 2), !shut);
+        if (click && !l.Removed && ImGui.GetMousePos().X < x + P(12) && !shutUnits.Remove(l.Text))
+            shutUnits.Add(l.Text);
+        x += P(12);
+        float ty = Mid(UiFonts.SansBold, a.Y, RowH);
+        float nameW = Width(UiFonts.SansBold, l.Text);
+        float figures = oobX[2] + shift;   // the group row's own cells start at Ships
         if (renaming == l)
         {
-            PushFields();
-            ImGui.SetCursorScreenPos(new Vector2(ux - 6 * sc, y - 1 * sc));
-            ImGui.SetNextItemWidth(Math.Min(300 * sc, right - ux - 140 * sc));
+            ImGui.SetCursorScreenPos(new Vector2(x - P(4), a.Y + P(2)));
+            ImGui.SetNextItemWidth(Math.Min(P(260), figures - x - P(10)));
             if (renameFocus)
             {
                 ImGui.SetKeyboardFocusHere();
                 renameFocus = false;
             }
+            ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(P(4), 0));
             bool done = ImGui.InputText("##rename", ref renameText, 64, ImGuiInputTextFlags.EnterReturnsTrue | ImGuiInputTextFlags.AutoSelectAll);
+            ImGui.PopStyleVar();
             bool left = !done && ImGui.IsItemDeactivated();
-            PopFields();
             if (done)
             {
                 string to = renameText.Trim();
@@ -286,208 +385,177 @@ public sealed unsafe partial class LaunchScene
             }
             else if (left)
                 renaming = null;
+            x += Math.Min(P(260), figures - x - P(10)) + P(4);
         }
         else
         {
-            Txt(UiFonts.Sans, px, new Vector2(ux, y + 2 * sc), l.Removed ? Muted : l.Added ? Brass : Bright, l.Text);
-            if (l.Admiral.Length > 0 && !l.Removed)
+            Txt(UiFonts.SansBold, new Vector2(x, ty), l.Removed ? T.Muted : T.Bright, l.Text);
+            if (l.Removed)
+                HLine(x, x + nameW, a.Y + RowH / 2, T.Muted);
+            else
             {
-                float ax = ux + Width(UiFonts.Sans, px, l.Text) + 8 * sc;
-                if (ax < right - 260 * sc)
-                    Txt(UiFonts.SansSmall, 11.5f, new Vector2(ax, y + 3 * sc), Muted, Clip(UiFonts.SansSmall, 11.5f, l.Admiral, right - 260 * sc - ax));
-            }
-            if (!l.Removed)
-            {
-                float nw = Width(UiFonts.Sans, px, l.Text);
-                ImGui.SetCursorScreenPos(new Vector2(ux, y));
-                if (ImGui.InvisibleButton("##name", new Vector2(nw, 20 * sc)) && !begin)
+                ImGui.SetCursorScreenPos(new Vector2(x, a.Y));
+                if (ImGui.InvisibleButton("##name", new Vector2(nameW, RowH)) && !begin)
                     (renaming, renameText, renameFocus) = (l, l.Text, true);
                 if (ImGui.IsItemHovered())
                 {
-                    dl.AddLine(new Vector2(ux, y + 18 * sc), new Vector2(ux + nw, y + 18 * sc), U(BrassDark));
+                    HLine(x, x + nameW, a.Y + RowH - P(4), T.BrassDark);
                     ImGui.SetTooltip("click to rename");
                 }
             }
+            x += nameW + P(6);
         }
-        if (l.Removed)
+        float room = figures - P(8);
+        if (!l.Removed)
         {
-            float nw = Width(UiFonts.Sans, px, l.Text);
-            dl.AddLine(new Vector2(ux, y + 10 * sc), new Vector2(ux + nw, y + 10 * sc), U(Muted));
-            const string Undo = "removed · undo";
-            float uw = Width(UiFonts.SansSmall, 11.5f, Undo);
-            ImGui.SetCursorScreenPos(new Vector2(right - uw, y + 2 * sc));
-            if (ImGui.InvisibleButton("##undo", new Vector2(uw, 18 * sc)) && !begin)
-                pendingEdit = setup.Without(new RemoveUnit(setup.NameAsMade(l.Text)).Key);
-            Txt(UiFonts.SansSmall, 11.5f, new Vector2(right - uw, y + 3 * sc), ImGui.IsItemHovered() ? Hex(0xE6C77A) : Brass, Undo);
+            // the admiral, then the chips after him (they say a state: kept whole, the admiral cut to make room)
+            bool now = placing?.Unit.Name == l.Text;
+            string added = !l.Added ? "" : now ? "placing…" : "added";
+            float chipsW = (l.Chip.Length > 0 ? ChipWidth(l.Chip) + P(4) : 0) + (added.Length > 0 ? ChipWidth(added) + P(4) : 0);
+            float adW = l.Admiral.Length > 0 ? Math.Min(Width(UiFonts.SansSmall, l.Admiral), Math.Max(0, room - chipsW - x)) : 0;
+            if (adW > P(20))
+            {
+                dl.PushClipRect(new Vector2(x, a.Y), new Vector2(x + adW, a.Y + RowH), true);
+                Txt(UiFonts.SansSmall, new Vector2(x, Mid(UiFonts.SansSmall, a.Y, RowH)), T.Muted, l.Admiral);
+                dl.PopClipRect();
+                x += adW + P(6);
+            }
+            if (l.Chip.Length > 0 && x + ChipWidth(l.Chip) < room)
+            {
+                Chip(new Vector2(x, a.Y + P(2.5f)), l.Chip, l.Bold ? ChipKind.Amber : ChipKind.Blue);
+                if (ImGui.IsMouseHoveringRect(new Vector2(x, a.Y), new Vector2(x + ChipWidth(l.Chip), a.Y + RowH)))
+                    ImGui.SetTooltip("his temper, added to the side's aggression (Standing orders)");
+                x += ChipWidth(l.Chip) + P(4);
+            }
+            if (added.Length > 0 && x + ChipWidth(added) < room)
+                Chip(new Vector2(x, a.Y + P(2.5f)), added, now ? ChipKind.Amber : ChipKind.Ok);
+            // its ships and tonnage under Ships and t
+            TxtR(UiFonts.Mono, oobX[3] + shift - P(6), Mid(UiFonts.Mono, a.Y, RowH), T.Bright, l.Right);
+            TxtR(UiFonts.Mono, oobX[4] + shift - P(6), Mid(UiFonts.Mono, a.Y, RowH), T.Bright, TonsOf(l));
+            // + division and move in the figures' room
+            float lx = oobX[5] + shift + P(4);
+            if (Link("##division", new Vector2(lx, a.Y + P(2)), "+ division", out float dw, muted: true))
+                pendingAdd = (l.Side, l.Text);
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip($"add a unit to {l.Text}, on its station there");
+            lx += dw + P(12);
+            if (l.Movable)
+            {
+                if (Link("##move", new Vector2(lx, a.Y + P(2)), "move", out _) && setup.AddedHolding(l.Text) is { } ad)
+                    StartPlacing(ad.Unit, ad.Unit.CourseDeg, ad.Unit.Kn);
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("place it again on the opening");
+            }
+            if (CrossButton("##rm", new Vector2(oobX[10] + shift + P(11), a.Y + RowH / 2),
+                    l.Added ? "take the added unit away" : "remove the unit (its undo stays here)") && !begin)
+                pendingEdit = l.Added ? setup.WithoutAdded(l.Text) : setup.With(new RemoveUnit(setup.NameAsMade(l.Text)));
         }
         else
         {
-            // ✕: taken off (an added one: taken away)
-            var xc = new Vector2(right - 7 * sc, y + 10 * sc);
-            ImGui.SetCursorScreenPos(xc - new Vector2(8, 9) * sc);
-            if (ImGui.InvisibleButton("##rm", new Vector2(16, 18) * sc) && !begin)
-                pendingEdit = l.Added ? setup.WithoutAdded(l.Text) : setup.With(new RemoveUnit(setup.NameAsMade(l.Text)));
-            bool hover = ImGui.IsItemHovered();
-            uint xcol = U(hover ? Hostile : Hex(0x56626C));
-            dl.AddLine(xc - new Vector2(3.5f, 3.5f) * sc, xc + new Vector2(3.5f, 3.5f) * sc, xcol, 1.2f * sc);
-            dl.AddLine(xc + new Vector2(-3.5f, 3.5f) * sc, xc + new Vector2(3.5f, -3.5f) * sc, xcol, 1.2f * sc);
-            if (hover)
-                ImGui.SetTooltip(l.Added ? "take the added unit away" : "remove the unit (its undo stays here)");
-            float rx = right - 22 * sc;
-            if (l.Right.Length > 0)
-            {
-                rx -= Width(UiFonts.SansSmall, 11.5f, l.Right);
-                Txt(UiFonts.SansSmall, 11.5f, new Vector2(rx, y + 3 * sc), Muted, l.Right);
-                rx -= 10 * sc;
-            }
-            // a division more, joining it
-            const string More = "+ division";
-            float dw = Width(UiFonts.SansSmall, 11.5f, More);
-            rx -= dw;
-            ImGui.SetCursorScreenPos(new Vector2(rx, y + 2 * sc));
-            if (ImGui.InvisibleButton("##division", new Vector2(dw, 18 * sc)) && !begin)
-                pendingAdd = (l.Side, l.Text);
-            Txt(UiFonts.SansSmall, 11.5f, new Vector2(rx, y + 3 * sc), ImGui.IsItemHovered() ? Hex(0xE6C77A) : Muted, More);
-            if (ImGui.IsItemHovered())
-                ImGui.SetTooltip($"add a unit to {l.Text}, on its station there");
-            rx -= 10 * sc;
-            if (l.Movable)
-            {
-                const string Move = "move";
-                float mw = Width(UiFonts.SansSmall, 11.5f, Move);
-                rx -= mw;
-                ImGui.SetCursorScreenPos(new Vector2(rx, y + 2 * sc));
-                if (ImGui.InvisibleButton("##move", new Vector2(mw, 18 * sc)) && !begin && setup.AddedHolding(l.Text) is { } a)
-                    StartPlacing(a.Unit, a.Unit.CourseDeg, a.Unit.Kn);
-                Txt(UiFonts.SansSmall, 11.5f, new Vector2(rx, y + 3 * sc), ImGui.IsItemHovered() ? Hex(0xE6C77A) : Brass, Move);
-                if (ImGui.IsItemHovered())
-                    ImGui.SetTooltip("place it again on the opening's map");
-                rx -= 10 * sc;
-            }
-            if (l.Chip.Length > 0)
-            {
-                float chw = TrackedWidth(UiFonts.SansBold, 10, l.Chip, 0.5f) + 10 * sc;
-                rx -= chw;
-                Chip(new Vector2(rx, y + 3 * sc), l.Chip, l.Bold ? Hex(0x3A2A12) : Hex(0x16283A), l.Bold ? Amber : Friend);
-                if (ImGui.IsMouseHoveringRect(new Vector2(rx, y + 3 * sc), new Vector2(rx + chw, y + 19 * sc)))
-                    ImGui.SetTooltip("his temper, added to the side's aggression (Standing orders)");
-                rx -= 6 * sc;
-            }
-            if (l.Added)
-            {
-                bool now = placing?.Unit.Name == l.Text;
-                string chip = now ? "PLACING…" : "ADDED";
-                rx -= TrackedWidth(UiFonts.SansBold, 10, chip, 0.5f) + 10 * sc;
-                Chip(new Vector2(rx, y + 3 * sc), chip, now ? Hex(0x3A2A12) : Hex(0x1E3320), now ? Amber : Ok);
-            }
+            const string Undo = "removed · undo";
+            float uw = Width(UiFonts.SansSmall, Undo);
+            if (Link("##undo", new Vector2(a.X + w - P(8) - uw, a.Y + P(2)), Undo, out _))
+                pendingEdit = setup.Without(new RemoveUnit(setup.NameAsMade(l.Text)).Key);
         }
         ImGui.PopID();
-        return 24 * sc;
     }
 
-    /// <summary>A design's class id in the pick, or -1.</summary>
-    int ClassOf(string design) => world.LoadIds is { } ids && ids.TryGetValue(design, out int id) ? id : -1;
-
-    /// <summary>A row: the ship to scale, how many and their names, the figures, the build, Change…; its height.</summary>
-    float ShipRow(int i, ShipLine l, Vector2 at, float w, float pxPerM)
+    /// <summary>A design's row: her twisty (her ships' names), name, drawn to scale, ◀ n ▶, figures, build, ▾ (the
+    /// picker). A click selects her.</summary>
+    void ClassRow(int i, ShipLine l, Vector2 a, float w, float shift, float pxPerM, bool selected, bool names, int n)
     {
         ImGui.PushID(i);
-        float h = Row(l, at, w, pxPerM);
-        ImGui.PopID();
-        return h;
-    }
-
-    float Row(ShipLine l, Vector2 at, float w, float pxPerM)
-    {
-        bool open = pickerRow == l;
-        float h = (l.Swapped ? 94 : 78) * sc;
-        Box(at, at + new Vector2(w, h), open ? Brass with { W = 0.06f } : new Vector4(1, 1, 1, 0.015f), open || l.Swapped ? BrassDark : LineC, 3);
+        var (click, hover) = HitRow("##row", a, new Vector2(w, RowH));
+        var key = (l.Side, l.Unit.Name, l.Design);
+        float x = a.X + P(6) + (l.Depth + 1) * P(14);
+        if (click)
+        {
+            if (ImGui.GetMousePos().X < x + P(12) && !namesToggled.Remove(key))
+                namesToggled.Add(key);
+            selKey = key;
+        }
+        RowBg(a, w, RowH, n, selected, hover);
+        Twisty(new Vector2(x + P(4), a.Y + RowH / 2), names);
+        x += P(12);
+        float scaleX = oobX[1] + shift;
+        dl.PushClipRect(new Vector2(x, a.Y), new Vector2(scaleX - P(4), a.Y + RowH), true);
+        Txt(UiFonts.Sans, new Vector2(x, Mid(UiFonts.Sans, a.Y, RowH)), selected ? T.Brass : T.Bright, l.Text);
         if (l.Swapped)
-            dl.AddRectFilled(at, at + new Vector2(3 * sc, h), U(Brass));
+            Txt(UiFonts.SansSmall, new Vector2(x + Width(UiFonts.Sans, l.Text) + P(6), Mid(UiFonts.SansSmall, a.Y, RowH)), T.Muted, l.Was);
+        dl.PopClipRect();
         int id = ClassOf(l.Design);
-        Thumb(id, at + new Vector2(10 * sc + ThumbW * sc / 2, 30 * sc), pxPerM, l.Ships.Count > 0 ? 1 : 0.35f);
-        // − n +, the design, the names (the struck after them)
-        float ix = at.X + (20 + ThumbW) * sc, iy = at.Y + 10 * sc;
-        float cw = Stepper(new Vector2(ix, iy), l.Count, l.Fewer && !begin, !begin, out int by);
+        dl.PushClipRect(new Vector2(scaleX, a.Y), new Vector2(oobX[2] + shift, a.Y + RowH), true);
+        Thumb(id, new Vector2(scaleX + P(OobCols[9]) / 2, a.Y + RowH / 2), pxPerM, l.Ships.Count > 0 ? 1 : 0.35f);
+        dl.PopClipRect();
+        Stepper("##n", new Vector2(oobX[2] + shift + P(2), a.Y + P(2.5f)), l.Count, P(26), l.Fewer, true, out int by);
         if (by != 0)
-            pendingEdit = setup.Resize(setup.NameAsMade(l.Unit.Name), l.Design, by);
-        Txt(UiFonts.Sans, 13, new Vector2(ix + cw + 8 * sc, iy), Bright, l.Text);
-        float namesW = at.X + w - 92 * sc - ix;
-        if (Math.Abs(namesW - l.NamesWidth) > 0.5f)
-        {
-            l.NamesWidth = namesW;
-            l.NamesShown = Clip(UiFonts.SansSmall, 11, l.Names, namesW);
-            float left = namesW - Width(UiFonts.SansSmall, 11, l.NamesShown + (l.Names.Length > 0 ? ", " : ""));
-            l.StruckShown = l.Struck.Length == 0 || left < 30 * sc ? "" : Clip(UiFonts.SansSmall, 11, l.Struck, left);
-            bool whole = ReferenceEquals(l.NamesShown, l.Names);
-            l.MarkX = [.. l.Marks.Select(m => whole || m.End + 2 < l.NamesShown.Length - 1 ? Width(UiFonts.SansSmall, 11, l.Names[..m.End]) : float.NaN)];
-        }
-        Txt(UiFonts.SansSmall, 11, new Vector2(ix, iy + 22 * sc), Muted, l.NamesShown);
-        // the captains' marks, each in the gap after her name: bold up, timid down
-        for (int k = 0; k < l.Marks.Length; k++)
-        {
-            if (float.IsNaN(l.MarkX[k]))
-                continue;
-            var c = new Vector2(ix + l.MarkX[k] + MarkGap / 2 * sc, iy + 29 * sc);
-            if (l.Marks[k].Bold)
-                dl.AddTriangleFilled(c + new Vector2(-3.5f, 2.5f) * sc, c + new Vector2(0, -3.5f) * sc, c + new Vector2(3.5f, 2.5f) * sc, U(Amber));
-            else
-                dl.AddTriangleFilled(c + new Vector2(-3.5f, -2.5f) * sc, c + new Vector2(3.5f, -2.5f) * sc, c + new Vector2(0, 3.5f) * sc, U(Friend));
-        }
-        if (l.StruckShown.Length > 0)
-        {
-            float sx = ix + (l.Names.Length > 0 ? Width(UiFonts.SansSmall, 11, l.NamesShown + ", ") : 0);
-            var dim = Hex(0x56626C);
-            if (l.Names.Length > 0)
-                Txt(UiFonts.SansSmall, 11, new Vector2(sx - Width(UiFonts.SansSmall, 11, ", "), iy + 22 * sc), Muted, ",");
-            Txt(UiFonts.SansSmall, 11, new Vector2(sx, iy + 22 * sc), dim, l.StruckShown);
-            dl.AddLine(new Vector2(sx, iy + 29.5f * sc), new Vector2(sx + Width(UiFonts.SansSmall, 11, l.StruckShown), iy + 29.5f * sc), U(dim));
-        }
-        ImGui.SetCursorScreenPos(new Vector2(ix, iy + 20 * sc));
-        if (ImGui.InvisibleButton("##names", new Vector2(namesW, 16 * sc)) && !begin && l.NameList.Length > 0)
-            ImGui.OpenPopup("##captains");
-        if (ImGui.IsItemHovered())
-            ImGui.SetTooltip(l.NamesTip);
-        CaptainsPopup(l);
-        // the figures, once compiled; what it was
-        float fy = at.Y + (l.Swapped ? 58 : 56) * sc;
+            pendingEdit = setup.Resize(setup.NameAsMade(l.Unit.Name), l.Design, Math.Sign(by));
+        float my = Mid(UiFonts.Mono, a.Y, RowH);
         if (FiguresOf(id) is { } f)
-            Txt(UiFonts.Mono, 12, new Vector2(at.X + 10 * sc, fy), Text, f.Line);
-        else if (id >= 0 && world.Classes.IsReady(id) && world.Classes.ErrorOf(id) is { } err)
-            Txt(UiFonts.SansSmall, 11.5f, new Vector2(at.X + 10 * sc, fy), Hostile, Clip(UiFonts.SansSmall, 11.5f, err, w - 20 * sc));
-        if (l.Swapped)
-            Txt(UiFonts.SansSmall, 11, new Vector2(at.X + 10 * sc, at.Y + 76 * sc), Brass, l.Was);
-        // Change…, and the build under it
-        if (Button("##change", "Change…", new Vector2(at.X + w - 72 * sc, at.Y + 10 * sc), new Vector2(62 * sc, 22 * sc), px: 11.5f) && !begin)
+        {
+            TxtR(UiFonts.Mono, oobX[4] + shift - P(6), my, T.Bright, f.Displacement);
+            TxtR(UiFonts.Mono, oobX[5] + shift - P(6), my, T.Bright, f.Speed);
+            Txt(UiFonts.Mono, new Vector2(oobX[5] + shift + P(4), my), T.Text, f.Main);
+            Txt(UiFonts.Mono, new Vector2(oobX[6] + shift + P(4), my), T.Text, f.Second);
+            TxtR(UiFonts.Mono, oobX[8] + shift - P(6), my, T.Bright, f.Belt);
+            TxtR(UiFonts.Mono, oobX[9] + shift - P(6), my, T.Bright, f.Reach);
+        }
+        BuildState(id, new Vector2(oobX[9] + shift + P(4), a.Y));
+        // ▾: the design picker
+        var dc = new Vector2(oobX[10] + shift + P(11), a.Y + RowH / 2);
+        ImGui.SetCursorScreenPos(dc - new Vector2(P(8), P(9)));
+        if (ImGui.InvisibleButton("##change", new Vector2(P(16), P(18))) && !begin)
             OpenPicker(l);
-        BuildState(id, new Vector2(at.X + w - 66 * sc, at.Y + 38 * sc));
-        return h;
+        bool ch = ImGui.IsItemHovered();
+        Arrow(dc, 1, P(3.5f), ch ? T.Bright : T.Muted);
+        if (ch)
+            ImGui.SetTooltip("change the design… (D)");
+        if (hover && !ch && l.NamesTip.Length > 0)
+            ImGui.SetTooltip(l.NamesTip);
+        ImGui.PopID();
     }
 
-    /// <summary>A − n + (the mockup's stepper): its width; <paramref name="by"/> the click's change, else 0.</summary>
-    float Stepper(Vector2 at, string n, bool fewer, bool more, out int by)
+    /// <summary>A ship of a row, by name: her captain's temper marked (bold ▲ amber, timid ▼ blue); then the unnamed; then
+    /// the struck, dim and crossed out. A click selects her design's row.</summary>
+    void ShipRow(int i, int k, ShipLine l, Vector2 a, float w, int n)
     {
-        by = 0;
-        float bw = 16 * sc, nw = Width(UiFonts.Mono, 12, n) + 8 * sc, h = 18 * sc, w = 2 * bw + nw;
-        Box(at, at + new Vector2(w, h), new Vector4(0, 0, 0, 0.25f), EdgeC, 2);
-        Txt(UiFonts.Mono, 12, at + new Vector2(bw + 4 * sc, 1.5f * sc), Brass, n);
-        for (int k = 0; k < 2; k++)
+        ImGui.PushID(i * 1024 + k);
+        var (click, hover) = HitRow("##ship", a, new Vector2(w, RowH));
+        ImGui.PopID();
+        if (click)
+            selKey = (l.Side, l.Unit.Name, l.Design);
+        RowBg(a, w, RowH, n, hover: hover);
+        float x = a.X + P(6) + (l.Depth + 2) * P(14) + P(16);
+        float ty = Mid(UiFonts.Sans, a.Y, RowH);
+        if (k < l.Captains.Length)
         {
-            var a = at + new Vector2(k == 0 ? 0 : bw + nw, 0);
-            bool on = k == 0 ? fewer : more;
-            ImGui.SetCursorScreenPos(a);
-            if (ImGui.InvisibleButton(k == 0 ? "##fewer" : "##more", new Vector2(bw, h)) && on)
-                by = k == 0 ? -1 : 1;
-            bool hover = on && ImGui.IsItemHovered();
-            if (hover)
-                dl.AddRectFilled(a, a + new Vector2(bw, h), U(new Vector4(1, 1, 1, 0.08f)));
-            uint col = U(!on ? Hex(0x3B4752) : hover ? Bright : Muted);
-            var c = a + new Vector2(bw, h) / 2;
-            dl.AddLine(c - new Vector2(3.5f * sc, 0), c + new Vector2(3.5f * sc, 0), col, 1.2f * sc);
-            if (k == 1)
-                dl.AddLine(c - new Vector2(0, 3.5f * sc), c + new Vector2(0, 3.5f * sc), col, 1.2f * sc);
+            var c = l.Captains[k];
+            Txt(UiFonts.Sans, new Vector2(x, ty), T.Text, c.Name);
+            if (c.Mark.Length > 0)
+                Mark(new Vector2(x + Width(UiFonts.Sans, c.Name) + P(8), a.Y), c.Temper, c.Mark);
+            return;
         }
-        return w;
+        k -= l.Captains.Length;
+        if (l.Unnamed.Length > 0 && k == 0)
+        {
+            Txt(UiFonts.SansSmall, new Vector2(x, Mid(UiFonts.SansSmall, a.Y, RowH)), T.Muted, l.Unnamed);
+            return;
+        }
+        k -= l.Unnamed.Length > 0 ? 1 : 0;
+        var dim = T.Muted with { W = 0.7f };
+        string s = l.StruckList[k];
+        Txt(UiFonts.Sans, new Vector2(x, ty), dim, s);
+        HLine(x, x + Width(UiFonts.Sans, s), a.Y + RowH / 2, dim);
+        if (k == 0)
+            Txt(UiFonts.SansSmall, new Vector2(x + Width(UiFonts.Sans, s) + P(8), Mid(UiFonts.SansSmall, a.Y, RowH)), T.Muted, "taken off: the row's stepper puts her back");
+    }
+
+    /// <summary>A captain's temper by her name: ▲ bold amber, ▼ timid blue, and the figure.</summary>
+    void Mark(Vector2 at, double temper, string figure)
+    {
+        var col = temper > 0 ? T.Amber : T.Blue;
+        Arrow(new Vector2(at.X + P(4), at.Y + RowH / 2), temper > 0 ? 3 : 1, P(4), col);
+        Txt(UiFonts.Mono, new Vector2(at.X + P(12), Mid(UiFonts.Mono, at.Y, RowH)), col, figure);
     }
 
     /// <summary>A class's build in a word: building, its art coming, ready, or failed.</summary>
@@ -495,20 +563,178 @@ public sealed unsafe partial class LaunchScene
     {
         if (id < 0)
             return;
-        var (word, col) = !world.Classes.IsReady(id) ? ("building", Muted)
-            : world.Classes.ErrorOf(id) != null ? ("failed", Hostile)
-            : art.Get(id) == null ? ("art…", Amber) : ("ready", Ok);
-        dl.AddCircleFilled(at + new Vector2(3 * sc, 7.5f * sc), 3 * sc, U(col), 10);
-        Txt(UiFonts.SansSmall, 11, at + new Vector2(10 * sc, 0), Muted, word);
+        var (word, col) = !world.Classes.IsReady(id) ? ("building", T.Muted)
+            : world.Classes.ErrorOf(id) != null ? ("failed", T.Amber)
+            : art.Get(id) == null ? ("art…", T.Muted) : ("ready", T.Ok);
+        dl.AddCircleFilled(at + new Vector2(P(3), RowH / 2), P(3), U(col), 10);
+        Txt(UiFonts.SansSmall, new Vector2(at.X + P(10), Mid(UiFonts.SansSmall, at.Y, RowH)), col == T.Ok ? T.Ok : T.Muted, word);
+    }
+
+    // ------------------------------------------------------------------ the selected class
+
+    sealed class SelText
+    {
+        public ShipLine? Of;
+        public int Id = -2;
+        public bool Figured;
+        public string File = "", Source = "", Length = "", Year = "";
+        public (string Label, string Value, string Note)[] Rows = [];
+    }
+
+    readonly SelText selText = new();
+
+    void MakeSel(ShipLine l, int id, Figures? f)
+    {
+        if (selText.Of == l && selText.Id == id && selText.Figured == (f != null))
+            return;
+        (selText.Of, selText.Id, selText.Figured) = (l, id, f != null);
+        var info = InfoOf(l.Design);
+        selText.File = info != null ? Path.GetFileName(info.Path) : l.Design + ".json";
+        selText.Source = info == null ? "" : info.Yours ? "your design" : written!.DesignNames().Contains(l.Design, StringComparer.OrdinalIgnoreCase) ? "scenario design" : "shipped design";
+        selText.Year = info is { Year: > 0 } ? $"tech {info.Year}" : "";
+        selText.Length = f != null ? $"{f.Profile.LengthM:0.0} m oa" : "";
+        var rows = new List<(string, string, string)>();
+        if (f != null)
+        {
+            rows.Add(("Displacement", f.Tonnes, "standard"));
+            rows.Add(("Speed", f.Knots, ""));
+            rows.Add(("Main", f.Main == "—" ? "—" : f.Main + " mm", ""));
+            rows.Add(("Secondary", f.Second, ""));
+            rows.Add(("Belt", f.BeltMm > 0 ? f.Belt + " mm" : "—", "at the waterline"));
+            rows.Add(("Reach", f.Profile.MainReachM > 0 ? f.Reach + " km" : "—", "the main guns'"));
+        }
+        if (l.Swapped)
+            rows.Add(("Changed", l.Was, ""));
+        selText.Rows = [.. rows];
+    }
+
+    void SelectedClass(Vector2 a, Vector2 size)
+    {
+        var l = Sel;
+        float w = size.X;
+        if (l == null)
+        {
+            SubHeader(a, w, "SELECTED CLASS");
+            return;
+        }
+        int id = ClassOf(l.Design);
+        var f = FiguresOf(id);
+        MakeSel(l, id, f);
+        float right = SubHeader(a, w, "SELECTED CLASS");
+        float nx = a.X + P(14) + Width(UiFonts.SansSmall, "SELECTED CLASS");
+        float srcX = right - Width(UiFonts.SansSmall, selText.Source);
+        dl.PushClipRect(new Vector2(nx, a.Y), new Vector2(srcX - P(8), a.Y + RowH), true);
+        Txt(UiFonts.SansBold, new Vector2(nx, Mid(UiFonts.SansBold, a.Y, RowH)), T.Bright, l.Text);
+        Txt(UiFonts.SansSmall, new Vector2(nx + Width(UiFonts.SansBold, l.Text) + P(8), Mid(UiFonts.SansSmall, a.Y, RowH)), T.Muted, selText.File);
+        dl.PopClipRect();
+        Txt(UiFonts.SansSmall, new Vector2(srcX, Mid(UiFonts.SansSmall, a.Y, RowH)), T.Muted, selText.Source);
+
+        ImGui.SetCursorScreenPos(a + new Vector2(0, RowH));
+        var keep = dl;
+        float y = 0;
+        if (ImGui.BeginChild("##selclass", new Vector2(w, size.Y - RowH), ImGuiChildFlags.None, ImGuiWindowFlags.None))
+        {
+            dl = ImGui.GetWindowDrawList();
+            var o = ImGui.GetCursorScreenPos();
+            float cw = ImGui.GetContentRegionAvail().X;
+            y = o.Y;
+            // her drawing, to scale on the plan ground, her length over her
+            float planH = P(104);
+            var p0 = new Vector2(o.X, y);
+            dl.AddRectFilled(p0, p0 + new Vector2(cw, planH), U(T.Plan));
+            HLine(p0.X, p0.X + cw, p0.Y + planH - 1, T.Edge);
+            if (id >= 0 && world.Classes.TryGet(id) is { } c)
+            {
+                float len = (float)c.Motion.LengthM;
+                float k = Math.Min(P(4), (cw - P(40)) / Math.Max(len, 1));
+                var mid = new Vector2(p0.X + cw / 2, p0.Y + planH / 2 + P(10));
+                Thumb(id, mid, k);
+                float x0 = mid.X - len * k / 2, x1 = mid.X + len * k / 2, ly = p0.Y + P(16);
+                uint line = U(T.PlanLine with { W = 0.7f });
+                dl.AddLine(new Vector2(x0, ly), new Vector2(x1, ly), line);
+                dl.AddLine(new Vector2(x0, ly - P(4)), new Vector2(x0, ly + P(4)), line);
+                dl.AddLine(new Vector2(x1, ly - P(4)), new Vector2(x1, ly + P(4)), line);
+                if (selText.Length.Length > 0)
+                    Tag(new Vector2(mid.X - TagSize(selText.Length).X / 2, ly - P(8)), selText.Length);
+            }
+            TxtR(UiFonts.MonoSmall, p0.X + cw - P(8), p0.Y + planH - P(16), T.PlanLine, "to scale");
+            y += planH;
+            // her particulars
+            var h = new Vector2(o.X, y);
+            Head(h, cw);
+            float vx = o.X + P(200);
+            HeadCell(h, o.X + P(6), "PARTICULAR");
+            HeadCell(h, vx, "VALUE", right: true);
+            HeadCell(h, vx + P(12), "NOTE");
+            y += HeadH;
+            if (selText.Rows.Length == 0)
+            {
+                Txt(UiFonts.SansSmall, new Vector2(o.X + P(6), Mid(UiFonts.SansSmall, y, RowH)), T.Muted, id >= 0 && world.Classes.ErrorOf(id) is { } err ? err : "her class is building");
+                y += RowH;
+            }
+            for (int r = 0; r < selText.Rows.Length; r++)
+            {
+                var (label, value, note) = selText.Rows[r];
+                var ra = new Vector2(o.X, y);
+                RowBg(ra, cw, RowH, r);
+                Txt(UiFonts.Sans, new Vector2(ra.X + P(6), Mid(UiFonts.Sans, ra.Y, RowH)), T.Muted, label);
+                if (label == "Changed")
+                    Txt(UiFonts.SansSmall, new Vector2(vx - P(110), Mid(UiFonts.SansSmall, ra.Y, RowH)), T.Text, value);
+                else
+                    TxtR(UiFonts.Mono, vx, Mid(UiFonts.Mono, ra.Y, RowH), T.Bright, value);
+                Txt(UiFonts.SansSmall, new Vector2(vx + P(12), Mid(UiFonts.SansSmall, ra.Y, RowH)), T.Muted, note);
+                y += RowH;
+            }
+            // the design's buttons
+            float right2 = SubHeader(new Vector2(o.X, y), cw, "DESIGN");
+            if (selText.Year.Length > 0)
+                RightNote(right2, y, RowH, selText.Year);
+            y += RowH + P(6);
+            const string ChangeL = "Change design…", CopyL = "Edit a copy in the designer";
+            if (Button("##seldesign", new Vector2(o.X + P(6), y), ChangeL, "D", enabled: !begin))
+                OpenPicker(l);
+            if (Button("##selcopy", new Vector2(o.X + P(10) + ButtonWidth(ChangeL, "D"), y), CopyL, "E", enabled: !begin && EditCopy != null))
+                Copy(InUseCandidate(l));
+            y += P(28);
+            // her captains
+            SubHeader(new Vector2(o.X, y), cw, "CAPTAINS", "added to the admiral's temper");
+            y += RowH;
+            if (l.Captains.Length == 0)
+            {
+                Txt(UiFonts.SansSmall, new Vector2(o.X + P(6), Mid(UiFonts.SansSmall, y, RowH)), T.Muted, "Her captains are unnamed: a named ship's captain takes a temper.");
+                y += RowH;
+            }
+            float sx = o.X + cw - P(6) - (2 * P(13) + P(44) + P(4));
+            for (int k = 0; k < l.Captains.Length; k++)
+            {
+                var cap = l.Captains[k];
+                var ra = new Vector2(o.X, y);
+                RowBg(ra, cw, RowH, k);
+                Txt(UiFonts.Sans, new Vector2(ra.X + P(6), Mid(UiFonts.Sans, ra.Y, RowH)), T.Text, cap.Name);
+                if (Math.Abs(cap.Temper - cap.Written) > 1e-9)
+                    TxtR(UiFonts.SansSmall, sx - P(8), Mid(UiFonts.SansSmall, ra.Y, RowH), T.Muted, "changed");
+                ImGui.PushID(k);
+                Stepper("##cap", new Vector2(sx, ra.Y + P(2.5f)), cap.Value, P(44), cap.Temper > -1 + 1e-9, cap.Temper < 1 - 1e-9, out int by);
+                ImGui.PopID();
+                if (by != 0)
+                    pendingEdit = setup.Temper(written!, cap.Name, Math.Clamp(Math.Round((cap.Temper + by * 0.05) * 20) / 20, -1, 1));
+                y += RowH;
+            }
+            y += P(4) - o.Y;
+        }
+        ImGui.SetCursorPos(new Vector2(0, Math.Max(y, 0)));
+        ImGui.Dummy(new Vector2(1, 0));
+        ImGui.EndChild();
+        dl = keep;
     }
 
     /// <summary>Text cut to a width with an ellipsis (the string itself when it fits).</summary>
-    static string Clip(ImFontPtr font, float px, string s, float width)
+    static string Clip(ImFontPtr font, string s, float width)
     {
-        if (Width(font, px, s) <= width)
+        if (Width(font, s) <= width)
             return s;
         int n = s.Length;
-        while (n > 0 && Width(font, px, s[..n] + "…") > width)
+        while (n > 0 && Width(font, s[..n] + "…") > width)
             n--;
         return s[..n].TrimEnd(' ', ',') + "…";
     }

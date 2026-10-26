@@ -2,6 +2,7 @@ using System.Numerics;
 using System.Text;
 using Fleetwright.Sim.Missions;
 using ImGuiNET;
+using T = Fleetwright.Designer.DesignerTheme;
 
 namespace Fleetwright.Map;
 
@@ -36,22 +37,31 @@ public sealed unsafe partial class LaunchScene
             return;
         if (!ImGui.IsPopupOpen(Id))
             ImGui.OpenPopup(Id);
+        // a box over the screen (the name must be typed before it can be saved): a title strip, the name, the buttons
         var vp = ImGui.GetMainViewport();
+        float w = P(480);
         ImGui.SetNextWindowPos(vp.GetCenter(), ImGuiCond.Always, new Vector2(0.5f, 0.5f));
-        ImGui.SetNextWindowSize(new Vector2(480 * sc, 0));
-        Designer.DesignerTheme.Push();
-        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(18, 14) * sc);
+        ImGui.SetNextWindowSize(new Vector2(w, 0));
+        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(P(8), TitleH + P(8)));
+        ImGui.PushStyleVar(ImGuiStyleVar.PopupRounding, 0);
+        ImGui.PushStyleColor(ImGuiCol.PopupBg, T.Panel);
         bool open = ImGui.BeginPopupModal(Id, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings);
-        ImGui.PopStyleVar();
+        ImGui.PopStyleColor();
+        ImGui.PopStyleVar(2);
         if (!open)
-        {
-            Designer.DesignerTheme.Pop();
             return;
-        }
-        ImGui.TextColored(Brass, "SAVE SETUP");
-        ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + 444 * sc);
-        ImGui.TextDisabled($"{written!.Name} and its {setup.Changes.Count} change{(setup.Changes.Count == 1 ? "" : "s")}, as a scenario file in My Games/Fleetwright/Setups: listed under Your setups, and shared by passing the file round.");
+        var keep = dl;
+        dl = ImGui.GetWindowDrawList();
+        var o = ImGui.GetWindowPos();
+        dl.AddRectFilledMultiColor(o, o + new Vector2(w, TitleH), U(T.TitleTop), U(T.TitleTop), U(T.TitleBottom), U(T.TitleBottom));
+        HLine(o.X, o.X + w, o.Y + TitleH, T.Edge);
+        Txt(UiFonts.SansBold, new Vector2(o.X + P(7), Mid(UiFonts.SansBold, o.Y, TitleH)), T.Brass, "SAVE SETUP");
+        Txt(UiFonts.SansSmall, new Vector2(o.X + P(15) + Width(UiFonts.SansBold, "SAVE SETUP"), Mid(UiFonts.SansSmall, o.Y, TitleH)), T.Muted, "My Games/Fleetwright/Setups");
+        ImGui.PushFont(UiFonts.SansSmall);
+        ImGui.PushTextWrapPos(w - P(8));
+        ImGui.TextDisabled($"{written!.Name} and its {setup.Changes.Count} change{(setup.Changes.Count == 1 ? "" : "s")}, as a scenario file: listed under Your setups, shared by passing the file round.");
         ImGui.PopTextWrapPos();
+        ImGui.PopFont();
         ImGui.Spacing();
         ImGui.SetNextItemWidth(-1);
         if (saveFocus)
@@ -61,17 +71,15 @@ public sealed unsafe partial class LaunchScene
         }
         bool save = ImGui.InputText("##setupname", ref saveName, 96, ImGuiInputTextFlags.EnterReturnsTrue);
         if (saveError != null)
-            ImGui.TextColored(Hostile, saveError);
+            ImGui.TextColored(T.Amber, saveError);
         ImGui.Spacing();
-        float bw = 110 * sc;
-        ImGui.SetCursorPosX(ImGui.GetWindowWidth() - 18 * sc - 2 * bw - ImGui.GetStyle().ItemSpacing.X);
-        bool cancel = ImGui.Button("Cancel", new Vector2(bw, 26 * sc)) || ImGui.IsKeyPressed(ImGuiKey.Escape);
-        ImGui.SameLine();
-        ImGui.PushStyleColor(ImGuiCol.Button, Brass);
-        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, Hex(0xE6C77A));
-        ImGui.PushStyleColor(ImGuiCol.Text, Hex(0x111111));
-        save |= ImGui.Button("Save", new Vector2(bw, 26 * sc));
-        ImGui.PopStyleColor(3);
+        var by = ImGui.GetCursorScreenPos();
+        float sw = ButtonWidth("Save", "Enter", primary: true), cw = ButtonWidth("Cancel", "Esc");
+        bool cancel = Button("##savecancel", new Vector2(o.X + w - P(8) - sw - P(4) - cw, by.Y), "Cancel", "Esc") || ImGui.IsKeyPressed(ImGuiKey.Escape);
+        save |= Button("##savego", new Vector2(o.X + w - P(8) - sw, by.Y), "Save", "Enter", primary: true, enabled: saveName.Trim().Length > 0);
+        ImGui.SetCursorScreenPos(by + new Vector2(0, P(20)));
+        ImGui.Dummy(new Vector2(1, P(2)));
+        dl = keep;
         if (save && saveName.Trim().Length > 0)
         {
             try
@@ -90,7 +98,6 @@ public sealed unsafe partial class LaunchScene
             ImGui.CloseCurrentPopup();
         }
         ImGui.EndPopup();
-        Designer.DesignerTheme.Pop();
     }
 
     void Save(string name)

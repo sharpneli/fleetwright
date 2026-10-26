@@ -37,6 +37,39 @@ public static class DesignerTheme
     /// <summary>The plan and profile's blueprint ground and its lines.</summary>
     public static readonly Vector4 Plan = Hex(0x14243A);
     public static readonly Vector4 PlanLine = Hex(0x9CC2E2);
+    /// <summary>The menu bar and the status bar.</summary>
+    public static readonly Vector4 MenuBar = Hex(0x161B20);
+    /// <summary>Buttons and segmented controls at rest, hovered, and their border.</summary>
+    public static readonly Vector4 Button = Hex(0x2E3842);
+    public static readonly Vector4 ButtonHover = Hex(0x45525E);
+    public static readonly Vector4 ButtonEdge = Hex(0x3A4651);
+    /// <summary>A drop-down's square ▼ box.</summary>
+    public static readonly Vector4 DropBox = Hex(0x56636F);
+    /// <summary>A stepper's arrow boxes and their edge.</summary>
+    public static readonly Vector4 StepBox = Hex(0x0B0F12);
+    public static readonly Vector4 StepEdge = Hex(0x2A333C);
+    /// <summary>The selected row's warm tint (a 3 px brass bar on its left edge with it).</summary>
+    public static readonly Vector4 Selected = Hex(0x2A2A1E);
+    /// <summary>A row under the pointer.</summary>
+    public static readonly Vector4 Hover = Hex(0x252E36);
+    /// <summary>A work surface's tags: their ground, border and text; the border is a kbd chip's too, its text the chip's.</summary>
+    public static readonly Vector4 TagBg = Hex(0x0A1016, 0.82f);
+    public static readonly Vector4 TagEdge = Hex(0x4A5764);
+    public static readonly Vector4 TagText = Hex(0xCFE3F3);
+    public static readonly Vector4 KeyText = Hex(0xAEB9C3);
+    /// <summary>The enemy, in figures and marks only (<c>MapPalette.Hostile</c>); never a refusal.</summary>
+    public static readonly Vector4 Hostile = Hex(0xE2685C);
+    /// <summary>Status chips' and the margin box's grounds and borders: ready, a consequence, friend.</summary>
+    public static readonly Vector4 OkTint = Hex(0x17261A);
+    public static readonly Vector4 OkEdge = Hex(0x2F5A31);
+    public static readonly Vector4 AmberTint = Hex(0x33261A);
+    public static readonly Vector4 AmberEdge = Hex(0x7A5A2C);
+    public static readonly Vector4 BlueTint = Hex(0x16263A);
+    /// <summary>A friend chip's border; the blue-filled screen tab.</summary>
+    public static readonly Vector4 BlueEdge = Hex(0x2F5E8E);
+    /// <summary>The sides' shares in a ledger bar: friend, enemy.</summary>
+    public static readonly Vector4 FriendBar = Hex(0x3F6D9E);
+    public static readonly Vector4 HostileBar = Hex(0x94473E);
 
     /// <summary>Armour thin to thick.</summary>
     public static readonly Vector4[] ArmourRamp = [Hex(0xF3E3A1), Hex(0xE9B66B), Hex(0xDE9455), Hex(0xCC6F43), Hex(0xB24E36), Hex(0x8E3328)];
@@ -84,16 +117,16 @@ public static class DesignerTheme
         C(ImGuiCol.WindowBg, Ground);
         C(ImGuiCol.ChildBg, Vector4.Zero);
         C(ImGuiCol.PopupBg, Hex(0x1F272E));
-        C(ImGuiCol.Border, Hex(0x3A4651));
+        C(ImGuiCol.Border, ButtonEdge);
         C(ImGuiCol.Text, Text);
         C(ImGuiCol.TextDisabled, Muted);
         C(ImGuiCol.FrameBg, Inset);
         C(ImGuiCol.FrameBgHovered, Hex(0x1A2229));
         C(ImGuiCol.FrameBgActive, Hex(0x1A2229));
-        C(ImGuiCol.Button, Hex(0x2E3842));
-        C(ImGuiCol.ButtonHovered, Hex(0x45525E));
-        C(ImGuiCol.ButtonActive, Hex(0x56636F));
-        C(ImGuiCol.Header, Hex(0x2E3842));
+        C(ImGuiCol.Button, Button);
+        C(ImGuiCol.ButtonHovered, ButtonHover);
+        C(ImGuiCol.ButtonActive, DropBox);
+        C(ImGuiCol.Header, Button);
         C(ImGuiCol.HeaderHovered, Hex(0x38434E));
         C(ImGuiCol.HeaderActive, Hex(0x45525E));
         C(ImGuiCol.CheckMark, Brass);
@@ -108,7 +141,7 @@ public static class DesignerTheme
         C(ImGuiCol.TableBorderStrong, Edge);
         C(ImGuiCol.TableHeaderBg, HeaderBg);
         C(ImGuiCol.TextSelectedBg, Hex(0x5B9BE0, 0.35f));
-        C(ImGuiCol.MenuBarBg, Hex(0x161B20));
+        C(ImGuiCol.MenuBarBg, MenuBar);
         C(ImGuiCol.ModalWindowDimBg, Hex(0x040608, 0.55f));
         V(ImGuiStyleVar.FrameRounding, 0);
         V(ImGuiStyleVar.ChildRounding, 0);

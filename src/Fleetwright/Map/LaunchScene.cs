@@ -1,7 +1,6 @@
 using System.Globalization;
 using System.Numerics;
 using System.Text.Json;
-using Fleetwright.Designer;
 using Fleetwright.Gpu;
 using Fleetwright.Sim;
 using Fleetwright.Sim.Core;
@@ -9,21 +8,23 @@ using Fleetwright.Sim.Missions;
 using ImGuiNET;
 using SDL;
 using static SDL.SDL3;
+using T = Fleetwright.Designer.DesignerTheme;
 
 namespace Fleetwright.Map;
 
-/// <summary>The scenario launch (docs/map-ui/launch.md L1, the mockup launch.html): the app's first screen, open before
-/// any ship is built. The scenarios at the left, the picked one's header (its date, place and day, the brief), a card a
-/// side and Watch, the opening on the map, what each side has and wants, and at the foot the load and Begin. Picking a
-/// scenario or a side asks for its classes and places its world at once (<see cref="WorldSession.Select(Scenario, string?)"/>),
-/// so reading the brief covers the build; Begin swaps the world in (<see cref="WorldSession.Begin"/>) and
-/// <see cref="Begun"/> shows the map. What the player changes is a setup (<see cref="ScenarioSetup"/>, L2): the
-/// scenario as written plus its changes, listed with an undo each, saved as a scenario file in My Games/Fleetwright/
-/// Setups and listed under Your setups. The body's first column is each side's ships (L3, <c>LaunchScene.Ships.cs</c>),
-/// a design changed by the picker (<c>LaunchScene.Picker.cs</c>); the second the standing orders (L4,
-/// <c>LaunchScene.Orders.cs</c>), the third the conditions and the day, then the changes (L5,
-/// <c>LaunchScene.Conditions.cs</c>). Its strings are made when the pick changes, so a frame allocates nothing but the
-/// load's line while it builds.</summary>
+/// <summary>The scenario launch (docs/map-ui/launch.md L1, in the UI language of docs/ui-language.md and the mockup
+/// launch-bureau.html): the app's first screen, open before any ship is built, laid out as a workstation like the
+/// designer. A menu bar and a resource bar of the picked scenario's figures; at the left the scenarios as an outliner by
+/// era over Your setups; in the centre the opening drawn as a plan (<c>LaunchScene.Opening.cs</c>) over three numbered
+/// tabs: the order of battle (L3, <c>LaunchScene.Ships.cs</c>, a design changed by the picker in
+/// <c>LaunchScene.Picker.cs</c>), the standing orders (L4, <c>LaunchScene.Orders.cs</c>), the conditions, the day and the
+/// changes (L5, <c>LaunchScene.Conditions.cs</c>); at the right Play as, the strength ledger, the brief, the remarks and
+/// the Begin box; a status bar of keys. Picking a scenario or a side asks for its classes and places its world at once
+/// (<see cref="WorldSession.Select(Scenario, string?)"/>), so reading the brief covers the build; Begin swaps the world in
+/// (<see cref="WorldSession.Begin"/>) and <see cref="Begun"/> shows the map. What the player changes is a setup
+/// (<see cref="ScenarioSetup"/>, L2): the scenario as written plus its changes, listed with an undo each, saved as a
+/// scenario file in My Games/Fleetwright/Setups and listed under Your setups. Its strings are made when the pick changes,
+/// so a frame allocates nothing but the load's line while it builds.</summary>
 public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
 {
     readonly WorldSession world;
@@ -41,17 +42,14 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         public string? Error;
         public bool Test, Opened, Saved;   // Saved: a setup of the player's, in the setups folder
         public DateTime Modified;
-        public string Name = "", Date = "", Classes = "", When = "";
-        public (string Name, string Count)[] Sides = [];
-        public int Year, Ships;
+        public string Name = "", When = "", Era = "", Ships = "", Year = "—", Of = "";   // Of: a setup's scenario
+        public string[] Ensigns = [];
+        public int StartYear, ShipCount;
     }
 
     readonly List<Entry> entries = [];
     int pick = -1;
     int side;   // the player's side, -1 to watch
-    int filter;   // 0 all, 1 1890-1905, 2 1906-1925 (the first cut's end), 3 small, 4 fleet, 5 tests
-    static readonly string[] Filters = ["ALL", "1890–1905", "1906–1925", "SMALL", "FLEET", "TESTS"];
-    const int SmallShips = 30;   // a fleet from here
 
     readonly int initial;   // the pick when it first opens: the scenario asked for, else the last played, else the first
     bool opened;
@@ -72,16 +70,6 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
     Scenario? written, current;
     ScenarioSetup setup = new();
     string? setupError;
-
-    // the theme of the mockup (launch.html's :root)
-    static readonly Vector4 Bg = Hex(0x0C1217), BgLight = Hex(0x14222D), Bar = Hex(0x0B0F12), ListBg = new(10 / 255f, 14 / 255f, 17 / 255f, 0.92f),
-        LineC = new(150 / 255f, 172 / 255f, 188 / 255f, 0.11f), EdgeC = new(150 / 255f, 172 / 255f, 188 / 255f, 0.17f),
-        Text = Hex(0xC9D3DB), BriefC = Hex(0xB8C3CB), Soft = Hex(0xAAB6BF), Bright = Hex(0xEEF3F6), Muted = Hex(0x7F8B95),
-        Brass = Hex(0xD9B868), BrassDark = Hex(0x5A4A24), BrassBg = Hex(0x3A3014), Ok = Hex(0x86C77E), Amber = Hex(0xE3A452),
-        Friend = Hex(0x5B9BE0), Hostile = Hex(0xE2685C), Sea = Hex(0x12293A), LandC = Hex(0x2C3128), AiBg = Hex(0x16283A);
-
-    static Vector4 Hex(uint rgb) => new(((rgb >> 16) & 0xFF) / 255f, ((rgb >> 8) & 0xFF) / 255f, (rgb & 0xFF) / 255f, 1);
-    static uint U(Vector4 c) => ImGui.ColorConvertFloat4ToU32(c);
 
     public LaunchScene(WorldSession world, ShipArtLibrary art, string? pickName = null)
     {
@@ -107,13 +95,8 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         entries.Sort((a, b) => Group(a) != Group(b) ? Group(a).CompareTo(Group(b))
             : a.Saved ? b.Modified.CompareTo(a.Modified)
             : (a.Scenario?.Start.Ms ?? long.MaxValue, a.Name).CompareTo((b.Scenario?.Start.Ms ?? long.MaxValue, b.Name)));
-        setupsOf.Clear();
-        foreach (var e in entries)
-            if (e.Saved && e.Scenario?.Setup is { } st)
-                setupsOf.Add(st.From);
+        groupCounts.Clear();
     }
-
-    readonly HashSet<string> setupsOf = new(StringComparer.OrdinalIgnoreCase);   // the scenarios the player has setups of
 
     static int Group(Entry e) => e.Opened ? 3 : e.Saved ? 2 : e.Test ? 1 : 0;
 
@@ -132,18 +115,20 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
             e.Scenario = s;
             e.Name = s.Name;
             e.Test = s.Test;
-            var start = s.Start.ToUtc();
-            e.Year = start.Year;
-            e.Date = start.ToString("d MMMM yyyy", CultureInfo.InvariantCulture) + (s.Place.Length > 0 ? " · " + s.Place : "");
-            e.Ships = s.ShipCount;
-            e.Sides = [.. s.Sides.Select((n, i) => (n, s.Units.Where(u => u.Side == i).Sum(u => u.ShipCount).ToString(CultureInfo.InvariantCulture)))];
-            int classes = s.DesignNames().Count;
-            e.Classes = $"{classes} class{(classes == 1 ? "" : "es")}";
+            e.StartYear = s.Start.ToUtc().Year;
+            e.Year = e.StartYear.ToString(CultureInfo.InvariantCulture);
+            e.ShipCount = s.ShipCount;
+            var counts = Enumerable.Range(0, s.Sides.Length).Select(i => s.Units.Where(u => u.Side == i).Sum(u => u.ShipCount)).ToArray();
+            var sides = counts.Where(n => n > 0).ToArray();
+            e.Ships = sides.Length <= 2 ? string.Join(":", sides) : sides.Sum().ToString(CultureInfo.InvariantCulture);   // more sides: the whole
+            e.Ensigns = [.. Enumerable.Range(0, s.Sides.Length).Where(i => counts[i] > 0).Select(i => s.AboutOf(i)?.Ensign ?? "")];
+            e.Of = s.Written?.Name ?? "";
         }
         catch (Exception x) when (x is ScenarioException or IOException or JsonException)
         {
             e.Error = x.Message;
         }
+        e.Era = opened ? "Opened" : e.Test ? "Tests" : e.StartYear <= 1905 ? "1890–1905" : e.StartYear <= 1925 ? "1906–1925" : "1926–";
         return e;
     }
 
@@ -185,7 +170,7 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
             Sort();
             at = entries.IndexOf(e);
         }
-        filter = 0;
+        shutGroups.Remove(entries[at].Era);
         Pick(at);
     }
 
@@ -221,6 +206,7 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         ClosePicker();
         placing = null;
         pick = i;
+        selKey = null;
         (written, current, setupError) = (null, null, null);
         if (i < 0 || entries[i].Scenario is not { } s)
             return;
@@ -248,7 +234,7 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         Apply();
     }
 
-    int? pendingSide;   // a side card clicked this frame
+    int? pendingSide;   // a Play as row clicked this frame
 
     void SetSide(int sd)
     {
@@ -257,6 +243,10 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         string? name = sd >= 0 ? written.Sides[sd] : null;
         Edit(name == written.PlayerName ? setup.Without("player") : setup.With(new PlayAs(name)));
     }
+
+    /// <summary>The newest change undone (Ctrl+Z, Edit's Undo).</summary>
+    ScenarioSetup? UndoLast() => setup.Changes.Count == 0 ? null
+        : setup.Changes[^1] is AddUnit a ? setup.WithoutAdded(a.Unit.Name) : setup.Without(setup.Changes[^1].Key);
 
     void Apply()
     {
@@ -278,6 +268,8 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
             (current, setupError) = (null, x.Message);
         }
         Select();
+        if (current == null && written != null)
+            MadeError();
     }
 
     /// <summary>The pick as set, to the world: its classes asked for and its world placed now.</summary>
@@ -309,7 +301,8 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
     public void Draw(SDL_GPUCommandBuffer* cmd, RenderTarget target, float dt)
     {
         art.UploadPending();   // the rows' and the picker's ships
-        var pass = target.BeginPass(cmd, new SDL_FColor { r = Bg.X, g = Bg.Y, b = Bg.Z, a = 1 }, depth: false);
+        var g = T.Ground;
+        var pass = target.BeginPass(cmd, new SDL_FColor { r = g.X, g = g.Y, b = g.Z, a = 1 }, depth: false);
         SDL_EndGPURenderPass(pass);
     }
 
@@ -339,8 +332,17 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
 
     // ------------------------------------------------------------------ the frame
 
-    float sc;
+    static float LeftW => P(300);
+    static float RightW => P(340);
+    static float ResBarH => P(34);
+    static float StatusH => P(20);
+    static float Gap => P(2);
+
     ImDrawListPtr dl;
+    int tab = 1;   // 1 the order of battle, 2 the standing orders, 3 the conditions
+    static readonly string[] TabNames = ["Order of battle", "Standing orders", "Conditions"];
+    static readonly string[] Digits = ["1", "2", "3"];
+    Vector2 centreAt, centreSize;   // the centre column: the picker opens over it
 
     public void BuildUi()
     {
@@ -351,38 +353,52 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         }
         else if (begin && world.LoadError != null)
             begin = false;
-        sc = UiFonts.Scale;
         Figure();
+        Load();
+        T.Push();
+        Keys();
+        MenuBar();
         var vp = ImGui.GetMainViewport();
-        ImGui.SetNextWindowPos(vp.Pos);
-        ImGui.SetNextWindowSize(vp.Size);
+        ImGui.SetNextWindowPos(vp.WorkPos);
+        ImGui.SetNextWindowSize(vp.WorkSize);
         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
-        ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, 0);
-        ImGui.PushStyleColor(ImGuiCol.WindowBg, Bg);
         bool open = ImGui.Begin("##launch", ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoMove |
                                             ImGuiWindowFlags.NoBringToFrontOnFocus | ImGuiWindowFlags.NoNav | ImGuiWindowFlags.NoScrollWithMouse);
-        ImGui.PopStyleColor();
-        ImGui.PopStyleVar(2);
+        ImGui.PopStyleVar();
         if (open)
         {
             dl = ImGui.GetWindowDrawList();
-            var o = vp.Pos;
-            float w = vp.Size.X, h = vp.Size.Y;
-            float top = 34 * sc, listW = 372 * sc, foot = 64 * sc, head = 332 * sc;
-            // the ground: a light at the upper right fading out
-            dl.AddRectFilledMultiColor(o + new Vector2(listW, top), o + new Vector2(w, h), U(BgLight), U(BgLight), U(Bg), U(Bg));
-            var main = new Vector2(o.X + listW, o.Y + top);
-            Header(main, w - listW, head);
-            Body(main + new Vector2(0, head), w - listW, h - top - head - foot);
-            Footer(new Vector2(o.X + listW, o.Y + h - foot), w - listW, foot);
-            List(new Vector2(o.X, o.Y + top), listW, h - top);
-            TopBar(o, w, top);
+            ImGui.PushFont(UiFonts.Sans);
+            var o = vp.WorkPos;
+            float w = vp.WorkSize.X, h = vp.WorkSize.Y;
+            ResourceBar(o, w);
+            float top = o.Y + ResBarH, bodyH = h - ResBarH - StatusH;
+
+            // left: the scenarios over your setups
+            float setupsH = MathF.Min(TitleH + RowH * Math.Max(1, SetupCount) + P(30), bodyH * 0.4f);
+            ScenariosPane(new Vector2(o.X, top), new Vector2(LeftW, bodyH - setupsH - Gap));
+            SetupsPane(new Vector2(o.X, top + bodyH - setupsH), new Vector2(LeftW, setupsH));
+
+            // the centre: the opening, the tabs, the tab's pages
+            float cx = o.X + LeftW + Gap, cw = w - LeftW - RightW - 2 * Gap;
+            (centreAt, centreSize) = (new Vector2(cx, top), new Vector2(cw, bodyH));
+            float openH = MathF.Round(Math.Clamp(bodyH * 0.4f, P(260), P(440)));
+            OpeningPane(new Vector2(cx, top), new Vector2(cw, openH));
+            float tabsY = top + openH + Gap;
+            Tabs(new Vector2(cx, tabsY), cw);
+            var pageAt = new Vector2(cx, tabsY + P(22));
+            Page(pageAt, new Vector2(cw, top + bodyH - pageAt.Y));
+
+            // right: play as, the strength ledger, the brief, the remarks, begin
+            RightColumn(new Vector2(o.X + w - RightW, top), new Vector2(RightW, bodyH));
+
+            StatusBar(new Vector2(o.X, o.Y + h - StatusH), w);
+            ImGui.PopFont();
         }
         ImGui.End();
-        {
-            float top = 34 * sc, x = vp.Pos.X + 372 * sc + ShipsW * sc;
-            PickerUi(new Vector2(x, vp.Pos.Y + top), new Vector2(vp.Pos.X + vp.Size.X - x, vp.Size.Y - top - 64 * sc));
-        }
+        PickerUi(centreAt, centreSize);
+        SaveDialog();
+        T.Pop();
         if (pendingSide is int ps)
         {
             pendingSide = null;
@@ -402,355 +418,435 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         }
     }
 
-    // ------------------------------------------------------------------ text and boxes
-
-    void Txt(ImFontPtr font, float px, Vector2 at, Vector4 col, string s) => dl.AddText(font, px * sc, at, U(col), s);
-
-    static float Width(ImFontPtr font, float px, string s) => font.CalcTextSizeA(px * UiFonts.Scale, float.MaxValue, 0, s).X;
-
-    /// <summary>Text wrapped at <paramref name="wrap"/> wide; returns its height.</summary>
-    float Wrapped(ImFontPtr font, float px, Vector2 at, Vector4 col, string s, float wrap)
+    /// <summary>The keys (the status bar lists them): 1–3 the tabs, Tab the side played, S the side shown, C R L G the
+    /// opening's overlays, A add a unit, D and E the selected class's design, Enter begin (Shift paused), Ctrl+S save,
+    /// Ctrl+Z undo the newest change. None while text is typed, the save box is up or a unit is being placed.</summary>
+    void Keys()
     {
-        dl.AddText(font, px * sc, at, U(col), s, wrap);
-        return font.CalcTextSizeA(px * sc, float.MaxValue, wrap, s).Y;
-    }
-
-    /// <summary>Spaced capitals (the mockup's headings, letter-spacing): returns the width.</summary>
-    float Tracked(ImFontPtr font, float px, Vector2 at, Vector4 col, string s, float track)
-    {
-        float x = at.X;
-        Span<char> one = stackalloc char[1];
-        foreach (char c in s)
+        var io = ImGui.GetIO();
+        if (io.WantTextInput || saveOpen || current == null || ImGui.IsPopupOpen("", ImGuiPopupFlags.AnyPopup))
+            return;
+        bool picker = pickerRow != null;
+        if (io.KeyCtrl)
         {
-            one[0] = c;
-            string g = c < Glyphs.Length ? Glyphs[c] : c.ToString();
-            dl.AddText(font, px * sc, new Vector2(x, at.Y), U(col), g);
-            x += font.CalcTextSizeA(px * sc, float.MaxValue, 0, g).X + track * sc;
+            if (ImGui.IsKeyPressed(ImGuiKey.S) && CanSave)
+                OpenSave();
+            else if (ImGui.IsKeyPressed(ImGuiKey.Z) && !begin && UndoLast() is { } u)
+                pendingEdit = u;
+            return;
         }
-        return x - at.X;
+        if (picker)
+        {
+            if (ImGui.IsKeyPressed(ImGuiKey.Enter) || ImGui.IsKeyPressed(ImGuiKey.KeypadEnter))
+                pickerEnter = true;
+            return;
+        }
+        if (placing != null)
+            return;
+        for (int i = 0; i < 3; i++)
+            if (ImGui.IsKeyPressed(ImGuiKey._1 + i))
+                tab = i + 1;
+        if (ImGui.IsKeyPressed(ImGuiKey.Tab) && !begin && playRows.Count > 0)
+        {
+            int at = playRows.FindIndex(r => r.Side == side);
+            pendingSide = playRows[(at + 1) % playRows.Count].Side;
+        }
+        if (ImGui.IsKeyPressed(ImGuiKey.S) && shipTabs.Count > 1)
+            shipTab = (shipTab + 1) % shipTabs.Count;
+        if (ImGui.IsKeyPressed(ImGuiKey.C))
+            showCourses = !showCourses;
+        if (ImGui.IsKeyPressed(ImGuiKey.R))
+            showRange = !showRange;
+        if (ImGui.IsKeyPressed(ImGuiKey.L))
+            showLabels = !showLabels;
+        if (ImGui.IsKeyPressed(ImGuiKey.G))
+            showGrid = !showGrid;
+        if (ImGui.IsKeyPressed(ImGuiKey.A) && !begin && OrdersSide >= 0)
+            pendingAdd = (OrdersSide, null);
+        if (ImGui.IsKeyPressed(ImGuiKey.D) && !begin && Sel is { } d)
+            OpenPicker(d);
+        if (ImGui.IsKeyPressed(ImGuiKey.E) && !begin && Sel is { } e)
+            Copy(InUseCandidate(e));
+        if ((ImGui.IsKeyPressed(ImGuiKey.Enter) || ImGui.IsKeyPressed(ImGuiKey.KeypadEnter)) && !begin)
+            BeginWorld(paused: io.KeyShift);
     }
 
-    static readonly string[] Glyphs = [.. Enumerable.Range(0, 128).Select(i => ((char)i).ToString())];
+    bool CanSave => current != null && !setup.IsEmpty && setup.From.Length > 0 && !begin;
 
-    float TrackedWidth(ImFontPtr font, float px, string s, float track)
+    // ------------------------------------------------------------------ the menu bar
+
+    void MenuBar()
     {
-        float x = 0;
-        foreach (char c in s)
-            x += font.CalcTextSizeA(px * sc, float.MaxValue, 0, c < Glyphs.Length ? Glyphs[c] : c.ToString()).X + track * sc;
-        return x;
-    }
-
-    void Box(Vector2 a, Vector2 b, Vector4 fill, Vector4 edge, float rounding = 3)
-    {
-        dl.AddRectFilled(a, b, U(fill), rounding * sc);
-        dl.AddRect(a, b, U(edge), rounding * sc);
-    }
-
-    /// <summary>A button of the mockup's: framed, its label centred; brass when primary.</summary>
-    bool Button(string id, string label, Vector2 at, Vector2 size, bool primary = false, bool enabled = true, float px = 12)
-    {
-        ImGui.SetCursorScreenPos(at);
-        bool hit = ImGui.InvisibleButton(id, size) && enabled;
-        bool hover = enabled && ImGui.IsItemHovered();
-        var fill = primary ? (hover ? Hex(0xE6C77A) : Brass) : new Vector4(1, 1, 1, hover ? 0.09f : 0.04f);
-        var edge = primary ? Brass : EdgeC;
-        if (!enabled)
-            (fill, edge) = (fill with { W = fill.W * 0.45f }, edge with { W = edge.W * 0.45f });
-        Box(at, at + size, fill, edge, 2);
-        var font = primary ? UiFonts.SansBold : UiFonts.Sans;
-        float tw = Width(font, px, label);
-        var col = primary ? Hex(0x111111) : enabled ? Text : Muted;
-        Txt(font, px, at + new Vector2((size.X - tw) / 2, (size.Y - px * sc * 1.3f) / 2), col, label);
-        return hit;
-    }
-
-    void Chip(Vector2 at, string label, Vector4 fill, Vector4 col)
-    {
-        float tw = TrackedWidth(UiFonts.SansBold, 10, label, 0.5f);
-        dl.AddRectFilled(at, at + new Vector2(tw + 10 * sc, 16 * sc), U(fill), 2 * sc);
-        Tracked(UiFonts.SansBold, 10, at + new Vector2(5 * sc, 1.5f * sc), col, label, 0.5f);
-    }
-
-    void HLine(float x0, float x1, float y) => dl.AddLine(new Vector2(x0, y), new Vector2(x1, y), U(LineC));
-
-    void VLine(float x, float y0, float y1) => dl.AddLine(new Vector2(x, y0), new Vector2(x, y1), U(LineC));
-
-    // ------------------------------------------------------------------ the top bar
-
-    string topLoad = "";
-    int topLoadKey = -1;
-
-    void TopBar(Vector2 o, float w, float h)
-    {
-        dl.AddRectFilled(o, o + new Vector2(w, h), U(Bar));
-        HLine(o.X, o.X + w, o.Y + h);
-        float mid = o.Y + h / 2;
-        float x = o.X + 14 * sc;
-        x += Tracked(UiFonts.SansBold, 13, new Vector2(x, mid - 9 * sc), Brass, "FLEETWRIGHT", 2.6f) + 12 * sc;
-        Txt(UiFonts.Sans, 13, new Vector2(x, mid - 9 * sc), Muted, "Scenarios ›");
-        x += Width(UiFonts.Sans, 13, "Scenarios ›") + 5 * sc;
-        if (pick >= 0)
-            Txt(UiFonts.SansBold, 13, new Vector2(x, mid - 9 * sc), Bright, current?.Name ?? entries[pick].Name);
-        // at the right: the build under way, the designer, quit
-        float bx = o.X + w - 14 * sc;
-        float qw = 44 * sc, dw = 72 * sc, bh = 24 * sc;
-        bx -= qw;
-        if (Button("##quit", "Quit", new Vector2(bx, mid - bh / 2), new Vector2(qw, bh)))
-            Quit?.Invoke();
-        bx -= dw + 6 * sc;
-        if (Button("##designer", "Designer", new Vector2(bx, mid - bh / 2), new Vector2(dw, bh)))
+        if (!ImGui.BeginMainMenuBar())
+            return;
+        if (ImGui.BeginMenu("File"))
+        {
+            if (ImGui.MenuItem("Save setup…", "Ctrl+S", false, CanSave))
+                OpenSave();
+            if (ImGui.MenuItem("Open the setups folder"))
+                ShowFolder(SetupsFolder);
+            ImGui.TextDisabled("A scenario file dropped on the window opens");
+            ImGui.Separator();
+            if (ImGui.MenuItem("Ship designer", "F3"))
+                OpenDesigner?.Invoke();
+            if (ImGui.MenuItem("Quit to desktop"))
+                Quit?.Invoke();
+            ImGui.EndMenu();
+        }
+        if (ImGui.BeginMenu("Edit"))
+        {
+            if (ImGui.MenuItem("Undo the newest change", "Ctrl+Z", false, !begin && !setup.IsEmpty) && UndoLast() is { } u)
+                pendingEdit = u;
+            if (ImGui.MenuItem("Reset to the scenario as written", null, false, !begin && !setup.IsEmpty))
+                pendingEdit = setup with { Changes = [] };
+            ImGui.EndMenu();
+        }
+        if (ImGui.BeginMenu("View"))
+        {
+            if (ImGui.MenuItem("Courses", "C", showCourses))
+                showCourses = !showCourses;
+            if (ImGui.MenuItem("Range", "R", showRange))
+                showRange = !showRange;
+            if (ImGui.MenuItem("Labels", "L", showLabels))
+                showLabels = !showLabels;
+            if (ImGui.MenuItem("Grid", "G", showGrid))
+                showGrid = !showGrid;
+            ImGui.EndMenu();
+        }
+        if (ImGui.BeginMenu("Scenario"))
+        {
+            if (ImGui.MenuItem(side < 0 ? "Watch" : "Begin", "Enter", false, current != null && !begin))
+                BeginWorld(paused: false);
+            if (ImGui.MenuItem("Begin paused", "Shift+Enter", false, current != null && !begin))
+                BeginWorld(paused: true);
+            ImGui.Separator();
+            foreach (var r in playRows)
+                if (ImGui.MenuItem(r.Side < 0 ? "Watch" : "Play as " + r.Name, null, r.Side == side, !begin) && r.Side != side)
+                    pendingSide = r.Side;
+            ImGui.EndMenu();
+        }
+        // the screens at the right end, as the designer's tabs
+        const string Here = "Scenarios", There = "Designer", Key = "F3";
+        var st = ImGui.GetStyle();
+        float tw = ImGui.CalcTextSize(Here).X + ImGui.CalcTextSize(There).X + ImGui.CalcTextSize(Key).X + st.ItemSpacing.X * 6 + st.WindowPadding.X;
+        ImGui.SetCursorPosX(Math.Max(ImGui.GetCursorPosX(), ImGui.GetWindowWidth() - tw));
+        ImGui.TextDisabled(Key);
+        ImGui.MenuItem(Here, null, true);
+        if (ImGui.MenuItem(There))
             OpenDesigner?.Invoke();
-        var (compiled, _, of) = Counts();
-        if (compiled < of)
+        ImGui.EndMainMenuBar();
+    }
+
+    static void ShowFolder(string folder)
+    {
+        try
         {
-            if (topLoadKey != of - compiled)
-                (topLoadKey, topLoad) = (of - compiled, $"building {of - compiled} class{(of - compiled == 1 ? "" : "es")}…");
-            float tw = Width(UiFonts.SansSmall, 12, topLoad);
-            Txt(UiFonts.SansSmall, 12, new Vector2(bx - 12 * sc - tw, mid - 8 * sc), Muted, topLoad);
+            Directory.CreateDirectory(folder);
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(folder) { UseShellExecute = true });
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine($"launch: {folder}: {e.Message}");
         }
     }
 
-    /// <summary>The picked (or begun) scenario's classes: compiled, drawn, of all.</summary>
-    (int Compiled, int Drawn, int Of) Counts()
+    // ------------------------------------------------------------------ the resource bar
+
+    // the pick's strings, made when it changes (Made)
+    string kind = "", title = "", file = "", brief = "";
+    (string Label, string Value)[] cells = [];
+    string shipsA = "", shipsB = "", changesCell = "0", readyLine = "";
+
+    void ResourceBar(Vector2 o, float w)
     {
-        if (world.LoadClasses is not { } ids)
-            return (0, 0, 0);
-        int c = 0, d = 0;
-        foreach (int id in ids)
+        var top = new Vector4(0.149f, 0.188f, 0.227f, 1);
+        var bottom = new Vector4(0.106f, 0.133f, 0.157f, 1);
+        dl.AddRectFilledMultiColor(o, o + new Vector2(w, ResBarH), U(top), U(top), U(bottom), U(bottom));
+        HLine(o.X, o.X + w, o.Y + ResBarH - 1, T.Edge);
+        float x = o.X + P(10);
+        Txt(UiFonts.SansSmall, new Vector2(x, o.Y + P(1)), T.Muted, kind);
+        Txt(UiFonts.SansBold, new Vector2(x, o.Y + P(15)), current == null && pick >= 0 ? T.Amber : T.Bright, title);
+        Txt(UiFonts.SansSmall, new Vector2(x + Width(UiFonts.SansBold, title) + P(8), o.Y + P(17)), T.Muted, file);
+        x = o.X + LeftW;
+        float vy = o.Y + P(16), ly = o.Y + P(2);
+        void Rule() => dl.AddLine(new Vector2(x, o.Y), new Vector2(x, o.Y + ResBarH - 1), U(T.Edge));
+        foreach (var (label, value) in cells)
         {
-            c += world.Classes.IsReady(id) ? 1 : 0;
-            d += world.Classes.IsDrawn(id) ? 1 : 0;
+            Rule();
+            x += P(10);
+            Txt(UiFonts.SansSmall, new Vector2(x, ly), T.Muted, label);
+            Txt(UiFonts.Mono, new Vector2(x, vy), T.Bright, value);
+            x += Math.Max(Width(UiFonts.SansSmall, label), Width(UiFonts.Mono, value)) + P(10);
         }
-        return (c, d, ids.Count);
+        if (current == null)
+            return;
+        // the sides' ships and tonnage, friend blue v enemy red, and the changes
+        Rule();
+        x += P(10);
+        float x0 = x;
+        Txt(UiFonts.SansSmall, new Vector2(x, ly), T.Muted, "SHIPS");
+        x = Versus(x, vy, shipsA, shipsB);
+        x = Math.Max(x, x0 + Width(UiFonts.SansSmall, "SHIPS")) + P(10);
+        var lv = Ledger();
+        Rule();
+        x += P(10);
+        x0 = x;
+        Txt(UiFonts.SansSmall, new Vector2(x, ly), T.Muted, "TONNAGE");
+        x = lv.TonsA.Length > 0 ? Versus(x, vy, lv.TonsA, lv.TonsB) : x + Width(UiFonts.Mono, "—");
+        if (lv.TonsA.Length == 0)
+            Txt(UiFonts.Mono, new Vector2(x0, vy), T.Muted, "—");
+        x = Math.Max(x, x0 + Width(UiFonts.SansSmall, "TONNAGE")) + P(10);
+        Rule();
+        x += P(10);
+        Txt(UiFonts.SansSmall, new Vector2(x, ly), T.Muted, "CHANGES");
+        Txt(UiFonts.Mono, new Vector2(x, vy), T.Bright, changesCell);
+        x += Width(UiFonts.SansSmall, "CHANGES") + P(10);
+        Rule();
     }
 
-    // ------------------------------------------------------------------ the scenarios
-
-    void List(Vector2 o, float w, float h)
+    /// <summary>"13 v 14": the friend's figure blue, the enemy's red; returns where it ends.</summary>
+    float Versus(float x, float y, string a, string b)
     {
-        dl.AddRectFilled(o, o + new Vector2(w, h), U(ListBg));
-        VLine(o.X + w, o.Y, o.Y + h);
-        float x = o.X + 16 * sc, y = o.Y + 14 * sc;
-        Tracked(UiFonts.Sans, 10.5f, new Vector2(x, y), Muted, "SCENARIOS", 0.9f);
+        Txt(UiFonts.Mono, new Vector2(x, y), T.Blue, a);
+        x += Width(UiFonts.Mono, a);
+        if (b.Length == 0)
+            return x;
+        Txt(UiFonts.Mono, new Vector2(x, y), T.Muted, " v ");
+        x += Width(UiFonts.Mono, " v ");
+        Txt(UiFonts.Mono, new Vector2(x, y), T.Hostile, b);
+        return x + Width(UiFonts.Mono, b);
+    }
+
+    // ------------------------------------------------------------------ the scenarios and your setups
+
+    readonly HashSet<string> shutGroups = [];
+
+    int SetupCount
+    {
+        get
+        {
+            int n = 0;
+            foreach (var e in entries)
+                n += e.Saved ? 1 : 0;
+            return n;
+        }
+    }
+
+    void ScenariosPane(Vector2 a, Vector2 size)
+    {
         int shipped = 0;
         foreach (var e in entries)
             shipped += e.Test || e.Opened || e.Saved ? 0 : 1;
-        string n = shipped == 1 ? "1 shipped" : $"{shipped} shipped";
-        Txt(UiFonts.SansSmall, 11, new Vector2(o.X + w - 16 * sc - Width(UiFonts.SansSmall, 11, n), y), Muted, n);
-        // the filters
-        float fx = x, fy = y + 18 * sc;
-        for (int i = 0; i < Filters.Length; i++)
+        Pane(a, size, "SCENARIOS", shipped == 1 ? "1 shipped" : ShippedNote(shipped));
+        if (!BeginBody("##scenarios", a, size, out var keep))
         {
-            float fw = TrackedWidth(UiFonts.Sans, 10.5f, Filters[i], 0.4f) + 14 * sc;
-            ImGui.SetCursorScreenPos(new Vector2(fx, fy));
-            if (ImGui.InvisibleButton($"##flt{i}", new Vector2(fw, 20 * sc)))
-                filter = i;
-            bool on = filter == i;
-            Box(new Vector2(fx, fy), new Vector2(fx + fw, fy + 20 * sc), on ? Hex(0x2A2412) : new Vector4(0, 0, 0, 0), on ? BrassDark : Hex(0x3B4752), 2);
-            Tracked(UiFonts.Sans, 10.5f, new Vector2(fx + 7 * sc, fy + 2.5f * sc), on ? Brass : Muted, Filters[i], 0.4f);
-            fx += fw + 4 * sc;
+            EndBody(keep, 0);
+            return;
         }
-        // the cards, scrolling; your setups and the drop at the foot
-        float footH = 150 * sc, cardsTop = fy + 30 * sc;
-        ImGui.SetCursorScreenPos(new Vector2(o.X, cardsTop));
-        ImGui.PushStyleColor(ImGuiCol.ChildBg, Vector4.Zero);
-        if (ImGui.BeginChild("##cards", new Vector2(w - 1, o.Y + h - footH - cardsTop), ImGuiChildFlags.None, ImGuiWindowFlags.NoScrollbar))
+        var o = ImGui.GetCursorScreenPos();
+        float w = ImGui.GetContentRegionAvail().X;
+        float xSides = o.X + P(156), xYear = o.X + P(206), xShips = o.X + w - P(6);
+        Head(o, w);
+        HeadCell(o, o.X + P(6), "NAME");
+        HeadCell(o, xSides, "SIDES");
+        HeadCell(o, xYear, "YEAR");
+        HeadCell(o, xShips, "SHIPS", right: true);
+        float y = o.Y + HeadH;
+        string? group = null;
+        int n = 0;
+        for (int i = 0; i < entries.Count; i++)
         {
-            var keep = dl;
-            dl = ImGui.GetWindowDrawList();
-            var p = ImGui.GetCursorScreenPos();
-            float cy = p.Y, cx = o.X + 10 * sc, cw = w - 20 * sc;
-            string? group = null;
-            for (int i = 0; i < entries.Count; i++)
+            var e = entries[i];
+            if (e.Saved)
+                continue;   // under Your setups
+            if (e.Era != group)
             {
-                var e = entries[i];
-                if (!Shown(e) || e.Saved)
-                    continue;   // the setups are at the foot
-                string g = e.Opened ? "OPENED" : e.Test ? "TESTS" : "SHIPPED";
-                if (g != group)
-                {
-                    group = g;
-                    Tracked(UiFonts.Sans, 10, new Vector2(cx + 2 * sc, cy + 6 * sc), Muted, g, 0.9f);
-                    cy += 26 * sc;
-                }
-                cy += Card(i, e, new Vector2(cx, cy), cw) + 7 * sc;
+                group = e.Era;
+                var ga = new Vector2(o.X, y);
+                ImGui.PushID(group);
+                var (gc, gh) = HitRow("##grp", ga, new Vector2(w, RowH));
+                ImGui.PopID();
+                if (gc && !shutGroups.Remove(group))
+                    shutGroups.Add(group);
+                GroupBg(ga, w, RowH, gh);
+                bool shut = shutGroups.Contains(group);
+                Twisty(new Vector2(ga.X + P(9), ga.Y + RowH / 2), !shut);
+                Txt(UiFonts.SansBold, new Vector2(ga.X + P(18), Mid(UiFonts.SansBold, ga.Y, RowH)), T.Bright, group);
+                TxtR(UiFonts.Mono, xShips, Mid(UiFonts.Mono, ga.Y, RowH), T.Muted, GroupCount(group));
+                y += RowH;
+                n = 0;
             }
-            ImGui.SetCursorScreenPos(new Vector2(cx, cy));
-            ImGui.Dummy(new Vector2(1, 4 * sc));
-            dl = keep;
+            if (shutGroups.Contains(group))
+                continue;
+            var ra = new Vector2(o.X, y);
+            ImGui.PushID(i);
+            var (click, hover) = HitRow("##sc", ra, new Vector2(w, RowH));
+            ImGui.PopID();
+            if (click && i != pick)
+                Pick(i);
+            bool on = i == pick;
+            RowBg(ra, w, RowH, n++, on, hover);
+            float ty = Mid(UiFonts.Sans, ra.Y, RowH);
+            dl.PushClipRect(ra, new Vector2(xSides - P(6), ra.Y + RowH), true);
+            Txt(UiFonts.Sans, new Vector2(ra.X + P(24), ty), e.Error != null ? T.Amber : on ? T.Brass : T.Text, e.Name);
+            dl.PopClipRect();
+            for (int k = 0; k < Math.Min(e.Ensigns.Length, 2); k++)
+                Ensign(e.Ensigns[k], new Vector2(xSides + k * P(18), ra.Y + P(6)), new Vector2(P(14), P(9)));
+            Txt(UiFonts.Mono, new Vector2(xYear, Mid(UiFonts.Mono, ra.Y, RowH)), T.Muted, e.Year);
+            TxtR(UiFonts.Mono, xShips, Mid(UiFonts.Mono, ra.Y, RowH), T.Bright, e.Ships);
+            if (hover && e.Error != null)
+                ImGui.SetTooltip(e.Error);
+            y += RowH;
         }
-        ImGui.EndChild();
-        ImGui.PopStyleColor();
-        float y0 = o.Y + h - footH;
-        HLine(o.X, o.X + w, y0);
-        Tracked(UiFonts.Sans, 10, new Vector2(o.X + 14 * sc, y0 + 12 * sc), Muted, "YOUR SETUPS", 0.9f);
-        float rowsTop = y0 + 30 * sc, rowsH = footH - 60 * sc;
-        ImGui.SetCursorScreenPos(new Vector2(o.X, rowsTop));
-        ImGui.PushStyleColor(ImGuiCol.ChildBg, Vector4.Zero);
-        if (ImGui.BeginChild("##setups", new Vector2(w - 1, rowsH), ImGuiChildFlags.None, ImGuiWindowFlags.None))
-        {
-            var keep = dl;
-            dl = ImGui.GetWindowDrawList();
-            var p = ImGui.GetCursorScreenPos();
-            float ry = p.Y, rw = w - 24 * sc;
-            bool any = false;
-            for (int i = 0; i < entries.Count; i++)
-            {
-                var e = entries[i];
-                if (!e.Saved)
-                    continue;
-                any = true;
-                var a = new Vector2(o.X + 8 * sc, ry);
-                ImGui.SetCursorScreenPos(a);
-                if (ImGui.InvisibleButton($"##setup{i}", new Vector2(rw, 26 * sc)) && i != pick)
-                    Pick(i);
-                bool on = i == pick, hover = ImGui.IsItemHovered();
-                if (on || hover)
-                    dl.AddRectFilled(a, a + new Vector2(rw, 26 * sc), U(on ? Brass with { W = 0.08f } : new Vector4(1, 1, 1, 0.04f)), 2 * sc);
-                var t = a + new Vector2(8 * sc, 13 * sc);
-                dl.AddTriangleFilled(t - new Vector2(0, 4 * sc), t + new Vector2(5 * sc, 0), t + new Vector2(0, 4 * sc), U(Brass));
-                Txt(UiFonts.SansSmall, 12, a + new Vector2(20 * sc, 5 * sc), e.Error != null ? Hostile : on ? Bright : Text, e.Name);
-                float ww = Width(UiFonts.SansSmall, 12, e.When);
-                Txt(UiFonts.SansSmall, 12, a + new Vector2(rw - 8 * sc - ww, 5 * sc), Muted, e.When);
-                if (hover && e.Error != null)
-                    ImGui.SetTooltip(e.Error);
-                ry += 28 * sc;
-            }
-            if (!any)
-                Txt(UiFonts.SansSmall, 12, new Vector2(o.X + 14 * sc, ry + 4 * sc), Muted, "None yet: change a scenario, then Save setup…");
-            ImGui.SetCursorScreenPos(new Vector2(o.X, ry));
-            ImGui.Dummy(new Vector2(1, 2 * sc));
-            dl = keep;
-        }
-        ImGui.EndChild();
-        ImGui.PopStyleColor();
-        Txt(UiFonts.SansSmall, 12, new Vector2(o.X + 14 * sc, o.Y + h - 26 * sc), Brass, "+");
-        Txt(UiFonts.SansSmall, 12, new Vector2(o.X + 30 * sc, o.Y + h - 26 * sc), Muted, "Open a scenario file: drop it on the window");
+        EndBody(keep, y - o.Y + P(4));
     }
 
-    bool Shown(Entry e) => filter switch
-    {
-        1 => !e.Test && e.Year <= 1905,
-        2 => !e.Test && e.Year is >= 1906 and <= 1925,
-        3 => !e.Test && e.Ships < SmallShips,
-        4 => !e.Test && e.Ships >= SmallShips,
-        5 => e.Test,
-        _ => true,
-    };
+    readonly Dictionary<int, string> shippedNotes = [];
+    string ShippedNote(int n) => shippedNotes.TryGetValue(n, out var s) ? s : shippedNotes[n] = $"{n} shipped";
 
-    /// <summary>A scenario's card: its name, date and place, each side's ships, its classes (and the load's bar when it's
-    /// the pick); returns its height.</summary>
-    float Card(int i, Entry e, Vector2 at, float w)
+    readonly Dictionary<string, string> groupCounts = [];
+
+    /// <summary>A group's count, made once (the entries change only when a file is added or a setup saved: <see cref="Sort"/>'s callers clear it).</summary>
+    string GroupCount(string g)
     {
-        bool on = i == pick, small = e.Test;
-        bool hasSetups = !e.Test && !e.Opened && setupsOf.Contains(Path.GetFileNameWithoutExtension(e.Path));
-        float h = (small ? 60 : hasSetups ? 94 : 78) * sc;
-        ImGui.SetCursorScreenPos(at);
-        if (ImGui.InvisibleButton($"##sc{i}", new Vector2(w, h)) && i != pick)
-            Pick(i);
-        bool hover = ImGui.IsItemHovered();
-        Box(at, at + new Vector2(w, h), on ? Brass with { W = 0.06f } : new Vector4(1, 1, 1, hover ? 0.04f : 0.015f), on ? BrassDark : LineC);
-        if (on)
-            dl.AddRectFilled(at, at + new Vector2(3 * sc, h), U(Brass));
-        float x = at.X + 12 * sc, y = at.Y + 9 * sc;
-        if (small)
-        {
-            Txt(UiFonts.Title, 14, new Vector2(x, y), Bright, e.Name);
-            Txt(UiFonts.SansSmall, 11.5f, new Vector2(x, y + 22 * sc), Muted, e.Error ?? e.Date);
-        }
-        else
-        {
-            Txt(UiFonts.Title, 16, new Vector2(x, y), Bright, e.Name);
-            Txt(UiFonts.SansSmall, 11.5f, new Vector2(x, y + 22 * sc), e.Error != null ? Hostile : Muted, e.Error ?? e.Date);
-            float sx = x, sy = y + 42 * sc;
-            for (int k = 0; k < e.Sides.Length; k++)
-            {
-                if (k > 0)
-                {
-                    Txt(UiFonts.SansSmall, 11.5f, new Vector2(sx, sy), Muted, "v");
-                    sx += 14 * sc;
-                }
-                var (name, count) = e.Sides[k];
-                Txt(UiFonts.SansSmall, 11.5f, new Vector2(sx, sy), Text, name);
-                sx += Width(UiFonts.SansSmall, 11.5f, name) + 4 * sc;
-                Txt(UiFonts.Mono, 11.5f, new Vector2(sx, sy + 1 * sc), Bright, count);
-                sx += Width(UiFonts.Mono, 11.5f, count) + 10 * sc;
-            }
-        }
-        if (hasSetups)
-        {
-            var d = new Vector2(at.X + 15 * sc, at.Y + 80 * sc);
-            dl.AddQuadFilled(d - new Vector2(0, 3.5f * sc), d + new Vector2(3.5f * sc, 0), d + new Vector2(0, 3.5f * sc), d - new Vector2(3.5f * sc, 0), U(Brass));
-            Txt(UiFonts.SansSmall, 11, new Vector2(at.X + 23 * sc, at.Y + 72 * sc), Brass, "a saved setup of yours");
-        }
-        if (e.Classes.Length > 0)
-        {
-            float tw = Width(UiFonts.SansSmall, 10.5f, e.Classes);
-            Txt(UiFonts.SansSmall, 10.5f, new Vector2(at.X + w - 10 * sc - tw, at.Y + 9 * sc), Muted, e.Classes);
-            if (on)
-            {
-                var (c, d, of) = Counts();
-                if (of > 0)
-                {
-                    var b0 = new Vector2(at.X + w - 10 * sc - 64 * sc, at.Y + 26 * sc);
-                    dl.AddRectFilled(b0, b0 + new Vector2(64 * sc, 3 * sc), U(Hex(0x222A31)));
-                    dl.AddRectFilled(b0, b0 + new Vector2(64 * sc * c / of, 3 * sc), U(Hex(0x6B5A2E)));
-                    dl.AddRectFilled(b0, b0 + new Vector2(64 * sc * d / of, 3 * sc), U(Brass));
-                }
-            }
-        }
-        return h;
+        if (!groupCounts.TryGetValue(g, out var s))
+            groupCounts[g] = s = entries.Count(e => !e.Saved && e.Era == g).ToString(CultureInfo.InvariantCulture);
+        return s;
     }
 
-    // ------------------------------------------------------------------ the header: what it is, the sides, the opening
-
-    // the pick's strings, made when it changes (Made)
-    string kicker = "", meta = "", brief = "";
-    readonly List<SideCard> cards = [];
-
-    sealed class SideCard
+    void SetupsPane(Vector2 a, Vector2 size)
     {
-        public int Side;
-        public string Name = "", Ships = "", Character = "", Commander = "", Ensign = "";
-        public int Capital = -1, Cruiser, Light;   // the strength pips, once the classes are in (-1 until)
+        Pane(a, size, "YOUR SETUPS", "a scenario file each");
+        if (!BeginBody("##setups", a, size, out var keep))
+        {
+            EndBody(keep, 0);
+            return;
+        }
+        var o = ImGui.GetCursorScreenPos();
+        float w = ImGui.GetContentRegionAvail().X, y = o.Y;
+        int n = 0;
+        for (int i = 0; i < entries.Count; i++)
+        {
+            var e = entries[i];
+            if (!e.Saved)
+                continue;
+            var ra = new Vector2(o.X, y);
+            ImGui.PushID(i);
+            var (click, hover) = HitRow("##setup", ra, new Vector2(w, RowH));
+            ImGui.PopID();
+            if (click && i != pick)
+                Pick(i);
+            bool on = i == pick;
+            RowBg(ra, w, RowH, n++, on, hover);
+            float ty = Mid(UiFonts.SansSmall, ra.Y, RowH);
+            dl.PushClipRect(ra, new Vector2(ra.X + P(84), ra.Y + RowH), true);
+            Txt(UiFonts.SansSmall, new Vector2(ra.X + P(8), ty), T.Muted, e.Of);
+            dl.PopClipRect();
+            float ww = Width(UiFonts.SansSmall, e.When);
+            dl.PushClipRect(new Vector2(ra.X + P(88), ra.Y), new Vector2(ra.X + w - ww - P(12), ra.Y + RowH), true);
+            Txt(UiFonts.Sans, new Vector2(ra.X + P(88), Mid(UiFonts.Sans, ra.Y, RowH)), e.Error != null ? T.Amber : on ? T.Brass : T.Bright, e.Name);
+            dl.PopClipRect();
+            TxtR(UiFonts.SansSmall, ra.X + w - P(6), ty, T.Muted, e.When);
+            if (hover && e.Error != null)
+                ImGui.SetTooltip(e.Error);
+            y += RowH;
+        }
+        if (n == 0)
+        {
+            Txt(UiFonts.SansSmall, new Vector2(o.X + P(8), Mid(UiFonts.SansSmall, y, RowH)), T.Muted, "None yet: change a scenario, then Save setup…");
+            y += RowH;
+        }
+        EndBody(keep, y - o.Y + P(4));
     }
 
-    /// <summary>The pick's header and side cards, and the opening, made once per pick and side.</summary>
+    // ------------------------------------------------------------------ the pick: its strings
+
+    /// <summary>A Play as row: a side, or Watch (-1).</summary>
+    sealed record PlayRow(int Side, string Name, string Ensign, string Commander, string Ships, string Character);
+
+    readonly List<PlayRow> playRows = [];
+    readonly List<(bool Amber, string Text)> remarks = [];
+    string remarkCount = "";
+
+    /// <summary>The pick's resource bar, Play as, brief and remarks, its body's lines and the opening, made once per pick
+    /// and change.</summary>
     void Made(Scenario s)
     {
         var start = s.Start.ToUtc();
-        kicker = $"{(s.Setup is { IsEmpty: false } ? $"YOUR SETUP OF {s.Written!.Name.ToUpperInvariant()}" : "SCENARIO")}{(s.Place.Length > 0 ? " · " + s.Place.ToUpperInvariant() : "")} · {start.Year}";
         var (lat, lon) = Centre(s);
         var local = start.AddHours(lon / 15);   // local mean time, by the sun
-        var parts = new List<string>
+        bool isSetup = s.Setup is { IsEmpty: false } || entries[pick].Saved;
+        string sides = string.Join(" v ", s.Sides.Where((_, i) => s.Units.Any(u => u.Side == i)).Select(n => n.ToUpperInvariant()));
+        kind = $"{(isSetup ? $"SETUP OF {s.Written?.Name.ToUpperInvariant() ?? ""} · " : "")}{start.Year} · {sides}";
+        title = isSetup && s.Setup is { Name.Length: > 0 } st ? st.Name : s.Written?.Name ?? s.Name;
+        file = Path.GetFileName(entries[pick].Path);
+        var c = new List<(string, string)>
         {
-            $"{local:dddd d MMMM yyyy, HH:mm} local ({start:HH:mm} GMT)".Replace("  ", " "),
-            $"{Dms(lat, 'N', 'S')} {Dms(lon, 'E', 'W')}",
+            ("DATE", local.ToString("ddd d MMM yyyy", CultureInfo.InvariantCulture)),
+            ("LOCAL", local.ToString("HH:mm", CultureInfo.InvariantCulture)),
+            ("POSITION", $"{Dms(lat, 'N', 'S')} {Dms(lon, 'E', 'W')}"),
         };
-        if (s.Weather is { } wx)
-            parts.Add($"{Sight(wx.VisibilityM)}, wind {Compass(wx.WindFromDeg)} {wx.WindMs / 0.514444:0} kn");
+        var wx = WeatherOf(s);
+        c.Add(("VISIBILITY", $"{wx.VisibilityM / 1000:0} km {SightWord(wx.VisibilityM)}"));
+        c.Add(("WIND", $"{Compass(wx.WindFromDeg)} {wx.WindMs / 0.514444:0} kn"));
         if (SunTurn(s.Start, Earth.Position(lat, lon)) is { } turn)
-            parts.Add($"{turn.Word} {turn.At.ToUtc().AddHours(lon / 15):HH:mm}");
-        if (s.Until is { } u)
-            parts.Add($"ends {u.ToUtc().AddHours(lon / 15).ToString("d MMMM HH:mm", CultureInfo.InvariantCulture)}");
-        meta = string.Join(" · ", parts);
+            c.Add((turn.Word.ToUpperInvariant(), turn.At.ToUtc().AddHours(lon / 15).ToString("HH:mm", CultureInfo.InvariantCulture)));
+        c.Add(("ENDS", EndOf(s).ToUtc().AddHours(lon / 15).ToString("d MMM HH:mm", CultureInfo.InvariantCulture)));
+        int me = side >= 0 ? side : 0;
+        c.Add(("DOCTRINE", s.Doctrine.FirstOrDefault(d => d.Side == me).Preset ?? Sim.Ai.DoctrinePresets.DefaultName));
+        cells = [.. c];
         brief = s.Brief;
-        cards.Clear();
+        changesCell = setup.Changes.Count.ToString(CultureInfo.InvariantCulture);
+        changesLine = $"{setup.Changes.Count} change{(setup.Changes.Count == 1 ? "" : "s")} from the scenario (Ctrl+Z undoes the newest)";
+
+        playRows.Clear();
+        int them = -1;
         for (int i = 0; i < s.Sides.Length; i++)
         {
             int ships = s.Units.Where(u => u.Side == i).Sum(u => u.ShipCount);
             if (ships == 0)
                 continue;
             var about = s.AboutOf(i);
-            cards.Add(new SideCard
-            {
-                Side = i, Name = s.Sides[i].ToUpperInvariant(), Ships = $"{ships} ship{(ships == 1 ? "" : "s")}",
-                Character = about?.Character ?? "", Commander = about is { Commander.Length: > 0 } a ? "Commander: " + a.Commander : "",
-                Ensign = about?.Ensign ?? "",
-            });
+            playRows.Add(new PlayRow(i, s.Sides[i], about?.Ensign ?? "", about?.Commander ?? "", $"{ships} ship{(ships == 1 ? "" : "s")}", about?.Character ?? ""));
+            if (i != me && them < 0)
+                them = i;
         }
+        playRows.Add(new PlayRow(-1, "Watch", "", "both sides the AI's", "all shown", "Both sides the AI's; you see everything. For checking a setup before playing it."));
+        int Ships(int sd) => s.Units.Where(u => u.Side == sd).Sum(u => u.ShipCount);
+        shipsA = Ships(me).ToString(CultureInfo.InvariantCulture);
+        shipsB = them >= 0 ? Ships(them).ToString(CultureInfo.InvariantCulture) : "";
+        readyLine = (side < 0 ? "both sides the AI's, all shown" : string.Join(" · ", playRows.Where(r => r.Side >= 0).Select(r => r.Side == side ? r.Name + ", yours" : r.Name + ", the AI's")))
+                    + (setup.IsEmpty ? " · as written" : $" · {setup.Changes.Count} change{(setup.Changes.Count == 1 ? "" : "s")}");
+
+        remarks.Clear();
+        void Walk(ScenarioUnit u)
+        {
+            if (!u.Removed && u.OwnTemper && u.TemperWhy.Length > 0 && u.Temper is double t)
+                remarks.Add((false, $"{(u.Admiral.Length > 0 ? Sim.Missions.SetTemper.AdmiralName(u.Admiral) : u.Name)}'s temper is {DoctrineRules.Signed(t)}: {u.TemperWhy}."));
+            foreach (var x in u.Units)
+                Walk(x);
+        }
+        foreach (var u in s.Units)
+            Walk(u);
+        remarkKey = (null, -1);
         MadeBody(s);
+        ledger = null;
         opening = null;   // drawn again for this pick and side
+    }
+
+    /// <summary>A pick whose changes no longer apply (or that couldn't be read): its name, and why in the remarks.</summary>
+    void MadeError()
+    {
+        var e = entries[pick];
+        kind = "COULDN'T BE SET UP";
+        title = e.Name;
+        file = Path.GetFileName(e.Path);
+        cells = [];
+        brief = "";
+        playRows.Clear();
+        remarks.Clear();
+        remarks.Add((true, e.Error ?? setupError ?? ""));
+        remarkKey = (null, -1);
     }
 
     /// <summary>Where the scenario is: its camera's centre, else its top units' mean.</summary>
@@ -771,7 +867,7 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         return $"{d}°{m:00}′{(v >= 0 ? pos : neg)}";
     }
 
-    static string Sight(double m) => (m < 1000 ? "fog" : m < 5000 ? "mist" : m < 18000 ? "haze" : "clear") + $", {m / 1000:0} km";
+    static string SightWord(double m) => m < 1000 ? "fog" : m < 5000 ? "mist" : m < 18000 ? "haze" : "clear";
 
     static string Compass(double deg) => SetWeather.Compass(deg);
 
@@ -790,284 +886,95 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         return null;
     }
 
-    void Header(Vector2 o, float w, float h)
+    // ------------------------------------------------------------------ the tabs and their pages
+
+    /// <summary>The numbered tabs (as the designer's 0–7) and, at their right, the side the first two show.</summary>
+    void Tabs(Vector2 a, float w)
     {
-        HLine(o.X, o.X + w, o.Y + h);
-        if (pick < 0)
-            return;
-        var e = entries[pick];
-        float x = o.X + 26 * sc, y = o.Y + 18 * sc;
-        if (current == null)
+        float x = a.X + P(4);
+        for (int i = 0; i < TabNames.Length; i++)
         {
-            Txt(UiFonts.Title, 16, new Vector2(x, y), Hostile, e.Scenario == null ? $"{e.Name} couldn't be read" : $"{e.Name}: a change no longer applies");
-            Wrapped(UiFonts.Sans, 13, new Vector2(x, y + 26 * sc), Muted, e.Error ?? setupError ?? "", 800 * sc);
-            if (e.Scenario != null && Button("##resetbad", "Reset to the scenario as written", new Vector2(x, y + 70 * sc), new Vector2(230 * sc, 24 * sc)))
-                Edit(setup with { Changes = [] });
-            return;
-        }
-        if (placing != null)
-        {
-            // the placing view: the opening widened over the header
-            Opening(new Vector2(x, y), new Vector2(w - 48 * sc, h - 34 * sc));
-            return;
-        }
-        Tracked(UiFonts.Sans, 10.5f, new Vector2(x, y), Brass, kicker, 1.2f);
-        Txt(UiFonts.PosterTitle, 34, new Vector2(x, y + 14 * sc), Bright, current.Name);
-        Txt(UiFonts.SansSmall, 12, new Vector2(x, y + 58 * sc), Muted, meta);
-        float wrap = Math.Min(800 * sc, w - 700 * sc);
-        Wrapped(UiFonts.Sans, 13.5f, new Vector2(x, y + 82 * sc), BriefC, brief, wrap);
-        // the sides, and Watch
-        float cx = x, cy = o.Y + 196 * sc;
-        foreach (var c in cards)
-        {
-            SideCardDraw(c, new Vector2(cx, cy), new Vector2(272 * sc, 128 * sc));
-            cx += 282 * sc;
-        }
-        WatchCard(new Vector2(cx, cy), new Vector2(180 * sc, 128 * sc));
-        // the opening, at the right
-        var pa = new Vector2(o.X + w - 22 * sc - 640 * sc, o.Y + 18 * sc);
-        Opening(pa, new Vector2(640 * sc, 298 * sc));
-    }
-
-    void SideCardDraw(SideCard c, Vector2 at, Vector2 size)
-    {
-        bool on = side == c.Side;
-        ImGui.SetCursorScreenPos(at);
-        if (ImGui.InvisibleButton($"##side{c.Side}", size) && !on && !begin)
-            pendingSide = c.Side;   // at the frame's end: the cards are being drawn
-        bool hover = ImGui.IsItemHovered();
-        Box(at, at + size, on ? Brass with { W = 0.07f } : new Vector4(1, 1, 1, hover ? 0.05f : 0.02f), on ? Brass : EdgeC);
-        float x = at.X + 12 * sc, y = at.Y + 10 * sc;
-        Ensign(c.Ensign, new Vector2(x, y + 2 * sc), new Vector2(26 * sc, 16 * sc));
-        Tracked(UiFonts.Title, 16, new Vector2(x + 34 * sc, y), Bright, c.Name, 1);
-        if (on)
-            Chip(new Vector2(at.X + size.X - 40 * sc, y + 2 * sc), "YOU", BrassBg, Brass);
-        else
-            Chip(new Vector2(at.X + size.X - 34 * sc, y + 2 * sc), "AI", AiBg, Friend);
-        float py = y + 27 * sc, px = x;
-        if (Pips(c) && c.Capital + c.Cruiser + c.Light is > 0 and <= 24)
-        {
-            var col = U(on || side < 0 && c.Side == 0 ? Friend : Hostile);
-            for (int k = 0; k < c.Capital; k++, px += 9 * sc)
-                dl.AddRectFilled(new Vector2(px, py + 2 * sc), new Vector2(px + 7 * sc, py + 11 * sc), col);
-            for (int k = 0; k < c.Cruiser; k++, px += 7 * sc)
-                dl.AddRectFilled(new Vector2(px, py + 4 * sc), new Vector2(px + 5 * sc, py + 11 * sc), col);
-            for (int k = 0; k < Math.Min(c.Light, 6); k++, px += 5 * sc)
-                dl.AddRectFilled(new Vector2(px, py + 6 * sc), new Vector2(px + 3 * sc, py + 11 * sc), col);
-            px += 8 * sc;
-        }
-        Txt(UiFonts.SansSmall, 11.5f, new Vector2(px, py), Muted, c.Ships);
-        float ch = Wrapped(UiFonts.SansSmall, 12, new Vector2(x, py + 20 * sc), Soft, c.Character, size.X - 24 * sc);
-        if (c.Commander.Length > 0)
-            Txt(UiFonts.SansSmall, 11, new Vector2(x, Math.Min(py + 24 * sc + ch, at.Y + size.Y - 22 * sc)), Muted, c.Commander);
-    }
-
-    /// <summary>A side's strength, its ships by type, once every class of the pick is compiled.</summary>
-    bool Pips(SideCard c)
-    {
-        if (c.Capital >= 0)
-            return true;
-        if (current is not { } s || world.LoadIds is not { } ids)
-            return false;
-        int cap = 0, cru = 0, light = 0;
-        foreach (var u in s.Units)
-            if (u.Side == c.Side && !Count(u, ref cap, ref cru, ref light))
-                return false;
-        (c.Capital, c.Cruiser, c.Light) = (cap, cru, light);
-        return true;
-
-        bool Count(ScenarioUnit u, ref int cap, ref int cru, ref int light)
-        {
-            foreach (var sub in u.Units)
-                if (!Count(sub, ref cap, ref cru, ref light))
-                    return false;
-            foreach (var ships in u.Ships)
-            {
-                if (!ids.TryGetValue(ships.Design, out int id) || !world.Classes.IsReady(id))
-                    return false;
-                var type = world.Classes.TryGet(id) is { } cls ? Sightings.TypeOf(cls) : ShipType.Unknown;
-                if (type == ShipType.Capital)
-                    cap += ships.Count;
-                else if (type == ShipType.Cruiser)
-                    cru += ships.Count;
-                else
-                    light += ships.Count;
-            }
-            return true;
-        }
-    }
-
-    void WatchCard(Vector2 at, Vector2 size)
-    {
-        bool on = side < 0;
-        ImGui.SetCursorScreenPos(at);
-        if (ImGui.InvisibleButton("##watch", size) && !on && !begin)
-            pendingSide = -1;
-        bool hover = ImGui.IsItemHovered();
-        Box(at, at + size, on ? Brass with { W = 0.07f } : new Vector4(1, 1, 1, hover ? 0.05f : 0.02f), on ? Brass : EdgeC);
-        float x = at.X + 12 * sc, y = at.Y + 10 * sc;
-        Ensign("", new Vector2(x, y + 2 * sc), new Vector2(26 * sc, 16 * sc));
-        dl.AddCircle(new Vector2(x + 13 * sc, y + 10 * sc), 4 * sc, U(Muted), 12, 1);
-        dl.AddCircleFilled(new Vector2(x + 13 * sc, y + 10 * sc), 1.5f * sc, U(Muted));
-        Tracked(UiFonts.Title, 16, new Vector2(x + 34 * sc, y), Bright, "WATCH", 1);
-        Wrapped(UiFonts.SansSmall, 12, new Vector2(x, y + 34 * sc), Soft, "Both sides the AI's; you see everything. For checking a setup before playing it.", size.X - 24 * sc);
-    }
-
-    // ------------------------------------------------------------------ the body: the ships, the standing orders, the conditions
-
-    const float ShipsW = 600, OrdersW = 520;   // the ships and the standing orders columns, reference px (the picker opens right of the ships)
-
-    readonly List<(string Label, string Value)> aims = [];
-
-    void MadeBody(Scenario s)
-    {
-        MadeShips(s);
-        aims.Clear();
-        var (_, lon) = Centre(s);
-        string end = s.Until is { } u2 ? $"at {u2.ToUtc().AddHours(lon / 15):HH:mm} local" : "";
-        for (int sd = 0; sd < s.Sides.Length; sd++)
-            if (side < 0 || sd == side)
-                aims.Add((side < 0 ? s.Sides[sd] : "The aim", MapScene.AimsText(s, sd)));
-        aims.Add(("The end", $"when one side is gone or out of the fight{(end.Length > 0 ? ", or " + end : "")}"));
-    }
-
-    void Body(Vector2 o, float w, float h)
-    {
-        if (current == null)
-            return;
-        ShipsColumn(new Vector2(o.X + 18 * sc, o.Y + 14 * sc), ShipsW * sc - 36 * sc, o.Y + h);
-        float x = o.X + ShipsW * sc;
-        VLine(x, o.Y, o.Y + h);
-        OrdersColumn(new Vector2(x + 18 * sc, o.Y + 14 * sc), OrdersW * sc - 36 * sc, o.Y + h);
-        x += OrdersW * sc;
-        VLine(x, o.Y, o.Y + h);
-        ConditionsColumn(new Vector2(x + 18 * sc, o.Y + 14 * sc), o.X + w - x - 36 * sc, o.Y + h);
-    }
-
-    /// <summary>Every change from the scenario as written, a line each with its undo, and Reset all (the mockup's
-    /// "Changes from the scenario"); returns where it ends.</summary>
-    float Changes(Vector2 at, float w)
-    {
-        float y = at.Y;
-        Tracked(UiFonts.Sans, 10.5f, at, Muted, "CHANGES FROM THE SCENARIO", 0.9f);
-        if (setup.IsEmpty)
-        {
-            const string None = "none: as written";
-            Txt(UiFonts.SansSmall, 11, new Vector2(at.X + w - Width(UiFonts.SansSmall, 11, None), y), Muted, None);
-            return y + 20 * sc;
-        }
-        const string Reset = "Reset all";
-        float rw = Width(UiFonts.SansSmall, 11.5f, Reset);
-        ImGui.SetCursorScreenPos(new Vector2(at.X + w - rw, y));
-        bool reset = ImGui.InvisibleButton("##resetall", new Vector2(rw, 16 * sc));
-        Txt(UiFonts.SansSmall, 11.5f, new Vector2(at.X + w - rw, y), ImGui.IsItemHovered() ? Hex(0xE6C77A) : Brass, Reset);
-        y += 24 * sc;
-        SetupChange? undo = null;
-        foreach (var c in setup.Changes)
-        {
-            HLine(at.X, at.X + w, y + 21 * sc);
-            Txt(UiFonts.SansSmall, 12, new Vector2(at.X, y + 2 * sc), Brass, Described(c));
-            ImGui.SetCursorScreenPos(new Vector2(at.X + w - 16 * sc, y));
-            if (ImGui.InvisibleButton($"##undo{c.Key}", new Vector2(16 * sc, 20 * sc)))
-                undo = c;
+            bool on = tab == i + 1;
+            float tw = P(28) + Width(UiFonts.SansBold, TabNames[i]), h = on ? P(22) : P(20);
+            var ta = new Vector2(x, a.Y + P(22) - h);
+            ImGui.SetCursorScreenPos(ta);
+            ImGui.PushID(i);
+            if (ImGui.InvisibleButton("##tab", new Vector2(tw, h)))
+                tab = i + 1;
             bool hover = ImGui.IsItemHovered();
-            var xc = new Vector2(at.X + w - 7 * sc, y + 10 * sc);
-            uint xcol = U(hover ? Hostile : Muted);
-            dl.AddLine(xc - new Vector2(3.5f, 3.5f) * sc, xc + new Vector2(3.5f, 3.5f) * sc, xcol, 1.2f * sc);
-            dl.AddLine(xc + new Vector2(-3.5f, 3.5f) * sc, xc + new Vector2(3.5f, -3.5f) * sc, xcol, 1.2f * sc);
-            if (hover)
-                ImGui.SetTooltip("undo: as written");
-            y += 24 * sc;
+            ImGui.PopID();
+            var top = on ? T.TitleTop : hover ? new Vector4(0.2f, 0.24f, 0.28f, 1) : new Vector4(0.165f, 0.2f, 0.235f, 1);
+            var bottom = on ? T.Panel : new Vector4(0.125f, 0.157f, 0.184f, 1);
+            dl.AddRectFilledMultiColor(ta, ta + new Vector2(tw, h), U(top), U(top), U(bottom), U(bottom));
+            dl.AddLine(ta, ta + new Vector2(tw, 0), U(T.Edge));
+            dl.AddLine(ta, ta + new Vector2(0, h), U(T.Edge));
+            dl.AddLine(ta + new Vector2(tw, 0), ta + new Vector2(tw, h), U(T.Edge));
+            var key = ta + new Vector2(P(6), (h - P(13)) / 2);
+            dl.AddRect(key, key + new Vector2(P(12), P(13)), U(on ? T.Brass : T.TagEdge), P(2));
+            Txt(UiFonts.SansSmall, key + new Vector2(P(3), 0), on ? T.Brass : T.Muted, Digits[i]);
+            Txt(UiFonts.SansBold, new Vector2(ta.X + P(22), Mid(UiFonts.SansBold, ta.Y, h)), on ? T.Brass : hover ? T.Text : T.Muted, TabNames[i]);
+            x += tw + P(2);
         }
-        if (reset && !begin)
-            pendingEdit = setup with { Changes = [] };
-        else if (undo != null && !begin)
-            pendingEdit = undo is AddUnit a ? setup.WithoutAdded(a.Unit.Name) : setup.Without(undo.Key);
-        return y;
+        // the side shown on the order of battle and the standing orders (S)
+        if (tab < 3 && shipTabs.Count > 1)
+        {
+            float sw = 0;
+            foreach (var t in sideLabels)
+                sw += Width(UiFonts.SansSmall, t) + P(14) - 1;
+            float sx = a.X + w - P(6) - sw - 1;
+            int hit = Segmented("##side", new Vector2(sx, a.Y + P(3)), sideLabels, shipTab, out _);
+            if (hit >= 0)
+                shipTab = hit;
+            RightNote(sx - P(8), a.Y + P(1), P(20), "side  S");
+        }
     }
 
-    // each change's line, made once (a frame allocates nothing for a list that stands); by the change itself, as a
-    // change is a new one when it's changed
-    readonly Dictionary<SetupChange, string> described = new(ReferenceEqualityComparer.Instance);
-
-    string Described(SetupChange c)
+    void Page(Vector2 a, Vector2 size)
     {
-        if (!described.TryGetValue(c, out var s))
-            described[c] = s = c switch
-            {
-                SwapDesign sw => sw.Describe(written!, TitleOf),
-                AddUnit a => a.Describe(written!, TitleOf),
-                ChangeCount n => n.Describe(written!, TitleOf),
-                SetDoctrine d => d.Describe(written!, presets),
-                _ => c.Describe(written!),
-            };
-        return s;
+        var b = a + size;
+        dl.AddRectFilled(a, b, U(T.Panel));
+        dl.AddRect(a, b, U(T.Edge));
+        HLine(a.X + 1, b.X - 1, a.Y, T.TitleTop);
+        if (current == null)
+            return;
+        var inner = new Vector2(a.X + 1, a.Y + 1);
+        var isize = size - new Vector2(2, 2);
+        if (tab == 1)
+            OrderOfBattle(inner, isize);
+        else if (tab == 2)
+            OrdersPage(inner, isize);
+        else
+            ConditionsPage(inner, isize);
     }
 
-    // ------------------------------------------------------------------ the foot: the load and Begin
+    // ------------------------------------------------------------------ the status bar
 
-    string loadHead = "", loadLine = "";
-    (int, int, int, int, bool) loadKey = (-1, 0, 0, 0, false);
+    string status = "";
+    const string StatusKeys = "1–3 tabs · Tab side played · S side shown · C R L G overlays · A add a unit · D design · Enter begin · Shift+Enter paused · Ctrl+S save · Ctrl+Z undo · F3 designer";
 
-    void Footer(Vector2 o, float w, float h)
+    void StatusBar(Vector2 a, float w)
     {
-        dl.AddRectFilled(o, o + new Vector2(w, h), U(Bar));
-        HLine(o.X, o.X + w, o.Y);
-        var (compiled, drawn, of) = Counts();
-        int tenths = compiled < of ? (int)(world.LoadClock * 10) : -1;   // the clock only while it builds
-        var key = (compiled, drawn, of, tenths, world.Beginning);
-        if (key != loadKey)
+        dl.AddRectFilled(a, a + new Vector2(w, StatusH), U(T.MenuBar));
+        HLine(a.X, a.X + w, a.Y, T.Edge);
+        var (compiled, _, of) = Counts();
+        float ty = Mid(UiFonts.SansSmall, a.Y, StatusH);
+        var dot = a + new Vector2(P(10), StatusH / 2);
+        bool failed = world.LoadError != null || current == null;
+        if (of > 0 && compiled < of && !failed)
         {
-            loadKey = key;
-            string threads = $"{world.Classes.Threads} builder thread{(world.Classes.Threads == 1 ? "" : "s")}";
-            if (of == 0)
-                (loadHead, loadLine) = ("", "");
-            else if (compiled < of)
-                (loadHead, loadLine) = ("Building the ships", $"classes {compiled} of {of} · art {drawn} of {of} · {world.LoadClock:0.0} s   ·   {threads}");
-            else
-                (loadHead, loadLine) = (world.Beginning ? "Beginning" : "Ready",
-                    $"{of} class{(of == 1 ? "" : "es")} built · {(drawn < of ? $"art {drawn} of {of}" : "art in")}   ·   {threads} · built classes are kept when you switch scenarios");
+            float t = (float)(ImGui.GetTime() * 6);
+            dl.PathArcTo(dot, P(4), t, t + 4.2f, 16);
+            dl.PathStroke(U(T.Brass), ImDrawFlags.None, P(1.5f));
         }
-        float x = o.X + 22 * sc, y = o.Y + 14 * sc;
-        if (loadHead.Length > 0)
-        {
-            Txt(UiFonts.SansBold, 12, new Vector2(x, y), Bright, loadHead);
-            Txt(UiFonts.SansSmall, 12, new Vector2(x + Width(UiFonts.SansBold, 12, loadHead) + 14 * sc, y), Muted, loadLine);
-        }
-        if (world.LoadError is { } err)
-            Txt(UiFonts.SansSmall, 12, new Vector2(x, y), Hostile, err);
-        // a segment a class: dark while it builds, darker brass compiled, brass with its art
-        if (of > 0 && world.LoadClasses is { } ids)
-        {
-            float sw = Math.Min(820 * sc, w - 560 * sc), gap = 2 * sc, seg = Math.Max((sw - gap * (of - 1)) / of, 3 * sc);
-            float sx = x, sy = o.Y + 36 * sc;
-            foreach (int id in ids)
-            {
-                var fill = world.Classes.IsDrawn(id) ? Brass : world.Classes.IsReady(id) ? Hex(0x6B5A2E) : Hex(0x1F262C);
-                dl.AddRectFilled(new Vector2(sx, sy), new Vector2(sx + seg, sy + 8 * sc), U(fill));
-                sx += seg + gap;
-                if (sx > x + sw)
-                    break;
-            }
-        }
-        // the buttons
-        bool ready = current != null;
-        float bh = 34 * sc, by = o.Y + (h - bh) / 2, bx = o.X + w - 22 * sc;
-        float pw = 170 * sc;
-        bx -= pw;
-        string go = begin ? "Begins when ready…" : side < 0 ? "Watch" : "Begin";
-        if (Button("##begin", go, new Vector2(bx, by), new Vector2(pw, bh), primary: true, enabled: ready && !begin, px: 13.5f))
-            BeginWorld(paused: false);
-        float qw = 108 * sc;
-        bx -= qw + 8 * sc;
-        if (Button("##paused", "Begin paused", new Vector2(bx, by), new Vector2(qw, bh), enabled: ready && !begin, px: 13.5f))
-            BeginWorld(paused: true);
-        bx -= qw + 8 * sc;
-        bool canSave = current != null && !setup.IsEmpty && setup.From.Length > 0 && !begin;
-        if (Button("##save", "Save setup…", new Vector2(bx, by), new Vector2(qw, bh), enabled: canSave, px: 13.5f))
-            OpenSave();
-        if (ImGui.IsItemHovered() && !canSave)
-            ImGui.SetTooltip(setup.IsEmpty ? "nothing changed from the scenario as written" : "a setup is of a shipped scenario");
-        SaveDialog();
+        else
+            dl.AddCircleFilled(dot, P(3.5f), U(failed ? T.Amber : T.Ok));
+        Txt(UiFonts.SansSmall, new Vector2(a.X + P(20), ty), T.Muted, status);
+        float x = a.X + P(38) + Width(UiFonts.SansSmall, status);
+        Txt(UiFonts.SansSmall, new Vector2(x, ty), T.Muted, setup.IsEmpty ? "history: as written" : "history:");
+        if (!setup.IsEmpty)
+            Txt(UiFonts.SansSmall, new Vector2(x + Width(UiFonts.SansSmall, "history: "), ty), T.Brass, changesLine);
+        TxtR(UiFonts.SansSmall, a.X + w - P(10), ty, T.Muted, StatusKeys);
     }
+
+    string changesLine = "";
 }

@@ -7,6 +7,7 @@ using Fleetwright.Shipgen;
 using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Ships;
 using ImGuiNET;
+using T = Fleetwright.Designer.DesignerTheme;
 
 namespace Fleetwright.Map;
 
@@ -132,10 +133,11 @@ public sealed unsafe partial class LaunchScene
     {
         public required MatchupProfile Profile;
         public double BeltMm;
-        public string Main = "", Line = "", Displacement = "", Speed = "", Belt = "", Reach = "", Length = "", Tonnes = "", Knots = "";
+        public string Main = "", Second = "", Line = "", Displacement = "", Speed = "", Belt = "", Reach = "", Length = "", Tonnes = "", Knots = "";
     }
 
     readonly Dictionary<int, Figures?> figures = [];   // by class id; null while it's being worked out
+    int figuredCount;   // the figures taken in so far: what's made from them is made again when it moves
     readonly ConcurrentQueue<(int Id, Figures? F)> figured = new();
     readonly List<int> toFigure = [];
     Task? figuring;
@@ -161,7 +163,10 @@ public sealed unsafe partial class LaunchScene
     {
         while (figured.TryDequeue(out var r))
             if (r.F != null)
+            {
                 figures[r.Id] = r.F;
+                figuredCount++;
+            }
         if (figuring is { IsCompleted: false } || toFigure.Count == 0)
             return;
         int[] batch = [.. toFigure];
@@ -209,6 +214,8 @@ public sealed unsafe partial class LaunchScene
             tubes += l.Tubes;
         var parts = byCal.Take(2).Select(x => $"{x.Guns} × {x.Mm}").ToList();
         string main = parts.Count > 0 ? parts[0] : "—";
+        // the second column: the next calibre's guns, else the tubes
+        string second = parts.Count > 1 ? parts[1] : tubes > 0 ? $"{tubes} tube{(tubes == 1 ? "" : "s")}" : "—";
         if (tubes > 0)
             parts.Add($"{tubes} tube{(tubes == 1 ? "" : "s")}");
         // the belt: the thickest side plate at the waterline
@@ -218,7 +225,7 @@ public sealed unsafe partial class LaunchScene
                 belt = Math.Max(belt, s.ThicknessMm);
         var f = new Figures
         {
-            Profile = p, BeltMm = belt, Main = main,
+            Profile = p, BeltMm = belt, Main = main, Second = second,
             Displacement = p.DisplacementT.ToString("N0", Inv), Speed = p.SpeedKn.ToString("0", Inv), Length = p.LengthM.ToString("0", Inv),
             Belt = belt > 0 ? belt.ToString("0", Inv) : "—", Reach = p.MainReachM > 0 ? (p.MainReachM / 1000).ToString("0.0", Inv) : "—",
         };

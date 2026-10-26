@@ -68,18 +68,21 @@ per pixel; projection, picking, the grid and the land's clip in double, so nothi
 menu, or `-brief` at start; Esc shuts the topmost thing, else opens the app's menu:
 the briefing, restart, Scenarios… (the launch screen), the clock's rules on contact, the designer, quit. Esc never quits).
 The app opens on the launch screen (`Map/LaunchScene.cs`, docs/map-ui/launch.md L1) unless the command line asks for
-a world (`-scenario=`, `-ships=`, `-map=`, `-view=` or a designer flag): the scenarios, the picked one's header and
-brief, a card a side and Watch, the opening drawn from its top units (`LaunchScene.Opening.cs`), what each side has and
-wants, the load and Begin; picking asks for the classes and places the world (`WorldSession.Select`), Begin swaps it
-in. `SceneSwitcher` shows it in place of the map until a scenario begins. What the player changes is a setup
+a world (`-scenario=`, `-ships=`, `-map=`, `-view=` or a designer flag), a workstation in the designer's look
+(docs/ui-language.md; its pieces `LaunchScene.Chrome.cs`, colours only from `DesignerTheme`): a menu bar and a resource
+bar of the pick's figures, the scenarios as an outliner by era over Your setups, the opening drawn as a plan from its top
+units (`LaunchScene.Opening.cs`, overlays C R L G), tabs 1–3 under it (order of battle, standing orders, conditions), and
+at the right Play as, the strength ledger, the brief, the remarks and the Begin box (`LaunchScene.Right.cs`); picking
+asks for the classes and places the world (`WorldSession.Select`), Begin (Enter) swaps it in. `SceneSwitcher` shows it in place of the map until a scenario begins. What the player changes is a setup
 (`Sim.Missions/ScenarioSetup.cs`, L2): the scenario as written plus its changes, listed with an undo each, saved by
 Save setup… as a scenario file with `"from"` in My Games/Fleetwright/Setups and listed under Your setups. The body's
-first column is each side's ships (`LaunchScene.Ships.cs`, L3): a row a design, drawn to scale with its figures, and
-Change… opens the design picker (`LaunchScene.Picker.cs`): every design the scenario can name, built without art for
+first tab is each side's ships (`LaunchScene.Ships.cs`, L3): a tree table, a row a design drawn to scale with its
+figures, the selected one's particulars and captains beside it, and its ▾ (or D) opens the design picker
+(`LaunchScene.Picker.cs`): every design the scenario can name, built without art for
 their figures, used for a unit, one ship or every ship of the design; a copy goes to the designer and comes back as yours.
-A row's − n + strikes or adds ships, a unit's ✕ strikes it (undo in place), and + Add a unit… opens the picker's add mode
-(`LaunchScene.Add.cs`, L3b): a new squadron joined to a force, or placed on the opening widened over the header (press
-for her head, drag for the course). Wheel zooms at the cursor, left drag pans. Ships (`MapScene.Ships.cs`, step 2.3a): a click
+A row's ◀ n ▶ strikes or adds ships, a unit's ✕ strikes it (undo in place), and + Add a unit… (A) opens the picker's add
+mode (`LaunchScene.Add.cs`, L3b): a new squadron joined to a force, or placed on the opening (press for her head, drag
+for the course). Wheel zooms at the cursor, left drag pans. Ships (`MapScene.Ships.cs`, step 2.3a): a click
 selects (twice: her squadron takes the orders; Tab steps through your ships), the strip at the bottom
 (`MapScene.Strip.cs`, docs/map-ui/battle-hud.md U2) gives the orders: who to (the ship or a unit above her), helm and
 telegraph, guns (Shells ▾: the main guns' shell for the selection, by target or a kind held, docs/battle/shell-choice.md),

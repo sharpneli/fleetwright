@@ -3,27 +3,28 @@ using Fleetwright.Sim;
 using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Missions;
 using ImGuiNET;
+using T = Fleetwright.Designer.DesignerTheme;
 
 namespace Fleetwright.Map;
 
 /// <summary>Adding a unit (docs/map-ui/launch.md L3b, the mockup's <c>#add</c> and <c>#place</c>): the design picker in
 /// its add mode names the new unit, how many of the design picked, its formation and spacing, and whether it joins a
-/// force (on its station there: no placing) or stands on its own. On its own it's placed in the placing view, the opening
-/// widened over the header: the unit at the cursor with its ships astern and half an hour's course, a press places her
-/// head (not on land), a drag sets the course; the course and speed typed in the bar, beside where she is and how far
-/// from her own and from the enemy. Either way it's an <see cref="AddUnit"/> of the setup; one on its own can be placed
-/// again (its "move"). No matchup: an added unit meets whom it meets (the scenario's maker places, the user 2026-10-25).</summary>
+/// force (on its station there: no placing) or stands on its own; a table of rows over the picker's list. On its own it's
+/// placed in the placing view, the opening with a bar over it: the unit at the cursor with its ships astern and half an
+/// hour's course, a press places her head (not on land), a drag sets the course; the course and speed stepped in the bar,
+/// beside where she is and how far from her own and from the enemy. Either way it's an <see cref="AddUnit"/> of the
+/// setup; one on its own can be placed again (its "move"). No matchup: an added unit meets whom it meets (the scenario's
+/// maker places, the user 2026-10-25).</summary>
 public sealed unsafe partial class LaunchScene
 {
     bool adding;
     int addSide, addCount = 4, addFormation, addSpacing = 600, addJoins;
-    string addName = "", addCountText = "4";
+    string addName = "", addCountText = "4", addSpacingText = "600 m";
     readonly List<(string Shown, string Made)> joinable = [];   // the side's units: as shown, and as the changes name them
     string[] joinLabels = [];
     HashSet<string> unitNames = [];   // every unit's in the pick: a new one's is new
     (int, int, bool, int) addNoteKey = (-2, 0, false, 0);
     string addNote = "";
-    const string AddSub = "A squadron of one design; more rows come with Change… and − + once it's in the order of battle";
     static readonly Formation[] AddFormations = [Formation.Column, Formation.LineAbreast, Formation.EchelonStarboard, Formation.EchelonPort];
     static readonly string[] AddFormationNames = ["line ahead", "line abreast", "echelon to starboard", "echelon to port"];
 
@@ -48,59 +49,74 @@ public sealed unsafe partial class LaunchScene
         }
         foreach (var u in s.Units)
             Walk(u);
-        joinLabels = ["on its own: placed on the map", .. joinable.Select(j => $"{j.Shown}: on its station")];
+        joinLabels = ["on its own: placed on the opening", .. joinable.Select(j => $"{j.Shown}: on its station")];
         addName = "New squadron";
         for (int k = 2; unitNames.Contains(addName); k++)
             addName = $"New squadron {k}";
-        (addCount, addCountText, addFormation, addSpacing, addJoins) = (4, "4", 0, 600, joinable.FindIndex(j => j.Shown == joins) + 1);
-        pickerTitle = $"Add a unit · {s.Sides[sd]}";
+        (addCount, addCountText, addFormation, addSpacing, addSpacingText, addJoins) = (4, "4", 0, 600, "600 m", joinable.FindIndex(j => j.Shown == joins) + 1);
+        pickerTitle = s.Sides[sd];
         pickerYear = s.Start.ToUtc().Year;
-        yearChip = $"UP TO {pickerYear} ONLY";
+        yearChip = $"up to {pickerYear}";
         pickerRow = new ShipLine { Side = sd, Unit = new ScenarioUnit { Name = "", Side = sd }, Ships = new ScenarioShips { Design = "" } };
         Candidates();
     }
 
-    /// <summary>The add mode's form: the name, the ships, the formation and spacing, where it goes. Its height.</summary>
-    float AddForm(float x, float y, float x1)
+    /// <summary>The add mode's form: the name, the ships, the formation and spacing, where it goes, as a table's rows.
+    /// Returns where it ends.</summary>
+    float AddForm(float x0, float y, float w)
     {
-        float k = 90 * sc, row = 28 * sc, y0 = y;
-        PushFields();
-        Txt(UiFonts.SansSmall, 12, new Vector2(x, y + 3 * sc), Soft, "Name");
-        ImGui.SetCursorScreenPos(new Vector2(x + k, y));
-        ImGui.SetNextItemWidth(260 * sc);
+        SubHeader(new Vector2(x0, y), w, "THE NEW UNIT", "one design; more come with Change design… and the steppers once it's in");
+        y += RowH;
+        float c0 = x0 + P(96);
+        int n = 0;
+        Vector2 Row(string label)
+        {
+            var ra = new Vector2(x0, y);
+            RowBg(ra, w, RowH, n++);
+            Txt(UiFonts.Sans, new Vector2(ra.X + P(6), Mid(UiFonts.Sans, ra.Y, RowH)), T.Text, label);
+            y += RowH;
+            return ra;
+        }
+        var r = Row("Name");
+        ImGui.SetCursorScreenPos(new Vector2(c0, r.Y + P(2)));
+        ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(P(5), P(1)));
+        ImGui.PushFont(UiFonts.SansSmall);
+        ImGui.SetNextItemWidth(P(260));
         ImGui.InputText("##addname", ref addName, 64);
-        y += row;
-        Txt(UiFonts.SansSmall, 12, new Vector2(x, y + 3 * sc), Soft, "Ships");
-        float sw = Stepper(new Vector2(x + k, y + 2 * sc), addCountText, addCount > 1, addCount < 99, out int by);
+        ImGui.PopFont();
+        ImGui.PopStyleVar();
+        r = Row("Ships");
+        float sw = Stepper("##addn", new Vector2(c0, r.Y + P(2.5f)), addCountText, P(30), addCount > 1, addCount < 99, out int by);
         if (by != 0)
-            (addCount, addCountText) = (addCount + by, (addCount + by).ToString(Inv));
-        Txt(UiFonts.SansSmall, 11.5f, new Vector2(x + k + sw + 10 * sc, y + 3 * sc), Muted, "of the design picked below, unnamed");
-        y += row;
-        Txt(UiFonts.SansSmall, 12, new Vector2(x, y + 3 * sc), Soft, "Formation");
-        ImGui.SetCursorScreenPos(new Vector2(x + k, y));
-        ImGui.SetNextItemWidth(170 * sc);
-        ImGui.Combo("##addform", ref addFormation, AddFormationNames, AddFormationNames.Length);
-        Txt(UiFonts.SansSmall, 12, new Vector2(x + k + 190 * sc, y + 3 * sc), Soft, "Spacing");
-        ImGui.SetCursorScreenPos(new Vector2(x + k + 246 * sc, y));
-        ImGui.SetNextItemWidth(70 * sc);
-        if (ImGui.InputInt("##addsp", ref addSpacing, 0, 0))
-            addSpacing = Math.Clamp(addSpacing, 100, 20_000);
-        Txt(UiFonts.SansSmall, 12, new Vector2(x + k + 322 * sc, y + 3 * sc), Muted, "m");
-        y += row;
-        Txt(UiFonts.SansSmall, 12, new Vector2(x, y + 3 * sc), Soft, "Joins");
-        ImGui.SetCursorScreenPos(new Vector2(x + k, y));
-        ImGui.SetNextItemWidth(Math.Min(420 * sc, x1 - x - k - 20 * sc));
-        ImGui.Combo("##addjoins", ref addJoins, joinLabels, joinLabels.Length, 16);
-        PopFields();
-        Txt(UiFonts.SansSmall, 11.5f, new Vector2(x + k + Math.Min(420 * sc, x1 - x - k - 20 * sc) + 10 * sc, y + 3 * sc), Muted,
-            addJoins == 0 ? "" : "a squadron joined becomes a force: its ships, then this");
-        y += row;
-        HLine(x - 20 * sc, x1, y + 2 * sc);
-        return y - y0 + 4 * sc;
+        {
+            addCount = Math.Clamp(addCount + by, 1, 99);
+            addCountText = addCount.ToString(Inv);
+        }
+        Txt(UiFonts.SansSmall, new Vector2(c0 + sw + P(8), Mid(UiFonts.SansSmall, r.Y, RowH)), T.Muted, "of the design picked below, unnamed");
+        r = Row("Formation");
+        int f = DropDown("##addform", new Vector2(c0, r.Y + P(2)), P(170), AddFormationNames[addFormation], AddFormationNames);
+        if (f >= 0)
+            addFormation = f;
+        r = Row("Spacing");
+        sw = Stepper("##addsp", new Vector2(c0, r.Y + P(2.5f)), addSpacingText, P(60), addSpacing > 100, addSpacing < 20_000, out by);
+        if (by != 0)
+        {
+            addSpacing = Math.Clamp(addSpacing + 100 * by, 100, 20_000);
+            addSpacingText = $"{addSpacing} m";
+        }
+        Txt(UiFonts.SansSmall, new Vector2(c0 + sw + P(8), Mid(UiFonts.SansSmall, r.Y, RowH)), T.Muted, "from ship to ship");
+        r = Row("Joins");
+        float jw = Math.Min(P(420), w - (c0 - x0) - P(12));
+        int j = DropDown("##addjoins", new Vector2(c0, r.Y + P(2)), jw, joinLabels[addJoins], joinLabels);
+        if (j >= 0)
+            addJoins = j;
+        if (addJoins > 0)
+            Txt(UiFonts.SansSmall, new Vector2(c0 + jw + P(8), Mid(UiFonts.SansSmall, r.Y, RowH)), T.Muted, "a squadron joined becomes a force");
+        return y;
     }
 
     /// <summary>The add mode's foot: what it adds, cancel, and place it (or add it, joining).</summary>
-    void AddFoot(Candidate? pick, float x, float x1, float by, float bh)
+    void AddFoot(Candidate? pick, float x, float x1, float by, bool enter)
     {
         string name = addName.Trim();
         bool taken = unitNames.Contains(name);
@@ -115,11 +131,13 @@ public sealed unsafe partial class LaunchScene
                 : f != null ? $"{addCount} × {pick.Info.Title}: {f.Profile.DisplacementT * addCount:N0} t at {f.Speed} kn."
                 : $"{addCount} × {pick.Info.Title}";
         }
-        Txt(UiFonts.SansSmall, 11.5f, new Vector2(x, by + 5 * sc), taken || name.Length == 0 ? Hostile : Muted, addNote);
-        string go = addJoins > 0 ? "Add it" : "Place it on the map…";
-        float gw = Math.Max(120 * sc, Width(UiFonts.SansBold, 12, go) + 28 * sc);
+        string go = addJoins > 0 ? "Add it" : "Place it on the opening…";
+        float gw = ButtonWidth(go, "Enter", primary: true), cw = ButtonWidth("Cancel", "Esc");
+        dl.PushClipRect(new Vector2(x, by), new Vector2(x1 - gw - cw - P(16), by + P(20)), true);
+        Txt(UiFonts.SansSmall, new Vector2(x, Mid(UiFonts.SansSmall, by, P(20))), taken || name.Length == 0 ? T.Amber : T.Muted, addNote);
+        dl.PopClipRect();
         bool ok = pick != null && name.Length > 0 && !taken;
-        if (Button("##addgo", go, new Vector2(x1 - 20 * sc - gw, by), new Vector2(gw, bh), primary: true, enabled: ok, px: 12))
+        if (Button("##addgo", new Vector2(x1 - gw, by), go, "Enter", primary: true, enabled: ok) || enter && ok)
         {
             var unit = new ScenarioUnit { Name = name, Side = addSide, Formation = AddFormations[addFormation], SpacingM = addSpacing };
             unit.Ships.Add(new ScenarioShips { Design = pick!.Info.Stem, Count = addCount });
@@ -136,28 +154,8 @@ public sealed unsafe partial class LaunchScene
             }
             ClosePicker();
         }
-        else if (Button("##addcancel", "Cancel", new Vector2(x1 - 28 * sc - gw - 76 * sc, by), new Vector2(76 * sc, bh), px: 11.5f))
+        else if (Button("##addcancel", new Vector2(x1 - gw - cw - P(4), by), "Cancel", "Esc"))
             ClosePicker();
-    }
-
-    /// <summary>The form's fields framed as the picker's search is, in the designer's theme otherwise.</summary>
-    void PushFields()
-    {
-        Designer.DesignerTheme.Push();
-        ImGui.PushStyleColor(ImGuiCol.FrameBg, new Vector4(0, 0, 0, 0.3f));
-        ImGui.PushStyleColor(ImGuiCol.Border, EdgeC);
-        ImGui.PushStyleColor(ImGuiCol.Text, Bright);
-        ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 1);
-        ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(6, 3) * sc);
-        ImGui.PushFont(UiFonts.SansSmall);
-    }
-
-    static void PopFields()
-    {
-        ImGui.PopFont();
-        ImGui.PopStyleVar(2);
-        ImGui.PopStyleColor(3);
-        Designer.DesignerTheme.Pop();
     }
 
     // ------------------------------------------------------------------ the placing view
@@ -168,11 +166,14 @@ public sealed unsafe partial class LaunchScene
         public required List<(double AsternM, double AbeamM, int Side)> Stations;
         public required string Title, Hint;
         public int Course, Kn;
+        public string CourseText = "", KnText = "";
         public Vec3d? Head, Ghost;   // pressed (the course dragged from it); under the cursor
         public Vector2 DownAt;
         public (long, long, int, bool) WhereKey = (long.MinValue, 0, 0, false);
         public string Where = "";
         public bool Land;
+
+        public void Texts() => (CourseText, KnText) = ($"{Course:000}°", $"{Kn} kn");
     }
 
     Placing? placing;
@@ -185,15 +186,17 @@ public sealed unsafe partial class LaunchScene
         placing = new Placing
         {
             Unit = unit, Stations = ScenarioLoader.Stations(unit), Course = ((int)Math.Round(course) % 360 + 360) % 360, Kn = (int)Math.Round(kn),
-            Title = $"Placing {unit.Name}", Hint = $"{n} × {design} · click to place her head, drag for the course",
+            Title = unit.Name, Hint = $"{n} × {design} · click to place her head, drag for the course",
         };
+        placing.Texts();
+        opening = null;   // framed again with room to place her
     }
 
     /// <summary>The placing view over the opening: the input, the unit where it would go, and the bar.</summary>
     void PlacingOverlay(OpeningView v)
     {
         var p = placing!;
-        float barH = 30 * sc;
+        float barH = RowH + P(4);
         var at = v.At;
         ImGui.SetCursorScreenPos(at + new Vector2(0, barH));
         ImGui.InvisibleButton("##placemap", v.Size - new Vector2(0, barH));
@@ -202,8 +205,11 @@ public sealed unsafe partial class LaunchScene
             (p.Head, p.DownAt) = (v.From(mouse), mouse);
         if (ImGui.IsItemActive() && p.Head is { } h)
         {
-            if (Vector2.Distance(mouse, p.DownAt) > 6 * sc)
+            if (Vector2.Distance(mouse, p.DownAt) > P(6))
+            {
                 p.Course = (int)Math.Round(Earth.Bearing(h, v.From(mouse))) % 360;
+                p.Texts();
+            }
         }
         else if (ImGui.IsItemHovered())
             p.Ghost = v.From(mouse);
@@ -220,51 +226,51 @@ public sealed unsafe partial class LaunchScene
         if ((p.Head ?? p.Ghost) is { } g)
         {
             p.Land = world.Shore.IsLand(g);
-            uint col = U(p.Land ? Hostile : Amber);
+            var colour = p.Land ? T.Muted : T.Amber;
+            uint col = U(colour);
             var fwd = Earth.Forward(g, p.Course);
             var starboard = Vec3d.Cross(fwd, g.Normalized());
             foreach (var (astern, abeam, _) in p.Stations)
-                dl.AddCircleFilled(v.Of((g - fwd * astern + starboard * abeam).Normalized() * Earth.Radius), 1.8f * sc, col, 6);
+                dl.AddCircleFilled(v.Of((g - fwd * astern + starboard * abeam).Normalized() * Earth.Radius), P(1.8f), col, 6);
             var hs = v.Of(g);
             Dashed(hs, v.Of((g + fwd * (p.Kn * 1852 * 0.5)).Normalized() * Earth.Radius), col);
-            dl.AddCircle(hs, 7 * sc, col, 16, 1.5f * sc);
-            Txt(UiFonts.SansSmall, 11.5f, hs + new Vector2(-12 * sc - Width(UiFonts.SansSmall, 11.5f, p.Unit.Name), 8 * sc), p.Land ? Hostile : Amber, p.Unit.Name);
+            dl.AddCircle(hs, P(7), col, 16, P(1.5f));
+            var ts = TagSize(p.Unit.Name);
+            Tag(hs + new Vector2(-P(12) - ts.X, P(8)), p.Unit.Name, colour);
             Where(p, v, g);
         }
-        // the bar: what's placed and how, the course and speed, where, cancel
+        // the bar: how it's placed, the course and speed, where, cancel
         var b1 = at + new Vector2(v.Size.X, barH);
-        dl.AddRectFilled(at, b1, U(new Vector4(10 / 255f, 14 / 255f, 17 / 255f, 0.9f)));
-        dl.AddLine(new Vector2(at.X, b1.Y), b1, U(LineC));
-        float x = at.X + 12 * sc, ty = at.Y + 7 * sc;
-        Txt(UiFonts.SansBold, 12.5f, new Vector2(x, ty), Amber, p.Title);
-        x += Width(UiFonts.SansBold, 12.5f, p.Title) + 12 * sc;
-        Txt(UiFonts.SansSmall, 12, new Vector2(x, ty + 1 * sc), Muted, p.Hint);
-        x += Width(UiFonts.SansSmall, 12, p.Hint) + 18 * sc;
-        PushFields();
-        Txt(UiFonts.SansSmall, 12, new Vector2(x, ty + 1 * sc), Soft, "course");
-        x += Width(UiFonts.SansSmall, 12, "course") + 6 * sc;
-        ImGui.SetCursorScreenPos(new Vector2(x, at.Y + 4 * sc));
-        ImGui.SetNextItemWidth(46 * sc);
-        if (ImGui.InputInt("##pcourse", ref p.Course, 0, 0))
-            p.Course = (p.Course % 360 + 360) % 360;
-        x += 50 * sc;
-        Txt(UiFonts.SansSmall, 12, new Vector2(x, ty + 1 * sc), Soft, "°   speed");
-        x += Width(UiFonts.SansSmall, 12, "°   speed") + 6 * sc;
-        ImGui.SetCursorScreenPos(new Vector2(x, at.Y + 4 * sc));
-        ImGui.SetNextItemWidth(36 * sc);
-        if (ImGui.InputInt("##pkn", ref p.Kn, 0, 0))
-            p.Kn = Math.Clamp(p.Kn, 0, 60);
-        x += 40 * sc;
-        Txt(UiFonts.SansSmall, 12, new Vector2(x, ty + 1 * sc), Soft, "kn");
-        PopFields();
-        float cw = 70 * sc;
-        if (Button("##placecancel", "Cancel  Esc", new Vector2(b1.X - 8 * sc - cw, at.Y + 4 * sc), new Vector2(cw, 22 * sc), px: 11))
+        dl.AddRectFilled(at, b1, U(T.HeaderBg));
+        HLine(at.X, b1.X, b1.Y - 1, T.Edge);
+        float x = at.X + P(8), ty = Mid(UiFonts.SansSmall, at.Y, barH);
+        Txt(UiFonts.SansSmall, new Vector2(x, ty), T.Muted, p.Hint);
+        x += Width(UiFonts.SansSmall, p.Hint) + P(16);
+        Txt(UiFonts.SansSmall, new Vector2(x, ty), T.Text, "Course");
+        x += Width(UiFonts.SansSmall, "Course") + P(6);
+        x += Stepper("##pcourse", new Vector2(x, at.Y + (barH - P(15)) / 2), p.CourseText, P(40), true, true, out int by) + P(14);
+        if (by != 0)
+        {
+            p.Course = ((p.Course + 5 * by) % 360 + 360) % 360;
+            p.Texts();
+        }
+        Txt(UiFonts.SansSmall, new Vector2(x, ty), T.Text, "Speed");
+        x += Width(UiFonts.SansSmall, "Speed") + P(6);
+        x += Stepper("##pkn", new Vector2(x, at.Y + (barH - P(15)) / 2), p.KnText, P(40), p.Kn > 0, p.Kn < 60, out by) + P(14);
+        if (by != 0)
+        {
+            p.Kn = Math.Clamp(p.Kn + by, 0, 60);
+            p.Texts();
+        }
+        float cw = ButtonWidth("Cancel", "Esc");
+        if (Button("##placecancel", new Vector2(b1.X - P(6) - cw, at.Y + (barH - P(20)) / 2), "Cancel", "Esc"))
         {
             placing = null;
+            opening = null;
             return;
         }
         if (p.Where.Length > 0)
-            Txt(UiFonts.Mono, 11.5f, new Vector2(b1.X - 20 * sc - cw - Width(UiFonts.Mono, 11.5f, p.Where), ty + 1 * sc), p.Land ? Hostile : Text, p.Where);
+            TxtR(UiFonts.MonoSmall, b1.X - P(14) - cw, Mid(UiFonts.MonoSmall, at.Y, barH), p.Land ? T.Amber : T.Text, p.Where);
     }
 
     /// <summary>Where the unit would go, in words: its place, the nearest of its own and the nearest enemy; made when it
@@ -312,5 +318,6 @@ public sealed unsafe partial class LaunchScene
         u.Ships.AddRange(p.Unit.Ships);
         pendingEdit = setup.With(new AddUnit(u, null));
         placing = null;
+        opening = null;
     }
 }

@@ -16,10 +16,10 @@ The test for a new piece: **put it beside the designer. Does it look like anothe
 | Colour tokens, ImGui style (rounding 0, padding, spacing), `Push`/`Pop` around a scene's windows | `src/Fleetwright/Designer/DesignerTheme.cs` |
 | Fonts and the UI scale (1080 px tall = 1.0) | `src/Fleetwright/UiFonts.cs`, `Content/Fonts/` |
 | The reference mockups | `docs/designer-ui/bureau.html` (the designer), `docs/map-ui/launch-bureau.html` (a second screen, its CSS a ready token set) |
-| As built | `docs/designer-ui/png/*-game-*.png`; any screen via `-screenshot=N -ui` |
+| As built | `docs/designer-ui/png/*-game-*.png`, `docs/map-ui/png/launch-game-*.png` (the launch screen, `Map/LaunchScene.Chrome.cs` its pieces); any screen via `-screenshot=N -ui` |
 | The map's own colours (sea, land, symbols): not chrome, see "Exceptions" | `src/Fleetwright/Map/MapPalette.cs`, `docs/map-ui/symbols.md` |
 
-A new scene's windows push `DesignerTheme` (the launch screen's picker already does). No new screen invents its own
+A new scene's windows push `DesignerTheme` (the designer and the launch screen do). No new screen invents its own
 hex values for chrome: if a colour is missing, it goes into `DesignerTheme` with a comment saying what it means.
 
 ## The layout grammar
@@ -66,6 +66,7 @@ The rules that hold it together:
 | Stepper | ◀ inset value ▶: small dark arrow boxes, the value right-aligned mono in an `Inset` well | any number the player sets: speed, belt, ships in a row, a temper |
 | Drop-down | an `Inset` field and a square grey ▼ button at its end | a pick from a list: templates, crews, doctrine |
 | Segmented | joined grey buttons, the chosen one `BrassDarker` with a brass border and brass text | two to four exclusive options: coverage, fight/carry on, presets |
+| Filter flag | one segment on its own, brass when on | an on/off filter beside others (the design picker's sources, up to the year) |
 | Button | 20 px, `Button` grey, a 1 px border, its key in a `kbd` chip after the word | actions: Change design… C, Save setup… Ctrl+S |
 | Primary button | the same size, `BrassDarker` fill, brass border and text | the screen's one main action (Begin); never larger than the others |
 | `kbd` chip | mono 9.5 px, a 1 px border with a 2 px bottom | every key binding shown next to its control |
@@ -102,7 +103,12 @@ Two families, no others in the chrome:
 
 - **IBM Plex Sans Condensed** for words. `Sans` 14, `SansSmall` 12, `SansBold` 13, `Title` 16 (`UiFonts`, at scale 1).
 - **IBM Plex Mono** for **every figure**: right-aligned in its column, the unit after the number in the same cell
-  (`279 mm`, `21.0 kn`), thousands with a comma (`25,118 t`). `MonoBig` 22 for the margin box's figure only.
+  (`279 mm`, `21.0 kn`), thousands with a comma (`25,118 t`). `MonoBig` 22 for the margin box's figure only,
+  `MonoSmall` 11 for a work surface's tags and the `kbd` chips.
+
+The game's fonts are Latin subsets (`UiFonts`' ranges: Latin-1, general punctuation, ←↑→↓, −): the mockups' ▼ ◀ ▶ ▲ ✕ ○
+◇ ⏎ ⇧ are no glyphs there. Draw the marks as shapes (a triangle, a cross, a circle) and write keys as words in their
+chips (`Enter`, `Shift+Enter`, `Esc`).
 
 Uppercase is for title strips, column headers and the resource bar's labels, nothing else: never a sentence, never a
 button. No letter-spaced wordmarks. The poster fonts (`PosterTitle`, `PosterFigure`, `PosterText`) are the ship card's

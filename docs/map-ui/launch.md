@@ -23,24 +23,37 @@ toggles C R L G P); numbered tabs 1-3 (order of battle, standing orders, conditi
 side; the order of battle as an outliner tree (unit, class with ◀ n ▶ and its figures, ship) with a selected-class
 panel like the protection tab's selected plate; Play as a three-row table in place of cards; a strength ledger (the
 sides by group, share bars) like the weight ledger; brief and remarks panels; Begin as a box like the limits' margin
-box, with no gold slab; and a status bar of keys. Not decided yet: which look the screen takes.
+box, with no gold slab; and a status bar of keys.
+
+**Ported 2026-10-26: the game's launch screen is the bureau look** (as built: `png/launch-game-oob.png`, `-orders`,
+`-conditions`, `-picker`; the pieces in `Map/LaunchScene.Chrome.cs`, colours only from `DesignerTheme`). What the port
+settled that the mockup left open: every number the player sets is a stepper (tempers and aggression by 0.05, Shift ×4,
+the wheel over the value), not a slider; the captains' tempers moved from a popup on the names into the selected class
+pane (a row a named ship, a stepper each), and the standing orders list only the captains with tempers of their own;
+the side the first two tabs show is a segmented control at the tabs' right (S); the scenarios are grouped by era (the
+era and size filters gone, the groups fold); the strength ledger counts ships by their designs' type, guns of 254 mm and
+up and of 120 to 253 mm, the line's speed (its slowest heavy ship), the gun crews and the tonnage; the remarks are the
+tempers the scenario gave and why, a class that didn't build and the world's error; the design picker opens over the
+whole centre column; errors are amber, never red. Keys: 1–3 tabs, Tab the side played, S the side shown, C R L G the
+opening's overlays, A add a unit, D and E the selected class's design, Enter begin (Shift: paused), Ctrl+S save,
+Ctrl+Z undo the newest change.
 
 ## What the player sees
 
 | Piece | Where | Shows | Mocked |
 |---|---|---|---|
-| Scenarios | left column | the shipped scenarios (date, place, each side's ships, its classes and load time, a bar while it builds), filters by era and size, the scale test's rungs and the benches (squadrons, flotilla: a file's `"test": true`) under Tests; **your setups** below (a saved setup is a scenario file, see "A setup is a scenario file"); open a file | all |
-| Header | top | kicker, name, date and place, the weather, sunset, the end; the brief | all |
-| Play as | under the brief | one card a side (ensign, strength pips, ships, its character in a line, its commander) and **Watch** (both sides the AI's, everything shown: for checking a setup) | `#japan`, `#watch` |
-| The opening | top right | the scenario's start on the map: each top unit at its place with its ships astern, its course for 30 minutes, the range between the sides; yours blue, theirs red. While a new unit is placed it widens over the header into **the placing view** | all, `#place` |
-| Ships | first column | each side's order of battle as a tab (yours, the enemy's): units with their admirals and tempers, a row a design (thumbnail to scale, **− n +** for its ships, their names with removed ones struck and captains' tempers marked ▲ ▼, displacement, speed, guns, belt, reach), its build state, **Change…**; ✕ removes a unit (undo in its place); **Add a unit…** at the end | all |
-| Design picker | over the orders and conditions | the row's ships; candidates from the scenario's designs, yours and the shipped ones, every filter off by default (type, source, up to the scenario's year); figures and the **matchup** against the enemy's line; the old and new side by side with the changes; use it for all of the unit, one ship, or every ship of the class; edit a copy in the designer; new design from this one | `#design` |
+| Scenarios | left column, an outliner | the shipped scenarios (date, place, each side's ships, its classes and load time, a bar while it builds), filters by era and size, the scale test's rungs and the benches (squadrons, flotilla: a file's `"test": true`) under Tests; **your setups** below (a saved setup is a scenario file, see "A setup is a scenario file"); open a file | all |
+| Header | the resource bar; the brief its own pane at the right | the name and its file, the year and sides; date, local time, position, visibility, wind, sunset, the end, the doctrine, the ships and tonnage (yours blue v theirs red), the changes | all |
+| Play as | right column, a table | a row a side (radio, ensign, commander, ships, `you`/`AI`; its character in the tooltip) and **Watch** (both sides the AI's, everything shown: for checking a setup) | `#japan`, `#watch` |
+| The opening | centre, the work surface | the scenario's start on the map: each top unit at its place with its ships astern, its course for 30 minutes, the range between the sides; yours blue, theirs red. While a new unit is placed it widens over the header into **the placing view** | all, `#place` |
+| Ships | tab 1, a tree table and the selected class | each side's order of battle as a tab (yours, the enemy's): units with their admirals and tempers, a row a design (thumbnail to scale, **− n +** for its ships, their names with removed ones struck and captains' tempers marked ▲ ▼, displacement, speed, guns, belt, reach), its build state, **Change…**; ✕ removes a unit (undo in its place); **Add a unit…** at the end | all |
+| Design picker | over the centre column | the row's ships; candidates from the scenario's designs, yours and the shipped ones, every filter off by default (type, source, up to the scenario's year); figures and the **matchup** against the enemy's line; the old and new side by side with the changes; use it for all of the unit, one ship, or every ship of the class; edit a copy in the designer; new design from this one | `#design` |
 | Add a unit | the picker, in its add mode | name, admiral, ships (− n +, named), formation and spacing, and whether it **joins** a unit (on its station: no placing) or stands **on its own** (placed on the map); the design list as the picker's; then Place it on the map | `#add` |
-| Placing view | the opening, widened | the unit at the cursor with its ships astern and its course for 30 minutes; click places her head, drag sets the course; course and speed typed in the bar; where she is, how far from her nearest own unit and from the enemy; Esc cancels | `#place` |
-| Standing orders | second column | the side's **aggression** (the C-in-C's, for every unit) with what it moves, written against now; each **admiral's temper**, added to it, with why the scenario gave it (captains' sit on their ships); the rules (engage, deploy, torpedoes, evasion, tracks, night action, night attacks, roles) | `#orders` |
-| Conditions | third column | both sides side by side: gun crews, readiness, damage control, fire discipline, fuel; presets (as history, even crews, easier, harder); the day (visibility, wind, the end, the seed) | `#orders` |
-| Changes | under the conditions | every change from the scenario as written, one line each, ✕ to undo, reset all | `#orders` |
-| The load | footer | one segment a class (dark: building, brass: its art), classes built and art in, the threads; **Begin** (Watch on Watch), Begin paused, Save setup… | `#loading`, `#jutland` |
+| Placing view | the opening, a bar over it | the unit at the cursor with its ships astern and its course for 30 minutes; click places her head, drag sets the course; course and speed typed in the bar; where she is, how far from her nearest own unit and from the enemy; Esc cancels | `#place` |
+| Standing orders | tab 2 | the side's **aggression** (the C-in-C's, for every unit) with what it moves, written against now; each **admiral's temper**, added to it, with why the scenario gave it (captains' sit on their ships); the rules (engage, deploy, torpedoes, evasion, tracks, night action, night attacks, roles) | `#orders` |
+| Conditions | tab 3 | both sides side by side: gun crews, readiness, damage control, fire discipline, fuel; presets (as history, even crews, easier, harder); the day (visibility, wind, the end, the seed) | `#orders` |
+| Changes | tab 3, its third column | every change from the scenario as written, one line each, ✕ to undo, reset all | `#orders` |
+| The load | the Begin box, right column | one segment a class (dark: building, brass: its art), classes built and art in, the threads; **Begin** (Watch on Watch), Begin paused, Save setup… | `#loading`, `#jutland` |
 
 Nothing on it is a modal: the player can read the brief, pick a side and change ships in any order, and Begin
 whenever the ships are ready. Esc closes the picker; with nothing open on the launch screen it opens the app's menu

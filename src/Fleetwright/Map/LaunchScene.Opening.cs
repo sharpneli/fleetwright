@@ -2,20 +2,25 @@ using System.Numerics;
 using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Missions;
 using ImGuiNET;
+using T = Fleetwright.Designer.DesignerTheme;
 
 namespace Fleetwright.Map;
 
-/// <summary>The launch screen's opening (docs/map-ui/launch.md "The opening"): the scenario's start on a framed map, each
-/// top unit at its place with its ships on their stations (<see cref="ScenarioLoader.Stations"/>, as the world places
-/// them), its course for 30 minutes dashed, the player's side blue rings and the other red diamonds, the coast from the
-/// 1:50M land. Made once per pick, side and frame (the land brought into the view's cap, as <see cref="LandMesh"/>
-/// does a face's, and filled by rows by its winding number, which the retraction keeps: its rings aren't simple
-/// polygons, so no triangulation of them is), then drawn from the arrays every frame. And the sides' ensigns, drawn.</summary>
+/// <summary>The launch screen's opening (docs/map-ui/launch.md "The opening"), the screen's one work surface drawn as a
+/// technical drawing (docs/ui-language.md): the scenario's start on the plan ground, each top unit at its place with its
+/// ships on their stations (<see cref="ScenarioLoader.Stations"/>, as the world places them), its course for 30 minutes
+/// dashed, the player's side blue rings and the other red diamonds, the coast from the 1:50M land in plan lines, a
+/// ruler, the labels and the range between the sides as tags; its overlays (C courses, R range, L labels, G the grid)
+/// toggled in its title strip. Made once per pick, side and frame (the land brought into the view's cap, as
+/// <see cref="LandMesh"/> does a face's, and filled by rows by its winding number, which the retraction keeps: its rings
+/// aren't simple polygons, so no triangulation of them is), then drawn from the arrays every frame. And the sides'
+/// ensigns, drawn.</summary>
 public sealed unsafe partial class LaunchScene
 {
     readonly Land land;
     readonly CapRetraction cap = new();
     OpeningView? opening;
+    bool showCourses = true, showRange = true, showLabels = true, showGrid = true;
 
     sealed class UnitMark
     {
@@ -24,7 +29,8 @@ public sealed unsafe partial class LaunchScene
         public bool Ring;   // a ring (the player's, or side 0 when watching), else a diamond
         public Vector4 Colour;
         public string Label = "";
-        public bool LabelLeft, LabelShown;
+        public Vector2 LabelAt;
+        public bool LabelShown;
     }
 
     sealed class OpeningView
@@ -58,82 +64,127 @@ public sealed unsafe partial class LaunchScene
         public readonly List<(Vector2 A, Vector2 B)> Fill = [];   // the land's spans, a pixel row each
         public readonly List<UnitMark> Units = [];
         public float BarPx;
-        public string BarLabel = "", Legend = "";
+        public string BarLabel = "", NorthTag = "", Range = "";
+        public Vector2 RangeA, RangeB;
         public (string Text, Vector4 Colour, bool Ring)[] Keys = [];
+    }
+
+    const string OpeningNote = "each top unit at its start, its ships astern";
+    const string KeyCourse = "dashed: 30 min";
+
+    /// <summary>The opening's pane: the title strip with the overlays' toggles, the plan under it (the placing view's bar
+    /// over it while a unit is placed).</summary>
+    void OpeningPane(Vector2 a, Vector2 size)
+    {
+        float right = Pane(a, size, placing != null ? "PLACING A UNIT" : "THE OPENING", placing != null ? placing.Title : OpeningNote);
+        if (Toggle("##ovg", ref right, a.Y, "G", "Grid", showGrid))
+            showGrid = !showGrid;
+        if (Toggle("##ovl", ref right, a.Y, "L", "Labels", showLabels))
+            showLabels = !showLabels;
+        if (Toggle("##ovr", ref right, a.Y, "R", "Range", showRange))
+            showRange = !showRange;
+        if (Toggle("##ovc", ref right, a.Y, "C", "Courses", showCourses))
+            showCourses = !showCourses;
+        Opening(a + new Vector2(1, TitleH + 1), size - new Vector2(2, TitleH + 2));
     }
 
     void Opening(Vector2 at, Vector2 size)
     {
+        var b = at + size;
+        dl.AddRectFilled(at, b, U(T.Plan));
         if (current is not { } s)
             return;
         if (opening is not { } v || v.At != at || v.Size != size)
             opening = v = Build(s, at, size);
-        var b = at + size;
-        dl.AddRectFilled(at, b, U(Sea), 3 * sc);
-        dl.PushClipRect(at + Vector2.One, b - Vector2.One, true);
-        foreach (var g in v.Grid)
-            dl.AddPolyline(ref g[0], g.Length, U(new Vector4(160 / 255f, 190 / 255f, 210 / 255f, 0.08f)), ImDrawFlags.None, 1);
-        uint landCol = U(LandC);
-        foreach (var (a, b2) in v.Fill)
-            dl.AddRectFilled(a, b2, landCol);
+        dl.PushClipRect(at, b, true);
+        if (showGrid)
+            foreach (var g in v.Grid)
+                dl.AddPolyline(ref g[0], g.Length, U(T.PlanLine with { W = 0.09f }), ImDrawFlags.None, 1);
+        uint landCol = U(T.PlanLine with { W = 0.10f });
+        foreach (var (a2, b2) in v.Fill)
+            dl.AddRectFilled(a2, b2, landCol);
         foreach (var c in v.Coast)
-            dl.AddPolyline(ref c[0], c.Length, U(Hex(0x4A5240)), ImDrawFlags.None, 1);
+            dl.AddPolyline(ref c[0], c.Length, U(T.PlanLine with { W = 0.45f }), ImDrawFlags.None, 1);
+        if (showRange && v.Range.Length > 0)
+        {
+            Dotted(v.RangeA, v.RangeB, U(T.PlanLine with { W = 0.55f }));
+            var ts = TagSize(v.Range);
+            Tag((v.RangeA + v.RangeB) / 2 - ts / 2, v.Range);
+        }
         foreach (var u in v.Units)
         {
             uint col = U(u.Colour);
             foreach (var p in u.Ships)
-                dl.AddCircleFilled(p, 1.6f * sc, col, 6);
-            Dashed(u.Head, u.Lead, U(u.Colour with { W = 0.7f }));
-            Mark(u.Head, u.Ring, u.Colour, 6.5f);
+                dl.AddCircleFilled(p, P(1.8f), col, 6);
+            if (showCourses)
+                Dashed(u.Head, u.Lead, U(u.Colour with { W = 0.8f }));
+            Mark(u.Head, u.Ring, u.Colour, 6);
         }
-        foreach (var u in v.Units)
-            if (u.LabelShown)
-            {
-                float tw = Width(UiFonts.SansSmall, 11, u.Label);
-                var p = u.LabelLeft ? u.Head + new Vector2(-10 * sc - tw, 4 * sc) : u.Head + new Vector2(10 * sc, 4 * sc);
-                Txt(UiFonts.SansSmall, 11, p, Hex(0xDFE7EC), u.Label);
-            }
-        // the caption, the scale, the key
-        Tracked(UiFonts.SansSmall, 10.5f, at + new Vector2(8 * sc, 6 * sc), Hex(0x9FB1BF), "THE OPENING", 0.8f);
-        var bar0 = new Vector2(at.X + 12 * sc, b.Y - 12 * sc);
-        uint scaleCol = U(Hex(0x9FB1BF));
-        dl.AddLine(bar0, bar0 + new Vector2(v.BarPx, 0), scaleCol);
-        dl.AddLine(bar0 - new Vector2(0, 3 * sc), bar0 + new Vector2(0, 3 * sc), scaleCol);
-        dl.AddLine(bar0 + new Vector2(v.BarPx, -3 * sc), bar0 + new Vector2(v.BarPx, 3 * sc), scaleCol);
-        Txt(UiFonts.SansSmall, 11, bar0 + new Vector2(v.BarPx + 6 * sc, -8 * sc), Hex(0x9FB1BF), v.BarLabel);
-        float kx = b.X - 8 * sc - Width(UiFonts.SansSmall, 11, v.Legend);
-        Txt(UiFonts.SansSmall, 11, new Vector2(kx, b.Y - 20 * sc), Hex(0x9FB1BF), v.Legend);
-        for (int k = v.Keys.Length - 1; k >= 0; k--)
-        {
-            kx -= Width(UiFonts.SansSmall, 11, v.Keys[k].Text) + 22 * sc;
-            Mark(new Vector2(kx + 5 * sc, b.Y - 12 * sc), v.Keys[k].Ring, v.Keys[k].Colour, 3.5f, 1);
-            Txt(UiFonts.SansSmall, 11, new Vector2(kx + 12 * sc, b.Y - 20 * sc), v.Keys[k].Colour, v.Keys[k].Text);
-        }
+        if (showLabels)
+            foreach (var u in v.Units)
+                if (u.LabelShown)
+                    Tag(u.LabelAt, u.Label, u.Ring ? T.TagText : new Vector4(0.945f, 0.788f, 0.765f, 1));
+        // the north and the grid's step at the top left, the ruler at the bottom left, the key at the bottom right
+        Tag(at + new Vector2(P(8), P(8)), v.NorthTag);
+        var bar0 = new Vector2(at.X + P(16), b.Y - P(18));
+        uint ruler = U(T.PlanLine with { W = 0.7f });
+        dl.AddLine(bar0, bar0 + new Vector2(v.BarPx, 0), ruler);
+        dl.AddLine(bar0 - new Vector2(0, P(4)), bar0 + new Vector2(0, P(4)), ruler);
+        dl.AddLine(bar0 + new Vector2(v.BarPx, -P(4)), bar0 + new Vector2(v.BarPx, P(4)), ruler);
+        Txt(UiFonts.MonoSmall, bar0 + new Vector2(v.BarPx + P(8), -P(7)), T.PlanLine, v.BarLabel);
+        Key(v, new Vector2(b.X - P(8), b.Y - P(8)));
         if (placing != null)
             PlacingOverlay(v);
         dl.PopClipRect();
-        dl.AddRect(at, b, U(placing != null ? Amber : EdgeC), 3 * sc);
+        if (placing != null)
+            dl.AddRect(at, b, U(T.Amber));
+    }
+
+    /// <summary>The key, a tag at the bottom right (<paramref name="br"/> its corner): each side's mark and name, and what
+    /// the dashes are.</summary>
+    void Key(OpeningView v, Vector2 br)
+    {
+        var f = UiFonts.MonoSmall;
+        float w = P(6) + Width(f, KeyCourse);
+        foreach (var k in v.Keys)
+            w += P(14) + Width(f, k.Text) + P(10);
+        float h = f.FontSize + P(2);
+        var a = br - new Vector2(w, h);
+        dl.AddRectFilled(a, br, U(T.TagBg));
+        dl.AddRect(a, br, U(T.TagEdge));
+        float x = a.X + P(3);
+        foreach (var (text, colour, ring) in v.Keys)
+        {
+            Mark(new Vector2(x + P(5), a.Y + h / 2), ring, colour, 3.5f, 1);
+            Txt(f, new Vector2(x + P(13), a.Y + P(1)), colour, text);
+            x += P(14) + Width(f, text) + P(10);
+        }
+        Txt(f, new Vector2(x, a.Y + P(1)), T.TagText, KeyCourse);
     }
 
     /// <summary>A unit's mark (the map symbols' own): a ring for the player's side, a diamond for the other.</summary>
-    void Mark(Vector2 at, bool ring, Vector4 colour, float r, float thick = 1.5f)
+    void Mark(Vector2 at, bool ring, Vector4 colour, float r, float thick = 1.6f)
     {
         uint col = U(colour);
         if (ring)
-            dl.AddCircle(at, r * sc, col, 16, thick * sc);
+            dl.AddCircle(at, P(r), col, 16, P(thick));
         else
-            dl.AddQuad(at - new Vector2(0, r * sc), at + new Vector2(r * sc, 0), at + new Vector2(0, r * sc), at - new Vector2(r * sc, 0), col, thick * sc);
+            dl.AddQuad(at - new Vector2(0, P(r)), at + new Vector2(P(r), 0), at + new Vector2(0, P(r)), at - new Vector2(P(r), 0), col, P(thick));
     }
 
-    void Dashed(Vector2 a, Vector2 b, uint col)
+    void Dashed(Vector2 a, Vector2 b, uint col) => Dashes(a, b, col, P(4), P(4));
+
+    void Dotted(Vector2 a, Vector2 b, uint col) => Dashes(a, b, col, P(1), P(3));
+
+    void Dashes(Vector2 a, Vector2 b, uint col, float on, float off)
     {
         var d = b - a;
-        float len = d.Length(), step = 3 * sc;
+        float len = d.Length();
         if (len < 1)
             return;
         d /= len;
-        for (float t = 0; t < len; t += 2 * step)
-            dl.AddLine(a + d * t, a + d * Math.Min(t + step, len), col);
+        for (float t = 0; t < len; t += on + off)
+            dl.AddLine(a + d * t, a + d * Math.Min(t + on, len), col);
     }
 
     OpeningView Build(Scenario s, Vector2 at, Vector2 size)
@@ -174,8 +225,8 @@ public sealed unsafe partial class LaunchScene
             foreach (var p in ships)
                 Grow(Plane(p));
         }
-        double margin = (placing != null ? 110 : 50) * sc;   // the placing view: room round the units to place one
-        double mpp = Math.Max(Math.Max((x1 - x0) / (size.X - 2 * margin), (y1 - y0) / (size.Y - 2 * margin)), 15 / sc);
+        double margin = P(placing != null ? 110 : 60);   // the placing view: room round the units to place one
+        double mpp = Math.Max(Math.Max((x1 - x0) / (size.X - 2 * margin), (y1 - y0) / (size.Y - 2 * margin)), 15 / UiFonts.Scale);
         double mx = (x0 + x1) / 2, my = (y0 + y1) / 2;
         (v.Mx, v.My, v.Mpp) = (mx, my, mpp);
         var Of = v.Of;
@@ -243,41 +294,57 @@ public sealed unsafe partial class LaunchScene
             v.Grid.Add([.. Enumerable.Range(0, 25).Select(k => Of(Earth.Position(la, cn - spanLon + 2 * spanLon * k / 24)))]);
         for (double lo = Math.Floor((cn - spanLon) / stepDeg) * stepDeg; lo <= cn + spanLon; lo += stepDeg)
             v.Grid.Add([.. Enumerable.Range(0, 25).Select(k => Of(Earth.Position(cl - spanLat + 2 * spanLat * k / 24, lo)))]);
+        v.NorthTag = $"N ↑ · grid {(stepDeg < 1 ? $"{stepDeg * 60:0}′" : $"{stepDeg:0}°")}";
 
-        // the units: the player's side rings, the other diamonds (watching: side 0 rings); labels where they fit
+        // the units: the player's side rings, the other diamonds (watching: side 0 rings); their tags where they fit,
+        // off their heads away from their courses
         var placed = new List<(Vector2 A, Vector2 B)>();
+        var heads = units.Select(u => Of(u.Head)).ToList();
         foreach (var (u, head, lead, ships) in units)
         {
             bool own = side >= 0 ? u.Side == side : u.Side == 0;
             var m = new UnitMark
             {
                 Head = Of(head), Lead = Of(lead), Ships = [.. ships.Select(Of)], Ring = own,
-                Colour = side < 0 ? (u.Side == 0 ? Hex(0x9DBFE6) : Hostile) : own ? Friend : Hostile,
-                Label = u.Name, LabelLeft = own,
+                Colour = own ? T.Blue : T.Hostile, Label = $"{u.Name} · {u.ShipCount}",
             };
-            float tw = Width(UiFonts.SansSmall, 11, m.Label), th = 14 * sc;
-            var a = m.LabelLeft ? m.Head + new Vector2(-10 * sc - tw, 4 * sc) : m.Head + new Vector2(10 * sc, 4 * sc);
-            var bb = a + new Vector2(tw, th);
-            m.LabelShown = a.X > at.X && bb.X < at.X + size.X && !placed.Any(r => a.X < r.B.X && bb.X > r.A.X && a.Y < r.B.Y && bb.Y > r.A.Y);
-            if (m.LabelShown)
-                placed.Add((a, bb));
+            var ts = TagSize(m.Label);
+            // the first of the four places round her head that's in the frame and clear of the others' tags and heads
+            Vector2[] tries =
+            [
+                m.Head + new Vector2(P(10), P(4)), m.Head + new Vector2(-P(10) - ts.X, P(4)),
+                m.Head + new Vector2(P(10), -P(4) - ts.Y), m.Head + new Vector2(-P(10) - ts.X, -P(4) - ts.Y),
+            ];
+            foreach (var a in tries)
+            {
+                var bb = a + ts;
+                bool inside = a.X > at.X + P(4) && bb.X < at.X + size.X - P(4) && a.Y > at.Y + P(24) && bb.Y < at.Y + size.Y - P(24);
+                bool clear = !placed.Any(r => a.X < r.B.X && bb.X > r.A.X && a.Y < r.B.Y && bb.Y > r.A.Y)
+                             && !heads.Any(hp => hp.X > a.X - P(4) && hp.X < bb.X + P(4) && hp.Y > a.Y - P(4) && hp.Y < bb.Y + P(4));
+                if (inside && clear)
+                {
+                    (m.LabelAt, m.LabelShown) = (a, true);
+                    placed.Add((a, bb));
+                    break;
+                }
+            }
             v.Units.Add(m);
         }
 
-        // the scale: a round length, at most 120 px
-        double km = new[] { 200.0, 100, 50, 20, 10, 5, 2, 1 }.FirstOrDefault(k => k * 1000 / mpp <= 120 * sc, 1);
+        // the ruler: a round length, at most 120 px
+        double km = new[] { 200.0, 100, 50, 20, 10, 5, 2, 1 }.FirstOrDefault(k => k * 1000 / mpp <= P(120), 1);
         v.BarPx = (float)(km * 1000 / mpp);
         v.BarLabel = $"{km:0} km";
-        // the key: the sides' marks, and how far apart they open
+        // the range: between the nearest heads of sides at war
         double apart = double.MaxValue;
         foreach (var a in units)
             foreach (var bu in units)
-                if (a.Unit.Side < bu.Unit.Side)
-                    apart = Math.Min(apart, Earth.Distance(a.Head, bu.Head));
+                if (a.Unit.Side < bu.Unit.Side && !s.Peace.Contains((a.Unit.Side, bu.Unit.Side)) && !s.Peace.Contains((bu.Unit.Side, a.Unit.Side))
+                    && Earth.Distance(a.Head, bu.Head) is var d && d < apart)
+                    (apart, v.RangeA, v.RangeB) = (d, Of(a.Head), Of(bu.Head));
+        v.Range = apart < double.MaxValue ? $"{apart / 1000:0.0} km" : "";
         int me = side >= 0 ? side : 0, them = s.Sides.Length > 1 ? (me == 0 ? 1 : 0) : -1;
-        v.Keys = them < 0 ? [(s.Sides[me], Friend, true)]
-            : [(s.Sides[me], side < 0 ? Hex(0x9DBFE6) : Friend, true), (s.Sides[them], Hostile, false)];
-        v.Legend = (apart < double.MaxValue ? $"{apart / 1000:0} km apart · " : "") + "dashed: 30 min";
+        v.Keys = them < 0 ? [(s.Sides[me], T.Blue, true)] : [(s.Sides[me], T.Blue, true), (s.Sides[them], T.Hostile, false)];
         return v;
     }
 
@@ -288,6 +355,8 @@ public sealed unsafe partial class LaunchScene
             v.Coast.Add([.. run]);
         run.Clear();
     }
+
+    static Vector4 Hex(uint rgb) => new(((rgb >> 16) & 0xFF) / 255f, ((rgb >> 8) & 0xFF) / 255f, (rgb & 0xFF) / 255f, 1);
 
     // ------------------------------------------------------------------ the ensigns
 
