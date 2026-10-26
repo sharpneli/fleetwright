@@ -321,34 +321,6 @@ public sealed partial class MapScene
     /// doesn't swamp the sea.</summary>
     static double CalibreScale(double calibreMm) => Math.Clamp(calibreMm / RefCalibreMm, 0.3, 1.6);
 
-    /// <summary>A line from each engaged battery's ship to its target (where the screen shows it: the ship, or its
-    /// contact), faint unless it's firing.</summary>
-    void DrawTargets(in MapView view, Snapshot s)
-    {
-        var b = s.Batteries;
-        if (b.Count == 0)
-            return;
-        shipIndex.Clear();
-        for (int k = 0; k < s.Ships.Count; k++)
-            shipIndex[s.Ships.Entity[k]] = k;
-        long now = world.DrawMs;
-        for (int i = 0; i < b.Count; i++)
-        {
-            if (!shipIndex.TryGetValue(b.Shooter[i], out int k) || !TargetAt(s, b.Target[i], now, out var to))
-                continue;
-            var (from, _) = s.Ships.PoseAt(k, now);
-            // the selection's in brass; the player's own in friend blue; others' (the truth's) red; faint unless firing
-            bool mine = b.Shooter[i] == selected, ours = s.PlayerSide < 0 || s.Ships.Side[k] == s.PlayerSide;
-            var col = mine ? MapPalette.SelectedFire : ours ? MapPalette.FriendFire : MapPalette.HostileFire;
-            if (b.State[i] != BatteryState.Firing)
-                col.W *= 0.35f;
-            overlay.BeginStrip(col, mine ? 1.6f : 1f);
-            for (int j = 0; j <= 8; j++)
-                Point(view, (from + (to - from) * (j / 8.0)).Normalized() * Earth.Radius);
-            overlay.End();
-        }
-    }
-
     /// <summary>Where the screen shows a ship: itself if it's in the snapshot, else its contact.</summary>
     bool TargetAt(Snapshot s, int entity, long now, out Vec3d at)
     {

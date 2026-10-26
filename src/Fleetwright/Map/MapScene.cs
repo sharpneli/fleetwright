@@ -319,6 +319,11 @@ public sealed unsafe partial class MapScene : IScene
                 }
                 return Key((uint)e->key.key, e->key.scancode, e->key.mod);
             case SDL_EventType.SDL_EVENT_KEY_UP:
+                if ((uint)e->key.key == SDLK_TAB)
+                {
+                    TabKey(false, (e->key.mod & SDL_Keymod.SDL_KMOD_SHIFT) != 0);
+                    return true;
+                }
                 if (e->key.scancode == FastKey)
                 {
                     FastForward(false);
@@ -349,7 +354,7 @@ public sealed unsafe partial class MapScene : IScene
         else if (key == SDLK_P)
             TogglePin(selected);
         else if (key == SDLK_TAB)
-            NextShip((SDL_GetModState() & SDL_Keymod.SDL_KMOD_SHIFT) != 0);
+            TabKey(true, (mod & SDL_Keymod.SDL_KMOD_SHIFT) != 0);   // held: the fire lines; a tap: the next ship (MapScene.Targets.cs)
         else if (key == SDLK_SPACE && (mod & SDL_Keymod.SDL_KMOD_SHIFT) != 0)
             Run();   // run until it matters (MapScene.Clock.cs)
         else if (key == SDLK_SPACE)

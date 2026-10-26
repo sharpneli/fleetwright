@@ -503,7 +503,7 @@ public sealed partial class MapScene : ISceneMenu
     DistanceUnit legendUnit;
 
     /// <summary>The map's own keys, at the status bar's right.</summary>
-    const string StatusKeys = "WASD pan · Space pause · ⇧Space run · 1–5 gears · § fast · + − speed · Tab next ship · J log · V card · P pin · Esc menu";
+    const string StatusKeys = "WASD pan · Space pause · Shift+Space run · 1–5 gears · § fast · + − speed · Tab next ship, held: fire lines · J log · V card · P pin · Esc menu";
 
     /// <summary>The status bar along the bottom (docs/map-ui/strip.md), as the designer's and the launch screen's: a dot
     /// and what the mouse does, or the armed pick in amber, at the left; the map's keys, the grid's legend, the scale bar

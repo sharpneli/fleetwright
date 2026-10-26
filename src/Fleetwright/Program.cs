@@ -6,6 +6,7 @@ public static unsafe class Program
     {
         // Parse command line arguments
         int screenshotFrame = -1;
+        TimeSpan? screenshotAt = null;
         string screenshotPath = "screenshot.png";
         bool screenshotUi = false, newDesign = false, hitRay = false;
         int section = 0;
@@ -53,6 +54,8 @@ public static unsafe class Program
                 {
                     screenshotFrame = frame;
                 }
+                else if (value.StartsWith('@') && TimeSpan.TryParseExact(value[1..], @"hh\:mm", System.Globalization.CultureInfo.InvariantCulture, out var at))
+                    (screenshotAt, screenshotFrame) = (at, int.MaxValue);   // @HH:MM: once the world's clock passes it (side-by-side captures)
             }
             else if (arg.StartsWith("-ship="))
             {
@@ -455,6 +458,8 @@ public static unsafe class Program
                 devShips.ForEach(d => SpawnDevShips(w, d));
                 loadouts.ForEach(l => DevLoadout(w, l));
             } : null);
+            if (screenshotAt is { } shotAt)
+                engine.ScreenshotWhen = () => world.Current.Time.ToUtc().TimeOfDay >= shotAt;
             foreach (var grp in devGroups)
                 foreach (var c in DevGroup(grp))
                     world.Send(c);

@@ -205,6 +205,10 @@ public unsafe class Sdl3GpuEngine : IDisposable
     private int _screenshotFrame = -1;
     private string _screenshotPath = "screenshot.png";
     private bool _screenshotTaken;
+
+    /// <summary>The command line's capture by the world's clock (-screenshot=@HH:MM): taken on the first frame this says
+    /// yes, the frame number then left out.</summary>
+    public Func<bool>? ScreenshotWhen { get; set; }
     private bool _screenshotUi;
 
     // The scene drawn into the main target (the ship viewer today), instead of the scene graph below
@@ -1354,7 +1358,7 @@ public unsafe class Sdl3GpuEngine : IDisposable
         _workMs = (float)_frameTimer.Elapsed.TotalMilliseconds - _waitMs;   // the CPU's part, before any blocking in submit
         // Submit (a capture frame records its capture first, then submits and waits): the command line's screenshot,
         // or a scene's export (FrameCapture), always with the UI
-        if (_screenshotFrame >= 0 && (int)FrameNumber >= _screenshotFrame && !_screenshotTaken)
+        if (_screenshotFrame >= 0 && ((int)FrameNumber >= _screenshotFrame || ScreenshotWhen?.Invoke() == true) && !_screenshotTaken)
         {
             CaptureFrame(commandBuffer, drawData, _screenshotPath, _screenshotUi, null);
             _screenshotTaken = true;

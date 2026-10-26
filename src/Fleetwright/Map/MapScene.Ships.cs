@@ -354,9 +354,7 @@ public sealed unsafe partial class MapScene
 
     // ------------------------------------------------------------------ the mouse
 
-    /// <summary>A left click: selects the ship under the cursor (or none). Armed to place, a press on the sea is a
-    /// placement (<see cref="BeginPlace"/>), and a click on land places nothing and selects nothing (the cursor line
-    /// says it's land).</summary>
+    /// <summary>A left click: selects the ship under the cursor (or none); a selection changed disarms the verb.</summary>
     void Click(double x, double y)
     {
         var view = View;
