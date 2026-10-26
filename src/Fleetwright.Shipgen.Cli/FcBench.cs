@@ -102,6 +102,12 @@ sealed record FcCase
     /// the first.</summary>
     public string? Discipline { get; init; }
     public bool Damage { get; init; }
+    /// <summary>The asked speed: it picks the clock tier (docs/battle/coarse.md J0), 1 the fine tier,
+    /// <see cref="CoarseParity.CoarseSpeed"/> the coarse one. The bench runs at full tilt either way.</summary>
+    public double Speed { get; init; } = 1;
+    /// <summary>With <see cref="Damage"/>: the rule the target is out of the fight by (doctrine's fall-out), none to leave
+    /// <see cref="FcRun.OutMs"/> unset.</summary>
+    public FallOutRule? FallOut { get; init; }
 
     public int Level => Fit >= 0 ? Fit : Shooter.Batteries[Battery].Local ? 0 : (int)Shooter.Batteries[Battery].Level;
 
@@ -123,6 +129,9 @@ sealed class FcRun
     public readonly List<long> OwnManoeuvres = [];
     public double OwnKn, TargetKn, CircleDegS = double.NaN;
     public long StartMs;
+    /// <summary>With damage: when the target was first going down, and first out of the fight by the case's rule (-1:
+    /// never), checked each second.</summary>
+    public long DownMs = -1, OutMs = -1;
     public double GunneryMs;
 }
 
@@ -140,6 +149,8 @@ static class FcBench
     {
         var s = c.Settings(settings);
         var w = new World(c.Start, (ulong)seed, s);
+        if (c.Speed != 1)
+            w.Apply(Command.SetSpeed(c.Speed));
         int a = w.Ships.AddClass(c.Shooter), b = w.Ships.AddClass(c.Target);
         double lat = 56.0, lon = 4.0;
         var p = Earth.Position(lat, lon);
@@ -247,6 +258,15 @@ static class FcBench
             }
             w.AdvanceTo(new WorldTime(t));
             second?.Invoke(w, run);
+            if (c.Damage && (ts = store.SlotOf(TargetShip)) >= 0)
+            {
+                var k = store.Combat.Condition(ts);
+                if (run.DownMs < 0 && k.Status != ShipStatus.Afloat)
+                    run.DownMs = t;
+                if (run.OutMs < 0 && c.FallOut is { } rule && (k.Status != ShipStatus.Afloat ||
+                                                               rule.Of(Fitness.Of(c.Target, k, w.Damage.Flood(c.Target).ReserveT)) != FallOutCause.None))
+                    run.OutMs = t;
+            }
             if ((os = store.SlotOf(Shooter)) >= 0 && (ts = store.SlotOf(TargetShip)) >= 0)
             {
                 ownSum += store[os].Speed;

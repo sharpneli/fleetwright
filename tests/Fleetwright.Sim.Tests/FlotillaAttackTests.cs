@@ -17,6 +17,8 @@ public class FlotillaAttackTests(ITestOutputHelper output)
     static (World W, AiSystem Ai, Scenario S) Load(TorpedoAttack attack, ulong? seed = null)
     {
         var s = Scenario.Load(Path.Combine(Fleet.Repo, "Content", "Scenarios", "flotilla.json"));
+        foreach (var u in s.Units)
+            u.Tasks.Clear();   // the file's opening attack (docs/battle/coarse.md J0) left out: these tests give their own orders
         var w = new World(s.Start, seed ?? s.Seed, Settings);
         var ai = new AiSystem(w);
         var classes = ScenarioLoader.RequestClasses(s, w.Ships.Registry, [Path.Combine(Fleet.Shipgen, "designs")]);

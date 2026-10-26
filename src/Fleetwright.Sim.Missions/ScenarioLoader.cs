@@ -234,6 +234,7 @@ public static class ScenarioLoader
             "screen" => o.Screen(unit, of, t.DistanceM),
             "cover" => o.Cover(unit, of, t.DistanceM),
             "shadow" => o.Shadow(unit, of, t.DistanceM),
+            "attack" => o.Attack(unit),
             _ => t.At != null ? o.Withdraw(unit, lat, lon) : o.WithdrawHome(unit),
         };
     }

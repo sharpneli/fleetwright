@@ -1,0 +1,32 @@
+// A running fight (docs/battle/coarse.md, the parity bench's dodging layer): two British dreadnoughts come upon a German
+// light cruiser and two large destroyers 15 km off. Outgunned, the light ships run, zigzagging under fire from beyond
+// 10 km by doctrine (or the boats try their torpedoes); the dreadnoughts' guns follow them out. Not history: a bench for
+// how well small, agile ships dodge, played the same in the fine and the coarse tier.
+{
+  "scenario": 1,
+  "test": true,
+  "name": "Running fight",
+  "brief": "Two dreadnoughts come upon a light cruiser and two destroyers 15 km off. Watch the light ships run and zigzag under the big guns' fire.",
+  "place": "North Sea",
+  "about": {
+    "Britain": { "character": "Two dreadnoughts: the guns, not the speed.", "commander": "R-Adm Gaunt", "ensign": "britain" },
+    "Germany": { "character": "A light cruiser and two destroyers: the speed, not the guns.", "commander": "Kapt Reiss", "ensign": "germany" } },
+  "start": "1916-05-31T16:00",
+  "seed": 21,
+  "camera": [56.55, 4.1, 30],
+  "sides": ["Britain", "Germany"],
+  "readiness": { "Britain": "closed up", "Germany": "closed up" },
+  "damage_control": { "Britain": "1916", "Germany": "1916" },
+  "fire_discipline": { "Britain": "rn-1914", "Germany": "german" },
+  "player": "Britain",
+  "until": "1916-05-31T19:00",
+  "aims": { "Britain": "destroy everyone", "Germany": "destroy everyone" },
+  "home": { "Britain": [56.3, -1.5], "Germany": [54.2, 7.6] },
+  "weather": { "visibility_km": 18, "wind_from": 225, "wind_kn": 8 },
+  "units": [
+    { "name": "4th Battle Squadron, 2nd Division", "admiral": "R-Adm Gaunt (in Iron Duke)", "side": 0, "at": [56.5, 4.0], "course": 90, "kn": 20, "formation": "column", "spacing": 600,
+      "ships": [ { "design": "iron_duke", "names": ["Iron Duke", "Marlborough"] } ] },
+    { "name": "Light forces", "side": 1, "at": [56.62, 4.12], "course": 225, "kn": 25, "formation": "column", "spacing": 500,
+      "ships": [ { "design": "wiesbaden", "name": "Wiesbaden" }, { "design": "b97", "names": ["B97", "B98"] } ] }
+  ]
+}

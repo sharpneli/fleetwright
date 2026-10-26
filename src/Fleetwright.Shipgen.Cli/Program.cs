@@ -248,10 +248,17 @@ public static class Program
             rails, the speed it runs at, the share of the sim thread --at x takes, allocations and collections;
             --replay runs the command log again and compares the hashes; --fire-trace logs each battery's target,
             state and phase as they change (the time a new target takes to come under fire)
-        shipgen scenario [SCENARIO.json] --play [--seeds N] [--fast 1000] [--fine 1] [--threads N] [--no-land]
+        shipgen scenario [SCENARIO.json] --play [--seeds N] [--fast 1000] [--tier fine|coarse] [--fine 1] [--threads N] [--no-land]
             the scenario played to its end with the AI on every side (docs/battle/command.md 5.0): one seed's
             timeline and result, or a line a seed and the spread; the asked speed is --fine while an encounter is
-            open (guns fire only in the fine tier) and --fast otherwise
+            open (1x, or 1000x with --tier coarse) and --fast otherwise
+        shipgen coarse-parity [--panel quick|standard|full] [--layer duels,dodging,fights,scenarios] [--tier both|fine|coarse]
+                              [--runs N] [--seeds N] [--threads N] [--only SCENARIO,...] [--out FILE.json] [--fine-from FILE.json]
+            the coarse tier against the fine one (docs/battle/coarse.md "The parity bench"): the panel's duels,
+            dodging, fights to the end and scenarios played both ways, each measure's means beside the agreed band
+            (±15%, absolute floors; the exchange ±10 points), and the seeds a noisy one would need; 300 runs a duel
+            and 48 seeds a scenario by default; --threads caps the plays at once (a full panel's Jutlands); --out
+            keeps the results, --fine-from takes the fine side from a kept file (only coarse changed)
         --root defaults to the repo's shipgen folder (found from the current directory up).
         """;
 
@@ -293,7 +300,7 @@ public static class Program
                 "scenario" when a.Has("play") => ScenarioPlay.Run(a.Positional.FirstOrDefault() ?? Path.Combine(Root(a), "..", "Content", "Scenarios", "jutland.json"),
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
                     a.Get("land") ?? Path.Combine(Root(a), "..", "Content", "World", "land-10m.bin"), Path.Combine(Root(a), "designs"),
-                    a.Int("threads", 0), !a.Has("no-land"), a.Int("seeds", 1), D(a, "fast", 1000), D(a, "fine", 1), SmokeSwitch(a),
+                    a.Int("threads", 0), !a.Has("no-land"), a.Int("seeds", 1), D(a, "fast", 1000), D(a, "fine", TierSpeed(a)), SmokeSwitch(a),
                     a.Int("workers", -1), (ulong)a.Int("shuffle", 0), D(a, "spin", 250)),
                 "scenario" => ScenarioRun.Run(a.Positional.FirstOrDefault() ?? Path.Combine(Root(a), "..", "Content", "Scenarios", "jutland.json"),
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
@@ -303,6 +310,10 @@ public static class Program
                     a.Get("watch")?.Split(',').Select(int.Parse).ToArray(),
                     double.Parse(a.Get("speed", "0")!, System.Globalization.CultureInfo.InvariantCulture), a.Has("fire-trace"), SmokeSwitch(a)),
                 "duel" => DuelCmd(a),
+                "coarse-parity" => CoarseParity.Run(Settings(a), Root(a), n => Class(a, n), new CoarseParity.Options(a.Get("panel", "standard")!,
+                    a.Get("layer")?.Split(','), a.Get("tier", "both")!, a.Int("runs", 0), a.Int("seeds", 0), a.Get("out"), a.Get("fine-from"),
+                    a.Get("land") ?? Path.Combine(Root(a), "..", "Content", "World", "land-10m.bin"), a.Int("threads", 0),
+                    a.Get("only")?.Split(','))),
                 "fc-converge" => FcLevels.Converge(Settings(a), a.Int("runs", 30), a.Has("ref") ? Root(a) : null, n => Class(a, n)),
                 "fc-levels" => FcLevels.Run(Settings(a), a.Int("runs", 20), a.Has("ref") ? Root(a) : null, n => Class(a, n)),
                 "fc-sensors" => FcSensors.Run(Settings(a), a.Int("runs", 12), Root(a), n => Class(a, n)),
@@ -701,9 +712,19 @@ public static class Program
             Crew = Enum.Parse<CrewQuality>(a.Get("crew", "trained")!, ignoreCase: true), Damage = a.Has("damage"), Discipline = a.Get("discipline"),
             WindFromDeg = a.Get("wind") is { } wf ? double.Parse(wf.Split(',')[0], inv) : double.NaN,
             WindKn = a.Get("wind") is { } wk ? double.Parse(wk.Split(',')[^1], inv) : double.NaN,
+            Speed = TierSpeed(a),
         };
         return Duel.Run(c, Settings(a), a.Int("runs", 20), a.Int("seed", 1), a.Has("trace"));
     }
+
+    /// <summary>The asked speed <c>--tier fine|coarse</c> picks (docs/battle/coarse.md J0): 1x, or
+    /// <see cref="CoarseParity.CoarseSpeed"/>.</summary>
+    static double TierSpeed(Args a) => a.Get("tier", "fine") switch
+    {
+        "fine" => 1,
+        "coarse" => CoarseParity.CoarseSpeed,
+        var t => throw new ArgumentException($"no tier '{t}' (fine, coarse)"),
+    };
 
     static int SimCmd(Args a)
     {

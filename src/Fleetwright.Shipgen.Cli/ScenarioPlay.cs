@@ -10,8 +10,8 @@ namespace Fleetwright.Shipgen.Cli;
 
 /// <summary><c>shipgen scenario X --play [--seeds N]</c> (docs/battle/command.md step 5.0): a scenario played to its end
 /// with every side the AI's, headless, as fast as it goes. One seed prints its timeline and result; several print a line
-/// each and the spread. The clock: guns are silent in the coarse tier until coarse fire (fighting.md 4.9), so while any
-/// encounter is open the asked speed is the fine tier's (<paramref name="fine"/>, 1x: an encounter opening drops to it at
+/// each and the spread. The clock: while any encounter is open the asked speed is <paramref name="fine"/> (1x, the fine
+/// tier, by default; <c>--tier coarse</c> asks <see cref="CoarseParity.CoarseSpeed"/>: an encounter opening drops to it at
 /// the event, by the interest rule for others' encounters), and <paramref name="fast"/> otherwise. The speed asked only
 /// picks the tiers here; the run goes at full tilt either way.</summary>
 static class ScenarioPlay
@@ -45,9 +45,7 @@ static class ScenarioPlay
         for (int i = 0; i < seeds; i++)
         {
             ulong seed = s.Seed + (ulong)i;
-            var w = new World(s.Start, seed, settings, registry, land ? shore : null) { Workers = workers };
-            var ai = new AiSystem(w);
-            var start = ScenarioLoader.Apply(s, w, ai, classes);
+            var (w, ai, start) = Begin(s, seed, settings, registry, classes, land ? shore : null, workers, fine);
             foreach (var x in start.Warnings)
                 Console.WriteLine($"  {x}");
             var names = new Dictionary<int, string>(start.ShipNames);
@@ -56,8 +54,6 @@ static class ScenarioPlay
                 if (store.IsAlive(slot) && !names.ContainsKey(store[slot].Entity))
                     names[store[slot].Entity] = $"{store[slot].Handling.Class.Name} #{store[slot].Entity}";
 
-            w.Apply(Command.SetPlayerSide(-1));   // watching: every side the AI's
-            w.Apply(Command.SetInterest(InterestKind.Others, InterestAction.Slow, fine));   // an encounter opening drops to the fine tier at once
             var end = new ScenarioEnd(s, w, ai);
             var guns = new MainGuns();
             int seen = 0;
@@ -69,19 +65,15 @@ static class ScenarioPlay
             var sw = Stopwatch.StartNew();
             try
             {
-                while (!end.Check())
+                PlayToEnd(w, end, fast, fine, () =>
                 {
-                    double want = w.Encounters.Count > 0 ? fine : fast;
-                    if (w.Speed != want)
-                        w.Apply(Command.SetSpeed(want));
-                    w.AdvanceTo(w.Time + 60_000);
                     guns.Read(w.CombatLog);
                     // a ship falling out for her main guns: why they're out, as she falls out
                     for (; seen < end.Timeline.Count; seen++)
                         if (end.Timeline[seen] is { Kind: PlayEvent.FellOut } l && (Fleetwright.Sim.Ai.Captains.CaptainReason)l.Count ==
                             Fleetwright.Sim.Ai.Captains.CaptainReason.OutGuns && w.Ships.Store.SlotOf(l.Entity) is int fs and >= 0)
                             guns.FellOut.Add(w.Ships.Store.Combat.Condition(fs));
-                }
+                });
                 for (int slot = 0; slot < w.Ships.Store.Slots; slot++)
                     if (w.Ships.Store.IsAlive(slot))
                         guns.End.Add(w.Ships.Store.Combat.Condition(slot));
@@ -128,6 +120,35 @@ static class ScenarioPlay
         if (crashed > 0)
             Console.WriteLine($"the sim broke in {crashed} of {seeds} seeds");
         return crashed > 0 ? 1 : 0;
+    }
+
+    /// <summary>A seed's world with the scenario in it and the AI on every side (the player's side none), an encounter
+    /// opening dropping the asked speed to <paramref name="encounterSpeed"/> at the event (the interest rule for others'
+    /// encounters): 1x the fine tier, <see cref="CoarseParity.CoarseSpeed"/> the coarse one.</summary>
+    public static (World World, AiSystem Ai, ScenarioStart Start) Begin(Scenario s, ulong seed, SimSettings settings, ShipClassRegistry registry,
+        IReadOnlyDictionary<string, int> classes, Shore? shore, Workers workers, double encounterSpeed)
+    {
+        var w = new World(s.Start, seed, settings, registry, shore) { Workers = workers };
+        var ai = new AiSystem(w);
+        var start = ScenarioLoader.Apply(s, w, ai, classes);
+        w.Apply(Command.SetPlayerSide(-1));   // watching: every side the AI's
+        w.Apply(Command.SetInterest(InterestKind.Others, InterestAction.Slow, encounterSpeed));
+        return (w, ai, start);
+    }
+
+    /// <summary>Plays a world to its scenario's end a game minute at a time: the asked speed <paramref name="encounterSpeed"/>
+    /// while any encounter is open, <paramref name="fast"/> otherwise (the speed only picks the tiers; the run goes at full
+    /// tilt), and <paramref name="minute"/> told after each minute.</summary>
+    public static void PlayToEnd(World w, ScenarioEnd end, double fast, double encounterSpeed, Action? minute = null)
+    {
+        while (!end.Check())
+        {
+            double want = w.Encounters.Count > 0 ? encounterSpeed : fast;
+            if (w.Speed != want)
+                w.Apply(Command.SetSpeed(want));
+            w.AdvanceTo(w.Time + 60_000);
+            minute?.Invoke();
+        }
     }
 
     /// <summary>Why ships' main guns are out (the user's question, 2026-10-20: "a lot of ships with disabled main guns"):

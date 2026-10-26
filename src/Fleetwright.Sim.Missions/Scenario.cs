@@ -941,7 +941,8 @@ public sealed class ScenarioShips
 /// "distance_km": 30 }</c>. Kinds: "go to" (<c>"at"</c>, <c>"kn"</c>), "patrol" (<c>"to"</c>), "search" (<c>"at"</c>,
 /// <c>"leg_km"</c>), "join", "scout" (<c>"off_bow"</c> degrees), "screen", "cover" and "shadow" (<c>"of"</c> a unit's name,
 /// any level of the scenario;
-/// <c>"distance_km"</c>), "withdraw" (<c>"at"</c>, else home). <c>"tasks": [...]</c> gives several, each begun when the one
+/// <c>"distance_km"</c>), "withdraw" (<c>"at"</c>, else home), "attack" (a flotilla's torpedo attack on the biggest enemy in
+/// sight, done once its torpedoes are spent). <c>"tasks": [...]</c> gives several, each begun when the one
 /// before it ends (the unit's plan, 5.1d); the side's commander gives the tasks after these.</summary>
 public sealed class ScenarioTask
 {
@@ -952,7 +953,7 @@ public sealed class ScenarioTask
     public double OffBowDeg { get; init; }
     public double Kn { get; init; }
 
-    public static readonly string[] Kinds = ["go to", "patrol", "search", "join", "scout", "screen", "cover", "shadow", "withdraw"];
+    public static readonly string[] Kinds = ["go to", "patrol", "search", "join", "scout", "screen", "cover", "shadow", "withdraw", "attack"];
 
     /// <summary>The task, of another unit (the one it named renamed).</summary>
     internal ScenarioTask OfUnit(string unit) => new() { Kind = Kind, Of = unit, At = At, DistanceM = DistanceM, OffBowDeg = OffBowDeg, Kn = Kn };

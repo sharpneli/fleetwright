@@ -194,18 +194,22 @@ public class ScenarioTests
     }
 
     /// <summary>Opening tasks (docs/battle/command.md 5.1c): a top unit's "task" is given once every unit is placed, naming
-    /// another by its name at any level; one naming a unit that isn't there is a warning, and the unit steams on.</summary>
+    /// another by its name at any level; one naming a unit that isn't there is a warning, and the unit steams on. An
+    /// "attack" (docs/battle/coarse.md J0: the flotilla bench's run-in) names nobody: the biggest enemy in sight.</summary>
     [Fact]
     public void Opening_tasks_are_given_by_the_units_names()
     {
         string json = Small
             .Replace("\"name\": \"Lone\", \"side\": 1,", "\"name\": \"Lone\", \"side\": 1, \"task\": { \"do\": \"scout\", \"of\": \"B\", \"distance_km\": 12 },")
-            .Replace("\"name\": \"Force A\", \"side\": 0,", "\"name\": \"Force A\", \"side\": 0, \"task\": { \"do\": \"cover\", \"of\": \"Nobody\" },");
+            .Replace("\"name\": \"Force A\", \"side\": 0,", "\"name\": \"Force A\", \"side\": 0, \"task\": { \"do\": \"cover\", \"of\": \"Nobody\" },")
+            .Replace("\"name\": \"Line\", \"side\": 1,", "\"name\": \"Line\", \"side\": 1, \"task\": { \"do\": \"attack\" },");
         var (w, ai, start) = Load(json);
         int lone = w.Ships.NewestEntity;
         Assert.Equal(Ai.Tasks.TaskKind.Scout, ai.Tasks.Of(Unit.Ship(lone)).Kind);
         Assert.Contains(start.Warnings, x => x.Contains("Nobody"));
         Assert.Equal(Ai.Tasks.TaskKind.None, ai.Tasks.Of(Unit.Group(1)).Kind);
+        int line = Enumerable.Range(0, w.Groups.Count).Select(k => w.Groups[k]).First(g => g.Name == "Line").GroupId;
+        Assert.Equal(Ai.Tasks.TaskKind.Attack, ai.Tasks.Of(Unit.Group(line)).Kind);
     }
 
     /// <summary>The shipped Jutland reads, its order of battle is the historical count, and every design it names is

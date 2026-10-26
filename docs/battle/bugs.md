@@ -119,6 +119,11 @@ runs 5-7, after its fix, and the Debug run had none.
   the boats and takes the closing ones first, and the secondaries no longer flick to each unknown contact: none of
   seeds 1-24 gets in (all beaten off in Gain or Run). Accepted for now (user); `FlotillaAttackTests`'s attack test is
   skipped until the tuning (the boats' break-off share, their run-in, or the line's fire against them).
+  2026-10-26 (docs/battle/coarse.md J0): the scenario file's flotilla no longer ran in at all. Since the commanders
+  (command.md 5.1d-g) its commander judges six boats outmatched by four battleships by day and withdraws them at once.
+  The file now gives it an opening `"attack"` task (a new scenario task kind, the task layer's own Attack): it runs in
+  as its brief says, under fire, and is beaten off in every one of 8 seeds (3.9 boats lost a run, no torpedoes fired).
+  That's the parity bench's dodging case for an attack run.
 - [ ] Opening fire once the track is good enough to range from (2026-10-18, `OpenDoubtSteps` 2) moves Lion's lay after
   a hit at 15 km from under 50 m to 52 m on average (`FireDisciplineTests`, bound now 60): she opens on a less settled
   track. Tune `OpenDoubtSteps` (1 waits for about twice the readings) against fc-history's time to first hit.
