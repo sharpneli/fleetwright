@@ -132,12 +132,13 @@ public static unsafe class Pieces
         return x;
     }
 
-    /// <summary>A pane's body as a child window under its title strip (scrolling when its content is longer);
-    /// <paramref name="body"/> is its draw list. End it with <see cref="EndBody"/> whatever this returns.</summary>
-    public static bool BeginBody(string id, Vector2 a, Vector2 size, out ImDrawListPtr body, bool scroll = true)
+    /// <summary>A pane's body as a child window under its title strip (scrolling when its content is longer), and under
+    /// <paramref name="head"/> more of fixed rows (a sub-header, a table's header row); <paramref name="body"/> is its draw
+    /// list. End it with <see cref="EndBody"/> whatever this returns.</summary>
+    public static bool BeginBody(string id, Vector2 a, Vector2 size, out ImDrawListPtr body, bool scroll = true, float head = 0)
     {
-        ImGui.SetCursorScreenPos(a + new Vector2(1, TitleH + 1));
-        bool open = ImGui.BeginChild(id, size - new Vector2(2, TitleH + 2), ImGuiChildFlags.None,
+        ImGui.SetCursorScreenPos(a + new Vector2(1, TitleH + 1 + head));
+        bool open = ImGui.BeginChild(id, size - new Vector2(2, TitleH + 2 + head), ImGuiChildFlags.None,
             scroll ? ImGuiWindowFlags.None : ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
         body = ImGui.GetWindowDrawList();
         return open;
@@ -232,6 +233,24 @@ public static unsafe class Pieces
     {
         dl.AddRectFilled(p, p + size, U(T.Inset));
         dl.AddRectFilled(p, p + new Vector2(size.X * Math.Clamp(frac, 0, 1), size.Y), U(colour));
+    }
+
+    /// <summary>A ledger bar of a segment a member (a unit's ships), each filled in its kind's colour
+    /// (<paramref name="colours"/>[kind]), 1 px apart while each is 2 px or more, else touching; a 1 px edge round it.</summary>
+    public static void SegmentBar(this ImDrawListPtr dl, Vector2 a, Vector2 size, ReadOnlySpan<byte> kinds, ReadOnlySpan<Vector4> colours)
+    {
+        dl.AddRectFilled(a, a + size, U(T.Inset));
+        int n = kinds.Length;
+        if (n > 0)
+        {
+            float inner = size.X - 2, gap = (inner - (n - 1)) / n >= 2 ? 1 : 0, seg = (inner - gap * (n - 1)) / n;
+            for (int i = 0; i < n; i++)
+            {
+                float x0 = a.X + 1 + i * (seg + gap);
+                dl.AddRectFilled(new Vector2(MathF.Round(x0), a.Y + 1), new Vector2(MathF.Round(x0 + seg), a.Y + size.Y - 1), U(colours[kinds[i]]));
+            }
+        }
+        dl.AddRect(a, a + size, U(T.Edge));
     }
 
     /// <summary>A ledger bar of two sides: the friend's share cream from the left, the rest the enemy's.</summary>
@@ -479,8 +498,9 @@ public static unsafe class Pieces
         return hit;
     }
 
-    /// <summary>A status chip's colour: ready, a consequence, plain, the enemy or a ship going down.</summary>
-    public enum ChipKind { Ok, Amber, Plain, Hostile }
+    /// <summary>A status chip's colour: ready, a consequence, plain, the enemy or a ship going down, or quiet (a state
+    /// that's the usual one: the AI's unit beside the player's plain "you").</summary>
+    public enum ChipKind { Ok, Amber, Plain, Hostile, Quiet }
 
     public static float ChipWidth(string label) => Width(UiFonts.SansSmall, label) + P(8);
     public static float ChipWidth(ReadOnlySpan<byte> label) => Width(UiFonts.SansSmall, label) + P(8);
@@ -510,6 +530,7 @@ public static unsafe class Pieces
             ChipKind.Ok => (T.OkTint, T.OkEdge, T.Ok),
             ChipKind.Amber => (T.AmberTint, T.AmberEdge, T.Amber),
             ChipKind.Hostile => (T.HostileTint, T.HostileEdge, T.Hostile),
+            ChipKind.Quiet => (T.Panel2, T.ButtonEdge, T.Muted),
             _ => (T.PlainTint, T.PlainEdge, T.Bright),
         };
         dl.AddRectFilled(at, at + new Vector2(w, P(15)), U(bg));

@@ -8,6 +8,8 @@ using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
 using ImGuiNET;
 using Fleetwright.Ui;
+using static Fleetwright.Ui.Pieces;
+using T = Fleetwright.Ui.Theme;
 
 namespace Fleetwright.Map;
 
@@ -255,38 +257,49 @@ public sealed partial class MapScene
 
     // ------------------------------------------------------------------ the ticker and the log
 
-    /// <summary>The newest events at the bottom left, above the strip: each fades from 14 s old; a click goes to its ship.</summary>
-    void Ticker(Snapshot s)
+    /// <summary>The rail's log pane (docs/map-ui/rail.md): the newest events, newest first, a row each (the whole line in
+    /// the tooltip); a click goes to its ship, the title strip opens the whole log (J). Its kind word is amber for a hit
+    /// on us, red for a loss of ours.</summary>
+    void LogPane(Snapshot s, ImDrawListPtr dl, Vector2 a, Vector2 size)
     {
-        var vp = ImGui.GetMainViewport();
-        float sc = UiFonts.Scale, pad = 8 * sc, w = 400 * sc;
-        if (events.Count == 0 || logOpen)
-            return;
-        ImGui.SetNextWindowPos(new Vector2(vp.Pos.X + pad, vp.Pos.Y + vp.Size.Y - 104 * sc), ImGuiCond.Always, new Vector2(0, 1));
-        ImGui.SetNextWindowSize(new Vector2(w, 0));
-        ImGui.SetNextWindowBgAlpha(0);
-        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
-        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(4, 2) * sc);
-        if (ImGui.Begin("##ticker", ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings |
-                                    ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoNav | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoBackground))
+        float right = dl.Pane(a, size, "LOG", "newest first");
+        float kw = dl.Kbd(new Vector2(right - Width(UiFonts.MonoSmall, "J") - P(6), a.Y + P(3.5f)), "J");
+        dl.TextRight(UiFonts.SansSmall, right - kw - P(6), Mid(UiFonts.SansSmall, a.Y, TitleH), T.Muted, U8.W($"{events.Count} lines"));
+        ImGui.SetCursorScreenPos(a);
+        if (ImGui.InvisibleButton("##logtitle", new Vector2(size.X, TitleH)))
+            logOpen = true;
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("the whole log (J)");
+        float w = size.X - 2;
+        var o = new Vector2(a.X + 1, a.Y + TitleH + 1);
+        int rows = (int)((size.Y - TitleH - 2) / RowH);
+        if (events.Count == 0)
+            dl.Text(UiFonts.SansSmall, new Vector2(o.X + P(6), Mid(UiFonts.SansSmall, o.Y, RowH)), T.Muted, "nothing yet");
+        for (int n = 0; n < rows && n < events.Count; n++)
         {
-            long now = Environment.TickCount64;
-            int first = Math.Max(0, events.Count - 5);
-            for (int i = first; i < events.Count; i++)
-            {
-                var ev = events[i];
-                float age = (now - ev.RealMs) / 1000f, alpha = Math.Clamp(1 - (age - 14) / 20, 0.45f, 1);
-                EventLine(s, ev, i, alpha, true);
-            }
-            ImGui.PushFont(UiFonts.SansSmall);
-            U8.Text(U8.W($"J: the log · {events.Count} lines"), Theme.Muted with { W = 0.8f });
-            if (ImGui.IsItemClicked())
-                logOpen = true;
-            ImGui.PopFont();
+            int i = events.Count - 1 - n;
+            var ev = events[i];
+            var p = o + new Vector2(0, n * RowH);
+            ImGui.PushID(i);
+            var (clicked, hover) = HitRow("##ev", p, new Vector2(w, RowH));
+            var (time, text) = TextOf(s, i);
+            dl.RowBg(p, w, RowH, n, hover: hover);
+            dl.Text(UiFonts.Mono, new Vector2(p.X + P(6), Mid(UiFonts.Mono, p.Y, RowH)), T.Muted, time);
+            var kind = ev.Kind == EventKind.Hit && ev.Form is Form.HitTaken or Form.TorpedoesIn ? T.Amber
+                : ev.Kind == EventKind.Loss && ev.Form == Form.LostOurs ? T.Hostile : T.Muted;
+            dl.Text(UiFonts.MonoSmall, new Vector2(p.X + P(46), Mid(UiFonts.MonoSmall, p.Y, RowH)), kind, KindWords[(int)ev.Kind]);
+            dl.PushClipRect(p, new Vector2(p.X + w - P(6), p.Y + RowH), true);
+            dl.Text(UiFonts.SansSmall, new Vector2(p.X + P(84), Mid(UiFonts.SansSmall, p.Y, RowH)), T.Text, text);
+            dl.PopClipRect();
+            if (hover && Width(UiFonts.SansSmall, text) > w - P(90))
+                ImGui.SetTooltip(text);
+            if (clicked)
+                GoTo(s, ev.Ship);
+            ImGui.PopID();
         }
-        ImGui.End();
-        ImGui.PopStyleVar(2);
     }
+
+    static readonly string[] KindWords = ["gun", "hit", "fire", "loss", "capt", "seen", "dc", "order"];
 
     /// <summary>One event's line: its time, its kind's tag, its text; a click selects its ship and centres on it.</summary>
     void EventLine(Snapshot s, in MapEvent ev, int id, float alpha, bool shaded)

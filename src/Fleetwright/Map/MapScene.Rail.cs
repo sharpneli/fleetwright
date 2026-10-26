@@ -1,5 +1,4 @@
 using System.Numerics;
-using Fleetwright.Designer;
 using Fleetwright.Sim;
 using Fleetwright.Sim.Ai;
 using Fleetwright.Sim.Ai.Commanders;
@@ -9,14 +8,18 @@ using ImGuiNET;
 using SDL;
 using static SDL.SDL3;
 using Fleetwright.Ui;
+using static Fleetwright.Ui.Pieces;
+using T = Fleetwright.Ui.Theme;
 
 namespace Fleetwright.Map;
 
-/// <summary>The forces rail (docs/map-ui/battle-hud.md U4), at the left: the player's units and their ships (a unit's
-/// head selects it for orders and opens its card; a ship's row selects her, twice centres the map on her), each ship
-/// with her flotation, fires, what she's firing at or why she's falling out, her speed and hits; then the enemy in the
-/// player's picture, nearest first from the ship the player last chose, with what's seen of each. Its text is written
-/// without garbage (<see cref="U8"/>).
+/// <summary>The forces rail (docs/map-ui/battle-hud.md U4, redrawn in docs/map-ui/rail.md): the left column of docked
+/// panes, the card dock's twin. FORCES, the player's units and ships as a tree table (a unit's row folds on its twisty,
+/// selects it for orders and opens its card; a ship's row selects her, twice centres the map on her), each ship with what
+/// she's doing, her flotation, speed and hits, a unit with a segment a ship; ENEMY, the player's picture grouped by type,
+/// nearest first in each from the ship the player last chose, with what's seen and how many of the player's ships fire at
+/// each; LOG, the newest events (<c>MapScene.Events.cs</c>). Its text is written without garbage (<see cref="U8"/>) and its
+/// lookups go through the frame's indices, not scans.
 /// <para>Organising by drag and drop (docs/battle/admirals-orders.md O8c): a ship onto a squadron joins it at its end,
 /// onto a ship of one ahead of her (in her own, a move), onto a ship alone makes a squadron of the two; a squadron or a
 /// force onto another unit goes under its admiral (<see cref="GroupSystem.Subordinate"/>); either onto "on its own" leaves
@@ -29,190 +32,358 @@ public sealed partial class MapScene
     int squadronCardOf = -1;
     long railClickMs;
     int railClickShip = -1;
-    // the enemy rows' order: nearest first, made once a frame
-    readonly List<(double Range, int Index)> enemyOrder = [];
-    /// <summary>The units whose ships the rail lists (with many ships, only these and the selection's are open), and
-    /// the player's ships this frame.</summary>
-    readonly HashSet<int> railOpen = [];
+    /// <summary>The units folded open or shut by the player, or opened to show the selection (by group id); the rest
+    /// open by <see cref="UnitOpen"/>'s rule. The enemy's groups the same, by kind.</summary>
+    readonly Dictionary<int, bool> railFold = [], enemyFold = [];
+    /// <summary>The player's ships this frame; with more than <see cref="RailAllOpen"/>, squadrons start shut.</summary>
     int railOwn;
     const int RailAllOpen = 12;
+    /// <summary>The selection the rail last showed (a new one from the map opens its units and scrolls to her).</summary>
+    int railRevealed = -1, railScrollTo = -1;
     /// <summary>What the rail's drag carries: a ship (an entity) or a group (an id); 0 for neither.</summary>
     int dragShip, dragGroup;
     const string RailPayload = "FW_RAIL";
 
+    // the frame's indices: ships, conditions and groups by entity or id, each ship's squadron, the main guns' targets, and
+    // how many of the player's ships fire at each target
+    readonly Dictionary<int, int> railShip = [], railCond = [], railGroup = [], railSquadron = [], railMain = [], railOn = [];
+
+    enum RailKind : byte { Unit, Ship, Loose, Drop }
+
+    /// <summary>A forces row: a unit (its index), a ship (her index; her squadron's index and her place in it, -1 alone),
+    /// the "on its own" head, the drop place while a drag is on.</summary>
+    readonly record struct RailRow(RailKind Kind, int Index, int Depth, int Group, int At);
+
+    readonly List<RailRow> railRows = [];
+    /// <summary>The enemy's rows: a group's (its kind, <see cref="EnemyGroupRow"/> as the index) or a contact's, nearest
+    /// first in each kind.</summary>
+    readonly List<(int Kind, double Range, int Index)> enemyOrder = [];
+    const int EnemyGroupRow = -1;
+
+    static readonly string[] OnOff = ["On", "Off"];
+    static readonly string[] EnemyKinds = ["Heavy ships", "Cruisers", "Destroyers", "Small craft", "Merchants", "Not made out"];
+    /// <summary>A ship's state in a unit's bar: sound, low, going down.</summary>
+    static readonly Vector4[] ShipStates = [T.Sound, T.Amber, T.Hostile];
+    const int RailMaxShips = 512;
+
     void Rail(Snapshot s)
     {
         var v = s.Ships;
-        var gv = s.Groups;
         int side = s.PlayerSide;
-        if (s.Ships.IndexOf(selected) is int ks and >= 0 && (side < 0 || v.Side[ks] == side))
+        if (v.IndexOf(selected) is int ks and >= 0 && (side < 0 || v.Side[ks] == side))
             lastOwn = selected;
-        if (s.Ships.IndexOf(lastOwn) < 0)
+        if (v.IndexOf(lastOwn) < 0)
             lastOwn = -1;
-        var vp = ImGui.GetMainViewport();
-        float sc = UiFonts.Scale, pad = 8 * sc, w = 270 * sc;
-        float maxH = vp.Size.Y * 0.62f;
-        ImGui.SetNextWindowPos(new Vector2(vp.Pos.X + pad, HudTop));
-        ImGui.SetNextWindowSizeConstraints(new Vector2(w, 0), new Vector2(w, maxH));
-        ImGui.SetNextWindowBgAlpha(0.86f);
-        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(8, 6) * sc);
-        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(4, 2) * sc);
-        bool open = ImGui.Begin("##rail", ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings |
-                                          ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoNav | ImGuiWindowFlags.NoMove);
-        ImGui.PopStyleVar(2);
-        if (!open)
-        {
-            ImGui.End();
-            return;
-        }
-        // the player's units: the top ones (forces and lone squadrons), each with its ships
-        int own = 0;
-        for (int k = 0; k < v.Count; k++)
-            own += side < 0 || v.Side[k] == side ? 1 : 0;
-        railOwn = own;
-        RailHead("YOUR FORCES", U8.W($"{own} ships"));
-        CommanderSwitch(s);
-        // a big order of battle scrolls in its own region, the enemy below it in view
-        bool scroll = own > RailAllOpen;
-        if (scroll)
-            ImGui.BeginChild("##forces", new Vector2(0, vp.Size.Y * 0.38f));
-        for (int g = 0; g < gv.Count; g++)
-            if (gv.Parent[g] == 0 && UnitIsOurs(s, g))
-                UnitRows(s, g, 0);
-        bool loose = false;
-        for (int k = 0; k < v.Count; k++)
-            if ((side < 0 || v.Side[k] == side) && gv.IndexOfShip(v.Entity[k]) < 0)
-            {
-                if (!loose)
-                {
-                    ImGui.TextDisabled("not in a squadron");
-                    loose = true;
-                }
-                ShipRow(s, k, -1, -1);
-            }
-        AloneZone(s);
-        if (scroll)
-            ImGui.EndChild();
+        RailIndex(s);
+        Reveal(s);
+        RailRows(s);
+        EnemyRows(s);
 
-        // the enemy in the picture
-        var c = s.Contacts;
-        if (c.Count > 0)
-        {
-            ImGui.Spacing();
-            int from = s.Ships.IndexOf(lastOwn);
-            Vec3d at = from >= 0 ? v.PoseAt(from, world.DrawMs).Position : default;
-            enemyOrder.Clear();
-            for (int i = 0; i < c.Count; i++)
-                if ((c.Seen[i] & SeenFlags.Gone) == 0)
-                    enemyOrder.Add((from >= 0 ? Earth.Distance(at, c.Position[i]) : i, i));
-            enemyOrder.Sort((a, b) => a.Range.CompareTo(b.Range));
-            int sighted = 0;
-            for (int i = 0; i < c.Count; i++)
-                sighted += c.InSight[i] ? 1 : 0;
-            RailHead("ENEMY", U8.W($"{sighted} in sight{(from >= 0 ? " · from " : "")}{(from >= 0 ? ShipName(s, lastOwn) : "")}"));
-            int shown = Math.Min(enemyOrder.Count, 10);
-            for (int j = 0; j < shown; j++)
-                EnemyRow(s, enemyOrder[j].Index, from >= 0 ? enemyOrder[j].Range : double.NaN, at, from >= 0);
-            if (enemyOrder.Count > shown)
-                U8.Text(U8.W($"and {enemyOrder.Count - shown} more"), Theme.Muted);
-        }
+        // the column: the forces from the top, the enemy under them, the log at the foot, above the strip
+        var vp = ImGui.GetMainViewport();
+        float w = P(330), top = HudTop, bottom = vp.Pos.Y + vp.Size.Y - P(128), gap = P(2), x = vp.Pos.X + P(8);
+        bool commander = side >= 0 && s.CommanderMode[side] != (byte)CommanderMode.None;
+        float logH = TitleH + 7 * RowH + 2;
+        float forcesHead = (commander ? RowH : 0) + HeadH;
+        float forcesWant = TitleH + forcesHead + Math.Max(railRows.Count, 1) * RowH + 2;
+        float enemyWant = TitleH + HeadH + Math.Max(enemyOrder.Count, 1) * RowH + 2;
+        float room = bottom - top - logH - 2 * gap;
+        // the enemy gets up to 30 % past a long order of battle, all it needs beside a short one
+        float forcesH = Math.Min(forcesWant, room - Math.Min(enemyWant, room * 0.3f));
+        float enemyH = Math.Min(enemyWant, room - forcesH);
+
+        ImGui.PushStyleColor(ImGuiCol.WindowBg, T.Panel);
+        ImGui.PushStyleColor(ImGuiCol.ChildBg, Vector4.Zero);
+        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
+        ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, 0);
+        var at = new Vector2(x, top);
+        if (BeginRailPane("##forces", at, new Vector2(w, forcesH), out var dl))
+            ForcesPane(s, dl, at, new Vector2(w, forcesH), commander, forcesWant > forcesH);
         ImGui.End();
+        at.Y += forcesH + gap;
+        if (BeginRailPane("##enemy", at, new Vector2(w, enemyH), out dl))
+            EnemyPane(s, dl, at, new Vector2(w, enemyH), enemyWant > enemyH);
+        ImGui.End();
+        at.Y = bottom - logH;
+        if (BeginRailPane("##logpane", at, new Vector2(w, logH), out dl))
+            LogPane(s, dl, at, new Vector2(w, logH));
+        ImGui.End();
+        ImGui.PopStyleVar(2);
+        ImGui.PopStyleColor(2);
+    }
+
+    static bool BeginRailPane(string id, Vector2 a, Vector2 size, out ImDrawListPtr dl)
+    {
+        ImGui.SetNextWindowPos(a);
+        ImGui.SetNextWindowSize(size);
+        bool open = ImGui.Begin(id, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoSavedSettings |
+                                    ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoNav | ImGuiWindowFlags.NoBringToFrontOnFocus);
+        dl = ImGui.GetWindowDrawList();
+        return open;
     }
 
     // by its side, not its guide: a force whose every member is detached has no guide ship
     static bool UnitIsOurs(Snapshot s, int g) => s.PlayerSide < 0 || s.Groups.Side[g] == s.PlayerSide;
 
-    /// <summary>The side's commander, under the forces' head (docs/battle/command.md decision 14): on (the default), he
-    /// fights every unit the player hasn't taken; off, only those handed to him.</summary>
-    void CommanderSwitch(Snapshot s)
+    bool OursAt(Snapshot s, int k) => s.PlayerSide < 0 || s.Ships.Side[k] == s.PlayerSide;
+
+    /// <summary>The frame's indices, so no row scans the snapshot.</summary>
+    void RailIndex(Snapshot s)
+    {
+        var v = s.Ships;
+        var gv = s.Groups;
+        var c = s.Conditions;
+        railShip.Clear();
+        railCond.Clear();
+        railGroup.Clear();
+        railSquadron.Clear();
+        railMain.Clear();
+        railOn.Clear();
+        for (int k = 0; k < v.Count; k++)
+            railShip[v.Entity[k]] = k;
+        for (int i = 0; i < c.Count; i++)
+            railCond[c.Entity[i]] = i;
+        for (int g = 0; g < gv.Count; g++)
+        {
+            railGroup[gv.Id[g]] = g;
+            if (!gv.Force[g])
+                for (int i = 0; i < gv.MemberCount[g]; i++)
+                    railSquadron[gv.Members[gv.MemberStart[g] + i]] = g;
+        }
+        var b = s.Batteries;
+        for (int i = 0; i < b.Count; i++)
+            if (b.Battery[i] == 0)
+                railMain[b.Shooter[i]] = b.Target[i];
+        railOwn = 0;
+        for (int k = 0; k < v.Count; k++)
+            if (OursAt(s, k))
+            {
+                railOwn++;
+                if (TargetOf(s, k) is int t and > 0)
+                    railOn[t] = railOn.GetValueOrDefault(t) + 1;
+            }
+    }
+
+    /// <summary>What a ship fires at: her order's target, else her main guns'.</summary>
+    int TargetOf(Snapshot s, int k) => s.Ships.FireTarget[k] is int t and > 0 ? t : railMain.GetValueOrDefault(s.Ships.Entity[k]);
+
+    /// <summary>A new selection of the player's from outside the rail (the map, Tab, the log) opens the units she's in and
+    /// scrolls to her; the rail's own clicks note theirs at once, so a unit's row doesn't open the unit.</summary>
+    void Reveal(Snapshot s)
+    {
+        if (selected == railRevealed)
+            return;
+        bool ship = railShip.TryGetValue(selected, out int k);
+        if (!ship && selected >= 0 && ContactIndex(s.Contacts, selected) < 0)
+            return;   // not in the snapshot yet (a selection at start): wait for her
+        railRevealed = selected;
+        if (!ship || !OursAt(s, k))
+            return;
+        var gv = s.Groups;
+        for (int g = railSquadron.GetValueOrDefault(selected, -1); g >= 0; g = gv.Parent[g] != 0 ? railGroup.GetValueOrDefault(gv.Parent[g], -1) : -1)
+            railFold[gv.Id[g]] = true;
+        railScrollTo = selected;
+    }
+
+    /// <summary>Whether a unit's members show: as the player or the selection left it, else open while the order of battle
+    /// is small, and a force's always (its squadrons each a row).</summary>
+    bool UnitOpen(Snapshot s, int g) => railFold.TryGetValue(s.Groups.Id[g], out bool open) ? open : railOwn <= RailAllOpen || s.Groups.Force[g];
+
+    void RailRows(Snapshot s)
+    {
+        var v = s.Ships;
+        var gv = s.Groups;
+        railRows.Clear();
+        for (int g = 0; g < gv.Count; g++)
+            if (gv.Parent[g] == 0 && UnitIsOurs(s, g))
+                UnitRows(s, g, 0);
+        bool loose = false;
+        for (int k = 0; k < v.Count; k++)
+            if (OursAt(s, k) && !railSquadron.ContainsKey(v.Entity[k]))
+            {
+                if (!loose)
+                    railRows.Add(new RailRow(RailKind.Loose, -1, 0, -1, -1));
+                loose = true;
+                railRows.Add(new RailRow(RailKind.Ship, k, 1, -1, -1));
+            }
+        unsafe
+        {
+            if (ImGui.GetDragDropPayload().NativePtr != null)
+                railRows.Add(new RailRow(RailKind.Drop, -1, 0, -1, -1));
+        }
+    }
+
+    void UnitRows(Snapshot s, int g, int depth)
+    {
+        var gv = s.Groups;
+        railRows.Add(new RailRow(RailKind.Unit, g, depth, -1, -1));
+        if (!UnitOpen(s, g))
+            return;
+        for (int i = 0; i < gv.MemberCount[g]; i++)
+        {
+            int m = gv.Members[gv.MemberStart[g] + i];
+            if (gv.Force[g])
+            {
+                if (railGroup.TryGetValue(m, out int sub))
+                    UnitRows(s, sub, depth + 1);
+            }
+            else if (railShip.TryGetValue(m, out int k))
+                railRows.Add(new RailRow(RailKind.Ship, k, depth + 1, g, i));
+        }
+    }
+
+    // ------------------------------------------------------------------ the forces
+
+    /// <summary>The forces' columns from a row's right edge: doing, the bar, speed, hits, whose.</summary>
+    static (float Doing, float BarL, float BarR, float Kn, float Hits, float Whose) ForcesColumns(float right)
+    {
+        float whose = right - P(34), hits = whose - P(2), kn = hits - P(26), barR = kn - P(26), barL = barR - P(36);
+        return (barL - P(80), barL, barR, kn, hits, whose);
+    }
+
+    void ForcesPane(Snapshot s, ImDrawListPtr dl, Vector2 a, Vector2 size, bool commander, bool scroll)
+    {
+        float right = dl.Pane(a, size, "FORCES", "your side");
+        float kw = dl.Kbd(new Vector2(right - Width(UiFonts.MonoSmall, "Tab") - P(6), a.Y + P(3.5f)), "Tab");
+        dl.TextRight(UiFonts.SansSmall, right - kw - P(6), Mid(UiFonts.SansSmall, a.Y, TitleH), T.Muted, U8.W($"{railOwn} ships"));
+        float w = size.X - 2, y = a.Y + TitleH + 1;
+        if (commander)
+        {
+            CommanderRow(s, dl, new Vector2(a.X + 1, y), w);
+            y += RowH;
+        }
+        var head = new Vector2(a.X + 1, y);
+        dl.Head(head, w);
+        var cols = ForcesColumns(head.X + w - (scroll ? ImGui.GetStyle().ScrollbarSize : 0));
+        dl.HeadCell(head, head.X + P(6), "UNIT · SHIP");
+        dl.HeadCell(head, cols.Doing, "DOING");
+        dl.HeadCell(head, cols.BarR, "AFLOAT", right: true);
+        dl.HeadCell(head, cols.Kn, "KN", right: true);
+        dl.HeadCell(head, cols.Hits, "HITS", right: true);
+        float rows = railRows.Count * RowH;
+        if (BeginBody("##forcesbody", a, size, out var body, head: y + HeadH - (a.Y + TitleH + 1)))
+        {
+            var o = ImGui.GetCursorScreenPos();
+            float rw = ImGui.GetContentRegionAvail().X;
+            cols = ForcesColumns(o.X + rw);
+            int cardUnit = squadronCardOf >= 0 && squadronCardOf == selected && railSquadron.ContainsKey(selected) ? UnitOfCard(s, selected) : -1;
+            for (int i = 0; i < railRows.Count; i++)
+            {
+                var r = railRows[i];
+                var p = new Vector2(o.X, o.Y + i * RowH);
+                switch (r.Kind)
+                {
+                    case RailKind.Unit:
+                        UnitRow(s, body, p, rw, r, cols, cardUnit);
+                        break;
+                    case RailKind.Ship:
+                        ShipRow(s, body, p, rw, r, cols, i);
+                        break;
+                    case RailKind.Loose:
+                        body.GroupBg(p, rw, RowH);
+                        body.Text(UiFonts.SansSmall, new Vector2(p.X + P(6), Mid(UiFonts.SansSmall, p.Y, RowH)), T.Muted, "On its own");
+                        break;
+                    default:
+                        DropRow(s, body, p, rw);
+                        break;
+                }
+            }
+            railScrollTo = -1;
+            if (railRows.Count == 0)
+                body.Text(UiFonts.SansSmall, new Vector2(o.X + P(6), Mid(UiFonts.SansSmall, o.Y, RowH)), T.Muted, "no ships");
+        }
+        EndBody(rows);
+    }
+
+    /// <summary>The side's commander, a sub-header under the forces' title (docs/battle/command.md decision 14): on (the
+    /// default), he fights every unit the player hasn't taken; off, only those handed to him.</summary>
+    void CommanderRow(Snapshot s, ImDrawListPtr dl, Vector2 a, float w)
     {
         int side = s.PlayerSide;
-        if (side < 0 || s.CommanderMode[side] == (byte)CommanderMode.None)
-            return;
         bool on = s.CommanderOn[side];
-        ImGui.PushFont(UiFonts.SansSmall);
-        if (Seg(on ? "AI commands: on" : "AI commands: off", on, first: true))
+        float right = dl.SubHeader(a, w, "COMMANDER", "fights the units you haven't taken");
+        if (dl.Segmented("##commander", new Vector2(right - SegmentedWidth(OnOff), a.Y + P(2)), OnOff, on ? 0 : 1, out _) >= 0)
             world.Send(world.Orders.Commander(side, on ? CommanderMode.Auto : CommanderMode.On));
-        ImGui.PopFont();
-        if (ImGui.IsItemHovered())
-            ImGui.SetTooltip(on ? "Your side's commander fights every unit you haven't taken. Any order of yours to a unit takes it (YOURS);\nclick its AI tag to take it, its YOURS tag to give it back. Click here to command everything yourself."
-                : "You command every unit but those you hand to the AI (click a unit's YOURS tag). Click here to let the AI command\nevery unit you haven't taken.");
+        if (ImGui.IsMouseHoveringRect(a, a + new Vector2(w, RowH)) && ImGui.IsWindowHovered())
+            Tip(on ? "Your side's commander fights every unit you haven't taken. Any order of yours to a unit takes it (you); click its AI chip to take it, its you chip to give it back. Off: you command everything yourself."
+                : "You command every unit but those you hand to the AI (click a unit's you chip). On: the AI commands every unit you haven't taken.", 360);
     }
 
     /// <summary>Whether a top unit shows whose it is: its side has a commander, or it's been handed to one.</summary>
     static bool Tagged(Snapshot s, byte commanded) =>
         commanded != 0 || s.PlayerSide >= 0 && s.CommanderMode[s.PlayerSide] != (byte)CommanderMode.None;
 
-    static ReadOnlySpan<byte> TagText(byte commanded) => commanded == 1 ? "AI"u8 : "YOURS"u8;
-
-    /// <summary>A whose-is-it tag's box, its right end at <paramref name="topRight"/> (in the small font).</summary>
-    static (Vector2 Min, Vector2 Max) TagRect(byte commanded, Vector2 topRight)
+    /// <summary>Whose it is, at a row's right end: the conn (green), else on a top unit or a ship alone the AI's (quiet)
+    /// or the player's (plain); a click on the AI's or the player's hands it over or takes it. True when clicked.</summary>
+    static bool WhoseChip(ImDrawListPtr dl, Vector2 row, float right, bool conn, bool tagged, byte commanded)
     {
-        ImGui.PushFont(UiFonts.SansSmall);
-        var size = U8.Size(TagText(commanded));
-        ImGui.PopFont();
-        float sc = UiFonts.Scale;
-        var at = topRight - new Vector2(size.X, 0);
-        return (at - new Vector2(3, 1) * sc, at + size + new Vector2(3, 1) * sc);
-    }
-
-    static bool InRect(Vector2 p, Vector2 min, Vector2 max) => p.X >= min.X && p.Y >= min.Y && p.X <= max.X && p.Y <= max.Y;
-
-    /// <summary>A top unit's whose-is-it tag (the AI's in friend blue, the player's in brass), brighter and explained under
-    /// the mouse: a click hands it to the AI or takes it.</summary>
-    void Tag(ImDrawListPtr dl, byte commanded, Vector2 min, Vector2 max, bool hovered)
-    {
-        float sc = UiFonts.Scale;
-        var colour = commanded == 1 ? Friend : Theme.Brass;
-        dl.AddRectFilled(min, max, ImGui.GetColorU32(colour with { W = hovered ? 0.4f : 0.18f }), 2 * sc);
-        U8.Draw(dl, min + new Vector2(3, 1) * sc, ImGui.GetColorU32(colour), TagText(commanded));
-        if (hovered)
+        if (!conn && !tagged)
+            return false;
+        var label = conn ? "conn"u8 : commanded == 1 ? "AI"u8 : "you"u8;
+        var at = new Vector2(right - ChipWidth(label), row.Y + P(2.5f));
+        dl.Chip(at, label, conn ? ChipKind.Ok : commanded == 1 ? ChipKind.Quiet : ChipKind.Plain);
+        if (conn)
+            return false;
+        ImGui.SetCursorScreenPos(at);
+        bool hit = ImGui.InvisibleButton("##whose", new Vector2(ChipWidth(label), P(15)));
+        if (ImGui.IsItemHovered())
             ImGui.SetTooltip(commanded == 1 ? "the side's commander fights it: click to take it" : "yours: click to leave it to the side's commander");
+        return hit;
     }
 
-    static void RailHead(string title, ReadOnlySpan<byte> right)
-    {
-        ImGui.PushFont(UiFonts.SansSmall);
-        ImGui.TextDisabled(title);
-        if (right.Length > 0)
-        {
-            ImGui.SameLine();
-            U8.Right(right, Theme.Muted);
-        }
-        ImGui.PopFont();
-    }
-
-    /// <summary>A unit's head (its name, formation, task, whose it is) and its members: a force's units, a squadron's ships.</summary>
-    void UnitRows(Snapshot s, int g, int depth)
+    /// <summary>A unit's row: its twisty, name and task (its ships burning while it's shut), a segment a ship, its guide's
+    /// speed, its hits, whose it is.</summary>
+    void UnitRow(Snapshot s, ImDrawListPtr dl, Vector2 a, float w, in RailRow r, (float Doing, float BarL, float BarR, float Kn, float Hits, float Whose) cols, int cardUnit)
     {
         var gv = s.Groups;
-        float sc = UiFonts.Scale;
-        ImGui.PushID(gv.Id[g]);
-        ImGui.Indent(depth * 8 * sc);
-        bool chosen = squadronCardOf >= 0 && squadronCardOf == selected && gv.IndexOfShip(selected) is int sg and >= 0 && (sg == g || gv.Parent[sg] == gv.Id[g]);
-        var p = ImGui.GetCursorScreenPos();
-        float w = ImGui.GetContentRegionAvail().X;
-        bool tagged = gv.Parent[g] == 0 && Tagged(s, gv.Commanded[g]);
-        var (tagMin, tagMax) = tagged ? TagRect(gv.Commanded[g], p + new Vector2(w - 8 * sc, 2 * sc)) : default;
-        bool onTag = tagged && InRect(ImGui.GetMousePos(), tagMin, tagMax);
-        bool clicked = ImGui.InvisibleButton("##unit", new Vector2(w, ImGui.GetTextLineHeight() * 2 + 2 * sc));
-        bool hovered = ImGui.IsItemHovered();
-        var size = ImGui.GetItemRectSize();
-        DragFrom(s, 0, gv.Id[g]);
+        int g = r.Index, id = gv.Id[g];
+        ImGui.PushID(id * 2 + 1);
+        var (clicked, hover) = HitRow("##unit", a, new Vector2(w, RowH));
+        DragFrom(s, 0, id);
         DropOn(s, g, -1, 0);
-        bool ctrl = (SDL_GetModState() & SDL_Keymod.SDL_KMOD_CTRL) != 0;
-        if (clicked && onTag)
-            world.Send(world.Orders.Automate(Unit.Group(gv.Id[g]), gv.Commanded[g] != 1));   // the tag: his, or the player's
-        else if (clicked && ctrl && selected >= 0 && s.Ships.IndexOf(selected) >= 0)
+        bool chosen = g == cardUnit, also = pickedGroups.Contains(id);
+        if (chosen || also)
+            dl.RowBg(a, w, RowH, 0, selected: true);
+        else
+            dl.GroupBg(a, w, RowH, hover);
+        bool open = UnitOpen(s, g);
+        float x = a.X + P(6) + r.Depth * P(10);
+        ImGui.SetCursorScreenPos(new Vector2(x - P(4), a.Y));
+        if (ImGui.InvisibleButton("##twisty", new Vector2(P(16), RowH)))
+            railFold[id] = !open;
+        dl.Twisty(new Vector2(x + P(3), a.Y + RowH / 2), open, ImGui.IsItemHovered() ? T.Bright : T.Muted);
+        x += P(12);
+
+        Span<byte> states = stackalloc byte[RailMaxShips];
+        int fires = 0, hits = 0;
+        int n = UnitShips(s, g, states, 0, ref fires, ref hits);
+        if (gv.Force[g])
+            states[..n].Sort();   // sound, low, going down: one ship in trouble among fifty still shows
+        float end = dl.TextClipped(UiFonts.SansBold, new Vector2(x, Mid(UiFonts.SansBold, a.Y, RowH)), cols.BarL - P(8), chosen ? T.Brass : T.Bright, U8.W($"{gv.Name[g]}"));
+        if (fires > 0 && !open && end + P(20) < cols.BarL)
+        {
+            Flame(dl, new Vector2(end + P(8), a.Y + RowH / 2 + P(1)), id);
+            end = dl.TextClipped(UiFonts.MonoSmall, new Vector2(end + P(13), Mid(UiFonts.MonoSmall, a.Y, RowH)), cols.BarL - P(8), T.Fire, U8.W($"{fires}"));
+        }
+        if (gv.Task[g] != 0)
+            dl.TextClipped(UiFonts.SansSmall, new Vector2(end + P(4), Mid(UiFonts.SansSmall, a.Y, RowH)), cols.BarL - P(8), T.Muted,
+                U8.W($"· {TaskText(gv.Task[g], gv.TaskStatus[g])}"));
+        dl.SegmentBar(new Vector2(cols.BarL, a.Y + P(6.5f)), new Vector2(cols.BarR - cols.BarL, P(7)), states[..n], ShipStates);
+        if (railShip.TryGetValue(gv.GuideShip[g], out int gk))
+            dl.TextRight(UiFonts.Mono, cols.Kn, Mid(UiFonts.Mono, a.Y, RowH), T.Bright, U8.W($"{s.Ships.Speed[gk] / Handling.MsPerKnot:0}"));
+        dl.TextRight(UiFonts.Mono, cols.Hits, Mid(UiFonts.Mono, a.Y, RowH), T.Bright, U8.W($"{hits}"));
+        if (WhoseChip(dl, a, a.X + w - P(4), gv.Conn[g], gv.Parent[g] == 0 && Tagged(s, gv.Commanded[g]), gv.Commanded[g]))
+            world.Send(world.Orders.Automate(Unit.Group(id), gv.Commanded[g] != 1));
+        else if (clicked && (SDL_GetModState() & SDL_Keymod.SDL_KMOD_CTRL) != 0 && selected >= 0 && s.Ships.IndexOf(selected) >= 0)
         {
             // beside the selection: orders go to it too (docs/battle/admirals-orders.md O9)
-            if (!pickedGroups.Remove(gv.Id[g]))
-                pickedGroups.Add(gv.Id[g]);
+            if (!pickedGroups.Remove(id))
+                pickedGroups.Add(id);
         }
         else if (clicked && gv.LeadShip(g) is int lead and > 0)
         {
             // the unit: its guide selected with the orders at its level, its card open
-            selected = lead;
+            selected = railRevealed = lead;
             ClearPicks();
             Chain(s);
             if (chain.Contains(g))
@@ -221,61 +392,86 @@ public sealed partial class MapScene
                 (levelFor, levelPick) = (selected, -1);
             squadronCardOf = selected;
             cardOpen = true;
-            if (!railOpen.Add(gv.Id[g]) && chosen)
-                railOpen.Remove(gv.Id[g]);   // its head again: shut its list
         }
-        var dl = ImGui.GetWindowDrawList();
-        bool also = pickedGroups.Contains(gv.Id[g]);   // ctrl+clicked beside the selection
-        if (chosen || also || hovered)
-            dl.AddRectFilled(p, p + size, ImGui.GetColorU32(chosen || also ? Theme.BrassDarker : new Vector4(1, 1, 1, 0.05f)));
-        if (chosen || also)
-            dl.AddRectFilled(p, p + new Vector2(2 * sc, size.Y), ImGui.GetColorU32(Theme.Brass));
-        ImGui.PushFont(UiFonts.SansBold);
-        U8.Draw(dl, p + new Vector2(6 * sc, 0), ImGui.GetColorU32(Theme.Bright), U8.W($"{gv.Name[g]}"));
-        ImGui.PopFont();
-        string form = GroupFormationNames[(int)gv.Formation[g]], task = gv.Task[g] != 0 ? TaskText(gv.Task[g], gv.TaskStatus[g]) : "";
-        var sub = gv.Force[g] ? U8.W($"{form}{(task.Length > 0 ? " · " : "")}{task}")
-            : U8.W($"{gv.MemberCount[g]} ships · {form}{(task.Length > 0 ? " · " : "")}{task}");
-        ImGui.PushFont(UiFonts.SansSmall);
-        U8.Draw(dl, p + new Vector2(6 * sc, ImGui.GetTextLineHeight()), ImGui.GetColorU32(Theme.Muted), sub);
-        if (tagged)
-            Tag(dl, gv.Commanded[g], tagMin, tagMax, onTag && hovered);
-        ImGui.PopFont();
-        // its members: a force's units always, a squadron's ships when few, or open, or holding the selection
-        bool ships = !gv.Force[g] && (railOwn <= RailAllOpen || railOpen.Contains(gv.Id[g]) || gv.IndexOfShip(selected) == g);
-        for (int i = 0; i < gv.MemberCount[g] && (gv.Force[g] || ships); i++)
+        ImGui.PopID();
+    }
+
+    /// <summary>A unit's ships' states (sound, low, going down) in line order into <paramref name="states"/> from
+    /// <paramref name="n"/>, with how many burn and their hits; the count after.</summary>
+    int UnitShips(Snapshot s, int g, Span<byte> states, int n, ref int fires, ref int hits)
+    {
+        var gv = s.Groups;
+        for (int i = 0; i < gv.MemberCount[g] && n < states.Length; i++)
         {
             int m = gv.Members[gv.MemberStart[g] + i];
             if (gv.Force[g])
             {
-                if (gv.IndexOfGroup(m) is int sub2 and >= 0)
-                    UnitRows(s, sub2, depth + 1);
+                if (railGroup.TryGetValue(m, out int sub))
+                    n = UnitShips(s, sub, states, n, ref fires, ref hits);
             }
-            else if (s.Ships.IndexOf(m) is int k and >= 0)
-                ShipRow(s, k, g, i);
+            else if (railShip.ContainsKey(m))
+            {
+                var (state, _, f, h) = ShipState(s, m);
+                states[n++] = state;
+                fires += f > 0 ? 1 : 0;
+                hits += h;
+            }
         }
-        ImGui.Unindent(depth * 8 * sc);
-        ImGui.PopID();
+        return n;
     }
 
-    /// <summary>A ship's row: her name (and flag), what she fires at or why she's falling out; her flotation, speed and hits.
-    /// In a squadron (its index <paramref name="g"/>) she's its <paramref name="at"/>-th member; -1 for a ship alone.</summary>
-    void ShipRow(Snapshot s, int k, int g, int at)
+    /// <summary>A ship's state for the rail: sound (0), low (1, under 80 % of her reserve left) or going down (2); the
+    /// share of her reserve left, her fires and hits.</summary>
+    (byte State, float Afloat, int Fires, int Hits) ShipState(Snapshot s, int e)
+    {
+        if (!railCond.TryGetValue(e, out int ci))
+            return (0, 1, 0, 0);
+        var c = s.Conditions;
+        double water = c.WaterT[ci], reserve = c.ReserveT[ci];
+        float afloat = (float)(reserve / Math.Max(reserve + water, 1e-6));
+        byte state = c.Status[ci] == ShipStatus.GoingDown ? (byte)2 : afloat < 0.8f ? (byte)1 : (byte)0;
+        return (state, afloat, c.Fires[ci], c.Hits[ci]);
+    }
+
+    /// <summary>A ship's row: her name (a flame when burning), what she fires at or why she's falling out, her flotation,
+    /// speed and hits; the conn, or whose she is when alone. In a squadron (<see cref="RailRow.Group"/>) she's its
+    /// <see cref="RailRow.At"/>-th member.</summary>
+    void ShipRow(Snapshot s, ImDrawListPtr dl, Vector2 a, float w, in RailRow r, (float Doing, float BarL, float BarR, float Kn, float Hits, float Whose) cols, int n)
     {
         var v = s.Ships;
-        int e = v.Entity[k];
-        float sc = UiFonts.Scale, h = ImGui.GetTextLineHeight() * 2 + 2 * sc;
-        ImGui.PushID(e);
-        var p = ImGui.GetCursorScreenPos();
-        float w = ImGui.GetContentRegionAvail().X;
-        bool tagged = s.Groups.IndexOfShip(e) < 0 && Tagged(s, v.Commanded[k]);
-        var (tagMin, tagMax) = tagged ? TagRect(v.Commanded[k], p + new Vector2(w - 50 * sc, 0)) : default;   // left of her flotation
-        bool onTag = tagged && InRect(ImGui.GetMousePos(), tagMin, tagMax);
-        bool clicked = ImGui.InvisibleButton("##ship", new Vector2(w, h));
-        bool hovered = ImGui.IsItemHovered();
+        int k = r.Index, e = v.Entity[k];
+        ImGui.PushID(e * 2);
+        var (clicked, hover) = HitRow("##ship", a, new Vector2(w, RowH));
         DragFrom(s, e, 0);
-        DropOn(s, g, at, e);
-        if (clicked && onTag)
+        DropOn(s, r.Group, r.At, e);
+        if (railScrollTo == e)
+        {
+            var wp = ImGui.GetWindowPos();
+            float h = ImGui.GetWindowHeight();
+            if (a.Y < wp.Y || a.Y + RowH > wp.Y + h)
+                ImGui.SetScrollY(ImGui.GetScrollY() + a.Y - wp.Y - h / 2);
+        }
+        bool on = selected == e && squadronCardOf != e || picked.Contains(e);
+        dl.RowBg(a, w, RowH, n, on, hover);
+        var (state, afloat, fires, hits) = ShipState(s, e);
+        bool going = state == 2;
+        float x = a.X + P(6) + r.Depth * P(10);
+        dl.AddCircle(new Vector2(x + P(4), a.Y + RowH / 2), P(3.5f), U(Friend), 0, P(1.4f));
+        x += P(12);
+        float end = dl.TextClipped(UiFonts.SansSmall, new Vector2(x, Mid(UiFonts.SansSmall, a.Y, RowH)), cols.Doing - P(fires > 0 ? 14 : 4), on ? T.Brass : going ? T.Hostile : T.Text,
+            U8.W($"{ShipName(s, e)}"));
+        if (fires > 0)
+            Flame(dl, new Vector2(Math.Min(end + P(8), cols.Doing - P(8)), a.Y + RowH / 2 + P(1)), e);
+        // what she's doing: going down, falling out and why, her target
+        var doing = going ? "going down"u8 : v.Reason[k] != 0 ? U8.W($"{ReasonText(v.Reason[k])}") : TargetOf(s, k) is int t and > 0 ? U8.W($"on {LabelOf(s, t)}") : "no target"u8;
+        var colour = going ? T.Hostile : v.Reason[k] != 0 ? T.Amber : TargetOf(s, k) > 0 ? T.Text : T.Muted;
+        dl.TextClipped(UiFonts.SansSmall, new Vector2(cols.Doing, Mid(UiFonts.SansSmall, a.Y, RowH)), cols.BarL - P(6), colour, doing);
+        var bar = new Vector2(cols.BarL, a.Y + P(6.5f));
+        dl.Bar(bar, new Vector2(cols.BarR - cols.BarL, P(7)), afloat, ShipStates[state]);
+        dl.AddRect(bar, bar + new Vector2(cols.BarR - cols.BarL, P(7)), U(T.Edge));
+        dl.TextRight(UiFonts.Mono, cols.Kn, Mid(UiFonts.Mono, a.Y, RowH), T.Bright, U8.W($"{v.Speed[k] / Handling.MsPerKnot:0}"));
+        dl.TextRight(UiFonts.Mono, cols.Hits, Mid(UiFonts.Mono, a.Y, RowH), T.Bright, U8.W($"{hits}"));
+        if (WhoseChip(dl, a, a.X + w - P(4), v.Conn[k] == 1, r.Group < 0 && Tagged(s, v.Commanded[k]), v.Commanded[k]))
             world.Send(world.Orders.Automate(Unit.Ship(e), v.Commanded[k] != 1));
         else if (clicked && (SDL_GetModState() & SDL_Keymod.SDL_KMOD_CTRL) != 0 && selected >= 0 && e != selected)
         {
@@ -288,51 +484,22 @@ public sealed partial class MapScene
             if (railClickShip == e && now - railClickMs < 400)
                 CentreOn(v.PoseAt(k, world.DrawMs).Position);   // twice: the map goes to her
             (railClickShip, railClickMs) = (e, now);
-            selected = e;
+            selected = railRevealed = e;
             ClearPicks();
             squadronCardOf = -1;
             cardOpen = true;
         }
-        bool on = selected == e && squadronCardOf != e || picked.Contains(e);
-        var dl = ImGui.GetWindowDrawList();
-        if (on || hovered)
-            dl.AddRectFilled(p, p + new Vector2(w, h), ImGui.GetColorU32(on ? Theme.BrassDarker : new Vector4(1, 1, 1, 0.05f)));
-        if (on)
-            dl.AddRectFilled(p, p + new Vector2(2 * sc, h), ImGui.GetColorU32(Theme.Brass));
-        int ci = s.Conditions.IndexOf(e);
-        bool going = ci >= 0 && s.Conditions.Status[ci] == ShipStatus.GoingDown;
-        var name = ShipName(s, e);
-        U8.Draw(dl, p + new Vector2(14 * sc, 0), ImGui.GetColorU32(going ? Bad : Theme.Bright), U8.W($"{name}"));
-        if (ci >= 0 && s.Conditions.Fires[ci] > 0)
-        {
-            var nameW = ImGui.CalcTextSize(name).X;
-            float pulse = 0.7f + 0.3f * MathF.Sin((float)ImGui.GetTime() * 5 + e);
-            dl.AddCircleFilled(p + new Vector2(14 * sc + nameW + 7 * sc, ImGui.GetTextLineHeight() / 2), 3 * sc, ImGui.GetColorU32(Fire with { W = pulse }));
-        }
-        // the dot of her side: a friend's circle
-        dl.AddCircle(p + new Vector2(6 * sc, ImGui.GetTextLineHeight() / 2), 3.5f * sc, ImGui.GetColorU32(Friend), 0, 1.4f * sc);
-        // under her name: going down, falling out, her target
-        ImGui.PushFont(UiFonts.SansSmall);
-        int target = v.FireTarget[k];
-        if (target == 0)
-            for (int i = 0; i < s.Batteries.Count; i++)
-                if (s.Batteries.Shooter[i] == e && s.Batteries.Battery[i] == 0)
-                    target = s.Batteries.Target[i];
-        var sub = going ? "going down"u8 : v.Reason[k] != 0 ? U8.W($"{ReasonText(v.Reason[k])}") : target > 0 ? U8.W($"on {LabelOf(s, target)}") : "no target"u8;
-        U8.Draw(dl, p + new Vector2(14 * sc, ImGui.GetTextLineHeight()), ImGui.GetColorU32(going ? Bad : v.Reason[k] != 0 ? Theme.Amber : Theme.Muted), sub);
-        // at the right: her flotation, speed and hits
-        double water = ci >= 0 ? s.Conditions.WaterT[ci] : 0, reserve = ci >= 0 ? s.Conditions.ReserveT[ci] : 1;
-        float afloat = (float)(reserve / Math.Max(reserve + water, 1e-6));
-        float bw = 40 * sc, bx = p.X + w - bw - 2 * sc, by = p.Y + ImGui.GetTextLineHeight() / 2 - 2 * sc;
-        dl.AddRectFilled(new Vector2(bx, by), new Vector2(bx + bw, by + 4 * sc), ImGui.GetColorU32(Theme.Inset), 1);
-        dl.AddRectFilled(new Vector2(bx, by), new Vector2(bx + bw * afloat, by + 4 * sc), ImGui.GetColorU32(afloat > 0.8f ? Ok : afloat > 0.6f ? Theme.Amber : Bad), 1);
-        if (tagged)
-            Tag(dl, v.Commanded[k], tagMin, tagMax, onTag && hovered);
-        var right = U8.W($"{v.Speed[k] / Handling.MsPerKnot:0} kn · {(ci >= 0 ? s.Conditions.Hits[ci] : 0)} hits");
-        var rs = U8.Size(right);
-        U8.Draw(dl, new Vector2(p.X + w - rs.X - 2 * sc, p.Y + ImGui.GetTextLineHeight()), ImGui.GetColorU32(Theme.Muted), right);
-        ImGui.PopFont();
         ImGui.PopID();
+    }
+
+    /// <summary>While a drag is on: the row at the table's end that takes a ship out of her squadron, or a unit out of its
+    /// force.</summary>
+    void DropRow(Snapshot s, ImDrawListPtr dl, Vector2 a, float w)
+    {
+        var (_, hover) = HitRow("##alone", a, new Vector2(w, RowH));
+        DropOn(s, AloneTarget, -1, 0);
+        dl.RowBg(a, w, RowH, 0, hover: hover);
+        dl.Text(UiFonts.SansSmall, new Vector2(a.X + P(6), Mid(UiFonts.SansSmall, a.Y, RowH)), T.Brass, "+ On its own");
     }
 
     // ------------------------------------------------------------------ organising by drag and drop
@@ -344,7 +511,7 @@ public sealed partial class MapScene
             return;
         (dragShip, dragGroup) = (ship, group);
         ImGui.SetDragDropPayload(RailPayload, IntPtr.Zero, 0);
-        U8.Text(ship != 0 ? U8.W($"{ShipName(s, ship)}") : s.Groups.IndexOfGroup(group) is int gi and >= 0 ? U8.W($"{s.Groups.Name[gi]}") : "?"u8);
+        U8.Text(ship != 0 ? U8.W($"{ShipName(s, ship)}") : railGroup.TryGetValue(group, out int gi) ? U8.W($"{s.Groups.Name[gi]}") : "?"u8);
         ImGui.EndDragDropSource();
     }
 
@@ -378,7 +545,7 @@ public sealed partial class MapScene
     /// commands sent.</summary>
     void Accept(string what, in Command first, Command? second)
     {
-        ImGui.PushStyleColor(ImGuiCol.DragDropTarget, Theme.Brass);
+        ImGui.PushStyleColor(ImGuiCol.DragDropTarget, T.Brass);
         var payload = ImGui.AcceptDragDropPayload(RailPayload, ImGuiDragDropFlags.AcceptBeforeDelivery);
         ImGui.PopStyleColor();
         unsafe
@@ -402,9 +569,9 @@ public sealed partial class MapScene
         (what, first, second) = ("", default, null);
         if (g == AloneTarget)
         {
-            if (dragShip != 0 && gv.IndexOfShip(dragShip) >= 0)
+            if (dragShip != 0 && railSquadron.ContainsKey(dragShip))
                 (first, what) = (GroupSystem.Remove(dragShip), $"{ShipName(s, dragShip)} out of her squadron");
-            else if (dragGroup != 0 && gv.IndexOfGroup(dragGroup) is int og and >= 0 && gv.Parent[og] != 0)
+            else if (dragGroup != 0 && railGroup.TryGetValue(dragGroup, out int og) && gv.Parent[og] != 0)
                 (first, what) = (GroupSystem.Exit(dragGroup), $"{gv.Name[og]} out of its force, on its own");
             else
                 return false;
@@ -415,7 +582,7 @@ public sealed partial class MapScene
             string name = ShipName(s, dragShip);
             if (g >= 0)
             {
-                if (gv.Force[g] || ship == dragShip || at < 0 && gv.IndexOfShip(dragShip) == g)
+                if (gv.Force[g] || ship == dragShip || at < 0 && railSquadron.GetValueOrDefault(dragShip, -1) == g)
                     return false;   // a force holds squadrons; onto herself, or her own squadron's head, does nothing
                 (first, what) = at < 0
                     ? (GroupSystem.Add(gv.Id[g], dragShip), $"{name} to {gv.Name[g]}, at its end")
@@ -428,7 +595,7 @@ public sealed partial class MapScene
             (first, second, what) = (GroupSystem.Create(ship), GroupSystem.Join(dragShip, ship), $"a new squadron of {lead} and {name}, {lead} leading");
             return true;
         }
-        if (dragGroup == 0 || g < 0 || gv.IndexOfGroup(dragGroup) is not (int dg and >= 0))
+        if (dragGroup == 0 || g < 0 || !railGroup.TryGetValue(dragGroup, out int dg))
             return false;
         if (gv.Id[g] == dragGroup || gv.Parent[dg] == gv.Id[g] || Inside(gv, g, dragGroup))
             return false;   // onto itself, its own force, or something inside it
@@ -447,85 +614,187 @@ public sealed partial class MapScene
         return false;
     }
 
-    /// <summary>While a drag is on: a place to drop a ship out of her squadron, or a group out of its force.</summary>
-    void AloneZone(Snapshot s)
+    // ------------------------------------------------------------------ the enemy
+
+    /// <summary>A contact's group: what she's made out to be, else "not made out".</summary>
+    static int EnemyKind(ContactsView c, int i) => c.Level[i] < ContactLevel.Type ? 5 : c.Type[i] switch
     {
-        unsafe
+        ShipType.Capital => 0,
+        ShipType.Cruiser => 1,
+        ShipType.Destroyer => 2,
+        ShipType.Small => 3,
+        ShipType.Merchant => 4,
+        _ => 5,
+    };
+
+    /// <summary>Whether an enemy group shows its contacts: as the player left it, else open unless it's more than six
+    /// smaller ships (destroyers, small craft, merchants, the not made out).</summary>
+    bool EnemyOpen(int kind, int count) => enemyFold.TryGetValue(kind, out bool open) ? open : kind <= 1 || count <= 6;
+
+    /// <summary>The enemy's rows: each kind's head, then (open) its contacts nearest first.</summary>
+    void EnemyRows(Snapshot s)
+    {
+        var c = s.Contacts;
+        int from = s.Ships.IndexOf(lastOwn);
+        Vec3d at = from >= 0 ? s.Ships.PoseAt(from, world.DrawMs).Position : default;
+        enemyOrder.Clear();
+        for (int i = 0; i < c.Count; i++)
+            if ((c.Seen[i] & SeenFlags.Gone) == 0)
+                enemyOrder.Add((EnemyKind(c, i), from >= 0 ? Earth.Distance(at, c.Position[i]) : i, i));
+        enemyOrder.Sort((a, b) => a.Kind != b.Kind ? a.Kind.CompareTo(b.Kind) : a.Range.CompareTo(b.Range));
+        // each kind's head before its first, its shut contacts out
+        int n = enemyOrder.Count;
+        for (int j = 0; j < n;)
         {
-            if (ImGui.GetDragDropPayload().NativePtr == null)
-                return;
+            int kind = enemyOrder[j].Kind, end = j;
+            while (end < n && enemyOrder[end].Kind == kind)
+                end++;
+            enemyOrder.Add((kind, enemyOrder[j].Range, EnemyGroupRow));
+            if (EnemyOpen(kind, end - j))
+                for (int q = j; q < end; q++)
+                    enemyOrder.Add(enemyOrder[q]);
+            j = end;
         }
-        float sc = UiFonts.Scale;
-        var p = ImGui.GetCursorScreenPos();
-        var size = new Vector2(ImGui.GetContentRegionAvail().X, ImGui.GetTextLineHeight() * 1.6f);
-        ImGui.InvisibleButton("##alone", size);
-        var dl = ImGui.GetWindowDrawList();
-        dl.AddRect(p, p + size, ImGui.GetColorU32(Theme.Muted), 2 * sc);
-        ImGui.PushFont(UiFonts.SansSmall);
-        U8.Draw(dl, p + new Vector2(6, 3) * sc, ImGui.GetColorU32(Theme.Muted), "on its own"u8);
-        ImGui.PopFont();
-        DropOn(s, AloneTarget, -1, 0);
+        enemyOrder.RemoveRange(0, n);
     }
 
+    void EnemyPane(Snapshot s, ImDrawListPtr dl, Vector2 a, Vector2 size, bool scroll)
+    {
+        var c = s.Contacts;
+        int from = s.Ships.IndexOf(lastOwn);
+        float right = dl.Pane(a, size, "ENEMY", from >= 0 ? null : "in the picture");
+        if (from >= 0)
+            dl.Text(UiFonts.SansSmall, new Vector2(a.X + P(17) + Width(UiFonts.Head, "ENEMY") + P(6), Mid(UiFonts.SansSmall, a.Y, TitleH)), T.Muted, U8.W($"from {ShipName(s, lastOwn)}"));
+        int sighted = 0;
+        for (int i = 0; i < c.Count; i++)
+            sighted += c.InSight[i] ? 1 : 0;
+        dl.TextRight(UiFonts.SansSmall, right, Mid(UiFonts.SansSmall, a.Y, TitleH), T.Muted, U8.W($"{sighted} in sight"));
+        float w = size.X - 2;
+        var head = new Vector2(a.X + 1, a.Y + TitleH + 1);
+        dl.Head(head, w);
+        var cols = EnemyColumns(head.X + w - (scroll ? ImGui.GetStyle().ScrollbarSize : 0));
+        dl.HeadCell(head, head.X + P(6), "CONTACT");
+        dl.HeadCell(head, cols.Seen, "SEEN");
+        dl.HeadCell(head, cols.Firing, "FIRING", right: true);
+        dl.HeadCell(head, cols.Km, "KM", right: true);
+        dl.HeadCell(head, cols.Brg, "BRG", right: true);
+        if (ImGui.IsMouseHoveringRect(new Vector2(cols.Firing - P(36), head.Y), new Vector2(cols.Firing, head.Y + HeadH)) && ImGui.IsWindowHovered())
+            ImGui.SetTooltip("how many of your ships are firing at her");
+        if (BeginBody("##enemybody", a, size, out var body, head: HeadH))
+        {
+            var o = ImGui.GetCursorScreenPos();
+            float rw = ImGui.GetContentRegionAvail().X;
+            cols = EnemyColumns(o.X + rw);
+            Vec3d at = from >= 0 ? s.Ships.PoseAt(from, world.DrawMs).Position : default;
+            int target = railShip.TryGetValue(selected, out int sk) && OursAt(s, sk) ? TargetOf(s, sk) : 0;
+            for (int j = 0; j < enemyOrder.Count; j++)
+            {
+                var p = new Vector2(o.X, o.Y + j * RowH);
+                var (kind, range, i) = enemyOrder[j];
+                if (i == EnemyGroupRow)
+                    EnemyGroup(s, body, p, rw, cols, j, kind, from >= 0);
+                else
+                    EnemyRow(s, body, p, rw, cols, j, i, range, at, from >= 0, target);
+            }
+            if (enemyOrder.Count == 0)
+                body.Text(UiFonts.SansSmall, new Vector2(o.X + P(6), Mid(UiFonts.SansSmall, o.Y, RowH)), T.Muted, "nothing in sight");
+        }
+        EndBody(enemyOrder.Count * RowH);
+    }
 
-    /// <summary>An enemy's row: her identity as held (doubtful dashed), what's seen of her; range and bearing from the
-    /// player's ship.</summary>
-    void EnemyRow(Snapshot s, int i, double range, Vec3d from, bool haveFrom)
+    /// <summary>The enemy's columns from a row's right edge: what's seen, your ships firing, range and bearing.</summary>
+    static (float Seen, float Firing, float Km, float Brg) EnemyColumns(float right)
+    {
+        float brg = right - P(6), km = brg - P(40), firing = km - P(42);
+        return (firing - P(40) - P(100), firing, km, brg);
+    }
+
+    /// <summary>A kind's head: its twisty and name, how many and how many in sight, your ships firing at them, the
+    /// nearest.</summary>
+    void EnemyGroup(Snapshot s, ImDrawListPtr dl, Vector2 a, float w, (float Seen, float Firing, float Km, float Brg) cols, int j, int kind, bool haveFrom)
+    {
+        var c = s.Contacts;
+        int count = 0, sighted = 0, firing = 0;
+        double nearest = double.MaxValue;
+        for (int i = 0; i < c.Count; i++)
+            if ((c.Seen[i] & SeenFlags.Gone) == 0 && EnemyKind(c, i) == kind)
+            {
+                count++;
+                sighted += c.InSight[i] ? 1 : 0;
+                firing += railOn.GetValueOrDefault(c.Entity[i]);
+            }
+        for (int q = j + 1; q < enemyOrder.Count && enemyOrder[q].Kind == kind; q++)
+            nearest = Math.Min(nearest, enemyOrder[q].Range);
+        ImGui.PushID(-1 - kind);
+        var (clicked, hover) = HitRow("##kind", a, new Vector2(w, RowH));
+        bool open = EnemyOpen(kind, count);
+        if (clicked)
+            enemyFold[kind] = !open;
+        dl.GroupBg(a, w, RowH, hover);
+        dl.Twisty(new Vector2(a.X + P(9), a.Y + RowH / 2), open, hover ? T.Bright : T.Muted);
+        dl.Text(UiFonts.SansBold, new Vector2(a.X + P(18), Mid(UiFonts.SansBold, a.Y, RowH)), T.Bright, EnemyKinds[kind]);
+        dl.TextClipped(UiFonts.SansSmall, new Vector2(cols.Seen, Mid(UiFonts.SansSmall, a.Y, RowH)), cols.Firing - P(26), T.Muted, U8.W($"{count} · {sighted} in sight"));
+        if (firing > 0)
+            dl.TextRight(UiFonts.Mono, cols.Firing, Mid(UiFonts.Mono, a.Y, RowH), T.Bright, U8.W($"{firing}"));
+        if (haveFrom && nearest < double.MaxValue)
+            dl.TextRight(UiFonts.Mono, cols.Km, Mid(UiFonts.Mono, a.Y, RowH), T.Muted, U8.W($"{nearest / 1000:0.0}"));
+        ImGui.PopID();
+    }
+
+    /// <summary>An enemy's row: her identity as held (doubtful dashed), what's seen of her (faint out of sight); how many
+    /// of yours fire at her (the selection's target in the accent); range and bearing from the player's ship.</summary>
+    void EnemyRow(Snapshot s, ImDrawListPtr dl, Vector2 a, float w, (float Seen, float Firing, float Km, float Brg) cols, int j, int i, double range, Vec3d from,
+        bool haveFrom, int target)
     {
         var c = s.Contacts;
         int e = c.Entity[i];
-        float sc = UiFonts.Scale, h = ImGui.GetTextLineHeight() * 2 + 2 * sc;
-        ImGui.PushID(e);
-        var p = ImGui.GetCursorScreenPos();
-        float w = ImGui.GetContentRegionAvail().X;
-        if (ImGui.InvisibleButton("##enemy", new Vector2(w, h)))
+        ImGui.PushID(e * 2);
+        var (clicked, hover) = HitRow("##enemy", a, new Vector2(w, RowH));
+        if (clicked)
         {
             long now = Environment.TickCount64;
             if (railClickShip == e && now - railClickMs < 400)
                 CentreOn(c.Position[i]);
             (railClickShip, railClickMs) = (e, now);
-            selected = e;
+            selected = railRevealed = e;
             ClearPicks();
             squadronCardOf = -1;
             cardOpen = true;
         }
         bool on = selected == e;
-        var dl = ImGui.GetWindowDrawList();
-        if (on || ImGui.IsItemHovered())
-            dl.AddRectFilled(p, p + new Vector2(w, h), ImGui.GetColorU32(on ? Theme.BrassDarker : new Vector4(1, 1, 1, 0.05f)));
-        bool sure = c.Level[i] >= ContactLevel.Class;
-        float alpha = c.InSight[i] ? 1 : 0.55f;
+        dl.RowBg(a, w, RowH, j, on, hover);
+        bool sure = c.Level[i] >= ContactLevel.Class, seen = c.InSight[i];
         // the dot: a hostile's diamond, dashed while she isn't made out
-        var d = p + new Vector2(6 * sc, ImGui.GetTextLineHeight() / 2);
-        float r = 3.6f * sc;
-        uint col = ImGui.GetColorU32(Bad with { W = alpha });
+        var d = new Vector2(a.X + P(22), a.Y + RowH / 2);
+        float r = P(3.6f);
+        uint col = U(T.Hostile with { W = seen ? 1 : 0.55f });
         if (sure)
-            dl.AddQuad(d + new Vector2(0, -r), d + new Vector2(r, 0), d + new Vector2(0, r), d + new Vector2(-r, 0), col, 1.4f * sc);
+        {
+            dl.AddQuadFilled(d + new Vector2(0, -r), d + new Vector2(r, 0), d + new Vector2(0, r), d + new Vector2(-r, 0), U(T.Hostile with { W = seen ? 0.25f : 0.12f }));
+            dl.AddQuad(d + new Vector2(0, -r), d + new Vector2(r, 0), d + new Vector2(0, r), d + new Vector2(-r, 0), col, P(1.3f));
+        }
         else
             for (int q = 0; q < 4; q++)
             {
-                var a = q switch { 0 => new Vector2(0, -r), 1 => new Vector2(r, 0), 2 => new Vector2(0, r), _ => new Vector2(-r, 0) };
-                var b = q switch { 0 => new Vector2(r, 0), 1 => new Vector2(0, r), 2 => new Vector2(-r, 0), _ => new Vector2(0, -r) };
-                dl.AddLine(d + a, d + (a + b) / 2, col, 1.4f * sc);
+                var p0 = q switch { 0 => new Vector2(0, -r), 1 => new Vector2(r, 0), 2 => new Vector2(0, r), _ => new Vector2(-r, 0) };
+                var p1 = q switch { 0 => new Vector2(r, 0), 1 => new Vector2(0, r), 2 => new Vector2(-r, 0), _ => new Vector2(0, -r) };
+                dl.AddLine(d + p0, d + (p0 + p1) / 2, col, P(1.3f));
             }
-        U8.Draw(dl, p + new Vector2(14 * sc, 0), ImGui.GetColorU32(new Vector4(0.95f, 0.77f, 0.74f, alpha)), U8.W($"{Identity(c, i)}"));
-        ImGui.PushFont(UiFonts.SansSmall);
-        var seen = c.Seen[i] != SeenFlags.None ? U8.W($"{SeenWords(c.Seen[i])}") : c.InSight[i] ? "no damage seen"u8
+        dl.TextClipped(UiFonts.SansSmall, new Vector2(a.X + P(30), Mid(UiFonts.SansSmall, a.Y, RowH)), cols.Seen - P(6), on ? T.Brass : seen ? T.Text : T.Faint,
+            U8.W($"{Identity(c, i)}"));
+        var what = c.Seen[i] != SeenFlags.None ? U8.W($"{SeenWords(c.Seen[i])}") : seen ? "no damage seen"u8
             : U8.W($"last seen {new WorldTime(c.SeenMs[i]).ToUtc().Hour:00}:{new WorldTime(c.SeenMs[i]).ToUtc().Minute:00}");
-        U8.Draw(dl, p + new Vector2(14 * sc, ImGui.GetTextLineHeight()), ImGui.GetColorU32(c.Seen[i] != SeenFlags.None ? new Vector4(0.94f, 0.7f, 0.66f, alpha) : Theme.Muted), seen);
+        dl.TextClipped(UiFonts.SansSmall, new Vector2(cols.Seen, Mid(UiFonts.SansSmall, a.Y, RowH)), cols.Firing - P(26),
+            !seen ? T.Faint : c.Seen[i] != SeenFlags.None ? T.Text : T.Muted, what);
+        if (railOn.GetValueOrDefault(e) is int firing and > 0)
+            dl.TextRight(UiFonts.Mono, cols.Firing, Mid(UiFonts.Mono, a.Y, RowH), e == target ? T.Brass : T.Bright, U8.W($"{firing}"));
         if (haveFrom)
         {
             double brg = (Earth.Bearing(from, c.Position[i]) % 360 + 360) % 360;
-            var a = U8.W($"{range / 1000:0.0} km");
-            var b = U8.W($"{brg:000}°");
-            ImGui.PushFont(UiFonts.Mono);
-            var sa = U8.Size(a);
-            var sb = U8.Size(b);
-            U8.Draw(dl, new Vector2(p.X + w - sa.X - 2 * sc, p.Y), ImGui.GetColorU32(Theme.Muted), a);
-            U8.Draw(dl, new Vector2(p.X + w - sb.X - 2 * sc, p.Y + ImGui.GetTextLineHeight()), ImGui.GetColorU32(Theme.Muted), b);
-            ImGui.PopFont();
+            var figure = seen ? T.Bright : T.Muted;
+            dl.TextRight(UiFonts.Mono, cols.Km, Mid(UiFonts.Mono, a.Y, RowH), figure, U8.W($"{range / 1000:0.0}"));
+            dl.TextRight(UiFonts.Mono, cols.Brg, Mid(UiFonts.Mono, a.Y, RowH), figure, U8.W($"{brg:000}°"));
         }
-        ImGui.PopFont();
         ImGui.PopID();
     }
 

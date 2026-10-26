@@ -126,6 +126,8 @@ public static class Theme
     /// <summary>A hostile chip's ground and border: the enemy, a ship going down.</summary>
     public static readonly Vector4 HostileTint = Hex(0x2E1714);
     public static readonly Vector4 HostileEdge = Hex(0x7A3029);
+    /// <summary>A sound ship's bar (her flotation, her segment in a unit's): neutral, colour only where something's wrong.</summary>
+    public static readonly Vector4 Sound = Hex(0x9A968B);
     /// <summary>The sides' shares in a ledger bar: friend, enemy.</summary>
     public static readonly Vector4 FriendBar = Hex(0xBDB7A4);
     public static readonly Vector4 HostileBar = Hex(0x9C3A30);

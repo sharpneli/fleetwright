@@ -40,7 +40,7 @@ they need up to most of the column and scroll inside past that, the log keeps se
   an empty box edged red lost. KN is her speed (a unit's, its guide's), HITS her hits taken (a unit's, the sum).
 - **Whose** as status chips on the top units and ships alone, as now: `AI` plain, `you` bright, `conn` in the conn's
   green. A click on the chip hands the unit over or takes it, as the tag does today.
-- **Lost ships** stay in their squadron as faint rows: "Indefatigable · sunk 16:03".
+- **Lost ships** stay in their squadron as faint rows: "Indefatigable · sunk 16:03". (Dropped: question 5.)
 - **On its own**: the ships in no squadron under a plain row at the end; while a drag is on, a brass "on its own" row at
   the end takes a drop (the UI language's "+ Add" row, in place of the outlined box).
 
@@ -71,17 +71,45 @@ order, and the rail reads them. The rest: `GroupsView` (members in line order, t
 entity (no scan per row). The panes are `Pieces`' title strip, sub-header, segmented, table rows, group rows, ledger bar
 and chips; the twisty, the flame and the diamond as shapes. No allocation on a steady frame, as the card.
 
-## Questions
+## Questions, answered (the user, 2026-10-26)
 
-1. **The column stops above the strip** rather than running full height like the card: the strip at a force's level is
-   ~1,260 px wide and wouldn't fit between the two columns (1,130 px). Fine, or should the strip shrink instead?
-2. **The ticker into the column** as the log pane (no fading, newest at the top), or keep it floating at the bottom left?
-3. **The enemy by type**, and destroyers folded past six: right grouping? (The alternative is the enemy's units as you
-   hold them, which the contact picture doesn't have.)
-4. **Whose chips**: `AI` plain, `you` bright, `conn` green. The player's tag was brass; the accent now marks only the
-   selection.
-5. **Lost ships kept as faint rows** (needs the map to remember them), or dropped as now (the bar's empty segment then
-   still tells)?
-6. **ON**, your ships firing at each contact: worth its column?
-7. **Width 330 px** (the old rail was 270 px and translucent). And should the column fold away with a key (U, X, Y, Z
-   are free)?
+1. **The column stops above the strip** (the strip at a force's level is ~1,260 px, too wide between the columns): fine.
+2. **The ticker into the column** as the log pane: yes, "looks better".
+3. **The enemy by type**: yes.
+4. **Whose chips** (`AI` quiet, `you` plain, `conn` green): fine.
+5. **Lost ships**: dropped, not kept as rows; a lost ship's segment goes with her.
+6. **ON** (your ships firing at each contact): asked what it was; kept, renamed **FIRING** with a tooltip on its header.
+   Say if it should go.
+7. **Width and a key**: unclear in the question (it was the column's 330 px against the old 270 px, and whether a key
+   should hide the column as V shuts the card); built at 330 px with no key.
+
+And: **the enemy pane smaller**, and **a unit folds on its twisty by the usual tree rules**, even while it holds the
+selection.
+
+## As built (2026-10-26)
+
+- `MapScene.Rail.cs`: three windows, one a pane (so the map between them takes its clicks), drawn on `Pieces`. The frame's
+  indices first (ships, conditions, groups by entity or id, each ship's squadron, the main guns' targets, how many of
+  yours fire at each target), so no row scans the snapshot (the old rail did, per row); then the rows as a list, laid out
+  once and drawn from it.
+- **Heights**: the log seven rows at the foot; the forces from the top as tall as they need, leaving the enemy up to 30 %
+  of the room past a long order of battle (all it needs beside a short one); each scrolls inside.
+- **Folding**: a twisty is the only thing that opens or shuts a unit, and the choice holds (by group id). Untouched, a unit
+  is open in a small order of battle (12 ships or fewer) and a force always; in a big one its squadrons start shut. A
+  selection from outside the rail (the map, Tab, the log, a start-up `-select=`) opens the units she's in and scrolls to
+  her, once; a click in the rail doesn't, so selecting a unit's row doesn't open it. The enemy's kinds fold on a click on
+  their row; untouched, heavy ships and cruisers are open, the others when six or fewer.
+- **A unit's row**: its name, its ships burning (a flame and a count) while shut, its task; its bar a segment a ship in
+  line order (a force's by state: sound, low, going down); its guide's speed, its hits. Whose it is on a top unit or a
+  ship alone; `conn` on any unit or ship the player holds by the conn.
+- **A ship's row**: names and doing in the small font (the card's rows'), "on V27" for her target (the fonts have no →).
+- **The log pane** (`MapScene.Events.cs` `LogPane`, the ticker gone): the kind word amber for a hit on us, red for a loss
+  of ours, the rest muted; the title strip opens the whole log.
+- `Pieces` gained `SegmentBar` and the quiet chip, `BeginBody` a fixed head under the title (a sub-header, a header row);
+  `Theme` the sound ship's grey (`Sound`).
+
+Checks: the map UI makes 489 bytes a frame over 3,000 frames of the Jutland at 240x with Lion's card open, against 482
+before the change (the events'; no garbage from the rail itself); tests pass (207). Captures:
+`png/rail-game-jutland.png` (Lion selected, her squadron opened for her), `png/rail-game-shut.png` (the same with the
+1st Battlecruiser Squadron shut on its twisty, Lion still selected inside it), `png/rail-game-squadrons.png` (a short
+order of battle: the panes at their content).

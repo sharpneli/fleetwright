@@ -18,11 +18,11 @@ session, each judged by captures against the mockup.
 | Piece | Where | Shows | Mocked |
 |---|---|---|---|
 | Top bar | top, 34 px | side and scenario; date and clock; pause and speed detents (the coarse ones greyed: guns silent); held speed; in action for how long; hits scored and taken, lost and sunk; the aim and the end; the menu | all states |
-| Forces rail | left | your squadrons and their ships (flotation bar, fire, falling out, target, speed, hits), then the enemy in sight by what you hold of them, with range and bearing from the selected ship | all |
+| Forces rail | left | your squadrons and their ships (flotation bar, fire, falling out, target, speed, hits), then the enemy in sight by what you hold of them, with range and bearing from the selected ship; redrawn as three docked panes with the log in `rail.md` (2026-10-26) | all |
 | Card dock | right, full height | the selection's card, opened by the click that selects; pinned cards as tabs above it | `#ship`, `#enemy`, `#group`, `#pinned` |
 | Selection strip | bottom, beside the ticker | the orders: helm, guns, torpedoes and smoke, the task, the formation; to the squadron or this ship | `#ship`, `#order`, `#arm` |
 | Notices | (dropped 2026-10-22, distracting) | falling out is told in the ticker; the strip's "Back into line" overrules it | all |
-| Ticker | bottom left | the last five events, fading; a click jumps to the ship. J opens the whole log, filtered | `#log` |
+| Ticker | bottom left | the last five events, fading; a click jumps to the ship. J opens the whole log, filtered. Since 2026-10-26 the rail's LOG pane (`rail.md`) | `#log` |
 | Map marks | the map | own ships named with speed and a flotation bar; contacts by identity with what's seen of them; fire lines, the selection's in brass with the range; torpedo reach; orders sent, amber while the signal travels; the cursor's verb | all |
 | Briefing | modal, at load (paused) | the situation, the aim, your side's orders before action, your forces and the enemy as reported | `#brief` |
 | Result | modal, at the end | the count, every ship's fate, the truth about the enemy | `#result` |
