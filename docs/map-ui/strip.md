@@ -92,6 +92,9 @@ end, the scale bar and the position (they floated at the bottom right). The bar 
 
 ## The keys
 
+Since input.md I0 (2026-10-26) WASD is the camera's: Shells ▾ is R, Abreast ⇧L, Deploy… N, and Withdraw has no key
+(input.md, The keys that moved). The table below is as the strip was ported.
+
 Every button wears its key, as the UI language asks. Kept to letters, the arrows, Enter, Del, comma and period: on a
 Finnish keyboard `[ ] / ;` need AltGr. Keys are SDL keycodes, so they follow the layout.
 

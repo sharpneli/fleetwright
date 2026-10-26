@@ -48,8 +48,10 @@ public sealed partial class MapScene
         Count,
     }
 
-    /// <summary>An order's key (with shift, or only with alt), its chip, its button's label and its tooltip.</summary>
-    readonly record struct ActDef(uint Key, bool Shift, bool Alt, string Chip, string Label, string Tip);
+    /// <summary>An order's key (with shift, or only with alt), its chip, its button's label and its tooltip. Key 0 and
+    /// no chip: a button alone (Withdraw: keys are for what's used often, docs/map-ui/input.md). W, A, S and D are the
+    /// camera's.</summary>
+    readonly record struct ActDef(uint Key, bool Shift, bool Alt, string? Chip, string Label, string Tip);
 
     static ActDef Def(Act a) => a switch
     {
@@ -70,19 +72,19 @@ public sealed partial class MapScene
         Act.AtWill => new(SDLK_G, false, false, "G", "Fire at will", "each battery at the enemy it judges best"),
         Act.Engage => new(SDLK_E, false, false, "E", "Engage…", "then click an enemy (or right-click her without this)"),
         Act.HoldFire => new(SDLK_X, false, false, "X", "Hold fire", "no gun fires"),
-        Act.Shells => new(SDLK_S, false, false, "S", "", "the main guns' shell, for the selection: by target (her captain judges what a round does to the target as she's made out), or a kind held until they're out of it; the round in the gun goes first"),
+        Act.Shells => new(SDLK_R, false, false, "R", "", "the main guns' shell, for the selection: by target (her captain judges what a round does to the target as she's made out), or a kind held until they're out of it; the round in the gun goes first"),
         Act.Torpedoes => new(SDLK_E, true, false, "Shift+E", "Torpedoes at…", "then click an enemy"),
         Act.Fight => new(SDLK_B, false, false, "B", "Fight", "the nearest enemy in sight; turns away when outgunned (Fight… in the task menu: one you pick)"),
         Act.Follow => new(SDLK_F, false, false, "F", "Follow…", "station astern of her: then click a ship"),
         Act.Hold => new(SDLK_H, false, false, "H", "Hold", "hold the course and speed ordered"),
         Act.Tasks => new(SDLK_T, false, false, "T", "Task", "every order, by what it's about, and what the unit is for"),
-        Act.Withdraw => new(SDLK_W, false, false, "W", "Withdraw", "break off and go home, away from any enemy first"),
+        Act.Withdraw => new(0, false, false, null, "Withdraw", "break off and go home, away from any enemy first"),
         Act.Auto => new(SDLK_I, false, false, "I", "AI", "the side's commander fights it: any order of yours takes it back"),
         Act.LineAhead => new(SDLK_L, false, false, "L", "Line ahead", "line ahead; a force: one line, every squadron in it, on the course it steers (on the same course the far columns drop back a column's length each, so a fleet takes long: deploying turns it into line quicker)"),
         Act.Columns => new(SDLK_K, false, false, "K", "Columns", "the cruising order: every squadron a column in line ahead, the columns abreast as far apart as one is long, ready to deploy"),
-        Act.Abreast => new(SDLK_A, false, false, "A", "Abreast", "line abreast; a force: every ship abreast, each squadron at its own spacing"),
+        Act.Abreast => new(SDLK_L, true, false, "Shift+L", "Abreast", "line abreast; a force: every ship abreast, each squadron at its own spacing"),
         Act.Turn => new(SDLK_U, false, false, "U", "Turn", "turn together: every ship at once; the line becomes a line of bearing on its old axis. Or the battle turn, about"),
-        Act.Deploy => new(SDLK_D, false, false, "D", "Deploy…", "into line of battle: click where the line should steer, or the enemy (across his course)"),
+        Act.Deploy => new(SDLK_N, false, false, "N", "Deploy…", "into line of battle: click where the line should steer, or the enemy (across his course)"),
         Act.DeployPort => new(SDLK_COMMA, false, false, ",", "to port", "deploy 8 points to port: one line, the port wing column leading round, the rest in its wake"),
         Act.DeployStbd => new(SDLK_PERIOD, false, false, ".", "to stbd", "deploy 8 points to starboard: one line, the starboard wing column leading round, the rest in its wake"),
         Act.Formation => new(SDLK_Z, false, false, "Z", "", "this level's formation and spacing: echelons and lines of bearing"),
@@ -546,13 +548,13 @@ public sealed partial class MapScene
         int more = OrderUnits(s).Count - 1;
         if (more != toMore)
             (toMore, toNote) = (more, more > 0 ? $"+{more} more, each" : null);
-        float chips = KbdWidth(Def(Act.LevelUp).Chip) + P(2) + KbdWidth(Def(Act.LevelDown).Chip);
+        float chips = KbdWidth(Def(Act.LevelUp).Chip!) + P(2) + KbdWidth(Def(Act.LevelDown).Chip!);
         BeginPane(x, "ORDERS TO", toNote, chips, P(230));
         if (!dry)
         {
             float r = TitleRight, y = paneTop + P(3.5f);
-            r -= sdl.Kbd(new Vector2(r - KbdWidth(Def(Act.LevelDown).Chip), y), Def(Act.LevelDown).Chip) + P(2);
-            sdl.Kbd(new Vector2(r - KbdWidth(Def(Act.LevelUp).Chip), y), Def(Act.LevelUp).Chip);
+            r -= sdl.Kbd(new Vector2(r - KbdWidth(Def(Act.LevelDown).Chip!), y), Def(Act.LevelDown).Chip!) + P(2);
+            sdl.Kbd(new Vector2(r - KbdWidth(Def(Act.LevelUp).Chip!), y), Def(Act.LevelUp).Chip!);
         }
         // what's become of her, under the chain
         string? state = null;
@@ -673,7 +675,7 @@ public sealed partial class MapScene
             Advance(w);
         }
         EndJoined();
-        Keys(Def(Act.Slower).Chip, Def(Act.Faster).Chip);
+        Keys(Def(Act.Slower).Chip!, Def(Act.Faster).Chip!);
         // the helm's toggles
         Row(2);
         Btn(Act.HardOver, c);
@@ -689,7 +691,7 @@ public sealed partial class MapScene
     /// <summary>The course ordered in an inset well: typed there (Enter puts the cursor in it, Enter sends it).</summary>
     void CourseWell(in Orders c)
     {
-        string chip = Def(Act.Course).Chip;
+        string chip = Def(Act.Course).Chip!;
         float w = P(80), chipW = KbdWidth(chip);
         if (!dry)
         {

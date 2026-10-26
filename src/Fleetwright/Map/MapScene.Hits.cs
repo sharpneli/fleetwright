@@ -14,8 +14,8 @@ public sealed partial class MapScene
 {
     readonly HitBook hitBook = new();
 
-    /// <summary>The dev's follow: the camera kept on this ship (an entity; 0 none).</summary>
-    public int Follow { get; init; }
+    /// <summary>The dev's follow: the camera kept on this ship (an entity; 0 none) until a pan, as a middle click on her.</summary>
+    public int Follow { get => follow; init => follow = value; }
     readonly HitMarks hitMarks = new();
 
     /// <summary>The continuous smoke sources: fires (I5), funnels (I6).</summary>

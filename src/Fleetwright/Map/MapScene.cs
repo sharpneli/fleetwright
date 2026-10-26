@@ -13,7 +13,8 @@ namespace Fleetwright.Map;
 /// <summary>The world tab (docs/battle/plan.md step 1.2): the globe of water at every zoom from orbit down to 10 px/m,
 /// the lat/lon grid, day and night from the snapshot's sun, and the clock's controls (pause, 1x to 1,000,000x, asked
 /// against achieved). It reads the world only through <see cref="WorldSession.Current"/> and changes it only by
-/// commands. Mouse: wheel zooms at the cursor, left drag pans (armed to place ships, it aims them). Keys: space pauses, + and - change the speed. The ships
+/// commands. Mouse: wheel zooms at the cursor, left or middle drag pans (armed to place ships, the left aims them), a middle
+/// click centres or follows (docs/map-ui/input.md). Keys: WASD pans, space pauses, + and - change the speed. The ships
 /// (step 2.3) are in MapScene.Ships.cs.</summary>
 public sealed unsafe partial class MapScene : IScene
 {
@@ -33,7 +34,7 @@ public sealed unsafe partial class MapScene : IScene
     readonly List<Graticule.BorderTick> ticks = [];   // the grid at the screen's edge, from the blend band in
     readonly Dictionary<(double, double, bool), string> tickLabels = [];   // their labels, kept: a pan makes no garbage
     double width = 1, height = 1;   // the target's size at the last draw, pixels
-    bool dragging, clamped, dragPending;
+    bool dragging, clamped, dragPending, middle;   // middle: the middle button is down (its drag pans)
     double panX, panY;   // the cursor the camera was last panned to
     double dragX, dragY;   // the newest cursor of a drag: panned to once a frame, however many motion events came
     Vector2 mouse;
@@ -88,14 +89,13 @@ public sealed unsafe partial class MapScene : IScene
             camera.Clamp(height);
             clamped = true;
         }
+        KeyPan(dt);
         if (dragPending)
         {
             camera.Pan(panX, panY, dragX, dragY, width, height);
-            (panX, panY, dragPending) = (dragX, dragY, false);
+            (panX, panY, dragPending, follow) = (dragX, dragY, false, 0);
         }
-        // the dev's follow (-follow=ENTITY: benches and captures stay on a ship as she steams)
-        if (Follow > 0 && world.Current.Ships.IndexOf(Follow) is int fk and >= 0)
-            camera.Target = world.Current.Ships.PoseAt(fk, world.DrawMs).Position.Normalized();
+        KeepFollow(world.Current);   // a middle click's, or the dev's (-follow=ENTITY: benches and captures stay on a ship)
         var probes = world.Perf.Ui;
         long t = Probes.Now;
         var view = View;
@@ -232,6 +232,13 @@ public sealed unsafe partial class MapScene : IScene
                 camera.ZoomAt(Math.Pow(1.2, -e->wheel.y), e->wheel.mouse_x * sx, e->wheel.mouse_y * sy, width, height);
                 return true;
             case SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN:
+                if (e->button.button == 2)
+                {
+                    // the middle button pans, off the globe too; its click centres or follows (MapScene.Input.cs)
+                    (pressX, pressY, middle) = (e->button.x * sx, e->button.y * sy, true);
+                    (panX, panY, dragging) = (e->button.x * sx, e->button.y * sy, true);
+                    return true;
+                }
                 if (e->button.button == 3)
                 {
                     OrderAt(e->button.x * sx, e->button.y * sy, (SDL_GetModState() & SDL_Keymod.SDL_KMOD_SHIFT) != 0);
@@ -245,6 +252,14 @@ public sealed unsafe partial class MapScene : IScene
                 (panX, panY, dragging) = (e->button.x * sx, e->button.y * sy, true);   // off the globe too: a pan needs no point held
                 return true;
             case SDL_EventType.SDL_EVENT_MOUSE_BUTTON_UP:
+                if (e->button.button == 2 && middle)
+                {
+                    double mx = e->button.x * sx, my = e->button.y * sy;
+                    if (Math.Abs(mx - pressX) + Math.Abs(my - pressY) < 5)
+                        MiddleClick(mx, my);
+                    (middle, dragging) = (false, pressed);
+                    return true;
+                }
                 if (e->button.button == 1 && placeDrag)
                 {
                     EndPlace(e->button.x * sx, e->button.y * sy);
@@ -257,7 +272,7 @@ public sealed unsafe partial class MapScene : IScene
                         Click(ux, uy);   // a click, not a drag
                     pressed = false;
                 }
-                dragging = false;
+                dragging = middle;
                 return true;
             case SDL_EventType.SDL_EVENT_MOUSE_MOTION:
                 (mouse, mouseIn) = (new Vector2(e->motion.x, e->motion.y), true);
@@ -275,18 +290,22 @@ public sealed unsafe partial class MapScene : IScene
                 mouseIn = false;
                 return false;
             case SDL_EventType.SDL_EVENT_KEY_DOWN:
-                return Key((uint)e->key.key);
+                return Key((uint)e->key.key, e->key.scancode);
+            case SDL_EventType.SDL_EVENT_KEY_UP:
+                return PanKey(e->key.scancode, false);
         }
         return false;
     }
 
-    bool Key(uint key)
+    bool Key(uint key, SDL_Scancode code)
     {
         var s = world.Current;
         if (key == SDLK_ESCAPE)
             return Escape();
         if (TaskKey(key))
             return true;   // the task menu's letters while it's open (docs/battle/admirals-orders.md O9)
+        if (PanKey(code, true))
+            return true;   // WASD pans, before any order's letter (docs/map-ui/input.md)
         if (StripKey(key))
             return true;   // an order's key while the strip is up (docs/map-ui/strip.md)
         if (key == SDLK_F1)

@@ -306,7 +306,8 @@ public unsafe class Sdl3GpuEngine : IDisposable
     /// device), the button down at X0,Y0, then N frames of eight motion events each toward X1,Y1, then up.
     /// "F:mclick:X,Y" and "F:mright:X,Y" are left and right clicks the same way, as SDL events (the map's clicks).
     /// "F:mwheel:X,Y:N" turns the wheel N notches as an SDL event (the map's zoom: N &gt; 0 zooms in), and "F:key:NAME"
-    /// presses a key by its SDL name (F2, Space, =).</summary>
+    /// presses a key by its SDL name (F2, Space, =); "F:hold:NAME:N" holds it N frames (down and up as SDL events, with
+    /// its scancode). "F:mmiddle:X,Y" is a middle click; "F:pan:X0,Y0:X1,Y1:N:2" pans with the middle button.</summary>
     public List<string> ScriptedInput { get; } = [];
 
     void FeedScriptedInput()
@@ -321,7 +322,9 @@ public unsafe class Sdl3GpuEngine : IDisposable
                 continue;
             int step = (int)FrameNumber - f;   // a drag runs over frames: move, press, six moves, let go
             int panFrames = p[1] == "pan" && p.Length > 4 ? int.Parse(p[4]) : 0;
-            if (step != 0 && !(p[1] == "drag" && step is > 0 and <= 8) && !(p[1] == "pan" && step > 0 && step <= panFrames + 1))
+            int holdFrames = p[1] == "hold" && p.Length > 3 ? int.Parse(p[3]) : 0;
+            if (step != 0 && !(p[1] == "drag" && step is > 0 and <= 8) && !(p[1] == "pan" && step > 0 && step <= panFrames + 1)
+                && !(p[1] == "hold" && step == holdFrames))
                 continue;
             System.Numerics.Vector2 At(string s)
             {
@@ -365,10 +368,11 @@ public unsafe class Sdl3GpuEngine : IDisposable
                 case "pan" when panFrames > 0:
                     var a0 = At(p[2]);
                     var a1 = At(p[3]);
+                    byte pb = p.Length > 5 ? byte.Parse(p[5]) : (byte)1;
                     if (step == 0)
                     {
                         PushMouse(SDL_EventType.SDL_EVENT_MOUSE_MOTION, a0, default);
-                        PushMouse(SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN, a0, default);
+                        PushMouse(SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN, a0, default, pb);
                     }
                     else if (step <= panFrames)
                         for (int k = 1; k <= 8; k++)
@@ -378,14 +382,14 @@ public unsafe class Sdl3GpuEngine : IDisposable
                             PushMouse(SDL_EventType.SDL_EVENT_MOUSE_MOTION, to, to - from);
                         }
                     else
-                        PushMouse(SDL_EventType.SDL_EVENT_MOUSE_BUTTON_UP, a1, default);
+                        PushMouse(SDL_EventType.SDL_EVENT_MOUSE_BUTTON_UP, a1, default, pb);
                     break;
                 case "mmove":   // the cursor over the map, no button (hover, the map's cursor verb)
                     PushMouse(SDL_EventType.SDL_EVENT_MOUSE_MOTION, At(p[2]), default);
                     break;
-                case "mclick" or "mright":
+                case "mclick" or "mright" or "mmiddle":
                     var m = At(p[2]);
-                    byte mb = p[1] == "mclick" ? (byte)1 : (byte)3;
+                    byte mb = p[1] == "mclick" ? (byte)1 : p[1] == "mmiddle" ? (byte)2 : (byte)3;
                     PushMouse(SDL_EventType.SDL_EVENT_MOUSE_MOTION, m, default);
                     PushMouse(SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN, m, default, mb);
                     PushMouse(SDL_EventType.SDL_EVENT_MOUSE_BUTTON_UP, m, default, mb);
@@ -405,6 +409,15 @@ public unsafe class Sdl3GpuEngine : IDisposable
                     ke.key.key = SDL_GetKeyFromName(p[2]);
                     ke.key.down = true;
                     SDL_PushEvent(&ke);
+                    break;
+                case "hold" when holdFrames > 0:
+                    var he = new SDL_Event();
+                    he.type = (uint)(step == 0 ? SDL_EventType.SDL_EVENT_KEY_DOWN : SDL_EventType.SDL_EVENT_KEY_UP);
+                    he.key.windowID = SDL_GetWindowID(_window);
+                    he.key.key = SDL_GetKeyFromName(p[2]);
+                    he.key.scancode = SDL_GetScancodeFromName(p[2]);
+                    he.key.down = step == 0;
+                    SDL_PushEvent(&he);
                     break;
                 case "drop":   // the path may hold colons (C:/...): all after the second
                     FileDropped?.Invoke(ev[(ev.IndexOf(':', ev.IndexOf(':') + 1) + 1)..]);
