@@ -1047,10 +1047,12 @@ public sealed class GroupSystem : IWorldSystem
         int n = 0, k = 0;
         foreach (var g in groups)
         {
-            if (SideOf(g) is int side and >= 0 && !s.ShownSides[side])
+            int side = SideOf(g);
+            if (side >= 0 && !s.ShownSides[side])
                 continue;   // the enemy's: not in the player's view
             (v.Id[n], v.Name[n], v.Formation[n], v.SpacingM[n], v.MemberStart[n], v.MemberCount[n]) =
                 (g.GroupId, g.Name, g.Formation, g.SpacingM, k, g.Members.Count);
+            v.Side[n] = side;
             v.BearingDeg[n] = g.BearingDeg;
             (v.Guide[n], v.GuideShip[n], v.Force[n], v.Parent[n]) = (g.Guide, GuideShip(g), g.IsForce, g.Parent);
             for (int i = 0; i < g.Members.Count; i++)

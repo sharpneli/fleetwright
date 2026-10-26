@@ -818,18 +818,18 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         }
         var gv = s.Groups;
         for (int k = 0; k < gv.Count; k++)
-            gv.Commanded[k] = gv.Parent[k] != 0 ? (byte)0 : Mark(Unit.Group(gv.Id[k]), gv.GuideShip[k], player);
+            gv.Commanded[k] = gv.Parent[k] != 0 ? (byte)0 : Mark(Unit.Group(gv.Id[k]), gv.Side[k], player);
         var v = s.Ships;
         for (int k = 0; k < v.Count; k++)
-            v.Commanded[k] = groups.Of(v.Entity[k]) != null ? (byte)0 : Mark(Unit.Ship(v.Entity[k]), v.Entity[k], player);
+            v.Commanded[k] = groups.Of(v.Entity[k]) != null ? (byte)0 : Mark(Unit.Ship(v.Entity[k]), v.Side[k], player);
     }
 
     /// <summary>A top unit's mark: his (1), held from him (2), or neither (0).</summary>
-    byte Mark(Unit u, int lead, int player)
+    byte Mark(Unit u, int side, int player)
     {
-        if (store.SlotOf(lead) is not (int slot and >= 0) || sides[store[slot].Side] is not { Mode: not CommanderMode.None })
+        if (side < 0 || sides[side] is not { Mode: not CommanderMode.None })
             return 0;
-        if (Commands(u, store[slot].Side, player))
+        if (Commands(u, side, player))
             return 1;
         return Find(u.Id) is int i and >= 0 && recs[i].Switch == 0 ? (byte)2 : (byte)0;
     }

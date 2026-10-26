@@ -277,6 +277,22 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void A_force_with_every_member_detached_keeps_its_side_in_the_snapshot()
+    {
+        // the rail lists the player's top units by side: a force whose squadrons are all out of its line (held by the
+        // player, on tasks) has no guide ship, and was dropped from the rail with every ship under it
+        var (w, _, force, battle, cruisers, destroyers, _) = Disposed(dispose: false);
+        foreach (int g in (int[])[battle, cruisers, destroyers])
+            w.Apply(GroupSystem.DetachGroup(g, Detachment.Pinned));
+        var s = new Snapshot();
+        w.Fill(s, truth: true);
+        int k = s.Groups.IndexOfGroup(force);
+        Assert.Equal(0, s.Groups.GuideShip[k]);
+        Assert.Equal(0, s.Groups.Side[k]);
+        Assert.Equal(w.Groups.Get(battle)!.Guide, s.Groups.LeadShip(k));
+    }
+
+    [Fact]
     public void Roles_are_worked_out_from_the_ships_and_set_by_the_player()
     {
         var (w, ai, line, sq) = Make(hand: true);

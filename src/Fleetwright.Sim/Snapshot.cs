@@ -729,12 +729,16 @@ public sealed class EncountersView
 
 /// <summary>The groups' part of a snapshot: per group its id, name, formation, spacing, whether it's a force (its
 /// members are groups, not ships), the force it's in (0 for none), its guide (the first member in its line, 0 when every
-/// member is detached) and the ship that leads it, and its members (entities or group ids, in order) as a run of
-/// <see cref="Members"/>, each with its <see cref="Detached"/>.</summary>
+/// member is detached) and the ship that leads it, its side, and its members (entities or group ids, in order) as a run
+/// of <see cref="Members"/>, each with its <see cref="Detached"/>.</summary>
 public sealed class GroupsView
 {
     public int Count;
     public int[] Id = [], MemberStart = [], MemberCount = [], Members = [], Guide = [], GuideShip = [], Parent = [];
+
+    /// <summary>Its ships' side (-1 for a group with none): a force whose every member is detached has no guide ship, but
+    /// a side still.</summary>
+    public int[] Side = [];
     public bool[] Force = [];
 
     /// <summary>Held by the player while its superior's orders for it have changed: a notice, "resume?" (the AI's).</summary>
@@ -781,6 +785,7 @@ public sealed class GroupsView
             Array.Resize(ref RoleSet, n);
             Array.Resize(ref Guide, n);
             Array.Resize(ref GuideShip, n);
+            Array.Resize(ref Side, n);
             Array.Resize(ref Parent, n);
             Array.Resize(ref Force, n);
             Array.Resize(ref Asked, n);
@@ -812,6 +817,23 @@ public sealed class GroupsView
             if (Id[g] == groupId)
                 return g;
         return -1;
+    }
+
+    /// <summary>The ship a group's head stands for: its guide ship, else (every member detached) its first ship down
+    /// the tree; 0 for none.</summary>
+    public int LeadShip(int g)
+    {
+        if (GuideShip[g] != 0)
+            return GuideShip[g];
+        for (int i = 0; i < MemberCount[g]; i++)
+        {
+            int m = Members[MemberStart[g] + i];
+            if (!Force[g])
+                return m;
+            if (IndexOfGroup(m) is int sub and >= 0 && LeadShip(sub) is int s and > 0)
+                return s;
+        }
+        return 0;
     }
 }
 

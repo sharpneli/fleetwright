@@ -118,13 +118,8 @@ public sealed partial class MapScene
         ImGui.End();
     }
 
-    bool UnitIsOurs(Snapshot s, int g)
-    {
-        var gv = s.Groups;
-        int guide = gv.GuideShip[g];
-        int k = s.Ships.IndexOf(guide);
-        return s.PlayerSide < 0 || k >= 0 && s.Ships.Side[k] == s.PlayerSide;
-    }
+    // by its side, not its guide: a force whose every member is detached has no guide ship
+    static bool UnitIsOurs(Snapshot s, int g) => s.PlayerSide < 0 || s.Groups.Side[g] == s.PlayerSide;
 
     /// <summary>The side's commander, under the forces' head (docs/battle/command.md decision 14): on (the default), he
     /// fights every unit the player hasn't taken; off, only those handed to him.</summary>
@@ -213,10 +208,10 @@ public sealed partial class MapScene
             if (!pickedGroups.Remove(gv.Id[g]))
                 pickedGroups.Add(gv.Id[g]);
         }
-        else if (clicked && gv.GuideShip[g] != 0)
+        else if (clicked && gv.LeadShip(g) is int lead and > 0)
         {
             // the unit: its guide selected with the orders at its level, its card open
-            selected = gv.GuideShip[g];
+            selected = lead;
             ClearPicks();
             Chain(s);
             if (chain.Contains(g))
