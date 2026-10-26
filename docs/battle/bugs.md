@@ -271,7 +271,7 @@ Seen in the AI's baseline after the detail passes (2026-10-20, docs/battle/comma
   (`shipgen scenario <setup> --play --fast 1000000 --fine 1`). Fixed 2026-10-25: `WorldTime.AheadMs` (at least 1 ms, at
   most a century) for every event put ahead by a span in seconds (the rails' five schedulers, coarse motion's and the
   slide's segment ends); the same run plays to its end.
-- [ ] The fine tier flat out (§ held, ⇧Space: `World.FineHeld`, docs/map-ui/input.md) makes only about 300x in the
+- [x] The fine tier flat out (§ held, ⇧Space: `World.FineHeld`, docs/map-ui/input.md) makes only about 300x in the
   Jutland (the user's test game, 2026-10-26; 288x measured the same day on 2 workers), so § gains little over the 240x
   gear in a fleet action. Small fights run far faster (the squadrons to their end in under a second). Look at where the
   fine tick's time goes at 250 ships (`-frametimes`, the world's probes in the F2 panel) and whether more workers
@@ -282,7 +282,8 @@ Seen in the AI's baseline after the detail passes (2026-10-20, docs/battle/comma
   step 20.9 µs a tick in the game, 21.6-31.9 headless). The game made 473x over its first 2.4 game hours, the headless
   play of the same span 379x. The ceiling is the sim's own cost at 250 ships, ~2-3.5 ms a game second, spread flat
   (inline: the ships' step 33%, sighting 20%, the AI 22%, smoke 15%, gunnery 6%); more workers were measured flat past
-  2 (workers.md W8). What would lift it is for the user to pick (the open options in docs/profiling.md's log row).
+  2 (workers.md W8). Kept as it is (the user, 2026-10-26): real speed in a fleet action is the coarse tier's (fighting.md
+  4.8-4.9), not the fine tier's.
 
 ## The app
 
