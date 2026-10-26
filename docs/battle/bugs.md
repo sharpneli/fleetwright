@@ -42,6 +42,28 @@ runs 5-7, after its fix, and the Debug run had none.
 
 ## Damage
 
+- [x] A ship far down by the head kept her full speed (the Åland card, 2026-10-26: Lemminkäinen at 13.4 kn, trimmed
+  9.3°, draught aft -0.2 m). The only link from flooding to speed was the water's weight on the power. Fixed 2026-10-26
+  by `Ploughing` (Sim.Combat):
+  - her screws drive by the share of their discs under the sea;
+  - her weather deck under the sea at speed is a plate at her trim that presses her down where it's under (in
+    `Flooding.Settle`, and in what her reserve must carry);
+  - it and her upper works' faces under the sea drag (in `DamageSystem.Hold`, as a share of the hull's resistance);
+  - the bow's ram head drives the sea over the deck into its openings.
+  - Bench: `dc-history --case "Åland card"`, holding 13 kn. At 4 h she was making 13.0 kn with 2,090 t aboard; now
+    she makes 3.5 kn with 2,600 t. She slows at 70-80 min, once the trim passes 5-7°: one screw comes out (her two
+    screws, 1.18 m across, are 2.5 m under the waterline) and about 30 m² of drag comes on as turret A goes under.
+  - The press itself is small here, 5-7 t at 5 kn, because she slows before the deck is deep. It's the fast ships'
+    effect.
+  - Unchanged: Seydlitz, Lützow and the Lion bow shells, whose decks never go under.
+- [ ] Damage control's safe speed (DC6) doesn't know the deck going under. Nobody slows her for the press or for the
+  sea washing in over the forecastle, only for the boundaries' load.
+- [ ] Screws near the surface ventilate, which costs more thrust than their emerged area alone [EST, left out].
+- [ ] Settling is linear (TPC, MCT) out to 8-9° of trim, past where the waterplane stays like the design's
+  (`sinking.py` is in damage-control.md's "What stays out").
+- [ ] The ship card shows "Safe speed 33 kn" on a 15-kn ship (nothing binds, but it's finite). Its "Power 100%" is the
+  plant's, with the screws out of the water: the UI pass.
+
 - [ ] An AP near miss 1.8 m down still puts 0.8 pieces a burst into a destroyer's upper works (the 16" Mk 8 20 m short at
   15 km, `NearMissTests.AP_bursts_deep_and_throws_no_splinters`; no holes, nobody hurt). Damage/15 §1.1 has the sea
   stopping every piece at that depth. Found 2026-10-19 when the Type 91 lost its diving fuze: its 0.4 s burst 14 m down

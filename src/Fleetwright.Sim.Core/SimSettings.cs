@@ -1443,6 +1443,12 @@ public sealed record SimSettings
     public double FloodRamReach { get; init; } = 0.25;
     public double FloodRamLoad { get; init; } = 0.5;
 
+    /// <summary>Her weather deck under the sea under way (<c>Ploughing</c>, the Åland card 2026-10-26): the share of a deep
+    /// plate's normal force it makes this near the free surface (a lifting surface near it loses about half) [EST], and
+    /// the drag coefficient of her upper works' faces under the sea (Hoerner: a block face on ~1) [EST].</summary>
+    public double PloughLiftShare { get; init; } = 0.5;
+    public double UpperWorksCd { get; init; } = 1;
+
     /// <summary>The closures in a boundary a load loosens (damage/17 §4's fittings; door dogs, hatch dogs, cable stuffing tubes, vent
     /// closures, reach rods, shaft glands, pipe flanges, by <c>Closure</c>): the D each starts at, its chance per unit of
     /// D over that (p = min(<see cref="ClosureCap"/>, per·(D − start + ½))) and its area, log-uniform between the two, cm²

@@ -789,10 +789,24 @@ public sealed class DamageSystem : IWorldSystem
     }
 
     /// <summary>The store holds the ship to the power it can make, less what its water's weight costs (the power a
-    /// speed needs goes as the displacement to the two-thirds); a change under 1% is let be, but for a hit's.</summary>
+    /// speed needs goes as the displacement to the two-thirds), the share of her screws still in the water and what her
+    /// deck and upper works under the sea drag at her speed (<see cref="Ploughing"/>: as a share of the hull's resistance
+    /// there, both going as the speed squared); a change under 1% is let be, but for a hit's.</summary>
     void Hold(World world, int slot, ShipCondition k, bool force)
     {
-        double d = Flood(k.Class).DisplacementT, cap = k.PowerCap * Math.Pow(d / (d + k.WaterT), 2.0 / 3);
+        var f = Flood(k.Class);
+        double d = f.DisplacementT, cap = k.PowerCap * Math.Pow(d / (d + k.WaterT), 2.0 / 3);
+        if (k.Attitude != Attitude.Upright)
+        {
+            cap *= Ploughing.Screws(k.Class, HitQuery.WaterOf(k.Class, k.Attitude));
+            double u = ships.Store[slot].Speed, au = Math.Max(Math.Abs(u), 1);
+            var press = Ploughing.Deck(k.Class, f, k.Attitude, u >= 0, settings);
+            if (press.DragM2 > 0)
+            {
+                double hull = settings.PropulsiveEfficiency * ships.Store[slot].Handling.PowerAtW(au) / au;   // N, as the motion has it
+                cap *= hull / (hull + 0.5 * FloodModel.SeaT * 1000 * au * au * press.DragM2);
+            }
+        }
         // damage control's safe speed (DC6, decision 2): her captain keeps to it once the doctrine's hold time is up, unless
         // her orders are to hold speed
         double hold = k.DamageControl.HoldSpeedS;
@@ -969,7 +983,7 @@ public sealed class DamageSystem : IWorldSystem
         for (int i = 0; i < k.NoteCount; i++)
             log.Add(new CombatEntry(now, CombatEvent.DamageControl, 0, k.Notes[i].Value, ships.Store[slot].Entity, (int)k.Notes[i].What, k.Notes[i].Part));
         k.NoteCount = 0;
-        var how = Flooding.Settle(cls, f, k, settings, dt);
+        var how = Flooding.Settle(cls, f, k, settings, dt, ships.Store[slot].Speed);
         var rng = stream.Derive(0xF100Du).Derive((ulong)ships.Store[slot].Entity).Derive((ulong)now);
         var fs = k.Fires > 0 || Fires.Hot(k) ? Fires.Step(cls, f, k, dt, settings, ref rng, now) : default;
         touched = true;

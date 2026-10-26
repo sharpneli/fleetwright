@@ -134,6 +134,10 @@ static class DcHistory
         new("mechanism checks", "The same, slowed to 12 kn at 4 min (09 §8)", "lion", 28,
             [Blow.Hole(0, 0.88, 0.8, 1.2, d: 2), Blow.Hole(0, 0.88, -0.4, 0.4), Blow.Speed(4, 12)],
             "closed up", "1916", 4, "(the research's model) ~1,900 t", "a fifth of holding 28 kn", "09 §8, §2.2"),
+        new("mechanism checks", "A coast defence ship's bow quarters burst open by four heavy HE, holding 13 kn (the Åland card, 2026-10-26)", "vainamoinen", 13,
+            [Blow.Hole(0, 0.92, 0.3, 20, d: 2), Blow.Hole(1, 0.86, 0, 20, d: 2), Blow.Hole(2, 0.80, 0.5, 20, port: true, d: 2), Blow.Hole(3, 0.74, -0.2, 20, d: 2)],
+            "closed up", "1916", 1, "(none: a ship down by the head with her screws out of the water can't drive ahead)",
+            "she slows as her stern lifts and her bow ploughs under", "the user, 2026-10-26", Holds: true),
 
         new("later cuts", "North Carolina 1942: one torpedo abreast turret A, at 19 kn (on a treaty battleship with torpedo protection)", "kgv", 19,
             [Blow.Torpedo(0, 0.78, 5, port: true)],
@@ -255,6 +259,11 @@ static class DcHistory
             Console.WriteLine(string.Format(Inv, "      counterflood tanks {0}: port {1:0} t, starboard {2:0} t, at {3:0} t/min; drainage {4}",
                 f0.CounterTanks.Length, Repairs.CounterfloodLeftT(f0, k0, -1), Repairs.CounterfloodLeftT(f0, k0, 1), target.Drainage.CounterfloodTpm,
                 target.Drainage));
+            foreach (var line in target.ShaftLines)
+                if (line.Propeller >= 0)
+                    Console.WriteLine(string.Format(Inv, "      screw at x {0:0.0}, y {1:+0.0;-0.0}, z {2:0.0} m (waterline {3:0.0}), {4:0.00} m across",
+                        target.Components[line.Propeller].X, target.Components[line.Propeller].Y, target.Components[line.Propeller].Z, target.Vertical.Waterline,
+                        line.PropellerDiameterM));
         }
         for (int m = 1; m <= hours * 60; m++)
         {
@@ -349,9 +358,12 @@ static class DcHistory
                         r.WaterAt[h] = r.WaterT;
                 if (trace && r == list[Math.Min(traceRun, runs - 1)] && (m <= 30 || m % 10 == 0))
                     Console.WriteLine(string.Format(Inv, "      {0,5} min  water {1,6:0} t, list {2,5:0.0}°, trim {3,5:+0.00;-0.00}°, GM {4,5:0.00} m, " +
-                        "speed {5,4:0.0} kn, power {6:0%}, holes {7:0.00} m², cf {9:0} t ({10}), parties {8}", m, k.WaterT, k.Attitude.HeelDeg, k.Attitude.TrimDeg,
+                        "speed {5,4:0.0} kn, power {6:0%}, screws {11:0%}, pressed {12:0} t, drag {13:0} m², holes {7:0.00} m², cf {9:0} t ({10}), parties {8}", m, k.WaterT, k.Attitude.HeelDeg, k.Attitude.TrimDeg,
                         k.GmM, r.Kn, k.PowerCap, k.BreachM2.Sum(), string.Join(" ", k.Parties.Take(k.PartyCount).Select(q =>
-                            q.Target >= 0 ? "fire" : q.Job == RepairJob.None ? "-" : q.Job.ToString().ToLowerInvariant())), k.CounterfloodT, k.CounterTank));
+                            q.Target >= 0 ? "fire" : q.Job == RepairJob.None ? "-" : q.Job.ToString().ToLowerInvariant())), k.CounterfloodT, k.CounterTank,
+                        Ploughing.Screws(target, HitQuery.WaterOf(target, k.Attitude)),
+                        0.5 * FloodModel.SeaT * store[slot].Speed * store[slot].Speed / 9.81 * Ploughing.Deck(target, w.Damage.Flood(target), k.Attitude, true, s).DownM2,
+                        Ploughing.Deck(target, w.Damage.Flood(target), k.Attitude, true, s).DragM2));
             }
         }
         if (trace)

@@ -239,7 +239,8 @@ public static class Flooding
             }
             if (f.Weather[i])
             {
-                double head = water.At(f.Cx[i], f.Cy[i]) - cells[i].Box.Top;
+                // the sea over her deck, and under way forward the bow's ram on it (the water she drives over it)
+                double head = water.At(f.Cx[i], f.Cy[i]) + Ram(c, f.Cx[i], speedMs, s) - cells[i].Box.Top;
                 if (head > 0)
                     q += cd * s.FloodWeatherShare * f.DeckArea[i] * Math.Sqrt(2 * G * head);
             }
@@ -487,9 +488,13 @@ public static class Flooding
     /// GM with the water in (its weight's height and its free surfaces), the heel coming on toward what they give over
     /// <see cref="SimSettings.HeelLagS"/> (water rushing in doesn't flip a ship in a second), and whether that loses it: foundered when the water passes the reserve buoyancy or the sea
     /// closes over the deck at the centre of flotation, capsized past <see cref="SimSettings.CapsizeHeelDeg"/> (a moment, or a
-    /// loll with its GM gone).</summary>
-    public static LossKind Settle(ShipClass c, FloodModel f, ShipCondition k, SimSettings s, double dt)
+    /// loll with its GM gone). Under way (m/s through the water, ahead over 0) her deck under the sea presses her down
+    /// where it's under (<see cref="Ploughing.Deck"/>, from the attitude she starts the step at): sinkage and trim as a
+    /// weight there would give, and in what her reserve buoyancy must carry (she can drive herself under).</summary>
+    public static LossKind Settle(ShipClass c, FloodModel f, ShipCondition k, SimSettings s, double dt, double speedMs = 0)
     {
+        var press = speedMs != 0 ? Ploughing.Deck(c, f, k.Attitude, speedMs > 0, s) : Ploughing.Forces.None;
+        double pressT = 0.5 * FloodModel.SeaT * speedMs * speedMs * press.DownM2 / G;   // tonnes-force: ½ρu²·A over g, ρ in t/m³
         var h = c.Hydrostatics;
         double wt = 0, mx = 0, my = 0, mz = 0, fs = 0;
         var cells = c.Cells;
@@ -521,7 +526,7 @@ public static class Flooding
             return LossKind.None;
         }
         double d = h.DisplacementT, d1 = d + wt;
-        double sink = Flotation.SinkageM(wt, h.TpcT), trim = Flotation.TrimRad(mx, h.MctTm, c.Length);
+        double sink = Flotation.SinkageM(wt + pressT, h.TpcT), trim = Flotation.TrimRad(mx + pressT * (press.X - h.Lcf), h.MctTm, c.Length);
         double kg1 = (d * h.Kg + mz) / d1;
         k.GmM = h.GmT + h.Kg - kg1 - fs * FloodModel.SeaT / d1;
         double heel = Heel(k.GmM, h.ITM4 * FloodModel.SeaT / d1, my / d1), was = double.DegreesToRadians(k.Attitude.HeelDeg);
@@ -529,7 +534,7 @@ public static class Flooding
         k.Attitude = new Attitude(sink, double.RadiansToDegrees(trim), double.RadiansToDegrees(heel));
         if (Math.Abs(k.Attitude.HeelDeg) >= s.CapsizeHeelDeg)
             return LossKind.Capsized;
-        if (wt >= f.ReserveT || HitQuery.WaterOf(c, k.Attitude).At(h.Lcf, 0) >= f.DeckAtLcf)
+        if (wt + pressT >= f.ReserveT || HitQuery.WaterOf(c, k.Attitude).At(h.Lcf, 0) >= f.DeckAtLcf)
             return LossKind.Foundered;
         return LossKind.None;
     }

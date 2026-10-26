@@ -18,7 +18,8 @@ public readonly record struct Fitness(double SpeedShare, double MainGunsShare, d
         if (!k.Damaged)
             return Whole;
         double top = c.Motion.MaxSpeedKn;
-        double speed = top > 0 ? c.SpeedAt(c.PowerAt(top) * k.PowerCapLasts) / top : 1;
+        double screws = k.Attitude != Attitude.Upright ? Ploughing.Screws(c, HitQuery.WaterOf(c, k.Attitude)) : 1;   // out of the water, they drive nothing
+        double speed = top > 0 ? c.SpeedAt(c.PowerAt(top) * k.PowerCapLasts * screws) / top : 1;
         int barrels = 0, working = 0;
         foreach (ref readonly var b in c.Batteries)
         {
