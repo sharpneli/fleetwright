@@ -26,7 +26,7 @@ public sealed partial class MapScene
     readonly List<int> pinned = [];
     const int MaxPins = Snapshot.MaxDetail - 1;
     bool cardOpen = true;
-    /// <summary>Where the dock starts this frame (screen x): the strip centres in what's left of it.</summary>
+    /// <summary>Where the dock starts this frame (screen x).</summary>
     float dockLeft = float.MaxValue;
 
     static readonly Vector4 Ok = Theme.Ok, Fire = Theme.Fire;
@@ -84,7 +84,7 @@ public sealed partial class MapScene
             return;
         int unit = squadronCardOf == live && s.Groups.IndexOfShip(live) is int g0 and >= 0 ? UnitOfCard(s, live) : -1;
         float pad = P(8), w = P(440), tabsH = P(22);
-        float top = HudTop, bottom = vp.Pos.Y + vp.Size.Y - pad - P(30);
+        float top = HudTop, bottom = vp.Pos.Y + vp.Size.Y - StatusH - P(2);
         dockLeft = vp.Pos.X + vp.Size.X - pad - w;
         ImGui.SetNextWindowPos(new Vector2(vp.Pos.X + vp.Size.X - pad, top), ImGuiCond.Always, new Vector2(1, 0));
         ImGui.SetNextWindowSize(new Vector2(w, bottom - top));

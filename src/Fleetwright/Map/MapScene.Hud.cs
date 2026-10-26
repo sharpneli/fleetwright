@@ -11,8 +11,8 @@ using Fleetwright.Ui;
 namespace Fleetwright.Map;
 
 /// <summary>The map's HUD (docs/map-ui/battle-hud.md U1): the top bar (the side and scenario, the clock and its speeds,
-/// in action, the aim and the end, the way to the designer and the menu), the briefing a scenario opens with, the scale
-/// at the bottom right, the map's items in the app's menu, and Esc. Its strings are made when what they say changes,
+/// in action, the aim and the end, the way to the designer and the menu), the briefing a scenario opens with, the status
+/// bar along the bottom, the map's items in the app's menu, and Esc. Its strings are made when what they say changes,
 /// so a frame that changes nothing allocates nothing.</summary>
 public sealed partial class MapScene : ISceneMenu
 {
@@ -494,20 +494,74 @@ public sealed partial class MapScene : ISceneMenu
         }
     }
 
-    // ------------------------------------------------------------------ the scale, bottom right
+    // ------------------------------------------------------------------ the status bar
 
     readonly string?[] graticuleLegend = new string?[Graticule.Levels], squareLegend = new string?[SquareGrid.Levels];
     DistanceUnit legendUnit;
 
-    /// <summary>The grid's legend over the scale bar (docs/visuals/grid.md): the major level and the minor inside it, a
-    /// stroke in each one's look beside its spacing, faded as the lines are; the graticule's and the square grid's in
-    /// the same two rows, handing over in the blend band, so the panel holds its size.</summary>
-    void GridLegend()
+    /// <summary>The map's own keys, at the status bar's right.</summary>
+    const string StatusKeys = "Space pause · + − speed · 1–0 speeds · Tab next ship · J log · V card · P pin · Esc menu";
+
+    /// <summary>The status bar along the bottom (docs/map-ui/strip.md), as the designer's and the launch screen's: a dot
+    /// and what the mouse does, or the armed pick in amber, at the left; the map's keys, the grid's legend, the scale bar
+    /// and the centre's position at the right. With shift held and a ship selected, a waypoint on land is refused here.
+    /// The band, the view and the sun's time are the dev panel's.</summary>
+    void StatusBar(Snapshot s)
+    {
+        var vp = ImGui.GetMainViewport();
+        float h = StatusH, y = vp.Pos.Y + vp.Size.Y - h;
+        ImGui.SetNextWindowPos(new Vector2(vp.Pos.X, y));
+        ImGui.SetNextWindowSize(new Vector2(vp.Size.X, h));
+        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
+        ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, 0);
+        if (ImGui.Begin("##status", ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoSavedSettings |
+                                    ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoNav | ImGuiWindowFlags.NoBackground |
+                                    ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
+        {
+            var dl = ImGui.GetWindowDrawList();
+            dl.StatusBarBg(new Vector2(vp.Pos.X, y), vp.Size.X, h);
+            float ty = Pieces.Mid(UiFonts.SansSmall, y, h), my = Pieces.Mid(UiFonts.MonoSmall, y, h);
+            // the right end, from the right: the position, the scale, the grid, the keys
+            var (lat, lon) = Earth.LatLon(camera.Target);
+            long key = (long)Math.Round(lat * 600) * 1_000_000 + (long)Math.Round(lon * 600);
+            if (key != whereKey)
+            {
+                whereKey = key;
+                // whole minutes first, so 56.7° is 56°42' (not 57°42') and 59.99' never shows as 60'
+                long la = (long)Math.Round(Math.Abs(lat) * 60), lo = (long)Math.Round(Math.Abs(lon) * 60);
+                whereText = $"{la / 60}°{la % 60:00}'{(lat >= 0 ? 'N' : 'S')} {lo / 60}°{lo % 60:00}'{(lon >= 0 ? 'E' : 'W')}";
+            }
+            float r = vp.Pos.X + vp.Size.X - Pieces.P(8);
+            dl.TextRight(UiFonts.MonoSmall, r, my, Theme.Text, whereText);
+            r -= Pieces.Width(UiFonts.MonoSmall, whereText) + Pieces.P(16);
+            r = ScaleBar(dl, r, y + h / 2, camera.MetresPerPixel * width / Math.Max(vp.Size.X, 1)) - Pieces.P(16);
+            r = GridLegend(dl, r, y + h / 2) - Pieces.P(16);
+            dl.TextRight(UiFonts.SansSmall, r, ty, Theme.Muted, StatusKeys);
+            r -= Pieces.Width(UiFonts.SansSmall, StatusKeys) + Pieces.P(16);
+            // the left end: what the mouse does, cut short of the keys
+            bool armed = armedPick != ClickPick.None;
+            dl.AddCircleFilled(new Vector2(vp.Pos.X + Pieces.P(12), y + h / 2), Pieces.P(3), Pieces.U(armed ? Theme.Amber : Theme.Ok), 12);
+            dl.PushClipRect(new Vector2(vp.Pos.X, y), new Vector2(r, y + h), true);
+            dl.Text(UiFonts.SansSmall, new Vector2(vp.Pos.X + Pieces.P(22), ty), armed ? Theme.Amber : Theme.Muted, StripHint(s));
+            dl.PopClipRect();
+        }
+        ImGui.End();
+        ImGui.PopStyleVar(2);
+        if (mouseIn && ImGui.GetIO().KeyShift && selected >= 0 && !ImGui.GetIO().WantCaptureMouse
+            && View.Pick(mouse.X * width / Math.Max(vp.Size.X, 1), mouse.Y * height / Math.Max(vp.Size.Y, 1), out var p) && world.Shore.IsLand(p))
+            ImGui.SetTooltip("land: no waypoint here");
+    }
+
+    /// <summary>The grid's legend in the status bar (docs/visuals/grid.md), ending at <paramref name="right"/>: the major
+    /// level and the minor inside it, a stroke in each one's look beside its spacing, faded as the lines are; the
+    /// graticule's and the square grid's in the same two places, handing over in the blend band, so it holds its size.
+    /// Where it starts.</summary>
+    float GridLegend(ImDrawListPtr dl, float right, float midY)
     {
         var view = View;
         float field = (float)(1 - WorldView.Factor(view)), sq = (float)GridLook.Squares(view);
         if (field <= 0)
-            return;
+            return right;
         if (legendUnit != MapUnits.Unit)
         {
             Array.Clear(graticuleLegend);
@@ -515,7 +569,7 @@ public sealed partial class MapScene : ISceneMenu
             legendUnit = MapUnits.Unit;
         }
         int gm = Graticule.Major(view), sm = SquareGrid.Major(view);
-        for (int r = 0; r < 2; r++)
+        for (int r = 1; r >= 0; r--)
         {
             int gl = gm + r, sl = sm + r;
             string? gt = null, st = null;
@@ -530,8 +584,9 @@ public sealed partial class MapScene : ISceneMenu
                 st = squareLegend[sl] ??= MapUnits.Distance(SquareGrid.Metres(sl));
                 spx = GridLook.Px(SquareGrid.Metres(sl), view);
             }
-            LegendRow(gt, gpx, field * (1 - Handover(0.3f, 0.5f, sq)), st, spx, field * Handover(0.5f, 0.7f, sq));
+            right = LegendRow(dl, right, midY, gt, gpx, field * (1 - Handover(0.3f, 0.5f, sq)), st, spx, field * Handover(0.5f, 0.7f, sq)) - Pieces.P(12);
         }
+        return right + Pieces.P(12);
     }
 
     /// <summary>0 under <paramref name="a"/>, 1 over <paramref name="b"/>, a smoothstep between: the legend's families
@@ -542,66 +597,36 @@ public sealed partial class MapScene : ISceneMenu
         return t * t * (3 - 2 * t);
     }
 
-    /// <summary>A legend row: for each of two levels (one may be null) a stroke in its look (its lines
-    /// <paramref name="pxA"/> reference px apart) and its text, both faded as the level is, drawn over each other.</summary>
-    static void LegendRow(string? a, double pxA, float alphaA, string? b, double pxB, float alphaB)
+    /// <summary>A legend's place ending at <paramref name="right"/>: for each of two levels (one may be null) a stroke in its
+    /// look (its lines <paramref name="pxA"/> reference px apart) and its text, both faded as the level is, drawn over each
+    /// other. Where it starts.</summary>
+    static float LegendRow(ImDrawListPtr dl, float right, float midY, string? a, double pxA, float alphaA, string? b, double pxB, float alphaB)
     {
-        float lh = ImGui.GetTextLineHeight(), len = 22 * UiFonts.Scale, gap = 6 * UiFonts.Scale;
-        var p = ImGui.GetCursorScreenPos();
-        var dl = ImGui.GetWindowDrawList();
-        var c = ImGui.GetStyle().Colors[(int)ImGuiCol.Text];
-        float textW = 0;
+        float len = Pieces.P(22), gap = Pieces.P(6), textW = 0;
+        var font = UiFonts.MonoSmall;
+        if (a != null)
+            textW = Pieces.Width(font, a);
+        if (b != null)
+            textW = Math.Max(textW, Pieces.Width(font, b));
+        float x = right - textW - gap - len;
+        var c = Theme.Text;
         for (int k = 0; k < 2; k++)
         {
             var (text, px, alpha) = k == 0 ? (a, pxA, alphaA) : (b, pxB, alphaB);
             if (text == null)
                 continue;
-            textW = Math.Max(textW, ImGui.CalcTextSize(text).X);
             float f = (float)GridLook.Fade(px) * alpha, w = (float)GridLook.Weight(px);
             if (f <= 0.004f)
                 continue;
-            dl.AddLine(new Vector2(p.X, p.Y + lh / 2), new Vector2(p.X + len, p.Y + lh / 2), ImGui.GetColorU32(c with { W = c.W * f * (0.45f + 0.55f * w) }),
+            dl.AddLine(new Vector2(x, midY), new Vector2(x + len, midY), Pieces.U(c with { W = c.W * f * (0.45f + 0.55f * w) }),
                 (GridLook.MinorWidth + (GridLook.MajorWidth - GridLook.MinorWidth) * w) * UiFonts.Scale);
-            dl.AddText(new Vector2(p.X + len + gap, p.Y), ImGui.GetColorU32(c with { W = c.W * f * 0.8f }), text);
+            dl.Text(font, new Vector2(x + len + gap, Pieces.Mid(font, midY - Pieces.P(10), Pieces.P(20))), c with { W = c.W * f * 0.8f }, text);
         }
-        ImGui.Dummy(new Vector2(len + gap + textW, lh));
+        return x;
     }
 
     long whereKey = long.MinValue;
     string whereText = "";
-
-    /// <summary>The scale bar and the centre's position, small, at the bottom right; with shift held and a ship selected,
-    /// a waypoint on land is refused here. The band, the view and the sun's time are the dev panel's.</summary>
-    void Where()
-    {
-        var vp = ImGui.GetMainViewport();
-        float pad = 8 * UiFonts.Scale;
-        ImGui.SetNextWindowPos(new Vector2(vp.Pos.X + vp.Size.X - pad, vp.Pos.Y + vp.Size.Y - pad), ImGuiCond.Always, new Vector2(1, 1));
-        ImGui.SetNextWindowBgAlpha(0.45f);
-        if (ImGui.Begin("##where", ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings |
-                                   ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoNav | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoInputs))
-        {
-            ImGui.PushFont(UiFonts.Mono);
-            GridLegend();
-            ScaleBar(camera.MetresPerPixel * width / Math.Max(vp.Size.X, 1));
-            ImGui.SameLine(0, 12 * UiFonts.Scale);
-            var (lat, lon) = Earth.LatLon(camera.Target);
-            long key = (long)Math.Round(lat * 600) * 1_000_000 + (long)Math.Round(lon * 600);
-            if (key != whereKey)
-            {
-                whereKey = key;
-                // whole minutes first, so 56.7° is 56°42' (not 57°42') and 59.99' never shows as 60'
-                long la = (long)Math.Round(Math.Abs(lat) * 60), lo = (long)Math.Round(Math.Abs(lon) * 60);
-                whereText = $"{la / 60}°{la % 60:00}'{(lat >= 0 ? 'N' : 'S')} {lo / 60}°{lo % 60:00}'{(lon >= 0 ? 'E' : 'W')}";
-            }
-            ImGui.TextDisabled(whereText);
-            ImGui.PopFont();
-        }
-        ImGui.End();
-        if (mouseIn && ImGui.GetIO().KeyShift && selected >= 0 && !ImGui.GetIO().WantCaptureMouse
-            && View.Pick(mouse.X * width / Math.Max(vp.Size.X, 1), mouse.Y * height / Math.Max(vp.Size.Y, 1), out var p) && world.Shore.IsLand(p))
-            ImGui.SetTooltip("land: no waypoint here");
-    }
 
     /// <summary>The grid's knobs live (docs/visuals/grid.md G2; <see cref="GridLook"/>, <c>-grid=</c>): the blend band,
     /// the levels' looks, the square grid's anchor limits.</summary>

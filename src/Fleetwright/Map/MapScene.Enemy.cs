@@ -124,12 +124,6 @@ public sealed partial class MapScene
             else
                 NoneRow("not seen firing at ours"u8);
         }
-        if (Strip("ORDERS", null, ""u8))
-        {
-            ImGui.SetCursorScreenPos(new Vector2(cardX + P(6), cardY + P(5)));
-            EnemyOrders(s, e, from);
-            cardY = ImGui.GetCursorScreenPos().Y + P(5);
-        }
     }
 
     /// <summary>Whom an enemy last fired at among the player's ships (the feed's newest salvo of hers), or 0.</summary>
@@ -142,82 +136,11 @@ public sealed partial class MapScene
         return 0;
     }
 
-    /// <summary>The orders against an enemy: engage her with the player's ship or her unit, torpedoes at her.</summary>
-    void EnemyOrders(Snapshot s, int e, int from)
-    {
-        if (from < 0)
-        {
-            ImGui.TextDisabled("choose one of your ships to give orders against her");
-            return;
-        }
-        var gv = s.Groups;
-        int g = gv.IndexOfShip(lastOwn);
-        var o = world.Orders;
-        if (g >= 0)
-        {
-            if (Seg(U8Label("Engage her with ", gv.Name[g]), first: true))
-                world.Send(o.Engage(Unit.Group(gv.Id[g]), e));
-            ImGui.SameLine(0, 4 * UiFonts.Scale);
-        }
-        if (Seg(U8Label(g >= 0 ? "or " : "Engage her with ", ShipName(s, lastOwn)), first: g < 0))
-            world.Send(o.Engage(Unit.Ship(lastOwn), e));
-        // torpedoes: loaded, and she's within their slow setting's reach
-        var cls = world.Classes.TryGet(s.Ships.Class[from]);
-        int ci = ContactIndex(s.Contacts, e);
-        double reach = cls != null && cls.Launchers.Length > 0 ? cls.Torpedoes[cls.Launchers[0].Torpedo].SlowRangeM : 0;
-        double range = ci >= 0 ? Earth.Distance(s.Ships.PoseAt(from, world.DrawMs).Position, s.Contacts.Position[ci]) : double.MaxValue;
-        bool loaded = s.Ships.TorpedoesLoaded[from] > 0, inReach = range <= reach;
-        ImGui.SameLine(0, 4 * UiFonts.Scale);
-        if (Seg("Torpedoes##et", enabled: loaded && inReach, first: true))
-            world.Send(TorpedoSystem.Launch(lastOwn, e, s.Ships.TorpedoesLoaded[from]));
-        if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-            ImGui.SetTooltip(!loaded ? "none loaded" : !inReach ? "out of their reach" : "fire what's loaded and bears");
-    }
-
     // the orders' button labels, made once per name
     readonly Dictionary<(string, string), string> orderLabels = [];
 
     string U8Label(string verb, string name) =>
         orderLabels.TryGetValue((verb, name), out var l) ? l : orderLabels[(verb, name)] = verb + name;
-
-    /// <summary>The strip for an enemy: who she is and how far, the orders against her.</summary>
-    void EnemyStrip(Snapshot s, int e)
-    {
-        var c = s.Contacts;
-        int i = ContactIndex(c, e);
-        if (i < 0)
-            return;
-        var vp = ImGui.GetMainViewport();
-        float sc = UiFonts.Scale, pad = 8 * sc;
-        ImGui.SetNextWindowPos(new Vector2(StripCentre(vp), vp.Pos.Y + vp.Size.Y - pad - ImGui.GetTextLineHeight() - 4 * sc), ImGuiCond.Always, new Vector2(0.5f, 1));
-        ImGui.SetNextWindowBgAlpha(0.9f);
-        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(10, 7) * sc);
-        ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(7, 3) * sc);
-        if (ImGui.Begin("##estrip", ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings |
-                                    ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoNav | ImGuiWindowFlags.NoMove))
-        {
-            ImGui.BeginGroup();
-            ImGui.PushFont(UiFonts.Title);
-            ImGui.TextColored(new Vector4(0.95f, 0.6f, 0.55f, 1), Identity(c, i));
-            ImGui.PopFont();
-            int from = s.Ships.IndexOf(lastOwn);
-            if (from >= 0)
-                U8.Text(U8.W($"enemy · {Earth.Distance(s.Ships.PoseAt(from, world.DrawMs).Position, c.Position[i]) / 1000:0.0} km from {ShipName(s, lastOwn)}"), Theme.Muted);
-            else
-                ImGui.TextDisabled("enemy");
-            ImGui.EndGroup();
-            ImGui.SameLine(0, 22 * sc);
-            ImGui.BeginGroup();
-            EnemyOrders(s, e, from);
-            ImGui.EndGroup();
-        }
-        ImGui.End();
-        ImGui.PopStyleVar(2);
-        var hint = "Select one of your ships and right-click her to engage · Esc: deselect"u8;
-        var size = U8.Size(hint);
-        var at = new Vector2(StripCentre(vp) - size.X / 2, vp.Pos.Y + vp.Size.Y - 6 * sc - size.Y);
-        U8.Draw(ImGui.GetBackgroundDrawList(), at, ImGui.GetColorU32(Theme.Muted), hint);
-    }
 
     // ------------------------------------------------------------------ a unit's card
 
@@ -294,26 +217,32 @@ public sealed partial class MapScene
         }
         if (Strip("ORDERS", null, ""u8))
         {
-            ImGui.SetCursorScreenPos(new Vector2(cardX + P(6), cardY + P(5)));
+            var at = new Vector2(cardX + P(6), cardY + P(5));
             var unit = Unit.Group(gv.Id[g]);
-            if (Seg(FormationLabels[(int)gv.Formation[g]], first: true, menu: true))
+            string form = GroupFormationNames[(int)gv.Formation[g]];
+            if (cdl.Button("##cardform", at, form, menu: true))
                 ImGui.OpenPopup("##cardform");
+            at.X += ButtonWidth(form, null, menu: true) + P(3);
             if (ImGui.BeginPopup("##cardform"))
             {
                 FormationEdit(gv, g, ref spacingEdit, "##cf");
                 ImGui.EndPopup();
             }
-            if (Seg("Fight"))
+            if (cdl.Button("##cardfight", at, "Fight"))
                 Behaviour(3, unit, 0);
-            if (Seg("Withdraw"))
+            at.X += ButtonWidth("Fight", null) + P(3);
+            if (cdl.Button("##cardwithdraw", at, "Withdraw"))
                 world.Send(world.Orders.WithdrawHome(unit));
+            at.X += ButtonWidth("Withdraw", null) + P(3);
             if (gv.Parent[g] == 0)
             {
                 bool his = gv.Commanded[g] == 1;
-                if (Seg(his ? "Take command" : "Leave to the commander"))
+                if (cdl.Button("##cardai", at, "AI", lit: his ? Lit.On : Lit.None))
                     world.Send(world.Orders.Automate(unit, !his));
+                if (ImGui.IsItemHovered())
+                    Tip(his ? "the side's commander fights it: click to take it" : "click to leave it to the side's commander");
             }
-            cardY = ImGui.GetCursorScreenPos().Y + P(5);
+            cardY = at.Y + P(20) + P(5);
         }
     }
 }

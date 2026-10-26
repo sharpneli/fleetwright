@@ -71,9 +71,9 @@ The rules that hold it together:
 | Drop-down | an `Inset` field and a square grey ▼ button at its end | a pick from a list: templates, crews, doctrine |
 | Segmented | joined grey buttons, the chosen one `BrassDarker` with a brass border and brass text | two to four exclusive options: coverage, fight/carry on, presets |
 | Filter flag | one segment on its own, brass when on | an on/off filter beside others (the design picker's sources, up to the year) |
-| Button | 20 px, `Button` grey, a 1 px border, its key in a `kbd` chip after the word | actions: Change design… C, Save setup… Ctrl+S |
+| Button | 20 px, `Button` grey, a 1 px border, its key in a `kbd` chip after the word; lit (the order in force) brass on its tint, armed (waiting for a click on the map) amber; a menu's with a caret after it; exclusive ones joined, sharing their edges | actions: Change design… C, Save setup… Ctrl+S; the map's orders (the strip) |
 | Primary button | the same size, filled with the accent (`PrimaryTop`→`PrimaryBottom`), dark ink (`PrimaryInk`) | the screen's one main action (Begin); never larger than the others |
-| `kbd` chip | mono 9.5 px, a 1 px border with a 2 px bottom | every key binding shown next to its control |
+| `kbd` chip | mono 9.5 px, a 1 px border with a 2 px bottom; `Shift+` drawn as an outlined arrow up, ← → as drawn arrows | every key binding shown next to its control |
 | Overlay toggle | a small boxed letter and a word; brass when on | what the work surface draws |
 | Status chip | 10 px text in a 1 px border on a dark tint of its colour (ok, amber, plain, hostile; quiet, muted on `Panel2`, for the usual state beside a plain one) | a state on a row: `bold +0.20`, `in action`, `you`; hostile for the enemy and a ship going down; `AI` quiet beside `you`, `conn` ok (the rail) |
 | Ledger bar | a thin `Inset` well filled by colour per share, a 1 px edge; or a segment a member (`SegmentBar`), 1 px apart while they fit | weights by group, the sides' share; a unit's ships in the rail (sound grey, low amber, going down red) |
@@ -119,9 +119,9 @@ Three roles, never mixed in the chrome:
   (`279 mm`, `21.0 kn`), thousands with a comma (`25,118 t`). `MonoBig` 22 (500) for the margin box's figure only,
   `MonoSmall` 11 for a work surface's tags and the `kbd` chips.
 
-The game's fonts are Latin subsets (`UiFonts`' ranges: Latin-1, general punctuation, ←↑→↓, −): the mockups' ▼ ◀ ▶ ▲ ✕ ○
-◇ ⏎ ⇧ are no glyphs there. Draw the marks as shapes (a triangle, a cross, a circle) and write keys as words in their
-chips (`Enter`, `Shift+Enter`, `Esc`).
+The game's fonts are Latin subsets (`UiFonts`' ranges: Latin-1, general punctuation, ↑ ↓, −; the subsets have no ← →):
+the mockups' ▼ ◀ ▶ ▲ ✕ ○ ◇ ⏎ ⇧ ← → are no glyphs there. Draw the marks as shapes (a triangle, a cross, a circle) and
+write keys as words in their chips (`Enter`, `Esc`); `Kbd` draws `Shift+` and ← → itself (`Shift+←`).
 
 Uppercase is for title strips, column headers and the resource bar's labels, nothing else: never a sentence, never a
 button. No letter-spaced wordmarks. The poster fonts (`PosterTitle`, `PosterFigure`, `PosterText`, IBM Plex Sans Condensed) are the

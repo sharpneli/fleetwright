@@ -149,3 +149,32 @@ The questions as asked:
 5. **The strip left-aligned under the rail**, ending where its last pane does (the map shows past it at a ship's level),
    or stretched to the card dock?
 6. **The status bar always there**, even with nothing selected, with the scale and position moved into it?
+
+## As built (2026-10-26)
+
+- `MapScene.Strip.cs`: the orders as one table (`Act`, `Def`: key, chip, label, tooltip), one `WhyNot` (greyed with its
+  reason, the key ignored), one `LitOf` and one `Do`; the buttons and `StripKey` both read them, so a key can't drift from
+  its button. The panes are measured in a dry pass, then drawn in a window just their size (the map past them takes its
+  clicks). The map's `Key` asks the task menu's letters first, then the strip's, then its own (C, T and the unit keys
+  moved into the table).
+- **Orders to** as rows with `Radio`, the top unit's whose-chip the rail's (`WhoseChip`, a click hands it over); what's
+  become of her on the last row only when something has (falling out with Back into line, held, on the coast).
+- **Helm**: the well is an `InputInt` over an `Inset` well; Enter focuses it, the map's keys stay off while it's typed
+  into (the engine's `WantTextInput`). The telegraph's bells joined, ↓ ↑ ring a bell slower or faster from the one
+  nearest the speed ordered.
+- **Popups** (Shells, Turn, this level's formation) open above their buttons, from a click or the key.
+- **Task menu**: anchored at the rail's right edge on the strip; its organise column gained Detach from its line (Rejoin
+  its line when out, X), Add selected to it (U) and Disband (Z), the old "Squadron…" popup's; the popup (`GroupRow`) is
+  gone, and the enemy card's and unit card's orders with it (the enemy's are the strip's pane; the unit card's row is on
+  `Pieces.Button`).
+- **Status bar** (`StatusBar` in MapScene.Hud.cs): the old bottom-right box (the grid's legend, the scale bar, the
+  position) laid flat at its right end, the keys before them, the hint or the armed pick at its left.
+- **Layout**: the rail ends at `StripTopY`, the card dock and the J log above the status bar.
+- `Pieces`: `Button` takes a `Lit` (on, armed) and a menu caret, `LitEdge` redraws a joined row's lit edge, `Kbd` draws
+  `Shift+` as a mark and ← → as arrows (the font subsets carry ↑ ↓ only; ui-language.md corrected).
+
+Checks: the map UI makes 483 bytes a frame over 3,000 frames of the Jutland at 240x with Lion selected (489 before: no
+garbage from the strip or the status bar). Captures: `png/strip-game-force.png` (orders to the Battlecruiser Fleet),
+`png/strip-game-armed.png` (E armed, ← steered, O hard over), `png/strip-game-ship.png` (the ship's row clicked: Lion
+alone, no Formation pane, AI greyed; Hold fire clicked), `png/strip-game-enemy.png` (an enemy picked in the rail). A
+scripted click on a row needs the pointer there a frame before (`-input=F:mmove:X,Y` first), as `HitRow` says.

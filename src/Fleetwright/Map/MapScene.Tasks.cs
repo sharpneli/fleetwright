@@ -25,7 +25,7 @@ public sealed partial class MapScene
         Screen, Scout, Cover, Join, Follow, Station,
         Fight, Intercept, Shadow, Attack, Run,
         GoTo, Patrol, Search, Withdraw,
-        Divide, DivideFrom, Merge, NewSquadron, FormForce, Leave,
+        Divide, DivideFrom, Merge, NewSquadron, FormForce, Leave, Detach, AddPicked, Disband,
     }
 
     /// <summary>An item: its label, column, key (and its letter), what a click on the map gives it (none: done at once),
@@ -55,12 +55,14 @@ public sealed partial class MapScene
         new("New squadron of selected##t", 3, SDLK_Q, "Q", ClickPick.None, "this ship and those you ctrl+clicked out of their squadrons into a new one, this one guiding"),
         new("Form a force with selected##t", 3, SDLK_K, "K", ClickPick.None, "this unit and those you ctrl+clicked under one admiral, this one guiding"),
         new("Leave its force##t", 3, SDLK_L, "L", ClickPick.None, "out of its force (a ship out of her squadron): on its own"),
+        new("Detach from its line##t", 3, SDLK_X, "X", ClickPick.None, "out of its line, held where it is (an order to the line gathers it in); again: back into its line"),
+        new("Add selected to it##t", 3, SDLK_U, "U", ClickPick.None, "the ships you ctrl+clicked into this squadron; a force: their squadrons into it"),
+        new("Disband##t", 3, SDLK_Z, "Z", ClickPick.None, "the unit broken up: its ships, or its squadrons, on their own"),
     ];
 
     static readonly (string Title, string How)[] TaskCols = [("ONE OF OURS", "click your ship"), ("THE ENEMY", "click an enemy"), ("A PLACE", "click the sea"), ("ORGANISE", "this unit")];
 
     bool taskOpen;
-    float stripTop;   // the strip's top this frame: the menu sits on it
 
     // groups ctrl+clicked in the rail beside the selection (ids): orders go to each
     readonly List<int> pickedGroups = [];
@@ -185,8 +187,16 @@ public sealed partial class MapScene
                     if (orderUnits[i].IsGroup)
                         return null;
                 return "ctrl+click the squadrons to form it with";
-            case TaskItem.Leave:
+            case TaskItem.Leave or TaskItem.Detach:
                 return g >= 0 ? (gv.Parent[g] == 0 ? "in no force" : null) : gv.IndexOfShip(unit.Entity) < 0 ? "in no squadron" : null;
+            case TaskItem.AddPicked:
+                if (g < 0)
+                    return "a ship: pick her squadron";
+                if (picked.Count == 0)
+                    return "ctrl+click the ships";
+                return gv.Force[g] && (gv.IndexOfShip(selected) is not (int own and >= 0) || gv.Parent[own] != gv.Id[g]) ? "her squadron isn't in this force" : null;
+            case TaskItem.Disband:
+                return g < 0 ? "a ship: pick her squadron" : null;
             default:
                 return null;
         }
@@ -236,7 +246,35 @@ public sealed partial class MapScene
             case TaskItem.Leave:
                 world.Send(g >= 0 ? GroupSystem.Exit(unit.GroupId) : GroupSystem.Remove(unit.Entity));
                 break;
+            case TaskItem.Detach:
+                world.Send(Detached(s, unit) ? o.Resume(unit) : o.Detach(unit));
+                break;
+            case TaskItem.AddPicked:
+                if (gv.Force[g])
+                {
+                    int own = gv.IndexOfShip(selected);
+                    foreach (int e in picked)
+                        if (gv.IndexOfShip(e) is int pg and >= 0 && pg != own)
+                            world.Send(GroupSystem.EnterAlongside(gv.Id[pg], gv.Id[own]));
+                }
+                else
+                    foreach (int e in picked)
+                        world.Send(GroupSystem.Add(unit.GroupId, e));
+                ClearPicks();
+                break;
+            case TaskItem.Disband:
+                world.Send(GroupSystem.Disband(unit.GroupId));
+                break;
         }
+    }
+
+    /// <summary>Whether a unit is out of its line: a ship held out of her squadron's, a squadron out of its force's.</summary>
+    static bool Detached(Snapshot s, Unit unit)
+    {
+        var gv = s.Groups;
+        if (unit.IsGroup)
+            return gv.IndexOfGroup(unit.GroupId) is int g and >= 0 && InForce(gv, g) != Detachment.InLine;
+        return gv.IndexOfShip(unit.Entity) is int sq and >= 0 && DetachmentOf(gv, sq, unit.Entity) != Detachment.InLine;
     }
 
     /// <summary>A key while the menu is open: its item's (true), or not one of them.</summary>
@@ -269,7 +307,7 @@ public sealed partial class MapScene
         var unit = units[0];
         var vp = ImGui.GetMainViewport();
         float sc = UiFonts.Scale;
-        ImGui.SetNextWindowPos(new Vector2(StripCentre(vp), stripTop - 6 * sc), ImGuiCond.Always, new Vector2(0.5f, 1));
+        ImGui.SetNextWindowPos(new Vector2(vp.Pos.X + Pieces.P(340), stripTop - Pieces.P(2)), ImGuiCond.Always, new Vector2(0, 1));
         ImGui.SetNextWindowBgAlpha(0.95f);
         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(10, 7) * sc);
         ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(1, 3) * sc);
@@ -300,9 +338,13 @@ public sealed partial class MapScene
             if (hasRole)
             {
                 for (int i = 0; i < Roles.Settable.Length; i++)
-                    if (Seg(RoleLabels[i], role == Roles.Settable[i], first: i == 0))
+                {
+                    if (i > 0)
+                        ImGui.SameLine(0, 1);
+                    if (Pieces.SegButton(RoleLabels[i], role == Roles.Settable[i]))
                         foreach (var u in units)
                             world.Send(world.Orders.Role(u, Roles.Settable[i]));
+                }
                 ImGui.SameLine(0, 12 * sc);
                 ImGui.PushFont(UiFonts.SansSmall);
                 if (set)
@@ -379,10 +421,11 @@ public sealed partial class MapScene
         var row = TaskRows[(int)item];
         string? why = WhyNot(s, item);
         bool armed = row.Pick != ClickPick.None && armedPick == row.Pick;
+        string label = item == TaskItem.Detach && why == null && Detached(s, orderUnits[0]) ? "Rejoin its line##t" : row.Label;
         ImGui.BeginDisabled(why != null);
         if (armed)
-            ImGui.PushStyleColor(ImGuiCol.Text, ArmedText);
-        bool hit = ImGui.Selectable(row.Label, armed, ImGuiSelectableFlags.None, new Vector2(width - 8 * UiFonts.Scale, 0));
+            ImGui.PushStyleColor(ImGuiCol.Text, Theme.Amber);
+        bool hit = ImGui.Selectable(label, armed, ImGuiSelectableFlags.None, new Vector2(width - 8 * UiFonts.Scale, 0));
         if (armed)
             ImGui.PopStyleColor();
         var (min, max) = (ImGui.GetItemRectMin(), ImGui.GetItemRectMax());

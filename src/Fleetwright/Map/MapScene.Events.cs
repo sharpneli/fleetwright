@@ -354,7 +354,7 @@ public sealed partial class MapScene
         var vp = ImGui.GetMainViewport();
         float sc = UiFonts.Scale, pad = 8 * sc, w = 460 * sc;
         ImGui.SetNextWindowPos(new Vector2(vp.Pos.X + pad, HudTop));
-        ImGui.SetNextWindowSize(new Vector2(w, vp.Pos.Y + vp.Size.Y - HudTop - 104 * sc));
+        ImGui.SetNextWindowSize(new Vector2(w, StripTopY(vp) - P(1) - HudTop));
         ImGui.SetNextWindowBgAlpha(0.95f);
         if (ImGui.Begin("##log", ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoNav))
         {
@@ -364,11 +364,11 @@ public sealed partial class MapScene
             for (int f = 0; f < FilterNames.Length; f++)
             {
                 ImGui.SameLine(0, f == 0 ? 16 * sc : 1);
-                if (Seg(FilterNames[f], logFilter == f, first: true))
+                if (SegButton(FilterNames[f], logFilter == f))
                     logFilter = f;
             }
             ImGui.SameLine(ImGui.GetWindowWidth() - 30 * sc);
-            if (Seg("×##logx", first: true))
+            if (SegButton("×##logx", false))
                 logOpen = false;
             ImGui.Separator();
             if (ImGui.BeginChild("##loglines"))

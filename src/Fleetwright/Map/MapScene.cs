@@ -212,7 +212,7 @@ public sealed unsafe partial class MapScene : IScene
         t = Probes.Now;
         if (Sdl3GpuEngine.StatsShown)
             world.Perf.Draw(s, art, renderer.OverlayVertices);
-        Where();
+        StatusBar(s);
         CursorVerb(s);
         HoverTip(s);
         Briefing();
@@ -287,9 +287,9 @@ public sealed unsafe partial class MapScene : IScene
             return Escape();
         if (TaskKey(key))
             return true;   // the task menu's letters while it's open (docs/battle/admirals-orders.md O9)
-        if (key == SDLK_T)
-            taskOpen = !taskOpen && s.Ships.IndexOf(selected) >= 0;
-        else if (key == SDLK_F1)
+        if (StripKey(key))
+            return true;   // an order's key while the strip is up (docs/map-ui/strip.md)
+        if (key == SDLK_F1)
             devOpen = !devOpen;
         else if (key == SDLK_J)
             logOpen = !logOpen;
@@ -297,8 +297,6 @@ public sealed unsafe partial class MapScene : IScene
             cardOpen = !cardOpen;
         else if (key == SDLK_P)
             TogglePin(selected);
-        else if (key == SDLK_C)
-            ToggleConn();
         else if (key == SDLK_TAB)
             NextShip((SDL_GetModState() & SDL_Keymod.SDL_KMOD_SHIFT) != 0);
         else if (key == SDLK_SPACE)
@@ -312,7 +310,7 @@ public sealed unsafe partial class MapScene : IScene
             if (s.Paused)
                 world.Send(Command.Resume());
         }
-        else if (!UnitKey(key))
+        else
             return false;
         return true;
     }
@@ -329,26 +327,25 @@ public sealed unsafe partial class MapScene : IScene
     };
 
     /// <summary>A scale bar at the length of a round number (in the map's unit, <see cref="MapUnits"/>) near 120 UI pixels,
-    /// with its length beside it.</summary>
-    static void ScaleBar(double metresPerUiPx)
+    /// with its length after it, ending at <paramref name="right"/>: where it starts.</summary>
+    static float ScaleBar(ImDrawListPtr dl, float right, float midY, double metresPerUiPx)
     {
         double want = 120 * UiFonts.Scale * metresPerUiPx, unit = MapUnits.Base(want);
         double pow = Math.Pow(10, Math.Floor(Math.Log10(want / unit))) * unit, nice = pow;
         foreach (double k in NiceSteps)
             if (k * pow <= want)
                 nice = k * pow;
-        float w = (float)(nice / metresPerUiPx), hgt = 6 * UiFonts.Scale;
-        var p = ImGui.GetCursorScreenPos() + new Vector2(0, ImGui.GetTextLineHeight() / 2 - hgt / 2);
-        var dl = ImGui.GetWindowDrawList();
-        uint c = ImGui.GetColorU32(ImGuiCol.Text);
+        if (nice != scaleNice)
+            (scaleNice, scaleText) = (nice, MapUnits.Distance(nice));
+        var font = UiFonts.MonoSmall;
+        dl.TextRight(font, right, Pieces.Mid(font, midY - Pieces.P(10), Pieces.P(20)), Theme.Text, scaleText);
+        float w = (float)(nice / metresPerUiPx), hgt = Pieces.P(5), x = right - Pieces.Width(font, scaleText) - Pieces.P(6) - w;
+        var p = new Vector2(x, midY - hgt / 2);
+        uint c = Pieces.U(Theme.Text);
         dl.AddLine(p, p + new Vector2(0, hgt), c, 1.5f);
         dl.AddLine(p + new Vector2(0, hgt), p + new Vector2(w, hgt), c, 1.5f);
         dl.AddLine(p + new Vector2(w, 0), p + new Vector2(w, hgt), c, 1.5f);
-        ImGui.Dummy(new Vector2(w, ImGui.GetTextLineHeight()));
-        ImGui.SameLine();
-        if (nice != scaleNice)
-            (scaleNice, scaleText) = (nice, MapUnits.Distance(nice));
-        ImGui.TextUnformatted(scaleText);
+        return x;
     }
 
     static readonly double[] NiceSteps = [1, 2, 5];

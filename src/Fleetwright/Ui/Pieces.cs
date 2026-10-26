@@ -446,26 +446,99 @@ public static unsafe class Pieces
         return hit;
     }
 
-    /// <summary>A kbd chip: its width.</summary>
+    /// <summary>A key with shift is written "Shift+…" and drawn with shift as a mark (the fonts have no ⇧).</summary>
+    const string ShiftPrefix = "Shift+";
+
+    /// <summary>A kbd chip's width.</summary>
+    public static float KbdWidth(string key)
+    {
+        bool shift = key.StartsWith(ShiftPrefix, StringComparison.Ordinal);
+        var rest = shift ? key.AsSpan(ShiftPrefix.Length) : key;
+        return KeyWidth(rest) + (shift ? P(15) : P(6));
+    }
+
+    /// <summary>The fonts have ↑ ↓ but no ← →: those are drawn (<see cref="SideArrow"/>), 0 left, 1 right; else -1.</summary>
+    static int SideArrowOf(ReadOnlySpan<char> key) => key is "←" ? 0 : key is "→" ? 1 : -1;
+
+    static float KeyWidth(ReadOnlySpan<char> key) => SideArrowOf(key) >= 0 ? P(8) : Width(UiFonts.MonoSmall, key);
+
+    static float Width(ImFontPtr f, ReadOnlySpan<char> s)
+    {
+        Span<byte> b = stackalloc byte[64];
+        int n = System.Text.Encoding.UTF8.GetBytes(s, b);
+        return Width(f, (ReadOnlySpan<byte>)b[..n]);
+    }
+
+    /// <summary>A kbd chip: its width. Shift is drawn as an outlined arrow up before the key.</summary>
     public static float Kbd(this ImDrawListPtr dl, Vector2 at, string key, Vector4? edge = null, Vector4? ink = null)
     {
-        float w = Width(UiFonts.MonoSmall, key) + P(6), h = P(13);
+        float w = KbdWidth(key), h = P(13);
         var e = U(edge ?? T.TagEdge);
         dl.AddRect(at, at + new Vector2(w, h), e, P(2));
         dl.AddLine(new Vector2(at.X + 1, at.Y + h - 1), new Vector2(at.X + w - 1, at.Y + h - 1), e);
-        dl.Text(UiFonts.MonoSmall, new Vector2(at.X + P(3), Mid(UiFonts.MonoSmall, at.Y, h - 1)), ink ?? T.KeyText, key);
+        var col = ink ?? T.KeyText;
+        bool shift = key.StartsWith(ShiftPrefix, StringComparison.Ordinal);
+        var rest = shift ? key.AsSpan(ShiftPrefix.Length) : key;
+        float x = at.X + P(3);
+        if (shift)
+        {
+            dl.ShiftMark(new Vector2(at.X + P(6.5f), at.Y + (h - 1) / 2), col);
+            x = at.X + P(12);
+        }
+        if (SideArrowOf(rest) is int dir and >= 0)
+            dl.SideArrow(new Vector2(x + P(4), at.Y + (h - 1) / 2), dir, col);
+        else
+        {
+            Span<byte> b = stackalloc byte[64];
+            int n = System.Text.Encoding.UTF8.GetBytes(rest, b);
+            dl.Text(UiFonts.MonoSmall, new Vector2(x, Mid(UiFonts.MonoSmall, at.Y, h - 1)), col, (ReadOnlySpan<byte>)b[..n]);
+        }
         return w;
     }
 
-    public static float ButtonWidth(string label, string? key, bool primary = false) =>
-        Width(primary ? UiFonts.SansBold : UiFonts.SansSmall, label) + P(16) + (key != null ? Width(UiFonts.MonoSmall, key) + P(12) : 0);
+    /// <summary>A key's arrow pointing left (0) or right (1), centred on <paramref name="c"/>: a shaft and a head.</summary>
+    public static void SideArrow(this ImDrawListPtr dl, Vector2 c, int dir, Vector4 col)
+    {
+        float r = P(3.5f), s = dir == 0 ? -1 : 1;
+        uint u = U(col);
+        dl.AddLine(new Vector2(c.X - r, c.Y), new Vector2(c.X + r, c.Y), u, 1);
+        dl.AddLine(new Vector2(c.X + s * r, c.Y), new Vector2(c.X + s * (r - P(2.5f)), c.Y - P(2.5f)), u, 1);
+        dl.AddLine(new Vector2(c.X + s * r, c.Y), new Vector2(c.X + s * (r - P(2.5f)), c.Y + P(2.5f)), u, 1);
+    }
+
+    /// <summary>Shift's mark: an outlined arrow up, centred on <paramref name="c"/>.</summary>
+    public static void ShiftMark(this ImDrawListPtr dl, Vector2 c, Vector4 col)
+    {
+        float r = P(3.5f), s = P(1.6f), y0 = c.Y - P(4), y1 = c.Y + P(4), knee = c.Y;
+        Span<Vector2> p = stackalloc Vector2[7];
+        p[0] = new(c.X, y0);
+        p[1] = new(c.X + r, knee);
+        p[2] = new(c.X + s, knee);
+        p[3] = new(c.X + s, y1);
+        p[4] = new(c.X - s, y1);
+        p[5] = new(c.X - s, knee);
+        p[6] = new(c.X - r, knee);
+        dl.AddPolyline(ref p[0], p.Length, U(col), ImDrawFlags.Closed, 1);
+    }
+
+    /// <summary>A button's light: lit as the order in force (the accent on its tint), or armed, waiting for a click on
+    /// the map (amber).</summary>
+    public enum Lit : byte { None, On, Armed }
+
+    /// <summary>A menu button's caret room.</summary>
+    static float CaretW => P(11);
+
+    public static float ButtonWidth(string label, string? key, bool primary = false, bool menu = false) =>
+        Width(primary ? UiFonts.SansBold : UiFonts.SansSmall, label) + P(16) + (key != null ? KbdWidth(key) + P(6) : 0) + (menu ? CaretW : 0);
 
     /// <summary>A button: 20 px, grey, its key in a kbd chip after the word; the primary one filled with the accent, dark
-    /// ink on it, never larger. <paramref name="w"/> stretches it (0: to its label).</summary>
-    public static bool Button(this ImDrawListPtr dl, string id, Vector2 at, string label, string? key = null, bool primary = false, bool enabled = true, float w = 0)
+    /// ink on it, never larger; lit on its tint, or amber while armed; a menu's with a caret after it. <paramref name="w"/>
+    /// stretches it (0: to its label).</summary>
+    public static bool Button(this ImDrawListPtr dl, string id, Vector2 at, string label, string? key = null, bool primary = false, bool enabled = true,
+        float w = 0, Lit lit = Lit.None, bool menu = false)
     {
         if (w <= 0)
-            w = ButtonWidth(label, key, primary);
+            w = ButtonWidth(label, key, primary, menu);
         float h = P(20);
         ImGui.SetCursorScreenPos(at);
         bool hit = ImGui.InvisibleButton(id, new Vector2(w, h)) && enabled;
@@ -474,17 +547,32 @@ public static unsafe class Pieces
         var fill = primary ? T.PrimaryBottom : hover ? T.Button : T.ToggleBottom;
         var edge = primary ? T.BrassDark : T.ButtonEdge;
         var ink = primary ? T.PrimaryInk : T.Text;
+        Vector4? keyEdge = primary ? T.BrassDark : null, keyInk = primary ? T.PrimaryInk : null;
         if (!enabled)
-            (top, fill, edge, ink) = (T.Panel2, T.Panel2, T.Line, T.Muted);
+            (top, fill, edge, ink, keyEdge, keyInk) = (T.Panel2, T.Panel2, T.Line, T.Muted, T.Line, T.Faint);
+        else if (lit == Lit.On)
+            (top, fill, edge, ink, keyEdge, keyInk) = (hover ? T.BrassHover : T.BrassDarker, T.BrassDarker, T.Brass, T.Brass, T.BrassDark, T.Brass);
+        else if (lit == Lit.Armed)
+            (top, fill, edge, ink, keyEdge, keyInk) = (T.AmberTint, T.AmberTint, T.Amber, T.Amber, T.AmberEdge, T.Amber);
         dl.AddRectFilledMultiColor(at, at + new Vector2(w, h), U(top), U(top), U(fill), U(fill));
         dl.AddRect(at, at + new Vector2(w, h), U(edge));
         var font = primary ? UiFonts.SansBold : UiFonts.SansSmall;
-        float content = Width(font, label) + (key != null ? Width(UiFonts.MonoSmall, key) + P(12) : 0);
+        float content = Width(font, label) + (key != null ? KbdWidth(key) + P(6) : 0) + (menu ? CaretW : 0);
         float x = at.X + MathF.Round((w - content) / 2);
         dl.Text(font, new Vector2(x, Mid(font, at.Y, h)), ink, label);
+        x += Width(font, label);
         if (key != null)
-            dl.Kbd(new Vector2(x + Width(font, label) + P(6), at.Y + P(3.5f)), key, primary && enabled ? T.BrassDark : null, primary && enabled ? T.PrimaryInk : null);
+            x += P(6) + dl.Kbd(new Vector2(x + P(6), at.Y + P(3.5f)), key, keyEdge, keyInk);
+        if (menu)
+            dl.Arrow(new Vector2(x + P(7), at.Y + h / 2 + P(0.5f)), 1, P(2.8f), ink);
         return hit;
+    }
+
+    /// <summary>A lit button's edge drawn again over its neighbours' in a joined row (they share their edges).</summary>
+    public static void LitEdge(this ImDrawListPtr dl, Vector2 a, float w, Lit lit)
+    {
+        if (lit != Lit.None)
+            dl.AddRect(a, a + new Vector2(w, P(20)), U(lit == Lit.On ? T.Brass : T.Amber));
     }
 
     /// <summary>A link-like action in a row (brass, or muted; bright under the pointer): true when clicked; its width out.</summary>

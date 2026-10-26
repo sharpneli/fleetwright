@@ -85,12 +85,14 @@ A row's ◀ n ▶ strikes or adds ships, a unit's ✕ strikes it (undo in place)
 mode (`LaunchScene.Add.cs`, L3b): a new squadron joined to a force, or placed on the opening (press for her head, drag
 for the course). Wheel zooms at the cursor, left drag pans. Ships (`MapScene.Ships.cs`, step 2.3a): a click
 selects (twice: her squadron takes the orders; Tab steps through your ships), the strip at the bottom
-(`MapScene.Strip.cs`, docs/map-ui/battle-hud.md U2) gives the orders: who to (the ship or a unit above her), helm and
-telegraph, guns (Shells ▾: the main guns' shell for the selection, by target or a kind held, docs/battle/shell-choice.md),
-torpedoes and smoke, the task (fight, follow…, hold; Task ▾ or T opens the task menu,
+(`MapScene.Strip.cs`, docs/map-ui/strip.md: docked panes under the rail, every order a button with its key from one table,
+`Def`) gives the orders: ORDERS TO, the chain as radio rows (Q up, Shift+Q down), HELM (← → 10°, Shift 90°, Enter types a
+course, ↑ ↓ the telegraph, O hard over, C the conn, Del clear route, M smoke), GUNS (G at will, E engage…, X hold fire,
+S shells: the main guns' shell for the selection, by target or a kind held, docs/battle/shell-choice.md; Shift+E
+torpedoes), TASK (B fight, F follow…, H hold, W withdraw, I the AI; Task ▾ or T opens the task menu,
 `MapScene.Tasks.cs`, docs/battle/admirals-orders.md O9: what the unit is for, every order by what it's about, each armed
-and given by a click, and organising the unit, letters picking while it's open; a unit's whole line in one click, Line ahead, Columns or Abreast (L, K, A; docs/map-ui/battle-hud.md P1), this level's formation ▾, Turn ▾, Deploy… and deploy to port or starboard (comma, period);
-the squadron's business in a popup; ctrl+click ships, or units in the rail, and orders go to each; the selection's tree
+and given by a click, and organising the unit (detach or rejoin, divide, merge, disband, add the picked), letters picking while it's open), FORMATION for a unit (its whole line in one click, Line ahead, Columns or Abreast: L, K, A, docs/map-ui/battle-hud.md P1; Turn ▾ U, Deploy… D and deploy to port or starboard: comma, period; this level's formation ▾ Z);
+Alt with any order's key gives it to the ship alone; an enemy selected shows her as held and the orders against her (E, Alt+E, Shift+E); a status bar along the bottom (`StatusBar`, MapScene.Hud.cs) says what the mouse does or the armed pick, the map's keys, the grid's legend, the scale and the position; ctrl+click ships, or units in the rail, and orders go to each; the selection's tree
 draws each squadron's station, its task and a screen's arc, `MapScene.TaskMarks.cs`, and an armed order its shape); the HELM column's Conn (or C) takes the conn of the unit picked (docs/battle/command.md "The conn": nothing but the player's helm orders moves it, the lookouts call torpedo tracks on the ticker, a green ring marks it); the cursor names what a right-click does: on an enemy engage, on one of yours follow (screen, for a flotilla or a screen),
 on the sea steer for it (shift: add a waypoint); the click opens her card at the right (`MapScene.Card.cs`, U3b, redrawn on the UI
 language's pieces in docs/map-ui/card.md: her condition as a damage plate drawn from her class, profile over plan, and a

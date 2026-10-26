@@ -81,7 +81,7 @@ public sealed partial class MapScene
 
         // the column: the forces from the top, the enemy under them, the log at the foot, above the strip
         var vp = ImGui.GetMainViewport();
-        float w = P(330), top = HudTop, bottom = vp.Pos.Y + vp.Size.Y - P(128), gap = P(2), x = vp.Pos.X + P(8);
+        float w = P(330), top = HudTop, bottom = StripTopY(vp) - P(1), gap = P(2), x = vp.Pos.X + P(8);
         bool commander = side >= 0 && s.CommanderMode[side] != (byte)CommanderMode.None;
         float logH = TitleH + 7 * RowH + 2;
         float forcesHead = (commander ? RowH : 0) + HeadH;
@@ -764,22 +764,7 @@ public sealed partial class MapScene
         bool on = selected == e;
         dl.RowBg(a, w, RowH, j, on, hover);
         bool sure = c.Level[i] >= ContactLevel.Class, seen = c.InSight[i];
-        // the dot: a hostile's diamond, dashed while she isn't made out
-        var d = new Vector2(a.X + P(22), a.Y + RowH / 2);
-        float r = P(3.6f);
-        uint col = U(T.Hostile with { W = seen ? 1 : 0.55f });
-        if (sure)
-        {
-            dl.AddQuadFilled(d + new Vector2(0, -r), d + new Vector2(r, 0), d + new Vector2(0, r), d + new Vector2(-r, 0), U(T.Hostile with { W = seen ? 0.25f : 0.12f }));
-            dl.AddQuad(d + new Vector2(0, -r), d + new Vector2(r, 0), d + new Vector2(0, r), d + new Vector2(-r, 0), col, P(1.3f));
-        }
-        else
-            for (int q = 0; q < 4; q++)
-            {
-                var p0 = q switch { 0 => new Vector2(0, -r), 1 => new Vector2(r, 0), 2 => new Vector2(0, r), _ => new Vector2(-r, 0) };
-                var p1 = q switch { 0 => new Vector2(r, 0), 1 => new Vector2(0, r), 2 => new Vector2(-r, 0), _ => new Vector2(0, -r) };
-                dl.AddLine(d + p0, d + (p0 + p1) / 2, col, P(1.3f));
-            }
+        Diamond(dl, new Vector2(a.X + P(22), a.Y + RowH / 2), sure, seen);
         dl.TextClipped(UiFonts.SansSmall, new Vector2(a.X + P(30), Mid(UiFonts.SansSmall, a.Y, RowH)), cols.Seen - P(6), on ? T.Brass : seen ? T.Text : T.Faint,
             U8.W($"{Identity(c, i)}"));
         var what = c.Seen[i] != SeenFlags.None ? U8.W($"{SeenWords(c.Seen[i])}") : seen ? "no damage seen"u8
@@ -799,6 +784,25 @@ public sealed partial class MapScene
     }
 
     /// <summary>What's seen of a ship, in words: "burning · low · by the bow".</summary>
+    /// <summary>A contact's mark: the hostile's diamond, dashed while she isn't made out, faint out of sight.</summary>
+    static void Diamond(ImDrawListPtr dl, Vector2 d, bool sure, bool seen)
+    {
+        float r = P(3.6f);
+        uint col = U(T.Hostile with { W = seen ? 1 : 0.55f });
+        if (sure)
+        {
+            dl.AddQuadFilled(d + new Vector2(0, -r), d + new Vector2(r, 0), d + new Vector2(0, r), d + new Vector2(-r, 0), U(T.Hostile with { W = seen ? 0.25f : 0.12f }));
+            dl.AddQuad(d + new Vector2(0, -r), d + new Vector2(r, 0), d + new Vector2(0, r), d + new Vector2(-r, 0), col, P(1.3f));
+        }
+        else
+            for (int q = 0; q < 4; q++)
+            {
+                var p0 = q switch { 0 => new Vector2(0, -r), 1 => new Vector2(r, 0), 2 => new Vector2(0, r), _ => new Vector2(-r, 0) };
+                var p1 = q switch { 0 => new Vector2(r, 0), 1 => new Vector2(0, r), 2 => new Vector2(-r, 0), _ => new Vector2(0, -r) };
+                dl.AddLine(d + p0, d + (p0 + p1) / 2, col, P(1.3f));
+            }
+    }
+
     static string SeenWords(SeenFlags f) => seenWords.TryGetValue(f, out var s) ? s : seenWords[f] = string.Join(" · ", SeenParts(f));
 
     static readonly Dictionary<SeenFlags, string> seenWords = [];

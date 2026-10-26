@@ -11,14 +11,17 @@ using ImGuiNET;
 using SDL;
 using static SDL.SDL3;
 using Fleetwright.Ui;
+using static Fleetwright.Ui.Pieces;
+using T = Fleetwright.Ui.Theme;
 
 namespace Fleetwright.Map;
 
-/// <summary>The selection strip (docs/map-ui/battle-hud.md U2): the orders, at the bottom, in columns: who gets them
-/// (the ship or a unit she's in), the helm, the guns, torpedoes and smoke, the captain's or the squadron's task (the
-/// search pattern, the formation and the squadron's own business in popups). And the cursor's verb: what a right-click
-/// does where it is (steer, engage, follow), and the armed picks ("Engage…", "Fire at…", "Follow…", "Run from…") a
-/// click completes.</summary>
+/// <summary>The orders strip (docs/map-ui/strip.md; battle-hud.md U2): a row of docked panes along the bottom, under the
+/// rail, while one of the player's ships is selected: who the orders go to (the ship or a unit she's in), the helm, the
+/// guns, the task and a unit's formation; an enemy's own two panes while she's selected. Every order is a button with
+/// its key, both read from one table (<see cref="Def"/>), so a key can't drift from its button. And the cursor's verb:
+/// what a right-click does where it is (steer, engage, follow), and the armed picks ("Engage…", "Fire at…", "Follow…",
+/// "Run from…") a click completes.</summary>
 public sealed partial class MapScene
 {
     /// <summary>What the next click on the map does, armed from the strip or the task menu (the dev's salvo is
@@ -33,114 +36,986 @@ public sealed partial class MapScene
     long lastClickMs;
     int lastClickShip = -1;
 
-    static readonly Vector4 SegOff = new(1, 1, 1, 0.05f), SegHover = new(1, 1, 1, 0.1f), ArmedBg = new(0.29f, 0.23f, 0.08f, 1),
-        ArmedText = new(1f, 0.85f, 0.54f, 1);
+    /// <summary>The strip's orders, each a button and a key (<see cref="Def"/>).</summary>
+    enum Act : byte
+    {
+        LevelUp, LevelDown, BackIntoLine,
+        Port90, Port10, Stbd10, Stbd90, Course, Slower, Faster, HardOver, Conn, ClearRoute, Smoke,
+        AtWill, Engage, HoldFire, Shells, Torpedoes,
+        Fight, Follow, Hold, Tasks, Withdraw, Auto,
+        LineAhead, Columns, Abreast, Turn, Deploy, DeployPort, DeployStbd, Formation,
+        EngageShip, EngageUnit, TorpedoesAt,   // an enemy selected: the ship alone first, Alt+E before E
+        Count,
+    }
+
+    /// <summary>An order's key (with shift, or only with alt), its chip, its button's label and its tooltip.</summary>
+    readonly record struct ActDef(uint Key, bool Shift, bool Alt, string Chip, string Label, string Tip);
+
+    static ActDef Def(Act a) => a switch
+    {
+        Act.LevelUp => new(SDLK_Q, false, false, "Q", "", "orders a level up: her squadron, then the force over it"),
+        Act.LevelDown => new(SDLK_Q, true, false, "Shift+Q", "", "orders a level down, toward the ship"),
+        Act.BackIntoLine => new(SDLK_B, true, false, "Shift+B", "Back into line", "order her back to her squadron: her captain stays, at his ship's risk"),
+        Act.Port90 => new(SDLK_LEFT, true, false, "Shift+←", "−90°", "the course 90° to port"),
+        Act.Port10 => new(SDLK_LEFT, false, false, "←", "−10°", "the course 10° to port"),
+        Act.Stbd10 => new(SDLK_RIGHT, false, false, "→", "+10°", "the course 10° to starboard"),
+        Act.Stbd90 => new(SDLK_RIGHT, true, false, "Shift+→", "+90°", "the course 90° to starboard"),
+        Act.Course => new(SDLK_RETURN, false, false, "Enter", "", "the course ordered: Enter, type one, Enter (Esc leaves it)"),
+        Act.Slower => new(SDLK_DOWN, false, false, "↓", "", "the telegraph a bell slower"),
+        Act.Faster => new(SDLK_UP, false, false, "↑", "", "the telegraph a bell faster"),
+        Act.HardOver => new(SDLK_O, false, false, "O", "Hard over", "the course orders put the rudder hard over"),
+        Act.Conn => new(SDLK_C, false, false, "C", "Conn", "take the conn: nothing but your helm orders moves her: no combing torpedo tracks (the lookouts call them), no turning away, no falling out; a task or a behaviour gives it back"),
+        Act.ClearRoute => new(SDLK_DELETE, false, false, "Del", "Clear route", "the waypoints dropped: she steers the course"),
+        Act.Smoke => new(SDLK_M, false, false, "M", "Make smoke", "her funnels burn rich: a screen (every ship of her squadron when the orders go to a unit)"),
+        Act.AtWill => new(SDLK_G, false, false, "G", "Fire at will", "each battery at the enemy it judges best"),
+        Act.Engage => new(SDLK_E, false, false, "E", "Engage…", "then click an enemy (or right-click her without this)"),
+        Act.HoldFire => new(SDLK_X, false, false, "X", "Hold fire", "no gun fires"),
+        Act.Shells => new(SDLK_S, false, false, "S", "", "the main guns' shell, for the selection: by target (her captain judges what a round does to the target as she's made out), or a kind held until they're out of it; the round in the gun goes first"),
+        Act.Torpedoes => new(SDLK_E, true, false, "Shift+E", "Torpedoes at…", "then click an enemy"),
+        Act.Fight => new(SDLK_B, false, false, "B", "Fight", "the nearest enemy in sight; turns away when outgunned (Fight… in the task menu: one you pick)"),
+        Act.Follow => new(SDLK_F, false, false, "F", "Follow…", "station astern of her: then click a ship"),
+        Act.Hold => new(SDLK_H, false, false, "H", "Hold", "hold the course and speed ordered"),
+        Act.Tasks => new(SDLK_T, false, false, "T", "Task", "every order, by what it's about, and what the unit is for"),
+        Act.Withdraw => new(SDLK_W, false, false, "W", "Withdraw", "break off and go home, away from any enemy first"),
+        Act.Auto => new(SDLK_I, false, false, "I", "AI", "the side's commander fights it: any order of yours takes it back"),
+        Act.LineAhead => new(SDLK_L, false, false, "L", "Line ahead", "line ahead; a force: one line, every squadron in it, on the course it steers (on the same course the far columns drop back a column's length each, so a fleet takes long: deploying turns it into line quicker)"),
+        Act.Columns => new(SDLK_K, false, false, "K", "Columns", "the cruising order: every squadron a column in line ahead, the columns abreast as far apart as one is long, ready to deploy"),
+        Act.Abreast => new(SDLK_A, false, false, "A", "Abreast", "line abreast; a force: every ship abreast, each squadron at its own spacing"),
+        Act.Turn => new(SDLK_U, false, false, "U", "Turn", "turn together: every ship at once; the line becomes a line of bearing on its old axis. Or the battle turn, about"),
+        Act.Deploy => new(SDLK_D, false, false, "D", "Deploy…", "into line of battle: click where the line should steer, or the enemy (across his course)"),
+        Act.DeployPort => new(SDLK_COMMA, false, false, ",", "to port", "deploy 8 points to port: one line, the port wing column leading round, the rest in its wake"),
+        Act.DeployStbd => new(SDLK_PERIOD, false, false, ".", "to stbd", "deploy 8 points to starboard: one line, the starboard wing column leading round, the rest in its wake"),
+        Act.Formation => new(SDLK_Z, false, false, "Z", "", "this level's formation and spacing: echelons and lines of bearing"),
+        Act.EngageShip => new(SDLK_E, false, true, "Alt+E", "", "engage her with the ship you had alone"),
+        Act.EngageUnit => new(SDLK_E, false, false, "E", "", "engage her with the ship's squadron: its admiral spreads the fire"),
+        Act.TorpedoesAt => new(SDLK_E, true, false, "Shift+E", "Torpedoes at her", "fire what's loaded and bears"),
+        _ => default,
+    };
+
+    /// <summary>What the strip's orders work on this frame: the selection's row and the row of the ship that steams the
+    /// orders, the unit they go to and its level (0 the ship; else the chain's group <see cref="G"/>), her class; or an
+    /// enemy's contact and the ship of ours the orders against her come from.</summary>
+    struct Orders
+    {
+        public Snapshot S;
+        public int K, Kc, Level, G;
+        public Unit Unit;
+        public ShipClass? Cls;
+        public bool Enemy;
+        public int Contact, From, FromGroup;
+    }
+
+    bool OrdersNow(Snapshot s, out Orders c)
+    {
+        c = default;
+        c.S = s;
+        int k = s.Ships.IndexOf(selected);
+        if (k >= 0)
+        {
+            var (unit, cmd) = Commanded(s);
+            c.K = k;
+            c.Kc = s.Ships.IndexOf(cmd) is int kc and >= 0 ? kc : k;
+            c.Level = Level(s);
+            c.G = c.Level > 0 ? chain[c.Level - 1] : -1;
+            c.Unit = unit;
+            c.Cls = world.Classes.TryGet(s.Ships.Class[k]);
+            return true;
+        }
+        if (selected < 0 || ContactIndex(s.Contacts, selected) is not (int ci and >= 0))
+            return false;
+        c.Enemy = true;
+        c.Contact = ci;
+        c.From = s.Ships.IndexOf(lastOwn);
+        c.FromGroup = c.From >= 0 ? s.Groups.IndexOfShip(lastOwn) : -1;
+        return true;
+    }
+
+    /// <summary>Why an order can't be given now (its button greyed with this in its tooltip, its key ignored), or null.</summary>
+    string? WhyNot(Act a, in Orders c)
+    {
+        var s = c.S;
+        var v = s.Ships;
+        var gv = s.Groups;
+        if (c.Enemy)
+        {
+            if (c.From < 0)
+                return "choose one of your ships first";
+            if (a == Act.EngageUnit)
+                return c.FromGroup < 0 ? "she's in no squadron" : null;
+            if (a == Act.TorpedoesAt)
+            {
+                var from = world.Classes.TryGet(v.Class[c.From]);
+                if (from == null || from.Launchers.Length == 0)
+                    return "no tubes";
+                if (v.TorpedoesLoaded[c.From] == 0)
+                    return "none loaded";
+                double reach = from.Torpedoes[from.Launchers[0].Torpedo].SlowRangeM;
+                return Earth.Distance(v.PoseAt(c.From, world.DrawMs).Position, s.Contacts.Position[c.Contact]) > reach ? "out of their reach" : null;
+            }
+            return a == Act.EngageShip ? null : "";
+        }
+        bool guns = c.Cls != null && c.Cls.Batteries.Length > 0;
+        switch (a)
+        {
+            case Act.LevelUp:
+                return c.Level >= chain.Count ? "the top of her chain" : null;
+            case Act.LevelDown:
+                return c.Level == 0 ? "the orders go to her already" : null;
+            case Act.BackIntoLine:
+                return v.Reason[c.K] != 0 && CanComeBack(s, c.K) ? null : "she's in her line";
+            case Act.ClearRoute:
+                return v.RouteCount[c.Kc] == 0 ? "no route" : null;
+            case Act.Smoke:
+            {
+                if (!world.Settings.Smoke)
+                    return "the smoke field is off";
+                Smokers(gv, selected, c.Unit.IsGroup, smokers);
+                foreach (int e in smokers)
+                    if (v.IndexOf(e) is int i and >= 0 && world.Classes.TryGet(v.Class[i]) is { Funnels.Length: > 0 })
+                        return null;
+                return "no funnels";
+            }
+            case Act.AtWill or Act.Engage or Act.HoldFire:
+                return guns ? null : "no guns";
+            case Act.Shells:
+                return guns && v.Loadout[c.K] != null && ChiefBattery(c.Cls!) >= 0 ? null : "no main guns";
+            case Act.Torpedoes:
+                return c.Cls == null || c.Cls.Launchers.Length == 0 ? "no tubes" : v.TorpedoesLoaded[c.K] == 0 ? "none loaded" : null;
+            case Act.Auto:
+                if (c.G >= 0)
+                    return gv.Parent[c.G] != 0 ? "in a force: hand over the force" : Tagged(s, gv.Commanded[c.G]) ? null : "your side has no commander";
+                if (gv.IndexOfShip(selected) >= 0)
+                    return "her squadron's: hand over its top unit";
+                return Tagged(s, v.Commanded[c.Kc]) ? null : "your side has no commander";
+            case Act.LineAhead or Act.Abreast or Act.Turn or Act.Deploy or Act.DeployPort or Act.DeployStbd or Act.Formation:
+                return c.G < 0 ? "a ship: Q for her squadron" : null;
+            case Act.Columns:
+                return c.G < 0 ? "a ship: Q for her squadron" : gv.Force[c.G] ? null : "a force's: its squadrons as columns";
+            case Act.EngageShip or Act.EngageUnit or Act.TorpedoesAt:
+                return "";
+            default:
+                return null;
+        }
+    }
+
+    /// <summary>How an order's button is lit: the order in force, or armed for its click.</summary>
+    Lit LitOf(Act a, in Orders c)
+    {
+        var v = c.S.Ships;
+        var fire = (FireOrder)v.Fire[c.K];
+        var order = (CaptainOrder)v.Captain[c.Kc];
+        static Lit On(bool on) => on ? Lit.On : Lit.None;
+        Lit Armed(ClickPick p, bool on) => armedPick == p ? Lit.Armed : On(on);
+        switch (a)
+        {
+            case Act.HardOver: return On(hardOver);
+            case Act.Conn: return On(OwnConn(c.S, c.Unit));
+            case Act.Smoke:
+            {
+                Smokers(c.S.Groups, selected, c.Unit.IsGroup, smokers);
+                bool making = true;
+                foreach (int e in smokers)
+                    if (v.IndexOf(e) is int i and >= 0)
+                        making &= v.MakingSmoke[i];
+                return On(making);
+            }
+            case Act.AtWill: return On(fire == FireOrder.AtWill);
+            case Act.Engage: return Armed(ClickPick.Engage, fire == FireOrder.Engage);
+            case Act.HoldFire: return On(fire == FireOrder.Hold);
+            case Act.Shells: return On(v.ShellHeld[c.K] > 0);
+            case Act.Torpedoes: return Armed(ClickPick.Torpedoes, false);
+            case Act.Fight: return On(order == CaptainOrder.Fight);
+            case Act.Follow: return Armed(ClickPick.Follow, order == CaptainOrder.Follow);
+            case Act.Hold: return On(order is CaptainOrder.Course or CaptainOrder.None);
+            case Act.Tasks: return On(taskOpen);
+            case Act.Auto: return On(c.G >= 0 ? c.S.Groups.Commanded[c.G] == 1 : v.Commanded[c.Kc] == 1);
+            case Act.LineAhead: return On(c.G >= 0 && ShapeOf(c.S.Groups, c.G) == (int)LineShape.OneLine);
+            case Act.Columns: return On(c.G >= 0 && ShapeOf(c.S.Groups, c.G) == (int)LineShape.Columns);
+            case Act.Abreast: return On(c.G >= 0 && ShapeOf(c.S.Groups, c.G) == (int)LineShape.Abreast);
+            case Act.Deploy: return Armed(ClickPick.Deploy, false);
+            default: return Lit.None;
+        }
+    }
+
+    /// <summary>An order given, from its button or its key; <see cref="WhyNot"/> has let it.</summary>
+    void Do(Act a, in Orders c)
+    {
+        var s = c.S;
+        var v = s.Ships;
+        var o = world.Orders;
+        var unit = c.Unit;
+        switch (a)
+        {
+            case Act.LevelUp: PickLevel(s, c.Level + 1); break;
+            case Act.LevelDown: PickLevel(s, c.Level - 1); break;
+            case Act.BackIntoLine: BackIntoLine(s, selected); break;
+            case Act.Port90 or Act.Port10 or Act.Stbd10 or Act.Stbd90:
+                int by = a switch { Act.Port90 => -90, Act.Port10 => -10, Act.Stbd10 => 10, _ => 90 };
+                world.Send(o.Course(unit, ((v.CourseOrderDeg[c.Kc] + by) % 360 + 360) % 360, hardOver ? 90 : 0));
+                break;
+            case Act.Course: courseFocus = true; break;
+            case Act.Slower or Act.Faster: RingBell(c, a == Act.Faster ? 1 : -1); break;
+            case Act.HardOver: hardOver = !hardOver; break;
+            case Act.Conn: world.Send(o.Conn(unit, !OwnConn(s, unit))); break;
+            case Act.ClearRoute: world.Send(o.ClearRoute(unit)); break;
+            case Act.Smoke:
+                bool making = LitOf(Act.Smoke, c) == Lit.On;   // fills the smokers
+                foreach (int e in smokers)
+                    world.Send(SmokeSystem.MakeSmoke(e, !making));
+                break;
+            case Act.AtWill: world.Send(o.FireAtWill(unit)); break;
+            case Act.Engage: Arm(ClickPick.Engage); break;
+            case Act.HoldFire: world.Send(o.HoldFire(unit)); break;
+            case Act.Shells: popupAsked = "##shells"; break;
+            case Act.Torpedoes: Arm(ClickPick.Torpedoes); break;
+            case Act.Fight: Behaviour(3, unit, 0); break;
+            case Act.Follow: Arm(ClickPick.Follow); break;
+            case Act.Hold: Behaviour(0, unit, 0); break;
+            case Act.Tasks: taskOpen = !taskOpen; break;
+            case Act.Withdraw:
+                foreach (var u in OrderUnits(s))
+                    world.Send(o.WithdrawHome(u));
+                break;
+            case Act.Auto: world.Send(o.Automate(unit, LitOf(Act.Auto, c) != Lit.On)); break;
+            case Act.LineAhead: SendShape(s, LineShape.OneLine); break;
+            case Act.Columns: SendShape(s, LineShape.Columns); break;
+            case Act.Abreast: SendShape(s, LineShape.Abreast); break;
+            case Act.Turn: popupAsked = "##turn"; break;
+            case Act.Deploy: Arm(ClickPick.Deploy); break;
+            case Act.DeployPort: DeployAbeam(s, -1); break;
+            case Act.DeployStbd: DeployAbeam(s, 1); break;
+            case Act.Formation: popupAsked = "##formation"; break;
+            case Act.EngageShip: world.Send(o.Engage(Unit.Ship(lastOwn), selected)); break;
+            case Act.EngageUnit: world.Send(o.Engage(Unit.Group(s.Groups.Id[c.FromGroup]), selected)); break;
+            case Act.TorpedoesAt: world.Send(TorpedoSystem.Launch(lastOwn, selected, v.TorpedoesLoaded[c.From])); break;
+        }
+    }
+
+    /// <summary>The strip's keys (the map's own are <see cref="Key"/>'s): an order's while its strip is up. Whether the key
+    /// was one.</summary>
+    bool StripKey(uint key)
+    {
+        var s = world.Current;
+        if (!OrdersNow(s, out var c))
+            return false;
+        var mod = SDL_GetModState();
+        bool shift = (mod & SDL_Keymod.SDL_KMOD_SHIFT) != 0, alt = (mod & SDL_Keymod.SDL_KMOD_ALT) != 0;
+        if (key == SDLK_KP_ENTER)
+            key = SDLK_RETURN;
+        for (var a = (Act)0; a < Act.Count; a++)
+        {
+            var d = Def(a);
+            if (d.Key != key || d.Shift != shift || d.Alt && !alt || c.Enemy != a >= Act.EngageShip)
+                continue;
+            if (WhyNot(a, c) == null)
+                Do(a, c);
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>The telegraph's bells: a share of full speed, or flank (her overload).</summary>
+    static readonly (string Label, double Of, bool Flank)[] Bells =
+        [("Astern", -1, false), ("Stop", 0, false), ("Slow", 0.25, false), ("Half", 0.5, false), ("Full", 1, false), ("Flank", 1, true)];
+
+    /// <summary>A bell's speed for the ship that steams the orders (0 with no class).</summary>
+    double BellKn(Snapshot s, int kc, int bell)
+    {
+        if (world.Classes.TryGet(s.Ships.Class[kc]) is not { } guide)
+            return 0;
+        double full = guide.Motion.MaxSpeedKn;
+        double flank = Math.Max(full, guide.SpeedAt(guide.Motion.RatedShp * Math.Max(guide.Motion.OverloadMax, 1)));
+        return Bells[bell].Of * (Bells[bell].Flank ? flank : full);
+    }
+
+    /// <summary>The bell rung now: the nearest to the speed ordered.</summary>
+    int BellNow(Snapshot s, int kc)
+    {
+        int best = 0;
+        for (int i = 1; i < Bells.Length; i++)
+            if (Math.Abs(BellKn(s, kc, i) - s.Ships.SpeedOrderKn[kc]) < Math.Abs(BellKn(s, kc, best) - s.Ships.SpeedOrderKn[kc]))
+                best = i;
+        return best;
+    }
+
+    void RingBell(in Orders c, int step)
+    {
+        int bell = Math.Clamp(BellNow(c.S, c.Kc) + step, 0, Bells.Length - 1);
+        world.Send(world.Orders.Speed(c.Unit, Math.Round(BellKn(c.S, c.Kc, bell), 2)));
+    }
+
+    static int ChiefBattery(ShipClass cls)
+    {
+        for (int b = 0; b < cls.Batteries.Length; b++)
+            if (cls.Batteries[b].Chief)
+                return b;
+        return -1;
+    }
+
+    // ------------------------------------------------------------------ the strip's frame
+
+    /// <summary>The status bar's height, and the strip's over it.</summary>
+    static float StatusH => P(20);
+    static float StripH => P(105);
+
+    /// <summary>The strip's top (the rail stops above it, the task menu sits on it).</summary>
+    static float StripTopY(ImGuiViewportPtr vp) => vp.Pos.Y + vp.Size.Y - StatusH - P(2) - StripH;
+
+    float stripTop;
+    // the popup an order asked for (from a key or its button), opened inside the strip's window
+    string? popupAsked;
+    // where the popups' buttons were drawn: they open above them
+    Vector2 shellsAt, turnAt, formationAt;
+    bool courseFocus, courseTyping;
+
+    // the pane being laid out: its left, its top, the pen in its row, the widest row; dry: measured, not drawn
+    ImDrawListPtr sdl;
+    float paneX, paneTop, penX, penY, paneRows;
+    bool dry;
+    // a joined row's lit button, its edge drawn again over its neighbours'
+    Vector2 litAt;
+    float litW;
+    Lit litKind;
+    // each pane's width, measured by the dry pass
+    readonly float[] paneW = new float[8];
+    int paneN;
+
+    /// <summary>The strip, while one of the player's ships (or, with truth, any ship) or an enemy is selected.</summary>
+    void Strip(Snapshot s)
+    {
+        var vp = ImGui.GetMainViewport();
+        stripTop = StripTopY(vp);
+        bool any = OrdersNow(s, out var c);
+        if (!any || c.Enemy)
+        {
+            armedPick = ClickPick.None;
+            taskOpen = false;
+        }
+        if (!any)
+            return;
+        if (!c.Enemy)
+            StripTexts(s, c.K, c.Kc, c.Cls);
+        // measured, then drawn in a window just the panes' size, so the map past them takes its clicks
+        dry = true;
+        paneN = 0;
+        float left = vp.Pos.X + P(8), width = Panes(c, left) - left;
+        dry = false;
+        paneN = 0;
+        ImGui.SetNextWindowPos(new Vector2(left, stripTop));
+        ImGui.SetNextWindowSize(new Vector2(width, StripH));
+        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
+        ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, 0);
+        if (ImGui.Begin("##strip", ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoSavedSettings |
+                                   ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoNav | ImGuiWindowFlags.NoBackground |
+                                   ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
+        {
+            sdl = ImGui.GetWindowDrawList();
+            sdl.AddRectFilled(new Vector2(left, stripTop), new Vector2(left + width, stripTop + StripH), U(T.Ground));
+            Panes(c, left);
+            Popups(c);
+        }
+        ImGui.End();
+        ImGui.PopStyleVar(2);
+        if (!c.Enemy)
+            TaskMenu(s);
+    }
+
+    /// <summary>The panes from <paramref name="x"/>: where they end.</summary>
+    float Panes(in Orders c, float x)
+    {
+        if (c.Enemy)
+        {
+            x = EnemyPane(c, x);
+            return AgainstPane(c, x);
+        }
+        x = ToPane(c, x);
+        x = HelmPane(c, x);
+        x = GunsPane(c, x);
+        x = TaskPane(c, x);
+        return c.G >= 0 ? FormationPane(c, x) : x - P(2);
+    }
+
+    /// <summary>A pane begun at <paramref name="x"/>: measured (the dry pass) or drawn at the width it measured. Its rows
+    /// follow (<see cref="Row"/>), then <see cref="EndPane"/>.</summary>
+    void BeginPane(float x, string title, string? note, float rightW, float minW = 0)
+    {
+        (paneX, paneTop, paneRows) = (x, stripTop, Math.Max(minW, P(17) + Width(UiFonts.Head, title) + (note != null ? P(6) + Width(UiFonts.SansSmall, note) : 0)
+            + P(14) + rightW + P(6)));
+        if (!dry)
+            sdl.Pane(new Vector2(x, stripTop), new Vector2(paneW[paneN], StripH), title, note);
+    }
+
+    float EndPane()
+    {
+        if (dry)
+            paneW[paneN] = paneRows;
+        return paneX + paneW[paneN++] + P(2);
+    }
+
+    /// <summary>The right end of the pane's title strip (drawn), for its figure or chips.</summary>
+    float TitleRight => paneX + paneW[paneN] - P(6);
+
+    void Row(int i) => (penX, penY) = (paneX + P(6), paneTop + TitleH + P(5) + i * P(25));
+
+    void Advance(float w) => paneRows = Math.Max(paneRows, (penX += w) - paneX + P(6));
+
+    /// <summary>An order's button in the row: its label (or the given one), its key; greyed with its reason, lit; joined
+    /// to the one before it (sharing an edge) in a row of exclusive ones. True when it gave the order.</summary>
+    bool Btn(Act a, in Orders c, string? label = null, bool joined = false, bool menu = false)
+    {
+        var d = Def(a);
+        label ??= d.Label;
+        if (joined)
+            penX -= P(3) + 1;
+        float w = ButtonWidth(label, d.Chip, menu: menu);
+        bool done = false;
+        if (!dry)
+        {
+            string? why = WhyNot(a, c);
+            var lit = why == null ? LitOf(a, c) : Lit.None;
+            var at = new Vector2(penX, penY);
+            ImGui.PushID((int)a);
+            bool hit = sdl.Button("##b", at, label, d.Chip, enabled: why == null, w: w, lit: lit, menu: menu);
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+                Tip(why != null ? why.Length > 0 ? $"{d.Tip} ({why})" : d.Tip : d.Tip);
+            ImGui.PopID();
+            if (lit != Lit.None)
+                (litAt, litW, litKind) = (at, w, lit);
+            if (a == Act.Shells)
+                shellsAt = at;
+            else if (a == Act.Turn)
+                turnAt = at;
+            else if (a == Act.Formation)
+                formationAt = at;
+            if (hit)
+            {
+                Do(a, c);
+                done = true;
+            }
+        }
+        Advance(w + P(3));
+        return done;
+    }
+
+    /// <summary>A joined row's end: its lit button's edge over its neighbours'.</summary>
+    void EndJoined()
+    {
+        if (!dry)
+            sdl.LitEdge(litAt, litW, litKind);
+        litKind = Lit.None;
+    }
+
+    /// <summary>Muted words after the row's buttons.</summary>
+    void Say(string s, Vector4? colour = null)
+    {
+        if (!dry)
+            sdl.Text(UiFonts.SansSmall, new Vector2(penX + P(3), Mid(UiFonts.SansSmall, penY, P(20))), colour ?? T.Muted, s);
+        Advance(P(3) + Width(UiFonts.SansSmall, s));
+    }
+
+    /// <summary>Key chips on their own (the telegraph's ↓ ↑).</summary>
+    void Keys(string a, string b)
+    {
+        float w = KbdWidth(a) + P(2) + KbdWidth(b);
+        if (!dry)
+        {
+            float x = penX + P(3);
+            x += sdl.Kbd(new Vector2(x, penY + P(3.5f)), a) + P(2);
+            sdl.Kbd(new Vector2(x, penY + P(3.5f)), b);
+        }
+        Advance(w + P(3));
+    }
+
+    /// <summary>A figure at the title strip's right end; its width.</summary>
+    float TitleFigure(string s, Vector4 colour)
+    {
+        if (!dry)
+            sdl.TextRight(UiFonts.Mono, TitleRight, Mid(UiFonts.Mono, paneTop, TitleH), colour, s);
+        return Width(UiFonts.Mono, s);
+    }
+
+    // ------------------------------------------------------------------ the panes
+
+    /// <summary>Orders to: the chain as rows with a radio mark, the top unit first and the ship last, a click picks the
+    /// level (Q, Shift+Q step it); whose the top unit is as the rail's chip; under them what's become of her.</summary>
+    float ToPane(in Orders c, float x)
+    {
+        var s = c.S;
+        var gv = s.Groups;
+        var v = s.Ships;
+        int more = OrderUnits(s).Count - 1;
+        if (more != toMore)
+            (toMore, toNote) = (more, more > 0 ? $"+{more} more, each" : null);
+        float chips = KbdWidth(Def(Act.LevelUp).Chip) + P(2) + KbdWidth(Def(Act.LevelDown).Chip);
+        BeginPane(x, "ORDERS TO", toNote, chips, P(230));
+        if (!dry)
+        {
+            float r = TitleRight, y = paneTop + P(3.5f);
+            r -= sdl.Kbd(new Vector2(r - KbdWidth(Def(Act.LevelDown).Chip), y), Def(Act.LevelDown).Chip) + P(2);
+            sdl.Kbd(new Vector2(r - KbdWidth(Def(Act.LevelUp).Chip), y), Def(Act.LevelUp).Chip);
+        }
+        // what's become of her, under the chain
+        string? state = null;
+        var stateColour = T.Amber;
+        bool back = false;
+        if (v.Reason[c.K] != 0)
+            (state, back) = (ReasonText(v.Reason[c.K]), CanComeBack(s, c.K));
+        else if (gv.IndexOfShip(selected) is int g0 and >= 0 && DetachmentOf(gv, g0, selected) is var d && d != Detachment.InLine)
+            state = HeldStateText(d, v.Asked[c.K]);
+        else if (v.LandSide[c.K] != 0)
+            (state, stateColour) = (v.LandSide[c.K] > 0 ? "following the coast, land to port" : "following the coast, land to starboard", MapPalette.DevSlide);
+        int rows = chain.Count + 1 + (state != null ? 1 : 0);
+        float rowH = MathF.Min(RowH, (StripH - TitleH - P(2)) / rows), w = paneW[paneN] - 2;
+        var a = new Vector2(x + 1, paneTop + TitleH + 1);
+        for (int i = chain.Count; i >= 0; i--, a.Y += rowH)
+        {
+            int depth = chain.Count - i;
+            string name = i == 0 ? nameText : gv.Name[chain[i - 1]];
+            string kind = i == 0 ? "ship" : gv.Force[chain[i - 1]] ? "force" : "squadron";
+            bool top = i == chain.Count;
+            byte commanded = i == 0 ? v.Commanded[c.Kc] : gv.Commanded[chain[i - 1]];
+            bool tagged = top && Tagged(s, commanded);
+            float kindW = Width(UiFonts.SansSmall, kind) + (tagged ? P(28) : 0);
+            float nameX = P(6 + 12 * depth) + P(14);
+            paneRows = Math.Max(paneRows, nameX + Width(UiFonts.SansSmall, name) + (i == 0 ? P(5) + Width(UiFonts.SansSmall, classText) : 0) + P(12) + kindW + P(6));
+            if (dry)
+                continue;
+            ImGui.PushID(i);
+            var (click, hover) = HitRow("##lvl", a, new Vector2(w, rowH));
+            bool on = c.Level == i;
+            sdl.RowBg(a, w, rowH, chain.Count - i, on, hover);
+            sdl.Radio(new Vector2(a.X + P(6 + 12 * depth) + P(5), a.Y + rowH / 2), on);
+            float ty = Mid(UiFonts.SansSmall, a.Y, rowH);
+            sdl.Text(UiFonts.SansSmall, new Vector2(a.X + nameX, ty), on ? T.Brass : T.Text, name);
+            if (i == 0)
+                sdl.Text(UiFonts.SansSmall, new Vector2(a.X + nameX + Width(UiFonts.SansSmall, name) + P(5), ty), T.Muted, classText);
+            float right = a.X + w - P(6);
+            sdl.TextRight(UiFonts.SansSmall, right, ty, T.Muted, kind);
+            if (tagged && WhoseChip(sdl, a with { Y = a.Y + (rowH - P(20)) / 2 }, right - Width(UiFonts.SansSmall, kind) - P(5), OwnConn(s, i == 0 ? Unit.Ship(selected) : Unit.Group(gv.Id[chain[i - 1]])), true, commanded))
+                world.Send(world.Orders.Automate(i == 0 ? Unit.Ship(selected) : Unit.Group(gv.Id[chain[i - 1]]), commanded != 1));
+            else if (click)
+                PickLevel(s, i);
+            ImGui.PopID();
+        }
+        if (state != null)
+        {
+            float sw = Width(UiFonts.SansSmall, state);
+            paneRows = Math.Max(paneRows, P(12) + sw + (back ? P(8) + ButtonWidth(Def(Act.BackIntoLine).Label, Def(Act.BackIntoLine).Chip) : 0));
+            if (!dry)
+            {
+                sdl.Text(UiFonts.SansSmall, new Vector2(a.X + P(6), Mid(UiFonts.SansSmall, a.Y, rowH)), stateColour, state);
+                if (back)
+                {
+                    (penX, penY) = (a.X + P(14) + sw, a.Y + (rowH - P(20)) / 2);
+                    Btn(Act.BackIntoLine, c);
+                }
+            }
+        }
+        return EndPane();
+    }
+
+    int toMore = -1;
+    string? toNote;
+    (Detachment, bool) heldStateKey = ((Detachment)255, false);
+    string heldStateText = "";
+
+    string HeldStateText(Detachment d, bool asked)
+    {
+        if ((d, asked) != heldStateKey)
+            (heldStateKey, heldStateText) = ((d, asked), $"{HeldText(d)}{(asked ? "; her orders changed" : "")}");
+        return heldStateText;
+    }
+
+    /// <summary>The helm: the course (±10°, ±90°, typed in the well), the telegraph's bells, hard over, the conn, the
+    /// route cleared, smoke. On the conn (the unit's own, or her line's) the figure says so in its colour.</summary>
+    float HelmPane(in Orders c, float x)
+    {
+        var s = c.S;
+        var v = s.Ships;
+        bool own = OwnConn(s, c.Unit), line = !own && c.Unit.IsShip && v.Conn[c.Kc] == 2;
+        if (!ReferenceEquals(helmText, connSource) || (own, line) != connKey)
+        {
+            (connSource, connKey) = (helmText, (own, line));
+            connText = own ? "conn · " + helmText : line ? "line on conn · " + helmText : helmText;
+        }
+        if (!ReferenceEquals(courseText, orderedSource))
+            (orderedSource, orderedText) = (courseText, "ordered " + courseText);
+        BeginPane(x, "HELM", orderedText, Width(UiFonts.Mono, connText));
+        TitleFigure(connText, own || line ? MapPalette.Conn : T.Bright);
+        // the course
+        Row(0);
+        Btn(Act.Port90, c);
+        Btn(Act.Port10, c);
+        CourseWell(c);
+        Btn(Act.Stbd10, c);
+        Btn(Act.Stbd90, c);
+        // the telegraph
+        Row(1);
+        int bell = BellNow(s, c.Kc);
+        for (int i = 0; i < Bells.Length; i++)
+        {
+            if (i > 0)
+                penX -= 1;
+            float w = ButtonWidth(Bells[i].Label, null);
+            if (!dry)
+            {
+                var at = new Vector2(penX, penY);
+                ImGui.PushID(100 + i);
+                var lit = i == bell ? Lit.On : Lit.None;
+                if (sdl.Button("##bell", at, Bells[i].Label, w: w, lit: lit))
+                    world.Send(world.Orders.Speed(c.Unit, Math.Round(BellKn(s, c.Kc, i), 2)));
+                if (ImGui.IsItemHovered())
+                    Tip(Def(Act.Faster).Tip + " (↑), slower (↓)");
+                ImGui.PopID();
+                if (lit != Lit.None)
+                    (litAt, litW, litKind) = (at, w, lit);
+            }
+            Advance(w);
+        }
+        EndJoined();
+        Keys(Def(Act.Slower).Chip, Def(Act.Faster).Chip);
+        // the helm's toggles
+        Row(2);
+        Btn(Act.HardOver, c);
+        Btn(Act.Conn, c);
+        Btn(Act.ClearRoute, c);
+        Btn(Act.Smoke, c);
+        return EndPane();
+    }
+
+    string connText = "", connSource = "", orderedText = "", orderedSource = "";
+    (bool, bool) connKey;
+
+    /// <summary>The course ordered in an inset well: typed there (Enter puts the cursor in it, Enter sends it).</summary>
+    void CourseWell(in Orders c)
+    {
+        string chip = Def(Act.Course).Chip;
+        float w = P(80), chipW = KbdWidth(chip);
+        if (!dry)
+        {
+            var a = new Vector2(penX, penY);
+            sdl.AddRectFilled(a, a + new Vector2(w, P(20)), U(T.Inset));
+            sdl.AddRect(a, a + new Vector2(w, P(20)), U(courseTyping ? T.Brass : T.InsetEdge));
+            sdl.Kbd(new Vector2(a.X + w - chipW - P(4), a.Y + P(3.5f)), chip);
+            ImGui.SetCursorScreenPos(a + new Vector2(P(3), (P(20) - UiFonts.Mono.FontSize - P(4)) / 2));
+            ImGui.SetNextItemWidth(w - chipW - P(10));
+            ImGui.PushFont(UiFonts.Mono);
+            ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(P(4), P(2)));
+            ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 0);
+            ImGui.PushStyleColor(ImGuiCol.FrameBg, Vector4.Zero);
+            ImGui.PushStyleColor(ImGuiCol.FrameBgHovered, T.Hover);
+            ImGui.PushStyleColor(ImGuiCol.FrameBgActive, Vector4.Zero);
+            ImGui.PushStyleColor(ImGuiCol.Text, T.Bright);
+            double ordered = c.S.Ships.CourseOrderDeg[c.Kc];
+            if (!courseTyping)
+                courseEdit = (int)Math.Round(ordered) % 360;
+            if (courseFocus)
+            {
+                ImGui.SetKeyboardFocusHere();
+                courseFocus = false;
+            }
+            ImGui.InputInt("##course", ref courseEdit, 0);
+            courseTyping = ImGui.IsItemActive();
+            if (ImGui.IsItemDeactivatedAfterEdit())
+            {
+                courseEdit = ((courseEdit % 360) + 360) % 360;
+                world.Send(world.Orders.Course(c.Unit, courseEdit, hardOver ? 90 : 0));
+            }
+            if (ImGui.IsItemHovered())
+                Tip(Def(Act.Course).Tip);
+            ImGui.PopStyleColor(4);
+            ImGui.PopStyleVar(2);
+            ImGui.PopFont();
+        }
+        Advance(w + P(3));
+    }
+
+    /// <summary>The guns: fire at will, engage (armed: click an enemy), hold fire; the main guns' shell; torpedoes. The
+    /// main battery's line as the note, each battery in its tooltip.</summary>
+    float GunsPane(in Orders c, float x)
+    {
+        var s = c.S;
+        var fire = (FireOrder)s.Ships.Fire[c.K];
+        int main = -1;
+        for (int i = 0; i < s.Batteries.Count; i++)
+            if (s.Batteries.Shooter[i] == selected && s.Batteries.Battery[i] == 0)
+                main = i;
+        bool guns = c.Cls != null && c.Cls.Batteries.Length > 0;
+        string? note = !guns ? null : main < 0 ? "main: no target" : BatteryLine(s.Batteries.State[main], s.Batteries.Phase[main], s.Batteries.Salvos[main], s.Batteries.Hits[main]);
+        BeginPane(x, "GUNS", note, Width(UiFonts.Mono, gunsText));
+        TitleFigure(gunsText, fire == FireOrder.Hold ? T.Amber : T.Bright);
+        if (!dry && guns && ImGui.IsMouseHoveringRect(new Vector2(paneX, paneTop), new Vector2(paneX + paneW[paneN], paneTop + TitleH)) && ImGui.IsWindowHovered())
+            BatteriesTip(s, c.Cls!);
+        Row(0);
+        Btn(Act.AtWill, c);
+        Btn(Act.Engage, c, joined: true);
+        Btn(Act.HoldFire, c, joined: true);
+        EndJoined();
+        Row(1);
+        Btn(Act.Shells, c, ShellsLabel(s, c), menu: true);
+        Row(2);
+        Btn(Act.Torpedoes, c);
+        Say(torpText);
+        return EndPane();
+    }
+
+    /// <summary>Each battery: a line in the guns' tooltip.</summary>
+    void BatteriesTip(Snapshot s, ShipClass cls)
+    {
+        ImGui.BeginTooltip();
+        var v = s.Batteries;
+        for (int b = 0; b < cls.Batteries.Length; b++)
+        {
+            var row = cls.Batteries[b];
+            int i = 0;
+            while (i < v.Count && (v.Shooter[i] != selected || v.Battery[i] != b))
+                i++;
+            string kind = row.Kind == Battery.Main ? "main" : "secondary";
+            string label = BatteryLabel(cls, b);
+            U8.Text(i == v.Count ? U8.W($"{label} {kind}: no target")
+                : U8.W($"{label} {kind} on {LabelOf(s, v.Target[i])}: {StateText(v.State[i], v.Phase[i])}, {(v.Local[i] ? "local control" : FireControlPresets.Name(v.Level[i]))}; {v.Salvos[i]} salvos, {v.Hits[i]} hits of {v.Shells[i]}"));
+        }
+        ImGui.EndTooltip();
+    }
+
+    /// <summary>The task: the captain's or the unit's (fight, follow, hold, every other in the task menu: Task, T),
+    /// withdraw, and handing the unit to the side's commander. The unit's role as the note, the task it's on at the right.</summary>
+    float TaskPane(in Orders c, float x)
+    {
+        var s = c.S;
+        var order = (CaptainOrder)s.Ships.Captain[c.Kc];
+        var (role, set) = RoleOf(s, c.Unit);
+        if ((role, set) != roleKey)
+            (roleKey, roleText) = ((role, set), role == UnitRole.None ? null : $"{RoleName(role)} · {(set ? "set by you" : "worked out")}");
+        string head = TaskHead(s, order, c.G);
+        BeginPane(x, "TASK", roleText, Width(UiFonts.Mono, head));
+        TitleFigure(head, T.Bright);
+        Row(0);
+        Btn(Act.Fight, c);
+        Btn(Act.Follow, c, joined: true);
+        Btn(Act.Hold, c, joined: true);
+        EndJoined();
+        penX += P(6);
+        Btn(Act.Tasks, c, menu: true);
+        Row(1);
+        Btn(Act.Withdraw, c);
+        Btn(Act.Auto, c);
+        return EndPane();
+    }
+
+    (UnitRole, bool) roleKey = ((UnitRole)255, false);
+    string? roleText;
+
+    /// <summary>A unit's formation: its whole line's shape (Line ahead, Columns for a force, Abreast; battle-hud.md P1),
+    /// its manoeuvres (turn together, deploy), this level's own formation and spacing.</summary>
+    float FormationPane(in Orders c, float x)
+    {
+        var gv = c.S.Groups;
+        int g = c.G;
+        int guide = gv.GuideShip[g];
+        string guideName = guide != 0 ? ShipName(c.S, guide) : "-";
+        if ((gv.Id[g], gv.MemberCount[g], (int)gv.Formation[g], gv.SpacingM[g]) != formKey)
+        {
+            formKey = (gv.Id[g], gv.MemberCount[g], (int)gv.Formation[g], gv.SpacingM[g]);
+            formNote = $"{gv.MemberCount[g]} {(gv.Force[g] ? "units" : "ships")}";
+            formLabel = string.Format(CultureInfo.InvariantCulture, "{0}{1}, {2:N0} m", gv.Force[g] ? "This level: " : "",
+                GroupFormationNames[(int)gv.Formation[g]].ToLowerInvariant(), gv.SpacingM[g]);
+        }
+        BeginPane(x, "FORMATION", formNote, Width(UiFonts.SansSmall, "guide ") + Width(UiFonts.SansSmall, guideName));
+        if (!dry)
+        {
+            float y = Mid(UiFonts.SansSmall, paneTop, TitleH), r = TitleRight;
+            sdl.TextRight(UiFonts.SansSmall, r, y, T.Bright, guideName);
+            sdl.TextRight(UiFonts.SansSmall, r - Width(UiFonts.SansSmall, guideName), y, T.Muted, "guide ");
+        }
+        Row(0);
+        Btn(Act.LineAhead, c);
+        Btn(Act.Columns, c, joined: true);
+        Btn(Act.Abreast, c, joined: true);
+        EndJoined();
+        Row(1);
+        Btn(Act.Turn, c, menu: true);
+        Btn(Act.Deploy, c);
+        Btn(Act.DeployPort, c);
+        Btn(Act.DeployStbd, c);
+        Row(2);
+        Btn(Act.Formation, c, formLabel, menu: true);
+        return EndPane();
+    }
+
+    (int, int, int, double) formKey = (-1, -1, -1, -1);
+    string formNote = "", formLabel = "";
+
+    /// <summary>An enemy as held: her identity with the rail's diamond, range and bearing from the ship you had, what's
+    /// seen, how many of yours fire at her.</summary>
+    float EnemyPane(in Orders c, float x)
+    {
+        var s = c.S;
+        var cv = s.Contacts;
+        int i = c.Contact;
+        string id = Identity(cv, i);
+        float labelW = P(70);
+        BeginPane(x, "ENEMY", "as held", 0, MathF.Max(P(262), labelW + P(26) + Width(UiFonts.SansSmall, id) + P(12)));
+        if (!dry)
+        {
+            float w = paneW[paneN] - 2, vx = paneX + 1 + labelW;
+            var a = new Vector2(paneX + 1, paneTop + TitleH + 1);
+            bool seen = cv.InSight[i];
+            for (int r = 0; r < 4; r++, a.Y += RowH)
+            {
+                sdl.RowBg(a, w, RowH, r);
+                float ty = Mid(UiFonts.SansSmall, a.Y, RowH), my = Mid(UiFonts.Mono, a.Y, RowH);
+                var label = r switch { 0 => "CONTACT", 1 => "FROM", 2 => "SEEN", _ => "FIRING" };
+                sdl.Text(UiFonts.SansSmall, new Vector2(a.X + P(6), ty), T.Muted, label);
+                switch (r)
+                {
+                    case 0:
+                        Diamond(sdl, new Vector2(vx + P(5), a.Y + RowH / 2), cv.Level[i] >= ContactLevel.Class, seen);
+                        sdl.Text(UiFonts.SansSmall, new Vector2(vx + P(14), ty), seen ? T.Bright : T.Faint, id);
+                        break;
+                    case 1:
+                        if (c.From >= 0)
+                        {
+                            var from = s.Ships.PoseAt(c.From, world.DrawMs).Position;
+                            double brg = (Earth.Bearing(from, cv.Position[i]) % 360 + 360) % 360;
+                            sdl.Text(UiFonts.Mono, new Vector2(vx, my), T.Bright, U8.W($"{Earth.Distance(from, cv.Position[i]) / 1000:0.0} km · {brg:000}°"));
+                            sdl.TextRight(UiFonts.SansSmall, a.X + w - P(6), ty, T.Muted, ShipName(s, lastOwn));
+                        }
+                        else
+                            sdl.Text(UiFonts.SansSmall, new Vector2(vx, ty), T.Muted, "none of yours chosen");
+                        break;
+                    case 2:
+                        sdl.Text(UiFonts.SansSmall, new Vector2(vx, ty), cv.Seen[i] != SeenFlags.None ? T.Text : T.Muted,
+                            cv.Seen[i] != SeenFlags.None ? U8.W($"{SeenWords(cv.Seen[i])}") : seen ? "no damage seen"u8
+                                : U8.W($"last seen {new WorldTime(cv.SeenMs[i]).ToUtc().Hour:00}:{new WorldTime(cv.SeenMs[i]).ToUtc().Minute:00}"));
+                        break;
+                    default:
+                        int firing = railOn.GetValueOrDefault(selected);
+                        sdl.Text(UiFonts.SansSmall, new Vector2(vx, ty), firing > 0 ? T.Text : T.Muted, firing > 0 ? U8.W($"{firing} of yours") : "none of yours"u8);
+                        break;
+                }
+            }
+        }
+        return EndPane();
+    }
+
+    /// <summary>The orders against her, from the ship you had: engage her with that ship's squadron (E) or the ship alone
+    /// (Alt+E), torpedoes (Shift+E).</summary>
+    float AgainstPane(in Orders c, float x)
+    {
+        var s = c.S;
+        string? from = c.From >= 0 ? ShipName(s, lastOwn) : null;
+        BeginPane(x, "ORDERS AGAINST HER", from != null ? U8Label("from ", from) : null, 0);
+        if (c.FromGroup >= 0)
+        {
+            Row(0);
+            Btn(Act.EngageUnit, c, U8Label("Engage her with ", s.Groups.Name[c.FromGroup]));
+        }
+        Row(c.FromGroup >= 0 ? 1 : 0);
+        Btn(Act.EngageShip, c, AloneLabel(from ?? "your ship", c.FromGroup >= 0));
+        Row(c.FromGroup >= 0 ? 2 : 1);
+        Btn(Act.TorpedoesAt, c);
+        if (!dry && WhyNot(Act.TorpedoesAt, c) is { Length: > 0 } why)
+            Say(why);
+        else if (dry)
+            Say("out of their reach");
+        return EndPane();
+    }
+
+    // "Engage her with Lion alone", made once a name
+    readonly Dictionary<(string, bool), string> aloneLabels = [];
+
+    string AloneLabel(string ship, bool alone) =>
+        aloneLabels.TryGetValue((ship, alone), out var l) ? l : aloneLabels[(ship, alone)] = $"Engage her with {ship}{(alone ? " alone" : "")}";
+
+    // ------------------------------------------------------------------ the popups
+
+    /// <summary>The popups an order opens (asked by its key or its button), above the button.</summary>
+    void Popups(in Orders c)
+    {
+        if (popupAsked != null)
+        {
+            ImGui.OpenPopup(popupAsked);
+            popupAsked = null;
+        }
+        if (c.Enemy)
+            return;
+        var s = c.S;
+        ImGui.SetNextWindowPos(shellsAt - new Vector2(0, P(2)), ImGuiCond.Appearing, new Vector2(0, 1));
+        if (ImGui.BeginPopup("##shells"))
+        {
+            ShellsMenu(s, c.K, c.Cls!);
+            ImGui.EndPopup();
+        }
+        ImGui.SetNextWindowPos(turnAt - new Vector2(0, P(2)), ImGuiCond.Appearing, new Vector2(0, 1));
+        if (ImGui.BeginPopup("##turn"))
+        {
+            TurnMenu(c.Unit);
+            ImGui.EndPopup();
+        }
+        ImGui.SetNextWindowPos(formationAt - new Vector2(0, P(2)), ImGuiCond.Appearing, new Vector2(0, 1));
+        if (ImGui.BeginPopup("##formation"))
+        {
+            if (c.G >= 0)
+            {
+                ImGui.TextDisabled(s.Groups.Name[c.G]);
+                FormationEdit(s.Groups, c.G, ref (c.G == chain[0] ? ref spacingEdit : ref forceSpacingEdit), "##fm");
+            }
+            ImGui.EndPopup();
+        }
+    }
+
+    /// <summary>The Shells button's labels (docs/battle/shell-choice.md A5): by the kind held (+ 1, 0 by target) and,
+    /// by target, the kind her main guns hold (+ 1, 0 none).</summary>
+    static readonly string[][] ShellsLabels = [.. Enumerable.Range(0, 4).Select(h => Enumerable.Range(0, 4).Select(g =>
+        h > 0 ? $"Shells: {KindName((ShellKind)(h - 1))}"
+        : g > 0 ? $"Shells: by target, {KindName((ShellKind)(g - 1))}" : "Shells: by target").ToArray())];
+    static readonly string[] ShellsItems = [.. Enum.GetValues<ShellKind>().Select(x => $"{KindName(x)}##shells{x}")];
+
+    string ShellsLabel(Snapshot s, in Orders c)
+    {
+        var v = s.Ships;
+        int chief = c.Cls != null ? ChiefBattery(c.Cls) : -1;
+        int guns = chief >= 0 && v.BatteryStart[c.K] >= 0 ? v.BatteryInGuns[v.BatteryStart[c.K] + chief] : 0;
+        return ShellsLabels[Math.Min((int)v.ShellHeld[c.K], 3)][Math.Min(guns, 3)];
+    }
+
+    /// <summary>The main guns' shell for the selection (decision 3): by target, her captain's choice, or a kind held until
+    /// they're out of it; the kinds her main guns carry.</summary>
+    void ShellsMenu(Snapshot s, int k, ShipClass cls)
+    {
+        var v = s.Ships;
+        var lo = v.Loadout[k];
+        if (lo == null)
+            return;
+        var o = world.Orders;
+        if (ImGui.Selectable("By target##shells", v.ShellHeld[k] == 0))
+            foreach (var u in OrderUnits(s))
+                world.Send(o.Shells(u, null));
+        foreach (var kind in Enum.GetValues<ShellKind>())
+        {
+            bool carried = false;
+            for (int b = 0; b < cls.Batteries.Length; b++)
+                if (cls.Batteries[b].Chief)
+                    foreach (var l in lo.Loads(b))
+                        carried |= lo.ShellTypes[l.ShellType].Kind == kind;
+            if (carried && ImGui.Selectable(ShellsItems[(int)kind], v.ShellHeld[k] == (byte)(kind + 1)))
+                foreach (var u in OrderUnits(s))
+                    world.Send(o.Shells(u, kind));
+        }
+    }
+
+    // ------------------------------------------------------------------ the strip's texts
 
     // the strip's strings, made when what they say changes
     (int Ship, int Course, int Kn) helmKey = (-1, -1, -1);
     string helmText = "", courseText = "";
-    string connText = "", connSource = "";   // the helm's head on the conn, made when the helm's text or the conn changes
-    (bool, bool) connKey;
     (int Ship, int Target, byte Fire) gunsKey = (-1, -1, 255);
     string gunsText = "";
     (int Ship, int Loaded, int Left) torpKey = (-1, -1, -1);
     string torpText = "";
     int nameShip = -1, nameGeneration = -1;
     string nameText = "", classText = "";
-
-    /// <summary>The strip, while one of the player's ships (or, with truth, any ship) is selected.</summary>
-    void Strip(Snapshot s)
-    {
-        int k = s.Ships.IndexOf(selected);
-        if (k < 0)
-        {
-            armedPick = ClickPick.None;
-            taskOpen = false;
-            if (selected >= 0)
-                EnemyStrip(s, selected);
-            return;
-        }
-        var cls = world.Classes.TryGet(s.Ships.Class[k]);
-        var vp = ImGui.GetMainViewport();
-        float sc = UiFonts.Scale, pad = 8 * sc;
-        ImGui.SetNextWindowPos(new Vector2(StripCentre(vp), vp.Pos.Y + vp.Size.Y - pad - ImGui.GetTextLineHeight() - 4 * sc), ImGuiCond.Always, new Vector2(0.5f, 1));
-        ImGui.SetNextWindowBgAlpha(0.9f);
-        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(10, 7) * sc);
-        ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(7, 3) * sc);
-        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(1, 4) * sc);
-        bool open = ImGui.Begin("##strip", ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings |
-                                           ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoNav | ImGuiWindowFlags.NoMove);
-        if (open)
-        {
-            var (unit, cmd) = Commanded(s);
-            int kc = s.Ships.IndexOf(cmd);
-            if (kc < 0)
-                kc = k;
-            StripTexts(s, k, kc, cls);
-            Span<float> seps = stackalloc float[5];
-            int n = 0;
-            float gap = 22 * sc;
-
-            Who(s, k, cls);
-            seps[n++] = ImGui.GetItemRectMax().X + gap / 2;
-            ImGui.SameLine(0, gap);
-            HelmColumn(s, unit, kc);
-            seps[n++] = ImGui.GetItemRectMax().X + gap / 2;
-            ImGui.SameLine(0, gap);
-            Guns(s, unit, k, cls);
-            seps[n++] = ImGui.GetItemRectMax().X + gap / 2;
-            ImGui.SameLine(0, gap);
-            TorpedoesAndSmoke(s, unit, k, cls);
-            seps[n++] = ImGui.GetItemRectMax().X + gap / 2;
-            ImGui.SameLine(0, gap);
-            Task(s, unit, kc);
-
-            var dl = ImGui.GetWindowDrawList();
-            var wp = ImGui.GetWindowPos();
-            float top = wp.Y + 6 * sc, bottom = wp.Y + ImGui.GetWindowHeight() - 6 * sc;
-            for (int i = 0; i < n; i++)
-                dl.AddLine(new Vector2(seps[i], top), new Vector2(seps[i], bottom), ImGui.GetColorU32(Theme.Line), 1);
-            stripTop = wp.Y;
-        }
-        ImGui.End();
-        ImGui.PopStyleVar(3);
-        StripHint(vp, s);
-        TaskMenu(s);
-    }
-
-    /// <summary>The line under the strip: what the mouse does, or what the armed pick waits for.</summary>
-    void StripHint(ImGuiViewportPtr vp, Snapshot s)
-    {
-        string hint;
-        if (armedPick != ClickPick.None)
-        {
-            if (armedPick != hintPick)
-                (hintPick, hintText) = (armedPick, $"{PickVerb(armedPick)}: {PickClick(armedPick)} · Esc cancels");
-            hint = hintText;
-        }
-        else
-            hint = SmartScreens(s) ? "Right-click: steer · on an enemy: engage · on your ship: screen · Shift: waypoint · Alt: this ship only · C: the conn · T: tasks · Tab: the next ship"
-                : "Right-click: steer · on an enemy: engage · on your ship: follow · Shift: waypoint · Alt: this ship only · C: the conn · T: tasks · Tab: the next ship";
-        var size = ImGui.CalcTextSize(hint);
-        var at = new Vector2(StripCentre(vp) - size.X / 2, vp.Pos.Y + vp.Size.Y - 6 * UiFonts.Scale - size.Y);
-        var dl = ImGui.GetBackgroundDrawList();
-        dl.AddText(at + Vector2.One, 0xC0000000, hint);
-        dl.AddText(at, ImGui.GetColorU32(armedPick != ClickPick.None ? Theme.Amber : Theme.Muted), hint);
-    }
-
-    ClickPick hintPick;
-    string hintText = "";
-
-    /// <summary>Whether the right click on one of ours screens her (the orders' unit is a flotilla or a screen, decision 4
-    /// of docs/battle/admirals-orders.md), else follows her.</summary>
-    bool SmartScreens(Snapshot s)
-    {
-        var (unit, _) = Commanded(s);
-        return RoleOf(s, unit).Role is UnitRole.Flotilla or UnitRole.Screen;
-    }
-
-    /// <summary>The strip's centre: the screen's, or what's left of the dock's when a card is open.</summary>
-    float StripCentre(ImGuiViewportPtr vp) => (vp.Pos.X + Math.Min(dockLeft, vp.Pos.X + vp.Size.X)) / 2;
 
     void StripTexts(Snapshot s, int k, int kc, ShipClass? cls)
     {
@@ -173,7 +1048,7 @@ public sealed partial class MapScene
         if ((selected, v.TorpedoesLoaded[k], v.TorpedoesLeft[k]) != torpKey)
         {
             torpKey = (selected, v.TorpedoesLoaded[k], v.TorpedoesLeft[k]);
-            torpText = cls == null || cls.Launchers.Length == 0 ? "none" : $"{v.TorpedoesLoaded[k]} loaded · {v.TorpedoesLeft[k]} left";
+            torpText = cls == null || cls.Launchers.Length == 0 ? "no tubes" : $"{v.TorpedoesLoaded[k]} loaded · {v.TorpedoesLeft[k]} left";
         }
     }
 
@@ -189,290 +1064,6 @@ public sealed partial class MapScene
         return courseKeyText;
     }
 
-    /// <summary>A column's head: its name, and its state beside it.</summary>
-    static void Head(string title, string value, Vector4 colour)
-    {
-        ImGui.PushFont(UiFonts.SansSmall);
-        ImGui.TextDisabled(title);
-        ImGui.PopFont();
-        ImGui.SameLine(0, 6 * UiFonts.Scale);
-        ImGui.PushFont(UiFonts.Mono);
-        ImGui.TextColored(colour, value);
-        ImGui.PopFont();
-    }
-
-    /// <summary>A segment of a row of buttons: on (brass), armed (amber), or not. A menu's has a caret drawn at its end
-    /// (the UI font has no ▾), in room its label leaves with trailing spaces.</summary>
-    static bool Seg(string label, bool on = false, bool armed = false, bool enabled = true, bool first = false, bool menu = false)
-    {
-        if (!first)
-            ImGui.SameLine(0, 1);
-        ImGui.PushStyleColor(ImGuiCol.Button, armed ? ArmedBg : on ? Theme.BrassDarker : SegOff);
-        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, armed ? ArmedBg : on ? Theme.BrassDark : SegHover);
-        ImGui.PushStyleColor(ImGuiCol.ButtonActive, Theme.BrassDark);
-        ImGui.PushStyleColor(ImGuiCol.Text, armed ? ArmedText : on ? Theme.Brass : Theme.Text);
-        ImGui.BeginDisabled(!enabled);
-        bool hit = ImGui.Button(label);
-        ImGui.EndDisabled();
-        if (menu)
-        {
-            float sc = UiFonts.Scale, h = 2.5f * sc;
-            var max = ImGui.GetItemRectMax();
-            var c = new Vector2(max.X - 10 * sc, (ImGui.GetItemRectMin().Y + max.Y) / 2 + 0.5f * sc);
-            ImGui.GetWindowDrawList().AddTriangleFilled(c + new Vector2(-h, -h * 0.7f), c + new Vector2(h, -h * 0.7f), c + new Vector2(0, h * 0.8f),
-                ImGui.GetColorU32(ImGuiCol.Text));
-        }
-        ImGui.PopStyleColor(4);
-        return hit;
-    }
-
-    // ------------------------------------------------------------------ the columns
-
-    /// <summary>Who: her name and class, who the orders go to (the ship, or each unit above her), and what's become of
-    /// her: falling out, held, her orders changed, altered for land; the condition (until the card, U3).</summary>
-    void Who(Snapshot s, int k, ShipClass? cls)
-    {
-        var v = s.Ships;
-        var gv = s.Groups;
-        ImGui.BeginGroup();
-        ImGui.PushFont(UiFonts.Title);
-        ImGui.TextColored(Theme.Bright, nameText);
-        ImGui.PopFont();
-        ImGui.SameLine(0, 6 * UiFonts.Scale);
-        ImGui.TextDisabled(classText);
-        // orders to: the ship, or a unit above her
-        int level = Level(s);
-        for (int i = 0; i <= chain.Count; i++)
-        {
-            string name = i == 0 ? "This ship" : gv.Name[chain[i - 1]];
-            ImGui.PushID(i);
-            if (Seg(name, level == i, first: i == 0))
-                PickLevel(s, i);
-            ImGui.PopID();
-            if (ImGui.IsItemHovered())
-                ImGui.SetTooltip(i == 0 ? "orders to her alone (alt does it for one order)" : level > i ? "" : "orders to the unit: its admiral hands them down");
-        }
-        // the units beside it the orders go to too, and what the unit is for
-        var units = OrderUnits(s);
-        var (role, set) = RoleOf(s, units[0]);
-        if ((units.Count, role, set) != whoKey)
-        {
-            whoKey = (units.Count, role, set);
-            string what = role == UnitRole.None ? "" : $"{RoleName(role)} · {(set ? "set by you" : "worked out")}";
-            whoText = units.Count > 1 ? $"+ {units.Count - 1} more · orders go to each{(what.Length > 0 ? " · " : "")}{what}" : what;
-        }
-        if (whoText.Length > 0)
-        {
-            ImGui.PushFont(UiFonts.SansSmall);
-            ImGui.TextColored(set ? Theme.Brass : Theme.Muted, whoText);
-            ImGui.PopFont();
-        }
-        // what's become of her
-        if (v.Reason[k] != 0)
-        {
-            ImGui.TextColored(Theme.Amber, ReasonText(v.Reason[k]));
-            if (CanComeBack(s, k))
-            {
-                // the player overrules her captain (docs/map-ui/battle-hud.md decision 2)
-                if (Seg("Back into line", first: true))
-                    BackIntoLine(s, selected);
-                if (ImGui.IsItemHovered())
-                    ImGui.SetTooltip("order her back to her squadron: her captain stays, at his ship's risk");
-            }
-        }
-        else if (gv.IndexOfShip(selected) is int g and >= 0 && DetachmentOf(gv, g, selected) is var d && d != Detachment.InLine)
-            U8.Text(U8.W($"{HeldText(d)}{(v.Asked[k] ? "; her orders changed" : "")}"), Theme.Amber);
-        else if (v.LandSide[k] != 0)
-            U8.Text(v.LandSide[k] > 0 ? "following the coast, land to port"u8 : "following the coast, land to starboard"u8, MapPalette.DevSlide);
-        else if (v.Tier[k] != ClockTier.Fine)
-            ImGui.TextDisabled(v.Tier[k] == ClockTier.Rails ? "on rails" : "coarse tier");
-        ImGui.EndGroup();
-    }
-
-    (int, UnitRole, bool) whoKey = (-1, default, false);
-    string whoText = "";
-
-    /// <summary>The helm: the course (±10°, ±90°, typed), hard over, the conn, the route cleared; the telegraph's bells.
-    /// On the conn (the unit's own, or her line's) the head says so in its colour.</summary>
-    void HelmColumn(Snapshot s, Unit unit, int kc)
-    {
-        var o = world.Orders;
-        var v = s.Ships;
-        bool own = OwnConn(s, unit), line = !own && unit.IsShip && v.Conn[kc] == 2;
-        if (!ReferenceEquals(helmText, connSource) || (own, line) != connKey)
-        {
-            (connSource, connKey) = (helmText, (own, line));
-            connText = own ? "CONN · " + helmText : line ? "LINE ON CONN · " + helmText : helmText;
-        }
-        ImGui.BeginGroup();
-        Head("HELM", connText, own || line ? MapPalette.Conn : Theme.Bright);
-        double ordered = v.CourseOrderDeg[kc];
-        foreach (int d in CourseSteps)
-        {
-            if (d > 0 && d == CourseSteps[2])
-            {
-                ImGui.SameLine(0, 1);
-                ImGui.SetNextItemWidth(46 * UiFonts.Scale);
-                ImGui.PushFont(UiFonts.Mono);
-                if (!ImGui.IsItemActive() && !courseTyping)
-                    courseEdit = (int)Math.Round(ordered) % 360;
-                ImGui.InputInt("##course", ref courseEdit, 0);
-                courseTyping = ImGui.IsItemActive();
-                if (ImGui.IsItemDeactivatedAfterEdit())
-                {
-                    courseEdit = ((courseEdit % 360) + 360) % 360;
-                    world.Send(o.Course(unit, courseEdit, hardOver ? 90 : 0));
-                }
-                ImGui.PopFont();
-                if (ImGui.IsItemHovered())
-                    ImGui.SetTooltip("the course ordered: type one and press Enter");
-            }
-            if (Seg(CourseLabels[Array.IndexOf(CourseSteps, d)], first: d == CourseSteps[0]))
-                world.Send(o.Course(unit, ((ordered + d) % 360 + 360) % 360, hardOver ? 90 : 0));
-        }
-        ImGui.SameLine(0, 6 * UiFonts.Scale);
-        if (Seg("Hard over##ho", hardOver, first: true))
-            hardOver = !hardOver;
-        if (ImGui.IsItemHovered())
-            ImGui.SetTooltip("the course orders put the rudder hard over");
-        if (Seg("Conn##conn", own))
-            world.Send(o.Conn(unit, !own));
-        if (ImGui.IsItemHovered())
-            ImGui.SetTooltip(own ? "give the conn back (C): her captain judges again"
-                : "take the conn (C): nothing but your helm orders moves her: no combing torpedo tracks (the lookouts call them), no turning away, no falling out; a task or a behaviour gives it back");
-        if (v.RouteCount[kc] > 0)
-        {
-            ImGui.SameLine(0, 6 * UiFonts.Scale);
-            if (Seg("Clear route", first: true))
-                world.Send(o.ClearRoute(unit));
-        }
-        // the telegraph
-        if (world.Classes.TryGet(v.Class[kc]) is { } guide)
-        {
-            double full = guide.Motion.MaxSpeedKn;
-            double flank = Math.Max(full, guide.SpeedAt(guide.Motion.RatedShp * Math.Max(guide.Motion.OverloadMax, 1)));
-            for (int i = 0; i < Bells.Length; i++)
-            {
-                double kn = Bells[i].Of * (Bells[i].Flank ? flank : full);
-                if (Seg(Bells[i].Label, Math.Abs(v.SpeedOrderKn[kc] - kn) < 0.05, first: i == 0))
-                    world.Send(o.Speed(unit, Math.Round(kn, 2)));
-            }
-        }
-        ImGui.EndGroup();
-    }
-
-    bool courseTyping;
-
-    /// <summary>The Shells button's labels (docs/battle/shell-choice.md A5): by the kind held (+ 1, 0 by target) and,
-    /// by target, the kind her main guns hold (+ 1, 0 none).</summary>
-    static readonly string[][] ShellsLabels = [.. Enumerable.Range(0, 4).Select(h => Enumerable.Range(0, 4).Select(g =>
-        h > 0 ? $"Shells: {KindName((ShellKind)(h - 1))}    ##shells"
-        : g > 0 ? $"Shells: by target, {KindName((ShellKind)(g - 1))}    ##shells" : "Shells: by target    ##shells").ToArray())];
-    static readonly string[] ShellsItems = [.. Enum.GetValues<ShellKind>().Select(x => $"{KindName(x)}##shells{x}")];
-
-    /// <summary>The main guns' shell for the selection (decision 3): by target, her captain's choice, or a kind held until
-    /// they're out of it; the kinds her main guns carry.</summary>
-    void Shells(Snapshot s, int k, ShipClass cls)
-    {
-        var v = s.Ships;
-        var lo = v.Loadout[k];
-        int chief = -1;
-        for (int b = 0; b < cls.Batteries.Length && chief < 0; b++)
-            if (cls.Batteries[b].Chief)
-                chief = b;
-        if (lo == null || chief < 0)
-            return;
-        int guns = v.BatteryStart[k] >= 0 ? v.BatteryInGuns[v.BatteryStart[k] + chief] : 0;
-        if (Seg(ShellsLabels[Math.Min((int)v.ShellHeld[k], 3)][Math.Min(guns, 3)], v.ShellHeld[k] > 0, first: true, menu: true))
-            ImGui.OpenPopup("##shells");
-        if (ImGui.IsItemHovered())
-            ImGui.SetTooltip("the main guns' shell, for the selection: by target (her captain judges what a round does to the target as she's made out), " +
-                "or a kind held until they're out of it; the round in the gun goes first");
-        if (!ImGui.BeginPopup("##shells"))
-            return;
-        var o = world.Orders;
-        if (ImGui.Selectable("By target##shells", v.ShellHeld[k] == 0))
-            foreach (var u in OrderUnits(s))
-                world.Send(o.Shells(u, null));
-        foreach (var kind in Enum.GetValues<ShellKind>())
-        {
-            bool carried = false;
-            for (int b = 0; b < cls.Batteries.Length; b++)
-                if (cls.Batteries[b].Chief)
-                    foreach (var l in lo.Loads(b))
-                        carried |= lo.ShellTypes[l.ShellType].Kind == kind;
-            if (carried && ImGui.Selectable(ShellsItems[(int)kind], v.ShellHeld[k] == (byte)(kind + 1)))
-                foreach (var u in OrderUnits(s))
-                    world.Send(o.Shells(u, kind));
-        }
-        ImGui.EndPopup();
-    }
-
-    /// <summary>The course buttons' labels, by <see cref="CourseSteps"/>.</summary>
-    static readonly string[] CourseLabels = [.. CourseSteps.Select(d => d < 0 ? $"−{-d}°##c{d}" : $"+{d}°##c{d}")];
-
-    /// <summary>The formation button's labels, by formation.</summary>
-    static readonly string[] FormationLabels = [.. GroupFormationNames.Select(n => $"{n}    ##form")];
-
-    /// <summary>The telegraph's bells: a share of full speed, or flank (her overload).</summary>
-    static readonly (string Label, double Of, bool Flank)[] Bells =
-        [("Astern", -1, false), ("Stop", 0, false), ("Slow", 0.25, false), ("Half", 0.5, false), ("Full", 1, false), ("Flank", 1, true)];
-
-    /// <summary>The guns: fire at will, engage (armed: click an enemy), hold fire; under them each battery's state.</summary>
-    void Guns(Snapshot s, Unit unit, int k, ShipClass? cls)
-    {
-        var o = world.Orders;
-        var fire = (FireOrder)s.Ships.Fire[k];
-        ImGui.BeginGroup();
-        Head("GUNS", gunsText, fire == FireOrder.Hold ? Theme.Amber : Theme.Bright);
-        bool any = cls != null && cls.Batteries.Length > 0;
-        if (Seg("Fire at will", fire == FireOrder.AtWill, enabled: any, first: true))
-            world.Send(o.FireAtWill(unit));
-        if (Seg("Engage…", fire == FireOrder.Engage && armedPick != ClickPick.Engage, armedPick == ClickPick.Engage, any))
-            Arm(ClickPick.Engage);
-        if (ImGui.IsItemHovered())
-            ImGui.SetTooltip("then click an enemy (or right-click her without this)");
-        if (Seg("Hold fire", fire == FireOrder.Hold, enabled: any))
-            world.Send(o.HoldFire(unit));
-        if (any)
-            Shells(s, k, cls!);
-        // each battery: a short line, the whole in the tooltip
-        if (any)
-        {
-            int main = -1;
-            for (int i = 0; i < s.Batteries.Count; i++)
-                if (s.Batteries.Shooter[i] == selected && s.Batteries.Battery[i] == 0)
-                    main = i;
-            ImGui.PushFont(UiFonts.SansSmall);
-            if (main < 0)
-                ImGui.TextDisabled("main: no target");
-            else
-            {
-                var b = s.Batteries;
-                ImGui.TextDisabled(BatteryLine(b.State[main], b.Phase[main], b.Salvos[main], b.Hits[main]));
-            }
-            ImGui.PopFont();
-            if (ImGui.IsItemHovered())
-            {
-                ImGui.BeginTooltip();
-                var v = s.Batteries;
-                for (int b = 0; b < cls!.Batteries.Length; b++)
-                {
-                    var row = cls.Batteries[b];
-                    int i = 0;
-                    while (i < v.Count && (v.Shooter[i] != selected || v.Battery[i] != b))
-                        i++;
-                    string kind = row.Kind == Battery.Main ? "main" : "secondary";
-                    string label = BatteryLabel(cls, b);
-                    U8.Text(i == v.Count ? U8.W($"{label} {kind}: no target")
-                        : U8.W($"{label} {kind} on {LabelOf(s, v.Target[i])}: {StateText(v.State[i], v.Phase[i])}, {(v.Local[i] ? "local control" : FireControlPresets.Name(v.Level[i]))}; {v.Salvos[i]} salvos, {v.Hits[i]} hits of {v.Shells[i]}"));
-                }
-                ImGui.EndTooltip();
-            }
-        }
-        ImGui.EndGroup();
-    }
-
     // the main battery's line, kept while it says the same
     (BatteryState, FirePhase, int, int) batteryKey = ((BatteryState)255, default, -1, -1);
     string batteryText = "";
@@ -485,36 +1076,32 @@ public sealed partial class MapScene
         return batteryText;
     }
 
-    /// <summary>Torpedoes (fire at: armed, click an enemy) and making smoke (the ship, or every ship of her squadron).</summary>
-    void TorpedoesAndSmoke(Snapshot s, Unit unit, int k, ShipClass? cls)
+    /// <summary>The status bar's left end: what the mouse does with the selection, or what the armed pick waits for.</summary>
+    string StripHint(Snapshot s)
     {
-        ImGui.BeginGroup();
-        Head("TORPEDOES", torpText, Theme.Bright);
-        bool tubes = cls != null && cls.Launchers.Length > 0;
-        if (Seg("Fire at…", armed: armedPick == ClickPick.Torpedoes, enabled: tubes && s.Ships.TorpedoesLoaded[k] > 0, first: true))
-            Arm(ClickPick.Torpedoes);
-        if (tubes && ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+        if (armedPick != ClickPick.None)
         {
-            var t = cls!.Torpedoes[cls.Launchers[0].Torpedo];
-            ImGui.SetTooltip(string.Format(CultureInfo.InvariantCulture, "{0:0} mm: {1:0} kn to {2:0.0} km, or {3:0} kn to {4:0.0} km; then click an enemy",
-                t.CalibreMm, t.FastKn, t.FastRangeM / 1000, t.SlowKn, t.SlowRangeM / 1000));
+            if (armedPick != hintPick)
+                (hintPick, hintText) = (armedPick, $"{PickVerb(armedPick)}: {PickClick(armedPick)} · Esc cancels");
+            return hintText;
         }
-        // smoke: on while all of them make it
-        var gv = s.Groups;
-        int squadron = Smokers(gv, selected, unit.IsGroup, smokers);
-        bool funnels = false, making = true;
-        foreach (int e in smokers)
-            if (s.Ships.IndexOf(e) is int i and >= 0)
-            {
-                funnels |= world.Classes.TryGet(s.Ships.Class[i]) is { Funnels.Length: > 0 };
-                making &= s.Ships.MakingSmoke[i];
-            }
-        if (Seg("Make smoke", making, enabled: world.Settings.Smoke && funnels, first: true))
-            foreach (int e in smokers)
-                world.Send(SmokeSystem.MakeSmoke(e, !making));
-        if (ImGui.IsItemHovered())
-            ImGui.SetTooltip(squadron >= 0 ? $"every ship of {gv.Name[squadron]}: funnels burning rich, a screen" : "her funnels burn rich: a screen");
-        ImGui.EndGroup();
+        if (s.Ships.IndexOf(selected) >= 0)
+            return SmartScreens(s) ? "Right-click: steer · on an enemy: engage · on your ship: screen · Shift: waypoint · Alt with any order: this ship only"
+                : "Right-click: steer · on an enemy: engage · on your ship: follow · Shift: waypoint · Alt with any order: this ship only";
+        if (selected >= 0)
+            return "Select one of your ships and right-click her to engage · Esc: deselect";
+        return "Click a ship to select her · Tab: your ships · wheel: zoom · drag: pan";
+    }
+
+    ClickPick hintPick;
+    string hintText = "";
+
+    /// <summary>Whether the right click on one of ours screens her (the orders' unit is a flotilla or a screen, decision 4
+    /// of docs/battle/admirals-orders.md), else follows her.</summary>
+    bool SmartScreens(Snapshot s)
+    {
+        var (unit, _) = Commanded(s);
+        return RoleOf(s, unit).Role is UnitRole.Flotilla or UnitRole.Screen;
     }
 
     readonly List<int> smokers = [];
@@ -532,120 +1119,6 @@ public sealed partial class MapScene
             for (int i = 0; i < gv.MemberCount[g]; i++)
                 into.Add(gv.Members[gv.MemberStart[g] + i]);
         return g;
-    }
-
-    /// <summary>The task: the captain's (or the unit's): fight, follow, hold, and every other in the task menu (Task ▾,
-    /// T); at a unit's level its manoeuvres (the formation, turn together, deploy), withdraw and its AI; the squadron's
-    /// own business (detach, rejoin, forming, disbanding) in a popup.</summary>
-    void Task(Snapshot s, Unit unit, int kc)
-    {
-        var v = s.Ships;
-        var gv = s.Groups;
-        var order = (CaptainOrder)v.Captain[kc];
-        int level = Level(s);
-        int g = level > 0 ? chain[level - 1] : -1;
-        var o = world.Orders;
-        ImGui.BeginGroup();
-        Head(g < 0 ? "CAPTAIN" : gv.Force[g] ? "FORCE" : "SQUADRON", TaskHead(s, order, g), Theme.Amber);
-        if (Seg("Fight", order == CaptainOrder.Fight, first: true))
-            Behaviour(3, unit, 0);
-        if (ImGui.IsItemHovered())
-            ImGui.SetTooltip("the nearest enemy in sight; turns away when outgunned (Fight… in the task menu: one you pick)");
-        if (Seg("Follow…", order == CaptainOrder.Follow && armedPick != ClickPick.Follow, armedPick == ClickPick.Follow))
-            Arm(ClickPick.Follow);
-        if (Seg("Hold", order is CaptainOrder.Course or CaptainOrder.None))
-            Behaviour(0, unit, 0);
-        if (ImGui.IsItemHovered())
-            ImGui.SetTooltip("hold the course and speed ordered");
-        if (Seg("Task    ##task", taskOpen, menu: true))
-            taskOpen = !taskOpen;
-        if (ImGui.IsItemHovered())
-            ImGui.SetTooltip("every order, by what it's about, and what the unit is for (T)");
-        // the unit: its whole line's shape (or this level's formation), its manoeuvres, withdraw, its AI
-        if (g >= 0)
-        {
-            int shape = ShapeOf(gv, g);
-            if (Seg("Line ahead##shape", shape == (int)LineShape.OneLine, first: true))
-                SendShape(s, LineShape.OneLine);
-            if (ImGui.IsItemHovered())
-                ImGui.SetTooltip(gv.Force[g] ? "one line ahead, every squadron in it, on the course it steers (L); on the same course the far columns drop back a column's length each, so a fleet takes long: deploying turns it into line quicker"
-                    : "line ahead (L)");
-            if (gv.Force[g])
-            {
-                if (Seg("Columns##shape", shape == (int)LineShape.Columns))
-                    SendShape(s, LineShape.Columns);
-                if (ImGui.IsItemHovered())
-                    ImGui.SetTooltip("the cruising order (K): every squadron a column in line ahead, the columns abreast as far apart as one is long, ready to deploy");
-            }
-            if (Seg("Abreast##shape", shape == (int)LineShape.Abreast))
-                SendShape(s, LineShape.Abreast);
-            if (ImGui.IsItemHovered())
-                ImGui.SetTooltip(gv.Force[g] ? "every ship abreast (A), each squadron at its own spacing" : "line abreast (A)");
-            if (Seg(FormationLabels[(int)gv.Formation[g]], menu: true))
-                ImGui.OpenPopup("##formation");
-            if (ImGui.IsItemHovered())
-                ImGui.SetTooltip(gv.Force[g] ? "this level's formation alone, its spacing; echelons and lines of bearing" : "its formation and spacing; echelons and lines of bearing");
-            if (ImGui.BeginPopup("##formation"))
-            {
-                ImGui.TextDisabled(gv.Name[g]);
-                FormationEdit(gv, g, ref (g == chain[0] ? ref spacingEdit : ref forceSpacingEdit), "##fm");
-                ImGui.EndPopup();
-            }
-            if (Seg("Turn    ##turn", first: true, menu: true))
-                ImGui.OpenPopup("##turn");
-            if (ImGui.IsItemHovered())
-                ImGui.SetTooltip("turn together: every ship at once; the line becomes a line of bearing on its old axis");
-            if (ImGui.BeginPopup("##turn"))
-            {
-                TurnMenu(unit);
-                ImGui.EndPopup();
-            }
-            if (Seg("Deploy…##deploy", armed: armedPick == ClickPick.Deploy))
-                Arm(ClickPick.Deploy);
-            if (ImGui.IsItemHovered())
-                ImGui.SetTooltip(gv.Force[g] ? "into one line of battle: click where the line should steer, or the enemy (across his course)"
-                    : "into line ahead: click where it should steer, or the enemy (across his course)");
-            if (Seg("to port##deploy"))
-                DeployAbeam(s, -1);
-            if (ImGui.IsItemHovered())
-                ImGui.SetTooltip(gv.Force[g] ? "deploy 8 points to port (,): one line of battle, the port wing column leading round, the rest in its wake"
-                    : "into line ahead 8 points to port (,)");
-            if (Seg("to stbd##deploy"))
-                DeployAbeam(s, 1);
-            if (ImGui.IsItemHovered())
-                ImGui.SetTooltip(gv.Force[g] ? "deploy 8 points to starboard (.): one line of battle, the starboard wing column leading round, the rest in its wake"
-                    : "into line ahead 8 points to starboard (.)");
-            if (Seg("Withdraw"))
-                world.Send(o.WithdrawHome(unit));
-            if (ImGui.IsItemHovered())
-                ImGui.SetTooltip("break off and go home, away from any enemy first");
-            if (gv.Parent[g] == 0)
-            {
-                bool his = gv.Commanded[g] == 1;
-                if (Seg("AI##auto", his))
-                    world.Send(o.Automate(unit, !his));
-                if (ImGui.IsItemHovered())
-                    ImGui.SetTooltip(his ? "the side's commander fights it: any order of yours takes it; click to take it" : "click to leave it to the side's commander");
-            }
-        }
-        // a ship in no squadron is a top unit too: hers to hand to the side's commander, or take
-        bool alone = g < 0 && s.Groups.IndexOfShip(selected) < 0 && Tagged(s, s.Ships.Commanded[kc]);
-        if (alone)
-        {
-            bool his = s.Ships.Commanded[kc] == 1;
-            if (Seg("AI##autoship", his, first: true))
-                world.Send(o.Automate(unit, !his));
-            if (ImGui.IsItemHovered())
-                ImGui.SetTooltip(his ? "the side's commander fights her: any order of yours takes her; click to take her" : "click to leave her to the side's commander");
-        }
-        if (Seg("Squadron…##sq", first: g < 0 && !alone))
-            ImGui.OpenPopup("##squadron");
-        if (ImGui.BeginPopup("##squadron"))
-        {
-            GroupRow(s);
-            ImGui.EndPopup();
-        }
-        ImGui.EndGroup();
     }
 
     /// <summary>Each unit the orders go to (a group) into a shape, its whole line (docs/map-ui/battle-hud.md P1).</summary>
@@ -668,25 +1141,7 @@ public sealed partial class MapScene
             }
     }
 
-    /// <summary>The unit's keys, with one of ours selected at a unit's level: L line ahead, K columns, A abreast, comma
-    /// and period deploy to port and starboard. Whether the key was one.</summary>
-    bool UnitKey(uint key)
-    {
-        if (key is not (SDLK_L or SDLK_K or SDLK_A or SDLK_COMMA or SDLK_PERIOD))
-            return false;
-        var s = world.Current;
-        if (s.Ships.IndexOf(selected) < 0 || Level(s) is not (int level and > 0))
-            return false;
-        if (key == SDLK_K && !s.Groups.Force[chain[level - 1]])
-            return false;
-        if (key is SDLK_COMMA or SDLK_PERIOD)
-            DeployAbeam(s, key == SDLK_COMMA ? -1 : 1);
-        else
-            SendShape(s, key == SDLK_L ? LineShape.OneLine : key == SDLK_K ? LineShape.Columns : LineShape.Abreast);
-        return true;
-    }
-
-    /// <summary>The Turn ▾ popup: together by 4 or 8 points either way, or about with the rear ship first (the battle
+    /// <summary>The Turn popup: together by 4 or 8 points either way, or about with the rear ship first (the battle
     /// turn-away), each to the unit's admiral.</summary>
     void TurnMenu(Unit unit)
     {

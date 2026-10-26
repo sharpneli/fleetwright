@@ -354,16 +354,6 @@ public sealed unsafe partial class MapScene
         ? s.Ships.IndexOf(unit.Entity) is int k and >= 0 && s.Ships.Conn[k] == 1
         : Array.IndexOf(s.Groups.Id, unit.GroupId, 0, s.Groups.Count) is int g and >= 0 && s.Groups.Conn[g];
 
-    /// <summary>Takes the conn of where the selection's orders go, or gives it back (C, the strip's Conn).</summary>
-    void ToggleConn()
-    {
-        var s = world.Current;
-        if (s.Ships.IndexOf(selected) < 0)
-            return;
-        var (unit, _) = Commanded(s);
-        world.Send(world.Orders.Conn(unit, !OwnConn(s, unit)));
-    }
-
     static Detachment DetachmentOf(GroupsView gv, int g, int member)
     {
         for (int i = 0; i < gv.MemberCount[g]; i++)
@@ -386,108 +376,6 @@ public sealed unsafe partial class MapScene
             return;
         if (!picked.Remove(hit))
             picked.Add(hit);
-    }
-
-    // ------------------------------------------------------------------ rows
-
-    /// <summary>The selected ship's squadron row and its force's row, or forming a squadron of the picked ships, or a
-    /// force of their squadrons.</summary>
-    void GroupRow(Snapshot s)
-    {
-        var gv = s.Groups;
-        var o = world.Orders;
-        for (int i = picked.Count - 1; i >= 0; i--)
-            if (s.Ships.IndexOf(picked[i]) < 0)
-                picked.RemoveAt(i);   // gone
-        int g = gv.IndexOfShip(selected);
-        if (g < 0)
-        {
-            if (picked.Count > 0)
-            {
-                if (ImGui.Button($"Form a squadron of {picked.Count + 1}, this ship guiding"))
-                {
-                    world.Send(GroupSystem.Create(selected, Formation.Column, spacingEdit));
-                    foreach (int e in picked)
-                        world.Send(GroupSystem.Join(e, selected));
-                    ClearPicks();
-                }
-            }
-            else
-                ImGui.TextDisabled("ctrl+click other ships to pick them and form a squadron");
-            return;
-        }
-
-        // the squadron
-        int id = gv.Id[g], guide = gv.Guide[g];
-        var detached = DetachmentOf(gv, g, selected);
-        ImGui.Text($"{gv.Name[g]}:");
-        ImGui.SameLine();
-        ImGui.TextDisabled(detached != Detachment.InLine
-            ? $"{gv.MemberCount[g]} ships; this one {(detached == Detachment.Nudged ? "held (an order to the squadron gathers it in)" : HeldText(detached))}{(s.Ships.Asked[s.Ships.IndexOf(selected)] ? "; its orders changed" : "")}"
-            : $"{gv.MemberCount[g]} ships, guide #{guide}{(guide == selected ? " (this)" : "")}");
-        ImGui.SameLine();
-        if (detached != Detachment.InLine ? ImGui.Button("Rejoin##ship") : ImGui.Button("Detach##ship"))
-            world.Send(detached != Detachment.InLine ? o.Resume(Unit.Ship(selected)) : o.Detach(Unit.Ship(selected)));
-        FormationEdit(gv, g, ref spacingEdit, "##sq");
-        ImGui.SameLine();
-        if (ImGui.Button("Leave squadron"))
-            world.Send(GroupSystem.Remove(selected));
-        ImGui.SameLine();
-        if (ImGui.Button("Disband##sq"))
-            world.Send(GroupSystem.Disband(id));
-        // picked ships: into this squadron, or their squadrons into a force with it
-        int others = 0;
-        foreach (int e in picked)
-            if (gv.IndexOfShip(e) is int pg and >= 0 && pg != g)
-                others++;
-        if (picked.Count > 0)
-        {
-            ImGui.SameLine();
-            if (ImGui.Button($"Add {picked.Count} picked"))
-            {
-                foreach (int e in picked)
-                    world.Send(GroupSystem.Add(id, e));
-                ClearPicks();
-            }
-        }
-
-        // the force it's in
-        int f = gv.Parent[g] != 0 ? gv.IndexOfGroup(gv.Parent[g]) : -1;
-        if (f >= 0)
-        {
-            var inForce = InForce(gv, g);
-            ImGui.Text($"{gv.Name[f]}:");
-            ImGui.SameLine();
-            ImGui.TextDisabled(inForce != Detachment.InLine
-                ? $"{gv.MemberCount[f]} groups; this squadron {HeldText(inForce)}{(gv.Asked[g] ? "; its orders changed" : "")}"
-                : $"{gv.MemberCount[f]} groups, guide {(gv.IndexOfGroup(gv.Guide[f]) is int fg and >= 0 ? gv.Name[fg] : "-")}");
-            ImGui.SameLine();
-            if (inForce != Detachment.InLine ? ImGui.Button("Rejoin##sq") : ImGui.Button("Detach##sq"))
-                world.Send(inForce != Detachment.InLine ? o.Resume(Unit.Group(id)) : o.Detach(Unit.Group(id)));
-            FormationEdit(gv, f, ref forceSpacingEdit, "##force");
-            ImGui.SameLine();
-            if (ImGui.Button("Leave force"))
-                world.Send(GroupSystem.Exit(id));
-            ImGui.SameLine();
-            if (ImGui.Button("Disband##force"))
-                world.Send(GroupSystem.Disband(gv.Id[f]));
-        }
-        if (others > 0)
-        {
-            if (f >= 0)
-                ImGui.SameLine();
-            if (ImGui.Button(f >= 0 ? $"Add the picked ships' squadrons to {gv.Name[f]}" : "Form a force of the picked ships' squadrons, this one guiding"))
-            {
-                if (f < 0)
-                    world.Send(GroupSystem.Form(id, Formation.LineAbreast, forceSpacingEdit));
-                foreach (int e in picked)
-                    if (gv.IndexOfShip(e) is int pg and >= 0 && pg != g)
-                        world.Send(GroupSystem.EnterAlongside(gv.Id[pg], id));
-                ClearPicks();
-            }
-        }
-        else if (f < 0)
-            ImGui.TextDisabled("ctrl+click ships of other squadrons to form a force of the squadrons");
     }
 
     /// <summary>A task and how it stands, for a label (docs/battle/command.md 5.1c): "intercept", "go to: there".</summary>
