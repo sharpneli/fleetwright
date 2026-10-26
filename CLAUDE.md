@@ -69,7 +69,7 @@ menu, or `-brief` at start; Esc shuts the topmost thing, else opens the app's me
 the briefing, restart, Scenarios… (the launch screen), the clock's rules on contact, the designer, quit. Esc never quits).
 The app opens on the launch screen (`Map/LaunchScene.cs`, docs/map-ui/launch.md L1) unless the command line asks for
 a world (`-scenario=`, `-ships=`, `-map=`, `-view=` or a designer flag), a workstation in the designer's look
-(docs/ui-language.md; its pieces `LaunchScene.Chrome.cs`, colours only from `DesignerTheme`): a menu bar and a resource
+(docs/ui-language.md; drawn with the shared pieces `Ui/Pieces.cs`, colours only from `Ui/Theme.cs`): a menu bar and a resource
 bar of the pick's figures, the scenarios as an outliner by era over Your setups, the opening drawn as a plan from its top
 units (`LaunchScene.Opening.cs`, overlays C R L G), tabs 1–3 under it (order of battle, standing orders, conditions), and
 at the right Play as, the strength ledger, the brief, the remarks and the Begin box (`LaunchScene.Right.cs`); picking
@@ -313,8 +313,10 @@ src/
     ProfileScene.cs, ShipCard.cs   # the profile tab: the ship card poster (drawings, silhouette, figures)
     SceneSwitcher.cs          #   several scenes behind one IScene: the map, the designer's tabs (F3), the app's menu (Esc)
     UiFonts.cs                #   the game UI's fonts (Content/Fonts) in ImGui's atlas
+    Ui/                       #   the UI language (docs/ui-language.md) for every game screen: Theme (the colour tokens,
+                              #   ImGui style), Pieces (panes, tables, steppers, drop-downs, buttons, chips, tabs, bars)
     Designer/                 #   the ship designer: DesignerScene (design in, design out), DesignDoc (history, save),
-                              #   Knobs (every control over the design), Templates, Units, DesignerTheme (the tokens)
+                              #   Knobs (every control over the design), Templates, Units
     HitView/                  #   the hitbox viewer: HitboxMesh (hitboxes as triangles, CPU), HitboxRenderer (into any
                               #   RenderTarget), HitboxCamera and HitboxViewState (what it shows), HitboxScene (UI)
     ProfilerStubs.cs          #   no-op Tracy stand-ins for Release
@@ -460,7 +462,7 @@ Content paths in code (`"Content/Shaders/Compiled/..."`) resolve against `AppCon
 ## UI look
 
 All UI follows `docs/ui-language.md`: the designer's workstation look (panes docked edge to edge with title strips,
-an outliner, ledgers, numbered tabs, a status bar; `DesignerTheme` tokens, Plex Sans Condensed and Plex Mono), never
+an outliner, ledgers, numbered tabs, a status bar; `Theme` tokens, Plex Sans Condensed and Plex Mono), never
 landing-page habits (hero titles, cards, badges, big call-to-action buttons). New screens mock up from
 `docs/map-ui/launch-bureau.html`'s CSS and are set beside a designer screenshot before porting.
 

@@ -6,6 +6,7 @@ using Fleetwright.Sim.Ai.Commanders;
 using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Missions;
 using ImGuiNET;
+using Fleetwright.Ui;
 
 namespace Fleetwright.Map;
 
@@ -77,17 +78,17 @@ public sealed partial class MapScene : ISceneMenu
 
         // the side and the scenario
         ImGui.PushFont(UiFonts.SansBold);
-        BarText(sideText, DesignerTheme.Bright, mid);
+        BarText(sideText, Theme.Bright, mid);
         ImGui.PopFont();
         ImGui.SameLine();
-        BarText(scenarioText, DesignerTheme.Muted, mid);
+        BarText(scenarioText, Theme.Muted, mid);
 
         // the date and the clock
         ImGui.SameLine(0, gap);
-        BarText(dayText, DesignerTheme.Muted, mid);
+        BarText(dayText, Theme.Muted, mid);
         ImGui.SameLine();
         ImGui.PushFont(UiFonts.Mono);
-        BarText(clockText, DesignerTheme.Bright, mid);
+        BarText(clockText, Theme.Bright, mid);
         ImGui.PopFont();
 
         // pause, the speeds, what's held
@@ -96,13 +97,13 @@ public sealed partial class MapScene : ISceneMenu
         SpeedButtons(s, mid);
         ImGui.SameLine(0, 10 * sc);
         if (s.Paused)
-            BarText("PAUSED", DesignerTheme.Amber, mid);
+            BarText("PAUSED", Theme.Amber, mid);
         else
-            BarText(heldText, s.AchievedSpeed < s.Speed * 0.9 ? DesignerTheme.Amber : DesignerTheme.Muted, mid);
+            BarText(heldText, s.AchievedSpeed < s.Speed * 0.9 ? Theme.Amber : Theme.Muted, mid);
         if (GunsSilent(s))
         {
             ImGui.SameLine(0, gap);
-            BarText("guns silent at this speed", DesignerTheme.Amber, mid);
+            BarText("guns silent at this speed", Theme.Amber, mid);
             if (ImGui.IsItemHovered())
                 ImGui.SetTooltip($"no fire in the coarse tier ({world.Settings.CoarseMinSpeed:0}x and up) until coarse fire (4.9)");
         }
@@ -116,22 +117,22 @@ public sealed partial class MapScene : ISceneMenu
             float r = 3.5f * sc, cy = p.Y;
             float pulse = 0.55f + 0.45f * MathF.Cos((float)ImGui.GetTime() * 4);
             ImGui.GetWindowDrawList().AddQuadFilled(new Vector2(p.X + r, cy - r), new Vector2(p.X + 2 * r, cy), new Vector2(p.X + r, cy + r),
-                new Vector2(p.X, cy), ImGui.GetColorU32(DesignerTheme.Amber with { W = pulse }));
+                new Vector2(p.X, cy), ImGui.GetColorU32(Theme.Amber with { W = pulse }));
             ImGui.Dummy(new Vector2(2 * r + 4 * sc, 1));
             ImGui.SameLine(0, 0);
-            BarText(actionText, DesignerTheme.Amber, mid);
+            BarText(actionText, Theme.Amber, mid);
         }
         if (tally != default)
         {
             ImGui.SameLine(0, gap);
             if (tally != tallyKey)
                 (tallyKey, tallyText) = (tally, $"hits {tally.Scored} scored · {tally.Taken} taken · lost {tally.Lost} · sunk {tally.Sunk}");
-            BarText(tallyText, DesignerTheme.Muted, mid);
+            BarText(tallyText, Theme.Muted, mid);
         }
         if (newsText.Length > 0)
         {
             ImGui.SameLine(0, gap);
-            BarText(newsText, DesignerTheme.Amber, mid);
+            BarText(newsText, Theme.Amber, mid);
         }
         if (s.Error != null)
         {
@@ -149,7 +150,7 @@ public sealed partial class MapScene : ISceneMenu
             ImGui.SetCursorPosX(right);
         if (aimText.Length > 0)
         {
-            BarText(aimText, DesignerTheme.Brass, mid);
+            BarText(aimText, Theme.Brass, mid);
             if (ImGui.IsItemHovered())
                 ImGui.SetTooltip("the aim, and when the scenario ends; the briefing is in the menu");
             ImGui.SameLine(0, gap);
@@ -245,7 +246,7 @@ public sealed partial class MapScene : ISceneMenu
         var dl = ImGui.GetWindowDrawList();
         dl.AddRectFilled(p, p + new Vector2(w, h), ImGui.GetColorU32(s.Paused ? new Vector4(0.35f, 0.17f, 0.08f, 1) :
             ImGui.IsItemHovered() ? new Vector4(1, 1, 1, 0.1f) : new Vector4(1, 1, 1, 0.05f)), 2 * sc);
-        uint ink = ImGui.GetColorU32(s.Paused ? DesignerTheme.Amber : DesignerTheme.Text);
+        uint ink = ImGui.GetColorU32(s.Paused ? Theme.Amber : Theme.Text);
         var c = p + new Vector2(w, h) / 2;
         if (s.Paused)
             dl.AddTriangleFilled(c + new Vector2(-4, -5) * sc, c + new Vector2(5, 0) * sc, c + new Vector2(-4, 5) * sc, ink);
@@ -270,9 +271,9 @@ public sealed partial class MapScene : ISceneMenu
             ImGui.SameLine(0, i == 0 ? 2 * sc : Speeds[i] >= world.Settings.CoarseMinSpeed && Speeds[i - 1] < world.Settings.CoarseMinSpeed ? 7 * sc : 1 * sc);
             ImGui.SetCursorPosY(mid - h / 2);
             bool asked = Math.Abs(Speeds[i] - s.Speed) < 1e-6, coarse = Speeds[i] >= world.Settings.CoarseMinSpeed;
-            ImGui.PushStyleColor(ImGuiCol.Button, asked ? DesignerTheme.BrassDarker : new Vector4(1, 1, 1, 0.04f));
-            ImGui.PushStyleColor(ImGuiCol.ButtonHovered, asked ? DesignerTheme.BrassDark : new Vector4(1, 1, 1, 0.1f));
-            ImGui.PushStyleColor(ImGuiCol.Text, asked ? DesignerTheme.Brass : coarse ? DesignerTheme.Muted with { W = 0.6f } : DesignerTheme.Muted);
+            ImGui.PushStyleColor(ImGuiCol.Button, asked ? Theme.BrassDarker : new Vector4(1, 1, 1, 0.04f));
+            ImGui.PushStyleColor(ImGuiCol.ButtonHovered, asked ? Theme.BrassDark : new Vector4(1, 1, 1, 0.1f));
+            ImGui.PushStyleColor(ImGuiCol.Text, asked ? Theme.Brass : coarse ? Theme.Muted with { W = 0.6f } : Theme.Muted);
             if (ImGui.Button(SpeedLabels[i]))
             {
                 world.Send(Command.SetSpeed(Speeds[i]));
@@ -306,8 +307,8 @@ public sealed partial class MapScene : ISceneMenu
         if (ImGui.InvisibleButton("##menu", new Vector2(w, h)))
             ImGui.OpenPopup("##mapmenu");
         var dl = ImGui.GetWindowDrawList();
-        dl.AddRect(p, p + new Vector2(w, h), ImGui.GetColorU32(ImGui.IsItemHovered() ? DesignerTheme.Muted : DesignerTheme.Bevel), 2 * sc);
-        uint ink = ImGui.GetColorU32(DesignerTheme.Text);
+        dl.AddRect(p, p + new Vector2(w, h), ImGui.GetColorU32(ImGui.IsItemHovered() ? Theme.Muted : Theme.Bevel), 2 * sc);
+        uint ink = ImGui.GetColorU32(Theme.Text);
         for (int i = -1; i <= 1; i++)
             dl.AddLine(p + new Vector2(w * 0.28f, h / 2 + i * 4 * sc), p + new Vector2(w * 0.72f, h / 2 + i * 4 * sc), ink, 1.2f * sc);
         if (ImGui.BeginPopup("##mapmenu"))
@@ -407,9 +408,9 @@ public sealed partial class MapScene : ISceneMenu
         if (!open)
             return;
         bool begin = false, paused = false;
-        ImGui.TextColored(DesignerTheme.Brass, "SCENARIO");
+        ImGui.TextColored(Theme.Brass, "SCENARIO");
         ImGui.PushFont(UiFonts.PosterFigure);
-        ImGui.TextColored(DesignerTheme.Bright, briefTitle);
+        ImGui.TextColored(Theme.Bright, briefTitle);
         ImGui.PopFont();
         ImGui.TextDisabled(briefMeta);
         ImGui.Spacing();
@@ -436,7 +437,7 @@ public sealed partial class MapScene : ISceneMenu
                 {
                     ImGui.TextDisabled(label);
                     ImGui.SameLine(x0 + 130 * sc);
-                    ImGui.TextColored(DesignerTheme.Bright, value);
+                    ImGui.TextColored(Theme.Bright, value);
                 }
             }
             ImGui.PopTextWrapPos();
@@ -469,9 +470,9 @@ public sealed partial class MapScene : ISceneMenu
         if (ImGui.Button("Begin paused", new Vector2(bw, 26 * sc)))
             (begin, paused) = (true, true);
         ImGui.SameLine();
-        ImGui.PushStyleColor(ImGuiCol.Button, DesignerTheme.Brass);
-        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, DesignerTheme.Brass with { W = 0.85f });
-        ImGui.PushStyleColor(ImGuiCol.Text, DesignerTheme.Ground);
+        ImGui.PushStyleColor(ImGuiCol.Button, Theme.Brass);
+        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, Theme.Brass with { W = 0.85f });
+        ImGui.PushStyleColor(ImGuiCol.Text, Theme.Ground);
         if (ImGui.Button("Begin", new Vector2(bw, 26 * sc)))
             begin = true;
         ImGui.PopStyleColor(3);

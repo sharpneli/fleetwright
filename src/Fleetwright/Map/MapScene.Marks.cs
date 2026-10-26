@@ -5,6 +5,7 @@ using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Ships;
 using ImGuiNET;
+using Fleetwright.Ui;
 
 namespace Fleetwright.Map;
 
@@ -73,16 +74,16 @@ public sealed partial class MapScene
         var sub = ShipSub(s, k, out bool going);
         MapLabels.Text(dl, new Vector2(Align(U8.Size(name).X), at.Y), going ? Bad : ShipNameColour, name, alpha);
         ImGui.PushFont(UiFonts.SansSmall);
-        MapLabels.Text(dl, new Vector2(Align(U8.Size(sub).X), at.Y + line), going ? Bad : s.Ships.Reason[k] != 0 ? DesignerTheme.Amber : ShipSubColour, sub, alpha);
+        MapLabels.Text(dl, new Vector2(Align(U8.Size(sub).X), at.Y + line), going ? Bad : s.Ships.Reason[k] != 0 ? Theme.Amber : ShipSubColour, sub, alpha);
         ImGui.PopFont();
         if (ci >= 0)
         {
             // her flotation, a short bar under her label
             double water = s.Conditions.WaterT[ci], reserve = s.Conditions.ReserveT[ci];
             float afloat = (float)(reserve / Math.Max(reserve + water, 1e-6)), bw = 32 * sc, bx = Align(bw), by = at.Y + line * 2 + 1;
-            dl.AddRectFilled(new Vector2(bx, by), new Vector2(bx + bw, by + 3 * sc), ImGui.GetColorU32(DesignerTheme.Inset with { W = DesignerTheme.Inset.W * alpha }));
+            dl.AddRectFilled(new Vector2(bx, by), new Vector2(bx + bw, by + 3 * sc), ImGui.GetColorU32(Theme.Inset with { W = Theme.Inset.W * alpha }));
             dl.AddRectFilled(new Vector2(bx, by), new Vector2(bx + bw * afloat, by + 3 * sc),
-                ImGui.GetColorU32((afloat > 0.8f ? Ok : afloat > 0.6f ? DesignerTheme.Amber : Bad) with { W = alpha }));
+                ImGui.GetColorU32((afloat > 0.8f ? Ok : afloat > 0.6f ? Theme.Amber : Bad) with { W = alpha }));
         }
     }
 
@@ -145,7 +146,7 @@ public sealed partial class MapScene
         float sc = UiFonts.Scale;
         ImGui.PushFont(UiFonts.Mono);
         dl.AddRectFilled(at, at + new Vector2(r.W, r.H), ImGui.GetColorU32(new Vector4(0.067f, 0.055f, 0.039f, 0.82f * alpha)), 2 * sc);
-        U8.Draw(dl, at + new Vector2(4, 1) * sc, ImGui.GetColorU32(DesignerTheme.Brass with { W = alpha }),
+        U8.Draw(dl, at + new Vector2(4, 1) * sc, ImGui.GetColorU32(Theme.Brass with { W = alpha }),
             U8.W($"{Earth.Distance(s.Ships.PoseAt(k, world.DrawMs).Position, to) / 1000:0.0} km"));
         ImGui.PopFont();
     }
@@ -199,14 +200,14 @@ public sealed partial class MapScene
             int k = s.Ships.IndexOf(own), ci = s.Conditions.IndexOf(own);
             ImGui.BeginTooltip();
             ImGui.PushFont(UiFonts.SansBold);
-            U8.Text(U8.W($"{ShipName(s, own)}"), DesignerTheme.Bright);
+            U8.Text(U8.W($"{ShipName(s, own)}"), Theme.Bright);
             ImGui.PopFont();
             ImGui.SameLine();
             if (world.Classes.TryGet(s.Ships.Class[k]) is { } cls)
-                U8.Text(U8.W($"{cls.Name}"), DesignerTheme.Muted);
+                U8.Text(U8.W($"{cls.Name}"), Theme.Muted);
             U8.Text(U8.W($"{s.Ships.Speed[k] / Handling.MsPerKnot:0} kn · {(ci >= 0 ? s.Conditions.Hits[ci] : 0)} hits{(ci >= 0 && s.Conditions.Fires[ci] > 0 ? " · burning" : "")}"));
             if (s.Ships.Reason[k] != 0)
-                U8.Text(U8.W($"{ReasonText(s.Ships.Reason[k])}"), DesignerTheme.Amber);
+                U8.Text(U8.W($"{ReasonText(s.Ships.Reason[k])}"), Theme.Amber);
             ImGui.TextDisabled("click: her card · right-click with one of yours: follow her");
             ImGui.EndTooltip();
             return;

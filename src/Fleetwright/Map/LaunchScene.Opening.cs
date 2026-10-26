@@ -2,7 +2,8 @@ using System.Numerics;
 using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Missions;
 using ImGuiNET;
-using T = Fleetwright.Designer.DesignerTheme;
+using static Fleetwright.Ui.Pieces;
+using T = Fleetwright.Ui.Theme;
 
 namespace Fleetwright.Map;
 
@@ -76,14 +77,14 @@ public sealed unsafe partial class LaunchScene
     /// over it while a unit is placed).</summary>
     void OpeningPane(Vector2 a, Vector2 size)
     {
-        float right = Pane(a, size, placing != null ? "PLACING A UNIT" : "THE OPENING", placing != null ? placing.Title : OpeningNote);
-        if (Toggle("##ovg", ref right, a.Y, "G", "Grid", showGrid))
+        float right = dl.Pane(a, size, placing != null ? "PLACING A UNIT" : "THE OPENING", placing != null ? placing.Title : OpeningNote);
+        if (dl.Toggle("##ovg", ref right, a.Y, "G", "Grid", showGrid))
             showGrid = !showGrid;
-        if (Toggle("##ovl", ref right, a.Y, "L", "Labels", showLabels))
+        if (dl.Toggle("##ovl", ref right, a.Y, "L", "Labels", showLabels))
             showLabels = !showLabels;
-        if (Toggle("##ovr", ref right, a.Y, "R", "Range", showRange))
+        if (dl.Toggle("##ovr", ref right, a.Y, "R", "Range", showRange))
             showRange = !showRange;
-        if (Toggle("##ovc", ref right, a.Y, "C", "Courses", showCourses))
+        if (dl.Toggle("##ovc", ref right, a.Y, "C", "Courses", showCourses))
             showCourses = !showCourses;
         Opening(a + new Vector2(1, TitleH + 1), size - new Vector2(2, TitleH + 2));
     }
@@ -109,7 +110,7 @@ public sealed unsafe partial class LaunchScene
         {
             Dotted(v.RangeA, v.RangeB, U(T.PlanLine with { W = 0.55f }));
             var ts = TagSize(v.Range);
-            Tag((v.RangeA + v.RangeB) / 2 - ts / 2, v.Range);
+            dl.Tag((v.RangeA + v.RangeB) / 2 - ts / 2, v.Range);
         }
         foreach (var u in v.Units)
         {
@@ -123,15 +124,15 @@ public sealed unsafe partial class LaunchScene
         if (showLabels)
             foreach (var u in v.Units)
                 if (u.LabelShown)
-                    Tag(u.LabelAt, u.Label, u.Ring ? T.TagText : new Vector4(0.945f, 0.788f, 0.765f, 1));
+                    dl.Tag(u.LabelAt, u.Label, u.Ring ? T.TagText : new Vector4(0.945f, 0.788f, 0.765f, 1));
         // the north and the grid's step at the top left, the ruler at the bottom left, the key at the bottom right
-        Tag(at + new Vector2(P(8), P(8)), v.NorthTag);
+        dl.Tag(at + new Vector2(P(8), P(8)), v.NorthTag);
         var bar0 = new Vector2(at.X + P(16), b.Y - P(18));
         uint ruler = U(T.PlanLine with { W = 0.7f });
         dl.AddLine(bar0, bar0 + new Vector2(v.BarPx, 0), ruler);
         dl.AddLine(bar0 - new Vector2(0, P(4)), bar0 + new Vector2(0, P(4)), ruler);
         dl.AddLine(bar0 + new Vector2(v.BarPx, -P(4)), bar0 + new Vector2(v.BarPx, P(4)), ruler);
-        Txt(UiFonts.MonoSmall, bar0 + new Vector2(v.BarPx + P(8), -P(7)), T.PlanLine, v.BarLabel);
+        dl.Text(UiFonts.MonoSmall, bar0 + new Vector2(v.BarPx + P(8), -P(7)), T.PlanLine, v.BarLabel);
         Key(v, new Vector2(b.X - P(8), b.Y - P(8)));
         if (placing != null)
             PlacingOverlay(v);
@@ -156,10 +157,10 @@ public sealed unsafe partial class LaunchScene
         foreach (var (text, colour, ring) in v.Keys)
         {
             Mark(new Vector2(x + P(5), a.Y + h / 2), ring, colour, 3.5f, 1);
-            Txt(f, new Vector2(x + P(13), a.Y + P(1)), colour, text);
+            dl.Text(f, new Vector2(x + P(13), a.Y + P(1)), colour, text);
             x += P(14) + Width(f, text) + P(10);
         }
-        Txt(f, new Vector2(x, a.Y + P(1)), T.TagText, KeyCourse);
+        dl.Text(f, new Vector2(x, a.Y + P(1)), T.TagText, KeyCourse);
     }
 
     /// <summary>A unit's mark (the map symbols' own): a ring for the player's side, a diamond for the other.</summary>

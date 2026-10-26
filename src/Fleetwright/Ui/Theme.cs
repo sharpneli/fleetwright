@@ -1,11 +1,13 @@
 using System.Numerics;
 using ImGuiNET;
 
-namespace Fleetwright.Designer;
+namespace Fleetwright.Ui;
 
-/// <summary>The dense bureau look's tokens (docs/designer-ui/bureau.html) as ImGui colours, pushed around the
-/// designer's windows only, so the tool scenes keep ImGui's defaults.</summary>
-public static class DesignerTheme
+/// <summary>The UI language's colour tokens and ImGui style (docs/ui-language.md "Colour", the mockups'
+/// <c>:root</c>), pushed around a game screen's windows (the designer, the launch screen), so the tool scenes keep
+/// ImGui's defaults. Every chrome colour comes from here: the gunmetal reskin is a change to this file. The pieces drawn
+/// in it are <see cref="Pieces"/>.</summary>
+public static class Theme
 {
     static Vector4 Hex(uint rgb, float a = 1) => new(((rgb >> 16) & 255) / 255f, ((rgb >> 8) & 255) / 255f, (rgb & 255) / 255f, a);
 
@@ -37,6 +39,21 @@ public static class DesignerTheme
     /// <summary>The plan and profile's blueprint ground and its lines.</summary>
     public static readonly Vector4 Plan = Hex(0x14243A);
     public static readonly Vector4 PlanLine = Hex(0x9CC2E2);
+    /// <summary>The edge of an inset well (a stepper's value, a drop-down's field).</summary>
+    public static readonly Vector4 InsetEdge = Hex(0x1A2026);
+    /// <summary>The primary button and a chosen segment under the pointer; an overlay toggle's letter when on.</summary>
+    public static readonly Vector4 BrassHover = Hex(0x4E3F1E);
+    public static readonly Vector4 BrassLight = Hex(0xF0D58A);
+    /// <summary>An overlay toggle's gradient when off.</summary>
+    public static readonly Vector4 ToggleTop = Hex(0x2E3842);
+    public static readonly Vector4 ToggleBottom = Hex(0x232B33);
+    /// <summary>A numbered tab at rest (its gradient) and under the pointer (its top); the chosen one is the title strip's.</summary>
+    public static readonly Vector4 TabTop = Hex(0x2A333C);
+    public static readonly Vector4 TabHover = Hex(0x333D47);
+    public static readonly Vector4 TabBottom = Hex(0x20282F);
+    /// <summary>The resource bar's gradient.</summary>
+    public static readonly Vector4 ResourceTop = Hex(0x26303A);
+    public static readonly Vector4 ResourceBottom = Hex(0x1B2228);
     /// <summary>The menu bar and the status bar.</summary>
     public static readonly Vector4 MenuBar = Hex(0x161B20);
     /// <summary>Buttons and segmented controls at rest, hovered, and their border.</summary>

@@ -3,7 +3,8 @@ using System.Numerics;
 using Fleetwright.Shipgen;
 using Fleetwright.Sim.Ships;
 using ImGuiNET;
-using T = Fleetwright.Designer.DesignerTheme;
+using static Fleetwright.Ui.Pieces;
+using T = Fleetwright.Ui.Theme;
 
 namespace Fleetwright.Designer;
 
@@ -76,7 +77,7 @@ public sealed unsafe partial class DesignerScene
         var p = ImGui.GetCursorScreenPos();
         if (c is null)
         {
-            Text(dl, UiFonts.Sans, p + new Vector2(P(4), (h - UiFonts.Sans.FontSize) / 2), T.Muted, "–");
+            dl.Text(UiFonts.Sans, p + new Vector2(P(4), (h - UiFonts.Sans.FontSize) / 2), T.Muted, "–");
             return;
         }
         string key = $"{(c.Main ? "main" : "sec")}:{c.K}";
@@ -91,16 +92,16 @@ public sealed unsafe partial class DesignerScene
             string t = $"{ShellEdits.KindLabel(l.Kind)} {l.Pct}";
             float tw = Width(UiFonts.SansSmall, t) + P(6);
             dl.AddRectFilled(new Vector2(x, cy - ch / 2), new Vector2(x + tw, cy + ch / 2), T.U32(KindColour(l.Kind)));
-            Text(dl, UiFonts.SansSmall, new Vector2(x + P(3), cy - UiFonts.SansSmall.FontSize / 2), T.Ground, t);
+            dl.Text(UiFonts.SansSmall, new Vector2(x + P(3), cy - UiFonts.SansSmall.FontSize / 2), T.Ground, t);
             x += tw + P(3);
         }
         string fam = c.Problem != null ? "invalid" : c.Default ? "default" : c.Family;
         float fw = Width(UiFonts.SansSmall, fam);
         float fx = Math.Max(x + P(4), p.X + w - P(16) - fw);
         dl.PushClipRect(new Vector2(x, p.Y), new Vector2(p.X + w - P(14), p.Y + h), true);
-        Text(dl, UiFonts.SansSmall, new Vector2(fx, cy - UiFonts.SansSmall.FontSize / 2), c.Problem != null ? T.Amber : T.Muted, fam);
+        dl.Text(UiFonts.SansSmall, new Vector2(fx, cy - UiFonts.SansSmall.FontSize / 2), c.Problem != null ? T.Amber : T.Muted, fam);
         dl.PopClipRect();
-        Twisty(dl, new Vector2(p.X + w - P(7), cy), true, T.Muted);
+        dl.Twisty(new Vector2(p.X + w - P(7), cy), true, T.Muted);
         if (hover && !open)
             ShellsTip(c);
         if (clicked || shellOpen?.StartsWith(key, StringComparison.Ordinal) == true)
@@ -307,9 +308,9 @@ public sealed unsafe partial class DesignerScene
         dl.AddRectFilled(p, p + new Vector2(w, h), T.U32(T.Inset));
         dl.AddRect(p, p + new Vector2(w, h), T.U32(hover ? T.Bevel : T.Edge));
         dl.PushClipRect(p, p + new Vector2(w - P(16), h), true);
-        Text(dl, UiFonts.Sans, p + new Vector2(P(5), (h - UiFonts.Sans.FontSize) / 2), hover ? T.Bright : T.Text, label);
+        dl.Text(UiFonts.Sans, p + new Vector2(P(5), (h - UiFonts.Sans.FontSize) / 2), hover ? T.Bright : T.Text, label);
         dl.PopClipRect();
-        Twisty(dl, new Vector2(p.X + w - P(8), p.Y + h / 2), true, T.Muted);
+        dl.Twisty(new Vector2(p.X + w - P(8), p.Y + h / 2), true, T.Muted);
         return clicked;
     }
 
@@ -390,7 +391,7 @@ public sealed unsafe partial class DesignerScene
         hover |= ImGui.IsItemHovered();
         var dl = ImGui.GetWindowDrawList();
         dl.AddRectFilled(p, p + new Vector2(w, h), T.U32(T.Inset));
-        Text(dl, UiFonts.Mono, new Vector2(p.X + w - P(4) - Width(UiFonts.Mono, t), p.Y + (h - UiFonts.Mono.FontSize) / 2), T.Bright, t);
+        dl.Text(UiFonts.Mono, new Vector2(p.X + w - P(4) - Width(UiFonts.Mono, t), p.Y + (h - UiFonts.Mono.FontSize) / 2), T.Bright, t);
         ImGui.SameLine();
         if (ImGui.ArrowButton("##more", ImGuiDir.Right))
             step = 1;

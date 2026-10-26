@@ -8,6 +8,7 @@ using Fleetwright.Sim.Core;
 using ImGuiNET;
 using SDL;
 using static SDL.SDL3;
+using Fleetwright.Ui;
 
 namespace Fleetwright.Map;
 
@@ -113,7 +114,7 @@ public sealed partial class MapScene
             for (int j = 0; j < shown; j++)
                 EnemyRow(s, enemyOrder[j].Index, from >= 0 ? enemyOrder[j].Range : double.NaN, at, from >= 0);
             if (enemyOrder.Count > shown)
-                U8.Text(U8.W($"and {enemyOrder.Count - shown} more"), DesignerTheme.Muted);
+                U8.Text(U8.W($"and {enemyOrder.Count - shown} more"), Theme.Muted);
         }
         ImGui.End();
     }
@@ -162,7 +163,7 @@ public sealed partial class MapScene
     void Tag(ImDrawListPtr dl, byte commanded, Vector2 min, Vector2 max, bool hovered)
     {
         float sc = UiFonts.Scale;
-        var colour = commanded == 1 ? Friend : DesignerTheme.Brass;
+        var colour = commanded == 1 ? Friend : Theme.Brass;
         dl.AddRectFilled(min, max, ImGui.GetColorU32(colour with { W = hovered ? 0.4f : 0.18f }), 2 * sc);
         U8.Draw(dl, min + new Vector2(3, 1) * sc, ImGui.GetColorU32(colour), TagText(commanded));
         if (hovered)
@@ -176,7 +177,7 @@ public sealed partial class MapScene
         if (right.Length > 0)
         {
             ImGui.SameLine();
-            U8.Right(right, DesignerTheme.Muted);
+            U8.Right(right, Theme.Muted);
         }
         ImGui.PopFont();
     }
@@ -226,17 +227,17 @@ public sealed partial class MapScene
         var dl = ImGui.GetWindowDrawList();
         bool also = pickedGroups.Contains(gv.Id[g]);   // ctrl+clicked beside the selection
         if (chosen || also || hovered)
-            dl.AddRectFilled(p, p + size, ImGui.GetColorU32(chosen || also ? DesignerTheme.BrassDarker : new Vector4(1, 1, 1, 0.05f)));
+            dl.AddRectFilled(p, p + size, ImGui.GetColorU32(chosen || also ? Theme.BrassDarker : new Vector4(1, 1, 1, 0.05f)));
         if (chosen || also)
-            dl.AddRectFilled(p, p + new Vector2(2 * sc, size.Y), ImGui.GetColorU32(DesignerTheme.Brass));
+            dl.AddRectFilled(p, p + new Vector2(2 * sc, size.Y), ImGui.GetColorU32(Theme.Brass));
         ImGui.PushFont(UiFonts.SansBold);
-        U8.Draw(dl, p + new Vector2(6 * sc, 0), ImGui.GetColorU32(DesignerTheme.Bright), U8.W($"{gv.Name[g]}"));
+        U8.Draw(dl, p + new Vector2(6 * sc, 0), ImGui.GetColorU32(Theme.Bright), U8.W($"{gv.Name[g]}"));
         ImGui.PopFont();
         string form = GroupFormationNames[(int)gv.Formation[g]], task = gv.Task[g] != 0 ? TaskText(gv.Task[g], gv.TaskStatus[g]) : "";
         var sub = gv.Force[g] ? U8.W($"{form}{(task.Length > 0 ? " · " : "")}{task}")
             : U8.W($"{gv.MemberCount[g]} ships · {form}{(task.Length > 0 ? " · " : "")}{task}");
         ImGui.PushFont(UiFonts.SansSmall);
-        U8.Draw(dl, p + new Vector2(6 * sc, ImGui.GetTextLineHeight()), ImGui.GetColorU32(DesignerTheme.Muted), sub);
+        U8.Draw(dl, p + new Vector2(6 * sc, ImGui.GetTextLineHeight()), ImGui.GetColorU32(Theme.Muted), sub);
         if (tagged)
             Tag(dl, gv.Commanded[g], tagMin, tagMax, onTag && hovered);
         ImGui.PopFont();
@@ -295,13 +296,13 @@ public sealed partial class MapScene
         bool on = selected == e && squadronCardOf != e || picked.Contains(e);
         var dl = ImGui.GetWindowDrawList();
         if (on || hovered)
-            dl.AddRectFilled(p, p + new Vector2(w, h), ImGui.GetColorU32(on ? DesignerTheme.BrassDarker : new Vector4(1, 1, 1, 0.05f)));
+            dl.AddRectFilled(p, p + new Vector2(w, h), ImGui.GetColorU32(on ? Theme.BrassDarker : new Vector4(1, 1, 1, 0.05f)));
         if (on)
-            dl.AddRectFilled(p, p + new Vector2(2 * sc, h), ImGui.GetColorU32(DesignerTheme.Brass));
+            dl.AddRectFilled(p, p + new Vector2(2 * sc, h), ImGui.GetColorU32(Theme.Brass));
         int ci = s.Conditions.IndexOf(e);
         bool going = ci >= 0 && s.Conditions.Status[ci] == ShipStatus.GoingDown;
         var name = ShipName(s, e);
-        U8.Draw(dl, p + new Vector2(14 * sc, 0), ImGui.GetColorU32(going ? Bad : DesignerTheme.Bright), U8.W($"{name}"));
+        U8.Draw(dl, p + new Vector2(14 * sc, 0), ImGui.GetColorU32(going ? Bad : Theme.Bright), U8.W($"{name}"));
         if (ci >= 0 && s.Conditions.Fires[ci] > 0)
         {
             var nameW = ImGui.CalcTextSize(name).X;
@@ -318,18 +319,18 @@ public sealed partial class MapScene
                 if (s.Batteries.Shooter[i] == e && s.Batteries.Battery[i] == 0)
                     target = s.Batteries.Target[i];
         var sub = going ? "going down"u8 : v.Reason[k] != 0 ? U8.W($"{ReasonText(v.Reason[k])}") : target > 0 ? U8.W($"on {LabelOf(s, target)}") : "no target"u8;
-        U8.Draw(dl, p + new Vector2(14 * sc, ImGui.GetTextLineHeight()), ImGui.GetColorU32(going ? Bad : v.Reason[k] != 0 ? DesignerTheme.Amber : DesignerTheme.Muted), sub);
+        U8.Draw(dl, p + new Vector2(14 * sc, ImGui.GetTextLineHeight()), ImGui.GetColorU32(going ? Bad : v.Reason[k] != 0 ? Theme.Amber : Theme.Muted), sub);
         // at the right: her flotation, speed and hits
         double water = ci >= 0 ? s.Conditions.WaterT[ci] : 0, reserve = ci >= 0 ? s.Conditions.ReserveT[ci] : 1;
         float afloat = (float)(reserve / Math.Max(reserve + water, 1e-6));
         float bw = 40 * sc, bx = p.X + w - bw - 2 * sc, by = p.Y + ImGui.GetTextLineHeight() / 2 - 2 * sc;
-        dl.AddRectFilled(new Vector2(bx, by), new Vector2(bx + bw, by + 4 * sc), ImGui.GetColorU32(DesignerTheme.Inset), 1);
-        dl.AddRectFilled(new Vector2(bx, by), new Vector2(bx + bw * afloat, by + 4 * sc), ImGui.GetColorU32(afloat > 0.8f ? Ok : afloat > 0.6f ? DesignerTheme.Amber : Bad), 1);
+        dl.AddRectFilled(new Vector2(bx, by), new Vector2(bx + bw, by + 4 * sc), ImGui.GetColorU32(Theme.Inset), 1);
+        dl.AddRectFilled(new Vector2(bx, by), new Vector2(bx + bw * afloat, by + 4 * sc), ImGui.GetColorU32(afloat > 0.8f ? Ok : afloat > 0.6f ? Theme.Amber : Bad), 1);
         if (tagged)
             Tag(dl, v.Commanded[k], tagMin, tagMax, onTag && hovered);
         var right = U8.W($"{v.Speed[k] / Handling.MsPerKnot:0} kn · {(ci >= 0 ? s.Conditions.Hits[ci] : 0)} hits");
         var rs = U8.Size(right);
-        U8.Draw(dl, new Vector2(p.X + w - rs.X - 2 * sc, p.Y + ImGui.GetTextLineHeight()), ImGui.GetColorU32(DesignerTheme.Muted), right);
+        U8.Draw(dl, new Vector2(p.X + w - rs.X - 2 * sc, p.Y + ImGui.GetTextLineHeight()), ImGui.GetColorU32(Theme.Muted), right);
         ImGui.PopFont();
         ImGui.PopID();
     }
@@ -377,7 +378,7 @@ public sealed partial class MapScene
     /// commands sent.</summary>
     void Accept(string what, in Command first, Command? second)
     {
-        ImGui.PushStyleColor(ImGuiCol.DragDropTarget, DesignerTheme.Brass);
+        ImGui.PushStyleColor(ImGuiCol.DragDropTarget, Theme.Brass);
         var payload = ImGui.AcceptDragDropPayload(RailPayload, ImGuiDragDropFlags.AcceptBeforeDelivery);
         ImGui.PopStyleColor();
         unsafe
@@ -459,9 +460,9 @@ public sealed partial class MapScene
         var size = new Vector2(ImGui.GetContentRegionAvail().X, ImGui.GetTextLineHeight() * 1.6f);
         ImGui.InvisibleButton("##alone", size);
         var dl = ImGui.GetWindowDrawList();
-        dl.AddRect(p, p + size, ImGui.GetColorU32(DesignerTheme.Muted), 2 * sc);
+        dl.AddRect(p, p + size, ImGui.GetColorU32(Theme.Muted), 2 * sc);
         ImGui.PushFont(UiFonts.SansSmall);
-        U8.Draw(dl, p + new Vector2(6, 3) * sc, ImGui.GetColorU32(DesignerTheme.Muted), "on its own"u8);
+        U8.Draw(dl, p + new Vector2(6, 3) * sc, ImGui.GetColorU32(Theme.Muted), "on its own"u8);
         ImGui.PopFont();
         DropOn(s, AloneTarget, -1, 0);
     }
@@ -491,7 +492,7 @@ public sealed partial class MapScene
         bool on = selected == e;
         var dl = ImGui.GetWindowDrawList();
         if (on || ImGui.IsItemHovered())
-            dl.AddRectFilled(p, p + new Vector2(w, h), ImGui.GetColorU32(on ? DesignerTheme.BrassDarker : new Vector4(1, 1, 1, 0.05f)));
+            dl.AddRectFilled(p, p + new Vector2(w, h), ImGui.GetColorU32(on ? Theme.BrassDarker : new Vector4(1, 1, 1, 0.05f)));
         bool sure = c.Level[i] >= ContactLevel.Class;
         float alpha = c.InSight[i] ? 1 : 0.55f;
         // the dot: a hostile's diamond, dashed while she isn't made out
@@ -511,7 +512,7 @@ public sealed partial class MapScene
         ImGui.PushFont(UiFonts.SansSmall);
         var seen = c.Seen[i] != SeenFlags.None ? U8.W($"{SeenWords(c.Seen[i])}") : c.InSight[i] ? "no damage seen"u8
             : U8.W($"last seen {new WorldTime(c.SeenMs[i]).ToUtc().Hour:00}:{new WorldTime(c.SeenMs[i]).ToUtc().Minute:00}");
-        U8.Draw(dl, p + new Vector2(14 * sc, ImGui.GetTextLineHeight()), ImGui.GetColorU32(c.Seen[i] != SeenFlags.None ? new Vector4(0.94f, 0.7f, 0.66f, alpha) : DesignerTheme.Muted), seen);
+        U8.Draw(dl, p + new Vector2(14 * sc, ImGui.GetTextLineHeight()), ImGui.GetColorU32(c.Seen[i] != SeenFlags.None ? new Vector4(0.94f, 0.7f, 0.66f, alpha) : Theme.Muted), seen);
         if (haveFrom)
         {
             double brg = (Earth.Bearing(from, c.Position[i]) % 360 + 360) % 360;
@@ -520,8 +521,8 @@ public sealed partial class MapScene
             ImGui.PushFont(UiFonts.Mono);
             var sa = U8.Size(a);
             var sb = U8.Size(b);
-            U8.Draw(dl, new Vector2(p.X + w - sa.X - 2 * sc, p.Y), ImGui.GetColorU32(DesignerTheme.Muted), a);
-            U8.Draw(dl, new Vector2(p.X + w - sb.X - 2 * sc, p.Y + ImGui.GetTextLineHeight()), ImGui.GetColorU32(DesignerTheme.Muted), b);
+            U8.Draw(dl, new Vector2(p.X + w - sa.X - 2 * sc, p.Y), ImGui.GetColorU32(Theme.Muted), a);
+            U8.Draw(dl, new Vector2(p.X + w - sb.X - 2 * sc, p.Y + ImGui.GetTextLineHeight()), ImGui.GetColorU32(Theme.Muted), b);
             ImGui.PopFont();
         }
         ImGui.PopFont();

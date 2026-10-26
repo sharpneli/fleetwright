@@ -3,7 +3,8 @@ using Fleetwright.Sim;
 using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Missions;
 using ImGuiNET;
-using T = Fleetwright.Designer.DesignerTheme;
+using static Fleetwright.Ui.Pieces;
+using T = Fleetwright.Ui.Theme;
 
 namespace Fleetwright.Map;
 
@@ -65,15 +66,15 @@ public sealed unsafe partial class LaunchScene
     /// Returns where it ends.</summary>
     float AddForm(float x0, float y, float w)
     {
-        SubHeader(new Vector2(x0, y), w, "THE NEW UNIT", "one design; more come with Change design… and the steppers once it's in");
+        dl.SubHeader(new Vector2(x0, y), w, "THE NEW UNIT", "one design; more come with Change design… and the steppers once it's in");
         y += RowH;
         float c0 = x0 + P(96);
         int n = 0;
         Vector2 Row(string label)
         {
             var ra = new Vector2(x0, y);
-            RowBg(ra, w, RowH, n++);
-            Txt(UiFonts.Sans, new Vector2(ra.X + P(6), Mid(UiFonts.Sans, ra.Y, RowH)), T.Text, label);
+            dl.RowBg(ra, w, RowH, n++);
+            dl.Text(UiFonts.Sans, new Vector2(ra.X + P(6), Mid(UiFonts.Sans, ra.Y, RowH)), T.Text, label);
             y += RowH;
             return ra;
         }
@@ -86,32 +87,32 @@ public sealed unsafe partial class LaunchScene
         ImGui.PopFont();
         ImGui.PopStyleVar();
         r = Row("Ships");
-        float sw = Stepper("##addn", new Vector2(c0, r.Y + P(2.5f)), addCountText, P(30), addCount > 1, addCount < 99, out int by);
+        float sw = dl.Stepper("##addn", new Vector2(c0, r.Y + P(2.5f)), addCountText, P(30), addCount > 1, addCount < 99, out int by);
         if (by != 0)
         {
             addCount = Math.Clamp(addCount + by, 1, 99);
             addCountText = addCount.ToString(Inv);
         }
-        Txt(UiFonts.SansSmall, new Vector2(c0 + sw + P(8), Mid(UiFonts.SansSmall, r.Y, RowH)), T.Muted, "of the design picked below, unnamed");
+        dl.Text(UiFonts.SansSmall, new Vector2(c0 + sw + P(8), Mid(UiFonts.SansSmall, r.Y, RowH)), T.Muted, "of the design picked below, unnamed");
         r = Row("Formation");
-        int f = DropDown("##addform", new Vector2(c0, r.Y + P(2)), P(170), AddFormationNames[addFormation], AddFormationNames);
+        int f = dl.DropDown("##addform", new Vector2(c0, r.Y + P(2)), P(170), AddFormationNames[addFormation], AddFormationNames);
         if (f >= 0)
             addFormation = f;
         r = Row("Spacing");
-        sw = Stepper("##addsp", new Vector2(c0, r.Y + P(2.5f)), addSpacingText, P(60), addSpacing > 100, addSpacing < 20_000, out by);
+        sw = dl.Stepper("##addsp", new Vector2(c0, r.Y + P(2.5f)), addSpacingText, P(60), addSpacing > 100, addSpacing < 20_000, out by);
         if (by != 0)
         {
             addSpacing = Math.Clamp(addSpacing + 100 * by, 100, 20_000);
             addSpacingText = $"{addSpacing} m";
         }
-        Txt(UiFonts.SansSmall, new Vector2(c0 + sw + P(8), Mid(UiFonts.SansSmall, r.Y, RowH)), T.Muted, "from ship to ship");
+        dl.Text(UiFonts.SansSmall, new Vector2(c0 + sw + P(8), Mid(UiFonts.SansSmall, r.Y, RowH)), T.Muted, "from ship to ship");
         r = Row("Joins");
         float jw = Math.Min(P(420), w - (c0 - x0) - P(12));
-        int j = DropDown("##addjoins", new Vector2(c0, r.Y + P(2)), jw, joinLabels[addJoins], joinLabels);
+        int j = dl.DropDown("##addjoins", new Vector2(c0, r.Y + P(2)), jw, joinLabels[addJoins], joinLabels);
         if (j >= 0)
             addJoins = j;
         if (addJoins > 0)
-            Txt(UiFonts.SansSmall, new Vector2(c0 + jw + P(8), Mid(UiFonts.SansSmall, r.Y, RowH)), T.Muted, "a squadron joined becomes a force");
+            dl.Text(UiFonts.SansSmall, new Vector2(c0 + jw + P(8), Mid(UiFonts.SansSmall, r.Y, RowH)), T.Muted, "a squadron joined becomes a force");
         return y;
     }
 
@@ -134,10 +135,10 @@ public sealed unsafe partial class LaunchScene
         string go = addJoins > 0 ? "Add it" : "Place it on the opening…";
         float gw = ButtonWidth(go, "Enter", primary: true), cw = ButtonWidth("Cancel", "Esc");
         dl.PushClipRect(new Vector2(x, by), new Vector2(x1 - gw - cw - P(16), by + P(20)), true);
-        Txt(UiFonts.SansSmall, new Vector2(x, Mid(UiFonts.SansSmall, by, P(20))), taken || name.Length == 0 ? T.Amber : T.Muted, addNote);
+        dl.Text(UiFonts.SansSmall, new Vector2(x, Mid(UiFonts.SansSmall, by, P(20))), taken || name.Length == 0 ? T.Amber : T.Muted, addNote);
         dl.PopClipRect();
         bool ok = pick != null && name.Length > 0 && !taken;
-        if (Button("##addgo", new Vector2(x1 - gw, by), go, "Enter", primary: true, enabled: ok) || enter && ok)
+        if (dl.Button("##addgo", new Vector2(x1 - gw, by), go, "Enter", primary: true, enabled: ok) || enter && ok)
         {
             var unit = new ScenarioUnit { Name = name, Side = addSide, Formation = AddFormations[addFormation], SpacingM = addSpacing };
             unit.Ships.Add(new ScenarioShips { Design = pick!.Info.Stem, Count = addCount });
@@ -154,7 +155,7 @@ public sealed unsafe partial class LaunchScene
             }
             ClosePicker();
         }
-        else if (Button("##addcancel", new Vector2(x1 - gw - cw - P(4), by), "Cancel", "Esc"))
+        else if (dl.Button("##addcancel", new Vector2(x1 - gw - cw - P(4), by), "Cancel", "Esc"))
             ClosePicker();
     }
 
@@ -236,41 +237,41 @@ public sealed unsafe partial class LaunchScene
             Dashed(hs, v.Of((g + fwd * (p.Kn * 1852 * 0.5)).Normalized() * Earth.Radius), col);
             dl.AddCircle(hs, P(7), col, 16, P(1.5f));
             var ts = TagSize(p.Unit.Name);
-            Tag(hs + new Vector2(-P(12) - ts.X, P(8)), p.Unit.Name, colour);
+            dl.Tag(hs + new Vector2(-P(12) - ts.X, P(8)), p.Unit.Name, colour);
             Where(p, v, g);
         }
         // the bar: how it's placed, the course and speed, where, cancel
         var b1 = at + new Vector2(v.Size.X, barH);
         dl.AddRectFilled(at, b1, U(T.HeaderBg));
-        HLine(at.X, b1.X, b1.Y - 1, T.Edge);
+        dl.HLine(at.X, b1.X, b1.Y - 1, T.Edge);
         float x = at.X + P(8), ty = Mid(UiFonts.SansSmall, at.Y, barH);
-        Txt(UiFonts.SansSmall, new Vector2(x, ty), T.Muted, p.Hint);
+        dl.Text(UiFonts.SansSmall, new Vector2(x, ty), T.Muted, p.Hint);
         x += Width(UiFonts.SansSmall, p.Hint) + P(16);
-        Txt(UiFonts.SansSmall, new Vector2(x, ty), T.Text, "Course");
+        dl.Text(UiFonts.SansSmall, new Vector2(x, ty), T.Text, "Course");
         x += Width(UiFonts.SansSmall, "Course") + P(6);
-        x += Stepper("##pcourse", new Vector2(x, at.Y + (barH - P(15)) / 2), p.CourseText, P(40), true, true, out int by) + P(14);
+        x += dl.Stepper("##pcourse", new Vector2(x, at.Y + (barH - P(15)) / 2), p.CourseText, P(40), true, true, out int by) + P(14);
         if (by != 0)
         {
             p.Course = ((p.Course + 5 * by) % 360 + 360) % 360;
             p.Texts();
         }
-        Txt(UiFonts.SansSmall, new Vector2(x, ty), T.Text, "Speed");
+        dl.Text(UiFonts.SansSmall, new Vector2(x, ty), T.Text, "Speed");
         x += Width(UiFonts.SansSmall, "Speed") + P(6);
-        x += Stepper("##pkn", new Vector2(x, at.Y + (barH - P(15)) / 2), p.KnText, P(40), p.Kn > 0, p.Kn < 60, out by) + P(14);
+        x += dl.Stepper("##pkn", new Vector2(x, at.Y + (barH - P(15)) / 2), p.KnText, P(40), p.Kn > 0, p.Kn < 60, out by) + P(14);
         if (by != 0)
         {
             p.Kn = Math.Clamp(p.Kn + by, 0, 60);
             p.Texts();
         }
         float cw = ButtonWidth("Cancel", "Esc");
-        if (Button("##placecancel", new Vector2(b1.X - P(6) - cw, at.Y + (barH - P(20)) / 2), "Cancel", "Esc"))
+        if (dl.Button("##placecancel", new Vector2(b1.X - P(6) - cw, at.Y + (barH - P(20)) / 2), "Cancel", "Esc"))
         {
             placing = null;
             opening = null;
             return;
         }
         if (p.Where.Length > 0)
-            TxtR(UiFonts.MonoSmall, b1.X - P(14) - cw, Mid(UiFonts.MonoSmall, at.Y, barH), p.Land ? T.Amber : T.Text, p.Where);
+            dl.TextRight(UiFonts.MonoSmall, b1.X - P(14) - cw, Mid(UiFonts.MonoSmall, at.Y, barH), p.Land ? T.Amber : T.Text, p.Where);
     }
 
     /// <summary>Where the unit would go, in words: its place, the nearest of its own and the nearest enemy; made when it

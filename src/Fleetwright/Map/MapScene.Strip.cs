@@ -10,6 +10,7 @@ using Fleetwright.Sim.Ships;
 using ImGuiNET;
 using SDL;
 using static SDL.SDL3;
+using Fleetwright.Ui;
 
 namespace Fleetwright.Map;
 
@@ -98,7 +99,7 @@ public sealed partial class MapScene
             var wp = ImGui.GetWindowPos();
             float top = wp.Y + 6 * sc, bottom = wp.Y + ImGui.GetWindowHeight() - 6 * sc;
             for (int i = 0; i < n; i++)
-                dl.AddLine(new Vector2(seps[i], top), new Vector2(seps[i], bottom), ImGui.GetColorU32(DesignerTheme.Line), 1);
+                dl.AddLine(new Vector2(seps[i], top), new Vector2(seps[i], bottom), ImGui.GetColorU32(Theme.Line), 1);
             stripTop = wp.Y;
         }
         ImGui.End();
@@ -124,7 +125,7 @@ public sealed partial class MapScene
         var at = new Vector2(StripCentre(vp) - size.X / 2, vp.Pos.Y + vp.Size.Y - 6 * UiFonts.Scale - size.Y);
         var dl = ImGui.GetBackgroundDrawList();
         dl.AddText(at + Vector2.One, 0xC0000000, hint);
-        dl.AddText(at, ImGui.GetColorU32(armedPick != ClickPick.None ? DesignerTheme.Amber : DesignerTheme.Muted), hint);
+        dl.AddText(at, ImGui.GetColorU32(armedPick != ClickPick.None ? Theme.Amber : Theme.Muted), hint);
     }
 
     ClickPick hintPick;
@@ -206,10 +207,10 @@ public sealed partial class MapScene
     {
         if (!first)
             ImGui.SameLine(0, 1);
-        ImGui.PushStyleColor(ImGuiCol.Button, armed ? ArmedBg : on ? DesignerTheme.BrassDarker : SegOff);
-        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, armed ? ArmedBg : on ? DesignerTheme.BrassDark : SegHover);
-        ImGui.PushStyleColor(ImGuiCol.ButtonActive, DesignerTheme.BrassDark);
-        ImGui.PushStyleColor(ImGuiCol.Text, armed ? ArmedText : on ? DesignerTheme.Brass : DesignerTheme.Text);
+        ImGui.PushStyleColor(ImGuiCol.Button, armed ? ArmedBg : on ? Theme.BrassDarker : SegOff);
+        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, armed ? ArmedBg : on ? Theme.BrassDark : SegHover);
+        ImGui.PushStyleColor(ImGuiCol.ButtonActive, Theme.BrassDark);
+        ImGui.PushStyleColor(ImGuiCol.Text, armed ? ArmedText : on ? Theme.Brass : Theme.Text);
         ImGui.BeginDisabled(!enabled);
         bool hit = ImGui.Button(label);
         ImGui.EndDisabled();
@@ -235,7 +236,7 @@ public sealed partial class MapScene
         var gv = s.Groups;
         ImGui.BeginGroup();
         ImGui.PushFont(UiFonts.Title);
-        ImGui.TextColored(DesignerTheme.Bright, nameText);
+        ImGui.TextColored(Theme.Bright, nameText);
         ImGui.PopFont();
         ImGui.SameLine(0, 6 * UiFonts.Scale);
         ImGui.TextDisabled(classText);
@@ -263,13 +264,13 @@ public sealed partial class MapScene
         if (whoText.Length > 0)
         {
             ImGui.PushFont(UiFonts.SansSmall);
-            ImGui.TextColored(set ? DesignerTheme.Brass : DesignerTheme.Muted, whoText);
+            ImGui.TextColored(set ? Theme.Brass : Theme.Muted, whoText);
             ImGui.PopFont();
         }
         // what's become of her
         if (v.Reason[k] != 0)
         {
-            ImGui.TextColored(DesignerTheme.Amber, ReasonText(v.Reason[k]));
+            ImGui.TextColored(Theme.Amber, ReasonText(v.Reason[k]));
             if (CanComeBack(s, k))
             {
                 // the player overrules her captain (docs/map-ui/battle-hud.md decision 2)
@@ -280,7 +281,7 @@ public sealed partial class MapScene
             }
         }
         else if (gv.IndexOfShip(selected) is int g and >= 0 && DetachmentOf(gv, g, selected) is var d && d != Detachment.InLine)
-            U8.Text(U8.W($"{HeldText(d)}{(v.Asked[k] ? "; her orders changed" : "")}"), DesignerTheme.Amber);
+            U8.Text(U8.W($"{HeldText(d)}{(v.Asked[k] ? "; her orders changed" : "")}"), Theme.Amber);
         else if (v.LandSide[k] != 0)
             U8.Text(v.LandSide[k] > 0 ? "following the coast, land to port"u8 : "following the coast, land to starboard"u8, MapPalette.DevSlide);
         else if (v.Tier[k] != ClockTier.Fine)
@@ -304,7 +305,7 @@ public sealed partial class MapScene
             connText = own ? "CONN · " + helmText : line ? "LINE ON CONN · " + helmText : helmText;
         }
         ImGui.BeginGroup();
-        Head("HELM", connText, own || line ? MapPalette.Conn : DesignerTheme.Bright);
+        Head("HELM", connText, own || line ? MapPalette.Conn : Theme.Bright);
         double ordered = v.CourseOrderDeg[kc];
         foreach (int d in CourseSteps)
         {
@@ -423,7 +424,7 @@ public sealed partial class MapScene
         var o = world.Orders;
         var fire = (FireOrder)s.Ships.Fire[k];
         ImGui.BeginGroup();
-        Head("GUNS", gunsText, fire == FireOrder.Hold ? DesignerTheme.Amber : DesignerTheme.Bright);
+        Head("GUNS", gunsText, fire == FireOrder.Hold ? Theme.Amber : Theme.Bright);
         bool any = cls != null && cls.Batteries.Length > 0;
         if (Seg("Fire at will", fire == FireOrder.AtWill, enabled: any, first: true))
             world.Send(o.FireAtWill(unit));
@@ -488,7 +489,7 @@ public sealed partial class MapScene
     void TorpedoesAndSmoke(Snapshot s, Unit unit, int k, ShipClass? cls)
     {
         ImGui.BeginGroup();
-        Head("TORPEDOES", torpText, DesignerTheme.Bright);
+        Head("TORPEDOES", torpText, Theme.Bright);
         bool tubes = cls != null && cls.Launchers.Length > 0;
         if (Seg("Fire at…", armed: armedPick == ClickPick.Torpedoes, enabled: tubes && s.Ships.TorpedoesLoaded[k] > 0, first: true))
             Arm(ClickPick.Torpedoes);
@@ -545,7 +546,7 @@ public sealed partial class MapScene
         int g = level > 0 ? chain[level - 1] : -1;
         var o = world.Orders;
         ImGui.BeginGroup();
-        Head(g < 0 ? "CAPTAIN" : gv.Force[g] ? "FORCE" : "SQUADRON", TaskHead(s, order, g), DesignerTheme.Amber);
+        Head(g < 0 ? "CAPTAIN" : gv.Force[g] ? "FORCE" : "SQUADRON", TaskHead(s, order, g), Theme.Amber);
         if (Seg("Fight", order == CaptainOrder.Fight, first: true))
             Behaviour(3, unit, 0);
         if (ImGui.IsItemHovered())
@@ -888,7 +889,7 @@ public sealed partial class MapScene
     {
         ClickPick.Engage or ClickPick.Torpedoes or ClickPick.Fight or ClickPick.Intercept or ClickPick.Shadow or ClickPick.Attack or ClickPick.Run => Bad,
         ClickPick.Follow or ClickPick.Screen or ClickPick.Scout or ClickPick.Cover or ClickPick.Join or ClickPick.Station or ClickPick.DivideFrom => Friend,
-        _ => DesignerTheme.Brass,
+        _ => Theme.Brass,
     };
 
     /// <summary>The cursor's verb, beside it on the map: what a right-click (or the armed pick's click) would do.</summary>
@@ -941,7 +942,7 @@ public sealed partial class MapScene
         var size = ImGui.CalcTextSize(verbText);
         var pos = vp.Pos + mouse + new Vector2(16, -22) * UiFonts.Scale;
         dl.AddRectFilled(pos - new Vector2(5, 2) * UiFonts.Scale, pos + size + new Vector2(5, 2) * UiFonts.Scale, 0xD8110E0A, 2 * UiFonts.Scale);
-        var colour = key.Kind switch { >= 10 => miss ? DesignerTheme.Amber : PickColour(armedPick), 1 => Bad, 2 or 6 => Friend, 3 => DesignerTheme.Muted, _ => DesignerTheme.Brass };
+        var colour = key.Kind switch { >= 10 => miss ? Theme.Amber : PickColour(armedPick), 1 => Bad, 2 or 6 => Friend, 3 => Theme.Muted, _ => Theme.Brass };
         dl.AddText(pos, ImGui.GetColorU32(colour), verbText);
     }
 }

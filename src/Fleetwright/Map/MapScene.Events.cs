@@ -7,6 +7,7 @@ using Fleetwright.Sim.Ai.Captains;
 using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
 using ImGuiNET;
+using Fleetwright.Ui;
 
 namespace Fleetwright.Map;
 
@@ -278,7 +279,7 @@ public sealed partial class MapScene
                 EventLine(s, ev, i, alpha, true);
             }
             ImGui.PushFont(UiFonts.SansSmall);
-            U8.Text(U8.W($"J: the log · {events.Count} lines"), DesignerTheme.Muted with { W = 0.8f });
+            U8.Text(U8.W($"J: the log · {events.Count} lines"), Theme.Muted with { W = 0.8f });
             if (ImGui.IsItemClicked())
                 logOpen = true;
             ImGui.PopFont();
@@ -304,12 +305,12 @@ public sealed partial class MapScene
         if (shaded || ImGui.IsItemHovered())
             dl.AddRectFilled(p, p + new Vector2(w, h), ImGui.GetColorU32(new Vector4(0.04f, 0.055f, 0.067f, ImGui.IsItemHovered() ? 0.9f : 0.66f * alpha)), 2 * sc);
         ImGui.PushFont(UiFonts.Mono);
-        dl.AddText(p + new Vector2(6 * sc, 1.5f * sc), ImGui.GetColorU32(DesignerTheme.Muted with { W = alpha }), time);
+        dl.AddText(p + new Vector2(6 * sc, 1.5f * sc), ImGui.GetColorU32(Theme.Muted with { W = alpha }), time);
         ImGui.PopFont();
         ImGui.PushFont(UiFonts.SansSmall);
         dl.AddText(p + new Vector2(6 * sc + tw, 2.5f * sc), ImGui.GetColorU32(KindColours[(int)ev.Kind] with { W = alpha }), KindTags[(int)ev.Kind]);
         ImGui.PopFont();
-        dl.AddText(ImGui.GetFont(), ImGui.GetFontSize(), p + new Vector2(6 * sc + tw + kw, 1.5f * sc), ImGui.GetColorU32(DesignerTheme.Text with { W = alpha }),
+        dl.AddText(ImGui.GetFont(), ImGui.GetFontSize(), p + new Vector2(6 * sc + tw + kw, 1.5f * sc), ImGui.GetColorU32(Theme.Text with { W = alpha }),
             text, wrap);
         ImGui.PopTextWrapPos();
         if (click)
@@ -344,7 +345,7 @@ public sealed partial class MapScene
         ImGui.SetNextWindowBgAlpha(0.95f);
         if (ImGui.Begin("##log", ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoNav))
         {
-            ImGui.TextColored(DesignerTheme.Brass, "LOG");
+            ImGui.TextColored(Theme.Brass, "LOG");
             ImGui.SameLine();
             ImGui.TextDisabled("J");
             for (int f = 0; f < FilterNames.Length; f++)

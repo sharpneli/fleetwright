@@ -7,6 +7,7 @@ using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Combat;
 using ImGuiNET;
 using static SDL.SDL3;
+using Fleetwright.Ui;
 
 namespace Fleetwright.Map;
 
@@ -286,7 +287,7 @@ public sealed partial class MapScene
             }
             // the head: what it's for
             ImGui.PushFont(UiFonts.SansBold);
-            ImGui.TextColored(DesignerTheme.Bright, taskHeadText);
+            ImGui.TextColored(Theme.Bright, taskHeadText);
             ImGui.PopFont();
             ImGui.SameLine(0, 12 * sc);
             var (role, set) = RoleOf(s, unit);
@@ -306,7 +307,7 @@ public sealed partial class MapScene
                 ImGui.PushFont(UiFonts.SansSmall);
                 if (set)
                 {
-                    ImGui.TextColored(DesignerTheme.Brass, "set by you ·");
+                    ImGui.TextColored(Theme.Brass, "set by you ·");
                     ImGui.SameLine(0, 4 * sc);
                     if (ImGui.SmallButton("work it out"))
                         foreach (var u in units)
@@ -333,7 +334,7 @@ public sealed partial class MapScene
                     if (c == 3)
                         ImGui.TableSetBgColor(ImGuiTableBgTarget.CellBg, ImGui.GetColorU32(new Vector4(1, 1, 1, 0.025f)));
                     ImGui.PushFont(UiFonts.SansSmall);
-                    ImGui.TextColored(c == 3 ? Friend : DesignerTheme.Brass, TaskCols[c].Title);
+                    ImGui.TextColored(c == 3 ? Friend : Theme.Brass, TaskCols[c].Title);
                     ImGui.SameLine(0, 6 * sc);
                     ImGui.TextDisabled(TaskCols[c].How);
                     ImGui.PopFont();
@@ -387,7 +388,7 @@ public sealed partial class MapScene
         var (min, max) = (ImGui.GetItemRectMin(), ImGui.GetItemRectMax());
         ImGui.PushFont(UiFonts.Mono);
         var kw = ImGui.CalcTextSize(row.Letter).X;
-        ImGui.GetWindowDrawList().AddText(new Vector2(max.X - kw - 4 * UiFonts.Scale, min.Y), ImGui.GetColorU32(DesignerTheme.Muted), row.Letter);
+        ImGui.GetWindowDrawList().AddText(new Vector2(max.X - kw - 4 * UiFonts.Scale, min.Y), ImGui.GetColorU32(Theme.Muted), row.Letter);
         ImGui.PopFont();
         ImGui.EndDisabled();
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))

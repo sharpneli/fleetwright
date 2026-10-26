@@ -13,14 +13,18 @@ The test for a new piece: **put it beside the designer. Does it look like anothe
 
 | What | Where |
 |---|---|
-| Colour tokens, ImGui style (rounding 0, padding, spacing), `Push`/`Pop` around a scene's windows | `src/Fleetwright/Designer/DesignerTheme.cs` |
+| Colour tokens, ImGui style (rounding 0, padding, spacing), `Push`/`Pop` around a scene's windows | `src/Fleetwright/Ui/Theme.cs` |
+| The pieces (below), one implementation for every screen | `src/Fleetwright/Ui/Pieces.cs` |
 | Fonts and the UI scale (1080 px tall = 1.0) | `src/Fleetwright/UiFonts.cs`, `Content/Fonts/` |
 | The reference mockups | `docs/designer-ui/bureau.html` (the designer), `docs/map-ui/launch-bureau.html` (a second screen, its CSS a ready token set) |
-| As built | `docs/designer-ui/png/*-game-*.png`, `docs/map-ui/png/launch-game-*.png` (the launch screen, `Map/LaunchScene.Chrome.cs` its pieces); any screen via `-screenshot=N -ui` |
+| As built | `docs/designer-ui/png/*-game-*.png`, `docs/map-ui/png/launch-game-*.png` (the launch screen); any screen via `-screenshot=N -ui` |
 | The map's own colours (sea, land, symbols): not chrome, see "Exceptions" | `src/Fleetwright/Map/MapPalette.cs`, `docs/map-ui/symbols.md` |
 
-A new scene's windows push `DesignerTheme` (the designer and the launch screen do). No new screen invents its own
-hex values for chrome: if a colour is missing, it goes into `DesignerTheme` with a comment saying what it means.
+A new scene's windows push `Theme` (the designer and the launch screen do) and are drawn with `Pieces`: a pane is
+`dl.Pane(…)`, a table row `dl.RowBg(…)`, a number the player sets `dl.Stepper(…)`, and so on. No new screen draws its
+own pieces or invents hex values for chrome: a missing colour goes into `Theme` with a comment saying what it means,
+a missing piece into `Pieces` (and into the table below), so the next screen has it and a change of style is made
+once.
 
 ## The layout grammar
 
@@ -78,7 +82,7 @@ The rules that hold it together:
 
 ## Colour: what each one means
 
-Colour says **state**, never decoration. The tokens are `DesignerTheme`'s:
+Colour says **state**, never decoration. The tokens are `Theme`'s:
 
 | Token | Hex | Meaning |
 |---|---|---|
@@ -159,7 +163,8 @@ headers, close enough to the game to judge by.
    the frame: menu bar, resource bar, three columns, status bar.
 2. Each pane has a title strip; each list is a table with a header row; each number is mono, right-aligned, with its unit.
 3. Brass marks only the chosen and the one primary action; amber only consequences; no red for refusals.
-4. Every control is one of the pieces above; a new kind of control needs a reason, and then goes in this table.
+4. Every control is one of the pieces above, drawn by `Pieces`; a new kind of control needs a reason, and then goes in
+   this table and in `Pieces`.
 5. Every tab and toggle has a key, and the status bar shows it.
 6. Mock it up at 1920×1080 by copying `launch-bureau.html`'s CSS. Screenshot it headless
    (`msedge --headless=new --window-size=1920,1080 --screenshot=out.png file:///…`), and set it beside a
@@ -175,4 +180,4 @@ headers, close enough to the game to judge by.
 - **Effects** (`docs/visuals/`): their own colours, never in the chrome.
 - **The gunmetal reskin** (`docs/ui-themes/ui-style-gunmetal-natural.md`), planned for later in one batch, changes the
   token and type sections only. The layout grammar, the pieces and the don'ts stay. Until then, new UI uses the tokens
-  above and takes colours only from `DesignerTheme`, so the batch is a change to one file, not a hunt for hex values.
+  above and takes colours only from `Theme`, so the batch is a change to one file, not a hunt for hex values.

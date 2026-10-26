@@ -8,7 +8,8 @@ using Fleetwright.Sim.Missions;
 using ImGuiNET;
 using SDL;
 using static SDL.SDL3;
-using T = Fleetwright.Designer.DesignerTheme;
+using static Fleetwright.Ui.Pieces;
+using T = Fleetwright.Ui.Theme;
 
 namespace Fleetwright.Map;
 
@@ -559,61 +560,46 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
 
     void ResourceBar(Vector2 o, float w)
     {
-        var top = new Vector4(0.149f, 0.188f, 0.227f, 1);
-        var bottom = new Vector4(0.106f, 0.133f, 0.157f, 1);
-        dl.AddRectFilledMultiColor(o, o + new Vector2(w, ResBarH), U(top), U(top), U(bottom), U(bottom));
-        HLine(o.X, o.X + w, o.Y + ResBarH - 1, T.Edge);
+        dl.ResourceBarBg(o, w, ResBarH);
         float x = o.X + P(10);
-        Txt(UiFonts.SansSmall, new Vector2(x, o.Y + P(1)), T.Muted, kind);
-        Txt(UiFonts.SansBold, new Vector2(x, o.Y + P(15)), current == null && pick >= 0 ? T.Amber : T.Bright, title);
-        Txt(UiFonts.SansSmall, new Vector2(x + Width(UiFonts.SansBold, title) + P(8), o.Y + P(17)), T.Muted, file);
+        dl.Text(UiFonts.SansSmall, new Vector2(x, o.Y + P(1)), T.Muted, kind);
+        dl.Text(UiFonts.SansBold, new Vector2(x, o.Y + P(15)), current == null && pick >= 0 ? T.Amber : T.Bright, title);
+        dl.Text(UiFonts.SansSmall, new Vector2(x + Width(UiFonts.SansBold, title) + P(8), o.Y + P(17)), T.Muted, file);
         x = o.X + LeftW;
-        float vy = o.Y + P(16), ly = o.Y + P(2);
-        void Rule() => dl.AddLine(new Vector2(x, o.Y), new Vector2(x, o.Y + ResBarH - 1), U(T.Edge));
         foreach (var (label, value) in cells)
-        {
-            Rule();
-            x += P(10);
-            Txt(UiFonts.SansSmall, new Vector2(x, ly), T.Muted, label);
-            Txt(UiFonts.Mono, new Vector2(x, vy), T.Bright, value);
-            x += Math.Max(Width(UiFonts.SansSmall, label), Width(UiFonts.Mono, value)) + P(10);
-        }
+            dl.ResourceCell(ref x, o.Y, ResBarH, label, value);
         if (current == null)
+        {
+            dl.ResourceEnd(x, o.Y, ResBarH);
             return;
+        }
         // the sides' ships and tonnage, friend blue v enemy red, and the changes
-        Rule();
-        x += P(10);
-        float x0 = x;
-        Txt(UiFonts.SansSmall, new Vector2(x, ly), T.Muted, "SHIPS");
-        x = Versus(x, vy, shipsA, shipsB);
-        x = Math.Max(x, x0 + Width(UiFonts.SansSmall, "SHIPS")) + P(10);
+        var at = dl.ResourceCell(ref x, o.Y, ResBarH, "SHIPS", "", drawnW: VersusWidth(shipsA, shipsB));
+        Versus(at.X, at.Y, shipsA, shipsB);
         var lv = Ledger();
-        Rule();
-        x += P(10);
-        x0 = x;
-        Txt(UiFonts.SansSmall, new Vector2(x, ly), T.Muted, "TONNAGE");
-        x = lv.TonsA.Length > 0 ? Versus(x, vy, lv.TonsA, lv.TonsB) : x + Width(UiFonts.Mono, "—");
-        if (lv.TonsA.Length == 0)
-            Txt(UiFonts.Mono, new Vector2(x0, vy), T.Muted, "—");
-        x = Math.Max(x, x0 + Width(UiFonts.SansSmall, "TONNAGE")) + P(10);
-        Rule();
-        x += P(10);
-        Txt(UiFonts.SansSmall, new Vector2(x, ly), T.Muted, "CHANGES");
-        Txt(UiFonts.Mono, new Vector2(x, vy), T.Bright, changesCell);
-        x += Width(UiFonts.SansSmall, "CHANGES") + P(10);
-        Rule();
+        if (lv.TonsA.Length > 0)
+        {
+            at = dl.ResourceCell(ref x, o.Y, ResBarH, "TONNAGE", "", drawnW: VersusWidth(lv.TonsA, lv.TonsB));
+            Versus(at.X, at.Y, lv.TonsA, lv.TonsB);
+        }
+        else
+            dl.ResourceCell(ref x, o.Y, ResBarH, "TONNAGE", "—", T.Muted);
+        dl.ResourceCell(ref x, o.Y, ResBarH, "CHANGES", changesCell);
+        dl.ResourceEnd(x, o.Y, ResBarH);
     }
+
+    static float VersusWidth(string a, string b) => Width(UiFonts.Mono, a) + (b.Length > 0 ? Width(UiFonts.Mono, " v ") + Width(UiFonts.Mono, b) : 0);
 
     /// <summary>"13 v 14": the friend's figure blue, the enemy's red; returns where it ends.</summary>
     float Versus(float x, float y, string a, string b)
     {
-        Txt(UiFonts.Mono, new Vector2(x, y), T.Blue, a);
+        dl.Text(UiFonts.Mono, new Vector2(x, y), T.Blue, a);
         x += Width(UiFonts.Mono, a);
         if (b.Length == 0)
             return x;
-        Txt(UiFonts.Mono, new Vector2(x, y), T.Muted, " v ");
+        dl.Text(UiFonts.Mono, new Vector2(x, y), T.Muted, " v ");
         x += Width(UiFonts.Mono, " v ");
-        Txt(UiFonts.Mono, new Vector2(x, y), T.Hostile, b);
+        dl.Text(UiFonts.Mono, new Vector2(x, y), T.Hostile, b);
         return x + Width(UiFonts.Mono, b);
     }
 
@@ -637,20 +623,22 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         int shipped = 0;
         foreach (var e in entries)
             shipped += e.Test || e.Opened || e.Saved ? 0 : 1;
-        Pane(a, size, "SCENARIOS", shipped == 1 ? "1 shipped" : ShippedNote(shipped));
-        if (!BeginBody("##scenarios", a, size, out var keep))
+        dl.Pane(a, size, "SCENARIOS", shipped == 1 ? "1 shipped" : ShippedNote(shipped));
+        var keep = dl;
+        if (!BeginBody("##scenarios", a, size, out dl))
         {
-            EndBody(keep, 0);
+            EndBody(0);
+            dl = keep;
             return;
         }
         var o = ImGui.GetCursorScreenPos();
         float w = ImGui.GetContentRegionAvail().X;
         float xSides = o.X + P(156), xYear = o.X + P(206), xShips = o.X + w - P(6);
-        Head(o, w);
-        HeadCell(o, o.X + P(6), "NAME");
-        HeadCell(o, xSides, "SIDES");
-        HeadCell(o, xYear, "YEAR");
-        HeadCell(o, xShips, "SHIPS", right: true);
+        dl.Head(o, w);
+        dl.HeadCell(o, o.X + P(6), "NAME");
+        dl.HeadCell(o, xSides, "SIDES");
+        dl.HeadCell(o, xYear, "YEAR");
+        dl.HeadCell(o, xShips, "SHIPS", right: true);
         float y = o.Y + HeadH;
         string? group = null;
         int n = 0;
@@ -668,11 +656,11 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
                 ImGui.PopID();
                 if (gc && !shutGroups.Remove(group))
                     shutGroups.Add(group);
-                GroupBg(ga, w, RowH, gh);
+                dl.GroupBg(ga, w, RowH, gh);
                 bool shut = shutGroups.Contains(group);
-                Twisty(new Vector2(ga.X + P(9), ga.Y + RowH / 2), !shut);
-                Txt(UiFonts.SansBold, new Vector2(ga.X + P(18), Mid(UiFonts.SansBold, ga.Y, RowH)), T.Bright, group);
-                TxtR(UiFonts.Mono, xShips, Mid(UiFonts.Mono, ga.Y, RowH), T.Muted, GroupCount(group));
+                dl.Twisty(new Vector2(ga.X + P(9), ga.Y + RowH / 2), !shut);
+                dl.Text(UiFonts.SansBold, new Vector2(ga.X + P(18), Mid(UiFonts.SansBold, ga.Y, RowH)), T.Bright, group);
+                dl.TextRight(UiFonts.Mono, xShips, Mid(UiFonts.Mono, ga.Y, RowH), T.Muted, GroupCount(group));
                 y += RowH;
                 n = 0;
             }
@@ -685,20 +673,21 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
             if (click && i != pick)
                 Pick(i);
             bool on = i == pick;
-            RowBg(ra, w, RowH, n++, on, hover);
+            dl.RowBg(ra, w, RowH, n++, on, hover);
             float ty = Mid(UiFonts.Sans, ra.Y, RowH);
             dl.PushClipRect(ra, new Vector2(xSides - P(6), ra.Y + RowH), true);
-            Txt(UiFonts.Sans, new Vector2(ra.X + P(24), ty), e.Error != null ? T.Amber : on ? T.Brass : T.Text, e.Name);
+            dl.Text(UiFonts.Sans, new Vector2(ra.X + P(24), ty), e.Error != null ? T.Amber : on ? T.Brass : T.Text, e.Name);
             dl.PopClipRect();
             for (int k = 0; k < Math.Min(e.Ensigns.Length, 2); k++)
                 Ensign(e.Ensigns[k], new Vector2(xSides + k * P(18), ra.Y + P(6)), new Vector2(P(14), P(9)));
-            Txt(UiFonts.Mono, new Vector2(xYear, Mid(UiFonts.Mono, ra.Y, RowH)), T.Muted, e.Year);
-            TxtR(UiFonts.Mono, xShips, Mid(UiFonts.Mono, ra.Y, RowH), T.Bright, e.Ships);
+            dl.Text(UiFonts.Mono, new Vector2(xYear, Mid(UiFonts.Mono, ra.Y, RowH)), T.Muted, e.Year);
+            dl.TextRight(UiFonts.Mono, xShips, Mid(UiFonts.Mono, ra.Y, RowH), T.Bright, e.Ships);
             if (hover && e.Error != null)
                 ImGui.SetTooltip(e.Error);
             y += RowH;
         }
-        EndBody(keep, y - o.Y + P(4));
+        EndBody(y - o.Y + P(4));
+        dl = keep;
     }
 
     readonly Dictionary<int, string> shippedNotes = [];
@@ -716,10 +705,12 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
 
     void SetupsPane(Vector2 a, Vector2 size)
     {
-        Pane(a, size, "YOUR SETUPS", "a scenario file each");
-        if (!BeginBody("##setups", a, size, out var keep))
+        dl.Pane(a, size, "YOUR SETUPS", "a scenario file each");
+        var keep = dl;
+        if (!BeginBody("##setups", a, size, out dl))
         {
-            EndBody(keep, 0);
+            EndBody(0);
+            dl = keep;
             return;
         }
         var o = ImGui.GetCursorScreenPos();
@@ -737,26 +728,27 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
             if (click && i != pick)
                 Pick(i);
             bool on = i == pick;
-            RowBg(ra, w, RowH, n++, on, hover);
+            dl.RowBg(ra, w, RowH, n++, on, hover);
             float ty = Mid(UiFonts.SansSmall, ra.Y, RowH);
             dl.PushClipRect(ra, new Vector2(ra.X + P(84), ra.Y + RowH), true);
-            Txt(UiFonts.SansSmall, new Vector2(ra.X + P(8), ty), T.Muted, e.Of);
+            dl.Text(UiFonts.SansSmall, new Vector2(ra.X + P(8), ty), T.Muted, e.Of);
             dl.PopClipRect();
             float ww = Width(UiFonts.SansSmall, e.When);
             dl.PushClipRect(new Vector2(ra.X + P(88), ra.Y), new Vector2(ra.X + w - ww - P(12), ra.Y + RowH), true);
-            Txt(UiFonts.Sans, new Vector2(ra.X + P(88), Mid(UiFonts.Sans, ra.Y, RowH)), e.Error != null ? T.Amber : on ? T.Brass : T.Bright, e.Name);
+            dl.Text(UiFonts.Sans, new Vector2(ra.X + P(88), Mid(UiFonts.Sans, ra.Y, RowH)), e.Error != null ? T.Amber : on ? T.Brass : T.Bright, e.Name);
             dl.PopClipRect();
-            TxtR(UiFonts.SansSmall, ra.X + w - P(6), ty, T.Muted, e.When);
+            dl.TextRight(UiFonts.SansSmall, ra.X + w - P(6), ty, T.Muted, e.When);
             if (hover && e.Error != null)
                 ImGui.SetTooltip(e.Error);
             y += RowH;
         }
         if (n == 0)
         {
-            Txt(UiFonts.SansSmall, new Vector2(o.X + P(8), Mid(UiFonts.SansSmall, y, RowH)), T.Muted, "None yet: change a scenario, then Save setup…");
+            dl.Text(UiFonts.SansSmall, new Vector2(o.X + P(8), Mid(UiFonts.SansSmall, y, RowH)), T.Muted, "None yet: change a scenario, then Save setup…");
             y += RowH;
         }
-        EndBody(keep, y - o.Y + P(4));
+        EndBody(y - o.Y + P(4));
+        dl = keep;
     }
 
     // ------------------------------------------------------------------ the pick: its strings
@@ -891,41 +883,17 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
     /// <summary>The numbered tabs (as the designer's 0–7) and, at their right, the side the first two show.</summary>
     void Tabs(Vector2 a, float w)
     {
-        float x = a.X + P(4);
-        for (int i = 0; i < TabNames.Length; i++)
-        {
-            bool on = tab == i + 1;
-            float tw = P(28) + Width(UiFonts.SansBold, TabNames[i]), h = on ? P(22) : P(20);
-            var ta = new Vector2(x, a.Y + P(22) - h);
-            ImGui.SetCursorScreenPos(ta);
-            ImGui.PushID(i);
-            if (ImGui.InvisibleButton("##tab", new Vector2(tw, h)))
-                tab = i + 1;
-            bool hover = ImGui.IsItemHovered();
-            ImGui.PopID();
-            var top = on ? T.TitleTop : hover ? new Vector4(0.2f, 0.24f, 0.28f, 1) : new Vector4(0.165f, 0.2f, 0.235f, 1);
-            var bottom = on ? T.Panel : new Vector4(0.125f, 0.157f, 0.184f, 1);
-            dl.AddRectFilledMultiColor(ta, ta + new Vector2(tw, h), U(top), U(top), U(bottom), U(bottom));
-            dl.AddLine(ta, ta + new Vector2(tw, 0), U(T.Edge));
-            dl.AddLine(ta, ta + new Vector2(0, h), U(T.Edge));
-            dl.AddLine(ta + new Vector2(tw, 0), ta + new Vector2(tw, h), U(T.Edge));
-            var key = ta + new Vector2(P(6), (h - P(13)) / 2);
-            dl.AddRect(key, key + new Vector2(P(12), P(13)), U(on ? T.Brass : T.TagEdge), P(2));
-            Txt(UiFonts.SansSmall, key + new Vector2(P(3), 0), on ? T.Brass : T.Muted, Digits[i]);
-            Txt(UiFonts.SansBold, new Vector2(ta.X + P(22), Mid(UiFonts.SansBold, ta.Y, h)), on ? T.Brass : hover ? T.Text : T.Muted, TabNames[i]);
-            x += tw + P(2);
-        }
+        int t = dl.NumberedTabs(new Vector2(a.X + P(4), a.Y), w - P(8), TabNames, Digits, tab - 1);
+        if (t >= 0)
+            tab = t + 1;
         // the side shown on the order of battle and the standing orders (S)
         if (tab < 3 && shipTabs.Count > 1)
         {
-            float sw = 0;
-            foreach (var t in sideLabels)
-                sw += Width(UiFonts.SansSmall, t) + P(14) - 1;
-            float sx = a.X + w - P(6) - sw - 1;
-            int hit = Segmented("##side", new Vector2(sx, a.Y + P(3)), sideLabels, shipTab, out _);
-            if (hit >= 0)
-                shipTab = hit;
-            RightNote(sx - P(8), a.Y + P(1), P(20), "side  S");
+            float sx = a.X + w - P(6) - SegmentedWidth(sideLabels);
+            int sd = dl.Segmented("##side", new Vector2(sx, a.Y + P(3)), sideLabels, shipTab, out _);
+            if (sd >= 0)
+                shipTab = sd;
+            dl.RightNote(sx - P(8), a.Y + P(1), P(20), "side  S");
         }
     }
 
@@ -934,7 +902,7 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         var b = a + size;
         dl.AddRectFilled(a, b, U(T.Panel));
         dl.AddRect(a, b, U(T.Edge));
-        HLine(a.X + 1, b.X - 1, a.Y, T.TitleTop);
+        dl.HLine(a.X + 1, b.X - 1, a.Y, T.TitleTop);
         if (current == null)
             return;
         var inner = new Vector2(a.X + 1, a.Y + 1);
@@ -954,26 +922,21 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
 
     void StatusBar(Vector2 a, float w)
     {
-        dl.AddRectFilled(a, a + new Vector2(w, StatusH), U(T.MenuBar));
-        HLine(a.X, a.X + w, a.Y, T.Edge);
+        dl.StatusBarBg(a, w, StatusH);
         var (compiled, _, of) = Counts();
         float ty = Mid(UiFonts.SansSmall, a.Y, StatusH);
         var dot = a + new Vector2(P(10), StatusH / 2);
         bool failed = world.LoadError != null || current == null;
         if (of > 0 && compiled < of && !failed)
-        {
-            float t = (float)(ImGui.GetTime() * 6);
-            dl.PathArcTo(dot, P(4), t, t + 4.2f, 16);
-            dl.PathStroke(U(T.Brass), ImDrawFlags.None, P(1.5f));
-        }
+            dl.Busy(dot, P(4));
         else
             dl.AddCircleFilled(dot, P(3.5f), U(failed ? T.Amber : T.Ok));
-        Txt(UiFonts.SansSmall, new Vector2(a.X + P(20), ty), T.Muted, status);
+        dl.Text(UiFonts.SansSmall, new Vector2(a.X + P(20), ty), T.Muted, status);
         float x = a.X + P(38) + Width(UiFonts.SansSmall, status);
-        Txt(UiFonts.SansSmall, new Vector2(x, ty), T.Muted, setup.IsEmpty ? "history: as written" : "history:");
+        dl.Text(UiFonts.SansSmall, new Vector2(x, ty), T.Muted, setup.IsEmpty ? "history: as written" : "history:");
         if (!setup.IsEmpty)
-            Txt(UiFonts.SansSmall, new Vector2(x + Width(UiFonts.SansSmall, "history: "), ty), T.Brass, changesLine);
-        TxtR(UiFonts.SansSmall, a.X + w - P(10), ty, T.Muted, StatusKeys);
+            dl.Text(UiFonts.SansSmall, new Vector2(x + Width(UiFonts.SansSmall, "history: "), ty), T.Brass, changesLine);
+        dl.TextRight(UiFonts.SansSmall, a.X + w - P(10), ty, T.Muted, StatusKeys);
     }
 
     string changesLine = "";

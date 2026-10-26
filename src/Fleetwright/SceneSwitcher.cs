@@ -110,7 +110,7 @@ public sealed unsafe class SceneSwitcher : IScene
         var vp = ImGui.GetMainViewport();
         ImGui.SetNextWindowPos(vp.GetCenter(), ImGuiCond.Always, new System.Numerics.Vector2(0.5f, 0.5f));
         ImGui.SetNextWindowSize(new System.Numerics.Vector2(320 * UiFonts.Scale, 0));
-        Designer.DesignerTheme.Push();
+        Ui.Theme.Push();
         ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new System.Numerics.Vector2(8, 5) * UiFonts.Scale);
         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new System.Numerics.Vector2(10, 10) * UiFonts.Scale);
         bool open = ImGui.BeginPopupModal(Id, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings);
@@ -118,7 +118,7 @@ public sealed unsafe class SceneSwitcher : IScene
         if (!open)
         {
             ImGui.PopStyleVar();
-            Designer.DesignerTheme.Pop();
+            Ui.Theme.Pop();
             return;
         }
         var full = new System.Numerics.Vector2(-1, 0);
@@ -158,7 +158,7 @@ public sealed unsafe class SceneSwitcher : IScene
         }
         ImGui.EndPopup();
         ImGui.PopStyleVar();
-        Designer.DesignerTheme.Pop();
+        Ui.Theme.Pop();
     }
 
     public bool ProcessEvent(SDL_Event* e, uint width, uint height)

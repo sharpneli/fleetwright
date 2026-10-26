@@ -6,6 +6,7 @@ using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Ships;
 using ImGuiNET;
+using Fleetwright.Ui;
 
 namespace Fleetwright.Map;
 
@@ -33,18 +34,18 @@ public sealed partial class MapScene
             ContactLevel.Type => U8.W($"a {TypeWord(c.Type[i])}: her class not made out"),
             ContactLevel.Ship => "a ship, not made out"u8,
             _ => "smoke on the horizon"u8,
-        }, DesignerTheme.Muted);
+        }, Theme.Muted);
         ImGui.PopTextWrapPos();
         Chip("ENEMY"u8, Bad);
         if (c.InSight[i])
-            Chip("IN SIGHT"u8, DesignerTheme.Text);
+            Chip("IN SIGHT"u8, Theme.Text);
         else
         {
             var seen = new WorldTime(c.SeenMs[i]).ToUtc();
-            Chip(U8.W($"LAST SEEN {seen.Hour:00}:{seen.Minute:00}"), DesignerTheme.Muted);
+            Chip(U8.W($"LAST SEEN {seen.Hour:00}:{seen.Minute:00}"), Theme.Muted);
         }
         if (c.SmokeInSight[i])
-            Chip("HER SMOKE"u8, DesignerTheme.Muted);
+            Chip("HER SMOKE"u8, Theme.Muted);
         ImGui.NewLine();
 
         // range and bearing from the player's ship; her course and speed as estimated
@@ -121,10 +122,10 @@ public sealed partial class MapScene
         ImGui.TextDisabled(label);
         ImGui.PopFont();
         ImGui.PushFont(UiFonts.Mono);
-        U8.Text(value, DesignerTheme.Bright);
+        U8.Text(value, Theme.Bright);
         ImGui.PopFont();
         ImGui.PushFont(UiFonts.SansSmall);
-        U8.Text(sub, DesignerTheme.Muted);
+        U8.Text(sub, Theme.Muted);
         ImGui.PopFont();
     }
 
@@ -198,7 +199,7 @@ public sealed partial class MapScene
             ImGui.PopFont();
             int from = s.Ships.IndexOf(lastOwn);
             if (from >= 0)
-                U8.Text(U8.W($"enemy · {Earth.Distance(s.Ships.PoseAt(from, world.DrawMs).Position, c.Position[i]) / 1000:0.0} km from {ShipName(s, lastOwn)}"), DesignerTheme.Muted);
+                U8.Text(U8.W($"enemy · {Earth.Distance(s.Ships.PoseAt(from, world.DrawMs).Position, c.Position[i]) / 1000:0.0} km from {ShipName(s, lastOwn)}"), Theme.Muted);
             else
                 ImGui.TextDisabled("enemy");
             ImGui.EndGroup();
@@ -212,7 +213,7 @@ public sealed partial class MapScene
         var hint = "Select one of your ships and right-click her to engage · Esc: deselect"u8;
         var size = U8.Size(hint);
         var at = new Vector2(StripCentre(vp) - size.X / 2, vp.Pos.Y + vp.Size.Y - 6 * sc - size.Y);
-        U8.Draw(ImGui.GetBackgroundDrawList(), at, ImGui.GetColorU32(DesignerTheme.Muted), hint);
+        U8.Draw(ImGui.GetBackgroundDrawList(), at, ImGui.GetColorU32(Theme.Muted), hint);
     }
 
     // ------------------------------------------------------------------ a unit's card
@@ -222,18 +223,18 @@ public sealed partial class MapScene
         var gv = s.Groups;
         var v = s.Ships;
         ImGui.PushFont(UiFonts.PosterFigure);
-        U8.Text(U8.W($"{gv.Name[g]}"), DesignerTheme.Bright);
+        U8.Text(U8.W($"{gv.Name[g]}"), Theme.Bright);
         ImGui.PopFont();
-        U8.Text(U8.W($"{GroupFormationNames[(int)gv.Formation[g]]}, {gv.SpacingM[g]:0} m · guide {(gv.GuideShip[g] != 0 ? ShipName(s, gv.GuideShip[g]) : "-")}"), DesignerTheme.Muted);
+        U8.Text(U8.W($"{GroupFormationNames[(int)gv.Formation[g]]}, {gv.SpacingM[g]:0} m · guide {(gv.GuideShip[g] != 0 ? ShipName(s, gv.GuideShip[g]) : "-")}"), Theme.Muted);
         bool action = false;
         for (int i = 0; i < gv.MemberCount[g] && !gv.Force[g]; i++)
             action |= v.IndexOf(gv.Members[gv.MemberStart[g] + i]) is int k and >= 0 && v.Encounter[k] != 0;
         if (action)
-            Chip("IN ACTION"u8, DesignerTheme.Amber);
+            Chip("IN ACTION"u8, Theme.Amber);
         int top = TopOf(gv, g);
-        Chip(gv.Commanded[top] == 1 ? "AI COMMANDER"u8 : gv.Commanded[top] == 2 ? "YOURS"u8 : "YOUR ORDERS"u8, gv.Commanded[top] == 1 ? Friend : DesignerTheme.Brass);
+        Chip(gv.Commanded[top] == 1 ? "AI COMMANDER"u8 : gv.Commanded[top] == 2 ? "YOURS"u8 : "YOUR ORDERS"u8, gv.Commanded[top] == 1 ? Friend : Theme.Brass);
         if (gv.Task[g] != 0)
-            Chip(U8.W($"{TaskText(gv.Task[g], gv.TaskStatus[g])}"), DesignerTheme.Amber);
+            Chip(U8.W($"{TaskText(gv.Task[g], gv.TaskStatus[g])}"), Theme.Amber);
         ImGui.NewLine();
         if (Section(gv.Force[g] ? "Units" : "Ships", U8.W($"{gv.MemberCount[g]}")))
         {
@@ -272,13 +273,13 @@ public sealed partial class MapScene
                     ImGui.TableNextColumn();
                     double water = ci >= 0 ? s.Conditions.WaterT[ci] : 0, reserve = ci >= 0 ? s.Conditions.ReserveT[ci] : 1;
                     float afloat = (float)(reserve / Math.Max(reserve + water, 1e-6));
-                    Bar(afloat, afloat > 0.8f ? Ok : afloat > 0.6f ? DesignerTheme.Amber : Bad, 44);
+                    Bar(afloat, afloat > 0.8f ? Ok : afloat > 0.6f ? Theme.Amber : Bad, 44);
                     ImGui.TableNextColumn();
-                    U8.Right(U8.W($"{(ci >= 0 ? s.Conditions.Hits[ci] : 0)}"), DesignerTheme.Bright);
+                    U8.Right(U8.W($"{(ci >= 0 ? s.Conditions.Hits[ci] : 0)}"), Theme.Bright);
                     ImGui.TableNextColumn();
-                    U8.Right(ci >= 0 ? U8.W($"{s.Conditions.MountsWorking[ci]}/{s.Conditions.Mounts[ci]}") : "all"u8, DesignerTheme.Bright);
+                    U8.Right(ci >= 0 ? U8.W($"{s.Conditions.MountsWorking[ci]}/{s.Conditions.Mounts[ci]}") : "all"u8, Theme.Bright);
                     ImGui.TableNextColumn();
-                    U8.Right(U8.W($"{v.Speed[k] / Handling.MsPerKnot:0}"), DesignerTheme.Bright);
+                    U8.Right(U8.W($"{v.Speed[k] / Handling.MsPerKnot:0}"), Theme.Bright);
                 }
                 ImGui.EndTable();
             }

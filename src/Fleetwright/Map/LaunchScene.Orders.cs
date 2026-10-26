@@ -2,7 +2,8 @@ using System.Numerics;
 using Fleetwright.Sim.Ai;
 using Fleetwright.Sim.Missions;
 using ImGuiNET;
-using T = Fleetwright.Designer.DesignerTheme;
+using static Fleetwright.Ui.Pieces;
+using T = Fleetwright.Ui.Theme;
 
 namespace Fleetwright.Map;
 
@@ -152,48 +153,48 @@ public sealed unsafe partial class LaunchScene
     void AggressionColumn(Vector2 a, Vector2 size, OrdersView v, int sd)
     {
         float w = size.X, y = a.Y;
-        float right = SubHeader(a, w, "AGGRESSION", "the C-in-C's, for every unit");
-        float dx = RightNote(right, y, RowH, v.Doctrine);
+        float right = dl.SubHeader(a, w, "AGGRESSION", "the C-in-C's, for every unit");
+        float dx = dl.RightNote(right, y, RowH, v.Doctrine);
         if (ImGui.IsMouseHoveringRect(new Vector2(dx, y), new Vector2(right, y + RowH)))
             ImGui.SetTooltip(v.AllFields);
         y += RowH;
         var h = new Vector2(a.X, y);
         float sx = a.X + P(96), wx = a.X + w - P(80), rx = a.X + w - P(74);
-        Head(h, w);
-        HeadCell(h, a.X + P(6), "LEVER");
-        HeadCell(h, sx, "VALUE");
-        HeadCell(h, wx, "WRITTEN", right: true);
-        HeadCell(h, rx, "READS");
+        dl.Head(h, w);
+        dl.HeadCell(h, a.X + P(6), "LEVER");
+        dl.HeadCell(h, sx, "VALUE");
+        dl.HeadCell(h, wx, "WRITTEN", right: true);
+        dl.HeadCell(h, rx, "READS");
         y += HeadH;
         var ra = new Vector2(a.X, y);
-        RowBg(ra, w, RowH, 0);
-        Txt(UiFonts.Sans, new Vector2(ra.X + P(6), Mid(UiFonts.Sans, ra.Y, RowH)), T.Bright, "Aggression");
-        Stepper("##aggr", new Vector2(sx, ra.Y + P(2.5f)), v.Value, P(44), v.Aggression > -1 + 1e-9, v.Aggression < 1 - 1e-9, out int by);
+        dl.RowBg(ra, w, RowH, 0);
+        dl.Text(UiFonts.Sans, new Vector2(ra.X + P(6), Mid(UiFonts.Sans, ra.Y, RowH)), T.Bright, "Aggression");
+        dl.Stepper("##aggr", new Vector2(sx, ra.Y + P(2.5f)), v.Value, P(44), v.Aggression > -1 + 1e-9, v.Aggression < 1 - 1e-9, out int by);
         if (by != 0)
             pendingEdit = setup.Doctrine(written!, sd, DoctrineField.Aggression, Stepped(v.Aggression, by), presets);
-        TxtR(UiFonts.Mono, wx, Mid(UiFonts.Mono, ra.Y, RowH), T.Muted, v.Written);
-        Txt(UiFonts.SansSmall, new Vector2(rx, Mid(UiFonts.SansSmall, ra.Y, RowH)), T.Text, v.Reads);
+        dl.TextRight(UiFonts.Mono, wx, Mid(UiFonts.Mono, ra.Y, RowH), T.Muted, v.Written);
+        dl.Text(UiFonts.SansSmall, new Vector2(rx, Mid(UiFonts.SansSmall, ra.Y, RowH)), T.Text, v.Reads);
         y += RowH + P(6);
-        float r2 = SubHeader(new Vector2(a.X, y), w, "WHAT IT MOVES");
-        RightNote(r2, y, RowH, "cautious −1 … bold +1");
+        float r2 = dl.SubHeader(new Vector2(a.X, y), w, "WHAT IT MOVES");
+        dl.RightNote(r2, y, RowH, "cautious −1 … bold +1");
         y += RowH;
         h = new Vector2(a.X, y);
         float cWas = a.X + w - P(74), cNow = a.X + w - P(8);
-        Head(h, w);
-        HeadCell(h, a.X + P(6), "MOVE");
-        HeadCell(h, cWas, "WRITTEN", right: true);
-        HeadCell(h, cNow, "NOW", right: true);
+        dl.Head(h, w);
+        dl.HeadCell(h, a.X + P(6), "MOVE");
+        dl.HeadCell(h, cWas, "WRITTEN", right: true);
+        dl.HeadCell(h, cNow, "NOW", right: true);
         y += HeadH;
         for (int i = 0; i < v.Moves.Length; i++)
         {
             var (label, was, now, changed) = v.Moves[i];
             ra = new Vector2(a.X, y);
-            RowBg(ra, w, RowH, i);
+            dl.RowBg(ra, w, RowH, i);
             dl.PushClipRect(ra, new Vector2(cWas - P(56), ra.Y + RowH), true);
-            Txt(UiFonts.Sans, new Vector2(ra.X + P(6), Mid(UiFonts.Sans, ra.Y, RowH)), T.Text, label);
+            dl.Text(UiFonts.Sans, new Vector2(ra.X + P(6), Mid(UiFonts.Sans, ra.Y, RowH)), T.Text, label);
             dl.PopClipRect();
-            TxtR(UiFonts.Mono, cWas, Mid(UiFonts.Mono, ra.Y, RowH), T.Muted, was);
-            TxtR(UiFonts.Mono, cNow, Mid(UiFonts.Mono, ra.Y, RowH), changed ? T.Brass : T.Bright, now);
+            dl.TextRight(UiFonts.Mono, cWas, Mid(UiFonts.Mono, ra.Y, RowH), T.Muted, was);
+            dl.TextRight(UiFonts.Mono, cNow, Mid(UiFonts.Mono, ra.Y, RowH), changed ? T.Brass : T.Bright, now);
             y += RowH;
         }
     }
@@ -210,22 +211,22 @@ public sealed unsafe partial class LaunchScene
             var o = ImGui.GetCursorScreenPos();
             w = ImGui.GetContentRegionAvail().X;
             y = o.Y;
-            float right = SubHeader(o, w, "TEMPERS", "the admiral's, added to the side's");
-            RightNote(right, y, RowH, "sum");
+            float right = dl.SubHeader(o, w, "TEMPERS", "the admiral's, added to the side's");
+            dl.RightNote(right, y, RowH, "sum");
             y += RowH;
             y = TemperTable(o.X, y, w, v.Tempers, "ADMIRAL", v.Of!);
             y += P(6);
-            SubHeader(new Vector2(o.X, y), w, "CAPTAINS", "with tempers of their own, added to the admiral's");
+            dl.SubHeader(new Vector2(o.X, y), w, "CAPTAINS", "with tempers of their own, added to the admiral's");
             y += RowH;
             if (v.Captains.Count == 0)
             {
-                Txt(UiFonts.SansSmall, new Vector2(o.X + P(6), Mid(UiFonts.SansSmall, y, RowH)), T.Muted, "None: every captain reads his admiral's.");
+                dl.Text(UiFonts.SansSmall, new Vector2(o.X + P(6), Mid(UiFonts.SansSmall, y, RowH)), T.Muted, "None: every captain reads his admiral's.");
                 y += RowH;
             }
             else
                 y = TemperTable(o.X, y, w, v.Captains, "SHIP", v.Of!);
             y += P(6);
-            y += Wrapped(UiFonts.SansSmall, new Vector2(o.X + P(6), y), T.Muted,
+            y += dl.Wrapped(UiFonts.SansSmall, new Vector2(o.X + P(6), y), T.Muted,
                 "Any captain's temper is on the order of battle: select her class. A timid captain under a bold admiral fights harder than alone, never as hard as a bold one under the same flag.", w - P(12));
             y += P(6) - o.Y;
         }
@@ -240,11 +241,11 @@ public sealed unsafe partial class LaunchScene
     {
         var h = new Vector2(x0, y);
         float ux = x0 + w * 0.40f, sx = x0 + w - P(64) - (2 * P(13) + P(44) + P(4)), sumX = x0 + w - P(8);
-        Head(h, w);
-        HeadCell(h, x0 + P(6), who);
-        HeadCell(h, ux, "UNIT");
-        HeadCell(h, sx, "TEMPER");
-        HeadCell(h, sumX, "SUM", right: true);
+        dl.Head(h, w);
+        dl.HeadCell(h, x0 + P(6), who);
+        dl.HeadCell(h, ux, "UNIT");
+        dl.HeadCell(h, sx, "TEMPER");
+        dl.HeadCell(h, sumX, "SUM", right: true);
         y += HeadH;
         for (int i = 0; i < rows.Count; i++)
         {
@@ -252,18 +253,18 @@ public sealed unsafe partial class LaunchScene
             var ra = new Vector2(x0, y);
             ImGui.PushID(t.Captain ? 4096 + i : i);
             var (_, hover) = HitRow("##t", ra, new Vector2(w, RowH));
-            RowBg(ra, w, RowH, i, hover: hover);
+            dl.RowBg(ra, w, RowH, i, hover: hover);
             dl.PushClipRect(ra, new Vector2(ux - P(6), ra.Y + RowH), true);
-            Txt(UiFonts.Sans, new Vector2(ra.X + P(6), Mid(UiFonts.Sans, ra.Y, RowH)), T.Bright, t.Name);
+            dl.Text(UiFonts.Sans, new Vector2(ra.X + P(6), Mid(UiFonts.Sans, ra.Y, RowH)), T.Bright, t.Name);
             dl.PopClipRect();
             dl.PushClipRect(new Vector2(ux, ra.Y), new Vector2(sx - P(6), ra.Y + RowH), true);
-            Txt(UiFonts.SansSmall, new Vector2(ux, Mid(UiFonts.SansSmall, ra.Y, RowH)), T.Muted, t.Unit);
+            dl.Text(UiFonts.SansSmall, new Vector2(ux, Mid(UiFonts.SansSmall, ra.Y, RowH)), T.Muted, t.Unit);
             dl.PopClipRect();
-            Stepper("##st", new Vector2(sx, ra.Y + P(2.5f)), t.Value, P(44), t.Temper > -1 + 1e-9, t.Temper < 1 - 1e-9, out int by);
+            dl.Stepper("##st", new Vector2(sx, ra.Y + P(2.5f)), t.Value, P(44), t.Temper > -1 + 1e-9, t.Temper < 1 - 1e-9, out int by);
             if (by != 0)
                 pendingEdit = setup.Temper(written!, t.Captain ? t.Name : t.Unit, Stepped(t.Temper, by));
             var sumCol = Math.Abs(t.Temper - t.Written) > 1e-9 ? T.Brass : t.Sum == "0.00" ? T.Muted : t.Sum[0] == '+' ? T.Amber : T.Blue;
-            TxtR(UiFonts.Mono, sumX, Mid(UiFonts.Mono, ra.Y, RowH), sumCol, t.Sum);
+            dl.TextRight(UiFonts.Mono, sumX, Mid(UiFonts.Mono, ra.Y, RowH), sumCol, t.Sum);
             if (hover && t.Why.Length > 0)
                 ImGui.SetTooltip(t.Why);
             else if (hover && Math.Abs(t.Temper - t.Written) > 1e-9)
@@ -277,30 +278,30 @@ public sealed unsafe partial class LaunchScene
     void RulesColumn(Vector2 a, Vector2 size, OrdersView v, int sd)
     {
         float w = size.X, y = a.Y;
-        float right = SubHeader(a, w, "RULES");
-        RightNote(right, y, RowH, "every unit, unless ordered");
+        float right = dl.SubHeader(a, w, "RULES");
+        dl.RightNote(right, y, RowH, "every unit, unless ordered");
         y += RowH;
         var h = new Vector2(a.X, y);
-        Head(h, w);
-        HeadCell(h, a.X + P(6), "RULE");
+        dl.Head(h, w);
+        dl.HeadCell(h, a.X + P(6), "RULE");
         float segX = a.X + w * 0.55f;
-        HeadCell(h, segX, "SETTING");
+        dl.HeadCell(h, segX, "SETTING");
         y += HeadH;
         for (int i = 0; i < v.Rules.Length; i++)
         {
             var (rule, on, was, words) = v.Rules[i];
             var ra = new Vector2(a.X, y);
-            RowBg(ra, w, RowH, i);
+            dl.RowBg(ra, w, RowH, i);
             dl.PushClipRect(ra, new Vector2(segX - P(6), ra.Y + RowH), true);
-            Txt(UiFonts.Sans, new Vector2(ra.X + P(6), Mid(UiFonts.Sans, ra.Y, RowH)), T.Text, rule.Label);
+            dl.Text(UiFonts.Sans, new Vector2(ra.X + P(6), Mid(UiFonts.Sans, ra.Y, RowH)), T.Text, rule.Label);
             dl.PopClipRect();
             ImGui.PushID(i);
-            int hit = Segmented("##rule", new Vector2(segX, ra.Y + P(2)), words, on, out float sw);
+            int hit = dl.Segmented("##rule", new Vector2(segX, ra.Y + P(2)), words, on, out float sw);
             ImGui.PopID();
             if (hit >= 0)
                 pendingEdit = setup.Doctrine(written!, sd, rule.Field, rule.Options[hit].Value, presets);
             if (on != was)
-                Txt(UiFonts.SansSmall, new Vector2(segX + sw + P(8), Mid(UiFonts.SansSmall, ra.Y, RowH)), T.Muted, "changed");
+                dl.Text(UiFonts.SansSmall, new Vector2(segX + sw + P(8), Mid(UiFonts.SansSmall, ra.Y, RowH)), T.Muted, "changed");
             y += RowH;
         }
     }

@@ -2,7 +2,7 @@ using System.Globalization;
 using System.Numerics;
 using Fleetwright.Shipgen;
 using ImGuiNET;
-using T = Fleetwright.Designer.DesignerTheme;
+using T = Fleetwright.Ui.Theme;
 
 namespace Fleetwright.Designer;
 

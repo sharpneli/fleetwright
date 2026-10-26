@@ -4,7 +4,8 @@ using Fleetwright.Shipgen;
 using ImGuiNET;
 using Part = Fleetwright.Designer.ProtectionEdits.Part;
 using PE = Fleetwright.Designer.ProtectionEdits;
-using T = Fleetwright.Designer.DesignerTheme;
+using static Fleetwright.Ui.Pieces;
+using T = Fleetwright.Ui.Theme;
 
 namespace Fleetwright.Designer;
 
@@ -164,9 +165,9 @@ public sealed unsafe partial class DesignerScene
         dl.AddRectFilled(pos, pos + size, T.U32(T.Plan));
         dl.AddRect(pos, pos + size, T.U32(T.Edge));
         ImGui.SetCursorScreenPos(pos);
-        SubHeader(dl, size.X, "ELEVATION", null);
+        dl.HeadStrip(size.X, "ELEVATION", null);
         var font = UiFonts.SansSmall;
-        Text(dl, font, new Vector2(pos.X + P(6) + Width(font, "ELEVATION") + P(10), pos.Y + (P(18) - font.FontSize) / 2), T.Muted, "heights stretched · deck by deck");
+        dl.Text(font, new Vector2(pos.X + P(6) + Width(font, "ELEVATION") + P(10), pos.Y + (P(18) - font.FontSize) / 2), T.Muted, "heights stretched · deck by deck");
         ElevToggles(dl, pos, size, pp);
         var io = ImGui.GetIO();
         float left = P(58), right = P(8), top = P(34), bottom = P(16);
@@ -202,22 +203,22 @@ public sealed unsafe partial class DesignerScene
         foreach (var (name, z, x0, x1) in pp.Lanes)
         {
             Dashed(dl, new Vector2(m.X(x0), m.Z(z)), new Vector2(m.X(x1), m.Z(z)), lane, P(3));
-            Text(dl, font, new Vector2(pos.X + left - P(6) - Width(font, name), m.Z(z) - font.FontSize / 2), new Vector4(0.5f, 0.61f, 0.72f, 1), name);
+            dl.Text(font, new Vector2(pos.X + left - P(6) - Width(font, name), m.Z(z) - font.FontSize / 2), new Vector4(0.5f, 0.61f, 0.72f, 1), name);
         }
         Dashed(dl, new Vector2(m.X(-pp.L / 2 + 0.05f * pp.L), m.Z(pp.Ib)), new Vector2(m.X(pp.L / 2 - 0.06f * pp.L), m.Z(pp.Ib)), lane, P(3));
-        Text(dl, font, new Vector2(pos.X + left - P(6) - Width(font, "Inner btm"), m.Z(pp.Ib) - font.FontSize / 2), new Vector4(0.5f, 0.61f, 0.72f, 1), "Inner btm");
+        dl.Text(font, new Vector2(pos.X + left - P(6) - Width(font, "Inner btm"), m.Z(pp.Ib) - font.FontSize / 2), new Vector4(0.5f, 0.61f, 0.72f, 1), "Inner btm");
         dl.AddLine(new Vector2(m.X(-pp.L / 2) - P(4), m.Z(pp.Wl)), new Vector2(m.X(pp.L / 2) + P(4), m.Z(pp.Wl)), T.U32(T.Blue));
-        Text(dl, font, new Vector2(pos.X + P(4), m.Z(pp.Wl) - font.FontSize / 2), T.Blue, "WL");
+        dl.Text(font, new Vector2(pos.X + P(4), m.Z(pp.Wl) - font.FontSize / 2), T.Blue, "WL");
         // the citadel's brackets (none on a ship with no armour)
         if (pp.HasCitadel)
         {
             uint brk = T.U32(T.Brass with { W = 0.22f });
             Dashed(dl, new Vector2(m.X(pp.X0), pos.Y + P(28)), new Vector2(m.X(pp.X0), pos.Y + size.Y - bottom), brk, P(3), vertical: true);
             Dashed(dl, new Vector2(m.X(pp.X1), pos.Y + P(28)), new Vector2(m.X(pp.X1), pos.Y + size.Y - bottom), brk, P(3), vertical: true);
-            Text(dl, font, new Vector2((m.X(pp.X0) + m.X(pp.X1) - Width(font, pp.Citadel)) / 2, pos.Y + size.Y - bottom + P(1)), new Vector4(0.55f, 0.48f, 0.33f, 1), pp.Citadel);
+            dl.Text(font, new Vector2((m.X(pp.X0) + m.X(pp.X1) - Width(font, pp.Citadel)) / 2, pos.Y + size.Y - bottom + P(1)), new Vector4(0.55f, 0.48f, 0.33f, 1), pp.Citadel);
         }
-        Text(dl, font, new Vector2(MathF.Max(pos.X + left, m.X(-pp.L / 2)), pos.Y + size.Y - bottom + P(1)), new Vector4(0.37f, 0.48f, 0.59f, 1), "aft");
-        Text(dl, font, new Vector2(m.X(pp.L / 2) - Width(font, "fore"), pos.Y + size.Y - bottom + P(1)), new Vector4(0.37f, 0.48f, 0.59f, 1), "fore");
+        dl.Text(font, new Vector2(MathF.Max(pos.X + left, m.X(-pp.L / 2)), pos.Y + size.Y - bottom + P(1)), new Vector4(0.37f, 0.48f, 0.59f, 1), "aft");
+        dl.Text(font, new Vector2(m.X(pp.L / 2) - Width(font, "fore"), pos.Y + size.Y - bottom + P(1)), new Vector4(0.37f, 0.48f, 0.59f, 1), "fore");
 
         // the interaction area under everything drawn from here
         var area0 = new Vector2(pos.X + 1, pos.Y + P(18));
@@ -251,7 +252,7 @@ public sealed unsafe partial class DesignerScene
             ghostHot = g;
             dl.AddRectFilled(a, b, T.U32(T.Brass with { W = 0.12f }));
             dl.AddRect(a, b, T.U32(T.Brass with { W = 0.75f }));
-            Text(dl, UiFonts.SansBold, (a + b) / 2 - new Vector2(Width(UiFonts.SansBold, "+") / 2, UiFonts.SansBold.FontSize / 2), new Vector4(1, 0.906f, 0.659f, 1), "+");
+            dl.Text(UiFonts.SansBold, (a + b) / 2 - new Vector2(Width(UiFonts.SansBold, "+") / 2, UiFonts.SansBold.FontSize / 2), new Vector4(1, 0.906f, 0.659f, 1), "+");
             if (protForceTip != null)
                 TipAt(g.Tip, b + new Vector2(P(6), P(-4)));
             else
@@ -305,7 +306,7 @@ public sealed unsafe partial class DesignerScene
         ImGui.SetCursorScreenPos(new Vector2(pos.X + size.X - P(4) - wc, pos.Y + P(1)));
         ImGui.PushStyleColor(ImGuiCol.Text, protComp ? new Vector4(1, 0.906f, 0.659f, 1) : pp.CompOk ? T.Text : T.Amber);
         ImGui.PushID("comp");
-        if (Seg(comp, protComp, wc))
+        if (SegButton(comp, protComp, wc))
             protComp = !protComp;
         ImGui.PopID();
         ImGui.PopStyleColor();
@@ -329,7 +330,7 @@ public sealed unsafe partial class DesignerScene
         if (protForceTip == "comp")
             TipAt(pp.CompTip, ImGui.GetItemRectMin() + new Vector2(-P(200), P(20)));
         ImGui.SetCursorScreenPos(new Vector2(pos.X + size.X - P(8) - wc - wr, pos.Y + P(1)));
-        if (Seg("Rooms", protRooms, wr))
+        if (SegButton("Rooms", protRooms, wr))
             protRooms = !protRooms;
         if (ImGui.IsItemHovered())
             Tip("Magazines, handling rooms and machinery, tinted");
@@ -382,7 +383,7 @@ public sealed unsafe partial class DesignerScene
         var b = a + new Vector2(w, h);
         dl.AddRectFilled(a, b, T.U32(T.Armour(mm)), P(1.5f));
         dl.AddRect(a, b, T.U32(ProtLit(r) ? new Vector4(1, 0.906f, 0.659f, 0.95f) : new Vector4(0, 0, 0, 0.6f)), P(1.5f));
-        Text(dl, font, a + new Vector2(P(3), P(1)), mm >= 140 ? new Vector4(0.965f, 0.937f, 0.886f, 1) : new Vector4(0.149f, 0.133f, 0.11f, 1), tag);
+        dl.Text(font, a + new Vector2(P(3), P(1)), mm >= 140 ? new Vector4(0.965f, 0.937f, 0.886f, 1) : new Vector4(0.149f, 0.133f, 0.11f, 1), tag);
         protHits.Add((a, b, r));
     }
 
@@ -463,7 +464,7 @@ public sealed unsafe partial class DesignerScene
             else
             {
                 string n = k == 0 ? "1" : "2";
-                Text(dl, font, new Vector2(px - Width(font, n) / 2, a.Y + (P(11) - font.FontSize) / 2), new Vector4(1, 0.906f, 0.659f, 1), n);
+                dl.Text(font, new Vector2(px - Width(font, n) / 2, a.Y + (P(11) - font.FontSize) / 2), new Vector4(1, 0.906f, 0.659f, 1), n);
             }
             if (on)
             {
@@ -540,7 +541,7 @@ public sealed unsafe partial class DesignerScene
                 dl.AddLine(new Vector2(x, b.Y), new Vector2(x + (b.Y - a.Y), a.Y), hatch, P(2));
             dl.PopClipRect();
             dl.AddRect(a, b, T.U32(T.Blue with { W = lit ? 0.8f : 0.35f }));
-            Text(dl, font, new Vector2(a.X + P(6), b.Y - font.FontSize - P(3)), new Vector4(0.5f, 0.69f, 0.88f, 1), pl.Label);
+            dl.Text(font, new Vector2(a.X + P(6), b.Y - font.FontSize - P(3)), new Vector4(0.5f, 0.69f, 0.88f, 1), pl.Label);
             protHits.Add((a, b, pl.Ref));
             return;
         }
@@ -556,13 +557,13 @@ public sealed unsafe partial class DesignerScene
             if (lit)
                 dl.AddRect(a, b, edge);
             if (pl.Label.Length > 0 && b.X - a.X > Width(font, pl.Label) + P(8))
-                Text(dl, font, (a + b) / 2 - new Vector2(Width(font, pl.Label) / 2, font.FontSize / 2), T.ArmourRamp[0], pl.Label);
+                dl.Text(font, (a + b) / 2 - new Vector2(Width(font, pl.Label) / 2, font.FontSize / 2), T.ArmourRamp[0], pl.Label);
             protHits.Add((a, b, pl.Ref));
             return;
         }
         if (pl.Flat)
         {
-            float th = Math.Clamp((float)pl.Mm / 25 * S, P(2.5f), P(6));
+            float th = Math.Clamp(P((float)pl.Mm / 25), P(2.5f), P(6));
             var a = new Vector2(m.X(pl.X0), m.Z(pl.Z0));
             var b = new Vector2(m.X(pl.X1), a.Y + th);
             dl.AddRectFilled(a, b, T.U32(col));
@@ -572,7 +573,7 @@ public sealed unsafe partial class DesignerScene
                 float lx = MathF.Min(a.X + P(24), (a.X + b.X) / 2), ly = b.Y + P(2);
                 float lw = Width(font, pl.Label) + P(6);
                 dl.AddRectFilled(new Vector2(lx - lw / 2, ly), new Vector2(lx + lw / 2, ly + font.FontSize + P(1)), T.U32(new Vector4(0.055f, 0.07f, 0.082f, 0.82f)), P(2));
-                Text(dl, font, new Vector2(lx - lw / 2 + P(3), ly), T.Armour(pl.Mm), pl.Label);
+                dl.Text(font, new Vector2(lx - lw / 2 + P(3), ly), T.Armour(pl.Mm), pl.Label);
             }
             protHits.Add((a - new Vector2(0, P(4)), b + new Vector2(0, P(4)), pl.Ref));
             return;
@@ -605,7 +606,7 @@ public sealed unsafe partial class DesignerScene
                 float fx = fore ? b.X - P(3) : a.X;
                 dl.AddRectFilled(new Vector2(fx, a.Y), new Vector2(fx + P(3), b.Y), T.U32(col));
                 if (pl.Label.Length > 0)
-                    Text(dl, font, new Vector2((a.X + b.X - Width(font, pl.Label)) / 2, a.Y - font.FontSize - P(1)), T.Text, pl.Label);
+                    dl.Text(font, new Vector2((a.X + b.X - Width(font, pl.Label)) / 2, a.Y - font.FontSize - P(1)), T.Text, pl.Label);
             }
             else
             {
@@ -622,9 +623,9 @@ public sealed unsafe partial class DesignerScene
                 dl.AddRect(a, b, edge);
                 float lw = Width(font, pl.Label);
                 if (pl.Label.Length > 0 && pl.Ref.Kind == PK.Ct)
-                    Text(dl, font, new Vector2((a.X + b.X - lw) / 2, a.Y - font.FontSize - P(1)), T.Text, pl.Label);
+                    dl.Text(font, new Vector2((a.X + b.X - lw) / 2, a.Y - font.FontSize - P(1)), T.Text, pl.Label);
                 else if (pl.Label.Length > 0 && b.X - a.X > lw + P(8) && b.Y - a.Y >= font.FontSize)
-                    Text(dl, font, (a + b) / 2 - new Vector2(lw / 2, font.FontSize / 2), pl.Mm >= 140 ? new Vector4(0.965f, 0.937f, 0.886f, 1) : new Vector4(0.149f, 0.133f, 0.11f, 1), pl.Label);
+                    dl.Text(font, (a + b) / 2 - new Vector2(lw / 2, font.FontSize / 2), pl.Mm >= 140 ? new Vector4(0.965f, 0.937f, 0.886f, 1) : new Vector4(0.149f, 0.133f, 0.11f, 1), pl.Label);
             }
             protHits.Add((a, b, pl.Ref));
         }
@@ -734,7 +735,7 @@ public sealed unsafe partial class DesignerScene
             var font = UiFonts.SansSmall;
             var at = new Vector2(m.Left - P(6) - Width(font, name), m.Z(z) - font.FontSize / 2);
             dl.AddRectFilled(at - new Vector2(P(3), P(1)), at + new Vector2(Width(font, name) + P(3), font.FontSize + P(1)), T.U32(T.BrassDark), P(2));
-            Text(dl, font, at, Light, name);
+            dl.Text(font, at, Light, name);
             return;
         }
     }
@@ -781,7 +782,7 @@ public sealed unsafe partial class DesignerScene
                 {
                     if (!pl.Flat || pl.Ref != protSel)
                         continue;
-                    float th = Math.Clamp((float)pl.Mm / 25 * S, P(2.5f), P(6));
+                    float th = Math.Clamp(P((float)pl.Mm / 25), P(2.5f), P(6));
                     var a = new Vector2(m.X(pl.X0), m.Z(z));
                     var b = new Vector2(m.X(pl.X1), a.Y + th);
                     dl.AddRectFilled(a, b, T.U32(T.Armour(pl.Mm) with { W = 0.85f }));
@@ -940,7 +941,7 @@ public sealed unsafe partial class DesignerScene
         dl.AddRectFilled(pos, pos + size, T.U32(T.Plan));
         dl.AddRect(pos, pos + size, T.U32(T.Edge));
         ImGui.SetCursorScreenPos(pos);
-        SubHeader(dl, size.X, "SECTIONS", null);
+        dl.HeadStrip(size.X, "SECTIONS", null);
         var font = UiFonts.SansSmall;
         SectionHeader(dl, pos, size, pp);
         var s0 = SectionAt(0, pp);
@@ -961,7 +962,7 @@ public sealed unsafe partial class DesignerScene
         (secs[0], secs[1]) = (s0, s1);
         // the deck names in the margin (the heights are the same in both halves)
         foreach (var (z, name) in s0.Decks)
-            Text(dl, font, new Vector2(pos.X + l - P(5) - Width(font, name), maps[0].Y(z) - font.FontSize / 2), new Vector4(0.5f, 0.61f, 0.72f, 1), name);
+            dl.Text(font, new Vector2(pos.X + l - P(5) - Width(font, name), maps[0].Y(z) - font.FontSize / 2), new Vector4(0.5f, 0.61f, 0.72f, 1), name);
         secLit ??= p => ProtLit(RefOf(p));
         secDim ??= p => protHot is { } h && h != RefOf(p) && protSel != RefOf(p);
         for (int h = 0; h < 2; h++)
@@ -978,7 +979,7 @@ public sealed unsafe partial class DesignerScene
         if (one)
         {
             Dashed(dl, new Vector2(scx, pos.Y + t - P(6)), new Vector2(scx, pos.Y + size.Y - b + P(4)), T.U32(new Vector4(0.61f, 0.76f, 0.886f, 0.35f)), P(5), vertical: true);
-            Text(dl, font, new Vector2(scx - Width(font, "CL") / 2, pos.Y + t - P(8) - font.FontSize), new Vector4(0.37f, 0.48f, 0.59f, 1), "CL");
+            dl.Text(font, new Vector2(scx - Width(font, "CL") / 2, pos.Y + t - P(8) - font.FontSize), new Vector4(0.37f, 0.48f, 0.59f, 1), "CL");
             CutCaption(dl, new Vector2(scx + P(14), pos.Y + P(30)), 1, protLinked ? "" : "1", CutName(pp, protCutX[0], protCutStop[0]), font);
         }
         else
@@ -996,9 +997,9 @@ public sealed unsafe partial class DesignerScene
             }
             CutCaption(dl, new Vector2(scx - gap / 2 - P(11), pos.Y + P(30)), -1, "1", CutName(pp, protCutX[0], protCutStop[0]), font);
             CutCaption(dl, new Vector2(scx + gap / 2 + P(11), pos.Y + P(30)), 1, "2", CutName(pp, protCutX[1], protCutStop[1]), font);
-            Text(dl, font, new Vector2(pos.X + l + P(2), pos.Y + P(22)), new Vector4(0.61f, 0.71f, 0.79f, 1), CutXText(0));
+            dl.Text(font, new Vector2(pos.X + l + P(2), pos.Y + P(22)), new Vector4(0.61f, 0.71f, 0.79f, 1), CutXText(0));
         }
-        Text(dl, font, new Vector2(pos.X + size.X - r - P(2) - Width(font, CutXText(1)), pos.Y + P(22)), new Vector4(0.61f, 0.71f, 0.79f, 1), CutXText(1));
+        dl.Text(font, new Vector2(pos.X + size.X - r - P(2) - Width(font, CutXText(1)), pos.Y + P(22)), new Vector4(0.61f, 0.71f, 0.79f, 1), CutXText(1));
         // the legend
         float lx = pos.X + P(6), ly = pos.Y + size.Y - P(15);
         foreach (var (kind, label) in ProtectionSection.Legend)
@@ -1007,10 +1008,10 @@ public sealed unsafe partial class DesignerScene
                 continue;
             var f = ProtectionSection.FillOf(kind);
             dl.AddRectFilled(new Vector2(lx, ly + P(2)), new Vector2(lx + P(9), ly + P(10)), T.U32(f with { W = MathF.Max(0.5f, f.W + 0.3f) }));
-            Text(dl, font, new Vector2(lx + P(12), ly), T.Muted, label);
+            dl.Text(font, new Vector2(lx + P(12), ly), T.Muted, label);
             lx += P(18) + Width(font, label);
         }
-        Text(dl, font, new Vector2(lx + P(6), ly), T.Muted, "to scale · plates ×3");
+        dl.Text(font, new Vector2(lx + P(6), ly), T.Muted, "to scale · plates ×3");
 
         // the interaction: handles, then plates, walls and cells
         ImGui.SetCursorScreenPos(pos + new Vector2(1, P(40)));
@@ -1082,9 +1083,9 @@ public sealed unsafe partial class DesignerScene
         if (n.Length == 0)
             Diamond(dl, c, P(3.5f), new Vector4(1, 0.906f, 0.659f, 1));
         else
-            Text(dl, font, c - new Vector2(Width(font, n) / 2, font.FontSize / 2), new Vector4(1, 0.906f, 0.659f, 1), n);
+            dl.Text(font, c - new Vector2(Width(font, n) / 2, font.FontSize / 2), new Vector4(1, 0.906f, 0.659f, 1), n);
         float w = Width(font, name);
-        Text(dl, font, new Vector2(side > 0 ? c.X + P(11) : c.X - P(11) - w, c.Y - font.FontSize / 2), T.Brass, name);
+        dl.Text(font, new Vector2(side > 0 ? c.X + P(11) : c.X - P(11) - w, c.Y - font.FontSize / 2), T.Brass, name);
     }
 
     /// <summary>The section's header: section 1's dropdown, Whole section, section 2's dropdown ("as 1" when locked).</summary>
@@ -1103,7 +1104,7 @@ public sealed unsafe partial class DesignerScene
             openCutMenu = 0;
         ImGui.PopID();
         cutAnchor[0] = new Vector2(ImGui.GetItemRectMin().X, ImGui.GetItemRectMax().Y + 1);
-        Twisty(dl, new Vector2(ImGui.GetItemRectMax().X - P(7), pos.Y + P(9)), true, T.Muted);
+        dl.Twisty(new Vector2(ImGui.GetItemRectMax().X - P(7), pos.Y + P(9)), true, T.Muted);
         if (ImGui.IsItemHovered())
             Tip("Section 1's station: the machinery, each magazine, the ends; or drag its flag on the elevation");
         // from the right: badge 2, its dropdown, Whole section
@@ -1122,12 +1123,12 @@ public sealed unsafe partial class DesignerScene
             openCutMenu = 1;
         ImGui.PopID();
         cutAnchor[1] = new Vector2(ImGui.GetItemRectMin().X, ImGui.GetItemRectMax().Y + 1);
-        Twisty(dl, new Vector2(ImGui.GetItemRectMax().X - P(7), pos.Y + P(9)), true, T.Muted);
+        dl.Twisty(new Vector2(ImGui.GetItemRectMax().X - P(7), pos.Y + P(9)), true, T.Muted);
         const string whole = "Whole section";
         float ww = Width(font, whole) + P(10);
         ImGui.SetCursorScreenPos(new Vector2(rx - P(26) - ddW - ww, pos.Y + P(1)));
         ImGui.PushID("whole");
-        if (Seg(whole, protLinked, ww))
+        if (SegButton(whole, protLinked, ww))
             ToggleLinked();
         ImGui.PopID();
         if (ImGui.IsItemHovered())
@@ -1145,7 +1146,7 @@ public sealed unsafe partial class DesignerScene
         float a = dim ? 0.45f : 1;
         dl.AddCircleFilled(c, P(6.5f), T.U32(new Vector4(0.29f, 0.243f, 0.125f, a)));
         dl.AddCircle(c, P(6.5f), T.U32(T.Brass with { W = a }));
-        Text(dl, font, c - new Vector2(Width(font, n) / 2, font.FontSize / 2), new Vector4(1, 0.906f, 0.659f, a), n);
+        dl.Text(font, c - new Vector2(Width(font, n) / 2, font.FontSize / 2), new Vector4(1, 0.906f, 0.659f, a), n);
     }
 
     /// <summary>Where the belt leans: an upright from its top, an arc to the lean, the angle.</summary>
@@ -1164,7 +1165,7 @@ public sealed unsafe partial class DesignerScene
         }
         string t = leanText.Lean == b.Lean ? leanText.Text : (leanText = (b.Lean, $"{b.Lean:0}°")).Text;
         var at = m.P(b.TopY, b.Top - 2.2f);
-        Text(dl, font, new Vector2(m.Side > 0 ? at.X + P(4) : at.X - P(4) - Width(font, t), at.Y), T.Brass, t);
+        dl.Text(font, new Vector2(m.Side > 0 ? at.X + P(4) : at.X - P(4) - Width(font, t), at.Y), T.Brass, t);
     }
 
     (float Lean, string Text) leanText = (float.NaN, "");

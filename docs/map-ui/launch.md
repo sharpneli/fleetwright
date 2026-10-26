@@ -16,7 +16,7 @@ and the thumbnails baked from the designs at 4 px/m, so the lengths compare true
 
 **Redesign mockup (2026-10-25): `launch-bureau.html`** (`#orders`, `#conditions`, `#japan`; screenshots
 `png/launch-bureau-*.png`). Playtesters found the screen above looked generic, so it is redrawn in the designer's bureau
-look, `DesignerTheme`'s tokens and fonts. The pieces stay the same, laid out the designer's way: a menu bar and a
+look, `Theme`'s tokens and fonts. The pieces stay the same, laid out the designer's way: a menu bar and a
 resource bar of the scenario's figures (date, visibility, wind, ships, tonnage, changes) in place of the kicker and
 hero title; the scenarios as an outliner by era; the opening as the plan view (blueprint ground, mono tags, overlay
 toggles C R L G P); numbered tabs 1-3 (order of battle, standing orders, conditions) in place of three columns side by
@@ -26,7 +26,7 @@ sides by group, share bars) like the weight ledger; brief and remarks panels; Be
 box, with no gold slab; and a status bar of keys.
 
 **Ported 2026-10-26: the game's launch screen is the bureau look** (as built: `png/launch-game-oob.png`, `-orders`,
-`-conditions`, `-picker`; the pieces in `Map/LaunchScene.Chrome.cs`, colours only from `DesignerTheme`). What the port
+`-conditions`, `-picker`; drawn with the shared pieces of `Ui/Pieces.cs`, colours only from `Ui/Theme.cs`). What the port
 settled that the mockup left open: every number the player sets is a stepper (tempers and aggression by 0.05, Shift ×4,
 the wheel over the value), not a slider; the captains' tempers moved from a popup on the names into the selected class
 pane (a row a named ship, a stepper each), and the standing orders list only the captains with tempers of their own;

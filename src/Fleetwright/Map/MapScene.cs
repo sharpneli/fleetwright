@@ -6,6 +6,7 @@ using Fleetwright.Sim.Core;
 using ImGuiNET;
 using SDL;
 using static SDL.SDL3;
+using Fleetwright.Ui;
 
 namespace Fleetwright.Map;
 
@@ -177,7 +178,7 @@ public sealed unsafe partial class MapScene : IScene
     {
         long allocated = GC.GetAllocatedBytesForCurrentThread();
         NewWorld();
-        DesignerTheme.Push();
+        Theme.Push();
         U8.Frame();
         var probes = world.Perf.Ui;
         long t = Probes.Now;
@@ -217,7 +218,7 @@ public sealed unsafe partial class MapScene : IScene
         Briefing();
         Result(s);
         probes.Add(probeUiRest, t);
-        DesignerTheme.Pop();
+        Theme.Pop();
         world.Perf.UiBytes += GC.GetAllocatedBytesForCurrentThread() - allocated;
         world.Perf.UiFrames++;
     }

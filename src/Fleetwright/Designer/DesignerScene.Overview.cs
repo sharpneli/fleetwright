@@ -1,7 +1,8 @@
 using System.Numerics;
 using Fleetwright.Shipgen;
 using ImGuiNET;
-using T = Fleetwright.Designer.DesignerTheme;
+using static Fleetwright.Ui.Pieces;
+using T = Fleetwright.Ui.Theme;
 
 namespace Fleetwright.Designer;
 
@@ -375,7 +376,7 @@ public sealed unsafe partial class DesignerScene
         var dl = ImGui.GetWindowDrawList();
         var b = ovBatch;
         string probeNote = b == null ? "" : b.Done ? $"{b.Count - 1} probe builds, one step each way" : $"probing {b.Finished}/{b.Count}";
-        SubHeader(dl, w, "TRIM SHEET · broad strokes; the tabs hold the detail", probeNote);
+        dl.HeadStrip(w, "TRIM SHEET · broad strokes; the tabs hold the detail", probeNote);
         if (b is { Done: false })   // a progress bar under the note
         {
             var e = ImGui.GetCursorScreenPos() + new Vector2(w - P(6), -P(3));
@@ -398,7 +399,7 @@ public sealed unsafe partial class DesignerScene
         for (int i = 0; i < OvHead.Length; i++)
         {
             float tx = i is 3 or 4 ? x[i + 1] - P(8) - Width(UiFonts.SansSmall, OvHead[i]) : x[i] + P(6);
-            Text(dl, UiFonts.SansSmall, new Vector2(tx, o.Y + (hh - UiFonts.SansSmall.FontSize) / 2), T.Muted, OvHead[i]);
+            dl.Text(UiFonts.SansSmall, new Vector2(tx, o.Y + (hh - UiFonts.SansSmall.FontSize) / 2), T.Muted, OvHead[i]);
         }
 
         float y = o.Y + hh, gh = P(19), fh = ImGui.GetFrameHeight();
@@ -416,11 +417,11 @@ public sealed unsafe partial class DesignerScene
             dl.AddRectFilled(gp, gp + new Vector2(w, gh), T.U32(new Vector4(0.098f, 0.125f, 0.149f, 1)));
             dl.AddLine(gp + new Vector2(0, gh - 1), gp + new Vector2(w, gh - 1), T.U32(T.Edge));
             float ty = gp.Y + (gh - UiFonts.SansSmall.FontSize) / 2;
-            Text(dl, UiFonts.SansSmall, new Vector2(x[0] + P(6), ty), T.Brass, OvGroups[g].Name);
-            Text(dl, UiFonts.Mono, new Vector2(x[0] + P(12) + Width(UiFonts.SansSmall, OvGroups[g].Name), gp.Y + (gh - UiFonts.Mono.FontSize) / 2),
+            dl.Text(UiFonts.SansSmall, new Vector2(x[0] + P(6), ty), T.Brass, OvGroups[g].Name);
+            dl.Text(UiFonts.Mono, new Vector2(x[0] + P(12) + Width(UiFonts.SansSmall, OvGroups[g].Name), gp.Y + (gh - UiFonts.Mono.FontSize) / 2),
                 T.Muted, op.GroupT[g]);
             string go = OvTabLink[g];
-            Text(dl, UiFonts.SansSmall, new Vector2(x[^1] - P(8) - Width(UiFonts.SansSmall, go), ty), gHover ? T.Brass : T.Muted, go);
+            dl.Text(UiFonts.SansSmall, new Vector2(x[^1] - P(8) - Width(UiFonts.SansSmall, go), ty), gHover ? T.Brass : T.Muted, go);
             y += gh;
 
             for (int i = 0; i < op.Levers.Length; i++)
@@ -441,12 +442,12 @@ public sealed unsafe partial class DesignerScene
     {
         var r = op.Rows[i];
         var x = ovX;
-        RowBg(dl, p, w, n);
+        dl.RowBg(p, w, RowH, n);
         if (r.Changed)
             dl.AddRectFilled(p, p + new Vector2(w, RowH), T.U32(T.Brass with { W = 0.06f }));
         float cy = p.Y + (RowH - fh) / 2;
         float ty = p.Y + (RowH - UiFonts.Sans.FontSize) / 2, my = p.Y + (RowH - UiFonts.Mono.FontSize) / 2;
-        Text(dl, UiFonts.Sans, new Vector2(x[0] + P(6), ty), r.Applies ? T.Text : T.Muted, r.L.Label);
+        dl.Text(UiFonts.Sans, new Vector2(x[0] + P(6), ty), r.Applies ? T.Text : T.Muted, r.L.Label);
 
         ImGui.PushID(i);
         ImGui.SetCursorScreenPos(new Vector2(x[1] + P(4), cy));
@@ -456,7 +457,7 @@ public sealed unsafe partial class DesignerScene
         else
             ScaleSpinner(r, P(104));
         ImGui.EndDisabled();
-        Text(dl, UiFonts.Mono, new Vector2(x[3] - P(8) - Width(UiFonts.Mono, r.Step), my), T.Muted, r.Step);
+        dl.Text(UiFonts.Mono, new Vector2(x[3] - P(8) - Width(UiFonts.Mono, r.Step), my), T.Muted, r.Step);
 
         // one step each way: the probe's figure, a click takes the step
         for (int dir = -1; dir <= 1; dir += 2)
@@ -481,7 +482,7 @@ public sealed unsafe partial class DesignerScene
             bool lumpy = live && ours && ovLumpy[c];
             var col = !live || cell == "…" ? T.Muted : lumpy ? T.Amber : hover ? T.Bright : T.Text;
             float cw = Width(UiFonts.Mono, cell), cxr = a.X + size.X - P(4) - cw;
-            Text(dl, UiFonts.Mono, new Vector2(cxr, my), col, cell);
+            dl.Text(UiFonts.Mono, new Vector2(cxr, my), col, cell);
             if (lumpy)   // a warning triangle: this step goes against the lever's usual sense
             {
                 float tm = p.Y + RowH / 2, tx = cxr - P(12);
@@ -502,7 +503,7 @@ public sealed unsafe partial class DesignerScene
 
         // what it drives, clipped to its column
         dl.PushClipRect(new Vector2(x[5], p.Y), new Vector2(x[6] - P(4), p.Y + RowH), true);
-        Text(dl, UiFonts.SansSmall, new Vector2(x[5] + P(6), p.Y + (RowH - UiFonts.SansSmall.FontSize) / 2), T.Muted,
+        dl.Text(UiFonts.SansSmall, new Vector2(x[5] + P(6), p.Y + (RowH - UiFonts.SansSmall.FontSize) / 2), T.Muted,
             r.Applies || r.Num == null ? r.L.Drives : LeverOff(r.L));
         dl.PopClipRect();
 
@@ -623,7 +624,7 @@ public sealed unsafe partial class DesignerScene
     {
         var dl = ImGui.GetWindowDrawList();
         var p0 = ImGui.GetCursorScreenPos();
-        SubHeader(dl, w, "LIMITS · they report, never refuse", null);
+        dl.HeadStrip(w, "LIMITS · they report, never refuse", null);
         // the pick, over the header's right end
         float comboW = P(210);
         ImGui.SetCursorScreenPos(p0 + new Vector2(w - comboW - P(3), P(1)));
@@ -656,9 +657,9 @@ public sealed unsafe partial class DesignerScene
         dl.AddRectFilled(o, o + new Vector2(w, hh), T.U32(T.HeaderBg));
         dl.AddLine(o + new Vector2(0, hh - 1), o + new Vector2(w, hh - 1), T.U32(T.Edge));
         float hy = o.Y + (hh - UiFonts.SansSmall.FontSize) / 2;
-        Text(dl, UiFonts.SansSmall, new Vector2(cx[3] - Width(UiFonts.SansSmall, "LIMIT"), hy), T.Muted, "LIMIT");
-        Text(dl, UiFonts.SansSmall, new Vector2(cx[4] - Width(UiFonts.SansSmall, "NOW"), hy), T.Muted, "NOW");
-        Text(dl, UiFonts.SansSmall, new Vector2(cx[5] - Width(UiFonts.SansSmall, "MARGIN"), hy), T.Muted, "MARGIN");
+        dl.Text(UiFonts.SansSmall, new Vector2(cx[3] - Width(UiFonts.SansSmall, "LIMIT"), hy), T.Muted, "LIMIT");
+        dl.Text(UiFonts.SansSmall, new Vector2(cx[4] - Width(UiFonts.SansSmall, "NOW"), hy), T.Muted, "NOW");
+        dl.Text(UiFonts.SansSmall, new Vector2(cx[5] - Width(UiFonts.SansSmall, "MARGIN"), hy), T.Muted, "MARGIN");
         float y = o.Y + hh;
         float rh = P(19);
         for (int i = 0; i < op.Limits.Length; i++)
@@ -666,16 +667,16 @@ public sealed unsafe partial class DesignerScene
             var r = op.Limits[i];
             var p = new Vector2(o.X, y);
             bool set = r.Limit.Length > 0;
-            RowBg(dl, p, w, i);
+            dl.RowBg(p, w, RowH, i);
             float ty = p.Y + (rh - UiFonts.Sans.FontSize) / 2, my = p.Y + (rh - UiFonts.Mono.FontSize) / 2;
-            Text(dl, UiFonts.Sans, new Vector2(cx[0], ty), set ? T.Text : T.Muted, r.Label);
-            Text(dl, UiFonts.Mono, new Vector2(cx[1], my), T.Muted, r.Op);
+            dl.Text(UiFonts.Sans, new Vector2(cx[0], ty), set ? T.Text : T.Muted, r.Label);
+            dl.Text(UiFonts.Mono, new Vector2(cx[1], my), T.Muted, r.Op);
             string lim = set ? r.Limit : "—";
-            Text(dl, UiFonts.Mono, new Vector2(cx[3] - Width(UiFonts.Mono, lim), my), set ? T.Bright : T.Muted, lim);
-            Text(dl, UiFonts.Mono, new Vector2(cx[4] - Width(UiFonts.Mono, r.Now), my), set ? T.Bright : T.Text, r.Now);
+            dl.Text(UiFonts.Mono, new Vector2(cx[3] - Width(UiFonts.Mono, lim), my), set ? T.Bright : T.Muted, lim);
+            dl.Text(UiFonts.Mono, new Vector2(cx[4] - Width(UiFonts.Mono, r.Now), my), set ? T.Bright : T.Text, r.Now);
             if (set)
             {
-                Text(dl, UiFonts.Mono, new Vector2(cx[5] - Width(UiFonts.Mono, r.Margin), my), r.Over ? T.Amber : T.Ok, r.Margin);
+                dl.Text(UiFonts.Mono, new Vector2(cx[5] - Width(UiFonts.Mono, r.Margin), my), r.Over ? T.Amber : T.Ok, r.Margin);
                 float bx = cx[5] + P(10), bw = w - (bx - o.X) - P(10);
                 if (bw > P(20))
                 {
@@ -704,11 +705,11 @@ public sealed unsafe partial class DesignerScene
         float vx = v0.X + P(10);
         if (op.Verdict.Length > 0)
         {
-            Text(dl, UiFonts.MonoBig, new Vector2(vx, (v0.Y + v1.Y - UiFonts.MonoBig.FontSize) / 2), ink, op.Verdict);
+            dl.Text(UiFonts.MonoBig, new Vector2(vx, (v0.Y + v1.Y - UiFonts.MonoBig.FontSize) / 2), ink, op.Verdict);
             vx += Width(UiFonts.MonoBig, op.Verdict) + P(10);
         }
         dl.PushClipRect(v0, v1, true);
-        Text(dl, UiFonts.Sans, new Vector2(vx, (v0.Y + v1.Y - UiFonts.Sans.FontSize) / 2), ink, op.VerdictNote);
+        dl.Text(UiFonts.Sans, new Vector2(vx, (v0.Y + v1.Y - UiFonts.Sans.FontSize) / 2), ink, op.VerdictNote);
         dl.PopClipRect();
         y = v1.Y + P(8);
 
@@ -733,12 +734,12 @@ public sealed unsafe partial class DesignerScene
             dl.AddLine(new Vector2(tx, w0.Y - P(4)), new Vector2(tx, w0.Y + wh + P(4)), T.U32(T.Bright), P(2));
         }
         y += wh + P(4);
-        Text(dl, UiFonts.SansSmall, new Vector2(o.X + P(8), y), T.Muted, "standard displacement by weight group · hover a part");
+        dl.Text(UiFonts.SansSmall, new Vector2(o.X + P(8), y), T.Muted, "standard displacement by weight group · hover a part");
         y += P(22);
 
         // Fit: a placeholder for the autodesigner
         ImGui.SetCursorScreenPos(new Vector2(o.X, y));
-        SubHeader(dl, w, "FIT TO THE LIMITS", "coming with the autodesigner");
+        dl.HeadStrip(w, "FIT TO THE LIMITS", "coming with the autodesigner");
         ImGui.SetCursorScreenPos(new Vector2(o.X + P(8), ImGui.GetCursorScreenPos().Y + P(6)));
         ImGui.BeginDisabled();
         ImGui.Button("Fit with one lever");

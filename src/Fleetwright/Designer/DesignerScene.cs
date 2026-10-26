@@ -6,7 +6,8 @@ using Fleetwright.Shipgen;
 using ImGuiNET;
 using SDL;
 using static SDL.SDL3;
-using T = Fleetwright.Designer.DesignerTheme;
+using T = Fleetwright.Ui.Theme;
+using static Fleetwright.Ui.Pieces;
 
 namespace Fleetwright.Designer;
 
@@ -25,9 +26,7 @@ public sealed unsafe partial class DesignerScene : IScene
 {
     const double SpriteScale = 8;   // px per metre at mip 0
     const int MipLevels = 4;
-    static float S => UiFonts.Scale;
-    static float P(float px) => px * S;
-    static Vector2 V(float x, float y) => new(x * S, y * S);
+    static Vector2 V(float x, float y) => new(P(x), P(y));
 
     static readonly string[] Sections =
         ["Overview", "Main battery", "Secondary · AA · TT", "Protection", "Speed & machinery", "Hull & upperworks", "Fire control", "Crew"];

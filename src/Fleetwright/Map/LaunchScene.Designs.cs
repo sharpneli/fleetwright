@@ -7,7 +7,8 @@ using Fleetwright.Shipgen;
 using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Ships;
 using ImGuiNET;
-using T = Fleetwright.Designer.DesignerTheme;
+using static Fleetwright.Ui.Pieces;
+using T = Fleetwright.Ui.Theme;
 
 namespace Fleetwright.Map;
 

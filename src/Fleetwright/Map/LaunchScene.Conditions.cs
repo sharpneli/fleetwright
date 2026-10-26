@@ -3,7 +3,8 @@ using System.Numerics;
 using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Missions;
 using ImGuiNET;
-using T = Fleetwright.Designer.DesignerTheme;
+using static Fleetwright.Ui.Pieces;
+using T = Fleetwright.Ui.Theme;
 
 namespace Fleetwright.Map;
 
@@ -183,11 +184,9 @@ public sealed unsafe partial class LaunchScene
     void CrewsColumn(Vector2 a, Vector2 size, ConditionsView v)
     {
         float w = size.X, y = a.Y;
-        float right = SubHeader(a, w, "CREWS AND SHIPS");
-        float pw = 0;
-        foreach (var p in PresetNames)
-            pw += Width(UiFonts.SansSmall, p) + P(14) - 1;
-        int hit = Segmented("##preset", new Vector2(right - pw - 1, y + P(2)), PresetNames, v.Preset, out _);
+        float right = dl.SubHeader(a, w, "CREWS AND SHIPS");
+        float pw = SegmentedWidth(PresetNames) - 1;
+        int hit = dl.Segmented("##preset", new Vector2(right - pw - 1, y + P(2)), PresetNames, v.Preset, out _);
         if (hit >= 0)
             pendingEdit = Preset(hit, v.Own, v.Other);
         if (ImGui.IsMouseHoveringRect(new Vector2(right - pw, y), new Vector2(right, y + RowH)))
@@ -204,79 +203,79 @@ public sealed unsafe partial class LaunchScene
         y += RowH;
         var h = new Vector2(a.X, y);
         float c0 = a.X + P(112), cw = (w - P(118)) / 2;
-        Head(h, w);
-        HeadCell(h, a.X + P(6), "ROW");
+        dl.Head(h, w);
+        dl.HeadCell(h, a.X + P(6), "ROW");
         for (int c = 0; c < 2; c++)
         {
             float hx = c0 + c * cw;
             Ensign(c == 0 ? v.OwnEnsign : v.OtherEnsign, new Vector2(hx, h.Y + P(4)), new Vector2(P(16), P(10)));
-            HeadCell(h, hx + P(22), c == 0 ? v.OwnHead : v.OtherHead);
+            dl.HeadCell(h, hx + P(22), c == 0 ? v.OwnHead : v.OtherHead);
         }
         y += HeadH;
         for (int k = 0; k < Kinds.Length; k++)
         {
             var ra = new Vector2(a.X, y);
-            RowBg(ra, w, RowH, k);
-            Txt(UiFonts.Sans, new Vector2(ra.X + P(6), Mid(UiFonts.Sans, ra.Y, RowH)), T.Text, KindLabels[k]);
+            dl.RowBg(ra, w, RowH, k);
+            dl.Text(UiFonts.Sans, new Vector2(ra.X + P(6), Mid(UiFonts.Sans, ra.Y, RowH)), T.Text, KindLabels[k]);
             var opts = OptionsOf(Kinds[k]);
             for (int c = 0; c < 2; c++)
             {
-                int picked = DropDown($"##cond{k}{c}", new Vector2(c0 + c * cw, ra.Y + P(2)), cw - P(8), v.Now[k, c], opts, v.Changed[k, c]);
+                int picked = dl.DropDown($"##cond{k}{c}", new Vector2(c0 + c * cw, ra.Y + P(2)), cw - P(8), v.Now[k, c], opts, v.Changed[k, c]);
                 if (picked >= 0 && opts[picked] != v.Now[k, c])
                     pendingEdit = Setting(setup, Kinds[k], c == 0 ? v.Own : v.Other, opts[picked]);
             }
             y += RowH;
         }
         y += P(6);
-        Wrapped(UiFonts.SansSmall, new Vector2(a.X + P(6), y), T.Muted,
+        dl.Wrapped(UiFonts.SansSmall, new Vector2(a.X + P(6), y), T.Muted,
             "What decides how well they fight, not what they are. The presets are first guesses, to be settled by playtesting.", w - P(12));
     }
 
     void DayColumn(Vector2 a, Vector2 size, ConditionsView v, Scenario s)
     {
         float w = size.X, y = a.Y;
-        SubHeader(a, w, "THE DAY");
+        dl.SubHeader(a, w, "THE DAY");
         y += RowH;
         var h = new Vector2(a.X, y);
         float c0 = a.X + P(86);
-        Head(h, w);
-        HeadCell(h, a.X + P(6), "ROW");
-        HeadCell(h, c0, "SETTING");
+        dl.Head(h, w);
+        dl.HeadCell(h, a.X + P(6), "ROW");
+        dl.HeadCell(h, c0, "SETTING");
         y += HeadH;
         int n = 0;
         Vector2 Row(string label)
         {
             var ra = new Vector2(a.X, y);
-            RowBg(ra, w, RowH, n++);
-            Txt(UiFonts.Sans, new Vector2(ra.X + P(6), Mid(UiFonts.Sans, ra.Y, RowH)), T.Text, label);
+            dl.RowBg(ra, w, RowH, n++);
+            dl.Text(UiFonts.Sans, new Vector2(ra.X + P(6), Mid(UiFonts.Sans, ra.Y, RowH)), T.Text, label);
             y += RowH;
             return ra;
         }
         void Note(Vector2 ra, float x, string s2, bool brass = false) =>
-            Txt(UiFonts.SansSmall, new Vector2(x, Mid(UiFonts.SansSmall, ra.Y, RowH)), brass ? T.Brass : T.Muted, s2);
+            dl.Text(UiFonts.SansSmall, new Vector2(x, Mid(UiFonts.SansSmall, ra.Y, RowH)), brass ? T.Brass : T.Muted, s2);
 
         // visibility, by the kilometre
         var r = Row("Visibility");
         double km = Math.Round(v.Weather.VisibilityM / 1000);
-        float sw = Stepper("##vis", new Vector2(c0, r.Y + P(2.5f)), v.Vis, P(52), km > 1, km < 30, out int by);
+        float sw = dl.Stepper("##vis", new Vector2(c0, r.Y + P(2.5f)), v.Vis, P(52), km > 1, km < 30, out int by);
         if (by != 0)
             pendingEdit = Weather(v.Weather with { VisibilityM = Math.Clamp(km + by, 1, 30) * 1000 });
         Note(r, c0 + sw + P(8), v.WeatherChanged && Math.Abs(v.Weather.VisibilityM - v.WrittenWeather.VisibilityM) > 1 ? "changed" : v.VisWord, v.WeatherChanged && Math.Abs(v.Weather.VisibilityM - v.WrittenWeather.VisibilityM) > 1);
         // the wind: from, and how hard
         r = Row("Wind");
-        int point = DropDown("##windfrom", new Vector2(c0, r.Y + P(2)), P(56), SetWeather.Points[v.WindPoint], SetWeather.Points,
+        int point = dl.DropDown("##windfrom", new Vector2(c0, r.Y + P(2)), P(56), SetWeather.Points[v.WindPoint], SetWeather.Points,
             v.WeatherChanged && Math.Abs(v.Weather.WindFromDeg - v.WrittenWeather.WindFromDeg) > 0.5);
         if (point >= 0 && point != v.WindPoint)
             pendingEdit = Weather(v.Weather with { WindFromDeg = point * 22.5 });
         double kn = Math.Round(v.Weather.WindMs / 0.514444);
-        sw = Stepper("##wind", new Vector2(c0 + P(62), r.Y + P(2.5f)), v.WindKn, P(46), kn > 0, kn < 60, out by);
+        sw = dl.Stepper("##wind", new Vector2(c0 + P(62), r.Y + P(2.5f)), v.WindKn, P(46), kn > 0, kn < 60, out by);
         if (by != 0)
             pendingEdit = Weather(v.Weather with { WindMs = Math.Clamp(kn + 2 * by, 0, 60) * 0.514444 });
         Note(r, c0 + P(62) + sw + P(8), "from, and how hard");
         // the end, by the hour
         r = Row("Ends");
         var end = EndOf(s);
-        sw = Stepper("##ends", new Vector2(c0, r.Y + P(2.5f)), v.Ends, P(96), end.Ms - 3_600_000L > s.Start.Ms, end.Ms < s.Start.Ms + 72 * 3_600_000L, out int hours);
+        sw = dl.Stepper("##ends", new Vector2(c0, r.Y + P(2.5f)), v.Ends, P(96), end.Ms - 3_600_000L > s.Start.Ms, end.Ms < s.Start.Ms + 72 * 3_600_000L, out int hours);
         if (hours != 0)
         {
             var to = end + Math.Sign(hours) * 3_600_000L;
@@ -285,7 +284,7 @@ public sealed unsafe partial class LaunchScene
         Note(r, c0 + sw + P(8), v.EndChanged ? "changed" : "local, at the latest", v.EndChanged);
         // the seed
         r = Row("Seed");
-        int seed = Segmented("##seed", new Vector2(c0, r.Y + P(2)), v.SeedWords, v.NewSeed ? 1 : 0, out sw);
+        int seed = dl.Segmented("##seed", new Vector2(c0, r.Y + P(2)), v.SeedWords, v.NewSeed ? 1 : 0, out sw);
         if (seed >= 0)
             pendingEdit = seed == 1 ? setup.With(new SetSeed(null)) : setup.Without("seed");
         if (v.SeedNote.Length > 0)
@@ -298,9 +297,9 @@ public sealed unsafe partial class LaunchScene
             var ra = new Vector2(a.X, y);
             if (n++ % 2 == 1)
                 dl.AddRectFilled(ra, ra + new Vector2(w, rh), U(new Vector4(1, 1, 1, 0.018f)));
-            HLine(ra.X, ra.X + w, ra.Y + rh - 1, T.Line);
-            Txt(UiFonts.Sans, new Vector2(ra.X + P(6), Mid(UiFonts.Sans, ra.Y, RowH)), T.Text, label);
-            Wrapped(UiFonts.Sans, new Vector2(c0, ra.Y + P(2)), T.Bright, value, w - (c0 - a.X) - P(8));
+            dl.HLine(ra.X, ra.X + w, ra.Y + rh - 1, T.Line);
+            dl.Text(UiFonts.Sans, new Vector2(ra.X + P(6), Mid(UiFonts.Sans, ra.Y, RowH)), T.Text, label);
+            dl.Wrapped(UiFonts.Sans, new Vector2(c0, ra.Y + P(2)), T.Bright, value, w - (c0 - a.X) - P(8));
             y += rh;
         }
     }
@@ -323,10 +322,10 @@ public sealed unsafe partial class LaunchScene
     void ChangesColumn(Vector2 a, Vector2 size)
     {
         float w = size.X;
-        float right = SubHeader(a, w, "CHANGES FROM THE SCENARIO");
+        float right = dl.SubHeader(a, w, "CHANGES FROM THE SCENARIO");
         const string Reset = "Reset all";
         float bw = ButtonWidth(Reset, null);
-        if (Button("##resetall", new Vector2(right - bw, a.Y + P(1)), Reset, enabled: !setup.IsEmpty && !begin))
+        if (dl.Button("##resetall", new Vector2(right - bw, a.Y + P(1)), Reset, enabled: !setup.IsEmpty && !begin))
             pendingEdit = setup with { Changes = [] };
         ImGui.SetCursorScreenPos(a + new Vector2(0, RowH));
         var keep = dl;
@@ -336,12 +335,12 @@ public sealed unsafe partial class LaunchScene
             dl = ImGui.GetWindowDrawList();
             var o = ImGui.GetCursorScreenPos();
             float cw = ImGui.GetContentRegionAvail().X;
-            Head(o, cw);
-            HeadCell(o, o.X + P(6), "CHANGE");
+            dl.Head(o, cw);
+            dl.HeadCell(o, o.X + P(6), "CHANGE");
             y = o.Y + HeadH;
             if (setup.IsEmpty)
             {
-                Txt(UiFonts.SansSmall, new Vector2(o.X + P(6), Mid(UiFonts.SansSmall, y, RowH)), T.Muted, "None: the scenario as written.");
+                dl.Text(UiFonts.SansSmall, new Vector2(o.X + P(6), Mid(UiFonts.SansSmall, y, RowH)), T.Muted, "None: the scenario as written.");
                 y += RowH;
             }
             SetupChange? undo = null;
@@ -352,10 +351,10 @@ public sealed unsafe partial class LaunchScene
                 float th = WrappedHeight(UiFonts.Sans, text, cw - P(34));
                 float rh = Math.Max(RowH, th + P(4));
                 var ra = new Vector2(o.X, y);
-                RowBg(ra, cw, rh, i);
-                Wrapped(UiFonts.Sans, new Vector2(ra.X + P(6), ra.Y + P(2)), T.Text, text, cw - P(34));
+                dl.RowBg(ra, cw, rh, i);
+                dl.Wrapped(UiFonts.Sans, new Vector2(ra.X + P(6), ra.Y + P(2)), T.Text, text, cw - P(34));
                 ImGui.PushID(i);
-                if (CrossButton("##undo", new Vector2(ra.X + cw - P(12), ra.Y + RowH / 2), "undo: as written"))
+                if (dl.CrossButton("##undo", new Vector2(ra.X + cw - P(12), ra.Y + RowH / 2), "undo: as written"))
                     undo = c;
                 ImGui.PopID();
                 y += rh;

@@ -3,7 +3,8 @@ using System.Numerics;
 using Fleetwright.Shipgen;
 using Fleetwright.Sim.Missions;
 using ImGuiNET;
-using T = Fleetwright.Designer.DesignerTheme;
+using static Fleetwright.Ui.Pieces;
+using T = Fleetwright.Ui.Theme;
 
 namespace Fleetwright.Map;
 
@@ -285,9 +286,9 @@ public sealed unsafe partial class LaunchScene
     void Picker(ShipLine row, Vector2 o, Vector2 size, bool enter)
     {
         float x0 = o.X, x1 = o.X + size.X, y1 = o.Y + size.Y, w = size.X;
-        float right = Pane(o, size, adding ? "ADD A UNIT" : "CHANGE DESIGN", pickerTitle);
+        float right = dl.Pane(o, size, adding ? "ADD A UNIT" : "CHANGE DESIGN", pickerTitle);
         float cw = ButtonWidth("Close", "Esc");
-        if (Button("##pclose", new Vector2(right - cw, o.Y + P(1)), "Close", "Esc"))
+        if (dl.Button("##pclose", new Vector2(right - cw, o.Y + P(1)), "Close", "Esc"))
         {
             ClosePicker();
             return;
@@ -301,7 +302,7 @@ public sealed unsafe partial class LaunchScene
         // the filters: a search, the type, the sources, the year; what the matchup is of at the right
         float fy = y;
         dl.AddRectFilled(new Vector2(x0 + 1, fy), new Vector2(x1 - 1, fy + P(24)), U(T.HeaderBg));
-        HLine(x0 + 1, x1 - 1, fy + P(24) - 1, T.Line);
+        dl.HLine(x0 + 1, x1 - 1, fy + P(24) - 1, T.Line);
         float fx = x0 + P(7), cy = fy + P(4);
         ImGui.SetCursorScreenPos(new Vector2(fx, fy + P(3)));
         ImGui.PushFont(UiFonts.SansSmall);
@@ -315,19 +316,19 @@ public sealed unsafe partial class LaunchScene
         if (!adding)
         {
             typeLabels[0] = typeChip;
-            int t = Segmented("##ptype", new Vector2(fx, cy), typeLabels, sameType ? 0 : 1, out float tw);
+            int t = dl.Segmented("##ptype", new Vector2(fx, cy), typeLabels, sameType ? 0 : 1, out float tw);
             if (t >= 0)
                 (sameType, candsDirty) = (t == 0, true);
             fx += tw + P(10);
         }
-        if (Flag("##pscen", ref fx, cy, "scenario's", fromScenario))
+        if (dl.Flag("##pscen", ref fx, cy, "scenario's", fromScenario))
             (fromScenario, candsDirty) = (!fromScenario, true);
-        if (Flag("##pyours", ref fx, cy, "yours", fromYours))
+        if (dl.Flag("##pyours", ref fx, cy, "yours", fromYours))
             (fromYours, candsDirty) = (!fromYours, true);
-        if (Flag("##pship", ref fx, cy, "shipped", fromShipped))
+        if (dl.Flag("##pship", ref fx, cy, "shipped", fromShipped))
             (fromShipped, candsDirty) = (!fromShipped, true);
         fx += P(6);
-        if (Flag("##pyear", ref fx, cy, yearChip, upToYear))
+        if (dl.Flag("##pyear", ref fx, cy, yearChip, upToYear))
             (upToYear, candsDirty) = (!upToYear, true);
         if (!adding)
             FoeReady(row);
@@ -336,7 +337,7 @@ public sealed unsafe partial class LaunchScene
         {
             if (!ReferenceEquals(matchupFor, matchupLine) || Math.Abs(mw - matchupWidth) > 0.5f)
                 (matchupFor, matchupWidth, matchupShown) = (matchupLine, mw, Clip(UiFonts.SansSmall, matchupLine, mw));
-            float mx = RightNote(x1 - P(8), fy, P(24), matchupShown);
+            float mx = dl.RightNote(x1 - P(8), fy, P(24), matchupShown);
             if (ImGui.IsMouseHoveringRect(new Vector2(mx, fy), new Vector2(x1, fy + P(24))))
                 ImGui.SetTooltip(MatchupHelp);
         }
@@ -346,16 +347,16 @@ public sealed unsafe partial class LaunchScene
         float cMatch = x1 - P(12), cBelt = cMatch - P(78), cMain = cBelt - P(60), cSpeed = cMain - P(84), cDispl = cSpeed - P(52);
         float cName = x0 + P(196), cNote = cName + P(250);
         var h = new Vector2(x0 + 1, y);
-        Head(h, w - 2);
-        HeadCell(h, x0 + P(10), "TO SCALE");
-        HeadCell(h, cName, "DESIGN");
-        HeadCell(h, cNote, "NOTE");
-        HeadCell(h, cDispl, "T", right: true);
-        HeadCell(h, cSpeed, "KN", right: true);
-        HeadCell(h, cMain, "MAIN", right: true);
-        HeadCell(h, cBelt, "BELT", right: true);
+        dl.Head(h, w - 2);
+        dl.HeadCell(h, x0 + P(10), "TO SCALE");
+        dl.HeadCell(h, cName, "DESIGN");
+        dl.HeadCell(h, cNote, "NOTE");
+        dl.HeadCell(h, cDispl, "T", right: true);
+        dl.HeadCell(h, cSpeed, "KN", right: true);
+        dl.HeadCell(h, cMain, "MAIN", right: true);
+        dl.HeadCell(h, cBelt, "BELT", right: true);
         if (!adding)
-            HeadCell(h, cMatch, "MATCHUP", right: true);
+            dl.HeadCell(h, cMatch, "MATCHUP", right: true);
         y += HeadH;
         double inUse = adding ? double.NaN : MatchupOf(row, ClassOf(row.Design))?.Value ?? double.NaN;
 
@@ -377,7 +378,7 @@ public sealed unsafe partial class LaunchScene
             float lw = ImGui.GetContentRegionAvail().X, shift = lw - (w - 2);
             float ry = lo.Y, rh = PickRowH, top = ImGui.GetWindowPos().Y, bottom = top + listBottom - listTop;
             if (!DesignsRead)
-                Txt(UiFonts.SansSmall, new Vector2(cName, Mid(UiFonts.SansSmall, ry, RowH)), T.Muted, "reading the designs…");
+                dl.Text(UiFonts.SansSmall, new Vector2(cName, Mid(UiFonts.SansSmall, ry, RowH)), T.Muted, "reading the designs…");
             int n = 0;
             foreach (int i in shownCands)
             {
@@ -396,45 +397,45 @@ public sealed unsafe partial class LaunchScene
                     Choose(i);
                 if (hover && ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left) && !adding)
                     use = i;
-                RowBg(a, lw, rh, n++, i == chosen, hover);
+                dl.RowBg(a, lw, rh, n++, i == chosen, hover);
                 int id = IdOf(c);
                 dl.PushClipRect(new Vector2(a.X + P(6), ry), new Vector2(cName - P(10), ry + rh), true);
                 Thumb(id, new Vector2(x0 + P(96), ry + rh / 2), pxPerM);
                 dl.PopClipRect();
                 float tx = cName, ty = Mid(UiFonts.Sans, ry, rh);
                 dl.PushClipRect(new Vector2(tx, ry), new Vector2(cNote - P(8), ry + rh), true);
-                Txt(UiFonts.Sans, new Vector2(tx, ty), i == chosen ? T.Brass : T.Bright, c.Info.Title);
+                dl.Text(UiFonts.Sans, new Vector2(tx, ty), i == chosen ? T.Brass : T.Bright, c.Info.Title);
                 tx += Width(UiFonts.Sans, c.Info.Title) + P(8);
-                tx += Chip(new Vector2(tx, ry + (rh - P(15)) / 2), c.Chip, c.Info.Yours ? ChipKind.Amber : ChipKind.Blue) + P(4);
+                tx += dl.Chip(new Vector2(tx, ry + (rh - P(15)) / 2), c.Chip, c.Info.Yours ? ChipKind.Amber : ChipKind.Blue) + P(4);
                 if (c.InUse)
-                    Chip(new Vector2(tx, ry + (rh - P(15)) / 2), "in use", ChipKind.Ok);
+                    dl.Chip(new Vector2(tx, ry + (rh - P(15)) / 2), "in use", ChipKind.Ok);
                 dl.PopClipRect();
                 float figs = cDispl + shift - P(64);
                 if (c.Sub.Length > 0)
                 {
                     dl.PushClipRect(new Vector2(cNote, ry), new Vector2(figs, ry + rh), true);
-                    Txt(UiFonts.SansSmall, new Vector2(cNote, Mid(UiFonts.SansSmall, ry, rh)), T.Muted, c.Sub);
+                    dl.Text(UiFonts.SansSmall, new Vector2(cNote, Mid(UiFonts.SansSmall, ry, rh)), T.Muted, c.Sub);
                     dl.PopClipRect();
                 }
                 float my = Mid(UiFonts.Mono, ry, rh);
                 if (FiguresOf(id) is { } f)
                 {
-                    TxtR(UiFonts.Mono, cDispl + shift, my, T.Bright, f.Displacement);
-                    TxtR(UiFonts.Mono, cSpeed + shift, my, T.Bright, f.Speed);
-                    TxtR(UiFonts.Mono, cMain + shift, my, T.Text, f.Main);
-                    TxtR(UiFonts.Mono, cBelt + shift, my, T.Bright, f.Belt);
+                    dl.TextRight(UiFonts.Mono, cDispl + shift, my, T.Bright, f.Displacement);
+                    dl.TextRight(UiFonts.Mono, cSpeed + shift, my, T.Bright, f.Speed);
+                    dl.TextRight(UiFonts.Mono, cMain + shift, my, T.Text, f.Main);
+                    dl.TextRight(UiFonts.Mono, cBelt + shift, my, T.Bright, f.Belt);
                     if (!adding && MatchupOf(row, id) is { } m)
-                        TxtR(UiFonts.Mono, cMatch + shift, my, c.InUse || !(Math.Abs(m.Value / inUse - 1) > 0.02) ? T.Text : m.Value > inUse ? T.Ok : T.Amber, m.Text);
+                        dl.TextRight(UiFonts.Mono, cMatch + shift, my, c.InUse || !(Math.Abs(m.Value / inUse - 1) > 0.02) ? T.Text : m.Value > inUse ? T.Ok : T.Amber, m.Text);
                 }
                 else if (id >= 0 && world.Classes.IsReady(id) && world.Classes.ErrorOf(id) != null)
-                    TxtR(UiFonts.SansSmall, cBelt + shift, Mid(UiFonts.SansSmall, ry, rh), T.Amber, "didn't build");
+                    dl.TextRight(UiFonts.SansSmall, cBelt + shift, Mid(UiFonts.SansSmall, ry, rh), T.Amber, "didn't build");
                 else
-                    TxtR(UiFonts.SansSmall, cDispl + shift, Mid(UiFonts.SansSmall, ry, rh), T.Muted, "building…");
+                    dl.TextRight(UiFonts.SansSmall, cDispl + shift, Mid(UiFonts.SansSmall, ry, rh), T.Muted, "building…");
                 ry += rh;
             }
             if (DesignsRead && shownCands.Count == 0)
             {
-                Txt(UiFonts.SansSmall, new Vector2(cName, Mid(UiFonts.SansSmall, ry, RowH)), T.Muted, "nothing listed: the filters leave none");
+                dl.Text(UiFonts.SansSmall, new Vector2(cName, Mid(UiFonts.SansSmall, ry, RowH)), T.Muted, "nothing listed: the filters leave none");
                 ry += RowH;
             }
             // a new design from the row's: a brass row at the end
@@ -443,9 +444,9 @@ public sealed unsafe partial class LaunchScene
                 var na = new Vector2(lo.X, ry);
                 var (click, hover) = HitRow("##pnew", na, new Vector2(lw, RowH));
                 copyRow = click;
-                RowBg(na, lw, RowH, n, hover: hover);
-                Txt(UiFonts.Sans, new Vector2(na.X + P(10), Mid(UiFonts.Sans, na.Y, RowH)), hover ? T.Bright : T.Brass, newFrom);
-                Txt(UiFonts.SansSmall, new Vector2(cNote, Mid(UiFonts.SansSmall, na.Y, RowH)), T.Muted, "opens the designer on a copy; saved, it's back here as yours");
+                dl.RowBg(na, lw, RowH, n, hover: hover);
+                dl.Text(UiFonts.Sans, new Vector2(na.X + P(10), Mid(UiFonts.Sans, na.Y, RowH)), hover ? T.Bright : T.Brass, newFrom);
+                dl.Text(UiFonts.SansSmall, new Vector2(cNote, Mid(UiFonts.SansSmall, na.Y, RowH)), T.Muted, "opens the designer on a copy; saved, it's back here as yours");
                 ry += RowH;
             }
             ImGui.SetCursorPos(new Vector2(0, ry + P(4) - lo.Y));
@@ -471,11 +472,11 @@ public sealed unsafe partial class LaunchScene
         // the foot: a copy to the designer, cancel, use (or add)
         float fby = y1 - footH;
         dl.AddRectFilled(new Vector2(x0 + 1, fby), new Vector2(x1 - 1, y1 - 1), U(T.Panel2));
-        HLine(x0 + 1, x1 - 1, fby, T.Edge);
+        dl.HLine(x0 + 1, x1 - 1, fby, T.Edge);
         float by = fby + P(6);
         var pick = chosen >= 0 ? candidates[chosen] : null;
         const string CopyL = "Edit a copy in the designer…";
-        if (Button("##pcopy", new Vector2(x0 + P(8), by), CopyL, "E", enabled: pick != null && EditCopy != null) ||
+        if (dl.Button("##pcopy", new Vector2(x0 + P(8), by), CopyL, "E", enabled: pick != null && EditCopy != null) ||
             pick != null && !ImGui.GetIO().WantTextInput && ImGui.IsKeyPressed(ImGuiKey.E) && !ImGui.GetIO().KeyCtrl)
             Copy(pick);
         if (adding)
@@ -486,29 +487,13 @@ public sealed unsafe partial class LaunchScene
         string useLabel = cmp.Use;
         float uw = ButtonWidth(useLabel, "Enter", primary: true);
         bool canUse = pick is { InUse: false };
-        if (Button("##puse", new Vector2(x1 - P(8) - uw, by), useLabel, "Enter", primary: true, enabled: canUse) || enter && canUse)
+        if (dl.Button("##puse", new Vector2(x1 - P(8) - uw, by), useLabel, "Enter", primary: true, enabled: canUse) || enter && canUse)
             UseChosen();
-        else if (Button("##pcancel", new Vector2(x1 - P(12) - uw - ButtonWidth("Cancel", "Esc"), by), "Cancel", "Esc"))
+        else if (dl.Button("##pcancel", new Vector2(x1 - P(12) - uw - ButtonWidth("Cancel", "Esc"), by), "Cancel", "Esc"))
             ClosePicker();
     }
 
     readonly string[] typeLabels = ["", "Any type"];
-
-    /// <summary>A filter that's on or off on its own: a single segment, brass when on; laid rightwards from
-    /// <paramref name="x"/>. True when clicked.</summary>
-    bool Flag(string id, ref float x, float y, string label, bool on)
-    {
-        float w = Width(UiFonts.SansSmall, label) + P(14), h = P(16);
-        var a = new Vector2(x, y);
-        ImGui.SetCursorScreenPos(a);
-        bool hit = ImGui.InvisibleButton(id, new Vector2(w, h));
-        bool hover = ImGui.IsItemHovered();
-        dl.AddRectFilled(a, a + new Vector2(w, h), U(on ? T.BrassDarker : hover ? T.ButtonHover : T.Button));
-        dl.AddRect(a, a + new Vector2(w, h), U(on ? T.Brass : T.ButtonEdge));
-        Txt(UiFonts.SansSmall, new Vector2(a.X + P(7), Mid(UiFonts.SansSmall, a.Y, h)), on ? T.Brass : T.Text, label);
-        x += w + P(3);
-        return hit;
-    }
 
     /// <summary>The comparison's strings, made when what it shows changes.</summary>
     sealed class CompareText
@@ -575,7 +560,7 @@ public sealed unsafe partial class LaunchScene
         var nf = other ? FiguresOf(newId) : null;
         MakeCompare(row, pick, oldId, newId, of, nf);
         dl.AddLine(new Vector2(o.X, o.Y), new Vector2(o.X + w, o.Y), U(T.Edge));
-        SubHeader(o + new Vector2(0, 1), w, "COMPARED", "the design in use over the one picked");
+        dl.SubHeader(o + new Vector2(0, 1), w, "COMPARED", "the design in use over the one picked");
         float y = o.Y + 1 + RowH;
         float drawW = MathF.Round(w * 0.30f), tableW = MathF.Round(w * 0.38f), useW = w - drawW - tableW;
         float bodyH = size.Y - RowH - 1;
@@ -589,26 +574,26 @@ public sealed unsafe partial class LaunchScene
         float k = longest > 0 ? Math.Min(P(1.6f), (drawW - P(24)) / longest) : P(1);
         float cx = p0.X + drawW / 2;
         Thumb(oldId, new Vector2(cx, p0.Y + bodyH * 0.32f), k);
-        Tag(new Vector2(p0.X + P(8), p0.Y + P(8)), row.Text);
+        dl.Tag(new Vector2(p0.X + P(8), p0.Y + P(8)), row.Text);
         if (other)
         {
             Thumb(newId, new Vector2(cx, p0.Y + bodyH * 0.74f), k);
-            Tag(new Vector2(p0.X + P(8), p0.Y + bodyH * 0.52f), pick!.Info.Title, T.Brass);
+            dl.Tag(new Vector2(p0.X + P(8), p0.Y + bodyH * 0.52f), pick!.Info.Title, T.Brass);
         }
-        TxtR(UiFonts.MonoSmall, p0.X + drawW - P(8), p0.Y + bodyH - P(16), T.PlanLine, "to scale");
+        dl.TextRight(UiFonts.MonoSmall, p0.X + drawW - P(8), p0.Y + bodyH - P(16), T.PlanLine, "to scale");
 
         // the figures, the old and the new
         float tx = o.X + drawW;
         dl.AddLine(new Vector2(tx, y), new Vector2(tx, y + bodyH), U(T.Edge));
         var h = new Vector2(tx + 1, y);
         float cOld = tx + tableW - P(150), cNew = tx + tableW - P(72), cDelta = tx + tableW - P(8);
-        Head(h, tableW - 1);
-        HeadCell(h, tx + P(6), "PARTICULAR");
-        HeadCell(h, cOld, cmp.OldHead, right: true);
+        dl.Head(h, tableW - 1);
+        dl.HeadCell(h, tx + P(6), "PARTICULAR");
+        dl.HeadCell(h, cOld, cmp.OldHead, right: true);
         if (other)
         {
-            HeadCell(h, cNew, cmp.NewHead, right: true);
-            HeadCell(h, cDelta, "CHANGE", right: true);
+            dl.HeadCell(h, cNew, cmp.NewHead, right: true);
+            dl.HeadCell(h, cDelta, "CHANGE", right: true);
         }
         float ty = y + HeadH;
         for (int r = 0; r < 7; r++, ty += RowH)
@@ -616,16 +601,16 @@ public sealed unsafe partial class LaunchScene
             if (r == 6 && cmp.MatchupLabel.Length == 0)
                 break;
             var ra = new Vector2(tx + 1, ty);
-            RowBg(ra, tableW - 1, RowH, r);
-            Txt(UiFonts.Sans, new Vector2(ra.X + P(6), Mid(UiFonts.Sans, ra.Y, RowH)), T.Muted, r < 6 ? CompareRows[r] : cmp.MatchupLabel);
+            dl.RowBg(ra, tableW - 1, RowH, r);
+            dl.Text(UiFonts.Sans, new Vector2(ra.X + P(6), Mid(UiFonts.Sans, ra.Y, RowH)), T.Muted, r < 6 ? CompareRows[r] : cmp.MatchupLabel);
             float my = Mid(UiFonts.Mono, ra.Y, RowH);
-            TxtR(UiFonts.Mono, cOld, my, T.Text, cmp.Old[r]);
+            dl.TextRight(UiFonts.Mono, cOld, my, T.Text, cmp.Old[r]);
             if (nf != null)
             {
-                TxtR(UiFonts.Mono, cNew, my, T.Bright, cmp.New[r]);
+                dl.TextRight(UiFonts.Mono, cNew, my, T.Bright, cmp.New[r]);
                 // the matchup's change is better or worse; the others are only changes
                 var dc = cmp.Delta[r] == "–" || r < 6 ? T.Muted : cmp.Delta[r].StartsWith('+') ? T.Ok : T.Amber;
-                TxtR(UiFonts.Mono, cDelta, my, dc, cmp.Delta[r]);
+                dl.TextRight(UiFonts.Mono, cDelta, my, dc, cmp.Delta[r]);
             }
         }
 
@@ -633,8 +618,8 @@ public sealed unsafe partial class LaunchScene
         float ux = tx + tableW;
         dl.AddLine(new Vector2(ux, y), new Vector2(ux, y + bodyH), U(T.Edge));
         h = new Vector2(ux + 1, y);
-        Head(h, useW - 1);
-        HeadCell(h, ux + P(6), "USE IT FOR");
+        dl.Head(h, useW - 1);
+        dl.HeadCell(h, ux + P(6), "USE IT FOR");
         float uy = y + HeadH;
         int un = 0;
         if (ScopeRow("##sc0", new Vector2(ux + 1, uy), useW - 1, unitScope, scope == 0, un++))
@@ -646,7 +631,7 @@ public sealed unsafe partial class LaunchScene
                 scope = 1;
             if (row.NameList.Length > 1)
             {
-                int ship = DropDown("##scship", new Vector2(ux + useW - P(130), uy + P(2)), P(122), row.NameList[Math.Min(scopeShip, row.NameList.Length - 1)], row.NameList);
+                int ship = dl.DropDown("##scship", new Vector2(ux + useW - P(130), uy + P(2)), P(122), row.NameList[Math.Min(scopeShip, row.NameList.Length - 1)], row.NameList);
                 if (ship >= 0)
                     (scopeShip, scope) = (ship, 1);
             }
@@ -657,18 +642,18 @@ public sealed unsafe partial class LaunchScene
         uy += RowH + P(6);
         float nw = useW - P(16);
         if (cmp.Note.Length > 0)
-            uy += Wrapped(UiFonts.SansSmall, new Vector2(ux + P(8), uy), T.Muted, cmp.Note, nw) + P(6);
+            uy += dl.Wrapped(UiFonts.SansSmall, new Vector2(ux + P(8), uy), T.Muted, cmp.Note, nw) + P(6);
         if (cmp.State.Length > 0)
-            Wrapped(UiFonts.SansSmall, new Vector2(ux + P(8), uy), newId >= 0 && world.Classes.ErrorOf(newId) != null ? T.Amber : T.Muted, cmp.State, nw);
+            dl.Wrapped(UiFonts.SansSmall, new Vector2(ux + P(8), uy), newId >= 0 && world.Classes.ErrorOf(newId) != null ? T.Amber : T.Muted, cmp.State, nw);
     }
 
     /// <summary>A row of "use it for": a radio mark and its words; true when clicked.</summary>
     bool ScopeRow(string id, Vector2 a, float w, string label, bool on, int n)
     {
         var (click, hover) = HitRow(id, a, new Vector2(w, RowH));
-        RowBg(a, w, RowH, n, on, hover);
-        Radio(new Vector2(a.X + P(14), a.Y + RowH / 2), on);
-        Txt(UiFonts.Sans, new Vector2(a.X + P(26), Mid(UiFonts.Sans, a.Y, RowH)), on ? T.Brass : T.Text, label);
+        dl.RowBg(a, w, RowH, n, on, hover);
+        dl.Radio(new Vector2(a.X + P(14), a.Y + RowH / 2), on);
+        dl.Text(UiFonts.Sans, new Vector2(a.X + P(26), Mid(UiFonts.Sans, a.Y, RowH)), on ? T.Brass : T.Text, label);
         return click;
     }
 

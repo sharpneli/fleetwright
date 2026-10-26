@@ -5,6 +5,7 @@ using Fleetwright.Sim;
 using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
 using ImGuiNET;
+using Fleetwright.Ui;
 
 namespace Fleetwright.Map;
 
@@ -108,15 +109,15 @@ public sealed partial class MapScene
         ImGui.PopStyleVar();
         if (!open)
             return;
-        ImGui.TextColored(DesignerTheme.Brass, resultKick);
+        ImGui.TextColored(Theme.Brass, resultKick);
         ImGui.PushFont(UiFonts.PosterFigure);
-        ImGui.TextColored(DesignerTheme.Bright, resultTitle);
+        ImGui.TextColored(Theme.Bright, resultTitle);
         ImGui.PopFont();
         ImGui.TextDisabled(resultMeta);
         if (resultSetup.Length > 0)
         {
             ImGui.Spacing();
-            ImGui.TextColored(DesignerTheme.Brass, resultSetup);
+            ImGui.TextColored(Theme.Brass, resultSetup);
             foreach (var c in resultChanges)
                 ImGui.TextDisabled("    " + c);
         }
@@ -170,7 +171,7 @@ public sealed partial class MapScene
                             ImGui.TableNextColumn();
                             ImGui.TextColored(side == s.PlayerSide ? Friend : Bad, x.Name);
                             ImGui.TableNextColumn();
-                            ImGui.TextColored(x.Lost ? Bad : DesignerTheme.Text, x.Fate);
+                            ImGui.TextColored(x.Lost ? Bad : Theme.Text, x.Fate);
                         }
                     ImGui.EndTable();
                 }
@@ -199,9 +200,9 @@ public sealed partial class MapScene
             world.Load(sc2);
         }
         ImGui.SameLine();
-        ImGui.PushStyleColor(ImGuiCol.Button, DesignerTheme.Brass);
-        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, DesignerTheme.Brass with { W = 0.85f });
-        ImGui.PushStyleColor(ImGuiCol.Text, DesignerTheme.Ground);
+        ImGui.PushStyleColor(ImGuiCol.Button, Theme.Brass);
+        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, Theme.Brass with { W = 0.85f });
+        ImGui.PushStyleColor(ImGuiCol.Text, Theme.Ground);
         if (ImGui.Button("Scenarios", new Vector2(bw, 26 * sc)))
         {
             shut = true;

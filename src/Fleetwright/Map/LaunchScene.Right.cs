@@ -2,7 +2,8 @@ using System.Globalization;
 using System.Numerics;
 using Fleetwright.Sim.Missions;
 using ImGuiNET;
-using T = Fleetwright.Designer.DesignerTheme;
+using static Fleetwright.Ui.Pieces;
+using T = Fleetwright.Ui.Theme;
 
 namespace Fleetwright.Map;
 
@@ -44,8 +45,8 @@ public sealed unsafe partial class LaunchScene
 
     void PlayAs(Vector2 a, Vector2 size)
     {
-        float right = Pane(a, size, "PLAY AS");
-        RightNote(right, a.Y, TitleH, "Tab to switch");
+        float right = dl.Pane(a, size, "PLAY AS");
+        dl.RightNote(right, a.Y, TitleH, "Tab to switch");
         float w = size.X - 2, y = a.Y + TitleH + 1;
         for (int i = 0; i < playRows.Count; i++)
         {
@@ -57,8 +58,8 @@ public sealed unsafe partial class LaunchScene
             bool on = r.Side == side;
             if (click && !on && !begin)
                 pendingSide = r.Side;
-            RowBg(ra, w, RowH, i, on, hover);
-            Radio(new Vector2(ra.X + P(12), ra.Y + RowH / 2), on);
+            dl.RowBg(ra, w, RowH, i, on, hover);
+            dl.Radio(new Vector2(ra.X + P(12), ra.Y + RowH / 2), on);
             float x = ra.X + P(24);
             if (r.Side >= 0)
                 Ensign(r.Ensign, new Vector2(x, ra.Y + P(4)), new Vector2(P(18), P(12)));
@@ -70,17 +71,17 @@ public sealed unsafe partial class LaunchScene
                 dl.AddCircleFilled(wa + new Vector2(P(9), P(6)), P(1.2f), U(T.KeyText), 8);
             }
             x += P(24);
-            Txt(UiFonts.SansBold, new Vector2(x, Mid(UiFonts.SansBold, ra.Y, RowH)), on ? T.Brass : T.Bright, r.Name);
+            dl.Text(UiFonts.SansBold, new Vector2(x, Mid(UiFonts.SansBold, ra.Y, RowH)), on ? T.Brass : T.Bright, r.Name);
             x += Math.Max(Width(UiFonts.SansBold, r.Name), P(52)) + P(8);
             string chip = r.Side < 0 ? "" : on ? "you" : "AI";
             float chipX = ra.X + w - P(6) - (chip.Length > 0 ? ChipWidth(chip) : 0);
             float shipsX = chipX - P(8);
-            TxtR(UiFonts.SansSmall, shipsX, Mid(UiFonts.SansSmall, ra.Y, RowH), T.Muted, r.Ships);
+            dl.TextRight(UiFonts.SansSmall, shipsX, Mid(UiFonts.SansSmall, ra.Y, RowH), T.Muted, r.Ships);
             dl.PushClipRect(new Vector2(x, ra.Y), new Vector2(shipsX - Width(UiFonts.SansSmall, r.Ships) - P(6), ra.Y + RowH), true);
-            Txt(UiFonts.SansSmall, new Vector2(x, Mid(UiFonts.SansSmall, ra.Y, RowH)), T.Muted, r.Commander);
+            dl.Text(UiFonts.SansSmall, new Vector2(x, Mid(UiFonts.SansSmall, ra.Y, RowH)), T.Muted, r.Commander);
             dl.PopClipRect();
             if (chip.Length > 0)
-                Chip(new Vector2(chipX, ra.Y + P(2.5f)), chip, on ? ChipKind.Amber : ChipKind.Blue);
+                dl.Chip(new Vector2(chipX, ra.Y + P(2.5f)), chip, on ? ChipKind.Amber : ChipKind.Blue);
             if (hover && r.Character.Length > 0)
                 ImGui.SetTooltip(r.Character);
             y += RowH;
@@ -89,16 +90,19 @@ public sealed unsafe partial class LaunchScene
 
     void BriefPane(Vector2 a, Vector2 size)
     {
-        Pane(a, size, "BRIEF");
-        if (!BeginBody("##brief", a, size, out var keep))
+        dl.Pane(a, size, "BRIEF");
+        var keep = dl;
+        if (!BeginBody("##brief", a, size, out dl))
         {
-            EndBody(keep, 0);
+            EndBody(0);
+            dl = keep;
             return;
         }
         var o = ImGui.GetCursorScreenPos();
         float w = ImGui.GetContentRegionAvail().X;
-        float h = Wrapped(UiFonts.Sans, o + new Vector2(P(8), P(6)), T.Text, brief, w - P(16));
-        EndBody(keep, h + P(12));
+        float h = dl.Wrapped(UiFonts.Sans, o + new Vector2(P(8), P(6)), T.Text, brief, w - P(16));
+        EndBody(h + P(12));
+        dl = keep;
     }
 
     (string?, int) remarkKey = (null, -1);
@@ -130,26 +134,29 @@ public sealed unsafe partial class LaunchScene
 
     void RemarksPane(Vector2 a, Vector2 size)
     {
-        float right = Pane(a, size, "REMARKS");
-        RightNote(right, a.Y, TitleH, remarkCount);
-        if (!BeginBody("##remarks", a, size, out var keep))
+        float right = dl.Pane(a, size, "REMARKS");
+        dl.RightNote(right, a.Y, TitleH, remarkCount);
+        var keep = dl;
+        if (!BeginBody("##remarks", a, size, out dl))
         {
-            EndBody(keep, 0);
+            EndBody(0);
+            dl = keep;
             return;
         }
         var o = ImGui.GetCursorScreenPos();
         float w = ImGui.GetContentRegionAvail().X, y = o.Y + P(4);
         if (remarks.Count == 0)
         {
-            Txt(UiFonts.SansSmall, new Vector2(o.X + P(8), y), T.Muted, "None.");
+            dl.Text(UiFonts.SansSmall, new Vector2(o.X + P(8), y), T.Muted, "None.");
             y += RowH;
         }
         foreach (var (amber, text) in remarks)
         {
-            Txt(UiFonts.SansBold, new Vector2(o.X + P(7), y - P(1)), amber ? T.Amber : T.Muted, amber ? "!" : "•");
-            y += Wrapped(UiFonts.SansSmall, new Vector2(o.X + P(20), y), amber ? T.Amber : T.Text, text, w - P(28)) + P(8);
+            dl.Text(UiFonts.SansBold, new Vector2(o.X + P(7), y - P(1)), amber ? T.Amber : T.Muted, amber ? "!" : "•");
+            y += dl.Wrapped(UiFonts.SansSmall, new Vector2(o.X + P(20), y), amber ? T.Amber : T.Text, text, w - P(28)) + P(8);
         }
-        EndBody(keep, y - o.Y);
+        EndBody(y - o.Y);
+        dl = keep;
     }
 
     // ------------------------------------------------------------------ the strength ledger
@@ -248,30 +255,30 @@ public sealed unsafe partial class LaunchScene
 
     void StrengthLedger(Vector2 a, Vector2 size, LedgerView v)
     {
-        float right = Pane(a, size, "STRENGTH LEDGER");
-        RightNote(right, a.Y, TitleH, setup.IsEmpty ? "the sides as written" : "the sides as set");
+        float right = dl.Pane(a, size, "STRENGTH LEDGER");
+        dl.RightNote(right, a.Y, TitleH, setup.IsEmpty ? "the sides as written" : "the sides as set");
         float w = size.X - 2;
         var o = new Vector2(a.X + 1, a.Y + TitleH + 1);
         float xA = o.X + P(176), xB = o.X + P(224), barX = o.X + P(234), barW = w - P(240);
-        Head(o, w);
-        HeadCell(o, o.X + P(6), "GROUP");
+        dl.Head(o, w);
+        dl.HeadCell(o, o.X + P(6), "GROUP");
         Ensign(v.HeadA, new Vector2(xA - P(16), o.Y + P(4)), new Vector2(P(16), P(10)));
         if (v.HeadB.Length > 0)
             Ensign(v.HeadB, new Vector2(xB - P(16), o.Y + P(4)), new Vector2(P(16), P(10)));
-        HeadCell(o, barX, "SHARE");
+        dl.HeadCell(o, barX, "SHARE");
         float y = o.Y + HeadH;
         for (int i = 0; i < v.Rows.Count; i++)
         {
             var (group, va, vb, share) = v.Rows[i];
             var ra = new Vector2(o.X, y);
             bool total = group == "Tonnage";
-            RowBg(ra, w, RowH, i);
-            Txt(total ? UiFonts.SansBold : UiFonts.Sans, new Vector2(ra.X + P(6), Mid(UiFonts.Sans, ra.Y, RowH)), total ? T.Bright : T.Text, group);
+            dl.RowBg(ra, w, RowH, i);
+            dl.Text(total ? UiFonts.SansBold : UiFonts.Sans, new Vector2(ra.X + P(6), Mid(UiFonts.Sans, ra.Y, RowH)), total ? T.Bright : T.Text, group);
             var font = char.IsDigit(va.Length > 0 ? va[0] : ' ') || va == "—" ? UiFonts.Mono : UiFonts.SansSmall;
-            TxtR(font, xA, Mid(font, ra.Y, RowH), T.Bright, va);
-            TxtR(font, xB, Mid(font, ra.Y, RowH), T.Bright, vb);
+            dl.TextRight(font, xA, Mid(font, ra.Y, RowH), T.Bright, va);
+            dl.TextRight(font, xB, Mid(font, ra.Y, RowH), T.Bright, vb);
             if (!float.IsNaN(share) && vb.Length > 0)
-                ShareBar(new Vector2(barX, ra.Y + RowH / 2 - P(3.5f)), barW, P(7), share);
+                dl.ShareBar(new Vector2(barX, ra.Y + RowH / 2 - P(3.5f)), barW, P(7), share);
             y += RowH;
         }
     }
@@ -327,17 +334,17 @@ public sealed unsafe partial class LaunchScene
     {
         var (compiled, drawn, of) = Counts();
         bool ready = current != null && of > 0 && compiled == of && world.LoadError == null;
-        float right = Pane(a, size, "BEGIN");
-        RightNote(right, a.Y, TitleH, begin ? "beginning" : ready ? "the world is placed" : current == null ? "" : "building");
+        float right = dl.Pane(a, size, "BEGIN");
+        dl.RightNote(right, a.Y, TitleH, begin ? "beginning" : ready ? "the world is placed" : current == null ? "" : "building");
         float w = size.X - 2, y = a.Y + TitleH + 1, x0 = a.X + 1;
         float xN = x0 + w - P(80), xS = x0 + w - P(8);
         void Row(int i, string label, string n, string s, bool done)
         {
             var ra = new Vector2(x0, y);
-            RowBg(ra, w, RowH, i);
-            Txt(UiFonts.Sans, new Vector2(ra.X + P(6), Mid(UiFonts.Sans, ra.Y, RowH)), T.Text, label);
-            TxtR(UiFonts.Mono, xN, Mid(UiFonts.Mono, ra.Y, RowH), T.Bright, n);
-            TxtR(UiFonts.Mono, xS, Mid(UiFonts.Mono, ra.Y, RowH), done ? T.Ok : T.Muted, s);
+            dl.RowBg(ra, w, RowH, i);
+            dl.Text(UiFonts.Sans, new Vector2(ra.X + P(6), Mid(UiFonts.Sans, ra.Y, RowH)), T.Text, label);
+            dl.TextRight(UiFonts.Mono, xN, Mid(UiFonts.Mono, ra.Y, RowH), T.Bright, n);
+            dl.TextRight(UiFonts.Mono, xS, Mid(UiFonts.Mono, ra.Y, RowH), done ? T.Ok : T.Muted, s);
             y += RowH;
         }
         Row(0, "Classes compiled", compiledN, compiledS, of > 0 && compiled == of);
@@ -371,26 +378,26 @@ public sealed unsafe partial class LaunchScene
             : (T.Panel2, T.Bevel, T.Text, "Building");
         dl.AddRectFilled(m0, m1, U(bg));
         dl.AddRect(m0, m1, U(edge));
-        Txt(UiFonts.MonoBig, new Vector2(m0.X + P(8), m0.Y + P(3)), ink, word);
+        dl.Text(UiFonts.MonoBig, new Vector2(m0.X + P(8), m0.Y + P(3)), ink, word);
         dl.PushClipRect(m0, m1, true);
-        Txt(UiFonts.SansSmall, new Vector2(m0.X + P(8), m0.Y + P(28)), T.Muted, current == null ? "see the remarks" : readyLine);
+        dl.Text(UiFonts.SansSmall, new Vector2(m0.X + P(8), m0.Y + P(28)), T.Muted, current == null ? "see the remarks" : readyLine);
         dl.PopClipRect();
         y = m1.Y + P(8);
         // the buttons: the primary takes the room left, as the mockup's
         float bx = x0 + P(6);
         const string SaveL = "Save setup…", SaveK = "Ctrl+S", PausedL = "Begin paused";
-        if (Button("##save", new Vector2(bx, y), SaveL, SaveK, enabled: CanSave))
+        if (dl.Button("##save", new Vector2(bx, y), SaveL, SaveK, enabled: CanSave))
             OpenSave();
         if (ImGui.IsItemHovered() && !CanSave)
             ImGui.SetTooltip(setup.IsEmpty ? "nothing changed from the scenario as written" : "a setup is of a shipped scenario");
         bx += ButtonWidth(SaveL, SaveK) + P(4);
-        if (Button("##paused", new Vector2(bx, y), PausedL, enabled: current != null && !begin))
+        if (dl.Button("##paused", new Vector2(bx, y), PausedL, enabled: current != null && !begin))
             BeginWorld(paused: true);
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip("Shift+Enter");
         bx += ButtonWidth(PausedL, null) + P(4);
         string go = side < 0 ? "Watch" : "Begin";
-        if (Button("##begin", new Vector2(bx, y), go, "Enter", primary: true, enabled: current != null && !begin, w: x0 + w - P(6) - bx))
+        if (dl.Button("##begin", new Vector2(bx, y), go, "Enter", primary: true, enabled: current != null && !begin, w: x0 + w - P(6) - bx))
             BeginWorld(paused: false);
     }
 }

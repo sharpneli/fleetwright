@@ -2,7 +2,8 @@ using System.Numerics;
 using System.Text;
 using Fleetwright.Sim.Missions;
 using ImGuiNET;
-using T = Fleetwright.Designer.DesignerTheme;
+using static Fleetwright.Ui.Pieces;
+using T = Fleetwright.Ui.Theme;
 
 namespace Fleetwright.Map;
 
@@ -54,9 +55,9 @@ public sealed unsafe partial class LaunchScene
         dl = ImGui.GetWindowDrawList();
         var o = ImGui.GetWindowPos();
         dl.AddRectFilledMultiColor(o, o + new Vector2(w, TitleH), U(T.TitleTop), U(T.TitleTop), U(T.TitleBottom), U(T.TitleBottom));
-        HLine(o.X, o.X + w, o.Y + TitleH, T.Edge);
-        Txt(UiFonts.SansBold, new Vector2(o.X + P(7), Mid(UiFonts.SansBold, o.Y, TitleH)), T.Brass, "SAVE SETUP");
-        Txt(UiFonts.SansSmall, new Vector2(o.X + P(15) + Width(UiFonts.SansBold, "SAVE SETUP"), Mid(UiFonts.SansSmall, o.Y, TitleH)), T.Muted, "My Games/Fleetwright/Setups");
+        dl.HLine(o.X, o.X + w, o.Y + TitleH, T.Edge);
+        dl.Text(UiFonts.SansBold, new Vector2(o.X + P(7), Mid(UiFonts.SansBold, o.Y, TitleH)), T.Brass, "SAVE SETUP");
+        dl.Text(UiFonts.SansSmall, new Vector2(o.X + P(15) + Width(UiFonts.SansBold, "SAVE SETUP"), Mid(UiFonts.SansSmall, o.Y, TitleH)), T.Muted, "My Games/Fleetwright/Setups");
         ImGui.PushFont(UiFonts.SansSmall);
         ImGui.PushTextWrapPos(w - P(8));
         ImGui.TextDisabled($"{written!.Name} and its {setup.Changes.Count} change{(setup.Changes.Count == 1 ? "" : "s")}, as a scenario file: listed under Your setups, shared by passing the file round.");
@@ -75,8 +76,8 @@ public sealed unsafe partial class LaunchScene
         ImGui.Spacing();
         var by = ImGui.GetCursorScreenPos();
         float sw = ButtonWidth("Save", "Enter", primary: true), cw = ButtonWidth("Cancel", "Esc");
-        bool cancel = Button("##savecancel", new Vector2(o.X + w - P(8) - sw - P(4) - cw, by.Y), "Cancel", "Esc") || ImGui.IsKeyPressed(ImGuiKey.Escape);
-        save |= Button("##savego", new Vector2(o.X + w - P(8) - sw, by.Y), "Save", "Enter", primary: true, enabled: saveName.Trim().Length > 0);
+        bool cancel = dl.Button("##savecancel", new Vector2(o.X + w - P(8) - sw - P(4) - cw, by.Y), "Cancel", "Esc") || ImGui.IsKeyPressed(ImGuiKey.Escape);
+        save |= dl.Button("##savego", new Vector2(o.X + w - P(8) - sw, by.Y), "Save", "Enter", primary: true, enabled: saveName.Trim().Length > 0);
         ImGui.SetCursorScreenPos(by + new Vector2(0, P(20)));
         ImGui.Dummy(new Vector2(1, P(2)));
         dl = keep;

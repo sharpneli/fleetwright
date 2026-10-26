@@ -5,7 +5,7 @@
 **Drop-in tokens:** `docs/ui-themes/gunmetal-natural.css`
 
 > **2026-10-25:** not applied yet; it will be, later, in one batch (the user). It is a colour scheme, not a change of
-> layout: it replaces only the token and type sections of `docs/ui-language.md` (`DesignerTheme.cs`, `UiFonts.cs`);
+> layout: it replaces only the token and type sections of `docs/ui-language.md` (`Ui/Theme.cs`, `UiFonts.cs`);
 > the layout grammar, the pieces and the don'ts stay. Until then everything uses the bureau tokens.
 
 This replaces the current slate-blue, brass and IBM Plex look, which reads as generic "AI dashboard". Keep the layouts, density and behaviour of the existing mockups. Only the visual treatment changes.

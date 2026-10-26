@@ -4,7 +4,8 @@ using Fleetwright.Shipgen;
 using ImGuiNET;
 using Part = Fleetwright.Designer.ProtectionEdits.Part;
 using PE = Fleetwright.Designer.ProtectionEdits;
-using T = Fleetwright.Designer.DesignerTheme;
+using static Fleetwright.Ui.Pieces;
+using T = Fleetwright.Ui.Theme;
 
 namespace Fleetwright.Designer;
 
@@ -1045,7 +1046,7 @@ public sealed unsafe partial class DesignerScene
         dl.AddLine(o + new Vector2(0, h - 1), o + new Vector2(w, h - 1), T.U32(T.Edge));
         var font = UiFonts.SansSmall;
         float ty = o.Y + (h - font.FontSize) / 2;
-        Text(dl, font, new Vector2(o.X + P(6), ty), T.Muted, "PROTECTION");
+        dl.Text(font, new Vector2(o.X + P(6), ty), T.Muted, "PROTECTION");
 
         var d = doc.Current;
         ImGui.PushFont(font);
@@ -1061,16 +1062,16 @@ public sealed unsafe partial class DesignerScene
         float segX = layL - P(12) - segsW, covL = segX - P(6) - Width(font, "Coverage");
         float readsX = o.X + P(6) + Width(font, "PROTECTION") + P(10);
         dl.PushClipRect(new Vector2(readsX, o.Y), new Vector2(covL - P(8), o.Y + h), true);
-        Text(dl, font, new Vector2(readsX, ty), T.Text, pp.Reads);
+        dl.Text(font, new Vector2(readsX, ty), T.Text, pp.Reads);
         dl.PopClipRect();
-        Text(dl, font, new Vector2(covL, ty), T.Muted, "Coverage");
+        dl.Text(font, new Vector2(covL, ty), T.Muted, "Coverage");
         ImGui.SetCursorScreenPos(new Vector2(segX, o.Y + P(1)));
         for (int i = 0; i < PE.Coverages.Length; i++)
         {
             var c = PE.Coverages[i];
             if (i > 0)
                 ImGui.SameLine();
-            if (Seg(PE.Name(c), pp.Coverage == c, Width(font, PE.Name(c)) + P(10)))
+            if (SegButton(PE.Name(c), pp.Coverage == c, Width(font, PE.Name(c)) + P(10)))
                 Edit(PE.Apply(d, c, DeepestDeck(pp)), $"Coverage: {PE.Name(c).ToLowerInvariant()}");
             if (ImGui.IsItemHovered())
                 Tip(pp.CoverTips[i]);
@@ -1078,7 +1079,7 @@ public sealed unsafe partial class DesignerScene
                 TipAt(pp.CoverTips[i], ImGui.GetItemRectMin() + new Vector2(-P(120), P(20)));
         }
         // the layout: a dropdown of the templates, the one in force named (amber with its own values, edited or custom)
-        Text(dl, font, new Vector2(layL, ty), T.Muted, "Layout");
+        dl.Text(font, new Vector2(layL, ty), T.Muted, "Layout");
         ImGui.SetCursorScreenPos(new Vector2(layX, o.Y + P(1)));
         ImGui.PushStyleColor(ImGuiCol.Text, pp.LayoutOwn ? T.Amber : T.Text);
         ImGui.PushStyleVar(ImGuiStyleVar.ButtonTextAlign, new Vector2(0, 0.5f));
@@ -1089,12 +1090,12 @@ public sealed unsafe partial class DesignerScene
         ImGui.PopStyleVar();
         ImGui.PopStyleColor();
         var lr = (ImGui.GetItemRectMin(), ImGui.GetItemRectMax());
-        Twisty(dl, new Vector2(lr.Item2.X - P(7), (lr.Item1.Y + lr.Item2.Y) / 2), true, T.Muted);
+        dl.Twisty(new Vector2(lr.Item2.X - P(7), (lr.Item1.Y + lr.Item2.Y) / 2), true, T.Muted);
         if (ImGui.IsItemHovered())
             Tip(pp.LayoutIndex >= 0 ? pp.LayoutTips[pp.LayoutIndex] : pp.LayoutName == "Plain" ? pp.PlainTip
                 : $"{pp.LayoutName}: the design's own layout inputs. Pick a template to put its layout on.");
         layoutAnchor = new Vector2(lr.Item1.X, lr.Item2.Y + 1);
-        Text(dl, font, new Vector2(matL, ty), T.Muted, "Materials");
+        dl.Text(font, new Vector2(matL, ty), T.Muted, "Materials");
         ImGui.SetCursorScreenPos(new Vector2(matX, o.Y + P(1)));
         ImGui.SetNextItemWidth(matW);
         int si = pp.Materials.Index;
@@ -1312,7 +1313,7 @@ public sealed unsafe partial class DesignerScene
             if (ProtHead[i].Length == 0)
                 continue;
             float tx = i is 2 or 3 or 6 ? x[i + 1] - P(6) - Width(font, ProtHead[i]) : x[i] + P(4);
-            Text(dl, font, new Vector2(tx, o.Y + (hh - font.FontSize) / 2), T.Muted, ProtHead[i]);
+            dl.Text(font, new Vector2(tx, o.Y + (hh - font.FontSize) / 2), T.Muted, ProtHead[i]);
         }
         var d = doc.Current;
         float y = o.Y + hh;
@@ -1330,7 +1331,7 @@ public sealed unsafe partial class DesignerScene
             // the group's header, with its + chips
             dl.AddRectFilled(new Vector2(o.X, y), new Vector2(o.X + w, y + gh), T.U32(new Vector4(0.035f, 0.047f, 0.055f, 0.35f)));
             dl.AddLine(new Vector2(o.X, y + gh - 1), new Vector2(o.X + w, y + gh - 1), T.U32(T.Edge));
-            Text(dl, font, new Vector2(o.X + P(6), y + (gh - font.FontSize) / 2), new Vector4(0.43f, 0.47f, 0.51f, 1), GroupTitle[g]);
+            dl.Text(font, new Vector2(o.X + P(6), y + (gh - font.FontSize) / 2), new Vector4(0.43f, 0.47f, 0.51f, 1), GroupTitle[g]);
             float cxp = o.X + P(12) + Width(font, GroupTitle[g]);
             ImGui.PushID(500 + g);
             for (int c = 0; c < pp.Chips[g].Length; c++)
@@ -1346,7 +1347,7 @@ public sealed unsafe partial class DesignerScene
                 ImGui.PopID();
                 dl.AddRectFilled(a, b, T.U32(T.Brass with { W = hov ? 0.16f : 0.05f }), P(2));
                 dl.AddRect(a, b, T.U32(hov ? T.Brass : T.BrassDark), P(2));
-                Text(dl, font, new Vector2(a.X + P(5), a.Y + (b.Y - a.Y - font.FontSize) / 2), hov ? new Vector4(1, 0.906f, 0.659f, 1) : T.Brass, chip.Label);
+                dl.Text(font, new Vector2(a.X + P(5), a.Y + (b.Y - a.Y - font.FontSize) / 2), hov ? new Vector4(1, 0.906f, 0.659f, 1) : T.Brass, chip.Label);
                 if (hov)
                     Tip(chip.Tip);
                 if (click)
@@ -1363,7 +1364,7 @@ public sealed unsafe partial class DesignerScene
             }
             ImGui.PopID();
             if (g == 4)
-                Text(dl, font, new Vector2(cxp + P(4), y + (gh - font.FontSize) / 2), T.Muted, "turret faces also on the Main battery tab; secondary shields on Secondary");
+                dl.Text(font, new Vector2(cxp + P(4), y + (gh - font.FontSize) / 2), T.Muted, "turret faces also on the Main battery tab; secondary shields on Secondary");
             y += gh;
             foreach (var r in pp.Rows)
             {
@@ -1396,7 +1397,7 @@ public sealed unsafe partial class DesignerScene
         bool hover = ImGui.IsItemHovered() || protHot == r.Ref;
         if (ImGui.IsItemHovered())
             protHotNext = r.Ref;
-        RowBg(dl, p, w, n);
+        dl.RowBg(p, w, RowH, n);
         if (on)
         {
             dl.AddRectFilled(p, p + new Vector2(w, rowH), T.U32(T.Brass with { W = hover ? 0.13f : 0.10f }));
@@ -1418,13 +1419,13 @@ public sealed unsafe partial class DesignerScene
             dl.AddLine(new Vector2(ex, ey - P(6)), new Vector2(ex, ey), elbow);
             dl.AddLine(new Vector2(ex, ey), new Vector2(ex + P(6), ey), elbow);
         }
-        Text(dl, r.Sub ? font : UiFonts.Sans, new Vector2(nx, r.Sub ? tys : ty), on ? T.Brass : r.Greyed ? dim : r.Sub ? T.Text : T.Bright, r.Title);
+        dl.Text(r.Sub ? font : UiFonts.Sans, new Vector2(nx, r.Sub ? tys : ty), on ? T.Brass : r.Greyed ? dim : r.Sub ? T.Text : T.Bright, r.Title);
         if (r.Tag.Length > 0)
         {
             float tx = nx + Width(UiFonts.Sans, r.Title) + P(6);
             float tw = Width(font, r.Tag) + P(8);
             dl.AddRect(new Vector2(tx, tys - P(1)), new Vector2(tx + tw, tys + font.FontSize + P(1)), T.U32(T.BrassDark), P(2));
-            Text(dl, font, new Vector2(tx + P(4), tys), T.Brass, r.Tag);
+            dl.Text(font, new Vector2(tx + P(4), tys), T.Brass, r.Tag);
         }
         if (r.Thick is { } th)
         {
@@ -1432,21 +1433,21 @@ public sealed unsafe partial class DesignerScene
             Spinner(th, P(50), extras: false);
         }
         else
-            Text(dl, UiFonts.Mono, new Vector2(x[3] - P(22) - Width(UiFonts.Mono, r.ThickText), p.Y + (rowH - UiFonts.Mono.FontSize) / 2), dim, r.ThickText);
+            dl.Text(UiFonts.Mono, new Vector2(x[3] - P(22) - Width(UiFonts.Mono, r.ThickText), p.Y + (rowH - UiFonts.Mono.FontSize) / 2), dim, r.ThickText);
         if (r.Second is { } s2)
         {
-            Text(dl, font, new Vector2(x[3] + P(4), tys), T.Muted, r.SecondPre);
+            dl.Text(font, new Vector2(x[3] + P(4), tys), T.Muted, r.SecondPre);
             ImGui.SetCursorScreenPos(new Vector2(x[4] - P(4) - P(46) - 2 * fh, cy));
             Spinner(s2, P(46), extras: false);
         }
         else if (r.SecondText.Length > 0)
-            Text(dl, UiFonts.Mono, new Vector2(x[4] - P(6) - Width(UiFonts.Mono, r.SecondText), p.Y + (rowH - UiFonts.Mono.FontSize) / 2), T.Muted, r.SecondText);
+            dl.Text(UiFonts.Mono, new Vector2(x[4] - P(6) - Width(UiFonts.Mono, r.SecondText), p.Y + (rowH - UiFonts.Mono.FontSize) / 2), T.Muted, r.SecondText);
 
         // where
         float wx = x[4] + P(4);
         if (r.WhereA is { } wa)
         {
-            Text(dl, font, new Vector2(wx, tys), T.Muted, r.WhereAPre);
+            dl.Text(font, new Vector2(wx, tys), T.Muted, r.WhereAPre);
             wx += Width(font, r.WhereAPre) + P(4);
             ImGui.SetCursorScreenPos(new Vector2(wx, cy));
             Spinner(wa, P(40), extras: false);
@@ -1454,7 +1455,7 @@ public sealed unsafe partial class DesignerScene
         }
         if (r.WhereB is { } wb)
         {
-            Text(dl, font, new Vector2(wx, tys), T.Muted, r.WhereBPre);
+            dl.Text(font, new Vector2(wx, tys), T.Muted, r.WhereBPre);
             wx += Width(font, r.WhereBPre) + P(4);
             ImGui.SetCursorScreenPos(new Vector2(wx, cy));
             Spinner(wb, P(40), extras: false);
@@ -1493,7 +1494,7 @@ public sealed unsafe partial class DesignerScene
             {
                 if (i > 0)
                     ImGui.SameLine();
-                if (Seg(ExtentShort[i], r.ExtentNow == ExtentValues[i]) && r.ExtentNow != ExtentValues[i])
+                if (SegButton(ExtentShort[i], r.ExtentNow == ExtentValues[i]) && r.ExtentNow != ExtentValues[i])
                     Edit(ek.Set(d, ExtentValues[i]), $"{r.Name}: over the {PE.ExtentText(ExtentValues[i])}");
                 if (ImGui.IsItemHovered())
                     Tip($"{(r.Ref.Kind == PK.Upper ? "Upper belt" : "This deck")} over the {PE.ExtentText(ExtentValues[i])}");
@@ -1505,7 +1506,7 @@ public sealed unsafe partial class DesignerScene
         if (r.WhereText.Length > 0)
         {
             dl.PushClipRect(new Vector2(wx, p.Y), new Vector2(x[5] - P(4), p.Y + rowH), true);
-            Text(dl, font, new Vector2(wx, tys), dim, r.WhereText);
+            dl.Text(font, new Vector2(wx, tys), dim, r.WhereText);
             dl.PopClipRect();
         }
 
@@ -1521,19 +1522,19 @@ public sealed unsafe partial class DesignerScene
             ImGui.PopFont();
         }
         else
-            Text(dl, font, new Vector2(x[5] + P(6), tys), dim, r.MaterialText);
+            dl.Text(font, new Vector2(x[5] + P(6), tys), dim, r.MaterialText);
 
         // weight and its share
         var tp = new Vector2(x[7] - P(6) - Width(UiFonts.Mono, r.T), p.Y + (rowH - UiFonts.Mono.FontSize) / 2);
-        Text(dl, UiFonts.Mono, tp, r.T is "turret" or "—" ? T.Muted : T.Bright, r.T);
+        dl.Text(UiFonts.Mono, tp, r.T is "turret" or "—" ? T.Muted : T.Bright, r.T);
         if (r.WeightTip.Length > 0 && ImGui.IsMouseHoveringRect(new Vector2(x[6], p.Y), new Vector2(x[7], p.Y + rowH)))
             Tip(r.WeightTip);
         if (r.Share > 0)
         {
             var bp = new Vector2(x[7] + P(4), p.Y + (rowH - P(6)) / 2);
-            Bar(dl, bp, new Vector2(P(22), P(6)), Math.Min(1, r.Share * 2), T.Group("armour"));
+            dl.Bar(bp, new Vector2(P(22), P(6)), Math.Min(1, r.Share * 2), T.Group("armour"));
             var pct = PctText(r.Share);
-            Text(dl, UiFonts.Mono, new Vector2(x[8] - P(2) - Width(UiFonts.Mono, pct), p.Y + (rowH - UiFonts.Mono.FontSize) / 2), T.Muted, pct);
+            dl.Text(UiFonts.Mono, new Vector2(x[8] - P(2) - Width(UiFonts.Mono, pct), p.Y + (rowH - UiFonts.Mono.FontSize) / 2), T.Muted, pct);
         }
         if (r.Removable)
         {
@@ -1562,7 +1563,7 @@ public sealed unsafe partial class DesignerScene
         dl.AddRectFilled(pos, pos + size, T.U32(T.Panel2));
         dl.AddRect(pos, pos + size, T.U32(T.Edge));
         ImGui.SetCursorScreenPos(pos);
-        SubHeader(dl, size.X, "SELECTED PLATE", "drag its brass handles on the drawings");
+        dl.HeadStrip(size.X, "SELECTED PLATE", "drag its brass handles on the drawings");
         var r = ProtRowOf(pp, protSel);
         var font = UiFonts.SansSmall;
         float ih = P(22);
@@ -1574,13 +1575,13 @@ public sealed unsafe partial class DesignerScene
             // the facts, on the left
             ImGui.PushClipRect(pos, new Vector2(pos.X + factsW, bottom), true);
             dl.AddRectFilled(new Vector2(x, y + P(2)), new Vector2(x + P(8), y + P(13)), T.U32(r.Swatch));
-            Text(dl, UiFonts.SansBold, new Vector2(x + P(14), y), T.Bright, r.Full);
-            Text(dl, UiFonts.Sans, new Vector2(x + P(22) + Width(UiFonts.SansBold, r.Full), y), T.Muted, r.ThickShown);
+            dl.Text(UiFonts.SansBold, new Vector2(x + P(14), y), T.Bright, r.Full);
+            dl.Text(UiFonts.Sans, new Vector2(x + P(22) + Width(UiFonts.SansBold, r.Full), y), T.Muted, r.ThickShown);
             y += P(20);
             foreach (var (label, value) in r.Lines)
             {
-                Text(dl, font, new Vector2(x, y + P(1)), T.Muted, label);
-                Text(dl, UiFonts.Mono, new Vector2(x + P(66), y + P(1)), T.Text, value);
+                dl.Text(font, new Vector2(x, y + P(1)), T.Muted, label);
+                dl.Text(UiFonts.Mono, new Vector2(x + P(66), y + P(1)), T.Text, value);
                 y += P(16);
             }
             y += P(4);
@@ -1600,11 +1601,11 @@ public sealed unsafe partial class DesignerScene
         dl.AddRect(a, b, T.U32(new Vector4(0.333f, 0.376f, 0.416f, 1)));
         var grey = new Vector4(0.37f, 0.416f, 0.455f, 1);
         float ly = a.Y + (ih - font.FontSize) / 2;
-        Text(dl, font, new Vector2(a.X + P(6), ly), grey, pp.ImmuneLine);
+        dl.Text(font, new Vector2(a.X + P(6), ly), grey, pp.ImmuneLine);
         string tag = "NEEDS THE PENETRATION MODEL";
         var tg = new Vector2(b.X - P(6) - Width(font, tag) - P(6), ly);
         dl.AddRect(tg - new Vector2(0, P(1)), tg + new Vector2(Width(font, tag) + P(6), font.FontSize + P(1)), T.U32(T.BrassDark));
-        Text(dl, font, tg + new Vector2(P(3), 0), new Vector4(0.55f, 0.48f, 0.33f, 1), tag);
+        dl.Text(font, tg + new Vector2(P(3), 0), new Vector4(0.55f, 0.48f, 0.33f, 1), tag);
     }
 
     /// <summary>Shape: what changes the part's form rather than its thickness (a zone, slopes, the belt's lean and place),
@@ -1615,7 +1616,7 @@ public sealed unsafe partial class DesignerScene
         var d = doc.Current;
         float fh = ImGui.GetFrameHeight();
         ImGui.PushClipRect(pos, pos + size, true);
-        Text(dl, font, pos + new Vector2(0, P(2)), T.Muted, "SHAPE");
+        dl.Text(font, pos + new Vector2(0, P(2)), T.Muted, "SHAPE");
         float y = pos.Y;
         if (r.Material is { } mat)
         {
@@ -1639,7 +1640,7 @@ public sealed unsafe partial class DesignerScene
             switch (it)
             {
                 case ShapeSeg s:
-                    Text(dl, font, new Vector2(lx, ty), T.Muted, s.Label);
+                    dl.Text(font, new Vector2(lx, ty), T.Muted, s.Label);
                     ImGui.SetCursorScreenPos(new Vector2(cx, cy));
                     ImGui.PushFont(font);
                     ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(1, 0));
@@ -1647,7 +1648,7 @@ public sealed unsafe partial class DesignerScene
                     {
                         if (i > 0)
                             ImGui.SameLine();
-                        if (Seg(s.Row.Labels[i], s.Row.Index == i) && s.Row.Index != i)
+                        if (SegButton(s.Row.Labels[i], s.Row.Index == i) && s.Row.Index != i)
                             Edit(s.Row.Knob.Set(d, s.Row.Knob.Values[i]), $"{s.Row.Knob.Label}: {s.Row.Labels[i]}");
                         if (ImGui.IsItemHovered() && i < s.Tips.Length)
                             Tip(s.Tips[i]);
@@ -1656,7 +1657,7 @@ public sealed unsafe partial class DesignerScene
                     ImGui.PopFont();
                     break;
                 case ShapeNum s:
-                    Text(dl, font, new Vector2(lx, ty), T.Muted, s.Label);
+                    dl.Text(font, new Vector2(lx, ty), T.Muted, s.Label);
                     ImGui.SetCursorScreenPos(new Vector2(cx, cy));
                     Spinner(s.Row, P(50), extras: false);
                     float nx = ImGui.GetItemRectMax().X + P(8);
@@ -1666,7 +1667,7 @@ public sealed unsafe partial class DesignerScene
                         ImGui.PushFont(font);
                         if (s.Row.IsAuto)
                         {
-                            Text(dl, font, new Vector2(nx, ty), T.Muted, "auto");
+                            dl.Text(font, new Vector2(nx, ty), T.Muted, "auto");
                             nx += Width(font, "auto") + P(8);
                         }
                         else
@@ -1683,10 +1684,10 @@ public sealed unsafe partial class DesignerScene
                         ImGui.PopFont();
                     }
                     if (s.Note.Length > 0)
-                        Text(dl, font, new Vector2(nx, ty), T.Muted, s.Note);
+                        dl.Text(font, new Vector2(nx, ty), T.Muted, s.Note);
                     break;
                 case ShapeAdd s:
-                    Text(dl, font, new Vector2(lx, ty), T.Muted, s.Label);
+                    dl.Text(font, new Vector2(lx, ty), T.Muted, s.Label);
                     {
                         float cw = Width(font, s.Chip) + P(10);
                         var a = new Vector2(cx, y + (rowH - P(14)) / 2);
@@ -1696,7 +1697,7 @@ public sealed unsafe partial class DesignerScene
                         bool hov = ImGui.IsItemHovered();
                         dl.AddRectFilled(a, b, T.U32(T.Brass with { W = hov ? 0.16f : 0.05f }), P(2));
                         dl.AddRect(a, b, T.U32(hov ? T.Brass : T.BrassDark), P(2));
-                        Text(dl, font, new Vector2(a.X + P(5), a.Y + (P(14) - font.FontSize) / 2), hov ? new Vector4(1, 0.906f, 0.659f, 1) : T.Brass, s.Chip);
+                        dl.Text(font, new Vector2(a.X + P(5), a.Y + (P(14) - font.FontSize) / 2), hov ? new Vector4(1, 0.906f, 0.659f, 1) : T.Brass, s.Chip);
                         if (hov)
                             Tip(s.Tip);
                         if (click)
@@ -1704,8 +1705,8 @@ public sealed unsafe partial class DesignerScene
                     }
                     break;
                 case ShapeRead s:
-                    Text(dl, font, new Vector2(lx, ty), T.Muted, s.Label);
-                    Text(dl, UiFonts.Mono, new Vector2(cx, y + (rowH - UiFonts.Mono.FontSize) / 2), s.Remove != null ? T.Muted : T.Text, s.Text);
+                    dl.Text(font, new Vector2(lx, ty), T.Muted, s.Label);
+                    dl.Text(UiFonts.Mono, new Vector2(cx, y + (rowH - UiFonts.Mono.FontSize) / 2), s.Remove != null ? T.Muted : T.Text, s.Text);
                     if (s.Remove != null)
                     {
                         ImGui.SetCursorScreenPos(new Vector2(cx + Width(UiFonts.Mono, s.Text) + P(6), cy));

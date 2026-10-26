@@ -1,7 +1,8 @@
 using System.Numerics;
 using Fleetwright.Sim.Missions;
 using ImGuiNET;
-using T = Fleetwright.Designer.DesignerTheme;
+using static Fleetwright.Ui.Pieces;
+using T = Fleetwright.Ui.Theme;
 
 namespace Fleetwright.Map;
 
@@ -240,8 +241,8 @@ public sealed unsafe partial class LaunchScene
         int ships = 0;
         foreach (var l in lines)
             ships += l.IsUnit && l.Top && !l.Removed ? l.Unit.ShipCount : 0;
-        float right = SubHeader(a, w, "ORDER OF BATTLE", sideLabels[Math.Min(shipTab, sideLabels.Length - 1)]);
-        TxtR(UiFonts.SansSmall, right, Mid(UiFonts.SansSmall, a.Y, RowH), T.Muted, sideShipsNote.Length > 0 && sideShipsFor == (sd, ships) ? sideShipsNote : SideShipsNote(sd, ships));
+        float right = dl.SubHeader(a, w, "ORDER OF BATTLE", sideLabels[Math.Min(shipTab, sideLabels.Length - 1)]);
+        dl.TextRight(UiFonts.SansSmall, right, Mid(UiFonts.SansSmall, a.Y, RowH), T.Muted, sideShipsNote.Length > 0 && sideShipsFor == (sd, ships) ? sideShipsNote : SideShipsNote(sd, ships));
         // the columns
         float x = a.X + w;
         for (int i = 0; i < OobCols.Length; i++)
@@ -251,17 +252,17 @@ public sealed unsafe partial class LaunchScene
         }
         oobX[0] = a.X;
         var h = new Vector2(a.X, a.Y + RowH);
-        Head(h, w);
-        HeadCell(h, a.X + P(6), "UNIT · CLASS · SHIP");
-        HeadCell(h, oobX[1] + P(4), "TO SCALE");
-        HeadCell(h, oobX[2] + P(4), "SHIPS");
-        HeadCell(h, oobX[4] - P(6), "T", right: true);
-        HeadCell(h, oobX[5] - P(6), "KN", right: true);
-        HeadCell(h, oobX[5] + P(4), "MAIN");
-        HeadCell(h, oobX[6] + P(4), "SECOND");
-        HeadCell(h, oobX[8] - P(6), "BELT", right: true);
-        HeadCell(h, oobX[9] - P(6), "REACH", right: true);
-        HeadCell(h, oobX[9] + P(4), "STATE");
+        dl.Head(h, w);
+        dl.HeadCell(h, a.X + P(6), "UNIT · CLASS · SHIP");
+        dl.HeadCell(h, oobX[1] + P(4), "TO SCALE");
+        dl.HeadCell(h, oobX[2] + P(4), "SHIPS");
+        dl.HeadCell(h, oobX[4] - P(6), "T", right: true);
+        dl.HeadCell(h, oobX[5] - P(6), "KN", right: true);
+        dl.HeadCell(h, oobX[5] + P(4), "MAIN");
+        dl.HeadCell(h, oobX[6] + P(4), "SECOND");
+        dl.HeadCell(h, oobX[8] - P(6), "BELT", right: true);
+        dl.HeadCell(h, oobX[9] - P(6), "REACH", right: true);
+        dl.HeadCell(h, oobX[9] + P(4), "STATE");
 
         // to scale: the longest class of either side fits the column
         float longest = 0;
@@ -324,9 +325,9 @@ public sealed unsafe partial class LaunchScene
             var (click, hover) = HitRow("##addunit", aa, new Vector2(cw, RowH));
             if (click && !begin)
                 OpenAdd(sd);
-            RowBg(aa, cw, RowH, n, hover: hover);
-            Txt(UiFonts.Sans, new Vector2(aa.X + P(20), Mid(UiFonts.Sans, aa.Y, RowH)), hover ? T.Bright : T.Brass, AddLabel);
-            Txt(UiFonts.SansSmall, new Vector2(aa.X + P(28) + Width(UiFonts.Sans, AddLabel), Mid(UiFonts.SansSmall, aa.Y, RowH)), T.Muted, AddNote);
+            dl.RowBg(aa, cw, RowH, n, hover: hover);
+            dl.Text(UiFonts.Sans, new Vector2(aa.X + P(20), Mid(UiFonts.Sans, aa.Y, RowH)), hover ? T.Bright : T.Brass, AddLabel);
+            dl.Text(UiFonts.SansSmall, new Vector2(aa.X + P(28) + Width(UiFonts.Sans, AddLabel), Mid(UiFonts.SansSmall, aa.Y, RowH)), T.Muted, AddNote);
             y += RowH + P(4) - o.Y;
         }
         ImGui.SetCursorPos(new Vector2(0, Math.Max(y, 0)));
@@ -352,11 +353,11 @@ public sealed unsafe partial class LaunchScene
     {
         ImGui.PushID(i);
         var (click, hover) = HitRow("##unit", a, new Vector2(w, RowH));
-        GroupBg(a, w, RowH, hover);
+        dl.GroupBg(a, w, RowH, hover);
         float x = a.X + P(6) + l.Depth * P(14);
         bool shut = shutUnits.Contains(l.Text);
         if (!l.Removed)
-            Twisty(new Vector2(x + P(4), a.Y + RowH / 2), !shut);
+            dl.Twisty(new Vector2(x + P(4), a.Y + RowH / 2), !shut);
         if (click && !l.Removed && ImGui.GetMousePos().X < x + P(12) && !shutUnits.Remove(l.Text))
             shutUnits.Add(l.Text);
         x += P(12);
@@ -389,9 +390,9 @@ public sealed unsafe partial class LaunchScene
         }
         else
         {
-            Txt(UiFonts.SansBold, new Vector2(x, ty), l.Removed ? T.Muted : T.Bright, l.Text);
+            dl.Text(UiFonts.SansBold, new Vector2(x, ty), l.Removed ? T.Muted : T.Bright, l.Text);
             if (l.Removed)
-                HLine(x, x + nameW, a.Y + RowH / 2, T.Muted);
+                dl.HLine(x, x + nameW, a.Y + RowH / 2, T.Muted);
             else
             {
                 ImGui.SetCursorScreenPos(new Vector2(x, a.Y));
@@ -399,7 +400,7 @@ public sealed unsafe partial class LaunchScene
                     (renaming, renameText, renameFocus) = (l, l.Text, true);
                 if (ImGui.IsItemHovered())
                 {
-                    HLine(x, x + nameW, a.Y + RowH - P(4), T.BrassDark);
+                    dl.HLine(x, x + nameW, a.Y + RowH - P(4), T.BrassDark);
                     ImGui.SetTooltip("click to rename");
                 }
             }
@@ -416,37 +417,37 @@ public sealed unsafe partial class LaunchScene
             if (adW > P(20))
             {
                 dl.PushClipRect(new Vector2(x, a.Y), new Vector2(x + adW, a.Y + RowH), true);
-                Txt(UiFonts.SansSmall, new Vector2(x, Mid(UiFonts.SansSmall, a.Y, RowH)), T.Muted, l.Admiral);
+                dl.Text(UiFonts.SansSmall, new Vector2(x, Mid(UiFonts.SansSmall, a.Y, RowH)), T.Muted, l.Admiral);
                 dl.PopClipRect();
                 x += adW + P(6);
             }
             if (l.Chip.Length > 0 && x + ChipWidth(l.Chip) < room)
             {
-                Chip(new Vector2(x, a.Y + P(2.5f)), l.Chip, l.Bold ? ChipKind.Amber : ChipKind.Blue);
+                dl.Chip(new Vector2(x, a.Y + P(2.5f)), l.Chip, l.Bold ? ChipKind.Amber : ChipKind.Blue);
                 if (ImGui.IsMouseHoveringRect(new Vector2(x, a.Y), new Vector2(x + ChipWidth(l.Chip), a.Y + RowH)))
                     ImGui.SetTooltip("his temper, added to the side's aggression (Standing orders)");
                 x += ChipWidth(l.Chip) + P(4);
             }
             if (added.Length > 0 && x + ChipWidth(added) < room)
-                Chip(new Vector2(x, a.Y + P(2.5f)), added, now ? ChipKind.Amber : ChipKind.Ok);
+                dl.Chip(new Vector2(x, a.Y + P(2.5f)), added, now ? ChipKind.Amber : ChipKind.Ok);
             // its ships and tonnage under Ships and t
-            TxtR(UiFonts.Mono, oobX[3] + shift - P(6), Mid(UiFonts.Mono, a.Y, RowH), T.Bright, l.Right);
-            TxtR(UiFonts.Mono, oobX[4] + shift - P(6), Mid(UiFonts.Mono, a.Y, RowH), T.Bright, TonsOf(l));
+            dl.TextRight(UiFonts.Mono, oobX[3] + shift - P(6), Mid(UiFonts.Mono, a.Y, RowH), T.Bright, l.Right);
+            dl.TextRight(UiFonts.Mono, oobX[4] + shift - P(6), Mid(UiFonts.Mono, a.Y, RowH), T.Bright, TonsOf(l));
             // + division and move in the figures' room
             float lx = oobX[5] + shift + P(4);
-            if (Link("##division", new Vector2(lx, a.Y + P(2)), "+ division", out float dw, muted: true))
+            if (dl.Link("##division", new Vector2(lx, a.Y + P(2)), "+ division", out float dw, muted: true))
                 pendingAdd = (l.Side, l.Text);
             if (ImGui.IsItemHovered())
                 ImGui.SetTooltip($"add a unit to {l.Text}, on its station there");
             lx += dw + P(12);
             if (l.Movable)
             {
-                if (Link("##move", new Vector2(lx, a.Y + P(2)), "move", out _) && setup.AddedHolding(l.Text) is { } ad)
+                if (dl.Link("##move", new Vector2(lx, a.Y + P(2)), "move", out _) && setup.AddedHolding(l.Text) is { } ad)
                     StartPlacing(ad.Unit, ad.Unit.CourseDeg, ad.Unit.Kn);
                 if (ImGui.IsItemHovered())
                     ImGui.SetTooltip("place it again on the opening");
             }
-            if (CrossButton("##rm", new Vector2(oobX[10] + shift + P(11), a.Y + RowH / 2),
+            if (dl.CrossButton("##rm", new Vector2(oobX[10] + shift + P(11), a.Y + RowH / 2),
                     l.Added ? "take the added unit away" : "remove the unit (its undo stays here)") && !begin)
                 pendingEdit = l.Added ? setup.WithoutAdded(l.Text) : setup.With(new RemoveUnit(setup.NameAsMade(l.Text)));
         }
@@ -454,7 +455,7 @@ public sealed unsafe partial class LaunchScene
         {
             const string Undo = "removed · undo";
             float uw = Width(UiFonts.SansSmall, Undo);
-            if (Link("##undo", new Vector2(a.X + w - P(8) - uw, a.Y + P(2)), Undo, out _))
+            if (dl.Link("##undo", new Vector2(a.X + w - P(8) - uw, a.Y + P(2)), Undo, out _))
                 pendingEdit = setup.Without(new RemoveUnit(setup.NameAsMade(l.Text)).Key);
         }
         ImGui.PopID();
@@ -474,31 +475,31 @@ public sealed unsafe partial class LaunchScene
                 namesToggled.Add(key);
             selKey = key;
         }
-        RowBg(a, w, RowH, n, selected, hover);
-        Twisty(new Vector2(x + P(4), a.Y + RowH / 2), names);
+        dl.RowBg(a, w, RowH, n, selected, hover);
+        dl.Twisty(new Vector2(x + P(4), a.Y + RowH / 2), names);
         x += P(12);
         float scaleX = oobX[1] + shift;
         dl.PushClipRect(new Vector2(x, a.Y), new Vector2(scaleX - P(4), a.Y + RowH), true);
-        Txt(UiFonts.Sans, new Vector2(x, Mid(UiFonts.Sans, a.Y, RowH)), selected ? T.Brass : T.Bright, l.Text);
+        dl.Text(UiFonts.Sans, new Vector2(x, Mid(UiFonts.Sans, a.Y, RowH)), selected ? T.Brass : T.Bright, l.Text);
         if (l.Swapped)
-            Txt(UiFonts.SansSmall, new Vector2(x + Width(UiFonts.Sans, l.Text) + P(6), Mid(UiFonts.SansSmall, a.Y, RowH)), T.Muted, l.Was);
+            dl.Text(UiFonts.SansSmall, new Vector2(x + Width(UiFonts.Sans, l.Text) + P(6), Mid(UiFonts.SansSmall, a.Y, RowH)), T.Muted, l.Was);
         dl.PopClipRect();
         int id = ClassOf(l.Design);
         dl.PushClipRect(new Vector2(scaleX, a.Y), new Vector2(oobX[2] + shift, a.Y + RowH), true);
         Thumb(id, new Vector2(scaleX + P(OobCols[9]) / 2, a.Y + RowH / 2), pxPerM, l.Ships.Count > 0 ? 1 : 0.35f);
         dl.PopClipRect();
-        Stepper("##n", new Vector2(oobX[2] + shift + P(2), a.Y + P(2.5f)), l.Count, P(26), l.Fewer, true, out int by);
+        dl.Stepper("##n", new Vector2(oobX[2] + shift + P(2), a.Y + P(2.5f)), l.Count, P(26), l.Fewer, true, out int by);
         if (by != 0)
             pendingEdit = setup.Resize(setup.NameAsMade(l.Unit.Name), l.Design, Math.Sign(by));
         float my = Mid(UiFonts.Mono, a.Y, RowH);
         if (FiguresOf(id) is { } f)
         {
-            TxtR(UiFonts.Mono, oobX[4] + shift - P(6), my, T.Bright, f.Displacement);
-            TxtR(UiFonts.Mono, oobX[5] + shift - P(6), my, T.Bright, f.Speed);
-            Txt(UiFonts.Mono, new Vector2(oobX[5] + shift + P(4), my), T.Text, f.Main);
-            Txt(UiFonts.Mono, new Vector2(oobX[6] + shift + P(4), my), T.Text, f.Second);
-            TxtR(UiFonts.Mono, oobX[8] + shift - P(6), my, T.Bright, f.Belt);
-            TxtR(UiFonts.Mono, oobX[9] + shift - P(6), my, T.Bright, f.Reach);
+            dl.TextRight(UiFonts.Mono, oobX[4] + shift - P(6), my, T.Bright, f.Displacement);
+            dl.TextRight(UiFonts.Mono, oobX[5] + shift - P(6), my, T.Bright, f.Speed);
+            dl.Text(UiFonts.Mono, new Vector2(oobX[5] + shift + P(4), my), T.Text, f.Main);
+            dl.Text(UiFonts.Mono, new Vector2(oobX[6] + shift + P(4), my), T.Text, f.Second);
+            dl.TextRight(UiFonts.Mono, oobX[8] + shift - P(6), my, T.Bright, f.Belt);
+            dl.TextRight(UiFonts.Mono, oobX[9] + shift - P(6), my, T.Bright, f.Reach);
         }
         BuildState(id, new Vector2(oobX[9] + shift + P(4), a.Y));
         // ▾: the design picker
@@ -507,7 +508,7 @@ public sealed unsafe partial class LaunchScene
         if (ImGui.InvisibleButton("##change", new Vector2(P(16), P(18))) && !begin)
             OpenPicker(l);
         bool ch = ImGui.IsItemHovered();
-        Arrow(dc, 1, P(3.5f), ch ? T.Bright : T.Muted);
+        dl.Arrow(dc, 1, P(3.5f), ch ? T.Bright : T.Muted);
         if (ch)
             ImGui.SetTooltip("change the design… (D)");
         if (hover && !ch && l.NamesTip.Length > 0)
@@ -524,13 +525,13 @@ public sealed unsafe partial class LaunchScene
         ImGui.PopID();
         if (click)
             selKey = (l.Side, l.Unit.Name, l.Design);
-        RowBg(a, w, RowH, n, hover: hover);
+        dl.RowBg(a, w, RowH, n, hover: hover);
         float x = a.X + P(6) + (l.Depth + 2) * P(14) + P(16);
         float ty = Mid(UiFonts.Sans, a.Y, RowH);
         if (k < l.Captains.Length)
         {
             var c = l.Captains[k];
-            Txt(UiFonts.Sans, new Vector2(x, ty), T.Text, c.Name);
+            dl.Text(UiFonts.Sans, new Vector2(x, ty), T.Text, c.Name);
             if (c.Mark.Length > 0)
                 Mark(new Vector2(x + Width(UiFonts.Sans, c.Name) + P(8), a.Y), c.Temper, c.Mark);
             return;
@@ -538,24 +539,24 @@ public sealed unsafe partial class LaunchScene
         k -= l.Captains.Length;
         if (l.Unnamed.Length > 0 && k == 0)
         {
-            Txt(UiFonts.SansSmall, new Vector2(x, Mid(UiFonts.SansSmall, a.Y, RowH)), T.Muted, l.Unnamed);
+            dl.Text(UiFonts.SansSmall, new Vector2(x, Mid(UiFonts.SansSmall, a.Y, RowH)), T.Muted, l.Unnamed);
             return;
         }
         k -= l.Unnamed.Length > 0 ? 1 : 0;
         var dim = T.Muted with { W = 0.7f };
         string s = l.StruckList[k];
-        Txt(UiFonts.Sans, new Vector2(x, ty), dim, s);
-        HLine(x, x + Width(UiFonts.Sans, s), a.Y + RowH / 2, dim);
+        dl.Text(UiFonts.Sans, new Vector2(x, ty), dim, s);
+        dl.HLine(x, x + Width(UiFonts.Sans, s), a.Y + RowH / 2, dim);
         if (k == 0)
-            Txt(UiFonts.SansSmall, new Vector2(x + Width(UiFonts.Sans, s) + P(8), Mid(UiFonts.SansSmall, a.Y, RowH)), T.Muted, "taken off: the row's stepper puts her back");
+            dl.Text(UiFonts.SansSmall, new Vector2(x + Width(UiFonts.Sans, s) + P(8), Mid(UiFonts.SansSmall, a.Y, RowH)), T.Muted, "taken off: the row's stepper puts her back");
     }
 
     /// <summary>A captain's temper by her name: ▲ bold amber, ▼ timid blue, and the figure.</summary>
     void Mark(Vector2 at, double temper, string figure)
     {
         var col = temper > 0 ? T.Amber : T.Blue;
-        Arrow(new Vector2(at.X + P(4), at.Y + RowH / 2), temper > 0 ? 3 : 1, P(4), col);
-        Txt(UiFonts.Mono, new Vector2(at.X + P(12), Mid(UiFonts.Mono, at.Y, RowH)), col, figure);
+        dl.Arrow(new Vector2(at.X + P(4), at.Y + RowH / 2), temper > 0 ? 3 : 1, P(4), col);
+        dl.Text(UiFonts.Mono, new Vector2(at.X + P(12), Mid(UiFonts.Mono, at.Y, RowH)), col, figure);
     }
 
     /// <summary>A class's build in a word: building, its art coming, ready, or failed.</summary>
@@ -567,7 +568,7 @@ public sealed unsafe partial class LaunchScene
             : world.Classes.ErrorOf(id) != null ? ("failed", T.Amber)
             : art.Get(id) == null ? ("art…", T.Muted) : ("ready", T.Ok);
         dl.AddCircleFilled(at + new Vector2(P(3), RowH / 2), P(3), U(col), 10);
-        Txt(UiFonts.SansSmall, new Vector2(at.X + P(10), Mid(UiFonts.SansSmall, at.Y, RowH)), col == T.Ok ? T.Ok : T.Muted, word);
+        dl.Text(UiFonts.SansSmall, new Vector2(at.X + P(10), Mid(UiFonts.SansSmall, at.Y, RowH)), col == T.Ok ? T.Ok : T.Muted, word);
     }
 
     // ------------------------------------------------------------------ the selected class
@@ -614,20 +615,20 @@ public sealed unsafe partial class LaunchScene
         float w = size.X;
         if (l == null)
         {
-            SubHeader(a, w, "SELECTED CLASS");
+            dl.SubHeader(a, w, "SELECTED CLASS");
             return;
         }
         int id = ClassOf(l.Design);
         var f = FiguresOf(id);
         MakeSel(l, id, f);
-        float right = SubHeader(a, w, "SELECTED CLASS");
+        float right = dl.SubHeader(a, w, "SELECTED CLASS");
         float nx = a.X + P(14) + Width(UiFonts.SansSmall, "SELECTED CLASS");
         float srcX = right - Width(UiFonts.SansSmall, selText.Source);
         dl.PushClipRect(new Vector2(nx, a.Y), new Vector2(srcX - P(8), a.Y + RowH), true);
-        Txt(UiFonts.SansBold, new Vector2(nx, Mid(UiFonts.SansBold, a.Y, RowH)), T.Bright, l.Text);
-        Txt(UiFonts.SansSmall, new Vector2(nx + Width(UiFonts.SansBold, l.Text) + P(8), Mid(UiFonts.SansSmall, a.Y, RowH)), T.Muted, selText.File);
+        dl.Text(UiFonts.SansBold, new Vector2(nx, Mid(UiFonts.SansBold, a.Y, RowH)), T.Bright, l.Text);
+        dl.Text(UiFonts.SansSmall, new Vector2(nx + Width(UiFonts.SansBold, l.Text) + P(8), Mid(UiFonts.SansSmall, a.Y, RowH)), T.Muted, selText.File);
         dl.PopClipRect();
-        Txt(UiFonts.SansSmall, new Vector2(srcX, Mid(UiFonts.SansSmall, a.Y, RowH)), T.Muted, selText.Source);
+        dl.Text(UiFonts.SansSmall, new Vector2(srcX, Mid(UiFonts.SansSmall, a.Y, RowH)), T.Muted, selText.Source);
 
         ImGui.SetCursorScreenPos(a + new Vector2(0, RowH));
         var keep = dl;
@@ -642,7 +643,7 @@ public sealed unsafe partial class LaunchScene
             float planH = P(104);
             var p0 = new Vector2(o.X, y);
             dl.AddRectFilled(p0, p0 + new Vector2(cw, planH), U(T.Plan));
-            HLine(p0.X, p0.X + cw, p0.Y + planH - 1, T.Edge);
+            dl.HLine(p0.X, p0.X + cw, p0.Y + planH - 1, T.Edge);
             if (id >= 0 && world.Classes.TryGet(id) is { } c)
             {
                 float len = (float)c.Motion.LengthM;
@@ -655,53 +656,53 @@ public sealed unsafe partial class LaunchScene
                 dl.AddLine(new Vector2(x0, ly - P(4)), new Vector2(x0, ly + P(4)), line);
                 dl.AddLine(new Vector2(x1, ly - P(4)), new Vector2(x1, ly + P(4)), line);
                 if (selText.Length.Length > 0)
-                    Tag(new Vector2(mid.X - TagSize(selText.Length).X / 2, ly - P(8)), selText.Length);
+                    dl.Tag(new Vector2(mid.X - TagSize(selText.Length).X / 2, ly - P(8)), selText.Length);
             }
-            TxtR(UiFonts.MonoSmall, p0.X + cw - P(8), p0.Y + planH - P(16), T.PlanLine, "to scale");
+            dl.TextRight(UiFonts.MonoSmall, p0.X + cw - P(8), p0.Y + planH - P(16), T.PlanLine, "to scale");
             y += planH;
             // her particulars
             var h = new Vector2(o.X, y);
-            Head(h, cw);
+            dl.Head(h, cw);
             float vx = o.X + P(200);
-            HeadCell(h, o.X + P(6), "PARTICULAR");
-            HeadCell(h, vx, "VALUE", right: true);
-            HeadCell(h, vx + P(12), "NOTE");
+            dl.HeadCell(h, o.X + P(6), "PARTICULAR");
+            dl.HeadCell(h, vx, "VALUE", right: true);
+            dl.HeadCell(h, vx + P(12), "NOTE");
             y += HeadH;
             if (selText.Rows.Length == 0)
             {
-                Txt(UiFonts.SansSmall, new Vector2(o.X + P(6), Mid(UiFonts.SansSmall, y, RowH)), T.Muted, id >= 0 && world.Classes.ErrorOf(id) is { } err ? err : "her class is building");
+                dl.Text(UiFonts.SansSmall, new Vector2(o.X + P(6), Mid(UiFonts.SansSmall, y, RowH)), T.Muted, id >= 0 && world.Classes.ErrorOf(id) is { } err ? err : "her class is building");
                 y += RowH;
             }
             for (int r = 0; r < selText.Rows.Length; r++)
             {
                 var (label, value, note) = selText.Rows[r];
                 var ra = new Vector2(o.X, y);
-                RowBg(ra, cw, RowH, r);
-                Txt(UiFonts.Sans, new Vector2(ra.X + P(6), Mid(UiFonts.Sans, ra.Y, RowH)), T.Muted, label);
+                dl.RowBg(ra, cw, RowH, r);
+                dl.Text(UiFonts.Sans, new Vector2(ra.X + P(6), Mid(UiFonts.Sans, ra.Y, RowH)), T.Muted, label);
                 if (label == "Changed")
-                    Txt(UiFonts.SansSmall, new Vector2(vx - P(110), Mid(UiFonts.SansSmall, ra.Y, RowH)), T.Text, value);
+                    dl.Text(UiFonts.SansSmall, new Vector2(vx - P(110), Mid(UiFonts.SansSmall, ra.Y, RowH)), T.Text, value);
                 else
-                    TxtR(UiFonts.Mono, vx, Mid(UiFonts.Mono, ra.Y, RowH), T.Bright, value);
-                Txt(UiFonts.SansSmall, new Vector2(vx + P(12), Mid(UiFonts.SansSmall, ra.Y, RowH)), T.Muted, note);
+                    dl.TextRight(UiFonts.Mono, vx, Mid(UiFonts.Mono, ra.Y, RowH), T.Bright, value);
+                dl.Text(UiFonts.SansSmall, new Vector2(vx + P(12), Mid(UiFonts.SansSmall, ra.Y, RowH)), T.Muted, note);
                 y += RowH;
             }
             // the design's buttons
-            float right2 = SubHeader(new Vector2(o.X, y), cw, "DESIGN");
+            float right2 = dl.SubHeader(new Vector2(o.X, y), cw, "DESIGN");
             if (selText.Year.Length > 0)
-                RightNote(right2, y, RowH, selText.Year);
+                dl.RightNote(right2, y, RowH, selText.Year);
             y += RowH + P(6);
             const string ChangeL = "Change design…", CopyL = "Edit a copy in the designer";
-            if (Button("##seldesign", new Vector2(o.X + P(6), y), ChangeL, "D", enabled: !begin))
+            if (dl.Button("##seldesign", new Vector2(o.X + P(6), y), ChangeL, "D", enabled: !begin))
                 OpenPicker(l);
-            if (Button("##selcopy", new Vector2(o.X + P(10) + ButtonWidth(ChangeL, "D"), y), CopyL, "E", enabled: !begin && EditCopy != null))
+            if (dl.Button("##selcopy", new Vector2(o.X + P(10) + ButtonWidth(ChangeL, "D"), y), CopyL, "E", enabled: !begin && EditCopy != null))
                 Copy(InUseCandidate(l));
             y += P(28);
             // her captains
-            SubHeader(new Vector2(o.X, y), cw, "CAPTAINS", "added to the admiral's temper");
+            dl.SubHeader(new Vector2(o.X, y), cw, "CAPTAINS", "added to the admiral's temper");
             y += RowH;
             if (l.Captains.Length == 0)
             {
-                Txt(UiFonts.SansSmall, new Vector2(o.X + P(6), Mid(UiFonts.SansSmall, y, RowH)), T.Muted, "Her captains are unnamed: a named ship's captain takes a temper.");
+                dl.Text(UiFonts.SansSmall, new Vector2(o.X + P(6), Mid(UiFonts.SansSmall, y, RowH)), T.Muted, "Her captains are unnamed: a named ship's captain takes a temper.");
                 y += RowH;
             }
             float sx = o.X + cw - P(6) - (2 * P(13) + P(44) + P(4));
@@ -709,12 +710,12 @@ public sealed unsafe partial class LaunchScene
             {
                 var cap = l.Captains[k];
                 var ra = new Vector2(o.X, y);
-                RowBg(ra, cw, RowH, k);
-                Txt(UiFonts.Sans, new Vector2(ra.X + P(6), Mid(UiFonts.Sans, ra.Y, RowH)), T.Text, cap.Name);
+                dl.RowBg(ra, cw, RowH, k);
+                dl.Text(UiFonts.Sans, new Vector2(ra.X + P(6), Mid(UiFonts.Sans, ra.Y, RowH)), T.Text, cap.Name);
                 if (Math.Abs(cap.Temper - cap.Written) > 1e-9)
-                    TxtR(UiFonts.SansSmall, sx - P(8), Mid(UiFonts.SansSmall, ra.Y, RowH), T.Muted, "changed");
+                    dl.TextRight(UiFonts.SansSmall, sx - P(8), Mid(UiFonts.SansSmall, ra.Y, RowH), T.Muted, "changed");
                 ImGui.PushID(k);
-                Stepper("##cap", new Vector2(sx, ra.Y + P(2.5f)), cap.Value, P(44), cap.Temper > -1 + 1e-9, cap.Temper < 1 - 1e-9, out int by);
+                dl.Stepper("##cap", new Vector2(sx, ra.Y + P(2.5f)), cap.Value, P(44), cap.Temper > -1 + 1e-9, cap.Temper < 1 - 1e-9, out int by);
                 ImGui.PopID();
                 if (by != 0)
                     pendingEdit = setup.Temper(written!, cap.Name, Math.Clamp(Math.Round((cap.Temper + by * 0.05) * 20) / 20, -1, 1));
@@ -726,16 +727,5 @@ public sealed unsafe partial class LaunchScene
         ImGui.Dummy(new Vector2(1, 0));
         ImGui.EndChild();
         dl = keep;
-    }
-
-    /// <summary>Text cut to a width with an ellipsis (the string itself when it fits).</summary>
-    static string Clip(ImFontPtr font, string s, float width)
-    {
-        if (Width(font, s) <= width)
-            return s;
-        int n = s.Length;
-        while (n > 0 && Width(font, s[..n] + "…") > width)
-            n--;
-        return s[..n].TrimEnd(' ', ',') + "…";
     }
 }

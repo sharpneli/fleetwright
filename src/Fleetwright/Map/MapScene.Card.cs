@@ -7,6 +7,7 @@ using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Ships;
 using ImGuiNET;
+using Fleetwright.Ui;
 
 namespace Fleetwright.Map;
 
@@ -115,8 +116,8 @@ public sealed partial class MapScene
         {
             ImGui.PushID(e);
             bool pin = pinned.Contains(e);
-            ImGui.PushStyleColor(ImGuiCol.Button, on ? DesignerTheme.Panel2 : new Vector4(1, 1, 1, 0.03f));
-            ImGui.PushStyleColor(ImGuiCol.Text, on ? DesignerTheme.Bright : pin ? DesignerTheme.Brass : DesignerTheme.Muted);
+            ImGui.PushStyleColor(ImGuiCol.Button, on ? Theme.Panel2 : new Vector4(1, 1, 1, 0.03f));
+            ImGui.PushStyleColor(ImGuiCol.Text, on ? Theme.Bright : pin ? Theme.Brass : Theme.Muted);
             if (ImGui.Button(TabName(s, e)) && e != selected)
             {
                 selected = e;
@@ -154,7 +155,7 @@ public sealed partial class MapScene
         ImGui.PopStyleVar();
         var p0 = ImGui.GetWindowPos();
         float y = p0.Y + ImGui.GetCursorPosY() + 2 * sc;
-        ImGui.GetWindowDrawList().AddLine(new Vector2(p0.X, y), new Vector2(p0.X + ImGui.GetWindowWidth(), y), ImGui.GetColorU32(DesignerTheme.Line));
+        ImGui.GetWindowDrawList().AddLine(new Vector2(p0.X, y), new Vector2(p0.X + ImGui.GetWindowWidth(), y), ImGui.GetColorU32(Theme.Line));
         ImGui.Dummy(new Vector2(1, 4 * sc));
     }
 
@@ -228,7 +229,7 @@ public sealed partial class MapScene
         ImGui.PushStyleColor(ImGuiCol.Header, new Vector4(1, 1, 1, 0.03f));
         ImGui.PushStyleColor(ImGuiCol.HeaderHovered, new Vector4(1, 1, 1, 0.07f));
         ImGui.PushStyleColor(ImGuiCol.HeaderActive, new Vector4(1, 1, 1, 0.1f));
-        ImGui.PushStyleColor(ImGuiCol.Text, DesignerTheme.Brass);
+        ImGui.PushStyleColor(ImGuiCol.Text, Theme.Brass);
         bool open = ImGui.CollapsingHeader(title, ImGuiTreeNodeFlags.DefaultOpen);
         ImGui.PopStyleColor(4);
         if (right.Length > 0)
@@ -237,7 +238,7 @@ public sealed partial class MapScene
             var max = ImGui.GetItemRectMax();
             var size = U8.Size(right);
             U8.Draw(ImGui.GetWindowDrawList(), new Vector2(max.X - size.X - 6 * UiFonts.Scale, (min.Y + max.Y - size.Y) / 2),
-                ImGui.GetColorU32(DesignerTheme.Muted), right);
+                ImGui.GetColorU32(Theme.Muted), right);
         }
         return open;
     }
@@ -262,25 +263,25 @@ public sealed partial class MapScene
         var v = s.Ships;
         var gv = s.Groups;
         ImGui.PushFont(UiFonts.PosterFigure);
-        ImGui.TextColored(DesignerTheme.Bright, ShipName(s, e));
+        ImGui.TextColored(Theme.Bright, ShipName(s, e));
         ImGui.PopFont();
         int g = gv.IndexOfShip(e);
         ImGui.PushTextWrapPos(0);
         if (g >= 0)
-            U8.Text(U8.W($"{cls.Name} · {gv.Name[g]}{(gv.GuideShip[g] == e ? ", guide" : "")}"), DesignerTheme.Muted);
+            U8.Text(U8.W($"{cls.Name} · {gv.Name[g]}{(gv.GuideShip[g] == e ? ", guide" : "")}"), Theme.Muted);
         else
-            U8.Text(U8.W($"{cls.Name}"), DesignerTheme.Muted);
+            U8.Text(U8.W($"{cls.Name}"), Theme.Muted);
         ImGui.PopTextWrapPos();
         // her state: in action, who commands her, falling out, going down
         bool going = ci >= 0 && s.Conditions.Status[ci] == ShipStatus.GoingDown;
         if (going)
             Chip(s.Conditions.Loss[ci] switch { LossKind.Magazine => "MAGAZINE: GOING DOWN"u8, LossKind.Capsized => "CAPSIZING"u8, LossKind.BrokeInTwo => "BROKEN IN TWO"u8, _ => "FOUNDERING"u8 }, Bad);
         else if (v.Encounter[k] != 0)
-            Chip("IN ACTION"u8, DesignerTheme.Amber);
+            Chip("IN ACTION"u8, Theme.Amber);
         var held = g >= 0 ? DetachmentOf(gv, g, e) : Detachment.InLine;
         bool ai = g >= 0 && gv.Commanded[TopOf(gv, g)] == 1;
         if (Held(held))
-            Chip("YOUR ORDERS"u8, DesignerTheme.Brass);
+            Chip("YOUR ORDERS"u8, Theme.Brass);
         else
             Chip(U8.W($"{(ai ? "AI" : "CAPTAIN")} · {CaptainWord((CaptainOrder)v.Captain[k])}"), Friend);
         if (v.Reason[k] != 0)
@@ -320,11 +321,11 @@ public sealed partial class MapScene
         ImGui.Spacing();
         if (!ImGui.BeginTable("##big", 4, ImGuiTableFlags.BordersInnerV | ImGuiTableFlags.SizingStretchSame))
             return;
-        Fig("SPEED", U8.W($"{v.Speed[k] / Handling.MsPerKnot:0.0} kn"), U8.W($"of {now:0.0} now"), now < top - 0.5 ? DesignerTheme.Amber : DesignerTheme.Bright);
-        Fig("COURSE", U8.W($"{Earth.Heading(p, f):000}°"), U8.W($"ordered {v.CourseOrderDeg[k]:000}°"), DesignerTheme.Bright);
-        Fig("TARGET", target > 0 ? LabelOf(s, target) : "-"u8, b >= 0 && s.Batteries.RangeM[b] > 0 ? U8.W($"{s.Batteries.RangeM[b] / 1000:0.0} km") : default, DesignerTheme.Bright);
+        Fig("SPEED", U8.W($"{v.Speed[k] / Handling.MsPerKnot:0.0} kn"), U8.W($"of {now:0.0} now"), now < top - 0.5 ? Theme.Amber : Theme.Bright);
+        Fig("COURSE", U8.W($"{Earth.Heading(p, f):000}°"), U8.W($"ordered {v.CourseOrderDeg[k]:000}°"), Theme.Bright);
+        Fig("TARGET", target > 0 ? LabelOf(s, target) : "-"u8, b >= 0 && s.Batteries.RangeM[b] > 0 ? U8.W($"{s.Batteries.RangeM[b] / 1000:0.0} km") : default, Theme.Bright);
         Fig("HITS", U8.W($"{(ci >= 0 ? c.Hits[ci] : 0)}"), ci >= 0 && c.BreachM2[ci] > 0 ? U8.W($"holes {c.BreachM2[ci]:0.0} m²") : default,
-            ci >= 0 && c.Hits[ci] > 0 ? DesignerTheme.Amber : DesignerTheme.Bright);
+            ci >= 0 && c.Hits[ci] > 0 ? Theme.Amber : Theme.Bright);
         ImGui.EndTable();
 
         static void Fig(string label, ReadOnlySpan<byte> value, ReadOnlySpan<byte> sub, Vector4 colour)
@@ -337,7 +338,7 @@ public sealed partial class MapScene
             U8.Text(value, colour);
             ImGui.PopFont();
             ImGui.PushFont(UiFonts.SansSmall);
-            U8.Text(sub, DesignerTheme.Muted);
+            U8.Text(sub, Theme.Muted);
             ImGui.PopFont();
         }
     }
@@ -388,7 +389,7 @@ public sealed partial class MapScene
             double water = ci >= 0 ? c.WaterT[ci] : 0, reserve = ci >= 0 ? c.ReserveT[ci] : 1;
             double afloat = reserve / Math.Max(reserve + water, 1e-6);
             Row("Flotation");
-            Bar((float)afloat, afloat > 0.8 ? Ok : afloat > 0.6 ? DesignerTheme.Amber : Bad);
+            Bar((float)afloat, afloat > 0.8 ? Ok : afloat > 0.6 ? Theme.Amber : Bad);
             ImGui.SameLine();
             U8.Text(U8.W($"{afloat * 100:0}% · {water:#,0} t aboard"));
             var a = ci >= 0 ? c.Attitude[ci] : default;
@@ -401,17 +402,17 @@ public sealed partial class MapScene
                 ImGui.TextDisabled("none");
             Row("Power · steering");
             var steer = ci >= 0 ? c.Steering[ci] : Steering.Free;
-            U8.Text(U8.W($"{(ci >= 0 ? c.PowerCap[ci] * 100 : 100):0}% power · {SteerWord(steer)}"), steer == Steering.Free ? DesignerTheme.Bright : DesignerTheme.Amber);
+            U8.Text(U8.W($"{(ci >= 0 ? c.PowerCap[ci] * 100 : 100):0}% power · {SteerWord(steer)}"), steer == Steering.Free ? Theme.Bright : Theme.Amber);
             if (ci >= 0 && double.IsFinite(c.SafeSpeedKn[ci]))
             {
                 Row("Safe speed");
-                U8.Text(U8.W($"{c.SafeSpeedKn[ci]:0} kn (damage control asks)"), DesignerTheme.Amber);
+                U8.Text(U8.W($"{c.SafeSpeedKn[ci]:0} kn (damage control asks)"), Theme.Amber);
             }
             if (di >= 0)
             {
                 Row("Crew");
                 U8.Text(U8.W($"{d.Killed[di]:0} killed, {d.Wounded[di]:0} wounded of {d.Complement[di]:#,0}"),
-                    d.Killed[di] + d.Wounded[di] > 0 ? DesignerTheme.Amber : DesignerTheme.Bright);
+                    d.Killed[di] + d.Wounded[di] > 0 ? Theme.Amber : Theme.Bright);
             }
             ImGui.EndTable();
         }
@@ -430,7 +431,7 @@ public sealed partial class MapScene
         float sc = UiFonts.Scale, h = 6 * sc;
         var p = ImGui.GetCursorScreenPos() + new Vector2(0, (ImGui.GetTextLineHeight() - h) / 2);
         var dl = ImGui.GetWindowDrawList();
-        dl.AddRectFilled(p, p + new Vector2(w * sc, h), ImGui.GetColorU32(DesignerTheme.Inset), 1);
+        dl.AddRectFilled(p, p + new Vector2(w * sc, h), ImGui.GetColorU32(Theme.Inset), 1);
         dl.AddRectFilled(p, p + new Vector2(w * sc * Math.Clamp(share, 0, 1), h), ImGui.GetColorU32(colour), 1);
         ImGui.Dummy(new Vector2(w * sc, ImGui.GetTextLineHeight()));
     }
@@ -467,7 +468,7 @@ public sealed partial class MapScene
             dl.AddPolyline(ref poly[0], poly.Length, ImGui.GetColorU32(new Vector4(0.55f, 0.62f, 0.68f, 1)), ImDrawFlags.Closed, 1);
         }
         else
-            dl.AddRect(P(x0, -cls.Beam / 2), P(x1, cls.Beam / 2), ImGui.GetColorU32(DesignerTheme.Muted));
+            dl.AddRect(P(x0, -cls.Beam / 2), P(x1, cls.Beam / 2), ImGui.GetColorU32(Theme.Muted));
         // the upper works
         var comps = cls.Components;
         for (int i = 0; i < comps.Length; i++)
@@ -488,7 +489,7 @@ public sealed partial class MapScene
             if (part >= comps.Length || st is PartState.Ok or PartState.Damaged)
                 continue;
             var bx = comps[part].Bounds;
-            dl.AddRect(P(bx.X0, bx.Y0), P(bx.X1, bx.Y1), ImGui.GetColorU32(st == PartState.Destroyed ? Bad : DesignerTheme.Amber), 0, 0, 1.5f * sc);
+            dl.AddRect(P(bx.X0, bx.Y0), P(bx.X1, bx.Y1), ImGui.GetColorU32(st == PartState.Destroyed ? Bad : Theme.Amber), 0, 0, 1.5f * sc);
         }
         // fires, at their cells
         var cells = cls.Cells;
@@ -621,7 +622,7 @@ public sealed partial class MapScene
     {
         MountStatus.Ready => Ok,
         MountStatus.Loading => OkDim,
-        MountStatus.Jammed or MountStatus.Down => DesignerTheme.Amber,
+        MountStatus.Jammed or MountStatus.Down => Theme.Amber,
         _ => Bad,
     };
 
@@ -678,7 +679,7 @@ public sealed partial class MapScene
             ImGui.TextDisabled(bat.Kind == Battery.Main ? "main" : "secondary");
             ImGui.TableNextColumn();
             string label = BatteryLabel(cls, b);
-            U8.Text(row >= 0 ? U8.W($"{label} on {LabelOf(s, s.Batteries.Target[row])}") : U8.W($"{label}: no target"), DesignerTheme.Muted);
+            U8.Text(row >= 0 ? U8.W($"{label} on {LabelOf(s, s.Batteries.Target[row])}") : U8.W($"{label}: no target"), Theme.Muted);
             ImGui.TableNextColumn();
             // its shell (docs/battle/shell-choice.md A5): the kind it loads, and the round in its guns while that changes
             if (s.Ships.IndexOf(e) is int k and >= 0 && s.Ships.BatteryStart[k] >= 0)
@@ -686,11 +687,11 @@ public sealed partial class MapScene
                 int o = s.Ships.BatteryOrdered[s.Ships.BatteryStart[k] + b], g = s.Ships.BatteryInGuns[s.Ships.BatteryStart[k] + b];
                 ImGui.PushFont(UiFonts.SansSmall);
                 if (o == 0)
-                    U8.Right(g > 0 ? U8.W($"{KindName((ShellKind)(g - 1))}, magazine order") : "none left"u8, DesignerTheme.Muted);
+                    U8.Right(g > 0 ? U8.W($"{KindName((ShellKind)(g - 1))}, magazine order") : "none left"u8, Theme.Muted);
                 else if (g == o || g == 0)
-                    U8.Right(U8.W($"loads {KindName((ShellKind)(o - 1))}"), s.Ships.ShellHeld[k] > 0 && bat.Chief ? DesignerTheme.Brass : DesignerTheme.Bright);
+                    U8.Right(U8.W($"loads {KindName((ShellKind)(o - 1))}"), s.Ships.ShellHeld[k] > 0 && bat.Chief ? Theme.Brass : Theme.Bright);
                 else
-                    U8.Right(U8.W($"{KindName((ShellKind)(g - 1))} in, then {KindName((ShellKind)(o - 1))}"), DesignerTheme.Amber);
+                    U8.Right(U8.W($"{KindName((ShellKind)(g - 1))} in, then {KindName((ShellKind)(o - 1))}"), Theme.Amber);
                 ImGui.PopFont();
             }
             foreach (int m in ForeToAft(cls, b))
@@ -720,11 +721,11 @@ public sealed partial class MapScene
                 if (d.MountGunsOut[j] > 0)
                 {
                     ImGui.SameLine();
-                    U8.Text(U8.W($"· {d.MountGunsOut[j]} gun out"), DesignerTheme.Amber);
+                    U8.Text(U8.W($"· {d.MountGunsOut[j]} gun out"), Theme.Amber);
                 }
                 ImGui.TableNextColumn();
                 ImGui.PushFont(UiFonts.Mono);
-                U8.Right(U8.W($"{Rounds(d.MountAp[j])} · {Rounds(d.MountCommon[j])} · {Rounds(d.MountHe[j])}"), st == MountStatus.Out ? DesignerTheme.Muted : DesignerTheme.Bright);
+                U8.Right(U8.W($"{Rounds(d.MountAp[j])} · {Rounds(d.MountCommon[j])} · {Rounds(d.MountHe[j])}"), st == MountStatus.Out ? Theme.Muted : Theme.Bright);
                 ImGui.PopFont();
             }
         }
@@ -782,12 +783,12 @@ public sealed partial class MapScene
                 continue;
             any = true;
             var row = cls.Batteries[bat];
-            U8.Text(U8.W($"{BatteryLabel(cls, bat)} {(row.Kind == Battery.Main ? "main" : "secondary")} on {LabelOf(s, b.Target[i])}"), DesignerTheme.Bright);
+            U8.Text(U8.W($"{BatteryLabel(cls, bat)} {(row.Kind == Battery.Main ? "main" : "secondary")} on {LabelOf(s, b.Target[i])}"), Theme.Bright);
             ImGui.PushFont(UiFonts.Mono);
             U8.Text(b.RangeM[i] > 0 ? U8.W($"{b.RangeM[i]:#,0} m · plot ±{b.SigmaM[i]:0} m · {(b.Sees[i] ? "in sight" : "not seen")}") : U8.W($"{StateText(b.State[i], b.Phase[i])}"),
-                b.Sees[i] ? DesignerTheme.Text : DesignerTheme.Amber);
+                b.Sees[i] ? Theme.Text : Theme.Amber);
             ImGui.PopFont();
-            U8.Text(b.Local[i] ? "local control"u8 : U8.W($"director, level {b.Level[i]} ({FireControlPresets.Name(b.Level[i])})"), DesignerTheme.Muted);
+            U8.Text(b.Local[i] ? "local control"u8 : U8.W($"director, level {b.Level[i]} ({FireControlPresets.Name(b.Level[i])})"), Theme.Muted);
             Phases(b.State[i] == BatteryState.Firing ? b.Phase[i] : (FirePhase)255);
             ImGui.PushID(bat);
             if (ImGui.BeginTable("##fc", 4, ImGuiTableFlags.BordersInnerV | ImGuiTableFlags.SizingStretchSame))
@@ -811,7 +812,7 @@ public sealed partial class MapScene
             ImGui.TextDisabled(label);
             ImGui.PopFont();
             ImGui.PushFont(UiFonts.Mono);
-            U8.Text(U8.W($"{n}"), DesignerTheme.Bright);
+            U8.Text(U8.W($"{n}"), Theme.Bright);
             ImGui.PopFont();
         }
     }
@@ -829,12 +830,12 @@ public sealed partial class MapScene
         {
             var a = p + new Vector2(i * (w + 2 * sc), 0);
             bool on = phases[i] == now, done = now != (FirePhase)255 && phases[i] < now;
-            dl.AddRectFilled(a, a + new Vector2(w, h), ImGui.GetColorU32(on ? new Vector4(0.17f, 0.23f, 0.12f, 1) : done ? new Vector4(0.11f, 0.16f, 0.11f, 1) : DesignerTheme.Inset), 1);
+            dl.AddRectFilled(a, a + new Vector2(w, h), ImGui.GetColorU32(on ? new Vector4(0.17f, 0.23f, 0.12f, 1) : done ? new Vector4(0.11f, 0.16f, 0.11f, 1) : Theme.Inset), 1);
             if (on)
                 dl.AddLine(a + new Vector2(0, h - 1), a + new Vector2(w, h - 1), ImGui.GetColorU32(Ok), 2 * sc);
             var text = i == 0 ? "Opening"u8 : i == 1 ? "Ranging"u8 : "Fire for effect"u8;
             var size = U8.Size(text);
-            U8.Draw(dl, a + new Vector2((w - size.X) / 2, (h - size.Y) / 2), ImGui.GetColorU32(on ? Ok : done ? OkDim : DesignerTheme.Muted), text);
+            U8.Draw(dl, a + new Vector2((w - size.X) / 2, (h - size.Y) / 2), ImGui.GetColorU32(on ? Ok : done ? OkDim : Theme.Muted), text);
         }
         ImGui.Dummy(new Vector2(3 * w, h + 2 * sc));
     }
@@ -859,26 +860,26 @@ public sealed partial class MapScene
             if (d.PartyFire[d.PartyStart[di] + i] < 0 && d.PartyJob[d.PartyStart[di] + i] == RepairJob.None)
                 (idle, idleMen) = (idle + 1, idleMen + d.PartyMen[d.PartyStart[di] + i]);
         if (idle > 0)
-            U8.Text(U8.W($"{idle} {(idle == 1 ? "party" : "parties")} standing by, {idleMen:0} men"), DesignerTheme.Muted);
+            U8.Text(U8.W($"{idle} {(idle == 1 ? "party" : "parties")} standing by, {idleMen:0} men"), Theme.Muted);
         for (int i = 0; i < d.PartyCount[di]; i++)
         {
             int j = d.PartyStart[di] + i;
             if (d.PartyFire[j] < 0 && d.PartyJob[j] == RepairJob.None)
                 continue;
             var job = d.PartyFire[j] >= 0 ? "fighting a fire"u8 : JobWord(d.PartyJob[j]);
-            U8.Text(U8.W($"{d.PartyMen[j]:0} men"), DesignerTheme.Muted);
+            U8.Text(U8.W($"{d.PartyMen[j]:0} men"), Theme.Muted);
             ImGui.SameLine(60 * UiFonts.Scale);
-            U8.Text(job, d.PartyFire[j] >= 0 ? Fire : d.PartyJob[j] == RepairJob.None ? DesignerTheme.Muted : DesignerTheme.Bright);
+            U8.Text(job, d.PartyFire[j] >= 0 ? Fire : d.PartyJob[j] == RepairJob.None ? Theme.Muted : Theme.Bright);
             if (d.PartyJob[j] != RepairJob.None && d.PartyDone[j] > 0)
             {
                 ImGui.SameLine();
-                U8.Text(U8.W($"· {d.PartyDone[j]:0} man-min done"), DesignerTheme.Muted);
+                U8.Text(U8.W($"· {d.PartyDone[j]:0} man-min done"), Theme.Muted);
             }
         }
         ImGui.Spacing();
         U8.Text(U8.W($"Pumps rigged: {d.PumpsRigged[di]} · spaces with water: {d.FloodCount[di]} · holes: {d.HoleCount[di]}"));
         if (ci >= 0 && (c.CounterfloodPortT[ci] > 0 || c.CounterfloodStarboardT[ci] > 0))
-            U8.Text(U8.W($"Counterflooding left: {c.CounterfloodPortT[ci]:0} t port, {c.CounterfloodStarboardT[ci]:0} t stbd"), DesignerTheme.Muted);
+            U8.Text(U8.W($"Counterflooding left: {c.CounterfloodPortT[ci]:0} t port, {c.CounterfloodStarboardT[ci]:0} t stbd"), Theme.Muted);
         for (int i = 0; i < d.MagazineCount[di]; i++)
             U8.Text(U8.W($"Magazine flooded: {cls.RoomId(d.MagazineRoom[d.MagazineStart[di] + i])}"), WaterTint);
     }
@@ -926,13 +927,13 @@ public sealed partial class MapScene
             ImGui.TextUnformatted(line);
         ImGui.PopTextWrapPos();
         if (hits.Count > hitLines.Count)
-            U8.Text(U8.W($"and {hits.Count - hitLines.Count} more"), DesignerTheme.Muted);
+            U8.Text(U8.W($"and {hits.Count - hitLines.Count} more"), Theme.Muted);
     }
 
     void TorpedoSection(Snapshot s, int k, ShipClass cls)
     {
         var t = cls.Torpedoes[cls.Launchers[0].Torpedo];
         U8.Text(U8.W($"{s.Ships.TorpedoesLoaded[k]} loaded, {s.Ships.TorpedoesLeft[k]} left · {t.CalibreMm:0} mm"));
-        U8.Text(U8.W($"{t.FastKn:0} kn to {t.FastRangeM / 1000:0.0} km, or {t.SlowKn:0} kn to {t.SlowRangeM / 1000:0.0} km"), DesignerTheme.Muted);
+        U8.Text(U8.W($"{t.FastKn:0} kn to {t.FastRangeM / 1000:0.0} km, or {t.SlowKn:0} kn to {t.SlowRangeM / 1000:0.0} km"), Theme.Muted);
     }
 }
