@@ -227,7 +227,8 @@ public static class Repairs
 
     /// <summary>The speed damage control asks for (09 §2.2, 17 §5; Seydlitz, Lützow, Bismarck): the highest at which every
     /// boundary of a holed space forward stays under <see cref="SimSettings.SafeLoadShare"/> of its rating with the ram head
-    /// on it (at least <see cref="SimSettings.SafeMinKn"/>, steerage); no more than <see cref="SimSettings.HullWorkKn"/>
+    /// on it (at least <see cref="SimSettings.SafeMinKn"/>, steerage); steerage while her deck forward is under the sea
+    /// (<see cref="DeckUnder"/>); no more than <see cref="SimSettings.HullWorkKn"/>
     /// while the work on her hull's holes holds back more than her pumps could take if it worked loose; no more than
     /// <see cref="SimSettings.MatKn"/> while a mat goes over (only started on holes the pumps can't keep up with). When it
     /// first asks for less than she's making is when the doctrine's hold time starts.</summary>
@@ -246,6 +247,8 @@ public static class Repairs
             double room = s.SafeLoadShare * Flooding.Rating(f, k, ei, e.Pool, s) - load;
             safe = Math.Min(safe, room <= 0 ? 0 : Math.Sqrt(room / ramK) / Kn);
         }
+        if (DeckUnder(c, f, k, s))
+            safe = 0;   // steerage way, below
         if (safe > s.HullWorkKn && Held(c, f, k, s) > Pumps(c, k))
             safe = s.HullWorkKn;
         for (int p = 0; p < k.PartyCount; p++)
@@ -265,6 +268,20 @@ public static class Repairs
     }
 
     const double Kn = 0.514444;
+
+    /// <summary>Her deck is under the sea where going ahead makes it worse (the Åland card, 2026-10-26): a weather deck in
+    /// the bow's ram under the sea at rest (every knot drives more of it over the deck and in), or a deck whose press
+    /// drives her down (<see cref="Ploughing.Deck"/>). Damage control asks for steerage way: both go as the speed squared.</summary>
+    static bool DeckUnder(ShipClass c, FloodModel f, ShipCondition k, SimSettings s)
+    {
+        if (k.Attitude == Attitude.Upright)
+            return false;
+        var water = HitQuery.WaterOf(c, k.Attitude);
+        for (int i = 0; i < c.Cells.Length; i++)
+            if (f.Weather[i] && water.At(f.Cx[i], f.Cy[i]) > c.Cells[i].Box.Top && Flooding.Ram(c, f.Cx[i], 1, s) > 0)
+                return true;
+        return Ploughing.Deck(c, f, k.Attitude, true, s).DownM2 > 0;
+    }
 
     /// <summary>What the work on her hull's holes holds back, m³/s: their area worked on × the share stopped, at each cell's
     /// full head (what would come in if it all worked loose).</summary>
@@ -316,8 +333,9 @@ public static class Repairs
 
     /// <summary>DC Central's counterflooding (09 §2.5, §3; WDR 61): past the doctrine's list it opens the narrow wing tank on
     /// the high side whose fill best matches the water the list needs (Δ·GM·tanφ over its lever), and fills it to full (a
-    /// tank left part full is free surface: NC's one at a time), the next when the list still asks; past its trim, a
-    /// centreline tank at the other end. It shuts a valve early only when the list has gone past the doctrine's the other
+    /// tank left part full is free surface: NC's one at a time), the next when the list still asks; past its trim, when
+    /// there's no list to answer or nothing to answer it with, a centreline tank at the other end (with her GM gone too:
+    /// the loll's rule is the high side's). It shuts a valve early only when the list has gone past the doctrine's the other
     /// way. At
     /// the design's valves' rate while she's conned (DC Central's stand-in until the designer has the station), by hand at
     /// a share of it after a delay when she isn't. The tanks it fills the pumps leave alone; when the high side's are
@@ -349,11 +367,10 @@ public static class Repairs
         }
         if (t < 0 && Math.Abs(heel) > doc.CounterfloodDeg && Deballast(c, f, k, heel > 0 ? 1 : -1, dt))
             return;   // the list is now toward water it let in itself: that goes out first
-        if (t < 0 && k.GmM < s.CounterfloodMinGmM)
-            return;   // a list with her GM gone is a loll: flooding the high side would throw her over (Ralph Talbot's lesson)
         if (t < 0)
         {
-            if (Math.Abs(heel) > doc.CounterfloodDeg)
+            // a list with her GM gone is a loll: flooding the high side would throw her over (Ralph Talbot's lesson)
+            if (Math.Abs(heel) > doc.CounterfloodDeg && k.GmM >= s.CounterfloodMinGmM)
             {
                 int side = heel > 0 ? -1 : 1;
                 t = Tank(c, f, k, side, 0, Needed(c, k, heel));
@@ -364,7 +381,7 @@ public static class Repairs
                     k.Note(DcEvent.CounterfloodOut, -1, side);
                 }
             }
-            else if (doc.CounterfloodTrimDeg >= 0 && Math.Abs(trim) > doc.CounterfloodTrimDeg)
+            if (t < 0 && doc.CounterfloodTrimDeg >= 0 && Math.Abs(trim) > doc.CounterfloodTrimDeg)
                 t = Tank(c, f, k, 0, trim > 0 ? -1 : 1, 0);
             if (t < 0)
                 return;

@@ -56,8 +56,24 @@ runs 5-7, after its fix, and the Debug run had none.
   - The press itself is small here, 5-7 t at 5 kn, because she slows before the deck is deep. It's the fast ships'
     effect.
   - Unchanged: Seydlitz, Lützow and the Lion bow shells, whose decks never go under.
-- [ ] Damage control's safe speed (DC6) doesn't know the deck going under. Nobody slows her for the press or for the
-  sea washing in over the forecastle, only for the boundaries' load.
+  - The bow's ram drives the sea in only over a deck that's already under. Over one still clear of the sea, it had
+    flooded a destroyer at 25 kn (332 → 357 t at 1 h). Fixed the same day.
+- [x] Damage control's safe speed (DC6) didn't know the deck going under. Fixed 2026-10-26 (the user: "the captain
+  should try to save the ship"), in `Repairs.DeckUnder`:
+  - it asks for steerage way while a weather deck in the bow's ram is under the sea at rest, or her deck under the
+    sea presses her down going ahead;
+  - the doctrine's hold time still applies.
+- [x] DC Central never trimmed a ship it couldn't right. With a list and no tank to answer it, or her GM under 0.3 m
+  (the loll rule), it opened nothing, so the trim branch was never reached. The Åland card's ship has six end tanks and
+  no wing tanks: she counterflooded 0 t at 8° by the head. Fixed 2026-10-26:
+  - the loll rule is the high side's only;
+  - trim counterflooding runs when there's no list to answer, or nothing to answer it with.
+  - Hers are small: 32 t in 4 h at 5 t/min.
+  - Captain saving her against holding 13 kn: 2,097 t against 2,119 t at 4 h. Her 80 m² of waterline holes are beyond
+    repair at sea, so the water comes in at any speed.
+  - dc-history, 20 runs against the day's first commit: water by the hour unchanged in every case.
+    - Lützow's end list is 4.9° against 5.6°, and one of her four losses comes at 344 min against 261.
+    - Shinano founders 9-40 min sooner in three runs, Seydlitz holding speed 1-7 min sooner in her two.
 - [ ] Screws near the surface ventilate, which costs more thrust than their emerged area alone [EST, left out].
 - [ ] Settling is linear (TPC, MCT) out to 8-9° of trim, past where the waterplane stays like the design's
   (`sinking.py` is in damage-control.md's "What stays out").

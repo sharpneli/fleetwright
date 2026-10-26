@@ -507,7 +507,7 @@ public sealed partial class MapScene
         Key(r, k1, "Fires"u8);
         Figure(r, v1, fires > 0 ? Fire : T.Muted, fires > 0 ? U8.W($"{fires}") : "none"u8, fires > 0 ? UiFonts.Mono : UiFonts.SansSmall);
         Key(r, k2, "Safe speed"u8);
-        if (ci >= 0 && double.IsFinite(c.SafeSpeedKn[ci]))
+        if (ci >= 0 && c.SafeSpeedKn[ci] < cls.Motion.MaxSpeedKn)   // over what she can make it binds nothing
             Figure(r, v2, T.Amber, U8.W($"{c.SafeSpeedKn[ci]:0} kn"));
         else
             Figure(r, v2, T.Muted, "any"u8, UiFonts.SansSmall);

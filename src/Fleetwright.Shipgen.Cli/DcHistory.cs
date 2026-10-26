@@ -138,6 +138,10 @@ static class DcHistory
             [Blow.Hole(0, 0.92, 0.3, 20, d: 2), Blow.Hole(1, 0.86, 0, 20, d: 2), Blow.Hole(2, 0.80, 0.5, 20, port: true, d: 2), Blow.Hole(3, 0.74, -0.2, 20, d: 2)],
             "closed up", "1916", 1, "(none: a ship down by the head with her screws out of the water can't drive ahead)",
             "she slows as her stern lifts and her bow ploughs under", "the user, 2026-10-26", Holds: true),
+        new("mechanism checks", "A coast defence ship's bow quarters burst open by four heavy HE, her captain saving her (the Åland card, 2026-10-26)", "vainamoinen", 13,
+            [Blow.Hole(0, 0.92, 0.3, 20, d: 2), Blow.Hole(1, 0.86, 0, 20, d: 2), Blow.Hole(2, 0.80, 0.5, 20, port: true, d: 2), Blow.Hole(3, 0.74, -0.2, 20, d: 2)],
+            "closed up", "1916", 1, "(none: a ship down by the head with her screws out of the water can't drive ahead)",
+            "damage control asks for steerage way once her forecastle is under; she takes less water than holding speed", "the user, 2026-10-26"),
 
         new("later cuts", "North Carolina 1942: one torpedo abreast turret A, at 19 kn (on a treaty battleship with torpedo protection)", "kgv", 19,
             [Blow.Torpedo(0, 0.78, 5, port: true)],

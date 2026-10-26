@@ -239,8 +239,11 @@ public static class Flooding
             }
             if (f.Weather[i])
             {
-                // the sea over her deck, and under way forward the bow's ram on it (the water she drives over it)
-                double head = water.At(f.Cx[i], f.Cy[i]) + Ram(c, f.Cx[i], speedMs, s) - cells[i].Box.Top;
+                // the sea over her deck, and once it's under, under way forward the bow's ram on it (the water she drives
+                // over it; a deck still clear of the sea throws her bow wave aside)
+                double head = water.At(f.Cx[i], f.Cy[i]) - cells[i].Box.Top;
+                if (head > 0)
+                    head += Ram(c, f.Cx[i], speedMs, s);
                 if (head > 0)
                     q += cd * s.FloodWeatherShare * f.DeckArea[i] * Math.Sqrt(2 * G * head);
             }
