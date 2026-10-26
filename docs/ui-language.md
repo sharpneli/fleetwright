@@ -75,8 +75,9 @@ The rules that hold it together:
 | Primary button | the same size, filled with the accent (`PrimaryTop`→`PrimaryBottom`), dark ink (`PrimaryInk`) | the screen's one main action (Begin); never larger than the others |
 | `kbd` chip | mono 9.5 px, a 1 px border with a 2 px bottom | every key binding shown next to its control |
 | Overlay toggle | a small boxed letter and a word; brass when on | what the work surface draws |
-| Status chip | 10 px text in a 1 px border on a dark tint of its colour | a state on a row: `bold +0.20`, `IN ACTION`, `you` |
+| Status chip | 10 px text in a 1 px border on a dark tint of its colour (ok, amber, plain, hostile) | a state on a row: `bold +0.20`, `in action`, `you`; hostile for the enemy and a ship going down |
 | Ledger bar | a thin `Inset` well filled by colour per share, a 1 px edge | weights by group, the sides' share |
+| Dock tab | a tab on a 22 px `Ground` strip: the live one brass on its tint with a brass border, the others `Panel2`; a pinned one's ✕ inside | the ship cards' live and pinned cards |
 | Margin box | the one tinted box on a screen (`Ok` green on dark green, or amber), a big mono figure (`MonoBig`) and a muted line | the screen's verdict: 14,882 t to spare; Ready |
 | Remarks | bullet lines in body text, a count in the title strip | what the player should know and might miss |
 

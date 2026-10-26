@@ -15,9 +15,9 @@ namespace Fleetwright.Ui;
 /// takes clicks is an ImGui item under its drawing and returns what was clicked; whether a click may change anything is
 /// the caller's to decide. A few are ImGui-flow pieces (at the cursor, for screens laid out by ImGui's layout): the
 /// segmented button, the tooltip, a figure right-aligned in a table cell. Nothing here allocates per frame: the strings
-/// are the caller's.</para>
+/// are the caller's, and the text pieces take UTF-8 too (the map's <c>U8</c> text, written without garbage).</para>
 /// </summary>
-public static class Pieces
+public static unsafe class Pieces
 {
     /// <summary>Reference pixels to the UI's.</summary>
     public static float P(float px) => px * UiFonts.Scale;
@@ -50,6 +50,33 @@ public static class Pieces
     {
         dl.AddText(f, f.FontSize, at, U(col), s, wrap);
         return WrappedHeight(f, s, wrap);
+    }
+
+    // UTF-8 text: what a screen writes every frame without making strings (the map's U8)
+    public static float Width(ImFontPtr f, ReadOnlySpan<byte> s)
+    {
+        Vector2 v;
+        fixed (byte* p = s)
+            ImGuiNative.ImFont_CalcTextSizeA(&v, f.NativePtr, f.FontSize, float.MaxValue, 0, p, p + s.Length, null);
+        return v.X;
+    }
+
+    public static void Text(this ImDrawListPtr dl, ImFontPtr f, Vector2 at, Vector4 col, ReadOnlySpan<byte> s)
+    {
+        fixed (byte* p = s)
+            ImGuiNative.ImDrawList_AddText_FontPtr(dl.NativePtr, f.NativePtr, f.FontSize, at, U(col), p, p + s.Length, 0, null);
+    }
+
+    public static void TextRight(this ImDrawListPtr dl, ImFontPtr f, float right, float y, Vector4 col, ReadOnlySpan<byte> s) =>
+        dl.Text(f, new Vector2(right - Width(f, s), y), col, s);
+
+    /// <summary>Text from <paramref name="at"/>, cut at <paramref name="right"/> (a cell's edge); returns where it ends.</summary>
+    public static float TextClipped(this ImDrawListPtr dl, ImFontPtr f, Vector2 at, float right, Vector4 col, ReadOnlySpan<byte> s)
+    {
+        dl.PushClipRect(new Vector2(at.X, at.Y - P(2)), new Vector2(right, at.Y + f.FontSize + P(2)), true);
+        dl.Text(f, at, col, s);
+        dl.PopClipRect();
+        return Math.Min(at.X + Width(f, s), right);
     }
 
     public static void HLine(this ImDrawListPtr dl, float x0, float x1, float y, Vector4 col) => dl.AddLine(new Vector2(x0, y), new Vector2(x1, y), U(col));
@@ -452,25 +479,41 @@ public static class Pieces
         return hit;
     }
 
-    /// <summary>A status chip's colour: ready, a consequence, plain.</summary>
-    public enum ChipKind { Ok, Amber, Plain }
+    /// <summary>A status chip's colour: ready, a consequence, plain, the enemy or a ship going down.</summary>
+    public enum ChipKind { Ok, Amber, Plain, Hostile }
 
     public static float ChipWidth(string label) => Width(UiFonts.SansSmall, label) + P(8);
+    public static float ChipWidth(ReadOnlySpan<byte> label) => Width(UiFonts.SansSmall, label) + P(8);
 
     /// <summary>A status chip: small text in a 1 px border on a dark tint of its colour; its width.</summary>
     public static float Chip(this ImDrawListPtr dl, Vector2 at, string label, ChipKind k)
     {
-        var (bg, edge, ink) = k switch
+        float w = ChipWidth(label);
+        ChipGround(dl, at, w, k, out var ink);
+        dl.Text(UiFonts.SansSmall, new Vector2(at.X + P(4), Mid(UiFonts.SansSmall, at.Y, P(15))), ink, label);
+        return w;
+    }
+
+    public static float Chip(this ImDrawListPtr dl, Vector2 at, ReadOnlySpan<byte> label, ChipKind k)
+    {
+        float w = ChipWidth(label);
+        ChipGround(dl, at, w, k, out var ink);
+        dl.Text(UiFonts.SansSmall, new Vector2(at.X + P(4), Mid(UiFonts.SansSmall, at.Y, P(15))), ink, label);
+        return w;
+    }
+
+    static void ChipGround(ImDrawListPtr dl, Vector2 at, float w, ChipKind k, out Vector4 ink)
+    {
+        Vector4 bg, edge;
+        (bg, edge, ink) = k switch
         {
             ChipKind.Ok => (T.OkTint, T.OkEdge, T.Ok),
             ChipKind.Amber => (T.AmberTint, T.AmberEdge, T.Amber),
+            ChipKind.Hostile => (T.HostileTint, T.HostileEdge, T.Hostile),
             _ => (T.PlainTint, T.PlainEdge, T.Bright),
         };
-        float w = ChipWidth(label), h = P(15);
-        dl.AddRectFilled(at, at + new Vector2(w, h), U(bg));
-        dl.AddRect(at, at + new Vector2(w, h), U(edge));
-        dl.Text(UiFonts.SansSmall, new Vector2(at.X + P(4), Mid(UiFonts.SansSmall, at.Y, h)), ink, label);
-        return w;
+        dl.AddRectFilled(at, at + new Vector2(w, P(15)), U(bg));
+        dl.AddRect(at, at + new Vector2(w, P(15)), U(edge));
     }
 
     public static Vector2 TagSize(string s, ImFontPtr? font = null)
@@ -488,6 +531,16 @@ public static class Pieces
         dl.AddRectFilled(at, at + size, U(T.TagBg));
         dl.AddRect(at, at + size, U(T.TagEdge));
         dl.Text(f, at + new Vector2(P(3), P(1)), ink ?? T.TagText, s);
+    }
+
+    public static Vector2 TagSize(ReadOnlySpan<byte> s) => new(Width(UiFonts.MonoSmall, s) + P(6), UiFonts.MonoSmall.FontSize + P(2));
+
+    public static void Tag(this ImDrawListPtr dl, Vector2 at, ReadOnlySpan<byte> s, Vector4? ink = null)
+    {
+        var size = TagSize(s);
+        dl.AddRectFilled(at, at + size, U(T.TagBg));
+        dl.AddRect(at, at + size, U(T.TagEdge));
+        dl.Text(UiFonts.MonoSmall, at + new Vector2(P(3), P(1)), ink ?? T.TagText, s);
     }
 
     /// <summary>A tag centred on a point (a mount's on the plan).</summary>
@@ -547,6 +600,24 @@ public static class Pieces
             if (x > width)
                 break;
         }
+        return hit;
+    }
+
+    /// <summary>A dock's tab (the ship cards' pinned ones), 20 px under a 22 px strip's top: the live one brass on its tint
+    /// and border, the others grey; its width out. True when clicked.</summary>
+    public static bool DockTab(this ImDrawListPtr dl, string id, Vector2 at, string label, bool on, float extra, out float w)
+    {
+        w = Width(UiFonts.SansSmall, label) + P(18) + extra;
+        var a = at + new Vector2(0, P(2));
+        ImGui.SetCursorScreenPos(a);
+        bool hit = ImGui.InvisibleButton(id, new Vector2(w, P(20)));
+        bool hover = ImGui.IsItemHovered();
+        dl.AddRectFilled(a, a + new Vector2(w, P(20)), U(on ? T.BrassDarker : hover ? T.TabHover : T.Panel2));
+        var edge = U(on ? T.Brass : T.Edge);
+        dl.AddLine(a, a + new Vector2(w, 0), edge);
+        dl.AddLine(a, a + new Vector2(0, P(20)), edge);
+        dl.AddLine(a + new Vector2(w, 0), a + new Vector2(w, P(20)), edge);
+        dl.Text(UiFonts.SansSmall, new Vector2(a.X + P(9), Mid(UiFonts.SansSmall, a.Y, P(20))), on ? T.Brass : hover ? T.Bright : T.Text, label);
         return hit;
     }
 

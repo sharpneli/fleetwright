@@ -42,3 +42,32 @@ Everything drawn is in the class or the snapshot already: the profile and sectio
 `HalfWidth`, made once a class), bulkheads and decks, components; water by `FloodCell`/`FloodShare` (tonnes from the
 cell's volume and permeability), holes (`HoleZ`, `HoleY`, `HoleM2`), fires (`FireCells`), parts' states, mounts' states
 and `MountUntilMs` against the battery's reload, the attitude for the waterline, draughts and clinometer.
+
+## As built (2026-10-26)
+
+The user took the mockup ("I like that a lot") with three answers: healthy mounts neutral; the clinometer stays ("we
+want to see the capsizing"); no masts ("turrets and flooding at a glance"). The whole card was ported, and with it the
+enemy's and a unit's cards, which share its pieces.
+
+- `MapScene.Plate.cs`: the plate and the clinometer. What it draws of a class (`PlateShape`: the side sampled from the hull
+  field, each strip's step drawn through its middle; the decks and watertight bulkheads inside her; the upper works' runs
+  as outlines; the deck's half-breadth by station; the midship section) is made once a class, with the frame's scratch
+  (the fullest space by section and tier, and by section and side; the water by section; her parts' states). The
+  waterline and the clinometer read the sim's own attitude (`Attitude.At` going down, `HitQuery.WaterOf`), so a capsize
+  rolls the section over as it rolls the sprite. The annotation row places the water's tags left to right between the
+  draughts and drops one with no room (the table has her water).
+- `MapScene.Card.cs`: the card's layout on `Pieces` (draw list, explicit rows, a scrolling body): the dock's tabs, the head
+  and its chips, the figures' cells, title strips that fold on a click (one set for every card), table rows. A battery
+  with more than four mounts shows one row (pips, what's wrong in words) until its row is clicked.
+- `Pieces` gained UTF-8 text (`Width`, `Text`, `TextRight`, `TextClipped`, chips and tags of `U8` text), a hostile chip and
+  the dock tab; `Theme` the flame's colours and the hostile chip's.
+- The orders in the enemy's and a unit's cards are still the strip's buttons, until the bottom panel's mockup.
+
+Departures from the mockup: a row a secondary battery, not one for all of them (they have their own targets); the profile's
+water is each section and tier at its fullest band, so a run of partly flooded tiers reads as bands, as it is; the
+clinometer's arc is ±45°, labelled every 15° by its ticks only.
+
+Checks: `PlateTests` builds the plate for every design and checks it holds together; the card allocates nothing on a frame
+without a new hit (measured round `Card()`: only a hit's frame remakes her hits' lines, as before). Captures:
+`png/card-game-damaged.png` (Lion with dev holes, flooding, a jam, a wreck, fires and the hit bench), `card-game-enemy.png`,
+`card-game-squadron.png`, `card-game-capsizing.png`.

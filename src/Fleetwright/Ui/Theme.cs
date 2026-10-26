@@ -62,6 +62,9 @@ public static class Theme
     public static readonly Vector4 DrawingFill = Hex(0x34332E);
     public static readonly Vector4 DrawingMid = Hex(0x4A4842);
     public static readonly Vector4 DrawingDark = Hex(0x1F1E1B);
+    /// <summary>A fire marked on a drawing (the ship card's plate): the flame and its hot core.</summary>
+    public static readonly Vector4 Fire = Hex(0xFF9A3D);
+    public static readonly Vector4 FireCore = Hex(0xFFE08A);
     /// <summary>A floating HUD panel's glass over the map (the battle HUD's bars and the ship card).</summary>
     public static readonly Vector4 Glass = Hex(0x1B1B19, 0.92f);
     /// <summary>The edge of an inset well (a stepper's value, a drop-down's field).</summary>
@@ -120,6 +123,9 @@ public static class Theme
     public static readonly Vector4 PlainTint = Hex(0x2A2925);
 
     public static readonly Vector4 PlainEdge = Hex(0x77725F);
+    /// <summary>A hostile chip's ground and border: the enemy, a ship going down.</summary>
+    public static readonly Vector4 HostileTint = Hex(0x2E1714);
+    public static readonly Vector4 HostileEdge = Hex(0x7A3029);
     /// <summary>The sides' shares in a ledger bar: friend, enemy.</summary>
     public static readonly Vector4 FriendBar = Hex(0xBDB7A4);
     public static readonly Vector4 HostileBar = Hex(0x9C3A30);

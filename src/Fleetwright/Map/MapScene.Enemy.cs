@@ -7,6 +7,8 @@ using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Ships;
 using ImGuiNET;
 using Fleetwright.Ui;
+using static Fleetwright.Ui.Pieces;
+using T = Fleetwright.Ui.Theme;
 
 namespace Fleetwright.Map;
 
@@ -23,110 +25,111 @@ public sealed partial class MapScene
         if (i < 0)
             return;
         var cls = c.Level[i] >= ContactLevel.Class ? world.Classes.TryGet(c.TakenFor[i]) : null;
-        ImGui.PushFont(UiFonts.PosterFigure);
-        ImGui.TextColored(new Vector4(0.95f, 0.6f, 0.55f, 1), Identity(c, i));
-        ImGui.PopFont();
-        ImGui.PushTextWrapPos(0);
-        U8.Text(c.Level[i] switch
+        var sub = c.Level[i] switch
         {
             ContactLevel.Name => cls != null ? U8.W($"{cls.Name}: identified") : "identified"u8,
             ContactLevel.Class => "her class made out by her silhouette, not her name"u8,
             ContactLevel.Type => U8.W($"a {TypeWord(c.Type[i])}: her class not made out"),
             ContactLevel.Ship => "a ship, not made out"u8,
             _ => "smoke on the horizon"u8,
-        }, Theme.Muted);
-        ImGui.PopTextWrapPos();
-        Chip("ENEMY"u8, Bad);
-        if (c.InSight[i])
-            Chip("IN SIGHT"u8, Theme.Text);
-        else
-        {
-            var seen = new WorldTime(c.SeenMs[i]).ToUtc();
-            Chip(U8.W($"LAST SEEN {seen.Hour:00}:{seen.Minute:00}"), Theme.Muted);
-        }
-        if (c.SmokeInSight[i])
-            Chip("HER SMOKE"u8, Theme.Muted);
-        ImGui.NewLine();
+        };
+        var seen = new WorldTime(c.SeenMs[i]).ToUtc();
+        Head(U8.W($"{Identity(c, i)}"), T.Hostile, sub, "enemy"u8, ChipKind.Hostile,
+            c.InSight[i] ? "in sight"u8 : U8.W($"last seen {seen.Hour:00}:{seen.Minute:00}"), ChipKind.Plain,
+            c.SmokeInSight[i] ? "her smoke"u8 : default, ChipKind.Plain);
 
         // range and bearing from the player's ship; her course and speed as estimated
         int from = s.Ships.IndexOf(lastOwn);
-        ImGui.Spacing();
-        if (ImGui.BeginTable("##ebig", 4, ImGuiTableFlags.BordersInnerV | ImGuiTableFlags.SizingStretchSame))
+        var at = c.Position[i];
+        var row = new Vector2(cardX, cardY);
+        float x = row.X, unit = cardW / 4;
+        if (from >= 0)
         {
-            var at = c.Position[i];
-            if (from >= 0)
-            {
-                var p = s.Ships.PoseAt(from, world.DrawMs).Position;
-                Fig4("RANGE", U8.W($"{Earth.Distance(p, at) / 1000:0.0} km"), U8.W($"from {ShipName(s, lastOwn)}"));
-                Fig4("BEARING", U8.W($"{(Earth.Bearing(p, at) % 360 + 360) % 360:000}°"), default);
-            }
-            else
-            {
-                Fig4("RANGE", "-"u8, default);
-                Fig4("BEARING", "-"u8, default);
-            }
-            double ms = c.Velocity[i].Length;
-            Fig4("COURSE", ms > 0.5 ? U8.W($"~{(Earth.Heading(at, c.Velocity[i]) % 360 + 360) % 360:000}°") : "-"u8, U8.W($"±{c.MajorM[i]:0} m"));
-            Fig4("SPEED", U8.W($"~{ms / Handling.MsPerKnot:0} kn"), "estimated"u8);
-            ImGui.EndTable();
+            var p = s.Ships.PoseAt(from, world.DrawMs).Position;
+            FigureCell(row, ref x, unit, "RANGE", U8.W($"{Earth.Distance(p, at) / 1000:0.0} km"), ""u8, T.Bright);
+            FigureCell(row, ref x, unit, "BEARING", U8.W($"{(Earth.Bearing(p, at) % 360 + 360) % 360:000}°"), ""u8, T.Bright);
         }
+        else
+        {
+            FigureCell(row, ref x, unit, "RANGE", "-"u8, ""u8, T.Bright);
+            FigureCell(row, ref x, unit, "BEARING", "-"u8, ""u8, T.Bright);
+        }
+        double ms = c.Velocity[i].Length;
+        FigureCell(row, ref x, unit, "COURSE", ms > 0.5 ? U8.W($"~{(Earth.Heading(at, c.Velocity[i]) % 360 + 360) % 360:000}°") : "-"u8, U8.W($"±{c.MajorM[i]:0} m"), T.Bright);
+        FigureCell(row, ref x, cardX + cardW - x, "SPEED", U8.W($"~{ms / Handling.MsPerKnot:0} kn"), "est."u8, T.Bright, last: true);
+        EndFigures();
 
-        if (Section("What we see", default))
+        float right = cardX + cardW - P(6);
+        if (Strip("WHAT WE SEE", "a lookout's", ""u8,
+                "Only what a lookout could see: fires, a list, low in the water, stopped, her guns silent. Her hits and flooding stay hers."))
         {
             if (c.Seen[i] == SeenFlags.None)
-                ImGui.TextDisabled(c.InSight[i] ? "no damage seen" : "nothing: she's out of sight");
+                NoneRow(c.InSight[i] ? "no damage seen"u8 : "nothing: she's out of sight"u8);
             else
-                U8.Text(U8.W($"{SeenWords(c.Seen[i])}"), new Vector4(0.94f, 0.7f, 0.66f, 1));
-            ImGui.PushTextWrapPos(0);
-            ImGui.TextDisabled("Only what a lookout could see: fires, a list, low in the water, stopped, her guns silent. Her hits and flooding stay hers.");
-            ImGui.PopTextWrapPos();
+            {
+                int n = 0;
+                var r = CardRow(ref n);
+                Words(r, r.X + P(6), right, T.Amber, U8.W($"{SeenWords(c.Seen[i])}"));
+            }
         }
-        if (cls != null && Section("From the book", U8.W($"{cls.Name}")))
+        if (cls != null && Strip("FROM THE BOOK", "not what she has left", U8.W($"{cls.Name}")))
         {
+            int n = 0;
             for (int b = 0; b < cls.Batteries.Length; b++)
-                U8.Text(U8.W($"{BatteryLabel(cls, b)} {(cls.Batteries[b].Kind == Battery.Main ? "main" : "secondary")}"));
-            U8.Text(U8.W($"{cls.Motion.MaxSpeedKn:0.0} kn · {cls.Length:0} m long"));
+            {
+                var r = CardRow(ref n);
+                Words(r, r.X + P(6), right, T.Text, U8.W($"{BatteryLabel(cls, b)} {(cls.Batteries[b].Kind == Battery.Main ? "main" : "secondary")}"));
+            }
+            var q = CardRow(ref n);
+            Words(q, q.X + P(6), right, T.Text, U8.W($"{cls.Motion.MaxSpeedKn:0.0} kn · {cls.Length:0} m long"));
             if (cls.Launchers.Length > 0)
-                U8.Text(U8.W($"torpedo tubes: {cls.Launchers.Length}"));
-            ImGui.TextDisabled("The book's figures, not what she has left.");
+            {
+                q = CardRow(ref n);
+                Words(q, q.X + P(6), right, T.Text, U8.W($"torpedo tubes: {cls.Launchers.Length}"));
+            }
         }
-        if (Section("Our fire on her", default))
+        if (Strip("OUR FIRE ON HER", null, ""u8))
         {
             bool any = false;
             var b = s.Batteries;
+            int n = 0;
             for (int j = 0; j < b.Count; j++)
                 if (b.Target[j] == e)
                 {
                     any = true;
-                    U8.Text(U8.W($"{ShipName(s, b.Shooter[j])}: {StateText(b.State[j], b.Phase[j])} · {b.Salvos[j]} salvos, {b.Straddles[j]} straddles, {b.Hits[j]} hits"));
+                    var r = CardRow(ref n);
+                    float fx = right;
+                    fx = Figure(r, fx, T.Bright, U8.W($"{b.Hits[j]}"));
+                    fx = Figure(r, fx - P(3), T.Muted, "hits"u8, UiFonts.SansSmall);
+                    fx = Figure(r, fx - P(6), T.Bright, U8.W($"{b.Straddles[j]}"));
+                    fx = Figure(r, fx - P(3), T.Muted, "str"u8, UiFonts.SansSmall);
+                    fx = Figure(r, fx - P(6), T.Bright, U8.W($"{b.Salvos[j]}"));
+                    fx = Figure(r, fx - P(3), T.Muted, "salvos"u8, UiFonts.SansSmall);
+                    float wx = Words(r, r.X + P(6), fx - P(8), T.Bright, U8.W($"{ShipName(s, b.Shooter[j])}"));
+                    Words(r, wx + P(6), fx - P(8), T.Muted, U8.W($"{StateText(b.State[j], b.Phase[j])}"));
                 }
             if (!any)
-                ImGui.TextDisabled("none of ours on her");
+                NoneRow("none of ours on her"u8);
         }
-        if (Section("Her fire", default))
+        if (Strip("HER FIRE", null, ""u8))
         {
             int on = HerTarget(e);
             if (on > 0)
-                U8.Text(U8.W($"on {LabelOf(s, on)}"));
+            {
+                int n = 0;
+                var r = CardRow(ref n);
+                float wx = Words(r, r.X + P(6), right, T.Muted, "on"u8);
+                Words(r, wx + P(4), right, T.Bright, LabelOf(s, on));
+            }
             else
-                ImGui.TextDisabled("not seen firing at ours");
+                NoneRow("not seen firing at ours"u8);
         }
-        ImGui.Spacing();
-        EnemyOrders(s, e, from);
-    }
-
-    static void Fig4(string label, ReadOnlySpan<byte> value, ReadOnlySpan<byte> sub)
-    {
-        ImGui.TableNextColumn();
-        ImGui.PushFont(UiFonts.SansSmall);
-        ImGui.TextDisabled(label);
-        ImGui.PopFont();
-        ImGui.PushFont(UiFonts.Mono);
-        U8.Text(value, Theme.Bright);
-        ImGui.PopFont();
-        ImGui.PushFont(UiFonts.SansSmall);
-        U8.Text(sub, Theme.Muted);
-        ImGui.PopFont();
+        if (Strip("ORDERS", null, ""u8))
+        {
+            ImGui.SetCursorScreenPos(new Vector2(cardX + P(6), cardY + P(5)));
+            EnemyOrders(s, e, from);
+            cardY = ImGui.GetCursorScreenPos().Y + P(5);
+        }
     }
 
     /// <summary>Whom an enemy last fired at among the player's ships (the feed's newest salvo of hers), or 0.</summary>
@@ -222,38 +225,44 @@ public sealed partial class MapScene
     {
         var gv = s.Groups;
         var v = s.Ships;
-        ImGui.PushFont(UiFonts.PosterFigure);
-        U8.Text(U8.W($"{gv.Name[g]}"), Theme.Bright);
-        ImGui.PopFont();
-        U8.Text(U8.W($"{GroupFormationNames[(int)gv.Formation[g]]}, {gv.SpacingM[g]:0} m · guide {(gv.GuideShip[g] != 0 ? ShipName(s, gv.GuideShip[g]) : "-")}"), Theme.Muted);
         bool action = false;
         for (int i = 0; i < gv.MemberCount[g] && !gv.Force[g]; i++)
             action |= v.IndexOf(gv.Members[gv.MemberStart[g] + i]) is int k and >= 0 && v.Encounter[k] != 0;
-        if (action)
-            Chip("IN ACTION"u8, Theme.Amber);
         int top = TopOf(gv, g);
-        Chip(gv.Commanded[top] == 1 ? "AI COMMANDER"u8 : gv.Commanded[top] == 2 ? "YOURS"u8 : "YOUR ORDERS"u8, gv.Commanded[top] == 1 ? Friend : Theme.Brass);
-        if (gv.Task[g] != 0)
-            Chip(U8.W($"{TaskText(gv.Task[g], gv.TaskStatus[g])}"), Theme.Amber);
-        ImGui.NewLine();
-        if (Section(gv.Force[g] ? "Units" : "Ships", U8.W($"{gv.MemberCount[g]}")))
+        var whose = gv.Commanded[top] == 1 ? "AI commander"u8 : gv.Commanded[top] == 2 ? "yours"u8 : "your orders"u8;
+        var whoseKind = gv.Commanded[top] == 0 ? ChipKind.Amber : ChipKind.Plain;
+        var task = gv.Task[g] != 0 ? U8.W($"{TaskText(gv.Task[g], gv.TaskStatus[g])}") : default;
+        var sub = U8.W($"{GroupFormationNames[(int)gv.Formation[g]]}, {gv.SpacingM[g]:0} m · guide {(gv.GuideShip[g] != 0 ? ShipName(s, gv.GuideShip[g]) : "-")}");
+        if (action)
+            Head(U8.W($"{gv.Name[g]}"), T.Bright, sub, "in action"u8, ChipKind.Amber, whose, whoseKind, task, ChipKind.Plain);
+        else
+            Head(U8.W($"{gv.Name[g]}"), T.Bright, sub, whose, whoseKind, task, ChipKind.Plain);
+        float right = cardX + cardW - P(6);
+        if (Strip(gv.Force[g] ? "UNITS" : "SHIPS", null, U8.W($"{gv.MemberCount[g]}")))
         {
+            int n = 0;
             if (gv.Force[g])
                 for (int i = 0; i < gv.MemberCount[g]; i++)
                 {
-                    if (gv.IndexOfGroup(gv.Members[gv.MemberStart[g] + i]) is int sub and >= 0)
-                        U8.Text(U8.W($"{gv.Name[sub]} · {gv.MemberCount[sub]} ships"));
+                    if (gv.IndexOfGroup(gv.Members[gv.MemberStart[g] + i]) is int sub2 and >= 0)
+                    {
+                        var r = CardRow(ref n);
+                        Words(r, r.X + P(6), right - P(60), T.Bright, U8.W($"{gv.Name[sub2]}"));
+                        Figure(r, right, T.Muted, U8.W($"{gv.MemberCount[sub2]} ships"), UiFonts.SansSmall);
+                    }
                 }
-            else if (ImGui.BeginTable("##sq", 5, ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg))
+            else
             {
-                ImGui.TableSetupColumn("Ship", ImGuiTableColumnFlags.WidthStretch);
-                ImGui.TableSetupColumn("Afloat", ImGuiTableColumnFlags.WidthFixed, 50 * UiFonts.Scale);
-                ImGui.TableSetupColumn("Hits", ImGuiTableColumnFlags.WidthFixed, 32 * UiFonts.Scale);
-                ImGui.TableSetupColumn("Guns", ImGuiTableColumnFlags.WidthFixed, 40 * UiFonts.Scale);
-                ImGui.TableSetupColumn("kn", ImGuiTableColumnFlags.WidthFixed, 26 * UiFonts.Scale);
-                ImGui.PushFont(UiFonts.SansSmall);
-                ImGui.TableHeadersRow();
-                ImGui.PopFont();
+                // a row a ship: afloat, hits, mounts working, speed; a click selects her
+                var a = new Vector2(cardX, cardY);
+                float cHits = right - P(110), cGuns = right - P(36), cKn = right, bar = right - P(186);
+                cdl.Head(a, cardW);
+                cdl.HeadCell(a, a.X + P(6), "Ship");
+                cdl.HeadCell(a, bar, "Afloat");
+                cdl.HeadCell(a, cHits, "Hits", right: true);
+                cdl.HeadCell(a, cGuns, "Guns", right: true);
+                cdl.HeadCell(a, cKn, "kn", right: true);
+                cardY += HeadH;
                 for (int i = 0; i < gv.MemberCount[g]; i++)
                 {
                     int e = gv.Members[gv.MemberStart[g] + i];
@@ -261,31 +270,31 @@ public sealed partial class MapScene
                     if (k < 0)
                         continue;
                     int ci = s.Conditions.IndexOf(e);
-                    ImGui.TableNextRow();
-                    ImGui.TableNextColumn();
+                    var r = new Vector2(cardX, cardY);
                     ImGui.PushID(e);
-                    if (ImGui.Selectable(ShipName(s, e), false, ImGuiSelectableFlags.SpanAllColumns))
+                    var (click, hover) = HitRow("##ship", r, new Vector2(cardW, RowH));
+                    ImGui.PopID();
+                    if (click)
                     {
                         selected = e;
                         squadronCardOf = -1;
                     }
-                    ImGui.PopID();
-                    ImGui.TableNextColumn();
+                    cdl.RowBg(r, cardW, RowH, n++, hover: hover);
+                    cardY += RowH;
+                    Words(r, r.X + P(6), bar - P(8), T.Bright, U8.W($"{ShipName(s, e)}"));
                     double water = ci >= 0 ? s.Conditions.WaterT[ci] : 0, reserve = ci >= 0 ? s.Conditions.ReserveT[ci] : 1;
                     float afloat = (float)(reserve / Math.Max(reserve + water, 1e-6));
-                    Bar(afloat, afloat > 0.8f ? Ok : afloat > 0.6f ? Theme.Amber : Bad, 44);
-                    ImGui.TableNextColumn();
-                    U8.Right(U8.W($"{(ci >= 0 ? s.Conditions.Hits[ci] : 0)}"), Theme.Bright);
-                    ImGui.TableNextColumn();
-                    U8.Right(ci >= 0 ? U8.W($"{s.Conditions.MountsWorking[ci]}/{s.Conditions.Mounts[ci]}") : "all"u8, Theme.Bright);
-                    ImGui.TableNextColumn();
-                    U8.Right(U8.W($"{v.Speed[k] / Handling.MsPerKnot:0}"), Theme.Bright);
+                    cdl.Bar(new Vector2(bar, r.Y + P(7)), new Vector2(P(44), P(6)), afloat, afloat > 0.8f ? Ok : afloat > 0.6f ? T.Amber : Bad);
+                    int hits = ci >= 0 ? s.Conditions.Hits[ci] : 0;
+                    Figure(r, cHits, hits > 0 ? T.Amber : T.Bright, U8.W($"{hits}"));
+                    Figure(r, cGuns, T.Bright, ci >= 0 ? U8.W($"{s.Conditions.MountsWorking[ci]}/{s.Conditions.Mounts[ci]}") : "all"u8);
+                    Figure(r, cKn, T.Bright, U8.W($"{v.Speed[k] / Handling.MsPerKnot:0}"));
                 }
-                ImGui.EndTable();
             }
         }
-        if (Section("Orders", default))
+        if (Strip("ORDERS", null, ""u8))
         {
+            ImGui.SetCursorScreenPos(new Vector2(cardX + P(6), cardY + P(5)));
             var unit = Unit.Group(gv.Id[g]);
             if (Seg(FormationLabels[(int)gv.Formation[g]], first: true, menu: true))
                 ImGui.OpenPopup("##cardform");
@@ -304,6 +313,7 @@ public sealed partial class MapScene
                 if (Seg(his ? "Take command" : "Leave to the commander"))
                     world.Send(world.Orders.Automate(unit, !his));
             }
+            cardY = ImGui.GetCursorScreenPos().Y + P(5);
         }
     }
 }
