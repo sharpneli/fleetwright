@@ -14,7 +14,7 @@ dotnet test
 ```bash
 dotnet run --project src/Fleetwright                                       # the launch screen (docs/map-ui/launch.md): the last scenario played picked; Begin opens the map
 dotnet run --project src/Fleetwright -- -launch=jutland -ui -screenshot=200   # the launch screen with a scenario picked (-launch alone: the last played), even with other flags
-dotnet run --project src/Fleetwright -- -map=56.7,5.8,0.1 -time=1916-05-31T15:48 [-speed=30000] [-paused]   # map camera: lat,lon,m/px; world start UTC
+dotnet run --project src/Fleetwright -- -map=56.7,5.8,0.1 -time=1916-05-31T15:48 [-speed=30000|fine] [-paused]   # map camera: lat,lon,m/px; world start UTC; -speed=fine the fine tier flat out (§ held)
 dotnet run --project src/Fleetwright -- -ships=dreadnought:9 -map=56.51,4.02,3 [-select=1]   # dev ships in the North Sea (sprites close, icons far), every other turning to 135°
 dotnet run --project src/Fleetwright -- -ships=dreadnought:1:0@59.03,5.50,90,15 -ships=destroyer@59.035,5.5,80 -select=1 -map=59.02,5.6,8 -speed=30   # dev ships placed (lat,lon,heading[,kn]; repeatable): onto Norway, sliding round a headland
 dotnet run --project src/Fleetwright -- -ships=dreadnought:1:0@56.5,4.0,0,0 -ships=dreadnought:1:0@56.5,4.13,0,0 -fire=1:56.5,4.13 -map=56.5,4.12,2 -select=1   # a dev salvo (ship[:battery][:ap|common|he]:lat,lon; by the magazine order without a kind); the dev panel's (F1) salvo row arms right-click and picks the kind

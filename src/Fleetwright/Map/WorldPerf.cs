@@ -39,8 +39,8 @@ public sealed class WorldPerf
 
     // the whole run, for the report
     readonly List<(float GameMs, float ExpectedMs, float AgeMs, bool Stale)> run = new(100_000);
-    readonly long[] runSim0 = new long[Probes.Capacity], runUi0 = new long[Probes.Capacity];
-    long runStart;
+    readonly long[] runSim0 = new long[Probes.Capacity], runSimCalls0 = new long[Probes.Capacity], runUi0 = new long[Probes.Capacity];
+    long runStart, runGameMs0;
     int runG0 = -1, runG1, runG2;
     readonly long[] runSimMax = new long[Probes.Capacity];
     readonly long[] runUiMax = new long[Probes.Capacity];
@@ -57,6 +57,8 @@ public sealed class WorldPerf
             Start(s, now);
             run.Clear();
             Array.Copy(s.Probes.Ticks, runSim0, Probes.Capacity);
+            Array.Copy(s.Probes.Calls, runSimCalls0, Probes.Capacity);
+            runGameMs0 = s.Time.Ms;
             Array.Copy(Ui.Ticks, runUi0, Probes.Capacity);
             Array.Clear(runSimMax);
             Array.Clear(runUiMax);
@@ -218,7 +220,9 @@ public sealed class WorldPerf
         var ratio = moving.Select(r => r.GameMs / r.ExpectedMs).Order().ToArray();
         var age = run.Select(r => r.AgeMs).Order().ToArray();
         var sb = new System.Text.StringBuilder();
-        sb.AppendLine($"world over {run.Count} frames ({seconds:F1} s), asked {s.Speed:G4}x, achieved {s.AchievedSpeed:F0}x at the end:");
+        double gameSeconds = (s.Time.Ms - runGameMs0) / 1000.0;
+        sb.AppendLine($"world over {run.Count} frames ({seconds:F1} s), asked {s.Speed:G4}x, achieved {s.AchievedSpeed:F0}x at the end, " +
+                      $"{gameSeconds / seconds:F0}x over the run ({gameSeconds:F0} game s):");
         if (ratio.Length > 0)
             sb.AppendLine($"  game time a frame over the achieved speed's: p1 {ratio[ratio.Length / 100]:F2}, p50 {ratio[ratio.Length / 2]:F2}, " +
                           $"p99 {ratio[ratio.Length * 99 / 100]:F2}, max {ratio[^1]:F2}; {moving.Count(r => r.Stale)} stale frames; " +
@@ -229,12 +233,14 @@ public sealed class WorldPerf
         if (effectFrames > 0)
             sb.AppendLine("  effects, mean (most): " + string.Join(", ",
                 EffectNames.Select((name, i) => $"{name} {effectSum[i] / (double)effectFrames:F0} ({effectMax[i]})")));
-        sb.AppendLine("  sim thread, share of the thread (longest call):");
+        sb.AppendLine("  sim thread, share of the thread, a call (longest call):");
         for (int i = 0; i < s.Probes.Count; i++)
         {
             double share = Probes.Ms(s.Probes.Ticks[i] - runSim0[i]) / 1000 / seconds;
+            long calls = s.Probes.Calls[i] - runSimCalls0[i];
+            double each = calls > 0 ? Probes.Ms(s.Probes.Ticks[i] - runSim0[i]) * 1000 / calls : 0;
             if (share >= 0.0001 || runSimMax[i] > 0)
-                sb.AppendLine($"    {s.Probes.Names[i],-26} {share * 100,6:F2}%  ({Probes.Ms(runSimMax[i]):F2} ms)");
+                sb.AppendLine($"    {s.Probes.Names[i],-26} {share * 100,6:F2}%  {each,9:F1} us  ({Probes.Ms(runSimMax[i]):F2} ms)");
         }
         if (UiFrames > 0)
             sb.AppendLine($"  map UI: {UiBytes / (double)UiFrames:F0} bytes allocated a frame over {UiFrames} frames");

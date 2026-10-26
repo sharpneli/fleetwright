@@ -121,6 +121,10 @@ public static unsafe class Program
                 }
                 start = Sim.Core.WorldTime.FromUtc(t);
             }
+            else if (arg == "-speed=fine")   // the fine tier flat out at start (as § held: World.FineHeld)
+            {
+                startSpeed = double.PositiveInfinity;
+            }
             else if (arg.StartsWith("-speed="))   // the world's clock speed at start
             {
                 if (double.TryParse(arg.Substring("-speed=".Length), System.Globalization.CultureInfo.InvariantCulture, out double sp))
@@ -540,7 +544,9 @@ public static unsafe class Program
                     Console.Error.WriteLine($"Scenario not found: {scenarioArg} (looked at {looked}; a new file in Content/Scenarios is copied next to the exe when the app builds)");
             }
             if (startSpeed is double speed0)
-                world.Send(Sim.Command.SetSpeed(speed0));
+                world.Send(double.IsPositiveInfinity(speed0)
+                    ? Sim.Command.SetSpeed(world.Settings.MaxSpeed, holdFine: true)
+                    : Sim.Command.SetSpeed(speed0));
             if (startPaused)
                 world.Send(Sim.Command.Pause());
             if (noPause)

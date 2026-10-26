@@ -276,6 +276,13 @@ Seen in the AI's baseline after the detail passes (2026-10-20, docs/battle/comma
   gear in a fleet action. Small fights run far faster (the squadrons to their end in under a second). Look at where the
   fine tick's time goes at 250 ships (`-frametimes`, the world's probes in the F2 panel) and whether more workers
   (docs/battle/workers.md, capped at 2) or W5 would lift it.
+  Measured 2026-10-26 (`-scenario=jutland -nopause -speed=fine -frametimes`, docs/profiling.md's log): not the
+  rendering. The sim thread is 97% busy advancing the world; the snapshots' fill and publish take 4% of it; the render
+  thread works ~1.8 ms a frame on a core of its own; each probe's cost a call matches the headless play's (the ships'
+  step 20.9 µs a tick in the game, 21.6-31.9 headless). The game made 473x over its first 2.4 game hours, the headless
+  play of the same span 379x. The ceiling is the sim's own cost at 250 ships, ~2-3.5 ms a game second, spread flat
+  (inline: the ships' step 33%, sighting 20%, the AI 22%, smoke 15%, gunnery 6%); more workers were measured flat past
+  2 (workers.md W8). What would lift it is for the user to pick (the open options in docs/profiling.md's log row).
 
 ## The app
 
