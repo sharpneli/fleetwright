@@ -94,4 +94,20 @@ picks a unit in one click.
 4. **The number keys stay time**, as gears; the left hand: Space, 1–5, § held, ⇧Space, mouse 4 and 5. The five gears
    are the speeds the user used most in testing.
 5. **§ on the fine tier is the fine tier uncapped** (2026-10-26, for trying out; likely to change once the coarse tier
-   is whole). Measured: the squadrons' fight ran to its end in under a second; the full Jutland makes about 288×.
+   is whole). Measured: the squadrons' fight ran to its end in under a second; the full Jutland makes about 288×. It may
+   need tuning after all, perhaps as a setting (the user, 2026-10-26).
+
+## Open questions (2026-10-26)
+
+1. **T1, which task endings drop the clock**: only tasks the player gave by hand, or any of the player's units' (the
+   side's commander gives and ends tasks often)? Proposed: by hand only.
+2. **T1, the run's speed**: the same as § (the fine tier flat out from the fine tier, 3,000× from the coarse), so § and
+   ⇧Space differ only in held against latched and one setting tunes both? Proposed: yes.
+3. **T1, where it drops to**: back to the speed it found (paused if an encounter rule pauses); the encounter rules as
+   they are. Proposed: yes, no new rows in the clock panel.
+4. **I3, a right drag on the sea**: steer for the press point, then hold the drag's heading on arrival (a waypoint, then
+   the course)? Proposed: yes.
+5. **I3, a force in columns**: a right drag deploys along it (the line's course), Deploy… (N) stays for the enemy's
+   course? Proposed: yes.
+6. **The 3D views** (the ship viewer, the hitbox view) orbit with a left drag today. Proposed: the middle button stays
+   the camera's there too (its drag orbits, ⇧ with it pans), WASD moves, the wheel zooms, the left selects (a prism).
