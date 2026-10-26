@@ -26,7 +26,7 @@ public sealed unsafe partial class DesignerScene
     string? fieldId;
     string fieldText = "";
 
-    static readonly Vector4[] BatteryColours = [T.Blue, Hex(0xD98B5F), Hex(0x8BC48A), Hex(0xB48CD9), Hex(0xD9C85F), Hex(0x5FC8D9)];
+    static readonly Vector4[] BatteryColours = [T.FireControl, Hex(0xD98B5F), Hex(0x8BC48A), Hex(0xB48CD9), Hex(0xD9C85F), Hex(0x5FC8D9)];
     static readonly string[] TierText = ["", "↑1", "↑2", "↑3", "↑4", "↑5", "↑6", "↑7"];
     static readonly string[] BarrelText = ["1", "2", "3", "4", "5", "6"];
     static readonly string[] Letters = Enumerable.Range(0, 26).Select(i => ((char)('A' + i)).ToString()).ToArray();
@@ -524,9 +524,9 @@ public sealed unsafe partial class DesignerScene
         Vector2 Px(float x, float y) => off + new Vector2(x, y) * sc;
         dl.PushClipRect(pos, pos + size, true);
         for (float gx = pos.X + P(24); gx < pos.X + size.X; gx += P(24))
-            dl.AddLine(new Vector2(gx, pos.Y), new Vector2(gx, pos.Y + size.Y), T.U32(new Vector4(0.59f, 0.75f, 0.9f, 0.05f)));
+            dl.AddLine(new Vector2(gx, pos.Y), new Vector2(gx, pos.Y + size.Y), T.U32(T.PlanLine with { W = 0.05f }));
         for (float gy = pos.Y + P(24); gy < pos.Y + size.Y; gy += P(24))
-            dl.AddLine(new Vector2(pos.X, gy), new Vector2(pos.X + size.X, gy), T.U32(new Vector4(0.59f, 0.75f, 0.9f, 0.05f)));
+            dl.AddLine(new Vector2(pos.X, gy), new Vector2(pos.X + size.X, gy), T.U32(T.PlanLine with { W = 0.05f }));
 
         // the hull outline, bow right like the plan above
         float cy = SchCy;
@@ -558,11 +558,11 @@ public sealed unsafe partial class DesignerScene
                 Edit(MainArrangement.ToggleStep(d, l.End, l.J), $"{(l.End == G.Fore ? "Fore" : "Aft")} turrets: {(l.On ? "on the deck" : "superfiring")} from {Layout.TurretName(l.End == G.Fore ? "ABC" : "YXW", l.J)}");
             bool hover = ImGui.IsItemHovered();
             ImGui.PopID();
-            dl.AddRectFilled(c - new Vector2(hs, hs), c + new Vector2(hs, hs), T.U32(l.On ? new Vector4(0.29f, 0.24f, 0.13f, 1) : new Vector4(0.1f, 0.145f, 0.19f, 1)), P(2));
-            dl.AddRect(c - new Vector2(hs, hs), c + new Vector2(hs, hs), T.U32(l.On ? T.Brass : hover ? T.Text : new Vector4(0.29f, 0.34f, 0.39f, 1)), P(2));
+            dl.AddRectFilled(c - new Vector2(hs, hs), c + new Vector2(hs, hs), T.U32(l.On ? T.BrassDarker : new Vector4(0.157f, 0.143f, 0.109f, 1)), P(2));
+            dl.AddRect(c - new Vector2(hs, hs), c + new Vector2(hs, hs), T.U32(l.On ? T.Brass : hover ? T.Text : new Vector4(0.351f, 0.337f, 0.303f, 1)), P(2));
             float t = P(4);
             if (l.On)
-                dl.AddTriangleFilled(c + new Vector2(0, -t), c + new Vector2(t, t * 0.8f), c + new Vector2(-t, t * 0.8f), T.U32(new Vector4(1, 0.906f, 0.659f, 1)));
+                dl.AddTriangleFilled(c + new Vector2(0, -t), c + new Vector2(t, t * 0.8f), c + new Vector2(-t, t * 0.8f), T.U32(T.BrassLight));
             else
             {
                 dl.AddLine(c + new Vector2(-t, -P(1.5f)), c + new Vector2(t, -P(1.5f)), T.U32(T.Muted), P(1.2f));
@@ -723,7 +723,7 @@ public sealed unsafe partial class DesignerScene
         }
         float f = ch.Tier > 0 ? 0.62f : 0.42f;
         dl.AddCircleFilled(c, r, T.U32(new Vector4(col.X * f, col.Y * f, col.Z * f, 1)));
-        dl.AddCircle(c, r, T.U32(sel ? new Vector4(1, 0.906f, 0.659f, 1) : hover ? T.Bright : col), 0, sel ? P(2.5f) : P(1.4f));
+        dl.AddCircle(c, r, T.U32(sel ? T.BrassLight : hover ? T.Bright : col), 0, sel ? P(2.5f) : P(1.4f));
         if (ch.Tier > 0)
             dl.AddCircle(c, r - 4 * sc, T.U32(new Vector4(1, 1, 1, 0.35f)));
         float nw = Width(UiFonts.Mono, ch.Slot.Name);
@@ -740,9 +740,9 @@ public sealed unsafe partial class DesignerScene
             var bp = c + new Vector2(r * 0.55f, r * 0.35f);
             string t = TierText[Math.Min(ch.Tier, TierText.Length - 1)];
             var bs = new Vector2(Width(UiFonts.SansSmall, t) + P(5), UiFonts.SansSmall.FontSize + P(1));
-            dl.AddRectFilled(bp, bp + bs, T.U32(new Vector4(0.29f, 0.24f, 0.13f, 1)), P(2));
+            dl.AddRectFilled(bp, bp + bs, T.U32(T.BrassDarker), P(2));
             dl.AddRect(bp, bp + bs, T.U32(T.Brass), P(2));
-            dl.Text(UiFonts.SansSmall, bp + new Vector2(P(2.5f), 0), new Vector4(1, 0.906f, 0.659f, 1), t);
+            dl.Text(UiFonts.SansSmall, bp + new Vector2(P(2.5f), 0), T.BrassLight, t);
         }
     }
 
@@ -858,18 +858,18 @@ public sealed unsafe partial class DesignerScene
         // the ship, bow up
         float sh = Math.Min(P(22), R * 0.25f);
         dl.AddQuadFilled(c + new Vector2(0, -sh), c + new Vector2(sh * 0.3f, sh * 0.2f), c + new Vector2(0, sh), c + new Vector2(-sh * 0.3f, sh * 0.2f),
-            T.U32(new Vector4(0.16f, 0.2f, 0.25f, 1)));
+            T.U32(new Vector4(0.213f, 0.199f, 0.165f, 1)));
         Vector2 At(int deg)
         {
             float rad = deg * MathF.PI / 180, v = mp.Rose[deg % 360] / mp.RoseMax * R;
             return c + new Vector2(MathF.Sin(rad), -MathF.Cos(rad)) * v;
         }
-        uint fill = T.U32(T.Blue with { W = 0.28f });
+        uint fill = T.U32(T.Arc with { W = 0.28f });
         for (int a = 0; a < 360; a++)
             dl.AddTriangleFilled(c, At(a), At(a + 1), fill);
         for (int a = 0; a <= 360; a++)
             dl.PathLineTo(At(a));
-        dl.PathStroke(T.U32(T.Blue), ImDrawFlags.None, P(1.4f));
+        dl.PathStroke(T.U32(T.Arc), ImDrawFlags.None, P(1.4f));
         void Label(int deg, string t)
         {
             float rad = deg * MathF.PI / 180;
@@ -916,7 +916,7 @@ public sealed unsafe partial class DesignerScene
             ImGui.EndDisabled();
             bool hover = ImGui.IsItemHovered();
             ImGui.PopID();
-            var top = hover && ok ? new Vector4(0.19f, 0.235f, 0.28f, 1) : new Vector4(0.15f, 0.19f, 0.227f, 1);
+            var top = hover && ok ? new Vector4(0.247f, 0.233f, 0.199f, 1) : new Vector4(0.202f, 0.188f, 0.154f, 1);
             dl.AddRectFilledMultiColor(a, a + new Vector2(bw, bh), T.U32(top), T.U32(top), T.U32(T.Panel), T.U32(T.Panel));
             dl.AddRect(a, a + new Vector2(bw, bh), T.U32(T.Edge));
             var tc = ok ? (hover ? T.Bright : T.Text) : T.Muted;
@@ -931,14 +931,14 @@ public sealed unsafe partial class DesignerScene
     static void Pictogram(ImDrawListPtr dl, Vector2 a, Vector2 s, MainArrangement.Preset p, bool ok)
     {
         float cy = a.Y + s.Y / 2;
-        uint line = T.U32(new Vector4(0.29f, 0.34f, 0.39f, 1));
+        uint line = T.U32(T.ButtonEdge);
         dl.AddLine(new Vector2(a.X, a.Y), new Vector2(a.X + s.X * 0.86f, a.Y), line);
         dl.AddLine(new Vector2(a.X, a.Y + s.Y), new Vector2(a.X + s.X * 0.86f, a.Y + s.Y), line);
         dl.AddLine(new Vector2(a.X + s.X * 0.86f, a.Y), new Vector2(a.X + s.X, cy), line);
         dl.AddLine(new Vector2(a.X + s.X * 0.86f, a.Y + s.Y), new Vector2(a.X + s.X, cy), line);
         dl.AddLine(new Vector2(a.X, a.Y), new Vector2(a.X, a.Y + s.Y), line);
-        var col = ok ? T.Blue : T.Muted;
-        var up = ok ? new Vector4(0.56f, 0.71f, 0.91f, 1) : T.Muted;
+        var col = ok ? T.Text : T.Muted;
+        var up = ok ? T.Bright : T.Muted;
         float r = Math.Max(2, s.Y * 0.2f), step = r * 2.6f;
         void Dot(float x, float y, bool hi) => dl.AddCircleFilled(new Vector2(x, y), hi ? r * 1.2f : r, T.U32(hi ? up : col));
         int sf = p.SteppedFore ?? p.Fore, sa = p.SteppedAft ?? p.Aft;

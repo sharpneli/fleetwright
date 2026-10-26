@@ -414,7 +414,7 @@ public sealed unsafe partial class DesignerScene
                 Open(OvGroups[g].Tab);
             bool gHover = ImGui.IsItemHovered();
             ImGui.PopID();
-            dl.AddRectFilled(gp, gp + new Vector2(w, gh), T.U32(new Vector4(0.098f, 0.125f, 0.149f, 1)));
+            dl.AddRectFilled(gp, gp + new Vector2(w, gh), T.U32(T.Inset));
             dl.AddLine(gp + new Vector2(0, gh - 1), gp + new Vector2(w, gh - 1), T.U32(T.Edge));
             float ty = gp.Y + (gh - UiFonts.SansSmall.FontSize) / 2;
             dl.Text(UiFonts.SansSmall, new Vector2(x[0] + P(6), ty), T.Brass, OvGroups[g].Name);
@@ -682,7 +682,7 @@ public sealed unsafe partial class DesignerScene
                 {
                     var b0 = new Vector2(bx, p.Y + rh / 2 - P(3));
                     dl.AddRectFilled(b0, b0 + new Vector2(bw, P(6)), T.U32(T.Inset));
-                    dl.AddRectFilled(b0, b0 + new Vector2(bw * r.Frac, P(6)), T.U32(r.Over ? T.Amber : new Vector4(0.31f, 0.38f, 0.44f, 1)));
+                    dl.AddRectFilled(b0, b0 + new Vector2(bw * r.Frac, P(6)), T.U32(r.Over ? T.Amber : T.DropBox));
                     float tx = bx + bw / 1.15f;
                     dl.AddLine(new Vector2(tx, b0.Y - P(3)), new Vector2(tx, b0.Y + P(9)), T.U32(T.Bright), P(2));
                 }
@@ -696,8 +696,8 @@ public sealed unsafe partial class DesignerScene
         var v1 = new Vector2(o.X + w - P(8), y + P(34));
         var (bg, edge, ink) = op.VerdictKind switch
         {
-            2 => (new Vector4(0.18f, 0.153f, 0.09f, 1), T.BrassDark, new Vector4(0.945f, 0.843f, 0.612f, 1)),
-            1 => (new Vector4(0.11f, 0.2f, 0.161f, 1), new Vector4(0.184f, 0.353f, 0.251f, 1), new Vector4(0.624f, 0.867f, 0.718f, 1)),
+            2 => (T.OverTint, T.BrassDark, T.BrassLight),
+            1 => (T.OkTint, T.Ok, T.Ok),
             _ => (T.Panel2, T.Bevel, T.Muted),
         };
         dl.AddRectFilled(v0, v1, T.U32(bg));

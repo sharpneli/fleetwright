@@ -423,7 +423,7 @@ public sealed unsafe partial class LaunchScene
             }
             if (l.Chip.Length > 0 && x + ChipWidth(l.Chip) < room)
             {
-                dl.Chip(new Vector2(x, a.Y + P(2.5f)), l.Chip, l.Bold ? ChipKind.Amber : ChipKind.Blue);
+                dl.Chip(new Vector2(x, a.Y + P(2.5f)), l.Chip, l.Bold ? ChipKind.Amber : ChipKind.Plain);
                 if (ImGui.IsMouseHoveringRect(new Vector2(x, a.Y), new Vector2(x + ChipWidth(l.Chip), a.Y + RowH)))
                     ImGui.SetTooltip("his temper, added to the side's aggression (Standing orders)");
                 x += ChipWidth(l.Chip) + P(4);
@@ -551,10 +551,10 @@ public sealed unsafe partial class LaunchScene
             dl.Text(UiFonts.SansSmall, new Vector2(x + Width(UiFonts.Sans, s) + P(8), Mid(UiFonts.SansSmall, a.Y, RowH)), T.Muted, "taken off: the row's stepper puts her back");
     }
 
-    /// <summary>A captain's temper by her name: ▲ bold amber, ▼ timid blue, and the figure.</summary>
+    /// <summary>A captain's temper by her name: ▲ bold amber, ▼ timid plain, and the figure.</summary>
     void Mark(Vector2 at, double temper, string figure)
     {
-        var col = temper > 0 ? T.Amber : T.Blue;
+        var col = temper > 0 ? T.Amber : T.Text;
         dl.Arrow(new Vector2(at.X + P(4), at.Y + RowH / 2), temper > 0 ? 3 : 1, P(4), col);
         dl.Text(UiFonts.Mono, new Vector2(at.X + P(12), Mid(UiFonts.Mono, at.Y, RowH)), col, figure);
     }

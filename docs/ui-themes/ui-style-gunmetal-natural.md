@@ -4,9 +4,11 @@
 **Live reference:** `docs/ui-themes/theme-trials.html`. Open it and press **4**.
 **Drop-in tokens:** `docs/ui-themes/gunmetal-natural.css`
 
-> **2026-10-25:** not applied yet; it will be, later, in one batch (the user). It is a colour scheme, not a change of
-> layout: it replaces only the token and type sections of `docs/ui-language.md` (`Ui/Theme.cs`, `UiFonts.cs`);
-> the layout grammar, the pieces and the don'ts stay. Until then everything uses the bureau tokens.
+> **2026-10-26: applied** (the user asked for it). The game: `Ui/Theme.cs` (the tokens), `UiFonts.cs` (Saira for title
+> strips, Barlow, Red Hat Mono; the poster keeps Plex), `Ui/Pieces.cs` (the rivet, the filled primary), `Map/MapPalette.cs`
+> (friend cream, the atlas colours), `globe.frag` (the chart's pale sage land). The mockups `launch-bureau.html` and
+> `bureau.html` carry it too. `docs/ui-language.md` holds the tokens and type as built;
+> as built: `docs/ui-themes/png/gunmetal-game-{launch,designer,battle,chart}.png`.
 
 This replaces the current slate-blue, brass and IBM Plex look, which reads as generic "AI dashboard". Keep the layouts, density and behaviour of the existing mockups. Only the visual treatment changes.
 

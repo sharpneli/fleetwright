@@ -41,7 +41,7 @@ public sealed partial class MapScene
     static readonly Vector4[] KindColours =
     [
         new(0.9f, 0.71f, 0.42f, 1), new(0.88f, 0.42f, 0.35f, 1), new(1f, 0.6f, 0.25f, 1), new(1f, 0.35f, 0.29f, 1),
-        new(0.36f, 0.61f, 0.88f, 1), new(0.77f, 0.61f, 0.88f, 1), new(0.44f, 0.66f, 0.86f, 1), new(0.9f, 0.77f, 0.33f, 1),
+        Theme.Friend, new(0.77f, 0.61f, 0.88f, 1), Theme.Water, new(0.9f, 0.77f, 0.33f, 1),
     ];
 
     /// <summary>Once a frame, after the feed has read the snapshot: its new lines and the snapshot's changes as events.</summary>
@@ -303,7 +303,7 @@ public sealed partial class MapScene
         bool click = ImGui.InvisibleButton("##ev", new Vector2(w, h));
         var dl = ImGui.GetWindowDrawList();
         if (shaded || ImGui.IsItemHovered())
-            dl.AddRectFilled(p, p + new Vector2(w, h), ImGui.GetColorU32(new Vector4(0.04f, 0.055f, 0.067f, ImGui.IsItemHovered() ? 0.9f : 0.66f * alpha)), 2 * sc);
+            dl.AddRectFilled(p, p + new Vector2(w, h), ImGui.GetColorU32(Theme.Inset with { W = ImGui.IsItemHovered() ? 0.9f : 0.66f * alpha }), 2 * sc);
         ImGui.PushFont(UiFonts.Mono);
         dl.AddText(p + new Vector2(6 * sc, 1.5f * sc), ImGui.GetColorU32(Theme.Muted with { W = alpha }), time);
         ImGui.PopFont();

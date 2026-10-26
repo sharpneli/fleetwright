@@ -15,7 +15,10 @@ namespace Fleetwright.HitView;
 /// </summary>
 public sealed unsafe class HitboxRenderer : IDisposable
 {
-    public static readonly Vector4 Background = new(34 / 255f, 40 / 255f, 48 / 255f, 1);
+    public static readonly Vector4 DefaultBackground = new(34 / 255f, 40 / 255f, 48 / 255f, 1);
+
+    /// <summary>The colour the view clears to (the designer's profile sets the plan's ground).</summary>
+    public Vector4 Background { get; set; } = DefaultBackground;
     static readonly Vector3 Light = Vector3.Normalize(new(-0.35f, -0.45f, 0.82f));   // hitview.LIGHT
     const int MaxKinds = 64;
 

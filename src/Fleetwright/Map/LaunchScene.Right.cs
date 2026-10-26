@@ -81,7 +81,7 @@ public sealed unsafe partial class LaunchScene
             dl.Text(UiFonts.SansSmall, new Vector2(x, Mid(UiFonts.SansSmall, ra.Y, RowH)), T.Muted, r.Commander);
             dl.PopClipRect();
             if (chip.Length > 0)
-                dl.Chip(new Vector2(chipX, ra.Y + P(2.5f)), chip, on ? ChipKind.Amber : ChipKind.Blue);
+                dl.Chip(new Vector2(chipX, ra.Y + P(2.5f)), chip, on ? ChipKind.Amber : ChipKind.Plain);
             if (hover && r.Character.Length > 0)
                 ImGui.SetTooltip(r.Character);
             y += RowH;

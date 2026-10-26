@@ -5,94 +5,105 @@
      docked panels with title strips, an outliner, ledgers, numbered tabs, a status bar. A mockup, not code to port.
      #orders, #conditions, #japan open a state. -->
 <style>
-@font-face{font-family:'IBM Plex Sans Condensed';font-weight:400;src:url(../designer-ui/assets/fonts/ibm-plex-sans-condensed-latin-400-normal.woff2)}
-@font-face{font-family:'IBM Plex Sans Condensed';font-weight:500;src:url(../designer-ui/assets/fonts/ibm-plex-sans-condensed-latin-500-normal.woff2)}
-@font-face{font-family:'IBM Plex Sans Condensed';font-weight:600;src:url(../designer-ui/assets/fonts/ibm-plex-sans-condensed-latin-600-normal.woff2)}
-@font-face{font-family:'IBM Plex Mono';font-weight:400;src:url(../designer-ui/assets/fonts/ibm-plex-mono-latin-400-normal.woff2)}
+/* Gunmetal, natural map (docs/ui-themes/ui-style-gunmetal-natural.md, gunmetal-natural.css): warm graphite chrome,
+   one orange accent (still named brass), Saira headers, Barlow text, Red Hat Mono figures; the map a plain atlas. */
+@font-face{font-family:'Saira Extra Condensed';font-weight:500;src:url(../designer-ui/assets/fonts/saira-extra-condensed-latin-500-normal.woff2)}
+@font-face{font-family:'Saira Extra Condensed';font-weight:700;src:url(../designer-ui/assets/fonts/saira-extra-condensed-latin-700-normal.woff2)}
+@font-face{font-family:'Barlow Condensed';font-weight:400;src:url(../designer-ui/assets/fonts/barlow-condensed-latin-400-normal.woff2)}
+@font-face{font-family:'Barlow Condensed';font-weight:500;src:url(../designer-ui/assets/fonts/barlow-condensed-latin-500-normal.woff2)}
+@font-face{font-family:'Barlow Condensed';font-weight:600;src:url(../designer-ui/assets/fonts/barlow-condensed-latin-600-normal.woff2)}
+@font-face{font-family:'Red Hat Mono';font-weight:400;src:url(../designer-ui/assets/fonts/red-hat-mono-latin-400-normal.woff2)}
+@font-face{font-family:'Red Hat Mono';font-weight:500;src:url(../designer-ui/assets/fonts/red-hat-mono-latin-500-normal.woff2)}
 :root{
-  --ground:#0E1215;--panel:#1C2329;--panel2:#20282F;--inset:#11161A;--line:#20292F;--edge:#090C0E;--bevel:#2C3640;
-  --title-top:#36434F;--title-bot:#27313A;--header:#161C21;--text:#C9D3DB;--bright:#EAF0F4;--muted:#7F8B95;
-  --brass:#D9B868;--brass-dark:#5A4A24;--brass-darker:#3E3218;--ok:#86C77E;--amber:#E3A452;--blue:#5B9BE0;--red:#E2685C;
-  --plan:#14243A;--planline:#9CC2E2;--btn:#2E3842;--border:#3A4651;
+  --ground:#0F0F0E;--panel:#1B1B19;--panel2:#22221F;--inset:#0B0B0A;--line:#272724;--edge:#050505;--bevel:#2E2E2A;
+  --title-top:#3A3934;--title-bot:#2A2A26;--header:#141412;--text:#D3CFC4;--bright:#F6F3EA;--muted:#8A867B;--faint:#55524B;
+  --brass:#E8772E;--brass-dark:#5C3416;--brass-darker:rgba(232,119,46,.16);--brassl:#FFC79A;--ok:#8DBE6B;--amber:#E8B64A;
+  --fr:#F1ECDD;--red:#E04A3C;
+  --plan:#262724;--planline:#A29F95;--btn:#2E2D29;--btn2:#232220;--border:#3A3934;--key:#45443E;
+  --sea:#2E5269;--shoal:#3D6880;--land:#A3AD86;--landedge:#6F7A57;--grid:rgba(235,240,242,.09);--maplab:#B7C7CF;
+  --font-head:'Saira Extra Condensed','Arial Narrow',sans-serif;
+  --font-ui:'Barlow Condensed','Arial Narrow',sans-serif;
+  --font-data:'Red Hat Mono',ui-monospace,monospace;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#05070a}
-#app{position:relative;width:1920px;height:1080px;overflow:hidden;background:var(--ground);color:var(--text);font:12px/1.3 'IBM Plex Sans Condensed',sans-serif}
-.mono,.num{font-family:'IBM Plex Mono',monospace;font-size:11.5px}
+body{background:var(--edge)}
+#app{position:relative;width:1920px;height:1080px;overflow:hidden;background:var(--ground);color:var(--text);font:13px/1.3 var(--font-ui)}
+.mono,.num{font-family:var(--font-data);font-size:11px;font-variant-numeric:tabular-nums}
 .num{text-align:right;color:var(--bright)}
 .mut{color:var(--muted)} .brt{color:var(--bright)} .brass{color:var(--brass)} .amb{color:var(--amber)} .ok{color:var(--ok)}
-.blu{color:var(--blue)} .red{color:var(--red)}
+.fr{color:var(--fr)} .red{color:var(--red)}
 b{font-weight:600}
 
 /* menu bar and resource bar */
-#menu{position:absolute;left:0;top:0;width:1920px;height:18px;background:#161B20;display:flex;align-items:center;padding:0 6px;gap:14px;border-bottom:1px solid var(--edge)}
+#menu{position:absolute;left:0;top:0;width:1920px;height:18px;background:var(--header);display:flex;align-items:center;padding:0 6px;gap:14px;border-bottom:1px solid var(--edge)}
 #menu .r{margin-left:auto;display:flex;gap:2px;align-items:center}
 #menu .r span{padding:1px 7px}
-#menu .r .on{background:#2F5E8E;color:var(--bright)}
-#res{position:absolute;left:0;top:18px;width:1920px;height:32px;background:var(--panel);border-bottom:1px solid var(--edge);display:flex}
+#menu .r .on{background:var(--brass-darker);color:var(--brass);box-shadow:inset 0 -2px 0 var(--brass)}
+#res{position:absolute;left:0;top:18px;width:1920px;height:32px;background:var(--panel);border-bottom:1px solid var(--edge);display:flex;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
 #res .who{width:300px;padding:2px 8px;border-right:1px solid var(--edge)}
-#res .who .k{font-size:9.5px;color:var(--muted);letter-spacing:.04em}
-#res .who .n{font-weight:600;color:var(--bright);font-size:13px;line-height:15px}
-#res .who .n span{font-weight:400;color:var(--muted);font-size:10.5px;margin-left:6px}
+#res .who .k{font-size:10px;color:var(--muted);letter-spacing:.06em}
+#res .who .n{font-weight:600;color:var(--bright);font-size:14px;line-height:15px}
+#res .who .n span{font-weight:400;color:var(--muted);font-size:11.5px;margin-left:6px}
 #res .c{padding:2px 9px;border-right:1px solid var(--line)}
-#res .c .k{font-size:9.5px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
-#res .c .v{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--bright)}
+#res .c .k{font-size:10px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+#res .c .v{font-family:var(--font-data);font-size:11px;font-variant-numeric:tabular-nums;color:var(--bright)}
 
-/* panes */
-.pane{position:absolute;background:var(--panel);border:1px solid var(--edge);display:flex;flex-direction:column;overflow:hidden}
-.title{height:20px;flex:none;display:flex;align-items:center;gap:8px;padding:0 6px;background:linear-gradient(var(--title-top),var(--title-bot));border-bottom:1px solid var(--edge);color:var(--brass);font-weight:600;font-size:11px;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
-.title .note{color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0;font-size:11px}
+/* panes: square corners, a bevel instead of a shadow */
+.pane{position:absolute;background:var(--panel);border:1px solid var(--edge);border-radius:1px;display:flex;flex-direction:column;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),inset 0 -1px 0 rgba(0,0,0,.6)}
+.title{height:20px;flex:none;display:flex;align-items:center;gap:8px;padding:0 6px;background:linear-gradient(var(--title-top),var(--title-bot));border-bottom:1px solid var(--edge);box-shadow:inset 0 1px 0 rgba(255,255,255,.06);color:var(--brass);font-family:var(--font-head);font-weight:700;font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;white-space:nowrap}
+.title::before{content:'';flex:none;width:5px;height:5px;border-radius:50%;background:var(--faint);box-shadow:inset 0 1px 0 rgba(255,255,255,.2);margin-right:-3px}
+.title .note{color:var(--muted);font-family:var(--font-ui);font-weight:400;text-transform:none;letter-spacing:0;font-size:12px}
 .title .r{margin-left:auto;display:flex;gap:3px;align-items:center}
-.sub{height:20px;flex:none;display:flex;align-items:center;gap:8px;padding:0 6px;color:var(--muted);font-size:11px;background:var(--header);border-bottom:1px solid var(--line);white-space:nowrap}
-.sub .cap{color:var(--text);text-transform:uppercase;letter-spacing:.04em;font-size:10.5px}
+.sub{height:20px;flex:none;display:flex;align-items:center;gap:8px;padding:0 6px;color:var(--muted);font-size:12px;background:var(--header);border-bottom:1px solid var(--line);white-space:nowrap}
+.sub .cap{color:var(--text);font-family:var(--font-head);font-weight:700;text-transform:uppercase;letter-spacing:.12em;font-size:11px}
 .sub .r{margin-left:auto;display:flex;gap:6px;align-items:center}
 
 /* overlay toggles, as the plan view's [A] Arcs */
-.ov{display:inline-flex;align-items:center;gap:3px;padding:0 4px;height:15px;border:1px solid var(--border);color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0;font-size:10.5px;background:var(--inset)}
-.ov i{font-style:normal;font-family:'IBM Plex Mono',monospace;font-size:9.5px;border:1px solid currentColor;padding:0 2px;line-height:10px}
+.ov{display:inline-flex;align-items:center;gap:3px;padding:0 4px;height:15px;border:1px solid var(--border);color:var(--muted);font-family:var(--font-ui);font-weight:400;text-transform:none;letter-spacing:0;font-size:11.5px;background:var(--inset)}
+.ov i{font-style:normal;font-family:var(--font-data);font-size:9.5px;border:1px solid currentColor;padding:0 2px;line-height:10px}
 .ov.on{border-color:var(--brass);color:var(--brass);background:var(--brass-darker)}
 
 /* tables */
 table{border-collapse:collapse;width:100%}
-th{height:18px;background:var(--header);color:var(--muted);font-weight:400;font-size:10px;text-transform:uppercase;letter-spacing:.03em;text-align:left;padding:0 6px;border-bottom:1px solid var(--edge);white-space:nowrap}
+th{height:18px;background:var(--header);color:var(--muted);font-weight:500;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;text-align:left;padding:0 6px;border-bottom:1px solid var(--edge);white-space:nowrap}
 th.n{text-align:right}
 td{height:20px;padding:0 6px;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:middle}
 tr.alt td{background:rgba(255,255,255,.018)}
 tr.grp td{background:var(--panel2);color:var(--bright);font-weight:600}
-tr.sel td{background:#2A2A1E}
+tr.sel td{background:rgba(232,119,46,.10)}
 tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--brass)}
 tr.hit{cursor:pointer}
-tr.hit:hover td{background:#252E36}
+tr.hit:hover td{background:#2A2A26}
 .tw{display:inline-block;width:10px;color:var(--muted);font-size:9px}
 .sw{display:inline-block;width:8px;height:8px;margin-right:5px;vertical-align:0}
 
 /* controls: steppers, drop-downs, segmented, buttons */
 .st{display:inline-flex;align-items:center;gap:2px}
-.st b{display:inline-flex;align-items:center;justify-content:center;width:13px;height:15px;background:#0B0F12;border:1px solid #2A333C;color:var(--bright);font-size:8px;font-weight:400;cursor:pointer}
-.st .v{display:inline-block;min-width:34px;height:15px;line-height:15px;padding:0 4px;background:var(--inset);border:1px solid #1A2026;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--bright)}
-.dd{display:inline-flex;align-items:center;height:16px;min-width:110px;background:var(--inset);border:1px solid #1A2026;padding-left:5px;color:var(--bright)}
+.st b{display:inline-flex;align-items:center;justify-content:center;width:13px;height:15px;background:var(--inset);border:1px solid var(--border);color:var(--bright);font-size:8px;font-weight:400;cursor:pointer}
+.st .v{display:inline-block;min-width:34px;height:15px;line-height:15px;padding:0 4px;background:var(--inset);border:1px solid var(--edge);text-align:right;font-family:var(--font-data);font-size:11px;font-variant-numeric:tabular-nums;color:var(--bright)}
+.dd{display:inline-flex;align-items:center;height:16px;min-width:110px;background:var(--inset);border:1px solid var(--edge);padding-left:5px;color:var(--bright)}
 .dd span{flex:1}
-.dd i{font-style:normal;width:15px;height:14px;display:flex;align-items:center;justify-content:center;background:#56636F;color:var(--bright);font-size:8px}
+.dd i{font-style:normal;width:15px;height:14px;display:flex;align-items:center;justify-content:center;background:var(--key);color:var(--bright);font-size:8px}
 .seg{display:inline-flex}
-.seg i{font-style:normal;padding:0 7px;height:16px;line-height:15px;background:var(--btn);border:1px solid #3A4651;margin-left:-1px;color:var(--text);cursor:pointer}
+.seg i{font-style:normal;padding:0 7px;height:16px;line-height:15px;background:linear-gradient(var(--btn),var(--btn2));border:1px solid var(--border);margin-left:-1px;color:var(--text);cursor:pointer}
 .seg i.on{background:var(--brass-darker);border-color:var(--brass);color:var(--brass);position:relative;z-index:1}
 tr td.mut{color:var(--muted)}
 #scn{table-layout:fixed}
 #scn td{overflow:hidden;text-overflow:ellipsis}
-.btn{display:inline-flex;align-items:center;gap:6px;height:20px;padding:0 8px;background:var(--btn);border:1px solid var(--border);color:var(--text);cursor:pointer;white-space:nowrap}
-.btn:hover{background:#45525E}
-.btn.go{background:var(--brass-darker);border-color:var(--brass);color:var(--brass);font-weight:600}
-.btn.go:hover{background:#4E3F1E}
-.kbd{display:inline-block;min-width:10px;padding:0 3px;border:1px solid #4A5764;border-bottom-width:2px;border-radius:2px;font-size:9.5px;line-height:11px;color:#AEB9C3;text-align:center;font-family:'IBM Plex Mono',monospace;font-weight:400}
-.chip{display:inline-block;padding:0 4px;font-size:10px;line-height:13px;border:1px solid}
-.chip.amb{border-color:#7A5A2C;background:#33261A}
-.chip.blu{border-color:#2F5E8E;background:#16263A}
+.btn{display:inline-flex;align-items:center;gap:6px;height:20px;padding:0 8px;background:linear-gradient(var(--btn),var(--btn2));border:1px solid var(--border);border-radius:1px;box-shadow:inset 0 1px 0 rgba(255,255,255,.05);color:var(--text);cursor:pointer;white-space:nowrap}
+.btn:hover{background:linear-gradient(#3A3934,#2E2D29)}
+.btn.go{background:linear-gradient(#E8772E,#B85A1E);border-color:var(--brass);color:#140800;font-weight:600}
+.btn.go:hover{background:linear-gradient(#F08A45,#C4642A)}
+.kbd{display:inline-block;min-width:10px;padding:0 3px;border:1px solid var(--key);border-bottom-width:2px;border-radius:1px;font-size:9.5px;line-height:11px;color:var(--text);text-align:center;font-family:var(--font-data);font-weight:400}
+.chip{display:inline-block;padding:0 4px;font-size:11px;line-height:13px;border:1px solid}
+.chip.amb{border-color:#7A5E26;background:#2E2410}
+.chip.neu{color:var(--text);border-color:var(--key);background:var(--panel2)}
 
 /* section tabs, as the designer's 0-7 */
 #tabs{position:absolute;left:302px;top:474px;width:1276px;height:22px;display:flex;gap:2px;align-items:flex-end;padding:0 4px;background:var(--ground)}
 #tabs .tb{display:flex;align-items:center;gap:5px;height:20px;padding:0 9px;background:var(--panel2);border:1px solid var(--edge);border-bottom:0;color:var(--text);cursor:pointer}
 #tabs .tb.on{background:var(--brass-darker);color:var(--brass);border-color:var(--brass)}
-#tabs .r{margin-left:auto;align-self:center;color:var(--muted);font-size:11px}
+#tabs .r{margin-left:auto;align-self:center;color:var(--muted);font-size:12px}
 
 .page{display:none;flex:1;min-height:0}
 .page.on{display:flex}
@@ -101,8 +112,9 @@ tr td.mut{color:var(--muted)}
 .para{padding:6px 8px;line-height:1.45}
 .bul{padding:4px 8px 4px 20px;position:relative;line-height:1.4}
 .bul:before{content:'•';position:absolute;left:8px;color:var(--muted)}
-.tag{position:absolute;padding:0 3px;background:rgba(10,16,22,.82);border:1px solid #4A5764;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CFE3F3;white-space:nowrap}
-#status{position:absolute;left:0;top:1060px;width:1920px;height:20px;background:#161B20;border-top:1px solid var(--edge);display:flex;align-items:center;gap:14px;padding:0 8px;color:var(--muted);font-size:11px}
+.tag{position:absolute;padding:0 3px;background:rgba(15,15,14,.82);border:1px solid var(--key);font-family:var(--font-data);font-size:10px;color:var(--text);white-space:nowrap}
+#map .tag{color:var(--maplab)}
+#status{position:absolute;left:0;top:1060px;width:1920px;height:20px;background:var(--header);border-top:1px solid var(--edge);display:flex;align-items:center;gap:14px;padding:0 8px;color:var(--muted);font-size:12px}
 #status .r{margin-left:auto}
 .bar{display:flex;height:8px;background:var(--inset);border:1px solid var(--edge)}
 .bar span{height:100%}
@@ -122,8 +134,8 @@ tr td.mut{color:var(--muted)}
   <div class="c"><div class="k">Sea</div><div class="v">4</div></div>
   <div class="c"><div class="k">Sunset</div><div class="v">19:03</div></div>
   <div class="c"><div class="k">Ends</div><div class="v">28 May 10:40</div></div>
-  <div class="c"><div class="k">Ships</div><div class="v"><span class="blu">13</span> v <span class="red">14</span></div></div>
-  <div class="c"><div class="k">Tonnage</div><div class="v"><span class="blu">94,033</span> v <span class="red">119,786</span></div></div>
+  <div class="c"><div class="k">Ships</div><div class="v"><span class="fr">13</span> v <span class="red">14</span></div></div>
+  <div class="c"><div class="k">Tonnage</div><div class="v"><span class="fr">94,033</span> v <span class="red">119,786</span></div></div>
   <div class="c"><div class="k">Doctrine</div><div class="v">1905</div></div>
   <div class="c"><div class="k">Changes</div><div class="v" id="nchg">0</div></div>
 </div>
@@ -147,7 +159,7 @@ tr td.mut{color:var(--muted)}
 <div class="pane" style="left:302px;top:52px;width:1276px;height:420px">
   <div class="title">The opening<span class="note">each top unit at its start, its ships astern</span>
     <span class="r"><span class="ov on"><i>C</i>Courses</span><span class="ov on"><i>R</i>Range</span><span class="ov on"><i>L</i>Labels</span><span class="ov"><i>G</i>Grid</span><span class="ov"><i>P</i>Place a unit</span></span></div>
-  <div id="map" style="position:relative;flex:1;background:var(--plan)"></div>
+  <div id="map" style="position:relative;flex:1;background:var(--sea)"></div>
 </div>
 
 <div id="tabs"></div>
@@ -241,13 +253,13 @@ tr td.mut{color:var(--muted)}
     <tr><td>World placed</td><td class="num">yes</td><td class="num ok">1.29 s</td></tr>
   </table>
   <div style="padding:6px 6px 0"><div class="bar" id="loadBar"></div></div>
-  <div style="margin:8px 6px 0;padding:6px 8px;background:#17261A;border:1px solid #2F5A31">
+  <div style="margin:8px 6px 0;padding:6px 8px;background:rgba(141,190,107,.12);border:1px solid var(--ok)">
     <span class="mono" style="font-size:20px;color:var(--ok)">Ready</span>
     <span class="mut" style="margin-left:6px">Russia, yours · Japan, the AI's · as written</span></div>
   <div style="display:flex;gap:4px;padding:8px 6px">
     <span class="btn">Save setup… <span class="kbd">Ctrl+S</span></span>
     <span class="btn">Begin paused <span class="kbd">⇧⏎</span></span>
-    <span class="btn go" style="flex:1;justify-content:center">Begin <span class="kbd" style="color:var(--brass);border-color:var(--brass-dark)">⏎</span></span>
+    <span class="btn go" style="flex:1;justify-content:center">Begin <span class="kbd" style="color:#140800;border-color:rgba(20,8,0,.45)">⏎</span></span>
   </div>
 </div>
 
@@ -292,7 +304,7 @@ const ENS = {
   1: '<svg width="18" height="12" viewBox="0 0 18 12" style="vertical-align:-2px"><rect width="18" height="12" fill="#F2F2F2"/><g stroke="#C8322B" stroke-width="1.1">' +
      Array.from({ length: 8 }, (_, i) => { const a = i * Math.PI / 4; return `<line x1="7" y1="6" x2="${7 + 14 * Math.cos(a)}" y2="${6 + 14 * Math.sin(a)}"/>`; }).join('') +
      '</g><circle cx="7" cy="6" r="3" fill="#C8322B"/></svg>',
-  w: '<svg width="18" height="12" viewBox="0 0 18 12" style="vertical-align:-2px"><rect width="18" height="12" fill="#2E3842"/><circle cx="9" cy="6" r="3" fill="none" stroke="#AEB9C3"/><circle cx="9" cy="6" r="1" fill="#AEB9C3"/></svg>',
+  w: '<svg width="18" height="12" viewBox="0 0 18 12" style="vertical-align:-2px"><rect width="18" height="12" fill="#2E2D29"/><circle cx="9" cy="6" r="3" fill="none" stroke="#8A867B"/><circle cx="9" cy="6" r="1" fill="#8A867B"/></svg>',
 };
 
 // ------------------------------------------------------------------ scenarios (the outliner)
@@ -303,7 +315,7 @@ const SCN = [
     ['The prizes’ war, 1920', 'FR IT', '1920', '6 : 6'], ['The battle for Åland', 'FI SE', '1921', '9 : 7']]],
   ['Tests', [['Squadrons', 'GB DE', '1916', '4 : 5'], ['Flotilla', 'GB DE', '1916', '6 : 11'], ['Ladder 1 … 5', 'dev', '—', '—']]],
 ];
-const GRPC = ['#8C7B62', '#5B7FA6', '#56636F'];
+const GRPC = ['#8A6A48', '#B7A27A', '#55524B'];
 $('scn').innerHTML = '<tr><th style="width:150px">Name</th><th style="width:44px">Sides</th><th style="width:44px">Year</th><th class="n">Ships</th></tr>' + SCN.map(([g, rows], gi) =>
   `<tr class="grp"><td colspan="3"><span class="tw">▼</span><span class="sw" style="background:${GRPC[gi]}"></span>${g}</td><td class="num mut">${rows.length}</td></tr>` +
   rows.map(([n, s, d, k, sel], i) => `<tr class="hit ${sel ? 'sel' : i % 2 ? 'alt' : ''}"><td style="padding-left:24px" class="${sel ? 'brass' : ''}">${n}</td><td class="mut mono" style="font-size:10px">${s}</td><td class="mut">${d}</td><td class="num" style="font-size:10.5px">${k.replace(/ : /, ':')}</td></tr>`).join('')).join('');
@@ -322,24 +334,24 @@ $('scn').innerHTML = '<tr><th style="width:150px">Name</th><th style="width:44px
   let g = '';
   for (let x = W / 2 % 83.3; x < W; x += 83.3) g += `<line x1="${x}" y1="0" x2="${x}" y2="${H}"/>`;
   for (let y = H / 2 % 83.3; y < H; y += 83.3) g += `<line x1="0" y1="${y}" x2="${W}" y2="${y}"/>`;
-  let s = `<svg width="${W}" height="${H}" style="position:absolute;left:0;top:0"><g stroke="#9CC2E2" stroke-opacity=".09">${g}</g>`;
+  let s = `<svg width="${W}" height="${H}" style="position:absolute;left:0;top:0"><g stroke="#EBF0F2" stroke-opacity=".09">${g}</g>`;
   let tags = '';
-  const col = ['#5B9BE0', '#E2685C'];
+  const col = ['#F1ECDD', '#E04A3C'];
   for (const u of U) {
     const [x, y] = P(...u.at), r = u.c * Math.PI / 180, len = u.kn * 0.5 * 1.852 / kmpx;
     s += `<line x1="${x}" y1="${y}" x2="${x + Math.sin(r) * len}" y2="${y - Math.cos(r) * len}" stroke="${col[u.s]}" stroke-dasharray="4 4" stroke-opacity=".8"/>`;
     for (let i = 1; i <= u.k - 1; i++) s += `<circle cx="${x - Math.sin(r) * 9 * i}" cy="${y + Math.cos(r) * 9 * i}" r="2" fill="${col[u.s]}"/>`;
     s += u.s === 0 ? `<circle cx="${x}" cy="${y}" r="6" fill="none" stroke="${col[0]}" stroke-width="1.6"/>`
       : `<rect x="${x - 5}" y="${y - 5}" width="10" height="10" transform="rotate(45 ${x} ${y})" fill="none" stroke="${col[1]}" stroke-width="1.6"/>`;
-    tags += `<div class="tag" style="left:${x + u.dx}px;top:${y + u.dy}px;color:${u.s ? '#F1C9C3' : '#CFE3F3'}">${u.n} · ${u.k}</div>`;
+    tags += `<div class="tag" style="left:${x + u.dx}px;top:${y + u.dy}px;color:${u.s ? '#F2A79E' : '#F1ECDD'}">${u.n} · ${u.k}</div>`;
   }
   const [ax, ay] = P(34.05, 129.95), [bx, by] = P(34.17, 130.20);
-  s += `<line x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}" stroke="#9CC2E2" stroke-opacity=".55" stroke-dasharray="1 3"/>`;
+  s += `<line x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}" stroke="#B7C7CF" stroke-opacity=".55" stroke-dasharray="1 3"/>`;
   tags += `<div class="tag" style="left:${(ax + bx) / 2 - 22}px;top:${(ay + by) / 2 - 8}px">27.0 km</div>`;
   // the 5 km ruler, as the plan view's 20 m
-  s += `<g stroke="#9CC2E2" stroke-opacity=".7"><line x1="16" y1="${H - 18}" x2="${16 + 5 / kmpx}" y2="${H - 18}"/><line x1="16" y1="${H - 22}" x2="16" y2="${H - 14}"/><line x1="${16 + 5 / kmpx}" y1="${H - 22}" x2="${16 + 5 / kmpx}" y2="${H - 14}"/></g></svg>`;
-  tags += `<div class="mono" style="position:absolute;left:${24 + 5 / kmpx}px;top:${H - 25}px;font-size:10px;color:#9CC2E2">5 km</div>`;
-  tags += `<div class="tag" style="right:8px;bottom:8px;left:auto"><span class="blu">○</span> Russia &nbsp;<span class="red">◇</span> Japan &nbsp;· dashed: 30 min</div>`;
+  s += `<g stroke="#B7C7CF" stroke-opacity=".7"><line x1="16" y1="${H - 18}" x2="${16 + 5 / kmpx}" y2="${H - 18}"/><line x1="16" y1="${H - 22}" x2="16" y2="${H - 14}"/><line x1="${16 + 5 / kmpx}" y1="${H - 22}" x2="${16 + 5 / kmpx}" y2="${H - 14}"/></g></svg>`;
+  tags += `<div class="mono" style="position:absolute;left:${24 + 5 / kmpx}px;top:${H - 25}px;font-size:10px;color:#B7C7CF">5 km</div>`;
+  tags += `<div class="tag" style="right:8px;bottom:8px;left:auto"><span class="fr">○</span> Russia &nbsp;<span class="red">◇</span> Japan &nbsp;· dashed: 30 min</div>`;
   tags += `<div class="tag" style="left:8px;top:8px">N ↑ · 1 square 5 km</div>`;
   $('map').innerHTML = s + tags;
 })();
@@ -365,7 +377,7 @@ function drawOob() {
   let alt = 0;
   const pad = l => `padding-left:${6 + l * 14}px`;
   const unit = (u, l) => {
-    const tm = u.temper ? ` <span class="chip ${u.temper < 0 ? 'blu' : 'amb'}">${u.temper < 0 ? 'cautious' : 'bold'} ${sgn(u.temper)}</span>` : '';
+    const tm = u.temper ? ` <span class="chip ${u.temper < 0 ? 'neu' : 'amb'}">${u.temper < 0 ? 'cautious' : 'bold'} ${sgn(u.temper)}</span>` : '';
     out.push(`<tr class="grp"><td colspan="2" style="${pad(l)}"><span class="tw">▼</span>${u.name} <span class="mut" style="font-weight:400">${u.adm}</span>${tm}</td>` +
       `<td class="num">${ships(u)}</td><td class="num">${fmt(tons(u))}</td><td colspan="6"></td><td class="mut" style="text-align:center">✕</td></tr>`);
     (u.units || []).forEach(s => unit(s, l + 1));
@@ -377,7 +389,7 @@ function drawOob() {
         `<td class="num">${c.belt || '—'}</td><td class="num">${c.reach.toFixed(1)}</td><td class="ok">● ready</td><td class="mut" style="text-align:center">▾</td></tr>`);
       for (const n of r.names) {
         const t = CAPT[n];
-        out.push(`<tr class="${alt++ % 2 ? 'alt' : ''}"><td colspan="2" style="${pad(l + 2.6)}">${n}${t ? ` <span class="${t < 0 ? 'blu' : 'amb'}">${t < 0 ? '▼' : '▲'} ${sgn(t)}</span>` : ''}</td><td colspan="8"></td><td class="mut" style="text-align:center">✕</td></tr>`);
+        out.push(`<tr class="${alt++ % 2 ? 'alt' : ''}"><td colspan="2" style="${pad(l + 2.6)}">${n}${t ? ` <span class="${t < 0 ? 'mut' : 'amb'}">${t < 0 ? '▼' : '▲'} ${sgn(t)}</span>` : ''}</td><td colspan="8"></td><td class="mut" style="text-align:center">✕</td></tr>`);
       }
     }
   };
@@ -390,10 +402,10 @@ function drawOob() {
   const c = CL[S.cls], sc = 0.7;
   $('selCls').innerHTML = `<div class="sub"><span class="cap">Selected class</span><span class="brt" style="font-weight:600">${c.name}</span>${c.file}<span class="r">scenario design</span></div>
     <div style="position:relative;height:118px;background:var(--plan);border-bottom:1px solid var(--edge)">
-      <div style="position:absolute;left:20px;top:22px;width:${Math.round(c.len * 4 * sc) - 4}px;border-top:1px solid #9CC2E2;opacity:.7"></div>
+      <div style="position:absolute;left:20px;top:22px;width:${Math.round(c.len * 4 * sc) - 4}px;border-top:1px solid var(--planline);opacity:.7"></div>
       <div class="tag" style="left:${12 + Math.round(c.len * 4 * sc) / 2 - 30}px;top:14px">${c.len.toFixed(1)} m oa</div>
       <img src="assets/launch/${S.cls}.png" style="position:absolute;left:18px;top:42px;width:${Math.round(c.w * sc)}px;filter:drop-shadow(0 0 2px #000)">
-      <div class="mono" style="position:absolute;right:8px;bottom:4px;font-size:10px;color:#9CC2E2">to scale, 4 px/m</div></div>
+      <div class="mono" style="position:absolute;right:8px;bottom:4px;font-size:10px;color:var(--planline)">to scale, 4 px/m</div></div>
     <table><tr><th>Particular</th><th class="n">Value</th><th>Note</th></tr>
       <tr><td class="mut">Displacement</td><td class="num">${fmt(c.t)} t</td><td class="mut">standard</td></tr>
       <tr class="alt"><td class="mut">Speed</td><td class="num">${c.kn} kn</td><td class="mut">trial</td></tr>
@@ -418,7 +430,7 @@ $('moves').innerHTML = '<tr><th>Move</th><th class="n">Written</th><th class="n"
 $('tempers').innerHTML = '<tr><th>Admiral</th><th>Unit</th><th class="n">Temper</th><th class="n">Sum</th></tr>' + [
   ['V-Adm Rozhestvensky', 'Second Pacific Squadron', 0], ['Oslyabya’s captain', '2nd Armoured Division', 0],
   ['R-Adm Enkvist', 'Cruiser Division', -0.4], ['the senior captain', '1st Destroyer Detachment', 0]].map(([a, u, v], i) =>
-  `<tr class="${i % 2 ? 'alt' : ''}"><td class="brt">${a}</td><td class="mut">${u}</td><td class="num">${st(sgn(v) || '0.00')}</td><td class="num ${v ? 'blu' : ''}">${v ? sgn(v) : '0.00'}</td></tr>`).join('');
+  `<tr class="${i % 2 ? 'alt' : ''}"><td class="brt">${a}</td><td class="mut">${u}</td><td class="num">${st(sgn(v) || '0.00')}</td><td class="num ${v ? 'mut' : ''}">${v ? sgn(v) : '0.00'}</td></tr>`).join('');
 $('rules').innerHTML = '<tr><th>Rule</th><th>Setting</th></tr>' + [
   ['On meeting the enemy', ['fight', 'carry on'], 0], ['Deploy into one line on his main body', ['yes', 'no'], 0], ['Torpedoes', ['at will', 'on order'], 0],
   ['Under fire', ['zigzag', 'steady'], 0], ['Torpedo tracks', ['comb', 'hold on'], 0], ['Heavy ships at night', ['accept', 'avoid'], 1],
@@ -433,7 +445,7 @@ $('cond').innerHTML = `<tr><th>Row</th><th>${ENS[0]} Russia · yours</th><th>${E
 function drawRight() {
   const rows = [[0, 'V-Adm Rozhestvensky', '13 ships'], [1, 'Adm Togo', '14 ships'], ['w', 'both sides the AI’s', 'all shown']];
   $('playAs').innerHTML = rows.map(([k, c, n], i) => {
-    const on = S.playAs === i, who = i === 2 ? '' : on ? '<span class="chip amb">you</span>' : S.playAs === 2 ? '<span class="chip blu">AI</span>' : '<span class="chip blu">AI</span>';
+    const on = S.playAs === i, who = i === 2 ? '' : on ? '<span class="chip amb">you</span>' : S.playAs === 2 ? '<span class="chip neu">AI</span>' : '<span class="chip neu">AI</span>';
     return `<tr class="hit ${on ? 'sel' : i % 2 ? 'alt' : ''}" data-p="${i}"><td style="width:22px">${on ? '◉' : '○'}</td><td>${ENS[k]} <span class="${on ? 'brass' : 'brt'}" style="font-weight:600">${i === 2 ? 'Watch' : SIDES[i]}</span></td><td class="mut">${c}</td><td class="num mut">${n}</td><td style="text-align:right">${who}</td></tr>`;
   }).join('');
   for (const el of $('playAs').querySelectorAll('tr')) el.onclick = () => { S.playAs = +el.dataset.p; draw(); };
@@ -442,10 +454,10 @@ function drawRight() {
     ['Guns 152–203 mm', 97, 164], ['Line speed, kn', 16, 18], ['Gun crews', 'average', 'trained']];
   $('ledger').innerHTML = `<tr><th>Group</th><th class="n">${ENS[0]}</th><th class="n">${ENS[1]}</th><th style="width:110px">Share</th></tr>` + L.map(([g, a, b], i) => {
     const num = typeof a === 'number', f = num && a + b ? a / (a + b) : 0.5;
-    return `<tr class="${i % 2 ? 'alt' : ''}"><td>${g}</td><td class="num">${a}</td><td class="num">${b}</td><td>${num ? `<div class="bar" style="height:7px"><span style="width:${f * 100}%;background:#3F6D9E"></span><span style="flex:1;background:#94473E"></span></div>` : ''}</td></tr>`;
-  }).join('') + `<tr><td class="brt" style="font-weight:600">Tonnage</td><td class="num">94,033</td><td class="num">119,786</td><td><div class="bar" style="height:7px"><span style="width:44%;background:#3F6D9E"></span><span style="flex:1;background:#94473E"></span></div></td></tr>`;
+    return `<tr class="${i % 2 ? 'alt' : ''}"><td>${g}</td><td class="num">${a}</td><td class="num">${b}</td><td>${num ? `<div class="bar" style="height:7px"><span style="width:${f * 100}%;background:#BDB6A4"></span><span style="flex:1;background:#B23A2F"></span></div>` : ''}</td></tr>`;
+  }).join('') + `<tr><td class="brt" style="font-weight:600">Tonnage</td><td class="num">94,033</td><td class="num">119,786</td><td><div class="bar" style="height:7px"><span style="width:44%;background:#BDB6A4"></span><span style="flex:1;background:#B23A2F"></span></div></td></tr>`;
 }
-$('loadBar').innerHTML = ['borodino', 'oslyabya', 'aurora', 'buyny', 'mikasa', 'izumo', 'ikazuchi'].map(k => `<span style="flex:${CL[k].t};background:var(--brass);border-right:1px solid var(--edge)" title="${CL[k].name}"></span>`).join('');
+$('loadBar').innerHTML = ['borodino', 'oslyabya', 'aurora', 'buyny', 'mikasa', 'izumo', 'ikazuchi'].map(k => `<span style="flex:${CL[k].t};background:var(--muted);border-right:1px solid var(--edge)" title="${CL[k].name}"></span>`).join('');
 
 function draw() { drawTabs(); drawOob(); drawRight(); }
 const h = location.hash.slice(1);

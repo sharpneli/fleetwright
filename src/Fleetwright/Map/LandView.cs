@@ -24,7 +24,7 @@ public sealed class LandView(Land coarse, Land medium, Land fine)
     /// <summary>Projected points nearer than this to the last one kept are dropped, pixels.</summary>
     public const double MinStepPx = 1.5;
 
-    public static readonly Vector4 CoastColor = new(0.86f, 0.80f, 0.60f, 0.55f);
+    public static readonly Vector4 CoastColor = MapPalette.Coast with { W = 0.85f };
     public const float CoastWidthPx = 1.2f;
 
     readonly CapRetraction cap = new();

@@ -513,7 +513,7 @@ public sealed unsafe partial class DesignerScene
                     Open(r.Section);
             }
             bool sel = r.Section == section;
-            var bg = sel ? (r.Child ? new Vector4(0.85f, 0.72f, 0.41f, 0.05f) : new Vector4(0.85f, 0.72f, 0.41f, 0.14f))
+            var bg = sel ? (r.Child ? T.Brass with { W = 0.05f } : T.Brass with { W = 0.14f })
                 : r.Child ? Vector4.Zero : T.Panel2;
             if (hover)
                 bg += new Vector4(0.04f, 0.04f, 0.04f, 0.06f);
@@ -561,7 +561,7 @@ public sealed unsafe partial class DesignerScene
             bool hover = ImGui.IsItemHovered();
             dl.RowBg(p, w, RowH, i);
             if (hover)
-                dl.AddRectFilled(p, p + new Vector2(w, RowH), T.U32(new Vector4(0.85f, 0.72f, 0.41f, 0.08f)));
+                dl.AddRectFilled(p, p + new Vector2(w, RowH), T.U32(T.Brass with { W = 0.08f }));
             float ty = p.Y + (RowH - UiFonts.Sans.FontSize) / 2;
             dl.Text(UiFonts.Sans, new Vector2(p.X + P(6), ty), T.Muted, TemplateLabels[i]);
             dl.PushClipRect(p + new Vector2(P(72), 0), p + new Vector2(w - P(14), RowH), true);
@@ -701,7 +701,7 @@ public sealed unsafe partial class DesignerScene
         if (section == 1 && planFocus != null)
             foreach (var m in ov.Mounts)
                 if (m.Main && m.Id == planFocus)
-                    dl.AddCircle(Px(m.X, m.Y), P(14), T.U32(new Vector4(1, 0.906f, 0.659f, 1)), 0, P(2));
+                    dl.AddCircle(Px(m.X, m.Y), P(14), T.U32(T.BrassLight), 0, P(2));
         if (section == 1 && snap?.Main is { } mp && ImGui.IsWindowHovered() && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
         {
             var mouse = ImGui.GetMousePos();
@@ -719,7 +719,7 @@ public sealed unsafe partial class DesignerScene
         if (section == 2 && secFocus is { } f)
             foreach (var m in ov.Mounts)
                 if (!m.Main && SecondaryArrangement.ParseId(m.Id) is var (k, n, _) && k == f.K && (f.N == 0 || n == f.N))
-                    dl.AddCircle(Px(m.X, m.Y), P(f.N == 0 ? 8 : 11), T.U32(new Vector4(1, 0.906f, 0.659f, f.N == 0 ? 0.6f : 1)), 0, P(f.N == 0 ? 1.2f : 2));
+                    dl.AddCircle(Px(m.X, m.Y), P(f.N == 0 ? 8 : 11), T.U32(T.BrassLight with { W = f.N == 0 ? 0.6f : 1 }), 0, P(f.N == 0 ? 1.2f : 2));
         if (section == 2 && snap?.Sec != null && ImGui.IsWindowHovered() && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
         {
             var mouse = ImGui.GetMousePos();
@@ -742,7 +742,7 @@ public sealed unsafe partial class DesignerScene
             float tw = Width(UiFonts.Mono, ov.Dimensions);
             var tp = new Vector2((x0 + x1 - tw) / 2, y - UiFonts.Mono.FontSize / 2);
             dl.AddRectFilled(tp - V(6, 0), tp + new Vector2(tw + P(6), UiFonts.Mono.FontSize), T.U32(T.Plan));
-            dl.Text(UiFonts.Mono, tp, new Vector4(0.81f, 0.89f, 0.95f, 1), ov.Dimensions);
+            dl.Text(UiFonts.Mono, tp, T.TagText, ov.Dimensions);
             foreach (var m in ov.Mounts)
             {
                 // main turrets tagged off the port side, the others just outboard of themselves
@@ -759,7 +759,7 @@ public sealed unsafe partial class DesignerScene
         const float Rad = MathF.PI / 180;
         float a0 = fromDeg * Rad, a1 = toDeg * Rad;
         int slices = Math.Max(1, (int)MathF.Ceiling((a1 - a0) / (MathF.PI / 2)));
-        uint fill = T.U32(T.Blue with { W = 0.10f });
+        uint fill = T.U32(T.Arc with { W = 0.06f });
         for (int i = 0; i < slices && main; i++)   // the secondaries' arcs are outlines only: a dozen fills is fog
         {
             dl.PathLineTo(c);
@@ -768,7 +768,7 @@ public sealed unsafe partial class DesignerScene
         }
         dl.PathLineTo(c);
         dl.PathArcTo(c, r, a0, a1, 48);
-        dl.PathStroke(T.U32(T.Blue with { W = main ? 0.7f : 0.3f }), ImDrawFlags.Closed, 1);
+        dl.PathStroke(T.U32(T.Arc with { W = main ? 0.45f : 0.22f }), ImDrawFlags.Closed, 1);
     }
 
     /// <summary>The armour on the profile: each plate in the thickness ramp, labelled where the label fits. Ship metres
@@ -1161,7 +1161,7 @@ public sealed unsafe partial class DesignerScene
             dl.RowBg(p, w, RowH, i);
             if (hover)
             {
-                dl.AddRectFilled(p, p + new Vector2(w, RowH), T.U32(new Vector4(0.85f, 0.72f, 0.41f, 0.08f)));
+                dl.AddRectFilled(p, p + new Vector2(w, RowH), T.U32(T.Brass with { W = 0.08f }));
                 ImGui.BeginTooltip();
                 ImGui.PushFont(UiFonts.SansBold);
                 ImGui.TextColored(T.Brass, g.Name);

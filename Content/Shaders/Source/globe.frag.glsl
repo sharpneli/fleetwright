@@ -58,7 +58,8 @@ float moonLightAt(vec3 n)
 }
 
 const vec3 Glow = vec3(0.30, 0.50, 0.85);
-const vec3 DayLand = vec3(0.34, 0.36, 0.27);
+// the plain atlas's pale sage (docs/ui-themes/ui-style-gunmetal-natural.md), under the full sun
+const vec3 DayLand = vec3(0.639, 0.678, 0.525);
 const vec3 NightLand = vec3(0.022, 0.026, 0.022);
 const vec3 Track = vec3(1.0, 0.78, 0.45);
 

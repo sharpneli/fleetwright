@@ -19,7 +19,7 @@ public static class GridLook
 
     public static float MinorAlpha = 0.13f, MajorAlpha = 0.26f, MinorWidth = 1f, MajorWidth = 1.4f;
 
-    public static readonly Vector3 LineRgb = new(0.75f, 0.85f, 0.95f), ZeroRgb = new(0.85f, 0.92f, 1.0f);
+    public static readonly Vector3 LineRgb = new(0.92f, 0.94f, 0.95f), ZeroRgb = new(0.96f, 0.97f, 0.97f);
 
     /// <summary>The equator's and the prime meridian's extra: alpha times, width plus.</summary>
     public static float ZeroGain = 1.6f, ZeroWidth = 0.5f;

@@ -296,7 +296,7 @@ public sealed unsafe partial class LaunchScene
             float rh = Math.Max(RowH, th + P(4));
             var ra = new Vector2(a.X, y);
             if (n++ % 2 == 1)
-                dl.AddRectFilled(ra, ra + new Vector2(w, rh), U(new Vector4(1, 1, 1, 0.018f)));
+                dl.AddRectFilled(ra, ra + new Vector2(w, rh), U(T.RowAlt));
             dl.HLine(ra.X, ra.X + w, ra.Y + rh - 1, T.Line);
             dl.Text(UiFonts.Sans, new Vector2(ra.X + P(6), Mid(UiFonts.Sans, ra.Y, RowH)), T.Text, label);
             dl.Wrapped(UiFonts.Sans, new Vector2(c0, ra.Y + P(2)), T.Bright, value, w - (c0 - a.X) - P(8));

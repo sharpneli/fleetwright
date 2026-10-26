@@ -263,7 +263,7 @@ public sealed unsafe partial class LaunchScene
             dl.Stepper("##st", new Vector2(sx, ra.Y + P(2.5f)), t.Value, P(44), t.Temper > -1 + 1e-9, t.Temper < 1 - 1e-9, out int by);
             if (by != 0)
                 pendingEdit = setup.Temper(written!, t.Captain ? t.Name : t.Unit, Stepped(t.Temper, by));
-            var sumCol = Math.Abs(t.Temper - t.Written) > 1e-9 ? T.Brass : t.Sum == "0.00" ? T.Muted : t.Sum[0] == '+' ? T.Amber : T.Blue;
+            var sumCol = Math.Abs(t.Temper - t.Written) > 1e-9 ? T.Brass : t.Sum == "0.00" ? T.Muted : t.Sum[0] == '+' ? T.Amber : T.Text;
             dl.TextRight(UiFonts.Mono, sumX, Mid(UiFonts.Mono, ra.Y, RowH), sumCol, t.Sum);
             if (hover && t.Why.Length > 0)
                 ImGui.SetTooltip(t.Why);

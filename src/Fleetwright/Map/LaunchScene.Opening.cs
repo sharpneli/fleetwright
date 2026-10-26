@@ -92,7 +92,7 @@ public sealed unsafe partial class LaunchScene
     void Opening(Vector2 at, Vector2 size)
     {
         var b = at + size;
-        dl.AddRectFilled(at, b, U(T.Plan));
+        dl.AddRectFilled(at, b, U(MapPalette.Sea));
         if (current is not { } s)
             return;
         if (opening is not { } v || v.At != at || v.Size != size)
@@ -100,15 +100,15 @@ public sealed unsafe partial class LaunchScene
         dl.PushClipRect(at, b, true);
         if (showGrid)
             foreach (var g in v.Grid)
-                dl.AddPolyline(ref g[0], g.Length, U(T.PlanLine with { W = 0.09f }), ImDrawFlags.None, 1);
-        uint landCol = U(T.PlanLine with { W = 0.10f });
+                dl.AddPolyline(ref g[0], g.Length, U(MapPalette.Grid), ImDrawFlags.None, 1);
+        uint landCol = U(MapPalette.Land);
         foreach (var (a2, b2) in v.Fill)
             dl.AddRectFilled(a2, b2, landCol);
         foreach (var c in v.Coast)
-            dl.AddPolyline(ref c[0], c.Length, U(T.PlanLine with { W = 0.45f }), ImDrawFlags.None, 1);
+            dl.AddPolyline(ref c[0], c.Length, U(MapPalette.Coast), ImDrawFlags.None, 1);
         if (showRange && v.Range.Length > 0)
         {
-            Dotted(v.RangeA, v.RangeB, U(T.PlanLine with { W = 0.55f }));
+            Dotted(v.RangeA, v.RangeB, U(MapPalette.Label with { W = 0.7f }));
             var ts = TagSize(v.Range);
             dl.Tag((v.RangeA + v.RangeB) / 2 - ts / 2, v.Range);
         }
@@ -128,11 +128,11 @@ public sealed unsafe partial class LaunchScene
         // the north and the grid's step at the top left, the ruler at the bottom left, the key at the bottom right
         dl.Tag(at + new Vector2(P(8), P(8)), v.NorthTag);
         var bar0 = new Vector2(at.X + P(16), b.Y - P(18));
-        uint ruler = U(T.PlanLine with { W = 0.7f });
+        uint ruler = U(MapPalette.Label with { W = 0.8f });
         dl.AddLine(bar0, bar0 + new Vector2(v.BarPx, 0), ruler);
         dl.AddLine(bar0 - new Vector2(0, P(4)), bar0 + new Vector2(0, P(4)), ruler);
         dl.AddLine(bar0 + new Vector2(v.BarPx, -P(4)), bar0 + new Vector2(v.BarPx, P(4)), ruler);
-        dl.Text(UiFonts.MonoSmall, bar0 + new Vector2(v.BarPx + P(8), -P(7)), T.PlanLine, v.BarLabel);
+        dl.Text(UiFonts.MonoSmall, bar0 + new Vector2(v.BarPx + P(8), -P(7)), MapPalette.Label, v.BarLabel);
         Key(v, new Vector2(b.X - P(8), b.Y - P(8)));
         if (placing != null)
             PlacingOverlay(v);
@@ -307,7 +307,7 @@ public sealed unsafe partial class LaunchScene
             var m = new UnitMark
             {
                 Head = Of(head), Lead = Of(lead), Ships = [.. ships.Select(Of)], Ring = own,
-                Colour = own ? T.Blue : T.Hostile, Label = $"{u.Name} · {u.ShipCount}",
+                Colour = own ? T.Friend : T.Hostile, Label = $"{u.Name} · {u.ShipCount}",
             };
             var ts = TagSize(m.Label);
             // the first of the four places round her head that's in the frame and clear of the others' tags and heads
@@ -345,7 +345,7 @@ public sealed unsafe partial class LaunchScene
                     (apart, v.RangeA, v.RangeB) = (d, Of(a.Head), Of(bu.Head));
         v.Range = apart < double.MaxValue ? $"{apart / 1000:0.0} km" : "";
         int me = side >= 0 ? side : 0, them = s.Sides.Length > 1 ? (me == 0 ? 1 : 0) : -1;
-        v.Keys = them < 0 ? [(s.Sides[me], T.Blue, true)] : [(s.Sides[me], T.Blue, true), (s.Sides[them], T.Hostile, false)];
+        v.Keys = them < 0 ? [(s.Sides[me], T.Friend, true)] : [(s.Sides[me], T.Friend, true), (s.Sides[them], T.Hostile, false)];
         return v;
     }
 
@@ -496,7 +496,7 @@ public sealed unsafe partial class LaunchScene
                 Tailed(at, size, SwedenBlue, SwedenYellow, arms: false);
                 return;
             default:
-                dl.AddRectFilled(at, b, U(Hex(0x2A3138)));
+                dl.AddRectFilled(at, b, U(T.Panel2));
                 break;
         }
         dl.PopClipRect();

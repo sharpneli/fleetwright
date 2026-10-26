@@ -27,8 +27,8 @@ public sealed partial class MapScene
     /// <summary>Where the dock starts this frame (screen x): the strip centres in what's left of it.</summary>
     float dockLeft = float.MaxValue;
 
-    static readonly Vector4 Ok = new(0.525f, 0.78f, 0.494f, 1), OkDim = new(0.66f, 0.78f, 0.64f, 1), WaterTint = new(0.435f, 0.655f, 0.863f, 1),
-        Fire = new(1f, 0.6f, 0.25f, 1), CardBg = new(0.051f, 0.071f, 0.086f, 0.96f);
+    static readonly Vector4 Ok = Theme.Ok, OkDim = new(0.68f, 0.76f, 0.6f, 1), WaterTint = new(0.435f, 0.655f, 0.863f, 1),
+        Fire = new(1f, 0.6f, 0.25f, 1), CardBg = Theme.Glass;
 
     /// <summary>The ships the cards show, asked of the sim for their detail (once a frame; a new array only on a change).</summary>
     void CardRequests(Snapshot s)
@@ -464,8 +464,8 @@ public sealed partial class MapScene
             Span<Vector2> poly = stackalloc Vector2[Math.Min(pts.Length, 512)];
             for (int i = 0; i < poly.Length; i++)
                 poly[i] = P(pts[i].X, pts[i].Y);
-            dl.AddConvexPolyFilled(ref poly[0], poly.Length, ImGui.GetColorU32(new Vector4(0.2f, 0.25f, 0.29f, 1)));
-            dl.AddPolyline(ref poly[0], poly.Length, ImGui.GetColorU32(new Vector4(0.55f, 0.62f, 0.68f, 1)), ImDrawFlags.Closed, 1);
+            dl.AddConvexPolyFilled(ref poly[0], poly.Length, ImGui.GetColorU32(Theme.DrawingFill));
+            dl.AddPolyline(ref poly[0], poly.Length, ImGui.GetColorU32(Theme.PlanLine with { W = 0.7f }), ImDrawFlags.Closed, 1);
         }
         else
             dl.AddRect(P(x0, -cls.Beam / 2), P(x1, cls.Beam / 2), ImGui.GetColorU32(Theme.Muted));
@@ -477,7 +477,7 @@ public sealed partial class MapScene
             if (kind is not (ComponentKind.Superstructure or ComponentKind.ConningTower or ComponentKind.Funnel))
                 continue;
             var bx = comps[i].Bounds;
-            uint col = ImGui.GetColorU32(kind == ComponentKind.Funnel ? new Vector4(0.12f, 0.14f, 0.16f, 1) : new Vector4(0.3f, 0.36f, 0.41f, 1));
+            uint col = ImGui.GetColorU32(kind == ComponentKind.Funnel ? Theme.DrawingDark : Theme.DrawingMid);
             dl.AddRectFilled(P(bx.X0, bx.Y0), P(bx.X1, bx.Y1), col);
         }
         // wrecked parts (her own damaged parts: the components among them)
@@ -563,11 +563,11 @@ public sealed partial class MapScene
             if (Standing(comps[i], vert))
             {
                 var bx = comps[i].Bounds;
-                dl.AddRectFilled(P(bx.X0, bx.Top), P(bx.X1, bx.Base), ImGui.GetColorU32(new Vector4(0.26f, 0.31f, 0.36f, 1)));
+                dl.AddRectFilled(P(bx.X0, bx.Top), P(bx.X1, bx.Base), ImGui.GetColorU32(Theme.DrawingMid));
             }
         var cells = cls.Cells;
-        uint edge = ImGui.GetColorU32(new Vector4(0.55f, 0.62f, 0.68f, 0.35f));
-        dl.AddRectFilled(P(x0, vert.Keel + vert.Depth), P(x1, vert.Keel), ImGui.GetColorU32(new Vector4(0.17f, 0.21f, 0.25f, 1)));
+        uint edge = ImGui.GetColorU32(Theme.PlanLine with { W = 0.35f });
+        dl.AddRectFilled(P(x0, vert.Keel + vert.Depth), P(x1, vert.Keel), ImGui.GetColorU32(Theme.DrawingFill));
         for (int i = 0; i < cells.Length; i++)
         {
             var bx = cells[i].Box;
@@ -590,7 +590,7 @@ public sealed partial class MapScene
         // the waterlines: the design's, dashed; now: settled, trimmed (down by the bow: the water higher forward)
         double wl = vert.Waterline;
         for (double x = x0; x < x1; x += 6)
-            dl.AddLine(P(x, wl), P(Math.Min(x + 3, x1), wl), ImGui.GetColorU32(new Vector4(0.7f, 0.85f, 1f, 0.5f)), 1);
+            dl.AddLine(P(x, wl), P(Math.Min(x + 3, x1), wl), ImGui.GetColorU32(Theme.Water with { W = 0.5f }), 1);
         if (ci >= 0)
         {
             var a = s.Conditions.Attitude[ci];

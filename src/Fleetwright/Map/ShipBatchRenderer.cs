@@ -119,9 +119,9 @@ public sealed class ShipDrawList
     /// is whose, like the icons themselves.</summary>
     public static readonly Vector4[] SideTints = [IconTint, new(0.55f, 0.75f, 1f, 1f), new(1f, 0.5f, 0.45f, 1f), new(0.55f, 0.95f, 0.55f, 1f)];
 
-    /// <summary>The icons' tint for the player (docs/map-ui/battle-hud.md U5): their side's friend blue, any other's
-    /// enemy red; while nobody plays a side (<see cref="PlayerSide"/> -1), the side tints.</summary>
-    public static readonly Vector4 FriendTint = new(0.62f, 0.8f, 1f, 1f), EnemyTint = new(1f, 0.58f, 0.52f, 1f);
+    /// <summary>The icons' tint for the player (docs/map-ui/battle-hud.md U5): their side's friend cream (blue would sink
+    /// into the sea), any other's enemy red; while nobody plays a side (<see cref="PlayerSide"/> -1), the side tints.</summary>
+    public static readonly Vector4 FriendTint = new(0.95f, 0.93f, 0.87f, 1f), EnemyTint = new(1f, 0.58f, 0.52f, 1f);
 
     /// <summary>The player's side, set by the map each frame (-1: watching).</summary>
     public int PlayerSide = -1;

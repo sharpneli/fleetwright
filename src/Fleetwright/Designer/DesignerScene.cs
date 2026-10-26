@@ -110,7 +110,7 @@ public sealed unsafe partial class DesignerScene : IScene
             seenDesign = session.DesignVersion;
         }
         sprite = new ShipSpriteRenderer(device);
-        profile = new HitboxRenderer(device);
+        profile = new HitboxRenderer(device) { Background = T.Plan };
         ulong mask = 0;
         for (int k = 0; k < HitKinds.All.Length; k++)
             if (HitKinds.All[k].Name is "belt" or "strake" or "armour_deck" or "armoured_bulkhead" or "barbette" or "conning_tower"

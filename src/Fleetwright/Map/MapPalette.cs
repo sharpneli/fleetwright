@@ -8,9 +8,15 @@ namespace Fleetwright.Map;
 /// (shells, splashes, fire, smoke) stay with them.</summary>
 public static class MapPalette
 {
-    // the design tokens
-    public static readonly Vector4 Brass = new(0.851f, 0.722f, 0.408f, 1), Amber = new(0.890f, 0.643f, 0.322f, 1),
-        Friend = new(0.357f, 0.608f, 0.878f, 1), Hostile = new(0.886f, 0.408f, 0.361f, 1);
+    // the design tokens (Ui/Theme: the gunmetal skin's accent, amber, friend cream and hostile red)
+    public static readonly Vector4 Brass = Ui.Theme.Brass, Amber = Ui.Theme.Amber, Friend = Ui.Theme.Friend, Hostile = Ui.Theme.Hostile;
+
+    /// <summary>The plain physical atlas (docs/ui-themes/ui-style-gunmetal-natural.md "the map is not themed"), for maps
+    /// drawn in the chrome (the launch screen's opening): sea, shallows, land, its coastline, the grid and the map's
+    /// labels. The globe's own chart takes its sea and land in globe.frag (DaySea, DayLand), lit by the sun.</summary>
+    public static readonly Vector4 Sea = new(0.180f, 0.322f, 0.412f, 1), Shoal = new(0.239f, 0.408f, 0.502f, 1),
+        Land = new(0.639f, 0.678f, 0.525f, 1), Coast = new(0.435f, 0.478f, 0.341f, 1), Grid = new(0.922f, 0.941f, 0.949f, 0.09f),
+        Label = new(0.718f, 0.780f, 0.812f, 1);
 
     /// <summary>The selection, everything that is hers on the map (her ring, her route, her squadron's symbol, the ships
     /// picked with her): the selected icon's own amber (<see cref="ShipDrawList.SelectedTint"/>).</summary>

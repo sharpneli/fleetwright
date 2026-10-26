@@ -392,10 +392,10 @@ public sealed class ProtectionSection
     static readonly Dictionary<RoomKind, Vector4> Fill = new()
     {
         [RoomKind.Magazine] = Rgb(0xB24E36, 0.62f), [RoomKind.Handling] = Rgb(0xCC6F43, 0.24f), [RoomKind.Stores] = Rgb(0xD7C79A, 0.16f),
-        [RoomKind.Tds] = Rgb(0x4FA3B8, 0.30f), [RoomKind.Bunker] = Rgb(0x05070A, 0.62f), [RoomKind.EngineRoom] = Rgb(0x6F92B5, 0.34f),
-        [RoomKind.BoilerRoom] = Rgb(0x6F92B5, 0.34f), [RoomKind.DoubleBottom] = Rgb(0x2E4A66, 0), [RoomKind.Accommodation] = Rgb(0x9CC2E2, 0.04f),
-        [RoomKind.Steering] = Rgb(0x7F8B95, 0.2f), [RoomKind.TorpedoRoom] = Rgb(0x8E9AA4, 0.22f), [RoomKind.FuelTank] = Rgb(0x5B4A2A, 0.4f),
-        [RoomKind.TransmittingStation] = Rgb(0x8E9AA4, 0.3f),
+        [RoomKind.Tds] = Rgb(0x4FA3B8, 0.30f), [RoomKind.Bunker] = Rgb(0x05070A, 0.62f), [RoomKind.EngineRoom] = Rgb(0x928E85, 0.34f),
+        [RoomKind.BoilerRoom] = Rgb(0x928E85, 0.34f), [RoomKind.DoubleBottom] = Rgb(0x2E4A66, 0), [RoomKind.Accommodation] = Rgb(0xC1BDB5, 0.04f),
+        [RoomKind.Steering] = Rgb(0x8E8A82, 0.2f), [RoomKind.TorpedoRoom] = Rgb(0x9D9991, 0.22f), [RoomKind.FuelTank] = Rgb(0x5B4A2A, 0.4f),
+        [RoomKind.TransmittingStation] = Rgb(0x9D9991, 0.3f),
     };
 
     /// <summary>The legend's swatches: (kind, label).</summary>
@@ -409,8 +409,8 @@ public sealed class ProtectionSection
 
     public static Vector4 Rgb(int rgb, float a) => new(((rgb >> 16) & 255) / 255f, ((rgb >> 8) & 255) / 255f, (rgb & 255) / 255f, a);
 
-    static readonly Vector4 HullFill = new(0.10f, 0.176f, 0.267f, 1), HullLine = new(0.435f, 0.576f, 0.71f, 1);
-    static readonly Vector4 LabelInk = Rgb(0xF3E3A1, 1), LabelHalo = Rgb(0x14243A, 0.9f);
+    static readonly Vector4 HullFill = T.DrawingFill, HullLine = T.PlanLine with { W = 0.75f };
+    static readonly Vector4 LabelInk = Rgb(0xF3E3A1, 1), LabelHalo = T.Plan with { W = 0.9f };
 
     /// <summary>The half drawn: the hull, its cells and walls, the decks, the armour (lit: selected or hovered plates in
     /// brass), the hull's outline and the waterline. Clipped to the hull by drawing the cells inside it.</summary>
@@ -426,14 +426,14 @@ public sealed class ProtectionSection
         foreach (var c in Cells)
             DrawCell(dl, m, c, small);
         foreach (var (z, _) in Decks)
-            dl.AddLine(m.P(0, z), m.P(HalfB(z), z), T.U32(new Vector4(0.61f, 0.76f, 0.886f, 0.32f)));
+            dl.AddLine(m.P(0, z), m.P(HalfB(z), z), T.U32(T.PlanLine with { W = 0.32f }));
         foreach (var (z, _) in Platforms)
             dl.AddLine(m.P(0, z), m.P(HalfB(z), z), T.U32(Rgb(0xD7C79A, 1)), 1.4f);
         foreach (var w in Walls)
         {
             bool tds = w.Kind == "tds";
             float th = MathF.Max(1, (float)(w.PlateMm * Stretch / 1000) * m.K);
-            dl.AddLine(m.P(w.Y, w.Z1), m.P(w.Y, w.Z0), T.U32(tds ? Rgb(0x8FC3D6, 1) : new Vector4(0.78f, 0.86f, 0.925f, 0.75f)), tds ? MathF.Max(1.5f, th) : 1);
+            dl.AddLine(m.P(w.Y, w.Z1), m.P(w.Y, w.Z0), T.U32(tds ? Rgb(0x8FC3D6, 1) : new Vector4(0.866f, 0.852f, 0.818f, 0.75f)), tds ? MathF.Max(1.5f, th) : 1);
         }
         // the armour, lit plates last so their outline sits on top
         for (int pass = 0; pass < 2; pass++)
@@ -448,14 +448,14 @@ public sealed class ProtectionSection
                 if (dim(p))
                     col = col with { W = col.W * 0.6f };
                 FillPoly(dl, m, p.Pts, T.U32(col));
-                OutlinePoly(dl, m, p.Pts, T.U32(on ? new Vector4(1, 0.906f, 0.659f, 0.95f) : new Vector4(0, 0, 0, 0.6f)), on ? 1.6f : 1);
+                OutlinePoly(dl, m, p.Pts, T.U32(on ? T.BrassLight with { W = 0.95f } : new Vector4(0, 0, 0, 0.6f)), on ? 1.6f : 1);
             }
         // the hull's outline on top, and the waterline
         for (int i = 0; i + 1 < Side.Length; i++)
             dl.AddLine(m.P(Side[i]), m.P(Side[i + 1]), T.U32(HullLine));
         dl.AddLine(m.P(0, Keel), m.P(Side[0]), T.U32(HullLine));
         dl.AddLine(m.P(0, Top), m.P(Side[^1]), T.U32(HullLine));
-        dl.AddLine(m.P(0, Wl), m.P(HalfB(Wl) + 0.6f, Wl), T.U32(T.Blue));
+        dl.AddLine(m.P(0, Wl), m.P(HalfB(Wl) + 0.6f, Wl), T.U32(T.Water));
         // the armour's labels
         foreach (var p in Armour)
         {
@@ -478,7 +478,7 @@ public sealed class ProtectionSection
     void DrawCell(ImDrawListPtr dl, Map m, CellBox c, ImFontPtr small)
     {
         var fill = FillOf(c.Kind);
-        uint edge = T.U32(new Vector4(0.61f, 0.76f, 0.886f, 0.16f));
+        uint edge = T.U32(T.PlanLine with { W = 0.16f });
         // band by band up the cell, each band clipped to the hull's half-breadth
         const int n = 6;
         for (int i = 0; i < n; i++)
@@ -507,7 +507,7 @@ public sealed class ProtectionSection
         var hi = Vector2.Max(a, b);
         if (c.Text.Length > 0 && hi.X - lo.X > DesignerSceneText.Width(small, c.Text) + 4 && hi.Y - lo.Y > small.FontSize)
             DesignerSceneText.Draw(dl, small, (lo + hi) / 2 - new Vector2(DesignerSceneText.Width(small, c.Text) / 2, small.FontSize / 2),
-                c.Kind == RoomKind.Magazine ? Rgb(0xFFE3D6, 0.9f) : Rgb(0xB9CBDB, 0.9f), c.Text);
+                c.Kind == RoomKind.Magazine ? Rgb(0xFFE3D6, 0.9f) : Rgb(0xCDC9C1, 0.9f), c.Text);
     }
 
     static void Hatch(ImDrawListPtr dl, Vector2 lo, Vector2 hi, RoomKind? kind)
@@ -518,11 +518,11 @@ public sealed class ProtectionSection
         {
             for (float y = lo.Y + 1; y < hi.Y; y += 4)
                 for (float x = lo.X + 1; x < hi.X; x += 4)
-                    dl.AddCircleFilled(new Vector2(x, y), 0.7f, T.U32(new Vector4(0.61f, 0.76f, 0.886f, 0.25f)));
+                    dl.AddCircleFilled(new Vector2(x, y), 0.7f, T.U32(T.PlanLine with { W = 0.25f }));
         }
         else
         {
-            uint col = T.U32(kind == RoomKind.Tds ? Rgb(0x4FA3B8, 0.55f) : new Vector4(0.61f, 0.76f, 0.886f, 0.35f));
+            uint col = T.U32(kind == RoomKind.Tds ? Rgb(0x4FA3B8, 0.55f) : T.PlanLine with { W = 0.35f });
             float step = kind == RoomKind.Tds ? 4 : 5, dir = kind == RoomKind.Tds ? -1 : 1;
             for (float x = lo.X - h; x < hi.X + h; x += step)
                 dl.AddLine(new Vector2(x, hi.Y), new Vector2(x + dir * h, lo.Y), col);

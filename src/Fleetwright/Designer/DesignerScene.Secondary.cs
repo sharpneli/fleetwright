@@ -549,9 +549,9 @@ public sealed unsafe partial class DesignerScene
         Vector2 Pl(float mx, float my) => new(X(mx), cl - my * ky);
         dl.PushClipRect(pos + new Vector2(1, P(18)), pos + size - new Vector2(1, 1), true);
         for (float gx = pos.X + P(24); gx < pos.X + size.X; gx += P(24))
-            dl.AddLine(new Vector2(gx, bodyTop), new Vector2(gx, pos.Y + size.Y), T.U32(new Vector4(0.59f, 0.75f, 0.9f, 0.05f)));
+            dl.AddLine(new Vector2(gx, bodyTop), new Vector2(gx, pos.Y + size.Y), T.U32(T.PlanLine with { W = 0.05f }));
         for (float gy = bodyTop + P(24); gy < pos.Y + size.Y; gy += P(24))
-            dl.AddLine(new Vector2(pos.X, gy), new Vector2(pos.X + size.X, gy), T.U32(new Vector4(0.59f, 0.75f, 0.9f, 0.05f)));
+            dl.AddLine(new Vector2(pos.X, gy), new Vector2(pos.X + size.X, gy), T.U32(T.PlanLine with { W = 0.05f }));
 
         // ---- the plan band
         dl.PushClipRect(new Vector2(pos.X, bodyTop), new Vector2(pos.X + size.X, cl + 0.5f), true);
@@ -570,16 +570,16 @@ public sealed unsafe partial class DesignerScene
         {
             foreach (var q in pts)
                 dl.PathLineTo(Pl(q.X, q.Y));
-            dl.PathFillConvex(T.U32(lv > 1 ? new Vector4(0.17f, 0.23f, 0.29f, 1) : new Vector4(0.13f, 0.19f, 0.25f, 1)));
+            dl.PathFillConvex(T.U32(lv > 1 ? new Vector4(0.24f, 0.226f, 0.192f, 1) : new Vector4(0.2f, 0.186f, 0.152f, 1)));
             foreach (var q in pts)
                 dl.PathLineTo(Pl(q.X, q.Y));
-            dl.PathStroke(T.U32(new Vector4(0.24f, 0.32f, 0.4f, 1)), ImDrawFlags.Closed, 1);
+            dl.PathStroke(T.U32(new Vector4(0.327f, 0.313f, 0.279f, 1)), ImDrawFlags.Closed, 1);
         }
         foreach (var m in sp.Mains)
         {
             var c = Pl(m.X, m.Y);
-            dl.AddCircleFilled(c, m.R * ky, T.U32(new Vector4(0.23f, 0.27f, 0.32f, 1)));
-            dl.AddCircle(c, m.R * ky, T.U32(new Vector4(0.34f, 0.39f, 0.43f, 1)));
+            dl.AddCircleFilled(c, m.R * ky, T.U32(new Vector4(0.283f, 0.269f, 0.235f, 1)));
+            dl.AddCircle(c, m.R * ky, T.U32(new Vector4(0.4f, 0.386f, 0.352f, 1)));
         }
         dl.PopClipRect();
         foreach (var m in sp.Mains)
@@ -589,12 +589,12 @@ public sealed unsafe partial class DesignerScene
                 float tw = Width(UiFonts.SansSmall, m.Id);
                 dl.Text(UiFonts.SansSmall, new Vector2(c.X - tw / 2, Math.Min(c.Y, cl) - UiFonts.SansSmall.FontSize - P(2)), T.Muted, m.Id);
             }
-        dl.AddLine(new Vector2(X(-sp.L / 2) - P(6), cl), new Vector2(X(sp.L / 2) + P(6), cl), T.U32(new Vector4(0.31f, 0.42f, 0.52f, 1)));
+        dl.AddLine(new Vector2(X(-sp.L / 2) - P(6), cl), new Vector2(X(sp.L / 2) + P(6), cl), T.U32(new Vector4(0.422f, 0.408f, 0.374f, 1)));
         // the amidships stretch, under the plan's top edge
         if (sp.AmidX1 > sp.AmidX0)
         {
             float by = bodyTop + P(16);
-            uint bc = T.U32(new Vector4(0.31f, 0.42f, 0.52f, 1));
+            uint bc = T.U32(new Vector4(0.422f, 0.408f, 0.374f, 1));
             dl.AddLine(new Vector2(X(sp.AmidX0), by + P(3)), new Vector2(X(sp.AmidX0), by), bc);
             dl.AddLine(new Vector2(X(sp.AmidX0), by), new Vector2(X(sp.AmidX1), by), bc);
             dl.AddLine(new Vector2(X(sp.AmidX1), by), new Vector2(X(sp.AmidX1), by + P(3)), bc);
@@ -602,7 +602,7 @@ public sealed unsafe partial class DesignerScene
             float lw = Width(UiFonts.SansSmall, lab);
             var lp = new Vector2((X(sp.AmidX0) + X(sp.AmidX1) - lw) / 2, by - UiFonts.SansSmall.FontSize - P(1));
             dl.AddRectFilled(lp - V(3, 0), lp + new Vector2(lw + P(3), UiFonts.SansSmall.FontSize), T.U32(T.Plan));
-            dl.Text(UiFonts.SansSmall, lp, new Vector4(0.44f, 0.51f, 0.6f, 1), lab);
+            dl.Text(UiFonts.SansSmall, lp, new Vector4(0.52f, 0.506f, 0.472f, 1), lab);
         }
         foreach (var (p, heavy, roof) in sp.Aa)
             if (p.Y >= 0)
@@ -611,15 +611,15 @@ public sealed unsafe partial class DesignerScene
             if (t.Y >= -0.5f)
             {
                 var c = Pl(t.X, t.Y);
-                dl.AddRectFilled(c - new Vector2(3.5f * kx, P(1.6f)), c + new Vector2(3.5f * kx, P(1.6f)), T.U32(new Vector4(0.62f, 0.78f, 0.91f, 0.85f)));
+                dl.AddRectFilled(c - new Vector2(3.5f * kx, P(1.6f)), c + new Vector2(3.5f * kx, P(1.6f)), T.U32(new Vector4(0.773f, 0.759f, 0.725f, 0.85f)));
             }
 
         // ---- the tracks
         float hullL = X(-sp.L / 2), hullR = X(sp.L / 2);
         dl.AddRectFilled(new Vector2(hullL, deckY), new Vector2(hullR, wlY), T.U32(T.PlanLine with { W = 0.06f }));
         dl.AddLine(new Vector2(hullL, deckY), new Vector2(hullR, deckY), T.U32(T.PlanLine with { W = 0.8f }));
-        dl.AddLine(new Vector2(hullL - P(8), wlY), new Vector2(hullR + P(8), wlY), T.U32(T.Blue), P(1.2f));
-        dl.Text(UiFonts.SansSmall, new Vector2(hullR + P(2), wlY - UiFonts.SansSmall.FontSize - P(1)), T.Blue, "WL");
+        dl.AddLine(new Vector2(hullL - P(8), wlY), new Vector2(hullR + P(8), wlY), T.U32(T.Water), P(1.2f));
+        dl.Text(UiFonts.SansSmall, new Vector2(hullR + P(2), wlY - UiFonts.SansSmall.FontSize - P(1)), T.Water, "WL");
         // the superstructure, low: the deckhouse as its roof (a band under the deckhouse track, faint to the deck), the
         // levels above it as thin steps; its extent comes from the plan
         foreach (var (pts, lv) in sp.Blocks.OrderBy(b => b.Level))
@@ -627,14 +627,14 @@ public sealed unsafe partial class DesignerScene
             float bx0 = X(pts.Min(q => q.X)), bx1 = X(pts.Max(q => q.X));
             if (lv <= 1)
             {
-                dl.AddRectFilled(new Vector2(bx0, roofY), new Vector2(bx1, deckY), T.U32(new Vector4(0.13f, 0.19f, 0.25f, 0.35f)));
-                dl.AddRectFilled(new Vector2(bx0, roofY), new Vector2(bx1, roofY + P(4)), T.U32(new Vector4(0.2f, 0.28f, 0.35f, 1)));
+                dl.AddRectFilled(new Vector2(bx0, roofY), new Vector2(bx1, deckY), T.U32(new Vector4(0.2f, 0.186f, 0.152f, 0.35f)));
+                dl.AddRectFilled(new Vector2(bx0, roofY), new Vector2(bx1, roofY + P(4)), T.U32(new Vector4(0.286f, 0.272f, 0.238f, 1)));
             }
             else
             {
                 float top = roofY - Math.Min(lv - 1, 4) * P(3);
-                dl.AddRectFilled(new Vector2(bx0, top), new Vector2(bx1, roofY), T.U32(new Vector4(0.17f, 0.23f, 0.29f, 0.8f)));
-                dl.AddRect(new Vector2(bx0, top), new Vector2(bx1, roofY), T.U32(new Vector4(0.22f, 0.3f, 0.37f, 1)));
+                dl.AddRectFilled(new Vector2(bx0, top), new Vector2(bx1, roofY), T.U32(new Vector4(0.24f, 0.226f, 0.192f, 0.8f)));
+                dl.AddRect(new Vector2(bx0, top), new Vector2(bx1, roofY), T.U32(new Vector4(0.306f, 0.292f, 0.258f, 1)));
             }
         }
         foreach (var m in sp.Mains)
@@ -642,9 +642,9 @@ public sealed unsafe partial class DesignerScene
             if (Math.Abs(m.Y) > 0.5f)
                 continue;
             float w = m.R * kx, z = deckY - m.Tier * P(6), hgt = P(10);
-            var grey = T.U32(new Vector4(0.23f, 0.27f, 0.32f, 1));
+            var grey = T.U32(new Vector4(0.283f, 0.269f, 0.235f, 1));
             if (m.Tier > 0)
-                dl.AddRectFilled(new Vector2(X(m.X) - w * 0.7f, z), new Vector2(X(m.X) + w * 0.7f, deckY), T.U32(new Vector4(0.18f, 0.22f, 0.26f, 1)));
+                dl.AddRectFilled(new Vector2(X(m.X) - w * 0.7f, z), new Vector2(X(m.X) + w * 0.7f, deckY), T.U32(new Vector4(0.232f, 0.218f, 0.184f, 1)));
             dl.AddQuadFilled(new Vector2(X(m.X) - w, z), new Vector2(X(m.X) - w * 0.8f, z - hgt), new Vector2(X(m.X) + w * 0.8f, z - hgt),
                 new Vector2(X(m.X) + w, z), grey);
             float dir = m.X > 0 ? 1 : -1;
@@ -665,13 +665,13 @@ public sealed unsafe partial class DesignerScene
             bool hover = ImGui.IsItemHovered();
             ImGui.PopID();
             bool here = ActiveRow(sp)?.Pos == p;
-            var lc = here ? SecColour(secActive) : hover ? T.Text : new Vector4(0.34f, 0.39f, 0.43f, 1);
+            var lc = here ? SecColour(secActive) : hover ? T.Text : new Vector4(0.4f, 0.386f, 0.352f, 1);
             var bp = new Vector2(pos.X + P(6), y - P(5.5f));
             DashedRect(dl, bp, bp + V(11, 11), T.U32(lc));
             dl.Text(UiFonts.SansSmall, bp + new Vector2(P(5.5f) - Width(UiFonts.SansSmall, "+") / 2, P(5.5f) - UiFonts.SansSmall.FontSize / 2), lc, "+");
-            dl.Text(UiFonts.SansSmall, new Vector2(pos.X + P(22), y - UiFonts.SansSmall.FontSize / 2), new Vector4(0.58f, 0.65f, 0.69f, 1), TrackLabel[(int)p]);
+            dl.Text(UiFonts.SansSmall, new Vector2(pos.X + P(22), y - UiFonts.SansSmall.FontSize / 2), new Vector4(0.656f, 0.642f, 0.608f, 1), TrackLabel[(int)p]);
             string ax = $"{sp.TrackAxis[(int)p]:0.0}";
-            dl.Text(UiFonts.SansSmall, new Vector2(x0 - P(8) - Width(UiFonts.SansSmall, ax), y - UiFonts.SansSmall.FontSize / 2), new Vector4(0.44f, 0.51f, 0.6f, 1), ax);
+            dl.Text(UiFonts.SansSmall, new Vector2(x0 - P(8) - Width(UiFonts.SansSmall, ax), y - UiFonts.SansSmall.FontSize / 2), new Vector4(0.52f, 0.506f, 0.472f, 1), ax);
             string tip = LaneTip(sp, p);
             if (hover)
             {
@@ -746,7 +746,7 @@ public sealed unsafe partial class DesignerScene
             dl.Text(UiFonts.SansSmall, new Vector2(X(m.X) - tw / 2, tagY), edge, tag);
             if (sel)
             {
-                uint brass = T.U32(new Vector4(1, 0.906f, 0.659f, 1));
+                uint brass = T.U32(T.BrassLight);
                 dl.AddRect(pc - new Vector2(tr + P(3), r + P(3)), pc + new Vector2(tr + P(3), r + P(3)), brass, 0, ImDrawFlags.None, P(1.4f));
                 dl.AddRect(new Vector2(X(m.X) - tr - P(3), ty - P(10)), new Vector2(X(m.X) + tr + P(3), ty + P(8)), brass, 0, ImDrawFlags.None, P(1.4f));
             }
@@ -965,7 +965,7 @@ public sealed unsafe partial class DesignerScene
         }
         float sh = Math.Min(P(22), R * 0.25f);
         dl.AddQuadFilled(c + new Vector2(0, -sh), c + new Vector2(sh * 0.3f, sh * 0.2f), c + new Vector2(0, sh), c + new Vector2(-sh * 0.3f, sh * 0.2f),
-            T.U32(new Vector4(0.16f, 0.2f, 0.25f, 1)));
+            T.U32(new Vector4(0.213f, 0.199f, 0.165f, 1)));
         Vector2 At(Func<int, float> f, int deg)
         {
             float rad = deg * MathF.PI / 180, v = f(deg % 360) / peak * R;
@@ -981,7 +981,7 @@ public sealed unsafe partial class DesignerScene
             dl.PathStroke(T.U32(line), ImDrawFlags.None, P(1.2f));
         }
         if (secRoseAll)
-            Poly(a => sum[a] + sp.RoseMain[a], T.Blue with { W = 0.2f }, T.Blue);
+            Poly(a => sum[a] + sp.RoseMain[a], T.Arc with { W = 0.2f }, T.Arc);
         // stacked by battery: the outermost line is all the secondaries
         for (int k = nb - 1; k >= 0; k--)
         {

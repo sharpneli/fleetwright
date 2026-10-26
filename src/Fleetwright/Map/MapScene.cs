@@ -395,7 +395,7 @@ public sealed unsafe partial class MapScene : IScene
                 continue;
             last[t.Edge] = end;
             dl.AddText(at + new Vector2(1, 1), ImGui.GetColorU32(new Vector4(0, 0, 0, 0.75f * a)), text);
-            dl.AddText(at, ImGui.GetColorU32(new Vector4(0.85f, 0.92f, 1f, 0.85f * a)), text);
+            dl.AddText(at, ImGui.GetColorU32(MapPalette.Label with { W = 0.85f * a }), text);
         }
     }
 

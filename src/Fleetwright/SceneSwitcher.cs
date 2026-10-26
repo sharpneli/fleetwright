@@ -84,6 +84,7 @@ public sealed unsafe class SceneSwitcher : IScene
         Current.BuildUi();
         if (current > 0 && ImGui.BeginMainMenuBar())
         {
+            Ui.Theme.Push();
             float w = ImGui.CalcTextSize(Home < 0 ? "Scenarios |" : "Map |").X + ImGui.CalcTextSize("F3").X + ImGui.GetStyle().ItemSpacing.X * 6 + ImGui.GetStyle().WindowPadding.X;
             for (int i = 1; i < entries.Length; i++)
                 w += ImGui.CalcTextSize(entries[i].Name).X + ImGui.GetStyle().ItemSpacing.X * 2;
@@ -92,9 +93,10 @@ public sealed unsafe class SceneSwitcher : IScene
                 Show(Home);
             ImGui.TextDisabled("|");
             for (int i = 1; i < entries.Length; i++)
-                if (ImGui.MenuItem(entries[i].Name, null, i == current))
+                if (Ui.Pieces.ScreenTab(entries[i].Name, i == current))
                     Show(i);
             ImGui.TextDisabled("F3");
+            Ui.Theme.Pop();
             ImGui.EndMainMenuBar();
         }
         Menu();

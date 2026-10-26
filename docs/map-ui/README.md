@@ -259,7 +259,7 @@ v1 (`map-v1.html`):
 
 ## Design tokens
 
-Same as the in-game designer (`overview.html`): ground `#0E1215`, panels `#1C2329`, brass `#D9B868`, amber
-`#E3A452`; friend `#5B9BE0`, allied `#9DBFE6`, hostile `#E2685C`, neutral `#6FC08A`, unknown `#E5C454`; sea
-`#12293A`, land `#2C3128`. Fonts in the game: IBM Plex Sans Condensed and IBM Plex Mono (these mockups used Archivo
-Narrow). Fixed at 1920×1080, scaled to the window. The UI's chrome, its layout and its pieces: `docs/ui-language.md`.
+The gunmetal-natural skin (`docs/ui-themes/ui-style-gunmetal-natural.md`, applied 2026-10-26): ground `#0F0F0E`, panels
+`#1B1B19`, the accent `#E8772E`, amber `#E8B64A`; friend cream `#F1ECDD`, hostile `#E04A3C`; sea `#2E5269`, land
+`#A3AD86`. Fonts in the game: Saira Extra Condensed (title strips), Barlow Condensed and Red Hat Mono; these older
+mockups still show the slate-and-brass look and Archivo Narrow (`launch-bureau.html` is current). Fixed at 1920×1080, scaled to the window. The UI's chrome, its layout and its pieces: `docs/ui-language.md`.

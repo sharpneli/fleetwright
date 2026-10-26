@@ -34,8 +34,7 @@ public sealed partial class MapScene : ISceneMenu
     /// <summary>Where the HUD's windows start: under the top bar.</summary>
     float HudTop => ImGui.GetMainViewport().Pos.Y + topBarH + 8 * UiFonts.Scale;
 
-    static readonly Vector4 BarBg = new(0.043f, 0.059f, 0.071f, 0.94f), Friend = new(0.357f, 0.608f, 0.878f, 1),
-        Bad = new(0.878f, 0.416f, 0.353f, 1);
+    static readonly Vector4 BarBg = Theme.Glass, Friend = Theme.Friend, Bad = Theme.Hostile;
 
     // ------------------------------------------------------------------ the top bar
 

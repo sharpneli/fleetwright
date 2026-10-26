@@ -204,7 +204,7 @@ public static class Graticule
 
     const int EdgeSamples = 96;
     const float TickMinPx = 4, TickMaxPx = 12;
-    static readonly Vector4 TickColor = new(0.85f, 0.92f, 1.0f, 0.65f);
+    static readonly Vector4 TickColor = MapPalette.Label with { W = 0.65f };
 
     /// <summary>The grid's lines where they cross the screen's edge, into <paramref name="ticks"/> (cleared first),
     /// while the margin shows (<see cref="Margin"/>) and the screen is all globe; and their marks, faded in with it, longer and brighter as their level grows to the major look, into <paramref name="lines"/>. The

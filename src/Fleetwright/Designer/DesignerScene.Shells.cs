@@ -30,8 +30,9 @@ public sealed unsafe partial class DesignerScene
     sealed record ShellCell(bool Main, int K, string Name, string Gun, double CalibreMm, string Family, bool Default, int Rounds, double GunMs,
         ShellLine[] Lines, string? Problem = null);
 
-    static readonly Vector4 ApColour = new(0.561f, 0.702f, 0.851f, 1), HeColour = new(0.878f, 0.478f, 0.373f, 1);
-    static Vector4 KindColour(string kind) => kind switch { "ap" => ApColour, "common" => T.Brass, _ => HeColour };
+    // the kinds' colours are data, not state: steel for AP, ochre for common (not the accent), red for HE
+    static readonly Vector4 ApColour = new(0.75f, 0.73f, 0.68f, 1), CommonColour = new(0.79f, 0.64f, 0.36f, 1), HeColour = new(0.878f, 0.478f, 0.373f, 1);
+    static Vector4 KindColour(string kind) => kind switch { "ap" => ApColour, "common" => CommonColour, _ => HeColour };
 
     string? shellOpen;   // the dev hook's picker to open: "main:0", "sec:0", and ":fam" or ":blk:E" for its lists
 

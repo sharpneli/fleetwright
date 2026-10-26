@@ -770,7 +770,7 @@ public sealed unsafe partial class DesignerScene
                 shape.Add(new ShapeNote("Torpedoes still hole every layer in reach at once (open: the flooding session).", true));
             rows.Add(new ProtRow
             {
-                Ref = new PRef(PK.Tds), Group = 2, Name = "Torpedo protection", Full = "Torpedo protection", Swatch = T.Blue, Thick = R(Knobs.Tds),
+                Ref = new PRef(PK.Tds), Group = 2, Name = "Torpedo protection", Full = "Torpedo protection", Swatch = T.Water, Thick = R(Knobs.Tds),
                 Second = R(Knobs.TdsLayers), SecondPre = "layers",
                 WhereText = spec.Layers > 1 ? $"{spec.Layers} spaces · holding {Fmt(spec.HoldingMm, Quantity.Armour)}" : $"one space · holding {Fmt(spec.HoldingMm, Quantity.Armour)}",
                 MaterialText = "steel walls", T = Tn(t), Share = Share(t), WeightTip = Weights("Torpedo protection", n => n == "Torpedo protection"), Removable = true,
@@ -1329,9 +1329,9 @@ public sealed unsafe partial class DesignerScene
             if (!any)
                 continue;
             // the group's header, with its + chips
-            dl.AddRectFilled(new Vector2(o.X, y), new Vector2(o.X + w, y + gh), T.U32(new Vector4(0.035f, 0.047f, 0.055f, 0.35f)));
+            dl.AddRectFilled(new Vector2(o.X, y), new Vector2(o.X + w, y + gh), T.U32(T.Inset with { W = 0.35f }));
             dl.AddLine(new Vector2(o.X, y + gh - 1), new Vector2(o.X + w, y + gh - 1), T.U32(T.Edge));
-            dl.Text(font, new Vector2(o.X + P(6), y + (gh - font.FontSize) / 2), new Vector4(0.43f, 0.47f, 0.51f, 1), GroupTitle[g]);
+            dl.Text(font, new Vector2(o.X + P(6), y + (gh - font.FontSize) / 2), T.Muted, GroupTitle[g]);
             float cxp = o.X + P(12) + Width(font, GroupTitle[g]);
             ImGui.PushID(500 + g);
             for (int c = 0; c < pp.Chips[g].Length; c++)
@@ -1347,7 +1347,7 @@ public sealed unsafe partial class DesignerScene
                 ImGui.PopID();
                 dl.AddRectFilled(a, b, T.U32(T.Brass with { W = hov ? 0.16f : 0.05f }), P(2));
                 dl.AddRect(a, b, T.U32(hov ? T.Brass : T.BrassDark), P(2));
-                dl.Text(font, new Vector2(a.X + P(5), a.Y + (b.Y - a.Y - font.FontSize) / 2), hov ? new Vector4(1, 0.906f, 0.659f, 1) : T.Brass, chip.Label);
+                dl.Text(font, new Vector2(a.X + P(5), a.Y + (b.Y - a.Y - font.FontSize) / 2), hov ? T.BrassLight : T.Brass, chip.Label);
                 if (hov)
                     Tip(chip.Tip);
                 if (click)
@@ -1598,14 +1598,14 @@ public sealed unsafe partial class DesignerScene
         // the immune zone: a one-line placeholder until the penetration model
         var a = new Vector2(pos.X + P(8), pos.Y + size.Y - ih - P(4));
         var b = new Vector2(pos.X + size.X - P(8), pos.Y + size.Y - P(4));
-        dl.AddRect(a, b, T.U32(new Vector4(0.333f, 0.376f, 0.416f, 1)));
-        var grey = new Vector4(0.37f, 0.416f, 0.455f, 1);
+        dl.AddRect(a, b, T.U32(T.ButtonEdge));
+        var grey = T.DropBox;
         float ly = a.Y + (ih - font.FontSize) / 2;
         dl.Text(font, new Vector2(a.X + P(6), ly), grey, pp.ImmuneLine);
         string tag = "NEEDS THE PENETRATION MODEL";
         var tg = new Vector2(b.X - P(6) - Width(font, tag) - P(6), ly);
         dl.AddRect(tg - new Vector2(0, P(1)), tg + new Vector2(Width(font, tag) + P(6), font.FontSize + P(1)), T.U32(T.BrassDark));
-        dl.Text(font, tg + new Vector2(P(3), 0), new Vector4(0.55f, 0.48f, 0.33f, 1), tag);
+        dl.Text(font, tg + new Vector2(P(3), 0), T.Brass with { W = 0.6f }, tag);
     }
 
     /// <summary>Shape: what changes the part's form rather than its thickness (a zone, slopes, the belt's lean and place),
@@ -1697,7 +1697,7 @@ public sealed unsafe partial class DesignerScene
                         bool hov = ImGui.IsItemHovered();
                         dl.AddRectFilled(a, b, T.U32(T.Brass with { W = hov ? 0.16f : 0.05f }), P(2));
                         dl.AddRect(a, b, T.U32(hov ? T.Brass : T.BrassDark), P(2));
-                        dl.Text(font, new Vector2(a.X + P(5), a.Y + (P(14) - font.FontSize) / 2), hov ? new Vector4(1, 0.906f, 0.659f, 1) : T.Brass, s.Chip);
+                        dl.Text(font, new Vector2(a.X + P(5), a.Y + (P(14) - font.FontSize) / 2), hov ? T.BrassLight : T.Brass, s.Chip);
                         if (hov)
                             Tip(s.Tip);
                         if (click)

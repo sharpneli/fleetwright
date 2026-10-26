@@ -406,7 +406,7 @@ public sealed unsafe partial class LaunchScene
                 dl.PushClipRect(new Vector2(tx, ry), new Vector2(cNote - P(8), ry + rh), true);
                 dl.Text(UiFonts.Sans, new Vector2(tx, ty), i == chosen ? T.Brass : T.Bright, c.Info.Title);
                 tx += Width(UiFonts.Sans, c.Info.Title) + P(8);
-                tx += dl.Chip(new Vector2(tx, ry + (rh - P(15)) / 2), c.Chip, c.Info.Yours ? ChipKind.Amber : ChipKind.Blue) + P(4);
+                tx += dl.Chip(new Vector2(tx, ry + (rh - P(15)) / 2), c.Chip, c.Info.Yours ? ChipKind.Amber : ChipKind.Plain) + P(4);
                 if (c.InUse)
                     dl.Chip(new Vector2(tx, ry + (rh - P(15)) / 2), "in use", ChipKind.Ok);
                 dl.PopClipRect();

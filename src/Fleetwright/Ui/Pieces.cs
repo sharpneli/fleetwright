@@ -68,20 +68,33 @@ public static class Pieces
 
     // ------------------------------------------------------------------ panes
 
-    /// <summary>A pane: its body, the near-black edge round it with a bevel inside, its title strip (the name in brass
-    /// caps, at most one note after it); returns where the strip's right end is, for its toggles or count.</summary>
+    /// <summary>A pane: its body, the near-black edge round it with a bevel inside, its title strip (a rivet, then the
+    /// name in the accent's engraved caps, at most one note after it); returns where the strip's right end is, for its
+    /// toggles or count.</summary>
     public static float Pane(this ImDrawListPtr dl, Vector2 a, Vector2 size, string title, string? note = null)
     {
         var b = a + size;
         dl.AddRectFilled(a, b, U(T.Panel));
         dl.AddRectFilledMultiColor(a, a + new Vector2(size.X, TitleH), U(T.TitleTop), U(T.TitleTop), U(T.TitleBottom), U(T.TitleBottom));
+        dl.HLine(a.X + 1, b.X - 1, a.Y + 1, T.Bevel);
         dl.HLine(a.X, b.X, a.Y + TitleH, T.Edge);
-        dl.AddLine(a + new Vector2(1, TitleH + 1), new Vector2(a.X + 1, b.Y - 1), U(T.Bevel));
+        dl.HLine(a.X + 1, b.X - 1, a.Y + TitleH + 1, T.Bevel);
         dl.AddRect(a, b, U(T.Edge));
-        dl.Text(UiFonts.SansBold, new Vector2(a.X + P(7), Mid(UiFonts.SansBold, a.Y, TitleH)), T.Brass, title);
+        float x = a.X + P(10);
+        dl.Rivet(new Vector2(x, a.Y + TitleH / 2));
+        x += P(7);
+        dl.Text(UiFonts.Head, new Vector2(x, Mid(UiFonts.Head, a.Y, TitleH)), T.Brass, title);
         if (note != null)
-            dl.Text(UiFonts.SansSmall, new Vector2(a.X + P(15) + Width(UiFonts.SansBold, title), Mid(UiFonts.SansSmall, a.Y, TitleH)), T.Muted, note);
+            dl.Text(UiFonts.SansSmall, new Vector2(x + P(6) + Width(UiFonts.Head, title), Mid(UiFonts.SansSmall, a.Y, TitleH)), T.Muted, note);
         return b.X - P(6);
+    }
+
+    /// <summary>A title strip's rivet: a 5 px graphite dot, lit at its top.</summary>
+    public static void Rivet(this ImDrawListPtr dl, Vector2 c)
+    {
+        dl.AddCircleFilled(c, P(2.5f), U(T.Rivet), 12);
+        dl.PathArcTo(c, P(2), MathF.PI * 1.15f, MathF.PI * 1.85f, 6);
+        dl.PathStroke(U(new Vector4(1, 1, 1, 0.2f)), ImDrawFlags.None, 1);
     }
 
     /// <summary>A muted note at a title strip's or sub-header's right end; returns where it starts.</summary>
@@ -163,7 +176,7 @@ public static class Pieces
         else if (hover)
             dl.AddRectFilled(a, b, U(T.Hover));
         else if (n % 2 == 1)
-            dl.AddRectFilled(a, b, U(new Vector4(1, 1, 1, 0.018f)));
+            dl.AddRectFilled(a, b, U(T.RowAlt));
         dl.HLine(a.X, b.X, b.Y - 1, T.Line);
         if (selected)
             dl.AddRectFilled(a, new Vector2(a.X + P(3), b.Y), U(T.Brass));
@@ -194,7 +207,7 @@ public static class Pieces
         dl.AddRectFilled(p, p + new Vector2(size.X * Math.Clamp(frac, 0, 1), size.Y), U(colour));
     }
 
-    /// <summary>A ledger bar of two sides: the friend's share blue from the left, the rest the enemy's.</summary>
+    /// <summary>A ledger bar of two sides: the friend's share cream from the left, the rest the enemy's.</summary>
     public static void ShareBar(this ImDrawListPtr dl, Vector2 a, float w, float h, float friend)
     {
         dl.AddRectFilled(a, a + new Vector2(w, h), U(T.HostileBar));
@@ -401,8 +414,8 @@ public static class Pieces
     public static float ButtonWidth(string label, string? key, bool primary = false) =>
         Width(primary ? UiFonts.SansBold : UiFonts.SansSmall, label) + P(16) + (key != null ? Width(UiFonts.MonoSmall, key) + P(12) : 0);
 
-    /// <summary>A button: 20 px, grey, its key in a kbd chip after the word; the primary one brass on dark brass, never
-    /// larger. <paramref name="w"/> stretches it (0: to its label).</summary>
+    /// <summary>A button: 20 px, grey, its key in a kbd chip after the word; the primary one filled with the accent, dark
+    /// ink on it, never larger. <paramref name="w"/> stretches it (0: to its label).</summary>
     public static bool Button(this ImDrawListPtr dl, string id, Vector2 at, string label, string? key = null, bool primary = false, bool enabled = true, float w = 0)
     {
         if (w <= 0)
@@ -411,19 +424,20 @@ public static class Pieces
         ImGui.SetCursorScreenPos(at);
         bool hit = ImGui.InvisibleButton(id, new Vector2(w, h)) && enabled;
         bool hover = enabled && ImGui.IsItemHovered();
-        var fill = primary ? (hover ? T.BrassHover : T.BrassDarker) : hover ? T.ButtonHover : T.Button;
-        var edge = primary ? T.Brass : T.ButtonEdge;
-        var ink = primary ? T.Brass : T.Text;
+        var top = primary ? (hover ? T.PrimaryHover : T.PrimaryTop) : hover ? T.ButtonHover : T.Button;
+        var fill = primary ? T.PrimaryBottom : hover ? T.Button : T.ToggleBottom;
+        var edge = primary ? T.BrassDark : T.ButtonEdge;
+        var ink = primary ? T.PrimaryInk : T.Text;
         if (!enabled)
-            (fill, edge, ink) = (T.Panel2, T.Line, T.Muted);
-        dl.AddRectFilled(at, at + new Vector2(w, h), U(fill));
+            (top, fill, edge, ink) = (T.Panel2, T.Panel2, T.Line, T.Muted);
+        dl.AddRectFilledMultiColor(at, at + new Vector2(w, h), U(top), U(top), U(fill), U(fill));
         dl.AddRect(at, at + new Vector2(w, h), U(edge));
         var font = primary ? UiFonts.SansBold : UiFonts.SansSmall;
         float content = Width(font, label) + (key != null ? Width(UiFonts.MonoSmall, key) + P(12) : 0);
         float x = at.X + MathF.Round((w - content) / 2);
         dl.Text(font, new Vector2(x, Mid(font, at.Y, h)), ink, label);
         if (key != null)
-            dl.Kbd(new Vector2(x + Width(font, label) + P(6), at.Y + P(3.5f)), key, primary && enabled ? T.BrassDark : null, primary && enabled ? T.Brass : null);
+            dl.Kbd(new Vector2(x + Width(font, label) + P(6), at.Y + P(3.5f)), key, primary && enabled ? T.BrassDark : null, primary && enabled ? T.PrimaryInk : null);
         return hit;
     }
 
@@ -438,8 +452,8 @@ public static class Pieces
         return hit;
     }
 
-    /// <summary>A status chip's colour: ready, a consequence, friend.</summary>
-    public enum ChipKind { Ok, Amber, Blue }
+    /// <summary>A status chip's colour: ready, a consequence, plain.</summary>
+    public enum ChipKind { Ok, Amber, Plain }
 
     public static float ChipWidth(string label) => Width(UiFonts.SansSmall, label) + P(8);
 
@@ -450,7 +464,7 @@ public static class Pieces
         {
             ChipKind.Ok => (T.OkTint, T.OkEdge, T.Ok),
             ChipKind.Amber => (T.AmberTint, T.AmberEdge, T.Amber),
-            _ => (T.BlueTint, T.BlueEdge, T.Blue),
+            _ => (T.PlainTint, T.PlainEdge, T.Bright),
         };
         float w = ChipWidth(label), h = P(15);
         dl.AddRectFilled(at, at + new Vector2(w, h), U(bg));
@@ -585,6 +599,22 @@ public static class Pieces
         ImGui.PopStyleVar();
         ImGui.PopStyleColor(5);
         return clicked;
+    }
+
+    /// <summary>An F-key screen tab in the menu bar (a menu item): the current one in the accent on its tint. True when
+    /// clicked.</summary>
+    public static bool ScreenTab(string name, bool current)
+    {
+        if (current)
+        {
+            ImGui.PushStyleColor(ImGuiCol.Header, T.BrassDarker);
+            ImGui.PushStyleColor(ImGuiCol.HeaderHovered, T.BrassHover);
+            ImGui.PushStyleColor(ImGuiCol.Text, T.Brass);
+        }
+        bool hit = ImGui.MenuItem(name, null, current);
+        if (current)
+            ImGui.PopStyleColor(3);
+        return hit;
     }
 
     /// <summary>A tooltip of wrapped text, <paramref name="wrap"/> reference px wide.</summary>

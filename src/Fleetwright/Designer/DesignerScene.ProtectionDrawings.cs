@@ -182,9 +182,9 @@ public sealed unsafe partial class DesignerScene
             var (p0, p1) = (pp.Profile[i], pp.Profile[i + 1]);
             float t0 = HullTop(pp, p0.X), t1 = HullTop(pp, p1.X);
             dl.AddQuadFilled(new Vector2(m.X(p0.X), m.Z(t0)), new Vector2(m.X(p1.X), m.Z(t1)), new Vector2(m.X(p1.X), m.Z(p1.Y)),
-                new Vector2(m.X(p0.X), m.Z(p0.Y)), T.U32(new Vector4(0.10f, 0.176f, 0.267f, 1)));
+                new Vector2(m.X(p0.X), m.Z(p0.Y)), T.U32(new Vector4(0.184f, 0.17f, 0.136f, 1)));
         }
-        uint hullLine = T.U32(new Vector4(0.435f, 0.576f, 0.71f, 1));
+        uint hullLine = T.U32(new Vector4(0.574f, 0.56f, 0.526f, 1));
         for (int i = 0; i + 1 < pp.Profile.Length; i++)
         {
             var (p0, p1) = (pp.Profile[i], pp.Profile[i + 1]);
@@ -199,16 +199,16 @@ public sealed unsafe partial class DesignerScene
                 dl.AddRectFilled(new Vector2(m.X(r.X0), m.Z(r.Z1)), new Vector2(m.X(r.X1), m.Z(r.Z0)), T.U32(f with { W = r.Kind == RoomKind.Magazine ? 0.5f : f.W * 0.9f }));
             }
         // deck lanes, dashed, named in the margin
-        uint lane = T.U32(new Vector4(0.61f, 0.76f, 0.886f, 0.28f));
+        uint lane = T.U32(T.PlanLine with { W = 0.28f });
         foreach (var (name, z, x0, x1) in pp.Lanes)
         {
             Dashed(dl, new Vector2(m.X(x0), m.Z(z)), new Vector2(m.X(x1), m.Z(z)), lane, P(3));
-            dl.Text(font, new Vector2(pos.X + left - P(6) - Width(font, name), m.Z(z) - font.FontSize / 2), new Vector4(0.5f, 0.61f, 0.72f, 1), name);
+            dl.Text(font, new Vector2(pos.X + left - P(6) - Width(font, name), m.Z(z) - font.FontSize / 2), new Vector4(0.613f, 0.599f, 0.565f, 1), name);
         }
         Dashed(dl, new Vector2(m.X(-pp.L / 2 + 0.05f * pp.L), m.Z(pp.Ib)), new Vector2(m.X(pp.L / 2 - 0.06f * pp.L), m.Z(pp.Ib)), lane, P(3));
-        dl.Text(font, new Vector2(pos.X + left - P(6) - Width(font, "Inner btm"), m.Z(pp.Ib) - font.FontSize / 2), new Vector4(0.5f, 0.61f, 0.72f, 1), "Inner btm");
-        dl.AddLine(new Vector2(m.X(-pp.L / 2) - P(4), m.Z(pp.Wl)), new Vector2(m.X(pp.L / 2) + P(4), m.Z(pp.Wl)), T.U32(T.Blue));
-        dl.Text(font, new Vector2(pos.X + P(4), m.Z(pp.Wl) - font.FontSize / 2), T.Blue, "WL");
+        dl.Text(font, new Vector2(pos.X + left - P(6) - Width(font, "Inner btm"), m.Z(pp.Ib) - font.FontSize / 2), new Vector4(0.613f, 0.599f, 0.565f, 1), "Inner btm");
+        dl.AddLine(new Vector2(m.X(-pp.L / 2) - P(4), m.Z(pp.Wl)), new Vector2(m.X(pp.L / 2) + P(4), m.Z(pp.Wl)), T.U32(T.Water));
+        dl.Text(font, new Vector2(pos.X + P(4), m.Z(pp.Wl) - font.FontSize / 2), T.Water, "WL");
         // the citadel's brackets (none on a ship with no armour)
         if (pp.HasCitadel)
         {
@@ -217,8 +217,8 @@ public sealed unsafe partial class DesignerScene
             Dashed(dl, new Vector2(m.X(pp.X1), pos.Y + P(28)), new Vector2(m.X(pp.X1), pos.Y + size.Y - bottom), brk, P(3), vertical: true);
             dl.Text(font, new Vector2((m.X(pp.X0) + m.X(pp.X1) - Width(font, pp.Citadel)) / 2, pos.Y + size.Y - bottom + P(1)), new Vector4(0.55f, 0.48f, 0.33f, 1), pp.Citadel);
         }
-        dl.Text(font, new Vector2(MathF.Max(pos.X + left, m.X(-pp.L / 2)), pos.Y + size.Y - bottom + P(1)), new Vector4(0.37f, 0.48f, 0.59f, 1), "aft");
-        dl.Text(font, new Vector2(m.X(pp.L / 2) - Width(font, "fore"), pos.Y + size.Y - bottom + P(1)), new Vector4(0.37f, 0.48f, 0.59f, 1), "fore");
+        dl.Text(font, new Vector2(MathF.Max(pos.X + left, m.X(-pp.L / 2)), pos.Y + size.Y - bottom + P(1)), new Vector4(0.483f, 0.469f, 0.435f, 1), "aft");
+        dl.Text(font, new Vector2(m.X(pp.L / 2) - Width(font, "fore"), pos.Y + size.Y - bottom + P(1)), new Vector4(0.483f, 0.469f, 0.435f, 1), "fore");
 
         // the interaction area under everything drawn from here
         var area0 = new Vector2(pos.X + 1, pos.Y + P(18));
@@ -252,7 +252,7 @@ public sealed unsafe partial class DesignerScene
             ghostHot = g;
             dl.AddRectFilled(a, b, T.U32(T.Brass with { W = 0.12f }));
             dl.AddRect(a, b, T.U32(T.Brass with { W = 0.75f }));
-            dl.Text(UiFonts.SansBold, (a + b) / 2 - new Vector2(Width(UiFonts.SansBold, "+") / 2, UiFonts.SansBold.FontSize / 2), new Vector4(1, 0.906f, 0.659f, 1), "+");
+            dl.Text(UiFonts.SansBold, (a + b) / 2 - new Vector2(Width(UiFonts.SansBold, "+") / 2, UiFonts.SansBold.FontSize / 2), T.BrassLight, "+");
             if (protForceTip != null)
                 TipAt(g.Tip, b + new Vector2(P(6), P(-4)));
             else
@@ -304,7 +304,7 @@ public sealed unsafe partial class DesignerScene
         string comp = pp.CompLabel;
         float wc = Width(font, comp) + P(10), wr = Width(font, "Rooms") + P(10);
         ImGui.SetCursorScreenPos(new Vector2(pos.X + size.X - P(4) - wc, pos.Y + P(1)));
-        ImGui.PushStyleColor(ImGuiCol.Text, protComp ? new Vector4(1, 0.906f, 0.659f, 1) : pp.CompOk ? T.Text : T.Amber);
+        ImGui.PushStyleColor(ImGuiCol.Text, protComp ? T.BrassLight : pp.CompOk ? T.Text : T.Amber);
         ImGui.PushID("comp");
         if (SegButton(comp, protComp, wc))
             protComp = !protComp;
@@ -350,7 +350,7 @@ public sealed unsafe partial class DesignerScene
         float y0 = m.Z(pp.RoofZ), y1 = m.Z(pp.Ib);
         if (mm > 0)
         {
-            uint c = T.U32(lit ? new Vector4(1, 0.906f, 0.659f, 0.95f) : T.Armour(mm));
+            uint c = T.U32(lit ? T.BrassLight with { W = 0.95f } : T.Armour(mm));
             float x0 = m.X(pp.X0), x1 = m.X(pp.X1);
             Dashed(dl, new Vector2(x0, y0), new Vector2(x1, y0), c, P(4));
             Dashed(dl, new Vector2(x0, y1), new Vector2(x1, y1), c, P(4));
@@ -368,7 +368,7 @@ public sealed unsafe partial class DesignerScene
                 var p0 = new Vector2(m.X(x0), y0);
                 var p1 = new Vector2(m.X(x1), y1);
                 dl.AddRectFilled(p0, p1, T.U32(T.Armour(mags) with { W = lit ? 0.45f : 0.3f }));
-                dl.AddRect(p0, p1, T.U32(lit ? new Vector4(1, 0.906f, 0.659f, 0.9f) : T.Armour(mags)));
+                dl.AddRect(p0, p1, T.U32(lit ? T.BrassLight with { W = 0.9f } : T.Armour(mags)));
                 protHits.Add((p0, p1, new PRef(PK.Inner)));
             }
     }
@@ -382,7 +382,7 @@ public sealed unsafe partial class DesignerScene
         var a = belt ? new Vector2(m.X(x) - P(3) - w, m.Z(z) - P(4) - h) : new Vector2(m.X(x) + P(3), m.Z(z) - h / 2);
         var b = a + new Vector2(w, h);
         dl.AddRectFilled(a, b, T.U32(T.Armour(mm)), P(1.5f));
-        dl.AddRect(a, b, T.U32(ProtLit(r) ? new Vector4(1, 0.906f, 0.659f, 0.95f) : new Vector4(0, 0, 0, 0.6f)), P(1.5f));
+        dl.AddRect(a, b, T.U32(ProtLit(r) ? T.BrassLight with { W = 0.95f } : new Vector4(0, 0, 0, 0.6f)), P(1.5f));
         dl.Text(font, a + new Vector2(P(3), P(1)), mm >= 140 ? new Vector4(0.965f, 0.937f, 0.886f, 1) : new Vector4(0.149f, 0.133f, 0.11f, 1), tag);
         protHits.Add((a, b, r));
     }
@@ -456,15 +456,15 @@ public sealed unsafe partial class DesignerScene
             bool dragging = protDrag == DragKind.Cut && protDragI == k;
             var a = new Vector2(px - P(8), fy);
             var b = new Vector2(px + P(8), fy + P(11));
-            dl.AddRectFilled(a, b, T.U32(on || dragging ? new Vector4(0.42f, 0.35f, 0.19f, 1) : new Vector4(0.29f, 0.243f, 0.125f, 1)));
-            dl.AddTriangleFilled(new Vector2(px - P(3), b.Y), new Vector2(px + P(3), b.Y), new Vector2(px, b.Y + P(4)), T.U32(new Vector4(0.29f, 0.243f, 0.125f, 1)));
+            dl.AddRectFilled(a, b, T.U32(on || dragging ? T.BrassHover : T.BrassDarker));
+            dl.AddTriangleFilled(new Vector2(px - P(3), b.Y), new Vector2(px + P(3), b.Y), new Vector2(px, b.Y + P(4)), T.U32(T.BrassDarker));
             dl.AddRect(a, b, brass);
             if (protLinked)
-                Diamond(dl, new Vector2(px, a.Y + P(5.5f)), P(3.5f), new Vector4(1, 0.906f, 0.659f, 1));
+                Diamond(dl, new Vector2(px, a.Y + P(5.5f)), P(3.5f), T.BrassLight);
             else
             {
                 string n = k == 0 ? "1" : "2";
-                dl.Text(font, new Vector2(px - Width(font, n) / 2, a.Y + (P(11) - font.FontSize) / 2), new Vector4(1, 0.906f, 0.659f, 1), n);
+                dl.Text(font, new Vector2(px - Width(font, n) / 2, a.Y + (P(11) - font.FontSize) / 2), T.BrassLight, n);
             }
             if (on)
             {
@@ -529,19 +529,19 @@ public sealed unsafe partial class DesignerScene
             col = col with { W = 0.55f };
         if (protDrag == DragKind.DeckMove && pl.Ref == protSel)
             col = col with { W = 0.45f };
-        uint edge = T.U32(lit ? new Vector4(1, 0.906f, 0.659f, 0.95f) : new Vector4(0, 0, 0, 0.45f));
+        uint edge = T.U32(lit ? T.BrassLight with { W = 0.95f } : new Vector4(0, 0, 0, 0.45f));
         var font = UiFonts.SansSmall;
         if (pl.Ref.Kind == PK.Tds)
         {
             var a = new Vector2(m.X(pl.X0), m.Z(pl.Z1));
             var b = new Vector2(m.X(pl.X1), m.Z(pl.Z0));
             dl.PushClipRect(a, b, true);
-            uint hatch = T.U32(T.Blue with { W = lit ? 0.4f : 0.22f });
+            uint hatch = T.U32(T.Water with { W = lit ? 0.4f : 0.22f });
             for (float x = a.X - (b.Y - a.Y); x < b.X; x += P(6))
                 dl.AddLine(new Vector2(x, b.Y), new Vector2(x + (b.Y - a.Y), a.Y), hatch, P(2));
             dl.PopClipRect();
-            dl.AddRect(a, b, T.U32(T.Blue with { W = lit ? 0.8f : 0.35f }));
-            dl.Text(font, new Vector2(a.X + P(6), b.Y - font.FontSize - P(3)), new Vector4(0.5f, 0.69f, 0.88f, 1), pl.Label);
+            dl.AddRect(a, b, T.U32(T.Water with { W = lit ? 0.8f : 0.35f }));
+            dl.Text(font, new Vector2(a.X + P(6), b.Y - font.FontSize - P(3)), T.Water, pl.Label);
             protHits.Add((a, b, pl.Ref));
             return;
         }
@@ -800,7 +800,7 @@ public sealed unsafe partial class DesignerScene
     static void Handle(ImDrawListPtr dl, Vector2 at, bool horizontal, bool on)
     {
         var half = horizontal ? new Vector2(P(3), P(7)) : new Vector2(P(7), P(3));
-        dl.AddRectFilled(at - half, at + half, T.U32(on ? new Vector4(1, 0.906f, 0.659f, 1) : T.Brass), P(1.5f));
+        dl.AddRectFilled(at - half, at + half, T.U32(on ? T.BrassLight : T.Brass), P(1.5f));
         dl.AddRect(at - half, at + half, T.U32(T.Ground), P(1.5f));
         if (horizontal)
             dl.AddLine(at - new Vector2(0, P(4)), at + new Vector2(0, P(4)), T.U32(T.BrassDark));
@@ -810,7 +810,7 @@ public sealed unsafe partial class DesignerScene
 
     static void RoundHandle(ImDrawListPtr dl, Vector2 at, bool on)
     {
-        dl.AddCircleFilled(at, P(4.5f), T.U32(on ? new Vector4(1, 0.906f, 0.659f, 1) : T.Brass));
+        dl.AddCircleFilled(at, P(4.5f), T.U32(on ? T.BrassLight : T.Brass));
         dl.AddCircle(at, P(4.5f), T.U32(T.Ground));
     }
 
@@ -962,7 +962,7 @@ public sealed unsafe partial class DesignerScene
         (secs[0], secs[1]) = (s0, s1);
         // the deck names in the margin (the heights are the same in both halves)
         foreach (var (z, name) in s0.Decks)
-            dl.Text(font, new Vector2(pos.X + l - P(5) - Width(font, name), maps[0].Y(z) - font.FontSize / 2), new Vector4(0.5f, 0.61f, 0.72f, 1), name);
+            dl.Text(font, new Vector2(pos.X + l - P(5) - Width(font, name), maps[0].Y(z) - font.FontSize / 2), new Vector4(0.613f, 0.599f, 0.565f, 1), name);
         secLit ??= p => ProtLit(RefOf(p));
         secDim ??= p => protHot is { } h && h != RefOf(p) && protSel != RefOf(p);
         for (int h = 0; h < 2; h++)
@@ -978,14 +978,14 @@ public sealed unsafe partial class DesignerScene
         uint brass = T.U32(T.Brass);
         if (one)
         {
-            Dashed(dl, new Vector2(scx, pos.Y + t - P(6)), new Vector2(scx, pos.Y + size.Y - b + P(4)), T.U32(new Vector4(0.61f, 0.76f, 0.886f, 0.35f)), P(5), vertical: true);
-            dl.Text(font, new Vector2(scx - Width(font, "CL") / 2, pos.Y + t - P(8) - font.FontSize), new Vector4(0.37f, 0.48f, 0.59f, 1), "CL");
+            Dashed(dl, new Vector2(scx, pos.Y + t - P(6)), new Vector2(scx, pos.Y + size.Y - b + P(4)), T.U32(T.PlanLine with { W = 0.35f }), P(5), vertical: true);
+            dl.Text(font, new Vector2(scx - Width(font, "CL") / 2, pos.Y + t - P(8) - font.FontSize), new Vector4(0.483f, 0.469f, 0.435f, 1), "CL");
             CutCaption(dl, new Vector2(scx + P(14), pos.Y + P(30)), 1, protLinked ? "" : "1", CutName(pp, protCutX[0], protCutStop[0]), font);
         }
         else
         {
             float y0 = pos.Y + t - P(16), y1 = pos.Y + size.Y - b + P(4), ym = (y0 + y1) / 2;
-            dl.AddRectFilled(new Vector2(scx - gap / 2, y0), new Vector2(scx + gap / 2, y1), T.U32(new Vector4(0.055f, 0.086f, 0.129f, 0.9f)));
+            dl.AddRectFilled(new Vector2(scx - gap / 2, y0), new Vector2(scx + gap / 2, y1), T.U32(new Vector4(0.101f, 0.087f, 0.053f, 0.9f)));
             for (int bi = 0; bi < 2; bi++)
             {
                 float xx = scx + (bi == 0 ? -P(2.5f) : P(2.5f));
@@ -997,9 +997,9 @@ public sealed unsafe partial class DesignerScene
             }
             CutCaption(dl, new Vector2(scx - gap / 2 - P(11), pos.Y + P(30)), -1, "1", CutName(pp, protCutX[0], protCutStop[0]), font);
             CutCaption(dl, new Vector2(scx + gap / 2 + P(11), pos.Y + P(30)), 1, "2", CutName(pp, protCutX[1], protCutStop[1]), font);
-            dl.Text(font, new Vector2(pos.X + l + P(2), pos.Y + P(22)), new Vector4(0.61f, 0.71f, 0.79f, 1), CutXText(0));
+            dl.Text(font, new Vector2(pos.X + l + P(2), pos.Y + P(22)), new Vector4(0.713f, 0.699f, 0.665f, 1), CutXText(0));
         }
-        dl.Text(font, new Vector2(pos.X + size.X - r - P(2) - Width(font, CutXText(1)), pos.Y + P(22)), new Vector4(0.61f, 0.71f, 0.79f, 1), CutXText(1));
+        dl.Text(font, new Vector2(pos.X + size.X - r - P(2) - Width(font, CutXText(1)), pos.Y + P(22)), new Vector4(0.713f, 0.699f, 0.665f, 1), CutXText(1));
         // the legend
         float lx = pos.X + P(6), ly = pos.Y + size.Y - P(15);
         foreach (var (kind, label) in ProtectionSection.Legend)
@@ -1078,12 +1078,12 @@ public sealed unsafe partial class DesignerScene
     /// <summary>A half's numbered badge and its cut's name, toward its own side.</summary>
     static void CutCaption(ImDrawListPtr dl, Vector2 c, int side, string n, string name, ImFontPtr font)
     {
-        dl.AddCircleFilled(c, P(7), T.U32(new Vector4(0.29f, 0.243f, 0.125f, 1)));
+        dl.AddCircleFilled(c, P(7), T.U32(T.BrassDarker));
         dl.AddCircle(c, P(7), T.U32(T.Brass));
         if (n.Length == 0)
-            Diamond(dl, c, P(3.5f), new Vector4(1, 0.906f, 0.659f, 1));
+            Diamond(dl, c, P(3.5f), T.BrassLight);
         else
-            dl.Text(font, c - new Vector2(Width(font, n) / 2, font.FontSize / 2), new Vector4(1, 0.906f, 0.659f, 1), n);
+            dl.Text(font, c - new Vector2(Width(font, n) / 2, font.FontSize / 2), T.BrassLight, n);
         float w = Width(font, name);
         dl.Text(font, new Vector2(side > 0 ? c.X + P(11) : c.X - P(11) - w, c.Y - font.FontSize / 2), T.Brass, name);
     }
@@ -1144,9 +1144,9 @@ public sealed unsafe partial class DesignerScene
     static void Badge(ImDrawListPtr dl, Vector2 c, string n, ImFontPtr font, bool dim = false)
     {
         float a = dim ? 0.45f : 1;
-        dl.AddCircleFilled(c, P(6.5f), T.U32(new Vector4(0.29f, 0.243f, 0.125f, a)));
+        dl.AddCircleFilled(c, P(6.5f), T.U32(T.BrassDarker with { W = a }));
         dl.AddCircle(c, P(6.5f), T.U32(T.Brass with { W = a }));
-        dl.Text(font, c - new Vector2(Width(font, n) / 2, font.FontSize / 2), new Vector4(1, 0.906f, 0.659f, a), n);
+        dl.Text(font, c - new Vector2(Width(font, n) / 2, font.FontSize / 2), T.BrassLight with { W = a }, n);
     }
 
     /// <summary>Where the belt leans: an upright from its top, an arc to the lean, the angle.</summary>

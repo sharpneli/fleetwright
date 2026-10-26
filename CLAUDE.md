@@ -462,7 +462,8 @@ Content paths in code (`"Content/Shaders/Compiled/..."`) resolve against `AppCon
 ## UI look
 
 All UI follows `docs/ui-language.md`: the designer's workstation look (panes docked edge to edge with title strips,
-an outliner, ledgers, numbered tabs, a status bar; `Theme` tokens, Plex Sans Condensed and Plex Mono), never
+an outliner, ledgers, numbered tabs, a status bar; the gunmetal-natural skin: `Theme` tokens, Saira Extra Condensed
+title strips, Barlow Condensed and Red Hat Mono), never
 landing-page habits (hero titles, cards, badges, big call-to-action buttons). New screens mock up from
 `docs/map-ui/launch-bureau.html`'s CSS and are set beside a designer screenshot before porting.
 

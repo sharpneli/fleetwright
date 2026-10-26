@@ -279,7 +279,7 @@ public sealed unsafe partial class LaunchScene
         pts[5] = centre + new Vector2(-l * 0.55f, -w);
         pts[6] = centre + new Vector2(l * 0.45f, -w);
         pts[7] = pts[0];
-        dl.AddConvexPolyFilled(ref pts[0], 7, U(new Vector4(0.42f, 0.45f, 0.47f, 0.35f * alpha)));
-        dl.AddPolyline(ref pts[0], 8, U(new Vector4(0.6f, 0.65f, 0.68f, 0.6f * alpha)), ImDrawFlags.None, 1);
+        dl.AddConvexPolyFilled(ref pts[0], 7, U(T.PlanLine with { W = 0.18f * alpha }));
+        dl.AddPolyline(ref pts[0], 8, U(T.PlanLine with { W = 0.6f * alpha }), ImDrawFlags.None, 1);
     }
 }

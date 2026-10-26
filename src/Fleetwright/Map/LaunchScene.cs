@@ -532,7 +532,7 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         float tw = ImGui.CalcTextSize(Here).X + ImGui.CalcTextSize(There).X + ImGui.CalcTextSize(Key).X + st.ItemSpacing.X * 6 + st.WindowPadding.X;
         ImGui.SetCursorPosX(Math.Max(ImGui.GetCursorPosX(), ImGui.GetWindowWidth() - tw));
         ImGui.TextDisabled(Key);
-        ImGui.MenuItem(Here, null, true);
+        Ui.Pieces.ScreenTab(Here, true);
         if (ImGui.MenuItem(There))
             OpenDesigner?.Invoke();
         ImGui.EndMainMenuBar();
@@ -590,10 +590,10 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
 
     static float VersusWidth(string a, string b) => Width(UiFonts.Mono, a) + (b.Length > 0 ? Width(UiFonts.Mono, " v ") + Width(UiFonts.Mono, b) : 0);
 
-    /// <summary>"13 v 14": the friend's figure blue, the enemy's red; returns where it ends.</summary>
+    /// <summary>"13 v 14": the friend's figure cream, the enemy's red; returns where it ends.</summary>
     float Versus(float x, float y, string a, string b)
     {
-        dl.Text(UiFonts.Mono, new Vector2(x, y), T.Blue, a);
+        dl.Text(UiFonts.Mono, new Vector2(x, y), T.Friend, a);
         x += Width(UiFonts.Mono, a);
         if (b.Length == 0)
             return x;
