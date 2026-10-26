@@ -30,13 +30,16 @@ box, with no gold slab; and a status bar of keys.
 settled that the mockup left open: every number the player sets is a stepper (tempers and aggression by 0.05, Shift ×4,
 the wheel over the value), not a slider; the captains' tempers moved from a popup on the names into the selected class
 pane (a row a named ship, a stepper each), and the standing orders list only the captains with tempers of their own;
-the side the first two tabs show is a segmented control at the tabs' right (S); the scenarios are grouped by era (the
+the side the first two tabs show is a segmented control at the tabs' right (V); the scenarios are grouped by era (the
 era and size filters gone, the groups fold); the strength ledger counts ships by their designs' type, guns of 254 mm and
 up and of 120 to 253 mm, the line's speed (its slowest heavy ship), the gun crews and the tonnage; the remarks are the
 tempers the scenario gave and why, a class that didn't build and the world's error; the design picker opens over the
-whole centre column; errors are amber, never red. Keys: 1–3 tabs, Tab the side played, S the side shown, C R L G the
-opening's overlays, A add a unit, D and E the selected class's design, Enter begin (Shift: paused), Ctrl+S save,
-Ctrl+Z undo the newest change.
+whole centre column; errors are amber, never red. Keys: 1–3 tabs, Tab the side played, V the side shown, C R L G the
+opening's overlays, N add a unit, P and E the selected class's design, Enter begin (Shift: paused), Ctrl+S save,
+Ctrl+Z undo the newest change. Since 2026-10-26 the opening takes the battle map's controls (docs/map-ui/input.md, the
+controls unified): WASD and the middle drag pan, a middle click centres, the wheel zooms at the cursor, a left click on
+a unit's mark selects her in the order of battle, and placing a unit is the right button's (its press her head, its drag
+her course); S, A and D moved to V, N and P for WASD.
 
 ## What the player sees
 

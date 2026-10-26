@@ -78,12 +78,14 @@ asks for the classes and places the world (`WorldSession.Select`), Begin (Enter)
 (`Sim.Missions/ScenarioSetup.cs`, L2): the scenario as written plus its changes, listed with an undo each, saved by
 Save setup… as a scenario file with `"from"` in My Games/Fleetwright/Setups and listed under Your setups. The body's
 first tab is each side's ships (`LaunchScene.Ships.cs`, L3): a tree table, a row a design drawn to scale with its
-figures, the selected one's particulars and captains beside it, and its ▾ (or D) opens the design picker
+figures, the selected one's particulars and captains beside it, and its ▾ (or P) opens the design picker
 (`LaunchScene.Picker.cs`): every design the scenario can name, built without art for
 their figures, used for a unit, one ship or every ship of the design; a copy goes to the designer and comes back as yours.
-A row's ◀ n ▶ strikes or adds ships, a unit's ✕ strikes it (undo in place), and + Add a unit… (A) opens the picker's add
-mode (`LaunchScene.Add.cs`, L3b): a new squadron joined to a force, or placed on the opening (press for her head, drag
-for the course). Wheel zooms at the cursor, left drag pans. Ships (`MapScene.Ships.cs`, step 2.3a): a click
+A row's ◀ n ▶ strikes or adds ships, a unit's ✕ strikes it (undo in place), and + Add a unit… (N) opens the picker's add
+mode (`LaunchScene.Add.cs`, L3b): a new squadron joined to a force, or placed on the opening (right press for her head,
+right drag for the course). The opening has the battle map's controls (`LaunchScene.View.cs`, docs/map-ui/input.md: one
+grammar everywhere): WASD (`PanKeys`, the map's own) and the middle drag pan, a middle click centres, the wheel zooms at
+the cursor, a left click on a unit's mark selects her. Ships (`MapScene.Ships.cs`, step 2.3a): a click
 selects (twice: her squadron takes the orders; Tab steps through your ships), the strip at the bottom
 (`MapScene.Strip.cs`, docs/map-ui/strip.md: docked panes under the rail, every order a button with its key from one table,
 `Def`) gives the orders: ORDERS TO, the chain as radio rows (Q up, Shift+Q down), HELM (← → 10°, Shift 90°, Enter types a

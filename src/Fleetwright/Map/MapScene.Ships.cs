@@ -360,8 +360,6 @@ public sealed unsafe partial class MapScene
     void Click(double x, double y)
     {
         var view = View;
-        if (Armed && view.Pick(x, y, out var at) && world.Shore.IsLand(at))
-            return;
         int was = selected;
         int hit = PickShip(view, x, y);
         if (hit < 0)
@@ -384,8 +382,8 @@ public sealed unsafe partial class MapScene
     /// <summary>Whether a press on the sea places ships: the dev panel armed and its class built.</summary>
     bool Armed => placing && placeClass >= 0 && world.Classes.IsReady(placeClass);
 
-    /// <summary>A left press: armed and on the sea, the placement's guide goes here and the drag aims it (true); else
-    /// false, and the press pans or clicks as ever.</summary>
+    /// <summary>A right press: armed and on the sea, the placement's guide goes here and the drag aims it (true); else
+    /// false, and the press gives an order as ever (docs/map-ui/input.md: the right acts).</summary>
     bool BeginPlace(double x, double y)
     {
         if (!Armed || !View.Pick(x, y, out var at) || world.Shore.IsLand(at))
@@ -751,7 +749,7 @@ public sealed unsafe partial class MapScene
         // for the build
         bool canPlace = fromDesigner && placeClass < 0 ? designer.Design != null : ready && error == null;
         ImGui.BeginDisabled(!canPlace);
-        if (ImGui.Button(placing ? "Click or drag on the sea..." : "Place"))
+        if (ImGui.Button(placing ? "Right-click or right-drag on the sea..." : "Place"))
         {
             placing = !placing;
             if (placing && fromDesigner)
@@ -759,7 +757,7 @@ public sealed unsafe partial class MapScene
         }
         ImGui.EndDisabled();
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-            ImGui.SetTooltip("click the sea: on the heading below · press and drag: they head the way you drag, placed on release");
+            ImGui.SetTooltip("right-click the sea: on the heading below · right-press and drag: they head the way you drag, placed on release");
         ImGui.SameLine();
         ImGui.Checkbox("keep placing", ref keepPlacing);
 

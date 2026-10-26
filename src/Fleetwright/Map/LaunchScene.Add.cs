@@ -187,24 +187,23 @@ public sealed unsafe partial class LaunchScene
         placing = new Placing
         {
             Unit = unit, Stations = ScenarioLoader.Stations(unit), Course = ((int)Math.Round(course) % 360 + 360) % 360, Kn = (int)Math.Round(kn),
-            Title = unit.Name, Hint = $"{n} × {design} · click to place her head, drag for the course",
+            Title = unit.Name, Hint = $"{n} × {design} · right-click to place her head, right-drag for the course",
         };
         placing.Texts();
-        opening = null;   // framed again with room to place her
+        (opening, openView) = (null, null);   // framed again with room to place her
     }
 
-    /// <summary>The placing view over the opening: the input, the unit where it would go, and the bar.</summary>
+    /// <summary>The placing view over the opening: the right button's press her head, its drag her course, its release
+    /// places her (the opening's input, <see cref="OpeningInput"/>: the right acts); the unit where it would go; the bar.</summary>
     void PlacingOverlay(OpeningView v)
     {
         var p = placing!;
         float barH = RowH + P(4);
         var at = v.At;
-        ImGui.SetCursorScreenPos(at + new Vector2(0, barH));
-        ImGui.InvisibleButton("##placemap", v.Size - new Vector2(0, barH));
         var mouse = ImGui.GetMousePos();
-        if (ImGui.IsItemActivated())
+        if (rightPressed)
             (p.Head, p.DownAt) = (v.From(mouse), mouse);
-        if (ImGui.IsItemActive() && p.Head is { } h)
+        if (rightHeld && p.Head is { } h)
         {
             if (Vector2.Distance(mouse, p.DownAt) > P(6))
             {
@@ -212,9 +211,9 @@ public sealed unsafe partial class LaunchScene
                 p.Texts();
             }
         }
-        else if (ImGui.IsItemHovered())
+        else if (openHovered)
             p.Ghost = v.From(mouse);
-        if (ImGui.IsItemDeactivated() && p.Head is { } placed)
+        if (rightReleased && p.Head is { } placed)
         {
             p.Head = null;
             if (!world.Shore.IsLand(placed))

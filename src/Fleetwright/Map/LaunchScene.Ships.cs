@@ -336,7 +336,7 @@ public sealed unsafe partial class LaunchScene
         dl = keep;
     }
 
-    const string AddLabel = "+ Add a unit…", AddNote = "joins a unit on its station, or stands alone placed on the opening  (A)";
+    const string AddLabel = "+ Add a unit…", AddNote = "joins a unit on its station, or stands alone placed on the opening  (N)";
 
     string sideShipsNote = "";
     (int, int) sideShipsFor = (-1, -1);
@@ -510,7 +510,7 @@ public sealed unsafe partial class LaunchScene
         bool ch = ImGui.IsItemHovered();
         dl.Arrow(dc, 1, P(3.5f), ch ? T.Bright : T.Muted);
         if (ch)
-            ImGui.SetTooltip("change the design… (D)");
+            ImGui.SetTooltip("change the design… (P)");
         if (hover && !ch && l.NamesTip.Length > 0)
             ImGui.SetTooltip(l.NamesTip);
         ImGui.PopID();
@@ -692,9 +692,9 @@ public sealed unsafe partial class LaunchScene
                 dl.RightNote(right2, y, RowH, selText.Year);
             y += RowH + P(6);
             const string ChangeL = "Change design…", CopyL = "Edit a copy in the designer";
-            if (dl.Button("##seldesign", new Vector2(o.X + P(6), y), ChangeL, "D", enabled: !begin))
+            if (dl.Button("##seldesign", new Vector2(o.X + P(6), y), ChangeL, "P", enabled: !begin))
                 OpenPicker(l);
-            if (dl.Button("##selcopy", new Vector2(o.X + P(10) + ButtonWidth(ChangeL, "D"), y), CopyL, "E", enabled: !begin && EditCopy != null))
+            if (dl.Button("##selcopy", new Vector2(o.X + P(10) + ButtonWidth(ChangeL, "P"), y), CopyL, "E", enabled: !begin && EditCopy != null))
                 Copy(InUseCandidate(l));
             y += P(28);
             // her captains

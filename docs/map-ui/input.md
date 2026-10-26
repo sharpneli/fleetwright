@@ -5,6 +5,14 @@ camera on WASD and the middle button, the clock on a few keys the left hand find
 map (`docs/battle/command-ui.md`, Default input map) and the strip's key table (`strip.md`, The keys), which this
 supersedes where they differ.
 
+## Everywhere
+
+The controls are the same in every view (the user, 2026-10-26: "a critical usability cornerstone"): once learned, the
+player expects identical behaviour everywhere. A view that pans takes `PanKeys` (WASD, one implementation), the middle
+drag and click, the wheel at the cursor; the left button selects, the right acts. Done for the battle map and the launch
+screen's opening (**U1**, 2026-10-26: placing a unit on the right button, the launch screen's S, A and D moved to V, N
+and P). Open: the 3D views (the ship viewer, the hitbox view) orbit with a left drag; their mapping waits for the user.
+
 ## Before
 
 - Left: a drag panned, a click selected, and with a verb armed (Engage…, Follow…, any task's pick) a click picked its

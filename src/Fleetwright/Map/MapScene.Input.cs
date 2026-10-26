@@ -10,57 +10,28 @@ using static SDL.SDL3;
 
 namespace Fleetwright.Map;
 
-/// <summary>The camera's input (docs/map-ui/input.md I0): WASD pans at a share of the screen a second whatever the
-/// zoom (shift faster), eased so a tap nudges; the middle button drags the map, and its click centres the map on the
-/// sea or follows a ship until a pan. The keys are scancodes, so they stay under the hand on any layout. The left
-/// button only selects (I1): a click a ship, a drag a box. The right acts (I2): its order goes on the release, drawn
+/// <summary>The camera's input (docs/map-ui/input.md I0): WASD pans (<see cref="PanKeys"/>); the middle button drags
+/// the map, and its click centres the map on the sea or follows a ship until a pan. The left button only selects (I1): a click a ship, a drag a box. The right acts (I2): its order goes on the release, drawn
 /// from the ship that steams it to what it's about while the button is held (Esc drops it); an armed verb is aimed by
 /// it too.</summary>
 public sealed unsafe partial class MapScene
 {
-    static readonly SDL_Scancode[] PanKeys = [SDL_Scancode.SDL_SCANCODE_W, SDL_Scancode.SDL_SCANCODE_A, SDL_Scancode.SDL_SCANCODE_S, SDL_Scancode.SDL_SCANCODE_D];
-    static readonly (int X, int Y)[] PanWays = [(0, -1), (-1, 0), (0, 1), (1, 0)];
+    readonly PanKeys panKeys = new();   // WASD, as every view's (PanKeys.cs)
+    int follow;                         // the camera kept on this ship (an entity; 0 none)
 
-    const double PanScreens = 0.8;   // the keys' pan, screen heights a second
-    const double PanFast = 3;        // with shift
-    const double PanEaseS = 0.08;    // the pan's time constant, seconds: a tap nudges, a hold glides
+    /// <summary>A key down or up: a pan key's (true), or not one.</summary>
+    bool PanKey(SDL_Scancode code, bool down) => panKeys.Key(code, down);
 
-    readonly bool[] panHeld = new bool[4];   // W A S D, held from their key's down to its up
-    double panVX, panVY;                      // the keys' pan now, target pixels a second
-    int follow;                               // the camera kept on this ship (an entity; 0 none)
-
-    /// <summary>A key down or up: one of the pan keys holds its way (true) from its down to its up. SDL sends the ups
-    /// of held keys when the window loses the keyboard; a text field taking it lets go of them all (<see cref="KeyPan"/>).</summary>
-    bool PanKey(SDL_Scancode code, bool down)
-    {
-        int i = Array.IndexOf(PanKeys, code);
-        if (i < 0)
-            return false;
-        panHeld[i] = down;
-        return true;
-    }
-
-    /// <summary>The keys' pan for this frame: their ways summed, eased toward, and the map dragged by it. A pan lets go
-    /// of a followed ship.</summary>
+    /// <summary>The keys' pan for this frame, the map dragged by it. A pan lets go of a followed ship.</summary>
     void KeyPan(double dt)
     {
-        dt = Math.Min(dt, 0.1);   // a stalled frame doesn't throw the map
         if (ImGui.GetIO().WantTextInput)
-            Array.Clear(panHeld);   // typing: the ups go to the field
-        int wx = 0, wy = 0;
-        for (int i = 0; i < PanKeys.Length; i++)
-            if (panHeld[i])
-                (wx, wy) = (wx + PanWays[i].X, wy + PanWays[i].Y);
-        double speed = PanScreens * height * ((SDL_GetModState() & SDL_Keymod.SDL_KMOD_SHIFT) != 0 ? PanFast : 1);
-        double k = 1 - Math.Exp(-dt / PanEaseS);
-        panVX += (wx * speed - panVX) * k;
-        panVY += (wy * speed - panVY) * k;
-        if (wx == 0 && wy == 0 && Math.Abs(panVX) + Math.Abs(panVY) < 1)
-            (panVX, panVY) = (0, 0);
-        if (panVX == 0 && panVY == 0)
+            panKeys.Release();   // typing: the ups go to the field
+        var (dx, dy) = panKeys.Step(dt, height, (SDL_GetModState() & SDL_Keymod.SDL_KMOD_SHIFT) != 0);
+        if (dx == 0 && dy == 0)
             return;
         double cx = width / 2, cy = height / 2;
-        camera.Pan(cx, cy, cx - panVX * dt, cy - panVY * dt, width, height);
+        camera.Pan(cx, cy, cx - dx, cy - dy, width, height);
         follow = 0;
     }
 

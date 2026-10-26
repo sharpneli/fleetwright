@@ -56,11 +56,10 @@ public sealed unsafe partial class LaunchScene
         }
 
         /// <summary>The point on the sea under a pixel.</summary>
-        public Vec3d From(Vector2 s)
-        {
-            double x = (s.X - At.X - Size.X / 2) * Mpp + Mx, y = -(s.Y - At.Y - Size.Y / 2) * Mpp + My;
-            return (C + East * (x / Earth.Radius) + North * (y / Earth.Radius)).Normalized() * Earth.Radius;
-        }
+        public Vec3d From(Vector2 s) => OnPlane((s.X - At.X - Size.X / 2) * Mpp + Mx, -(s.Y - At.Y - Size.Y / 2) * Mpp + My);
+
+        /// <summary>The point on the sea at (x, y) metres on the tangent plane.</summary>
+        public Vec3d OnPlane(double x, double y) => (C + East * (x / Earth.Radius) + North * (y / Earth.Radius)).Normalized() * Earth.Radius;
         public readonly List<Vector2[]> Coast = [], Grid = [];
         public readonly List<(Vector2 A, Vector2 B)> Fill = [];   // the land's spans, a pixel row each
         public readonly List<UnitMark> Units = [];
@@ -134,6 +133,7 @@ public sealed unsafe partial class LaunchScene
         dl.AddLine(bar0 + new Vector2(v.BarPx, -P(4)), bar0 + new Vector2(v.BarPx, P(4)), ruler);
         dl.Text(UiFonts.MonoSmall, bar0 + new Vector2(v.BarPx + P(8), -P(7)), MapPalette.Label, v.BarLabel);
         Key(v, new Vector2(b.X - P(8), b.Y - P(8)));
+        OpeningInput(v);
         if (placing != null)
             PlacingOverlay(v);
         dl.PopClipRect();
@@ -188,6 +188,9 @@ public sealed unsafe partial class LaunchScene
             dl.AddLine(a + d * t, a + d * Math.Min(t + on, len), col);
     }
 
+    List<(double X, int Dir)>[] rowCross = [];   // the fill's crossings by pixel row, kept for the next build
+    static readonly Comparison<(double X, int Dir)> ByX = (a, b) => a.X.CompareTo(b.X);
+
     OpeningView Build(Scenario s, Vector2 at, Vector2 size)
     {
         var v = new OpeningView { At = at, Size = size };
@@ -229,6 +232,8 @@ public sealed unsafe partial class LaunchScene
         double margin = P(placing != null ? 110 : 60);   // the placing view: room round the units to place one
         double mpp = Math.Max(Math.Max((x1 - x0) / (size.X - 2 * margin), (y1 - y0) / (size.Y - 2 * margin)), 15 / UiFonts.Scale);
         double mx = (x0 + x1) / 2, my = (y0 + y1) / 2;
+        if (openView is var (centre, viewMpp))
+            ((mx, my), mpp) = (v.Plane(centre), viewMpp);   // the player's view (LaunchScene.View.cs)
         (v.Mx, v.My, v.Mpp) = (mx, my, mpp);
         var Of = v.Of;
 
@@ -261,16 +266,31 @@ public sealed unsafe partial class LaunchScene
             }
             Coast(v, run);
         }
-        // the fill: each pixel row's crossings, by the winding number (land where it isn't 0)
-        var cross = new List<(double X, int Dir)>();
-        for (float y = MathF.Floor(at.Y); y < at.Y + size.Y; y++)
+        // the fill: each pixel row's crossings, by the winding number (land where it isn't 0); each edge handed only the
+        // rows it crosses, so the work is the crossings, not rows times edges (the view is rebuilt as it pans)
+        float row0 = MathF.Floor(at.Y);
+        int rows = (int)Math.Ceiling(at.Y + size.Y - row0);
+        if (rowCross.Length < rows)
+            rowCross = [.. Enumerable.Range(0, rows).Select(_ => new List<(double X, int Dir)>())];
+        for (int r = 0; r < rows; r++)
+            rowCross[r].Clear();
+        foreach (var (ex0, ey0, ex1, ey1) in edges)
         {
-            double yc = y + 0.5;
-            cross.Clear();
-            foreach (var (ex0, ey0, ex1, ey1) in edges)
-                if (ey0 <= yc != ey1 <= yc)
-                    cross.Add((ex0 + (yc - ey0) / (ey1 - ey0) * (ex1 - ex0), ey1 > ey0 ? 1 : -1));
-            cross.Sort((a, b) => a.X.CompareTo(b.X));
+            if (ey0 == ey1)
+                continue;
+            double lo = Math.Min(ey0, ey1), hi = Math.Max(ey0, ey1);
+            int r0 = Math.Max((int)Math.Ceiling(lo - row0 - 0.5), 0), r1 = Math.Min((int)Math.Ceiling(hi - row0 - 0.5) - 1, rows - 1);
+            for (int r = r0; r <= r1; r++)
+            {
+                double yc = row0 + r + 0.5;
+                rowCross[r].Add((ex0 + (yc - ey0) / (ey1 - ey0) * (ex1 - ex0), ey1 > ey0 ? 1 : -1));
+            }
+        }
+        for (int r = 0; r < rows; r++)
+        {
+            float y = row0 + r;
+            var cross = rowCross[r];
+            cross.Sort(ByX);
             int wind = 0;
             double from = 0;
             foreach (var (x, dir) in cross)

@@ -58,7 +58,7 @@ public sealed unsafe partial class LaunchScene
     /// <summary>A temper's figure, signed to two places ("0.00" for none).</summary>
     static string Temper(double t) => Math.Abs(t) < 0.005 ? "0.00" : DoctrineRules.Signed(t);
 
-    /// <summary>The side the first two tabs show (S).</summary>
+    /// <summary>The side the first two tabs show (V).</summary>
     int OrdersSide => shipTabs.Count == 0 ? -1 : shipTabs[Math.Min(shipTab, shipTabs.Count - 1)].Side;
 
     /// <summary>The page's lines for a side, made again when the pick or the side changes.</summary>

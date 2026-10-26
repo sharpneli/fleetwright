@@ -307,9 +307,14 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         SDL_EndGPURenderPass(pass);
     }
 
-    /// <summary>Esc shuts the picker, or stops placing a unit; with nothing open, the menu.</summary>
+    /// <summary>Esc shuts the picker, or stops placing a unit; with nothing open, the menu. WASD pans the opening
+    /// (<see cref="PanKeys"/>, as on the map).</summary>
     public bool ProcessEvent(SDL_Event* e, uint width, uint height)
     {
+        var type = (SDL_EventType)e->type;
+        if (type is SDL_EventType.SDL_EVENT_KEY_DOWN or SDL_EventType.SDL_EVENT_KEY_UP && !saveOpen
+            && panKeys.Key(e->key.scancode, type == SDL_EventType.SDL_EVENT_KEY_DOWN))
+            return true;
         if ((SDL_EventType)e->type == SDL_EventType.SDL_EVENT_KEY_DOWN && (uint)e->key.key == SDLK_ESCAPE && (pickerRow != null || placing != null) && !saveOpen)
         {
             if (pickerRow != null)
@@ -419,9 +424,10 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         }
     }
 
-    /// <summary>The keys (the status bar lists them): 1–3 the tabs, Tab the side played, S the side shown, C R L G the
-    /// opening's overlays, A add a unit, D and E the selected class's design, Enter begin (Shift paused), Ctrl+S save,
-    /// Ctrl+Z undo the newest change. None while text is typed, the save box is up or a unit is being placed.</summary>
+    /// <summary>The keys (the status bar lists them): 1–3 the tabs, Tab the side played, V the side shown, C R L G the
+    /// opening's overlays, N add a unit, P and E the selected class's design, Enter begin (Shift paused), Ctrl+S save,
+    /// Ctrl+Z undo the newest change; WASD pans the opening (ProcessEvent), so no key here is W, A, S or D
+    /// (docs/map-ui/input.md). None while text is typed, the save box is up or a unit is being placed.</summary>
     void Keys()
     {
         var io = ImGui.GetIO();
@@ -452,7 +458,7 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
             int at = playRows.FindIndex(r => r.Side == side);
             pendingSide = playRows[(at + 1) % playRows.Count].Side;
         }
-        if (ImGui.IsKeyPressed(ImGuiKey.S) && shipTabs.Count > 1)
+        if (ImGui.IsKeyPressed(ImGuiKey.V) && shipTabs.Count > 1)
             shipTab = (shipTab + 1) % shipTabs.Count;
         if (ImGui.IsKeyPressed(ImGuiKey.C))
             showCourses = !showCourses;
@@ -462,9 +468,9 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
             showLabels = !showLabels;
         if (ImGui.IsKeyPressed(ImGuiKey.G))
             showGrid = !showGrid;
-        if (ImGui.IsKeyPressed(ImGuiKey.A) && !begin && OrdersSide >= 0)
+        if (ImGui.IsKeyPressed(ImGuiKey.N) && !begin && OrdersSide >= 0)
             pendingAdd = (OrdersSide, null);
-        if (ImGui.IsKeyPressed(ImGuiKey.D) && !begin && Sel is { } d)
+        if (ImGui.IsKeyPressed(ImGuiKey.P) && !begin && Sel is { } d)
             OpenPicker(d);
         if (ImGui.IsKeyPressed(ImGuiKey.E) && !begin && Sel is { } e)
             Copy(InUseCandidate(e));
@@ -823,7 +829,7 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         remarkKey = (null, -1);
         MadeBody(s);
         ledger = null;
-        opening = null;   // drawn again for this pick and side
+        (opening, openView) = (null, null);   // drawn again for this pick and side, framed to it
     }
 
     /// <summary>A pick whose changes no longer apply (or that couldn't be read): its name, and why in the remarks.</summary>
@@ -886,14 +892,14 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         int t = dl.NumberedTabs(new Vector2(a.X + P(4), a.Y), w - P(8), TabNames, Digits, tab - 1);
         if (t >= 0)
             tab = t + 1;
-        // the side shown on the order of battle and the standing orders (S)
+        // the side shown on the order of battle and the standing orders (V)
         if (tab < 3 && shipTabs.Count > 1)
         {
             float sx = a.X + w - P(6) - SegmentedWidth(sideLabels);
             int sd = dl.Segmented("##side", new Vector2(sx, a.Y + P(3)), sideLabels, shipTab, out _);
             if (sd >= 0)
                 shipTab = sd;
-            dl.RightNote(sx - P(8), a.Y + P(1), P(20), "side  S");
+            dl.RightNote(sx - P(8), a.Y + P(1), P(20), "side  V");
         }
     }
 
@@ -918,7 +924,7 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
     // ------------------------------------------------------------------ the status bar
 
     string status = "";
-    const string StatusKeys = "1–3 tabs · Tab side played · S side shown · C R L G overlays · A add a unit · D design · Enter begin · Shift+Enter paused · Ctrl+S save · Ctrl+Z undo · F3 designer";
+    const string StatusKeys = "1–3 tabs · Tab side played · V side shown · WASD or middle drag pan · wheel zoom · C R L G overlays · N add a unit · P design · Enter begin · Shift+Enter paused · Ctrl+S save · Ctrl+Z undo · F3 designer";
 
     void StatusBar(Vector2 a, float w)
     {

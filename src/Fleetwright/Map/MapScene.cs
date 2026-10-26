@@ -13,8 +13,8 @@ namespace Fleetwright.Map;
 /// <summary>The world tab (docs/battle/plan.md step 1.2): the globe of water at every zoom from orbit down to 10 px/m,
 /// the lat/lon grid, day and night from the snapshot's sun, and the clock's controls (pause, 1x to 1,000,000x, asked
 /// against achieved). It reads the world only through <see cref="WorldSession.Current"/> and changes it only by
-/// commands. Mouse: wheel zooms at the cursor, the left button selects (a click a ship, a drag a box; armed to place ships,
-/// it aims them), the right gives the order the cursor names on its release (an armed verb's too), the middle drag pans
+/// commands. Mouse: wheel zooms at the cursor, the left button selects (a click a ship, a drag a box), the right gives the order
+/// the cursor names on its release (an armed verb's too; armed to place ships, its drag aims them), the middle drag pans
 /// and its click centres or follows (docs/map-ui/input.md). Keys: WASD pans, space pauses, + and - change the speed. The ships
 /// (step 2.3) are in MapScene.Ships.cs.</summary>
 public sealed unsafe partial class MapScene : IScene
@@ -36,6 +36,7 @@ public sealed unsafe partial class MapScene : IScene
     readonly Dictionary<(double, double, bool), string> tickLabels = [];   // their labels, kept: a pan makes no garbage
     double width = 1, height = 1;   // the target's size at the last draw, pixels
     bool dragging, clamped, dragPending, middle;   // middle: the middle button is down (its drag pans)
+    double middleX, middleY;   // where it went down
     double panX, panY;   // the cursor the camera was last panned to
     double dragX, dragY;   // the newest cursor of a drag: panned to once a frame, however many motion events came
     Vector2 mouse;
@@ -237,7 +238,7 @@ public sealed unsafe partial class MapScene : IScene
                 if (e->button.button == 2)
                 {
                     // the middle button pans, off the globe too; its click centres or follows (MapScene.Input.cs)
-                    (pressX, pressY, middle) = (e->button.x * sx, e->button.y * sy, true);
+                    (middleX, middleY, middle) = (e->button.x * sx, e->button.y * sy, true);
                     (panX, panY, dragging) = (e->button.x * sx, e->button.y * sy, true);
                     return true;
                 }
@@ -249,16 +250,20 @@ public sealed unsafe partial class MapScene : IScene
                 }
                 if (e->button.button == 3)
                 {
-                    rightHeld = true;   // the order goes on the release, drawn while held (MapScene.Input.cs)
+                    if (!BeginPlace(e->button.x * sx, e->button.y * sy))   // armed to place: the drag aims the ships
+                        rightHeld = true;   // the order goes on the release, drawn while held (MapScene.Input.cs)
                     return true;
                 }
                 if (e->button.button != 1)
                     return false;
-                if (BeginPlace(e->button.x * sx, e->button.y * sy))
-                    return true;   // armed to place: the drag aims the ships
                 (pressX, pressY, pressed, boxing) = (e->button.x * sx, e->button.y * sy, true, false);   // a click, or a box (MapScene.Input.cs)
                 return true;
             case SDL_EventType.SDL_EVENT_MOUSE_BUTTON_UP:
+                if (e->button.button == 3 && placeDrag)
+                {
+                    EndPlace(e->button.x * sx, e->button.y * sy);
+                    return true;
+                }
                 if (e->button.button == 3)
                 {
                     if (rightHeld)
@@ -269,14 +274,9 @@ public sealed unsafe partial class MapScene : IScene
                 if (e->button.button == 2 && middle)
                 {
                     double mx = e->button.x * sx, my = e->button.y * sy;
-                    if (Math.Abs(mx - pressX) + Math.Abs(my - pressY) < 5)
+                    if (Math.Abs(mx - middleX) + Math.Abs(my - middleY) < ClickPx)
                         MiddleClick(mx, my);
-                    (middle, dragging) = (false, pressed);
-                    return true;
-                }
-                if (e->button.button == 1 && placeDrag)
-                {
-                    EndPlace(e->button.x * sx, e->button.y * sy);
+                    (middle, dragging) = (false, false);
                     return true;
                 }
                 if (e->button.button == 1 && pressed)
