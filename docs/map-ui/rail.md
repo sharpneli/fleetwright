@@ -79,9 +79,10 @@ and chips; the twisty, the flame and the diamond as shapes. No allocation on a s
 4. **Whose chips** (`AI` quiet, `you` plain, `conn` green): fine.
 5. **Lost ships**: dropped, not kept as rows; a lost ship's segment goes with her.
 6. **ON** (your ships firing at each contact): asked what it was; kept, renamed **FIRING** with a tooltip on its header.
-   Say if it should go.
 7. **Width and a key**: unclear in the question (it was the column's 330 px against the old 270 px, and whether a key
    should hide the column as V shuts the card); built at 330 px with no key.
+
+The user took the build as is (2026-10-26): FIRING stays, 330 px, no key.
 
 And: **the enemy pane smaller**, and **a unit folds on its twisty by the usual tree rules**, even while it holds the
 selection.
