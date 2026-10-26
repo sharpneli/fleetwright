@@ -5,6 +5,8 @@
 // light is marched through the splash's density (Include/splash.glsl); what it takes out darkens the sea and the decks
 // under it, premultiplied black over them, as the ships' shadows do. Spray lets some light through, so even a dense
 // column's shadow isn't black.
+#define LIGHTS_BINDING 0
+#include "Include/shiplight.glsl"
 #include "Include/splash.glsl"
 
 layout(location = 0) in vec2 fragLoc;
@@ -43,5 +45,5 @@ void main()
     float a = 0.85 * (1.0 - exp(-depth)) * shadowL.z * fragLean.z;
     if (a < 0.002)
         discard;
-    outColor = vec4(0.0, 0.0, 0.0, a);
+    outColor = hazePremul(vec4(0.0, 0.0, 0.0, a));   // the haze over the shadow (docs/visuals/haze.md)
 }

@@ -104,5 +104,5 @@ void main()
     vec3 rgb = col * (yt / y);
     float over = clamp(log2(max(y, 1e-6)) / 3.0, 0.0, 1.0);
     rgb = mix(rgb / max(max(rgb.r, max(rgb.g, rgb.b)), 1.0), vec3(yt), over);
-    outColor = vec4(linearToSrgb(rgb), 0.0);
+    outColor = vec4(linearToSrgb(rgb * hazeThrough()), 0.0);
 }

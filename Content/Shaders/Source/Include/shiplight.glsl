@@ -23,6 +23,10 @@ layout(set = 3, binding = LIGHTS_BINDING) uniform Lights
     vec4 flashUp;       // xyz: up there
     vec4 flashPos[16];  // xyz: metres from the eye, Earth-fixed; w: its size, m (the falloff softened inside it)
     vec4 flashRad[16];  // rgb: its intensity, display units x m^2 (a white surface facing it d away is lit by rgb / d^2)
+    // the haze between the eye and the sea (docs/visuals/haze.md; Map/HazeLook.cs), the world view's alone
+    vec4 haze;          // x: its optical depth straight down from the eye to the sea (0: none); y: the slab's backscatter
+    vec4 hazeView;      // xy: 2 tan of the half fields over the target's pixels; zw: the tans (a pixel's slant)
+    vec4 hazeLight;     // rgb: the light on a level white deck (sun, moon, sky), linear
 };
 
 int flashCount()
@@ -86,6 +90,52 @@ vec3 linearToSrgb(vec3 c)
 vec3 shoulder(vec3 x, float k)
 {
     return min(x, vec3(k)) + (1.0 - k) * (1.0 - exp(-max(x - k, 0.0) / (1.0 - k)));
+}
+
+// The haze between the eye and the sea (docs/visuals/haze.md), on what a world-view shader puts out: a level slab whose
+// optical depth straight down is haze.x, slanting with the pixel's ray (times 1 / cos of its angle off straight down).
+// What shows is the scene times e^-tau (the contrast's loss: Koschmieder's law, the lookouts' own haze), the slab's
+// backscatter of the light on it, R = gamma tau / (1 + gamma tau) (two-stream, conservative: no light lost), and the
+// sea's light scattered on through it, the rest, 1 - R - e^-tau, of the sea's mean (the ambient from below). The scene
+// and everything over it are at the sea's distance: the tallest effects are under 2% of the eye's height.
+float hazeTau()
+{
+    vec2 s = gl_FragCoord.xy * hazeView.xy - hazeView.zw;
+    return haze.x * sqrt(1.0 + dot(s, s));
+}
+
+// a linear colour seen through the haze
+vec3 hazeLinear(vec3 c)
+{
+    if (haze.x <= 0.0)
+        return c;
+    float tau = hazeTau(), t = exp(-tau), g = haze.y * tau, r = g / (1.0 + g);
+    return c * t + hazeLight.rgb * r + seaAmb.rgb * max(1.0 - r - t, 0.0);
+}
+
+// the same on a colour as the frame holds it (sRGB-coded; not clamped over 1, for the shoulder's glints), dithered by
+// half a level of 8 bits: the haze's slant is a few levels across the screen, and a calm sea showed it as rings
+vec3 hazeCoded(vec3 c)
+{
+    if (haze.x <= 0.0)
+        return c;
+    vec3 k = max(c, 0.0);
+    vec3 h = hazeLinear(mix(k / 12.92, pow((k + 0.055) / 1.055, vec3(2.4)), step(0.04045, k)));
+    float ign = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));   // interleaved gradient noise
+    return mix(h * 12.92, 1.055 * pow(h, vec3(1.0 / 2.4)) - 0.055, step(0.0031308, h)) + (ign - 0.5) / 255.0;
+}
+
+// on a premultiplied colour over the scene: what it covers is hazed too, so a shadow's black becomes the haze's own
+// light over its share
+vec4 hazePremul(vec4 p)
+{
+    return haze.x <= 0.0 || p.a <= 0.0 ? p : vec4(hazeCoded(p.rgb / p.a) * p.a, p.a);
+}
+
+// the share of a light added over the scene that comes through the haze (a flash's glow, a jet's fire)
+float hazeThrough()
+{
+    return haze.x <= 0.0 ? 1.0 : exp(-hazeTau());
 }
 
 // the specular BRDF times pi (the lights are in units where a matte white surface facing one returns it)

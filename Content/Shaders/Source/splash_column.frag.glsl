@@ -99,5 +99,5 @@ void main()
         discard;
     vec3 c3 = linearToSrgb(shoulder(col / cover, look.z));
     float o = cover * fragLean.z;
-    outColor = vec4(c3 * o, o);
+    outColor = vec4(hazeCoded(c3) * o, o);
 }

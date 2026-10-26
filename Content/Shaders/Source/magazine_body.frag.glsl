@@ -139,5 +139,5 @@ void main()
         c = rgb / max(max(rgb.r, max(rgb.g, rgb.b)), 1.0);
     }
     float o = cover * m.time.w;
-    outColor = vec4(linearToSrgb(c) * o, o);
+    outColor = vec4(hazeCoded(linearToSrgb(c)) * o, o);
 }

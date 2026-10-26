@@ -44,5 +44,5 @@ void main()
         discard;
     vec3 light = mix(seaAmb.rgb, skyAmb.rgb, 0.7) + 0.8 * (sunRad.rgb * max(sunL.z, 0.0) + moonRad.rgb * max(moonL.z, 0.0));
     vec3 c = linearToSrgb(shoulder(vec3(max(fireK.z, 0.12)) * light, look.z));
-    outColor = vec4(c * alpha, alpha);
+    outColor = vec4(hazeCoded(c) * alpha, alpha);
 }

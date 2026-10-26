@@ -101,6 +101,16 @@ public struct LightUniforms
     /// <summary>Per flash light, rgb: its intensity in display units × m²: a matte white surface facing it from d metres
     /// is lit by rgb / d², in the lights' units (as the sun's radiance is).</summary>
     public Vec4x16 FlashRad;
+    /// <summary>The haze between the eye and the sea, the world view's alone (docs/visuals/haze.md,
+    /// <see cref="Map.HazeLook"/>): x its optical depth straight down from the eye (0: none), y the slab's
+    /// backscatter.</summary>
+    public Vector4 Haze;
+    /// <summary>xy: 2 tan of the half fields over the target's pixels; zw: the tans (a pixel's slant off straight
+    /// down).</summary>
+    public Vector4 HazeView;
+    /// <summary>rgb: the light on a level white deck (the sun's, the moon's and the sky's), what the haze sends back
+    /// up a share of.</summary>
+    public Vector4 HazeLight;
 }
 
 /// <summary>One frame's light at a place: the uniforms, the directions (in the caller's axes) and the shadows.</summary>

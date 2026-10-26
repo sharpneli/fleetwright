@@ -141,7 +141,7 @@ void main()
             day = mix(avg.x, day, sun.w);
         }
         col += Glow * pow(1.0 - clamp(dot(n, -d), 0.0, 1.0), 4.0) * (0.1 + 0.4 * day);
-        sea = col;
+        sea = hazeCoded(col);   // the world view's air between the eye and the sea (docs/visuals/haze.md); none on the table
         cover = clamp(disc / fw + 0.5, 0.0, 1.0);
     }
     outColor = vec4(mix(outside, sea, cover), 1.0);

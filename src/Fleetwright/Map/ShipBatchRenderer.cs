@@ -170,6 +170,15 @@ public sealed class ShipDrawList
         Lights = l;
     }
 
+    /// <summary>The haze between the eye and the sea this frame (docs/visuals/haze.md, <see cref="HazeLook.Uniforms"/>),
+    /// into the frame's light block: set right after the build, before any effect takes the light.</summary>
+    public void SetHaze((Vector4 Haze, Vector4 View, Vector4 Light) haze)
+    {
+        var l = Lights;
+        (l.Uniforms.Haze, l.Uniforms.HazeView, l.Uniforms.HazeLight) = haze;
+        Lights = l;
+    }
+
     // per ship this frame
     struct Placed
     {
@@ -742,7 +751,7 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
         this.device = device;
         vs = GpuShader.Load(device, "Content/Shaders/Compiled/shipmap.vert.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_VERTEX, 0, 1, 0, 1);
         fsSprite = GpuShader.Load(device, "Content/Shaders/Compiled/shipmap.frag.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_FRAGMENT, 4, 0, 0, 1);
-        fsShadow = GpuShader.Load(device, "Content/Shaders/Compiled/shipmap_shadow.frag.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 0, 0, 0);
+        fsShadow = GpuShader.Load(device, "Content/Shaders/Compiled/shipmap_shadow.frag.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 0, 0, 1);
         fsWake = GpuShader.Load(device, "Content/Shaders/Compiled/wakesplat.frag.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_FRAGMENT, 2, 0, 0, 0);
         vsRibbon = GpuShader.Load(device, "Content/Shaders/Compiled/wakeribbon.vert.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_VERTEX, 0, 0, 0, 1);
         fsRibbon = GpuShader.Load(device, "Content/Shaders/Compiled/wakeribbon.frag.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_FRAGMENT, 0, 0, 0, 0);

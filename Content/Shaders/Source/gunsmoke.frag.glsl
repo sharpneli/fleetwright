@@ -112,7 +112,7 @@ void main()
         float a = 0.7 * (1.0 - 0.8 * youth(p)) * (1.0 - exp(-smoothTau(p, fragLoc, 1.3) * (1.0 - smoothstep(0.7 * p.shape.w, p.shape.w, length(fragLoc))))) * p.shadow.z;
         if (a < 0.002)
             discard;
-        outColor = vec4(0.0, 0.0, 0.0, a);
+        outColor = hazePremul(vec4(0.0, 0.0, 0.0, a));   // the haze over the shadow (docs/visuals/haze.md)
         return;
     }
     // faded to nothing inside the quad (it ends where the smooth depth is down to a few percent: cut there, a wide old
@@ -142,5 +142,5 @@ void main()
     }
     vec3 albedo = mix(mix(p.tint.rgb, vec3(0.9), p.light.z), vec3(0.92), p.light.w);
     vec3 c = linearToSrgb(shoulder(albedo * lit, look.z));
-    outColor = vec4(c * alpha, alpha);
+    outColor = vec4(hazeCoded(c) * alpha, alpha);
 }

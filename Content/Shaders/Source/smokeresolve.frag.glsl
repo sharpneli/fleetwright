@@ -46,5 +46,5 @@ void main()
     float sunLit = (max(sunL.z, 0.0) + 0.4) / 1.4, moonLit = (max(moonL.z, 0.0) + 0.4) / 1.4;
     vec3 lit = mix(seaAmb.rgb, skyAmb.rgb, 0.7) + sunRad.rgb * sunLit + moonRad.rgb * moonLit;
     vec3 c = linearToSrgb(shoulder(albedo * lit, look.z));
-    outColor = vec4(c * alpha, alpha);
+    outColor = vec4(hazeCoded(c) * alpha, alpha);
 }

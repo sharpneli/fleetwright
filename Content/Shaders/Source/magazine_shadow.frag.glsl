@@ -5,6 +5,8 @@
 // the light is marched through the one density (Include/magazine.glsl, its coarse octave); what it takes out darkens the
 // sea and the decks under it, premultiplied black over them, as the splashes' shadows do. By day the strongest cue that
 // the smoke is tall: a 1 km cap's shadow is over a kilometre long by 15 s.
+#define LIGHTS_BINDING 0
+#include "Include/shiplight.glsl"
 #include "Include/magazine.glsl"
 
 struct Mag
@@ -64,5 +66,5 @@ void main()
     float a = 0.7 * (1.0 - exp(-depth)) * shadowL.z * m.time.w;
     if (a < 0.002)
         discard;
-    outColor = vec4(0.0, 0.0, 0.0, a);
+    outColor = hazePremul(vec4(0.0, 0.0, 0.0, a));   // the haze over the shadow (docs/visuals/haze.md)
 }

@@ -130,7 +130,7 @@ void main()
         vec3 rgb = shipShade(fragTint.rgb * (0.55 + 0.9 * n) * (1.0 - 0.95 * hole), unpackNormal(nt), normalize(fragEye), fragLightSun, fragLightMoon, 1.0, 0.0,
             nt.a * (0.45 + 0.35 * n), specAt(depth), flashLit(unpackNormal(nt)));
         vec4 c = vec4(rgb, 1.0) * max(fragTint.a * edge * (0.7 + 0.3 * n), hole);
-        outColour = drown(c, depth) * opacity;
+        outColour = hazePremul(drown(c, depth)) * opacity;
         return;
     }
     if (fragMode.x > 0.5 && fragMode.x < 1.5)
@@ -154,7 +154,7 @@ void main()
         if (a <= 0.0)
             discard;
         float hs = hullShadow(heightTex, fragHmap, at, h, fragSun.xy, fragSun.z, fragMarch, fragSea);
-        outColour = vec4(0.0, 0.0, 0.0, shadowOver(a, hs, fragSun.w) * opacity);
+        outColour = hazePremul(vec4(0.0, 0.0, 0.0, shadowOver(a, hs, fragSun.w) * opacity));
         return;
     }
     vec2 uv = fragUv, at = fragShip;
@@ -222,6 +222,6 @@ void main()
             specAt(depth), flashLit(unpackNormal(nt)));
         if (fragMode.z > 0.0 && fragMarch.y > 0.0)   // a turret, in the hull's shadow at its roof's height
             rgb *= 1.0 - hullShadow(heightTex, fragHmap, own, fragMode.z, fragSun.xy, fragSun.z, fragMarch, fragSea) * fragSun.w;
-        outColour = drown(vec4(rgb * c.a, c.a), depth) * opacity;
+        outColour = hazePremul(drown(vec4(rgb * c.a, c.a), depth)) * opacity;   // through the haze (docs/visuals/haze.md); the icons are the table's
     }
 }

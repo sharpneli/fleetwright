@@ -16,6 +16,8 @@ layout(set = 2, binding = 0) uniform sampler2D heightTex;
 
 layout(location = 0) out vec4 outColour;
 
+#define LIGHTS_BINDING 0
+#include "Include/shiplight.glsl"
 #include "Include/shipshadow.glsl"
 
 void main()
@@ -24,5 +26,5 @@ void main()
     vec2 at = shownAt(heightTex, fragHmap, fragShip, fragSea, max(px.x, px.y));
     float hp = shadowHeight(heightTex, fragHmap, at, fragMarch.w);
     float shade = hullShadow(heightTex, fragHmap, at, hp, fragSun.xy, fragSun.z, fragMarch, fragSea);
-    outColour = vec4(0.0, 0.0, 0.0, shade * fragSun.w * fragMode.y);
+    outColour = hazePremul(vec4(0.0, 0.0, 0.0, shade * fragSun.w * fragMode.y));   // the haze over it (docs/visuals/haze.md)
 }

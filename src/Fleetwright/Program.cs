@@ -329,6 +329,12 @@ public static unsafe class Program
                     if (!Map.SymbolLook.Set(kv))
                         Console.Error.WriteLine($"Bad symbols knob: {kv} (want chord, width, casing, casingalpha, labelfade, labelhold, halo, motion)");
             }
+            else if (arg.StartsWith("-haze="))   // the world view's haze knobs (docs/visuals/haze.md; Map/HazeLook.cs): -haze=gain:2,on:0
+            {
+                foreach (var kv in arg.Substring("-haze=".Length).Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    if (!Map.HazeLook.Set(kv))
+                        Console.Error.WriteLine($"Bad haze knob: {kv} (want on, gain, hazescale, fogscale, deepest, back, slant)");
+            }
             else if (arg.StartsWith("-worldview="))   // the map's table-to-world boundary, metres per pixel at 1080p (docs/visuals/sea.md W0)
             {
                 if (double.TryParse(arg.Substring("-worldview=".Length), System.Globalization.CultureInfo.InvariantCulture, out double m) && m > 0)

@@ -64,5 +64,5 @@ void main()
     float y = shoulder(vec3(min(misc.w * magLuminance(kel), 200.0)), look.z).x;
     vec3 rgb = ch * y;
     rgb /= max(max(rgb.r, max(rgb.g, rgb.b)), 1.0);
-    outColor = vec4(linearToSrgb(rgb * w), 0.0);
+    outColor = vec4(linearToSrgb(rgb * w * hazeThrough()), 0.0);
 }

@@ -132,6 +132,7 @@ public sealed unsafe partial class MapScene : IScene
         (shipRenderer.List.IconCasingPx, shipRenderer.List.IconGlowPx) = (SymbolLook.Casing * 1.5 * Rp, 4 * Rp);
         shipRenderer.List.Build(view,s.Ships, world.DrawMs, s.Sun, artOf, classOf, shipRenderer.Icon, selected, hidden, sunLapse.Motion, s.Sighted,
             shipRenderer.Wakes);
+        shipRenderer.List.SetHaze(HazeLook.Uniforms(view, s.Weather, world.Settings, shipRenderer.List.Lights, WorldView.Factor(view)));
         probes.Add(probeDrawList, t);
         t = Probes.Now;
         BuildOverlay(view, s);
