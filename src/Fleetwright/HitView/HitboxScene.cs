@@ -10,12 +10,14 @@ using SDL;
 namespace Fleetwright.HitView;
 
 /// <summary>
-/// The hitbox viewer: the session's ship as its hitbox model in 3D (hitview.py, live). Left drag orbits, right drag
-/// pans, the wheel zooms; hovering names a prism, a click selects it and lists its fields. The panel picks the design,
+/// The hitbox viewer: the session's ship as its hitbox model in 3D (hitview.py, live), in the map's grammar
+/// (docs/map-ui/input.md, the controls unified): the middle button is the camera's (its drag orbits, with shift it
+/// pans), WASD pans, the wheel zooms; hovering names a prism, a left click selects it and lists its fields, a right
+/// click acts (fires a ray or a shell, as the panel's choice; shift+right a ray). The panel picks the design,
 /// a view (hitview's bow, quarter, side and internal, and plan), the projection, which kinds are drawn (alone or by
-/// preset) and a clip box (a tier at a click). With "click fires a ray" (or shift+click), a click fires a ray from the
+/// preset) and a clip box (a tier at a click). With "right-click fires a ray" (or shift+right), a right click fires a ray from the
 /// eye at the ship through the hit query's tracer (<see cref="ShipTracer"/>, docs/battle/fighting.md 4.1): the ray and
-/// what it crossed are drawn over the view, and the crossings listed in the panel. With "shell", a click fires a shell
+/// what it crossed are drawn over the view, and the crossings listed in the panel. With "shell", a right click fires a shell
 /// at what's under the cursor through the damage system (<see cref="ShotRange"/>): its path, the terminal walk plate by
 /// plate and what it did, played back over the view (HitboxScene.Shot.cs). Draws through a
 /// <see cref="HitboxRenderer"/>, which could as well draw into a small target inside another scene.
@@ -34,8 +36,9 @@ public sealed unsafe partial class HitboxScene : IScene
     bool frame = true;   // fit the camera to the ship at the next draw
     float aspect = 16f / 9;
     string status = "";
-    bool orbiting, panning;
-    float dragPx;   // how far the mouse moved with the left button down: a click selects, a drag orbits
+    bool orbiting, panning;   // the middle button's drag: it orbits, with shift it pans
+    float dragPx;   // how far the mouse moved with a button down: a click under 4 px
+    readonly Map.PanKeys panKeys = new();   // WASD, as every view's
     uint hoverFor = HitboxMesh.NoPrism, selectedFor = HitboxMesh.NoPrism;
     string hoverText = "", selectedText = "";
     List<Shipgen.Tier> tiers = [];
@@ -76,7 +79,7 @@ public sealed unsafe partial class HitboxScene : IScene
     public HitboxScene(SDL_GPUDevice* device, DesignSession session, string? view = null, string? show = null, bool fire = false)
     {
         this.session = session;
-        click = fire ? ClickMode.Ray : DevShot != null ? ClickMode.Shell : ClickMode.Select;
+        click = DevShot != null && !fire ? ClickMode.Shell : ClickMode.Ray;
         renderer = new HitboxRenderer(device);
         ApplyPreset(Presets.FirstOrDefault(p => p.Name == show, Presets[1]).Shows);
         var v = Views.FirstOrDefault(v => v.Name == view, Views[0]);
@@ -122,6 +125,14 @@ public sealed unsafe partial class HitboxScene : IScene
     public void Draw(SDL_GPUCommandBuffer* cmd, RenderTarget target, float dt)
     {
         aspect = (float)target.Width / Math.Max(1, target.Height);
+        if (ImGui.GetIO().WantTextInput)
+            panKeys.Release();
+        var (kx, ky) = panKeys.Step(dt, target.Height, (SDL3.SDL_GetModState() & SDL_Keymod.SDL_KMOD_SHIFT) != 0);
+        if (kx != 0 || ky != 0)
+        {
+            var (r, s, _) = cam.Basis();
+            cam.Target += (r * (float)kx - s * (float)ky) * (2 * cam.HalfHeight / Math.Max(1, target.Height));
+        }
         if (builtVersion != session.Version)
             Rebuild();
         if (frame && renderer.Mesh is { Prisms.Length: > 0 } m)   // the ship fills the view; the direction stays
@@ -166,8 +177,8 @@ public sealed unsafe partial class HitboxScene : IScene
         }
 
         ClipUi();
-        ImGui.Text("click");
-        foreach (var (mode, label) in (ReadOnlySpan<(ClickMode, string)>)[(ClickMode.Select, "selects"), (ClickMode.Ray, "fires a ray"), (ClickMode.Shell, "fires a shell")])
+        ImGui.Text("right-click");
+        foreach (var (mode, label) in (ReadOnlySpan<(ClickMode, string)>)[(ClickMode.Ray, "fires a ray"), (ClickMode.Shell, "fires a shell")])
         {
             ImGui.SameLine();
             if (ImGui.RadioButton(label, click == mode))
@@ -331,34 +342,34 @@ public sealed unsafe partial class HitboxScene : IScene
             case SDL_EventType.SDL_EVENT_MOUSE_WHEEL:
                 cam.HalfHeight *= MathF.Pow(1.15f, -e->wheel.y);
                 return true;
+            case SDL_EventType.SDL_EVENT_KEY_DOWN or SDL_EventType.SDL_EVENT_KEY_UP:
+                return panKeys.Key(e->key.scancode, (SDL_EventType)e->type == SDL_EventType.SDL_EVENT_KEY_DOWN);
             case SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN:
                 shiftDown = (SDL3.SDL_GetModState() & SDL_Keymod.SDL_KMOD_SHIFT) != 0;
-                if (e->button.button == 1)
-                    dragPx = 0;
-                orbiting |= e->button.button == 1;
-                panning |= e->button.button is 2 or 3;
-                return orbiting || panning;
+                dragPx = 0;
+                if (e->button.button == 2)
+                    (orbiting, panning) = (!shiftDown, shiftDown);
+                return true;
             case SDL_EventType.SDL_EVENT_MOUSE_BUTTON_UP:
-                if (e->button.button == 1)
+                if (e->button.button == 2)
+                    (orbiting, panning) = (false, false);
+                else if (dragPx < 4 && e->button.button == 1)   // the left selects what is under the cursor, or nothing
                 {
-                    orbiting = false;
-                    if (dragPx < 4 && click == ClickMode.Shell && !shiftDown)   // a click fires a shell
-                        Shoot(e->button.x, e->button.y, width, height);
-                    else if (dragPx < 4 && (click == ClickMode.Ray || shiftDown))   // a click fires a ray
-                        Fire(e->button.x, e->button.y, width, height);
-                    else if (dragPx < 4)   // a click: select what is under the cursor, or nothing
-                    {
-                        Pick(e->button.x, e->button.y, width, height);
-                        state.Selected = state.Hover == state.Selected ? HitboxMesh.NoPrism : state.Hover;
-                    }
+                    Pick(e->button.x, e->button.y, width, height);
+                    state.Selected = state.Hover == state.Selected ? HitboxMesh.NoPrism : state.Hover;
                 }
-                if (e->button.button is 2 or 3)
-                    panning = false;
+                else if (dragPx < 4 && e->button.button == 3)   // the right acts: a shell, or a ray
+                {
+                    if (click == ClickMode.Shell && !shiftDown)
+                        Shoot(e->button.x, e->button.y, width, height);
+                    else
+                        Fire(e->button.x, e->button.y, width, height);
+                }
                 return true;
             case SDL_EventType.SDL_EVENT_MOUSE_MOTION:
+                dragPx += MathF.Abs(e->motion.xrel) + MathF.Abs(e->motion.yrel);
                 if (orbiting)
                 {
-                    dragPx += MathF.Abs(e->motion.xrel) + MathF.Abs(e->motion.yrel);
                     cam.Bearing = (cam.Bearing - e->motion.xrel * 0.4f + 360) % 360;
                     cam.Elevation = Math.Clamp(cam.Elevation + e->motion.yrel * 0.4f, -89.9f, 89.9f);
                     return true;

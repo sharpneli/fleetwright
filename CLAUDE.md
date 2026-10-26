@@ -34,7 +34,7 @@ dotnet run --project src/Fleetwright -- -view=designer                    # the 
 dotnet run --project src/Fleetwright -- -ship=shipgen/designs/yamato.json [-new] [-section=0-7] [-units=imperial] [-steps=speed:-2,belt:+3]
 dotnet run --project src/Fleetwright -- -screenshot=30 [-output=ship.png]   # save frame 30 (default screenshot.png), exit
 dotnet run --project src/Fleetwright -- -screenshot=30 -ui [-size=1920x1080] # the window as seen, ImGui included
-dotnet run --project src/Fleetwright -- -view=hitbox [-camera=bow|quarter|side|internal|plan|ahead|astern] [-show=all|outside|internal|rooms|armour] [-clip=AFT,FORE[,port][,cut]] [-hitray]   # -clip: the clip box at start (the view framed to it); -hitray: a click fires a ray through the tracer
+dotnet run --project src/Fleetwright -- -view=hitbox [-camera=bow|quarter|side|internal|plan|ahead|astern] [-show=all|outside|internal|rooms|armour] [-clip=AFT,FORE[,port][,cut]] [-hitray]   # -clip: the clip box at start (the view framed to it); -hitray: a right click fires a ray through the tracer
 dotnet run --project src/Fleetwright -- -view=hitbox -camera=internal -show=internal -clip=-40,40,port "-hitshot=10,0,0,25,90,0,ap,at=6"   # a shell fired at start through ship point X,Y,Z from RANGE_KM and ASPECT (° off the bow)[,battery index[,ap|common|he]][,at=S: playback held at S s] (HitboxScene.Shot.cs)
 dotnet run --project src/Fleetwright -- -view=ship [-navy=kure] [-era=wwii]
 dotnet run --project src/Fleetwright -- -view=profile                      # the ship card's side view
@@ -145,10 +145,11 @@ autodesigner. `-steps=` applies knob steps at startup (knob ids from `Knobs`: `s
 The game uses the designer's other constructor: a design in, the edited one out through a callback, with a worker of
 its own.
 
-The hitbox viewer (`-view=hitbox`) shows the design's hitbox model in 3D (`HitView/`, the live `hitview.py`). Left
-drag orbits, right drag pans, wheel zooms; hovering names a prism and a click selects it and lists its fields. Its
+The hitbox viewer (`-view=hitbox`) shows the design's hitbox model in 3D (`HitView/`, the live `hitview.py`). In the
+map's grammar (docs/map-ui/input.md): the middle drag orbits (with shift it pans), WASD pans, wheel zooms; hovering names a
+prism and a left click selects it and lists its fields, a right click fires (a ray, or a shell as the panel picks). Its
 panel picks the view, the projection, which kinds are drawn, and a clip box: whole prisms that overlap it (a tier
-button gives that tier's rooms, `hitbox_cells.png` live) or a per-pixel cut. A click selects, fires a ray through the tracer, or fires a
+button gives that tier's rooms, `hitbox_cells.png` live) or a per-pixel cut. A right click fires a ray through the tracer, or fires a
 shell (`HitboxScene.Shot.cs`): through the point clicked from the range and the view's bearing (or a fixed aspect), by
 this ship's or another design's battery, through the world's own damage system on a ship of the design (`ShotRange`,
 with a `TerminalTrace` listening to `Terminal.Resolve`). The Shot window lists the walk plate by plate (obliquity,
@@ -158,7 +159,7 @@ fires), and plays it back over the view; a seed, again and re-roll, and a ship t
 
 The ship viewer (`-view=ship`) shows the design from the baked textures (mips, turrets through their arcs,
 height-map shadows), lit as on the map; its panel switches design, look, mip level, turrets, sun and moon, the
-lighting's debug views (albedo, normal, AO, ...) and the light table. Wheel zooms, left drag pans.
+lighting's debug views (albedo, normal, AO, ...) and the light table. Wheel zooms, WASD and the middle drag pan.
 
 The profile (`-view=profile`, `ProfileScene`) is the ship card, a poster of the session's ship in its look: the name,
 the plan (the sprite, turrets at rest, no shadow) over the profile (`ShipProfile`) at one scale with a scale bar, the

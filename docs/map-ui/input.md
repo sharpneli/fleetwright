@@ -11,7 +11,10 @@ The controls are the same in every view (the user, 2026-10-26: "a critical usabi
 player expects identical behaviour everywhere. A view that pans takes `PanKeys` (WASD, one implementation), the middle
 drag and click, the wheel at the cursor; the left button selects, the right acts. Done for the battle map and the launch
 screen's opening (**U1**, 2026-10-26: placing a unit on the right button, the launch screen's S, A and D moved to V, N
-and P). Open: the 3D views (the ship viewer, the hitbox view) orbit with a left drag; their mapping waits for the user.
+and P). **U2** (2026-10-26, question 6): the ship viewer pans by WASD and the middle drag; the hitbox view's middle
+button is the camera's (its drag orbits, with shift it pans), WASD pans, the left selects a prism, the right fires (a
+ray, or a shell as the panel picks; shift+right a ray). The free camera of a scene-less engine (`Camera.cs`) is left
+as it is: no player sees it.
 
 ## Before
 

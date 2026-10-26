@@ -10,10 +10,9 @@ using ShipP3 = Fleetwright.Sim.Ships.P3;
 
 namespace Fleetwright.HitView;
 
-/// <summary>What a click in the hitbox viewer does.</summary>
+/// <summary>What a right click in the hitbox viewer does (the left selects).</summary>
 enum ClickMode
 {
-    Select,
     Ray,
     Shell,
 }

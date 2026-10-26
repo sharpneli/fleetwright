@@ -39,7 +39,8 @@ public sealed unsafe class ShipViewer : IScene
     bool bearingsSet;
     (double Lo, double Hi)[][] mountArcs = [];   // each mount's arcs, made once per ship so a frame allocates nothing
     const double TraverseDegPerS = 45;   // faster than the sweep, so a turret catches up after a blind arc
-    bool dragging;
+    bool dragging;   // the middle button's
+    readonly Map.PanKeys panKeys = new();   // WASD, as every view's
 
     // the hitbox inset: the hitbox renderer drawing into a small target of its own, shown in the panel, turning
     HitboxRenderer? insetRenderer;
@@ -184,6 +185,10 @@ public sealed unsafe class ShipViewer : IScene
     {
         if (shownVersion != session.Version)
             Show();
+        if (ImGui.GetIO().WantTextInput)
+            panKeys.Release();
+        var (kx, ky) = panKeys.Step(dt, target.Height, (SDL3.SDL_GetModState() & SDL_Keymod.SDL_KMOD_SHIFT) != 0);
+        view.Centre += new Vector2((float)kx, (float)ky) / view.Zoom;
         clock += dt;
         if (renderer.Meta != null)
         {
@@ -307,7 +312,8 @@ public sealed unsafe class ShipViewer : IScene
         ImGui.TextDisabled($"sun + day sky: {s.X:0.00} {s.Y:0.00} {s.Z:0.00} (1: a flat matte deck at noon as drawn)");
     }
 
-    /// <summary>Wheel zooms about the cursor, left drag pans. False when the event isn't the viewer's.</summary>
+    /// <summary>The map's grammar (docs/map-ui/input.md, the controls unified): the wheel zooms about the cursor, the
+    /// middle drag and WASD pan. False when the event isn't the viewer's.</summary>
     public bool ProcessEvent(SDL_Event* e, uint w, uint h)
     {
         switch ((SDL_EventType)e->type)
@@ -320,8 +326,10 @@ public sealed unsafe class ShipViewer : IScene
                     view.Centre = before - at / view.Zoom;
                     return true;
                 }
+            case SDL_EventType.SDL_EVENT_KEY_DOWN or SDL_EventType.SDL_EVENT_KEY_UP:
+                return panKeys.Key(e->key.scancode, (SDL_EventType)e->type == SDL_EventType.SDL_EVENT_KEY_DOWN);
             case SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN:
-                dragging = e->button.button == 1;
+                dragging = e->button.button == 2;
                 return dragging;
             case SDL_EventType.SDL_EVENT_MOUSE_BUTTON_UP:
                 dragging = false;
