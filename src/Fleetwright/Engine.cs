@@ -307,7 +307,8 @@ public unsafe class Sdl3GpuEngine : IDisposable
     /// "F:mclick:X,Y" and "F:mright:X,Y" are left and right clicks the same way, as SDL events (the map's clicks).
     /// "F:mwheel:X,Y:N" turns the wheel N notches as an SDL event (the map's zoom: N &gt; 0 zooms in), and "F:key:NAME"
     /// presses a key by its SDL name (F2, Space, =); "F:hold:NAME:N" holds it N frames (down and up as SDL events, with
-    /// its scancode). "F:mmiddle:X,Y" is a middle click; "F:pan:X0,Y0:X1,Y1:N:2" pans with the middle button.</summary>
+    /// its scancode). "F:mmiddle:X,Y" is a middle click, "F:mclick:X,Y:B" a click of button B (4, 5 the side buttons);
+    /// "F:pan:X0,Y0:X1,Y1:N:2" pans with the middle button.</summary>
     public List<string> ScriptedInput { get; } = [];
 
     void FeedScriptedInput()
@@ -389,7 +390,7 @@ public unsafe class Sdl3GpuEngine : IDisposable
                     break;
                 case "mclick" or "mright" or "mmiddle":
                     var m = At(p[2]);
-                    byte mb = p[1] == "mclick" ? (byte)1 : p[1] == "mmiddle" ? (byte)2 : (byte)3;
+                    byte mb = p.Length > 3 ? byte.Parse(p[3]) : p[1] == "mclick" ? (byte)1 : p[1] == "mmiddle" ? (byte)2 : (byte)3;
                     PushMouse(SDL_EventType.SDL_EVENT_MOUSE_MOTION, m, default);
                     PushMouse(SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN, m, default, mb);
                     PushMouse(SDL_EventType.SDL_EVENT_MOUSE_BUTTON_UP, m, default, mb);

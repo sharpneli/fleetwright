@@ -100,7 +100,7 @@ Finnish keyboard `[ ] / ;` need AltGr. Keys are SDL keycodes, so they follow the
 
 | Where | Key | Does |
 |---|---|---|
-| The map (status bar) | Space, + −, 1–0, Tab ⇧Tab, T, J, V, P, Esc, F1 | as now: pause, speed, speeds, next ship, tasks, log, card, pin, menu, dev |
+| The map (status bar) | Space, + −, 1–5, Tab ⇧Tab, T, J, V, P, Esc, F1 | pause, speed, the gears (1–0 the speeds until input.md T0), next ship, tasks, log, card, pin, menu, dev |
 | Orders to | Q, ⇧Q | the next level up (toward the fleet), down (toward the ship) |
 | | ⇧B | back into line (falling out) |
 | Helm | ← →, ⇧← ⇧→ | course 10°, 90° |

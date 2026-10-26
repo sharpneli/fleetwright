@@ -6,13 +6,46 @@ namespace Fleetwright.Map;
 
 /// <summary>The clock's speed detent: a track of notches from 1x to 1,000,000x, the knob on the speed asked, a mark over
 /// the speed achieved, the coarse tier's stretch tinted. Click or drag picks a notch (and runs a paused clock); the wheel
-/// over it and + and - step it.</summary>
+/// over it and + and - step it, as the mouse's side buttons do; keys 1 to 5 the gears, § held the passage gear.</summary>
 public sealed partial class MapScene
 {
     static readonly double[] Speeds = [1, 3, 10, 30, 60, 240, 1000, 3000, 10_000, 30_000, 100_000, 300_000, 1_000_000];
     static readonly string[] SpeedLabels = [.. Speeds.Select(sp => SpeedLabel(sp).TrimEnd('×'))];
     static readonly string[] SpeedSpans = [.. Speeds.Select(sp => $"{SpeedLabel(sp)}: {PerSecond(sp)} a second")];
-    static readonly string[] SpeedKeys = [.. Enumerable.Range(0, 10).Select(i => $"key {(i + 1) % 10}")];   // MapScene.SpeedKey
+    /// <summary>The gears, keys 1 to 5 (docs/map-ui/input.md T0): the speeds used most; the bar keeps all of them.
+    /// 240× is the fine tier's top, 3,000× a passage (and § held's).</summary>
+    static readonly double[] Gears = [1, 10, 60, 240, 3000];
+    static readonly string?[] SpeedKeys = [.. Speeds.Select(sp => Array.IndexOf(Gears, sp) is int g and >= 0 ? $"key {g + 1}" : null)];   // MapScene.SpeedKey
+
+    /// <summary>The fast-forward key, by its place: left of 1 (§ on a Nordic keyboard, ` on a US one).</summary>
+    const SDL.SDL_Scancode FastKey = SDL.SDL_Scancode.SDL_SCANCODE_GRAVE;
+    (double Speed, bool Paused)? fastFrom;   // while § is held: the clock it found, given back on the release
+
+    /// <summary>§ down (not its repeats): the clock to the passage gear, a paused one running; up: back to the speed it
+    /// found, paused again if it was, unless the player or the clock's own rule changed it meanwhile (a gear picked,
+    /// an encounter's pause).</summary>
+    void FastForward(bool down)
+    {
+        var s = world.Current;
+        if (down)
+        {
+            if (fastFrom != null)
+                return;
+            fastFrom = (s.Speed, s.Paused);
+            world.Send(Command.SetSpeed(Gears[^1]));
+            if (s.Paused)
+                world.Send(Command.Resume());
+            return;
+        }
+        if (fastFrom is not var (speed, paused))
+            return;
+        fastFrom = null;
+        if (Math.Abs(s.Speed - Gears[^1]) > 1e-6 || s.Paused)
+            return;
+        world.Send(Command.SetSpeed(speed));
+        if (paused)
+            world.Send(Command.Pause());
+    }
 
     int detentSent = -1;   // the notch a drag last sent, so a held drag sends once per notch
 

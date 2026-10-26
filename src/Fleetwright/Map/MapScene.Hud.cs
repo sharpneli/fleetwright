@@ -284,8 +284,8 @@ public sealed partial class MapScene : ISceneMenu
             {
                 ImGui.BeginTooltip();
                 ImGui.TextUnformatted(SpeedSpans[i]);
-                if (i < 10)
-                    ImGui.TextDisabled(SpeedKeys[i]);
+                if (SpeedKeys[i] is { } key)
+                    ImGui.TextDisabled(key);
                 if (coarse)
                     ImGui.TextDisabled("coarse tier: ships off rails in 1-minute steps, guns silent");
                 ImGui.EndTooltip();
@@ -500,7 +500,7 @@ public sealed partial class MapScene : ISceneMenu
     DistanceUnit legendUnit;
 
     /// <summary>The map's own keys, at the status bar's right.</summary>
-    const string StatusKeys = "WASD pan · Space pause · + − speed · 1–0 speeds · Tab next ship · J log · V card · P pin · Esc menu";
+    const string StatusKeys = "WASD pan · Space pause · 1–5 gears · § fast · + − speed · Tab next ship · J log · V card · P pin · Esc menu";
 
     /// <summary>The status bar along the bottom (docs/map-ui/strip.md), as the designer's and the launch screen's: a dot
     /// and what the mouse does, or the armed pick in amber, at the left; the map's keys, the grid's legend, the scale bar

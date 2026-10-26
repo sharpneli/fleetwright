@@ -239,6 +239,12 @@ public sealed unsafe partial class MapScene : IScene
                     (panX, panY, dragging) = (e->button.x * sx, e->button.y * sy, true);
                     return true;
                 }
+                if (e->button.button is 4 or 5)
+                {
+                    // the side buttons: back a step slower, forward faster (docs/map-ui/input.md T0)
+                    world.Send(Command.SetSpeed(StepSpeed(world.Current.Speed, e->button.button == 5 ? 1 : -1)));
+                    return true;
+                }
                 if (e->button.button == 3)
                 {
                     OrderAt(e->button.x * sx, e->button.y * sy, (SDL_GetModState() & SDL_Keymod.SDL_KMOD_SHIFT) != 0);
@@ -290,8 +296,19 @@ public sealed unsafe partial class MapScene : IScene
                 mouseIn = false;
                 return false;
             case SDL_EventType.SDL_EVENT_KEY_DOWN:
+                if (e->key.scancode == FastKey)
+                {
+                    if (!e->key.repeat)
+                        FastForward(true);
+                    return true;
+                }
                 return Key((uint)e->key.key, e->key.scancode);
             case SDL_EventType.SDL_EVENT_KEY_UP:
+                if (e->key.scancode == FastKey)
+                {
+                    FastForward(false);
+                    return true;
+                }
                 return PanKey(e->key.scancode, false);
         }
         return false;
@@ -322,10 +339,10 @@ public sealed unsafe partial class MapScene : IScene
             world.Send(s.Paused ? Command.Resume() : Command.Pause());
         else if (key is SDLK_EQUALS or SDLK_KP_PLUS or SDLK_MINUS or SDLK_KP_MINUS)
             world.Send(Command.SetSpeed(StepSpeed(s.Speed, key is SDLK_MINUS or SDLK_KP_MINUS ? -1 : 1)));
-        else if (SpeedKey(key) is var i and >= 0 && i < Speeds.Length)
+        else if (SpeedKey(key) is var i and >= 0)
         {
-            // as the bar's button: the speed, and a paused clock runs at it
-            world.Send(Command.SetSpeed(Speeds[i]));
+            // as the bar's button: the gear's speed, and a paused clock runs at it
+            world.Send(Command.SetSpeed(Gears[i]));
             if (s.Paused)
                 world.Send(Command.Resume());
         }
@@ -334,14 +351,12 @@ public sealed unsafe partial class MapScene : IScene
         return true;
     }
 
-    /// <summary>The bar's speed a number key picks: 1 to 9 the first nine, 0 the tenth (the keypad's too); -1 for any
-    /// other key.</summary>
+    /// <summary>The gear a number key picks: 1 to 5 (the keypad's too); -1 for any other key (6 to 0 are free,
+    /// docs/map-ui/input.md).</summary>
     static int SpeedKey(uint key) => key switch
     {
-        >= SDLK_1 and <= SDLK_9 => (int)(key - SDLK_1),
-        SDLK_0 => 9,
-        >= SDLK_KP_1 and <= SDLK_KP_9 => (int)(key - SDLK_KP_1),
-        SDLK_KP_0 => 9,
+        >= SDLK_1 and <= SDLK_5 => (int)(key - SDLK_1),
+        >= SDLK_KP_1 and <= SDLK_KP_5 => (int)(key - SDLK_KP_1),
         _ => -1,
     };
 
