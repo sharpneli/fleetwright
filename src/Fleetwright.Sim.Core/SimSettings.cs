@@ -338,6 +338,11 @@ public sealed record SimSettings
     /// <summary>How often each navy's sighting is looked at in an encounter, ms (the plan's ~1 Hz).</summary>
     public int SightingMs { get; init; } = 1000;
 
+    /// <summary>The coarse tier's watch (docs/battle/coarse.md J5): every <see cref="SightWatchMs"/> between its looks,
+    /// the engaged batteries' targets are looked for again (fire control reads her being in sight every second; 5 s kept
+    /// the haze duel's parity at a fifth of the watch's cost at 1 s).</summary>
+    public int SightWatchMs { get; init; } = 5000;
+
     /// <summary>A look ordered at once (ShipSystem.LookNow, after a dev spawn) is over this many seconds: as if the ships
     /// had been there a while, so anything plainly visible is found (a 1 s look finds it one time in eight).</summary>
     public double SightLookNowS { get; init; } = 300;
@@ -1924,6 +1929,11 @@ public sealed record SimSettings
     /// lattice of world time (the same at any speed within a tier; the coarse is cheaper, docs/battle/smoke.md principles).</summary>
     public int SmokeTickMs { get; init; } = 1000;
     public int SmokeCoarseTickMs { get; init; } = 60_000;
+
+    /// <summary>The coarse tier's young steps (docs/battle/coarse.md J5): every <see cref="SmokeYoungMs"/> between its
+    /// ticks, each ship's smoke since her last laid and the index's young part filed again, so her newest smoke stands on
+    /// the lines as in fine (6 s let the haze duel's rounds drift out of parity).</summary>
+    public int SmokeYoungMs { get; init; } = 3_000;
 
     /// <summary>A puff's spread at birth, m (the plume after the funnels' lee) [EST]; the most of a ship's run through the
     /// air one puff stands for, m: a tick's run is cut into puffs this long or shorter, and a longer one (the coarse tier's)

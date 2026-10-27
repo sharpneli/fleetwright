@@ -24,6 +24,9 @@ namespace Fleetwright.Sim;
 /// <see cref="SimSettings.SightForgetMs"/>.</item>
 /// <item><b>Smoke on the horizon</b> (docs/battle/smoke.md Z6): a ship not seen is looked for by her smoke
 /// (<see cref="SmokeLook"/>), and a fix on it starts a contact at <see cref="ContactLevel.Smoke"/> or keeps her track.</item>
+/// <item><b>The coarse tier's watch</b> (docs/battle/coarse.md J5): between its minute looks, the engaged batteries'
+/// targets are looked for again every <see cref="SimSettings.SightWatchMs"/> (<see cref="Watch"/>); a look's draw covers
+/// only the time since she was last looked for.</item>
 /// </list></summary>
 public sealed class Sightings
 {
@@ -38,6 +41,10 @@ public sealed class Sightings
     readonly int smokeLookProbe;
     readonly Dictionary<int, int> similar = new(64);   // a class's most similar other class in the world, or -1
     int similarFor = -1;   // the count of classes in use it was worked out for
+    // the coarse tier's watch (docs/battle/coarse.md J5): this second's targets of engaged batteries (by the side looking
+    // and the entity), and whether the look is the watch's
+    readonly HashSet<long> watch = new(64);
+    bool watching;
 
     // a look's ships (those in encounters), sorted by encounter: slot, side, encounter, position, their place in the
     // encounter's grid
@@ -75,7 +82,7 @@ public sealed class Sightings
     double[] nearD = [];      // each worker's squared distances while it finds an item's nearest
     // the encounter being looked in: its grid, and the moment's light
     int gridW, gridH;
-    double gridMinX, gridMinY, gridCell, lookDt, lookVis, lookSunEl, lookSunBrg;
+    double gridMinX, gridMinY, gridCell, lookVis, lookSunEl, lookSunBrg;
     long lookNow;
 
     // a look's items worked out on the workers; under a few, inline (the same code path)
@@ -121,6 +128,34 @@ public sealed class Sightings
     /// coarse tier): every ship in an encounter looked for by the sides at war with it there.</summary>
     internal void Look(World world, ShipStore store, IReadOnlyList<int> classesInUse, double dt)
     {
+        Gather(world, store, classesInUse, dt);
+        OutOfSight(world.Time.Ms);
+        Forget(world.Time.Ms);
+    }
+
+    /// <summary>The coarse tier's watch (docs/battle/coarse.md J5), every <see cref="SimSettings.SightWatchMs"/> between its
+    /// looks: each engaged battery's target looked for by the battery's side, as the fine tick's look does (lost when no
+    /// eye makes her out, found again at the detection's rate). Fire control reads her being in sight every second; nothing
+    /// else does between the coarse looks (the AI reads it at its thinks, torpedoes have their own watch,
+    /// coarse.md J3), so the rest wait for the coarse look.</summary>
+    internal void Watch(World world, ShipStore store, IReadOnlyList<int> classesInUse)
+    {
+        watch.Clear();
+        for (int i = 0; i < world.Gunnery.Engagements; i++)
+            if (world.Gunnery.Engagement(i, out int shooter, out int target) && store.SlotOf(shooter) is int s and >= 0)
+                watch.Add(WatchKey(store[s].Side, target));
+        if (watch.Count == 0)
+            return;
+        watching = true;
+        Gather(world, store, classesInUse, settings.SightWatchMs / 1000.0);
+        watching = false;
+    }
+
+    static long WatchKey(byte by, int entity) => (long)by << 32 | (uint)entity;
+
+    /// <summary>The ships in encounters gathered, sorted by encounter, each encounter looked in.</summary>
+    void Gather(World world, ShipStore store, IReadOnlyList<int> classesInUse, double dt)
+    {
         long now = world.Time.Ms;
         // the ships in encounters, sorted by encounter
         int n = 0;
@@ -144,8 +179,6 @@ public sealed class Sightings
             LookIn(world, store, i, j, now, dt, classesInUse);
             i = j;
         }
-        OutOfSight(now);
-        Forget(now);
     }
 
     /// <summary>Contacts in sight that no look was made for this time (their ships out of the encounters, or gone) go out
@@ -178,6 +211,15 @@ public sealed class Sightings
         }
         if (sideCount < 2)
             return;
+        // the items in the order they're looked at: each ship, by each side at war with her here (the watch's: the
+        // batteries' targets)
+        int items = 0;
+        for (int i = a; i < b; i++)
+            for (int si = 0; si < sideCount; si++)
+                if (Looked(store, order[i], sidesHere[si]))
+                    items++;
+        if (items == 0)
+            return;
         double cell = settings.SightGridM;
         while ((maxX - minX) / cell * ((maxY - minY) / cell) > 250_000)
             cell *= 2;   // a sprawling encounter: coarser, not huge
@@ -206,13 +248,7 @@ public sealed class Sightings
         double sunEl = Light.SunElevationDeg(origin, world.Time), sunBrg = Light.SunBearingDeg(origin, world.Time);
         bool lowSun = sunEl >= settings.SightSilhouetteLowDeg && sunEl <= settings.SightSilhouetteHighDeg;
         (gridW, gridH, gridMinX, gridMinY, gridCell) = (w, h, minX, minY, cell);
-        (lookNow, lookDt, lookVis, lookSunEl, lookSunBrg) = (now, dt, weather.VisibilityM, sunEl, lowSun ? sunBrg : double.NaN);
-        // the items in the order they're looked at: each ship, by each side at war with her here
-        int items = 0;
-        for (int i = a; i < b; i++)
-            for (int si = 0; si < sideCount; si++)
-                if (relations.Hostile(sidesHere[si], side[order[i]]))
-                    items++;
+        (lookNow, lookVis, lookSunEl, lookSunBrg) = (now, weather.VisibilityM, sunEl, lowSun ? sunBrg : double.NaN);
         EnsureItems(items, world.Workers.Participants);
         world.Smoke.PrepareQueries(world.Workers.Participants);
         items = 0;
@@ -220,14 +256,32 @@ public sealed class Sightings
         {
             int t = order[i];
             for (int si = 0; si < sideCount; si++)
-                if (relations.Hostile(sidesHere[si], side[t]))
+                if (Looked(store, t, sidesHere[si]))
                     (rows[items].T, rows[items++].By) = (t, sidesHere[si]);
         }
         world.Workers.For(new LookJob(this, world, store), items, LookChunk, LookMinItems);
         for (int i = 0; i < items; i++)
-            if (rows[i].Found > 0 && !Apply(world, store, i, classesInUse))
-                SmokeLook(world, store, rows[i].T, rows[i].By, near.AsSpan(i * NearMax, rows[i].Found), now, dt, lookVis, sunEl);
+            if (rows[i].Found > 0)
+            {
+                double span = Span(store, i, now, dt);
+                if (!Apply(world, store, i, classesInUse, span))
+                    SmokeLook(world, store, rows[i].T, rows[i].By, near.AsSpan(i * NearMax, rows[i].Found), now, span, lookVis, sunEl);
+            }
     }
+
+    /// <summary>The time item i's look covers, s: the look's, or the time since she was last looked for by the side if
+    /// that's less (a coarse look after the watch's seconds, docs/battle/coarse.md J5: those seconds had their own draws).</summary>
+    double Span(ShipStore store, int i, long now, double dt)
+    {
+        var pic = Of(rows[i].By);
+        int ci = pic?.IndexOf(store[slot[rows[i].T]].Entity) ?? -1;
+        return ci >= 0 && pic![ci].LookedMs < now ? Math.Min(dt, (now - pic[ci].LookedMs) / 1000.0) : dt;
+    }
+
+    /// <summary>Whether ship k (of the look's) is looked for by a side: one at war with her; on the watch, a target of
+    /// the side's batteries.</summary>
+    bool Looked(ShipStore store, int k, byte by) =>
+        relations.Hostile(by, side[k]) && (!watching || watch.Contains(WatchKey(by, store[slot[k]].Entity)));
 
     void EnsureItems(int items, int participants)
     {
@@ -387,8 +441,8 @@ public sealed class Sightings
     }
 
     /// <summary>Item i's look applied, on the sim thread in the look's order: the smoke cache's bookkeeping for the pairs
-    /// it asked, then a fix, a detection, or the contact going out of sight. Whether she's in sight after it.</summary>
-    bool Apply(World world, ShipStore store, int i, IReadOnlyList<int> classesInUse)
+    /// it asked, then a fix, a detection (a draw over dt s), or the contact going out of sight. Whether she's in sight after it.</summary>
+    bool Apply(World world, ShipStore store, int i, IReadOnlyList<int> classesInUse, double dt)
     {
         ref readonly var row = ref rows[i];
         var ts = store[slot[row.T]];
@@ -402,7 +456,7 @@ public sealed class Sightings
         if (ci >= 0)
             pic.At(ci).LookedMs = now;
         var r = stream.Derive(((ulong)row.By << 56) ^ ((ulong)(uint)ts.Entity << 24) ^ (ulong)(now / settings.SightingMs));
-        if (inSight && row.Best >= 1 || !inSight && row.Rate > 0 && r.NextDouble() < SightModel.Chance(row.Rate, lookDt))
+        if (inSight && row.Best >= 1 || !inSight && row.Rate > 0 && r.NextDouble() < SightModel.Chance(row.Rate, dt))
         {
             var os = store[slot[row.FixObs]];
             Fix(pic, ci, ts, store.Combat.Condition(ts.Slot), os, os.Handling.Class.Eyes[row.FixEye], row.Best, row.FixMargin, row.FixD, row.FixBrg,

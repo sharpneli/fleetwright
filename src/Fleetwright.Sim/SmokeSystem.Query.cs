@@ -564,9 +564,9 @@ public sealed partial class SmokeSystem
         var tc = ts.Handling.Class;
         for (int j = 0; j < PairBands; j++)
             q.BandTo[j] = tc.Silhouette.TopM * settings.SmokeBands[j];
-        var o = os.Position.Normalized() * Earth.Radius;
-        var t = ts.Position.Normalized() * Earth.Radius;
-        (a, b) = (frame.ToAir(o), frame.ToAir(t));
+        // the ships as they are now, in the air as the last tick left it (unwound by its drift since, as a puff laid now is)
+        long now = world.Time.Ms;
+        (a, b) = (ToAir(os.Position.Normalized() * Earth.Radius, now), ToAir(ts.Position.Normalized() * Earth.Radius, now));
         q.Split = splitShare;
         q.Middle = new SmokeLine(a, b, eyes[0].HeightM, q.BandTo[0], settings.SightRefraction);
         // each row from its eye's place on her, each point along the target in hers: their offsets from the middle line
@@ -576,14 +576,14 @@ public sealed partial class SmokeSystem
         {
             ref readonly var eye = ref eyes[SmokeModel.PairEye(e, eyes.Length)];
             q.RowFrom[e] = eye.HeightM;
-            var at = frame.ToAir(of.ToWorld(eye.X, eye.Y, 0).Normalized() * Earth.Radius) - a;
+            var at = ToAir(of.ToWorld(eye.X, eye.Y, 0).Normalized() * Earth.Radius, now) - a;
             (q.RowSide[e], q.RowAlong[e]) = (Vec3d.Dot(at, q.Middle.Side), Vec3d.Dot(at, q.Middle.Along));
             q.SpreadO = Math.Max(q.SpreadO, Math.Sqrt(q.RowSide[e] * q.RowSide[e] + q.RowAlong[e] * q.RowAlong[e]));
         }
         var tf = ts.Frame;
         for (int k = 0; k < PairPoints; k++)
         {
-            var at = frame.ToAir(tf.ToWorld(SmokeModel.PointX(k, tc.Hull.X0, tc.Hull.X1), 0, 0).Normalized() * Earth.Radius) - b;
+            var at = ToAir(tf.ToWorld(SmokeModel.PointX(k, tc.Hull.X0, tc.Hull.X1), 0, 0).Normalized() * Earth.Radius, now) - b;
             (q.PointSide[k], q.PointAlong[k]) = (Vec3d.Dot(at, q.Middle.Side), Vec3d.Dot(at, q.Middle.Along));
             q.SpreadT = Math.Max(q.SpreadT, Math.Sqrt(q.PointSide[k] * q.PointSide[k] + q.PointAlong[k] * q.PointAlong[k]));
         }

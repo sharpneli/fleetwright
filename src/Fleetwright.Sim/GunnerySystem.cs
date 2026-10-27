@@ -1524,6 +1524,17 @@ public sealed class GunnerySystem : IWorldSystem
     public readonly record struct Tally(int Salvos, int Shells, int Hits, int Straddles, long FirstHitMs, long FirstStraddleMs, long TrackMs,
         BatteryState State, bool Local, FirePhase Phase, int RangingSalvos, int RangingShells, long EffectMs);
 
+    /// <summary>The engagements' pool, for the coarse tier's watch (docs/battle/coarse.md J5): how far it's used, and
+    /// engagement i's shooter and target (entities), true while it's live.</summary>
+    internal int Engagements => highFc;
+
+    internal bool Engagement(int i, out int shooter, out int target)
+    {
+        ref readonly var fc = ref fcs[i];
+        (shooter, target) = (fc.Shooter, fc.Target);
+        return fc.Alive;
+    }
+
     /// <summary>A ship's battery's tally, if it's engaged.</summary>
     public Tally? TallyOf(int shooter, int battery)
     {

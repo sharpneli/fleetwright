@@ -32,7 +32,7 @@ public sealed partial class ShipSystem : IWorldSystem
 {
     public const byte Id = 1;
     const ushort Tick = 1, RailsWaypoint = 2, PolarEntry = 3, PolarExit = 4, ContactCheck = 5, ContactScan = 6, LandAhead = 7, LandRecheck = 8,
-        CoarseStep = 9, CoarseSegment = 10;
+        CoarseStep = 9, CoarseSegment = 10, SightWatch = 11;
 
     readonly SimSettings settings;
     readonly Relations relations;
@@ -330,6 +330,12 @@ public sealed partial class ShipSystem : IWorldSystem
             probes.Add(coarseProbe, t);
             return;
         }
+        if (e.Code == SightWatch)
+        {
+            WatchEvent(world);
+            probes.Add(sightingProbe, t);
+            return;
+        }
         if (e.Code == CoarseStep)
         {
             CoarseStepEvent(world);
@@ -375,6 +381,8 @@ public sealed partial class ShipSystem : IWorldSystem
             h.Add(coarseMode);   // only then, so a world never coarse hashes as it did before the tier
             h.Add(nextCoarseMs);
         }
+        if (watchMs >= 0)
+            h.Add(watchMs);
         h.Add(nextScanMs);
         h.Add(scanGen);
         h.Add(nextEntity);

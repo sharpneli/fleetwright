@@ -706,6 +706,7 @@ public sealed partial class ShipSystem
 
     bool coarseMode;   // ships off rails are coarse: the asked speed at CoarseMinSpeed or more, as of its last change
     long nextCoarseMs = -1;   // the coarse step scheduled, or -1
+    long watchMs = -1;        // the coarse tier's watch scheduled (docs/battle/coarse.md J5), or -1
 
     /// <summary>Whether ships off rails are coarse: the asked speed at <see cref="SimSettings.CoarseMinSpeed"/> or
     /// more (<see cref="World.Coarse"/>: never with the fine tier held). The asked speed, never the achieved one (world
@@ -837,6 +838,30 @@ public sealed partial class ShipSystem
         PlanCoarse(world, slot);
     }
 
+    /// <summary>The coarse tier's watch (docs/battle/coarse.md J5, <see cref="Sightings.Watch"/>) at the next
+    /// <see cref="SimSettings.SightWatchMs"/> of world time, up to the next coarse look, while an encounter is open.</summary>
+    void ScheduleWatch(World world)
+    {
+        if (watchMs >= 0 || encounters.Count == 0)
+            return;
+        long next = (world.Time.Ms / settings.SightWatchMs + 1) * settings.SightWatchMs;
+        if (next % settings.CoarseStepMs == 0)
+            return;   // the coarse look's own moment: it sets the next watch
+        watchMs = next;
+        world.Schedule(new WorldTime(next), EventTier.Coarse, 0, Id, SightWatch);
+    }
+
+    /// <summary>A moment of the coarse tier's watch, while no ship is on the fine tick (its look looks at everyone every
+    /// second).</summary>
+    void WatchEvent(World world)
+    {
+        watchMs = -1;
+        if (Store.FineCount > 0 || encounters.Count == 0)
+            return;
+        sightings.Watch(world, Store, used);
+        ScheduleWatch(world);
+    }
+
     void EnsureCoarseStep(World world)
     {
         if (nextCoarseMs >= 0)
@@ -877,6 +902,7 @@ public sealed partial class ShipSystem
                 t = Probes.Now;
                 sightings.Look(world, Store, used, settings.CoarseStepMs / 1000.0);
                 probes.Add(sightingProbe, t);
+                ScheduleWatch(world);
             }
         }
         RideCheck(world);

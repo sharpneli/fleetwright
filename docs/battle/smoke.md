@@ -444,7 +444,10 @@ settings.json; `shipgen smoke run [SCENARIO] [--minutes N] [--every N] [--speed 
 - **A tick on a lattice of world time:** every `SmokeTickMs` (1 s) in the fine tier, `SmokeCoarseTickMs` (60 s) in the
   coarse (the coarse lays the same smoke in fewer, wider puffs: cheap, as the user asked of it). It starts when a ship is
   off rails and stops when no trail is left; the air's frame is carried on, each ship's smoke since her last tick laid, a
-  slice of the trails walked.
+  slice of the trails walked. *Since coarse.md J5 (2026-10-27):* between the coarse ticks, young steps every
+  `SmokeYoungMs` (3 s) lay each ship's smoke and file the index's young part, so her newest smoke stands on the lines as
+  in fine (the minute's laying alone left them all but clear); the air, the merges and the full rebuild keep the minute.
+  The sight lines take the ships unwound by the air's drift since the last tick (`SmokeSystem.ToAir`).
 - **One trail a ship,** not one a funnel: her funnels' plumes summed, the rest A-weighted, their spread over her length
   in the puff's σ (the research's count was a trail a ship; the plumes join within a few lengths). A tick's run through
   the air is cut into puffs at most `SmokeSpacingM` (20 m) long, each laid where she was then; a longer run (the coarse

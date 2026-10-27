@@ -237,4 +237,42 @@ public class SmokeSightTests(ITestOutputHelper output)
         Assert.Equal(5, SightModel.SmokeAt(tau, top, top, Settings));
         Assert.Equal(2, SightModel.SmokeAt(tau, top * (b + Settings.SmokeBands[1]) / 2, top, Settings), 1e-9);
     }
+
+    /// <summary>The coarse tier's young steps (docs/battle/coarse.md J5): a battleship engaging another 7 km abeam in calm
+    /// air, both at 25 kn, their own funnels' and guns' smoke on the line between them. Between the coarse ticks her newest
+    /// smoke stands on it as it does on the fine tick (the minute's laying alone left the line all but clear: a ship's
+    /// last minute of smoke, the densest there is, wasn't laid until she'd run 770 m past it).</summary>
+    [Fact]
+    public void Between_the_coarse_ticks_her_newest_smoke_is_on_the_lines()
+    {
+        double Mean(double speed)
+        {
+            var w = new World(Start, 9, Settings with { Smoke = true });
+            int c = w.Ships.AddClass(Fleet.Get("super_dreadnought").Class!);
+            w.Apply(Command.SetSpeed(speed));
+            w.Apply(Command.SetWeather(8_000));
+            w.Apply(ShipSystem.Spawn(c, 56.5, 4.0, 0, 25, 0));
+            w.Apply(ShipSystem.Spawn(c, 56.5, 4.0 + 7_000 / (111_320 * Math.Cos(56.5 * Math.PI / 180)), 0, 25, 1));
+            w.Apply(GunnerySystem.Engage(1, 0, 2));
+            Span<double> tau = stackalloc double[SmokeSystem.PairTaus];
+            double sum = 0;
+            int n = 0;
+            w.AdvanceTo(w.Time + 120_000);
+            for (int s = 0; s < 240; s += 5)
+            {
+                w.AdvanceTo(w.Time + 5_000);
+                w.Smoke.TauUncached(w, w.Ships.Store.SlotOf(1), w.Ships.Store.SlotOf(2), tau);
+                double most = 0;
+                foreach (double x in tau)
+                    most = Math.Max(most, x);
+                (sum, n) = (sum + Math.Min(most, 3), n + 1);   // (a salvo's cloud right on the line counts as opaque)
+            }
+            Assert.Equal(speed >= Settings.CoarseMinSpeed ? ClockTier.Coarse : ClockTier.Fine, w.Ships.Store[w.Ships.Store.SlotOf(1)].Tier);
+            return sum / n;
+        }
+        double fine = Mean(1), coarse = Mean(1000);
+        output.WriteLine($"the most smoke on a line between them, mean over 4 minutes: fine τ {fine:F2}, coarse {coarse:F2}");
+        Assert.True(fine > 0.1, "her own smoke on the line in fine");
+        Assert.InRange(coarse, 0.6 * fine, 1.6 * fine);
+    }
 }

@@ -1,6 +1,6 @@
 # Plan: fighting in the coarse tier
 Status: **agreed 2026-10-26** (drafted and answered the same day: "Decided" at the end). J0 (the bench) done
-2026-10-26; J1 (the step mode) done 2026-10-27; J2 (guns in coarse) done 2026-10-27 (the speed it makes taken as it is, decision 3); J3 (torpedoes) done 2026-10-27; J4 (dodging) done 2026-10-27; J5 next. It takes over `fighting.md` 4.8
+2026-10-26; J1 (the step mode) done 2026-10-27; J2 (guns in coarse) done 2026-10-27 (the speed it makes taken as it is, decision 3); J3 (torpedoes) done 2026-10-27; J4 (dodging) done 2026-10-27; J5 (sighting and smoke) done 2026-10-27, with open fails for the user; J6 next. It takes over `fighting.md` 4.8
 (damage in the coarse tier) and 4.9 (coarse fire), and the parts of `plan.md` 2.8 that touch fighting. Those sections
 only point here.
 
@@ -365,6 +365,57 @@ Each step ends with something to run and watch in the step mode, and with the pa
 - **Speed:** `scenario jutland --play --tier coarse --workers 2` plays the 14 hours in 29.3 s, inside J2's 27.6-34.6 s:
   no measurable cost.
 
+**J5 done (2026-10-27).** The haze duel's fail was the smoke, not the look; the night's is the AI's minute.
+- **Found:** coarse ships were never blinded by smoke. Fine with the smoke field off gave coarse's numbers exactly, and
+  coarse gave the same numbers with it on or off. A ship's smoke since the last coarse tick wasn't laid until the minute
+  tick, by when she'd run ~770 m past it, and her gun puffs weren't filed until then. Her newest smoke, the densest
+  there is, never stood on her lines (τ on the duel's line ~0.01 coarse against 0.25-0.45 fine).
+- **The young steps** (`SmokeSystem.YoungStep`, rung 2): between the coarse ticks, every `SmokeYoungMs` (3 s) each
+  ship's smoke since her last is laid where it was made, and the index's young part filed again (T2's `Fresh`), as the
+  fine tier does. The air, the merges, the retiring and the full rebuild keep the minute. 6 s let the haze duel drift
+  out (+16% rounds).
+- **The lines unwound:** the sight query put the ships into the air's frame as the last tick left it, without its
+  drift since. That's under a second in fine, up to a minute (several hundred metres in a breeze) in coarse. Now
+  `SmokeSystem.ToAir` unwinds them as a puff laid then is. Fine moves by under a second's drift; its baseline is rerun.
+- **The watch** (`Sightings.Watch`, rung 2): fire control reads her being in sight every second, nothing else does
+  between the coarse looks. So every `SightWatchMs` (5 s) the engaged batteries' targets are looked for again, the fine
+  look's own code on those items only. A target lost behind smoke at the minute's look is found again within seconds,
+  as fine finds her: a 15 kn duel at 14 km fired 13% fewer shells coarse, now 2-4%. At 1 s it cost five times as much
+  for the same parity.
+- **A look covers only the time since she was last looked for:** the minute look's draw took 60 s, so a contact the
+  watch had been looking for every few seconds was all but surely found again at each minute. The haze duel's in-sight
+  share went from 79% to 71% (fine 61%).
+- **The smoke store's free list** grows with the store (the coarse no-allocation test found it doubling late, as puffs
+  retired).
+- **Tried and dropped:** a watch on every pair out of sight that could be made out before the next look (closing at
+  best speed, broadside, clear air). It took most enemies out of sight by day and cost 24% of the Jutland at 1 s.
+- **The night (the Dover Strait), measured:** hit % by range band is the same in both tiers (16.6 against 17.1% at
+  2-3 km, 5.3 against 4.7% at 3-4 km). Coarse fights closer: 3.7× fine's shells under 1 km, 36% fewer at 3-4 km. A look
+  every second alone didn't move it (hit % +73% and +47%). Captains thinking every second took it to +43% and +40%;
+  both together to +23% and +28%, still with 3× the shells under 1 km (fine's admirals think every second too). So the
+  night's gap is the AI's minute cadence in a close action, not sighting.
+- **Checked:** `SmokeSightTests.Between_the_coarse_ticks_her_newest_smoke_is_on_the_lines` (the most τ on a line, mean
+  over 4 minutes: fine 0.61, coarse 0.62; 0.05 with the young steps off). `GunneryTests`' coarse duel now sums four
+  seeds: one duel's own smoke moves a single seed's salvos by a fifth.
+- **Parity** (the standard panel both ways, fine rerun: `2026-10-27-standard-j5.json`): 90 ok, 6 FAIL, 90 noisy. Every
+  J4 fail is in or near its band: the haze duel ok (+10% hits and rounds, was +36%), the flotilla's torpedo launches ok
+  (0.10 both ways, was 0.06 against 1.29), the Dover Strait's hit % noisy (+29%, +43%, was +73%, +74%). **Six new
+  fails,** all noisy at J4 and further the same way:
+  - **The prizes' war's French shell hits** (-36%): fine's side moved (237 to 266 since the 2026-10-26 baseline), coarse
+    stayed at 169 with the watch or the young steps off. Not J5's.
+  - **The prizes' war's Italian ships lost** (-68%) and tonnage share (-72%): 0.54 ships coarse, 0.75 with the watch off,
+    0.90 with the young steps off (each ±0.15), against 1.69 fine.
+  - **The flotilla's hit % on the G101-like boats** (+41%) and **Britain's hit %** (+40%): +29% with the watch off, +13%
+    with the young steps off.
+  - **Squadrons' British tonnage share lost** (-44%): -31% and -42% with each off, so neither alone.
+
+  Smoke now stands on coarse's lines, but only the batteries' targets are watched. The AI still sees the picture once a
+  minute, and a minute look that falls in smoke loses her for the AI until the next. These and the night are the AI's
+  minute cadence (the user's to decide: a step of its own).
+- **Speed:** the Jutland coarse plays its 14 hours in 47.8 s against J4's 29.3 s (1,050× overall). Sighting 7.9% (the
+  watch), the smoke 27% (its index 12.4%, the merges more puffs), damage 26.5%. Smoke laid every 3 s is the most of it:
+  the price of coarse ships being blinded by their smoke at all.
+
 ## Decided
 
 The user's, 2026-10-26:
@@ -389,3 +440,4 @@ The user's, 2026-10-26:
 | 2026-10-27 | J2 (guns in coarse) | standard, coarse only against the 2026-10-26 fine baseline: 186 measures, 4.3 min on 32 threads | the haze duel +36% hits (the minute's look holds a target fine loses); the Dover Strait's hit % +77%; the flotilla's boats fire torpedoes 1.4 a run against 0.06 | 95 ok, 9 FAIL, 82 noisy: the fails J3-J5's (`2026-10-27-standard-j2.json`) |
 | 2026-10-27 | J3 (torpedoes in coarse) | standard, coarse only against the 2026-10-26 fine baseline: 186 measures, 4.9 min on 32 threads | torpedo hits low across the scenarios (Japan -95%, France -82%): coarse combs turn with no helm lag; the flotilla's launches 1.4 a run against 0.06 | 95 ok, 10 FAIL, 81 noisy: Åland's torpedo hits fixed; the rest J4's and J5's (`2026-10-27-standard-j3.json`) |
 | 2026-10-27 | J4 (dodging) | standard, coarse only against the 2026-10-26 fine baseline: 186 measures, 4.4 min on 32 threads | the Dover Strait's hit % +73% and +74% and the haze duel +36% (J5's); the flotilla's launches 1.29 a run against 0.06 | 92 ok, 6 FAIL, 88 noisy: torpedo hits back in the bands (`2026-10-27-standard-j4.json`) |
+| 2026-10-27 | J5 (sighting and smoke) | standard, both ways (fine rerun: the lines unwound): 186 measures, 14 min on 32 threads | the prizes' war's Italian losses -68% (and France's hits -36%, fine's side moved); squadrons' British tonnage share -44%; the flotilla's hit % +41% | 90 ok, 6 FAIL, 90 noisy: J4's fails in or near the bands; the new ones the AI's minute in smoke (`2026-10-27-standard-j5.json`, the new fine baseline) |

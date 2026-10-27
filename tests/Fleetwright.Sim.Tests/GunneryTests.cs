@@ -154,14 +154,21 @@ public class GunneryTests(ITestOutputHelper output)
         Assert.True(w.Ships.Store[w.Ships.Store.SlotOf(1)].OnRails, "ceased: on rails");
 
         // in range, at 1,000x: coarse, and the fine chain fires from and at coarse ships as it does on the fine tick
-        // (docs/battle/coarse.md J2): a steady duel, so its salvos and hits come out near the fine tick's
-        GunnerySystem.Tally Duel(double speed)
+        // (docs/battle/coarse.md J2): a steady duel, so its salvos and hits come out near the fine tick's, over a few
+        // seeds (one duel's own smoke on the lines moves a single seed's salvos by a fifth, J5)
+        (int Salvos, int Hits) Duel(double speed)
         {
-            var c = Make(qe, qe, 14_000, 90, 0, 15, 5);
-            c.Apply(Command.SetSpeed(speed));
-            c.AdvanceTo(Start + 15 * 60_000);
-            Assert.Equal(speed >= Settings.CoarseMinSpeed ? ClockTier.Coarse : ClockTier.Fine, c.Ships.Store[c.Ships.Store.SlotOf(1)].Tier);
-            return c.Gunnery.TallyOf(1, 0)!.Value;
+            var (salvos, hits) = (0, 0);
+            for (int seed = 5; seed < 9; seed++)
+            {
+                var c = Make(qe, qe, 14_000, 90, 0, 15, seed);
+                c.Apply(Command.SetSpeed(speed));
+                c.AdvanceTo(Start + 15 * 60_000);
+                Assert.Equal(speed >= Settings.CoarseMinSpeed ? ClockTier.Coarse : ClockTier.Fine, c.Ships.Store[c.Ships.Store.SlotOf(1)].Tier);
+                var tally = c.Gunnery.TallyOf(1, 0)!.Value;
+                (salvos, hits) = (salvos + tally.Salvos, hits + tally.Hits);
+            }
+            return (salvos, hits);
         }
         var fine = Duel(1);
         var t = Duel(1000);

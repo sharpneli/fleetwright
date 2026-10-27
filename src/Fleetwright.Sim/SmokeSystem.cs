@@ -278,12 +278,38 @@ public sealed partial class SmokeSystem : IWorldSystem
     /// fades and is retired, so a world whose ships are all on rails keeps one event a minute while it lasts).</summary>
     int TickMs(World world) => world.Coarse || idle ? settings.SmokeCoarseTickMs : settings.SmokeTickMs;
 
+    /// <summary>Whether the coarse tier's young steps run between its ticks (docs/battle/coarse.md J5): while ships lay
+    /// smoke, every <see cref="SimSettings.SmokeYoungMs"/> each ship's smoke since her last is laid and the index's young
+    /// part filed again, as the fine tier does, so her newest smoke, the densest there is, stands on the lines as it does
+    /// in fine; the air, the merges, the retiring and the full rebuild keep the minute.</summary>
+    bool Young(World world) => world.Coarse && !idle;
+
     void Schedule(World world)
     {
-        long step = TickMs(world);
-        nextMs = (world.Time.Ms / step + 1) * step;
+        long step = TickMs(world), now = world.Time.Ms;
+        nextMs = (now / step + 1) * step;
+        if (Young(world))
+            nextMs = Math.Min(nextMs, (now / settings.SmokeYoungMs + 1) * settings.SmokeYoungMs);
         world.Schedule(new WorldTime(nextMs), EventTier.Fine, 0, Id, TickEvent);
         scheduled = true;
+    }
+
+    /// <summary>A young step between the coarse tier's ticks: each ship's smoke since her last laid where it was made (in
+    /// the air's frame as the last tick left it), the wrecks' too, and the index's young part filed again.</summary>
+    void YoungStep(World world, long t)
+    {
+        var store = world.Ships.Store;
+        bool smoking = false;
+        for (int s = 0; s < store.Slots; s++)
+            smoking |= Emit(world, s, t, settings.SmokeYoungMs);
+        Wrecks(t);
+        if (indexMs == long.MinValue)
+            Index(world, t);
+        else
+            Fresh(world, t);   // the young part only: the full rebuild keeps the minute, with the merges and the retiring
+        version++;
+        idle = !smoking && wrecks.Count == 0;
+        Schedule(world);
     }
 
     public void Handle(World world, in SimEvent e)
@@ -294,6 +320,11 @@ public sealed partial class SmokeSystem : IWorldSystem
         scheduled = false;
         long t = e.Time.Ms;
         int step = TickMs(world);
+        if (Young(world) && frameSet && t % step != 0)
+        {   // (the field's first event is a tick, wherever it falls: it sets the air's frame)
+            YoungStep(world, t);
+            return;
+        }
         var store = world.Ships.Store;
         if (!frameSet)
             for (int s = 0; s < store.Slots && !frameSet; s++)
@@ -416,7 +447,7 @@ public sealed partial class SmokeSystem : IWorldSystem
         double rate = src.Rate, baseM = src.BaseM, rise = src.Rise, riseS = src.RiseS, x = src.X, y = src.Y, spread2 = src.Spread2;
         double leeZ = src.LeeZ, leeY = src.LeeY;
         var up = pos.Normalized();
-        var at = pos + fwd * x + Vec3d.Cross(fwd, up).Normalized() * y;
+        var at = Unwind(pos + fwd * x + Vec3d.Cross(fwd, up).Normalized() * y, t);   // a young step's: where the last tick's air has it
         var tint = c.Smoke.Fuel == Fuel.Coal ? SmokeTint.Coal : SmokeTint.Oil;
         long from = fresh ? t - (long)(settings.SmokeBackfillS * 1000) : Math.Max(last, t - (long)(settings.SmokeBackfillS * 1000));
         // what's still to lay, newest first in chunks: one tick, then wider the older (a quarter of their age), so a
@@ -513,7 +544,7 @@ public sealed partial class SmokeSystem : IWorldSystem
         (baseM, rise, riseS, x, y) = (baseM / rate, rise / rate, riseS / rate, x / rate, y / rate);
         double spread2 = Math.Max(x2 / rate - x * x - y * y, 0) / 2;
         var up = pos.Normalized();
-        var from = pos + fwd * x + Vec3d.Cross(fwd, up).Normalized() * y;
+        var from = Unwind(pos + fwd * x + Vec3d.Cross(fwd, up).Normalized() * y, t);
         var vAir = fwd * ship.Speed - Earth.Forward(pos, air.WindToDeg) * air.DriftMs;
         Lay(fk, last, t, t, from, vAir, rate, baseM, rise, riseS, spread2, SmokeTint.Fire);
     }
@@ -591,6 +622,10 @@ public sealed partial class SmokeSystem : IWorldSystem
                 wrecks.RemoveAt(i);
         }
     }
+
+    /// <summary>A place on the sea at a world time in the air's frame (<see cref="Unwind"/>, then the frame's rotation):
+    /// where a ship is on the lines between the field's ticks (docs/battle/coarse.md J5: up to a minute's drift in coarse).</summary>
+    public Vec3d ToAir(Vec3d at, long ms) => frame.ToAir(Unwind(at, ms));
 
     /// <summary>Where a puff laid at a place on the sea at a world time is at the air frame's time (its last tick's): moved
     /// back by the air's drift since then (laid after the tick), or on by it (laid before), so it's where it was laid when
@@ -682,9 +717,7 @@ public sealed partial class SmokeSystem : IWorldSystem
         s.Puffs--;
         sources[k] = s;
         owner[i] = -1;
-        if (freeCount == free.Length)
-            Array.Resize(ref free, free.Length * 2);
-        free[freeCount++] = i;
+        free[freeCount++] = i;   // (sized with the store: it never holds more slots than there are)
         live--;
     }
 
@@ -695,6 +728,7 @@ public sealed partial class SmokeSystem : IWorldSystem
         Array.Resize(ref owner, n);
         Array.Resize(ref prev, n);
         Array.Resize(ref next, n);
+        Array.Resize(ref free, n);
     }
 
     /// <summary>A trail walked oldest to newest: the thinned retired, settled neighbours close together along the line

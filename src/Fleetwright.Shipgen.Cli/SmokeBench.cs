@@ -287,8 +287,8 @@ static class SmokeBench
         {
             var os = store[o];
             var ts = store[t];
-            var a = w.Smoke.Frame.ToAir(os.Position.Normalized() * Earth.Radius);
-            var b = w.Smoke.Frame.ToAir(ts.Position.Normalized() * Earth.Radius);
+            var a = w.Smoke.ToAir(os.Position.Normalized() * Earth.Radius, now);
+            var b = w.Smoke.ToAir(ts.Position.Normalized() * Earth.Radius, now);
             double from = os.Handling.Class.Eyes[0].HeightM, to = settings.SmokeBands[1] * ts.Handling.Class.Silhouette.TopM;
             var line = new SmokeLine(a, b, from, to, settings.SightRefraction);
             for (int i = 0; i < w.Smoke.Slots; i++)
