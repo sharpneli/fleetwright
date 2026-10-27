@@ -9,7 +9,7 @@ namespace Fleetwright.Sim.Ai.Captains;
 /// will by default, hold fire, or engage a contact) and is the only one who puts its batteries on a target
 /// (<see cref="GunnerySystem.Engage"/>, <see cref="GunnerySystem.Cease"/>), as he's the only one who orders its helm.
 /// <list type="bullet">
-/// <item><b>Fire at will:</b> each second, for every ship on the fine tick that's in an encounter or has a battery
+/// <item><b>Fire at will:</b> at each think, for every ship off rails that's in an encounter or has a battery
 /// engaged, each battery picks from its navy's contacts in sight within its reach (<see cref="SimSettings.FireReachShare"/>
 /// of the range table's): one that bears first, then (secondaries) the smallest type, then the nearest, by the range
 /// she'll be at <see cref="SimSettings.FireLeadS"/> on and longer by <see cref="SimSettings.FireCrowdShare"/> for each
@@ -35,8 +35,9 @@ namespace Fleetwright.Sim.Ai.Captains;
 /// and the launchers bear; <see cref="SimSettings.TorpedoSpread"/> a firing, then <see cref="SimSettings.TorpedoRefireMs"/>
 /// before the next.</item>
 /// </list>
-/// Guns are silent in the coarse tier (4.9): a coarse ship keeps its batteries' targets, and they fire again on the fine
-/// tick.</summary>
+/// All of it runs in every clock tier at the captain's think: each second on the fine tick, each minute coarse
+/// (docs/battle/coarse.md J2). Only combing a torpedo's track is the fine tick's until the coarse watch sees a track at
+/// its moment (J3).</summary>
 public sealed partial class CaptainLayer
 {
     readonly List<int> fighters = new(64);
@@ -94,18 +95,17 @@ public sealed partial class CaptainLayer
         CountOn(store);
         foreach (int slot in fighters)
         {
+            // every tier, at its think: the fine tick's second, the coarse step's minute (docs/battle/coarse.md J2)
             var own = store[slot];
+            ref var cap = ref Get(own.Entity);
+            if (cap.TorpedoHeld && !groups.InLine(own.Entity))
+                cap.TorpedoHeld = false;   // out of her flotilla's line: her torpedoes her own again
+            FallOut(ctx, ref cap, own, slot);
+            OutOfRounds(ctx, ref cap, own);
             if (own.Tier == ClockTier.Fine)
-            {
-                ref var cap = ref Get(own.Entity);
-                if (cap.TorpedoHeld && !groups.InLine(own.Entity))
-                    cap.TorpedoHeld = false;   // out of her flotilla's line: her torpedoes her own again
-                FallOut(ctx, ref cap, own, slot);
-                OutOfRounds(ctx, ref cap, own);
-                Comb(ctx, ref cap, own);
-                TakeUpStanding(ctx, ref cap, own, slot);
-                Aim(ctx, ref cap, own, slot);
-            }
+                Comb(ctx, ref cap, own);   // a track seen a minute late can't be combed: coarse waits for J3's watch at its moment
+            TakeUpStanding(ctx, ref cap, own, slot);
+            Aim(ctx, ref cap, own, slot);
             if (store.Combat.Engaged(slot) > 0)
             {
                 fighting++;

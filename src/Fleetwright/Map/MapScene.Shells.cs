@@ -463,16 +463,6 @@ public sealed partial class MapScene
         return i >= 0 ? Identity(s.Contacts, i) : $"#{entity}";
     }
 
-    /// <summary>Whether a battery the screen shows is silent for the coarse tier (the clock panel says why).</summary>
-    static bool GunsSilent(Snapshot s)
-    {
-        var b = s.Batteries;
-        for (int i = 0; i < b.Count; i++)
-            if (b.State[i] == BatteryState.Silent)
-                return true;
-        return false;
-    }
-
     static string StateText(BatteryState s, FirePhase phase) => s switch
     {
         BatteryState.NoContact => "no contact",
@@ -480,7 +470,7 @@ public sealed partial class MapScene
         BatteryState.Firing => phase == FirePhase.Effect ? "fire for effect" : "ranging",
         BatteryState.NotBearing => "not bearing",
         BatteryState.OutOfRange => "out of range",
-        _ => "silent (coarse tier)",
+        _ => "",
     };
 
     /// <summary>The dev's armed right-click: one salvo at the sea there (the strip's picks are <see cref="ArmedClick"/>).</summary>

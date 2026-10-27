@@ -140,7 +140,7 @@ public class GunneryTests(ITestOutputHelper output)
     }
 
     [Fact]
-    public void An_engaged_ship_stays_off_rails_and_its_guns_are_silent_in_the_coarse_tier()
+    public void An_engaged_ship_stays_off_rails_and_its_guns_fire_in_the_coarse_tier()
     {
         var qe = Class("super_dreadnought");
         // a target far beyond any encounter: steady ships go on rails at 1x, but not one with a battery engaged
@@ -153,13 +153,21 @@ public class GunneryTests(ITestOutputHelper output)
         w.AdvanceTo(w.Time + 10 * 60_000);
         Assert.True(w.Ships.Store[w.Ships.Store.SlotOf(1)].OnRails, "ceased: on rails");
 
-        // in range, at 1,000x: coarse, so silent (fighting.md decision 4, until 4.9)
-        var c = Make(qe, qe, 14_000, 90, 0, 15, 5);
-        c.Apply(Command.SetSpeed(1000));
-        c.AdvanceTo(Start + 15 * 60_000);
-        var t = c.Gunnery.TallyOf(1, 0)!.Value;
-        Assert.Equal(BatteryState.Silent, t.State);
-        Assert.Equal(0, t.Salvos);
+        // in range, at 1,000x: coarse, and the fine chain fires from and at coarse ships as it does on the fine tick
+        // (docs/battle/coarse.md J2): a steady duel, so its salvos and hits come out near the fine tick's
+        GunnerySystem.Tally Duel(double speed)
+        {
+            var c = Make(qe, qe, 14_000, 90, 0, 15, 5);
+            c.Apply(Command.SetSpeed(speed));
+            c.AdvanceTo(Start + 15 * 60_000);
+            Assert.Equal(speed >= Settings.CoarseMinSpeed ? ClockTier.Coarse : ClockTier.Fine, c.Ships.Store[c.Ships.Store.SlotOf(1)].Tier);
+            return c.Gunnery.TallyOf(1, 0)!.Value;
+        }
+        var fine = Duel(1);
+        var t = Duel(1000);
+        output.WriteLine($"fine: {fine.Salvos} salvos, {fine.Hits} hits; coarse: {t.Salvos} salvos, {t.Hits} hits");
+        Assert.True(t.Salvos > 0 && t.Hits > 0, "coarse fires and hits");
+        Assert.InRange(t.Salvos, fine.Salvos * 0.85, fine.Salvos * 1.15);
     }
 
     [Fact]

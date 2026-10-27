@@ -1,6 +1,6 @@
 # Plan: fighting in the coarse tier
 Status: **agreed 2026-10-26** (drafted and answered the same day: "Decided" at the end). J0 (the bench) done
-2026-10-26; J1 (the step mode) done 2026-10-27; J2 (guns in coarse) next. It takes over `fighting.md` 4.8
+2026-10-26; J1 (the step mode) done 2026-10-27; J2 (guns in coarse) built 2026-10-27, its speed gate failed (levers to choose). It takes over `fighting.md` 4.8
 (damage in the coarse tier) and 4.9 (coarse fire), and the parts of `plan.md` 2.8 that touch fighting. Those sections
 only point here.
 
@@ -280,6 +280,34 @@ Each step ends with something to run and watch in the step mode, and with the pa
 - **For J2:** the guns are still silent in coarse, so a step through a fight shows no fire yet. The "guns silent"
   label stays until then.
 
+**J2 built (2026-10-27); its gate passes on parity's duels and fails on speed.**
+- **Built:** the tier gate is gone from `GunnerySystem.Start` and `Fire`. A coarse ship's `ShipState` is its segment's
+  pose at the second, so the fine chain (rung 1) fires from and at coarse ships unchanged. `BatteryState.Silent` and
+  the "guns silent" labels are gone. The captains' fighting decisions (`FallOut`, `OutOfRounds`, `TakeUpStanding`,
+  `Aim` with its torpedoes) run at every tier's think. Only `Comb` stays the fine tick's, until J3's watch sees a track at
+  its moment. `scenario --play --tier coarse` already stayed coarse through encounters (J0); the default stays fine.
+  `scenario --play` now prints the speed hour by hour.
+- **Parity** (the standard panel, coarse against the kept fine baseline; `2026-10-27-standard-j2.json`): 95 ok, 9 FAIL,
+  82 noisy, against J0's 37 ok and 139 FAIL. Every clear-weather duel is inside its band, steady, zigzagging, turning
+  and own ship turning (hits a gun a minute -6% to -9%). So are the fight duels, most within 12%. The fails, each a later step's:
+  - **The haze duel** (7 km in 8 km): coarse +36% hits a gun a minute, +29% rounds. Fine loses the target now and then
+    at the edge of the haze ("not seen", the battery waits); coarse, looking once a minute, never does: 84% of the drill's
+    rate against 63%. The same cause shows at night: the Dover Strait's hit % is +77% (Britain) and +53% (Germany).
+    **J5** (sighting at a minute).
+  - **The flotilla's dodging:** hit % on the V25-like boats +44%, Britain's hit % +37%. **J4.**
+  - **Torpedoes:** the flotilla's boats fire 1.4 a run coarse against 0.06 fine, and Åland's Finnish torpedo hits are
+    +257%; coarse captains don't comb yet. **J3.**
+- **Speed (the gate, decision 3: the Jutland's fighting at 2,000× or more on 2 workers): fails.** Headless,
+  `scenario jutland --play --tier coarse --workers 2`: the 14 hours in 27.6-34.6 s (about 1,500-1,830× overall; the end
+  state the same each run). Hour by hour: 2,140× 1,110-1,130× 1,370-1,790× 1,230-1,590× **560-710×** 940-1,250× 750-940×
+  1,610-1,720× 1,870-1,890×, then 2,700-4,400× as the fleets thin. The fighting hours run at 560-1,800×. In the app
+  (`-scenario=jutland -nopause -speed=5000 -frametimes`): 969× over the first 4.7 game hours, 408× at the heaviest. The
+  whole run's split: damage 28.6% (its 1 s step on the wet ships), gunnery 22.8% and shells 7.9%, smoke 16.7% (the
+  minute's merge 10.4%), the AI 15.9% (the commander 11.3%), coarse motion 6.9%, sighting 4.3%. Gunnery and shells
+  together are 31%: even free, they would make it about 1.45× faster. The heaviest hour needs about 3×, so J7 (cheaper
+  fire control) can't meet the gate alone. Damage (J6's adaptive step), the smoke merge and the commander are as large.
+  **Waiting on the user:** which levers, in which order.
+
 ## Decided
 
 The user's, 2026-10-26:
@@ -299,3 +327,4 @@ The user's, 2026-10-26:
 |---|---|---|---|---|
 | 2026-10-26 | 0e08e9f3 (fight duels at 300 runs after it) | standard, 300 runs, 48 seeds: 186 measures, 10 min | coarse silent: every gunnery measure -100%; the flotilla's boats all fire coarse (10.9 torpedo hits a run against 0) | 37 ok, 139 FAIL, 10 noisy: expected before J2. Fine's baseline kept (`2026-10-26-standard.json`); its rerun gave the same numbers |
 | 2026-10-26 | 0e08e9f3 | full's big three (Heligoland Bight, Dogger Bank, the Jutland), 8 seeds: 45 measures, 8 min on 16 threads | the Jutland's exchange 0.82 coarse against 0.36 fine on torpedoes alone; ships lost -72% to -98% | 5 ok, 29 FAIL, 11 noisy: expected before J2 (`2026-10-26-full-big-three-8-seeds.json`) |
+| 2026-10-27 | J2 (guns in coarse) | standard, coarse only against the 2026-10-26 fine baseline: 186 measures, 4.3 min on 32 threads | the haze duel +36% hits (the minute's look holds a target fine loses); the Dover Strait's hit % +77%; the flotilla's boats fire torpedoes 1.4 a run against 0.06 | 95 ok, 9 FAIL, 82 noisy: the fails J3-J5's (`2026-10-27-standard-j2.json`) |

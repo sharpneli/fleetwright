@@ -100,13 +100,6 @@ public sealed partial class MapScene : ISceneMenu
             BarText("PAUSED", Theme.Amber, mid);
         else
             BarText(heldText, !s.FineHeld && s.RunBack == 0 && s.AchievedSpeed < s.Speed * 0.9 ? Theme.Amber : Theme.Muted, mid);
-        if (GunsSilent(s))
-        {
-            ImGui.SameLine(0, gap);
-            BarText("guns silent at this speed", Theme.Amber, mid);
-            if (ImGui.IsItemHovered())
-                ImGui.SetTooltip($"no fire in the coarse tier ({world.Settings.CoarseMinSpeed:0}x and up) until coarse fire (4.9)");
-        }
 
         // in action, the news, a stopped sim
         if (actionText.Length > 0)
@@ -290,7 +283,7 @@ public sealed partial class MapScene : ISceneMenu
         dl.AddRectFilled(c + new Vector2(3.5f, -5) * sc, c + new Vector2(6, 5) * sc, ink);
     }
 
-    /// <summary>The speeds as buttons: the one asked in brass, the coarse tier's dimmer (no fire there yet); a click
+    /// <summary>The speeds as buttons: the one asked in brass, the coarse tier's dimmer (its 1-minute steps); a click
     /// runs a paused clock at it.</summary>
     void SpeedButtons(Snapshot s, float mid)
     {
@@ -321,7 +314,7 @@ public sealed partial class MapScene : ISceneMenu
                 if (SpeedKeys[i] is { } key)
                     ImGui.TextDisabled(key);
                 if (coarse)
-                    ImGui.TextDisabled("coarse tier: ships off rails in 1-minute steps, guns silent");
+                    ImGui.TextDisabled("coarse tier: ships off rails in 1-minute steps");
                 ImGui.EndTooltip();
             }
         }

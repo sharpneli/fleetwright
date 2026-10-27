@@ -63,10 +63,14 @@ static class ScenarioPlay
             long alloc0 = GC.GetAllocatedBytesForCurrentThread() + workers.AllocatedBytes;
             int g0 = GC.CollectionCount(0), g1 = GC.CollectionCount(1), g2 = GC.CollectionCount(2);
             var sw = Stopwatch.StartNew();
+            var hours = new List<double>();   // the wall clock at each game hour played: the speed hour by hour
+            long hour0 = w.Time.Ms;
             try
             {
                 PlayToEnd(w, end, fast, fine, () =>
                 {
+                    if ((w.Time.Ms - hour0) / 3_600_000 > hours.Count)
+                        hours.Add(sw.Elapsed.TotalSeconds);
                     guns.Read(w.CombatLog);
                     // a ship falling out for her main guns: why they're out, as she falls out
                     for (; seen < end.Timeline.Count; seen++)
@@ -93,6 +97,9 @@ static class ScenarioPlay
             if (seeds == 1)
             {
                 PrintOne(s, end, result, names, wall, w, ai, cost);
+                if (hours.Count > 0)
+                    Console.WriteLine("  the speed hour by hour: " + string.Join(" ", hours.Select((t, h) =>
+                        $"{3600 / (t - (h > 0 ? hours[h - 1] : 0)):0}x")));
                 guns.Print("  ");
                 Console.WriteLine($"  the state at the end: {w.ComputeHash():x16}");
             }

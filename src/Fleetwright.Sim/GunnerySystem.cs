@@ -26,8 +26,6 @@ public enum BatteryState : byte
     NotBearing,
     /// <summary>The target is beyond the guns' reach.</summary>
     OutOfRange,
-    /// <summary>Its ship isn't on the fine tick: guns are silent in the coarse tier until 4.9 (fighting.md decision 4).</summary>
-    Silent,
 }
 
 /// <summary>Where an engaged battery is in its fire discipline (docs/battle/fire-control.md F6).</summary>
@@ -644,8 +642,9 @@ public sealed class GunnerySystem : IWorldSystem
     }
 
     /// <summary>One battery's second begun, on the sim thread in battery order: let go if its ship or target is gone,
-    /// silent off the fine tier, its instruments picked again after damage or a unit let go (what reaches its ship's
-    /// other batteries). Whether the rest of it (<see cref="Second"/>) runs.</summary>
+    /// its instruments picked again after damage or a unit let go (what reaches its ship's other batteries). Whether the
+    /// rest of it (<see cref="Second"/>) runs. Any clock tier: a coarse ship's pose is its segment's at the second, as a
+    /// fine one's is its tick's (docs/battle/coarse.md J2).</summary>
     bool Start(World world, int f, long now)
     {
         ref var fc = ref fcs[f];
@@ -657,11 +656,6 @@ public sealed class GunnerySystem : IWorldSystem
             return false;
         }
         var ship = store[slot];
-        if (ship.Tier != ClockTier.Fine)
-        {
-            fc.State = BatteryState.Silent;
-            return false;
-        }
         var cls = ship.Handling.Class;
         var cond = store.Combat.Condition(slot);
         if (cond.Version != fc.Condition || fc.Repick)
@@ -1095,7 +1089,7 @@ public sealed class GunnerySystem : IWorldSystem
         fc.SalvoPending = false;
         var store = ships.Store;
         int slot = store.SlotOf(fc.Shooter), tslot = store.SlotOf(fc.Target);
-        if (slot < 0 || tslot < 0 || store[slot].Tier != ClockTier.Fine)
+        if (slot < 0 || tslot < 0)
             return;
         long now = world.Time.Ms;
         var ship = store[slot];
