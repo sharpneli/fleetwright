@@ -1,0 +1,135 @@
+# Plan: the crew (a 4.5 deepening)
+Status: **draft 2026-10-27**, for the user    Updated: 2026-10-27
+
+What a ship's men do in a fight: where they stand, what a station can do with the men left at it, who goes up to fill
+the gaps, and when there's nobody left to fight her. It builds on E6's casualties (`shells-armour-damage.md`,
+`damage/16_casualties.md`), fire's parties (`fire.md` B2) and damage control (`damage-control.md`). Started by the
+user's Sverige slugfest (2026-10-27): "Once the crew is gone the ship is de facto dead, now the ship basically becomes
+a zombie."
+
+## The aim
+
+1. **One book of men.** Every man stands somewhere, and a hit counts whoever stands where it bursts. That includes the
+   fire parties, which today are a pool of their own.
+2. **A station works with the men at it.** A gun with half its crew loads slower, and with nobody it's silent. The same
+   goes for directors, the conn, the stokehold and the ammunition supply. A ship with her crew gone is dead in fact, not
+   a hull that fires on.
+3. **Men go up to fill the gaps.** Reliefs from below and from the disengaged side man the guns again. The toll rises
+   for as long as she keeps fighting, and it levels off when she stops fighting, not before.
+
+## What there is today (checked 2026-10-27)
+
+- **Where the men stand** (`Shipgen/Crew.cs` `BattleStations`): gun crews at the mounts (0.4 of a barbetted mount's
+  in its barbette), the engineers in the machinery by volume, a command party on the bridge (a quarter aft),
+  director crews, two at the steering, and the rest as "repair" over the accommodation and stores by volume. Sverige's
+  569 men: guns 186, handling 102, machinery 162, repair 75, command 20, directors 14, torpedoes 8, steering 2.
+- **Casualties** (E6, `Sim.Combat/Casualties.cs`): per group (a component's or cell's `BattleCrew`, less
+  `ShipCondition.Gone`), from pieces, blast, the lane, spall and flash. The walking wounded come back in 15-45 min.
+- **Nothing reads the men left for what she can do.** `Functions.Evaluate` sets `MountWorks`, `DirectorWorks`,
+  `Conned` and `PowerCap` from the parts' health alone. `CrewLost` is read by the benches, the snapshot and the card,
+  never by the sim. A gunhouse whose crew are all dead fires at its full rate.
+- **Fire parties are a second book** (`Repairs.Make`): `Complement × PartyShare` men, made at the first fire, apart
+  from the stations' groups. A hit in a working party's section thins it by a flat chance (`FireHitMenChance`,
+  `FireHitMenKeep`). E6's pieces never reach them, while the "repair" men in the quarters they came from can still be
+  killed a second time.
+- **Fall-out** (`FallOutRule`): speed, main guns, list and water. No crew term, and none is wanted (see N5).
+
+## What's wrong, measured
+
+`shipgen hits sverige --shooter sverige --battery 1 --range 3000`: 152 mm HE, 60/40 with common, at 2° of fall.
+
+| Hits a ship | Out of action (of 569) | Killed a hit | Main mounts | Fires burning |
+|---|---|---|---|---|
+| 25 | 61 | 0.54 | 1.5 of 2 | 2.3 |
+| 50 | 74 | 0.38 | 1.1 | 5.6 |
+| 100 | 79 | 0.23 | 0.6 | 9.8 |
+| 200 | 85 | 0.12 | 0.1 | 17.4 |
+| 500 | 90 | 0.06 | 0.0 | 28.8 |
+
+- **The early hits are right.** Her first 25 hits put 2.4 men a hit out of action. Tsesarevich lost 59 to 15 hits and
+  Retvizan 48 to 18. Oryol lost 123 to 76 hits at Tsushima. The bench's 79 at 100 hits of 6" alone isn't far off.
+- **What comes after isn't.** The ~120 men a 152 mm shell can reach (the bridge, the directors, the 75 mm crews, the
+  parties in the flats) are used up by about 50 hits. Then the toll stops, because nobody goes up to replace them. The
+  other 450 sit behind 100-200 mm of armour that the shell can't get through. Half the HE bursts outside on the side
+  armour, and what gets inside finds empty quarters. That much is physical.
+- **And she's a zombie.** With her bridge and directors cleared, 29 fires burning and nobody fighting them in the open,
+  her guns still fire at full drill and her parties' men are never in the way of a shell.
+- **The record has no 500-hit ship.** Ships pounded that hard (Suvorov, Bismarck) were silent, burning wrecks long
+  before. What's wanted is the shape, not a number: **the toll may flatten only once she has stopped fighting.**
+
+## The principles
+
+- **Physics and the record, no guard rules.** A station's work by its men present is drill arithmetic: who lays,
+  who rams, who passes. It's not a morale factor and not a lumped "crew quality" knob.
+- **No hard switches.** A station's work falls smoothly with its men down to the few it can't do without. "Nobody
+  there, nothing done" is a physical step and allowed.
+- **Doctrine, not navy.** Who relieves whom and how many are kept back are fields in the side's damage-control
+  doctrine, one a period, as E8b set them. No per-navy values.
+- **Rough where it doesn't decide.** Reliefs move as counts between groups after a walking delay. There are no
+  individual men and no paths through the ship.
+- **Player may overrule.** Doctrine sets the default. Later, an order can clear the upper deck or keep the guns
+  manned (the posture, N4).
+- **Same at any compression.** Reliefs and station shares change on minute clocks and on hits, the same in fine and
+  coarse.
+- **No garbage per frame.** Group arrays at spawn. `Functions.Evaluate` runs when the condition changes, as now.
+
+## The yardstick
+
+| Case | Record | Wanted |
+|---|---|---|
+| E6's per-hit fit (G1-G7, 10 hits a ship) | as in `shells-armour-damage.md` E6 | unchanged within the noise: reliefs come after the first hits |
+| Oryol, Tsushima: battleship, 76 hits of all calibres | 43 killed, 80 wounded; "main losses behind armour from splinters entering ports/slits" (Kostenko) | about 100-150 out of action at 76 mixed hits |
+| Southampton, Chester, Jutland: open crews under 15 cm | 76-77 killed and wounded to 17-18 hits | unchanged (already crowded stations) |
+| Graf Spee: 18 × 6" + 2 × 8" | 36 killed, 60 wounded | in the band |
+| Sverige under 500 × 152 mm (the user's case) | — | toll rising for as long as her secondaries fight; silent from want of men before the toll flattens; fires gaining once her parties are spent |
+
+**Research ask (N0):** ship totals for the ships pounded to wrecks (Suvorov, Borodino, Blücher, Bismarck,
+Scharnhorst 1943, Hiei, Kirishima): hits, complement, killed and wounded before the end if known, and what still
+worked. The aim is the ranges by type, not replicas.
+
+## The steps
+
+- **N0 Measure.** The hits bench prints, after K hits: men out by station kind, mounts working by battery, directors,
+  conned, the parties' men and their jobs. Add a `--curve` line of the out-of-action count every 25 hits. The research
+  ask above. The yardstick runs and today's figures are recorded here.
+- **N1 One book of men.** Parties are made from the "repair" groups' men, not from `Complement × PartyShare`. A party
+  at work stands in its target's cells and is a group there: E6's pieces, blast and spall hit it as anyone. Fire's
+  `Hurt` and `Caught` take from that group. `FireHitMenChance` and `FireHitMenKeep` go. Turned-to gun crews (`TurnTo`)
+  come from the mounts' groups. The doctrine's `PartyShare` becomes how many of the repair men muster into parties.
+  Fire's yardstick re-run (fire.md B5).
+- **N2 Stations work by their men.** A share per station: men present over the need it was sized for (`Crew.GunCrew`,
+  `CommandK`, the directors' and the plant's crews).
+  - **Mounts:** the reload stretched by the share. Below the few a gun can't be fought without (layer, loader, rammer),
+    it's silent. A barbette's handling men set the supply in the same way.
+  - **Directors and eyes:** short-handed, the rangefinder and the plot are slower (the F-steps' sigma), and silent with
+    nobody.
+  - **Command:** the conn passes to the next manned station (the conning tower, aft control). With none, she isn't
+    conned (`Conned`).
+  - **Machinery:** steam by the stokehold's men, with a floor. A boiler room keeps its steam for a while on what's
+    already in the fires.
+  - Read in `Functions.Evaluate` from `Casualties.Men` (it already runs on every hit).
+- **N3 Reliefs.** When a station falls below its need, men walk to it after a delay of minutes, by the sections
+  between. They come in the doctrine's order: the crews of mounts that can't bear (the disengaged side), the hotel and
+  idle men, the repair men above the doctrine's floor, then the handling rooms of silent mounts. They stop at the floor
+  the doctrine keeps for the parties and the stokehold. A relief joins the station's group, so the next hit there finds
+  him. The walking wounded come back to their own station as now. Doctrine fields: `ReliefOrder`, `ReliefFloorShare`,
+  `ReliefWalkS` per section, one a period.
+- **N4 Posture** (16 §4.9; can wait). The ship-wide stance: closed up, or under cover. Under cover, the open stations'
+  men go behind plating (cover 0.2) and those stations stop. Doctrine default: under cover where the station can't bear.
+  The player's order later, in the UI pass.
+- **N5 The end of her.** No new fall-out knob. Fall-out already reads the main guns, and those now go silent for want
+  of men. A ship whose parties are spent can't fight her fires, and fire's own model takes her from there: they spread,
+  the magazines are threatened and flooded or not. Fire control's "ships seen done for" (F10) already counts silent and
+  burning. Striking colours and abandoning ship are command's, not this plan's (open question 3).
+- **N6 Fit and check.** The yardstick above. E6's per-hit benches stay as they are. Coarse parity (`CoarseParityTests`),
+  no allocation in the hit and evaluate paths, the matchup and the squadrons' hash reported.
+
+## Open questions
+
+1. **Reliefs' order:** do the disengaged side's crews go first (common practice in the record), and should the
+   handling rooms ever be stripped to man the guns?
+2. **Posture now or later:** N4 with this plan, or after the UI pass where the player's order lives?
+3. **Striking colours and abandoning ship:** Oryol surrendered with most of her men alive. Is that for command (the
+   captain's call on a ship that can't fight), and when?
+4. **Behind armour:** Oryol's losses came through ports and slits. E6 gives a gunhouse's men 0.45 cover. Is that
+   enough, or do sighting ports and conning tower slits need their own way in? This is checked in N0, not assumed.

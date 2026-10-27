@@ -22,7 +22,8 @@ decision 17). 4.5 (the deepenings) and 4.7 (mines) are moved out of the sequence
 ahead anyway as plans of their own: `shells-armour-damage.md` (phases S and P, E0-E8b; 2026-10-16 to 10-20; PM waits
 for the balance pass), `fire.md`, `damage-control.md`, `shell-contents.md` and `magazines.md` (all complete
 2026-10-19 to 10-20), `fire-control.md` (F0-F6 done 2026-10-18; F7-F12 left, F9 radar out of the first cut) and
-`smoke.md` (built and on by default 2026-10-21, smoke contacts 2026-10-22; its tuning pass under way); 4.7, 4.11, 4.8
+`smoke.md` (built and on by default 2026-10-21, smoke contacts 2026-10-22; its tuning pass under way) and `crew.md`
+(draft 2026-10-27: one book of men, stations working by their men, reliefs); 4.7, 4.11, 4.8
 and 4.9 are still to come.
 
 Step 5, command, is under way: its detailed plan is `docs/battle/command.md` (agreed 2026-10-14). 5.0 (a scenario that
@@ -1829,8 +1830,9 @@ it hands the sessions below. The systems' dependency graph
 the previous one: leaks through bulkheads and decks, free surface, `sinking.py`'s non-linear settling, pumping and
 counter-flooding, a plunge or capsize that plays out. Planned so far: `fire.md`, `damage-control.md`, `shell-contents.md`,
 `fire-control.md`, `magazines.md` (draft 2026-10-20: the flash chain down the hoists, the venting race, the hull at
-the magazine, flash discipline), and `shell-choice.md` (agreed 2026-10-25: the shell by target, the captain's and the
-player's).
+the magazine, flash discipline), `shell-choice.md` (agreed 2026-10-25: the shell by target, the captain's and the
+player's) and `crew.md` (draft 2026-10-27: the men as a station's strength, reliefs, the end of a ship with nobody to
+fight her).
 
 **4.6 Torpedoes** (done 2026-10-14, `fighting.md` 4.6). Tubes, and running torpedoes as tracks with events (like
 shells). Hits below the waterline go into the same damage. Torpedo boat and destroyer attacks need them.
