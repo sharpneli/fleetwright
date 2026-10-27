@@ -885,6 +885,15 @@ from the parts and independent fire (items 6 and 9); F6e ammunition as a choice 
   (the record 222), 3rd BCS 73 against ~160; at 16-18 km sometimes later, opening on a rawer track: 5th BS 318 against
   ~260, the German BCs at Dogger Bank 579 against ~500. Lion's lay after a hit moved 52 m against 50 (bound now 60,
   `bugs.md`).
+- **The first reading at once** (the user, 2026-10-27: casemates by eye let a ship alongside go unshot). A battery's
+  instruments took their first reading at a random point of their cycle, an eye's once a minute, and nothing, point
+  blank included, comes before the first reading through the computer (20 s for the layer by eye): 20-80 s with a
+  ship 300 m abeam, again at each shift. Now each is put on her at once and reads, then at its own rate. A 6" by eye
+  fires about 20 s after taking a ship at any range to 1.5 km (the bench: ~50 s before). fc-history at 96 runs a case:
+  every verdict as before, hit rates within their noise (the main batteries' opening is the track's doubt, not the
+  first reading). Tsushima over 4 seeds: Russia loses 4.5 ships (3.8), Japan 4.8 (5.2). `Fight_turns_away_when_outmatched`
+  starts the battleships at 18 km (16: they hit Lion five times in her first three minutes, and slowed she fights).
+  Left as it is: the layer by eye's 20 s from reading to sights (`FireControlPresets.Local`'s latency), close in too.
 - **F6d done 2026-10-18** (the rate of fire from its parts, independent fire).
   - *The supply:* a mount fires from its ready-use rounds (shipgen's `ReadyRounds`: a 4" 26 a gun, a 6" 15, a 12" 6, a
     15" 4) at the reload, and once they're gone as the hoists bring them, a round a gun every `MountRow.SupplyS`, the

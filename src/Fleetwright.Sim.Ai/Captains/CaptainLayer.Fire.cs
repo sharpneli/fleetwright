@@ -11,13 +11,14 @@ namespace Fleetwright.Sim.Ai.Captains;
 /// <list type="bullet">
 /// <item><b>Fire at will:</b> at each think, for every ship off rails that's in an encounter or has a battery
 /// engaged, each battery picks from its navy's contacts in sight within its reach (<see cref="SimSettings.FireReachShare"/>
-/// of the range table's): one that bears first, then (secondaries) the smallest type, then the nearest, by the range
-/// she'll be at <see cref="SimSettings.FireLeadS"/> on and longer by <see cref="SimSettings.FireCrowdShare"/> for each
-/// other ship's battery of the kind already on her (one closing before one running; the fire spread). It keeps its
-/// target until it's unseen for <see cref="SimSettings.FireLostMs"/> or past <see cref="SimSettings.FireKeepShare"/> of its
-/// reach, or another bears where it doesn't, is smaller (secondaries: by a type made out, never a contact still unknown,
-/// or each ship coming out of the haze would take the fire off the one held), or is nearer so than
-/// <see cref="SimSettings.FireSwitchShare"/> of it: no flicking between targets, as each shift starts the track again.
+/// of the range table's): one that bears first, then the nearest, by the range she'll be at
+/// <see cref="SimSettings.FireLeadS"/> on, longer by <see cref="SimSettings.FireCrowdShare"/> for each other ship's battery
+/// of the kind already on her (one closing before one running; the fire spread) and, for a secondary, by
+/// <see cref="SimSettings.FireSizeShare"/> for each step of her type's size (a boat before a battleship at much her
+/// range, never one alongside). It keeps its target until it's unseen for <see cref="SimSettings.FireLostMs"/> or past
+/// <see cref="SimSettings.FireKeepShare"/> of its reach, or another bears where it doesn't, or is nearer so than
+/// <see cref="SimSettings.FireSwitchShare"/> of it (an unknown's size taken as the held one's at most, or each ship coming
+/// out of the haze would take the fire off the one held): no flicking between targets, as each shift starts the track again.
 /// With nothing to shoot at it ceases fire, so the ship can go back on rails.</item>
 /// <item><b>Engage:</b> the chief batteries (<see cref="BatteryRow.Chief"/>: the main, or with none the heaviest guns) on
 /// the contact while the navy holds it (then at will again); the others pick their own. <b>Hold fire:</b> every battery
@@ -572,10 +573,10 @@ public sealed partial class CaptainLayer
             keep = curRange <= reach * s.FireKeepShare / s.FireReachShare;   // held a little further than taken: no flicking at the edge
             curBears = Bears(cls, b, Earth.Bearing(p, q) - own.HeadingDeg);
             curRank = secondary ? Rank(pic[ci].Type) : 0;
-            curBy = Lead(own, q, v, s) * (1 + s.FireCrowdShare * Crowd(cls, b, current, ctx.Ships.SlotOf(current)));
+            curBy = Lead(own, q, v, s) * (1 + s.FireCrowdShare * Crowd(cls, b, current, ctx.Ships.SlotOf(current))) * Sized(s, curRank);
         }
 
-        int best = 0, bestRank = int.MaxValue;
+        int best = 0, bestRank = 0;
         bool bestBears = false;
         double bestBy = double.MaxValue;
         for (int k = 0; k < candCount; k++)
@@ -583,12 +584,12 @@ public sealed partial class CaptainLayer
             if (candRange[k] > reach)
                 continue;
             bool bears = Bears(cls, b, candBearing[k]);
-            int rank = secondary ? candRank[k] : 0;
-            if (bears != bestBears ? !bears : rank != bestRank && rank > bestRank)
+            if (bears != bestBears && !bears)
                 continue;
-            double by = candLead[k] * (1 + s.FireCrowdShare * Crowd(cls, b, candEntity[k], candSlot[k]));
+            int rank = secondary ? candRank[k] : 0;
+            double by = candLead[k] * (1 + s.FireCrowdShare * Crowd(cls, b, candEntity[k], candSlot[k])) * Sized(s, rank);
             // a foul line only rules one out: asked only of one that would be the best yet (the line of fire's the cost)
-            if ((bears != bestBears || rank != bestRank || by < bestBy) && !Foul(ctx, own, k))
+            if ((bears != bestBears || by < bestBy) && !Foul(ctx, own, k))
                 (best, bestBears, bestRank, bestBy) = (candEntity[k], bears, rank, by);
         }
         if (!keep)
@@ -597,11 +598,16 @@ public sealed partial class CaptainLayer
             return current;
         if (bestBears != curBears)
             return bestBears ? best : current;
-        // by size only for a type made out: an unknown's smaller rank is a guess
-        if (bestRank != curRank && !(bestRank < curRank && bestRank == Rank(ShipType.Unknown)))
-            return bestRank < curRank ? best : current;
+        // an unknown's smaller size is a guess: against the one held she counts as its size
+        if (bestRank < curRank && bestRank == Rank(ShipType.Unknown))
+            bestBy *= Sized(s, curRank) / Sized(s, bestRank);
         return bestBy < s.FireSwitchShare * curBy ? best : current;
     }
+
+    /// <summary>A secondary battery's range to a contact counts longer by <see cref="SimSettings.FireSizeShare"/> for each
+    /// step of her type's rank (<see cref="Rank"/>), so a boat comes before a battleship at much the same range, never one
+    /// alongside.</summary>
+    static double Sized(SimSettings s, int rank) => 1 + s.FireSizeShare * rank;
 
     /// <summary>The range a contact (where and how his navy has her going) will be at <see cref="SimSettings.FireLeadS"/>
     /// on at the rate it's opening or closing now, m: never under a tenth of the range now.</summary>

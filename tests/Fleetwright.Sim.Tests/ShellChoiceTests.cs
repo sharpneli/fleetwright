@@ -25,8 +25,8 @@ public class ShellChoiceTests
         return w;
     }
 
-    /// <summary>What each of a battery's mounts that bear fires, second by second until each that has fired has fired
-    /// <paramref name="times"/> times: the kind its rounds went down by (a mount that never bore, none).</summary>
+    /// <summary>What each of a battery's mounts fires, second by second until each that has fired has fired
+    /// <paramref name="times"/> times: the kind its rounds went down by (a mount that never bore, none), by mount.</summary>
     static List<ShellKind>[] Fired(World w, int battery, int times, int limitS = 900)
     {
         var store = w.Ships.Store;
@@ -50,11 +50,12 @@ public class ShellChoiceTests
             }
         }
         Assert.True(seen.Count(x => x.Count >= times) >= 2, "two mounts or more fired");
-        return [.. seen.Where(x => x.Count > 0)];
+        return seen;
     }
 
     /// <summary>With no order a main battery fires AP (the magazine order); ordered HE, each mount fires the AP round
-    /// in its guns first, then HE; ordered back to the magazine order, the HE in its guns, then AP.</summary>
+    /// in its guns first, then HE; ordered back to the magazine order, the HE in its guns, then AP (and one coming to
+    /// bear only now, the AP it was loaded with at the start).</summary>
     [Fact]
     public void A_load_ordered_comes_up_after_the_round_in_the_gun()
     {
@@ -64,18 +65,21 @@ public class ShellChoiceTests
 
         w.Apply(GunnerySystem.Load(1, 0, ShellKind.He));
         Assert.Equal(ShellKind.He, w.Ships.Store.Combat.Ordered(w.Ships.Store.SlotOf(1), 0));
-        foreach (var m in Fired(w, 0, 2))
+        var he = Fired(w, 0, 2);
+        foreach (var m in he.Where(m => m.Count > 0))
         {
             Assert.Equal(ShellKind.Ap, m[0]);
             Assert.All(m.Skip(1), k => Assert.Equal(ShellKind.He, k));
         }
 
         w.Apply(GunnerySystem.Load(1, 0, null));
-        foreach (var m in Fired(w, 0, 2))
-        {
-            Assert.Equal(ShellKind.He, m[0]);
-            Assert.All(m.Skip(1), k => Assert.Equal(ShellKind.Ap, k));
-        }
+        var back = Fired(w, 0, 2);
+        for (int j = 0; j < back.Length; j++)
+            if (back[j].Count > 0)
+            {
+                Assert.Equal(he[j].Count > 0 ? ShellKind.He : ShellKind.Ap, back[j][0]);
+                Assert.All(back[j].Skip(1), k => Assert.Equal(ShellKind.Ap, k));
+            }
     }
 
     /// <summary>A kind the battery doesn't carry loads nothing of it: its guns go on by the magazine order.</summary>

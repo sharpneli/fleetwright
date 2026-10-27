@@ -613,6 +613,13 @@ rework, with the fire-control computers by era, revisits these):
     nearest; the counts follow the orders of the same pass, so ships don't all pick one in the same second. A smaller
     type wins a secondary's fire only when it's made out: an unknown contact's rank is a guess (each Russian ship coming
     out of the haze took the Japanese 6" off the one before, two minutes' opening lost each time);
+  - *size weighs the range* (the user, 2026-10-27, silly ships with many casemates in close melees: a battleship's 6"
+    left one 1.5 km abeam for a destroyer 8 km off): a secondary's range to a contact counts longer by `FireSizeShare`
+    (0.5) for each step of her type's rank (small craft 0 to capital ships 4), instead of the rank coming before the
+    range. A boat 8 km off still comes before a battleship beyond 4 km, a battleship at 1.5 km before a boat beyond
+    4.5. A smaller type no longer takes the fire off the one held by itself: it must be nearer by `FireSwitchShare`
+    after the weighing, an unknown counting as the held one's size at most. (The fleet destroyer, over 2,500 t, is
+    reported as a cruiser: `Sightings.TypeOf`);
   - with nothing to shoot at, it ceases fire, so the ship can go back on rails when the encounter closes;
   - the contacts in sight come from one `CubeIndex` per navy, built once a think, not ships × contacts.
 - **To a group:** its admiral hands the order to every ship of his tree (the group they came from is his). `Engage` is

@@ -81,9 +81,11 @@ public class FireOrderTests(ITestOutputHelper output)
     [Fact]
     public void Main_batteries_take_the_nearest_secondaries_the_smallest_and_neither_flicks()
     {
-        // a battleship at 7 km and a destroyer at 10 km, both abeam: the 15" on the battleship, the 6" on the destroyer
+        // a battleship at 7 km and a torpedo boat at 10 km, both abeam: the 15" on the battleship, the 6" on the boat (the
+        // size weighs the range, FireSizeShare: a battleship much nearer would be the 6"'s; and the fleet destroyer, over
+        // 2,500 t, is taken for a cruiser)
         var (w, _) = Make(new Placed("super_dreadnought", 0, 0, 0, 12, 0), new Placed("dreadnought", 80, 7_000, 0, 12, 1),
-            new Placed("destroyer", 100, 10_000, 0, 12, 1));
+            new Placed("tb_destroyer", 100, 10_000, 0, 12, 1));
         var cls = Fleet.Get("super_dreadnought").Class!;
         int secondary = Array.FindIndex(cls.Batteries.ToArray(), b => b.Kind == Ships.Battery.Secondary);
         Assert.True(secondary > 0);
@@ -101,6 +103,32 @@ public class FireOrderTests(ITestOutputHelper output)
                 (changes, last) = (changes + 1, Target(w, 1, 0));
         }
         Assert.Equal(0, changes);
+    }
+
+    [Fact]
+    public void Secondaries_take_a_battleship_alongside_over_a_boat_far_off_and_open_at_once()
+    {
+        // the user, 2026-10-27: a battleship's 6" left one 1.5 km abeam for a destroyer 8 km off (the type came before the
+        // range), and by eye waited up to a minute for its first reading
+        var (w, _) = Make(new Placed("super_dreadnought", 0, 0, 0, 10, 0), new Placed("dreadnought", 90, 1_500, 0, 10, 1),
+            new Placed("destroyer", 95, 8_000, 0, 10, 1));
+        var cls = Fleet.Get("super_dreadnought").Class!;
+        int starboard = -1;
+        for (int b = 0; b < cls.Batteries.Length; b++)
+            if (cls.Batteries[b].Kind == Ships.Battery.Secondary && cls.Links(cls.Batteries[b].Mounts).ToArray().All(m => cls.Mounts[m].Y > 0))
+                starboard = b;
+        Assert.True(starboard > 0);
+        long engaged = -1;
+        for (int s = 0; s < 60 && w.Gunnery.TallyOf(1, starboard) is not { Salvos: > 0 }; s++)
+        {
+            Run(w, 1);
+            if (engaged < 0 && Target(w, 1, starboard) != 0)
+                engaged = w.Time.Ms;
+        }
+        Assert.Equal(2, Target(w, 1, starboard));
+        var t = w.Gunnery.TallyOf(1, starboard)!.Value;
+        output.WriteLine($"engaged after {(engaged - Start.Ms) / 1000} s, first salvo {(w.Time.Ms - engaged) / 1000} s later, {t.Hits} hits");
+        Assert.True(t.Salvos > 0 && w.Time.Ms - engaged <= 30_000, "opened within half a minute of taking her");
     }
 
     [Fact]
@@ -211,10 +239,11 @@ public class FireOrderTests(ITestOutputHelper output)
         // a battlecruiser, faster than the four battleships she meets (28 kn against 24): she can get away, and does. Judged
         // over the first 5 minutes: hit and slowed later she can't refuse them, and with nowhere to fall back on she fights
         // (she turned back at about 330 s once the battleships' after control rangefinders read too, fire-control.md F4b, and
-        // at about 250 s once their turrets' report to the computer as well, F5)
+        // at about 250 s once their turrets' report to the computer as well, F5; from 16 km they hit her five times in her
+        // first three minutes once their instruments read at once, 2026-10-27, and she fought: so 18 km)
         var ships = new List<Placed> { new("lion", 0, 0, 90, 18, 0) };
         for (int i = 0; i < 4; i++)
-            ships.Add(new Placed("super_dreadnought", 90 + i * 3, 16_000, 270, 15, 1));
+            ships.Add(new Placed("super_dreadnought", 90 + i * 3, 18_000, 270, 15, 1));
         var (w, ai) = Make([.. ships]);
         w.Apply(ai.Orders.Fight(Unit.Ship(1)));
         Run(w, 30);

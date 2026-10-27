@@ -650,6 +650,12 @@ public sealed record SimSettings
     public double FireLeadS { get; init; } = 120;
     public double FireCrowdShare { get; init; } = 0.25;
 
+    /// <summary>A secondary battery's range to a contact counts longer by this share for each step of her type's rank,
+    /// small craft 0 to capital ships 4 [EST] (the user, 2026-10-27: the rank once came before the range, and a battleship's
+    /// 6" left one alongside for a destroyer 8 km off). A capital ship counts as at three times her range, a destroyer one
+    /// and a half: a boat 8 km off before a battleship beyond 4, a battleship at 1.5 km before a boat beyond 4.5.</summary>
+    public double FireSizeShare { get; init; } = 0.5;
+
     /// <summary>The shell by target (docs/battle/shell-choice.md A3): a captain changes a battery's load only for a kind
     /// whose rounds do this many times the one loaded [EST], since each change costs the round in the gun.</summary>
     public double ShellSwitchGain { get; init; } = 1.25;

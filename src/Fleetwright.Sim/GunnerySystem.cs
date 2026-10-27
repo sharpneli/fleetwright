@@ -507,7 +507,9 @@ public sealed class GunnerySystem : IWorldSystem
             ref var s = ref sensors[f * MaxSensors + k];
             s.Bias = r.NextGaussian();
             (s.Wander, s.WanderMs) = (r.NextGaussian(), now);
-            s.NextMs = now + (long)(r.NextDouble() * 60_000 / Math.Max(Rate(optics, s), 1e-6));
+            // put on her at once, its first reading now (the user, 2026-10-27: one at a random point of its cycle left a
+            // layer by eye looking at a ship alongside for up to a minute); its own rate from there
+            s.NextMs = now;
             fc.SpotHeightM = Math.Max(fc.SpotHeightM, s.HeightM);
         }
     }
