@@ -430,7 +430,12 @@ public sealed class WorldSession : IDisposable
             switch ((WorldCommand)c.Code)
             {
                 case WorldCommand.SetSpeed:
-                    askedSpeed = c.Y > 0 ? Command.SetSpeed(c.Y) : c;   // with its fine tier held, if it was; a run, as it'll end
+                    // with its tier held, if it was; a run, as it'll end (the coarse tier's hold kept, as a halt keeps it)
+                    askedSpeed = c.Y > 0 ? Command.SetSpeed(c.Y, (ClockHold)c.A == ClockHold.Coarse ? ClockHold.Coarse : ClockHold.None) : c;
+                    break;
+                case WorldCommand.Step:
+                    // a new world takes the step from its start (the pause it ends in is the world's, as a rule's is)
+                    (askedSpeed, askedPaused) = (c, false);
                     break;
                 case WorldCommand.Pause:
                     askedPaused = true;

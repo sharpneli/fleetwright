@@ -73,8 +73,9 @@ picks a unit in one click.
 | **⇧Space** | run until it matters: the clock to the top and back to the watching speed, or paused, at the first thing the player wants to know (a new contact, an enemy in gun range, a hit on one of ours, a torpedo track sighted, a task done or can't). The encounter rule (`Interest`) grows into this list, each item pause, slow or nothing. No popup: the clock changes and the status bar says why |
 | Mouse 4, 5 | a step slower, faster (the hand stays on the mouse) |
 | + − | a step, as before |
+| **6** (proposed, `coarse.md` J1) | a coarse step: a minute, the coarse tier held at the watching speed (a minute in 3 s, the menu's clock), paused at the next minute (`Command.Step`). A gear or + − lets the hold go; § and ⇧Space keep it |
 
-6–0 are free.
+7–0 are free.
 
 ## Steps
 

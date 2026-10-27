@@ -509,7 +509,7 @@ public class CommanderTests(ITestOutputHelper output)
         var (lb, lb2) = LatLon(Off(0, 16_000));
         w.Apply(ai.Orders.ByHand.GoTo(u, la, lo, 18));
         w.Apply(UnitOrders.Then(ai.Orders.ByHand.GoTo(u, lb, lb2, 18)));
-        w.Apply(Command.SetSpeed(w.Settings.MaxSpeed, holdFine: true, runBack: 10));
+        w.Apply(Command.SetSpeed(w.Settings.MaxSpeed, ClockHold.Fine, runBack: 10));
         double first = double.NaN, end = double.NaN;
         for (double s = 0; s < 2 * 3600 && double.IsNaN(end); s += 10)
         {
@@ -538,7 +538,7 @@ public class CommanderTests(ITestOutputHelper output)
         Column(w, ai, bb, Earth.Position(Lat, Lon), 90, 1);
         Column(w, ai, bb, Off(90, 40_000), 270, 1, side: 1);
         w.Apply(Command.SetInterest(InterestKind.Own, InterestAction.Slow, 100));
-        w.Apply(Command.SetSpeed(w.Settings.MaxSpeed, holdFine: true, runBack: 60));
+        w.Apply(Command.SetSpeed(w.Settings.MaxSpeed, ClockHold.Fine, runBack: 60));
         for (int i = 0; i < 360 && w.RunBack > 0; i++)
             Run(w, 10);
         Assert.Equal((0.0, 60.0, false), (w.RunBack, w.Speed, w.Paused));
@@ -552,7 +552,7 @@ public class CommanderTests(ITestOutputHelper output)
         int bb = Class(w, "dreadnought");
         Column(w, ai, bb, Earth.Position(Lat, Lon), 90, 1);
         Column(w, ai, bb, Off(90, 40_000), 270, 1, side: 1);
-        w.Apply(Command.SetSpeed(w.Settings.MaxSpeed, holdFine: true, runBack: 60));
+        w.Apply(Command.SetSpeed(w.Settings.MaxSpeed, ClockHold.Fine, runBack: 60));
         for (int i = 0; i < 360 && w.RunBack > 0; i++)
             Run(w, 10);
         Assert.Equal((0.0, 1.0, true), (w.RunBack, w.Speed, w.Paused));

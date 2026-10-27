@@ -20,7 +20,7 @@ public static unsafe class Program
         bool mapGiven = false;
         var start = Sim.Core.WorldTime.FromUtc(1916, 5, 31, 14, 0);
         double? startSpeed = null;
-        bool startPaused = false, noPause = false;
+        bool startPaused = false, noPause = false, coarseHeld = false;
         int builders = 0, idleBuilders = 0;
         bool launchFlag = false;
         string? launchName = null;
@@ -124,6 +124,10 @@ public static unsafe class Program
             else if (arg == "-speed=fine")   // the fine tier flat out at start (as § held: World.FineHeld)
             {
                 startSpeed = double.PositiveInfinity;
+            }
+            else if (arg == "-tier=coarse")   // the coarse tier held at start (the step mode's, World.CoarseHeld): at -speed=, else a minute in 3 s
+            {
+                coarseHeld = true;
             }
             else if (arg.StartsWith("-speed="))   // the world's clock speed at start
             {
@@ -543,9 +547,11 @@ public static unsafe class Program
                 else
                     Console.Error.WriteLine($"Scenario not found: {scenarioArg} (looked at {looked}; a new file in Content/Scenarios is copied next to the exe when the app builds)");
             }
-            if (startSpeed is double speed0)
+            if (coarseHeld)
+                world.Send(Sim.Command.SetSpeed(startSpeed is double sp0 && !double.IsPositiveInfinity(sp0) ? sp0 : 20, Sim.ClockHold.Coarse));
+            else if (startSpeed is double speed0)
                 world.Send(double.IsPositiveInfinity(speed0)
-                    ? Sim.Command.SetSpeed(world.Settings.MaxSpeed, holdFine: true)
+                    ? Sim.Command.SetSpeed(world.Settings.MaxSpeed, Sim.ClockHold.Fine)
                     : Sim.Command.SetSpeed(speed0));
             if (startPaused)
                 world.Send(Sim.Command.Pause());

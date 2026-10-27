@@ -20,7 +20,38 @@ public sealed partial class MapScene
 
     /// <summary>The fast-forward key, by its place: left of 1 (§ on a Nordic keyboard, ` on a US one).</summary>
     const SDL.SDL_Scancode FastKey = SDL.SDL_Scancode.SDL_SCANCODE_GRAVE;
-    (double Speed, bool Fine, bool Paused)? fastFrom;   // while § is held: the clock it found, given back on the release
+    (double Speed, ClockHold Held, bool Paused)? fastFrom;   // while § is held: the clock it found, given back on the release
+
+    /// <summary>The step key (docs/battle/coarse.md J1, proposed against docs/map-ui/input.md: 6, the first free key after
+    /// the gears, under the left hand with the rest of the clock).</summary>
+    const uint StepKey = SDL.SDL3.SDLK_6;
+    const string StepKeyName = "6";
+
+    /// <summary>The step mode's playback speeds, a minute in 1, 2, 3, 6 or 12 s; the menu's clock picks one.</summary>
+    static readonly double[] StepSpeeds = [60, 30, 20, 10, 5];
+    static readonly string[] StepSpeedNames = [.. StepSpeeds.Select(sp => $"{60 / sp:0} s")];
+
+    /// <summary>The speed a step plays at: the player's setting, carried by each step's command (a minute in 3 s by
+    /// default).</summary>
+    double stepSpeed = 20;
+
+    /// <summary>A step (docs/battle/coarse.md, the step mode): the coarse tier held at the playback speed, to the next
+    /// minute and paused there (pressed again while one runs, it runs to the same minute).</summary>
+    void Step() => world.Send(Command.Step(stepSpeed));
+
+    void StepSpeedRow()
+    {
+        ImGui.SameLine();
+        int cur = Math.Max(0, Array.IndexOf(StepSpeeds, stepSpeed));
+        ImGui.SetNextItemWidth(90 * UiFonts.Scale);
+        if (ImGui.BeginCombo("##stepspeed", StepSpeedNames[cur]))
+        {
+            for (int i = 0; i < StepSpeeds.Length; i++)
+                if (ImGui.Selectable(StepSpeedNames[i], i == cur))
+                    stepSpeed = StepSpeeds[i];
+            ImGui.EndCombo();
+        }
+    }
 
     /// <summary>§ down (not its repeats): on the fine tier the fine tier held flat out (the clock as fast as the sim can,
     /// the world 240×'s: <see cref="World.FineHeld"/>; for trying, until the coarse tier is whole), on the coarse the
@@ -33,7 +64,7 @@ public sealed partial class MapScene
         {
             if (fastFrom != null)
                 return;
-            fastFrom = (s.Speed, s.FineHeld, s.Paused);
+            fastFrom = (s.Speed, s.Held, s.Paused);
             world.Send(Fast(s));
             if (s.Paused)
                 world.Send(Command.Resume());
@@ -51,12 +82,12 @@ public sealed partial class MapScene
     }
 
     /// <summary>The fast clock, § held's and a run's (one rule, so one setting can tune both): on the fine tier the fine
-    /// tier flat out (<see cref="World.FineHeld"/>), on the coarse the passage gear; a run's with the speed to drop back
-    /// to.</summary>
+    /// tier flat out (<see cref="World.FineHeld"/>), on the coarse the passage gear (held coarse, so a run drops back to
+    /// the step mode); a run's with the speed to drop back to.</summary>
     Command Fast(Snapshot s, double runBack = 0) =>
-        s.FineHeld || s.Speed < world.Settings.CoarseMinSpeed
-            ? Command.SetSpeed(world.Settings.MaxSpeed, holdFine: true, runBack)
-            : Command.SetSpeed(Gears[^1], runBack: runBack);
+        s.CoarseHeld ? Command.SetSpeed(Gears[^1], ClockHold.Coarse, runBack)
+        : s.FineHeld || s.Speed < world.Settings.CoarseMinSpeed ? Command.SetSpeed(world.Settings.MaxSpeed, ClockHold.Fine, runBack)
+        : Command.SetSpeed(Gears[^1], runBack: runBack);
 
     /// <summary>⇧Space, run until it matters (docs/map-ui/input.md T1): the fast clock latched, back to the speed it
     /// found at the first thing that matters (a task the player gave by hand ended, the last of its plan, or an encounter
@@ -66,7 +97,7 @@ public sealed partial class MapScene
         var s = world.Current;
         if (s.RunBack > 0)
         {
-            world.Send(Command.SetSpeed(s.RunBack));
+            world.Send(Command.SetSpeed(s.RunBack, s.CoarseHeld ? ClockHold.Coarse : ClockHold.None));
             return;
         }
         double back = s.FineHeld ? Gears.Last(g => g < world.Settings.CoarseMinSpeed) : s.Speed;   // flat out: the fine tier's top gear

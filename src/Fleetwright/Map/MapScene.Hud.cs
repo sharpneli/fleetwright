@@ -42,7 +42,7 @@ public sealed partial class MapScene : ISceneMenu
     long clockSecond = long.MinValue;
     DateTime clockDay;
     string clockText = "", dayText = "";
-    (double Asked, double Held, bool Paused) heldKey = (-1, -1, false);
+    (double Asked, double Held, bool Paused, long Step) heldKey = (-1, -1, false, long.MinValue);
     string heldText = "";
     int actionMinutes = -1;
     string actionText = "";
@@ -93,6 +93,7 @@ public sealed partial class MapScene : ISceneMenu
         // pause, the speeds, what's held
         ImGui.SameLine(0, gap);
         PauseButton(s, mid);
+        StepButton(s, mid);
         SpeedButtons(s, mid);
         ImGui.SameLine(0, 10 * sc);
         if (s.Paused)
@@ -184,14 +185,17 @@ public sealed partial class MapScene : ISceneMenu
             }
         }
         // what's held: the speed asked while the sim keeps up, else what it makes; the fine tier held (§), what it makes
-        // flat out (made when the words change)
+        // flat out; the coarse tier held (the step mode), the step's boundary (made when the words change)
         bool lagging = s.FineHeld || s.RunBack > 0 || s.AchievedSpeed < s.Speed * 0.9;
-        var held = (s.RunBack > 0 ? -3 : s.FineHeld ? -2 : s.Speed, lagging ? Math.Round(s.AchievedSpeed) : -1, s.Paused);
+        var held = (s.RunBack > 0 ? -3 : s.FineHeld ? -2 : s.Speed, lagging ? Math.Round(s.AchievedSpeed) : -1, s.Paused,
+            s.CoarseHeld ? s.StepEndMs : long.MinValue);
         if (held != heldKey)
         {
             heldKey = held;
             heldText = s.RunBack > 0 ? $"run until it matters: {SpeedLabel(held.Item2)}"
                 : s.FineHeld ? $"fine, flat out: {SpeedLabel(held.Item2)}"
+                : s.CoarseHeld && s.StepEndMs >= 0 ? $"a step to {new WorldTime(s.StepEndMs).ToUtc():HH:mm}"
+                : s.CoarseHeld ? $"coarse, held {SpeedLabel(s.Speed)}"
                 : lagging ? $"held {SpeedLabel(held.Item2)} of {SpeedLabel(s.Speed)}" : $"held {SpeedLabel(s.Speed)}";
         }
         // in action: since the oldest open encounter of ours
@@ -259,6 +263,33 @@ public sealed partial class MapScene : ISceneMenu
         }
     }
 
+    /// <summary>A step (docs/battle/coarse.md, the step mode): a triangle to a bar, drawn; brass while the coarse tier is
+    /// held. A click runs a minute coarse and pauses, as the step key does.</summary>
+    void StepButton(Snapshot s, float mid)
+    {
+        float sc = UiFonts.Scale, w = 26 * sc, h = 20 * sc;
+        ImGui.SameLine(0, 2 * sc);
+        ImGui.SetCursorPosY(mid - h / 2);
+        var p = ImGui.GetCursorScreenPos();
+        if (ImGui.InvisibleButton("##step", new Vector2(w, h)))
+            Step();
+        bool hovered = ImGui.IsItemHovered();
+        if (hovered)
+        {
+            ImGui.BeginTooltip();
+            ImGui.TextUnformatted($"a step: a minute, coarse, then paused ({StepKeyName})");
+            ImGui.TextDisabled($"played in {60 / stepSpeed:0.#} s (the menu: the clock)");
+            ImGui.EndTooltip();
+        }
+        var dl = ImGui.GetWindowDrawList();
+        dl.AddRectFilled(p, p + new Vector2(w, h), ImGui.GetColorU32(s.CoarseHeld ? Theme.BrassDarker :
+            hovered ? new Vector4(1, 1, 1, 0.1f) : new Vector4(1, 1, 1, 0.05f)), 2 * sc);
+        uint ink = ImGui.GetColorU32(s.CoarseHeld ? Theme.Brass : Theme.Text);
+        var c = p + new Vector2(w, h) / 2;
+        dl.AddTriangleFilled(c + new Vector2(-5, -5) * sc, c + new Vector2(3, 0) * sc, c + new Vector2(-5, 5) * sc, ink);
+        dl.AddRectFilled(c + new Vector2(3.5f, -5) * sc, c + new Vector2(6, 5) * sc, ink);
+    }
+
     /// <summary>The speeds as buttons: the one asked in brass, the coarse tier's dimmer (no fire there yet); a click
     /// runs a paused clock at it.</summary>
     void SpeedButtons(Snapshot s, float mid)
@@ -272,7 +303,7 @@ public sealed partial class MapScene : ISceneMenu
         {
             ImGui.SameLine(0, i == 0 ? 2 * sc : Speeds[i] >= world.Settings.CoarseMinSpeed && Speeds[i - 1] < world.Settings.CoarseMinSpeed ? 7 * sc : 1 * sc);
             ImGui.SetCursorPosY(mid - h / 2);
-            bool asked = !s.FineHeld && Math.Abs(Speeds[i] - s.Speed) < 1e-6, coarse = Speeds[i] >= world.Settings.CoarseMinSpeed;
+            bool asked = s.Held == ClockHold.None && Math.Abs(Speeds[i] - s.Speed) < 1e-6, coarse = Speeds[i] >= world.Settings.CoarseMinSpeed;
             ImGui.PushStyleColor(ImGuiCol.Button, asked ? Theme.BrassDarker : new Vector4(1, 1, 1, 0.04f));
             ImGui.PushStyleColor(ImGuiCol.ButtonHovered, asked ? Theme.BrassDark : new Vector4(1, 1, 1, 0.1f));
             ImGui.PushStyleColor(ImGuiCol.Text, asked ? Theme.Brass : coarse ? Theme.Muted with { W = 0.6f } : Theme.Muted);
@@ -744,6 +775,15 @@ public sealed partial class MapScene : ISceneMenu
             ImGui.Dummy(Vector2.Zero);
             Rule(s, InterestKind.Others, "##others");
         }
+        else
+        {
+            ImGui.Spacing();
+            ImGui.TextDisabled("The clock");
+        }
+        ImGui.TextUnformatted("A step played in");
+        ImGui.SameLine(200 * UiFonts.Scale);
+        ImGui.Dummy(Vector2.Zero);
+        StepSpeedRow();
         return shut;
     }
 

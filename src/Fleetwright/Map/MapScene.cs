@@ -361,6 +361,8 @@ public sealed unsafe partial class MapScene : IScene
             world.Send(s.Paused ? Command.Resume() : Command.Pause());
         else if (key is SDLK_EQUALS or SDLK_KP_PLUS or SDLK_MINUS or SDLK_KP_MINUS)
             world.Send(Command.SetSpeed(StepSpeed(s.Speed, key is SDLK_MINUS or SDLK_KP_MINUS ? -1 : 1)));
+        else if (key == StepKey)
+            Step();   // a minute, coarse, then paused (MapScene.Clock.cs)
         else if (SpeedKey(key) is var i and >= 0)
         {
             // as the bar's button: the gear's speed, and a paused clock runs at it
@@ -373,8 +375,8 @@ public sealed unsafe partial class MapScene : IScene
         return true;
     }
 
-    /// <summary>The gear a number key picks: 1 to 5 (the keypad's too); -1 for any other key (6 to 0 are free,
-    /// docs/map-ui/input.md).</summary>
+    /// <summary>The gear a number key picks: 1 to 5 (the keypad's too); -1 for any other key (6 is the step, 7 to 0 are
+    /// free, docs/map-ui/input.md).</summary>
     static int SpeedKey(uint key) => key switch
     {
         >= SDLK_1 and <= SDLK_5 => (int)(key - SDLK_1),

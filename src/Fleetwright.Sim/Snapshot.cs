@@ -22,8 +22,15 @@ public sealed class Snapshot
     /// <summary>The asked speed, game seconds per real second.</summary>
     public double Speed { get; set; }
 
-    /// <summary>The fine tier held whatever the speed (World.FineHeld): the clock as fast as the sim can, the world 240×'s.</summary>
-    public bool FineHeld { get; set; }
+    /// <summary>A tier held whatever the speed (World.Held): fine, the clock as fast as the sim can with the world
+    /// 240×'s; coarse, the step mode's, the world 241×'s at a watching speed.</summary>
+    public ClockHold Held { get; set; }
+
+    public bool FineHeld => Held == ClockHold.Fine;
+    public bool CoarseHeld => Held == ClockHold.Coarse;
+
+    /// <summary>The coarse step boundary a step runs to (World.StepEndMs), -1 with none.</summary>
+    public long StepEndMs { get; set; } = -1;
 
     /// <summary>A run's speed to drop back to (World.RunBack), 0 with none.</summary>
     public double RunBack { get; set; }

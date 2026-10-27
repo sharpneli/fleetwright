@@ -141,7 +141,7 @@ public class ScenarioTests
             // contact mustn't drop the clock to 1x, or both would fight at 1x
             w.Apply(Command.SetInterest(InterestKind.Own, InterestAction.Nothing));
             w.Apply(Command.SetInterest(InterestKind.Others, InterestAction.Nothing));
-            w.Apply(Command.SetSpeed(speed, holdFine));
+            w.Apply(Command.SetSpeed(speed, holdFine ? ClockHold.Fine : ClockHold.None));
             w.AdvanceTo(w.Time + 20 * 60_000);
             Assert.Equal(speed, w.Speed);
             Assert.Equal(holdFine, w.FineHeld);
@@ -155,6 +155,63 @@ public class ScenarioTests
         ulong slow = Run(1);
         Assert.Equal(slow, Run(Settings.CoarseMinSpeed - 1));
         Assert.Equal(slow, Run(Settings.MaxSpeed, holdFine: true));
+    }
+
+    /// <summary>The step mode (docs/battle/coarse.md J1): the coarse tier held at a watching speed is the world the coarse
+    /// tier makes at speed. The squadrons scenario played 20 minutes coarse at 1,000x and held at 20x and 1x comes out the
+    /// same world, and so does the same 20 minutes played as 20 steps, their pauses and all.</summary>
+    [Fact]
+    public void The_coarse_tier_held_is_the_same_at_any_speed_and_in_steps()
+    {
+        var s = Scenario.Load(Path.Combine(Fleet.Repo, "Content", "Scenarios", "squadrons.json"));
+        ulong Run(Action<World> play)
+        {
+            var w = new World(s.Start, s.Seed, Settings);
+            var ai = new AiSystem(w);
+            ScenarioLoader.Apply(s, w, ai, ScenarioLoader.RequestClasses(s, w.Ships.Registry, Designs));
+            w.Apply(Command.SetInterest(InterestKind.Own, InterestAction.Nothing));
+            w.Apply(Command.SetInterest(InterestKind.Others, InterestAction.Nothing));
+            play(w);
+            Assert.True(w.Coarse);
+            Assert.True(w.Encounters.Count > 0, "they've met");
+            w.Apply(Command.SetSpeed(1000));   // the asked speed, its hold and the pause are world state, in the hash: the same for all
+            w.Apply(Command.Resume());
+            return w.ComputeHash();
+        }
+        long step = Settings.CoarseStepMs;
+        var end = new WorldTime((s.Start.Ms / step + 20) * step + 1);   // where the 20th step pauses
+        void Held(World w, double speed)
+        {
+            w.Apply(Command.SetSpeed(speed, ClockHold.Coarse));
+            w.AdvanceTo(end);
+            Assert.False(w.Paused);
+        }
+        ulong fast = Run(w =>
+        {
+            w.Apply(Command.SetSpeed(1000));
+            w.AdvanceTo(end);
+        });
+        Assert.Equal(fast, Run(w => Held(w, 20)));
+        Assert.Equal(fast, Run(w => Held(w, 1)));
+        Assert.Equal(fast, Run(w =>
+        {
+            // a step at a time, paced as a host does (real time passing), each pausing just past its boundary
+            for (int i = 0; i < 20; i++)
+            {
+                w.Apply(Command.Step(20));
+                long boundary = w.StepEndMs;
+                Assert.Equal(0, boundary % step);
+                while (!w.Paused)
+                {
+                    w.Elapse(0.1);
+                    w.Advance();
+                }
+                Assert.Equal(boundary + 1, w.Time.Ms);
+                Assert.Equal(-1, w.StepEndMs);
+            }
+            Assert.True(w.CoarseHeld);
+            Assert.Equal(end, w.Time);
+        }));
     }
 
     /// <summary>The host cuts a slow stretch into slices that end when a snapshot is due (World.Advance's deadline):

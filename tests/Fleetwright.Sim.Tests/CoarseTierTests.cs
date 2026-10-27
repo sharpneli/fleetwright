@@ -73,6 +73,81 @@ public class CoarseTierTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void A_step_runs_coarse_held_to_the_boundary_and_pauses_past_its_moment()
+    {
+        // the step mode (docs/battle/coarse.md J1): at 20x the ships are coarse, the clock runs to the next minute and
+        // rests 1 ms past it, paused, with the coarse step and the captains' think of that minute run
+        var (w, c) = Make(Settings with { RailsEnabled = false });   // off rails, so it shows its tier
+        w.Apply(ShipSystem.Spawn(c, Lat, Lon, 0, Kn, 1));
+        Run(w, 12.5);
+        w.Apply(Command.Step(20));
+        Assert.True(w.CoarseHeld && w.Coarse && !w.Paused);
+        Assert.Equal(ClockTier.Coarse, Ship(w, 1).Tier);
+        long boundary = (w.Time.Ms / 60_000 + 1) * 60_000;
+        Assert.Equal(boundary, w.StepEndMs);
+        for (int i = 0; i < 100 && !w.Paused; i++)
+        {
+            w.Elapse(0.25);   // 5 s of the world a slice
+            w.Advance();
+        }
+        Assert.True(w.Paused);
+        Assert.Equal(boundary + 1, w.Time.Ms);
+        Assert.True(w.CoarseHeld);
+        Assert.Equal(20, w.Speed);
+        w.Elapse(10);   // paused: nothing moves
+        w.Advance();
+        Assert.Equal(boundary + 1, w.Time.Ms);
+
+        // the next step: a minute on; a pause and a resume carry it on
+        w.Apply(Command.Step(20));
+        Assert.Equal(boundary + 60_000, w.StepEndMs);
+        w.Elapse(1);
+        w.Advance();
+        w.Apply(Command.Pause());
+        w.Apply(Command.Resume());
+        Assert.Equal(boundary + 60_000, w.StepEndMs);
+        // headless, a target past the step goes there, the pause kept, as through a halt (AdvanceTo)
+        w.AdvanceTo(new WorldTime(boundary + 150_000));
+        Assert.True(w.Paused);
+        Assert.Equal(boundary + 150_000, w.Time.Ms);
+        Assert.Equal(-1, w.StepEndMs);
+
+        // a speed asked lets the hold go: fine below the threshold
+        w.Apply(Command.Step(20));
+        w.Apply(Command.SetSpeed(20));
+        Assert.True(!w.CoarseHeld && !w.Coarse && w.StepEndMs == -1);
+        Assert.Equal(ClockTier.Fine, Ship(w, 1).Tier);
+    }
+
+    [Fact]
+    public void An_encounter_that_pauses_ends_a_step_and_keeps_the_coarse_tier()
+    {
+        // the player's rule pauses at 1x when their ships meet the enemy: in a step, the step ends there, coarse held
+        // (in coarse the encounters are looked at on the step, so it opens on a boundary: the pause is the rule's by
+        // the speed it slowed to)
+        var (w, c) = Make();
+        w.Apply(Command.SetPlayerSide(1));
+        w.Apply(ShipSystem.Spawn(c, Lat, Lon, 0, Kn, 1));
+        w.Apply(ShipSystem.Spawn(c, Lat + 0.9, Lon, 180, Kn, 2));
+        int steps = 0;
+        while (w.Encounters.Count == 0 && steps++ < 60)
+        {
+            w.Apply(Command.Step(20));
+            while (!w.Paused)
+            {
+                w.Elapse(0.5);
+                w.Advance();
+            }
+        }
+        output.WriteLine($"the encounter opened in step {steps}, at {(w.Time.Ms - Start.Ms) / 1000.0:F3} s");
+        Assert.Equal(1, w.Encounters.Count);
+        Assert.True(w.Paused && w.CoarseHeld && w.Coarse);
+        Assert.Equal(1, w.Speed);
+        Assert.Equal(-1, w.StepEndMs);
+        Assert.Equal(ClockTier.Coarse, Ship(w, 1).Tier);
+    }
+
+    [Fact]
     public void A_snapshot_carries_a_coarse_turn_on_to_its_end_and_no_further()
     {
         // what the map draws between snapshots: a coarse ship's turn carried on along its circle to the turn's end,

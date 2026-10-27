@@ -1,6 +1,6 @@
 # Plan: fighting in the coarse tier
 Status: **agreed 2026-10-26** (drafted and answered the same day: "Decided" at the end). J0 (the bench) done
-2026-10-26; J1 (the step mode) next. It takes over `fighting.md` 4.8
+2026-10-26; J1 (the step mode) done 2026-10-27, its key awaiting the user's nod; J2 (guns in coarse) next. It takes over `fighting.md` 4.8
 (damage in the coarse tier) and 4.9 (coarse fire), and the parts of `plan.md` 2.8 that touch fighting. Those sections
 only point here.
 
@@ -256,6 +256,29 @@ Each step ends with something to run and watch in the step mode, and with the pa
     0.36 fine.
 - **Kept:** the fine baseline, `docs/battle/coarse-parity/2026-10-26-standard.json`. Run twice, the panel gave the
   same numbers: the bench is deterministic.
+
+**J1 done (2026-10-27).**
+- **The hold:** `World.Held` (`ClockHold`: none, fine, coarse) replaces `FineHeld`, set with the speed by one
+  `SetSpeed`. Held coarse, `TierSpeed` is at least `CoarseMinSpeed`. A halt to a speed (an encounter's rule) lets the
+  fine hold go but keeps the coarse one: a coarse world is slowed, never taken fine. The hash is unchanged for none and fine.
+- **The step:** `Command.Step(speed)` holds coarse at that speed, runs, and sets `World.StepEndMs` to the next minute
+  of world time (the coarse step's grid, which the AI's thinks share). The clock's target is capped 1 ms past it. Once
+  the clock rests there, after that moment's events, the world pauses. A halt that pauses ends the step early. A pause
+  and a resume carry it on; a speed asked ends it. Headless, `AdvanceTo` goes on past the step's pause, as through a
+  halt. The snapshot carries the hold and the step's end.
+- **The app:** a step button beside pause (brass while coarse is held). The bar reads "a step to 15:31" or
+  "coarse, held 20×". The menu's clock has "A step played in" (1, 2, 3, 6 or 12 s; 3 s default). `-tier=coarse` starts
+  coarse held, at `-speed=` or 20×. § and ⇧Space keep the coarse hold (the passage gear, back to the step mode). A gear
+  or + − lets it go. A new world loaded mid-step takes the step from its start (`WorldSession`).
+- **The key, proposed:** **6**, the first free key after the gears, under the left hand with the rest of the clock.
+  Enter is the strip's course entry. It is in `input.md`'s clock table as proposed, waiting for the user's nod.
+- **Checked:** the squadrons scenario 20 minutes coarse at 1,000×, held at 20× and at 1×, and as 20 steps paced by real
+  time all give the same hash (`ScenarioTests.The_coarse_tier_held_is_the_same_at_any_speed_and_in_steps`). A step
+  pauses 1 ms past its boundary, and an encounter's pause ends one with coarse kept (`CoarseTierTests`). A `-screenshot`
+  series mid-step at 12 m/px (frames 330-800, the key at 300) shows the line moving on along its track between
+  15:30:16 and 15:30:38 and pausing at 15:31:00. At that boundary the minute's look found the enemy.
+- **For J2:** the guns are still silent in coarse, so a step through a fight shows no fire yet. The "guns silent"
+  label stays until then.
 
 ## Decided
 

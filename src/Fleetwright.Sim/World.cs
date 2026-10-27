@@ -39,20 +39,43 @@ public sealed class World
     /// <summary>The asked speed, game seconds per real second.</summary>
     public double Speed { get; private set; } = 1;
 
-    /// <summary>The fine tier held whatever the speed asked (docs/map-ui/input.md, § held): the clock runs as fast as
-    /// it's asked (the top, as fast as the sim can) while the tiers and the rails go by the fine tier's top, so the
-    /// world is the one 240× makes. Set with the speed by one command, so a ship never crosses to coarse and back; a
-    /// speed asked without it, or a halt to a speed, lets go.</summary>
-    public bool FineHeld { get; private set; }
+    /// <summary>A tier held whatever the speed asked, set with the speed by one command, so a ship never crosses tiers
+    /// and back; a speed asked without it lets go.
+    /// <list type="bullet">
+    /// <item><b>Fine</b> (docs/map-ui/input.md, § held): the clock runs as fast as it's asked (the top, as fast as the
+    /// sim can) while the tiers and the rails go by the fine tier's top, so the world is the one 240× makes. A halt to a
+    /// speed lets go.</item>
+    /// <item><b>Coarse</b> (docs/battle/coarse.md, the step mode): the clock as slow as it's asked while the tiers and
+    /// the rails go by the coarse tier's bottom (<see cref="SimSettings.CoarseMinSpeed"/>), so the world at 20× held is
+    /// the one 241× makes, a minute watched in 3 s. A halt to a speed keeps it: an encounter's rule slows a coarse world,
+    /// never takes it fine.</item>
+    /// </list></summary>
+    public ClockHold Held { get; private set; }
+
+    /// <summary>The fine tier held (<see cref="Held"/>).</summary>
+    public bool FineHeld => Held == ClockHold.Fine;
+
+    /// <summary>The coarse tier held (<see cref="Held"/>): the step mode's.</summary>
+    public bool CoarseHeld => Held == ClockHold.Coarse;
+
+    /// <summary>A step (<see cref="Command.Step"/>, docs/battle/coarse.md): the coarse step boundary it runs to, pausing
+    /// once that moment's events have run (the AI has thought, the look is in), -1 with none. A speed asked, or a halt
+    /// that pauses (an encounter's rule), ends it early; a pause and a resume carry it on.</summary>
+    public long StepEndMs { get; private set; } = -1;
 
     /// <summary>A run (⇧Space, docs/map-ui/input.md T1): the speed the clock drops back to at the first thing that matters
     /// (<see cref="Matters"/>, an encounter rule's), 0 with none. Set with the speed by one command; a speed asked
     /// without it, or a halt to a speed, ends it.</summary>
     public double RunBack { get; private set; }
 
-    /// <summary>The speed the tiers and the rails go by: the asked one, or held fine, at most the fine tier's top
-    /// (just under <see cref="SimSettings.CoarseMinSpeed"/>).</summary>
-    public double TierSpeed => FineHeld ? Math.Min(Speed, Math.BitDecrement(Settings.CoarseMinSpeed)) : Speed;
+    /// <summary>The speed the tiers and the rails go by: the asked one; held fine, at most the fine tier's top (just
+    /// under <see cref="SimSettings.CoarseMinSpeed"/>); held coarse, at least the coarse tier's bottom.</summary>
+    public double TierSpeed => Held switch
+    {
+        ClockHold.Fine => Math.Min(Speed, Math.BitDecrement(Settings.CoarseMinSpeed)),
+        ClockHold.Coarse => Math.Max(Speed, Settings.CoarseMinSpeed),
+        _ => Speed,
+    };
 
     /// <summary>Whether the coarse tier runs: <see cref="TierSpeed"/> at <see cref="SimSettings.CoarseMinSpeed"/> or more.</summary>
     public bool Coarse => TierSpeed >= Settings.CoarseMinSpeed;
@@ -237,11 +260,21 @@ public sealed class World
         switch ((WorldCommand)c.Code)
         {
             case WorldCommand.SetSpeed:
+                if (c.A is < 0 or > (long)ClockHold.Coarse)
+                    throw new ArgumentException($"no clock hold {c.A}");
                 Speed = Math.Clamp(c.X, Settings.MinSpeed, Settings.MaxSpeed);
-                FineHeld = c.A != 0;
+                Held = (ClockHold)c.A;
                 RunBack = c.Y > 0 ? Math.Clamp(c.Y, Settings.MinSpeed, Settings.MaxSpeed) : 0;
+                StepEndMs = -1;
                 targetMs = Math.Min(targetMs, Time.Ms + MaxLagMs);
                 Ships.SpeedChanged(this);   // the speed picks the tier
+                break;
+            case WorldCommand.Step:
+                Speed = Math.Clamp(c.X, Settings.MinSpeed, Settings.MaxSpeed);
+                (Held, RunBack, Paused) = (ClockHold.Coarse, 0, false);
+                StepEndMs = (Time.Ms / Settings.CoarseStepMs + 1) * Settings.CoarseStepMs;
+                targetMs = Time.Ms;
+                Ships.SpeedChanged(this);
                 break;
             case WorldCommand.Pause:
                 Paused = true;
@@ -284,6 +317,8 @@ public sealed class World
         if (Paused || !(realSeconds > 0))
             return;
         targetMs = Math.Min(targetMs + realSeconds * 1000 * Speed, Time.Ms + MaxLagMs);
+        if (StepEndMs >= 0)
+            targetMs = Math.Min(targetMs, StepEndMs + 1);
     }
 
     /// <summary>Sets the target directly, ignoring the speed: for replays and tests. A host uses
@@ -292,19 +327,24 @@ public sealed class World
     {
         if (target < Time)
             throw new ArgumentException($"target {target} is before the clock, {Time}");
-        targetMs = target.Ms;
+        targetMs = StepEndMs >= 0 ? Math.Min(target.Ms, StepEndMs + 1) : target.Ms;   // a step pauses at its end, as a halt
     }
 
     /// <summary>From an event's handler: drop the speed here. The other events at this moment still run, and the
-    /// clock rests 1 ms after it, paused or at a new speed.</summary>
+    /// clock rests 1 ms after it, paused or at a new speed. A new speed lets the fine tier's hold go, never the coarse
+    /// tier's (<see cref="Held"/>); a pause ends a step (<see cref="StepEndMs"/>).</summary>
     public void Halt(bool pause, double? speed = null)
     {
         if (speed is double s)
         {
             Speed = Math.Clamp(s, Settings.MinSpeed, Settings.MaxSpeed);
-            (FineHeld, RunBack) = (false, 0);
+            RunBack = 0;
+            if (FineHeld)
+                Held = ClockHold.None;
             Ships.SpeedChanged(this);
         }
+        if (pause)
+            StepEndMs = -1;
         Paused |= pause;
         targetMs = Math.Min(targetMs, Time.Ms + 1);
     }
@@ -348,6 +388,13 @@ public sealed class World
         }
         Time = Target;
         Ships.Store.NowMs = Time.Ms;
+        if (StepEndMs >= 0 && Time.Ms > StepEndMs)
+        {
+            // the step's boundary run with its moment's events: paused 1 ms after it, as a halt there would
+            StepEndMs = -1;
+            Paused = true;
+            targetMs = Time.Ms;
+        }
         return true;
     }
 
@@ -371,7 +418,8 @@ public sealed class World
         s.Target = Target;
         s.Sun = Sun.Direction(Time);
         s.Speed = Speed;
-        s.FineHeld = FineHeld;
+        s.Held = Held;
+        s.StepEndMs = StepEndMs;
         s.RunBack = RunBack;
         s.Paused = Paused;
         s.PlayerSide = PlayerSide;
@@ -398,8 +446,10 @@ public sealed class World
         h.Add(Seed);
         h.Add(Time.Ms);
         h.Add(Speed);
-        h.Add(FineHeld);
+        h.Add((int)Held);   // as the bool it was, with none or fine
         h.Add(RunBack);
+        if (StepEndMs >= 0)
+            h.Add(StepEndMs);
         h.Add(Paused);
         Relations.Hash(ref h);
         h.Add(PlayerSide);

@@ -12,6 +12,15 @@ public enum WorldCommand : ushort
     SetPlayerSide,
     SetInterest,
     SetWeather,
+    Step,
+}
+
+/// <summary>A tier the clock holds whatever the speed asked (<see cref="World.Held"/>).</summary>
+public enum ClockHold : byte
+{
+    None,
+    Fine,
+    Coarse,
 }
 
 /// <summary>The only way into the world (docs/world/architecture.md, "Commands in"): a player's or a captain's order,
@@ -20,11 +29,16 @@ public enum WorldCommand : ushort
 /// start state, the settings and the log are a replay.</summary>
 public readonly record struct Command(byte System, ushort Code, int Entity = 0, long A = 0, double X = 0, int B = 0, double Y = 0)
 {
-    /// <summary>Game seconds per real second, clamped to the settings' range; <paramref name="holdFine"/> keeps the
-    /// fine tier whatever the speed (<see cref="World.FineHeld"/>); <paramref name="runBack"/> above 0 makes it a run,
-    /// back to that speed at the first thing that matters (<see cref="World.RunBack"/>).</summary>
-    public static Command SetSpeed(double speed, bool holdFine = false, double runBack = 0) =>
-        new(0, (ushort)WorldCommand.SetSpeed, A: holdFine ? 1 : 0, X: speed, Y: runBack);
+    /// <summary>Game seconds per real second, clamped to the settings' range; <paramref name="hold"/> keeps a tier
+    /// whatever the speed (<see cref="World.Held"/>); <paramref name="runBack"/> above 0 makes it a run, back to that
+    /// speed at the first thing that matters (<see cref="World.RunBack"/>).</summary>
+    public static Command SetSpeed(double speed, ClockHold hold = ClockHold.None, double runBack = 0) =>
+        new(0, (ushort)WorldCommand.SetSpeed, A: (long)hold, X: speed, Y: runBack);
+
+    /// <summary>A step of the coarse tier (docs/battle/coarse.md, the step mode): the coarse tier held at
+    /// <paramref name="speed"/>, run to the next coarse step boundary and paused once that moment's events have run
+    /// (<see cref="World.StepEndMs"/>). Orders given while paused land at the boundary and shape the next step.</summary>
+    public static Command Step(double speed) => new(0, (ushort)WorldCommand.Step, X: speed);
     public static Command Pause() => new(0, (ushort)WorldCommand.Pause);
     public static Command Resume() => new(0, (ushort)WorldCommand.Resume);
 
