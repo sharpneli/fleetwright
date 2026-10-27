@@ -1,6 +1,6 @@
 # Plan: fighting in the coarse tier
 Status: **agreed 2026-10-26** (drafted and answered the same day: "Decided" at the end). J0 (the bench) done
-2026-10-26; J1 (the step mode) done 2026-10-27, its key awaiting the user's nod; J2 (guns in coarse) next. It takes over `fighting.md` 4.8
+2026-10-26; J1 (the step mode) done 2026-10-27; J2 (guns in coarse) next. It takes over `fighting.md` 4.8
 (damage in the coarse tier) and 4.9 (coarse fire), and the parts of `plan.md` 2.8 that touch fighting. Those sections
 only point here.
 
@@ -270,8 +270,8 @@ Each step ends with something to run and watch in the step mode, and with the pa
   "coarse, held 20×". The menu's clock has "A step played in" (1, 2, 3, 6 or 12 s; 3 s default). `-tier=coarse` starts
   coarse held, at `-speed=` or 20×. § and ⇧Space keep the coarse hold (the passage gear, back to the step mode). A gear
   or + − lets it go. A new world loaded mid-step takes the step from its start (`WorldSession`).
-- **The key, proposed:** **6**, the first free key after the gears, under the left hand with the rest of the clock.
-  Enter is the strip's course entry. It is in `input.md`'s clock table as proposed, waiting for the user's nod.
+- **The key: Ctrl+Space** (the user, 2026-10-27; 6 was proposed first). The Space family is now the three ways to run
+  the clock: resume, a minute, until it matters. It's in `input.md`'s clock table.
 - **Checked:** the squadrons scenario 20 minutes coarse at 1,000×, held at 20× and at 1×, and as 20 steps paced by real
   time all give the same hash (`ScenarioTests.The_coarse_tier_held_is_the_same_at_any_speed_and_in_steps`). A step
   pauses 1 ms past its boundary, and an encounter's pause ends one with coarse kept (`CoarseTierTests`). A `-screenshot`

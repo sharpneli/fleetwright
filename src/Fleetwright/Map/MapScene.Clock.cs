@@ -22,10 +22,9 @@ public sealed partial class MapScene
     const SDL.SDL_Scancode FastKey = SDL.SDL_Scancode.SDL_SCANCODE_GRAVE;
     (double Speed, ClockHold Held, bool Paused)? fastFrom;   // while § is held: the clock it found, given back on the release
 
-    /// <summary>The step key (docs/battle/coarse.md J1, proposed against docs/map-ui/input.md: 6, the first free key after
-    /// the gears, under the left hand with the rest of the clock).</summary>
-    const uint StepKey = SDL.SDL3.SDLK_6;
-    const string StepKeyName = "6";
+    /// <summary>The step key's name (docs/battle/coarse.md J1, the user's 2026-10-27): Ctrl+Space, the Space family's
+    /// third way to run the clock, beside resume and run until it matters (MapScene.Key).</summary>
+    const string StepKeyName = "Ctrl+Space";
 
     /// <summary>The step mode's playback speeds, a minute in 1, 2, 3, 6 or 12 s; the menu's clock picks one.</summary>
     static readonly double[] StepSpeeds = [60, 30, 20, 10, 5];

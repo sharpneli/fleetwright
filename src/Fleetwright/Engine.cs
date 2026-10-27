@@ -411,9 +411,10 @@ public unsafe class Sdl3GpuEngine : IDisposable
                     var ke = new SDL_Event();
                     ke.type = (uint)SDL_EventType.SDL_EVENT_KEY_DOWN;
                     ke.key.windowID = SDL_GetWindowID(_window);
-                    bool shifted = p[2].StartsWith("Shift+", StringComparison.Ordinal);   // the event's own modifier
-                    ke.key.key = SDL_GetKeyFromName(shifted ? p[2][6..] : p[2]);
-                    ke.key.mod = shifted ? SDL_Keymod.SDL_KMOD_LSHIFT : SDL_Keymod.SDL_KMOD_NONE;
+                    // the event's own modifier: Shift+ or Ctrl+
+                    bool shifted = p[2].StartsWith("Shift+", StringComparison.Ordinal), ctrl = p[2].StartsWith("Ctrl+", StringComparison.Ordinal);
+                    ke.key.key = SDL_GetKeyFromName(shifted ? p[2][6..] : ctrl ? p[2][5..] : p[2]);
+                    ke.key.mod = shifted ? SDL_Keymod.SDL_KMOD_LSHIFT : ctrl ? SDL_Keymod.SDL_KMOD_LCTRL : SDL_Keymod.SDL_KMOD_NONE;
                     ke.key.down = true;
                     SDL_PushEvent(&ke);
                     (ke.type, ke.key.down, ke.key.mod) = ((uint)SDL_EventType.SDL_EVENT_KEY_UP, false, SDL_Keymod.SDL_KMOD_NONE);
