@@ -97,6 +97,11 @@ a zombie."
    life.** If one of her guns fires, she's taken under fire again at once, as happened in the record (Wiesbaden at
    Jutland, Suvorov at Tsushima). This is built here as N5b, because N2 is what makes a ship really fall silent.
 4. **Cover is fine-tuned later** (gunhouse ports, conning tower slits, the 0.45). N0 only measures it.
+5. **A morale system lite, inside N3** (the user, 2026-10-27: "green crew is more easily scared and goes to cover
+   whereas seasoned veterans brave the onslaught"). The men's steadiness under fire is read from the side's existing
+   `CrewQuality` (the launch screen's Conditions), per ship later with the difficulty sliders. It's about the men at
+   their stations only. A ship breaking off or fleeing is her captain's call, with striking and abandoning after this
+   plan.
 
 ## The yardstick
 
@@ -140,6 +145,16 @@ worked. The aim is the ranges by type, not replicas.
     delay below. With the conn, the directors and the stokehold, there's no choice: they're always manned.
   - **Under cover is a group** of its own, in the cells the men shelter in, so a hit there still counts them.
   - **The men under cover are the reserve the reliefs draw from.**
+  - **The men's steadiness: crew quality** (decision 5). Each station keeps how hard it's being hit: the hits and
+    casualties near it, fading over a few minutes. While that's under what the side's `CrewQuality` (green, average,
+    trained, elite) can stand, the men stay. Over it, a share take cover on their own, unordered, and the station
+    works short-handed, as in N2. Green crews stand less, come back later and volunteer fewer reliefs. Elite crews hold
+    and take the casualties for it. All of it acts through where the men stand, with no factor on hits or rates. The
+    thresholds are [EST] until the research comes in (`research/REQUESTS.md`, 2026-10-27); the first check is only
+    the direction.
+  - **The captain's temper** (`Temper`, launch.md L4: the side's aggression plus her admiral's and her own). A bold
+    captain keeps stations closed up longer and sends reliefs sooner; a timid one clears the upper deck early. This is
+    the order. Crew quality is whether the men keep to it.
 
   When a station falls below its need, men walk to it after a delay of minutes, by the sections
   between. They come in the doctrine's order (decision 1): the crews of mounts that can't bear, those of wrecked

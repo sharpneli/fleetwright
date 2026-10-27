@@ -12,6 +12,23 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: (comparison, recommendation, API notes, plan...)
 -->
 
+### 2026-10-27 - Crews under fire: who held their stations, 1890-1925 first
+- Question: how gun crews and other exposed stations behaved under fire, as ranges by navy, period and training.
+  (1) Cases of crews leaving their guns or going to cover unordered, and of crews holding to the last: the Yalu (both
+  sides), Santiago, the Yellow Sea, Tsushima (Suvorov, Oryol, the Japanese line), the Falklands, the Dogger Bank,
+  Jutland (Chester, Southampton, Wiesbaden, the German and British lines). Later cuts as checks: Samar, the Solomons.
+  (2) What set the difference: training and time in commission, officers present, earlier action, how hard and how
+  long the station was hit, casualties seen around it. (3) How fast men came back to a station after a heavy hit, and
+  who manned it again (reliefs: from where, how many, how soon), and how navies ordered it (clearing the upper deck,
+  men lying down, the disengaged side's crews as reserve). (4) Anything on rates of fire falling off under fire beyond
+  casualties and damage.
+- Context / relevant files: `docs/battle/crew.md` (the plan; N3 and decision 5: men take cover by the pressure on
+  their station against their crew quality, green to elite; reliefs), `docs/battle/damage/16_casualties.md` §4.9
+  (posture), `SimSettings.GunneryCrews` (the existing crew-quality rows). Not blocking: N3's thresholds start as [EST].
+- Wanted output: cases with what was known of the crew and the fire it was under; ranges by training level for how
+  much fire a station took before men left it and how soon they came back; the navies' orders on cover and reliefs,
+  with sources.
+
 ### 2026-10-25 - Which shell at which target, 1890-1925
 - Question: how navies chose the shell by target, as ranges by navy and period. (1) The rules each navy gave its
   gunnery officers (AP, common/CPC, HE; by target type, range, armour), and how far the practice followed them
