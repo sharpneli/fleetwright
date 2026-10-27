@@ -412,6 +412,13 @@ Each step ends with something to run and watch in the step mode, and with the pa
   Smoke now stands on coarse's lines, but only the batteries' targets are watched. The AI still sees the picture once a
   minute, and a minute look that falls in smoke loses her for the AI until the next. These and the night are the AI's
   minute cadence (the user's to decide: a step of its own).
+- **After J5, with the user (2026-10-27):** the fights stay coarse, so AI fights can run in the background later: no fine
+  pockets (a flotilla attack would pull the battle squadrons fine, and the Jutland's heavy hours with them). A thick, dark
+  night giving little action is fine (searchlights come later). **Tried: waking the AI at the moment of a sighting**
+  (a prototype, reverted). Every pair was looked at each second between the coarse looks, and a new sighting woke the
+  captains, then the admirals too. The Dover Strait's hit % coarse against fine: J5 as built +29% and +43%; looks alone
+  +83% and +33%; with the captains woken +50% and +41%; with the admirals too +36% and +22%. Each is ±2-3 points at 48
+  seeds, so none beats J5 beyond the noise: not built.
 - **Speed:** the Jutland coarse plays its 14 hours in 47.8 s against J4's 29.3 s (1,050× overall). Sighting 7.9% (the
   watch), the smoke 27% (its index 12.4%, the merges more puffs), damage 26.5%. Smoke laid every 3 s is the most of it:
   the price of coarse ships being blinded by their smoke at all.
