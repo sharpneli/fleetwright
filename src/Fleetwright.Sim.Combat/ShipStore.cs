@@ -76,6 +76,12 @@ public sealed class ShipStore
     internal double[] railAccel = [], railCurv = [];
     internal long[] segEndMs = [];
 
+    // a coarse turn's lead (docs/battle/coarse.md J4): the curvature she had when anchored (swinging already, or not), and
+    // until when a turn she's ordered runs straight on first, as the fine tick's swing builds (Handling.HelmLagS); 0 none
+    internal double[] anchorCurv = [];
+    internal long[] leadEndMs = [];
+    internal sbyte[] leadSide = [];   // the side the turn was chosen to go when its lead began (a course right astern stays a tie no longer)
+
     // a coarse ship's track (step 2.8d): its past segments, newest last, in a ring of trackCap a slot (where each began,
     // its way, curvature and line, how far along the track it began and how long it was), and how far along the track
     // its own anchor is; a group's ships riding it coarse sit on it at their distance astern
@@ -398,9 +404,12 @@ public sealed class ShipStore
     {
         PoseNow(slot, out var p, out var f);
         double v = SpeedAt(slot, NowMs);
+        double swing = tier[slot] == ClockTier.Fine ? (Math.Abs(speed[slot]) > 1e-6 ? yawRate[slot] / speed[slot] : 0) : railCurv[slot];
         SetTier(slot, ClockTier.Coarse);
         (histFirst[slot], histCount[slot], trackAt[slot]) = (0, 0, 0);   // a fresh track: straight back from here
+        leadEndMs[slot] = 0;
         Anchor(slot, p, f, v);
+        anchorCurv[slot] = swing;
     }
 
     /// <summary>A ship riding its guide on rails rides it coarse (its guide come off rails into the coarse tier), at the
@@ -437,6 +446,7 @@ public sealed class ShipStore
     public void TurnTogether(int slot, int guide)
     {
         Coarsen(slot);
+        (leadEndMs[slot], leadSide[slot]) = (leadEndMs[guide], leadSide[guide]);   // the guide's swing built: hers too (J4)
         (speedOrderKn[slot], courseRudder[slot]) = (speedOrderKn[guide], courseRudder[guide]);
         powerOrder[slot] = Capped(slot, powerOrder[guide]);
         if (helm[guide] is Helm.Rudder or Helm.None)
@@ -469,6 +479,7 @@ public sealed class ShipStore
     void Anchor(int slot, Vec3d p, Vec3d f, double v)
     {
         railGen[slot]++;
+        anchorCurv[slot] = railCurv[slot];   // the swing she has now
         var up = p.Normalized();
         (railMs[slot], railPos[slot], railFwd[slot], railSpeed[slot], railGuide[slot], railCourse[slot]) =
             (NowMs, up * Earth.Radius, (f - up * Vec3d.Dot(f, up)).Normalized(), v, -1, double.NaN);
@@ -895,6 +906,11 @@ public sealed class ShipStore
                     h.Add(railAccel[i]);
                     h.Add(railCurv[i]);
                     h.Add(segEndMs[i]);
+                    if (leadEndMs[i] != 0)
+                    {
+                        h.Add(leadEndMs[i]);   // only then, so a coarse world without turns' leads hashes as it did
+                        h.Add(leadSide[i]);
+                    }
                     h.Add(trackAt[i]);
                     h.Add(histCount[i]);
                     for (int k = 0; k < histCount[i]; k++)
@@ -961,6 +977,9 @@ public sealed class ShipStore
         Array.Resize(ref railAccel, n);
         Array.Resize(ref railCurv, n);
         Array.Resize(ref segEndMs, n);
+        Array.Resize(ref anchorCurv, n);
+        Array.Resize(ref leadEndMs, n);
+        Array.Resize(ref leadSide, n);
         Array.Resize(ref histPos, n * trackCap);
         Array.Resize(ref histFwd, n * trackCap);
         Array.Resize(ref histCourse, n * trackCap);

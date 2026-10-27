@@ -1,6 +1,6 @@
 # Plan: fighting in the coarse tier
 Status: **agreed 2026-10-26** (drafted and answered the same day: "Decided" at the end). J0 (the bench) done
-2026-10-26; J1 (the step mode) done 2026-10-27; J2 (guns in coarse) done 2026-10-27 (the speed it makes taken as it is, decision 3); J3 (torpedoes) done 2026-10-27; J4 (dodging) next. It takes over `fighting.md` 4.8
+2026-10-26; J1 (the step mode) done 2026-10-27; J2 (guns in coarse) done 2026-10-27 (the speed it makes taken as it is, decision 3); J3 (torpedoes) done 2026-10-27; J4 (dodging) done 2026-10-27; J5 next. It takes over `fighting.md` 4.8
 (damage in the coarse tier) and 4.9 (coarse fire), and the parts of `plan.md` 2.8 that touch fighting. Those sections
 only point here.
 
@@ -334,6 +334,37 @@ Each step ends with something to run and watch in the step mode, and with the pa
 - **Left for J4:** the flotilla's boats still fire 1.4 times a run coarse against 0.06 fine, hit 30-44% more. Their attack
   run is steered at the think, so coarse holds a minute's leg where fine turns away; J4 lays it ahead as a route.
 
+**J4 done (2026-10-27).**
+- **The helm lag:** a coarse turn ran its arc from the moment it was ordered, while the fine tick's heading answers the helm
+  late (the rudder put over at its gear's rate, then Nomoto's first-order swing). Now a coarse turn from a steady course
+  runs straight on first for `Handling.HelmLagS`: Nomoto's T at the speed plus half the rudder's travel time, the fine
+  model's own lag, so no hand-set number. The lead is kept on the ship (`leadEndMs`, `leadSide`: a 180° turn keeps its
+  side through float noise), hashed only while set. A ship already swinging (her curvature handed over from fine) has
+  no lead. Riders turning together take their guide's.
+- **Zigzag legs between thinks:** a coarse captain's think comes once a minute, so a zigzag he set held one leg for the
+  whole minute where fine turned at each leg's end. His think now keeps the zigzag's base course and its next leg's
+  end, and the torpedo watch's wake (J3's) also wakes at the leg's end to give the next leg. A comb under way lets the
+  leg pass unsteered.
+- **Tried and reverted: speed lost in turns.** Coarse arcs lost speed as the fine model does in a hard turn
+  (`TurnDragFactor`). The coast-slide tests then ended 4.9-5.6 km from fine (0.44-0.46 km without it), and the 50 mm
+  re-lay test and the snapshot drawing broke. The cause: a coarse arc always turns on the course rudder's circle, while
+  the fine helmsman uses little rudder for small corrections, so coarse paid hard-turn losses fine never does. It needs a
+  small-rudder helmsman model in coarse first; left out.
+- **A hang found and fixed:** the first panel run hung (two of 432 plays looped). A leg ending during a comb was left
+  unsteered without moving on, so the watch woke at the same millisecond forever. Its next leg's end is now always set,
+  and the watch counts only leg ends still ahead.
+- **Checked:** `CoarseTierTests.A_coarse_turn_keeps_with_the_fine_ticks_heading`. Over a 90° turn coarse keeps with
+  fine's heading: a super-dreadnought at 20 kn 6.9° RMS (14.8° at worst, 81 m apart after 3 min), a destroyer at 28 kn
+  5.1° RMS (15.3°, 143 m). The comb bench still orders the comb on time (108.60 s coarse, 109.05 s fine).
+- **Parity** (`2026-10-27-standard-j4.json`): 92 ok, 6 FAIL, 88 noisy. Torpedo hits came back: the prizes' war's French
+  -82% to -18%, Italy's ships lost back in the band, Tsushima's Japanese -95% to -70% (inside the absolute floor). The
+  flotilla's hit % on the V25-like boats fell from +44% to +26% (noisy). **Fails left:** the haze duel (+36% hits) and the
+  Dover Strait's hit % (+73%, +74%) are J5's: the minute's look holds a target fine loses. The flotilla's boats still
+  fire torpedoes 1.29 times a run against 0.06; their run still closes faster coarse. It waits for the speed loss
+  above (the small-rudder helmsman), carried open.
+- **Speed:** `scenario jutland --play --tier coarse --workers 2` plays the 14 hours in 29.3 s, inside J2's 27.6-34.6 s:
+  no measurable cost.
+
 ## Decided
 
 The user's, 2026-10-26:
@@ -357,3 +388,4 @@ The user's, 2026-10-26:
 | 2026-10-26 | 0e08e9f3 | full's big three (Heligoland Bight, Dogger Bank, the Jutland), 8 seeds: 45 measures, 8 min on 16 threads | the Jutland's exchange 0.82 coarse against 0.36 fine on torpedoes alone; ships lost -72% to -98% | 5 ok, 29 FAIL, 11 noisy: expected before J2 (`2026-10-26-full-big-three-8-seeds.json`) |
 | 2026-10-27 | J2 (guns in coarse) | standard, coarse only against the 2026-10-26 fine baseline: 186 measures, 4.3 min on 32 threads | the haze duel +36% hits (the minute's look holds a target fine loses); the Dover Strait's hit % +77%; the flotilla's boats fire torpedoes 1.4 a run against 0.06 | 95 ok, 9 FAIL, 82 noisy: the fails J3-J5's (`2026-10-27-standard-j2.json`) |
 | 2026-10-27 | J3 (torpedoes in coarse) | standard, coarse only against the 2026-10-26 fine baseline: 186 measures, 4.9 min on 32 threads | torpedo hits low across the scenarios (Japan -95%, France -82%): coarse combs turn with no helm lag; the flotilla's launches 1.4 a run against 0.06 | 95 ok, 10 FAIL, 81 noisy: Åland's torpedo hits fixed; the rest J4's and J5's (`2026-10-27-standard-j3.json`) |
+| 2026-10-27 | J4 (dodging) | standard, coarse only against the 2026-10-26 fine baseline: 186 measures, 4.4 min on 32 threads | the Dover Strait's hit % +73% and +74% and the haze duel +36% (J5's); the flotilla's launches 1.29 a run against 0.06 | 92 ok, 6 FAIL, 88 noisy: torpedo hits back in the bands (`2026-10-27-standard-j4.json`) |

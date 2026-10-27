@@ -123,6 +123,8 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         public int FitVersion;          // his ship's condition's version when he last judged its fitness
         public long CombUntilMs;        // combing a torpedo's track until then (0: not)
         public double CombDeg, CombBackDeg;   // the comb's course, and the course ordered before it
+        public double ZigBaseDeg;       // coarse, zigzagging: the course his legs go either side of, as his last think had it (J4)
+        public long ZigNextMs, ZigThinkMs;   // when his leg ends (0: not zigzagging coarse), and the think that set it
         public ShellJudged[]? Shells;   // by battery, what its shell was last judged on (made when first needed)
         public byte ShellHeld, ShellSpent;   // the player's kind for his main guns (+ 1, 0 none), and the one that ran out
     }
@@ -436,6 +438,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
 
     public void Think(in AiContext ctx)
     {
+        thinkMs = ctx.NowMs;
         MarkUnderFire(ctx);
         for (int i = 0; i < count; i++)
         {
@@ -620,6 +623,12 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
             h.Add(c.CombUntilMs);
             h.Add(c.CombDeg);
             h.Add(c.CombBackDeg);
+            if (c.ZigNextMs != 0)
+            {
+                h.Add(c.ZigBaseDeg);   // only then: worlds without a coarse zigzag hash as before
+                h.Add(c.ZigNextMs);
+                h.Add(c.ZigThinkMs);
+            }
             h.Add(c.Conn);
             h.Add((int)c.Tracks);
             if (c.ShellHeld + c.ShellSpent > 0)

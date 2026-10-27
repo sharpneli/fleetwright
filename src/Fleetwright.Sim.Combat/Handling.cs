@@ -160,6 +160,12 @@ public sealed class Handling
     /// <summary>The radius a rudder turns in, metres.</summary>
     public double RadiusFor(double rudder) => SteadyRadiusM * HardOverRad / Math.Max(Math.Abs(Effective(rudder)), 1e-9);
 
+    /// <summary>How far behind a coarse turn's start at once the fine tick's heading runs, s (docs/battle/coarse.md J4):
+    /// the rudder put over to <paramref name="rudderRad"/> at its gear's rate (half its travel's time) and the swing built
+    /// over Nomoto's T at the speed, the lag of the fine model's own first-order answer to the helm. A coarse turn runs
+    /// straight on for it first.</summary>
+    public double HelmLagS(double speedMs, double rudderRad, SimSettings s) => T(speedMs, s) + Math.Abs(rudderRad) / RudderRateRadS / 2;
+
     /// <summary>Nomoto's T at a speed, seconds.</summary>
     public double T(double speedMs, SimSettings s) => TPrime * LengthM / Math.Max(Math.Abs(speedMs), s.NomotoMinSpeedMs);
 }

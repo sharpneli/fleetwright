@@ -157,7 +157,7 @@ public class CoarseTierTests(ITestOutputHelper output)
         w.Apply(ShipSystem.Spawn(c, Lat, Lon, 0, Kn));
         Run(w, 60);
         w.Apply(ShipSystem.Course(1, 120));
-        Run(w, 10);
+        Run(w, 45);   // past the turn's lead (the fine tick's helm lag, J4): on her circle
         var snap = new Snapshot();
         w.Fill(snap);
         int k = snap.Ships.IndexOf(1);
@@ -184,7 +184,7 @@ public class CoarseTierTests(ITestOutputHelper output)
         w.Apply(ShipSystem.Course(1, 120));
         w.Apply(ShipSystem.Speed(1, 10));
         Assert.Equal(ClockTier.Coarse, Ship(w, 1).Tier);
-        Run(w, 30);
+        Run(w, 60);   // the turn's lead run (J4), and turning
         Assert.InRange(Ship(w, 1).HeadingDeg, 5, 115);
         for (int m = 0; m < 30 && !Ship(w, 1).OnRails; m++)
             Run(w, 60);
@@ -193,13 +193,54 @@ public class CoarseTierTests(ITestOutputHelper output)
         Assert.Equal(10, Ship(w, 1).Speed / Handling.MsPerKnot, 1e-6);
     }
 
+    /// <summary>A turn's lead (docs/battle/coarse.md J4): a coarse ship ordered round from steady runs straight on for the
+    /// fine tick's helm lag first, so its heading keeps with the fine ship's through a turn (dodging is the track steered,
+    /// so fire control sees the same turns), a battleship's and a destroyer's.</summary>
+    [Theory]
+    [InlineData("super_dreadnought", 20)]
+    [InlineData("destroyer", 28)]
+    public void A_coarse_turn_keeps_with_the_fine_ticks_heading(string name, double kn)
+    {
+        (List<double> Headings, Vec3d End) Turn(double speed)
+        {
+            var w = new World(Start, 11, Settings with { RailsEnabled = false });
+            new AiSystem(w);
+            int c = w.Ships.AddClass(Fleet.Get(name).Class!);
+            w.Apply(Command.SetSpeed(speed));
+            w.Apply(ShipSystem.Spawn(c, Lat, Lon, 0, kn));
+            Run(w, 30);
+            w.Apply(ShipSystem.Course(1, 90));
+            var hs = new List<double>();
+            for (int k = 0; k < 36; k++)
+            {
+                Run(w, 5);
+                hs.Add(Ship(w, 1).HeadingDeg);
+            }
+            return (hs, Ship(w, 1).Position);
+        }
+        var (fine, fe) = Turn(1);
+        var (coarse, ce) = Turn(1000);
+        double worst = 0, sum = 0;
+        for (int k = 0; k < fine.Count; k++)
+        {
+            double d = Math.Abs(fine[k] - coarse[k]);
+            d = Math.Min(d, 360 - d);
+            (worst, sum) = (Math.Max(worst, d), sum + d * d);
+        }
+        double rms = Math.Sqrt(sum / fine.Count), apart = Earth.Distance(fe, ce);
+        output.WriteLine($"{name} at {kn} kn, 90° to starboard: heading apart {rms:F1}° RMS, {worst:F1}° at worst over 3 min; " +
+                         $"{apart:F0} m apart at the end; fine {string.Join(" ", fine.Take(12).Select(h => h.ToString("F0")))}; " +
+                         $"coarse {string.Join(" ", coarse.Take(12).Select(h => h.ToString("F0")))}");
+        Assert.True(rms < 8, $"{rms:F1}° RMS");
+    }
+
     [Fact]
     public void A_route_steamed_coarse_keeps_near_the_fine_ticks_track()
     {
-        // the same route at 1x and 1,000x, side by side: the coarse turns are the steady circle at once, with no rudder to
-        // move and no swing to build first (the user's: nothing to settle), so it turns inside the fine track at each
-        // waypoint, the fine ship running on some 25 s at 18 kn before its swing builds, on a wider circle; both steer
-        // for the next waypoint, and part again at its wheel-over: under one and a half of the coarse turning circles
+        // the same route at 1x and 1,000x, side by side: a coarse turn runs straight on for the fine tick's helm lag
+        // (some 25 s at 18 kn) and then turns on the steady circle, where the fine ship's swing builds and it slows in the
+        // turn; both steer for the next waypoint, and part again at its wheel-over: about 120 m apart at most (1,030 m
+        // before the lead, docs/battle/coarse.md J4), held under one and a half of the coarse turning circles
         World Route(double speed)
         {
             var (w, c) = Make(Settings with { RailsEnabled = false });
@@ -348,8 +389,6 @@ public class CoarseTierTests(ITestOutputHelper output)
         Assert.True(Ship(w, 1).OnRails && Ship(w, 4).OnRails, "in station: on rails");
         w.Apply(O.Course(Unit.Group(group), 90));
         Assert.Equal(ClockTier.Coarse, Ship(w, 1).Tier);
-        for (int e = 2; e <= 4; e++)
-            Assert.False(w.Ships.Store.RidesAnother(w.Ships.Store.SlotOf(e)), "abeam of the turning guide: off it");
         var last = new Vec3d[5];
         for (int e = 1; e <= 4; e++)
             last[e] = Ship(w, e).Position;
@@ -364,14 +403,18 @@ public class CoarseTierTests(ITestOutputHelper output)
                 fastest = Math.Max(fastest, Earth.Distance(p, last[e]) / 5);
                 last[e] = p;
             }
-            if (t == 30)
+            if (t == 60)
                 for (int e = 2; e <= 4; e++)
-                    Assert.InRange(Ship(w, e).HeadingDeg, 10, 100);   // turning with the guide, not running on
+                {
+                    // the guide's swing built (its lead run, J4): abeam of its turn, off it, turning with it, not running on
+                    Assert.False(w.Ships.Store.RidesAnother(w.Ships.Store.SlotOf(e)), "abeam of the turning guide: off it");
+                    Assert.InRange(Ship(w, e).HeadingDeg, 10, 100);
+                }
             bool riding = true;
             for (int e = 2; e <= 4; e++)
                 riding &= w.Ships.Store.RidesAnother(w.Ships.Store.SlotOf(e)) || Ship(w, e).OnRails;
-            if (riding)
-                ridingAt = t;
+            if (riding && t > 60)
+                ridingAt = t;   // again, once off it for the turn
         }
         output.WriteLine($"riding again {ridingAt} s after the turn; the fastest any ship went {fastest / Handling.MsPerKnot:F1} kn");
         Assert.True(ridingAt > 0, "back in station, riding its guide");

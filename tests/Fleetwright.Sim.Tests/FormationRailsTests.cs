@@ -252,7 +252,8 @@ public class FormationRailsTests(ITestOutputHelper output)
         for (int e = g; e < g + 3; e++)
             Assert.False(Ship(w, e).OnRails);
         Run(w, 10);
-        Assert.True(Ship(w, g).HeadingDeg < 30, "turning, not turned");
+        double h = Ship(w, g).HeadingDeg;
+        Assert.True(Math.Abs(h - 360 * Math.Round(h / 360)) < 30, $"turning, not turned: {h:F1}°");   // in its lead or swinging (J4), not snapped
     }
 
     [Theory]

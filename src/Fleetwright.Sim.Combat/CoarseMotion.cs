@@ -53,11 +53,12 @@ public static class CoarseMotion
         {
             case Helm.Rudder:
             case Helm.None:
+                s.leadEndMs[i] = 0;
                 double rudder = !free ? s.jamRudder[i] : s.helm[i] == Helm.Rudder ? s.rudderOrder[i] : s.rudder[i];
                 if (rudder != 0)
                     curv = Math.Sign(rudder) / h.RadiusFor(rudder);   // going astern the same circle runs backward
                 break;
-            case Helm.Route when Route(s, i, h, set, p, ref f, dir, out curv, out dist):
+            case Helm.Route when Route(s, i, h, set, p, ref f, dir, v0, a, out curv, out dist):
                 break;
             default:
                 if (dir == 0)
@@ -70,10 +71,19 @@ public static class CoarseMotion
                 double err = Wrap(s.courseDeg[i] - Earth.Heading(p, f));
                 if (Math.Abs(err) <= set.CoarseSnapDeg)
                 {
+                    s.leadEndMs[i] = 0;
                     course = s.courseDeg[i];   // on it: a rhumb line at the course exactly
                     f = Earth.Forward(p, course);
                     break;
                 }
+                if (Lead(s, i, h, set, v0, a, Math.Sign(err), out dist))
+                {
+                    course = Earth.Heading(p, f);   // the swing building: straight on the heading she has
+                    f = Earth.Forward(p, course);
+                    break;
+                }
+                if (s.leadEndMs[i] != 0 && Math.Abs(err) > 179)
+                    err = s.leadSide[i] * Math.Abs(err);   // near right astern: the side chosen as the lead began
                 double radius = h.RadiusFor(s.courseRudder[i]);
                 curv = Math.Sign(err) * dir / radius;
                 dist = Math.Abs(err) * Deg * radius;
@@ -93,7 +103,7 @@ public static class CoarseMotion
     /// <summary>A route's next segment: on to the next waypoint once inside the wheel-over point (or, past the last,
     /// the course it arrived on held: false), then the turn onto the line for it, or the straight leg to the next
     /// wheel-over point (or to the last waypoint).</summary>
-    static bool Route(ShipStore s, int i, Handling h, SimSettings set, Vec3d p, ref Vec3d f, int dir, out double curv, out double dist)
+    static bool Route(ShipStore s, int i, Handling h, SimSettings set, Vec3d p, ref Vec3d f, int dir, double v0, double a, out double curv, out double dist)
     {
         (curv, dist) = (0, double.PositiveInfinity);
         int cap = s.RouteCapacity, n = s.routeCount[i];
@@ -127,10 +137,13 @@ public static class CoarseMotion
             double rel = Wrap(Earth.Bearing(p, wp) - Earth.Heading(p, f)) * Deg;
             if (Math.Abs(rel) <= set.CoarseSnapDeg * Deg)
             {
+                s.leadEndMs[i] = 0;
                 f = Toward(p, wp);   // on the line: the great circle for it, to where it's passed
                 dist = end;
                 return true;
             }
+            if (Lead(s, i, h, set, v0, a, Math.Sign(rel), out dist))
+                return true;   // the swing building: straight on along her heading (the great circle)
             // the turn whose tangent runs through the waypoint, in the tangent plane at p (ahead x, to starboard y),
             // mirrored to starboard: on the circle round (0, R), heading ψ is at (R sin ψ, R (1 - cos ψ)), and the
             // waypoint lies on its tangent where (wy - R) cos ψ - wx sin ψ = -R
@@ -149,6 +162,29 @@ public static class CoarseMotion
             dist = psi * radius;
             return true;
         }
+    }
+
+    /// <summary>A turn about to be laid from straight (docs/battle/coarse.md J4): the fine tick's heading runs
+    /// <see cref="Handling.HelmLagS"/> behind a turn started at once (the rudder going over, the swing building), so a
+    /// coarse ship not swinging when anchored runs straight on for that long first, then turns on her circle; one
+    /// swinging already turns on. Laid again within it (an order, a change of speed's end), the lead runs to the same
+    /// end. True with the lead's distance to go.</summary>
+    static bool Lead(ShipStore s, int i, Handling h, SimSettings set, double v0, double a, int side, out double dist)
+    {
+        dist = double.PositiveInfinity;
+        long now = s.railMs[i];
+        if (s.leadEndMs[i] == 0)
+        {
+            if (s.anchorCurv[i] != 0)
+                return false;
+            s.leadEndMs[i] = now + WorldTime.AheadMs(h.HelmLagS(Math.Abs(v0), s.courseRudder[i], set));
+            s.leadSide[i] = (sbyte)side;
+        }
+        if (now >= s.leadEndMs[i])
+            return false;   // the swing's built: the turn (and the lead stays spent until she's on her course)
+        double t = (s.leadEndMs[i] - now) / 1000.0;
+        dist = Math.Abs(v0 * t + 0.5 * a * t * t);
+        return dist > 0;
     }
 
     /// <summary>A solution's turn in [0, 2π), if heading along the tangent there goes toward the waypoint (the other

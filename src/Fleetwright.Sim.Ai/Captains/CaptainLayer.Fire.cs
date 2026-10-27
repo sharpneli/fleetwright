@@ -122,21 +122,40 @@ public sealed partial class CaptainLayer
         CoarseFighters(ctx);
         long next = torpedoWatch.NextSeen(ctx, watched, untilMs);
         foreach (int slot in watched)
-            if (Find(ctx.Ships[slot].Entity) is int i and >= 0 && captains[i].CombUntilMs > ctx.NowMs)
-                next = Math.Min(next, captains[i].CombUntilMs);
+            if (Find(ctx.Ships[slot].Entity) is int i and >= 0)
+            {
+                ref readonly var c = ref captains[i];
+                if (c.CombUntilMs > ctx.NowMs)
+                    next = Math.Min(next, c.CombUntilMs);
+                if (Zigzagging(c, ctx.NowMs) && c.ZigNextMs > ctx.NowMs)
+                    next = Math.Min(next, c.ZigNextMs);
+            }
         return next;
     }
 
-    /// <summary>The coarse torpedo watch's wake: each coarse fighting ship's lookouts, by the think's own test (<see cref="Comb"/>).</summary>
+    /// <summary>The coarse watch's wake: each coarse fighting ship's lookouts, by the think's own test (<see cref="Comb"/>),
+    /// and her zigzag's next leg where one ends (J4), from the course her last think evaded from.</summary>
     internal void WatchTracks(in AiContext ctx)
     {
         CoarseFighters(ctx);
         foreach (int slot in watched)
         {
             var own = ctx.Ships[slot];
-            Comb(ctx, ref Get(own.Entity), own);
+            ref var cap = ref Get(own.Entity);
+            Comb(ctx, ref cap, own);
+            if (Zigzagging(cap, ctx.NowMs + 1) && cap.ZigNextMs <= ctx.NowMs)
+            {
+                if (cap.CombUntilMs <= ctx.NowMs)
+                    Give(ctx, own, Leg(ctx, own, cap.ZigBaseDeg), own.SpeedOrderKn);
+                cap.ZigNextMs = LegEndMs(ctx, own);   // combing, the leg passes unsteered: never the same moment twice
+            }
         }
     }
+
+    long thinkMs;   // the captains' last think
+
+    /// <summary>Whether a coarse captain's zigzag runs on between thinks: set by his last think, with a leg ending.</summary>
+    bool Zigzagging(in Captain c, long nowMs) => c.ZigNextMs != 0 && c.ZigThinkMs == thinkMs && c.ZigNextMs >= nowMs - 1;
 
     void CoarseFighters(in AiContext ctx)
     {
@@ -956,10 +975,32 @@ public sealed partial class CaptainLayer
             return course;
         if (!attackRun && near < doctrine.Of(own.Entity, own.Side, DoctrineField.EvadeBeyondM))
             return course;
-        long leg = Math.Max(1, (long)(doctrine.Of(own.Entity, own.Side, DoctrineField.EvadeLegS) * 1000));
+        if (own.Tier == ClockTier.Coarse)
+        {
+            // his think comes once a minute: his legs at their own ends, steered from this base until it comes (WatchTracks)
+            ref var cap = ref Get(own.Entity);
+            (cap.ZigBaseDeg, cap.ZigNextMs, cap.ZigThinkMs) = (course, LegEndMs(ctx, own), ctx.NowMs);
+        }
+        return Leg(ctx, own, course);
+    }
+
+    /// <summary>The zigzag's course on the leg the moment falls in: doctrine's legs either side of the course, each ship on
+    /// her own phase.</summary>
+    double Leg(in AiContext ctx, ShipState own, double course)
+    {
+        long leg = LegMs(own);
         long phase = own.Entity * 7_919L % leg;   // not every ship on the same leg
         double swing = doctrine.Of(own.Entity, own.Side, DoctrineField.EvadeDeg);
         return ((ctx.NowMs + phase) / leg % 2 == 0 ? course + swing : course - swing + 360) % 360;
+    }
+
+    long LegMs(ShipState own) => Math.Max(1, (long)(doctrine.Of(own.Entity, own.Side, DoctrineField.EvadeLegS) * 1000));
+
+    /// <summary>When the zigzag's leg she's on ends, ms.</summary>
+    long LegEndMs(in AiContext ctx, ShipState own)
+    {
+        long leg = LegMs(own), phase = own.Entity * 7_919L % leg;
+        return ((ctx.NowMs + phase) / leg + 1) * leg - phase;
     }
 
     /// <summary>The nearest contact his navy holds in sight within a radius, as a sighting; 0 if none.</summary>
