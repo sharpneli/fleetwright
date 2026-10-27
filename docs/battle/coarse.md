@@ -1,6 +1,6 @@
 # Plan: fighting in the coarse tier
 Status: **agreed 2026-10-26** (drafted and answered the same day: "Decided" at the end). J0 (the bench) done
-2026-10-26; J1 (the step mode) done 2026-10-27; J2 (guns in coarse) built 2026-10-27, its speed gate failed (levers to choose). It takes over `fighting.md` 4.8
+2026-10-26; J1 (the step mode) done 2026-10-27; J2 (guns in coarse) done 2026-10-27 (the speed it makes taken as it is, decision 3); J3 (torpedoes) next. It takes over `fighting.md` 4.8
 (damage in the coarse tier) and 4.9 (coarse fire), and the parts of `plan.md` 2.8 that touch fighting. Those sections
 only point here.
 
@@ -280,7 +280,7 @@ Each step ends with something to run and watch in the step mode, and with the pa
 - **For J2:** the guns are still silent in coarse, so a step through a fight shows no fire yet. The "guns silent"
   label stays until then.
 
-**J2 built (2026-10-27); its gate passes on parity's duels and fails on speed.**
+**J2 done (2026-10-27).** Its gate passed on parity's duels; on speed, the user took what it makes (decision 3).
 - **Built:** the tier gate is gone from `GunnerySystem.Start` and `Fire`. A coarse ship's `ShipState` is its segment's
   pose at the second, so the fine chain (rung 1) fires from and at coarse ships unchanged. `BatteryState.Silent` and
   the "guns silent" labels are gone. The captains' fighting decisions (`FallOut`, `OutOfRounds`, `TakeUpStanding`,
@@ -306,7 +306,8 @@ Each step ends with something to run and watch in the step mode, and with the pa
   minute's merge 10.4%), the AI 15.9% (the commander 11.3%), coarse motion 6.9%, sighting 4.3%. Gunnery and shells
   together are 31%: even free, they would make it about 1.45× faster. The heaviest hour needs about 3×, so J7 (cheaper
   fire control) can't meet the gate alone. Damage (J6's adaptive step), the smoke merge and the commander are as large.
-  **Waiting on the user:** which levers, in which order.
+  **The user, 2026-10-27:** "perfectly fine for now", after test games ("I wasn't expecting the shells to be that nice"). The
+  target is revisited (decision 3), no lever taken; the split above is kept for when speed comes up again.
 
 ## Decided
 
@@ -317,6 +318,8 @@ The user's, 2026-10-26:
    its own parity layer and step (J4).
 2. **Fire starts as the fine chain on coarse ships** (rung 1); fitted tables only if J2 measures it too slow (J7).
 3. **The speed target:** the Jutland's fighting at 2,000x or more on 2 workers, against ~300x fine today.
+   **Revisited 2026-10-27** (the user, after test games of J2): what J2 makes is "perfectly fine for now", 560-1,800x in
+   the Jutland's fighting hours on 2 workers. Not a gate for J3-J8; speed work waits until play asks for it.
 4. **One-minute steps.** There's no difference between testing and a way to play in the end: the step mode is built
    as a way to play.
 5. **The parity bands:** ±15% on means with absolute floors, the winner's share within 10 percentage points.
