@@ -279,7 +279,11 @@ public sealed unsafe partial class DesignerScene
 
     // ------------------------------------------------------------------ drawing
 
-    static readonly float[] SecColW = [34, 40, 138, 104, 128, 84, 0, 74, 50, 44, 104, 120, 180, 46, 46];   // 0: the position takes what's left
+    // 0: the position takes what's left, down to what its segments and axis need; then SHELLS gives up to ShellsGive
+    // (its cell clips), so the T and + x columns stay in a 16:9 window
+    static readonly float[] SecColW = [34, 40, 116, 96, 124, 84, 0, 64, 50, 44, 96, 120, 180, 46, 46];
+    const int ShellsCol = 12;
+    const float ShellsGive = 60;
     readonly float[] secX = new float[SecColW.Length + 1];
     static readonly string[] SecHead = ["", "", "CALIBRE", "LENGTH", "GUNS / MOUNT", "HOUSING", "TURRET ON", "PER SIDE", "PLACED", "GUNS", "SHIELDS",
         "ROUNDS / GUN", "SHELLS", "T", ""];
@@ -319,9 +323,22 @@ public sealed unsafe partial class DesignerScene
         float fixedW = 0;
         foreach (var c in SecColW)
             fixedW += P(c);
+        float padX = 2 * ImGui.GetStyle().FramePadding.X, posMin = P(4) + P(10) + P(6), axisW = 0;
+        bool firstPos = true;
+        foreach (var pos in SA.All)
+        {
+            if (!sp.Offered[(int)pos])
+                continue;
+            posMin += (firstPos ? 0 : pos == Pos.Upper ? P(5) : 1) + Width(UiFonts.SansSmall, PosLabel[(int)pos]) + padX;
+            firstPos = false;
+        }
+        foreach (var r in sp.Rows)
+            axisW = Math.Max(axisW, Width(UiFonts.SansSmall, r.Axis));
+        posMin += axisW;
+        float give = Math.Clamp(fixedW + posMin - w, 0, P(ShellsGive));
         x[0] = o.X;
         for (int i = 0; i < SecColW.Length; i++)
-            x[i + 1] = x[i] + (SecColW[i] > 0 ? P(SecColW[i]) : Math.Max(P(230), w - fixedW));
+            x[i + 1] = x[i] + (SecColW[i] == 0 ? Math.Max(posMin, w - fixedW + give) : P(SecColW[i]) - (i == ShellsCol ? give : 0));
         float hh = P(18);
         dl.AddRectFilled(o, o + new Vector2(w, hh), T.U32(T.HeaderBg));
         dl.AddLine(o + new Vector2(0, hh - 1), o + new Vector2(w, hh - 1), T.U32(T.Edge));
@@ -445,7 +462,7 @@ public sealed unsafe partial class DesignerScene
             At(11);
             Spinner(r.Rounds, P(40), extras: true);
             At(12);
-            ShellCellUi(r.Shells, P(172));   // where the material was: the mounts' material stays the scheme's, hidden (user, 2026-10-16)
+            ShellCellUi(r.Shells, x[13] - x[12] - P(8));   // where the material was: the mounts' material stays the scheme's, hidden (user, 2026-10-16)
             dl.Text(UiFonts.Mono, new Vector2(x[14] - P(6) - Width(UiFonts.Mono, r.Tonnes), ty), T.Muted, r.Tonnes);
             At(14, 2);
             ImGui.PushFont(UiFonts.SansSmall);

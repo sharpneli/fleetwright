@@ -88,6 +88,7 @@ public sealed unsafe partial class DesignerScene
         dl.AddRectFilled(p, p + new Vector2(w, h), T.U32(T.Inset));
         dl.AddRect(p, p + new Vector2(w, h), T.U32(open ? T.Brass : hover ? T.Bevel : T.Edge));
         float x = p.X + P(4), cy = p.Y + h / 2, ch = UiFonts.SansSmall.FontSize + P(1);
+        dl.PushClipRect(p, new Vector2(p.X + w - P(14), p.Y + h), true);   // a narrowed cell (the secondary table's) clips its chips
         foreach (var l in c.Lines)
         {
             string t = $"{ShellEdits.KindLabel(l.Kind)} {l.Pct}";
@@ -96,6 +97,7 @@ public sealed unsafe partial class DesignerScene
             dl.Text(UiFonts.SansSmall, new Vector2(x + P(3), cy - UiFonts.SansSmall.FontSize / 2), T.Ground, t);
             x += tw + P(3);
         }
+        dl.PopClipRect();
         string fam = c.Problem != null ? "invalid" : c.Default ? "default" : c.Family;
         float fw = Width(UiFonts.SansSmall, fam);
         float fx = Math.Max(x + P(4), p.X + w - P(16) - fw);
