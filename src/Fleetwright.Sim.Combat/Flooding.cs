@@ -165,6 +165,8 @@ public sealed class FloodModel
 public struct FloodStep
 {
     public double InM3, OutM3, PumpedM3;
+    /// <summary>The water that ran across the joins, m³ (with the rest, how much moved: docs/battle/coarse.md J6).</summary>
+    public double MovedM3;
     public bool RoomsFlooded;
     /// <summary>Boundaries that gave way under the head this step (docs/battle/damage-control.md DC1).</summary>
     public int Collapsed;
@@ -335,6 +337,7 @@ public static class Flooding
                 continue;
             w[hi] -= v;
             w[lo] += v;
+            res.MovedM3 += v;
             k.JoinFlow[p] = (hi == a ? v : -v) / dt;
         }
 

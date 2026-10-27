@@ -354,6 +354,11 @@ public sealed class ShipCondition
     public long StepMs, NextStepMs = -1;
     public int StepGen;
     public double HeldCap = 1;
+    /// <summary>The flooding's own clock within it (docs/battle/coarse.md J6): when the water last stepped, when it's due
+    /// next (every FloodMs while it moves, FloodIdleMs once settled, whether or not she burns), and the hoses' water put in
+    /// since, m³.</summary>
+    public long FloodStepMs, FloodDueMs, FloodEveryMs = 1000;
+    public double FireWaterM3;
 
     internal void Reset(ShipClass c)
     {
@@ -464,6 +469,7 @@ public sealed class ShipCondition
         (CrewLost, Killed, Wounded, Returns) = (0, 0, 0, 0);
         (Status, Loss, Attitude, PowerCap, Steering, JamRudderRad, Conned, Hits, Damaged) = (ShipStatus.Afloat, LossKind.None, Attitude.Upright, 1, Steering.Free, 0, true, 0, false);
         (WaterT, GmM, StepMs, NextStepMs, HeldCap, LastShooter, LastBattery, LossMs, GoneMs) = (0, c.Hydrostatics.GmT, 0, -1, 1, 0, 0, 0, 0);
+        (FloodStepMs, FloodDueMs, FloodEveryMs, FireWaterM3) = (0, 0, 1000, 0);
         (NextClearMs, ClearAtMs, Leaks, DoorsDrawn, PumpsRigged) = (-1, -1, 0, false, 0);
         (CounterTank, CounterfloodT, CounterHandMs) = (-1, 0, 0);
         (SafeSpeedKn, SafeSinceMs, HoldsSpeed, SteerCause, SteerSinceMs) = (double.PositiveInfinity, 0, false, SteerCause.None, 0);
@@ -815,6 +821,13 @@ public sealed class ShipCondition
         h.Add((int)Status | (int)Loss << 8);
         h.Add(PowerCap);
         h.Add(WaterT);
+        if (FloodDueMs != 0)
+        {
+            h.Add(FloodStepMs);
+            h.Add(FloodDueMs);
+            h.Add(FloodEveryMs);
+            h.Add(FireWaterM3);
+        }
         h.Add((int)Steering);
         h.Add(JamRudderRad);
         for (int i = 0; i < State.Length; i++)

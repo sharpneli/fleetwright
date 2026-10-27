@@ -310,6 +310,11 @@ public static class Fires
         {
             if (rooms[m].Kind != RoomKind.Magazine)
                 continue;
+            if (k.State[c.RoomNode(m)] == PartState.Destroyed)
+            {
+                k.MagazineThreatS[m] = 0;   // spent: lit in a race she lived through, nothing left in it to go up
+                continue;
+            }
             double held = 0, cap = 0, rate = 0;
             bool blocked = false;
             foreach (int cell in c.Links(rooms[m].Cells))

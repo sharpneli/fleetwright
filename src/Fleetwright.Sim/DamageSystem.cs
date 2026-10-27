@@ -58,7 +58,7 @@ public enum HoleAt : byte
 /// <item>a line in the combat log: the shell, the part, the outcome, the effects.</item>
 /// </list>
 /// A ship with water in it or a fire is stepped every <see cref="SimSettings.FloodMs"/> (4.3b; less often once its water
-/// has settled), in any clock tier: FLOODING (<see cref="Flooding"/>: the sea in, across the cell graph, the pumps; the
+/// has settled, and its water on its own clock while she burns: docs/battle/coarse.md J6), in any clock tier: FLOODING (<see cref="Flooding"/>: the sea in, across the cell graph, the pumps; the
 /// ship settled to it, its power held to what drives its added weight) and FIRE (<see cref="Fires"/>). It goes down by
 /// its buoyancy, not hit points: foundered or capsized, or its magazine set off by a hit or a fire. Going down, it stops,
 /// its guns fall silent and it leaves its group; it goes under a while later (by how it went), seen to go by those who
@@ -944,15 +944,18 @@ public sealed class DamageSystem : IWorldSystem
 
     // ------------------------------------------------------------------ fire and flooding
 
-    /// <summary>A ship's steps begin, or come sooner: at the next <see cref="SimSettings.FloodMs"/> of world time.</summary>
+    /// <summary>A ship's steps begin, or come sooner: at the next <see cref="SimSettings.FloodMs"/> of world time, her
+    /// water's with them (what woke her may have moved it: a hit, damage control).</summary>
     void Wake(World world, int slot, ShipCondition k)
     {
         long now = world.Time.Ms, next = (now / settings.FloodMs + 1) * settings.FloodMs;
-        if (k.NextStepMs >= 0 && k.NextStepMs <= next)
-            return;
         bool starting = k.NextStepMs < 0;
+        if (starting || next < k.FloodDueMs)
+            k.FloodDueMs = next;
+        if (!starting && k.NextStepMs <= next)
+            return;
         if (starting)
-            k.StepMs = now;   // still since then
+            (k.StepMs, k.FloodStepMs) = (now, now);   // still since then
         k.NextStepMs = next;
         k.StepGen++;
         if (starting)
@@ -960,10 +963,12 @@ public sealed class DamageSystem : IWorldSystem
         world.Schedule(new WorldTime(next), EventTier.Fine, ships.Store[slot].Entity, Id, StepEvent, ships.Store[slot].Generation, k.StepGen);
     }
 
-    /// <summary>One step of a ship's flooding and fire, from its last to now: the water, the attitude it settles to and
-    /// whether that loses it, the fires; what it can do worked out again if a room flooded or burned out; its power held
-    /// to its added weight. The time to its next step, ms, or -1 when it's dry, holed nowhere under the sea and not
-    /// burning (or going down).</summary>
+    /// <summary>One step of a ship's flooding and fire, from its last to now: the water (on its own clock: due every
+    /// <see cref="SimSettings.FloodMs"/> while it moves, <see cref="SimSettings.FloodIdleMs"/> once settled, whether or not
+    /// she burns; at once when something moved it, docs/battle/coarse.md J6), the attitude it settles to and whether that
+    /// loses it, the fires; what it can do worked out again if a room flooded or burned out; its power held to its added
+    /// weight. The time to its next step, ms, or -1 when it's dry, holed nowhere under the sea and not burning (or going
+    /// down).</summary>
     long Step(World world, int slot, ShipCondition k, long now)
     {
         var cls = k.Class;
@@ -973,19 +978,35 @@ public sealed class DamageSystem : IWorldSystem
         if (dt <= 0)
             return settings.FloodMs;
         Ready(slot, k);
-        var fix = stream.Derive(0xF1C5u).Derive((ulong)ships.Store[slot].Entity).Derive((ulong)now);
-        var repaired = Repairs.Step(cls, f, k, dt, now, ships.Store[slot].Speed, settings, ref fix);   // her repair parties and DC Central (DC3-DC7)
-        var wet = stream.Derive(0xF1000Du).Derive((ulong)ships.Store[slot].Entity).Derive((ulong)now);
-        Magazines.Valves(cls, f, k, dt, now, settings);   // the magazines' flooding and sprinklers (docs/battle/magazines.md V6)
-        var fl = Flooding.Step(cls, f, k, dt, k.PowerCap, ships.Store[slot].Speed, settings, ref wet);
-        if (fl.Collapsed > 0)
-            log.Add(new CombatEntry(now, CombatEvent.DamageControl, 0, fl.Collapsed, ships.Store[slot].Entity, (int)DcEvent.Gave));
-        for (int i = 0; i < k.NoteCount; i++)
-            log.Add(new CombatEntry(now, CombatEvent.DamageControl, 0, k.Notes[i].Value, ships.Store[slot].Entity, (int)k.Notes[i].What, k.Notes[i].Part));
-        k.NoteCount = 0;
-        var how = Flooding.Settle(cls, f, k, settings, dt, ships.Store[slot].Speed);
+        // the water's step: due by its own clock, or the hoses have put a settled step's worth in since (fresh water, a
+        // tonne a cubic metre)
+        bool flooding = now >= k.FloodDueMs || k.FireWaterM3 >= settings.FloodIdleT;
+        var repaired = RepairChange.None;
+        var fl = default(FloodStep);
+        var how = LossKind.None;
+        if (flooding)
+        {
+            double fdt = (now - k.FloodStepMs) / 1000.0;
+            (k.FloodStepMs, k.FireWaterM3) = (now, 0);
+            var fix = stream.Derive(0xF1C5u).Derive((ulong)ships.Store[slot].Entity).Derive((ulong)now);
+            repaired = Repairs.Step(cls, f, k, fdt, now, ships.Store[slot].Speed, settings, ref fix);   // her repair parties and DC Central (DC3-DC7)
+            var wet = stream.Derive(0xF1000Du).Derive((ulong)ships.Store[slot].Entity).Derive((ulong)now);
+            Magazines.Valves(cls, f, k, fdt, now, settings);   // the magazines' flooding and sprinklers (docs/battle/magazines.md V6)
+            fl = Flooding.Step(cls, f, k, fdt, k.PowerCap, ships.Store[slot].Speed, settings, ref wet);
+            if (fl.Collapsed > 0)
+                log.Add(new CombatEntry(now, CombatEvent.DamageControl, 0, fl.Collapsed, ships.Store[slot].Entity, (int)DcEvent.Gave));
+            for (int i = 0; i < k.NoteCount; i++)
+                log.Add(new CombatEntry(now, CombatEvent.DamageControl, 0, k.Notes[i].Value, ships.Store[slot].Entity, (int)k.Notes[i].What, k.Notes[i].Part));
+            k.NoteCount = 0;
+            how = Flooding.Settle(cls, f, k, settings, fdt, ships.Store[slot].Speed);
+            k.FloodEveryMs = FloodEvery(cls, Math.Abs(k.WaterT - was), (fl.InM3 + fl.OutM3 + fl.PumpedM3 + fl.MovedM3) * FloodModel.SeaT, fdt);
+            k.FloodDueMs = (now / k.FloodEveryMs + 1) * k.FloodEveryMs;
+        }
         var rng = stream.Derive(0xF100Du).Derive((ulong)ships.Store[slot].Entity).Derive((ulong)now);
         var fs = k.Fires > 0 || Fires.Hot(k) ? Fires.Step(cls, f, k, dt, settings, ref rng, now) : default;
+        k.FireWaterM3 += fs.WaterM3;
+        if (fs.Flooded > 0)
+            k.FloodDueMs = Math.Min(k.FloodDueMs, now + settings.FloodMs);   // a magazine's valves opened: its water from the next second
         touched = true;
         if (fs.Magazine)
         {
@@ -1010,9 +1031,29 @@ public sealed class DamageSystem : IWorldSystem
         if (fs.Abandoned > 0 || k.Smoked.AsSpan().Contains(true))
             Remind(world, slot, k);   // smoke's outages (B2) end on the clear event
         Hold(world, slot, k, force: false);
-        if (k.Fires > 0 || Fires.Hot(k) || Math.Abs(k.WaterT - was) >= settings.FloodIdleT)
+        if (k.Fires > 0 || Fires.Hot(k) || k.FloodDueMs - now <= settings.FloodMs)
             return settings.FloodMs;
-        return k.WaterT > 0 || Holed(cls, k) || Repairs.Busy(cls, k) || Magazines.Busy(cls, f, k, settings) ? settings.FloodIdleMs : -1;
+        return k.WaterT > 0 || Holed(cls, k) || Repairs.Busy(cls, k) || Magazines.Busy(cls, f, k, settings) ? k.FloodEveryMs : -1;
+    }
+
+    /// <summary>The water's next step, ms (docs/battle/coarse.md J6): settled (its total under
+    /// <see cref="SimSettings.FloodIdleT"/> in a step) every <see cref="SimSettings.FloodIdleMs"/>; else the longest step on
+    /// that one's lattice (a whole number of <see cref="SimSettings.FloodMs"/> that divides it) over which the last step's
+    /// flows (in, out, pumped and across the joins: a ship balanced against her pumps moves water while her total stands)
+    /// would move no more than <see cref="SimSettings.FloodSteadyShare"/> of her displacement: a ship flooding slowly
+    /// against her pumps steps as seldom as her water allows, one taking the sea fast every second. The flows are bounded
+    /// (into a cell no more than its room, across a join no more than levels it), so a longer step is less exact, never
+    /// unstable.</summary>
+    long FloodEvery(ShipClass c, double netT, double flowsT, double dtS)
+    {
+        int n = settings.FloodIdleMs / settings.FloodMs;
+        if (netT < settings.FloodIdleT || dtS <= 0)
+            return settings.FloodIdleMs;
+        double rate = flowsT / dtS, allowed = settings.FloodSteadyShare * c.Hydrostatics.DisplacementT;
+        for (int m = n; m > 1; m--)
+            if (n % m == 0 && rate * m * settings.FloodMs / 1000.0 <= allowed)
+                return (long)m * settings.FloodMs;
+        return settings.FloodMs;
     }
 
     /// <summary>Whether any hole is under the sea now.</summary>
@@ -1037,10 +1078,11 @@ public sealed class DamageSystem : IWorldSystem
         var k = ships.Store.Combat.Condition(slot);
         long t = world.Time.Ms, end = t + (long)(seconds * 1000);
         if (k.NextStepMs < 0 && k.Status == ShipStatus.Afloat)
-            k.StepMs = t;
+            (k.StepMs, k.FloodStepMs) = (t, t);
         k.StepGen++;   // the world's own steps for it are cancelled: these take their place
         k.NextStepMs = -1;
         long next = (t / settings.FloodMs + 1) * settings.FloodMs;
+        k.FloodDueMs = Math.Min(k.FloodDueMs, next);
         while (k.Status == ShipStatus.Afloat && next <= end)
         {
             // the timed outages and the walking wounded (E6) ending by then over first, as the world's clear event has them

@@ -1375,6 +1375,10 @@ public sealed record SimSettings
     public int FloodMs { get; init; } = 1000;
     public int FloodIdleMs { get; init; } = 30_000;
     public double FloodIdleT { get; init; } = 0.05;
+    /// <summary>The share of her displacement her water may move in one step while it isn't settled: the step is the
+    /// longest (up to <see cref="FloodIdleMs"/>) that keeps to it at the last step's rate (docs/battle/coarse.md J6); 0
+    /// steps it every <see cref="FloodMs"/> as before.</summary>
+    public double FloodSteadyShare { get; init; } = 1e-4;
 
     /// <summary>The discharge coefficient of every opening water comes through (Cd·A·√(2g·head)).</summary>
     public double FloodCd { get; init; } = 0.6;

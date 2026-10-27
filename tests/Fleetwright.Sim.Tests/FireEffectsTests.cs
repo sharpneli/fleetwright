@@ -223,6 +223,25 @@ public class FireEffectsTests(ITestOutputHelper output)
         Assert.Equal(RoomKind.Magazine, c.Rooms[room].Kind);
     }
 
+    /// <summary>A magazine set off by the fire beside it, the race lived through (its aftermath leaves it spent:
+    /// destroyed, its charges burnt): the fire burns on, but there's nothing left in it to go up again. Before
+    /// docs/battle/coarse.md J6 its heat stayed past its limit and it was raced again every step, its aftermath with it
+    /// (the trains' men flashed again, the vented gunhouses lit again).</summary>
+    [Fact]
+    public void A_spent_magazine_is_not_set_off_again()
+    {
+        var c = Class("dreadnought");
+        var f = new FloodModel(c);
+        var (_, room, beside, _) = Magazine(c);
+        var k = Fresh(c);
+        Assert.False(double.IsNaN(CookOff(c, f, k, beside, 3, 1)), "set off by the fire beside it");
+        k.Worsen(c.RoomNode(room), PartState.Destroyed);   // as the race's aftermath leaves a magazine she lived through
+        var r = RandomStream.FromSeed(2);
+        for (int t = 10; t <= 30 * 60; t += 10)
+            Assert.False(Fires.Step(c, f, k, 10, Still, ref r, (3 * 3600 + t) * 1000L).Magazine, $"set off again at {t} s");
+        Assert.True(k.Fires > 0, "the fire beside it still burns");
+    }
+
     [Fact]
     public void Her_crew_flood_a_threatened_magazine_unless_smoke_over_it_cuts_the_controls_off()
     {

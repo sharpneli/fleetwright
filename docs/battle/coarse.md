@@ -1,6 +1,7 @@
 # Plan: fighting in the coarse tier
 Status: **agreed 2026-10-26** (drafted and answered the same day: "Decided" at the end). J0 (the bench) done
-2026-10-26; J1 (the step mode) done 2026-10-27; J2 (guns in coarse) done 2026-10-27 (the speed it makes taken as it is, decision 3); J3 (torpedoes) done 2026-10-27; J4 (dodging) done 2026-10-27; J5 (sighting and smoke) done 2026-10-27, with open fails for the user; J6 next. It takes over `fighting.md` 4.8
+2026-10-26; J1 (the step mode) done 2026-10-27; J2 (guns in coarse) done 2026-10-27 (the speed it makes taken as it is, decision 3); J3 (torpedoes) done 2026-10-27; J4 (dodging) done 2026-10-27; J5 (sighting and smoke) done 2026-10-27, with open fails for the user; J6 (damage at speed) done 2026-10-27; J7 next (only if
+speed asks: decision 3 took J2's speed), then J8. It takes over `fighting.md` 4.8
 (damage in the coarse tier) and 4.9 (coarse fire), and the parts of `plan.md` 2.8 that touch fighting. Those sections
 only point here.
 
@@ -422,6 +423,43 @@ Each step ends with something to run and watch in the step mode, and with the pa
 - **Speed:** the Jutland coarse plays its 14 hours in 47.8 s against J4's 29.3 s (1,050× overall). Sighting 7.9% (the
   watch), the smoke 27% (its index 12.4%, the merges more puffs), damage 26.5%. Smoke laid every 3 s is the most of it:
   the price of coarse ships being blinded by their smoke at all.
+- **The user's guideline from here (2026-10-27):** coarse isn't really for the player. It's for roughly realistic end
+  results, and a balancing pass comes later (cursed tricks for the smoke allowed then). J6-J8 go on without chasing
+  every fail.
+
+**J6 done (2026-10-27).** The damage step was a fifth to a quarter of the coarse Jutland. Most of that turned out to be a
+bug, and the rest was water that moved slowly but stepped every second.
+- **Measured** (the coarse Jutland, the parts of `DamageSystem.Step` timed): damage was 28% of 50.3 s, 800k steps at
+  17.6 µs. Why steps came every second: a fire burning 395k, the water moving 0.05 t or more 357k; the 30 s settled step
+  only 35k.
+- **A bug, the same in both tiers: a spent magazine raced again every second** (5.0 s of the 14). Fixed;
+  `magazines.md`'s open items have it. The Jutland went 50.3 s to 44.5 s.
+- **The water on its own clock** (rung 1: the same model, `ShipCondition.FloodDueMs`). A burning ship's flooding, repairs
+  and settling ran on the fire's 1 s step. Now the water keeps its own: due by its cadence, at once when something
+  moves it (a hit or damage control wakes the ship; a magazine's valves opened by the fire), or once the hoses have put
+  in a settled step's worth (`FloodIdleT`).
+- **The steady step** (`FloodSteadyShare`, 1/10,000 of her displacement): 627k of the steps were water that wasn't
+  settled, but 61% of those moved under 1/10,000 of her displacement a second. The water's step is now the longest of
+  1, 2, 3, 5, 6, 10, 15 or 30 s over which the last step's flows would move no more than that. The flows are bounded
+  (into a cell no more than its room, across a join no more than levels it), so a longer step is less exact, never
+  unstable. The flows counted are the gross ones (in, out, pumped, across the joins). A first try on the net change left
+  Marlborough (one torpedo, `dc-history`) listing 3.8° at 10 h against 0.4° stepping every second. Her water balanced
+  against the pumps, so the net change hid the flows. On the gross flows she lists 0.6° (the committed code 0.7°).
+- **Outcomes at fine's step** (the yardsticks against everything stepped every second, `FloodIdleMs` 1000):
+  `damage-history` agrees case by case. At 100 runs Derfflinger's water is 283 against 268 t, Bismarck lost 37%
+  against 32%, Kirishima 21% against 20%. In `dc-history` at 100 runs, Seydlitz has 4,548 against 4,522 t at 4 h, and
+  Lützow 5,035 against 5,030 t, lost 24% against 25%. The benches themselves run faster: `damage-history` 75 s to 48 s,
+  `dc-history` 106 s to 79 s.
+- **Checked:** `FireEffectsTests.A_spent_magazine_is_not_set_off_again`;
+  `FloodingTests.A_ship_flooding_slowly_steps_seldom_to_the_same_water` (a super-dreadnought with a 0.3 m² hole, two
+  hours on: 770 t against 779 t at 1 s, stepping every 3 s at the end).
+- **The coarse Jutland:** damage 13.4% of the run, 9.2 µs a step and 13.5 steps a game second (from 28%, 17.6 µs, 16).
+  This seed's fight was a smaller one (8,241 hits against 11,893), and the whole run took 46.7 s; the fight differs by
+  seed, so the per-step figures are the measure. The smoke (33%) and gunnery (22%) are now the largest.
+- **Parity** (the standard panel both ways, `2026-10-27-standard-j6.json`): 93 ok, 4 FAIL, 89 noisy. No measure on
+  either side moved more than three standard errors since J5. The fails are J5's (the flotilla's hit %, squadrons'
+  British tonnage share, the prizes' war's Italian losses), and the Dover Strait's German hit % at +48% (J5 +43%,
+  noisy).
 
 ## Decided
 
@@ -448,3 +486,4 @@ The user's, 2026-10-26:
 | 2026-10-27 | J3 (torpedoes in coarse) | standard, coarse only against the 2026-10-26 fine baseline: 186 measures, 4.9 min on 32 threads | torpedo hits low across the scenarios (Japan -95%, France -82%): coarse combs turn with no helm lag; the flotilla's launches 1.4 a run against 0.06 | 95 ok, 10 FAIL, 81 noisy: Åland's torpedo hits fixed; the rest J4's and J5's (`2026-10-27-standard-j3.json`) |
 | 2026-10-27 | J4 (dodging) | standard, coarse only against the 2026-10-26 fine baseline: 186 measures, 4.4 min on 32 threads | the Dover Strait's hit % +73% and +74% and the haze duel +36% (J5's); the flotilla's launches 1.29 a run against 0.06 | 92 ok, 6 FAIL, 88 noisy: torpedo hits back in the bands (`2026-10-27-standard-j4.json`) |
 | 2026-10-27 | J5 (sighting and smoke) | standard, both ways (fine rerun: the lines unwound): 186 measures, 14 min on 32 threads | the prizes' war's Italian losses -68% (and France's hits -36%, fine's side moved); squadrons' British tonnage share -44%; the flotilla's hit % +41% | 90 ok, 6 FAIL, 90 noisy: J4's fails in or near the bands; the new ones the AI's minute in smoke (`2026-10-27-standard-j5.json`, the new fine baseline) |
+| 2026-10-27 | J6 (damage at speed) | standard, both ways (the spent magazine fix and the water's clock reach fine) | squadrons' British tonnage share -44%; the prizes' war's Italian ships lost -54%; the Dover Strait's German hit % +48% | 93 ok, 4 FAIL, 89 noisy: nothing moved over 3 SE since J5 (`2026-10-27-standard-j6.json`, the fine baseline now) |

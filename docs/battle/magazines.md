@@ -695,3 +695,9 @@ follows the dependencies: the fake turrets first, because the chain means nothin
     doctrine (the BCF on rate first) is the scenarios' later step.
   - `shipgen magazine` prints shipgen's room volumes, which are 0 m³ for a secondary magazine sharing a main one's
     cells. The race reads the cells' gas, so only the print is off.
+- **Fixed 2026-10-27 (found in `coarse.md` J6): a spent magazine was raced again every second.** Fire's heat
+  (`Fires.Magazines`) never looked at whether a magazine was spent. A race she lived through leaves the lit magazines
+  destroyed, but their heat stayed past its limit. So the race ran again at each damage step until she blew or the
+  fire died, and its aftermath ran with it: the trains' men flashed again, casualties drawn again, the vented gunhouses
+  lit again. In a coarse Jutland that was 4,641 races, 5 s of the run. Now a destroyed magazine has nothing left to go
+  up (`FireEffectsTests.A_spent_magazine_is_not_set_off_again`). The damage benches barely move.
