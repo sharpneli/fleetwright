@@ -1,5 +1,5 @@
 # Plan: the crew (a 4.5 deepening)
-Status: **draft 2026-10-27**, for the user    Updated: 2026-10-27
+Status: **agreed with the user 2026-10-27** ("Decided" below)    Updated: 2026-10-27
 
 What a ship's men do in a fight: where they stand, what a station can do with the men left at it, who goes up to fill
 the gaps, and when there's nobody left to fight her. It builds on E6's casualties (`shells-armour-damage.md`,
@@ -73,6 +73,27 @@ a zombie."
   coarse.
 - **No garbage per frame.** Group arrays at spawn. `Functions.Evaluate` runs when the condition changes, as now.
 
+## Decided (the user, 2026-10-27)
+
+1. **Reliefs follow what a reasonable captain orders** (the user: "what would a reasonable captain order?"). The
+   default, from the record's practice:
+   - First, the crews of guns that can't bear (the disengaged side). They're the ship's ready reserve, and they go back
+     when she turns.
+   - Next, the crews of mounts that are wrecked or jammed for the battle, and those mounts' handling men.
+   - Then the idle hands (the hotel staff, the band, the stewards), and the repair men above the floor.
+   - The main battery is filled before the secondaries, unless torpedo craft are the threat.
+   - A live mount's handling room is never stripped: guns without ammunition are as silent as guns without crews. The
+     stokehold and the parties' floor are kept.
+
+   This is doctrine, so a period's doctrine and later the player may order otherwise. It's open to revision once it
+   plays.
+2. **Posture waits for the UI pass**, where the player's order lives. N4 moves there.
+3. **Striking colours and abandoning ship are the captain's call, after this plan.** A command step of its own, once a
+   ship with nobody left to fight her exists. **And the captains stop shooting at burning wrecks that show no sign of
+   life.** If one of her guns fires, she's taken under fire again at once, as happened in the record (Wiesbaden at
+   Jutland, Suvorov at Tsushima). This is built here as N5b, because N2 is what makes a ship really fall silent.
+4. **Cover is fine-tuned later** (gunhouse ports, conning tower slits, the 0.45). N0 only measures it.
+
 ## The yardstick
 
 | Case | Record | Wanted |
@@ -109,27 +130,34 @@ worked. The aim is the ranges by type, not replicas.
     already in the fires.
   - Read in `Functions.Evaluate` from `Casualties.Men` (it already runs on every hit).
 - **N3 Reliefs.** When a station falls below its need, men walk to it after a delay of minutes, by the sections
-  between. They come in the doctrine's order: the crews of mounts that can't bear (the disengaged side), the hotel and
-  idle men, the repair men above the doctrine's floor, then the handling rooms of silent mounts. They stop at the floor
+  between. They come in the doctrine's order (decision 1): the crews of mounts that can't bear, those of wrecked
+  mounts and their handling men, the idle hands, then the repair men above the floor. They stop at the floor
   the doctrine keeps for the parties and the stokehold. A relief joins the station's group, so the next hit there finds
   him. The walking wounded come back to their own station as now. Doctrine fields: `ReliefOrder`, `ReliefFloorShare`,
   `ReliefWalkS` per section, one a period.
-- **N4 Posture** (16 §4.9; can wait). The ship-wide stance: closed up, or under cover. Under cover, the open stations'
-  men go behind plating (cover 0.2) and those stations stop. Doctrine default: under cover where the station can't bear.
-  The player's order later, in the UI pass.
+- **N4 Posture:** moved to the UI pass (decision 2). It's the ship-wide stance from 16 §4.9: closed up, or under
+  cover. Under cover, the open stations' men go behind plating (cover 0.2) and those stations stop.
 - **N5 The end of her.** No new fall-out knob. Fall-out already reads the main guns, and those now go silent for want
   of men. A ship whose parties are spent can't fight her fires, and fire's own model takes her from there: they spread,
-  the magazines are threatened and flooded or not. Fire control's "ships seen done for" (F10) already counts silent and
-  burning. Striking colours and abandoning ship are command's, not this plan's (open question 3).
+  the magazines are threatened and flooded or not.
+- **N5b Wrecks with no sign of life** (decision 3; builds the "ships seen done for" item that fire-control.md F10 holds,
+  for burning, silent ships; the record of that item stays there).
+  - **Silent as seen:** today `SeenFlags.Silent` is read from the truth (`MountsWorking == 0`). It becomes "no gun of
+    hers seen firing for a while". The quiet a battery keeps between salvos isn't silence. A salvo of hers that an
+    observer is placed to see (the sightings' own judgement, never the drawing's) clears it at once.
+  - **Her worth falls** on burning, silent and stopped, as seen, smoothly (no hard switch). At will, the batteries go
+    to the next target in reach. With none, the side's doctrine field picks finishing her or ceasing fire.
+  - **A sign of life brings the fire back:** her worth recovers as soon as a gun of hers is seen firing.
+  - An ordered Engage stands: the player's call, or an admiral's.
+  - **Tests:** a silent burning cripple loses a line's fire when another target is in reach; one gun of hers firing
+    takes it back within a salvo's time; the rounds saved in a squadrons play, reported.
 - **N6 Fit and check.** The yardstick above. E6's per-hit benches stay as they are. Coarse parity (`CoarseParityTests`),
   no allocation in the hit and evaluate paths, the matchup and the squadrons' hash reported.
 
-## Open questions
+## After this plan
 
-1. **Reliefs' order:** do the disengaged side's crews go first (common practice in the record), and should the
-   handling rooms ever be stripped to man the guns?
-2. **Posture now or later:** N4 with this plan, or after the UI pass where the player's order lives?
-3. **Striking colours and abandoning ship:** Oryol surrendered with most of her men alive. Is that for command (the
-   captain's call on a ship that can't fight), and when?
-4. **Behind armour:** Oryol's losses came through ports and slits. E6 gives a gunhouse's men 0.45 cover. Is that
-   enough, or do sighting ports and conning tower slits need their own way in? This is checked in N0, not assumed.
+- **The captain strikes or abandons** (decision 3): a command step (`command.md`). This is a ship that can't fight,
+  with her men alive or dying. Oryol surrendered with most of her crew alive.
+- **Posture** in the UI pass (decision 2).
+- **Cover's fine-tuning** (decision 4): Oryol's losses came through ports and slits. E6 gives a gunhouse's men 0.45
+  cover; sighting ports and conning tower slits may need their own way in.

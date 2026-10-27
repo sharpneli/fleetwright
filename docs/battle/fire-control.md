@@ -1229,6 +1229,9 @@ are the AI's passes (`command.md`).
     side's doctrine field picks finishing her or ceasing fire (rounds for the next fight against seeing her go). An
     ordered Engage stands: the player's call, or an admiral's who judged.
   - **Later, the commander's:** a destroyer or two sent to finish her with torpedoes, or left to pick up survivors.
+  - **Burning and silent, built early in `crew.md` N5b** (the user, 2026-10-27: stop firing on burning wrecks that show
+    no sign of life; a gun of hers firing brings the fire back at once). Silent becomes "no salvo of hers seen for a
+    while" there; the list and freeboard above stay here.
   - **Tests:** a cripple seen past the list loses a line's fire when another target is in reach, and with none the
     doctrine decides; the rounds a squadrons play saves, reported; the judgement's misses both ways counted (left and
     lived, fired at and sank anyway).
