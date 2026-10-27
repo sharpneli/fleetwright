@@ -1,7 +1,7 @@
 # Plan: fighting in the coarse tier
 Status: **agreed 2026-10-26** (drafted and answered the same day: "Decided" at the end). J0 (the bench) done
-2026-10-26; J1 (the step mode) done 2026-10-27; J2 (guns in coarse) done 2026-10-27 (the speed it makes taken as it is, decision 3); J3 (torpedoes) done 2026-10-27; J4 (dodging) done 2026-10-27; J5 (sighting and smoke) done 2026-10-27, with open fails for the user; J6 (damage at speed) done 2026-10-27; J7 next (only if
-speed asks: decision 3 took J2's speed), then J8. It takes over `fighting.md` 4.8
+2026-10-26; J1 (the step mode) done 2026-10-27; J2 (guns in coarse) done 2026-10-27 (the speed it makes taken as it is, decision 3); J3 (torpedoes) done 2026-10-27; J4 (dodging) done 2026-10-27; J5 (sighting and smoke) done 2026-10-27, with open fails for the user; J6 (damage at speed) done 2026-10-27; J7 (cheaper fire
+control: its (a), the 3 s grid) done 2026-10-27; J8 next. It takes over `fighting.md` 4.8
 (damage in the coarse tier) and 4.9 (coarse fire), and the parts of `plan.md` 2.8 that touch fighting. Those sections
 only point here.
 
@@ -461,6 +461,28 @@ bug, and the rest was water that moved slowly but stepped every second.
   British tonnage share, the prizes' war's Italian losses), and the Dover Strait's German hit % at +48% (J5 +43%,
   noisy).
 
+**J7 done (2026-10-27): its (a), fire control's grid longer in coarse.** The user, before it was skipped: no low-hanging
+fruit left behind. Decision 3 had taken J2's speed, so this was a check, not a gate.
+- **Measured** (the coarse Jutland, `GunnerySystem`'s parts timed): gunnery was 22% of the run, 10.8 s. 3.0 million
+  battery-seconds at 7.7 µs each: the sensors' margins 4.3, the aim and the ballistic solve 2.6, the rest 0.7. Salvos
+  were 1.3 s and spots 0.1 s. No hot spot like J6's magazine: the second is spread over what the model needs.
+- **The 3 s grid** (`FireControlCoarseMs`, rung 2: the same chain at a coarser cadence). Readings are taken as they
+  fall due on the grid, the mounts are ordered every 3 s, and salvos still fire at their own moments (events, as
+  before). Every coarse duel and fight to the end held its band at 2 s and at 3 s. At 3 s: the 16 kyd duel -6% hits a
+  gun a minute, the haze duel +10%, a light cruiser on a zigzagging destroyer -4%, the fights' shares out of the fight
+  +2% and -7%. Gunnery went 206 to 102 µs a game second.
+- **The sun's direction** worked out once a moment (`Sun.Direction`, a thread's own cache): every battery asked it every
+  second, the same answer for the whole world. It's exact: the Jutland ends in the same state with it.
+- **Not built: (b), sampled salvos (rung 3).** There's no need for it at this speed. It stays for the NPC wars, if they
+  want it.
+- **The coarse Jutland:** 39.2 s for its 14 hours (from J6's 46.7 s, in a bigger fight: 13,144 hits against 8,241).
+  Gunnery 12.6%, damage 19.4%, the smoke 32%, the AI 13%, sighting 11%.
+- **Parity** (coarse against J6's fine baseline, `2026-10-27-standard-j7.json`): 94 ok, 4 FAIL, 88 noisy. One measure on
+  the coarse side moved more than three standard errors: the prizes' war's French ships firing torpedoes, 1.56 to 2.62
+  (fine 1.92). Its shell hits and Italian losses came toward fine with it: 173 to 211 hits (fine 246), 0.79 to 1.08
+  ships lost (1.71). The fails: the Dover Strait's hit % (+65%, +68%) and Cape Sarych's Ottoman hit % (+75%), the
+  night's close fighting (J5); squadrons' German tonnage share (-42%).
+
 ## Decided
 
 The user's, 2026-10-26:
@@ -487,3 +509,4 @@ The user's, 2026-10-26:
 | 2026-10-27 | J4 (dodging) | standard, coarse only against the 2026-10-26 fine baseline: 186 measures, 4.4 min on 32 threads | the Dover Strait's hit % +73% and +74% and the haze duel +36% (J5's); the flotilla's launches 1.29 a run against 0.06 | 92 ok, 6 FAIL, 88 noisy: torpedo hits back in the bands (`2026-10-27-standard-j4.json`) |
 | 2026-10-27 | J5 (sighting and smoke) | standard, both ways (fine rerun: the lines unwound): 186 measures, 14 min on 32 threads | the prizes' war's Italian losses -68% (and France's hits -36%, fine's side moved); squadrons' British tonnage share -44%; the flotilla's hit % +41% | 90 ok, 6 FAIL, 90 noisy: J4's fails in or near the bands; the new ones the AI's minute in smoke (`2026-10-27-standard-j5.json`, the new fine baseline) |
 | 2026-10-27 | J6 (damage at speed) | standard, both ways (the spent magazine fix and the water's clock reach fine) | squadrons' British tonnage share -44%; the prizes' war's Italian ships lost -54%; the Dover Strait's German hit % +48% | 93 ok, 4 FAIL, 89 noisy: nothing moved over 3 SE since J5 (`2026-10-27-standard-j6.json`, the fine baseline now) |
+| 2026-10-27 | J7 (the 3 s fire-control grid in coarse) | standard, coarse only against J6's fine baseline: 186 measures, 3.3 min on 32 threads | the night's hit % (the Dover Strait +65%, +68%; Cape Sarych +75%); squadrons' German tonnage share -42% | 94 ok, 4 FAIL, 88 noisy (`2026-10-27-standard-j7.json`) |

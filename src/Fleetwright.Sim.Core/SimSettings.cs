@@ -494,6 +494,11 @@ public sealed record SimSettings
     /// mounts ordered, the next salvo timed.</summary>
     public int FireControlMs { get; init; } = 1000;
 
+    /// <summary>The coarse tier's fire-control tick, ms (docs/battle/coarse.md J7, rung 2): the same chain every few
+    /// seconds. Readings are taken as they fall due on it, and salvos still fire at their own moments. The parity
+    /// duels held at 2 s and 3 s, at half the gunnery's cost at 3 s.</summary>
+    public int FireControlCoarseMs { get; init; } = 3000;
+
     /// <summary>Battle against practice: the multiplier on the salvo-to-salvo, laying, rangetaking and spotting errors
     /// (fire_control_ref.py Conditions.combat, calibrated there at 1.5 against battles' records). 1 (the user,
     /// 2026-10-18): the sim is the ideal case, and what the 1.5 lumped together comes as its own systems (the weather,

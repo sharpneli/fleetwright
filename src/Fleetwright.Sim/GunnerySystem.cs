@@ -588,12 +588,16 @@ public sealed class GunnerySystem : IWorldSystem
         }
     }
 
+    /// <summary>The fire-control tick's grid, ms: <see cref="SimSettings.FireControlMs"/>, the coarse tier's
+    /// <see cref="SimSettings.FireControlCoarseMs"/> (docs/battle/coarse.md J7: the same chain at a coarser cadence).</summary>
+    int GridMs(World world) => world.Coarse ? settings.FireControlCoarseMs : settings.FireControlMs;
+
     /// <summary>The fire-control tick: each engaged battery measured, tracked, its mounts ordered and its next salvo
     /// timed; the next tick on the grid while any battery is engaged. From a command (<paramref name="schedule"/>), only
     /// the next tick is scheduled.</summary>
     void Tick(World world, bool schedule)
     {
-        long now = world.Time.Ms, step = settings.FireControlMs;
+        long now = world.Time.Ms, step = GridMs(world);
         if (!schedule)
         {
             int n = 0;
@@ -635,7 +639,7 @@ public sealed class GunnerySystem : IWorldSystem
             any |= fcs[f].Alive;
         if (any && !ticking)
         {
-            long next = schedule ? (now + step - 1) / step * step : now + step;
+            long next = schedule ? (now + step - 1) / step * step : (now / step + 1) * step;
             world.Schedule(new WorldTime(next), EventTier.Fine, 0, Id, TickEvent);
             ticking = true;
         }
@@ -844,7 +848,7 @@ public sealed class GunnerySystem : IWorldSystem
             when = Math.Max(when, Math.Max(ms.LoadedMs, CombatStore.LaidBy(ms, cls.Mounts[mounts[j]])));
             (got, taken) = (got + cond.Guns(mounts[j]), taken + 1);
         }
-        if (when < now + settings.FireControlMs)
+        if (when < now + GridMs(world))
         {
             fc.SalvoPending = true;
             fc.Arm++;

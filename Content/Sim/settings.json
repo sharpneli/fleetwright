@@ -160,6 +160,7 @@
   "DevFirePatternPct": 0.8,
   "DevFireDeflectionShare": 0.4,
   "FireControlMs": 1000,
+  "FireControlCoarseMs": 3000,
   "GunneryCombat": 1,
   "GunneryOpenS": 120,
   "OpenDoubtSteps": 2,

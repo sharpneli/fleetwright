@@ -11,9 +11,17 @@ public static class Sun
     /// the same direction from everywhere on the planet). Up · this is the sine of the sun's elevation there.</summary>
     public static Vec3d Direction(WorldTime t)
     {
+        if (lastSet && t.Ms == lastMs)
+            return lastDirection;   // a moment's batteries and looks all ask it (docs/battle/coarse.md J7)
         var (lat, lon) = Subsolar(t);
-        return Earth.Up(lat, lon);
+        (lastMs, lastDirection, lastSet) = (t.Ms, Earth.Up(lat, lon), true);
+        return lastDirection;
     }
+
+    // the last moment asked, a thread's own (the workers ask it too): the same answer, worked out once
+    [ThreadStatic] static long lastMs;
+    [ThreadStatic] static Vec3d lastDirection;
+    [ThreadStatic] static bool lastSet;
 
     /// <summary>The point where the sun is overhead: latitude (the declination) and longitude, degrees.</summary>
     public static (double Lat, double Lon) Subsolar(WorldTime t)
