@@ -101,6 +101,13 @@ public enum DoctrineField : byte
     /// <summary>How a battery picks its shell (<see cref="ShellUse"/>; docs/battle/shell-choice.md A3): by its target, or
     /// by the magazine order. After <see cref="Temper"/>, so the fields' numbers in logged commands stand.</summary>
     Shells,
+
+    /// <summary>A secondary battery firing at will takes only a contact it hits with this share of its shells or more, as
+    /// the matchup reckons it (<see cref="Combat.Matchup.HitChance"/>, by its fire control's level, the contact as she's made out,
+    /// at her range): no splashing at the edge of its reach (the user, 2026-10-27; docs/battle/fire-control.md F10's
+    /// ammunition floor, the secondaries' first). 0: anything in reach. An ordered Engage fires regardless. Last, so
+    /// the fields' numbers in logged commands stand.</summary>
+    SecondaryHitFloor,
 }
 
 /// <summary>Doctrine's Shells: each battery loads the kind its target calls for (the captain's choice, the matchup's
@@ -176,7 +183,7 @@ public sealed class Doctrine(GroupSystem groups, IReadOnlyDictionary<string, dou
         return r;
     }
 
-    public const int FieldCount = (int)DoctrineField.Shells + 1;
+    public const int FieldCount = (int)DoctrineField.SecondaryHitFloor + 1;
 
     /// <summary>Every field when nothing sets it: a world told nothing (a dev's, a test's) behaves as before doctrine.</summary>
     public static double Default(DoctrineField f) => f switch
@@ -205,6 +212,7 @@ public sealed class Doctrine(GroupSystem groups, IReadOnlyDictionary<string, dou
         DoctrineField.Dispose => 0,
         DoctrineField.Temper => 0,
         DoctrineField.Shells => (double)ShellUse.MagazineOrder,
+        DoctrineField.SecondaryHitFloor => 0,
         _ => throw new ArgumentOutOfRangeException(nameof(f)),
     };
 

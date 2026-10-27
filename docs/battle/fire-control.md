@@ -893,7 +893,12 @@ from the parts and independent fire (items 6 and 9); F6e ammunition as a choice 
   every verdict as before, hit rates within their noise (the main batteries' opening is the track's doubt, not the
   first reading). Tsushima over 4 seeds: Russia loses 4.5 ships (3.8), Japan 4.8 (5.2). `Fight_turns_away_when_outmatched`
   starts the battleships at 18 km (16: they hit Lion five times in her first three minutes, and slowed she fights).
-  Left as it is: the layer by eye's 20 s from reading to sights (`FireControlPresets.Local`'s latency), close in too.
+  *Point blank, no plot* (the user, the same day: "it shouldn't take 20 s to figure out someone is 500 m from you"):
+  where laying at her present range by sight is point blank (`GunnerySystem.PointBlankAt`, `Aim`'s test: her danger
+  space covers twice that error), a reading goes to the layers at once, without the computer's latency; further out,
+  through it. So the closer, the sooner, by the danger space against the sight's error: a 6" by eye 1.5 km off a
+  battleship fires 7 s after taking her (its casemates training round), against 27. fc-history at 96 runs: within
+  0.1 points everywhere.
 - **F6d done 2026-10-18** (the rate of fire from its parts, independent fire).
   - *The supply:* a mount fires from its ready-use rounds (shipgen's `ReadyRounds`: a 4" 26 a gun, a 6" 15, a 12" 6, a
     15" 4) at the reload, and once they're gone as the hoists bring them, a round a gun every `MountRow.SupplyS`, the
@@ -1204,6 +1209,10 @@ are the AI's passes (`command.md`).
   fire at will is doctrine; the secondaries at the edge of their reach, `fighting.md` 4.2c's "left as it is"). The
   battery shows it holds (a state beside its phase), and takes the target up again when the estimate clears the floor
   (closing range, a settled track). The reserve's share has no source yet (the research request on fire discipline).
+  *The secondaries' part done 2026-10-27* (the user: "secondary should not just waste its shells splashing around to
+  max range"): doctrine's `SecondaryHitFloor` (1% [EST], 0 none), read by the captain's pick at will from the matchup's
+  hit chance (by level, the contact as made out) until `FireEstimate` comes; below it a secondary takes nothing rather
+  than holding fire on her (no state beside the phase yet). The main batteries and the reserve wait for the rest of F10.
   Anchors: a battle line's magazines last the hours of a Jutland, not 1.5 hours of unbroken fire (F6d's rate);
   `command.md` 5.1g's Tsushima, where both sides' battleships emptied their main magazines in 1.5-2 hours.
 - **Ships seen done for** (the user, 2026-10-21: "ammo saving time"; the target's worth above). A ship seen going down

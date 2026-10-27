@@ -49,6 +49,10 @@
     // each battery loads the shell its target calls for, "by target" (the captain judges what a round does to her as he
     // has her made out, docs/battle/shell-choice.md), or fires "by the magazine order" (a main battery AP until it's
     // spent, a secondary HE)
-    "Shells": "by target"
+    "Shells": "by target",
+    // a secondary battery at will takes only a ship it hits with 1% of its shells or more (the matchup's estimate by its
+    // fire control, the ship as made out, at her range; 0: anything in reach): a 6" by eye on a battleship to about
+    // 10 km, on a torpedo-boat destroyer to about 7 km, never splashing at 12 km
+    "SecondaryHitFloor": 0.01
   }
 }

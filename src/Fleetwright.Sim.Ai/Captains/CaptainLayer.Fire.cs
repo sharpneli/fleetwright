@@ -11,14 +11,17 @@ namespace Fleetwright.Sim.Ai.Captains;
 /// <list type="bullet">
 /// <item><b>Fire at will:</b> at each think, for every ship off rails that's in an encounter or has a battery
 /// engaged, each battery picks from its navy's contacts in sight within its reach (<see cref="SimSettings.FireReachShare"/>
-/// of the range table's): one that bears first, then the nearest, by the range she'll be at
+/// of the range table's): one it can fire on now first (she bears, within its guns' reach), then one it can train on,
+/// then the nearest, by the range she'll be at
 /// <see cref="SimSettings.FireLeadS"/> on, longer by <see cref="SimSettings.FireCrowdShare"/> for each other ship's battery
 /// of the kind already on her (one closing before one running; the fire spread) and, for a secondary, by
 /// <see cref="SimSettings.FireSizeShare"/> for each step of her type's size (a boat before a battleship at much her
 /// range, never one alongside). It keeps its target until it's unseen for <see cref="SimSettings.FireLostMs"/> or past
-/// <see cref="SimSettings.FireKeepShare"/> of its reach, or another bears where it doesn't, or is nearer so than
+/// <see cref="SimSettings.FireKeepShare"/> of its reach, or another it can fire on where it can't, or is nearer so than
 /// <see cref="SimSettings.FireSwitchShare"/> of it (an unknown's size taken as the held one's at most, or each ship coming
 /// out of the haze would take the fire off the one held): no flicking between targets, as each shift starts the track again.
+/// A secondary takes none it'd hit with fewer than doctrine's <see cref="DoctrineField.SecondaryHitFloor"/> of its shells
+/// (the matchup's estimate), and drops one at that much less range: no splashing at the edge of its reach.
 /// With nothing to shoot at it ceases fire, so the ship can go back on rails.</item>
 /// <item><b>Engage:</b> the chief batteries (<see cref="BatteryRow.Chief"/>: the main, or with none the heaviest guns) on
 /// the contact while the navy holds it (then at will again); the others pick their own. <b>Hold fire:</b> every battery
@@ -192,7 +195,7 @@ public sealed partial class CaptainLayer
     // a ship's candidates, found once for all its batteries: each contact in sight within its widest reach, its entity
     // and slot, range (m), the range it'll be at FireLeadS on (m), bearing from ahead and the rank of its type for a
     // secondary battery
-    int[] candEntity = new int[32], candRank = new int[32], candSlot = new int[32];
+    int[] candEntity = new int[32], candRank = new int[32], candSlot = new int[32], candPic = new int[32];
     double[] candRange = new double[32], candLead = new double[32], candBearing = new double[32];
     Vec3d[] candPos = new Vec3d[32];
     sbyte[] candFoul = new sbyte[32];   // its line of fire: -1 not asked yet, 0 clear, 1 foul
@@ -223,7 +226,7 @@ public sealed partial class CaptainLayer
             {
                 FireOrder.Hold => 0,
                 FireOrder.Engage when cls.Batteries[b].Chief => cap.FireTarget,
-                _ => Pick(ctx, pic, own, cls, b, reach[b], reach[^1], current),
+                _ => Pick(ctx, pic, own, slot, cls, b, reach[b], reach[^1], current),
             };
             Shells(ctx, ref cap, own, slot, b, want, pic);
             if (want == current)
@@ -546,9 +549,11 @@ public sealed partial class CaptainLayer
     }
 
     /// <summary>A battery's target at will: the current one while it's held and in reach, unless another is better by
-    /// bearing, by size (secondaries, a type made out) or by much in range to come and in the fire on her; else the best
-    /// in sight; 0 for none.</summary>
-    int Pick(in AiContext ctx, Picture? pic, ShipState own, ShipClass cls, int b, double reach, double widest, int current)
+    /// what the battery can do about her (fire on her now, bearing and within its guns' reach, before one it can only
+    /// track: the user, 2026-10-27, a casemate side kept on a ship it couldn't reach) or by much in range to come, her
+    /// size and the fire on her; else the best in sight; 0 for none. A secondary takes none it'd hit with fewer than
+    /// doctrine's <see cref="DoctrineField.SecondaryHitFloor"/> of its shells.</summary>
+    int Pick(in AiContext ctx, Picture? pic, ShipState own, int slot, ShipClass cls, int b, double reach, double widest, int current)
     {
         if (pic == null)
             return 0;
@@ -558,50 +563,86 @@ public sealed partial class CaptainLayer
         var p = own.Position;
         if (candCount < 0)
             Candidates(ctx, pic, own, widest);
+        double guns = reach / s.FireReachShare;   // the guns' own reach: past it she's tracked, not fired on
+        double floor = secondary ? doctrine.Of(own.Entity, own.Side, DoctrineField.SecondaryHitFloor) : 0;
+        var gun = floor > 0 ? GunOf(ctx, slot, b) : null;
 
         int ci = current != 0 ? pic.IndexOf(current) : -1;
         bool keep = ci >= 0 && !pic[ci].Lost && now - pic[ci].SeenMs <= s.FireLostMs;
         if (keep && lines.GunsFoul(ctx, own, pic.EstimateAt(ci, now, s).Position))
             keep = false;   // a friend in the way: not while he's there
-        double curRange = 0, curBy = 0;
-        bool curBears = false;
-        int curRank = 0;
+        double curBy = 0;
+        int curRank = 0, curCan = 0;
         if (keep)
         {
             var (q, v, _) = pic.EstimateAt(ci, now, s);
-            curRange = (q - p).Length;
-            keep = curRange <= reach * s.FireKeepShare / s.FireReachShare;   // held a little further than taken: no flicking at the edge
-            curBears = Bears(cls, b, Earth.Bearing(p, q) - own.HeadingDeg);
+            double curRange = (q - p).Length;
+            // held a little further than taken (by range, and by the hit floor at that much less range): no flicking at the edge
+            keep = curRange <= reach * s.FireKeepShare / s.FireReachShare &&
+                   (gun == null || HitOn(ctx, gun, own.Side, pic[ci], curRange * s.FireReachShare / s.FireKeepShare) >= floor);
+            curCan = Can(Bears(cls, b, Earth.Bearing(p, q) - own.HeadingDeg), curRange <= guns);
             curRank = secondary ? Rank(pic[ci].Type) : 0;
             curBy = Lead(own, q, v, s) * (1 + s.FireCrowdShare * Crowd(cls, b, current, ctx.Ships.SlotOf(current))) * Sized(s, curRank);
         }
 
-        int best = 0, bestRank = 0;
-        bool bestBears = false;
+        int best = 0, bestRank = 0, bestCan = -1;
         double bestBy = double.MaxValue;
         for (int k = 0; k < candCount; k++)
         {
             if (candRange[k] > reach)
                 continue;
-            bool bears = Bears(cls, b, candBearing[k]);
-            if (bears != bestBears && !bears)
+            int can = Can(Bears(cls, b, candBearing[k]), candRange[k] <= guns);
+            if (can < bestCan)
                 continue;
             int rank = secondary ? candRank[k] : 0;
             double by = candLead[k] * (1 + s.FireCrowdShare * Crowd(cls, b, candEntity[k], candSlot[k])) * Sized(s, rank);
-            // a foul line only rules one out: asked only of one that would be the best yet (the line of fire's the cost)
-            if ((bears != bestBears || by < bestBy) && !Foul(ctx, own, k))
-                (best, bestBears, bestRank, bestBy) = (candEntity[k], bears, rank, by);
+            // a foul line and the hit floor only rule one out: asked only of one that would be the best yet (they're the cost)
+            if ((can > bestCan || by < bestBy) && (gun == null || HitOn(ctx, gun, own.Side, pic[candPic[k]], candRange[k]) >= floor) && !Foul(ctx, own, k))
+                (best, bestCan, bestRank, bestBy) = (candEntity[k], can, rank, by);
         }
         if (!keep)
             return best;
         if (best == 0 || best == current)
             return current;
-        if (bestBears != curBears)
-            return bestBears ? best : current;
+        if (bestCan != curCan)
+            return bestCan > curCan ? best : current;
         // an unknown's smaller size is a guess: against the one held she counts as its size
         if (bestRank < curRank && bestRank == Rank(ShipType.Unknown))
             bestBy *= Sized(s, curRank) / Sized(s, bestRank);
         return bestBy < s.FireSwitchShare * curBy ? best : current;
+    }
+
+    /// <summary>What a battery can do about a contact: fire on her now (2: she bears, within its guns' reach), train on her
+    /// (1: she bears, beyond it), or only track her (0).</summary>
+    static int Can(bool bears, bool inReach) => bears ? inReach ? 2 : 1 : 0;
+
+    /// <summary>A battery as the matchup sees it: the matchup counts the guns bearing on one beam, so a side battery on the
+    /// other is its twin there (the same kind and calibre); null if neither.</summary>
+    MatchupGun? GunOf(in AiContext ctx, int slot, int b)
+    {
+        var lo = ctx.Ships.Combat.Loadout(slot);
+        ref readonly var row = ref lo.Class.Batteries[b];
+        MatchupGun? twin = null;
+        foreach (var g in Judge.Matchups.Profile(ctx.World, lo).Guns)
+            if (g.Battery == b)
+                return g;
+            else if (g.Kind == row.Kind && g.CalibreMm == row.CalibreMm)
+                twin ??= g;
+        return twin;
+    }
+
+    /// <summary>A battery's hit chance a shell on a contact at a range, as the matchup reckons it: the kind its captain
+    /// would load there, over the classes his navy may take her for; 0 past its reach.</summary>
+    double HitOn(in AiContext ctx, MatchupGun gun, byte side, in Contact c, double rangeM)
+    {
+        if (rangeM > gun.KindsReachM)
+            return 0;
+        shellTarget.Clear();
+        shellTarget.AddContact(ctx.World, Judge.Matchups, side, c);
+        double hit = 0, n = 0;
+        foreach (ref readonly var e in shellTarget.Entries)
+            (hit, n) = (hit + e.Count * gun.Chosen(e.Profile, rangeM, ctx.Settings).Hit, n + e.Count);
+        return n > 0 ? hit / n : 0;
     }
 
     /// <summary>A secondary battery's range to a contact counts longer by <see cref="SimSettings.FireSizeShare"/> for each
@@ -632,6 +673,7 @@ public sealed partial class CaptainLayer
         {
             int n = Math.Max(near.Length, candEntity.Length * 2);
             (candEntity, candRank, candSlot, candRange, candLead, candBearing) = (new int[n], new int[n], new int[n], new double[n], new double[n], new double[n]);
+            candPic = new int[n];
             (candPos, candFoul) = (new Vec3d[n], new sbyte[n]);
         }
         candCount = 0;
@@ -642,7 +684,7 @@ public sealed partial class CaptainLayer
             (candEntity[candCount], candSlot[candCount], candRange[candCount]) = (e, ctx.Ships.SlotOf(e), (q - p).Length);
             candLead[candCount] = Lead(own, q, seen.Velocity(own.Side, i), ctx.Settings);
             (candBearing[candCount], candRank[candCount]) = (Earth.Bearing(p, q) - heading, Rank(pic[i].Type));
-            (candPos[candCount], candFoul[candCount]) = (q, -1);
+            (candPos[candCount], candFoul[candCount], candPic[candCount]) = (q, -1, i);
             candCount++;
         }
     }

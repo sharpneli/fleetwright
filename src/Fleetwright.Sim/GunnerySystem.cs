@@ -705,6 +705,14 @@ public sealed class GunnerySystem : IWorldSystem
         var frame = ship.Frame;
         var tpos = target.Position;
         double combat = settings.GunneryCombat;
+        ref readonly var row = ref cls.Batteries[fc.Battery];
+        var mounts = cls.Links(row.Mounts);
+        var table = shells.Ballistics[fc.Table];
+        var muzzle = Muzzle(cls, frame, mounts[0]);
+        // point blank, a reading goes to the layers at once: they lay on what they see, with no plot to wait for (the user,
+        // 2026-10-27: "it shouldn't take 20 s to figure out someone is 500 m from you"); further out, through the computer
+        long latencyMs = inSight && PointBlankAt(fc, f, table, muzzle.Length - Earth.Radius, Earth.Distance(ship.Position, tpos), target, crew,
+            out _, out _, out _) == true ? 0 : (long)(computer.LatencyS * 1000);
         Air air = default;
         bool sees = false, aired = false;
         var smoke = dueTau.AsSpan(i * SmokeSystem.PairTaus, SmokeSystem.PairTaus);
@@ -754,7 +762,7 @@ public sealed class GunnerySystem : IWorldSystem
             // correction: a director forward and one aft see the target on bearings tens of mils apart close in)
             pending[at2] = new FcReading
             {
-                Ms = now, ArriveMs = now + (long)(computer.LatencyS * 1000), From = ship.Position, OwnVelocity = ownV, Z = z,
+                Ms = now, ArriveMs = now + latencyMs, From = ship.Position, OwnVelocity = ownV, Z = z,
                 RangeM = Earth.Distance(ship.Position, z), BearingDeg = Earth.Bearing(ship.Position, z), SigmaRangeM = sr, SigmaBearingRad = sb, R11 = r11,
                 R12 = r12, R22 = r22,
             };
@@ -779,10 +787,6 @@ public sealed class GunnerySystem : IWorldSystem
         }
 
         // solve, and order the mounts
-        ref readonly var row = ref cls.Batteries[fc.Battery];
-        var mounts = cls.Links(row.Mounts);
-        var table = shells.Ballistics[fc.Table];
-        var muzzle = Muzzle(cls, frame, mounts[0]);
         fc.Sees = sees;
         var aim = Aim(ref fc, f, table, muzzle, now, ship.Position, ownV, target, crew);
         bool laid = FireControl.Solve(table, muzzle, ship.Forward * ship.Speed, aim, out var lay, fc.ElevationDeg);
@@ -1009,24 +1013,9 @@ public sealed class GunnerySystem : IWorldSystem
         fc.Tracker.At(fc.Fit.Computer, now, now, ownP, ownV, out var here, out _);
         var lead = (target.Position + (c - here)).Normalized() * Earth.Radius;
         double range = Earth.Distance(ownP, c), present = Earth.Distance(ownP, lead);
-        var tc = target.Handling.Class;
-        double side = Math.Max(tc.Hull.DeckTop(0) - tc.Vertical.Waterline, 1);
-        // her danger space at her present range (not the computer's: a clock run past her closest approach has her short)
-        double h0 = muzzle.Length - Earth.Radius, e = table.ElevationFor(present, h0, 1, fc.ElevationDeg);
-        if (double.IsNaN(e))
+        double h0 = muzzle.Length - Earth.Radius;
+        if (PointBlankAt(fc, f, table, h0, present, target, crew, out double danger, out double sigma, out double bias) is not { } pb)
             return c;
-        double fall = table.Fall(e, h0).FallDeg;
-        double danger = side / Math.Tan(double.DegreesToRadians(Math.Max(fall, 0.05)));
-        // the error of laying at her present range unspotted: the sight's, and the computer's residual ballistic bias (the
-        // propellant, the air, the gun's wear; small at short range: a share of the range)
-        var (sigma, bias) = PresentRangeError(fc, f, crew, present);
-        double resid = fc.Fit.Computer.ResidPct / 100 * present;
-        // point blank where the danger space covers the error, or where the layers read their own falls finely enough to walk
-        // them onto her (their spotting error from their guns' height under a quarter of it: the user, 2026-10-18)
-        double own = settings.SpotOpticK * settings.GunneryCombat * present * present / Math.Max(h0, 1);
-        // in at the test, out only with a margin past it (no flicking at its edge)
-        double margin = fc.WasPointBlank ? 0.75 : 1;
-        bool pb = danger * margin >= 2 * Math.Sqrt(sigma * sigma + bias * bias + resid * resid) || own <= 0.25 * danger / margin;
         if (pb && !fc.WasPointBlank && now - fc.PbLeftMs > 60_000)
         {
             // into the band: the sight set to her present range as judged then, nothing walked onto it yet (back within a
@@ -1043,6 +1032,31 @@ public sealed class GunnerySystem : IWorldSystem
         var fw = Earth.Forward(p, Earth.Bearing(ownP, lead));
         Earth.Advance(ref p, ref fw, range);
         return p;
+    }
+
+    /// <summary>Whether laying at a target's present range by sight is point blank (<see cref="Aim"/>): her side's danger space
+    /// at that range covers twice the error of it (the sight's, and the computer's residual ballistic bias: the propellant,
+    /// the air, the gun's wear; small at short range, a share of the range), or the layers read their own falls finely
+    /// enough to walk them onto her (their spotting error from their guns' height under a quarter of it: the user,
+    /// 2026-10-18); in at the test, out only with a margin past it (no flicking at its edge). Null where the guns can't
+    /// reach her.</summary>
+    bool? PointBlankAt(in Fc fc, int f, BallisticTable table, double h0, double present, in ShipState target, in GunneryCrew crew,
+        out double danger, out double sigma, out double bias)
+    {
+        (danger, sigma, bias) = (0, 0, 0);
+        // her danger space at her present range (not the computer's: a clock run past her closest approach has her short)
+        double e = table.ElevationFor(present, h0, 1, fc.ElevationDeg);
+        if (double.IsNaN(e))
+            return null;
+        var tc = target.Handling.Class;
+        double side = Math.Max(tc.Hull.DeckTop(0) - tc.Vertical.Waterline, 1);
+        double fall = table.Fall(e, h0).FallDeg;
+        danger = side / Math.Tan(double.DegreesToRadians(Math.Max(fall, 0.05)));
+        (sigma, bias) = PresentRangeError(fc, f, crew, present);
+        double resid = fc.Fit.Computer.ResidPct / 100 * present;
+        double own = settings.SpotOpticK * settings.GunneryCombat * present * present / Math.Max(h0, 1);
+        double margin = fc.WasPointBlank ? 0.75 : 1;
+        return danger * margin >= 2 * Math.Sqrt(sigma * sigma + bias * bias + resid * resid) || own <= 0.25 * danger / margin;
     }
 
     /// <summary>The error of a battery's present range by sight (point blank): its first instrument's, or its layer's eye's

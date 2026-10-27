@@ -109,7 +109,7 @@ public class FireOrderTests(ITestOutputHelper output)
     public void Secondaries_take_a_battleship_alongside_over_a_boat_far_off_and_open_at_once()
     {
         // the user, 2026-10-27: a battleship's 6" left one 1.5 km abeam for a destroyer 8 km off (the type came before the
-        // range), and by eye waited up to a minute for its first reading
+        // range), and by eye waited up to a minute for its first reading, then 20 s for the plot (point blank: none)
         var (w, _) = Make(new Placed("super_dreadnought", 0, 0, 0, 10, 0), new Placed("dreadnought", 90, 1_500, 0, 10, 1),
             new Placed("destroyer", 95, 8_000, 0, 10, 1));
         var cls = Fleet.Get("super_dreadnought").Class!;
@@ -128,7 +128,28 @@ public class FireOrderTests(ITestOutputHelper output)
         Assert.Equal(2, Target(w, 1, starboard));
         var t = w.Gunnery.TallyOf(1, starboard)!.Value;
         output.WriteLine($"engaged after {(engaged - Start.Ms) / 1000} s, first salvo {(w.Time.Ms - engaged) / 1000} s later, {t.Hits} hits");
-        Assert.True(t.Salvos > 0 && w.Time.Ms - engaged <= 30_000, "opened within half a minute of taking her");
+        Assert.True(t.Salvos > 0 && w.Time.Ms - engaged <= 12_000, "opened as her guns came round on her");
+    }
+
+    [Fact]
+    public void Secondaries_at_will_hold_fire_below_doctrines_hit_floor()
+    {
+        // a battleship at 11 km: the 15" fire, the 6" by eye don't (the matchup has them hitting her with under 1% of their
+        // shells there); at 7 km they do. Doctrine's floor at 0, they take her at 11 km too
+        foreach (var (km, floor, takes) in new[] { (11.0, 0.01, false), (7.0, 0.01, true), (11.0, 0.0, true) })
+        {
+            var (w, ai) = Make(new Placed("super_dreadnought", 0, 0, 0, 10, 0), new Placed("dreadnought", 90, km * 1000, 0, 10, 1));
+            w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.SecondaryHitFloor, floor));
+            Run(w, 60);
+            var cls = Fleet.Get("super_dreadnought").Class!;
+            bool any = false;
+            for (int b = 0; b < cls.Batteries.Length; b++)
+                if (!cls.Batteries[b].Chief)
+                    any |= Target(w, 1, b) == 2;
+            output.WriteLine($"{km} km, floor {floor}: main on {Target(w, 1, 0)}, a secondary on her: {any}");
+            Assert.Equal(2, Target(w, 1, 0));
+            Assert.Equal(takes, any);
+        }
     }
 
     [Fact]
