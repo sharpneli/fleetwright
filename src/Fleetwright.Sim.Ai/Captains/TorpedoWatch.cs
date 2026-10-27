@@ -75,6 +75,97 @@ public sealed class TorpedoWatch
         return soonest < double.MaxValue;
     }
 
+    readonly CubeIndex watchedAt = new();
+
+    /// <summary>The coarse tier's lookouts (docs/battle/coarse.md J3): a coarse captain thinks once a minute, so the first
+    /// moment before <paramref name="untilMs"/> that a running torpedo comes within sight of one of
+    /// <paramref name="watched"/> (slots) is worked out along both tracks, the torpedo's run and the ship's segment (straight
+    /// on from its end), to wake her captain then for the same test (<see cref="Threat"/>); long.MaxValue if none. A track
+    /// in sight already is the think's. Sampled every <see cref="SampleMs"/>, then halved to <see cref="EdgeMs"/>.</summary>
+    public long NextSeen(in AiContext ctx, List<int> watched, long untilMs)
+    {
+        var torpedoes = ctx.World.Torpedoes;
+        long now = ctx.NowMs;
+        if (torpedoes.Running == 0 || watched.Count == 0 || untilMs <= now)
+            return long.MaxValue;
+        var s = ctx.Settings;
+        var store = ctx.Ships;
+        double span = (untilMs - now) / 1000.0, fastest = 0, torpedo = 0;
+        foreach (int slot in watched)
+            fastest = Math.Max(fastest, Math.Abs(store[slot].Speed));
+        for (int i = 0; i < torpedoes.Slots; i++)
+            if (torpedoes[i].Alive)
+                torpedo = Math.Max(torpedo, torpedoes[i].SpeedMs);
+        watchedAt.Clear(store.Slots, s.TorpedoSeenM + (fastest + torpedo) * span);
+        foreach (int slot in watched)
+            watchedAt.Add(slot, store[slot].Position);
+        long first = long.MaxValue;
+        for (int i = 0; i < torpedoes.Slots; i++)
+        {
+            ref readonly var t = ref torpedoes[i];
+            if (!t.Alive)
+                continue;
+            long end = Math.Min(untilMs, Math.Min(first, t.LaunchMs + (long)(t.EndS * 1000)));
+            if (end <= now)
+                continue;
+            int n = watchedAt.Near(TorpedoSystem.Where(t, now).Position);
+            foreach (int slot in watchedAt.Found(n))
+            {
+                var p = store[slot].Position;
+                double seen = Light.SunElevationDeg(p, ctx.World.Time) > s.TorpedoDayElevationDeg ? s.TorpedoSeenM : s.TorpedoSeenNightM;
+                long at = Entry(store, slot, t, now, end, seen * seen);
+                if (at < first)
+                    (first, end) = (at, at);
+            }
+        }
+        return first;
+    }
+
+    const long SampleMs = 2_000, EdgeMs = 50;
+
+    /// <summary>When a torpedo first comes within sight (squared, m²) of a ship between two moments, ms; long.MaxValue if it
+    /// doesn't, or is in sight from the start.</summary>
+    static long Entry(ShipStore store, int slot, in TorpedoSystem.Torpedo t, long from, long to, double seen2)
+    {
+        if (Apart2(store, slot, t, from) <= seen2)
+            return long.MaxValue;
+        for (long lo = from; lo < to;)
+        {
+            long hi = Math.Min(lo + SampleMs, to);
+            if (Apart2(store, slot, t, hi) <= seen2)
+            {
+                while (hi - lo > EdgeMs)
+                {
+                    long mid = (lo + hi) / 2;
+                    if (Apart2(store, slot, t, mid) <= seen2)
+                        hi = mid;
+                    else
+                        lo = mid;
+                }
+                return hi;
+            }
+            lo = hi;
+        }
+        return long.MaxValue;
+    }
+
+    static double Apart2(ShipStore store, int slot, in TorpedoSystem.Torpedo t, long ms) => (TorpedoSystem.Where(t, ms).Position - ShipAt(store, slot, ms)).LengthSquared;
+
+    /// <summary>Where a coarse ship will be: on her segment while it lasts, straight on at its end's speed after (her next
+    /// segment isn't laid yet; a wrong guess only moves the wake, which tests her as she is).</summary>
+    static Vec3d ShipAt(ShipStore store, int slot, long ms)
+    {
+        long end = store.SegmentEndMs(slot);
+        if (ms <= end)
+        {
+            store.PoseAt(slot, ms, out var p, out _);
+            return p;
+        }
+        store.PoseAt(slot, end, out var q, out var f);
+        Earth.Advance(ref q, ref f, store.SpeedAt(slot, end) * (ms - end) / 1000.0);
+        return q;
+    }
+
     static double Turn(double from, double to)
     {
         double d = to - from;

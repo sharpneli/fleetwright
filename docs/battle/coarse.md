@@ -1,6 +1,6 @@
 # Plan: fighting in the coarse tier
 Status: **agreed 2026-10-26** (drafted and answered the same day: "Decided" at the end). J0 (the bench) done
-2026-10-26; J1 (the step mode) done 2026-10-27; J2 (guns in coarse) done 2026-10-27 (the speed it makes taken as it is, decision 3); J3 (torpedoes) next. It takes over `fighting.md` 4.8
+2026-10-26; J1 (the step mode) done 2026-10-27; J2 (guns in coarse) done 2026-10-27 (the speed it makes taken as it is, decision 3); J3 (torpedoes) done 2026-10-27; J4 (dodging) next. It takes over `fighting.md` 4.8
 (damage in the coarse tier) and 4.9 (coarse fire), and the parts of `plan.md` 2.8 that touch fighting. Those sections
 only point here.
 
@@ -309,6 +309,31 @@ Each step ends with something to run and watch in the step mode, and with the pa
   **The user, 2026-10-27:** "perfectly fine for now", after test games ("I wasn't expecting the shells to be that nice"). The
   target is revisited (decision 3), no lever taken; the split above is kept for when speed comes up again.
 
+**J3 done (2026-10-27).**
+- **Launches:** J2 already made them at the coarse think: the captains' own (`Torpedoes`, in `Aim`) and the flotilla
+  admiral's signal (`FireOnSignal`). The signal was the path J0 found firing coarse before any of it.
+- **Tracks seen at their moment:** a coarse captain thinks once a minute, so his lookouts get a wake of their own. When
+  torpedoes enter the water (`TorpedoSystem.Launched`, the AI's hook) and after each captains' think,
+  `TorpedoWatch.NextSeen` works out the first moment before the next think that a running torpedo comes within sight
+  of a coarse ship that's fighting (in an encounter, or a battery engaged). It follows both tracks ahead: the
+  torpedo's run, and the ship's segment, then straight on from its end. It samples every 2 s, then halves to 50 ms. The
+  AI wakes then (`AiSystem`'s one pending watch, its time and generation in the hash once used) and runs the think's
+  own test (`Comb`) for those ships. A comb's end is a wake too, so she gives her course back on time. A guess the
+  ship's next segment makes wrong only moves the wake: the test there is the real one.
+- **Combing in every tier:** `Comb` runs at the coarse think and at the watch's wakes.
+- **Checked:** `TorpedoEvasionTests`. The coarse captain is ordered to comb at the moment the spread comes into sight
+  (108.60 s), and the fine tick at its next second (109.05 s). She gives her course back. Combing buys her as many
+  hits saved at 1,000× as at 1× (seeds 1-6: coarse 0 of 24 against 10 holding on; fine 3 against 10).
+- **Parity** (`2026-10-27-standard-j3.json`): 95 ok, 10 FAIL, 81 noisy. Åland's Finnish torpedo hits went from +257% to -26%,
+  inside the band. **What it shows next:** torpedo hits now run low in coarse across the scenarios (Tsushima's Japanese
+  -95%, the prizes' war's French -82%, the Dover Strait's -72% and -54%, Åland's Swedish -38%). A coarse comb turns at once,
+  with no helm lag: in the evasion bench she's ordered to comb at the same moment as on the fine tick, but on the
+  fine tick she takes 14 s to swing her first 2°. So combing asks for J4's helm lag. Two measures noisy at J2 now fail
+  on the same cause: the Dover Strait's German tonnage lost (+103%) and the prizes' war's Italian ships lost (-62%,
+  France's torpedo hits -82%).
+- **Left for J4:** the flotilla's boats still fire 1.4 times a run coarse against 0.06 fine, hit 30-44% more. Their attack
+  run is steered at the think, so coarse holds a minute's leg where fine turns away; J4 lays it ahead as a route.
+
 ## Decided
 
 The user's, 2026-10-26:
@@ -331,3 +356,4 @@ The user's, 2026-10-26:
 | 2026-10-26 | 0e08e9f3 (fight duels at 300 runs after it) | standard, 300 runs, 48 seeds: 186 measures, 10 min | coarse silent: every gunnery measure -100%; the flotilla's boats all fire coarse (10.9 torpedo hits a run against 0) | 37 ok, 139 FAIL, 10 noisy: expected before J2. Fine's baseline kept (`2026-10-26-standard.json`); its rerun gave the same numbers |
 | 2026-10-26 | 0e08e9f3 | full's big three (Heligoland Bight, Dogger Bank, the Jutland), 8 seeds: 45 measures, 8 min on 16 threads | the Jutland's exchange 0.82 coarse against 0.36 fine on torpedoes alone; ships lost -72% to -98% | 5 ok, 29 FAIL, 11 noisy: expected before J2 (`2026-10-26-full-big-three-8-seeds.json`) |
 | 2026-10-27 | J2 (guns in coarse) | standard, coarse only against the 2026-10-26 fine baseline: 186 measures, 4.3 min on 32 threads | the haze duel +36% hits (the minute's look holds a target fine loses); the Dover Strait's hit % +77%; the flotilla's boats fire torpedoes 1.4 a run against 0.06 | 95 ok, 9 FAIL, 82 noisy: the fails J3-J5's (`2026-10-27-standard-j2.json`) |
+| 2026-10-27 | J3 (torpedoes in coarse) | standard, coarse only against the 2026-10-26 fine baseline: 186 measures, 4.9 min on 32 threads | torpedo hits low across the scenarios (Japan -95%, France -82%): coarse combs turn with no helm lag; the flotilla's launches 1.4 a run against 0.06 | 95 ok, 10 FAIL, 81 noisy: Åland's torpedo hits fixed; the rest J4's and J5's (`2026-10-27-standard-j3.json`) |

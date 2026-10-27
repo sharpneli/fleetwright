@@ -97,6 +97,10 @@ public sealed class TorpedoSystem : IWorldSystem
     double[] bearings = new double[16];
     readonly int[] launched = new int[64];
 
+    /// <summary>Told when torpedoes enter the water, from the launch's event: the AI's coarse torpedo watch works out when
+    /// lookouts first see them (docs/battle/coarse.md J3). Not world state; whoever sets it is deterministic.</summary>
+    public Action<World>? Launched { get; set; }
+
     /// <summary>Torpedoes running now; hits and ends (sunk at the end of their run, or failed) so far.</summary>
     public int Running => alive;
     public int Hits { get; private set; }
@@ -402,6 +406,7 @@ public sealed class TorpedoSystem : IWorldSystem
         store.Combat.Launched(slot, pe.Launcher, row, count, now);
         log.Add(new CombatEntry(now, CombatEvent.Torpedoes, pe.Shooter, pe.Launcher, pe.Target, count, Source: HitSource.Torpedo));
         fired = true;
+        Launched?.Invoke(world);
     }
 
     /// <summary>A target as its navy takes it: its length (the spread's width) and the depth set for it, from the class

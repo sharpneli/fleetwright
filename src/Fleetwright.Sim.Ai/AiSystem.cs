@@ -87,6 +87,29 @@ public sealed class AiSystem : IWorldSystem
         probes = world.Probes;
         layerProbes = [.. layers.Select(l => probes.Register("AI: " + l.GetType().Name))];
         Id = world.Register(this);
+        world.Torpedoes.Launched = WatchTracks;
+    }
+
+    // the coarse torpedo watch's one wake (docs/battle/coarse.md J3): its moment, -1 with none, and its generation
+    const ushort TrackWatch = 100;
+    long watchMs = -1;
+    int watchGen;
+
+    /// <summary>The coarse captains' torpedo watch: woken at the first moment before their next think that a running
+    /// torpedo comes into a coarse fighting ship's sight, or a comb ends (<see cref="CaptainLayer.NextTrackSeen"/>). Worked
+    /// out again after their think and when torpedoes enter the water; a wake due sooner stands.</summary>
+    void WatchTracks(World world)
+    {
+        if (world.Ships.Store.CoarseCount == 0)
+            return;
+        int captains = Array.IndexOf(layers, Captains);
+        long until = nextTick[captains] >= 0 ? nextTick[captains] : world.Time.Ms + world.Settings.CoarseStepMs;
+        long next = Captains.NextTrackSeen(Context(world), until);
+        if (next >= until || watchMs >= 0 && watchMs <= next)
+            return;
+        watchMs = next;
+        watchGen++;
+        world.Schedule(new WorldTime(next), EventTier.Fine, -layers.Length - 1, Id, TrackWatch, watchGen);
     }
 
     AiContext Context(World world) => new(world, picture, Id);
@@ -217,14 +240,27 @@ public sealed class AiSystem : IWorldSystem
 
     public void Handle(World world, in SimEvent e)
     {
+        long t = Probes.Now;
+        if (e.Code == TrackWatch)
+        {
+            if (e.Generation != watchGen)
+                return;
+            watchMs = -1;
+            Captains.WatchTracks(Context(world));
+            probes.Add(layerProbes[Array.IndexOf(layers, Captains)], t);
+            WakeAll(world);
+            WatchTracks(world);
+            return;
+        }
         int layer = e.Code;
         if (e.Generation != tickGen[layer])
             return;   // replaced by a sooner one
         nextTick[layer] = -1;
-        long t = Probes.Now;
         layers[layer].Think(Context(world));
         probes.Add(layerProbes[layer], t);
         WakeAll(world);   // a layer's orders can give the one below something to do (an admiral's first stations)
+        if (layers[layer] == Captains)
+            WatchTracks(world);
     }
 
     public void Hash(ref StateHash h)
@@ -233,6 +269,11 @@ public sealed class AiSystem : IWorldSystem
             h.Add(t);
         foreach (int g in tickGen)
             h.Add(g);
+        if (watchGen != 0)
+        {
+            h.Add(watchMs);   // only then, so a world never coarse in a fight hashes as it did before the watch
+            h.Add(watchGen);
+        }
         foreach (var l in layers)
             l.Hash(ref h);
         Doctrine.Hash(ref h);

@@ -36,11 +36,12 @@ namespace Fleetwright.Sim.Ai.Captains;
 /// before the next.</item>
 /// </list>
 /// All of it runs in every clock tier at the captain's think: each second on the fine tick, each minute coarse
-/// (docs/battle/coarse.md J2). Only combing a torpedo's track is the fine tick's until the coarse watch sees a track at
-/// its moment (J3).</summary>
+/// (docs/battle/coarse.md J2). A coarse captain also combs between thinks: woken when a running torpedo first comes into
+/// his lookouts' sight, worked out ahead along both tracks, and when his comb is done (<see cref="NextTrackSeen"/>,
+/// <see cref="WatchTracks"/>, J3).</summary>
 public sealed partial class CaptainLayer
 {
-    readonly List<int> fighters = new(64);
+    readonly List<int> fighters = new(64), watched = new(64);
     readonly LineOfFire lines = new();
     readonly TorpedoWatch torpedoWatch = new();
     double[] underFire = [];   // by slot: the range of the nearest enemy battery on her, m (0: none), as of this think
@@ -102,8 +103,7 @@ public sealed partial class CaptainLayer
                 cap.TorpedoHeld = false;   // out of her flotilla's line: her torpedoes her own again
             FallOut(ctx, ref cap, own, slot);
             OutOfRounds(ctx, ref cap, own);
-            if (own.Tier == ClockTier.Fine)
-                Comb(ctx, ref cap, own);   // a track seen a minute late can't be combed: coarse waits for J3's watch at its moment
+            Comb(ctx, ref cap, own);   // coarse, also when a track comes into sight between thinks (WatchTracks)
             TakeUpStanding(ctx, ref cap, own, slot);
             Aim(ctx, ref cap, own, slot);
             if (store.Combat.Engaged(slot) > 0)
@@ -111,6 +111,42 @@ public sealed partial class CaptainLayer
                 fighting++;
                 fightingFine |= own.Tier == ClockTier.Fine;
             }
+        }
+    }
+
+    /// <summary>The coarse tier's next wake for the torpedo watch before <paramref name="untilMs"/> (the captains' next
+    /// think), ms, or long.MaxValue: the first moment a running torpedo comes into sight of a coarse ship that's fighting
+    /// (in an encounter, or a battery engaged), or a comb of one of them is done (docs/battle/coarse.md J3).</summary>
+    internal long NextTrackSeen(in AiContext ctx, long untilMs)
+    {
+        CoarseFighters(ctx);
+        long next = torpedoWatch.NextSeen(ctx, watched, untilMs);
+        foreach (int slot in watched)
+            if (Find(ctx.Ships[slot].Entity) is int i and >= 0 && captains[i].CombUntilMs > ctx.NowMs)
+                next = Math.Min(next, captains[i].CombUntilMs);
+        return next;
+    }
+
+    /// <summary>The coarse torpedo watch's wake: each coarse fighting ship's lookouts, by the think's own test (<see cref="Comb"/>).</summary>
+    internal void WatchTracks(in AiContext ctx)
+    {
+        CoarseFighters(ctx);
+        foreach (int slot in watched)
+        {
+            var own = ctx.Ships[slot];
+            Comb(ctx, ref Get(own.Entity), own);
+        }
+    }
+
+    void CoarseFighters(in AiContext ctx)
+    {
+        var store = ctx.Ships;
+        watched.Clear();
+        for (int k = 0; k < store.CoarseCount; k++)
+        {
+            int slot = store.CoarseSlot(k);
+            if (encounters.Of(slot, store[slot].Entity) != 0 || store.Combat.Engaged(slot) > 0)
+                watched.Add(slot);
         }
     }
 
