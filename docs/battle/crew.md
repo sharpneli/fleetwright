@@ -67,8 +67,8 @@ a zombie."
   doctrine, one a period, as E8b set them. No per-navy values.
 - **Rough where it doesn't decide.** Reliefs move as counts between groups after a walking delay. There are no
   individual men and no paths through the ship.
-- **Player may overrule.** Doctrine sets the default. Later, an order can clear the upper deck or keep the guns
-  manned (the posture, N4).
+- **The captain's, not the player's.** Where the men stand is the captain's call by the side's doctrine (decision 2).
+  The player sets the doctrine before action, and doesn't manage the men in it.
 - **Same at any compression.** Reliefs and station shares change on minute clocks and on hits, the same in fine and
   coarse.
 - **No garbage per frame.** Group arrays at spawn. `Functions.Evaluate` runs when the condition changes, as now.
@@ -85,9 +85,13 @@ a zombie."
    - A live mount's handling room is never stripped: guns without ammunition are as silent as guns without crews. The
      stokehold and the parties' floor are kept.
 
-   This is doctrine, so a period's doctrine and later the player may order otherwise. It's open to revision once it
-   plays.
-2. **Posture waits for the UI pass**, where the player's order lives. N4 moves there.
+   This is doctrine: a period's doctrine may order it otherwise, and the player picks the doctrine at launch, not the
+   men (decision 2). It's open to revision once it plays.
+2. **Posture is part of the reliefs: the captain's and the crew's, not the player's** (the user: "I don't think as a
+   player I want to care about the decision on that level"). They're one question: where each man stands now. The
+   captain keeps men at the stations that are fighting and sends the rest under cover. Those men under cover are the
+   reserve the reliefs come from. Built in N3. N4 is gone. The player's only say is the side's doctrine at launch
+   (standing orders, later the difficulty sliders).
 3. **Striking colours and abandoning ship are the captain's call, after this plan.** A command step of its own, once a
    ship with nobody left to fight her exists. **And the captains stop shooting at burning wrecks that show no sign of
    life.** If one of her guns fires, she's taken under fire again at once, as happened in the record (Wiesbaden at
@@ -129,14 +133,20 @@ worked. The aim is the ranges by type, not replicas.
   - **Machinery:** steam by the stokehold's men, with a floor. A boiler room keeps its steam for a while on what's
     already in the fires.
   - Read in `Functions.Evaluate` from `Casualties.Men` (it already runs on every hit).
-- **N3 Reliefs.** When a station falls below its need, men walk to it after a delay of minutes, by the sections
+- **N3 Posture and reliefs** (decision 2): where each man stands, decided by the captain at each think.
+  - **Closed up or under cover, per station:** a station that's fighting keeps its men at it. One that can't bear, has
+    nothing worth its fire (a 75 mm against a battleship at 8 km) or is wrecked sends its men under cover, behind
+    plating or below the armour deck (16 §4.9: cover 0.2, prone). They go back when it's needed again, after the walking
+    delay below. With the conn, the directors and the stokehold, there's no choice: they're always manned.
+  - **Under cover is a group** of its own, in the cells the men shelter in, so a hit there still counts them.
+  - **The men under cover are the reserve the reliefs draw from.**
+
+  When a station falls below its need, men walk to it after a delay of minutes, by the sections
   between. They come in the doctrine's order (decision 1): the crews of mounts that can't bear, those of wrecked
   mounts and their handling men, the idle hands, then the repair men above the floor. They stop at the floor
   the doctrine keeps for the parties and the stokehold. A relief joins the station's group, so the next hit there finds
   him. The walking wounded come back to their own station as now. Doctrine fields: `ReliefOrder`, `ReliefFloorShare`,
   `ReliefWalkS` per section, one a period.
-- **N4 Posture:** moved to the UI pass (decision 2). It's the ship-wide stance from 16 §4.9: closed up, or under
-  cover. Under cover, the open stations' men go behind plating (cover 0.2) and those stations stop.
 - **N5 The end of her.** No new fall-out knob. Fall-out already reads the main guns, and those now go silent for want
   of men. A ship whose parties are spent can't fight her fires, and fire's own model takes her from there: they spread,
   the magazines are threatened and flooded or not.
@@ -158,6 +168,5 @@ worked. The aim is the ranges by type, not replicas.
 
 - **The captain strikes or abandons** (decision 3): a command step (`command.md`). This is a ship that can't fight,
   with her men alive or dying. Oryol surrendered with most of her crew alive.
-- **Posture** in the UI pass (decision 2).
 - **Cover's fine-tuning** (decision 4): Oryol's losses came through ports and slits. E6 gives a gunhouse's men 0.45
   cover; sighting ports and conning tower slits may need their own way in.
