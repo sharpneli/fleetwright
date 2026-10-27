@@ -31,9 +31,11 @@ public sealed partial class MapScene
 
     static readonly Vector4 Ok = Theme.Ok, Fire = Theme.Fire;
 
-    // the card's body as it's laid out: its draw list, left and width, and where the next piece goes
+    // the card's body as it's laid out: its draw list, left and width, and where the next piece goes; cardScaleW is the
+    // width with the scrollbar always taken off, for anything whose height follows its width (else the scrollbar
+    // comes and goes a frame each: taller without it, so it shows, shorter with it, so it hides)
     ImDrawListPtr cdl;
-    float cardX, cardW, cardY;
+    float cardX, cardW, cardY, cardScaleW;
     /// <summary>The title strips folded shut (by title, for every card).</summary>
     readonly HashSet<string> shutStrips = [];
 
@@ -108,6 +110,7 @@ public sealed partial class MapScene
                 cdl = ImGui.GetWindowDrawList();
                 var o = ImGui.GetCursorScreenPos();
                 (cardX, cardW, cardY) = (o.X, ImGui.GetContentRegionAvail().X, o.Y);
+                cardScaleW = Math.Min(cardW, ws.X - ImGui.GetStyle().ScrollbarSize);
                 if (enemy)
                     EnemyCard(s, live);
                 else if (unit >= 0)
@@ -453,7 +456,7 @@ public sealed partial class MapScene
         var d = s.Details;
         // the sim's own attitude for the moment (going down too: the one the sprite and the hit queries see)
         var att = Attitude.At(cls, v.Attitude[k], v.Loss[k], v.LossMs[k], v.GoneMs[k], world.DrawMs);
-        cardY += Plate(cdl, new Vector2(cardX, cardY), cardW, s, k, cls, di, att);
+        cardY += Plate(cdl, new Vector2(cardX, cardY), cardW, cardScaleW, s, k, cls, di, att);
         cdl.HLine(cardX, cardX + cardW, cardY, T.Edge);
         // the clinometer, the readings beside it
         float cw = P(104), h = 5 * RowH;

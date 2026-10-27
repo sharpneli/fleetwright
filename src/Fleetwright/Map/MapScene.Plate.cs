@@ -226,8 +226,9 @@ public sealed partial class MapScene
         _ => T.PlanLine,
     };
 
-    /// <summary>The plate across <paramref name="w"/> from <paramref name="a"/>: its height.</summary>
-    float Plate(ImDrawListPtr dl, Vector2 a, float w, Snapshot s, int k, ShipClass cls, int di, in Attitude att)
+    /// <summary>The plate across <paramref name="w"/> from <paramref name="a"/>, scaled to <paramref name="scaleW"/>
+    /// (centred in the rest): its height.</summary>
+    float Plate(ImDrawListPtr dl, Vector2 a, float w, float scaleW, Snapshot s, int k, ShipClass cls, int di, in Attitude att)
     {
         var sh = PlateOf(cls);
         var v = s.Ships;
@@ -235,8 +236,8 @@ public sealed partial class MapScene
         var vert = cls.Vertical;
         var comps = cls.Components;
         var cells = cls.Cells;
-        float mx = P(12);
-        double sc = (w - 2 * mx) / Math.Max(sh.X1 - sh.X0, 1), zs = 2 * sc;   // heights ×2: PlateMap
+        float mx = P(12) + (w - scaleW) / 2;
+        double sc = (scaleW - 2 * P(12)) / Math.Max(sh.X1 - sh.X0, 1), zs = 2 * sc;   // heights ×2: PlateMap
         float pTop = a.Y + P(16), pBottom = pTop + (float)((sh.ZHigh - vert.Keel) * zs), sea = P(18);
         float planCy = pBottom + sea + P(12) + (float)(cls.Beam * sc / 2);
         float stripY = planCy + (float)(cls.Beam * sc / 2) + P(12);
