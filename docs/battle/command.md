@@ -269,7 +269,8 @@ flotillas all read the matchup: one implementation.
 Every unit's layer keeps its `Status` and a reason (a small code: "falling out: speed", "turning away: torpedoes",
 "holding fire: unidentified", "can't: lost contact"), in the hash and the snapshot. Superiors read the status; the
 UI shows the reason on the ship's or group's label, and the decisions that are the player's (a captain asking to fall
-out of the player's line, a squadron out of contact) become 2.6's notices, which 5.2 turns into the decision queue.
+out of the player's line, a squadron out of contact) become 2.6's notices, shown in 5.2's event log (no decision
+queue: decision 15).
 
 ### Signals: orders take time
 
@@ -1254,8 +1255,8 @@ What step 5.1 leaves it to show:
 - **The doctrine card** per side and unit, and the tasks in the radial menu with the smart default.
 - **Leave it to the admiral:** any unit, or the whole side, handed to the AI; and the commander's suggestion for the
   player's held units.
-- **The decision queue and the event log** (the research's two streams): notices, captains asking to fall out, contact
-  reports, losses; each item jumps the camera.
+- **The event log:** notices, captains asking to fall out, contact reports, losses. The decision queue is scrapped
+  (decision 15): nothing moves the camera on its own.
 - **The rumble** for a fight at speed (fighting.md decision 4) is designed here.
 
 ## Where it lives
@@ -1355,3 +1356,6 @@ The user's, 2026-10-14, on the questions:
     big for anyone to steer every squadron, and switching the AI on by hand each time is tedious. Every side's commander
     starts on; the player takes whichever units they want (any order by hand takes one; its AI tag on the rail too) and
     hands them back the same way. "AI commands" on the rail switches the side's commander off and on.
+15. **No decision queue** (the user, 2026-10-27): a queue of things to decide, each jumping the camera, fits a turn-based
+    game, not a real-time one; a camera that jumps is extremely distracting. Notices go to the event log, and the
+    camera moves only when the player moves it.

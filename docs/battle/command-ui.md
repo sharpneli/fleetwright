@@ -317,7 +317,7 @@ Split the information stream in two:
 
 | Stream | Content | Presentation |
 | --- | --- | --- |
-| Decision queue | Things that need the player: contact identified, ship asking to retreat, ammo low, objective threatened | A short stack (≤ 5) at screen edge; each item jumps the camera and pre-selects the relevant ship; dismiss or act |
+| ~~Decision queue~~ | Scrapped (command.md decision 15, 2026-10-27): a turn-based pattern; a jumping camera distracts in real time | — |
 | Event log | Everything that happened: hits, kills, launches, sensor changes | Scrollable, filterable, timestamped; each line clickable to jump camera and time-scrub |
 
 The event log answers the HOI4 complaint that players [can't see who shot whom](https://steamcommunity.com/workshop/filedetails/discussion/1687056790/1850323802578952897). Add a post-battle replay with the same filters.
@@ -372,10 +372,10 @@ Step 3 is where this design differs most from genre norms: nothing is committed 
 ### Screen layout
 
 - **Map: 85%+ of the screen,** always the primary surface.
-- **Top bar:** time state and controls, mission clock, decision queue count.
+- **Top bar:** time state and controls, mission clock.
 - **Left edge:** fleet tree (fleet → groups → ships) that mirrors the map selection; drag ships between groups here.
 - **Bottom-right, contextual:** a selection card with doctrine, stance and key stats for whatever is selected. It shrinks to a strip at fleet zoom and expands at ship zoom.
-- **Right edge:** decision queue (≤ 5 items) above a collapsible event log.
+- **Right edge:** a collapsible event log.
 - **Nothing modal during combat** except the radial menu, which closes on release.
 
 ### Prototype and test plan

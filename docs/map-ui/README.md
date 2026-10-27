@@ -138,8 +138,8 @@ In v2 this is the details view of the selection strip (V); the strip itself carr
   architecture's tiers of time, made visible).
 - **Actions in progress** (right, top): one card per open encounter, each with a live mini-plot, so three battles on
   three oceans can be watched at once and jumped to. A world war has several at a time.
-- **Decisions** (≤5): things that need you, each jumps the camera and preselects. **Log** below, filterable, every
-  line naming a ship jumps to it.
+- **Log**, filterable, every line naming a ship jumps to it when clicked. No decision queue (command.md decision 15:
+  the camera never moves on its own).
 - **No needless busywork.** A decision is a real choice with a consequence the player cares about: hold the line
   with a damaged flagship or haul out, scatter a convoy or keep formation, treat an unidentified contact as the High
   Seas Fleet. Anything the simulation models at a lower level is handled by the AI at that level and shown, not asked:
