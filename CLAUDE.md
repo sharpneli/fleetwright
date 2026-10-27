@@ -466,6 +466,13 @@ Coarse, Fine: how time advances) are different things (`docs/world/architecture.
 rests its clock only on a moment's boundary, so commands replay exactly; a world system is an `IWorldSystem` with its
 events as plain structs, and nothing in a step allocates (the tests check it).
 
+The coarse tier approximates the fine one, never history (`docs/battle/coarse.md`: the ladder decides how each piece keeps
+matching). `CoarseParityTests` keep a small duel panel and the coarse invariants in the suite: that's all a change
+runs. `shipgen coarse-parity` runs only at sync points: the standard panel at the end of a coarse plan step and around a
+balancing pass (both ways if fine moved, ~14 min; else coarse only with `--fine-from` the latest kept baseline, ~4 min),
+with a row in coarse.md's parity log. The full panel runs when the coarse tier is released to players. A band never
+widens without the user's approval.
+
 Content paths in code (`"Content/Shaders/Compiled/..."`) resolve against `AppContext.BaseDirectory`, not the working directory.
 
 ## UI look

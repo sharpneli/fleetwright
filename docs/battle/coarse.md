@@ -1,7 +1,8 @@
 # Plan: fighting in the coarse tier
 Status: **agreed 2026-10-26** (drafted and answered the same day: "Decided" at the end). J0 (the bench) done
 2026-10-26; J1 (the step mode) done 2026-10-27; J2 (guns in coarse) done 2026-10-27 (the speed it makes taken as it is, decision 3); J3 (torpedoes) done 2026-10-27; J4 (dodging) done 2026-10-27; J5 (sighting and smoke) done 2026-10-27, with open fails for the user; J6 (damage at speed) done 2026-10-27; J7 (cheaper fire
-control: its (a), the 3 s grid) done 2026-10-27; J8 next. It takes over `fighting.md` 4.8
+control: its (a), the 3 s grid) done 2026-10-27; J8 (the process) done 2026-10-27: **the plan is complete.** The full panel
+runs when the coarse tier is released to players; the balancing pass comes later (the user). It takes over `fighting.md` 4.8
 (damage in the coarse tier) and 4.9 (coarse fire), and the parts of `plan.md` 2.8 that touch fighting. Those sections
 only point here.
 
@@ -482,6 +483,49 @@ fruit left behind. Decision 3 had taken J2's speed, so this was a check, not a g
   (fine 1.92). Its shell hits and Italian losses came toward fine with it: 173 to 211 hits (fine 246), 0.79 to 1.08
   ships lost (1.71). The fails: the Dover Strait's hit % (+65%, +68%) and Cape Sarych's Ottoman hit % (+75%), the
   night's close fighting (J5); squadrons' German tonnage share (-42%).
+
+**J8 done (2026-10-27): the process in place.**
+- **Running the parity process** (the user, 2026-10-27: too slow to run after every change; the coarse tier won't be
+  used much for now):
+
+  | When | What | Time (32 threads) |
+  |---|---|---|
+  | Every change | the kept tests, with the suite (`CoarseParityTests` and the invariants below) | ~15 s |
+  | A sync point: the end of a coarse plan step, around a balancing pass | `shipgen coarse-parity` (the standard panel), both ways if fine moved | ~14 min |
+  | The same, fine unchanged | `coarse-parity --tier coarse --fine-from docs/battle/coarse-parity/<latest>.json` | ~4 min |
+  | A quick look at fire alone | `coarse-parity --layer duels` | 1.5-3 min |
+  | The coarse tier released to players | `coarse-parity --panel full` (the Jutland at 48 seeds) | over an hour |
+
+  Each sync point's run adds a row to the parity log below; `--out` keeps it in `docs/battle/coarse-parity/`, and the
+  latest both-ways file is the fine baseline. The bench's output is buffered until it ends: start it in the background
+  and wait on the process, don't restart it.
+- **The kept tests** (`CoarseParityTests`, DevRelease, ~15 s):
+  - **The duel panel:** the bench's duels played both ways over 48 fixed seeds, engaged at 90 s once the coarse tier's
+    first look has the ships see each other (the panel compares the fire, not the minute's first sighting). The cases:
+    a battleship duel at 14 km, secondaries on a zigzagging destroyer at 6 km, a light cruiser on a zigzagging
+    destroyer at 8 km. The bands: salvos ±15% (decision 5); hits ±20%, three standard errors of 48 seeds' hits (2-25
+    a run). Today: salvos -1%, -1%, -3%; hits 0%, -11%, -15%.
+  - **The tier crossed mid-engagement,** fine to coarse and back with shells in the air: neither ship moves, the salvos,
+    shells, phase and shells in flight all carry over, and the battery fires on in each tier.
+  - **Coarse fire allocates nothing,** a light cruiser on a zigzagging destroyer with damage on.
+  - **Already kept:** coarse held at any speed and in steps gives the same world
+    (`ScenarioTests.The_coarse_tier_held_is_the_same_at_any_speed_and_in_steps`, the squadrons fight); a replay with
+    tier changes gives the same world (`CoarseTierTests`); the crossing moves no pose; no rung-3 piece exists, so no
+    fingerprint tests.
+- **The check: a fine gunnery change that coarse can't follow,** tried and reverted.
+  - A reading's way into the computer counted in ticks (`ArriveMs` as (latency + 2) fire-control ticks, not its
+    latency): 3 s longer on fine's 1 s tick, 9 s on coarse's 3 s. The panel failed: the light cruiser's hits -31%.
+  - A salvo timed only on every other tick passed. On a 30 s reload the extra wait cost coarse 3-8% of its salvos:
+    under the panel's bands, for the full bench to see. The kept tests catch the large drifts, the sync points the rest.
+- **Found while building the panel (for the balancing pass): a destroyer turning hard and often dodges coarse fire
+  better.**
+  - A regular zigzag (60° turns every 75 s) took 40-50% fewer hits coarse than fine, at a 1 s fire-control grid as
+    well as 3 s. The bench's zigzag picks a side at random, so it turns half as often: -8 to -13% there.
+  - With damage on, a light cruiser on a zigzagging destroyer at 7 km ran -15% to -26% over four seed sets: the
+    destroyer, hit and slowed, is a target the fine tick keeps hitting more.
+  - The likely cause is J4's carried item: a fine ship loses speed in a hard turn, a coarse one keeps her 30 kn.
+- **Not done:** the parity log's first full row (the user, 2026-10-27: a full panel when the coarse tier is released).
+  The standard panel at J7 is the last sync point.
 
 ## Decided
 
