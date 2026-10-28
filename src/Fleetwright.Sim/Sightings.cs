@@ -461,6 +461,7 @@ public sealed class Sightings
             var os = store[slot[row.FixObs]];
             Fix(pic, ci, ts, store.Combat.Condition(ts.Slot), os, os.Handling.Class.Eyes[row.FixEye], row.Best, row.FixMargin, row.FixD, row.FixBrg,
                 now, ref r, classesInUse);
+            Quiet(ref pic.At(ci >= 0 ? ci : pic.IndexOf(ts.Entity)), inSight, store.Combat.LastFired(ts.Slot), now, dt);
             return true;
         }
         if (inSight && row.Best < 1)
@@ -638,8 +639,24 @@ public sealed class Sightings
         Identify(ref con, ts, margin, d, ref r, classesInUse);
     }
 
+    /// <summary>Her guns as watched (docs/battle/crew.md N5b): her quiet starts again when she comes into sight or a salvo of
+    /// hers was fired since the last look (dt s), now that she's in sight; silent once she shows damage (burning, low, a list,
+    /// a trim) and has been quiet <see cref="SimSettings.SeenSilentS"/>. The quiet between a battery's salvos isn't
+    /// silence, nor a ship holding her fire unhurt: a damaged one gone quiet is read as silenced.</summary>
+    void Quiet(ref Contact con, bool wasInSight, long fired, long now, double dt)
+    {
+        if (!wasInSight || con.QuietMs == 0)
+            con.QuietMs = now;
+        if (fired > 0 && fired >= now - (long)(dt * 1000))
+            con.QuietMs = Math.Max(con.QuietMs, fired);
+        if ((con.Seen & (SeenFlags.Burning | SeenFlags.Low | SeenFlags.Listing | SeenFlags.ByBow | SeenFlags.ByStern)) != 0 &&
+            now - con.QuietMs >= settings.SeenSilentS * 1000)
+            con.Seen |= SeenFlags.Silent;
+    }
+
     /// <summary>What an observer makes out of a ship's condition (docs/battle/fighting.md 4.3b): settled low, a list, a
-    /// trim, fire and smoke, stopped, its guns silent, going under. Never its water or what's left of its buoyancy.</summary>
+    /// trim, fire and smoke, stopped, going under (silent: <see cref="Quiet"/>). Never its water or what's left of its
+    /// buoyancy.</summary>
     SeenFlags SeenOf(ShipState ts, ShipCondition k)
     {
         var seen = SeenFlags.None;
@@ -658,8 +675,6 @@ public sealed class Sightings
             seen |= SeenFlags.ByStern;
         if (k.FireShowMW > 0)
             seen |= SeenFlags.Burning;   // a developed or open-deck fire shows; a starved one inside doesn't (fire.md B2)
-        if (k.MountWorks.Length > 0 && k.MountsWorking == 0)
-            seen |= SeenFlags.Silent;
         if (k.Status == ShipStatus.GoingDown)
             seen |= SeenFlags.GoingDown;
         return seen;

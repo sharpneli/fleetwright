@@ -676,6 +676,7 @@ public static class DoctrineRules
             ((double)ManGuns.TorpedoCraft, "for torpedo craft")]),
         new(DoctrineField.ReliefOrder, "Reliefs", [((double)ReliefOrder.HandlingRoomProtected, "handling rooms kept"),
             ((double)ReliefOrder.ReserveInSupply, "from the supply first")]),
+        new(DoctrineField.Wrecks, "Wrecks seen done for", [((double)WreckFire.Cease, "cease fire"), ((double)WreckFire.Finish, "finish them")]),
     ];
 
     public static Rule? Of(DoctrineField f) => Array.Find(All, r => r.Field == f);

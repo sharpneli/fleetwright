@@ -578,6 +578,37 @@ the walking wounded back after 15-45 min). Southampton's and Emden's hit counts 
   - An ordered Engage stands: the player's call, or an admiral's.
   - **Tests:** a silent burning cripple loses a line's fire when another target is in reach; one gun of hers firing
     takes it back within a salvo's time; the rounds saved in a squadrons play, reported.
+  - **Built 2026-10-28.**
+    - **Silent as seen** (`Sightings.Quiet`): each ship's last salvo is stamped (`CombatStore.LastFired`, fine and coarse
+      alike). A contact keeps `QuietMs`, when her guns were last seen firing: she fired since the side's last look (its
+      span: a second fine, the coarse step) and she's in sight now. Her coming into sight starts it again too. She's
+      silent once she shows damage (burning, low, a list, a trim) and has been quiet `SeenSilentS` 180 s [EST: past a
+      heavy battery's slowest salvos and a ranging wait]. The damage condition is the observer's reading: a ship
+      unhurt and holding her fire, or not yet opened, isn't silenced. Without it the matchup (which counts a silent
+      ship's guns as nothing) would take every ship out of reach for gunless. The truth's "no mount works" is gone; the
+      map's marks and the matchup read the seen one.
+    - **Done for** (`Contact.DoneFor`, 0-1, from the picture alone): 0 unless burning and silent; then the quiet past
+      180 s (over another 180 s) × how near stopped her estimated speed is (none at `DoneForKn` 4 kn [EST]).
+    - **Her worth** in the captains' pick at will: her range counts / (1 − 0.95 × done for), up to twenty times as far,
+      so any other target in reach comes first, smoothly. With nothing else in reach, doctrine's **`Wrecks`** decides:
+      cease (she's no target once `DoneForCease` 0.5 done for) or finish her. The default preset ceases (the user's
+      direction); the neutral default (a world told nothing) finishes, as before. On the launch screen's standing
+      orders as "Wrecks seen done for". An ordered Engage stands, the player's or an admiral's line.
+    - **A sign of life:** a salvo of hers seen restarts her quiet at the next look, so she's neither silent nor done for
+      and the pick takes her up again.
+    - **Found:** the dev's fire (`DamageSystem.Burn`, `-burn`) didn't mark the ship damaged, so no observer ever saw it
+      burning; it does now.
+    - **Tests** (`WreckFireTests`): a burning, stopped cripple holding her fire loses the line's fire to a healthy ship
+      beyond her 3.8 min after it was first on her (silent at 3 min); when she fires again it's back on her 3 s after her
+      first salvo; with nothing else in reach "cease" ceases and "finish" stays on her; an unhurt ship holding her fire
+      isn't silent.
+    - **The rounds saved in a squadrons play** (8 seeds to the end; `scenario --play` now prints the shells fired and
+      those at ships seen done for): 58,007 before, 60,048 after, within the seeds' spread; 17 shells at ships seen done
+      for. Nothing measurable is saved there because the case hardly arises: her ships founder or capsize, or keep a gun
+      firing (the reliefs, N3), before any is seen burning, silent and stopped. The savings wait for a fight with
+      cripples left burning (Wiesbaden's), and for the list and freeboard graded in fire-control.md F10.
+    - The squadrons' hash at 30 min: 692F156EB43F7CA1 → 66C709F73E3D1C32 (the pictures hash `QuietMs`); its cost and
+      allocations the same. The full suite passes.
 - **N6 Fit and check.** The yardstick above. E6's per-hit benches stay as they are. Coarse parity (`CoarseParityTests`),
   no allocation in the hit and evaluate paths, the matchup and the squadrons' hash reported.
 

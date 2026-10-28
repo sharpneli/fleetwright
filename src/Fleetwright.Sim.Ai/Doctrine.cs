@@ -118,6 +118,11 @@ public enum DoctrineField : byte
 
     /// <summary>Where the reliefs come from first (<see cref="ReliefOrder"/>; N3a, decision 1).</summary>
     ReliefOrder,
+
+    /// <summary>A ship seen done for (burning, silent and stopped: <c>Contact.DoneFor</c>; docs/battle/crew.md N5b) with
+    /// nothing else in reach: fire at will finishes her, or ceases (<see cref="WreckFire"/>). Either way at will takes any
+    /// other target in reach first; an ordered Engage stands.</summary>
+    Wrecks,
 }
 
 /// <summary>Doctrine's Shells: each battery loads the kind its target calls for (the captain's choice, the matchup's
@@ -133,6 +138,12 @@ public enum ManGuns : byte
 
 /// <summary>Where a ship's reliefs come from first (N3a, decision 1): her men under cover and her idle hands, a live mount's
 /// handling room kept; or (the USN's 1899 bill) the supply's spare men first.</summary>
+public enum WreckFire : byte
+{
+    Finish,
+    Cease,
+}
+
 public enum ReliefOrder : byte
 {
     HandlingRoomProtected,
@@ -210,7 +221,7 @@ public sealed class Doctrine(GroupSystem groups, IReadOnlyDictionary<string, dou
         return r;
     }
 
-    public const int FieldCount = (int)DoctrineField.ReliefOrder + 1;
+    public const int FieldCount = (int)DoctrineField.Wrecks + 1;
 
     /// <summary>Every field when nothing sets it: a world told nothing (a dev's, a test's) behaves as before doctrine.</summary>
     public static double Default(DoctrineField f) => f switch
@@ -242,6 +253,7 @@ public sealed class Doctrine(GroupSystem groups, IReadOnlyDictionary<string, dou
         DoctrineField.SecondaryHitFloor => 0,
         DoctrineField.ManCasemates or DoctrineField.ManOpenGuns => (double)ManGuns.Always,   // as before the crews' posture
         DoctrineField.ReliefOrder => (double)Ai.ReliefOrder.HandlingRoomProtected,
+        DoctrineField.Wrecks => (double)WreckFire.Finish,   // as before: fire on while she's the one in reach
         _ => throw new ArgumentOutOfRangeException(nameof(f)),
     };
 
@@ -397,6 +409,7 @@ public sealed class DoctrinePresets
             DoctrineField.Shells when Enum.TryParse<ShellUse>(name, ignoreCase: true, out var su) => (f, (double)su),
             DoctrineField.ManCasemates or DoctrineField.ManOpenGuns when Enum.TryParse<ManGuns>(name, ignoreCase: true, out var mg) => (f, (double)mg),
             DoctrineField.ReliefOrder when Enum.TryParse<ReliefOrder>(name, ignoreCase: true, out var ro) => (f, (double)ro),
+            DoctrineField.Wrecks when Enum.TryParse<WreckFire>(name, ignoreCase: true, out var wf) => (f, (double)wf),
             _ => throw new ArgumentException($"doctrine: \"{v}\" isn't a value of {field}"),
         };
     }
@@ -416,6 +429,7 @@ public sealed class DoctrinePresets
             DoctrineField.Shells => ((ShellUse)(int)v).ToString(),
             DoctrineField.ManCasemates or DoctrineField.ManOpenGuns => ((ManGuns)(int)v).ToString(),
             DoctrineField.ReliefOrder => ((ReliefOrder)(int)v).ToString(),
+            DoctrineField.Wrecks => ((WreckFire)(int)v).ToString(),
             _ => null,
         };
         // "CarryOn" -> "carry on"

@@ -476,6 +476,7 @@ public sealed class DamageSystem : IWorldSystem
                     throw new ArgumentException($"no cell at {c.X:0.0} m on ship {c.Entity}");
                 if (!Fires.Ignite(cls, k, top, settings.FireSeatMW[^1], settings) && !k.Fire[top].Burning)
                     throw new ArgumentException($"nothing to burn at {c.X:0.0} m on ship {c.Entity} ({cls.Rooms[cls.Cells[top].Room].Kind})");
+                k.Damaged = touched = true;   // a ship on fire is one the enemy may see burning
                 Wake(world, slot, k);
                 break;
         }

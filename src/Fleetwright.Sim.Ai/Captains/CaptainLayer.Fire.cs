@@ -22,6 +22,9 @@ namespace Fleetwright.Sim.Ai.Captains;
 /// out of the haze would take the fire off the one held): no flicking between targets, as each shift starts the track again.
 /// A secondary takes none it'd hit with fewer than doctrine's <see cref="DoctrineField.SecondaryHitFloor"/> of its shells
 /// (the matchup's estimate), and drops one at that much less range: no splashing at the edge of its reach.
+/// A ship seen done for (burning, silent and stopped: <see cref="Contact.DoneFor"/>) counts as further off the more done for
+/// she looks, so any other in reach is taken first; with doctrine's <see cref="DoctrineField.Wrecks"/> ceasing, one
+/// <see cref="SimSettings.DoneForCease"/> done for is no target at all (docs/battle/crew.md N5b).
 /// With nothing to shoot at it ceases fire, so the ship can go back on rails.</item>
 /// <item><b>Engage:</b> the chief batteries (<see cref="BatteryRow.Chief"/>: the main, or with none the heaviest guns) on
 /// the contact while the navy holds it (then at will again); the others pick their own. <b>Hold fire:</b> every battery
@@ -197,7 +200,7 @@ public sealed partial class CaptainLayer
     // and slot, range (m), the range it'll be at FireLeadS on (m), bearing from ahead and the rank of its type for a
     // secondary battery
     int[] candEntity = new int[32], candRank = new int[32], candSlot = new int[32], candPic = new int[32];
-    double[] candRange = new double[32], candLead = new double[32], candBearing = new double[32];
+    double[] candRange = new double[32], candLead = new double[32], candBearing = new double[32], candDone = new double[32];
     Vec3d[] candPos = new Vec3d[32];
     sbyte[] candFoul = new sbyte[32];   // its line of fire: -1 not asked yet, 0 clear, 1 foul
     int candCount;
@@ -567,6 +570,8 @@ public sealed partial class CaptainLayer
         double guns = reach / s.FireReachShare;   // the guns' own reach: past it she's tracked, not fired on
         double floor = secondary ? doctrine.Of(own.Entity, own.Side, DoctrineField.SecondaryHitFloor) : 0;
         var gun = floor > 0 ? GunOf(ctx, slot, b) : null;
+        // a ship seen done for: any other target first; with a side ceasing on wrecks, none at all (crew.md N5b)
+        double cease = (WreckFire)(int)doctrine.Of(own.Entity, own.Side, DoctrineField.Wrecks) == WreckFire.Cease ? s.DoneForCease : double.PositiveInfinity;
 
         int ci = current != 0 ? pic.IndexOf(current) : -1;
         bool keep = ci >= 0 && !pic[ci].Lost && now - pic[ci].SeenMs <= s.FireLostMs;
@@ -574,6 +579,9 @@ public sealed partial class CaptainLayer
             keep = false;   // a friend in the way: not while he's there
         double curBy = 0;
         int curRank = 0, curCan = 0;
+        double curDone = keep ? pic[ci].DoneFor(now, s) : 0;
+        if (keep && curDone >= cease)
+            keep = false;
         if (keep)
         {
             var (q, v, _) = pic.EstimateAt(ci, now, s);
@@ -583,20 +591,20 @@ public sealed partial class CaptainLayer
                    (gun == null || HitOn(ctx, gun, own.Side, pic[ci], curRange * s.FireReachShare / s.FireKeepShare) >= floor);
             curCan = Can(Bears(cls, b, Earth.Bearing(p, q) - own.HeadingDeg), curRange <= guns);
             curRank = secondary ? Rank(pic[ci].Type) : 0;
-            curBy = Lead(own, q, v, s) * (1 + s.FireCrowdShare * Crowd(cls, b, current, ctx.Ships.SlotOf(current))) * Sized(s, curRank);
+            curBy = Lead(own, q, v, s) * (1 + s.FireCrowdShare * Crowd(cls, b, current, ctx.Ships.SlotOf(current))) * Sized(s, curRank) / Worth(curDone);
         }
 
         int best = 0, bestRank = 0, bestCan = -1;
         double bestBy = double.MaxValue;
         for (int k = 0; k < candCount; k++)
         {
-            if (candRange[k] > reach)
+            if (candRange[k] > reach || candDone[k] >= cease)
                 continue;
             int can = Can(Bears(cls, b, candBearing[k]), candRange[k] <= guns);
             if (can < bestCan)
                 continue;
             int rank = secondary ? candRank[k] : 0;
-            double by = candLead[k] * (1 + s.FireCrowdShare * Crowd(cls, b, candEntity[k], candSlot[k])) * Sized(s, rank);
+            double by = candLead[k] * (1 + s.FireCrowdShare * Crowd(cls, b, candEntity[k], candSlot[k])) * Sized(s, rank) / Worth(candDone[k]);
             // a foul line and the hit floor only rule one out: asked only of one that would be the best yet (they're the cost)
             if ((can > bestCan || by < bestBy) && (gun == null || HitOn(ctx, gun, own.Side, pic[candPic[k]], candRange[k]) >= floor) && !Foul(ctx, own, k))
                 (best, bestCan, bestRank, bestBy) = (candEntity[k], can, rank, by);
@@ -612,6 +620,10 @@ public sealed partial class CaptainLayer
             bestBy *= Sized(s, curRank) / Sized(s, bestRank);
         return bestBy < s.FireSwitchShare * curBy ? best : current;
     }
+
+    /// <summary>A contact's worth as a target by how done for she's seen (crew.md N5b): her range counts as much as twenty
+    /// times as far, so any other in reach comes first; smoothly, no switch.</summary>
+    static double Worth(double doneFor) => 1 - 0.95 * doneFor;
 
     /// <summary>What a battery can do about a contact: fire on her now (2: she bears, within its guns' reach), train on her
     /// (1: she bears, beyond it), or only track her (0).</summary>
@@ -674,7 +686,7 @@ public sealed partial class CaptainLayer
         {
             int n = Math.Max(near.Length, candEntity.Length * 2);
             (candEntity, candRank, candSlot, candRange, candLead, candBearing) = (new int[n], new int[n], new int[n], new double[n], new double[n], new double[n]);
-            candPic = new int[n];
+            (candPic, candDone) = (new int[n], new double[n]);
             (candPos, candFoul) = (new Vec3d[n], new sbyte[n]);
         }
         candCount = 0;
@@ -686,6 +698,7 @@ public sealed partial class CaptainLayer
             candLead[candCount] = Lead(own, q, seen.Velocity(own.Side, i), ctx.Settings);
             (candBearing[candCount], candRank[candCount]) = (Earth.Bearing(p, q) - heading, Rank(pic[i].Type));
             (candPos[candCount], candFoul[candCount], candPic[candCount]) = (q, -1, i);
+            candDone[candCount] = pic[i].DoneFor(ctx.NowMs, ctx.Settings);
             candCount++;
         }
     }

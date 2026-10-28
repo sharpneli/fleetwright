@@ -1942,6 +1942,14 @@ public sealed record SimSettings
     public double SeenTrimDeg { get; init; } = 1;
     public double SeenStoppedKn { get; init; } = 1;
 
+    /// <summary>Silent as seen (docs/battle/crew.md N5b): a ship showing damage whose guns haven't been seen firing for this
+    /// long, s [EST: past a heavy battery's slowest salvos and a ranging wait]. Seen done for (<c>Contact.DoneFor</c>):
+    /// burning, silent a while longer, and as near stopped as her speed is under this, kn [EST]; at will a side ceasing on
+    /// wrecks takes none this far done for.</summary>
+    public double SeenSilentS { get; init; } = 180;
+    public double DoneForKn { get; init; } = 4;
+    public double DoneForCease { get; init; } = 0.5;
+
     // ------------------------------------------------------------------ torpedoes (docs/battle/fighting.md 4.6)
 
     /// <summary>Torpedoes running at once (the pool grows past it), and the ring of their ends the screens read.</summary>

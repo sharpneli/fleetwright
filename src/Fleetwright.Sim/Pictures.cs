@@ -27,8 +27,9 @@ public enum ShipType : byte
 }
 
 /// <summary>What an observer makes out of a ship's condition (docs/battle/fighting.md 4.3b: the enemy sees only what can
-/// be seen): low in the water, a list, trimmed by the bow or the stern, fires, stopped, its guns silent, going under; and
-/// seen to go. Whether it's done for is the observer's judgement.</summary>
+/// be seen): low in the water, a list, trimmed by the bow or the stern, fires, stopped, its guns silent (a damaged ship not
+/// seen firing for a while: docs/battle/crew.md N5b), going under; and seen to go. Whether it's done for is the
+/// observer's judgement (<see cref="Contact.DoneFor"/>).</summary>
 [Flags]
 public enum SeenFlags : ushort
 {
@@ -79,8 +80,25 @@ public struct Contact
     /// <summary>What was made out of its condition when last seen, and whether it was seen to go.</summary>
     public SeenFlags Seen;
 
+    /// <summary>Since when her guns have been quiet as her navy has watched her (world ms; docs/battle/crew.md N5b): a salvo
+    /// of hers seen, or her coming into sight, starts it again. Silent is read from it.</summary>
+    public long QuietMs;
+
     /// <summary>Seen going down or gone: no target, no threat (docs/battle/fighting.md 4.3b).</summary>
     public readonly bool Lost => (Seen & (SeenFlags.GoingDown | SeenFlags.Gone)) != 0;
+
+    /// <summary>How done for she looks, 0-1 (docs/battle/crew.md N5b; fire-control.md F10 "ships seen done for"): burning
+    /// and silent as seen, by how long her guns have been quiet past <see cref="SimSettings.SeenSilentS"/> (over as long
+    /// again) and how near stopped her estimated speed is (none at <see cref="SimSettings.DoneForKn"/>); 0 if she isn't
+    /// both burning and silent. Never her water or her men.</summary>
+    public readonly double DoneFor(long now, SimSettings s)
+    {
+        if ((Seen & (SeenFlags.Burning | SeenFlags.Silent)) != (SeenFlags.Burning | SeenFlags.Silent))
+            return 0;
+        double quiet = Math.Clamp(((now - QuietMs) / 1000.0 - s.SeenSilentS) / s.SeenSilentS, 0, 1);
+        double kn = Velocity.Length / Handling.MsPerKnot;
+        return quiet * Math.Clamp(1 - kn / s.DoneForKn, 0, 1);
+    }
 }
 
 /// <summary>One navy's picture: its contacts, in slots, by entity through an index. World state: deterministic, saved
@@ -169,6 +187,7 @@ public sealed class Picture
             h.Add(c.P.VeVe);
             h.Add((int)c.Level | (int)c.Seen << 8);
             h.Add(c.TakenFor);
+            h.Add(c.QuietMs);
         }
     }
 }

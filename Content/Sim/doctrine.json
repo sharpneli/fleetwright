@@ -61,6 +61,10 @@
     "ManOpenGuns": "in range",
     // reliefs from the men under cover and the idle hands, a live mount's handling room kept ("handling room protected"),
     // or "reserve in supply" (the USN's 1899 bill: the supply's spare men first)
-    "ReliefOrder": "handling room protected"
+    "ReliefOrder": "handling room protected",
+    // a ship seen done for (burning, her guns silent a while, stopped) with nothing else in reach: "cease" fire on her
+    // (rounds kept for the next fight) or "finish" her (docs/battle/crew.md N5b; the user: no fire on burning wrecks that
+    // show no sign of life); any other target in reach comes first either way, and a gun of hers seen firing brings it back
+    "Wrecks": "cease"
   }
 }

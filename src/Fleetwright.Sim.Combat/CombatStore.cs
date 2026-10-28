@@ -44,6 +44,7 @@ public sealed class CombatStore
     int[]?[] targets = [];
     int[] engaged = [];
     bool[] moved = [];
+    long[] firedMs = [];   // by slot: when any of her guns last fired (docs/battle/crew.md N5b: what an observer may see)
 
     /// <summary>Whether any mount has ever moved or fired (so a world that never fought hashes as before).</summary>
     public bool Touched { get; private set; }
@@ -62,6 +63,7 @@ public sealed class CombatStore
             Array.Resize(ref targets, n);
             Array.Resize(ref engaged, n);
             Array.Resize(ref moved, n);
+            Array.Resize(ref firedMs, n);
         }
         var m = mounts[slot];
         if (m == null || m.Length != cls.Mounts.Length)
@@ -98,7 +100,12 @@ public sealed class CombatStore
             Array.Clear(o);
         engaged[slot] = 0;
         moved[slot] = false;
+        firedMs[slot] = 0;
     }
+
+    /// <summary>When any of a ship's guns last fired (world ms, 0: never): the sightings read it for a salvo of hers seen
+    /// (docs/battle/crew.md N5b).</summary>
+    public long LastFired(int slot) => slot < firedMs.Length ? firedMs[slot] : 0;
 
     internal void Drop(int slot) => engaged[slot] = 0;
 
@@ -257,6 +264,7 @@ public sealed class CombatStore
     {
         ref var s = ref mounts[slot]![mount];
         ref readonly var row = ref cls.Mounts[mount];
+        firedMs[slot] = Math.Max(firedMs[slot], ms);
         double reload = row.ReloadS * loadFactor;
         if (row.ReadyRounds > 0 && row.SupplyS > 0)
         {

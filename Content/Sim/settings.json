@@ -747,6 +747,9 @@
   "SeenListDeg": 3,
   "SeenTrimDeg": 1,
   "SeenStoppedKn": 1,
+  "SeenSilentS": 180,
+  "DoneForKn": 4,
+  "DoneForCease": 0.5,
   // torpedoes (docs/battle/fighting.md 4.6; damage-model-research.md §3.4, 05-mechanics-and-games.md A6)
   "TorpedoCapacity": 256,
   "TorpedoEndCapacity": 256,

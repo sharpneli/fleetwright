@@ -71,7 +71,7 @@ static class ScenarioPlay
                 {
                     if ((w.Time.Ms - hour0) / 3_600_000 > hours.Count)
                         hours.Add(sw.Elapsed.TotalSeconds);
-                    guns.Read(w.CombatLog);
+                    guns.Read(w);
                     // a ship falling out for her main guns: why they're out, as she falls out
                     for (; seen < end.Timeline.Count; seen++)
                         if (end.Timeline[seen] is { Kind: PlayEvent.FellOut } l && (Fleetwright.Sim.Ai.Captains.CaptainReason)l.Count ==
@@ -117,6 +117,7 @@ static class ScenarioPlay
             all.End.Merge(guns.End);
             (all.HitBlackouts, all.NearBlackouts, all.ShipsBlacked) = (all.HitBlackouts + guns.HitBlackouts, all.NearBlackouts + guns.NearBlackouts,
                 all.ShipsBlacked + guns.ShipsBlacked);
+            (all.Shells, all.AtWrecks) = (all.Shells + guns.Shells, all.AtWrecks + guns.AtWrecks);
         }
         if (seeds > 1 && runs.Count > 0)
         {
@@ -166,14 +167,26 @@ static class ScenarioPlay
         public readonly Tally FellOut = new(), End = new();
         /// <summary>The ship-wide blackouts (E4's cascade, E7's near misses), and the ships blacked out at least once.</summary>
         public int HitBlackouts, NearBlackouts, ShipsBlacked;
+        /// <summary>The shells fired, and those at a ship her shooter's side saw as mostly done for then (docs/battle/crew.md
+        /// N5b: <c>Contact.DoneFor</c> at <see cref="SimSettings.DoneForCease"/> or more, as of the log's reading).</summary>
+        public long Shells, AtWrecks;
         readonly HashSet<int> blacked = [];
         long read;
 
-        public void Read(CombatLog log)
+        public void Read(World w)
         {
+            var log = w.CombatLog;
             for (long i = Math.Min(log.Written - read, log.Count) - 1; i >= 0; i--)
             {
                 var e = log.Newest((int)i);
+                if (e.Kind == CombatEvent.Fired)
+                {
+                    Shells += e.Count;
+                    if (w.Ships.Store.SlotOf(e.Shooter) is int ss and >= 0 && w.Sightings.Of(w.Ships.Store[ss].Side) is { } pic &&
+                        pic.IndexOf(e.Target) is int ci and >= 0 && pic[ci].DoneFor(w.Time.Ms, w.Settings) >= w.Settings.DoneForCease)
+                        AtWrecks += e.Count;
+                    continue;
+                }
                 if (e.Kind is not (CombatEvent.Hit or CombatEvent.NearMiss) || (e.Effect & HitEffect.Blackout) == 0)
                     continue;
                 if (e.Kind == CombatEvent.NearMiss)
@@ -191,6 +204,7 @@ static class ScenarioPlay
             Console.WriteLine($"{indent}           at the end, {End.Ships} ships afloat: " + End.Text());
             Console.WriteLine($"{indent}blackouts: {HitBlackouts + NearBlackouts} ship-wide ({HitBlackouts} by a hit's shock, {NearBlackouts} by near misses), " +
                               $"{ShipsBlacked} ships blacked out");
+            Console.WriteLine($"{indent}shells: {Shells} fired, {AtWrecks} at ships seen done for");
         }
 
         public sealed class Tally
