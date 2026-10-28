@@ -330,19 +330,27 @@ public sealed partial class MapScene
         return Bells[bell].Of * (Bells[bell].Flank ? flank : full);
     }
 
+    /// <summary>The speed ordered: what her captain was asked for, though a limit from above (her line's) rings less;
+    /// else what's rung.</summary>
+    static double OrderedKn(Snapshot s, int kc) => double.IsNaN(s.Ships.SpeedAskedKn[kc]) ? s.Ships.SpeedOrderKn[kc] : s.Ships.SpeedAskedKn[kc];
+
+    /// <summary>Whether her plant makes more than full (an overload): with none, flank is full and its bell is out.</summary>
+    bool HasFlank(Snapshot s, int kc) => BellKn(s, kc, Bells.Length - 1) > BellKn(s, kc, Bells.Length - 2) + 0.05;
+
     /// <summary>The bell rung now: the nearest to the speed ordered.</summary>
     int BellNow(Snapshot s, int kc)
     {
+        double kn = OrderedKn(s, kc);
         int best = 0;
         for (int i = 1; i < Bells.Length; i++)
-            if (Math.Abs(BellKn(s, kc, i) - s.Ships.SpeedOrderKn[kc]) < Math.Abs(BellKn(s, kc, best) - s.Ships.SpeedOrderKn[kc]))
+            if (Math.Abs(BellKn(s, kc, i) - kn) < Math.Abs(BellKn(s, kc, best) - kn))
                 best = i;
         return best;
     }
 
     void RingBell(in Orders c, int step)
     {
-        int bell = Math.Clamp(BellNow(c.S, c.Kc) + step, 0, Bells.Length - 1);
+        int bell = Math.Clamp(BellNow(c.S, c.Kc) + step, 0, Bells.Length - (HasFlank(c.S, c.Kc) ? 1 : 2));
         world.Send(world.Orders.Speed(c.Unit, Math.Round(BellKn(c.S, c.Kc, bell), 2)));
     }
 
@@ -640,8 +648,12 @@ public sealed partial class MapScene
             (connSource, connKey) = (helmText, (own, line));
             connText = own ? "conn · " + helmText : line ? "line on conn · " + helmText : helmText;
         }
-        if (!ReferenceEquals(courseText, orderedSource))
-            (orderedSource, orderedText) = (courseText, "ordered " + courseText);
+        // a speed asked over her line's limit: the bell lit is the one asked, the note says what she's held to
+        double asked = v.SpeedAskedKn[c.Kc], limit = v.SpeedLimitKn[c.Kc];
+        int held = limit > 0 && asked > limit + 0.05 ? (int)Math.Round(limit * 10) : -1;
+        if (!ReferenceEquals(courseText, orderedSource) || held != orderedHeld)
+            (orderedSource, orderedHeld, orderedText) = (courseText, held, held < 0 ? "ordered " + courseText
+                : string.Format(CultureInfo.InvariantCulture, "ordered {0} · held to {1:0.0} kn by the line", courseText, held / 10.0));
         BeginPane(x, "HELM", orderedText, Width(UiFonts.Mono, connText));
         TitleFigure(connText, own || line ? MapPalette.Conn : T.Bright);
         // the course
@@ -654,6 +666,7 @@ public sealed partial class MapScene
         // the telegraph
         Row(1);
         int bell = BellNow(s, c.Kc);
+        bool flank = HasFlank(s, c.Kc);
         for (int i = 0; i < Bells.Length; i++)
         {
             if (i > 0)
@@ -664,10 +677,11 @@ public sealed partial class MapScene
                 var at = new Vector2(penX, penY);
                 ImGui.PushID(100 + i);
                 var lit = i == bell ? Lit.On : Lit.None;
-                if (sdl.Button("##bell", at, Bells[i].Label, w: w, lit: lit))
+                bool on = flank || !Bells[i].Flank;
+                if (sdl.Button("##bell", at, Bells[i].Label, enabled: on, w: w, lit: lit))
                     world.Send(world.Orders.Speed(c.Unit, Math.Round(BellKn(s, c.Kc, i), 2)));
-                if (ImGui.IsItemHovered())
-                    Tip(Def(Act.Faster).Tip + " (↑), slower (↓)");
+                if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+                    Tip(on ? Def(Act.Faster).Tip + " (↑), slower (↓)" : "Her plant has no overload: flank is full");
                 ImGui.PopID();
                 if (lit != Lit.None)
                     (litAt, litW, litKind) = (at, w, lit);
@@ -686,6 +700,7 @@ public sealed partial class MapScene
     }
 
     string connText = "", connSource = "", orderedText = "", orderedSource = "";
+    int orderedHeld = -1;
     (bool, bool) connKey;
 
     /// <summary>The course ordered in an inset well: typed there (Enter puts the cursor in it, Enter sends it).</summary>

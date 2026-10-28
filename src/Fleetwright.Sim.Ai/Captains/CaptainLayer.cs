@@ -653,6 +653,8 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
                 CaptainOrder.Follow when captains[i].DistanceM > 0 => (captains[i].DistanceM, 0),
                 _ => (double.NaN, double.NaN),
             };
+            (v.SpeedAskedKn[k], v.SpeedLimitKn[k]) = i < 0 ? (double.NaN, 0) : captains[i].Order is CaptainOrder.Course or CaptainOrder.Route or CaptainOrder.None
+                ? (captains[i].AskedKn, captains[i].LimitKn) : (double.NaN, captains[i].LimitKn);   // a behaviour's speed is its own
             v.Asked[k] = i >= 0 && captains[i].Asked;
             v.Conn[k] = i >= 0 && captains[i].Conn ? (byte)1 : Admirals?.LineConned(v.Entity[k]) == true ? (byte)2 : (byte)0;
             v.Tracks[k] = i >= 0 ? captains[i].Tracks : (sbyte)0;

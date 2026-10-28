@@ -456,7 +456,8 @@ public sealed partial class ShipSystem : IWorldSystem
         v.TurnEndMs[n] = Store.SegmentEndMs(i);   // a coarse ship's own; long.MaxValue for the rest
         v.CourseOrderDeg[n] = orders ? ship.CourseOrderDeg : 0;
         v.SpeedOrderKn[n] = orders ? ship.SpeedOrderKn : 0;
-        v.Captain[n] = 0;   // the AI fills its own, after
+        (v.SpeedAskedKn[n], v.SpeedLimitKn[n]) = (double.NaN, 0);   // the AI fills its own, after
+        v.Captain[n] = 0;
         v.CaptainTarget[n] = 0;
         (v.StationAsternM[n], v.StationAbeamM[n]) = (double.NaN, double.NaN);
         v.Asked[n] = false;

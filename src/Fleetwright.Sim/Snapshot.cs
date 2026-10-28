@@ -884,6 +884,10 @@ public sealed class ShipsView
     public long[] TurnEndMs = [];
     public double[] CourseOrderDeg = [], SpeedOrderKn = [];
 
+    /// <summary>The speed her captain was asked for (NaN: none, or a behaviour sets its own) and the most he may ring,
+    /// from above (0: none): what's rung, <see cref="SpeedOrderKn"/>, is never more (the AI's).</summary>
+    public double[] SpeedAskedKn = [], SpeedLimitKn = [];
+
     /// <summary>Who commands each ship and how, filled by the AI (0: nobody, the player's own orders stand); the
     /// meaning of the order is the AI's (<c>Fleetwright.Sim.Ai.CaptainOrder</c>), with its target ship's entity or 0.</summary>
     public byte[] Captain = [];
@@ -1091,6 +1095,8 @@ public sealed class ShipsView
         Array.Resize(ref TurnEndMs, n);
         Array.Resize(ref CourseOrderDeg, n);
         Array.Resize(ref SpeedOrderKn, n);
+        Array.Resize(ref SpeedAskedKn, n);
+        Array.Resize(ref SpeedLimitKn, n);
         Array.Resize(ref Captain, n);
         Array.Resize(ref CaptainTarget, n);
         Array.Resize(ref StationAsternM, n);
