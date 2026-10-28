@@ -17,7 +17,8 @@ namespace Fleetwright.Map;
 /// <see cref="SetSeed"/>), gone when it's put back as written. Its lines are made when the pick changes.</summary>
 public sealed unsafe partial class LaunchScene
 {
-    static readonly string[] CrewNames = ["green", "average", "trained", "elite"];
+    // the men's experience (docs/battle/crew.md decision 6): the names on the whole numbers, the halves between
+    static readonly string[] CrewNames = ["green", "0.5", "average", "1.5", "trained", "2.5", "elite"];
     static readonly (double Share, string Word)[] FuelSteps = [(1, "full"), (0.75, "75%"), (0.5, "50%"), (0.25, "25%")];
     static readonly SideKind[] Kinds = [SideKind.Crews, SideKind.Readiness, SideKind.DamageControl, SideKind.FireDiscipline, SideKind.Fuel];
     static readonly string[] KindLabels = ["Gun crews", "Readiness", "Damage control", "Fire discipline", "Fuel"];
@@ -67,7 +68,7 @@ public sealed unsafe partial class LaunchScene
     /// <summary>A side's setting in a scenario, as its option is named (a side not given takes the settings' default).</summary>
     string SettingOf(Scenario s, SideKind k, int sd) => k switch
     {
-        SideKind.Crews => s.Crews.Where(x => x.Side == sd).Select(x => x.Quality.ToString().ToLowerInvariant()).FirstOrDefault() ?? "trained",
+        SideKind.Crews => s.Crews.Where(x => x.Side == sd).Select(x => Experience.Name(x.Experience)).FirstOrDefault() ?? "trained",
         SideKind.Readiness => s.Readiness.Where(x => x.Side == sd).Select(x => x.Name).FirstOrDefault() ?? world.Settings.ReadinessDefault,
         SideKind.DamageControl => s.DamageControl.Where(x => x.Side == sd).Select(x => x.Name).FirstOrDefault() ?? world.Settings.DamageControlDefault,
         SideKind.FireDiscipline => s.FireDisciplines.Where(x => x.Side == sd).Select(x => x.Name).FirstOrDefault() ?? world.Settings.FireDisciplines[0].Name,

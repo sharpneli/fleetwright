@@ -94,8 +94,12 @@ public class ScenarioSetupTests
         Assert.Equal(4, setup.Changes.Count);
         var s = setup.Apply(written);
         Assert.Equal(1, s.Player);
-        Assert.Contains((0, CrewQuality.Average), s.Crews);   // Russia's as written
-        Assert.Contains((1, CrewQuality.Average), s.Crews);
+        Assert.Contains((0, Experience.Average), s.Crews);   // Russia's as written
+        Assert.Contains((1, Experience.Average), s.Crews);
+        // a number between the names (docs/battle/crew.md decision 6), written as one
+        var between = (setup with { From = "tsushima" }).With(new SideSetting(SideKind.Crews, 1, "1.5"));
+        Assert.Contains((1, 1.5), between.Apply(written).Crews);
+        Assert.Contains("\"Japan\": 1.5", between.ToJson(written));
         Assert.Equal("closed up", s.Readiness.Single(x => x.Side == 0).Name);
         Assert.Equal("prepared", s.Readiness.Single(x => x.Side == 1).Name);
         Assert.Equal(7UL, s.Seed);

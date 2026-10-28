@@ -618,7 +618,9 @@ public sealed record SimSettings
     /// <summary>Own ship counts as turning (its salvos take its computer's own-turn kick) past this rate of yaw, °/s.</summary>
     public double OwnTurnYawDegS { get; init; } = 0.2;
 
-    /// <summary>A side's gun crews, a row for each <see cref="CrewQuality"/> in order: the rangetakers' error (Conditions.
+    /// <summary>A side's gun crews, anchors at the whole numbers of the gunnery level (docs/battle/crew.md decision 6: a row
+    /// for each of <see cref="Experience.Names"/> in order), read between them linearly (<see cref="GunneryCrewAt"/>): the
+    /// rangetakers' error (Conditions.
     /// operator: 2 green, 1.5 average, 1 trained, 0.85 elite), the layers' (a guess, the same way), and the chance a spot is
     /// applied to the correction in force rather than the one its salvo was fired with (pyramiding, fire-control.md F6:
     /// "a common error", NO&amp;G ch. 18C; the numbers [EST]), and the battle's factor on the drill reload (fire-control.md
@@ -631,6 +633,33 @@ public sealed record SimSettings
         new() { Name = "trained", Operator = 1, Lay = 1, Pyramid = 0.03, Load = 1.2 },
         new() { Name = "elite", Operator = 0.85, Lay = 0.9, Pyramid = 0, Load = 1.1 },
     ];
+
+    /// <summary>The share of her men's experience a crew new to the ship shoots at (docs/battle/crew.md decision 6:
+    /// gunnery level = experience × (0.3 + 0.7 × work-up) [EST: Chester, long-service men some weeks into a new ship,
+    /// shot green to average; CUF §9's "new to the ship: down one for gunnery"]).</summary>
+    public double WorkUpGunneryShare { get; init; } = 0.3;
+
+    /// <summary>A crew's gunnery level from her side's experience (0-3) and her work-up (0-1): the experience itself when
+    /// worked up (written so that's exact, the rows' anchors read as they are).</summary>
+    public double GunneryLevel(double experience, double workUp) => experience * (1 - (1 - WorkUpGunneryShare) * (1 - workUp));
+
+    /// <summary>The gun crews at a gunnery level, read linearly between the <see cref="GunneryCrews"/> at the whole
+    /// numbers (an anchor exactly on one), held at the ends.</summary>
+    public GunneryCrew GunneryCrewAt(double level)
+    {
+        var rows = GunneryCrews;
+        int i = Math.Clamp((int)Math.Floor(level), 0, rows.Length - 1);
+        double t = Math.Clamp(level - i, 0, 1);
+        if (t == 0 || i == rows.Length - 1)
+            return rows[i];
+        ref readonly var a = ref rows[i];
+        ref readonly var b = ref rows[i + 1];
+        return new()
+        {
+            Name = "", Operator = a.Operator * (1 - t) + b.Operator * t, Lay = a.Lay * (1 - t) + b.Lay * t,
+            Pyramid = a.Pyramid * (1 - t) + b.Pyramid * t, Load = a.Load * (1 - t) + b.Load * t,
+        };
+    }
 
     // ------------------------------------------------------------------ fire orders (docs/battle/fighting.md 4.2c)
 
@@ -2077,13 +2106,32 @@ public sealed record SimSettings
     public string ToJson() => JsonSerializer.Serialize(this, SimSettingsJson.Default.SimSettings);
 }
 
-/// <summary>How good a side's gun crews are (docs/battle/fighting.md 4.2b: one per side, a scenario's to give).</summary>
-public enum CrewQuality : byte
+/// <summary>A side's men's experience (docs/battle/crew.md decision 6), 0 to 3: their years at sea and their battles, a
+/// scenario's to give (trained by default). It goes with them to another ship; a ship's work-up (0-1) is hers. The names
+/// are presets on the whole numbers.</summary>
+public static class Experience
 {
-    Green,
-    Average,
-    Trained,
-    Elite,
+    public const double Green = 0, Average = 1, Trained = 2, Elite = 3, Max = 3;
+
+    public static readonly string[] Names = ["green", "average", "trained", "elite"];
+
+    /// <summary>A name ("trained", any case) or a number from 0 to 3.</summary>
+    public static bool TryParse(string? text, out double experience)
+    {
+        int k = Array.FindIndex(Names, n => string.Equals(n, text, StringComparison.OrdinalIgnoreCase));
+        if (k >= 0)
+        {
+            experience = k;
+            return true;
+        }
+        return double.TryParse(text, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out experience)
+            && experience is >= 0 and <= Max;
+    }
+
+    /// <summary>Its name on a whole number, else the number ("1.5").</summary>
+    public static string Name(double experience) =>
+        experience == Math.Floor(experience) && experience is >= 0 and <= Max ? Names[(int)experience]
+            : experience.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
 }
 
 /// <summary>A fire discipline (docs/battle/fire-control.md F6), the side's doctrine for finding the bracket and hitting:
@@ -2181,9 +2229,12 @@ public readonly record struct Readiness
     public double WtDoorsOpen { get; init; }
 }
 
-/// <summary>A crew quality's multipliers on the rangetakers' and the layers' errors.</summary>
-public sealed record GunneryCrew
+/// <summary>A gunnery level's multipliers on the rangetakers' and the layers' errors (a struct: read between the rows on
+/// every salvo without garbage).</summary>
+public readonly record struct GunneryCrew
 {
+    public GunneryCrew() { }
+
     public string Name { get; init; } = "";
     public double Operator { get; init; }
     public double Lay { get; init; }

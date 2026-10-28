@@ -250,6 +250,17 @@ Ship totals of lost ships (CUF §8) are for what still worked late, not for casu
   thousandths, so replays stay identical. Scenarios, the setup and the launch screen take the names as presets
   ("trained" = 2) or a number; a ship's `"work_up"` in a scenario. Parity: with work-up 1 and the names on whole
   numbers, every bench and hash is unchanged.
+  **Done 2026-10-28.** `Experience` (Sim.Core: the names, `TryParse` a name or 0-3, `Name`) in place of the enum;
+  `GunnerySystem.SetExperience` (the old `SetCrew`'s code, 3) in thousandths; `ShipSystem.WorkUp` and the store's
+  work-up column (thousandths, hashed only off 1); `SimSettings.GunneryLevel` (written experience × (1 − 0.7 × (1 −
+  work-up)), the same number, so a worked-up crew's level is its experience exactly) and `GunneryCrewAt` (the rows
+  read linearly, exact on the anchors; `GunneryCrew` a struct, no garbage per salvo), the 0.3 as
+  `WorkUpGunneryShare`. A scenario's `"crews"` take a name or a number, a ship entry's `"work_up"` a number for all
+  of them or by name; the setup writes a number between the names as one; the launch screen's gun crews add the
+  halves (0.5, 1.5, 2.5); `duel --crew 1.5 --work-up 0.5`. Parity: coronel, tsushima, dover-strait, aland,
+  prizes-war and jutland at 90 min (hashes and replays), the duel at each name and fc-history all identical to before.
+  Between: the duel's rate falls with the level (green 0.99, average 1.09, 1.5 1.14, trained 1.22 rounds a gun a
+  minute; trained new to the ship, level 0.6, 1.05); its hit counts at 10 runs are noise, as before.
 - **N0 Measure.** The hits bench prints, after K hits: men out by station kind, mounts working by battery, directors,
   conned, the parties' men and their jobs. Add a `--curve` line of the out-of-action count every 25 hits. The
   yardstick runs and today's figures are recorded here. Add a timed bench of the yardstick's short cases (Chester,

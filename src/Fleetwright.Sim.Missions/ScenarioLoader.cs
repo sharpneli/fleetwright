@@ -74,8 +74,8 @@ public static class ScenarioLoader
             w.Apply(Command.SetPlayerSide(s.Player));
         if (s.Weather is { } we)
             w.Apply(Command.SetWeather(we.VisibilityM, we.WindFromDeg, we.WindMs, we.AirOverSeaK));
-        foreach (var (side, quality) in s.Crews)
-            w.Apply(GunnerySystem.SetCrew(side, quality));
+        foreach (var (side, experience) in s.Crews)
+            w.Apply(GunnerySystem.SetExperience(side, experience));
         foreach (var (side, share) in s.Fuel)
             w.Apply(DamageSystem.SetFuel(side, share));
         foreach (var (side, name) in s.FireDisciplines)
@@ -146,6 +146,8 @@ public static class ScenarioLoader
                     start.ShipNames[e] = spec.Names[nth];
                 if (nth < spec.Dyes.Length && spec.Dyes[nth] != Dye.None)
                     w.Apply(ShipSystem.Dye(e, spec.Dyes[nth]));
+                if (spec.WorkUpOf(nth) != 1)
+                    w.Apply(ShipSystem.WorkUp(e, spec.WorkUpOf(nth)));
                 // her captain's temper; a ship on her own is her admiral's too (docs/map-ui/launch.md "Tempers")
                 double temper = spec.TemperOf(nth) + (!top.IsForce && top.ShipCount == 1 ? top.Temper ?? 0 : 0);
                 if (temper != 0)

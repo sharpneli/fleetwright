@@ -22,9 +22,9 @@ static class Duel
         var row = c.Shooter.Batteries[c.Battery];
         string fit = c.Fit >= 0 ? $"preset {c.Fit} ({FireControlPresets.Name(c.Fit)})" : row.Local ? "local control" : $"its own fit, level {(int)row.Level}";
         Console.WriteLine(string.Format(Inv, "{0} battery {1} ({2:0.#}/{3:0.#}, {4} guns, {5}) at {6} ({7:0} m, {8:0.0} kyd), bearing {9:0}°, " +
-            "target on {10:0}° at {11:0} kn, {12}; own 0° at {13:0} kn, {14}; {15} crew, fire discipline {21}; {16}{17}{18}; {19} runs of {20:0} min{22}",
+            "target on {10:0}° at {11:0} kn, {12}; own 0° at {13:0} kn, {14}; {15}, fire discipline {21}; {16}{17}{18}; {19} runs of {20:0} min{22}",
             c.Shooter, c.Battery, row.CalibreMm, row.CalibreLength, row.Guns, fit, c.Target, c.RangeM, c.RangeM / FcBench.Kyd, c.BearingDeg,
-            c.CourseDeg, c.TargetKn, c.Behaviour, c.OwnKn, c.Own, c.Crew.ToString().ToLowerInvariant(),
+            c.CourseDeg, c.TargetKn, c.Behaviour, c.OwnKn, c.Own, Experience.Name(c.Experience) + " crew" + (c.WorkUp < 1 ? string.Format(Inv, ", work-up {0:0.##}", c.WorkUp) : ""),
             c.VisibilityM > 0 ? string.Format(Inv, "visibility {0:0.#} km", c.VisibilityM / 1000) : "clear",
             c.Start.Ms == FcCase.Day.Ms ? "" : $", from {c.Start}", double.IsNaN(c.Combat) ? "" : string.Format(Inv, ", combat factor {0:0.##}", c.Combat),
             runs, c.Minutes, c.Discipline ?? settings.FireDisciplines[0].Name,

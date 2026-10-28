@@ -287,7 +287,7 @@ public sealed record ScenarioSetup
         }
         if (r.TryGetProperty("crews", out var cr))
             foreach (var (side, q) in Scenario.ParseCrews(cr, sides))
-                changes.Add(new SideSetting(SideKind.Crews, side, q.ToString().ToLowerInvariant()));
+                changes.Add(new SideSetting(SideKind.Crews, side, Experience.Name(q)));
         foreach (var (key, kind, what) in Named)
             if (r.TryGetProperty(key, out var e))
                 foreach (var (side, name) in Scenario.ParseNames(key, what, e, sides))
@@ -425,7 +425,7 @@ public sealed record ScenarioSetup
                     continue;
                 w.WriteStartObject(SideSetting.FileKey(kind));
                 foreach (var x in set)
-                    if (kind == SideKind.Fuel)
+                    if (kind == SideKind.Fuel || kind == SideKind.Crews && !Experience.Names.Contains(x.Value))
                         w.WriteNumber(written.Sides[x.Side], double.Parse(x.Value, CultureInfo.InvariantCulture));
                     else
                         w.WriteString(written.Sides[x.Side], x.Value);
@@ -582,7 +582,11 @@ public sealed record SideSetting(SideKind Kind, int Side, string Value) : SetupC
             throw new ScenarioException($"{FileKey(Kind)}: no side {Side}");
         return Kind switch
         {
-            SideKind.Crews => s with { Crews = Over(s.Crews, Enum.Parse<CrewQuality>(Value, ignoreCase: true)) },
+            SideKind.Crews => s with
+            {
+                Crews = Over(s.Crews, Experience.TryParse(Value, out double x) ? x
+                    : throw new ScenarioException($"crews: \"{Value}\": green, average, trained or elite, or 0 to 3")),
+            },
             SideKind.Readiness => s with { Readiness = Over(s.Readiness, Value) },
             SideKind.DamageControl => s with { DamageControl = Over(s.DamageControl, Value) },
             SideKind.FireDiscipline => s with { FireDisciplines = Over(s.FireDisciplines, Value) },
@@ -597,7 +601,7 @@ public sealed record SideSetting(SideKind Kind, int Side, string Value) : SetupC
     {
         string was = Kind switch
         {
-            SideKind.Crews => written.Crews.Where(x => x.Side == Side).Select(x => x.Quality.ToString().ToLowerInvariant()).FirstOrDefault() ?? "trained",
+            SideKind.Crews => written.Crews.Where(x => x.Side == Side).Select(x => Experience.Name(x.Experience)).FirstOrDefault() ?? "trained",
             SideKind.Readiness => written.Readiness.Where(x => x.Side == Side).Select(x => x.Name).FirstOrDefault() ?? "the default",
             SideKind.DamageControl => written.DamageControl.Where(x => x.Side == Side).Select(x => x.Name).FirstOrDefault() ?? "the default",
             SideKind.FireDiscipline => written.FireDisciplines.Where(x => x.Side == Side).Select(x => x.Name).FirstOrDefault() ?? "the default",

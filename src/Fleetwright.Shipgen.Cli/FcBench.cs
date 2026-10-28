@@ -97,7 +97,10 @@ sealed record FcCase
     /// <summary>Battle against practice (<see cref="SimSettings.GunneryCombat"/>); NaN the settings' (battle).</summary>
     public double Combat { get; init; } = double.NaN;
     public double Minutes { get; init; } = 15;
-    public CrewQuality Crew { get; init; } = CrewQuality.Trained;
+    /// <summary>The shooter's side's men's experience, 0-3, and her crew's work-up in her, 0-1 (docs/battle/crew.md
+    /// decision 6).</summary>
+    public double Experience { get; init; } = Sim.Core.Experience.Trained;
+    public double WorkUp { get; init; } = 1;
     /// <summary>The shooter's side's fire discipline (fire-control.md F6), a name of the settings' FireDisciplines; null
     /// the first.</summary>
     public string? Discipline { get; init; }
@@ -164,8 +167,10 @@ static class FcBench
                 c.WindKn * Handling.MsPerKnot));
         else if (c.VisibilityM > 0)
             w.Apply(Command.SetWeather(c.VisibilityM));
-        if (c.Crew != CrewQuality.Trained)
-            w.Apply(GunnerySystem.SetCrew(0, c.Crew));
+        if (c.Experience != Sim.Core.Experience.Trained)
+            w.Apply(GunnerySystem.SetExperience(0, c.Experience));
+        if (c.WorkUp != 1)
+            w.Apply(ShipSystem.WorkUp(Shooter, c.WorkUp));
         if (c.Discipline is { } dis)
             w.Apply(GunnerySystem.SetDiscipline(0, DisciplineOf(s, dis)));
         w.Apply(GunnerySystem.Engage(Shooter, c.Battery, TargetShip, c.Fit));

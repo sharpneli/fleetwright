@@ -205,6 +205,7 @@
     { "Name": "trained", "Operator": 1, "Lay": 1, "Pyramid": 0.03, "Load": 1.2 },
     { "Name": "elite", "Operator": 0.85, "Lay": 0.9, "Pyramid": 0, "Load": 1.1 }
   ],
+  "WorkUpGunneryShare": 0.3,
   "FireReachShare": 1.1,
   "FireKeepShare": 1.25,
   "FireLostMs": 30000,

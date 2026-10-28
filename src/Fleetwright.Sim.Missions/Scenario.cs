@@ -28,14 +28,16 @@ namespace Fleetwright.Sim.Missions;
 ///       "ships": [ { "design": "light_cruiser", "count": 2 } ] } ] }
 /// </code>
 /// <para>A ship entry may give her shells a dye (<c>"dye": "orange"</c>, or <c>"dyes": [...]</c> one a ship; none if not
-/// given; docs/visuals/splashes.md "Dye").</para>
+/// given; docs/visuals/splashes.md "Dye"), and her crew a work-up short of worked up (docs/battle/crew.md decision 6: 0
+/// new to her to 1, the default): <c>"work_up": 0.3</c> for all of them, or by name, <c>"work_up": { "Chester": 0.3 }</c>.</para>
 /// <para>A ship entry or a unit (for every ship below it that doesn't give its own) may give the ships a loadout other
 /// than their design's (docs/battle/shells-armour-damage.md S5: the Admiralty's choice, not the designer's):
 /// <c>"loadout": { "main": [{ "ammo": "RN 1912 HE (lyddite)", "share": 0.5 }, { "ammo": "ap" }] }</c>, by battery (main,
 /// secondary, main[i], secondary[i]); an ammo a template's name (docs/shipgen/shell-templates.md), a block of the
 /// design's, a kind (ap, common, he: the battery's own of it), or a block written out; shares left out split the
 /// rest. One that doesn't fit a design is a warning, and her design's own shells are kept.</para>
-/// <para>A side's gun crews are green, average, trained or elite (<c>"crews"</c>; trained if not listed). A side's
+/// <para>A side's men's experience (<c>"crews"</c>; docs/battle/crew.md decision 6) is green, average, trained or elite,
+/// or a number from 0 to 3 between them (<c>{ "Germany": 2.5 }</c>; trained, 2, if not listed). A side's
 /// fire discipline (<c>"fire_discipline": { "Germany": "german" }</c>; the settings' first if not listed) is how its
 /// batteries range and fire for effect (docs/battle/fire-control.md F6: a name of the settings' <c>FireDisciplines</c>). A side's readiness
 /// (<c>"readiness": { "Russia": "prepared" }</c>; the settings' default if not listed) is its ships' orders before action
@@ -116,8 +118,8 @@ public sealed record Scenario
     /// <summary>The pairs of sides at peace (by index); every other pair is at war (docs/battle/plan.md step 3.1a).</summary>
     public List<(int A, int B)> Peace { get; init; } = [];
 
-    /// <summary>The sides' gun crews where they aren't trained (docs/battle/fighting.md 4.2b), by side index.</summary>
-    public List<(int Side, CrewQuality Quality)> Crews { get; init; } = [];
+    /// <summary>The sides' men's experience where it's given, 0-3 (docs/battle/crew.md decision 6), by side index.</summary>
+    public List<(int Side, double Experience)> Crews { get; init; } = [];
 
     /// <summary>The sides' fuel where it's given, a share of a full load (docs/battle/shell-contents.md C2), by side
     /// index.</summary>
@@ -449,18 +451,20 @@ public sealed record Scenario
         return list;
     }
 
-    internal static List<(int, CrewQuality)> ParseCrews(JsonElement e, string[] sides)
+    internal static List<(int, double)> ParseCrews(JsonElement e, string[] sides)
     {
         if (e.ValueKind != JsonValueKind.Object)
             throw new ScenarioException("crews: an object of sides' names, { \"Germany\": \"elite\" }");
-        var list = new List<(int, CrewQuality)>();
+        var list = new List<(int, double)>();
         foreach (var p in e.EnumerateObject())
         {
             int side = Array.IndexOf(sides, p.Name);
             if (side < 0)
                 throw new ScenarioException($"crews: \"{p.Name}\" isn't one of the sides ({string.Join(", ", sides)})");
-            if (!Enum.TryParse<CrewQuality>(p.Value.GetString(), ignoreCase: true, out var q) || !Enum.IsDefined(q))
-                throw new ScenarioException($"crews: \"{p.Value}\" for {p.Name}: green, average, trained or elite");
+            double q = 0;
+            if (!(p.Value.ValueKind == JsonValueKind.Number ? (q = p.Value.GetDouble()) is >= 0 and <= Experience.Max
+                    : p.Value.ValueKind == JsonValueKind.String && Experience.TryParse(p.Value.GetString(), out q)))
+                throw new ScenarioException($"crews: \"{p.Value}\" for {p.Name}: green, average, trained or elite, or 0 to 3");
             list.Add((side, q));
         }
         return list;
@@ -629,6 +633,11 @@ public sealed record Scenario
         return (Str(a, "name", ""), a.TryGetProperty("temper", out var t) ? Temper(t, $"{path} admiral") : null, Str(a, "why", ""));
     }
 
+    /// <summary>A crew's work-up as written: 0 (new to her) to 1 (worked up).</summary>
+    static double WorkUp(JsonElement w, string path) =>
+        w.ValueKind == JsonValueKind.Number && w.GetDouble() is >= 0 and <= 1 and var v ? v
+            : throw new ScenarioException($"{path}: a work-up is 0 (new to her) to 1 (worked up)");
+
     /// <summary>A temper as written: -1 (timid) to +1 (bold).</summary>
     internal static double Temper(JsonElement t, string path) =>
         t.ValueKind == JsonValueKind.Number && t.GetDouble() is var v and >= -1 and <= 1 ? v
@@ -724,7 +733,29 @@ public sealed record Scenario
                 tempers[k] = Temper(p.Value, $"{path} captains: {p.Name}");
             }
         }
-        return new ScenarioShips { Design = design, Count = count, Names = names, Dyes = dyes, Tempers = tempers, Loadout = ParseLoadout(e, path) ?? unitLoadout };
+        // the crews' work-up (docs/battle/crew.md decision 6): one for all of them, or by their ships' names
+        var workUps = Array.Empty<double>();
+        if (e.TryGetProperty("work_up", out var wu))
+        {
+            workUps = Enumerable.Repeat(1.0, count).ToArray();
+            if (wu.ValueKind == JsonValueKind.Number)
+                Array.Fill(workUps, WorkUp(wu, path));
+            else if (wu.ValueKind == JsonValueKind.Object)
+                foreach (var p in wu.EnumerateObject())
+                {
+                    int k = Array.IndexOf(names, p.Name);
+                    if (k < 0)
+                        throw new ScenarioException($"{path} work_up: no ship \"{p.Name}\" here (have {string.Join(", ", names)})");
+                    workUps[k] = WorkUp(p.Value, $"{path} work_up: {p.Name}");
+                }
+            else
+                throw new ScenarioException($"{path}: \"work_up\", 0 to 1 for all of them or by ships' names, {{ \"Chester\": 0.3 }}");
+        }
+        return new ScenarioShips
+        {
+            Design = design, Count = count, Names = names, Dyes = dyes, Tempers = tempers, WorkUps = workUps,
+            Loadout = ParseLoadout(e, path) ?? unitLoadout,
+        };
     }
 
     static Dye ParseDye(string? s, string path) =>
@@ -890,6 +921,13 @@ public sealed class ScenarioShips
     /// <summary>The <paramref name="i"/>-th ship's captain's temper.</summary>
     public double TemperOf(int i) => i < Tempers.Length ? Tempers[i] : 0;
 
+    /// <summary>Each ship's crew's work-up in order (<c>"work_up"</c>; docs/battle/crew.md decision 6); those past its end
+    /// are worked up.</summary>
+    public double[] WorkUps { get; init; } = [];
+
+    /// <summary>The <paramref name="i"/>-th ship's crew's work-up, 0-1.</summary>
+    public double WorkUpOf(int i) => i < WorkUps.Length ? WorkUps[i] : 1;
+
     /// <summary>The loadout they carry (docs/battle/shells-armour-damage.md S5): the entry's, else its unit's; null for
     /// their design's own.</summary>
     public LoadoutSpec? Loadout { get; init; }
@@ -906,11 +944,15 @@ public sealed class ScenarioShips
         Names = from < Names.Length ? Names[from..Math.Min(from + count, Names.Length)] : [],
         Dyes = from < Dyes.Length ? Dyes[from..Math.Min(from + count, Dyes.Length)] : [],
         Tempers = from < Tempers.Length ? Tempers[from..Math.Min(from + count, Tempers.Length)] : [],
+        WorkUps = from < WorkUps.Length ? WorkUps[from..Math.Min(from + count, WorkUps.Length)] : [],
         Struck = from + count >= Count ? Struck : [],
     };
 
     /// <summary>The entry with <paramref name="n"/> more ships at its end, unnamed.</summary>
-    internal ScenarioShips Grown(int n) => new() { Design = Design, Count = Count + n, Names = Names, Dyes = Dyes, Tempers = Tempers, Loadout = Loadout, Struck = Struck };
+    internal ScenarioShips Grown(int n) => new()
+    {
+        Design = Design, Count = Count + n, Names = Names, Dyes = Dyes, Tempers = Tempers, WorkUps = WorkUps, Loadout = Loadout, Struck = Struck,
+    };
 
     /// <summary>The entry with the <paramref name="i"/>-th ship's captain's temper set.</summary>
     internal ScenarioShips Tempered(int i, double temper)
@@ -918,7 +960,7 @@ public sealed class ScenarioShips
         var t = new double[Math.Max(Tempers.Length, i + 1)];
         Tempers.CopyTo(t, 0);
         t[i] = temper;
-        return new() { Design = Design, Count = Count, Names = Names, Dyes = Dyes, Tempers = t, Loadout = Loadout, Struck = Struck };
+        return new() { Design = Design, Count = Count, Names = Names, Dyes = Dyes, Tempers = t, WorkUps = WorkUps, Loadout = Loadout, Struck = Struck };
     }
 
     /// <summary>The entry with its last <paramref name="n"/> ships taken off: struck (kept by name for the screen), or
@@ -931,7 +973,7 @@ public sealed class ScenarioShips
         {
             Design = Design, Count = keep, Loadout = Loadout,
             Names = Names[..Math.Min(keep, Names.Length)], Dyes = Dyes[..Math.Min(keep, Dyes.Length)],
-            Tempers = Tempers[..Math.Min(keep, Tempers.Length)],
+            Tempers = Tempers[..Math.Min(keep, Tempers.Length)], WorkUps = WorkUps[..Math.Min(keep, WorkUps.Length)],
             Struck = strike ? [.. off, .. Struck] : Struck,
         };
     }

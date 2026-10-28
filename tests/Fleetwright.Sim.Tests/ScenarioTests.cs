@@ -295,7 +295,7 @@ public class ScenarioTests
         Assert.Equal(0, s.Player);
         Assert.Equal(13, s.Units.Where(u => u.Side == 0).Sum(u => u.ShipCount));
         Assert.Equal(14, s.Units.Where(u => u.Side == 1).Sum(u => u.ShipCount));
-        Assert.Equal([(0, CrewQuality.Average)], s.Crews);
+        Assert.Equal([(0, Experience.Average)], s.Crews);
         foreach (var n in s.DesignNames())
             Assert.True(File.Exists(Path.Combine(s.Folder!, "Designs", n + ".json")) || File.Exists(Path.Combine(Designs[0], n + ".json")), n);
     }
@@ -351,7 +351,6 @@ public class ScenarioTests
         Assert.Contains("\"France\" isn't one of the sides", x.Message);
     }
 
-    /// <summary>A side's gun crews by its name (docs/battle/fighting.md 4.2b), trained where not given.</summary>
     /// <summary>Dye loads (docs/visuals/splashes.md "Dye"): one for a whole entry, or each ship's in order, onto the
     /// ships; a colour the palette hasn't is named.</summary>
     [Fact]
@@ -396,14 +395,34 @@ public class ScenarioTests
         Assert.Contains("temper", Assert.Throws<ScenarioException>(() => Scenario.Parse(Small.Replace("\"spacing\": 2000,", "\"spacing\": 2000, \"admiral\": { \"temper\": 2 },"))).Message);
     }
 
+    /// <summary>A side's men's experience by its name or a number (docs/battle/crew.md decision 6), trained where not
+    /// given; a ship's crew's work-up for all of an entry or by name, worked up where not given.</summary>
     [Fact]
     public void Crews_are_a_sides_by_name_and_go_to_the_world()
     {
         var (w, _, _) = Load(Small.Replace("\"sides\": [\"Britain\", \"Germany\"],", "\"sides\": [\"Britain\", \"Germany\"], \"crews\": { \"Germany\": \"elite\" },"));
-        Assert.Equal(CrewQuality.Trained, w.Gunnery.Crew(0));
-        Assert.Equal(CrewQuality.Elite, w.Gunnery.Crew(1));
+        Assert.Equal(Experience.Trained, w.Gunnery.Experience(0));
+        Assert.Equal(Experience.Elite, w.Gunnery.Experience(1));
         var x = Assert.Throws<ScenarioException>(() => Scenario.Parse(Small.Replace("\"sides\":", "\"crews\": { \"Germany\": \"heroic\" }, \"sides\":")));
         Assert.Contains("green, average, trained or elite", x.Message);
+        x = Assert.Throws<ScenarioException>(() => Scenario.Parse(Small.Replace("\"sides\":", "\"crews\": { \"Germany\": 3.5 }, \"sides\":")));
+        Assert.Contains("0 to 3", x.Message);
+
+        var (w2, _, start) = Load(Small
+            .Replace("\"sides\": [\"Britain\", \"Germany\"],", "\"sides\": [\"Britain\", \"Germany\"], \"crews\": { \"Britain\": 1.5, \"Germany\": \"2.25\" },")
+            .Replace("\"names\": [\"Alpha\", \"Bravo\"] }", "\"names\": [\"Alpha\", \"Bravo\"], \"work_up\": { \"Bravo\": 0.4 } }")
+            .Replace("\"name\": \"Picket\" }", "\"name\": \"Picket\", \"work_up\": 0.25 }"));
+        int Named(string n) => start.ShipNames.First(kv => kv.Value == n).Key;
+        Assert.Equal(1.5, w2.Gunnery.Experience(0));
+        Assert.Equal(2.25, w2.Gunnery.Experience(1));
+        Assert.Equal(1, Ship(w2, Named("Alpha")).WorkUp);
+        Assert.Equal(0.4, Ship(w2, Named("Bravo")).WorkUp);
+        Assert.Equal(1, Ship(w2, Named("Alpha") + 2).WorkUp);   // the next entry's
+        Assert.Equal(0.25, Ship(w2, Named("Picket")).WorkUp);
+        x = Assert.Throws<ScenarioException>(() => Scenario.Parse(Small.Replace("\"name\": \"Picket\" }", "\"name\": \"Picket\", \"work_up\": 1.5 }")));
+        Assert.Contains("work-up", x.Message);
+        x = Assert.Throws<ScenarioException>(() => Scenario.Parse(Small.Replace("\"name\": \"Picket\" }", "\"name\": \"Picket\", \"work_up\": { \"Pickett\": 0.5 } }")));
+        Assert.Contains("no ship", x.Message);
     }
 
     [Fact]

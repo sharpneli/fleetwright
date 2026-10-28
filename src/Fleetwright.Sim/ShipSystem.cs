@@ -20,6 +20,7 @@ public enum ShipCommand : ushort
     Dye,
     Load,
     ResumeRoute,
+    WorkUp,
 }
 
 /// <summary>The world's ships (docs/battle/plan.md step 2.2), in their clock tiers (ShipSystem.Tiers.cs): on the fine
@@ -173,6 +174,10 @@ public sealed partial class ShipSystem : IWorldSystem
     /// takes nothing off rails.</summary>
     public static Command Dye(int entity, Ships.Dye dye) => new(Id, (ushort)ShipCommand.Dye, entity, B: (int)dye);
 
+    /// <summary>How far a ship's crew is worked up in her, 0-1 (docs/battle/crew.md decision 6), carried in thousandths.
+    /// A setting, not a movement: it takes nothing off rails.</summary>
+    public static Command WorkUp(int entity, double workUp) => new(Id, (ushort)ShipCommand.WorkUp, entity, B: (int)Math.Round(workUp * 1000));
+
     /// <summary>A ship takes a loadout of her class (its registry id, <see cref="ShipClassRegistry.AddLoadout"/>;
     /// docs/battle/shells-armour-damage.md S5), her magazines filled with it: only in port, which until the campaign's
     /// ports means before she's fired a round (CombatStore.Load); otherwise, or for another class's loadout, nothing.
@@ -216,6 +221,12 @@ public sealed partial class ShipSystem : IWorldSystem
         {
             if (c.B is >= 0 and <= (int)Ships.Dye.Black)
                 Store.SetDye(slot, (Ships.Dye)c.B);
+            return;
+        }
+        if (code == ShipCommand.WorkUp)
+        {
+            if (c.B is >= 0 and <= 1000)
+                Store.SetWorkUp(slot, c.B / 1000.0);
             return;
         }
         if (code == ShipCommand.Load)

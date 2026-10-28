@@ -38,6 +38,7 @@ public sealed class ShipStore
     internal int[] entity = [], generation = [], classIndex = [];
     internal byte[] side = [];
     internal Dye[] dye = [];   // her shells' splash colour (docs/visuals/splashes.md): nothing reads it but the screens yet
+    internal double[] workUp = [];   // this crew in this ship, 0-1 (docs/battle/crew.md decision 6): 1 worked up
     internal bool[] alive = [];
     internal Handling[] handling = [];
 
@@ -138,6 +139,7 @@ public sealed class ShipStore
         this.classIndex[slot] = classIndex;
         this.side[slot] = side;
         dye[slot] = Dye.None;
+        workUp[slot] = 1;
         alive[slot] = true;
         handling[slot] = h;
         this.position[slot] = up * Earth.Radius;
@@ -533,6 +535,9 @@ public sealed class ShipStore
     /// <summary>The dye her shells carry from now on.</summary>
     public void SetDye(int slot, Dye d) => dye[slot] = d;
 
+    /// <summary>How far her crew is worked up in her, 0-1.</summary>
+    public void SetWorkUp(int slot, double w) => workUp[slot] = w;
+
     /// <summary>Re-anchors a ship on rails at a point on a rhumb line at a course (past a route's last waypoint).</summary>
     public void ReanchorRhumb(int slot, Vec3d at, double courseDeg)
     {
@@ -862,6 +867,8 @@ public sealed class ShipStore
             h.Add(side[i]);
             if (dye[i] != Dye.None)
                 h.Add((int)dye[i]);   // only then, so a world without dye hashes as it did before
+            if (workUp[i] != 1)
+                h.Add(workUp[i]);   // the same
             h.Add(position[i]);
             h.Add(forward[i]);
             h.Add(speed[i]);
@@ -939,6 +946,7 @@ public sealed class ShipStore
         Array.Resize(ref classIndex, n);
         Array.Resize(ref side, n);
         Array.Resize(ref dye, n);
+        Array.Resize(ref workUp, n);
         Array.Resize(ref alive, n);
         Array.Resize(ref handling, n);
         Array.Resize(ref position, n);
@@ -1009,6 +1017,9 @@ public readonly struct ShipState(ShipStore store, int slot)
 
     /// <summary>The dye her shells carry (<see cref="Dye.None"/> before the 1930s).</summary>
     public Dye Dye => store.dye[slot];
+
+    /// <summary>How far her crew is worked up in her (docs/battle/crew.md decision 6), 0 new to her to 1 worked up.</summary>
+    public double WorkUp => store.workUp[slot];
 
     /// <summary>Where the ship is now (on rails, evaluated at the world's time).</summary>
     public Vec3d Position

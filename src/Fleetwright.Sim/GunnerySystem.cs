@@ -9,7 +9,7 @@ public enum GunneryCommand : ushort
 {
     Engage = 1,
     Cease = 2,
-    SetCrew = 3,
+    SetExperience = 3,
     SetDiscipline = 4,
     Load = 5,
 }
@@ -236,8 +236,10 @@ public sealed class GunnerySystem : IWorldSystem
     readonly Stack<int> freeSalvo;
     int highSalvo;
     bool ticking, ever;
-    readonly CrewQuality[] crews = new CrewQuality[256];
-    bool crewsSet;
+    // each side's men's experience in thousandths (docs/battle/crew.md decision 6: whole numbers in commands, so a replay
+    // is the same)
+    readonly int[] experience = new int[256];
+    bool experienceSet;
     // each side's fire discipline, an index of the settings' FireDisciplines (fire-control.md F6, decision 3)
     readonly byte[] disciplines = new byte[256];
     bool disciplinesSet;
@@ -274,7 +276,7 @@ public sealed class GunnerySystem : IWorldSystem
         int engagements = Math.Max(16, 2 * settings.ShipCapacity);
         (fcs, sensors, pending, freeFc) = (new Fc[engagements], new Sensor[engagements * MaxSensors], new FcReading[engagements * PendingCap],
             new Stack<int>(engagements));
-        Array.Fill(crews, CrewQuality.Trained);
+        Array.Fill(experience, (int)(Core.Experience.Trained * 1000));
     }
 
     // ------------------------------------------------------------------ commands
@@ -292,14 +294,19 @@ public sealed class GunnerySystem : IWorldSystem
     public static Command Load(int shooter, int battery, ShellKind? kind) =>
         new(Id, (ushort)GunneryCommand.Load, shooter, A: kind is { } k ? (long)k + 1 : 0, B: battery);
 
-    /// <summary>A side's gun crews (the scenario's to give; trained by default).</summary>
-    public static Command SetCrew(int side, CrewQuality quality) => new(Id, (ushort)GunneryCommand.SetCrew, side, A: (long)quality);
+    /// <summary>A side's men's experience, 0-3 (<see cref="Core.Experience"/>: the scenario's to give; trained by
+    /// default), carried in thousandths.</summary>
+    public static Command SetExperience(int side, double experience) =>
+        new(Id, (ushort)GunneryCommand.SetExperience, side, A: (long)Math.Round(experience * 1000));
 
     /// <summary>A side's fire discipline, an index of <see cref="SimSettings.FireDisciplines"/> (the scenario's or the
     /// admiral's to give; the first by default).</summary>
     public static Command SetDiscipline(int side, int discipline) => new(Id, (ushort)GunneryCommand.SetDiscipline, side, A: discipline);
 
-    public CrewQuality Crew(int side) => crews[side & 255];
+    public double Experience(int side) => experience[side & 255] / 1000.0;
+
+    /// <summary>A ship's gun crews: her side's experience as far as she's worked up (docs/battle/crew.md decision 6).</summary>
+    GunneryCrew CrewOf(in ShipState ship) => settings.GunneryCrewAt(settings.GunneryLevel(Experience(ship.Side), ship.WorkUp));
 
     public FireDiscipline Discipline(int side) => settings.FireDisciplines[disciplines[side & 255]];
 
@@ -334,11 +341,11 @@ public sealed class GunnerySystem : IWorldSystem
                     if (fcs[i].Alive && fcs[i].Shooter == c.Entity && (c.B < 0 || fcs[i].Battery == c.B))
                         Free(i);
                 break;
-            case GunneryCommand.SetCrew:
-                if (c.Entity is < 0 or > 255 || c.A is < 0 or > (long)CrewQuality.Elite)
-                    throw new ArgumentException($"no crew {c.A} for side {c.Entity}");
-                crews[c.Entity] = (CrewQuality)c.A;
-                crewsSet = true;
+            case GunneryCommand.SetExperience:
+                if (c.Entity is < 0 or > 255 || c.A is < 0 or > (long)(Core.Experience.Max * 1000))
+                    throw new ArgumentException($"no experience {c.A / 1000.0} for side {c.Entity}");
+                experience[c.Entity] = (int)c.A;
+                experienceSet = true;
                 break;
             case GunneryCommand.SetDiscipline:
                 if (c.Entity is < 0 or > 255 || c.A < 0 || c.A >= settings.FireDisciplines.Length)
@@ -690,7 +697,7 @@ public sealed class GunnerySystem : IWorldSystem
         var cond = store.Combat.Condition(slot);
         var computer = fc.Fit.Computer;
         var optics = fc.Fit.Optics;
-        var crew = settings.GunneryCrews[(int)crews[ship.Side]];
+        var crew = CrewOf(ship);
         var pic = world.Sightings.Of(ship.Side);
         int ci = pic?.IndexOf(fc.Target) ?? -1;
         bool inSight = ci >= 0 && pic![ci].InSight;
@@ -1172,7 +1179,7 @@ public sealed class GunnerySystem : IWorldSystem
 
         var computer = fc.Fit.Computer;
         var mount = fc.Fit.Mount;
-        var crew = settings.GunneryCrews[(int)crews[ship.Side]];
+        var crew = CrewOf(ship);
         int tableIndex = fc.Table;
         var table = shells.Ballistics[tableIndex];
         var frame = ship.Frame;
@@ -1395,7 +1402,7 @@ public sealed class GunnerySystem : IWorldSystem
                 // each spot against the correction its salvo was fired with; a crew may pyramid, putting it on the one in
                 // force (F6: the green most often)
                 var rp = stream.Derive(0x5B09u).Derive((ulong)si).Derive((ulong)sv.Generation);
-                bool pyramid = rp.NextDouble() < settings.GunneryCrews[(int)crews[ship.Side]].Pyramid;
+                bool pyramid = rp.NextDouble() < CrewOf(ship).Pyramid;
                 if (sign != FireControl.Sign.Doubtful)
                     SpotRange(ref fc, sv, ship.Side, sign, pyramid, now);
                 // the line, spotted whether the range could be or not (off for line, it's corrected first): an angle, so
@@ -1599,12 +1606,13 @@ public sealed class GunnerySystem : IWorldSystem
 
     public void Hash(ref StateHash h)
     {
-        if (crewsSet)
-            for (int s = 0; s < crews.Length; s++)
-                if (crews[s] != CrewQuality.Trained)
+        if (experienceSet)
+            for (int s = 0; s < experience.Length; s++)
+                if (experience[s] != (int)(Core.Experience.Trained * 1000))
                 {
+                    // a name's whole number as the crew quality's index was, so those hash as they did; between, apart
                     h.Add(s);
-                    h.Add((int)crews[s]);
+                    h.Add(experience[s] % 1000 == 0 ? experience[s] / 1000 : 10_000 + experience[s]);
                 }
         if (disciplinesSet)
             for (int s = 0; s < disciplines.Length; s++)

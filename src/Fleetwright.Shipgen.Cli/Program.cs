@@ -87,7 +87,7 @@ public static class Program
             0 -> full, coasting, a crash stop, each beside the research's band for its kind; --out writes the circles
             as DIR/<design>_turns.svg
         shipgen duel SHOOTER [TARGET] [--range M] [--fit design|0-8|NAME] [--runs N] [--minutes M] [--speed KN] [--target-speed KN] [--bearing DEG] [--course DEG]
-                [--target-policy P] [--own-policy P] [--visibility KM] [--wind FROM,KN] [--night | --at ISO] [--combat X] [--crew trained] [--battery B] [--seed S] [--trace] [--damage] [--smoke | --no-smoke]
+                [--target-policy P] [--own-policy P] [--visibility KM] [--wind FROM,KN] [--night | --at ISO] [--combat X] [--crew trained|0-3] [--work-up 0-1] [--battery B] [--seed S] [--trace] [--damage] [--smoke | --no-smoke]
             the fire-control bench (docs/battle/fire-control.md F1): the shooter steams north, the target at a bearing and range on
             a course; a policy is steady, zigzag:AMP:PERIOD, circle:RATE:FROM (°/s, s after the track), chase:AMP:PERIOD (steer for
             the last splash), turn:DEG:AT or crippled; --fit a preset (--level the same) or the battery's own; --combat 1 for
@@ -709,7 +709,8 @@ public static class Program
             Own = Policy.Parse(a.Get("own-policy", "steady")!), Behaviour = Policy.Parse(a.Get("target-policy", "steady")!),
             VisibilityM = D(a, "visibility", 0) * 1000, Combat = D(a, "combat", double.NaN), Minutes = D(a, "minutes", 15),
             Start = a.Has("night") ? FcCase.Night : a.Get("at") is { } at ? WorldTime.FromUtc(DateTime.Parse(at, inv, System.Globalization.DateTimeStyles.AdjustToUniversal | System.Globalization.DateTimeStyles.AssumeUniversal)) : FcCase.Day,
-            Crew = Enum.Parse<CrewQuality>(a.Get("crew", "trained")!, ignoreCase: true), Damage = a.Has("damage"), Discipline = a.Get("discipline"),
+            Experience = Experience.TryParse(a.Get("crew", "trained"), out double xp) ? xp : throw new ArgumentException("--crew: green, average, trained or elite, or 0 to 3"),
+            WorkUp = D(a, "work-up", 1), Damage = a.Has("damage"), Discipline = a.Get("discipline"),
             WindFromDeg = a.Get("wind") is { } wf ? double.Parse(wf.Split(',')[0], inv) : double.NaN,
             WindKn = a.Get("wind") is { } wk ? double.Parse(wk.Split(',')[^1], inv) : double.NaN,
             Speed = TierSpeed(a),

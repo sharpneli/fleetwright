@@ -18,6 +18,32 @@ public class GunneryTests(ITestOutputHelper output)
 
     static ShipClass Class(string name) => Fleet.Get(name).Class!;
 
+    /// <summary>Experience and work-up (docs/battle/crew.md decision 6): the crew rows are anchors at the whole numbers,
+    /// read exactly there and linearly between, held past the ends; a worked-up crew shoots at its experience exactly,
+    /// one new to the ship at 0.3 of it.</summary>
+    [Fact]
+    public void The_gunnery_level_reads_the_crew_rows_between_the_whole_numbers()
+    {
+        var s = SimSettings.Default;
+        for (int k = 0; k < s.GunneryCrews.Length; k++)
+        {
+            Assert.Equal(k, s.GunneryLevel(k, 1));
+            Assert.Equal(s.GunneryCrews[k], s.GunneryCrewAt(k));
+        }
+        var mid = s.GunneryCrewAt(1.5);
+        Assert.Equal((s.GunneryCrews[1].Operator + s.GunneryCrews[2].Operator) / 2, mid.Operator, 12);
+        Assert.Equal((s.GunneryCrews[1].Pyramid + s.GunneryCrews[2].Pyramid) / 2, mid.Pyramid, 12);
+        Assert.Equal(s.GunneryCrews[^1], s.GunneryCrewAt(3.4));
+        Assert.Equal(s.GunneryCrews[0], s.GunneryCrewAt(-1));
+        Assert.Equal(0.6, s.GunneryLevel(Experience.Trained, 0), 12);
+        Assert.Equal(1.3, s.GunneryLevel(Experience.Trained, 0.5), 12);
+        Assert.True(Experience.TryParse("Elite", out double e) && e == 3);
+        Assert.True(Experience.TryParse("2.5", out e) && e == 2.5);
+        Assert.False(Experience.TryParse("3.5", out _));
+        Assert.Equal("trained", Experience.Name(2));
+        Assert.Equal("1.25", Experience.Name(1.25));
+    }
+
     /// <summary>A shooter steaming north and a target at a bearing and range from it on a course, both at speed, sides
     /// 0 and 1; the shooter's battery engaged on it.</summary>
     static World Make(ShipClass shooter, ShipClass target, double rangeM, double bearingDeg, double courseDeg, double kn, int seed, int level = -1,

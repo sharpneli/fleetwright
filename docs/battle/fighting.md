@@ -451,7 +451,8 @@ between cells), its thickness, material and normal.
   firing independently. **Kept simple for now: that ship gets the advantage** (decision 9). Whose splash it is
   (`manual-gunnery-research.md` §5) stays on 4.5's list with the rest.
 - **Crew quality,** one per side, given by a scenario (green, average, trained, elite; trained by default): it scales
-  the rangetaker's δ and the laying error.
+  the rangetaker's δ and the laying error. Since `crew.md` N0a two floats: a side's experience (0-3, the names on the
+  whole numbers) and a ship's work-up (0-1).
 - **Hits are counted and shown but do nothing yet** (a flash, a log line), so fire control is calibrated on its own
   before damage is in.
 - **`CombatLog`** starts here: the architecture's "who fired first and what each hit did". A ring of plain structs per
@@ -500,7 +501,8 @@ between cells), its thickness, material and normal.
   trackers, radars and stabilisation are 4.5's; since `fire-control.md` F0 the rows are `FireControlPresets`, each
   battery's fit on its class; since F3 the presets are the catalogue's named fits and a battery's fit its design's
   tech blocks), crew qualities (green, average, trained, elite: the rangetakers' and
-  layers' errors), and the gunnery numbers. Crews per side: `GunnerySystem.SetCrew`, and a scenario's `"crews"`.
+  layers' errors), and the gunnery numbers. Crews per side: `GunnerySystem.SetExperience`, and a scenario's `"crews"` (crew.md N0a: the rows anchors at the
+  whole numbers, read between them by the gunnery level).
 - **The gun's pattern** is a placeholder on `BatteryRow` (`DesignerPlaceholders.Pattern`: the Great War's heavy guns
   3.3·(305 mm/d)³ %, 12" 3.3, 13.5" 2.5, 15" 1.7; lighter 2.5; later 1.8-1.9).
 - **`CombatLog`:** a ring of plain lines (fired, hit, straddle) in the world, hashed; the snapshot carries the newest 64.
