@@ -139,7 +139,7 @@ public class FallOutTests(ITestOutputHelper output)
             k.Damaged = true;
             long now = 600_000;
             Effects.PowerOut(c, k, new P3(0, 0, 0), -1, -1, double.PositiveInfinity, (long)(min * 60_000), now, DownCause.NearMissCascade);
-            Functions.Evaluate(k, Settings.DraughtFloor, now + (long)(Settings.FallOutWaitMin * 60_000));
+            Functions.Evaluate(k, Settings, now, now + (long)(Settings.FallOutWaitMin * 60_000));
             var fit = Fitness.Of(c, k, 1000);
             output.WriteLine($"power out {min} min: mounts working {k.MountWorks.Count(m => m)} of {k.MountWorks.Length}, " +
                              $"main guns {fit.MainGunsShare:P0} to the captain, fall-out {rule.Of(fit)}");

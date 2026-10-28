@@ -1,4 +1,5 @@
 using Fleetwright.Shipgen;
+using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Ships;
 
 namespace Fleetwright.Sim.Combat;
@@ -58,6 +59,36 @@ public static class BattleStations
             RoomKind.Hangar => BattleStation.Air,
             _ => BattleStation.Repair,
         };
+    }
+
+    /// <summary>A group's men at work over the need it was sized for (docs/battle/crew.md N2: its battle crew, Shipgen's
+    /// GunCrew, CommandK, the directors' and the plant's crews), 0-1: the crew thinning, the next man stepping up and the
+    /// least skilled duty dropped (1 for a group sized for nobody).</summary>
+    public static double Share(ShipClass c, ShipCondition k, int g)
+    {
+        int need = g < c.Components.Length ? c.Components[g].BattleCrew : c.Cells[g - c.Components.Length].BattleCrew;
+        return need > 0 ? Math.Min((double)Casualties.Men(c, k, g) / need, 1) : 1;
+    }
+
+    /// <summary>A mount's gun crew and its supply at work (N2), each 0-1, 0 below the few the guns can't be fought without:
+    /// the gunhouse's (or the open mount's) men, by <see cref="SimSettings.GunMinMenPerMm"/> of calibre a barrel, 1 to
+    /// <see cref="SimSettings.GunMinMenMax"/> (the layer, the loader, the rammer); the handling men in its barbette, one a
+    /// barrel; a mount with no barbette passes its own rounds.</summary>
+    public static (double Crew, double Supply) Mount(ShipClass c, ShipCondition k, int mount, SimSettings s)
+    {
+        ref readonly var row = ref c.Mounts[mount];
+        int barrels = Math.Max(c.TurretTypes[row.Type].Barrels, 1);
+        int perBarrel = Math.Clamp((int)Math.Round(row.CalibreMm * s.GunMinMenPerMm), 1, s.GunMinMenMax);
+        double crew = Thinned(c, k, Casualties.Part(row.Component), perBarrel * barrels);
+        double supply = row.Barbette >= 0 ? Thinned(c, k, Casualties.Part(row.Barbette), barrels) : 1;
+        return (crew, supply);
+    }
+
+    /// <summary>A group's share, 0 below the fewest it works with (as many as it was sized for, if fewer).</summary>
+    static double Thinned(ShipClass c, ShipCondition k, int g, int fewest)
+    {
+        int need = g < c.Components.Length ? c.Components[g].BattleCrew : c.Cells[g - c.Components.Length].BattleCrew;
+        return need <= 0 ? 1 : Casualties.Men(c, k, g) < Math.Min(fewest, need) ? 0 : Share(c, k, g);
     }
 
     /// <summary>A ship's men by station, added in: her battle crew at each (<paramref name="men"/>) and those out of action

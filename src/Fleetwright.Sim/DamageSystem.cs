@@ -713,7 +713,7 @@ public sealed class DamageSystem : IWorldSystem
     {
         double cap = k.PowerCap;
         var steering = k.Steering;
-        bool steers = Functions.Evaluate(k, settings.DraughtFloor, world.Time.Ms + (long)(settings.FallOutWaitMin * 60_000));
+        bool steers = Functions.Evaluate(k, settings, world.Time.Ms, world.Time.Ms + (long)(settings.FallOutWaitMin * 60_000));
         Freeze(world, slot, k);
         Stiffen(world, slot, k);
         if (!steers && k.Steering == Steering.Free)

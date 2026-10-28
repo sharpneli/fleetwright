@@ -10,7 +10,9 @@ namespace Fleetwright.Sim.Tests;
 public class LineOfFireTests(ITestOutputHelper output)
 {
     static readonly WorldTime Start = WorldTime.FromUtc(1916, 5, 31, 14);
-    static readonly SimSettings Settings = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json"));
+    // the line of fire alone: hits do no damage, so a friend shot up by the enemy doesn't fall out of the scene (her guns
+    // silent for want of men since docs/battle/crew.md N2)
+    static readonly SimSettings Settings = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json")) with { HitsDoDamage = false };
     const double Lat = 56.0, Lon = 4.0;
 
     record Placed(string Design, double BearingDeg, double RangeM, double CourseDeg, double Kn, byte Side);

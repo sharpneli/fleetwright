@@ -738,7 +738,7 @@ public sealed class GunnerySystem : IWorldSystem
             if (!due)
                 continue;
             var r = stream.Derive((ulong)f).Derive((ulong)fc.Generation).Derive((ulong)now).Derive((ulong)k);
-            s.NextMs = now + (long)(60_000 / Rate(optics, s) * r.NextDouble(0.7, 1.3));
+            s.NextMs = now + (long)(60_000 / (Rate(optics, s) * (s.Eye >= 0 ? cond.EyeCrew[s.Eye] : 1)) * r.NextDouble(0.7, 1.3));   // short-handed, slower (crew.md N2)
             if (!seen)
                 continue;
             double range = Earth.Distance(at, tpos), brg = Earth.Bearing(at, tpos), sr, bias, sb;
@@ -1264,7 +1264,10 @@ public sealed class GunnerySystem : IWorldSystem
                 shells.Fired(world, fc.Shooter, ship.ClassIndex, mounts[j], salvo, away, muzzle, first, firstEl);
                 world.Smoke.Gun(world, slot, cls, mounts[j], away, muzzle, first, firstEl);   // its smoke (docs/battle/smoke.md Z4)
             }
-            store.Combat.Fired(slot, cls, mounts[j], fireLoad[j], barrels, now, crew.Load, world.Damage.FlashOf(ship.Side).HoistShare / DesignerPlaceholders.HoistShare);
+            // the reload stretched by the gun crew at work, the hoists by the handling men (docs/battle/crew.md N2)
+            var mc = store.Combat.Condition(slot);
+            store.Combat.Fired(slot, cls, mounts[j], fireLoad[j], barrels, now, crew.Load / mc.MountCrew[mounts[j]],
+                world.Damage.FlashOf(ship.Side).HoistShare / DesignerPlaceholders.HoistShare / mc.MountSupply[mounts[j]]);
         }
         sv.Left = sv.Shells;
         if (sv.Shells == 0)

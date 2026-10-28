@@ -217,6 +217,9 @@ public sealed class ShipCondition
     /// <summary>The heat release of her fires that show (B2: developed, on the open deck, burning charges), MW.</summary>
     public double FireShowMW;
     public bool[] MountWorks = [], DirectorWorks = [], EyeWorks = [], TubeWorks = [];
+    /// <summary>Each mount's gun crew and supply at work and each eye's men, 0-1 (docs/battle/crew.md N2,
+    /// <see cref="BattleStations"/>): its reload, its hoists and its readings stretched by them.</summary>
+    public double[] MountCrew = [], MountSupply = [], EyeCrew = [];
     /// <summary>Which mounts work and the power the plant makes once the outages ending by <see cref="LastingMs"/> are over
     /// (<see cref="Functions.Evaluate"/>): what her captain's fall-out reads (<see cref="Fitness"/>), the lasting state.</summary>
     public bool[] MountLasts = [];
@@ -386,6 +389,7 @@ public sealed class ShipCondition
             Smoked = new bool[c.Rooms.Length];
             (Level, LevelsFuel) = (new double[c.Rooms.Length], double.NaN);
             MountWorks = new bool[c.Mounts.Length];
+            (MountCrew, MountSupply, EyeCrew) = (new double[c.Mounts.Length], new double[c.Mounts.Length], new double[c.Eyes.Length]);
             MountLasts = new bool[c.Mounts.Length];
             DirectorWorks = new bool[c.Directors.Length];
             EyeWorks = new bool[c.Eyes.Length];
@@ -464,6 +468,9 @@ public sealed class ShipCondition
         }
         Array.Fill(HoleLeft, 1.0);
         Array.Fill(MountWorks, true);
+        Array.Fill(MountCrew, 1.0);
+        Array.Fill(MountSupply, 1.0);
+        Array.Fill(EyeCrew, 1.0);
         Array.Fill(MountLasts, true);
         (PowerCapLasts, LastingMs) = (1, 0);
         Array.Fill(DirectorWorks, true);
@@ -698,11 +705,14 @@ public sealed class ShipCondition
             next = Math.Min(next, Later(a.StiffUntil, now));
             next = Math.Min(next, Later(a.GunUntil, now));
         }
-        // the walking wounded back at their stations (nothing the ship can do changes with them yet)
+        // the walking wounded back at their stations, which work by their men (docs/battle/crew.md N2)
         for (int i = Returns - 1; i >= 0; i--)
         {
             if (ReturnMs[i] <= now)
+            {
                 Return(i);
+                any = true;
+            }
             else
                 next = Math.Min(next, ReturnMs[i]);
         }

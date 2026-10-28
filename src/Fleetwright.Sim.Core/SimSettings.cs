@@ -1041,6 +1041,12 @@ public sealed record SimSettings
     /// lost; 08-gunfire-effects.md §8: funnel hits cost draught, not the boilers).</summary>
     public double DraughtFloor { get; init; } = 0.7;
 
+    /// <summary>The fewest men a gun is fought with (docs/battle/crew.md N2): one a barrel per 1/GunMinMenPerMm mm of
+    /// calibre, 1 to <see cref="GunMinMenMax"/> [EST: a heavy gun's layer, loader and rammer, 3; a 3-pdr's layer and
+    /// loader, 1-2]; a mount with fewer is silent, and with more fires at its men over its crew of the reload.</summary>
+    public double GunMinMenPerMm { get; init; } = 0.02;
+    public int GunMinMenMax { get; init; } = 3;
+
     /// <summary>The outages a captain waits out in the line, minutes (docs/battle/command.md 5.1a item 2; the user,
     /// 2026-10-20): his fall-out reads his ship as she'll be once what ends within this is back (a blackout, a tripped
     /// breaker, a stunned crew, a short jam), not what's down for a while. 13 §1.3's short jams are under 15 min, the

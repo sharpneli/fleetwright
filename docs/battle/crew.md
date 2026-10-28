@@ -158,6 +158,16 @@ a zombie." The research for N3 is `research/simulation/crews-under-fire.md` (202
     preset holds a middle value, and the campaign's mechanics come later. `ReliefOrder` goes with it, a navy's practice
     as well.
 
+## Decided (the user, 2026-10-28, on N1)
+
+11. **The German big ships' fewer killed a hit after N1 stays for now** (the user: "we'll think about this later once
+    all steps are done and effects of duress etc are in"). Judged again against E6's fit at the end of the plan.
+12. **Reliefs take only idle hands, the repair parties' among them** (the user: "Only idle hands should matter. So if
+    repair crews are mostly idle then captain can grab some, at the risk of having to toss them back for repair work if
+    it's needed"). No floor of repair men kept apart: a party standing by, with no fire or water job, is idle hands the
+    captain may draw reliefs from (decision 1's "the repair men above the floor" read so), and he sends them back when
+    damage control needs them, so a party's men come off the guns for a job (N3a).
+
 ## What the research says (2026-10-28)
 
 CUF gathers over 40 cases in six navies, Yalu to Samar, with WWII and land evidence as checks. Against this plan:
@@ -331,7 +341,7 @@ the walking wounded back after 15-45 min). Southampton's and Emden's hit counts 
     complement were 0.10 and 0.12, so the new shares of the repair men are 0.85 (1890) and 1.0 (1905 on): the same men on
     the median ship. That leaves no repair men above the floor for N3's reliefs on most ships (decision 1's "the repair
     men above the floor"); reliefs come from the covered crews, the wrecked mounts' men and the stokers first, and the
-    doctrine can lower it. **Open for the user.**
+    doctrine can lower it. Decided (12): no floor; a party standing by is idle hands for the reliefs, sent back for a job.
   - **Found:** `Muster`'s choice is by section and size, not by protection; the standing-by parties of a fired-on ship
     gather there.
   - **The yardsticks (before → after, 20 runs a case):**
@@ -347,8 +357,7 @@ the walking wounded back after 15-45 min). Southampton's and Emden's hit counts 
       later cuts; Orel 0.30 → 0.43 killed a hit (her fires' parties); **the German big ships 7-12% fewer killed a hit**
       (60 runs, the same hits: Jutland's plate count 1.34 → 1.25, Seydlitz 1.91 → 1.75, Dogger Bank's Lion 0.74 → 0.65),
       their men drawn out of the upper quarters into parties working below. Past the noise, against wanted "unchanged";
-      the record has the German ships higher still (G1 1.94). **Open for the user:** keep (physical), or muster the
-      parties where they're protected less.
+      the record has the German ships higher still (G1 1.94). Decided (11): kept for now, judged again at the plan's end.
 - **N2 Stations work by their men.** A share per station: men present over the need it was sized for (`Crew.GunCrew`,
   `CommandK`, the directors' and the plant's crews).
   - **The share is the crew thinning** (the 1866 tables): the next man steps up at once, the least skilled duty drops,
@@ -366,6 +375,18 @@ the walking wounded back after 15-45 min). Southampton's and Emden's hit counts 
     men's height holds nobody at work. Its men go to the nearest cover and count as reserve. They go back when the
     space clears. Read from fire's and flooding's own state, never through duress.
   - Read in `Functions.Evaluate` from `Casualties.Men` (it already runs on every hit).
+  - **N2a built 2026-10-28 (mounts, supply, directors, eyes).** `BattleStations.Share` (men at work over the group's
+    battle crew) and `Mount` (the gun crew's share, 0 below `GunMinMenPerMm` × calibre a barrel, 1 to `GunMinMenMax` 3
+    [EST]; the barbette's handling men, 0 below one a barrel). `Evaluate` (now with the settings and the time) keeps
+    `MountCrew`, `MountSupply` and `EyeCrew`; a mount works only manned (its lasting state too, so her fall-out reads
+    guns silent for want of men), a director or an eye only with somebody there. `CombatStore.Fired` takes the reload
+    over the crew's share and the hoists over the supply's (the fine and the coarse tier alike), the readings come at the
+    eye's rate times its share. A walking wounded man's return is now a change (`Clear`), so his station counts him
+    again. The relief's 0.7 and the frozen 0 wait for N3. Not done: the transmitting station's plot (its rooms carry no
+    battery), the tops' lookouts (no men are placed there).
+    Measured: the guns lost are mostly lost with their mounts, so the counts move little (Emden's main at 100 min 0.8 →
+    0.5 of 2, her 105 mm 1.1 → 0.9 a side; Sverige's the same); damage-history's men unchanged. `LineOfFireTests` now run
+    without damage: their friend, shot up by the enemy, fell out of the scene with her guns silent.
 - **N3a Posture and reliefs: the captain's order** (decisions 1-2). Where each man stands, decided by the captain at
   each think.
   - **Closed up or under cover, per station**, by the side's doctrine field **`ManSecondaries`** (decision 10): Always,

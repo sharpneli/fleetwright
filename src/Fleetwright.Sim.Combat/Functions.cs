@@ -1,3 +1,4 @@
+using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Ships;
 
 namespace Fleetwright.Sim.Combat;
@@ -7,7 +8,10 @@ namespace Fleetwright.Sim.Combat;
 /// each function worth the least of its needs' health times the best of its alternatives'. From them: which mounts
 /// fire (and aren't jammed, nor all their guns out), which submerged tubes, directors and eyes work, the power the
 /// plant can make (its boiler rooms' steam and its shaft lines, the less of the two), whether the rudders answer,
-/// whether the ship is conned. A node down for a while (E4) gives nothing until it's back. Beside them, the mounts and
+/// whether the ship is conned; each station by the men at work there (docs/battle/crew.md N2: <see cref="BattleStations"/>:
+/// shares: a mount's crew stretches its reload and its handling men its supply, silent below the few it's fought with;
+/// a director or an eye with nobody is out, short-handed it reads slower). A node down for a while (E4) gives nothing
+/// until it's back. Beside them, the mounts and
 /// the power as they'll be once the outages ending by a time are over: the lasting state a captain falls out by
 /// (<see cref="Fitness"/>). Run when the condition changes, not per tick.</summary>
 public static class Functions
@@ -30,12 +34,13 @@ public static class Functions
         return v;
     }
 
-    /// <summary>Works out the condition's functions; whether its rudders still answer (none fitted: they do).
-    /// draughtFloor: the share of its steam a boiler room keeps with all its funnels wrecked; lastingMs: the lasting
-    /// state's time (world ms), the outages ending by then over.</summary>
-    public static bool Evaluate(ShipCondition k, double draughtFloor, long lastingMs)
+    /// <summary>Works out the condition's functions now (world ms); whether its rudders still answer (none fitted: they
+    /// do). The settings' DraughtFloor: the share of its steam a boiler room keeps with all its funnels wrecked;
+    /// lastingMs: the lasting state's time (world ms), the outages ending by then over (the men as they are now).</summary>
+    public static bool Evaluate(ShipCondition k, SimSettings s, long now, long lastingMs)
     {
         var c = k.Class;
+        double draughtFloor = s.DraughtFloor;
         double steam = 0, shafts = 0, steamBy = 0, shaftsBy = 0;
         int boilers = 0, lines = 0, rudders = 0;
         bool steer = false, conned = true;
@@ -45,14 +50,20 @@ public static class Functions
             switch (f.Kind)
             {
                 case FunctionKind.Mount:
-                    k.MountWorks[f.Index] = v > 0 && !k.Has(c.Mounts[f.Index].Component, PartFlags.Jammed) && k.Guns(f.Index) > 0;
-                    k.MountLasts[f.Index] = k.WorksBy(f.Index, Value(c, k, f, floor, lastingMs), lastingMs);
+                {
+                    var (crew, supply) = BattleStations.Mount(c, k, f.Index, s);
+                    (k.MountCrew[f.Index], k.MountSupply[f.Index]) = (crew, supply);
+                    bool manned = crew > 0 && supply > 0;
+                    k.MountWorks[f.Index] = manned && v > 0 && !k.Has(c.Mounts[f.Index].Component, PartFlags.Jammed) && k.Guns(f.Index) > 0;
+                    k.MountLasts[f.Index] = manned && k.WorksBy(f.Index, Value(c, k, f, floor, lastingMs), lastingMs);
                     break;
+                }
                 case FunctionKind.Director:
-                    k.DirectorWorks[f.Index] = v > 0 && k.DirectorDown[f.Index] == 0;
+                    k.DirectorWorks[f.Index] = v > 0 && k.DirectorDown[f.Index] == 0 && BattleStations.Share(c, k, Casualties.Part(c.Directors[f.Index].Component)) > 0;
                     break;
                 case FunctionKind.Eye:
-                    k.EyeWorks[f.Index] = v > 0 && k.EyeDown[f.Index] == 0;
+                    k.EyeCrew[f.Index] = BattleStations.Share(c, k, Casualties.Part(c.Eyes[f.Index].Component));
+                    k.EyeWorks[f.Index] = v > 0 && k.EyeDown[f.Index] == 0 && k.EyeCrew[f.Index] > 0;
                     break;
                 case FunctionKind.ShaftLine:
                     shafts += v;
