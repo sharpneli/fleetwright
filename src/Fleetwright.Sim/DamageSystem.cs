@@ -638,6 +638,7 @@ public sealed class DamageSystem : IWorldSystem
         bool near = hit.Source == HitSource.NearMiss;
         k.Damaged = touched = true;
         Ready(slot, k);
+        k.Experience = world.Gunnery.Experience(ship.Side);   // her men's nerve (docs/battle/crew.md N3b)
         if (!near)
             k.Hits++;
         (k.LastShooter, k.LastBattery) = (hit.Shooter, hit.Battery);
@@ -720,7 +721,8 @@ public sealed class DamageSystem : IWorldSystem
             fx |= HitEffect.Shock;
         if (e.Blackout)
             fx |= HitEffect.Blackout;
-        if (e.Changed && k.Status == ShipStatus.Afloat)
+        // men hit or shaken change what her stations can do (docs/battle/crew.md N2, N3b)
+        if ((e.Changed || e.Killed + e.Wounded > 0 || k.Stirred) && k.Status == ShipStatus.Afloat)
         {
             fx |= Recompute(world, slot, k, ref rng);
             Remind(world, slot, k);
@@ -750,6 +752,7 @@ public sealed class DamageSystem : IWorldSystem
     {
         double cap = k.PowerCap;
         var steering = k.Steering;
+        k.Experience = world.Gunnery.Experience(ships.Store[slot].Side);
         bool steers = Functions.Evaluate(k, settings, world.Time.Ms, world.Time.Ms + (long)(settings.FallOutWaitMin * 60_000));
         Freeze(world, slot, k);
         Stiffen(world, slot, k);

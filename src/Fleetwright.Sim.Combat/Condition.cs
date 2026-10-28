@@ -321,12 +321,40 @@ public sealed class ShipCondition
     /// arrived at each station from elsewhere (reliefs), each mount closed up or under cover, its men under cover and the
     /// shelter they wait in (a cell's group, -1 none), and what each fire party has lent and to which station.</summary>
     public int[] In = [];
-    /// <summary>When men at each station were last hit (world ms, 0: never): reliefs wait for a lull there (N3a's stand-in
-    /// for N3b's duress).</summary>
-    public long[] HitMs = [];
     public bool[] ClosedUp = [];
     public int[] Covered = [], MountShelter = [];
     public readonly int[] PartyLent = new int[MaxParties], PartyLentTo = new int[MaxParties];
+    /// <summary>The men's nerve (docs/battle/crew.md N3b, <see cref="Steadiness"/>): their experience (her side's, 0-3); the
+    /// stations that have duress (by group: its index, -1 none; by station: its group, whether it's open, how its men are
+    /// covered from a burst near it); and by station: its duress's channels (<see cref="Steadiness.Channels"/> a station, the
+    /// last its sensitising) as of when they were last faded, the men gone on their own (shaken) and those present and not
+    /// working (frozen), since when it's been calm (0: it isn't), its officer (0 there, -1 hit and none coming, else when a
+    /// relief officer gets there), the nerve it's lost for good, whether it's over its nerve, when it last burned, and
+    /// this hit's marks; the open stations by x; the stations to look at again; the spare officers; when they're next due.</summary>
+    public double Experience = Core.Experience.Trained;
+    public int[] StationOf = [], StationGroup = [];
+    public bool[] StationOpen = [];
+    public byte[] StationCover = [];
+    public double[] Duress = [];
+    public long[] DuressMs = [], CalmMs = [], OfficerAt = [], BurnMs = [];
+    public int[] Shaken = [], Frozen = [];
+    public double[] NerveKept = [];
+    public bool[] Over = [];
+    internal int[] InsideStamp = [], NearStamp = [];
+    internal int[] OpenByX = [];
+    internal int[] Active = [];
+    internal bool[] IsActive = [];
+    internal int ActiveN, StirredId;
+    /// <summary>Whether the hit (the casualty pass) under way added to a station's duress (N3b).</summary>
+    public bool Stirred => StirredId == RiskId;
+    public int SpareOfficers;
+    public long NerveDueMs;
+
+    internal void NerveDue(long at)
+    {
+        NerveDueMs = at;
+        Due(at);
+    }
     /// <summary>The men on their way (N3a): when they get there, to which station (-1 - g: back to their own g), how
     /// many; a pool of <see cref="MoveSlots"/>.</summary>
     public const int MoveSlots = 64;
@@ -503,17 +531,16 @@ public sealed class ShipCondition
             int groups = c.Components.Length + c.Cells.Length;
             (Gone, Away, RiskK, RiskC, RiskStamp, Touched) = (new int[groups], new int[groups], new double[groups], new double[groups], new int[groups], new int[groups]);
             In = new int[groups];
-            HitMs = new long[groups];
             (ClosedUp, Covered, MountShelter) = (new bool[c.Mounts.Length], new int[c.Mounts.Length], new int[c.Mounts.Length]);
             for (int m = 0; m < c.Mounts.Length; m++)
                 MountShelter[m] = Reliefs.ShelterOf(c, m);
+            Steadiness.Setup(c, this);
         }
         else
         {
             Array.Clear(Gone);
             Array.Clear(Away);
             Array.Clear(In);
-            Array.Clear(HitMs);
             Array.Clear(Covered);
             Array.Clear(JoinOpenM2);
             Array.Clear(JoinSeamM2);
@@ -578,6 +605,7 @@ public sealed class ShipCondition
         (ConnAt, ConnShiftMs) = (0, 0);
         Array.Fill(ClosedUp, true);
         Moves = 0;
+        Steadiness.Reset(this);
         Array.Clear(PartyLent);
         Array.Clear(PartyLentTo);
         Array.Fill(Stoke, 1.0);
@@ -825,6 +853,14 @@ public sealed class ShipCondition
                 any = true;
             else
                 next = Math.Min(next, ConnShiftMs);
+        }
+        // the men's nerve to look at again, a relief officer come (N3b): worked out with her functions
+        if (NerveDueMs > 0)
+        {
+            if (NerveDueMs <= now)
+                any = true;
+            else
+                next = Math.Min(next, NerveDueMs);
         }
         // the men on their way there (N3a)
         for (int i = Moves - 1; i >= 0; i--)
@@ -1111,6 +1147,13 @@ public sealed class ShipCondition
             h.Add(MoveMs[i]);
             h.Add(MoveTo[i] * 10_000 + MoveMen[i]);
         }
+        for (int n = 0; n < Shaken.Length; n++)
+            if (Shaken[n] != 0 || Frozen[n] != 0 || OfficerAt[n] != 0)
+            {
+                h.Add(n + 9700);
+                h.Add(Shaken[n] * 10_000 + Frozen[n]);
+                h.Add(OfficerAt[n]);
+            }
         for (int p = 0; p < PartyCount; p++)
             if (PartyLent[p] != 0)
             {

@@ -18,8 +18,8 @@ namespace Fleetwright.Sim.Ai.Captains;
 /// torpedo craft are in reach); from the men under cover, the wrecked guns' crews and their handling men, the parties
 /// standing by (lent: back to them for a job), and the stokers the speed asked doesn't need. A live mount's handling room
 /// is kept, unless her doctrine keeps its reserve in the supply (<see cref="ReliefOrder.ReserveInSupply"/>: the supply's
-/// spare men first). They wait for a lull at a station hit within <see cref="SimSettings.ReliefLullS"/> (a stand-in for
-/// N3b's duress against the men's nerve), unless the captain is bold.</item>
+/// spare men first). They wait for a lull while a station's duress is over their nerve (N3b,
+/// <see cref="Steadiness.ReliefNerve"/>), unless the captain is bold.</item>
 /// <item>He looks it over every <see cref="SimSettings.CrewPlanS"/> a ship.</item>
 /// </list></summary>
 public sealed partial class CaptainLayer
@@ -256,13 +256,13 @@ public sealed partial class CaptainLayer
             }
         int sources = -1;   // gathered when a station first needs them
         bool bold = doctrine.Of(own.Entity, own.Side, DoctrineField.Temper) >= 0.5;
-        long lull = (long)(ctx.Settings.ReliefLullS * 1000);
+        double nerve = Steadiness.ReliefNerve(k, ctx.Settings);
         for (int t = 0; t < n; t++)
         {
             int g = crewTargets[t];
             int need = g < cls.Components.Length ? cls.Components[g].BattleCrew : cls.Cells[g - cls.Components.Length].BattleCrew;
             int want = need - Casualties.Men(cls, k, g) - Reliefs.Inbound(k, g);
-            if (want < 1 || !bold && k.HitMs[g] > 0 && ctx.NowMs - k.HitMs[g] < lull)
+            if (want < 1 || !bold && Steadiness.Duress(cls, k, g, ctx.NowMs, ctx.Settings) > nerve)
                 continue;   // full, or under fire there: they wait for a lull
             if (sources < 0)
                 sources = Sources(ctx, own, cls, k, plan);

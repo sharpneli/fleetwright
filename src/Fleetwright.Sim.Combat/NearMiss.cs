@@ -236,6 +236,7 @@ public static class NearMiss
                 var (pk, pc) = Casualties.PiecesRisk(comp.Bounds, Casualties.Cover(c, Casualties.Part(i), s), frag, p, d, v, crewMild > 0 ? 1 : 1 / s.CasualtyS,
                     crewMild, default, 0, s, WaterDragM(p, surface, mid, s));
                 Casualties.Add(k, Casualties.Part(i), pk, pc);
+                Steadiness.NearBurst(c, k, Casualties.Part(i), p, s);
             }
         }
     }
@@ -276,6 +277,7 @@ public static class NearMiss
             var (pk, pc) = Casualties.PiecesRisk(box, Casualties.Cover(c, g, s), frag, p, hit.Direction, hit.SpeedMs, 1, sideMild + Belt(c, mid.X, mid.Z),
                 normal, 0, s, WaterDragM(p, surface, mid, s));
             Casualties.Add(k, g, pk, pc);
+            Steadiness.NearBurst(c, k, g, p, s);
         }
     }
 

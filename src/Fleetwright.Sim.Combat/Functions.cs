@@ -63,6 +63,7 @@ public static class Functions
     public static bool Evaluate(ShipCondition k, SimSettings s, long now, long lastingMs)
     {
         var c = k.Class;
+        Steadiness.Update(k, s, now);   // who stays at the stations (docs/battle/crew.md N3b), before what they can do
         double draughtFloor = s.DraughtFloor;
         double steam = 0, shafts = 0, steamBy = 0, shaftsBy = 0;
         int boilers = 0, lines = 0, rudders = 0;

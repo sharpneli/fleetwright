@@ -445,8 +445,9 @@ the walking wounded back after 15-45 min). Southampton's and Emden's hit counts 
     conn and the steering, then the main battery's guns and handling rooms, then the secondaries' (them first with
     torpedo craft in reach), from the supply's spare men first by `ReliefOrder` ReserveInSupply, the men under cover, the
     wrecked guns' crews and handling men, the parties standing by, the stokers the speed asked doesn't need.
-    **The lull** is a stand-in until N3b: reliefs wait while a station's men were hit within `ReliefLullS` 120 s [EST],
-    unless the captain is bold. `ReliefFloorShare` isn't built (decision 12: no floor).
+    **The lull** was a stand-in until N3b: reliefs waited while a station's men were hit within `ReliefLullS` 120 s
+    [EST], unless the captain was bold (gone with N3b: duress against the relief party's nerve). `ReliefFloorShare`
+    isn't built (decision 12: no floor).
     Scenarios (decision 10, CUF §5): the RN 1914-16 casemates in range and its open guns for torpedo craft (coronel,
     dogger-bank, heligoland-bight, jutland, running-fight); the Germans' casemates always, open guns for torpedo craft;
     the Russians at Tsushima both for torpedo craft; the rest the default preset (in range).
@@ -497,6 +498,71 @@ the walking wounded back after 15-45 min). Southampton's and Emden's hit counts 
   - **The captain's temper is the order, the men's experience whether they keep to it**: N3a sets where they're
     ordered to stand, N3b who stays.
   - The first check is the direction and the yardstick's shape. Tuning waits for the playtest.
+  - **Built 2026-10-28** (`Sim.Combat/Steadiness.cs`; the numbers in `settings.json`, all [EST] as above).
+    - **Stations:** every group with a battle crew but the repair men's quarters, set up at spawn. Open: the open and
+      shielded mounts and the parts above the deck (the bridge, the directors, the AA). Enclosed: the turrets, the
+      casemates, the barbettes, the conning tower and every space in the hull.
+    - **Duress** is held in five channels a station, each fading by its own half-life (30 s, 90 s, 2 min, 4 min,
+      15 min), faded lazily to the time it's read. The men's experience speeds the fading up (the row's ×). A station's
+      casualties add their share of its battle crew (1 = the whole crew, however many are left), 30% of it held 15 min.
+      Its officer hit adds 0.15. An open station within `DuressNeighbourM` 15 m of an open one hit takes 0.3 of that
+      one's share (a sorted sweep along x, no pairs). A shell's lane through the station adds 0.30, once a hit. A burst
+      within 15 m whose pieces reach its men adds 0.08 × its cover (1 open, 0.6 shielded, 0.4 casemate, 0.3 turret or
+      inside the hull; near misses too), once a hit. Flash adds 0.40. A fire in its space at any stage short of out adds
+      0.40 while it burns, fading for 2 min after. The straddle and searchlight term isn't built: at half weight for
+      green men it's +0.01 a salvo with a 30 s half-life, a steady 0.02 against a nerve of 0.30.
+    - **Nerve and going:** the rows are read between the whole numbers (`NerveAt`, as `GunneryCrewAt`). The share going
+      is the row's most × a logistic in (duress − nerve) / (0.15 × nerve). They come back the row's middle time after
+      the duress falls under 0.6 × the nerve (green 6 min, average 3, trained 1.5, elite 0.75; × 1.75 with the officer
+      down). Shaken and frozen men aren't at work (`AtWork`, so the mounts' crew, the directors, the conn and the
+      stokehold all read it). Rough: they still stand where the hits find them, as an untenable space's men do (N2).
+      Their share of a station's casualties comes off their counts. They aren't in the relief pool, and the captain
+      sends no reliefs for them: they're still there.
+    - **The officer** (decision 7) is the first man of the station's casualty roll (no extra draw). Hit, a relief
+      officer walks in from the middle of the ship (the relief walk) while the ship's spare officers last
+      (`OfficersSpare` 1% of the battle crew, at least one). After that his station stays without one. His coming
+      takes 0.15 off and frees the frozen. Frozen: `FrozenShare` 0.3 × (1 − experience) of the men there, at a station
+      with its officer down after a shell through it or a fire in it.
+    - **Sensitised:** going over the nerve takes 6.5% off it for good and 6.5% that comes back with a 10 min half-life
+      (most of it within 30 min). The station is over again only after it's been calm (under 0.6 × the nerve).
+    - **When:** worked out in `Functions.Evaluate` (on a hit, now also one that only killed men or stirred a station:
+      before this a hit that killed men and wrecked nothing left the stations' shares unread until the next change, an
+      N2 gap). The outage clock looks again every `NerveCheckS` 10 s while a station has men shaken or frozen, and when
+      a relief officer is due. A station steady again leaves the list it's kept on.
+    - **The reliefs' lull:** a station's duress over the relief party's nerve (the men's row, no officer's) holds them,
+      unless the captain is bold (`Steadiness.ReliefNerve`, in place of `ReliefLullS`).
+    - `crew-history` prints the men shaken, frozen and the officers out at each sample, and the most shaken and frozen
+      at once a run. Tests: `SteadinessTests`.
+  - **Measured (2026-10-28, 20 runs; killed and wounded a ship, N3a → N3b, record):**
+
+    | Case | Killed and wounded | Out at the end of the fire | Most shaken at once (max), frozen (max) | Record |
+    |---|---|---|---|---|
+    | Oryol, green, 5 h | 181 → 180 (43 killed) | 121 | 6.7 (9), 1.7 (8) | 43 killed, 80 wounded |
+    | Chester, trained, work-up 0.3 | 23 → 23 | 23 | 0.9 (2), 0 | 29 killed, 49 wounded; no flight |
+    | Southampton, trained | 13 → 13 | 9 | 0.1 (1), 0 | 89; few or none leaving |
+    | Kent, average | 55 → 58 | 42 | 2.7 (6), 0 | 16; no leaving |
+    | Emden, trained | 219 → 236 (lost 85 → 60%) | 176 | 4.2 (7), 0 | 171-203 |
+    | Suvorov, green, 5 h | 295 → 287 | 162 | 9.2 (11), 2.8 (5) | all lost |
+    | Sverige, trained, 500 hits in 2 h | 427 → 277 | 135 at 30 min, 144, 165, 181 at 2 h | 1.7 (3), 0 | - |
+    | Graf Spee | 44 → 48 | 29 | 0.2 (1), 0 | 96 |
+
+    - **The long fights re-judged.** Oryol's killed are now the record's 43, with 121 out at 5 h in the wanted
+      100-150. Her wounded (137 against 80) are E6's split, as before. Emden's 236 is 16% over the record's top (219
+      before, so within the runs' spread). Fewer of her runs are lost. Suvorov's toll can't be read against an
+      all-lost record. Sverige no longer blows up: N3a's reliefs walked into her stations as soon as 2 min passed and
+      were killed there (427, out of action 333 at 2 h). Now they wait while a station is over their nerve, and under
+      four hits a minute most of her hit stations stay over it, so few walk in during the fire (2-4 there at a time).
+      Her toll still rises for as long as she fights (135, 144, 165, 181 at 30, 60, 90, 120 min), with 3 of her 8 6″ mounts
+      and one of her 2 main mounts in action at 2 h; her reliefs (40) come in the lull after. That's the wanted shape but for
+      "silent from want of men before the toll flattens": her guns aren't silent at 2 h.
+    - **Who goes:** green crews' open stations most (Suvorov, Oryol: a few men at a time, out of 790 and 800). Trained
+      and average crews hold, a man or two at most, except Kent's average reservists (2.7 at once). Kent's casemates
+      take three times the record's casualties (E6, flagged at N0), and so their duress. Frozen men only on the green
+      ships.
+    - **Unchanged:** E6's per-hit fit (damage-history, 60 runs, before and after alike: Jutland's plate count 1.25,
+      Dogger Bank's Lion 0.65), and the rest of the cases within their noise. The full suite passes (no allocation in
+      the hit and evaluate paths). The squadrons' hash moves (9C31A3193971F350 → 692F156EB43F7CA1: the men's state is
+      hashed), at the same cost and allocations.
 - **N5 The end of her.** No new fall-out knob. Fall-out already reads the main guns, and those now go silent for want
   of men. A ship whose parties are spent can't fight her fires, and fire's own model takes her from there: they spread,
   the magazines are threatened and flooded or not. The last gun, fed by reliefs, may fight on for hours after the main

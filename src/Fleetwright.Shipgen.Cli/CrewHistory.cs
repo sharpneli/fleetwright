@@ -11,8 +11,8 @@ namespace Fleetwright.Shipgen.Cli;
 /// <summary><c>shipgen crew-history</c>: the crews' yardstick (docs/battle/crew.md "The yardstick", N0). Each case is a
 /// ship of the record's kind under the record's fire (<see cref="GivenFire"/>), timed, since a hit count alone can't show
 /// reliefs or a lull: the men out of action through the fire and after it, by battle station, the batteries' mounts
-/// working, the directors, the conn and the parties, beside what was recorded. The men's experience and work-up are the
-/// record's (decision 6), though nothing reads them on the ship under fire before N3b.</summary>
+/// working, the directors, the conn and the parties, the men shaken and frozen (N3b), beside what was recorded. The men's
+/// experience and work-up are the record's (decision 6): their nerve reads the experience.</summary>
 static class CrewHistory
 {
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
@@ -55,8 +55,8 @@ static class CrewHistory
     /// <summary>A run's ship: her hits' men, and her state at each sample minute (NaN out once she's gone).</summary>
     sealed class Ship
     {
-        public int Entity, Hits, Killed, Wounded, Lost = -1;
-        public double[] Out = [], Mounts = [], Conned = [], Parties = [], AtFire = [], OnWater = [], Reliefs = [], Covered = [];
+        public int Entity, Hits, Killed, Wounded, Lost = -1, MostShaken, MostFrozen;
+        public double[] Out = [], Mounts = [], Conned = [], Parties = [], AtFire = [], OnWater = [], Reliefs = [], Covered = [], Shaken = [], Frozen = [], Officers = [];
         public double[][] Stations = [], Batteries = [];
     }
 
@@ -65,7 +65,7 @@ static class CrewHistory
         var settings = SimSettings.Load(settingsPath);
         var classes = new Dictionary<string, ShipClass>();
         ShipClass Cls(string name) => classes.TryGetValue(name, out var c) ? c : classes[name] = ShipClassCompiler.Compile(ShipDesign.Build(load(name)));
-        Console.WriteLine($"the crews' yardstick (docs/battle/crew.md N0): {runs} runs a case, each a ship under the case's fire, timed, through the world's damage system");
+        Console.WriteLine($"the crews' yardstick (docs/battle/crew.md N0, N3b): {runs} runs a case, each a ship under the case's fire, timed, through the world's damage system");
         string era = "";
         foreach (var cc in Cases)
         {
@@ -82,8 +82,11 @@ static class CrewHistory
                 var fx = w.Damage.LastEffects;
                 var r = ships[h.Run];
                 (r.Hits, r.Killed, r.Wounded) = (r.Hits + 1, r.Killed + fx.Killed, r.Wounded + fx.Wounded);
+                Most(w, r);
             }, (w, m) =>
             {
+                foreach (var r in ships)
+                    Most(w, r);
                 int i = Array.IndexOf(at, m);
                 if (i < 0)
                     return;
@@ -110,12 +113,22 @@ static class CrewHistory
         return new Ship
         {
             Entity = entity, Out = Nan(), Mounts = Nan(), Conned = Nan(), Parties = Nan(), AtFire = Nan(), OnWater = Nan(), Reliefs = Nan(), Covered = Nan(),
+            Shaken = Nan(), Frozen = Nan(), Officers = Nan(),
             Stations = Enumerable.Range(0, n).Select(_ => new double[BattleStations.Count]).ToArray(),
             Batteries = Enumerable.Range(0, n).Select(_ => new double[c.Batteries.Length]).ToArray(),
         };
     }
 
     static readonly double[] Scratch = new double[BattleStations.Count];
+
+    /// <summary>The most men shaken and frozen at once so far (after each hit and each minute).</summary>
+    static void Most(World w, Ship r)
+    {
+        int slot = w.Ships.Store.SlotOf(r.Entity);
+        if (slot < 0 || w.Ships.Store.Combat.Condition(slot) is not { Status: ShipStatus.Afloat } k)
+            return;
+        (r.MostShaken, r.MostFrozen) = (Math.Max(r.MostShaken, k.Shaken.Sum()), Math.Max(r.MostFrozen, k.Frozen.Sum()));
+    }
 
     static void Sample(World w, ShipClass c, Ship r, int i)
     {
@@ -138,6 +151,7 @@ static class CrewHistory
         r.Mounts[i] = ok;
         r.Conned[i] = k.Conned ? 1 : 0;
         (r.Reliefs[i], r.Covered[i]) = (k.In.Sum(), k.Covered.Sum());
+        (r.Shaken[i], r.Frozen[i], r.Officers[i]) = (k.Shaken.Sum(), k.Frozen.Sum(), k.OfficerAt.Count(t => t != 0));
         double men = 0, fire = 0, water = 0;
         for (int p = 0; p < k.PartyCount; p++)
         {
@@ -171,9 +185,9 @@ static class CrewHistory
             c.Name, b.Kn, crew, string.Join(", ", Enumerable.Range(0, BattleStations.Count).Where(s => men[s] > 0).Select(s => $"{BattleStations.Names[s]} {men[s]:0}")),
             Experience.Name(b.Experience), b.WorkUp, b.Readiness, b.Doctrine, b.Hits, b.Minutes, b.RangeM.Lo / 1000, b.RangeM.Hi / 1000,
             string.Join(" + ", b.Falls.Select(f => string.Format(Inv, "{0:0}% {1} {2}{3}", 100 * f.Share, f.Shooter, f.Battery, f.Kind != null ? " " + f.Kind : "")))));
-        Console.WriteLine(string.Format(Inv, "    killed {0:0.0} and wounded {1:0.0} a ship ({2:0.00} and {3:0.00} a hit); lost {4:0}% of runs",
+        Console.WriteLine(string.Format(Inv, "    killed {0:0.0} and wounded {1:0.0} a ship ({2:0.00} and {3:0.00} a hit); lost {4:0}% of runs; most shaken at once {5:0.#} (max {6}), frozen {7:0.#} (max {8})",
             (double)rs.Sum(r => r.Killed) / n, (double)rs.Sum(r => r.Wounded) / n, (double)rs.Sum(r => r.Killed) / hits, (double)rs.Sum(r => r.Wounded) / hits,
-            100.0 * rs.Count(r => r.Lost >= 0) / n));
+            100.0 * rs.Count(r => r.Lost >= 0) / n, rs.Average(r => r.MostShaken), rs.Max(r => r.MostShaken), rs.Average(r => r.MostFrozen), rs.Max(r => r.MostFrozen)));
         for (int i = 0; i < at.Length; i++)
         {
             var afloat = rs.Where(r => !double.IsNaN(r.Out[i])).ToList();
@@ -183,14 +197,15 @@ static class CrewHistory
                 continue;
             }
             double A(Func<Ship, double> f) => afloat.Average(f);
-            Console.WriteLine(string.Format(Inv, "    {0,4} min{1}  out of action {2:0} (median; {3:0}-{4:0}): {5}; mounts {6}; conned {7:0}%; parties' men {8:0} (at fires {9:0}, on water {10:0}); reliefs come {12:0.#}, under cover {13:0.#}{11}",
+            Console.WriteLine(string.Format(Inv, "    {0,4} min{1}  out of action {2:0} (median; {3:0}-{4:0}): {5}; mounts {6}; conned {7:0}%; parties' men {8:0} (at fires {9:0}, on water {10:0}); reliefs come {12:0.#}, under cover {13:0.#}; shaken {14:0.#}, frozen {15:0.#}, officers out {16:0.#}{11}",
                 at[i], at[i] <= b.Minutes ? " " : "+", Med(afloat.Select(r => r.Out[i])), Q(afloat.Select(r => r.Out[i]), 0.1), Q(afloat.Select(r => r.Out[i]), 0.9),
                 string.Join(", ", Enumerable.Range(0, BattleStations.Count).Where(s => men[s] > 0 && A(r => r.Stations[i][s]) >= 0.05)
                     .Select(s => string.Format(Inv, "{0} {1:0.#}", BattleStations.Names[s], A(r => r.Stations[i][s])))),
                 string.Join(", ", Enumerable.Range(0, c.Batteries.Length).Where(x => Mounts(c, x) > 0)
                     .Select(x => string.Format(Inv, "{0} {1:0.#}/{2}", HitsBench.Battery(c, x), A(r => r.Batteries[i][x]), Mounts(c, x)))),
                 100 * A(r => r.Conned[i]), A(r => r.Parties[i]), A(r => r.AtFire[i]), A(r => r.OnWater[i]),
-                afloat.Count < n ? string.Format(Inv, "; {0} of {1} afloat", afloat.Count, n) : "", A(r => r.Reliefs[i]), A(r => r.Covered[i])));
+                afloat.Count < n ? string.Format(Inv, "; {0} of {1} afloat", afloat.Count, n) : "", A(r => r.Reliefs[i]), A(r => r.Covered[i]),
+                A(r => r.Shaken[i]), A(r => r.Frozen[i]), A(r => r.Officers[i])));
         }
         Console.WriteLine($"    record: {cc.Record}");
         Console.WriteLine($"    wanted: {cc.Wanted}");

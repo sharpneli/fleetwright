@@ -1062,9 +1062,83 @@ public sealed record SimSettings
     public double ReliefWalkS { get; init; } = 45;
     public double ReliefWalkSectionS { get; init; } = 12;
 
-    /// <summary>Reliefs wait for a lull at a station whose men were hit within this, s [EST: CUF R9, Southampton's "time to
-    /// reorganize"]; a bold captain sends them anyway. N3a's stand-in for N3b's duress against the men's nerve.</summary>
-    public double ReliefLullS { get; init; } = 120;
+    /// <summary>A station's duress (docs/battle/crew.md N3b; all [EST] from CUF R1-R4, in station units: 1 = its whole
+    /// crew hit at once), what has landed at and around it, held in channels each fading by its half-life, s: a near
+    /// burst's, a hit inside it, flash or fire there, its casualties (and its officer hit, its neighbours' casualties), and
+    /// the share of its casualties held longer.</summary>
+    public double[] DuressHalfLifeS { get; init; } = [30, 90, 120, 240, 900];
+    public double DuressHeldShare { get; init; } = 0.3;
+
+    /// <summary>What adds to a station's duress (N3b): its officer hit; the casualties at a neighbouring open station (as a
+    /// share of theirs, open stations within <see cref="DuressNeighbourM"/> of each other); a shell through it; flash in it,
+    /// or a fire while it burns there; a burst within <see cref="DuressNearM"/> of it, by how its men are covered (open,
+    /// shielded, a casemate, a turret or below the armour); a relief officer come (taken off).</summary>
+    public double DuressOfficerHit { get; init; } = 0.15;
+    public double DuressNeighbourShare { get; init; } = 0.3;
+    public double DuressNeighbourM { get; init; } = 15;
+    public double DuressInside { get; init; } = 0.3;
+    public double DuressFire { get; init; } = 0.4;
+    public double DuressNearBurst { get; init; } = 0.08;
+    public double DuressNearM { get; init; } = 15;
+    public double[] DuressNearCover { get; init; } = [1, 0.6, 0.4, 0.3];
+    public double DuressOfficerCome { get; init; } = 0.15;
+
+    /// <summary>The men's nerve by their experience (N3b, decision 6: a row for each of <see cref="Experience.Names"/>, read
+    /// between them; work-up doesn't enter) [EST: CUF R1-R4]: the threshold in duress; the most of an open station's and an
+    /// enclosed one's men (a turret, a casemate, below the armour) who go on their own; how long after the duress falls
+    /// below <see cref="NerveBackShare"/> of the nerve they come back, s; and how fast duress fades for them.</summary>
+    public NerveRow[] Nerves { get; init; } =
+    [
+        new() { Name = "green", Nerve = 0.30, GoingOpen = 0.35, GoingEnclosed = 0.15, BackS = 360, Fade = 0.67 },
+        new() { Name = "average", Nerve = 0.45, GoingOpen = 0.20, GoingEnclosed = 0.08, BackS = 180, Fade = 1 },
+        new() { Name = "trained", Nerve = 0.60, GoingOpen = 0.10, GoingEnclosed = 0.04, BackS = 90, Fade = 1.2 },
+        new() { Name = "elite", Nerve = 0.75, GoingOpen = 0.05, GoingEnclosed = 0.02, BackS = 45, Fade = 1.5 },
+    ];
+
+    /// <summary>The men's nerve at an experience, the rows read between the whole numbers.</summary>
+    public NerveRow NerveAt(double experience)
+    {
+        var rows = Nerves;
+        int i = Math.Clamp((int)Math.Floor(experience), 0, rows.Length - 1);
+        double t = Math.Clamp(experience - i, 0, 1);
+        if (t == 0 || i == rows.Length - 1)
+            return rows[i];
+        ref readonly var a = ref rows[i];
+        ref readonly var b = ref rows[i + 1];
+        return new()
+        {
+            Name = "", Nerve = a.Nerve * (1 - t) + b.Nerve * t, GoingOpen = a.GoingOpen * (1 - t) + b.GoingOpen * t,
+            GoingEnclosed = a.GoingEnclosed * (1 - t) + b.GoingEnclosed * t, BackS = a.BackS * (1 - t) + b.BackS * t, Fade = a.Fade * (1 - t) + b.Fade * t,
+        };
+    }
+
+    /// <summary>How the men go (N3b) [EST: CUF R1]: the share going rises as a logistic in duress about the nerve, this
+    /// share of the nerve wide; and they come back once the duress is under this share of it.</summary>
+    public double NerveWidth { get; init; } = 0.15;
+    public double NerveBackShare { get; init; } = 0.6;
+
+    /// <summary>A station's officer (N3b, decision 7) [EST: CUF R4]: there and unhurt, the nerve and the share going by
+    /// these; hit, the nerve and the time to come back by these until a relief officer walks in. The ship's spare officers,
+    /// a share of her battle crew (at least one).</summary>
+    public double OfficerNerve { get; init; } = 1.25;
+    public double OfficerGoing { get; init; } = 0.5;
+    public double OfficerHitNerve { get; init; } = 0.8;
+    public double OfficerHitBack { get; init; } = 1.75;
+    public double OfficersSpare { get; init; } = 0.01;
+
+    /// <summary>The frozen men (N3b) [EST: CUF §1.6, Semenov]: at a green station (by how far its experience is under 1)
+    /// with its officer hit, after a shell through it or a fire in it, this share of its men present and not working until
+    /// an officer comes.</summary>
+    public double FrozenShare { get; init; } = 0.3;
+
+    /// <summary>A station sensitised (N3b) [EST: CUF R2]: each time it goes over its nerve, the nerve falls by this share,
+    /// this much of it back with this half-life, s.</summary>
+    public double SensitiseLoss { get; init; } = 0.13;
+    public double SensitiseBackShare { get; init; } = 0.5;
+    public double SensitiseBackS { get; init; } = 600;
+
+    /// <summary>How often the stations whose men are shaken, frozen or over their nerve are looked at again, s (N3b).</summary>
+    public double NerveCheckS { get; init; } = 10;
 
     /// <summary>How often a captain looks over where his ship's men stand (docs/battle/crew.md N3a: her posture, her
     /// reliefs), s [EST: a crew walks to its gun in 45 s or more anyway].</summary>
@@ -2258,6 +2332,19 @@ public readonly record struct Readiness
 
 /// <summary>A gunnery level's multipliers on the rangetakers' and the layers' errors (a struct: read between the rows on
 /// every salvo without garbage).</summary>
+/// <summary>The men's nerve at an experience (<see cref="SimSettings.Nerves"/>; docs/battle/crew.md N3b).</summary>
+public readonly record struct NerveRow
+{
+    public NerveRow() { }
+
+    public string Name { get; init; } = "";
+    public double Nerve { get; init; }
+    public double GoingOpen { get; init; }
+    public double GoingEnclosed { get; init; }
+    public double BackS { get; init; }
+    public double Fade { get; init; } = 1;
+}
+
 public readonly record struct GunneryCrew
 {
     public GunneryCrew() { }

@@ -41,7 +41,7 @@ public static class Reliefs
     }
 
     /// <summary>A group's section (a part's by its middle).</summary>
-    static int SectionOf(ShipClass c, int g)
+    internal static int SectionOf(ShipClass c, int g)
     {
         if (g < c.Components.Length)
         {

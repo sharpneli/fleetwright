@@ -31,7 +31,7 @@ public static class BattleStations
     public const int Count = 10;
 
     /// <summary>A relief from another trade at a station, against one of its own (docs/battle/crew.md N3a) [EST: CUF R9, a
-    /// crew rebuilt from mixed reliefs loses 10-20% of its rate; the frozen men of N3b count none].</summary>
+    /// crew rebuilt from mixed reliefs loses 10-20% of its rate; the frozen men of N3b count none: <see cref="AtWork"/>].</summary>
     public const double ReliefWorth = 0.7;
 
     /// <summary>A group's station: a part's by its kind (a superstructure by its role: a director's crew, else the command
@@ -74,8 +74,17 @@ public static class BattleStations
         return space >= 0 && k.Fire[space].Phase is BurnPhase.Developed or BurnPhase.Decay;
     }
 
-    /// <summary>The men at work at a station: those there, none while its space is untenable.</summary>
-    public static int AtWork(ShipClass c, ShipCondition k, int g) => Untenable(c, k, g) ? 0 : Casualties.Men(c, k, g);
+    /// <summary>A group's space on fire, at any stage short of out (docs/battle/crew.md N3b: its men's duress while it burns).</summary>
+    public static bool Burning(ShipClass c, ShipCondition k, int g)
+    {
+        int space = g < c.Components.Length ? k.PartSpace[g] : k.CellSpace[g - c.Components.Length];
+        return space >= 0 && k.Fire[space].Phase is not (BurnPhase.None or BurnPhase.Out);
+    }
+
+    /// <summary>The men at work at a station: those there less the shaken and the frozen (N3b), none while its space is
+    /// untenable.</summary>
+    public static int AtWork(ShipClass c, ShipCondition k, int g) =>
+        Untenable(c, k, g) ? 0 : Math.Max(Casualties.Men(c, k, g) - Steadiness.Idle(k, g), 0);
 
     /// <summary>A group's men at work over the need it was sized for (docs/battle/crew.md N2: its battle crew, Shipgen's
     /// GunCrew, CommandK, the directors' and the plant's crews), 0-1: the crew thinning, the next man stepping up and the

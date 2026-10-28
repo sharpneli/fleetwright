@@ -130,6 +130,7 @@ public static class Casualties
             return;
         var (pk, pc) = PiecesRisk(BoxOf(c, g), Cover(c, g, s), b, at, dir, v, share, mildMm, normal, openW, s);
         Add(k, g, pk, pc);
+        Steadiness.NearBurst(c, k, g, at, s);
     }
 
     /// <summary>A man's chance of being killed, and of being a casualty, standing in a box among men a share cover of whom
@@ -207,6 +208,7 @@ public static class Casualties
             return;
         double share = LaneShare(BoxOf(c, g), a, b, calibreM, s);
         Add(k, g, share, share);
+        Steadiness.Through(k, g, s);
     }
 
     /// <summary>The share of the men on a box's floor in a shell's lane from a to b (16 §4.3): a calibre across and a man's
@@ -286,6 +288,7 @@ public static class Casualties
     {
         var sh = turret ? s.FlashTurret : s.FlashBattery;
         Add(k, g, sh[0], sh[0] + sh[1]);
+        Steadiness.Flash(k, g, s);
     }
 
     /// <summary>A magazine set off: the flash through its turrets' trains (16 §4.6), the men in the gunhouses, their
@@ -323,13 +326,13 @@ public static class Casualties
             int n = Men(c, k, g);
             if (n > 0)
             {
-                var (killed, wounded) = Roll(k, g, n, pk, pc, now, s, ref r);
+                var (killed, wounded) = Roll(k, g, n, pk, pc, now, s, ref r, out bool first);
                 // the reliefs there take their share of it (docs/battle/crew.md N3a), the station's own the rest
                 int hurt = killed + wounded, rel = k.In[g] > 0 ? Math.Min(k.In[g], (int)Math.Round((double)hurt * Math.Min(k.In[g], n) / n)) : 0;
                 k.In[g] -= rel;
                 k.Gone[g] += hurt - rel;
-                if (hurt > 0)
-                    k.HitMs[g] = Math.Max(now, 1);
+                // its duress (N3b): the first man rolled is its officer (decision 7: one of its men, hit as any)
+                Steadiness.Hurt(c, k, g, hurt, n, first, now, s);
                 (res.Killed, res.Wounded) = (res.Killed + killed, res.Wounded + wounded);
             }
             // a party working there (docs/battle/crew.md N1), its men as the station's
@@ -338,7 +341,7 @@ public static class Casualties
                 ref var party = ref k.Parties[p];
                 if (PlaceOf(party, now) != g || party.Men < 1)
                     continue;
-                var (killed, wounded) = Roll(k, PartyGroup(k, p), (int)party.Men, pk, pc, now, s, ref r);
+                var (killed, wounded) = Roll(k, PartyGroup(k, p), (int)party.Men, pk, pc, now, s, ref r, out _);
                 party.Men -= killed + wounded;
                 (res.Killed, res.Wounded) = (res.Killed + killed, res.Wounded + wounded);
             }
@@ -347,7 +350,7 @@ public static class Casualties
             {
                 if (k.MountShelter[m] != g || k.Covered[m] <= 0)
                     continue;
-                var (killed, wounded) = Roll(k, CoverGroup(k, m), k.Covered[m], pk, pc, now, s, ref r);
+                var (killed, wounded) = Roll(k, CoverGroup(k, m), k.Covered[m], pk, pc, now, s, ref r, out _);
                 k.Covered[m] -= killed + wounded;
                 (res.Killed, res.Wounded) = (res.Killed + killed, res.Wounded + wounded);
             }
@@ -357,13 +360,15 @@ public static class Casualties
     }
 
     /// <summary>A group's n men each killed, wounded or untouched (16 §4.7), into the ship's counts; its walking wounded
-    /// back to it after first aid.</summary>
-    static (int Killed, int Wounded) Roll(ShipCondition k, int g, int n, double pk, double pc, long now, SimSettings s, ref RandomStream r)
+    /// back to it after first aid; whether the first of them was hit.</summary>
+    static (int Killed, int Wounded) Roll(ShipCondition k, int g, int n, double pk, double pc, long now, SimSettings s, ref RandomStream r, out bool first)
     {
         int killed = 0, wounded = 0, walking = 0;
+        first = false;
         for (int m = 0; m < n; m++)
         {
             double u = r.NextDouble();
+            first |= m == 0 && u < pc;
             if (u < pk)
                 killed++;
             else if (u < pc)
