@@ -120,6 +120,21 @@ public class ShipClassRegistryTests
     }
 
     [Fact]
+    public void A_registry_holds_no_threads_once_its_work_is_done()
+    {
+        // a world's own registry is never disposed: its builders idling for the process's life were a leak (143 threads
+        // after a Sim run, 2026-10-28); now they leave with the work, and come again with more
+        var r = new ShipClassRegistry(2);
+        Assert.Equal(0, r.Running);
+        int a = r.Request(Load("pt_boat"));
+        Assert.NotNull(r.Get(a));
+        Assert.True(SpinWait.SpinUntil(() => r.Running == 0, 10_000));
+        int b = r.Request(Load("destroyer"));
+        Assert.NotNull(r.Get(b));
+        Assert.True(SpinWait.SpinUntil(() => r.Running == 0, 10_000));
+    }
+
+    [Fact]
     public void A_class_asked_for_without_its_art_is_drawn_once_asked_with_it()
     {
         // docs/map-ui/launch.md L3: the picker's candidates build for their figures only; one picked gets its art

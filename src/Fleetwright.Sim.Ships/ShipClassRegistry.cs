@@ -13,8 +13,9 @@ namespace Fleetwright.Sim.Ships;
 /// (<see cref="IsDrawn"/>), the preferred classes' first (<see cref="Prefer"/>). A registry holds no Ship
 /// afterwards. A class may be asked for without its art (the launch screen's design picker: its candidates' figures,
 /// docs/map-ui/launch.md L3); asked for again with it, it's built again for the drawing.</para>
-/// <para>The threads: a few beside a running world, more while none runs (<see cref="Idle"/>); below normal, but at
-/// Normal while a thread waits on them (<see cref="Get"/>, <see cref="WaitAll"/>).</para>
+/// <para>The threads: a few beside a running world, more while none runs (<see cref="Idle"/>); started for work and
+/// gone when there's none, so a registry nobody disposes (a world's own) holds no threads and is collected with its
+/// world. Below normal, but at Normal while a thread waits on them (<see cref="Get"/>, <see cref="WaitAll"/>).</para>
 /// <para>References are counted (<see cref="Acquire"/>, <see cref="Release"/>): what reaches zero may be freed
 /// (<see cref="Unused"/>). Thread-safe throughout; when a build finishes can never change what a world does, since
 /// a world that needs a class waits for it.</para></summary>
@@ -50,12 +51,13 @@ public sealed class ShipClassRegistry : IDisposable
     // the work, under the gate: every build before any drawing, the preferred drawings first (one preferred while
     // already queued later is queued again first, and skipped at its later place)
     readonly Queue<int> builds = [], drawFirst = [], drawLater = [];
-    readonly Thread[] workers;
-    readonly int narrow;
-    volatile int active;   // the threads that take work: the first `active` of them
-    bool started;
+    readonly int narrow, wide;
+    volatile int active;   // the most threads that take work now
+    readonly List<Thread> running = [];   // the builders alive (under the gate): started for work, gone when there's none
+    int named;   // builders started, for their names
     volatile bool closing;
     int waiters;   // threads blocked on a build or a drawing (under the gate): the builders run at Normal meanwhile
+    ThreadPriority priority = ThreadPriority.BelowNormal;   // the builders' (under the gate)
 
     /// <summary>Called on a building thread with each design's id, its built ship and its class (null if the compile
     /// failed), before the ship is let go, after every build queued before it. Set it before the first request.</summary>
@@ -68,13 +70,7 @@ public sealed class ShipClassRegistry : IDisposable
     public ShipClassRegistry(int threads = 0, int idleThreads = 0)
     {
         narrow = active = threads > 0 ? threads : Math.Clamp(Environment.ProcessorCount / 2, 1, 4);
-        int wide = Math.Max(narrow, idleThreads > 0 ? idleThreads : Math.Min(Environment.ProcessorCount - 2, 8));
-        workers = new Thread[wide];
-        for (int i = 0; i < wide; i++)
-        {
-            int index = i;
-            workers[i] = new Thread(() => Work(index)) { Name = $"Class builder {i}", IsBackground = true, Priority = ThreadPriority.BelowNormal };
-        }
+        wide = Math.Max(narrow, idleThreads > 0 ? idleThreads : Math.Min(Environment.ProcessorCount - 2, 8));
     }
 
     /// <summary>No world is running (the launch screen, a paused or empty world): the registry works on all its
@@ -86,11 +82,11 @@ public sealed class ShipClassRegistry : IDisposable
         {
             lock (gate)
             {
-                int n = value ? workers.Length : narrow;
+                int n = value ? wide : narrow;
                 if (n == active)
                     return;
                 active = n;
-                Monitor.PulseAll(gate);
+                Spawn();
             }
         }
     }
@@ -99,7 +95,17 @@ public sealed class ShipClassRegistry : IDisposable
     public int Threads => active;
 
     /// <summary>The builders' priority now (tests): below normal, Normal while a thread waits on them.</summary>
-    internal ThreadPriority Priority => workers[0].Priority;
+    internal ThreadPriority Priority => priority;
+
+    /// <summary>The builders alive now (tests): none once the work is done.</summary>
+    internal int Running
+    {
+        get
+        {
+            lock (gate)
+                return running.Count;
+        }
+    }
 
     /// <summary>Asks for a design's class: its id, now; the build runs in the background unless the design was asked
     /// for before. Without <paramref name="art"/> its art isn't drawn (it counts as drawn: there's nothing to wait
@@ -120,7 +126,7 @@ public sealed class ShipClassRegistry : IDisposable
                         // built without its art: built again for the drawing (the class stands)
                         e.Drawn.Reset();
                         builds.Enqueue(id);
-                        Monitor.PulseAll(gate);
+                        Spawn();
                     }
                 }
                 return id;
@@ -129,13 +135,7 @@ public sealed class ShipClassRegistry : IDisposable
             entries = [.. entries, new Entry { Hash = hash, Design = design, Art = art }];
             byHash[hash] = id;
             builds.Enqueue(id);
-            Monitor.PulseAll(gate);   // all: one woken past the active threads would wait on
-            if (!started)
-            {
-                started = true;   // the threads start with the first build, so a registry of ready classes costs none
-                foreach (var w in workers)
-                    w.Start();
-            }
+            Spawn();
             return id;
         }
     }
@@ -237,13 +237,26 @@ public sealed class ShipClassRegistry : IDisposable
         }
     }
 
-    /// <summary>The builders' priority (under the gate): only while they run, since a thread may end once closing.</summary>
+    /// <summary>The builders' priority, those alive and those to come (under the gate).</summary>
     void SetPriority(ThreadPriority p)
     {
-        if (!started || closing)
-            return;
-        foreach (var t in workers)
+        priority = p;
+        foreach (var t in running)
             t.Priority = p;
+    }
+
+    /// <summary>Starts builders for the work queued, up to the active count (under the gate). One too many finds no
+    /// work and leaves; closing, the threads alive drain the queues (whoever queues a job is one of them).</summary>
+    void Spawn()
+    {
+        if (closing)
+            return;
+        for (int n = Math.Min(active - running.Count, builds.Count + drawFirst.Count + drawLater.Count); n > 0; n--)
+        {
+            var t = new Thread(Work) { Name = $"Class builder {named++}", IsBackground = true, Priority = priority };
+            running.Add(t);
+            t.Start();
+        }
     }
 
     /// <summary>The class if it's ready, else null, without waiting.</summary>
@@ -306,40 +319,37 @@ public sealed class ShipClassRegistry : IDisposable
         return id >= 0 && id < all.Length ? all[id] : throw new ArgumentOutOfRangeException(nameof(id), $"no class {id}");
     }
 
-    /// <summary>Thread <paramref name="index"/>'s next job, under the gate: a build if one waits, else a drawing (its
-    /// ship handed over); false once the registry is closing and nothing is left. A thread past the active ones waits,
-    /// unless closing.</summary>
-    bool Next(int index, out int id, out Ship? draw)
+    /// <summary>A builder's next job, under the gate: a build if one waits, else a drawing (its ship handed over); false
+    /// when there's none, or when more threads run than may take work (one let go after its job), unless closing.</summary>
+    bool Next(out int id, out Ship? draw)
     {
         draw = null;
-        while (true)
-        {
-            if (index < active || closing)
+        id = -1;
+        if (running.Count > active && !closing)
+            return false;
+        if (builds.TryDequeue(out id))
+            return true;
+        while (drawFirst.TryDequeue(out id) || drawLater.TryDequeue(out id))
+            if (EntryOf(id).Ship is { } ship)   // else drawn from its other place in the queues
             {
-                if (builds.TryDequeue(out id))
-                    return true;
-                while (drawFirst.TryDequeue(out id) || drawLater.TryDequeue(out id))
-                    if (EntryOf(id).Ship is { } ship)   // else drawn from its other place in the queues
-                    {
-                        (draw, EntryOf(id).Ship) = (ship, null);
-                        return true;
-                    }
-                if (closing)
-                    return false;
+                (draw, EntryOf(id).Ship) = (ship, null);
+                return true;
             }
-            Monitor.Wait(gate);
-        }
+        return false;
     }
 
-    void Work(int index)
+    void Work()
     {
         while (true)
         {
             int id;
             Ship? draw;
             lock (gate)
-                if (!Next(index, out id, out draw))
+                if (!Next(out id, out draw))
+                {
+                    running.Remove(Thread.CurrentThread);   // under the gate: a job queued after this starts another
                     return;
+                }
             if (draw != null)
                 Draw(id, EntryOf(id), draw);
             else
@@ -397,7 +407,7 @@ public sealed class ShipClassRegistry : IDisposable
             {
                 e.Ship = ship;
                 (e.First ? drawFirst : drawLater).Enqueue(id);
-                Monitor.PulseAll(gate);   // all: one woken past the active threads would wait on
+                Spawn();
             }
             if (draws || e.Class == null || e.Art)
                 e.Design = null;
@@ -427,7 +437,7 @@ public sealed class ShipClassRegistry : IDisposable
             {
                 e.Ship = ship;
                 (e.First ? drawFirst : drawLater).Enqueue(id);
-                Monitor.PulseAll(gate);
+                Spawn();
             }
             else
                 e.Drawn.Set();
@@ -456,14 +466,14 @@ public sealed class ShipClassRegistry : IDisposable
     /// the drawings undrawn.</summary>
     public void Dispose()
     {
+        Thread[] left;
         lock (gate)
         {
             SetPriority(ThreadPriority.Normal);   // waited on to the end: their last jobs and their exits
             closing = true;
-            Monitor.PulseAll(gate);
+            left = [.. running];
         }
-        if (started)
-            foreach (var t in workers)
-                t.Join();
+        foreach (var t in left)
+            t.Join();
     }
 }

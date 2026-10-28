@@ -24,9 +24,11 @@ runs 5-7, after its fix, and the Debug run had none.
      scheduler's starvation boosts, and a test (or the world) waiting in `Get` waited minutes on a cold build. Now the
      builders run at Normal while any thread waits on them (`Get`, `WaitAll`, and `Dispose` to the end), checked by
      `The_builders_run_at_normal_only_while_a_thread_waits_on_them`.
-- [ ] A `World` given no registry makes its own (`new ShipClassRegistry(1)`, World.cs) and never disposes it: once a
-  design is requested, its builder threads (up to 8) idle for the life of the process. A full Sim run left 143 of them
-  (seen in the hang dumps, 2026-10-28). Harmless (background threads), but a leak.
+- [x] A `World` given no registry makes its own (`new ShipClassRegistry(1)`, World.cs) and never disposes it: once a
+  design was requested, its builder threads (up to 8) idled for the life of the process. A full Sim run left 143 of
+  them (seen in the hang dumps, 2026-10-28). Fixed 2026-10-28 in the registry, not by disposing worlds: builders are
+  started for queued work (up to the active count) and leave when the queues are empty, so an undisposed registry
+  holds no threads and is collected with its world (`A_registry_holds_no_threads_once_its_work_is_done`).
 - [x] One `Fleetwright.Tests` test failed once (173 of 174) on 2026-10-22, right after a game capture, its name hidden
   by `-v q`. Likely `SmokeFieldTwinTests` (smoke Z5, added the day before): it makes a GPU device of its own but wasn't
   in the `Gpu` collection ("one GPU device at a time"), so it ran beside `DesignWorkerTests`' bakers. Put in the
