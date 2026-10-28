@@ -359,6 +359,8 @@
   "StokeholdHoldS": 600,
   "ReliefWalkS": 45,
   "ReliefWalkSectionS": 12,
+  "ReliefLullS": 120,
+  "CrewPlanS": 5,
   "FallOutWaitMin": 15,
   "NeighbourShare": 0.5,
   "ShellHoleCalibres": 1.5,

@@ -223,6 +223,8 @@ public sealed class ShipCondition
     /// <summary>Which mounts work and the power the plant makes once the outages ending by <see cref="LastingMs"/> are over
     /// (<see cref="Functions.Evaluate"/>): what her captain's fall-out reads (<see cref="Fitness"/>), the lasting state.</summary>
     public bool[] MountLasts = [];
+    /// <summary>Each mount sound for the battle whatever its men (its lasting state without them: N3a's posture).</summary>
+    public bool[] MountSound = [];
     public double PowerCapLasts = 1;
     public long LastingMs;
     /// <summary>What hits that held left each mount (E4).</summary>
@@ -319,6 +321,9 @@ public sealed class ShipCondition
     /// arrived at each station from elsewhere (reliefs), each mount closed up or under cover, its men under cover and the
     /// shelter they wait in (a cell's group, -1 none), and what each fire party has lent and to which station.</summary>
     public int[] In = [];
+    /// <summary>When men at each station were last hit (world ms, 0: never): reliefs wait for a lull there (N3a's stand-in
+    /// for N3b's duress).</summary>
+    public long[] HitMs = [];
     public bool[] ClosedUp = [];
     public int[] Covered = [], MountShelter = [];
     public readonly int[] PartyLent = new int[MaxParties], PartyLentTo = new int[MaxParties];
@@ -473,6 +478,7 @@ public sealed class ShipCondition
             MountWorks = new bool[c.Mounts.Length];
             (MountCrew, MountSupply, EyeCrew) = (new double[c.Mounts.Length], new double[c.Mounts.Length], new double[c.Eyes.Length]);
             MountLasts = new bool[c.Mounts.Length];
+            MountSound = new bool[c.Mounts.Length];
             DirectorWorks = new bool[c.Directors.Length];
             EyeWorks = new bool[c.Eyes.Length];
             TubeWorks = new bool[c.Tubes.Length];
@@ -497,6 +503,7 @@ public sealed class ShipCondition
             int groups = c.Components.Length + c.Cells.Length;
             (Gone, Away, RiskK, RiskC, RiskStamp, Touched) = (new int[groups], new int[groups], new double[groups], new double[groups], new int[groups], new int[groups]);
             In = new int[groups];
+            HitMs = new long[groups];
             (ClosedUp, Covered, MountShelter) = (new bool[c.Mounts.Length], new int[c.Mounts.Length], new int[c.Mounts.Length]);
             for (int m = 0; m < c.Mounts.Length; m++)
                 MountShelter[m] = Reliefs.ShelterOf(c, m);
@@ -506,6 +513,7 @@ public sealed class ShipCondition
             Array.Clear(Gone);
             Array.Clear(Away);
             Array.Clear(In);
+            Array.Clear(HitMs);
             Array.Clear(Covered);
             Array.Clear(JoinOpenM2);
             Array.Clear(JoinSeamM2);
@@ -556,6 +564,7 @@ public sealed class ShipCondition
         }
         Array.Fill(HoleLeft, 1.0);
         Array.Fill(MountWorks, true);
+        Array.Fill(MountSound, true);
         Array.Fill(MountCrew, 1.0);
         Array.Fill(MountSupply, 1.0);
         Array.Fill(EyeCrew, 1.0);

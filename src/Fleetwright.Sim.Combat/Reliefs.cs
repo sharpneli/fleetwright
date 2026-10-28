@@ -108,8 +108,8 @@ public static class Reliefs
                 if (i < 0 || i >= k.PartyCount)
                     return 0;
                 ref var p = ref k.Parties[i];
-                if (p.Target >= 0 || p.Job != RepairJob.None || k.PartyLent[i] > 0 && k.PartyLentTo[i] != to)
-                    return 0;   // at work, or its men lent elsewhere: one station a party
+                if (!p.Mustered || p.Target >= 0 || p.Job != RepairJob.None || k.PartyLent[i] > 0 && k.PartyLentTo[i] != to)
+                    return 0;   // never sent (its men still at their stations), at work, or lent elsewhere: one station a party
                 men = Math.Min(men, (int)p.Men);
                 p.Men -= men;
                 (k.PartyLent[i], k.PartyLentTo[i]) = (k.PartyLent[i] + men, to);

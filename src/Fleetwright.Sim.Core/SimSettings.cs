@@ -1062,6 +1062,14 @@ public sealed record SimSettings
     public double ReliefWalkS { get; init; } = 45;
     public double ReliefWalkSectionS { get; init; } = 12;
 
+    /// <summary>Reliefs wait for a lull at a station whose men were hit within this, s [EST: CUF R9, Southampton's "time to
+    /// reorganize"]; a bold captain sends them anyway. N3a's stand-in for N3b's duress against the men's nerve.</summary>
+    public double ReliefLullS { get; init; } = 120;
+
+    /// <summary>How often a captain looks over where his ship's men stand (docs/battle/crew.md N3a: her posture, her
+    /// reliefs), s [EST: a crew walks to its gun in 45 s or more anyway].</summary>
+    public double CrewPlanS { get; init; } = 5;
+
     /// <summary>The outages a captain waits out in the line, minutes (docs/battle/command.md 5.1a item 2; the user,
     /// 2026-10-20): his fall-out reads his ship as she'll be once what ends within this is back (a blackout, a tripped
     /// breaker, a stunned crew, a short jam), not what's down for a while. 13 §1.3's short jams are under 15 min, the

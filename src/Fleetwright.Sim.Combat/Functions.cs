@@ -78,7 +78,8 @@ public static class Functions
                     (k.MountCrew[f.Index], k.MountSupply[f.Index]) = (crew, supply);
                     bool manned = crew > 0 && supply > 0;
                     k.MountWorks[f.Index] = manned && v > 0 && !k.Has(c.Mounts[f.Index].Component, PartFlags.Jammed) && k.Guns(f.Index) > 0;
-                    k.MountLasts[f.Index] = manned && k.WorksBy(f.Index, Value(c, k, f, floor, lastingMs), lastingMs);
+                    k.MountSound[f.Index] = k.WorksBy(f.Index, Value(c, k, f, floor, lastingMs), lastingMs);
+                    k.MountLasts[f.Index] = manned && k.MountSound[f.Index];
                     break;
                 }
                 case FunctionKind.Director:

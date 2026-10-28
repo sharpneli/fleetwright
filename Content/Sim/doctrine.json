@@ -53,6 +53,14 @@
     // a secondary battery at will takes only a ship it hits with 1% of its shells or more (the matchup's estimate by its
     // fire control, the ship as made out, at her range; 0: anything in reach): a 6" by eye on a battleship to about
     // 10 km, on a torpedo-boat destroyer to about 7 km, never splashing at 12 km
-    "SecondaryHitFloor": 0.01
+    "SecondaryHitFloor": 0.01,
+    // a secondary's casemated and its open guns closed up (docs/battle/crew.md N3a): "always", "in range" (an enemy worth
+    // their fire in reach and bearing) or "torpedo craft" (only those in reach, a watch of two guns a battery meanwhile);
+    // the rest of the time their crews wait under cover, the reserve the reliefs come from [EST: the RN at Jutland]
+    "ManCasemates": "in range",
+    "ManOpenGuns": "in range",
+    // reliefs from the men under cover and the idle hands, a live mount's handling room kept ("handling room protected"),
+    // or "reserve in supply" (the USN's 1899 bill: the supply's spare men first)
+    "ReliefOrder": "handling room protected"
   }
 }

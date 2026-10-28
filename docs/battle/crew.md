@@ -430,6 +430,33 @@ the walking wounded back after 15-45 min). Southampton's and Emden's hit counts 
     side's doctrine, set by the scenario (decision 10); `ReliefFloorShare` in the damage-control doctrine with
     `PartyShare`; the walking times (`ReliefWalkS` per section) a sim setting, the same for everyone (they're the
     ship's passages, not a choice).
+  - **Built 2026-10-28.** Sim side (`Sim.Combat/Reliefs.cs`): a mount's crew under cover waits in its shelter (the
+    cell under it, `MountShelter`), counted by a hit there; closed up it walks back. Reliefs walk from a station's men, a
+    mount's men under cover, or a fire party standing by (decision 12: lent, and taken back by `Repairs.Plan` when the
+    party is sent to a job; a party never yet sent lends nobody, its men are still at their stations) to a station
+    short of men (`ReliefWalkS` 45 s + `ReliefWalkSectionS` 12 s a section [EST, CUF R10]), on the outage clock. A relief
+    at a station counts `BattleStations.ReliefWorth` 0.7 of its own (`In`, the reliefs' share of the casualties there
+    booked against them). The captain's orders are commands: `DamageSystem.Posture` (a mask of mounts a ship) and
+    `Relieve`.
+    The captain's side (`CaptainLayer.Crew.cs`), every `CrewPlanS` 5 s a ship: posture for a ship fighting (the main
+    battery, the turrets, torpedo mounts always manned; a wrecked gun's crew under cover, `MountSound` its state without
+    its men; the secondaries by `ManCasemates` and `ManOpenGuns`, the captain's temper a step either way at ±0.5); reliefs
+    for a ship hurt, fighting or not (the layer stays awake while any ship is, at the rails period between fights): the
+    conn and the steering, then the main battery's guns and handling rooms, then the secondaries' (them first with
+    torpedo craft in reach), from the supply's spare men first by `ReliefOrder` ReserveInSupply, the men under cover, the
+    wrecked guns' crews and handling men, the parties standing by, the stokers the speed asked doesn't need.
+    **The lull** is a stand-in until N3b: reliefs wait while a station's men were hit within `ReliefLullS` 120 s [EST],
+    unless the captain is bold. `ReliefFloorShare` isn't built (decision 12: no floor).
+    Scenarios (decision 10, CUF §5): the RN 1914-16 casemates in range and its open guns for torpedo craft (coronel,
+    dogger-bank, heligoland-bight, jutland, running-fight); the Germans' casemates always, open guns for torpedo craft;
+    the Russians at Tsushima both for torpedo craft; the rest the default preset (in range).
+    **Measured** (crew-history now runs with captains, so the reliefs come in the lull after the fire): Chester,
+    Southampton, Kent and Graf Spee the same men; Southampton has 23 reliefs at her guns by 30 min (her stokers off
+    watch), Chester 15. Under long fire the toll rises with the reliefs sent into it: Oryol 157 → 181 killed and wounded
+    (record 123), Emden 194 → 219 (171-203), Suvorov 228 → 295, Sverige 207 → 427 (out of action at 2 h 128 → 333,
+    still rising while her guns are manned). The lull stand-in holds them back a little; N3b's nerve is the real check.
+    Cost: Jutland's captains at 2.5 h 499 µs a think (498 without the pass), the longest 16 ms (9); the squadrons
+    scenario allocates nothing.
 - **N3b Steadiness: the men's nerve** (decision 5). Each station keeps its **duress** (a new word: what has landed at
   and around it, fading), against its **nerve** (the threshold, by the men's experience, decision 6; work-up doesn't
   enter). All numbers [EST] from CUF R1-R4.

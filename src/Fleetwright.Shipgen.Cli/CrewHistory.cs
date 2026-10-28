@@ -23,32 +23,32 @@ static class CrewHistory
     [
         new("1890-1925", "Oryol, Tsushima 1905: about 74 hits (Campbell; 12″, 8″, 6″ as Orel's 53) over 5 h",
             new("borodino", 9, [new("mikasa", 0, "ap", 0.06), new("mikasa", 0, "common", 0.03), new("izumo", 0, null, 0.17), new("mikasa", 1, null, 0.74)],
-                74, 300, (4_500, 7_500), (45, 135), "prepared", "1905", 5, Experience.Green),
+                74, 300, (4_500, 7_500), (45, 135), "prepared", "1905", 5, Experience.Green, Captains: true),
             "43 killed, 80 wounded; \"main losses behind armour from splinters entering ports and slits\" (Kostenko)", "about 100-150 out of action"),
         new("1890-1925", "Chester, Jutland 1916: 17 × 15 cm (Wiesbaden class) in about 5 min, open-backed shields, 3-5 weeks in commission",
-            new("town_chatham", 26, [new("wiesbaden", 0, null, 1)], 17, 5, (6_000, 8_000), (45, 135), "closed up", "1916", 0.5, Experience.Trained, 0.3),
+            new("town_chatham", 26, [new("wiesbaden", 0, null, 1)], 17, 5, (6_000, 8_000), (45, 135), "closed up", "1916", 0.5, Experience.Trained, 0.3, Captains: true),
             "29 killed, 49 wounded; four guns out; no recorded flight", "about 75-80 out; she still steams and fights"),
         new("1890-1925", "Southampton, Jutland night 1916: four light cruisers' 10.5 cm at 1,500 yd for 3.5 min (18 hits [EST])",
-            new("town_chatham", 20, [new("stettin", 0, null, 1)], 18, 3.5, (1_200, 1_600), (60, 120), "closed up", "1916", 0.5),
+            new("town_chatham", 20, [new("stettin", 0, null, 1)], 18, 3.5, (1_200, 1_600), (60, 120), "closed up", "1916", 0.5, Captains: true),
             "89 casualties; 75% of the upper deck killed or wounded in 3.5 min; guns silent \"through lack of flesh and blood\"; stokers off watch re-manned them in a lull",
             "silent from casualties, few or none leaving; reliefs only once the fire stops"),
         new("1890-1925", "Kent, Falklands 1914: 37 × 10.5 cm (Nürnberg) over 90 min, reservists in casemates (Devonshire class)",
-            new("devonshire", 22, [new("stettin", 0, null, 1)], 37, 90, (5_000, 10_000), (45, 135), "closed up", "1916", 2, Experience.Average),
+            new("devonshire", 22, [new("stettin", 0, null, 1)], 37, 90, (5_000, 10_000), (45, 135), "closed up", "1916", 2, Experience.Average, Captains: true),
             "4 killed, 12 wounded, most at one gun; armour not pierced", "about 16 out; no leaving"),
         new("1890-1925", "Emden, Cocos 1914: Sydney's 6″ from about 9,500 yd for 1 h 40 min (100 hits [EST]; Dresden class as Stettin)",
-            new("stettin", 20, [new("town_chatham", 0, null, 1)], 100, 100, (8_000, 9_500), (45, 135), "closed up", "1916", 2),
+            new("stettin", 20, [new("town_chatham", 0, null, 1)], 100, 100, (8_000, 9_500), (45, 135), "closed up", "1916", 2, Captains: true),
             "115-134 killed and 56-69 wounded of 316; fire slackened as the rangefinders went; one gun at 11:00, then none",
             "accuracy falls with control damage first; one gun late, worked by reliefs"),
         new("1890-1925", "Suvorov, Tsushima 1905: 5 h of 12″, 8″ and 6″ (150 hits [EST]; not counted), green",
             new("borodino", 9, [new("mikasa", 0, "common", 0.1), new("izumo", 0, null, 0.2), new("mikasa", 1, null, 0.7)],
-                150, 300, (3_000, 7_500), (30, 150), "prepared", "1905", 5.5, Experience.Green),
+                150, 300, (3_000, 7_500), (30, 150), "prepared", "1905", 5.5, Experience.Green, Captains: true),
             "all lost but the staff; short routs after blasts; covered light-gun crews used up as reliefs; a 12-pdr each side firing late",
             "the reserve gone within hours; a last gun late"),
         new("1890-1925", "Sverige under 500 × 152 mm (the user's case) over 2 h at 2-4 km",
-            new("sverige", 16, [new("sverige", 1, null, 1)], 500, 120, (2_000, 4_000), (45, 135), "closed up", "1916", 3),
+            new("sverige", 16, [new("sverige", 1, null, 1)], 500, 120, (2_000, 4_000), (45, 135), "closed up", "1916", 3, Captains: true),
             "-", "toll rising for as long as her secondaries fight; the last gun outlives the main battery; silent from want of men before the toll flattens"),
         new("later cuts", "Graf Spee, River Plate 1939: 18 × 6″ and 2 × 8″ over 80 min",
-            new("deutschland", 24, [new("light_cruiser", 0, null, 0.9, RangeHi: 12_000), new("kent", 0, null, 0.1)], 20, 80, (8_000, 16_000), (30, 150), "closed up", "1916", 2),
+            new("deutschland", 24, [new("light_cruiser", 0, null, 0.9, RangeHi: 12_000), new("kent", 0, null, 0.1)], 20, 80, (8_000, 16_000), (30, 150), "closed up", "1916", 2, Captains: true),
             "36 killed, 60 wounded", "in the band"),
     ];
 
@@ -56,7 +56,7 @@ static class CrewHistory
     sealed class Ship
     {
         public int Entity, Hits, Killed, Wounded, Lost = -1;
-        public double[] Out = [], Mounts = [], Conned = [], Parties = [], AtFire = [], OnWater = [];
+        public double[] Out = [], Mounts = [], Conned = [], Parties = [], AtFire = [], OnWater = [], Reliefs = [], Covered = [];
         public double[][] Stations = [], Batteries = [];
     }
 
@@ -109,7 +109,7 @@ static class CrewHistory
         double[] Nan() => Enumerable.Repeat(double.NaN, n).ToArray();
         return new Ship
         {
-            Entity = entity, Out = Nan(), Mounts = Nan(), Conned = Nan(), Parties = Nan(), AtFire = Nan(), OnWater = Nan(),
+            Entity = entity, Out = Nan(), Mounts = Nan(), Conned = Nan(), Parties = Nan(), AtFire = Nan(), OnWater = Nan(), Reliefs = Nan(), Covered = Nan(),
             Stations = Enumerable.Range(0, n).Select(_ => new double[BattleStations.Count]).ToArray(),
             Batteries = Enumerable.Range(0, n).Select(_ => new double[c.Batteries.Length]).ToArray(),
         };
@@ -137,6 +137,7 @@ static class CrewHistory
                 (ok, r.Batteries[i][b]) = (ok + 1, r.Batteries[i][b] + 1);
         r.Mounts[i] = ok;
         r.Conned[i] = k.Conned ? 1 : 0;
+        (r.Reliefs[i], r.Covered[i]) = (k.In.Sum(), k.Covered.Sum());
         double men = 0, fire = 0, water = 0;
         for (int p = 0; p < k.PartyCount; p++)
         {
@@ -182,14 +183,14 @@ static class CrewHistory
                 continue;
             }
             double A(Func<Ship, double> f) => afloat.Average(f);
-            Console.WriteLine(string.Format(Inv, "    {0,4} min{1}  out of action {2:0} (median; {3:0}-{4:0}): {5}; mounts {6}; conned {7:0}%; parties' men {8:0} (at fires {9:0}, on water {10:0}){11}",
+            Console.WriteLine(string.Format(Inv, "    {0,4} min{1}  out of action {2:0} (median; {3:0}-{4:0}): {5}; mounts {6}; conned {7:0}%; parties' men {8:0} (at fires {9:0}, on water {10:0}); reliefs come {12:0.#}, under cover {13:0.#}{11}",
                 at[i], at[i] <= b.Minutes ? " " : "+", Med(afloat.Select(r => r.Out[i])), Q(afloat.Select(r => r.Out[i]), 0.1), Q(afloat.Select(r => r.Out[i]), 0.9),
                 string.Join(", ", Enumerable.Range(0, BattleStations.Count).Where(s => men[s] > 0 && A(r => r.Stations[i][s]) >= 0.05)
                     .Select(s => string.Format(Inv, "{0} {1:0.#}", BattleStations.Names[s], A(r => r.Stations[i][s])))),
                 string.Join(", ", Enumerable.Range(0, c.Batteries.Length).Where(x => Mounts(c, x) > 0)
                     .Select(x => string.Format(Inv, "{0} {1:0.#}/{2}", HitsBench.Battery(c, x), A(r => r.Batteries[i][x]), Mounts(c, x)))),
                 100 * A(r => r.Conned[i]), A(r => r.Parties[i]), A(r => r.AtFire[i]), A(r => r.OnWater[i]),
-                afloat.Count < n ? string.Format(Inv, "; {0} of {1} afloat", afloat.Count, n) : ""));
+                afloat.Count < n ? string.Format(Inv, "; {0} of {1} afloat", afloat.Count, n) : "", A(r => r.Reliefs[i]), A(r => r.Covered[i])));
         }
         Console.WriteLine($"    record: {cc.Record}");
         Console.WriteLine($"    wanted: {cc.Wanted}");

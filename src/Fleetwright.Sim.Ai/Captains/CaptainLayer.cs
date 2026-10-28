@@ -187,7 +187,11 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         int i = Find(entity);
         return i >= 0 ? captains[i].ClearanceM : 0;
     }
-    public bool Active => active > 0 || Fighting;
+    public bool Active => active > 0 || Fighting || Hurt();
+
+    /// <summary>The world's ships, for her men's reliefs between fights (docs/battle/crew.md N3a: a captain thinks while
+    /// his ship is hurt, whatever his order).</summary>
+    public ShipStore? Store { get; init; }
 
     public int PeriodMs(in AiContext ctx)
     {
@@ -523,6 +527,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
                 kn = Math.Min(kn, cap.LimitKn);
             Give(ctx, own, course, kn);
         }
+        HurtPass(ctx);   // first: it starts the hurt flag afresh, the fire pass's hurt ships add to it
         if (Fighting)
             FirePass(ctx);
         Recount();

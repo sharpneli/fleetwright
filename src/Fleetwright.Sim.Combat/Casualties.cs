@@ -328,6 +328,8 @@ public static class Casualties
                 int hurt = killed + wounded, rel = k.In[g] > 0 ? Math.Min(k.In[g], (int)Math.Round((double)hurt * Math.Min(k.In[g], n) / n)) : 0;
                 k.In[g] -= rel;
                 k.Gone[g] += hurt - rel;
+                if (hurt > 0)
+                    k.HitMs[g] = Math.Max(now, 1);
                 (res.Killed, res.Wounded) = (res.Killed + killed, res.Wounded + wounded);
             }
             // a party working there (docs/battle/crew.md N1), its men as the station's

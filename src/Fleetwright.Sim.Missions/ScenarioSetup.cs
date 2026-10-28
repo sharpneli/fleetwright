@@ -670,6 +670,12 @@ public static class DoctrineRules
         new(DoctrineField.Dispose, "Admirals place scouts and screens", [(1, "by roles"), (0, "all in line")]),
         new(DoctrineField.Shells, "Shells", [((double)ShellUse.ByTarget, "by target"), ((double)ShellUse.MagazineOrder, "by the magazine order")]),
         new(DoctrineField.SecondaryHitFloor, "Secondaries at will", [(0.01, "1 hit in 100 or better"), (0, "anything in reach")]),
+        new(DoctrineField.ManCasemates, "Casemate guns closed up", [((double)ManGuns.Always, "always"), ((double)ManGuns.InRange, "in range"),
+            ((double)ManGuns.TorpedoCraft, "for torpedo craft")]),
+        new(DoctrineField.ManOpenGuns, "Open guns closed up", [((double)ManGuns.Always, "always"), ((double)ManGuns.InRange, "in range"),
+            ((double)ManGuns.TorpedoCraft, "for torpedo craft")]),
+        new(DoctrineField.ReliefOrder, "Reliefs", [((double)ReliefOrder.HandlingRoomProtected, "handling rooms kept"),
+            ((double)ReliefOrder.ReserveInSupply, "from the supply first")]),
     ];
 
     public static Rule? Of(DoctrineField f) => Array.Find(All, r => r.Field == f);

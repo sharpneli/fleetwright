@@ -108,10 +108,37 @@ public enum DoctrineField : byte
     /// ammunition floor, the secondaries' first). 0: anything in reach. An ordered Engage fires regardless. Last, so
     /// the fields' numbers in logged commands stand.</summary>
     SecondaryHitFloor,
+
+    /// <summary>When a secondary's casemated guns are closed up (<see cref="ManGuns"/>; docs/battle/crew.md N3a, decision
+    /// 10: a navy's doctrine, set by the scenario from the record): the rest of the time their crews wait under cover.</summary>
+    ManCasemates,
+
+    /// <summary>When a secondary's open and shielded guns are closed up (<see cref="ManGuns"/>; N3a).</summary>
+    ManOpenGuns,
+
+    /// <summary>Where the reliefs come from first (<see cref="ReliefOrder"/>; N3a, decision 1).</summary>
+    ReliefOrder,
 }
 
 /// <summary>Doctrine's Shells: each battery loads the kind its target calls for (the captain's choice, the matchup's
 /// judgement), or fires by the magazine order (a main battery AP first, a secondary HE).</summary>
+/// <summary>When a gun's crew is closed up (docs/battle/crew.md N3a): always; while an enemy worth its fire is in its reach
+/// and bearing; or only against torpedo craft in reach, with a watch of two guns a battery closed up meanwhile.</summary>
+public enum ManGuns : byte
+{
+    Always,
+    InRange,
+    TorpedoCraft,
+}
+
+/// <summary>Where a ship's reliefs come from first (N3a, decision 1): her men under cover and her idle hands, a live mount's
+/// handling room kept; or (the USN's 1899 bill) the supply's spare men first.</summary>
+public enum ReliefOrder : byte
+{
+    HandlingRoomProtected,
+    ReserveInSupply,
+}
+
 public enum ShellUse : byte
 {
     ByTarget,
@@ -183,7 +210,7 @@ public sealed class Doctrine(GroupSystem groups, IReadOnlyDictionary<string, dou
         return r;
     }
 
-    public const int FieldCount = (int)DoctrineField.SecondaryHitFloor + 1;
+    public const int FieldCount = (int)DoctrineField.ReliefOrder + 1;
 
     /// <summary>Every field when nothing sets it: a world told nothing (a dev's, a test's) behaves as before doctrine.</summary>
     public static double Default(DoctrineField f) => f switch
@@ -213,6 +240,8 @@ public sealed class Doctrine(GroupSystem groups, IReadOnlyDictionary<string, dou
         DoctrineField.Temper => 0,
         DoctrineField.Shells => (double)ShellUse.MagazineOrder,
         DoctrineField.SecondaryHitFloor => 0,
+        DoctrineField.ManCasemates or DoctrineField.ManOpenGuns => (double)ManGuns.Always,   // as before the crews' posture
+        DoctrineField.ReliefOrder => (double)Ai.ReliefOrder.HandlingRoomProtected,
         _ => throw new ArgumentOutOfRangeException(nameof(f)),
     };
 
@@ -366,6 +395,8 @@ public sealed class DoctrinePresets
             DoctrineField.TorpedoAttack when Enum.TryParse<TorpedoAttack>(name, ignoreCase: true, out var ta) => (f, (double)ta),
             DoctrineField.NightAction when Enum.TryParse<NightAction>(name, ignoreCase: true, out var na) => (f, (double)na),
             DoctrineField.Shells when Enum.TryParse<ShellUse>(name, ignoreCase: true, out var su) => (f, (double)su),
+            DoctrineField.ManCasemates or DoctrineField.ManOpenGuns when Enum.TryParse<ManGuns>(name, ignoreCase: true, out var mg) => (f, (double)mg),
+            DoctrineField.ReliefOrder when Enum.TryParse<ReliefOrder>(name, ignoreCase: true, out var ro) => (f, (double)ro),
             _ => throw new ArgumentException($"doctrine: \"{v}\" isn't a value of {field}"),
         };
     }
@@ -383,6 +414,8 @@ public sealed class DoctrinePresets
             DoctrineField.TorpedoAttack => ((TorpedoAttack)(int)v).ToString(),
             DoctrineField.NightAction => ((NightAction)(int)v).ToString(),
             DoctrineField.Shells => ((ShellUse)(int)v).ToString(),
+            DoctrineField.ManCasemates or DoctrineField.ManOpenGuns => ((ManGuns)(int)v).ToString(),
+            DoctrineField.ReliefOrder => ((ReliefOrder)(int)v).ToString(),
             _ => null,
         };
         // "CarryOn" -> "carry on"

@@ -110,6 +110,7 @@ public sealed partial class CaptainLayer
             Comb(ctx, ref cap, own);   // coarse, also when a track comes into sight between thinks (WatchTracks)
             TakeUpStanding(ctx, ref cap, own, slot);
             Aim(ctx, ref cap, own, slot);
+            Crew(ctx, own, slot, fighting: true);   // where her men stand (docs/battle/crew.md N3a)
             if (store.Combat.Engaged(slot) > 0)
             {
                 fighting++;

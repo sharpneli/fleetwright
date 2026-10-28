@@ -27,6 +27,9 @@
   "readiness": { "Russia": "prepared", "Japan": "prepared" },
   // how her crews fight fire (docs/battle/fire.md B4): the fire watch, the parties, the main
   "damage_control": { "Russia": "1905", "Japan": "1905" },
+  // the Russians kept their light guns' crews under cover until the torpedo-attack signal (docs/battle/crew.md N3a,
+  // CUF §5: Oryol); nothing is known of the Japanese practice
+  "doctrine": { "Russia": { "preset": "default", "ManCasemates": "torpedo craft", "ManOpenGuns": "torpedo craft" } },
   "player": "Russia",
   // the end (docs/battle/command.md 5.0): the day and the night, to Nebogatov's surrender the next forenoon. History's aims
   // (Russia through to Vladivostok) wait for "reach"; v0 has one aim

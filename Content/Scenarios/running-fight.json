@@ -17,6 +17,9 @@
   "sides": ["Britain", "Germany"],
   "readiness": { "Britain": "closed up", "Germany": "closed up" },
   "damage_control": { "Britain": "1916", "Germany": "1916" },
+  // the guns' crews by the navies' practice (docs/battle/crew.md N3a, CUF §5): the RN's casemates manned in reach and a
+  // watch on its open guns; the Germans' casemates kept at their guns, their open guns' crews under cover
+  "doctrine": { "Britain": { "preset": "default", "ManCasemates": "in range", "ManOpenGuns": "torpedo craft" }, "Germany": { "preset": "default", "ManCasemates": "always", "ManOpenGuns": "torpedo craft" } },
   "fire_discipline": { "Britain": "rn-1914", "Germany": "german" },
   "player": "Britain",
   "until": "1916-05-31T19:00",

@@ -18,9 +18,10 @@ static class GivenFire
 
     /// <summary>The fire: the target, her speed, the hits (n over the minutes, ranges and target angles drawn from the
     /// bands), her readiness and doctrine, the hours run; her side's men's experience and her work-up (docs/battle/crew.md
-    /// decision 6).</summary>
+    /// decision 6); and whether her captain orders her men (N3a: the reliefs; no enemy in sight, so her posture stands).</summary>
     public sealed record Barrage(string Target, double Kn, Fall[] Falls, int Hits, double Minutes, (double Lo, double Hi) RangeM,
-        (double Lo, double Hi) AspectDeg, string Readiness, string Doctrine, double Hours, double Experience = Sim.Core.Experience.Trained, double WorkUp = 1);
+        (double Lo, double Hi) AspectDeg, string Readiness, string Doctrine, double Hours, double Experience = Sim.Core.Experience.Trained, double WorkUp = 1,
+        bool Captains = false);
 
     /// <summary>A hit just struck: the run, the ship's slot and condition, when (ms after the start), where it struck, and
     /// her mounts working before it. The damage system's Last* hold what it did.</summary>
@@ -53,6 +54,7 @@ static class GivenFire
         double total = b.Falls.Sum(f => f.Share);
         var start = WorldTime.FromUtc(1916, 5, 31, 14);
         var w = new World(start, 1, s);
+        var ai = b.Captains ? new Sim.Ai.AiSystem(w) : null;
         int ci = w.Ships.AddClass(target);
         if (b.Experience != Sim.Core.Experience.Trained)
             w.Apply(GunnerySystem.SetExperience(0, b.Experience));
@@ -94,6 +96,7 @@ static class GivenFire
                 var mounts = (bool[])k.MountWorks.Clone();
                 var aim = aims[fi][rng.NextInt(aims[fi].Length)];
                 w.Damage.Strike(w, aim.Next(w, entities[ri], slot, path, ref rng, out string where));
+                ai?.OffRails(w);   // a hit wakes her captain, as a fight's encounter would
                 hit(w, new Struck(ri, slot, ms, where, k, mounts));
             }
             w.AdvanceTo(start + end);

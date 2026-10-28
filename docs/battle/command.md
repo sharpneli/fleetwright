@@ -179,6 +179,8 @@ own value, else its group's, else the side's. A command sets it, so it's logged 
 | **Torpedoes** | At will, only on order, or never; how far into their range | At will, 4.6's shares |
 | **Night** | Capital ships avoid action at night, or don't; torpedo craft attack at night, or don't | Avoid; attack |
 | **Evasion** | Under fire: steady, zigzag, chase salvos (the evasion research's styles), from what range | Steady inside 10 km, zigzag beyond if outgunned |
+| **ManCasemates, ManOpenGuns** (crew.md N3a) | When a secondary's casemated and its open guns are closed up: always, in range (an enemy in reach and bearing), or for torpedo craft (a watch of two a battery meanwhile); otherwise their crews wait under cover | Always (the "default" preset: in range) |
+| **ReliefOrder** (crew.md N3a) | Where the reliefs come from first: the men under cover and the idle hands, a live mount's handling room kept; or the supply's spare men first (the USN's 1899 bill) | Handling rooms kept |
 
 **Presets, defined by values** (decision 7): a preset is a named set of these fields' values, as data
 (`Content/Sim/doctrine.json`, beside the settings), never code. A side takes a preset by name in the scenario
