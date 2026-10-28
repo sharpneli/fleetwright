@@ -732,6 +732,7 @@ public sealed class DamageSystem : IWorldSystem
             fx |= HitEffect.Power;
         if (fx != HitEffect.None)
             Hold(world, slot, k, force: true);
+        Remind(world, slot, k);   // its functions may have set a time of their own (the conn shifting: crew.md N2)
         return fx;
     }
 

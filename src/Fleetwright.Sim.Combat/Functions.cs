@@ -34,6 +34,29 @@ public static class Functions
         return v;
     }
 
+    /// <summary>Where she's conned from (docs/battle/crew.md N2): forward while a bridge or the conning tower stands with
+    /// her command party there; when that goes, aft control if it's manned, once the control has shifted there
+    /// (<see cref="SimSettings.ConnShiftS"/>; not conned meanwhile); else nowhere.</summary>
+    static void Conn(ShipCondition k, bool command, long now, SimSettings s)
+    {
+        var (fore, aft) = BattleStations.Conn(k.Class, k);
+        if (command && fore)
+            (k.ConnAt, k.ConnShiftMs) = (0, 0);
+        else if (!aft)
+            (k.ConnAt, k.ConnShiftMs) = (-1, 0);
+        else if (k.ConnAt != 1)
+        {
+            if (k.ConnShiftMs == 0)
+            {
+                k.ConnAt = -1;
+                k.ShiftConn(now + (long)(s.ConnShiftS * 1000));
+            }
+            else if (now >= k.ConnShiftMs)
+                (k.ConnAt, k.ConnShiftMs) = (1, 0);
+        }
+        k.Conned = k.ConnAt >= 0;
+    }
+
     /// <summary>Works out the condition's functions now (world ms); whether its rudders still answer (none fitted: they
     /// do). The settings' DraughtFloor: the share of its steam a boiler room keeps with all its funnels wrecked;
     /// lastingMs: the lasting state's time (world ms), the outages ending by then over (the men as they are now).</summary>
@@ -43,7 +66,7 @@ public static class Functions
         double draughtFloor = s.DraughtFloor;
         double steam = 0, shafts = 0, steamBy = 0, shaftsBy = 0;
         int boilers = 0, lines = 0, rudders = 0;
-        bool steer = false, conned = true;
+        bool steer = false, command = true;
         foreach (ref readonly var f in c.Functions)
         {
             double floor = f.Kind == FunctionKind.Boilers ? draughtFloor : 0, v = Value(c, k, f, floor);
@@ -71,16 +94,28 @@ public static class Functions
                     lines++;
                     break;
                 case FunctionKind.Boilers:
-                    steam += v;
-                    steamBy += Value(c, k, f, floor, lastingMs);
+                {
+                    // by its stokers (crew.md N2), a drop held while what's in the fires burns; the lasting state at the
+                    // stokers' own
+                    double men = BattleStations.Stokehold(c, k, f.Index, s.StokeholdFloor);
+                    ref double at = ref k.Stoke[f.Index];
+                    if (men >= at)
+                        (at, k.StokeUntilMs[f.Index]) = (men, 0);
+                    else if (k.StokeUntilMs[f.Index] == 0)
+                        k.HoldStoke(f.Index, now + (long)(s.StokeholdHoldS * 1000));
+                    else if (now >= k.StokeUntilMs[f.Index])
+                        (at, k.StokeUntilMs[f.Index]) = (men, 0);
+                    steam += v * at;
+                    steamBy += Value(c, k, f, floor, lastingMs) * men;
                     boilers++;
                     break;
+                }
                 case FunctionKind.Rudder:
                     steer |= v > 0;
                     rudders++;
                     break;
                 case FunctionKind.Command:
-                    conned = v > 0;
+                    command = v > 0;
                     break;
                 case FunctionKind.Tube:
                     k.TubeWorks[f.Index] = v > 0;
@@ -90,7 +125,7 @@ public static class Functions
         k.PowerCap = Math.Min(boilers > 0 ? steam / boilers : 1, lines > 0 ? shafts / lines : 1);
         k.PowerCapLasts = Math.Min(boilers > 0 ? steamBy / boilers : 1, lines > 0 ? shaftsBy / lines : 1);
         k.LastingMs = lastingMs;
-        k.Conned = conned;
+        Conn(k, command, now, s);
         return steer || rudders == 0;
     }
 }

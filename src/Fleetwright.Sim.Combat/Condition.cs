@@ -344,8 +344,34 @@ public sealed class ShipCondition
     public Steering Steering;
     /// <summary>The rudder's angle when it jammed, radians.</summary>
     public double JamRudderRad;
-    /// <summary>Whether it's conned (a bridge or the conning tower works): recorded until the signals (5.1).</summary>
+    /// <summary>Whether it's conned (docs/battle/crew.md N2: a bridge or the conning tower standing with her command party
+    /// there, else aft control once the control has shifted), where from (0 forward, 1 aft control, -1 nowhere) and when
+    /// the control shifting aft gets there (world ms; 0: none shifting). What it costs beyond counterflooding by hand
+    /// comes with the signals (5.1).</summary>
     public bool Conned = true;
+    public int ConnAt;
+    public long ConnShiftMs;
+
+    /// <summary>Each boiler room's stokehold at work (docs/battle/crew.md N2: its steam's share by its men, by room), and
+    /// until when a drop is held on what's already in the fires (world ms; 0: none held).</summary>
+    public double[] Stoke = [];
+    public long[] StokeUntilMs = [];
+    /// <summary>Each part's and each cell's fire space (-1: none), the class's, for a station's space (N2).</summary>
+    public int[] PartSpace = [], CellSpace = [];
+
+    /// <summary>A boiler room's fires burning on until then (on the outage clock).</summary>
+    internal void HoldStoke(int room, long until)
+    {
+        StokeUntilMs[room] = until;
+        Due(until);
+    }
+
+    /// <summary>The control shifting aft, there then (on the outage clock: the clear event re-works her functions).</summary>
+    internal void ShiftConn(long until)
+    {
+        ConnShiftMs = until;
+        Due(until);
+    }
     /// <summary>Hits taken, and whether it's been touched at all (a ship never hit hashes as before); who hit it last (an
     /// entity and battery, for the log's line when it goes down).</summary>
     public int Hits, LastShooter, LastBattery;
@@ -387,6 +413,18 @@ public sealed class ShipCondition
                 (new double[c.Rooms.Length], new double[c.Rooms.Length], new double[c.Rooms.Length], new bool[c.Rooms.Length]);
             (MagazineOrderMs, MagazineWet) = (new long[c.Rooms.Length], new double[c.Rooms.Length]);
             Smoked = new bool[c.Rooms.Length];
+            (Stoke, StokeUntilMs) = (new double[c.Rooms.Length], new long[c.Rooms.Length]);
+            (PartSpace, CellSpace) = (new int[c.Components.Length], new int[c.Cells.Length]);
+            Array.Fill(PartSpace, -1);
+            Array.Fill(CellSpace, -1);
+            for (int i = 0; i < c.FireSpaces.Length; i++)
+            {
+                ref readonly var row = ref c.FireSpaces[i];
+                if (row.Kind == FireSpaceKind.Part)
+                    PartSpace[row.Index] = i;
+                else if (row.Kind == FireSpaceKind.Cell)
+                    CellSpace[row.Index] = i;
+            }
             (Level, LevelsFuel) = (new double[c.Rooms.Length], double.NaN);
             MountWorks = new bool[c.Mounts.Length];
             (MountCrew, MountSupply, EyeCrew) = (new double[c.Mounts.Length], new double[c.Mounts.Length], new double[c.Eyes.Length]);
@@ -478,6 +516,9 @@ public sealed class ShipCondition
         Array.Fill(TubeWorks, true);
         (CrewLost, Killed, Wounded, Returns) = (0, 0, 0, 0);
         (Status, Loss, Attitude, PowerCap, Steering, JamRudderRad, Conned, Hits, Damaged) = (ShipStatus.Afloat, LossKind.None, Attitude.Upright, 1, Steering.Free, 0, true, 0, false);
+        (ConnAt, ConnShiftMs) = (0, 0);
+        Array.Fill(Stoke, 1.0);
+        Array.Clear(StokeUntilMs);
         (WaterT, GmM, StepMs, NextStepMs, HeldCap, LastShooter, LastBattery, LossMs, GoneMs) = (0, c.Hydrostatics.GmT, 0, -1, 1, 0, 0, 0, 0);
         (FloodStepMs, FloodDueMs, FloodEveryMs, FireWaterM3) = (0, 0, 1000, 0);
         (NextClearMs, ClearAtMs, Leaks, DoorsDrawn, PumpsRigged) = (-1, -1, 0, false, 0);
@@ -705,6 +746,23 @@ public sealed class ShipCondition
             next = Math.Min(next, Later(a.StiffUntil, now));
             next = Math.Min(next, Later(a.GunUntil, now));
         }
+        // a stokehold's fires burned down to what its men keep up (N2)
+        for (int r = 0; r < StokeUntilMs.Length; r++)
+            if (StokeUntilMs[r] > 0)
+            {
+                if (StokeUntilMs[r] <= now)
+                    any = true;
+                else
+                    next = Math.Min(next, StokeUntilMs[r]);
+            }
+        // the control shifted aft (N2): her functions to work out again
+        if (ConnShiftMs > 0)
+        {
+            if (ConnShiftMs <= now)
+                any = true;
+            else
+                next = Math.Min(next, ConnShiftMs);
+        }
         // the walking wounded back at their stations, which work by their men (docs/battle/crew.md N2)
         for (int i = Returns - 1; i >= 0; i--)
         {
@@ -842,6 +900,18 @@ public sealed class ShipCondition
             h.Add(Wounded);
         }
         h.Add((int)Status | (int)Loss << 8);
+        if (ConnAt != 0 || ConnShiftMs != 0)
+        {
+            h.Add(ConnAt + 7000);
+            h.Add(ConnShiftMs);
+        }
+        for (int r = 0; r < Stoke.Length; r++)
+            if (Stoke[r] != 1 || StokeUntilMs[r] != 0)
+            {
+                h.Add(r + 8000);
+                h.Add(Stoke[r]);
+                h.Add(StokeUntilMs[r]);
+            }
         h.Add(PowerCap);
         h.Add(WaterT);
         if (FloodDueMs != 0)

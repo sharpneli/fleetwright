@@ -154,6 +154,7 @@ public static class Fires
             if (e == BurnEvent.Flashover)
             {
                 res.Flashed++;
+                res.Changed = true;   // its station untenable (docs/battle/crew.md N2)
                 caught |= Caught(c, k, i, nowMs, s, caught);
             }
             else if (e == BurnEvent.Out)
@@ -162,6 +163,7 @@ public static class Fires
                     Douse(c, k, i, s);
                 Mark(c, k, i);
                 res.Out++;
+                res.Changed |= c.FireSpaces[i].Kind != FireSpaceKind.Deck;   // its station's men back at work (N2)
                 continue;
             }
             res.Changed |= Heat(c, k, i, dt, s);

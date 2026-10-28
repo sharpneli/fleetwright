@@ -387,6 +387,24 @@ the walking wounded back after 15-45 min). Southampton's and Emden's hit counts 
     Measured: the guns lost are mostly lost with their mounts, so the counts move little (Emden's main at 100 min 0.8 →
     0.5 of 2, her 105 mm 1.1 → 0.9 a side; Sverige's the same); damage-history's men unchanged. `LineOfFireTests` now run
     without damage: their friend, shot up by the enemy, fell out of the scene with her guns silent.
+  - **N2b-d built 2026-10-28 (the conn, the stokehold, untenable spaces): N2 done.**
+    - **The conn** (`Functions.Conn`, `BattleStations.Conn`): forward while a bridge or the conning tower stands and any of
+      the command party on her bridge blocks is there; lost, aft control if it stands manned, once the control has
+      shifted (`ConnShiftS` 420 s [EST: CUF §4 5-10 min, Marlborough 9]; on the outage clock, `ConnAt`, `ConnShiftMs`),
+      not conned meanwhile; else nowhere. `Conned` is still read only by counterflooding by hand and the magazines'
+      flooding; what more it costs is the signals' (5.1).
+    - **The stokehold** (`BattleStations.Stokehold`): a boiler room's steam × (`StokeholdFloor` 0.3 + the rest by its
+      stokers there over its crew) [EST], a drop held `StokeholdHoldS` 600 s on what's in the fires (`Stoke`,
+      `StokeUntilMs`, the outage clock); the lasting state at the stokers' own; men back count at once.
+    - **Untenable spaces** (`BattleStations.Untenable`, `AtWork`): a developed fire in a station's space (its part's or
+      cell's fire space, mapped once a class: `PartSpace`, `CellSpace`) holds nobody at work there; the men aren't
+      casualties and still stand where the hits find them (rough), and are back when it's out (a flashover and a fire
+      out are now changes of the fire step). Water past the men's height is flooding's own: a room flooded out of action
+      takes its function's node. Flash, steam and gas: not modelled as spaces yet.
+    - **Measured (20 runs):** crew-history's men the same; Emden lost 70 → 85% of runs, Suvorov conned 35 → 40% at 5 h;
+      damage-history's men a hit the same, its losses a run or two either way (the fire step's changes re-work the
+      functions more often); dc-history the same but Seydlitz holding 24 kn 10 → 5%. Sverige's conn is 0% from an hour:
+      her aft control goes with her upper works.
 - **N3a Posture and reliefs: the captain's order** (decisions 1-2). Where each man stands, decided by the captain at
   each think.
   - **Closed up or under cover, per station**, by the side's doctrine field **`ManSecondaries`** (decision 10): Always,

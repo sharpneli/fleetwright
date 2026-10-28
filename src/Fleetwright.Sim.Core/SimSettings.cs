@@ -1047,6 +1047,16 @@ public sealed record SimSettings
     public double GunMinMenPerMm { get; init; } = 0.02;
     public int GunMinMenMax { get; init; } = 3;
 
+    /// <summary>The control shifting aft when the conn forward is lost, s (docs/battle/crew.md N2) [EST: CUF §4's 5-10 min;
+    /// Marlborough 9 min]: she isn't conned meanwhile.</summary>
+    public double ConnShiftS { get; init; } = 420;
+
+    /// <summary>A boiler room's steam by its stokers (docs/battle/crew.md N2): this share kept with nobody there, the rest
+    /// by its men over its crew [EST: the fires burn on, the water and the draught still go]; and a drop comes only after
+    /// what's already in the fires has burned, s [EST: a fire's charge lasts minutes].</summary>
+    public double StokeholdFloor { get; init; } = 0.3;
+    public double StokeholdHoldS { get; init; } = 600;
+
     /// <summary>The outages a captain waits out in the line, minutes (docs/battle/command.md 5.1a item 2; the user,
     /// 2026-10-20): his fall-out reads his ship as she'll be once what ends within this is back (a blackout, a tripped
     /// breaker, a stunned crew, a short jam), not what's down for a while. 13 §1.3's short jams are under 15 min, the

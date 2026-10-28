@@ -11,6 +11,12 @@ Hunted 2026-10-24: every flaky entry below is closed. The check was seven full D
 together, plus one full Debug run of `Fleetwright.Sim.Tests`. Runs 1-4 had one failure in all, the achieved speed (below);
 runs 5-7, after its fix, and the Debug run had none.
 
+- [ ] **The Sim suite hangs at 0% CPU now and then** (2026-10-28, twice): `dotnet test tests/Fleetwright.Sim.Tests -c
+  DevRelease` stopped printing after `ShellTestTests.No_design_leaks [SKIP]` (18-31 s in) with testhost and vstest idle,
+  both times while another heavy job ran beside it (a CLI build; the four history benches). A deadlock, likely timing:
+  alone the suite passes every time. The workers' job system (`Workers.For`) or a test waiting on it is the first
+  suspect. Run the suite with `--blame-hang --blame-hang-timeout 3m --blame-hang-dump-type mini` so the next hang names
+  its test and leaves a dump; don't run benches beside it meanwhile.
 - [x] One `Fleetwright.Tests` test failed once (173 of 174) on 2026-10-22, right after a game capture, its name hidden
   by `-v q`. Likely `SmokeFieldTwinTests` (smoke Z5, added the day before): it makes a GPU device of its own but wasn't
   in the `Gpu` collection ("one GPU device at a time"), so it ran beside `DesignWorkerTests`' bakers. Put in the
