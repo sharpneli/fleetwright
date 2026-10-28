@@ -315,6 +315,50 @@ public sealed class ShipCondition
     /// <summary>At each station, the men killed or out there now: a part's (by component), then a cell's
     /// (<see cref="Casualties"/>'s groups); and those away from it in a party (docs/battle/crew.md N1).</summary>
     public int[] Gone = [], Away = [];
+    /// <summary>Where the men stand by the captain's order (docs/battle/crew.md N3a, <see cref="Reliefs"/>): the men
+    /// arrived at each station from elsewhere (reliefs), each mount closed up or under cover, its men under cover and the
+    /// shelter they wait in (a cell's group, -1 none), and what each fire party has lent and to which station.</summary>
+    public int[] In = [];
+    public bool[] ClosedUp = [];
+    public int[] Covered = [], MountShelter = [];
+    public readonly int[] PartyLent = new int[MaxParties], PartyLentTo = new int[MaxParties];
+    /// <summary>The men on their way (N3a): when they get there, to which station (-1 - g: back to their own g), how
+    /// many; a pool of <see cref="MoveSlots"/>.</summary>
+    public const int MoveSlots = 64;
+    public readonly long[] MoveMs = new long[MoveSlots];
+    public readonly int[] MoveTo = new int[MoveSlots], MoveMen = new int[MoveSlots];
+    public int Moves;
+
+    /// <summary>Men on their way to a station (or back to their own: -1 - g), there then; with the pool full the soonest
+    /// due arrive now to make room.</summary>
+    internal void Move(int to, int men, long at)
+    {
+        if (men <= 0)
+            return;
+        if (Moves == MoveSlots)
+        {
+            int soonest = 0;
+            for (int i = 1; i < Moves; i++)
+                if (MoveMs[i] < MoveMs[soonest])
+                    soonest = i;
+            Arrive(soonest);
+        }
+        (MoveMs[Moves], MoveTo[Moves], MoveMen[Moves]) = (at, to, men);
+        Moves++;
+        Due(at);
+    }
+
+    /// <summary>A move's men there, its slot taken by the last.</summary>
+    void Arrive(int i)
+    {
+        int to = MoveTo[i], men = MoveMen[i];
+        if (to >= 0)
+            In[to] += men;
+        else
+            Away[-1 - to] = Math.Max(Away[-1 - to] - men, 0);
+        Moves--;
+        (MoveMs[i], MoveTo[i], MoveMen[i]) = (MoveMs[Moves], MoveTo[Moves], MoveMen[Moves]);
+    }
     /// <summary>The walking wounded on their way back (E6): when, to which station, how many; a pool of
     /// <see cref="ReturnSlots"/>.</summary>
     public const int ReturnSlots = 64;
@@ -452,11 +496,17 @@ public sealed class ShipCondition
             (FaceArea, FaceMm, FacePoint, FacesReady) = (new double[4 * c.Cells.Length], new double[4 * c.Cells.Length], new P3[4 * c.Cells.Length], false);
             int groups = c.Components.Length + c.Cells.Length;
             (Gone, Away, RiskK, RiskC, RiskStamp, Touched) = (new int[groups], new int[groups], new double[groups], new double[groups], new int[groups], new int[groups]);
+            In = new int[groups];
+            (ClosedUp, Covered, MountShelter) = (new bool[c.Mounts.Length], new int[c.Mounts.Length], new int[c.Mounts.Length]);
+            for (int m = 0; m < c.Mounts.Length; m++)
+                MountShelter[m] = Reliefs.ShelterOf(c, m);
         }
         else
         {
             Array.Clear(Gone);
             Array.Clear(Away);
+            Array.Clear(In);
+            Array.Clear(Covered);
             Array.Clear(JoinOpenM2);
             Array.Clear(JoinSeamM2);
             Array.Clear(JoinClosureM2);
@@ -517,6 +567,10 @@ public sealed class ShipCondition
         (CrewLost, Killed, Wounded, Returns) = (0, 0, 0, 0);
         (Status, Loss, Attitude, PowerCap, Steering, JamRudderRad, Conned, Hits, Damaged) = (ShipStatus.Afloat, LossKind.None, Attitude.Upright, 1, Steering.Free, 0, true, 0, false);
         (ConnAt, ConnShiftMs) = (0, 0);
+        Array.Fill(ClosedUp, true);
+        Moves = 0;
+        Array.Clear(PartyLent);
+        Array.Clear(PartyLentTo);
         Array.Fill(Stoke, 1.0);
         Array.Clear(StokeUntilMs);
         (WaterT, GmM, StepMs, NextStepMs, HeldCap, LastShooter, LastBattery, LossMs, GoneMs) = (0, c.Hydrostatics.GmT, 0, -1, 1, 0, 0, 0, 0);
@@ -763,6 +817,17 @@ public sealed class ShipCondition
             else
                 next = Math.Min(next, ConnShiftMs);
         }
+        // the men on their way there (N3a)
+        for (int i = Moves - 1; i >= 0; i--)
+        {
+            if (MoveMs[i] <= now)
+            {
+                Arrive(i);
+                any = true;
+            }
+            else
+                next = Math.Min(next, MoveMs[i]);
+        }
         // the walking wounded back at their stations, which work by their men (docs/battle/crew.md N2)
         for (int i = Returns - 1; i >= 0; i--)
         {
@@ -807,10 +872,15 @@ public sealed class ShipCondition
             men = Math.Min(ReturnMen[i], Gone[g]);
             Gone[g] -= men;
         }
-        else
+        else if (g < Gone.Length + MaxParties)
         {
             men = ReturnMen[i];
             Parties[g - Gone.Length].Men += men;
+        }
+        else
+        {
+            men = ReturnMen[i];
+            Covered[g - Gone.Length - MaxParties] += men;
         }
         CrewLost = Math.Max(CrewLost - men, 0);
         Returns--;
@@ -1014,13 +1084,30 @@ public sealed class ShipCondition
             h.Add(party.Home);
             h.Add(party.Place);
         }
-        if (PartiesMade)
-            for (int g = 0; g < Away.Length; g++)
-                if (Away[g] != 0)
-                {
-                    h.Add(g + 6000);
-                    h.Add(Away[g]);
-                }
+        for (int g = 0; g < Away.Length; g++)
+            if (Away[g] != 0 || In[g] != 0)
+            {
+                h.Add(g + 6000);
+                h.Add(Away[g]);
+                h.Add(In[g]);
+            }
+        for (int m = 0; m < ClosedUp.Length; m++)
+            if (!ClosedUp[m] || Covered[m] != 0)
+            {
+                h.Add(m + 9000);
+                h.Add(Covered[m] * 2 + (ClosedUp[m] ? 1 : 0));
+            }
+        for (int i = 0; i < Moves; i++)
+        {
+            h.Add(MoveMs[i]);
+            h.Add(MoveTo[i] * 10_000 + MoveMen[i]);
+        }
+        for (int p = 0; p < PartyCount; p++)
+            if (PartyLent[p] != 0)
+            {
+                h.Add(p + 9500);
+                h.Add(PartyLent[p] * 10_000 + PartyLentTo[p]);
+            }
         for (int i = 0; i < MainCutMs.Length; i++)
             if (MainCutMs[i] != 0)
             {

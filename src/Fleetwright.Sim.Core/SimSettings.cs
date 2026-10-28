@@ -1057,6 +1057,11 @@ public sealed record SimSettings
     public double StokeholdFloor { get; init; } = 0.3;
     public double StokeholdHoldS { get; init; } = 600;
 
+    /// <summary>A relief's walk to a station (docs/battle/crew.md N3a) [EST: CUF R10, 20-60 s between adjacent guns, 1-2
+    /// min within a section, 3-6 min end to end below the armour deck]: this many s, and this many a section between.</summary>
+    public double ReliefWalkS { get; init; } = 45;
+    public double ReliefWalkSectionS { get; init; } = 12;
+
     /// <summary>The outages a captain waits out in the line, minutes (docs/battle/command.md 5.1a item 2; the user,
     /// 2026-10-20): his fall-out reads his ship as she'll be once what ends within this is back (a blackout, a tripped
     /// breaker, a stunned crew, a short jam), not what's down for a while. 13 §1.3's short jams are under 15 min, the

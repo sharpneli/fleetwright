@@ -158,4 +158,52 @@ public class StationTests(ITestOutputHelper output)
         Assert.True(k.MountWorks[m]);
         Assert.Equal(1, k.MountCrew[m]);
     }
+
+    /// <summary>The captain's order (N3a): a mount's crew under cover leaves it silent and waits in its shelter, where a
+    /// hit there finds them; closed up they walk back. A relief walks to a short station and counts less than its own.</summary>
+    [Fact]
+    public void Under_cover_and_reliefs_move_the_men()
+    {
+        var c = Fleet.Get("dreadnought").Class!;
+        var k = Fresh(c);
+        int m = Enumerable.Range(0, c.Mounts.Length).First(i => c.Mounts[i].Kind == Shipgen.ComponentKind.Secondary && k.MountShelter[i] >= 0);
+        int g = Casualties.Part(c.Mounts[m].Component), need = Crew(c, g);
+        Assert.True(Reliefs.Posture(c, k, m, closedUp: false, 0, Settings));
+        Functions.Evaluate(k, Settings, 0, 0);
+        Assert.False(k.MountWorks[m]);
+        Assert.Equal(need, k.Covered[m]);
+        Casualties.Begin(k, 0);
+        Assert.True(Casualties.Here(c, k, k.MountShelter[m]) >= need);
+        Casualties.Add(k, k.MountShelter[m], 0.5, 0.9);
+        var res = new EffectsResult();
+        var r = RandomStream.FromSeed(3);
+        Casualties.Draw(c, k, 0, Settings, ref res, ref r);
+        int left = k.Covered[m];
+        output.WriteLine($"mount {m}: {need} under cover at its shelter, a hit there leaves {left}");
+        Assert.True(left < need);
+
+        Assert.True(Reliefs.Posture(c, k, m, closedUp: true, 1000, Settings));
+        Assert.Equal(0, k.Covered[m]);
+        Functions.Evaluate(k, Settings, 1000, 1000);
+        Assert.False(k.MountWorks[m]);   // on their way back
+        Assert.True(k.Clear(k.NextClearMs));
+        Functions.Evaluate(k, Settings, k.NextClearMs, k.NextClearMs);
+        Assert.Equal(left, Casualties.Men(c, k, g));
+
+        // a relief: a main mount short, men from another mount's crew under cover
+        var k2 = Fresh(c);
+        int main = Enumerable.Range(0, c.Mounts.Length).First(i => c.Mounts[i].Kind == Shipgen.ComponentKind.Main);
+        int mg = Casualties.Part(c.Mounts[main].Component), mneed = Crew(c, mg);
+        k2.Gone[mg] = mneed / 2;
+        Reliefs.Posture(c, k2, m, closedUp: false, 0, Settings);
+        int sent = Reliefs.Relieve(c, k2, Reliefs.Source(Reliefs.From.Covered, m), mg, mneed / 2, 0, Settings);
+        Assert.Equal(Math.Min(mneed / 2, need), sent);
+        Assert.Equal(sent, Reliefs.Inbound(k2, mg));
+        long there = k2.MoveMs[0];
+        Assert.InRange(there, (long)(Settings.ReliefWalkS * 1000), (long)((Settings.ReliefWalkS + 30 * Settings.ReliefWalkSectionS) * 1000));
+        Assert.True(k2.Clear(there));
+        Functions.Evaluate(k2, Settings, there, there);
+        double expected = (mneed - mneed / 2 + sent - (1 - BattleStations.ReliefWorth) * sent) / mneed;
+        Assert.Equal(Math.Min(expected, 1), BattleStations.Share(c, k2, mg), 6);
+    }
 }

@@ -21,6 +21,8 @@ public enum DamageCommand : ushort
     SetFuel,
     Shoot,
     HoldSpeed,
+    Posture,
+    Relieve,
 }
 
 /// <summary>What set a magazine off (<see cref="DamageSystem.Blast"/>).</summary>
@@ -168,6 +170,13 @@ public sealed class DamageSystem : IWorldSystem
     /// 2: the player's override, the benches').</summary>
     public static Command HoldSpeed(int entity, bool on) => new(Id, (ushort)DamageCommand.HoldSpeed, entity, A: on ? 1 : 0);
 
+    /// <summary>A mount's crew closed up or under cover (docs/battle/crew.md N3a): her captain's order.</summary>
+    public static Command Posture(int entity, int mount, bool closedUp) => new(Id, (ushort)DamageCommand.Posture, entity, A: closedUp ? 1 : 0, B: mount);
+
+    /// <summary>Men sent to relieve a station (a crew group, <see cref="Casualties"/>'), from a source
+    /// (<see cref="Reliefs.Source"/>): her captain's order (N3a).</summary>
+    public static Command Relieve(int entity, long source, int to, int men) => new(Id, (ushort)DamageCommand.Relieve, entity, A: source, B: to, X: men);
+
     /// <summary>A ship's orders and firefighting kept to her side's, before anything reads them.</summary>
     void Ready(int slot, ShipCondition k)
     {
@@ -249,6 +258,25 @@ public sealed class DamageSystem : IWorldSystem
                 readiness[c.Entity] = (int)c.A;
                 readinessSet = true;
                 break;
+            case DamageCommand.Posture:
+            case DamageCommand.Relieve:
+            {
+                int ps = ships.Store.SlotOf(c.Entity);
+                if (ps < 0)
+                    return;
+                var pk = ships.Store.Combat.Condition(ps);
+                if (pk.Status != ShipStatus.Afloat)
+                    return;
+                bool changed = (DamageCommand)c.Code == DamageCommand.Posture
+                    ? Reliefs.Posture(pk.Class, pk, c.B, c.A != 0, world.Time.Ms, settings)
+                    : Reliefs.Relieve(pk.Class, pk, c.A, c.B, (int)c.X, world.Time.Ms, settings) > 0;
+                if (changed)
+                {
+                    var rp = stream.Derive(0x9E1Eu).Derive((ulong)c.Entity).Derive((ulong)world.Time.Ms);
+                    Recompute(world, ps, pk, ref rp);
+                }
+                break;
+            }
             case DamageCommand.HoldSpeed:
             {
                 int hs = ships.Store.SlotOf(c.Entity);

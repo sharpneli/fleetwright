@@ -659,9 +659,11 @@ public static class Repairs
             if (near < 0)
                 return;
             ref var party = ref k.Parties[near];
-            // sent the first time, its men leave their stations: those still there of its share
+            // sent the first time, its men leave their stations: those still there of its share; its men lent to the guns
+            // come back to it (docs/battle/crew.md decision 12)
             if (!party.Mustered)
                 party.Men = Take(c, k, BattleStation.Repair, party.Men, out _);
+            Reliefs.Recall(c, k, near);
             // on the way it's where it was: its last place, else where it mustered
             if (party.Place >= 0 && now >= party.ArriveMs)
                 party.Home = party.Place;

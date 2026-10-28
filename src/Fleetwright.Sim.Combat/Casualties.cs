@@ -36,9 +36,13 @@ public static class Casualties
     public static int Part(int component) => component;
     public static int Cell(ShipClass c, int cell) => c.Components.Length + cell;
 
-    /// <summary>The men at a station now: its battle crew less those killed or out there and those away in a party.</summary>
+    /// <summary>The men at a station now: its battle crew less those killed or out there and those away (in a party,
+    /// under cover, relieving elsewhere), and the reliefs come to it (docs/battle/crew.md N3a).</summary>
     public static int Men(ShipClass c, ShipCondition k, int g) =>
-        Math.Max((g < c.Components.Length ? c.Components[g].BattleCrew : c.Cells[g - c.Components.Length].BattleCrew) - k.Gone[g] - k.Away[g], 0);
+        Math.Max((g < c.Components.Length ? c.Components[g].BattleCrew : c.Cells[g - c.Components.Length].BattleCrew) - k.Gone[g] - k.Away[g] + k.In[g], 0);
+
+    /// <summary>A mount's men under cover's own group (past the parties'): where their walking wounded go back to.</summary>
+    public static int CoverGroup(ShipCondition k, int mount) => k.Gone.Length + ShipCondition.MaxParties + mount;
 
     /// <summary>A party's own group (past the stations): where its walking wounded go back to.</summary>
     public static int PartyGroup(ShipCondition k, int party) => k.Gone.Length + party;
@@ -54,6 +58,9 @@ public static class Casualties
         for (int p = 0; p < k.PartyCount; p++)
             if (PlaceOf(k.Parties[p], k.RiskMs) == g)
                 n += (int)k.Parties[p].Men;
+        for (int m = 0; m < k.Covered.Length; m++)
+            if (k.MountShelter[m] == g)
+                n += k.Covered[m];
         return n;
     }
 
@@ -317,7 +324,10 @@ public static class Casualties
             if (n > 0)
             {
                 var (killed, wounded) = Roll(k, g, n, pk, pc, now, s, ref r);
-                k.Gone[g] += killed + wounded;
+                // the reliefs there take their share of it (docs/battle/crew.md N3a), the station's own the rest
+                int hurt = killed + wounded, rel = k.In[g] > 0 ? Math.Min(k.In[g], (int)Math.Round((double)hurt * Math.Min(k.In[g], n) / n)) : 0;
+                k.In[g] -= rel;
+                k.Gone[g] += hurt - rel;
                 (res.Killed, res.Wounded) = (res.Killed + killed, res.Wounded + wounded);
             }
             // a party working there (docs/battle/crew.md N1), its men as the station's
@@ -328,6 +338,15 @@ public static class Casualties
                     continue;
                 var (killed, wounded) = Roll(k, PartyGroup(k, p), (int)party.Men, pk, pc, now, s, ref r);
                 party.Men -= killed + wounded;
+                (res.Killed, res.Wounded) = (res.Killed + killed, res.Wounded + wounded);
+            }
+            // a mount's men waiting under cover there (N3a)
+            for (int m = 0; m < k.Covered.Length; m++)
+            {
+                if (k.MountShelter[m] != g || k.Covered[m] <= 0)
+                    continue;
+                var (killed, wounded) = Roll(k, CoverGroup(k, m), k.Covered[m], pk, pc, now, s, ref r);
+                k.Covered[m] -= killed + wounded;
                 (res.Killed, res.Wounded) = (res.Killed + killed, res.Wounded + wounded);
             }
         }

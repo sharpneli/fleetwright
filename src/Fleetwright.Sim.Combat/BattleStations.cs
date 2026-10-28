@@ -30,6 +30,10 @@ public static class BattleStations
 
     public const int Count = 10;
 
+    /// <summary>A relief from another trade at a station, against one of its own (docs/battle/crew.md N3a) [EST: CUF R9, a
+    /// crew rebuilt from mixed reliefs loses 10-20% of its rate; the frozen men of N3b count none].</summary>
+    public const double ReliefWorth = 0.7;
+
     /// <summary>A group's station: a part's by its kind (a superstructure by its role: a director's crew, else the command
     /// party's, where a ship with no quarters below also keeps her repair men), a cell's by its room's kind.</summary>
     public static BattleStation Of(ShipClass c, int g)
@@ -79,7 +83,13 @@ public static class BattleStations
     public static double Share(ShipClass c, ShipCondition k, int g)
     {
         int need = g < c.Components.Length ? c.Components[g].BattleCrew : c.Cells[g - c.Components.Length].BattleCrew;
-        return need > 0 ? Math.Min((double)AtWork(c, k, g) / need, 1) : 1;
+        if (need <= 0)
+            return 1;
+        // reliefs from another trade count less (N3a, CUF R9)
+        double men = AtWork(c, k, g);
+        if (men > 0 && k.In[g] > 0)
+            men -= (1 - ReliefWorth) * Reliefs.At(c, k, g);
+        return Math.Clamp(men / need, 0, 1);
     }
 
     /// <summary>A mount's gun crew and its supply at work (N2), each 0-1, 0 below the few the guns can't be fought without:
