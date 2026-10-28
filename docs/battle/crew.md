@@ -1,6 +1,6 @@
 # Plan: the crew (a 4.5 deepening)
-Status: **agreed with the user 2026-10-27**; **replanned from the research 2026-10-28, the changes await the user**
-("Questions from the research" below)    Updated: 2026-10-28
+Status: **agreed with the user 2026-10-27**; **replanned from the research and agreed 2026-10-28** (decisions 6-10)
+Updated: 2026-10-28
 
 What a ship's men do in a fight: where they stand, what a station can do with the men left at it, who goes up to fill
 the gaps, and when there's nobody left to fight her. It builds on E6's casualties (`shells-armour-damage.md`,
@@ -69,8 +69,12 @@ a zombie." The research for N3 is `research/simulation/crews-under-fire.md` (202
   who rams, who passes. It's not a morale factor and not a lumped "crew quality" knob.
 - **No hard switches.** A station's work falls smoothly with its men down to the few it can't do without. "Nobody
   there, nothing done" is a physical step and allowed.
-- **Doctrine, not navy.** Who relieves whom and how many are kept back are fields in the side's damage-control
-  doctrine, one a period, as E8b set them. No per-navy values.
+- **Doctrine, not ships.** How a navy fights her men (when the secondaries are manned, who relieves whom) is the side's
+  doctrine, set by the scenario from the record (decision 10). How many are kept back for the parties sits with the
+  damage-control doctrine, one a period, as E8b set them. Nothing of this is baked into a ship or a period table, and
+  there are no per-navy damage values.
+- **The captain is the person.** At the level we play, the captain's personality (his temper) is what matters most.
+  Officers, crews and their men are abstracted: counts, a few numbers, no personalities (decision 7).
 - **Rough where it doesn't decide.** Reliefs move as counts between groups after a walking delay. There are no
   individual men and no paths through the ship.
 - **The captain's, not the player's.** Where the men stand is the captain's call by the side's doctrine (decision 2).
@@ -87,17 +91,23 @@ a zombie." The research for N3 is `research/simulation/crews-under-fire.md` (202
 ## Decided (the user, 2026-10-27)
 
 1. **Reliefs follow what a reasonable captain orders** (the user: "what would a reasonable captain order?"). The
-   default, from the record's practice:
-   - First, the crews of guns that can't bear (the disengaged side). They're the ship's ready reserve, and they go back
-     when she turns.
+   default, from the record's practice, **as revised from the research 2026-10-28 (decision 8)**:
+   - Within a crew, the next man steps up: that's the crew thinning (N2), not a relief.
+   - The conn and the steering are filled before the guns (Reina Cristina drew her steering crews from the guns).
+   - First of the reliefs, the men under cover by the captain's order: the crews of guns that can't bear (the
+     disengaged side) and of guns not manned by doctrine. They're the ship's ready reserve, and they go back when she
+     turns or the guns are wanted.
    - Next, the crews of mounts that are wrecked or jammed for the battle, and those mounts' handling men.
-   - Then the idle hands (the hotel staff, the band, the stewards), and the repair men above the floor.
+   - Then the idle hands (the hotel staff, the band, the stewards), the repair men above the floor, and the stokers the
+     steam asked of them doesn't need: for the supply first, then the guns.
    - The main battery is filled before the secondaries, unless torpedo craft are the threat.
-   - A live mount's handling room is never stripped: guns without ammunition are as silent as guns without crews. The
-     stokehold and the parties' floor are kept.
+   - A live mount's handling room is kept (HandlingRoomProtected, the default): guns without ammunition are as silent
+     as guns without crews. A side's doctrine may instead keep its reserve in the supply (ReserveInSupply, the USN's
+     1899 bill): the supply's spare men go first and the idle hands refill the supply. The parties' floor is kept.
+   - Reliefs wait for a lull before going into a station under heavy fire, unless a bold captain sends them.
 
-   This is doctrine: a period's doctrine may order it otherwise, and the player picks the doctrine at launch, not the
-   men (decision 2). It's open to revision once it plays. **The research's revisions are question 3 below.**
+   This is doctrine: the side's doctrine may order it otherwise, and the player picks the doctrine at launch, not the
+   men (decision 2). It's open to revision once it plays.
 2. **Posture is part of the reliefs: the captain's and the crew's, not the player's** (the user: "I don't think as a
    player I want to care about the decision on that level"). They're one question: where each man stands now. The
    captain keeps men at the stations that are fighting and sends the rest under cover. Those men under cover are the
@@ -112,7 +122,41 @@ a zombie." The research for N3 is `research/simulation/crews-under-fire.md` (202
    whereas seasoned veterans brave the onslaught"). The men's steadiness under fire is read from the side's existing
    `CrewQuality` (the launch screen's Conditions), per ship later with the difficulty sliders. It's about the men at
    their stations only. A ship breaking off or fleeing is her captain's call, with striking and abandoning after this
-   plan. Built in N3b, with the research's numbers.
+   plan. Built in N3b, with the research's numbers, read from the men's experience (decision 6).
+
+## Decided (the user, 2026-10-28, on the research)
+
+6. **Experience and work-up, two numbers in place of `CrewQuality`** (the user: "the crew is great as a fighting crew
+   but inexperienced with that particular ship"; crews were moved into new ships, and the campaign will have them
+   learn). Both are floats: an enum with an experience bar and a discrete jump felt off, and the rows switched by level
+   broke the no-hard-switches rule.
+   - **Experience, the men's** (0-3: green 0, average 1, trained 2, elite 3, the names as presets on the whole
+     numbers): their years at sea and their battles. It goes with them to another ship. It sets steadiness (N3b) and
+     the ceiling of the crew's gunnery.
+   - **Work-up, this crew in this ship** (0-1): the drill as a team, her director and her guns' ways, her valves and
+     passages. It fills over about six months of work-up, with diminishing returns, and drops when the crew moves (a
+     sister keeps much of it).
+   - **Gunnery reads both:** level = experience × (0.3 + 0.7 × work-up) [EST: Chester, long-service men some weeks
+     into a new ship, shot green to average; CUF §9's "new to the ship: down one for gunnery, none to one for
+     steadiness"]. The `GunneryCrews` rows and N3b's nerve rows become anchors at the whole numbers, read between
+     them linearly.
+   - **Before the campaign:** scenarios give experience per side (the launch screen's Conditions, the picker as now)
+     and work-up defaults to 1, worked up; a scenario may lower it for a ship (Chester at Jutland, Tiger at the Dogger
+     Bank). The game plays as now.
+   - Work-up for the parties and the engines, and the ship's own teething (time in commission: Arethusa's guns
+     jammed because she was new), are later (after this plan).
+7. **An officer a station, rough** (the user: "at the level we play at the captain is the critical thing whose
+   personality matters the most, rest are abstracted"). Present or hit, no person: one of the station's men, hit by
+   E6's draw like any of them, a relief from a small pool walking in like any relief.
+8. **The relief order revised from the research** (decision 1 as it now stands).
+9. **Civilian and committee crews after this plan**, as ship-wide overrides when a scenario needs them: Otranto's
+   drifters first (scenarios.md 16).
+10. **When the secondaries are manned is a navy's doctrine, not a period's or a ship's** (the user: "we don't want
+    period things in ships per se. It should be a navy doctrine, which on our scenarios is set as per the historical
+    part and in campaign we'll think of mechanics"). `ManSecondaries` is a field of the side's doctrine
+    (`command.md` "Doctrine", `doctrine.json`, a `DoctrineField`): each scenario sets it from the record, the default
+    preset holds a middle value, and the campaign's mechanics come later. `ReliefOrder` goes with it, a navy's practice
+    as well.
 
 ## What the research says (2026-10-28)
 
@@ -135,14 +179,14 @@ CUF gathers over 40 cases in six navies, Yalu to Samar, with WWII and land evide
   there were no men left"; Coronel's reservists). The threshold's spread from green to elite is narrow (2.5 times);
   quality acts mostly through how many go, how soon they come back and the officer (CUF R1, summary 3).
 - **Steadiness and gunnery part company.** Kent's reservists held and shot "rotten"; the Spanish held and couldn't hit
-  (CUF §9). One `CrewQuality` for both overstates a green crew's flight. Question 1.
+  (CUF §9). One `CrewQuality` for both overstates a green crew's flight. Decision 6: experience and work-up.
 - **Ordered cover is the big lever, unordered flight the small one.** Rossia cleared her quick-firers at Ulsan and her
   sister Gromoboi didn't: 44 dead against 87 (CUF §1.6). The captain's order (N3a) moves more men than the crew's
   nerve (N3b).
 - **The relief order needs four changes** (CUF R9): the conn and steering outrank the guns (Reina Cristina); the handling
   room is a doctrine option, not a law (the USN's 1899 bill kept the reserve in the powder division); stokers go free
   as the steam asked of them falls (Southampton, Blücher); reliefs wait for a lull before going into a station under
-  heavy fire (Southampton, the USN's "wait for lull"). Question 3.
+  heavy fire (Southampton, the USN's "wait for lull"). Decision 8.
 - **The relief pool is small** (Semenov: "there are no spare men on board a warship"), perhaps 40-80 men on a
   battleship under cover (CUF §4). Re-manning runs on three clocks: seconds within a crew, minutes from idle mounts, a
   lull for stokers.
@@ -156,7 +200,7 @@ CUF gathers over 40 cases in six navies, Yalu to Samar, with WWII and land evide
 - **Reliefs from other trades work worse** (Emden's "unskilled chaps"): counted at a weight in N2's share, not as a
   rate factor.
 - **The officer** (CUF R4): "the strongest single steadying factor the evidence supports". Present, his men hold
-  longer and leave only on order; hit, they waver until another comes. Question 2.
+  longer and leave only on order; hit, they waver until another comes. Decision 7, rough.
 - **Three states of a shaken crew** (Semenov on Suvorov, CUF §1.6): present but not working until an officer acts
   ("frozen"); a short rout after one blast among a group; hiding until rallied. Men who went on their own aren't in the
   relief pool.
@@ -168,12 +212,12 @@ CUF gathers over 40 cases in six navies, Yalu to Samar, with WWII and land evide
 
 **Left out, and why.**
 - Civilian crews and committee crews (the Dardanelles trawlers, the Otranto drifters, Slava 1917): ship-wide overrides
-  outside the station model (CUF R6). Question 4.
+  outside the station model (CUF R6). Decision 9: after this plan.
 - Captains taking ships out (Jiyuan, Nebogatov): the captain's temper and the step after this plan, as decision 3 has it.
 - Contagion (CUF R5): no source quantifies it, and the panic literature points the other way. None.
 - The blast knocking a crew down for 10-60 s (Colossus): under a salvo's time, not decisive. Not built.
 - The straddle and searchlight term for green crews (CUF R3): kept, at half weight, green only. Civilians would take it
-  at full weight with question 4.
+  at full weight with decision 9.
 - Readiness (Savo's Condition II) and weapon failures in new ships (Arethusa, Tiger): the difficulty sliders' and
   gunnery's, after this plan.
 - The research's ask for ship totals of wrecks (N0) is answered in CUF §8, with a warning: killed totals on lost
@@ -187,7 +231,7 @@ CUF gathers over 40 cases in six navies, Yalu to Samar, with WWII and land evide
 | Oryol, Tsushima: battleship, about 74 hits (Campbell) | 43 killed, 80 wounded; "main losses behind armour from splinters entering ports/slits" (Kostenko) | about 100-150 out of action |
 | Chester, Jutland: average (new ship), open-backed shields, ~17 × 15 cm in minutes | 29 killed, 49 wounded; four guns out; no recorded flight | about 75-80 out; a small share leaving at most; she still steams and fights |
 | Southampton, Jutland night: trained, four cruisers at 1,500 yd | 75% of the upper deck hit in 3.5 min; guns silent from casualties; stokers re-manned them in a lull | silent from casualties, few or none leaving; reliefs only once the fire stops |
-| Rossia against Gromoboi, Ulsan (scenario 5): sisters, one cleared her light guns | 44 against 87 killed; 200 against 257 casualties | the covered ship about half the dead, about 20% fewer casualties, fewer light-gun rounds |
+| Rossia against Gromoboi, Ulsan (scenario 5): sisters, one cleared her light guns | 44 against 87 killed; 200 against 257 casualties | one navy's doctrine (light guns under cover), Gromoboi's captain bold: about half the dead, about 20% fewer casualties, fewer light-gun rounds on Rossia |
 | Kent, Falklands: reservists in casemates, 37 light hits | 4 killed, 12 wounded, most at one gun | about 16 out; no leaving; poor shooting from gunnery quality, not duress |
 | Emden, Cocos: trained, fire control wrecked early | fire slackened as the rangefinders went; by ~80 min one gun, an officer and "unskilled chaps" | accuracy falls with control damage first (the F-steps); one gun late, worked by reliefs |
 | Suvorov, Tsushima: green, worn, 5 h of HE | short routs after blasts; frozen men restarted by officers; covered light-gun crews used up as reliefs; a 12-pdr firing late | the same states seen; the reserve gone within hours; a last gun late |
@@ -200,6 +244,12 @@ Ship totals of lost ships (CUF §8) are for what still worked late, not for casu
 
 ## The steps
 
+- **N0a Experience and work-up** (decision 6), a small step of its own before the rest. `CrewQuality` goes; a side's
+  experience is a float 0-3 and a ship's work-up a float 0-1 (default 1). `GunneryCrews` rows are read between the
+  whole numbers by the gunnery level (experience × (0.3 + 0.7 × work-up)). The sim command carries experience in
+  thousandths, so replays stay identical. Scenarios, the setup and the launch screen take the names as presets
+  ("trained" = 2) or a number; a ship's `"work_up"` in a scenario. Parity: with work-up 1 and the names on whole
+  numbers, every bench and hash is unchanged.
 - **N0 Measure.** The hits bench prints, after K hits: men out by station kind, mounts working by battery, directors,
   conned, the parties' men and their jobs. Add a `--curve` line of the out-of-action count every 25 hits. The
   yardstick runs and today's figures are recorded here. Add a timed bench of the yardstick's short cases (Chester,
@@ -229,17 +279,18 @@ Ship totals of lost ships (CUF §8) are for what still worked late, not for casu
   - Read in `Functions.Evaluate` from `Casualties.Men` (it already runs on every hit).
 - **N3a Posture and reliefs: the captain's order** (decisions 1-2). Where each man stands, decided by the captain at
   each think.
-  - **Closed up or under cover, per station**, by a doctrine field **`ManSecondaries`**: Always, InRange (a target worth
-    its fire in reach), or TorpedoCraft (with a watch of two guns a side closed up). Proposed defaults (CUF R8): 1890
-    Always (the open-mount era); 1905 and 1916, casemated batteries InRange and open light guns TorpedoCraft with the
-    watch; 1942 and 1944 as 1916 until the later cuts' research. A gun that can't bear or is wrecked sends its men
-    under cover. The conn, the bridge, the tops, the look-outs, the directors and the stokehold are always manned.
+  - **Closed up or under cover, per station**, by the side's doctrine field **`ManSecondaries`** (decision 10): Always,
+    InRange (a target worth its fire in reach), or TorpedoCraft (with a watch of two guns a side closed up), given
+    for casemated and open guns apart. The default preset holds InRange for both [EST]. Each scenario sets it from
+    its navy's record (CUF R8 and §5: the Chinese and Spanish crews manned everything; the Russians in 1904-05 kept
+    light guns under cover until a torpedo attack; the RN at Jutland manned its casemates in reach and kept a watch
+    on its 4-in). A gun that can't bear or is wrecked sends its men under cover. The conn, the bridge, the tops, the
+    look-outs, the directors and the stokehold are always manned.
   - **The captain's temper** (`Temper`, launch.md L4) moves the field a step: a timid captain applies the stricter
     rule a step early, a bold one keeps the guns manned (Gromoboi) and sends reliefs sooner.
   - **Under cover is a group** of its own, in the cells the men shelter in (16 §4.9: cover 0.2, prone), so a hit there
     still counts them. The men under cover by order are the reserve the reliefs draw from.
-  - **Reliefs** (question 3 for the revised order): when a station falls below its need, men walk to it in the
-    doctrine's order. They stop at the floor the doctrine keeps for the parties (`ReliefFloorShare` 0.25 [EST], CUF
+  - **Reliefs** (decisions 1 and 8): when a station falls below its need, men walk to it in the doctrine's order. They stop at the floor the doctrine keeps for the parties (`ReliefFloorShare` 0.25 [EST], CUF
     R9). The stokehold's floor is what the steam asked of it needs: the stokers above it are free, first for the
     supply, then the guns. A relief joins the station's group, so the next hit there finds him. The walking wounded
     come back to their own station as now.
@@ -247,10 +298,13 @@ Ship totals of lost ships (CUF §8) are for what still worked late, not for casu
     A bold captain sends them anyway, and they take the casualties on the way.
   - **Walking** (CUF R10, all [EST], one set for all periods): 20-60 s between adjacent guns, 1-2 min within a
     section, 3-6 min end to end below the armour deck, 5-15 min for a whole crew to take over another turret and fire.
-  - Doctrine fields: `ManSecondaries`, `ReliefOrder` (HandlingRoomProtected or ReserveInSupply), `ReliefFloorShare`,
-    `ReliefWalkS` per section, one a period.
+  - **Where the fields live:** `ManSecondaries` and `ReliefOrder` (HandlingRoomProtected or ReserveInSupply) in the
+    side's doctrine, set by the scenario (decision 10); `ReliefFloorShare` in the damage-control doctrine with
+    `PartyShare`; the walking times (`ReliefWalkS` per section) a sim setting, the same for everyone (they're the
+    ship's passages, not a choice).
 - **N3b Steadiness: the men's nerve** (decision 5). Each station keeps its **duress** (a new word: what has landed at
-  and around it, fading), against its **nerve** (the threshold, by `CrewQuality`). All numbers [EST] from CUF R1-R4.
+  and around it, fading), against its **nerve** (the threshold, by the men's experience, decision 6; work-up doesn't
+  enter). All numbers [EST] from CUF R1-R4.
   - **Duress** in station units (1.0 = the whole station's crew hit at once):
 
     | Event | Adds | Half-life |
@@ -265,7 +319,7 @@ Ship totals of lost ships (CUF §8) are for what still worked late, not for casu
     | An officer arrives | −0.15, the return delay reset | — |
 
     No term for hits elsewhere on the ship, and no contagion (CUF R2, R5).
-  - **Nerve and what follows**, by `CrewQuality`:
+  - **Nerve and what follows**, by experience (the rows at 0-3, read between them):
 
     | | Nerve | Share going, open station | Enclosed (turret, casemate, below the armour) | Back after duress falls below 0.6 × nerve | Duress fades |
     |---|---|---|---|---|---|
@@ -279,13 +333,14 @@ Ship totals of lost ships (CUF §8) are for what still worked late, not for casu
     the relief pool until they come back (Suvorov's hiding men).
   - **Sensitised:** each time a station goes over its nerve, its nerve falls 13% for the rest of the action, half of
     that back over 30 min (CUF R2).
-  - **The officer** (question 2): while the station's officer or senior PO is there and unhurt, nerve × 1.25 and the
-    share going × 0.5, and his men leave only on his order, in good order (Queen Mary's X). Hit, nerve × 0.8 and the
-    return delay × 1.5-2 until a relief officer walks in from the ship's few spare officers. A green station with no
-    officer after a penetrating hit or fire has 0.2-0.4 of its men frozen: present, taking casualties where they stand,
-    not working, until an officer arrives (Semenov's "mesmerised" men).
-  - **The captain's temper is the order, crew quality whether the men keep to it**: N3a sets where they're ordered to
-    stand, N3b who stays.
+  - **The officer** (decision 7: rough, present or hit, no person): while the station's officer or senior PO is there
+    and unhurt, nerve × 1.25 and the share going × 0.5, and his men leave only on his order, in good order (Queen
+    Mary's X). Hit, nerve × 0.8 and the return delay × 1.5-2 until a relief officer walks in from the ship's few spare
+    officers. A green station (experience under 1, smoothly) with no officer after a penetrating hit or fire has
+    0.2-0.4 of its men frozen: present, taking casualties where they stand, not working, until an officer arrives
+    (Semenov's "mesmerised" men).
+  - **The captain's temper is the order, the men's experience whether they keep to it**: N3a sets where they're
+    ordered to stand, N3b who stays.
   - The first check is the direction and the yardstick's shape. Tuning waits for the playtest.
 - **N5 The end of her.** No new fall-out knob. Fall-out already reads the main guns, and those now go silent for want
   of men. A ship whose parties are spent can't fight her fires, and fire's own model takes her from there: they spread,
@@ -305,27 +360,6 @@ Ship totals of lost ships (CUF §8) are for what still worked late, not for casu
 - **N6 Fit and check.** The yardstick above. E6's per-hit benches stay as they are. Coarse parity (`CoarseParityTests`),
   no allocation in the hit and evaluate paths, the matchup and the squadrons' hash reported.
 
-## Questions from the research (for the user, 2026-10-28)
-
-1. **Steadiness and gunnery from one `CrewQuality`?** The record parts them (Kent, the Spanish: steady, bad shots).
-   Recommended: one `CrewQuality` for now. The narrow nerve table above already keeps a green crew mostly at its guns.
-   A separate steadiness setting comes with the difficulty sliders, defaulting to the gunnery's.
-2. **Officers per station in N3b?** The evidence's strongest steadying factor, and the frozen state hangs on it.
-   Recommended: yes, rough. One officer (or senior PO) a station as part of its men, hit by E6's draw as one of them,
-   relief officers from a small pool walking in like any relief. A byte a group.
-3. **Decision 1's relief order, revised.** Recommended order: (0) the crew thinning, not a relief (N2); (1) the conn and
-   steering before the guns (Reina Cristina); (2) the men under cover by order, the disengaged side's among them;
-   (3) wrecked and jammed mounts' crews and their handling men; (4) the idle hands, the repair men above the floor and
-   the stokers the steam doesn't need; the main battery before the secondaries unless torpedo craft threaten. The
-   handling room becomes `ReliefOrder`: HandlingRoomProtected (the default, every period) or ReserveInSupply (the
-   reserve waits in the supply and goes first; the idle hands refill the supply). Reliefs wait for a lull.
-4. **Civilian and committee crews after this plan?** Recommended: yes, as ship-wide overrides when a scenario needs them.
-   The first is Otranto's drifters (scenarios.md 16): civilian nerve 0.10, the straddle term at full weight, taking to
-   the boats when warned unless a bold skipper commands. A committee crew (Moon Sound 1917) empties the stations below
-   the waterline when flooding is reported.
-5. **`ManSecondaries` with the period defaults above?** Recommended: yes. Ulsan (scenario 5) is its check: Rossia and
-   Gromoboi are one class, so the same doctrine with two captains' tempers should show the halving.
-
 ## After this plan
 
 - **The captain strikes or abandons** (decision 3): a command step (`command.md`). This is a ship that can't fight,
@@ -333,8 +367,16 @@ Ship totals of lost ships (CUF §8) are for what still worked late, not for casu
   Guangjia at the Yalu) belong there too.
 - **Cover's fine-tuning** (decision 4): Oryol's losses came through ports and slits (Kostenko, CUF §2). E6 gives a
   gunhouse's men 0.45 cover; sighting ports and conning tower slits may need their own way in.
-- **Civilian and committee crews** (question 4), with the scenarios that need them.
-- **Readiness and work-up** (the difficulty sliders): closing up from a lower condition (Savo, Hercules' men at their
-  tea), and weapon failures in ships under about six months in commission (Arethusa, Tiger; CUF R11).
+- **Civilian and committee crews** (decision 9), as ship-wide overrides when a scenario needs them. Otranto's drifters
+  first (scenarios.md 16): civilian nerve 0.10, the straddle term at full weight, taking to the boats when warned
+  unless a bold skipper commands. A committee crew (Moon Sound 1917) empties the stations below the waterline when
+  flooding is reported, and the captain's orders to them go unobeyed (Slava).
+- **The campaign's crews** (decision 6): experience growing with action (most in the first), work-up with months in
+  the ship, both wearing (turnover, long voyages, idle fleets: CUF §9), crews moved between ships, and a navy's
+  doctrine (decision 10) by the campaign's own mechanics.
+- **Work-up beyond the guns** (decision 6): the parties knowing her valves, the engines giving her full power.
+- **Readiness and teething** (the difficulty sliders): closing up from a lower condition (Savo, Hercules' men at their
+  tea), and a new ship's weapon failures by her time in commission, the ship's and not the crew's (Arethusa, Tiger;
+  CUF R11).
 - **A gunnery term under fire** only if the playtest asks for one (CUF R11: error × 1.2 green to 1.0 elite on layers,
   halved under director firing, or a spotting penalty from splashes about her). Today's rule stands: none.
