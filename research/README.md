@@ -115,6 +115,12 @@ Ballistics has no note of its own: the point-mass ballistics fitted to each gun 
 
 Across both: [armour-and-damage.md](simulation/armour-and-damage.md) (draft, 2026-10-16): what the armour research adds to the damage model, checked against the game's `Terminal`. Not the formula (the game's fit is within 1–4% of Thompson) but the shell's state after each plate: break-up and shatter, holed vs effective, fuze start and delay by fuze, decapping, underwater hits. Also the conflicts between the two sets, two-layer calibration, and a ranked list for fighting.md 4.5.
 
+**Crews**
+
+| Note | What it covers | Scripts |
+|---|---|---|
+| [crews-under-fire.md](simulation/crews-under-fire.md) | Crews under fire, 1890-1925 (WWII and land evidence as checks): who held their stations and who left, what set the difference, re-manning and reliefs, the navies' orders on cover, gunnery under fire, ship totals for wrecks, crew quality by navy; proposals for crew.md N3 (draft) | — |
+
 **Ship design model**
 
 | Note | What it covers | Scripts |
