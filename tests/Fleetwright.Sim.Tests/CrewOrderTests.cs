@@ -59,6 +59,26 @@ public class CrewOrderTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void With_an_enemy_on_each_beam_both_sides_close_up()
+    {
+        var (w, ai) = Make(ManGuns.InRange);
+        int c = w.Ships.AddClass(Fleet.Get("dreadnought").Class!);
+        var p = Earth.Position(Lat, Lon);
+        var f = Earth.Forward(p, 270);
+        Earth.Advance(ref p, ref f, 8_000);
+        var (la, lo) = Earth.LatLon(p);
+        w.Apply(ShipSystem.Spawn(c, la, lo, 0, 0, 1));
+        w.AdvanceTo(w.Time + 90_000);
+        var k = Her(w);
+        var cls = k.Class;
+        var secondaries = Enumerable.Range(0, cls.Mounts.Length).Where(m => cls.Mounts[m].Battery >= 0 && !cls.Batteries[cls.Mounts[m].Battery].Chief && !cls.Enclosed(m)).ToList();
+        foreach (int m in secondaries)
+            output.WriteLine($"mount {m} at y {cls.Mounts[m].Y:+0.0;-0.0}: {(k.ClosedUp[m] ? "closed up" : "under cover")}, bears 90 {CombatStore.InArcs(cls, cls.Mounts[m], 90)}, 270 {CombatStore.InArcs(cls, cls.Mounts[m], 270)}");
+        foreach (int m in secondaries)
+            Assert.True(k.ClosedUp[m]);
+    }
+
+    [Fact]
     public void For_torpedo_craft_only_a_watch_is_closed_up()
     {
         var (w, _) = Make(ManGuns.TorpedoCraft);

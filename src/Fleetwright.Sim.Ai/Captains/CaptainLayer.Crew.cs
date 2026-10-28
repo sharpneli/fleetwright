@@ -104,10 +104,11 @@ public sealed partial class CaptainLayer
         long closed = 0, change = 0;
         for (int m = 0; m < cls.Mounts.Length; m++)
         {
-            if (m > 0 && m % 63 == 0 && change != 0)
+            if (m > 0 && m % 63 == 0)
             {
-                ctx.Issue(DamageSystem.Posture(own.Entity, m - 63, closed, change));   // one order for each 63 mounts
-                (closed, change) = (0, 0);
+                if (change != 0)
+                    ctx.Issue(DamageSystem.Posture(own.Entity, m - 63, closed, change));   // one order for each 63 mounts
+                (closed, change) = (0, 0);   // the next 63's bits, none carried over
             }
             ref readonly var row = ref cls.Mounts[m];
             int b = row.Battery;
