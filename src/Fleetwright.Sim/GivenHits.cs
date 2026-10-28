@@ -109,6 +109,18 @@ public static class GivenHits
         /// flooded against a fire and the machinery spaces still abandoned to smoke (docs/battle/fire.md B2).</summary>
         public double BurningAfter, CrewAfter, MagazinesFlooded, Smoked;
         public int BurningShips;
+        /// <summary>After the settle, the men (docs/battle/crew.md N0), summed over the ships: each battle station's men
+        /// (<see cref="BattleStations"/>) and those out of action there; each battery's mounts and those working; the
+        /// ships still conned; her fire parties, their men, and those men at a fire, on a water job (DC3) or neither; the
+        /// ships whose gun crews have turned to on the fires (fire.md B4).</summary>
+        public readonly double[] StationMen = new double[BattleStations.Count], StationOut = new double[BattleStations.Count];
+        public double[] BatteryMounts = [], BatteryWorking = [];
+        public int Conned, Parties, TurnedTo;
+        public double PartyMen, PartyAtFire, PartyOnWater;
+        /// <summary>With a curve's step (<see cref="Run"/>'s curveEvery), the out-of-action count summed over the ships
+        /// after each step's hits, and the ships that reached it.</summary>
+        public readonly List<double> CurveOut = [];
+        public readonly List<int> CurveShips = [];
         public double FallDeg, StrikeMs;
         /// <summary>The hits that ran under the water to the hull: how many, and their runs and striking speeds summed.</summary>
         public int Underwater;
@@ -138,10 +150,14 @@ public static class GivenHits
 
     public static Report Run(ShipClass target, ShellTypeRow shell, double maxElevationDeg, double rangeM, double aspectDeg, int n, int perShip, ulong seed,
         SimSettings settings, Action<int, HitPath, TerminalResult, EffectsResult>? each = null, double settleS = 0,
-        FallOutRule? fallOut = null)
+        FallOutRule? fallOut = null, int curveEvery = 0)
     {
         var aim = new Aim(target, shell, maxElevationDeg, rangeM, aspectDeg, settings);
-        var rep = new Report { FallDeg = aim.Fall.FallDeg, StrikeMs = aim.Fall.StrikeMs, PartsOut = new int[target.NodeCount] };
+        var rep = new Report
+        {
+            FallDeg = aim.Fall.FallDeg, StrikeMs = aim.Fall.StrikeMs, PartsOut = new int[target.NodeCount],
+            BatteryMounts = new double[target.Batteries.Length], BatteryWorking = new double[target.Batteries.Length],
+        };
         var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), seed, settings);
         int cls = w.Ships.AddClass(target);
         var path = new HitPath();
@@ -227,6 +243,17 @@ public static class GivenHits
                 for (int i = 0; i < before.Length; i++)
                     if (before[i] < PartState.Disabled && k0.State[i] >= PartState.Disabled)
                         rep.PartsOut[i]++;
+                if (curveEvery > 0 && (k + 1) % curveEvery == 0)
+                {
+                    int c = (k + 1) / curveEvery - 1;
+                    if (c == rep.CurveOut.Count)
+                    {
+                        rep.CurveOut.Add(0);
+                        rep.CurveShips.Add(0);
+                    }
+                    rep.CurveOut[c] += k0.CrewLost;
+                    rep.CurveShips[c]++;
+                }
             }
             After(rep, target, w, entity, slot, settleS, fallOut, hitMagazine);
         }
@@ -584,6 +611,23 @@ public static class GivenHits
         rep.Crippled += lost || slowed || steer || main > 0 && mainOk == 0 ? 1 : 0;
         rep.ListDeg += Math.Abs(kk.Attitude.HeelDeg);
         rep.Out += lost || fallOut is { } rule && rule.Of(Fitness.Of(target, kk, w.Damage.Flood(target).ReserveT)) != FallOutCause.None ? 1 : 0;
+        // the men (docs/battle/crew.md N0)
+        BattleStations.Tally(target, kk, rep.StationMen, rep.StationOut);
+        for (int m = 0; m < target.Mounts.Length; m++)
+            if (target.Mounts[m].Battery is int b and >= 0 && b < rep.BatteryMounts.Length)
+                (rep.BatteryMounts[b], rep.BatteryWorking[b]) = (rep.BatteryMounts[b] + 1, rep.BatteryWorking[b] + (kk.MountWorks[m] ? 1 : 0));
+        rep.Conned += kk.Conned ? 1 : 0;
+        rep.TurnedTo += kk.TurnedTo ? 1 : 0;
+        rep.Parties += kk.PartyCount;
+        for (int p = 0; p < kk.PartyCount; p++)
+        {
+            ref readonly var party = ref kk.Parties[p];
+            rep.PartyMen += party.Men;
+            if (party.Target >= 0)
+                rep.PartyAtFire += party.Men;
+            else if (party.Job != RepairJob.None)
+                rep.PartyOnWater += party.Men;
+        }
     }
 
     /// <summary>The first crossing into the ship: its hull or a part.</summary>

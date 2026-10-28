@@ -15,6 +15,31 @@ public class CasualtyTests(ITestOutputHelper output)
     static readonly SimSettings Settings = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json"));
     static readonly WorldTime Start = WorldTime.FromUtc(1916, 5, 31, 14);
 
+    /// <summary>The battle stations (docs/battle/crew.md N0): the sim's station of each crew group gives every design's
+    /// men at each kind of station as Shipgen placed them (its crew report's summary), to the man; short only where a
+    /// transmitting station's or a torpedo room's men are summed but stand on no cell of their own (docs/battle/bugs.md).</summary>
+    [Fact]
+    public void Each_crew_group_is_at_the_station_Shipgen_put_its_men()
+    {
+        int checkedDesigns = 0;
+        foreach (var b in Fleet.All)
+        {
+            if (b.Ship?.Report.Crew?.BattleStations is not { Count: > 0 } summary || b.Class is not { } c)
+                continue;
+            var men = new double[BattleStations.Count];
+            BattleStations.Tally(c, null, men, new double[BattleStations.Count]);
+            for (int s = 0; s < BattleStations.Count; s++)
+            {
+                double gap = (summary.TryGetValue(BattleStations.Names[s], out long v) ? v : 0) - men[s];
+                Assert.True(gap == 0 || gap > 0 && (BattleStation)s is BattleStation.Directors or BattleStation.Torpedoes,
+                    $"{b.Case.Name}: {BattleStations.Names[s]} {men[s]} against Shipgen's {v}");
+            }
+            Assert.All(summary.Keys, k => Assert.Contains(k, BattleStations.Names));
+            checkedDesigns++;
+        }
+        Assert.True(checkedDesigns > 40, $"{checkedDesigns} designs");
+    }
+
     static Fragments Shell(double cal, double kg, double filler, string explosive, string kind, double size = 1, double speed = 1)
     {
         var x = Explosives.Get(explosive)!;

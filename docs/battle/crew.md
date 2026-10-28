@@ -242,6 +242,39 @@ CUF gathers over 40 cases in six navies, Yalu to Samar, with WWII and land evide
 
 Ship totals of lost ships (CUF §8) are for what still worked late, not for casualties.
 
+### Today (N0, 2026-10-28)
+
+`shipgen crew-history` (20 runs a case; killed and wounded a ship, out of action the median at the end of the fire,
+the walking wounded back after 15-45 min). Southampton's and Emden's hit counts aren't in the record (18 and 100
+[EST]); Suvorov's 150 [EST] were never counted.
+
+| Case | Record | Today |
+|---|---|---|
+| Oryol, 74 hits over 5 h | 43 killed, 80 wounded | 30 killed, 75 wounded; 65 out at 5 h; 152 mm mounts 3.2 of 6, 75 mm 9.2 of 20; conned 80% |
+| Chester, 17 × 15 cm in 5 min | 29 killed, 49 wounded; four guns out | 6 killed, 17 wounded; 22 out; 4.4 of 5 main mounts working |
+| Southampton, 18 × 10.5 cm at 1,500 yd in 3.5 min | 89 casualties; guns silent | 5 killed, 8 wounded; 8 out; 4.5 of 5 mounts |
+| Kent, 37 × 10.5 cm over 90 min | 4 killed, 12 wounded | 12 killed, 43 wounded; 38 out at 90 min (31 of them guns' crews), 30 at 2 h |
+| Emden, 100 × 6″ over 100 min | 115-134 killed, 56-69 wounded of 316; one gun late, then none | 60 killed, 132 wounded; 146 out; 2.6 of 12 mounts at the end; lost in 75% of runs (she was beached) |
+| Suvorov, 150 hits over 5 h | all lost; a 12-pdr each side late | 40 killed, 110 wounded; 90 out of 790; afloat in every run; 152 mm 2.8 of 6, 75 mm 7.3 of 20; conned 35% |
+| Sverige, 500 × 152 mm over 2 h | - | 44 killed, 112 wounded; out 81 at 30 min, 89 at 60, 98 at 120, flat from about 60 min while 152 mm mounts 4 of 8 still work (main 1 of 2); the 75 mm all out by 30 min; conned 0% from 60 min; the parties' men 45 at 30 min, 10 at 120 |
+| Graf Spee, 18 × 6″ and 2 × 8″ over 80 min | 36 killed, 60 wounded | 19 killed, 25 wounded |
+
+- **The light shells kill too few** (Chester a third of the record, Southampton a seventh, Graf Spee half) and Kent's
+  casemates too many (three times). Both are E6's placement (shells-armour-damage.md: "the stance is the fix"), not
+  this plan's; the crew steps measure against today's figures, and Kent and Chester are flagged for E6's follow-up.
+- **Sverige is the zombie in numbers:** the toll flattens with half her 6″ guns in action, nobody at the conn and the
+  parties used up.
+- **Emden's casualties are on the record**, but she sinks where Emden was beached; not this plan's (damage control).
+- **The hits bench's curve** (`shipgen hits sverige --shooter sverige --battery 1 --range 3000 --per-ship 500 --curve 25`,
+  20 ships): 25 hits 60 out, 50 72, 100 77, 200 82, 300 85, 500 89. That's the table in "What's wrong, measured" again.
+- **E6's per-hit fit** is damage-history's killed and wounded a hit (20 runs): German ships under British shells 1.25-1.91 /
+  2.87-4.55, British under German 0.58-0.92 / 1.81-2.95 (G1 1.94 / 3.00); Chester 0.36 / 1.02 (G6b 2.0 / 2.4); Kent
+  0.35 / 1.21 (G6a 0.17 / 0.33); Orel 0.30 (G2a 0.58), Mikasa 0.55 (G2b 1.69); destroyers 1.4-2.8 / 3.6-6.8 (G7 2.2 /
+  4.5). The later steps keep these within their noise (reliefs and nerve come after the first hits).
+- **Not benched yet:** Rossia against Gromoboi (scenario 5, with N3a's cover doctrine); Vizcaya (no Spanish armoured
+  cruiser among the designs, and her case is the parties drawn to the guns, N3a); the crews that held (Zhenyuan, Queen
+  Mary's X, Samar, Blücher) are behaviours, N3's.
+
 ## The steps
 
 - **N0a Experience and work-up** (decision 6), a small step of its own before the rest. `CrewQuality` goes; a side's
@@ -266,6 +299,16 @@ Ship totals of lost ships (CUF §8) are for what still worked late, not for casu
   yardstick runs and today's figures are recorded here. Add a timed bench of the yardstick's short cases (Chester,
   Southampton, Kent: a ship under a given fire for minutes), since a hit count alone can't show reliefs or a lull. The
   research ask is answered (CUF §8).
+  **Done 2026-10-28.** `BattleStations` (Sim.Combat): each crew group's station (guns, handling, aa, torpedoes,
+  machinery, command, directors, steering, air, repair; Shipgen's own names), and a ship's men and men out by station
+  (`Tally`). The hits bench prints, after the hits and the settle, the men out of action by station of the men there,
+  each battery's mounts working, the directors, the conn, the parties (men at a fire, on a water job, neither) and the
+  gun crews turned to; `--curve N` the out-of-action count every N hits. damage-history's timed fire moved into
+  `GivenFire` (its output identical before and after), and `shipgen crew-history` runs the yardstick's cases under it:
+  the men out through the fire and after, by station, the batteries, the conn and the parties, at a quarter, a half,
+  three quarters and the end of the fire and 5, 15 and 30 min after. The research ask is answered by CUF §8 (ship
+  totals for ships pounded to wrecks) and the cases above. Today's figures are in "The yardstick". Found on the way
+  (bugs.md, Shipgen): a transmitting station's men summed but standing on no cell in 13 designs.
 - **N1 One book of men.** Parties are made from the "repair" groups' men, not from `Complement × PartyShare`. A party
   at work stands in its target's cells and is a group there: E6's pieces, blast and spall hit it as anyone. Fire's
   `Hurt` and `Caught` take from that group. `FireHitMenChance` and `FireHitMenKeep` go. Turned-to gun crews (`TurnTo`)

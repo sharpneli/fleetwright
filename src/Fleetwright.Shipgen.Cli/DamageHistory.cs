@@ -4,13 +4,13 @@ using Fleetwright.Sim;
 using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Ships;
+using Fall = Fleetwright.Shipgen.Cli.GivenFire.Fall;
 
 namespace Fleetwright.Shipgen.Cli;
 
 /// <summary><c>shipgen damage-history</c>: the battle anchors (docs/battle/shells-armour-damage.md E8). Each case is a
-/// ship of the record's kind hit by the record's shells at random times over its minutes, through the world's damage
-/// system, each hit from a range and a target angle drawn from the case's bands (the battle's, not one beam-on shot), at
-/// her speed. The anchors are the damage done: what the shells did on the plates (Jutland's
+/// ship of the record's kind under the record's fire (<see cref="GivenFire"/>: hit at random times over its minutes, each
+/// hit from a range and a target angle drawn from the case's bands, at her speed). The anchors are the damage done: what the shells did on the plates (Jutland's
 /// count on plate over 9″ and on 6-9″, the belt holes), killed and wounded a hit (16's groups, flashes aside), the
 /// turret-minutes lost (13), directors, steering, speed, water and list; how she ended is reported beside them, not
 /// tuned to (damage control's own yardstick is <c>dc-history</c>). The first game's cases (1890-1925) lead; the later
@@ -19,14 +19,13 @@ static class DamageHistory
 {
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
-    /// <summary>A share of a case's hits: a shooter's battery's shell, by kind (or its first), or a loadout's; at the
-    /// case's ranges, or its own (a secondary that can't reach the main's).</summary>
-    sealed record Fall(string Shooter, int Battery, string? Kind, double Share, string? Loadout = null, double RangeHi = 0);
-
     /// <summary>A case of the record: the target, her speed, the hits (n over the minutes, ranges and target angles drawn
     /// from the bands), her readiness and doctrine, the hours run, what was recorded and what's wanted.</summary>
     sealed record DamageCase(string Era, string Name, string Target, double Kn, Fall[] Falls, int Hits, double Minutes, (double Lo, double Hi) RangeM,
-        (double Lo, double Hi) AspectDeg, string Readiness, string Doctrine, double Hours, string Record, string Wanted);
+        (double Lo, double Hi) AspectDeg, string Readiness, string Doctrine, double Hours, string Record, string Wanted)
+    {
+        public GivenFire.Barrage Fire => new(Target, Kn, Falls, Hits, Minutes, RangeM, AspectDeg, Readiness, Doctrine, Hours);
+    }
 
     const string Jut = "closed up";
 
@@ -170,103 +169,51 @@ static class DamageHistory
         return 0;
     }
 
-    static readonly double[] RangeSteps = [0, 0.25, 0.5, 0.75, 1];
-    static readonly double[] AspectSteps = [0, 0.25, 0.5, 0.75, 1];
-
     static List<Ship> One(DamageCase dc, ShipClass target, Func<string, ShipClass> cls, SimSettings settings, int runs, Tally tally, int trace)
     {
-        var s = settings with { ReadinessDefault = dc.Readiness, DamageControlDefault = dc.Doctrine };
-        if (!s.Readiness.Any(x => x.Name == dc.Readiness) || !s.DamageControl.Any(x => x.Name == dc.Doctrine))
-            throw new ArgumentException($"{dc.Name}: no readiness \"{dc.Readiness}\" or doctrine \"{dc.Doctrine}\"");
-        // each fall's aims over the case's ranges and target angles
-        var aims = dc.Falls.Select(f =>
-        {
-            var sc = cls(f.Shooter);
-            var (shell, _) = HitsBench.ShellOf(sc, f.Battery, f.Kind, f.Loadout);
-            double maxElev = sc.Mounts[sc.Links(sc.Batteries[f.Battery].Mounts)[0]].MaxElevationDeg;
-            double hi = f.RangeHi > 0 ? f.RangeHi : dc.RangeM.Hi, lo = Math.Min(dc.RangeM.Lo, hi);
-            return (from r in RangeSteps
-                    from a in AspectSteps
-                    select new GivenHits.Aim(target, shell, maxElev, lo + r * (hi - lo),
-                        dc.AspectDeg.Lo + a * (dc.AspectDeg.Hi - dc.AspectDeg.Lo), s)).ToArray();
-        }).ToArray();
-        double total = dc.Falls.Sum(f => f.Share);
-        var start = WorldTime.FromUtc(1916, 5, 31, 14);
-        var w = new World(start, 1, s);
-        int ci = w.Ships.AddClass(target);
-        var rng = RandomStream.Named(1, "damage history");
         var list = new List<Ship>();
-        var due = new List<(long Ms, int Run, int Fall)>();
-        for (int i = 0; i < runs; i++)
+        GivenFire.Run(dc.Fire, dc.Name, target, cls, settings, runs, (_, e) => list.Add(new Ship { Entity = e }), (w, h) =>
         {
-            w.Apply(ShipSystem.Spawn(ci, 50 + 0.05 * (i % 20), -20 - 0.1 * (i / 20), 0, dc.Kn));   // the open Atlantic, 5 km apart
-            list.Add(new Ship { Entity = w.Ships.NewestEntity });
-            for (int h = 0; h < dc.Hits; h++)
+            var (ri, ms, where, k, mounts) = (h.Run, h.Ms, h.Where, h.K, h.MountsBefore);
+            var r = list[ri];
+            var t = w.Damage.LastTerminal;
+            var fx = w.Damage.LastEffects;
+            r.Hits++;
+            tally.Hits++;
+            tally.LargeStruck += where is "superstructure" or "director" or "mast" or "top" or "funnel" ? 1 : 0;
+            tally.Classes[GivenHits.Report.ClassOf(t.Outcome)]++;
+            (r.Killed, r.Wounded, r.Fires, r.Magazine) = (r.Killed + fx.Killed, r.Wounded + fx.Wounded, r.Fires + (fx.Fire ? 1 : 0), r.Magazine + (fx.Magazine ? 1 : 0));
+            if (fx.Magazine)
+                r.Via = fx.MagazineVia;
+            (r.TrainHits, r.Stations) = (r.TrainHits + (fx.Stations > 0 ? 1 : 0), r.Stations + fx.Stations);
+            if (fx.Magazine)
+                r.Tiers[(int)w.Damage.LastRace.Tier]++;
+            if (fx.Magazine && fx.MagazineVia == MagazineVia.Turret)
+                tally.TurretVia[fx.Part >= 0 && fx.Part < target.Components.Length ? $"{target.Components[fx.Part].Kind} {t.Outcome} {(int)(w.Damage.LastPath.Crossings.ToArray().Where(c => c.T < t.StopT && c.Plate is >= PlateKind.SideArmour and <= PlateKind.PartArmour).Select(c => c.Mm).DefaultIfEmpty(0).Max())}mm" : "?"] =
+                    tally.TurretVia.GetValueOrDefault(fx.Part >= 0 && fx.Part < target.Components.Length ? $"{target.Components[fx.Part].Kind} {t.Outcome} {(int)(w.Damage.LastPath.Crossings.ToArray().Where(c => c.T < t.StopT && c.Plate is >= PlateKind.SideArmour and <= PlateKind.PartArmour).Select(c => c.Mm).DefaultIfEmpty(0).Max())}mm" : "?") + 1;
+            if (ri == trace)
             {
-                double u = rng.NextDouble() * total, acc = 0;
-                int a = 0;
-                for (; a < dc.Falls.Length - 1; a++)
-                    if ((acc += dc.Falls[a].Share) > u)
-                        break;
-                due.Add(((long)(rng.NextDouble() * dc.Minutes * 60_000), i, a));
+                var hp = w.Damage.LastPath;
+                var x0 = hp.Crossings[Math.Max(0, hp.Crossings.ToArray().ToList().FindIndex(c => c.Kind is CrossingKind.HullIn or CrossingKind.PartIn))];
+                Console.WriteLine(string.Format(Inv, "      {0,5:0.0} min  {1} at x {2:0.0} z {3:+0.0;-0.0} (wl {4:0.0}): {5}, burst {6} at {7:0.0} m, stopped {8:0.0} m; holes {9:0.000} m², " +
+                    "out {10}, killed {11}, wounded {12}{13}{14}; water now {15:0} t", ms / 60_000.0, where, x0.Point.X, x0.Point.Z, target.Vertical.Waterline, t.Outcome, t.Burst,
+                    t.BurstT, t.StopT, fx.BreachM2, fx.Destroyed + fx.Disabled, fx.Killed, fx.Wounded, fx.Fire ? ", fire" : "", fx.Magazine ? ", MAGAZINE" : "", k.WaterT));
             }
-        }
-        due.Sort();
-        var path = new HitPath();
-        int next = 0;
-        var store = w.Ships.Store;
-        for (int m = 1; m <= Math.Max(dc.Hours * 60, dc.Minutes); m++)
+            if (fx.Flash)
+                (r.Flashes, r.FlashKilled, r.FlashWounded) = (r.Flashes + 1, r.FlashKilled + fx.Killed, r.FlashWounded + fx.Wounded);
+            Plates(w.Damage.LastPath, t, tally, r);
+            int held = t.Glance >= 0 ? t.Glance : t.Outcome is Outcome.Defeated or Outcome.BurstOutside ? t.Plate : -1;
+            if (held >= 0 && w.Damage.LastPath.Crossings[held].Plate is PlateKind.Barbette or >= PlateKind.TurretFace and <= PlateKind.TurretRoof &&
+                target.MountOf(w.Damage.LastPath.Crossings[held].Index) >= 0)
+            {
+                tally.TurretHeld++;
+                tally.Jams += fx.Turret.Blow == TurretBlow.Jam ? 1 : 0;
+                int mt = target.MountOf(w.Damage.LastPath.Crossings[held].Index);
+                tally.NonPenOut += mounts[mt] && !k.MountWorks[mt] && target.Mounts[mt].Kind == ComponentKind.Main ? 1 : 0;
+            }
+        }, (w, m) =>
         {
-            long end = m * 60_000L;
-            for (; next < due.Count && due[next].Ms < end; next++)
-            {
-                var (ms, ri, fi) = due[next];
-                var r = list[ri];
-                w.AdvanceTo(start + ms);
-                int slot = store.SlotOf(r.Entity);
-                if (slot < 0 || store.Combat.Condition(slot).Status != ShipStatus.Afloat)
-                    continue;
-                var k = store.Combat.Condition(slot);
-                var mounts = (bool[])k.MountWorks.Clone();
-                var aim = aims[fi][rng.NextInt(aims[fi].Length)];
-                w.Damage.Strike(w, aim.Next(w, r.Entity, slot, path, ref rng, out string where));
-                var t = w.Damage.LastTerminal;
-                var fx = w.Damage.LastEffects;
-                r.Hits++;
-                tally.Hits++;
-                tally.LargeStruck += where is "superstructure" or "director" or "mast" or "top" or "funnel" ? 1 : 0;
-                tally.Classes[GivenHits.Report.ClassOf(t.Outcome)]++;
-                (r.Killed, r.Wounded, r.Fires, r.Magazine) = (r.Killed + fx.Killed, r.Wounded + fx.Wounded, r.Fires + (fx.Fire ? 1 : 0), r.Magazine + (fx.Magazine ? 1 : 0));
-                if (fx.Magazine)
-                    r.Via = fx.MagazineVia;
-                (r.TrainHits, r.Stations) = (r.TrainHits + (fx.Stations > 0 ? 1 : 0), r.Stations + fx.Stations);
-                if (fx.Magazine)
-                    r.Tiers[(int)w.Damage.LastRace.Tier]++;
-                if (fx.Magazine && fx.MagazineVia == MagazineVia.Turret)
-                    tally.TurretVia[fx.Part >= 0 && fx.Part < target.Components.Length ? $"{target.Components[fx.Part].Kind} {t.Outcome} {(int)(w.Damage.LastPath.Crossings.ToArray().Where(c => c.T < t.StopT && c.Plate is >= PlateKind.SideArmour and <= PlateKind.PartArmour).Select(c => c.Mm).DefaultIfEmpty(0).Max())}mm" : "?"] =
-                        tally.TurretVia.GetValueOrDefault(fx.Part >= 0 && fx.Part < target.Components.Length ? $"{target.Components[fx.Part].Kind} {t.Outcome} {(int)(w.Damage.LastPath.Crossings.ToArray().Where(c => c.T < t.StopT && c.Plate is >= PlateKind.SideArmour and <= PlateKind.PartArmour).Select(c => c.Mm).DefaultIfEmpty(0).Max())}mm" : "?") + 1;
-                if (ri == trace)
-                {
-                    var hp = w.Damage.LastPath;
-                    var x0 = hp.Crossings[Math.Max(0, hp.Crossings.ToArray().ToList().FindIndex(c => c.Kind is CrossingKind.HullIn or CrossingKind.PartIn))];
-                    Console.WriteLine(string.Format(Inv, "      {0,5:0.0} min  {1} at x {2:0.0} z {3:+0.0;-0.0} (wl {4:0.0}): {5}, burst {6} at {7:0.0} m, stopped {8:0.0} m; holes {9:0.000} m², " +
-                        "out {10}, killed {11}, wounded {12}{13}{14}; water now {15:0} t", ms / 60_000.0, where, x0.Point.X, x0.Point.Z, target.Vertical.Waterline, t.Outcome, t.Burst,
-                        t.BurstT, t.StopT, fx.BreachM2, fx.Destroyed + fx.Disabled, fx.Killed, fx.Wounded, fx.Fire ? ", fire" : "", fx.Magazine ? ", MAGAZINE" : "", k.WaterT));
-                }
-                if (fx.Flash)
-                    (r.Flashes, r.FlashKilled, r.FlashWounded) = (r.Flashes + 1, r.FlashKilled + fx.Killed, r.FlashWounded + fx.Wounded);
-                Plates(w.Damage.LastPath, t, tally, r);
-                int held = t.Glance >= 0 ? t.Glance : t.Outcome is Outcome.Defeated or Outcome.BurstOutside ? t.Plate : -1;
-                if (held >= 0 && w.Damage.LastPath.Crossings[held].Plate is PlateKind.Barbette or >= PlateKind.TurretFace and <= PlateKind.TurretRoof &&
-                    target.MountOf(w.Damage.LastPath.Crossings[held].Index) >= 0)
-                {
-                    tally.TurretHeld++;
-                    tally.Jams += fx.Turret.Blow == TurretBlow.Jam ? 1 : 0;
-                    int mt = target.MountOf(w.Damage.LastPath.Crossings[held].Index);
-                    tally.NonPenOut += mounts[mt] && !k.MountWorks[mt] && target.Mounts[mt].Kind == ComponentKind.Main ? 1 : 0;
-                }
-            }
-            w.AdvanceTo(start + end);
+            var store = w.Ships.Store;
             foreach (var r in list)
             {
                 if (!r.Afloat)
@@ -299,7 +246,7 @@ static class DamageHistory
                     Console.WriteLine(string.Format(Inv, "      {0,5} min  water {1:0} t, list {2:0.0}°, holes {3:0.00} m², speed {4:0.0} kn, power {5:0%}, main {6} of {7}",
                         m, k.WaterT, k.Attitude.HeelDeg, k.BreachM2.Sum(), store[slot].Speed / 0.514444, k.PowerCap, r.MainOk, r.Main));
             }
-        }
+        });
         return list;
     }
 

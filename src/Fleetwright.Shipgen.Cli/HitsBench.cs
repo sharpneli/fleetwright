@@ -11,13 +11,15 @@ namespace Fleetwright.Shipgen.Cli;
 /// <summary>`shipgen hits`: the damage model alone (docs/battle/fighting.md 4.3a, "The instruments"; gunfire_ref.py
 /// <c>mc()</c>): n hits of one shell at a range on a design, spread over it as the falling shells see it, through the
 /// world's damage system (<see cref="GivenHits"/>). It prints where they struck, the outcome classes, fires, crew and
-/// holes per hit, the parts most often put out of action, and with --per-ship K the ships' state after K hits each.</summary>
+/// holes per hit, the parts most often put out of action, and with --per-ship K the ships' state after K hits each: with
+/// the men (docs/battle/crew.md N0) by battle station, the batteries, the conn and the parties; --curve N the out-of-action
+/// count every N hits.</summary>
 static class HitsBench
 {
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
     public record Options(string? Shooter, int Battery, string? Kind, double RangeM, double AspectDeg, int N, int PerShip, int Seed, int Trace, double SettleMin,
-        string? Loadout = null, string? Readiness = null, string? DamageControl = null);
+        string? Loadout = null, string? Readiness = null, string? DamageControl = null, int Curve = 0);
 
     /// <summary>A shooter's battery's shell: the one it fires, or its first of a kind, from its design's loadout or one
     /// given; and its name.</summary>
@@ -121,7 +123,7 @@ static class HitsBench
                 "killed {9}, wounded {10}, holes {11:0.000} m²{12}{13}{14}", i, t.Outcome, t.Burst, t.BurstT, t.Force, t.StopT, Node(tc, e.Part), e.Destroyed + e.Disabled,
                 e.Damaged, e.Killed, e.Wounded, e.BreachM2, e.Fire ? ", fire" : "", e.Jammed ? ", jammed" : "", e.Magazine ? ", MAGAZINE" : ""));
             Console.Write(path.Text(tc));
-        }, o.SettleMin * 60, FallOut(settingsPath));
+        }, o.SettleMin * 60, FallOut(settingsPath), o.Curve);
         double secs = sw.Elapsed.TotalSeconds;
 
         Console.WriteLine(string.Format(Inv, "{0} on {1}: {2} ({3:0.#} kg, filler {4:0.##} kg, {5} {6}) at {7:0} m ({8:0.0} kyd) from {9:0}° off the bow",
@@ -219,8 +221,35 @@ static class HitsBench
             Console.WriteLine(string.Format(Inv, "    to the magazine: set off by a hit {0:0.#}%, by a fire later {1:0.#}%",
                 100.0 * (r.LostBy[(int)LossKind.Magazine] - r.MagazineByFire) / r.Ships, 100.0 * r.MagazineByFire / r.Ships));
         Console.WriteLine(string.Format(Inv, "  out of the fight (lost, or past the default preset's fall-out) {0:0}%", 100.0 * r.Out / r.Ships));
+        Men(tc, r);
         return 0;
     }
+
+    /// <summary>The men after the hits and the settle (docs/battle/crew.md N0), a ship's on average: out of action by battle
+    /// station of the men there, each battery's mounts working, the directors, the conn, the parties and their jobs; and the
+    /// curve of the out-of-action count.</summary>
+    static void Men(ShipClass tc, GivenHits.Report r)
+    {
+        int n = Math.Max(r.Ships, 1);
+        Console.WriteLine("  the men out of action by station, of those there (a ship): " + string.Join(", ", Enumerable.Range(0, BattleStations.Count)
+            .Where(s => r.StationMen[s] > 0).Select(s => string.Format(Inv, "{0} {1:0.#} of {2:0}", BattleStations.Names[s], r.StationOut[s] / n, r.StationMen[s] / n))));
+        Console.WriteLine("  mounts working by battery: " + string.Join(", ", Enumerable.Range(0, tc.Batteries.Length).Where(b => r.BatteryMounts[b] > 0)
+            .Select(b => string.Format(Inv, "{0} {1:0.0} of {2:0}", Battery(tc, b), r.BatteryWorking[b] / n, r.BatteryMounts[b] / n))) +
+            string.Format(Inv, "; directors {0:0.0} of {1:0}; conned {2:0}% of ships", r.DirectorsWorking / n, r.Directors / n, 100.0 * r.Conned / n));
+        Console.WriteLine(string.Format(Inv, "  fire parties {0:0.0} a ship, {1:0} men: at a fire {2:0}, on a water job {3:0}, neither {4:0}; gun crews turned to in {5:0}% of ships",
+            (double)r.Parties / n, r.PartyMen / n, r.PartyAtFire / n, r.PartyOnWater / n, (r.PartyMen - r.PartyAtFire - r.PartyOnWater) / n, 100.0 * r.TurnedTo / n));
+        if (r.CurveOut.Count > 0)
+        {
+            int every = r.Hits / n / r.CurveOut.Count;
+            Console.WriteLine("  out of action after the hits (a ship): " + string.Join(", ", r.CurveOut.Select((x, i) => string.Format(Inv, "{0} {1:0}",
+                (i + 1) * every, x / Math.Max(r.CurveShips[i], 1)))));
+        }
+    }
+
+    /// <summary>A battery's name: its kind, side and calibre ("main 305 mm", "secondary port 152 mm").</summary>
+    public static string Battery(ShipClass c, int b) =>
+        c.Batteries[b].Kind.ToString().ToLowerInvariant() + (c.Batteries[b].Side == Side.None ? "" : " " + c.Batteries[b].Side.ToString().ToLowerInvariant()) +
+        string.Format(Inv, " {0:0} mm", c.Batteries[b].CalibreMm);
 
     /// <summary>The default doctrine preset's fall-out (Content/Sim/doctrine.json beside the settings): what "out of the
     /// fight" means to the benches.</summary>

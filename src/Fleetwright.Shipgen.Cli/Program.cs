@@ -106,7 +106,7 @@ public static class Program
         shipgen fc-history [--runs N] [--case TEXT] [--ref] [--smoke | --no-smoke]
             the historical record's cases (fire-control.md, "The yardstick"), each at its recorded range, weather and target
             behaviour, beside the record's band, then the orderings between them: the bench every fire-control step answers to
-        shipgen hits TARGET [--shooter DESIGN] [--battery B] [--kind ap|common|he] [--loadout SPEC] [--range M] [--aspect DEG] [--n N] [--per-ship K] [--seed S] [--show N] [--settle MIN] [--readiness NAME] [--damage-control NAME]
+        shipgen hits TARGET [--shooter DESIGN] [--battery B] [--kind ap|common|he] [--loadout SPEC] [--range M] [--aspect DEG] [--n N] [--per-ship K] [--seed S] [--show N] [--settle MIN] [--readiness NAME] [--damage-control NAME] [--curve N]
             the damage model alone (docs/battle/fighting.md 4.3a): N hits of the shooter's battery's shell (the one it
             fires, or --kind) at a range, spread over the target as the falling shells see it from --aspect degrees off
             its bow, through the world's damage system: where they struck, the outcome classes, fire, crew and holes a
@@ -199,6 +199,9 @@ public static class Program
             weight of fire at random over its minutes through the world's damage system (parties, the main, smoke,
             magazines), run on for hours (default each case's): ablaze, all out, still burning, water, how she ended;
             N runs a case (default 20), --case a case by name
+        shipgen crew-history [--runs N] [--case TEXT] [--settings FILE]
+            the crews' yardstick (docs/battle/crew.md N0): the record's cases under their fire, timed: the men out of action
+            through the fire and after it by battle station, the batteries' mounts, the conn and the parties
         shipgen damage-history [--runs N] [--case TEXT] [--settings FILE]
             the battle anchors (docs/battle/shells-armour-damage.md E8): the record's cases, a ship of its kind hit by its
             shells at random over its minutes, each from a range and target angle in the case's bands, at her speed,
@@ -321,7 +324,8 @@ public static class Program
                 "hits" => HitsBench.Run(a.Positional.ElementAtOrDefault(0) ?? "dreadnought", n => LoadDesign(Resolve(a, n)),
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
                     new HitsBench.Options(a.Get("shooter"), a.Int("battery", 0), a.Get("kind"), D(a, "range", 12_000), D(a, "aspect", 90), a.Int("n", 2000),
-                        a.Int("per-ship", 1), a.Int("seed", 1), a.Int("show", 0), D(a, "settle", 30), a.Get("loadout"), a.Get("readiness"), a.Get("damage-control"))),
+                        a.Int("per-ship", 1), a.Int("seed", 1), a.Int("show", 0), D(a, "settle", 30), a.Get("loadout"), a.Get("readiness"), a.Get("damage-control"),
+                        a.Int("curve", 0))),
                 "nearmiss" => NearMissBench.Run(a.Positional.ElementAtOrDefault(0) ?? "destroyer", n => LoadDesign(Resolve(a, n)),
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
                     new NearMissBench.Options(a.Get("shooter"), a.Int("battery", 0), a.Get("kind"), a.Get("loadout"), D(a, "range", 15_000), D(a, "aspect", 90),
@@ -363,6 +367,8 @@ public static class Program
                     a.Get("case"), a.Get("hours") is null ? null : D(a, "hours", 4), n => LoadDesign(Resolve(a, n)), a.Has("trace")),
                 "damage-history" => DamageHistory.Run(a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), a.Int("runs", 20),
                     a.Get("case"), n => LoadDesign(Resolve(a, n)), a.Int("trace-run", -1)),
+                "crew-history" => CrewHistory.Run(a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), a.Int("runs", 20),
+                    a.Get("case"), n => LoadDesign(Resolve(a, n))),
                 "dc-history" => DcHistory.Run(a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), a.Int("runs", 20),
                     a.Get("case"), a.Get("hours") is null ? null : D(a, "hours", 4), n => LoadDesign(Resolve(a, n)), a.Has("trace") || a.Get("trace-run") != null,
                     a.Int("trace-run", 0)),

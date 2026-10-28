@@ -252,6 +252,14 @@ Seen in the AI's baseline after the detail passes (2026-10-20, docs/battle/comma
   Jutland every ship draws at about two thirds of Tsushima's size. Probably her seven twin turrets on the centreline
   stretching the hull; scenario designs are tuned for balance, not tonnage, but 109 m more is
   past that. To hunt: `SHIPGEN_TRACE=1 shipgen design Content/Scenarios/Designs/agincourt.json`, what sets the length.
+- [ ] Men summed at a station but standing on no cell (crew.md N0, 2026-10-28): `Crew.BattleStations` counts a
+  transmitting station's men (and Invincible's submerged torpedo room's 8) in the summary, but `AssignBattleCrew`
+  spreads a room's men over its own cells only, and some of those rooms have none (13 designs, 4-10 directors' men each:
+  battleship, bismarck, dunkerque, littorio, richelieu, kgv, kent, ...; the third transmitting station, an AA one, on
+  most). They're in the complement but no shell can reach them and the sim never counts them. Probably the room is
+  placed (`FireControl.cs` adds the compartment) and then lost or merged in the subdivision. `CasualtyTests`'
+  `Each_crew_group_is_at_the_station_Shipgen_put_its_men` allows exactly this shortfall; tighten it when fixed (the
+  designs' goldens will move).
 
 ## The slide
 
