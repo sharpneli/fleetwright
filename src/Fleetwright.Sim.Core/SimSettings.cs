@@ -1791,23 +1791,23 @@ public sealed record SimSettings
     /// <see cref="FireDryShare"/> of the flow, one cut and rigged again at <see cref="FireJumperShare"/>; a hit in the
     /// section breaks the main with the doctrine's chance × (<see cref="FireMainRefT"/> t / displacement)^
     /// <see cref="FireMainExp"/> [FIT to 17 §6.4's ×1 destroyer, ×0.5 cruiser, ×0.35 battleship], stops a party working
-    /// there for <see cref="FireHitStopS"/> with the doctrine's hose-cut chance, and with <see cref="FireHitMenChance"/>
-    /// leaves it <see cref="FireHitMenKeep"/> of its men (fire_ref.py's hit). <see cref="FireTurnToS"/> after the last hit the
-    /// gun crews turn to as the doctrine's extra parties at <see cref="FireTurnToSkill"/> (doc 10 §5).</summary>
+    /// there for <see cref="FireHitStopS"/> with the doctrine's hose-cut chance (its men lost are E6's, where it stands:
+    /// docs/battle/crew.md N1). <see cref="FireTurnToS"/> after the last hit the gun crews turn to as the doctrine's extra
+    /// parties at <see cref="FireTurnToSkill"/> (doc 10 §5), from the mounts' men.</summary>
     public DamageControlDoctrine[] DamageControl { get; init; } =
     [
-        new() { Name = "1890", HoldSpeedS = 3600, CounterfloodDeg = -1, CounterfloodTrimDeg = -1, Skill = 0.4, WatchS = -1, HoseLpm = 600, Nozzle = "jet", MusterS = 360, ManLpm = 100, PartyShare = 0.10, PartyMen = 16,
+        new() { Name = "1890", HoldSpeedS = 3600, CounterfloodDeg = -1, CounterfloodTrimDeg = -1, Skill = 0.4, WatchS = -1, HoseLpm = 600, Nozzle = "jet", MusterS = 360, ManLpm = 100, PartyShare = 0.85, PartyMen = 16,
             MainBreak = 0.25, HoseCut = 0.30, Looped = false, RestoreS = -1, PumpFloor = 0, BreathingSets = false, TurnTo = 1, FloodMagazineS = 600 },
-        new() { Name = "1905", HoldSpeedS = 1800, CounterfloodDeg = 4, CounterfloodTrimDeg = -1, Skill = 0.6, WatchS = 120, HoseLpm = 600, Nozzle = "jet", MusterS = 180, ManLpm = 100, PartyShare = 0.12, PartyMen = 16,
+        new() { Name = "1905", HoldSpeedS = 1800, CounterfloodDeg = 4, CounterfloodTrimDeg = -1, Skill = 0.6, WatchS = 120, HoseLpm = 600, Nozzle = "jet", MusterS = 180, ManLpm = 100, PartyShare = 1.0, PartyMen = 16,
             MainBreak = 0.20, HoseCut = 0.35, Looped = false, RestoreS = 900, PumpFloor = 0, BreathingSets = false, TurnTo = 2, FloodMagazineS = 300 },
-        new() { Name = "1916", HoldSpeedS = 900, CounterfloodDeg = 2, CounterfloodTrimDeg = 1, Skill = 0.85, WatchS = 180, HoseLpm = 420, Nozzle = "jet", MusterS = 240, ManLpm = 84, PartyShare = 0.12, PartyMen = 16,
+        new() { Name = "1916", HoldSpeedS = 900, CounterfloodDeg = 2, CounterfloodTrimDeg = 1, Skill = 0.85, WatchS = 180, HoseLpm = 420, Nozzle = "jet", MusterS = 240, ManLpm = 84, PartyShare = 1.0, PartyMen = 16,
             MainBreak = 0.10, HoseCut = 0.15, Looped = false, RestoreS = 900, PumpFloor = 0, BreathingSets = false, TurnTo = 2, FloodMagazineS = 180 },
         new() { Name = "1916 BCF", HoldSpeedS = 900, CounterfloodDeg = 2, CounterfloodTrimDeg = 1, Skill = 0.85, WatchS = 180, HoseLpm = 420, Nozzle = "jet", MusterS = 240, ManLpm = 84,
-            PartyShare = 0.12, PartyMen = 16, MainBreak = 0.10, HoseCut = 0.15, Looped = false, RestoreS = 900, PumpFloor = 0, BreathingSets = false, TurnTo = 2,
+            PartyShare = 1.0, PartyMen = 16, MainBreak = 0.10, HoseCut = 0.15, Looped = false, RestoreS = 900, PumpFloor = 0, BreathingSets = false, TurnTo = 2,
             FloodMagazineS = 180, Flash = "rate first" },
-        new() { Name = "1942", HoldSpeedS = 600, CounterfloodDeg = 1, CounterfloodTrimDeg = 1, Skill = 0.9, WatchS = 120, HoseLpm = 250, Nozzle = "all-purpose", MusterS = 180, ManLpm = 62.5, PartyShare = 0.12, PartyMen = 16,
+        new() { Name = "1942", HoldSpeedS = 600, CounterfloodDeg = 1, CounterfloodTrimDeg = 1, Skill = 0.9, WatchS = 120, HoseLpm = 250, Nozzle = "all-purpose", MusterS = 180, ManLpm = 62.5, PartyShare = 1.0, PartyMen = 16,
             MainBreak = 0.25, HoseCut = 0.20, Looped = false, RestoreS = 480, PumpFloor = 0, BreathingSets = false, TurnTo = 2, FloodMagazineS = 180 },
-        new() { Name = "1944", HoldSpeedS = 600, CounterfloodDeg = 1, CounterfloodTrimDeg = 1, Skill = 1.0, WatchS = 60, HoseLpm = 360, Nozzle = "fog", MusterS = 120, ManLpm = 90, PartyShare = 0.12, PartyMen = 16,
+        new() { Name = "1944", HoldSpeedS = 600, CounterfloodDeg = 1, CounterfloodTrimDeg = 1, Skill = 1.0, WatchS = 60, HoseLpm = 360, Nozzle = "fog", MusterS = 120, ManLpm = 90, PartyShare = 1.0, PartyMen = 16,
             MainBreak = 0.15, HoseCut = 0.20, Looped = true, RestoreS = 240, PumpFloor = 0.6, BreathingSets = true, TurnTo = 3,
             CoolBoundaries = true, ReflashWatch = true, FloodMagazineS = 120 },
     ];
@@ -1825,8 +1825,6 @@ public sealed record SimSettings
     public double FireMainRefT { get; init; } = 2000;
     public double FireMainExp { get; init; } = 0.4;
     public double FireHitStopS { get; init; } = 120;
-    public double FireHitMenChance { get; init; } = 0.3;
-    public double FireHitMenKeep { get; init; } = 0.6;
     public double FireTurnToS { get; init; } = 900;
     public double FireTurnToSkill { get; init; } = 0.7;
     /// <summary>Boundary cooling cuts the spread through steel from a fire its parties have the water for to this share
@@ -2172,8 +2170,8 @@ public readonly record struct FireNozzle
 
 /// <summary>A side's firefighting doctrine (docs/battle/fire.md B4; <see cref="SimSettings.DamageControl"/>): the fire watch's
 /// delay to first water on a new fire (s; under 0: none) and its hose's flow (L/min); the nozzle (a name of FireNozzles); the
-/// parties' muster (s), each man's flow (L/min thrown, men a hose and the hose's flow folded in), the share of the complement
-/// in them and a party's men; the main's break chance a hit, looped or not, the time to isolate a break and rig past it (s;
+/// parties' muster (s), each man's flow (L/min thrown, men a hose and the hose's flow folded in), the share of her repair
+/// men (the battle station's, in her quarters and stores) who muster into them (docs/battle/crew.md N1) and a party's men; the main's break chance a hit, looped or not, the time to isolate a break and rig past it (s;
 /// under 0: never), the pumps' floor with the steam gone (a diesel pump's share); breathing sets; the extra parties that
 /// turn to after the action; and the habits: cooling the boundaries, a reflash watch.</summary>
 public readonly record struct DamageControlDoctrine

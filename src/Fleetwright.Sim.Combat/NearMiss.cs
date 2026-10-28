@@ -84,7 +84,7 @@ public static class NearMiss
     public static EffectsResult Apply(ShipClass c, ShipCondition k, in Hit hit, SimSettings s, ref RandomStream r, Span<double> intoParts = default)
     {
         var res = new EffectsResult { Part = -1, MagazineRoom = -1 };
-        Casualties.Begin(k);
+        Casualties.Begin(k, hit.Ms);
         var water = HitQuery.WaterOf(c, k.Attitude);
         var p = hit.Point;
         double depth = Math.Max(water.At(p.X, p.Y) - p.Z, 0), surface = p.Z + depth;
@@ -229,7 +229,7 @@ public static class NearMiss
             }
             // its men: an open or shielded mount's stand open; the floor hidden by the side, none. In the open they meet the
             // free field (16 §4.2: S is the flux a man meets inside a steel compartment, ricochets and debris; 13's field is 1)
-            if (comp.BattleCrew > 0 && box.Base <= comp.Bounds.Base + StandM && Casualties.Men(c, k, Casualties.Part(i)) > 0)
+            if (box.Base <= comp.Bounds.Base + StandM && Casualties.Here(c, k, Casualties.Part(i)) > 0)
             {
                 int m = c.MountOf(i);
                 double crewMild = Effects.PartMild(c, i, m >= 0 && c.Mounts[m].Component == i && !Casualties.Enclosed(c, m) ? 0 : raw);
@@ -270,7 +270,7 @@ public static class NearMiss
                 Effects.Harm(ref res, k, j);
         }
         int g = Casualties.Cell(c, cell);
-        if (Casualties.Men(c, k, g) > 0)
+        if (Casualties.Here(c, k, g) > 0)
         {
             var mid = new P3((box.X0 + box.X1) / 2, (box.Y0 + box.Y1) / 2, (box.Base + box.Top) / 2);
             var (pk, pc) = Casualties.PiecesRisk(box, Casualties.Cover(c, g, s), frag, p, hit.Direction, hit.SpeedMs, 1, sideMild + Belt(c, mid.X, mid.Z),

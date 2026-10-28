@@ -314,6 +314,41 @@ the walking wounded back after 15-45 min). Southampton's and Emden's hit counts 
   `Hurt` and `Caught` take from that group. `FireHitMenChance` and `FireHitMenKeep` go. Turned-to gun crews (`TurnTo`)
   come from the mounts' groups. The doctrine's `PartyShare` becomes how many of the repair men muster into parties.
   Fire's yardstick re-run (fire.md B5).
+  **Done 2026-10-28.**
+  - **The book:** a station's men are its battle crew less the gone (`Gone`) and the away (`Away`, new: in a party).
+    `Repairs.Make` plans her parties from the repair men there at her first fire (`PartyShare` of them, two to eight
+    parties); a party takes its men from the repair groups (each its share, whole men) only when it's first sent, so
+    until then they stand by in their quarters and E6 meets them there as before. It musters in the repair space nearest
+    its section (`Home`), walks from where it was, and works at its job's place (`Place`: a fire's cell or part, a deck
+    fire's cell under it, a boundary's dry side, a cell's holes or pump, the steering room, the part or room under
+    repair). The turned-to gun crews are taken from the mounts' men, standing by at the mount that gave most.
+  - **E6 meets them where they stand:** `Casualties.Draw` rolls a party's men with its place's risks, after the men who
+    live there; its walking wounded walk back to the party. The early-outs that skip an empty space (`Here`: its men and
+    the parties there at the pass's time, which `Begin` now takes) let the bursts, lanes, spall and near misses find a
+    party in an empty store. Fire's flashover (`Caught`) reaches the party in the room the same way. Smoke (`Hurt`) still
+    takes from the party at its fire. `FireHitMenChance` and `FireHitMenKeep` are gone.
+  - **`PartyShare`:** the repair men are a median 12% of a complement (8-17% over the designs), the old shares of the
+    complement were 0.10 and 0.12, so the new shares of the repair men are 0.85 (1890) and 1.0 (1905 on): the same men on
+    the median ship. That leaves no repair men above the floor for N3's reliefs on most ships (decision 1's "the repair
+    men above the floor"); reliefs come from the covered crews, the wrecked mounts' men and the stokers first, and the
+    doctrine can lower it. **Open for the user.**
+  - **Found:** `Muster`'s choice is by section and size, not by protection; the standing-by parties of a fired-on ship
+    gather there.
+  - **The yardsticks (before → after, 20 runs a case):**
+    - **fire-history:** Suvorov ablaze 5 → 20% of runs (record: ablaze in 20-40 min, B5's open gap), her killed and
+      wounded 106 → 162; Orel's 111 → 164; Santiago unprepared ablaze 70 → 65%, killed and wounded 239 → 186 (her men
+      muster out of the burning quarters); the rest unchanged within a run or two.
+    - **dc-history:** every case's losses the same but Oslyabya, 0 → 5% (one capsized at 164 min; the record has her
+      capsize, the wanted most runs).
+    - **crew-history:** Oryol 105 → 157 killed and wounded; Suvorov 150 → 228; Sverige 156 → 207, out of action at 2 h
+      98 → 128 and still rising (her parties used up at work: 45 → 19 men at 30 min), lost 0 → 10%; Chester, Southampton,
+      Kent, Emden and Graf Spee unchanged within a few men.
+    - **damage-history (E6's fit):** the same within the noise for the British ships, the cruisers, the destroyers and the
+      later cuts; Orel 0.30 → 0.43 killed a hit (her fires' parties); **the German big ships 7-12% fewer killed a hit**
+      (60 runs, the same hits: Jutland's plate count 1.34 → 1.25, Seydlitz 1.91 → 1.75, Dogger Bank's Lion 0.74 → 0.65),
+      their men drawn out of the upper quarters into parties working below. Past the noise, against wanted "unchanged";
+      the record has the German ships higher still (G1 1.94). **Open for the user:** keep (physical), or muster the
+      parties where they're protected less.
 - **N2 Stations work by their men.** A share per station: men present over the need it was sized for (`Crew.GunCrew`,
   `CommandK`, the directors' and the plant's crews).
   - **The share is the crew thinning** (the 1866 tables): the next man steps up at once, the least skilled duty drops,

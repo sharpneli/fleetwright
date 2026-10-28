@@ -310,8 +310,8 @@ public sealed class ShipCondition
     /// yet), and the killed and wounded so far (the fire's too: docs/battle/fire.md B2).</summary>
     public double CrewLost, Killed, Wounded;
     /// <summary>At each station, the men killed or out there now: a part's (by component), then a cell's
-    /// (<see cref="Casualties"/>'s groups).</summary>
-    public int[] Gone = [];
+    /// (<see cref="Casualties"/>'s groups); and those away from it in a party (docs/battle/crew.md N1).</summary>
+    public int[] Gone = [], Away = [];
     /// <summary>The walking wounded on their way back (E6): when, to which station, how many; a pool of
     /// <see cref="ReturnSlots"/>.</summary>
     public const int ReturnSlots = 64;
@@ -323,6 +323,8 @@ public sealed class ShipCondition
     internal double[] RiskK = [], RiskC = [];
     internal int[] RiskStamp = [], Touched = [];
     internal int RiskId, TouchedN;
+    /// <summary>When the casualty pass under way happens (world ms): where the parties stand then.</summary>
+    internal long RiskMs;
     public ShipStatus Status;
     /// <summary>How it went down (None while afloat), when it began to and when it's gone under (ms).</summary>
     public LossKind Loss;
@@ -407,11 +409,12 @@ public sealed class ShipCondition
             (FaceStamp, FaceFate, FaceFelt) = (new int[4 * c.Cells.Length], new byte[4 * c.Cells.Length], new double[4 * c.Cells.Length]);
             (FaceArea, FaceMm, FacePoint, FacesReady) = (new double[4 * c.Cells.Length], new double[4 * c.Cells.Length], new P3[4 * c.Cells.Length], false);
             int groups = c.Components.Length + c.Cells.Length;
-            (Gone, RiskK, RiskC, RiskStamp, Touched) = (new int[groups], new double[groups], new double[groups], new int[groups], new int[groups]);
+            (Gone, Away, RiskK, RiskC, RiskStamp, Touched) = (new int[groups], new int[groups], new double[groups], new double[groups], new int[groups], new int[groups]);
         }
         else
         {
             Array.Clear(Gone);
+            Array.Clear(Away);
             Array.Clear(JoinOpenM2);
             Array.Clear(JoinSeamM2);
             Array.Clear(JoinClosureM2);
@@ -726,11 +729,21 @@ public sealed class ShipCondition
         Due(at);
     }
 
-    /// <summary>A return's men back at their station, its slot taken by the last.</summary>
+    /// <summary>A return's men back at their station (or their party: a group past the stations,
+    /// <see cref="Casualties.PartyGroup"/>), its slot taken by the last.</summary>
     void Return(int i)
     {
-        int g = ReturnGroup[i], men = Math.Min(ReturnMen[i], Gone[g]);
-        Gone[g] -= men;
+        int g = ReturnGroup[i], men;
+        if (g < Gone.Length)
+        {
+            men = Math.Min(ReturnMen[i], Gone[g]);
+            Gone[g] -= men;
+        }
+        else
+        {
+            men = ReturnMen[i];
+            Parties[g - Gone.Length].Men += men;
+        }
         CrewLost = Math.Max(CrewLost - men, 0);
         Returns--;
         (ReturnMs[i], ReturnGroup[i], ReturnMen[i]) = (ReturnMs[Returns], ReturnGroup[Returns], ReturnMen[Returns]);
@@ -918,7 +931,16 @@ public sealed class ShipCondition
             h.Add(party.Target);
             h.Add(party.ArriveMs);
             h.Add(party.StopMs);
+            h.Add(party.Home);
+            h.Add(party.Place);
         }
+        if (PartiesMade)
+            for (int g = 0; g < Away.Length; g++)
+                if (Away[g] != 0)
+                {
+                    h.Add(g + 6000);
+                    h.Add(Away[g]);
+                }
         for (int i = 0; i < MainCutMs.Length; i++)
             if (MainCutMs[i] != 0)
             {

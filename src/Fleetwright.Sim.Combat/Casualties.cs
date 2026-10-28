@@ -22,8 +22,10 @@ namespace Fleetwright.Sim.Combat;
 /// </list>
 /// Each risk adds to the group's (independent: P(killed) = 1 − Π(1 − pᵢ)); <see cref="Draw"/> then rolls each man
 /// killed, wounded or untouched, and of the wounded who are out for the action and who walk back to their station
-/// later (16 §4.8). No factor afterwards: the scatter is the hit point, the ring, the spall roll and the men. Pure and
-/// allocation-free; the scratch is on the ship's condition.</summary>
+/// later (16 §4.8). No factor afterwards: the scatter is the hit point, the ring, the spall roll and the men. A fire or
+/// repair party at work is one more group of men where it stands (docs/battle/crew.md N1: its place, a part or a cell),
+/// taking that place's risks as the men who live there. Pure and allocation-free; the scratch is on the ship's
+/// condition.</summary>
 public static class Casualties
 {
     /// <summary>A grid of points over a group's floor, Grid × Grid, at a man's height (or half the space's).</summary>
@@ -34,9 +36,26 @@ public static class Casualties
     public static int Part(int component) => component;
     public static int Cell(ShipClass c, int cell) => c.Components.Length + cell;
 
-    /// <summary>The men at a station now: its battle crew less those killed or out there.</summary>
+    /// <summary>The men at a station now: its battle crew less those killed or out there and those away in a party.</summary>
     public static int Men(ShipClass c, ShipCondition k, int g) =>
-        Math.Max((g < c.Components.Length ? c.Components[g].BattleCrew : c.Cells[g - c.Components.Length].BattleCrew) - k.Gone[g], 0);
+        Math.Max((g < c.Components.Length ? c.Components[g].BattleCrew : c.Cells[g - c.Components.Length].BattleCrew) - k.Gone[g] - k.Away[g], 0);
+
+    /// <summary>A party's own group (past the stations): where its walking wounded go back to.</summary>
+    public static int PartyGroup(ShipCondition k, int party) => k.Gone.Length + party;
+
+    /// <summary>Where a party's men stand at a time: its place once it's there, else where it was; none before it's first
+    /// sent (its men are still at their stations).</summary>
+    public static int PlaceOf(in RepairParty p, long now) => !p.Mustered ? -1 : p.Place >= 0 && now >= p.ArriveMs ? p.Place : p.Home;
+
+    /// <summary>Everyone in a group's place now (the pass's time, <see cref="Begin"/>): its men and the parties there.</summary>
+    public static int Here(ShipClass c, ShipCondition k, int g)
+    {
+        int n = Men(c, k, g);
+        for (int p = 0; p < k.PartyCount; p++)
+            if (PlaceOf(k.Parties[p], k.RiskMs) == g)
+                n += (int)k.Parties[p].Men;
+        return n;
+    }
 
     /// <summary>The box a group stands in.</summary>
     public static Box BoxOf(ShipClass c, int g) => g < c.Components.Length ? c.Components[g].Bounds : c.Cells[g - c.Components.Length].Box;
@@ -59,11 +78,11 @@ public static class Casualties
     /// <summary>A gunhouse proper: a turret a mount's crew works inside (a battleship's or a dual-purpose one).</summary>
     internal static bool Enclosed(ShipClass c, int mount) => c.Enclosed(mount);
 
-    /// <summary>A new hit: no group touched yet.</summary>
-    internal static void Begin(ShipCondition k)
+    /// <summary>A new hit, at a time (world ms): no group touched yet.</summary>
+    internal static void Begin(ShipCondition k, long now)
     {
         k.RiskId++;
-        k.TouchedN = 0;
+        (k.TouchedN, k.RiskMs) = (0, now);
     }
 
     /// <summary>One more independent risk on a group's men: killed with pk, a casualty (killed or wounded) with pc.</summary>
@@ -100,7 +119,7 @@ public static class Casualties
     internal static void Pieces(ShipClass c, ShipCondition k, int g, FragmentBurst b, P3 at, P3 dir, double v, double share, double mildMm,
         P3 normal, double openW, SimSettings s)
     {
-        if (Men(c, k, g) <= 0)
+        if (Here(c, k, g) <= 0)
             return;
         var (pk, pc) = PiecesRisk(BoxOf(c, g), Cover(c, g, s), b, at, dir, v, share, mildMm, normal, openW, s);
         Add(k, g, pk, pc);
@@ -177,7 +196,7 @@ public static class Casualties
     /// <summary>The shell's line from a to b through a group's space (<see cref="LaneShare"/>): the men in its lane killed.</summary>
     internal static void Lane(ShipClass c, ShipCondition k, int g, P3 a, P3 b, double calibreM, SimSettings s)
     {
-        if (Men(c, k, g) <= 0)
+        if (Here(c, k, g) <= 0)
             return;
         double share = LaneShare(BoxOf(c, g), a, b, calibreM, s);
         Add(k, g, share, share);
@@ -226,7 +245,7 @@ public static class Casualties
 
     static void Cloud(ShipClass c, ShipCondition k, int g, in SpallCloud cloud, SimSettings s)
     {
-        if (Men(c, k, g) <= 0 || !(cloud.Flakes > 0) && !(cloud.BigKg > 0))
+        if (Here(c, k, g) <= 0 || !(cloud.Flakes > 0) && !(cloud.BigKg > 0))
             return;
         var (pk, pc) = CloudRisk(BoxOf(c, g), Cover(c, g, s), cloud, s);
         Add(k, g, pk, pc);
@@ -292,35 +311,55 @@ public static class Casualties
     {
         for (int i = 0; i < k.TouchedN; i++)
         {
-            int g = k.Touched[i], n = Men(c, k, g);
-            if (n <= 0)
-                continue;
+            int g = k.Touched[i];
             double pk = 1 - Math.Exp(k.RiskK[g]), pc = Math.Max(pk, 1 - Math.Exp(k.RiskC[g]));
-            int killed = 0, wounded = 0, walking = 0;
-            for (int m = 0; m < n; m++)
+            int n = Men(c, k, g);
+            if (n > 0)
             {
-                double u = r.NextDouble();
-                if (u < pk)
-                    killed++;
-                else if (u < pc)
-                {
-                    wounded++;
-                    if (r.NextDouble() >= s.WoundedOutShare)
-                        walking++;
-                }
+                var (killed, wounded) = Roll(k, g, n, pk, pc, now, s, ref r);
+                k.Gone[g] += killed + wounded;
+                (res.Killed, res.Wounded) = (res.Killed + killed, res.Wounded + wounded);
             }
-            if (killed + wounded == 0)
-                continue;
-            k.Gone[g] += killed + wounded;
-            (k.Killed, k.Wounded, k.CrewLost) = (k.Killed + killed, k.Wounded + wounded, k.CrewLost + killed + wounded);
-            (res.Killed, res.Wounded) = (res.Killed + killed, res.Wounded + wounded);
-            if (walking > 0)
+            // a party working there (docs/battle/crew.md N1), its men as the station's
+            for (int p = 0; p < k.PartyCount; p++)
             {
-                double m0 = s.WoundedBackMin[0], m1 = s.WoundedBackMin[1];
-                k.Back(g, walking, now + (long)(60_000 * (m0 + (m1 - m0) * r.NextDouble())));
+                ref var party = ref k.Parties[p];
+                if (PlaceOf(party, now) != g || party.Men < 1)
+                    continue;
+                var (killed, wounded) = Roll(k, PartyGroup(k, p), (int)party.Men, pk, pc, now, s, ref r);
+                party.Men -= killed + wounded;
+                (res.Killed, res.Wounded) = (res.Killed + killed, res.Wounded + wounded);
             }
         }
         res.CrewLost += res.Killed + res.Wounded;
         k.TouchedN = 0;
+    }
+
+    /// <summary>A group's n men each killed, wounded or untouched (16 §4.7), into the ship's counts; its walking wounded
+    /// back to it after first aid.</summary>
+    static (int Killed, int Wounded) Roll(ShipCondition k, int g, int n, double pk, double pc, long now, SimSettings s, ref RandomStream r)
+    {
+        int killed = 0, wounded = 0, walking = 0;
+        for (int m = 0; m < n; m++)
+        {
+            double u = r.NextDouble();
+            if (u < pk)
+                killed++;
+            else if (u < pc)
+            {
+                wounded++;
+                if (r.NextDouble() >= s.WoundedOutShare)
+                    walking++;
+            }
+        }
+        if (killed + wounded == 0)
+            return (0, 0);
+        (k.Killed, k.Wounded, k.CrewLost) = (k.Killed + killed, k.Wounded + wounded, k.CrewLost + killed + wounded);
+        if (walking > 0)
+        {
+            double m0 = s.WoundedBackMin[0], m1 = s.WoundedBackMin[1];
+            k.Back(g, walking, now + (long)(60_000 * (m0 + (m1 - m0) * r.NextDouble())));
+        }
+        return (killed, wounded);
     }
 }

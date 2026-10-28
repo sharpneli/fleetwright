@@ -99,7 +99,7 @@ public static class Effects
         double calM = shell.CalibreMm / 1000, w = Math.Max(shell.FillerKg * shell.FillerRe, 0), size = Math.Cbrt(w);
         var xs = path.Crossings;
         var water = HitQuery.WaterOf(c, k.Attitude);
-        Casualties.Begin(k);
+        Casualties.Begin(k, hit.Ms);
 
         // the line of flight: what its body went into before it stopped; the men in its lane, and the disc each plate it
         // got through drives ahead of it (E6; 16 §4.3)
@@ -688,7 +688,7 @@ public static class Effects
             for (int i = 0; i < comps.Length; i++)
             {
                 ref readonly var comp = ref comps[i];
-                if (i == part || comp.BattleCrew <= 0 || (inHull ? comp.Bounds.Base >= cellBox.Top - 0.05 || !Overlaps(comp.Bounds, cellBox) : comp.Bounds.Top <= 0))
+                if (i == part || Casualties.Here(c, k, Casualties.Part(i)) <= 0 || (inHull ? comp.Bounds.Base >= cellBox.Top - 0.05 || !Overlaps(comp.Bounds, cellBox) : comp.Bounds.Top <= 0))
                     continue;
                 int m = c.MountOf(i);
                 double mild = around + PartMild(c, i, m >= 0 && c.Mounts[m].Component == i && !Casualties.Enclosed(c, m) ? 0 : Armour(c, i));

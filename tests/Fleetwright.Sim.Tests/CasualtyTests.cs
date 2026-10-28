@@ -148,7 +148,7 @@ public class CasualtyTests(ITestOutputHelper output)
         // nobody there, nobody hurt: no group touched
         var (c, k) = Ship("lion");
         int empty = Enumerable.Range(0, c.Cells.Length).First(i => c.Cells[i].BattleCrew == 0 && c.Cells[i].Room >= 0);
-        Casualties.Begin(k);
+        Casualties.Begin(k, 0);
         Casualties.Lane(c, k, Casualties.Cell(c, empty), new P3(c.Cells[empty].Box.X0, 0, c.Cells[empty].Box.Base + 1), new P3(c.Cells[empty].Box.X1, 0,
             c.Cells[empty].Box.Base + 1), 0.343, Settings);
         var res = new EffectsResult();
@@ -178,7 +178,7 @@ public class CasualtyTests(ITestOutputHelper output)
         for (int i = 0; i < 40; i++)
         {
             Array.Clear(k.Gone);
-            Casualties.Begin(k);
+            Casualties.Begin(k, 0);
             Casualties.Train(c, k, c.Mounts[m].Magazine, Settings);
             for (int j = 0; j < k.TouchedN; j++)
                 n += Casualties.Men(c, k, k.Touched[j]);
@@ -190,13 +190,13 @@ public class CasualtyTests(ITestOutputHelper output)
         output.WriteLine($"a turret's train: {100.0 * killed / n:0}% of its {n / 40} men killed, {100.0 * hurt / n:0}% hurt");
         Assert.True(killed >= 0.85 * n, $"{killed} of {n}");
 
-        Casualties.Begin(k);
+        Casualties.Begin(k, 0);
         Array.Clear(k.Gone);
         int battery = 0, bn = 0;
         for (int i = 0; i < 400; i++)
         {
             Array.Clear(k.Gone);
-            Casualties.Begin(k);
+            Casualties.Begin(k, 0);
             Casualties.Flash(k, g, false, Settings);
             var res = new EffectsResult();
             k.Returns = 0;

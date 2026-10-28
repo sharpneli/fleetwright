@@ -77,6 +77,10 @@ public struct RepairParty
     public RepairJob Job;
     public int JobAt;
     public double Done;
+    /// <summary>Where its men stand once it's first sent (docs/battle/crew.md N1: a casualty group, so the hits there take
+    /// them as anyone; before that they're at their stations): its place, the group it works in once there (-1: none yet),
+    /// and before that where it was, the group it musters in or its last place.</summary>
+    public int Home, Place;
 }
 
 /// <summary>The water on a fire (docs/battle/fire.md B3): the flow as fog would do the work (L/min), the flow thrown
@@ -150,7 +154,7 @@ public static class Fires
             if (e == BurnEvent.Flashover)
             {
                 res.Flashed++;
-                caught |= Caught(c, k, i, s, caught);
+                caught |= Caught(c, k, i, nowMs, s, caught);
             }
             else if (e == BurnEvent.Out)
             {
@@ -227,16 +231,16 @@ public static class Fires
     /// <summary>The men in the room that flashed over (B2): the room's share of the space's men killed and hurt by
     /// <see cref="SimSettings.FireFlashCaught"/>, a risk on their group drawn with the step's others (16's draw). A
     /// propellant seat's men are its flash's (16 §4.6, at the hit). Whether it added a risk.</summary>
-    static bool Caught(ShipClass c, ShipCondition k, int space, SimSettings s, bool begun)
+    static bool Caught(ShipClass c, ShipCondition k, int space, long now, SimSettings s, bool begun)
     {
         ref readonly var row = ref c.FireSpaces[space];
         if (row.Kind == FireSpaceKind.Deck || k.Fire[space].Charges > 0 || row.AreaM2 <= 0)
             return false;
         int g = row.Kind == FireSpaceKind.Cell ? Casualties.Cell(c, row.Index) : Casualties.Part(row.Index);
-        if (Casualties.Men(c, k, g) <= 0)
-            return false;
         if (!begun)
-            Casualties.Begin(k);
+            Casualties.Begin(k, now);
+        if (Casualties.Here(c, k, g) <= 0)
+            return false;
         double share = Room(row, s) / row.AreaM2;
         Casualties.Add(k, g, share * s.FireFlashCaught[0], share * s.FireFlashCaught[1]);
         return true;
@@ -713,7 +717,7 @@ public static class Fires
 
     /// <summary>A hit in a section (17 §6.3-6.4, fire_ref.py's hit): its fire main broken with the doctrine's chance (more
     /// on a small ship: fewer risers, less ship between them), a party working there stopped for a while (hoses cut, men
-    /// down) and maybe thinned, a watch hose there cut.</summary>
+    /// down; the men it loses are E6's, where it stands: docs/battle/crew.md N1), a watch hose there cut.</summary>
     public static void Hit(ShipClass c, FloodModel f, ShipCondition k, int section, long now, SimSettings s, ref RandomStream r)
     {
         k.LastHitMs = now;
@@ -730,8 +734,6 @@ public static class Fires
                 continue;   // only a party at work (one whose fire went out waits for the next plan to be freed)
             if (r.NextDouble() < doc.HoseCut)
                 party.StopMs = now + (long)(s.FireHitStopS * 1000);
-            if (r.NextDouble() < s.FireHitMenChance)
-                party.Men *= s.FireHitMenKeep;
         }
         var spaces = c.FireSpaces;
         for (int i = 0; i < spaces.Length; i++)

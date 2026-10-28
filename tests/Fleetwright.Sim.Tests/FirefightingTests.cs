@@ -84,8 +84,11 @@ public class FirefightingTests(ITestOutputHelper output)
         Assert.InRange(bb, 0.05, 0.15);   // 0.25 × (2000 / ~18,000)^0.4 ≈ 0.1
     }
 
+    /// <summary>Her parties are her repair men (docs/battle/crew.md N1: one book of men): the doctrine's share of the men
+    /// in her quarters and stores, each party to muster in one of those spaces; those sent are away from there now, the
+    /// rest still at their stations.</summary>
     [Fact]
-    public void Her_parties_come_from_her_complement_and_go_to_the_worst_fire()
+    public void Her_parties_come_from_her_repair_men_and_go_to_the_worst_fire()
     {
         var c = Class("dreadnought");
         var f = new FloodModel(c);
@@ -98,7 +101,14 @@ public class FirefightingTests(ITestOutputHelper output)
         output.WriteLine($"{k.PartyCount} parties, {men:0} men of {f.Complement:0}; sent: " +
                          string.Join(", ", Enumerable.Range(0, k.PartyCount).Select(p => $"{k.Parties[p].Target}@{k.Parties[p].ArriveMs / 1000.0:0}s")));
         Assert.InRange(k.PartyCount, Settings.FirePartiesMin, Settings.FirePartiesMax);
-        Assert.Equal(f.Complement * Doctrine("1916").PartyShare, men, 6);
+        var repair = Enumerable.Range(0, c.Components.Length + c.Cells.Length).Where(g => BattleStations.Of(c, g) == BattleStation.Repair).ToList();
+        double there = repair.Sum(g => g < c.Components.Length ? c.Components[g].BattleCrew : c.Cells[g - c.Components.Length].BattleCrew);
+        double share = Doctrine("1916").PartyShare * there / k.PartyCount;
+        Assert.All(Enumerable.Range(0, k.PartyCount), p => Assert.True(k.Parties[p].Mustered ? k.Parties[p].Men <= share + 1e-9 : Math.Abs(k.Parties[p].Men - share) < 1e-9,
+            $"party {p}: {k.Parties[p].Men} men of its share {share}"));
+        Assert.Equal(Enumerable.Range(0, k.PartyCount).Where(p => k.Parties[p].Mustered).Sum(p => k.Parties[p].Men), repair.Sum(g => k.Away[g]), 6);
+        Assert.True(Enumerable.Range(0, k.PartyCount).Count(p => !k.Parties[p].Mustered) > 0, "the parties not sent are still at their stations");
+        Assert.All(Enumerable.Range(0, k.PartyCount), p => Assert.Contains(k.Parties[p].Home, repair));
         Assert.Equal(Settings.FirePartiesAFire, Enumerable.Range(0, k.PartyCount).Count(p => k.Parties[p].Target == a));
         Assert.All(Enumerable.Range(0, k.PartyCount).Where(p => k.Parties[p].Target == a), p =>
             Assert.True(k.Parties[p].ArriveMs >= 1000 + Doctrine("1916").MusterS * 1000, "mustered first"));
@@ -111,6 +121,41 @@ public class FirefightingTests(ITestOutputHelper output)
             Fires.Step(c, f, none, 1, Settings, ref r, 1000 + t * 1000);
         Assert.Equal(0, none.FireFlow[a].Lpm);
         Assert.Equal(0, none.PartyCount);
+    }
+
+    /// <summary>A party at work is a group of men where it stands (docs/battle/crew.md N1): before it gets there it's where
+    /// it mustered; there, a hit's risks on the space take its men as the space's own, into her killed and wounded, and its
+    /// walking wounded come back to it.</summary>
+    [Fact]
+    public void A_party_at_work_is_hit_where_it_stands()
+    {
+        var c = Class("dreadnought");
+        var f = new FloodModel(c);
+        var k = Fresh(c, "1916");
+        int a = Enumerable.Range(0, c.Cells.Length).First(i => c.FireSpaces[i].Use == FireUse.Quarters && c.FireSpaces[i].AreaM2 > 30);
+        Fires.Ignite(c, k, a, 0.3, Settings);
+        var r = RandomStream.FromSeed(1);
+        Fires.Step(c, f, k, 1, Settings, ref r, 1000);
+        int p = Enumerable.Range(0, k.PartyCount).First(q => k.Parties[q].Target == a);
+        ref var party = ref k.Parties[p];
+        Assert.Equal(party.Home, Casualties.PlaceOf(party, party.ArriveMs - 1));
+        int g = Casualties.Cell(c, a);
+        Assert.Equal(g, Casualties.PlaceOf(party, party.ArriveMs));
+
+        long at = party.ArriveMs + 1000;
+        double before = party.Men, lost = k.CrewLost;
+        Casualties.Begin(k, at);
+        Assert.True(Casualties.Here(c, k, g) >= (int)before);
+        Casualties.Add(k, g, 0.2, 0.7);
+        var res = new EffectsResult();
+        Casualties.Draw(c, k, at, Settings, ref res, ref r);
+        double hit = before - party.Men;
+        output.WriteLine($"party of {before:0}: {hit:0} hit; the hit's {res.Killed} killed, {res.Wounded} wounded");
+        Assert.True(hit > 0.3 * before && hit < before, $"{hit} of {before}");
+        Assert.True(k.CrewLost - lost >= hit);
+        double after = party.Men;
+        k.Clear(at + 3_600_000);
+        Assert.True(party.Men > after, "its walking wounded back with it");
     }
 
     /// <summary>One fire lit in a ship's quarters, run on through the world: minutes until it was out (NaN: still burning

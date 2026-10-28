@@ -475,20 +475,115 @@ public static class Repairs
         k.NextPlanMs = now + (long)(s.FirePlanS * 1000);
     }
 
-    /// <summary>Her parties, once (fire_ref.py's Sim): a share of her complement, two to eight of them, spread along her.</summary>
+    /// <summary>Her parties, once (fire_ref.py's Sim): the doctrine's share of her repair men there now (docs/battle/crew.md
+    /// N1: one book of men, the battle station's in her quarters and stores), two to eight of them, spread along her, each
+    /// to muster in the repair men's space nearest its section. Their men stay at their stations until a party is first
+    /// sent (<see cref="Plan"/>: it takes those still there), so the men standing by are where they were.</summary>
     public static void Make(ShipClass c, FloodModel f, ShipCondition k, long now, SimSettings s)
     {
         if (k.PartiesMade)
             return;
         ref readonly var doc = ref k.DamageControl;
-        double men = f.Complement * doc.PartyShare;
-        int n = Math.Clamp((int)Math.Round(men / Math.Max(doc.PartyMen, 1)), s.FirePartiesMin, Math.Min(s.FirePartiesMax, ShipCondition.MaxParties));
+        int groups = c.Components.Length + c.Cells.Length, there = 0;
+        for (int g = 0; g < groups; g++)
+            if (BattleStations.Of(c, g) == BattleStation.Repair)
+                there += Casualties.Men(c, k, g);
+        int n = Math.Clamp((int)Math.Round(doc.PartyShare * there / Math.Max(doc.PartyMen, 1)), s.FirePartiesMin, Math.Min(s.FirePartiesMax, ShipCondition.MaxParties));
         for (int i = 0; i < n; i++)
+        {
+            int section = (int)((i + 0.5) * c.Sections.Length / n);
             k.Parties[i] = new RepairParty
             {
-                Men = men / n, Skill = 1, Section = (int)((i + 0.5) * c.Sections.Length / n), Target = -1, JobAt = -1,
+                Men = doc.PartyShare * there / n, Skill = 1, Section = section, Target = -1, JobAt = -1, Home = Muster(c, section), Place = -1,
             };
+        }
         (k.PartyCount, k.PartiesMade, k.NextPlanMs) = (n, true, now);
+    }
+
+    /// <summary>Men taken from a station's groups into a party (docs/battle/crew.md N1), each group giving its share of the
+    /// wanted (whole men, the remainder carried on), away from it from now: how many, and the group that gave the most.</summary>
+    static int Take(ShipClass c, ShipCondition k, BattleStation station, double want, out int most)
+    {
+        int groups = c.Components.Length + c.Cells.Length, there = 0;
+        for (int g = 0; g < groups; g++)
+            if (BattleStations.Of(c, g) == station)
+                there += Casualties.Men(c, k, g);
+        (most, int taken, int best) = (-1, 0, 0);
+        if (there <= 0)
+            return 0;
+        double share = Math.Min(want / there, 1), carry = 0;
+        for (int g = 0; g < groups; g++)
+        {
+            int men = BattleStations.Of(c, g) == station ? Casualties.Men(c, k, g) : 0;
+            if (men <= 0)
+                continue;
+            double x = share * men + carry;
+            int t = Math.Min((int)Math.Floor(x + 1e-9), men);
+            carry = x - t;
+            k.Away[g] += t;
+            taken += t;
+            if (t > best)
+                (best, most) = (t, g);
+        }
+        return taken;
+    }
+
+    /// <summary>Where a party musters: the repair men's space (a cell of the quarters or stores) nearest its section, the
+    /// fullest of those; -1 if she has none.</summary>
+    static int Muster(ShipClass c, int section)
+    {
+        int best = -1, dist = int.MaxValue, crew = 0;
+        for (int i = 0; i < c.Cells.Length; i++)
+        {
+            int g = Casualties.Cell(c, i);
+            if (c.Cells[i].BattleCrew <= 0 || BattleStations.Of(c, g) != BattleStation.Repair)
+                continue;
+            int d = Math.Abs(c.Cells[i].Section - section);
+            if (d < dist || d == dist && c.Cells[i].BattleCrew > crew)
+                (best, dist, crew) = (g, d, c.Cells[i].BattleCrew);
+        }
+        return best;
+    }
+
+    /// <summary>Where a party works at a job (docs/battle/crew.md N1): a fire's space (a cell or a part; a weather deck's
+    /// cell under it), a boundary's dry side, a cell's holes or pump, the steering room, a part or room under repair.</summary>
+    static int PlaceAt(ShipClass c, FloodModel f, ShipCondition k, RepairJob job, int at, int home)
+    {
+        int RoomCell(int room)
+        {
+            foreach (int cell in c.Links(c.Rooms[room].Cells))
+                return Casualties.Cell(c, cell);
+            return home;
+        }
+        switch (job)
+        {
+            case RepairJob.None:
+            {
+                ref readonly var row = ref c.FireSpaces[at];
+                return row.Kind switch
+                {
+                    FireSpaceKind.Cell => Casualties.Cell(c, row.Index),
+                    FireSpaceKind.Part => Casualties.Part(row.Index),
+                    _ => row.Cell >= 0 ? Casualties.Cell(c, row.Cell) : home,
+                };
+            }
+            case RepairJob.Door:
+            case RepairJob.Redog:
+            case RepairJob.Caulk:
+            case RepairJob.Shore:
+            case RepairJob.Batten:
+                return Casualties.Cell(c, Sides(c, f, k, f.Edges[at]).Lo);
+            case RepairJob.Steering:
+            {
+                int room = SteeringRoom(c).Room;
+                return room >= 0 ? RoomCell(room) : home;
+            }
+            case RepairJob.Repair:
+            case RepairJob.Restore:
+                return at < c.Components.Length ? Casualties.Part(at) : RoomCell(at - c.Components.Length);
+            default:
+                return Casualties.Cell(c, at);
+        }
     }
 
     // ------------------------------------------------------------------ the men on the spot
@@ -525,11 +620,15 @@ public static class Repairs
         if (!k.TurnedTo && k.LastHitMs > 0 && now - k.LastHitMs >= s.FireTurnToS * 1000)
         {
             k.TurnedTo = true;
+            // from the mounts' men (docs/battle/crew.md N1), standing by at the mount that gave the most
             for (int i = 0; i < doc.TurnTo && k.PartyCount < ShipCondition.MaxParties; i++)
+            {
+                int men = Take(c, k, BattleStation.Guns, Math.Max(doc.PartyMen, 2), out int from);
                 k.Parties[k.PartyCount++] = new RepairParty
                 {
-                    Men = Math.Max(doc.PartyMen, 2), Skill = s.FireTurnToSkill, Section = c.PumpSection, Target = -1, JobAt = -1,
+                    Men = men, Skill = s.FireTurnToSkill, Section = c.PumpSection, Target = -1, JobAt = -1, Home = from, Place = -1, Mustered = true,
                 };
+            }
         }
         for (int p = 0; p < k.PartyCount; p++)
         {
@@ -560,6 +659,13 @@ public static class Repairs
             if (near < 0)
                 return;
             ref var party = ref k.Parties[near];
+            // sent the first time, its men leave their stations: those still there of its share
+            if (!party.Mustered)
+                party.Men = Take(c, k, BattleStation.Repair, party.Men, out _);
+            // on the way it's where it was: its last place, else where it mustered
+            if (party.Place >= 0 && now >= party.ArriveMs)
+                party.Home = party.Place;
+            party.Place = PlaceAt(c, f, k, best.Job, best.At, party.Home);
             party.ArriveMs = now + (long)(1000 * (Math.Abs(party.Section - best.Section) * s.FireTravelS + (party.Mustered ? 0 : doc.MusterS)));
             (party.Section, party.Mustered, party.Done) = (best.Section, true, 0);
             if (best.Job == RepairJob.None)

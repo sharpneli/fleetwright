@@ -494,6 +494,10 @@ from B0's bench on.
   wall time a burning ship-hour, ~11 µs a 1 s step for a ship with tens of spaces alight.
 - **The AI and the matchup:** they read fire through what's seen (`SeenFlags.Burning`, now only while a fire shows:
   B2), and the matchup's toughness takes `MatchupSeenBurningShare` for it; nothing more for now.
+- **Re-run for crew.md N1 (2026-10-28, one book of men):** the parties are now the repair men, hit by E6 where they
+  stand, and the flat thinning by a hit (`FireHitMenChance`, `FireHitMenKeep`) is gone. Suvorov ablaze 5 → 20% of runs
+  (median 80 min), killed and wounded 106 → 162; Orel's 111 → 164; Santiago unprepared ablaze 70 → 65%, killed and
+  wounded 239 → 186; the rest within a run or two of the table above.
 - **Open (for the final balance pass, or a later fire step):**
   - Suvorov and the Yalu's unprepared cruiser don't burn as the record has them: small superstructure fire spaces
     (Borodino's blocks median 8 m²), armour keeping bursts out of the big spaces, and parties only hit in their own

@@ -366,7 +366,7 @@ public static partial class Magazines
     static void Aftermath(ShipClass c, ShipCondition k, int room, ReadOnlySpan<int> lit, ReadOnlySpan<bool> vented, int gave, ref RaceResult res,
         SimSettings s, long now, ref RandomStream r)
     {
-        Casualties.Begin(k);
+        Casualties.Begin(k, now);
         foreach (int rm in lit)
         {
             k.Worsen(c.RoomNode(rm), PartState.Destroyed);
