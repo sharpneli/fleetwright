@@ -58,13 +58,24 @@ public class ShipClassRegistryTests
     public void Every_class_is_compiled_before_any_art_and_the_preferred_art_goes_first()
     {
         // docs/map-ui/launch.md L0: the world needs only the classes, so their builds go first; the player's art first
+        // the one thread held in a first drawing while the three are asked for: else it may build the first and start
+        // drawing it before the others are queued, and then wait on the gate while the test waits on their builds
         var drawn = new List<int>();
         bool allReadyAtFirstDraw = false;
+        int calls = 0;
+        using var holding = new ManualResetEventSlim(false);
+        using var release = new ManualResetEventSlim(false);
         using var gate = new ManualResetEventSlim(false);
         using var r = new ShipClassRegistry(1);
         int[] ids = [];
         r.Built = (id, _, _) =>
         {
+            if (Interlocked.Increment(ref calls) == 1)
+            {
+                holding.Set();
+                release.Wait();
+                return;
+            }
             gate.Wait();
             lock (drawn)
             {
@@ -73,8 +84,11 @@ public class ShipClassRegistryTests
                 drawn.Add(id);
             }
         };
+        r.Get(r.Request(Load("mikasa")));   // through the registry, so its builder isn't starved meanwhile
+        holding.Wait();
         ids = [.. new[] { "destroyer", "light_cruiser", "pt_boat" }.Select(n => r.Request(Load(n)))];
         r.Prefer(ids[2]);
+        release.Set();
         foreach (int id in ids)
             Assert.NotNull(r.Get(id));   // ready while the art waits
         Assert.DoesNotContain(ids, r.IsDrawn);
@@ -83,6 +97,26 @@ public class ShipClassRegistryTests
         Assert.True(allReadyAtFirstDraw);
         Assert.Equal([ids[2], ids[0], ids[1]], drawn);
         Assert.All(ids, id => Assert.True(r.IsDrawn(id)));
+    }
+
+    [Fact]
+    public void The_builders_run_at_normal_only_while_a_thread_waits_on_them()
+    {
+        // below normal beside a world, but a waiter at Normal mustn't wait on threads that other work starves (the Sim
+        // suite's hangs at 0% CPU, 2026-10-28: a cold build ran only on the scheduler's starvation boosts)
+        var seen = ThreadPriority.Lowest;
+        using var r = new ShipClassRegistry(1);
+        r.Built = (_, _, _) =>
+        {
+            // the waiter may come in only after the build: give it time
+            SpinWait.SpinUntil(() => Thread.CurrentThread.Priority == ThreadPriority.Normal, 10_000);
+            seen = Thread.CurrentThread.Priority;
+        };
+        Assert.Equal(ThreadPriority.BelowNormal, r.Priority);
+        r.Request(Load("pt_boat"));
+        r.WaitAll();
+        Assert.Equal(ThreadPriority.Normal, seen);
+        Assert.Equal(ThreadPriority.BelowNormal, r.Priority);
     }
 
     [Fact]

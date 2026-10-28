@@ -11,12 +11,22 @@ Hunted 2026-10-24: every flaky entry below is closed. The check was seven full D
 together, plus one full Debug run of `Fleetwright.Sim.Tests`. Runs 1-4 had one failure in all, the achieved speed (below);
 runs 5-7, after its fix, and the Debug run had none.
 
-- [ ] **The Sim suite hangs at 0% CPU now and then** (2026-10-28, twice): `dotnet test tests/Fleetwright.Sim.Tests -c
-  DevRelease` stopped printing after `ShellTestTests.No_design_leaks [SKIP]` (18-31 s in) with testhost and vstest idle,
-  both times while another heavy job ran beside it (a CLI build; the four history benches). A deadlock, likely timing:
-  alone the suite passes every time. The workers' job system (`Workers.For`) or a test waiting on it is the first
-  suspect. Run the suite with `--blame-hang --blame-hang-timeout 3m --blame-hang-dump-type mini` so the next hang names
-  its test and leaves a dump; don't run benches beside it meanwhile.
+- [x] **The Sim suite hung at 0% CPU now and then** (2026-10-28, twice, beside a CLI build and the history benches).
+  Fixed 2026-10-28, reproduced first with 32 busy loops beside the suite and `--blame-hang` dumps. Two causes, both in
+  the class registry, not in the workers' job system (`Workers.cs` read through: generations keep a late worker off a
+  new dispatch's chunks, sleep and wake are fenced both sides, a missed wake only leaves the chunks to the dispatching
+  thread, and its wait spins, so it can't sit at 0%):
+  1. A test's own deadlock. `ShipClassRegistryTests.Every_class_is_compiled_before_any_art...` ran one builder with a
+     drawing hook held on a gate. When the builder finished the first design before the test asked for the second, it
+     started drawing and waited on the gate, while the test waited in `Get` on builds only that thread could run. Now a
+     first, held drawing keeps the builder busy until all three are asked for.
+  2. A priority inversion. The builders run below normal; with other work filling every core they ran only on the
+     scheduler's starvation boosts, and a test (or the world) waiting in `Get` waited minutes on a cold build. Now the
+     builders run at Normal while any thread waits on them (`Get`, `WaitAll`, and `Dispose` to the end), checked by
+     `The_builders_run_at_normal_only_while_a_thread_waits_on_them`.
+- [ ] A `World` given no registry makes its own (`new ShipClassRegistry(1)`, World.cs) and never disposes it: once a
+  design is requested, its builder threads (up to 8) idle for the life of the process. A full Sim run left 143 of them
+  (seen in the hang dumps, 2026-10-28). Harmless (background threads), but a leak.
 - [x] One `Fleetwright.Tests` test failed once (173 of 174) on 2026-10-22, right after a game capture, its name hidden
   by `-v q`. Likely `SmokeFieldTwinTests` (smoke Z5, added the day before): it makes a GPU device of its own but wasn't
   in the `Gpu` collection ("one GPU device at a time"), so it ran beside `DesignWorkerTests`' bakers. Put in the

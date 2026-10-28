@@ -13,7 +13,8 @@ namespace Fleetwright.Sim.Ships;
 /// (<see cref="IsDrawn"/>), the preferred classes' first (<see cref="Prefer"/>). A registry holds no Ship
 /// afterwards. A class may be asked for without its art (the launch screen's design picker: its candidates' figures,
 /// docs/map-ui/launch.md L3); asked for again with it, it's built again for the drawing.</para>
-/// <para>The threads: a few beside a running world, more while none runs (<see cref="Idle"/>).</para>
+/// <para>The threads: a few beside a running world, more while none runs (<see cref="Idle"/>); below normal, but at
+/// Normal while a thread waits on them (<see cref="Get"/>, <see cref="WaitAll"/>).</para>
 /// <para>References are counted (<see cref="Acquire"/>, <see cref="Release"/>): what reaches zero may be freed
 /// (<see cref="Unused"/>). Thread-safe throughout; when a build finishes can never change what a world does, since
 /// a world that needs a class waits for it.</para></summary>
@@ -54,6 +55,7 @@ public sealed class ShipClassRegistry : IDisposable
     volatile int active;   // the threads that take work: the first `active` of them
     bool started;
     volatile bool closing;
+    int waiters;   // threads blocked on a build or a drawing (under the gate): the builders run at Normal meanwhile
 
     /// <summary>Called on a building thread with each design's id, its built ship and its class (null if the compile
     /// failed), before the ship is let go, after every build queued before it. Set it before the first request.</summary>
@@ -95,6 +97,9 @@ public sealed class ShipClassRegistry : IDisposable
 
     /// <summary>The building threads taking work now.</summary>
     public int Threads => active;
+
+    /// <summary>The builders' priority now (tests): below normal, Normal while a thread waits on them.</summary>
+    internal ThreadPriority Priority => workers[0].Priority;
 
     /// <summary>Asks for a design's class: its id, now; the build runs in the background unless the design was asked
     /// for before. Without <paramref name="art"/> its art isn't drawn (it counts as drawn: there's nothing to wait
@@ -206,8 +211,39 @@ public sealed class ShipClassRegistry : IDisposable
     public ShipClass? Get(int id)
     {
         var e = EntryOf(id);
-        e.Done.Wait();
+        Wait(e.Done);
         return e.Class;
+    }
+
+    /// <summary>Blocks on a build or a drawing with the builders at Normal: below normal, beside other work filling
+    /// every core, they ran only on the scheduler's starvation boosts, and a waiter at Normal waited minutes on them (a
+    /// priority inversion: the Sim suite's "hangs" at 0% CPU, docs/battle/bugs.md).</summary>
+    void Wait(ManualResetEventSlim done)
+    {
+        if (done.IsSet)
+            return;
+        lock (gate)
+            if (waiters++ == 0)
+                SetPriority(ThreadPriority.Normal);
+        try
+        {
+            done.Wait();
+        }
+        finally
+        {
+            lock (gate)
+                if (--waiters == 0)
+                    SetPriority(ThreadPriority.BelowNormal);
+        }
+    }
+
+    /// <summary>The builders' priority (under the gate): only while they run, since a thread may end once closing.</summary>
+    void SetPriority(ThreadPriority p)
+    {
+        if (!started || closing)
+            return;
+        foreach (var t in workers)
+            t.Priority = p;
     }
 
     /// <summary>The class if it's ready, else null, without waiting.</summary>
@@ -231,7 +267,7 @@ public sealed class ShipClassRegistry : IDisposable
     {
         int n = Count;
         for (int i = 0; i < n; i++)
-            EntryOf(i).Drawn.Wait();
+            Wait(EntryOf(i).Drawn);
     }
 
     public void Acquire(int id)
@@ -422,6 +458,7 @@ public sealed class ShipClassRegistry : IDisposable
     {
         lock (gate)
         {
+            SetPriority(ThreadPriority.Normal);   // waited on to the end: their last jobs and their exits
             closing = true;
             Monitor.PulseAll(gate);
         }
