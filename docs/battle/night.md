@@ -976,11 +976,12 @@ beam's target isn't in the snapshot; the wedge shows it); the challenge lamp isn
 
 ### Q10 The look
 
-**Drafted 2026-10-29 in `docs/visuals/night-lights.md`** (Q10a-Q10f; five questions for the user at its end): the
+**Agreed 2026-10-29 in `docs/visuals/night-lights.md`** (Q10a-Q10f; decisions 1-5 there): the
 nights dark again (one "night eye" from `NightLight.At` replaces the amplified night light), the night's own light
 desaturated while lights keep their colour, flares and beams in the shared light block (a high point light, a spot
 light), beams scattered in the haze and smoke, star shell with its halo and trail through the effects camera, the
-moon under the cloud, funnel glow and challenge lamps. Placeholders (a line for a beam, a disc for a flare) until it.
+moon under the cloud, funnel glow and challenge lamps, night ticks, phosphorescence (the look now, the sim's cue
+later: a sighting cue for a glowing bow wave and wake on a scenario's `phosphorescence`). Placeholders (a line for a beam, a disc for a flare) until it.
 
 ### Q11 The coarse tier
 

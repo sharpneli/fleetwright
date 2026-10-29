@@ -1,4 +1,4 @@
-# The night in the world view (night.md Q10; plan drafted 2026-10-29)
+# The night in the world view (night.md Q10; plan agreed 2026-10-29)
 
 The look of a night action from close in: the dark itself, searchlight beams, star shell, the moon on the water, and
 the small lights that make a night fight feel like one. The **world view** only, as the other visuals plans: what it
@@ -72,9 +72,11 @@ shrink.
   see no colour; the film convention reads it as blue-grey). **Artificial light keeps its colour**: in a beam or under a
   flare the grey hull is grey, the fire orange, the foam white, the rest of the world blue-black. A per-light split in
   the shaders the lighting already has (the ambient and moon terms vs the point lights), no pass of its own.
-- **Readability is the HUD's job, not the light's.** On a moonless night an unlit ship is a faint dark shape against a
-  black sea at close zoom, as it was. The symbols, the selection and the marks already say where the player's ships
-  are; the light doesn't have to.
+- **Readability is the HUD's job, not the light's** (decision 1). On a moonless night an unlit ship is a faint dark
+  shape against a black sea at close zoom. So the world view gets **night ticks**: four small corner ticks about each
+  ship the player knows of (his own, and the contacts as the picture holds them, at the contact's place, never the
+  truth), in the side's colour, a few pixels whatever the zoom, fading in as the night eye's level falls (none by day,
+  full on a moonless night). Table marks, not light: they don't light anything and the haze doesn't take them.
 
 ### 2. Lights in the block: flares as high point lights, beams as spot lights
 
@@ -151,9 +153,12 @@ drifting with the wind: all in the sim (`StarShellSystem`, closed form in the ag
   challenger's mast, from `ChallengeSystem`. Needs the challenge in the snapshot (the Q9 open item "the challenge lamp
   isn't marked").
 - **Fires and flashes in the haze**: the halo above (fires already light the sea and ships).
-- **Not now: phosphorescence** (a glowing bow wave, wake and torpedo track on nights the sea glows). It's a sighting
-  cue the sim doesn't have; drawn without it, the look would say more than the sim knows. With the sim's scenario
-  flag later.
+- **Phosphorescence** (decision 5): a glowing bow wave, wake and torpedo track on nights the sea glows, blue-green in
+  the fresh foam and turbulence (the wake target's foam, already there), fading as it settles. A weather field of the
+  scenario's (`phosphorescence`, 0 to 1; none by default) the look reads now; the sim's sighting cue from it comes later
+  (night.md, open after Q10). **An approved exception** to looks never saying more than the sim knows: until the cue
+  is in, a glowing wake shows the player what the lookouts don't weigh. Only for what the world view draws anyway
+  (own ships, contacts, torpedoes already shown), so it shows no ship the player can't see.
 
 ## Steps
 
@@ -161,7 +166,7 @@ drifting with the wind: all in the sim (`StarShellSystem`, closed form in the ag
 −6° and −12°, at 0.3, 1 and 3 m/px; `-screenshot`, median 8-bit RGB). The night eye: one curve from `NightLight.At`'s
 illuminance (under cloud) to the display's white deck, read by `ShipLights`, `SeaView`'s night light and the haze; the
 amplification removed; the flashes' L_bg on the same eye; the Purkinje split (night light desaturated and cool, lights
-in colour). The table/world hand-over measured. Captures side by side, before and after.
+in colour); the night ticks. The table/world hand-over measured (the table may stay brighter: decision 3). Captures side by side, before and after.
 
 **Q10b Lights in the block.** The night's pool (flares as point lights, beams as spot lights) in `LightUniforms` and
 every shader that reads the flashes; the sea's body lit by the night pool; the per-ship shadow direction from the
@@ -176,7 +181,7 @@ the lamp's point, the target's shadow in the beam, the iris in time. The world v
 point-light halo, also on for fires and flashes), the trail. The world view's placeholder disc goes.
 
 **Q10e The moon and the small lights.** The cloud on the moon, the moon path checked; funnel glow and challenge lamps
-(their cues into the snapshot).
+(their cues into the snapshot); phosphorescence (the weather field, the foam's glow).
 
 **Q10f Cost and tuning.** `-gputime` at the night scenarios (Dover 1917, Jutland's night, Tsushima, Åland's summer
 night) with every light on; the gains by the user's eye from side-by-side captures.
@@ -188,15 +193,11 @@ loops 8 more lights (the flashes' 16 today). The beam and halo terms are closed 
 the smoke field's τ under a beam. No new pass, no new target. Nothing allocates per frame; nothing depends on the
 clock's speed (the iris, sweep, fall and drift are the sim's time).
 
-## For the user (proposed; open until agreed)
+## Decided (the user, 2026-10-29)
 
-1. **How dark.** The night eye's table above: a moonless night near black (an unlit ship a faint shape at close zoom),
-   a full moon a cool grey-blue world with moon shadows, every artificial light far brighter than either. Readability
-   from the HUD's marks, not from light. Or keep a small floor for the ships?
-2. **The night's colour.** Desaturate the night's own light toward blue-grey while lights keep their colour (the
-   Purkinje split)?
-3. **The table at night** stays the chart's navy, so the zoom's hand-over darkens through the fade; or darken the
-   chart's night to meet it?
-4. **Flares up the screen** through the effects camera (300 m up shows 300 m north of the pool, `Effects.PitchDeg`
-   45°), as the splashes and the smoke field; or drawn over their ground point?
-5. **Phosphorescence** waits for the sim's cue (a scenario flag), as above?
+1. **Near black**, with **night ticks** in the world view to show where the ships are (above, "Readability").
+2. **The Purkinje split**: the night's own light desaturated and cool, artificial lights in colour.
+3. **The table may stay brighter** than the world at night: it's for decisions, not mood. The hand-over darkens
+   through the fade.
+4. **Flares through the effects camera at 45°** for now (`Effects.PitchDeg`).
+5. **Phosphorescence now**, as a look on a scenario weather field; the sim's cue later (an approved exception, above).
