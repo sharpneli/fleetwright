@@ -78,10 +78,19 @@ static class ShellEdits
     public static Design SetFamily(Design d, bool main, int k, string family)
     {
         double cal = List(d, main)![k].CalibreMm ?? 0;
-        var shells = Loadout(d, main, k).Select(e =>
+        string KindOf(ShellEntryInput e) => TemplateOf(e.Ammo)?.Value.Kind ?? d.Ammunition?.GetValueOrDefault(e.Ammo ?? "")?.Kind ?? "ap";
+        // star shell to the family's own, or gone with its share to the rest where the family had none (docs/battle/night.md Q5)
+        var loadout = Loadout(d, main, k);
+        var kept = loadout.Where(e => KindOf(e) != "star" || BlockOf(family, "star", cal) is not null).ToList();
+        double left = kept.Sum(e => e.Share ?? 0);
+        if (kept.Count == 0)
+            kept = loadout;
+        else if (kept.Count < loadout.Count && left > 0)
+            kept = [.. kept.Select(e => e with { Share = (e.Share ?? 0) / left })];
+        var shells = kept.Select(e =>
         {
-            string kind = TemplateOf(e.Ammo)?.Value.Kind ?? d.Ammunition?.GetValueOrDefault(e.Ammo ?? "")?.Kind ?? "ap";
-            var t = BlockOf(family, kind, cal) ?? BlockOf(family, "common", cal) ?? BlockOf(family, "ap", cal);
+            string kind = KindOf(e);
+            var t = kind == "star" ? BlockOf(family, "star", cal) : BlockOf(family, kind, cal) ?? BlockOf(family, "common", cal) ?? BlockOf(family, "ap", cal);
             return t is null ? e : e with { Ammo = t.Name };
         }).ToList();
         return With(d, main, k, Merge(shells));

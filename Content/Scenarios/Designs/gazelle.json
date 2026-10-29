@@ -1,5 +1,5 @@
 {
- "version": 14,
+ "version": 15,
  "id": "gazelle",
  "name": "Gazelle-like (1900)",
  "type": "CL",
@@ -43,11 +43,15 @@
    "shells": [
     {
      "ammo": "DE 1911 Psgr L/3,4 (TNT)",
-     "share": 0.7
+     "share": 0.665
     },
     {
      "ammo": "DE 1911 Spgr Kz (TNT)",
-     "share": 0.3
+     "share": 0.285
+    },
+    {
+     "ammo": "DE 1911 Leuchtgeschoss",
+     "share": 0.05
     }
    ],
    "gun": "Great War, double-base, brass-cased",
@@ -66,11 +70,15 @@
    "shells": [
     {
      "ammo": "DE 1911 Psgr L/3,4 (TNT)",
-     "share": 0.3
+     "share": 0.285
     },
     {
      "ammo": "DE 1911 Spgr Kz (TNT)",
-     "share": 0.7
+     "share": 0.665
+    },
+    {
+     "ammo": "DE 1911 Leuchtgeschoss",
+     "share": 0.05
     }
    ],
    "gun": "Great War, double-base, brass-cased",
@@ -330,6 +338,55 @@
     "blind": 0.05,
     "water_ms": 0.5,
     "water_fires": 1
+   }
+  },
+  "DE 1911 Leuchtgeschoss": {
+   "kind": "star",
+   "mass_k_kg_m3": 13010,
+   "nose_crh": 1.5,
+   "form_factor": 1.6,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.02,
+    "body": 0.75,
+    "explosive": "Black powder",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "time",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0.015,
+    "blind": 0.15,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "star": {
+    "candle_share": 0.15,
+    "cd_per_kg": 30000,
+    "burn_s": 25,
+    "fall_ms": 6
    }
   }
  },

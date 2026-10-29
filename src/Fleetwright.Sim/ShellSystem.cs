@@ -181,6 +181,8 @@ public sealed class ShellSystem : IWorldSystem
 
     void FireBattery(World world, int slot, ShipClass cls, int battery, Vec3d target, ShellKind? kind)
     {
+        if (kind == ShellKind.Star)
+            return;   // star shell bursts in the air by its time fuze: the star shell system's (docs/battle/night.md Q5)
         var ship = ships.Store[slot];
         ref readonly var b = ref cls.Batteries[battery];
         var frame = ship.Frame;

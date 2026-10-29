@@ -387,6 +387,23 @@ public sealed record SimSettings
     public double SearchlightOpenShare { get; init; } = 0.9;
     public double SearchlightDouseShare { get; init; } = 1.2;
 
+    /// <summary>Star shell (docs/battle/night.md Q5) [EST, every number until the research]. An illuminating mount bursts
+    /// its shells <see cref="StarBurstM"/> over a point <see cref="StarBeyondM"/> beyond its target (so she stands dark
+    /// against the lit sea for the firer), laid by sight with <see cref="StarDispersionMil"/> of error each way on top of
+    /// its fuze's own; it fires the next to burst as the last has <see cref="StarOverlapS"/> left to burn, looking every
+    /// <see cref="StarCheckMs"/>. The sea under a flare shines back at <see cref="StarSeaReflectance"/> of its light (the
+    /// diffuse and the flare's glitter path together) behind a ship between it and the eye.</summary>
+    public double StarBurstM { get; init; } = 300;
+    public double StarBeyondM { get; init; } = 600;
+    public double StarDispersionMil { get; init; } = 2;
+    public double StarOverlapS { get; init; } = 3;
+    public int StarCheckMs { get; init; } = 1000;
+    public double StarSeaReflectance { get; init; } = 0.1;
+
+    /// <summary>A time fuze's longest setting, s [EST: the Great War's mechanical and powder-train fuzes]: no star shell
+    /// bursts later, which bounds its reach.</summary>
+    public double StarFuzeMaxS { get; init; } = 25;
+
     /// <summary>A moon low enough silhouettes a ship toward it as the low sun does, as strongly as its path on the sea
     /// outshines the sky (<see cref="NightMoonPathShare"/>), fading as it climbs to this elevation, degrees [EST].</summary>
     public double SightSilhouetteMoonHighDeg { get; init; } = 40;

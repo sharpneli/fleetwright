@@ -12,7 +12,7 @@ namespace Fleetwright.Shipgen;
 public static class DesignFormat
 {
     /// <summary>The version this build writes.</summary>
-    public const int Current = 14;
+    public const int Current = 15;
 
     /// <summary>Steps[v] upgrades a version v design to v + 1, adding what it couldn't tell to the warnings.</summary>
     static readonly Action<JsonObject, List<string>>[] Steps =
@@ -31,7 +31,39 @@ public static class DesignFormat
         (d, _) => Housing(d),          // 11 → 12: how the guns are housed (docs/battle/magazines.md V1)
         (d, _) => Packaging(d),        // 12 → 13: how the charges are packed (docs/battle/magazines.md V3)
         Searchlights,                  // 13 → 14: the searchlights the design's (docs/battle/night.md Q3)
+        (d, _) => StarShell(d),        // 14 → 15: star shell in the light guns' magazines (docs/battle/night.md Q5)
     ];
+
+    /// <summary>14 → 15: star shell (docs/battle/night.md Q5) is a fourth kind. A light gun's battery (under
+    /// <see cref="ShellTemplates.StarUnderMm"/>) whose shells are a family that had star shell (its first shell a
+    /// template's, <see cref="ShellTemplates.StarOf"/>) gets <see cref="ShellTemplates.StarShare"/> of it, its others
+    /// scaled to make room, the block copied into the ammunition table. A battery giving no shells (the default family's)
+    /// gets none, as does a family without star shell (the British before 1917).</summary>
+    static void StarShell(JsonObject d)
+    {
+        if (d["ammunition"] is not JsonObject table)
+            return;
+        foreach (var key in (ReadOnlySpan<string>)["main", "secondary"])
+        {
+            JsonNode?[] batteries = d[key] switch { JsonArray a => [.. a], JsonObject o => [o], _ => [] };
+            foreach (var b in batteries)
+            {
+                if (b is not JsonObject bo || bo["calibre_mm"] is not JsonValue c || !c.TryGetValue(out double cal) || cal >= ShellTemplates.StarUnderMm ||
+                    bo["shells"] is not JsonArray shells || shells.Count == 0)
+                    continue;
+                string? first = shells[0]?["ammo"] is JsonValue f && f.TryGetValue(out string? fs) ? fs : null;
+                if (first is null || ShellTemplates.Get(first) is not { } t || ShellTemplates.StarOf(t.Group) is not { } star ||
+                    shells.Any(e => e?["ammo"] is JsonValue a && a.TryGetValue(out string? n) && ShellTemplates.Get(n)?.Value.Kind == "star"))
+                    continue;
+                foreach (var e in shells)
+                    if (e is JsonObject eo && eo["share"] is JsonValue sv && sv.TryGetValue(out double share))
+                        eo["share"] = Math.Round(share * (1 - ShellTemplates.StarShare), 6);
+                shells.Add((JsonNode)new JsonObject { ["ammo"] = star.Name, ["share"] = ShellTemplates.StarShare });
+                if (!table.ContainsKey(star.Name))
+                    table[star.Name] = JsonSerializer.SerializeToNode(star.Value, ShipgenJson.Default.AmmoInput);
+            }
+        }
+    }
 
     /// <summary>13 → 14: searchlights were the drawing's clutter; now they're the design's (SearchlightTemplates), sited by
     /// shipgen. A design without a block gets its navy's (look.navy) in its plant's year, else the Great War's, with a

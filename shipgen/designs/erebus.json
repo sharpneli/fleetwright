@@ -1,4 +1,4 @@
-{"version": 14, "id": "erebus", "name": "Erebus-like monitor (1916)", "look": {"navy": "portsmouth", "era": "great_war"}, "type": "M",
+{"version": 15, "id": "erebus", "name": "Erebus-like monitor (1916)", "look": {"navy": "portsmouth", "era": "great_war"}, "type": "M",
  "hull": {"block_coefficient": 0.68, "construction": {"name": "Mild steel hull, high-tensile strength deck, riveted", "yield_mpa": 290, "join_factor": 1.1, "standard": 1.0, "shell": "riveted", "internals": "riveted"}, "plating": {"shell_mm": 0, "material": "steel", "deck_wood_mm": 50}, "freeboard": 0.7, "raised": [{"from": "bow", "to": "bridge", "decks": 1}]},
  "speed_kn": 12,
  "range_nm": 2500,

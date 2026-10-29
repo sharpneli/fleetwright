@@ -134,10 +134,12 @@ plate, full detonation) is the explosive's (`explosive-templates.md`).
 |---|---|---|---|---|---|---|---|---|
 | DE 1911 Psgr L/3,4 (TNT) | ap | 0.52 | 3 / 1.50 | hard2 8% | 20°, 0.6; 0.95 | 2.7% TNT, basic | base 0.025 s, 0.05 cal (×0.45), two, ±50%, 15% blind | 1.25/1 |
 | DE 1911 Spgr L/3,8 Bdz (TNT) | common | 0.52 | 3 / 1.50 | none | 10°, 0.33; 0.90 | 6.1% TNT, basic | base 0.025 s, 0.05 cal (×0.45), two, ±50%, 15% blind | 1/1 |
+| DE 1911 Leuchtgeschoss (light) | star | 0.47 | 1.5 / 1.60 | none | 0°, 0.2; 1.00 | 2% Black powder, basic | base 0 s, 0 cal (×1), single, ±2%, 15% blind | 1/1 |
 | DE 1911 Spgr Kz (TNT) | he | 0.52 | 3 / 1.50 | none | 0°, 0.2; 1.00 | 6.6% TNT, basic | nose | 1/1 |
 
 - **DE 1911 Psgr L/3,4 (TNT):** 30.5 cm Psgr. L/3,4 405 kg (W/D³ 0.52), Krupp Type 2 cap (share [EST]), 10.8 kg TNT, Bdz ~0.025 s nominal: at most half came near it, many duds.
 - **DE 1911 Spgr L/3,8 Bdz (TNT):** 30.5 cm Spgr. L/3,8 Bdz 405 kg, 24.8 kg TNT: base-fuzed, bursts 2-6 m into unarmoured structure.
+- **DE 1911 Leuchtgeschoss:** The German star shell of the 8.8, 10.5 and 15 cm guns, in service by 1914 and used at Jutland's night (the 4th Flotilla lit by it). All [EST] until the research: a candle 15% of the shell, 3·10⁴ cd a kg, 25 s under its parachute at 6 m/s, the time fuze 1.5% out, 15% duds.
 - **DE 1911 Spgr Kz (TNT):** Nose-fuzed Sprenggranate (the 15 cm's 45.3 kg, 3.0 kg TNT). German light shells ran 0.49-0.54, so the family's blocks serve every gun.
 
 ## FR 1910
@@ -185,9 +187,11 @@ plate, full detonation) is the explosive's (`explosive-templates.md`).
 | Template | Kind | W/D³ | crh / i | Cap | Body | Filler | Fuze | Steel |
 |---|---|---|---|---|---|---|---|---|
 | US 1921 AP Mk 3 (Explosive D) | ap | 0.52 | 4 / 1.15 | soft 6% | 15°, 0.5; 0.95 | 2.7% Explosive D, basic | base 0.003 s, 0.07 cal (×0.45), single, ±10%, 5% blind | 1.25/1 |
+| US 1921 star shell (light) | star | 0.46 | 1.5 / 1.60 | none | 0°, 0.2; 1.00 | 2% Black powder, basic | base 0 s, 0 cal (×1), single, ±1%, 10% blind | 1/1 |
 | US 1921 HC (Explosive D) | he | 0.46 | 4 / 1.15 | none | 0°, 0.2; 1.00 | 7% Explosive D, basic | nose | 1/1 |
 
 - **US 1921 AP Mk 3 (Explosive D):** 16"/45 Mk 3 2,110 lb (W/D³ 0.52), 57.5 lb Explosive D (2.7%), non-delay until the late 1920s.
+- **US 1921 star shell:** The 1920s' candle: 18% of the shell, 5e4 cd a kg, 30 s at 6 m/s, the fuze 1% out, 10% duds [EST].
 - **US 1921 HC (Explosive D):** [EST] from the later HC.
 
 ## RN 1927
@@ -195,11 +199,13 @@ plate, full detonation) is the explosive's (`explosive-templates.md`).
 | Template | Kind | W/D³ | crh / i | Cap | Body | Filler | Fuze | Steel |
 |---|---|---|---|---|---|---|---|---|
 | RN 1927 APC (Shellite) | ap | 0.50 | 4 / 1.15 | hard 11.6% | 20°, 0.67; 0.96 | 2.4% Shellite, basic | base 0.025 s, 0.07 cal (×0.45), single, ±10%, 5% blind | 1.25/1 |
+| RN 1927 star shell (light) | star | 0.47 | 1.5 / 1.60 | none | 0°, 0.2; 1.00 | 2% Black powder, basic | base 0 s, 0 cal (×1), single, ±1%, 10% blind | 1/1 |
 | RN 1927 HE (TNT) | he | 0.50 | 4 / 1.15 | none | 0°, 0.2; 1.00 | 7% TNT, basic | nose | 1/1 |
 | RN 1927 light SAP (TNT/wax) (light) | common | 0.47 | 4 / 1.15 | none | 10°, 0.33; 0.90 | 3.3% TNT/wax, basic | base 0.01 s, 0.07 cal (×0.45), single, ±10%, 5% blind | 1/1 |
 | RN 1927 light HE (TNT) (light) | he | 0.47 | 4 / 1.15 | none | 0°, 0.2; 1.00 | 6% TNT, basic | nose | 1/1 |
 
 - **RN 1927 APC (Shellite):** Greenboy practice (hard cap 11.6%, Shellite 2.4%, No. 16D 0.025 s) at the light W/D³ of Nelson's 16" (2,048 lb, 0.50) and the 8" (256 lb, 0.50). CE booster only from the late 1920s.
+- **RN 1927 star shell:** The 1920s' candle: 18% of the shell, 5e4 cd a kg, 30 s at 6 m/s, the fuze 1% out, 10% duds [EST].
 - **RN 1927 HE (TNT):** [EST].
 - **RN 1927 light SAP (TNT/wax):** 6" CPBC 100 lb (W/D³ 0.47), TNT/beeswax. Filler [EST].
 - **RN 1927 light HE (TNT):** [EST].
@@ -221,11 +227,13 @@ plate, full detonation) is the explosive's (`explosive-templates.md`).
 | Template | Kind | W/D³ | crh / i | Cap | Body | Filler | Fuze | Steel |
 |---|---|---|---|---|---|---|---|---|
 | JP 1925 APC (TNT/wax) | ap | 0.54 | 4 / 1.15 | hard 9% | 20°, 0.6; 0.95 | 2.5% TNT/wax, basic | base 0.03 s, 0.05 cal (×0.45), two, ±10%, 10% blind | 1.25/1 |
+| JP 1925 star shell (light) | star | 0.47 | 1.5 / 1.60 | none | 0°, 0.2; 1.00 | 2% Black powder, basic | base 0 s, 0 cal (×1), single, ±1%, 10% blind | 1/1 |
 | JP 1925 HE (TNT) | he | 0.50 | 4 / 1.15 | none | 0°, 0.2; 1.00 | 6% TNT, basic | nose | 1/1 |
 | JP 1925 light common (TNT/wax) (light) | common | 0.43 | 4 / 1.15 | none | 10°, 0.33; 0.90 | 3% TNT/wax, basic | base 0.01 s, 0.07 cal (×0.45), single, ±10%, 5% blind | 1/1 |
 | JP 1925 light HE (TNT) (light) | he | 0.43 | 4 / 1.15 | none | 0°, 0.2; 1.00 | 8% TNT, basic | nose | 1/1 |
 
 - **JP 1925 APC (TNT/wax):** APC Model 1925 on the German pattern (wax-TNT, buffered cavity, 1922): 41 cm 1,020 kg (W/D³ 0.54). Still prematures and low-order bursts. Cap and filler [EST]; delay 0.025-0.035 (Okun).
+- **JP 1925 star shell:** The 1920s' candle: 18% of the shell, 5e4 cd a kg, 30 s at 6 m/s, the fuze 1% out, 10% duds [EST].
 - **JP 1925 HE (TNT):** [EST].
 - **JP 1925 light common (TNT/wax):** 12.7 cm 23 kg (W/D³ 0.41) and 14 cm 38 kg (0.46). Filler [EST].
 - **JP 1925 light HE (TNT):** [EST].
@@ -235,11 +243,13 @@ plate, full detonation) is the explosive's (`explosive-templates.md`).
 | Template | Kind | W/D³ | crh / i | Cap | Body | Filler | Fuze | Steel |
 |---|---|---|---|---|---|---|---|---|
 | RU 1911 AP (TNT) | ap | 0.60 | 4 / 1.15 | hard 8% | 20°, 0.6; 0.95 | 2.7% TNT, basic | base 0.025 s, 0.07 cal (×0.45), single, ±10%, 5% blind | 1.25/1 |
+| RU 1911 star shell (light) | star | 0.53 | 1.5 / 1.60 | none | 0°, 0.2; 1.00 | 2% Black powder, basic | base 0 s, 0 cal (×1), single, ±2%, 15% blind | 1/1 |
 | RU 1911 HE (TNT) | he | 0.60 | 4 / 1.15 | none | 0°, 0.2; 1.00 | 12.5% TNT, basic | nose | 1/1 |
 | RU 1911 light common (TNT) (light) | common | 0.53 | 4 / 1.15 | none | 10°, 0.33; 0.90 | 4% TNT, basic | base 0.01 s, 0.07 cal (×0.45), single, ±10%, 5% blind | 1/1 |
 | RU 1911 light HE (TNT) (light) | he | 0.53 | 4 / 1.15 | none | 0°, 0.2; 1.00 | 8% TNT, basic | nose | 1/1 |
 
 - **RU 1911 AP (TNT):** 12" AP mod 1911 470.9 kg (W/D³ 0.60, super-heavy), 12.84 kg. Cap, explosive and fuze [EST].
+- **RU 1911 star shell:** The Great War's candle: 15% of the shell, 3e4 cd a kg, 25 s at 6 m/s, the fuze 1.5% out, 15% duds [EST].
 - **RU 1911 HE (TNT):** 12" HE mod 1911 471 kg, 58.8 kg TNT.
 - **RU 1911 light common (TNT):** 120/50 28.97 kg (W/D³ 0.53). Filler [EST].
 - **RU 1911 light HE (TNT):** [EST].
@@ -249,11 +259,13 @@ plate, full detonation) is the explosive's (`explosive-templates.md`).
 | Template | Kind | W/D³ | crh / i | Cap | Body | Filler | Fuze | Steel |
 |---|---|---|---|---|---|---|---|---|
 | RN 1938 APC (Shellite) | ap | 0.58 | 6 / 1.05 | hard 10% | 30°, 1; 1.00 | 2.5% Shellite, ce | base 0.025 s, 0.063 cal (×0.45), single, ±10%, 5% blind | 1.25/1 |
+| RN 1938 star shell (light) | star | 0.53 | 1.5 / 1.60 | none | 0°, 0.2; 1.00 | 2% Black powder, basic | base 0 s, 0 cal (×1), single, ±1%, 5% blind | 1/1 |
 | RN 1938 HE (TNT) | he | 0.58 | 6 / 1.05 | none | 0°, 0.2; 1.00 | 6.7% TNT, ce | nose | 1/1 |
 | RN 1938 light SAP (TNT/wax) (light) | common | 0.53 | 6 / 1.05 | none | 10°, 0.33; 0.90 | 3% TNT/wax, ce | base 0.01 s, 0.07 cal (×0.45), single, ±10%, 5% blind | 1/1 |
 | RN 1938 light HE (TNT) (light) | he | 0.53 | 6 / 1.05 | none | 0°, 0.2; 1.00 | 7% TNT, ce | nose | 1/1 |
 
 - **RN 1938 APC (Shellite):** 14" APC Mk VIIb 6crh 1,590 lb (W/D³ 0.58), Shellite 2.5% with CE, No. 159 (1" at normal on a 16": 0.0625 cal), 0.025 s. Cap share [EST].
+- **RN 1938 star shell:** The Second War's (the USN 5-inch/38's ~4·10⁵ cd for ~45 s): 20% of the shell, 8e4 cd a kg, 45 s at 8 m/s, the fuze 0.8% out, 5% duds [EST].
 - **RN 1938 HE (TNT):** 15" HE Mk VII 879 kg, 59 kg TNT (6.7%).
 - **RN 1938 light SAP (TNT/wax):** 6" CPBC 112 lb (W/D³ 0.52), 5.25" 80 lb (0.56). Filler [EST].
 - **RN 1938 light HE (TNT):** [EST].
@@ -263,11 +275,13 @@ plate, full detonation) is the explosive's (`explosive-templates.md`).
 | Template | Kind | W/D³ | crh / i | Cap | Body | Filler | Fuze | Steel |
 |---|---|---|---|---|---|---|---|---|
 | DE 1939 Psgr L/4,4 m.Hb (TNT/wax) | ap | 0.53 | 4.4 / 1.05 | hard 10% | 20°, 0.8; 1.00 | 2.5% TNT/wax, basic | base 0.035 s, 0.05 cal (×0.45), two, ±10%, 5% blind | 1.25/1 |
+| DE 1939 star shell (light) | star | 0.48 | 1.5 / 1.60 | none | 0°, 0.2; 1.00 | 2% Black powder, basic | base 0 s, 0 cal (×1), single, ±1%, 5% blind | 1/1 |
 | DE 1939 Spgr L/4,5 Kz (TNT) | he | 0.53 | 4.4 / 1.05 | none | 0°, 0.2; 1.00 | 8.3% TNT, basic | nose | 1/1 |
 | DE 1939 15cm Spgr Bdz (TNT) (light) | common | 0.48 | 4.4 / 1.05 | none | 10°, 0.33; 0.90 | 5% TNT, basic | base 0.015 s, 0.05 cal (×0.45), two, ±10%, 5% blind | 1/1 |
 | DE 1939 15cm Spgr Kz (TNT) (light) | he | 0.48 | 4.4 / 1.05 | none | 0°, 0.2; 1.00 | 8.6% TNT, basic | nose | 1/1 |
 
 - **DE 1939 Psgr L/4,4 m.Hb (TNT/wax):** 38 cm Psgr. L/4,4 m.Hb 800 kg (W/D³ 0.53), hard cap and 10-calibre ballistic cap, 20.3 kg Fp, Bd.Z. 38 0.035 s; a picric booster to 1945. Cap share [EST].
+- **DE 1939 star shell:** The Second War's (the USN 5-inch/38's ~4·10⁵ cd for ~45 s): 20% of the shell, 8e4 cd a kg, 45 s at 8 m/s, the fuze 0.8% out, 5% duds [EST].
 - **DE 1939 Spgr L/4,5 Kz (TNT):** 38 cm nose-fuzed HE 800 kg, 66.2 kg TNT.
 - **DE 1939 15cm Spgr Bdz (TNT):** 15 cm 45.3 kg (W/D³ 0.485), 10.5 cm 15.1 kg (0.47); Bd.Z. KV 0.015 s. Filler [EST].
 - **DE 1939 15cm Spgr Kz (TNT):** 15 cm Sprgr. L/4,6 KZ, 3.9 kg TNT.
@@ -277,11 +291,13 @@ plate, full detonation) is the explosive's (`explosive-templates.md`).
 | Template | Kind | W/D³ | crh / i | Cap | Body | Filler | Fuze | Steel |
 |---|---|---|---|---|---|---|---|---|
 | IT 1940 APC (TNT) | ap | 0.58 | 4 / 1.05 | hard 10% | 25°, 0.9; 0.95 | 1.15% TNT, basic | base 0.03 s, 0.07 cal (×0.45), single, ±10%, 5% blind | 1.25/1 |
+| IT 1940 star shell (light) | star | 0.50 | 1.5 / 1.60 | none | 0°, 0.2; 1.00 | 2% Black powder, basic | base 0 s, 0 cal (×1), single, ±1%, 5% blind | 1/1 |
 | IT 1940 HE (TNT) | he | 0.54 | 4 / 1.05 | none | 0°, 0.2; 1.00 | 7% TNT, basic | nose | 1/1 |
 | IT 1940 light SAP (TNT) (light) | common | 0.50 | 4 / 1.05 | none | 10°, 0.33; 0.90 | 3% TNT, basic | base 0.01 s, 0.07 cal (×0.45), single, ±10%, 5% blind | 1/1 |
 | IT 1940 light HE (TNT) (light) | he | 0.50 | 4 / 1.05 | none | 0°, 0.2; 1.00 | 7% TNT, basic | nose | 1/1 |
 
 - **IT 1940 APC (TNT):** 381 mm APC 884.8 kg (W/D³ 0.58), cast TNT 10.16 kg (1.15%). Uneven makers: quality 0.95. Cap and fuze [EST].
+- **IT 1940 star shell:** The Second War's (the USN 5-inch/38's ~4·10⁵ cd for ~45 s): 20% of the shell, 8e4 cd a kg, 45 s at 8 m/s, the fuze 0.8% out, 5% duds [EST].
 - **IT 1940 HE (TNT):** [EST].
 - **IT 1940 light SAP (TNT):** 152/55 50 kg (W/D³ 0.51), 90/50 and 100/47 0.50. Filler [EST].
 - **IT 1940 light HE (TNT):** [EST].
@@ -291,11 +307,13 @@ plate, full detonation) is the explosive's (`explosive-templates.md`).
 | Template | Kind | W/D³ | crh / i | Cap | Body | Filler | Fuze | Steel |
 |---|---|---|---|---|---|---|---|---|
 | FR 1936 OPfK (TNT) | ap | 0.58 | 4 / 1.05 | hard 9.5% | 30°, 1; 1.00 | 2.5% TNT, basic | base 0.03 s, 0.07 cal (×0.45), single, ±10%, 5% blind | 1.25/1 |
+| FR 1936 star shell (light) | star | 0.53 | 1.5 / 1.60 | none | 0°, 0.2; 1.00 | 2% Black powder, basic | base 0 s, 0 cal (×1), single, ±1%, 5% blind | 1/1 |
 | FR 1936 OEA (Melinite) | he | 0.55 | 4 / 1.05 | none | 0°, 0.2; 1.00 | 8% Lyddite, basic | nose | 1/1 |
 | FR 1936 light SAP (TNT) (light) | common | 0.53 | 4 / 1.05 | none | 10°, 0.33; 0.90 | 3% TNT, basic | base 0.01 s, 0.07 cal (×0.45), single, ±10%, 5% blind | 1/1 |
 | FR 1936 light HE (TNT) (light) | he | 0.53 | 4 / 1.05 | none | 0°, 0.2; 1.00 | 7% TNT, basic | nose | 1/1 |
 
 - **FR 1936 OPfK (TNT):** 380 mm OPfK Mle 1936 884 kg (W/D³ 0.58), cap 84 kg (9.5%), 21.9 kg filler (explosive [EST]). Fuze [EST].
+- **FR 1936 star shell:** The Second War's (the USN 5-inch/38's ~4·10⁵ cd for ~45 s): 20% of the shell, 8e4 cd a kg, 45 s at 8 m/s, the fuze 0.8% out, 5% duds [EST].
 - **FR 1936 OEA (Melinite):** [EST].
 - **FR 1936 light SAP (TNT):** 152/55 Mle 1930 54 kg (W/D³ 0.555), 130/45 32 kg (0.53), 100/45 13.5 kg (0.49). Filler [EST].
 - **FR 1936 light HE (TNT):** [EST].
@@ -305,11 +323,13 @@ plate, full detonation) is the explosive's (`explosive-templates.md`).
 | Template | Kind | W/D³ | crh / i | Cap | Body | Filler | Fuze | Steel |
 |---|---|---|---|---|---|---|---|---|
 | US 1941 AP Mk 8 (Explosive D) | ap | 0.66 | 9 / 1.05 | hard 12% | 45°, 1.2; 1.10 | 1.5% Explosive D, ce | base 0.033 s, 0.094 cal (×0.25), single, ±10%, 5% blind | 1.25/1 |
+| US 1941 star shell (light) | star | 0.44 | 1.5 / 1.60 | none | 0°, 0.2; 1.00 | 2% Black powder, basic | base 0 s, 0 cal (×1), single, ±1%, 5% blind | 1/1 |
 | US 1941 HC (Explosive D) | he | 0.48 | 9 / 1.05 | none | 0°, 0.2; 1.00 | 8.1% Explosive D, ce | nose | 1/1 |
 | US 1941 5in Common (Explosive D) (light) | common | 0.44 | 4 / 1.05 | none | 10°, 0.33; 0.90 | 4.9% Explosive D, ce | base 0.01 s, 0.07 cal (×0.45), single, ±10%, 5% blind | 1/1 |
 | US 1941 5in AAC (Explosive D) (light) | he | 0.44 | 4 / 1.05 | none | 0°, 0.2; 1.00 | 13% Explosive D, ce | nose | 1/1 |
 
 - **US 1941 AP Mk 8 (Explosive D):** 16"/50 Mk 8 2,700 lb (W/D³ 0.66, super-heavy; the 8" and 6" SH the same), 9crh under a windscreen, 40.9 lb Explosive D (1.5%), Mk 21 BDF 0.033 s (1.5" at 0°, 0.375" at 65°). Cap share [EST].
+- **US 1941 star shell:** The Second War's (the USN 5-inch/38's ~4·10⁵ cd for ~45 s): 20% of the shell, 8e4 cd a kg, 45 s at 8 m/s, the fuze 0.8% out, 5% duds [EST].
 - **US 1941 HC (Explosive D):** 16" HC Mk 13 1,900 lb (W/D³ 0.46), 8" 0.51, 6" 0.49: 0.48 between. 8.1% Explosive D, PDF Mk 29.
 - **US 1941 5in Common (Explosive D):** 5"/38 Common 24.5 kg (W/D³ 0.44), 1.2 kg Explosive D, 0.01 s.
 - **US 1941 5in AAC (Explosive D):** 5"/38 AAC 25 kg, 3.3 kg Explosive D.
@@ -319,11 +339,13 @@ plate, full detonation) is the explosive's (`explosive-templates.md`).
 | Template | Kind | W/D³ | crh / i | Cap | Body | Filler | Fuze | Steel |
 |---|---|---|---|---|---|---|---|---|
 | JP 1931 Type 91 AP (TNA) | ap | 0.54 | 4 / 1.05 | hard 10% | 20°, 0.67; 0.96 | 1.6% TNA, ce | base 0.03 s, 0.05 cal (×0.45), two, ±10%, 5% blind | 1.25/1 |
+| JP 1931 star shell (light) | star | 0.44 | 1.5 / 1.60 | none | 0°, 0.2; 1.00 | 2% Black powder, basic | base 0 s, 0 cal (×1), single, ±1%, 5% blind | 1/1 |
 | JP 1931 Type 0 HE (TNA) | he | 0.51 | 4 / 1.05 | none | 0°, 0.2; 1.00 | 4.5% TNA, ce | nose | 1/1 |
 | JP 1931 light common (TNA) (light) | common | 0.44 | 4 / 1.05 | none | 10°, 0.33; 0.90 | 3% TNA, ce | base 0.01 s, 0.07 cal (×0.45), single, ±10%, 5% blind | 1/1 |
 | JP 1931 light HE (TNA) (light) | he | 0.44 | 4 / 1.05 | none | 0°, 0.2; 1.00 | 8% TNA, ce | nose | 1/1 |
 
 - **JP 1931 Type 91 AP (TNA):** 46 cm Type 91 1,460 kg (W/D³ 0.54), 23.9 kg TNA with its liner. As a plain hard-capped APC with the period's 0.03 s: the real break-away cap and 0.4 s fuze were the diving doctrine, not in the game yet. Cap share and booster [EST].
+- **JP 1931 star shell:** The Second War's (the USN 5-inch/38's ~4·10⁵ cd for ~45 s): 20% of the shell, 8e4 cd a kg, 45 s at 8 m/s, the fuze 0.8% out, 5% duds [EST].
 - **JP 1931 Type 0 HE (TNA):** 46 cm Type 0 HE 1,360 kg, 61.7 kg TNA.
 - **JP 1931 light common (TNA):** 15.5 cm and 12.7 cm (W/D³ 0.41-0.48). Filler [EST].
 - **JP 1931 light HE (TNA):** 12.7 cm Type 0 HE 23 kg, 1.88 kg TNA.
@@ -333,7 +355,9 @@ plate, full detonation) is the explosive's (`explosive-templates.md`).
 | Template | Kind | W/D³ | crh / i | Cap | Body | Filler | Fuze | Steel |
 |---|---|---|---|---|---|---|---|---|
 | DP SAP (1950) | common | 0.56 | 6 / 1.00 | none | 10°, 0.33; 0.90 | 4% TNT, ce | base 0.01 s, 0.07 cal (×0.45), single, ±10%, 5% blind | 1/1 |
+| DP star shell (1950) (light) | star | 0.50 | 1.5 / 1.60 | none | 0°, 0.2; 1.00 | 2% Black powder, basic | base 0 s, 0 cal (×1), single, ±1%, 3% blind | 1/1 |
 | DP HE (1950) | he | 0.56 | 6 / 1.00 | none | 0°, 0.2; 1.00 | 10% Comp B, ce | nose | 1/1 |
 
 - **DP SAP (1950):** The post-war 4.5"-6" dual-purpose guns' shells (5"/54 31.75 kg, W/D³ 0.56). [EST].
+- **DP star shell (1950):** The postwar candle: 20% of the shell, 1e5 cd a kg, 50 s at 8 m/s, the fuze 0.5% out, 3% duds [EST].
 - **DP HE (1950):** Comp B filled, nose fuzed. [EST].

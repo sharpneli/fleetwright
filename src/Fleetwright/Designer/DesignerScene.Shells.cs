@@ -49,7 +49,7 @@ public sealed unsafe partial class DesignerScene
         {
             var res = Ammunition.ResolveBattery(d, main ? "main" : "secondary", k);
             var battery = main ? Battery.Main : Battery.Secondary;
-            var order = Enumerable.Range(0, res.Count).OrderBy(i => MagazineOrder.Rank(battery, res[i].Kind switch { "ap" => ShellKind.Ap, "common" => ShellKind.Common, _ => ShellKind.He })).ThenBy(i => i).ToArray();
+            var order = Enumerable.Range(0, res.Count).OrderBy(i => MagazineOrder.Rank(battery, res[i].Kind switch { "ap" => ShellKind.Ap, "common" => ShellKind.Common, "star" => ShellKind.Star, _ => ShellKind.He })).ThenBy(i => i).ToArray();
             var split = Loadout.Split(rounds, order.Select(i => res[i].Share).ToArray());
             var lines = order.Select((i, o) =>
             {

@@ -309,6 +309,9 @@ public enum ShellKind : byte
     Common,
     /// <summary>High explosive: the most filler, a nose fuze that bursts on the first thing it meets.</summary>
     He,
+    /// <summary>Star shell (docs/battle/night.md Q5): a candle on a parachute, burst out of the shell by a time fuze; a
+    /// light, never a hit. Fired only by an illuminating mount, never by the magazine order or a battery's load.</summary>
+    Star,
 }
 
 /// <summary>A ship's splash colour (docs/visuals/splashes.md "Dye"): the dye load her heavy shells carry so she can
@@ -332,6 +335,8 @@ public enum Fuze : byte
     Base,
     /// <summary>In the nose, at once.</summary>
     Nose,
+    /// <summary>A time fuze (a star shell's): it bursts at the time it was set to, in the air.</summary>
+    Time,
 }
 
 /// <summary>A shell's cap (docs/battle/shells-armour-damage.md P2): none, soft (Makarov's, torn off past 15-20° of
@@ -404,6 +409,11 @@ public readonly record struct ShellTypeRow
     /// <summary>Its burst's pieces (docs/battle/shells-armour-damage.md E1; <see cref="Ships.Fragments"/>): null for a
     /// shell without filler. Equal when made of the same numbers.</summary>
     public Fragments? Fragments { get; init; }
+    /// <summary>A star shell's flare (docs/battle/night.md Q5): its light, cd, how long it burns, s, and how fast it falls
+    /// under its parachute, m/s; 0 for any other kind.</summary>
+    public double StarCd { get; init; }
+    public double StarBurnS { get; init; }
+    public double StarFallMs { get; init; }
     /// <summary>A diving shell (the IJN's Type 88/91): its cap head comes off on the water, leaving a flat nose that runs
     /// true under it instead of tumbling, so it keeps its speed there longer (WaterRun).</summary>
     public bool Diving => Cap == Cap.BreakAway;
@@ -419,7 +429,7 @@ public readonly record struct ShellLoad(int ShellType, double Share);
 public static class MagazineOrder
 {
     /// <summary>A kind's place in a battery's order: lower fires first.</summary>
-    public static int Rank(Battery battery, ShellKind kind) => battery == Battery.Main
+    public static int Rank(Battery battery, ShellKind kind) => kind == ShellKind.Star ? 3 : battery == Battery.Main
         ? kind switch { ShellKind.Ap => 0, ShellKind.Common => 1, _ => 2 }
         : kind switch { ShellKind.He => 0, ShellKind.Common => 1, _ => 2 };
 }

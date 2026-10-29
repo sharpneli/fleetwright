@@ -1011,6 +1011,8 @@ public sealed partial class MapScene
                 world.Send(o.Shells(u, null));
         foreach (var kind in Enum.GetValues<ShellKind>())
         {
+            if (kind == ShellKind.Star)
+                continue;   // fired by an illuminating mount, not loaded by the battery (docs/battle/night.md Q5)
             bool carried = false;
             for (int b = 0; b < cls.Batteries.Length; b++)
                 if (cls.Batteries[b].Chief)

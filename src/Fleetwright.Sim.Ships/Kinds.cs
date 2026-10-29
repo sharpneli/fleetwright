@@ -257,6 +257,7 @@ static class Kinds
         "ap" => ShellKind.Ap,
         "common" => ShellKind.Common,
         "he" => ShellKind.He,
+        "star" => ShellKind.Star,
         _ => throw Unknown("shell kind", s),
     };
 
@@ -264,6 +265,7 @@ static class Kinds
     {
         "base" => Fuze.Base,
         "nose" => Fuze.Nose,
+        "time" => Fuze.Time,
         _ => throw Unknown("fuze position", s),
     };
 

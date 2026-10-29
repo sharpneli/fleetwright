@@ -45,6 +45,8 @@ public sealed class CombatStore
     // by battery, whether its fire control made its target out at its last second (the gunnery's, for the captains:
     // docs/battle/night.md Q4, a searchlight on a target the guns can't see); not world state, the gunnery's own copy is
     bool[]?[] sees = [];
+    // by mount, whether it's an illuminating mount (docs/battle/night.md Q5): out of its battery's salvos, firing star shell
+    bool[]?[] illuminating = [];
     int[] engaged = [];
     bool[] moved = [];
     long[] firedMs = [];   // by slot: when any of her guns last fired (docs/battle/crew.md N5b: what an observer may see)
@@ -70,6 +72,7 @@ public sealed class CombatStore
             Array.Resize(ref conditions, n);
             Array.Resize(ref targets, n);
             Array.Resize(ref sees, n);
+            Array.Resize(ref illuminating, n);
             Array.Resize(ref engaged, n);
             Array.Resize(ref moved, n);
             Array.Resize(ref firedMs, n);
@@ -111,6 +114,11 @@ public sealed class CombatStore
             sees[slot] = new bool[cls.Batteries.Length];
         else
             Array.Clear(sw);
+        var il = illuminating[slot];
+        if (il == null || il.Length != cls.Mounts.Length)
+            illuminating[slot] = new bool[cls.Mounts.Length];
+        else
+            Array.Clear(il);
         var o = ordered[slot];
         if (o == null || o.Length != cls.Batteries.Length)
             ordered[slot] = new byte[cls.Batteries.Length];
@@ -235,6 +243,17 @@ public sealed class CombatStore
     /// <summary>The gunnery's word on whether a battery's fire control makes its target out (each its own element: its
     /// batteries' seconds may run on different workers).</summary>
     public void SetSees(int slot, int battery, bool value) => sees[slot]![battery] = value;
+
+    /// <summary>Whether a mount fires star shell for its ship's illuminating task (docs/battle/night.md Q5), out of its
+    /// battery's salvos.</summary>
+    public bool Illuminating(int slot, int mount) => illuminating[slot] is { } m && mount < m.Length && m[mount];
+
+    /// <summary>A mount given the illuminating task, or back to its battery (the star shell system's).</summary>
+    public void SetIlluminating(int slot, int mount, bool value)
+    {
+        illuminating[slot]![mount] = value;
+        Touched = true;
+    }
 
     /// <summary>Whether a ship's mounts have left their rest (the snapshot sends their bearings only then).</summary>
     public bool Moved(int slot) => slot < moved.Length && moved[slot];
@@ -391,14 +410,17 @@ public sealed class CombatStore
     public int LoadRounds(int slot, int mount, int k) => loadRounds[slot]![loadouts[slot]!.MountLoadStart(mount) + k];
 
     /// <summary>The load a mount fires next: the first of its battery's loads (in the magazine order) it has rounds of, or
-    /// -1 when it has none left.</summary>
+    /// -1 when it has none left. Never star shell (docs/battle/night.md Q5: an illuminating mount fires it by its own
+    /// order, <see cref="LoadOf"/>).</summary>
     public int NextLoad(int slot, int mount)
     {
         var lo = loadouts[slot]!;
+        ref readonly var m = ref lo.Class.Mounts[mount];
         int s0 = lo.MountLoadStart(mount), n = lo.MountLoadStart(mount + 1) - s0;
+        var loads = m.Battery >= 0 ? lo.Loads(m.Battery) : default;
         var r = loadRounds[slot]!;
         for (int k = 0; k < n; k++)
-            if (r[s0 + k] > 0)
+            if (r[s0 + k] > 0 && (k >= loads.Length || lo.ShellTypes[loads[k].ShellType].Kind != ShellKind.Star))
                 return k;
         return -1;
     }

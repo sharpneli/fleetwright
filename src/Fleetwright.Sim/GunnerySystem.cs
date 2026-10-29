@@ -809,7 +809,8 @@ public sealed class GunnerySystem : IWorldSystem
         for (int j = 0; j < mounts.Length; j++)
         {
             ref readonly var mr = ref cls.Mounts[mounts[j]];
-            bool works = cond.MountWorks[mounts[j]];   // one out of action or jammed stays where it stopped
+            // one out of action or jammed stays where it stopped; one lighting her with star shell is laid for that (Q5)
+            bool works = cond.MountWorks[mounts[j]] && !store.Combat.Illuminating(slot, mounts[j]);
             bool inTraverse = works && store.Combat.Order(slot, mounts[j], mr, now, bearing, elevation);
             firing[j] = inTraverse && cond.Lays(mounts[j], fc.Local) && CombatStore.InArcs(cls, mr, bearing) &&
                         store.Combat.Mount(slot, mounts[j]).Rounds > 0 && elevation <= mr.MaxElevationDeg;
@@ -941,11 +942,12 @@ public sealed class GunnerySystem : IWorldSystem
             ranges ? SightModel.TelescopeGlass(optics, pupil) : SightModel.LookoutGlass(pupil, settings),
             lux > 0 ? lux * Lights.Facing(from, back) : 0, air.DazzleCdM2);
         double lamp = 0, lampM = 0;
+        if (air.Lights.Flares > 0)
+            line = Sightings.Backlit(line, air.Lights.BacklightCdM2(at, tp, air.VisibilityM, settings));   // a flare beyond her (Q5)
+        if (air.Lights.Beams > 0 || air.Lights.Flares > 0)
+            line = line with { VeilCdM2 = air.Lights.VeilCdM2(slot, frame.ToWorld(s.X, s.Y, s.HeightM), tp, air.VisibilityM, settings, line.SkyCdM2) };
         if (air.Lights.Beams > 0)
-        {
-            line = line with { VeilCdM2 = air.Lights.VeilCdM2(slot, frame.ToWorld(s.X, s.Y, s.HeightM), tp, air.VisibilityM, settings) };
             (lamp, _, lampM) = air.Lights.LampsOf(target.Slot, at, air.VisibilityM, settings);
-        }
         double mag = ranges ? optics.Magnification : settings.SightLookoutMagnification;
         // her bow wave gives a point of aim in the dark (docs/battle/night.md Q1), as her lamp does (Q4)
         double margin = Math.Max(SightModel.Margin(s.HeightM, mag, tc, line, settings), SightModel.BowWaveMargin(s.HeightM, mag, tc, line, settings));
@@ -1164,7 +1166,7 @@ public sealed class GunnerySystem : IWorldSystem
             ref readonly var ms = ref store.Combat.Mount(slot, mounts[j]);
             // loaded, with rounds; ordered on the target (not parked at its traverse's end) inside its arcs; and there
             double tol = settings.LayToleranceDeg;
-            bool bears = ms.Rounds > 0 && cond.Lays(mounts[j], fc.Local) && fc.OrderElevationDeg <= mr.MaxElevationDeg && CombatStore.InArcs(cls, mr, fc.OrderBearingDeg);
+            bool bears = ms.Rounds > 0 && !store.Combat.Illuminating(slot, mounts[j]) && cond.Lays(mounts[j], fc.Local) && fc.OrderElevationDeg <= mr.MaxElevationDeg && CombatStore.InArcs(cls, mr, fc.OrderBearingDeg);
             (bearingGuns, bearingMounts) = bears ? (bearingGuns + cond.Guns(mounts[j]), bearingMounts + 1) : (bearingGuns, bearingMounts);
             firing[j] = bears && ms.LoadedMs <= now &&
                         Math.Abs(Wrap(ms.TrainTo - fc.OrderBearingDeg)) <= tol &&

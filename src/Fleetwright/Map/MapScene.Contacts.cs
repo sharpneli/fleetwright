@@ -105,6 +105,16 @@ public sealed partial class MapScene
         }
     }
 
+    /// <summary>The star shells' flares burning (docs/battle/night.md Q5), as their placeholder until the night's look (Q10):
+    /// a small disc where each burns, the light's colour.</summary>
+    void DrawFlares(in MapView view, Snapshot s)
+    {
+        var f = s.Flares;
+        for (int i = 0; i < f.Count; i++)
+            if (view.Project(f.At[i].Normalized() * Earth.Radius, out double x, out double y))
+                overlay.Disc(x, y, 5 * Rp, MapPalette.Light with { W = 0.85f }, 1f);
+    }
+
     /// <summary>What a contact is taken for, as its label says it.</summary>
     // the contacts' identities as the player holds them, made when one changes
     readonly Dictionary<(int, ContactLevel, int, ShipType), string> identities = [];

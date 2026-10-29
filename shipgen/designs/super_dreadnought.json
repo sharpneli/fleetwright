@@ -1,4 +1,4 @@
-{"version": 14, "id": "super_dreadnought", "name": "Super-dreadnought (Queen Elizabeth-like, 1913)", "look": {"navy": "portsmouth", "era": "great_war"}, "type": "BB",
+{"version": 15, "id": "super_dreadnought", "name": "Super-dreadnought (Queen Elizabeth-like, 1913)", "look": {"navy": "portsmouth", "era": "great_war"}, "type": "BB",
  "hull": {"block_coefficient": 0.59, "construction": {"name": "Mild steel hull, high-tensile strength deck, riveted", "yield_mpa": 290, "join_factor": 1.1, "standard": 1.0, "shell": "riveted", "internals": "riveted"}, "plating": {"shell_mm": 0, "material": "steel", "deck_wood_mm": 76}, "freeboard": 1.0, "raised": [{"from": "bow", "to": "aft_control", "decks": 1}]},
  "speed_kn": 24,
  "range_nm": 5000,

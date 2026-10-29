@@ -1351,6 +1351,60 @@
   }
  },
  {
+  "name": "DE 1911 Leuchtgeschoss",
+  "group": "DE 1911",
+  "note": "The German star shell of the 8.8, 10.5 and 15 cm guns, in service by 1914 and used at Jutland's night (the 4th Flotilla lit by it). All [EST] until the research: a candle 15% of the shell, 3·10⁴ cd a kg, 25 s under its parachute at 6 m/s, the time fuze 1.5% out, 15% duds.",
+  "value": {
+   "kind": "star",
+   "mass_k_kg_m3": 13010,
+   "nose_crh": 1.5,
+   "form_factor": 1.6,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.02,
+    "body": 0.75,
+    "explosive": "Black powder",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "time",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0.015,
+    "blind": 0.15,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "star": {
+    "candle_share": 0.15,
+    "cd_per_kg": 30000,
+    "burn_s": 25,
+    "fall_ms": 6
+   }
+  }
+ },
+ {
   "name": "DE 1911 Spgr Kz (TNT)",
   "group": "DE 1911",
   "note": "Nose-fuzed Sprenggranate (the 15 cm's 45.3 kg, 3.0 kg TNT). German light shells ran 0.49-0.54, so the family's blocks serve every gun.",
@@ -1979,6 +2033,60 @@
   }
  },
  {
+  "name": "US 1921 star shell",
+  "group": "US 1921",
+  "note": "The 1920s' candle: 18% of the shell, 5e4 cd a kg, 30 s at 6 m/s, the fuze 1% out, 10% duds [EST].",
+  "value": {
+   "kind": "star",
+   "mass_k_kg_m3": 12730,
+   "nose_crh": 1.5,
+   "form_factor": 1.6,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.02,
+    "body": 0.75,
+    "explosive": "Black powder",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "time",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0.01,
+    "blind": 0.1,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "star": {
+    "candle_share": 0.18,
+    "cd_per_kg": 50000,
+    "burn_s": 30,
+    "fall_ms": 6
+   }
+  }
+ },
+ {
   "name": "US 1921 HC (Explosive D)",
   "group": "US 1921",
   "note": "[EST] from the later HC.",
@@ -2072,6 +2180,60 @@
     "blind": 0.05,
     "water_ms": 0.5,
     "water_fires": 1
+   }
+  }
+ },
+ {
+  "name": "RN 1927 star shell",
+  "group": "RN 1927",
+  "note": "The 1920s' candle: 18% of the shell, 5e4 cd a kg, 30 s at 6 m/s, the fuze 1% out, 10% duds [EST].",
+  "value": {
+   "kind": "star",
+   "mass_k_kg_m3": 13010,
+   "nose_crh": 1.5,
+   "form_factor": 1.6,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.02,
+    "body": 0.75,
+    "explosive": "Black powder",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "time",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0.01,
+    "blind": 0.1,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "star": {
+    "candle_share": 0.18,
+    "cd_per_kg": 50000,
+    "burn_s": 30,
+    "fall_ms": 6
    }
   }
  },
@@ -2414,6 +2576,60 @@
   }
  },
  {
+  "name": "JP 1925 star shell",
+  "group": "JP 1925",
+  "note": "The 1920s' candle: 18% of the shell, 5e4 cd a kg, 30 s at 6 m/s, the fuze 1% out, 10% duds [EST].",
+  "value": {
+   "kind": "star",
+   "mass_k_kg_m3": 13010,
+   "nose_crh": 1.5,
+   "form_factor": 1.6,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.02,
+    "body": 0.75,
+    "explosive": "Black powder",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "time",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0.01,
+    "blind": 0.1,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "star": {
+    "candle_share": 0.18,
+    "cd_per_kg": 50000,
+    "burn_s": 30,
+    "fall_ms": 6
+   }
+  }
+ },
+ {
   "name": "JP 1925 HE (TNT)",
   "group": "JP 1925",
   "note": "[EST].",
@@ -2603,6 +2819,60 @@
     "blind": 0.05,
     "water_ms": 0.5,
     "water_fires": 1
+   }
+  }
+ },
+ {
+  "name": "RU 1911 star shell",
+  "group": "RU 1911",
+  "note": "The Great War's candle: 15% of the shell, 3e4 cd a kg, 25 s at 6 m/s, the fuze 1.5% out, 15% duds [EST].",
+  "value": {
+   "kind": "star",
+   "mass_k_kg_m3": 14670,
+   "nose_crh": 1.5,
+   "form_factor": 1.6,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.02,
+    "body": 0.75,
+    "explosive": "Black powder",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "time",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0.015,
+    "blind": 0.15,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "star": {
+    "candle_share": 0.15,
+    "cd_per_kg": 30000,
+    "burn_s": 25,
+    "fall_ms": 6
    }
   }
  },
@@ -2800,6 +3070,60 @@
   }
  },
  {
+  "name": "RN 1938 star shell",
+  "group": "RN 1938",
+  "note": "The Second War's (the USN 5-inch/38's ~4·10⁵ cd for ~45 s): 20% of the shell, 8e4 cd a kg, 45 s at 8 m/s, the fuze 0.8% out, 5% duds [EST].",
+  "value": {
+   "kind": "star",
+   "mass_k_kg_m3": 14670,
+   "nose_crh": 1.5,
+   "form_factor": 1.6,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.02,
+    "body": 0.75,
+    "explosive": "Black powder",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "time",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0.008,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "star": {
+    "candle_share": 0.2,
+    "cd_per_kg": 80000,
+    "burn_s": 45,
+    "fall_ms": 8
+   }
+  }
+ },
+ {
   "name": "RN 1938 HE (TNT)",
   "group": "RN 1938",
   "note": "15\" HE Mk VII 879 kg, 59 kg TNT (6.7%).",
@@ -2989,6 +3313,60 @@
     "blind": 0.05,
     "water_ms": 0.5,
     "water_fires": 1
+   }
+  }
+ },
+ {
+  "name": "DE 1939 star shell",
+  "group": "DE 1939",
+  "note": "The Second War's (the USN 5-inch/38's ~4·10⁵ cd for ~45 s): 20% of the shell, 8e4 cd a kg, 45 s at 8 m/s, the fuze 0.8% out, 5% duds [EST].",
+  "value": {
+   "kind": "star",
+   "mass_k_kg_m3": 13290,
+   "nose_crh": 1.5,
+   "form_factor": 1.6,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.02,
+    "body": 0.75,
+    "explosive": "Black powder",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "time",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0.008,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "star": {
+    "candle_share": 0.2,
+    "cd_per_kg": 80000,
+    "burn_s": 45,
+    "fall_ms": 8
    }
   }
  },
@@ -3186,6 +3564,60 @@
   }
  },
  {
+  "name": "IT 1940 star shell",
+  "group": "IT 1940",
+  "note": "The Second War's (the USN 5-inch/38's ~4·10⁵ cd for ~45 s): 20% of the shell, 8e4 cd a kg, 45 s at 8 m/s, the fuze 0.8% out, 5% duds [EST].",
+  "value": {
+   "kind": "star",
+   "mass_k_kg_m3": 13840,
+   "nose_crh": 1.5,
+   "form_factor": 1.6,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.02,
+    "body": 0.75,
+    "explosive": "Black powder",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "time",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0.008,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "star": {
+    "candle_share": 0.2,
+    "cd_per_kg": 80000,
+    "burn_s": 45,
+    "fall_ms": 8
+   }
+  }
+ },
+ {
   "name": "IT 1940 HE (TNT)",
   "group": "IT 1940",
   "note": "[EST].",
@@ -3375,6 +3807,60 @@
     "blind": 0.05,
     "water_ms": 0.5,
     "water_fires": 1
+   }
+  }
+ },
+ {
+  "name": "FR 1936 star shell",
+  "group": "FR 1936",
+  "note": "The Second War's (the USN 5-inch/38's ~4·10⁵ cd for ~45 s): 20% of the shell, 8e4 cd a kg, 45 s at 8 m/s, the fuze 0.8% out, 5% duds [EST].",
+  "value": {
+   "kind": "star",
+   "mass_k_kg_m3": 14670,
+   "nose_crh": 1.5,
+   "form_factor": 1.6,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.02,
+    "body": 0.75,
+    "explosive": "Black powder",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "time",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0.008,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "star": {
+    "candle_share": 0.2,
+    "cd_per_kg": 80000,
+    "burn_s": 45,
+    "fall_ms": 8
    }
   }
  },
@@ -3572,6 +4058,60 @@
   }
  },
  {
+  "name": "US 1941 star shell",
+  "group": "US 1941",
+  "note": "The Second War's (the USN 5-inch/38's ~4·10⁵ cd for ~45 s): 20% of the shell, 8e4 cd a kg, 45 s at 8 m/s, the fuze 0.8% out, 5% duds [EST].",
+  "value": {
+   "kind": "star",
+   "mass_k_kg_m3": 12180,
+   "nose_crh": 1.5,
+   "form_factor": 1.6,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.02,
+    "body": 0.75,
+    "explosive": "Black powder",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "time",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0.008,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "star": {
+    "candle_share": 0.2,
+    "cd_per_kg": 80000,
+    "burn_s": 45,
+    "fall_ms": 8
+   }
+  }
+ },
+ {
   "name": "US 1941 HC (Explosive D)",
   "group": "US 1941",
   "note": "16\" HC Mk 13 1,900 lb (W/D³ 0.46), 8\" 0.51, 6\" 0.49: 0.48 between. 8.1% Explosive D, PDF Mk 29.",
@@ -3765,6 +4305,60 @@
   }
  },
  {
+  "name": "JP 1931 star shell",
+  "group": "JP 1931",
+  "note": "The Second War's (the USN 5-inch/38's ~4·10⁵ cd for ~45 s): 20% of the shell, 8e4 cd a kg, 45 s at 8 m/s, the fuze 0.8% out, 5% duds [EST].",
+  "value": {
+   "kind": "star",
+   "mass_k_kg_m3": 12180,
+   "nose_crh": 1.5,
+   "form_factor": 1.6,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.02,
+    "body": 0.75,
+    "explosive": "Black powder",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "time",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0.008,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "star": {
+    "candle_share": 0.2,
+    "cd_per_kg": 80000,
+    "burn_s": 45,
+    "fall_ms": 8
+   }
+  }
+ },
+ {
   "name": "JP 1931 Type 0 HE (TNA)",
   "group": "JP 1931",
   "note": "46 cm Type 0 HE 1,360 kg, 61.7 kg TNA.",
@@ -3953,6 +4547,60 @@
     "blind": 0.05,
     "water_ms": 0.5,
     "water_fires": 1
+   }
+  }
+ },
+ {
+  "name": "DP star shell (1950)",
+  "group": "1950 dual-purpose",
+  "note": "The postwar candle: 20% of the shell, 1e5 cd a kg, 50 s at 8 m/s, the fuze 0.5% out, 3% duds [EST].",
+  "value": {
+   "kind": "star",
+   "mass_k_kg_m3": 13840,
+   "nose_crh": 1.5,
+   "form_factor": 1.6,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.02,
+    "body": 0.75,
+    "explosive": "Black powder",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "time",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0.005,
+    "blind": 0.03,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "star": {
+    "candle_share": 0.2,
+    "cd_per_kg": 100000,
+    "burn_s": 50,
+    "fall_ms": 8
    }
   }
  },

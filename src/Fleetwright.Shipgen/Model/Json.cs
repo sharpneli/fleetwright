@@ -19,6 +19,7 @@ namespace Fleetwright.Shipgen;
 [JsonSerializable(typeof(OutfitInput))]
 [JsonSerializable(typeof(DrainageInput))]
 [JsonSerializable(typeof(SearchlightsInput))]
+[JsonSerializable(typeof(AmmoInput))]
 [JsonSerializable(typeof(GunTechInput))]
 [JsonSerializable(typeof(TorpedoTechInput))]
 public sealed partial class ShipgenJson : JsonSerializerContext

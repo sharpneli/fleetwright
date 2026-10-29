@@ -188,6 +188,11 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
   place none. 326 design cases change; the clutter no longer draws searchlights of its own, and the lights are drawn
   from the hitboxes in both views: 282 cases' SVGs and 61 sprite.json.
   ShipDesign.Version 50.
+- 2026-10-29, star shell (docs/battle/night.md Q5), on purpose: design format 15 gives a light gun (under 160 mm) whose
+  shells are a family that had star shell (ShellTemplates.StarOf) 5% of it, the others scaled to make room; the shell
+  report gains the star's flare (`star_cd`, `star_burn_s`, `star_fall_ms`, star shell only). Every case's version
+  changes; the designs that gained star shell shift by 0.005-0.02% of standard displacement (the magazines' mean round),
+  their hulls by a hair: 39 cases' SVGs and 37 sprite.json. ShipDesign.Version 51.
 
 ## Layout
 

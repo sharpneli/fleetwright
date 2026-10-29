@@ -9,14 +9,14 @@ namespace Fleetwright.Shipgen;
 /// default template (ShellTemplates.DefaultLoadout).</summary>
 public static class Ammunition
 {
-    public static readonly string[] Kinds = ["ap", "common", "he"];
+    public static readonly string[] Kinds = ["ap", "common", "he", "star"];
     public static readonly string[] Caps = ["none", "soft", "hard", "hard2", "break_away"];
-    public static readonly string[] FuzePositions = ["base", "nose"];
+    public static readonly string[] FuzePositions = ["base", "nose", "time"];
     public static readonly string[] Boosters = ["basic", "ce"];
     public static readonly string[] FuzePlates = ["single", "two"];
 
     static readonly string[] BlockFields =
-        ["kind", "mass_k_kg_m3", "nose_crh", "form_factor", "cap", "windscreen", "body", "filler", "steel", "casing", "fuze"];
+        ["kind", "mass_k_kg_m3", "nose_crh", "form_factor", "cap", "windscreen", "body", "filler", "steel", "casing", "fuze", "star"];
     static readonly string[] EntryFields = ["ammo", "share", "mass_kg", "muzzle_velocity_ms", "fuze_delay_s"];
 
     /// <summary>PLACEHOLDER (until a gun tech exists): a gun's muzzle velocity with its heaviest shell from its length
@@ -158,14 +158,35 @@ public static class Ammunition
             else if (parts.All(p => p != null) && Math.Abs(parts.Sum(p => p!.Value) - 1) > 0.01)
                 yield return $"{at}.casing: the shares add up to {parts.Sum(p => p!.Value):0.###}, not 1";
         }
+        if (a.Kind == "star")
+        {
+            // a star shell (docs/battle/night.md Q5): its candle, and a time fuze to burst it
+            if (a.Star is not { } star)
+                yield return $"{at}.star: a star shell gives its candle (candle_share, cd_per_kg, burn_s, fall_ms)";
+            else
+            {
+                foreach (var k in star.Extra.KeysOrEmpty())
+                    yield return $"{at}.star.{k}: not a candle field (candle_share, cd_per_kg, burn_s, fall_ms)";
+                if (star.CandleShare is not (> 0 and < 1))
+                    yield return $"{at}.star.candle_share: a share of the mass, more than 0 up to 1";
+                if (!(star.CdPerKg > 0) || !(star.BurnS > 0) || !(star.FallMs >= 0))
+                    yield return $"{at}.star: cd_per_kg and burn_s more than 0, fall_ms 0 or more";
+            }
+            if (a.Fuze?.Position is not "time")
+                yield return $"{at}.fuze.position: a star shell bursts by a time fuze (time)";
+        }
+        else if (a.Star is not null)
+            yield return $"{at}.star: only a star shell has a candle";
+        else if (a.Fuze?.Position is "time")
+            yield return $"{at}.fuze.position = time: only a star shell's (base or nose)";
         if (a.Fuze is not { } z)
-            yield return $"{at}.fuze: give its position (base or nose) and delay";
+            yield return $"{at}.fuze: give its position (base, nose or time) and delay";
         else
         {
             foreach (var k in z.Extra.KeysOrEmpty())
                 yield return $"{at}.fuze.{k}: not a fuze field (position, delay_s, start_cal, oblique, plates, scatter, blind, water_ms, water_fires)";
             if (z.Position is null || !FuzePositions.Contains(z.Position))
-                yield return $"{at}.fuze.position = {Style.Quote(z.Position)}: use base or nose";
+                yield return $"{at}.fuze.position = {Style.Quote(z.Position)}: use base, nose or time";
             if (z.DelayS is < 0 || z.StartCal is < 0 || z.WaterMs is < 0)
                 yield return $"{at}.fuze: delay_s, start_cal and water_ms are 0 or more";
             if (z.Plates is { } pl && !FuzePlates.Contains(pl))
@@ -183,6 +204,11 @@ public static class Ammunition
             b.CalibreMm is { } cal && b.CalibreLength is not null ? b with { ShellKg = Loadout(design, b, main).Sum(o => o.Share * o.MassKg) } : b).ToList();
         return design with { Main = Stamp(design.Main, true), Secondary = Stamp(design.Secondary, false) };
     }
+
+    /// <summary>A loadout's entries with a share of the family's star shell (docs/battle/night.md Q5): the star's
+    /// <paramref name="share"/>, the others' scaled to make room.</summary>
+    public static List<ShellEntryInput> WithStar(IEnumerable<ShellEntryInput> entries, string star, double share) =>
+        [.. entries.Select(e => e with { Share = Math.Round(e.Share!.Value * (1 - share), 6) }), new ShellEntryInput { Ammo = star, Share = share }];
 
     /// <summary>A battery's loadout: its shells (block, name, share, mass, its own velocity and fuze delay if given), or
     /// the default loadout's.</summary>
@@ -252,6 +278,8 @@ public static class Ammunition
                 FuzeWaterMs = a.Fuze.WaterMs ?? FuzeDefaults.WaterMs, FuzeWaterFires = a.Fuze.WaterFires ?? FuzeDefaults.WaterFires,
                 GurneyMs = x.GurneyMs ?? 2438, Brisance = x.Brisance ?? 1, SteelSize = a.Steel?.Size ?? 1, SteelSpeed = a.Steel?.Speed ?? 1,
                 Casing = Casing(a), FillerBody = a.Filler.Body ?? ShellTemplates.FillerBodyOf(a.Kind!),
+                StarCd = a.Star is { } st ? masses[k] * st.CandleShare!.Value * st.CdPerKg!.Value : null, StarBurnS = a.Star?.BurnS,
+                StarFallMs = a.Star?.FallMs,
             });
         }
         return resolved;
@@ -413,6 +441,11 @@ public sealed record ShellReport
     public double SteelSpeed { get; init; }
     public required CasingReport Casing { get; init; }
     public double FillerBody { get; init; }
+    /// <summary>A star shell's flare (docs/battle/night.md Q5): its light, cd (its candle's mass by its light a kilogram),
+    /// how long it burns, s, and how fast it falls, m/s; none for any other kind.</summary>
+    public double? StarCd { get; init; }
+    public double? StarBurnS { get; init; }
+    public double? StarFallMs { get; init; }
 }
 
 /// <summary>A shell's casing as shares of its metal: the nose slug, the ogive's spray, the body's side spray, the base

@@ -129,6 +129,9 @@ public sealed class Snapshot
     /// <summary>The searchlights' beams out at the last look (docs/battle/night.md Q4).</summary>
     public BeamsView Beams { get; } = new();
 
+    /// <summary>The star shells' flares burning (docs/battle/night.md Q5).</summary>
+    public FlaresView Flares { get; } = new();
+
     /// <summary>The engaged batteries of the ships shown, and the newest lines of the combat log (docs/battle/fighting.md
     /// 4.2b).</summary>
     public BatteriesView Batteries { get; } = new();
@@ -208,7 +211,7 @@ public sealed class ShipDetailView
     public int Mounts;
     public MountStatus[] Mount = [];
     public long[] MountUntilMs = [];
-    public int[] MountGunsOut = [], MountAp = [], MountCommon = [], MountHe = [];
+    public int[] MountGunsOut = [], MountAp = [], MountCommon = [], MountHe = [], MountStar = [];
 
     // the parties' pool
     public int Parties;
@@ -242,6 +245,7 @@ public sealed class ShipDetailView
         Array.Resize(ref MountAp, n);
         Array.Resize(ref MountCommon, n);
         Array.Resize(ref MountHe, n);
+        Array.Resize(ref MountStar, n);
     }
 
     public void EnsureParties(int n)
@@ -459,6 +463,24 @@ public sealed class BeamsView
         Array.Resize(ref BearingDeg, n);
         Array.Resize(ref Candela, n);
         Array.Resize(ref Ship, n);
+    }
+}
+
+/// <summary>The star shells' flares burning (docs/battle/night.md Q5): each one's place (its height in the point) and
+/// light (cd).</summary>
+public sealed class FlaresView
+{
+    public int Count;
+    public Vec3d[] At = [];
+    public double[] Candela = [];
+
+    public void EnsureCapacity(int n)
+    {
+        if (n <= At.Length)
+            return;
+        n = Math.Max(n, Math.Max(16, At.Length * 2));
+        Array.Resize(ref At, n);
+        Array.Resize(ref Candela, n);
     }
 }
 

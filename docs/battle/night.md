@@ -1,5 +1,5 @@
 # Plan: night fighting (a 4.5 deepening)
-Status: **drafted 2026-10-29**; **agreed with the user 2026-10-29** (decisions 1-5 at the end); Q0, Q1, Q2, Q3 and Q4 done 2026-10-29
+Status: **drafted 2026-10-29**; **agreed with the user 2026-10-29** (decisions 1-5 at the end); Q0-Q5 done 2026-10-29
 Updated: 2026-10-29
 
 How ships see, light, shoot and lose each other in the dark. The user asked for it after the crew plan (2026-10-28),
@@ -515,6 +515,75 @@ for being lit is Q8's; the coarse tier's lights are the fine tier's at its looks
 - **Anchors:** the German use against the 4th Flotilla; WWII's North Cape ("like a chandelier") as a later-cut check.
   Tests: a flare's light on the sea by height and time, the silhouette from the firer's side, its fall and drift at
   any time step.
+
+**Q5 done (2026-10-29).** Star shell, on our own estimates (the research hasn't come back):
+
+- **The data** (design format 15): a fifth shell block kind, `star`, with its candle (`star`: its share of the shell's mass,
+  cd a kg, burn time, fall rate) and a `time` fuze (its `scatter` the setting's error as a share, its `blind` the duds).
+  `ShellTemplates` has a star shell for each family that had one [EST]: the Germans' 1911 family (the Leuchtgeschoss of
+  the 8.8, 10.5 and 15 cm: 3·10⁴ cd a kg of a 15% candle, 25 s at 6 m/s, the fuze 1.5% out, 15% duds; a 15 cm round
+  2·10⁵ cd), the Russian 1911, the 1920s' families (RN 1927, US 1921, JP 1925: 5·10⁴ cd a kg, 30 s) and the Second War's
+  (8·10⁴, 45 s at 8 m/s). Not the RN 1912 family (the British had none at Jutland) nor the French 1910 or the generic 1912
+  standard. **Who carries it goes by the battery's shell family, not the hull's year:** Nassau-1916's secondaries fire
+  the DE 1911 family, so Westfalen has star shell at Jutland. The format upgrade gave each light gun (under 160 mm) whose
+  shells are such a family 5% star shell [EST], its other shells scaled to make room; 59 designs (the German ships of the
+  Great War in the scenarios, the later designs of the other families). Standard displacements moved by 0.005-0.02%.
+  `ShellKind.Star`, `Fuze.Time`; the shell type carries its flare (cd, burn, fall). The magazine order never fires it
+  (last in the order, skipped by `NextLoad`); the captains' shell choice, the matchup and the strip's shell menu leave it
+  out; the card counts it after a star; the designer's family switch takes a battery's star shell to the new family's, or
+  drops it with its share to the rest. Goldens: 372 design cases, 39 SVG cases and 37 sprite.json, the hulls of the designs whose magazines changed moving by a hair (ShipDesign.Version 51).
+- **The flare** (`Sim/StarShellSystem.cs`, world system 9): a ship's illuminating task gives one mount the job, a working
+  one with star rounds that bears, of the lightest battery that has them. It leaves its battery's salvos
+  (`CombatStore.Illuminating`; the rest fire at what it shows) and keeps a flare up: the next shell goes so it bursts as
+  the last has 3 s to burn, once the mount is loaded and laid. **The aim:** where the picture has her at the burst, then
+  600 m beyond along the line of fire and 300 m up, so she stands dark against the sea it lights for the firer. The gun
+  is laid so the range table's flight passes through that height there (on its way up close in: a flat gun at 2.5 km
+  can't come down through 300 m that soon), the time fuze set to that moment; the laying's 2 mil and the fuze's error on
+  it, a share of duds, and no burst past the fuze's longest setting (25 s [EST]), which bounds the reach. A flare bursts,
+  burns, falls at its parachute's rate and drifts with the wind; it flies and bursts by the range table alone (no splash,
+  no hit). Its light is nobody's: the firer shows only by her gun's flash.
+- **What a flare does**, each through the haze: it **lights what's near** for every eye (`Lights.On`, as a fire); it
+  **glares** in eyes looking near it (Q4's law; glare that can't reach a hundredth of the sky isn't worked out); and it
+  **lights the sea behind a ship** between it and the eye (`Lights.BacklightCdM2`: its light on the sea under the line
+  past her, shining back at 0.1 [EST: diffuse and the glitter path]), so the background brightens and she's a silhouette
+  against it by its share (`Sightings.Backlit`, in the looks and fire control's sensors alike). Nassau-1916 lighting a
+  destroyer 2.5 km off: flares 550-590 m beyond her and 300 m up, a flare up 79 s of 90, 0.5 lux on her, the sea behind
+  her 0.13 cd/m² (400 times a moonless sky).
+- **The captains** (`CaptainLayer.Lights.cs`, Q4's rule): the target his guns can't see is lit with star shell where she
+  carries it and the target is within its reach (`StarShellSystem.ReachM`), else with his searchlights; the star task
+  stops with the night, the encounter, or the target.
+- **The map** draws a flare as a placeholder disc (Q10 later); `-starshell=ship:target` (0 stops) the dev's.
+- **Tests:** `StarShellTests` (a German 1916 ship's star shell, its 15 cm's 2·10⁵ cd; a contact lit from beyond, the mount
+  taken from its battery, she lit and the sea behind her lit for the firer; a flare's fall and drift the same at a 1 s and
+  a 0.25 s step).
+
+**The bench after Q5** (20 seeds; the same code with star shell's reach set to none in brackets):
+
+| Case | German star shell | Shells / hits | Salvos' median | Lost |
+|---|---|---|---|---|
+| Southampton | from 8.3 km at 21 min (20/20), 293 ship-min | GB 97 / 21 (105 / 13), DE 2,553 / 235 (2,862 / 320) | GB 5.1 (5.4), DE 5.3 km (5.2) | GB 0.5 of 4 (0.7), DE 0.3 of 5 (0.1) |
+| 4th Flotilla | from 6.1 km at 29 min (20/20), 157 ship-min | GB 61 / 10 (209 / 44), DE 692 / 77 (405 / 77) | GB 3.6 (3.6), DE 4.9 km (3.6) | GB 1.2 of 10 (1.6), DE 0.1 (0.1) |
+| Black Prince | from 4.7 km at 31 min (20/20), 58 ship-min | GB 51 / 11 (175 / 42), DE 398 / 92 (319 / 87) | GB 5.1 (3.8), DE 3.9 km (3.8) | GB 0.7 of 1 (0.3) |
+| Dover Strait | from 0.3 km at 15 min (20/20), 90 ship-min | GB 747 / 83 (941 / 98), DE 282 / 27 (328 / 53) | GB 4.4 (4.7), DE 4.3 km (3.9) | GB 0.3 of 2 (0.5), DE 1.9 of 6 (2.1) |
+
+**What it says:**
+- **The Germans use it, the British can't.** Star shell goes up in every German run (the British 1912 family has none),
+  and the British fire far less back: the flares show the Germans what they're shooting at without showing the British
+  who fired, as at Jutland.
+- **Black Prince comes closer to the record:** lost in 0.7 runs of 1 (from 0.3), her own fire down from 42 hits to 11
+  (the record: sunk in minutes with no hits on the Germans).
+- **It opens the fight further out.** Its reach is the guns' and the fuze's, so the Germans light the 4th Flotilla's
+  boats from 6 km and Southampton's squadron from 8 km. Their hit rate halves at the longer range and the boats still
+  lose only 1.2 of 10 (the record's four). The record's lights went up at 1,000-2,000 yd once the challenge failed.
+  Holding fire until then is Q6's (unknowns, the challenge), and when to burn star shell is doctrine's (Q7).
+- The bench takes 33 s (26 s with star shell off: more fighting, the flares' looks a little).
+
+**Open after Q5:** every number is [EST] until the research (who had star shell when, its candle, burn, fall, the fuze's
+error, duds and longest setting, the share carried, the sea's reflectance); a flare's light passes no smoke of the field;
+the sky round a flare isn't lit (its haze); the star shell's flight draws nothing on the map; a ship lights one contact
+at a time with one mount (no spread of several); the captains use it as soon as a target's beyond their guns' sight and
+within its reach (Q7's doctrine decides when); the rounds a scenario's older ships carried by date (a refit's) are the
+design's; the coarse tier's flares are the fine tier's at its looks (Q11).
 
 ### Q6 Friend or foe
 

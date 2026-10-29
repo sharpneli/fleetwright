@@ -38,6 +38,7 @@ public static unsafe class Program
         var torpedoes = new List<string>();
         var screens = new List<string>();
         var searchlights = new List<string>();
+        var starshells = new List<string>();
         var damages = new List<string>();
         var firefightings = new List<string>();
         var readinesses = new List<string>();
@@ -281,6 +282,10 @@ public static unsafe class Program
             {
                 searchlights.Add(arg.Substring("-searchlight=".Length));
             }
+            else if (arg.StartsWith("-starshell="))   // a dev ship lights a contact with star shell: -starshell=ship:target (0 stops; docs/battle/night.md Q5)
+            {
+                starshells.Add(arg.Substring("-starshell=".Length));
+            }
             else if (arg.StartsWith("-smoke="))   // a dev ship makes smoke: -smoke=ship[:on|off] (docs/battle/smoke.md Z4; the field's on in settings.json)
             {
                 screens.Add(arg.Substring("-smoke=".Length));
@@ -514,6 +519,14 @@ public static unsafe class Program
                     world.Send(order);
                 else
                     Console.Error.WriteLine($"Bad searchlight: -searchlight={sl} (want ship:on:target[:n] | ship:search:centre:half[:n] | ship:ready | ship:off)");
+            foreach (var ss in starshells)
+            {
+                var p = ss.Split(':');
+                if (p.Length == 2 && int.TryParse(p[0], out int ship) && int.TryParse(p[1], out int target))
+                    world.Send(Sim.StarShellSystem.Illuminate(ship, target));
+                else
+                    Console.Error.WriteLine($"Bad star shell: -starshell={ss} (want ship:target)");
+            }
             foreach (var screen in screens)
             {
                 var p = screen.Split(':');

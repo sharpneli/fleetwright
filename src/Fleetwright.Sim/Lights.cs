@@ -7,8 +7,9 @@ namespace Fleetwright.Sim;
 /// each a place, an intensity (cd) and an owner, gathered from the ships off rails at each look: the ships' fires
 /// (<see cref="ShipCondition.FireShowMW"/>, as lamps of <see cref="SimSettings.FireGlowCdPerMW"/>) and the searchlights'
 /// beams exposed (Q4, <see cref="SearchlightSystem"/>: each with its axis's bearing, its blurred spread and its mirror);
-/// star shell (Q5) joins it. Lights are few beside ships, so a ship lit asks every light (lights × ships, never ships ×
-/// ships), and an eye asks only the beams. Pooled: allocates only to grow. Not world state: remade from it at each look.</summary>
+/// and the star shells' flares burning (Q5, <see cref="StarShellSystem"/>: nobody's, high over the sea). Lights are few
+/// beside ships, so a ship lit asks every light (lights × ships, never ships × ships), and an eye asks only the beams and
+/// the flares. Pooled: allocates only to grow. Not world state: remade from it at each look.</summary>
 public sealed class Lights
 {
     Vec3d[] at = new Vec3d[16];
@@ -17,10 +18,15 @@ public sealed class Lights
     // a beam's (Q4; NaN axis: a lamp all round): its axis's true bearing, its mean light's spread (degrees) and the share of
     // its peak that keeps (SearchlightModel.Held), its own beam's spread (full, degrees) and its mirror (m)
     double[] axis = new double[16], sigma = new double[16], keep = new double[16], spread = new double[16], mirror = new double[16];
+    bool[] flare = new bool[16];
 
-    /// <summary>How many lights there are, and how many of them are beams.</summary>
+    /// <summary>How many lights there are, how many of them are beams and how many flares.</summary>
     public int Count { get; private set; }
     public int Beams { get; private set; }
+    public int Flares { get; private set; }
+
+    /// <summary>Whether light i is a star shell's flare (Q5).</summary>
+    public bool IsFlare(int i) => flare[i];
 
     /// <summary>Light i: where (its height in the place), how bright (a beam's peak), whose (slot).</summary>
     public Vec3d At(int i) => at[i];
@@ -35,7 +41,7 @@ public sealed class Lights
     /// (<see cref="SimSettings.FireGlowHeightShare"/>); then the beams, added by the searchlights.</summary>
     public void Gather(ShipStore store, SimSettings s)
     {
-        (Count, Beams) = (0, 0);
+        (Count, Beams, Flares) = (0, 0, 0);
         for (int k = 0; k < store.OffRailsCount; k++)
         {
             int slot = store.OffRailsSlot(k);
@@ -58,6 +64,13 @@ public sealed class Lights
         Beams++;
     }
 
+    /// <summary>A star shell's flare (Q5): where it burns (its height in the place) and how bright; nobody's.</summary>
+    public void AddFlare(Vec3d at, double candela)
+    {
+        flare[Add(at, candela, -1)] = true;
+        Flares++;
+    }
+
     int Add(Vec3d where, double candela, int slot)
     {
         if (Count == at.Length)
@@ -71,8 +84,9 @@ public sealed class Lights
             Array.Resize(ref keep, n);
             Array.Resize(ref spread, n);
             Array.Resize(ref mirror, n);
+            Array.Resize(ref flare, n);
         }
-        (at[Count], cd[Count], owner[Count], axis[Count]) = (where, candela, slot, double.NaN);
+        (at[Count], cd[Count], owner[Count], axis[Count], flare[Count]) = (where, candela, slot, double.NaN, false);
         return Count++;
     }
 
@@ -116,27 +130,75 @@ public sealed class Lights
     /// down the eye's line where it runs inside the beam (<see cref="SearchlightModel.BackscatterCdM2"/>, the eye nearer
     /// the lamp than she is: its own ship's down the whole beam, a consort's from where its line meets the beam near her),
     /// and every other ship's beam on the eye as glare (<see cref="SearchlightModel.GlareCdM2"/>: the lux at the eye, by
-    /// the angle between the lamp and the target). 0 with no beam out.</summary>
-    public double VeilCdM2(int observerSlot, Vec3d eye, Vec3d target, double visibilityM, SimSettings s)
+    /// the angle between the lamp and the target), and the flares' glare too (Q5). Glare that couldn't be a hundredth of
+    /// the sky's <paramref name="skyCdM2"/> at its worst (θ at its least) isn't worked out. 0 with no beam or flare out.</summary>
+    public double VeilCdM2(int observerSlot, Vec3d eye, Vec3d target, double visibilityM, SimSettings s, double skyCdM2 = 0)
     {
-        if (Beams == 0)
+        if (Beams == 0 && Flares == 0)
             return 0;
-        double veil = 0, look = Earth.Bearing(eye, target);
+        double veil = 0, look = double.NaN, least = 0.01 * skyCdM2 * s.SearchlightGlareMinDeg * s.SearchlightGlareMinDeg / s.SearchlightGlareK;
         for (int i = 0; i < Count; i++)
         {
+            if (flare[i])
+            {
+                // a flare in the eye's view glares as a lamp does (Q5)
+                double r2 = (at[i] - eye).LengthSquared;
+                if (cd[i] < least * r2)
+                    continue;
+                if (double.IsNaN(look))
+                    look = Earth.Bearing(eye, target);
+                veil += SearchlightModel.GlareCdM2(SearchlightModel.LuxAt(cd[i], Math.Sqrt(r2), visibilityM), Earth.Bearing(eye, at[i]) - look, s);
+                continue;
+            }
             if (double.IsNaN(axis[i]))
                 continue;
             double offset = (at[i] - eye).Length, d = (target - at[i]).Length;
             if (offset < d)
                 veil += SearchlightModel.BackscatterCdM2(cd[i], spread[i], mirror[i], Earth.Bearing(at[i], target) - axis[i], sigma[i], keep[i], offset, d,
                     visibilityM, s);
-            if (owner[i] != observerSlot)
+            if (owner[i] != observerSlot && cd[i] >= least * offset * offset)
             {
+                if (double.IsNaN(look))
+                    look = Earth.Bearing(eye, target);
                 double lux = SearchlightModel.LuxAt(SearchlightModel.LampCd(cd[i], Earth.Bearing(at[i], eye) - axis[i], sigma[i], keep[i], s), offset, visibilityM);
                 veil += SearchlightModel.GlareCdM2(lux, Earth.Bearing(eye, at[i]) - look, s);
             }
         }
         return veil;
+    }
+
+    /// <summary>The sea lit behind a ship by the flares beyond her (Q5), cd/m² as an eye sees it past her: each flare
+    /// further along the eye's line than she is lights the sea there by its light at that slant (I·h / r³ at the point of
+    /// the line under it, r from the flare), which shines back at <see cref="SimSettings.StarSeaReflectance"/> through the
+    /// haze to the eye. She stands dark against it: a silhouette, as against a low sun or the moon's path. 0 with no
+    /// flare out.</summary>
+    public double BacklightCdM2(Vec3d eye, Vec3d target, double visibilityM, SimSettings s)
+    {
+        if (Flares == 0)
+            return 0;
+        double sigmaAir = double.IsPositiveInfinity(visibilityM) || visibilityM <= 0 ? 0 : 3.912 / visibilityM;
+        var up = target.Normalized();
+        var line = target - eye;
+        line -= up * Vec3d.Dot(line, up);
+        double d = line.Length;
+        if (!(d > 1))
+            return 0;
+        var u = line / d;
+        double l = 0;
+        for (int i = 0; i < Count; i++)
+        {
+            if (!flare[i])
+                continue;
+            var f = at[i] - eye;
+            double h = at[i].Length - Earth.Radius, along = Vec3d.Dot(f, u);
+            if (along <= d || h <= 0)
+                continue;   // short of her: it lights her side, not what's behind her
+            var off = f - u * along;
+            off -= up * Vec3d.Dot(off, up);
+            double r2 = h * h + off.LengthSquared, e = cd[i] * h / (r2 * Math.Sqrt(r2)) * Math.Exp(-sigmaAir * Math.Sqrt(r2));
+            l += s.StarSeaReflectance * e / Math.PI * Math.Exp(-sigmaAir * along);
+        }
+        return l;
     }
 
     /// <summary>Whether a ship (slot) has a beam out.</summary>

@@ -29,7 +29,7 @@ public class FormationRailsTests(ITestOutputHelper output)
     }
 
     /// <summary>The AI is registered third, after the ships and groups: its orders' system id.</summary>
-    const byte AiId = 9;   // the world registers ships 1, groups 2, shells 3, gunnery 4, damage 5, torpedoes 6, smoke 7 and searchlights 8; the AI comes after them
+    const byte AiId = 10;   // the world registers ships 1, groups 2, shells 3, gunnery 4, damage 5, torpedoes 6, smoke 7, searchlights 8 and star shell 9; the AI comes after them
     static readonly UnitOrders O = new(AiId);
 
     /// <summary>The unit a ship's orders go to: its group, if it guides one, or the ship.</summary>

@@ -135,6 +135,8 @@ public sealed class World
         Register(Smoke);
         Searchlights = new SearchlightSystem(Settings, Ships, Sightings);
         Register(Searchlights);
+        StarShells = new StarShellSystem(Settings, Ships, Shells, seed);
+        Register(StarShells);
         Ships.ClassAdded = cls =>
         {
             if (Reach.Add(cls))
@@ -157,6 +159,9 @@ public sealed class World
     /// <summary>The searchlights in the fight (docs/battle/night.md Q4): always registered eighth
     /// (<see cref="SearchlightSystem.Id"/>).</summary>
     public SearchlightSystem Searchlights { get; }
+
+    /// <summary>Star shell in the fight (docs/battle/night.md Q5): always registered ninth (<see cref="StarShellSystem.Id"/>).</summary>
+    public StarShellSystem StarShells { get; }
 
     /// <summary>Torpedoes running (docs/battle/fighting.md 4.6): always registered sixth (<see cref="TorpedoSystem.Id"/>).</summary>
     public TorpedoSystem Torpedoes { get; }

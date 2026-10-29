@@ -34,7 +34,7 @@ static class NightHistory
         new("1890-1925", "night-4th-flotilla",
             "The 4th Flotilla, Jutland 23:30: German searchlights, star shell and secondaries at 1,000-2,000 yd; Tipperary wrecked " +
             "in minutes; Ardent, Fortune lost to gunfire in the night (Sparrowhawk to a collision); probably one torpedo hit (Rostock)",
-            "star shell; collisions (4.11)"),
+            "collisions (4.11)"),
         new("1890-1925", "night-black-prince",
             "Black Prince, Jutland 00:07: blundered into the German line at about 1,000-1,500 yd, lit and sunk in minutes, all hands; " +
             "no hits on the Germans",
@@ -52,7 +52,7 @@ static class NightHistory
     sealed class Side
     {
         public double SeenS = double.NaN, SeenM = double.NaN, FireS = double.NaN, FireM = double.NaN, TorpS = double.NaN, TorpM = double.NaN;
-        public double LitS = double.NaN, LitM = double.NaN, LitShipS;
+        public double LitS = double.NaN, LitM = double.NaN, LitShipS, StarS = double.NaN, StarM = double.NaN, StarShipS;
         public int HitsOnLights;
         public ContactLevel SeenAs;
         public readonly List<double> SalvoM = [];
@@ -147,9 +147,18 @@ static class NightHistory
             {
                 var ship = store[store.OffRailsSlot(k)];
                 var (_, on, exposed) = w.Searchlights.OrderOf(ship.Entity, w.Time.Ms);
-                if (!exposed || SideOf(ship.Entity) is not (>= 0 and var ls))
+                var (star, starMount) = w.StarShells.TaskOf(ship.Entity);
+                if (SideOf(ship.Entity) is not (>= 0 and var ls))
                     continue;
                 var r = sides[ls];
+                if (star != 0 && starMount >= 0)
+                {
+                    r.StarShipS += open ? 1 : 60;
+                    if (double.IsNaN(r.StarS))
+                        (r.StarS, r.StarM) = (now, Range(ship.Entity, star));
+                }
+                if (!exposed)
+                    continue;
                 r.LitShipS += open ? 1 : 60;
                 if (double.IsNaN(r.LitS))
                     (r.LitS, r.LitM) = (now, on != 0 ? Range(ship.Entity, on) : double.NaN);
@@ -239,8 +248,11 @@ static class NightHistory
             var r = plays.Select(p => p.Sides[sd]).ToArray();
             int lit = r.Count(x => !double.IsNaN(x.LitS));
             double hits = r.Average(x => x.Hits), onLights = r.Average(x => x.HitsOnLights);
+            int star = r.Count(x => !double.IsNaN(x.StarS));
             Console.WriteLine($"    {s.Sides[sd],-10} lights: " + (lit == 0 ? "never" :
                 $"first on {Mean(r, x => x.LitS) / 60:F0} min, at {Km(Mean(r, x => x.LitM))} ({lit}/{r.Length}), {r.Average(x => x.LitShipS) / 60:F0} ship-min out") +
+                $"; star shell: " + (star == 0 ? "never" :
+                $"first at {Mean(r, x => x.StarS) / 60:F0} min, at {Km(Mean(r, x => x.StarM))} ({star}/{r.Length}), {r.Average(x => x.StarShipS) / 60:F0} ship-min") +
                 $"; its hits on ships showing a light {onLights:F1} of {hits:F1}");
         }
         Console.WriteLine($"    the end: {plays.Average(p => p.Hours):F1} h; " +

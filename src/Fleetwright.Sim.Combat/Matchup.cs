@@ -104,7 +104,7 @@ public sealed class MatchupProfile
             foreach (var l in Loadout.Loads(b))
             {
                 var ls = Loadout.ShellTypes[l.ShellType];
-                if (!kinds.Exists(k => k.Shell.Kind == ls.Kind))
+                if (ls.Kind != ShellKind.Star && !kinds.Exists(k => k.Shell.Kind == ls.Kind))
                     kinds.Add(new MatchupGun(b, row, bearing, 60 / (reload / mounts), rounds, ls, table(BallisticKey.Of(ls, maxElev)), s));
             }
             g.Kinds = [.. kinds];

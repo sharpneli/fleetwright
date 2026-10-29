@@ -122,6 +122,13 @@
   "SearchlightsOnOne": 2,
   "SearchlightOpenShare": 0.9,
   "SearchlightDouseShare": 1.2,
+  "StarBurstM": 300,
+  "StarBeyondM": 600,
+  "StarDispersionMil": 2,
+  "StarOverlapS": 3,
+  "StarCheckMs": 1000,
+  "StarSeaReflectance": 0.1,
+  "StarFuzeMaxS": 25,
   // the night's light (docs/battle/night.md Q1)
   "NightOvercastShare": 0.15,
   "NightMoonSkyShare": 0.25,

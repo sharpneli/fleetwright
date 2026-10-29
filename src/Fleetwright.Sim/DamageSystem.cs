@@ -544,7 +544,7 @@ public sealed class DamageSystem : IWorldSystem
                     : st.LoadedMs > now ? (MountStatus.Loading, st.LoadedMs)
                     : (MountStatus.Ready, 0L);
                 d.MountGunsOut[i] = harm.GunUntil > now ? harm.GunsOut : 0;
-                (d.MountAp[i], d.MountCommon[i], d.MountHe[i]) = (0, 0, 0);
+                (d.MountAp[i], d.MountCommon[i], d.MountHe[i], d.MountStar[i]) = (0, 0, 0, 0);
             }
             var lo = store.Combat.Loadout(slot);
             if (lo.LoadCount > 0)
@@ -556,7 +556,7 @@ public sealed class DamageSystem : IWorldSystem
                         {
                             int rounds = store.Combat.LoadRounds(slot, m, l);
                             var kind = lo.ShellTypes[loads[l].ShellType].Kind;
-                            ref int sum = ref (kind == ShellKind.Ap ? d.MountAp : kind == ShellKind.Common ? d.MountCommon : d.MountHe)[m0 + m];
+                            ref int sum = ref (kind switch { ShellKind.Ap => d.MountAp, ShellKind.Common => d.MountCommon, ShellKind.Star => d.MountStar, _ => d.MountHe })[m0 + m];
                             sum = rounds == int.MaxValue || sum == int.MaxValue ? int.MaxValue : sum + rounds;
                         }
                 }

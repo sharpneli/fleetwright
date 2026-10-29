@@ -162,6 +162,7 @@ public sealed class Sightings
         long now = world.Time.Ms;
         world.Lights.Gather(store, settings);   // the fires that light what's near them (docs/battle/night.md Q2)
         world.Searchlights.Gather(world, world.Lights);   // and the beams out (Q4)
+        world.StarShells.Gather(world, world.Lights);     // and the flares burning (Q5)
         foreach (var p in pictures)
             p.Reserve(store.Count);
         // the ships in encounters, sorted by encounter
@@ -387,7 +388,7 @@ public sealed class Sightings
         double glowMW = store.Combat.Condition(ts.Slot).FireShowMW, glowM = settings.FireGlowHeightShare * tTop;
         var lights = world.Lights;
         var (litLux, litFrom) = lights.On(ts.Slot, ts.Position, vis);
-        bool beams = lights.Beams > 0;
+        bool beams = lights.Beams > 0, veiled = beams || lights.Flares > 0;
         var pic = Of(row.By);
         int ci = pic?.IndexOf(ts.Entity) ?? -1;
         bool inSight = ci >= 0 && pic![ci].InSight;
@@ -411,6 +412,8 @@ public sealed class Sightings
             double back = Earth.Bearing(ts.Position, os.Position), aspect = back - ts.HeadingDeg;
             var line = new SightLine(d, aspect, vis, lookNight.Toward(brg), Silhouette(brg), SpeedMs: speed,
                 LitLux: litLux > 0 ? litLux * Lights.Facing(litFrom, back) : 0, AdaptedCdM2: Dazzled(store, os.Slot));
+            if (lights.Flares > 0)
+                line = Backlit(line, lights.BacklightCdM2(os.Position, ts.Position, vis, settings));   // a flare beyond her (Q5)
             var works = store.Combat.Condition(slot[nearIdx[m]]).EyeWorks;   // damage: a wrecked post sees nothing
             // her searchlights toward this ship (docs/battle/night.md Q4): the lamp in the beam or forward of it, a point
             // to aim at that finds and holds her, but no more says what she is than her bow wave does
@@ -442,8 +445,8 @@ public sealed class Sightings
                 line = line with { Glass = SightModel.GlassLight(eyes[e], lookPupil, settings) };
                 if (smoked)
                     line = line with { Smoke = SmokeModel.EyeTau(smoke, eyes, eyes[e].X, eyes[e].Y, eyes[e].HeightM) };
-                if (beams)   // her own beams' light scattered back down this line, others' glare in this eye (Q4)
-                    line = line with { VeilCdM2 = lights.VeilCdM2(os.Slot, os.Frame.ToWorld(eyes[e].X, eyes[e].Y, eyes[e].HeightM), ts.Position, vis, settings) };
+                if (veiled)   // the beams' light scattered back down this line, others' and the flares' glare in this eye (Q4, Q5)
+                    line = line with { VeilCdM2 = lights.VeilCdM2(os.Slot, os.Frame.ToWorld(eyes[e].X, eyes[e].Y, eyes[e].HeightM), ts.Position, vis, settings, line.SkyCdM2) };
                 double mag = SightModel.Magnification(eyes[e], settings);
                 double margin = SightModel.Margin(eyes[e].HeightM, mag, tc, line, settings);
                 if (glowMW > 0)
@@ -504,6 +507,14 @@ public sealed class Sightings
             pic.At(ci).InSight = false;
         return false;
     }
+
+    /// <summary>A line with the sea lit behind her by a flare beyond (docs/battle/night.md Q5, cd/m²): the background
+    /// that much brighter, and she a silhouette against it by its share of it.</summary>
+    internal static SightLine Backlit(in SightLine line, double backCdM2) =>
+        backCdM2 <= 0 ? line : line with
+        {
+            SkyCdM2 = line.SkyCdM2 + backCdM2, Silhouette = Math.Max(line.Silhouette, backCdM2 / (line.SkyCdM2 + backCdM2)),
+        };
 
     /// <summary>How far a ship on this bearing from the eye stands dark against a bright horizon beyond her (0-1): fully
     /// within the silhouette arc of a low sun, by the moon's path's strength within its arc (docs/battle/night.md Q1).</summary>

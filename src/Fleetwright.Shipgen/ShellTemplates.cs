@@ -76,6 +76,28 @@ public static class ShellTemplates
         });
     }
 
+    /// <summary>A star shell (docs/battle/night.md Q5) of a family: base-ejecting, a time fuze (its error a share of the time
+    /// set, and the share that fail: the duds), an expelling charge of black powder, its candle (a share of the mass, its
+    /// light a kilogram, burn and fall). Always a light guns' block: star shell came from the light and medium guns.</summary>
+    static Template S(string name, string group, double lbIn3, double formFactor, double candle, double cdPerKg, double burnS, double fallMs,
+        double fuzeError, double duds, string note)
+    {
+        var t = T(name, group, "star", lbIn3, 1.5, formFactor, "none", 0, false, He, 0.02, "Black powder", "basic",
+            new F("time", 0, 0, 1, "single", fuzeError, duds), "forged", note);
+        return L(t with { Value = t.Value with { Star = new StarInput { CandleShare = candle, CdPerKg = cdPerKg, BurnS = burnS, FallMs = fallMs } } });
+    }
+
+    /// <summary>A family's star shell, if it had one: what the format 15 upgrade gives its light guns (docs/battle/night.md
+    /// Q5).</summary>
+    public static Template? StarOf(string group) => All.FirstOrDefault(t => t.Group == group && t.Value.Kind == "star");
+
+    /// <summary>The star shell's share of a light gun's rounds where its family has one [EST: a few rounds a gun in a
+    /// hundred-odd].</summary>
+    public const double StarShare = 0.05;
+
+    /// <summary>The guns that carry star shell: under this calibre, mm (the light and medium guns).</summary>
+    public const double StarUnderMm = 160;
+
     // the body's break-up limits and quality by family (armor/00 §5.4, armor/02 §4.6): (obliquity °, T/D, quality)
     static readonly (double, double, double) Chilled = (0, 0.3, 0.85), Uncapped = (15, 0.5, 0.95), Soft = (15, 0.5, 0.95),
         Rn1914 = (15, 0.4, 0.85), Krupp1911 = (20, 0.6, 0.95), Greenboy = (20, 0.67, 0.96), Ww2 = (30, 1.0, 1.0), Km1939 = (20, 0.8, 1.0),
@@ -175,6 +197,10 @@ public static class ShellTemplates
         T("DE 1911 Spgr L/3,8 Bdz (TNT)", "DE 1911", "common", 0.52, 3, 1.5, "none", 0, false, Common, 0.061, "TNT", "basic",
             Base(0.025, 0.05, plates: "two", scatter: 0.5, blind: 0.15), "forged",
             "30.5 cm Spgr. L/3,8 Bdz 405 kg, 24.8 kg TNT: base-fuzed, bursts 2-6 m into unarmoured structure."),
+        S("DE 1911 Leuchtgeschoss", "DE 1911", 0.47, 1.6, 0.15, 3e4, 25, 6, 0.015, 0.15,
+            "The German star shell of the 8.8, 10.5 and 15 cm guns, in service by 1914 and used at Jutland's night (the 4th " +
+            "Flotilla lit by it). All [EST] until the research: a candle 15% of the shell, 3·10⁴ cd a kg, 25 s under its " +
+            "parachute at 6 m/s, the time fuze 1.5% out, 15% duds."),
         T("DE 1911 Spgr Kz (TNT)", "DE 1911", "he", 0.52, 3, 1.5, "none", 0, false, He, 0.066, "TNT", "basic", Nose, "forged",
             "Nose-fuzed Sprenggranate (the 15 cm's 45.3 kg, 3.0 kg TNT). German light shells ran 0.49-0.54, so the family's blocks serve every gun."),
 
@@ -205,6 +231,8 @@ public static class ShellTemplates
             "[EST]. Also the 1921 family's.")),
         T("US 1921 AP Mk 3 (Explosive D)", "US 1921", "ap", 0.52, 4, 1.15, "soft", 0.06, false, Soft, 0.027, "Explosive D", "basic",
             Base(0.003), "nicr", "16\"/45 Mk 3 2,110 lb (W/D³ 0.52), 57.5 lb Explosive D (2.7%), non-delay until the late 1920s."),
+        S("US 1921 star shell", "US 1921", 0.46, 1.6, 0.18, 5e4, 30, 6, 0.01, 0.1,
+            "The 1920s' candle: 18% of the shell, 5e4 cd a kg, 30 s at 6 m/s, the fuze 1% out, 10% duds [EST]."),
         T("US 1921 HC (Explosive D)", "US 1921", "he", 0.46, 4, 1.15, "none", 0, false, He, 0.07, "Explosive D", "basic", Nose, "forged",
             "[EST] from the later HC."),
 
@@ -212,6 +240,8 @@ public static class ShellTemplates
         T("RN 1927 APC (Shellite)", "RN 1927", "ap", 0.50, 4, 1.15, "hard", 0.116, true, Greenboy, 0.024, "Shellite", "basic", Base(0.025),
             "nicr",
             "Greenboy practice (hard cap 11.6%, Shellite 2.4%, No. 16D 0.025 s) at the light W/D³ of Nelson's 16\" (2,048 lb, 0.50) and the 8\" (256 lb, 0.50). CE booster only from the late 1920s."),
+        S("RN 1927 star shell", "RN 1927", 0.47, 1.6, 0.18, 5e4, 30, 6, 0.01, 0.1,
+            "The 1920s' candle: 18% of the shell, 5e4 cd a kg, 30 s at 6 m/s, the fuze 1% out, 10% duds [EST]."),
         T("RN 1927 HE (TNT)", "RN 1927", "he", 0.50, 4, 1.15, "none", 0, true, He, 0.07, "TNT", "basic", Nose, "forged", "[EST]."),
         L(T("RN 1927 light SAP (TNT/wax)", "RN 1927", "common", 0.47, 4, 1.15, "none", 0, true, Common, 0.033, "TNT/wax", "basic", Base(0.01),
             "forged", "6\" CPBC 100 lb (W/D³ 0.47), TNT/beeswax. Filler [EST].")),
@@ -226,6 +256,8 @@ public static class ShellTemplates
         T("JP 1925 APC (TNT/wax)", "JP 1925", "ap", 0.54, 4, 1.15, "hard", 0.09, true, Krupp1911, 0.025, "TNT/wax", "basic",
             Base(0.03, 0.05, plates: "two", blind: 0.1), "nicr",
             "APC Model 1925 on the German pattern (wax-TNT, buffered cavity, 1922): 41 cm 1,020 kg (W/D³ 0.54). Still prematures and low-order bursts. Cap and filler [EST]; delay 0.025-0.035 (Okun)."),
+        S("JP 1925 star shell", "JP 1925", 0.47, 1.6, 0.18, 5e4, 30, 6, 0.01, 0.1,
+            "The 1920s' candle: 18% of the shell, 5e4 cd a kg, 30 s at 6 m/s, the fuze 1% out, 10% duds [EST]."),
         T("JP 1925 HE (TNT)", "JP 1925", "he", 0.50, 4, 1.15, "none", 0, true, He, 0.06, "TNT", "basic", Nose, "forged", "[EST]."),
         L(T("JP 1925 light common (TNT/wax)", "JP 1925", "common", 0.43, 4, 1.15, "none", 0, true, Common, 0.03, "TNT/wax", "basic", Base(0.01),
             "forged", "12.7 cm 23 kg (W/D³ 0.41) and 14 cm 38 kg (0.46). Filler [EST].")),
@@ -234,6 +266,8 @@ public static class ShellTemplates
         // ---- Russia 1911
         T("RU 1911 AP (TNT)", "RU 1911", "ap", 0.60, 4, 1.15, "hard", 0.08, true, Krupp1911, 0.027, "TNT", "basic", Base(0.025), "nicr",
             "12\" AP mod 1911 470.9 kg (W/D³ 0.60, super-heavy), 12.84 kg. Cap, explosive and fuze [EST]."),
+        S("RU 1911 star shell", "RU 1911", 0.53, 1.6, 0.15, 3e4, 25, 6, 0.015, 0.15,
+            "The Great War's candle: 15% of the shell, 3e4 cd a kg, 25 s at 6 m/s, the fuze 1.5% out, 15% duds [EST]."),
         T("RU 1911 HE (TNT)", "RU 1911", "he", 0.60, 4, 1.15, "none", 0, true, He, 0.125, "TNT", "basic", Nose, "forged",
             "12\" HE mod 1911 471 kg, 58.8 kg TNT."),
 
@@ -244,6 +278,8 @@ public static class ShellTemplates
         // ---- the Second World War
         T("RN 1938 APC (Shellite)", "RN 1938", "ap", 0.58, 6, 1.05, "hard", 0.10, true, Ww2, 0.025, "Shellite", "ce", Base(0.025, 0.0625),
             "nicr", "14\" APC Mk VIIb 6crh 1,590 lb (W/D³ 0.58), Shellite 2.5% with CE, No. 159 (1\" at normal on a 16\": 0.0625 cal), 0.025 s. Cap share [EST]."),
+        S("RN 1938 star shell", "RN 1938", 0.53, 1.6, 0.2, 8e4, 45, 8, 0.008, 0.05,
+            "The Second War's (the USN 5-inch/38's ~4·10⁵ cd for ~45 s): 20% of the shell, 8e4 cd a kg, 45 s at 8 m/s, the fuze 0.8% out, 5% duds [EST]."),
         T("RN 1938 HE (TNT)", "RN 1938", "he", 0.58, 6, 1.05, "none", 0, true, He, 0.067, "TNT", "ce", Nose, "forged",
             "15\" HE Mk VII 879 kg, 59 kg TNT (6.7%)."),
         L(T("RN 1938 light SAP (TNT/wax)", "RN 1938", "common", 0.53, 6, 1.05, "none", 0, true, Common, 0.03, "TNT/wax", "ce", Base(0.01),
@@ -252,6 +288,8 @@ public static class ShellTemplates
         T("DE 1939 Psgr L/4,4 m.Hb (TNT/wax)", "DE 1939", "ap", 0.53, 4.4, 1.05, "hard", 0.10, true, Km1939, 0.025, "TNT/wax", "basic",
             Base(0.035, 0.05, plates: "two"), "nicr",
             "38 cm Psgr. L/4,4 m.Hb 800 kg (W/D³ 0.53), hard cap and 10-calibre ballistic cap, 20.3 kg Fp, Bd.Z. 38 0.035 s; a picric booster to 1945. Cap share [EST]."),
+        S("DE 1939 star shell", "DE 1939", 0.48, 1.6, 0.2, 8e4, 45, 8, 0.008, 0.05,
+            "The Second War's (the USN 5-inch/38's ~4·10⁵ cd for ~45 s): 20% of the shell, 8e4 cd a kg, 45 s at 8 m/s, the fuze 0.8% out, 5% duds [EST]."),
         T("DE 1939 Spgr L/4,5 Kz (TNT)", "DE 1939", "he", 0.53, 4.4, 1.05, "none", 0, true, He, 0.083, "TNT", "basic", Nose, "forged",
             "38 cm nose-fuzed HE 800 kg, 66.2 kg TNT."),
         L(T("DE 1939 15cm Spgr Bdz (TNT)", "DE 1939", "common", 0.48, 4.4, 1.05, "none", 0, true, Common, 0.05, "TNT", "basic",
@@ -260,12 +298,16 @@ public static class ShellTemplates
             "15 cm Sprgr. L/4,6 KZ, 3.9 kg TNT.")),
         T("IT 1940 APC (TNT)", "IT 1940", "ap", 0.58, 4, 1.05, "hard", 0.10, true, (25, 0.9, 0.95), 0.0115, "TNT", "basic", Base(0.03), "nicr",
             "381 mm APC 884.8 kg (W/D³ 0.58), cast TNT 10.16 kg (1.15%). Uneven makers: quality 0.95. Cap and fuze [EST]."),
+        S("IT 1940 star shell", "IT 1940", 0.5, 1.6, 0.2, 8e4, 45, 8, 0.008, 0.05,
+            "The Second War's (the USN 5-inch/38's ~4·10⁵ cd for ~45 s): 20% of the shell, 8e4 cd a kg, 45 s at 8 m/s, the fuze 0.8% out, 5% duds [EST]."),
         T("IT 1940 HE (TNT)", "IT 1940", "he", 0.54, 4, 1.05, "none", 0, true, He, 0.07, "TNT", "basic", Nose, "forged", "[EST]."),
         L(T("IT 1940 light SAP (TNT)", "IT 1940", "common", 0.50, 4, 1.05, "none", 0, true, Common, 0.03, "TNT", "basic", Base(0.01), "forged",
             "152/55 50 kg (W/D³ 0.51), 90/50 and 100/47 0.50. Filler [EST].")),
         L(T("IT 1940 light HE (TNT)", "IT 1940", "he", 0.50, 4, 1.05, "none", 0, true, He, 0.07, "TNT", "basic", Nose, "forged", "[EST].")),
         T("FR 1936 OPfK (TNT)", "FR 1936", "ap", 0.58, 4, 1.05, "hard", 0.095, true, Ww2, 0.025, "TNT", "basic", Base(0.03), "nicr",
             "380 mm OPfK Mle 1936 884 kg (W/D³ 0.58), cap 84 kg (9.5%), 21.9 kg filler (explosive [EST]). Fuze [EST]."),
+        S("FR 1936 star shell", "FR 1936", 0.53, 1.6, 0.2, 8e4, 45, 8, 0.008, 0.05,
+            "The Second War's (the USN 5-inch/38's ~4·10⁵ cd for ~45 s): 20% of the shell, 8e4 cd a kg, 45 s at 8 m/s, the fuze 0.8% out, 5% duds [EST]."),
         T("FR 1936 OEA (Melinite)", "FR 1936", "he", 0.55, 4, 1.05, "none", 0, true, He, 0.08, "Lyddite", "basic", Nose, "forged", "[EST]."),
         L(T("FR 1936 light SAP (TNT)", "FR 1936", "common", 0.53, 4, 1.05, "none", 0, true, Common, 0.03, "TNT", "basic", Base(0.01), "forged",
              "152/55 Mle 1930 54 kg (W/D³ 0.555), 130/45 32 kg (0.53), 100/45 13.5 kg (0.49). Filler [EST].")),
@@ -273,6 +315,8 @@ public static class ShellTemplates
         T("US 1941 AP Mk 8 (Explosive D)", "US 1941", "ap", 0.66, 9, 1.05, "hard", 0.12, true, UsLate, 0.015, "Explosive D", "ce",
             Base(0.033, 0.094, 0.25), "nicr",
             "16\"/50 Mk 8 2,700 lb (W/D³ 0.66, super-heavy; the 8\" and 6\" SH the same), 9crh under a windscreen, 40.9 lb Explosive D (1.5%), Mk 21 BDF 0.033 s (1.5\" at 0°, 0.375\" at 65°). Cap share [EST]."),
+        S("US 1941 star shell", "US 1941", 0.44, 1.6, 0.2, 8e4, 45, 8, 0.008, 0.05,
+            "The Second War's (the USN 5-inch/38's ~4·10⁵ cd for ~45 s): 20% of the shell, 8e4 cd a kg, 45 s at 8 m/s, the fuze 0.8% out, 5% duds [EST]."),
         T("US 1941 HC (Explosive D)", "US 1941", "he", 0.48, 9, 1.05, "none", 0, true, He, 0.081, "Explosive D", "ce", Nose, "forged",
             "16\" HC Mk 13 1,900 lb (W/D³ 0.46), 8\" 0.51, 6\" 0.49: 0.48 between. 8.1% Explosive D, PDF Mk 29."),
         L(T("US 1941 5in Common (Explosive D)", "US 1941", "common", 0.44, 4, 1.05, "none", 0, true, Common, 0.049, "Explosive D", "ce", Base(0.01),
@@ -282,6 +326,8 @@ public static class ShellTemplates
         T("JP 1931 Type 91 AP (TNA)", "JP 1931", "ap", 0.54, 4, 1.05, "hard", 0.10, true, Greenboy, 0.016, "TNA", "ce",
             Base(0.03, 0.05, plates: "two"), "nicr",
             "46 cm Type 91 1,460 kg (W/D³ 0.54), 23.9 kg TNA with its liner. As a plain hard-capped APC with the period's 0.03 s: the real break-away cap and 0.4 s fuze were the diving doctrine, not in the game yet. Cap share and booster [EST]."),
+        S("JP 1931 star shell", "JP 1931", 0.44, 1.6, 0.2, 8e4, 45, 8, 0.008, 0.05,
+            "The Second War's (the USN 5-inch/38's ~4·10⁵ cd for ~45 s): 20% of the shell, 8e4 cd a kg, 45 s at 8 m/s, the fuze 0.8% out, 5% duds [EST]."),
         T("JP 1931 Type 0 HE (TNA)", "JP 1931", "he", 0.51, 4, 1.05, "none", 0, true, He, 0.045, "TNA", "ce", Nose, "forged",
             "46 cm Type 0 HE 1,360 kg, 61.7 kg TNA."),
         L(T("JP 1931 light common (TNA)", "JP 1931", "common", 0.44, 4, 1.05, "none", 0, true, Common, 0.03, "TNA", "ce", Base(0.01), "forged",
@@ -292,6 +338,8 @@ public static class ShellTemplates
         // ---- after the war: dual-purpose guns
         T("DP SAP (1950)", "1950 dual-purpose", "common", 0.56, 6, 1.0, "none", 0, true, Common, 0.04, "TNT", "ce", Base(0.01), "forged",
             "The post-war 4.5\"-6\" dual-purpose guns' shells (5\"/54 31.75 kg, W/D³ 0.56). [EST]."),
+        S("DP star shell (1950)", "1950 dual-purpose", 0.5, 1.6, 0.2, 1e5, 50, 8, 0.005, 0.03,
+            "The postwar candle: 20% of the shell, 1e5 cd a kg, 50 s at 8 m/s, the fuze 0.5% out, 3% duds [EST]."),
         T("DP HE (1950)", "1950 dual-purpose", "he", 0.56, 6, 1.0, "none", 0, true, He, 0.10, "Comp B", "ce", Nose, "forged",
             "Comp B filled, nose fuzed. [EST]."),
     ];

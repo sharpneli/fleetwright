@@ -683,7 +683,9 @@ public sealed partial class MapScene
             MountStatus.Down => until > now ? U8.W($"down · ~{Math.Ceiling((until - now) / 1000.0):0} s") : "down"u8,
             _ => "out of action"u8,
         };
-        var rounds = U8.W($"{Rounds(d.MountAp[j])} · {Rounds(d.MountCommon[j])} · {Rounds(d.MountHe[j])}");
+        var rounds = d.MountStar[j] > 0
+            ? U8.W($"{Rounds(d.MountAp[j])} · {Rounds(d.MountCommon[j])} · {Rounds(d.MountHe[j])} · {Rounds(d.MountStar[j])}*")
+            : U8.W($"{Rounds(d.MountAp[j])} · {Rounds(d.MountCommon[j])} · {Rounds(d.MountHe[j])}");
         float rx = right - Width(UiFonts.Mono, rounds);
         x = Words(r, x, rx - P(6), st is MountStatus.Ready or MountStatus.Loading ? T.Text : MountInk(st), text);
         if (d.MountGunsOut[j] > 0)
@@ -706,7 +708,7 @@ public sealed partial class MapScene
         if (di < 0)
             return;
         float x = xs;
-        int ready = 0, ap = 0, com = 0, he = 0, wrong = 0;
+        int ready = 0, ap = 0, com = 0, he = 0, star = 0, wrong = 0;
         foreach (int m in mounts)
         {
             int j = d.MountStart[di] + m;
@@ -721,8 +723,10 @@ public sealed partial class MapScene
             x += P(9);
             ready += st is MountStatus.Ready or MountStatus.Loading ? 1 : 0;
             (ap, com, he) = (ap + Math.Max(Rounds(d.MountAp[j]), 0), com + Math.Max(Rounds(d.MountCommon[j]), 0), he + Math.Max(Rounds(d.MountHe[j]), 0));
+            star += Math.Max(Rounds(d.MountStar[j]), 0);
         }
-        var rounds = U8.W($"{ap:#,0} · {com:#,0} · {he:#,0}");
+        // star shell after a star (docs/battle/night.md Q5; its own column waits for the night's UI, Q9)
+        var rounds = star > 0 ? U8.W($"{ap:#,0} · {com:#,0} · {he:#,0} · {star:#,0}*") : U8.W($"{ap:#,0} · {com:#,0} · {he:#,0}");
         float rx = right - Width(UiFonts.Mono, rounds) - P(6);
         x += P(4);
         if (ready == mounts.Length)

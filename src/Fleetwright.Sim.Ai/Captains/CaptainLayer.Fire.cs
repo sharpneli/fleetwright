@@ -113,7 +113,7 @@ public sealed partial class CaptainLayer
             Comb(ctx, ref cap, own);   // coarse, also when a track comes into sight between thinks (WatchTracks)
             TakeUpStanding(ctx, ref cap, own, slot);
             Aim(ctx, ref cap, own, slot);
-            Searchlights(ctx, ref cap, own, slot);   // on what the guns can't see, in the dark (docs/battle/night.md Q4)
+            NightLights(ctx, ref cap, own, slot);   // star shell or searchlights on what the guns can't see (docs/battle/night.md Q4, Q5)
             Crew(ctx, own, slot, fighting: true);   // where her men stand (docs/battle/crew.md N3a)
             if (store.Combat.Engaged(slot) > 0)
             {

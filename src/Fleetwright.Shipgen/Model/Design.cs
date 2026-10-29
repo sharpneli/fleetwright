@@ -313,7 +313,7 @@ public sealed record ShellEntryInput
 /// is of the shell's mass, every threshold in calibres or T/D, so one block serves a navy's family of guns.</summary>
 public sealed record AmmoInput
 {
-    /// <summary>ap, common or he.</summary>
+    /// <summary>ap, common, he or star (docs/battle/night.md Q5: an illuminant on a parachute, burst by a time fuze).</summary>
     public string? Kind { get; init; }
     /// <summary>Mass = k·D³, D in m, kg/m³ (1 lb/in³ = 27,680).</summary>
     public double? MassKKgM3 { get; init; }
@@ -329,6 +329,19 @@ public sealed record AmmoInput
     public SteelInput? Steel { get; init; }
     public CasingInput? Casing { get; init; }
     public FuzeInput? Fuze { get; init; }
+    /// <summary>A star shell's candle (kind star only).</summary>
+    public StarInput? Star { get; init; }
+    [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+/// <summary>ammunition.NAME.star (docs/battle/night.md Q5): a star shell's candle, its share of the shell's mass, its
+/// light a kilogram of it (cd/kg), how long it burns (s) and how fast it falls under its parachute (m/s).</summary>
+public sealed record StarInput
+{
+    public double? CandleShare { get; init; }
+    public double? CdPerKg { get; init; }
+    public double? BurnS { get; init; }
+    public double? FallMs { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 
