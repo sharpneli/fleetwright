@@ -198,8 +198,8 @@ public enum AiCommand : ushort
     Beams,
 
     /// <summary>The player's star shell (docs/battle/night.md Q9): A a contact (an entity, as the navy holds her), or with
-    /// X 1 a point on the sea (A a packed lat/lon), lit until the order's given with A 0 (her task stops) or the contact's
-    /// lost. To a group, one ship of its tree fires: the nearest that carries star shell with the target in its reach (else
+    /// X 1 a point on the sea (A a packed lat/lon), lit by one shell: the task ends once it's fired, or when the order's
+    /// given with A 0 before then, or the contact's lost. To a group, one ship of its tree fires: the nearest that carries star shell with the target in its reach (else
     /// the nearest that carries it); A 0 stops every ship's.</summary>
     StarShell,
 }
@@ -320,10 +320,11 @@ public readonly struct UnitOrders(byte system, bool hand = false)
     /// <summary>A unit's beams kept on in the dark (or back to doctrine), against the captains' doctrine.</summary>
     public Command Beams(Unit u, bool on, OrderSource source = OrderSource.Player) => Make(AiCommand.Beams, u, source, x: on ? 1 : 0);
 
-    /// <summary>Star shell on a contact (a ship's entity, as the navy holds her; 0 stops it), by one ship of the unit.</summary>
+    /// <summary>One star shell on a contact (a ship's entity, as the navy holds her; 0 calls it off), by one ship of the unit.</summary>
     public Command StarShell(Unit u, int contact, OrderSource source = OrderSource.Player) => Make(AiCommand.StarShell, u, source, a: contact);
 
-    /// <summary>Star shell over a point on the sea, by one ship of the unit, until stopped (<see cref="StarShell"/> with 0).</summary>
+    /// <summary>One star shell over a point on the sea, by one ship of the unit (called off before it's fired by
+    /// <see cref="StarShell"/> with 0).</summary>
     public Command StarShellAt(Unit u, double latDeg, double lonDeg, OrderSource source = OrderSource.Player) =>
         Make(AiCommand.StarShell, u, source, a: Earth.PackLatLon(latDeg, lonDeg), x: 1);
 

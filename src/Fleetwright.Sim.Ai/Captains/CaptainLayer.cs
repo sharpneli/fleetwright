@@ -154,7 +154,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
     }
 
     Captain[] captains = new Captain[16];
-    int count, active;
+    int count, active, lightsHeld;   // lightsHeld: captains with the player's beams or star shell (docs/battle/night.md Q9)
 
     public int Count => count;
 
@@ -201,7 +201,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         int i = Find(entity);
         return i >= 0 ? captains[i].ClearanceM : 0;
     }
-    public bool Active => active > 0 || Fighting || Hurt();
+    public bool Active => active > 0 || Fighting || Hurt() || lightsHeld > 0;
 
     /// <summary>The world's ships, for her men's reliefs between fights (docs/battle/crew.md N3a: a captain thinks while
     /// his ship is hurt, whatever his order).</summary>
@@ -558,6 +558,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         HurtPass(ctx);   // first: it starts the hurt flag afresh, the fire pass's hurt ships add to it
         if (Fighting)
             FirePass(ctx);
+        HeldLightsPass(ctx);
         Recount();
     }
 
@@ -644,10 +645,14 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
 
     void Recount()
     {
-        active = 0;
+        (active, lightsHeld) = (0, 0);
         for (int i = 0; i < count; i++)
+        {
             if (IsActive(captains[i]))
                 active++;
+            if (captains[i].BeamsHeld || captains[i].StarHeld)
+                lightsHeld++;
+        }
     }
 
     public void Hash(ref StateHash h)
@@ -749,20 +754,29 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
     }
 
     /// <summary>The player's beams for a ship (docs/battle/night.md Q9): kept on in the dark against his doctrine, or back
-    /// to it.</summary>
-    internal void HoldBeams(int entity, bool on) => Get(entity).BeamsHeld = on;
+    /// to it. Out of a fight his lights are seen to at once (<see cref="HeldLightsPass"/>); in one, at his next think.</summary>
+    internal void HoldBeams(in AiContext ctx, int entity, bool on)
+    {
+        ref var cap = ref Get(entity);
+        cap.BeamsHeld = on;
+        if (ctx.Ships.SlotOf(entity) is int slot and >= 0 && !InFight(ctx, slot, entity))
+            HeldLights(ctx, ref cap, slot);
+        Recount();
+    }
 
-    /// <summary>The player's star shell for a ship (docs/battle/night.md Q9): on a contact (an entity), or over a point
-    /// (a packed lat/lon), or stopped (both 0). The task starts at once; his doctrine leaves it be until it ends.</summary>
+    /// <summary>The player's star shell for a ship (docs/battle/night.md Q9): one shell on a contact (an entity), or over a
+    /// point (a packed lat/lon), or called off (both 0). The task starts at once and ends with its shell; his doctrine
+    /// leaves it be until then.</summary>
     internal void HoldStar(in AiContext ctx, int entity, int contact, long point)
     {
         ref var cap = ref Get(entity);
         bool had = cap.StarHeld;
         cap.StarHeld = contact != 0 || point != 0;
         if (cap.StarHeld)
-            ctx.Issue(point != 0 ? StarShellSystem.IlluminateAt(entity, point) : StarShellSystem.Illuminate(entity, contact));
+            ctx.Issue(point != 0 ? StarShellSystem.IlluminateAt(entity, point, once: true) : StarShellSystem.Illuminate(entity, contact, once: true));
         else if (had)
             ctx.Issue(StarShellSystem.Illuminate(entity, 0));
+        Recount();
     }
 
     /// <summary>The player's shell order for a ship's main guns (docs/battle/shell-choice.md A5): a kind + 1 held against

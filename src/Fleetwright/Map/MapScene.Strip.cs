@@ -74,9 +74,9 @@ public sealed partial class MapScene
         Act.HoldFire => new(SDLK_X, false, false, "X", "Hold fire", "no gun fires"),
         Act.Shells => new(SDLK_R, false, false, "R", "", "the main guns' shell, for the selection: by target (her captain judges what a round does to the target as she's made out), or a kind held until they're out of it; the round in the gun goes first"),
         Act.Torpedoes => new(SDLK_E, true, false, "Shift+E", "Torpedoes…", "then right-click an enemy"),
-        Act.StarShell => new(SDLK_R, true, false, "Shift+R", "Star shell…", "then right-click a contact or the sea: one ship lights it, a flare kept up over it; again while one burns: stop it"),
+        Act.StarShell => new(SDLK_R, true, false, "Shift+R", "Star shell…", "then right-click a contact or the sea: one ship fires one star shell over it; again before it's fired: called off"),
         Act.Dark => new(SDLK_X, true, false, "Shift+X", "Dark", "darkened: no searchlights, star shell or challenge lamp of her own, her guns holding until she or her squadron is fired upon; again: lights by doctrine"),
-        Act.Beams => new(SDLK_G, true, false, "Shift+G", "Beams", "searchlights kept on in the dark: on her guns' target, else sweeping about the nearest contact; again: by doctrine"),
+        Act.Beams => new(SDLK_G, true, false, "Shift+G", "Beams", "searchlights kept on in the dark, hers or her squadron's (never a force's; Alt: hers alone): on her guns' target, else sweeping about the nearest contact; again: by doctrine"),
         Act.Fight => new(SDLK_B, false, false, "B", "Fight", "the nearest enemy in sight; turns away when outgunned (Fight… in the task menu: one you pick)"),
         Act.Follow => new(SDLK_F, false, false, "F", "Follow…", "station astern of her: then right-click a ship"),
         Act.Hold => new(SDLK_H, false, false, "H", "Hold", "hold the course and speed ordered"),
@@ -94,7 +94,7 @@ public sealed partial class MapScene
         Act.EngageShip => new(SDLK_E, false, true, "Alt+E", "", "engage her with the ship you had alone"),
         Act.EngageUnit => new(SDLK_E, false, false, "E", "", "engage her with the ship's squadron: its admiral spreads the fire"),
         Act.TorpedoesAt => new(SDLK_E, true, false, "Shift+E", "Torpedoes at her", "fire what's loaded and bears"),
-        Act.StarShellOn => new(SDLK_R, true, false, "Shift+R", "Star shell on her", "the ship you had lights her with star shell, a flare kept up over her"),
+        Act.StarShellOn => new(SDLK_R, true, false, "Shift+R", "Star shell on her", "the ship you had fires one star shell over her"),
         _ => default,
     };
 
@@ -192,7 +192,7 @@ public sealed partial class MapScene
             case Act.StarShell:
                 return Lights(s, c.Unit, star: true) ? null : "no star shell aboard";
             case Act.Beams:
-                return Lights(s, c.Unit, star: false) ? null : "no searchlights";
+                return Lights(s, BeamsUnit(c), star: false) ? null : "no searchlights";
             case Act.Auto:
                 if (c.G >= 0)
                     return gv.Parent[c.G] != 0 ? "in a force: hand over the force" : Tagged(s, gv.Commanded[c.G]) ? null : "your side has no commander";
@@ -301,9 +301,10 @@ public sealed partial class MapScene
             case Act.Beams:
             {
                 bool on = LitOf(Act.Beams, c) == Lit.On;
+                var beams = BeamsUnit(c);
                 if (!on && LitOf(Act.Dark, c) == Lit.On)
-                    world.Send(o.Doctrine(unit, DoctrineField.Darkened, 0));
-                world.Send(o.Beams(unit, !on));
+                    world.Send(o.Doctrine(beams, DoctrineField.Darkened, 0));
+                world.Send(o.Beams(beams, !on));
                 break;
             }
             case Act.Fight: Behaviour(3, unit, 0); break;
@@ -329,6 +330,10 @@ public sealed partial class MapScene
             case Act.StarShellOn: world.Send(o.StarShell(Unit.Ship(lastOwn), selected)); break;
         }
     }
+
+    /// <summary>Who the beams go to: the ship at her own level (or with Alt), else her squadron, never a force over it: the
+    /// beams light one ship's or one squadron's way.</summary>
+    Unit BeamsUnit(in Orders c) => c.Level == 0 || chain.Count == 0 ? Unit.Ship(selected) : Unit.Group(c.S.Groups.Id[chain[0]]);
 
     // what a unit's ships carry for the night, worked out again when the unit, the classes or the ships change
     (int Unit, int Generation, int Count) lightsKey = (0, -1, -1);
@@ -360,12 +365,12 @@ public sealed partial class MapScene
         return false;
     }
 
-    /// <summary>Whether a ship of a unit lights something with star shell by the player's order.</summary>
+    /// <summary>Whether a ship of a unit has the player's star shell still to fire (its task gone once it's fired).</summary>
     static bool StarHeld(Snapshot s, Unit u)
     {
         var v = s.Ships;
         for (int k = 0; k < v.Count; k++)
-            if (((NightFlags)v.Night[k] & NightFlags.StarHeld) != 0 && ShipIn(s, v.Entity[k], u))
+            if (((NightFlags)v.Night[k] & NightFlags.StarHeld) != 0 && v.StarOn[k] != 0 && ShipIn(s, v.Entity[k], u))
                 return true;
         return false;
     }

@@ -969,6 +969,21 @@ the close-in look; (4) as mocked: Dark lets her shoot back once fired upon, it a
   be, stopped; a squadron's star shell from its nearer ship). The sim suite 874 passed, the game's 207.
 - **Captures:** `docs/map-ui/png/night-game-beams.png`, `-dark.png`, `-star.png`, `-armed.png`.
 
+**Changed after playtest (the user, 2026-10-29):**
+
+- **Star shell by hand is one shell.** The player's order (a contact or the sea, from the strip or the enemy pane)
+  fires a single star shell and ends (`StarShellSystem` task `Once`: `Illuminate`/`IlluminateAt` with `once`); the button
+  lights only while it's still to fire (`NightFlags.StarHeld` and a task in `StarOn`), and `⇧R` again before then calls
+  it off. Doctrine's tasks still keep a flare up. Keeping one up by hand is the blanket of star shell's later work.
+- **Beams by hand go to one ship or one squadron.** The strip's Beams goes to the selected ship at her own level (or
+  with Alt), else to her squadron, never to a force over it (`MapScene.BeamsUnit`): at the default level, a ship in a
+  force's line had lit every squadron of the force.
+- **Beams by hand burn out of a fight too**, as agreed above ("whenever it's dark"): the captains' lights ran only in
+  the fire pass (an encounter or engaged), so beams ordered before contact lit nobody. `CaptainLayer.HeldLightsPass` sees
+  to the player's beams and star shell flags of ships outside it, at the layer's think (the rails period, 60 s, out of a
+  fight; at once when the order's given). Tests: `Beams_by_hand_burn_out_of_a_fight`, the star shell test now one flare
+  and done in 12 s.
+
 **Open after Q9:** a long night note widens the GUNS pane (as a long battery line already does); the flare's seconds
 left aren't in the snapshot (the mockup's "flare · 40 s"); the lit ring for an own ship in an enemy beam isn't drawn (a
 beam's target isn't in the snapshot; the wedge shows it); the challenge lamp isn't marked; a blanket of star shell

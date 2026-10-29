@@ -32,12 +32,14 @@ public sealed class StarShellSystem : IWorldSystem
     const ushort IlluminateCode = 1, IlluminateAtCode = 2, TickEvent = 1;
 
     /// <summary>A ship's illuminating task: whose (an entity), on whom (an entity; 0 for a point on the sea, <see cref="At"/>),
-    /// the mount (-1: none found yet) and its battery, and when its newest flare bursts and burns out (0: none yet).</summary>
+    /// the mount (-1: none found yet) and its battery, and when its newest flare bursts and burns out (0: none yet); a
+    /// task <see cref="Once"/> ends with its first shell fired (the player's, docs/battle/night.md Q9).</summary>
     struct Task
     {
         public int Ship, Target, Mount, Battery;
         public Vec3d At;
         public long BurstMs, OutMs;
+        public bool Once;
         /// <summary>The last lay's elevation and time of flight (0: not laid yet).</summary>
         public double Elev, Tof;
     }
@@ -69,12 +71,14 @@ public sealed class StarShellSystem : IWorldSystem
         stream = RandomStream.Named(seed, "star shell");
     }
 
-    /// <summary>A ship lights a contact (an entity) with star shell, or stops (0).</summary>
-    public static Command Illuminate(int ship, int target) => new(Id, IlluminateCode, ship, A: target);
+    /// <summary>A ship lights a contact (an entity) with star shell, or stops (0); <paramref name="once"/>: one shell, then
+    /// the task ends.</summary>
+    public static Command Illuminate(int ship, int target, bool once = false) => new(Id, IlluminateCode, ship, A: target, B: once ? 1 : 0);
 
     /// <summary>A ship lights a point on the sea with star shell (a packed lat/lon, <see cref="Earth.PackLatLon"/>; the
-    /// player's, docs/battle/night.md Q9: torpedo craft suspected there), until told to stop (<see cref="Illuminate"/> 0).</summary>
-    public static Command IlluminateAt(int ship, long packedLatLon) => new(Id, IlluminateAtCode, ship, A: packedLatLon);
+    /// player's, docs/battle/night.md Q9: torpedo craft suspected there), until told to stop (<see cref="Illuminate"/> 0),
+    /// or with <paramref name="once"/> one shell.</summary>
+    public static Command IlluminateAt(int ship, long packedLatLon, bool once = false) => new(Id, IlluminateAtCode, ship, A: packedLatLon, B: once ? 1 : 0);
 
     /// <summary>The contact a ship is lighting with star shell (0: none, or a point), and her illuminating mount (-1: none).</summary>
     public (int Target, int Mount) TaskOf(int ship)
@@ -116,7 +120,8 @@ public sealed class StarShellSystem : IWorldSystem
                 Drop(i);
             return;
         }
-        if (i >= 0 && tasks[i].Target == target && tasks[i].At == at)
+        bool once = c.B != 0;
+        if (i >= 0 && tasks[i].Target == target && tasks[i].At == at && tasks[i].Once == once)
             return;   // as it is
         if (i >= 0)
             Drop(i);
@@ -125,7 +130,7 @@ public sealed class StarShellSystem : IWorldSystem
             Array.Resize(ref tasks, 2 * taskCount);
         Array.Copy(tasks, i, tasks, i + 1, taskCount - i);
         taskCount++;
-        tasks[i] = new Task { Ship = c.Entity, Target = target, At = at, Mount = -1, Battery = -1 };
+        tasks[i] = new Task { Ship = c.Entity, Target = target, At = at, Mount = -1, Battery = -1, Once = once };
         Tick(world, schedule: true);
     }
 
@@ -203,7 +208,7 @@ public sealed class StarShellSystem : IWorldSystem
 
     /// <summary>One task's tick: false when it ends (her ship or the contact gone, the contact seen going down, no mount
     /// left to fire star shell at her); while her navy doesn't hold the contact it waits. Else a shell, when one's due and
-    /// the mount is ready. A point's ends only with her ship or her mounts.</summary>
+    /// the mount is ready. A point's ends only with her ship or her mounts; a task once with its shell.</summary>
     bool Work(World world, int i, long now)
     {
         ref var t = ref tasks[i];
@@ -293,16 +298,16 @@ public sealed class StarShellSystem : IWorldSystem
         t.BurstMs = burstMs;
         t.OutMs = burstMs + (long)(1000 * type.StarBurnS);
         if (r.NextDouble() < type.FuzeBlind || type.StarCd <= 0)
-            return true;   // a dud: the next goes when this one would have burnt out
+            return !t.Once;   // a dud: the next goes when this one would have burnt out
         var at = table.Position(muzzle, f, e, 1, tf, out _);
         if (at.Length - Earth.Radius <= 0)
-            return true;   // the fuze set long: into the sea
+            return !t.Once;   // the fuze set long: into the sea
         var w = world.Weather.At(at, world.Time);
         var drift = Earth.Forward(at, w.WindFromDeg + 180) * w.WindMs;
         if (flareCount == flares.Length)
             Array.Resize(ref flares, 2 * flareCount);
         flares[flareCount++] = new Flare { At = at, Drift = drift, BurstMs = burstMs, Cd = type.StarCd, BurnS = type.StarBurnS, FallMs = type.StarFallMs, Ship = t.Ship };
-        return true;
+        return !t.Once;
     }
 
     /// <summary>How long before a shell's due its lay is worked out, s: time for the mount to lay.</summary>
@@ -431,6 +436,8 @@ public sealed class StarShellSystem : IWorldSystem
             h.Add(t.Battery);
             h.Add(t.BurstMs);
             h.Add(t.OutMs);
+            if (t.Once)
+                h.Add(0x1u);   // only then: worlds without the player's single shells hash as before
         }
         h.Add(flareCount);
         for (int i = 0; i < flareCount; i++)

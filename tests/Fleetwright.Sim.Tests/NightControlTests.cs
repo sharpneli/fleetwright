@@ -132,8 +132,31 @@ public class NightControlTests(ITestOutputHelper output)
         Assert.Equal(SearchlightOrder.Search, sweeping);
     }
 
-    /// <summary>A German ship of 1916 (her star shell off by doctrine) told to light a point of the sea 4 km east: its flares
-    /// burst over it, a few hundred metres up, while her captain leaves the task be; stopped, it ends.</summary>
+    /// <summary>The cruiser alone on the night sea, no encounter: the player's beams still burn, sweeping about her bow, and
+    /// go out when handed back to doctrine.</summary>
+    [Fact]
+    public void Beams_by_hand_burn_out_of_a_fight()
+    {
+        var w = new World(WorldTime.FromUtc(1917, 4, 21, 0), 7, S);
+        var ai = new AiSystem(w);
+        w.Apply(Command.SetWeather(20_000));
+        w.Apply(ShipSystem.Spawn(w.Ships.AddClass(Fleet.Get("light_cruiser").Class!), Lat, Lon, 0, 10, 1));
+        w.AdvanceTo(w.Time + 5_000);
+        w.Apply(ai.Orders.Beams(Unit.Ship(1), true));
+        w.AdvanceTo(w.Time + 30_000);
+        var (on, _, exposed) = w.Searchlights.OrderOf(1, w.Time.Ms);
+        w.Apply(ai.Orders.Beams(Unit.Ship(1), false));
+        w.AdvanceTo(w.Time + 5_000);
+        var after = w.Searchlights.OrderOf(1, w.Time.Ms).Order;
+        output.WriteLine($"alone, beams by hand: {on} (out {exposed}); back to doctrine: {after}");
+        Assert.Equal(SearchlightOrder.Search, on);
+        Assert.True(exposed);
+        Assert.Equal(SearchlightOrder.Off, after);
+    }
+
+    /// <summary>A German ship of 1916 (her star shell off by doctrine) told to light a point of the sea 4 km east: one flare
+    /// bursts over it, a few hundred metres up, her captain leaving the task be until it's fired; then the task's done. An
+    /// order called off before its shell goes ends at once.</summary>
     [Fact]
     public void Star_shell_by_hand_over_a_point_of_the_sea()
     {
@@ -150,32 +173,41 @@ public class NightControlTests(ITestOutputHelper output)
         double lon = Lon + 4_000 / (Earth.Radius * Math.Cos(Lat * Math.PI / 180)) * 180 / Math.PI;
         var point = Earth.Position(Lat, lon);
         w.Apply(ai.Orders.StarShellAt(Unit.Ship(1), Lat, lon));
+        bool busy = w.StarShells.Busy(1, out var lights);
+        var snap = Snap(w);
+        int k = snap.Ships.IndexOf(1);
+        var held = (NightFlags)snap.Ships.Night[k];
         double nearest = double.MaxValue, height = 0;
-        int seen = 0;
-        for (int s = 0; s < 90; s++)
+        int most = 0;
+        long doneMs = 0;
+        for (int s = 0; s < 150; s++)
         {
             w.AdvanceTo(w.Time + 1_000);
+            most = Math.Max(most, w.StarShells.FlareCount);
             for (int i = 0; i < w.StarShells.FlareCount; i++)
             {
                 var (at, _) = w.StarShells.FlareAt(i, w.Time.Ms);
                 double off = Earth.Distance(at.Normalized() * Earth.Radius, point);
                 if (off < nearest)
                     (nearest, height) = (off, at.Length - Earth.Radius);
-                seen++;
             }
+            if (doneMs == 0 && !w.StarShells.Busy(1, out _))
+                doneMs = s + 1;
         }
-        bool busy = w.StarShells.Busy(1, out var lights);
-        var snap = Snap(w);
-        int k = snap.Ships.IndexOf(1);
+
+        w.Apply(ai.Orders.StarShellAt(Unit.Ship(1), Lat, lon));
         w.Apply(ai.Orders.StarShell(Unit.Ship(1), 0));
         bool after = w.StarShells.Busy(1, out _);
-        output.WriteLine($"flares seen {seen}, the nearest {nearest:F0} m off the point at {height:F0} m; the task's point " +
-                         $"{Earth.Distance(lights, point):F0} m off it, the snapshot's {snap.Ships.StarOn[k]}; stopped: {!after}");
-        Assert.True(busy, "her captain left the player's task be");
-        Assert.True(seen > 0);
+        output.WriteLine($"pending: busy {busy}, the snapshot's {snap.Ships.StarOn[k]}, flags {held}; the task done after {doneMs} s, " +
+                         $"flares up at most {most}; the nearest {nearest:F0} m off the point at {height:F0} m; " +
+                         $"the task's point {Earth.Distance(lights, point):F0} m off it; called off: {!after}");
+        Assert.True(busy);
+        Assert.Equal(-1, snap.Ships.StarOn[k]);
+        Assert.True((held & NightFlags.StarHeld) != 0);
+        Assert.InRange(doneMs, 1, 60);
+        Assert.Equal(1, most);   // (the list keeps a spent flare until the next tick: a second shell would show as 2)
         Assert.InRange(nearest, 0, 800);
         Assert.InRange(height, 50, 600);
-        Assert.Equal(-1, snap.Ships.StarOn[k]);
         Assert.False(after);
     }
 
@@ -201,8 +233,12 @@ public class NightControlTests(ITestOutputHelper output)
         w.AdvanceTo(w.Time + 30_000);
         Assert.True(w.Sightings.Of(1)!.IndexOf(3) >= 0, "the squadron holds the destroyer");
         w.Apply(ai.Orders.StarShell(Unit.Group(g), 3));
-        w.AdvanceTo(w.Time + 10_000);
-        int first = w.StarShells.TaskOf(1).Target, second = w.StarShells.TaskOf(2).Target;
+        int first = w.StarShells.TaskOf(1).Target, second = 0;
+        for (int s = 0; s < 10; s++)
+        {
+            w.AdvanceTo(w.Time + 1_000);
+            second |= w.StarShells.TaskOf(2).Target;
+        }
         output.WriteLine($"the near ship's task {first}, the far one's {second}");
         Assert.Equal(3, first);
         Assert.Equal(0, second);

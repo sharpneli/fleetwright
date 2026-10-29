@@ -217,7 +217,7 @@ public sealed class AiSystem : IWorldSystem
     void HoldBeams(World world, Unit u, bool on)
     {
         if (u.IsShip)
-            Captains.HoldBeams(u.Id, on);
+            Captains.HoldBeams(Context(world), u.Id, on);
         else if (u.IsGroup && world.Groups.Get(u.GroupId) is { } g)
             foreach (int m in g.Members)
                 HoldBeams(world, g.IsForce ? Unit.Group(m) : Unit.Ship(m), on);
