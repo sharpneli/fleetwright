@@ -726,6 +726,15 @@ commander), **Q7d** the admirals at night (close order, losing touch).
   blunder wants her to take them for friends, which needs own ships as contacts (decision 1) or her own hold-fire.
 - These are measurements for the tuning pass, not targets met.
 
+**Q7b done (2026-10-29).** The flotilla's dark side: in the dark (as the captains judge it, `SightModel.DarkOf`), a
+flotilla attacking together gains its point on the side of the target's bow that has him against the brighter sky as the
+boats look back at him from it (`AdmiralLayer.DarkSide`): the moon's path behind him if one side has it, else a twilight
+sky `AttackSkyRatio` 1.5 times the other side's or more [EST]; else the side it's on, as by day. The boats there have the
+darker sky behind them as he looks at them. `AdmiralLayer.AttackOf` gives the side. Test: the moon in the WSW, a ship
+heading north, attacked from her starboard bow; the twilight's glow in the SE, from her port bow; an even sky, either.
+**The bench** is Q7a's to the noise: in these cases flotillas seldom attack together by night, as the matchup rarely
+sends them in on a line (Q7c's).
+
 ### Q8 The crew at night
 
 - Searchlight crews in the crew book (Q3). The searchlight term for green crews (`crew.md` N3's unbuilt row, CUF R3).

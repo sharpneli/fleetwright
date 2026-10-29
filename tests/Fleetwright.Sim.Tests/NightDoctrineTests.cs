@@ -114,4 +114,21 @@ public class NightDoctrineTests(ITestOutputHelper output)
         Assert.True(within);
         Assert.False(beyond);
     }
+
+    /// <summary>A flotilla attacks a ship heading north from the side that has her against the moon's path (the moon in the
+    /// west-south-west: from her starboard bow, looking back west-south-west at her), else against the brighter twilight
+    /// (the sun's glow in the south-east: from her port bow); under an even sky, either.</summary>
+    [Fact]
+    public void A_flotilla_attacks_from_the_dark_side()
+    {
+        var moon = new NightSky(1e-4, 230, 0.8, 0.1);
+        var twilight = new NightSky(1e-3, 0, 0, 1e-3, TwilightCdM2: 9e-4, SunBearingDeg: 130, Arch: 1.5);
+        var even = new NightSky(1e-4, 0, 0, 1e-4);
+        int byMoon = Ai.Admirals.AdmiralLayer.DarkSide(moon, 0, S), byTwilight = Ai.Admirals.AdmiralLayer.DarkSide(twilight, 0, S),
+            byEven = Ai.Admirals.AdmiralLayer.DarkSide(even, 0, S);
+        output.WriteLine($"by the moon: {byMoon}; by the twilight: {byTwilight}; an even sky: {byEven}");
+        Assert.Equal(1, byMoon);
+        Assert.Equal(-1, byTwilight);
+        Assert.Equal(0, byEven);
+    }
 }

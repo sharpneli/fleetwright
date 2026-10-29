@@ -25,7 +25,8 @@ public enum AttackPhase : byte
 /// <summary>The flotilla's attack (docs/battle/command.md 5.1b): a squadron with torpedoes that's told to Attack, or
 /// fights with doctrine's TorpedoAttack "together", its guide's torpedoes its better weapon there and its matchup has
 /// the attack worth making (5.1g; docs/battle/admirals-orders.md O7c), attacks as one
-/// under its admiral, each boat's torpedoes held for his signal. It gains a point <see cref="SimSettings.AttackGainDeg"/> off the target's bow, on its side of him, at
+/// under its admiral, each boat's torpedoes held for his signal. It gains a point <see cref="SimSettings.AttackGainDeg"/> off the target's bow, on its side of him
+/// (in the dark, on the side that has him against the brighter sky: <see cref="DarkSide"/>, docs/battle/night.md Q7), at
 /// <see cref="SimSettings.AttackGainShare"/> of its torpedoes' fast range, at full speed; runs in from there (its guide
 /// fighting the target, the boats on station about him); fires every boat's spread on one signal when the guide's run is
 /// within <see cref="SimSettings.TorpedoFireShare"/> of the fast range; runs from the target for
@@ -34,9 +35,26 @@ public enum AttackPhase : byte
 /// flotilla by doctrine's "alone", attacks as 4.6 has it, each captain on his own.</summary>
 public sealed partial class AdmiralLayer
 {
-    /// <summary>Where a group's attack stands, and on whom.</summary>
-    public (AttackPhase Phase, int Target) AttackOf(int groupId) =>
-        Find(groupId) is int i and >= 0 ? (admirals[i].Attack, admirals[i].AttackTarget) : (AttackPhase.None, 0);
+    /// <summary>Where a group's attack stands, on whom, and on which side of his bow (1 starboard, -1 port; 0 none).</summary>
+    public (AttackPhase Phase, int Target, int Side) AttackOf(int groupId) =>
+        Find(groupId) is int i and >= 0 ? (admirals[i].Attack, admirals[i].AttackTarget, admirals[i].AttackSide) : (AttackPhase.None, 0, 0);
+
+    /// <summary>The side of a target's bow a flotilla attacks from in the dark (docs/battle/night.md Q7: from the dark side),
+    /// 1 starboard, -1 port, 0 if neither is better: the one whose gain point (<see cref="SimSettings.AttackGainDeg"/> off his
+    /// bow) has him against the moon's path, else against a twilight sky <see cref="SimSettings.AttackSkyRatio"/> times as
+    /// bright as the other's or more; the boats there have the darker sky behind them as he looks at them.</summary>
+    public static int DarkSide(in NightSky sky, double targetHeadingDeg, SimSettings s)
+    {
+        double port = targetHeadingDeg - s.AttackGainDeg + 180, starboard = targetHeadingDeg + s.AttackGainDeg + 180;
+        bool moonPort = MoonBehind(sky, port, s), moonStarboard = MoonBehind(sky, starboard, s);
+        if (moonPort != moonStarboard)
+            return moonStarboard ? 1 : -1;
+        double p = sky.Toward(port), b = sky.Toward(starboard);
+        return b >= s.AttackSkyRatio * p ? 1 : p >= s.AttackSkyRatio * b ? -1 : 0;
+    }
+
+    static bool MoonBehind(in NightSky sky, double bearingDeg, SimSettings s) =>
+        sky.MoonSilhouette > 0 && Math.Abs(Wrap180(bearingDeg - sky.MoonBearingDeg)) <= s.SightSilhouetteArcDeg;
 
     bool AttackStep(in AiContext ctx, GroupSystem.Group g, Admiral a, int lead)
     {
@@ -105,6 +123,12 @@ public sealed partial class AdmiralLayer
             var starboard = Vec3d.Cross(t.Forward, t.Position.Normalized());
             (a.Attack, a.AttackMs, a.AttackShips, a.AttackTubes) = (AttackPhase.Gain, now, g.Line.Count, 0);
             a.AttackSide = Vec3d.Dot(guide.Position - t.Position, starboard) >= 0 ? 1 : -1;
+            // in the dark, from the side that has him against the brighter sky (docs/battle/night.md Q7)
+            var weather = ctx.World.Weather.At(t.Position, ctx.World.Time);
+            var sky = NightLight.At(t.Position, ctx.World.Time, weather.Cloud, s);
+            if (SightModel.DarkOf(sky.SkyCdM2 * SightModel.LookoutGlass(SightModel.PupilMm(sky.SkyCdM2), s), s).Any &&
+                DarkSide(sky, Earth.Heading(t.Position, t.Forward), s) is int dark and not 0)
+                a.AttackSide = dark;
         }
         // where the boats are on the target: how far round his bow, and the run their torpedoes would need to meet him
         var rel = guide.Position - t.Position;

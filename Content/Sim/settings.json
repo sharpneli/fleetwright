@@ -141,6 +141,7 @@
   "LitShare": 10,
   "LitTurnAwayS": 120,
   "SearchHalfDeg": 45,
+  "AttackSkyRatio": 1.5,
   // the night's light (docs/battle/night.md Q1)
   "NightOvercastShare": 0.15,
   "NightMoonSkyShare": 0.25,

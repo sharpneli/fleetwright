@@ -899,6 +899,10 @@ public sealed record SimSettings
     /// round the target's bow, or after AttackGainMaxMs). Degrees, a share, ms.</summary>
     public double AttackGainDeg { get; init; } = 50;
     public double AttackGainShare { get; init; } = 1.5;
+
+    /// <summary>In the dark a flotilla attacks from the side of the target's bow that has him against a twilight sky this
+    /// many times as bright as the other side's, or against the moon's path (docs/battle/night.md Q7) [EST].</summary>
+    public double AttackSkyRatio { get; init; } = 1.5;
     public long AttackGainMaxMs { get; init; } = 900_000;
 
     /// <summary>A flotilla's signal to fire holds this long: each boat fires once as her tubes bear, s.</summary>
