@@ -446,13 +446,18 @@ public sealed class ShellsView
 }
 
 /// <summary>The searchlights' beams out (docs/battle/night.md Q4): each one's lamp (its height in the point), the true
-/// bearing it's on, whose (an entity) and its peak (cd).</summary>
+/// bearing it's on, whose (an entity) and its peak (cd). For the world view's look (docs/visuals/night-lights.md Q10b):
+/// its full spread (degrees, the width at half its peak), how fast its bearing turns (degrees a second, + clockwise: a
+/// sweep's), when its iris opened (ms) and the ship it's held on (an entity, -1 sweeping), all as at the look
+/// (<see cref="LookMs"/>), so the map carries a sweep on between looks.</summary>
 public sealed class BeamsView
 {
     public int Count;
+    public long LookMs;
     public Vec3d[] Lamp = [];
-    public double[] BearingDeg = [], Candela = [];
-    public int[] Ship = [];
+    public double[] BearingDeg = [], Candela = [], SpreadDeg = [], RateDegS = [];
+    public long[] OnMs = [];
+    public int[] Ship = [], Target = [];
 
     public void EnsureCapacity(int n)
     {
@@ -462,17 +467,31 @@ public sealed class BeamsView
         Array.Resize(ref Lamp, n);
         Array.Resize(ref BearingDeg, n);
         Array.Resize(ref Candela, n);
+        Array.Resize(ref SpreadDeg, n);
+        Array.Resize(ref RateDegS, n);
+        Array.Resize(ref OnMs, n);
         Array.Resize(ref Ship, n);
+        Array.Resize(ref Target, n);
     }
 }
 
 /// <summary>The star shells' flares burning (docs/battle/night.md Q5): each one's place (its height in the point) and
-/// light (cd).</summary>
+/// light (cd). For the world view's look (docs/visuals/night-lights.md Q10b), its motion in closed form
+/// (<see cref="Where"/>): where it burst and when, its drift (m/s along the sea), how fast it falls (m/s) and when it
+/// goes out (ms).</summary>
 public sealed class FlaresView
 {
     public int Count;
-    public Vec3d[] At = [];
-    public double[] Candela = [];
+    public Vec3d[] At = [], Origin = [], Drift = [];
+    public double[] Candela = [], FallMs = [];
+    public long[] BurstMs = [], OutMs = [];
+
+    /// <summary>Flare i's place at a time (its height in the point): StarShellSystem's own motion.</summary>
+    public Vec3d Where(int i, long ms)
+    {
+        double t = Math.Max(ms - BurstMs[i], 0) / 1000.0;
+        return Origin[i] + Drift[i] * t - Origin[i].Normalized() * (FallMs[i] * t);
+    }
 
     public void EnsureCapacity(int n)
     {
@@ -480,7 +499,12 @@ public sealed class FlaresView
             return;
         n = Math.Max(n, Math.Max(16, At.Length * 2));
         Array.Resize(ref At, n);
+        Array.Resize(ref Origin, n);
+        Array.Resize(ref Drift, n);
         Array.Resize(ref Candela, n);
+        Array.Resize(ref FallMs, n);
+        Array.Resize(ref BurstMs, n);
+        Array.Resize(ref OutMs, n);
     }
 }
 

@@ -218,9 +218,10 @@ vec3 seaShade(vec2 local, vec3 v, vec3 lSun, vec3 lMoon, vec3 lNight, vec4 wake,
         body += seaBody.rgb * seaNight.rgb * mix(seaLetIn(vec3(0.0, 0.0, 1.0), lNight), seaLetIn(nn, lNight), seaMss2.z);
     }
     // the flashes: each a point light, so its direction is the pixel's own; on the glints and the foam alone (in the
-    // water's body their orange came out a teal glow under the guns)
-    vec3 fGlint = vec3(0.0), fLevel = vec3(0.0);
-    int nf = flashCount();
+    // water's body their orange came out a teal glow under the guns). The night's lights (flares, beams:
+    // docs/visuals/night-lights.md Q10b) light the body too: what shows a flare's pool on a dark sea
+    vec3 fGlint = vec3(0.0), fLevel = vec3(0.0), nBody = vec3(0.0);
+    int nf = flashCount(), n0 = nightStart();
     for (int i = 0; i < nf; i++)
     {
         vec3 lw;
@@ -228,10 +229,12 @@ vec3 seaShade(vec2 local, vec3 v, vec3 lSun, vec3 lMoon, vec3 lNight, vec4 wake,
         vec3 l = vec3(dot(lw, rt), dot(lw, upv), dot(lw, nrm));
         fGlint += rad * seaGlint(l, v, m, var);
         fLevel += rad * max(l.z, 0.0);
+        if (i >= n0)
+            nBody += rad * seaLetIn(vec3(0.0, 0.0, 1.0), l);   // as a level sea: the relief is for the natural light's waves
     }
     vec3 c = (1.0 - F) * body + F * skyAt(r, vec3(0.0, 0.0, 1.0), 0.0);
     c += (sunRad.rgb * seaGlint(lSun, v, m, var) + moonRad.rgb * seaGlint(lMoon, v, m, var)) * seaMss2.z;
-    c = nightSee(c) + fGlint * seaMss2.z;   // the rods' view of the natural light; the flashes' in colour
+    c = nightSee(c) + (1.0 - F) * seaBody.rgb * nBody + fGlint * seaMss2.z;   // the rods' view of the natural light; the lights' in colour
     // the foam, lit as a level surface by the sun, the moon, the sky and the night's light: the aerated water under it
     // brightens the water, the surface foam lays a translucent white over it (hiding most of the glint)
     float foam = clamp(wake.w, 0.0, 1.0);
@@ -243,5 +246,5 @@ vec3 seaShade(vec2 local, vec3 v, vec3 lSun, vec3 lMoon, vec3 lNight, vec4 wake,
         c += aerated * AeratedAlbedo * AeratedTint * lit;
         c = mix(c, FoamAlbedo * lit, surface * FoamCover);
     }
-    return linearToSrgb(shoulder(c, look.z));
+    return linearToSrgb(shoulderHue(c, look.z));
 }

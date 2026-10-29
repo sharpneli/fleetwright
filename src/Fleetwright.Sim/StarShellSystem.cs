@@ -448,8 +448,8 @@ public sealed class StarShellSystem : IWorldSystem
         h.Add(ticking);
     }
 
-    /// <summary>The flares burning, for the map's placeholder (docs/battle/night.md Q10: a disc a flare); a flare is
-    /// seen by everyone.</summary>
+    /// <summary>The flares burning, for the map (docs/battle/night.md Q9; docs/visuals/night-lights.md Q10b: their
+    /// motion for the world view's look); a flare is seen by everyone.</summary>
     public void Fill(Snapshot s)
     {
         var v = s.Flares;
@@ -461,7 +461,8 @@ public sealed class StarShellSystem : IWorldSystem
             ref readonly var f = ref flares[i];
             if (now < f.BurstMs || now >= OutMs(f))
                 continue;
-            (v.At[n], v.Candela[n]) = (Where(f, now), f.Cd);
+            (v.At[n], v.Candela[n], v.Origin[n], v.Drift[n], v.FallMs[n], v.BurstMs[n], v.OutMs[n]) =
+                (Where(f, now), f.Cd, f.At, f.Drift, f.FallMs, f.BurstMs, OutMs(f));
             n++;
         }
         v.Count = n;

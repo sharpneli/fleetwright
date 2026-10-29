@@ -361,6 +361,12 @@ public static unsafe class Program
                     if (!Map.HazeLook.Set(kv))
                         Console.Error.WriteLine($"Bad haze knob: {kv} (want on, gain, hazescale, fogscale, deepest, back, slant)");
             }
+            else if (arg.StartsWith("-night="))   // the world view's night lights (docs/visuals/night-lights.md; Map/Night/NightLights.cs): -night=gain:1,iris:1
+            {
+                foreach (var kv in arg.Substring("-night=".Length).Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    if (!Map.Night.NightLights.Set(kv))
+                        Console.Error.WriteLine($"Bad night knob: {kv} (want on, gain, iris)");
+            }
             else if (arg.StartsWith("-worldview="))   // the map's table-to-world boundary, metres per pixel at 1080p (docs/visuals/sea.md W0)
             {
                 if (double.TryParse(arg.Substring("-worldview=".Length), System.Globalization.CultureInfo.InvariantCulture, out double m) && m > 0)

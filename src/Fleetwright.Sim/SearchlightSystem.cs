@@ -58,13 +58,16 @@ public sealed class SearchlightSystem : IWorldSystem
     Lit[] lit = new Lit[16];
     int count;
     // a gather's lights already taken by a beam; the beams it put out, for the snapshot (not world state: remade at each
-    // look): the lamp, the bearing, whose (an entity, her side) and its peak
+    // look): the lamp, the bearing, whose (an entity, her side) and its peak; for the look, its spread, its sweep's rate,
+    // when it was exposed and whom it's held on (-1 sweeping), and the look's time
     bool[] taken = new bool[16];
     Vec3d[] outLamp = new Vec3d[16];
-    double[] outBearing = new double[16], outCd = new double[16];
-    int[] outShip = new int[16];
+    double[] outBearing = new double[16], outCd = new double[16], outSpread = new double[16], outRate = new double[16];
+    long[] outOn = new long[16];
+    int[] outShip = new int[16], outTarget = new int[16];
     byte[] outSide = new byte[16];
     int outCount;
+    long outMs;
 
     internal SearchlightSystem(SimSettings settings, ShipSystem ships, Sightings sightings) =>
         (this.settings, this.ships, this.sightings) = (settings, ships, sightings);
@@ -151,7 +154,7 @@ public sealed class SearchlightSystem : IWorldSystem
     /// <summary>The beams out now into the lights (at a look, after the fires): each ship's under its order.</summary>
     internal void Gather(World world, Lights lights)
     {
-        outCount = 0;
+        (outCount, outMs) = (0, world.Time.Ms);
         if (count == 0)
             return;
         var store = ships.Store;
@@ -186,7 +189,7 @@ public sealed class SearchlightSystem : IWorldSystem
                     if (!row.Sees(brg - ship.HeadingDeg))
                         continue;
                     lights.AddBeam(lamp, row.BeamCd, slot, brg, row.SpreadDeg, SearchlightModel.PointingDeg(row.Control, settings), row.MirrorM);
-                    Out(lamp, brg, ship, row.BeamCd);
+                    Out(lamp, brg, ship, row.BeamCd, row.SpreadDeg, 0, l.OnMs, l.Target);
                     want--;
                 }
             }
@@ -220,7 +223,8 @@ public sealed class SearchlightSystem : IWorldSystem
                         continue;   // swept onto her own upper works for the moment
                     var lamp = frame.ToWorld(row.X, row.Y, row.HeightM);
                     lights.AddBeam(lamp, row.BeamCd, slot, ship.HeadingDeg + middle + at, row.SpreadDeg, 0, row.MirrorM);
-                    Out(lamp, ship.HeadingDeg + middle + at, ship, row.BeamCd);
+                    Out(lamp, ship.HeadingDeg + middle + at, ship, row.BeamCd, row.SpreadDeg,
+                        share > 0 ? (swing < 2 * share ? 1 : -1) * settings.SearchlightSweepDegS : 0, l.OnMs, -1);
                 }
             }
         }
@@ -265,7 +269,7 @@ public sealed class SearchlightSystem : IWorldSystem
         }
     }
 
-    void Out(Vec3d lamp, double bearingDeg, ShipState ship, double candela)
+    void Out(Vec3d lamp, double bearingDeg, ShipState ship, double candela, double spreadDeg, double rateDegS, long onMs, int target)
     {
         if (outCount == outLamp.Length)
         {
@@ -275,12 +279,17 @@ public sealed class SearchlightSystem : IWorldSystem
             Array.Resize(ref outCd, n);
             Array.Resize(ref outShip, n);
             Array.Resize(ref outSide, n);
+            Array.Resize(ref outSpread, n);
+            Array.Resize(ref outRate, n);
+            Array.Resize(ref outOn, n);
+            Array.Resize(ref outTarget, n);
         }
         (outLamp[outCount], outBearing[outCount], outShip[outCount], outSide[outCount], outCd[outCount]) = (lamp, bearingDeg, ship.Entity, ship.Side, candela);
+        (outSpread[outCount], outRate[outCount], outOn[outCount], outTarget[outCount]) = (spreadDeg, rateDegS, onMs, target);
         outCount++;
     }
 
-    /// <summary>The beams out at the last look, for the map's placeholder (docs/battle/night.md Q10: a line a beam): the
+    /// <summary>The beams out at the last look, for the map (docs/battle/night.md Q9; docs/visuals/night-lights.md Q10b): the
     /// player's view's (<see cref="Snapshot.Truth"/>), the beams of the sides it shows and those of ships the player's
     /// navy has in sight, or her lights.</summary>
     public void Fill(Snapshot s)
@@ -298,9 +307,10 @@ public sealed class SearchlightSystem : IWorldSystem
                     continue;
             }
             (v.Lamp[n], v.BearingDeg[n], v.Ship[n], v.Candela[n]) = (outLamp[k], outBearing[k], outShip[k], outCd[k]);
+            (v.SpreadDeg[n], v.RateDegS[n], v.OnMs[n], v.Target[n]) = (outSpread[k], outRate[k], outOn[k], outTarget[k]);
             n++;
         }
-        v.Count = n;
+        (v.Count, v.LookMs) = (n, outMs);
         if (count == 0)
             return;
         var sv = s.Ships;   // each ship's beams out now (docs/battle/night.md Q9: her card and the strip)

@@ -27,6 +27,7 @@ public sealed unsafe partial class MapScene : IScene
     readonly LandView land;
     readonly SunLapse sunLapse = new();
     readonly SeaView sea = new();
+    readonly Night.NightLights nightLights = new();   // docs/visuals/night-lights.md Q10b
     MapCamera camera, built;   // built: the view the lines and the land's fill were last built for
     (double, double) builtSize;
     double builtBoundary, builtInset;   // WorldView.BoundaryM and the top bar's height (target px) the lines were built for
@@ -132,6 +133,8 @@ public sealed unsafe partial class MapScene : IScene
         probes.Add(probeGroups, t);
         t = Probes.Now;
         (shipRenderer.List.IconCasingPx, shipRenderer.List.IconGlowPx) = (SymbolLook.Casing * 1.5 * Rp, 4 * Rp);
+        nightLights.Gather(s, world.DrawMs, WorldView.Factor(view));   // the night's lights first: the ships' shadows ask them
+        shipRenderer.List.Night = nightLights;
         shipRenderer.List.Build(view,s.Ships, world.DrawMs, s.Sun, artOf, classOf, shipRenderer.Icon, selected, hidden, sunLapse.Motion, s.Sighted,
             shipRenderer.Wakes, s.Weather.Cloud, world.Settings.NightOvercastShare);
         var now = new WorldTime(world.DrawMs);
@@ -156,6 +159,8 @@ public sealed unsafe partial class MapScene : IScene
             shipRenderer.Flashes.Lights, shipRenderer.Smoke.Book, smokeTrails);
         Map.Fires.FunnelSmoke.Build(view, s, world.DrawMs, WorldView.Factor(view), world.DrawMs / 1000.0, classOf, shipRenderer.Smoke.Book,
             smokeTrails, world.Settings);
+        // the night's lights: star shell's flares and searchlights' beams (docs/visuals/night-lights.md Q10b)
+        nightLights.Into(shipRenderer.Flashes.Lights, view, shipRenderer.List.Lights);
         world.Perf.Effects(shipRenderer.Smoke.Book.Count, shipRenderer.Flashes.Lights.Count, shipRenderer.Flashes.Lights.Fires,
             shipRenderer.Splashes.Book.Count, smokeTrails.Count);
         shipRenderer.List.SetFlashLights(shipRenderer.Flashes.Lights.Block);

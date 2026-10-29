@@ -16,13 +16,14 @@ layout(set = 3, binding = LIGHTS_BINDING) uniform Lights
     vec4 look;      // x: 1 lit, 0 flat (the albedo as drawn), 2-5 debug views (normal, AO, roughness, metallic); y: a
                     // scale on the materials' roughness; z: the shoulder's knee; w: specular
     // the point lights (docs/visuals/muzzle-flashes.md F4): the flashes' (muzzle flashes, bursts, magazines), then the
-    // fires' (docs/visuals/hits-and-fires.md I4)
-    vec4 flashInfo;     // x: how many (0-16)
+    // fires' (docs/visuals/hits-and-fires.md I4), then the night's (flares and beams: docs/visuals/night-lights.md Q10b)
+    vec4 flashInfo;     // x: how many (0-24); y: where the night's start
     vec4 flashEast;     // xyz: east at the view's centre, Earth-fixed (for shaders in a local frame)
     vec4 flashNorth;    // xyz: north there
     vec4 flashUp;       // xyz: up there
-    vec4 flashPos[16];  // xyz: metres from the eye, Earth-fixed; w: its size, m (the falloff softened inside it)
-    vec4 flashRad[16];  // rgb: its intensity, display units x m^2 (a white surface facing it d away is lit by rgb / d^2)
+    vec4 flashPos[24];  // xyz: metres from the eye, Earth-fixed; w: its size, m (the falloff softened inside it)
+    vec4 flashRad[24];  // rgb: its intensity, display units x m^2 (a white surface facing it d away is lit by rgb / d^2)
+    vec4 flashDir[24];  // a spot's (a beam's): xyz its axis, Earth-fixed; w: 1 / sigma^2 of its Gaussian (0: all round)
     // the haze between the eye and the sea (docs/visuals/haze.md; Map/HazeLook.cs), the world view's alone
     vec4 haze;          // x: its optical depth straight down from the eye to the sea (0: none); y: the slab's backscatter
     vec4 hazeView;      // xy: 2 tan of the half fields over the target's pixels; zw: the tans (a pixel's slant)
@@ -37,14 +38,22 @@ int flashCount()
     return int(flashInfo.x + 0.5);
 }
 
-// flash light i at p (metres from the eye, Earth-fixed): toward it, l (unit, Earth-fixed), and its light there in the
-// lights' units
+// the first of the night's lights (flares and beams), which light the water's body too
+int nightStart()
+{
+    return int(flashInfo.y + 0.5);
+}
+
+// light i at p (metres from the eye, Earth-fixed): toward it, l (unit, Earth-fixed), and its light there in the lights'
+// units; a spot's by its Gaussian about its axis (e^(-theta^2 / 2 sigma^2), theta^2 ~ 2 (1 - cos theta))
 vec3 flashAt(int i, vec3 p, out vec3 l)
 {
     vec3 d = flashPos[i].xyz - p;
     float s = flashPos[i].w, d2 = dot(d, d);
     l = d * inversesqrt(max(d2, 1e-6));
-    return flashRad[i].rgb / (d2 + s * s);
+    vec3 rad = flashRad[i].rgb / (d2 + s * s);
+    float k = flashDir[i].w;
+    return k > 0.0 ? rad * exp(-(1.0 + dot(l, flashDir[i].xyz)) * k) : rad;
 }
 
 // The eye at night (docs/visuals/night-lights.md decision 2, Purkinje): what the natural light (sun, moon, sky) shows,
@@ -102,6 +111,18 @@ vec3 linearToSrgb(vec3 c)
 vec3 shoulder(vec3 x, float k)
 {
     return min(x, vec3(k)) + (1.0 - k) * (1.0 - exp(-max(x - k, 0.0) / (1.0 - k)));
+}
+
+// the shoulder on the brightest channel, the others kept in proportion, going to white as it's overexposed: a coloured
+// surface lit far past white (the sea's blue under a flare against a night-adapted eye) rolls off to its own hue and then
+// to white, not to the cyan a shoulder a channel makes of it (docs/visuals/night-lights.md Q10b)
+vec3 shoulderHue(vec3 x, float k)
+{
+    float m = max(x.r, max(x.g, x.b));
+    if (m <= k)
+        return x;
+    float r = shoulder(vec3(m), k).x;
+    return mix(x * (r / m), vec3(r), smoothstep(1.0, 8.0, m));
 }
 
 // The haze between the eye and the sea (docs/visuals/haze.md), on what a world-view shader puts out: a level slab whose

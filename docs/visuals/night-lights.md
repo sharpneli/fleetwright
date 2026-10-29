@@ -204,11 +204,31 @@ salvo lights its ship warm out of the black. Knobs: `-lights=eye:1,below:0.06,pu
 land at night is still the chart's fill (`globe.frag`'s `NightLand`), lighter than the sea now: with the coast's look
 (`sea.md`, later).
 
+**Looked at by the user 2026-10-29: good, on an OLED display.** On an ordinary display the dark end may crush or wash
+out; the eye's levels (`NightEyeLevel`, `EyeGain`) get tuned from playtest feedback on other displays.
+
 **Q10b Lights in the block.** The night's pool (flares as point lights, beams as spot lights) in `LightUniforms` and
 every shader that reads the flashes; the sea's body lit by the night pool; the per-ship shadow direction from the
 dominant light. The snapshot's beams gain their spread, iris share and target (sim data only); its flares their burst
 time, burn, fall and drift (so the renderer moves them closed form). Placeholders keep drawing the beam and flare
 themselves until c and d.
+
+**Q10b done 2026-10-29.** The snapshot carries the look's data (sim data only): a beam's spread, its sweep's rate,
+when its iris opened and whom it's held on, with the look's time (`BeamsView`); a flare's burst point and time, drift,
+fall and when it goes out (`FlaresView.Where`, the system's own motion). `Map/Night/NightLights` gathers them at the
+frame's time before the ships are placed (a sweep carried on between looks by its rate, the iris opening over 1 s), then
+puts them into a third pool of eight in the light block (`FlashLights.AddNight`; `LightUniforms.MaxLights` 24, a
+`FlashDir` a light: a beam's axis and 1 / σ² of its Gaussian, the sim's `SearchlightModel` profile; `flashInfo.y` where
+the night's start), in physical units through the frame's night eye (I cd × the display's level a lux, the flashes'
+own photometry). Every world shader takes them through `flashAt`: the ships lit white on the side facing a beam or a
+flare, the smoke and the splashes too. The sea's body takes the night's (and only the night's) lights, as a level sea:
+a flare's pool with its glitter; a beam, grazing, lights the glints and the foam along its lane and hardly the body. The
+sea's shoulder now keeps a surface's hue (`shoulderHue`: the brightest channel rolled off, the rest in proportion, to
+white as it's overexposed): the pool had gone cyan. The ships' shadows: a night light that outshines the night at a ship
+(`NightLights.Strongest` against `ShipLights.Lux`) casts her shadow away from it, its opacity by the frame's own rule;
+a flat beam casts none (its shadow in the air is Q10c's). Knobs: `-night=on:1,gain:1,iris:1`. Cost: within the noise
+(a flare, a beam and three ships at 1 m/px, p50 1.5-1.8 ms on or off, the machine shared). Tests: 207 and 875 pass.
+The placeholders (a line for a beam, a disc for a flare) stay until Q10c and Q10d.
 
 **Q10c Beams in the air.** The in-scatter quad (σ, phase, 1/r, the cone's height over the sea, the smoke field's τ),
 the lamp's point, the target's shadow in the beam, the iris in time. The world view's placeholder line goes.

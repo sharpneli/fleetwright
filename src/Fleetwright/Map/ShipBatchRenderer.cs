@@ -158,6 +158,11 @@ public sealed class ShipDrawList
     /// (<see cref="SetFlashLights"/>).</summary>
     public ShipLights Lights { get; private set; } = ShipLights.Flat;
 
+    /// <summary>The night's lights this frame (docs/visuals/night-lights.md Q10b), gathered before the build: a ship
+    /// that one outshines the night at throws her shadow away from it. Null for none.</summary>
+    public Night.NightLights? Night { get; set; }
+    bool liveLight;
+
     /// <summary>The muzzle flashes' lights this frame (docs/visuals/muzzle-flashes.md F4), into the frame's light block
     /// every map shader reads.</summary>
     public void SetFlashLights(in LightUniforms flashes)
@@ -167,6 +172,7 @@ public sealed class ShipDrawList
         (l.Uniforms.FlashEast, l.Uniforms.FlashNorth, l.Uniforms.FlashUp) = (flashes.FlashEast, flashes.FlashNorth, flashes.FlashUp);
         l.Uniforms.FlashPos = flashes.FlashPos;
         l.Uniforms.FlashRad = flashes.FlashRad;
+        l.Uniforms.FlashDir = flashes.FlashDir;
         Lights = l;
     }
 
@@ -185,7 +191,7 @@ public sealed class ShipDrawList
         public Vec3d Rel, F, S;
         public double PxPerM, LengthPx, SpriteAlpha, IconAlpha, IconL, IconW;
         public Vector2 SunDir;
-        public double SunTan;
+        public double SunTan, ShadowOpacity;
         public bool Shadows;
         /// <summary>Off the screen, placed only for its wake, which reaches into it.</summary>
         public bool WakeOnly;
@@ -237,6 +243,7 @@ public sealed class ShipDrawList
         WakeLibrary? wakes = null, double cloud = 0, double overcastShare = 0.15)
     {
         Lights = LightsAt(view, timeMs, sun, sunMotion, cloud, overcastShare);
+        liveLight = sunMotion >= 1;
         viewNorth = view.Up;
         quadCount = drawCount = wakeDrawCount = placedCount = 0;
         foreach (var l in byClass.Values)
@@ -346,6 +353,16 @@ public sealed class ShipDrawList
             var up = p.Normalized();
             var s = Vec3d.Cross(f, up);
             var light = Lights.ShadowDir;   // the shadows' light, in the ship's frame
+            double opacity = Lights.ShadowOpacity;
+            if (liveLight && Night is { Count: > 0 } night && !wakeOnly)
+            {
+                // a night light that outshines the night here (the moon and the sky, Lights.Lux): her shadow from it, as
+                // the frame's own shadows by the stronger light (ShipLights.Compute)
+                var (toward, lux) = night.Strongest(p);
+                double natural = Math.Max(Lights.Lux, 1e-8);
+                if (lux > natural)
+                    (light, opacity) = (toward, LightTable.Current.Shadow * (1 - Math.Pow(natural / (natural + lux), 1 / 2.2)));
+            }
             double sx = Vec3d.Dot(light, f), sy = Vec3d.Dot(light, s), sz = Vec3d.Dot(light, up);
             double horiz = Math.Sqrt(sx * sx + sy * sy);
             double sprite = wakeOnly ? 0 : art != null && pxPerM >= art.MinPxPerM ? world : 0;
@@ -355,8 +372,8 @@ public sealed class ShipDrawList
                 Rel = rel, F = f, S = s, PxPerM = pxPerM, LengthPx = lengthPx, IconL = iconL, IconW = iconW,
                 SpriteAlpha = sprite * fade, IconAlpha = wakeOnly ? 0 : (1 - sprite) * fade, WakeOnly = wakeOnly,
                 SunDir = horiz > 1e-9 ? new Vector2((float)(sx / horiz), (float)(sy / horiz)) : Vector2.UnitX,
-                SunTan = Math.Max(sz / Math.Max(horiz, 1e-9), 0.15),
-                Shadows = !wakeOnly && sz > 0.05 && lengthPx >= ShadowFromPx && Lights.ShadowOpacity > 0,   // none in time-lapse: they'd spin
+                SunTan = Math.Max(sz / Math.Max(horiz, 1e-9), 0.15), ShadowOpacity = opacity,
+                Shadows = !wakeOnly && sz > 0.05 && lengthPx >= ShadowFromPx && opacity > 0,   // none in time-lapse: they'd spin
                 Class = cls, Entity = ships.Entity[k], Side = ships.Side[k], Bearings = ships.MountBearingDeg, MountStart = ships.MountStart[k],
                 View = ships, Row = k, Cls = c, Sea = sea, Fade = fade,
                 SeaSpan = c != null ? Math.Abs(sea.X) + Math.Abs(sea.Y) * c.Length / 2 + Math.Abs(sea.Z) * c.Beam / 2 : 0,
@@ -659,7 +676,7 @@ public sealed class ShipDrawList
             V = new Vector4((float)v.X, (float)v.Y, (float)v.Z, (float)roof),
             Ship = new Vector4((float)ox, (float)oy, (float)ux, (float)uy),
             ShipV = new Vector4((float)vx, (float)vy, cover, soot),
-            Sun = new Vector4(p.SunDir, (float)p.SunTan, (float)Lights.ShadowOpacity),
+            Sun = new Vector4(p.SunDir, (float)p.SunTan, (float)p.ShadowOpacity),
             March = march,
             Hmap = hmap,
             Tint = tint,

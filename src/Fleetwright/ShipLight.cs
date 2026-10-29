@@ -88,9 +88,9 @@ public sealed class LightTable
     }
 }
 
-/// <summary>Sixteen vec4s: an array of the Lights block (std140, 16 bytes a slot).</summary>
+/// <summary>A vec4 a point light: an array of the Lights block (std140, 16 bytes a slot).</summary>
 [System.Runtime.CompilerServices.InlineArray(LightUniforms.MaxLights)]
-public struct Vec4x16
+public struct LightArray
 {
     Vector4 e;
 }
@@ -101,8 +101,9 @@ public struct Vec4x16
 public struct LightUniforms
 {
     /// <summary>The most point lights a frame (docs/visuals/hits-and-fires.md decision 5): the flashes' pool (muzzle
-    /// flashes, bursts, magazines) and the fires', each of eight, so the guns and the fires don't compete.</summary>
-    public const int MaxLights = 16, MaxFlashes = 8, MaxFires = 8;
+    /// flashes, bursts, magazines), the fires' and the night's (star shell's flares, searchlights' beams:
+    /// docs/visuals/night-lights.md Q10b), each of eight, so none crowds another out.</summary>
+    public const int MaxLights = 24, MaxFlashes = 8, MaxFires = 8, MaxNight = 8;
 
     /// <summary>rgb: the sun's light, linear (0 when down); w unused.</summary>
     public Vector4 SunRad;
@@ -114,17 +115,21 @@ public struct LightUniforms
     public Vector4 Sea;
     /// <summary>x: 1 lit, 0 flat (the albedo as drawn); y: roughness; z: the shoulder's knee; w: the specular's scale.</summary>
     public Vector4 Look;
-    /// <summary>x: how many point lights there are (0-16: the flashes', then the fires').</summary>
+    /// <summary>x: how many point lights there are (0-24: the flashes', the fires', then the night's); y: where the
+    /// night's start (they light the water's body, the flashes and fires its glints and foam alone).</summary>
     public Vector4 FlashInfo;
     /// <summary>xyz: east, north and up at the view's centre, Earth-fixed: the axes of shaders that work in a local
     /// frame (the splash columns).</summary>
     public Vector4 FlashEast, FlashNorth, FlashUp;
     /// <summary>Per flash light, xyz: where it is, metres from the eye, Earth-fixed axes; w: its size, m (its falloff
     /// is softened inside it).</summary>
-    public Vec4x16 FlashPos;
+    public LightArray FlashPos;
     /// <summary>Per flash light, rgb: its intensity in display units × m²: a matte white surface facing it from d metres
     /// is lit by rgb / d², in the lights' units (as the sun's radiance is).</summary>
-    public Vec4x16 FlashRad;
+    public LightArray FlashRad;
+    /// <summary>Per light, a spot's (a searchlight's beam): xyz its axis, Earth-fixed; w 1 / σ² of its Gaussian about it
+    /// (σ in radians), 0 for a point light all round.</summary>
+    public LightArray FlashDir;
     /// <summary>The haze between the eye and the sea, the world view's alone (docs/visuals/haze.md,
     /// <see cref="Map.HazeLook"/>): x its optical depth straight down from the eye (0: none), y the slab's
     /// backscatter.</summary>
