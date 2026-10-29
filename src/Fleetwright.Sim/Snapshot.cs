@@ -449,13 +449,15 @@ public sealed class ShellsView
 /// bearing it's on, whose (an entity) and its peak (cd). For the world view's look (docs/visuals/night-lights.md Q10b):
 /// its full spread (degrees, the width at half its peak), how fast its bearing turns (degrees a second, + clockwise: a
 /// sweep's), when its iris opened (ms) and the ship it's held on (an entity, -1 sweeping), all as at the look
-/// (<see cref="LookMs"/>), so the map carries a sweep on between looks.</summary>
+/// (<see cref="LookMs"/>), so the map carries a sweep on between looks; and the lamp's place in her own frame (m: +x the
+/// bow, +y starboard, its height) and the bearing off her bow, so the map draws the beam from her as she's drawn, not
+/// where she was at the look.</summary>
 public sealed class BeamsView
 {
     public int Count;
     public long LookMs;
-    public Vec3d[] Lamp = [];
-    public double[] BearingDeg = [], Candela = [], SpreadDeg = [], RateDegS = [];
+    public Vec3d[] Lamp = [], LampLocal = [];
+    public double[] BearingDeg = [], RelativeDeg = [], Candela = [], SpreadDeg = [], RateDegS = [];
     public long[] OnMs = [];
     public int[] Ship = [], Target = [];
 
@@ -465,7 +467,9 @@ public sealed class BeamsView
             return;
         n = Math.Max(n, Math.Max(16, Lamp.Length * 2));
         Array.Resize(ref Lamp, n);
+        Array.Resize(ref LampLocal, n);
         Array.Resize(ref BearingDeg, n);
+        Array.Resize(ref RelativeDeg, n);
         Array.Resize(ref Candela, n);
         Array.Resize(ref SpreadDeg, n);
         Array.Resize(ref RateDegS, n);

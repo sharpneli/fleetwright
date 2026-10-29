@@ -248,6 +248,13 @@ flares and beams, from the smoke's place under the pixel rebuilt from the view a
 under it, and the fires now light their own palls. The world view's placeholder line went (the table's wedge stays,
 faded out over the boundary). Knob: `-night=beam:1`. Tests: 207 pass.
 
+**Fixed 2026-10-29 (the user: beams stuttered at 1x close in).** The beam was drawn from the lamp and bearing at the
+last look, so between looks the ship sailed on under a beam left behind, then it jumped. The snapshot now carries the
+lamp in its ship's frame and the bearing off her bow (`BeamsView.LampLocal`, `RelativeDeg`), and `NightLights.Beam`
+places it each frame from her pose as the map draws her (`ShipsView.PoseAt`, the sprite's own): a beam held on a ship
+the map shows points at her as drawn, a sweep turns from her heading now. Only a contact's light seen with no ship
+drawn falls back to the look's.
+
 **Q10d Star shell.** The burst and its puff, the star with its flicker and burn-out, the halo in the haze (the shared
 point-light halo, also on for fires and flashes), the trail. The world view's placeholder disc goes.
 

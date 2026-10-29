@@ -58,11 +58,12 @@ public sealed class SearchlightSystem : IWorldSystem
     Lit[] lit = new Lit[16];
     int count;
     // a gather's lights already taken by a beam; the beams it put out, for the snapshot (not world state: remade at each
-    // look): the lamp, the bearing, whose (an entity, her side) and its peak; for the look, its spread, its sweep's rate,
-    // when it was exposed and whom it's held on (-1 sweeping), and the look's time
+    // look): the lamp, the bearing, whose (an entity, her side) and its peak; for the look, the lamp in her frame and the
+    // bearing off her bow, its spread, its sweep's rate, when it was exposed and whom it's held on (-1 sweeping), and the
+    // look's time
     bool[] taken = new bool[16];
-    Vec3d[] outLamp = new Vec3d[16];
-    double[] outBearing = new double[16], outCd = new double[16], outSpread = new double[16], outRate = new double[16];
+    Vec3d[] outLamp = new Vec3d[16], outLocal = new Vec3d[16];
+    double[] outBearing = new double[16], outRelative = new double[16], outCd = new double[16], outSpread = new double[16], outRate = new double[16];
     long[] outOn = new long[16];
     int[] outShip = new int[16], outTarget = new int[16];
     byte[] outSide = new byte[16];
@@ -189,7 +190,7 @@ public sealed class SearchlightSystem : IWorldSystem
                     if (!row.Sees(brg - ship.HeadingDeg))
                         continue;
                     lights.AddBeam(lamp, row.BeamCd, slot, brg, row.SpreadDeg, SearchlightModel.PointingDeg(row.Control, settings), row.MirrorM);
-                    Out(lamp, brg, ship, row.BeamCd, row.SpreadDeg, 0, l.OnMs, l.Target);
+                    Out(lamp, new Vec3d(row.X, row.Y, row.HeightM), brg, ship, row.BeamCd, row.SpreadDeg, 0, l.OnMs, l.Target);
                     want--;
                 }
             }
@@ -223,7 +224,7 @@ public sealed class SearchlightSystem : IWorldSystem
                         continue;   // swept onto her own upper works for the moment
                     var lamp = frame.ToWorld(row.X, row.Y, row.HeightM);
                     lights.AddBeam(lamp, row.BeamCd, slot, ship.HeadingDeg + middle + at, row.SpreadDeg, 0, row.MirrorM);
-                    Out(lamp, ship.HeadingDeg + middle + at, ship, row.BeamCd, row.SpreadDeg,
+                    Out(lamp, new Vec3d(row.X, row.Y, row.HeightM), ship.HeadingDeg + middle + at, ship, row.BeamCd, row.SpreadDeg,
                         share > 0 ? (swing < 2 * share ? 1 : -1) * settings.SearchlightSweepDegS : 0, l.OnMs, -1);
                 }
             }
@@ -269,13 +270,15 @@ public sealed class SearchlightSystem : IWorldSystem
         }
     }
 
-    void Out(Vec3d lamp, double bearingDeg, ShipState ship, double candela, double spreadDeg, double rateDegS, long onMs, int target)
+    void Out(Vec3d lamp, Vec3d local, double bearingDeg, ShipState ship, double candela, double spreadDeg, double rateDegS, long onMs, int target)
     {
         if (outCount == outLamp.Length)
         {
             int n = 2 * outCount;
             Array.Resize(ref outLamp, n);
+            Array.Resize(ref outLocal, n);
             Array.Resize(ref outBearing, n);
+            Array.Resize(ref outRelative, n);
             Array.Resize(ref outCd, n);
             Array.Resize(ref outShip, n);
             Array.Resize(ref outSide, n);
@@ -286,6 +289,7 @@ public sealed class SearchlightSystem : IWorldSystem
         }
         (outLamp[outCount], outBearing[outCount], outShip[outCount], outSide[outCount], outCd[outCount]) = (lamp, bearingDeg, ship.Entity, ship.Side, candela);
         (outSpread[outCount], outRate[outCount], outOn[outCount], outTarget[outCount]) = (spreadDeg, rateDegS, onMs, target);
+        (outLocal[outCount], outRelative[outCount]) = (local, bearingDeg - ship.HeadingDeg);
         outCount++;
     }
 
@@ -308,6 +312,7 @@ public sealed class SearchlightSystem : IWorldSystem
             }
             (v.Lamp[n], v.BearingDeg[n], v.Ship[n], v.Candela[n]) = (outLamp[k], outBearing[k], outShip[k], outCd[k]);
             (v.SpreadDeg[n], v.RateDegS[n], v.OnMs[n], v.Target[n]) = (outSpread[k], outRate[k], outOn[k], outTarget[k]);
+            (v.LampLocal[n], v.RelativeDeg[n]) = (outLocal[k], outRelative[k]);
             n++;
         }
         (v.Count, v.LookMs) = (n, outMs);

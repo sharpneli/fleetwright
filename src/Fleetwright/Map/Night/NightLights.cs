@@ -69,10 +69,42 @@ public sealed class NightLights
             double open = Math.Clamp((drawMs - b.OnMs[i]) / (1000 * IrisS), 0, 1);
             if (open <= 0)
                 continue;
-            double brg = b.BearingDeg[i] + b.RateDegS[i] * (drawMs - b.LookMs) / 1000.0;
+            var (lamp, brg) = Beam(s, i, drawMs);
             double sigma = SearchlightModel.BeamSigmaDeg(b.SpreadDeg[i]) * Math.PI / 180;
-            Add(b.Lamp[i], b.Candela[i] * world * open * open * (3 - 2 * open), true, Earth.Forward(b.Lamp[i], brg), 1 / (sigma * sigma), b.Target[i]);
+            Add(lamp, b.Candela[i] * world * open * open * (3 - 2 * open), true, Earth.Forward(lamp, brg), 1 / (sigma * sigma), b.Target[i]);
         }
+    }
+
+    /// <summary>Beam i's lamp and true bearing at the frame's time, fixed to her ship as she's drawn: the lamp in her frame
+    /// from her pose, held on a ship the map shows at that ship as she's drawn, else the bearing off her bow at the look
+    /// carried on by the sweep's rate from her heading now. A ship the map doesn't show (a contact's light seen alone):
+    /// the look's lamp and bearing, the sweep carried on.</summary>
+    static (Vec3d Lamp, double BearingDeg) Beam(Snapshot s, int i, long drawMs)
+    {
+        var b = s.Beams;
+        double swept = b.RateDegS[i] * (drawMs - b.LookMs) / 1000.0;
+        if (!PoseOf(s, b.Ship[i], drawMs, out var p, out var f))
+            return (b.Lamp[i], b.BearingDeg[i] + swept);
+        var up = p.Normalized();
+        var stbd = Vec3d.Cross(f, up);
+        var l = b.LampLocal[i];
+        var lamp = p + f * l.X + stbd * l.Y + up * l.Z;
+        if (b.Target[i] >= 0 && PoseOf(s, b.Target[i], drawMs, out var t, out _))
+            return (lamp, Earth.Bearing(lamp, t));
+        return (lamp, Earth.Heading(p, f) + b.RelativeDeg[i] + swept);
+    }
+
+    /// <summary>A ship's pose as the map draws her (hers or one in sight); false if it doesn't show her.</summary>
+    static bool PoseOf(Snapshot s, int entity, long drawMs, out Vec3d p, out Vec3d f)
+    {
+        foreach (var v in (ReadOnlySpan<ShipsView>)[s.Ships, s.Sighted])
+            if (v.IndexOf(entity) is int k and >= 0)
+            {
+                (p, f) = v.PoseAt(k, drawMs);
+                return true;
+            }
+        (p, f) = (default, default);
+        return false;
     }
 
     void Add(Vec3d where, double candela, bool isBeam, Vec3d dir, double k, int held)
