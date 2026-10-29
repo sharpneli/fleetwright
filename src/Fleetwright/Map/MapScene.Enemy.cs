@@ -31,12 +31,13 @@ public sealed partial class MapScene
             ContactLevel.Class => "her class made out by her silhouette, not her name"u8,
             ContactLevel.Type => U8.W($"a {TypeWord(c.Type[i])}: her class not made out"),
             ContactLevel.Ship => "a ship, not made out"u8,
+            ContactLevel.Light => "a light in the dark: a gun's flash or a funnel's glow"u8,
             _ => "smoke on the horizon"u8,
         };
         var seen = new WorldTime(c.SeenMs[i]).ToUtc();
         Head(U8.W($"{Identity(c, i)}"), T.Hostile, sub, "enemy"u8, ChipKind.Hostile,
             c.InSight[i] ? "in sight"u8 : U8.W($"last seen {seen.Hour:00}:{seen.Minute:00}"), ChipKind.Plain,
-            c.SmokeInSight[i] ? "her smoke"u8 : default, ChipKind.Plain);
+            c.SmokeInSight[i] ? "her smoke"u8 : c.LightInSight[i] ? "her lights"u8 : default, ChipKind.Plain);
 
         // range and bearing from the player's ship; her course and speed as estimated
         int from = s.Ships.IndexOf(lastOwn);

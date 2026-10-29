@@ -189,6 +189,9 @@ public sealed class World
     /// <summary>Every navy's picture, and the looks that feed them (docs/battle/plan.md step 3.2d).</summary>
     public Sightings Sightings { get; }
 
+    /// <summary>The lights at sea that light what's near them (docs/battle/night.md Q2), gathered at each look.</summary>
+    public Lights Lights { get; } = new();
+
     /// <summary>The encounters: ships of sides at war near each other (docs/battle/plan.md step 3.1b).</summary>
     public Encounters Encounters { get; }
 

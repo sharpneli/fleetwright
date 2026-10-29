@@ -146,3 +146,102 @@ public class NightSightTests(ITestOutputHelper output)
         Assert.Contains("cloud 6/10", SetWeather.Words(new WeatherHere(8_000, 225, 6, 0, 0.6)));
     }
 }
+
+/// <summary>Lights (docs/battle/night.md Q2): a salvo's flash made out far on a dark night and seen as a light contact on
+/// its bearing; the firer dazzled for a few seconds; a ship lit by a fire near her shows further; fires as they were.</summary>
+public class NightLightsTests(ITestOutputHelper output)
+{
+    static readonly SimSettings S = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json"));
+
+    static double Moonless => NightLight.ClearSkyCdM2(-30);
+
+    /// <summary>A mount's salvo as a light: big guns brighter than small, a broadside made out to the horizon on a dark
+    /// night (the plan's 15-30 km), less far against a brighter sky.</summary>
+    [Fact]
+    public void A_salvos_flash_shows_far_on_a_dark_night()
+    {
+        var sd = Fleet.Get("super_dreadnought").Class!;
+        var dd = Fleet.Get("destroyer").Class!;
+        double Of(ShipClass c, int type) => MuzzleFlash.Of(c, Array.FindIndex(c.Mounts.ToArray(), m => m.Type == type)).EffectiveCd;
+        double big = Of(sd, 0), small = Of(dd, 0);
+        double Far(double cd, double sky) =>
+            Enumerable.Range(1, 60).Where(km => SightModel.LightMargin(20, cd, 10, km * 1000, 20_000, sky, S) >= 1).DefaultIfEmpty(0).Max();
+        output.WriteLine($"a 15\" twin's salvo {big:0.0e0} cd, made out to {Far(4 * big, Moonless)} km (four turrets); a destroyer's gun {small:0.0e0} cd, " +
+                         $"{Far(small, Moonless)} km, with the sun 6° down {Far(small, NightLight.ClearSkyCdM2(-6))} km");
+        Assert.True(big > 50 * small);
+        Assert.InRange(Far(4 * big, Moonless), 15, 35);   // the horizon's limit for a flash 10 m up
+        Assert.True(Far(small, Moonless) > 8);
+        Assert.True(Far(small, NightLight.ClearSkyCdM2(-6)) < Far(small, Moonless) - 5);
+    }
+
+    /// <summary>Her own flash dazzles her eyes for a few seconds (Q2): a destroyer at 1 km on a moonless night all but
+    /// lost right after a 15" twin fires, back within a tenth of her margin some 8 s on.</summary>
+    [Fact]
+    public void Her_own_flash_dazzles_her_for_a_few_seconds()
+    {
+        var sd = Fleet.Get("super_dreadnought").Class!;
+        var dd = Fleet.Get("destroyer").Class!;
+        double cd = MuzzleFlash.Of(sd, 0).EffectiveCd, glass = SightModel.LookoutGlass(SightModel.PupilMm(Moonless), S);
+        double At(double ageS) => SightModel.Margin(25, 7, dd,
+            new SightLine(1000, 90, 20_000, Moonless, 0, Glass: glass, AdaptedCdM2: SightModel.DazzleCdM2(cd, ageS, S)), S);
+        double clear = SightModel.Margin(25, 7, dd, new SightLine(1000, 90, 20_000, Moonless, 0, Glass: glass), S);
+        output.WriteLine($"margin {clear:F2} undazzled; after her salvo {At(0):F2} at once, {At(3):F2} at 3 s, {At(8):F2} at 8 s, {At(15):F2} at 15 s");
+        Assert.True(At(0) < 0.2 * clear);
+        Assert.True(At(0) < At(3) && At(3) < At(8));
+        Assert.True(At(8) > 0.9 * clear);
+        Assert.Equal(0, SightModel.DazzleCdM2(cd, -1, S));
+    }
+
+    /// <summary>A ship lit by a fire near her shows further (Q2), from the side the light falls on; the light from beyond
+    /// her lights nothing the eye sees.</summary>
+    [Fact]
+    public void A_ship_lit_by_a_fire_near_her_shows_further()
+    {
+        var dn = Fleet.Get("dreadnought").Class!;
+        double glass = SightModel.LookoutGlass(SightModel.PupilMm(Moonless), S);
+        double fire = 5 * S.FireGlowCdPerMW, lux = fire / (300.0 * 300.0);   // 5 MW 300 m off her
+        SightLine At(double d, double litLux) => new(d, 90, 20_000, Moonless, 0, Glass: glass, LitLux: litLux);
+        double dark = SightModel.Margin(25, 7, dn, At(4000, 0), S);
+        double lit = SightModel.Margin(25, 7, dn, At(4000, lux * Lights.Facing(0, 0)), S);
+        double beyond = SightModel.Margin(25, 7, dn, At(4000, lux * Lights.Facing(0, 180)), S);
+        output.WriteLine($"a dreadnought at 4 km, moonless: {dark:F2} dark, {lit:F2} lit by a 5 MW fire 300 m off on the eye's side, {beyond:F2} from beyond her");
+        Assert.True(lit > 2 * dark);
+        Assert.Equal(dark, beyond, 1e-12);
+        var lights = new Lights();
+        Assert.Equal(0, lights.On(0, Earth.Position(56, 4), 20_000).Lux);
+    }
+
+    /// <summary>A world at a winter midnight (Q2): two ships 15 km apart, out of each other's sight; one fires, and the
+    /// other side holds her as a light on its bearing at once; quiet again, the light goes out of sight.</summary>
+    [Fact]
+    public void A_salvo_seen_gives_a_light_contact_on_its_bearing()
+    {
+        var w = new World(WorldTime.FromUtc(1916, 1, 15, 23), 4, S);
+        int c = w.Ships.AddClass(Fleet.Get("dreadnought").Class!);
+        w.Apply(Command.SetWeather(20_000));
+        w.Apply(ShipSystem.Spawn(c, 56, 4, 90, 0, 1));
+        w.Apply(ShipSystem.Spawn(c, 56.135, 4, 270, 0, 2));
+        w.AdvanceTo(w.Time + 30_000);
+        var pic = w.Sightings.Of(2);
+        Assert.True(pic is null || pic.IndexOf(1) < 0, "15 km apart in the dark, unseen");
+        var store = w.Ships.Store;
+        int slot = store.SlotOf(1);
+        var cls = store[slot].Handling.Class;
+        for (int m = 0; m < cls.Mounts.Length; m++)
+            if (cls.TurretTypes[cls.Mounts[m].Type].CalibreMm >= 200)
+                store.Combat.Fired(slot, cls, m, 0, cls.TurretTypes[cls.Mounts[m].Type].Barrels, w.Time.Ms);
+        w.AdvanceTo(w.Time + 1_000);
+        pic = w.Sightings.Of(2)!;
+        int i = pic.IndexOf(1);
+        Assert.True(i >= 0, "her salvo seen");
+        var o = store[store.SlotOf(2)].Position;
+        double err = Earth.Bearing(o, pic[i].Position) - Earth.Bearing(o, store[slot].Position);
+        err -= 360 * Math.Round(err / 360);
+        output.WriteLine($"a light at {Earth.Distance(o, pic[i].Position) / 1000:F1} km reckoned (15 km true), bearing off by {err:F2}°");
+        Assert.Equal(ContactLevel.Light, pic[i].Level);
+        Assert.True(pic[i].LightInSight && !pic[i].InSight);
+        Assert.InRange(Math.Abs(err), 0, 1);
+        w.AdvanceTo(w.Time + 5_000);
+        Assert.False(pic[pic.IndexOf(1)].LightInSight);
+    }
+}

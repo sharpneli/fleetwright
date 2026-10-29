@@ -343,6 +343,20 @@ public sealed record SimSettings
     public double SightBowWaveLength { get; init; } = 0.15;
     public double SightFoamContrast { get; init; } = 1.0;
 
+    /// <summary>Lights (docs/battle/night.md Q2). A ship lit by a light near her shines back at this albedo (grey paint)
+    /// [EST]. A light seen alone (a salvo's flash, a funnel's glow) gives a contact on its bearing, its range's 1-sigma
+    /// this share of the range (no rangefinder takes a flash; the flash to the report's sound is the best of it) [EST],
+    /// its speed unknown (1-sigma, m/s). Her own salvo leaves her eyes adapted as to <see cref="SightDazzleCdM2PerCd"/>
+    /// cd/m² a candela of its light, fading over <see cref="SightDazzleS"/> s [EST: a 15" turret's ~2.5·10⁷ cd as deep
+    /// twilight's sky, gone in some seven seconds]. A coal-fired ship forcing her fires shows a glow and sparks at her funnel
+    /// tops, <see cref="SightFunnelGlowCd"/> a funnel at her rated power, growing as the smoke's forcing does [EST].</summary>
+    public double SightHullAlbedo { get; init; } = 0.3;
+    public double SightLightRangeShare { get; init; } = 0.3;
+    public double SightLightSpeedSigmaMs { get; init; } = 8;
+    public double SightDazzleCdM2PerCd { get; init; } = 1.2e-9;
+    public double SightDazzleS { get; init; } = 1;
+    public double SightFunnelGlowCd { get; init; } = 10;
+
     /// <summary>A moon low enough silhouettes a ship toward it as the low sun does, as strongly as its path on the sea
     /// outshines the sky (<see cref="NightMoonPathShare"/>), fading as it climbs to this elevation, degrees [EST].</summary>
     public double SightSilhouetteMoonHighDeg { get; init; } = 40;

@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using Fleetwright.Gpu;
 using Fleetwright.Map.Splashes;
 using Fleetwright.Sim;
+using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Ships;
 using SDL;
@@ -162,7 +163,7 @@ public sealed unsafe class FlashRenderer : IDisposable
             var dir = new Vector2((float)Vec3d.Dot(e.Forward, east), (float)Vec3d.Dot(e.Forward, north));
             dir = dir.LengthSquared() > 1e-12f ? Vector2.Normalize(dir) : Vector2.UnitY;
             double el = e.ElevationDeg * Math.PI / 180, ce = Math.Cos(el), se = Math.Sin(el);
-            Vector2 At(in FlashEmitters.Part p) => dir * (float)(p.Along * ce) + new Vector2(0, (float)(k * (p.Along * se + p.Lift)));
+            Vector2 At(in FlashGlow.Part p) => dir * (float)(p.Along * ce) + new Vector2(0, (float)(k * (p.Along * se + p.Lift)));
             float scale = (float)(Scale * world * keepIe);
             int n = e.Barrels;
 
@@ -199,7 +200,7 @@ public sealed unsafe class FlashRenderer : IDisposable
             if (rad > lightFloor)
             {
                 var (tip, fwd, tipUp) = (e.Tip, e.Forward, e.Tip.Normalized());
-                Vec3d True(in FlashEmitters.Part p) => tip + fwd * (p.Along * ce) + tipUp * (p.Along * se + p.Lift);
+                Vec3d True(in FlashGlow.Part p) => tip + fwd * (p.Along * ce) + tipUp * (p.Along * se + p.Lift);
                 double ic = n * core.Intensity, id = n * disc.Intensity, ifi = fire.Intensity, isum = ic + id + ifi;
                 var at = (True(core) * ic + True(disc) * id + True(fire) * ifi) / isum;
                 var colour = (cc * (float)ic + dc * (float)id + fc * (float)ifi) / (float)isum;
@@ -226,7 +227,7 @@ public sealed unsafe class FlashRenderer : IDisposable
 
     /// <summary>A part's light as thrown (display units × m²): its brightness as drawn, compressed as x/(1 + x/knee),
     /// times its semi-axes' product (its area over pi).</summary>
-    public static double Thrown(in FlashEmitters.Part p, double gain, double knee)
+    public static double Thrown(in FlashGlow.Part p, double gain, double knee)
     {
         if (p.Intensity <= 0 || p.A <= 0 || p.B <= 0)
             return 0;
@@ -242,7 +243,7 @@ public sealed unsafe class FlashRenderer : IDisposable
 
     /// <summary>A part as a Gaussian at its drawn centre: σ along the bore its semi-axis × cos(el) / 1.5, across its
     /// semi-axis / 1.5 (the reference renderer's), neither under the floor; <paramref name="area"/> σ_a·σ_b.</summary>
-    static Vector4 Splat(Vector2 at, in FlashEmitters.Part p, double cosEl, double floor, out double area)
+    static Vector4 Splat(Vector2 at, in FlashGlow.Part p, double cosEl, double floor, out double area)
     {
         if (p.Intensity <= 0)
         {

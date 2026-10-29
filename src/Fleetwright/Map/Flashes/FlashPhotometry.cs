@@ -1,4 +1,5 @@
 using System.Numerics;
+using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
 
 namespace Fleetwright.Map.Flashes;
@@ -10,13 +11,6 @@ namespace Fleetwright.Map.Flashes;
 /// than the display's white deck as it is than the real one.</summary>
 public static class FlashPhotometry
 {
-    // the blackbody's luminance, cd/m², by temperature, K (log10 interpolated in ln T)
-    static readonly (double T, double L)[] Luminances =
-    [
-        (1000, 2.73), (1200, 141), (1400, 2460), (1600, 2.15e4), (1800, 1.18e5), (2000, 4.67e5), (2200, 1.44e6), (2500, 5.65e6),
-        (2800, 1.66e7), (3000, 3.03e7),
-    ];
-
     // its chroma, linear sRGB, the largest channel 1
     static readonly (double T, Vector3 C)[] Chromas =
     [
@@ -29,25 +23,8 @@ public static class FlashPhotometry
     public static readonly Vector3 Sodium = new(1f, 0.62f, 0.18f);
     public const float SodiumShare = 0.55f;
 
-    /// <summary>A blackbody's luminance at <paramref name="kelvin"/>, cd/m².</summary>
-    public static double Luminance(double kelvin)
-    {
-        double x = Math.Log(Math.Max(kelvin, 1));
-        double x0 = Math.Log(Luminances[0].T), y0 = Math.Log10(Luminances[0].L);
-        if (x <= x0)
-            return Math.Pow(10, y0 - 40 * (x0 - x));
-        for (int i = 1; i < Luminances.Length; i++)
-        {
-            double x1 = Math.Log(Luminances[i].T);
-            if (x <= x1)
-            {
-                double y1 = Math.Log10(Luminances[i].L);
-                return Math.Pow(10, y0 + (y1 - y0) * (x - x0) / (x1 - x0));
-            }
-            (x0, y0) = (x1, Math.Log10(Luminances[i].L));
-        }
-        return Luminances[^1].L;
-    }
+    /// <summary>A blackbody's luminance at <paramref name="kelvin"/>, cd/m²: the sim's (<see cref="FlashGlow.Luminance"/>).</summary>
+    public static double Luminance(double kelvin) => FlashGlow.Luminance(kelvin);
 
     /// <summary>A blackbody's chroma at <paramref name="kelvin"/>, linear sRGB, the largest channel 1.</summary>
     public static Vector3 Chroma(double kelvin)

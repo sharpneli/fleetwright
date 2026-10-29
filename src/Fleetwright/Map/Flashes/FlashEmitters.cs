@@ -1,9 +1,11 @@
 using System.Numerics;
+using Fleetwright.Sim.Combat;
 
 namespace Fleetwright.Map.Flashes;
 
-/// <summary>A flash's glowing parts at a moment (docs/visuals/muzzle-flashes.md "The look"; research/vfx/muzzle_flash_ref.py
-/// <c>Shot.emitters</c>), each an ellipse along the bore at a temperature:
+/// <summary>A flash's glowing parts at a moment, the sim's one model (<see cref="FlashGlow"/>, docs/battle/night.md Q2: the
+/// night's sight sees the same light) on the screen's flash clock (docs/visuals/muzzle-flashes.md "The look";
+/// research/vfx/muzzle_flash_ref.py <c>Shot.emitters</c>), each an ellipse along the bore at a temperature:
 /// <list type="bullet">
 /// <item><b>the primary core</b>, per barrel: hot gas at 0.35 x_M from the muzzle, 2000 → 1200 K over the gun's emptying
 /// time t_e;</item>
@@ -16,62 +18,18 @@ namespace Fleetwright.Map.Flashes;
 /// ellipse (cd). Positions are metres along the bore from the muzzle (3D), and up for the lift.</summary>
 public static class FlashEmitters
 {
-    public struct Part
-    {
-        /// <summary>Along the bore from the muzzle, m (its centre), and its lift, m.</summary>
-        public float Along, Lift;
-        /// <summary>Its semi-axes, m: along the bore and across it.</summary>
-        public float A, B;
-        public float Kelvin;
-        /// <summary>Its luminous intensity seen from above, cd (0 when it isn't glowing).</summary>
-        public float Intensity;
-        /// <summary>The secondary's share of its life gone, 0-1 (for the noise's growth).</summary>
-        public float Life;
-    }
-
-    const double Gravity = 9.81;
+    /// <summary>The shot's flash as the sim's model has it (<see cref="FlashGlow"/>).</summary>
+    static FlashGlow.Shot Shot(in ShotBook.Entry e) =>
+        new(e.BoreM, e.MachDiskM, e.EmptyS, e.SecondaryK, e.FlashLengthM, e.SecondaryS, e.Scatter);
 
     /// <summary>The parts at <paramref name="t"/> seconds after firing (on the flash's clock).</summary>
-    public static void At(in ShotBook.Entry e, double t, out Part core, out Part disc, out Part fire)
-    {
-        core = disc = fire = default;
-        if (t < 0)
-            return;
-        double d = e.BoreM, xm = e.MachDiskM, te = e.EmptyS;
-        if (t < te)
-        {
-            double f = t / te;
-            double tc = 2000 - 800 * f, r = 1.5 * d + 0.12 * xm * Math.Min(1, 4 * f);
-            core = Ellipse(0.35 * xm, 0, 0.35 * xm + r, r, tc, 1 - Math.Exp(-r / 2), 1, 0);
-            double ti = 1900 - 500 * f, ri = 0.22 * xm;
-            disc = Ellipse(xm, 0, 0.10 * xm, ri, ti, 1 - Math.Exp(-ri / 3), 1, 0);
-        }
-        double ts = e.SecondaryS;
-        if (ts > 0 && t < ts)
-        {
-            double rise = 0.12 * ts;
-            double env = Math.Min(1, t / rise) * (t > rise ? 1 - Math.Pow((t - rise) / (ts - rise), 2) : 1);
-            double tk = e.SecondaryK * (0.75 + 0.25 * env) * Math.Pow(e.Scatter, 0.05);
-            double lf = e.FlashLengthM, grow = Math.Min(1, 0.35 + 0.65 * t / (0.5 * ts));
-            double a = 0.8 * lf * grow, b = 0.5 * lf * grow;
-            fire = Ellipse(xm + 0.7 * lf * grow, 0.5 * 0.6 * Gravity * t * t, a, b, tk, 1 - Math.Exp(-b / 6), env, t / ts);
-        }
-    }
-
-    static Part Ellipse(double along, double lift, double a, double b, double kelvin, double emissivity, double envelope, double life)
-    {
-        double l = emissivity * FlashPhotometry.Luminance(kelvin) * envelope;
-        return new Part
-        {
-            Along = (float)along, Lift = (float)lift, A = (float)a, B = (float)b, Kelvin = (float)kelvin,
-            Intensity = (float)(l * Math.PI * a * b), Life = (float)life,
-        };
-    }
+    public static void At(in ShotBook.Entry e, double t, out FlashGlow.Part core, out FlashGlow.Part disc, out FlashGlow.Part fire) =>
+        FlashGlow.At(Shot(e), t, out core, out disc, out fire);
 
     /// <summary>The parts averaged over the frame's interval on the flash's clock, [<paramref name="t"/> −
     /// <paramref name="dt"/>, <paramref name="t"/>], by <see cref="Samples"/> samples: the intensities averaged, the shape
     /// and temperature at the middle. A flash shorter than a frame is neither missed nor flickered.</summary>
-    public static void Averaged(in ShotBook.Entry e, double t, double dt, out Part core, out Part disc, out Part fire)
+    public static void Averaged(in ShotBook.Entry e, double t, double dt, out FlashGlow.Part core, out FlashGlow.Part disc, out FlashGlow.Part fire)
     {
         At(e, t - dt / 2, out core, out disc, out fire);
         if (dt <= 0)
@@ -98,7 +56,7 @@ public static class FlashEmitters
 
     /// <summary>A part's colour, linear, unit luminance: the blackbody's chroma at its temperature, and for the
     /// secondary fireball the sodium line's yellow mixed in.</summary>
-    public static Vector3 Colour(in Part p, bool secondary)
+    public static Vector3 Colour(in FlashGlow.Part p, bool secondary)
     {
         var c = FlashPhotometry.Chroma(p.Kelvin);
         if (secondary)
@@ -107,5 +65,5 @@ public static class FlashEmitters
     }
 
     /// <summary>How long a shot glows, s on the flash's clock.</summary>
-    public static double Life(in ShotBook.Entry e) => Math.Max(e.EmptyS, e.SecondaryS);
+    public static double Life(in ShotBook.Entry e) => FlashGlow.Life(Shot(e));
 }

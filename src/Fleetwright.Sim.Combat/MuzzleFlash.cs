@@ -59,6 +59,27 @@ public readonly record struct MuzzleFlash
     /// <summary>The secondary flash's life, s, for a fireball of length λ_f.</summary>
     public static double SecondaryS(double flashLengthM) => 5 * flashLengthM / C0;
 
+    /// <summary>A shot of this gun (<see cref="FlashGlow"/>): its secondary flash burning at a scatter, or not.</summary>
+    public FlashGlow.Shot Shot(bool burns, double scatter = 1)
+    {
+        double lf = FlashLengthM(burns ? scatter : 0);
+        return new FlashGlow.Shot(BoreM, MachDiskM, EmptyS, SecondaryK, lf, burns ? SecondaryS(lf) : 0, scatter);
+    }
+
+    /// <summary>The mount's salvo as a steady light to the eye, cd (docs/battle/night.md Q2): each way the secondary flash
+    /// goes (it burns or not, at its chance) by the Blondel-Rey law, its expected value.</summary>
+    public double EffectiveCd
+    {
+        get
+        {
+            var dark = Shot(false);
+            var lit = Shot(true);
+            double without = FlashGlow.EffectiveCd(FlashGlow.LightCdS(dark, Guns), FlashGlow.Life(dark));
+            double with = FlashGlow.EffectiveCd(FlashGlow.LightCdS(lit, Guns), FlashGlow.Life(lit));
+            return (1 - SecondaryP) * without + SecondaryP * with;
+        }
+    }
+
     /// <summary>A mount of <paramref name="guns"/> guns of bore <paramref name="calibreMm"/> and
     /// <paramref name="calibreLength"/> calibres, firing <paramref name="charge"/>, in air of relative humidity
     /// <paramref name="humidity"/> (0-1) at <paramref name="airC"/> °C.</summary>

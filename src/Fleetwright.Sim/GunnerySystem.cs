@@ -871,9 +871,10 @@ public sealed class GunnerySystem : IWorldSystem
 
     /// <summary>The air at a place now: the visibility, the night's light (docs/battle/night.md Q1: the sky's luminance,
     /// the moon's bearing and its silhouette's strength), and the sun's bearing when it's low enough to silhouette a ship
-    /// against the horizon (else NaN), as the sightings read them; and whether there's smoke on the lines to the target
-    /// (docs/battle/smoke.md Z3).</summary>
-    readonly record struct Air(double VisibilityM, NightSky Sky, double SunBearingDeg, bool Smoked);
+    /// against the horizon (else NaN), as the sightings read them; whether there's smoke on the lines to the target
+    /// (docs/battle/smoke.md Z3); the lights that may light her (docs/battle/night.md Q2), and what her own guns' last
+    /// flash leaves the firing ship's eyes adapted to (cd/m²).</summary>
+    readonly record struct Air(double VisibilityM, NightSky Sky, double SunBearingDeg, bool Smoked, Lights Lights, double DazzleCdM2);
 
     /// <summary><see cref="AirAt(World, Vec3d, int, int, Span{double})"/> for due battery i on a worker: the smoke from
     /// the cache or worked out on the worker's scratch, the cache's bookkeeping after the job.</summary>
@@ -887,7 +888,7 @@ public sealed class GunnerySystem : IWorldSystem
             world.Smoke.WorkOut(world, slot, tslot, smoke, worker);
             dueTicks[i] = Probes.Now - p0;
         }
-        return AirOf(world, at, smoked);
+        return AirOf(world, at, slot, smoked);
     }
 
     /// <summary>The air at a ship (slot) now, and the smoke on her lines to the target (slot; none for -1) into
@@ -897,16 +898,17 @@ public sealed class GunnerySystem : IWorldSystem
         bool smoked = world.Smoke.On && tslot >= 0;
         if (smoked)
             world.Smoke.Tau(world, slot, tslot, smoke);
-        return AirOf(world, at, smoked);
+        return AirOf(world, at, slot, smoked);
     }
 
-    Air AirOf(World world, Vec3d at, bool smoked)
+    Air AirOf(World world, Vec3d at, int slot, bool smoked)
     {
         double el = Light.SunElevationDeg(at, world.Time);
         bool low = el >= settings.SightSilhouetteLowDeg && el <= settings.SightSilhouetteHighDeg;
         var weather = world.Weather.At(at, world.Time);
+        var (cd, ms) = world.Ships.Store.Combat.LastFlash(slot);
         return new Air(weather.VisibilityM, NightLight.At(at, world.Time, weather.Cloud, settings), low ? Light.SunBearingDeg(at, world.Time) : double.NaN,
-            smoked);
+            smoked, world.Lights, SightModel.DazzleCdM2(cd, (world.Time.Ms - ms) / 1000.0, settings));
     }
 
     /// <summary>A battery's sensor's margin on the target (fire-control.md F5c: the sighting model's, through its optics'
@@ -928,10 +930,12 @@ public sealed class GunnerySystem : IWorldSystem
             !double.IsNaN(air.SunBearingDeg) && Math.Abs(Wrap(brg - air.SunBearingDeg)) <= arc ? 1 :
             air.Sky.MoonSilhouette > 0 && Math.Abs(Wrap(brg - air.Sky.MoonBearingDeg)) <= arc ? air.Sky.MoonSilhouette : 0;
         bool ranges = Ranges(optics, s);
-        double pupil = SightModel.PupilMm(air.Sky.SkyCdM2);
-        var line = new SightLine(d, Earth.Bearing(tp, at) - target.HeadingDeg, air.VisibilityM, air.Sky.Toward(brg), sil,
+        double pupil = SightModel.PupilMm(air.Sky.SkyCdM2), back = Earth.Bearing(tp, at);
+        var (lux, from) = air.Lights.On(target.Slot, tp, air.VisibilityM);
+        var line = new SightLine(d, back - target.HeadingDeg, air.VisibilityM, air.Sky.Toward(brg), sil,
             air.Smoked ? SmokeModel.EyeTau(smoke, cls.Eyes, s.X, s.Y, s.HeightM) : default, Math.Abs(target.Speed),
-            ranges ? SightModel.TelescopeGlass(optics, pupil) : SightModel.LookoutGlass(pupil, settings));
+            ranges ? SightModel.TelescopeGlass(optics, pupil) : SightModel.LookoutGlass(pupil, settings),
+            lux > 0 ? lux * Lights.Facing(from, back) : 0, air.DazzleCdM2);
         double mag = ranges ? optics.Magnification : settings.SightLookoutMagnification;
         // her bow wave gives a point of aim in the dark (docs/battle/night.md Q1)
         return Math.Max(SightModel.Margin(s.HeightM, mag, tc, line, settings), SightModel.BowWaveMargin(s.HeightM, mag, tc, line, settings));

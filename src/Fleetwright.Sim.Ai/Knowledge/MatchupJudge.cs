@@ -18,6 +18,23 @@ public sealed class MatchupJudge(GroupSystem groups, SeenContacts seen, Doctrine
     readonly Dictionary<(MatchupProfile, MatchupProfile, double), bool> pairs = [];
     readonly MatchupEntry[] oneA = new MatchupEntry[1], oneB = new MatchupEntry[1];
 
+    int unitsShips = -1, unitsGroups = -1;
+
+    /// <summary>A judgement's room for every ship (as a unit of her own) and every group at sea, made when the ships or the
+    /// groups change (a spawn, a loss, a detachment: when allocating is allowed), never at a unit's first judgement in a
+    /// step (docs/battle/night.md Q2 found one: a ship judging alone for the first time minutes after she left her line).</summary>
+    void MakeUnits(in AiContext ctx)
+    {
+        var store = ctx.Ships;
+        for (int slot = 0; slot < store.Slots; slot++)
+            if (store.IsAlive(slot) && !units.ContainsKey(Unit.Ship(store[slot].Entity).Id))
+                units[Unit.Ship(store[slot].Entity).Id] = new Judged();
+        for (int k = 0; k < groups.Count; k++)
+            if (!units.ContainsKey(Unit.Group(groups[k].GroupId).Id))
+                units[Unit.Group(groups[k].GroupId).Id] = new Judged();
+        (unitsShips, unitsGroups) = (store.Count, groups.Count);
+    }
+
     /// <summary>A unit's judgement this moment, and the classes of its own that attack in it.</summary>
     sealed class Judged
     {
@@ -56,8 +73,10 @@ public sealed class MatchupJudge(GroupSystem groups, SeenContacts seen, Doctrine
     {
         var unit = groups.UnitOf(own.Entity);
         int key = unit != null ? Unit.Group(unit.GroupId).Id : Unit.Ship(own.Entity).Id;
+        if (ctx.Ships.Count != unitsShips || groups.Count != unitsGroups)
+            MakeUnits(ctx);
         if (!units.TryGetValue(key, out var c))
-            units[key] = c = new Judged();
+            units[key] = c = new Judged();   // (made by MakeUnits; a ship that came another way)
         if (c.Ms == ctx.NowMs)
             return c;
         Matchups.Warm(ctx.World);

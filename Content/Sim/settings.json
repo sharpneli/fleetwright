@@ -102,6 +102,13 @@
   "SightBowWaveLength": 0.15,
   "SightFoamContrast": 1.0,
   "SightSilhouetteMoonHighDeg": 40,
+  // lights (docs/battle/night.md Q2)
+  "SightHullAlbedo": 0.3,
+  "SightLightRangeShare": 0.3,
+  "SightLightSpeedSigmaMs": 8,
+  "SightDazzleCdM2PerCd": 1.2e-9,
+  "SightDazzleS": 1,
+  "SightFunnelGlowCd": 10,
   // the night's light (docs/battle/night.md Q1)
   "NightOvercastShare": 0.15,
   "NightMoonSkyShare": 0.25,

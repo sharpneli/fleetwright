@@ -678,7 +678,7 @@ public sealed class ContactsView
     public int[] Entity = [], TakenFor = [];
     public Vec3d[] Position = [], Velocity = [];
     public double[] MajorM = [], MinorM = [], AxisDeg = [];
-    public bool[] InSight = [], SmokeInSight = [];
+    public bool[] InSight = [], SmokeInSight = [], LightInSight = [];
     public Vec3d[] From = [];
     public long[] SeenMs = [];
     public ContactLevel[] Level = [];
@@ -701,6 +701,7 @@ public sealed class ContactsView
         Array.Resize(ref AxisDeg, n);
         Array.Resize(ref InSight, n);
         Array.Resize(ref SmokeInSight, n);
+        Array.Resize(ref LightInSight, n);
         Array.Resize(ref From, n);
         Array.Resize(ref SeenMs, n);
         Array.Resize(ref Level, n);

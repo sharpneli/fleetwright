@@ -45,6 +45,11 @@ public sealed class CombatStore
     int[] engaged = [];
     bool[] moved = [];
     long[] firedMs = [];   // by slot: when any of her guns last fired (docs/battle/crew.md N5b: what an observer may see)
+    // by slot: her latest salvo's flash, the mounts fired at that ms together (docs/battle/night.md Q2), cd and when
+    double[] flashCd = [];
+    long[] flashMs = [];
+    // a class's mount types' flash, cd a gun (MuzzleFlash.EffectiveCd over its guns): filled at a class's first salvo
+    readonly Dictionary<ShipClass, double[]> flashOf = new(ReferenceEqualityComparer.Instance);
 
     /// <summary>Whether any mount has ever moved or fired (so a world that never fought hashes as before).</summary>
     public bool Touched { get; private set; }
@@ -64,10 +69,14 @@ public sealed class CombatStore
             Array.Resize(ref engaged, n);
             Array.Resize(ref moved, n);
             Array.Resize(ref firedMs, n);
+            Array.Resize(ref flashCd, n);
+            Array.Resize(ref flashMs, n);
         }
         var m = mounts[slot];
         if (m == null || m.Length != cls.Mounts.Length)
             mounts[slot] = m = new MountState[cls.Mounts.Length];
+        (flashCd[slot], flashMs[slot]) = (0, 0);
+        FlashTable(cls);   // her class's flashes worked out at her coming, never at a salvo (nothing in a step allocates)
         for (int i = 0; i < m.Length; i++)
         {
             ref readonly var row = ref cls.Mounts[i];
@@ -101,11 +110,41 @@ public sealed class CombatStore
         engaged[slot] = 0;
         moved[slot] = false;
         firedMs[slot] = 0;
+        (flashCd[slot], flashMs[slot]) = (0, 0);
     }
 
     /// <summary>When any of a ship's guns last fired (world ms, 0: never): the sightings read it for a salvo of hers seen
     /// (docs/battle/crew.md N5b).</summary>
     public long LastFired(int slot) => slot < firedMs.Length ? firedMs[slot] : 0;
+
+    /// <summary>Her latest salvo's flash (docs/battle/night.md Q2): every mount that fired at that moment, as a steady
+    /// light to the eye (cd, <see cref="MuzzleFlash.EffectiveCd"/> by the guns fired), and when (world ms; 0, 0: none).</summary>
+    public (double Cd, long Ms) LastFlash(int slot) => slot < flashMs.Length ? (flashCd[slot], flashMs[slot]) : (0, 0);
+
+    /// <summary>A mount type's flash a gun, cd (a mount without a charge has none).</summary>
+    double FlashPerGun(ShipClass cls, int mount) => FlashTable(cls)[cls.Mounts[mount].Type];
+
+    /// <summary>A class's mount types' flash a gun, cd, cached by class: worked out when a ship of it is set up.</summary>
+    double[] FlashTable(ShipClass cls)
+    {
+        if (!flashOf.TryGetValue(cls, out var cd))
+        {
+            cd = new double[cls.TurretTypes.Length];
+            for (int t = 0; t < cd.Length; t++)
+            {
+                int m = 0;
+                while (m < cls.Mounts.Length && cls.Mounts[m].Type != t)
+                    m++;
+                if (m == cls.Mounts.Length)
+                    continue;
+                var f = MuzzleFlash.Of(cls, m);
+                double each = f.EffectiveCd / Math.Max(f.Guns, 1);
+                cd[t] = double.IsFinite(each) && each > 0 ? each : 0;
+            }
+            flashOf[cls] = cd;
+        }
+        return cd;
+    }
 
     internal void Drop(int slot) => engaged[slot] = 0;
 
@@ -265,6 +304,11 @@ public sealed class CombatStore
         ref var s = ref mounts[slot]![mount];
         ref readonly var row = ref cls.Mounts[mount];
         firedMs[slot] = Math.Max(firedMs[slot], ms);
+        double flash = FlashPerGun(cls, mount) * guns;
+        if (ms > flashMs[slot])
+            (flashCd[slot], flashMs[slot]) = (flash, ms);
+        else if (ms == flashMs[slot])
+            flashCd[slot] += flash;
         double reload = row.ReloadS * loadFactor;
         if (row.ReadyRounds > 0 && row.SupplyS > 0)
         {

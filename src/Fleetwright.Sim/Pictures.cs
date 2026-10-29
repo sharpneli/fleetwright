@@ -4,10 +4,12 @@ using Fleetwright.Sim.Ships;
 
 namespace Fleetwright.Sim;
 
-/// <summary>How far a contact has been made out: smoke on the horizon (docs/battle/smoke.md Z6: something's there, its
-/// ships not yet seen), a ship, its type, its class (perhaps wrongly), its name.</summary>
+/// <summary>How far a contact has been made out: a light in the dark (docs/battle/night.md Q2: a salvo's flash, a funnel's
+/// glow; something's there), smoke on the horizon (docs/battle/smoke.md Z6: something's there, its ships not yet seen), a
+/// ship, its type, its class (perhaps wrongly), its name.</summary>
 public enum ContactLevel : byte
 {
+    Light,
     Smoke,
     Ship,
     Type,
@@ -59,8 +61,9 @@ public struct Contact
     public long LookedMs;
 
     /// <summary>Whether the ship is in sight; whether her smoke was at the last look while she wasn't (docs/battle/smoke.md
-    /// Z6: a fix on the smoke keeps her track, <see cref="SeenMs"/> its time).</summary>
-    public bool InSight, SmokeInSight;
+    /// Z6: a fix on the smoke keeps her track, <see cref="SeenMs"/> its time); whether her lights were (docs/battle/night.md
+    /// Q2: her salvo's flash, her funnels' glow).</summary>
+    public bool InSight, SmokeInSight, LightInSight;
     public Vec3d Position, Velocity;
     public Cov4 P;
     public ContactLevel Level;
@@ -124,6 +127,15 @@ public sealed class Picture
     /// <summary>Whether it holds a ship and sees it going down or gone (<see cref="Contact.Lost"/>).</summary>
     public bool Lost(int entity) => IndexOf(entity) is int i and >= 0 && contacts[i].Lost;
 
+    /// <summary>Room for this many contacts (every ship at sea): a picture grows when the fleets do, not when a contact
+    /// comes in (a light seen far, docs/battle/night.md Q2, makes many more), so a look never allocates.</summary>
+    internal void Reserve(int n)
+    {
+        if (contacts.Length < n)
+            Array.Resize(ref contacts, Math.Max(n, 2 * contacts.Length));
+        index.EnsureCapacity(n);
+    }
+
     internal ref Contact Add(int entity)
     {
         if (Count == contacts.Length)
@@ -176,6 +188,8 @@ public sealed class Picture
             h.Add(c.EstMs);
             h.Add(c.InSight);
             h.Add(c.SmokeInSight);
+            if (c.LightInSight)
+                h.Add(0x119u);   // (only when set: the hashes of worlds with no lights seen as they were)
             h.Add(c.Position.X);
             h.Add(c.Position.Y);
             h.Add(c.Position.Z);

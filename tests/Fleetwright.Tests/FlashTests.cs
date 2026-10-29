@@ -174,7 +174,7 @@ public class FlashTests(ITestOutputHelper output)
     [Fact]
     public void A_flash_throws_its_drawn_brightness()
     {
-        var p = new FlashEmitters.Part { A = 18, B = 11, Intensity = (float)(1e5 * Math.PI * 18 * 11) };
+        var p = new Fleetwright.Sim.Combat.FlashGlow.Part { A = 18, B = 11, Intensity = (float)(1e5 * Math.PI * 18 * 11) };
         double dim = FlashRenderer.Thrown(p, 1e-9, 6), bright = FlashRenderer.Thrown(p, 1e3, 6);
         Assert.Equal(1e-9 * p.Intensity / Math.PI, dim, dim * 1e-3);
         Assert.InRange(bright, 0.99 * 6 * 18 * 11, 6 * 18 * 11);

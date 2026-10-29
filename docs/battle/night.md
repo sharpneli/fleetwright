@@ -1,5 +1,5 @@
 # Plan: night fighting (a 4.5 deepening)
-Status: **drafted 2026-10-29**; **agreed with the user 2026-10-29** (decisions 1-5 at the end); Q0 and Q1 done 2026-10-29
+Status: **drafted 2026-10-29**; **agreed with the user 2026-10-29** (decisions 1-5 at the end); Q0, Q1 and Q2 done 2026-10-29
 Updated: 2026-10-29
 
 How ships see, light, shoot and lose each other in the dark. The user asked for it after the crew plan (2026-10-28),
@@ -262,6 +262,66 @@ strength (1.5) is the main knob if the research says Jutland's dark side was dar
 - **Anchors:** a broadside's flash made out at 15-30 km on a dark night [EST, research]; fires as now (`fire.md` B2's
   25 km for a 2 MW fire). Tests: a flash contact's bearing within its sigma, the dazzle's recovery, the fire's numbers
   unchanged.
+
+**Q2 done (2026-10-29).** Lights are one model:
+
+- **One flash model.** The glowing gas of a shot (the cores, Mach discs and secondary fireball, and the blackbody
+  table) moved from the renderer's `FlashEmitters` into the sim as `Sim.Combat/FlashGlow.cs`; the screens draw through
+  it. `MuzzleFlash.EffectiveCd` integrates a mount's salvo and takes it as a steady light by the Blondel-Rey law (IALA's
+  rule for flashing lights, a = 0.2 s), as expected over the secondary flash's chance: a 15" twin 2.9·10⁷ cd, a 13.5"
+  twin 2.3·10⁷, a 6" 9.6·10⁵, a destroyer's 3" 8.5·10⁴. `CombatStore.Fired` keeps each ship's latest salvo's flash (the
+  mounts fired at one moment summed); a class's flashes are worked out when a ship of it is set up.
+- **`Lights`** (`Sim/Lights.cs`, the world's): the sources that light what's near them, gathered at each look. Today
+  the fires (as before, lamps of 10⁴ cd a MW halfway up her); Q4's searchlights and Q5's flares join it. A ship asks every
+  light (lights × ships): the illuminance on her through the haze and the bearing it comes from; the share an eye sees
+  is (1 + cos Δ) / 2 of it (light from beyond her lights nothing the eye sees). Lit, her parts shine back at albedo 0.3,
+  their contrast against the sky ρE / πL less her own darkness, the better of that and her dark shape: a dreadnought at
+  4 km on a moonless night goes from a margin of 0.7 to some 200 with a 5 MW fire 300 m off her on the eye's side.
+- **A light seen** (`SightModel.LightMargin`): Allard's law against the sky through the haze, every source the same law;
+  the fires' `GlowMargin` is one case of it (unchanged: a 2 MW fire made out to 24 km). A ship not in sight is looked
+  for by her lights (`Sightings.LightLook`): her salvo's flash if she fired within the look (seen once, by its chance),
+  and her funnels' glow while she forces coal fires (at the rate a ship is; 10 cd a funnel at her rated power, growing as
+  the smoke's forcing does [EST]). A light seen is a **light contact** (`ContactLevel.Light`, `LightInSight`): a bearing
+  with the eye's error and a rough range (30%), its course and speed unknown, into the same track; seeing her raises it.
+  The map shows it as a placeholder spark with the bearing it was taken on, the card as "a light in the dark"
+  (the night's marks wait for Q9). A broadside shows to the horizon on a dark night (29 km for a flash 10 m up, the
+  plan's 15-30 km); a destroyer's gun 29 km moonless, 16 km with the sun 6° down.
+- **Dazzle**: her own salvo leaves her eyes adapted as to 1.2·10⁻⁹ cd/m² a candela of its light (a 15" twin's as deep
+  twilight's sky), fading with τ = 1 s [EST]; the eye adapted to L_a needs Cₜ(L_a)·L_a, so in the dark she's all but blind
+  for a few seconds (a destroyer at 1 km on a moonless night: margin 1.9, 0.04 just after a 15" twin fires, 0.5 at 3 s,
+  back by 8 s). Her eyes take no fresh sighting and no reading while dazzled, but keep the ship they hold where they last
+  saw her (a lookout dazzled for three seconds still knows where she was: without that, the Dover Strait's leaders lost
+  their targets after one salvo). Fire control's sensors are dazzled the same way.
+- **Flashless and night charges** wait for the ammunition system, as planned.
+- **Allocation:** two things a step could allocate, found by the flotilla's allocation test once lights changed its
+  play: a side's picture is now sized for every ship at sea (it grows with the fleets, not with the contacts), and the
+  matchup judge makes its room for every ship and group when they change, not at a unit's first judgement in a step.
+
+**The bench after Q2** (5 seeds; Q1's in brackets):
+
+| Case | First seen | Salvos at | Shells, hits | Lost |
+|---|---|---|---|---|
+| Southampton | GB 5.7 (5.9), DE 9.1 km (9.1) | 5.4-5.6 km | GB 55 / 1.4 (41 / 3), DE 2,281 / 172 (2,377 / 199) | GB 0.2 of 4 (0.4), DE 0 |
+| 4th Flotilla | GB 3.5 (3.0), DE 4.3 km (4.3) | 3.4-3.6 km | GB 171 / 28 (89 / 15), DE 124 / 16 (351 / 45) | GB 0.6 of 10 (1.8), DE 0 (0.2) |
+| Black Prince | GB 3.1 km in 4 runs of 5 (3.7 in 1), DE 4.7 km | 3.3-3.7 km | GB 104 / 30 (14 / 4), DE 277 / 120 (450 / 162) | GB 0.6 of 1 (0.6) |
+| Dover Strait | 0.3 km both | 0.3 km | GB 22 / 21 (17 / 16), DE 16 / 12 (11 / 10) | GB 0 of 2 (0.4), DE 0.2 of 6 (0) |
+
+**What it says:**
+- **Firing gives you away.** Black Prince, who in Q1 rarely saw the line that sank her, now sees it in four runs of five
+  by its flashes once it opens on her, and fires back (104 shells, 30 hits; the record has her sunk without a hit on the
+  Germans: she closed taking them for friends and was lit before she fired, Q6 and Q4's).
+- **Firing in the dark costs the firer.** Dazzled after each salvo, the German line's fire on the 4th Flotilla falls
+  from 351 shells and 45 hits to 124 and 16; the flotilla, firing small guns that dazzle little, does better and loses
+  0.6 boats of 10 (1.8). The record's four boats lost lean on searchlights and star shell (Q4, Q5).
+- **The Dover Strait** keeps its point-blank pass (22 and 16 shells, nearly every one a hit, torpedoes at 200 m).
+- Jutland's twilight ranges and Southampton's long duel are as Q1 left them.
+
+**Open after Q2:** the screen draws each salvo's secondary flash by its own draw while the sim takes the expected light
+(the sim would have to keep each salvo's draw for the screen to read it; worth it if a capture shows a mismatch);
+a salvo's flash lights its firer's surroundings for an instant but lights no other ship in the sim (too brief beside a
+fire or a beam; Q4's beams and Q5's flares are steady); a ship backlit against a fire or a flare beyond her is Q5's
+(silhouettes against a lit sky); a light's look asks no smoke of the field; the funnel glow, the dazzle and the light
+contact's range error are [EST] until the research; no ranging by a flash's report (the sound's delay).
 
 ### Q3 Searchlights in the design
 

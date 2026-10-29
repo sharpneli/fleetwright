@@ -10,7 +10,9 @@ namespace Fleetwright.Map;
 /// in its side's colour once its type is made out; solid while in sight, fading once it's out of sight and dead reckoned.
 /// Its label says what it's taken for: a ship, its type, its class (with a "?": it may be wrong), its name. Smoke on the
 /// horizon (docs/battle/smoke.md Z6) is a smudge where it's reckoned, with the bearing it was taken on while it's in
-/// sight: no ship's marker or course until she's seen.</summary>
+/// sight: no ship's marker or course until she's seen. A light in the dark (docs/battle/night.md Q2: a salvo's flash, a
+/// funnel's glow) is a small spark where it's reckoned, with its bearing while it's in sight (placeholder marks until the
+/// night's UI, Q9).</summary>
 public sealed partial class MapScene
 {
     const double ContactFadeMs = 30 * 60_000;   // out of sight, it fades to its faintest over this
@@ -20,7 +22,7 @@ public sealed partial class MapScene
     static Vector4 ContactColour(ContactsView c, int i, long now)
     {
         var col = c.Side[i] == 255 ? MapPalette.Unknown : ShipDrawList.EnemyTint;   // the player's picture: the enemy's
-        float a = c.InSight[i] || c.SmokeInSight[i] ? 0.95f : (float)Math.Max(0.3, 0.85 - 0.55 * (now - c.SeenMs[i]) / ContactFadeMs);
+        float a = c.InSight[i] || c.SmokeInSight[i] || c.LightInSight[i] ? 0.95f : (float)Math.Max(0.3, 0.85 - 0.55 * (now - c.SeenMs[i]) / ContactFadeMs);
         return col with { W = a };
     }
 
@@ -46,7 +48,7 @@ public sealed partial class MapScene
                 ClipPoint(view, (p + ax * (Math.Cos(a) * major) + across * (Math.Sin(a) * minor)).Normalized() * Earth.Radius);
             }
             overlay.EndClosed();
-            if (c.SmokeInSight[i])
+            if (c.SmokeInSight[i] || c.LightInSight[i])
             {
                 // the bearing it was taken on: from where she looked, through it, out past its range's error
                 var far = (p + (p - c.From[i]).Normalized() * (2 * c.MajorM[i])).Normalized() * Earth.Radius;
@@ -65,8 +67,10 @@ public sealed partial class MapScene
                 double r = Math.Clamp(2 * c.MinorM[i] / view.MetresPerPixel, 28, 64);
                 overlay.Disc(x, y, r, MapPalette.Smoke with { W = MapPalette.Smoke.W * col.W }, 0.7f);
             }
-            if (c.Level[i] == ContactLevel.Smoke)
-                continue;   // smoke alone: no ship's marker, no course
+            if (c.LightInSight[i] || c.Level[i] == ContactLevel.Light)
+                overlay.Disc(x, y, 4 * Rp, MapPalette.Light with { W = MapPalette.Light.W * col.W }, 1f);
+            if (c.Level[i] <= ContactLevel.Smoke)
+                continue;   // smoke or a light alone: no ship's marker, no course
             // the marker: a diamond, filled while she's in sight, hollow once dead reckoned; and the course line ahead
             symbols.Add(SymbolShape.Diamond, x, y, ContactMarkerPx * Rp, c.InSight[i] ? col with { W = col.W * 0.85f } : default, col, 1.5f);
             var ahead = (p + c.Velocity[i] * ContactCourseS).Normalized() * Earth.Radius;
@@ -99,7 +103,8 @@ public sealed partial class MapScene
             ContactLevel.Class => ClassName(c.TakenFor[i]) + " class?",
             ContactLevel.Type => TypeWord(c.Type[i]),
             ContactLevel.Ship => "ship",
-            _ => "smoke",
+            ContactLevel.Smoke => "smoke",
+            _ => "a light",
         };
     }
 
@@ -128,7 +133,9 @@ public sealed partial class MapScene
         what += SeenText(c.Seen[i]);
         if (c.SmokeInSight[i] && c.Level[i] > ContactLevel.Smoke)
             what += " · her smoke";
-        return c.InSight[i] || c.SmokeInSight[i] ? what : $"{what} · last seen {new WorldTime(c.SeenMs[i]).ToUtc():HH:mm}";
+        if (c.LightInSight[i] && c.Level[i] > ContactLevel.Light)
+            what += " · her lights";
+        return c.InSight[i] || c.SmokeInSight[i] || c.LightInSight[i] ? what : $"{what} · last seen {new WorldTime(c.SeenMs[i]).ToUtc():HH:mm}";
     }
 
     string ClassName(int id) => id >= 0 && world.Classes.TryGet(id) is { } cls ? cls.Name : "?";

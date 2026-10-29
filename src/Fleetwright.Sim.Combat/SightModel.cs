@@ -8,10 +8,12 @@ namespace Fleetwright.Sim.Combat;
 /// the visibility; the light (docs/battle/night.md Q1): the horizon sky's luminance, cd/m² (<see cref="NightSky.SkyCdM2"/>),
 /// and how far she stands dark against a bright horizon beyond her, 0 to 1 (a low sun's, the moon's path); the smoke on
 /// the line from the eye (docs/battle/smoke.md Z3), none by default; her speed through the water, m/s (her bow wave, 0:
-/// none asked); and the share of the sky's light the eye's glass brings to it (<see cref="SightModel.GlassLight"/>, 1 the
-/// naked eye).</summary>
+/// none asked); the share of the sky's light the eye's glass brings to it (<see cref="SightModel.GlassLight"/>, 1 the
+/// naked eye); a light's illuminance on her side toward the eye, lux (docs/battle/night.md Q2: a fire near her, later a
+/// beam or a flare); and the luminance the eye is adapted to if more than the scene through its glass (its own guns'
+/// flash, <see cref="SightModel.DazzleCdM2"/>; 0: the scene's).</summary>
 public readonly record struct SightLine(double DistanceM, double AspectDeg, double VisibilityM, double SkyCdM2, double Silhouette,
-    SmokeTau Smoke = default, double SpeedMs = 0, double Glass = 1);
+    SmokeTau Smoke = default, double SpeedMs = 0, double Glass = 1, double LitLux = 0, double AdaptedCdM2 = 0);
 
 /// <summary>How the dark raises the eye's threshold (docs/battle/night.md Q1), both ≥ 1 and exactly 1 by day: the large
 /// object's threshold contrast by <paramref name="Floor"/>, and the patch the eye sums its light over (the critical solid
@@ -180,22 +182,39 @@ public static class SightModel
         return Math.Min(dayM, dayM * Math.Cbrt(omegaDay / omega));
     }
 
-    /// <summary>A ship's fires as a light at night (docs/battle/fire.md B2; 17 §8.5), its margin over what an eye this high
-    /// makes out: the heat that shows (MW) as a lamp of <see cref="SimSettings.FireGlowCdPerMW"/>, at a height on the ship,
-    /// through the haze by Allard's law (3.912 / the visibility), against <see cref="SimSettings.FireGlowLux"/> under a dark
-    /// sky, more against a brighter one by the eye's square root law (docs/battle/night.md Q1: <see cref="SimSettings.FireGlowSkyCdM2"/>),
-    /// so by day it barely counts beside the ship herself; none below the horizon. Smoke on the line at its height
-    /// (docs/battle/smoke.md Z3) dims it as the haze does.</summary>
+    /// <summary>A ship's fires as a light at night (docs/battle/fire.md B2; 17 §8.5): the heat that shows (MW) as a lamp of
+    /// <see cref="SimSettings.FireGlowCdPerMW"/> (<see cref="LightMargin"/>).</summary>
     public static double GlowMargin(double eyeM, double fireMW, double heightM, double distanceM, double visibilityM, double skyCdM2,
-        SimSettings s, double smokeTau = 0)
+        SimSettings s, double smokeTau = 0) =>
+        fireMW <= 0 ? 0 : LightMargin(eyeM, s.FireGlowCdPerMW * fireMW, heightM, distanceM, visibilityM, skyCdM2, s, smokeTau);
+
+    /// <summary>A light's margin over what an eye this high makes out (docs/battle/night.md Q2: the one law for every
+    /// source, a fire, a salvo's flash, a funnel's glow, later a searchlight's lamp and a flare): its intensity (cd, a
+    /// flash's effective one) at a height, through the haze by Allard's law (3.912 / the visibility), against
+    /// <see cref="SimSettings.FireGlowLux"/> under a dark sky, more against a brighter one by the eye's square root law
+    /// (<see cref="SimSettings.FireGlowSkyCdM2"/>), so by day it barely counts; none below the horizon. Smoke on the line
+    /// at its height (docs/battle/smoke.md Z3) dims it as the haze does; an eye dazzled by its own guns sees it as against
+    /// the sky it's adapted to.</summary>
+    public static double LightMargin(double eyeM, double candela, double heightM, double distanceM, double visibilityM, double skyCdM2,
+        SimSettings s, double smokeTau = 0, double adaptedCdM2 = 0)
     {
-        if (fireMW <= 0 || HiddenM(eyeM, distanceM, s) >= heightM)
+        if (candela <= 0 || HiddenM(eyeM, distanceM, s) >= heightM)
             return 0;
-        double d = Math.Max(distanceM, 1);
+        double d = Math.Max(distanceM, 1), sky = Math.Max(Math.Max(skyCdM2, 0), adaptedCdM2);
         double sigma = double.IsPositiveInfinity(visibilityM) || visibilityM <= 0 ? 0 : 3.912 / visibilityM;
-        return s.FireGlowCdPerMW * fireMW * Math.Exp(-sigma * d - smokeTau) /
-               (d * d * s.FireGlowLux * Math.Sqrt(1 + Math.Max(skyCdM2, 0) / s.FireGlowSkyCdM2));
+        return candela * Math.Exp(-sigma * d - smokeTau) / (d * d * s.FireGlowLux * Math.Sqrt(1 + sky / s.FireGlowSkyCdM2));
     }
+
+    /// <summary>The chance a flash is seen (docs/battle/night.md Q2): a light for an instant, so not a rate over time but
+    /// once, rising from none at a margin of 1 to sure at the full margin, as a sighting's rate does.</summary>
+    public static double FlashChance(double margin, SimSettings s) =>
+        margin <= 1 ? 0 : Math.Min(1, Math.Log(margin) / Math.Log(s.SightFullMargin));
+
+    /// <summary>What her own guns' flash leaves her eyes adapted to, cd/m² (docs/battle/night.md Q2): her salvo's light
+    /// (cd, <c>CombatStore.LastFlash</c>) times <see cref="SimSettings.SightDazzleCdM2PerCd"/>, fading over
+    /// <see cref="SimSettings.SightDazzleS"/> as the eyes recover [EST]. A ship firing fast in the dark sees less.</summary>
+    public static double DazzleCdM2(double flashCd, double ageS, SimSettings s) =>
+        flashCd <= 0 || ageS < 0 ? 0 : flashCd * s.SightDazzleCdM2PerCd * Math.Exp(-ageS / s.SightDazzleS);
 
     /// <summary>The eye's pupil, mm, adapted to a scene of this luminance (cd/m²): Moon and Spencer (1944),
     /// 4.9 − 3 tanh(0.4 log₁₀ L), about 3 mm by day and 7.5 in the dark.</summary>
@@ -219,6 +238,18 @@ public static class SightModel
     static double Share((double ExitPupilMm, double Transmission) g, double pupilMm) =>
         g.Transmission * Math.Min(1, g.ExitPupilMm * g.ExitPupilMm / (pupilMm * pupilMm));
 
+    /// <summary>The dark on a line (<see cref="DarkOf(double, SimSettings)"/>): the scene through the eye's glass, or what
+    /// the eye is adapted to when it's more (dazzled, docs/battle/night.md Q2): the threshold then as for that light, and
+    /// over the scene by as much as that is brighter (the eye adapted to L_a needs ΔL ≈ Cₜ(L_a)·L_a).</summary>
+    public static Dark DarkOf(in SightLine line, SimSettings s)
+    {
+        double scene = line.SkyCdM2 * line.Glass;
+        if (!(line.AdaptedCdM2 > scene))
+            return DarkOf(scene, s);
+        var d = DarkOf(line.AdaptedCdM2, s);
+        return new Dark(Math.Max(d.Floor, 1) * line.AdaptedCdM2 / Math.Max(scene, 1e-12), Math.Max(d.Summation, 1));
+    }
+
     /// <summary>How much the dark raises the eye's threshold (docs/battle/night.md Q1), from the sky's luminance as the eye
     /// gets it through its glass (cd/m²): each factor (1 + √(L_k / L)) over its value at <see cref="SimSettings.SightWeberCdM2"/>
     /// (flat by day, the de Vries-Rose square root law in the dark), its own knee for the large object's threshold
@@ -235,12 +266,17 @@ public static class SightModel
 
     /// <summary>A ship's own contrast against the horizon sky in this light (cd/m²): the day's grey ship with the sun on
     /// her sides, darker against the sky in its light alone (after sunset, under an overcast, at night), between on the
-    /// sky's luminance (log); and toward a silhouette's against a bright horizon by the share (0-1).</summary>
-    public static double InherentContrast(double skyCdM2, double silhouette, SimSettings s)
+    /// sky's luminance (log); and toward a silhouette's against a bright horizon by the share (0-1). Lit by a light near
+    /// her (lux on her side toward the eye, docs/battle/night.md Q2), the parts it falls on shine back at
+    /// <see cref="SimSettings.SightHullAlbedo"/>: brighter than the sky by ρE / πL less her own darkness, the better of
+    /// that and her dark shape.</summary>
+    public static double InherentContrast(double skyCdM2, double silhouette, SimSettings s, double litLux = 0)
     {
-        double lit = Math.Clamp(Math.Log(Math.Max(skyCdM2, 1e-12) / s.SightContrastNightCdM2) / Math.Log(s.SightContrastDayCdM2 / s.SightContrastNightCdM2), 0, 1);
-        double own = s.SightContrastNight + (s.SightContrastDay - s.SightContrastNight) * lit;
-        return own + (s.SightContrastSilhouette - own) * Math.Clamp(silhouette, 0, 1);
+        double sky = Math.Max(skyCdM2, 1e-12);
+        double day = Math.Clamp(Math.Log(sky / s.SightContrastNightCdM2) / Math.Log(s.SightContrastDayCdM2 / s.SightContrastNightCdM2), 0, 1);
+        double own = s.SightContrastNight + (s.SightContrastDay - s.SightContrastNight) * day;
+        double c = own + (s.SightContrastSilhouette - own) * Math.Clamp(silhouette, 0, 1);
+        return litLux > 0 ? Math.Max(c, s.SightHullAlbedo * litLux / (Math.PI * sky) - own) : c;
     }
 
     /// <summary>Her bow wave's margin (docs/battle/night.md Q1): white water at her stem as high as
@@ -262,7 +298,7 @@ public static class SightModel
         if (area <= 0)
             return 0;
         double c = s.SightFoamContrast * Math.Exp(-Extinction(line.VisibilityM, s) * d - (line.Smoke.Clear ? 0 : line.Smoke.Low));
-        return c / Threshold(area * magnification * magnification / (d * d), DarkOf(line.SkyCdM2 * line.Glass, s), s);
+        return c / Threshold(area * magnification * magnification / (d * d), DarkOf(line, s), s);
     }
 
     /// <summary>An eye's magnification: a director's rangefinder's (its make's), binoculars at a masthead, on the bridge
@@ -337,7 +373,7 @@ public static class SightModel
             for (int j = 0; j < 3; j++)
                 through[p * 3 + j] = Math.Exp(-line.Smoke[p, j]);
         double contrast = Contrast(d, line, s), m2 = magnification * magnification / (d * d), best = 0;
-        var dark = DarkOf(line.SkyCdM2 * line.Glass, s);
+        var dark = DarkOf(line, s);
         for (int p0 = 0; p0 < 3; p0++)
             for (int p1 = p0; p1 < 3; p1++)
                 for (int j0 = 0; j0 < 3; j0++)
@@ -360,7 +396,7 @@ public static class SightModel
     /// <summary>The margin for an area showing at a distance (<see cref="Margin"/> after the horizon and aspect), through
     /// the haze alone.</summary>
     public static double MarginOfArea(double areaM2, double distanceM, double magnification, in SightLine line, SimSettings s) =>
-        Contrast(distanceM, line, s) / Threshold(areaM2 * magnification * magnification / (distanceM * distanceM), DarkOf(line.SkyCdM2 * line.Glass, s), s);
+        Contrast(distanceM, line, s) / Threshold(areaM2 * magnification * magnification / (distanceM * distanceM), DarkOf(line, s), s);
 
     /// <summary>The margin an eye makes out a ship's smoke at (docs/battle/smoke.md Z6, <see cref="SmokePlume"/>): what of
     /// it shows over the horizon at the view (the sine of the line of sight against its trail), at its own contrast through
@@ -373,7 +409,7 @@ public static class SightModel
         if (!(area > 0) || !(shade > 0))
             return 0;
         return shade * Math.Exp(-Extinction(line.VisibilityM, s) * d) /
-               Threshold(area * magnification * magnification / (d * d), DarkOf(line.SkyCdM2 * line.Glass, s), s);
+               Threshold(area * magnification * magnification / (d * d), DarkOf(line, s), s);
     }
 
     /// <summary>The farthest any of a plume could be made out, m (<see cref="SmokeMargin"/>'s bound): its darkest
@@ -393,7 +429,7 @@ public static class SightModel
     /// <summary>A target's apparent contrast through the haze at a distance: her own in the light (<see cref="InherentContrast"/>)
     /// faded by the visibility.</summary>
     static double Contrast(double distanceM, in SightLine line, SimSettings s) =>
-        InherentContrast(line.SkyCdM2, line.Silhouette, s) * Math.Exp(-Extinction(line.VisibilityM, s) * distanceM);
+        InherentContrast(line.SkyCdM2, line.Silhouette, s, line.LitLux) * Math.Exp(-Extinction(line.VisibilityM, s) * distanceM);
 
     /// <summary>The smoke's depth on the line to her middle at a height, between its bands (held beyond the lowest and the
     /// highest).</summary>
