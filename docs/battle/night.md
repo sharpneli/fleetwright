@@ -1,6 +1,6 @@
 # Plan: night fighting (a 4.5 deepening)
-Status: **drafted 2026-10-29**; **agreed with the user 2026-10-29** (decisions 1-5 at the end); Q0-Q9 done 2026-10-29;
-the research arrived 2026-10-29: Q1b, Q0b, Q3b, Q5b added before Q10 (after Q9)
+Status: **drafted 2026-10-29**; **agreed with the user 2026-10-29** (decisions 1-5 at the end); Q0-Q10 done 2026-10-29;
+the research arrived 2026-10-29: Q1b, Q0b, Q3b, Q5b added before Q10 (after Q9), done; Q11 next, then Q12
 Updated: 2026-10-29
 
 How ships see, light, shoot and lose each other in the dark. The user asked for it after the crew plan (2026-10-28),
@@ -1223,6 +1223,16 @@ desaturated while lights keep their colour, flares and beams in the shared light
 light), beams scattered in the haze and smoke, star shell with its halo and trail through the effects camera, the
 moon under the cloud, funnel glow and challenge lamps, night ticks, phosphorescence (the look now, the sim's cue
 later: a sighting cue for a glowing bow wave and wake on a scenario's `phosphorescence`). Placeholders (a line for a beam, a disc for a flare) until it.
+
+**Q10 done (2026-10-29)**, as `docs/visuals/night-lights.md` records it: Q10a the dark (one night eye from
+`NightLight.At`, the amplification gone, Purkinje, night ticks), Q10b lights in the block (flares as high point lights,
+beams as spot lights), Q10c beams in the air (`BeamRenderer`, lit haze and smoke), Q10d star shell (`FlareRenderer`
+through the effects camera), Q10e the moon under the cloud, funnel glow, challenge lamps, small lights keeping their
+colour, phosphorescence as a look; Q10f's first pass (the eye's response to artificial light, `LightKnee` 20; the star's
+glow at 0.3) and the beams over a hull (glow at half, thinned over the ship held) approved by the user. Open: finer
+tuning for ordinary displays from playtest feedback (the levels were set on the user's OLED); the sim's phosphorescence
+cue is Q12's. Q1b's sky reaches the look only through the shared daylight table (the night eye reads `SunLux` and the
+stars, not the sky's luminance by bearing).
 
 ### Q11 The coarse tier
 
