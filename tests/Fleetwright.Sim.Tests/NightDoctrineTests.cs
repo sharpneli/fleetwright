@@ -131,4 +131,41 @@ public class NightDoctrineTests(ITestOutputHelper output)
         Assert.Equal(-1, byTwilight);
         Assert.Equal(0, byEven);
     }
+
+    /// <summary>The strain of being found and fired on (docs/battle/night.md Q8; crew.md N3b): a salvo down about a green crew
+    /// that straddles her, or falls while she's held in a beam, adds 0.02 at every station; trained men feel nothing, nor do
+    /// green men in the dark when it misses wide.</summary>
+    [Fact]
+    public void A_green_crew_feels_being_lit_and_straddled()
+    {
+        double Strain(double experience, bool lit, bool straddle)
+        {
+            // no captains: nobody fires or lights by doctrine, the only light on the cruiser is the one ordered
+            var w = new World(WorldTime.FromUtc(1917, 4, 21, 0), 7, S);
+            int cl = w.Ships.AddClass(Fleet.Get("light_cruiser").Class!), dd = w.Ships.AddClass(Fleet.Get("destroyer").Class!);
+            w.Apply(Command.SetWeather(20_000));
+            w.Apply(ShipSystem.Spawn(cl, Lat, Lon, 0, 0, 1));
+            w.Apply(ShipSystem.Spawn(dd, Lat, Lon + 0.03, 180, 0, 2));
+            w.Apply(GunnerySystem.SetExperience(1, experience));
+            w.AdvanceTo(w.Time + 30_000);
+            if (lit)
+                w.Apply(SearchlightSystem.Order(2, SearchlightOrder.Illuminate, 1));
+            w.AdvanceTo(w.Time + 20_000);
+            int slot = w.Ships.Store.SlotOf(1);
+            var k = w.Ships.Store.Combat.Condition(slot);
+            var c = k.Class;
+            double Sum() => k.StationGroup.Sum(g => Steadiness.Duress(c, k, g, w.Time.Ms, S));
+            double before = Sum();
+            w.Damage.Salvo(w, slot, straddle);
+            return (Sum() - before) / k.StationGroup.Length;
+        }
+        double greenLit = Strain(Experience.Green, lit: true, straddle: false), greenStraddled = Strain(Experience.Green, lit: false, straddle: true);
+        double greenDark = Strain(Experience.Green, lit: false, straddle: false), trainedLit = Strain(Experience.Trained, lit: true, straddle: true);
+        output.WriteLine($"a station's duress from one salvo: green lit {greenLit:0.000}, green straddled {greenStraddled:0.000}, green in the dark " +
+                         $"{greenDark:0.000}, trained lit and straddled {trainedLit:0.000}");
+        Assert.Equal(S.DuressStraddle * S.DuressStraddleGreen, greenLit, 3);
+        Assert.Equal(S.DuressStraddle * S.DuressStraddleGreen, greenStraddled, 3);
+        Assert.Equal(0, greenDark, 6);
+        Assert.Equal(0, trainedLit, 6);
+    }
 }

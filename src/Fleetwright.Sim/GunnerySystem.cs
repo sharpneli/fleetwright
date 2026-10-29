@@ -1394,6 +1394,8 @@ public sealed class GunnerySystem : IWorldSystem
                 log.Add(new CombatEntry(now, CombatEvent.Straddle, fc.Shooter, fc.Battery, fc.Target, sv.Landed));
             }
         }
+        if (world.Ships.Store.SlotOf(sv.Target) is int ts and >= 0)
+            world.Damage.Salvo(world, ts, straddle);   // a green crew straddled, or fired on lit (docs/battle/night.md Q8)
         world.Schedule(new WorldTime(world.Time.Ms + settings.SpotDelayMs), EventTier.Fine, si, Id, SpotEvent, sv.Generation);
     }
 

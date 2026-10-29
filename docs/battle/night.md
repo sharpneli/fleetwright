@@ -1,5 +1,5 @@
 # Plan: night fighting (a 4.5 deepening)
-Status: **drafted 2026-10-29**; **agreed with the user 2026-10-29** (decisions 1-5 at the end); Q0-Q7 done 2026-10-29
+Status: **drafted 2026-10-29**; **agreed with the user 2026-10-29** (decisions 1-5 at the end); Q0-Q8 done 2026-10-29
 Updated: 2026-10-29
 
 How ships see, light, shoot and lose each other in the dark. The user asked for it after the crew plan (2026-10-28),
@@ -845,6 +845,25 @@ of it at its thinks (Q11).
 - Searchlight crews in the crew book (Q3). The searchlight term for green crews (`crew.md` N3's unbuilt row, CUF R3).
 - A ship firing rapidly in the dark dazzles herself (Q2). Fatigue after a day's fighting stays its own later system
   (no lumped factors).
+
+**Q8 done (2026-10-29).** Two of its three items were already in: the searchlights' men at their own station
+(`BattleStation.Searchlights`, Q3) and a ship's own flashes dazzling her (Q2). What was left is crew.md N3b's last row,
+the strain of being found and fired on (CUF R2-R3), built for straddles and lights together as the row has it:
+
+- **A salvo down about her** (`GunnerySystem`, as each salvo's fall is judged; `DamageSystem.Salvo`) that straddled her,
+  or fell while she was lit (the others' beams and flares on her `LitShare` times the night sky's light, the same test
+  her captain turns away by, Q7a), adds duress at every station on the burst's 30 s channel (`Steadiness.Pressed`):
+  `DuressStraddle` 0.04 (CUF R2's full weight, a civilian crew's) × `DuressStraddleGreen` 0.5 × her greenness (1 less her
+  men's experience: all of it for green men, none from average up; no sourced case of trained crews breaking before
+  being hit, R3). Who stays is worked out again at once.
+- **What it amounts to:** 0.02 a salvo with a 30 s half-life, so a green crew under a salvo every 20-30 s carries a
+  steady 0.02-0.04 against a nerve of 0.30: by itself it never sends men away, it brings a station that's been hit nearer
+  its edge. crew.md's N3b note had it halved twice (0.01); CUF R3's green weight is half of R2's 0.04, so 0.02.
+- **Not here:** civilian crews at full weight (crew.md decision 9, after that plan); the coarse tier's fire (it judges no
+  straddles: Q11).
+- **Test:** `NightDoctrineTests.A_green_crew_feels_being_lit_and_straddled` (0.02 a station lit or straddled; none in
+  the dark wide of her, none for trained men).
+- **The bench** is Q7d's to the shot: none of its cases has a green crew (the term reads nothing for trained men).
 
 ### Q9 The player's hand
 

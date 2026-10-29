@@ -430,6 +430,13 @@ public sealed record SimSettings
     public double LitTurnAwayS { get; init; } = 120;
     public double SearchHalfDeg { get; init; } = 45;
 
+    /// <summary>The strain of being found and fired on (docs/battle/night.md Q8; crew.md N3b; CUF R2-R3): a salvo that
+    /// straddles a ship, or falls while she's lit, adds <see cref="DuressStraddle"/> at every station of a civilian crew
+    /// (CUF R2's full weight), <see cref="DuressStraddleGreen"/> of it for green men, fading out by average (her greenness,
+    /// 1 less her men's experience), on the burst's 30 s channel [EST].</summary>
+    public double DuressStraddle { get; init; } = 0.04;
+    public double DuressStraddleGreen { get; init; } = 0.5;
+
     /// <summary>A moon low enough silhouettes a ship toward it as the low sun does, as strongly as its path on the sea
     /// outshines the sky (<see cref="NightMoonPathShare"/>), fading as it climbs to this elevation, degrees [EST].</summary>
     public double SightSilhouetteMoonHighDeg { get; init; } = 40;

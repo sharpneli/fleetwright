@@ -244,6 +244,18 @@ public static class Steadiness
         Add(k, n, Near, s.DuressNearBurst * s.DuressNearCover[Math.Min(k.StationCover[n], s.DuressNearCover.Length - 1)], k.RiskMs, s);
     }
 
+    /// <summary>A salvo down about her that straddled her, or fell while she was lit (docs/battle/night.md Q8; crew.md N3b's
+    /// last row, CUF R2-R3): the strain of being found and fired on, at every station, on the burst's 30 s channel; the
+    /// amount already weighed by her men's greenness (none for trained men: no sourced case of them breaking before being
+    /// hit).</summary>
+    public static void Pressed(ShipCondition k, double amount, long now, SimSettings s)
+    {
+        if (amount <= 0)
+            return;
+        for (int n = 0; n < k.StationGroup.Length; n++)
+            Add(k, n, Near, amount, now, s);
+    }
+
     /// <summary>Propellant flash through a station (16 §4.6).</summary>
     internal static void Flash(ShipCondition k, int g, SimSettings s)
     {

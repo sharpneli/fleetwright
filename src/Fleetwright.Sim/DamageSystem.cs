@@ -809,6 +809,34 @@ public sealed class DamageSystem : IWorldSystem
         Remind(world, slot, k);
     }
 
+    /// <summary>An enemy's salvo down about a ship (docs/battle/night.md Q8; crew.md N3b's straddle and searchlight row, CUF
+    /// R2-R3): if it straddled her, or she was lit as it fell (the others' beams and flares on her
+    /// <see cref="SimSettings.LitShare"/> times the night sky's light, as her captain counts it), her green men feel it:
+    /// <see cref="SimSettings.DuressStraddle"/> × <see cref="SimSettings.DuressStraddleGreen"/> × her greenness (1 less her
+    /// men's experience, none from average up) at every station, and who stays is worked out again.</summary>
+    public void Salvo(World world, int slot, bool straddle)
+    {
+        var k = ships.Store.Combat.Condition(slot);
+        if (k.Status != ShipStatus.Afloat)
+            return;
+        var ship = ships.Store[slot];
+        double green = Math.Clamp(1 - world.Gunnery.Experience(ship.Side), 0, 1);
+        if (green <= 0)
+            return;
+        if (!straddle)
+        {
+            var weather = world.Weather.At(ship.Position, world.Time);
+            double lux = world.Lights.LitBy(slot, ship.Position, weather.VisibilityM).Lux;
+            if (lux <= 0 || lux < settings.LitShare * NightLight.At(ship.Position, world.Time, weather.Cloud, settings).Lux)
+                return;
+        }
+        long now = world.Time.Ms;
+        Steadiness.Pressed(k, settings.DuressStraddle * settings.DuressStraddleGreen * green, now, settings);
+        var r = stream.Derive(0x57AD1u).Derive((ulong)ship.Entity).Derive((ulong)now);
+        Recompute(world, slot, k, ref r);
+        Remind(world, slot, k);
+    }
+
     /// <summary>Its mounts train as stiffly as their hits left them, now (E4).</summary>
     void Stiffen(World world, int slot, ShipCondition k)
     {

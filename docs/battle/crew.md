@@ -509,8 +509,9 @@ the walking wounded back after 15-45 min). Southampton's and Emden's hit counts 
       one's share (a sorted sweep along x, no pairs). A shell's lane through the station adds 0.30, once a hit. A burst
       within 15 m whose pieces reach its men adds 0.08 × its cover (1 open, 0.6 shielded, 0.4 casemate, 0.3 turret or
       inside the hull; near misses too), once a hit. Flash adds 0.40. A fire in its space at any stage short of out adds
-      0.40 while it burns, fading for 2 min after. The straddle and searchlight term isn't built: at half weight for
-      green men it's +0.01 a salvo with a 30 s half-life, a steady 0.02 against a nerve of 0.30.
+      0.40 while it burns, fading for 2 min after. The straddle and searchlight term is built with the night's lights
+      (docs/battle/night.md Q8): +0.02 a salvo for green men (CUF R3: half R2's 0.04), fading out by average, 30 s
+      half-life; a steady 0.02-0.04 against a nerve of 0.30.
     - **Nerve and going:** the rows are read between the whole numbers (`NerveAt`, as `GunneryCrewAt`). The share going
       is the row's most × a logistic in (duress − nerve) / (0.15 × nerve). They come back the row's middle time after
       the duress falls under 0.6 × the nerve (green 6 min, average 3, trained 1.5, elite 0.75; × 1.75 with the officer
