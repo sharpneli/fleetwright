@@ -365,7 +365,7 @@ public static unsafe class Program
             {
                 foreach (var kv in arg.Substring("-night=".Length).Split(',', StringSplitOptions.RemoveEmptyEntries))
                     if (!Map.Night.NightLights.Set(kv))
-                        Console.Error.WriteLine($"Bad night knob: {kv} (want on, gain, iris, beam)");
+                        Console.Error.WriteLine($"Bad night knob: {kv} (want on, gain, iris, beam, hull)");
             }
             else if (arg.StartsWith("-flares="))   // the world view's star shell (docs/visuals/night-lights.md Q10d; Map/Night/FlareRenderer.cs): -flares=halo:1,trail:40
             {

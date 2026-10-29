@@ -162,7 +162,8 @@ public sealed class NightLights
         lights.Finish(view);
     }
 
-    /// <summary>Sets a knob, "on:1", "gain:1", "iris:1", "beam:1" (the beams' glow in the air, <see cref="BeamRenderer.Gain"/>)
+    /// <summary>Sets a knob, "on:1", "gain:1", "iris:1", "beam:0.5" (the beams' glow in the air, <see cref="BeamRenderer.Gain"/>), "hull:0.3" (its share left over the ship
+    /// held, <see cref="BeamRenderer.OverHull"/>)
     /// (the -night= flag, for side-by-side captures); false for a bad one.</summary>
     public static bool Set(string kv)
     {
@@ -175,6 +176,7 @@ public sealed class NightLights
             case "gain": Gain = Math.Max(v, 0); break;
             case "iris": IrisS = Math.Max(v, 0.01); break;
             case "beam": BeamRenderer.Gain = Math.Max(v, 0); break;
+            case "hull": BeamRenderer.OverHull = Math.Clamp(v, 0, 1); break;
             default: return false;
         }
         return true;

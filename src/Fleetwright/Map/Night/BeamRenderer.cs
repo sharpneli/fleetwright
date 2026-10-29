@@ -11,12 +11,12 @@ using static SDL.SDL3;
 
 namespace Fleetwright.Map.Night;
 
-/// <summary>One beam as beam.vert reads it (std430: 6 vec4s).</summary>
+/// <summary>One beam as beam.vert reads it (std430: 7 vec4s).</summary>
 [StructLayout(LayoutKind.Sequential)]
 public struct BeamGpu
 {
-    public Vector4 Base, Axis, Side, Light, Shadow, Colour;
-    public const int SizeInBytes = 96;
+    public Vector4 Base, Axis, Side, Light, Shadow, Colour, Hull;
+    public const int SizeInBytes = 112;
 }
 
 /// <summary>The searchlights' beams in the air (docs/visuals/night-lights.md Q10c): each beam the night's lights hold
@@ -29,10 +29,17 @@ public struct BeamGpu
 /// takes the beams' light itself); the ships' layer calls it. Nothing allocates once grown.</summary>
 public sealed unsafe class BeamRenderer : IDisposable
 {
-    const uint BufferBytes = 96 << 8;   // 256 beams
+    const uint BufferBytes = 112 << 8;   // 256 beams
 
-    /// <summary>A gain on the glow (1: physical, through the night eye).</summary>
-    public static double Gain = 1;
+    /// <summary>The glow's share left over the ship the beam's held on (a look's departure, the user, 2026-10-29): the
+    /// air over her is lit as much as anywhere, but her lit hull is what the beam is for; softened at her edges.</summary>
+    public static double OverHull = 0.3;
+
+    /// <summary>A gain on the glow as shown, after the eye's response (1: physical, through the night eye). Halved, a
+    /// look's departure (the user, 2026-10-29, docs/visuals/night-lights.md Q10f): over a hull the glow saturated like a
+    /// lightsaber's and hid the lit ship under it; the light the beam throws on her is untouched. After the response, so
+    /// the half shows (before it, the log took most of it back).</summary>
+    public static double Gain = 0.5;
 
     /// <summary>Where the glow stops being drawn: a share of a lit white deck (display units).</summary>
     public const double FadeTo = 0.003;
@@ -76,7 +83,7 @@ public sealed unsafe class BeamRenderer : IDisposable
         if (Gain <= 0 || night.Count == 0)
             return;
         var up = (-view.Forward).Normalized();
-        double perCd = Gain * FlashRenderer.PerCandela(frameLights, up);
+        double perCd = FlashRenderer.PerCandela(frameLights, up);
         double scatter = SearchlightModel.ScatterPerM(visibilityM, settings), extinction = scatter;
         for (int i = 0; i < night.Count; i++)
         {
@@ -101,17 +108,21 @@ public sealed unsafe class BeamRenderer : IDisposable
                 Base = new Vector4((float)rel.X, (float)rel.Y, (float)rel.Z, (float)h),
                 Axis = new Vector4(F(axis), (float)len),
                 Side = new Vector4(F(side), (float)sigma),
-                Light = new Vector4((float)k, (float)extinction, (float)LampM, 0),
-                Shadow = ShadowOf(night.Target(i), s, drawMs, ground, axis, side, classOf),
-                Colour = new Vector4(FlashPhotometry.UnitLuminance(NightLights.ArcColour), 0),
+                Light = new Vector4((float)k, (float)extinction, (float)LampM, (float)Gain),
+                Hull = new Vector4((float)OverHull, 0, 0, 0),
+                Shadow = ShadowOf(night.Target(i), s, drawMs, ground, axis, side, classOf, out double alongHalf),
+                Colour = new Vector4(FlashPhotometry.UnitLuminance(NightLights.ArcColour), (float)alongHalf),
             };
         }
     }
 
     /// <summary>The ship a beam's held on, as beam.frag reads her shadow: where she stands along the beam and across it,
-    /// the half width of her silhouette across it, her top (m); x &lt; 0 for none (sweeping, or not seen).</summary>
-    static Vector4 ShadowOf(int target, Snapshot s, long drawMs, Vec3d ground, Vec3d axis, Vec3d side, Func<int, ShipClass?> classOf)
+    /// the half width of her silhouette across it, her top (m); x &lt; 0 for none (sweeping, or not seen). And the half of
+    /// her length along the beam (<paramref name="alongHalf"/>, m: the glow thinned over her).</summary>
+    static Vector4 ShadowOf(int target, Snapshot s, long drawMs, Vec3d ground, Vec3d axis, Vec3d side, Func<int, ShipClass?> classOf,
+        out double alongHalf)
     {
+        alongHalf = 0;
         if (target < 0)
             return new Vector4(-1, 0, 0, 0);
         foreach (var v in (ReadOnlySpan<ShipsView>)[s.Ships, s.Sighted])
@@ -123,6 +134,7 @@ public sealed unsafe class BeamRenderer : IDisposable
                 if (along <= 0)
                     break;
                 double half = 0.5 * (c.Length * Math.Abs(Vec3d.Dot(f, side)) + c.Beam * Math.Abs(Vec3d.Dot(f, axis)));
+                alongHalf = 0.5 * (c.Length * Math.Abs(Vec3d.Dot(f, axis)) + c.Beam * Math.Abs(Vec3d.Dot(f, side)));
                 return new Vector4((float)along, (float)across, (float)Math.Max(half, 3), (float)Math.Max(c.Silhouette.TopM, 5));
             }
         return new Vector4(-1, 0, 0, 0);

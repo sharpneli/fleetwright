@@ -16,7 +16,7 @@
 
 struct Beam
 {
-    vec4 base, axis, side, light, shadow, colour;
+    vec4 base, axis, side, light, shadow, colour, hull;
 };
 
 layout(std430, set = 2, binding = 0) readonly buffer Beams { Beam beams[]; };
@@ -41,6 +41,13 @@ void main()
     // behind the lamp only its glare: the mirror's spill, a few metres
     if (fragLoc.x < 0.0)
         g *= exp(-fragLoc.x * fragLoc.x / 8.0);
+    // over her: the glow thinned (a look's departure: her lit hull is what the beam is for), soft at her edges
+    if (b.shadow.x > 0.0)
+    {
+        float over = (1.0 - smoothstep(0.7, 1.2, abs(fragLoc.x - b.shadow.x) / max(b.colour.w, 1.0)))
+                   * (1.0 - smoothstep(0.7, 1.2, abs(x - b.shadow.y) / max(b.shadow.z, 1.0)));
+        g *= mix(1.0, b.hull.x, over);
+    }
     // her shadow: the air behind her unlit up to her top, filling in as the beam's spread grows past it
     if (b.shadow.x > 0.0 && fragLoc.x > b.shadow.x)
     {
@@ -49,7 +56,7 @@ void main()
         float below = clamp(b.shadow.w * k / max(h + 2.0 * w, 1.0), 0.0, 1.0);   // the share of the beam's height she hides
         g *= 1.0 - across * below;
     }
-    vec3 col = lightResponse(b.colour.rgb * b.light.x * g);   // through the eye's response to artificial light
+    vec3 col = lightResponse(b.colour.rgb * b.light.x * g) * b.light.w;   // through the eye's response, then the look's gain
     float y = dot(col, vec3(0.2126, 0.7152, 0.0722));
     if (y < 1e-4)
         discard;

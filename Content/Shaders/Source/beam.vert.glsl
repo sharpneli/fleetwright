@@ -10,9 +10,11 @@ struct Beam
     vec4 base;    // xyz: the lamp's place on the sea under it, metres from the eye; w: the lamp's height, m
     vec4 axis;    // xyz: along the beam, unit, Earth-fixed; w: the quad's length, m
     vec4 side;    // xyz: across it, unit; w: its 1-sigma spread, radians
-    vec4 light;   // x: its glow's scale, display units x m; y: the air's extinction, 1/m; z: the lamp's softening, m
+    vec4 light;   // x: its glow's scale, display units x m; y: the air's extinction, 1/m; z: the lamp's softening, m; w: the
+                  // gain on it as shown (after the eye's response)
     vec4 shadow;  // x: where her target stands along it, m (< 0: none); y: across; z: the half width she covers; w: her top, m
-    vec4 colour;  // rgb: the arc's
+    vec4 colour;  // rgb: the arc's; w: half her length along the beam, m (the ship it's held on)
+    vec4 hull;    // x: the glow's share left over her
 };
 
 layout(std430, set = 0, binding = 0) readonly buffer Beams { Beam beams[]; };

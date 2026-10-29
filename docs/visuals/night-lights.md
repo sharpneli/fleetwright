@@ -324,7 +324,13 @@ so everything over the night's white goes white and the white grows with the gai
   to ~10× a starlit white deck and turned the moonless night grey; at a third the glow stays local.
 Moonless captures (Dover, 21 Apr 1917, a star shell and a beam): frame mean 59 → 32 (8-bit), pixels over 200 3.4% →
 0.3%; night salvos now orange fireballs with their structure where they were white blobs. Brightest left: smoke lying in
-a beam (lit white along it). Knobs: `-lights=lightknee:20` (0 the physical), `-flares=halo:0.3`. **Approved by the user 2026-10-29** ("looks great"); finer tuning for ordinary displays from playtest feedback. `-gputime` at the night scenarios (Dover 1917, Jutland's night, Tsushima, Åland's summer
+a beam (lit white along it). Knobs: `-lights=lightknee:20` (0 the physical), `-flares=halo:0.3`. **Approved by the user 2026-10-29** ("looks great"); finer tuning for ordinary displays from playtest feedback.
+
+**The beams, 2026-10-29 (the user: over a hull they read as lightsabers, saturating instead of showing a lit hull).** Two
+looks' departures in `BeamRenderer`: the glow at half (`Gain` 0.5, now applied after the eye's response, where a half
+shows; before it the log took most of it back), and the glow thinned to 0.3 over the footprint of the ship it's held on
+(`OverHull`, soft at her edges: the air over her is lit as much as anywhere, but her lit hull is what the beam is for).
+The light the beam throws on her is untouched. Knobs: `-night=beam:0.5,hull:0.3`. `-gputime` at the night scenarios (Dover 1917, Jutland's night, Tsushima, Åland's summer
 night) with every light on; the gains by the user's eye from side-by-side captures.
 
 ## Budgets
