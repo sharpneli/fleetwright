@@ -116,6 +116,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         public bool Met;                // doctrine's Engage taken up in this encounter
         public long TorpedoMs;          // when he last fired torpedoes (0: never)
         public bool TorpedoHeld;        // his flotilla attacking together: his torpedoes wait for its signal
+        public bool Attacking;          // fighting: pressing a torpedo attack (his searchlights dark, docs/battle/night.md Q4)
         public CaptainReason Reason;    // why, when it isn't simply his order (fallen out)
         public bool Overruled;          // the player ordered him on after he fell out: he stays, at his ship's risk
         public bool Conn;               // the player has the conn: nothing but the player's helm orders moves her
@@ -621,6 +622,8 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
             h.Add(c.TorpedoMs);
             if (c.TorpedoHeld)
                 h.Add(true);   // only then: worlds without flotilla attacks hash as before
+            if (c.Attacking)
+                h.Add(2);      // only then: worlds without a torpedo attack hash as before
             h.Add((int)c.Reason);
             if (c.Overruled)
                 h.Add(true);   // only then: worlds without an overrule hash as before

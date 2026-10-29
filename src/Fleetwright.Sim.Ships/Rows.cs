@@ -290,9 +290,14 @@ public enum SearchlightControl : byte
 /// <summary>A searchlight (docs/battle/night.md Q3): its part, and the part that carries it (a funnel, a mast or a block;
 /// -1 the deck); the lamp's place in the ship's frame and its height over the sea; the mirror (m), the beam's peak
 /// intensity (cd) and full spread (degrees), how it's trained, and the arc's draw (kW). Shipgen sizes and sites them
-/// (SearchlightTemplates).</summary>
+/// (SearchlightTemplates). The bearings its beam can't go along (Q4), a bit a sector as an eye's (<see cref="EyeRow.Blind"/>):
+/// where a taller part of the ship stands in its way at the lamp's height.</summary>
 public readonly record struct SearchlightRow(int Component, int On, double X, double Y, double HeightM, double MirrorM, double BeamCd,
-    double SpreadDeg, SearchlightControl Control, double PowerKw);
+    double SpreadDeg, SearchlightControl Control, double PowerKw, ulong Blind = 0)
+{
+    /// <summary>Whether its beam can go along a bearing relative to the bow, degrees clockwise.</summary>
+    public bool Sees(double relativeDeg) => (Blind & (1UL << Sight.Sector(relativeDeg))) == 0;
+}
 
 // ------------------------------------------------------------------ the weapons (docs/battle/fighting.md 4.0)
 

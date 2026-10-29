@@ -704,6 +704,7 @@ public sealed class GunnerySystem : IWorldSystem
         if (!fc.Tracking && !inSight)
         {
             fc.State = BatteryState.NoContact;
+            store.Combat.SetSees(slot, fc.Battery, false);
             return;
         }
         var ownV = ship.Forward * ship.Speed;
@@ -732,7 +733,7 @@ public sealed class GunnerySystem : IWorldSystem
             if (!aired)
                 (air, aired) = (AirAt(world, ship.Position, slot, inSight ? tslot : -1, smoke, i, worker), true);
             var at = frame.ToWorld(s.X, s.Y, 0);
-            double margin = inSight ? MarginOf(cls, s, optics, at, ship.HeadingDeg, target, air, smoke) : 0;
+            double margin = inSight ? MarginOf(cls, s, optics, at, ship.HeadingDeg, target, air, smoke, slot, frame) : 0;
             bool seen = margin >= 1;
             sees |= seen;
             if (!due)
@@ -795,6 +796,7 @@ public sealed class GunnerySystem : IWorldSystem
 
         // solve, and order the mounts
         fc.Sees = sees;
+        store.Combat.SetSees(slot, fc.Battery, sees);
         var aim = Aim(ref fc, f, table, muzzle, now, ship.Position, ownV, target, crew);
         bool laid = FireControl.Solve(table, muzzle, ship.Forward * ship.Speed, aim, out var lay, fc.ElevationDeg);
         double bearing = Mod((laid ? Earth.Heading(muzzle, lay.GunHorizontal) : Earth.Bearing(ship.Position, aim)) - ship.HeadingDeg);
@@ -914,9 +916,11 @@ public sealed class GunnerySystem : IWorldSystem
     /// <summary>A battery's sensor's margin on the target (fire-control.md F5c: the sighting model's, through its optics'
     /// magnification, or a layer's or an eye's binoculars): 0 when its eye doesn't bear (a blind sector) or the target is
     /// under the horizon; under 1 it can't make the target out, so takes no reading and doesn't see the fall. Through the
-    /// smoke on its line (docs/battle/smoke.md Z3) when there is any, the pair's answer read at its height.</summary>
+    /// smoke on its line (docs/battle/smoke.md Z3) when there is any, the pair's answer read at its height. A searchlight's
+    /// beam on her lights her, her own ship's beams veil the sensor's view down them, others' glare in it, and her own
+    /// lamp in its view is a point to aim at (docs/battle/night.md Q4).</summary>
     double MarginOf(ShipClass cls, in Sensor s, in OpticsRow optics, Vec3d at, double headingDeg, in ShipState target, in Air air,
-        ReadOnlySpan<double> smoke)
+        ReadOnlySpan<double> smoke, int slot, in ShipFrame frame)
     {
         var tc = target.Handling.Class;
         var tp = target.Position;
@@ -936,9 +940,19 @@ public sealed class GunnerySystem : IWorldSystem
             air.Smoked ? SmokeModel.EyeTau(smoke, cls.Eyes, s.X, s.Y, s.HeightM) : default, Math.Abs(target.Speed),
             ranges ? SightModel.TelescopeGlass(optics, pupil) : SightModel.LookoutGlass(pupil, settings),
             lux > 0 ? lux * Lights.Facing(from, back) : 0, air.DazzleCdM2);
+        double lamp = 0, lampM = 0;
+        if (air.Lights.Beams > 0)
+        {
+            line = line with { VeilCdM2 = air.Lights.VeilCdM2(slot, frame.ToWorld(s.X, s.Y, s.HeightM), tp, air.VisibilityM, settings) };
+            (lamp, _, lampM) = air.Lights.LampsOf(target.Slot, at, air.VisibilityM, settings);
+        }
         double mag = ranges ? optics.Magnification : settings.SightLookoutMagnification;
-        // her bow wave gives a point of aim in the dark (docs/battle/night.md Q1)
-        return Math.Max(SightModel.Margin(s.HeightM, mag, tc, line, settings), SightModel.BowWaveMargin(s.HeightM, mag, tc, line, settings));
+        // her bow wave gives a point of aim in the dark (docs/battle/night.md Q1), as her lamp does (Q4)
+        double margin = Math.Max(SightModel.Margin(s.HeightM, mag, tc, line, settings), SightModel.BowWaveMargin(s.HeightM, mag, tc, line, settings));
+        return lamp > 0
+            ? Math.Max(margin, SightModel.LightMargin(s.HeightM, lamp, lampM, d, air.VisibilityM, line.SkyCdM2 + line.VeilCdM2, settings,
+                air.Smoked ? SightModel.SmokeAt(line.Smoke, lampM, tc.Silhouette.TopM, settings) : 0, air.DazzleCdM2))
+            : margin;
     }
 
     /// <summary>The oldest reading into the computer: the first starts the track, from the eye's guess at the target's
@@ -1408,7 +1422,7 @@ public sealed class GunnerySystem : IWorldSystem
                 for (int k = 0; k < fc.SensorCount && !sees; k++)
                 {
                     ref readonly var s = ref sensors[sv.Fc * MaxSensors + k];
-                    sees = MarginOf(ship.Handling.Class, s, fc.Fit.Optics, frame.ToWorld(s.X, s.Y, 0), ship.HeadingDeg, target, air, smoke) >= 1;
+                    sees = MarginOf(ship.Handling.Class, s, fc.Fit.Optics, frame.ToWorld(s.X, s.Y, 0), ship.HeadingDeg, target, air, smoke, slot, frame) >= 1;
                 }
             }
             var sign = sv.Hits > 0 || sv.Over > 0 && sv.Short > 0 ? FireControl.Sign.Straddle : sv.Over > 0 ? FireControl.Sign.Over :

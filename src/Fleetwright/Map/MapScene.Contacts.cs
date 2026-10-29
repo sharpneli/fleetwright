@@ -84,6 +84,27 @@ public sealed partial class MapScene
         }
     }
 
+    const double BeamDrawnM = 4000;   // a beam's placeholder line: about its reach
+
+    /// <summary>The searchlights' beams out (docs/battle/night.md Q4), as their placeholder until the night's look (Q10):
+    /// a thin line from the lamp along its bearing, the light's colour.</summary>
+    void DrawBeams(in MapView view, Snapshot s)
+    {
+        var b = s.Beams;
+        for (int i = 0; i < b.Count; i++)
+        {
+            var lamp = b.Lamp[i].Normalized() * Earth.Radius;
+            var (end, along) = (lamp, Earth.Forward(lamp, b.BearingDeg[i]));
+            Earth.Advance(ref end, ref along, BeamDrawnM);
+            if (!view.Project(lamp, out double x0, out double y0) || !view.Project(end, out double x1, out double y1))
+                continue;
+            overlay.BeginStrip(MapPalette.Light with { W = 0.55f }, 1.5f);
+            overlay.Point(x0, y0);
+            overlay.Point(x1, y1);
+            overlay.End();
+        }
+    }
+
     /// <summary>What a contact is taken for, as its label says it.</summary>
     // the contacts' identities as the player holds them, made when one changes
     readonly Dictionary<(int, ContactLevel, int, ShipType), string> identities = [];

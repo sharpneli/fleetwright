@@ -133,6 +133,8 @@ public sealed class World
         Register(Torpedoes);
         Smoke = new SmokeSystem(Settings, Probes, seed);
         Register(Smoke);
+        Searchlights = new SearchlightSystem(Settings, Ships, Sightings);
+        Register(Searchlights);
         Ships.ClassAdded = cls =>
         {
             if (Reach.Add(cls))
@@ -151,6 +153,10 @@ public sealed class World
     /// <summary>The smoke field (docs/battle/smoke.md Z1): always registered seventh (<see cref="SmokeSystem.Id"/>), off
     /// unless <see cref="SimSettings.Smoke"/>.</summary>
     public SmokeSystem Smoke { get; }
+
+    /// <summary>The searchlights in the fight (docs/battle/night.md Q4): always registered eighth
+    /// (<see cref="SearchlightSystem.Id"/>).</summary>
+    public SearchlightSystem Searchlights { get; }
 
     /// <summary>Torpedoes running (docs/battle/fighting.md 4.6): always registered sixth (<see cref="TorpedoSystem.Id"/>).</summary>
     public TorpedoSystem Torpedoes { get; }

@@ -77,6 +77,7 @@ public static class ShipClassCompiler
             c.Smoke = new SmokeFactsRow(Kinds.FuelOf(pl.Fuel), pl.GasTempK, pl.GasM3PerKg, pl.SmokeM2PerKg, pl.FunnelGasVelocityMS);
             (c.fuelShares, c.fuelKgS) = ([.. pl.FuelShares], [.. pl.FuelKgS]);
             c.eyes = Sight.Eyes(c);
+            Sight.SearchlightArcs(c);
             TurretRangefinders(c);
             FireControlUnits(c);
             c.Silhouette = Sight.Silhouette(c, numbers);

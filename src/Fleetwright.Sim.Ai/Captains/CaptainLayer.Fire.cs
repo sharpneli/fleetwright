@@ -113,6 +113,7 @@ public sealed partial class CaptainLayer
             Comb(ctx, ref cap, own);   // coarse, also when a track comes into sight between thinks (WatchTracks)
             TakeUpStanding(ctx, ref cap, own, slot);
             Aim(ctx, ref cap, own, slot);
+            Searchlights(ctx, ref cap, own, slot);   // on what the guns can't see, in the dark (docs/battle/night.md Q4)
             Crew(ctx, own, slot, fighting: true);   // where her men stand (docs/battle/crew.md N3a)
             if (store.Combat.Engaged(slot) > 0)
             {
@@ -745,6 +746,7 @@ public sealed partial class CaptainLayer
         var cls = own.Handling.Class;
         int main = ChiefBattery(cls);
         double reach = main >= 0 ? ctx.World.Gunnery.ReachM(ctx.Ships.Combat.Loadout(slot), main) : s.ShadowMinM;
+        cap.Attacking = false;
         double band = cap.DistanceM > 0 ? cap.DistanceM : doctrine.Of(own.Entity, own.Side, DoctrineField.RangeShare) * reach;
 
         int enemy = new Unit(cap.Target).ShipOf(groups);
@@ -772,6 +774,7 @@ public sealed partial class CaptainLayer
                                              !away && (m.Terms.Style & MatchupStyle.AttackByA) != 0 && Judge.Attacks(ctx, own)))
         {
             // the attack: in to the torpedoes' range, fire, away, and in again
+            cap.Attacking = true;
             bool off = cap.TorpedoMs != 0 && ctx.NowMs - cap.TorpedoMs < s.TorpedoTurnAwayMs;
             double attack = s.TorpedoAttackShare * FastSetting(cls).RangeM;
             var (course0, kn0) = off ? Behaviours.Run(own, t) : Behaviours.Fight(own, t, attack, s.FightBandShare, s.FightCloseDeg, s.FightMinCloseKn, ref cap.FightSide);

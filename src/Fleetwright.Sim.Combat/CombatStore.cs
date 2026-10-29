@@ -42,6 +42,9 @@ public sealed class CombatStore
     LauncherState[]?[] launchers = [];
     ShipCondition?[] conditions = [];
     int[]?[] targets = [];
+    // by battery, whether its fire control made its target out at its last second (the gunnery's, for the captains:
+    // docs/battle/night.md Q4, a searchlight on a target the guns can't see); not world state, the gunnery's own copy is
+    bool[]?[] sees = [];
     int[] engaged = [];
     bool[] moved = [];
     long[] firedMs = [];   // by slot: when any of her guns last fired (docs/battle/crew.md N5b: what an observer may see)
@@ -66,6 +69,7 @@ public sealed class CombatStore
             Array.Resize(ref launchers, n);
             Array.Resize(ref conditions, n);
             Array.Resize(ref targets, n);
+            Array.Resize(ref sees, n);
             Array.Resize(ref engaged, n);
             Array.Resize(ref moved, n);
             Array.Resize(ref firedMs, n);
@@ -102,6 +106,11 @@ public sealed class CombatStore
         if (t == null || t.Length != cls.Batteries.Length)
             targets[slot] = t = new int[cls.Batteries.Length];
         Array.Clear(t);
+        var sw = sees[slot];
+        if (sw == null || sw.Length != cls.Batteries.Length)
+            sees[slot] = new bool[cls.Batteries.Length];
+        else
+            Array.Clear(sw);
         var o = ordered[slot];
         if (o == null || o.Length != cls.Batteries.Length)
             ordered[slot] = new byte[cls.Batteries.Length];
@@ -217,7 +226,15 @@ public sealed class CombatStore
         ref int t = ref targets[slot]![battery];
         engaged[slot] = Math.Max(engaged[slot] + (target != 0 ? 1 : 0) - (t != 0 ? 1 : 0), 0);
         t = target;
+        sees[slot]![battery] = false;
     }
+
+    /// <summary>Whether an engaged battery's fire control made its target out at its last second (docs/battle/night.md Q4).</summary>
+    public bool Sees(int slot, int battery) => sees[slot] is { } s && battery < s.Length && s[battery];
+
+    /// <summary>The gunnery's word on whether a battery's fire control makes its target out (each its own element: its
+    /// batteries' seconds may run on different workers).</summary>
+    public void SetSees(int slot, int battery, bool value) => sees[slot]![battery] = value;
 
     /// <summary>Whether a ship's mounts have left their rest (the snapshot sends their bearings only then).</summary>
     public bool Moved(int slot) => slot < moved.Length && moved[slot];

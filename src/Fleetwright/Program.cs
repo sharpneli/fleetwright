@@ -37,6 +37,7 @@ public static unsafe class Program
         string? weather = null;
         var torpedoes = new List<string>();
         var screens = new List<string>();
+        var searchlights = new List<string>();
         var damages = new List<string>();
         var firefightings = new List<string>();
         var readinesses = new List<string>();
@@ -276,6 +277,10 @@ public static unsafe class Program
                     if (!Map.Smoke.SmokeFieldLook.Set(kv))
                         Console.Error.WriteLine($"Bad -smokelook knob: {kv} (have {Map.Smoke.SmokeFieldLook.Knobs})");
             }
+            else if (arg.StartsWith("-searchlight="))   // a dev ship's searchlights: -searchlight=ship:on:target[:n] | search:centre:half[:n] | ready | off (docs/battle/night.md Q4)
+            {
+                searchlights.Add(arg.Substring("-searchlight=".Length));
+            }
             else if (arg.StartsWith("-smoke="))   // a dev ship makes smoke: -smoke=ship[:on|off] (docs/battle/smoke.md Z4; the field's on in settings.json)
             {
                 screens.Add(arg.Substring("-smoke=".Length));
@@ -504,6 +509,11 @@ public static unsafe class Program
                     world.Send(order);
                 else
                     Console.Error.WriteLine($"Bad torpedo: -torpedo={torpedo} (want ship:target[:n])");
+            foreach (var sl in searchlights)
+                if (DevSearchlight(sl) is { } order)
+                    world.Send(order);
+                else
+                    Console.Error.WriteLine($"Bad searchlight: -searchlight={sl} (want ship:on:target[:n] | ship:search:centre:half[:n] | ship:ready | ship:off)");
             foreach (var screen in screens)
             {
                 var p = screen.Split(':');
@@ -730,6 +740,27 @@ public static unsafe class Program
             return null;
         int n = p.Length == 3 && int.TryParse(p[2], out int k) ? k : 4;
         return Sim.TorpedoSystem.Launch(ship, target, n, truth: true);
+    }
+
+    /// <summary>-searchlight=ship:on:target[:n] | ship:search:centre:half[:n] | ship:ready | ship:off: a dev ship's
+    /// searchlights (docs/battle/night.md Q4): n of them held on a ship (its navy's contact), sweeping an arc (its middle,
+    /// degrees off her bow, and half its width), the arcs burning behind their shutters, or out.</summary>
+    static Sim.Command? DevSearchlight(string arg)
+    {
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        var p = arg.Split(':');
+        if (p.Length < 2 || !int.TryParse(p[0], out int ship))
+            return null;
+        int N(int i) => p.Length > i && int.TryParse(p[i], out int n) ? n : 0;
+        return p[1] switch
+        {
+            "on" when p.Length >= 3 && int.TryParse(p[2], out int target) => Sim.SearchlightSystem.Order(ship, Sim.SearchlightOrder.Illuminate, target, N(3)),
+            "search" when p.Length >= 4 && double.TryParse(p[2], inv, out double centre) && double.TryParse(p[3], inv, out double half) =>
+                Sim.SearchlightSystem.Order(ship, Sim.SearchlightOrder.Search, count: N(4), centreDeg: centre, halfDeg: half),
+            "ready" => Sim.SearchlightSystem.Order(ship, Sim.SearchlightOrder.Ready),
+            "off" => Sim.SearchlightSystem.Order(ship, Sim.SearchlightOrder.Off),
+            _ => null,
+        };
     }
 
     /// <summary>Dev damage, as the damage system's dev commands: -hole=ship:mid|bow|stern|x:z:m2[:p] (a hole in the side, z m

@@ -213,7 +213,21 @@ public static class Sight
     /// the eye looks out from its face). Light AA mounts don't: open guns behind a low shield, each a few degrees
     /// wide and with sea between them, that a post on their deck looks over and past (a row of them along each beam had
     /// blinded Bismarck's secondary directors broadside).</summary>
-    static EyeRow Eye(ShipClass c, EyeKind kind, int own, double x, double y, double heightM, double rangefinderM)
+    static EyeRow Eye(ShipClass c, EyeKind kind, int own, double x, double y, double heightM, double rangefinderM) =>
+        new(kind, own, x, y, heightM, rangefinderM, BlindOf(c, own, x, y, heightM));
+
+    /// <summary>The searchlights' blind sectors (docs/battle/night.md Q4), by the eyes' rule from each lamp.</summary>
+    internal static void SearchlightArcs(ShipClass c)
+    {
+        for (int i = 0; i < c.searchlights.Length; i++)
+        {
+            ref readonly var l = ref c.searchlights[i];
+            c.searchlights[i] = l with { Blind = BlindOf(c, l.Component, l.X, l.Y, l.HeightM) };
+        }
+    }
+
+    /// <summary>The sectors blind from a point this high over the sea on a part (<see cref="Eye"/>'s rule).</summary>
+    static ulong BlindOf(ShipClass c, int own, double x, double y, double heightM)
     {
         double eyeZ = heightM + c.Vertical.Waterline;   // back over the main deck, as the components' heights are
         ulong blind = 0;
@@ -232,7 +246,7 @@ public static class Sight
                     blind |= 1UL << s;
             }
         }
-        return new EyeRow(kind, own, x, y, heightM, rangefinderM, blind);
+        return blind;
     }
 
     /// <summary>Whether a ray from (x, y) along (dx, dy) passes through a box's plan, and the box is at least

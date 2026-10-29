@@ -126,6 +126,9 @@ public sealed class Snapshot
     public TorpedoesView Torpedoes { get; } = new();
     public TorpedoEndsView TorpedoEnds { get; } = new();
 
+    /// <summary>The searchlights' beams out at the last look (docs/battle/night.md Q4).</summary>
+    public BeamsView Beams { get; } = new();
+
     /// <summary>The engaged batteries of the ships shown, and the newest lines of the combat log (docs/battle/fighting.md
     /// 4.2b).</summary>
     public BatteriesView Batteries { get; } = new();
@@ -435,6 +438,27 @@ public sealed class ShellsView
         Array.Resize(ref WaterS, n);
         Array.Resize(ref Water, n);
         Array.Resize(ref End, n);
+    }
+}
+
+/// <summary>The searchlights' beams out (docs/battle/night.md Q4): each one's lamp (its height in the point), the true
+/// bearing it's on, whose (an entity) and its peak (cd).</summary>
+public sealed class BeamsView
+{
+    public int Count;
+    public Vec3d[] Lamp = [];
+    public double[] BearingDeg = [], Candela = [];
+    public int[] Ship = [];
+
+    public void EnsureCapacity(int n)
+    {
+        if (n <= Lamp.Length)
+            return;
+        n = Math.Max(n, Math.Max(16, Lamp.Length * 2));
+        Array.Resize(ref Lamp, n);
+        Array.Resize(ref BearingDeg, n);
+        Array.Resize(ref Candela, n);
+        Array.Resize(ref Ship, n);
     }
 }
 

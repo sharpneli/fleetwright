@@ -357,6 +357,36 @@ public sealed record SimSettings
     public double SightDazzleS { get; init; } = 1;
     public double SightFunnelGlowCd { get; init; } = 10;
 
+    /// <summary>Searchlights in the fight (docs/battle/night.md Q4) [EST, every number until the research]. Ordered to burn,
+    /// the arc is struck and steady behind its shutter in <see cref="SearchlightStrikeS"/> s; ordered on a bearing from
+    /// there, it's trained and exposed in <see cref="SearchlightExposeS"/> s. Held on a ship, its beam wanders off her by
+    /// <see cref="SearchlightPointingDeg"/> (1-sigma; by its control: local, remote, director); searching, it sweeps its
+    /// arc at <see cref="SearchlightSweepDegS"/>, about a beam's width a look. The lamp shows outside its beam by
+    /// <see cref="SearchlightStrayShare"/> of its peak (the front glass, forward of it only). Its beam is seen from the side
+    /// as the light its first <see cref="SearchlightColumnM"/> scatter (through the haze, and at least
+    /// <see cref="SearchlightClearAirPerM"/>: clear air's own, Rayleigh's at 550 nm), and its own light scattered back
+    /// (<see cref="SearchlightBackscatter"/>: the haze's phase function at 180° over an even one's) veils the beam to the
+    /// eyes beside it. A beam in an eye veils what's near it by Stiles and Holladay, <see cref="SearchlightGlareK"/> E/θ²
+    /// cd/m² (E lux at the eye, θ degrees off the lamp, at least <see cref="SearchlightGlareMinDeg"/>). A ship lights a
+    /// target with <see cref="SearchlightsOnOne"/> of her lights that bear.</summary>
+    public double SearchlightStrikeS { get; init; } = 10;
+    public double SearchlightExposeS { get; init; } = 4;
+    public double[] SearchlightPointingDeg { get; init; } = [0.5, 0.35, 0.15];
+    public double SearchlightSweepDegS { get; init; } = 1.5;
+    public double SearchlightStrayShare { get; init; } = 1e-5;
+    public double SearchlightColumnM { get; init; } = 2000;
+    public double SearchlightClearAirPerM { get; init; } = 1.2e-5;
+    public double SearchlightBackscatter { get; init; } = 0.3;
+    public double SearchlightGlareK { get; init; } = 10;
+    public double SearchlightGlareMinDeg { get; init; } = 1;
+    public int SearchlightsOnOne { get; init; } = 2;
+
+    /// <summary>A captain lights a contact (docs/battle/night.md Q4, to fire) within this share of his lights' reach
+    /// (<c>SearchlightModel.ReachM</c>: where the operator makes out the reference ship by them), and douses past
+    /// <see cref="SearchlightDouseShare"/> of it.</summary>
+    public double SearchlightOpenShare { get; init; } = 0.9;
+    public double SearchlightDouseShare { get; init; } = 1.2;
+
     /// <summary>A moon low enough silhouettes a ship toward it as the low sun does, as strongly as its path on the sea
     /// outshines the sky (<see cref="NightMoonPathShare"/>), fading as it climbs to this elevation, degrees [EST].</summary>
     public double SightSilhouetteMoonHighDeg { get; init; } = 40;

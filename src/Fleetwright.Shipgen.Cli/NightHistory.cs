@@ -26,19 +26,19 @@ static class NightHistory
         new("1890-1925", "night-tsushima",
             "Tsushima's night, 27-28 May 1905: the Russian ships that showed searchlights found and torpedoed (Navarin sunk, " +
             "Sissoi Veliky, Admiral Nakhimov, Vladimir Monomakh lost next morning); three Japanese torpedo boats sunk [to check]",
-            "searchlights; the moon; the boats' attack from the dark side"),
+            "the moon; the boats' attack from the dark side"),
         new("1890-1925", "night-southampton",
             "Southampton, Jutland 22:15: searchlights both sides, fire at about 800-1,500 yd for a few minutes; Frauenlob torpedoed " +
             "and sunk; Southampton 89 casualties, Dublin hit [ranges to check]",
-            "searchlights; the challenge; the twilight of a northern June night"),
+            "the challenge; the twilight of a northern June night"),
         new("1890-1925", "night-4th-flotilla",
             "The 4th Flotilla, Jutland 23:30: German searchlights, star shell and secondaries at 1,000-2,000 yd; Tipperary wrecked " +
             "in minutes; Ardent, Fortune lost to gunfire in the night (Sparrowhawk to a collision); probably one torpedo hit (Rostock)",
-            "searchlights; star shell; collisions (4.11)"),
+            "star shell; collisions (4.11)"),
         new("1890-1925", "night-black-prince",
             "Black Prince, Jutland 00:07: blundered into the German line at about 1,000-1,500 yd, lit and sunk in minutes, all hands; " +
             "no hits on the Germans",
-            "searchlights; the unidentified ship (she closed, taking them for friends)"),
+            "the unidentified ship (she closed, taking them for friends)"),
         new("1890-1925", "dover-strait",
             "The Dover Strait, 21 April 1917, moonless: sighted at about 600 yd, guns and torpedoes at point blank, Broke rams; " +
             "G42 and G85 sunk, Broke and Swift damaged [to check]",
@@ -46,10 +46,14 @@ static class NightHistory
     ];
 
     /// <summary>One side's night in a run: the first sighting (seconds from the start, the range, the level), the first
-    /// salvo's and torpedoes' ranges, the salvos' ranges, the shells and torpedoes and what they hit, the ships lost.</summary>
+    /// salvo's and torpedoes' ranges, the salvos' ranges, the shells and torpedoes and what they hit, the ships lost; its
+    /// searchlights (Q4): when one of its ships first exposed a beam and her range to what it was on, the ship-seconds of
+    /// beams out, and its hits on ships showing a light.</summary>
     sealed class Side
     {
         public double SeenS = double.NaN, SeenM = double.NaN, FireS = double.NaN, FireM = double.NaN, TorpS = double.NaN, TorpM = double.NaN;
+        public double LitS = double.NaN, LitM = double.NaN, LitShipS;
+        public int HitsOnLights;
         public ContactLevel SeenAs;
         public readonly List<double> SalvoM = [];
         public int Shells, Hits, Torpedoes, TorpedoHits, Lost, Ships;
@@ -138,6 +142,19 @@ static class NightHistory
                 (r.SeenS, r.SeenM, r.SeenAs) = ((con.FirstMs - t0) / 1000.0, Range(con.Observer, con.Entity), con.Level);
             }
 
+            // the searchlights out this second
+            for (int k = 0; k < store.OffRailsCount; k++)
+            {
+                var ship = store[store.OffRailsSlot(k)];
+                var (_, on, exposed) = w.Searchlights.OrderOf(ship.Entity, w.Time.Ms);
+                if (!exposed || SideOf(ship.Entity) is not (>= 0 and var ls))
+                    continue;
+                var r = sides[ls];
+                r.LitShipS += open ? 1 : 60;
+                if (double.IsNaN(r.LitS))
+                    (r.LitS, r.LitM) = (now, on != 0 ? Range(ship.Entity, on) : double.NaN);
+            }
+
             long fresh = log.Written - read;
             missed += Math.Max(0, fresh - log.Count);
             for (long i = Math.Min(fresh, log.Count) - 1; i >= 0; i--)
@@ -168,6 +185,8 @@ static class NightHistory
                     }
                     case CombatEvent.Hit when sd >= 0 && e.Source is HitSource.Shell or HitSource.Coarse:
                         sides[sd].Hits++;
+                        if (w.Searchlights.OrderOf(e.Target, w.Time.Ms).Exposed)
+                            sides[sd].HitsOnLights++;
                         break;
                     case CombatEvent.Hit when sd >= 0 && e.Source == HitSource.Torpedo:
                         sides[sd].TorpedoHits++;
@@ -214,6 +233,15 @@ static class NightHistory
             string torps = torp == 0 ? "none" : $"{r.Average(x => x.Torpedoes):F1} from {Km(Mean(r, x => x.TorpM))}";
             Console.WriteLine($"    {s.Sides[sd],-10} {first,-24} {salvo,-18} {spread,-15} {shells,7:F0} {hits,6:F1} {(shells > 0 ? 100 * hits / shells : 0),5:F1}%" +
                               $" {torps,-18} {r.Average(x => x.TorpedoHits),7:F1} {r.Average(x => x.Lost),4:F1} of {r[0].Ships}");
+        }
+        for (int sd = 0; sd < s.Sides.Length; sd++)
+        {
+            var r = plays.Select(p => p.Sides[sd]).ToArray();
+            int lit = r.Count(x => !double.IsNaN(x.LitS));
+            double hits = r.Average(x => x.Hits), onLights = r.Average(x => x.HitsOnLights);
+            Console.WriteLine($"    {s.Sides[sd],-10} lights: " + (lit == 0 ? "never" :
+                $"first on {Mean(r, x => x.LitS) / 60:F0} min, at {Km(Mean(r, x => x.LitM))} ({lit}/{r.Length}), {r.Average(x => x.LitShipS) / 60:F0} ship-min out") +
+                $"; its hits on ships showing a light {onLights:F1} of {hits:F1}");
         }
         Console.WriteLine($"    the end: {plays.Average(p => p.Hours):F1} h; " +
                           string.Join(", ", plays.GroupBy(p => p.Reason).Select(g => $"{g.Key} {g.Count()}")) +

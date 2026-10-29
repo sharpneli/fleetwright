@@ -10,10 +10,16 @@ namespace Fleetwright.Sim.Combat;
 /// the line from the eye (docs/battle/smoke.md Z3), none by default; her speed through the water, m/s (her bow wave, 0:
 /// none asked); the share of the sky's light the eye's glass brings to it (<see cref="SightModel.GlassLight"/>, 1 the
 /// naked eye); a light's illuminance on her side toward the eye, lux (docs/battle/night.md Q2: a fire near her, later a
-/// beam or a flare); and the luminance the eye is adapted to if more than the scene through its glass (its own guns'
-/// flash, <see cref="SightModel.DazzleCdM2"/>; 0: the scene's).</summary>
+/// beam or a flare); the luminance the eye is adapted to if more than the scene through its glass (its own guns'
+/// flash, <see cref="SightModel.DazzleCdM2"/>; 0: the scene's); and a veil's luminance over the scene, cd/m²
+/// (docs/battle/night.md Q4: her own beam's light scattered back down the line, a beam's glare in the eye), which lowers
+/// her contrast as it brightens what the eye is adapted to.</summary>
 public readonly record struct SightLine(double DistanceM, double AspectDeg, double VisibilityM, double SkyCdM2, double Silhouette,
-    SmokeTau Smoke = default, double SpeedMs = 0, double Glass = 1, double LitLux = 0, double AdaptedCdM2 = 0);
+    SmokeTau Smoke = default, double SpeedMs = 0, double Glass = 1, double LitLux = 0, double AdaptedCdM2 = 0, double VeilCdM2 = 0)
+{
+    /// <summary>The share of her contrast against the sky a veil leaves: L / (L + L_veil).</summary>
+    public double VeilShare => VeilCdM2 > 0 ? SkyCdM2 / (SkyCdM2 + VeilCdM2) : 1;
+}
 
 /// <summary>How the dark raises the eye's threshold (docs/battle/night.md Q1), both ≥ 1 and exactly 1 by day: the large
 /// object's threshold contrast by <paramref name="Floor"/>, and the patch the eye sums its light over (the critical solid
@@ -238,12 +244,13 @@ public static class SightModel
     static double Share((double ExitPupilMm, double Transmission) g, double pupilMm) =>
         g.Transmission * Math.Min(1, g.ExitPupilMm * g.ExitPupilMm / (pupilMm * pupilMm));
 
-    /// <summary>The dark on a line (<see cref="DarkOf(double, SimSettings)"/>): the scene through the eye's glass, or what
-    /// the eye is adapted to when it's more (dazzled, docs/battle/night.md Q2): the threshold then as for that light, and
-    /// over the scene by as much as that is brighter (the eye adapted to L_a needs ΔL ≈ Cₜ(L_a)·L_a).</summary>
+    /// <summary>The dark on a line (<see cref="DarkOf(double, SimSettings)"/>): the scene through the eye's glass (the sky
+    /// and any veil over it, docs/battle/night.md Q4), or what the eye is adapted to when it's more (dazzled, Q2): the
+    /// threshold then as for that light, and over the scene by as much as that is brighter (the eye adapted to L_a needs
+    /// ΔL ≈ Cₜ(L_a)·L_a).</summary>
     public static Dark DarkOf(in SightLine line, SimSettings s)
     {
-        double scene = line.SkyCdM2 * line.Glass;
+        double scene = (line.SkyCdM2 + line.VeilCdM2) * line.Glass;
         if (!(line.AdaptedCdM2 > scene))
             return DarkOf(scene, s);
         var d = DarkOf(line.AdaptedCdM2, s);
@@ -297,7 +304,7 @@ public static class SightModel
         double area = shown * (s.SightBowWaveLength * m.LengthM * Math.Abs(Math.Sin(a)) + 2 * m.BeamM * Math.Max(Math.Cos(a), 0));
         if (area <= 0)
             return 0;
-        double c = s.SightFoamContrast * Math.Exp(-Extinction(line.VisibilityM, s) * d - (line.Smoke.Clear ? 0 : line.Smoke.Low));
+        double c = s.SightFoamContrast * line.VeilShare * Math.Exp(-Extinction(line.VisibilityM, s) * d - (line.Smoke.Clear ? 0 : line.Smoke.Low));
         return c / Threshold(area * magnification * magnification / (d * d), DarkOf(line, s), s);
     }
 
@@ -408,7 +415,7 @@ public static class SightModel
         var (area, shade) = plume.Showing(HiddenM(eyeM, d, s), sinView);
         if (!(area > 0) || !(shade > 0))
             return 0;
-        return shade * Math.Exp(-Extinction(line.VisibilityM, s) * d) /
+        return shade * line.VeilShare * Math.Exp(-Extinction(line.VisibilityM, s) * d) /
                Threshold(area * magnification * magnification / (d * d), DarkOf(line, s), s);
     }
 
@@ -427,9 +434,9 @@ public static class SightModel
     }
 
     /// <summary>A target's apparent contrast through the haze at a distance: her own in the light (<see cref="InherentContrast"/>)
-    /// faded by the visibility.</summary>
+    /// faded by the visibility, and by a veil over her (docs/battle/night.md Q4).</summary>
     static double Contrast(double distanceM, in SightLine line, SimSettings s) =>
-        InherentContrast(line.SkyCdM2, line.Silhouette, s, line.LitLux) * Math.Exp(-Extinction(line.VisibilityM, s) * distanceM);
+        InherentContrast(line.SkyCdM2, line.Silhouette, s, line.LitLux) * line.VeilShare * Math.Exp(-Extinction(line.VisibilityM, s) * distanceM);
 
     /// <summary>The smoke's depth on the line to her middle at a height, between its bands (held beyond the lowest and the
     /// highest).</summary>

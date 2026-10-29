@@ -1,5 +1,5 @@
 # Plan: night fighting (a 4.5 deepening)
-Status: **drafted 2026-10-29**; **agreed with the user 2026-10-29** (decisions 1-5 at the end); Q0, Q1, Q2 and Q3 done 2026-10-29
+Status: **drafted 2026-10-29**; **agreed with the user 2026-10-29** (decisions 1-5 at the end); Q0, Q1, Q2, Q3 and Q4 done 2026-10-29
 Updated: 2026-10-29
 
 How ships see, light, shoot and lose each other in the dark. The user asked for it after the crew plan (2026-10-28),
@@ -420,6 +420,84 @@ merchants carry none; the look is a placeholder (Q10); signalling by searchlight
 - **Dazzle:** a beam on a ship's bridge or director blinds those eyes for its time [EST, rough].
 - **Anchors:** useful range 2-4 km by size and haze; the lit ship hit first in the night-history cases. Tests: the
   beam's illuminance by distance and haze, a consort's margin over the operator's, a lamp seen at 20+ km.
+
+**Q4 done (2026-10-29).** Searchlights burn in the fight, on our own estimates (the research request hasn't come back):
+
+- **The beam** (`Sim.Combat/SearchlightModel.cs`): a Gaussian about its axis, its spread the width at half its peak; held
+  on a ship by hand it wanders by its control's pointing error (`SearchlightPointingDeg`: local 0.5°, remote 0.35°,
+  director 0.15° [EST]), so its mean light is the beam blurred by that (a 36-inch held locally keeps 74% of its peak over
+  a σ of 1°). It does four things, each through the haze by Allard's law as every light does:
+  - **It lights what it's on**, for every eye that sees her lit side (Q2's `Lights.On`, beams now in it by their profile):
+    a 36-inch puts 11 lux on a ship at 2 km in 25 km visibility, 3 lux in 5 km.
+  - **Its lamp shows**: to an eye in the beam the mirror's glare, forward of it the front glass's stray light (10⁻⁵ of its
+    peak [EST]); both are a point to aim at, as her bow wave is (they find and hold her, and fire control ranges on
+    them, but never say what she is). From beside, the beam itself: its first 2 km scatter a share of its light all
+    round (`ColumnCd`), a streak that gives her bearing as a light contact. Lion's 36-inch is seen to the horizon (31-36
+    km) in its beam, at 14 km 45° off it, its beam from beside at 19 km (25 km visibility; 7.6, 2.8 and 3.8 km in 2 km).
+  - **It veils the view down it** (`BackscatterCdM2`): its light scattered back off the haze (`SearchlightBackscatter`,
+    0.3 of an even phase function [EST]) along an eye's line from where the line enters the beam to the target. Beside
+    the lamp the line enters a few hundred metres out; from a consort a kilometre off, only near the target. So **the
+    operator sees worse than a consort**: Lion lighting V25 at 2.5 km in 10 km visibility, a margin of 1.3 to her own
+    lookout (0.6 dark), 179 to a consort 1 km off. In thick haze the veil can cost the operator more than the light gives
+    (V25 lighting Lion in 10 km: made out lit at 2.5 km, dark at 2.8).
+  - **It glares in the eyes it's on** (Stiles and Holladay's disability glare, 10 E/θ² cd/m², θ at least 1°): the lit
+    ship sees the lamp and little round it.
+- **Reach** (`SearchlightModel.ReachM`, the captains' and the tables' useful range): where her operator's lookout makes
+  out the reference ship lit by her biggest light. Lion's 36-inch on a moonless night: 5.2 km in 25 km visibility, 2.8 in
+  10, 1.7 in 5, 0.8 in 2 (the record's 2-4 km).
+- **The sight line** takes a veil (`SightLine.VeilCdM2`): her contrast falls by L / (L + L_veil) and the eye adapts to
+  the sky and the veil together. Sightings and fire control's sensors ask the world's lights for it per eye
+  (`Lights.VeilCdM2`: every beam's backscatter on the line, other ships' glare), and for the target's own lamps
+  (`Lights.LampsOf`); a light look adds her lamps and beams to her flash and funnel glow.
+- **The arcs:** a light can't send its beam where its own ship stands in the way (`SearchlightRow.Blind`, by the eyes'
+  rule from the lamp: Lion's bridge lights are blind over 96°, her funnel platforms' over 186°).
+- **Orders** (`Sim/SearchlightSystem.cs`, world system 8; `SearchlightSystem.Order`): a ship's lights off, ready (arcs
+  struck behind their shutters, `SearchlightStrikeS` 10 s), held on a contact (`SearchlightsOnOne`, 2, of those that bear;
+  trained and exposed `SearchlightExposeS` 4 s after the order or the strike; on her while her navy holds her in sight,
+  else on where its picture has her) or searching an arc (the lights that bear split it, each sweeping its share at 1.5°/s,
+  a light whose share its own upper works block only where they don't). No tick: a beam's bearing at a look is a
+  function of the order, the time and the ships, so it's the same at any speed and in either tier. A light burns only
+  while it works (Q3's `SearchlightWorks`). The dev's `-searchlight=ship:on:target[:n] | search:centre:half[:n] | ready |
+  off`.
+- **The captains' first use, to fire** (`CaptainLayer.Lights.cs`): in the dark, in an encounter, the arcs struck; a light
+  on the target of her engaged batteries that their fire control can't make out (`CombatStore.Sees`, the gunnery's word),
+  chief battery first, within 0.9 of her lights' reach, held until it's lost, seen going down or past 1.2 of it; a ship
+  pressing a torpedo attack keeps dark. Doctrine's when to burn them, searching, keeping dark and dousing when lit are Q7's.
+- **The map** draws a beam as a placeholder line from the lamp along its bearing, 4 km (Q10's look later): the player's
+  own, and the enemy's that their navy has in sight or by its light.
+- **`shipgen searchlight [OWN] [TARGET] [--sky CD_M2] [--consort M]`**: a class's lights and arcs, its biggest's light by
+  range and haze, its reach, the target lit as the operator and a consort see her, the lamp seen.
+- **Tests:** `SearchlightFightTests` (the beam by range and haze and its reach, the consort over the operator, the lamp
+  seen past 20 km in its beam, an order struck, exposed and held, lighting her and glaring her eyes, a sweep within its
+  arc, the same twice over).
+
+**The bench after Q4** (20 seeds; the same code with the captains lighting nothing in brackets, which is Q3's table to
+the shell: a new world system changes nothing by itself):
+
+| Case | Lights first on (runs) | Shells / hits | Its hits on ships showing a light | Lost |
+|---|---|---|---|---|
+| Southampton | GB 2.8 km (6/20), DE 2.6 km (6/20) | GB 110 / 9.8 (108 / 9.2), DE 2,595 / 245 (2,511 / 201) | GB 1.1 of 9.8, DE 75 of 245 | GB 0.5 of 4 (0.4), DE 0.1 (0.1) |
+| 4th Flotilla | GB 2.8 km (12/20), DE 3.7 km (19/20) | GB 186 / 36 (161 / 42), DE 305 / 45 (276 / 54) | GB 29 of 36, DE 23 of 45 | GB 1.4 of 10 (1.4), DE 0.1 (0.1) |
+| Black Prince | GB 2.5 km (10/20), DE 3.1 km (11/20) | GB 184 / 46 (115 / 31), DE 308 / 72 (242 / 68) | GB 10 of 46, DE 9 of 72 | GB 0.3 of 1 (0.2) |
+| Dover Strait | both 0.3 km (20/20) | GB 806 / 85 (9 / 8), DE 320 / 46 (9 / 8) | GB 66 of 85, DE 40 of 46 | GB 0.4 of 2 (0.1), DE 1.9 of 6 (0.1) |
+
+**What it says:**
+- **Illuminating means being hit**, with no rule saying so: the lamp is a point to aim at, the lit ship sees it at
+  once. In the 4th Flotilla's fight 79% of the British hits land on German ships showing a light; at Dover 78% and 87%.
+- **Lights carry a fight on.** Dover's point-blank pass becomes a duel out to 4-4.5 km (the salvos' median from 0.3 km),
+  hundreds of shells, the Germans losing 1.9 boats of 6 (the record's two) and the leaders 0.4 of 2. In the record the
+  boats broke off into the dark: dousing and turning away when lit, and keeping dark, are Q7's.
+- **Jutland's twilight moves less**: the lights go on at the edge of their reach (2.5-3.7 km, where the record's went on
+  at 1,000-2,000 yd with the challenge, Q6), and the losses don't move (the 4th Flotilla 1.4 boats of 10 against the
+  record's four, which also want star shell, Q5).
+- Tsushima's boats still never attack (Q7's matchup). The bench cost nothing (21 s for the 100 plays, 23 without lights).
+
+**Open after Q4:** every number is [EST] until the research (pointing, backscatter, the stray light, the column, the
+glare's constant, strike and expose times, the beam's spread); a beam passes no smoke of the field (its light, its
+lamp in a light look; a hull's look does take the lamp's smoke); beams are level (no elevation) and lit as their
+expected profile, not a drawn wander; a ship's lights hold one order at a time (one target); the captains light only to
+fire, not to search; ranging on a lamp is the rangefinder's own error at that margin (no special case); the crew's term
+for being lit is Q8's; the coarse tier's lights are the fine tier's at its looks (Q11 for a cheaper one).
 
 ### Q5 Star shell
 

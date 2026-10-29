@@ -76,6 +76,7 @@ public sealed unsafe partial class MapScene
         frame++;
         DrawEncounters(view, s);
         DrawContacts(view, s);
+        DrawBeams(view, s);
         DrawShells(view, s);
         DrawDamage(view, s);
         OrderPreview(view, s);
