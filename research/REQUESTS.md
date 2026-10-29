@@ -12,6 +12,27 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: (comparison, recommendation, API notes, plan...)
 -->
 
+### 2026-10-29 - Night fighting, 1890-1925 first
+- Question: how navies saw, lit and fought each other at night, as ranges by navy and period. (1) Searchlights: mirror
+  sizes, lamps (carbon arc) and intensity in candela by size and year, how many a ship carried and where, power,
+  control (local, control position, director), useful ranges in clear air and haze, how long to expose, damage.
+  (2) Star shell: which navy had it from when (the British at Jutland?), by calibre, its intensity, burn time,
+  parachute fall rate, burst height, fuze reliability, how it was placed (beyond the target) and how many to keep a
+  target lit. (3) Seeing in the dark: night binoculars by navy (aperture, magnification), lookouts, first sightings by
+  moon phase and cloud; what showed first (bow wave, wake, funnel sparks or glow, gun flash, a hull against the
+  sky); torpedo tracks at night. (4) Identification: challenge and reply, recognition lights, how often ships held fire
+  on unknown ships, fired on friends, or were betrayed by their own challenge. (5) The cases, with ranges, who lit up
+  first and what it cost them: Port Arthur 1904, Tsushima's night (the Russian ships that lit their searchlights),
+  Jutland's night (Southampton, the 4th Flotilla, Black Prince, the battleships that didn't fire), the Dover Strait
+  1917, the Otranto Straits, the Adriatic and Baltic night actions. (6) Doctrine by navy: when to burn searchlights, the
+  torpedo boats' night attack, the heavy ships' turn away.
+- Context / relevant files: `docs/battle/night.md` (the plan, Q0's bench and the [EST]s), `src/Fleetwright.Sim.Combat/SightModel.cs`
+  (`LightReachM`: one 5 km night today; `GlowMargin`: fires as lamps by Allard's law),
+  `research/simulation/fire-control-research/emergency-eyeball.md` (WWII night cases), `crews-under-fire.md`
+  (Southampton). Not blocking Q0-Q2.
+- Wanted output: tables by navy and year with sources (searchlights, star shell, glasses), the cases' numbers, and
+  what the doctrine said against what was done.
+
 ### 2026-10-25 - Which shell at which target, 1890-1925
 - Question: how navies chose the shell by target, as ranges by navy and period. (1) The rules each navy gave its
   gunnery officers (AP, common/CPC, HE; by target type, range, armour), and how far the practice followed them
