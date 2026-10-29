@@ -15,11 +15,12 @@ public class NightControlTests(ITestOutputHelper output)
     const double Lat = 56, Lon = 4;
 
     /// <summary>A light cruiser (side 1, entity 1) steaming north at 10 kn and a destroyer (side 2, entity 2) stopped 1.9 km
-    /// to the east of her, on the Dover Strait's moonless night: the cruiser fires on what she can't make out, the
+    /// to the east of her, under a full moon high over the North Sea (seen there, not made out by the guns' glasses: on a
+    /// moonless night she'd be seen only within a kilometre, docs/battle/night.md Q1b): the cruiser fires on what she can't make out, the
     /// destroyer holds hers and keeps dark; both sides' star shell off.</summary>
     static (World W, AiSystem Ai) Night()
     {
-        var w = new World(WorldTime.FromUtc(1917, 4, 21, 0), 7, S);
+        var w = new World(WorldTime.FromUtc(1916, 9, 12, 23, 30), 7, S);
         var ai = new AiSystem(w);
         int cl = w.Ships.AddClass(Fleet.Get("light_cruiser").Class!);
         int dd = w.Ships.AddClass(Fleet.Get("destroyer").Class!);
@@ -223,7 +224,7 @@ public class NightControlTests(ITestOutputHelper output)
         w.Apply(Command.SetWeather(20_000));
         w.Apply(ShipSystem.Spawn(c, Lat, Lon, 0, 0, 1));
         w.Apply(ShipSystem.Spawn(c, Lat - 0.027, Lon, 0, 0, 1));
-        w.Apply(ShipSystem.Spawn(d, Lat, Lon + 0.04, 180, 0, 2));
+        w.Apply(ShipSystem.Spawn(d, Lat, Lon + 0.014, 180, 0, 2));
         w.Apply(GroupSystem.Create(1, Formation.Column, 3_000));
         int g = w.Groups[w.Groups.Count - 1].GroupId;
         w.Apply(GroupSystem.Add(g, 2));

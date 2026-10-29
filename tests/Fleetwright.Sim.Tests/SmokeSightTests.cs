@@ -14,7 +14,7 @@ public class SmokeSightTests(ITestOutputHelper output)
     static readonly SimSettings Settings = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json"));
     static readonly ShipClass Target = Fleet.Get("dreadnought").Class!;
     const double Eye = 30, Mag = 7;
-    static readonly SightLine Line = new(10_000, 90, 25_000, NightLight.ClearSkyCdM2(30), 0);
+    static readonly SightLine Line = new(10_000, 90, 25_000, NightLight.ClearSkyCdM2(30, Settings), 0);
 
     static double Margin(SmokeTau tau) => SightModel.Margin(Eye, Mag, Target, Line with { Smoke = tau }, Settings);
 
@@ -226,8 +226,8 @@ public class SmokeSightTests(ITestOutputHelper output)
     [Fact]
     public void A_glow_is_dimmed_by_the_smoke_on_its_line()
     {
-        double clear = SightModel.GlowMargin(Eye, 20, 15, 8_000, 25_000, NightLight.ClearSkyCdM2(-12), Settings);
-        double smoked = SightModel.GlowMargin(Eye, 20, 15, 8_000, 25_000, NightLight.ClearSkyCdM2(-12), Settings, 2);
+        double clear = SightModel.GlowMargin(Eye, 20, 15, 8_000, 25_000, NightLight.ClearSkyCdM2(-12, Settings), Settings);
+        double smoked = SightModel.GlowMargin(Eye, 20, 15, 8_000, 25_000, NightLight.ClearSkyCdM2(-12, Settings), Settings, 2);
         Assert.True(clear > 0);
         Assert.Equal(clear * Math.Exp(-2), smoked, 1e-12);
         // the depth at its height, between the bands

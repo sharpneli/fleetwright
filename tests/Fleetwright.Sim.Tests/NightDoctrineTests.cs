@@ -15,17 +15,18 @@ public class NightDoctrineTests(ITestOutputHelper output)
     static readonly SimSettings S = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json")) with { Smoke = false };
     const double Lat = 56, Lon = 4;
 
-    /// <summary>A light cruiser (side 1, entity 1) steaming north at 10 kn and a destroyer (side 2, entity 2) stopped 1.9 km
-    /// to the east of her, on the Dover Strait's moonless night; the AI on both, both sides' star shell off.</summary>
-    static (World W, AiSystem Ai) Night()
+    /// <summary>A light cruiser (side 1, entity 1) steaming north at 10 kn and a destroyer (side 2, entity 2) stopped 0.75 km
+    /// to the east of her, on the Dover Strait's moonless night (or this far apart under a full moon high over the North Sea);
+    /// the AI on both, both sides' star shell off.</summary>
+    static (World W, AiSystem Ai) Night(double apartLonDeg = 0.012, bool fullMoon = false)
     {
-        var w = new World(WorldTime.FromUtc(1917, 4, 21, 0), 7, S);
+        var w = new World(fullMoon ? WorldTime.FromUtc(1916, 9, 12, 23, 30) : WorldTime.FromUtc(1917, 4, 21, 0), 7, S);
         var ai = new AiSystem(w);
         int cl = w.Ships.AddClass(Fleet.Get("light_cruiser").Class!);
         int dd = w.Ships.AddClass(Fleet.Get("destroyer").Class!);
         w.Apply(Command.SetWeather(20_000));
         w.Apply(ShipSystem.Spawn(cl, Lat, Lon, 0, 10, 1));
-        w.Apply(ShipSystem.Spawn(dd, Lat, Lon + 0.03, 180, 0, 2));
+        w.Apply(ShipSystem.Spawn(dd, Lat, Lon + apartLonDeg, 180, 0, 2));
         foreach (int side in new[] { 1, 2 })
             w.Apply(ai.Orders.SideDoctrine(side, DoctrineField.StarShell, (double)StarShellUse.Never));
         return (w, ai);
@@ -40,7 +41,7 @@ public class NightDoctrineTests(ITestOutputHelper output)
     {
         (double Course, CaptainReason Why, SearchlightOrder Lights) Play(WhenLit rule)
         {
-            var (w, ai) = Night();
+            var (w, ai) = Night(0.03, fullMoon: true);
             w.Apply(ai.Orders.SideDoctrine(1, DoctrineField.WhenLit, (double)rule));
             w.Apply(ai.Orders.SideDoctrine(2, DoctrineField.Unknowns, (double)Unknowns.Hold));
             w.AdvanceTo(w.Time + 30_000);
@@ -65,7 +66,7 @@ public class NightDoctrineTests(ITestOutputHelper output)
     {
         SearchlightOrder Play(SearchlightUse use, Unknowns unknowns)
         {
-            var (w, ai) = Night();
+            var (w, ai) = Night(0.03, fullMoon: true);
             w.Apply(ai.Orders.SideDoctrine(1, DoctrineField.Searchlights, (double)use));
             w.Apply(ai.Orders.SideDoctrine(1, DoctrineField.Unknowns, (double)unknowns));
             w.Apply(ai.Orders.SideDoctrine(2, DoctrineField.Unknowns, (double)Unknowns.Hold));
@@ -91,13 +92,13 @@ public class NightDoctrineTests(ITestOutputHelper output)
         Assert.True(held <= SearchlightOrder.Ready, "nothing to fire at: nothing lit");
     }
 
-    /// <summary>A ship not made out 1.9 km off is challenged within a 2.5 km challenge range, not within 1 km.</summary>
+    /// <summary>A ship not made out 1.9 km off under a full moon is challenged within a 2.5 km challenge range, not within 1 km.</summary>
     [Fact]
     public void A_ship_not_made_out_is_challenged_only_within_the_doctrines_range()
     {
         bool Play(double rangeM)
         {
-            var (w, ai) = Night();
+            var (w, ai) = Night(0.03, fullMoon: true);
             w.Apply(ai.Orders.SideDoctrine(1, DoctrineField.Unknowns, (double)Unknowns.Challenge));
             w.Apply(ai.Orders.SideDoctrine(1, DoctrineField.ChallengeM, rangeM));
             w.Apply(ai.Orders.SideDoctrine(2, DoctrineField.Unknowns, (double)Unknowns.Hold));
@@ -122,7 +123,7 @@ public class NightDoctrineTests(ITestOutputHelper output)
     public void A_flotilla_attacks_from_the_dark_side()
     {
         var moon = new NightSky(1e-4, 230, 0.8, 0.1);
-        var twilight = new NightSky(1e-3, 0, 0, 1e-3, TwilightCdM2: 9e-4, SunBearingDeg: 130, Arch: 1.5);
+        var twilight = new NightSky(1e-3, 0, 0, 1e-3, TwilightCdM2: 9e-4, SunBearingDeg: 130, Arch: 3.2, Glow: 10);
         var even = new NightSky(1e-4, 0, 0, 1e-4);
         int byMoon = Ai.Admirals.AdmiralLayer.DarkSide(moon, 0, S), byTwilight = Ai.Admirals.AdmiralLayer.DarkSide(twilight, 0, S),
             byEven = Ai.Admirals.AdmiralLayer.DarkSide(even, 0, S);
@@ -145,7 +146,7 @@ public class NightDoctrineTests(ITestOutputHelper output)
             int cl = w.Ships.AddClass(Fleet.Get("light_cruiser").Class!), dd = w.Ships.AddClass(Fleet.Get("destroyer").Class!);
             w.Apply(Command.SetWeather(20_000));
             w.Apply(ShipSystem.Spawn(cl, Lat, Lon, 0, 0, 1));
-            w.Apply(ShipSystem.Spawn(dd, Lat, Lon + 0.03, 180, 0, 2));
+            w.Apply(ShipSystem.Spawn(dd, Lat, Lon + 0.012, 180, 0, 2));
             w.Apply(GunnerySystem.SetExperience(1, experience));
             w.AdvanceTo(w.Time + 30_000);
             if (lit)

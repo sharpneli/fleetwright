@@ -26,15 +26,15 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))   # its sibling, under python -I too
 import sighting_ref as S  # noqa: E402
 
+c_inf, ricco = S.c_inf, S.ricco
 
-def c_inf(lum):
-    return 2.720e-3 if lum >= 0.354 else max(2.720e-3, 7.633e-3 * lum ** -0.25 - 7.174e-3)
+# the sim's law as Q1 fitted it, which night.md Q1b replaced with this note's proposal (sighting_ref.py has Q1b's now):
+# two knees on (1 + sqrt(L_k / L)), a ship's night contrast 0.6
+L_A, L_B, C0_Q1 = 1e-4, 0.2, 0.6
 
 
-def ricco(lum):
-    q = lum ** -0.25
-    r = (6.505e-4 * q - 8.461e-4) ** 2 if lum < 0.0708 else (1.772e-4 * q + 7.167e-5) ** 2
-    return r / c_inf(lum)
+def knee(lk, lum):
+    return 1.0 if lum >= S.L_WEBER else (1 + math.sqrt(lk / lum)) / (1 + math.sqrt(lk / S.L_WEBER))
 
 
 def blackwell_factors(lum):
@@ -46,7 +46,7 @@ def blackwell_factors(lum):
 
 def sim_law(k=1.0):
     """The sim's threshold today, scaled by k."""
-    return lambda omega, lum: k * S.threshold(omega, S.knee(S.L_A, lum), S.knee(S.L_B, lum))
+    return lambda omega, lum: k * S.threshold(omega, knee(L_A, lum), knee(L_B, lum))
 
 
 def field_law(f):
@@ -117,11 +117,11 @@ ANCHORS = [
 if __name__ == "__main__":
     print("the dark's rise over 30 cd/m^2, through a 7x50 (0.6): sky cd/m^2 -> sim f_a, f_b | Blackwell f_a, f_b")
     for sky in (1e-5, 1e-4, 3.2e-4, 1e-3, 5e-3, 2e-2, 0.1, 1.0, 30.0):
-        fa, fb = S.knee(S.L_A, sky * 0.6), S.knee(S.L_B, sky * 0.6)
+        fa, fb = knee(L_A, sky * 0.6), knee(L_B, sky * 0.6)
         ba, bb = blackwell_factors(sky * 0.6)
         print(f"  {sky:8.1e}: {fa:6.2f} {fb:7.2f} | {ba:6.2f} {bb:6.2f}")
 
-    for c0 in (S.C0_NIGHT, 0.9):
+    for c0 in (C0_Q1, 0.9):
         S.C0_NIGHT = c0
         print()
         print(f"the scale on each law the record implies (a ship's night contrast {c0}) (one scale fitting every anchor would mean the law's shape is right):")
@@ -134,12 +134,12 @@ if __name__ == "__main__":
     print()
     print("made out at (km): the sim today | the proposal (Blackwell, F falling below 3e-3, contrast 0.9) | the record")
     for name, target, (lo, mid, hi), vis, sky, rec in ANCHORS:
-        S.C0_NIGHT = 0.6
+        S.C0_NIGHT = C0_Q1
         a = made_out(sim_law(), target, vis, sky) / 1000
         S.C0_NIGHT = C0_PROPOSED
         b = made_out(proposed_law(), target, vis, sky) / 1000
         print(f"  {name}: {a:4.1f} | {b:4.2f} | {lo / 1000:.2f}-{hi / 1000:.2f} ({rec})")
-    S.C0_NIGHT = 0.6
+    S.C0_NIGHT = C0_Q1
     a = [made_out(sim_law(), t, 25_000, 0.01) / 1000 for t in (battleship, destroyer)]
     S.C0_NIGHT = C0_PROPOSED
     b = [made_out(proposed_law(), t, 25_000, 0.01) / 1000 for t in (battleship, destroyer)]

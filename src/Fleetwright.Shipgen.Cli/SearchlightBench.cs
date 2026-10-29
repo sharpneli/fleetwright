@@ -18,6 +18,8 @@ static class SearchlightBench
 
     public static int Run(ShipClass own, ShipClass target, SimSettings s, double skyCdM2, double consortM)
     {
+        if (double.IsNaN(skyCdM2))
+            skyCdM2 = NightLight.ClearSkyCdM2(-30, s);   // a moonless night
         var sb = new StringBuilder();
         void Line(string t) => sb.AppendLine(t);
         var rows = own.Searchlights;

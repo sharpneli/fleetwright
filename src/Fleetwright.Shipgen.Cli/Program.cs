@@ -391,7 +391,7 @@ public static class Program
                     D(a, "share", 0.6), D(a, "sky", double.PositiveInfinity), D(a, "vis", 20_000)),
                 "searchlight" => SearchlightBench.Run(Class(a, a.Positional.ElementAtOrDefault(0) ?? "lion"), Class(a, a.Positional.ElementAtOrDefault(1) ?? "v25"),
                     SimSettings.Load(a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json")),
-                    D(a, "sky", NightLight.ClearSkyCdM2(-30)), D(a, "consort", 1000)),
+                    D(a, "sky", double.NaN), D(a, "consort", 1000)),
                 "sight" => SightList.Run(a.Positional, n => LoadDesign(Resolve(a, n)),
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), a.Get("from") is { } f ? Resolve(a, f) : null),
                 "smoke" => SmokeBench.Run(a.Positional, n => Class(a, n), Path.Combine(Root(a), "..", "Content", "Scenarios", "jutland.json"),

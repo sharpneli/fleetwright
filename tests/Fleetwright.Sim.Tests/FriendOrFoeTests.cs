@@ -13,17 +13,19 @@ public class FriendOrFoeTests(ITestOutputHelper output)
     static readonly SimSettings S = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json")) with { Smoke = false };
     const double Lat = 56, Lon = 4;
 
-    /// <summary>A light cruiser (side 1, entity 1) and a destroyer (side 2, entity 2) on a moonless spring night (the Dover Strait's), stopped,
-    /// beam on to each other, 0.03° of longitude apart (1.9 km); with the AI if asked, and the destroyers' class.</summary>
+    /// <summary>A light cruiser (side 1, entity 1) and a destroyer (side 2, entity 2) under a full moon high over the North
+    /// Sea, stopped, beam on to each other, 0.036° of longitude apart (2.2 km): seen, not made out (on a moonless night she's
+    /// seen only within a kilometre, where the challenge's own lamp lights her enough to make her out, docs/battle/night.md
+    /// Q1b); with the AI if asked, and the destroyers' class.</summary>
     static World Night(out AiSystem? ai, out int destroyers, bool withAi)
     {
-        var w = new World(WorldTime.FromUtc(1917, 4, 21, 0), 7, S);
+        var w = new World(WorldTime.FromUtc(1916, 9, 12, 23, 30), 7, S);
         ai = withAi ? new AiSystem(w) : null;
         int cl = w.Ships.AddClass(Fleet.Get("light_cruiser").Class!);
         destroyers = w.Ships.AddClass(Fleet.Get("destroyer").Class!);
         w.Apply(Command.SetWeather(20_000));
         w.Apply(ShipSystem.Spawn(cl, Lat, Lon, 0, 0, 1));
-        w.Apply(ShipSystem.Spawn(destroyers, Lat, Lon + 0.03, 180, 0, 2));
+        w.Apply(ShipSystem.Spawn(destroyers, Lat, Lon + 0.036, 180, 0, 2));
         return w;
     }
 
@@ -120,10 +122,11 @@ public class FriendOrFoeTests(ITestOutputHelper output)
             var w = Night(out var ai, out int destroyers, withAi: true);
             w.Apply(ai!.Orders.SideDoctrine(1, DoctrineField.Unknowns, (double)rule));
             w.Apply(ai.Orders.SideDoctrine(2, DoctrineField.Unknowns, (double)Unknowns.Hold));   // she holds, so she doesn't give herself away
+            w.Apply(ai.Orders.SideDoctrine(2, DoctrineField.Darkened, 1));   // nor fires on the challenger she knows by his lamp (Q1b: under the moon she sees him)
             if (temper != 0)
                 w.Apply(ai.Orders.Doctrine(Unit.Ship(1), DoctrineField.Temper, temper));
             if (friendNear)
-                w.Apply(ShipSystem.Spawn(destroyers, Lat + 0.01, Lon + 0.03, 0, 0, 1));   // one of the cruiser's, 1.1 km off her
+                w.Apply(ShipSystem.Spawn(destroyers, Lat + 0.01, Lon + 0.036, 0, 0, 1));   // one of the cruiser's, 1.1 km off her
             var store = w.Ships.Store;
             bool challenged = false;
             for (int s = 1; s <= 120; s++)

@@ -10,14 +10,17 @@ The model: an eye h over the sea, a target d away.
   3. The air fades its contrast: C = C0 exp(-sigma d) (Koschmieder). A visibility V means what a ship's log means: how
      far a ship is made out. sigma is the one at which a reference ship (3,000 m^2 side on, about a capital ship's; a
      lookout's 7x binoculars) is just made out at V by day. C0 is a grey ship's in the sun (0.35), darker against the
-     sky in its light alone (0.6: after sunset, at night), between on the log of the horizon sky's luminance L from
+     sky in its light alone (0.9: after sunset, at night; 0.6 until night.md Q1b), between on the log of the horizon sky's luminance L from
      150 to 2,000 cd/m^2, and toward a silhouette's (0.8) by its share against a bright horizon.
      (1,000 m^2 until fire-control.md F4d: on the ships' real tops and their directors' optics, Lion first sighted
      Derfflinger at a median 30 km in Jutland's 25 km against the record's ~24; at 3,000 m^2, 25 km.)
   4. The eye needs a threshold contrast C_t = C_inf (1 + sqrt(omega_c / omega)): small things need more. In the dark
-     (docs/battle/night.md Q1) C_inf grows by f_a and sqrt(omega_c) by f_b, each f = (1 + sqrt(L_k / L)) / (1 +
-     sqrt(L_k / 30)) (1 from 30 cd/m^2 up), L the sky's luminance through the eye's glass (the glass's share of it),
-     knees L_a = 1e-4 and L_b = 0.2 cd/m^2. The margin m = C / C_t: visible at m >= 1.
+     (docs/battle/night.md Q1b) C_inf grows by f_a and sqrt(omega_c) by f_b (1 from 30 cd/m^2 up), L the sky's luminance
+     through the eye's glass (the glass's share of it), by Blackwell's measured shape (Crumey 2014's fits to Blackwell
+     1946): f_a = F(L) C_inf_B(L) / C_inf_B(30), F(L) = min(1, (L / 1.8e-3)^(1/4)) the searching eye's field factor
+     easing in the dark (night-fighting.md section 7.4's fit to the record), and f_b = sqrt(A_R(L) / A_R(30)), Ricco's
+     area. (Q1's law, two knees on (1 + sqrt(L_k / L)), is kept in night_ref.py for its comparison.) The margin
+     m = C / C_t: visible at m >= 1.
   5. Detection is a rate: rate = rate_max * min(1, ln m / ln m_full), so a look of dt finds it with 1 - exp(-rate dt)
      whatever dt is.
 
@@ -35,8 +38,8 @@ OMEGA_C = 2e-4
 A_REF = 3000.0
 M_LOOKOUT = 7.0
 RATE, M_FULL = 1.0 / 30, 3.0
-C0_NIGHT, L_NIGHT, L_DAY = 0.6, 150.0, 2000.0
-L_A, L_B, L_WEBER = 1e-4, 0.2, 30.0
+C0_NIGHT, L_NIGHT, L_DAY = 0.9, 150.0, 2000.0
+L_WEBER, F_KNEE, F_POWER = 30.0, 1.8e-3, 0.25
 
 
 def horizon(h):
@@ -52,14 +55,30 @@ def threshold(omega, fa=1.0, fb=1.0):
     return C_INF * fa * (1 + fb * math.sqrt(OMEGA_C / max(omega, 1e-30)))
 
 
-def knee(lk, lum):
-    return 1.0 if lum >= L_WEBER else (1 + math.sqrt(lk / lum)) / (1 + math.sqrt(lk / L_WEBER))
+def c_inf(lum):
+    """Blackwell's large-object threshold, 50% seen (Crumey 2014, eqs. 23-38; L in cd/m^2, laboratory)."""
+    return 2.720e-3 if lum >= 0.354 else max(2.720e-3, 7.633e-3 * lum ** -0.25 - 7.174e-3)
+
+
+def ricco(lum):
+    """Ricco's area (Crumey 2014): R / C_inf."""
+    q = lum ** -0.25
+    r = (6.505e-4 * q - 8.461e-4) ** 2 if lum < 0.0708 else (1.772e-4 * q + 7.167e-5) ** 2
+    return r / c_inf(lum)
+
+
+def dark(lum):
+    """The dark's (f_a, f_b) over the day's at an eye's luminance."""
+    if lum >= L_WEBER:
+        return 1.0, 1.0
+    field = min(1.0, (lum / F_KNEE) ** F_POWER)
+    return max(1.0, field * c_inf(lum) / c_inf(L_WEBER)), math.sqrt(ricco(lum) / ricco(L_WEBER))
 
 
 def own_contrast(sky, sil):
     lit = min(max(math.log(sky / L_NIGHT) / math.log(L_DAY / L_NIGHT), 0.0), 1.0)
     own = C0_NIGHT + (C0_DAY - C0_NIGHT) * lit
-    return own + (C0_SIL - own) * sil
+    return own + max(C0_SIL - own, 0.0) * sil   # never below her own (night.md Q1b)
 
 
 def extinction(reach):
@@ -71,8 +90,7 @@ def extinction(reach):
 
 def margin_of_area(area, d, mag, vis, sky, sil, glass=1.0):
     contrast = own_contrast(sky, sil) * math.exp(-extinction(vis) * d)
-    lum = sky * glass
-    return contrast / threshold(area * mag * mag / (d * d), knee(L_A, lum), knee(L_B, lum))
+    return contrast / threshold(area * mag * mag / (d * d), *dark(sky * glass))
 
 
 def rate(m, search=1.0):

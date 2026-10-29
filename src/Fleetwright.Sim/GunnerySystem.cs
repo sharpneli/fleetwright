@@ -931,9 +931,7 @@ public sealed class GunnerySystem : IWorldSystem
         double brg = Earth.Bearing(at, tp);
         if (s.Eye >= 0 && !cls.Eyes[s.Eye].Sees(brg - headingDeg))
             return 0;
-        double arc = settings.SightSilhouetteArcDeg, sil =
-            !double.IsNaN(air.SunBearingDeg) && Math.Abs(Wrap(brg - air.SunBearingDeg)) <= arc ? 1 :
-            air.Sky.MoonSilhouette > 0 && Math.Abs(Wrap(brg - air.Sky.MoonBearingDeg)) <= arc ? air.Sky.MoonSilhouette : 0;
+        double sil = !double.IsNaN(air.SunBearingDeg) && Math.Abs(Wrap(brg - air.SunBearingDeg)) <= settings.SightSilhouetteArcDeg ? 1 : 0;
         bool ranges = Ranges(optics, s);
         double pupil = SightModel.PupilMm(air.Sky.SkyCdM2), back = Earth.Bearing(tp, at);
         var (lux, from) = air.Lights.On(target.Slot, tp, air.VisibilityM);

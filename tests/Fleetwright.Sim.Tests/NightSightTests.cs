@@ -39,7 +39,7 @@ public class NightSightTests(ITestOutputHelper output)
         Assert.True(over.Lux < 0.3 * clear.Lux);
         Assert.True(over.SkyCdM2 < clear.SkyCdM2);
         Assert.Equal(0, over.MoonSilhouette);
-        double twelve = NightLight.ClearSkyCdM2(-12), dark = NightLight.ClearSkyCdM2(-30);
+        double twelve = NightLight.ClearSkyCdM2(-12, S), dark = NightLight.ClearSkyCdM2(-30, S);
         Assert.InRange(twelve / dark, 4, 15);
         // the twilight's arch: brighter toward the sun than across from it, its mean all round the mean
         var dusk = NightLight.At(Earth.Position(57, 5.5), WorldTime.FromUtc(1916, 5, 31, 23, 0), 0, S);
@@ -53,33 +53,35 @@ public class NightSightTests(ITestOutputHelper output)
             NightLight.At(Earth.Position(57, 5.5), WorldTime.FromUtc(1916, 5, 31, 23, 0), 1, S).Toward(0), 1e-15);   // an overcast: all round
     }
 
-    /// <summary>The record's night (docs/battle/night.md Q1): a destroyer made out by a destroyer's lookout at a few
-    /// hundred metres on an overcast black night (the Dover Strait's ~600 yd), a couple of kilometres on a clear moonless
-    /// one (Jutland's night actions at 700-2,000 yd), further against Jutland's midnight twilight and under a moon, a
+    /// <summary>The record's night (docs/battle/night.md Q1, Q1b): a destroyer made out by a destroyer's lookout at a few
+    /// hundred metres on an overcast black night (the Dover Strait's under a cable to 600 yd), about a kilometre on a clear
+    /// moonless one (night-fighting.md: boats unseen to ~600 yd at Port Arthur and Tsushima, 0.5-2 km), further against Jutland's midnight twilight and under a moon, a
     /// battleship further than a destroyer every time, the moon's path beyond her further still; and the day as it was.</summary>
     [Fact]
     public void The_dark_shortens_sight_as_the_light_falls()
     {
         var dd = Fleet.Get("destroyer").Class!;
         var lion = Fleet.Scenario("lion");
-        double overcast = NightLight.ClearSkyCdM2(-30) * NightLight.Through(1, S), moonless = NightLight.ClearSkyCdM2(-30);
-        double twilight = NightLight.ClearSkyCdM2(-12), moon = (NightLight.StarLux + NightLight.FullMoonLux * 0.5 * S.NightMoonSkyShare) / Math.PI;
+        double overcast = NightLight.ClearSkyCdM2(-30, S) * NightLight.Through(1, S), moonless = NightLight.ClearSkyCdM2(-30, S);
+        double twilight = NightLight.ClearSkyCdM2(-12, S), moon = (S.NightStarHorizon * NightLight.StarLux + NightLight.FullMoonLux * 0.5 * S.NightMoonSkyShare) / Math.PI;
         double[] skies = [overcast, moonless, twilight, moon];
         var ddAt = skies.Select(k => MadeOut(dd, k)).ToArray();
         var lionAt = skies.Select(k => MadeOut(lion, k)).ToArray();
         output.WriteLine($"a destroyer made out at {string.Join(", ", ddAt.Select(x => $"{x:F1}"))} km; Lion at {string.Join(", ", lionAt.Select(x => $"{x:F1}"))} km" +
                          " (overcast, moonless, the sun 12° down, a full moon 30° up)");
         Assert.InRange(ddAt[0], 0.2, 1.0);
-        Assert.InRange(ddAt[1], 1.0, 3.5);
+        Assert.InRange(ddAt[1], 0.5, 2.0);
         for (int i = 0; i < skies.Length; i++)
         {
             Assert.True(lionAt[i] > ddAt[i]);
             if (i > 0)
                 Assert.True(ddAt[i] > ddAt[i - 1]);
         }
-        Assert.True(MadeOut(dd, moon, 20_000, 0.9) > ddAt[3], "against the moon's path");
+        // the moon's path is the sky's luminance on its bearing (Q1b), as bright as the moonlit sky there
+        var path = new NightSky(moon, 90, 0.5, 0, MoonPathCdM2: moon, MoonArcDeg: S.SightSilhouetteArcDeg);
+        Assert.True(MadeOut(dd, path.Toward(90)) > ddAt[3] && path.Toward(150) == moon, "against the moon's path");
         // the day: no dark at all, the threshold as it was
-        double day = NightLight.ClearSkyCdM2(30);
+        double day = NightLight.ClearSkyCdM2(30, S);
         Assert.Equal(Dark.Day, SightModel.DarkOf(day * 0.05, S));
         Assert.Equal(SightModel.Threshold(1e-3, S), SightModel.Threshold(1e-3, SightModel.DarkOf(day, S), S));
         Assert.Equal(S.SightContrastDay, SightModel.InherentContrast(day, 0, S));
@@ -94,7 +96,7 @@ public class NightSightTests(ITestOutputHelper output)
     [Fact]
     public void A_night_glass_beats_a_small_one_and_a_rangefinder_sees_dim()
     {
-        double dark = SightModel.PupilMm(NightLight.ClearSkyCdM2(-30)), bright = SightModel.PupilMm(NightLight.ClearSkyCdM2(30));
+        double dark = SightModel.PupilMm(NightLight.ClearSkyCdM2(-30, S)), bright = SightModel.PupilMm(NightLight.ClearSkyCdM2(30, S));
         Assert.InRange(dark, 6.5, 8);
         Assert.InRange(bright, 1.9, 3.5);
         var lion = Fleet.Get("lion").Class!;
@@ -108,24 +110,25 @@ public class NightSightTests(ITestOutputHelper output)
         Assert.Equal(0.6, SightModel.GlassLight(bridge, bright, S), 1e-9);
     }
 
-    /// <summary>A bow wave (Q1) finds a ship coming bow on fast in the dark, not one stopped or seen from astern, and says
-    /// nothing of what she is (it isn't her margin); torpedo tracks are seen less far in the dark, their day's reach by day.</summary>
+    /// <summary>A bow wave (Q1) finds a ship coming bow on fast in the dark nearly as soon as her dark shape does (Q1b's
+    /// night contrast of 0.9 brought her hull level with it), not one stopped or seen from astern, and says nothing of what
+    /// she is (it isn't her margin); torpedo tracks are seen less far in the dark, their day's reach by day.</summary>
     [Fact]
     public void A_bow_wave_shows_a_fast_ship_and_tracks_fade_in_the_dark()
     {
         var dd = Fleet.Get("destroyer").Class!;
-        double sky = NightLight.ClearSkyCdM2(-30), glass = SightModel.LookoutGlass(SightModel.PupilMm(sky), S);
+        double sky = NightLight.ClearSkyCdM2(-30, S), glass = SightModel.LookoutGlass(SightModel.PupilMm(sky), S);
         SightLine At(double d, double aspect, double kn) => new(d, aspect, 20_000, sky, 0, SpeedMs: kn * 0.514444, Glass: glass);
         double fast = SightModel.BowWaveMargin(20, 7, dd, At(1500, 0, 30), S);
         Assert.True(fast > SightModel.BowWaveMargin(20, 7, dd, At(1500, 0, 10), S));
         Assert.Equal(0, SightModel.BowWaveMargin(20, 7, dd, At(1500, 0, 0), S));
         Assert.True(SightModel.BowWaveMargin(20, 7, dd, At(1500, 180, 30), S) < 1e-6);   // from astern
         output.WriteLine($"bow on at 1.5 km, moonless: her hull {SightModel.Margin(20, 7, dd, At(1500, 0, 30), S):F2}, her bow wave at 30 kn {fast:F2}");
-        Assert.True(fast > SightModel.Margin(20, 7, dd, At(1500, 0, 30), S), "a fast boat bow on shows her bow wave before her hull");
-        Assert.Equal(S.TorpedoSeenM, SightModel.TrackSeenM(S.TorpedoSeenM, NightLight.ClearSkyCdM2(30), S));
-        double night = SightModel.TrackSeenM(S.TorpedoSeenM, sky, S), twilight = SightModel.TrackSeenM(S.TorpedoSeenM, NightLight.ClearSkyCdM2(-8), S);
+        Assert.True(fast > 0.8 * SightModel.Margin(20, 7, dd, At(1500, 0, 30), S), "a fast boat bow on shows her bow wave about as far as her hull");
+        Assert.Equal(S.TorpedoSeenM, SightModel.TrackSeenM(S.TorpedoSeenM, NightLight.ClearSkyCdM2(30, S), S));
+        double night = SightModel.TrackSeenM(S.TorpedoSeenM, sky, S), twilight = SightModel.TrackSeenM(S.TorpedoSeenM, NightLight.ClearSkyCdM2(-8, S), S);
         output.WriteLine($"a track seen at {night:F0} m on a moonless night, {twilight:F0} m with the sun 8° down");
-        Assert.InRange(night, 100, 700);
+        Assert.InRange(night, 30, 700);   // no phosphorescence yet (night.md Q12): a bare bubble track hardly shows
         Assert.True(twilight > night && twilight < S.TorpedoSeenM);
     }
 
@@ -153,7 +156,7 @@ public class NightLightsTests(ITestOutputHelper output)
 {
     static readonly SimSettings S = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json"));
 
-    static double Moonless => NightLight.ClearSkyCdM2(-30);
+    static double Moonless => NightLight.ClearSkyCdM2(-30, S);
 
     /// <summary>A mount's salvo as a light: big guns brighter than small, a broadside made out to the horizon on a dark
     /// night (the plan's 15-30 km), less far against a brighter sky.</summary>
@@ -167,11 +170,11 @@ public class NightLightsTests(ITestOutputHelper output)
         double Far(double cd, double sky) =>
             Enumerable.Range(1, 60).Where(km => SightModel.LightMargin(20, cd, 10, km * 1000, 20_000, sky, S) >= 1).DefaultIfEmpty(0).Max();
         output.WriteLine($"a 15\" twin's salvo {big:0.0e0} cd, made out to {Far(4 * big, Moonless)} km (four turrets); a destroyer's gun {small:0.0e0} cd, " +
-                         $"{Far(small, Moonless)} km, with the sun 6° down {Far(small, NightLight.ClearSkyCdM2(-6))} km");
+                         $"{Far(small, Moonless)} km, with the sun 6° down {Far(small, NightLight.ClearSkyCdM2(-6, S))} km");
         Assert.True(big > 50 * small);
         Assert.InRange(Far(4 * big, Moonless), 15, 35);   // the horizon's limit for a flash 10 m up
         Assert.True(Far(small, Moonless) > 8);
-        Assert.True(Far(small, NightLight.ClearSkyCdM2(-6)) < Far(small, Moonless) - 5);
+        Assert.True(Far(small, NightLight.ClearSkyCdM2(-6, S)) < Far(small, Moonless) - 5);
     }
 
     /// <summary>Her own flash dazzles her eyes for a few seconds (Q2): a destroyer at 1 km on a moonless night all but

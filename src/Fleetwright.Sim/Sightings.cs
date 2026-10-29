@@ -83,7 +83,7 @@ public sealed class Sightings
     double[] nearD = [];      // each worker's squared distances while it finds an item's nearest
     // the encounter being looked in: its grid, and the moment's light
     int gridW, gridH;
-    double gridMinX, gridMinY, gridCell, lookVis, lookPupil, lookSunBrg, lookMoonBrg, lookMoonSil;
+    double gridMinX, gridMinY, gridCell, lookVis, lookPupil, lookSunBrg;
     NightSky lookNight;
     long lookNow;
 
@@ -259,7 +259,7 @@ public sealed class Sightings
         var sky = NightLight.At(origin, world.Time, weather.Cloud, settings);   // the night's light (docs/battle/night.md Q1)
         (gridW, gridH, gridMinX, gridMinY, gridCell) = (w, h, minX, minY, cell);
         (lookNow, lookVis, lookPupil, lookSunBrg) = (now, weather.VisibilityM, SightModel.PupilMm(sky.SkyCdM2), lowSun ? sunBrg : double.NaN);
-        (lookMoonBrg, lookMoonSil, lookNight) = (sky.MoonBearingDeg, sky.MoonSilhouette, sky);
+        lookNight = sky;
         EnsureItems(items, world.Workers.Participants);
         world.Smoke.PrepareQueries(world.Workers.Participants);
         items = 0;
@@ -521,14 +521,10 @@ public sealed class Sightings
         };
 
     /// <summary>How far a ship on this bearing from the eye stands dark against a bright horizon beyond her (0-1): fully
-    /// within the silhouette arc of a low sun, by the moon's path's strength within its arc (docs/battle/night.md Q1).</summary>
-    double Silhouette(double brg)
-    {
-        double arc = settings.SightSilhouetteArcDeg;
-        if (!double.IsNaN(lookSunBrg) && Math.Abs(Angle(brg - lookSunBrg)) <= arc)
-            return 1;
-        return lookMoonSil > 0 && Math.Abs(Angle(brg - lookMoonBrg)) <= arc ? lookMoonSil : 0;
-    }
+    /// within the silhouette arc of a low sun. The moon's path is the sky's luminance on its bearing
+    /// (<see cref="NightSky.Toward"/>, docs/battle/night.md Q1b), as the twilight's glow is.</summary>
+    double Silhouette(double brg) =>
+        !double.IsNaN(lookSunBrg) && Math.Abs(Angle(brg - lookSunBrg)) <= settings.SightSilhouetteArcDeg ? 1 : 0;
 
     /// <summary>Whether any of the eyes that look at her (the first <see cref="SimSettings.SightEyes"/> that bear and
     /// work) makes her out in clear air.</summary>

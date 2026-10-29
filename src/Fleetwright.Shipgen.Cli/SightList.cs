@@ -52,15 +52,15 @@ static class SightList
             }
             Line(string.Format(Inv, "  made out side on by {0}a lookout at {1:0.0} m (x{2:0}): {3:0.0} km in 25 km visibility, {4:0.0} km in clear air; bow on {5:0.0} km",
                 observer is null ? "" : observer + "'s highest eye, ", eye, s.SightLookoutMagnification,
-                SightModel.MadeOutAtM(eye, s.SightLookoutMagnification, c, 25_000, 90, Day, 0, s) / 1000,
-                SightModel.MadeOutAtM(eye, s.SightLookoutMagnification, c, double.PositiveInfinity, 90, Day, 0, s) / 1000,
-                SightModel.MadeOutAtM(eye, s.SightLookoutMagnification, c, 25_000, 0, Day, 0, s) / 1000));
+                SightModel.MadeOutAtM(eye, s.SightLookoutMagnification, c, 25_000, 90, Day(s), 0, s) / 1000,
+                SightModel.MadeOutAtM(eye, s.SightLookoutMagnification, c, double.PositiveInfinity, 90, Day(s), 0, s) / 1000,
+                SightModel.MadeOutAtM(eye, s.SightLookoutMagnification, c, 25_000, 0, Day(s), 0, s) / 1000));
             // the dark (docs/battle/night.md Q1): a moonless clear night, the sun 12° down (the northern June night), a full moon
             double Night(double sky, double sil = 0) =>
                 SightModel.MadeOutAtM(eye, s.SightLookoutMagnification, c, 25_000, 90, sky, sil, s, SightModel.LookoutGlass(SightModel.PupilMm(sky), s)) / 1000;
-            double moon = (NightLight.StarLux + NightLight.FullMoonLux * 0.5 * s.NightMoonSkyShare) / Math.PI;
+            double moon = (s.NightStarHorizon * NightLight.StarLux + NightLight.FullMoonLux * 0.5 * s.NightMoonSkyShare) / Math.PI;
             Line(string.Format(Inv, "  at night side on, 25 km visibility: {0:0.0} km moonless, {1:0.0} km with the sun 12° down, {2:0.0} km under a full moon" +
-                " 30° up ({3:0.0} km toward it)", Night(NightLight.ClearSkyCdM2(-30)), Night(NightLight.ClearSkyCdM2(-12)), Night(moon), Night(moon, 0.9)));
+                " 30° up ({3:0.0} km toward it)", Night(NightLight.ClearSkyCdM2(-30, s)), Night(NightLight.ClearSkyCdM2(-12, s)), Night(moon), Night(moon, 0.9)));
             if (observer is not null)
                 Line(string.Format(Inv, "  first sighted by {0} closing at 30 kn (median, its {1} highest eyes): side on {2:0.0} km in 25 km visibility, " +
                     "{3:0.0} km in clear air; at 45° {4:0.0} km and {5:0.0} km", observer, s.SightEyes,
@@ -71,10 +71,10 @@ static class SightList
             if (observer is not null)
                 Line(string.Format(Inv, "  first sighted by {0} at night closing at 30 kn, 25 km visibility, side on: {1:0.0} km moonless, {2:0.0} km with" +
                     " the sun 12° down; bow on at 25 kn (her bow wave) {3:0.0} km moonless, {4:0.0} km stopped", observer,
-                    SightModel.FirstSightingM(observer, c, 25_000, 90, 30 * 0.5144, s, NightLight.ClearSkyCdM2(-30)) / 1000,
-                    SightModel.FirstSightingM(observer, c, 25_000, 90, 30 * 0.5144, s, NightLight.ClearSkyCdM2(-12)) / 1000,
-                    SightModel.FirstSightingM(observer, c, 25_000, 0, 30 * 0.5144, s, NightLight.ClearSkyCdM2(-30), 25 * 0.5144) / 1000,
-                    SightModel.FirstSightingM(observer, c, 25_000, 0, 30 * 0.5144, s, NightLight.ClearSkyCdM2(-30)) / 1000));
+                    SightModel.FirstSightingM(observer, c, 25_000, 90, 30 * 0.5144, s, NightLight.ClearSkyCdM2(-30, s)) / 1000,
+                    SightModel.FirstSightingM(observer, c, 25_000, 90, 30 * 0.5144, s, NightLight.ClearSkyCdM2(-12, s)) / 1000,
+                    SightModel.FirstSightingM(observer, c, 25_000, 0, 30 * 0.5144, s, NightLight.ClearSkyCdM2(-30, s), 25 * 0.5144) / 1000,
+                    SightModel.FirstSightingM(observer, c, 25_000, 0, 30 * 0.5144, s, NightLight.ClearSkyCdM2(-30, s)) / 1000));
         }
         Line(string.Format(Inv, "reach: the tallest eye {0:0.0} m and top {1:0.0} m see each other's tops at {2:0.0} km at most", eyeMax, topMax,
             SightModel.ReachM(eyeMax, topMax, s) / 1000));
@@ -83,5 +83,5 @@ static class SightList
     }
 
     /// <summary>The sky by day, cd/m².</summary>
-    static double Day => NightLight.ClearSkyCdM2(30);
+    static double Day(SimSettings s) => NightLight.ClearSkyCdM2(30, s);
 }

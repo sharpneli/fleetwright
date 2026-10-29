@@ -1007,10 +1007,12 @@ as four steps before Q10, and items for Q12's tuning pass:
   750, +5° 4,500, +10° 11,000 lux; −15° and −18° the sun's alone, the stars no longer counted twice). `sighting_ref.py`
   takes the new law and the C# reference rows follow it. Expect the bench's first sightings to fall ×2-4; the
   searchlight's and the matchup's reaches follow without retuning (re-checked against the record, not fitted).
-- **Q0b The bench to the record.** The Jutland cases' forces meet on collision courses with the Germans SW to W of the
-  British, so the Germans look toward the northern glow and see first; the record has them W to NW, the British looking
-  into the glow and seeing first (Nottingham "silhouetted against the evening sky … while we remained in darkness").
-  Start positions moved to the record's bearings; visibility 8 km (the night's mist: "three to four miles" at daylight);
+- **Q0b The bench to the record.** The Jutland cases' forces meet on collision courses with the Germans 65° off the
+  British bow at Southampton (225°), 65° at the 4th Flotilla (245°), 80° at Black Prince (260°); the record has them on the
+  starboard bow (Castor, Ambuscade, Petard) to the starboard beam (Southampton, Dublin, Tipperary, Spitfire), the British
+  looking a little more toward the glow (Nottingham "silhouetted against the evening sky … while we remained in darkness").
+  (The research's "W to NW" is its summary; its own table is bow to beam.) Courses and speeds set so the meetings come
+  on the beam; visibility 8 km (the night's mist: "three to four miles" at daylight);
   the record's lines corrected (Dover at point blank, not 600 yd; Southampton's five German ships; the 4th Flotilla's ~14
   torpedoes for 1 hit; Tsushima's 54 torpedoes and 32 linked mines for 4-6 hits, 3 boats lost); a dawn case (the 12th
   Flotilla at 01:45, the sun −6°, torpedoes at 1,700-3,500 yd); the bench counts the hits on lit and on dark ships of the
@@ -1039,6 +1041,71 @@ as four steps before Q10, and items for Q12's tuning pass:
   two of Jutland's eleven night losses.
 - **Not found by the research** (stay [EST]): German searchlight sizes by class, the star shell's candle and dud rate,
   the "burst beyond the target" rule before WWII, Makarov, Japanese written doctrine, gun flash distances.
+
+**Q1b done (2026-10-29).** The eye and the sky as the research has them:
+
+- **The eye** (`SightModel.DarkOf`): Crumey's fits to Blackwell (`BlackwellCInf`, `RiccoArea`) as ratios over 30 cd/m²,
+  the floor's eased by the field factor below `SightDarkFieldCdM2` 1.8·10⁻³ as its `SightDarkFieldPower` ¼ (the two knees
+  `SightDarkCdM2` and `SightDarkSummationCdM2` went). `SightContrastNight` 0.9. Brighter than 30 cd/m² through the glass
+  the dark adds exactly nothing, as before: Lion sights Derfflinger at 25.0 km and KGV Bismarck at 36.2 km, and
+  `sighting_ref.py`'s day rows hold to the last digit (its night rows and the C# test's follow the new law; `night_ref.py`
+  keeps Q1's law for its comparison and prints what it did).
+- **A silhouette never lowers her contrast** (`InherentContrast`): in twilight she's already near black against the sky
+  (0.9 over the silhouette's 0.8), so a low sun or the moon behind her shows as the sky's luminance on that bearing, not
+  as contrast. **The moon's path** is that now (`NightSky.MoonPathCdM2`, falling off to none `SightSilhouetteArcDeg`
+  either side of the moon's bearing in `Toward`), as the twilight's glow is; the moon's share went from the contrast
+  silhouettes in the looks and fire control's sensors.
+- **The sky** (`NightLight`): the twilight a floor of `NightTwilightFloor` 1 × E/π (Sacramento Peak's absolute
+  luminances against our table's illuminance: its own site's E was about half Schlyter's, so its "5 × E/π" is our 1-3)
+  and a glow toward the sun over it, e^(3.2 (cos Δ − 1)) (`NightTwilightArch` 3.2, was the von Mises 1.5), as strong as
+  Koomen's toward/away less one by the sun's depth (`NightLight.GlowOf`: 10.5 at −6°, 5.4 at −12°, 2.1 at −15°, none
+  at −18°, 2.9-4.3 before sunset; `NightTwilightArchDeg` went); the starlit horizon `NightStarHorizon` 2.5 × E/π; the
+  daylight table's ends (0° 750, +5° 4,500, +10° 11,000 lux, −15° 2·10⁻⁴ and −18° 10⁻⁵ the sun's alone).
+  `ClearSkyCdM2` takes the settings. The display reads the same table: its dusk and dawn are a little darker below the
+  sun's −12° and the hour round sunset a little different (one table for sim and screen, as Q1 set it).
+- **Made out by a destroyer's 7×50 lookout, side on** (`NightSightTests`, Q1's in brackets): a destroyer 0.6 km
+  overcast (0.4), 0.9 moonless and clear (2.0), 2.5 with the sun 12° down (6.4), 3.5 under a full moon 30° up (9.8); Lion
+  1.1, 1.6, 3.9, 5.2 km (0.8, 3.5, 9.6, 13.6). The record's bands: 0.2-0.6, 0.5-2, 0.55-1.8 across from Jutland's glow
+  and 2-3.2 toward it.
+- **Restated to the record** (tests whose setups leaned on Q1's longer night): the moonless destroyer's band 0.5-2 km
+  (was 1-3.5); a fast boat's bow wave about as far as her dark shape (her hull's contrast 0.9 brought it level, was
+  before it); a torpedo track on a moonless night 30-700 m (51 m now, was ~170: no phosphorescence yet, Q12's); in
+  twilight she's seen further toward the glow than across from it (was: silhouetted at −4°); the director ranges best in
+  civil twilight, worse by −7°, and nothing at 10 km by −9° (was a dusk at −10° that still ranged at 10 km). The night
+  tests' ships moved within a moonless night's sight (0.75-0.9 km, the beams', flares' and darkened ships' tests), and the
+  challenge tests to a full moon at their 1.9-2.2 km (on a moonless night a ship is seen only within a kilometre, where
+  the challenge's own lamp lights her enough to make her out); the challenged destroyer is darkened in the captains'
+  test (under the moon she sees the challenger and fires, giving herself away: the record's pattern). Sim 876, shipgen
+  59, game 207 passed.
+
+**The bench after Q1b** (20 seeds; Q9's in brackets):
+
+| Case | First seen | Salvos' median | Shells / hits | Torpedoes, hits | Lost |
+|---|---|---|---|---|---|
+| Tsushima (from dusk, −5°) | RU 12 km in 18 of 20 (5.0 in 11), JP 14 km | 2.5, 3.1 km | RU 393 / 92 (725 / 139), JP 466 / 101 (834 / 114) | JP 4.1 from 0.9 km, 0.8 (1.5, 0.7) | RU 0.1 of 3, JP 0.9 of 8 (1.2) |
+| Southampton | GB 1.8 km in 4 of 20 (6.1, all), DE 6.5 (9.2) | 1.2 km (3.1-3.6) | GB 12 / 8 (140 / 54), DE 43 / 30 (1,876 / 459) | GB 1.3, 0.6; DE 0.8, 0.1 | GB 0 of 4 (0.6), DE 0.1 of 5 (0.9) |
+| 4th Flotilla | GB 1.2 (3.7), DE 1.4 km (4.3) | 1.0-1.1 km (3.5-3.9) | GB 252 / 182 (403 / 89), DE 542 / 264 (1,020 / 152) | GB 25.8 from 0.6 km, 8.3 (8.2, 1.2); DE 7.5, 2.4 | GB 7.3 of 10 (5.0), DE 1.2 of 6 (0.2) |
+| Black Prince | GB 1.1 (3.5), DE 1.2 km (4.7) | 1.2-1.8 km (1.2-2.3) | GB 80 / 61 (109 / 86), DE 128 / 60 (294 / 114) | DE 4.7, 1.8 | GB 0.3 of 1 (0.8) |
+| Dover Strait | 0.4 and 0.3 km (0.5, 0.3) | 1.4, 2.5 km | GB 128 / 64 (125 / 52), DE 107 / 39 (84 / 33) | GB 2.8, 0.7; DE 7.1, 1.3 | GB 0.8 of 2 (1.0), DE 1.4 of 6 (0.8) |
+
+**What it says:**
+- **Jutland's night is fought at the record's ranges.** The 4th Flotilla and Black Prince first see the Germans at
+  1.1-1.4 km (the record's 1,000-2,000 yd; 3.5-4.7 km before) and fight at about a kilometre, the guns hitting half to
+  three quarters of their shells (Westfalen's 92 × 15 cm and 45 × 8.8 cm into Tipperary in five minutes).
+- **Night torpedoes now hit far too often**: the 4th Flotilla fires 26 from 0.6 km for 8.3 hits a run (the record about 14
+  for one), the Germans 7.5 for 2.4 (none known to hit). At these ranges a track is seen at 50 m, too late to comb, and the
+  torpedo's aim has no night term (the target's course and speed from a short track in the dark, the boats firing at
+  speed). A model item for Q12, measured here; the flotilla's 7.3 boats lost of 10 (the record's four) goes with it.
+- **Southampton fights in 4 runs of 20**: the Germans see the British at 6.5 km toward the glow and hold their fire past
+  their challenge range; the British, across from it, see them only at 1.8 km. Q0b's geometry (the beam) and visibility
+  (8 km) are the next step for that case.
+- **Tsushima starts at dusk** (the sun −5°): both sides see each other at 12-14 km while it's light, then lose touch in
+  the dark; the Japanese boats attack from 0.9 km.
+- **The day actions** (8 seeds, the fine tier, before → after, ± a standard error): the Heligoland Bight within the noise;
+  Coronel, fought into the dusk, British ships lost 0.6 → 1.1 (±0.3), German 0.9 → 0.5 (the record: two and none); the
+  Dogger Bank, opening in a winter dawn's twilight with the sun never over 13°, British hits 1,062 → 761 (±100) and ships
+  lost 7.8 → 10.8 (±1.4). Measured, not tuned: the scenarios' balance pass is the place for it.
+- The bench took 29 s for its 100 plays (34 s before).
 
 ### Q10 The look
 

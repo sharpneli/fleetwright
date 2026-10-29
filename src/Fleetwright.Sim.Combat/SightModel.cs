@@ -72,8 +72,8 @@ public readonly record struct SmokeTau(double F0, double F1, double F2, double M
 /// against the sky in the sun, darker against it in the sky's light alone (after sunset, under cloud), or a silhouette's
 /// against a bright horizon.</item>
 /// <item><b>The eye</b> needs a threshold contrast, rising for small objects as their solid angle shrinks
-/// (Cₜ = C∞ (1 + √(Ω꜀ / Ω))), and in the dark (docs/battle/night.md Q1): C∞ and Ω꜀ grow as the sky's luminance through the
-/// eye's glass falls (<see cref="DarkOf"/>). Its margin over it, m = C / Cₜ, makes the target visible at 1 and
+/// (Cₜ = C∞ (1 + √(Ω꜀ / Ω))), and in the dark (docs/battle/night.md Q1, Q1b): C∞ and Ω꜀ grow as the sky's luminance through
+/// the eye's glass falls, by Blackwell's measured shape (<see cref="DarkOf"/>). Its margin over it, m = C / Cₜ, makes the target visible at 1 and
 /// plainly so at the full margin.</item>
 /// <item><b>Detection is a rate</b> (the full rate times the log of the margin, from 1 to the full margin), so the chance in
 /// a look of dt is 1 - e^(-rate·dt) and doesn't depend on how often it's looked at.</item>
@@ -109,7 +109,7 @@ public static class SightModel
     {
         var eyes = observer.Eyes;
         int n = Math.Min(eyes.Length, s.SightEyes);
-        double hazard = 0, step = 100, dt = step / closingMs, sky = double.IsNaN(skyCdM2) ? NightLight.ClearSkyCdM2(30) : skyCdM2;
+        double hazard = 0, step = 100, dt = step / closingMs, sky = double.IsNaN(skyCdM2) ? NightLight.ClearSkyCdM2(30, s) : skyCdM2;
         double pupil = PupilMm(sky);
         for (double d = Math.Floor(ReachM(n > 0 ? eyes[0].HeightM : 0, target.Silhouette.TopM, s) / step) * step; d > step; d -= step)
         {
@@ -267,23 +267,39 @@ public static class SightModel
         return new Dark(Math.Max(d.Floor, 1) * line.AdaptedCdM2 / Math.Max(scene, 1e-12), Math.Max(d.Summation, 1));
     }
 
-    /// <summary>How much the dark raises the eye's threshold (docs/battle/night.md Q1), from the sky's luminance as the eye
-    /// gets it through its glass (cd/m²): each factor (1 + √(L_k / L)) over its value at <see cref="SimSettings.SightWeberCdM2"/>
-    /// (flat by day, the de Vries-Rose square root law in the dark), its own knee for the large object's threshold
-    /// (<see cref="SimSettings.SightDarkCdM2"/>) and for the summation's side (<see cref="SimSettings.SightDarkSummationCdM2"/>);
+    /// <summary>How much the dark raises the eye's threshold (docs/battle/night.md Q1b), from the sky's luminance as the eye
+    /// gets it through its glass (cd/m²): Blackwell's large-object threshold and Riccò's area (<see cref="BlackwellCInf"/>,
+    /// <see cref="RiccoArea"/>) over their values at <see cref="SimSettings.SightWeberCdM2"/>, the floor's eased by the
+    /// field factor below <see cref="SimSettings.SightDarkFieldCdM2"/>, the summation's side the area's square root;
     /// exactly none brighter than that.</summary>
     public static Dark DarkOf(double eyeCdM2, SimSettings s)
     {
         double l = Math.Max(eyeCdM2, 1e-12), w = s.SightWeberCdM2;
         if (l >= w)
             return Dark.Day;
-        static double K(double knee, double l, double w) => (1 + Math.Sqrt(knee / l)) / (1 + Math.Sqrt(knee / w));
-        return new Dark(K(s.SightDarkCdM2, l, w), K(s.SightDarkSummationCdM2, l, w));
+        double field = Math.Min(1, Math.Pow(l / s.SightDarkFieldCdM2, s.SightDarkFieldPower));
+        return new Dark(Math.Max(1, field * BlackwellCInf(l) / BlackwellCInf(w)), Math.Sqrt(RiccoArea(l) / RiccoArea(w)));
+    }
+
+    /// <summary>The laboratory's threshold contrast for a large object, 50% seen, against an adapting luminance (cd/m²):
+    /// Crumey 2014's fit to Blackwell 1946, flat over 0.354 cd/m², rising as L^(−1/4) below.</summary>
+    public static double BlackwellCInf(double cdM2) =>
+        cdM2 >= 0.354 ? 2.720e-3 : Math.Max(2.720e-3, 7.633e-3 * Math.Pow(cdM2, -0.25) - 7.174e-3);
+
+    /// <summary>Riccò's area (the solid angle the eye sums light over, in Crumey's units) against an adapting luminance
+    /// (cd/m²): Crumey 2014's fit to Blackwell 1946, R / C∞.</summary>
+    public static double RiccoArea(double cdM2)
+    {
+        double q = Math.Pow(cdM2, -0.25);
+        double r = cdM2 < 0.0708 ? 6.505e-4 * q - 8.461e-4 : 1.772e-4 * q + 7.167e-5;
+        return r * r / BlackwellCInf(cdM2);
     }
 
     /// <summary>A ship's own contrast against the horizon sky in this light (cd/m²): the day's grey ship with the sun on
     /// her sides, darker against the sky in its light alone (after sunset, under an overcast, at night), between on the
-    /// sky's luminance (log); and toward a silhouette's against a bright horizon by the share (0-1). Lit by a light near
+    /// sky's luminance (log); and toward a silhouette's against a bright horizon by the share (0-1), never below her own
+    /// (in twilight she's already near black against the sky: the glow beyond her shows as the sky's luminance on that
+    /// bearing, docs/battle/night.md Q1b). Lit by a light near
     /// her (lux on her side toward the eye, docs/battle/night.md Q2), the parts it falls on shine back at
     /// <see cref="SimSettings.SightHullAlbedo"/>: brighter than the sky by ρE / πL less her own darkness, the better of
     /// that and her dark shape.</summary>
@@ -292,7 +308,7 @@ public static class SightModel
         double sky = Math.Max(skyCdM2, 1e-12);
         double day = Math.Clamp(Math.Log(sky / s.SightContrastNightCdM2) / Math.Log(s.SightContrastDayCdM2 / s.SightContrastNightCdM2), 0, 1);
         double own = s.SightContrastNight + (s.SightContrastDay - s.SightContrastNight) * day;
-        double c = own + (s.SightContrastSilhouette - own) * Math.Clamp(silhouette, 0, 1);
+        double c = own + Math.Max(s.SightContrastSilhouette - own, 0) * Math.Clamp(silhouette, 0, 1);
         return litLux > 0 ? Math.Max(c, s.SightHullAlbedo * litLux / (Math.PI * sky) - own) : c;
     }
 

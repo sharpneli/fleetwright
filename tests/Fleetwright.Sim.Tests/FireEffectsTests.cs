@@ -307,7 +307,7 @@ public class FireEffectsTests(ITestOutputHelper output)
         Assert.True(k.FireShowMW > inside);
 
         // at night, a 2 MW fire as a lamp through 20 km of visibility, from a 30 m masthead
-        double Margin(double km, double sun) => SightModel.GlowMargin(30, 2, 10, km * 1000, 20_000, NightLight.ClearSkyCdM2(sun), Settings);
+        double Margin(double km, double sun) => SightModel.GlowMargin(30, 2, 10, km * 1000, 20_000, NightLight.ClearSkyCdM2(sun, Settings), Settings);
         double reach = Enumerable.Range(1, 60).Where(km => Margin(km, -20) >= 1).DefaultIfEmpty(0).Max();
         output.WriteLine($"a 2 MW fire at night made out to {reach} km; margin at 10 km {Margin(10, -20):0}, at sunset {Margin(10, -0.5):0.00}, by day {Margin(10, 10)}");
         Assert.InRange(reach, 12, 35);

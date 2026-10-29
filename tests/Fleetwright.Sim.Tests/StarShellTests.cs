@@ -13,7 +13,7 @@ public class StarShellTests(ITestOutputHelper output)
 {
     static readonly SimSettings S = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json"));
 
-    static World Night(out int ship, out int dd, double apartLonDeg = 0.04)
+    static World Night(out int ship, out int dd, double apartLonDeg = 0.014)
     {
         var w = new World(WorldTime.FromUtc(1916, 1, 15, 23), 7, S);
         int c = w.Ships.AddClass(Fleet.Scenario("nassau_1916"));
@@ -79,12 +79,12 @@ public class StarShellTests(ITestOutputHelper output)
         }
         var (target, mount) = w.StarShells.TaskOf(ship);
         output.WriteLine($"task on {target}, mount {mount}; a flare up {up} s of 90, at most {most}; on her at most {lux:F2} lux; " +
-                         $"the sea behind her {back:0.0e0} cd/m² (the sky {NightLight.ClearSkyCdM2(-30):0.0e0})");
+                         $"the sea behind her {back:0.0e0} cd/m² (the sky {NightLight.ClearSkyCdM2(-30, S):0.0e0})");
         Assert.Equal(dd, target);
         Assert.True(mount >= 0 && store.Combat.Illuminating(slot, mount));
         Assert.True(up > 45, "a flare up most of the time");
         Assert.True(lux > 0.05, "she's lit");
-        Assert.True(back > 10 * NightLight.ClearSkyCdM2(-30), "the sea behind her lit for the firer");
+        Assert.True(back > 10 * NightLight.ClearSkyCdM2(-30, S), "the sea behind her lit for the firer");
         w.Apply(StarShellSystem.Illuminate(ship, 0));
         Assert.False(store.Combat.Illuminating(slot, mount));
     }

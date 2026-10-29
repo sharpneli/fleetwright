@@ -314,24 +314,26 @@ public sealed record SimSettings
     /// margin's logarithm.</summary>
     public double SightFullMargin { get; init; } = 3;
 
-    /// <summary>The dark (docs/battle/night.md Q1): the eye's threshold rises as the light it sees falls (L, the horizon
-    /// sky's luminance through the eye's glass, cd/m²), each of two ways by (1 + √(L_k / L)) over its value at
-    /// <see cref="SightWeberCdM2"/> (Blackwell 1946: flat in the bright, the de Vries-Rose square root in the dark; never
-    /// below the day's): the large object's threshold contrast C∞ with its knee at <see cref="SightDarkCdM2"/>, and the side
-    /// of the patch the eye sums its light over (√Ω꜀) with its knee at <see cref="SightDarkSummationCdM2"/> (Riccò's area
-    /// grows a hundredfold from day to night: small and distant things fade first, large ones close by stay). Fitted to
-    /// the record's night ranges [EST]: a destroyer made out at about half a kilometre on an overcast black night (the
-    /// Dover Strait), two moonless and clear, three across the sky from Jutland's midnight twilight.</summary>
-    public double SightDarkCdM2 { get; init; } = 1e-4;
-    public double SightDarkSummationCdM2 { get; init; } = 0.2;
+    /// <summary>The dark (docs/battle/night.md Q1, Q1b): the eye's threshold rises as the light it sees falls (L, the
+    /// horizon sky's luminance through the eye's glass, cd/m²) by Blackwell's measured shape (Crumey 2014's fits to
+    /// Blackwell 1946, as ratios over their values at <see cref="SightWeberCdM2"/>, exactly none brighter): the large
+    /// object's threshold contrast C∞ (×13 at 10⁻³ cd/m²) and Riccò's summation area (×28 there: small and distant things
+    /// fade first). The searching eye's field factor over the laboratory's (the day's C∞ of 0.05 is 18.4 times Blackwell's)
+    /// eases below <see cref="SightDarkFieldCdM2"/> as the <see cref="SightDarkFieldPower"/> power of L over it: the
+    /// research's fit to the record's night ranges (night-fighting.md §7.4 [INFERRED]: a destroyer made out at about 0.4 km
+    /// on a black overcast night, 0.8 moonless and clear, a battleship at 1.2 km across the sky from Jutland's midnight
+    /// twilight and 3.4 toward it).</summary>
+    public double SightDarkFieldCdM2 { get; init; } = 1.8e-3;
+    public double SightDarkFieldPower { get; init; } = 0.25;
     public double SightWeberCdM2 { get; init; } = 30;
 
     /// <summary>A ship's contrast against the horizon sky when no sun lights her sides (after sunset, in twilight, under an
-    /// overcast, at night: lit by the sky alone, her upper works stand dark against it) [EST], under a sky of
+    /// overcast, at night: lit by the sky alone, her upper works stand dark against it; a hull of reflectance 0.1-0.2 lit
+    /// only by the sky, night-fighting.md §7.4 [EST]), under a sky of
     /// <see cref="SightContrastNightCdM2"/> or less; the day's <see cref="SightContrastDay"/> under
     /// <see cref="SightContrastDayCdM2"/> or more, between on the luminance's log (a clear sky's at sunset and with the sun
     /// 5° up).</summary>
-    public double SightContrastNight { get; init; } = 0.6;
+    public double SightContrastNight { get; init; } = 0.9;
     public double SightContrastNightCdM2 { get; init; } = 150;
     public double SightContrastDayCdM2 { get; init; } = 2000;
 
@@ -458,11 +460,17 @@ public sealed record SimSettings
     /// <summary>The moon's path on the sea, as a luminance: this of the moon's illuminance over π [EST].</summary>
     public double NightMoonPathShare { get; init; } = 0.1;
 
-    /// <summary>The twilight's arch: its light gathers toward the sun's bearing as e^(k cos Δ), k this under a clear sky
-    /// [EST: the horizon toward the sun some twenty times as bright as across from it, e^(2k)], growing as the sun goes
-    /// down to <see cref="NightTwilightArchDeg"/> (degrees below the horizon) from none at sunset.</summary>
-    public double NightTwilightArch { get; init; } = 1.5;
-    public double NightTwilightArchDeg { get; init; } = 6;
+    /// <summary>The twilight's sky on the horizon (Koomen et al. 1952, night-fighting.md §7.2): a floor all round of
+    /// <see cref="NightTwilightFloor"/> times the twilight's level illuminance over π (Sacramento Peak's absolute
+    /// luminances against this table's illuminance), and a glow toward the sun's bearing over it, falling as
+    /// e^(k (cos Δ − 1)), k this; how strong the glow is over the floor goes by the sun's depth (NightLight's table:
+    /// toward against away 11 at −6° to −9°, 6 at −12°, 3 at −15°; there before sunset). An overcast spreads it all round.</summary>
+    public double NightTwilightArch { get; init; } = 3.2;
+    public double NightTwilightFloor { get; init; } = 1;
+
+    /// <summary>The starlit sky's horizon over its level illuminance over π (the zenith's): the airglow brightens toward
+    /// the horizon, 2-3 times the zenith (night-fighting.md §7.1).</summary>
+    public double NightStarHorizon { get; init; } = 2.5;
 
     /// <summary>A target against the bright horizon (silhouetted): the sun between this and <see cref="SightSilhouetteHighDeg"/>
     /// of elevation, and within <see cref="SightSilhouetteArcDeg"/> of the line of sight's bearing beyond the target.</summary>

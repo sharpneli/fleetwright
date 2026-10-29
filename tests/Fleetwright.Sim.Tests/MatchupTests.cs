@@ -38,7 +38,7 @@ public class MatchupTests(ITestOutputHelper output)
         new(profiles.Value[name], n, MainRounds: mainRounds, TorpedoesLeft: torpedoes ? 1 : 0);
 
     /// <summary>The Dover Strait's moonless night, clear (docs/battle/night.md Q7).</summary>
-    static readonly MatchupLight Moonless = new(20_000, NightLight.ClearSkyCdM2(-30));
+    static readonly MatchupLight Moonless = new(20_000, NightLight.ClearSkyCdM2(-30, Settings));
 
     double Judge(MatchupEntry[] a, MatchupEntry[] b, MatchupLight? light = null)
     {

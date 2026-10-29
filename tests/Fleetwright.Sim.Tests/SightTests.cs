@@ -97,7 +97,7 @@ public class SightModelTests(ITestOutputHelper output)
     /// seconds (0: where it can be made out at all), km.</summary>
     static double Reach(double eyeM, double mag, double search, ShipClass t, double vis, double sun, bool sil, double aspect, double perS)
     {
-        double sky = Core.NightLight.ClearSkyCdM2(sun), glass = Combat.SightModel.LookoutGlass(Combat.SightModel.PupilMm(sky), S);
+        double sky = Core.NightLight.ClearSkyCdM2(sun, S), glass = Combat.SightModel.LookoutGlass(Combat.SightModel.PupilMm(sky), S);
         for (double d = 80_000; d > 100; d -= 100)
         {
             var line = new Combat.SightLine(d, aspect, vis, sky, sil ? 1 : 0, Glass: glass);
@@ -115,10 +115,10 @@ public class SightModelTests(ITestOutputHelper output)
     [InlineData(24, 30000, 7, 25000, 19_099, 0, 1, 8.30538589554, 602.676846267, 0.427893508467)]
     [InlineData(20, 30000, 20, 40000, 19_099, 0, 1, 10.9478277071, 444.130337571, 1.59975553324)]
     [InlineData(15, 34000, 7, double.PositiveInfinity, 19_099, 0, 1, 24.4565288112, 1.63041356626, 0.127747417247)]
-    [InlineData(24, 2000, 7, 25000, 3.2e-4, 0, 0.6, 0, 1941, 1.64775288626)]
-    [InlineData(24, 800, 7, 20000, 4.8e-5, 0, 0.6, 0, 1941, 1.02865699387)]
-    [InlineData(24, 25000, 7, 25000, 7.0, 1, 1, 2.51251756067, 1488.74683908, 1.81586980882)]
-    [InlineData(24, 6000, 7, 25000, 0.01, 0.6, 0.6, 0, 1941, 3.44081758277)]
+    [InlineData(24, 2000, 7, 25000, 3.2e-4, 0, 0.6, 0, 1941, 0.820604892359)]
+    [InlineData(24, 800, 7, 20000, 4.8e-5, 0, 0.6, 0, 1941, 1.00535635903)]
+    [InlineData(24, 25000, 7, 25000, 7.0, 1, 1, 2.51251756067, 1488.74683908, 1.89801279623)]
+    [InlineData(24, 6000, 7, 25000, 0.01, 0.6, 0.6, 0, 1941, 0.877549678819)]
     public void The_model_agrees_with_its_reference(double eye, double d, double mag, double vis, double sky, double sil, double glass, double hidden,
         double area, double margin)
     {
@@ -168,7 +168,16 @@ public class SightModelTests(ITestOutputHelper output)
         double night = Reach(eye, 7, 1, bis, 25_000, -30, false, 90, 0);
         output.WriteLine($"Bismarck side on, a moonless night: made out at {night:F1} km");
         Assert.InRange(night, 1.5, 4.5);
-        Assert.True(Reach(eye, 7, 1, bis, 25_000, -4, true, 90, 0) > Reach(eye, 7, 1, bis, 25_000, -4, false, 90, 0) + 1.5, "silhouetted at dusk");
+        // in twilight she's seen further against the glow toward the sun than across from it (docs/battle/night.md Q1b)
+        var dusk = Core.NightLight.At(Core.Earth.Position(57, 5.5), Core.WorldTime.FromUtc(1916, 5, 31, 21, 30), 0, S);
+        double Dusk(double brg)
+        {
+            double sky = dusk.Toward(brg);
+            return Combat.SightModel.MadeOutAtM(eye, 7, bis, 25_000, 90, sky, 0, S, Combat.SightModel.LookoutGlass(Combat.SightModel.PupilMm(sky), S)) / 1000;
+        }
+        double toward = Dusk(dusk.SunBearingDeg), away = Dusk(dusk.SunBearingDeg + 180);
+        output.WriteLine($"Bismarck side on, the sun {Core.Light.SunElevationDeg(Core.Earth.Position(57, 5.5), Core.WorldTime.FromUtc(1916, 5, 31, 21, 30)):F1}° down: made out at {toward:F1} km toward the glow, {away:F1} km across from it");
+        Assert.True(toward > away + 1.5, "against the twilight's glow");
         Assert.True(Reach(20, 20, 0.3, bis, 25_000, 30, false, 90, 0) > Reach(20, 7, 1, bis, 25_000, 30, false, 90, 0), "a rangefinder's magnification");
     }
 
@@ -178,7 +187,7 @@ public class SightModelTests(ITestOutputHelper output)
     public void Taller_eyes_see_further_and_a_top_shows_before_the_hull()
     {
         var lion = Fleet.Scenario("lion");
-        double day = Core.NightLight.ClearSkyCdM2(30);
+        double day = Core.NightLight.ClearSkyCdM2(30, S);
         double low = Combat.SightModel.MadeOutAtM(15, 7, lion, double.PositiveInfinity, 90, day, 0, S);
         double high = Combat.SightModel.MadeOutAtM(35, 7, lion, double.PositiveInfinity, 90, day, 0, S);
         output.WriteLine($"Lion side on in clear air: from 15 m {low / 1000:F1} km, from 35 m {high / 1000:F1} km");
@@ -256,7 +265,8 @@ public class SightModelTests(ITestOutputHelper output)
 
     /// <summary>fire-control.md F5c: the air on a rangefinder. In clear air a capital ship at 15 km is ranged at the
     /// trained acuity; in Jutland's haze (16 km) a coincidence set's error grows about twice, a stereo set's about a
-    /// third (the reference's k_optic: 2.25 and 1.4), and coated glass less; at dusk the margin, and so the error, worsens
+    /// third (the reference's k_optic: 2.25 and 1.4), and coated glass less; in civil twilight she stands darkest against
+    /// the sky (docs/battle/night.md Q1b), by nautical twilight the margin, and so the error, worsens
     /// again; past the night's reach nothing is made out to range.</summary>
     [Fact]
     public void The_air_worsens_the_rangefinders_stereo_less()
@@ -267,17 +277,19 @@ public class SightModelTests(ITestOutputHelper output)
         var stereo = derf.Eyes.ToArray().Single(e => e.Kind == EyeKind.Director);
         double K(in EyeRow eye, ShipClass target, double vis, double sun = 30, double range = 15_000)
         {
-            double sky = Core.NightLight.ClearSkyCdM2(sun);
+            double sky = Core.NightLight.ClearSkyCdM2(sun, S);
             double m = Combat.SightModel.Margin(eye.HeightM, Combat.SightModel.Magnification(eye, S), target,
                 new Combat.SightLine(range, 80, vis, sky, 0, Glass: Combat.SightModel.GlassLight(eye, Combat.SightModel.PupilMm(sky), S)), S);
             return m < 1 ? double.PositiveInfinity : Combat.SightModel.RangingFactor(m, eye.Optics, S);
         }
-        double clear = K(dir, derf, 35_000), haze = K(dir, derf, 16_000), stereoHaze = K(stereo, lion, 16_000), dusk = K(dir, derf, 16_000, -10, 10_000);
+        double clear = K(dir, derf, 35_000), haze = K(dir, derf, 16_000), stereoHaze = K(stereo, lion, 16_000), dusk = K(dir, derf, 16_000, -7, 10_000);
         output.WriteLine($"coincidence k: clear {clear:F2}, haze {haze:F2}, haze at dusk {dusk:F2}; stereo in haze {stereoHaze:F2}");
         Assert.InRange(clear, 1, 1.1);
         Assert.InRange(haze, 1.6, 2.6);
         Assert.InRange(stereoHaze, 1.15, 1.6);
-        Assert.True(dusk > K(dir, derf, 16_000, 30, 10_000) && double.IsFinite(dusk));
+        output.WriteLine("by the sun at 10 km: " + string.Join(", ", new[] { 30, 0, -3, -5, -7, -9, -10, -11, -12 }.Select(e => $"{e}° {K(dir, derf, 16_000, e, 10_000):F2}")));
+        Assert.True(dusk > K(dir, derf, 16_000, -3, 10_000) && double.IsFinite(dusk));   // civil twilight her darkest against the sky (Q1b)
+        Assert.True(double.IsPositiveInfinity(K(dir, derf, 16_000, -9, 10_000)));
         Assert.True(double.IsPositiveInfinity(K(dir, derf, 16_000, -18)));   // a dark night: 15 km is past its reach
         var coated = dir.Optics with { Coated = true };
         Assert.True(Combat.SightModel.RangingFactor(1.5, coated, S) < Combat.SightModel.RangingFactor(1.5, dir.Optics, S));

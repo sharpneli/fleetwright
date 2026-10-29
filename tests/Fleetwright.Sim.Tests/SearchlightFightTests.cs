@@ -12,7 +12,7 @@ namespace Fleetwright.Sim.Tests;
 public class SearchlightFightTests(ITestOutputHelper output)
 {
     static readonly SimSettings S = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json"));
-    static readonly double Moonless = NightLight.ClearSkyCdM2(-30);
+    static readonly double Moonless = NightLight.ClearSkyCdM2(-30, S);
 
     /// <summary>A Great War 36-inch's light on a ship falls as the square of the range and faster in haze, and off its
     /// axis by its profile; its reach shortens with the haze through the 2-4 km of the record's useful range.</summary>
@@ -77,7 +77,7 @@ public class SearchlightFightTests(ITestOutputHelper output)
         int d = w.Ships.AddClass(Fleet.Get("destroyer").Class!);
         w.Apply(Command.SetWeather(20_000));
         w.Apply(ShipSystem.Spawn(c, 56, 4, 0, 0, 1));
-        w.Apply(ShipSystem.Spawn(d, 56, 4.027, 180, 0, 2));   // 1.7 km east of her, abeam to starboard
+        w.Apply(ShipSystem.Spawn(d, 56, 4.012, 180, 0, 2));   // 0.75 km east of her, abeam to starboard (inside a moonless night's sight)
         (lion, destroyer) = (1, 2);
         return w;
     }
@@ -104,7 +104,7 @@ public class SearchlightFightTests(ITestOutputHelper output)
         double veil = w.Lights.VeilCdM2(ds, store[ds].Position, store[ls].Position + store[ls].Forward * 200, 20_000, S);
         output.WriteLine($"on her {lux:F1} lux from {from:F0}°; Lion's lamps toward her {lamp:0.0e0} cd (beams {column:0.0e0} cd from beside) {h:F1} m up; " +
                          $"glare 200 m off them {veil:F2} cd/m²");
-        Assert.InRange(lux, 5, 100);
+        Assert.InRange(lux, 50, 500);   // 0.75 km off (5-100 at 1.7 km before docs/battle/night.md Q1b)
         Assert.InRange(Math.Abs(from - 270 - 360 * Math.Round((from - 270) / 360)), 0, 5);   // from the west, where Lion is
         Assert.True(lamp > 1e7, "her eyes look into the beam");
         Assert.True(veil > 100 * Moonless, "glared round the lamp");
