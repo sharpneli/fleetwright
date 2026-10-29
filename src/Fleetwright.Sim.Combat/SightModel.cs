@@ -153,11 +153,21 @@ public static class SightModel
     /// dark together, m, to 10 m (the captains' and the shadowers' "how far I can see"): the visibility itself by day.</summary>
     public static double SeenToM(double visibilityM, double skyCdM2, SimSettings s)
     {
-        var dark = DarkOf(skyCdM2 * LookoutGlass(PupilMm(skyCdM2), s), s);
-        if (!dark.Any && double.IsFinite(visibilityM))
+        if (!DarkOf(skyCdM2 * LookoutGlass(PupilMm(skyCdM2), s), s).Any && double.IsFinite(visibilityM))
             return visibilityM;
-        double m = s.SightLookoutMagnification, sigma = Extinction(visibilityM, s), c0 = InherentContrast(skyCdM2, 0, s);
-        double Over(double d) => c0 * Math.Exp(-sigma * d) / Threshold(s.SightReferenceAreaM2 * m * m / (d * d), dark, s);
+        return MadeOutM(s.SightReferenceAreaM2, InherentContrast(skyCdM2, 0, s), visibilityM, skyCdM2, s);
+    }
+
+    /// <summary>How far a lookout's binoculars make out a shape showing an area (m², side on) at a contrast through the haze
+    /// and the dark, m, to 10 m (the reference ship's for <see cref="SeenToM"/>; a class's hull or bow wave for the matchup
+    /// at night, docs/battle/night.md Q7); 0 if not even at a metre.</summary>
+    public static double MadeOutM(double areaM2, double contrast, double visibilityM, double skyCdM2, SimSettings s)
+    {
+        if (areaM2 <= 0 || contrast <= 0)
+            return 0;
+        var dark = DarkOf(skyCdM2 * LookoutGlass(PupilMm(skyCdM2), s), s);
+        double m = s.SightLookoutMagnification, sigma = Extinction(visibilityM, s);
+        double Over(double d) => contrast * Math.Exp(-sigma * d) / Threshold(areaM2 * m * m / (d * d), dark, s);
         double lo = 1, hi = 1e7;
         if (Over(lo) < 1)
             return 0;

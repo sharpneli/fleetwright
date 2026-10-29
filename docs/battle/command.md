@@ -992,7 +992,7 @@ odds, not a forecast of the battle.
   threat test still reads it; `DesignerPlaceholders.HeavyGunMm` (the shell mix), which isn't the commander's.
 
 **Piece 1 done 2026-10-15: a class's profile and the matchup** (`Sim.Combat/Matchup.cs`; the bench `shipgen matchup
-A[:n][:t0][,...] B[:n][,...] [--range M] [--share 0.6] [--sight M]`; `MatchupTests`). Fitted to the fine model's own
+A[:n][:t0][,...] B[:n][,...] [--range M] [--share 0.6] [--sky CD_M2] [--vis M]`; `MatchupTests`). Fitted to the fine model's own
 benches first, so it judges the game's physics, not history's:
 
 - **The measurements.** `shipgen hits` and `shipgen torpedo` print "out of the fight" now (lost, or past the default

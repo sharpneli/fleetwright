@@ -195,9 +195,9 @@ public sealed class MatchupJudge(GroupSystem groups, SeenContacts seen, Doctrine
     {
         Matchups.Warm(ctx.World);
         double share = entity != 0 ? doctrine.Of(entity, side, DoctrineField.RangeShare) : doctrine.OfGroup(null, side, DoctrineField.RangeShare);
-        double sight = SightModel.LightReachM(NightLight.At(at, ctx.World.Time, ctx.World.Weather.At(at, ctx.World.Time).Cloud, ctx.Settings).SkyCdM2,
-            ctx.Settings);
-        return Matchup.Judge(a.Entries, b.Entries, share, share, ctx.Settings, sight);
+        var weather = ctx.World.Weather.At(at, ctx.World.Time);
+        var light = new MatchupLight(weather.VisibilityM, NightLight.At(at, ctx.World.Time, weather.Cloud, ctx.Settings).SkyCdM2);
+        return Matchup.Judge(a.Entries, b.Entries, share, share, ctx.Settings, light);
     }
 
     /// <summary>The bar a unit fights down to (1 / doctrine's outgunned ratio), and the one it seeks a fight at (its seek

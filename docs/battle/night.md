@@ -735,6 +735,60 @@ heading north, attacked from her starboard bow; the twilight's glow in the SE, f
 **The bench** is Q7a's to the noise: in these cases flotillas seldom attack together by night, as the matchup rarely
 sends them in on a line (Q7c's).
 
+**Q7c done (2026-10-29).** The matchup at night, and the commander's flotillas waiting for it:
+
+- **Each class made out at its own range** (`MatchupLight`, in place of the one sight distance: the visibility and the
+  night sky's luminance; `SightModel.MadeOutM`, the one made-out range `SeenToM` now calls for the reference ship). In the
+  dark a class is made out at the better of her hull (her side-on silhouette, `MatchupProfile.SideAreaM2`, at the night's
+  contrast) and her bow wave at her best speed (Q1's white water, at the foam's contrast); by day as far as the guns
+  reach, as before. A gun fires only on a class within that range: the defence opens on a run-in where the first attacker
+  is made out (a destroyer far closer than a battleship), and every phase's fire stops past it. The lines fight no further
+  off than **both** make the other out: a line firing shows itself by its flashes, and the sim can't lay a gun on a flash
+  yet, so a gunfight from the edge of the other's sight isn't judged to go unanswered.
+- **A line's torpedoes at will go by the captains' rule**: the fast setting within `TorpedoFireShare` of its range
+  (`CaptainLayer.FastSetting`). The matchup had let a line fire its slow setting at will, which no captain does; at night,
+  with the lines closer, that made standing off and firing long torpedoes look better than any attack. The day's
+  matchup tests are unchanged by it.
+- **Keeping touch for the night** (`CommanderLayer.Retire`, `CommanderWhy.AwaitNight`): a side declining battle whose
+  doctrine attacks by night keeps any unit that would attack the enemy (its guide an attacker against his target as his
+  navy holds him, whatever its role) shadowing him instead of going home, while the night falls within
+  `CommanderNightWaitS` 90 min [EST]; such a flotilla is free to be sent in once it's dark and worth it, and a unit in
+  touch fights as its captains judge. Tsushima's destroyers did exactly this.
+- `shipgen matchup A B --sky CD_M2 [--vis M]` judges in a night sky and prints each class's made-out range.
+- **The numbers it gives** (`shipgen matchup`, four destroyers against one dreadnought, 30 km visibility): confidence 1.05
+  by day; 0.88 in Jutland's midnight twilight (5·10⁻³ cd/m²: the boats made out at 9.7 km, the defence opening closer and
+  hitting better than by day); 1.01 at 10⁻³; 21 on a moonless night (3·10⁻⁴: made out at 2.1 km, the dreadnought at
+  3.1 km). Four V25s against sixteen Iron Dukes: 0.004 in twilight, 21 on a black overcast night.
+- **Tests restated:** `CommanderTests`' two night tests ran in Jutland's June midnight, which by Q1's light is a twilight
+  in which a destroyer is made out at 10 km and the attack isn't worth it; they now run on the Dover Strait's moonless
+  April night, the avoid test's battleship 4 km off (2 km from the flotilla), and the declining flotilla shadows at
+  dusk (it went home before) and is sent in as the sun passes −6°. `MatchupTests`' night case reads a moonless sky.
+
+**The bench after Q7c** (20 seeds; Q7a-b's in brackets):
+
+| Case | First salvo, salvos' median | Shells / hits | Torpedoes, hits | Lost |
+|---|---|---|---|---|
+| Tsushima | RU 4.3 km in 14 of 20 (never), JP 6.6 km in 14 | RU 1,323 / 267, JP 1,341 / 192 (none) | JP 2.5 from 1.0 km, 0.8 (none) | RU 0.1 of 3 (0), JP 1.9 of 8 (0) |
+| Southampton | GB 4.1, DE 5.1 km; 4.2 and 3.4 km | GB 121 / 30 (73 / 22), DE 2,945 / 781 (2,602 / 782) | GB 4.2, 0.1; DE 7.7, 0.7 | GB 1.2 of 4 (1.1), DE 0.2 (0.2) |
+| 4th Flotilla | GB 2.9, DE 4.1 km; 3.1 km both | GB 433 / 148 (80 / 18), DE 1,311 / 294 (519 / 67) | GB 16.1, 2.5 (3.5, 0.4); DE 16.8, 1.2 | GB 6.5 of 10 (2.0), DE 0.7 of 6 (0.1) |
+| Black Prince | GB 2.1, DE 2.8 km in 18 of 20 (8); 1.1 and 1.7 km | GB 73 / 58 (58 / 45), DE 330 / 150 (154 / 47) | DE 10.2, 2.1 (2.4, 0.6) | GB 0.9 of 1 (0.2) |
+| Dover Strait | 0.4 and 0.3 km; 1.4 and 3.3 km | GB 120 / 59 (110 / 65), DE 158 / 40 (118 / 33) | GB 1.7, 0.6; DE 7.7, 1.4 | GB 0.8 of 2 (0.7), DE 1.1 of 6 (1.8) |
+
+**What it says:**
+- **The flotillas go in by night.** The 4th Flotilla attacks the German line in every run (16 torpedoes, 2.5 hits; the
+  record's one, Rostock) and loses 6.5 boats of 10 (the record's four, Sparrowhawk to a collision); the Germans lose 0.7
+  ships of 6 (the record's one, Rostock, torpedoed).
+- **Tsushima's boats attack at last**, in 14 runs of 20: they keep touch at dusk and close after dark, firing 2.5 torpedoes
+  a run from 1 km for 0.8 hits, and lose 1.9 of 8 (the record's three); the Russians lose 0.1 of 3 (the record's Navarin,
+  three more torpedoed, lost next morning). The guns do most of it on both sides (1,300 shells each).
+- **Black Prince is lost again** (0.9 of 1, as in the record), the German line torpedoing her (2.1 hits) and hitting her
+  150 times at 1.7 km; she hits back 58 times (the record: none).
+- **Open for the user (roles):** Tsushima's Japanese destroyer divisions are scouts by role, not a flotilla
+  (`Roles.Count`: a boat is an attacker against her own side's heaviest class at sea, which for a side of destroyers alone
+  is a destroyer). So the commander never sends them in as a flotilla; here they attack as units in touch, their
+  captains judging it. Measuring against the heaviest at sea of any side would make them a flotilla; it's the user's
+  approved rule (admirals-orders.md, 2026-10-24), so it's asked, not changed.
+
 ### Q8 The crew at night
 
 - Searchlight crews in the crew book (Q3). The searchlight term for green crews (`crew.md` N3's unbuilt row, CUF R3).

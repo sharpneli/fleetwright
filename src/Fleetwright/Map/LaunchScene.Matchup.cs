@@ -19,7 +19,8 @@ public sealed unsafe partial class LaunchScene
     MatchupEntry[] foeEntries = [];
     readonly MatchupEntry[] own = new MatchupEntry[1];
     readonly Dictionary<int, (double Value, string Text)> judged = [];
-    double shareOwn, shareFoe, sightM;
+    double shareOwn, shareFoe;
+    MatchupLight light;
     string matchupLine = "", matchupLabel = "";
 
     void ResetMatchup()
@@ -75,7 +76,7 @@ public sealed unsafe partial class LaunchScene
         shareOwn = ScenarioLoader.SideDoctrine(s, row.Side, DoctrineField.RangeShare);
         shareFoe = ScenarioLoader.SideDoctrine(s, best.Side, DoctrineField.RangeShare);
         var (lat, lon) = Centre(s);
-        sightM = SightModel.LightReachM(NightLight.At(Earth.Position(lat, lon), s.Start, WeatherOf(s).Cloud, world.Settings).SkyCdM2, world.Settings);
+        light = new MatchupLight(WeatherOf(s).VisibilityM, NightLight.At(Earth.Position(lat, lon), s.Start, WeatherOf(s).Cloud, world.Settings).SkyCdM2);
         string ships = string.Join(", ", best.Ships.Select(sh => $"{sh.Count} {TitleOf(sh.Design)}"));
         matchupLine = $"Matchup: {unitCount} of her v {best.Name} ({ships}); 1 = even";
         matchupLabel = $"Matchup v {best.Name}";
@@ -92,7 +93,7 @@ public sealed unsafe partial class LaunchScene
         if (FiguresOf(id) is not { } f)
             return null;
         own[0] = new MatchupEntry(f.Profile, Math.Max(unitCount, 1));
-        double v = Matchup.Judge(own, foeEntries, shareOwn, shareFoe, world.Settings, sightM).Confidence;
+        double v = Matchup.Judge(own, foeEntries, shareOwn, shareFoe, world.Settings, light).Confidence;
         judged[id] = j = (v, v.ToString(v < 10 ? "0.00" : v < 100 ? "0.0" : "0", CultureInfo.InvariantCulture));
         return j;
     }

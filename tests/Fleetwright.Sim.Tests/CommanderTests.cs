@@ -375,13 +375,15 @@ public class CommanderTests(ITestOutputHelper output)
     [InlineData(NightAction.Accept)]
     public void By_night_heavy_ships_avoid_action_and_the_flotillas_go_in(NightAction night)
     {
-        var w = new World(WorldTime.FromUtc(1916, 5, 31, 23), 3, Settings);
+        // a dark night (the Dover Strait's, moonless, the sun 22° down): Jutland's June midnight is a twilight in which a
+        // destroyer is made out at 10 km, too light for the flotilla's attack to be worth it (docs/battle/night.md Q7)
+        var w = new World(WorldTime.FromUtc(1917, 4, 21, 0), 3, Settings);
         var ai = new AiSystem(w);
         w.Apply(Command.SetWeather(30_000));
         int bb = Class(w, "dreadnought"), dd = Class(w, "destroyer");
         var mine = Column(w, ai, bb, Earth.Position(Lat, Lon), 180, 3, side: 1);
         var flotilla = Column(w, ai, dd, Off(90, 2_000), 180, 4, side: 1);
-        Column(w, ai, bb, Off(90, 7_000), 180, 1, side: 0);   // a battleship the flotilla's attack is worth making on
+        Column(w, ai, bb, Off(90, 4_000), 180, 1, side: 0);   // a battleship the flotilla's attack is worth making on, 2 km off it
         w.Apply(ai.Orders.FireAtWill(flotilla));
         var (hla, hlo) = LatLon(Off(270, 150_000));
         w.Apply(ai.Orders.Home(1, hla, hlo));
@@ -407,14 +409,16 @@ public class CommanderTests(ITestOutputHelper output)
     }
 
     /// <summary>Declining by day doesn't keep his flotillas in by night (the user, 2026-10-20, after the decline was made
-    /// to hold): two battlecruisers and a flotilla decline seventeen dreadnoughts at dusk and go home; once it's dark the
-    /// flotilla, going home with them, is sent in (on the one apart from the others: against the sixteen the matchup has
-    /// no attack worth making, by night as by day), and the battlecruisers go on home. Only a flotilla still in reach when
-    /// it gets dark: one long gone home isn't sent back to look for him.</summary>
+    /// to hold): two battlecruisers and a flotilla decline seventeen dreadnoughts at dusk; the battlecruisers go home, the
+    /// flotilla keeps touch with the enemy for the night (docs/battle/night.md Q7: it shadows him instead of going home
+    /// while the night falls within the hour and a half); once it's dark it's sent in (on the one apart from the others:
+    /// against the sixteen the matchup has no attack worth making, by night as by day), and the battlecruisers go on
+    /// home. On a dark spring night (the Dover Strait's, moonless): Jutland's June night is a twilight too light for the
+    /// attack.</summary>
     [Fact]
     public void Declining_he_still_sends_his_flotillas_in_by_night()
     {
-        var w = new World(WorldTime.FromUtc(1916, 5, 31, 21, 8), 3, Settings);   // a few minutes before it's dark (the sun at -6°)
+        var w = new World(WorldTime.FromUtc(1917, 4, 20, 19, 32), 3, Settings);   // a few minutes before it's dark (the sun at -6°)
         var ai = new AiSystem(w);
         w.Apply(Command.SetWeather(30_000));
         int bb = Class(w, "dreadnought"), bc = Class(w, "lion"), dd = Class(w, "destroyer");
@@ -440,7 +444,7 @@ public class CommanderTests(ITestOutputHelper output)
         }
         output.WriteLine($"at dusk {dusk}; then the flotilla given {sent} at {w.Time} (the sun {sun:F1}°), the battlecruisers {ai.Commanders.GivenOf(mine)}");
         Assert.Equal((CommanderPhase.Retiring, CommanderReason.Outmatched), dusk.Item1);
-        Assert.Equal((TaskKind.Withdraw, CommanderWhy.Outmatched), (dusk.Given, dusk.Why));
+        Assert.Equal((TaskKind.Shadow, CommanderWhy.AwaitNight), (dusk.Given, dusk.Why));
         Assert.Equal((TaskKind.Attack, CommanderWhy.Night), sent);
         Assert.True(sun < Settings.NightSunElevationDeg);
         Assert.Equal((CommanderPhase.Retiring, CommanderReason.Outmatched), ai.Commanders.PhaseOf(1));

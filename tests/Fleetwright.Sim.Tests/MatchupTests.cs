@@ -37,9 +37,12 @@ public class MatchupTests(ITestOutputHelper output)
     static MatchupEntry E(string name, int n = 1, bool torpedoes = true, double mainRounds = 1) =>
         new(profiles.Value[name], n, MainRounds: mainRounds, TorpedoesLeft: torpedoes ? 1 : 0);
 
-    double Judge(MatchupEntry[] a, MatchupEntry[] b, double sightM = double.PositiveInfinity)
+    /// <summary>The Dover Strait's moonless night, clear (docs/battle/night.md Q7).</summary>
+    static readonly MatchupLight Moonless = new(20_000, NightLight.ClearSkyCdM2(-30));
+
+    double Judge(MatchupEntry[] a, MatchupEntry[] b, MatchupLight? light = null)
     {
-        var r = Matchup.Judge(a, b, Share, Share, Settings, sightM);
+        var r = Matchup.Judge(a, b, Share, Share, Settings, light);
         output.WriteLine($"{string.Join(",", a.Select(x => $"{x.Profile.Class.Name}x{x.Count}"))} against {string.Join(",", b.Select(x => $"{x.Profile.Class.Name}x{x.Count}"))}: " +
                          $"{r.Confidence:0.###} ({r.Terms.Style}, lines at {r.Terms.RangeM:0} m)");
         return r.Confidence;
@@ -78,8 +81,8 @@ public class MatchupTests(ITestOutputHelper output)
         // a dozen since her guns load HE at them (docs/battle/shell-choice.md A4, 2026-10-25: eight 1.33 -> 0.80, twelve
         // 1.40; restated, awaiting the user)
         Assert.True(Judge([E("v25", 12)], [E("iron_duke")]) > 1);
-        // by night the battleship's guns open only within sight: the lone boat does better
-        Assert.True(Judge([E("v25")], [E("iron_duke")], sightM: 2000) > Judge([E("v25")], [E("iron_duke")]));
+        // by night the battleship's guns open only on what she makes out: the lone boat does better
+        Assert.True(Judge([E("v25")], [E("iron_duke")], Moonless) > Judge([E("v25")], [E("iron_duke")]));
     }
 
     [Fact]

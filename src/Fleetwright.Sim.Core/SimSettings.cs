@@ -977,6 +977,10 @@ public sealed record SimSettings
     /// his main body, degrees (civil twilight's end).</summary>
     public double NightSunElevationDeg { get; init; } = -6;
 
+    /// <summary>A side declining battle by day keeps its flotillas in touch with the enemy, for their night attack, while
+    /// the night falls within this many seconds (docs/battle/night.md Q7) [EST].</summary>
+    public double CommanderNightWaitS { get; init; } = 5400;
+
     /// <summary>What doctrine's Aggression (-1 timid to +1 bold) does: each listed field is read as its value x (1 + shift
     /// x aggression). Bold: worse odds taken (OutgunnedRatio up) and sought (SeekRatio down), losses borne longer
     /// (BreakOffShare, AttackBreakOffShare up), nearer (RangeShare down), in the line longer (the fall-out thresholds), a

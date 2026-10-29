@@ -35,6 +35,10 @@ public sealed class MatchupProfile
     public double UpperShare { get; }
     public double DeckMeanMm { get; }
 
+    /// <summary>What it shows side on above the water, m² (its silhouette's: how far it's made out in the dark,
+    /// <see cref="MatchupLight"/>).</summary>
+    public double SideAreaM2 { get; }
+
     public MatchupGun[] Guns { get; }
 
     static int made;
@@ -69,6 +73,7 @@ public sealed class MatchupProfile
         (SidePlatingMm, DeckPlatingMm) = (c.Plating.ShellMm, c.Plating.StrengthDeckMm);
         var area = c.Numbers(c.Silhouette.SideAreaM2);
         double whole = Sight.AreaAbove(area, 0);
+        SideAreaM2 = whole;
         UpperShare = whole > 0 ? Math.Clamp(Sight.AreaAbove(area, c.Vertical.Freeboard) / whole, 0, 1) : 0;
         foreach (var f in Deck)
             DeckMeanMm += f.Share * f.Mm;
@@ -408,6 +413,31 @@ public readonly record struct MatchupEntry(MatchupProfile Profile, double Count,
     public double RoundsShare(MatchupGun g) => g.Chief ? MainRounds : OtherRounds;
 }
 
+/// <summary>The light a matchup is judged in (docs/battle/night.md Q7): the visibility and the horizon sky's luminance.
+/// By day (where the dark adds nothing to the eye) every ship is seen as far as the guns reach; in the dark a gun fires
+/// only on a class within the range a lookout makes it out at (<see cref="SeenM"/>), so a small, fast boat comes far
+/// closer unseen than a battleship.</summary>
+public readonly record struct MatchupLight(double VisibilityM, double SkyCdM2)
+{
+    /// <summary>Daylight: nothing unseen within the guns' reach.</summary>
+    public static MatchupLight Day { get; } = new(double.PositiveInfinity, 1e4);
+
+    /// <summary>Whether the dark adds to the eye's threshold (<see cref="SightModel.DarkOf(double, SimSettings)"/>).</summary>
+    public bool Dark(SimSettings s) => SightModel.DarkOf(SkyCdM2 * SightModel.LookoutGlass(SightModel.PupilMm(SkyCdM2), s), s).Any;
+
+    /// <summary>How far ships of an entry are made out, m: unlimited by day; in the dark the better of her hull (side on, at
+    /// the night's own contrast) and her bow wave at her best speed now (<see cref="SightModel.BowWaveMargin"/>'s white water
+    /// side on, at the foam's contrast).</summary>
+    public double SeenM(in MatchupEntry e, SimSettings s)
+    {
+        if (!Dark(s))
+            return double.PositiveInfinity;
+        double hull = SightModel.MadeOutM(e.Profile.SideAreaM2, SightModel.InherentContrast(SkyCdM2, 0, s), VisibilityM, SkyCdM2, s);
+        double v = e.SpeedKn * Handling.MsPerKnot, bow = s.SightBowWaveHeight * v * v / (2 * 9.81) * s.SightBowWaveLength * e.Profile.LengthM;
+        return Math.Max(hull, SightModel.MadeOutM(bow, s.SightFoamContrast, VisibilityM, SkyCdM2, s));
+    }
+}
+
 /// <summary>How the engagement judged is fought: the lines' gunfight, and each side's torpedo attack, if it makes one
 /// (its ships built for it run in on the other's line while the lines fight).</summary>
 [Flags]
@@ -453,21 +483,30 @@ public static class Matchup
 
     /// <summary>A's judgement of B. Each side's gun range is its doctrine's share of its main guns' reach: the lines fight
     /// at the faster side's (by the margin) best of the two, else at A's. A side's attackers (<see cref="Attackers"/>)
-    /// attack if that's better for it than not (each judged against the other not attacking). The defence's guns open on an
-    /// attack from their reach, or from <paramref name="sightM"/> if that's less (by night), and the lines fight no further
-    /// off than that.</summary>
+    /// attack if that's better for it than not (each judged against the other not attacking). In the dark (<paramref name="light"/>;
+    /// daylight if none) a gun fires only on a class within the range it's made out at (<see cref="MatchupLight.SeenM"/>):
+    /// the defence opens on an attack from there if that's less than its reach, and the lines fight no further off than
+    /// both make the other out (a line firing shows itself by its flashes: the sim can't lay a gun on a flash yet, so a
+    /// gunfight from the edge of the other's sight isn't judged to go unanswered).</summary>
     public static MatchupResult Judge(ReadOnlySpan<MatchupEntry> a, ReadOnlySpan<MatchupEntry> b, double rangeShareA, double rangeShareB, SimSettings s,
-        double sightM = double.PositiveInfinity)
+        MatchupLight? light = null)
     {
+        if (a.Length > MaxClasses || b.Length > MaxClasses)
+            throw new ArgumentException($"a matchup takes at most {MaxClasses} classes a side");
+        Span<double> seenA = stackalloc double[a.Length], seenB = stackalloc double[b.Length];
+        Seen(a, light, s, seenA);
+        Seen(b, light, s, seenB);
         double speedA = Slowest(a), speedB = Slowest(b);
         bool aPicks = speedA > speedB + s.MatchupSpeedMarginKn, bPicks = speedB > speedA + s.MatchupSpeedMarginKn;
-        double gunA = Math.Min(rangeShareA * Reach(a), sightM), gunB = Math.Min(rangeShareB * Reach(b), sightM);
+        // in the dark the lines fight where both make the other out: a line firing shows itself by its flashes
+        double mutual = Math.Min(Farthest(a, seenA), Farthest(b, seenB));
+        double gunA = Math.Min(rangeShareA * Reach(a), mutual), gunB = Math.Min(rangeShareB * Reach(b), mutual);
         double line = gunA > 0 ? gunA : gunB;
-        ulong byA = Attackers(a, b, s, sightM), byB = Attackers(b, a, s, sightM);   // once: they don't hang on the range
-        var plain = Engage(a, b, line, MatchupStyle.Gunfight, byA, byB, s, sightM);
+        ulong byA = Attackers(a, b, s, seenA, seenB), byB = Attackers(b, a, s, seenB, seenA);   // once: they don't hang on the range
+        var plain = Engage(a, b, line, MatchupStyle.Gunfight, byA, byB, s, seenA, seenB);
         if ((aPicks || bPicks) && gunB > 0 && gunB != line)
         {
-            var other = Engage(a, b, gunB, MatchupStyle.Gunfight, byA, byB, s, sightM);
+            var other = Engage(a, b, gunB, MatchupStyle.Gunfight, byA, byB, s, seenA, seenB);
             double c0 = plain.Confidence(s.MatchupFloor), c1 = other.Confidence(s.MatchupFloor);
             if (aPicks ? c1 > c0 : c1 < c0)
                 (line, plain) = (gunB, other);
@@ -475,18 +514,36 @@ public static class Matchup
         double c = plain.Confidence(s.MatchupFloor);
         var style = MatchupStyle.Gunfight;
         MatchupTerms withA = default, withB = default;   // each style weighed, kept for the one chosen
-        if (byA != 0 && (withA = Engage(a, b, line, MatchupStyle.AttackByA, byA, byB, s, sightM)).Confidence(s.MatchupFloor) > c)
+        if (byA != 0 && (withA = Engage(a, b, line, MatchupStyle.AttackByA, byA, byB, s, seenA, seenB)).Confidence(s.MatchupFloor) > c)
             style |= MatchupStyle.AttackByA;
-        if (byB != 0 && (withB = Engage(a, b, line, MatchupStyle.AttackByB, byA, byB, s, sightM)).Confidence(s.MatchupFloor) < c)
+        if (byB != 0 && (withB = Engage(a, b, line, MatchupStyle.AttackByB, byA, byB, s, seenA, seenB)).Confidence(s.MatchupFloor) < c)
             style |= MatchupStyle.AttackByB;
         var t = style switch
         {
             MatchupStyle.Gunfight => plain,
             MatchupStyle.AttackByA => withA,
             MatchupStyle.AttackByB => withB,
-            _ => Engage(a, b, line, style, byA, byB, s, sightM),
+            _ => Engage(a, b, line, style, byA, byB, s, seenA, seenB),
         };
         return new MatchupResult(t.Confidence(s.MatchupFloor), speedA, speedB, t with { AttackersA = byA, AttackersB = byB });
+    }
+
+    /// <summary>How far each entry of a side is made out in the light (unlimited by day or with none).</summary>
+    static void Seen(ReadOnlySpan<MatchupEntry> side, MatchupLight? light, SimSettings s, Span<double> seen)
+    {
+        bool dark = light is { } l && l.Dark(s);
+        for (int i = 0; i < side.Length; i++)
+            seen[i] = dark ? light!.Value.SeenM(side[i], s) : double.PositiveInfinity;
+    }
+
+    /// <summary>The farthest a side's ships are made out (the first seen of them).</summary>
+    static double Farthest(ReadOnlySpan<MatchupEntry> side, ReadOnlySpan<double> seen)
+    {
+        double r = 0;
+        for (int i = 0; i < side.Length; i++)
+            if (side[i].Count > 0)
+                r = Math.Max(r, seen[i]);
+        return r;
     }
 
     /// <summary>A side's attackers against the other (docs/battle/admirals-orders.md O7c), by bit of its entries: those
@@ -496,16 +553,23 @@ public static class Matchup
     /// where they beat what the guns do closing in. No ship is torpedo craft by its design: a destroyer with one 8" gun
     /// attacks a battleship and fights a destroyer, and a battleship's submerged tubes never send her in. Whether an
     /// attack is worth its losses on the way in is the judgement's, not this.</summary>
-    public static ulong Attackers(ReadOnlySpan<MatchupEntry> a, ReadOnlySpan<MatchupEntry> b, SimSettings s,
-        double sightM = double.PositiveInfinity)
+    public static ulong Attackers(ReadOnlySpan<MatchupEntry> a, ReadOnlySpan<MatchupEntry> b, SimSettings s, MatchupLight? light = null)
     {
         if (a.Length > MaxClasses || b.Length > MaxClasses)
             throw new ArgumentException($"a matchup takes at most {MaxClasses} classes a side");
+        Span<double> seenA = stackalloc double[a.Length], seenB = stackalloc double[b.Length];
+        Seen(a, light, s, seenA);
+        Seen(b, light, s, seenB);
+        return Attackers(a, b, s, seenA, seenB);
+    }
+
+    static ulong Attackers(ReadOnlySpan<MatchupEntry> a, ReadOnlySpan<MatchupEntry> b, SimSettings s, ReadOnlySpan<double> seenA, ReadOnlySpan<double> seenB)
+    {
         Span<bool> sel = stackalloc bool[a.Length];
         Span<double> none = stackalloc double[a.Length], outB = stackalloc double[b.Length];
         none.Clear();
         ulong mask = 0;
-        double openM = Math.Min(MaxReach(b), sightM);
+        double reachB = MaxReach(b);
         for (int i = 0; i < a.Length; i++)
         {
             ref readonly var e = ref a[i];
@@ -514,13 +578,13 @@ public static class Matchup
                 continue;
             sel.Clear();
             sel[i] = true;
-            var (inMin, midM) = RunIn(openM, e.SpeedKn, fireM);
+            var (inMin, midM) = RunIn(Math.Min(reachB, seenA[i]), e.SpeedKn, fireM);
             outB.Clear();
             Torpedoes(a, sel, b, fireM, s, outB, none, 1);
             double torpedoes = Lost(b, outB);
             outB.Clear();
-            Guns(a, sel, default, b, default, default, midM, midM, midM, 2 * inMin, s, outB);
-            Guns(a, sel, default, b, default, default, fireM, fireM, fireM, s.MatchupTorpedoFireMin, s, outB);
+            Guns(a, sel, default, b, default, default, midM, midM, midM, 2 * inMin, seenB, s, outB);
+            Guns(a, sel, default, b, default, default, fireM, fireM, fireM, s.MatchupTorpedoFireMin, seenB, s, outB);
             if (torpedoes > Lost(b, outB))
                 mask |= 1UL << i;
         }
@@ -534,14 +598,19 @@ public static class Matchup
     /// guns choosing between them and the line by what they do. Every gun fires at what it does most to, at the range
     /// between them (the lines' range, or the attack's).</summary>
     public static MatchupTerms Engage(ReadOnlySpan<MatchupEntry> a, ReadOnlySpan<MatchupEntry> b, double rangeM, MatchupStyle style, SimSettings s,
-        double sightM = double.PositiveInfinity) =>
-        Engage(a, b, rangeM, style, Attackers(a, b, s, sightM), Attackers(b, a, s, sightM), s, sightM);
-
-    static MatchupTerms Engage(ReadOnlySpan<MatchupEntry> a, ReadOnlySpan<MatchupEntry> b, double rangeM, MatchupStyle style, ulong byA, ulong byB,
-        SimSettings s, double sightM)
+        MatchupLight? light = null)
     {
         if (a.Length > MaxClasses || b.Length > MaxClasses)
             throw new ArgumentException($"a matchup takes at most {MaxClasses} classes a side");
+        Span<double> seenA = stackalloc double[a.Length], seenB = stackalloc double[b.Length];
+        Seen(a, light, s, seenA);
+        Seen(b, light, s, seenB);
+        return Engage(a, b, rangeM, style, Attackers(a, b, s, seenA, seenB), Attackers(b, a, s, seenB, seenA), s, seenA, seenB);
+    }
+
+    static MatchupTerms Engage(ReadOnlySpan<MatchupEntry> a, ReadOnlySpan<MatchupEntry> b, double rangeM, MatchupStyle style, ulong byA, ulong byB,
+        SimSettings s, ReadOnlySpan<double> seenA, ReadOnlySpan<double> seenB)
+    {
         Span<double> outA = stackalloc double[a.Length], outB = stackalloc double[b.Length];
         Span<double> preA = stackalloc double[a.Length], preB = stackalloc double[b.Length];
         Span<bool> inA = stackalloc bool[a.Length], inB = stackalloc bool[b.Length];
@@ -555,14 +624,14 @@ public static class Matchup
         // the attacks: in, the salvo, fired, and out; the lines fighting on beside them
         double inMinA = 0, inMinB = 0, midA = rangeM, midB = rangeM;
         if (attackA > 0)
-            (inMinA, midA) = RunIn(a, inA, b, attackA, sightM);
+            (inMinA, midA) = RunIn(a, inA, b, attackA, seenA);
         if (attackB > 0)
-            (inMinB, midB) = RunIn(b, inB, a, attackB, sightM);
+            (inMinB, midB) = RunIn(b, inB, a, attackB, seenB);
         double inMin = Math.Max(inMinA, inMinB), fireMin = attackA > 0 || attackB > 0 ? s.MatchupTorpedoFireMin : 0, runIn = 0;
         double torpOnA = 0, torpOnB = 0;
         if (attackA > 0 || attackB > 0)
         {
-            Phase(a, inA, b, inB, rangeM, midA, midB, inMin, s, outA, outB, s.MatchupRunInHitShare);
+            Phase(a, inA, b, inB, rangeM, midA, midB, inMin, seenA, seenB, s, outA, outB, s.MatchupRunInHitShare);
             runIn = Sum(outA, inA) + Sum(outB, inB);
             // the salvos are fired at once: each side's boats still in it as they were before either
             outA.CopyTo(preA);
@@ -571,8 +640,8 @@ public static class Matchup
                 torpOnB += Torpedoes(a, inA, b, attackA, s, outB, preA, 1);
             if (attackB > 0)
                 torpOnA += Torpedoes(b, inB, a, attackB, s, outA, preB, 1);
-            Phase(a, inA, b, inB, rangeM, attackA > 0 ? attackA : rangeM, attackB > 0 ? attackB : rangeM, fireMin, s, outA, outB);
-            Phase(a, inA, b, inB, rangeM, midA, midB, inMin, s, outA, outB, s.MatchupRunInHitShare);
+            Phase(a, inA, b, inB, rangeM, attackA > 0 ? attackA : rangeM, attackB > 0 ? attackB : rangeM, fireMin, seenA, seenB, s, outA, outB);
+            Phase(a, inA, b, inB, rangeM, midA, midB, inMin, seenA, seenB, s, outA, outB, s.MatchupRunInHitShare);
         }
         // the attackers are out of it: the lines alone for the rest of the fight
         double attackMin = 2 * inMin + fireMin, rest = Math.Max(s.MatchupFightMin - attackMin, 0);
@@ -581,8 +650,8 @@ public static class Matchup
             lineA[i] = !inA[i];
         for (int i = 0; i < b.Length; i++)
             lineB[i] = !inB[i];
-        Guns(a, lineA, default, b, lineB, default, rangeM, rangeM, rangeM, rest, s, outB);
-        Guns(b, lineB, default, a, lineA, default, rangeM, rangeM, rangeM, rest, s, outA);
+        Guns(a, lineA, default, b, lineB, default, rangeM, rangeM, rangeM, rest, seenB, s, outB);
+        Guns(b, lineB, default, a, lineA, default, rangeM, rangeM, rangeM, rest, seenA, s, outA);
         outA.CopyTo(preA);
         outB.CopyTo(preB);
         torpOnB += Torpedoes(a, lineA, b, rangeM, s, outB, preA, s.TorpedoFireShare);
@@ -607,16 +676,16 @@ public static class Matchup
         return r;
     }
 
-    /// <summary>An attack's run in: minutes from where the defence's guns open to the firing range at the attackers'
-    /// speed, and the mean range on the way.</summary>
+    /// <summary>An attack's run in: minutes from where the defence's guns open (their reach, or where the first of the
+    /// attackers is made out if that's less) to the firing range at the attackers' speed, and the mean range on the way.</summary>
     static (double Minutes, double MidM) RunIn(ReadOnlySpan<MatchupEntry> att, ReadOnlySpan<bool> inAtt, ReadOnlySpan<MatchupEntry> def, double fireM,
-        double sightM)
+        ReadOnlySpan<double> seenAtt)
     {
-        double kn = double.MaxValue;
+        double kn = double.MaxValue, seen = 0;
         for (int i = 0; i < att.Length; i++)
             if (inAtt[i])
-                kn = Math.Min(kn, att[i].SpeedKn);
-        return RunIn(Math.Min(MaxReach(def), sightM), kn == double.MaxValue ? 1 : kn, fireM);
+                (kn, seen) = (Math.Min(kn, att[i].SpeedKn), Math.Max(seen, seenAtt[i]));
+        return RunIn(Math.Min(MaxReach(def), seen), kn == double.MaxValue ? 1 : kn, fireM);
     }
 
     /// <summary>A run in at a speed from where the defence's guns open to the firing range: its minutes, and its mean range.</summary>
@@ -629,20 +698,22 @@ public static class Matchup
     /// <summary>A stretch of an attack: every ship of both sides fires (the lines at each other at the lines' range, at
     /// an attacker at its side's attack range for the stretch).</summary>
     static void Phase(ReadOnlySpan<MatchupEntry> a, ReadOnlySpan<bool> inA, ReadOnlySpan<MatchupEntry> b, ReadOnlySpan<bool> inB, double lineM,
-        double attackAM, double attackBM, double minutes, SimSettings s, Span<double> outA, Span<double> outB, double evaded = 1)
+        double attackAM, double attackBM, double minutes, ReadOnlySpan<double> seenA, ReadOnlySpan<double> seenB, SimSettings s, Span<double> outA,
+        Span<double> outB, double evaded = 1)
     {
-        Guns(a, default, inA, b, default, inB, lineM, attackAM, attackBM, minutes, s, outB, evaded);
-        Guns(b, default, inB, a, default, inA, lineM, attackBM, attackAM, minutes, s, outA, evaded);
+        Guns(a, default, inA, b, default, inB, lineM, attackAM, attackBM, minutes, seenB, s, outB, evaded);
+        Guns(b, default, inB, a, default, inA, lineM, attackBM, attackAM, minutes, seenA, s, outA, evaded);
     }
 
     /// <summary>The ships of <paramref name="from"/>'s guns put out of <paramref name="to"/> over some minutes (added
     /// into <paramref name="outTo"/>, by class), the ships of each that take part marked (empty: all), at the range between
     /// them: an attacker's side's attack range when either is in an attack (<paramref name="inFrom"/>,
-    /// <paramref name="inTo"/>), else the lines'. Each battery's shells go over the targets by what they do there (more
-    /// where they do more), at most the rounds it has left.</summary>
+    /// <paramref name="inTo"/>), else the lines'; none past where a class is made out (<paramref name="seenTo"/>: in the
+    /// dark). Each battery's shells go over the targets by what they do there (more where they do more), at most the rounds
+    /// it has left.</summary>
     static void Guns(ReadOnlySpan<MatchupEntry> from, ReadOnlySpan<bool> fromSel, ReadOnlySpan<bool> inFrom, ReadOnlySpan<MatchupEntry> to,
-        ReadOnlySpan<bool> toSel, ReadOnlySpan<bool> inTo, double lineM, double fromAttackM, double toAttackM, double minutes, SimSettings s, Span<double> outTo,
-        double evaded = 1)
+        ReadOnlySpan<bool> toSel, ReadOnlySpan<bool> inTo, double lineM, double fromAttackM, double toAttackM, double minutes, ReadOnlySpan<double> seenTo,
+        SimSettings s, Span<double> outTo, double evaded = 1)
     {
         if (minutes <= 0)
             return;
@@ -666,7 +737,7 @@ public static class Matchup
                     if (to[j].Count == 0 || toSel.Length > 0 && !toSel[j])
                         continue;
                     double r = attacking ? fromAttackM : inTo.Length > 0 && inTo[j] ? toAttackM : lineM;
-                    if (r > g.KindsReachM)
+                    if (r > g.KindsReachM || r > seenTo[j])
                         continue;
                     // an attacker running in or out zigzags (the defence's fire on it spoilt by the share given)
                     var (hit, exponent) = g.Chosen(to[j].Profile, r, s);
@@ -682,7 +753,7 @@ public static class Matchup
     }
 
     /// <summary>One salvo of torpedoes from every ship of <paramref name="from"/> marked (an attack's, or a line's firing
-    /// at will) with torpedoes left and the range within their reach, from the share of its ships still in the fight (<paramref name="outFrom"/> so far), at the biggest of
+    /// at will) with torpedoes left and the range within their fast setting's reach (the captains', at its share), from the share of its ships still in the fight (<paramref name="outFrom"/> so far), at the biggest of
     /// <paramref name="to"/>'s classes; what they put out, added into <paramref name="outTo"/>.</summary>
     static double Torpedoes(ReadOnlySpan<MatchupEntry> from, ReadOnlySpan<bool> sel, ReadOnlySpan<MatchupEntry> to, double rangeM, SimSettings s,
         Span<double> outTo, ReadOnlySpan<double> outFrom, double reachShare)
@@ -701,8 +772,8 @@ public static class Matchup
         {
             ref readonly var e = ref from[i];
             var pr = e.Profile;
-            if (!sel[i] || pr.TubesBearing == 0 || e.TorpedoesLeft <= 0 || rangeM > reachShare * pr.Torpedo.FastRangeM && rangeM > reachShare * pr.Torpedo.SlowRangeM)
-                continue;
+            if (!sel[i] || pr.TubesBearing == 0 || e.TorpedoesLeft <= 0 || rangeM > reachShare * pr.Torpedo.FastRangeM)
+                continue;   // the captains' fast setting (CaptainLayer.FastSetting): no one fires the slow at will (docs/battle/night.md Q7)
             double left = e.Count * Math.Exp(-outFrom[i] / Math.Max(e.Count, 1e-9));
             // a firing is the captains' spread (TorpedoSpread), not the whole broadside
             double fired = Math.Min(Math.Min(pr.TubesBearing, s.TorpedoSpread), pr.Torpedoes * e.TorpedoesLeft) * left;

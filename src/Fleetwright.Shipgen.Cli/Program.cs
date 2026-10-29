@@ -388,7 +388,7 @@ public static class Program
                     a.Int("hits", 0), a.Int("ships", 200), D(a, "settle", 30), a.Int("seed", 1)),
                 "matchup" => MatchupBench.Run(a.Positional.ElementAtOrDefault(0) ?? "arethusa", a.Positional.ElementAtOrDefault(1) ?? "v25",
                     n => LoadDesign(Resolve(a, n)), a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), D(a, "range", 0),
-                    D(a, "share", 0.6), D(a, "sight", double.PositiveInfinity)),
+                    D(a, "share", 0.6), D(a, "sky", double.PositiveInfinity), D(a, "vis", 20_000)),
                 "searchlight" => SearchlightBench.Run(Class(a, a.Positional.ElementAtOrDefault(0) ?? "lion"), Class(a, a.Positional.ElementAtOrDefault(1) ?? "v25"),
                     SimSettings.Load(a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json")),
                     D(a, "sky", NightLight.ClearSkyCdM2(-30)), D(a, "consort", 1000)),

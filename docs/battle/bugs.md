@@ -234,7 +234,9 @@ Seen in the AI's baseline after the detail passes (2026-10-20, docs/battle/comma
   eight dreadnoughts lose two battlecruisers at 15:26 and give up at 08:23 the next morning (17 hours), and shorter
   `LostSearchLegM` (5 km against 20) barely changes it. The task steams to the datum (the picture's estimate when he
   lost them), forms line abreast at the weather's spacing, then runs the ladder; which part takes the hours isn't known.
-- [ ] The matchup has no night: four destroyers against sixteen dreadnoughts are hopeless (confidence 0.03) with
+- [x] (Fixed 2026-10-29, docs/battle/night.md Q7c: each class made out at its own range in the dark, the defence firing
+  only within it; a side declining at dusk keeps its flotillas in touch for the night.) The matchup has no night: four
+  destroyers against sixteen dreadnoughts are hopeless (confidence 0.03) with
   `--sight 5000` as without, so a flotilla is sent in by night only on a group it could take on by day (a lone
   battleship). The era's night attack on a battle line counted on the dark (short sight for the guns, the boats seen
   late); for the matchup's fine-tune with fire control's night (fighting.md 4.5). Seen again in `shipgen night-history`

@@ -15,9 +15,10 @@ static class MatchupBench
 {
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
-    public static int Run(string a, string b, Func<string, Design> load, string settingsPath, double rangeM, double share, double sightM)
+    public static int Run(string a, string b, Func<string, Design> load, string settingsPath, double rangeM, double share, double skyCdM2, double visibilityM)
     {
         var s = SimSettings.Load(settingsPath);
+        MatchupLight? light = double.IsFinite(skyCdM2) ? new MatchupLight(visibilityM, skyCdM2) : null;   // --sky: a night's (docs/battle/night.md Q7)
         var tables = new Dictionary<BallisticKey, BallisticTable>();
         BallisticTable Table(BallisticKey k) => tables.TryGetValue(k, out var t) ? t : tables[k] = new BallisticTable(k);
         var profiles = new Dictionary<string, MatchupProfile>();
@@ -33,7 +34,11 @@ static class MatchupBench
         var sb = Side(b);
         foreach (var p in profiles.Values)
             Profile(p, s);
-        var judged = Matchup.Judge(sa, sb, share, share, s, sightM);
+        if (light is { } l && l.Dark(s))
+            foreach (var e in sa.Concat(sb))
+                Console.WriteLine(string.Format(Inv, "  in this dark {0} is made out at {1:0} m (hull {2:0} m² side on)", e.Profile.Class.Name, l.SeenM(e, s),
+                    e.Profile.SideAreaM2));
+        var judged = Matchup.Judge(sa, sb, share, share, s, light);
         double r = rangeM > 0 ? rangeM : judged.Terms.RangeM;
         Console.WriteLine(string.Format(Inv, "\nAt {0:0} m:", r));
         Shots(sa, sb, r, s);
@@ -43,7 +48,7 @@ static class MatchupBench
             : [.. new[] { share * sa.Max(e => e.Profile.MainReachM), share * sb.Max(e => e.Profile.MainReachM) }.Where(x => x > 0).Distinct()];
         foreach (double line in lines)
             foreach (var style in new[] { MatchupStyle.Gunfight, MatchupStyle.AttackByA, MatchupStyle.AttackByB, MatchupStyle.AttackByA | MatchupStyle.AttackByB })
-                Terms(Matchup.Engage(sa, sb, line, style, s, sightM), s);
+                Terms(Matchup.Engage(sa, sb, line, style, s, light), s);
         Console.WriteLine(string.Format(Inv, "\nA's judgement: confidence {0:0.###} ({1}, the lines at {2:0} m); A {3:0.#} kn, B {4:0.#} kn{5}", judged.Confidence,
             judged.Terms.Style, judged.Terms.RangeM, judged.SpeedA, judged.SpeedB,
             judged.ACanRefuse(s) ? ": A picks the range, and can refuse" : judged.BCanRefuse(s) ? ": B picks the range, and can refuse" : ": about equal speed, A's own range"));
@@ -52,7 +57,7 @@ static class MatchupBench
         const int reps = 2000;
         var sw = System.Diagnostics.Stopwatch.StartNew();
         for (int k = 0; k < reps; k++)
-            Matchup.Judge(sa, sb, share, share, s, sightM);
+            Matchup.Judge(sa, sb, share, share, s, light);
         Console.WriteLine(string.Format(Inv, "  a judgement costs {0:0.0} µs ({1} classes against {2})", sw.Elapsed.TotalMicroseconds / reps, sa.Length, sb.Length));
         return 0;
     }

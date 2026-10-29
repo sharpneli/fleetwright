@@ -102,6 +102,10 @@ public enum CommanderWhy : byte
 
     /// <summary>Night: a heavy unit withdrawn from contact; a flotilla sent in on a heavy enemy in reach.</summary>
     Night,
+
+    /// <summary>A flotilla keeping touch with an enemy he declined by day, for its attack once the night falls
+    /// (docs/battle/night.md Q7).</summary>
+    AwaitNight,
 }
 
 /// <summary>The side's commander (docs/battle/command.md 5.1d), the layer above the tasks: one per side, the C-in-C on
@@ -404,11 +408,13 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
     }
 
     /// <summary>A flotilla of his sent in to attack, by the rule every commander shares (<see cref="FlotillaAttacks"/>):
-    /// free to go (going home from a battle he declined counts, for the night), and worth it as he sees the battle. True if
-    /// it was.</summary>
+    /// free to go (going home from a battle he declined counts, for the night, and so does keeping touch for it), and worth
+    /// it as he sees the battle. True if it was.</summary>
     bool SendIn(in AiContext ctx, SideState s, byte side, ReadOnlySpan<HeldGroup> held, in Top t)
     {
-        bool declining = Tasks!.Of(t.Unit).Kind == TaskKind.Withdraw && GivenOf(t.Unit).Why == CommanderWhy.Outmatched;
+        var kind = Tasks!.Of(t.Unit).Kind;
+        var given = GivenOf(t.Unit).Why;
+        bool declining = kind == TaskKind.Withdraw && given == CommanderWhy.Outmatched || kind == TaskKind.Shadow && given == CommanderWhy.AwaitNight;
         if (!Attacks.Free(ctx, t.Unit, t.Slot, declining))
             return false;
         var why = Attacks.SendIn(ctx, side, s.Phase, s.Reason, t.Unit, store[t.Slot].Position, held);
@@ -621,13 +627,24 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
     }
 
     /// <summary>Retiring or gone home: every unit of his for home, unless it's going or there (a flotilla sent in to cover
-    /// the others breaking off, <see cref="SendIn"/>, after its attack).</summary>
+    /// the others breaking off, <see cref="SendIn"/>, after its attack). A unit that would attack his target (its guide an
+    /// attacker against the target's class, whatever its role) of a side declining battle whose doctrine attacks by night
+    /// shadows the target instead while the night falls within <see cref="SimSettings.CommanderNightWaitS"/>
+    /// (docs/battle/night.md Q7: keeping touch for its attack in the dark, as at Tsushima); in the dark a flotilla is sent
+    /// in once it's worth it, and any unit in touch fights as its captains judge it.</summary>
     void Retire(in AiContext ctx, SideState s, in Top t)
     {
         var why = s.Phase == CommanderPhase.Home ? CommanderWhy.GaveUp : s.BrokenOff ? CommanderWhy.BrokenOff : CommanderWhy.Outmatched;
         var (kind, state, _) = Tasks!.Of(t.Unit);
         if (kind == TaskKind.Attack && state is TaskState.OnTask or TaskState.Engaged)
             return;   // its attack first
+        if (why == CommanderWhy.Outmatched && s.Target != 0 && NightComing(ctx, t.Side, store[t.Slot].Position) && WouldAttack(ctx, t, s.Target))
+        {
+            if (kind == TaskKind.Shadow && state is TaskState.OnTask or TaskState.Engaged or TaskState.InContact && Tasks.TargetOf(t.Unit) == s.Target)
+                return;
+            Give(ctx, t, ctx.Orders.Shadow(t.Unit, Unit.Ship(s.Target), 0, OrderSource.Commander), CommanderWhy.AwaitNight);
+            return;
+        }
         if (Tasks.Of(t.Unit) is (TaskKind.Withdraw, TaskState.Cant, TaskReason.Nowhere))
             return;   // no home to go to: it holds what it has
         if (kind == TaskKind.Withdraw && (state is TaskState.OnTask or TaskState.Engaged or TaskState.InContact || Home(t.Unit)))
@@ -666,6 +683,30 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
             (s.LastAt, s.LastTarget, s.Met, s.Searched) = (Earth.PackLatLon(lat, lon), s.Target, true, false);
         }
     }
+
+    /// <summary>Whether a unit's guide is an attacker (<see cref="Matchup.Attackers"/>, by daylight) against a contact as his
+    /// navy holds her (over the classes she may be).</summary>
+    bool WouldAttack(in AiContext ctx, in Top t, int target)
+    {
+        var pic = ctx.World.Sightings.Of(t.Side);
+        if (pic?.IndexOf(target) is not (>= 0 and var ci))
+            return false;
+        (attacker, attacked) = (attacker ?? new MatchupSide(), attacked ?? new MatchupSide());
+        attacker.Clear();
+        attacked.Clear();
+        attacker.AddOwn(ctx.World, Judge.Matchups, t.Slot);
+        attacked.AddContact(ctx.World, Judge.Matchups, t.Side, pic[ci]);
+        return attacker.Count > 0 && attacked.Count > 0 && (Matchup.Attackers(attacker.Entries, attacked.Entries, ctx.Settings) & 1) != 0;
+    }
+
+    MatchupSide? attacker, attacked;
+
+    /// <summary>Whether his doctrine sends torpedo craft in by night and the night (the sun more than
+    /// <see cref="SimSettings.NightSunElevationDeg"/> down) falls at a place within <see cref="SimSettings.CommanderNightWaitS"/>,
+    /// or has.</summary>
+    bool NightComing(in AiContext ctx, byte side, Vec3d at) =>
+        doctrine.OfGroup(null, side, DoctrineField.NightAttack) != 0 &&
+        Light.SunElevationDeg(at, new WorldTime(ctx.NowMs + (long)(ctx.Settings.CommanderNightWaitS * 1000))) < ctx.Settings.NightSunElevationDeg;
 
     /// <summary>Whether it's night to him (the sun more than <see cref="SimSettings.NightSunElevationDeg"/> down at his main
     /// body) and his doctrine avoids action by night.</summary>
