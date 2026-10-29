@@ -1,5 +1,6 @@
 # Plan: night fighting (a 4.5 deepening)
-Status: **drafted 2026-10-29**; **agreed with the user 2026-10-29** (decisions 1-5 at the end); Q0-Q8 done 2026-10-29
+Status: **drafted 2026-10-29**; **agreed with the user 2026-10-29** (decisions 1-5 at the end); Q0-Q9 done 2026-10-29;
+the research arrived 2026-10-29: Q1b, Q0b, Q3b, Q5b added before Q10 (after Q9)
 Updated: 2026-10-29
 
 How ships see, light, shoot and lose each other in the dark. The user asked for it after the crew plan (2026-10-28),
@@ -989,6 +990,56 @@ left aren't in the snapshot (the mockup's "flare · 40 s"); the lit ring for an 
 beam's target isn't in the snapshot; the wedge shows it); the challenge lamp isn't marked; a blanket of star shell
 (above) waits for the research.
 
+### The research folded in (arrived 2026-10-29)
+
+`research/simulation/night-fighting.md` (eight strands in `night-fighting/`, `night_ref.py` the sight law against the
+record) checked the plan's [EST]s. What it changes, agreed with the user 2026-10-29 ("let's get these things wrapped in"),
+as four steps before Q10, and items for Q12's tuning pass:
+
+- **Q1b The eye and the sky.** Q1's law is the wrong shape, not the wrong scale: its large-object threshold hardly rises
+  in the dark (×1.4 against Blackwell's ×15 at a 10⁻³ cd/m² sky through a 7×50) while its summation grows far too much,
+  so the two cancel at the black overcast and drift ×2-5 long into twilight. In its place Blackwell's shape (Crumey 2014's
+  fits to C∞ and Riccò's area, as ratios over 30 cd/m²) and a field factor easing as the fourth root below 1.8·10⁻³ cd/m²
+  at the eye (the research's fit to five anchors, [INFERRED]); a ship's night contrast 0.9 against the sky (0.6). The
+  sky in the same step, since a brighter sky alone would lengthen the night: the twilight's arch a glow over a floor
+  (Koomen et al. 1952, k ≈ 3.2; toward/away 11 at −6° to −9°, 6 at −12°, 3 at −15°, already 4-5 before sunset; was
+  e^(1.5 cos Δ) at 20, formed only 0-6° down), the starlit horizon 2.5 times its E/π, the daylight table's ends (0°
+  750, +5° 4,500, +10° 11,000 lux; −15° and −18° the sun's alone, the stars no longer counted twice). `sighting_ref.py`
+  takes the new law and the C# reference rows follow it. Expect the bench's first sightings to fall ×2-4; the
+  searchlight's and the matchup's reaches follow without retuning (re-checked against the record, not fitted).
+- **Q0b The bench to the record.** The Jutland cases' forces meet on collision courses with the Germans SW to W of the
+  British, so the Germans look toward the northern glow and see first; the record has them W to NW, the British looking
+  into the glow and seeing first (Nottingham "silhouetted against the evening sky … while we remained in darkness").
+  Start positions moved to the record's bearings; visibility 8 km (the night's mist: "three to four miles" at daylight);
+  the record's lines corrected (Dover at point blank, not 600 yd; Southampton's five German ships; the 4th Flotilla's ~14
+  torpedoes for 1 hit; Tsushima's 54 torpedoes and 32 linked mines for 4-6 hits, 3 boats lost); a dawn case (the 12th
+  Flotilla at 01:45, the sun −6°, torpedoes at 1,700-3,500 yd); the bench counts the hits on lit and on dark ships of the
+  same side (the record: lit ships fired on in seconds, dark ones in the same line left alone) and torpedoes per hit
+  (the record under way 1 in 9-17; no German night torpedo known to hit at Jutland).
+- **Q3b Searchlights to the record.** Templates: the RN's twin 24-inch to mid-1915, then 36-inch; Russia's six 75 cm with
+  remote control (1898-1905); the German navy on the plain arc throughout (no high-intensity; its 110 cm unconfirmed,
+  kept [EST]); plain-arc spread 2.5-3°; the high-intensity draw 18-19 kW. **Ready** is the arc burning behind a closed
+  iris, trained dark on the contact (the German method, the USN's 20 min behind the shutter): exposing takes about a
+  second (4 s); striking from cold stays 10 s.
+- **Q5b Star shell to the record.** Its own lower velocity and range table (15 cm Lg 500 m/s against the HE's 835, 10.5
+  cm 450, 8.8 cm 650); the German 1916 candle burning ~15 s, not 25, unless parachuted; an RN star shell from 1917
+  (issued to all ships during 1917); destroyers' and light cruisers' outfits 10-20% star shell, big ships' secondaries
+  2-6% (was 5% for all). The dazzle (Q2) 2-7 s, not 1 (flash-blindness recovery to a lit target). Funnel flare also from
+  oil-fired boats at high power (Dover and Schouwen 1917: enough to fight by at close range), not only forced coal.
+- **For Q12 (tuning):** doctrine presets one a period from the research's table (RN 1914-16: lights only when fired on,
+  no star shell, challenge and hold, the battle line keeps dark and doesn't challenge; RN 1917-18: lights to fire, star
+  shell, screens fire without challenging; Germany 1914-16: trained dark then light and fire together, star shell to
+  find, recognition lights; Russia 1904-05: lights to search; Japan 1904-05: attack after moonset, from two sides, to
+  ≤600 yd); an unanswered challenge marks a foe but doesn't fire the guns (the British line held fire on wrong replies);
+  a partial or echoed reply gives doubt, not trust (Castor's two right signs, Flirt's echo, Lynx's copied reply);
+  `AnswerChallenge` partial for the Germans from about 22:00; `ChallengeM` ~2,000 m for light forces, none for a hiding
+  battle line or a raider; turning away when lit by the unit's role (small craft and cruisers drawing torpedoes turned
+  away, lit big ships seldom did); phosphorescence as a sight cue on a scenario's flag (tracks "clearly seen" in 1904);
+  raiders and flotillas choosing the moonless hours (the commander's wait for night). Collisions (4.11) more pressing:
+  two of Jutland's eleven night losses.
+- **Not found by the research** (stay [EST]): German searchlight sizes by class, the star shell's candle and dud rate,
+  the "burst beyond the target" rule before WWII, Makarov, Japanese written doctrine, gun flash distances.
+
 ### Q10 The look
 
 **Agreed 2026-10-29 in `docs/visuals/night-lights.md`** (Q10a-Q10f; decisions 1-5 there): the
@@ -1030,7 +1081,8 @@ Against `night-history` and the night scenarios. Restated anchors and what moved
 
 ## Research request
 
-Filed in `research/REQUESTS.md` (2026-10-29, "Night fighting, 1890-1925"): searchlights by navy and year (sizes,
+Arrived 2026-10-29 as `research/simulation/night-fighting.md` (folded in above, after Q9). Filed in
+`research/REQUESTS.md` (2026-10-29, "Night fighting, 1890-1925"): searchlights by navy and year (sizes,
 intensity, positions, control, useful ranges, doctrine), star shell (who had it when, by calibre, intensity, burn time,
 fall rate, use), night glasses and lookouts, the night cases' ranges and outcomes, challenges and recognition, flash and
 funnel glow, wake and bow wave by night.
