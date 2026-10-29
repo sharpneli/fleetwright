@@ -4,7 +4,8 @@
 // minutes and blows up with all hands; she hits nothing. The classes are stand-ins (duke_of_edinburgh for Black Prince,
 // helgoland for the Helgolands, nassau_1916 for Nassau). A bench, not a scenario to play: the forces start 45 min from
 // meeting, so the first sighting is the model's.
-// The weather of the night: misty, little wind.
+// The weather of the night: misty, little wind; hulls lost past about 3/4 mile, "three to four miles" at daylight
+// (docs/battle/night.md Q0b: visibility 8 km).
 {
   "scenario": 1,
   "test": true,
@@ -24,7 +25,7 @@
   "until": "1916-06-01T01:22",
   "aims": { "Britain": "destroy everyone", "Germany": "destroy everyone" },
   "home": { "Britain": [56.3, -1.5], "Germany": [54.2, 7.6] },
-  "weather": { "visibility_km": 12, "wind_from": 225, "wind_kn": 8 },
+  "weather": { "visibility_km": 8, "wind_from": 225, "wind_kn": 8 },
   "units": [
     { "name": "Black Prince", "admiral": "Capt Bonham", "side": 0, "at": [55.9749, 6.2], "course": 180, "kn": 14, "spacing": 500,
       "ships": [ { "design": "duke_of_edinburgh", "names": ["Black Prince"] } ] },

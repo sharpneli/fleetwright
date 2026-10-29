@@ -4,12 +4,14 @@
 // deck swept (89 casualties). The classes are stand-ins (town_chatham for Southampton and Dublin, town_birmingham for
 // Nottingham and Birmingham, stettin for the Stettins, gazelle for Frauenlob). A bench, not a scenario to play: the
 // forces start 45 min from meeting, so the first sighting is the model's.
-// The weather of the night: misty, little wind.
+// The meeting comes on the British starboard beam, the record's bearing (Q0b: the courses and speeds set for it).
+// The weather of the night: misty, little wind; hulls lost past about 3/4 mile, "three to four miles" at daylight
+// (docs/battle/night.md Q0b: visibility 8 km).
 {
   "scenario": 1,
   "test": true,
   "name": "Night: Southampton, Jutland 1916",
-  "brief": "31 May 1916, 21:30 GMT. The 2nd Light Cruiser Squadron steams south in the gathering dark; the 4th Scouting Group is closing from the west. Night history bench.",
+  "brief": "31 May 1916, 21:30 GMT. The 2nd Light Cruiser Squadron steams south in the gathering dark; the 4th Scouting Group is closing on her starboard beam. Night history bench.",
   "place": "North Sea",
   "start": "1916-05-31T21:30",
   "seed": 1916,
@@ -24,11 +26,11 @@
   "until": "1916-05-31T23:30",
   "aims": { "Britain": "destroy everyone", "Germany": "destroy everyone" },
   "home": { "Britain": [56.3, -1.5], "Germany": [54.2, 7.6] },
-  "weather": { "visibility_km": 12, "wind_from": 225, "wind_kn": 8 },
+  "weather": { "visibility_km": 8, "wind_from": 225, "wind_kn": 8 },
   "units": [
-    { "name": "2nd Light Cruiser Squadron", "admiral": "Cdre Goodenough", "side": 0, "at": [56.1995, 5.8694], "course": 160, "kn": 17, "spacing": 500,
+    { "name": "2nd Light Cruiser Squadron", "admiral": "Cdre Goodenough", "side": 0, "at": [56.1995, 5.8694], "course": 160, "kn": 15, "spacing": 500,
       "ships": [ { "design": "town_chatham", "names": ["Southampton", "Dublin"] }, { "design": "town_birmingham", "names": ["Nottingham", "Birmingham"] } ] },
-    { "name": "4th Scouting Group", "admiral": "Kmdr von Reuter", "side": 1, "at": [56.0995, 5.6897], "course": 120, "kn": 16, "spacing": 500,
+    { "name": "4th Scouting Group", "admiral": "Kmdr von Reuter", "side": 1, "at": [56.1765, 5.7537], "course": 140, "kn": 16, "spacing": 500,
       "ships": [ { "design": "stettin", "names": ["Stettin", "München", "Hamburg", "Stuttgart"] }, { "design": "gazelle", "names": ["Frauenlob"] } ] }
   ]
 }

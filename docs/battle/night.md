@@ -1107,6 +1107,48 @@ as four steps before Q10, and items for Q12's tuning pass:
   lost 7.8 → 10.8 (±1.4). Measured, not tuned: the scenarios' balance pass is the place for it.
 - The bench took 29 s for its 100 plays (34 s before).
 
+**Q0b done (2026-10-29).** The bench to the record:
+
+- **The meetings on the beam:** Southampton's squadron at 15 kn on 160° and the 4th Scouting Group at 16 kn on 140°, the
+  Germans starting 7.6 km on her starboard beam (250°); the 4th Flotilla at 15 kn on 180° and the German line at 16 kn on
+  160°, 7.6 km on her beam (270°), the light cruisers kept where they were beside it; Black Prince as she was (80° off her
+  bow, the record's "blundered into"). Visibility 8 km in the three, the night's mist.
+- **A dawn case**, `night-12th-flotilla` (the 12th Flotilla's leader and seven M boats steaming south, the II Squadron's
+  five Deutschlands and Hessen on 120° from their starboard bow, 01:00 GMT, meeting at about 01:45 with the sun −7° and
+  rising).
+- **The record's lines** as the research has them (Tsushima's torpedoes and mines, Southampton's five ships and her four
+  hot minutes, the 4th Flotilla's 14 torpedoes for one hit, Black Prince's 750-1,500 yd and Campbell's two hits, the Dover
+  Strait at point blank with the Germans firing first).
+- **The hits on ships lit** (by others' beams and flares past `LitShare`, as her captain judges it) beside the hits on
+  ships showing their own light.
+
+**The bench after Q0b** (20 seeds; Q1b's in brackets; Tsushima and the Dover Strait unchanged):
+
+| Case | First seen | Salvos' median | Shells / hits (on ships lit) | Torpedoes, hits | Lost |
+|---|---|---|---|---|---|
+| Southampton | GB 5.6 (1.8 in 4 of 20), DE 4.9 km (6.5), every run | 1.7-1.8 km (1.2) | GB 79 / 55 (20), DE 567 / 315 (71) | GB 13 from 2.8 km, 3.0; DE 7.5, 1.1 | GB 0.9 of 4 (0), DE 1.6 of 5 (0.1) |
+| 4th Flotilla | GB 1.3 (1.2), DE 1.9 km (1.4) | 0.9-1.1 km | GB 198 / 147 (81), DE 447 / 241 (127) | GB 26.8 from 0.8 km, 9.1 (8.3); DE 6.2, 1.9 | GB 7.0 of 10 (7.3), DE 1.3 of 6 (1.2) |
+| Black Prince | GB 0.8 (1.1), DE 0.9 km (1.2) | 0.9-1.1 km | GB 91 / 75 (40), DE 71 / 35 (13) | DE 4.7 from 0.6 km, 1.9 | GB 0.1 of 1 (0.3) |
+| 12th Flotilla (new) | GB 8.7 km in 7 of 20, DE 8.8 km | 4.9-5.9 km | GB 29 / 4, DE 424 / 19 | GB 0.5 from 1.8 km, 0 | GB 0.2 of 8, DE 0 of 6 |
+
+**What it says:**
+- **Southampton is the record's fight now**: every run, the British seeing first (5.6 km against 4.9: they look a little
+  more toward the glow), fire from 2.4-2.6 km and a median of 1.8 km (the record's 1,500-2,000 yd), the Germans' star
+  shell up in every run; a German cruiser and more lost a run (Frauenlob), but also nearly one British (none), and the
+  British torpedoes 13 for 3 hits (one for one).
+- **Black Prince now gets off** (lost 0.1 of 1): she and the line see each other at 0.8-0.9 km and the Germans fire 71
+  shells (she 91, hitting 83%). Her blunder (closing on ships taken for friends, the Germans lighting her first) is Q12's
+  doubt and challenge.
+- **The dawn's attack hardly comes:** at −7° to −5° the boats and the line see each other at 8.7 km (the visibility), the
+  Germans open at 6.6 km, and the flotilla fires torpedoes in 7 runs of 20 from 1.8 km; the record attacked at
+  1,700-3,500 yd. The flotilla's night attack is keyed to the sun 6° down (`NightSunElevationDeg`, the AI's judgment), so
+  it ends just as the record's began; the dawn's mist may also have been thicker than 8 km ("no more than two miles",
+  Malaya). For Q12.
+- **On lit ships**: at the 4th Flotilla more than half the hits on each side land on ships lit (GB 81 of 147, DE 127 of
+  241); at the Dover Strait 46 of 64 British.
+- **Night torpedoes stay the outlier** (the 4th Flotilla 27 for 9 hits, Southampton 13 for 3): Q1b's open item.
+- The bench takes 38 s for 120 plays.
+
 ### Q10 The look
 
 **Agreed 2026-10-29 in `docs/visuals/night-lights.md`** (Q10a-Q10f; decisions 1-5 there): the

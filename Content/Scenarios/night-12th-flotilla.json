@@ -1,0 +1,37 @@
+// Night history (docs/battle/night.md Q0b): Jutland, 1 June 1916, about 01:45 GMT, the sun 6° down and rising. The 12th
+// Flotilla, steaming south, finds the German line steering east-south-east for Horns Reef on its starboard bow in the
+// dawn's mist, "too light for searchlights to be of much use". Faulknor, Obedient, Marvel, Onslaught and Narwhal fire 17
+// torpedoes at 1,700-3,500 yd (Maenad later at 4,000-5,000); one hit, Pommern, blows up with all hands. Onslaught is hit,
+// Nessus hit before she fires. The classes are stand-ins (flotilla_leader for Faulknor, m_class for the M boats,
+// deutschland_1906 for the Deutschlands). A bench, not a scenario to play: the forces start 45 min from meeting, so the
+// first sighting is the model's.
+// The weather of the dawn: mist, little wind; "three to four miles" at daylight (visibility 8 km).
+{
+  "scenario": 1,
+  "test": true,
+  "name": "Night: the 12th Flotilla, Jutland 1916",
+  "brief": "1 June 1916, 01:00 GMT. The 12th Flotilla steams south in the short northern night; the German line is closing from the west-south-west for Horns Reef. Night history bench.",
+  "place": "North Sea",
+  "start": "1916-06-01T01:00",
+  "seed": 1916,
+  "camera": [55.98, 6.3, 25],
+  "sides": ["Britain", "Germany"],
+  "readiness": { "Britain": "closed up", "Germany": "closed up" },
+  "damage_control": { "Britain": "1916", "Germany": "1916" },
+  "fire_discipline": { "Britain": "independent", "Germany": "german" },
+  "doctrine": { "Britain": { "preset": "default", "NightAction": "accept" }, "Germany": { "preset": "default", "NightAction": "accept" } },
+  "crews": { "Britain": "trained", "Germany": "trained" },
+  "player": "Britain",
+  "until": "1916-06-01T03:00",
+  "aims": { "Britain": "destroy everyone", "Germany": "destroy everyone" },
+  "home": { "Britain": [56.3, -1.5], "Germany": [54.2, 7.6] },
+  "weather": { "visibility_km": 8, "wind_from": 225, "wind_kn": 8 },
+  "units": [
+    { "name": "12th Flotilla", "admiral": "Capt Stirling", "side": 0, "at": [56.05, 6.45], "course": 180, "kn": 17, "spacing": 350,
+      "ships": [ { "design": "flotilla_leader", "names": ["Faulknor"] },
+                 { "design": "m_class", "names": ["Obedient", "Marvel", "Onslaught", "Mindful", "Maenad", "Narwhal", "Nessus"] } ] },
+    { "name": "II Squadron", "admiral": "R-Adm Mauve", "side": 1, "at": [55.9376, 6.1401], "course": 120, "kn": 16, "spacing": 500,
+      "ships": [ { "design": "deutschland_1906", "names": ["Deutschland", "Pommern", "Schlesien", "Schleswig-Holstein", "Hannover"] },
+                 { "design": "hessen", "names": ["Hessen"] } ] }
+  ]
+}

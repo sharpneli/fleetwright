@@ -24,36 +24,48 @@ static class NightHistory
     static readonly NightCase[] Cases =
     [
         new("1890-1925", "night-tsushima",
-            "Tsushima's night, 27-28 May 1905: the Russian ships that showed searchlights found and torpedoed (Navarin sunk, " +
-            "Sissoi Veliky, Admiral Nakhimov, Vladimir Monomakh lost next morning); three Japanese torpedo boats sunk [to check]",
-            "the moon; the boats' attack from the dark side"),
+            "Tsushima's night, 27-28 May 1905: attacks at 600 yd and less; 54 torpedoes and 32 linked mines for 4-6 hits; the rear " +
+            "ships that lit their searchlights found and torpedoed (Nakhimov, Navarin sunk; Sissoi Veliky, Monomakh lost next " +
+            "morning), Nebogatov's dark division untouched; 3 Japanese torpedo boats lost (2 to gunfire, 1 to a collision)",
+            "the boats' attack from two sides; collisions (4.11)"),
         new("1890-1925", "night-southampton",
-            "Southampton, Jutland 22:15: searchlights both sides, fire at about 800-1,500 yd for a few minutes; Frauenlob torpedoed " +
-            "and sunk; Southampton 89 casualties, Dublin hit [ranges to check]",
-            "the challenge; the twilight of a northern June night"),
+            "Southampton, Jutland 22:15: five German ships on the starboard beam at about 1,500 yd (Nottingham: 2 miles, " +
+            "silhouetted); the Germans' coloured lights, then a dozen searchlights on Southampton and Dublin, the dark Nottingham " +
+            "and Birmingham not fired on; the hot exchange about 4 min in some 15; Frauenlob torpedoed and sunk; Southampton 89 " +
+            "casualties, Dublin 8 hits",
+            "the German challenge (Q12)"),
         new("1890-1925", "night-4th-flotilla",
-            "The 4th Flotilla, Jutland 23:30: German searchlights, star shell and secondaries at 1,000-2,000 yd; Tipperary wrecked " +
-            "in minutes; Ardent, Fortune lost to gunfire in the night (Sparrowhawk to a collision); probably one torpedo hit (Rostock)",
+            "The 4th Flotilla, Jutland 23:15-23:35: three ships on the starboard beam; Tipperary's challenge answered by three " +
+            "ships' searchlights at once, lit at 1,500-2,000 yd and wrecked in five minutes (Westfalen's 92 x 15 cm and 45 x 8.8 cm); " +
+            "about 14 torpedoes at 800-1,000 yd for one hit (Rostock); Ardent, Fortune lost to gunfire later (Sparrowhawk to a " +
+            "collision)",
             "collisions (4.11)"),
         new("1890-1925", "night-black-prince",
-            "Black Prince, Jutland 00:07: blundered into the German line at about 1,000-1,500 yd, lit and sunk in minutes, all hands; " +
-            "no hits on the Germans",
+            "Black Prince, Jutland 00:07: blundered into the German line at about 750-1,500 yd, lit by Thuringen and sunk in some " +
+            "15 min, all hands; Campbell credits her with two 6-in hits on Rheinland at 23:35 [uncertain]",
             "the unidentified ship (she closed, taking them for friends)"),
+        new("1890-1925", "night-12th-flotilla",
+            "The 12th Flotilla, Jutland 01:43-02:10, the sun -6 deg and rising, mist: the German line on the starboard bow, 'too " +
+            "light for searchlights'; 17 torpedoes at 1,700-3,500 yd (Maenad 4,000-5,000) for one hit, Pommern blown up with " +
+            "all hands; Onslaught and Nessus hit",
+            "the Germans' doubt (some held fire, some turned away)"),
         new("1890-1925", "dover-strait",
-            "The Dover Strait, 21 April 1917, moonless: sighted at about 600 yd, guns and torpedoes at point blank, Broke rams; " +
-            "G42 and G85 sunk, Broke and Swift damaged [to check]",
+            "The Dover Strait, 20-21 April 1917, moonless: the Germans fire first, their funnel flares seen 10 s later; guns and " +
+            "torpedoes at point blank (the last torpedo at 200 yd), Broke rams G42 at 27-30 kn; G42 and G85 sunk; Broke 21 " +
+            "killed, 36 wounded",
             "ramming (4.11)"),
     ];
 
     /// <summary>One side's night in a run: the first sighting (seconds from the start, the range, the level), the first
     /// salvo's and torpedoes' ranges, the salvos' ranges, the shells and torpedoes and what they hit, the ships lost; its
     /// searchlights (Q4): when one of its ships first exposed a beam and her range to what it was on, the ship-seconds of
-    /// beams out, and its hits on ships showing a light.</summary>
+    /// beams out, and its hits on ships showing a light, and on ships lit by beams or flares (Q0b: the record's lit ships
+    /// fired on in seconds, the dark ones in the same line left alone).</summary>
     sealed class Side
     {
         public double SeenS = double.NaN, SeenM = double.NaN, FireS = double.NaN, FireM = double.NaN, TorpS = double.NaN, TorpM = double.NaN;
         public double LitS = double.NaN, LitM = double.NaN, LitShipS, StarS = double.NaN, StarM = double.NaN, StarShipS;
-        public int HitsOnLights;
+        public int HitsOnLights, HitsOnLit;
         // challenges (docs/battle/night.md Q6): the first's time and range, how many made and how many answered
         public double AskS = double.NaN, AskM = double.NaN;
         public int Asked, Answered;
@@ -121,6 +133,17 @@ static class NightHistory
             return sa >= 0 && sb >= 0 ? Earth.Distance(store[sa].Position, store[sb].Position) : double.NaN;
         }
         int SideOf(int entity) => end.SideOf(entity) is int x and >= 0 && x < sides.Length ? x : -1;
+        // lit by others' beams and flares as her captain judges it (docs/battle/night.md Q7a's LitShare)
+        bool Lit(int entity)
+        {
+            int slot = store.SlotOf(entity);
+            if (slot < 0)
+                return false;
+            var p = store[slot].Position;
+            var weather = w.Weather.At(p, w.Time);
+            double lux = w.Lights.LitBy(slot, p, weather.VisibilityM).Lux;
+            return lux > 0 && lux >= settings.LitShare * NightLight.At(p, w.Time, weather.Cloud, settings).Lux;
+        }
 
         while (!end.Check())
         {
@@ -210,6 +233,8 @@ static class NightHistory
                         sides[sd].Hits++;
                         if (w.Searchlights.OrderOf(e.Target, w.Time.Ms).Exposed)
                             sides[sd].HitsOnLights++;
+                        if (Lit(e.Target))
+                            sides[sd].HitsOnLit++;
                         break;
                     case CombatEvent.Hit when sd >= 0 && e.Source == HitSource.Torpedo:
                         sides[sd].TorpedoHits++;
@@ -261,13 +286,13 @@ static class NightHistory
         {
             var r = plays.Select(p => p.Sides[sd]).ToArray();
             int lit = r.Count(x => !double.IsNaN(x.LitS));
-            double hits = r.Average(x => x.Hits), onLights = r.Average(x => x.HitsOnLights);
+            double hits = r.Average(x => x.Hits), onLights = r.Average(x => x.HitsOnLights), onLit = r.Average(x => x.HitsOnLit);
             int star = r.Count(x => !double.IsNaN(x.StarS));
             Console.WriteLine($"    {s.Sides[sd],-10} lights: " + (lit == 0 ? "never" :
                 $"first on {Mean(r, x => x.LitS) / 60:F0} min, at {Km(Mean(r, x => x.LitM))} ({lit}/{r.Length}), {r.Average(x => x.LitShipS) / 60:F0} ship-min out") +
                 $"; star shell: " + (star == 0 ? "never" :
                 $"first at {Mean(r, x => x.StarS) / 60:F0} min, at {Km(Mean(r, x => x.StarM))} ({star}/{r.Length}), {r.Average(x => x.StarShipS) / 60:F0} ship-min") +
-                $"; its hits on ships showing a light {onLights:F1} of {hits:F1}");
+                $"; its hits on ships showing a light {onLights:F1}, on ships lit {onLit:F1}, of {hits:F1}");
             int ask = r.Count(x => !double.IsNaN(x.AskS));
             Console.WriteLine($"    {s.Sides[sd],-10} challenges: " + (ask == 0 ? "never" :
                 $"first at {Mean(r, x => x.AskS) / 60:F0} min, at {Km(Mean(r, x => x.AskM))} ({ask}/{r.Length}), {r.Average(x => x.Asked):F1} a run, " +
