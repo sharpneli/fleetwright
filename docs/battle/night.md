@@ -976,10 +976,11 @@ beam's target isn't in the snapshot; the wedge shows it); the challenge lamp isn
 
 ### Q10 The look
 
-A visuals plan of its own (`docs/visuals/night-lights.md`) when Q4-Q5 are in: searchlight beams as light scattered in
-the haze and smoke (the beam visible from the side), the lit patch on the sea and on the target (a spot light in the
-shared light block), star shell flares with their smoke trails and the sea lit under them, the moon path on the water
-(the sea's shader has the moon). Placeholder looks until then: a line for a beam, a disc for a flare. Realistic first.
+**Drafted 2026-10-29 in `docs/visuals/night-lights.md`** (Q10a-Q10f; five questions for the user at its end): the
+nights dark again (one "night eye" from `NightLight.At` replaces the amplified night light), the night's own light
+desaturated while lights keep their colour, flares and beams in the shared light block (a high point light, a spot
+light), beams scattered in the haze and smoke, star shell with its halo and trail through the effects camera, the
+moon under the cloud, funnel glow and challenge lamps. Placeholders (a line for a beam, a disc for a flare) until it.
 
 ### Q11 The coarse tier
 
