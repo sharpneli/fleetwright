@@ -61,7 +61,7 @@ void main()
     ch = mix(ch, Warm, more.z * smoothstep(1350.0, 1950.0, kel));
     // its gas's brightness rolled off on luminance (the body's rule, its hue kept), then weighted by how much of the
     // flame the pixel sees: soft at its edges, however far past white the gas is
-    float y = shoulder(vec3(min(misc.w * magLuminance(kel), 200.0)), look.z).x;
+    float y = shoulder(lightResponse(vec3(min(misc.w * magLuminance(kel), 200.0))), look.z).x;   // through the eye's response
     vec3 rgb = ch * y;
     rgb /= max(max(rgb.r, max(rgb.g, rgb.b)), 1.0);
     outColor = vec4(linearToSrgb(rgb * w * hazeThrough()), 0.0);

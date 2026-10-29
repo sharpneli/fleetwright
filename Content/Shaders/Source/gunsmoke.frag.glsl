@@ -134,11 +134,13 @@ void main()
     if (nf > 0)
     {
         vec3 here = p.centre.xyz + flashEast.xyz * fragLoc.x + flashNorth.xyz * fragLoc.y + flashUp.xyz * p.light.x;
+        vec3 art = vec3(0.0);
         for (int i = 0; i < nf; i++)
         {
             vec3 lw;
-            lit += 0.5 * flashAt(i, here, lw);
+            art += 0.5 * flashAt(i, here, lw);
         }
+        lit += lightResponse(art);   // the eye's response to artificial light
     }
     vec3 albedo = mix(mix(p.tint.rgb, vec3(0.9), p.light.z), vec3(0.92), p.light.w);
     vec3 c = linearToSrgb(shoulder(albedo * lit, look.z));

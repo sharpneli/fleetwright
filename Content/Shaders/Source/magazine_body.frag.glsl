@@ -105,12 +105,13 @@ void main()
         light = nightSee(light);   // the rods' view of the natural light at night; the fire's and the flashes' in colour
         // the fire's light from inside and below: on the smoke near the core, most under it
         float e = length(vec3(d.xy / s.r, d.z / s.rv));
-        light += glow * exp(-1.5 * e) * (1.0 + 0.6 * clamp(-d.z / s.rv, 0.0, 1.0));
+        vec3 art = glow * exp(-1.5 * e) * (1.0 + 0.6 * clamp(-d.z / s.rv, 0.0, 1.0));
         for (int f = 0; f < nf; f++)
         {
             vec3 lw;
-            light += 0.5 * flashAt(f, m.base.xyz + flashEast.xyz * q.x + flashNorth.xyz * q.y + flashUp.xyz * q.z, lw);
+            art += 0.5 * flashAt(f, m.base.xyz + flashEast.xyz * q.x + flashNorth.xyz * q.y + flashUp.xyz * q.z, lw);
         }
+        light += lightResponse(art);   // the eye's response to artificial light
         // the fire: emitting by its temperature
         // (its hue whitened by its temperature, toward a warm white: the eye's hue shifts toward yellow as a fire
         // brightens, and a blackbody's own chroma, whitened, reads salmon, as the flashes' research found; by its
@@ -122,7 +123,7 @@ void main()
             vec3 ch = magChroma(kel);
             ch /= dot(ch, vec3(0.2126, 0.7152, 0.0722));
             ch = mix(ch, Warm, more.z * smoothstep(1350.0, 1950.0, kel));
-            emit = ch * min(misc.w * magLuminance(kel), 200.0);
+            emit = lightResponse(ch * min(misc.w * magLuminance(kel), 200.0));
         }
         col += trans * alpha * (albedo * light + emit);
         trans *= 1.0 - alpha;

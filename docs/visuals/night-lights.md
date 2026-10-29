@@ -307,7 +307,24 @@ Knobs: `-sea=glow:1`. Tests: 207 and 875 pass.
 
 **Q10f Cost and tuning.** The user (2026-10-29): once every light source is in, tune what is in effect the camera,
 its parameters and the response curve from the physical into something our displays carry (the night eye's levels,
-the shoulder and roll to white, the glow's gains), for ordinary displays as well as an OLED. `-gputime` at the night scenarios (Dover 1917, Jutland's night, Tsushima, Åland's summer
+the shoulder and roll to white, the glow's gains), for ordinary displays as well as an OLED.
+
+**Q10f, first pass 2026-10-29 (the user: dusk good; a very dark night "with the power of a thousand suns", star shell and
+beams overwhelming).** The cause: on a moonless night the lights get the dark-adapted eye's whole gain (~1,000× dusk's),
+so everything over the night's white goes white and the white grows with the gain. Two changes:
+- **The eye's response to artificial light** (`LightTable.LightKnee` 20, `shiplight.glsl`'s `lightResponse`): what the
+  lights put on a pixel (falling on it, or sent by it: a flash, a beam's glow, a star, a fire's body and jets) is linear
+  up to 20× the natural light's white deck and logarithmic above, a·ln(1 + y/a) on its luminance, its hue kept
+  (Weber-Fechner: far over its adaptation the eye takes ratios). Applied to the lights' sum in the ships, the sea (body,
+  glints, foam), splash columns, gun smoke, the smoke field, magazine bodies and jets, star shell trails, and to the
+  muzzle flashes, beams and stars. By day the knee is far over anything; at sun −6° a white-deck light keeps ~86%; on a
+  moonless night (knee ~0.2) a lit target's 880 comes to ~2, a flare's pool's 11 to ~1, a beam's faint glow kept. Not
+  an adaptation to the lights (no exposure dimming): the knee follows the natural light alone.
+- **The star's glow at 0.3** (`FlareRenderer.HaloGain`): physical, a flare in a 10 km haze lit the air kilometres round
+  to ~10× a starlit white deck and turned the moonless night grey; at a third the glow stays local.
+Moonless captures (Dover, 21 Apr 1917, a star shell and a beam): frame mean 59 → 32 (8-bit), pixels over 200 3.4% →
+0.3%; night salvos now orange fireballs with their structure where they were white blobs. Brightest left: smoke lying in
+a beam (lit white along it). Knobs: `-lights=lightknee:20` (0 the physical), `-flares=halo:0.3`. `-gputime` at the night scenarios (Dover 1917, Jutland's night, Tsushima, Åland's summer
 night) with every light on; the gains by the user's eye from side-by-side captures.
 
 ## Budgets

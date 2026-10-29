@@ -52,6 +52,13 @@ public sealed class LightTable
     /// the rods' grey-blue as the light falls, from <see cref="PurkinjeLogLux"/>[0] (none) to [1] (all of it, times
     /// <see cref="Purkinje"/>); artificial lights keep theirs. <see cref="RodTint"/>: the rods' world's colour.</summary>
     public double[] PurkinjeLogLux = [1.0, -1.5];
+
+    /// <summary>The eye's response to artificial light (docs/visuals/night-lights.md Q10f): linear up to this many times
+    /// the natural light's white deck, logarithmic above (Weber-Fechner: what's far over the eye's adaptation it takes in
+    /// ratios). By day and at dusk the knee is far over anything a light puts on the scene; on a dark night it brings the
+    /// flares', beams' and flashes' thousandfold down to a few times white while their faint glows keep showing. By eye
+    /// [EST]; 0 is linear (physical).</summary>
+    public float LightKnee = 20;
     public float Purkinje = 1;
     public Vector3 RodTint = new(0.62f, 0.86f, 1.45f);
 
@@ -82,6 +89,7 @@ public sealed class LightTable
             case "eye": EyeGain = v; break;
             case "below": NightBelow = v; break;
             case "purkinje": Purkinje = v; break;
+            case "lightknee": LightKnee = v; break;
             default: return false;
         }
         return true;
@@ -146,6 +154,9 @@ public struct LightUniforms
     /// <summary>The eye at night (<see cref="LightTable.Purkinje"/>): x how much of the natural light's colour goes to the
     /// rods' grey-blue; yzw the rods' tint (luminance 1).</summary>
     public Vector4 Night;
+    /// <summary>The eye's response to artificial light (<see cref="LightTable.LightKnee"/>): x its knee, display units (0:
+    /// linear).</summary>
+    public Vector4 Response;
 }
 
 /// <summary>One frame's light at a place: the uniforms, the directions (in the caller's axes) and the shadows.</summary>
@@ -233,6 +244,7 @@ public struct ShipLights
         double rods = t.Purkinje * SmoothStep(t.PurkinjeLogLux[0], t.PurkinjeLogLux[1], Math.Log10(Math.Max(lux, 1e-8)));
 
         var rod = Chroma(t.RodTint);
+        double white = Lum(sunRad) * Math.Max(Vec3d.Dot(sunDir, up), 0) + Lum(moonRad) * moonUp + amb;
         double level = Encode(Lum(sunRad) * Math.Max(Vec3d.Dot(sunDir, up), 0) + amb);
         return new ShipLights
         {
@@ -244,6 +256,7 @@ public struct ShipLights
                 Sea = new Vector4(sea, t.Horizon),
                 Look = new Vector4(1, t.Roughness, t.Knee, t.Specular * m),
                 Night = new Vector4((float)rods, rod.X, rod.Y, rod.Z),
+                Response = new Vector4((float)(t.LightKnee * white), 0, 0, 0),
             },
             SunDir = sunDir, MoonDir = moon,
             ShadowDir = sunH >= moonH ? sun : moon, ShadowOpacity = opacity,

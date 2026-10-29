@@ -59,11 +59,13 @@ void main()
         vec3 here = mix(f.loAt.xyz, f.hiAt.xyz, t);
         vec3 lit = nightSee(mix(seaAmb.rgb, skyAmb.rgb, 0.7) + 0.6 * (sunRad.rgb + moonRad.rgb));
         int nf = flashCount();
+        vec3 art = vec3(0.0);
         for (int i = 0; i < nf; i++)
         {
             vec3 lw;
-            lit += 0.6 * flashAt(i, here, lw);
+            art += 0.6 * flashAt(i, here, lw);
         }
+        lit += lightResponse(art);   // the eye's response to artificial light
         vec3 c = linearToSrgb(shoulder(TrailAlbedo * lit, look.z));
         outColor = hazePremul(vec4(c * a, a));
         return;
@@ -73,7 +75,7 @@ void main()
     float dd = max(d, core);
     float glow = f.look.y * (1.5708 + atan(f.colour.w, dd)) / dd * exp(-sigma * d) * (1.0 - smoothstep(0.5 * reach, reach, d));
     float star = f.look.x * exp(-0.5 * d * d / (core * core));
-    vec3 col = f.colour.rgb * (star + glow);
+    vec3 col = lightResponse(f.colour.rgb * (star + glow));   // through the eye's response to artificial light
     if (dot(col, vec3(0.2126, 0.7152, 0.0722)) < 1e-4)
         discard;
     outColor = vec4(linearToSrgb(rolled(col, f.lo.w > 1.5 ? SmallLightHue : 0.0) * hazeThrough()), 0.0);

@@ -51,8 +51,10 @@ public sealed unsafe class FlareRenderer : IDisposable
 
     public static bool On = true;
 
-    /// <summary>A gain on the star and its glow (1: physical, through the night eye).</summary>
-    public static double Gain = 1, HaloGain = 1;
+    /// <summary>A gain on the star and on its glow in the haze (1: physical, through the night eye). The glow is turned down
+    /// (the user, 2026-10-29, docs/visuals/night-lights.md Q10f): physical, a flare in a 10 km haze lit the air kilometres
+    /// round to ten times a starlit white deck, a moonless night gone grey; a third keeps the glow and the night.</summary>
+    public static double Gain = 1, HaloGain = 0.3;
 
     /// <summary>How long the trail outlives its star, s (an effect fades within a minute), and its spread: a half width of
     /// <see cref="TrailM"/> at the star, growing by <see cref="TrailGrowMs"/> a second of its age [EST].</summary>

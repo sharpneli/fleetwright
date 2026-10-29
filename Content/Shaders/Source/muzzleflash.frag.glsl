@@ -96,7 +96,9 @@ void main()
     // shows the quad's edge
     col *= 1.0 - smoothstep(0.75, 1.0, length(p - f.quad.xy) / f.quad.z);
 
-    // rolled to white on luminance: the shoulder on Y, then toward white as it passes it
+    // through the eye's response to artificial light (docs/visuals/night-lights.md Q10f), then rolled to white on
+    // luminance: the shoulder on Y, then toward white as it passes it
+    col = lightResponse(col);
     float y = dot(col, vec3(0.2126, 0.7152, 0.0722));
     if (y < 1e-4)
         discard;

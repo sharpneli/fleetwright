@@ -31,6 +31,7 @@ layout(set = 3, binding = LIGHTS_BINDING) uniform Lights
     vec4 hazeSea;       // rgb: the sea's mean from above (by day the ambient from below, at night the night sea as drawn)
     // the eye at night (docs/visuals/night-lights.md decision 2)
     vec4 night;         // x: how much of the natural light's colour goes to the rods' grey-blue; yzw: their tint
+    vec4 respond;       // x: the eye's knee for artificial light, display units (0: linear)
 };
 
 int flashCount()
@@ -63,6 +64,16 @@ vec3 flashAt(int i, vec3 p, out vec3 l)
 vec3 nightSee(vec3 c)
 {
     return night.x <= 0.0 ? c : mix(c, night.yzw * dot(c, vec3(0.03, 0.55, 0.42)), night.x);
+}
+
+// The eye's response to artificial light (docs/visuals/night-lights.md Q10f, LightTable.LightKnee): what the lights put
+// on a pixel (light falling on it, or light it sends: a flash, a beam's glow, a star), display units, linear up to the
+// knee (a multiple of the natural light's white deck) and logarithmic above, a * ln(1 + y / a) on its luminance, its hue
+// kept. By day the knee is far over any light; on a dark night it brings the thousandfold down, the faint glows kept.
+vec3 lightResponse(vec3 d)
+{
+    float a = respond.x, y = dot(d, vec3(0.2126, 0.7152, 0.0722));
+    return a <= 0.0 || y <= 1e-6 ? d : d * (a * log(1.0 + y / a) / y);
 }
 
 // a sprite's normal + AO texel (biased xyz, AO in a; ReliefMaps) as its normal, not renormalised: the mips average
@@ -188,7 +199,7 @@ vec3 specularPi(vec3 n, vec3 v, vec3 l, float nl, float a, vec3 f0)
 // the lights (unit, in the sprite's frame); its material's roughness and metallic; ambient occlusion. Flat (look.x
 // 0): the albedo as drawn; the debug views show one input as grey (the normal biased, as colour; the roughness as
 // shaded, Toksvig's and the scale's included). spec scales the specular and the sky's reflection (0: under the sea).
-// extra: more light on the diffuse alone, already by its cosine (the flashes' lights).
+// extra: more light on the diffuse alone, already by its cosine (the flashes' lights), through the eye's response.
 vec3 shipShade(vec3 albedoSrgb, vec3 n, vec3 v, vec3 lSun, vec3 lMoon, float roughness, float metallic, float ao, float spec, vec3 extra)
 {
     if (look.x < 0.5)
@@ -222,7 +233,7 @@ vec3 shipShade(vec3 albedoSrgb, vec3 n, vec3 v, vec3 lSun, vec3 lMoon, float rou
     nl = dot(n, lMoon);
     if (nl > 0.0)
         c += (diffuse + spec * look.w * specularPi(n, v, lMoon, nl, a, f0)) * moonRad.rgb * nl;
-    c = nightSee(c) + diffuse * extra;
+    c = nightSee(c) + diffuse * lightResponse(extra);
     return linearToSrgb(shoulder(c, look.z));
 }
 

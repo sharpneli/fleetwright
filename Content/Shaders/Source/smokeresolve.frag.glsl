@@ -57,12 +57,14 @@ void main()
         vec2 s = gl_FragCoord.xy * pixView.xy - pixView.zw;
         vec3 here = pixAt.x * (-flashUp.xyz + s.x * flashEast.xyz - s.y * flashNorth.xyz)
                   + flashUp.xyz * pixAt.z - flashNorth.xyz * (pixAt.z * pixAt.y);
+        vec3 art = vec3(0.0);
         for (int i = 0; i < nf; i++)
         {
             vec3 lw;
             vec3 rad = flashAt(i, here, lw);
-            lit += rad * (max(dot(lw, flashUp.xyz), 0.0) + 0.4) / 1.4;
+            art += rad * (max(dot(lw, flashUp.xyz), 0.0) + 0.4) / 1.4;
         }
+        lit += lightResponse(art);   // the eye's response to artificial light
     }
     vec3 c = linearToSrgb(shoulder(albedo * lit, look.z));
     outColor = vec4(hazeCoded(c) * alpha, alpha);

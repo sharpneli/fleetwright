@@ -49,7 +49,7 @@ void main()
         float below = clamp(b.shadow.w * k / max(h + 2.0 * w, 1.0), 0.0, 1.0);   // the share of the beam's height she hides
         g *= 1.0 - across * below;
     }
-    vec3 col = b.colour.rgb * b.light.x * g;
+    vec3 col = lightResponse(b.colour.rgb * b.light.x * g);   // through the eye's response to artificial light
     float y = dot(col, vec3(0.2126, 0.7152, 0.0722));
     if (y < 1e-4)
         discard;
