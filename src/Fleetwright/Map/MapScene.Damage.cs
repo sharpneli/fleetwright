@@ -301,6 +301,7 @@ public sealed partial class MapScene
         CaptainReason.OutAmmunition => "out of ammunition, home",
         CaptainReason.Home => "out of the fight, home",
         CaptainReason.Combing => "combing a torpedo's track",
+        CaptainReason.Lit => "lit: lights out, turned away",
         _ => "",
     };
 

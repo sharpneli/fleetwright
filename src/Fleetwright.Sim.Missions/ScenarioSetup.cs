@@ -681,6 +681,11 @@ public static class DoctrineRules
         new(DoctrineField.Wrecks, "Wrecks seen done for", [((double)WreckFire.Cease, "cease fire"), ((double)WreckFire.Finish, "finish them")]),
         new(DoctrineField.Unknowns, "Ships not made out", [((double)Unknowns.Challenge, "challenge"), ((double)Unknowns.Hold, "hold fire"),
             ((double)Unknowns.Fire, "fire")]),
+        new(DoctrineField.Searchlights, "Searchlights at night", [((double)SearchlightUse.ToFire, "to fire"), ((double)SearchlightUse.Search, "to search and fire"),
+            ((double)SearchlightUse.WhenFiredOn, "once fired on"), ((double)SearchlightUse.Never, "never")]),
+        new(DoctrineField.StarShell, "Star shell", [((double)StarShellUse.ToFire, "to fire"), ((double)StarShellUse.ToFind, "to find and fire"),
+            ((double)StarShellUse.Never, "never")]),
+        new(DoctrineField.WhenLit, "When lit at night", [((double)WhenLit.TurnAway, "lights out, turn away"), ((double)WhenLit.FightOn, "fight on")]),
     ];
 
     public static Rule? Of(DoctrineField f) => Array.Find(All, r => r.Field == f);

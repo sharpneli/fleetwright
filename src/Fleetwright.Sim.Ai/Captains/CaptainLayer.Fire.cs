@@ -116,6 +116,7 @@ public sealed partial class CaptainLayer
             FallOut(ctx, ref cap, own, slot);
             OutOfRounds(ctx, ref cap, own);
             Comb(ctx, ref cap, own);   // coarse, also when a track comes into sight between thinks (WatchTracks)
+            TurnFromLight(ctx, ref cap, own, slot);   // a light on her in the dark (docs/battle/night.md Q7)
             TakeUpStanding(ctx, ref cap, own, slot);
             Aim(ctx, ref cap, own, slot);
             AnswerChallenges(ctx, own);
@@ -140,8 +141,8 @@ public sealed partial class CaptainLayer
             if (Find(ctx.Ships[slot].Entity) is int i and >= 0)
             {
                 ref readonly var c = ref captains[i];
-                if (c.CombUntilMs > ctx.NowMs)
-                    next = Math.Min(next, c.CombUntilMs);
+                if (c.HeldUntilMs > ctx.NowMs)
+                    next = Math.Min(next, c.HeldUntilMs);
                 if (Zigzagging(c, ctx.NowMs) && c.ZigNextMs > ctx.NowMs)
                     next = Math.Min(next, c.ZigNextMs);
             }
@@ -160,7 +161,7 @@ public sealed partial class CaptainLayer
             Comb(ctx, ref cap, own);
             if (Zigzagging(cap, ctx.NowMs + 1) && cap.ZigNextMs <= ctx.NowMs)
             {
-                if (cap.CombUntilMs <= ctx.NowMs)
+                if (cap.HeldUntilMs <= ctx.NowMs)
                     Give(ctx, own, Leg(ctx, own, cap.ZigBaseDeg), own.SpeedOrderKn);
                 cap.ZigNextMs = LegEndMs(ctx, own);   // combing, the leg passes unsteered: never the same moment twice
             }
@@ -216,6 +217,7 @@ public sealed partial class CaptainLayer
     Unknowns candUnknowns;
     double candBold;
     int candUnknown;
+    double candUnknownM;
     readonly Dictionary<Loadout, double[]> reaches = new(ReferenceEqualityComparer.Instance);
     // by target slot, the batteries on her (chief, and the rest), kept as this pass's orders go out; and the ship's own
     // batteries' targets as its captain's orders leave them
@@ -264,15 +266,17 @@ public sealed partial class CaptainLayer
     }
 
     /// <summary>His challenge (docs/battle/night.md Q6): with doctrine's Unknowns at Challenge, at the nearest ship in his
-    /// widest reach he won't fire on for not knowing her, when he has none open and no ship of his navy's is asking her
-    /// already. Never while holding his fire.</summary>
+    /// widest reach he won't fire on for not knowing her, once she's within doctrine's <see cref="DoctrineField.ChallengeM"/>
+    /// (Q7: farther off he keeps dark), when he has none open and no ship of his navy's is asking her already. Never while
+    /// holding his fire.</summary>
     void Challenge(in AiContext ctx, in Captain cap, ShipState own, Picture pic, double widest)
     {
         if (cap.Fire == FireOrder.Hold || ctx.World.Challenges.ChallengeOf(own.Entity).Target != 0)
             return;
         if (candCount < 0)
             Candidates(ctx, pic, own, widest);
-        if (candUnknown != 0 && candUnknowns == Unknowns.Challenge && !ctx.World.Challenges.Asking(own.Side, candUnknown))
+        if (candUnknown != 0 && candUnknowns == Unknowns.Challenge && candUnknownM <= doctrine.Of(own.Entity, own.Side, DoctrineField.ChallengeM) &&
+            !ctx.World.Challenges.Asking(own.Side, candUnknown))
             ctx.Issue(ChallengeSystem.Challenge(own.Entity, candUnknown));
     }
 
@@ -766,7 +770,7 @@ public sealed partial class CaptainLayer
             {
                 double d = (q - p).LengthSquared;
                 if (!pic[i].TakenForFriend(ctx.NowMs, ctx.Settings) && d < unknownD)
-                    (candUnknown, unknownD) = (e, d);
+                    (candUnknown, unknownD, candUnknownM) = (e, d, Math.Sqrt(d));
                 continue;   // not known for a foe: held (docs/battle/night.md Q6)
             }
             (candEntity[candCount], candSlot[candCount], candRange[candCount]) = (e, ctx.Ships.SlotOf(e), (q - p).Length);
@@ -1040,15 +1044,15 @@ public sealed partial class CaptainLayer
     {
         long now = ctx.NowMs;
         bool conned = Conned(cap, own.Entity);
-        if (conned && cap.CombUntilMs != 0)
-            (cap.CombUntilMs, cap.Reason) = (0, cap.Reason == CaptainReason.Combing ? CaptainReason.None : cap.Reason);   // her line's conn taken: her station again
-        if (cap.CombUntilMs != 0 && now >= cap.CombUntilMs)
+        if (conned && cap.HeldUntilMs != 0)
+            (cap.HeldUntilMs, cap.Reason) = (0, cap.Reason == cap.HeldFor ? CaptainReason.None : cap.Reason);   // her line's conn taken: her station again
+        if (cap.HeldUntilMs != 0 && now >= cap.HeldUntilMs)
         {
-            cap.CombUntilMs = 0;
-            if (cap.Reason == CaptainReason.Combing)
+            cap.HeldUntilMs = 0;
+            if (cap.Reason == cap.HeldFor)
                 cap.Reason = CaptainReason.None;
             if (cap.Order is CaptainOrder.Course or CaptainOrder.None)
-                ctx.Helm.Course(own.Entity, cap.CombBackDeg);
+                ctx.Helm.Course(own.Entity, cap.HeldBackDeg);
             else if (cap.Order == CaptainOrder.Route)
                 ctx.Helm.ResumeRoute(own.Entity);   // the comb's course took the helm off it for the moment
         }
@@ -1065,9 +1069,11 @@ public sealed partial class CaptainLayer
             return;
         }
         cap.Tracks = 0;
-        if (cap.CombUntilMs == 0)
-            cap.CombBackDeg = own.CourseOrderDeg;
-        (cap.CombDeg, cap.CombUntilMs) = (comb, now + (long)((past + ctx.Settings.TorpedoCombAfterS) * 1000));
+        if (cap.HeldUntilMs == 0)
+            cap.HeldBackDeg = own.CourseOrderDeg;
+        if (cap.Reason == CaptainReason.Lit)
+            cap.Reason = CaptainReason.None;   // a torpedo before a light
+        (cap.HeldDeg, cap.HeldUntilMs, cap.HeldFor) = (comb, now + (long)((past + ctx.Settings.TorpedoCombAfterS) * 1000), CaptainReason.Combing);
         if (cap.Reason == CaptainReason.None)
             cap.Reason = CaptainReason.Combing;
         Give(ctx, own, comb, own.SpeedOrderKn);

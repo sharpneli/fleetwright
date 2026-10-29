@@ -71,6 +71,9 @@ public enum CaptainReason : byte
 
     /// <summary>Combing a torpedo's track her lookouts saw coming at her.</summary>
     Combing,
+
+    /// <summary>Turned away from a light on her, her own lights out (docs/battle/night.md Q7: doctrine's WhenLit).</summary>
+    Lit,
 }
 
 /// <summary>The captains (docs/battle/plan.md steps 2.3b and 2.6): one per ship that has been given an order, kept in
@@ -122,8 +125,9 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         public bool Conn;               // the player has the conn: nothing but the player's helm orders moves her
         public sbyte Tracks;            // the conn's lookouts: a torpedo's track seen coming at her, its side (1 starboard, -1 port; 0 none)
         public int FitVersion;          // his ship's condition's version when he last judged its fitness
-        public long CombUntilMs;        // combing a torpedo's track until then (0: not)
-        public double CombDeg, CombBackDeg;   // the comb's course, and the course ordered before it
+        public long HeldUntilMs;        // a course held until then (0: none): combing a torpedo's track, or away from a light (HeldFor)
+        public double HeldDeg, HeldBackDeg;   // the course held, and the course ordered before it
+        public CaptainReason HeldFor;   // why it's held: Combing or Lit
         public double ZigBaseDeg;       // coarse, zigzagging: the course his legs go either side of, as his last think had it (J4)
         public long ZigNextMs, ZigThinkMs;   // when his leg ends (0: not zigzagging coarse), and the think that set it
         public ShellJudged[]? Shells;   // by battery, what its shell was last judged on (made when first needed)
@@ -233,7 +237,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
     }
 
     /// <summary>Whether a ship's captain is combing a torpedo's track his lookouts saw (his admiral reads it: tracks seen).</summary>
-    public bool Combing(int entity, long nowMs) => Find(entity) is int i and >= 0 && captains[i].CombUntilMs > nowMs;
+    public bool Combing(int entity, long nowMs) => Find(entity) is int i and >= 0 && captains[i].HeldUntilMs > nowMs && captains[i].HeldFor == CaptainReason.Combing;
 
     /// <summary>Why a ship's captain does what he does (fallen out, home), or None.</summary>
     public CaptainReason ReasonOf(int entity) => Find(entity) is int i and >= 0 ? captains[i].Reason : CaptainReason.None;
@@ -344,7 +348,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         if (!cap.Conn)
             cap.Tracks = 0;
         else
-            cap.CombUntilMs = 0;
+            cap.HeldUntilMs = 0;
         // the player's order to a ship fallen out keeps her in (docs/map-ui/battle-hud.md decision 2: the player may
         // overrule her captain; attention is what's rewarded): she won't fall out again this battle
         if (whose == Whose.Player && cap.Reason is CaptainReason.OutSpeed or CaptainReason.OutGuns or CaptainReason.OutList
@@ -355,8 +359,8 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         {
             case AiCommand.Course:
                 (cap.Order, cap.Target) = (CaptainOrder.Course, 0);
-                if (cap.CombUntilMs > ctx.NowMs)
-                    cap.CombBackDeg = c.X;   // combing a track: the course is steered once it's past
+                if (cap.HeldUntilMs > ctx.NowMs)
+                    cap.HeldBackDeg = c.X;   // a course held (a track combed, a light turned from): steered once it's done
                 else
                     ctx.Helm.Course(e, c.X, c.Y);
                 break;
@@ -462,7 +466,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
                 // a route the player gave a ship out of its line: at its end, back to its admiral
                 if (own.RouteLoop)
                     cap.Watch = false;   // a patrol has no end
-                else if (own.Helm != Helm.Route && cap.CombUntilMs == 0)   // off it while combing a track isn't its end
+                else if (own.Helm != Helm.Route && cap.HeldUntilMs == 0)   // off it while holding a course (a comb, a light) isn't its end
                 {
                     (cap.Watch, cap.Order) = (false, CaptainOrder.Course);
                     if (groups.Of(cap.Entity)?.DetachmentOf(cap.Entity) == Detachment.Nudged)
@@ -472,8 +476,8 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
             }
             if (ctx.Ships.RidesAnother(slot))
                 continue;   // carried on its guide's rails, held exactly on station: an order would only derail the line
-            if (cap.CombUntilMs > ctx.NowMs)
-                continue;   // combing a torpedo's track: that first
+            if (cap.HeldUntilMs > ctx.NowMs)
+                continue;   // combing a torpedo's track, or turned from a light: that first
             if (cap.Order == CaptainOrder.Fight)
             {
                 FightThink(ctx, ref cap, own, slot);
@@ -628,9 +632,11 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
             if (c.Overruled)
                 h.Add(true);   // only then: worlds without an overrule hash as before
             h.Add(c.FitVersion);
-            h.Add(c.CombUntilMs);
-            h.Add(c.CombDeg);
-            h.Add(c.CombBackDeg);
+            h.Add(c.HeldUntilMs);
+            h.Add(c.HeldDeg);
+            h.Add(c.HeldBackDeg);
+            if (c.HeldFor == CaptainReason.Lit)
+                h.Add(0x117u);   // (only when lit: the hashes of worlds with none as they were)
             if (c.ZigNextMs != 0)
             {
                 h.Add(c.ZigBaseDeg);   // only then: worlds without a coarse zigzag hash as before

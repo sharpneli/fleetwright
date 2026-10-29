@@ -184,6 +184,10 @@ own value, else its group's, else the side's. A command sets it, so it's logged 
 | **Wrecks** (crew.md N5b) | A ship seen done for (burning, silent a while, stopped) with nothing else in reach: cease fire on her, or finish her; any other target in reach first either way | Finish (the "default" preset: cease) |
 | **Unknowns** (night.md Q6) | A ship in sight not known for friend or foe: fire on her, challenge her first (the bridge lamp; unanswered she's a foe), or hold fire until she's made out or gives herself away; a bold captain fires anyway where no friend is about her | Fire (the "default" preset: challenge) |
 | **AnswerChallenge** (night.md Q6) | The share of the enemy's challenges a side's ships can answer with his reply, so he takes them for friends | 0 |
+| **Searchlights** (night.md Q7) | When a captain burns his searchlights in the dark: never, once fired on, to fire (on what his guns can't see), or to search for torpedo craft as well | To fire |
+| **StarShell** (night.md Q7) | When a captain fires star shell: never, to fire, or to find as well (a contact held but not seen or not made out) | To fire |
+| **ChallengeM** (night.md Q7) | A ship not made out is challenged only within this range; farther off he keeps dark | Any range (the "default" preset: 2,500 m) |
+| **WhenLit** (night.md Q7) | A ship in an enemy's beam or under a flare: fight on, or put her lights out and turn away | Fight on (the "default" preset: turn away) |
 
 **Presets, defined by values** (decision 7): a preset is a named set of these fields' values, as data
 (`Content/Sim/doctrine.json`, beside the settings), never code. A side takes a preset by name in the scenario

@@ -141,6 +141,13 @@ public sealed class SearchlightSystem : IWorldSystem
         return (l.Order, l.Target, l.Order >= SearchlightOrder.Illuminate && nowMs >= l.OnMs);
     }
 
+    /// <summary>A ship's searching arc (its middle, degrees off her bow, and half its width); (0, 0) unless searching.</summary>
+    public (double CentreDeg, double HalfDeg) ArcOf(int ship)
+    {
+        int i = Find(ship);
+        return i >= 0 && lit[i].Order == SearchlightOrder.Search ? (lit[i].CentreDeg, lit[i].HalfDeg) : (0, 0);
+    }
+
     /// <summary>The beams out now into the lights (at a look, after the fires): each ship's under its order.</summary>
     internal void Gather(World world, Lights lights)
     {

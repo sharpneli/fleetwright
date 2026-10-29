@@ -681,6 +681,51 @@ decision 1); own ships as contacts (a bounded look in the dark) wait for playtes
   boats are seen late), so flotillas are sent in on battle lines by night when worth it.
 - The night's change of task stays keyed on the doctrine's sun elevation (the AI's judgment, not a physical switch).
 
+**Built in four slices** (the user, 2026-10-29: tuning passes once every piece is in, so each slice is measured, not
+tuned): **Q7a** lights by doctrine and when lit, **Q7b** the flotilla's dark side, **Q7c** the matchup at night (the
+commander), **Q7d** the admirals at night (close order, losing touch).
+
+**Q7a done (2026-10-29).** Lights by doctrine, and what a ship does when lit:
+
+- **Doctrine rows** (after `AnswerChallenge`; the launch screen's rows too): **`Searchlights`** never / when fired on
+  (once she's under fire) / to fire (Q4's: on what the guns can't see) / search (and, with nothing to light, sweeping
+  `SearchHalfDeg` 45° either side of the nearest contact held; trained round again only once it's drawn half the arc off);
+  **`StarShell`** never / to fire (Q5's) / to find (and, with nothing to fire at, the nearest contact in its reach held but
+  not in sight or not made out); **`ChallengeM`**, the range within which an unknown is challenged (farther off he keeps
+  dark; Q6's open item); **`WhenLit`** fight on / turn away. The code's defaults are what Q4-Q6 did; the "default" preset
+  takes to fire, to fire, 2,500 m and turn away [EST]. Presets one a period wait for the tuning pass.
+- **Lit** (`CaptainLayer.TurnFromLight`): a ship counts herself lit once the others' beams and the flares on her
+  (`Lights.LitBy`: not the fires) are `LitShare` 10 times the night sky's light [EST]. Turning away, she puts her lights out,
+  turns stern to the light and holds that course until `LitTurnAwayS` 120 s after she was last lit [EST], her guns still
+  firing; then her order's course again. Not while combing a track, pressing a torpedo attack or under the conn. The comb
+  and this are one held course now (`Captain.HeldUntilMs`, `HeldFor`: Combing or Lit); the card says "lit: lights out,
+  turned away".
+- **Not built:** a darkened ship (navigation lights aren't modelled: every ship is darkened); firing at a gun's flash alone
+  (fire control lays on lamps and bow waves, not a flash: a later fire-control item).
+- **Tests:** `NightDoctrineTests` (lit, turn away to 279° with her lights out or fight on; searchlights never, to fire,
+  search; challenged within 2.5 km, not within 1 km).
+
+**The bench after Q7a** (20 seeds; Q6's in brackets):
+
+| Case | First seen | First salvo, salvos' median | Shells / hits | Torpedoes, hits | Lost |
+|---|---|---|---|---|---|
+| Southampton | GB 5.8 (8.9), DE 9.1 km | DE 5.1 (8.6), 3.3 km (5.4) | GB 73 / 22 (165 / 16), DE 2,588 / 775 (2,945 / 310) | GB 3.5, 0.1 (0.4, 0); DE 6.8, 0.8 | GB 1.1 of 4 (0.5), DE 0.2 (0.2) |
+| 4th Flotilla | GB 3.4 (5.7), DE 4.3 km | DE 4.3, 3.7 km | GB 79 / 18 (72 / 18), DE 518 / 66 (699 / 110) | GB 3.3, 0.3 (3.5, 0.8); DE 8.7 | GB 2.0 of 10 (2.3), DE 0.1 |
+| Black Prince | GB 2.8 in 10 of 20, DE 4.7 km | DE 2.9 km in 8 of 20 (4.1, all), 2.8 km | GB 58 / 45 (58 / 21), DE 154 / 47 (372 / 81) | DE 2.4, 0.6 | GB 0.2 of 1 (0.7) |
+| Dover Strait | 0.5 and 0.3 km | 0.4 and 0.3 km, GB 1.1 (4.4), DE 3.2 km | GB 110 / 65 (760 / 89), DE 118 / 33 (241 / 30) | GB 4.9, 1.8 (8.7, 1.3); DE 8.3, 1.8 | GB 0.7 of 2 (0.3), DE 1.8 of 6 (2.1) |
+
+**What it says:**
+- **The Germans challenge only close now** (within 2.5 km), so they no longer give themselves away at 9 km: the British
+  pick them up at Q5's ranges again, and the Germans open at 5.1 km (8.6) at Southampton, once she's made out.
+- **Turning away from the light ends the long night duels.** The Dover Strait's 4 km gun duel (Q4) is a close fight again
+  (the British salvos' median 1.1 km, the record's point blank), with the Germans losing 1.8 boats of 6 (the record's two).
+  At Southampton the British, lit by star shell, turn away and fire little (73 shells), while the Germans hit 30% of 2,588
+  at a 3.3 km median: the turn-away is a straight run with a flare kept over her.
+- **Black Prince now gets away** (lost 0.2 of 1): the Germans hold their fire on her past 2.5 km and never challenge
+  her; in 8 runs of 20 there's a fight, at about 1 km. The record's
+  blunder wants her to take them for friends, which needs own ships as contacts (decision 1) or her own hold-fire.
+- These are measurements for the tuning pass, not targets met.
+
 ### Q8 The crew at night
 
 - Searchlight crews in the crew book (Q3). The searchlight term for green crews (`crew.md` N3's unbuilt row, CUF R3).

@@ -98,7 +98,14 @@ public sealed class Lights
     /// <summary>The light on a ship (slot) from every light but her own, through the haze (Allard's extinction, 3.912 /
     /// the visibility): the illuminance, lux, and the bearing it comes from (the lights' bearings weighed by their light);
     /// 0 lux when none reaches her.</summary>
-    public (double Lux, double FromDeg) On(int slot, Vec3d position, double visibilityM)
+    public (double Lux, double FromDeg) On(int slot, Vec3d position, double visibilityM) => Sum(slot, position, visibilityM, fires: true);
+
+    /// <summary>The light on a ship (slot) from the others' beams and the flares (docs/battle/night.md Q7: what tells her
+    /// she's lit; not the fires near her), as <see cref="On"/>.</summary>
+    public (double Lux, double FromDeg) LitBy(int slot, Vec3d position, double visibilityM) =>
+        Beams == 0 && Flares == 0 ? (0, 0) : Sum(slot, position, visibilityM, fires: false);
+
+    (double Lux, double FromDeg) Sum(int slot, Vec3d position, double visibilityM, bool fires)
     {
         double sigmaAir = double.IsPositiveInfinity(visibilityM) || visibilityM <= 0 ? 0 : 3.912 / visibilityM;
         double lux = 0, e = 0, n = 0;
@@ -106,7 +113,7 @@ public sealed class Lights
         var north = Earth.North(position);
         for (int i = 0; i < Count; i++)
         {
-            if (owner[i] == slot)
+            if (owner[i] == slot || !fires && !flare[i] && double.IsNaN(axis[i]))
                 continue;
             double c = Sends(i, position);
             if (!(c > 0))

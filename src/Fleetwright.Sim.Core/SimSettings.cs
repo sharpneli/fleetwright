@@ -422,6 +422,14 @@ public sealed record SimSettings
     /// within this many metres × (1 − a) of her: at a = 1 on any shape [EST]. At most <see cref="LineOfFireCellM"/>.</summary>
     public double UnknownFriendM { get; init; } = 5_000;
 
+    /// <summary>The captains at night (docs/battle/night.md Q7) [EST]. A ship counts herself lit when the light on her from
+    /// others' beams and flares is <see cref="LitShare"/> times the night sky's or more; doctrine turning her away, she holds
+    /// away from it until <see cref="LitTurnAwayS"/> s after she was last lit. Searching, her lights sweep
+    /// <see cref="SearchHalfDeg"/> either side of the nearest contact her navy holds.</summary>
+    public double LitShare { get; init; } = 10;
+    public double LitTurnAwayS { get; init; } = 120;
+    public double SearchHalfDeg { get; init; } = 45;
+
     /// <summary>A moon low enough silhouettes a ship toward it as the low sun does, as strongly as its path on the sea
     /// outshines the sky (<see cref="NightMoonPathShare"/>), fading as it climbs to this elevation, degrees [EST].</summary>
     public double SightSilhouetteMoonHighDeg { get; init; } = 40;

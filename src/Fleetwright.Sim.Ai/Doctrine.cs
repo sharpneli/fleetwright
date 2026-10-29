@@ -134,6 +134,23 @@ public enum DoctrineField : byte
     /// <summary>The share of the enemy's challenges a side's ships can answer with his reply (0-1; docs/battle/night.md Q6:
     /// the challenge known from captured signal books or overheard), so he takes them for friends. A side's value.</summary>
     AnswerChallenge,
+
+    /// <summary>When a captain burns his searchlights in the dark (<see cref="SearchlightUse"/>; docs/battle/night.md Q7):
+    /// never, only once he's under fire or lit, to light what his guns can't see, or to search for torpedo craft as well.
+    /// After <see cref="AnswerChallenge"/>, so the fields' numbers in logged commands stand.</summary>
+    Searchlights,
+
+    /// <summary>When a captain fires star shell (<see cref="StarShellUse"/>; Q7): never, to light what his guns can't see,
+    /// or to find as well: a contact held but not in sight, or one not made out, within its reach.</summary>
+    StarShell,
+
+    /// <summary>A captain challenges a ship he can't make out only within this range, m (Q7): beyond it he holds his fire
+    /// and keeps dark until she's nearer.</summary>
+    ChallengeM,
+
+    /// <summary>What a ship does when a light (an enemy's beam, a flare) is on her in the dark (<see cref="Ai.WhenLit"/>;
+    /// Q7): fight on, or put out her own lights and turn away from it.</summary>
+    WhenLit,
 }
 
 /// <summary>Doctrine's Shells: each battery loads the kind its target calls for (the captain's choice, the matchup's
@@ -147,6 +164,30 @@ public enum Unknowns : byte
     Fire,
     Challenge,
     Hold,
+}
+
+/// <summary>Doctrine's Searchlights (docs/battle/night.md Q7).</summary>
+public enum SearchlightUse : byte
+{
+    Never,
+    WhenFiredOn,
+    ToFire,
+    Search,
+}
+
+/// <summary>Doctrine's StarShell (docs/battle/night.md Q7).</summary>
+public enum StarShellUse : byte
+{
+    Never,
+    ToFire,
+    ToFind,
+}
+
+/// <summary>Doctrine's WhenLit (docs/battle/night.md Q7).</summary>
+public enum WhenLit : byte
+{
+    FightOn,
+    TurnAway,
 }
 
 public enum ManGuns : byte
@@ -241,7 +282,7 @@ public sealed class Doctrine(GroupSystem groups, IReadOnlyDictionary<string, dou
         return r;
     }
 
-    public const int FieldCount = (int)DoctrineField.AnswerChallenge + 1;
+    public const int FieldCount = (int)DoctrineField.WhenLit + 1;
 
     /// <summary>Every field when nothing sets it: a world told nothing (a dev's, a test's) behaves as before doctrine.</summary>
     public static double Default(DoctrineField f) => f switch
@@ -276,6 +317,10 @@ public sealed class Doctrine(GroupSystem groups, IReadOnlyDictionary<string, dou
         DoctrineField.Wrecks => (double)WreckFire.Finish,   // as before: fire on while she's the one in reach
         DoctrineField.Unknowns => (double)Ai.Unknowns.Fire,   // as before friend or foe
         DoctrineField.AnswerChallenge => 0,
+        DoctrineField.Searchlights => (double)SearchlightUse.ToFire,   // as Q4 left them
+        DoctrineField.StarShell => (double)StarShellUse.ToFire,   // as Q5 left it
+        DoctrineField.ChallengeM => double.PositiveInfinity,   // as Q6 left it
+        DoctrineField.WhenLit => (double)Ai.WhenLit.FightOn,
         _ => throw new ArgumentOutOfRangeException(nameof(f)),
     };
 
@@ -433,6 +478,9 @@ public sealed class DoctrinePresets
             DoctrineField.ReliefOrder when Enum.TryParse<ReliefOrder>(name, ignoreCase: true, out var ro) => (f, (double)ro),
             DoctrineField.Wrecks when Enum.TryParse<WreckFire>(name, ignoreCase: true, out var wf) => (f, (double)wf),
             DoctrineField.Unknowns when Enum.TryParse<Unknowns>(name, ignoreCase: true, out var un) => (f, (double)un),
+            DoctrineField.Searchlights when Enum.TryParse<SearchlightUse>(name, ignoreCase: true, out var sl) => (f, (double)sl),
+            DoctrineField.StarShell when Enum.TryParse<StarShellUse>(name, ignoreCase: true, out var ss) => (f, (double)ss),
+            DoctrineField.WhenLit when Enum.TryParse<WhenLit>(name, ignoreCase: true, out var wl) => (f, (double)wl),
             _ => throw new ArgumentException($"doctrine: \"{v}\" isn't a value of {field}"),
         };
     }
@@ -454,6 +502,9 @@ public sealed class DoctrinePresets
             DoctrineField.ReliefOrder => ((ReliefOrder)(int)v).ToString(),
             DoctrineField.Wrecks => ((WreckFire)(int)v).ToString(),
             DoctrineField.Unknowns => ((Unknowns)(int)v).ToString(),
+            DoctrineField.Searchlights => ((SearchlightUse)(int)v).ToString(),
+            DoctrineField.StarShell => ((StarShellUse)(int)v).ToString(),
+            DoctrineField.WhenLit => ((WhenLit)(int)v).ToString(),
             _ => null,
         };
         // "CarryOn" -> "carry on"

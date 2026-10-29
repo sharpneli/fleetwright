@@ -137,6 +137,10 @@
   "ChallengeLampMirrorM": 0.25,
   "ChallengeTrustS": 600,
   "UnknownFriendM": 5000,
+  // the captains at night (docs/battle/night.md Q7)
+  "LitShare": 10,
+  "LitTurnAwayS": 120,
+  "SearchHalfDeg": 45,
   // the night's light (docs/battle/night.md Q1)
   "NightOvercastShare": 0.15,
   "NightMoonSkyShare": 0.25,

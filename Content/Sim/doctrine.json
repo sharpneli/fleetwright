@@ -72,6 +72,15 @@
     // about her. Most of the era's navies challenged or held fire [EST until the research]
     "Unknowns": "challenge",
     // the share of the enemy's challenges a side's ships can answer with his reply, taken for friends (0: none known)
-    "AnswerChallenge": 0
+    "AnswerChallenge": 0,
+    // at night (docs/battle/night.md Q7) [EST until the research; one a period in the tuning pass]: searchlights "never",
+    // "when fired on", "to fire" (on a target the guns can't see) or "search" (sweeping for torpedo craft as well); star
+    // shell "never", "to fire" or "to find" (a contact held but not seen or not made out, as well); challenge a ship not
+    // made out only within ChallengeM (farther off, keep dark); lit by an enemy's beam or a flare, "fight on" or "turn
+    // away" (lights out, stern to the light for two minutes)
+    "Searchlights": "to fire",
+    "StarShell": "to fire",
+    "ChallengeM": 2500,
+    "WhenLit": "turn away"
   }
 }
