@@ -1,6 +1,6 @@
 # Plan: the crew (a 4.5 deepening)
-Status: **agreed with the user 2026-10-27**; **replanned from the research and agreed 2026-10-28** (decisions 6-10)
-Updated: 2026-10-28
+Status: **agreed with the user 2026-10-27**; **replanned from the research and agreed 2026-10-28** (decisions 6-10); **complete 2026-10-29** (N6)
+Updated: 2026-10-29
 
 What a ship's men do in a fight: where they stand, what a station can do with the men left at it, who goes up to fill
 the gaps, and when there's nobody left to fight her. It builds on E6's casualties (`shells-armour-damage.md`,
@@ -611,6 +611,57 @@ the walking wounded back after 15-45 min). Southampton's and Emden's hit counts 
       allocations the same. The full suite passes.
 - **N6 Fit and check.** The yardstick above. E6's per-hit benches stay as they are. Coarse parity (`CoarseParityTests`),
   no allocation in the hit and evaluate paths, the matchup and the squadrons' hash reported.
+  **Done 2026-10-29.**
+  - **The bench gap first.** crew-history's ships had no enemy in sight, so their captains never ran the posture
+    (N3a): every gun was closed up on both sides, the Russians' light guns too. The long cases were fitted against the
+    wrong posture. Now each run's ship has her enemy (the case's first shooter) on the side the hits come from, at the
+    middle of its ranges, on her course and speed, 80-110 km from the other runs. Both keep the conn, and their own
+    shells and torpedoes do nothing (`HitsDoDamage` off): only the given fire does damage. Each case takes its navy's
+    `ManCasemates` and `ManOpenGuns` from its scenario: the Russians at Tsushima torpedo craft for both, the RN casemates
+    in range and open guns torpedo craft, the Germans casemates always, the rest the default preset (in range).
+    damage-history runs as before (`GivenFire.Barrage.Man` null). A case costs 3-4 times what it did (Oryol 6 → 21 s).
+  - **The yardstick (20 runs; killed and wounded a ship, N3b → N6, record):**
+
+    | Case | Killed and wounded | Out at the end of the fire | Under cover, reliefs at the end | Record, wanted |
+    |---|---|---|---|---|
+    | Oryol, green, 5 h | 180 → 97 (43 → 25 killed) | 121 → 62 | 108, 41 | 43 killed, 80 wounded; 100-150 out |
+    | Chester | 23 → 23 | 22 | 0, 1 | 78; 75-80 out |
+    | Southampton | 13 → 13 | 11 | 0, 2 | 89; silent from casualties |
+    | Kent, average | 58 → 45 | 42 → 34 | 53, 30 | 16; about 16 out |
+    | Emden | 236 → 206 (lost 60 → 75%) | 176 → 159 | 2, 43 | 171-203 |
+    | Suvorov, green, 5 h | 287 → 180 | 162 → 109 | 97, 20 | all lost; the reserve gone within hours |
+    | Sverige, 500 hits in 2 h | 277 → 276 (lost 10 → 0%) | 181 → 178 | 0, 5 | toll rising while she fights |
+    | Graf Spee | 48 → 45 | 31 | 0, 10 | 96 |
+
+    - **What the posture moves:** the light guns' crews under cover take a hit there at cover 0.2, where they stood in the
+      open before. Oryol and Suvorov keep 130 men under cover with a watch of two 75 mm a side; Kent keeps her port
+      casemates and half her 12-pdrs' crews under cover (76 men). Emden's casemates are manned by doctrine, and her
+      wrecked guns' crews go under cover and on to the guns left (17 under cover at 25 min, gone by 50).
+    - **Where the misses lie, none of them this plan's numbers:**
+      - **Oryol now kills too few** (25 killed against 43, 62 out against 100-150), with her wounded on the record (72
+        against 80). Kostenko's "behind armour, from splinters entering ports and slits" is cover's fine-tuning (decision
+        4, after this plan). Before N6 her toll was right only because her light-gun crews stood in the open.
+      - **Suvorov's reserve isn't used up** (131 → 97 under cover in 5 h): her stations lose their mounts before they
+        lose their men, so few reliefs are asked for. The same cover question, and a 150-hit count that was never
+        recorded.
+      - **The light shells** (Chester, Southampton, Graf Spee) and **Kent's casemates** are E6's placement, flagged at
+        N0. Kent comes closer with her port casemates under cover (34 out against 16).
+      - **Sverige's guns aren't silent at 2 h** (main 0.9 of 2, 152 mm 3.8 of 8). Her turrets' men are behind armour that
+        a 152 mm shell can't get through, and her stations lose their guns before their men. Physical: the record's
+        silenced ships (Suvorov, Bismarck) took heavy shells too. The rest of her wanted shape holds: the toll rises while
+        she fights (134, 140, 162, 178 at 30-120 min) and levels off after; the 75 mm are gone first; her parties are
+        spent (9 men at 2 h).
+    - **So no [EST] of N2-N3 is refitted:** every miss traces to E6's placement, to cover (decision 4) or to physics.
+      Tuning the men's numbers against them would be a guard rule.
+  - **Decision 11 judged again** (damage-history, 60 runs, identical to N3b): Seydlitz 1.75 killed a hit (wanted 1-3),
+    Derfflinger 1.28 (wanted "a few"), Jutland's plate count 1.25 (G1 1.94). The German ships sit inside their own cases'
+    bands, under G1's average only. Recommended: kept as is; the user's call.
+  - **Checks:** the full suite passes in DevRelease (Sim 836, 2 skipped as before; app 207; Shipgen 59), with
+    `CoarseParityTests` (coarse fire allocates nothing) and the zero-allocation tests of the hit and evaluate paths. The
+    squadrons' hash at 30 min is 66C709F73E3D1C32, unchanged since N5b, at the same cost. `matchup arethusa:4 iron_duke`
+    0.915 (the matchup reads no men).
+  - **Still not benched:** Rossia against Gromoboi (scenario 5 isn't built; no Rossia design) and Vizcaya (no Spanish
+    armoured cruiser).
 
 ## After this plan
 

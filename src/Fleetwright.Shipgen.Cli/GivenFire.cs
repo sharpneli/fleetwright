@@ -18,10 +18,13 @@ static class GivenFire
 
     /// <summary>The fire: the target, her speed, the hits (n over the minutes, ranges and target angles drawn from the
     /// bands), her readiness and doctrine, the hours run; her side's men's experience and her work-up (docs/battle/crew.md
-    /// decision 6); and whether her captain orders her men (N3a: the reliefs; no enemy in sight, so her posture stands).</summary>
+    /// decision 6); and whether her captain orders her men (N3a: the reliefs). With <paramref name="Man"/> (N6) she also
+    /// has her enemy in sight, so her captain's posture is her navy's: the first fall's shooter on the side the hits come
+    /// from, at the middle of the ranges and angles, on her course and speed; both keep the conn, and only the given fire
+    /// does damage. Without it no enemy is in sight and her posture stands.</summary>
     public sealed record Barrage(string Target, double Kn, Fall[] Falls, int Hits, double Minutes, (double Lo, double Hi) RangeM,
         (double Lo, double Hi) AspectDeg, string Readiness, string Doctrine, double Hours, double Experience = Sim.Core.Experience.Trained, double WorkUp = 1,
-        bool Captains = false);
+        bool Captains = false, (Sim.Ai.ManGuns Casemates, Sim.Ai.ManGuns Open)? Man = null);
 
     /// <summary>A hit just struck: the run, the ship's slot and condition, when (ms after the start), where it struck, and
     /// her mounts working before it. The damage system's Last* hold what it did.</summary>
@@ -36,7 +39,8 @@ static class GivenFire
     public static void Run(Barrage b, string name, ShipClass target, Func<string, ShipClass> cls, SimSettings settings, int runs,
         Action<int, int> spawned, Action<World, Struck> hit, Action<World, int> minute)
     {
-        var s = settings with { ReadinessDefault = b.Readiness, DamageControlDefault = b.Doctrine };
+        // with her enemy in sight, their own shells and torpedoes do nothing: only the case's fire
+        var s = settings with { ReadinessDefault = b.Readiness, DamageControlDefault = b.Doctrine, HitsDoDamage = settings.HitsDoDamage && b.Man == null };
         if (!s.Readiness.Any(x => x.Name == b.Readiness) || !s.DamageControl.Any(x => x.Name == b.Doctrine))
             throw new ArgumentException($"{name}: no readiness \"{b.Readiness}\" or doctrine \"{b.Doctrine}\"");
         // each fall's aims over the case's ranges and target angles
@@ -54,17 +58,42 @@ static class GivenFire
         double total = b.Falls.Sum(f => f.Share);
         var start = WorldTime.FromUtc(1916, 5, 31, 14);
         var w = new World(start, 1, s);
-        var ai = b.Captains ? new Sim.Ai.AiSystem(w) : null;
+        var ai = b.Captains || b.Man != null ? new Sim.Ai.AiSystem(w) : null;
         int ci = w.Ships.AddClass(target);
         if (b.Experience != Sim.Core.Experience.Trained)
             w.Apply(GunnerySystem.SetExperience(0, b.Experience));
+        int ei = -1;
+        if (b.Man is var (casemates, open))
+        {
+            ei = w.Ships.AddClass(cls(b.Falls[0].Shooter));
+            w.Apply(Command.SetWeather(25_000));
+            w.Apply(ai!.Orders.SideDoctrine(0, Sim.Ai.DoctrineField.ManCasemates, (double)casemates));
+            w.Apply(ai.Orders.SideDoctrine(0, Sim.Ai.DoctrineField.ManOpenGuns, (double)open));
+        }
         var rng = RandomStream.Named(1, "damage history");
         var entities = new int[runs];
         var due = new List<(long Ms, int Run, int Fall)>();
         for (int i = 0; i < runs; i++)
         {
-            w.Apply(ShipSystem.Spawn(ci, 50 + 0.05 * (i % 20), -20 - 0.1 * (i / 20), 0, b.Kn));   // the open Atlantic, 5 km apart
-            entities[i] = w.Ships.NewestEntity;
+            if (ei < 0)
+            {
+                w.Apply(ShipSystem.Spawn(ci, 50 + 0.05 * (i % 20), -20 - 0.1 * (i / 20), 0, b.Kn));   // the open Atlantic, 5 km apart
+                entities[i] = w.Ships.NewestEntity;
+            }
+            else
+            {
+                // each with her enemy, out of sight of the others' (80-110 km apart)
+                double lat = 45 + i / 10, lon = -20 - 1.2 * (i % 10);
+                w.Apply(ShipSystem.Spawn(ci, lat, lon, 0, b.Kn));
+                entities[i] = w.Ships.NewestEntity;
+                var p = Earth.Position(lat, lon);
+                var f = Earth.Forward(p, (b.AspectDeg.Lo + b.AspectDeg.Hi) / 2);   // the hits come from her starboard side (GivenHits.Flight)
+                Earth.Advance(ref p, ref f, (b.RangeM.Lo + b.RangeM.Hi) / 2);
+                var (la, lo) = Earth.LatLon(p);
+                w.Apply(ShipSystem.Spawn(ei, la, lo, 0, b.Kn, 1));
+                w.Apply(ai!.Orders.Conn(Sim.Ai.Unit.Ship(entities[i]), true));   // held on her course: the fire's side stays hers
+                w.Apply(ai.Orders.Conn(Sim.Ai.Unit.Ship(w.Ships.NewestEntity), true));
+            }
             if (b.WorkUp != 1)
                 w.Apply(ShipSystem.WorkUp(entities[i], b.WorkUp));
             spawned(i, entities[i]);
