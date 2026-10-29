@@ -187,13 +187,13 @@ public sealed unsafe partial class LaunchScene
         placing = new Placing
         {
             Unit = unit, Stations = ScenarioLoader.Stations(unit), Course = ((int)Math.Round(course) % 360 + 360) % 360, Kn = (int)Math.Round(kn),
-            Title = unit.Name, Hint = $"{n} × {design} · click to place her head, drag for the course",
+            Title = unit.Name, Hint = $"{n} × {design} · click to place her head, drag for the course, right-click cancels",
         };
         placing.Texts();
         (opening, openView) = (null, null);   // framed again with room to place her
     }
 
-    /// <summary>The placing view over the opening: a press (either button: an armed action) her head, its drag her
+    /// <summary>The placing view over the opening: a left press (an armed action; the right cancels it) her head, its drag her
     /// course, its release places her (the opening's input, <see cref="OpeningInput"/>); the unit where it would go; the bar.</summary>
     void PlacingOverlay(OpeningView v)
     {

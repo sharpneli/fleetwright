@@ -257,7 +257,7 @@ public sealed unsafe partial class MapScene : IScene
                 }
                 if (e->button.button == 3)
                 {
-                    if (!BeginPlace(e->button.x * sx, e->button.y * sy, 3))   // armed to place: the drag aims the ships
+                    if (!CancelArmed())   // an armed action: the right cancels it (docs/map-ui/input.md I4, as StarCraft)
                         (rightHeld, rightX, rightY) = (true, e->button.x * sx, e->button.y * sy);   // the order goes on the release, drawn while held (MapScene.Input.cs)
                     return true;
                 }
@@ -265,14 +265,14 @@ public sealed unsafe partial class MapScene : IScene
                     return false;
                 if (placing)
                 {
-                    BeginPlace(e->button.x * sx, e->button.y * sy, 1);   // an armed action takes the left: never a select
+                    BeginPlace(e->button.x * sx, e->button.y * sy);   // an armed action takes the left: never a select
                     return true;
                 }
                 // a click, or a box; with a verb armed, its aim (docs/map-ui/input.md: the left completes what was armed)
                 (pressX, pressY, pressed, boxing, pressAims) = (e->button.x * sx, e->button.y * sy, true, false, armedPick != ClickPick.None || fireArmed);
                 return true;
             case SDL_EventType.SDL_EVENT_MOUSE_BUTTON_UP:
-                if (placeDrag && e->button.button == placeButton)
+                if (placeDrag && e->button.button == 1)
                 {
                     EndPlace(e->button.x * sx, e->button.y * sy);
                     return true;

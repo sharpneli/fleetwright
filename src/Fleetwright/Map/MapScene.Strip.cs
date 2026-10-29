@@ -1209,7 +1209,7 @@ public sealed partial class MapScene
         if (armedPick != ClickPick.None)
         {
             if (armedPick != hintPick)
-                (hintPick, hintText) = (armedPick, $"{PickVerb(armedPick)}: {PickClick(armedPick)} · Esc cancels");
+                (hintPick, hintText) = (armedPick, $"{PickVerb(armedPick)}: {PickClick(armedPick)} · right-click or Esc cancels");
             return hintText;
         }
         if (s.Ships.IndexOf(selected) >= 0)
@@ -1344,7 +1344,7 @@ public sealed partial class MapScene
         return (enemy, own, sea, at);
     }
 
-    /// <summary>A click (either button) with a pick armed: done with what's under it (true), else false and the smart order goes. A
+    /// <summary>A left click with a pick armed: done with what's under it (true), else false. A
     /// miss on what the pick wants keeps it armed.</summary>
     bool ArmedClick(double x, double y)
     {

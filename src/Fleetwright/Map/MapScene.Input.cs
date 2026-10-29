@@ -14,8 +14,8 @@ namespace Fleetwright.Map;
 /// the map, and its click centres the map on the sea or follows a ship until a pan. The left button selects (I1): a click a ship, a drag a box;
 /// with an action armed (a verb, the dev's place or salvo) it completes it instead (I4), a click that can't mean select.
 /// The right acts (I2): its order goes on the release, drawn from the ship that steams it to what it's about while the
-/// button is held (Esc drops it); an armed verb is aimed by it too, and a drag shapes it (I3: the heading on arrival, a
-/// force's deploy).</summary>
+/// button is held (Esc drops it), and a drag shapes it (I3: the heading on arrival, a force's deploy); with an action
+/// armed, its press cancels it (I4, as StarCraft).</summary>
 public sealed unsafe partial class MapScene
 {
     readonly PanKeys panKeys = new();   // WASD, as every view's (PanKeys.cs)
@@ -69,11 +69,11 @@ public sealed unsafe partial class MapScene
     /// <summary>A right drag let go at (x, y), shaped from its press on the sea (docs/map-ui/input.md I3): a force in
     /// columns deploys on the drag's bearing; else the unit steers for the press point and holds the drag's heading
     /// there (a waypoint, and one a short leg on: past the last a ship holds the course she arrived on); with shift both
-    /// added to the route. False when it isn't a shape (pressed on a ship, an armed verb, land): the press's click then.</summary>
+    /// added to the route. False when it isn't a shape (pressed on a ship, land): the press's click then.</summary>
     bool ShapedOrder(double x, double y, bool waypoint)
     {
         var s = world.Current;
-        if (armedPick != ClickPick.None || fireArmed || s.Ships.IndexOf(selected) < 0 || Shape(s, x, y) is not var (from, heading, deploy))
+        if (s.Ships.IndexOf(selected) < 0 || Shape(s, x, y) is not var (from, heading, deploy))
             return false;
         var (unit, _) = Commanded(s);
         var o = world.Orders;

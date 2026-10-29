@@ -473,7 +473,7 @@ public sealed partial class MapScene
         _ => "",
     };
 
-    /// <summary>The dev's armed click (either button): one salvo at the sea there (the strip's picks are <see cref="ArmedClick"/>).</summary>
+    /// <summary>The dev's armed left click: one salvo at the sea there (the strip's picks are <see cref="ArmedClick"/>).</summary>
     bool FireAt(double x, double y)
     {
         if (selected < 0)
