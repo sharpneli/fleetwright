@@ -518,7 +518,7 @@ for being lit is Q8's; the coarse tier's lights are the fine tier's at its looks
 
 **Q5 done (2026-10-29).** Star shell, on our own estimates (the research hasn't come back):
 
-- **The data** (design format 15): a fifth shell block kind, `star`, with its candle (`star`: its share of the shell's mass,
+- **The data** (design format 15): a fourth shell block kind, `star`, with its candle (`star`: its share of the shell's mass,
   cd a kg, burn time, fall rate) and a `time` fuze (its `scatter` the setting's error as a share, its `blind` the duds).
   `ShellTemplates` has a star shell for each family that had one [EST]: the Germans' 1911 family (the Leuchtgeschoss of
   the 8.8, 10.5 and 15 cm: 3·10⁴ cd a kg of a 15% candle, 25 s at 6 m/s, the fuze 1.5% out, 15% duds; a 15 cm round
