@@ -324,7 +324,7 @@ so everything over the night's white goes white and the white grows with the gai
   to ~10× a starlit white deck and turned the moonless night grey; at a third the glow stays local.
 Moonless captures (Dover, 21 Apr 1917, a star shell and a beam): frame mean 59 → 32 (8-bit), pixels over 200 3.4% →
 0.3%; night salvos now orange fireballs with their structure where they were white blobs. Brightest left: smoke lying in
-a beam (lit white along it). Knobs: `-lights=lightknee:20` (0 the physical), `-flares=halo:0.3`. `-gputime` at the night scenarios (Dover 1917, Jutland's night, Tsushima, Åland's summer
+a beam (lit white along it). Knobs: `-lights=lightknee:20` (0 the physical), `-flares=halo:0.3`. **Approved by the user 2026-10-29** ("looks great"); finer tuning for ordinary displays from playtest feedback. `-gputime` at the night scenarios (Dover 1917, Jutland's night, Tsushima, Åland's summer
 night) with every light on; the gains by the user's eye from side-by-side captures.
 
 ## Budgets
