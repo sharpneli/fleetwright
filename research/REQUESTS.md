@@ -12,33 +12,6 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: (comparison, recommendation, API notes, plan...)
 -->
 
-### 2026-10-29 - Night fighting, 1890-1925 first
-- Question: how navies saw, lit and fought each other at night, as ranges by navy and period. (1) Searchlights: mirror
-  sizes, lamps (carbon arc) and intensity in candela by size and year, how many a ship carried and where, power,
-  control (local, control position, director), useful ranges in clear air and haze, how long to expose, damage.
-  (2) Star shell: which navy had it from when (the British at Jutland?), by calibre, its intensity, burn time,
-  parachute fall rate, burst height, fuze reliability, how it was placed (beyond the target) and how many to keep a
-  target lit. (3) Seeing in the dark: night binoculars by navy (aperture, magnification), lookouts, first sightings by
-  moon phase and cloud; what showed first (bow wave, wake, funnel sparks or glow, gun flash, a hull against the
-  sky); torpedo tracks at night. (4) Identification: challenge and reply, recognition lights, how often ships held fire
-  on unknown ships, fired on friends, or were betrayed by their own challenge. (5) The cases, with ranges, who lit up
-  first and what it cost them: Port Arthur 1904, Tsushima's night (the Russian ships that lit their searchlights),
-  Jutland's night (Southampton, the 4th Flotilla, Black Prince, the battleships that didn't fire), the Dover Strait
-  1917, the Otranto Straits, the Adriatic and Baltic night actions. (6) Doctrine by navy: when to burn searchlights, the
-  torpedo boats' night attack, the heavy ships' turn away. (7) Added with Q1 (2026-10-29): the cases' weather at
-  night (cloud, mist, the visibility; Jutland's night especially, which at 56°N in June was nautical twilight
-  throughout), the twilight sky's luminance by bearing from the sun's (how much darker across the sky from it), and
-  what lookouts saw against the twilight and away from it; the night sky's light (starlight and airglow, overcast) and
-  the eye's threshold contrast at night for large targets searched for (Blackwell, Middleton, Duntley), to check
-  the fitted law.
-- Context / relevant files: `docs/battle/night.md` (the plan, Q0's bench and the [EST]s), `src/Fleetwright.Sim.Combat/SightModel.cs`
-  (Q1's dark: `DarkOf`, the two knees fitted on the record; `GlowMargin`: fires as lamps by Allard's law),
-  `src/Fleetwright.Sim.Core/NightLight.cs` (twilight, moon, stars, cloud, the twilight's arch),
-  `research/simulation/fire-control-research/emergency-eyeball.md` (WWII night cases), `crews-under-fire.md`
-  (Southampton). Not blocking Q0-Q2.
-- Wanted output: tables by navy and year with sources (searchlights, star shell, glasses), the cases' numbers, and
-  what the doctrine said against what was done.
-
 ### 2026-10-25 - Which shell at which target, 1890-1925
 - Question: how navies chose the shell by target, as ranges by navy and period. (1) The rules each navy gave its
   gunnery officers (AP, common/CPC, HE; by target type, range, armour), and how far the practice followed them
@@ -270,6 +243,21 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: a table of the ratios per ship, and a recommended range for `strength` and `knuckle`.
 
 ## Done
+
+### 2026-10-29 - Night fighting, 1890-1925 first
+- Done 2026-10-29 (draft): [simulation/night-fighting.md](simulation/night-fighting.md), its eight strands as appendices in
+  [simulation/night-fighting/](simulation/night-fighting/), and [night_ref.py](simulation/night_ref.py) (the sight law
+  against the record). Searchlights by navy and year (plain arc 1.6-1.8e4 cd/cm2, a 36-in ~8-9e7 cd at 2.5-3 deg; the
+  RN's pre-war twin 24-in, 36-in and control gear from mid-1915; Russia 6 x 75 cm with remote control; USN high-intensity
+  1914-18; useful 2.7-3.7 km plain, 5.5-7.3 km HI; sweep 1.5 deg/s, 1894). Star shell: the Germans' at Jutland (to find,
+  then lights already trained), 15 cm Lg 37 kg at 500 m/s; RN from 1917; USN by 1922; burst 300-370 m. Glasses by navy
+  (KM 7x50 from 1914, RN 10x45, USN 8x with a 2.5 mm exit pupil). Identification: the challenge gave the challenger
+  away; the Germans had part of the British challenge; the British line held fire in 6 of 7 meetings. Cases 1891-1918
+  with computed sun and moon: ranges point blank to 650 yd in the dark, Jutland 600-1,500 yd at -11.5 deg (a new moon,
+  nautical twilight all night, mist), the British looking toward the glow. Night torpedoes: 1 in 2.5-7 at anchor, 1 in
+  9-17 under way. The sky by bearing (Koomen 1952: away/toward 1/11 at -6..-9 deg, not 1/20) and Blackwell's thresholds:
+  the sim's night is ×2-5 too long in twilight and moonless dark; a law with Blackwell's shape fits the anchors and keeps
+  the day. Not reached: German searchlight sizes, star shell candle and burn, Makarov, Japanese written doctrine.
 
 ### 2026-10-27 - Crews under fire: who held their stations, 1890-1925 first
 - Done 2026-10-28 (draft): [simulation/crews-under-fire.md](simulation/crews-under-fire.md). Over 40 cases in six

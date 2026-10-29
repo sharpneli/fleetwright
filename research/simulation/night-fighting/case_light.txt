@@ -1,0 +1,49 @@
+Weihaiwei 4-5 Feb 1895 (attack ~03:00 local = 19:00 UT on the 4th)
+  1895/2/4 18:00 UT  sun  -57.0 deg az   58 | moon    5.9 deg az  298,  68% lit
+  1895/2/4 19:00 UT  sun  -46.1 deg az   73 | moon   -3.6 deg az  307,  69% lit
+Weihaiwei 5-6 Feb 1895
+  1895/2/5 18:00 UT  sun  -56.7 deg az   57 | moon   17.6 deg az  292,  78% lit
+  1895/2/5 19:00 UT  sun  -46.0 deg az   73 | moon    7.3 deg az  300,  79% lit
+Port Arthur 8-9 Feb 1904 (attack ~23:30 local = 15:25 UT)
+  1904/2/8 15:30 UT  sun  -65.0 deg az  337 | moon  -16.5 deg az   96,  48% lit
+  1904/2/8 17:00 UT  sun  -64.0 deg az   29 | moon   -0.1 deg az  109,  47% lit
+Yellow Sea night 10-11 Aug 1904
+  1904/8/10 11:00 UT  sun   -3.4 deg az  292 | moon  -15.6 deg az  304,   2% lit
+  1904/8/10 13:00 UT  sun  -23.4 deg az  314 | moon  -31.7 deg az  328,   2% lit
+  1904/8/10 16:00 UT  sun  -37.4 deg az    2 | moon  -36.5 deg az   18,   1% lit
+Dogger Bank incident 21-22 Oct 1904 (~00:55 local)
+  1904/10/21 21:00 UT  sun  -36.5 deg az  309 | moon   32.6 deg az  164,  94% lit
+  1904/10/22 00:00 UT  sun  -46.1 deg az    8 | moon   28.6 deg az  216,  95% lit
+Tsushima night 27-28 May 1905 (local = UT+9)
+  1905/5/27 11:00 UT  sun   -7.4 deg az  302 | moon  -60.2 deg az   16,  37% lit
+  1905/5/27 12:00 UT  sun  -17.3 deg az  312 | moon  -54.4 deg az   40,  37% lit
+  1905/5/27 13:00 UT  sun  -25.5 deg az  325 | moon  -45.4 deg az   57,  37% lit
+  1905/5/27 15:00 UT  sun  -34.1 deg az  355 | moon  -23.0 deg az   80,  36% lit
+  1905/5/27 17:00 UT  sun  -29.1 deg az   28 | moon    1.0 deg az   96,  35% lit
+Coronel 1 Nov 1914 (local ~UT-4.9)
+  1914/11/1 23:30 UT  sun   -1.3 deg az  251 | moon    9.2 deg az   63,  99% lit
+  1914/11/2 00:30 UT  sun  -12.2 deg az  241 | moon   19.0 deg az   53,  99% lit
+  1914/11/2 01:30 UT  sun  -22.1 deg az  230 | moon   27.3 deg az   40,  99% lit
+Gulf of Riga 16-17 Aug 1915
+  1915/8/16 22:00 UT  sun  -18.3 deg az  352 | moon  -24.2 deg az  271,  37% lit
+  1915/8/17 01:00 UT  sun  -12.4 deg az   37 | moon  -45.7 deg az  314,  38% lit
+Jutland night 31 May-1 Jun 1916 (GMT)
+  1916/5/31 20:00 UT  sun    0.5 deg az  312 | moon    2.9 deg az  314,   0% lit
+  1916/5/31 21:00 UT  sun   -5.0 deg az  325 | moon   -2.2 deg az  326,   0% lit
+  1916/5/31 22:00 UT  sun   -8.9 deg az  338 | moon   -5.9 deg az  338,   0% lit
+  1916/5/31 23:00 UT  sun  -11.1 deg az  352 | moon   -7.9 deg az  351,   0% lit
+  1916/6/1 00:00 UT  sun  -11.2 deg az    6 | moon   -8.2 deg az    4,   0% lit
+  1916/6/1 01:00 UT  sun   -9.4 deg az   20 | moon   -6.6 deg az   17,   0% lit
+  1916/6/1 02:00 UT  sun   -5.6 deg az   34 | moon   -3.4 deg az   30,   0% lit
+Dover Strait 26-27 Oct 1916
+  1916/10/26 22:00 UT  sun  -46.7 deg az  324 | moon  -52.2 deg az  323,   0% lit
+  1916/10/27 00:00 UT  sun  -51.2 deg az    9 | moon  -57.0 deg az   10,   0% lit
+Dover Strait 20-21 Apr 1917
+  1917/4/20 23:00 UT  sun  -26.3 deg az  346 | moon  -26.5 deg az  356,   1% lit
+  1917/4/21 00:45 UT  sun  -26.3 deg az   14 | moon  -23.5 deg az   23,   1% lit
+Otranto 14-15 May 1917 (local = UT+1)
+  1917/5/15 01:00 UT  sun  -22.8 deg az   36 | moon   10.2 deg az  107,  39% lit
+  1917/5/15 03:30 UT  sun   -0.7 deg az   65 | moon   34.4 deg az  137,  38% lit
+Dover Strait 14-15 Feb 1918
+  1918/2/15 00:00 UT  sun  -51.9 deg az  357 | moon  -17.0 deg az  312,  18% lit
+  1918/2/15 01:30 UT  sun  -48.4 deg az   31 | moon  -25.0 deg az  333,  19% lit

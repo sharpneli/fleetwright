@@ -121,6 +121,14 @@ Across both: [armour-and-damage.md](simulation/armour-and-damage.md) (draft, 202
 |---|---|---|
 | [crews-under-fire.md](simulation/crews-under-fire.md) | Crews under fire, 1890-1925 (WWII and land evidence as checks): who held their stations and who left, what set the difference, re-manning and reliefs, the navies' orders on cover, gunnery under fire, ship totals for wrecks, crew quality by navy; proposals for crew.md N3 (draft) | — |
 
+**Night fighting**
+
+| Note | What it covers | Scripts |
+|---|---|---|
+| [night-fighting.md](simulation/night-fighting.md) | Night fighting without radar, 1890-1925 (WWII as checks): searchlights and star shell by navy and year, glasses and lookouts, ranges by light, what showed first, identification and challenges, the cases 1891-1918 with computed sun and moon (Jutland's night in full), doctrine written and done, the night sky by bearing and the eye's thresholds, the sim's sight law against the record; the plan's [EST]s checked (draft) | [night_ref.py](simulation/night_ref.py) |
+
+Its eight strands, with their full case tables and sources, are in [simulation/night-fighting/](simulation/night-fighting/): searchlights, star shell, lookouts and glasses, the night's light and the eye, identification and doctrine, cases 1890-1905, Jutland's night, cases 1911-1918.
+
 **Ship design model**
 
 | Note | What it covers | Scripts |
