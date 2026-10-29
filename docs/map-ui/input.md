@@ -9,7 +9,7 @@ supersedes where they differ.
 
 The controls are the same in every view (the user, 2026-10-26: "a critical usability cornerstone"): once learned, the
 player expects identical behaviour everywhere. A view that pans takes `PanKeys` (WASD, one implementation), the middle
-drag and click, the wheel at the cursor; the left button selects, the right acts. Done for the battle map and the launch
+drag and click, the wheel at the cursor; the left button selects (or completes an armed action), the right acts. Done for the battle map and the launch
 screen's opening (**U1**, 2026-10-26: placing a unit on the right button, the launch screen's S, A and D moved to V, N
 and P). **U2** (2026-10-26, question 6): the ship viewer pans by WASD and the middle drag; the hitbox view's middle
 button is the camera's (its drag orbits, with shift it pans), WASD pans, the left selects a prism, the right fires (a
@@ -34,15 +34,19 @@ as it is: no player sees it.
 | Middle drag | pan, the point under the cursor held (the left drag's grab) |
 | Middle click | the sea: the map centres there; a ship: the camera follows her until a pan |
 | Wheel | zoom at the cursor (as before); the map stays north-up, so no rotate keys |
-| **Left click** | select: a ship; double-click her squadron; Ctrl+click adds or takes (decision 2); the empty sea deselects |
-| Left drag | box select: the ships inside; a squadron or force wholly inside goes as that unit |
+| **Left click** | select: a ship; double-click her squadron; Ctrl+click adds or takes (decision 2); the empty sea deselects. With an action armed: completes it (I4) |
+| Left drag | box select: the ships inside; a squadron or force wholly inside goes as that unit. With an action armed: the press's click (placing: the drag aims the heading) |
 | **Right click** | the order the cursor names, given on the release; while held the order is drawn as it would go |
 | Right drag | shapes the order, never changes its verb: on the sea go here arriving on this heading; a force in columns deploys along the line |
-| A verb's key | arms it: the next right click aims it, the cursor names it in amber; Esc disarms, a second Esc deselects |
+| A verb's key | arms it: the next click, left or right, aims it, the cursor names it in amber; Esc disarms, a second Esc deselects |
 | ⇧ right | queue (a waypoint), as before |
 | Alt + an order | to this ship alone, as before |
 
-The left button never does anything but select: an armed verb changes only what the right button does (decision 1).
+The left button selects, except when the player has armed an action, where a click can't mean select: then the left
+completes it (decision 1, revised 2026-10-29). An armed action is one switched on by a button or a key and waiting for a
+place or a target: a verb (Engage…, Follow…, Star shell…, every pick of the task menu), the launch screen's placing of a
+unit, and the dev panel's Place and salvo. The right button stays the acting one everywhere else, and aims an armed
+action too, so nothing learnt on it breaks. A miss keeps the action armed (the cursor says why), never a select.
 
 ## The keys that moved
 
@@ -86,12 +90,15 @@ picks a unit in one click.
 | **I1** | The left button selects only: the drag a box (units wholly inside as units) | **Done 2026-10-26** (`MapScene.Input.cs`: `BoxSelect`): the selection the guide of the largest unit wholly inside, at its level; the rest picked beside it, so a cut squadron goes as ships alone (a picked ship at a unit's level goes as her unit at it, as a ctrl+click's); ctrl adds; an empty box deselects. Benches pan with `F:pan:…:2` now |
 | **I2** | The right button on the release with the order drawn while held; armed verbs aimed by the right button | **Done 2026-10-26** (`MapScene.Input.cs`: `OrderPreview`, a dashed line from the ship that steams the order to what it's about, in the verb's colour, beside the cursor's verb; Esc while held drops it). A left click that changes the selection disarms; every "click …" of a pick now says "right-click …" |
 | **T1** | Run until it matters: the interest list in the sim, ⇧Space | **Done 2026-10-26** (`World.RunBack`, set with the speed by one `SetSpeed`; `World.Matters` from the task layer when a plan the player gave by hand ends, the encounter rules dropping to the run's speed or theirs if slower; `MapScene.Clock.cs`: `Run`, the fast clock shared with § by `Fast`; ⇧Space again ends it). The draw clock no longer runs ahead after a drop from a fast clock (`WorldSession.Clock`: its rate capped by the asked speed, a clock far ahead jumps back) |
+| **I4** | The left completes an armed action (decision 1 revised, 2026-10-29: "strict right click activates feels clunky", e.g. Place then a right click) | **Done 2026-10-29** (`MapScene.cs` press and release, `pressAims`, `AimArmed`; the dev's Place on either button, `placeButton`; `LaunchScene.View.cs`: placing on either button, a left release while placing never selects). Every armed pick's text says "click …"; the smart order's hints keep "right-click" |
 | **I3** | Right drag shapes: the heading on arrival, a force's deploy line | **Done 2026-10-26** (`MapScene.Input.cs`: `ShapedOrder`, `Shape`): pressed on the sea, a route to the press point and a 2 km leg on along the drag (past its last waypoint a ship holds the course she arrived on), ⇧ adds both to the route; a force in columns deploys on the drag's bearing; drawn while held (to the press point dashed, the drag an arrow) and named (THERE, THEN 056°; DEPLOY 045°). Pressed on a ship, or with a verb armed, a drag is the press's click |
 
 ## Decisions (the user, 2026-10-26)
 
 1. **Armed verbs on the right button**, not StarCraft's left-commits right-cancels: consistency. May change after
-   playtesting.
+   playtesting. **Revised 2026-10-29** (the user, after trying it): the strict right felt clunky (Place on the spawner,
+   then a right click). The left completes an armed action wherever it can't mean select, as many games do; the right
+   stays the active button otherwise, and still aims an armed action (it doesn't cancel, as StarCraft's does).
 2. **Ctrl+click** adds to the selection (not Shift, which queues and pans fast). Playtesting will tell.
 3. **Withdraw loses its key.** Keys are for things used often. Later: instrument which elements players use, so the
    playtests show what earns a key.

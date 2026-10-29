@@ -50,7 +50,7 @@ public sealed partial class MapScene
         new("Search…##t", 2, SDLK_E, "E", ClickPick.Search, "a scouting line spaced by the visibility, a ladder about the point; done on contact"),
         new("Withdraw##t", 2, SDLK_W, "W", ClickPick.None, "break off and go home, away from any enemy first"),
         new("Divide in two##t", 3, SDLK_D, "D", ClickPick.None, "two divisions under its admiral, each its own squadron to sail and fight as one; the unit keeps its name and orders"),
-        new("Divide from her…##t", 3, SDLK_V, "V", ClickPick.DivideFrom, "two divisions, split where you choose: right-click a ship of it, she and those astern of her the second"),
+        new("Divide from her…##t", 3, SDLK_V, "V", ClickPick.DivideFrom, "two divisions, split where you choose: click a ship of it, she and those astern of her the second"),
         new("Merge divisions##t", 3, SDLK_M, "M", ClickPick.None, "its divisions back into one squadron, the same unit"),
         new("New squadron of selected##t", 3, SDLK_Q, "Q", ClickPick.None, "this ship and those you ctrl+clicked out of their squadrons into a new one, this one guiding"),
         new("Form a force with selected##t", 3, SDLK_K, "K", ClickPick.None, "this unit and those you ctrl+clicked under one admiral, this one guiding"),
@@ -60,7 +60,7 @@ public sealed partial class MapScene
         new("Disband##t", 3, SDLK_Z, "Z", ClickPick.None, "the unit broken up: its ships, or its squadrons, on their own"),
     ];
 
-    static readonly (string Title, string How)[] TaskCols = [("ONE OF OURS", "right-click your ship"), ("THE ENEMY", "right-click an enemy"), ("A PLACE", "right-click the sea"), ("ORGANISE", "this unit")];
+    static readonly (string Title, string How)[] TaskCols = [("ONE OF OURS", "click your ship"), ("THE ENEMY", "click an enemy"), ("A PLACE", "click the sea"), ("ORGANISE", "this unit")];
 
     bool taskOpen;
 
@@ -589,17 +589,17 @@ public sealed partial class MapScene
 
     static string PickClick(ClickPick pick) => pick switch
     {
-        ClickPick.Engage or ClickPick.Torpedoes or ClickPick.Fight or ClickPick.Attack => "right-click an enemy",
-        ClickPick.Intercept or ClickPick.Shadow => "right-click a contact, seen or reported",
-        ClickPick.StarShell => "right-click a contact or the sea",
-        ClickPick.Run => "right-click a ship",
-        ClickPick.Follow or ClickPick.Station => "right-click your ship",
-        ClickPick.Screen or ClickPick.Scout or ClickPick.Cover => "right-click your ship: her squadron, or the force she's in",
-        ClickPick.Join => "right-click a ship of the squadron or force to join",
-        ClickPick.GoTo or ClickPick.Search => "right-click the sea",
-        ClickPick.Patrol => "right-click the line's far end",
-        ClickPick.Deploy => "right-click where the line should steer, or the enemy (across his course)",
-        ClickPick.DivideFrom => "right-click a ship of it: she and those astern of her the second division",
+        ClickPick.Engage or ClickPick.Torpedoes or ClickPick.Fight or ClickPick.Attack => "click an enemy",
+        ClickPick.Intercept or ClickPick.Shadow => "click a contact, seen or reported",
+        ClickPick.StarShell => "click a contact or the sea",
+        ClickPick.Run => "click a ship",
+        ClickPick.Follow or ClickPick.Station => "click your ship",
+        ClickPick.Screen or ClickPick.Scout or ClickPick.Cover => "click your ship: her squadron, or the force she's in",
+        ClickPick.Join => "click a ship of the squadron or force to join",
+        ClickPick.GoTo or ClickPick.Search => "click the sea",
+        ClickPick.Patrol => "click the line's far end",
+        ClickPick.Deploy => "click where the line should steer, or the enemy (across his course)",
+        ClickPick.DivideFrom => "click a ship of it: she and those astern of her the second division",
         _ => "",
     };
 

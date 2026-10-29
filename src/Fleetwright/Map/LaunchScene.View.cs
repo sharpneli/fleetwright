@@ -7,8 +7,8 @@ namespace Fleetwright.Map;
 
 /// <summary>The opening's camera and mouse, in the battle map's grammar (docs/map-ui/input.md: controls unified):
 /// the wheel zooms at the cursor, WASD pans (<see cref="PanKeys"/>, the map's own), the middle button drags and its
-/// click centres there; the left button selects (a unit's mark: its ships in the order of battle); the right acts
-/// (placing a unit: its press her head, its drag her course). The player's view is kept as a centre and a scale over
+/// click centres there; the left button selects (a unit's mark: its ships in the order of battle); the right acts.
+/// Placing a unit is an armed action, so either button places her (its press her head, its drag her course). The player's view is kept as a centre and a scale over
 /// rebuilds; a new pick, or placing (framed with room round the units), frames it again.</summary>
 public sealed unsafe partial class LaunchScene
 {
@@ -16,10 +16,10 @@ public sealed unsafe partial class LaunchScene
     (Vec3d Centre, double Mpp)? openView;   // the player's view of the opening, or null: framed to the units
 
     // the opening's press this frame: which button (0 left, 1 right, 2 middle; -1 none), where, whether it moved a
-    // click's worth; and the right button's for placing
+    // click's worth; and the placing button's (left or right while placing)
     int openPress = -1;
     Vector2 openPressAt;
-    bool openMoved, openHovered, rightPressed, rightHeld, rightReleased;
+    bool openMoved, openHovered, placePressed, placeHeld, placeReleased;
 
     const double OpeningMaxMpp = 5000;   // the farthest out: the gnomonic plane stays a fair chart
 
@@ -42,7 +42,8 @@ public sealed unsafe partial class LaunchScene
         }
         if (active && Vector2.Distance(mouse, openPressAt) > P(6))
             openMoved = true;
-        (rightPressed, rightHeld, rightReleased) = (ImGui.IsItemActivated() && openPress == 1, active && openPress == 1, released && openPress == 1);
+        bool places = placing != null && openPress is 0 or 1;   // an armed action takes the left too (docs/map-ui/input.md I4)
+        (placePressed, placeHeld, placeReleased) = (places && ImGui.IsItemActivated(), places && active, places && released);
 
         if (openHovered && io.MouseWheel != 0)
             Zoom(v, mouse, Math.Pow(1.2, -io.MouseWheel));
@@ -57,7 +58,7 @@ public sealed unsafe partial class LaunchScene
         {
             if (openPress == 2)
                 Centre(v, mouse);
-            else if (openPress == 0)
+            else if (openPress == 0 && placing == null)
                 SelectAt(v, mouse);
         }
         if (released)

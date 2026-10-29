@@ -11,9 +11,11 @@ using static SDL.SDL3;
 namespace Fleetwright.Map;
 
 /// <summary>The camera's input (docs/map-ui/input.md I0): WASD pans (<see cref="PanKeys"/>); the middle button drags
-/// the map, and its click centres the map on the sea or follows a ship until a pan. The left button only selects (I1): a click a ship, a drag a box. The right acts (I2): its order goes on the release, drawn
-/// from the ship that steams it to what it's about while the button is held (Esc drops it); an armed verb is aimed by
-/// it too, and a drag shapes it (I3: the heading on arrival, a force's deploy).</summary>
+/// the map, and its click centres the map on the sea or follows a ship until a pan. The left button selects (I1): a click a ship, a drag a box;
+/// with an action armed (a verb, the dev's place or salvo) it completes it instead (I4), a click that can't mean select.
+/// The right acts (I2): its order goes on the release, drawn from the ship that steams it to what it's about while the
+/// button is held (Esc drops it); an armed verb is aimed by it too, and a drag shapes it (I3: the heading on arrival, a
+/// force's deploy).</summary>
 public sealed unsafe partial class MapScene
 {
     readonly PanKeys panKeys = new();   // WASD, as every view's (PanKeys.cs)
@@ -111,11 +113,12 @@ public sealed unsafe partial class MapScene
         return (from, (Earth.Bearing(from, to) % 360 + 360) % 360, deploy);
     }
 
-    /// <summary>While the right button is held: a dashed line from the ship that steams the orders to what the release
-    /// would be about (the enemy, one of ours, the sea), in the verb's colour; the cursor's verb names it.</summary>
+    /// <summary>While the right button is held (or the left, aiming an armed verb): a dashed line from the ship that
+    /// steams the orders to what the release would be about (the enemy, one of ours, the sea), in the verb's colour; the
+    /// cursor's verb names it.</summary>
     void OrderPreview(in MapView view, Snapshot s)
     {
-        if (!rightHeld || !mouseIn || ImGui.GetIO().WantCaptureMouse || s.Ships.IndexOf(selected) < 0)
+        if (!rightHeld && !(pressed && pressAims && armedPick != ClickPick.None) || !mouseIn || ImGui.GetIO().WantCaptureMouse || s.Ships.IndexOf(selected) < 0)
             return;
         var (enemy, own, sea, at) = Under(s, cursorX, cursorY);
         var (_, ship) = Commanded(s);
@@ -185,7 +188,7 @@ public sealed unsafe partial class MapScene
     /// <summary>A left press moved: past a click's worth, it's a box.</summary>
     void BoxMove()
     {
-        if (pressed && !boxing && Math.Abs(cursorX - pressX) + Math.Abs(cursorY - pressY) >= ClickPx)
+        if (pressed && !pressAims && !boxing && Math.Abs(cursorX - pressX) + Math.Abs(cursorY - pressY) >= ClickPx)
             boxing = true;
     }
 

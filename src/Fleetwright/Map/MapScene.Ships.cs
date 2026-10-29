@@ -34,7 +34,7 @@ public sealed unsafe partial class MapScene
     /// <summary>The dev panel (F1) open at start (-dev).</summary>
     public bool DevOpen { init => devOpen = value; }
     double pressX, pressY;
-    bool pressed;
+    bool pressed, pressAims;   // the left is down; with an action armed, its release aims it (no box, no select)
 
     // the dev spawn: the design picked, its class id once requested, whether the next click places, and what it places:
     // how many (more than one a group, each ship on its station), the formation, heading and speed. From the designer,
@@ -46,6 +46,7 @@ public sealed unsafe partial class MapScene
     bool placing, keepPlacing;
     // a placement being aimed: pressed on the sea while armed, heading the way the cursor has been dragged
     bool placeDrag;
+    byte placeButton;   // the button that pressed it (1 left, 3 right): its release places
     Vec3d placeAt;
     double placeX, placeY, placeHeading;
     const double ClickPx = 5;   // a press that moves less than this is a click
@@ -384,13 +385,14 @@ public sealed unsafe partial class MapScene
     /// <summary>Whether a press on the sea places ships: the dev panel armed and its class built.</summary>
     bool Armed => placing && placeClass >= 0 && world.Classes.IsReady(placeClass);
 
-    /// <summary>A right press: armed and on the sea, the placement's guide goes here and the drag aims it (true); else
-    /// false, and the press gives an order as ever (docs/map-ui/input.md: the right acts).</summary>
-    bool BeginPlace(double x, double y)
+    /// <summary>A press of either button: armed and on the sea, the placement's guide goes here and the drag aims it
+    /// (true); else false, and a right press gives an order as ever (docs/map-ui/input.md: an armed action takes the
+    /// left, the right acts).</summary>
+    bool BeginPlace(double x, double y, byte button)
     {
         if (!Armed || !View.Pick(x, y, out var at) || world.Shore.IsLand(at))
             return false;
-        (placeDrag, placeAt, placeX, placeY, placeHeading) = (true, at, x, y, spawnHeading);
+        (placeDrag, placeButton, placeAt, placeX, placeY, placeHeading) = (true, button, at, x, y, spawnHeading);
         return true;
     }
 
@@ -525,6 +527,13 @@ public sealed unsafe partial class MapScene
     /// <summary>A class's icon length at a point in the view, px: its tonnage's at the least, its true length once longer.</summary>
     double IconLengthAt(in MapView view, int cls, Vec3d p) =>
         ShipDrawList.IconPx(classOf(cls), view.Altitude / view.MetresPerPixel / Math.Max(Vec3d.Dot(p - view.Eye, view.Forward), 1e-3)).Length;
+
+    /// <summary>A left click with a verb armed: the verb aimed there, as a right click would (a miss keeps it armed).</summary>
+    void AimArmed(double x, double y)
+    {
+        if (!FireAt(x, y))
+            ArmedClick(x, y);
+    }
 
     /// <summary>A right click on the sea with a ship selected: steer for it, or with shift add it to the route.</summary>
     void OrderAt(double x, double y, bool waypoint)
@@ -751,7 +760,7 @@ public sealed unsafe partial class MapScene
         // for the build
         bool canPlace = fromDesigner && placeClass < 0 ? designer.Design != null : ready && error == null;
         ImGui.BeginDisabled(!canPlace);
-        if (ImGui.Button(placing ? "Right-click or right-drag on the sea..." : "Place"))
+        if (ImGui.Button(placing ? "Click or drag on the sea..." : "Place"))
         {
             placing = !placing;
             if (placing && fromDesigner)
@@ -759,7 +768,7 @@ public sealed unsafe partial class MapScene
         }
         ImGui.EndDisabled();
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-            ImGui.SetTooltip("right-click the sea: on the heading below · right-press and drag: they head the way you drag, placed on release");
+            ImGui.SetTooltip("click the sea (either button): on the heading below · press and drag: they head the way you drag, placed on release");
         ImGui.SameLine();
         ImGui.Checkbox("keep placing", ref keepPlacing);
 

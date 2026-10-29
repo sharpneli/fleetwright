@@ -46,7 +46,7 @@ public sealed partial class MapScene
     // a pop's least time on the screen, in real seconds, whatever the clock's rate
     const double PopFloorS = 0.2;
     const double RefCalibreMm = 305;
-    bool fireArmed;   // the dev's salvo "at": a right-click on the sea fires it
+    bool fireArmed;   // the dev's salvo "at": a click on the sea fires it
     int fireBattery;   // the dev's salvo "at": which battery
     ShellKind? fireKind;   // and which kind (null: the magazine order)
     static readonly ShellKind[] KindsInOrder = [ShellKind.Ap, ShellKind.Common, ShellKind.He];
@@ -344,7 +344,7 @@ public sealed partial class MapScene
     static string KindName(ShellKind kind) => kind switch { ShellKind.Ap => "AP", ShellKind.Common => "common", _ => "HE" };
 
     /// <summary>Dev (F1): one salvo from the selected ship "at" the sea: the battery, the kind (the magazine order, or a
-    /// kind the battery carries, her loadout's, with its rounds left), armed, then a right-click on the sea fires it.</summary>
+    /// kind the battery carries, her loadout's, with its rounds left), armed, then a click on the sea fires it.</summary>
     void DevFireRow(Snapshot s)
     {
         int k = s.Ships.IndexOf(selected);
@@ -407,7 +407,7 @@ public sealed partial class MapScene
             ImGui.TextDisabled($"no {KindName(none)} left");
         }
         ImGui.SameLine();
-        if (ImGui.Checkbox("salvo at (right-click the sea)##fire", ref fireArmed) && fireArmed)
+        if (ImGui.Checkbox("salvo at (click the sea)##fire", ref fireArmed) && fireArmed)
             armedPick = ClickPick.None;
         if (s.Shells.Count > 0)
         {
@@ -473,7 +473,7 @@ public sealed partial class MapScene
         _ => "",
     };
 
-    /// <summary>The dev's armed right-click: one salvo at the sea there (the strip's picks are <see cref="ArmedClick"/>).</summary>
+    /// <summary>The dev's armed click (either button): one salvo at the sea there (the strip's picks are <see cref="ArmedClick"/>).</summary>
     bool FireAt(double x, double y)
     {
         if (selected < 0)
