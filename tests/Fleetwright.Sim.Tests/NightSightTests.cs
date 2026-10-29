@@ -177,8 +177,9 @@ public class NightLightsTests(ITestOutputHelper output)
         Assert.True(Far(small, NightLight.ClearSkyCdM2(-6, S)) < Far(small, Moonless) - 5);
     }
 
-    /// <summary>Her own flash dazzles her eyes for a few seconds (Q2): a destroyer at 1 km on a moonless night all but
-    /// lost right after a 15" twin fires, back within a tenth of her margin some 8 s on.</summary>
+    /// <summary>Her own flash dazzles her eyes for some seconds (Q2, Q5b): a destroyer at 1 km on a moonless night (at her
+    /// threshold) all but lost right after a 15" twin fires, still dimmed 8 s on, back within a tenth of her margin by 15 s
+    /// (the flash-blindness record: 15-30 s to a silhouette near the threshold).</summary>
     [Fact]
     public void Her_own_flash_dazzles_her_for_a_few_seconds()
     {
@@ -191,7 +192,7 @@ public class NightLightsTests(ITestOutputHelper output)
         output.WriteLine($"margin {clear:F2} undazzled; after her salvo {At(0):F2} at once, {At(3):F2} at 3 s, {At(8):F2} at 8 s, {At(15):F2} at 15 s");
         Assert.True(At(0) < 0.2 * clear);
         Assert.True(At(0) < At(3) && At(3) < At(8));
-        Assert.True(At(8) > 0.9 * clear);
+        Assert.True(At(8) < 0.5 * clear && At(15) > 0.9 * clear);
         Assert.Equal(0, SightModel.DazzleCdM2(cd, -1, S));
     }
 

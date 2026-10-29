@@ -1,5 +1,5 @@
 {
- "version": 16,
+ "version": 17,
  "id": "v25",
  "name": "V25-like torpedo boat (1914)",
  "type": "DD",
@@ -41,15 +41,15 @@
    "shells": [
     {
      "ammo": "DE 1911 Psgr L/3,4 (TNT)",
-     "share": 0.665
+     "share": 0.595
     },
     {
      "ammo": "DE 1911 Spgr Kz (TNT)",
-     "share": 0.285
+     "share": 0.255
     },
     {
      "ammo": "DE 1911 Leuchtgeschoss",
-     "share": 0.05
+     "share": 0.15
     }
    ],
    "gun": "Great War, double-base, brass-cased",
@@ -345,8 +345,9 @@
    "star": {
     "candle_share": 0.15,
     "cd_per_kg": 30000,
-    "burn_s": 25,
-    "fall_ms": 6
+    "burn_s": 15,
+    "fall_ms": 6,
+    "velocity_share": 0.6
    }
   }
  },

@@ -139,7 +139,7 @@ plate, full detonation) is the explosive's (`explosive-templates.md`).
 
 - **DE 1911 Psgr L/3,4 (TNT):** 30.5 cm Psgr. L/3,4 405 kg (W/D³ 0.52), Krupp Type 2 cap (share [EST]), 10.8 kg TNT, Bdz ~0.025 s nominal: at most half came near it, many duds.
 - **DE 1911 Spgr L/3,8 Bdz (TNT):** 30.5 cm Spgr. L/3,8 Bdz 405 kg, 24.8 kg TNT: base-fuzed, bursts 2-6 m into unarmoured structure.
-- **DE 1911 Leuchtgeschoss:** The German star shell of the 8.8, 10.5 and 15 cm guns, in service by 1914 and used at Jutland's night (the 4th Flotilla lit by it). All [EST] until the research: a candle 15% of the shell, 3·10⁴ cd a kg, 25 s under its parachute at 6 m/s, the time fuze 1.5% out, 15% duds.
+- **DE 1911 Leuchtgeschoss:** The German star shell of the 8.8, 10.5 and 15 cm guns, in service by 1914 and used at Jutland's night to find the British boats, then to light them for the searchlights (the 4th Flotilla). The 15 cm Lg L/3,6 37 kg at 500 m/s against the HE's 45.3 kg at 835: fired at 0.6 of the full velocity [SRC]; a flare 'lasting quite 15 seconds', one that 'opened up like a parachute' [SRC, uncertain]; the candle 15% of the shell at 3·10⁴ cd a kg (2·10⁵ cd a 15 cm, 'an area of about 1,000 yards'), the fall 6 m/s, the time fuze 1.5% out, 15% duds [EST].
 - **DE 1911 Spgr Kz (TNT):** Nose-fuzed Sprenggranate (the 15 cm's 45.3 kg, 3.0 kg TNT). German light shells ran 0.49-0.54, so the family's blocks serve every gun.
 
 ## FR 1910
@@ -249,7 +249,7 @@ plate, full detonation) is the explosive's (`explosive-templates.md`).
 | RU 1911 light HE (TNT) (light) | he | 0.53 | 4 / 1.15 | none | 0°, 0.2; 1.00 | 8% TNT, basic | nose | 1/1 |
 
 - **RU 1911 AP (TNT):** 12" AP mod 1911 470.9 kg (W/D³ 0.60, super-heavy), 12.84 kg. Cap, explosive and fuze [EST].
-- **RU 1911 star shell:** The Great War's candle: 15% of the shell, 3e4 cd a kg, 25 s at 6 m/s, the fuze 1.5% out, 15% duds [EST].
+- **RU 1911 star shell:** Made before 1916 (130 mm; the 102 mm 15.08 kg) [SRC]; as the German: fired at 0.6 of the full velocity, a candle 15% of the shell at 3e4 cd a kg burning 15 s at 6 m/s, the fuze 1.5% out, 15% duds [EST].
 - **RU 1911 HE (TNT):** 12" HE mod 1911 471 kg, 58.8 kg TNT.
 - **RU 1911 light common (TNT):** 120/50 28.97 kg (W/D³ 0.53). Filler [EST].
 - **RU 1911 light HE (TNT):** [EST].

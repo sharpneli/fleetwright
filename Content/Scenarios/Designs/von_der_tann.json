@@ -1,5 +1,5 @@
 {
- "version": 16,
+ "version": 17,
  "id": "von_der_tann",
  "name": "Von der Tann-like (1910)",
  "type": "BC",
@@ -75,15 +75,15 @@
    "shells": [
     {
      "ammo": "DE 1911 Psgr L/3,4 (TNT)",
-     "share": 0.285
+     "share": 0.288
     },
     {
      "ammo": "DE 1911 Spgr Kz (TNT)",
-     "share": 0.665
+     "share": 0.672
     },
     {
      "ammo": "DE 1911 Leuchtgeschoss",
-     "share": 0.05
+     "share": 0.04
     }
    ],
    "gun": "Great War, double-base, brass-cased"
@@ -99,15 +99,15 @@
    "shells": [
     {
      "ammo": "DE 1911 Psgr L/3,4 (TNT)",
-     "share": 0.285
+     "share": 0.288
     },
     {
      "ammo": "DE 1911 Spgr Kz (TNT)",
-     "share": 0.665
+     "share": 0.672
     },
     {
      "ammo": "DE 1911 Leuchtgeschoss",
-     "share": 0.05
+     "share": 0.04
     }
    ],
    "gun": "Great War, double-base, brass-cased",
@@ -421,8 +421,9 @@
    "star": {
     "candle_share": 0.15,
     "cd_per_kg": 30000,
-    "burn_s": 25,
-    "fall_ms": 6
+    "burn_s": 15,
+    "fall_ms": 6,
+    "velocity_share": 0.6
    }
   }
  },

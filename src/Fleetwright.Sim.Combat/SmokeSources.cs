@@ -125,13 +125,14 @@ public static class SmokeSources
         return new FunnelPlume(rate, gas, exit, flux, kept, riseS, baseM, top - baseM, forcing, sz, sy, rise - kept);
     }
 
-    /// <summary>A coal-fired ship's funnels' glow while she forces her fires (docs/battle/night.md Q2): every funnel's,
+    /// <summary>A steam ship's funnels' glow and flare while she forces her fires (docs/battle/night.md Q2): every funnel's,
     /// cd, <see cref="SimSettings.SightFunnelGlowCd"/> a funnel at her rated power, as the smoke's forcing grows
-    /// (<see cref="Forcing"/>, at the load her speed asks); none on oil. The sight's light and the map's glow
-    /// (docs/visuals/night-lights.md Q10e) both read it.</summary>
+    /// (<see cref="Forcing"/>, at the load her speed asks); coal or oil alike (Q5b: the oil-fired destroyers of the Dover
+    /// Strait, 1917, were known by their funnel flare). The sight's light and the map's glow (docs/visuals/night-lights.md
+    /// Q10e) both read it.</summary>
     public static double FunnelGlowCd(ShipClass c, double speedMs, SimSettings s)
     {
-        if (c.Smoke.Fuel != Fuel.Coal || c.Funnels.Length == 0 || !(c.Motion.RatedShp > 0))
+        if (c.Smoke.Fuel is not (Fuel.Coal or Fuel.Oil) || c.Funnels.Length == 0 || !(c.Motion.RatedShp > 0))
             return 0;
         double load = c.PowerAt(Math.Abs(speedMs) / Handling.MsPerKnot) / c.Motion.RatedShp;
         double forced = (Forcing(load, s) - 1) / Math.Max(s.SmokeForcedFactor - 1, 1e-6);

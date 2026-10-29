@@ -78,22 +78,30 @@ public static class ShellTemplates
 
     /// <summary>A star shell (docs/battle/night.md Q5) of a family: base-ejecting, a time fuze (its error a share of the time
     /// set, and the share that fail: the duds), an expelling charge of black powder, its candle (a share of the mass, its
-    /// light a kilogram, burn and fall). Always a light guns' block: star shell came from the light and medium guns.</summary>
+    /// light a kilogram, burn and fall), and the share of the full charge's velocity it's fired at (a reduced charge, 1:
+    /// the full). Always a light guns' block: star shell came from the light and medium guns.</summary>
     static Template S(string name, string group, double lbIn3, double formFactor, double candle, double cdPerKg, double burnS, double fallMs,
-        double fuzeError, double duds, string note)
+        double fuzeError, double duds, string note, double velocity = 1)
     {
         var t = T(name, group, "star", lbIn3, 1.5, formFactor, "none", 0, false, He, 0.02, "Black powder", "basic",
             new F("time", 0, 0, 1, "single", fuzeError, duds), "forged", note);
-        return L(t with { Value = t.Value with { Star = new StarInput { CandleShare = candle, CdPerKg = cdPerKg, BurnS = burnS, FallMs = fallMs } } });
+        return L(t with
+        {
+            Value = t.Value with
+            {
+                Star = new StarInput { CandleShare = candle, CdPerKg = cdPerKg, BurnS = burnS, FallMs = fallMs, VelocityShare = velocity < 1 ? velocity : null },
+            },
+        });
     }
 
     /// <summary>A family's star shell, if it had one: what the format 15 upgrade gives its light guns (docs/battle/night.md
     /// Q5).</summary>
     public static Template? StarOf(string group) => All.FirstOrDefault(t => t.Group == group && t.Value.Kind == "star");
 
-    /// <summary>The star shell's share of a light gun's rounds where its family has one [EST: a few rounds a gun in a
-    /// hundred-odd].</summary>
-    public const double StarShare = 0.05;
+    /// <summary>The star shell's share of a light gun's rounds where its family has one (docs/battle/night.md Q5b): a main
+    /// battery's (the destroyers' and light cruisers', the night's illuminators) 15%, a secondary's 4% [SRC, the USN's
+    /// pre-war and Second War outfits: 15-20% and 2-6%; none found for 1916].</summary>
+    public static double StarShareOf(bool main) => main ? 0.15 : 0.04;
 
     /// <summary>The guns that carry star shell: under this calibre, mm (the light and medium guns).</summary>
     public const double StarUnderMm = 160;
@@ -197,10 +205,12 @@ public static class ShellTemplates
         T("DE 1911 Spgr L/3,8 Bdz (TNT)", "DE 1911", "common", 0.52, 3, 1.5, "none", 0, false, Common, 0.061, "TNT", "basic",
             Base(0.025, 0.05, plates: "two", scatter: 0.5, blind: 0.15), "forged",
             "30.5 cm Spgr. L/3,8 Bdz 405 kg, 24.8 kg TNT: base-fuzed, bursts 2-6 m into unarmoured structure."),
-        S("DE 1911 Leuchtgeschoss", "DE 1911", 0.47, 1.6, 0.15, 3e4, 25, 6, 0.015, 0.15,
-            "The German star shell of the 8.8, 10.5 and 15 cm guns, in service by 1914 and used at Jutland's night (the 4th " +
-            "Flotilla lit by it). All [EST] until the research: a candle 15% of the shell, 3·10⁴ cd a kg, 25 s under its " +
-            "parachute at 6 m/s, the time fuze 1.5% out, 15% duds."),
+        S("DE 1911 Leuchtgeschoss", "DE 1911", 0.47, 1.6, 0.15, 3e4, 15, 6, 0.015, 0.15,
+            "The German star shell of the 8.8, 10.5 and 15 cm guns, in service by 1914 and used at Jutland's night to find the " +
+            "British boats, then to light them for the searchlights (the 4th Flotilla). The 15 cm Lg L/3,6 37 kg at 500 m/s " +
+            "against the HE's 45.3 kg at 835: fired at 0.6 of the full velocity [SRC]; a flare 'lasting quite 15 seconds', one " +
+            "that 'opened up like a parachute' [SRC, uncertain]; the candle 15% of the shell at 3·10⁴ cd a kg (2·10⁵ cd a " +
+            "15 cm, 'an area of about 1,000 yards'), the fall 6 m/s, the time fuze 1.5% out, 15% duds [EST].", 0.6),
         T("DE 1911 Spgr Kz (TNT)", "DE 1911", "he", 0.52, 3, 1.5, "none", 0, false, He, 0.066, "TNT", "basic", Nose, "forged",
             "Nose-fuzed Sprenggranate (the 15 cm's 45.3 kg, 3.0 kg TNT). German light shells ran 0.49-0.54, so the family's blocks serve every gun."),
 
@@ -266,8 +276,9 @@ public static class ShellTemplates
         // ---- Russia 1911
         T("RU 1911 AP (TNT)", "RU 1911", "ap", 0.60, 4, 1.15, "hard", 0.08, true, Krupp1911, 0.027, "TNT", "basic", Base(0.025), "nicr",
             "12\" AP mod 1911 470.9 kg (W/D³ 0.60, super-heavy), 12.84 kg. Cap, explosive and fuze [EST]."),
-        S("RU 1911 star shell", "RU 1911", 0.53, 1.6, 0.15, 3e4, 25, 6, 0.015, 0.15,
-            "The Great War's candle: 15% of the shell, 3e4 cd a kg, 25 s at 6 m/s, the fuze 1.5% out, 15% duds [EST]."),
+        S("RU 1911 star shell", "RU 1911", 0.53, 1.6, 0.15, 3e4, 15, 6, 0.015, 0.15,
+            "Made before 1916 (130 mm; the 102 mm 15.08 kg) [SRC]; as the German: fired at 0.6 of the full velocity, a candle " +
+            "15% of the shell at 3e4 cd a kg burning 15 s at 6 m/s, the fuze 1.5% out, 15% duds [EST].", 0.6),
         T("RU 1911 HE (TNT)", "RU 1911", "he", 0.60, 4, 1.15, "none", 0, true, He, 0.125, "TNT", "basic", Nose, "forged",
             "12\" HE mod 1911 471 kg, 58.8 kg TNT."),
 

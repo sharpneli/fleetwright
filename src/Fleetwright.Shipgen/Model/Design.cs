@@ -335,13 +335,16 @@ public sealed record AmmoInput
 }
 
 /// <summary>ammunition.NAME.star (docs/battle/night.md Q5): a star shell's candle, its share of the shell's mass, its
-/// light a kilogram of it (cd/kg), how long it burns (s) and how fast it falls under its parachute (m/s).</summary>
+/// light a kilogram of it (cd/kg), how long it burns (s) and how fast it falls under its parachute (m/s); and the share of
+/// the full charge's muzzle velocity it's fired at (Q5b: the German 15 cm Leuchtgeschoss at 500 m/s against the HE's 835;
+/// 1 when absent).</summary>
 public sealed record StarInput
 {
     public double? CandleShare { get; init; }
     public double? CdPerKg { get; init; }
     public double? BurnS { get; init; }
     public double? FallMs { get; init; }
+    public double? VelocityShare { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 

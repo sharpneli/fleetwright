@@ -198,6 +198,11 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
   1910-1915, Russia's remote 75 cm, the USN's high-intensity arcs from 1915; design format 16 moves the blocks still as a
   template gave them. Every case's version changes; 62 cases' standard displacements move by -0.55% to +0.07% (the
   lights' mirrors, weights and housings), their hulls by a hair: 79 cases' SVGs and 17 sprite.json. ShipDesign.Version 52.
+- 2026-10-29, star shell to the research (docs/battle/night.md Q5b), on purpose: the star block's `velocity_share` (the
+  German and Russian 1911 rounds fired at 0.6 of the full velocity, burning 15 s), a main battery's 15% of star shell and
+  a secondary's 4% (was 5%); design format 17 moves the blocks and shares still as format 15 gave them. Every case's
+  version changes; the designs with star shell shift by their magazines' mean round, their hulls by a hair: 38 cases'
+  SVGs and 33 sprite.json. ShipDesign.Version 53.
 
 ## Layout
 

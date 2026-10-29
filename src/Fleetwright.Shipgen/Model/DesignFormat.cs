@@ -12,7 +12,7 @@ namespace Fleetwright.Shipgen;
 public static class DesignFormat
 {
     /// <summary>The version this build writes.</summary>
-    public const int Current = 16;
+    public const int Current = 17;
 
     /// <summary>Steps[v] upgrades a version v design to v + 1, adding what it couldn't tell to the warnings.</summary>
     static readonly Action<JsonObject, List<string>>[] Steps =
@@ -33,7 +33,52 @@ public static class DesignFormat
         Searchlights,                  // 13 → 14: the searchlights the design's (docs/battle/night.md Q3)
         (d, _) => StarShell(d),        // 14 → 15: star shell in the light guns' magazines (docs/battle/night.md Q5)
         (d, _) => SearchlightsToRecord(d), // 15 → 16: the searchlight templates to the research (docs/battle/night.md Q3b)
+        (d, _) => StarShellToRecord(d), // 16 → 17: star shell to the research (docs/battle/night.md Q5b)
     ];
+
+    // the star shells format 15 copied into the ammunition tables (name: candle share, cd a kg, burn, fall), and the share
+    // it gave a light gun's battery
+    static readonly (string Name, double Candle, double CdPerKg, double BurnS, double FallMs)[] StarsBefore17 =
+    [
+        ("DE 1911 Leuchtgeschoss", 0.15, 3e4, 25, 6),
+        ("RU 1911 star shell", 0.15, 3e4, 25, 6),
+    ];
+    const double StarShareBefore17 = 0.05;
+
+    /// <summary>16 → 17: star shell to the research (docs/battle/night.md Q5b). A star block in the ammunition table still
+    /// as format 15 copied it takes its template's new numbers (the German and Russian 1911 rounds fired at 0.6 of the full
+    /// velocity, burning 15 s); a battery whose star shell is still format 15's 5% takes a main battery's 15% or a
+    /// secondary's 4% (<see cref="ShellTemplates.StarShareOf"/>), its others scaled to fill the rest. A block or a share
+    /// changed by hand stays.</summary>
+    static void StarShellToRecord(JsonObject d)
+    {
+        if (d["ammunition"] is not JsonObject table)
+            return;
+        static double? N(JsonNode? n) => n is JsonValue v && v.TryGetValue(out double x) ? x : null;
+        foreach (var o in StarsBefore17)
+            if (table[o.Name] is JsonObject block && block["star"] is JsonObject s && s.Count == 4 &&
+                N(s["candle_share"]) == o.Candle && N(s["cd_per_kg"]) == o.CdPerKg && N(s["burn_s"]) == o.BurnS && N(s["fall_ms"]) == o.FallMs &&
+                ShellTemplates.Get(o.Name) is { } t)
+                block["star"] = JsonSerializer.SerializeToNode(t.Value.Star!, ShipgenJson.Default.StarInput);
+        foreach (var key in (ReadOnlySpan<string>)["main", "secondary"])
+        {
+            JsonNode?[] batteries = d[key] switch { JsonArray a => [.. a], JsonObject o => [o], _ => [] };
+            foreach (var b in batteries)
+            {
+                if (b?["shells"] is not JsonArray shells)
+                    continue;
+                var star = shells.OfType<JsonObject>().FirstOrDefault(e => e["ammo"] is JsonValue a && a.TryGetValue(out string? n) &&
+                    (ShellTemplates.Get(n)?.Value.Kind ?? (table[n]?["kind"] is JsonValue k && k.TryGetValue(out string? ks) ? ks : null)) == "star");
+                if (star is null || N(star["share"]) != StarShareBefore17)
+                    continue;
+                double share = ShellTemplates.StarShareOf(key == "main"), scale = (1 - share) / (1 - StarShareBefore17);
+                foreach (var e in shells)
+                    if (e is JsonObject eo && eo != star && N(eo["share"]) is { } x)
+                        eo["share"] = Math.Round(x * scale, 6);
+                star["share"] = share;
+            }
+        }
+    }
 
     // the searchlight templates as format 14 and 15 wrote them (name, capital count, mirror, small mirror, crater, spread,
     // control): a block still exactly one of these was never changed by hand
@@ -74,7 +119,7 @@ public static class DesignFormat
 
     /// <summary>14 → 15: star shell (docs/battle/night.md Q5) is a fourth kind. A light gun's battery (under
     /// <see cref="ShellTemplates.StarUnderMm"/>) whose shells are a family that had star shell (its first shell a
-    /// template's, <see cref="ShellTemplates.StarOf"/>) gets <see cref="ShellTemplates.StarShare"/> of it, its others
+    /// template's, <see cref="ShellTemplates.StarOf"/>) gets <see cref="ShellTemplates.StarShareOf"/> of it, its others
     /// scaled to make room, the block copied into the ammunition table. A battery giving no shells (the default family's)
     /// gets none, as does a family without star shell (the British before 1917).</summary>
     static void StarShell(JsonObject d)
@@ -93,10 +138,11 @@ public static class DesignFormat
                 if (first is null || ShellTemplates.Get(first) is not { } t || ShellTemplates.StarOf(t.Group) is not { } star ||
                     shells.Any(e => e?["ammo"] is JsonValue a && a.TryGetValue(out string? n) && ShellTemplates.Get(n)?.Value.Kind == "star"))
                     continue;
+                double starShare = ShellTemplates.StarShareOf(key == "main");
                 foreach (var e in shells)
                     if (e is JsonObject eo && eo["share"] is JsonValue sv && sv.TryGetValue(out double share))
-                        eo["share"] = Math.Round(share * (1 - ShellTemplates.StarShare), 6);
-                shells.Add((JsonNode)new JsonObject { ["ammo"] = star.Name, ["share"] = ShellTemplates.StarShare });
+                        eo["share"] = Math.Round(share * (1 - starShare), 6);
+                shells.Add((JsonNode)new JsonObject { ["ammo"] = star.Name, ["share"] = starShare });
                 if (!table.ContainsKey(star.Name))
                     table[star.Name] = JsonSerializer.SerializeToNode(star.Value, ShipgenJson.Default.AmmoInput);
             }

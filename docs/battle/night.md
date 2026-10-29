@@ -1175,6 +1175,46 @@ as four steps before Q10, and items for Q12's tuning pass:
 - **The bench** moves within its seeds' spread (Southampton GB 1.3 of 4 lost, DE 1.9 of 5; the 4th Flotilla GB 6.6 of 10,
   DE 1.1 of 6; Black Prince 0.2 of 1); the lights first go on at 0.6-1.1 km at Jutland, the record's 150-2,500 yd.
 
+**Q5b done (2026-10-29).** Star shell, the dazzle and the funnel flare to the record:
+
+- **A reduced charge** (`ammunition.NAME.star.velocity_share`, 1 when absent): a star round's muzzle velocity is the
+  battery's rule's times it, so it flies its own range table (each shell type has its own already). The German and
+  Russian 1911 star shells 0.6 (the 15 cm Lg's 500 m/s against the HE's 835; the 10.5 cm's 450, the 8.8 cm's 650): a
+  15 cm star round leaves at about 520 m/s.
+- **The burn** of the 1911 rounds 15 s (was 25: "lasting quite 15 seconds"; the fall 6 m/s kept, one "opened up like a
+  parachute"); the candle, the fuze's error and the duds stay [EST], not found.
+- **The share** (`ShellTemplates.StarShareOf`): a main battery's 15% (the destroyers' and light cruisers', the night's
+  illuminators), a secondary's 4% (was 5% for both; the USN's outfits, 15-20% and 2-6%).
+- **Design format 17** (`DesignFormat.StarShellToRecord`): star blocks still as format 15 copied them take the new
+  numbers, batteries still at its 5% the new share (the others scaled); hand-made ones stay. 130 design files upgraded;
+  goldens: 326 design cases, 38 SVG cases, 33 sprite.json (`ShipDesign.Version` 53).
+- **The dazzle** (`SightDazzleS` 2.5 s, was 1): a destroyer at her threshold 1 km off on a moonless night is lost after
+  her 15" twin fires, still dimmed at 8 s, back by 15 s (the flash-blindness record's 15-30 s to a silhouette near the
+  threshold; a lit target, brighter than the dazzle, isn't touched). `Her_own_flash_dazzles_her_for_a_few_seconds`
+  restated (was back by 8 s).
+- **Funnel flare on oil too** (`SmokeSources.FunnelGlowCd`): a forced oil-fired boat flares as a coal-fired one does (the
+  Dover Strait 1917, Schouwen: fought by each other's flare).
+- **Not done:** an RN star shell from 1917 wants an RN 1917 shell family (the Greenboys), which there isn't; the RN 1912
+  family stays without one (none at Jutland).
+
+**The bench after Q5b** (20 seeds; Q3b's in brackets):
+
+| Case | German star shell | Shells / hits | Torpedoes, hits | Lost |
+|---|---|---|---|---|
+| Southampton | 91 ship-min (149) | GB 71 / 49, DE 414 / 193 (492 / 257) | GB 15.7, 4.6; DE 6.3, 0.9 | GB 0.8 of 4 (1.3), DE 2.0 of 5 (1.9) |
+| 4th Flotilla | 76 ship-min (120) | GB 221 / 151, DE 368 / 197 (434 / 241) | GB 24.6, 7.5 (23.2, 7.9); DE 6.0, 1.8 | GB 5.5 of 10 (6.6), DE 1.1 of 6 |
+| Black Prince | 20 ship-min (49) | GB 70 / 63, DE 64 / 36 | DE 4.7, 1.4 | GB 0 of 1 (0.2) |
+| Dover Strait | 8 ship-min (14) | GB 92 / 46, DE 65 / 31 | GB 1.8, 0.3; DE 6.0, 1.2 | GB 0.8 of 2, DE 0.8 of 6 (1.1) |
+
+**What it says:** the shorter burns halve the German star shell's time aloft and the German hits fall by a fifth; the
+4th Flotilla's losses come down to 5.5 boats of 10 (the record's four); Black Prince is never lost now (the record: lost
+with all hands), her blunder being the challenge's and the doubt's (Q12).
+
+**Open for Q12 from the research steps:** night torpedoes hit three to eight times the record's rate (their aim has no
+night term; tracks seen at 50 m); Black Prince's blunder (doubt, the partial reply); the dawn's attack (the AI's night
+keyed to the sun 6° down); doctrine presets one a period; turning away when lit by role; phosphorescence; the moonless
+hours for raiders.
+
 ### Q10 The look
 
 **Agreed 2026-10-29 in `docs/visuals/night-lights.md`** (Q10a-Q10f; decisions 1-5 there): the

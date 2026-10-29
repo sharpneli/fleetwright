@@ -1353,7 +1353,7 @@
  {
   "name": "DE 1911 Leuchtgeschoss",
   "group": "DE 1911",
-  "note": "The German star shell of the 8.8, 10.5 and 15 cm guns, in service by 1914 and used at Jutland's night (the 4th Flotilla lit by it). All [EST] until the research: a candle 15% of the shell, 3·10⁴ cd a kg, 25 s under its parachute at 6 m/s, the time fuze 1.5% out, 15% duds.",
+  "note": "The German star shell of the 8.8, 10.5 and 15 cm guns, in service by 1914 and used at Jutland's night to find the British boats, then to light them for the searchlights (the 4th Flotilla). The 15 cm Lg L/3,6 37 kg at 500 m/s against the HE's 45.3 kg at 835: fired at 0.6 of the full velocity [SRC]; a flare 'lasting quite 15 seconds', one that 'opened up like a parachute' [SRC, uncertain]; the candle 15% of the shell at 3·10⁴ cd a kg (2·10⁵ cd a 15 cm, 'an area of about 1,000 yards'), the fall 6 m/s, the time fuze 1.5% out, 15% duds [EST].",
   "value": {
    "kind": "star",
    "mass_k_kg_m3": 13010,
@@ -1399,8 +1399,9 @@
    "star": {
     "candle_share": 0.15,
     "cd_per_kg": 30000,
-    "burn_s": 25,
-    "fall_ms": 6
+    "burn_s": 15,
+    "fall_ms": 6,
+    "velocity_share": 0.6
    }
   }
  },
@@ -2825,7 +2826,7 @@
  {
   "name": "RU 1911 star shell",
   "group": "RU 1911",
-  "note": "The Great War's candle: 15% of the shell, 3e4 cd a kg, 25 s at 6 m/s, the fuze 1.5% out, 15% duds [EST].",
+  "note": "Made before 1916 (130 mm; the 102 mm 15.08 kg) [SRC]; as the German: fired at 0.6 of the full velocity, a candle 15% of the shell at 3e4 cd a kg burning 15 s at 6 m/s, the fuze 1.5% out, 15% duds [EST].",
   "value": {
    "kind": "star",
    "mass_k_kg_m3": 14670,
@@ -2871,8 +2872,9 @@
    "star": {
     "candle_share": 0.15,
     "cd_per_kg": 30000,
-    "burn_s": 25,
-    "fall_ms": 6
+    "burn_s": 15,
+    "fall_ms": 6,
+    "velocity_share": 0.6
    }
   }
  },

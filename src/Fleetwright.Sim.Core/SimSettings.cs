@@ -349,14 +349,16 @@ public sealed record SimSettings
     /// [EST]. A light seen alone (a salvo's flash, a funnel's glow) gives a contact on its bearing, its range's 1-sigma
     /// this share of the range (no rangefinder takes a flash; the flash to the report's sound is the best of it) [EST],
     /// its speed unknown (1-sigma, m/s). Her own salvo leaves her eyes adapted as to <see cref="SightDazzleCdM2PerCd"/>
-    /// cd/m² a candela of its light, fading over <see cref="SightDazzleS"/> s [EST: a 15" turret's ~2.5·10⁷ cd as deep
-    /// twilight's sky, gone in some seven seconds]. A coal-fired ship forcing her fires shows a glow and sparks at her funnel
-    /// tops, <see cref="SightFunnelGlowCd"/> a funnel at her rated power, growing as the smoke's forcing does [EST].</summary>
+    /// cd/m² a candela of its light, fading over <see cref="SightDazzleS"/> s [a 15" turret's ~2.5·10⁷ cd as deep twilight's
+    /// sky (EST); its fading by the flash-blindness record, night-fighting.md §7.3: 2-7 s back to a lit target, 15-30 s to
+    /// a silhouette near the threshold (docs/battle/night.md Q5b)]. A ship forcing her fires shows a glow and flare at her
+    /// funnel tops, coal or oil (Q5b: the oil-fired boats of the Dover Strait fought by each other's funnel flare),
+    /// <see cref="SightFunnelGlowCd"/> a funnel at her rated power, growing as the smoke's forcing does [EST].</summary>
     public double SightHullAlbedo { get; init; } = 0.3;
     public double SightLightRangeShare { get; init; } = 0.3;
     public double SightLightSpeedSigmaMs { get; init; } = 8;
     public double SightDazzleCdM2PerCd { get; init; } = 1.2e-9;
-    public double SightDazzleS { get; init; } = 1;
+    public double SightDazzleS { get; init; } = 2.5;
     public double SightFunnelGlowCd { get; init; } = 10;
 
     /// <summary>Searchlights in the fight (docs/battle/night.md Q4) [EST, every number until the research]. Ordered to burn,

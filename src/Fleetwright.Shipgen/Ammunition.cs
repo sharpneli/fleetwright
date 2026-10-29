@@ -166,7 +166,9 @@ public static class Ammunition
             else
             {
                 foreach (var k in star.Extra.KeysOrEmpty())
-                    yield return $"{at}.star.{k}: not a candle field (candle_share, cd_per_kg, burn_s, fall_ms)";
+                    yield return $"{at}.star.{k}: not a candle field (candle_share, cd_per_kg, burn_s, fall_ms, velocity_share)";
+                if (star.VelocityShare is { } vs && !(vs > 0 && vs <= 1))
+                    yield return $"{at}.star.velocity_share: a share of the full charge's velocity, more than 0 up to 1";
                 if (star.CandleShare is not (> 0 and < 1))
                     yield return $"{at}.star.candle_share: a share of the mass, more than 0 up to 1";
                 if (!(star.CdPerKg > 0) || !(star.BurnS > 0) || !(star.FallMs >= 0))
@@ -266,7 +268,8 @@ public static class Ammunition
             var x = Explosives.Resolve(design, a.Filler!.Explosive)!;
             resolved.Add(new ShellReport
             {
-                Ammo = name, Kind = a.Kind!, Share = share, MassKg = masses[k], MuzzleVelocityMs = mv ?? MuzzleVelocity(heavyMs, heavyKg, masses[k]),
+                Ammo = name, Kind = a.Kind!, Share = share, MassKg = masses[k],
+                MuzzleVelocityMs = mv ?? MuzzleVelocity(heavyMs, heavyKg, masses[k]) * (a.Kind == "star" ? a.Star?.VelocityShare ?? 1 : 1),
                 FormFactor = a.FormFactor!.Value, Cap = a.Cap?.Kind ?? "none", CapShare = a.Cap?.Share ?? 0, BreakObDeg = a.Body?.BreakObDeg ?? 90,
                 BreakTD = a.Body?.BreakTD ?? 0, BodyQuality = a.Body?.Quality ?? 1, FillerKg = masses[k] * a.Filler.Share!.Value,
                 Explosive = x.Name ?? "", FillerRe = x.Re ?? 1, Booster = a.Filler.Booster ?? "basic",
