@@ -1,0 +1,37 @@
+// Night history (docs/battle/night.md Q0): Tsushima, 27 May 1905, from about 20:15 local (11:15 UTC). The Russian
+// squadron's remnant steams north-north-east for Vladivostok; Togo sends in his destroyers and torpedo boats from three
+// sides. The Russian ships that showed searchlights were found and torpedoed: Navarin sunk in the night, Sissoi Veliky,
+// Admiral Nakhimov and Vladimir Monomakh torpedoed and lost next morning; three Japanese torpedo boats sunk (Nos. 34,
+// 35 and 69). The forces thinned: the old ships (oslyabya stands for Navarin, Sissoi Veliky and Admiral Nakhimov)
+// against two divisions of four destroyers (ikazuchi for every boat). A bench, not a scenario to play: the boats start
+// 30 min from the Russians' track, so the first sighting is the model's.
+// The weather of the night: haze, a fresh south-westerly.
+{
+  "scenario": 1,
+  "test": true,
+  "name": "Night: Tsushima 1905",
+  "brief": "27 May 1905, 19:45 local. The Russian squadron's old ships steam north-north-east for Vladivostok as the light fails; two Japanese destroyer divisions close from the east and south-east. Night history bench.",
+  "place": "Tsushima Strait",
+  "start": "1905-05-27T10:45",
+  "seed": 1905,
+  "camera": [34.66, 130.55, 30],
+  "sides": ["Russia", "Japan"],
+  "readiness": { "Russia": "prepared", "Japan": "closed up" },
+  "damage_control": { "Russia": "1905", "Japan": "1905" },
+  "fire_discipline": { "Russia": "independent", "Japan": "independent" },
+  "doctrine": { "Russia": { "preset": "default", "NightAction": "accept", "ManCasemates": "torpedo craft", "ManOpenGuns": "torpedo craft" }, "Japan": { "preset": "default", "NightAction": "accept" } },
+  "crews": { "Russia": "average", "Japan": "trained" },
+  "player": "Russia",
+  "until": "1905-05-27T12:45",
+  "aims": { "Russia": "destroy everyone", "Japan": "destroy everyone" },
+  "home": { "Russia": [42.6, 132.0], "Japan": [33.0, 129.4] },
+  "weather": { "visibility_km": 13, "wind_from": 225, "wind_kn": 18 },
+  "units": [
+    { "name": "2nd Armoured Division", "admiral": "Capt Ozerov", "side": 0, "at": [34.6157, 130.4565], "course": 23, "kn": 11, "spacing": 600,
+      "ships": [ { "design": "oslyabya", "names": ["Navarin", "Sissoi Veliky", "Admiral Nakhimov"] } ] },
+    { "name": "3rd Destroyer Division", "admiral": "Cdr Yoshijima", "side": 1, "at": [34.6429, 130.6902], "course": 290, "kn": 20, "spacing": 300,
+      "ships": [ { "design": "ikazuchi", "names": ["Murakumo", "Shinonome", "Yugiri", "Shiranui"] } ] },
+    { "name": "4th Destroyer Division", "admiral": "Cdr Suzuki", "side": 1, "at": [34.5557, 130.6011], "course": 330, "kn": 20, "spacing": 300,
+      "ships": [ { "design": "ikazuchi", "names": ["Asagiri", "Murasame", "Harusame", "Hayatori"] } ] }
+  ]
+}

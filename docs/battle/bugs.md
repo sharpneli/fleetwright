@@ -237,7 +237,9 @@ Seen in the AI's baseline after the detail passes (2026-10-20, docs/battle/comma
 - [ ] The matchup has no night: four destroyers against sixteen dreadnoughts are hopeless (confidence 0.03) with
   `--sight 5000` as without, so a flotilla is sent in by night only on a group it could take on by day (a lone
   battleship). The era's night attack on a battle line counted on the dark (short sight for the guns, the boats seen
-  late); for the matchup's fine-tune with fire control's night (fighting.md 4.5).
+  late); for the matchup's fine-tune with fire control's night (fighting.md 4.5). Seen again in `shipgen night-history`
+  (2026-10-29, docs/battle/night.md Q0): Tsushima's eight destroyers never attack the three old battleships in 5 runs.
+  Planned in night.md Q7.
 
 - [ ] A ship keeping station far astern of where she is (a column dropping back into one line,
   `LineShapeTests`) slows by `FollowMaxSpeedDiffKn` and overshoots her station by 1-2 km before closing again at 5 kn

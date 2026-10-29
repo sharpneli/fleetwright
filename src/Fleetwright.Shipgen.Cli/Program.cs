@@ -202,6 +202,10 @@ public static class Program
         shipgen crew-history [--runs N] [--case TEXT] [--settings FILE]
             the crews' yardstick (docs/battle/crew.md N0): the record's cases under their fire, timed: the men out of action
             through the fire and after it by battle station, the batteries' mounts, the conn and the parties
+        shipgen night-history [--runs N] [--case TEXT] [--threads N] [--settings FILE]
+            the night's yardstick (docs/battle/night.md Q0): the record's night fights as scenarios played by the AI on
+            every side (the night-* tests and the Dover Strait): the first sighting, the first salvo's and torpedoes'
+            ranges, shells, hits, torpedo hits and losses by side, beside the record and the light; N seeds (default 5)
         shipgen damage-history [--runs N] [--case TEXT] [--settings FILE]
             the battle anchors (docs/battle/shells-armour-damage.md E8): the record's cases, a ship of its kind hit by its
             shells at random over its minutes, each from a range and target angle in the case's bands, at her speed,
@@ -367,6 +371,8 @@ public static class Program
                     a.Get("case"), a.Get("hours") is null ? null : D(a, "hours", 4), n => LoadDesign(Resolve(a, n)), a.Has("trace")),
                 "damage-history" => DamageHistory.Run(a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), a.Int("runs", 20),
                     a.Get("case"), n => LoadDesign(Resolve(a, n)), a.Int("trace-run", -1)),
+                "night-history" => NightHistory.Run(a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), Root(a),
+                    a.Get("land") ?? Path.Combine(Root(a), "..", "Content", "World", "land-10m.bin"), a.Int("runs", 5), a.Get("case"), a.Int("threads", 0)),
                 "crew-history" => CrewHistory.Run(a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), a.Int("runs", 20),
                     a.Get("case"), n => LoadDesign(Resolve(a, n))),
                 "dc-history" => DcHistory.Run(a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), a.Int("runs", 20),

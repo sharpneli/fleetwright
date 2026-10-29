@@ -1,0 +1,38 @@
+// Night history (docs/battle/night.md Q0): Jutland, 31 May 1916, about 23:30 GMT. The 4th Flotilla, steaming south
+// astern of the Grand Fleet, crosses the head of the German battle line pushing south-east for Horns Reef; the German
+// searchlights, star shell and secondaries open at 1,000-2,000 yd. Tipperary wrecked in minutes, Ardent and Fortune sunk
+// by gunfire later in the night's attacks (Sparrowhawk after a collision); probably one torpedo hit (Rostock). The
+// classes are stand-ins (flotilla_leader for the Faulknor-class leaders, k_acasta for the K boats, nassau_1916 for the
+// Nassaus, pillau for Elbing, graudenz for Rostock). A bench, not a scenario to play: the forces start 45 min from
+// meeting, so the first sighting is the model's.
+// The weather of the night: misty, little wind.
+{
+  "scenario": 1,
+  "test": true,
+  "name": "Night: the 4th Flotilla, Jutland 1916",
+  "brief": "31 May 1916, 22:45 GMT. The 4th Flotilla steams south in the dark; the German battle line is closing from the west-north-west for Horns Reef. Night history bench.",
+  "place": "North Sea",
+  "start": "1916-05-31T22:45",
+  "seed": 1916,
+  "camera": [56.06, 6.0, 25],
+  "sides": ["Britain", "Germany"],
+  "readiness": { "Britain": "closed up", "Germany": "closed up" },
+  "damage_control": { "Britain": "1916", "Germany": "1916" },
+  "fire_discipline": { "Britain": "independent", "Germany": "german" },
+  "doctrine": { "Britain": { "preset": "default", "NightAction": "accept" }, "Germany": { "preset": "default", "NightAction": "accept" } },
+  "crews": { "Britain": "trained", "Germany": "trained" },
+  "player": "Britain",
+  "until": "1916-06-01T00:45",
+  "aims": { "Britain": "destroy everyone", "Germany": "destroy everyone" },
+  "home": { "Britain": [56.3, -1.5], "Germany": [54.2, 7.6] },
+  "weather": { "visibility_km": 12, "wind_from": 225, "wind_kn": 8 },
+  "units": [
+    { "name": "4th Flotilla", "admiral": "Capt Wintour", "side": 0, "at": [56.1124, 6.1], "course": 180, "kn": 17, "spacing": 350,
+      "ships": [ { "design": "flotilla_leader", "names": ["Tipperary", "Broke"] },
+                 { "design": "k_acasta", "names": ["Spitfire", "Sparrowhawk", "Garland", "Contest", "Achates", "Ambuscade", "Ardent", "Fortune"] } ] },
+    { "name": "1st Squadron (van)", "admiral": "V-Adm Schmidt", "side": 1, "at": [56.0529, 5.8699], "course": 140, "kn": 16, "spacing": 500,
+      "ships": [ { "design": "nassau_1916", "names": ["Westfalen", "Nassau", "Rheinland", "Posen"] } ] },
+    { "name": "Light cruisers", "admiral": "Kmdr Michelsen", "side": 1, "at": [56.0679, 5.8899], "course": 140, "kn": 16, "spacing": 500,
+      "ships": [ { "design": "pillau", "names": ["Elbing"] }, { "design": "graudenz", "names": ["Rostock"] } ] }
+  ]
+}

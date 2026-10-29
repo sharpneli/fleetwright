@@ -120,6 +120,37 @@ want the request's numbers, and go ahead on flagged estimates if it hasn't come 
 - **Today's numbers** on it first (all at 5 km), so each step shows what it moved.
 - The scenarios with a night (`dover-strait.json`, the Jutland's night run, Tsushima) as the play checks.
 
+**Q0 done (2026-10-29).** `shipgen night-history [--runs N] [--case TEXT]` (`Shipgen.Cli/NightHistory.cs`): each case a
+scenario played by the AI on every side on the fine tier, looked at every second while an encounter is open, so the
+ranges at the first sighting, salvo and torpedoes are within a second of their moment. The cases are four new test
+scenarios (`night-tsushima`, `night-southampton`, `night-4th-flotilla`, `night-black-prince`, under Tests on the launch
+screen, to watch by eye in later steps) and the Dover Strait. Each starts its forces 30-45 min from meeting, so the first
+sighting is the model's; the record's ranges and outcomes print beside them, with the light at the place (the sun, the
+moon, the sight model's reach). 5 seeds a case, 25 plays in 9 s.
+
+**Today** (5 seeds; ranges as means, the salvos' as a median; record in brackets):
+
+| Case | Light at the meeting | First seen | Salvos at | Shells, hits | Lost |
+|---|---|---|---|---|---|
+| Tsushima 1905 | sun −5° to −13°, moon down | Japan 14 km at once; Russia never | never (the boats never attack) | none | none (Navarin sunk, 3 more torpedoed, 3 Japanese boats sunk) |
+| Southampton | sun −8° to −10°, no moon | 11 km, both | 6.6 km for 2 h | GB 1,232 / 119, DE 3,443 / 146 | GB 0 of 4, DE 1.4 of 5 (a few minutes at 800-1,500 yd; Frauenlob) |
+| 4th Flotilla | sun −11° to −12°, no moon | GB 4.3, DE 4.9 km | 3.6 km | GB 179 / 26, DE 484 / 65 | GB 1.4 of 10, DE 0 of 6 (1,000-2,000 yd; 3 boats to gunfire, 1 torpedo hit) |
+| Black Prince | sun −12°, no moon | 4.5 km, both | 4.5 km | GB 20 / 3, DE 48 / 8 | GB 0.2 of 1 (sunk in minutes at 1,000-1,500 yd) |
+| Dover Strait | sun −27°, no moon | 3.9 km, both | 3.5 km | GB 159 / 20, DE 232 / 24 | GB 1.0 of 2, DE 0.4 of 6 (about 600 yd; 2 boats sunk) |
+
+**What it says:**
+- **Every night fight opens three to ten times too far out.** In the dark the sight model's 5 km gives first sightings
+  of 4-5 km where the record has 0.5-2 km, and the guns open as soon as anyone sees.
+- **Twilight is far too generous.** The ramp from sunset to −12° keeps the reach at 27 km with the sun 8° down, so
+  Southampton's few minutes at 1,500 yd become a two-hour gun duel at 6.6 km with 4,700 shells. The northern June night
+  never gets darker than −12° at Jutland, so the ramp sets most of that night. This is Q1's first job.
+- **Black Prince sees the German line at 4.5 km and turns away**, surviving 4 runs in 5. In the record she closed it,
+  seemingly taking the ships for friends, and was lit and sunk at close range. The cautious captain's hold on unknowns
+  (Q6) and the short night (Q1) are what could bring her in.
+- **Tsushima's destroyers never attack** in 5 runs: eight boats against three old battleships aren't worth it to the
+  matchup, by night as by day (the `bugs.md` entry "the matchup has no night", now with this case). Q7's.
+- Hit rates are day-like (10-16% at 3-5 km), with no light to aim by: the ranging error has no night term yet (Q2, Q4).
+
 ### Q1 The dark
 
 - **The night's light at a place:** illuminance from the sun below the horizon (civil, nautical and astronomical

@@ -1,0 +1,34 @@
+// Night history (docs/battle/night.md Q0): Jutland, 1 June 1916, about 00:07 GMT. Black Prince, separated from the
+// 1st Cruiser Squadron since the day action and steering south to rejoin, runs into the German battle line at about
+// 1,000-1,500 yd. Lit by searchlights, she is shot to pieces by Thüringen, Ostfriesland and the ships astern in a few
+// minutes and blows up with all hands; she hits nothing. The classes are stand-ins (duke_of_edinburgh for Black Prince,
+// helgoland for the Helgolands, nassau_1916 for Nassau). A bench, not a scenario to play: the forces start 45 min from
+// meeting, so the first sighting is the model's.
+// The weather of the night: misty, little wind.
+{
+  "scenario": 1,
+  "test": true,
+  "name": "Night: Black Prince, Jutland 1916",
+  "brief": "31 May 1916, 23:22 GMT. Black Prince steams south alone to find her squadron; the German battle line is closing from the west-north-west. Night history bench.",
+  "place": "North Sea",
+  "start": "1916-05-31T23:22",
+  "seed": 1916,
+  "camera": [55.95, 6.1, 25],
+  "sides": ["Britain", "Germany"],
+  "readiness": { "Britain": "closed up", "Germany": "closed up" },
+  "damage_control": { "Britain": "1916", "Germany": "1916" },
+  "fire_discipline": { "Britain": "rn-1914", "Germany": "german" },
+  "doctrine": { "Britain": { "preset": "default", "NightAction": "accept" }, "Germany": { "preset": "default", "NightAction": "accept" } },
+  "crews": { "Britain": "trained", "Germany": "trained" },
+  "player": "Britain",
+  "until": "1916-06-01T01:22",
+  "aims": { "Britain": "destroy everyone", "Germany": "destroy everyone" },
+  "home": { "Britain": [56.3, -1.5], "Germany": [54.2, 7.6] },
+  "weather": { "visibility_km": 12, "wind_from": 225, "wind_kn": 8 },
+  "units": [
+    { "name": "Black Prince", "admiral": "Capt Bonham", "side": 0, "at": [55.9749, 6.2], "course": 180, "kn": 14, "spacing": 500,
+      "ships": [ { "design": "duke_of_edinburgh", "names": ["Black Prince"] } ] },
+    { "name": "1st Squadron", "admiral": "V-Adm Schmidt", "side": 1, "at": [55.9529, 5.9705], "course": 140, "kn": 16, "spacing": 500,
+      "ships": [ { "design": "helgoland", "names": ["Thüringen", "Ostfriesland"] }, { "design": "nassau_1916", "names": ["Nassau"] } ] }
+  ]
+}
