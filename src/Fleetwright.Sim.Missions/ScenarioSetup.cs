@@ -439,6 +439,8 @@ public sealed record ScenarioSetup
                 w.WriteNumber("wind_kn", Math.Round(c.Weather.WindMs / 0.514444, 3));
                 if (c.Weather.AirOverSeaK != 0)
                     w.WriteNumber("air_over_sea_k", c.Weather.AirOverSeaK);
+                if (c.Weather.Cloud != 0)
+                    w.WriteNumber("cloud", c.Weather.Cloud);
                 w.WriteEndObject();
             }
             foreach (var c in Changes.OfType<SetEnd>())
@@ -756,9 +758,10 @@ public sealed record SetWeather(WeatherHere Weather) : SetupChange
     public override string Describe(Scenario written) =>
         $"Weather: {Words(Weather)} (written: {(written.Weather is { } w ? Words(w) : "the default")})";
 
-    /// <summary>The weather in a few words: "8 km, wind SW 12 kn".</summary>
+    /// <summary>The weather in a few words: "8 km, wind SW 12 kn, cloud 6/10".</summary>
     public static string Words(WeatherHere w) =>
-        $"{(w.VisibilityM / 1000).ToString("0.#", CultureInfo.InvariantCulture)} km, wind {Compass(w.WindFromDeg)} {(w.WindMs / 0.514444).ToString("0", CultureInfo.InvariantCulture)} kn";
+        $"{(w.VisibilityM / 1000).ToString("0.#", CultureInfo.InvariantCulture)} km, wind {Compass(w.WindFromDeg)} {(w.WindMs / 0.514444).ToString("0", CultureInfo.InvariantCulture)} kn" +
+        (w.Cloud > 0 ? $", cloud {Math.Round(w.Cloud * 10).ToString("0", CultureInfo.InvariantCulture)}/10" : "");
 
     /// <summary>A direction by the sixteen points.</summary>
     public static string Compass(double deg) => Points[(int)Math.Round(((deg % 360) + 360) % 360 / 22.5) % 16];

@@ -191,9 +191,13 @@ static class NightHistory
         var toMoon = Moon.Position(s.Start) - at;
         double moonEl = Math.Asin(Math.Clamp(Vec3d.Dot(toMoon.Normalized(), at.Normalized()), -1, 1)) * 180 / Math.PI;
         var phase = Moon.Phase(s.Start);
-        double reach = SightModel.LightReachM(sun, settings);
+        double cloud = s.Weather?.Cloud ?? 0, vis = s.Weather?.VisibilityM ?? settings.DefaultVisibilityM;
+        var sky = NightLight.At(at, s.Start, cloud, settings);
+        var skyMeet = NightLight.At(at, new WorldTime(s.Start.Ms + 45 * 60_000), cloud, settings);
         Console.WriteLine($"    the light at the start: sun {sun:F1}° (45 min on {meet:F1}°), moon {moonEl:F0}° up, {100 * phase.Lit:F0}% lit" +
-                          $" ({(phase.Waxing ? "waxing" : "waning")}); the sight model's reach {Km(reach)} (visibility {Km(s.Weather?.VisibilityM ?? double.PositiveInfinity)})");
+                          $" ({(phase.Waxing ? "waxing" : "waning")}), cloud {cloud * 10:0}/10; sky {sky.SkyCdM2:0.0e0} cd/m² ({sky.Lux:0.0e0} lux), 45 min on" +
+                          $" {skyMeet.SkyCdM2:0.0e0}; the reference ship seen to {Km(SightModel.SeenToM(vis, sky.SkyCdM2, settings))}, 45 min on" +
+                          $" {Km(SightModel.SeenToM(vis, skyMeet.SkyCdM2, settings))} (visibility {Km(vis)})");
         Console.WriteLine($"    record: {c.Record}");
         Console.WriteLine($"    not modelled yet: {c.Missing}");
         Console.WriteLine($"    {"",-10} {"first seen",-24} {"first salvo",-18} {"salvos' range",-15} {"shells",7} {"hits",6} {"hit %",6}" +

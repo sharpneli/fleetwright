@@ -63,7 +63,7 @@ public sealed class Sightings
     {
         public int T, Found, Queries, FixObs, FixEye;
         public byte By;
-        public double Rate, Best, FixD, FixBrg, FixMargin;
+        public double Rate, Best, Shape, FixD, FixBrg, FixMargin;   // Shape: the best margin on her shape (not her bow wave), what identifies her
     }
 
     /// <summary>A smoke query a look's compute made (<see cref="SmokeSystem.Cached"/>): the observer, and the work's
@@ -82,7 +82,8 @@ public sealed class Sightings
     double[] nearD = [];      // each worker's squared distances while it finds an item's nearest
     // the encounter being looked in: its grid, and the moment's light
     int gridW, gridH;
-    double gridMinX, gridMinY, gridCell, lookVis, lookSunEl, lookSunBrg;
+    double gridMinX, gridMinY, gridCell, lookVis, lookPupil, lookSunBrg, lookMoonBrg, lookMoonSil;
+    NightSky lookNight;
     long lookNow;
 
     // a look's items worked out on the workers; under a few, inline (the same code path)
@@ -247,8 +248,10 @@ public sealed class Sightings
         var weather = world.Weather.At(origin, world.Time);
         double sunEl = Light.SunElevationDeg(origin, world.Time), sunBrg = Light.SunBearingDeg(origin, world.Time);
         bool lowSun = sunEl >= settings.SightSilhouetteLowDeg && sunEl <= settings.SightSilhouetteHighDeg;
+        var sky = NightLight.At(origin, world.Time, weather.Cloud, settings);   // the night's light (docs/battle/night.md Q1)
         (gridW, gridH, gridMinX, gridMinY, gridCell) = (w, h, minX, minY, cell);
-        (lookNow, lookVis, lookSunEl, lookSunBrg) = (now, weather.VisibilityM, sunEl, lowSun ? sunBrg : double.NaN);
+        (lookNow, lookVis, lookPupil, lookSunBrg) = (now, weather.VisibilityM, SightModel.PupilMm(sky.SkyCdM2), lowSun ? sunBrg : double.NaN);
+        (lookMoonBrg, lookMoonSil, lookNight) = (sky.MoonBearingDeg, sky.MoonSilhouette, sky);
         EnsureItems(items, world.Workers.Participants);
         world.Smoke.PrepareQueries(world.Workers.Participants);
         items = 0;
@@ -265,7 +268,7 @@ public sealed class Sightings
             {
                 double span = Span(store, i, now, dt);
                 if (!Apply(world, store, i, classesInUse, span))
-                    SmokeLook(world, store, rows[i].T, rows[i].By, near.AsSpan(i * NearMax, rows[i].Found), now, span, lookVis, sunEl);
+                    SmokeLook(world, store, rows[i].T, rows[i].By, near.AsSpan(i * NearMax, rows[i].Found), now, span, lookVis);
             }
     }
 
@@ -370,7 +373,7 @@ public sealed class Sightings
         var nearIdx = near.AsSpan(i * NearMax, row.Found);
         var ts = store[slot[t]];
         var tc = ts.Handling.Class;
-        double tTop = tc.Silhouette.TopM, vis = lookVis, sunEl = lookSunEl, sunBrg = lookSunBrg;
+        double tTop = tc.Silhouette.TopM, vis = lookVis, speed = Math.Abs(ts.Speed);
         // her fires as a light at night (fire.md B2)
         double glowMW = store.Combat.Condition(ts.Slot).FireShowMW, glowM = settings.FireGlowHeightShare * tTop;
         var pic = Of(row.By);
@@ -378,7 +381,7 @@ public sealed class Sightings
         bool inSight = ci >= 0 && pic![ci].InSight;
         // the rates add; the fix comes from the eye that ranges it best (a rangefinder before an eye's guess), and once
         // a held contact is seen by a rangefinder no more need look
-        double rate = 0, best = 0, fixD = 0, fixBrg = 0, fixSigma = double.MaxValue, fixMargin = 0;
+        double rate = 0, best = 0, shape = 0, fixD = 0, fixBrg = 0, fixSigma = double.MaxValue, fixMargin = 0;
         int fixObs = -1, fixEye = -1;
         bool done = false;
         for (int m = 0; m < nearIdx.Length && !done; m++)
@@ -394,8 +397,7 @@ public sealed class Sightings
             double brg = Earth.Bearing(os.Position, ts.Position);
             double rel = brg - os.HeadingDeg;
             double aspect = Earth.Bearing(ts.Position, os.Position) - ts.HeadingDeg;
-            bool sil = !double.IsNaN(sunBrg) && Math.Abs(Angle(brg - sunBrg)) <= settings.SightSilhouetteArcDeg;
-            var line = new SightLine(d, aspect, vis, sunEl, sil);
+            var line = new SightLine(d, aspect, vis, lookNight.Toward(brg), Silhouette(brg), SpeedMs: speed);
             var works = store.Combat.Condition(slot[nearIdx[m]]).EyeWorks;   // damage: a wrecked post sees nothing
             // the smoke on the lines (docs/battle/smoke.md Z3), asked for only where it could matter: smoke only lowers
             // a margin, so where none of the eyes that will look makes her out in clear air (and her fires don't show),
@@ -421,12 +423,17 @@ public sealed class Sightings
                 if (!eyes[e].Sees(rel) || !works[e])
                     continue;
                 tried++;
+                line = line with { Glass = SightModel.GlassLight(eyes[e], lookPupil, settings) };
                 if (smoked)
                     line = line with { Smoke = SmokeModel.EyeTau(smoke, eyes, eyes[e].X, eyes[e].Y, eyes[e].HeightM) };
-                double margin = SightModel.Margin(eyes[e].HeightM, SightModel.Magnification(eyes[e], settings), tc, line, settings);
+                double mag = SightModel.Magnification(eyes[e], settings);
+                double margin = SightModel.Margin(eyes[e].HeightM, mag, tc, line, settings);
                 if (glowMW > 0)
-                    margin = Math.Max(margin, SightModel.GlowMargin(eyes[e].HeightM, glowMW, glowM, d, vis, sunEl, settings,
+                    margin = Math.Max(margin, SightModel.GlowMargin(eyes[e].HeightM, glowMW, glowM, d, vis, line.SkyCdM2, settings,
                         SightModel.SmokeAt(line.Smoke, glowM, tTop, settings)));
+                shape = Math.Max(shape, margin);
+                // her bow wave finds her and keeps her (docs/battle/night.md Q1), but says nothing of what she is
+                margin = Math.Max(margin, SightModel.BowWaveMargin(eyes[e].HeightM, mag, tc, line, settings));
                 rate += SightModel.Rate(margin, SightModel.SearchFactor(eyes[e], settings), settings);
                 best = Math.Max(best, margin);
                 if (margin < 1)
@@ -437,7 +444,7 @@ public sealed class Sightings
                 done = inSight && eyes[e].RangefinderM > 0;
             }
         }
-        (row.Rate, row.Best, row.FixD, row.FixBrg, row.FixObs, row.FixEye, row.FixMargin) = (rate, best, fixD, fixBrg, fixObs, fixEye, fixMargin);
+        (row.Rate, row.Best, row.Shape, row.FixD, row.FixBrg, row.FixObs, row.FixEye, row.FixMargin) = (rate, best, shape, fixD, fixBrg, fixObs, fixEye, fixMargin);
     }
 
     /// <summary>Item i's look applied, on the sim thread in the look's order: the smoke cache's bookkeeping for the pairs
@@ -459,7 +466,7 @@ public sealed class Sightings
         if (inSight && row.Best >= 1 || !inSight && row.Rate > 0 && r.NextDouble() < SightModel.Chance(row.Rate, dt))
         {
             var os = store[slot[row.FixObs]];
-            Fix(pic, ci, ts, store.Combat.Condition(ts.Slot), os, os.Handling.Class.Eyes[row.FixEye], row.Best, row.FixMargin, row.FixD, row.FixBrg,
+            Fix(pic, ci, ts, store.Combat.Condition(ts.Slot), os, os.Handling.Class.Eyes[row.FixEye], row.Shape, row.FixMargin, row.FixD, row.FixBrg,
                 now, ref r, classesInUse);
             Quiet(ref pic.At(ci >= 0 ? ci : pic.IndexOf(ts.Entity)), inSight, store.Combat.LastFired(ts.Slot), now, dt);
             return true;
@@ -467,6 +474,16 @@ public sealed class Sightings
         if (inSight && row.Best < 1)
             pic.At(ci).InSight = false;
         return false;
+    }
+
+    /// <summary>How far a ship on this bearing from the eye stands dark against a bright horizon beyond her (0-1): fully
+    /// within the silhouette arc of a low sun, by the moon's path's strength within its arc (docs/battle/night.md Q1).</summary>
+    double Silhouette(double brg)
+    {
+        double arc = settings.SightSilhouetteArcDeg;
+        if (!double.IsNaN(lookSunBrg) && Math.Abs(Angle(brg - lookSunBrg)) <= arc)
+            return 1;
+        return lookMoonSil > 0 && Math.Abs(Angle(brg - lookMoonBrg)) <= arc ? lookMoonSil : 0;
     }
 
     /// <summary>Whether any of the eyes that look at her (the first <see cref="SimSettings.SightEyes"/> that bear and
@@ -479,7 +496,9 @@ public sealed class Sightings
             if (!eyes[e].Sees(rel) || !works[e])
                 continue;
             tried++;
-            if (SightModel.Margin(eyes[e].HeightM, SightModel.Magnification(eyes[e], settings), tc, line, settings) > 1)
+            var eye = line with { Glass = SightModel.GlassLight(eyes[e], lookPupil, settings) };
+            double mag = SightModel.Magnification(eyes[e], settings);
+            if (SightModel.Margin(eyes[e].HeightM, mag, tc, eye, settings) > 1 || SightModel.BowWaveMargin(eyes[e].HeightM, mag, tc, eye, settings) > 1)
                 return true;
         }
         return false;
@@ -490,7 +509,7 @@ public sealed class Sightings
     /// see furthest), its margin by <see cref="SightModel.SmokeMargin"/>; the rates add as a ship's do, and smoke in sight
     /// stays so while any of them still makes it out. A fix (<see cref="SmokeFix"/>) or the smoke going out of sight. Its
     /// own draws (a stream of its own), so the ships' are as they were.</summary>
-    void SmokeLook(World world, ShipStore store, int t, byte by, ReadOnlySpan<int> nearIdx, long now, double dt, double vis, double sunEl)
+    void SmokeLook(World world, ShipStore store, int t, byte by, ReadOnlySpan<int> nearIdx, long now, double dt, double vis)
     {
         var ts = store[slot[t]];
         var pic = Get(by);
@@ -505,7 +524,7 @@ public sealed class Sightings
         long p0 = Probes.Now;
         // no plume, however big, beats the haze past where its darkest smoke fades under the eye's threshold for the
         // largest object (and none shows in the dark): those observers are skipped, their margins under 1 anyway
-        double farM = SightModel.SmokeFarthestM(plume, vis, sunEl, settings);
+        double farM = SightModel.SmokeFarthestM(plume, vis, lookNight.Brightest, settings);
         double rate = 0, best = 0, fixSin = 0;
         int fixObs = -1, fixEye = -1;
         double top = SightModel.HorizonM(plume.TopM, settings);
@@ -519,7 +538,7 @@ public sealed class Sightings
             double d = Earth.Distance(os.Position, plume.Centre);
             if (d > farM || d > SightModel.HorizonM(eyes[0].HeightM, settings) + top)
                 continue;
-            double rel = Earth.Bearing(os.Position, plume.Centre) - os.HeadingDeg;
+            double brg = Earth.Bearing(os.Position, plume.Centre), rel = brg - os.HeadingDeg;
             var works = store.Combat.Condition(slot[nearIdx[m]]).EyeWorks;
             int e = 0;
             while (e < eyes.Length && (!eyes[e].Sees(rel) || !works[e]))
@@ -531,7 +550,7 @@ public sealed class Sightings
             los -= up * Vec3d.Dot(los, up);
             double len = los.Length, cos = len > 0 ? Vec3d.Dot(los, plume.Axis) / len : 0, sin = Math.Sqrt(Math.Max(1 - cos * cos, 0));
             double margin = SightModel.SmokeMargin(eyes[e].HeightM, SightModel.Magnification(eyes[e], settings), plume, sin,
-                new SightLine(d, 90, vis, sunEl, false), settings);
+                new SightLine(d, 90, vis, lookNight.Toward(brg), 0, Glass: SightModel.GlassLight(eyes[e], lookPupil, settings)), settings);
             rate += SightModel.Rate(margin, SightModel.SearchFactor(eyes[e], settings), settings);
             if (margin > best)
                 (best, fixObs, fixEye, fixSin) = (margin, nearIdx[m], e, sin);

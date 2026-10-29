@@ -7,7 +7,9 @@
 // in two or three runs), and a player who combs the tracks does better:
 //   Britain, the hammer: two 31 kn leaders with four 4 in each, the patrol's eyes on a moonless night.
 //   Germany, the pack: six 33 kn boats, 88 mm guns, thirty-six tubes, heading home for Zeebrugge.
-// The weather of the night: calm, overcast, no moon.
+// The weather of the night: calm, overcast, no moon. In so black a night (docs/battle/night.md Q1) a boat is made out at a
+// few hundred yards, so the two run into each other: the boats' course passes 300 m off the leaders' (it was 1.8 km for
+// the old 5 km night).
 {
   "scenario": 1,
   "name": "Night in the Dover Strait",
@@ -33,11 +35,11 @@
   "aims": { "Britain": "destroy everyone", "Germany": "destroy everyone" },
   // where ships out of the fight go: off Dover, and off Zeebrugge
   "home": { "Britain": [51.08, 1.40], "Germany": [51.38, 3.10] },
-  "weather": { "visibility_km": 20, "wind_from": 200, "wind_kn": 4 },
+  "weather": { "visibility_km": 20, "wind_from": 200, "wind_kn": 4, "cloud": 1 },
   "units": [
     { "name": "Dover Patrol", "admiral": { "name": "Cdr Evans", "temper": 0.5, "why": "\"Broke\" Evans: closed and rammed" }, "side": 0, "at": [51.11, 1.68], "course": 245, "kn": 15, "spacing": 400,
       "ships": [ { "design": "flotilla_leader", "names": ["Broke", "Swift"] } ] },
-    { "name": "Flanders torpedo boats", "admiral": "KKpt Gautier", "side": 1, "at": [51.03, 1.47], "course": 65, "kn": 22, "spacing": 350,
+    { "name": "Flanders torpedo boats", "admiral": "KKpt Gautier", "side": 1, "at": [51.0427, 1.4606], "course": 65, "kn": 22, "spacing": 350,
       "ships": [ { "design": "v1", "names": ["G42", "G85", "G41", "G86", "G87", "G91"] } ] }
   ]
 }

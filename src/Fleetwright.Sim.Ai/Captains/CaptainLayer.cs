@@ -538,8 +538,8 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
     static double ShadowRange(in AiContext ctx, ShipState own)
     {
         var s = ctx.Settings;
-        double vis = ctx.World.Weather.At(own.Position, ctx.World.Time).VisibilityM;
-        double reach = Math.Min(vis, SightModel.LightReachM(Light.SunElevationDeg(own.Position, ctx.World.Time), s));
+        var weather = ctx.World.Weather.At(own.Position, ctx.World.Time);
+        double reach = SightModel.SeenToM(weather.VisibilityM, NightLight.At(own.Position, ctx.World.Time, weather.Cloud, s).SkyCdM2, s);
         return Math.Clamp(s.ShadowVisibilityShare * reach, s.ShadowMinM, s.ShadowMaxM);
     }
 

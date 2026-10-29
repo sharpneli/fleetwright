@@ -1,5 +1,5 @@
 # Plan: night fighting (a 4.5 deepening)
-Status: **drafted 2026-10-29**; **agreed with the user 2026-10-29** (decisions 1-5 at the end)
+Status: **drafted 2026-10-29**; **agreed with the user 2026-10-29** (decisions 1-5 at the end); Q0 and Q1 done 2026-10-29
 Updated: 2026-10-29
 
 How ships see, light, shoot and lose each other in the dark. The user asked for it after the crew plan (2026-10-28),
@@ -173,6 +173,74 @@ moon, the sight model's reach). 5 seeds a case, 25 plays in 9 s.
 - **Anchors:** Jutland's night sighting ranges (1-2 km in the dark, more against a lit horizon), the Dover Strait's
   moonless point blank, and the 3.2c day anchors unchanged. Tests: a moonless overcast night against a full moon, the
   moon's bearing (a silhouette toward it), the same at 0.5 s and 5 s looks.
+
+**Q1 done (2026-10-29).** The dark is a quantity now:
+
+- **The light** (`Sim.Core/NightLight.cs`): `NightLight.At(place, time, cloud)` gives the horizon sky's luminance (the
+  twilight's curve, the one the display already used, now moved here and read by `FlashPhotometry` too; the moon by
+  `Moon.Light`, its scattered share in the sky; the stars' and airglow's 10⁻³ lux; all through the cloud, an overcast
+  passing 0.15), the moon's bearing and how strongly its path silhouettes a ship toward it, and the **twilight's arch**:
+  its light gathered toward the sun's bearing (e^(1.5 cos Δ), forming as the sun goes 0-6° down, spread all round by
+  an overcast), so the sky across from the sun is several times darker than toward it. Cloud is in the weather
+  (`WeatherHere.Cloud`, a scenario's `"cloud"`, the command, `-weather=...,cloud`, the launch screen's Cloud row).
+- **The eye** (`SightModel.DarkOf`): the threshold rises as the sky's luminance through the eye's glass falls, two
+  ways by (1 + √(L_k / L)) over its value at 30 cd/m² (Blackwell's shape: flat by day, de Vries-Rose in the dark):
+  the large object's threshold (knee 10⁻⁴ cd/m²) and the side of the patch the eye sums over (knee 0.2: Riccò's
+  area grows a hundredfold toward night), so small and distant things fade first and nothing falls off a cliff. A
+  ship's own contrast goes from the day's grey 0.35 to 0.6 against the sky in its light alone (after sunset, under an
+  overcast), on the sky's luminance. The extinction is the visibility's alone now: the dark is the eye's, not the air's.
+- **The glass** (`DesignerPlaceholders.Glass`): a 7×50 lookout's glass (0.6 uncoated, fills a dark-adapted pupil),
+  the conning tower's naked eye, a rangefinder's 2.5 mm exit pupil at 0.35 (a dim image: night ranging suffers through
+  its margin). The pupil follows Moon and Spencer. Placeholders until the designer gives each post its glass.
+- **What shows besides the hull**: her bow wave (`BowWaveMargin`: v²/2g × 0.3 high, 0.15 of her length, both sheets bow
+  on, at contrast 1.0 [EST]), which finds and holds her and gives fire control a point of aim but never identifies
+  her. Funnel sparks and glow go to Q2 (they're a light). Torpedo tracks (`TrackSeenM`) are a thin streak solved on the
+  same threshold: 2 km by day, ~1.1 km with the sun 8° down, ~170 m on a moonless night (was 400 m by a switch);
+  phosphorescence waits for the research.
+- **Gone:** `SightNightM`, the sunset ramp of `SightNightSunDeg`, `TorpedoSeenNightM` and `TorpedoDayElevationDeg`.
+  Fire control's margin, the captains' shadowing range (`SeenToM`), the matchup's and the launch screen's sight
+  (`LightReachM`, now of the sky) and the night bench read the new light. A fire's glow is held to a threshold that
+  rises with the sky as the square root (so by day it barely counts).
+- **The day is as it was**: brighter than 30 cd/m² through the glass the dark adds exactly nothing, so Lion sights
+  Derfflinger at 25.0 km and KGV Bismarck at 36.2 km as before, and the reference table's day rows are unchanged
+  to the last digit (`research/simulation/sighting_ref.py`, brought to the new law, with four night rows).
+- **The Dover Strait scenario**: its file already said "calm, overcast, no moon", so it has `"cloud": 1`; its two
+  forces passed 1.8 km apart (set for the old 5 km night) and now pass 300 m apart, so they run into each other.
+
+The made-out ranges by a destroyer's 7×50 lookout, side on (`NightSightTests`): a destroyer 0.4 km overcast, 2.0 km
+moonless and clear, 6.4 km with the sun 12° down (the mean sky: less across from the twilight, more toward it), 9.8 km
+under a full moon 30° up; Lion 0.8, 3.5, 9.6 and 13.6 km.
+
+**The bench after Q1** (5 seeds; Q0's numbers in brackets):
+
+| Case | First seen | Salvos at | Shells, hits | Lost |
+|---|---|---|---|---|
+| Tsushima | Japan 14 km (14), Russia never | never | none | none |
+| Southampton | GB 5.9 (11), DE 9.1 km (11) | 5.4-5.9 km (6.6) | GB 41 / 3 (1,232 / 119), DE 2,377 / 199 (3,443 / 146) | GB 0.4 of 4 (0), DE 0 (1.4) |
+| 4th Flotilla | GB 3.0 (4.3), DE 4.3 km (4.9) | 3.6-3.7 km (3.6) | GB 89 / 15, DE 351 / 45 | GB 1.8 of 10 (1.4), DE 0.2 (0) |
+| Black Prince | GB 3.7 km in 1 run of 5 (4.5, all), DE 4.7 km (4.5) | 3.7 km (4.5) | GB 14 / 4, DE 450 / 162 | GB 0.6 of 1 (0.2) |
+| Dover Strait | 0.3 km both (3.9) | 0.3 km (3.5) | GB 17 / 16, DE 11 / 10 | GB 0.4 of 2 (1.0), DE 0 (0.4) |
+
+**What it says:**
+- **The deep dark is right.** The Dover Strait's black overcast night is fought at point blank (the pass's own 300 m;
+  the record's ~600 yd), every shell a hit.
+- **The twilight decides who sees first.** At Jutland the German line, looking north into the midnight twilight, sees
+  first and further (4.3-4.7 km) than the British looking south into the dark (3.0-3.7 km); Black Prince now rarely
+  sees the line that sinks her (lost 0.6 of 1, from 0.2). That's the record's shape.
+- **Jutland's ranges are still two or three times the record's.** At 56°N in June the sun never sinks past -11.5°:
+  the whole night is nautical twilight, a hundred times a moonless night in its mean. The record's 1,000-2,000 yd
+  leans on what isn't modelled yet: the night's mist and cloud (the research request now asks for the cases'
+  weather and the twilight sky by bearing), challenges and holding fire on unknowns (Q6), searchlights (Q4).
+- **Southampton stays a twilight gun duel** (the sun 8-10° down, 0.1-0.5 lux: by the eye's law ships show at several
+  km then). Q0 called this Q1's first job; the physics doesn't give the record's few minutes at 1,500 yd from the
+  light alone, so it waits for the weather's research and Q6. The record's numbers there are marked [to check] too.
+- **Dover's balance moved**: the file's note (the leaders lose about a ship a run, the boats one in two or three)
+  no longer holds (0.4 and 0 now, one pass at point blank, then they lose each other). For Q12's scenario pass.
+
+**Open after Q1:** the display doesn't dim its moon and stars by the cloud yet (a look item, Q10); the low sun's
+silhouette is still the old switch (-10° to +6°, within 50° of its bearing: left alone for the day's anchors); the
+bow wave's, the glass's, the cloud's and the moon's shares are [EST] until the research; the twilight arch's
+strength (1.5) is the main knob if the research says Jutland's dark side was darker.
 
 ### Q2 Lights as one model; gun flashes and fires
 

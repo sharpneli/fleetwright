@@ -4,8 +4,8 @@ using Fleetwright.Sim.Core;
 namespace Fleetwright.Sim.Ai.Captains;
 
 /// <summary>A ship's lookouts on torpedoes (docs/battle/command.md 5.1a, decision 10: captains try to evade them): the
-/// era's torpedoes left a wake, seen from a ship within <see cref="SimSettings.TorpedoSeenM"/> by day and
-/// <see cref="SimSettings.TorpedoSeenNightM"/> at night. One coming at her (its track passing within her half-length and
+/// era's torpedoes left a wake, seen from a ship within <see cref="SimSettings.TorpedoSeenM"/> by day and less in the dark
+/// (docs/battle/night.md Q1: the eye's law in the night's light). One coming at her (its track passing within her half-length and
 /// <see cref="SimSettings.TorpedoCombMarginM"/> of her, as she goes on, before its run ends) is a threat she combs: she
 /// turns parallel to its track, bow or stern on, whichever turn is the smaller. What a ship's own lookouts see, not her
 /// navy's picture (that holds ships; tracks go there when an admiral's turn-away needs them, 5.1b). The torpedoes go in a
@@ -44,7 +44,7 @@ public sealed class TorpedoWatch
             return false;
         var s = ctx.Settings;
         var p = own.Position;
-        double seen = Light.SunElevationDeg(p, ctx.World.Time) > s.TorpedoDayElevationDeg ? s.TorpedoSeenM : s.TorpedoSeenNightM;
+        double seen = SeenM(ctx, p);
         double reach = own.Handling.LengthM / 2 + s.TorpedoCombMarginM;
         var vs = own.Forward * own.Speed;
         var torpedoes = ctx.World.Torpedoes;
@@ -112,13 +112,22 @@ public sealed class TorpedoWatch
             foreach (int slot in watchedAt.Found(n))
             {
                 var p = store[slot].Position;
-                double seen = Light.SunElevationDeg(p, ctx.World.Time) > s.TorpedoDayElevationDeg ? s.TorpedoSeenM : s.TorpedoSeenNightM;
+                double seen = SeenM(ctx, p);
                 long at = Entry(store, slot, t, now, end, seen * seen);
                 if (at < first)
                     (first, end) = (at, at);
             }
         }
         return first;
+    }
+
+    /// <summary>How far a track is seen from a place now, m: <see cref="SimSettings.TorpedoSeenM"/> by day, less in the
+    /// dark (docs/battle/night.md Q1: <see cref="SightModel.TrackSeenM"/> in the night's light there).</summary>
+    static double SeenM(in AiContext ctx, Vec3d p)
+    {
+        var s = ctx.Settings;
+        double cloud = ctx.World.Weather.At(p, ctx.World.Time).Cloud;
+        return SightModel.TrackSeenM(s.TorpedoSeenM, NightLight.At(p, ctx.World.Time, cloud, s).SkyCdM2, s);
     }
 
     const long SampleMs = 2_000, EdgeMs = 50;

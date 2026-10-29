@@ -16,6 +16,30 @@ public static class DesignerPlaceholders
         PowerCutS = m.PowerCutS > 0 ? m.PowerCutS : 15,
     };
 
+    // ------------------------------------------------------------------ the eyes' glass (docs/battle/night.md Q1)
+
+    /// <summary>PLACEHOLDER: the glass an eye looks through, its exit pupil (mm) and the share of the light it passes,
+    /// which tell in the dark: the lookouts' binoculars 7×50-type night glasses, uncoated (the objective
+    /// <see cref="LookoutApertureMm"/> over the magnification, 0.6: some sixteen bare air-glass surfaces) [EST], coated
+    /// 0.85; the conning tower's slits the naked eye; a rangefinder's or a director's telescope a narrow exit pupil
+    /// (<see cref="TelescopeExitPupilMm"/>) and the coincidence prisms' loss, 0.35 uncoated and 0.55 coated [EST]. The
+    /// designer should give each post its glass (the optics block; the lookouts' kit by navy and year).</summary>
+    public static (double ExitPupilMm, double Transmission) Glass(EyeKind kind, bool ranges, bool coated, double magnification)
+    {
+        if (ranges)
+            return (TelescopeExitPupilMm, coated ? 0.55 : 0.35);
+        if (kind == EyeKind.ConningTower)
+            return (double.PositiveInfinity, 1);
+        return (LookoutApertureMm / Math.Max(magnification, 1), coated ? 0.85 : 0.6);
+    }
+
+    /// <summary>PLACEHOLDER: the lookouts' binoculars' objective, mm (<see cref="Glass"/>).</summary>
+    public const double LookoutApertureMm = 50;
+
+    /// <summary>PLACEHOLDER: a rangefinder's or a director's exit pupil, mm (<see cref="Glass"/>) [EST: 2-3 mm at their
+    /// 15-25×].</summary>
+    public const double TelescopeExitPupilMm = 2.5;
+
     // ------------------------------------------------------------------ the weapons (docs/battle/fighting.md 4.0)
 
     /// <summary>PLACEHOLDER: working a gun, from its calibre and length, its mount's shape and the design's gun block

@@ -291,9 +291,9 @@ public sealed class World
                     Ships.RelationsChanged(this);
                 break;
             case WorldCommand.SetWeather:
-                if (!(c.X > 0) || !(c.Y >= 0))
-                    throw new ArgumentException($"no weather of {c.X} m visibility and {c.Y} m/s wind");
-                weather = new UniformWeather(new WeatherHere(c.X, ((c.A / 1000.0) % 360 + 360) % 360, c.Y, c.B / 1000.0));
+                if (!(c.X > 0) || !(c.Y >= 0) || c.A < 0 || c.A / 1_000_000 > 1000)
+                    throw new ArgumentException($"no weather of {c.X} m visibility, {c.Y} m/s wind and {c.A / 1_000_000 / 10.0}% cloud");
+                weather = new UniformWeather(new WeatherHere(c.X, c.A % 1_000_000 / 1000.0, c.Y, c.B / 1000.0, c.A / 1_000_000 / 1000.0));
                 break;
             case WorldCommand.SetPlayerSide:
                 if (c.Entity is < -1 or > byte.MaxValue)
@@ -457,6 +457,8 @@ public sealed class World
         h.Add(weather.Here.WindFromDeg);
         h.Add(weather.Here.WindMs);
         h.Add(weather.Here.AirOverSeaK);
+        if (weather.Here.Cloud != 0)
+            h.Add(weather.Here.Cloud);   // (only when set: the hashes of clear worlds as they were)
         Interest.Hash(ref h);
         Encounters.Hash(ref h);
         Sightings.Hash(ref h);

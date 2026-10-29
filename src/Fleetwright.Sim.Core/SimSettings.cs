@@ -314,12 +314,57 @@ public sealed record SimSettings
     /// margin's logarithm.</summary>
     public double SightFullMargin { get; init; } = 3;
 
-    /// <summary>How far an unlit ship shows at night (starlight, no moon), m: sight lines are cut to this in the dark.</summary>
-    public double SightNightM { get; init; } = 5_000;
+    /// <summary>The dark (docs/battle/night.md Q1): the eye's threshold rises as the light it sees falls (L, the horizon
+    /// sky's luminance through the eye's glass, cd/m²), each of two ways by (1 + √(L_k / L)) over its value at
+    /// <see cref="SightWeberCdM2"/> (Blackwell 1946: flat in the bright, the de Vries-Rose square root in the dark; never
+    /// below the day's): the large object's threshold contrast C∞ with its knee at <see cref="SightDarkCdM2"/>, and the side
+    /// of the patch the eye sums its light over (√Ω꜀) with its knee at <see cref="SightDarkSummationCdM2"/> (Riccò's area
+    /// grows a hundredfold from day to night: small and distant things fade first, large ones close by stay). Fitted to
+    /// the record's night ranges [EST]: a destroyer made out at about half a kilometre on an overcast black night (the
+    /// Dover Strait), two moonless and clear, three across the sky from Jutland's midnight twilight.</summary>
+    public double SightDarkCdM2 { get; init; } = 1e-4;
+    public double SightDarkSummationCdM2 { get; init; } = 0.2;
+    public double SightWeberCdM2 { get; init; } = 30;
 
-    /// <summary>The sun's elevation where night begins, degrees (nautical twilight's end); from 0° down to it the light
-    /// fails, the sight lines shortening geometrically to <see cref="SightNightM"/>.</summary>
-    public double SightNightSunDeg { get; init; } = -12;
+    /// <summary>A ship's contrast against the horizon sky when no sun lights her sides (after sunset, in twilight, under an
+    /// overcast, at night: lit by the sky alone, her upper works stand dark against it) [EST], under a sky of
+    /// <see cref="SightContrastNightCdM2"/> or less; the day's <see cref="SightContrastDay"/> under
+    /// <see cref="SightContrastDayCdM2"/> or more, between on the luminance's log (a clear sky's at sunset and with the sun
+    /// 5° up).</summary>
+    public double SightContrastNight { get; init; } = 0.6;
+    public double SightContrastNightCdM2 { get; init; } = 150;
+    public double SightContrastDayCdM2 { get; init; } = 2000;
+
+    /// <summary>A bow wave shows (docs/battle/night.md Q1): white water at her stem, its height
+    /// <see cref="SightBowWaveHeight"/> of her speed's head (v² / 2g) and its length <see cref="SightBowWaveLength"/> of
+    /// hers along her side, at a contrast of <see cref="SightFoamContrast"/> against her dark hull and the sea [EST: the
+    /// research's numbers to come]. Seen side on, and both sheets bow on; not from astern.</summary>
+    public double SightBowWaveHeight { get; init; } = 0.3;
+    public double SightBowWaveLength { get; init; } = 0.15;
+    public double SightFoamContrast { get; init; } = 1.0;
+
+    /// <summary>A moon low enough silhouettes a ship toward it as the low sun does, as strongly as its path on the sea
+    /// outshines the sky (<see cref="NightMoonPathShare"/>), fading as it climbs to this elevation, degrees [EST].</summary>
+    public double SightSilhouetteMoonHighDeg { get; init; } = 40;
+
+    // ------------------------------------------------------------------ the night's light (docs/battle/night.md Q1)
+
+    /// <summary>The share of the sky's light an overcast passes [EST: overcast moonless nights ~10⁻⁴ lux against a clear
+    /// one's 10⁻³].</summary>
+    public double NightOvercastShare { get; init; } = 0.15;
+
+    /// <summary>The share of the moon's light clear air scatters into the horizon sky: its luminance is this of the
+    /// moon's level illuminance over π [EST: Krisciunas and Schaefer's moonlit sky near the horizon].</summary>
+    public double NightMoonSkyShare { get; init; } = 0.25;
+
+    /// <summary>The moon's path on the sea, as a luminance: this of the moon's illuminance over π [EST].</summary>
+    public double NightMoonPathShare { get; init; } = 0.1;
+
+    /// <summary>The twilight's arch: its light gathers toward the sun's bearing as e^(k cos Δ), k this under a clear sky
+    /// [EST: the horizon toward the sun some twenty times as bright as across from it, e^(2k)], growing as the sun goes
+    /// down to <see cref="NightTwilightArchDeg"/> (degrees below the horizon) from none at sunset.</summary>
+    public double NightTwilightArch { get; init; } = 1.5;
+    public double NightTwilightArchDeg { get; init; } = 6;
 
     /// <summary>A target against the bright horizon (silhouetted): the sun between this and <see cref="SightSilhouetteHighDeg"/>
     /// of elevation, and within <see cref="SightSilhouetteArcDeg"/> of the line of sight's bearing beyond the target.</summary>
@@ -732,12 +777,14 @@ public sealed record SimSettings
     public double TorpedoFoulTurnDeg { get; init; } = 20;
     public double LineOfFireCellM { get; init; } = 5_000;
 
-    /// <summary>Torpedoes seen (docs/battle/command.md 5.1a): a wake is seen within TorpedoSeenM of a ship while the sun is
-    /// over TorpedoDayElevationDeg, within TorpedoSeenNightM otherwise; one passing within her half-length and
-    /// TorpedoCombMarginM is coming at her; she holds the comb TorpedoCombAfterS after it's past. m, degrees, s.</summary>
+    /// <summary>Torpedoes seen (docs/battle/command.md 5.1a): a wake is seen within TorpedoSeenM of a ship by day, less in
+    /// the dark as the eye's law has it (<c>SightModel.TrackSeenM</c>, docs/battle/night.md Q1); one passing within her
+    /// half-length and TorpedoCombMarginM is coming at her; she holds the comb TorpedoCombAfterS after it's past. m, s.</summary>
     public double TorpedoSeenM { get; init; } = 2_000;
-    public double TorpedoSeenNightM { get; init; } = 400;
-    public double TorpedoDayElevationDeg { get; init; } = -6;
+
+    /// <summary>A track's solid angle to a lookout's naked eye at its day's reach, sr [EST: some 200 m of foam a few metres
+    /// wide, foreshortened from 15 m up at 2 km, ~4 m² showing]: how small it is sets how the dark shortens its reach.</summary>
+    public double TorpedoTrackSolidAngle { get; init; } = 1e-6;
     public double TorpedoCombMarginM { get; init; } = 100;
     public double TorpedoCombAfterS { get; init; } = 20;
 
@@ -1752,6 +1799,10 @@ public sealed record SimSettings
     /// visibility), the threshold ×100 at sunset as the light's reach has it.</summary>
     public double FireGlowCdPerMW { get; init; } = 1e4;
     public double FireGlowLux { get; init; } = 2e-7;
+
+    /// <summary>The sky the night threshold <see cref="FireGlowLux"/> is for, cd/m² (a clear moonless night's): against a
+    /// brighter sky a light must be brighter, as √(1 + L / this) (the eye's square root law; docs/battle/night.md Q1).</summary>
+    public double FireGlowSkyCdM2 { get; init; } = 3e-4;
     public double FireGlowHeightShare { get; init; } = 0.5;
 
     /// <summary>One space's fire (docs/battle/fire.md B0; damage/17 §3-4, fire_ref.py). Growth: Q = seat + α·t², α the

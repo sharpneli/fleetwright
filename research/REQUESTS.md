@@ -25,9 +25,15 @@ When done, the research companion moves the entry to **Done** with a link to the
   first and what it cost them: Port Arthur 1904, Tsushima's night (the Russian ships that lit their searchlights),
   Jutland's night (Southampton, the 4th Flotilla, Black Prince, the battleships that didn't fire), the Dover Strait
   1917, the Otranto Straits, the Adriatic and Baltic night actions. (6) Doctrine by navy: when to burn searchlights, the
-  torpedo boats' night attack, the heavy ships' turn away.
+  torpedo boats' night attack, the heavy ships' turn away. (7) Added with Q1 (2026-10-29): the cases' weather at
+  night (cloud, mist, the visibility; Jutland's night especially, which at 56°N in June was nautical twilight
+  throughout), the twilight sky's luminance by bearing from the sun's (how much darker across the sky from it), and
+  what lookouts saw against the twilight and away from it; the night sky's light (starlight and airglow, overcast) and
+  the eye's threshold contrast at night for large targets searched for (Blackwell, Middleton, Duntley), to check
+  the fitted law.
 - Context / relevant files: `docs/battle/night.md` (the plan, Q0's bench and the [EST]s), `src/Fleetwright.Sim.Combat/SightModel.cs`
-  (`LightReachM`: one 5 km night today; `GlowMargin`: fires as lamps by Allard's law),
+  (Q1's dark: `DarkOf`, the two knees fitted on the record; `GlowMargin`: fires as lamps by Allard's law),
+  `src/Fleetwright.Sim.Core/NightLight.cs` (twilight, moon, stars, cloud, the twilight's arch),
   `research/simulation/fire-control-research/emergency-eyeball.md` (WWII night cases), `crews-under-fire.md`
   (Southampton). Not blocking Q0-Q2.
 - Wanted output: tables by navy and year with sources (searchlights, star shell, glasses), the cases' numbers, and

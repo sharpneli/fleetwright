@@ -509,7 +509,8 @@ Bottom-up, so each layer is built on one that already behaves.
    more (Britain loses 1.2 of 4, from 0.8): the research's run-in weave.
 5. **Torpedoes seen and combed.** `TorpedoWatch` (`Captains/`): the running torpedoes in a grid once a think
    (`TorpedoSystem.Where`, the torpedo's closed form, now public). A ship's own lookouts see a wake within
-   `TorpedoSeenM` (2 km) by day, `TorpedoSeenNightM` (400 m) at night (the sun under `TorpedoDayElevationDeg`); one
+   `TorpedoSeenM` (2 km) by day, less in the dark (since night.md Q1 the eye's law in the night's light, `SightModel.TrackSeenM`:
+   about 170 m on a moonless night; until then 400 m under the sun 6° down); one
    whose track passes within her half-length and `TorpedoCombMarginM` before its run ends is coming at her, and with
    doctrine's `TorpedoEvasion` at comb (the default preset; neutral: none, so 4.6's benches keep their steady targets)
    she turns parallel to it, bow or stern on, the smaller turn, until `TorpedoCombAfterS` after it's past; a plain

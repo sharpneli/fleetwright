@@ -413,8 +413,8 @@ decided ahead.
 
 ## Open
 
-- **The sim's night sight and the moon:** sight is starlight only today (`SightNightM`), so a full-moon night shows
-  ships on screen that the sim says can't be seen past 5 km. That's for the night-sight system to settle (reading
-  the same light function); until it does, the display may look brighter than the sim's night.
+- **The sim's night sight and the moon:** settled by docs/battle/night.md Q1 (2026-10-29): the sim reads the moon
+  through the same `Moon.Light` and the same twilight curve (`NightLight`, which `FlashPhotometry.Illuminance` now
+  calls). Left: the weather's cloud cover dims the sim's moon and stars but not yet the display's.
 - **Spare channels:** the material texture has two free if it goes RGBA8: wetness (spray, rain later) and soot
   would fit there instead of in the scorch quads. Not needed until weather.

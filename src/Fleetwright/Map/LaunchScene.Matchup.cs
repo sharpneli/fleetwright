@@ -75,7 +75,7 @@ public sealed unsafe partial class LaunchScene
         shareOwn = ScenarioLoader.SideDoctrine(s, row.Side, DoctrineField.RangeShare);
         shareFoe = ScenarioLoader.SideDoctrine(s, best.Side, DoctrineField.RangeShare);
         var (lat, lon) = Centre(s);
-        sightM = SightModel.LightReachM(Light.SunElevationDeg(Earth.Position(lat, lon), s.Start), world.Settings);
+        sightM = SightModel.LightReachM(NightLight.At(Earth.Position(lat, lon), s.Start, WeatherOf(s).Cloud, world.Settings).SkyCdM2, world.Settings);
         string ships = string.Join(", ", best.Ships.Select(sh => $"{sh.Count} {TitleOf(sh.Design)}"));
         matchupLine = $"Matchup: {unitCount} of her v {best.Name} ({ships}); 1 = even";
         matchupLabel = $"Matchup v {best.Name}";

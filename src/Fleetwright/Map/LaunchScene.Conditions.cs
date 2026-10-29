@@ -43,7 +43,7 @@ public sealed unsafe partial class LaunchScene
         public readonly string[,] Now = new string[5, 2];
         public readonly bool[,] Changed = new bool[5, 2];
         public WeatherHere Weather, WrittenWeather;
-        public string Vis = "", VisWord = "", WindKn = "", Ends = "", SeedNote = "";
+        public string Vis = "", VisWord = "", WindKn = "", Cloud = "", Ends = "", SeedNote = "";
         public bool WeatherChanged, EndChanged, NewSeed;
         public int WindPoint, Preset = -1;
         public string[] SeedWords = [];
@@ -123,7 +123,8 @@ public sealed unsafe partial class LaunchScene
     ScenarioSetup Weather(WeatherHere w)
     {
         var was = WeatherOf(written!);
-        bool same = Math.Abs(w.VisibilityM - was.VisibilityM) < 1 && Math.Abs(w.WindFromDeg - was.WindFromDeg) < 0.5 && Math.Abs(w.WindMs - was.WindMs) < 0.01;
+        bool same = Math.Abs(w.VisibilityM - was.VisibilityM) < 1 && Math.Abs(w.WindFromDeg - was.WindFromDeg) < 0.5 && Math.Abs(w.WindMs - was.WindMs) < 0.01 &&
+                    Math.Abs(w.Cloud - was.Cloud) < 0.01;
         return same ? setup.Without("weather") : setup.With(new SetWeather(w with { AirOverSeaK = was.AirOverSeaK }));
     }
 
@@ -160,6 +161,7 @@ public sealed unsafe partial class LaunchScene
         v.VisWord = SightWord(v.Weather.VisibilityM);
         v.WindPoint = (int)Math.Round(((v.Weather.WindFromDeg % 360) + 360) % 360 / 22.5) % 16;
         v.WindKn = $"{v.Weather.WindMs / 0.514444:0} kn";
+        v.Cloud = $"{Math.Round(v.Weather.Cloud * 10):0}/10";
         var (_, lon) = Centre(s);
         v.Ends = EndOf(s).ToUtc().AddHours(lon / 15).ToString("d MMM HH:mm", CultureInfo.InvariantCulture);
         v.EndChanged = setup.Changes.Any(c => c is SetEnd);
@@ -273,6 +275,14 @@ public sealed unsafe partial class LaunchScene
         if (by != 0)
             pendingEdit = Weather(v.Weather with { WindMs = Math.Clamp(kn + 2 * by, 0, 60) * 0.514444 });
         Note(r, c0 + P(62) + sw + P(8), "from, and how hard");
+        // the cloud, by the tenth of the sky: an overcast takes the moon and the stars (docs/battle/night.md Q1)
+        r = Row("Cloud");
+        double tenths = Math.Round(v.Weather.Cloud * 10);
+        sw = dl.Stepper("##cloud", new Vector2(c0, r.Y + P(2.5f)), v.Cloud, P(52), tenths > 0, tenths < 10, out by);
+        if (by != 0)
+            pendingEdit = Weather(v.Weather with { Cloud = Math.Clamp(tenths + by, 0, 10) / 10 });
+        bool cloudChanged = v.WeatherChanged && Math.Abs(v.Weather.Cloud - v.WrittenWeather.Cloud) > 0.01;
+        Note(r, c0 + sw + P(8), cloudChanged ? "changed" : tenths >= 8 ? "overcast" : tenths >= 4 ? "broken" : tenths > 0 ? "scattered" : "clear", cloudChanged);
         // the end, by the hour
         r = Row("Ends");
         var end = EndOf(s);

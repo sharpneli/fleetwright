@@ -231,7 +231,7 @@ static class SmokeBench
             double d = Earth.Distance(os.Position, ts.Position), brg = Earth.Bearing(os.Position, ts.Position);
             double off = Math.Abs(brg - windTo) % 360, way = Math.Min(off, 360 - off);
             var line = new SightLine(d, Earth.Bearing(ts.Position, os.Position) - ts.HeadingDeg, w.Weather.At(os.Position, w.Time).VisibilityM,
-                Light.SunElevationDeg(os.Position, w.Time), false);
+                NightLight.At(os.Position, w.Time, w.Weather.At(os.Position, w.Time).Cloud, settings).SkyCdM2, 0);
             double mag = SightModel.Magnification(eyes[0], settings);
             var tau = SmokeModel.EyeTau(w.Smoke.PairDepths(q), eyes, eyes[0].X, eyes[0].Y, eyes[0].HeightM);
             rows.Add((os.Side, way < 45 ? 0 : way > 135 ? 2 : 1, tau.Mid, SightModel.Margin(eyes[0].HeightM, mag, ts.Handling.Class, line, settings),

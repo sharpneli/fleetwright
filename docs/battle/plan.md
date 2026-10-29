@@ -602,6 +602,9 @@ Zooming into a combat keeps it in the fine tier, which naturally limits time com
 
 **Needed from the designer** (placeholders in `Fleetwright.Sim.Ships/DesignerPlaceholders.cs`, the one place they
 live; each is deleted there when shipgen gives the fact):
+- **The eyes' glass** (docs/battle/night.md Q1): each post's exit pupil and transmission, which tell in the dark.
+  Placeholder: lookouts' 7×50 at 0.6 uncoated (0.85 coated), the conning tower's naked eye, a rangefinder's or a
+  director's 2.5 mm exit pupil at 0.35 (0.55 coated).
 - **Tactical diameter** at full speed and hard over. Placeholder: TD/L = 0.341·(L/B)^1.3, times 0.77 for twin
   rudders, kept to 2.5-8 (4-8 under 60 m).
   - It overstates fast battleships (Iowa ~3.9 L against a sourced 2.8).

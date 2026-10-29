@@ -1,4 +1,5 @@
 using System.Numerics;
+using Fleetwright.Sim.Core;
 
 namespace Fleetwright.Map.Flashes;
 
@@ -68,42 +69,17 @@ public static class FlashPhotometry
 
     public static float Lum(Vector3 c) => 0.2126f * c.X + 0.7152f * c.Y + 0.0722f * c.Z;
 
-    // a level surface's illuminance from the sun and the sky by the sun's elevation, degrees, lux (clear air: the
-    // standard daylight and twilight curve; log10 interpolated)
-    static readonly (double Deg, double Lux)[] Daylight =
-    [
-        (-18, 7e-4), (-12, 8e-3), (-9, 0.1), (-6, 3), (-3, 60), (0, 500), (5, 6000), (10, 15_000), (20, 40_000), (30, 60_000),
-        (45, 85_000), (60, 100_000), (90, 120_000),
-    ];
+    /// <summary>A full moon overhead at its mean distance, lux (Moon.Light's 1): the sim's (<see cref="NightLight.FullMoonLux"/>).</summary>
+    public const double FullMoonLux = NightLight.FullMoonLux;
 
-    /// <summary>A full moon overhead at its mean distance, lux (Moon.Light's 1).</summary>
-    public const double FullMoonLux = 0.25;
-
-    /// <summary>The starlit night sky's floor, lux.</summary>
-    public const double StarLux = 1e-3;
+    /// <summary>The starlit night sky's floor, lux: the sim's (<see cref="NightLight.StarLux"/>).</summary>
+    public const double StarLux = NightLight.StarLux;
 
     /// <summary>A level surface's illuminance, lux, from the sun at <paramref name="sunSin"/> (the sine of its
     /// elevation), the moon's light (Moon.Light, already on a surface facing it) at <paramref name="moonSin"/>, and the
-    /// stars.</summary>
-    public static double Illuminance(double sunSin, double moonLight, double moonSin)
-    {
-        double deg = Math.Asin(Math.Clamp(sunSin, -1, 1)) * 180 / Math.PI, sun;
-        if (deg <= Daylight[0].Deg)
-            sun = 0;
-        else
-        {
-            sun = Daylight[^1].Lux;
-            for (int i = 1; i < Daylight.Length; i++)
-                if (deg <= Daylight[i].Deg)
-                {
-                    var (a, b) = (Daylight[i - 1], Daylight[i]);
-                    double f = (deg - a.Deg) / (b.Deg - a.Deg);
-                    sun = Math.Pow(10, Math.Log10(a.Lux) + f * (Math.Log10(b.Lux) - Math.Log10(a.Lux)));
-                    break;
-                }
-        }
-        return sun + FullMoonLux * Math.Max(moonLight, 0) * Math.Max(moonSin, 0) + StarLux;
-    }
+    /// stars: the sim's night light (<see cref="NightLight.Lux"/>, docs/battle/night.md Q1), so the look and the sight
+    /// can't disagree.</summary>
+    public static double Illuminance(double sunSin, double moonLight, double moonSin) => NightLight.Lux(sunSin, moonLight, moonSin);
 
     /// <summary>A level white (Lambertian, albedo 1) deck's luminance under an illuminance, cd/m².</summary>
     public static double WhiteDeck(double lux) => lux / Math.PI;
