@@ -627,17 +627,13 @@ public sealed class Sightings
     (double Cd, double HeightM) FunnelGlow(ShipState ts)
     {
         var c = ts.Handling.Class;
-        if (c.Smoke.Fuel != Fuel.Coal || c.Funnels.Length == 0 || !(c.Motion.RatedShp > 0))
-            return (0, 0);
-        // her load as the smoke model takes it (the power her speed asks over her rated), its forcing's growth
-        double load = c.PowerAt(Math.Abs(ts.Speed) / Handling.MsPerKnot) / c.Motion.RatedShp;
-        double forced = (SmokeSources.Forcing(load, settings) - 1) / Math.Max(settings.SmokeForcedFactor - 1, 1e-6);
-        if (!(forced > 0))
+        double cd = SmokeSources.FunnelGlowCd(c, ts.Speed, settings);
+        if (!(cd > 0))
             return (0, 0);
         double top = 0;
         foreach (ref readonly var f in c.Funnels)
             top = Math.Max(top, c.Components[f.Component].Bounds.Top - c.Vertical.Waterline);
-        return (settings.SightFunnelGlowCd * c.Funnels.Length * forced, top);
+        return (cd, top);
     }
 
     /// <summary>Side `by`'s look for ship t's lights (docs/battle/night.md Q2), she herself not in sight: her latest salvo's

@@ -445,6 +445,8 @@ public sealed record ScenarioSetup
                     w.WriteNumber("air_over_sea_k", c.Weather.AirOverSeaK);
                 if (c.Weather.Cloud != 0)
                     w.WriteNumber("cloud", c.Weather.Cloud);
+                if (c.Weather.Phosphorescence != 0)
+                    w.WriteNumber("phosphorescence", c.Weather.Phosphorescence);
                 w.WriteEndObject();
             }
             foreach (var c in Changes.OfType<SetStart>())

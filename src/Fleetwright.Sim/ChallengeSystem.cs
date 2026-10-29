@@ -129,6 +129,17 @@ public sealed class ChallengeSystem : IWorldSystem
         return i < 0 ? (0, 0, false) : (asked[i].Target, asked[i].StartMs, asked[i].AnswerMs > 0);
     }
 
+    /// <summary>The challenges open, for the world view's lamps (docs/visuals/night-lights.md Q10e): the map draws them only
+    /// on ships it shows.</summary>
+    public void Fill(Snapshot s)
+    {
+        var v = s.Challenges;
+        v.EnsureCapacity(count);
+        for (int i = 0; i < count; i++)
+            (v.Ship[i], v.Target[i], v.StartMs[i], v.AnswerMs[i]) = (asked[i].Ship, asked[i].Target, asked[i].StartMs, asked[i].AnswerMs);
+        v.Count = count;
+    }
+
     /// <summary>Whether any ship of a side has a challenge open at a contact (an entity).</summary>
     public bool Asking(byte side, int target)
     {

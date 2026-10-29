@@ -125,6 +125,19 @@ public static class SmokeSources
         return new FunnelPlume(rate, gas, exit, flux, kept, riseS, baseM, top - baseM, forcing, sz, sy, rise - kept);
     }
 
+    /// <summary>A coal-fired ship's funnels' glow while she forces her fires (docs/battle/night.md Q2): every funnel's,
+    /// cd, <see cref="SimSettings.SightFunnelGlowCd"/> a funnel at her rated power, as the smoke's forcing grows
+    /// (<see cref="Forcing"/>, at the load her speed asks); none on oil. The sight's light and the map's glow
+    /// (docs/visuals/night-lights.md Q10e) both read it.</summary>
+    public static double FunnelGlowCd(ShipClass c, double speedMs, SimSettings s)
+    {
+        if (c.Smoke.Fuel != Fuel.Coal || c.Funnels.Length == 0 || !(c.Motion.RatedShp > 0))
+            return 0;
+        double load = c.PowerAt(Math.Abs(speedMs) / Handling.MsPerKnot) / c.Motion.RatedShp;
+        double forced = (Forcing(load, s) - 1) / Math.Max(s.SmokeForcedFactor - 1, 1e-6);
+        return forced > 0 ? s.SightFunnelGlowCd * c.Funnels.Length * forced : 0;
+    }
+
     /// <summary>The firing state (docs/battle/smoke.md T3): the smoke a kg of fuel makes, over well fired's, at a load (the
     /// power over the rated). Pushed past what its air and furnace burn cleanly a fire makes black smoke: none up to
     /// <see cref="SimSettings.SmokeForcingFrom"/> of the rated power, rising as the square of the load over it to

@@ -310,9 +310,9 @@ public sealed class World
                     Ships.RelationsChanged(this);
                 break;
             case WorldCommand.SetWeather:
-                if (!(c.X > 0) || !(c.Y >= 0) || c.A < 0 || c.A / 1_000_000 > 1000)
-                    throw new ArgumentException($"no weather of {c.X} m visibility, {c.Y} m/s wind and {c.A / 1_000_000 / 10.0}% cloud");
-                weather = new UniformWeather(new WeatherHere(c.X, c.A % 1_000_000 / 1000.0, c.Y, c.B / 1000.0, c.A / 1_000_000 / 1000.0));
+                if (!(c.X > 0) || !(c.Y >= 0) || c.A < 0 || c.A / 1_000_000 > 1000 || c.Entity is < 0 or > 1000)
+                    throw new ArgumentException($"no weather of {c.X} m visibility, {c.Y} m/s wind, {c.A / 1_000_000 / 10.0}% cloud and {c.Entity / 10.0}% glow");
+                weather = new UniformWeather(new WeatherHere(c.X, c.A % 1_000_000 / 1000.0, c.Y, c.B / 1000.0, c.A / 1_000_000 / 1000.0, c.Entity / 1000.0));
                 break;
             case WorldCommand.SetPlayerSide:
                 if (c.Entity is < -1 or > byte.MaxValue)

@@ -281,6 +281,30 @@ Tests: 207 pass.
 **Q10e The moon and the small lights.** The cloud on the moon, the moon path checked; funnel glow and challenge lamps
 (their cues into the snapshot); phosphorescence (the weather field, the foam's glow).
 
+**Q10e done 2026-10-29.**
+- **The moon under the cloud** came with Q10a: its direct light through what's clear, its diffuse through the overcast
+  (`ShipLights.Compute`), so the moon path (the sea's moon glint by `moonRad`) and the moon's shadows fade with the cloud.
+  The path shows from above only for a high moon, as it should; nothing added.
+- **Funnel glow**: the sim's light (`SmokeSources.FunnelGlowCd`, moved there from `Sightings` so the sight and the look
+  share it: coal fires forced past `SmokeForcingFrom`, `SightFunnelGlowCd` a funnel at the rated power) drawn at each
+  funnel's mouth on the ship as she's drawn, a 1,150 K dull red [EST], flickering as the draught does
+  (`FlareRenderer.Envelope`'s flicker). At 10 cd a funnel through the night eye it's a vivid red point on a moonless
+  night.
+- **Challenge lamps**: the snapshot carries the challenges open (`ChallengesView`, `ChallengeSystem.Fill`); a row of
+  three lamps across the challenger's highest lookout's yard, 2 m apart, each red, green or white by the challenge, on
+  two seconds in every three while the signal lasts (`ChallengeSignalS`), at `ChallengeLampCd` through the glass's
+  share (red 0.2, green 0.15 [EST]); the reply's the same on the ship challenged once she answers.
+- **Small lights keep their colour** (flare.frag kind 2): rolled to white on luminance with 0.75 of the hue held past
+  white, so a red lamp stays red (its colour is its message); the stars and flashes still go white.
+- **Phosphorescence** (decision 5, the look now): `WeatherHere.Phosphorescence` 0-1 (scenario `"phosphorescence"`, the
+  setup's, `-weather=...,cloud,phosphorescence`; it rides in `SetWeather`'s unused entity field, so old replays read 0),
+  drawn as the stirred sea's own light in the wake target's foam (the bow wave, the wake, torpedo tracks, splashes),
+  `SeaView.GlowCdM2` 3·10⁻³ cd/m² at full [EST], blue-green, through the night eye (so it shows only in the dark):
+  a faint teal wake at 1. The sim reads nothing of it yet (night.md: the sighting cue later).
+- **Seen 2026-10-29:** the glows of the lamps (a 3·10⁴ cd lamp in the haze) and of the stars swamp their colours close in:
+  the dark-adapted linear gain. Left physical for the camera's tuning (Q10f).
+Knobs: `-sea=glow:1`. Tests: 207 and 875 pass.
+
 **Q10f Cost and tuning.** The user (2026-10-29): once every light source is in, tune what is in effect the camera,
 its parameters and the response curve from the physical into something our displays carry (the night eye's levels,
 the shoulder and roll to white, the glow's gains), for ordinary displays as well as an OLED. `-gputime` at the night scenarios (Dover 1917, Jutland's night, Tsushima, Åland's summer

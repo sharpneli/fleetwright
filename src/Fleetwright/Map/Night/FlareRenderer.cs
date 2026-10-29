@@ -5,6 +5,7 @@ using Fleetwright.Map.Flashes;
 using Fleetwright.Sim;
 using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
+using Fleetwright.Sim.Ships;
 using SDL;
 using static SDL.SDL3;
 
@@ -15,7 +16,7 @@ namespace Fleetwright.Map.Night;
 public struct FlareGpu
 {
     /// <summary>Lo, Hi: the part's ends as drawn (on the sea's plane, lifted by the effects camera; metres from the eye),
-    /// w the kind (0 the trail, 1 the star) and the trail's half width at the top. LoAt, HiAt: the same points where they
+    /// w the kind (0 the trail, 1 the star, 2 a small light) and the trail's half width at the top. LoAt, HiAt: the same points where they
     /// are (for the lights), w the trail's half width at the bottom and its opacity (the star's: the air's scattering).
     /// Look: the star's core (display units), its glow in the haze (display units × m), its core's radius (m; the trail's
     /// half width at a fresh star) and the glow's reach (m). Colour: the star's.</summary>
@@ -37,6 +38,11 @@ public struct FlareGpu
 /// wind as it does (so it hangs straight over it), widening with its age, lit by every light in the block (the star's
 /// own from just under it) and by the night; it outlives the star by <see cref="TrailS"/>, its top the burst's puff.</item>
 /// </list>
+/// And the night's <b>small lights</b> on the ships the map shows (Q10e), points as the star is, on her as she's drawn
+/// (not lifted: they're on her): her funnels' glow while she forces coal fires (<see cref="SmokeSources.FunnelGlowCd"/>,
+/// the sim's own light, a dull red at each funnel's mouth, flickering) and a challenge's lamps (docs/battle/night.md Q6;
+/// the record's coloured lamp groups, a row on her highest lookout's yard switched on three times over the signal, the
+/// reply's on the ship challenged).
 /// The world view's alone. A book of the flares seen keeps their trails after the snapshot drops them. Nothing allocates
 /// once grown.</summary>
 public sealed unsafe class FlareRenderer : IDisposable
@@ -128,8 +134,15 @@ public sealed unsafe class FlareRenderer : IDisposable
         return (x & 0xFFFFFF) / (double)0xFFFFFF;
     }
 
-    /// <summary>A frame: the book brought up to the snapshot's flares, then each one's trail and burning star as parts.</summary>
-    public void Build(in MapView view, Snapshot s, long drawMs, double world, ShipLights frameLights, double visibilityM, SimSettings settings)
+    /// <summary>A coal fire's glow's temperature, K, and a challenge lamp's light through its colour's glass, a share of
+    /// <see cref="SimSettings.ChallengeLampCd"/>: red, green, white [EST].</summary>
+    public const double FunnelKelvin = 1150;
+    static readonly (Vector3 Colour, double Share)[] LampGlass = [(new(1f, 0.12f, 0.08f), 0.2), (new(0.15f, 1f, 0.45f), 0.15), (new(1f, 0.95f, 0.85f), 1)];
+
+    /// <summary>A frame: the book brought up to the snapshot's flares, then each one's trail and burning star as parts,
+    /// and the small lights on the ships shown.</summary>
+    public void Build(in MapView view, Snapshot s, long drawMs, double world, ShipLights frameLights, double visibilityM, SimSettings settings,
+        Func<int, ShipClass?> classOf)
     {
         count = 0;
         lights = frameLights;
@@ -141,11 +154,12 @@ public sealed unsafe class FlareRenderer : IDisposable
             if (drawMs < book[i].OutMs + 1000 * TrailS && drawMs >= book[i].BurstMs - 60_000)
                 book[kept++] = book[i];
         booked = kept;
-        if (!On || world <= 0 || booked == 0)
+        if (!On || world <= 0)
             return;
         var up = (-view.Forward).Normalized();
         double perCd = FlashRenderer.PerCandela(frameLights, up), k = Effects.K;
         double scatter = SearchlightModel.ScatterPerM(visibilityM, settings);
+        SmallLights(view, s, drawMs, world, perCd, scatter, settings, classOf);
         double mpp = view.MetresPerPixel, reach = (view.Width + view.Height) * mpp + 3000;
         var centre = up * Earth.Radius;
         for (int i = 0; i < booked; i++)
@@ -191,6 +205,90 @@ public sealed unsafe class FlareRenderer : IDisposable
                 Colour = new Vector4(FlashPhotometry.UnitLuminance(colour), (float)Math.Max(h, 0)),
             });
         }
+    }
+
+    /// <summary>The small lights on the ships shown: her funnels' glow, a challenge's lamps.</summary>
+    void SmallLights(in MapView view, Snapshot s, long drawMs, double world, double perCd, double scatter, SimSettings settings,
+        Func<int, ShipClass?> classOf)
+    {
+        double mpp = view.MetresPerPixel;
+        foreach (var v in (ReadOnlySpan<ShipsView>)[s.Ships, s.Sighted])
+            for (int k = 0; k < v.Count; k++)
+            {
+                if (classOf(v.Class[k]) is not { } c)
+                    continue;
+                double cd = SmokeSources.FunnelGlowCd(c, v.Speed[k], settings);
+                if (!(cd > 0))
+                    continue;
+                var (p, f) = v.PoseAt(k, drawMs);
+                var (stbd, upv) = (Vec3d.Cross(f, p.Normalized()), p.Normalized());
+                var colour = FlashPhotometry.Chroma(FunnelKelvin);
+                foreach (ref readonly var fu in c.Funnels)
+                {
+                    var b = c.Components[fu.Component].Bounds;
+                    var at = p + f * ((b.X0 + b.X1) / 2) + stbd * ((b.Y0 + b.Y1) / 2) + upv * (b.Top - c.Vertical.Waterline);
+                    // each funnel its share, its mouth's glow flickering as the fire's draught does
+                    var (light, _) = Envelope(10 + drawMs / 1000.0 % 1000, 1e9, v.Entity[k] * 31 + fu.Component);
+                    double r = Math.Max(0.3 * Math.Min(b.X1 - b.X0, b.Y1 - b.Y0), 1.2 * mpp);
+                    Point(view, at, cd / c.Funnels.Length * light * world, colour, r, perCd, scatter);
+                }
+            }
+        var ch = s.Challenges;
+        long signal = (long)(settings.ChallengeSignalS * 1000);
+        for (int i = 0; i < ch.Count; i++)
+        {
+            Lamps(view, s, ch.Ship[i], drawMs, drawMs - ch.StartMs[i], signal, ch.StartMs[i] ^ ch.Ship[i], world, perCd, scatter, settings, classOf);
+            if (ch.AnswerMs[i] > 0)
+                Lamps(view, s, ch.Target[i], drawMs, drawMs - ch.AnswerMs[i], signal, ch.AnswerMs[i] ^ ch.Target[i], world, perCd, scatter, settings, classOf);
+        }
+    }
+
+    /// <summary>A challenge's (or its reply's) lamps on a ship, <paramref name="ms"/> into its signal: a row of three
+    /// across her highest lookout's yard, each red, green or white by the challenge (<paramref name="seed"/>), on for two
+    /// seconds of every three while the signal lasts.</summary>
+    void Lamps(in MapView view, Snapshot s, int ship, long drawMs, long sinceMs, long signal, long seed, double world, double perCd,
+        double scatter, SimSettings settings, Func<int, ShipClass?> classOf)
+    {
+        if (sinceMs < 0 || sinceMs >= signal || sinceMs % 3000 >= 2000)
+            return;
+        foreach (var v in (ReadOnlySpan<ShipsView>)[s.Ships, s.Sighted])
+            if (v.IndexOf(ship) is int k and >= 0 && classOf(v.Class[k]) is { } c && c.Eyes.Length > 0)
+            {
+                var eye = c.Eyes[0];
+                foreach (ref readonly var e in c.Eyes)
+                    if (e.HeightM > eye.HeightM)
+                        eye = e;
+                var (p, f) = v.PoseAt(k, drawMs);
+                var (upv, r) = (p.Normalized(), Math.Max(LampM, 1.5 * view.MetresPerPixel));
+                var stbd = Vec3d.Cross(f, upv);
+                for (int j = 0; j < 3; j++)
+                {
+                    var (colour, share) = LampGlass[Math.Min((int)(Hash(seed, j) * LampGlass.Length), LampGlass.Length - 1)];
+                    var at = p + f * eye.X + stbd * (eye.Y + (j - 1) * LampSpacingM) + upv * eye.HeightM;
+                    Point(view, at, settings.ChallengeLampCd * share * world, colour, r, perCd, scatter);
+                }
+                return;
+            }
+    }
+
+    /// <summary>A challenge lamp's drawn size and the lamps' spacing along the yard, m [EST].</summary>
+    const double LampM = 0.3, LampSpacingM = 2;
+
+    /// <summary>A small light as a star part (kind 2: its colour kept far past white, a red lamp still red: a coloured
+    /// lamp's colour is its message): its candle over a core of radius <paramref name="r"/>, its glow in the haze.</summary>
+    void Point(in MapView view, Vec3d at, double cd, Vector3 colour, double r, double perCd, double scatter)
+    {
+        if (!(cd > 0))
+            return;
+        var rel = at - view.Eye;
+        double halo = HaloGain * perCd * scatter * cd * HazePhase;
+        Add(new FlareGpu
+        {
+            Lo = new Vector4(F(rel), 2), Hi = new Vector4(F(rel), 0),
+            LoAt = new Vector4(F(rel), 0), HiAt = new Vector4(0, 0, 0, (float)scatter),
+            Look = new Vector4((float)(Gain * perCd * cd / (Math.PI * r * r)), (float)halo, (float)r, (float)Math.Max(8 * r, 20)),
+            Colour = new Vector4(FlashPhotometry.UnitLuminance(colour), (float)Math.Max(at.Length - Earth.Radius, 0)),
+        });
     }
 
     void Book(FlaresView f, int i)

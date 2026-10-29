@@ -508,9 +508,10 @@ public sealed record Scenario
     internal static WeatherHere ParseWeather(JsonElement e)
     {
         if (e.ValueKind != JsonValueKind.Object)
-            throw new ScenarioException("weather: an object, { \"visibility_km\": 25, \"wind_from\": 225, \"wind_kn\": 8, \"air_over_sea_k\": 0, \"cloud\": 0 }");
+            throw new ScenarioException("weather: an object, { \"visibility_km\": 25, \"wind_from\": 225, \"wind_kn\": 8, \"air_over_sea_k\": 0, \"cloud\": 0, \"phosphorescence\": 0 }");
         double Num(string name, double fallback) => e.TryGetProperty(name, out var v) ? v.GetDouble() : fallback;
         double vis = Num("visibility_km", double.NaN), from = Num("wind_from", 0), kn = Num("wind_kn", 0), airSea = Num("air_over_sea_k", 0), cloud = Num("cloud", 0);
+        double glow = Num("phosphorescence", 0);
         if (!(vis > 0))
             throw new ScenarioException("weather: \"visibility_km\", more than 0");
         if (!(kn >= 0))
@@ -519,7 +520,9 @@ public sealed record Scenario
             throw new ScenarioException("weather: \"air_over_sea_k\", the air's temperature over the sea's, -30 to 30");
         if (!(cloud >= 0 && cloud <= 1))
             throw new ScenarioException("weather: \"cloud\", the cloud cover, 0 clear to 1 overcast");
-        return new WeatherHere(vis * 1000, from, kn * 0.514444, airSea, cloud);
+        if (!(glow >= 0 && glow <= 1))
+            throw new ScenarioException("weather: \"phosphorescence\", how strongly the sea glows where it's stirred, 0 none to 1");
+        return new WeatherHere(vis * 1000, from, kn * 0.514444, airSea, cloud, glow);
     }
 
     static List<(int, int)> ParsePeace(JsonElement e, string[] sides)

@@ -519,7 +519,7 @@ public static unsafe class Program
                 if (DevWeather(weather) is { } w)
                     world.Send(w);
                 else
-                    Console.Error.WriteLine($"Bad weather: -weather={weather} (want wind_from,kn[,visibility_km[,air_over_sea_k]])");
+                    Console.Error.WriteLine($"Bad weather: -weather={weather} (want wind_from,kn[,visibility_km[,air_over_sea_k[,cloud[,phosphorescence]]]])");
             }
             foreach (var engage in engages)
                 if (DevEngage(engage) is { } order)
@@ -744,19 +744,21 @@ public static unsafe class Program
         return Sim.ShellSystem.FireAt(ship, battery, lat, lon, kind);
     }
 
-    /// <summary>-weather=wind_from,kn[,visibility_km[,air_over_sea_k[,cloud]]]: the dev world's weather (degrees the wind is
-    /// from, its knots, the visibility, 25 km without it, the air's temperature over the sea's, K, 0 without it, and the cloud
-    /// cover, 0 clear to 1 overcast, 0 without it).</summary>
+    /// <summary>-weather=wind_from,kn[,visibility_km[,air_over_sea_k[,cloud[,phosphorescence]]]]: the dev world's weather
+    /// (degrees the wind is from, its knots, the visibility, 25 km without it, the air's temperature over the sea's, K, 0
+    /// without it, the cloud cover, 0 clear to 1 overcast, 0 without it, and how strongly the sea glows where it's stirred,
+    /// 0-1, 0 without it).</summary>
     static Sim.Command? DevWeather(string arg)
     {
         var p = arg.Split(',');
         var ci = System.Globalization.CultureInfo.InvariantCulture;
-        if (p.Length is < 2 or > 5 || !double.TryParse(p[0], ci, out double from) || !double.TryParse(p[1], ci, out double kn))
+        if (p.Length is < 2 or > 6 || !double.TryParse(p[0], ci, out double from) || !double.TryParse(p[1], ci, out double kn))
             return null;
         double km = p.Length >= 3 && double.TryParse(p[2], ci, out double v) ? v : 25;
         double airSea = p.Length >= 4 && double.TryParse(p[3], ci, out double t) ? t : 0;
-        double cloud = p.Length == 5 && double.TryParse(p[4], ci, out double c) ? Math.Clamp(c, 0, 1) : 0;
-        return Sim.Command.SetWeather(km * 1000, from, kn * 0.514444, airSea, cloud);
+        double cloud = p.Length >= 5 && double.TryParse(p[4], ci, out double c) ? Math.Clamp(c, 0, 1) : 0;
+        double glow = p.Length == 6 && double.TryParse(p[5], ci, out double g) ? Math.Clamp(g, 0, 1) : 0;
+        return Sim.Command.SetWeather(km * 1000, from, kn * 0.514444, airSea, cloud, glow);
     }
 
     /// <summary>-engage=ship[:battery]:target: a dev ship's battery (all of them without one) engages a ship.</summary>

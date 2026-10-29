@@ -132,6 +132,9 @@ public sealed class Snapshot
     /// <summary>The star shells' flares burning (docs/battle/night.md Q5).</summary>
     public FlaresView Flares { get; } = new();
 
+    /// <summary>The challenges open (docs/battle/night.md Q6), for the world view's lamps.</summary>
+    public ChallengesView Challenges { get; } = new();
+
     /// <summary>The engaged batteries of the ships shown, and the newest lines of the combat log (docs/battle/fighting.md
     /// 4.2b).</summary>
     public BatteriesView Batteries { get; } = new();
@@ -476,6 +479,26 @@ public sealed class BeamsView
         Array.Resize(ref OnMs, n);
         Array.Resize(ref Ship, n);
         Array.Resize(ref Target, n);
+    }
+}
+
+/// <summary>The challenges open (docs/battle/night.md Q6), for the world view's lamps (docs/visuals/night-lights.md Q10e):
+/// who made each (an entity), at whom, when, and when she answered (0: not).</summary>
+public sealed class ChallengesView
+{
+    public int Count;
+    public int[] Ship = [], Target = [];
+    public long[] StartMs = [], AnswerMs = [];
+
+    public void EnsureCapacity(int n)
+    {
+        if (n <= Ship.Length)
+            return;
+        n = Math.Max(n, Math.Max(8, Ship.Length * 2));
+        Array.Resize(ref Ship, n);
+        Array.Resize(ref Target, n);
+        Array.Resize(ref StartMs, n);
+        Array.Resize(ref AnswerMs, n);
     }
 }
 

@@ -168,14 +168,14 @@ public sealed unsafe partial class MapScene : IScene
         shipRenderer.Field.Build(view, s, world.DrawMs, WorldView.Factor(view), shipRenderer.List.Lights);
         shipRenderer.Splashes.Build(view, s, world.DrawMs, s.Paused ? 0 : s.AchievedSpeed, dt, selected, WorldView.Factor(view), shipRenderer.List.Lights);
         shipRenderer.Beams.Build(view, nightLights, s, world.DrawMs, shipRenderer.List.Lights, s.Weather.VisibilityM, world.Settings, classOf);
-        shipRenderer.Flares.Build(view, s, world.DrawMs, WorldView.Factor(view), shipRenderer.List.Lights, s.Weather.VisibilityM, world.Settings);
+        shipRenderer.Flares.Build(view, s, world.DrawMs, WorldView.Factor(view), shipRenderer.List.Lights, s.Weather.VisibilityM, world.Settings, classOf);
         shipRenderer.Torpedoes.Build(view, torpedoBook, Torpedoes.TorpedoLook.DrawMs(torpedoBook, world.DrawMs), WorldView.Factor(view),
             shipRenderer.List.Lights, classOf);
         probes.Add(probeSplashes, t);
         t = Probes.Now;
         renderer.Sea.SetState(SeaState.Of(s.Weather));   // rebuilt only when the weather changes
         var lights = shipRenderer.List.Lights;
-        sea.Update(view, renderer.Sea, dt, s.Paused ? 0 : s.AchievedSpeed, lights, sunLapse.Motion, moonHere);
+        sea.Update(view, renderer.Sea, dt, s.Paused ? 0 : s.AchievedSpeed, lights, sunLapse.Motion, moonHere, s.Weather.Phosphorescence);
         shipRenderer.FoamClockS = sea.ClockS;
         shipRenderer.List.PlayerSide = world.Current.PlayerSide;
         renderer.Render(cmd, target, view, s.Sun, land.Fill, baked, lines, overlay, shipRenderer, sunLapse.Motion, sea, lights.Uniforms,

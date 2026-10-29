@@ -4,11 +4,11 @@ using Fleetwright.Sim.Core;
 
 namespace Fleetwright.Map;
 
-/// <summary>The Sea uniform block of Content/Shaders/Source/Include/seashade.glsl (std140, 13 vec4s).</summary>
+/// <summary>The Sea uniform block of Content/Shaders/Source/Include/seashade.glsl (std140, 14 vec4s).</summary>
 [StructLayout(LayoutKind.Sequential)]
 public struct SeaUniforms
 {
-    public Vector4 On, Tiles, Off01, Off23, HexOff, HexS, Axes, VarU, Mss2, Body, Moon, Night, NightDir;
+    public Vector4 On, Tiles, Off01, Off23, HexOff, HexS, Axes, VarU, Mss2, Body, Moon, Night, NightDir, Glow;
 }
 
 /// <summary>The sea's frame and clock for the map (docs/visuals/sea.md W2-W4), on the CPU in double; the shader gets
@@ -64,6 +64,13 @@ public sealed class SeaView
     /// <summary>The slopes' steepening for the night's light (as <see cref="Relief"/> for the day's).</summary>
     public static float NightRelief = 7;
 
+    /// <summary>Phosphorescence (docs/visuals/night-lights.md Q10e, decision 5): the sea's own light where it's stirred
+    /// (the bow wave, the wake, a torpedo's track, a splash: the wake target's foam), at the weather's full glow, cd/m²
+    /// [EST: a bright bioluminescent wake, near the eye's threshold in daylight terms, plain on a dark night], blue-green
+    /// (Noctiluca's ~475 nm). Through the night eye, so it shows only in the dark. A gain for captures.</summary>
+    public static double GlowCdM2 = 3e-3, GlowGain = 1;
+    public static Vector3 GlowColour = new(0.2f, 0.75f, 1.0f);
+
     /// <summary>A debug view of the sea: 0 shaded, 1 its normal, 2 its slopes' spread.</summary>
     public static int Debug;
 
@@ -92,6 +99,7 @@ public sealed class SeaView
             case "foam": FoamGain = v; break;
             case "nightrelief": NightRelief = v; break;
             case "nightshare": NightShare = v; break;
+            case "glow": GlowGain = v; break;
             default: return false;
         }
         return true;
@@ -114,7 +122,9 @@ public sealed class SeaView
     /// <param name="lights">This frame's light (the ships'), for the moon's direction.</param>
     /// <param name="sunMotion"><see cref="SunLapse.Motion"/>: below 1 the glints fade out with the ships' shadows.</param>
     /// <param name="moonLight"><see cref="Moon.Light(Vec3d, WorldTime)"/> at the view's centre.</param>
-    public void Update(in MapView view, SeaSim sim, double dtS, double speed, in ShipLights lights, double sunMotion, double moonLight)
+    /// <param name="phosphorescence">The weather's: how strongly the sea glows where it's stirred, 0-1.</param>
+    public void Update(in MapView view, SeaSim sim, double dtS, double speed, in ShipLights lights, double sunMotion, double moonLight,
+        double phosphorescence = 0)
     {
         World = WorldView.Factor(view);
         ClockS = (ClockS + dtS * Math.Clamp(speed, 0, SpeedCap)) % SeaSim.PeriodS;
@@ -170,6 +180,8 @@ public sealed class SeaView
         var (nightRad, nightDir, nightShare) = NightLight(target, lights, moonLight);
         Uniforms.Night = new Vector4(nightRad, NightRelief);
         Uniforms.NightDir = new Vector4((float)nightDir.X, (float)nightDir.Y, (float)nightDir.Z, nightShare);
+        double glow = GlowGain * phosphorescence * GlowCdM2 * Flashes.FlashRenderer.PerCandela(lights, target);
+        Uniforms.Glow = new Vector4(Flashes.FlashPhotometry.UnitLuminance(GlowColour) * (float)glow, 0);
     }
 
     /// <summary>The relief for the sun's and moon's light on the body: <see cref="Relief"/> under a high sun, growing to

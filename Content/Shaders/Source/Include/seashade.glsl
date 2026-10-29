@@ -41,6 +41,7 @@ layout(set = 3, binding = 1) uniform Sea
     vec4 seaNight;  // rgb: the night's light on the water (SeaView.NightLight: a share of the sky's, given a direction
                     // for the waves), linear; w: its relief
     vec4 seaNightDir; // xyz: toward it, Earth-fixed; w: the share of the sky's all-round light it took
+    vec4 seaGlow;   // rgb: phosphorescence, the stirred sea's own light at full foam, display units (SeaView.GlowCdM2)
 };
 
 // The wakes' foam (wakeribbon.frag packs two layers into wake.w): aerated water in 0-0.4, which brightens the water a
@@ -245,6 +246,8 @@ vec3 seaShade(vec2 local, vec3 v, vec3 lSun, vec3 lMoon, vec3 lNight, vec4 wake,
         float aerated = min(foam / 0.4, 1.0), surface = max((foam - 0.4) / 0.6, 0.0);
         c += aerated * AeratedAlbedo * AeratedTint * lit;
         c = mix(c, FoamAlbedo * lit, surface * FoamCover);
+        // phosphorescence (docs/visuals/night-lights.md Q10e): the stirred water's own light, as much as it's stirred
+        c += seaGlow.rgb * foam;
     }
     return linearToSrgb(shoulderHue(c, look.z));
 }

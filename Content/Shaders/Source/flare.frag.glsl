@@ -6,7 +6,7 @@
 //    it's spread. Lit where it is: by the night (the rods' view) and by every light in the block, the star's own among
 //    them from just under it, so it glows over the star and dims up its length, and keeps the others' after burn-out.
 //    Premultiplied, through the haze.
-//  - the star (kind 1): its core, its candle spread over a small disc, and its glow in the haze, sigma p I (pi/2 +
+//  - the star (kind 1; a small light, kind 2, a funnel's glow or a challenge lamp, keeping its colour past white): its core, its candle spread over a small disc, and its glow in the haze, sigma p I (pi/2 +
 //    atan(h / d)) / d (the eye's ray from above down to the sea h under it), out to its reach with the air's
 //    extinction; rolled to white on luminance as the flashes are (never per channel); added over the scene through the
 //    haze.
@@ -26,13 +26,15 @@ layout(location = 0) out vec4 outColor;
 
 const float TrailDepth = 1.2;     // a fresh trail's optical depth across its middle [EST]
 const float TrailAlbedo = 0.8;    // white smoke (magnesium oxide)
+const float SmallLightHue = 0.75; // a small light's hue kept past white (kind 2) [EST]
 
-vec3 rolled(vec3 col)
+// rolled to white on luminance; keep (0-1) holds that much of its hue past white (a coloured lamp's colour is its message)
+vec3 rolled(vec3 col, float keep)
 {
     float y = dot(col, vec3(0.2126, 0.7152, 0.0722));
     float yt = shoulder(vec3(y), look.z).x;
     vec3 rgb = col * (yt / max(y, 1e-6));
-    float over = clamp(log2(max(y, 1e-6)) / 3.0, 0.0, 1.0);
+    float over = clamp(log2(max(y, 1e-6)) / 3.0, 0.0, 1.0) * (1.0 - keep);
     return mix(rgb / max(max(rgb.r, max(rgb.g, rgb.b)), 1.0), vec3(yt), over);
 }
 
@@ -74,5 +76,5 @@ void main()
     vec3 col = f.colour.rgb * (star + glow);
     if (dot(col, vec3(0.2126, 0.7152, 0.0722)) < 1e-4)
         discard;
-    outColor = vec4(linearToSrgb(rolled(col) * hazeThrough()), 0.0);
+    outColor = vec4(linearToSrgb(rolled(col, f.lo.w > 1.5 ? SmallLightHue : 0.0) * hazeThrough()), 0.0);
 }
