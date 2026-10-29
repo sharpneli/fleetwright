@@ -44,7 +44,7 @@ public class SearchlightFightTests(ITestOutputHelper output)
         var (big, offset) = SearchlightModel.Biggest(lion);
         var l = lion.Searchlights[big];
         var (sigma, keep) = SearchlightModel.Held(l.SpreadDeg, SearchlightModel.PointingDeg(l.Control, S));
-        double d = 2_500, vis = 10_000, eye = lion.Eyes[0].HeightM, lux = SearchlightModel.LuxAt(l.BeamCd * keep, d, vis);
+        double d = 2_000, vis = 10_000, eye = lion.Eyes[0].HeightM, lux = SearchlightModel.LuxAt(l.BeamCd * keep, d, vis);   // her 24-inch (Q3b)
         double Margin(double veil, double lit) => SightModel.Margin(eye, S.SightLookoutMagnification, v25,
             new SightLine(d, 90, vis, Moonless, 0, Glass: SightModel.LookoutGlass(SightModel.PupilMm(Moonless + veil), S), LitLux: lit, VeilCdM2: veil), S);
         double dark = Margin(0, 0);

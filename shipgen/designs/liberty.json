@@ -1,5 +1,5 @@
 {
-    "version": 15,
+    "version": 16,
     "id": "liberty",
     "name": "Liberty Ship",
     "look": {"navy": "generic", "era": "wwii"},

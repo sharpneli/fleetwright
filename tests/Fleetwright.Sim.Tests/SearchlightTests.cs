@@ -12,12 +12,13 @@ public class SearchlightTests(ITestOutputHelper output)
 {
     static readonly SimSettings Settings = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json"));
 
-    /// <summary>A battlecruiser and a destroyer of the Great War carry their template's lights: 36-inch on the one, smaller
+    /// <summary>A battlecruiser and a destroyer of the Great War carry their template's lights: the RN's 24-inch on the one as
+    /// she was built (night-fighting.md §1.2: twin 24-inch mountings until the 36-inch of mid-1915, docs/battle/night.md Q3b), smaller
     /// on the other, high over the sea, each with its men and a function of its own.</summary>
     [Fact]
     public void Great_War_ships_carry_their_lights_manned_and_high()
     {
-        foreach (var (name, min, mirror) in new[] { ("lion", 8, (0.90, 0.92)), ("v25", 1, (0.61, 0.85)) })
+        foreach (var (name, min, mirror) in new[] { ("lion", 8, (0.60, 0.62)), ("v25", 1, (0.61, 0.85)) })
         {
             var c = Fleet.Scenario(name);
             var k = new ShipCondition();

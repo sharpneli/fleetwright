@@ -380,12 +380,13 @@ static class TemplatesWriter
             width; control is local (each light by its crew), remote (from a searchlight control position) or director.
             A light's weight (1.2 t a 36-inch, by its mirror's area), draw (6.5 kW a 36-inch plain arc) and crew (three at a
             36-inch) are booked from its mirror. A key not given takes its template in the plant's year (old designs got the
-            whole block by their navy so when the format moved to 14). The numbers are estimates by period [EST] until the
-            research request "Night fighting, 1890-1925" comes back.
+            whole block by their navy so when the format moved to 14; format 16 moved the blocks still as a template gave
+            them to the research's numbers, Q3b). The numbers are from `research/simulation/night-fighting.md` §1 where it
+            found them ([SRC] in the notes), estimates where it didn't ([EST]).
 
             ```json
             "searchlights": {"name": "Great War (1914)", "capital_count": 8, "mirror_cm": 91, "small_mirror_cm": 61,
-              "lamp_cd_cm2": 16000, "spread_deg": 2, "control": "local"}
+              "lamp_cd_cm2": 16000, "spread_deg": 3, "control": "local"}
             ```
 
             | Template | Capital ship | Mirror, cm | Small, cm | Crater, cd/cm² | Beam (capital), cd | Spread | Control |

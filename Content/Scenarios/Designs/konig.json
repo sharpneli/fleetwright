@@ -1,5 +1,5 @@
 {
- "version": 15,
+ "version": 16,
  "id": "konig",
  "name": "K\u00F6nig-like (1914)",
  "type": "BB",
@@ -119,5 +119,5 @@
  "outfit": {"name": "Great War (1914)", "fitted": {"quarters": 420, "cabins": 750, "offices": 420, "stores": 1500, "machinery": 150, "deck": 300}, "stripped": {"quarters": 400, "cabins": 450, "offices": 420, "stores": 1500, "machinery": 150, "deck": 150}, "paint_mj_m2": 50, "growth": 1},
  "gun_tech": {"Great War, double-base, brass-cased": {"reload_share": 1.1, "heavy_slow": 1, "heavy_slow_under_40_cal": 1, "heavy_slow_under_30_cal": 1, "train_share": 1, "dp_train_share": 1, "max_elevation_deg": 18, "dp_max_elevation_deg": 18, "pattern_pct": 3.3, "pattern_exp": 3, "pattern_light_pct": 2.5, "propellant": "double-base", "black_powder_under_cal": 0, "packaging": "brass"}},
  "drainage": {"name": "German Great War (1914)", "pumps_tph_per_1000t": 50, "portable_pumps": 4, "portable_tph": 15, "counterflood_tpm_per_10000t": 20, "tightness": 1},
- "searchlights": {"name": "German Great War (1914)", "capital_count": 8, "mirror_cm": 110, "small_mirror_cm": 60, "lamp_cd_cm2": 16000, "spread_deg": 1.8, "control": "remote"}
+ "searchlights": {"name": "German Great War (1914)", "capital_count": 8, "mirror_cm": 110, "small_mirror_cm": 60, "lamp_cd_cm2": 16000, "spread_deg": 3, "control": "remote"}
 }

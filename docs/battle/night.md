@@ -1149,6 +1149,32 @@ as four steps before Q10, and items for Q12's tuning pass:
 - **Night torpedoes stay the outlier** (the 4th Flotilla 27 for 9 hits, Southampton 13 for 3): Q1b's open item.
 - The bench takes 38 s for 120 plays.
 
+**Q3b done (2026-10-29).** Searchlights to the record:
+
+- **Trained dark** (`SearchlightSystem`): Ready may name a contact; the lights are trained on her dark
+  (`SearchlightTrainS` 3 s from the order or the strike), and lit, she's lit when the iris opens (`SearchlightExposeS`
+  1 s, was 4 for training and exposing together); a light ready on another, or none, trains first (4 s). The captains
+  keep their struck lights trained on the chief battery's target, else any battery's, held in the picture
+  (`CaptainLayer.NightLights`). Test: `Lights_trained_dark_on_a_ship_expose_at_once` (1.0 s against 4.0).
+- **The templates** (`SearchlightTemplates`, `searchlight-templates.md`): every plain arc 1.6·10⁴ cd/cm² and 3° (was
+  1.2-1.6·10⁴, 1.8-3°); Victorian six 90 cm on the continental ships and a new **RN Victorian** of 24-inch; the
+  pre-dreadnoughts' 75 cm by Russia's, six in pairs with remote control, 40 cm on the boats; a new **RN dreadnought
+  (1910)**, twin 24-inch mountings hand-worked by voice pipe, for the RN's plant years 1910-1915 (its 36-inch from 1916,
+  controlled from 1917); the German navy's plain arcs, trained dark from a control position (its 110 cm still [EST]); the
+  USN's high-intensity arcs from 1915, remote, 1.8°. The notes say [SRC] or [EST] for each.
+- **Design format 16** (`DesignFormat.SearchlightsToRecord`): a block still exactly as format 14 or 15 wrote a template
+  takes its navy's in its plant's year from the new table; one changed by hand stays. 130 design files upgraded; goldens:
+  326 design cases, 79 SVG cases, 17 sprite.json (`ShipDesign.Version` 52). Lion, Iron Duke and the RN's light cruisers
+  of 1910-15 now carry 24-inch lights (3.6·10⁷ cd), as they were built (Jellicoe's "very powerful (much more so than
+  ours)" of the German lights), a few tonnes lighter.
+- **Reach** (`shipgen searchlight`, the reference ship lit, a lookout's 7×50, moonless): Lion's 24-inch 4.6 km in clear
+  air, 2.5 in 10 km, 1.5 in 5 km (her 36-inch 5.1, 2.8, 1.7); Helgoland's 75 cm 4.4, 2.4, 1.5. The record's plain 36-inch:
+  2.7 km lit well, 3.7 with glasses.
+- **Restated:** Lion's lights in `SearchlightTests` are 24-inch (were 36-inch); the consort test's destroyer at 2.0 km (was
+  2.5, where the 24-inch no longer lets her own lookout make her out in 10 km haze).
+- **The bench** moves within its seeds' spread (Southampton GB 1.3 of 4 lost, DE 1.9 of 5; the 4th Flotilla GB 6.6 of 10,
+  DE 1.1 of 6; Black Prince 0.2 of 1); the lights first go on at 0.6-1.1 km at Jutland, the record's 150-2,500 yd.
+
 ### Q10 The look
 
 **Agreed 2026-10-29 in `docs/visuals/night-lights.md`** (Q10a-Q10f; decisions 1-5 there): the

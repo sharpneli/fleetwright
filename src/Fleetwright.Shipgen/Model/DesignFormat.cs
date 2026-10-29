@@ -12,7 +12,7 @@ namespace Fleetwright.Shipgen;
 public static class DesignFormat
 {
     /// <summary>The version this build writes.</summary>
-    public const int Current = 15;
+    public const int Current = 16;
 
     /// <summary>Steps[v] upgrades a version v design to v + 1, adding what it couldn't tell to the warnings.</summary>
     static readonly Action<JsonObject, List<string>>[] Steps =
@@ -32,7 +32,45 @@ public static class DesignFormat
         (d, _) => Packaging(d),        // 12 → 13: how the charges are packed (docs/battle/magazines.md V3)
         Searchlights,                  // 13 → 14: the searchlights the design's (docs/battle/night.md Q3)
         (d, _) => StarShell(d),        // 14 → 15: star shell in the light guns' magazines (docs/battle/night.md Q5)
+        (d, _) => SearchlightsToRecord(d), // 15 → 16: the searchlight templates to the research (docs/battle/night.md Q3b)
     ];
+
+    // the searchlight templates as format 14 and 15 wrote them (name, capital count, mirror, small mirror, crater, spread,
+    // control): a block still exactly one of these was never changed by hand
+    static readonly (string Name, int Capital, double Mirror, double Small, double Lamp, double Spread, string Control)[] SearchlightsBefore16 =
+    [
+        ("Victorian (1890)", 5, 61, 40, 12000, 3.0, "local"),
+        ("Pre-dreadnought (1904)", 6, 75, 45, 14000, 2.5, "local"),
+        ("RN pre-dreadnought (1904)", 6, 61, 51, 14000, 2.5, "local"),
+        ("Great War (1914)", 8, 91, 61, 16000, 2.0, "local"),
+        ("RN post-Jutland (1918)", 8, 91, 61, 16000, 2.0, "remote"),
+        ("German Great War (1914)", 8, 110, 60, 16000, 1.8, "remote"),
+        ("USN high-intensity (1918)", 8, 91, 61, 60000, 1.4, "local"),
+    ];
+
+    /// <summary>15 → 16: the searchlight templates took the research's numbers (docs/battle/night.md Q3b: the plain arc's
+    /// crater and 3° beam, the RN's 24-inch to 1915, Russia's remote control, the USN's high-intensity arcs from 1915). A
+    /// block still exactly as a template gave it takes its navy's (look.navy) in its plant's year, else its template's new
+    /// numbers; a block changed by hand (any number off its template's, or a count of its own) stays as it is.</summary>
+    static void SearchlightsToRecord(JsonObject d)
+    {
+        if (d["searchlights"] is not JsonObject s || s.ContainsKey("count"))
+            return;
+        static double? N(JsonNode? n) => n is JsonValue v && v.TryGetValue(out double x) ? x : null;
+        static string? S(JsonNode? n) => n is JsonValue v && v.TryGetValue(out string? x) ? x : null;
+        string? name = S(s["name"]);
+        int old = Array.FindIndex(SearchlightsBefore16, o => o.Name == name);
+        if (old < 0 || s.Count != 7)
+            return;
+        var o = SearchlightsBefore16[old];
+        if (N(s["capital_count"]) != o.Capital || N(s["mirror_cm"]) != o.Mirror || N(s["small_mirror_cm"]) != o.Small ||
+            N(s["lamp_cd_cm2"]) != o.Lamp || N(s["spread_deg"]) != o.Spread || S(s["control"]) != o.Control)
+            return;
+        string? tech = S(d["machinery"]?["tech"]?["name"]);
+        string? navy = S(d["look"]?["navy"]);
+        var template = Fittings.YearOf(tech) is int year ? SearchlightTemplates.ByNavyAndYear(navy, year) : SearchlightTemplates.Get(o.Name)!;
+        d["searchlights"] = JsonSerializer.SerializeToNode(template.Value, ShipgenJson.Default.SearchlightsInput);
+    }
 
     /// <summary>14 → 15: star shell (docs/battle/night.md Q5) is a fourth kind. A light gun's battery (under
     /// <see cref="ShellTemplates.StarUnderMm"/>) whose shells are a family that had star shell (its first shell a

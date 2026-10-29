@@ -1,5 +1,5 @@
 {
- "version": 15,
+ "version": 16,
  "id": "erin",
  "name": "Erin-like (1914)",
  "type": "BB",
@@ -607,12 +607,12 @@
   "tightness": 1.5
  },
  "searchlights": {
-  "name": "Great War (1914)",
+  "name": "RN dreadnought (1910)",
   "capital_count": 8,
-  "mirror_cm": 91,
-  "small_mirror_cm": 61,
+  "mirror_cm": 61,
+  "small_mirror_cm": 51,
   "lamp_cd_cm2": 16000,
-  "spread_deg": 2,
+  "spread_deg": 3,
   "control": "local"
  }
 }

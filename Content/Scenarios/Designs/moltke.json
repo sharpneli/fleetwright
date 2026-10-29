@@ -1,5 +1,5 @@
 {
- "version": 15,
+ "version": 16,
  "id": "moltke",
  "name": "Moltke-like (1911)",
  "type": "BC",
@@ -632,7 +632,7 @@
   "mirror_cm": 110,
   "small_mirror_cm": 60,
   "lamp_cd_cm2": 16000,
-  "spread_deg": 1.8,
+  "spread_deg": 3,
   "control": "remote"
  }
 }

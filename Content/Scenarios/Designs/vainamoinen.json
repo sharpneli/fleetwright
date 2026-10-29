@@ -1,5 +1,5 @@
 {
- "version": 15,
+ "version": 16,
  "id": "vainamoinen",
  "name": "Väinämöinen-like (1921)",
  "look": {
@@ -539,5 +539,5 @@
   "counterflood_tpm_per_10000t": 20,
   "tightness": 1
  },
- "searchlights": {"name": "Great War (1914)", "capital_count": 8, "mirror_cm": 91, "small_mirror_cm": 61, "lamp_cd_cm2": 16000, "spread_deg": 2, "control": "local"}
+ "searchlights": {"name": "Great War (1914)", "capital_count": 8, "mirror_cm": 91, "small_mirror_cm": 61, "lamp_cd_cm2": 16000, "spread_deg": 3, "control": "local"}
 }

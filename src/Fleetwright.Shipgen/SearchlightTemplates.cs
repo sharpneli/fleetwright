@@ -1,8 +1,9 @@
 namespace Fleetwright.Shipgen;
 
-/// <summary>A design's searchlights (docs/battle/night.md Q3): how many, their mirrors, the arc that lights them, the
-/// beam's spread and how they're trained. The templates are labels on the numbers by navy and period [EST: the research
-/// request "Night fighting, 1890-1925" asks for the sourced ones]; a design carries the block, and shipgen sizes and sites
+/// <summary>A design's searchlights (docs/battle/night.md Q3, Q3b): how many, their mirrors, the arc that lights them, the
+/// beam's spread and how they're trained. The templates are labels on the numbers by navy and period, from
+/// research/simulation/night-fighting.md §1 where it found them ([SRC] in the notes) and estimates where it didn't
+/// ([EST]); a design carries the block, and shipgen sizes and sites
 /// the lights from it (Layout.PlaceSearchlights): a capital ship's count and mirror, scaled down to a torpedo craft's by
 /// her waterplane. The photometry, weight, power and crew of one light are here too, the one place they live.</summary>
 public static class SearchlightTemplates
@@ -18,42 +19,59 @@ public static class SearchlightTemplates
 
     public static readonly Template[] All =
     [
-        T("Victorian (1890)", 5, 61, 40, 12000, 3.0, "local",
-            "24-inch projectors with plain carbon arcs on the bridges, the fighting tops and the flying deck, to search for torpedo " +
-            "boats; the boats a small one or none [EST]."),
-        T("Pre-dreadnought (1904)", 6, 75, 45, 14000, 2.5, "local",
-            "75 cm projectors (the Russian and Japanese fleets' at Port Arthur and Tsushima), trained by hand at each light on " +
-            "orders by voice pipe [EST]."),
-        T("RN pre-dreadnought (1904)", 6, 61, 51, 14000, 2.5, "local",
-            "24-inch on the big ships, 20-inch on the destroyers, each trained at the light [EST]."),
-        T("Great War (1914)", 8, 91, 61, 16000, 2.0, "local",
-            "36-inch on the big ships (searchlight towers by the funnels, the bridge's wings), 24-inch on the destroyers, plain " +
-            "carbon arcs, each light trained by its own crew [EST]."),
-        T("RN post-Jutland (1918)", 8, 91, 61, 16000, 2.0, "remote",
-            "As in 1914, now trained from searchlight control positions with directing sights after the night of Jutland [EST]."),
-        T("German Great War (1914)", 8, 110, 60, 16000, 1.8, "remote",
-            "110 cm on the big ships, 60 cm on the boats, worked from a searchlight control position by a drilled crew: the lights " +
-            "that found the 4th Flotilla at Jutland [EST]."),
-        T("USN high-intensity (1918)", 8, 91, 61, 60000, 1.4, "local",
-            "36-inch Sperry high-intensity arcs: about four times the plain arc's beam, narrower [EST]."),
+        T("Victorian (1890)", 6, 90, 40, 16000, 3.0, "local",
+            "90 cm Mangin or Schuckert projectors on the continental battleships, not less than six on a large ship (1894), " +
+            "plain carbon arcs (a crater of 1.6-1.8e4 cd/cm2), a 3 deg beam, trained at the light, to search for torpedo boats " +
+            "[SRC]; the boats a small one [EST]."),
+        T("Pre-dreadnought (1904)", 6, 75, 40, 16000, 3.0, "remote",
+            "Russia's six 75 cm Mangin lights in pairs (the fore bridge, amidships, the after bridge or the mainmast) with " +
+            "electric remote control, 40 cm on the boats, 1898-1905 [SRC]; the other navies' of the period by it [EST]."),
+        T("RN pre-dreadnought (1904)", 6, 61, 51, 16000, 3.0, "local",
+            "24-inch on the big ships (landed from the tops to the shelter deck in 1906), 20-inch on the destroyers, each " +
+            "trained at the light [SRC]; the count [EST]."),
+        T("Great War (1914)", 8, 91, 61, 16000, 3.0, "local",
+            "36-inch plain arcs on the big ships (searchlight towers by the funnels, the bridge's wings; the RN's from mid-1915), " +
+            "24-inch on the destroyers, each light trained by its own crew to orders by voice pipe ('never really efficient', " +
+            "the RN at Jutland) [SRC]; the count [EST]."),
+        T("RN post-Jutland (1918)", 8, 91, 61, 16000, 3.0, "remote",
+            "As in 1916, now four 36-inch over a searchlight control position with directing sights (August 1917) [SRC]."),
+        T("German Great War (1914)", 8, 110, 60, 16000, 3.0, "remote",
+            "Plain arcs kept (the navy rejected Beck's high-intensity arc: worse in the Baltic mist), iris shutters, the lights " +
+            "trained dark from a control position before they were switched on: the lights that found the 4th Flotilla at " +
+            "Jutland, 'much more powerful than ours' (Jellicoe) [SRC]; the 110 cm and the count [EST]."),
+        T("USN high-intensity (1918)", 8, 91, 61, 60000, 1.8, "remote",
+            "36-inch high-intensity arcs (Beck in Texas 1914, the 1917 specification's 5e4 cd/cm2 and more, Sperry's 9e4), " +
+            "eight on a battleship, distant electric control, tied into fire control by 1918; the beam's spread about 2/3 " +
+            "the plain arc's [SRC/INFERRED]."),
         T("Interwar (1930)", 6, 110, 61, 60000, 1.4, "remote",
             "High-intensity arcs everywhere, fewer and bigger lights, trained from control positions [EST]."),
         T("Second War (1940)", 6, 150, 61, 75000, 1.2, "director",
             "150 cm (44-inch in the RN) high-intensity lights slaved to the fire-control directors [EST]."),
+        T("RN Victorian (1890)", 6, 61, 40, 16000, 3.0, "local",
+            "24-inch projectors with plain carbon arcs on the bridges, the fighting tops and the flying deck, to search for " +
+            "torpedo boats [SRC]; the count and the boats' [EST]."),
+        T("RN dreadnought (1910)", 8, 61, 51, 16000, 3.0, "local",
+            "Twin 24-inch mountings (St Vincent, Colossus, Iron Duke), not 36-inch, hand-worked to orders by voice pipe, " +
+            "until the 36-inch lights of mid-1915 [SRC]; the count [EST]."),
     ];
 
     public static Template? Get(string name) => All.FirstOrDefault(t => t.Name == name);
 
-    /// <summary>The searchlights a navy fitted in a year [EST]: Victorian before 1898, the pre-dreadnoughts' to 1909 (the
-    /// RN's own), the Great War's to 1916 (the German navy's own), from 1917 the RN's controlled lights and the USN's
-    /// high-intensity arcs, interwar to 1937, then the Second War's. look.navy names the navy ("portsmouth" the RN, "kiel"
-    /// the German, "brooklyn" the USN).</summary>
+    /// <summary>The searchlights a navy fitted in a year (night-fighting.md §1.2): Victorian before 1898 (the RN's 24-inch),
+    /// the pre-dreadnoughts' to 1909 (the RN's 24-inch), the Great War's to 1919 (the RN's twin 24-inch to 1915 and its
+    /// 36-inch from 1916, controlled from 1917; the German navy's own; the USN's high-intensity arcs from 1915), interwar to
+    /// 1937, then the Second War's. look.navy names the navy ("portsmouth" the RN, "kiel" the German, "brooklyn" the USN).</summary>
     public static Template ByNavyAndYear(string? navy, int year) => year switch
     {
-        < 1898 => All[0],
+        < 1898 => navy == "portsmouth" ? All[9] : All[0],
         < 1910 => navy == "portsmouth" ? All[2] : All[1],
-        < 1917 => navy == "kiel" ? All[5] : All[3],
-        < 1920 => navy switch { "kiel" => All[5], "portsmouth" => All[4], "brooklyn" => All[6], _ => All[3] },
+        < 1920 => navy switch
+        {
+            "kiel" => All[5],
+            "portsmouth" => year < 1916 ? All[10] : year < 1917 ? All[3] : All[4],
+            "brooklyn" when year >= 1915 => All[6],
+            _ => All[3],
+        },
         < 1938 => All[7],
         _ => All[8],
     };

@@ -2,13 +2,13 @@
  {
   "name": "Victorian (1890)",
   "group": "",
-  "note": "24-inch projectors with plain carbon arcs on the bridges, the fighting tops and the flying deck, to search for torpedo boats; the boats a small one or none [EST].",
+  "note": "90 cm Mangin or Schuckert projectors on the continental battleships, not less than six on a large ship (1894), plain carbon arcs (a crater of 1.6-1.8e4 cd/cm2), a 3 deg beam, trained at the light, to search for torpedo boats [SRC]; the boats a small one [EST].",
   "value": {
    "name": "Victorian (1890)",
-   "capital_count": 5,
-   "mirror_cm": 61,
+   "capital_count": 6,
+   "mirror_cm": 90,
    "small_mirror_cm": 40,
-   "lamp_cd_cm2": 12000,
+   "lamp_cd_cm2": 16000,
    "spread_deg": 3,
    "control": "local"
   }
@@ -16,85 +16,85 @@
  {
   "name": "Pre-dreadnought (1904)",
   "group": "",
-  "note": "75 cm projectors (the Russian and Japanese fleets' at Port Arthur and Tsushima), trained by hand at each light on orders by voice pipe [EST].",
+  "note": "Russia's six 75 cm Mangin lights in pairs (the fore bridge, amidships, the after bridge or the mainmast) with electric remote control, 40 cm on the boats, 1898-1905 [SRC]; the other navies' of the period by it [EST].",
   "value": {
    "name": "Pre-dreadnought (1904)",
    "capital_count": 6,
    "mirror_cm": 75,
-   "small_mirror_cm": 45,
-   "lamp_cd_cm2": 14000,
-   "spread_deg": 2.5,
-   "control": "local"
+   "small_mirror_cm": 40,
+   "lamp_cd_cm2": 16000,
+   "spread_deg": 3,
+   "control": "remote"
   }
  },
  {
   "name": "RN pre-dreadnought (1904)",
   "group": "",
-  "note": "24-inch on the big ships, 20-inch on the destroyers, each trained at the light [EST].",
+  "note": "24-inch on the big ships (landed from the tops to the shelter deck in 1906), 20-inch on the destroyers, each trained at the light [SRC]; the count [EST].",
   "value": {
    "name": "RN pre-dreadnought (1904)",
    "capital_count": 6,
    "mirror_cm": 61,
    "small_mirror_cm": 51,
-   "lamp_cd_cm2": 14000,
-   "spread_deg": 2.5,
+   "lamp_cd_cm2": 16000,
+   "spread_deg": 3,
    "control": "local"
   }
  },
  {
   "name": "Great War (1914)",
   "group": "",
-  "note": "36-inch on the big ships (searchlight towers by the funnels, the bridge's wings), 24-inch on the destroyers, plain carbon arcs, each light trained by its own crew [EST].",
+  "note": "36-inch plain arcs on the big ships (searchlight towers by the funnels, the bridge's wings; the RN's from mid-1915), 24-inch on the destroyers, each light trained by its own crew to orders by voice pipe ('never really efficient', the RN at Jutland) [SRC]; the count [EST].",
   "value": {
    "name": "Great War (1914)",
    "capital_count": 8,
    "mirror_cm": 91,
    "small_mirror_cm": 61,
    "lamp_cd_cm2": 16000,
-   "spread_deg": 2,
+   "spread_deg": 3,
    "control": "local"
   }
  },
  {
   "name": "RN post-Jutland (1918)",
   "group": "",
-  "note": "As in 1914, now trained from searchlight control positions with directing sights after the night of Jutland [EST].",
+  "note": "As in 1916, now four 36-inch over a searchlight control position with directing sights (August 1917) [SRC].",
   "value": {
    "name": "RN post-Jutland (1918)",
    "capital_count": 8,
    "mirror_cm": 91,
    "small_mirror_cm": 61,
    "lamp_cd_cm2": 16000,
-   "spread_deg": 2,
+   "spread_deg": 3,
    "control": "remote"
   }
  },
  {
   "name": "German Great War (1914)",
   "group": "",
-  "note": "110 cm on the big ships, 60 cm on the boats, worked from a searchlight control position by a drilled crew: the lights that found the 4th Flotilla at Jutland [EST].",
+  "note": "Plain arcs kept (the navy rejected Beck's high-intensity arc: worse in the Baltic mist), iris shutters, the lights trained dark from a control position before they were switched on: the lights that found the 4th Flotilla at Jutland, 'much more powerful than ours' (Jellicoe) [SRC]; the 110 cm and the count [EST].",
   "value": {
    "name": "German Great War (1914)",
    "capital_count": 8,
    "mirror_cm": 110,
    "small_mirror_cm": 60,
    "lamp_cd_cm2": 16000,
-   "spread_deg": 1.8,
+   "spread_deg": 3,
    "control": "remote"
   }
  },
  {
   "name": "USN high-intensity (1918)",
   "group": "",
-  "note": "36-inch Sperry high-intensity arcs: about four times the plain arc's beam, narrower [EST].",
+  "note": "36-inch high-intensity arcs (Beck in Texas 1914, the 1917 specification's 5e4 cd/cm2 and more, Sperry's 9e4), eight on a battleship, distant electric control, tied into fire control by 1918; the beam's spread about 2/3 the plain arc's [SRC/INFERRED].",
   "value": {
    "name": "USN high-intensity (1918)",
    "capital_count": 8,
    "mirror_cm": 91,
    "small_mirror_cm": 61,
    "lamp_cd_cm2": 60000,
-   "spread_deg": 1.4,
-   "control": "local"
+   "spread_deg": 1.8,
+   "control": "remote"
   }
  },
  {
@@ -123,6 +123,34 @@
    "lamp_cd_cm2": 75000,
    "spread_deg": 1.2,
    "control": "director"
+  }
+ },
+ {
+  "name": "RN Victorian (1890)",
+  "group": "",
+  "note": "24-inch projectors with plain carbon arcs on the bridges, the fighting tops and the flying deck, to search for torpedo boats [SRC]; the count and the boats' [EST].",
+  "value": {
+   "name": "RN Victorian (1890)",
+   "capital_count": 6,
+   "mirror_cm": 61,
+   "small_mirror_cm": 40,
+   "lamp_cd_cm2": 16000,
+   "spread_deg": 3,
+   "control": "local"
+  }
+ },
+ {
+  "name": "RN dreadnought (1910)",
+  "group": "",
+  "note": "Twin 24-inch mountings (St Vincent, Colossus, Iron Duke), not 36-inch, hand-worked to orders by voice pipe, until the 36-inch lights of mid-1915 [SRC]; the count [EST].",
+  "value": {
+   "name": "RN dreadnought (1910)",
+   "capital_count": 8,
+   "mirror_cm": 61,
+   "small_mirror_cm": 51,
+   "lamp_cd_cm2": 16000,
+   "spread_deg": 3,
+   "control": "local"
   }
  }
 ]

@@ -1,5 +1,5 @@
 {
- "version": 15,
+ "version": 16,
  "id": "buyny",
  "name": "Buyny-like destroyer (1902)",
  "type": "DD",
@@ -110,5 +110,5 @@
  "gun_tech": {"Victorian, single-base": {"reload_share": 1, "heavy_slow": 1.3, "heavy_slow_under_40_cal": 2.5, "heavy_slow_under_30_cal": 4, "train_share": 0.7, "dp_train_share": 1, "max_elevation_deg": 13, "dp_max_elevation_deg": 13, "pattern_pct": 3.5, "pattern_exp": 0, "pattern_light_pct": 3.5, "propellant": "single-base", "black_powder_under_cal": 36, "packaging": "tank"}},
  "torpedo_tech": {"Victorian torpedo": {"fast_kn": 30, "fast_range_m": 1000, "slow_kn": 24, "slow_range_m": 2700, "charge_share": 0.45, "mount_train_deg_s": 3, "mount_reload_s": 600, "tube_reload_s": 180, "gyro_deg": 5, "fail": 0.25, "dud": 0.15}},
  "drainage": {"name": "Pre-dreadnought (1905)", "pumps_tph_per_1000t": 40, "portable_pumps": 4, "portable_tph": 8, "counterflood_tpm_per_10000t": 8, "tightness": 2},
- "searchlights": {"name": "Pre-dreadnought (1904)", "capital_count": 6, "mirror_cm": 75, "small_mirror_cm": 45, "lamp_cd_cm2": 14000, "spread_deg": 2.5, "control": "local"}
+ "searchlights": {"name": "Pre-dreadnought (1904)", "capital_count": 6, "mirror_cm": 75, "small_mirror_cm": 40, "lamp_cd_cm2": 16000, "spread_deg": 3, "control": "remote"}
 }

@@ -1,4 +1,4 @@
-{"version": 15, "id": "colbert", "name": "Colbert-like AA cruiser (1959)", "look": {"navy": "toulon", "era": "cold_war"}, "type": "CL",
+{"version": 16, "id": "colbert", "name": "Colbert-like AA cruiser (1959)", "look": {"navy": "toulon", "era": "cold_war"}, "type": "CL",
  "hull": {"block_coefficient": 0.52, "construction": {"name": "High-tensile steel, all welded", "yield_mpa": 350, "join_factor": 1.0, "standard": 1.0, "shell": "welded", "internals": "welded"}, "plating": {"shell_mm": 0, "material": "steel", "deck_wood_mm": 0}, "freeboard": 1.0, "raised": [{"from": "bow", "to": "bridge", "decks": 1}]},
  "speed_kn": 32,
  "range_nm": 4000,

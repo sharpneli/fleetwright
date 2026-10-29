@@ -1,4 +1,4 @@
-{"version": 15, "id": "zara", "name": "Zara-like heavy cruiser (1931)", "look": {"navy": "la_spezia", "era": "treaty"}, "type": "CA",
+{"version": 16, "id": "zara", "name": "Zara-like heavy cruiser (1931)", "look": {"navy": "la_spezia", "era": "treaty"}, "type": "CA",
  "hull": {"block_coefficient": 0.52, "construction": {"name": "High-tensile steel (D, Ducol, HTS), riveted", "yield_mpa": 340, "join_factor": 1.08, "standard": 1.0, "shell": "riveted", "internals": "riveted"}, "plating": {"shell_mm": 0, "material": "steel", "deck_wood_mm": 50}, "freeboard": 1.0, "raised": [{"from": "bow", "to": "bridge", "decks": 1}]},
  "speed_kn": 32,
  "range_nm": 5400,
