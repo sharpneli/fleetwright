@@ -281,7 +281,9 @@ Tests: 207 pass.
 **Q10e The moon and the small lights.** The cloud on the moon, the moon path checked; funnel glow and challenge lamps
 (their cues into the snapshot); phosphorescence (the weather field, the foam's glow).
 
-**Q10f Cost and tuning.** `-gputime` at the night scenarios (Dover 1917, Jutland's night, Tsushima, Åland's summer
+**Q10f Cost and tuning.** The user (2026-10-29): once every light source is in, tune what is in effect the camera,
+its parameters and the response curve from the physical into something our displays carry (the night eye's levels,
+the shoulder and roll to white, the glow's gains), for ordinary displays as well as an OLED. `-gputime` at the night scenarios (Dover 1917, Jutland's night, Tsushima, Åland's summer
 night) with every light on; the gains by the user's eye from side-by-side captures.
 
 ## Budgets
