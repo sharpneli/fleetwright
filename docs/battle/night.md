@@ -1,5 +1,5 @@
 # Plan: night fighting (a 4.5 deepening)
-Status: **drafted 2026-10-29**, for the user (questions at the end)
+Status: **drafted 2026-10-29**; questions 2-5 decided by the user the same day, question 1 open (at the end)
 Updated: 2026-10-29
 
 How ships see, light, shoot and lose each other in the dark. The user asked for it after the crew plan (2026-10-28),
@@ -171,10 +171,11 @@ want the request's numbers, and go ahead on flagged estimates if it hasn't come 
   (local, from a searchlight control position, later director-controlled), and its crew (in the crew book: "bridge,
   tops, look-outs and searchlights stay manned in every period", CUF). Power from the ship's dynamos through the
   electric network (E4's breakers and cable cuts reach it, near-miss blackouts douse it).
-- **From templates by navy and year** (a design block like `gun_tech`), placed by the designer on platforms, the
-  funnels, the masts and the bridge. **Until the designer places them, flagged placeholders** in
-  `DesignerPlaceholders.cs` by size and year. **The clutter draws from the rows** (one physical model): the look
-  never places a searchlight the sim doesn't have.
+- **The designer places them** (decision 2): shipgen sizes and sites them itself, from templates by navy and year (a
+  design block like `gun_tech`), on platforms, the funnels, the masts and the bridge, with their weight and power in
+  the budgets. No hand is needed: every design gets them from shipgen, and a design format bump migrates the old ones.
+  No placeholder phase. **The clutter draws from the rows** (one physical model): the look never places a searchlight
+  the sim doesn't have, and the clutter's own `searchlight` and `searchlight_tower` placement goes.
 - **Damage:** a searchlight is a part in the hitbox, so splinters, blast and its own guns' shock put it out (the
   record's mantelets burned and broken lamps).
 - The designer's UI row waits for the UI pass, as with the damage plan's data steps.
@@ -213,10 +214,18 @@ want the request's numbers, and go ahead on flagged estimates if it hasn't come 
 
 ### Q6 Friend or foe
 
-- **Seen isn't known.** At night (in fact in any light, by the margin), a ship made out but not identified is an
-  **unknown** contact. Own and allied ships the side's picture doesn't hold by plot (stationed in the same formation,
-  known by the admiral's orders) are seen as anyone else is: the picture gets contacts for own ships too, keyed on the
-  true entity, and identification is the margin's step, as the class is now.
+- **Today** (checked 2026-10-29): a look runs only for each ship against each side **at war** with her
+  (`Sightings`: "for each ship and each side at war with it in its encounter"). Own and allied ships are never looked
+  at; the AI and the snapshot read them from the world, exactly and for free. No CPU goes into seeing friends.
+- **Seen isn't known.** At night, a ship made out but not identified is an **unknown** contact. An enemy below the
+  type's margin is one already; that costs nothing new, and hold fire on unknowns works on it alone.
+- **Own ships, if question 1 says so: a bounded look.** Ships of one's own group (the admiral's division or squadron,
+  kept in formation) stay known by plot, free as now. Other own and allied ships are looked at only **where the light
+  is low** (the night's reach from Q1 under a few km) and **within that reach**, through the same grid ring by ring,
+  so it's a short search over a few neighbours, and none by day. Its result is a contact like an enemy's (keyed on the
+  true entity), unknown until identified. The same look gives Q7 its "losing touch": a ship that no longer sees her
+  next ahead. Its cost is measured in Q0's Jutland night before it's taken in [EST: well under today's 270 µs a look;
+  the night's reach is short].
 - **The challenge:** a lamp signal (the night's challenge and reply). It shows the challenger (a light in `Lights`).
   A friend answers, and a foe who knows the challenge may answer it too (the Germans at Jutland knew the British
   challenge [to check]). Recognition lights are the same mechanism.
@@ -268,20 +277,22 @@ doesn't change that.)
 
 Against `night-history` and the night scenarios. Restated anchors and what moved, for the user.
 
-## Questions for the user
+## Open (for the user)
 
 1. **Friendly fire at night.** Own ships seen as unknowns, so a ship can fire on a friend (the record has many),
-   within doctrine's hold-fire rules, or own ships always known as now? *Recommendation:* unknowns and the challenge
-   (Q6) as planned, friendly fire allowed but rare by doctrine; a difficulty setting can turn it off later.
-2. **Searchlights from the designer now, or placeholders first?** *Recommendation:* the rows and placeholders in Q3,
-   the designer emitting them in the same step (a design format bump), its UI row in the later UI pass.
-3. **Star shell as a fourth `ShellKind`** in the same magazines and outfits, rather than a separate store?
-   *Recommendation:* yes.
-4. **Cloud cover in the weather now** (for the moon), one per scenario like the visibility? *Recommendation:* yes; local
-   cloud waits for the weather features (`smoke.md`).
-5. **Order:** Q0-Q2 first (the dark and the lights we already have: fires and flashes), then searchlights, star shell,
-   friend or foe, the AI. Or star shell and searchlights first and the moon after? *Recommendation:* as written: the
-   lights' value is measured against the dark they light.
+   within doctrine's hold-fire rules, or own ships always known as now? Today no CPU goes into seeing friends (Q6).
+   The bounded look in Q6 adds it only at night, only near, only outside one's own group. *Recommendation:* the
+   bounded look, measured in Q0 first; it also gives Q7 ships losing touch in the dark. Friendly fire rare by doctrine,
+   a difficulty setting can turn it off later.
+
+## Decided (the user, 2026-10-29)
+
+2. **Searchlights are placed by the designer.** Shipgen produces the data itself (no human needs to intervene); no
+   placeholder phase (Q3).
+3. **Star shell is a fourth `ShellKind`** in the same magazines and outfits (Q5).
+4. **Cloud cover in the weather now,** one per scenario like the visibility (Q1).
+5. **The order as written:** Q0-Q2 first (the dark, and the lights we already have: fires and flashes), then
+   searchlights, star shell, friend or foe, the AI.
 
 ## Not here
 
