@@ -210,7 +210,7 @@ public class WorldTests
         var (w, m) = Make();
         w.AdvanceTo(Start + 100);
         Assert.Throws<ArgumentException>(() => w.Schedule(Start, EventTier.Rails, 0, m.Id, 0));
-        Assert.Throws<ArgumentException>(() => w.Schedule(Start + 200, EventTier.Rails, 0, 11, 0));   // nine of the world's, the metronome tenth
+        Assert.Throws<ArgumentException>(() => w.Schedule(Start + 200, EventTier.Rails, 0, 12, 0));   // ten of the world's, the metronome eleventh
         Assert.Throws<ArgumentException>(() => w.SetTarget(Start));
         Assert.Throws<ArgumentException>(() => w.Apply(new Command(0, 99)));
     }

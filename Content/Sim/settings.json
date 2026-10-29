@@ -129,6 +129,14 @@
   "StarCheckMs": 1000,
   "StarSeaReflectance": 0.1,
   "StarFuzeMaxS": 25,
+  // friend or foe (docs/battle/night.md Q6)
+  "ChallengeSignalS": 8,
+  "ChallengeReplyS": 20,
+  "ChallengeLampCd": 3e4,
+  "ChallengeLampDeg": 10,
+  "ChallengeLampMirrorM": 0.25,
+  "ChallengeTrustS": 600,
+  "UnknownFriendM": 5000,
   // the night's light (docs/battle/night.md Q1)
   "NightOvercastShare": 0.15,
   "NightMoonSkyShare": 0.25,

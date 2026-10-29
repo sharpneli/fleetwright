@@ -123,12 +123,32 @@ public enum DoctrineField : byte
     /// nothing else in reach: fire at will finishes her, or ceases (<see cref="WreckFire"/>). Either way at will takes any
     /// other target in reach first; an ordered Engage stands.</summary>
     Wrecks,
+
+    /// <summary>What a captain does about a ship in sight his navy can't tell for friend or foe (<see cref="Ai.Unknowns"/>;
+    /// docs/battle/night.md Q6): fire on her, challenge her first, or hold his fire until she's made out or gives herself
+    /// away. A bold captain (his aggression over 0) fires anyway where no friend is about her
+    /// (<see cref="SimSettings.UnknownFriendM"/>). An ordered Engage fires regardless. After <see cref="Wrecks"/>, so the
+    /// fields' numbers in logged commands stand.</summary>
+    Unknowns,
+
+    /// <summary>The share of the enemy's challenges a side's ships can answer with his reply (0-1; docs/battle/night.md Q6:
+    /// the challenge known from captured signal books or overheard), so he takes them for friends. A side's value.</summary>
+    AnswerChallenge,
 }
 
 /// <summary>Doctrine's Shells: each battery loads the kind its target calls for (the captain's choice, the matchup's
 /// judgement), or fires by the magazine order (a main battery AP first, a secondary HE).</summary>
 /// <summary>When a gun's crew is closed up (docs/battle/crew.md N3a): always; while an enemy worth its fire is in its reach
 /// and bearing; or only against torpedo craft in reach, with a watch of two guns a battery closed up meanwhile.</summary>
+/// <summary>Doctrine's Unknowns (docs/battle/night.md Q6): fire on a ship that can't be made out, challenge her first, or
+/// hold fire until she's known.</summary>
+public enum Unknowns : byte
+{
+    Fire,
+    Challenge,
+    Hold,
+}
+
 public enum ManGuns : byte
 {
     Always,
@@ -221,7 +241,7 @@ public sealed class Doctrine(GroupSystem groups, IReadOnlyDictionary<string, dou
         return r;
     }
 
-    public const int FieldCount = (int)DoctrineField.Wrecks + 1;
+    public const int FieldCount = (int)DoctrineField.AnswerChallenge + 1;
 
     /// <summary>Every field when nothing sets it: a world told nothing (a dev's, a test's) behaves as before doctrine.</summary>
     public static double Default(DoctrineField f) => f switch
@@ -254,6 +274,8 @@ public sealed class Doctrine(GroupSystem groups, IReadOnlyDictionary<string, dou
         DoctrineField.ManCasemates or DoctrineField.ManOpenGuns => (double)ManGuns.Always,   // as before the crews' posture
         DoctrineField.ReliefOrder => (double)Ai.ReliefOrder.HandlingRoomProtected,
         DoctrineField.Wrecks => (double)WreckFire.Finish,   // as before: fire on while she's the one in reach
+        DoctrineField.Unknowns => (double)Ai.Unknowns.Fire,   // as before friend or foe
+        DoctrineField.AnswerChallenge => 0,
         _ => throw new ArgumentOutOfRangeException(nameof(f)),
     };
 
@@ -410,6 +432,7 @@ public sealed class DoctrinePresets
             DoctrineField.ManCasemates or DoctrineField.ManOpenGuns when Enum.TryParse<ManGuns>(name, ignoreCase: true, out var mg) => (f, (double)mg),
             DoctrineField.ReliefOrder when Enum.TryParse<ReliefOrder>(name, ignoreCase: true, out var ro) => (f, (double)ro),
             DoctrineField.Wrecks when Enum.TryParse<WreckFire>(name, ignoreCase: true, out var wf) => (f, (double)wf),
+            DoctrineField.Unknowns when Enum.TryParse<Unknowns>(name, ignoreCase: true, out var un) => (f, (double)un),
             _ => throw new ArgumentException($"doctrine: \"{v}\" isn't a value of {field}"),
         };
     }
@@ -430,6 +453,7 @@ public sealed class DoctrinePresets
             DoctrineField.ManCasemates or DoctrineField.ManOpenGuns => ((ManGuns)(int)v).ToString(),
             DoctrineField.ReliefOrder => ((ReliefOrder)(int)v).ToString(),
             DoctrineField.Wrecks => ((WreckFire)(int)v).ToString(),
+            DoctrineField.Unknowns => ((Unknowns)(int)v).ToString(),
             _ => null,
         };
         // "CarryOn" -> "carry on"

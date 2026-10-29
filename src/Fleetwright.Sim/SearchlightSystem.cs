@@ -221,7 +221,7 @@ public sealed class SearchlightSystem : IWorldSystem
 
     /// <summary>Where a ship holds her lights on a contact: on her while her navy holds her in sight, else on where its
     /// picture has her now; false when it has none to hold on (gone, or seen going down).</summary>
-    static bool AimAt(World world, ShipState ship, int target, out Vec3d aim)
+    internal static bool AimAt(World world, ShipState ship, int target, out Vec3d aim)
     {
         aim = default;
         var pic = world.Sightings.Of(ship.Side);

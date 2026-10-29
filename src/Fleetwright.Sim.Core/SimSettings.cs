@@ -404,6 +404,24 @@ public sealed record SimSettings
     /// bursts later, which bounds its reach.</summary>
     public double StarFuzeMaxS { get; init; } = 25;
 
+    /// <summary>The night's challenge (docs/battle/night.md Q6) [EST, every number until the research]: a signal lamp on
+    /// the bridge flashes the challenge at a contact for <see cref="ChallengeSignalS"/> s (a two-letter group), a beam of
+    /// <see cref="ChallengeLampCd"/> (its flashing's effective light), <see cref="ChallengeLampDeg"/> wide from a
+    /// <see cref="ChallengeLampMirrorM"/> mirror; the reply is awaited <see cref="ChallengeReplyS"/> s after it, and given
+    /// by the same lamp. A ship that answers it rightly is taken for a friend for <see cref="ChallengeTrustS"/> s, unless
+    /// she gives herself away first.</summary>
+    public double ChallengeSignalS { get; init; } = 8;
+    public double ChallengeReplyS { get; init; } = 20;
+    public double ChallengeLampCd { get; init; } = 3e4;
+    public double ChallengeLampDeg { get; init; } = 10;
+    public double ChallengeLampMirrorM { get; init; } = 0.25;
+    public double ChallengeTrustS { get; init; } = 600;
+
+    /// <summary>A bold captain (docs/battle/night.md Q6: his aggression a over 0) opens on a ship he can't make out, under a
+    /// doctrine that would challenge her or hold, where no friend of his (but his own unit's, whom he sees in station) is
+    /// within this many metres × (1 − a) of her: at a = 1 on any shape [EST]. At most <see cref="LineOfFireCellM"/>.</summary>
+    public double UnknownFriendM { get; init; } = 5_000;
+
     /// <summary>A moon low enough silhouettes a ship toward it as the low sun does, as strongly as its path on the sea
     /// outshines the sky (<see cref="NightMoonPathShare"/>), fading as it climbs to this elevation, degrees [EST].</summary>
     public double SightSilhouetteMoonHighDeg { get; init; } = 40;

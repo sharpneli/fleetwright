@@ -77,8 +77,18 @@ public struct Contact
     /// <summary>Where the observer was at the last fix (the map's bearing line for smoke).</summary>
     public Vec3d From;
 
-    /// <summary>The ship's side (a navy knows it once it's made out the type: its colours, its build).</summary>
+    /// <summary>The ship's side (a navy knows it once it's made out the type: its colours, its build; or she's shown
+    /// herself a foe, <see cref="Foe"/>).</summary>
     public byte Side;
+
+    /// <summary>Whether her navy knows her for an enemy (docs/battle/night.md Q6): her type made out, or she gave herself
+    /// away (seen firing on its ships or holding a light on one, seen making a challenge not its own, or failed its
+    /// challenge). Below it she's an unknown: friend or foe for all her navy can tell.</summary>
+    public bool Foe;
+
+    /// <summary>When she answered its challenge rightly and was taken for a friend (world ms; 0: never): for
+    /// <see cref="SimSettings.ChallengeTrustS"/>, unless she's known for a foe first.</summary>
+    public long FriendMs;
 
     /// <summary>What was made out of its condition when last seen, and whether it was seen to go.</summary>
     public SeenFlags Seen;
@@ -86,6 +96,10 @@ public struct Contact
     /// <summary>Since when her guns have been quiet as her navy has watched her (world ms; docs/battle/crew.md N5b): a salvo
     /// of hers seen, or her coming into sight, starts it again. Silent is read from it.</summary>
     public long QuietMs;
+
+    /// <summary>Whether she's taken for a friend now (answered its challenge rightly within
+    /// <see cref="SimSettings.ChallengeTrustS"/>, not since known for a foe).</summary>
+    public readonly bool TakenForFriend(long now, SimSettings s) => !Foe && FriendMs > 0 && now - FriendMs < s.ChallengeTrustS * 1000;
 
     /// <summary>Seen going down or gone: no target, no threat (docs/battle/fighting.md 4.3b).</summary>
     public readonly bool Lost => (Seen & (SeenFlags.GoingDown | SeenFlags.Gone)) != 0;
@@ -202,6 +216,12 @@ public sealed class Picture
             h.Add((int)c.Level | (int)c.Seen << 8);
             h.Add(c.TakenFor);
             h.Add(c.QuietMs);
+            if (c.Foe != c.Level >= ContactLevel.Type || c.FriendMs != 0)
+            {
+                h.Add(0x0F0Eu);   // (only when not as the type alone says: the hashes of worlds with no challenge as they were)
+                h.Add(c.Foe);
+                h.Add(c.FriendMs);
+            }
         }
     }
 }

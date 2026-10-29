@@ -1,5 +1,5 @@
 # Plan: night fighting (a 4.5 deepening)
-Status: **drafted 2026-10-29**; **agreed with the user 2026-10-29** (decisions 1-5 at the end); Q0-Q5 done 2026-10-29
+Status: **drafted 2026-10-29**; **agreed with the user 2026-10-29** (decisions 1-5 at the end); Q0-Q6 done 2026-10-29
 Updated: 2026-10-29
 
 How ships see, light, shoot and lose each other in the dark. The user asked for it after the crew plan (2026-10-28),
@@ -605,6 +605,66 @@ design's; the coarse tier's flares are the fine tier's at its looks (Q11).
   Within the doctrine, the captain's temper sets how readily he opens on an unknown (captains are the people with
   personality): a cautious one waits for the type or the challenge's answer, a bold one fires on a shape where no
   friend is expected.
+
+**Q6 done (2026-10-29).** Friend or foe, on our own estimates (the research hasn't come back):
+
+- **A known foe** (`Contact.Foe`): her navy knows her for an enemy once it has made out her type (her colours, her build,
+  as it knew her side before), or once she **gives herself away** (`Sightings.GivesAway`), seen in sight or by her lights:
+  her salvo fired within the look at one of its ships or a friend's, her searchlights held on one, or a challenge of hers
+  (none is its own). Her guns at others, her star shell (nobody's light) and her answer to a challenge say nothing. Below
+  that she's an unknown. The map's side for a contact follows it. Own ships stay known from the world (decision 1).
+- **The challenge** (`Sim/ChallengeSystem.cs`, world system 10): the bridge's signal lamp held on the contact for 8 s
+  (a beam of 3·10⁴ cd, 10° wide [EST]), a light in `Lights` like any other, so it shows the challenger to whoever it
+  reaches, the contact first. The reply is awaited 20 s after it. Unanswered, she's a foe, whether she saw it or not.
+  Answered (`ChallengeSystem.Answer`, the same lamp held back), she's taken for a friend (`Contact.FriendMs`) for
+  10 min [EST], unless she gives herself away first. One challenge a ship at a time; a side doesn't ask one contact twice
+  at once. `-challenge=ship:target` is the dev's.
+- **Doctrine** (`Unknowns`, after `Wrecks`; the launch screen's "Ships not made out"): **fire** on an unknown (as before,
+  the code's default), **challenge** her first (the "default" preset), or **hold** fire until she's made out or gives
+  herself away. Within it the captain's temper: a bold one (his aggression a over 0) fires anyway where no friend of his
+  but his own squadron is within 5 km × (1 − a) of her (`UnknownFriendM` [EST]; `LineOfFire.FriendNear`), so at a = 1 on
+  any shape. **`AnswerChallenge`**, a side's share of the enemy's challenges it can answer with his reply (0 by default):
+  the challenged captain gives it once his navy has seen the challenger since it began, drawn once a challenge.
+- **The captains** (`CaptainLayer.Fire.cs`, `Opens`): fire at will and torpedoes at will take only a contact they'd open
+  on (a foe, an unknown by doctrine and temper, never one taken for a friend); with Challenge, the nearest unknown in the
+  widest reach is challenged. An ordered Engage fires regardless (the player's orders beat doctrine). Searchlights and
+  star shell follow the guns' targets (Q4, Q5), so nothing is lit before it's known.
+- **By day** the challenge costs little: a contact is made out to her type at about the range she's first seen. Dogger
+  Bank, Coronel and the Heligoland Bight played 8 seeds each with the old "fire" against the new "challenge" moved within
+  the seeds' spread (Germany's losses 11.6 and 12.0 of 26, 1.1 and 1.1 of 5, 20 and 19 of 24).
+- **Tests:** `FriendOrFoeTests` (an unanswered challenge makes her a foe and shows the challenger; a foe who answers is
+  taken for a friend until she lights the challenger; by day a ship seen firing on one's own is a foe before her type is
+  made out; the captains fire at 9 s, challenge and fire at 38 s, hold, or, bold, fire unless a friend is near her).
+
+**The bench after Q6** (20 seeds; Q5's in brackets):
+
+| Case | Challenges | First seen | Shells / hits | Torpedoes, hits | Lost |
+|---|---|---|---|---|---|
+| Southampton | DE at 9.1 km (20/20), 3.8 a run; GB never | GB 8.9 (5.9), DE 9.1 km (9.1) | GB 165 / 16 (97 / 21), DE 2,945 / 310 (2,553 / 235) | GB 0.4, 0 (1.7, 0.3) | GB 0.5 of 4 (0.5), DE 0.2 (0.3) |
+| 4th Flotilla | DE at 6.1 km (20/20), 4.8 a run; GB 3 runs of 20 | GB 5.7 (3.4), DE 4.3 km (4.3) | GB 72 / 18 (61 / 10), DE 699 / 110 (692 / 77) | GB 3.5, 0.8 (1.4, 0.2) | GB 2.3 of 10 (1.2), DE 0.1 (0.1) |
+| Black Prince | DE at 4.7 km (20/20), 1.0 a run; GB 1 run | GB 4.5 in 18 of 20 (4.3 in 12), DE 4.7 km | GB 58 / 21 (51 / 11), DE 372 / 81 (398 / 92) | none | GB 0.7 of 1 (0.7), DE 0.1 (0) |
+| Dover Strait | DE at 0.6 km (11/20); GB never (the Germans made out at once) | 0.5 and 0.3 km | GB 760 / 89 (747 / 83), DE 241 / 30 (282 / 27) | GB 8.7, 1.3 (8.4, 0.9) | GB 0.3 of 2 (0.3), DE 2.1 of 6 (1.9) |
+
+**What it says:**
+- **Challenging gives you away.** The Germans challenge first in every Jutland case, and their lamp is seen far: the
+  British pick them up at 8.9 km at Southampton (5.9 before) and 5.7 km against the 4th Flotilla (3.4), and know them for
+  foes at once. The British, who challenge only what they see first, hardly ever get to.
+- **The 4th Flotilla comes closer to the record.** Seeing the line earlier, the boats fire 3.5 torpedoes a run (1.4) for
+  0.8 hits (the record's one, Rostock), and lose 2.3 boats of 10 (1.2; the record's four).
+- **The challenge is made where the shape is first seen**, so its range is the night's sight: 4.7-9 km in Jutland's
+  twilight, where the record's challenges came at 1,000-2,000 yd. That's Q1's open twilight (the weather's research),
+  and when a ship challenges at all, or keeps dark and closes, is doctrine's (Q7).
+- **Black Prince** is as Q5 left her (lost 0.7 of 1): the Germans challenge her at 4.7 km and she, seeing it, knows them
+  for foes and turns away. The record's closing on ships she took for friends wants her not to see their challenge (or
+  the Germans not to make it) until much closer, Q7's.
+- The bench took 26 s, as before.
+
+**Open after Q6:** every number is [EST] until the research (the lamp, the signal and reply times, the trust, the
+friend radius); `AnswerChallenge` is 0 everywhere (the Germans at Jutland may have known the British challenge [to check]);
+captains challenge at any range they see a shape (Q7: within a doctrine's range, or keep dark and shadow); the map
+draws no challenge lamp and doesn't mark an unknown apart from a ship not made out (Q9, Q10); recognition lights
+(shown all round, by doctrine) aren't modelled; the admirals and the matchup still count unknowns as enemies (no friendly fire,
+decision 1); own ships as contacts (a bounded look in the dark) wait for playtesting to want them.
 
 ### Q7 Captains, admirals and doctrine at night
 

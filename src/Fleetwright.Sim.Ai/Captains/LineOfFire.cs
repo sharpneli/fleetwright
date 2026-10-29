@@ -125,6 +125,34 @@ public sealed class LineOfFire
         return Math.Min(Math.Min(fc, fd), Math.Min(F(t0), F(t1)));
     }
 
+    /// <summary>Whether a friend of <paramref name="own"/> (not himself, nor one of his own squadron, whom he sees in station)
+    /// is within a radius of a point (docs/battle/night.md Q6: a shape there might be one of his), at most the grid's
+    /// cell.</summary>
+    public bool FriendNear(in AiContext ctx, GroupSystem groups, ShipState own, Vec3d p, double radiusM)
+    {
+        if (radiusM <= 0)
+            return false;
+        Build(ctx);
+        var store = ctx.Ships;
+        var relations = ctx.World.Relations;
+        var unit = groups.Of(own.Entity);
+        double r2 = radiusM * radiusM;
+        foreach (byte side in sides)
+        {
+            if (relations.Hostile(own.Side, side))
+                continue;
+            var grid = grids[side]!;
+            int n = grid.NearAnyOrder(p);
+            foreach (int slot in grid.Found(n))
+            {
+                var x = store[slot];
+                if (x.Entity != own.Entity && (unit == null || groups.Of(x.Entity) != unit) && (x.Position - p).LengthSquared <= r2)
+                    return true;
+            }
+        }
+        return false;
+    }
+
     /// <summary>Whether a friend (not himself, not an enemy) is within <paramref name="width"/> of the segment a-b.</summary>
     bool Foul(in AiContext ctx, ShipState own, Vec3d a, Vec3d b, double width)
     {

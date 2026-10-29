@@ -182,6 +182,8 @@ own value, else its group's, else the side's. A command sets it, so it's logged 
 | **ManCasemates, ManOpenGuns** (crew.md N3a) | When a secondary's casemated and its open guns are closed up: always, in range (an enemy in reach and bearing), or for torpedo craft (a watch of two a battery meanwhile); otherwise their crews wait under cover | Always (the "default" preset: in range) |
 | **ReliefOrder** (crew.md N3a) | Where the reliefs come from first: the men under cover and the idle hands, a live mount's handling room kept; or the supply's spare men first (the USN's 1899 bill) | Handling rooms kept |
 | **Wrecks** (crew.md N5b) | A ship seen done for (burning, silent a while, stopped) with nothing else in reach: cease fire on her, or finish her; any other target in reach first either way | Finish (the "default" preset: cease) |
+| **Unknowns** (night.md Q6) | A ship in sight not known for friend or foe: fire on her, challenge her first (the bridge lamp; unanswered she's a foe), or hold fire until she's made out or gives herself away; a bold captain fires anyway where no friend is about her | Fire (the "default" preset: challenge) |
+| **AnswerChallenge** (night.md Q6) | The share of the enemy's challenges a side's ships can answer with his reply, so he takes them for friends | 0 |
 
 **Presets, defined by values** (decision 7): a preset is a named set of these fields' values, as data
 (`Content/Sim/doctrine.json`, beside the settings), never code. A side takes a preset by name in the scenario

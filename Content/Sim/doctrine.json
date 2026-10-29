@@ -65,6 +65,13 @@
     // a ship seen done for (burning, her guns silent a while, stopped) with nothing else in reach: "cease" fire on her
     // (rounds kept for the next fight) or "finish" her (docs/battle/crew.md N5b; the user: no fire on burning wrecks that
     // show no sign of life); any other target in reach comes first either way, and a gun of hers seen firing brings it back
-    "Wrecks": "cease"
+    "Wrecks": "cease",
+    // a ship in sight that can't be made out, friend or foe (docs/battle/night.md Q6): "challenge" her with the bridge
+    // lamp first (unanswered she's a foe; the lamp shows the challenger), "hold fire" until she's made out or gives herself
+    // away (fires on one of ours, lights one, challenges), or "fire"; a bold captain fires anyway where no friend is
+    // about her. Most of the era's navies challenged or held fire [EST until the research]
+    "Unknowns": "challenge",
+    // the share of the enemy's challenges a side's ships can answer with his reply, taken for friends (0: none known)
+    "AnswerChallenge": 0
   }
 }

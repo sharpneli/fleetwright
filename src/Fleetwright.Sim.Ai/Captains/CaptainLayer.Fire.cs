@@ -26,6 +26,11 @@ namespace Fleetwright.Sim.Ai.Captains;
 /// she looks, so any other in reach is taken first; with doctrine's <see cref="DoctrineField.Wrecks"/> ceasing, one
 /// <see cref="SimSettings.DoneForCease"/> done for is no target at all (docs/battle/crew.md N5b).
 /// With nothing to shoot at it ceases fire, so the ship can go back on rails.</item>
+/// <item><b>Friend or foe</b> (docs/battle/night.md Q6): at will takes only a contact he'd open on (<see cref="Opens"/>):
+/// one his navy knows for a foe, or an unknown as doctrine's <see cref="DoctrineField.Unknowns"/> says (fire on her; or
+/// challenge her, <see cref="Challenge"/>, or hold, firing anyway when he's bold and no friend is about her); never one
+/// taken for a friend. Torpedoes at will alike. A challenge made at him he answers with the enemy's reply by his navy's
+/// <see cref="DoctrineField.AnswerChallenge"/> (<see cref="AnswerChallenges"/>).</item>
 /// <item><b>Engage:</b> the chief batteries (<see cref="BatteryRow.Chief"/>: the main, or with none the heaviest guns) on
 /// the contact while the navy holds it (then at will again); the others pick their own. <b>Hold fire:</b> every battery
 /// ceases.</item>
@@ -113,6 +118,7 @@ public sealed partial class CaptainLayer
             Comb(ctx, ref cap, own);   // coarse, also when a track comes into sight between thinks (WatchTracks)
             TakeUpStanding(ctx, ref cap, own, slot);
             Aim(ctx, ref cap, own, slot);
+            AnswerChallenges(ctx, own);
             NightLights(ctx, ref cap, own, slot);   // star shell or searchlights on what the guns can't see (docs/battle/night.md Q4, Q5)
             Crew(ctx, own, slot, fighting: true);   // where her men stand (docs/battle/crew.md N3a)
             if (store.Combat.Engaged(slot) > 0)
@@ -205,6 +211,11 @@ public sealed partial class CaptainLayer
     Vec3d[] candPos = new Vec3d[32];
     sbyte[] candFoul = new sbyte[32];   // its line of fire: -1 not asked yet, 0 clear, 1 foul
     int candCount;
+    // the ship's doctrine on unknowns and her aggression, as of this think; the nearest unknown in reach she won't fire on
+    // (an entity, 0: none), found with her candidates, for a challenge (docs/battle/night.md Q6)
+    Unknowns candUnknowns;
+    double candBold;
+    int candUnknown;
     readonly Dictionary<Loadout, double[]> reaches = new(ReferenceEqualityComparer.Instance);
     // by target slot, the batteries on her (chief, and the rest), kept as this pass's orders go out; and the ship's own
     // batteries' targets as its captain's orders leave them
@@ -220,6 +231,8 @@ public sealed partial class CaptainLayer
             (cap.Fire, cap.FireTarget) = (FireOrder.AtWill, 0);   // gone from the picture, or seen going down: at will again
         var reach = Reaches(ctx, ctx.Ships.Combat.Loadout(slot));
         candCount = -1;   // found when a battery first needs them
+        candUnknowns = (Unknowns)doctrine.Of(own.Entity, own.Side, DoctrineField.Unknowns);
+        candBold = doctrine.Of(own.Entity, own.Side, DoctrineField.Aggression);
         if (ownTargets.Length < cls.Batteries.Length)
             ownTargets = new int[Math.Max(cls.Batteries.Length, ownTargets.Length * 2)];
         for (int b = 0; b < cls.Batteries.Length; b++)
@@ -246,6 +259,56 @@ public sealed partial class CaptainLayer
             ownTargets[b] = want;
         }
         Torpedoes(ctx, ref cap, own, slot, pic);
+        if (pic != null)
+            Challenge(ctx, cap, own, pic, reach[^1]);
+    }
+
+    /// <summary>His challenge (docs/battle/night.md Q6): with doctrine's Unknowns at Challenge, at the nearest ship in his
+    /// widest reach he won't fire on for not knowing her, when he has none open and no ship of his navy's is asking her
+    /// already. Never while holding his fire.</summary>
+    void Challenge(in AiContext ctx, in Captain cap, ShipState own, Picture pic, double widest)
+    {
+        if (cap.Fire == FireOrder.Hold || ctx.World.Challenges.ChallengeOf(own.Entity).Target != 0)
+            return;
+        if (candCount < 0)
+            Candidates(ctx, pic, own, widest);
+        if (candUnknown != 0 && candUnknowns == Unknowns.Challenge && !ctx.World.Challenges.Asking(own.Side, candUnknown))
+            ctx.Issue(ChallengeSystem.Challenge(own.Entity, candUnknown));
+    }
+
+    /// <summary>His answers to the challenges made at him (docs/battle/night.md Q6), each once his navy has seen its
+    /// challenger since it began: he gives the enemy's reply with his navy's <see cref="DoctrineField.AnswerChallenge"/>
+    /// share (drawn once a challenge, from the world's seed), so the challenger takes him for a friend.</summary>
+    void AnswerChallenges(in AiContext ctx, ShipState own)
+    {
+        var challenges = ctx.World.Challenges;
+        if (!challenges.At(own.Entity, 0, out _, out _, out _))
+            return;
+        double share = doctrine.Of(own.Entity, own.Side, DoctrineField.AnswerChallenge);
+        var pic = ctx.World.Sightings.Of(own.Side);
+        if (share <= 0 || pic == null)
+            return;
+        for (int k = 0; challenges.At(own.Entity, k, out int by, out long start, out bool answered); k++)
+        {
+            if (answered || pic.IndexOf(by) is not (>= 0 and var ci) || pic[ci].SeenMs < start)
+                continue;
+            var r = ctx.World.Stream("challenge answer").Derive((ulong)(uint)own.Entity << 32 ^ (ulong)start);
+            if (r.NextDouble() < share)
+                ctx.Issue(ChallengeSystem.Answer(own.Entity, by));
+        }
+    }
+
+    /// <summary>Whether he'd open on a contact where his navy has her (docs/battle/night.md Q6): one known for a foe; never
+    /// one taken for a friend; an unknown when doctrine's Unknowns is Fire, or when he's bold (his aggression a over 0)
+    /// and no friend of his but his own unit is within <see cref="SimSettings.UnknownFriendM"/> × (1 − a) of her.</summary>
+    bool Opens(in AiContext ctx, ShipState own, in Contact c, Vec3d at)
+    {
+        if (c.Foe)
+            return true;
+        if (c.TakenForFriend(ctx.NowMs, ctx.Settings) || candUnknowns != Unknowns.Fire && candBold <= 0)
+            return false;
+        return candUnknowns == Unknowns.Fire ||
+               !lines.FriendNear(ctx, groups, own, at, Math.Min(ctx.Settings.UnknownFriendM * (1 - candBold), ctx.Settings.LineOfFireCellM));
     }
 
     readonly MatchupSide shellTarget = new();
@@ -417,6 +480,8 @@ public sealed partial class CaptainLayer
             double bestRun = double.MaxValue;
             foreach (int i in seen.Near(ctx.World, own.Side, own.Position, reach))
             {
+                if (!Opens(ctx, own, pic[i], seen.Position(own.Side, i)))
+                    continue;   // not known for a foe (docs/battle/night.md Q6)
                 double run = Run(ctx, pic, own, i, speed);
                 int rank = TorpedoRank(pic[i].Type);
                 if (run <= reach && (rank < bestRank || rank == bestRank && run < bestRun))
@@ -575,7 +640,7 @@ public sealed partial class CaptainLayer
         double cease = (WreckFire)(int)doctrine.Of(own.Entity, own.Side, DoctrineField.Wrecks) == WreckFire.Cease ? s.DoneForCease : double.PositiveInfinity;
 
         int ci = current != 0 ? pic.IndexOf(current) : -1;
-        bool keep = ci >= 0 && !pic[ci].Lost && now - pic[ci].SeenMs <= s.FireLostMs;
+        bool keep = ci >= 0 && !pic[ci].Lost && now - pic[ci].SeenMs <= s.FireLostMs && Opens(ctx, own, pic[ci], pic[ci].Position);
         if (keep && lines.GunsFoul(ctx, own, pic.EstimateAt(ci, now, s).Position))
             keep = false;   // a friend in the way: not while he's there
         double curBy = 0;
@@ -691,10 +756,19 @@ public sealed partial class CaptainLayer
             (candPos, candFoul) = (new Vec3d[n], new sbyte[n]);
         }
         candCount = 0;
+        candUnknown = 0;
+        double unknownD = double.MaxValue;
         foreach (int i in near)
         {
             var q = seen.Position(own.Side, i);
             int e = pic[i].Entity;
+            if (!Opens(ctx, own, pic[i], q))
+            {
+                double d = (q - p).LengthSquared;
+                if (!pic[i].TakenForFriend(ctx.NowMs, ctx.Settings) && d < unknownD)
+                    (candUnknown, unknownD) = (e, d);
+                continue;   // not known for a foe: held (docs/battle/night.md Q6)
+            }
             (candEntity[candCount], candSlot[candCount], candRange[candCount]) = (e, ctx.Ships.SlotOf(e), (q - p).Length);
             candLead[candCount] = Lead(own, q, seen.Velocity(own.Side, i), ctx.Settings);
             (candBearing[candCount], candRank[candCount]) = (Earth.Bearing(p, q) - heading, Rank(pic[i].Type));

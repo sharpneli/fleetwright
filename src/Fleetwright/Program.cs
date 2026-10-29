@@ -39,6 +39,7 @@ public static unsafe class Program
         var screens = new List<string>();
         var searchlights = new List<string>();
         var starshells = new List<string>();
+        var challenges = new List<string>();
         var damages = new List<string>();
         var firefightings = new List<string>();
         var readinesses = new List<string>();
@@ -286,6 +287,10 @@ public static unsafe class Program
             {
                 starshells.Add(arg.Substring("-starshell=".Length));
             }
+            else if (arg.StartsWith("-challenge="))   // a dev ship challenges a contact: -challenge=ship:target (docs/battle/night.md Q6)
+            {
+                challenges.Add(arg.Substring("-challenge=".Length));
+            }
             else if (arg.StartsWith("-smoke="))   // a dev ship makes smoke: -smoke=ship[:on|off] (docs/battle/smoke.md Z4; the field's on in settings.json)
             {
                 screens.Add(arg.Substring("-smoke=".Length));
@@ -526,6 +531,14 @@ public static unsafe class Program
                     world.Send(Sim.StarShellSystem.Illuminate(ship, target));
                 else
                     Console.Error.WriteLine($"Bad star shell: -starshell={ss} (want ship:target)");
+            }
+            foreach (var ch in challenges)
+            {
+                var p = ch.Split(':');
+                if (p.Length == 2 && int.TryParse(p[0], out int ship) && int.TryParse(p[1], out int target))
+                    world.Send(Sim.ChallengeSystem.Challenge(ship, target));
+                else
+                    Console.Error.WriteLine($"Bad challenge: -challenge={ch} (want ship:target)");
             }
             foreach (var screen in screens)
             {

@@ -163,6 +163,7 @@ public sealed class Sightings
         world.Lights.Gather(store, settings);   // the fires that light what's near them (docs/battle/night.md Q2)
         world.Searchlights.Gather(world, world.Lights);   // and the beams out (Q4)
         world.StarShells.Gather(world, world.Lights);     // and the flares burning (Q5)
+        world.Challenges.Gather(world, world.Lights);     // and the challenges' lamps (Q6)
         foreach (var p in pictures)
             p.Reserve(store.Count);
         // the ships in encounters, sorted by encounter
@@ -498,7 +499,10 @@ public sealed class Sightings
             var os = store[slot[row.FixObs]];
             Fix(pic, ci, ts, store.Combat.Condition(ts.Slot), os, os.Handling.Class.Eyes[row.FixEye], row.Shape, row.FixMargin, row.FixD, row.FixBrg,
                 now, ref r, classesInUse);
-            Quiet(ref pic.At(ci >= 0 ? ci : pic.IndexOf(ts.Entity)), inSight, store.Combat.LastFired(ts.Slot), now, dt);
+            ref var con = ref pic.At(ci >= 0 ? ci : pic.IndexOf(ts.Entity));
+            Quiet(ref con, inSight, store.Combat.LastFired(ts.Slot), now, dt);
+            if (!con.Foe && GivesAway(world, store, ts, row.By, now, dt))
+                con.Foe = true;
             return true;
         }
         if (inSight && row.Keep >= 1)
@@ -705,10 +709,38 @@ public sealed class Sightings
         {
             var os = store[slot[fixObs]];
             LightFix(pic, ci, ts, os, os.Handling.Class.Eyes[fixEye], now, ref r);
+            ref var con = ref pic.At(pic.IndexOf(ts.Entity));
+            if (!con.Foe && GivesAway(world, store, ts, by, now, dt))
+                con.Foe = true;
         }
         else if (held)
             pic.At(ci).LightInSight = false;
     }
+
+    /// <summary>Whether a ship seen (in sight or by her lights) gives herself away to side `by` as a foe over a look's dt s
+    /// (docs/battle/night.md Q6): a challenge of hers (none is by's own: its ships challenge only what they don't know), her
+    /// salvo fired within it at a ship of by's or a friend's, or her searchlights held on one. Her guns at others, her
+    /// star shell (nobody's light) and her answer to a challenge say nothing of whose she is.</summary>
+    bool GivesAway(World world, ShipStore store, ShipState ts, byte by, long now, double dt)
+    {
+        long from = now - (long)(dt * 1000);
+        if (world.Challenges.Signalling(ts.Entity, from, now))
+            return true;
+        var (order, lit, exposed) = world.Searchlights.OrderOf(ts.Entity, now);
+        if (exposed && order == SearchlightOrder.Illuminate && Friendly(store, lit, by))
+            return true;
+        long fired = store.Combat.LastFired(ts.Slot);
+        if (fired <= 0 || fired < from || fired > now)
+            return false;
+        for (int b = 0; b < ts.Handling.Class.Batteries.Length; b++)
+            if (Friendly(store, store.Combat.Target(ts.Slot, b), by))
+                return true;
+        return false;
+    }
+
+    /// <summary>Whether a ship (an entity) is of side `by` or a side at peace with it.</summary>
+    bool Friendly(ShipStore store, int entity, byte by) =>
+        entity != 0 && store.SlotOf(entity) is int s and >= 0 && !relations.Hostile(by, store[s].Side);
 
     /// <summary>A sighting of a ship's lights into the picture (docs/battle/night.md Q2): a bearing on her with the eye's
     /// error, and a rough range (<see cref="SimSettings.SightLightRangeShare"/> of it). A new contact is at
@@ -902,7 +934,10 @@ public sealed class Sightings
         else if (margin >= settings.SightTypeMargin && c.Level < ContactLevel.Type)
             c.Level = ContactLevel.Type;
         if (c.Level >= ContactLevel.Type)
+        {
             c.Type = TypeOf(c.TakenFor >= 0 && Registry?.Get(c.TakenFor) is { } taken ? taken : ts.Handling.Class);
+            c.Foe = true;   // her colours, her build: whose she is (docs/battle/night.md Q6)
+        }
     }
 
     /// <summary>The class in the world most like a class (by funnels, masts, main mounts and length), if any is near
@@ -1005,7 +1040,7 @@ public sealed class Sightings
             (v.MajorM[i], v.MinorM[i], v.AxisDeg[i]) = (major, minor, axis);
             (v.InSight[i], v.SeenMs[i], v.Level[i], v.Type[i]) = (c.InSight, c.SeenMs, c.Level, c.Type);
             (v.SmokeInSight[i], v.LightInSight[i], v.From[i]) = (c.SmokeInSight, c.LightInSight, c.From);
-            v.Side[i] = c.Level >= ContactLevel.Type ? c.Side : (byte)255;
+            v.Side[i] = c.Foe ? c.Side : (byte)255;
             v.Seen[i] = c.Seen;
         }
         v.Count = pic.Count;

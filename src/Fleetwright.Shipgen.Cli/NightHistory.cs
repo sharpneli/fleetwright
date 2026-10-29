@@ -54,6 +54,9 @@ static class NightHistory
         public double SeenS = double.NaN, SeenM = double.NaN, FireS = double.NaN, FireM = double.NaN, TorpS = double.NaN, TorpM = double.NaN;
         public double LitS = double.NaN, LitM = double.NaN, LitShipS, StarS = double.NaN, StarM = double.NaN, StarShipS;
         public int HitsOnLights;
+        // challenges (docs/battle/night.md Q6): the first's time and range, how many made and how many answered
+        public double AskS = double.NaN, AskM = double.NaN;
+        public int Asked, Answered;
         public ContactLevel SeenAs;
         public readonly List<double> SalvoM = [];
         public int Shells, Hits, Torpedoes, TorpedoHits, Lost, Ships;
@@ -109,6 +112,8 @@ static class NightHistory
         long t0 = s.Start.Ms, read = 0, missed = 0;
         var log = w.CombatLog;
         var launched = new HashSet<int>();
+        var asked = new HashSet<(int, long)>();
+        var answered = new HashSet<(int, long)>();
 
         double Range(int a, int b)
         {
@@ -151,6 +156,15 @@ static class NightHistory
                 if (SideOf(ship.Entity) is not (>= 0 and var ls))
                     continue;
                 var r = sides[ls];
+                var (asking, askMs, wasAnswered) = w.Challenges.ChallengeOf(ship.Entity);
+                if (asking != 0 && asked.Add((ship.Entity, askMs)))
+                {
+                    r.Asked++;
+                    if (double.IsNaN(r.AskS))
+                        (r.AskS, r.AskM) = (now, Range(ship.Entity, asking));
+                }
+                if (asking != 0 && wasAnswered && answered.Add((ship.Entity, askMs)))
+                    r.Answered++;
                 if (star != 0 && starMount >= 0)
                 {
                     r.StarShipS += open ? 1 : 60;
@@ -254,6 +268,10 @@ static class NightHistory
                 $"; star shell: " + (star == 0 ? "never" :
                 $"first at {Mean(r, x => x.StarS) / 60:F0} min, at {Km(Mean(r, x => x.StarM))} ({star}/{r.Length}), {r.Average(x => x.StarShipS) / 60:F0} ship-min") +
                 $"; its hits on ships showing a light {onLights:F1} of {hits:F1}");
+            int ask = r.Count(x => !double.IsNaN(x.AskS));
+            Console.WriteLine($"    {s.Sides[sd],-10} challenges: " + (ask == 0 ? "never" :
+                $"first at {Mean(r, x => x.AskS) / 60:F0} min, at {Km(Mean(r, x => x.AskM))} ({ask}/{r.Length}), {r.Average(x => x.Asked):F1} a run, " +
+                $"{r.Average(x => x.Answered):F1} answered by the enemy"));
         }
         Console.WriteLine($"    the end: {plays.Average(p => p.Hours):F1} h; " +
                           string.Join(", ", plays.GroupBy(p => p.Reason).Select(g => $"{g.Key} {g.Count()}")) +
