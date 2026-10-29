@@ -567,6 +567,7 @@ public sealed partial class MapScene
     {
         ClickPick.Engage => "ENGAGE",
         ClickPick.Torpedoes => "TORPEDOES AT",
+        ClickPick.StarShell => "STAR SHELL",
         ClickPick.Follow => "FOLLOW",
         ClickPick.Run => "RUN FROM",
         ClickPick.Screen => "SCREEN",
@@ -590,6 +591,7 @@ public sealed partial class MapScene
     {
         ClickPick.Engage or ClickPick.Torpedoes or ClickPick.Fight or ClickPick.Attack => "right-click an enemy",
         ClickPick.Intercept or ClickPick.Shadow => "right-click a contact, seen or reported",
+        ClickPick.StarShell => "right-click a contact or the sea",
         ClickPick.Run => "right-click a ship",
         ClickPick.Follow or ClickPick.Station => "right-click your ship",
         ClickPick.Screen or ClickPick.Scout or ClickPick.Cover => "right-click your ship: her squadron, or the force she's in",
@@ -658,6 +660,12 @@ public sealed partial class MapScene
                 return string.Format(CultureInfo.InvariantCulture, "GO TO {0:000}° · {1:0.0} km · {2}:{3:00} at {4:0} kn", course, tenths / 10.0,
                     minutes / 60, minutes % 60, ms / Handling.MsPerKnot);
             }
+            case ClickPick.StarShell:
+                if (enemy > 0)
+                    return string.Format(CultureInfo.InvariantCulture, "STAR SHELL on {0} · {1:0.0} km", TargetLabel(s, enemy), tenths / 10.0);
+                if (!sea || own > 0 || world.Shore.IsLand(at))
+                    return null;
+                return string.Format(CultureInfo.InvariantCulture, "STAR SHELL · the sea here · {0:0.0} km", tenths / 10.0);
             case ClickPick.Deploy:
                 if (enemy > 0)
                     return $"DEPLOY across {TargetLabel(s, enemy)}'s course · the wing column furthest along it leads";

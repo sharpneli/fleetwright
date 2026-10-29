@@ -687,6 +687,7 @@ public static class DoctrineRules
             ((double)StarShellUse.Never, "never")]),
         new(DoctrineField.WhenLit, "When lit at night", [((double)WhenLit.TurnAway, "lights out, turn away"), ((double)WhenLit.FightOn, "fight on")]),
         new(DoctrineField.NightSpacingShare, "Lines at night", [(0.5, "close up to half"), (1, "the day's spacing")]),
+        new(DoctrineField.Darkened, "Darkened at night", [(0, "no"), (1, "no lights, fire once fired on")]),
     ];
 
     public static Rule? Of(DoctrineField f) => Array.Find(All, r => r.Field == f);

@@ -430,6 +430,10 @@ public sealed record SimSettings
     public double LitTurnAwayS { get; init; } = 120;
     public double SearchHalfDeg { get; init; } = 45;
 
+    /// <summary>A darkened ship (docs/battle/night.md Q9) fights by her orders from when she or her squadron is fired upon
+    /// until this long after the last time, s; then she holds again, creeping on [EST].</summary>
+    public double DarkenedFreeS { get; init; } = 600;
+
     /// <summary>The strain of being found and fired on (docs/battle/night.md Q8; crew.md N3b; CUF R2-R3): a salvo that
     /// straddles a ship, or falls while she's lit, adds <see cref="DuressStraddle"/> at every station of a civilian crew
     /// (CUF R2's full weight), <see cref="DuressStraddleGreen"/> of it for green men, fading out by average (her greenness,

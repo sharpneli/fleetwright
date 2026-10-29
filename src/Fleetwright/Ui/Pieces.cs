@@ -588,7 +588,7 @@ public static unsafe class Pieces
 
     /// <summary>A status chip's colour: ready, a consequence, plain, the enemy or a ship going down, or quiet (a state
     /// that's the usual one: the AI's unit beside the player's plain "you").</summary>
-    public enum ChipKind { Ok, Amber, Plain, Hostile, Quiet }
+    public enum ChipKind { Ok, Amber, Plain, Hostile, Quiet, Lamp }
 
     public static float ChipWidth(string label) => Width(UiFonts.SansSmall, label) + P(8);
     public static float ChipWidth(ReadOnlySpan<byte> label) => Width(UiFonts.SansSmall, label) + P(8);
@@ -619,6 +619,7 @@ public static unsafe class Pieces
             ChipKind.Amber => (T.AmberTint, T.AmberEdge, T.Amber),
             ChipKind.Hostile => (T.HostileTint, T.HostileEdge, T.Hostile),
             ChipKind.Quiet => (T.Panel2, T.ButtonEdge, T.Muted),
+            ChipKind.Lamp => (T.LampTint, T.LampEdge, T.Lamp),
             _ => (T.PlainTint, T.PlainEdge, T.Bright),
         };
         dl.AddRectFilled(at, at + new Vector2(w, P(15)), U(bg));

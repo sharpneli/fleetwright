@@ -141,6 +141,7 @@
   "LitShare": 10,
   "LitTurnAwayS": 120,
   "SearchHalfDeg": 45,
+  "DarkenedFreeS": 600,
   "DuressStraddle": 0.04,
   "DuressStraddleGreen": 0.5,
   "AttackSkyRatio": 1.5,

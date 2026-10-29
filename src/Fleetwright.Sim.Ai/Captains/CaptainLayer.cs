@@ -137,6 +137,10 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         public long ZigNextMs, ZigThinkMs;   // when his leg ends (0: not zigzagging coarse), and the think that set it
         public ShellJudged[]? Shells;   // by battery, what its shell was last judged on (made when first needed)
         public byte ShellHeld, ShellSpent;   // the player's kind for his main guns (+ 1, 0 none), and the one that ran out
+        public bool BeamsHeld;          // the player's: his beams kept on in the dark (docs/battle/night.md Q9)
+        public bool StarHeld;           // the player's: his star shell task (a contact or a point) is the player's
+        public long FiredOnMs;          // when she or her squadron was last fired upon, darkened (0: never; docs/battle/night.md Q9)
+        public bool Holding;            // darkened in the dark, not fired upon lately: his guns hold (as of his last think)
     }
 
     /// <summary>What a battery's shell was last judged on (docs/battle/shell-choice.md A3): its target as the picture had
@@ -700,6 +704,14 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
                 h.Add(c.ShellHeld);   // only then: worlds without the player's shell orders hash as before
                 h.Add(c.ShellSpent);
             }
+            if (c.BeamsHeld || c.StarHeld || c.FiredOnMs != 0 || c.Holding)
+            {
+                h.Add(0x9u);   // only then: worlds without the night's orders hash as before
+                h.Add(c.BeamsHeld);
+                h.Add(c.StarHeld);
+                h.Add(c.FiredOnMs);
+                h.Add(c.Holding);
+            }
             c.Track?.Hash(ref h);
         }
     }
@@ -725,7 +737,32 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
             v.Reason[k] = i >= 0 ? (byte)captains[i].Reason : (byte)0;
             (v.Fire[k], v.FireTarget[k]) = i >= 0 ? ((byte)captains[i].Fire, captains[i].FireTarget) : ((byte)0, 0);
             (v.ShellHeld[k], v.ShellSpent[k]) = i >= 0 ? (captains[i].ShellHeld, captains[i].ShellSpent) : ((byte)0, (byte)0);
+            var night = doctrine.Of(v.Entity[k], v.Side[k], DoctrineField.Darkened) != 0 ? NightFlags.Darkened : NightFlags.None;
+            if (i >= 0)
+            {
+                ref readonly var c = ref captains[i];
+                night |= (c.BeamsHeld ? NightFlags.Beams : 0) | (c.StarHeld ? NightFlags.StarHeld : 0) |
+                         (c.Holding && v.Encounter[k] != 0 ? NightFlags.Holding : 0);
+            }
+            v.Night[k] = (byte)night;
         }
+    }
+
+    /// <summary>The player's beams for a ship (docs/battle/night.md Q9): kept on in the dark against his doctrine, or back
+    /// to it.</summary>
+    internal void HoldBeams(int entity, bool on) => Get(entity).BeamsHeld = on;
+
+    /// <summary>The player's star shell for a ship (docs/battle/night.md Q9): on a contact (an entity), or over a point
+    /// (a packed lat/lon), or stopped (both 0). The task starts at once; his doctrine leaves it be until it ends.</summary>
+    internal void HoldStar(in AiContext ctx, int entity, int contact, long point)
+    {
+        ref var cap = ref Get(entity);
+        bool had = cap.StarHeld;
+        cap.StarHeld = contact != 0 || point != 0;
+        if (cap.StarHeld)
+            ctx.Issue(point != 0 ? StarShellSystem.IlluminateAt(entity, point) : StarShellSystem.Illuminate(entity, contact));
+        else if (had)
+            ctx.Issue(StarShellSystem.Illuminate(entity, 0));
     }
 
     /// <summary>The player's shell order for a ship's main guns (docs/battle/shell-choice.md A5): a kind + 1 held against

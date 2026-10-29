@@ -16,35 +16,53 @@ namespace Fleetwright.Sim.Ai.Captains;
 /// nothing to fire at, the nearest contact in its reach his navy holds but doesn't see or hasn't made out; searchlights "to
 /// search" sweep <see cref="SimSettings.SearchHalfDeg"/> either side of the nearest contact held. Out of encounters, or by
 /// day, the arcs go out and the star shell stops. A ship pressing a torpedo attack keeps dark, and so does one turned away
-/// from a light on her (<see cref="TurnFromLight"/>).</summary>
+/// from a light on her (<see cref="TurnFromLight"/>). A darkened unit's (doctrine's <see cref="DoctrineField.Darkened"/>,
+/// docs/battle/night.md Q9) shows nothing of its own. The player's hand beats it all: his beams kept on (held on the guns'
+/// target, chief battery's first, seen or not; else the one lit while she's held; else sweeping about the nearest contact,
+/// or ahead), his star shell task left alone until it ends.</summary>
 public sealed partial class CaptainLayer
 {
+    /// <summary>Whether it's dark where she is for her lookouts (the night sky adds to their threshold), and the sky's
+    /// luminance, cd/m².</summary>
+    static bool InDark(in AiContext ctx, ShipState own, out double skyCdM2)
+    {
+        var world = ctx.World;
+        var weather = world.Weather.At(own.Position, world.Time);
+        skyCdM2 = NightLight.At(own.Position, world.Time, weather.Cloud, ctx.Settings).SkyCdM2;
+        return SightModel.DarkOf(skyCdM2 * SightModel.LookoutGlass(SightModel.PupilMm(skyCdM2), ctx.Settings), ctx.Settings).Any;
+    }
+
     void NightLights(in AiContext ctx, ref Captain cap, ShipState own, int slot)
     {
         var cls = own.Handling.Class;
         var world = ctx.World;
         var (big, offset) = SearchlightModel.Biggest(cls);
-        var (starOn, _) = world.StarShells.TaskOf(own.Entity);
-        double starReach = world.StarShells.ReachM(own.Entity);
+        if (cap.StarHeld && !world.StarShells.Busy(own.Entity, out _))
+            cap.StarHeld = false;   // the player's task ended: the contact lost or gone, no mount left to fire it
+        // the player's star shell task is his to end: his doctrine's left out of it
+        var (starOn, _) = cap.StarHeld ? (0, -1) : world.StarShells.TaskOf(own.Entity);
+        double starReach = cap.StarHeld ? 0 : world.StarShells.ReachM(own.Entity);
         if (big < 0 && starReach <= 0 && starOn == 0)
             return;
         var s = ctx.Settings;
         var use = (SearchlightUse)doctrine.Of(own.Entity, own.Side, DoctrineField.Searchlights);
         var starUse = (StarShellUse)doctrine.Of(own.Entity, own.Side, DoctrineField.StarShell);
+        if (candDark)
+            (use, starUse) = (SearchlightUse.Never, StarShellUse.Never);   // darkened: nothing of his own shows
         if (starUse == StarShellUse.Never)
             starReach = 0;
         var (order, target, _) = world.Searchlights.OrderOf(own.Entity, ctx.NowMs);
         var weather = world.Weather.At(own.Position, world.Time);
-        double sky = NightLight.At(own.Position, world.Time, weather.Cloud, s).SkyCdM2;
+        bool dark = InDark(ctx, own, out double sky);
         bool doused = cap.HeldUntilMs > ctx.NowMs && cap.HeldFor == CaptainReason.Lit;
-        bool burn = !(cap.Attacking && cap.Order == CaptainOrder.Fight) && !doused && encounters.Of(slot, own.Entity) != 0 &&
-                    SightModel.DarkOf(sky * SightModel.LookoutGlass(SightModel.PupilMm(sky), s), s).Any;
-        bool beams = big >= 0 && use switch
+        bool held = cap.BeamsHeld && big >= 0;
+        bool burn = dark && (held || !(cap.Attacking && cap.Order == CaptainOrder.Fight) && !doused && encounters.Of(slot, own.Entity) != 0);
+        bool beams = big >= 0 && (held || use switch
         {
             SearchlightUse.Never => false,
             SearchlightUse.WhenFiredOn => slot < underFire.Length && underFire[slot] > 0,
             _ => true,
-        };
+        });
         if (!burn || !beams && starReach <= 0)
         {
             if (order != SearchlightOrder.Off)
@@ -60,24 +78,27 @@ public sealed partial class CaptainLayer
         bool byStar = false;
         if (starOn != 0 && starReach > 0 && Held(ctx, pic, own, starOn, s.SearchlightDouseShare * starReach))
             (pick, byStar) = (starOn, true);
-        else if (order == SearchlightOrder.Illuminate && beams && Held(ctx, pic, own, target, s.SearchlightDouseShare * reach))
+        else if (!held && order == SearchlightOrder.Illuminate && beams && Held(ctx, pic, own, target, s.SearchlightDouseShare * reach))
             pick = target;
         else
         {
-            // his batteries' targets their fire control can't make out, the chief battery's first, then the nearest
-            double best = double.MaxValue, at = 0, within = Math.Max(s.SearchlightOpenShare * reach, starReach);
+            // his batteries' targets their fire control can't make out, the chief battery's first, then the nearest; the
+            // player's beams on any of them, seen or not, at any range
+            double best = double.MaxValue, at = 0, within = held ? double.MaxValue : Math.Max(s.SearchlightOpenShare * reach, starReach);
             int chief = ChiefBattery(cls);
             for (int b = 0; b < cls.Batteries.Length; b++)
             {
                 int t = ctx.Ships.Combat.Target(slot, b);
-                if (t == 0 || ctx.Ships.Combat.Sees(slot, b) || !Held(ctx, pic, own, t, within, out double d))
+                if (t == 0 || !held && ctx.Ships.Combat.Sees(slot, b) || !Held(ctx, pic, own, t, within, out double d))
                     continue;
                 if ((b == chief ? -1 : d) < best)
                     (best, pick, at) = (b == chief ? -1 : d, t, d);
             }
-            byStar = pick != 0 && at <= starReach;
-            if (pick != 0 && !byStar && at > s.SearchlightOpenShare * reach)
+            byStar = !held && pick != 0 && at <= starReach;
+            if (pick != 0 && !byStar && !held && at > s.SearchlightOpenShare * reach)
                 pick = 0;
+            if (pick == 0 && held && order == SearchlightOrder.Illuminate && Held(ctx, pic, own, target, double.MaxValue))
+                pick = target;   // nothing new to light: the one lit kept while she's held
             if (pick == 0 && starUse == StarShellUse.ToFind && starReach > 0 && pic != null)
                 (pick, byStar) = (ToFind(ctx, pic, own, starReach), true);
         }
@@ -99,9 +120,10 @@ public sealed partial class CaptainLayer
             if (order != SearchlightOrder.Illuminate || target != pick)
                 ctx.Issue(SearchlightSystem.Order(own.Entity, SearchlightOrder.Illuminate, pick));
         }
-        else if (use == SearchlightUse.Search && Nearest(ctx, pic, own, out double rel))
+        else if ((use == SearchlightUse.Search || held) && (Nearest(ctx, pic, own, out double rel) || held))
         {
-            // swept either side of the nearest contact; trained round again only once she's drawn half the arc off its middle
+            // swept either side of the nearest contact (the player's beams with none held: about her bow, rel 0); trained
+            // round again only once she's drawn half the arc off its middle
             rel -= 360 * Math.Round(rel / 360);
             var (centre, half) = world.Searchlights.ArcOf(own.Entity);
             double off = rel - centre;

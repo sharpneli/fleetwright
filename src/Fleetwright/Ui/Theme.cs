@@ -126,6 +126,13 @@ public static class Theme
     /// <summary>A hostile chip's ground and border: the enemy, a ship going down.</summary>
     public static readonly Vector4 HostileTint = Hex(0x2E1714);
     public static readonly Vector4 HostileEdge = Hex(0x7A3029);
+    /// <summary>A light at night (docs/battle/night.md Q9: a beam, a flare, a ship showing one; <c>MapPalette.Light</c>'s
+    /// hue): its chip's ink, ground and border.</summary>
+    public static readonly Vector4 Lamp = Hex(0xFFD173);
+    /// <summary>A ship not known for friend or foe (<c>MapPalette.Unknown</c>'s cream; docs/battle/night.md Q9).</summary>
+    public static readonly Vector4 Unknown = Hex(0xF2E6B3);
+    public static readonly Vector4 LampTint = Hex(0x2A2412);
+    public static readonly Vector4 LampEdge = Hex(0x7A6230);
     /// <summary>A sound ship's bar (her flotation, her segment in a unit's): neutral, colour only where something's wrong.</summary>
     public static readonly Vector4 Sound = Hex(0x9A968B);
     /// <summary>The sides' shares in a ledger bar: friend, enemy.</summary>

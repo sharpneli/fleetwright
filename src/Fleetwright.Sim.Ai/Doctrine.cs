@@ -155,6 +155,13 @@ public enum DoctrineField : byte
     /// <summary>A squadron's spacing at night, a share of its day's (docs/battle/night.md Q7: close order, each ship
     /// keeping the next ahead in sight); 1 keeps the day's.</summary>
     NightSpacingShare,
+
+    /// <summary>A unit darkened (1) or not (0) (docs/battle/night.md Q9, the strict silent setting): its ships show nothing
+    /// of their own in the dark, no searchlights, no star shell by doctrine, no challenge lamp (an unknown held, not
+    /// challenged), and their guns hold until she or her squadron is fired upon, then fight by their orders (torpedo craft
+    /// creeping in for the best ambush). Torpedoes, the player's own orders (an Engage, Beams, Star shell) and what's
+    /// burning go as ever.</summary>
+    Darkened,
 }
 
 /// <summary>Doctrine's Shells: each battery loads the kind its target calls for (the captain's choice, the matchup's
@@ -286,7 +293,7 @@ public sealed class Doctrine(GroupSystem groups, IReadOnlyDictionary<string, dou
         return r;
     }
 
-    public const int FieldCount = (int)DoctrineField.NightSpacingShare + 1;
+    public const int FieldCount = (int)DoctrineField.Darkened + 1;
 
     /// <summary>Every field when nothing sets it: a world told nothing (a dev's, a test's) behaves as before doctrine.</summary>
     public static double Default(DoctrineField f) => f switch
@@ -326,6 +333,7 @@ public sealed class Doctrine(GroupSystem groups, IReadOnlyDictionary<string, dou
         DoctrineField.ChallengeM => double.PositiveInfinity,   // as Q6 left it
         DoctrineField.WhenLit => (double)Ai.WhenLit.FightOn,
         DoctrineField.NightSpacingShare => 1,
+        DoctrineField.Darkened => 0,
         _ => throw new ArgumentOutOfRangeException(nameof(f)),
     };
 

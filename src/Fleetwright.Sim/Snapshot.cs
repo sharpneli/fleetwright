@@ -1031,6 +1031,14 @@ public sealed class ShipsView
     /// order ended with the rounds of it spent (+ 1, 0 none), until the player orders again (the AI's).</summary>
     public byte[] ShellHeld = [], ShellSpent = [];
 
+    /// <summary>Her lights (docs/battle/night.md Q9): the contact her searchlights are held on (-1 searching, 0 none: off,
+    /// ready or dark), and the contact her star shell lights (-1 a point on the sea, 0 none).</summary>
+    public int[] BeamOn = [], StarOn = [];
+
+    /// <summary>The night's orders on her (the AI's <c>NightFlags</c>): her beams kept on by the player, her unit darkened,
+    /// her guns holding while darkened until she's fired upon, her star shell the player's.</summary>
+    public byte[] Night = [];
+
     /// <summary>Room for n loads' rounds in all; grows only past the most yet.</summary>
     public void EnsureLoads(int n)
     {
@@ -1184,6 +1192,9 @@ public sealed class ShipsView
         Array.Resize(ref BatteryStart, n);
         Array.Resize(ref ShellHeld, n);
         Array.Resize(ref ShellSpent, n);
+        Array.Resize(ref BeamOn, n);
+        Array.Resize(ref StarOn, n);
+        Array.Resize(ref Night, n);
         int had = MountStart.Length;
         Array.Resize(ref MountStart, n);
         Array.Fill(MountStart, -1, had, n - had);   // at rest, unless filled

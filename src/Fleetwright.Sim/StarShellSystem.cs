@@ -29,13 +29,14 @@ namespace Fleetwright.Sim;
 public sealed class StarShellSystem : IWorldSystem
 {
     public const byte Id = 9;
-    const ushort IlluminateCode = 1, TickEvent = 1;
+    const ushort IlluminateCode = 1, IlluminateAtCode = 2, TickEvent = 1;
 
-    /// <summary>A ship's illuminating task: whose (an entity), on whom (an entity), the mount (-1: none found yet) and its
-    /// battery, and when its newest flare bursts and burns out (0: none yet).</summary>
+    /// <summary>A ship's illuminating task: whose (an entity), on whom (an entity; 0 for a point on the sea, <see cref="At"/>),
+    /// the mount (-1: none found yet) and its battery, and when its newest flare bursts and burns out (0: none yet).</summary>
     struct Task
     {
         public int Ship, Target, Mount, Battery;
+        public Vec3d At;
         public long BurstMs, OutMs;
         /// <summary>The last lay's elevation and time of flight (0: not laid yet).</summary>
         public double Elev, Tof;
@@ -71,11 +72,24 @@ public sealed class StarShellSystem : IWorldSystem
     /// <summary>A ship lights a contact (an entity) with star shell, or stops (0).</summary>
     public static Command Illuminate(int ship, int target) => new(Id, IlluminateCode, ship, A: target);
 
-    /// <summary>The contact a ship is lighting with star shell (0: none), and her illuminating mount (-1: none).</summary>
+    /// <summary>A ship lights a point on the sea with star shell (a packed lat/lon, <see cref="Earth.PackLatLon"/>; the
+    /// player's, docs/battle/night.md Q9: torpedo craft suspected there), until told to stop (<see cref="Illuminate"/> 0).</summary>
+    public static Command IlluminateAt(int ship, long packedLatLon) => new(Id, IlluminateAtCode, ship, A: packedLatLon);
+
+    /// <summary>The contact a ship is lighting with star shell (0: none, or a point), and her illuminating mount (-1: none).</summary>
     public (int Target, int Mount) TaskOf(int ship)
     {
         int i = Find(ship);
         return i < 0 ? (0, -1) : (tasks[i].Target, tasks[i].Mount);
+    }
+
+    /// <summary>Whether a ship has an illuminating task (on a contact or a point), and the point it lights (on the sea;
+    /// zero for a contact's).</summary>
+    public bool Busy(int ship, out Vec3d at)
+    {
+        int i = Find(ship);
+        at = i >= 0 ? tasks[i].At : default;
+        return i >= 0;
     }
 
     /// <summary>The flares burning now: how many, and each one's place (its height in it) and light; for tools, tests and the
@@ -86,17 +100,23 @@ public sealed class StarShellSystem : IWorldSystem
 
     public void Apply(World world, in Command c)
     {
-        if (c.Code != IlluminateCode)
+        if (c.Code is not (IlluminateCode or IlluminateAtCode))
             throw new ArgumentException($"star shell has no command {c.Code}");
         int i = Find(c.Entity);
-        int target = (int)c.A;
-        if (target == 0)
+        int target = c.Code == IlluminateCode ? (int)c.A : 0;
+        var at = default(Vec3d);
+        if (c.Code == IlluminateAtCode)
+        {
+            var (lat, lon) = Earth.UnpackLatLon(c.A);
+            at = Earth.Position(lat, lon);
+        }
+        else if (target == 0)
         {
             if (i >= 0)
                 Drop(i);
             return;
         }
-        if (i >= 0 && tasks[i].Target == target)
+        if (i >= 0 && tasks[i].Target == target && tasks[i].At == at)
             return;   // as it is
         if (i >= 0)
             Drop(i);
@@ -105,7 +125,7 @@ public sealed class StarShellSystem : IWorldSystem
             Array.Resize(ref tasks, 2 * taskCount);
         Array.Copy(tasks, i, tasks, i + 1, taskCount - i);
         taskCount++;
-        tasks[i] = new Task { Ship = c.Entity, Target = target, Mount = -1, Battery = -1 };
+        tasks[i] = new Task { Ship = c.Entity, Target = target, At = at, Mount = -1, Battery = -1 };
         Tick(world, schedule: true);
     }
 
@@ -183,26 +203,34 @@ public sealed class StarShellSystem : IWorldSystem
 
     /// <summary>One task's tick: false when it ends (her ship or the contact gone, the contact seen going down, no mount
     /// left to fire star shell at her); while her navy doesn't hold the contact it waits. Else a shell, when one's due and
-    /// the mount is ready.</summary>
+    /// the mount is ready. A point's ends only with her ship or her mounts.</summary>
     bool Work(World world, int i, long now)
     {
         ref var t = ref tasks[i];
         var store = ships.Store;
-        int slot = store.SlotOf(t.Ship), tslot = store.SlotOf(t.Target);
-        if (slot < 0 || tslot < 0)
+        int slot = store.SlotOf(t.Ship);
+        if (slot < 0)
             return false;
         var ship = store[slot];
-        var pic = world.Sightings.Of(ship.Side);
-        int ci = pic?.IndexOf(t.Target) ?? -1;
-        if (ci < 0)
-            return true;   // not held (yet): nothing to aim at, the task waits
-        if (pic![ci].Lost)
-            return false;
-        ref readonly var c = ref pic[ci];
+        Vec3d pos = t.At, vel = default;
+        long estMs = now;
+        if (t.Target != 0)
+        {
+            if (store.SlotOf(t.Target) < 0)
+                return false;
+            var pic = world.Sightings.Of(ship.Side);
+            int ci = pic?.IndexOf(t.Target) ?? -1;
+            if (ci < 0)
+                return true;   // not held (yet): nothing to aim at, the task waits
+            if (pic![ci].Lost)
+                return false;
+            ref readonly var c = ref pic[ci];
+            (pos, vel, estMs) = (c.Position, c.Velocity, c.EstMs);
+        }
         var cls = ship.Handling.Class;
         var combat = store.Combat;
         var cond = combat.Condition(slot);
-        double brg = Earth.Bearing(ship.Position, c.Position), rel = brg - ship.HeadingDeg;
+        double brg = Earth.Bearing(ship.Position, pos), rel = brg - ship.HeadingDeg;
         // the mount: kept while it works, has star rounds and bears; else the lightest battery's first that does
         if (t.Mount < 0 || !cond.MountWorks[t.Mount] || combat.LoadOf(slot, t.Mount, ShellKind.Star) < 0 || !CombatStore.InArcs(cls, cls.Mounts[t.Mount], rel))
         {
@@ -210,17 +238,21 @@ public sealed class StarShellSystem : IWorldSystem
                 combat.SetIlluminating(slot, t.Mount, false);
             (t.Mount, t.Battery) = (-1, -1);
             double lightest = double.MaxValue;
+            bool any = false;   // a working mount with star rounds, bearing or not
             for (int m = 0; m < cls.Mounts.Length; m++)
             {
                 ref readonly var mr = ref cls.Mounts[m];
-                if (mr.Battery < 0 || !cond.MountWorks[m] || combat.LoadOf(slot, m, ShellKind.Star) < 0 || !CombatStore.InArcs(cls, mr, rel))
+                if (mr.Battery < 0 || !cond.MountWorks[m] || combat.LoadOf(slot, m, ShellKind.Star) < 0)
+                    continue;
+                any = true;
+                if (!CombatStore.InArcs(cls, mr, rel))
                     continue;
                 double cal = cls.Batteries[mr.Battery].CalibreMm;
                 if (cal < lightest)
                     (lightest, t.Mount, t.Battery) = (cal, m, mr.Battery);
             }
             if (t.Mount < 0)
-                return false;
+                return any;   // none bears now: it waits for one to (she turns, or the target draws round), ends with none left
             combat.SetIlluminating(slot, t.Mount, true);
         }
         var lo = combat.Loadout(slot);
@@ -235,11 +267,11 @@ public sealed class StarShellSystem : IWorldSystem
         // between shells the mount follows her bearing at its last elevation; the lay is worked out only as one comes due
         if (t.Tof > 0 && now + (long)(1000 * (t.Tof - settings.StarOverlapS + LayAheadS)) < t.OutMs)
         {
-            var est = c.Position + c.Velocity * ((now - c.EstMs) / 1000.0);
+            var est = pos + vel * ((now - estMs) / 1000.0);
             combat.Order(slot, t.Mount, row, now, Earth.Bearing(muzzle, est) - ship.HeadingDeg, t.Elev);
             return true;
         }
-        if (!Lay(table, c, muzzle, h0, now, out double elev, out double tof, out var forward))
+        if (!Lay(table, pos, vel, estMs, t.Target != 0 ? settings.StarBeyondM : 0, muzzle, h0, now, out double elev, out double tof, out var forward))
             return true;   // beyond the star's reach for now: kept, she may close
         (t.Elev, t.Tof) = (elev, tof);
         double bearing = Earth.Heading(muzzle, forward) - ship.HeadingDeg;
@@ -276,19 +308,20 @@ public sealed class StarShellSystem : IWorldSystem
     /// <summary>How long before a shell's due its lay is worked out, s: time for the mount to lay.</summary>
     const double LayAheadS = 5;
 
-    /// <summary>The gun laid for a star shell at a contact: her picture's estimate carried on to the burst, then
-    /// <see cref="SimSettings.StarBeyondM"/> on along the line of fire and <see cref="SimSettings.StarBurstM"/> up; the elevation
+    /// <summary>The gun laid for a star shell at a contact: her picture's estimate (a place, its velocity, and when) carried
+    /// on to the burst, then <paramref name="beyondM"/> on along the line of fire (<see cref="SimSettings.StarBeyondM"/>; 0
+    /// over a point on the sea) and <see cref="SimSettings.StarBurstM"/> up; the elevation
     /// whose flight passes through that height there (on its way up close in, as a flat gun's must, on its way down further
     /// out: bisection between the one that throws to it along the sea and the gun's highest), the time of flight to it and
     /// the line of fire. False beyond reach.</summary>
-    bool Lay(BallisticTable table, in Contact c, Vec3d muzzle, double h0, long now, out double elev, out double tof, out Vec3d forward)
+    bool Lay(BallisticTable table, Vec3d pos, Vec3d vel, long estMs, double beyondM, Vec3d muzzle, double h0, long now, out double elev, out double tof, out Vec3d forward)
     {
         (elev, tof, forward) = (double.NaN, double.NaN, default);
         double lead = 0;
         for (int pass = 0; pass < 2; pass++)
         {
-            var est = c.Position + c.Velocity * ((now - c.EstMs) / 1000.0 + lead);
-            double d = Earth.Distance(muzzle, est) + settings.StarBeyondM;
+            var est = pos + vel * ((now - estMs) / 1000.0 + lead);
+            double d = Earth.Distance(muzzle, est) + beyondM;
             forward = Earth.Forward(muzzle, Earth.Bearing(muzzle, est));
             double lo = table.ElevationFor(d, h0), hi = Math.Min(table.Key.MaxElevationDeg, table.MaxElevationDeg - 2 * BallisticTable.ElevationStep);
             if (double.IsNaN(lo) || !(HeightOver(table, hi, h0, d, out _) >= settings.StarBurstM))
@@ -392,6 +425,8 @@ public sealed class StarShellSystem : IWorldSystem
             ref readonly var t = ref tasks[i];
             h.Add(t.Ship);
             h.Add(t.Target);
+            if (t.Target == 0)
+                h.Add(t.At);   // a point's (only then: worlds without one hash as before)
             h.Add(t.Mount);
             h.Add(t.Battery);
             h.Add(t.BurstMs);
@@ -430,5 +465,11 @@ public sealed class StarShellSystem : IWorldSystem
             n++;
         }
         v.Count = n;
+        if (taskCount == 0)
+            return;
+        var sv = s.Ships;   // each ship's task (docs/battle/night.md Q9: her card and the strip)
+        for (int k = 0; k < sv.Count; k++)
+            if (Find(sv.Entity[k]) is >= 0 and var i)
+                sv.StarOn[k] = tasks[i].Target != 0 ? tasks[i].Target : -1;
     }
 }

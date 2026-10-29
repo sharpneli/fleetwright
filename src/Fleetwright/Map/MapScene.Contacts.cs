@@ -1,6 +1,7 @@
 using System.Numerics;
 using Fleetwright.Sim;
 using Fleetwright.Sim.Core;
+using Fleetwright.Sim.Ships;
 using ImGuiNET;
 
 namespace Fleetwright.Map;
@@ -68,11 +69,13 @@ public sealed partial class MapScene
                 overlay.Disc(x, y, r, MapPalette.Smoke with { W = MapPalette.Smoke.W * col.W }, 0.7f);
             }
             if (c.LightInSight[i] || c.Level[i] == ContactLevel.Light)
-                overlay.Disc(x, y, 4 * Rp, MapPalette.Light with { W = MapPalette.Light.W * col.W }, 1f);
+                Spark(x, y, MapPalette.Light with { W = MapPalette.Light.W * col.W });
             if (c.Level[i] <= ContactLevel.Smoke)
                 continue;   // smoke or a light alone: no ship's marker, no course
-            // the marker: a diamond, filled while she's in sight, hollow once dead reckoned; and the course line ahead
-            symbols.Add(SymbolShape.Diamond, x, y, ContactMarkerPx * Rp, c.InSight[i] ? col with { W = col.W * 0.85f } : default, col, 1.5f);
+            // the marker: a diamond, filled while she's in sight, hollow once dead reckoned; an unknown (made out, not known
+            // for friend or foe: docs/battle/night.md Q6, Q9) APP-6's quatrefoil; and the course line ahead
+            symbols.Add(c.Side[i] == 255 ? SymbolShape.Quatrefoil : SymbolShape.Diamond, x, y, ContactMarkerPx * Rp,
+                c.InSight[i] ? col with { W = col.W * 0.85f } : default, col, 1.5f);
             var ahead = (p + c.Velocity[i] * ContactCourseS).Normalized() * Earth.Radius;
             if (view.Project(ahead, out double ax2, out double ay2) && Math.Abs(ax2 - x) + Math.Abs(ay2 - y) > 2)
             {
@@ -84,13 +87,31 @@ public sealed partial class MapScene
         }
     }
 
-    const double BeamDrawnM = 4000;   // a beam's placeholder line: about its reach
+    const double BeamDrawnM = 4000;   // a beam drawn out to about its reach
+    const double BeamMarkHalfDeg = 0.9;   // the table's wedge, either side of its axis (wider than the beam, to be seen)
+    const double FlareLitLux = 1;     // a flare's patch on the table: the sea it lights to a lux or more [EST]
 
-    /// <summary>The searchlights' beams out (docs/battle/night.md Q4), as their placeholder until the night's look (Q10):
-    /// a thin line from the lamp along its bearing, the light's colour.</summary>
+    /// <summary>A light seen in the dark (a gun's flash, a lamp, a fire): a spark of eight short rays.</summary>
+    void Spark(double x, double y, Vector4 col)
+    {
+        for (int k = 0; k < 8; k++)
+        {
+            double a = k * Math.PI / 4, r0 = 2 * Rp, r1 = (k % 2 == 0 ? 7.5 : 5) * Rp;
+            overlay.BeginStrip(col, 1.6f);
+            overlay.Point(x + Math.Cos(a) * r0, y + Math.Sin(a) * r0);
+            overlay.Point(x + Math.Cos(a) * r1, y + Math.Sin(a) * r1);
+            overlay.End();
+        }
+    }
+
+    /// <summary>The searchlights' beams out (docs/battle/night.md Q4, Q9). On the table, a mark: a narrow wedge of the
+    /// light's colour from the lamp out to about its reach, fading along it, and a dashed ring about the ship one of
+    /// the player's ships holds hers on (lit). In the world view, a thin line along its bearing until the night's look
+    /// (Q10); across the table's fade, both.</summary>
     void DrawBeams(in MapView view, Snapshot s)
     {
         var b = s.Beams;
+        double inWorld = WorldView.Factor(view), table = 1 - inWorld;
         for (int i = 0; i < b.Count; i++)
         {
             var lamp = b.Lamp[i].Normalized() * Earth.Radius;
@@ -98,21 +119,117 @@ public sealed partial class MapScene
             Earth.Advance(ref end, ref along, BeamDrawnM);
             if (!view.Project(lamp, out double x0, out double y0) || !view.Project(end, out double x1, out double y1))
                 continue;
-            overlay.BeginStrip(MapPalette.Light with { W = 0.55f }, 1.5f);
-            overlay.Point(x0, y0);
-            overlay.Point(x1, y1);
+            if (inWorld > 0)
+            {
+                overlay.BeginStrip(MapPalette.Light with { W = (float)(0.55 * inWorld) }, 1.5f);
+                overlay.Point(x0, y0);
+                overlay.Point(x1, y1);
+                overlay.End();
+            }
+            if (table <= 0)
+                continue;
+            // the wedge: its width grows with the distance along it, its light fades out to the far end
+            double len = Math.Sqrt((x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0)), t = Math.Tan(BeamMarkHalfDeg * Math.PI / 180);
+            overlay.BeginStrip(MapPalette.Light, 1);
+            foreach (var (share, alpha) in BeamStops)
+                overlay.Point(x0 + (x1 - x0) * share, y0 + (y1 - y0) * share, MapPalette.Light with { W = (float)(alpha * table) },
+                    (float)((2 * len * share * t + 3) / Rp));
             overlay.End();
         }
+        // lit: the ships the player's beams are held on
+        if (table <= 0)
+            return;
+        var v = s.Ships;
+        for (int k = 0; k < v.Count; k++)
+            if (v.BeamOn[k] > 0 && Where(s, v.BeamOn[k]) is { } at && view.Project(at, out double lx, out double ly))
+            {
+                if (v.IndexOf(selected) == k && view.Project(v.PoseAt(k, world.DrawMs).Position, out double ox, out double oy))
+                {
+                    // the selection's beam: a thin line to the ship it's held on
+                    overlay.BeginStrip(MapPalette.Light with { W = (float)(0.7 * table) }, 1.2f);
+                    overlay.Point(ox, oy);
+                    overlay.Point(lx, ly);
+                    overlay.End();
+                }
+                overlay.Circle(lx, ly, 15 * Rp, MapPalette.Light with { W = (float)(0.9 * table) }, 1.4f, Dash.Dashed);
+            }
     }
 
-    /// <summary>The star shells' flares burning (docs/battle/night.md Q5), as their placeholder until the night's look (Q10):
-    /// a small disc where each burns, the light's colour.</summary>
+    static readonly (double Share, double Alpha)[] BeamStops = [(0, 0.34), (0.3, 0.12), (1, 0)];
+
+    /// <summary>Where the player holds a ship: one of hers, or a contact; null if neither.</summary>
+    Vec3d? Where(Snapshot s, int entity)
+    {
+        if (s.Ships.IndexOf(entity) is int k and >= 0)
+            return s.Ships.PoseAt(k, world.DrawMs).Position;
+        return ContactIndex(s.Contacts, entity) is int i and >= 0 ? s.Contacts.Position[i] : null;
+    }
+
+    /// <summary>The star shells' flares burning (docs/battle/night.md Q5, Q9). On the table, a mark: a four-pointed star
+    /// where each burns and the sea it lights as a faint disc (its edge where its light falls to <see cref="FlareLitLux"/>),
+    /// a dashed ring about each ship under it. In the world view, a small disc until the night's look (Q10).</summary>
     void DrawFlares(in MapView view, Snapshot s)
     {
         var f = s.Flares;
+        double inWorld = WorldView.Factor(view), table = 1 - inWorld;
         for (int i = 0; i < f.Count; i++)
-            if (view.Project(f.At[i].Normalized() * Earth.Radius, out double x, out double y))
-                overlay.Disc(x, y, 5 * Rp, MapPalette.Light with { W = 0.85f }, 1f);
+        {
+            var under = f.At[i].Normalized() * Earth.Radius;
+            if (!view.Project(under, out double x, out double y))
+                continue;
+            if (inWorld > 0)
+                overlay.Disc(x, y, 5 * Rp, MapPalette.Light with { W = (float)(0.85 * inWorld) }, 1f);
+            if (table <= 0)
+                continue;
+            double h = f.At[i].Length - Earth.Radius;
+            double litM = Math.Sqrt(Math.Max(f.Candela[i] / FlareLitLux - h * h, 0));
+            double r = litM / view.MetresPerPixel;
+            overlay.Disc(x, y, r, MapPalette.Light with { W = (float)(0.08 * table) }, 0.9f);
+            overlay.Circle(x, y, r, MapPalette.Light with { W = (float)(0.3 * table) }, 1);
+            Star(x, y, MapPalette.Light with { W = (float)(0.95 * table) });
+            // lit: every ship of the player's and every contact under it
+            var v = s.Ships;
+            for (int k = 0; k < v.Count; k++)
+                if (Earth.Distance(v.PoseAt(k, world.DrawMs).Position, under) <= litM && view.Project(v.PoseAt(k, world.DrawMs).Position, out double sx, out double sy))
+                    overlay.Circle(sx, sy, 15 * Rp, MapPalette.Light with { W = (float)(0.9 * table) }, 1.4f, Dash.Dashed);
+            var c = s.Contacts;
+            for (int j = 0; j < c.Count; j++)
+                if (c.Level[j] > ContactLevel.Smoke && Earth.Distance(c.Position[j], under) <= litM && view.Project(c.Position[j], out double cx, out double cy))
+                    overlay.Circle(cx, cy, 15 * Rp, MapPalette.Light with { W = (float)(0.9 * table) }, 1.4f, Dash.Dashed);
+        }
+    }
+
+    /// <summary>Star shell… armed over the sea (docs/battle/night.md Q9): the patch its flare would light there, ghosted
+    /// (dashed), by the brightest star shell the selected ship carries.</summary>
+    void StarPreview(in MapView view, Snapshot s)
+    {
+        if (armedPick != ClickPick.StarShell || !mouseIn || ImGui.GetIO().WantCaptureMouse || s.Ships.IndexOf(selected) is not (>= 0 and var k))
+            return;
+        var (enemy, own, sea, at) = Under(s, cursorX, cursorY);
+        if (enemy > 0 || own > 0 || !sea || world.Shore.IsLand(at) || s.Ships.Loadout[k] is not { } lo)
+            return;
+        double cd = 0;
+        foreach (var t in lo.ShellTypes)
+            if (t.Kind == ShellKind.Star)
+                cd = Math.Max(cd, t.StarCd);
+        double h = world.Settings.StarBurstM, litM = Math.Sqrt(Math.Max(cd / FlareLitLux - h * h, 0));
+        if (litM <= 0 || !view.Project(at, out double x, out double y))
+            return;
+        overlay.Circle(x, y, litM / view.MetresPerPixel, MapPalette.Light with { W = 0.45f }, 1, Dash.Dashed);
+    }
+
+    /// <summary>A flare: a four-pointed star, its rays tapering from the middle.</summary>
+    void Star(double x, double y, Vector4 col)
+    {
+        for (int k = 0; k < 4; k++)
+        {
+            double a = k * Math.PI / 2;
+            overlay.BeginStrip(col, 3.5f);
+            overlay.Point(x, y, col, 3.5f);
+            overlay.Point(x + Math.Cos(a) * 10 * Rp, y + Math.Sin(a) * 10 * Rp, col, 0.4f);
+            overlay.End();
+        }
+        overlay.Disc(x, y, 6 * Rp, col with { W = col.W * 0.6f }, 0.5f);
     }
 
     /// <summary>What a contact is taken for, as its label says it.</summary>

@@ -61,7 +61,8 @@ public sealed partial class MapScene
     const int EnemyGroupRow = -1;
 
     static readonly string[] OnOff = ["On", "Off"];
-    static readonly string[] EnemyKinds = ["Heavy ships", "Cruisers", "Destroyers", "Small craft", "Merchants", "Not made out"];
+    // the unknowns (made out, not known for friend or foe: docs/battle/night.md Q9) first
+    static readonly string[] EnemyKinds = ["Unknown", "Heavy ships", "Cruisers", "Destroyers", "Small craft", "Merchants", "Not made out"];
     /// <summary>A ship's state in a unit's bar: sound, low, going down.</summary>
     static readonly Vector4[] ShipStates = [T.Sound, T.Amber, T.Hostile];
     const int RailMaxShips = 512;
@@ -458,12 +459,18 @@ public sealed partial class MapScene
         float x = a.X + P(6) + r.Depth * P(10);
         dl.AddCircle(new Vector2(x + P(4), a.Y + RowH / 2), P(3.5f), U(Friend), 0, P(1.4f));
         x += P(12);
-        float end = dl.TextClipped(UiFonts.SansSmall, new Vector2(x, Mid(UiFonts.SansSmall, a.Y, RowH)), cols.Doing - P(fires > 0 ? 14 : 4), on ? T.Brass : going ? T.Hostile : T.Text,
+        bool showing = v.BeamOn[k] != 0 || v.StarOn[k] != 0;   // a light of hers out (docs/battle/night.md Q9)
+        float marks = (fires > 0 ? P(10) : 0) + (showing ? P(10) : 0);
+        float end = dl.TextClipped(UiFonts.SansSmall, new Vector2(x, Mid(UiFonts.SansSmall, a.Y, RowH)), cols.Doing - P(4) - marks, on ? T.Brass : going ? T.Hostile : T.Text,
             U8.W($"{ShipName(s, e)}"));
         if (fires > 0)
             Flame(dl, new Vector2(Math.Min(end + P(8), cols.Doing - P(8)), a.Y + RowH / 2 + P(1)), e);
-        // what she's doing: going down, falling out and why, her target
-        var doing = going ? "going down"u8 : v.Reason[k] != 0 ? U8.W($"{ReasonText(v.Reason[k])}") : TargetOf(s, k) is int t and > 0 ? U8.W($"on {LabelOf(s, t)}") : "no target"u8;
+        if (showing)
+            Spark(dl, new Vector2(Math.Min(end + P(fires > 0 ? 18 : 8), cols.Doing - P(8)), a.Y + RowH / 2));
+        // what she's doing: going down, falling out and why, her target; darkened, holding her fire
+        bool holding = ((NightFlags)v.Night[k] & NightFlags.Holding) != 0;
+        var doing = going ? "going down"u8 : v.Reason[k] != 0 ? U8.W($"{ReasonText(v.Reason[k])}") : TargetOf(s, k) is int t and > 0 ? U8.W($"on {LabelOf(s, t)}")
+            : holding ? "dark · holding"u8 : "no target"u8;
         var colour = going ? T.Hostile : v.Reason[k] != 0 ? T.Amber : TargetOf(s, k) > 0 ? T.Text : T.Muted;
         dl.TextClipped(UiFonts.SansSmall, new Vector2(cols.Doing, Mid(UiFonts.SansSmall, a.Y, RowH)), cols.BarL - P(6), colour, doing);
         var bar = new Vector2(cols.BarL, a.Y + P(6.5f));
@@ -617,19 +624,19 @@ public sealed partial class MapScene
     // ------------------------------------------------------------------ the enemy
 
     /// <summary>A contact's group: what she's made out to be, else "not made out".</summary>
-    static int EnemyKind(ContactsView c, int i) => c.Level[i] < ContactLevel.Type ? 5 : c.Type[i] switch
+    static int EnemyKind(ContactsView c, int i) => c.Side[i] == 255 && c.Level[i] > ContactLevel.Smoke ? 0 : c.Level[i] < ContactLevel.Type ? 6 : c.Type[i] switch
     {
-        ShipType.Capital => 0,
-        ShipType.Cruiser => 1,
-        ShipType.Destroyer => 2,
-        ShipType.Small => 3,
-        ShipType.Merchant => 4,
-        _ => 5,
+        ShipType.Capital => 1,
+        ShipType.Cruiser => 2,
+        ShipType.Destroyer => 3,
+        ShipType.Small => 4,
+        ShipType.Merchant => 5,
+        _ => 6,
     };
 
     /// <summary>Whether an enemy group shows its contacts: as the player left it, else open unless it's more than six
-    /// smaller ships (destroyers, small craft, merchants, the not made out).</summary>
-    bool EnemyOpen(int kind, int count) => enemyFold.TryGetValue(kind, out bool open) ? open : kind <= 1 || count <= 6;
+    /// smaller ships (destroyers, small craft, merchants, the not made out); the unknowns always.</summary>
+    bool EnemyOpen(int kind, int count) => enemyFold.TryGetValue(kind, out bool open) ? open : kind <= 2 || count <= 6;
 
     /// <summary>The enemy's rows: each kind's head, then (open) its contacts nearest first.</summary>
     void EnemyRows(Snapshot s)
@@ -764,7 +771,7 @@ public sealed partial class MapScene
         bool on = selected == e;
         dl.RowBg(a, w, RowH, j, on, hover);
         bool sure = c.Level[i] >= ContactLevel.Class, seen = c.InSight[i];
-        Diamond(dl, new Vector2(a.X + P(22), a.Y + RowH / 2), sure, seen);
+        Diamond(dl, new Vector2(a.X + P(22), a.Y + RowH / 2), sure, seen, c.Side[i] == 255);
         dl.TextClipped(UiFonts.SansSmall, new Vector2(a.X + P(30), Mid(UiFonts.SansSmall, a.Y, RowH)), cols.Seen - P(6), on ? T.Brass : seen ? T.Text : T.Faint,
             U8.W($"{Identity(c, i)}"));
         var what = c.Seen[i] != SeenFlags.None ? U8.W($"{SeenWords(c.Seen[i])}") : seen ? "no damage seen"u8
@@ -785,9 +792,20 @@ public sealed partial class MapScene
 
     /// <summary>What's seen of a ship, in words: "burning · low · by the bow".</summary>
     /// <summary>A contact's mark: the hostile's diamond, dashed while she isn't made out, faint out of sight.</summary>
-    static void Diamond(ImDrawListPtr dl, Vector2 d, bool sure, bool seen)
+    static void Diamond(ImDrawListPtr dl, Vector2 d, bool sure, bool seen, bool unknown = false)
     {
         float r = P(3.6f);
+        if (unknown)
+        {
+            // not known for friend or foe (docs/battle/night.md Q9): APP-6's quatrefoil in the unknown's cream
+            uint ink = U(T.Unknown with { W = seen ? 0.85f : 0.45f });
+            for (int q = 0; q < 4; q++)
+            {
+                var o = q switch { 0 => new Vector2(0, -1), 1 => new Vector2(1, 0), 2 => new Vector2(0, 1), _ => new Vector2(-1, 0) };
+                dl.AddCircleFilled(d + o * r * 0.48f, r * 0.55f, ink);
+            }
+            return;
+        }
         uint col = U(T.Hostile with { W = seen ? 1 : 0.55f });
         if (sure)
         {

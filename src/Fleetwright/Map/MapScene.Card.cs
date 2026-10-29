@@ -2,6 +2,7 @@ using System.Numerics;
 using Fleetwright.Designer;
 using Fleetwright.Shipgen;
 using Fleetwright.Sim;
+using Fleetwright.Sim.Ai;
 using Fleetwright.Sim.Ai.Captains;
 using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
@@ -371,6 +372,17 @@ public sealed partial class MapScene
         bool ai = g >= 0 && gv.Commanded[TopOf(gv, g)] == 1;
         var c2 = Held(held) ? "your orders"u8 : U8.W($"{(ai ? "AI" : "captain")} · {CaptainWord((CaptainOrder)v.Captain[k])}");
         var c3 = v.Reason[k] != 0 ? U8.W($"{ReasonText(v.Reason[k])}") : default;
+        // her lights (docs/battle/night.md Q9), where her state leaves room: what she shows, or dark
+        var night = (NightFlags)v.Night[k];
+        var lightChip = v.BeamOn[k] != 0 && v.StarOn[k] != 0 ? "showing a light: beams, star shell"u8 : v.BeamOn[k] != 0 ? "showing a light: beams"u8
+            : v.StarOn[k] != 0 ? "showing a light: star shell"u8 : (night & NightFlags.Darkened) != 0 ? "dark"u8 : default;
+        if (c3.Length == 0 && lightChip.Length > 0)
+        {
+            Head(U8.W($"{ShipName(s, e)}"), T.Bright, sub, lightChip, (night & NightFlags.Darkened) != 0 && v.BeamOn[k] == 0 && v.StarOn[k] == 0 ? ChipKind.Plain : ChipKind.Lamp,
+                c1.Length > 0 ? c1 : c2, c1.Length > 0 ? (going ? ChipKind.Hostile : ChipKind.Amber) : Held(held) ? ChipKind.Amber : ChipKind.Plain,
+                c1.Length > 0 ? c2 : default, Held(held) ? ChipKind.Amber : ChipKind.Plain);
+            return;
+        }
         if (c1.Length == 0)
             Head(U8.W($"{ShipName(s, e)}"), T.Bright, sub, c2, Held(held) ? ChipKind.Amber : ChipKind.Plain, c3, ChipKind.Amber);
         else

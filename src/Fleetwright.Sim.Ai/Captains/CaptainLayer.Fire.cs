@@ -117,6 +117,7 @@ public sealed partial class CaptainLayer
             OutOfRounds(ctx, ref cap, own);
             Comb(ctx, ref cap, own);   // coarse, also when a track comes into sight between thinks (WatchTracks)
             TurnFromLight(ctx, ref cap, own, slot);   // a light on her in the dark (docs/battle/night.md Q7)
+            Darken(ctx, ref cap, own, slot);          // darkened: her guns hold till she's fired upon (Q9)
             TakeUpStanding(ctx, ref cap, own, slot);
             Aim(ctx, ref cap, own, slot);
             AnswerChallenges(ctx, own);
@@ -185,6 +186,36 @@ public sealed partial class CaptainLayer
         }
     }
 
+    bool candDark;   // darkened in the dark, as of this ship's think (docs/battle/night.md Q9)
+
+    /// <summary>Darkened (doctrine's <see cref="DoctrineField.Darkened"/>, docs/battle/night.md Q9) in the dark: his guns
+    /// hold until she or a ship of her squadron is fired upon (an enemy battery on her), then fight by his orders for
+    /// <see cref="SimSettings.DarkenedFreeS"/> after the last time; never while the player keeps her beams on.</summary>
+    void Darken(in AiContext ctx, ref Captain cap, ShipState own, int slot)
+    {
+        candDark = doctrine.Of(own.Entity, own.Side, DoctrineField.Darkened) != 0 && InDark(ctx, own, out _);
+        if (!candDark)
+        {
+            cap.Holding = false;
+            return;
+        }
+        if (FiredUpon(ctx.Ships, own, slot))
+            cap.FiredOnMs = ctx.NowMs;
+        cap.Holding = !cap.BeamsHeld && (cap.FiredOnMs == 0 || ctx.NowMs - cap.FiredOnMs > ctx.Settings.DarkenedFreeS * 1000);
+    }
+
+    /// <summary>Whether an enemy battery is on her or a ship of her squadron, as of this think.</summary>
+    bool FiredUpon(ShipStore store, ShipState own, int slot)
+    {
+        if (slot < underFire.Length && underFire[slot] > 0)
+            return true;
+        if (groups.Of(own.Entity) is { IsForce: false } g)
+            foreach (int m in g.Members)
+                if (store.SlotOf(m) is >= 0 and var ms && ms < underFire.Length && underFire[ms] > 0)
+                    return true;
+        return false;
+    }
+
     /// <summary>A ship alone whose doctrine is to fight (docs/battle/command.md "Doctrine": Engage) takes up Fight when
     /// it first meets an enemy in sight in an encounter; it's armed again once it's out of encounters. Not while the
     /// player holds her (<see cref="Whose.Player"/>): the player's order is what she does.</summary>
@@ -242,11 +273,12 @@ public sealed partial class CaptainLayer
         for (int b = 0; b < cls.Batteries.Length; b++)
         {
             int current = ownTargets[b];
+            // darkened and holding (docs/battle/night.md Q9): only the player's own Engage fires
             int want = cap.Fire switch
             {
                 FireOrder.Hold => 0,
-                FireOrder.Engage when cls.Batteries[b].Chief => cap.FireTarget,
-                _ => Pick(ctx, pic, own, slot, cls, b, reach[b], reach[^1], current),
+                FireOrder.Engage when cls.Batteries[b].Chief => cap.Holding && cap.FireFrom != 0 ? 0 : cap.FireTarget,
+                _ => cap.Holding ? 0 : Pick(ctx, pic, own, slot, cls, b, reach[b], reach[^1], current),
             };
             Shells(ctx, ref cap, own, slot, b, want, pic);
             if (want == current)
@@ -268,10 +300,10 @@ public sealed partial class CaptainLayer
     /// <summary>His challenge (docs/battle/night.md Q6): with doctrine's Unknowns at Challenge, at the nearest ship in his
     /// widest reach he won't fire on for not knowing her, once she's within doctrine's <see cref="DoctrineField.ChallengeM"/>
     /// (Q7: farther off he keeps dark), when he has none open and no ship of his navy's is asking her already. Never while
-    /// holding his fire.</summary>
+    /// holding his fire, nor darkened in the dark (Q9: no lamp).</summary>
     void Challenge(in AiContext ctx, in Captain cap, ShipState own, Picture pic, double widest)
     {
-        if (cap.Fire == FireOrder.Hold || ctx.World.Challenges.ChallengeOf(own.Entity).Target != 0)
+        if (cap.Fire == FireOrder.Hold || candDark || ctx.World.Challenges.ChallengeOf(own.Entity).Target != 0)
             return;
         if (candCount < 0)
             Candidates(ctx, pic, own, widest);

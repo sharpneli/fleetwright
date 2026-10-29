@@ -28,7 +28,7 @@ public sealed partial class MapScene
     /// <see cref="fireArmed"/>): on a ship of ours, an enemy, or the sea (docs/battle/admirals-orders.md O9).</summary>
     enum ClickPick : byte
     {
-        None, Engage, Torpedoes, Follow, Run,
+        None, Engage, Torpedoes, Follow, Run, StarShell,
         Screen, Scout, Cover, Join, Station, Fight, Intercept, Shadow, Attack, GoTo, Patrol, Search, Deploy, DivideFrom,
     }
 
@@ -41,10 +41,10 @@ public sealed partial class MapScene
     {
         LevelUp, LevelDown, BackIntoLine,
         Port90, Port10, Stbd10, Stbd90, Course, Slower, Faster, HardOver, Conn, ClearRoute, Smoke,
-        AtWill, Engage, HoldFire, Shells, Torpedoes,
+        AtWill, Engage, HoldFire, Shells, Torpedoes, StarShell, Dark, Beams,
         Fight, Follow, Hold, Tasks, Withdraw, Auto,
         LineAhead, Columns, Abreast, Turn, Deploy, DeployPort, DeployStbd, Formation,
-        EngageShip, EngageUnit, TorpedoesAt,   // an enemy selected: the ship alone first, Alt+E before E
+        EngageShip, EngageUnit, TorpedoesAt, StarShellOn,   // an enemy selected: the ship alone first, Alt+E before E
         Count,
     }
 
@@ -73,7 +73,10 @@ public sealed partial class MapScene
         Act.Engage => new(SDLK_E, false, false, "E", "Engage…", "then right-click an enemy (or right-click her without this: engage is the default)"),
         Act.HoldFire => new(SDLK_X, false, false, "X", "Hold fire", "no gun fires"),
         Act.Shells => new(SDLK_R, false, false, "R", "", "the main guns' shell, for the selection: by target (her captain judges what a round does to the target as she's made out), or a kind held until they're out of it; the round in the gun goes first"),
-        Act.Torpedoes => new(SDLK_E, true, false, "Shift+E", "Torpedoes at…", "then right-click an enemy"),
+        Act.Torpedoes => new(SDLK_E, true, false, "Shift+E", "Torpedoes…", "then right-click an enemy"),
+        Act.StarShell => new(SDLK_R, true, false, "Shift+R", "Star shell…", "then right-click a contact or the sea: one ship lights it, a flare kept up over it; again while one burns: stop it"),
+        Act.Dark => new(SDLK_X, true, false, "Shift+X", "Dark", "darkened: no searchlights, star shell or challenge lamp of her own, her guns holding until she or her squadron is fired upon; again: lights by doctrine"),
+        Act.Beams => new(SDLK_G, true, false, "Shift+G", "Beams", "searchlights kept on in the dark: on her guns' target, else sweeping about the nearest contact; again: by doctrine"),
         Act.Fight => new(SDLK_B, false, false, "B", "Fight", "the nearest enemy in sight; turns away when outgunned (Fight… in the task menu: one you pick)"),
         Act.Follow => new(SDLK_F, false, false, "F", "Follow…", "station astern of her: then right-click a ship"),
         Act.Hold => new(SDLK_H, false, false, "H", "Hold", "hold the course and speed ordered"),
@@ -91,6 +94,7 @@ public sealed partial class MapScene
         Act.EngageShip => new(SDLK_E, false, true, "Alt+E", "", "engage her with the ship you had alone"),
         Act.EngageUnit => new(SDLK_E, false, false, "E", "", "engage her with the ship's squadron: its admiral spreads the fire"),
         Act.TorpedoesAt => new(SDLK_E, true, false, "Shift+E", "Torpedoes at her", "fire what's loaded and bears"),
+        Act.StarShellOn => new(SDLK_R, true, false, "Shift+R", "Star shell on her", "the ship you had lights her with star shell, a flare kept up over her"),
         _ => default,
     };
 
@@ -154,6 +158,8 @@ public sealed partial class MapScene
                 double reach = from.Torpedoes[from.Launchers[0].Torpedo].SlowRangeM;
                 return Earth.Distance(v.PoseAt(c.From, world.DrawMs).Position, s.Contacts.Position[c.Contact]) > reach ? "out of their reach" : null;
             }
+            if (a == Act.StarShellOn)
+                return !Lights(s, Unit.Ship(lastOwn), star: true) ? "no star shell aboard" : v.StarOn[c.From] == selected ? "she's lighting her" : null;
             return a == Act.EngageShip ? null : "";
         }
         bool guns = c.Cls != null && c.Cls.Batteries.Length > 0;
@@ -183,6 +189,10 @@ public sealed partial class MapScene
                 return guns && v.Loadout[c.K] != null && ChiefBattery(c.Cls!) >= 0 ? null : "no main guns";
             case Act.Torpedoes:
                 return c.Cls == null || c.Cls.Launchers.Length == 0 ? "no tubes" : v.TorpedoesLoaded[c.K] == 0 ? "none loaded" : null;
+            case Act.StarShell:
+                return Lights(s, c.Unit, star: true) ? null : "no star shell aboard";
+            case Act.Beams:
+                return Lights(s, c.Unit, star: false) ? null : "no searchlights";
             case Act.Auto:
                 if (c.G >= 0)
                     return gv.Parent[c.G] != 0 ? "in a force: hand over the force" : Tagged(s, gv.Commanded[c.G]) ? null : "your side has no commander";
@@ -226,6 +236,9 @@ public sealed partial class MapScene
             case Act.HoldFire: return On(fire == FireOrder.Hold);
             case Act.Shells: return On(v.ShellHeld[c.K] > 0);
             case Act.Torpedoes: return Armed(ClickPick.Torpedoes, false);
+            case Act.StarShell: return Armed(ClickPick.StarShell, StarHeld(c.S, c.Unit));
+            case Act.Dark: return On(((NightFlags)v.Night[c.K] & NightFlags.Darkened) != 0);
+            case Act.Beams: return On(((NightFlags)v.Night[c.K] & NightFlags.Beams) != 0);
             case Act.Fight: return On(order == CaptainOrder.Fight);
             case Act.Follow: return Armed(ClickPick.Follow, order == CaptainOrder.Follow);
             case Act.Hold: return On(order is CaptainOrder.Course or CaptainOrder.None);
@@ -270,6 +283,29 @@ public sealed partial class MapScene
             case Act.HoldFire: world.Send(o.HoldFire(unit)); break;
             case Act.Shells: popupAsked = "##shells"; break;
             case Act.Torpedoes: Arm(ClickPick.Torpedoes); break;
+            case Act.StarShell:
+                if (armedPick != ClickPick.StarShell && StarHeld(s, unit))
+                    world.Send(o.StarShell(unit, 0));   // again while one burns: stopped
+                else
+                    Arm(ClickPick.StarShell);
+                break;
+            case Act.Dark:
+            {
+                // the two flags never both lit: darkening puts the player's beams out, beams on lift it
+                bool dark = LitOf(Act.Dark, c) == Lit.On;
+                if (!dark && LitOf(Act.Beams, c) == Lit.On)
+                    world.Send(o.Beams(unit, false));
+                world.Send(o.Doctrine(unit, DoctrineField.Darkened, dark ? 0 : 1));
+                break;
+            }
+            case Act.Beams:
+            {
+                bool on = LitOf(Act.Beams, c) == Lit.On;
+                if (!on && LitOf(Act.Dark, c) == Lit.On)
+                    world.Send(o.Doctrine(unit, DoctrineField.Darkened, 0));
+                world.Send(o.Beams(unit, !on));
+                break;
+            }
             case Act.Fight: Behaviour(3, unit, 0); break;
             case Act.Follow: Arm(ClickPick.Follow); break;
             case Act.Hold: Behaviour(0, unit, 0); break;
@@ -290,17 +326,57 @@ public sealed partial class MapScene
             case Act.EngageShip: world.Send(o.Engage(Unit.Ship(lastOwn), selected)); break;
             case Act.EngageUnit: world.Send(o.Engage(Unit.Group(s.Groups.Id[c.FromGroup]), selected)); break;
             case Act.TorpedoesAt: world.Send(TorpedoSystem.Launch(lastOwn, selected, v.TorpedoesLoaded[c.From])); break;
+            case Act.StarShellOn: world.Send(o.StarShell(Unit.Ship(lastOwn), selected)); break;
         }
+    }
+
+    // what a unit's ships carry for the night, worked out again when the unit, the classes or the ships change
+    (int Unit, int Generation, int Count) lightsKey = (0, -1, -1);
+    bool unitStar, unitBeams;
+
+    /// <summary>Whether any ship of a unit carries star shell (<paramref name="star"/>) or searchlights.</summary>
+    bool Lights(Snapshot s, Unit u, bool star)
+    {
+        var v = s.Ships;
+        if ((u.Id, world.Generation, v.Count) != lightsKey)
+        {
+            (lightsKey, unitStar, unitBeams) = ((u.Id, world.Generation, v.Count), false, false);
+            for (int k = 0; k < v.Count; k++)
+            {
+                if (!ShipIn(s, v.Entity[k], u) || world.Classes.TryGet(v.Class[k]) is not { } cls)
+                    continue;
+                unitBeams |= cls.Searchlights.Length > 0;
+                unitStar |= v.Loadout[k] is { } lo && CarriesStar(lo);
+            }
+        }
+        return star ? unitStar : unitBeams;
+    }
+
+    static bool CarriesStar(Loadout lo)
+    {
+        foreach (var t in lo.ShellTypes)
+            if (t.Kind == ShellKind.Star)
+                return true;
+        return false;
+    }
+
+    /// <summary>Whether a ship of a unit lights something with star shell by the player's order.</summary>
+    static bool StarHeld(Snapshot s, Unit u)
+    {
+        var v = s.Ships;
+        for (int k = 0; k < v.Count; k++)
+            if (((NightFlags)v.Night[k] & NightFlags.StarHeld) != 0 && ShipIn(s, v.Entity[k], u))
+                return true;
+        return false;
     }
 
     /// <summary>The strip's keys (the map's own are <see cref="Key"/>'s): an order's while its strip is up. Whether the key
     /// was one.</summary>
-    bool StripKey(uint key)
+    bool StripKey(uint key, SDL_Keymod mod)
     {
         var s = world.Current;
         if (!OrdersNow(s, out var c))
             return false;
-        var mod = SDL_GetModState();
         bool shift = (mod & SDL_Keymod.SDL_KMOD_SHIFT) != 0, alt = (mod & SDL_Keymod.SDL_KMOD_ALT) != 0;
         if (key == SDLK_KP_ENTER)
             key = SDLK_RETURN;
@@ -471,10 +547,11 @@ public sealed partial class MapScene
 
     /// <summary>An order's button in the row: its label (or the given one), its key; greyed with its reason, lit; joined
     /// to the one before it (sharing an edge) in a row of exclusive ones. True when it gave the order.</summary>
-    bool Btn(Act a, in Orders c, string? label = null, bool joined = false, bool menu = false)
+    bool Btn(Act a, in Orders c, string? label = null, bool joined = false, bool menu = false, string? tip = null)
     {
         var d = Def(a);
         label ??= d.Label;
+        string dtip = tip ?? d.Tip;
         if (joined)
             penX -= P(3) + 1;
         float w = ButtonWidth(label, d.Chip, menu: menu);
@@ -487,7 +564,7 @@ public sealed partial class MapScene
             ImGui.PushID((int)a);
             bool hit = sdl.Button("##b", at, label, d.Chip, enabled: why == null, w: w, lit: lit, menu: menu);
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                Tip(why != null ? why.Length > 0 ? $"{d.Tip} ({why})" : d.Tip : d.Tip);
+                Tip(why != null ? why.Length > 0 ? $"{dtip} ({why})" : dtip : dtip);
             ImGui.PopID();
             if (lit != Lit.None)
                 (litAt, litW, litKind) = (at, w, lit);
@@ -758,9 +835,12 @@ public sealed partial class MapScene
             if (s.Batteries.Shooter[i] == selected && s.Batteries.Battery[i] == 0)
                 main = i;
         bool guns = c.Cls != null && c.Cls.Batteries.Length > 0;
-        string? note = !guns ? null : main < 0 ? "main: no target" : BatteryLine(s.Batteries.State[main], s.Batteries.Phase[main], s.Batteries.Salvos[main], s.Batteries.Hits[main]);
+        // her lights first (docs/battle/night.md Q9: dark and holding, her beams, her star shell), else the main battery's line
+        string? note = NightNote(s, c.K) ?? (!guns ? null : main < 0 ? "main: no target"
+            : BatteryLine(s.Batteries.State[main], s.Batteries.Phase[main], s.Batteries.Salvos[main], s.Batteries.Hits[main]));
         BeginPane(x, "GUNS", note, Width(UiFonts.Mono, gunsText));
-        TitleFigure(gunsText, fire == FireOrder.Hold ? T.Amber : T.Bright);
+        bool holding = ((NightFlags)s.Ships.Night[c.K] & NightFlags.Holding) != 0;
+        TitleFigure(gunsText, fire == FireOrder.Hold || holding ? T.Amber : T.Bright);
         if (!dry && guns && ImGui.IsMouseHoveringRect(new Vector2(paneX, paneTop), new Vector2(paneX + paneW[paneN], paneTop + TitleH)) && ImGui.IsWindowHovered())
             BatteriesTip(s, c.Cls!);
         Row(0);
@@ -770,10 +850,34 @@ public sealed partial class MapScene
         EndJoined();
         Row(1);
         Btn(Act.Shells, c, ShellsLabel(s, c), menu: true);
+        Btn(Act.Torpedoes, c, tip: torpTip);
+        // the night's row (docs/battle/night.md Q9)
         Row(2);
-        Btn(Act.Torpedoes, c);
-        Say(torpText);
+        Btn(Act.StarShell, c);
+        Btn(Act.Dark, c);
+        Btn(Act.Beams, c);
         return EndPane();
+    }
+
+    // the guns' note at night, kept while it says the same
+    (int Ship, int BeamOn, int StarOn, byte Night, int Generation) nightKey = (-1, 0, 0, 0, -1);
+    string? nightNote;
+
+    /// <summary>The guns' note for her lights: dark and holding, her beams on a ship or searching, her star shell on one
+    /// or over the sea; null for none.</summary>
+    string? NightNote(Snapshot s, int k)
+    {
+        var v = s.Ships;
+        var key = (v.Entity[k], v.BeamOn[k], v.StarOn[k], v.Night[k], world.Generation);
+        if (key == nightKey)
+            return nightNote;
+        nightKey = key;
+        var night = (NightFlags)v.Night[k];
+        string? beams = v.BeamOn[k] > 0 ? "beams on " + TargetLabel(s, v.BeamOn[k]) : v.BeamOn[k] < 0 ? "beams searching" : null;
+        string? star = v.StarOn[k] > 0 ? "star shell on " + TargetLabel(s, v.StarOn[k]) : v.StarOn[k] < 0 ? "star shell over the sea" : null;
+        string? dark = (night & NightFlags.Holding) != 0 ? "dark: holding fire till fired on" : (night & NightFlags.Darkened) != 0 && beams == null ? "dark" : null;
+        return nightNote = dark != null ? (star != null ? $"{dark} · {star}" : dark)
+            : beams != null ? (star != null ? $"{beams} · {star}" : beams) : star;
     }
 
     /// <summary>Each battery: a line in the guns' tooltip.</summary>
@@ -887,7 +991,7 @@ public sealed partial class MapScene
                 switch (r)
                 {
                     case 0:
-                        Diamond(sdl, new Vector2(vx + P(5), a.Y + RowH / 2), cv.Level[i] >= ContactLevel.Class, seen);
+                        Diamond(sdl, new Vector2(vx + P(5), a.Y + RowH / 2), cv.Level[i] >= ContactLevel.Class, seen, cv.Side[i] == 255);
                         sdl.Text(UiFonts.SansSmall, new Vector2(vx + P(14), ty), seen ? T.Bright : T.Faint, id);
                         break;
                     case 1:
@@ -932,10 +1036,7 @@ public sealed partial class MapScene
         Btn(Act.EngageShip, c, AloneLabel(from ?? "your ship", c.FromGroup >= 0));
         Row(c.FromGroup >= 0 ? 2 : 1);
         Btn(Act.TorpedoesAt, c);
-        if (!dry && WhyNot(Act.TorpedoesAt, c) is { Length: > 0 } why)
-            Say(why);
-        else if (dry)
-            Say("out of their reach");
+        Btn(Act.StarShellOn, c);
         return EndPane();
     }
 
@@ -1032,7 +1133,7 @@ public sealed partial class MapScene
     (int Ship, int Target, byte Fire) gunsKey = (-1, -1, 255);
     string gunsText = "";
     (int Ship, int Loaded, int Left) torpKey = (-1, -1, -1);
-    string torpText = "";
+    string torpText = "", torpTip = "";
     int nameShip = -1, nameGeneration = -1;
     string nameText = "", classText = "";
 
@@ -1059,15 +1160,17 @@ public sealed partial class MapScene
             for (int i = 0; i < s.Batteries.Count; i++)
                 if (s.Batteries.Shooter[i] == selected && s.Batteries.Battery[i] == 0)
                     target = s.Batteries.Target[i];
-        if ((selected, target, v.Fire[k]) != gunsKey)
+        bool holding = ((NightFlags)v.Night[k] & NightFlags.Holding) != 0;
+        if ((selected, target, (byte)(v.Fire[k] | (holding ? 0x80 : 0))) != gunsKey)
         {
-            gunsKey = (selected, target, v.Fire[k]);
-            gunsText = (FireOrder)v.Fire[k] == FireOrder.Hold ? "holding fire" : target > 0 ? "on " + TargetLabel(s, target) : "no target";
+            gunsKey = (selected, target, (byte)(v.Fire[k] | (holding ? 0x80 : 0)));
+            gunsText = (FireOrder)v.Fire[k] == FireOrder.Hold ? "holding fire" : target > 0 ? "on " + TargetLabel(s, target) : holding ? "dark, holding" : "no target";
         }
         if ((selected, v.TorpedoesLoaded[k], v.TorpedoesLeft[k]) != torpKey)
         {
             torpKey = (selected, v.TorpedoesLoaded[k], v.TorpedoesLeft[k]);
             torpText = cls == null || cls.Launchers.Length == 0 ? "no tubes" : $"{v.TorpedoesLoaded[k]} loaded · {v.TorpedoesLeft[k]} left";
+            torpTip = $"{Def(Act.Torpedoes).Tip} · {torpText}";
         }
     }
 
@@ -1255,6 +1358,18 @@ public sealed partial class MapScene
                 world.Send(armedPick == ClickPick.Engage ? world.Orders.Engage(unit, enemy)
                     : TorpedoSystem.Launch(selected, enemy, Math.Max(k >= 0 ? s.Ships.TorpedoesLoaded[k] : 1, 1)));
                 break;
+            case ClickPick.StarShell:
+                // on a contact (the flare follows her), else over the sea there (docs/battle/night.md Q9)
+                if (enemy > 0)
+                    world.Send(world.Orders.StarShell(unit, enemy));
+                else if (sea && own <= 0 && !world.Shore.IsLand(at))
+                {
+                    var (lat, lon) = Earth.LatLon(at);
+                    world.Send(world.Orders.StarShellAt(unit, lat, lon));
+                }
+                else
+                    return true;
+                break;
             case ClickPick.Follow or ClickPick.Run:
                 int target = enemy > 0 ? enemy : own;
                 if (target <= 0 || target == selected)
@@ -1362,6 +1477,7 @@ public sealed partial class MapScene
     static Vector4 PickColour(ClickPick pick) => pick switch
     {
         ClickPick.Engage or ClickPick.Torpedoes or ClickPick.Fight or ClickPick.Intercept or ClickPick.Shadow or ClickPick.Attack or ClickPick.Run => Bad,
+        ClickPick.StarShell => Theme.Lamp,
         ClickPick.Follow or ClickPick.Screen or ClickPick.Scout or ClickPick.Cover or ClickPick.Join or ClickPick.Station or ClickPick.DivideFrom => Friend,
         _ => Theme.Brass,
     };

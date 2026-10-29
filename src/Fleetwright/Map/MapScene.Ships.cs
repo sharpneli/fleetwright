@@ -78,6 +78,7 @@ public sealed unsafe partial class MapScene
         DrawContacts(view, s);
         DrawBeams(view, s);
         DrawFlares(view, s);
+        StarPreview(view, s);
         DrawShells(view, s);
         DrawDamage(view, s);
         OrderPreview(view, s);

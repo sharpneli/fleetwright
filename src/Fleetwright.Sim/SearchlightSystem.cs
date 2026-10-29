@@ -301,5 +301,12 @@ public sealed class SearchlightSystem : IWorldSystem
             n++;
         }
         v.Count = n;
+        if (count == 0)
+            return;
+        var sv = s.Ships;   // each ship's beams out now (docs/battle/night.md Q9: her card and the strip)
+        long now = s.Time.Ms;
+        for (int k = 0; k < sv.Count; k++)
+            if (Find(sv.Entity[k]) is >= 0 and var i && lit[i].Order >= SearchlightOrder.Illuminate && now >= lit[i].OnMs)
+                sv.BeamOn[k] = lit[i].Order == SearchlightOrder.Illuminate ? lit[i].Target : -1;
     }
 }

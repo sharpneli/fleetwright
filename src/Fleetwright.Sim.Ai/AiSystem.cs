@@ -119,7 +119,7 @@ public sealed class AiSystem : IWorldSystem
 
     public void Apply(World world, in Command c)
     {
-        if ((AiCommand)c.Code is < AiCommand.Course or > AiCommand.Shells)
+        if ((AiCommand)c.Code is < AiCommand.Course or > AiCommand.StarShell)
             throw new ArgumentException($"unknown AI command {c.Code}");
         var u = new Unit(c.Entity);
         var code = (AiCommand)c.Code;
@@ -159,7 +159,7 @@ public sealed class AiSystem : IWorldSystem
     /// task's), not its guns, doctrine or detachment.</summary>
     static bool EndsTask(AiCommand code) => code is not (AiCommand.FireAtWill or AiCommand.HoldFire or AiCommand.Engage or AiCommand.Doctrine
         or AiCommand.SideDoctrine or AiCommand.Home or AiCommand.SpeedLimit or AiCommand.Clearance or AiCommand.Detach or AiCommand.Form
-        or AiCommand.Shape or AiCommand.Role or AiCommand.Shells);
+        or AiCommand.Shape or AiCommand.Role or AiCommand.Shells or AiCommand.Beams or AiCommand.StarShell);
 
     void Route(World world, in Command c, Unit u)
     {
@@ -187,6 +187,14 @@ public sealed class AiSystem : IWorldSystem
                 HoldShells(world, u, (byte)c.A);
                 WakeAll(world);
                 return;
+            case AiCommand.Beams:
+                HoldBeams(world, u, c.X != 0);
+                WakeAll(world);
+                return;
+            case AiCommand.StarShell:
+                StarShell(world, u, c);
+                WakeAll(world);
+                return;
         }
         if (u.IsShip)
             Captains.Order(Context(world), c);
@@ -203,6 +211,78 @@ public sealed class AiSystem : IWorldSystem
         else if (u.IsGroup && world.Groups.Get(u.GroupId) is { } g)
             foreach (int m in g.Members)
                 HoldShells(world, g.IsForce ? Unit.Group(m) : Unit.Ship(m), kind);
+    }
+
+    /// <summary>The player's beams to every ship down a unit's tree (docs/battle/night.md Q9).</summary>
+    void HoldBeams(World world, Unit u, bool on)
+    {
+        if (u.IsShip)
+            Captains.HoldBeams(u.Id, on);
+        else if (u.IsGroup && world.Groups.Get(u.GroupId) is { } g)
+            foreach (int m in g.Members)
+                HoldBeams(world, g.IsForce ? Unit.Group(m) : Unit.Ship(m), on);
+    }
+
+    /// <summary>The player's star shell (docs/battle/night.md Q9): to a ship, hers; to a group, one ship of its tree's, the
+    /// nearest that carries star shell with the target in its reach, else the nearest that carries it. A 0 stops every
+    /// ship's down the tree.</summary>
+    void StarShell(World world, Unit u, in Command c)
+    {
+        bool point = c.X != 0;
+        if (!point && c.A == 0)
+        {
+            StopStars(world, u);
+            return;
+        }
+        int ship = u.Id;
+        if (u.IsGroup)
+        {
+            var at = point ? Earth.Position(Earth.UnpackLatLon(c.A).Lat, Earth.UnpackLatLon(c.A).Lon) : default;
+            (ship, double best) = (0, double.MaxValue);
+            Nearest(world, u, ref ship, ref best, point, at, (int)c.A);
+            if (ship == 0)
+                return;   // nobody in it carries star shell
+            StopStars(world, u);
+        }
+        Captains.HoldStar(Context(world), ship, point ? 0 : (int)c.A, point ? c.A : 0);
+    }
+
+    void StopStars(World world, Unit u)
+    {
+        if (u.IsShip)
+            Captains.HoldStar(Context(world), u.Id, 0, 0);
+        else if (u.IsGroup && world.Groups.Get(u.GroupId) is { } g)
+            foreach (int m in g.Members)
+                StopStars(world, g.IsForce ? Unit.Group(m) : Unit.Ship(m));
+    }
+
+    // the ship down a unit's tree that carries star shell nearest the target: those with it in reach first (their
+    // distance), then the rest (past every one in reach)
+    void Nearest(World world, Unit u, ref int ship, ref double best, bool point, Vec3d at, int contact)
+    {
+        if (u.IsGroup)
+        {
+            if (world.Groups.Get(u.GroupId) is { } g)
+                foreach (int m in g.Members)
+                    Nearest(world, g.IsForce ? Unit.Group(m) : Unit.Ship(m), ref ship, ref best, point, at, contact);
+            return;
+        }
+        double reach = world.StarShells.ReachM(u.Id);
+        if (reach <= 0 || world.Ships.Store.SlotOf(u.Id) is not (>= 0 and var slot))
+            return;
+        var own = world.Ships.Store[slot];
+        var to = at;
+        if (!point)
+        {
+            var pic = world.Sightings.Of(own.Side);
+            if (pic?.IndexOf(contact) is not (>= 0 and var ci))
+                return;
+            to = pic[ci].Position;
+        }
+        double d = Earth.Distance(own.Position, to);
+        double key = d <= reach ? d : 1e9 + d;
+        if (key < best)
+            (ship, best) = (u.Id, key);
     }
 
     /// <summary>Starts the ticks of the layers that have something to watch. Groups and ships change by the world's

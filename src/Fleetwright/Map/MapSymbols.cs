@@ -13,6 +13,8 @@ public enum SymbolShape : byte
     Arrow,
     /// <summary>A ring and a cross: what's lost (no fill).</summary>
     Wreck,
+    /// <summary>Four lobes, APP-6's unknown: a ship made out, not known for friend or foe (docs/battle/night.md Q9).</summary>
+    Quatrefoil,
 }
 
 /// <summary>One corner of a map symbol's quad: NDC position, its point in the symbol's own frame (px), the shape and

@@ -191,6 +191,32 @@ public enum AiCommand : ushort
     /// every ship down its tree: A the <c>ShellKind</c> + 1, held against her captain's choice until those guns are out
     /// of it; 0 hands the choice back to him (by target).</summary>
     Shells,
+
+    /// <summary>The player's beams (docs/battle/night.md Q9) for a ship, to a group every ship down its tree: X 1 kept on
+    /// in the dark against her captain's doctrine (held on her guns' target, else sweeping about the nearest contact), 0
+    /// back to doctrine. A setting, as doctrine is: it doesn't take the unit from its commander.</summary>
+    Beams,
+
+    /// <summary>The player's star shell (docs/battle/night.md Q9): A a contact (an entity, as the navy holds her), or with
+    /// X 1 a point on the sea (A a packed lat/lon), lit until the order's given with A 0 (her task stops) or the contact's
+    /// lost. To a group, one ship of its tree fires: the nearest that carries star shell with the target in its reach (else
+    /// the nearest that carries it); A 0 stops every ship's.</summary>
+    StarShell,
+}
+
+/// <summary>The night's orders on a ship as the snapshot shows them (<c>ShipsView.Night</c>; docs/battle/night.md Q9).</summary>
+[Flags]
+public enum NightFlags : byte
+{
+    None = 0,
+    /// <summary>Her beams kept on by the player.</summary>
+    Beams = 1,
+    /// <summary>Her unit darkened (doctrine's <see cref="DoctrineField.Darkened"/>).</summary>
+    Darkened = 2,
+    /// <summary>Darkened, her guns holding: nobody's fired on her or her squadron yet.</summary>
+    Holding = 4,
+    /// <summary>Her star shell the player's.</summary>
+    StarHeld = 8,
 }
 
 /// <summary>A ship's fire order (docs/battle/fighting.md 4.2c).</summary>
@@ -290,6 +316,16 @@ public readonly struct UnitOrders(byte system, bool hand = false)
     /// <summary>A unit's main guns load a kind, held against the captains' choice (null: by target, theirs again).</summary>
     public Command Shells(Unit u, Ships.ShellKind? kind, OrderSource source = OrderSource.Player) =>
         Make(AiCommand.Shells, u, source, a: kind is { } k ? (long)k + 1 : 0);
+
+    /// <summary>A unit's beams kept on in the dark (or back to doctrine), against the captains' doctrine.</summary>
+    public Command Beams(Unit u, bool on, OrderSource source = OrderSource.Player) => Make(AiCommand.Beams, u, source, x: on ? 1 : 0);
+
+    /// <summary>Star shell on a contact (a ship's entity, as the navy holds her; 0 stops it), by one ship of the unit.</summary>
+    public Command StarShell(Unit u, int contact, OrderSource source = OrderSource.Player) => Make(AiCommand.StarShell, u, source, a: contact);
+
+    /// <summary>Star shell over a point on the sea, by one ship of the unit, until stopped (<see cref="StarShell"/> with 0).</summary>
+    public Command StarShellAt(Unit u, double latDeg, double lonDeg, OrderSource source = OrderSource.Player) =>
+        Make(AiCommand.StarShell, u, source, a: Earth.PackLatLon(latDeg, lonDeg), x: 1);
 
     /// <summary>Screen another unit of the same side: keep a distance off it (0: the settings'), on a station of its arc
     /// that every screen of it shares, and counter-attack enemy torpedo craft closing on it.</summary>

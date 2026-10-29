@@ -343,7 +343,7 @@ public sealed unsafe partial class MapScene : IScene
             return true;   // the task menu's letters while it's open (docs/battle/admirals-orders.md O9)
         if (PanKey(code, true))
             return true;   // WASD pans, before any order's letter (docs/map-ui/input.md)
-        if (StripKey(key))
+        if (StripKey(key, mod))
             return true;   // an order's key while the strip is up (docs/map-ui/strip.md)
         if (key == SDLK_F1)
             devOpen = !devOpen;

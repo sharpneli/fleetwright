@@ -922,11 +922,57 @@ needs it (Broke has no star shell). Four states:
 4. **The unknown selected:** the ENEMY pane says she's lit and by what; ORDERS AGAINST HER gains Star shell on her `⇧R`
    beside the torpedoes. A flare burning: a four-pointed star, the sea it lights as a faint disc, its seconds left.
 
-**Questions on the mockup (for the user):**
-1. The night row in GUNS, the torpedoes moved up beside the shells (their count to the tooltip): fine?
-2. Unknowns as a cream quatrefoil (APP-6), or the diamond kept in cream?
-3. The beam and flare marks at every zoom, over the world view's real beams (Q10) too, or only on the table?
-4. Darkened keeps Fire at will lit with "holding" in the note: or should Dark light Hold fire while she waits?
+**Questions on the mockup, answered (the user, 2026-10-29):** the three buttons are what's wanted; (1) the row as mocked;
+(2) the quatrefoil (my call: apart from the diamond at a glance); (3) the marks on the table only, the visuals pass makes
+the close-in look; (4) as mocked: Dark lets her shoot back once fired upon, it avoids the first detection.
+
+**Q9 done (2026-10-29).** The player's hand at night, as mocked:
+
+- **Darkened** (`DoctrineField.Darkened`, last; the launch screen's "Darkened at night"; the strip's Dark `⇧X` sets the
+  unit's): in the dark (`CaptainLayer.InDark`, Q1's test) no searchlights or star shell by doctrine, no challenge lamp
+  (an unknown held, not challenged), and the guns hold (`Captain.Holding`) until she or a ship of her squadron is fired
+  upon (an enemy battery on her: `FiredUpon`), then fight by their orders for `DarkenedFreeS` 600 s after the last time
+  [EST] and hold again. Torpedoes at will go as ever (the ambush is the point); the player's own Engage fires; an
+  admiral's distributed Engage holds. By day nothing changes.
+- **Beams** (`AiCommand.Beams`, the player's to every ship down a unit's tree; `Captain.BeamsHeld`): the arcs burn in the
+  dark against doctrine, Darkened, the douse when lit and keeping dark in an attack: held on the guns' targets (the chief
+  battery's first, seen or not, at any range), else the one lit while she's held, else sweeping about the nearest contact,
+  or about her bow with none. Doctrine's turn away when lit still steers her (the conn holds her course). Beams and Dark
+  never both lit: one clears the other.
+- **Star shell…** (`AiCommand.StarShell`; `UnitOrders.StarShell` on a contact, `StarShellAt` on a point; armed by `⇧R`,
+  given by a right-click on a contact or the sea; `⇧R` again while one of the player's burns stops it): to a ship, hers;
+  to a unit, one ship of its tree, the nearest that carries star shell with the target in reach (`AiSystem.Nearest`).
+  `StarShellSystem.IlluminateAt`: a point's task bursts straight over it (no `StarBeyondM`) and ends only when stopped or
+  with no star mount left. Her captain leaves the player's task be (`Captain.StarHeld`), and clears it once the task's
+  gone. **Changed for every task:** one whose mounts don't bear now waits for one to (she turns, the target draws round)
+  instead of ending; it ends when no working mount has star rounds (a task dropped at once had left a player's order
+  silently undone).
+- **The strip** (`MapScene.Strip.cs`): GUNS row 2 Shells ▾ · Torpedoes… (the count in its tooltip), row 3 Star shell… ·
+  Dark · Beams, each greyed with its reason (no star shell aboard, no searchlights); the note her lights first ("dark:
+  holding fire till fired on", "beams on G42", "beams searching", "star shell over the sea") else the battery's line; the
+  figure "dark, holding" in amber. The enemy pane's Star shell on her `⇧R`, from the ship you had. The cursor's verb
+  "STAR SHELL on X · 1.2 km" / "STAR SHELL · the sea here", the patch it would light ghosted under the cursor. The
+  strip's keys now read the key event's own Shift (scripted keys reach them).
+- **The card** a chip "showing a light: beams / star shell" in the lamp's colour (`Theme.Lamp`, `ChipKind.Lamp`), "dark"
+  plain, where her state chips leave room; the lit reason now reads "lit: turned away" (her lights stay on under Beams).
+  **The rail** a spark by the name of a ship showing a light, "dark · holding" in DOING; ENEMY's unknowns grouped first
+  with the quatrefoil.
+- **The map** (table only, faded out over the world view's boundary; the world view keeps Q4/Q5's placeholders until
+  Q10): a beam as a widening wedge fading to its reach, a dashed lit ring about a ship the player's beams hold; a flare
+  as a four-pointed star over the sea it lights to 1 lux [EST] (`FlareLitLux`), lit rings on every ship under it; a light
+  seen as a spark (the disc went); an unknown as APP-6's quatrefoil (`SymbolShape.Quatrefoil`, the symbol shader's shape 5).
+- **The snapshot** (`ShipsView.BeamOn`, `StarOn`, `Night` as `NightFlags`), filled by the searchlight and star shell
+  systems and the captains.
+- **Tests:** `NightControlTests` (darkened: no fire, lights or challenge in 90 s, fires back once fired upon, lights still
+  out; beams by hand light the engaged destroyer against "never", stay on her once the guns hold, out back to doctrine,
+  sweep with no target; a point of the sea lit by a German 1916 ship, flares 19 m off it at 293 m, her captain leaving it
+  be, stopped; a squadron's star shell from its nearer ship). The sim suite 874 passed, the game's 207.
+- **Captures:** `docs/map-ui/png/night-game-beams.png`, `-dark.png`, `-star.png`, `-armed.png`.
+
+**Open after Q9:** a long night note widens the GUNS pane (as a long battery line already does); the flare's seconds
+left aren't in the snapshot (the mockup's "flare · 40 s"); the lit ring for an own ship in an enemy beam isn't drawn (a
+beam's target isn't in the snapshot; the wedge shows it); the challenge lamp isn't marked; a blanket of star shell
+(above) waits for the research.
 
 ### Q10 The look
 

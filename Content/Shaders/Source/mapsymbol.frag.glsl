@@ -2,7 +2,8 @@
 // Map symbols (docs/map-ui/symbols.md Y3): the shape as a signed distance in pixels, so every edge and corner is
 // anti-aliased over a pixel at any size. Drawn back to front: the casing (the ground's dark, either side of the
 // outline), the fill inside, the stroke on the outline. Shapes: 0 circle, 1 diamond, 2 square, 3 arrowhead (its tip
-// at +y), 4 wreck (a ring and a cross: lines only, no fill).
+// at +y), 4 wreck (a ring and a cross: lines only, no fill), 5 quatrefoil (four lobes: APP-6's unknown, docs/battle/
+// night.md Q9).
 layout(location = 0) in vec2 fragLocal;
 layout(location = 1) flat in vec4 fragShape;
 layout(location = 2) flat in vec4 fragFill;
@@ -47,6 +48,11 @@ void main()
     }
     else if (shape == 3)
         d = triangle(vec2(p.x, r - p.y), vec2(0.62 * r, 1.7 * r));
+    else if (shape == 5)
+    {
+        vec2 q = abs(p);
+        d = min(length(q - vec2(0.48 * r, 0.0)), length(q - vec2(0.0, 0.48 * r))) - 0.52 * r;
+    }
     else
         d = length(p) - r;
     line = abs(d);

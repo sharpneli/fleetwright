@@ -474,6 +474,7 @@ public sealed partial class ShipSystem : IWorldSystem
         v.Asked[n] = false;
         (v.Conn[n], v.Tracks[n]) = (0, 0);
         (v.ShellHeld[n], v.ShellSpent[n]) = (0, 0);
+        (v.BeamOn[n], v.StarOn[n], v.Night[n]) = (0, 0, 0);   // the lights' systems and the AI fill their own, after
         v.LandSide[n] = orders ? (sbyte)ship.LandSide : (sbyte)0;
         v.Backstops[n] = orders ? ship.Backstops : 0;
         v.MinClearanceM[n] = ship.Handling.MinClearanceM;

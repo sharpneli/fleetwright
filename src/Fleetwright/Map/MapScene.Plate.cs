@@ -667,6 +667,18 @@ public sealed partial class MapScene
         dl.AddConvexPolyFilled(ref o[0], o.Length, U(T.FireCore with { W = f }));
     }
 
+    /// <summary>A light she shows (docs/battle/night.md Q9: her beams, her star shell): a spark of eight short rays.</summary>
+    static void Spark(ImDrawListPtr dl, Vector2 c)
+    {
+        uint ink = U(T.Lamp);
+        for (int i = 0; i < 8; i++)
+        {
+            float a = i * MathF.PI / 4, r0 = P(1.5f), r1 = P(i % 2 == 0 ? 4.5f : 3.2f);
+            var d = new Vector2(MathF.Cos(a), MathF.Sin(a));
+            dl.AddLine(c + d * r0, c + d * r1, ink, P(1.2f));
+        }
+    }
+
     // ------------------------------------------------------------------ the clinometer
 
     /// <summary>Her midship section heeled to her list (going down too: a capsize rolls her over), the sea level, a

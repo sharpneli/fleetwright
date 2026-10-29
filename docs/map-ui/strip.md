@@ -109,6 +109,7 @@ Finnish keyboard `[ ] / ;` need AltGr. Keys are SDL keycodes, so they follow the
 | | O, C, Del, M | hard over, the conn (as now), clear route, make smoke |
 | Guns | G, E, X, S | fire at will, engage…, hold fire, shells ▾ |
 | | ⇧E | torpedoes at… |
+| | ⇧R, ⇧X, ⇧G | star shell… (a contact or the sea), dark, beams: the night's row (docs/battle/night.md Q9, added 2026-10-29) |
 | Task | B, F, H, T, W, I | fight, follow…, hold, the task menu (as now), withdraw, AI |
 | Formation | L, K, A (as now), Z, U, D, `,` `.` (as now) | line ahead, columns, abreast, this level's formation ▾, turn ▾, deploy…, deploy to port, to starboard |
 | An enemy | E, Alt+E, ⇧E | engage her with the unit, with the ship alone, torpedoes |
