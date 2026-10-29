@@ -1,5 +1,5 @@
 # Plan: night fighting (a 4.5 deepening)
-Status: **drafted 2026-10-29**; questions 2-5 decided by the user the same day, question 1 open (at the end)
+Status: **drafted 2026-10-29**; **agreed with the user 2026-10-29** (decisions 1-5 at the end)
 Updated: 2026-10-29
 
 How ships see, light, shoot and lose each other in the dark. The user asked for it after the crew plan (2026-10-28),
@@ -219,19 +219,19 @@ want the request's numbers, and go ahead on flagged estimates if it hasn't come 
   at; the AI and the snapshot read them from the world, exactly and for free. No CPU goes into seeing friends.
 - **Seen isn't known.** At night, a ship made out but not identified is an **unknown** contact. An enemy below the
   type's margin is one already; that costs nothing new, and hold fire on unknowns works on it alone.
-- **Own ships, if question 1 says so: a bounded look.** Ships of one's own group (the admiral's division or squadron,
-  kept in formation) stay known by plot, free as now. Other own and allied ships are looked at only **where the light
-  is low** (the night's reach from Q1 under a few km) and **within that reach**, through the same grid ring by ring,
-  so it's a short search over a few neighbours, and none by day. Its result is a contact like an enemy's (keyed on the
-  true entity), unknown until identified. The same look gives Q7 its "losing touch": a ship that no longer sees her
-  next ahead. Its cost is measured in Q0's Jutland night before it's taken in [EST: well under today's 270 µs a look;
-  the night's reach is short].
+- **No friendly fire for now** (decision 1). Own and allied ships stay known from the world, as today, at no cost.
+  What the fear of it did still plays: a captain who can't tell what he sees may hold his fire, so the cost of caution
+  (an enemy let pass, a late first salvo) is real while the friend he feared never appears. A later pass can add own
+  ships as contacts (a bounded look: only in the dark, only within the night's reach, outside one's own group), if
+  playtesting wants it.
 - **The challenge:** a lamp signal (the night's challenge and reply). It shows the challenger (a light in `Lights`).
   A friend answers, and a foe who knows the challenge may answer it too (the Germans at Jutland knew the British
   challenge [to check]). Recognition lights are the same mechanism.
 - **Hold fire:** doctrine says whether a ship fires on an unknown contact, challenges first, or holds fire and
   reports. Most of the era's navies held fire. That's what kept Jellicoe's battleships silent while German ships passed.
-- **Friendly fire** follows if a ship fires on an unknown that's a friend. Whether to allow it is question 1.
+  Within the doctrine, the captain's temper sets how readily he opens on an unknown (captains are the people with
+  personality): a cautious one waits for the type or the challenge's answer, a bold one fires on a shape where no
+  friend is expected.
 
 ### Q7 Captains, admirals and doctrine at night
 
@@ -241,7 +241,8 @@ want the request's numbers, and go ahead on flagged estimates if it hasn't come 
 - **Captains:** keep dark; douse and turn away when lit; fire at a light; turn away from a torpedo attack in the dark
   (TorpedoWatch reads Q1's light). A flotilla's approach from the dark side, with the moon behind its target.
 - **Admirals:** night formations (close order, each ship following the next ahead's stern by her wake) and losing touch
-  in the dark: a ship that can't see her next ahead falls out of formation and must find it again. Collisions in
+  in the dark: a ship that can't see her next ahead falls out of formation and must find it again (one look a ship,
+  at her next ahead only: a station-keeping check, not a sighting of friends). Collisions in
   close order wait for 4.11, which this makes more urgent.
 - **The commander:** the matchup at night (`bugs.md`'s entry: the defence's guns reach only the night's sight, and the
   boats are seen late), so flotillas are sent in on battle lines by night when worth it.
@@ -277,16 +278,11 @@ doesn't change that.)
 
 Against `night-history` and the night scenarios. Restated anchors and what moved, for the user.
 
-## Open (for the user)
-
-1. **Friendly fire at night.** Own ships seen as unknowns, so a ship can fire on a friend (the record has many),
-   within doctrine's hold-fire rules, or own ships always known as now? Today no CPU goes into seeing friends (Q6).
-   The bounded look in Q6 adds it only at night, only near, only outside one's own group. *Recommendation:* the
-   bounded look, measured in Q0 first; it also gives Q7 ships losing touch in the dark. Friendly fire rare by doctrine,
-   a difficulty setting can turn it off later.
-
 ## Decided (the user, 2026-10-29)
 
+1. **No friendly fire for now.** Own ships stay known (no CPU spent on seeing friends, as today). Captains may still be
+   cautious about opening fire on unidentified targets for fear of it, by doctrine and temper (Q6); the friend just
+   never turns out to be there.
 2. **Searchlights are placed by the designer.** Shipgen produces the data itself (no human needs to intervene); no
    placeholder phase (Q3).
 3. **Star shell is a fourth `ShellKind`** in the same magazines and outfits (Q5).
