@@ -10,7 +10,7 @@ namespace Fleetwright.Sim.Core;
 /// <code>long t = Probes.Now; ... probes.Add(id, t);</code></summary>
 public sealed class Probes
 {
-    public const int Capacity = 32;
+    public const int Capacity = 64;
 
     public readonly string[] Names = new string[Capacity];
     public readonly long[] Ticks = new long[Capacity];

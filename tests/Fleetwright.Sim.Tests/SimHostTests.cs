@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Fleetwright.Sim.Ai;
 using Fleetwright.Sim.Core;
 
 namespace Fleetwright.Sim.Tests;
@@ -118,6 +119,17 @@ public class SimHostTests
         var s = WaitFor(host, _ => true);
         Assert.InRange(s.AchievedSpeed, 700, 1300);
         Assert.Equal(1000, s.Speed);
+    }
+
+    [Fact]
+    public void The_games_whole_world_fits_the_probes()
+    {
+        // the game's world: every system and the AI's layers, each a probe, and the host's own, with room for a few more
+        // (2026-10-29: the night's systems took it past 32 and the game crashed at start)
+        var world = new World(Start, 1);
+        _ = new AiSystem(world);
+        using var host = new SimHost(world);
+        Assert.True(world.Probes.Count <= Probes.Capacity - 8, $"{world.Probes.Count} of {Probes.Capacity} probes");
     }
 
     [Fact]
