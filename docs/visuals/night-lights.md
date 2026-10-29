@@ -233,6 +233,21 @@ The placeholders (a line for a beam, a disc for a flare) stay until Q10c and Q10
 **Q10c Beams in the air.** The in-scatter quad (σ, phase, 1/r, the cone's height over the sea, the smoke field's τ),
 the lamp's point, the target's shadow in the beam, the iris in time. The world view's placeholder line goes.
 
+**Q10c done 2026-10-29.** `Map/Night/BeamRenderer` (`beam.vert`/`beam.frag`): a quad on the sea under each beam the
+night's lights hold, from the lamp out to where its glow falls under 0.003 of a lit deck, as wide as 3.5 σ; the glow
+closed form for a Gaussian beam crossed straight down and cut by the sea, L = I σ_s p √(2π) s / r · e^(−x²/2s²r²) ·
+Φ(h / s r) · e^(−σ r), softened to the lamp's glare over its first 6 m. Its numbers are the sim's: the peak, the spread,
+the air's scattering (`SearchlightModel.ScatterPerM`) and the share seen from beside (all round, as `ColumnCd`), so the
+drawn beam is the lookouts' beam; through the night eye (`FlashRenderer.PerCandela`), rolled to white on luminance as
+the flashes are, through the haze, screen-blended, after the gun smoke and the magazines and before the smoke field.
+Past the ship it's held on, her shadow in the air (the share of the beam's height her top hides, widening with it):
+faint for a destroyer under a 25 m lamp, as it should be. A clear night's beam and a 5 km haze's differ in how fast
+they fade along their length. **The smoke field takes every point light** (`smokeresolve.frag`: the flashes, fires,
+flares and beams, from the smoke's place under the pixel rebuilt from the view at `SmokeFieldRenderer.LitHeightM` 20 m
+[EST], lifted by the effects camera): a beam crossing a destroyer's smoke blooms white there, a flare lights the smoke
+under it, and the fires now light their own palls. The world view's placeholder line went (the table's wedge stays,
+faded out over the boundary). Knob: `-night=beam:1`. Tests: 207 pass.
+
 **Q10d Star shell.** The burst and its puff, the star with its flicker and burn-out, the halo in the haze (the shared
 point-light halo, also on for fires and flashes), the trail. The world view's placeholder disc goes.
 

@@ -92,8 +92,12 @@ public sealed unsafe class SmokeFieldRenderer : IDisposable
     [StructLayout(LayoutKind.Sequential)]
     struct Params
     {
-        public Vector4 SunL, MoonL, Info;
+        public Vector4 SunL, MoonL, Info, PixView, PixAt;
     }
+
+    /// <summary>The height the point lights light the field's smoke at, m (smokeresolve.frag: one height for the
+    /// column under a pixel) [EST: about a searchlight's, low in a funnel's or a screen's smoke].</summary>
+    public static double LitHeightM = 20;
 
     public SmokeFieldRenderer(SDL_GPUDevice* device)
     {
@@ -179,7 +183,12 @@ public sealed unsafe class SmokeFieldRenderer : IDisposable
         view.GrainO = new Vector4((float)Wrap(Vec3d.Dot(copy.Anchor, ge)), (float)Wrap(Vec3d.Dot(copy.Anchor, gn)), 0, 0);
         var (east, north, up) = (v.Right, v.Up, (-v.Forward).Normalized());
         Vector3 Local(Vec3d d) => new((float)Vec3d.Dot(d, east), (float)Vec3d.Dot(d, north), (float)Vec3d.Dot(d, up));
-        prms = new Params { SunL = new Vector4(Local(lights.SunDir), 0), MoonL = new Vector4(Local(lights.MoonDir), 0) };
+        prms = new Params
+        {
+            SunL = new Vector4(Local(lights.SunDir), 0), MoonL = new Vector4(Local(lights.MoonDir), 0),
+            PixView = new Vector4((float)(2 * v.TanHalfX / v.Width), (float)(2 * v.TanHalfY / v.Height), (float)v.TanHalfX, (float)v.TanHalfY),
+            PixAt = new Vector4((float)v.Altitude, (float)Effects.K, (float)LitHeightM, 0),
+        };
     }
 
     /// <summary>The copy into the storage buffer when it's changed (a copy pass, before any render pass).</summary>

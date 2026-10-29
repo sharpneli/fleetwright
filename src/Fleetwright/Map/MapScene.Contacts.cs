@@ -160,27 +160,20 @@ public sealed partial class MapScene
 
     /// <summary>The searchlights' beams out (docs/battle/night.md Q4, Q9). On the table, a mark: a narrow wedge of the
     /// light's colour from the lamp out to about its reach, fading along it, and a dashed ring about the ship one of
-    /// the player's ships holds hers on (lit). In the world view, a thin line along its bearing until the night's look
-    /// (Q10); across the table's fade, both.</summary>
+    /// the player's ships holds hers on (lit), faded out over the world's boundary, where the beam itself shows
+    /// (docs/visuals/night-lights.md Q10c).</summary>
     void DrawBeams(in MapView view, Snapshot s)
     {
         var b = s.Beams;
-        double inWorld = WorldView.Factor(view), table = 1 - inWorld;
+        double table = 1 - WorldView.Factor(view);
+        if (table <= 0)
+            return;
         for (int i = 0; i < b.Count; i++)
         {
             var lamp = b.Lamp[i].Normalized() * Earth.Radius;
             var (end, along) = (lamp, Earth.Forward(lamp, b.BearingDeg[i]));
             Earth.Advance(ref end, ref along, BeamDrawnM);
             if (!view.Project(lamp, out double x0, out double y0) || !view.Project(end, out double x1, out double y1))
-                continue;
-            if (inWorld > 0)
-            {
-                overlay.BeginStrip(MapPalette.Light with { W = (float)(0.55 * inWorld) }, 1.5f);
-                overlay.Point(x0, y0);
-                overlay.Point(x1, y1);
-                overlay.End();
-            }
-            if (table <= 0)
                 continue;
             // the wedge: its width grows with the distance along it, its light fades out to the far end
             double len = Math.Sqrt((x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0)), t = Math.Tan(BeamMarkHalfDeg * Math.PI / 180);
@@ -191,8 +184,6 @@ public sealed partial class MapScene
             overlay.End();
         }
         // lit: the ships the player's beams are held on
-        if (table <= 0)
-            return;
         var v = s.Ships;
         for (int k = 0; k < v.Count; k++)
             if (v.BeamOn[k] > 0 && Where(s, v.BeamOn[k]) is { } at && view.Project(at, out double lx, out double ly))

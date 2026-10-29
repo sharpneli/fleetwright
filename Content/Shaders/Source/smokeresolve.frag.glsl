@@ -2,8 +2,10 @@
 #extension GL_GOOGLE_include_directive : require
 // The smoke field over the scene (docs/battle/smoke.md Z5): the levels of the accumulation summed (each a B-spline
 // bicubic of its level, four bilinear taps), alpha = 1 - e^(-tau), the tint the depth-weighted mean of the puffs'. The
-// plain look: lit as the gun smoke is, a dome seen from above in the sky's and sea's ambient, the sun and the moon.
-// Premultiplied, through the ships' shoulder.
+// plain look: lit as the gun smoke is, a dome seen from above in the sky's and sea's ambient, the sun and the moon, and
+// the point lights (flashes, fires, flares, beams: docs/visuals/night-lights.md Q10c), each from where the smoke under
+// the pixel is: its place rebuilt from the view at a height (SmokeLitHeightM), lifted up the screen by the effects
+// camera as the field draws it. Premultiplied, through the ships' shoulder.
 #define LIGHTS_BINDING 0
 #include "Include/shiplight.glsl"
 
@@ -14,6 +16,8 @@ layout(set = 3, binding = 1) uniform Params
     vec4 sunL;    // xyz: toward the sun, east, north, up
     vec4 moonL;   // xyz: toward the moon; w: the lowest level in use
     vec4 info;    // x: one past the highest level in use; y: an opacity gain; zw: level 0's size, texels
+    vec4 pixView; // xy: 2 tan of the half fields over the target's pixels; zw: the tans (a pixel's ray off straight down)
+    vec4 pixAt;   // x: the eye's altitude, m; y: the effects camera's screen metres north a metre up; z: the smoke's height, m
 };
 
 layout(location = 0) in vec2 fragUv;
@@ -45,6 +49,21 @@ void main()
     vec3 albedo = sum.rgb / max(sum.a, 1e-6);
     float sunLit = (max(sunL.z, 0.0) + 0.4) / 1.4, moonLit = (max(moonL.z, 0.0) + 0.4) / 1.4;
     vec3 lit = nightSee(mix(seaAmb.rgb, skyAmb.rgb, 0.7) + sunRad.rgb * sunLit + moonRad.rgb * moonLit);   // the rods' view at night
+    int nf = flashCount();
+    if (nf > 0)
+    {
+        // the smoke under the pixel: the sea there (straight down, the pixel's ray off it), less the lift the effects
+        // camera gives its height, up at that height
+        vec2 s = gl_FragCoord.xy * pixView.xy - pixView.zw;
+        vec3 here = pixAt.x * (-flashUp.xyz + s.x * flashEast.xyz - s.y * flashNorth.xyz)
+                  + flashUp.xyz * pixAt.z - flashNorth.xyz * (pixAt.z * pixAt.y);
+        for (int i = 0; i < nf; i++)
+        {
+            vec3 lw;
+            vec3 rad = flashAt(i, here, lw);
+            lit += rad * (max(dot(lw, flashUp.xyz), 0.0) + 0.4) / 1.4;
+        }
+    }
     vec3 c = linearToSrgb(shoulder(albedo * lit, look.z));
     outColor = vec4(hazeCoded(c) * alpha, alpha);
 }

@@ -750,6 +750,9 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
     /// <summary>The torpedoes under the water (docs/visuals/torpedoes.md R3).</summary>
     public TorpedoRenderer Torpedoes { get; }
 
+    /// <summary>The searchlights' beams in the air (docs/visuals/night-lights.md Q10c).</summary>
+    public Night.BeamRenderer Beams { get; }
+
     /// <summary>The smoke field (docs/battle/smoke.md Z5), accumulated before the main pass and laid over the scene after
     /// the magazines' clouds.</summary>
     public Smoke.SmokeFieldRenderer Field { get; }
@@ -789,6 +792,7 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
         Magazines = new MagazineRenderer(device, Splashes.Book);
         List.Thrown = Magazines.Book;
         Torpedoes = new TorpedoRenderer(device);
+        Beams = new Night.BeamRenderer(device);
         Field = new Smoke.SmokeFieldRenderer(device);
     }
 
@@ -871,6 +875,7 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
         Smoke.Copy(cmd);
         Magazines.Copy(cmd);
         Torpedoes.Copy(cmd);
+        Beams.Copy(cmd);
         Field.Copy(cmd);
         var fv = Foam.Vertices;
         foamUploaded = Math.Min(fv.Length, (int)(FoamBufferBytes / FoamVertex.SizeInBytes));
@@ -894,6 +899,7 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
         Splashes.DrawColumns(cmd, pass, target, view);
         Smoke.Draw(cmd, pass, target, view);
         Magazines.Draw(cmd, pass, target, view);
+        Beams.Draw(cmd, pass, target, view);
         Field.Draw(cmd, pass, target);
         Flashes.Draw(cmd, pass, target, view);
     }
@@ -1033,6 +1039,7 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
         Field.Dispose();
         Magazines.Dispose();
         Torpedoes.Dispose();
+        Beams.Dispose();
         SDL_WaitForGPUIdle(device);
         ReleasePipelines();
         if (wakePipe != null)

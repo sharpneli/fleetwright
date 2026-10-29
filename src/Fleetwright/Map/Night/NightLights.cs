@@ -37,9 +37,20 @@ public sealed class NightLights
     Vec3d[] at = new Vec3d[16], axis = new Vec3d[16];
     double[] cd = new double[16], invSigma2 = new double[16];
     bool[] beam = new bool[16];
+    int[] target = new int[16];
 
     /// <summary>How many lights this frame.</summary>
     public int Count { get; private set; }
+
+    /// <summary>Light i: whether it's a beam, where (Earth-centred: a beam's lamp), its light (cd, a beam's peak, times
+    /// its iris and the world's share), a beam's axis (unit, Earth-fixed), its 1-sigma spread (radians) and whom it's
+    /// held on (an entity, -1 sweeping).</summary>
+    public bool IsBeam(int i) => beam[i];
+    public Vec3d At(int i) => at[i];
+    public double Candela(int i) => cd[i];
+    public Vec3d Axis(int i) => axis[i];
+    public double SigmaRad(int i) => invSigma2[i] > 0 ? 1 / Math.Sqrt(invSigma2[i]) : 0;
+    public int Target(int i) => target[i];
 
     /// <summary>This frame's flares and beams from the snapshot at the frame's time <paramref name="drawMs"/>, times the
     /// world's share (none on the table).</summary>
@@ -51,7 +62,7 @@ public sealed class NightLights
         var f = s.Flares;
         for (int i = 0; i < f.Count; i++)
             if (drawMs >= f.BurstMs[i] && drawMs < f.OutMs[i])
-                Add(f.Where(i, drawMs), f.Candela[i] * world, false, default, 0);
+                Add(f.Where(i, drawMs), f.Candela[i] * world, false, default, 0, -1);
         var b = s.Beams;
         for (int i = 0; i < b.Count; i++)
         {
@@ -60,11 +71,11 @@ public sealed class NightLights
                 continue;
             double brg = b.BearingDeg[i] + b.RateDegS[i] * (drawMs - b.LookMs) / 1000.0;
             double sigma = SearchlightModel.BeamSigmaDeg(b.SpreadDeg[i]) * Math.PI / 180;
-            Add(b.Lamp[i], b.Candela[i] * world * open * open * (3 - 2 * open), true, Earth.Forward(b.Lamp[i], brg), 1 / (sigma * sigma));
+            Add(b.Lamp[i], b.Candela[i] * world * open * open * (3 - 2 * open), true, Earth.Forward(b.Lamp[i], brg), 1 / (sigma * sigma), b.Target[i]);
         }
     }
 
-    void Add(Vec3d where, double candela, bool isBeam, Vec3d dir, double k)
+    void Add(Vec3d where, double candela, bool isBeam, Vec3d dir, double k, int held)
     {
         if (Count == at.Length)
         {
@@ -74,8 +85,9 @@ public sealed class NightLights
             Array.Resize(ref cd, n);
             Array.Resize(ref invSigma2, n);
             Array.Resize(ref beam, n);
+            Array.Resize(ref target, n);
         }
-        (at[Count], cd[Count], beam[Count], axis[Count], invSigma2[Count]) = (where, candela, isBeam, dir, k);
+        (at[Count], cd[Count], beam[Count], axis[Count], invSigma2[Count], target[Count]) = (where, candela, isBeam, dir, k, held);
         Count++;
     }
 
@@ -113,7 +125,8 @@ public sealed class NightLights
         lights.Finish(view);
     }
 
-    /// <summary>Sets a knob, "on:1", "gain:1", "iris:1" (the -night= flag, for side-by-side captures); false for a bad one.</summary>
+    /// <summary>Sets a knob, "on:1", "gain:1", "iris:1", "beam:1" (the beams' glow in the air, <see cref="BeamRenderer.Gain"/>)
+    /// (the -night= flag, for side-by-side captures); false for a bad one.</summary>
     public static bool Set(string kv)
     {
         var p = kv.Split(':');
@@ -124,6 +137,7 @@ public sealed class NightLights
             case "on": On = v != 0; break;
             case "gain": Gain = Math.Max(v, 0); break;
             case "iris": IrisS = Math.Max(v, 0.01); break;
+            case "beam": BeamRenderer.Gain = Math.Max(v, 0); break;
             default: return false;
         }
         return true;

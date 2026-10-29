@@ -365,7 +365,7 @@ public static unsafe class Program
             {
                 foreach (var kv in arg.Substring("-night=".Length).Split(',', StringSplitOptions.RemoveEmptyEntries))
                     if (!Map.Night.NightLights.Set(kv))
-                        Console.Error.WriteLine($"Bad night knob: {kv} (want on, gain, iris)");
+                        Console.Error.WriteLine($"Bad night knob: {kv} (want on, gain, iris, beam)");
             }
             else if (arg.StartsWith("-worldview="))   // the map's table-to-world boundary, metres per pixel at 1080p (docs/visuals/sea.md W0)
             {
