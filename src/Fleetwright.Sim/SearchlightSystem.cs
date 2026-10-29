@@ -9,7 +9,9 @@ public enum SearchlightOrder : byte
 {
     /// <summary>The arcs out.</summary>
     Off,
-    /// <summary>The arcs struck and burning behind their shutters, ready to expose at once.</summary>
+    /// <summary>The arcs struck and burning behind their shutters, ready to expose at once; on a ship (a contact of her
+    /// navy's), trained dark on her (the German method at Jutland, docs/battle/night.md Q3b), so she's lit the moment the
+    /// iris opens.</summary>
     Ready,
     /// <summary>Held on a ship (a contact of her navy's), so the guns can lay and range on her.</summary>
     Illuminate,
@@ -23,8 +25,10 @@ public enum SearchlightOrder : byte
 /// on (<see cref="SearchlightModel"/>).
 /// <list type="bullet">
 /// <item><b>No tick:</b> a beam's bearing at a look is a function of the order, the time and the ships: ordered from off,
-/// the arcs are struck in <see cref="SimSettings.SearchlightStrikeS"/>; a beam ordered onto a bearing is trained and
-/// exposed <see cref="SimSettings.SearchlightExposeS"/> after that (or after the order, its arcs burning).</item>
+/// the arcs are struck in <see cref="SimSettings.SearchlightStrikeS"/>; a beam ordered onto a bearing is trained in
+/// <see cref="SimSettings.SearchlightTrainS"/> and exposed <see cref="SimSettings.SearchlightExposeS"/> after that (or after
+/// the order, its arcs burning); onto the ship it was made ready on, trained dark on her by then, only exposed
+/// (docs/battle/night.md Q3b).</item>
 /// <item><b>Illuminate:</b> <see cref="SimSettings.SearchlightsOnOne"/> of her working lights that bear on the contact
 /// (by their blind arcs) are held on her: on where she is while her navy holds her in sight (the operator sees her in
 /// his beam), else on where its picture has her; their light blurred by the control's pointing error. Nothing to hold
@@ -42,13 +46,13 @@ public sealed class SearchlightSystem : IWorldSystem
 
     /// <summary>A ship's lights' order: whose (an entity), what, on whom (an entity), how many lights (0 the default), the
     /// arc's middle (degrees off her bow) and half its width, when it was given, when the arcs burn and when the beams
-    /// are out on it.</summary>
+    /// are out on it; whom they're trained on (dark or exposed: 0 none) and from when.</summary>
     struct Lit
     {
-        public int Ship, Target, Count;
+        public int Ship, Target, Count, TrainedOn;
         public SearchlightOrder Order;
         public double CentreDeg, HalfDeg;
-        public long OrderMs, ReadyMs, OnMs;
+        public long OrderMs, ReadyMs, OnMs, TrainedMs;
     }
 
     readonly SimSettings settings;
@@ -73,8 +77,8 @@ public sealed class SearchlightSystem : IWorldSystem
     internal SearchlightSystem(SimSettings settings, ShipSystem ships, Sightings sightings) =>
         (this.settings, this.ships, this.sightings) = (settings, ships, sightings);
 
-    /// <summary>A ship's searchlights ordered (docs/battle/night.md Q4): off, ready, held on a ship (an entity), or
-    /// searching an arc (its middle, degrees off her bow, and half its width); with how many lights (0: <see cref="SimSettings.SearchlightsOnOne"/>
+    /// <summary>A ship's searchlights ordered (docs/battle/night.md Q4): off, ready (trained dark on a ship, an entity, if
+    /// one is given: Q3b), held on a ship (an entity), or searching an arc (its middle, degrees off her bow, and half its width); with how many lights (0: <see cref="SimSettings.SearchlightsOnOne"/>
     /// on a ship, every one that bears searching).</summary>
     public static Command Order(int ship, SearchlightOrder order, int target = 0, int count = 0, double centreDeg = 0, double halfDeg = 0) =>
         new(Id, OrderCode, ship, A: target, B: (int)order | Math.Clamp(count, 0, 255) << 8, X: centreDeg, Y: halfDeg);
@@ -107,15 +111,26 @@ public sealed class SearchlightSystem : IWorldSystem
             lit[i] = new Lit { Ship = c.Entity, ReadyMs = now + (long)(settings.SearchlightStrikeS * 1000), Order = SearchlightOrder.Ready };
         }
         ref var l = ref lit[i];
-        int target = order == SearchlightOrder.Illuminate ? (int)c.A : 0;
+        int target = order is SearchlightOrder.Illuminate or SearchlightOrder.Ready ? (int)c.A : 0;
         int n = c.B >> 8;
         double centre = order == SearchlightOrder.Search ? c.X : 0, half = order == SearchlightOrder.Search ? Math.Clamp(Math.Abs(c.Y), 0, 180) : 0;
         if (l.Order == order && l.Target == target && l.Count == n && l.CentreDeg == centre && l.HalfDeg == half)
             return;   // as it is (a captain gives it again)
         bool moved = order != SearchlightOrder.Ready && (l.Order != order || l.Target != target || l.CentreDeg != centre || l.HalfDeg != half);
         (l.Order, l.Target, l.Count, l.CentreDeg, l.HalfDeg, l.OrderMs) = (order, target, n, centre, half, now);
-        if (moved)
-            l.OnMs = Math.Max(l.ReadyMs, now + (long)(settings.SearchlightExposeS * 1000));
+        long train = (long)(settings.SearchlightTrainS * 1000), expose = (long)(settings.SearchlightExposeS * 1000);
+        if (order == SearchlightOrder.Ready)
+        {
+            // trained dark on her (or left where they are)
+            if (target != 0 && target != l.TrainedOn)
+                (l.TrainedOn, l.TrainedMs) = (target, Math.Max(l.ReadyMs, now) + train);
+        }
+        else if (moved)
+        {
+            bool onHer = order == SearchlightOrder.Illuminate && target == l.TrainedOn;
+            l.OnMs = onHer ? Math.Max(Math.Max(l.ReadyMs, l.TrainedMs), now) + expose : Math.Max(l.ReadyMs, now + train) + expose;
+            (l.TrainedOn, l.TrainedMs) = order == SearchlightOrder.Illuminate ? (target, l.OnMs - expose) : (0, 0);
+        }
     }
 
     /// <summary>The ship's place in the list, or its complement where it'd go.</summary>
@@ -267,6 +282,8 @@ public sealed class SearchlightSystem : IWorldSystem
             h.Add(l.OrderMs);
             h.Add(l.ReadyMs);
             h.Add(l.OnMs);
+            h.Add(l.TrainedOn);
+            h.Add(l.TrainedMs);
         }
     }
 

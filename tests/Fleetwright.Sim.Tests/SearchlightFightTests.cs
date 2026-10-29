@@ -82,6 +82,30 @@ public class SearchlightFightTests(ITestOutputHelper output)
         return w;
     }
 
+    /// <summary>Made ready on a contact, the lights are trained dark on her: lit, she's lit the moment the iris opens (the
+    /// German method, docs/battle/night.md Q3b); lights ready on another first train onto her, then open.</summary>
+    [Fact]
+    public void Lights_trained_dark_on_a_ship_expose_at_once()
+    {
+        long Exposing(bool readyOnHer)
+        {
+            var w = Night(out int lion, out int dd);
+            w.AdvanceTo(w.Time + 20_000);
+            w.Apply(SearchlightSystem.Order(lion, SearchlightOrder.Ready, readyOnHer ? dd : 0));
+            w.AdvanceTo(w.Time + 20_000);   // struck and trained
+            Assert.False(w.Searchlights.OrderOf(lion, w.Time.Ms).Exposed, "ready: dark");
+            w.Apply(SearchlightSystem.Order(lion, SearchlightOrder.Illuminate, dd));
+            long t0 = w.Time.Ms;
+            while (!w.Searchlights.OrderOf(lion, w.Time.Ms).Exposed)
+                w.AdvanceTo(w.Time + 250);
+            return w.Time.Ms - t0;
+        }
+        long trained = Exposing(true), untrained = Exposing(false);
+        output.WriteLine($"exposed {trained} ms after the order when trained dark on her, {untrained} ms when not");
+        Assert.InRange(trained, 0, (long)(S.SearchlightExposeS * 1000) + 250);
+        Assert.InRange(untrained, (long)((S.SearchlightTrainS + S.SearchlightExposeS) * 1000) - 250, (long)((S.SearchlightTrainS + S.SearchlightExposeS) * 1000) + 250);
+    }
+
     /// <summary>Ordered on a contact, the lights are struck, then exposed and held on her: she's lit for every eye, her
     /// eyes see the lamp (a point to aim at), and her lookouts' view round it is glared; doused, all of it goes.</summary>
     [Fact]

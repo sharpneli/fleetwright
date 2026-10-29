@@ -360,8 +360,10 @@ public sealed record SimSettings
     public double SightFunnelGlowCd { get; init; } = 10;
 
     /// <summary>Searchlights in the fight (docs/battle/night.md Q4) [EST, every number until the research]. Ordered to burn,
-    /// the arc is struck and steady behind its shutter in <see cref="SearchlightStrikeS"/> s; ordered on a bearing from
-    /// there, it's trained and exposed in <see cref="SearchlightExposeS"/> s. Held on a ship, its beam wanders off her by
+    /// the arc is struck and steady behind its shutter in <see cref="SearchlightStrikeS"/> s (from cold: the USN's arcs
+    /// burned 20 min behind closed shutters, night-fighting.md §1.3); ordered on a bearing from there, it's trained in
+    /// <see cref="SearchlightTrainS"/> s and its iris opened in <see cref="SearchlightExposeS"/> s ("rapid", Q3b), the
+    /// training already done on a ship it was made ready on. Held on a ship, its beam wanders off her by
     /// <see cref="SearchlightPointingDeg"/> (1-sigma; by its control: local, remote, director); searching, it sweeps its
     /// arc at <see cref="SearchlightSweepDegS"/>, about a beam's width a look. The lamp shows outside its beam by
     /// <see cref="SearchlightStrayShare"/> of its peak (the front glass, forward of it only). Its beam is seen from the side
@@ -372,7 +374,8 @@ public sealed record SimSettings
     /// cd/m² (E lux at the eye, θ degrees off the lamp, at least <see cref="SearchlightGlareMinDeg"/>). A ship lights a
     /// target with <see cref="SearchlightsOnOne"/> of her lights that bear.</summary>
     public double SearchlightStrikeS { get; init; } = 10;
-    public double SearchlightExposeS { get; init; } = 4;
+    public double SearchlightTrainS { get; init; } = 3;
+    public double SearchlightExposeS { get; init; } = 1;
     public double[] SearchlightPointingDeg { get; init; } = [0.5, 0.35, 0.15];
     public double SearchlightSweepDegS { get; init; } = 1.5;
     public double SearchlightStrayShare { get; init; } = 1e-5;

@@ -130,8 +130,20 @@ public sealed partial class CaptainLayer
             if (order != SearchlightOrder.Search || half != s.SearchHalfDeg || Math.Abs(off - 360 * Math.Round(off / 360)) > s.SearchHalfDeg / 2)
                 ctx.Issue(SearchlightSystem.Order(own.Entity, SearchlightOrder.Search, centreDeg: rel, halfDeg: s.SearchHalfDeg));
         }
-        else if (order != SearchlightOrder.Ready)
-            ctx.Issue(SearchlightSystem.Order(own.Entity, SearchlightOrder.Ready));
+        else
+        {
+            // ready, trained dark on what he'd light (docs/battle/night.md Q3b: the German method): his chief battery's target,
+            // else any battery's, held in his navy's picture
+            int onHer = 0, chief = ChiefBattery(cls);
+            for (int b = -1; b < cls.Batteries.Length && onHer == 0; b++)
+            {
+                int k = b < 0 ? chief : b;
+                if (k >= 0 && (b < 0 || b != chief) && ctx.Ships.Combat.Target(slot, k) is var t and not 0 && Held(ctx, pic, own, t, double.MaxValue))
+                    onHer = t;
+            }
+            if (order != SearchlightOrder.Ready || target != onHer)
+                ctx.Issue(SearchlightSystem.Order(own.Entity, SearchlightOrder.Ready, onHer));
+        }
     }
 
     /// <summary>Whether a ship is among the fire pass's (<see cref="FirePass"/>: in an encounter or engaged), whose lights
