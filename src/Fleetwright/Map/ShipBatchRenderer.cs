@@ -230,11 +230,13 @@ public sealed class ShipDrawList
     /// <param name="sighted">The enemy ships in sight (<see cref="Snapshot.Sighted"/>), drawn the same after the ships.</param>
     /// <param name="wakes">The wake bakes: in the world view each ship under way gets its wave field's stamp
     /// (docs/visuals/wakes.md K3); null for none.</param>
+    /// <param name="cloud">The weather's cloud, 0-1, and the share of the sky's light an overcast passes: the night's
+    /// light under it (docs/visuals/night-lights.md Q10a).</param>
     public void Build(in MapView view, ShipsView ships, long timeMs, Vec3d sun, Func<int, ShipArt?> artOf, Func<int, ShipClass?> classOf,
         nint icon, int selectedEntity, ReadOnlySpan<bool> hidden = default, double sunMotion = 1, ShipsView? sighted = null,
-        WakeLibrary? wakes = null)
+        WakeLibrary? wakes = null, double cloud = 0, double overcastShare = 0.15)
     {
-        Lights = LightsAt(view, timeMs, sun, sunMotion);
+        Lights = LightsAt(view, timeMs, sun, sunMotion, cloud, overcastShare);
         viewNorth = view.Up;
         quadCount = drawCount = wakeDrawCount = placedCount = 0;
         foreach (var l in byClass.Values)
@@ -304,14 +306,14 @@ public sealed class ShipDrawList
     }
 
     /// <summary>The light at the view's centre: the sun, the real moon from there, and in time-lapse the day's means.</summary>
-    static ShipLights LightsAt(in MapView view, long timeMs, Vec3d sun, double sunMotion)
+    static ShipLights LightsAt(in MapView view, long timeMs, Vec3d sun, double sunMotion, double cloud, double overcastShare)
     {
         var up = view.Eye.Normalized();
         var t = new WorldTime(timeMs);
         var at = up * Earth.Radius;
         double phaseLaw = sunMotion < 1 ? Moon.PhaseLaw(Moon.Phase(t).AngleDeg) : 0;
         var means = sunMotion < 1 ? SunLapse.DayMeans(up, sun) : default;
-        return ShipLights.Compute(LightTable.Current, up, sun, Moon.Direction(at, t), Moon.Light(at, t), phaseLaw, sunMotion, means);
+        return ShipLights.Compute(LightTable.Current, up, sun, Moon.Direction(at, t), Moon.Light(at, t), phaseLaw, sunMotion, means, cloud, overcastShare);
     }
 
     /// <summary>Places a view's ships: where each is, how big on screen, sprite or icon (by <paramref name="world"/>,

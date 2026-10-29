@@ -102,6 +102,7 @@ void main()
         vec3 light = amb * (0.6 + 0.4 * tSun) * (1.0 + 0.3 * relief);
         light += sunRad.rgb * (max(dot(nrm, sunL.xyz), 0.0) + 0.2) / 1.2 * tSun * bump;
         light += moonRad.rgb * (max(dot(nrm, moonL.xyz), 0.0) + 0.2) / 1.2 * tMoon * bump;
+        light = nightSee(light);   // the rods' view of the natural light at night; the fire's and the flashes' in colour
         // the fire's light from inside and below: on the smoke near the core, most under it
         float e = length(vec3(d.xy / s.r, d.z / s.rv));
         light += glow * exp(-1.5 * e) * (1.0 + 0.6 * clamp(-d.z / s.rv, 0.0, 1.0));

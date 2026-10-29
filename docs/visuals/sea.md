@@ -250,6 +250,11 @@ sea brightness evened across directions (a low moon used to darken the night it 
 June 1916 (median 8-bit RGB): moonless world 7 21 39 / table 7 19 36; full moon 10 27 46 / 8 22 43; moonlit waves
 std 4-5, moonless 1.8.
 
+**Superseded at night (2026-10-29, `night-lights.md` Q10a):** the tuned night light above (`StarNightRad`,
+`MoonNightTint`, `MoonNightGain`) went with the nights' amplification. The night is the night eye's: the real light under
+the cloud through one curve, the moon in `moonRad`, and `SeaView.NightShare` of the sky's own light given a direction
+for the swell (the level unchanged). The colour tables above are the old night's.
+
 ### Later (not v1)
 
 - **Foam:** the lab's whitecaps, with the cost listed above coming back.

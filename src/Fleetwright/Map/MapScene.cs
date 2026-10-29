@@ -133,7 +133,7 @@ public sealed unsafe partial class MapScene : IScene
         t = Probes.Now;
         (shipRenderer.List.IconCasingPx, shipRenderer.List.IconGlowPx) = (SymbolLook.Casing * 1.5 * Rp, 4 * Rp);
         shipRenderer.List.Build(view,s.Ships, world.DrawMs, s.Sun, artOf, classOf, shipRenderer.Icon, selected, hidden, sunLapse.Motion, s.Sighted,
-            shipRenderer.Wakes);
+            shipRenderer.Wakes, s.Weather.Cloud, world.Settings.NightOvercastShare);
         var now = new WorldTime(world.DrawMs);
         double moonHere = Moon.Light((-view.Forward).Normalized() * Earth.Radius, now);
         shipRenderer.List.SetHaze(HazeLook.Uniforms(view, s.Weather, world.Settings, shipRenderer.List.Lights, moonHere, WorldView.Factor(view)));

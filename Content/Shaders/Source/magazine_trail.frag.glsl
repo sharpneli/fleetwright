@@ -42,7 +42,7 @@ void main()
     float alpha = mix(g.shape.z, g.shape.w, s) * (1.0 - smoothstep(0.45, 1.0, d / (r * (0.8 + 0.4 * n)))) * g.look.x;
     if (alpha < 0.003)
         discard;
-    vec3 light = mix(seaAmb.rgb, skyAmb.rgb, 0.7) + 0.8 * (sunRad.rgb * max(sunL.z, 0.0) + moonRad.rgb * max(moonL.z, 0.0));
+    vec3 light = nightSee(mix(seaAmb.rgb, skyAmb.rgb, 0.7) + 0.8 * (sunRad.rgb * max(sunL.z, 0.0) + moonRad.rgb * max(moonL.z, 0.0)));
     vec3 c = linearToSrgb(shoulder(vec3(max(fireK.z, 0.12)) * light, look.z));
     outColor = vec4(hazeCoded(c) * alpha, alpha);
 }

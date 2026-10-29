@@ -87,6 +87,60 @@ public sealed partial class MapScene
         }
     }
 
+    /// <summary>The night ticks (docs/visuals/night-lights.md decision 1): in the world view at night, four corner ticks
+    /// about each ship the player knows of, his own and the contacts in sight (at the contact's place, never the truth),
+    /// a few pixels whatever the zoom, so a near-black night still shows where the ships are. They fade in with the dark
+    /// (the night eye's light, over the rods' range: none by day, full on a moonless night) and with the world's share;
+    /// table marks: they light nothing and the haze doesn't take them.</summary>
+    void DrawNightTicks(in MapView view, Snapshot s)
+    {
+        double inWorld = WorldView.Factor(view);
+        if (inWorld <= 0)
+            return;
+        var t = LightTable.Current;
+        double lux = Math.Log10(Math.Max(shipRenderer.List.Lights.Lux, 1e-8));
+        double k = Math.Clamp((lux - t.PurkinjeLogLux[0]) / (t.PurkinjeLogLux[1] - t.PurkinjeLogLux[0]), 0, 1);
+        float dark = (float)(inWorld * k * k * (3 - 2 * k));
+        if (dark <= 0.01f)
+            return;
+        var v = s.Ships;
+        for (int i = 0; i < v.Count; i++)
+        {
+            var (p, f) = v.PoseAt(i, world.DrawMs);
+            if (!view.Project(p, out double x, out double y) || !view.Project((p + f * 10).Normalized() * Earth.Radius, out double fx, out double fy))
+                continue;
+            double len = IconLengthAt(view, v.Class[i], p), beam = (classOf(v.Class[i]) is { } cls ? cls.Beam / cls.Length : 0.12) * len;
+            Ticks(x, y, fx - x, fy - y, len, beam, ShipDrawList.FriendTint with { W = 0.8f * dark });
+        }
+        var c = s.Contacts;
+        for (int i = 0; i < c.Count; i++)
+            if (c.InSight[i] && c.Level[i] > ContactLevel.Smoke && view.Project(c.Position[i], out double x, out double y))
+                Ticks(x, y, 1, 0, NightTickContactPx * Rp, NightTickContactPx * Rp, ContactColour(c, i, world.DrawMs) with { W = 0.8f * dark });
+    }
+
+    const double NightTickContactPx = 18;   // a contact's ticks: a square a few pixels round its marker (its size unknown)
+
+    /// <summary>Four corner ticks about a ship <paramref name="lengthPx"/> by <paramref name="beamPx"/> at x, y, her bow
+    /// toward (dx, dy) on the screen.</summary>
+    void Ticks(double x, double y, double dx, double dy, double lengthPx, double beamPx, Vector4 col)
+    {
+        double n = Math.Sqrt(dx * dx + dy * dy);
+        (dx, dy) = n > 1e-9 ? (dx / n, dy / n) : (1, 0);
+        double a = 0.5 * lengthPx + 5 * Rp, b = Math.Max(0.5 * beamPx + 5 * Rp, 7 * Rp);
+        double armA = Math.Clamp(0.25 * a, 3 * Rp, 9 * Rp), armB = Math.Clamp(0.6 * b, 3 * Rp, 9 * Rp);
+        for (int q = 0; q < 4; q++)
+        {
+            double sa = q % 2 == 0 ? -1 : 1, sb = q < 2 ? -1 : 1;
+            overlay.BeginStrip(col, 1.3f);
+            Corner(sa * (a - armA), sb * b);
+            Corner(sa * a, sb * b);
+            Corner(sa * a, sb * (b - armB));
+            overlay.End();
+        }
+
+        void Corner(double u, double w) => overlay.Point(x + dx * u - dy * w, y + dy * u + dx * w);
+    }
+
     const double BeamDrawnM = 4000;   // a beam drawn out to about its reach
     const double BeamMarkHalfDeg = 0.9;   // the table's wedge, either side of its axis (wider than the beam, to be seen)
     const double FlareLitLux = 1;     // a flare's patch on the table: the sea it lights to a lux or more [EST]

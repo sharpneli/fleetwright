@@ -79,6 +79,7 @@ void main()
         vec3 light = amb;
         light += sunRad.rgb * (max(dot(nrm, sunL.xyz) + 0.3, 0.0) / 1.3 * lit + 1.2 * hg * (1.0 - share));
         light += moonRad.rgb * (max(dot(nrm, moonL.xyz) + 0.3, 0.0) / 1.3 * lit + 1.2 * hgm);
+        light = nightSee(light);   // the rods' view of the natural light at night; the flashes' in colour
         // the flashes' lights (docs/visuals/muzzle-flashes.md F4), from where this water is
         for (int f = 0; f < nf; f++)
         {

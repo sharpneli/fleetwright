@@ -129,7 +129,7 @@ void main()
     vec2 sunH = normalize(sunL.xy + vec2(1e-5)) * s * 0.5, moonH = normalize(moonL.xy + vec2(1e-5)) * s * 0.5;
     float sunLit = (max(dot(nrm, sunL.xyz), 0.0) + 0.4) / 1.4 * (1.0 - 0.4 * (1.0 - sunL.z) * farSide(p, fragLoc, sunH));
     float moonLit = (max(dot(nrm, moonL.xyz), 0.0) + 0.4) / 1.4 * (1.0 - 0.4 * (1.0 - moonL.z) * farSide(p, fragLoc, moonH));
-    vec3 lit = mix(seaAmb.rgb, skyAmb.rgb, 0.7) + sunRad.rgb * sunLit + moonRad.rgb * moonLit;
+    vec3 lit = nightSee(mix(seaAmb.rgb, skyAmb.rgb, 0.7) + sunRad.rgb * sunLit + moonRad.rgb * moonLit);   // the rods' view at night
     int nf = flashCount();
     if (nf > 0)
     {

@@ -38,8 +38,9 @@ layout(set = 3, binding = 1) uniform Sea
     vec4 seaMss2;   // xy: cascade 2's mean-square slopes; z: the glints' scale (0 in time-lapse); w: the Earth's radius, m
     vec4 seaBody;   // rgb: the water body's reflectance, linear; w: how much of its light follows the facet (FacetLight)
     vec4 seaMoon;   // xyz: toward the moon, Earth-fixed; w: the slopes' exaggeration for the body's light (Relief)
-    vec4 seaNight;  // rgb: the night's light on the water (SeaView.NightLight: tuned, not real), linear; w: its relief
-    vec4 seaNightDir; // xyz: toward it, Earth-fixed
+    vec4 seaNight;  // rgb: the night's light on the water (SeaView.NightLight: a share of the sky's, given a direction
+                    // for the waves), linear; w: its relief
+    vec4 seaNightDir; // xyz: toward it, Earth-fixed; w: the share of the sky's all-round light it took
 };
 
 // The wakes' foam (wakeribbon.frag packs two layers into wake.w): aerated water in 0-0.4, which brightens the water a
@@ -208,8 +209,9 @@ vec3 seaShade(vec2 local, vec3 v, vec3 lSun, vec3 lMoon, vec3 lNight, vec4 wake,
     float k = seaBody.w * seaMss2.z;
     vec3 nb = normalize(vec3(-m * seaMoon.w, 1.0));
     vec3 body = seaBody.rgb * (sunRad.rgb * mix(seaLetIn(vec3(0.0, 0.0, 1.0), lSun), seaLetIn(nb, lSun), k)
-                             + moonRad.rgb * mix(seaLetIn(vec3(0.0, 0.0, 1.0), lMoon), seaLetIn(nb, lMoon), k) + skyAmb.rgb);
-    // the night's light (tuned: a real night sea from above is black and still), all by the facet, with its own relief
+                             + moonRad.rgb * mix(seaLetIn(vec3(0.0, 0.0, 1.0), lMoon), seaLetIn(nb, lMoon), k)
+                             + skyAmb.rgb * (1.0 - seaNightDir.w));
+    // the night's light (a share of the sky's: a real night sea from above is still), all by the facet, its own relief
     if (seaNight.r + seaNight.g + seaNight.b > 0.0)
     {
         vec3 nn = normalize(vec3(-m * seaNight.w, 1.0));
@@ -228,13 +230,15 @@ vec3 seaShade(vec2 local, vec3 v, vec3 lSun, vec3 lMoon, vec3 lNight, vec4 wake,
         fLevel += rad * max(l.z, 0.0);
     }
     vec3 c = (1.0 - F) * body + F * skyAt(r, vec3(0.0, 0.0, 1.0), 0.0);
-    c += (sunRad.rgb * seaGlint(lSun, v, m, var) + moonRad.rgb * seaGlint(lMoon, v, m, var) + fGlint) * seaMss2.z;
+    c += (sunRad.rgb * seaGlint(lSun, v, m, var) + moonRad.rgb * seaGlint(lMoon, v, m, var)) * seaMss2.z;
+    c = nightSee(c) + fGlint * seaMss2.z;   // the rods' view of the natural light; the flashes' in colour
     // the foam, lit as a level surface by the sun, the moon, the sky and the night's light: the aerated water under it
     // brightens the water, the surface foam lays a translucent white over it (hiding most of the glint)
     float foam = clamp(wake.w, 0.0, 1.0);
     if (foam > 0.0)
     {
-        vec3 lit = sunRad.rgb * max(lSun.z, 0.0) + moonRad.rgb * max(lMoon.z, 0.0) + skyAmb.rgb + seaNight.rgb * max(lNight.z, 0.0) + fLevel;
+        vec3 lit = nightSee(sunRad.rgb * max(lSun.z, 0.0) + moonRad.rgb * max(lMoon.z, 0.0) + skyAmb.rgb * (1.0 - seaNightDir.w)
+                            + seaNight.rgb * max(lNight.z, 0.0)) + fLevel;
         float aerated = min(foam / 0.4, 1.0), surface = max((foam - 0.4) / 0.6, 0.0);
         c += aerated * AeratedAlbedo * AeratedTint * lit;
         c = mix(c, FoamAlbedo * lit, surface * FoamCover);

@@ -155,7 +155,7 @@ public sealed unsafe class MagazineRenderer : IDisposable
             shadowDrift *= MaxDrift / shadowDrift.Length();
         shadows = on > 0.002f && (MagazineLook.Parts & 2) != 0;
         double mpp = view.MetresPerPixel, k = Effects.K;
-        PerCandela = MagazineLook.Gain * FlashRenderer.PerCandela(lights, s.Sun, up, drawMs);
+        PerCandela = MagazineLook.Gain * FlashRenderer.PerCandela(lights, up);
         prms = new Params
         {
             SunL = new Vector4(sunL, 0), MoonL = new Vector4(moonL, 0), ShadowL = new Vector4(shadowDrift, on, 0),

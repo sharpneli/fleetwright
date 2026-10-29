@@ -121,7 +121,7 @@ public sealed unsafe class FlashRenderer : IDisposable
         var up = (-view.Forward).Normalized();
         var (east, north) = (view.Right, view.Up);
         double white = DisplayWhite(lights, up);
-        Scale = FlashLook.Gain * PerCandela(lights, s.Sun, up, drawMs);
+        Scale = FlashLook.Gain * PerCandela(lights, up);
         double lightFloor = (FlashLook.Parts & 2) != 0 ? LightCut * white * LightCutM * LightCutM : double.PositiveInfinity;
         double mpp = view.MetresPerPixel, k = Effects.K, floor = MinSigmaPx * mpp;
         prms = new Params { Misc = new Vector4((float)mpp, (float)FlashLook.HaloScale, (float)FlashLook.HaloGain, (float)FlashLook.HaloKnee) };
@@ -286,14 +286,11 @@ public sealed unsafe class FlashRenderer : IDisposable
         return Math.Max(sun + moon + FlashPhotometry.Lum(new Vector3(u.Sky.X, u.Sky.Y, u.Sky.Z)), 1e-4);
     }
 
-    /// <summary>Display units per cd/m² (no gain): the display's lit white deck over the real one's, so a hot gas is
-    /// drawn as many times brighter than the deck as it is in the world (the flashes', and the magazines' fire).</summary>
-    public static double PerCandela(in ShipLights l, Vec3d sun, Vec3d up, long ms) =>
-        DisplayWhite(l, up) / FlashPhotometry.WhiteDeck(Illuminance(sun, up, ms, l));
-
-    /// <summary>The real illuminance on a level surface at the view's centre, lux.</summary>
-    static double Illuminance(Vec3d sun, Vec3d up, long ms, in ShipLights l) =>
-        FlashPhotometry.Illuminance(Vec3d.Dot(sun, up), Moon.Light(up * Earth.Radius, new WorldTime(ms)), Vec3d.Dot(l.MoonDir, up));
+    /// <summary>Display units per cd/m² (no gain): the display's lit white deck over the real one's (the frame's light
+    /// under the cloud, <see cref="ShipLights.Lux"/>: the night eye's own input), so a hot gas is drawn as many times
+    /// brighter than the deck as it is in the world (the flashes', and the magazines' fire).</summary>
+    public static double PerCandela(in ShipLights l, Vec3d up) =>
+        DisplayWhite(l, up) / FlashPhotometry.WhiteDeck(Math.Max(l.Lux, NightLight.StarLux * 0.01));
 
     // ------------------------------------------------------------------ the GPU side
 

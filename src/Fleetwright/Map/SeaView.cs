@@ -49,18 +49,14 @@ public sealed class SeaView
 
     public static readonly double[] LowSunDeg = [40, 15];
 
-    /// <summary>The night's light on the water, tuned away from the real (docs/visuals/sea.md, "Night"): realistic, a
-    /// night sea seen from above is black and still, and so is one under a sun too low for its glint to reach the eye;
-    /// so as the sun goes (fading in from <see cref="NightFromDeg"/>: 12° over the horizon to 2° under it) the water body
-    /// gets a light of its own, for its waves alone. In twilight it is the sky's glow on the sun's side. With no moon it
-    /// is starlight, bluer, biased to where the sun is under the horizon (the sky stays brightest there); while the moon
-    /// is up at all it comes from the moon's bearing, greyer, and brighter by the moon's light (<see cref="MoonNightGain"/>,
-    /// as the table's night side brightens: a full moon makes a lighter night). Its height is kept where it shades: the
-    /// moon's clamped to 25-60°, the stars' at 40°. Linear, by eye: dark and gloomy, yet the waves read.</summary>
-    public static Vector3 StarNightRad = new(0.08f, 0.10f, 0.15f), MoonNightTint = new(0.10f, 0.115f, 0.15f);
-
-    /// <summary>How much brighter the night's light gets by the moon's light (Moon.Light: 1, a full moon overhead).</summary>
-    public static float MoonNightGain = 1.2f;
+    /// <summary>The night's light on the water (docs/visuals/night-lights.md Q10a): realistic, a night sea seen from
+    /// above is lit by the sky all round, black and still, and so is one under a sun too low for its glint to reach the
+    /// eye. So as the sun goes (fading in from <see cref="NightFromDeg"/>: 12° over the horizon to 2° under it) this share
+    /// of the sky's own light (the night eye's, <see cref="ShipLights"/>) is taken from all round and given a direction,
+    /// for the waves alone: the level stays the real night's, the swell shows in it. In twilight it comes from the sun's
+    /// side, with no moon from there 40° up, while the moon is up at all from the moon's bearing, its height kept
+    /// where it shades (25-60°).</summary>
+    public static float NightShare = 0.6f;
 
     /// <summary>The sun's elevations, degrees, between which the night's light fades in: from the first down to the second.</summary>
     public static readonly double[] NightFromDeg = [12, -2];
@@ -77,8 +73,8 @@ public sealed class SeaView
     /// <summary>The foam lanes' gain over their realistic white water (docs/visuals/wakes.md K4); 0 draws none.</summary>
     public static float FoamGain = 1;
 
-    /// <summary>Sets a knob by name, "facet:0.7", "relief:1", "lowsunrelief:4", "chop:1", "debug:1", "nightrelief:7",
-    /// "moonnight:1.2" (the moon's gain on the night's light) and "starnight:1" (a scale on the starlight) (the -sea= flag,
+    /// <summary>Sets a knob by name, "facet:0.7", "relief:1", "lowsunrelief:4", "chop:1", "debug:1", "nightrelief:7"
+    /// and "nightshare:0.6" (the share of the night sky's light given a direction, for the waves) (the -sea= flag,
     /// for side-by-side captures); false for a bad one.</summary>
     public static bool Set(string kv)
     {
@@ -95,8 +91,7 @@ public sealed class SeaView
             case "wake": WakeGain = v; break;
             case "foam": FoamGain = v; break;
             case "nightrelief": NightRelief = v; break;
-            case "moonnight": MoonNightGain = v; break;
-            case "starnight": StarNightRad = new Vector3(0.08f, 0.10f, 0.15f) * v; break;
+            case "nightshare": NightShare = v; break;
             default: return false;
         }
         return true;
@@ -172,9 +167,9 @@ public sealed class SeaView
             Body = new Vector4(Body, FacetLight),
             Moon = new Vector4((float)lights.MoonDir.X, (float)lights.MoonDir.Y, (float)lights.MoonDir.Z, DayRelief(target, lights)),
         };
-        var (nightRad, nightDir) = NightLight(target, lights, moonLight);
+        var (nightRad, nightDir, nightShare) = NightLight(target, lights, moonLight);
         Uniforms.Night = new Vector4(nightRad, NightRelief);
-        Uniforms.NightDir = new Vector4((float)nightDir.X, (float)nightDir.Y, (float)nightDir.Z, 0);
+        Uniforms.NightDir = new Vector4((float)nightDir.X, (float)nightDir.Y, (float)nightDir.Z, nightShare);
     }
 
     /// <summary>The relief for the sun's and moon's light on the body: <see cref="Relief"/> under a high sun, growing to
@@ -185,24 +180,26 @@ public sealed class SeaView
         return (float)(Relief + (LowSunRelief - Relief) * (1 - SmoothStep(LowSunDeg[1], LowSunDeg[0], sunEl)));
     }
 
-    /// <summary>The night's light at a place (<see cref="MoonNightRad"/>): its colour, faded in as the sun goes, and
-    /// the way toward it, Earth-fixed.</summary>
-    internal static (Vector3 Rad, Vec3d Dir) NightLight(Vec3d up, in ShipLights lights, double moonLight)
+    /// <summary>The night's light at a place (<see cref="NightShare"/>): its colour, faded in as the sun goes, the way
+    /// toward it, Earth-fixed, and the share of the sky's light it takes (what the sky's all-round light keeps is the
+    /// rest).</summary>
+    internal static (Vector3 Rad, Vec3d Dir, float Share) NightLight(Vec3d up, in ShipLights lights, double moonLight)
     {
         double sunEl = Math.Asin(Math.Clamp(Vec3d.Dot(lights.SunDir, up), -1, 1)) * 180 / Math.PI;
         double night = 1 - SmoothStep(NightFromDeg[1], NightFromDeg[0], sunEl);
         if (night <= 0)
-            return (Vector3.Zero, up);
+            return (Vector3.Zero, up, 0);
         double moonUp = SmoothStep(0, 0.004, moonLight);   // up at all: even a thin crescent gives the direction
         double moonEl = Math.Asin(Math.Clamp(Vec3d.Dot(lights.MoonDir, up), -1, 1)) * 180 / Math.PI;
         var moon = Toward(up, lights.MoonDir, Math.Clamp(moonEl, 25, 60));
         var stars = Toward(up, lights.SunDir, 40);
         var dir = (stars * (1 - moonUp) + moon * moonUp).Normalized();
         // the direction shapes the waves, not the level sea's brightness: what a level sea lets in from it is evened
-        // to what it lets in from 40° up, so a low moon doesn't darken the night it should lighten
-        double even = LetIn(Math.Sin(40 * Math.PI / 180)) / Math.Max(LetIn(Vec3d.Dot(dir, up)), 1e-3);
-        var rad = Vector3.Lerp(StarNightRad, MoonNightTint, (float)moonUp) * (float)((1 + MoonNightGain * moonLight) * night * even);
-        return (rad, dir);
+        // to what it lets in from all round (the sky's ambient's own), so the share moved gives back the light it took
+        float share = (float)(NightShare * night);
+        double even = 1 / Math.Max(LetIn(Vec3d.Dot(dir, up)), 1e-3);
+        var sky = lights.Uniforms.Sky;
+        return (new Vector3(sky.X, sky.Y, sky.Z) * (float)(share * even), dir, share);
     }
 
     /// <summary>What a level sea lets in from a light at an elevation (its sine): its cosine through 1 - Fresnel, as

@@ -38,6 +38,6 @@ void main()
     if (a < 0.002)
         discard;
     vec3 light = skyAmb.rgb + sunRad.rgb * max(sunL.z, 0.0) + moonRad.rgb * max(moonL.z, 0.0);
-    vec3 c = linearToSrgb(shoulder(srgbToLinear(fragDye.rgb) * 0.7 * light, look.z));
+    vec3 c = linearToSrgb(shoulder(nightSee(srgbToLinear(fragDye.rgb) * 0.7 * light), look.z));   // the rods' view at night
     outColor = vec4(hazeCoded(c) * a, a);
 }

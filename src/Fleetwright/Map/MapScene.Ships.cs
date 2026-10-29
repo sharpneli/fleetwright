@@ -76,6 +76,7 @@ public sealed unsafe partial class MapScene
         frame++;
         DrawEncounters(view, s);
         DrawContacts(view, s);
+        DrawNightTicks(view, s);
         DrawBeams(view, s);
         DrawFlares(view, s);
         StarPreview(view, s);

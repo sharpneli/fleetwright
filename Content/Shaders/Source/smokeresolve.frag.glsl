@@ -44,7 +44,7 @@ void main()
         discard;
     vec3 albedo = sum.rgb / max(sum.a, 1e-6);
     float sunLit = (max(sunL.z, 0.0) + 0.4) / 1.4, moonLit = (max(moonL.z, 0.0) + 0.4) / 1.4;
-    vec3 lit = mix(seaAmb.rgb, skyAmb.rgb, 0.7) + sunRad.rgb * sunLit + moonRad.rgb * moonLit;
+    vec3 lit = nightSee(mix(seaAmb.rgb, skyAmb.rgb, 0.7) + sunRad.rgb * sunLit + moonRad.rgb * moonLit);   // the rods' view at night
     vec3 c = linearToSrgb(shoulder(albedo * lit, look.z));
     outColor = vec4(hazeCoded(c) * alpha, alpha);
 }

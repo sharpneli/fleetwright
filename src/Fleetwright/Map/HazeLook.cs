@@ -72,15 +72,17 @@ public static class HazeLook
         Vector3 sun = new(u.SunRad.X, u.SunRad.Y, u.SunRad.Z), moon = new(u.MoonRad.X, u.MoonRad.Y, u.MoonRad.Z), sky = new(u.Sky.X, u.Sky.Y, u.Sky.Z);
         double ss = Vec3d.Dot(lights.SunDir, up), sm = Vec3d.Dot(lights.MoonDir, up);
         var day = sun * (float)Math.Max(ss, 0) + moon * (float)Math.Max(sm, 0) + sky;
-        // the night's: the light the sea is drawn by (SeaView's night light, tuned), the haze's and the sea's both, so a
-        // thick haze at night sinks into the night sea's own colour instead of greying it (the user, 2026-10-26); the sea
-        // as a level one shows it: its body by what the surface lets in (seashade.glsl), the zenith's 2% over it
-        var (nightRad, nightDir) = SeaView.NightLight(up, lights, moonLight);
-        var sea = 0.98f * SeaView.Body * (sun * (float)SeaView.LetIn(ss) + moon * (float)SeaView.LetIn(sm) + sky
+        // the night's: the light the sea is drawn by (SeaView's night light), the haze's and the sea's both, so a thick
+        // haze at night sinks into the night sea's own colour instead of greying it (the user, 2026-10-26); the sea as a
+        // level one shows it: its body by what the surface lets in (seashade.glsl), the zenith's 2% over it, as the
+        // rods see it (docs/visuals/night-lights.md decision 2)
+        var (nightRad, nightDir, share) = SeaView.NightLight(up, lights, moonLight);
+        var sea = 0.98f * SeaView.Body * (sun * (float)SeaView.LetIn(ss) + moon * (float)SeaView.LetIn(sm) + sky * (1 - share)
             + nightRad * (float)SeaView.LetIn(Vec3d.Dot(nightDir, up))) + 0.02f * sky;
+        sea = ShipLights.NightSee(u, sea);
         double el = Math.Asin(Math.Clamp(ss, -1, 1)) * 180 / Math.PI, k = Math.Clamp((el - SeaView.NightFromDeg[1]) / (SeaView.NightFromDeg[0] - SeaView.NightFromDeg[1]), 0, 1);
         float night = (float)(1 - k * k * (3 - 2 * k));
-        var light = Vector3.Lerp(day, sea, night);
+        var light = Vector3.Lerp(ShipLights.NightSee(u, day), sea, night);
         var below = Vector3.Lerp(new Vector3(u.Sea.X, u.Sea.Y, u.Sea.Z), sea, night);
         double sx = Slant * view.TanHalfX, sy = Slant * view.TanHalfY;
         return (new Vector4((float)tau, (float)Backscatter, 0, 0),

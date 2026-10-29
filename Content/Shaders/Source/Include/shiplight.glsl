@@ -28,6 +28,8 @@ layout(set = 3, binding = LIGHTS_BINDING) uniform Lights
     vec4 hazeView;      // xy: 2 tan of the half fields over the target's pixels; zw: the tans (a pixel's slant)
     vec4 hazeLight;     // rgb: the light on a level white deck (sun, moon, sky; at night the sea's night light), linear
     vec4 hazeSea;       // rgb: the sea's mean from above (by day the ambient from below, at night the night sea as drawn)
+    // the eye at night (docs/visuals/night-lights.md decision 2)
+    vec4 night;         // x: how much of the natural light's colour goes to the rods' grey-blue; yzw: their tint
 };
 
 int flashCount()
@@ -43,6 +45,15 @@ vec3 flashAt(int i, vec3 p, out vec3 l)
     float s = flashPos[i].w, d2 = dot(d, d);
     l = d * inversesqrt(max(d2, 1e-6));
     return flashRad[i].rgb / (d2 + s * s);
+}
+
+// The eye at night (docs/visuals/night-lights.md decision 2, Purkinje): what the natural light (sun, moon, sky) shows,
+// linear, as the rods see it as the light falls: their luminance (blues brighter, reds dark) in a grey-blue. Applied to
+// the natural light alone; artificial lights (flashes, fires, beams, flares) are added after it and keep their colour.
+// The twin of ShipLights.NightSee.
+vec3 nightSee(vec3 c)
+{
+    return night.x <= 0.0 ? c : mix(c, night.yzw * dot(c, vec3(0.03, 0.55, 0.42)), night.x);
 }
 
 // a sprite's normal + AO texel (biased xyz, AO in a; ReliefMaps) as its normal, not renormalised: the mips average
@@ -190,7 +201,7 @@ vec3 shipShade(vec3 albedoSrgb, vec3 n, vec3 v, vec3 lSun, vec3 lMoon, float rou
     nl = dot(n, lMoon);
     if (nl > 0.0)
         c += (diffuse + spec * look.w * specularPi(n, v, lMoon, nl, a, f0)) * moonRad.rgb * nl;
-    c += diffuse * extra;
+    c = nightSee(c) + diffuse * extra;
     return linearToSrgb(shoulder(c, look.z));
 }
 

@@ -168,6 +168,42 @@ illuminance (under cloud) to the display's white deck, read by `ShipLights`, `Se
 amplification removed; the flashes' L_bg on the same eye; the Purkinje split (night light desaturated and cool, lights
 in colour); the night ticks. The table/world hand-over measured (the table may stay brighter: decision 3). Captures side by side, before and after.
 
+**Q10a done 2026-10-29.** `ShipLights.Compute` (`ShipLight.cs`): by day the light table as before; once the sun is
+down (handing over through its last 2°), the real light at the view's centre, `NightLight`'s terms under the scenario's
+cloud (twilight and stars through it, the moon direct through what's clear and diffuse through the overcast), times
+the night eye's display level over the real lux (`LightTable.NightEyeLogLux`/`NightEyeLevel`, log-linear; its last row
+meets the dusk's ambient at sunset). The moon, the sky's ambient and the sea's from below all from it; `SkyNight` and
+`SeaNight` give only their chroma; the old floor (`MoonStrength`, the night sky's 0.3 of a day) went. `ShipLights.Lux`
+carries the real light: the flashes' and magazines' background (`FlashRenderer.PerCandela`) now reads it, so they
+stand on the same eye (by day it takes no cloud, as the day's model doesn't). The sea's night light
+(`SeaView.NightLight`) is no longer a light of its own: `NightShare` 0.6 of the sky's ambient taken from all round and
+given a direction for the swell (`seashade.glsl` keeps the rest all round), so the level is the real night's. The
+Purkinje split: `LightUniforms.Night` (the rods' share by the lux, `PurkinjeLogLux` 10 lx to 0.03 lx, and their tint
+`RodTint`), `shiplight.glsl`'s `nightSee` on the natural light in the ships, the sea (body, sky, sun and moon glints,
+the foam's natural light), gun smoke, the smoke field, splash columns and stains, magazine bodies and trails,
+torpedoes; the flashes' and fires' light added after it in colour; the haze's night colours on the CPU twin
+(`ShipLights.NightSee`). The night ticks: `MapScene.DrawNightTicks`, oriented along each own hull (length by beam, a
+few pixels out), a square about each contact in sight, faded in by the same lux range times the world's share.
+
+Median 8-bit RGB, Dover, three ships, 0.8 m/px, 10 km visibility (before → after):
+
+| Night | Before | After |
+|---|---|---|
+| Day | 49 70 89 | 49 70 89 |
+| Sun −3° | — | 13 20 29 |
+| Sun −6° | 7 21 39 | 12 19 29 |
+| Full moon (7 Apr 1917, 23:30) | 11 29 49 | 7 9 15 |
+| First quarter | 8 23 41 | 5 8 13 |
+| Moonless | 7 21 39 | 3 4 7 |
+| Moonless, overcast | 7 21 39 | 2 2 2 |
+
+The night's order is back (a moonless night darker than a moonlit one, overcast darker still, twilight lighter than
+all). The chart past the boundary keeps its navy (7 19 36, decision 3): the zoom darkens through the fade. A night
+salvo lights its ship warm out of the black. Knobs: `-lights=eye:1,below:0.06,purkinje:1,moonsky:0.2`,
+`-sea=nightshare:0.6,nightrelief:7`. The ship viewer's panel has the eye's gain and the rods' share. The world view's
+land at night is still the chart's fill (`globe.frag`'s `NightLand`), lighter than the sea now: with the coast's look
+(`sea.md`, later).
+
 **Q10b Lights in the block.** The night's pool (flares as point lights, beams as spot lights) in `LightUniforms` and
 every shader that reads the flashes; the sea's body lit by the night pool; the per-ship shadow direction from the
 dominant light. The snapshot's beams gain their spread, iris share and target (sim data only); its flares their burst
