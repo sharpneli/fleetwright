@@ -872,6 +872,32 @@ the strain of being found and fired on (CUF R2-R3), built for straddles and ligh
 - What the map shows: lights as marks (a beam's bearing, a flare's patch), flash and light contacts, unknowns, "you're
   showing a light" on the card. Mockup first, then the port, per the UI process. No popups.
 
+**The controls (proposed and decided with the user, 2026-10-29; mockup next):** a setting, and two orders by hand.
+
+- **Darkened, the strict silent setting:** a doctrine field (`Darkened`, on/off) a unit's, set on the launch screen as
+  a standing order and in the fight by the strip's flag (`UnitOrders.Doctrine`, the player's). Strict: no searchlights
+  (not when fired on, not to light the guns' target), no star shell by doctrine, no challenge lamp, and **her guns fire
+  only once she's fired upon** (the user: destroyers creeping in the dark to the best ambush). Once fired on, she fights
+  by her orders; her lights stay dark. Star shell ordered by hand still goes (the player's own act; a flare shows only
+  the gun's flash).
+- **Beams on, forced:** the arcs burn and are exposed whenever it's dark (an order given at dusk holds through the night),
+  held on her guns' target (the chief battery's first: Engage… picks what she lights), else sweeping the arc about the
+  nearest contact. Beats the captain's doctrine, his douse when lit and keeping dark in a torpedo attack. Doctrine's turn
+  away when lit still steers her: the conn (C) is the player's way to hold her course (the user: that option is there
+  already). The line's illuminator: one ship with Beams on, engaging the target the rest fire at.
+- **Darken and Beams on** are two flags, never both on; neither lit is the captain's doctrine, a lit one clicked again
+  hands it back (as Make smoke and the held Shells ▾).
+- **Star shell…, an armed order:** the key, then a right-click on a contact (an enemy or an unknown) **or on the sea**
+  (a point to light, for torpedo craft suspected but not held: new sim work, the user wants it now; the task today takes
+  only a contact). One mount keeps a flare up (Q5's task) until the order's given again, the contact's lost or sunk, or
+  she's out of its reach; held by hand as `ShellHeld` is, so the captain doesn't cancel it. Given to a unit, one ship
+  fires: the nearest carrying star shell with the target in reach.
+- **No challenge by hand** (the user): challenging stays doctrine's.
+- **In the strip** (strip.md's GUNS pane, no new pane): row 2 Shells ▾ `R` · Star shell… `⇧R`; row 3 Torpedoes at…
+  `⇧E` · Darken `⇧X` · Beams on `⇧G`; the title note "dark" / "beams on Derfflinger" / "star shell on V27" while one is
+  set; the enemy pane gains Star shell on her `⇧R`. Greyed with the reason where it can't be given (no searchlights, no
+  star shell aboard, out of its reach). The shifted keys are free.
+
 ### Q10 The look
 
 A visuals plan of its own (`docs/visuals/night-lights.md`) when Q4-Q5 are in: searchlight beams as light scattered in
