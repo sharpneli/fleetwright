@@ -193,6 +193,11 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
   report gains the star's flare (`star_cd`, `star_burn_s`, `star_fall_ms`, star shell only). Every case's version
   changes; the designs that gained star shell shift by 0.005-0.02% of standard displacement (the magazines' mean round),
   their hulls by a hair: 39 cases' SVGs and 37 sprite.json. ShipDesign.Version 51.
+- 2026-10-29, the searchlight templates to the research (docs/battle/night.md Q3b), on purpose: the plain arcs 1.6e4
+  cd/cm² at 3°, the continental Victorian 90 cm and an RN Victorian 24-inch, the RN's twin 24-inch for plant years
+  1910-1915, Russia's remote 75 cm, the USN's high-intensity arcs from 1915; design format 16 moves the blocks still as a
+  template gave them. Every case's version changes; 62 cases' standard displacements move by -0.55% to +0.07% (the
+  lights' mirrors, weights and housings), their hulls by a hair: 79 cases' SVGs and 17 sprite.json. ShipDesign.Version 52.
 
 ## Layout
 
