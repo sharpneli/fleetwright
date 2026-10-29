@@ -1291,8 +1291,8 @@ commander reads to know when he's done and 6.1's objectives read to judge.
 Flagged placeholders until then (`DesignerPlaceholders.cs`):
 
 - **The signal bridge and the wireless office** as parts, so their loss cuts signals (5.1e).
-- **Searchlights** as parts (they're render clutter now, plan.md 3.2's list), for night signalling and, later, night
-  fighting.
+- **Searchlights** as parts: done in night.md Q3 (a part each, with its beam and its men); night signalling by them
+  is this step's.
 - **Torpedo wakes** aren't the designer's, but the torpedo's propulsion (the era's wet heaters left a track; oxygen
   torpedoes didn't) is a fact of the torpedo row when the designer offers torpedoes.
 

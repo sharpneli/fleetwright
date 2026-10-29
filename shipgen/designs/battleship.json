@@ -1,5 +1,5 @@
 {
-  "version": 13,
+  "version": 14,
   "id": "battleship", "name": "Fast Battleship", "look": {"navy": "generic", "era": "wwii"}, "type": "BB",
   "hull": {"block_coefficient": 0.59, "construction": {"name": "High-tensile and structural STS, mostly welded", "yield_mpa": 420, "join_factor": 1.02, "standard": 1.0, "shell": "welded", "internals": "welded"}, "plating": {"shell_mm": 0, "material": "steel", "deck_wood_mm": 76}, "freeboard": 1.0, "raised": []},
   "speed_kn": 30, "range_nm": 15000,
@@ -19,5 +19,6 @@
  "masts": [{"kind": "tripod"}, {"kind": "pole"}],
  "outfit": {"name": "Post-Savo (1943)", "fitted": {"quarters": 240, "cabins": 280, "offices": 300, "stores": 1200, "machinery": 120, "deck": 120}, "stripped": {"quarters": 240, "cabins": 280, "offices": 300, "stores": 1200, "machinery": 120, "deck": 120}, "paint_mj_m2": 10, "growth": 0.7},
  "gun_tech": {"Second War, double-base": {"reload_share": 0.9, "heavy_slow": 1, "heavy_slow_under_40_cal": 1, "heavy_slow_under_30_cal": 1, "train_share": 1.5, "dp_train_share": 1.6, "max_elevation_deg": 40, "dp_max_elevation_deg": 45, "pattern_pct": 1.9, "pattern_exp": 0, "pattern_light_pct": 1.8, "propellant": "double-base", "black_powder_under_cal": 0, "packaging": "clarkson"}},
- "drainage": {"name": "USN 1943", "pumps_tph_per_1000t": 70, "portable_pumps": 8, "portable_tph": 60, "counterflood_tpm_per_10000t": 20, "tightness": 1}
+ "drainage": {"name": "USN 1943", "pumps_tph_per_1000t": 70, "portable_pumps": 8, "portable_tph": 60, "counterflood_tpm_per_10000t": 20, "tightness": 1},
+ "searchlights": {"name": "Second War (1940)", "capital_count": 6, "mirror_cm": 150, "small_mirror_cm": 61, "lamp_cd_cm2": 75000, "spread_deg": 1.2, "control": "director"}
 }

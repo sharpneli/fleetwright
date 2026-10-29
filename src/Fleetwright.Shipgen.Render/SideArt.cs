@@ -69,6 +69,8 @@ public static class SideArt
         }
         foreach (var a in v.AaMounts)
             Add(a.Y + a.R, o => Aa(o, P, a));
+        foreach (var l in v.Searchlights)
+            Add(l.Y + l.R, o => Searchlight(o, P, l));
         foreach (var p in v.Platforms)
             Add(p.B.Y1, o => Platform(o, P, p, v));
         foreach (var bt in v.Dressing.Boats ?? [])
@@ -773,6 +775,21 @@ public static class SideArt
         o.Add(P.Ln(new PathNode(shield).Fill(P.C("turret")), 0.7));
         o.Add(P.Ln(new PathNode(tubD).Fill(P.C("tub"))));
         o.Add(Rim(P, tubD, P.C("tub")));
+    }
+
+    /// <summary>A searchlight from the side: its platform (with a rail where it stands aloft), the pedestal, the drum and
+    /// its glass facing ahead.</summary>
+    static void Searchlight(List<Node> o, Painter P, SideView.Light l)
+    {
+        double x = l.X, b = l.Base, h = l.Top - l.Base, r = l.R;
+        double drum = r - 0.35, z0 = b + 0.3 * h;
+        o.Add(P.Ln(new PathNode(Rect(x - r, x + r, b - 0.12, b)).Fill(P.C("tub")), 0.6));
+        if (l.Aloft)
+            o.Add(new PathNode(new PathData().M(x - r, -(b + 0.9)).L(x + r, -(b + 0.9))).Fill("none").Stroke(P.C("mast"), Math.Max(0.06, P.Sw * 0.6)));
+        o.Add(new PathNode(Rect(x - 0.12, x + 0.12, b, z0)).Fill(P.C("fitting")));
+        var drumD = Rect(x - drum, x + drum, z0, b + h);
+        o.Add(P.Ln(new PathNode(drumD).Fill(P.C("fitting")), 0.6));
+        o.Add(new EllipseNode(x + drum, -(z0 + (b + h)) / 2, 0.12, 0.42 * (b + h - z0)).Fill("#d9dccf").Mat("glass"));
     }
 
     // ------------------------------------------------------------------ platforms and dressing

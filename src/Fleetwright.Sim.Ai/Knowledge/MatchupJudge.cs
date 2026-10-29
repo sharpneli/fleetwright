@@ -22,7 +22,9 @@ public sealed class MatchupJudge(GroupSystem groups, SeenContacts seen, Doctrine
 
     /// <summary>A judgement's room for every ship (as a unit of her own) and every group at sea, made when the ships or the
     /// groups change (a spawn, a loss, a detachment: when allocating is allowed), never at a unit's first judgement in a
-    /// step (docs/battle/night.md Q2 found one: a ship judging alone for the first time minutes after she left her line).</summary>
+    /// step (docs/battle/night.md Q2 found one: a ship judging alone for the first time minutes after she left her line);
+    /// and the attackers' memo's for every two classes or loadouts, by either side's doctrine (Q3 found that one: a
+    /// flotilla making out an attacker's class for the first time a quarter of an hour into the fight).</summary>
     void MakeUnits(in AiContext ctx)
     {
         var store = ctx.Ships;
@@ -32,6 +34,9 @@ public sealed class MatchupJudge(GroupSystem groups, SeenContacts seen, Doctrine
         for (int k = 0; k < groups.Count; k++)
             if (!units.ContainsKey(Unit.Group(groups[k].GroupId).Id))
                 units[Unit.Group(groups[k].GroupId).Id] = new Judged();
+        var reg = ctx.World.Ships.Registry;
+        int classes = reg.Count + reg.LoadoutCount;
+        pairs.EnsureCapacity(2 * classes * classes);
         (unitsShips, unitsGroups) = (store.Count, groups.Count);
     }
 

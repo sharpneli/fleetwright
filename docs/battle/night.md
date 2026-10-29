@@ -1,5 +1,5 @@
 # Plan: night fighting (a 4.5 deepening)
-Status: **drafted 2026-10-29**; **agreed with the user 2026-10-29** (decisions 1-5 at the end); Q0, Q1 and Q2 done 2026-10-29
+Status: **drafted 2026-10-29**; **agreed with the user 2026-10-29** (decisions 1-5 at the end); Q0, Q1, Q2 and Q3 done 2026-10-29
 Updated: 2026-10-29
 
 How ships see, light, shoot and lose each other in the dark. The user asked for it after the crew plan (2026-10-28),
@@ -338,6 +338,73 @@ contact's range error are [EST] until the research; no ranging by a flash's repo
 - **Damage:** a searchlight is a part in the hitbox, so splinters, blast and its own guns' shock put it out (the
   record's mantelets burned and broken lamps).
 - The designer's UI row waits for the UI pass, as with the damage plan's data steps.
+
+**Q3 done (2026-10-29).** Searchlights are the design's, sited by shipgen:
+
+- **The block** (`searchlights`, design format 14; `SearchlightTemplates`, `docs/shipgen/searchlight-templates.md`,
+  `Content/Templates/searchlights.json`): a capital ship's count and mirror, a torpedo craft's mirror, the arc's crater
+  (cd/cm²), the beam's spread and the control (local, remote, director), with an optional `count` of her own. Nine
+  templates by navy and period [EST until the research request]: Victorian 24-inch, the pre-dreadnoughts' 75 cm (the
+  RN's 24-inch), the Great War's 36-inch with plain arcs (the German navy's 110 cm from a control position), the RN's
+  remote control after Jutland, the USN's high-intensity arcs from 1917, interwar, the Second War's 150 cm on the
+  directors. The format upgrade gave every design its navy's (look.navy) in its plant's year, so a design that gives
+  none takes its plant year's (the look decides nothing).
+- **Sizing:** the count is the capital count (180 × 27 m of waterplane) in proportion to her waterplane below that, by
+  its 0.25 power above, at least one: a destroyer one or two, a light cruiser three or four, a battleship 6-9. The mirror
+  goes from the small one (600 m² and under) to the capital one with the logarithm of the waterplane. One light's
+  beam (crater × mirror face × 0.9 clear × 0.85 silvered glass: a 36-inch plain arc 8·10⁷ cd, high-intensity 3·10⁸),
+  weight (1.2 t a 36-inch, by its mirror's area, booked as equipment), draw (6.5 kW a 36-inch plain arc) and crew
+  (three at a 36-inch) come from its mirror [EST]. No dynamo budget exists to book the draw in: it's on the row.
+- **Siting** (`Layout.PlaceSearchlights`, the warship layout; carriers, merchants and planing craft place none): sites
+  in groups, each best first, taking turns so the lights spread fore and aft, pairs abreast while two or more are
+  wanted: the bridge's highest roof (its wings), platforms on the funnels' sides (the searchlight towers, at 0.55 of the
+  funnel's height, 0.7 where that's taken), after control's roof, the masts' tops (ahead of a pole that runs through),
+  the other roofs; the deck on the centreline only where nothing else has room. Each keeps clear of what stands at its
+  height, of the gun sweeps under it and of the masts and tripod legs. No shortfall warnings across the 372 cases.
+- **A part:** a `searchlight` hitbox component (its drum and platform: R = 0.5 d + 0.35, d + 0.7 high) with its mirror
+  and what carries it. The crew book puts its men at a `searchlights` station (shipgen's, and the sim's
+  `BattleStation.Searchlights`), from the torpedo branch's share of the weapons department.
+- **In the sim:** `ShipClass.Searchlights` (`SearchlightRow`: part, carrier, place, height over the sea, mirror, beam
+  cd, spread, control, kW) and a `FunctionKind.Searchlight` for each: it burns while it and what carries it stand (a
+  funnel shot away takes its platform's lights), its power isn't cut (`SearchlightDown`: E4's local, section and
+  cascade outages, its own guns' shock, the near misses' breakers and blackouts reach it, as they reach the directors)
+  and someone's at it (`ShipCondition.SearchlightWorks`). A shell through one disables it, splinters harm it as an
+  open mount (vitals 0.5, a mirror's fragility 100 J), the gas as electrical gear, and its men stand in the open. Its
+  hitbox shows in the silhouette, as every part above water does. Q4 reads all this; nothing burns a light yet.
+- **One physical model:** the clutter no longer places searchlights of its own; the top view and the profile draw them
+  from the hitboxes (a railed platform with the drum, the glass ahead; a funnel's or a mast's drawn over it).
+- **What it cost the ships:** capital ships about 0.1% of standard and 15-30 men, destroyers 0.5-1% (the destroyer
+  113.6 to 114.7 m long: the sizer's bistable step) and 3-8 men; goldens 326 design cases, 282 cases' SVGs, 61
+  sprite.json (ShipDesign.Version 50).
+- **Tests:** `SearchlightTests` (Lion's and V25's lights, manned and high, each with its beam; a hit, its funnel's
+  loss and a power cut put one out, and the power's return lights it). Three tests anchored on geometry the hulls'
+  small growth moved were restated to what their docs say: the coal shot aims along the whole bunker (most aims burst in
+  the decks over it), the slow flood's step is its longest in the second hour (not the one at the last instant), and
+  the deep AP burst puts "about one" piece into the upper works (1.0, was 0.8: mostly a gun the destroyer's longer hull
+  brought into view). The flotilla's allocation test found a latent growth: `MatchupJudge`'s attackers memo resized
+  the first time a flotilla made out an attacker's class mid-fight; it now gets its room with the units' (Q2's fix).
+
+**The bench after Q3** (20 seeds a case on both, so the noise is smaller than Q2's five; Q2's code and designs in
+brackets):
+
+| Case | First seen | Shells, hits | Lost |
+|---|---|---|---|
+| Tsushima | Japan 14 km (14), Russia never | none | none |
+| Southampton | GB 5.9 (5.9), DE 9.1 km (9.1) | GB 108 / 9 (64 / 10), DE 2,511 / 201 (2,579 / 309) | GB 0.4 of 4 (0.8), DE 0.1 (0.1) |
+| 4th Flotilla | GB 3.5 (3.6), DE 4.3 km (4.3) | GB 161 / 42 (101 / 24), DE 276 / 54 (327 / 89) | GB 1.4 of 10 (1.8), DE 0.1 (0) |
+| Black Prince | GB 4.4 km in 14 of 20 (3.9 in 9), DE 4.7 km (4.8) | GB 115 / 31 (118 / 30), DE 242 / 68 (219 / 66) | GB 0.2 of 1 (0.2) |
+| Dover Strait | 0.3 km both | GB 9 / 8 (12 / 11), DE 9 / 8 (18 / 14) | GB 0.1 of 2 (0.1), DE 0.1 (0.2) |
+
+**What it says:** nothing burns a light yet, so the night is Q2's: what moved is the ships' small growth and chance.
+The lights in the silhouette move nothing past the noise (the Jutland cases run both ways at 20 seeds). The one shift
+not explained is Southampton's German hits, 12% to 8% of about 2,500 shells; worth a look when Q4's lights change that
+fight anyway.
+
+**Open after Q3:** the templates' numbers wait for the research (sizes by navy and year, counts, the arcs' brightness,
+spreads, crews, weights); no dynamo or switchboard (the lights' draw sits on the row until the electric network is a
+model: E4 reaches them by distance, as it does the directors); the shock gate (`NonPen.Electrics`: director fire
+control) means a pre-director ship's lights never lose power to shock, though they ran on dynamos; carriers and
+merchants carry none; the look is a placeholder (Q10); signalling by searchlight is `command.md` 5.1e's.
 
 ### Q4 Searchlights in the fight
 

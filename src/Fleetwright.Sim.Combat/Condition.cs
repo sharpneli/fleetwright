@@ -216,7 +216,7 @@ public sealed class ShipCondition
     public bool[] Smoked = [];
     /// <summary>The heat release of her fires that show (B2: developed, on the open deck, burning charges), MW.</summary>
     public double FireShowMW;
-    public bool[] MountWorks = [], DirectorWorks = [], EyeWorks = [], TubeWorks = [];
+    public bool[] MountWorks = [], DirectorWorks = [], EyeWorks = [], TubeWorks = [], SearchlightWorks = [];
     /// <summary>Each mount's gun crew and supply at work and each eye's men, 0-1 (docs/battle/crew.md N2,
     /// <see cref="BattleStations"/>): its reload, its hoists and its readings stretched by them.</summary>
     public double[] MountCrew = [], MountSupply = [], EyeCrew = [];
@@ -233,9 +233,9 @@ public sealed class ShipCondition
     public long[] DownUntil = [];
     /// <summary>What put each node down, the longest outage's (<see cref="DownCause"/>): the benches' tally.</summary>
     public DownCause[] DownWhy = [];
-    /// <summary>Each director's and eye's outage of its own (E4's shock: a director's gyro, a rangefinder knocked out of
-    /// adjustment), not its part's: until when, world ms (0: none).</summary>
-    public long[] DirectorDown = [], EyeDown = [];
+    /// <summary>Each director's, eye's and searchlight's outage of its own (E4's shock: a director's gyro, a rangefinder
+    /// knocked out of adjustment, the power to a light), not its part's: until when, world ms (0: none).</summary>
+    public long[] DirectorDown = [], EyeDown = [], SearchlightDown = [];
     /// <summary>Openings between spaces a burst's gas left (E5: ruptured boundaries, blown doors, sprung seams), m², on
     /// each edge of the cell graph's entry from its lower cell (the Neighbours pool's index): the flooding adds them.</summary>
     public double[] JoinOpenM2 = [];
@@ -510,11 +510,13 @@ public sealed class ShipCondition
             DirectorWorks = new bool[c.Directors.Length];
             EyeWorks = new bool[c.Eyes.Length];
             TubeWorks = new bool[c.Tubes.Length];
+            SearchlightWorks = new bool[c.Searchlights.Length];
             Mount = new MountHarm[c.Mounts.Length];
             DownUntil = new long[c.NodeCount];
             DownWhy = new DownCause[c.NodeCount];
             DirectorDown = new long[c.Directors.Length];
             EyeDown = new long[c.Eyes.Length];
+            SearchlightDown = new long[c.Searchlights.Length];
             JoinOpenM2 = new double[c.NeighbourCount];
             (JoinSeamM2, JoinClosureM2, JoinWork) = (new double[c.NeighbourCount], new double[c.NeighbourCount], new double[c.NeighbourCount]);
             (JoinWorkAcc, JoinWorkAt, JoinD) = (new double[c.NeighbourCount], new double[c.NeighbourCount], new double[c.NeighbourCount]);
@@ -566,6 +568,7 @@ public sealed class ShipCondition
             Array.Clear(DownWhy);
             Array.Clear(DirectorDown);
             Array.Clear(EyeDown);
+            Array.Clear(SearchlightDown);
             Array.Clear(State);
             Array.Clear(Flags);
             Array.Clear(WaterM3);
@@ -600,6 +603,7 @@ public sealed class ShipCondition
         Array.Fill(DirectorWorks, true);
         Array.Fill(EyeWorks, true);
         Array.Fill(TubeWorks, true);
+        Array.Fill(SearchlightWorks, true);
         (CrewLost, Killed, Wounded, Returns) = (0, 0, 0, 0);
         (Status, Loss, Attitude, PowerCap, Steering, JamRudderRad, Conned, Hits, Damaged) = (ShipStatus.Afloat, LossKind.None, Attitude.Upright, 1, Steering.Free, 0, true, 0, false);
         (ConnAt, ConnShiftMs) = (0, 0);
@@ -819,7 +823,7 @@ public sealed class ShipCondition
             else
                 next = Math.Min(next, DownUntil[i]);
         }
-        any |= Clear(DirectorDown, now, ref next) | Clear(EyeDown, now, ref next);
+        any |= Clear(DirectorDown, now, ref next) | Clear(EyeDown, now, ref next) | Clear(SearchlightDown, now, ref next);
         var mounts = Class.Mounts;
         for (int m = 0; m < Mount.Length; m++)
         {
@@ -1106,6 +1110,12 @@ public sealed class ShipCondition
             {
                 h.Add(i + 1000);
                 h.Add(EyeDown[i]);
+            }
+        for (int i = 0; i < SearchlightDown.Length; i++)
+            if (SearchlightDown[i] != 0)
+            {
+                h.Add(i + 6000);
+                h.Add(SearchlightDown[i]);
             }
         for (int m = 0; m < Mount.Length; m++)
         {

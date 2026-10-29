@@ -156,7 +156,8 @@ public class FloodingTests(ITestOutputHelper output)
 
     /// <summary>The water's step lengthens while it moves slowly (docs/battle/coarse.md J6): a capital ship with a 0.3 m²
     /// hole low in her side (a smaller one her pumps beat), two hours on, takes on the same water with its steps up to
-    /// 30 s as every second.</summary>
+    /// 30 s as every second; in the second hour her water steps less often than every second (the longest step then: at
+    /// any one moment a small change may have just shortened it).</summary>
     [Fact]
     public void A_ship_flooding_slowly_steps_seldom_to_the_same_water()
     {
@@ -164,13 +165,19 @@ public class FloodingTests(ITestOutputHelper output)
         {
             var (w, c) = Ship("super_dreadnought", s);
             Hole(w, c, c.Hydrostatics.Lcf + 30, -1.5, 0.3);
-            w.Damage.Settle(w, 1, 2 * 3600);
+            w.Damage.Settle(w, 1, 3600);
             var k = Condition(w);
-            return (k.WaterT, k.FloodEveryMs);
+            long every = 0;
+            for (int m = 0; m < 60; m++)
+            {
+                w.Damage.Settle(w, 1, 60);
+                every = Math.Max(every, k.FloodEveryMs);
+            }
+            return (k.WaterT, every);
         }
         var every = Run(Shut with { FloodIdleMs = 1000 });
         var steady = Run(Shut);
-        output.WriteLine($"every second: {every.Water:0} t; steady steps: {steady.Water:0} t, stepping every {steady.EveryMs / 1000} s at the end");
+        output.WriteLine($"every second: {every.Water:0} t; steady steps: {steady.Water:0} t, stepping up to every {steady.EveryMs / 1000} s in the second hour");
         Assert.True(every.Water > 10, "she takes water");
         Assert.InRange(steady.Water / every.Water, 0.97, 1.03);
         Assert.True(steady.EveryMs > 1000, "her water steps less often than every second");

@@ -129,6 +129,10 @@ public sealed class AaMount
     [JsonIgnore] public double Base;
 }
 
+/// <summary>A searchlight (docs/battle/night.md Q3): where it stands, its base above the main deck, its mirror (m), its
+/// hitbox's radius and height, and what carries it (a block's, funnel's or mast's id, or null: the deck).</summary>
+public sealed record Searchlight(string Id, double X, double Y, double Base, double MirrorM, double R, double H, string? On);
+
 /// <summary>A mast: where it stands, its yard, its kind (pole, tripod, cage, lattice, tower), its masthead above the main
 /// deck (null until FinishLayout sets the layout's default), its top (a platform round it, or none) and a merchant's cargo
 /// booms ([x, y] of each boom's head). Its hitbox is a pole of PoleR, a tower's a column of TowerR; its top's, a cylinder

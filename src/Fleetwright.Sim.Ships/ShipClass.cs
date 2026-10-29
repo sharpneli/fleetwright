@@ -21,6 +21,7 @@ public sealed class ShipClass
     internal ShaftLineRow[] shaftLines = [];
     internal RudderRow[] rudders = [];
     internal DirectorRow[] directors = [];
+    internal SearchlightRow[] searchlights = [];
     internal BatteryRow[] batteries = [];
     internal FcUnitRow[] fcUnits = [];
     internal InstrumentRow[] instruments = [];
@@ -196,6 +197,8 @@ public sealed class ShipClass
     public ReadOnlySpan<ShaftLineRow> ShaftLines => shaftLines;
     public ReadOnlySpan<RudderRow> Rudders => rudders;
     public ReadOnlySpan<DirectorRow> Directors => directors;
+    /// <summary>The searchlights (docs/battle/night.md Q3).</summary>
+    public ReadOnlySpan<SearchlightRow> Searchlights => searchlights;
 
     /// <summary>The gun batteries (docs/battle/fighting.md 4.0): every gun mount is in one.</summary>
     public ReadOnlySpan<BatteryRow> Batteries => batteries;

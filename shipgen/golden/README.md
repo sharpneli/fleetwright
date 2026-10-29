@@ -180,6 +180,14 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
 - 2026-10-21, the smoke's facts (docs/battle/smoke.md Z0), on purpose: the plant report gains `gas_temp_k`,
   `gas_m3_per_kg`, `smoke_m2_per_kg`, `fuel_shares` and `fuel_kg_s` (the fuel burnt at shares of the rated power, by
   `Powerplant.FuelRate`). 326 design cases change (the plant report only), no SVG or sprite.json. ShipDesign.Version 49.
+- 2026-10-29, searchlights in the design (docs/battle/night.md Q3), on purpose: design format 14 gives each design a
+  `searchlights` block (SearchlightTemplates, by navy and plant year), and shipgen sites the lights itself (the bridge's
+  wings, platforms on the funnels' sides, after control, the masts' tops, the other roofs, the deck last), each a
+  `searchlight` hitbox component with its mirror and its men, its weight booked as equipment. Capital ships gain about
+  0.1% standard and 15-30 men, destroyers 0.5-1% (the destroyer 113.6 to 114.7 m) and 3-8 men; carriers and merchants
+  place none. 326 design cases change; the clutter no longer draws searchlights of its own, and the lights are drawn
+  from the hitboxes in both views: 282 cases' SVGs and 61 sprite.json.
+  ShipDesign.Version 50.
 
 ## Layout
 

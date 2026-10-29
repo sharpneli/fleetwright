@@ -35,6 +35,8 @@ public sealed class SideView
         List<TopView.MastTier> Tops);
 
     public sealed record Aa(string Id, string Type, double X, double Y, double R, double Base, double Top, double Dir);
+    /// <summary>A searchlight on its platform; Aloft on a funnel's or a mast's.</summary>
+    public sealed record Light(string Id, double X, double Y, double R, double Base, double Top, bool Aloft);
 
     /// <summary>A platform outside the hull's deck: the flight deck or a sponson (Elevator: a deck-edge elevator's).</summary>
     public sealed record Platform(string Id, ComponentKind Kind, Box B, bool Elevator);
@@ -73,6 +75,7 @@ public sealed class SideView
     public required List<Funnel> Funnels;
     public required List<Mast> Masts;
     public required List<Aa> AaMounts;
+    public required List<Light> Searchlights;
     public Box? ConningTower;
     public required List<Box> Casings;
     public required List<Box> Hangars;
@@ -210,6 +213,8 @@ public sealed class SideView
             Masts = masts,
             AaMounts = comps.Where(c => c.Kind == ComponentKind.Aa).Select(c => new Aa(c.Id, c.Type!, c.X!.Value, c.Y!.Value, c.R!.Value, c.Base, c.Top,
                 c.RestDeg ?? 0.0)).ToList(),
+            Searchlights = comps.Where(c => c.Kind == ComponentKind.Searchlight).Select(c => new Light(c.Id, c.X!.Value, c.Y!.Value, c.R!.Value, c.Base,
+                c.Top, c.On is { } on && comps.Any(t => t.Id == on && t.Kind is ComponentKind.Funnel or ComponentKind.Mast))).ToList(),
             ConningTower = comps.Where(c => c.Kind == ComponentKind.ConningTower).Select(c => (Box?)Box.Round(c.X!.Value, c.Y!.Value, c.R!.Value, c.Base, c.Top))
                 .FirstOrDefault(),
             Casings = comps.Where(c => c.Kind == ComponentKind.Casing && c.Top > 0).Select(c => Box.Of(c.Points!, c.Base, c.Top)).ToList(),
@@ -246,6 +251,8 @@ public sealed class SideView
         }
         foreach (var a in AaMounts)
             Add(a.X - a.R, a.X + a.R, a.Base, a.Top);
+        foreach (var l in Searchlights)
+            Add(l.X - l.R, l.X + l.R, l.Base, l.Top);
         foreach (var p in Propellers)
             Add(p.X - p.R, p.X + p.R, p.Z - p.R, p.Z + p.R);
         if (ConningTower is { } ct)

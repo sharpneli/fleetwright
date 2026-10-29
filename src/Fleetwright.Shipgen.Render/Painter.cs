@@ -117,6 +117,16 @@ public sealed class Painter
         o.Add(g);
     }
 
+    /// <summary>A searchlight seen from above: its platform with a rail, the drum on it, the glass facing ahead.</summary>
+    public void Searchlight(List<Node> o, TopView.Light l)
+    {
+        double x = l.X, y = l.Y, r = l.R;
+        o.Add(Ln(new CircleNode(x, y, r).Fill(Shade(C("tub"), 0.9))));
+        o.Add(new CircleNode(x, y, r - 0.15).Fill("none").Stroke(C("mast"), Math.Max(0.08, Sw * 0.7)).Dash(0.12, 0.6).StrokeOp(0.8));
+        o.Add(Ln(new CircleNode(x, y, r * 0.55).Fill(C("fitting")), 0.5));
+        o.Add(new CircleNode(x + r * 0.25, y, r * 0.3).Fill("#d9dccf").Mat("glass"));
+    }
+
     public void Boat(List<Node> o, Boat b)
     {
         double x = b.X, y = b.Y, l = b.L, w = b.W;

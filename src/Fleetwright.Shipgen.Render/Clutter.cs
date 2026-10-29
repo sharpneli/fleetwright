@@ -2,11 +2,12 @@ namespace Fleetwright.Shipgen.Render;
 
 /// <summary>clutter: the small gear on a warship's roofs and open decks, drawn only (the design never sees it).
 ///
-/// Ventilators, skylights, hatches, boats on their chocks, Carley floats, ready-use lockers, searchlights, coal
-/// scuttles, paravanes and so on, picked by era: a look's shapes key "clutter" names a kit in Kits (Looks.Shapes
-/// defaults it to the look's era). Placement is repeatable (seeded by the design's id) and keeps to open roof and
-/// deck: never under a higher block, a funnel, a mast, a turret, an AA mount or another item. Most items come in
-/// mirrored pairs, as on real ships, so the result reads as fitted out rather than strewn about.
+/// Ventilators, skylights, hatches, boats on their chocks, Carley floats, ready-use lockers, coal scuttles, paravanes
+/// and so on, picked by era: a look's shapes key "clutter" names a kit in Kits (Looks.Shapes defaults it to the look's
+/// era). Placement is repeatable (seeded by the design's id) and keeps to open roof and deck: never under a higher
+/// block, a funnel, a mast, a turret, an AA mount, a searchlight (the design's, docs/battle/night.md Q3) or another
+/// item. Most items come in mirrored pairs, as on real ships, so the result reads as fitted out rather than strewn
+/// about.
 ///
 /// Nothing here changes the layout, hitboxes, sprite.json or the report. Each item also gives the height map a low
 /// column (HeightColumns), so it casts its own small shadow.
@@ -39,14 +40,12 @@ public static class Clutter
         ["locker"] = new(1.2, 0.8, 0.9, "row"),
         ["float"] = new(2.2, 1.0, 0.5, "row"),
         ["raft"] = new(0.7, 1.5, 0.7, "row"),
-        ["searchlight"] = new(1.7, 1.7, 1.6, "pair"),
         ["scuttle"] = new(0.5, 0.5, 0.0, "edge"),
         ["paravane"] = new(3.2, 0.7, 0.4, "edge"),
         ["dc_rack"] = new(4.0, 1.2, 1.0, "edge"),
         // big gear, for the big roofs (kit "big")
         ["boiler_cowl"] = new(2.4, 2.4, 3.2, "pair", Near: "funnel"),
         ["engine_skylight"] = new(6.5, 3.4, 1.0, "pair", CentreP: 0.7),
-        ["searchlight_tower"] = new(3.4, 3.4, 2.6, "pair"),
         ["fan_house"] = new(4.2, 2.6, 2.0, "pair", CentreP: 0.4, Near: "funnel"),
     };
 
@@ -77,20 +76,20 @@ public static class Clutter
             Deck: [("cowl", 0.35), ("skylight", 0.25), ("capstan", 0.15), ("hatch", 0.2), ("reel", 0.15)],
             Boats: ["cutter", "pinnace", "gig", "whaler"], Nest: true, Scuttles: true, RoofPlanks: 60.0, RoofRails: true),
         ["great_war"] = new(
-            Roof: [("cowl", 1.2), ("searchlight", 0.5), ("skylight", 0.4), ("hatch", 0.5), ("cowl_small", 0.9)],
-            Big: [("boiler_cowl", 0.25), ("engine_skylight", 0.15), ("searchlight_tower", 0.1)],
+            Roof: [("cowl", 1.2), ("skylight", 0.4), ("hatch", 0.5), ("cowl_small", 0.9)],
+            Big: [("boiler_cowl", 0.25), ("engine_skylight", 0.15)],
             Deck: [("cowl", 0.3), ("skylight", 0.15), ("capstan", 0.12), ("hatch", 0.2), ("reel", 0.2), ("paravane", 0.05)],
             Boats: ["pinnace", "cutter", "whaler", "pinnace", "gig"], Nest: true, Scuttles: true, RoofPlanks: 60.0,
             RoofRails: true),
         ["treaty"] = new(
-            Roof: [("mushroom", 1.2), ("searchlight", 0.45), ("vent_box", 0.5), ("hatch", 0.5), ("float", 0.4)],
-            Big: [("fan_house", 0.25), ("searchlight_tower", 0.12), ("engine_skylight", 0.08)],
+            Roof: [("mushroom", 1.2), ("vent_box", 0.5), ("hatch", 0.5), ("float", 0.4)],
+            Big: [("fan_house", 0.25), ("engine_skylight", 0.08)],
             Deck: [("mushroom", 0.3), ("capstan", 0.1), ("hatch", 0.2), ("reel", 0.2), ("paravane", 0.06)],
             Boats: ["launch", "cutter", "pinnace", "whaler"], MaxBoats: 6, Nest: false, Scuttles: false, RoofPlanks: 0.0,
             RoofRails: true),
         ["wwii"] = new(
             Roof: [("locker", 1.3), ("float", 1.0), ("vent_box", 0.8), ("mushroom", 0.8), ("hatch", 0.4)],
-            Big: [("fan_house", 0.3), ("searchlight_tower", 0.08)],
+            Big: [("fan_house", 0.3)],
             Deck: [("locker", 0.25), ("float", 0.25), ("mushroom", 0.25), ("hatch", 0.2), ("reel", 0.2), ("paravane", 0.04),
                    ("dc_rack", 0.0)],
             Boats: ["launch", "whaler"], MaxBoats: 4, Nest: false, Scuttles: false, RoofPlanks: 0.0, RoofRails: true),
@@ -267,6 +266,8 @@ public static class Clutter
                 Circles.Add((m.X, m.Y, v.TurretTypes[m.Type].R * 1.2));
             foreach (var a in v.AaMounts)
                 Circles.Add((a.X, a.Y, 2.4));
+            foreach (var l in v.Searchlights)
+                Circles.Add((l.X, l.Y, l.R + 0.6));
             foreach (var fn in v.Funnels)
                 Funnels.Add((fn.X, fn.L));
             foreach (var fn in v.Funnels)
@@ -710,24 +711,6 @@ public static class Clutter
                     o.Add(new LineNode(x - l / 2, y, x + l / 2, y).Stroke(Shade(col, 0.7), P.Sw * 0.7));
                     return;
                 }
-            case "searchlight":   // a round platform with its lamp
-                {
-                    double r = l / 2;
-                    o.Add(St(new CircleNode(x, y, r).Fill(Shade(surfaceCol, 0.85))));
-                    o.Add(P.Ln(new CircleNode(x, y, r * 0.5).Fill(fitting), 0.5));
-                    o.Add(new CircleNode(x + r * 0.28, y, r * 0.3).Fill("#d9dccf").Mat("glass"));
-                    return;
-                }
-            case "searchlight_tower":   // a raised platform with its rail, the lamp on it
-                {
-                    double r = l / 2;
-                    o.Add(St(new CircleNode(x, y, r).Fill(Shade(surfaceCol, 0.8))));
-                    o.Add(new CircleNode(x, y, r - 0.2).Fill("none").Stroke(P.C("mast"), Math.Max(0.1, P.Sw * 0.8))
-                        .Dash(0.12, 0.9).StrokeOp(0.8));
-                    o.Add(P.Ln(new CircleNode(x, y, r * 0.4).Fill(fitting), 0.5));
-                    o.Add(new CircleNode(x + r * 0.2, y, r * 0.24).Fill("#d9dccf").Mat("glass"));
-                    return;
-                }
             case "fan_house":   // a boiler-room fan house: a steel box, louvres down both sides, a cap on top
                 o.Add(St(new RectNode(x - l / 2, y - w / 2, l, w, 0.15).Fill(metal)));
                 o.Add(P.Ln(new RectNode(x - l / 2 + 0.5, y - w / 2 + 0.55, l - 1.0, w - 1.1, 0.1).Fill(Shade(metal, 1.12)), 0.5));
@@ -877,8 +860,8 @@ public static class Clutter
             if (it.H <= 0)
                 continue;
             double top = Under(it.X, it.Y) + it.H;
-            // round heads are domes (a cowl's bell, a mushroom vent, a searchlight), a boat an ellipsoid: the relief's shape
-            if (it.Kind is "cowl" or "cowl_small" or "boiler_cowl" or "mushroom" or "searchlight" or "searchlight_tower")
+            // round heads are domes (a cowl's bell, a mushroom vent), a boat an ellipsoid: the relief's shape
+            if (it.Kind is "cowl" or "cowl_small" or "boiler_cowl" or "mushroom")
                 result.Add(new(top, "circle")
                 {
                     Cx = it.X, Cy = it.Y, R = it.L / 2, Profile = Relief.Dome(it.X, it.Y, it.L / 2, it.L / 2, top, Math.Min(it.L / 2, it.H)),

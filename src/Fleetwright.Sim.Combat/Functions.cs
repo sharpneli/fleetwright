@@ -10,7 +10,7 @@ namespace Fleetwright.Sim.Combat;
 /// plant can make (its boiler rooms' steam and its shaft lines, the less of the two), whether the rudders answer,
 /// whether the ship is conned; each station by the men at work there (docs/battle/crew.md N2: <see cref="BattleStations"/>:
 /// shares: a mount's crew stretches its reload and its handling men its supply, silent below the few it's fought with;
-/// a director or an eye with nobody is out, short-handed it reads slower). A node down for a while (E4) gives nothing
+/// a director, an eye or a searchlight with nobody is out, short-handed it reads slower). A node down for a while (E4) gives nothing
 /// until it's back. Beside them, the mounts and
 /// the power as they'll be once the outages ending by a time are over: the lasting state a captain falls out by
 /// (<see cref="Fitness"/>). Run when the condition changes, not per tick.</summary>
@@ -121,6 +121,10 @@ public static class Functions
                     break;
                 case FunctionKind.Tube:
                     k.TubeWorks[f.Index] = v > 0;
+                    break;
+                case FunctionKind.Searchlight:
+                    k.SearchlightWorks[f.Index] = v > 0 && k.SearchlightDown[f.Index] == 0 &&
+                                                  BattleStations.Share(c, k, Casualties.Part(c.Searchlights[f.Index].Component)) > 0;
                     break;
             }
         }

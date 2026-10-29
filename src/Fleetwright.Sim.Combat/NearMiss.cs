@@ -452,7 +452,7 @@ public static class NearMiss
                 Effects.Harm(ref res, k, node);
         }
 
-        // the gear: breakers and the directors' gyros (with something to trip)
+        // the gear: breakers (the mounts', directors' and searchlights') and the directors' gyros (with something to trip)
         if (NonPen.Electrics(c))
         {
             // the breakers by each mount's and director's own shock, one draw for them all: the nearer trip first
@@ -478,6 +478,13 @@ public static class NearMiss
                     {
                         ms = ms < 0 ? NonPen.Minutes(s.NearTripMin, ref r) : ms;
                         k.Out(k.DirectorDown, d, now, ms);
+                        res.Shock = true;
+                    }
+                for (int l = 0; l < c.Searchlights.Length; l++)
+                    if (u < Ramp(Nsf(w, p, surface, Nearest(comps[c.Searchlights[l].Component].Bounds, p)) / grade, b[0], b[1]))
+                    {
+                        ms = ms < 0 ? NonPen.Minutes(s.NearTripMin, ref r) : ms;
+                        k.Out(k.SearchlightDown, l, now, ms);
                         res.Shock = true;
                     }
             }

@@ -136,6 +136,8 @@ public static class Crew
         foreach (var c in lay.Compartments)
             if (c.Kind == RoomKind.TorpedoRoom)
                 torps += SubmergedTubes.Crew(c.Tubes?.Count ?? 0);
+        foreach (var sl in lay.Searchlights)   // the torpedo branch's, with the ship's electrics
+            torps += SearchlightTemplates.Crew(sl.MirrorM);
         var deps = new OrderedDictionary<string, long>(StringComparer.Ordinal)
         {
             ["engineering"] = res.PlantRated.Crew, ["weapons"] = (long)Math.Round(guns + torps),
@@ -347,11 +349,18 @@ public static class Crew
         foreach (var c in lay.Compartments)
             if (c.Kind == RoomKind.TorpedoRoom)
                 need.Add((("torpedo_room", c.Id), SubmergedTubes.Crew(c.Tubes?.Count ?? 0)));
+        foreach (var sl in lay.Searchlights)
+            need.Add((("searchlight", sl.Id), SearchlightTemplates.Crew(sl.MirrorM)));
         foreach (var ((kind, k), men) in Spread(Dep("weapons"), need))
         {
             if (kind == "torpedo_room")
             {
                 Put(onRoom, [(k, men)], "torpedoes");
+                continue;
+            }
+            if (kind == "searchlight")
+            {
+                Put(onComp, [((kind, k), men)], "searchlights");
                 continue;
             }
             long below = kind != "aa" && barbettes.Contains(k) ? (long)Math.Round(Handling * men) : 0;

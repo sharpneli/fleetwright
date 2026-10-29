@@ -1,5 +1,5 @@
 {
- "version": 13,
+ "version": 14,
  "id": "finnish_tb",
  "name": "Finnish torpedo boat (1921)",
  "type": "DD",
@@ -465,5 +465,6 @@
   "counterflood_tpm_per_10000t": 20,
   "tightness": 1
  },
- "funnels": 2
+ "funnels": 2,
+ "searchlights": {"name": "Great War (1914)", "capital_count": 8, "mirror_cm": 91, "small_mirror_cm": 61, "lamp_cd_cm2": 16000, "spread_deg": 2, "control": "local"}
 }

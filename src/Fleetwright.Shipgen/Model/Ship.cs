@@ -458,6 +458,10 @@ public sealed class Component
     public string? Alley { get; init; }
     public string? Shaft { get; init; }
     public double? DiameterM { get; init; }
+    /// <summary>A searchlight's mirror, m.</summary>
+    public double? MirrorM { get; init; }
+    /// <summary>What carries a searchlight: a block's, funnel's or mast's id (none: the deck).</summary>
+    public string? On { get; init; }
     public double? AreaM2 { get; init; }
     public string? Steering { get; init; }
     /// <summary>A submerged torpedo tube's room.</summary>

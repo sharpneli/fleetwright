@@ -1,5 +1,5 @@
 {
- "version": 13,
+ "version": 14,
  "id": "warrior",
  "name": "Warrior-like (1907)",
  "type": "CA",
@@ -555,5 +555,14 @@
   "portable_tph": 8,
   "counterflood_tpm_per_10000t": 8,
   "tightness": 2
+ },
+ "searchlights": {
+  "name": "RN pre-dreadnought (1904)",
+  "capital_count": 6,
+  "mirror_cm": 61,
+  "small_mirror_cm": 51,
+  "lamp_cd_cm2": 14000,
+  "spread_deg": 2.5,
+  "control": "local"
  }
 }

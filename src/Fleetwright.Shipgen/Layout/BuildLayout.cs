@@ -94,6 +94,7 @@ public sealed partial class Layout
         // ---------------- dressing ----------------
         string deck = design.Deck ?? (site.L >= 150 ? "wood" : "steel");
         FinishLayout(lay, design, site.Hs, mounts, turretTypes, blocks, funnels, masts, aaOut, funTop, deck);
+        PlaceSearchlights(site, blocks, funnels, masts);
         Dress(site, mg, ends, boats);
         return lay;
     }

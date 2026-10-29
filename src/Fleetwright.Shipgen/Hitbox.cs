@@ -180,6 +180,12 @@ public static class Hitbox
                 ReadyT = Math.Round(w, 2),
             });
         }
+        foreach (var s in lay.Searchlights)
+            comps.Add(new Component
+            {
+                Id = s.Id, Kind = ComponentKind.Searchlight, Shape = "circle", X = Math.Round(s.X, 3), Y = Math.Round(s.Y, 3), R = Math.Round(s.R, 3),
+                Base = Math.Round(s.Base, 2), Top = Math.Round(s.Base + s.H, 2), MirrorM = Math.Round(s.MirrorM, 3), On = s.On,
+            });
         foreach (var m in lay.Masts)   // a pole from the deck it is stepped on, through any deckhouse round it
         {
             double x = m.X, y = m.Y ?? 0.0, bse = 0.0;

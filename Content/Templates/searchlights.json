@@ -1,0 +1,128 @@
+[
+ {
+  "name": "Victorian (1890)",
+  "group": "",
+  "note": "24-inch projectors with plain carbon arcs on the bridges, the fighting tops and the flying deck, to search for torpedo boats; the boats a small one or none [EST].",
+  "value": {
+   "name": "Victorian (1890)",
+   "capital_count": 5,
+   "mirror_cm": 61,
+   "small_mirror_cm": 40,
+   "lamp_cd_cm2": 12000,
+   "spread_deg": 3,
+   "control": "local"
+  }
+ },
+ {
+  "name": "Pre-dreadnought (1904)",
+  "group": "",
+  "note": "75 cm projectors (the Russian and Japanese fleets' at Port Arthur and Tsushima), trained by hand at each light on orders by voice pipe [EST].",
+  "value": {
+   "name": "Pre-dreadnought (1904)",
+   "capital_count": 6,
+   "mirror_cm": 75,
+   "small_mirror_cm": 45,
+   "lamp_cd_cm2": 14000,
+   "spread_deg": 2.5,
+   "control": "local"
+  }
+ },
+ {
+  "name": "RN pre-dreadnought (1904)",
+  "group": "",
+  "note": "24-inch on the big ships, 20-inch on the destroyers, each trained at the light [EST].",
+  "value": {
+   "name": "RN pre-dreadnought (1904)",
+   "capital_count": 6,
+   "mirror_cm": 61,
+   "small_mirror_cm": 51,
+   "lamp_cd_cm2": 14000,
+   "spread_deg": 2.5,
+   "control": "local"
+  }
+ },
+ {
+  "name": "Great War (1914)",
+  "group": "",
+  "note": "36-inch on the big ships (searchlight towers by the funnels, the bridge's wings), 24-inch on the destroyers, plain carbon arcs, each light trained by its own crew [EST].",
+  "value": {
+   "name": "Great War (1914)",
+   "capital_count": 8,
+   "mirror_cm": 91,
+   "small_mirror_cm": 61,
+   "lamp_cd_cm2": 16000,
+   "spread_deg": 2,
+   "control": "local"
+  }
+ },
+ {
+  "name": "RN post-Jutland (1918)",
+  "group": "",
+  "note": "As in 1914, now trained from searchlight control positions with directing sights after the night of Jutland [EST].",
+  "value": {
+   "name": "RN post-Jutland (1918)",
+   "capital_count": 8,
+   "mirror_cm": 91,
+   "small_mirror_cm": 61,
+   "lamp_cd_cm2": 16000,
+   "spread_deg": 2,
+   "control": "remote"
+  }
+ },
+ {
+  "name": "German Great War (1914)",
+  "group": "",
+  "note": "110 cm on the big ships, 60 cm on the boats, worked from a searchlight control position by a drilled crew: the lights that found the 4th Flotilla at Jutland [EST].",
+  "value": {
+   "name": "German Great War (1914)",
+   "capital_count": 8,
+   "mirror_cm": 110,
+   "small_mirror_cm": 60,
+   "lamp_cd_cm2": 16000,
+   "spread_deg": 1.8,
+   "control": "remote"
+  }
+ },
+ {
+  "name": "USN high-intensity (1918)",
+  "group": "",
+  "note": "36-inch Sperry high-intensity arcs: about four times the plain arc's beam, narrower [EST].",
+  "value": {
+   "name": "USN high-intensity (1918)",
+   "capital_count": 8,
+   "mirror_cm": 91,
+   "small_mirror_cm": 61,
+   "lamp_cd_cm2": 60000,
+   "spread_deg": 1.4,
+   "control": "local"
+  }
+ },
+ {
+  "name": "Interwar (1930)",
+  "group": "",
+  "note": "High-intensity arcs everywhere, fewer and bigger lights, trained from control positions [EST].",
+  "value": {
+   "name": "Interwar (1930)",
+   "capital_count": 6,
+   "mirror_cm": 110,
+   "small_mirror_cm": 61,
+   "lamp_cd_cm2": 60000,
+   "spread_deg": 1.4,
+   "control": "remote"
+  }
+ },
+ {
+  "name": "Second War (1940)",
+  "group": "",
+  "note": "150 cm (44-inch in the RN) high-intensity lights slaved to the fire-control directors [EST].",
+  "value": {
+   "name": "Second War (1940)",
+   "capital_count": 6,
+   "mirror_cm": 150,
+   "small_mirror_cm": 61,
+   "lamp_cd_cm2": 75000,
+   "spread_deg": 1.2,
+   "control": "director"
+  }
+ }
+]

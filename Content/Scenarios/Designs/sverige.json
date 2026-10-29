@@ -1,5 +1,5 @@
 {
- "version": 13,
+ "version": 14,
  "id": "sverige",
  "name": "Sverige-like (1917)",
  "look": {
@@ -588,5 +588,6 @@
    "fail": 0.12,
    "dud": 0.1
   }
- }
+ },
+ "searchlights": {"name": "Great War (1914)", "capital_count": 8, "mirror_cm": 91, "small_mirror_cm": 61, "lamp_cd_cm2": 16000, "spread_deg": 2, "control": "local"}
 }

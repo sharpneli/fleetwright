@@ -6,8 +6,8 @@ namespace Fleetwright.Sim.Combat;
 
 /// <summary>The kinds of battle station a ship's men stand at (Shipgen's <c>Crew.BattleStations</c>, docs/battle/crew.md
 /// N0): the gun crews in the mounts, the handling parties under them in the barbettes, the AA and torpedo crews, the
-/// engineers, the command party, the directors' and transmitting stations' crews, the steering party, the air group, and
-/// the rest as repair men in the quarters and stores. Not an ammunition train's <see cref="StationKind"/>.</summary>
+/// engineers, the command party, the directors' and transmitting stations' crews, the steering party, the air group, the
+/// searchlights' crews, and the rest as repair men in the quarters and stores. Not an ammunition train's <see cref="StationKind"/>.</summary>
 public enum BattleStation : byte
 {
     Guns,
@@ -19,6 +19,8 @@ public enum BattleStation : byte
     Directors,
     Steering,
     Air,
+    /// <summary>The searchlights' crews (docs/battle/night.md Q3).</summary>
+    Searchlights,
     Repair,
 }
 
@@ -26,9 +28,10 @@ public enum BattleStation : byte
 /// cells') is, and her men at each.</summary>
 public static class BattleStations
 {
-    public static readonly string[] Names = ["guns", "handling", "aa", "torpedoes", "machinery", "command", "directors", "steering", "air", "repair"];
+    public static readonly string[] Names = ["guns", "handling", "aa", "torpedoes", "machinery", "command", "directors", "steering", "air", "searchlights",
+        "repair"];
 
-    public const int Count = 10;
+    public const int Count = 11;
 
     /// <summary>A relief from another trade at a station, against one of its own (docs/battle/crew.md N3a) [EST: CUF R9, a
     /// crew rebuilt from mixed reliefs loses 10-20% of its rate; the frozen men of N3b count none: <see cref="AtWork"/>].</summary>
@@ -50,6 +53,7 @@ public static class BattleStations
                 ComponentKind.Superstructure => p.Role is ComponentRole.Director or ComponentRole.Rangefinder ? BattleStation.Directors : BattleStation.Command,
                 ComponentKind.ConningTower => BattleStation.Command,
                 ComponentKind.HangarBay or ComponentKind.FlightDeck => BattleStation.Air,
+                ComponentKind.Searchlight => BattleStation.Searchlights,
                 _ => BattleStation.Repair,
             };
         }

@@ -3,7 +3,7 @@ namespace Fleetwright.Sim.Ships;
 
 /// <summary>What a function of the ship is (docs/battle/fighting.md 4.3a, FUNCTIONS): what the damage model asks of its
 /// parts. Index says which: a mount, a director, an eye, a shaft line, a boiler room (a room), a rudder, a submerged
-/// tube; the command function has none.</summary>
+/// tube, a searchlight; the command function has none.</summary>
 public enum FunctionKind : byte
 {
     /// <summary>A mount fires (Index: Mounts).</summary>
@@ -23,6 +23,8 @@ public enum FunctionKind : byte
     Command,
     /// <summary>A submerged tube fires (Index: Tubes): it and its torpedo room work (4.6).</summary>
     Tube,
+    /// <summary>A searchlight burns (Index: Searchlights): it and what carries it stand (docs/battle/night.md Q3).</summary>
+    Searchlight,
 }
 
 /// <summary>A function's needs (docs/research/simulation/damage-research/06-service-networks.md §4, Model A): every node
@@ -90,6 +92,8 @@ static class FunctionTable
             ref readonly var row = ref c.tubes[t];
             rows.Add(new FunctionRow(FunctionKind.Tube, t, Add([row.Component, row.Room >= 0 ? Room(row.Room) : -1]), Slice.Empty));
         }
+        for (int l = 0; l < c.searchlights.Length; l++)
+            rows.Add(new FunctionRow(FunctionKind.Searchlight, l, Add([c.searchlights[l].Component, c.searchlights[l].On]), Slice.Empty));
         var conning = new List<int>();
         for (int i = 0; i < c.components.Length; i++)
             if (c.components[i].Kind == ComponentKind.ConningTower || c.components[i].Role == ComponentRole.Bridge)

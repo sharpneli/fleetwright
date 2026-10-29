@@ -426,6 +426,8 @@ public static class HullArt
             P.Fitting(low, ft);
         foreach (var a in v.AaMounts)
             P.Aa(a.Upper ? high : low, a);
+        foreach (var l in v.Searchlights.Where(l => !l.Aloft))
+            P.Searchlight(l.Upper ? high : low, l);
         foreach (var b in spec.Boats ?? [])
             P.Boat(high, b);
 
@@ -440,6 +442,8 @@ public static class HullArt
             P.Mast(high, m, v.DeckM);
         foreach (var c in spec.Cranes ?? [])
             P.Crane(high, c);
+        foreach (var l in v.Searchlights.Where(l => l.Aloft))   // on the funnels' and masts' platforms, over them
+            P.Searchlight(high, l);
 
         scene.Root.Items.AddRange(low);
         scene.Root.Items.AddRange(high);

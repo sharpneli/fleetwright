@@ -966,6 +966,7 @@ public sealed class DamageSystem : IWorldSystem
         Array.Fill(k.MountLasts, false);
         Array.Fill(k.TubeWorks, false);
         Array.Fill(k.DirectorWorks, false);
+        Array.Fill(k.SearchlightWorks, false);
         Freeze(world, slot, k);
         k.Version++;
         k.HeldCap = 0;

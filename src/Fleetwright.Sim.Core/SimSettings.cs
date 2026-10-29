@@ -1064,14 +1064,14 @@ public sealed record SimSettings
     /// a part's by its component kind (as PartVital's), 1 and over open (an open mount, a mast, a funnel); the free
     /// share of a part's box [EST].</summary>
     public double[] RoomVentShare { get; init; } = [0.01, 0.02, 0, 0.005, 0.01, 0.15, 0.03, 0.01, 0, 0.02, 0, 0, 0.02, 0.02, 0.1];
-    public double[] PartVentShare { get; init; } = [0.05, 0.1, 1, 1, 0.02, 0.15, 0.05, 1, 1, 0.3, 0.2, 1, 0, 0.01, 1, 1, 1, 1, 0.1];
+    public double[] PartVentShare { get; init; } = [0.05, 0.1, 1, 1, 0.02, 0.15, 0.05, 1, 1, 0.3, 0.2, 1, 0, 0.01, 1, 1, 1, 1, 0.1, 0.1, 1];
     public double PartAirShare { get; init; } = 0.7;
 
     /// <summary>What a space's or a part's gear takes from the gas, MPa (11 §4.3 [EST]: fittings 0.03, electrical 0.10,
     /// auxiliary 0.25, machinery 0.6), by room kind and component kind: out of action from it, damaged from
     /// <see cref="BlastDamagedShare"/> of it.</summary>
     public double[] RoomBlastMPa { get; init; } = [0.03, 0.03, 0.25, 0.25, 0.6, 0.25, 0.25, 0.25, 0.6, 0.25, 0.6, 0.6, 0.03, 0.25, 0.03];
-    public double[] PartBlastMPa { get; init; } = [0.10, 0.10, 0.25, 0.10, 0.25, 0.03, 0.10, 0.25, 0.25, 0.25, 0.10, 0.25, 0.6, 0.6, 0.6, 0.6, 0.25, 0.03, 0.03];
+    public double[] PartBlastMPa { get; init; } = [0.10, 0.10, 0.25, 0.10, 0.25, 0.03, 0.10, 0.25, 0.25, 0.25, 0.10, 0.25, 0.6, 0.6, 0.6, 0.6, 0.25, 0.03, 0.03, 0.03, 0.10];
     public double BlastDamagedShare { get; init; } = 0.5;
 
     /// <summary>A burst's force as a share of one inside: in the plate, outside on it, and low-order.</summary>
@@ -1092,11 +1092,11 @@ public sealed record SimSettings
 
     /// <summary>A part's vitals as a share of it, by its kind (main, secondary and torpedo mounts, AA, barbette,
     /// superstructure, conning tower, funnel, uptake, casing, sponson, mast, shaft, shaft alley, propeller, rudder,
-    /// torpedo tube, flight deck, hangar bay): a burst's fragments that get into it damage it at this share of their
-    /// count (docs/battle/shells-armour-damage.md E1, the user's choice: like RoomVital). A funnel or uptake holed by
-    /// splinters keeps its draught; an open mount's crew and sights, a conning tower's instruments and a tube's
-    /// torpedoes don't [EST].</summary>
-    public double[] PartVital { get; init; } = [0.3, 0.3, 0.5, 0.5, 0.2, 0.2, 0.5, 0.05, 0.05, 0.1, 0.1, 0.1, 0.05, 0.2, 0.05, 0.05, 0.5, 0.1, 0.2];
+    /// torpedo tube, flight deck, hangar bay, a mast's top, searchlight): a burst's fragments that get into it damage it
+    /// at this share of their count (docs/battle/shells-armour-damage.md E1, the user's choice: like RoomVital). A funnel
+    /// or uptake holed by splinters keeps its draught; an open mount's crew and sights, a conning tower's instruments, a
+    /// tube's torpedoes and a searchlight's mirror don't [EST].</summary>
+    public double[] PartVital { get; init; } = [0.3, 0.3, 0.5, 0.5, 0.2, 0.2, 0.5, 0.05, 0.05, 0.1, 0.1, 0.1, 0.05, 0.2, 0.05, 0.05, 0.5, 0.1, 0.2, 0.2, 0.5];
 
     /// <summary>A boiler room keeps this share of its steam with every funnel it draws through wrecked (the draught
     /// lost; 08-gunfire-effects.md §8: funnel hits cost draught, not the boilers).</summary>
@@ -1309,7 +1309,7 @@ public sealed record SimSettings
     public double SpallRoofChance { get; init; } = 0.3;
     public double SpallFlashChance { get; init; } = 0.2;
     public double SpallStopMm { get; init; } = 5;
-    public double[] PartFragilityJ { get; init; } = [100, 100, 500, 100, 5000, 100, 100, 5000, 5000, 5000, 5000, 500, 5000, 500, 5000, 5000, 500, 500, 500];
+    public double[] PartFragilityJ { get; init; } = [100, 100, 500, 100, 5000, 100, 100, 5000, 5000, 5000, 5000, 500, 5000, 500, 5000, 5000, 500, 500, 500, 500, 100];
     public double RoomFragilityJ { get; init; } = 500;
 
     /// <summary>Fire: a burst's chance by the shell's kind (AP, common, HE; 08 §3.9's WWII bursts), as a rate times its
@@ -1500,9 +1500,10 @@ public sealed record SimSettings
     /// <summary>The share of the men who see the burst, by room kind (Stores ... Hangar): flats and stores 0.6, magazines
     /// and handling rooms 0.45, machinery and the steering gear 0.3 (16 §4.1 [EST]).</summary>
     public double[] CoverRoom { get; init; } = [0.6, 0.6, 0.6, 0.45, 0.3, 0.3, 0.3, 0.3, 0.6, 0.6, 0.6, 0.6, 0.6, 0.45, 0.6];
-    /// <summary>... by component kind (Main ... HangarBay; a mount's own by <see cref="CoverMount"/>): a station (a bridge,
-    /// a director, the conning tower) 0.7, a barbette's handling crew 0.45, the open (AA, tubes, masts, flight deck) 0.8.</summary>
-    public double[] CoverPart { get; init; } = [0.45, 0.45, 0.8, 0.8, 0.45, 0.7, 0.7, 0.8, 0.8, 0.6, 0.6, 0.8, 0.3, 0.3, 0.3, 0.3, 0.8, 0.8, 0.6];
+    /// <summary>... by component kind (Main ... Searchlight; a mount's own by <see cref="CoverMount"/>): a station (a bridge,
+    /// a director, the conning tower) 0.7, a barbette's handling crew 0.45, the open (AA, tubes, masts, flight deck,
+    /// searchlights) 0.8.</summary>
+    public double[] CoverPart { get; init; } = [0.45, 0.45, 0.8, 0.8, 0.45, 0.7, 0.7, 0.8, 0.8, 0.6, 0.6, 0.8, 0.3, 0.3, 0.3, 0.3, 0.8, 0.8, 0.6, 0.6, 0.8];
     /// <summary>... a mount's: an enclosed gunhouse (breeches, cradles, rammers), a casemate, an open or shielded mount.</summary>
     public double[] CoverMount { get; init; } = [0.45, 0.6, 0.8];
     /// <summary>Blast on people (16 §4.5; 11): in a closed space by the pressure its boundaries felt (E5), killed 50% at

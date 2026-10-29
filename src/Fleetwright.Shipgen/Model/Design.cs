@@ -52,6 +52,9 @@ public sealed record Design
     /// <summary>What's built in against water: drainage pumps, portable pumps, the counterflooding valves' rate and her
     /// boundaries' tightness (DrainageTemplates; docs/battle/damage-control.md DC4).</summary>
     public DrainageInput? Drainage { get; init; }
+    /// <summary>The searchlights: how many, their mirrors, lamps, beams and control (SearchlightTemplates;
+    /// docs/battle/night.md Q3). Shipgen sites them itself.</summary>
+    public SearchlightsInput? Searchlights { get; init; }
     public FireControlInput? FireControl { get; init; }
     /// <summary>The fire-control tech blocks the batteries' fits name, keyed by name (FireControlTemplates;
     /// docs/battle/fire-control.md F3): a name the table doesn't give takes the catalogue's block.</summary>
@@ -179,6 +182,31 @@ public sealed record DrainageInput
     [JsonPropertyName("counterflood_tpm_per_10000t")] public double? CounterfloodTpmPer10000T { get; init; }
     /// <summary>The intact boundaries' leak, × the base: 1 air-tested, more for glands and penetrations never tested.</summary>
     public double? Tightness { get; init; }
+    [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+/// <summary>A design's searchlights (docs/battle/night.md Q3), every key optional: one not given is its default template's
+/// for the plant's year (SearchlightTemplates). Shipgen sizes and sites them: a capital ship's count and mirror scale down
+/// to a torpedo craft's by her waterplane (L × B), unless `count` gives hers.</summary>
+public sealed record SearchlightsInput
+{
+    /// <summary>The template it was made from, a label only.</summary>
+    public string? Name { get; init; }
+    /// <summary>How many she carries; none: by her size, from capital_count.</summary>
+    public int? Count { get; init; }
+    /// <summary>How many a capital ship of 4,900 m² waterplane (180 × 27 m) carries.</summary>
+    public int? CapitalCount { get; init; }
+    /// <summary>A capital ship's mirror, cm; a torpedo craft's (600 m² of waterplane and under), cm. Between them her
+    /// mirror goes with the logarithm of her waterplane.</summary>
+    public double? MirrorCm { get; init; }
+    public double? SmallMirrorCm { get; init; }
+    /// <summary>The arc's crater, cd/cm²: a plain carbon arc 12,000-18,000, a high-intensity arc 50,000-90,000.</summary>
+    [JsonPropertyName("lamp_cd_cm2")] public double? LampCdCm2 { get; init; }
+    /// <summary>The beam's full spread, degrees.</summary>
+    public double? SpreadDeg { get; init; }
+    /// <summary>How they're trained: local (each by its own crew, by voice pipe or telephone), remote (from a searchlight
+    /// control position, by its directing sights) or director (slaved to a fire-control director).</summary>
+    public string? Control { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 

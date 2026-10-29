@@ -1,5 +1,5 @@
 {
- "version": 13,
+ "version": 14,
  "id": "gazelle",
  "name": "Gazelle-like (1900)",
  "type": "CL",
@@ -500,5 +500,14 @@
   "portable_tph": 15,
   "counterflood_tpm_per_10000t": 20,
   "tightness": 1
+ },
+ "searchlights": {
+  "name": "German Great War (1914)",
+  "capital_count": 8,
+  "mirror_cm": 110,
+  "small_mirror_cm": 60,
+  "lamp_cd_cm2": 16000,
+  "spread_deg": 1.8,
+  "control": "remote"
  }
 }

@@ -1760,7 +1760,8 @@ visibility they light up. Fire control's own sight lines (4.2) are per engaged p
 - ~~Masts are the funnel top + 6 m on every ship~~ and ~~no spotting or fighting top as a part~~: done in
   fire-control.md F4a-b (masts by kind with tops at their heights, directors in tops) and F4d (the masthead lookout
   placeholder went: a lookout stands in a top, a crow's nest's too).
-- **Searchlights are render clutter, not parts** (night fighting needs them).
+- ~~Searchlights are render clutter, not parts~~: done in night.md Q3 (shipgen sites them from the design's block, a
+  part each with a row in the class).
 - **No smoke output per funnel in the export** (shipgen has the fuel, draught and gas flow behind `SmokeReach`): for
   the smoke field.
 

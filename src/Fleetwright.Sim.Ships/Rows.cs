@@ -278,6 +278,22 @@ public readonly record struct RudderRow(int Component, double X, double Y, doubl
 /// <summary>A director: a superstructure block with role director.</summary>
 public readonly record struct DirectorRow(int Component, Battery Battery, double RangefinderM, bool Radar);
 
+/// <summary>How a searchlight is trained (the design's searchlights.control): by its own crew, from a searchlight control
+/// position by its directing sights, or slaved to a fire-control director.</summary>
+public enum SearchlightControl : byte
+{
+    Local,
+    Remote,
+    Director,
+}
+
+/// <summary>A searchlight (docs/battle/night.md Q3): its part, and the part that carries it (a funnel, a mast or a block;
+/// -1 the deck); the lamp's place in the ship's frame and its height over the sea; the mirror (m), the beam's peak
+/// intensity (cd) and full spread (degrees), how it's trained, and the arc's draw (kW). Shipgen sizes and sites them
+/// (SearchlightTemplates).</summary>
+public readonly record struct SearchlightRow(int Component, int On, double X, double Y, double HeightM, double MirrorM, double BeamCd,
+    double SpreadDeg, SearchlightControl Control, double PowerKw);
+
 // ------------------------------------------------------------------ the weapons (docs/battle/fighting.md 4.0)
 
 public enum ShellKind : byte

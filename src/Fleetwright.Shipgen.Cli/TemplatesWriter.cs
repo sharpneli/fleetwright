@@ -56,6 +56,12 @@ static class TemplatesWriter
         }).ToArray());
         Write(Path.Combine(repo, "Content", "Templates", "drainage.json"), drainage.ToJsonString(json) + "\n");
         Write(Path.Combine(repo, "docs", "shipgen", "drainage-templates.md"), DrainagePage());
+        var searchlights = new JsonArray(SearchlightTemplates.All.Select(o => (JsonNode)new JsonObject
+        {
+            ["name"] = o.Name, ["group"] = "", ["note"] = o.Note, ["value"] = Value(o.Value),
+        }).ToArray());
+        Write(Path.Combine(repo, "Content", "Templates", "searchlights.json"), searchlights.ToJsonString(json) + "\n");
+        Write(Path.Combine(repo, "docs", "shipgen", "searchlight-templates.md"), SearchlightPage());
         Write(Path.Combine(repo, "docs", "shipgen", "shell-templates.md"), ShellPage());
         Write(Path.Combine(repo, "docs", "shipgen", "explosive-templates.md"), ExplosivePage());
         Write(Path.Combine(repo, "docs", "shipgen", "material-templates.md"), MaterialPage());
@@ -351,6 +357,49 @@ static class TemplatesWriter
         }
         sb.Append('\n');
         foreach (var o in DrainageTemplates.All)
+            sb.Append("- **").Append(o.Name).Append(":** ").Append(o.Note).Append('\n');
+        return sb.ToString();
+    }
+
+    static string SearchlightPage()
+    {
+        var sb = new StringBuilder();
+        sb.Append("""
+            # Searchlight templates
+
+            Written by `shipgen templates` from `src/Fleetwright.Shipgen/SearchlightTemplates.cs`; don't edit by hand. The
+            designer's templates are `Content/Templates/searchlights.json`, from the same table.
+
+            A design's `searchlights` block says what lights she carries (`docs/battle/night.md` Q3), and shipgen sizes and
+            sites them itself: a capital ship's count (180 × 27 m of waterplane; a smaller ship in proportion to her waterplane,
+            a bigger one by its 0.25 power, at least one) unless `count` gives hers, and her mirror between a torpedo craft's (600
+            m² and under) and a capital ship's by the logarithm of her waterplane. They stand on the bridge's wings, on
+            platforms on the funnels' sides, on after control, on the masts' tops and the other roofs, the groups taking turns
+            so they spread fore and aft, pairs abreast; the deck only where nothing else has room. The arc's crater (cd/cm²)
+            and the mirror give the beam's peak (crater × mirror's face × 0.9 clear × 0.85 silvered glass), the spread its
+            width; control is local (each light by its crew), remote (from a searchlight control position) or director.
+            A light's weight (1.2 t a 36-inch, by its mirror's area), draw (6.5 kW a 36-inch plain arc) and crew (three at a
+            36-inch) are booked from its mirror. A key not given takes its template in the plant's year (old designs got the
+            whole block by their navy so when the format moved to 14). The numbers are estimates by period [EST] until the
+            research request "Night fighting, 1890-1925" comes back.
+
+            ```json
+            "searchlights": {"name": "Great War (1914)", "capital_count": 8, "mirror_cm": 91, "small_mirror_cm": 61,
+              "lamp_cd_cm2": 16000, "spread_deg": 2, "control": "local"}
+            ```
+
+            | Template | Capital ship | Mirror, cm | Small, cm | Crater, cd/cm² | Beam (capital), cd | Spread | Control |
+            |---|---|---|---|---|---|---|---|
+
+            """.Replace("\r\n", "\n"));
+        foreach (var o in SearchlightTemplates.All)
+        {
+            var v = o.Value;
+            double cd = SearchlightTemplates.BeamCd(v.MirrorCm!.Value / 100, v.LampCdCm2!.Value);
+            sb.Append(Inv, $"| {o.Name} | {v.CapitalCount} | {v.MirrorCm:0} | {v.SmallMirrorCm:0} | {v.LampCdCm2:#,0} | {cd:0.0e0} | {v.SpreadDeg:0.0#}° | {v.Control} |\n");
+        }
+        sb.Append('\n');
+        foreach (var o in SearchlightTemplates.All)
             sb.Append("- **").Append(o.Name).Append(":** ").Append(o.Note).Append('\n');
         return sb.ToString();
     }

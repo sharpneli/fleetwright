@@ -60,6 +60,9 @@ public enum ComponentKind : byte
     HangarBay,
     /// <summary>A mast's top: a platform or an enclosed top round the mast at its height (fire-control.md F4).</summary>
     Top,
+    /// <summary>A searchlight with its platform (docs/battle/night.md Q3): on a roof, a funnel's platform, a mast's top or
+    /// the deck.</summary>
+    Searchlight,
 }
 
 /// <summary>Where along the hull an armour strake or deck runs (the design's "ends" is a fore and an aft piece). The sim

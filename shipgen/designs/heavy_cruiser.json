@@ -1,5 +1,5 @@
 {
-  "version": 13,
+  "version": 14,
   "id": "heavy_cruiser", "name": "Heavy Cruiser", "look": {"navy": "generic", "era": "wwii"}, "type": "CA",
   "hull": {"block_coefficient": 0.53, "construction": {"name": "High-tensile steel, riveted shell, welded internals", "yield_mpa": 350, "join_factor": 1.04, "standard": 1.0, "shell": "riveted", "internals": "welded"}, "plating": {"shell_mm": 0, "material": "steel", "deck_wood_mm": 50}, "freeboard": 1.0, "raised": []},
   "speed_kn": 33, "range_nm": 10000,
@@ -19,5 +19,6 @@
  "masts": [{"kind": "tripod"}, {"kind": "pole"}],
  "outfit": {"name": "Interwar (1939)", "fitted": {"quarters": 380, "cabins": 650, "offices": 500, "stores": 1500, "machinery": 150, "deck": 250}, "stripped": {"quarters": 240, "cabins": 280, "offices": 300, "stores": 1200, "machinery": 120, "deck": 120}, "paint_mj_m2": 100, "growth": 1.3},
  "gun_tech": {"Second War, double-base": {"reload_share": 0.9, "heavy_slow": 1, "heavy_slow_under_40_cal": 1, "heavy_slow_under_30_cal": 1, "train_share": 1.5, "dp_train_share": 1.6, "max_elevation_deg": 40, "dp_max_elevation_deg": 45, "pattern_pct": 1.9, "pattern_exp": 0, "pattern_light_pct": 1.8, "propellant": "double-base", "black_powder_under_cal": 0, "packaging": "clarkson"}},
- "drainage": {"name": "Interwar (1939)", "pumps_tph_per_1000t": 60, "portable_pumps": 6, "portable_tph": 30, "counterflood_tpm_per_10000t": 18, "tightness": 1}
+ "drainage": {"name": "Interwar (1939)", "pumps_tph_per_1000t": 60, "portable_pumps": 6, "portable_tph": 30, "counterflood_tpm_per_10000t": 18, "tightness": 1},
+ "searchlights": {"name": "Second War (1940)", "capital_count": 6, "mirror_cm": 150, "small_mirror_cm": 61, "lamp_cd_cm2": 75000, "spread_deg": 1.2, "control": "director"}
 }

@@ -367,6 +367,9 @@ public static class ShipClassCompiler
             var shafts = new List<ShaftLineRow>();
             var rudders = new List<RudderRow>();
             var directors = new List<DirectorRow>();
+            var searchlights = new List<SearchlightRow>();
+            var lights = SearchlightTemplates.Of(ship.Design);
+            var control = lights.Control switch { "remote" => SearchlightControl.Remote, "director" => SearchlightControl.Director, _ => SearchlightControl.Local };
             var tubes = new List<TubeRow>();
             for (int i = 0; i < n; i++)
             {
@@ -431,6 +434,12 @@ public static class ShipClassCompiler
                         case ComponentKind.Rudder:
                             detail = rudders.Count;
                             rudders.Add(new RudderRow(i, x.X ?? 0, x.Y ?? 0, Or(x.AreaM2), Room(x.Steering)));
+                            break;
+                        case ComponentKind.Searchlight:
+                            detail = searchlights.Count;
+                            double mirror = Or(x.MirrorM), lamp = lights.LampCdCm2 ?? 16000;
+                            searchlights.Add(new SearchlightRow(i, Comp(x.On), x.X ?? 0, x.Y ?? 0, x.Base + 0.6 * (x.Top - x.Base) - hb.Vertical.Waterline,
+                                mirror, SearchlightTemplates.BeamCd(mirror, lamp), lights.SpreadDeg ?? 2, control, SearchlightTemplates.PowerKw(mirror, lamp)));
                             break;
                         case ComponentKind.TorpedoTube:
                             detail = tubes.Count;
@@ -511,8 +520,9 @@ public static class ShipClassCompiler
                 funnels[k] = funnels[k] with { Share = share, ExitAreaM2 = gasArea * share };
             }
             c.components = rows;
-            (c.mounts, c.barbettes, c.funnels, c.shaftLines, c.rudders, c.directors, c.tubes) =
-                (mounts.ToArray(), barbettes.ToArray(), funnels.ToArray(), shafts.ToArray(), rudders.ToArray(), directors.ToArray(), tubes.ToArray());
+            (c.mounts, c.barbettes, c.funnels, c.shaftLines, c.rudders, c.directors, c.searchlights, c.tubes) =
+                (mounts.ToArray(), barbettes.ToArray(), funnels.ToArray(), shafts.ToArray(), rudders.ToArray(), directors.ToArray(),
+                 searchlights.ToArray(), tubes.ToArray());
         }
 
         /// <summary>The plan's extent: the outline's, a circle's or disc's square, a mount's turret body at rest, a

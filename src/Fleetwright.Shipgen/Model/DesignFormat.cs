@@ -12,7 +12,7 @@ namespace Fleetwright.Shipgen;
 public static class DesignFormat
 {
     /// <summary>The version this build writes.</summary>
-    public const int Current = 13;
+    public const int Current = 14;
 
     /// <summary>Steps[v] upgrades a version v design to v + 1, adding what it couldn't tell to the warnings.</summary>
     static readonly Action<JsonObject, List<string>>[] Steps =
@@ -30,7 +30,23 @@ public static class DesignFormat
         Drainage,                      // 10 → 11: what's built in against water (docs/battle/damage-control.md DC4)
         (d, _) => Housing(d),          // 11 → 12: how the guns are housed (docs/battle/magazines.md V1)
         (d, _) => Packaging(d),        // 12 → 13: how the charges are packed (docs/battle/magazines.md V3)
+        Searchlights,                  // 13 → 14: the searchlights the design's (docs/battle/night.md Q3)
     ];
+
+    /// <summary>13 → 14: searchlights were the drawing's clutter; now they're the design's (SearchlightTemplates), sited by
+    /// shipgen. A design without a block gets its navy's (look.navy) in its plant's year, else the Great War's, with a
+    /// warning. Its count is left to her size.</summary>
+    static void Searchlights(JsonObject d, List<string> warnings)
+    {
+        if (d["searchlights"] is not null)
+            return;
+        string? tech = d["machinery"]?["tech"]?["name"] is JsonValue t && t.TryGetValue(out string? ts) ? ts : null;
+        string? navy = d["look"]?["navy"] is JsonValue nv && nv.TryGetValue(out string? ns) ? ns : null;
+        var template = Fittings.YearOf(tech) is int year ? SearchlightTemplates.ByNavyAndYear(navy, year) : SearchlightTemplates.All[3];
+        if (Fittings.YearOf(tech) is null)
+            warnings.Add($"searchlights: no plant year to set them by (machinery.tech's name); {template.Name} assumed");
+        d["searchlights"] = JsonSerializer.SerializeToNode(template.Value, ShipgenJson.Default.SearchlightsInput);
+    }
 
     /// <summary>12 → 13: a gun block says how its charges are packed (GunTemplates.Packagings); a block without gets its
     /// propellant's usual (GunTemplates.PackagingOf: double-base in Clarkson cases, single-base in tanks, the later ones in

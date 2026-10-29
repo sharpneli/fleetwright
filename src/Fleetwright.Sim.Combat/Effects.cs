@@ -316,9 +316,10 @@ public static class Effects
         }
     }
 
-    /// <summary>The power off for ms (E4's shock) to the mounts and directors from <paramref name="from"/> (exclusive; -1
-    /// takes in the struck part's too) to <paramref name="to"/> metres of a point, and to the struck part's own (its
-    /// mount, a conning tower's directors): mounts down, directors out. Whether it reached any.</summary>
+    /// <summary>The power off for ms (E4's shock) to the mounts, directors and searchlights from <paramref name="from"/>
+    /// (exclusive; -1 takes in the struck part's too) to <paramref name="to"/> metres of a point, and to the struck part's
+    /// own (its mount, a conning tower's directors): mounts down, directors and searchlights out. Whether it reached
+    /// any.</summary>
     public static bool PowerOut(ShipClass c, ShipCondition k, P3 at, int struck, double from, double to, long ms, long now, DownCause why)
     {
         bool any = false;
@@ -338,6 +339,15 @@ public static class Effects
             if (d <= to && (from < 0 || d > from))
             {
                 k.Out(k.DirectorDown, i, now, ms);
+                any = true;
+            }
+        }
+        for (int i = 0; i < c.Searchlights.Length; i++)
+        {
+            double d = c.Searchlights[i].Component == struck ? 0 : Distance(c, c.Searchlights[i].Component, at);
+            if (d <= to && (from < 0 || d > from))
+            {
+                k.Out(k.SearchlightDown, i, now, ms);
                 any = true;
             }
         }
@@ -1034,12 +1044,12 @@ public static class Effects
 
     internal static double Vital(ShipClass c, int room, SimSettings s) => s.RoomVital[Math.Min((int)c.Rooms[room].Kind, s.RoomVital.Length - 1)];
 
-    /// <summary>What a shell passing through a part does to it: a mount, a director, a shaft or a rudder is put out of
-    /// action; plating, a funnel or a mast is damaged.</summary>
+    /// <summary>What a shell passing through a part does to it: a mount, a director, a shaft, a rudder or a searchlight is
+    /// put out of action; plating, a funnel or a mast is damaged.</summary>
     internal static PartState Struck(ComponentKind kind) => kind switch
     {
         ComponentKind.Main or ComponentKind.Secondary or ComponentKind.Torpedo or ComponentKind.Aa or ComponentKind.Shaft or ComponentKind.Propeller
-            or ComponentKind.Rudder or ComponentKind.TorpedoTube => PartState.Disabled,
+            or ComponentKind.Rudder or ComponentKind.TorpedoTube or ComponentKind.Searchlight => PartState.Disabled,
         _ => PartState.Damaged,
     };
 

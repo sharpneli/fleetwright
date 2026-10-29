@@ -105,7 +105,8 @@ public class ContentsTests(ITestOutputHelper output)
     }
 
     /// <summary>A shell falling into a coal ship's wing bunker (C3a): the trace shows the run through the coal, and the shell
-    /// slowed by e^(−x/L) over it, L 120 calibres.</summary>
+    /// slowed by e^(−x/L) over it, L 120 calibres. Aimed at points along the bunker: most of them burst in the decks over
+    /// it, so it takes a few.</summary>
     [Fact]
     public void Coal_slows_a_shell_a_little()
     {
@@ -129,9 +130,9 @@ public class ContentsTests(ITestOutputHelper output)
         var range = new ShotRange(Settings);
         double decay = WaterRun.DecayM(shell, Settings, Stowage.CoalRho, MediumKind.Granular);
         int runs = 0;
-        for (ulong seed = 1; seed <= 12; seed++)
+        for (ulong seed = 1; seed <= 36; seed++)
         {
-            var s = range.Fire(target, shell, "iron duke main", elev, 18_000, y > 0 ? 270 : 90, new P3(x0 + (x1 - x0) * seed / 13.0, y, z), seed);
+            var s = range.Fire(target, shell, "iron duke main", elev, 18_000, y > 0 ? 270 : 90, new P3(x0 + (x1 - x0) * seed / 37.0, y, z), seed);
             foreach (var step in s.Steps)
                 if (step.Call == PlateCall.Medium && step.Name == "coal")
                 {

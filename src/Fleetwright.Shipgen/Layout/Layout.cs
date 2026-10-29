@@ -179,6 +179,8 @@ public sealed partial class Layout
     public List<Funnel> Funnels = [];
     public List<AaMount> Aa = [];
     public List<Mast> Masts = [];
+    /// <summary>The searchlights (PlaceSearchlights).</summary>
+    public List<Searchlight> Searchlights = [];
     /// <summary>The submerged torpedo tubes (SubmergedTubes.Plan).</summary>
     public List<SubmergedTube> Tubes = [];
     public double FunTop;

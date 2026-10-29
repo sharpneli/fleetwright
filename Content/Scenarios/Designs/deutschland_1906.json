@@ -1,5 +1,5 @@
 {
- "version": 13,
+ "version": 14,
  "id": "deutschland_1906",
  "name": "Deutschland-like pre-dreadnought (1906)",
  "type": "BB",
@@ -568,5 +568,14 @@
   "portable_tph": 8,
   "counterflood_tpm_per_10000t": 8,
   "tightness": 2
+ },
+ "searchlights": {
+  "name": "Pre-dreadnought (1904)",
+  "capital_count": 6,
+  "mirror_cm": 75,
+  "small_mirror_cm": 45,
+  "lamp_cd_cm2": 14000,
+  "spread_deg": 2.5,
+  "control": "local"
  }
 }

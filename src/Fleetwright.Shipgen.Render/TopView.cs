@@ -40,6 +40,9 @@ public sealed class TopView
             .Select(c => new MastTier(c.R!.Value, c.Base, c.Top)).OrderBy(t => t.Base).ToList();
 
     public sealed record Aa(string Id, string Type, double X, double Y, double Dir, double R, double Top, bool Upper);
+    /// <summary>A searchlight on its platform: Upper on a roof drawn in the high pass, Aloft on a funnel's or a mast's
+    /// platform (drawn over them).</summary>
+    public sealed record Light(string Id, double X, double Y, double R, double Top, bool Upper, bool Aloft);
 
     /// <summary>A raised stretch of hull, Levels decks up.</summary>
     public sealed record Raised(double X0, double X1, long Levels, List<Pt> Outline, double Top);
@@ -82,6 +85,7 @@ public sealed class TopView
     public required List<Funnel> Funnels;
     public required List<Mast> Masts;
     public required List<Aa> AaMounts;
+    public required List<Light> Searchlights;
     public required List<Raised> RaisedDecks;
     public Tower? ConningTower;
     public required List<Casing> Casings;
@@ -141,6 +145,10 @@ public sealed class TopView
         var aa = comps.Where(c => c.Kind == ComponentKind.Aa).Select(c => new Aa(c.Id, c.Type!, c.X!.Value, c.Y!.Value, c.RestDeg ?? 0.0, c.R!.Value, c.Top,
             OnUpper(c))).ToList();
 
+        var tall = comps.Where(c => c.Kind is ComponentKind.Funnel or ComponentKind.Mast).Select(c => c.Id).ToHashSet(StringComparer.Ordinal);
+        var lights = comps.Where(c => c.Kind == ComponentKind.Searchlight).Select(c => new Light(c.Id, c.X!.Value, c.Y!.Value, c.R!.Value, c.Top,
+            OnUpper(c), c.On is { } on && tall.Contains(on))).ToList();
+
         var hull = new Hull(new HullSpec(hb.Length, hb.Beam, hb.Bow, hb.Stern));
         var vert = hb.Vertical;
         double deckM = Math.Max(vert.Freeboard, 0.1);
@@ -167,7 +175,7 @@ public sealed class TopView
         {
             Id = ship.Design.Id ?? "", Hull = hull, Deck = SideAt(0.0), SideBands = bands, ShadeBands = shades, KnuckleM = knuckleM, DeckM = deckM, TurretTypes = hb.TurretTypes, Mounts = mounts,
             Barbettes = comps.Where(c => c.Kind == ComponentKind.Barbette).Select(c => new Barbette(c.X!.Value, c.Y!.Value, c.R!.Value, c.Top)).ToList(),
-            Blocks = blocks, Funnels = funnels, Masts = masts, AaMounts = aa, RaisedDecks = raised,
+            Blocks = blocks, Funnels = funnels, Masts = masts, AaMounts = aa, Searchlights = lights, RaisedDecks = raised,
             ConningTower = comps.Where(c => c.Kind == ComponentKind.ConningTower).Select(c => new Tower(c.X!.Value, c.Y!.Value, c.R!.Value, c.Top))
                 .FirstOrDefault(),
             Casings = comps.Where(c => c.Kind == ComponentKind.Casing && c.Top > 0).Select(c => new Casing(c.Id, c.Points!, c.Top)).ToList(),
@@ -208,6 +216,8 @@ public sealed class TopView
             items.Add(new(DeckM + b.Top, "polygon") { Points = b.Outline });
         foreach (var a in AaMounts)
             items.Add(new(DeckM + a.Top, "circle") { Cx = a.X, Cy = a.Y, R = a.R * 0.8 });
+        foreach (var l in Searchlights)   // the drum a dome on its platform
+            items.Add(new(DeckM + l.Top, "circle") { Cx = l.X, Cy = l.Y, R = l.R, Profile = Relief.Dome(l.X, l.Y, l.R, l.R, DeckM + l.Top, l.R) });
         foreach (var bt in d.Boats ?? [])
         {
             double top = DeckM + (bt.Top ?? Layout.LevelH + 1.5);   // a boat's hull: an ellipsoid along its length

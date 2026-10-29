@@ -1,4 +1,4 @@
-{"version": 13, "id": "tiger", "name": "Tiger-class cruiser (1959)", "look": {"navy": "portsmouth", "era": "cold_war"}, "type": "CL",
+{"version": 14, "id": "tiger", "name": "Tiger-class cruiser (1959)", "look": {"navy": "portsmouth", "era": "cold_war"}, "type": "CL",
  "hull": {"block_coefficient": 0.52, "construction": {"name": "High-tensile steel, all welded", "yield_mpa": 350, "join_factor": 1.0, "standard": 1.0, "shell": "welded", "internals": "welded"}, "plating": {"shell_mm": 0, "material": "steel", "deck_wood_mm": 0}, "freeboard": 1.0, "raised": []},
  "speed_kn": 31.5,
  "range_nm": 6500,
@@ -19,5 +19,6 @@
  "masts": [{"kind": "pole"}, {"kind": "pole"}],
  "outfit": {"name": "Interwar (1939)", "fitted": {"quarters": 380, "cabins": 650, "offices": 500, "stores": 1500, "machinery": 150, "deck": 250}, "stripped": {"quarters": 240, "cabins": 280, "offices": 300, "stores": 1200, "machinery": 120, "deck": 120}, "paint_mj_m2": 100, "growth": 1.3},
  "gun_tech": {"Cold War, triple-base": {"reload_share": 0.5, "heavy_slow": 1, "heavy_slow_under_40_cal": 1, "heavy_slow_under_30_cal": 1, "train_share": 3, "dp_train_share": 1.6, "max_elevation_deg": 45, "dp_max_elevation_deg": 45, "pattern_pct": 1.5, "pattern_exp": 0, "pattern_light_pct": 1.5, "propellant": "triple-base", "black_powder_under_cal": 0, "packaging": "brass"}},
- "drainage": {"name": "Interwar (1939)", "pumps_tph_per_1000t": 60, "portable_pumps": 6, "portable_tph": 30, "counterflood_tpm_per_10000t": 18, "tightness": 1}
+ "drainage": {"name": "Interwar (1939)", "pumps_tph_per_1000t": 60, "portable_pumps": 6, "portable_tph": 30, "counterflood_tpm_per_10000t": 18, "tightness": 1},
+ "searchlights": {"name": "Second War (1940)", "capital_count": 6, "mirror_cm": 150, "small_mirror_cm": 61, "lamp_cd_cm2": 75000, "spread_deg": 1.2, "control": "director"}
 }

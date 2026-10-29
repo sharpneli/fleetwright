@@ -1,5 +1,5 @@
 {
- "version": 13,
+ "version": 14,
  "id": "engadine",
  "name": "Engadine-like seaplane carrier (1911)",
  "type": "AV",
@@ -391,5 +391,14 @@
   "portable_tph": 30,
   "counterflood_tpm_per_10000t": 18,
   "tightness": 1
+ },
+ "searchlights": {
+  "name": "Interwar (1930)",
+  "capital_count": 6,
+  "mirror_cm": 110,
+  "small_mirror_cm": 61,
+  "lamp_cd_cm2": 60000,
+  "spread_deg": 1.4,
+  "control": "remote"
  }
 }
