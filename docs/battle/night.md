@@ -892,11 +892,41 @@ the strain of being found and fired on (CUF R2-R3), built for straddles and ligh
   only a contact). One mount keeps a flare up (Q5's task) until the order's given again, the contact's lost or sunk, or
   she's out of its reach; held by hand as `ShellHeld` is, so the captain doesn't cancel it. Given to a unit, one ship
   fires: the nearest carrying star shell with the target in reach.
+- **A blanket of star shell (later; the user, 2026-10-29):** an admiral, or a captain, may order a spread of flares
+  over an area (several ships or mounts, the flares laid side by side) rather than one over a contact. The doctrine and
+  its numbers (how many, how far apart, who fires) likely come with the research results; the sea-point order above is
+  its single-flare case.
 - **No challenge by hand** (the user): challenging stays doctrine's.
 - **In the strip** (strip.md's GUNS pane, no new pane): row 2 Shells ▾ `R` · Star shell… `⇧R`; row 3 Torpedoes at…
   `⇧E` · Darken `⇧X` · Beams on `⇧G`; the title note "dark" / "beams on Derfflinger" / "star shell on V27" while one is
   set; the enemy pane gains Star shell on her `⇧R`. Greyed with the reason where it can't be given (no searchlights, no
   star shell aboard, out of its reach). The shifted keys are free.
+
+**The mockup (2026-10-29):** `docs/map-ui/night.html` (`png/night-mock-1.png` to `-4.png`; N toggles the notes, 1-4 the
+state), drawn over the game's Dover Strait at 23:50 (Broke firing on G42 at 300 m, her beam on), the dark states over
+the same frame with the beam, the fire lines and G42's marks painted out. The ships' state is made up where a state
+needs it (Broke has no star shell). Four states:
+
+1. **Beams on by hand:** the GUNS pane's rows become Fire at will · Engage… · Hold fire; Shells ▾ `R` · Torpedoes… `⇧E`
+   (what's loaded to its tooltip; the card's TORPEDOES has it); the night row Star shell… `⇧R` · Dark `⇧X` · Beams `⇧G`
+   (the short labels fit the pane's 234 px as it is). A beam as a mark: a narrow wedge of the light's colour from the lamp
+   to its reach, fading, a thin line to the ship it's held on; **lit** as a dashed ring of the light's colour about any
+   ship in a beam or under a flare. The card's chip "showing a light: beams" by "in action"; a spark by her name in the rail.
+2. **Star shell armed on the sea:** the status bar's amber pick, the cursor's verb ("Broke: STAR SHELL · the sea here ·
+   1.1 km"), the flare's patch ghosted where it would burst; the reach as a dashed ring while armed. **A light seen** as a
+   spark where it's reckoned with its bearing dashed (the placeholder disc goes), labelled with what showed.
+3. **Darkened:** Dark lit, Fire at will stays lit (the order she'll fight by once fired on), the note "dark: holding fire
+   till fired on"; the card's chip "dark", the rail's DOING "dark · holding". **An unknown** (Q6: made out, not known for
+   friend or foe) as APP-6's quatrefoil in the unknown's cream, filled in sight, the enemy's diamond once known for a foe;
+   the rail's ENEMY groups unknowns first.
+4. **The unknown selected:** the ENEMY pane says she's lit and by what; ORDERS AGAINST HER gains Star shell on her `⇧R`
+   beside the torpedoes. A flare burning: a four-pointed star, the sea it lights as a faint disc, its seconds left.
+
+**Questions on the mockup (for the user):**
+1. The night row in GUNS, the torpedoes moved up beside the shells (their count to the tooltip): fine?
+2. Unknowns as a cream quatrefoil (APP-6), or the diamond kept in cream?
+3. The beam and flare marks at every zoom, over the world view's real beams (Q10) too, or only on the table?
+4. Darkened keeps Fire at will lit with "holding" in the note: or should Dark light Hold fire while she waits?
 
 ### Q10 The look
 

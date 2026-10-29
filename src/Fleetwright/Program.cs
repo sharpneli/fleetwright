@@ -57,8 +57,8 @@ public static unsafe class Program
                 {
                     screenshotFrame = frame;
                 }
-                else if (value.StartsWith('@') && TimeSpan.TryParseExact(value[1..], @"hh\:mm", System.Globalization.CultureInfo.InvariantCulture, out var at))
-                    (screenshotAt, screenshotFrame) = (at, int.MaxValue);   // @HH:MM: once the world's clock passes it (side-by-side captures)
+                else if (value.StartsWith('@') && TimeSpan.TryParseExact(value[1..], [@"hh\:mm", @"hh\:mm\:ss"], System.Globalization.CultureInfo.InvariantCulture, out var at))
+                    (screenshotAt, screenshotFrame) = (at, int.MaxValue);   // @HH:MM[:SS]: once the world's clock passes it (side-by-side captures)
             }
             else if (arg.StartsWith("-ship="))
             {

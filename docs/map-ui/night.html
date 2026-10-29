@@ -1,0 +1,318 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Night controls</title>
+<!-- The night's hand on the battle map (docs/battle/night.md Q9): the GUNS pane's night row (Star shell…, Dark, Beams),
+     the marks for lights (a beam, a flare's patch, a light seen, an unknown), and "showing a light" on the card and the
+     rail. Drawn over the game's capture of the Dover Strait at 23:50 (png/night-bg.png: Broke firing on G42 at 300 m, her
+     beam on the placeholder line); the dark states over the same frame with the beam, the fire lines and G42's marks
+     painted out (png/night-bg-dark.png). Four states: 1 beams on by hand, 2 star shell armed on the sea, 3 darkened with
+     an unknown ahead, 4 the unknown selected. The ships' state is made up where a state needs it (Broke has no star
+     shell: the RN 1912 family has none). -->
+<style>
+@font-face{font-family:'Saira Extra Condensed';font-weight:700;src:url(../designer-ui/assets/fonts/saira-extra-condensed-latin-700-normal.woff2)}
+@font-face{font-family:'Barlow Condensed';font-weight:400;src:url(../designer-ui/assets/fonts/barlow-condensed-latin-400-normal.woff2)}
+@font-face{font-family:'Barlow Condensed';font-weight:500;src:url(../designer-ui/assets/fonts/barlow-condensed-latin-500-normal.woff2)}
+@font-face{font-family:'Barlow Condensed';font-weight:600;src:url(../designer-ui/assets/fonts/barlow-condensed-latin-600-normal.woff2)}
+@font-face{font-family:'Red Hat Mono';font-weight:400;src:url(../designer-ui/assets/fonts/red-hat-mono-latin-400-normal.woff2)}
+@font-face{font-family:'Red Hat Mono';font-weight:500;src:url(../designer-ui/assets/fonts/red-hat-mono-latin-500-normal.woff2)}
+:root{
+  --ground:#0F0F0E;--panel:#1B1B19;--panel2:#22221F;--inset:#0B0B0A;--line:#272724;--edge:#050505;--bevel:#2E2E2A;
+  --title-top:#3A3934;--title-bot:#2A2A26;--header:#141412;--text:#D3CFC4;--bright:#F6F3EA;--muted:#8A867B;--faint:#55524B;
+  --brass:#E8772E;--brass-darker:rgba(232,119,46,.16);--ok:#8DBE6B;--amber:#E8B64A;--amber-bg:rgba(232,182,74,.16);--fr:#F1ECDD;--red:#E04A3C;
+  --btn:#2E2D29;--btn2:#232220;--border:#3A3934;--key:#45443E;
+  --light:#FFD173;--unknown:#F2E6B3;--sea:rgb(7,21,39);
+  --font-head:'Saira Extra Condensed','Arial Narrow',sans-serif;
+  --font-ui:'Barlow Condensed','Arial Narrow',sans-serif;
+  --font-data:'Red Hat Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--edge)}
+#app{position:relative;width:1920px;height:1080px;overflow:hidden;background:url(png/night-bg.png) no-repeat;color:var(--text);font:13px/1.3 var(--font-ui)}
+#app.dark{background-image:url(png/night-bg-dark.png)}
+.abs{position:absolute}
+
+/* ------------------------------------------------------------------ panes, as strip.html */
+.pane{position:absolute;background:var(--panel);border:1px solid var(--edge);display:flex;flex-direction:column;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+.title{height:20px;flex:none;display:flex;align-items:center;gap:8px;padding:0 6px;background:linear-gradient(var(--title-top),var(--title-bot));border-bottom:1px solid var(--edge);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);color:var(--brass);font-family:var(--font-head);font-weight:700;font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;white-space:nowrap}
+.title::before{content:'';flex:none;width:5px;height:5px;border-radius:50%;background:var(--faint);margin-right:-3px}
+.title .note{color:var(--muted);font-family:var(--font-ui);font-weight:400;text-transform:none;letter-spacing:0;font-size:12px;overflow:hidden;text-overflow:ellipsis}
+.title .r{margin-left:auto;color:var(--muted);font-family:var(--font-ui);font-weight:400;text-transform:none;letter-spacing:0;font-size:12px;display:flex;gap:5px;align-items:center}
+.title .fig{font-family:var(--font-data);font-size:11px;color:var(--bright)}
+.body{padding:5px 5px 0;display:flex;flex-direction:column;gap:5px}
+.row{display:flex;align-items:center;gap:3px;height:20px;white-space:nowrap}
+.row .say{font-size:12px;color:var(--muted);margin-left:5px}
+.b{display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 6px;background:linear-gradient(var(--btn),var(--btn2));border:1px solid var(--border);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05);color:var(--text);font-size:12.5px;white-space:nowrap;flex:none}
+.b.on{background:var(--brass-darker);border-color:var(--brass);color:var(--brass);box-shadow:none}
+.b.on .kbd{border-color:#8A4A22;color:var(--brass)}
+.b.armed{background:var(--amber-bg);border-color:var(--amber);color:var(--amber);box-shadow:none}
+.b.armed .kbd{border-color:#8A6E2E;color:var(--amber)}
+.b.off{background:var(--panel2);border-color:var(--line);color:var(--muted);box-shadow:none}
+.b.off .kbd{border-color:var(--line);color:var(--faint)}
+.b.menu::after{content:'';width:0;height:0;border-left:3.5px solid transparent;border-right:3.5px solid transparent;border-top:4px solid currentColor;margin-left:-1px}
+.seg{display:inline-flex;flex:none}
+.seg .b{margin-left:-1px}
+.seg .b:first-child{margin-left:0}
+.seg .b.on,.seg .b.armed{position:relative;z-index:1}
+.kbd{display:inline-block;min-width:13px;padding:0 3px;border:1px solid var(--key);border-bottom-width:2px;font-size:9.5px;line-height:11px;color:var(--text);text-align:center;font-family:var(--font-data);font-weight:400}
+/* a tooltip, as the game's: the greyed reason */
+.tip{position:absolute;padding:3px 7px;background:#11110F;border:1px solid var(--border);color:var(--text);font-size:12px;white-space:nowrap;z-index:4}
+.tip b{color:var(--muted);font-weight:400}
+
+table{border-collapse:collapse;width:100%;table-layout:fixed}
+td{height:19px;padding:0 5px;border-bottom:1px solid var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
+tr.alt td{background:rgba(255,255,255,.018)}
+tr.sel td{background:var(--brass-darker)}
+tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--brass)}
+tr.sel td.nm{color:var(--brass)}
+td.k{color:var(--muted);font-size:12px;text-align:right}
+.radio{display:inline-block;width:9px;height:9px;border:1.3px solid var(--muted);border-radius:50%;margin-right:6px;vertical-align:-0.5px;position:relative}
+tr.sel .radio{border-color:var(--brass)}
+tr.sel .radio::after{content:'';position:absolute;left:1.5px;top:1.5px;width:3.4px;height:3.4px;border-radius:50%;background:var(--brass)}
+.cls{color:var(--muted);font-size:12px;margin-left:4px}
+.chip{display:inline-block;padding:0 3px;font-size:11px;line-height:13px;border:1px solid}
+.chip.neu{color:var(--muted);border-color:var(--key);background:var(--panel2)}
+.chip.lit{color:var(--light);border-color:#7A6230;background:#2A2412}
+.chip.dk{color:var(--text);border-color:var(--key);background:#121A24}
+.parts td.l{color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;width:62px}
+.parts .fig{font-family:var(--font-data);font-size:11px;color:var(--bright)}
+.amb{color:var(--amber)} .brt{color:var(--bright)} .mut{color:var(--muted)} .lt{color:var(--light)}
+
+/* the rail's rows patched (the game's sizes: 20 px rows, Barlow 12) */
+.patch{position:absolute;background:#1F1F1D;font-size:12px;color:var(--text);display:flex;align-items:center;white-space:nowrap;overflow:hidden}
+.rail td{height:20px;font-size:12px;border-bottom:1px solid #262624}
+.rail td.f{font-family:var(--font-data);font-size:11px;text-align:right;color:var(--text)}
+.rail .grp td{color:var(--bright)}
+
+/* the map's labels, as the game draws them */
+.lab{position:absolute;font-size:12.5px;color:var(--text);text-shadow:0 0 2px #000,0 0 3px #000;white-space:nowrap;transform:translateX(-50%)}
+.lab .s{display:block;font-size:10.5px;color:var(--muted);text-align:center}
+#verb{position:absolute;padding:2px 5px;background:rgba(17,14,10,.85);border-radius:2px;color:var(--amber);font-size:13px;z-index:4;white-space:nowrap}
+svg#marks{position:absolute;left:0;top:0;pointer-events:none}
+
+#status{position:absolute;left:0;top:1060px;width:1920px;height:20px;background:var(--header);border-top:1px solid var(--edge);display:flex;align-items:center;gap:14px;padding:0 8px;color:var(--muted);font-size:12px;white-space:nowrap}
+#status .dot{color:var(--ok)}
+#status .r{margin-left:auto;display:flex;gap:14px;align-items:center}
+#status .armed{color:var(--amber)}
+
+.call{position:absolute;width:18px;height:18px;border-radius:50%;background:#E8772E;color:#0F0F0E;font:600 11px/18px var(--font-ui);text-align:center;box-shadow:0 0 0 2px #0F0F0E;z-index:5}
+#notes{position:absolute;left:356px;top:48px;width:470px;background:rgba(15,15,14,.94);border:1px solid var(--border);padding:8px 10px;font-size:12.5px;line-height:1.35;color:var(--text);display:none;z-index:6}
+#notes b{color:var(--brass);font-weight:600}
+#notes div{margin-bottom:5px}
+#notes .states{display:flex;gap:4px;margin:2px 0 8px;flex-wrap:wrap}
+#notes .states a{color:var(--text);text-decoration:none;border:1px solid var(--border);padding:0 6px;background:var(--panel2)}
+#notes .states a.on{color:var(--brass);border-color:var(--brass);background:var(--brass-darker)}
+body.notes #notes{display:block}
+body:not(.notes) .call{display:none}
+</style></head>
+<body class="notes"><div id="app">
+<svg id="marks" width="1920" height="1080"></svg>
+<div id="layer"></div>
+<div id="status"></div>
+<div id="calls"></div>
+<div id="notes">
+  <div class="states"><a href="#1" data-s="1">1 · beams on</a><a href="#2" data-s="2">2 · star shell armed</a><a href="#3" data-s="3">3 · darkened</a><a href="#4" data-s="4">4 · an unknown</a></div>
+  <div id="notetext"></div>
+  <div class="mut">N hides these notes; 1-4 (in this page) switch the state.</div>
+</div>
+</div>
+<script>
+// ------------------------------------------------------------------ pieces (strip.html's)
+const kbd = k => k ? `<span class="kbd">${k}</span>` : '';
+const B = (label, key, st = '', menu = false) => `<span class="b ${st}${menu ? ' menu' : ''}">${label}${kbd(key)}</span>`;
+const seg = items => `<span class="seg">${items.map(([l, k, st]) => B(l, k, st)).join('')}</span>`;
+const row = (...xs) => `<div class="row">${xs.join('')}</div>`;
+const say = s => `<span class="say">${s}</span>`;
+const pane = (id, x, w, title, note, right, body, y = 953, h = 105) =>
+  `<div class="pane" id="${id}" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px"><div class="title">${title}${note ? `<span class="note">${note}</span>` : ''}<span class="r">${right || ''}</span></div>${body}</div>`;
+const at = (x, y, w, h, html, cls = 'patch', style = '') => `<div class="${cls}" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px;${style}">${html}</div>`;
+
+// the GUNS pane with its night row, over the game's (574..808, 953..1058)
+function guns(o) {
+  return pane('guns', 574, 234, 'Guns', o.note, `<span class="fig">${o.target}</span>`,
+    `<div class="body">
+      ${row(seg([['Fire at will', 'G', o.fire === 'will' ? 'on' : ''], ['Engage…', 'E', o.fire === 'engage' ? 'on' : ''], ['Hold fire', 'X', o.fire === 'hold' ? 'on' : '']]))}
+      ${row(B(o.shells, 'R', '', true), B('Torpedoes…', '⇧E'))}
+      ${row(B('Star shell…', '⇧R', o.star || ''), B('Dark', '⇧X', o.dark ? 'on' : ''), B('Beams', '⇧G', o.beams ? 'on' : ''))}
+    </div>`);
+}
+// the orders-to pane (the game's 8..237)
+function ordersTo(rows) {
+  return pane('to', 8, 230, 'Orders to', '', '<span class="kbd">Q</span><span class="kbd">⇧Q</span>', `<table>${rows.map(([d, name, kind, sel], i) =>
+    `<tr class="${sel ? 'sel' : i % 2 ? 'alt' : ''}"><td class="nm" style="padding-left:${6 + d * 12}px"><span class="radio"></span>${name}</td><td class="k" style="width:62px">${kind}</td></tr>`).join('')}</table>`);
+}
+// a chip on the card's header, left of "in action"
+const cardChip = html => at(1700, 64, 116, 16, `<span style="margin-left:auto">${html}</span>`, 'patch', 'background:transparent;justify-content:flex-end');
+// the card's TARGET cell
+const cardTarget = t => at(1680, 112, 120, 14, t, 'patch', 'background:#1B1B19;font-family:var(--font-data);font-size:11px');
+
+// ------------------------------------------------------------------ the map's marks (svg)
+const L = '#FFD173', U = '#F2E6B3';
+const broke = [960, 540], g42 = [1042, 640];
+const dir = (a, b) => { const dx = b[0] - a[0], dy = b[1] - a[1], n = Math.hypot(dx, dy); return [dx / n, dy / n]; };
+// a beam: a wedge from the lamp out to its reach, fading along it; its centre line to the lit ship
+function beam(from, to, reachPx, halfDeg, id) {
+  const [ux, uy] = dir(from, to), [px, py] = [-uy, ux], t = Math.tan(halfDeg * Math.PI / 180);
+  const e = [from[0] + ux * reachPx, from[1] + uy * reachPx], w = reachPx * t + 2;
+  return `<defs><linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="${from[0]}" y1="${from[1]}" x2="${e[0]}" y2="${e[1]}">
+      <stop offset="0" stop-color="${L}" stop-opacity=".34"/><stop offset=".3" stop-color="${L}" stop-opacity=".12"/><stop offset="1" stop-color="${L}" stop-opacity="0"/></linearGradient></defs>
+    <path d="M${from[0] + px * 2} ${from[1] + py * 2}L${e[0] + px * w} ${e[1] + py * w}L${e[0] - px * w} ${e[1] - py * w}L${from[0] - px * 2} ${from[1] - py * 2}Z" fill="url(#${id})"/>
+    <line x1="${from[0]}" y1="${from[1]}" x2="${to[0]}" y2="${to[1]}" stroke="${L}" stroke-opacity=".7" stroke-width="1.2"/>`;
+}
+// lit: the light's dashed ring about a ship in a beam or under a flare
+const lit = (p, r = 15) => `<circle cx="${p[0]}" cy="${p[1]}" r="${r}" fill="none" stroke="${L}" stroke-width="1.4" stroke-dasharray="3 3" stroke-opacity=".9"/>`;
+// a flare: a four-pointed star where it burns, the patch of sea it lights, its drift
+function flare(p, rPx, ghost) {
+  const s = 6, o = ghost ? .55 : .95;
+  return `<circle cx="${p[0]}" cy="${p[1]}" r="${rPx}" fill="${L}" fill-opacity="${ghost ? .03 : .07}" stroke="${L}" stroke-opacity="${ghost ? .45 : .35}" stroke-width="1" ${ghost ? 'stroke-dasharray="5 4"' : ''}/>
+    <path d="M${p[0]} ${p[1] - s * 1.6}L${p[0] + s * .35} ${p[1] - s * .35}L${p[0] + s * 1.6} ${p[1]}L${p[0] + s * .35} ${p[1] + s * .35}L${p[0]} ${p[1] + s * 1.6}L${p[0] - s * .35} ${p[1] + s * .35}L${p[0] - s * 1.6} ${p[1]}L${p[0] - s * .35} ${p[1] - s * .35}Z"
+      fill="${ghost ? 'none' : L}" fill-opacity="${o}" stroke="${L}" stroke-opacity="${o}" stroke-width="1"/>`;
+}
+// a light seen: a spark (eight short rays) where it's reckoned, its bearing from the looker dashed
+function spark(p, from) {
+  let d = '';
+  for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4, r0 = k % 2 ? 2.5 : 2, r1 = k % 2 ? 5 : 7.5; d += `M${p[0] + Math.cos(a) * r0} ${p[1] + Math.sin(a) * r0}L${p[0] + Math.cos(a) * r1} ${p[1] + Math.sin(a) * r1}`; }
+  const [ux, uy] = dir(from, p);
+  return `<line x1="${from[0] + ux * 30}" y1="${from[1] + uy * 30}" x2="${p[0] + ux * 60}" y2="${p[1] + uy * 60}" stroke="${L}" stroke-opacity=".4" stroke-width="1" stroke-dasharray="4 4"/>
+    <path d="${d}" stroke="${L}" stroke-width="1.6" stroke-linecap="round"/>`;
+}
+// an unknown: a ship made out, not known for friend or foe: the cream quatrefoil (APP-6's unknown), filled while in sight
+function unknown(p, filled, selected) {
+  const r = 4.2, [x, y] = p;
+  const q = `M${x - r} ${y - r}a${r} ${r} 0 0 1 ${2 * r} 0a${r} ${r} 0 0 1 0 ${2 * r}a${r} ${r} 0 0 1 ${-2 * r} 0a${r} ${r} 0 0 1 0 ${-2 * r}Z`;
+  return `<ellipse cx="${x}" cy="${y}" rx="22" ry="9" transform="rotate(48 ${x} ${y})" fill="none" stroke="${U}" stroke-opacity=".45"/>
+    <line x1="${x}" y1="${y}" x2="${x - 22}" y2="${y + 26}" stroke="${U}" stroke-width="1.2"/>
+    <path d="${q}" fill="${filled ? U : 'none'}" fill-opacity=".85" stroke="${U}" stroke-width="1.5"/>
+    ${selected ? `<circle cx="${x}" cy="${y}" r="16" fill="none" stroke="#F1ECDD" stroke-width="1.5"/>` : ''}`;
+}
+// own ship showing a light: a small spark beside her label
+const ownLit = p => `<g transform="translate(${p[0]} ${p[1]})"><circle r="5.5" fill="#1B1B19" fill-opacity=".8"/>${[0, 1, 2, 3, 4, 5, 6, 7].map(k => { const a = k * Math.PI / 4; return `<line x1="${Math.cos(a) * 1.5}" y1="${Math.sin(a) * 1.5}" x2="${Math.cos(a) * 4.5}" y2="${Math.sin(a) * 4.5}" stroke="${L}" stroke-width="1.3"/>`; }).join('')}</g>`;
+
+// the dark states' rail and card: holding, an unknown in the ENEMY pane, no target
+const quat = `<svg width="11" height="11" viewBox="-5.5 -5.5 11 11" style="vertical-align:-1.5px;margin-right:4px"><path d="M-2.4 -2.4a2.4 2.4 0 0 1 4.8 0a2.4 2.4 0 0 1 0 4.8a2.4 2.4 0 0 1 -4.8 0a2.4 2.4 0 0 1 0 -4.8Z" fill="${U}" fill-opacity=".8" stroke="${U}"/></svg>`;
+const darkRail = () => [
+  cardChip('<span class="chip dk">dark</span>'),
+  cardTarget('–'),
+  at(130, 121, 80, 13, '<span class="mut">dark · holding</span>', 'patch', 'background:#2F241B'),
+  at(130, 141, 80, 13, '<span class="mut">dark · holding</span>', 'patch', 'background:#1B1B19'),
+  at(9, 200, 328, 42, `<table class="rail">
+    <tr class="grp"><td style="width:118px">▾ Unknown</td><td class="mut">1 · 1 in sight</td><td style="width:40px"></td><td class="f" style="width:40px"></td><td style="width:44px"></td></tr>
+    <tr><td style="padding-left:20px">${quat}ship?</td><td class="mut">not made out</td><td></td><td class="f">0.3</td><td class="f">141°</td></tr></table>`, 'patch', 'background:#1F1F1D;display:block'),
+];
+
+// ------------------------------------------------------------------ the states
+const normal = `<span class="dot">●</span><span>Right-click: steer · on an enemy: engage · on your ship: follow · Shift: waypoint · Alt with any order: this ship only</span>`;
+const S = {
+  1: {
+    dark: false,
+    svg: () => beam(broke, g42, 1600, 0.9, 'bm1') + lit(g42),
+    html: () => [
+      guns({ note: 'beams on G42 · fire for effect', target: 'on ship', fire: 'will', shells: 'Shells: by target, HE', star: 'off', beams: true }),
+      `<div class="tip" style="left:604px;top:926px">Star shell…<b> · none aboard: the RN 1912 shells have no star shell</b></div>`,
+      cardChip('<span class="chip lit">showing a light: beams</span>'),
+      at(52, 121, 14, 13, `<svg width="12" height="12" viewBox="-6 -6 12 12">${[0, 1, 2, 3, 4, 5, 6, 7].map(k => { const a = k * Math.PI / 4; return `<line x1="${Math.cos(a) * 1.5}" y1="${Math.sin(a) * 1.5}" x2="${Math.cos(a) * 4.5}" y2="${Math.sin(a) * 4.5}" stroke="${L}" stroke-width="1.3"/>`; }).join('')}</svg>`, 'patch', 'background:transparent'),
+      `<div class="lab lt" style="left:1092px;top:648px;font-size:11px">lit: Broke's beam</div>`,
+    ],
+    status: normal,
+    calls: [['guns', 'tl', 1], [[1004, 585], 'p', 2], [[1700, 64], 'p', 3], [[104, 118], 'p', 4]],
+    notes: [
+      '<b>The night row</b> in GUNS, no new pane: Star shell… <span class="kbd">⇧R</span>, Dark <span class="kbd">⇧X</span>, Beams <span class="kbd">⇧G</span>. Torpedoes move up beside Shells (what\'s loaded goes to its tooltip; the card\'s TORPEDOES has it). Dark and Beams are flags, never both lit: neither lit is the captain\'s doctrine, a lit one clicked again hands the lights back. The title note says what she\'s doing with them ("beams on G42"). Star shell greyed with its reason (here: none aboard).',
+      '<b>A beam</b> as a mark: a narrow wedge of the light\'s colour from the lamp out to its reach, fading along it (the placeholder line goes), a thin line to the ship it\'s held on, and <b>lit</b>: a dashed ring of the light\'s colour about the ship in it, ours or theirs. The same mark at every zoom (the world view\'s real beam is Q10\'s look, under it).',
+      '<b>The card</b> says when she\'s showing a light, as a chip by "in action": "showing a light: beams" (or star shell, the challenge lamp, a fire), in the light\'s colour; "dark" when Darkened.',
+      '<b>The rail</b> marks a ship showing a light with a small spark by her name, as a fire\'s flame is marked: who in the line gives it away, at a glance.',
+    ],
+  },
+  2: {
+    dark: false,
+    svg: () => beam(broke, g42, 1600, 0.9, 'bm2') + lit(g42) + spark([1255, 395], broke) + flare([1225, 420], 120, true),
+    html: () => [
+      ordersTo([[0, 'Dover Patrol', '<span class="chip neu">AI</span> squadron'], [1, 'Broke<span class="cls">Faulknor-like (1914)</span>', 'ship', 1]]),
+      guns({ note: 'doctrine: beams to fire', target: 'on ship', fire: 'will', shells: 'Shells: by target, HE', star: 'armed' }),
+      `<div class="lab" style="left:1255px;top:362px">a light<span class="s">flash · 1.2 km?</span></div>`,
+      `<div id="verb" style="left:1236px;top:432px">Broke: STAR SHELL · the sea here · 1.1 km</div>`,
+    ],
+    status: `<span class="armed">●</span><span class="armed">Star shell: right-click a contact or the sea · Esc cancels</span>`,
+    calls: [['guns', 'tl', 1], [[1250, 330], 'p', 2], [[1100, 300], 'p', 3], [[8, 1062], 'p', 4]],
+    notes: [
+      '<b>Star shell…</b> armed (⇧R; ⇧R or Esc again disarms), to Broke alone (Alt+⇧R does that from a unit). Made up: Broke has no star shell. Given to a unit, one ship fires: the nearest that carries it with the point in reach.',
+      '<b>A light seen</b> (a gun\'s flash, a lamp, a fire) as a mark: a spark of the light\'s colour where it\'s reckoned and the bearing it was taken on, dashed (the disc goes). Its label says what showed and how far it\'s guessed. No ship\'s mark until she\'s seen.',
+      '<b>The sea as a target</b>: the cursor\'s verb names it, and the flare\'s patch shows ghosted, dashed, where it would burst: the sea it would light for her lookouts. A right-click there fires; a contact under the cursor takes it instead (the flare then follows her, as Q5\'s task does). The star shell\'s reach shows as a dashed ring while it\'s armed, when the ring\'s on the screen (here it\'s far off it).',
+      'The status bar carries the armed pick in amber, as Engage… does.',
+    ],
+  },
+  3: {
+    dark: true,
+    svg: () => unknown(g42, true, false) + spark([1255, 395], broke),
+    html: () => [
+      guns({ note: 'dark: holding fire till fired on', target: 'no target', fire: 'will', shells: 'Shells: by target, HE', star: '', dark: true }),
+      ...darkRail(),
+      `<div class="lab" style="left:1042px;top:654px">ship?<span class="s">not made out</span></div>`,
+      `<div class="lab" style="left:1255px;top:362px">a light<span class="s">flash · 1.2 km?</span></div>`,
+    ],
+    status: normal,
+    calls: [['guns', 'tl', 1], [[1040, 600], 'p', 2], [[10, 196], 'p', 3], [[1760, 64], 'p', 4]],
+    notes: [
+      '<b>Darkened</b> (⇧X): the unit\'s doctrine field set by the strip (the launch screen\'s standing orders have the same row). No beams, no star shell by doctrine, no challenge lamp, and the guns <b>hold until she\'s fired upon</b>: Fire at will stays lit as the order she\'ll fight by, the title note says she\'s holding. Once fired on she fights; her lights stay dark.',
+      '<b>An unknown</b>: a ship made out, not known for friend or foe (Q6), in the cream of the unknown with APP-6\'s quatrefoil, filled while in sight; it becomes the enemy\'s diamond once she\'s known for a foe (her colours made out, or she gives herself away). Its label says "ship?". The fire lines\' pips (fire-marks.md) don\'t change.',
+      '<b>The rail\'s ENEMY</b> groups unknowns apart, above the known enemy: Unknown, then the types.',
+      'The card says <b>dark</b>; the rail\'s DOING says "dark · holding" while the guns wait.',
+    ],
+  },
+  4: {
+    dark: true,
+    svg: () => unknown(g42, true, true) + spark([1255, 395], broke) + flare([1068, 690], 140, false) + lit(g42, 21),
+    html: () => [
+      at(8, 953, 1310, 105, '', 'patch', 'background:var(--sea)'),
+      pane('to', 8, 262, 'Enemy', 'as held', '', `<table class="parts">
+        <tr><td class="l">Contact</td><td>${quat}<span class="brt">ship?</span><span class="cls">a ship, not made out</span></td></tr>
+        <tr class="alt"><td class="l">From Broke</td><td><span class="fig">0.3 km · 141°</span></td></tr>
+        <tr><td class="l">Seen</td><td><span class="lt">lit</span>: our star shell · 22 kn, 065°</td></tr>
+        <tr class="alt"><td class="l">Firing</td><td>none of yours: dark, holding</td></tr></table>`),
+      pane('against', 272, 330, 'Orders against her', 'from Broke', '',
+        `<div class="body">
+          ${row(B('Engage her with Dover Patrol', 'E'))}
+          ${row(B('Engage her with Broke alone', 'Alt+E'))}
+          ${row(B('Torpedoes at her', '⇧E'), B('Star shell on her', '⇧R', 'off'))}
+        </div>`),
+      ...darkRail(),
+      `<div class="lab" style="left:1042px;top:660px">ship?<span class="s">not made out · lit</span></div>`,
+      `<div class="lab lt" style="left:1068px;top:712px;font-size:11px">flare · 40 s</div>`,
+    ],
+    status: `<span class="dot">●</span><span>Select one of your ships and right-click her to engage · Esc: deselect · the orders go from Broke, the ship you had</span>`,
+    calls: [['to', 'tl', 1], ['against', 'tl', 2], [[1090, 560], 'p', 3]],
+    notes: [
+      '<b>An unknown selected</b>: the ENEMY pane says what\'s held of her, including that she\'s <span class="lt">lit</span> and by what. Engaging an unknown is your call (the player\'s orders beat doctrine and Darkened: an ordered Engage fires).',
+      '<b>Star shell on her</b> <span class="kbd">⇧R</span> beside the torpedoes (greyed here: Broke is already lighting her). No challenge by hand (decided): challenging stays doctrine\'s.',
+      '<b>A flare</b> burning: the four-pointed star where it burns, the sea it lights as a faint disc, the seconds it has left in its label; the ship under it gets the lit ring. Made up: the flare is ours, ordered in state 2 and following her since.',
+    ],
+  },
+};
+
+// ------------------------------------------------------------------ drawing a state
+const common = `<span class="r"><span>WASD pan · Space pause · ⇧Space run · 1–5 gears · Tab next ship · J log · V card · P pin · Esc menu</span></span>`;
+function show(n) {
+  const st = S[n];
+  document.getElementById('app').classList.toggle('dark', st.dark);
+  document.getElementById('marks').innerHTML = st.svg();
+  document.getElementById('layer').innerHTML = st.html().join('');
+  document.getElementById('status').innerHTML = st.status + common;
+  const app = document.getElementById('app').getBoundingClientRect();
+  document.getElementById('calls').innerHTML = st.calls.map(([id, how, num]) => {
+    let x, y;
+    if (how === 'p') [x, y] = [id[0] - 20, id[1] - 20];
+    else { const r = document.getElementById(id).getBoundingClientRect(); [x, y] = [r.left + 4 - app.left, r.top - 22 - app.top]; }
+    return `<span class="call" style="left:${x}px;top:${y}px">${num}</span>`;
+  }).join('');
+  document.getElementById('notetext').innerHTML = st.notes.map((t, i) => `<div><b>${i + 1}</b> ${t}</div>`).join('');
+  document.querySelectorAll('#notes .states a').forEach(a => a.classList.toggle('on', a.dataset.s == n));
+}
+const pick = () => show(S[location.hash.slice(1, 2)] ? location.hash.slice(1, 2) : 1);
+addEventListener('hashchange', pick);
+addEventListener('keydown', e => {
+  if (e.key === 'n' || e.key === 'N') document.body.classList.toggle('notes');
+  if (S[e.key]) location.hash = '#' + e.key + (location.hash.includes('clean') ? 'clean' : '');
+});
+if (location.hash.includes('clean')) document.body.classList.remove('notes');
+pick();
+</script>
+</body></html>
