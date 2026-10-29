@@ -367,6 +367,12 @@ public static unsafe class Program
                     if (!Map.Night.NightLights.Set(kv))
                         Console.Error.WriteLine($"Bad night knob: {kv} (want on, gain, iris, beam)");
             }
+            else if (arg.StartsWith("-flares="))   // the world view's star shell (docs/visuals/night-lights.md Q10d; Map/Night/FlareRenderer.cs): -flares=halo:1,trail:40
+            {
+                foreach (var kv in arg.Substring("-flares=".Length).Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    if (!Map.Night.FlareRenderer.Set(kv))
+                        Console.Error.WriteLine($"Bad flares knob: {kv} (want on, gain, halo, trail, width, grow)");
+            }
             else if (arg.StartsWith("-worldview="))   // the map's table-to-world boundary, metres per pixel at 1080p (docs/visuals/sea.md W0)
             {
                 if (double.TryParse(arg.Substring("-worldview=".Length), System.Globalization.CultureInfo.InvariantCulture, out double m) && m > 0)

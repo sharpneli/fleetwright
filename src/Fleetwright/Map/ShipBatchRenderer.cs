@@ -753,6 +753,9 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
     /// <summary>The searchlights' beams in the air (docs/visuals/night-lights.md Q10c).</summary>
     public Night.BeamRenderer Beams { get; }
 
+    /// <summary>Star shell: the stars, their glow and their trails (docs/visuals/night-lights.md Q10d).</summary>
+    public Night.FlareRenderer Flares { get; }
+
     /// <summary>The smoke field (docs/battle/smoke.md Z5), accumulated before the main pass and laid over the scene after
     /// the magazines' clouds.</summary>
     public Smoke.SmokeFieldRenderer Field { get; }
@@ -793,6 +796,7 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
         List.Thrown = Magazines.Book;
         Torpedoes = new TorpedoRenderer(device);
         Beams = new Night.BeamRenderer(device);
+        Flares = new Night.FlareRenderer(device);
         Field = new Smoke.SmokeFieldRenderer(device);
     }
 
@@ -876,6 +880,7 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
         Magazines.Copy(cmd);
         Torpedoes.Copy(cmd);
         Beams.Copy(cmd);
+        Flares.Copy(cmd);
         Field.Copy(cmd);
         var fv = Foam.Vertices;
         foamUploaded = Math.Min(fv.Length, (int)(FoamBufferBytes / FoamVertex.SizeInBytes));
@@ -902,6 +907,7 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
         Beams.Draw(cmd, pass, target, view);
         Field.Draw(cmd, pass, target);
         Flashes.Draw(cmd, pass, target, view);
+        Flares.Draw(cmd, pass, target, view);
     }
 
     public void Prepass(SDL_GPUCommandBuffer* cmd, RenderTarget target) => Field.Prepass(cmd, target);
@@ -1040,6 +1046,7 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
         Magazines.Dispose();
         Torpedoes.Dispose();
         Beams.Dispose();
+        Flares.Dispose();
         SDL_WaitForGPUIdle(device);
         ReleasePipelines();
         if (wakePipe != null)

@@ -212,19 +212,18 @@ public sealed partial class MapScene
 
     /// <summary>The star shells' flares burning (docs/battle/night.md Q5, Q9). On the table, a mark: a four-pointed star
     /// where each burns and the sea it lights as a faint disc (its edge where its light falls to <see cref="FlareLitLux"/>),
-    /// a dashed ring about each ship under it. In the world view, a small disc until the night's look (Q10).</summary>
+    /// a dashed ring about each ship under it, faded out over the world's boundary, where the star itself shows
+    /// (docs/visuals/night-lights.md Q10d).</summary>
     void DrawFlares(in MapView view, Snapshot s)
     {
         var f = s.Flares;
-        double inWorld = WorldView.Factor(view), table = 1 - inWorld;
+        double table = 1 - WorldView.Factor(view);
+        if (table <= 0)
+            return;
         for (int i = 0; i < f.Count; i++)
         {
             var under = f.At[i].Normalized() * Earth.Radius;
             if (!view.Project(under, out double x, out double y))
-                continue;
-            if (inWorld > 0)
-                overlay.Disc(x, y, 5 * Rp, MapPalette.Light with { W = (float)(0.85 * inWorld) }, 1f);
-            if (table <= 0)
                 continue;
             double h = f.At[i].Length - Earth.Radius;
             double litM = Math.Sqrt(Math.Max(f.Candela[i] / FlareLitLux - h * h, 0));

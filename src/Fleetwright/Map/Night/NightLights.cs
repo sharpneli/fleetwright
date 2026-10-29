@@ -62,7 +62,12 @@ public sealed class NightLights
         var f = s.Flares;
         for (int i = 0; i < f.Count; i++)
             if (drawMs >= f.BurstMs[i] && drawMs < f.OutMs[i])
-                Add(f.Where(i, drawMs), f.Candela[i] * world, false, default, 0, -1);
+            {
+                // its light over its life: the pop as it lights, its flicker, its burn-out (the star's own, FlareRenderer)
+                var (light, _) = FlareRenderer.Envelope((drawMs - f.BurstMs[i]) / 1000.0, (f.OutMs[i] - f.BurstMs[i]) / 1000.0,
+                    f.BurstMs[i] ^ (long)(f.Origin[i].X * 1000));
+                Add(f.Where(i, drawMs), f.Candela[i] * light * world, false, default, 0, -1);
+            }
         var b = s.Beams;
         for (int i = 0; i < b.Count; i++)
         {

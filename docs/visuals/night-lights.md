@@ -258,6 +258,26 @@ drawn falls back to the look's.
 **Q10d Star shell.** The burst and its puff, the star with its flicker and burn-out, the halo in the haze (the shared
 point-light halo, also on for fires and flashes), the trail. The world view's placeholder disc goes.
 
+**Q10d done 2026-10-29.** `Map/Night/FlareRenderer` (`flare.vert`/`flare.frag`), through the effects camera (height
+× tan 45° up the screen; the pool, the shadows and the light block at the true place):
+- **The star**: its candle over a small core (0.6 m, never under 1.5 px) and its **glow in the haze**, the air's light
+  scattered toward the eye along its ray past the star from above and down to the sea under it, L = σ p I (π/2 +
+  atan(h/d)) / d · e^(−σd): σ the sim's (`SearchlightModel.ScatterPerM`), p a marine aerosol's at right angles
+  (Henyey-Greenstein g 0.7, 0.022 /sr: no sim number stands behind the glow, so the physical one; all round would be
+  3.6× brighter). Out to where it sinks under the night sea's own light (cap 10 km): a first cut capped at 3 km left a
+  hard edge, the physical glow still far over the dark sea there. Through the night eye, rolled to white on luminance,
+  added through the haze. In an 8 km haze on a moonless night it greys a wide patch of the night; in clear air far
+  less.
+- **Its life** (`FlareRenderer.Envelope`, shared with its light in `NightLights`, so the pool follows): a pop as it
+  lights (×1.8 decaying over 0.6 s), an 8% flicker by the world's time, the last 1.5 s dimming and reddening.
+- **The trail**: a Gaussian column from the star to the burst (it drifts with the wind as the star does, so it hangs
+  straight over it), its half width 1.2 m at the star growing 0.25 m a second of its age, the burst's puff rounder at its
+  top; lit by the night (the rods' view) and by every light in the block, the star's own from just under it, so it glows
+  over the star and dims up its length. It outlives the star by 40 s, fading (a book in the renderer keeps flares the
+  snapshot has dropped).
+The world view's placeholder disc went (the table's star and patch stay). Knobs: `-flares=on,gain,halo,trail,width,grow`.
+Tests: 207 pass.
+
 **Q10e The moon and the small lights.** The cloud on the moon, the moon path checked; funnel glow and challenge lamps
 (their cues into the snapshot); phosphorescence (the weather field, the foam's glow).
 
