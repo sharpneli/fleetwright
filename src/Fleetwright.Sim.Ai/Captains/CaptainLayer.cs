@@ -1,6 +1,7 @@
 using Fleetwright.Sim.Ai.Knowledge;
 using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
+using Fleetwright.Sim.Ships;
 
 namespace Fleetwright.Sim.Ai.Captains;
 
@@ -74,6 +75,10 @@ public enum CaptainReason : byte
 
     /// <summary>Turned away from a light on her, her own lights out (docs/battle/night.md Q7: doctrine's WhenLit).</summary>
     Lit,
+
+    /// <summary>In line ahead in the dark, her next ahead lost from sight: she holds the course and speed she had until she
+    /// sees her again (docs/battle/night.md Q7).</summary>
+    LostTouch,
 }
 
 /// <summary>The captains (docs/battle/plan.md steps 2.3b and 2.6): one per ship that has been given an order, kept in
@@ -495,6 +500,20 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
                 continue;
             }
             double course, kn;
+            if ((cap.Order == CaptainOrder.Follow || cap.Order == CaptainOrder.Station && cap.AbeamM == 0 && cap.DistanceM > 0) &&
+                ctx.Ships.SlotOf(target) is int ahead and >= 0)
+            {
+                // in line ahead in the dark: she keeps station only on a next ahead she makes out (docs/battle/night.md Q7)
+                bool sees = SeesAhead(ctx, own, ctx.Ships[ahead]);
+                if (!sees)
+                {
+                    if (cap.Reason == CaptainReason.None)
+                        cap.Reason = CaptainReason.LostTouch;
+                    continue;   // the course and speed she had
+                }
+                if (cap.Reason == CaptainReason.LostTouch)
+                    cap.Reason = CaptainReason.None;
+            }
             if (own.Tier == ClockTier.Coarse && cap.Order is CaptainOrder.Follow or CaptainOrder.Station or CaptainOrder.Shadow)
             {
                 // coarse, deciding once a step: steer for where the station will be a step on (a trail recorded once
@@ -536,6 +555,37 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         if (Fighting)
             FirePass(ctx);
         Recount();
+    }
+
+    /// <summary>Whether a ship in line ahead makes out her next ahead (docs/battle/night.md Q7: a station-keeping look, one
+    /// a ship at her next ahead only, never a sighting of friends): always where the dark adds nothing to the eye; in the dark,
+    /// her bridge's lookout (else her first post) on the other's hull as it shows on its bearing
+    /// (<see cref="SightModel.Margin"/>: end on from astern) or her wake's white water, taken as her bow wave seen bow on
+    /// (<see cref="SightModel.BowWaveMargin"/>: across her beam, at the foam's contrast [EST]), at the distance between them.</summary>
+    static bool SeesAhead(in AiContext ctx, ShipState own, ShipState ahead)
+    {
+        var s = ctx.Settings;
+        var weather = ctx.World.Weather.At(own.Position, ctx.World.Time);
+        var sky = NightLight.At(own.Position, ctx.World.Time, weather.Cloud, s);
+        double pupil = SightModel.PupilMm(sky.SkyCdM2);
+        if (!SightModel.DarkOf(sky.SkyCdM2 * SightModel.LookoutGlass(pupil, s), s).Any)
+            return true;
+        var eyes = own.Handling.Class.Eyes;
+        if (eyes.Length == 0)
+            return true;
+        int e = 0;
+        for (int k = 0; k < eyes.Length; k++)
+            if (eyes[k].Kind == EyeKind.Bridge)
+            {
+                e = k;
+                break;
+            }
+        double d = Earth.Distance(own.Position, ahead.Position), brg = Earth.Bearing(own.Position, ahead.Position);
+        var line = new SightLine(d, Earth.Bearing(ahead.Position, own.Position) - ahead.HeadingDeg, weather.VisibilityM, sky.Toward(brg), 0, default,
+            Math.Abs(ahead.Speed), SightModel.GlassLight(eyes[e], pupil, s), 0, 0);
+        double mag = SightModel.Magnification(eyes[e], s), h = eyes[e].HeightM;
+        var cls = ahead.Handling.Class;
+        return SightModel.Margin(h, mag, cls, line, s) >= 1 || SightModel.BowWaveMargin(h, mag, cls, line with { AspectDeg = 0 }, s) >= 1;
     }
 
     /// <summary>The range a shadower keeps when he's given none: a share of how far he can see now (the weather's

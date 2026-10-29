@@ -1,5 +1,5 @@
 # Plan: night fighting (a 4.5 deepening)
-Status: **drafted 2026-10-29**; **agreed with the user 2026-10-29** (decisions 1-5 at the end); Q0-Q6 done 2026-10-29
+Status: **drafted 2026-10-29**; **agreed with the user 2026-10-29** (decisions 1-5 at the end); Q0-Q7 done 2026-10-29
 Updated: 2026-10-29
 
 How ships see, light, shoot and lose each other in the dark. The user asked for it after the crew plan (2026-10-28),
@@ -788,6 +788,57 @@ sends them in on a line (Q7c's).
   is a destroyer). So the commander never sends them in as a flotilla; here they attack as units in touch, their
   captains judging it. Measuring against the heaviest at sea of any side would make them a flotilla; it's the user's
   approved rule (admirals-orders.md, 2026-10-24), so it's asked, not changed.
+
+**Q7d done (2026-10-29).** The admirals' lines at night:
+
+- **Close order** (`AdmiralLayer.CloseUp`; doctrine **`NightSpacingShare`**, after `WhenLit`, 1 by the code's default,
+  the "default" preset's 0.5 [EST]; the launch screen's "Lines at night"): with the sun more than 6° down at his guide, a
+  squadron's admiral closes its spacing to that share of the day's, by the group's own formation command (so its rails
+  and its stations agree: the sim stays the same at any speed), and opens it to the day's again when the sun's back
+  over it, unless its spacing was changed meanwhile (the player's then).
+- **Losing touch** (`CaptainLayer.SeesAhead`): a ship in line ahead keeps station only on a next ahead she makes out. In
+  the dark her bridge lookout looks at the other's hull as it shows on its bearing (end on from astern) or her wake's white
+  water (taken as her bow wave seen bow on [EST]: the wake model's foam isn't in sight yet), at the distance between them:
+  one look a ship at her next ahead only, a station-keeping check, not a sighting of friends (decision 1). Not made out,
+  she holds the course and speed she had ("lost touch with the next ahead" on the card) until she sees her again, then
+  steers back onto the line. Collisions in close order wait for 4.11.
+- **Tests:** `NightLineTests` (a squadron closes from 600 to 300 m at dusk and opens out at dawn; under the Dover Strait's
+  black overcast a destroyer 600 m astern loses touch, one 150 m astern keeps station).
+
+**The bench after Q7d** (20 seeds; Q7c's in brackets):
+
+| Case | Shells / hits | Torpedoes, hits | Lost |
+|---|---|---|---|
+| Tsushima | RU 725 / 139 (1,323 / 267), JP 834 / 114 (1,341 / 192); a fight in 12 of 20 (14) | JP 1.5, 0.7 (2.5, 0.8) | RU 0.1 of 3 (0.1), JP 1.2 of 8 (1.9) |
+| Southampton | GB 110 / 45 (121 / 30), DE 2,155 / 528 (2,945 / 781) | GB 4.2, 0.3; DE 7.4, 0.7 | GB 0.8 of 4 (1.2), DE 0.8 of 5 (0.2) |
+| 4th Flotilla | GB 389 / 88 (433 / 148), DE 1,081 / 160 (1,311 / 294) | GB 7.5, 1.0 (16.1, 2.5); DE 15.1, 0.8 | GB 4.8 of 10 (6.5), DE 0.2 of 6 (0.7) |
+| Black Prince | GB 130 / 98 (73 / 58), DE 281 / 103 (330 / 150) | DE 9.8, 1.6 (10.2, 2.1) | GB 0.8 of 1 (0.9) |
+| Dover Strait | GB 129 / 53 (120 / 59), DE 85 / 34 (158 / 40) | GB 2.6, 0.3; DE 7.0, 1.9 | GB 1.1 of 2 (0.8), DE 0.8 of 6 (1.1) |
+
+**What it says:** close order and losing touch move every case by about the seeds' spread, and the record's shapes hold:
+the 4th Flotilla now one torpedo hit and 4.8 boats lost a run (the record's one and four), Southampton a German cruiser
+lost (Frauenlob), Black Prince sunk in four runs of five.
+
+**Q7 as a whole** (Q6's bench in brackets, the record after it):
+- **4th Flotilla:** the boats attack every run, 7.5 torpedoes for 1.0 hits (3.5, 0.8; Rostock's one), 4.8 boats lost of 10
+  (2.3; four).
+- **Southampton:** the British hold fire and turn from the German flares; 0.8 cruisers lost a side (GB 0.5, DE 0.2; GB 0,
+  DE Frauenlob).
+- **Black Prince:** sunk in 0.8 runs of 1 (0.7; sunk), her hits on the line 98 (21; none).
+- **Dover Strait:** a close fight (salvos' median 1.7-1.9 km; Q4-Q6's 4 km duel), 0.8 German boats of 6 (2.1; two).
+- **Tsushima:** a night attack at last, in 12 runs of 20 (never; the record's Navarin sunk and three more torpedoed), the
+  boats losing 1.2 of 8 (three).
+- The bench takes 36 s for the 100 plays (26 s at Q6): more fighting, the night matchup's few µs more a judgement.
+- **The day actions hold** (8 seeds each, against Q6's): Germany loses 10.8 of 26 at the Dogger Bank (11.6, 12.0), 18.5 of
+  24 in the Heligoland Bight (20, 19), 1.0 of 5 at Coronel (1.1); Coronel, fought into the dusk, sees fewer German hits
+  (491 from about 640), the dark's matchup and lights at work there.
+
+**Open after Q7:** every number is [EST] until the research; presets one a period (the doctrine rows' values by navy and
+year) wait for the tuning pass; the roles question above (a side of destroyers alone); firing at a gun's flash alone (fire
+control lays on lamps and bow waves only), which also keeps the matchup's night gunfights mutual; a ship turned away from
+a light doesn't zigzag or make smoke; searching sweeps toward the nearest contact only; the wake's foam isn't a sight of
+its own (the station-keeping look borrows the bow wave's); collisions (4.11) for close order; the coarse tier runs all
+of it at its thinks (Q11).
 
 ### Q8 The crew at night
 

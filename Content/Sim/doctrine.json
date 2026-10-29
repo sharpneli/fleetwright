@@ -81,6 +81,9 @@
     "Searchlights": "to fire",
     "StarShell": "to fire",
     "ChallengeM": 2500,
-    "WhenLit": "turn away"
+    "WhenLit": "turn away",
+    // a squadron closes up at night (the sun 6° down) to this share of its day's spacing, each ship keeping her next ahead
+    // in sight [EST]; one that loses sight of her next ahead holds the course and speed she had until she sees her again
+    "NightSpacingShare": 0.5
   }
 }

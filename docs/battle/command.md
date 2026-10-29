@@ -188,6 +188,7 @@ own value, else its group's, else the side's. A command sets it, so it's logged 
 | **StarShell** (night.md Q7) | When a captain fires star shell: never, to fire, or to find as well (a contact held but not seen or not made out) | To fire |
 | **ChallengeM** (night.md Q7) | A ship not made out is challenged only within this range; farther off he keeps dark | Any range (the "default" preset: 2,500 m) |
 | **WhenLit** (night.md Q7) | A ship in an enemy's beam or under a flare: fight on, or put her lights out and turn away | Fight on (the "default" preset: turn away) |
+| **NightSpacingShare** (night.md Q7) | A squadron's spacing at night, a share of its day's (close order) | 1 (the "default" preset: 0.5) |
 
 **Presets, defined by values** (decision 7): a preset is a named set of these fields' values, as data
 (`Content/Sim/doctrine.json`, beside the settings), never code. A side takes a preset by name in the scenario

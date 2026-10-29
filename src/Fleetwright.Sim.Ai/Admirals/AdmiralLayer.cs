@@ -55,6 +55,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
         public long TurnStartMs;
         public int[] TurnShips = new int[16];   // his line's ships in the order they turn, TurnCount of them (made with him)
         public int TurnCount;
+        public double DaySpacingM;      // closed up for the night from this spacing (0: not; docs/battle/night.md Q7)
         public bool Away;               // turned away from torpedoes, AwayDeg, on AwayCourse; his order waits
         public double AwayDeg, AwayCourse;
         public long ThreatMs;           // when he last saw the attack
@@ -373,6 +374,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
             }
             if (a.HandedTo != to.Id)
                 HandOver(ctx, a, to);
+            CloseUp(ctx, g, a, lead);
             FormingStep(ctx, g, a, lead);
             bool deploying = DeployStep(ctx, g, a, lead);
             if (deploying && a.DeployMs == ctx.NowMs)
@@ -421,6 +423,30 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
         for (int i = 0; i < count; i++)
             if (admirals[i].Whose == Whose.Superior && groups.Get(admirals[i].GroupId) is { } g && !groups.InForceLine(g))
                 Release(ctx, g, admirals[i]);
+    }
+
+    /// <summary>Night's close order (docs/battle/night.md Q7): with the sun more than <see cref="SimSettings.NightSunElevationDeg"/>
+    /// down at his guide, a squadron's spacing closed to doctrine's <see cref="DoctrineField.NightSpacingShare"/> of the day's
+    /// (the group's own, so its rails and its stations agree), and opened to the day's again once the sun's back over it,
+    /// unless its spacing was changed meanwhile (the player's, then).</summary>
+    void CloseUp(in AiContext ctx, GroupSystem.Group g, Admiral a, int lead)
+    {
+        if (g.IsForce)
+            return;
+        var guide = ctx.Ships[lead];
+        bool night = Light.SunElevationDeg(guide.Position, ctx.World.Time) < ctx.Settings.NightSunElevationDeg;
+        double share = doctrine.OfGroup(g, guide.Side, DoctrineField.NightSpacingShare);
+        if (night && a.DaySpacingM == 0 && share is > 0 and < 1)
+        {
+            a.DaySpacingM = g.SpacingM;
+            ctx.Issue(GroupSystem.SetFormation(g.GroupId, g.Formation, g.SpacingM * share, g.BearingDeg));
+        }
+        else if (!night && a.DaySpacingM > 0)
+        {
+            if (Math.Abs(g.SpacingM - a.DaySpacingM * share) < 1)
+                ctx.Issue(GroupSystem.SetFormation(g.GroupId, g.Formation, a.DaySpacingM, g.BearingDeg));
+            a.DaySpacingM = 0;
+        }
     }
 
     /// <summary>Whether a group's admiral already holds his superior's order to keep this station on a ship.</summary>
@@ -653,6 +679,8 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
             h.Add(a.Loop);
             h.Add(a.Watch);
             h.Add(a.Asked);
+            if (a.DaySpacingM != 0)
+                h.Add(a.DaySpacingM);   // (only when closed up: the hashes of worlds by day as they were)
             h.Add((int)a.Fire);
             h.Add(a.FireTarget);
             h.Add(a.Met);

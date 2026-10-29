@@ -151,6 +151,10 @@ public enum DoctrineField : byte
     /// <summary>What a ship does when a light (an enemy's beam, a flare) is on her in the dark (<see cref="Ai.WhenLit"/>;
     /// Q7): fight on, or put out her own lights and turn away from it.</summary>
     WhenLit,
+
+    /// <summary>A squadron's spacing at night, a share of its day's (docs/battle/night.md Q7: close order, each ship
+    /// keeping the next ahead in sight); 1 keeps the day's.</summary>
+    NightSpacingShare,
 }
 
 /// <summary>Doctrine's Shells: each battery loads the kind its target calls for (the captain's choice, the matchup's
@@ -282,7 +286,7 @@ public sealed class Doctrine(GroupSystem groups, IReadOnlyDictionary<string, dou
         return r;
     }
 
-    public const int FieldCount = (int)DoctrineField.WhenLit + 1;
+    public const int FieldCount = (int)DoctrineField.NightSpacingShare + 1;
 
     /// <summary>Every field when nothing sets it: a world told nothing (a dev's, a test's) behaves as before doctrine.</summary>
     public static double Default(DoctrineField f) => f switch
@@ -321,6 +325,7 @@ public sealed class Doctrine(GroupSystem groups, IReadOnlyDictionary<string, dou
         DoctrineField.StarShell => (double)StarShellUse.ToFire,   // as Q5 left it
         DoctrineField.ChallengeM => double.PositiveInfinity,   // as Q6 left it
         DoctrineField.WhenLit => (double)Ai.WhenLit.FightOn,
+        DoctrineField.NightSpacingShare => 1,
         _ => throw new ArgumentOutOfRangeException(nameof(f)),
     };
 
