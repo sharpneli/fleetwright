@@ -12,9 +12,9 @@ namespace Fleetwright.Map;
 /// columns of tables: both sides side by side (yours first) in what decides how well they fight, not what they are: gun
 /// crews, readiness, damage control, fire discipline, fuel, with four presets over them as a segmented control (as
 /// history, even crews, easier, harder: first guesses, decision 5; the one the settings match is lit); the day
-/// (visibility, wind, the end, the seed, and the aim it's fought for); and the changes from the scenario, a line each
-/// with its ✕. Each is a change of the setup (<see cref="SideSetting"/>, <see cref="SetWeather"/>, <see cref="SetEnd"/>,
-/// <see cref="SetSeed"/>), gone when it's put back as written. Its lines are made when the pick changes.</summary>
+/// (visibility, wind, cloud, the start, the end, the seed, and the aim it's fought for); and the changes from the
+/// scenario, a line each with its ✕. Each is a change of the setup (<see cref="SideSetting"/>, <see cref="SetWeather"/>,
+/// <see cref="SetStart"/>, <see cref="SetEnd"/>, <see cref="SetSeed"/>), gone when it's put back as written. Its lines are made when the pick changes.</summary>
 public sealed unsafe partial class LaunchScene
 {
     // the men's experience (docs/battle/crew.md decision 6): the names on the whole numbers, the halves between
@@ -43,8 +43,8 @@ public sealed unsafe partial class LaunchScene
         public readonly string[,] Now = new string[5, 2];
         public readonly bool[,] Changed = new bool[5, 2];
         public WeatherHere Weather, WrittenWeather;
-        public string Vis = "", VisWord = "", WindKn = "", Cloud = "", Ends = "", SeedNote = "";
-        public bool WeatherChanged, EndChanged, NewSeed;
+        public string Vis = "", VisWord = "", WindKn = "", Cloud = "", Starts = "", StartWord = "", Ends = "", SeedNote = "";
+        public bool WeatherChanged, StartChanged, EndChanged, NewSeed;
         public int WindPoint, Preset = -1;
         public string[] SeedWords = [];
     }
@@ -131,6 +131,32 @@ public sealed unsafe partial class LaunchScene
     /// <summary>When a scenario ends: its "until", else the start and the settings' play limit.</summary>
     WorldTime EndOf(Scenario s) => s.Until ?? s.Start + world.Settings.PlayLimitMs;
 
+    // how far the start moves either way of the written: every hour of the day once
+    const int EarlierHours = 12, LaterHours = 11;
+
+    /// <summary>The setup with the start at a time, or without the change when it's as written; an end of the setup's
+    /// own keeps its distance from the start.</summary>
+    ScenarioSetup Started(WorldTime to)
+    {
+        var st = to.Ms == written!.Start.Ms ? setup.Without("start") : setup.With(new SetStart(to));
+        return setup.Changes.OfType<SetEnd>().FirstOrDefault() is { } e ? Ended(st, to, e.Until + (to - current!.Start)) : st;
+    }
+
+    /// <summary>The setup with the end at a time, or without the change when it's where the start puts the written end.</summary>
+    ScenarioSetup Ended(ScenarioSetup st, WorldTime start, WorldTime to)
+    {
+        var asWritten = written!.Until is { } u ? u + (start - written.Start) : start + world.Settings.PlayLimitMs;
+        return to.Ms == asWritten.Ms ? st.Without("until") : st.With(new SetEnd(to));
+    }
+
+    /// <summary>The light at the start where it's fought: daylight, dawn or dusk (the sun under the horizon, above
+    /// nautical twilight's 12°) or night.</summary>
+    static string LightWord(WorldTime t, Vec3d at)
+    {
+        double el = Light.SunElevationDeg(at, t);
+        return el > -0.833 ? "daylight" : el > -12 ? Light.SunElevationDeg(at, t + 600_000L) > el ? "dawn" : "dusk" : "night";
+    }
+
     ConditionsView Conditions(Scenario s)
     {
         if (conditionsView is { } v && ReferenceEquals(v.Of, s))
@@ -162,7 +188,10 @@ public sealed unsafe partial class LaunchScene
         v.WindPoint = (int)Math.Round(((v.Weather.WindFromDeg % 360) + 360) % 360 / 22.5) % 16;
         v.WindKn = $"{v.Weather.WindMs / 0.514444:0} kn";
         v.Cloud = $"{Math.Round(v.Weather.Cloud * 10):0}/10";
-        var (_, lon) = Centre(s);
+        var (lat, lon) = Centre(s);
+        v.Starts = s.Start.ToUtc().AddHours(lon / 15).ToString("d MMM HH:mm", CultureInfo.InvariantCulture);
+        v.StartWord = LightWord(s.Start, Earth.Position(lat, lon));
+        v.StartChanged = setup.Changes.Any(c => c is SetStart);
         v.Ends = EndOf(s).ToUtc().AddHours(lon / 15).ToString("d MMM HH:mm", CultureInfo.InvariantCulture);
         v.EndChanged = setup.Changes.Any(c => c is SetEnd);
         v.NewSeed = setup.Changes.Any(c => c is SetSeed { Seed: null });
@@ -283,15 +312,19 @@ public sealed unsafe partial class LaunchScene
             pendingEdit = Weather(v.Weather with { Cloud = Math.Clamp(tenths + by, 0, 10) / 10 });
         bool cloudChanged = v.WeatherChanged && Math.Abs(v.Weather.Cloud - v.WrittenWeather.Cloud) > 0.01;
         Note(r, c0 + sw + P(8), cloudChanged ? "changed" : tenths >= 8 ? "overcast" : tenths >= 4 ? "broken" : tenths > 0 ? "scattered" : "clear", cloudChanged);
+        // the start, by the hour, the light it's fought in beside it
+        r = Row("Starts");
+        long off = s.Start - written!.Start;
+        sw = dl.Stepper("##starts", new Vector2(c0, r.Y + P(2.5f)), v.Starts, P(96), off > -EarlierHours * 3_600_000L, off < LaterHours * 3_600_000L, out int hours);
+        if (hours != 0)
+            pendingEdit = Started(s.Start + Math.Sign(hours) * 3_600_000L);
+        Note(r, c0 + sw + P(8), v.StartChanged ? $"changed · {v.StartWord}" : $"local · {v.StartWord}", v.StartChanged);
         // the end, by the hour
         r = Row("Ends");
         var end = EndOf(s);
-        sw = dl.Stepper("##ends", new Vector2(c0, r.Y + P(2.5f)), v.Ends, P(96), end.Ms - 3_600_000L > s.Start.Ms, end.Ms < s.Start.Ms + 72 * 3_600_000L, out int hours);
+        sw = dl.Stepper("##ends", new Vector2(c0, r.Y + P(2.5f)), v.Ends, P(96), end.Ms - 3_600_000L > s.Start.Ms, end.Ms < s.Start.Ms + 72 * 3_600_000L, out hours);
         if (hours != 0)
-        {
-            var to = end + Math.Sign(hours) * 3_600_000L;
-            pendingEdit = written!.Until is { } wu && wu.Ms == to.Ms || written.Until == null && to.Ms == EndOf(written).Ms ? setup.Without("until") : setup.With(new SetEnd(to));
-        }
+            pendingEdit = Ended(setup, s.Start, end + Math.Sign(hours) * 3_600_000L);
         Note(r, c0 + sw + P(8), v.EndChanged ? "changed" : "local, at the latest", v.EndChanged);
         // the seed
         r = Row("Seed");

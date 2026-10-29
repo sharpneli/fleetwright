@@ -54,7 +54,7 @@ her course); S, A and D moved to V, N and P for WASD.
 | Add a unit | the picker, in its add mode | name, admiral, ships (− n +, named), formation and spacing, and whether it **joins** a unit (on its station: no placing) or stands **on its own** (placed on the map); the design list as the picker's; then Place it on the map | `#add` |
 | Placing view | the opening, a bar over it | the unit at the cursor with its ships astern and its course for 30 minutes; click places her head, drag sets the course; course and speed typed in the bar; where she is, how far from her nearest own unit and from the enemy; Esc cancels | `#place` |
 | Standing orders | tab 2 | the side's **aggression** (the C-in-C's, for every unit) with what it moves, written against now; each **admiral's temper**, added to it, with why the scenario gave it (captains' sit on their ships); the rules (engage, deploy, torpedoes, evasion, tracks, night action, night attacks, roles) | `#orders` |
-| Conditions | tab 3 | both sides side by side: gun crews, readiness, damage control, fire discipline, fuel; presets (as history, even crews, easier, harder); the day (visibility, wind, the end, the seed) | `#orders` |
+| Conditions | tab 3 | both sides side by side: gun crews, readiness, damage control, fire discipline, fuel; presets (as history, even crews, easier, harder); the day (visibility, wind, cloud, the start, the end, the seed) | `#orders` |
 | Changes | tab 3, its third column | every change from the scenario as written, one line each, ✕ to undo, reset all | `#orders` |
 | The load | the Begin box, right column | one segment a class (dark: building, brass: its art), classes built and art in, the threads; **Begin** (Watch on Watch), Begin paused, Save setup… | `#loading`, `#jutland` |
 
@@ -402,6 +402,12 @@ the screen draws (once a pick, again after each Begin; shown as "this time 71154
   is scoped now.
 - **Left for later:** the sea state beside the wind (the mockup's "sea 4": no sea state in the sim yet); the end said in
   the changes in GMT, the screen in local time; typing a seed.
+- **The start (2026-10-29):** history's variance in the hour too. `SetStart` (`"start"` in the setup's file) moves the
+  start by the hour, up to 12 earlier and 11 later than written (every hour of the day once, the date following), its
+  row over the end's, the light it's fought in beside it (daylight, dawn, dusk or night: the sun at the opening's
+  centre, nautical twilight the night's edge). The written end moves with it (the fight as long); it applies before the
+  rest of the day, so an end of the setup's own stands, and the screen moves that one with the start too. Checked at
+  Jutland: seven hours later, 21:20 local reads dusk, the end 11:20 the next morning, sunrise in the header.
 
 ## Decisions (the user, 2026-10-25)
 

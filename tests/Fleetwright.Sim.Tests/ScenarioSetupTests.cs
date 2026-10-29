@@ -271,6 +271,25 @@ public class ScenarioSetupTests
         Assert.Equal("Weather: 8 km, wind SSW 12 kn (written: 13 km, wind SW 18 kn)", new SetWeather(new WeatherHere(8000, 200, 12 * 0.514444)).Describe(written));
     }
 
+    /// <summary>The start by the hour: the written end moves with it, an end of the setup's own stands whatever order
+    /// the two were made in.</summary>
+    [Fact]
+    public void A_start_moves_the_written_end_with_it_and_an_own_end_stands()
+    {
+        var written = Tsushima() with { Until = null };
+        var later = written.Start + 5 * 3_600_000L;
+        var s = new ScenarioSetup().With(new SetStart(later)).Apply(written);
+        Assert.Equal(later, s.Start);
+        Assert.Null(s.Until);   // the play limit counts from the start
+        var until = written with { Until = written.Start + 10 * 3_600_000L };
+        Assert.Equal(written.Start + 15 * 3_600_000L, new ScenarioSetup().With(new SetStart(later)).Apply(until).Until);
+        var own = written.Start + 20 * 3_600_000L;
+        Assert.Equal(own, new ScenarioSetup().With(new SetEnd(own)).With(new SetStart(later)).Apply(until).Until);
+        Assert.Equal(own, new ScenarioSetup().With(new SetStart(later)).With(new SetEnd(own)).Apply(until).Until);
+        Assert.Throws<ScenarioException>(() => new ScenarioSetup().With(new SetEnd(written.Start + 3_600_000L)).With(new SetStart(later)).Apply(written));
+        Assert.Equal("Starts 27 May 09:40 GMT (written: 27 May 04:40 GMT)", new SetStart(later).Describe(written));
+    }
+
     static ScenarioUnit Tree(Scenario s, string name)
     {
         ScenarioUnit? Find(IEnumerable<ScenarioUnit> units) => units.Select(u => u.Name == name ? u : Find(u.Units)).FirstOrDefault(u => u != null);
@@ -300,6 +319,7 @@ public class ScenarioSetupTests
             .With(new SideSetting(SideKind.FireDiscipline, 1, "rn-1914"))
             .With(new SetWeather(new WeatherHere(8000, 200, 12 * 0.514444)))
             .With(new SetEnd(written.Start + 20 * 3_600_000L))
+            .With(new SetStart(written.Start - 3 * 3_600_000L))
             .With(new SetSeed(1906));
         var set = setup.Apply(written);
         var dir = Path.Combine(Path.GetTempPath(), "fleetwright-setup-" + Guid.NewGuid().ToString("N"));
@@ -322,6 +342,7 @@ public class ScenarioSetupTests
             Assert.Equal(200, read.Weather.Value.WindFromDeg, 6);
             Assert.Equal(12, read.Weather.Value.WindMs / 0.514444, 3);
             Assert.Equal(set.Until, read.Until);
+            Assert.Equal(set.Start, read.Start);
             Assert.Equal(set.Doctrine.Select(d => (d.Side, d.Preset, string.Join(",", d.Values))), read.Doctrine.Select(d => (d.Side, d.Preset, string.Join(",", d.Values))));
             Assert.Equal(0.2, Tree(read, "Enkvist's cruisers").Temper);
             Assert.Equal(0.3, Tree(read, "3rd Armoured Division").Temper);
