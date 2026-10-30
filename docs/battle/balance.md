@@ -158,6 +158,7 @@ brutality is untouched; BL1g checks it with close-range duels and `night-history
 | **BL1e** | **Local control's judgement** (P4). **Done 2026-10-30:** `FireControlPresets.Local` takes the judgement's computer (the officer at the guns judging her course and speed, looking again each minute) beside level 0's optics and the battery's own sights. | fire-control.md F6's crossing case (12.5% to 21%) is F6's measure; the suite passes unchanged. |
 | **BL1f** | **Wetness, the first part. Done 2026-10-30:** the research's casemate rule (`RollSea.Awash`): a gun is awash under H_s x its side (0.6 weather to 0.35 lee) x its place (2 at the bow, 1 amidships) x (1 + 0.5 (V/25 kn)² x her heading to the sea), its axis as she has settled; awash, it doesn't bear. The wetness index for blinded forward rangefinders and swamped forward turrets waits for a freeboard factor from the designer (with the hull model's refresh, `docs/shipgen/TODO.md`). | `RollTests`: a 3 m casemate under on the weather side in 5 m of sea, not on the lee, a turret never, a bow casemate heading into it, nothing in a calm. |
 | **BL1g** | **Fit and check.** Under way 2026-10-30: `scenario --play --fire-table` (shells and hits by calibre, range and point blank) found where the scenarios' losses come from (below). `shipgen balance`, `fc-history`, `night-history` and close-range duels; only [EST] numbers moved, each move logged. | fc-history mostly in its bands, the rest named; night and point blank as brutal as before. |
+| **BL1h** | **The moving platform, second part** (agreed 2026-10-30, after BL5's closing): **pitch** from the same spectrum and method as the roll (the hull's pitch response by length against wavelength, the encounter frequency at speed) into the layer's elevation for targets toward the bow and stern; **vibration at speed** on the sights (research §1.1: 1 + a (v / v_max)², a by the gun's support [EST]); **yaw** from the helm and the sea into the trainer's laying. Each fades as she slows and the sea calms. | The light guns' 2-4 km and point-blank rates come down for fast small ships; big ships at battle ranges and a ship lying still unchanged. |
 
 **Out of BL1, named:** fatigue over hours (with `GunneryCombat`'s removal), vibration with speed (no numbers in the
 research), stable verticals and fins (later cuts), the captains choosing a course for the sea (BL5's or later), spray
@@ -235,6 +236,10 @@ refreshed once ships roll ("the whole hull model is quite old"); wetness in if i
        about a third of the runs, at the cost of about half the boats sunk or crippled; checked after BL1, tuned in
        BL5 or BL6 by the boats' run-in and break-off if it misses. Jutland's day attacks had boats fire at heavy cost;
        never getting in makes a flotilla pointless by day, always getting in makes battleships pointless.
+
+6. **Point blank's rate comes down by physics, not a number** (the user, 2026-10-30, on BL1g's finding): pitch,
+   vibration at speed and yaw as BL1h ("that's exactly how we want to do it instead of adhoc numbers"); first the AI's
+   closing (BL5's part: why light forces get inside 2 km by day).
 
 ## Pending decisions
 
