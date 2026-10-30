@@ -2142,6 +2142,23 @@ public sealed record SimSettings
     public double TorpedoDepthMinM { get; init; } = 1.5;
     public double TorpedoDepthMaxM { get; init; } = 4.5;
 
+    /// <summary>The target's course and speed as the torpedo officer judges them for the launch (docs/battle/night.md Q12c):
+    /// her course from her inclination, her speed from her bow wave, by eye, one judgement a spread; the side's track gives
+    /// only where she is. The 1-sigma errors of a trained officer seeing her plainly (fire-control-research/computing.md
+    /// §2.1: course ±10-20°, speed ±2-4 kn by eye [EST]), grown as her shape is made out worse: times
+    /// √(1 + (<see cref="TorpedoJudgeMargin"/> / margin)²), the margin on her shape at the last sighting (floored at
+    /// <see cref="TorpedoJudgeMarginMin"/>: a ship seen by her lights alone), and by the crew's experience as the gun
+    /// crews' operators (<see cref="GunneryCrew.Operator"/>). No term for being under fire: the record shows none beyond
+    /// casualties, smoke and the light (crews-under-fire.md, finding 8), which reach the eye already.</summary>
+    public double TorpedoJudgeCourseSigmaDeg { get; init; } = 15;
+    public double TorpedoJudgeSpeedSigmaMs { get; init; } = 1.5;
+    public double TorpedoJudgeMargin { get; init; } = 4;
+    public double TorpedoJudgeMarginMin { get; init; } = 0.3;
+
+    /// <summary>The moment a torpedo leaves its tube against the sight's coming on, 1-sigma, s [EST: a reaction]: a ship
+    /// turning swings her tubes through it, so each torpedo's course errs by her rate of turn times it.</summary>
+    public double TorpedoFireTimingS { get; init; } = 0.5;
+
     /// <summary>The explosion at the hull (damage-model-research.md §3.4, A6): how far inboard it wrecks, m per kg^⅓ of its
     /// charge (TNT's worth; a 300 kg charge 4.7 m, the depth of a TDS rated for it), and the hole it tears in the side,
     /// m² per kg^⅔ (Seydlitz's 12 × 4 m from a ~200 kg charge). Each other cell within the reach takes a hole of its own
@@ -2212,7 +2229,9 @@ public sealed record SimSettings
     /// <summary>A torpedo's hit chance, fired at a range: MatchupTorpedoHitM / range, at most MatchupTorpedoHitMax, by the
     /// square root of the target's length over MatchupTorpedoLengthM, times MatchupTorpedoEvadedShare for her combing and
     /// turning away, and by how much slower than the torpedo she is beside a target at MatchupTorpedoRefKn (a fast ship
-    /// turning away outruns its reach): shipgen torpedo against a steady target at 18 kn, 35% at 3 km, 18% at 5 km.</summary>
+    /// turning away outruns its reach): shipgen torpedo against a steady target at 18 kn, 35% at 3 km, 18% at 5 km, before
+    /// the torpedo officer's judgement (docs/battle/night.md Q12c: now 18% at 1 km, 15% at 2 km, 7% at 3 km, 6% at 5 km; the
+    /// refit waits on the user, as it moves who is taken for an attacker).</summary>
     public double MatchupTorpedoHitM { get; init; } = 900;
     public double MatchupTorpedoHitMax { get; init; } = 0.4;
     public double MatchupTorpedoLengthM { get; init; } = 150;

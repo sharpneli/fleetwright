@@ -1,6 +1,6 @@
 # Plan: night fighting (a 4.5 deepening)
 Status: **drafted 2026-10-29**; **agreed with the user 2026-10-29** (decisions 1-5 at the end); Q0-Q10 done 2026-10-29;
-the research arrived 2026-10-29: Q1b, Q0b, Q3b, Q5b added before Q10 (after Q9), done; Q11 done 2026-10-30; Q12a (the check) and Q12b (night doctrine one a period) done 2026-10-30, the fits next
+the research arrived 2026-10-29: Q1b, Q0b, Q3b, Q5b added before Q10 (after Q9), done; Q11 done 2026-10-30; Q12a (the check) and Q12b (night doctrine one a period) done 2026-10-30; Q12c (the torpedo officer's judgement) done 2026-10-30, the fits next
 Updated: 2026-10-30
 
 How ships see, light, shoot and lose each other in the dark. The user asked for it after the crew plan (2026-10-28),
@@ -1321,7 +1321,56 @@ differ, so the day doesn't move. Sim 877, game 207 passed.
 course and speed as a director or an eye judges them, firing while turning or under fire); why a light ship lit at
 1.5-2 km takes the fire of a whole long fight (the hot four minutes: turning away by role, the research's item); Black
 Prince (doubt from the partial reply, her guns held until made out); the AI's night by the light, not the sun's angle,
-with the dawn case's visibility to the record; phosphorescence as a sight cue; the moonless hours for raiders.
+with the dawn case's visibility to the record; phosphorescence as a sight cue; the moonless hours for raiders. The user
+(2026-10-30): the torpedo's aim first, then the rest in that order.
+
+**Q12c, the torpedo officer's judgement (2026-10-30).** Read first: the aim took the side's track for the target's
+course and speed, and by the launch that track is good (a probe: 0.2-1.6 m/s off at 2.5 km, after the mounts trained),
+so a spread went where a perfect solution sends it: 33-36% of torpedoes hit from 0.8 to 2.5 km, about the most a fan
+of four can. The record's officers had no plot: the torpedo director took the target's course from her inclination and
+her speed from her bow wave, by eye.
+
+- **The judgement** (`TorpedoSystem.Judged`): the track gives where she is; her course and speed are the track's off by
+  one draw a spread (`Pending.CourseZ`, `SpeedZ`), 1-sigma 15° and 1.5 m/s (`TorpedoJudgeCourseSigmaDeg`,
+  `TorpedoJudgeSpeedSigmaMs`: the middle of `computing.md` §2.1's ±10-20° and ±2-4 kn by eye [EST]), grown by
+  √(1 + (4 / margin)²) on the margin her shape was made out at the last sighting (`Contact.Shape`, new, hashed; 4 the
+  class's margin, `TorpedoJudgeMargin`; floored at 0.3, a ship seen by her lights alone) and by the crew's experience as
+  the gun crews' operators (`GunneryCrew.Operator`: green twice a trained crew's). A day target at 2.5 km is made out
+  at a margin of about 5 (the errors ×1.25); the night's launches at a median 2.1 (×2.1: course 31°, speed 6 kn).
+- **Firing while turning** (`TorpedoFireTimingS` 0.5 s [EST: a reaction]): each torpedo's course errs by her rate of
+  turn times the moment it leaves the tube against the sight's coming on, beside the gyro's 1°.
+- **Under fire: no term.** `crews-under-fire.md` (finding 8) found no measurable effect on accuracy beyond casualties,
+  damage, smoke and the light, which reach the eye and the crews already (the user's "under fire" is those).
+- **The dev's launches** (`-torpedo`, `Launch(truth: true)`) stay aimed at the truth.
+
+| Measure | Before | After | The record |
+|---|---|---|---|
+| a spread of 4 at QE at 15 kn, beam on (`shipgen torpedo`): 0.8 / 2.5 / 3.5 / 6 / 8 km | 33 / 36 / 33 / 21-28 / 24% | 24 / 18 / 3.4 / 4.9 / 0% | close: often; far, at a ship that turns: a few % |
+| at 18 kn: 1 / 2 / 3 / 5 / 8 km | 31 / - / 23 / 19 / -% | 18.5 / 15 / 6.6 / 5.7 / 0% | |
+| Tsushima, Japanese torpedoes | 1.4 for 0.3 (21%) | 1.3 for 0.2 (15%) | 54 for 4-6 (7-11%; mines aside) |
+| Southampton, British | 12.9 for 2.9 (22%) | 12.2 for 2.0 (16%) | 1 for 1 |
+| 4th Flotilla, British | 27.8 for 9.0 (32%) | 24.8 for 5.0 (20%) | ~14 for 1 (7%) |
+| Black Prince, German | 6.0 for 2.7 (45%) | 5.5 for 1.3 (24%) | none known to hit at the Jutland's night |
+| Dover Strait, German | 6.0 for 1.2 (20%) | 6.2 for 0.8 (13%) | (G42, G85 sunk; Broke's torpedoes missed) |
+
+(`night-history --runs 40`; the dip at 3.5 km is the setting: beyond the fast setting's reach the slow one and a run
+twice as long. Past 3 km the solution's error grows with the run, so a lone target is seldom hit; a line gives the misses
+a second ship to find.)
+
+**What it says:** the day comes into the record's shape (close often, far seldom). The night falls by a third to a
+half but stays about twice the record at the 4th Flotilla: at 0.8 km the judged aim is off by some 200 m against a
+fan 300 m wide, and 70% of the night's hits are on the ship aimed at. A larger judgement error isn't sourced (it would
+need ~3×); what's left is the targets' own turning (the German line turned away as the boats came in) and the boats'
+haste under fire, which the record tells in words, not numbers. The British at Southampton fire 12 torpedoes where the
+record has Southampton's one: the light cruisers' fire discipline, not the aim.
+
+- **Not done, for the user:** the matchup's torpedo curve (`MatchupTorpedoHitM` 900, `MatchupTorpedoHitMax` 0.4: 35% at
+  3 km) is the old bench's; refitted to the new one (350, 0.2) destroyers stop being taken for a threat to a battleship,
+  so the roles, the flotillas' attacks and the turn-away (14 tests) go with it. Left as the AI's belief, optimistic as
+  the navies' pre-war estimates were, until the user decides: refit it with the attacker threshold, or keep it.
+- A test's force attack (`A_force_told_to_attack_hands_it_to_its_divisions`) needed 90 minutes, not 40, for its task to
+  end: the dreadnought no longer sinks in the first attack, so the boats come round again.
+- Sim 877 passed (a smoke cost test flaky under load, passes alone), game 207 passed.
 
 ## Decided (the user, 2026-10-29)
 

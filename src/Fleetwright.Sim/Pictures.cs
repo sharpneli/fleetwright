@@ -69,6 +69,11 @@ public struct Contact
     public ContactLevel Level;
     public ShipType Type;
 
+    /// <summary>How well her shape was made out at the last sighting: the best margin on it (not her bow wave or her
+    /// lights: under 1 when she was made out by them alone). The torpedo officer's judgement reads it
+    /// (<see cref="SimSettings.TorpedoJudgeMargin"/>).</summary>
+    public double Shape;
+
     /// <summary>The class it's taken for (a registry id), -1 below <see cref="ContactLevel.Class"/>.</summary>
     public int TakenFor;
     public int Observer;
@@ -216,6 +221,7 @@ public sealed class Picture
             h.Add((int)c.Level | (int)c.Seen << 8);
             h.Add(c.TakenFor);
             h.Add(c.QuietMs);
+            h.Add(c.Shape);
             if (c.Foe != c.Level >= ContactLevel.Type || c.FriendMs != 0)
             {
                 h.Add(0x0F0Eu);   // (only when not as the type alone says: the hashes of worlds with no challenge as they were)

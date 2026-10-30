@@ -306,7 +306,7 @@ public sealed class GunnerySystem : IWorldSystem
     public double Experience(int side) => experience[side & 255] / 1000.0;
 
     /// <summary>A ship's gun crews: her side's experience as far as she's worked up (docs/battle/crew.md decision 6).</summary>
-    GunneryCrew CrewOf(in ShipState ship) => settings.GunneryCrewAt(settings.GunneryLevel(Experience(ship.Side), ship.WorkUp));
+    internal GunneryCrew CrewOf(in ShipState ship) => settings.GunneryCrewAt(settings.GunneryLevel(Experience(ship.Side), ship.WorkUp));
 
     public FireDiscipline Discipline(int side) => settings.FireDisciplines[disciplines[side & 255]];
 

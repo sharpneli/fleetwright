@@ -623,7 +623,7 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
         long seen = w.CombatLog.Written;
         var firedBy = new HashSet<int>();
         var phases = new HashSet<(int, AttackPhase)>();
-        for (int min = 1; min <= 40; min++)
+        for (int min = 1; min <= 90; min++)
         {
             w.AdvanceTo(w.Time + 60_000);
             foreach (int m in f.Members)

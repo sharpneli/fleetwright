@@ -26,7 +26,10 @@ public enum TorpedoEnd : byte
 /// takes a share of the spread; a mount trains to the course first. At the launch the aim is solved again from the navy's
 /// estimate of the target (<see cref="TorpedoAim"/>: the fast setting if it reaches, else the slow), the depth set for the
 /// target as it's taken, the spread fanned over its length at the meeting point, each torpedo with its own course error;
-/// some fail and sink on the way.
+/// some fail and sink on the way. The estimate gives where the target is; her course and speed are as the torpedo officer
+/// judges them by eye, one judgement a spread, worse the worse her shape is made out
+/// (<see cref="SimSettings.TorpedoJudgeCourseSigmaDeg"/>; docs/battle/night.md Q12c), and a ship turning swings her tubes
+/// through the moment of firing (<see cref="SimSettings.TorpedoFireTimingS"/>).
 /// <para>A torpedo is a few numbers: where and when it entered the water, its heading, speed and depth; where it is is
 /// closed form on its great circle. It costs one event a <see cref="SimSettings.TorpedoCheckMs"/>: the next piece of its
 /// run is swept against the ships the world's index finds near it, each in its frame at the piece's two ends (at the set
@@ -70,6 +73,8 @@ public sealed class TorpedoSystem : IWorldSystem
         public bool Alive;
         public int Generation, Shooter, Launcher, Target, First, Count, Spread;
         public bool Truth;
+        /// <summary>The spread's judgement of the target's course and speed: its errors in sigmas (scaled at the launch).</summary>
+        public double CourseZ, SpeedZ;
     }
 
     readonly SimSettings settings;
@@ -90,7 +95,7 @@ public sealed class TorpedoSystem : IWorldSystem
 
     readonly Ending[] ends;
     int endNext, endCount;
-    long serial;
+    long serial, orders;
     bool fired;
     double biggest;
     int[] candidates = new int[16];
@@ -193,7 +198,7 @@ public sealed class TorpedoSystem : IWorldSystem
             if (!k.LauncherWorks(l) || Busy(shooter, l))
                 continue;
             int loaded = store.Combat.Launcher(slot, l, row, now).Loaded;
-            if (loaded > 0 && Solve(world, ship, row, target, now, false, out _, out _, out double heading, out _) &&
+            if (loaded > 0 && Solve(world, ship, row, target, now, false, 0, 0, out _, out _, out double heading, out _) &&
                 Bears(cls, row, Wrap(heading - ship.HeadingDeg)))
                 n += loaded;
         }
@@ -213,13 +218,15 @@ public sealed class TorpedoSystem : IWorldSystem
             return;
         long now = world.Time.Ms;
         int first = 0, made = 0;
+        var judged = stream.Derive(0x4A55_4447_0000_0000UL | (ulong)orders++);   // one judgement for the spread
+        double courseZ = truth ? 0 : judged.NextGaussian(), speedZ = truth ? 0 : judged.NextGaussian();
         for (int l = 0; l < cls.Launchers.Length && first < n && made < launched.Length; l++)
         {
             ref readonly var row = ref cls.Launchers[l];
             if (!k.LauncherWorks(l) || Busy(shooter, l))
                 continue;
             int loaded = store.Combat.Launcher(slot, l, row, now).Loaded;
-            if (loaded <= 0 || !Solve(world, ship, row, target, now, truth, out _, out _, out double heading, out _))
+            if (loaded <= 0 || !Solve(world, ship, row, target, now, truth, courseZ, speedZ, out _, out _, out double heading, out _))
                 continue;
             double rel = Wrap(heading - ship.HeadingDeg);
             if (!Bears(cls, row, rel))
@@ -233,6 +240,7 @@ public sealed class TorpedoSystem : IWorldSystem
             pe = new Pending
             {
                 Alive = true, Generation = pe.Generation + 1, Shooter = shooter, Launcher = l, Target = target, First = first, Count = count, Truth = truth,
+                CourseZ = courseZ, SpeedZ = speedZ,
             };
             launched[made++] = p;
             first += count;
@@ -262,10 +270,10 @@ public sealed class TorpedoSystem : IWorldSystem
         return false;
     }
 
-    /// <summary>The aim from a launcher at a target its navy holds in sight (or as it truly is: the dev's): the setting's
-    /// speed and range, the course and the run.</summary>
-    bool Solve(World world, ShipState ship, in LauncherRow row, int target, long now, bool truth, out double speedMs, out double rangeM,
-        out double headingDeg, out double runM)
+    /// <summary>The aim from a launcher at a target its navy holds in sight, her course and speed as judged (errors of
+    /// courseZ and speedZ sigmas; or as she truly is: the dev's): the setting's speed and range, the course and the run.</summary>
+    bool Solve(World world, ShipState ship, in LauncherRow row, int target, long now, bool truth, double courseZ, double speedZ, out double speedMs,
+        out double rangeM, out double headingDeg, out double runM)
     {
         (speedMs, rangeM, headingDeg, runM) = (0, 0, double.NaN, double.NaN);
         Vec3d q, v;
@@ -284,9 +292,24 @@ public sealed class TorpedoSystem : IWorldSystem
             if (ci < 0 || !pic![ci].InSight)
                 return false;
             (q, v, _) = pic.EstimateAt(ci, now, settings);
+            if (courseZ != 0 || speedZ != 0)
+                v = Judged(world, ship, q, v, pic[ci].Shape, courseZ, speedZ);
         }
         var from = ship.Frame.ToWorld(row.X, row.Y, 0);
         return TorpedoAim.Setting(ship.Handling.Class.Torpedoes[row.Torpedo], from, q, v, out speedMs, out rangeM, out headingDeg, out runM);
+    }
+
+    /// <summary>A target's velocity as the torpedo officer judges it: the track's, its course and speed off by the sigmas
+    /// given, the sigmas grown as her shape is made out worse and by the crew's experience.</summary>
+    Vec3d Judged(World world, ShipState ship, Vec3d q, Vec3d v, double shape, double courseZ, double speedZ)
+    {
+        double m = settings.TorpedoJudgeMargin / Math.Max(shape, settings.TorpedoJudgeMarginMin);
+        double grow = Math.Sqrt(1 + m * m) * world.Gunnery.CrewOf(ship).Operator;
+        double speed = v.Length;
+        double course = speed > 1e-6 ? Earth.Heading(q, v) : 0;
+        course += courseZ * settings.TorpedoJudgeCourseSigmaDeg * grow;
+        speed = Math.Max(speed + speedZ * settings.TorpedoJudgeSpeedSigmaMs * grow, 0);
+        return Earth.Forward(q, course) * speed;
     }
 
     /// <summary>Whether a launcher bears on a relative bearing: a trained one within its arcs, a fixed one within its gyro
@@ -375,7 +398,8 @@ public sealed class TorpedoSystem : IWorldSystem
         if (k.Status != ShipStatus.Afloat || !k.LauncherWorks(pe.Launcher))
             return;
         int count = Math.Min(pe.Count, store.Combat.Launcher(slot, pe.Launcher, row, now).Loaded);
-        if (count <= 0 || !Solve(world, ship, row, pe.Target, now, pe.Truth, out double speed, out double range, out double heading, out double run) ||
+        if (count <= 0 || !Solve(world, ship, row, pe.Target, now, pe.Truth, pe.CourseZ, pe.SpeedZ, out double speed, out double range, out double heading,
+                out double run) ||
             !Bears(cls, row, Wrap(heading - ship.HeadingDeg)))
             return;   // lost it, or it no longer bears: it holds its fire
 
@@ -383,12 +407,15 @@ public sealed class TorpedoSystem : IWorldSystem
         double spacing = settings.TorpedoSpacingShare * length / Math.Max(run, 1);   // radians between neighbours
         double fail = cls.Torpedoes[row.Torpedo].FailShare;
         var origin = ship.Frame.ToWorld(row.X, row.Y, 0).Normalized() * Earth.Radius;
+        // her swing through the moment each leaves its tube
+        double swing = double.RadiansToDegrees(Math.Abs(store.YawRateAt(slot, now))) * settings.TorpedoFireTimingS;
+        double sigma = Math.Sqrt(settings.TorpedoCourseSigmaDeg * settings.TorpedoCourseSigmaDeg + swing * swing);
         for (int j = 0; j < count; j++)
         {
             long id = serial;
             var r = stream.Derive((ulong)serial++);
             double off = (pe.First + j - (pe.Spread - 1) / 2.0) * spacing;
-            double h = heading + double.RadiansToDegrees(off) + r.NextGaussian() * settings.TorpedoCourseSigmaDeg;
+            double h = heading + double.RadiansToDegrees(off) + r.NextGaussian() * sigma;
             bool failed = r.NextDouble() < fail;
             double end = failed ? range * r.NextDouble() : range;
             int i = Allocate();
@@ -553,6 +580,7 @@ public sealed class TorpedoSystem : IWorldSystem
             return;   // a world that never fired one hashes as it did before there were torpedoes
         h.Add(alive);
         h.Add(serial);
+        h.Add(orders);
         for (int i = 0; i < high; i++)
             if (torpedoes[i].Alive)
             {

@@ -820,6 +820,12 @@
   "TorpedoDepthShare": 0.6,
   "TorpedoDepthMinM": 1.5,
   "TorpedoDepthMaxM": 4.5,
+  // the target's course and speed as the torpedo officer judges them (docs/battle/night.md Q12c; computing.md §2.1)
+  "TorpedoJudgeCourseSigmaDeg": 15,
+  "TorpedoJudgeSpeedSigmaMs": 1.5,
+  "TorpedoJudgeMargin": 4,
+  "TorpedoJudgeMarginMin": 0.3,
+  "TorpedoFireTimingS": 0.5,
   "TorpedoReachK": 0.7,
   "TorpedoHoleK": 1.4,
   "TorpedoInnerHoleShare": 0.5,

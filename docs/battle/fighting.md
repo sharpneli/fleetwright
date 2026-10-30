@@ -1267,7 +1267,7 @@ What it settled, beyond the plan:
 | one hit on Lion | 2,570 t, list 0.9° | the same |
 | 2, 4, 6 hits on QE (2 hours) | 3,900 / 7,050 / 9,550 t, list under 2°, lost 6 / 14 / 21% (magazines) | Prince of Wales sank after 4, Royal Oak 3 |
 | 4, 8 hits on Lion (2 hours) | 10,000 / 16,900 t, list 7°, lost 8 / 15% (magazines) | |
-| a spread of 4 at QE steaming steady at 15 kn: 2.5 / 3.5 / 6 / 8 km | 36 / 33 / 28 / 24% of torpedoes hit | close: often; far, at a ship that turns: a few % |
+| a spread of 4 at QE steaming steady at 15 kn: 2.5 / 3.5 / 6 / 8 km | 36 / 33 / 28 / 24% of torpedoes hit; with the torpedo officer's judgement (night.md Q12c, 2026-10-30) 18 / 3.4 / 4.9 / 0% | close: often; far, at a ship that turns: a few % |
 | a dud | 11% (Great War) | |
 
 - **The flotilla** (seed 9, 40 min): the boats close under fire and fire 15 torpedoes from 18:49; 7 hit Monarch, which

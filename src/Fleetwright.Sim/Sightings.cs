@@ -863,6 +863,7 @@ public sealed class Sightings
         if (con.Level < ContactLevel.Ship)
             con.Level = ContactLevel.Ship;   // her smoke's contact: now the ship herself
         con.Seen = SeenOf(ts, tk) | con.Seen & SeenFlags.Gone;
+        con.Shape = margin;
         Identify(ref con, ts, margin, d, ref r, classesInUse);
     }
 
