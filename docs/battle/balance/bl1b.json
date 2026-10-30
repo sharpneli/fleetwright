@@ -1,0 +1,337 @@
+{
+  "date": "2026-10-30 13:28",
+  "seeds": 8,
+  "sides": [
+    {
+      "scenario": "dover-strait",
+      "side": "Britain",
+      "lost": 0.75,
+      "min": 0,
+      "max": 2,
+      "record": 0,
+      "verdict": "in",
+      "hits": 47.375,
+      "hit_pct": 47.375
+    },
+    {
+      "scenario": "dover-strait",
+      "side": "Germany",
+      "lost": 0.5,
+      "min": 0,
+      "max": 2,
+      "record": 2,
+      "verdict": "LOW",
+      "hits": 46.875,
+      "hit_pct": 36.5141187925998
+    },
+    {
+      "scenario": "coronel",
+      "side": "Britain",
+      "lost": 0.625,
+      "min": 0,
+      "max": 2,
+      "record": 2,
+      "verdict": "LOW",
+      "hits": 255.125,
+      "hit_pct": 12.8534542477486
+    },
+    {
+      "scenario": "coronel",
+      "side": "Germany",
+      "lost": 0.875,
+      "min": 0,
+      "max": 2,
+      "record": 0,
+      "verdict": "in",
+      "hits": 482,
+      "hit_pct": 9.0122937409433
+    },
+    {
+      "scenario": "cape-sarych",
+      "side": "Russia",
+      "lost": 0.75,
+      "min": 0,
+      "max": 2,
+      "record": 0,
+      "verdict": "in",
+      "hits": 456.125,
+      "hit_pct": 9.169032841671482
+    },
+    {
+      "scenario": "cape-sarych",
+      "side": "Ottoman Empire",
+      "lost": 0.75,
+      "min": 0,
+      "max": 1,
+      "record": 0,
+      "verdict": "in",
+      "hits": 96.875,
+      "hit_pct": 6.8179818773643
+    },
+    {
+      "scenario": "prizes-war",
+      "side": "France",
+      "lost": 0.875,
+      "min": 0,
+      "max": 3,
+      "verdict": "",
+      "hits": 163.75,
+      "hit_pct": 2.8535953122617466
+    },
+    {
+      "scenario": "prizes-war",
+      "side": "Italy",
+      "lost": 0.125,
+      "min": 0,
+      "max": 1,
+      "verdict": "",
+      "hits": 155.25,
+      "hit_pct": 2.1936099189318075
+    },
+    {
+      "scenario": "aland",
+      "side": "Finland",
+      "lost": 3.75,
+      "min": 0,
+      "max": 6,
+      "verdict": "",
+      "hits": 350.5,
+      "hit_pct": 14.20394103642166
+    },
+    {
+      "scenario": "aland",
+      "side": "Sweden",
+      "lost": 0.875,
+      "min": 0,
+      "max": 2,
+      "verdict": "",
+      "hits": 246.75,
+      "hit_pct": 9.677893807912929
+    },
+    {
+      "scenario": "heligoland-bight",
+      "side": "Britain",
+      "lost": 2,
+      "min": 1,
+      "max": 6,
+      "record": 0,
+      "verdict": "HIGH",
+      "hits": 1168.875,
+      "hit_pct": 19.747845919918905
+    },
+    {
+      "scenario": "heligoland-bight",
+      "side": "Germany",
+      "lost": 17.5,
+      "min": 15,
+      "max": 22,
+      "record": 4,
+      "verdict": "HIGH",
+      "hits": 240.375,
+      "hit_pct": 14.606912267375618
+    },
+    {
+      "scenario": "dogger-bank",
+      "side": "Britain",
+      "lost": 5.625,
+      "min": 1,
+      "max": 13,
+      "record": 0,
+      "verdict": "HIGH",
+      "hits": 1537.5,
+      "hit_pct": 10.446835797824
+    },
+    {
+      "scenario": "dogger-bank",
+      "side": "Germany",
+      "lost": 9,
+      "min": 6,
+      "max": 12,
+      "record": 1,
+      "verdict": "HIGH",
+      "hits": 600.875,
+      "hit_pct": 6.219352835388338
+    },
+    {
+      "scenario": "tsushima",
+      "side": "Russia",
+      "lost": 5.5,
+      "min": 3,
+      "max": 8,
+      "record": 7,
+      "verdict": "in",
+      "hits": 650.25,
+      "hit_pct": 7.232232232232232
+    },
+    {
+      "scenario": "tsushima",
+      "side": "Japan",
+      "lost": 3,
+      "min": 1,
+      "max": 6,
+      "record": 0,
+      "verdict": "HIGH",
+      "hits": 1596.875,
+      "hit_pct": 7.805149260114618
+    },
+    {
+      "scenario": "jutland",
+      "side": "Britain",
+      "lost": 31.5,
+      "min": 18,
+      "max": 42,
+      "record": 14,
+      "verdict": "HIGH",
+      "hits": 3934,
+      "hit_pct": 8.802962664608017
+    },
+    {
+      "scenario": "jutland",
+      "side": "Germany",
+      "lost": 46.5,
+      "min": 28,
+      "max": 57,
+      "record": 11,
+      "verdict": "HIGH",
+      "hits": 3820.5,
+      "hit_pct": 7.166942582856929
+    }
+  ],
+  "fc_history": [
+    {
+      "case": "Santiago 1898, US 12\u0022",
+      "hit_pct": 30.338541666666668,
+      "verdict": "HIGH"
+    },
+    {
+      "case": "Yellow Sea 1904, Japanese 12\u0022",
+      "hit_pct": 18.27956989247312,
+      "verdict": "HIGH"
+    },
+    {
+      "case": "Tsushima 1905, Japanese 12\u0022",
+      "hit_pct": 8.724832214765101,
+      "verdict": "in"
+    },
+    {
+      "case": "Tsushima 1905, Japanese 6\u0022",
+      "hit_pct": 4.56245325355273,
+      "verdict": "HIGH"
+    },
+    {
+      "case": "1912 trial, director (Thunderer)",
+      "hit_pct": 21.223709369024856,
+      "verdict": ""
+    },
+    {
+      "case": "1912 trial, independent (Orion)",
+      "hit_pct": 20.910493827160494,
+      "verdict": ""
+    },
+    {
+      "case": "Dogger Bank 1915, British BCs",
+      "hit_pct": 5.4579673776662485,
+      "verdict": "HIGH"
+    },
+    {
+      "case": "Dogger Bank 1915, German BCs",
+      "hit_pct": 1.3812154696132597,
+      "verdict": "in"
+    },
+    {
+      "case": "Jutland 1916, British 1st/2nd BCS",
+      "hit_pct": 5.817513778322106,
+      "verdict": "HIGH"
+    },
+    {
+      "case": "Jutland 1916, British 5th BS",
+      "hit_pct": 3.6202735317779564,
+      "verdict": "in"
+    },
+    {
+      "case": "Jutland 1916, Grand Fleet BS",
+      "hit_pct": 8.333333333333334,
+      "verdict": "HIGH"
+    },
+    {
+      "case": "Jutland 1916, British 3rd BCS",
+      "hit_pct": 24.13101604278075,
+      "verdict": "HIGH"
+    },
+    {
+      "case": "Jutland 1916, German 1st SG",
+      "hit_pct": 3.6298568507157465,
+      "verdict": "in"
+    },
+    {
+      "case": "Jutland 1916, German battleships",
+      "hit_pct": 6.8807339449541285,
+      "verdict": "HIGH"
+    },
+    {
+      "case": "Falklands 1914, Invincible",
+      "hit_pct": 4.379084967320262,
+      "verdict": "in"
+    },
+    {
+      "case": "USN practice 1912-18, 6 kyd",
+      "hit_pct": 37.125748502994014,
+      "verdict": "in"
+    },
+    {
+      "case": "USN practice 1912-18, 10 kyd",
+      "hit_pct": 14.912280701754385,
+      "verdict": "in"
+    },
+    {
+      "case": "Tennessee-like practice, 19 kyd",
+      "hit_pct": 5.432780847145488,
+      "verdict": ""
+    },
+    {
+      "case": "Bismarck\u0027s end, Rodney",
+      "hit_pct": 32.638888888888886,
+      "verdict": "HIGH"
+    },
+    {
+      "case": "Denmark Strait, Bismarck",
+      "hit_pct": 10.52060737527115,
+      "verdict": "in"
+    },
+    {
+      "case": "Komandorski, Japanese on a salvo chaser",
+      "hit_pct": 0.7590132827324478,
+      "verdict": "in"
+    },
+    {
+      "case": "Komandorski geometry, a steady target",
+      "hit_pct": 2.2176022176022174,
+      "verdict": ""
+    },
+    {
+      "case": "LRBP 1932-33, 16\u0022 at 30 kyd",
+      "hit_pct": 3.1335149863760217,
+      "verdict": "in"
+    },
+    {
+      "case": "USN 1944 study, 16\u0022 at 10 kyd",
+      "hit_pct": 48.783557046979865,
+      "verdict": "in"
+    },
+    {
+      "case": "USN 1944 study, 16\u0022 at 20 kyd",
+      "hit_pct": 8.919597989949748,
+      "verdict": "in"
+    },
+    {
+      "case": "USN 1944 study, 16\u0022 at 30 kyd",
+      "hit_pct": 2.4597495527728084,
+      "verdict": "in"
+    },
+    {
+      "case": "Light guns at a fast boat, 5\u0022",
+      "hit_pct": 4.460492778249788,
+      "verdict": "HIGH"
+    }
+  ]
+}

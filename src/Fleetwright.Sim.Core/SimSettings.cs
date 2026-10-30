@@ -712,6 +712,21 @@ public sealed record SimSettings
     /// line is corrected. The line's correction is an angle, so it holds as the range changes.</summary>
     public double SpotLineMarginM { get; init; } = 25;
 
+    /// <summary>Whose splash (docs/battle/balance.md BL1c, fire-control.md F7; research/simulation/manual-gunnery-research.md
+    /// §5): a spotter tells his own fall of one or two shells from the others falling about the target with the chance
+    /// 1/(1 + <see cref="SplashConfusion"/>·N), N the other splashes of its calibre band (within <see cref="SplashCalibreBand"/>
+    /// of its calibre either way) that come down within <see cref="SplashNearM"/> of her and <see cref="SplashWindowMs"/>
+    /// of his own (other ships': his own ship's guns firing independently he reads as one group); a salvo of
+    /// <see cref="SalvoIdentifiedShells"/> or more he always knows (the research's 0.6 and 3). Not told apart, his spot is
+    /// doubtful, or a <see cref="SplashMisreadShare"/> of the time read from the wrong fall (KGV ranging on Rodney's
+    /// splashes). The window, band, reach and misread share are [EST].</summary>
+    public double SplashConfusion { get; init; } = 0.6;
+    public int SalvoIdentifiedShells { get; init; } = 3;
+    public long SplashWindowMs { get; init; } = 3000;
+    public double SplashCalibreBand { get; init; } = 0.15;
+    public double SplashNearM { get; init; } = 1000;
+    public double SplashMisreadShare { get; init; } = 0.3;
+
     /// <summary>Fire discipline (docs/battle/fire-control.md F6): the spots' bracket is never narrower than this many of
     /// the salvo's patterns (the USN's "never below the pattern"), nor than <see cref="BracketFloorM"/>, m. A ranging
     /// salvo waits for the spots it's due, or this long past its time of flight and the spot's delay, ms (a spot that
