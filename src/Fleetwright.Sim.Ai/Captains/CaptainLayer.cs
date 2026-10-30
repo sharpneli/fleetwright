@@ -127,6 +127,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         public bool TorpedoWait;        // on the coarse fire watch: a torpedo target found, his tubes not bearing yet
         public bool Attacking;          // fighting: pressing a torpedo attack (his searchlights dark, docs/battle/night.md Q4)
         public bool Finishing;          // fighting: in to finish an enemy that can hardly hurt him (docs/battle/balance.md BL5)
+        public bool SmokeMade;          // going home under fire, making funnel smoke to cover it (docs/battle/balance.md BL2b)
         public CaptainReason Reason;    // why, when it isn't simply his order (fallen out)
         public bool Overruled;          // the player ordered him on after he fell out: he stays, at his ship's risk
         public bool Conn;               // the player has the conn: nothing but the player's helm orders moves her
@@ -477,6 +478,8 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
             if (!IsActive(cap) || ctx.Ships.Combat.Condition(slot).Status != ShipStatus.Afloat)
                 continue;   // nothing to do, or his ship going down
             var own = ctx.Ships[slot];
+            if (cap.SmokeMade && cap.Order != CaptainOrder.Home)
+                CoverRetreat(ctx, ref cap, own, slot, near: false);   // another order: the smoke he made for his retreat stops
             if (cap.Watch)
             {
                 // a route the player gave a ship out of its line: at its end, back to its admiral

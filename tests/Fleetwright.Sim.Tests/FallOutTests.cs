@@ -148,4 +148,30 @@ public class FallOutTests(ITestOutputHelper output)
             Assert.Equal(whole ? FallOutCause.None : FallOutCause.Guns, rule.Of(fit));
         }
     }
+
+    [Fact]
+    public void A_ship_going_home_under_fire_covers_her_retreat_with_smoke_and_stops_out_of_touch()
+    {
+        // docs/battle/balance.md BL2b: fallen out and running from an enemy that fires on her, she makes funnel smoke; with
+        // no enemy near any more she stops it
+        var (w, ai, g) = Make();
+        w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.FallOutGunsShare, 1.01));   // any damage at all
+        w.Apply(ai.Orders.Home(0, 57.0, 3.0));
+        w.AdvanceTo(w.Time + 60_000);
+        w.Apply(DamageSystem.SideHole(1, HoleAt.Mid, 0, 3, 0.01));
+        w.AdvanceTo(w.Time + 5_000);
+        Assert.Equal(CaptainOrder.Home, ai.Captains.Of(1).Order);
+        w.Apply(ai.Orders.Engage(Unit.Ship(3), 1));   // the enemy on her (at will she might take the other)
+        bool smoked = false;
+        for (int i = 0; i < 180 && !smoked; i++)
+        {
+            w.AdvanceTo(w.Time + 1_000);
+            smoked = w.Smoke.Screening(1);
+        }
+        Assert.True(smoked, "under fire on her way home, she makes smoke");
+        Assert.False(w.Smoke.Screening(2), "her line's other ship doesn't");
+        w.Apply(DamageSystem.Sink(3, LossKind.Foundered));
+        w.AdvanceTo(w.Time + 60_000);
+        Assert.False(w.Smoke.Screening(1), "out of touch, she stops");
+    }
 }

@@ -1126,8 +1126,10 @@ public sealed partial class CaptainLayer
         {
             var (course, kn) = Behaviours.Run(own, t);
             Give(ctx, own, Evade(ctx, own, slot, course, attackRun: false), kn);
+            CoverRetreat(ctx, ref cap, own, slot, near: true);
             return;
         }
+        CoverRetreat(ctx, ref cap, own, slot, near: false);   // out of touch: no more smoke
         if (homes[own.Side] is not { } home)
             return;
         if (Earth.Distance(own.Position, home) <= s.HomeRadiusM)
@@ -1138,6 +1140,19 @@ public sealed partial class CaptainLayer
             return;
         }
         Give(ctx, own, Earth.Bearing(own.Position, home), flank);
+    }
+
+    /// <summary>A ship going home covers her retreat (docs/battle/balance.md BL2b; the user: any ship may): under fire, with an
+    /// enemy near, she makes funnel smoke (the smoke field: as much as her plant gives), and keeps it while one is near;
+    /// out of touch, home or given another order she stops what she started. Smoke made by another's order isn't his to
+    /// stop, nor does he start it then.</summary>
+    void CoverRetreat(in AiContext ctx, ref Captain cap, ShipState own, int slot, bool near)
+    {
+        bool want = near && (cap.SmokeMade || FiredUpon(ctx.Ships, own, slot));
+        if (want == cap.SmokeMade || want && ctx.World.Smoke.Screening(own.Entity))
+            return;
+        cap.SmokeMade = want;
+        ctx.Issue(SmokeSystem.MakeSmoke(own.Entity, want));
     }
 
     /// <summary>A torpedo seen coming at her (doctrine's TorpedoEvasion: comb): she turns parallel to its track, at the
