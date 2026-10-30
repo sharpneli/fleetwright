@@ -278,7 +278,17 @@ her task were doing and who was closing whom:
   the Great War torpedo's 3.9 km) and often comes closer before it fires; the record's day attacks fired from 5-8 km
   (long settings at a line), the close ones were the night's and the dusk's.
 
-**Proposed for BL5 (for the user):**
+**Decided (the user, 2026-10-30), and to build:**
+
+1. **Screens and cripples:** "Finishing cripples is an important thing. So naturally screen should not prioritize them
+   but if one is nearby it should be attacked, unless the cripple strikes their colors." A screen goes for the threats
+   first; a cripple near enough it takes as it would any target (striking colours isn't in the sim yet: crew.md's
+   "after", noted for it).
+2. **Day attacks fire from range:** "Very much this. Ships seem to wait until very close until launching despite
+   torpedo ranges being much farther. I bet this is a big reason for the cripples."
+3. **Cripples run sneakily:** "cripples should try to be bit more sneaky in how they run away."
+
+**As proposed (before the user's answers):**
 
 1. **A screen counter-attacks a threat, not a cripple:** it goes for a torpedo craft closing its charge within her
    torpedoes' reach; one making away, or gone quiet and slow, isn't one (BL2a's reading of a target, for the screen's
