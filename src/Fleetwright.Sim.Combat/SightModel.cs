@@ -510,6 +510,13 @@ public static class SightModel
         return o.Coated ? 1 + s.RangingCoatedShare * (k - 1) : k;
     }
 
+    /// <summary>How much the air worsens the eye's own work through the optics (docs/battle/balance.md BL1i): the layer
+    /// laying his wire on the target and the spotter judging a splash beside her, from the target's margin as the
+    /// rangefinders' is (<see cref="RangingFactor"/>): 1 from <see cref="SimSettings.RangingClearMargin"/> up, under it
+    /// (clear / margin) to the power. The optical path's only: radar's ranging and spotting (a later cut) step round it.</summary>
+    public static double HazeFactor(double margin, double power, SimSettings s) =>
+        margin >= s.RangingClearMargin ? 1 : Math.Pow(s.RangingClearMargin / Math.Max(margin, 1), power);
+
     /// <summary>A reading's 1-sigma bearing error, radians, by the post: a director's 0.7 mil, a gunhouse's 1.5, a control
     /// position's rangefinder 1 (fire-control-designer.md §3.1), binoculars' 2 mil (the reference's eye figure), the
     /// slits' 5. The one law: the picture's fixes and fire control's readings both take it.</summary>

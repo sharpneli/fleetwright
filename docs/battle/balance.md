@@ -231,7 +231,7 @@ turning from cripples.
 Cripples are not interesting when there is something better to do"; and any ship falling out under fire makes smoke if
 she can ("any ships may do so naturally"): no rule by type.
 
-### BL1i The air on the sights and the spots (proposed 2026-10-30, for the user)
+### BL1i The air on the sights and the spots (agreed 2026-10-30)
 
 After BL1h the gap is light and medium guns in calm, hazy weather: at the Heligoland Bight (5 km of mist, calm) the
 light guns hit 14-23% at 2-4 km, so too many ships fall out early (about 18 German against the record's 4) and the
@@ -250,7 +250,19 @@ and the spotter's by the rangefinders' factor (or a factor of its form: the rese
 an unlit one its silhouette's, so the night's point blank stays brutal where it's lit or close, and `night-history`
 checks it.
 
-**Question for the user:** build it as BL1i, or leave it?
+**Decided (the user, 2026-10-30):** build it; "it's also preparing for the future expansions because in situation like
+that a radar will be incredibly useful addition and that will be properly deadly as it ought to be." So the air works
+on the optical path only (the eye, the telescope, the rangefinder); radar ranging and spotting (F9, a later cut) step
+round it.
+
+**Built 2026-10-30:** `SightModel.HazeFactor` (the rangefinders' form: 1 from the clear margin 4 up, (4 / margin) to a
+power under it; the layer's `AimHazePower` 0.6, the spotter's `SpotHazePower` 0.8 [EST]) by the battery's best margin
+that second. `SplashTests`: a destroyer 4.5 km off is seen at margin 10 in clear air, 3.4 in 6 km of mist, 2.4 at the
+mist's edge. It bites at the edge of sight, little inside it: fc-history's haze cases move the right way (the Dogger Bank's
+British 4.9 → 3.6%, the 3rd BCS 21.9 → 19.8%, the Germans over the British at Jutland 0.86 → 1.03), 12 of 23 in band;
+`night-history` keeps the close night fights brutal (64-84% Britain, 46-59% Germany inside about 2 km) and takes the
+12th Flotilla's dawn shooting at 5-7 km down (12 → 4%). Not the answer for the Heligoland Bight's 2-4 km: there the boats
+are plainly in sight.
 
 ## Decided (the user, 2026-10-30)
 

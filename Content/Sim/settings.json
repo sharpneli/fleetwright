@@ -272,6 +272,8 @@
   "RangingPowerCoincidence": 0.8,
   "RangingPowerStereo": 0.4,
   "RangingCoatedShare": 0.8,
+  "AimHazePower": 0.6,
+  "SpotHazePower": 0.8,
   "EyeRangeShare": 0.075,
   "EyeRangeBiasShare": 0.1,
   "EyeWanderTauS": 300,

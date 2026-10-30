@@ -152,6 +152,9 @@ public sealed class GunnerySystem : IWorldSystem
         /// heading, speed or GM moves a step (<see cref="RollKey"/>); whether they lay on the roll (firing as it brings the
         /// sight on, once a roll) rather than following it; and when it next brings the sight on for the salvo due.</summary>
         public RollState Roll, Pitch;
+        /// <summary>The best margin over the air its sensors had on the target this second (BL1i: the layer's and the
+        /// spotter's eyes work through the same air).</summary>
+        public double Margin;
         public long RollKey, RollMs;
         public bool OnRoll;
     }
@@ -235,6 +238,16 @@ public sealed class GunnerySystem : IWorldSystem
     /// after it.</summary>
     public readonly record struct SpotReport(long FiredMs, int Shooter, int Battery, bool Seen, FireControl.Sign Sign, double Lo, double Hi, double Next,
         FirePhase Phase, bool Told = true);
+
+    /// <summary>A ship's battery's best margin over the air on its target as of its last second (BL1i; tools), 0 if it isn't
+    /// engaged.</summary>
+    public double MarginOf(int shooter, int battery)
+    {
+        for (int i = 0; i < highFc; i++)
+            if (fcs[i].Alive && fcs[i].Shooter == shooter && fcs[i].Battery == battery)
+                return fcs[i].Margin;
+        return 0;
+    }
 
     /// <summary>Told of each salvo once it's down (tools and benches; the world never reads it).</summary>
     public Action<SalvoReport>? Reported { get; set; }
@@ -753,6 +766,7 @@ public sealed class GunnerySystem : IWorldSystem
             out _, out _, out _) == true ? 0 : (long)(computer.LatencyS * 1000);
         Air air = default;
         bool sees = false, aired = false;
+        double bestMargin = 0;
         var smoke = dueTau.AsSpan(i * SmokeSystem.PairTaus, SmokeSystem.PairTaus);
         for (int k = 0; k < fc.SensorCount; k++)
         {
@@ -766,6 +780,7 @@ public sealed class GunnerySystem : IWorldSystem
             double margin = inSight ? MarginOf(cls, s, optics, at, ship.HeadingDeg, target, air, smoke, slot, frame) : 0;
             bool seen = margin >= 1;
             sees |= seen;
+            bestMargin = Math.Max(bestMargin, margin);
             if (!due)
                 continue;
             var r = stream.Derive((ulong)f).Derive((ulong)fc.Generation).Derive((ulong)now).Derive((ulong)k);
@@ -808,6 +823,8 @@ public sealed class GunnerySystem : IWorldSystem
             };
         }
 
+        if (bestMargin > 0 || !inSight)
+            fc.Margin = bestMargin;   // a second whose sensors weren't looked at keeps the last
         // the computer: readings that have come through
         while (fc.PendCount > 0 && pending[f * PendingCap + fc.PendHead].ArriveMs <= now)
             PopReading(ref fc, f, target, now, ship.Position, ownV);
@@ -1322,7 +1339,8 @@ public sealed class GunnerySystem : IWorldSystem
         // the sights shaking at speed (BL1h): the director's where it stands, else the guns' own (a turret or a deck mount)
         double shake = mount.DirectorFiring && fc.SensorCount > 0 ? Vibration(cls, ship, sensors[f * MaxSensors].Support, sensors[f * MaxSensors].X)
             : Vibration(cls, ship, InstrumentSupport.Turret, cls.Mounts[mounts[0]].X);
-        double layRad = mount.LayMil * FireControl.Mil * crew.Lay * combat * stress * shake;
+        // and the air on his sight (BL1i): a grey shape at the edge of what he can make out
+        double layRad = mount.LayMil * FireControl.Mil * crew.Lay * combat * stress * shake * SightModel.HazeFactor(fc.Margin, settings.AimHazePower, settings);
         double eEl = mount.DirectorFiring ? r.NextGaussian() * layRad * perRad : 0, eTr = mount.DirectorFiring ? r.NextGaussian() * layRad * range : 0;
         bool turning = Math.Abs(double.RadiansToDegrees(ship.YawRate)) > settings.OwnTurnYawDegS;
         double kickR = turning ? r.NextGaussian() * computer.OwnTurnKickM : 0, kickL = turning ? r.NextGaussian() * computer.OwnTurnKickM : 0;
@@ -1375,7 +1393,8 @@ public sealed class GunnerySystem : IWorldSystem
         // its record, for the spot
         int si = AllocateSalvo();
         ref var sv = ref salvos[si];
-        double spot = settings.SpotOpticK * combat * range * range / Math.Max(fc.SpotHeightM, 1);
+        // the spotter's eye through the same air (BL1i): over or short of a splash low in haze
+        double spot = settings.SpotOpticK * combat * range * range / Math.Max(fc.SpotHeightM, 1) * SightModel.HazeFactor(fc.Margin, settings.SpotHazePower, settings);
         sv = new Salvo
         {
             Alive = true, Generation = sv.Generation + 1, Fc = f, FcGeneration = fc.Generation, Target = fc.Target, CorrR = fc.CorrR + ladder, CorrD = fc.CorrD,

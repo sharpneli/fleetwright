@@ -644,7 +644,9 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
             Assert.Contains((m, AttackPhase.Run), phases);   // each division ran in itself
             Assert.Contains(m, firedBy);
         }
-        Assert.Equal(TaskState.Done, ai.Tasks.Of(Unit.Group(flotilla)).Status);   // the force's attack over
+        // the force's attack not beaten off: over, or still going in again while boats keep torpedoes and the target is in
+        // sight (over by 90 min until docs/battle/balance.md BL1's gunnery let more of them live)
+        Assert.NotEqual(TaskState.Cant, ai.Tasks.Of(Unit.Group(flotilla)).Status);
     }
 
     [Fact]

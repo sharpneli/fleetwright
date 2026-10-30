@@ -822,6 +822,13 @@ public sealed record SimSettings
     /// target (fire_control_ref.py's Conditions, designer §3.1: stereo ×0.8 on the excess, coincidence ×1.5 at low
     /// contrast).</summary>
     public double RangingClearMargin { get; init; } = 4;
+
+    /// <summary>The air on the layer's sight and the spotter's eye (docs/battle/balance.md BL1i): their errors grow as the
+    /// rangefinders' do, (RangingClearMargin / margin) to these powers, under the clear margin: a cross-wire laid on an
+    /// indistinct shape between a stereo set's and a coincidence set's, over or short judged of a splash low in haze as a
+    /// coincidence set's edges [EST].</summary>
+    public double AimHazePower { get; init; } = 0.6;
+    public double SpotHazePower { get; init; } = 0.8;
     public double RangingPowerCoincidence { get; init; } = 0.8;
     public double RangingPowerStereo { get; init; } = 0.4;
     public double RangingCoatedShare { get; init; } = 0.8;

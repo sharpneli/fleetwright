@@ -1,3 +1,4 @@
+using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Ships;
 using Xunit.Abstractions;
@@ -65,5 +66,37 @@ public class SplashTests(ITestOutputHelper output)
         output.WriteLine($"salvos: {told} of {spots} told");
         Assert.True(spots > 5);
         Assert.Equal(spots, told);
+    }
+
+    /// <summary>A light cruiser's battery's margin over the air on a destroyer 4.5 km off, both steaming north, in a
+    /// visibility, two minutes on.</summary>
+    static double Margin(double visibilityM)
+    {
+        var w = new World(Start, 9, Settings);
+        w.Apply(Command.SetWeather(visibilityM));
+        int c = w.Ships.AddClass(Fleet.Get("light_cruiser").Class!), d = w.Ships.AddClass(Fleet.Get("destroyer").Class!);
+        var p = Earth.Position(Lat, Lon);
+        var f = Earth.Forward(p, 90);
+        Earth.Advance(ref p, ref f, 4_500);
+        var (tl, to) = Earth.LatLon(p);
+        w.Apply(ShipSystem.Spawn(c, Lat, Lon, 0, 15, side: 0));
+        w.Apply(ShipSystem.Spawn(d, tl, to, 0, 15, side: 1));
+        w.Apply(GunnerySystem.Engage(1, -1, 2));
+        w.AdvanceTo(Start + 2 * 60_000);
+        return w.Gunnery.MarginOf(1, 0);
+    }
+
+    [Fact]
+    public void The_air_on_the_sights_and_the_spots_grows_toward_the_edge_of_sight()
+    {
+        // docs/battle/balance.md BL1i: the layer's wire and the spotter's eye work through the same air as the rangefinder,
+        // by the battery's margin over it: nothing in clear air, more toward the edge of sight (radar's ranging and spotting,
+        // a later cut, step round it)
+        double clear = Margin(25_000), mist = Margin(6_000), edge = Margin(4_800);
+        output.WriteLine($"margins: clear {clear:0.00}, mist {mist:0.00}, the edge {edge:0.00}");
+        Assert.True(clear > mist && mist > edge && edge >= 1, $"{clear}, {mist}, {edge}");
+        Assert.Equal(1, SightModel.HazeFactor(clear, Settings.AimHazePower, Settings));
+        double aim = SightModel.HazeFactor(edge, Settings.AimHazePower, Settings), spot = SightModel.HazeFactor(edge, Settings.SpotHazePower, Settings);
+        Assert.True(aim > 1 && spot > aim, $"aim x{aim:0.00}, spot x{spot:0.00}");
     }
 }
