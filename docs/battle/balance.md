@@ -231,6 +231,27 @@ turning from cripples.
 Cripples are not interesting when there is something better to do"; and any ship falling out under fire makes smoke if
 she can ("any ships may do so naturally"): no rule by type.
 
+### BL1i The air on the sights and the spots (proposed 2026-10-30, for the user)
+
+After BL1h the gap is light and medium guns in calm, hazy weather: at the Heligoland Bight (5 km of mist, calm) the
+light guns hit 14-23% at 2-4 km, so too many ships fall out early (about 18 German against the record's 4) and the
+cripples are then finished; fc-history's misses in calm air say the same (the Jutland's 3rd BCS 22% at 8 km against
+2.2-8.6%, the Grand Fleet's 8.8% against 1.8-7.2%, the cases' own "not modelled: haze on the rangefinders; low
+contrast; splash confusion").
+
+**What's missing:** the air works on the rangefinders' readings already (fire-control.md F5c: their error grows as the
+target's contrast through the air falls toward the eye's threshold, `SightModel.RangingFactor`), but not on the
+layer's sight nor on the spotter's eye. A layer laying on a grey shape at the edge of what he can see, and a spotter
+judging over or short of a splash low in haze, both do worse as the margin falls, as the rangetaker does.
+
+**Proposed:** the same margin, already worked out for each sensor every second (`MarginOf`), widens the layer's error
+and the spotter's by the rangefinders' factor (or a factor of its form: the research's eye-in-haze, research
+`fire-control-research.md` §3), nothing at a clear, near target. At night a lit target has its margin from the light,
+an unlit one its silhouette's, so the night's point blank stays brutal where it's lit or close, and `night-history`
+checks it.
+
+**Question for the user:** build it as BL1i, or leave it?
+
 ## Decided (the user, 2026-10-30)
 
 1. **Gunnery closes the gap with the systems,** not a gameplay exception: "we need the systems in place. We can
@@ -300,3 +321,4 @@ answered today; the rest are best answered when their step has measured.
 | 2026-10-30 | `e6feae4a` | BL1b: laying on the roll (`balance/bl1b.json`) | 5 of 14 sides within 2x; the record's loser lost more in 24 of 44 seeds; Heligoland 2.0 v 17.5 (hits 1,660 → 1,169), Dogger 5.6 v 9.0, Jutland 31.5 v 46.5; fc-history 13 of 23 (10 HIGH), orderings 2 of 7 |
 | 2026-10-30 | `0992f1a8` | BL1c: whose splash (`balance/bl1c.json`, scenarios only) | 4 of 14 sides within 2x; the record's loser lost more in 27 of 44 seeds; Heligoland 3.1 v 18.8 (British hit % 23.2), Dogger 4.6 v 9.6, Jutland 44.5 v 46.5 (26-65 a seed): within the panel's noise at 8 seeds; most fire is salvos of three or more, or point blank |
 | 2026-10-30 | `478e2a75` | BL2a-b: Finish 0.1, a cripple's smoke (`balance/bl2.json`) | 5 of 14 sides within 2x; the record's loser lost more in 21 of 44; Heligoland 2.1 v 18.5, Dogger 4.1 v 9.3, Jutland 32.0 v 48.0: within the noise. The fire table: the cripples going home still draw the close fire (Heligoland ~3,500 hits on them, 4 seeds): most fire back as they run (not quiet, so they matter by the user's rule), and in 5 km of mist each is often the only enemy in sight |
+| 2026-10-30 | `7001702f` | BL1h: pitch, vibration, yaw (`balance/bl1h.json`) | 4 of 14 sides within 2x; the record's loser lost more in 26 of 44; Heligoland 2.1 v 16.4, Dogger 4.0 v 6.9, Jutland 33.8 v 50.0; fc-history 13 of 23 (9 HIGH, 1 LOW: the LRBP case 2.8% under 2.9%), orderings 4 of 7. Heligoland's light guns at small ships, point blank 64 → 58%, at 2-4 km 15.4 → 14.4%: little sea there, so little motion |
