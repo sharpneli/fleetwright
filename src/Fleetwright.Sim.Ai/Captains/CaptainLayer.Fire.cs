@@ -1142,7 +1142,7 @@ public sealed partial class CaptainLayer
         double flank = own.Handling.Class.Motion.MaxSpeedKn;
         if (Nearest(ctx, own, s.FightCompareM, out var t) != 0)
         {
-            var (course, kn) = Behaviours.Run(own, t);
+            var (course, kn) = (Escape(ctx, own, t), Behaviours.Run(own, t).SpeedKn);
             Give(ctx, own, Evade(ctx, own, slot, course, attackRun: false), kn);
             CoverRetreat(ctx, ref cap, own, slot, near: true);
             return;
@@ -1158,6 +1158,42 @@ public sealed partial class CaptainLayer
             return;
         }
         Give(ctx, own, Earth.Bearing(own.Position, home), flank);
+    }
+
+    /// <summary>A cripple's way out (docs/battle/balance.md BL5: "a bit more sneaky"): away from every enemy her navy holds
+    /// about her, each by its bearing weighted by the inverse square of its range (the nearest most, but not one alone:
+    /// running from him straight at another is what she mustn't do), bent toward home as the nearest falls back past
+    /// <see cref="SimSettings.CrippleHomeFreeM"/>, fully home at twice it; her own speed and her smoke do the rest.</summary>
+    double Escape(in AiContext ctx, ShipState own, in Sighting nearest)
+    {
+        var s = ctx.Settings;
+        var p = own.Position;
+        var away = new Vec3d();
+        var pic = ctx.World.Sightings.Of(own.Side);
+        if (pic != null)
+            foreach (int i in seen.Near(ctx.World, own.Side, p, s.FightCompareM))
+            {
+                var q = seen.Position(own.Side, i);
+                if (!Opens(ctx, own, pic[i], q))
+                    continue;
+                var d = p - q;
+                double r2 = Math.Max(d.LengthSquared, 1e4);
+                away += d * (1 / (r2 * Math.Sqrt(r2)));   // its unit bearing over its range squared
+            }
+        if (away.LengthSquared == 0)
+            away = p - nearest.Position;
+        var up = p.Normalized();
+        away -= up * Vec3d.Dot(away, up);
+        away = away.Normalized();
+        if (homes[own.Side] is { } home)
+        {
+            double free = Math.Clamp((Earth.Distance(p, nearest.Position) - s.CrippleHomeFreeM) / s.CrippleHomeFreeM, 0, 1);
+            var toward = Earth.Forward(p, Earth.Bearing(p, home));
+            // toward home only as far as it doesn't take her back at them
+            if (Vec3d.Dot(toward, away) > 0 || free >= 1)
+                away = (away * (1 - free) + toward * free).Normalized();
+        }
+        return Earth.Bearing(p, p + away * 1000);
     }
 
     /// <summary>A ship going home covers her retreat (docs/battle/balance.md BL2b; the user: any ship may): under fire, with an

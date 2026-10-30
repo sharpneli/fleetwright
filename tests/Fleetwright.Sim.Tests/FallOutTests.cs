@@ -174,4 +174,34 @@ public class FallOutTests(ITestOutputHelper output)
         w.AdvanceTo(w.Time + 60_000);
         Assert.False(w.Smoke.Screening(1), "out of touch, she stops");
     }
+
+    [Fact]
+    public void A_cripple_runs_from_all_the_enemy_about_her_not_at_the_next_one()
+    {
+        // docs/battle/balance.md BL5 ("a bit more sneaky"): an enemy 6 km east and another 9 km to the west-south-west, where
+        // running straight from the nearer would take her; she makes off between them instead
+        var w = new World(Start, 7, Settings);
+        var ai = new AiSystem(w);
+        w.Apply(Command.SetWeather(25_000));
+        int c = w.Ships.AddClass(Fleet.Get("light_cruiser").Class!);
+        var at = Earth.Position(56.0, 4.0);
+        Vec3d Off(double brg, double m) { var p = at; var f = Earth.Forward(p, brg); Earth.Advance(ref p, ref f, m); return p; }
+        void Spawn(Vec3d p, double course, byte side) { var (la, lo) = Earth.LatLon(p); w.Apply(ShipSystem.Spawn(c, la, lo, course, 15, side)); }
+        Spawn(at, 0, 0);
+        Spawn(Off(90, 6_000), 0, 1);
+        Spawn(Off(255, 9_000), 0, 1);
+        w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.FallOutGunsShare, 1.01));
+        w.Apply(ai.Orders.Home(0, 50.0, 4.0));   // home far to the south
+        w.Apply(ai.Orders.HoldFire(Unit.Ship(2)));
+        w.Apply(ai.Orders.HoldFire(Unit.Ship(3)));
+        w.AdvanceTo(w.Time + 30_000);
+        w.Apply(DamageSystem.SideHole(1, HoleAt.Mid, 0, 3, 0.01));
+        w.AdvanceTo(w.Time + 4 * 60_000);
+        Assert.Equal(CaptainOrder.Home, ai.Captains.Of(1).Order);
+        var me = Ship(w, 1);
+        double toWest = Math.Abs(Earth.Bearing(me.Position, Ship(w, 3).Position) - me.HeadingDeg) % 360;
+        toWest = Math.Min(toWest, 360 - toWest);
+        output.WriteLine($"heading {me.HeadingDeg:0}°, the far enemy {toWest:0}° off her bow, {Earth.Distance(me.Position, Ship(w, 3).Position):0} m");
+        Assert.True(toWest > 60, $"she steers within {toWest:0}° of the second enemy");
+    }
 }

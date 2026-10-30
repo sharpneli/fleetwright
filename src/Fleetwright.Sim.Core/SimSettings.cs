@@ -2268,6 +2268,11 @@ public sealed record SimSettings
     /// before, run in close. The record's day attacks fired at a line from 5-8 km (the Great War torpedo's 9.2 km slow
     /// setting: 6.4 km, fired at 0.9 of it) [EST].</summary>
     public double TorpedoDayShare { get; init; } = 0.7;
+
+    /// <summary>A cripple's escape (docs/battle/balance.md BL5; the user: "a bit more sneaky"): she runs from every enemy her
+    /// navy holds within FightCompareM, each by its bearing weighted by the inverse square of its range, and bends toward
+    /// home as the nearest falls back past this range, m, fully home at twice it [EST].</summary>
+    public double CrippleHomeFreeM { get; init; } = 8000;
     public int TorpedoTurnAwayMs { get; init; } = 180_000;
 
     // ------------------------------------------------------------------ the matchup (docs/battle/command.md 5.1g)
