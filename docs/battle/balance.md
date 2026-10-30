@@ -1,7 +1,7 @@
 # Plan: the balance round
 
 Status: **drafted 2026-10-30**; BL0 (the panel) done the same day; the user's answers the same day ("Decided");
-P1-P6 answered the same day, P7-P10 after BL1.    Updated: 2026-10-30
+P1-P10 answered the same day.    Updated: 2026-10-30
 
 Every deepening since 2026-10-14 kept balancing out of its steps and left it "to the balance pass": the physics first,
 sourced, with the combined results judged at the end (memory: realistic, then tune; physics, no guard rules). This is
@@ -151,7 +151,18 @@ Each step measures against BL0's panel and records before and after here.
      we need to think carefully what effects to include because it will then affect every other battle too." So an
      effect goes in for the physics' sake and for every battle, never to make one scenario come out right.
    - **P6** Aims (N1) and wave 2 after this round.
-   - P7-P10 are revisited after BL1.
+   - **P7** (the scenarios' count, hypotheticals, the prizes' looks) in a session of its own with aims and goals, so
+     "destroy all" isn't the only option; after the base game is in shape (the user, 2026-10-30).
+   - **P8-P10 as recommended** (the user: "even if you didn't explicitly give any ... I'm not sure either in these
+     cases"):
+     - **P8** water per heavy hit: waves over holes near the waterline come with BL1's sea (the same sea that moves
+       the guns), the captain slowing for holes forward in BL5, the near zone holing a burst space's outside faces in
+       BL3; each measured, kept if `damage-history`'s water moves toward the record.
+     - **P9** the two restated matchup anchors are set in BL4, after BL1's gunnery has moved them.
+     - **P10 a determined day attack** (six boats on four battleships, ordered in) gets two or more boats firing in
+       about a third of the runs, at the cost of about half the boats sunk or crippled; checked after BL1, tuned in
+       BL5 or BL6 by the boats' run-in and break-off if it misses. Jutland's day attacks had boats fire at heavy cost;
+       never getting in makes a flotilla pointless by day, always getting in makes battleships pointless.
 
 ## Pending decisions
 
@@ -166,10 +177,10 @@ answered today; the rest are best answered when their step has measured.
 | P4 | `fire-control.md` F6 | Local control's computer: a plain rate clock fed by the eye (today) runs a closing rate past the closest approach; the judgement (preset 9) does better crossing (21% against 12.5%), the same elsewhere. | The judgement: it's what a trained officer in local control does, and it keeps point blank deadly (decision 2). | decided (5) |
 | P5 | `docs/missions/scenarios.md` question 2 | Real battles as history set them, or nudged for balance where history was a massacre? | Answered by decision 3, read as: history's forces and places, nudged with the scenario's knobs (crews, weather, doctrine, stand-ins) to stay within 2x and give the losing side a game. Confirm the reading. | decided (5) |
 | P6 | scenarios.md question 4 | Aims (N1) before wave 2, or the breakouts as straight fights first? | Aims after this round (plan.md's order: balance, then 6.1 aims and wave 2). | decided (5) |
-| P7 | scenarios.md questions 1, 3, 5 | How many scenarios for the first release (a dozen, three or four a size?); hypotheticals plausible only or wilder too; the prizes' war's ex-German ships in Kiel's looks or French and Italian trim. | Not this round's; answer when wave 2 is planned. | later |
-| P8 | E8a item 2 | Water per heavy hit sits low in the median: missing are waves over holes near the waterline, a captain slowing for holes forward, and the near zone holing a burst space's outside faces. | Waves over holes with BL1's sea state (the same sea that moves the guns); the captain's slowing in BL5; the outer faces in BL3. Decide after BL1 measures. | after BL1 |
-| P9 | `shell-choice.md` A4 | Two matchup anchors restated since battleships fire HE at small ships: "light cruisers with torpedoes take on a battleship" four → five; "destroyers saturate a battleship's defence" eight → twelve. | Set them in BL4: BL1's gunnery (light guns at boats today 3x the record) moves both back. | after BL1 |
-| P10 | `bugs.md` Balance | The flotilla scenario's day attack (six boats on four battleships) is beaten off in every seed. What share of determined day attacks should get in? | Decide after BL1, with the light guns at their record; a proposal then. | after BL1 |
+| P7 | scenarios.md questions 1, 3, 5 | How many scenarios for the first release (a dozen, three or four a size?); hypotheticals plausible only or wilder too; the prizes' war's ex-German ships in Kiel's looks or French and Italian trim. | Not this round's; answer when wave 2 is planned. | decided (5) |
+| P8 | E8a item 2 | Water per heavy hit sits low in the median: missing are waves over holes near the waterline, a captain slowing for holes forward, and the near zone holing a burst space's outside faces. | Waves over holes with BL1's sea state (the same sea that moves the guns); the captain's slowing in BL5; the outer faces in BL3. Decide after BL1 measures. | decided (5) |
+| P9 | `shell-choice.md` A4 | Two matchup anchors restated since battleships fire HE at small ships: "light cruisers with torpedoes take on a battleship" four → five; "destroyers saturate a battleship's defence" eight → twelve. | Set them in BL4: BL1's gunnery (light guns at boats today 3x the record) moves both back. | decided (5) |
+| P10 | `bugs.md` Balance | The flotilla scenario's day attack (six boats on four battleships) is beaten off in every seed. What share of determined day attacks should get in? | Decide after BL1, with the light guns at their record; a proposal then. | decided (5) |
 
 ## The balance log
 
