@@ -179,6 +179,16 @@ refreshed once ships roll ("the whole hull model is quite old"); wetness in if i
 | medium (120-200 mm), 0-2 km point blank / 2-4 km | 79% / 16% | 70% / 19% |
 | heavy (300 mm and over), 10-15 km / 15 km and over | (none) | 1.0% / 0.7% (the record 1.4-4%) |
 
+- **By day and night, at small ships and large** (the Jutland, 2 seeds, the table split): the light guns at point blank
+  hit 79% by day and 74% by night at large ships, 64% and 61% at small; at 2-4 km (not point blank) 25% and 23% at
+  large ships, 15% at small. Day is no better than night: the melee itself is the trouble, not the dark.
+- **Why the light guns hit so well close in:** a light gun's trajectory is so flat inside 2 km that each mil of
+  elevation is about 100 m of range, so the layer's hand decides it. The sights' `lay_mil` is table 1's trained layer
+  in a moderate sea (manual-gunnery-research.md: 0.55 mil for a good telescope, continuous aim), a gunlayer's test
+  ashore of a steady ship; on a destroyer at 25-30 kn nothing else moves the gun but the roll (BL1b) and the men's
+  stress (BL1d). Missing, all physical and all of the sim's state: **pitch** (the same spectrum and method as the roll;
+  short, fast ships meet the waves often and pitch hard), **vibration at speed** on the sights (research §1.1:
+  k_vib = 1 + a (v / v_max)², a by the gun's support), and **yaw** from the helm and the sea into the trainer's laying.
 - **The heavy guns at battle ranges are at or under the record now.** BL1's systems did their work there.
 - **The losses are the light forces' melee:** at the Jutland the light guns make about 12,000 of a seed's ~16,000 hits,
   nearly 4,000 of them inside 2 km and as many again at 2-4 km.

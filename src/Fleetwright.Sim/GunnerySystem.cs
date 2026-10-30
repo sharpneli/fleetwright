@@ -227,7 +227,8 @@ public sealed class GunnerySystem : IWorldSystem
     /// where the guns were laid against where she went, along the line (the aim with its correction, before the salvo's own
     /// errors), m.</summary>
     public readonly record struct SalvoReport(long FiredMs, int Shooter, int Battery, double RangeM, int Shells, double MeanX, double MeanY, double AimErrM,
-        double AimErrAcrossM, double CorrR, int Hits, bool Straddle, FirePhase Phase, double LadderM, double TrueRangeM, bool PointBlank, double LaidErrM);
+        double AimErrAcrossM, double CorrR, int Hits, bool Straddle, FirePhase Phase, double LadderM, double TrueRangeM, bool PointBlank, double LaidErrM,
+        int Target = 0);
 
     /// <summary>A salvo's spot, for tools: the salvo (by when it was fired), whether the spotter saw its fall and what he
     /// judged it, the bracket after it (m; infinite: open) and the correction the next salvo goes with, and the phase
@@ -1516,7 +1517,7 @@ public sealed class GunnerySystem : IWorldSystem
             long now = world.Time.Ms;
             Reported?.Invoke(new SalvoReport(sv.FiredMs, fc.Shooter, fc.Battery, sv.RangeM, sv.Landed, sv.SumX / Math.Max(sv.Landed, 1),
                 sv.SumY / Math.Max(sv.Landed, 1), sv.AimErrM, sv.AimErrAcrossM, sv.PointBlank ? sv.PbCorrR * sv.TrueRangeM : sv.CorrR, sv.Hits, straddle, sv.Phase, sv.LadderM,
-                sv.TrueRangeM, sv.PointBlank, sv.AimErrM + (sv.PointBlank ? 0 : sv.CorrR)));
+                sv.TrueRangeM, sv.PointBlank, sv.AimErrM + (sv.PointBlank ? 0 : sv.CorrR), sv.Target));
             fc.Hits += sv.Hits;
             if (sv.Hits > 0 && fc.FirstHitMs < 0)
                 fc.FirstHitMs = now;

@@ -20,7 +20,7 @@ static class ScenarioPlay
         int seeds, double fast, double fine, bool? smoke = null, int workerCount = -1, ulong shuffle = 0, double spinUs = 250, bool fireTable = false)
     {
         // where the hits come from (docs/battle/balance.md BL1g): shells and hits by calibre, range and point blank, every seed
-        var fire = new SortedDictionary<(int Cal, int Range, bool Pb), (long Shells, long Hits)>();
+        var fire = new SortedDictionary<(bool Night, bool Small, int Cal, int Range, bool Pb), (long Shells, long Hits)>();
         int[] calBands = [120, 200, 300], rangeBands = [2, 4, 6, 10, 15];
         var settings = SimSettings.Load(settingsPath);
         if (smoke is bool on)
@@ -56,7 +56,11 @@ static class ScenarioPlay
                     if (ss < 0)
                         return;
                     double cal = w.Ships.Store[ss].Handling.Class.Batteries[r.Battery].CalibreMm;
-                    var key = (calBands.Count(b => cal >= b), rangeBands.Count(b => r.TrueRangeM >= b * 1000), r.PointBlank);
+                    // by day or night (the sun under 6°: civil twilight's end), at a small ship (under 2,000 t) or a larger
+                    int ts = w.Ships.Store.SlotOf(r.Target);
+                    bool night = Light.SunElevationDeg(w.Ships.Store[ss].Position, w.Time) < -6;
+                    bool small = ts >= 0 && w.Ships.Store[ts].Handling.Class.Motion.FullDisplacementT < 2000;
+                    var key = (night, small, calBands.Count(b => cal >= b), rangeBands.Count(b => r.TrueRangeM >= b * 1000), r.PointBlank);
                     var (sh, hi) = fire.GetValueOrDefault(key);
                     fire[key] = (sh + r.Shells, hi + r.Hits);
                 };
@@ -144,9 +148,9 @@ static class ScenarioPlay
             string[] cals = ["under 120 mm", "120-200 mm", "200-300 mm", "300 mm and over"];
             string[] ranges = ["0-2 km", "2-4 km", "4-6 km", "6-10 km", "10-15 km", "15 km and over"];
             Console.WriteLine();
-            Console.WriteLine($"where the hits came from, every seed (shells, hits, hit %; pb: laid point blank):");
-            foreach (var ((cal, range, pb), (sh, hi)) in fire)
-                Console.WriteLine($"  {cals[cal],-16} {ranges[range],-15} {(pb ? "pb" : "  ")}  {sh,8} {hi,6} {100.0 * hi / Math.Max(sh, 1),6:F1}%");
+            Console.WriteLine($"where the hits came from, every seed (shells, hits, hit %; pb: laid point blank; at a ship under 2,000 t or larger):");
+            foreach (var ((night, small, cal, range, pb), (sh, hi)) in fire)
+                Console.WriteLine($"  {(night ? "night" : "day"),-6} {(small ? "small" : "large"),-6} {cals[cal],-16} {ranges[range],-15} {(pb ? "pb" : "  ")}  {sh,8} {hi,6} {100.0 * hi / Math.Max(sh, 1),6:F1}%");
         }
         if (crashed > 0)
             Console.WriteLine($"the sim broke in {crashed} of {seeds} seeds");
