@@ -1,7 +1,7 @@
 # Plan: the balance round
 
-Status: **drafted 2026-10-30** (BL0's baseline taken the same day); the steps and the questions at the end wait for the
-user.    Updated: 2026-10-30
+Status: **drafted 2026-10-30** (BL0's baseline taken the same day); the user's answers the same day ("Decided");
+the pending decisions gathered for the user.    Updated: 2026-10-30
 
 Every deepening since 2026-10-14 kept balancing out of its steps and left it "to the balance pass": the physics first,
 sourced, with the combined results judged at the end (memory: realistic, then tune; physics, no guard rules). This is
@@ -116,24 +116,43 @@ Each step measures against BL0's panel and records before and after here.
 | Step | What | Done when |
 |---|---|---|
 | **BL0** | **The panel.** `shipgen balance` runs the scenarios and the yardsticks above and prints one table (losses, hits a side, how ships went, how it ended, each yardstick's in-band count), appended as a dated row to "The balance log" at the end of this doc, as coarse's parity log. | It reproduces the table above. |
-| **BL1** | **Gunnery to the record.** F7 (spotting by the navy's rules, the straddle calls); then the missing degraders the first cut's battles had, each a physical system with its source: splash confusion (several batteries on one target), the gun platform's motion in a sea, the small fast target (light guns' laying on a turning boat). Order and scope are question 1. | `fc-history` mostly in its bands, the rest named; the orderings in. |
+| **BL1** | **Gunnery to the record.** F7 (spotting by the navy's rules, the straddle calls); then the missing degraders the first cut's battles had, each a physical system with its source: splash confusion (several batteries on one target), the gun platform's motion in a sea, the small fast target (light guns' laying on a turning boat). Systems, approximated where tracing each splash isn't needed (decision 1); point blank stays deadly (decision 2). | `fc-history` mostly in its bands, the rest named; the orderings in; the night cases and close-range duels still brutal. |
 | **BL2** | **Cripples and escapes.** F10's judgement on a ship still afloat (worth falling as she's seen done for, a doctrine field for finishing her); falling-out ships turning away and making smoke; striking and abandoning (crew.md's "after"). | The Heligoland Bight and the Dogger Bank's light losses within about twice the record. |
 | **BL3** | **The damage leftovers that move a scenario.** Triage of the table above by what BL0-BL2's runs show: the cell-side ruptures, settling past 8-9°, Tiger's magazines, the `yamato` TDS, the user's E8a and crew decisions. The rest stays open with its reason. | Each item done or kept open with a reason. |
 | **BL4** | **The matchup refit (PM)** with `OutExponent`, the missing terms, and the widened bands set again. | MatchupTests' even band back to 2, or kept with the user's reason. |
-| **BL5** | **The AI's judgement and the ends.** The AI bugs that show in the panel, and why fights run to the clock. | Most panel runs end by their own rules. |
+| **BL5** | **The AI's judgement and the ends.** Most of `bugs.md`'s AI items (decision 4), and why fights run to the clock. | Most panel runs end by their own rules. |
 | **BL6** | **The scenarios rebalanced** with their knobs, then the coarse sync (bugs.md's drift, `coarse-parity` standard), then the user's playtest. | Each scenario's intended balance stated and met; the coarse panel in its bands. |
 
-## Questions for the user
+## Decided (the user, 2026-10-30)
 
-1. **Gunnery (BL1):** close the hit-rate gap with the missing systems (F7, splash confusion, the sea's motion, the
-   small fast target), accepting that it's several steps, or with a named gameplay exception now and the systems
-   later? I'd build the systems: F7 is already planned and agreed, and the rest are what the record's cases name.
-2. **How close to history** must the real battles come? A proposal: losses within about twice the record, and the
-   right side on top in most seeds. This is also scenarios.md question 2 (nudge history for balance where it was a
-   massacre).
-3. **Scope of the AI (BL5):** the AI bugs that show in the panel only, or the whole of 5.1f's cluster here?
-4. **Your pending decisions** (E8a's items, crew decision 11, the shell-choice anchors): settle them as the steps
-   reach them, or now?
+1. **Gunnery closes the gap with the systems,** not a gameplay exception: "we need the systems in place. We can
+   naturally do approximations in the system so that there is no necessary need to trace each individual splash but
+   the concept has to be there."
+2. **Very close range stays deadly:** "we expect very close range gunnery to still be deadly, and we need it anyhow
+   for night fights where the action was usually very brutal." Whatever BL1 adds falls away as the range closes: a
+   check of every BL1 step, beside the yardstick.
+3. **Twice the record is close enough:** "We are not replicating history, we are using it as a guideline to develop a
+   naval combat game after all." The real battles' losses within about 2x of the record, the right side on top in
+   most seeds.
+4. **The AI's scope:** at least most of `bugs.md`'s AI items go through BL5, not only those the panel shows.
+
+## Pending decisions
+
+Gathered from the plans for the user, each with what it is and a recommendation. Those marked **now** can be
+answered today; the rest are best answered when their step has measured.
+
+| # | From | The question | Recommended | When |
+|---|---|---|---|---|
+| P1 | `crew.md` decision 11 | The German big ships lose fewer killed a hit since N1. N6 judged it again: Seydlitz 1.75 (wanted 1-3), Derfflinger 1.28 (wanted "a few"); inside their cases' bands, under G1's average only. | Keep as is, close the decision. | **now** |
+| P2 | `shells-armour-damage.md` E8a item 3 | Small destroyers capsize more since every hole is kept: a 6″ lyddite burst in a small compartment ruptures a whole cell side (9-15 m²); the rupture capacity was left to the destroyer benches. BL0: the destroyer cases are in their bands (10 × 6″ lost 25%, "lost in many runs"). | Keep as is; reopen only if capsizes still dominate after BL1-BL2. | **now** |
+| P3 | E8a item 5 | Tsushima's Russian battleships no longer go down for their hits alone: what sank the Borodinos was overload (coal past full load, the belt under water). A scenario's `fuel` stops at a full load. | Let a scenario carry an overload (fuel past full load, a ship's stores), set in Tsushima in BL6. | **now** |
+| P4 | `fire-control.md` F6 | Local control's computer: a plain rate clock fed by the eye (today) runs a closing rate past the closest approach; the judgement (preset 9) does better crossing (21% against 12.5%), the same elsewhere. | The judgement: it's what a trained officer in local control does, and it keeps point blank deadly (decision 2). | **now** |
+| P5 | `docs/missions/scenarios.md` question 2 | Real battles as history set them, or nudged for balance where history was a massacre? | Answered by decision 3, read as: history's forces and places, nudged with the scenario's knobs (crews, weather, doctrine, stand-ins) to stay within 2x and give the losing side a game. Confirm the reading. | **now** |
+| P6 | scenarios.md question 4 | Aims (N1) before wave 2, or the breakouts as straight fights first? | Aims after this round (plan.md's order: balance, then 6.1 aims and wave 2). | **now** |
+| P7 | scenarios.md questions 1, 3, 5 | How many scenarios for the first release (a dozen, three or four a size?); hypotheticals plausible only or wilder too; the prizes' war's ex-German ships in Kiel's looks or French and Italian trim. | Not this round's; answer when wave 2 is planned. | later |
+| P8 | E8a item 2 | Water per heavy hit sits low in the median: missing are waves over holes near the waterline, a captain slowing for holes forward, and the near zone holing a burst space's outside faces. | Waves over holes with BL1's sea state (the same sea that moves the guns); the captain's slowing in BL5; the outer faces in BL3. Decide after BL1 measures. | after BL1 |
+| P9 | `shell-choice.md` A4 | Two matchup anchors restated since battleships fire HE at small ships: "light cruisers with torpedoes take on a battleship" four → five; "destroyers saturate a battleship's defence" eight → twelve. | Set them in BL4: BL1's gunnery (light guns at boats today 3x the record) moves both back. | after BL1 |
+| P10 | `bugs.md` Balance | The flotilla scenario's day attack (six boats on four battleships) is beaten off in every seed. What share of determined day attacks should get in? | Decide after BL1, with the light guns at their record; a proposal then. | after BL1 |
 
 ## The balance log
 
