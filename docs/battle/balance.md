@@ -300,6 +300,50 @@ her task were doing and who was closing whom:
 3. **A cripple runs from all the enemy about her, not the nearest:** away from where the enemy is (their bearings
    weighted by nearness), toward home, under her smoke.
 
+### BL5: the commander's judgement and the ends (diagnosed 2026-10-30, at `ef344c41`)
+
+**Why the Heligoland Germans stay, 24 against 44** (one seed, traced by hand: the commander's `Balance` and the
+captains' `FightThink`, traces since removed):
+
+1. **The first hour is the flotillas' attack, not the commander.** Ten German boats go between 07:05 and 07:38. Their
+   fire table's tags are `admiral Fight / task Patrol Engaged / attack Gain, Run, Fire, Away`: the patrol flotilla meets
+   Arethusa and a few boats, takes up Fight by doctrine, and `AdmiralLayer.AttackStep` begins the attack (its matchup
+   over the bar on what the guide sees then). After that the attack is "seen through" (its own comment) until
+   `AttackBreakOffShare` (0.4) of its boats are gone from the line, while the rest of the 3rd and 1st Flotillas come up
+   out of the mist. The boats are on Course or Station orders under the attack, so the captains' own outgunned rule
+   (`FightThink`: under the bar, away) never runs for them: no German `FightThink` at all before 07:24. Once one does run
+   (07:24 on), the survivors judge 0.03-0.2 and turn away.
+2. **The commander can never decline.** `Balance` judges his whole side (`mine`: every top unit, spread over 60 km of
+   the Bight) against all he holds, and `ACanRefuse` compares the slowest of each (`Matchup.Slowest`): Germany 21.5 kn (a
+   Gazelle somewhere), Britain 25 kn, every think of the run. So "caught by what he can't beat, he fights": from 08:25,
+   with the battlecruisers in sight, his confidence is 0.005 and he goes on fighting until the losses' `BreakOffShare`
+   breaks him off at 09:02. A slow ship far from the fight pins the whole side.
+3. **His confidence through the first hour sits about the bar** (0.4-0.9 against 8 held in 5 km of mist, the side's 10
+   pooled as if together), so even a fixed escape test would decline late or not at all. That one is the fog of war and
+   the pooling, and probably fine: the flotillas' own judgement (1) is what matters there.
+4. In history the light cruisers caught by Beatty (Cöln, Ariadne, Mainz) were caught: 24 kn against 25-27. A "caught"
+   rule judged on the ships actually in touch gives the record's shape there.
+
+**Toward the clock (Heligoland, the same seed):** Britain's commander loses contact, searches, meets a straggler,
+loses it, searches again (three times: each fresh contact resets `Searched`), and is still searching at 15:00. Germany
+is retiring, but a stopped cripple sits in an encounter with British ships that don't finish her (`Finish` 0.1, she's
+quiet), so neither "done" (every ship home or in no encounter) nor "quiet" (no encounter open) can come.
+
+**Proposals (open, for the user):**
+
+1. **A flotilla's attack taken up by doctrine is judged again as it goes:** each think, the guide's matchup on what
+   it now sees; under the bar by the commander's margin (`CommanderMarginShare`, as `Balance` does) and not yet in its
+   Fire phase, it's given up and the flotilla runs, as when beaten off. An attack ordered (by the player, or the
+   commander's `SendIn`) is still seen through: whoever ordered it judged.
+2. **The commander's "can he get away" judged on his units in touch,** not the slowest ship of his side: the slowest of
+   his top units in contact against the enemy near them. Out-of-touch units are free to go home anyway.
+3. **Searching ends:** a search counts once per contact lost, not restarted by every straggler seen and lost again (or
+   a pursuit given up once the enemy he holds is home); bugs.md's "a day's search" with it.
+4. **A stopped ship doesn't hold the end open:** a ship dead in the water, out of the fight and quiet, counts as done
+   for "every side done" and doesn't keep an encounter open for "quiet" (until striking colours, crew.md's "after").
+
+Next: the panel's ends (below), then the user's word on the proposals, then build, then BL3 and BL4.
+
 ## Decided (the user, 2026-10-30)
 
 1. **Gunnery closes the gap with the systems,** not a gameplay exception: "we need the systems in place. We can
