@@ -1,6 +1,6 @@
 # Plan: night fighting (a 4.5 deepening)
 Status: **drafted 2026-10-29**; **agreed with the user 2026-10-29** (decisions 1-5 at the end); Q0-Q10 done 2026-10-29;
-the research arrived 2026-10-29: Q1b, Q0b, Q3b, Q5b added before Q10 (after Q9), done; Q11 done 2026-10-30; Q12a (the check) and Q12b (night doctrine one a period) done 2026-10-30; Q12c (the torpedo officer's judgement) and Q12d (the AI's night by the light) done 2026-10-30, the fits next
+the research arrived 2026-10-29: Q1b, Q0b, Q3b, Q5b added before Q10 (after Q9), done; Q11 done 2026-10-30; Q12a (the check) and Q12b (night doctrine one a period) done 2026-10-30; Q12c (the torpedo officer's judgement), Q12d (the AI's night by the light) and Q12e (whose she is, by the light) done 2026-10-30; the night's hit rates await the user
 Updated: 2026-10-30
 
 How ships see, light, shoot and lose each other in the dark. The user asked for it after the crew plan (2026-10-28),
@@ -1395,6 +1395,39 @@ helper for the four callers; `NightSunElevationDeg` is gone.
 - **The other cases** barely move (Tsushima's Japanese first salvo 5.8 → 5.2 km, 1.0 torpedoes a run against 1.3).
 - **Cost:** the admirals' think 31.6 → 34.9 µs (the 4th Flotilla's play): the sky asked once a group, no cache.
 - Sim 877, game 207 passed (`CommanderTests`' dusk case asserts the sun under 5° down, not the old setting).
+
+**Lit ships turning away by role: measured, not built (2026-10-30).** Its premise (Q12a: Southampton's fight runs long)
+doesn't hold. Played headless (`shipgen scenario night-southampton.json --minutes 120 --every 2`), the fight has the
+record's shape: some 250 shells in the four hot minutes (21:56-22:00), a second burst to 22:12, then quiet, about 16
+minutes in all against the record's 15. What's high is the hit rate: the Germans 255 hits of 513 shells at a median
+1.9 km, against the record's 26 (Southampton 18 `[UNCERTAIN]`, Dublin 8). Turning lit ships away by role wouldn't touch
+it, and the research's direction (lit small craft turned away, big ships seldom: `night-fighting.md` §5.4 point 5) would
+keep Southampton fighting longer if anything. Left as written (every ship's default "turn away") until the hit rate
+is decided.
+
+**The night's hit rates, for the user.** Every night case hits at 40-87% of shells fired at 0.6-2 km (Southampton's
+Germans 47%, the British 73%; the 4th Flotilla's British 80%, the Germans 58%; Black Prince 87%, her Germans 59%).
+The record has no rate but Southampton's (about 26 hits where the sim makes 255 from as many shells) and says observation
+was "nearly impossible" for the searchlights' glare and the guns' flash (`emergency-eyeball.md` §2). A fire-control item
+(local control by eye at night: the flash, the glare, laying on a lit target), not a night-lights one: to decide.
+
+**Q12e, whose she is, by the light (2026-10-30).** The user's Black Prince step: she holds her guns until she makes them
+out. A contact was known for a foe once her type was made out ("her colours, her build"), even in the dark, where no
+colour is seen. Now the margin whose she is is made out at runs from the type's (2) by day to the class's (4) in the
+dark, on the log of the look's sky across the eye's mesopic range (`SightColoursCdM2` 5 to 0.005 cd/m², CIE 191:
+colour fading between): by day as before, at night her silhouette's class tells it (`Sightings.SideMargin`). The
+record's Port Arthur ("boats showing lights were naturally taken for our own") and Black Prince taking the Germans for
+her own.
+
+- **Black Prince isn't sunk still** (0.1 of 1). She holds her fire now until the Germans give themselves away, which
+  they do first: star shell "to find" at 0.9 km, then their fire at 0.7 km (hers at 0.6). From there she fires 100
+  shells for 87 hits and the Germans 77 for 45; their beams 2 ship-minutes in 19 runs of 40 (the record: Thüringen's
+  searchlight on her and four battleships' fire for some 15 minutes). The rest is the night's hit rates (above) and the
+  German volume. The partial reply as doubt adds nothing to it: answered, she's already held as a friend
+  (`TakenForFriend`, her guns held), which is what doubt does.
+- **Moved:** Tsushima's Russian hits 100 → 72 (their sweeping ships take the boats for unknowns longer), the Japanese
+  85 → 77; the 4th Flotilla's British torpedoes 24.7 → 27.2 for 6.1 hits; the others within their noise.
+- Sim 877, game 207 passed.
 
 ## Decided (the user, 2026-10-29)
 

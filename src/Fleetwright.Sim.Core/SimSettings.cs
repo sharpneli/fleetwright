@@ -527,6 +527,12 @@ public sealed record SimSettings
     public double SightClassMargin { get; init; } = 4;
     public double SightNameM { get; init; } = 6_000;
 
+    /// <summary>Whose a ship is (docs/battle/night.md Q12e): by day her colours tell it with her type, in the dark only her
+    /// build with her class; the margin it's made out at runs from <see cref="SightTypeMargin"/> to
+    /// <see cref="SightClassMargin"/> across the eye's mesopic range, on the log of the sky's luminance between these two,
+    /// cd/m² (CIE 191: photopic above 5, scotopic below 0.005, colour fading between).</summary>
+    public double[] SightColoursCdM2 { get; init; } = [5, 0.005];
+
     /// <summary>The chance a class first made out is taken for the most similar class in the world (a battlecruiser
     /// for a battleship), if one's like enough (its unlikeness under <see cref="SightSimilarScore"/>: funnels and masts
     /// one each, main mounts a half, length five per ratio).</summary>

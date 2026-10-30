@@ -929,8 +929,18 @@ public sealed class Sightings
         if (c.Level >= ContactLevel.Type)
         {
             c.Type = TypeOf(c.TakenFor >= 0 && Registry?.Get(c.TakenFor) is { } taken ? taken : ts.Handling.Class);
-            c.Foe = true;   // her colours, her build: whose she is (docs/battle/night.md Q6)
+            if (c.Level >= ContactLevel.Class || margin >= SideMargin(lookNight.SkyCdM2))
+                c.Foe = true;   // her colours by day, her build in the dark: whose she is (docs/battle/night.md Q6, Q12e)
         }
+    }
+
+    /// <summary>The margin whose a ship is made out at under a sky (cd/m²): the type's by day, the class's in the dark,
+    /// between on the log of its luminance across <see cref="SimSettings.SightColoursCdM2"/>.</summary>
+    double SideMargin(double skyCdM2)
+    {
+        double day = settings.SightColoursCdM2[0], dark = settings.SightColoursCdM2[1];
+        double t = Math.Clamp(Math.Log(day / Math.Max(skyCdM2, 1e-12)) / Math.Log(day / dark), 0, 1);
+        return settings.SightTypeMargin + t * (settings.SightClassMargin - settings.SightTypeMargin);
     }
 
     /// <summary>The class in the world most like a class (by funnels, masts, main mounts and length), if any is near

@@ -171,6 +171,7 @@
   "SightTypeMargin": 2,
   "SightClassMargin": 4,
   "SightNameM": 6000,
+  "SightColoursCdM2": [5, 0.005],
   "SightMisidentify": 0.3,
   "SightSimilarScore": 1.5,
   "SightForgetMs": 21600000,

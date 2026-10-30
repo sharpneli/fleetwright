@@ -86,7 +86,8 @@ public struct Contact
     /// herself a foe, <see cref="Foe"/>).</summary>
     public byte Side;
 
-    /// <summary>Whether her navy knows her for an enemy (docs/battle/night.md Q6): her type made out, or she gave herself
+    /// <summary>Whether her navy knows her for an enemy (docs/battle/night.md Q6): whose she is made out (her colours with
+    /// her type by day, her build with her class in the dark: <see cref="SimSettings.SightColoursCdM2"/>, Q12e), or she gave herself
     /// away (seen firing on its ships or holding a light on one, seen making a challenge not its own, or failed its
     /// challenge). Below it she's an unknown: friend or foe for all her navy can tell.</summary>
     public bool Foe;
