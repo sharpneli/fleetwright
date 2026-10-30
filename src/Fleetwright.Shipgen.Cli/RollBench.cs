@@ -55,10 +55,17 @@ static class RollBench
                     return string.Format(Inv, "{0,5:0.0}° {1,4:0.0}°/s {2,4:0.0}s", double.RadiansToDegrees(r.AmplitudeRad), double.RadiansToDegrees(2 * r.RateSigmaRadS), r.PeriodS);
                 });
                 Console.WriteLine(string.Format(Inv, "  {0,4:0} kn  ", kn) + string.Concat(cells.Select(x => $"{x,18}")));
+                // her pitch at the same headings (docs/battle/balance.md BL1h)
+                var pitch = rel.Select(h =>
+                {
+                    var r = sea.Pitch((waveFrom + h) % 360, kn * 0.514444, m.LengthM, m.BeamM, settings.PitchPeriodK * Math.Sqrt(Math.Max(m.DraughtM, 0.5)), settings.PitchDamping);
+                    return string.Format(Inv, "{0,5:0.0}° {1,4:0.0}°/s {2,4:0.0}s", double.RadiansToDegrees(r.AmplitudeRad), double.RadiansToDegrees(2 * r.RateSigmaRadS), r.PeriodS);
+                });
+                Console.WriteLine("    pitch " + string.Concat(pitch.Select(x => $"{x,18}")));
             }
         }
         Console.WriteLine();
-        Console.WriteLine("each cell: the significant roll (single amplitude), the peak roll rate (2 sigma), the mean period");
+        Console.WriteLine("each cell: the significant roll (single amplitude), the peak roll rate (2 sigma), the mean period; the pitch the same below");
         return 0;
     }
 }

@@ -151,7 +151,7 @@ public sealed class GunnerySystem : IWorldSystem
         /// <summary>Her roll in the sea as her layers meet it (docs/battle/balance.md BL1b), worked out again when the sea, her
         /// heading, speed or GM moves a step (<see cref="RollKey"/>); whether they lay on the roll (firing as it brings the
         /// sight on, once a roll) rather than following it; and when it next brings the sight on for the salvo due.</summary>
-        public RollState Roll;
+        public RollState Roll, Pitch;
         public long RollKey, RollMs;
         public bool OnRoll;
     }
@@ -774,6 +774,7 @@ public sealed class GunnerySystem : IWorldSystem
                 continue;
             double range = Earth.Distance(at, tpos), brg = Earth.Bearing(at, tpos), sr, bias, sb;
             double st = Steadiness.Stress(cls, cond, s.Eye >= 0 ? cls.Eyes[s.Eye].Component : cls.Mounts[mounts[0]].Component, now, settings);   // BL1d
+            st *= Vibration(cls, ship, s.Support, s.X);   // BL1h: the ship's own shaking at speed
             if (Ranges(optics, s))
             {
                 // its unit of error, worse as the air takes the target's contrast toward the eye's threshold (F5c)
@@ -937,6 +938,21 @@ public sealed class GunnerySystem : IWorldSystem
         fc.RollKey = key;
         var m = cls.Motion;
         fc.Roll = world.Sea.At(h * 2 + 1, (v + 0.5) * 0.25, m.RollPeriodS * Math.Sqrt(100.0 / g), m.RollDamping, settings.RollExcitation);
+        fc.Pitch = world.Sea.Pitch(h * 2 + 1, (v + 0.5) * 0.25, m.LengthM, m.BeamM, settings.PitchPeriodK * Math.Sqrt(Math.Max(m.DraughtM, 0.5)), settings.PitchDamping);
+    }
+
+    /// <summary>Vibration at speed on an instrument or a gun's sights (docs/battle/balance.md BL1h; research §1.1): the
+    /// multiplier 1 + a (v / v_max)² on its random error, a by what it stands on, toward 1 on a light, powerful hull, more in
+    /// her after third.</summary>
+    double Vibration(ShipClass cls, in ShipState ship, InstrumentSupport support, double x)
+    {
+        var m = cls.Motion;
+        double v = ship.Speed / Math.Max(m.MaxSpeedKn * Handling.MsPerKnot, 0.1);
+        double a = support switch { InstrumentSupport.Pole => 1.0, InstrumentSupport.Tripod or InstrumentSupport.Cage or InstrumentSupport.Lattice => 0.6, _ => 0.3 };
+        double light = Math.Clamp((m.PowerShp / Math.Max(m.FullDisplacementT, 1) - settings.VibrationLightShpT) / settings.VibrationLightSpanShpT, 0, 1);
+        a += (1 - a) * light;
+        a *= 1 + (settings.VibrationAft - 1) * Math.Clamp((-x / (0.5 * m.LengthM) - 1 / 3.0) / (2 / 3.0), 0, 1);
+        return 1 + a * v * v;
     }
 
     /// <summary>The air at a place now: the visibility, the night's light (docs/battle/night.md Q1: the sky's luminance,
@@ -1303,7 +1319,10 @@ public sealed class GunnerySystem : IWorldSystem
         int layerAt = mount.DirectorFiring && fc.SensorCount > 0 && sensors[f * MaxSensors].Eye >= 0 ? cls.Eyes[sensors[f * MaxSensors].Eye].Component
             : cls.Mounts[mounts[0]].Component;
         double stress = Steadiness.Stress(cls, cond, layerAt, now, settings);
-        double layRad = mount.LayMil * FireControl.Mil * crew.Lay * combat * stress;
+        // the sights shaking at speed (BL1h): the director's where it stands, else the guns' own (a turret or a deck mount)
+        double shake = mount.DirectorFiring && fc.SensorCount > 0 ? Vibration(cls, ship, sensors[f * MaxSensors].Support, sensors[f * MaxSensors].X)
+            : Vibration(cls, ship, InstrumentSupport.Turret, cls.Mounts[mounts[0]].X);
+        double layRad = mount.LayMil * FireControl.Mil * crew.Lay * combat * stress * shake;
         double eEl = mount.DirectorFiring ? r.NextGaussian() * layRad * perRad : 0, eTr = mount.DirectorFiring ? r.NextGaussian() * layRad * range : 0;
         bool turning = Math.Abs(double.RadiansToDegrees(ship.YawRate)) > settings.OwnTurnYawDegS;
         double kickR = turning ? r.NextGaussian() * computer.OwnTurnKickM : 0, kickL = turning ? r.NextGaussian() * computer.OwnTurnKickM : 0;
@@ -1313,7 +1332,7 @@ public sealed class GunnerySystem : IWorldSystem
         var (sr, sd) = FireControl.Dispersion(row.PatternPct, range + dr, n, settings.DispersionDeflectionRatio);
         if (!mount.DirectorFiring)
             (sr, sd) = (Math.Sqrt(sr * sr + Math.Pow(layRad * perRad, 2)), Math.Sqrt(sd * sd + Math.Pow(layRad * range, 2)));
-        if (fc.Roll.AmplitudeRad > 0 || cond.Attitude.HeelDeg != 0)
+        if (fc.Roll.AmplitudeRad > 0 || fc.Pitch.AmplitudeRad > 0 || cond.Attitude.HeelDeg != 0 || ship.YawRate != 0)
         {
             // the roll (BL1b; research §4.1, §4.3): the layer's timing lag at her roll rate as his sight comes on (the gear's lag
             // following it, a stable vertical's contacts), into elevation as she rolls across the line of fire and into line by
@@ -1323,18 +1342,25 @@ public sealed class GunnerySystem : IWorldSystem
             double rel = double.DegreesToRadians(fc.OrderBearingDeg), tanE = Math.Tan(double.DegreesToRadians(e0)), keep = 1 - mount.CrossLevel;
             double tau = stress * (fc.OnRoll ? mount.RollTauS * crew.RollTiming : mount.StableVertical ? mount.RollTauS : settings.ContinuousAimTauS);
             double omega = fc.Roll.RateAtLevel(ref rr), slip = tau * omega * rr.NextGaussian();
+            // and her pitch (BL1h): the same lag at its rate, into elevation toward the bow and stern, cross-level abeam
+            double pslip = tau * fc.Pitch.RateAtLevel(ref rr) * rr.NextGaussian();
+            // and her yaw under the helm (BL1h; research §4.5): the trainer's lag at her rate of turn, into line (the sea's
+            // own yaw, a degree or two, left out)
+            double yslip = tau * ship.YawRate * rr.NextGaussian();
             // fired anywhere in the roll (following it), the roll's own tilt at that instant; on the roll, at its level
             double at = fc.OnRoll ? 0 : fc.Roll.AmplitudeRad * Math.Sin(2 * Math.PI * rr.NextDouble());
             double heel = double.DegreesToRadians(cond.Attitude.HeelDeg) * Math.Cos(rel);
             if (mount.DirectorFiring)
             {
-                dr += slip * Math.Sin(rel) * perRad;
-                dl += keep * Math.Atan(Math.Sin(heel + (at + slip) * Math.Cos(rel)) * tanE) * range;
+                dr += (slip * Math.Sin(rel) + pslip * Math.Cos(rel)) * perRad;
+                dl += keep * Math.Atan(Math.Sin(heel + (at + slip) * Math.Cos(rel) - pslip * Math.Sin(rel)) * tanE) * range + yslip * range;
             }
             else
             {
-                double each = tau * fc.Roll.RateSigmaRadS;
-                (sr, sd) = (Math.Sqrt(sr * sr + Math.Pow(each * Math.Sin(rel) * perRad, 2)), Math.Sqrt(sd * sd + Math.Pow(keep * each * Math.Cos(rel) * tanE * range, 2)));
+                double each = tau * fc.Roll.RateSigmaRadS, peach = tau * fc.Pitch.RateSigmaRadS;
+                double el = Math.Sqrt(Math.Pow(each * Math.Sin(rel), 2) + Math.Pow(peach * Math.Cos(rel), 2));
+                double xl = keep * Math.Sqrt(Math.Pow(each * Math.Cos(rel), 2) + Math.Pow(peach * Math.Sin(rel), 2)) * tanE;
+                (sr, sd) = (Math.Sqrt(sr * sr + Math.Pow(el * perRad, 2)), Math.Sqrt(sd * sd + Math.Pow(xl * range, 2) + Math.Pow(tau * ship.YawRate * range, 2)));
                 dl += keep * Math.Atan(Math.Sin(heel + at * Math.Cos(rel)) * tanE) * range;
             }
         }

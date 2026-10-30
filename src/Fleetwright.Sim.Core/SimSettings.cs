@@ -695,6 +695,21 @@ public sealed record SimSettings
     /// been seen firing for this long, s, and making away at this much of her own speed opening the range, m/s (each a
     /// share to 1 at it, multiplied) [EST: a broadside's interval and more; about 8 kn away].</summary>
     public double CrippleQuietS { get; init; } = 90;
+
+    /// <summary>Pitch (docs/battle/balance.md BL1h): a hull's natural pitch period, s, as this times the square root of her
+    /// draught, m (about her heave's: 4.5 s at 3.5 m, 7 s at 8.5 m), and its damping ratio, heavy (the hull's own wave
+    /// making) [EST].</summary>
+    public double PitchPeriodK { get; init; } = 2.4;
+    public double PitchDamping { get; init; } = 0.3;
+
+    /// <summary>Vibration at speed (BL1h; research §1.1): an instrument's and a gun sight's random error grows by
+    /// 1 + a (v / v_max)², a by what it stands on (a turret, a deck or a tower 0.3, a tripod, cage or lattice 0.6, a pole
+    /// 1.0), rising toward 1 on a light, powerful hull (by her plant's power a tonne, from <see cref="VibrationLightShpT"/>
+    /// over <see cref="VibrationLightSpanShpT"/>), times 1.3 in her after third (Iowa's) [EST, the research's uncalibrated
+    /// values].</summary>
+    public double VibrationLightShpT { get; init; } = 3;
+    public double VibrationLightSpanShpT { get; init; } = 12;
+    public double VibrationAft { get; init; } = 1.3;
     public double CrippleOpenMs { get; init; } = 4;
 
     /// <summary>How long after a battery's track starts (its first reading in the computer) it opens fire at the latest,

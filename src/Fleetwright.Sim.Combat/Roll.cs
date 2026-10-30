@@ -77,6 +77,43 @@ public sealed class RollSea
         return heightM < HsM * side * place * (1 + 0.5 * Math.Pow(kn / 25, 2) * heading);
     }
 
+    /// <summary>A ship's pitch at a heading (degrees true) and speed (m/s through the water), with her waterline length,
+    /// m, her natural pitch period, s, and its damping ratio (docs/battle/balance.md BL1h; research §1.3): the wave slope
+    /// along her (each component's cos of its angle to her heading), the share of it a hull of her length follows (the
+    /// best-fit tilt of her waterplane to the wave over her length, 3 (sin q - q cos q) / q³ with q her half length in
+    /// the wave's along-ship wavenumber: a long wave carries her bow up and down with it, one shorter than her rocks her
+    /// little), averaged across her beam too (sin p / p, p her half beam in the wave's across-ship wavenumber: a short wave
+    /// meeting her obliquely is many crests across her waterplane), met at the encounter frequency and magnified by her
+    /// (heavily damped) pitch resonance. A short, fast ship meeting a head sea pitches hard and quickly; a long one in a
+    /// short sea hardly at all.</summary>
+    public RollState Pitch(double headingDeg, double speedMs, double lengthM, double beamM, double naturalPeriodS, double damping)
+    {
+        if (!(naturalPeriodS > 0) || !(lengthM > 0))
+            return default;
+        double halfBeam = 0.5 * Math.Max(beamM, 0);
+        double psi = double.DegreesToRadians(90 - headingDeg), cp = Math.Cos(psi), sp = Math.Sin(psi);
+        double wn = 2 * Math.PI / naturalPeriodS, z2 = 4 * damping * damping, half = 0.5 * lengthM;
+        double m0 = 0, m2 = 0;
+        for (int i = 0; i < Frequencies; i++)
+        {
+            double wi = w[i], k = wi * wi / SeaSpectrum.G, doppler = k * speedMs;
+            int row = i * Directions;
+            for (int j = 0; j < Directions; j++)
+            {
+                double s = slope[row + j];
+                if (s == 0)
+                    continue;
+                double cb = cos[j] * cp + sin[j] * sp, sb = sin[j] * cp - cos[j] * sp, q = k * Math.Abs(cb) * half, pb = k * Math.Abs(sb) * halfBeam;
+                double fit = (q < 1e-3 ? 1 : 3 * (Math.Sin(q) - q * Math.Cos(q)) / (q * q * q)) * (pb < 1e-3 ? 1 : Math.Sin(pb) / pb);
+                double we = Math.Abs(wi - doppler * cb), l = we / wn, d = 1 - l * l;
+                double v = s * cb * cb * fit * fit / (d * d + z2 * l * l);
+                m0 += v;
+                m2 += v * we * we;
+            }
+        }
+        return m0 > 0 ? new RollState(2 * Math.Sqrt(m0), Math.Sqrt(m2), 2 * Math.PI * Math.Sqrt(m0 / Math.Max(m2, 1e-30))) : default;
+    }
+
     /// <summary>A ship's roll at a heading (degrees true) and speed (m/s through the water), with her natural period (s;
     /// none, or 0 or less: she doesn't roll) and damping ratio; <paramref name="excitation"/> the share of the wave slope
     /// that heels her (<see cref="SimSettings.RollExcitation"/>).</summary>

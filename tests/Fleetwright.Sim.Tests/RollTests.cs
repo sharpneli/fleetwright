@@ -9,7 +9,7 @@ namespace Fleetwright.Sim.Tests;
 /// head on least; resonance with the swell, which bilge keels damp, and a stiff ship lively in it; a long-period ship
 /// rolling in the swell and not in a short wind sea, at her own period near resonance; the weather's swell set by its own command and kept by the weather's; a scenario's swell read and
 /// written; no garbage.</summary>
-public class RollTests
+public class RollTests(Xunit.Abstractions.ITestOutputHelper output)
 {
     static readonly SimSettings Settings = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json")) with { Smoke = false };
     static readonly WorldTime Start = WorldTime.FromUtc(1916, 5, 31, 14);
@@ -123,5 +123,33 @@ public class RollTests
         Assert.False(heavy.Awash(8, 0.6, -1, 0, 15), "a turret's guns");
         Assert.True(heavy.Awash(4.5, 0.8, 0, 270, 20), "a bow casemate heading into it");
         Assert.False(calm.Awash(1.5, 0.8, -1, 0, 25), "a calm");
+    }
+
+    [Fact]
+    public void A_short_ship_pitches_head_on_and_more_than_a_long_one_and_faster_at_speed()
+    {
+        // docs/battle/balance.md BL1h, research §1.3. In a long swell (14 s, about 300 m: longer than any hull): head on most,
+        // beam on little; the destroyer more than the battleship; into it at speed the encounter frequency up and her rate
+        // with it. In waves shorter than the ship the oblique ones (long along her) can pitch her as much as head-on ones:
+        // physical, so not asked here. In a sea state 5 wind sea head on, the research's 2.5-4° for a destroyer [INFERRED]
+        // and 0.8-1.5° for a battleship, within a factor of two (our fetch-limited sea runs low)
+        double Deg(RollState r) => double.RadiansToDegrees(r.AmplitudeRad);
+        double T(double draught) => 2.4 * Math.Sqrt(draught);
+        var swell = new RollSea(new SeaSpectrum(SeaState.Of(new WeatherHere(25_000, 0, 0, SwellHsM: 2, SwellTpS: 14, SwellFromDeg: 0))));
+        var dd = swell.Pitch(0, 0, 110, 11, T(3.5), 0.3);
+        var bb = swell.Pitch(0, 0, 230, 28, T(9), 0.3);
+        double beam = Deg(swell.Pitch(90, 0, 110, 11, T(3.5), 0.3));
+        var fast = swell.Pitch(0, 15, 110, 11, T(3.5), 0.3);
+        output.WriteLine($"swell: destroyer {Deg(dd):0.0}°, battleship {Deg(bb):0.0}°, beam on {beam:0.0}°, at 30 kn {double.RadiansToDegrees(fast.RateSigmaRadS):0.0}°/s against {double.RadiansToDegrees(dd.RateSigmaRadS):0.0}°/s");
+        Assert.True(beam < 0.5 * Deg(dd), $"beam on {beam:0.0}°");
+        Assert.True(Deg(dd) > Deg(bb));
+        Assert.True(fast.RateSigmaRadS > 1.5 * dd.RateSigmaRadS);
+
+        var ss5 = new RollSea(new SeaSpectrum(SeaState.Of(new WeatherHere(25_000, 0, 12.3, SwellHsM: 0))));
+        double d5 = Deg(ss5.Pitch(0, 0, 110, 11, T(3.5), 0.3)), b5 = Deg(ss5.Pitch(0, 0, 230, 28, T(9), 0.3));
+        output.WriteLine($"SS5: destroyer {d5:0.0}°, battleship {b5:0.0}°");
+        Assert.InRange(d5, 1.25, 8);
+        Assert.InRange(b5, 0.2, 3);
+        Assert.True(d5 > 1.5 * b5);
     }
 }
