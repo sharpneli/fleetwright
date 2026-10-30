@@ -342,7 +342,15 @@ quiet), so neither "done" (every ship home or in no encounter) nor "quiet" (no e
 4. **A stopped ship doesn't hold the end open:** a ship dead in the water, out of the fight and quiet, counts as done
    for "every side done" and doesn't keep an encounter open for "quiet" (until striking colours, crew.md's "after").
 
-Next: the panel's ends (below), then the user's word on the proposals, then build, then BL3 and BL4.
+**The panel's ends** (`shipgen balance --fc-runs 0` at `ef344c41`, 8 seeds, the Jutland 4): **55 of 68 plays end by
+the clock.** Dover Strait time 8 of 8; Coronel time 7, done 1; Cape Sarych time 8; the prizes' war time 8; Åland time
+2, decided 1, quiet 2, done 3; Heligoland time 7, decided 1; Dogger Bank time 8; Tsushima time 3, quiet 3, done 2; the
+Jutland time 4. The small scenarios (Dover, Cape Sarych, the prizes) end on time with little lost: the sides parting
+and nobody giving up, to be read per scenario once proposals 3 and 4 are in. Losses: 7 of 14 sides within 2x; the
+record's loser lost more in 26 of 44; Heligoland 3.6 v 19.0, Dogger 3.5 v 9.8, Tsushima 4.5 v 2.4, the Jutland 26.5 v
+59.3 (bl5's 47.0 before `ef344c41`'s torpedo chance: 4 seeds, to watch).
+
+Next: the user's word on the proposals, then build, then BL3 and BL4.
 
 ## Decided (the user, 2026-10-30)
 
@@ -426,3 +434,4 @@ answered today; the rest are best answered when their step has measured.
 | 2026-10-30 | `478e2a75` | BL2a-b: Finish 0.1, a cripple's smoke (`balance/bl2.json`) | 5 of 14 sides within 2x; the record's loser lost more in 21 of 44; Heligoland 2.1 v 18.5, Dogger 4.1 v 9.3, Jutland 32.0 v 48.0: within the noise. The fire table: the cripples going home still draw the close fire (Heligoland ~3,500 hits on them, 4 seeds): most fire back as they run (not quiet, so they matter by the user's rule), and in 5 km of mist each is often the only enemy in sight |
 | 2026-10-30 | `7001702f` | BL1h: pitch, vibration, yaw (`balance/bl1h.json`) | 4 of 14 sides within 2x; the record's loser lost more in 26 of 44; Heligoland 2.1 v 16.4, Dogger 4.0 v 6.9, Jutland 33.8 v 50.0; fc-history 13 of 23 (9 HIGH, 1 LOW: the LRBP case 2.8% under 2.9%), orderings 4 of 7. Heligoland's light guns at small ships, point blank 64 → 58%, at 2-4 km 15.4 → 14.4%: little sea there, so little motion |
 | 2026-10-30 | `c87b0270` | BL1i + BL5's three: the air on the sights, day attacks from the long setting, cripples' escape, screens past cripples (`balance/bl5.json`) | 6 of 14 sides within 2x; the record's loser lost more in 24 of 44; Heligoland 4.9 v 18.1 (torpedoes fired 215 British, 48 German a run: the day shots now from range), Dogger 4.0 v 9.0, Tsushima 4.5 v 2.4, Jutland 29.0 v 47.0 |
+| 2026-10-30 | `ef344c41` | BL5: torpedoes only with a chance; the panel for BL5's ends (by hand, scenarios only) | 7 of 14 sides within 2x; the record's loser lost more in 26 of 44; Heligoland 3.6 v 19.0, Dogger 3.5 v 9.8, Tsushima 4.5 v 2.4, Jutland 26.5 v 59.3; 55 of 68 plays end by the clock |
