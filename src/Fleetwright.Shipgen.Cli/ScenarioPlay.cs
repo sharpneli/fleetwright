@@ -17,8 +17,11 @@ namespace Fleetwright.Shipgen.Cli;
 static class ScenarioPlay
 {
     public static int Run(string path, string settingsPath, string landPath, string designsPath, int threads, bool land,
-        int seeds, double fast, double fine, bool? smoke = null, int workerCount = -1, ulong shuffle = 0, double spinUs = 250)
+        int seeds, double fast, double fine, bool? smoke = null, int workerCount = -1, ulong shuffle = 0, double spinUs = 250, bool fireTable = false)
     {
+        // where the hits come from (docs/battle/balance.md BL1g): shells and hits by calibre, range and point blank, every seed
+        var fire = new SortedDictionary<(int Cal, int Range, bool Pb), (long Shells, long Hits)>();
+        int[] calBands = [120, 200, 300], rangeBands = [2, 4, 6, 10, 15];
         var settings = SimSettings.Load(settingsPath);
         if (smoke is bool on)
             settings = settings with { Smoke = on };   // docs/battle/smoke.md: --smoke or --no-smoke
@@ -46,6 +49,17 @@ static class ScenarioPlay
         {
             ulong seed = s.Seed + (ulong)i;
             var (w, ai, start) = Begin(s, seed, settings, registry, classes, land ? shore : null, workers, fine);
+            if (fireTable)
+                w.Gunnery.Reported = r =>
+                {
+                    int ss = w.Ships.Store.SlotOf(r.Shooter);
+                    if (ss < 0)
+                        return;
+                    double cal = w.Ships.Store[ss].Handling.Class.Batteries[r.Battery].CalibreMm;
+                    var key = (calBands.Count(b => cal >= b), rangeBands.Count(b => r.TrueRangeM >= b * 1000), r.PointBlank);
+                    var (sh, hi) = fire.GetValueOrDefault(key);
+                    fire[key] = (sh + r.Shells, hi + r.Hits);
+                };
             foreach (var x in start.Warnings)
                 Console.WriteLine($"  {x}");
             var names = new Dictionary<int, string>(start.ShipNames);
@@ -124,6 +138,15 @@ static class ScenarioPlay
             PrintSpread(s, runs.Select(r => (r.End, r.Result)).ToList());
             Console.WriteLine($"over {runs.Count} seeds:");
             all.Print("  ");
+        }
+        if (fireTable && fire.Count > 0)
+        {
+            string[] cals = ["under 120 mm", "120-200 mm", "200-300 mm", "300 mm and over"];
+            string[] ranges = ["0-2 km", "2-4 km", "4-6 km", "6-10 km", "10-15 km", "15 km and over"];
+            Console.WriteLine();
+            Console.WriteLine($"where the hits came from, every seed (shells, hits, hit %; pb: laid point blank):");
+            foreach (var ((cal, range, pb), (sh, hi)) in fire)
+                Console.WriteLine($"  {cals[cal],-16} {ranges[range],-15} {(pb ? "pb" : "  ")}  {sh,8} {hi,6} {100.0 * hi / Math.Max(sh, 1),6:F1}%");
         }
         if (crashed > 0)
             Console.WriteLine($"the sim broke in {crashed} of {seeds} seeds");

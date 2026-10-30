@@ -157,7 +157,7 @@ brutality is untouched; BL1g checks it with close-range duels and `night-history
 | **BL1d** | **Stress on the layers. Built 2026-10-30.** The station's duress (crew.md N3b: what has landed at and around it, against its men's nerve) adds to its layers' and rangetakers' errors, as a share of the laying error rising with the duress; green crews in their first fight feel it soonest. This is the research's x1.5 combat factor as a system that reads where the shells fall. Fatigue over hours stays out (memory: GunneryCombat goes when fatigue lands). | `Steadiness.Stress`: 1 + `StressGain` (1 [EST]) x min(duress / nerve, 1) on the laying error, the roll timing and a reading's error, by the layer's station (the director's, else the guns') and the rangetaker's; `SteadinessTests`: none unopposed, a shell through a turret hitting a tenth of its men x2.0 green, x1.68 trained, x1.54 elite, easing in the quiet. fc-history is untouched (nobody fires back there); the scenarios carry it. |
 | **BL1e** | **Local control's judgement** (P4). **Done 2026-10-30:** `FireControlPresets.Local` takes the judgement's computer (the officer at the guns judging her course and speed, looking again each minute) beside level 0's optics and the battery's own sights. | fire-control.md F6's crossing case (12.5% to 21%) is F6's measure; the suite passes unchanged. |
 | **BL1f** | **Wetness, the first part. Done 2026-10-30:** the research's casemate rule (`RollSea.Awash`): a gun is awash under H_s x its side (0.6 weather to 0.35 lee) x its place (2 at the bow, 1 amidships) x (1 + 0.5 (V/25 kn)² x her heading to the sea), its axis as she has settled; awash, it doesn't bear. The wetness index for blinded forward rangefinders and swamped forward turrets waits for a freeboard factor from the designer (with the hull model's refresh, `docs/shipgen/TODO.md`). | `RollTests`: a 3 m casemate under on the weather side in 5 m of sea, not on the lee, a turret never, a bow casemate heading into it, nothing in a calm. |
-| **BL1g** | **Fit and check.** `shipgen balance`, `fc-history`, `night-history` and close-range duels; only [EST] numbers moved, each move logged. | fc-history mostly in its bands, the rest named; night and point blank as brutal as before. |
+| **BL1g** | **Fit and check.** Under way 2026-10-30: `scenario --play --fire-table` (shells and hits by calibre, range and point blank) found where the scenarios' losses come from (below). `shipgen balance`, `fc-history`, `night-history` and close-range duels; only [EST] numbers moved, each move logged. | fc-history mostly in its bands, the rest named; night and point blank as brutal as before. |
 
 **Out of BL1, named:** fatigue over hours (with `GunneryCombat`'s removal), vibration with speed (no numbers in the
 research), stable verticals and fins (later cuts), the captains choosing a course for the sea (BL5's or later), spray
@@ -166,6 +166,27 @@ on turret rangefinders at speed (with BL1f if cheap, else later).
 **Decided (the user, 2026-10-30):** the steps and their order as above; bilge keels on every ship from 1895 as a
 flagged placeholder, with the damping fit planned for the designer (`docs/shipgen/TODO.md`), and the hull model to be
 refreshed once ships roll ("the whole hull model is quite old"); wetness in if it's cheap.
+
+### BL1g: where the hits come from (2026-10-30, after BL1f)
+
+`shipgen scenario FILE --play --seeds N --fire-table`, every seed's shells and hits by calibre, range band and point blank:
+
+| | Heligoland Bight (4 seeds) | the Jutland (2 seeds) |
+|---|---|---|
+| light guns (under 120 mm), 0-2 km, point blank | 2,814 shells, 65% | 5,668 shells, 68% |
+| light guns, 2-4 km | 9,382, 17% | 19,097, 21% |
+| light guns, 4-6 km | 9,881, 4.5% | 34,765, 6.6% |
+| medium (120-200 mm), 0-2 km point blank / 2-4 km | 79% / 16% | 70% / 19% |
+| heavy (300 mm and over), 10-15 km / 15 km and over | (none) | 1.0% / 0.7% (the record 1.4-4%) |
+
+- **The heavy guns at battle ranges are at or under the record now.** BL1's systems did their work there.
+- **The losses are the light forces' melee:** at the Jutland the light guns make about 12,000 of a seed's ~16,000 hits,
+  nearly 4,000 of them inside 2 km and as many again at 2-4 km.
+- **Point blank is deadly by decision 2;** the question is why light forces close inside 2 km by day so often (the
+  AI's: BL5) and whether 65-70% a shell is the deadly decision 2 meant.
+- **At 2-4 km the light guns hit 17-21%,** far over anything recorded for them. What's still missing for small, fast
+  ships firing at each other: own speed (vibration, spray over the guns, pitch: the research's §1.1-1.3, roll only so
+  far), and the target's evasion under fire as the record's boats did it.
 
 ## Decided (the user, 2026-10-30)
 
