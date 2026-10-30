@@ -5,7 +5,8 @@
 // Nessus hit before she fires. The classes are stand-ins (flotilla_leader for Faulknor, m_class for the M boats,
 // deutschland_1906 for the Deutschlands). A bench, not a scenario to play: the forces start 45 min from meeting, so the
 // first sighting is the model's.
-// The weather of the dawn: mist, little wind; "three to four miles" at daylight (visibility 8 km).
+// The weather of the dawn: mist, little wind; "three to four miles" at daylight, Malaya's "no more than two" (visibility
+// 6 km, about three miles).
 {
   "scenario": 1,
   "test": true,
@@ -25,7 +26,7 @@
   "until": "1916-06-01T03:00",
   "aims": { "Britain": "destroy everyone", "Germany": "destroy everyone" },
   "home": { "Britain": [56.3, -1.5], "Germany": [54.2, 7.6] },
-  "weather": { "visibility_km": 8, "wind_from": 225, "wind_kn": 8 },
+  "weather": { "visibility_km": 6, "wind_from": 225, "wind_kn": 8 },
   "units": [
     { "name": "12th Flotilla", "admiral": "Capt Stirling", "side": 0, "at": [56.05, 6.45], "course": 180, "kn": 17, "spacing": 350,
       "ships": [ { "design": "flotilla_leader", "names": ["Faulknor"] },

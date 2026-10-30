@@ -997,9 +997,10 @@ public sealed record SimSettings
     /// <summary>The enemy lost, his main body searches where he was last held on legs this long (m), and gives up after.</summary>
     public double LostSearchLegM { get; init; } = 20_000;
 
-    /// <summary>It's night to a commander (doctrine's NightAction and NightAttack) with the sun more than this far down at
-    /// his main body, degrees (civil twilight's end).</summary>
-    public double NightSunElevationDeg { get; init; } = -6;
+    /// <summary>It's night to the AI (doctrine's NightAction and NightAttack, night's close order; docs/battle/night.md Q12d)
+    /// where the sky is darker than this, cd/m² (a clear sky's with the sun 6° down, civil twilight's end: 2.8 by
+    /// <see cref="NightLight"/>).</summary>
+    public double NightSkyCdM2 { get; init; } = 3;
 
     /// <summary>A side declining battle by day keeps its flotillas in touch with the enemy, for their night attack, while
     /// the night falls within this many seconds (docs/battle/night.md Q7) [EST].</summary>

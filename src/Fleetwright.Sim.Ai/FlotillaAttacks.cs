@@ -106,11 +106,11 @@ public sealed class FlotillaAttacks(MatchupJudge judge, HeldGroups held, Doctrin
             Add(covered, u.Id);
     }
 
-    /// <summary>Whether it's night for torpedo craft where a flotilla is (the sun more than
-    /// <see cref="SimSettings.NightSunElevationDeg"/> down) and doctrine sends them in by night.</summary>
+    /// <summary>Whether it's night for torpedo craft where a flotilla is (<see cref="AiNight"/>) and doctrine sends them in
+    /// by night.</summary>
     public bool Night(in AiContext ctx, byte side, Vec3d at) =>
         doctrine.OfGroup(null, side, DoctrineField.NightAttack) != 0 &&
-        Light.SunElevationDeg(at, ctx.World.Time) < ctx.Settings.NightSunElevationDeg;
+        AiNight.At(ctx, at, ctx.World.Time);
 
     /// <summary>Whether a flotilla's attack is worth making (docs/battle/command.md 5.1g): an enemy group within
     /// <see cref="SimSettings.CommanderAttackM"/> of it that its matchup has it attacking, at doctrine's bar or better; and,

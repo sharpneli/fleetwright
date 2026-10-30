@@ -701,18 +701,17 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
 
     MatchupSide? attacker, attacked;
 
-    /// <summary>Whether his doctrine sends torpedo craft in by night and the night (the sun more than
-    /// <see cref="SimSettings.NightSunElevationDeg"/> down) falls at a place within <see cref="SimSettings.CommanderNightWaitS"/>,
-    /// or has.</summary>
+    /// <summary>Whether his doctrine sends torpedo craft in by night and the night (<see cref="AiNight"/>, under the
+    /// weather as it is) falls at a place within <see cref="SimSettings.CommanderNightWaitS"/>, or has.</summary>
     bool NightComing(in AiContext ctx, byte side, Vec3d at) =>
         doctrine.OfGroup(null, side, DoctrineField.NightAttack) != 0 &&
-        Light.SunElevationDeg(at, new WorldTime(ctx.NowMs + (long)(ctx.Settings.CommanderNightWaitS * 1000))) < ctx.Settings.NightSunElevationDeg;
+        AiNight.At(ctx, at, new WorldTime(ctx.NowMs + (long)(ctx.Settings.CommanderNightWaitS * 1000)));
 
-    /// <summary>Whether it's night to him (the sun more than <see cref="SimSettings.NightSunElevationDeg"/> down at his main
-    /// body) and his doctrine avoids action by night.</summary>
+    /// <summary>Whether it's night to him at his main body (<see cref="AiNight"/>) and his doctrine avoids action by
+    /// night.</summary>
     bool Night(in AiContext ctx, byte side, int main) =>
         main >= 0 && (NightAction)doctrine.OfGroup(null, side, DoctrineField.NightAction) == NightAction.Avoid &&
-        Light.SunElevationDeg(store[tops[main].Slot].Position, ctx.World.Time) < ctx.Settings.NightSunElevationDeg;
+        AiNight.At(ctx, store[tops[main].Slot].Position, ctx.World.Time);
 
     /// <summary>By night: his heavy units withdrawn from contact (home, until the day; free to close again then); his
     /// flotillas are sent in by doctrine (<see cref="SendIn"/>). True if it dealt with the unit; the rest (his scouts,

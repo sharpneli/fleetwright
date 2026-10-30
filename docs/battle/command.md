@@ -799,7 +799,8 @@ doesn't hold the T.
    every unit home. A new end, `EndReason.Done`: every side afloat has its aims, or has given up or broken off with every
    ship afloat home.
 4. **Night.** Doctrine's `NightAction` (default preset "avoid"; neutral "accept") and `NightAttack` (1; neutral 0): with
-   the enemy held and the sun more than `NightSunElevationDeg` (6°) down at his main body, his heavy units are withdrawn
+   the enemy held and night at his main body (by the light since night.md Q12d, `AiNight`: the sky darker than
+   `NightSkyCdM2`, a clear sky's with the sun 6° down), his heavy units are withdrawn
    (home, free to close again at dawn), his scouts keep their tasks, and his flotillas go in on any heavy enemy in
    reach, engaged or not.
 5. **The Jutland's plans** (`"tasks"`): Beatty north to the rendezvous with Jellicoe in 57°45'N 4°15'E and into the

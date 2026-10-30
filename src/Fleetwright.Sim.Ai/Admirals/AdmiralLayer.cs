@@ -425,8 +425,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
                 Release(ctx, g, admirals[i]);
     }
 
-    /// <summary>Night's close order (docs/battle/night.md Q7): with the sun more than <see cref="SimSettings.NightSunElevationDeg"/>
-    /// down at his guide, a squadron's spacing closed to doctrine's <see cref="DoctrineField.NightSpacingShare"/> of the day's
+    /// <summary>Night's close order (docs/battle/night.md Q7): by night at his guide (<see cref="AiNight"/>), a squadron's spacing closed to doctrine's <see cref="DoctrineField.NightSpacingShare"/> of the day's
     /// (the group's own, so its rails and its stations agree), and opened to the day's again once the sun's back over it,
     /// unless its spacing was changed meanwhile (the player's, then).</summary>
     void CloseUp(in AiContext ctx, GroupSystem.Group g, Admiral a, int lead)
@@ -434,7 +433,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
         if (g.IsForce)
             return;
         var guide = ctx.Ships[lead];
-        bool night = Light.SunElevationDeg(guide.Position, ctx.World.Time) < ctx.Settings.NightSunElevationDeg;
+        bool night = AiNight.At(ctx, guide.Position, ctx.World.Time);
         double share = doctrine.OfGroup(g, guide.Side, DoctrineField.NightSpacingShare);
         if (night && a.DaySpacingM == 0 && share is > 0 and < 1)
         {

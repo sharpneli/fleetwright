@@ -329,7 +329,7 @@
   "CommanderAttackM": 25000,
   "CommanderMarginShare": 0.25,
   "LostSearchLegM": 20000,
-  "NightSunElevationDeg": -6,
+  "NightSkyCdM2": 3,
   "CommanderNightWaitS": 5400,
   "AggressionShift": {
     "OutgunnedRatio": 0.5,

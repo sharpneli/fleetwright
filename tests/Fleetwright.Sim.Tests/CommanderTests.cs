@@ -446,7 +446,7 @@ public class CommanderTests(ITestOutputHelper output)
         Assert.Equal((CommanderPhase.Retiring, CommanderReason.Outmatched), dusk.Item1);
         Assert.Equal((TaskKind.Shadow, CommanderWhy.AwaitNight), (dusk.Given, dusk.Why));
         Assert.Equal((TaskKind.Attack, CommanderWhy.Night), sent);
-        Assert.True(sun < Settings.NightSunElevationDeg);
+        Assert.True(sun < -5);   // night by the light: a clear sky's falls with the sun about 6° down
         Assert.Equal((CommanderPhase.Retiring, CommanderReason.Outmatched), ai.Commanders.PhaseOf(1));
         Assert.Equal(TaskKind.Withdraw, ai.Commanders.GivenOf(mine).Given);
     }

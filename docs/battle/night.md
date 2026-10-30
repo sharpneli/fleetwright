@@ -1,6 +1,6 @@
 # Plan: night fighting (a 4.5 deepening)
 Status: **drafted 2026-10-29**; **agreed with the user 2026-10-29** (decisions 1-5 at the end); Q0-Q10 done 2026-10-29;
-the research arrived 2026-10-29: Q1b, Q0b, Q3b, Q5b added before Q10 (after Q9), done; Q11 done 2026-10-30; Q12a (the check) and Q12b (night doctrine one a period) done 2026-10-30; Q12c (the torpedo officer's judgement) done 2026-10-30, the fits next
+the research arrived 2026-10-29: Q1b, Q0b, Q3b, Q5b added before Q10 (after Q9), done; Q11 done 2026-10-30; Q12a (the check) and Q12b (night doctrine one a period) done 2026-10-30; Q12c (the torpedo officer's judgement) and Q12d (the AI's night by the light) done 2026-10-30, the fits next
 Updated: 2026-10-30
 
 How ships see, light, shoot and lose each other in the dark. The user asked for it after the crew plan (2026-10-28),
@@ -45,7 +45,7 @@ and the commander's night doctrine (`command.md` 5.1d). Step letter **Q** (free 
 - **Three shell kinds:** `ShellKind` is AP, Common and HE. Time fuzes exist (`shell-contents.md` C0, "the fuze on
   time"), so a shell bursting at a set time is already there.
 - **Night in the AI:** doctrine's `NightAction` (avoid or accept, for heavy ships) and `NightAttack` (flotillas), both
-  keyed on the sun 6° down (`NightSunElevationDeg`). Torpedo tracks are seen at 2 km by day and 400 m by night
+  keyed on the sun 6° down (`NightSunElevationDeg`; by the sky's light since Q12d, `AiNight`). Torpedo tracks are seen at 2 km by day and 400 m by night
   (`TorpedoSeenNightM`), a hard switch at `TorpedoDayElevationDeg`.
 - **Own ships are known exactly.** A side's picture holds only the enemy. Own and allied ships are read from the world,
   so there's no friendly fire and no doubt about who's who.
@@ -1371,6 +1371,30 @@ record has Southampton's one: the light cruisers' fire discipline, not the aim.
 - A test's force attack (`A_force_told_to_attack_hands_it_to_its_divisions`) needed 90 minutes, not 40, for its task to
   end: the dreadnought no longer sinks in the first attack, so the boats come round again.
 - Sim 877 passed (a smoke cost test flaky under load, passes alone), game 207 passed.
+
+**Q12d, the AI's night by the light (2026-10-30).** The AI's night (doctrine's `NightAction` and `NightAttack`, the
+commander's night coming, night's close order) was the sun 6° down, a switch on the clock. Now `AiNight.At`: the sky at
+the place darker than `NightSkyCdM2` 3 cd/m² under the weather's cloud (`NightLight.At`; a clear sky's with the sun 6°
+down is 2.8, so a clear night falls as before; under overcast about 15-20 min sooner, at the sun ~2.5° down). One
+helper for the four callers; `NightSunElevationDeg` is gone.
+
+- **Not on how far a ship is seen:** a threshold on the reference ship's reach (`SightModel.SeenToM`, light and haze
+  together) would make the day's misty battles night (Heligoland Bight 5 km, Cape Sarych and Åland 8 km) and their
+  commanders avoid action. The mist reaches the AI through what it sees and its matchups.
+- **The dawn's mist** (`night-12th-flotilla`): 8 → 6 km (about three miles: the record's "three to four miles" at
+  daylight, Malaya's "no more than two"). The boats now see the line in 40 runs of 40 at 5.3 km (9 of 40 at 8.4 km);
+  the Germans see them first at 6.8 km and open at 5.0 km.
+- **The dawn's attack still doesn't come** (0.3 torpedoes a run, from 3.6 km). It's night to the AI throughout; the
+  British commander withdraws the flotilla as outmatched on sighting the line, because the attack isn't worth it by the
+  matchup (`FlotillaAttacks.Worth`): in that half-light (sky 0.5 cd/m², 6 km of mist) the line makes an M class out at
+  7.0 km, so the run in from there to 2.7 km costs 1.7 boats of 8 by its reckoning, and its confidence is 0.21, under the
+  commander's bar (`shipgen matchup m_class:7 deutschland_1906:5 --sky 0.5 --vis 6000`; in the dark, 0.01 cd/m², 209).
+  The record's boats went in by their orders (to attack the battle fleet by night), and the Germans doubted and held
+  their fire (Q12's doubt, next). Doctrine's `NightAttack` is yes or no, and its flotillas still clear the day's bar:
+  whether a night attack goes in against the odds (a bar of its own) is a doctrine choice for the user.
+- **The other cases** barely move (Tsushima's Japanese first salvo 5.8 → 5.2 km, 1.0 torpedoes a run against 1.3).
+- **Cost:** the admirals' think 31.6 → 34.9 µs (the 4th Flotilla's play): the sky asked once a group, no cache.
+- Sim 877, game 207 passed (`CommanderTests`' dusk case asserts the sun under 5° down, not the old setting).
 
 ## Decided (the user, 2026-10-29)
 
