@@ -2,13 +2,12 @@ namespace Fleetwright.Sim.Core;
 
 /// <summary>The state of the sea at a place (docs/visuals/sea.md W1): the wind sea from the wind (its speed, the way it
 /// blows from, the fetch it has blown over) and a swell from elsewhere (significant height, peak period, the way it
-/// comes from). Pure values: the map's sea is drawn from it, and the sim can read the same field later.</summary>
+/// comes from). Pure values: the map's sea is drawn from it, and the ships roll in the same (docs/battle/balance.md BL1a).</summary>
 public readonly record struct SeaState(double WindMs, double WindFromDeg, double FetchM, double SwellHsM, double SwellTpS, double SwellFromDeg)
 {
-    /// <summary>The sea for a weather: its wind, a fetch for that wind (<see cref="FetchFor"/>), and a low swell from
-    /// 50° off the wind (the cross-sea that makes the surface read as ocean) until the weather knows its swell.</summary>
-    public static SeaState Of(in WeatherHere w, double swellHsM = 1.0, double swellTpS = 12) =>
-        new(w.WindMs, w.WindFromDeg, FetchFor(w.WindMs), swellHsM, swellTpS, (w.WindFromDeg + 50) % 360);
+    /// <summary>The sea for a weather: its wind, a fetch for that wind (<see cref="FetchFor"/>), and its swell
+    /// (<see cref="WeatherHere.SwellHsM"/>: by default low and long, 50° off the wind).</summary>
+    public static SeaState Of(in WeatherHere w) => new(w.WindMs, w.WindFromDeg, FetchFor(w.WindMs), w.SwellHsM, w.SwellTpS, w.SwellFrom);
 
     /// <summary>A fetch for a wind (research/vfx/ocean-surface-research.md §2.2): 150 km tracks the WMO's probable
     /// heights up to a gale, and storms have blown longer and further, so it grows past that to 1,000 km.</summary>

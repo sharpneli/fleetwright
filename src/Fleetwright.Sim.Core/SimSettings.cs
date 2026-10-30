@@ -672,6 +672,11 @@ public sealed record SimSettings
     /// smoke and sea; crew fatigue), which will take this knob's place.</summary>
     public double GunneryCombat { get; init; } = 1;
 
+    /// <summary>The share of the wave slope that heels a ship beam-on to it (docs/battle/balance.md BL1a, Sim.Combat's RollSea):
+    /// 0.85, the research's linear roll model's, which gives an RN frigate her ±12° in sea state 5 at ζ 0.10
+    /// (research/simulation/ship-motion/ship-motion-gunnery-research.md §3.2) [EST].</summary>
+    public double RollExcitation { get; init; } = 0.85;
+
     /// <summary>How long after a battery's track starts (its first reading in the computer) it opens fire at the latest,
     /// s (fire_control_ref.py Scenario.t_open). It opens sooner once its computer's doubt of where the shells must go is
     /// within <see cref="OpenDoubtSteps"/> of its first step (twice the sigma) [EST: about two ranging salvos' worth, so

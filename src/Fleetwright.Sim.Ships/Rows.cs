@@ -1098,6 +1098,11 @@ public readonly record struct MotionFacts
     public double GmFullM { get; init; }
     public double RollPeriodS { get; init; }
 
+    /// <summary>Her roll's damping ratio, ζ (docs/battle/balance.md BL1a): 0.04 a bare hull, 0.10 with bilge keels
+    /// (research/simulation/ship-motion/ship-motion-gunnery-research.md §3.3). The designer's damping fit to give; a
+    /// placeholder until then (<see cref="DesignerPlaceholders"/>).</summary>
+    public double RollDamping { get; init; }
+
     /// <summary>The tactical diameter at full speed and hard over, metres. The designer's to give; until it does, a
     /// placeholder (<see cref="DesignerPlaceholders"/>).</summary>
     public double TacticalDiameterM { get; init; }

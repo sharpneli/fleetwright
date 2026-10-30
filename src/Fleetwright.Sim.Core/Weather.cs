@@ -5,10 +5,21 @@ namespace Fleetwright.Sim.Core;
 /// and its speed), and the air's temperature over the sea's, K (docs/battle/smoke.md Z0: warm air over a cold sea is
 /// stable and smoke lies thin, low and long; 0 neutral), and the cloud cover, 0 clear to 1 overcast (docs/battle/night.md
 /// Q1: an overcast takes most of the moon's and the stars' light), and how strongly the sea glows where it's stirred, 0 to
-/// 1 (phosphorescence: docs/visuals/night-lights.md decision 5, the look's now, the sight's cue later). A sea state reads
-/// the wind later.</summary>
+/// 1 (phosphorescence: docs/visuals/night-lights.md decision 5, the look's now, the sight's cue later), and the swell from
+/// elsewhere beside the wind's own sea (docs/battle/balance.md BL1a: its significant height, m, its peak period, s, and the
+/// way it comes from, degrees, NaN 50° off the wind): the sea drawn and the sea the ships roll in
+/// (<see cref="SeaState.Of"/>).</summary>
 public readonly record struct WeatherHere(double VisibilityM, double WindFromDeg, double WindMs, double AirOverSeaK = 0, double Cloud = 0,
-    double Phosphorescence = 0);
+    double Phosphorescence = 0, double SwellHsM = WeatherHere.DefaultSwellHsM, double SwellTpS = WeatherHere.DefaultSwellTpS,
+    double SwellFromDeg = double.NaN)
+{
+    /// <summary>The swell until a weather gives one: low and long, the cross-sea that makes the surface read as ocean
+    /// (docs/visuals/sea.md W1).</summary>
+    public const double DefaultSwellHsM = 1.0, DefaultSwellTpS = 12;
+
+    /// <summary>The way the swell comes from, degrees: its own, or 50° off the wind's.</summary>
+    public double SwellFrom => double.IsNaN(SwellFromDeg) ? (WindFromDeg + 50) % 360 : SwellFromDeg;
+}
 
 /// <summary>The world's weather: a function of position and time, so it can vary later (fronts, squalls, a forecast)
 /// without anything asking it changing. One weather per scenario for now (<see cref="UniformWeather"/>).</summary>

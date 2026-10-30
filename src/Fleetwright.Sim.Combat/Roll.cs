@@ -1,0 +1,82 @@
+using Fleetwright.Sim.Core;
+
+namespace Fleetwright.Sim.Combat;
+
+/// <summary>A ship's roll in a sea, as gunnery reads it (docs/battle/balance.md BL1a): the significant amplitude (radians,
+/// single), the spread of her roll rate (1 sigma, rad/s) and her mean period (s), the zero crossings'.</summary>
+public readonly record struct RollState(double AmplitudeRad, double RateSigmaRadS, double PeriodS)
+{
+    /// <summary>The roll rate as she passes upright on one roll, rad/s: Rayleigh about <see cref="RateSigmaRadS"/> (a
+    /// narrow-band roll's rate at its zero crossings), drawn from the caller's stream.</summary>
+    public double RateAtLevel(ref RandomStream r) => RateSigmaRadS * Math.Sqrt(-2 * Math.Log(1 - r.NextDouble()));
+}
+
+/// <summary>The sea a world's ships roll in (docs/battle/balance.md BL1a;
+/// research/simulation/ship-motion/ship-motion-gunnery-research.md §3.2, its own method rather than its table): the
+/// weather's directional spectrum (<see cref="SeaSpectrum"/>, the one the map draws) as wave-slope variance by frequency
+/// and direction, built once per weather. A ship's roll is the linear one-degree-of-freedom response to it: each component
+/// met at its encounter frequency (her heading and speed to it), its slope taken by her beam-on share (sin of the angle
+/// between it and her heading) and an excitation coefficient (<see cref="SimSettings.RollExcitation"/>), magnified by her
+/// resonance (natural period, damping). Short-crestedness comes with the spread; a swell near her period rolls her hard,
+/// a short wind sea only a short-period ship. A pure function of the sea and her state, so nothing is stepped and it's the
+/// same at any compression; a few µs a call, no garbage.</summary>
+public sealed class RollSea
+{
+    /// <summary>The grid: wave frequencies log-spaced over periods of about 1.8 to 42 s (the swell's narrow peak and the
+    /// short wind sea a destroyer feels), and directions every 5° (the swell's spread is about ±15°).</summary>
+    public const int Frequencies = 32, Directions = 72;
+    const double WLow = 0.15, WHigh = 3.5;
+
+    readonly double[] w = new double[Frequencies], cos = new double[Directions], sin = new double[Directions];
+    /// <summary>Wave-slope variance a cell, (ω²/g)²·S(ω, θ)·dω·dθ, by frequency then direction.</summary>
+    readonly double[] slope = new double[Frequencies * Directions];
+
+    /// <summary>The significant wave height, m (wind sea and swell).</summary>
+    public double HsM { get; }
+
+    public RollSea(SeaSpectrum spectrum)
+    {
+        HsM = spectrum.HsTarget;
+        double dt = 2 * Math.PI / Directions, ratio = Math.Pow(WHigh / WLow, 1.0 / Frequencies);
+        for (int j = 0; j < Directions; j++)
+            (cos[j], sin[j]) = (Math.Cos(j * dt), Math.Sin(j * dt));
+        for (int i = 0; i < Frequencies; i++)
+        {
+            double lo = WLow * Math.Pow(ratio, i), hi = lo * ratio, wi = Math.Sqrt(lo * hi), k = wi * wi / SeaSpectrum.G;
+            w[i] = wi;
+            for (int j = 0; j < Directions; j++)
+                slope[i * Directions + j] = k * k * spectrum.S(wi, j * dt) * (hi - lo) * dt;
+        }
+    }
+
+    /// <summary>A ship's roll at a heading (degrees true) and speed (m/s through the water), with her natural period (s;
+    /// none, or 0 or less: she doesn't roll) and damping ratio; <paramref name="excitation"/> the share of the wave slope
+    /// that heels her (<see cref="SimSettings.RollExcitation"/>).</summary>
+    public RollState At(double headingDeg, double speedMs, double naturalPeriodS, double damping, double excitation)
+    {
+        if (!(naturalPeriodS > 0) || double.IsInfinity(naturalPeriodS))
+            return default;
+        // her heading in the spectrum's frame: x east, y north, counter-clockwise from east
+        double psi = double.DegreesToRadians(90 - headingDeg), cp = Math.Cos(psi), sp = Math.Sin(psi);
+        double wn = 2 * Math.PI / naturalPeriodS, z2 = 4 * damping * damping, e2 = excitation * excitation;
+        double m0 = 0, m2 = 0;
+        for (int i = 0; i < Frequencies; i++)
+        {
+            double wi = w[i], doppler = wi * wi * speedMs / SeaSpectrum.G;
+            int row = i * Directions;
+            for (int j = 0; j < Directions; j++)
+            {
+                double s = slope[row + j];
+                if (s == 0)
+                    continue;
+                // the wave's travel against her heading: cos β (0 a following sea), sin β her beam-on share
+                double cb = cos[j] * cp + sin[j] * sp, sb = sin[j] * cp - cos[j] * sp;
+                double we = Math.Abs(wi - doppler * cb), l = we / wn, d = 1 - l * l;
+                double v = s * e2 * sb * sb / (d * d + z2 * l * l);
+                m0 += v;
+                m2 += v * we * we;
+            }
+        }
+        return m0 > 0 ? new RollState(2 * Math.Sqrt(m0), Math.Sqrt(m2), 2 * Math.PI * Math.Sqrt(m0 / Math.Max(m2, 1e-30))) : default;
+    }
+}

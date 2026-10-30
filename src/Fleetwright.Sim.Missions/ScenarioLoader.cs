@@ -73,7 +73,10 @@ public static class ScenarioLoader
         if (s.Player >= 0)
             w.Apply(Command.SetPlayerSide(s.Player));
         if (s.Weather is { } we)
+        {
             w.Apply(Command.SetWeather(we.VisibilityM, we.WindFromDeg, we.WindMs, we.AirOverSeaK, we.Cloud, we.Phosphorescence));
+            w.Apply(Command.SetSea(we.SwellHsM, we.SwellTpS, we.SwellFromDeg));
+        }
         foreach (var (side, experience) in s.Crews)
             w.Apply(GunnerySystem.SetExperience(side, experience));
         foreach (var (side, share) in s.Fuel)

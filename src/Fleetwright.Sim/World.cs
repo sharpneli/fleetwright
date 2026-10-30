@@ -1,3 +1,4 @@
+using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Ships;
 
@@ -111,6 +112,7 @@ public sealed class World
         commandsProbe = Probes.Register("Commands");
         fillProbe = Probes.Register("Snapshot fill");
         weather = new UniformWeather(new WeatherHere(Settings.DefaultVisibilityM, Settings.DefaultWindFromDeg, Settings.DefaultWindMs));
+        Sea = new RollSea(new SeaSpectrum(SeaState.Of(weather.Here)));
         Reach = new SightReach(Settings);
         Encounters = new Encounters(Settings, Relations, Reach);
         Sightings = new Sightings(Settings, Relations, Encounters, Reach, seed, Probes);
@@ -195,6 +197,10 @@ public sealed class World
     /// <summary>The weather (docs/battle/plan.md step 3.2b): one for the world for now, set by a command.</summary>
     public IWeather Weather => weather;
     UniformWeather weather;
+
+    /// <summary>The weather's sea as the ships roll in it (docs/battle/balance.md BL1a; <see cref="Roll"/>): built when the
+    /// weather is set, read on any thread.</summary>
+    public RollSea Sea { get; private set; }
 
     /// <summary>The side the player commands, -1 for none (docs/battle/plan.md step 3.1c).</summary>
     public int PlayerSide { get; private set; } = -1;
@@ -312,7 +318,18 @@ public sealed class World
             case WorldCommand.SetWeather:
                 if (!(c.X > 0) || !(c.Y >= 0) || c.A < 0 || c.A / 1_000_000 > 1000 || c.Entity is < 0 or > 1000)
                     throw new ArgumentException($"no weather of {c.X} m visibility, {c.Y} m/s wind, {c.A / 1_000_000 / 10.0}% cloud and {c.Entity / 10.0}% glow");
-                weather = new UniformWeather(new WeatherHere(c.X, c.A % 1_000_000 / 1000.0, c.Y, c.B / 1000.0, c.A / 1_000_000 / 1000.0, c.Entity / 1000.0));
+                weather = new UniformWeather(weather.Here with
+                {
+                    VisibilityM = c.X, WindFromDeg = c.A % 1_000_000 / 1000.0, WindMs = c.Y, AirOverSeaK = c.B / 1000.0, Cloud = c.A / 1_000_000 / 1000.0,
+                    Phosphorescence = c.Entity / 1000.0,
+                });
+                Sea = new RollSea(new SeaSpectrum(SeaState.Of(weather.Here)));
+                break;
+            case WorldCommand.SetSea:
+                if (!(c.X >= 0 && c.X <= 30) || !(c.Y >= 2 && c.Y <= 30) || c.Entity is < -1 or >= 360_000)
+                    throw new ArgumentException($"no swell of {c.X} m at {c.Y} s from {c.Entity / 1000.0}°");
+                weather = new UniformWeather(weather.Here with { SwellHsM = c.X, SwellTpS = c.Y, SwellFromDeg = c.Entity < 0 ? double.NaN : c.Entity / 1000.0 });
+                Sea = new RollSea(new SeaSpectrum(SeaState.Of(weather.Here)));
                 break;
             case WorldCommand.SetPlayerSide:
                 if (c.Entity is < -1 or > byte.MaxValue)

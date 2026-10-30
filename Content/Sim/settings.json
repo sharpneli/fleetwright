@@ -223,6 +223,7 @@
   "FireControlMs": 1000,
   "FireControlCoarseMs": 3000,
   "GunneryCombat": 1,
+  "RollExcitation": 0.85,
   "GunneryOpenS": 120,
   "OpenDoubtSteps": 2,
   "LayToleranceDeg": 1,

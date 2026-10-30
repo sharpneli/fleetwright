@@ -447,6 +447,12 @@ public sealed record ScenarioSetup
                     w.WriteNumber("cloud", c.Weather.Cloud);
                 if (c.Weather.Phosphorescence != 0)
                     w.WriteNumber("phosphorescence", c.Weather.Phosphorescence);
+                if (c.Weather.SwellHsM != WeatherHere.DefaultSwellHsM)
+                    w.WriteNumber("swell_m", c.Weather.SwellHsM);
+                if (c.Weather.SwellTpS != WeatherHere.DefaultSwellTpS)
+                    w.WriteNumber("swell_s", c.Weather.SwellTpS);
+                if (!double.IsNaN(c.Weather.SwellFromDeg))
+                    w.WriteNumber("swell_from", c.Weather.SwellFromDeg);
                 w.WriteEndObject();
             }
             foreach (var c in Changes.OfType<SetStart>())

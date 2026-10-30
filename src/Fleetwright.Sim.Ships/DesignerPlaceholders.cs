@@ -14,7 +14,14 @@ public static class DesignerPlaceholders
         HardOverDeg = m.HardOverDeg > 0 ? m.HardOverDeg : 35,
         PowerRampS = m.PowerRampS > 0 ? m.PowerRampS : 1.93 * Math.Pow(m.FullDisplacementT, 0.47),
         PowerCutS = m.PowerCutS > 0 ? m.PowerCutS : 15,
+        RollDamping = m.RollDamping > 0 ? m.RollDamping : BilgeKeelDamping,
     };
+
+    /// <summary>PLACEHOLDER: every ship rolls as one with bilge keels, ζ 0.10 (Froude's keels halving the resonant roll,
+    /// universal after the Royal Sovereigns of 1894-95; ship-motion-gunnery-research.md §3.3) [EST]. The designer's
+    /// damping fit (none, bilge keels, Frahm tanks, a gyro, fins: docs/shipgen/TODO.md) should give it; the user's 1895
+    /// cut waits for it, since a class carries no year and its look never sets a number.</summary>
+    public const double BilgeKeelDamping = 0.10;
 
     // ------------------------------------------------------------------ the eyes' glass (docs/battle/night.md Q1)
 

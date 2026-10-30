@@ -17,7 +17,7 @@ namespace Fleetwright.Sim.Missions;
 /// { "scenario": 1, "name": "Jutland", "brief": "...", "start": "1916-05-31T14:00", "seed": 1916,
 ///   "camera": [56.8, 5.2, 400], "sides": ["Britain", "Germany", "Neutral"],
 ///   "peace": [["Britain", "Neutral"], ["Germany", "Neutral"]], "player": "Britain",
-///   "weather": { "visibility_km": 25, "wind_from": 225, "wind_kn": 8 }, "crews": { "Germany": "elite" },
+///   "weather": { "visibility_km": 25, "wind_from": 225, "wind_kn": 8, "swell_m": 1, "swell_s": 12 }, "crews": { "Germany": "elite" },
 ///   "units": [
 ///     { "name": "Battlecruiser Fleet", "side": 0, "at": [56.77, 4.6], "course": 112, "kn": 19,
 ///       "formation": "column", "spacing": 3000,
@@ -508,10 +508,11 @@ public sealed record Scenario
     internal static WeatherHere ParseWeather(JsonElement e)
     {
         if (e.ValueKind != JsonValueKind.Object)
-            throw new ScenarioException("weather: an object, { \"visibility_km\": 25, \"wind_from\": 225, \"wind_kn\": 8, \"air_over_sea_k\": 0, \"cloud\": 0, \"phosphorescence\": 0 }");
+            throw new ScenarioException("weather: an object, { \"visibility_km\": 25, \"wind_from\": 225, \"wind_kn\": 8, \"air_over_sea_k\": 0, \"cloud\": 0, \"phosphorescence\": 0, \"swell_m\": 1, \"swell_s\": 12, \"swell_from\": 270 }");
         double Num(string name, double fallback) => e.TryGetProperty(name, out var v) ? v.GetDouble() : fallback;
         double vis = Num("visibility_km", double.NaN), from = Num("wind_from", 0), kn = Num("wind_kn", 0), airSea = Num("air_over_sea_k", 0), cloud = Num("cloud", 0);
         double glow = Num("phosphorescence", 0);
+        double swell = Num("swell_m", WeatherHere.DefaultSwellHsM), swellS = Num("swell_s", WeatherHere.DefaultSwellTpS), swellFrom = Num("swell_from", double.NaN);
         if (!(vis > 0))
             throw new ScenarioException("weather: \"visibility_km\", more than 0");
         if (!(kn >= 0))
@@ -522,7 +523,11 @@ public sealed record Scenario
             throw new ScenarioException("weather: \"cloud\", the cloud cover, 0 clear to 1 overcast");
         if (!(glow >= 0 && glow <= 1))
             throw new ScenarioException("weather: \"phosphorescence\", how strongly the sea glows where it's stirred, 0 none to 1");
-        return new WeatherHere(vis * 1000, from, kn * 0.514444, airSea, cloud, glow);
+        if (!(swell >= 0 && swell <= 30))
+            throw new ScenarioException("weather: \"swell_m\", the swell's significant height, 0 to 30 m");
+        if (!(swellS >= 2 && swellS <= 30))
+            throw new ScenarioException("weather: \"swell_s\", the swell's peak period, 2 to 30 s");
+        return new WeatherHere(vis * 1000, from, kn * 0.514444, airSea, cloud, glow, swell, swellS, double.IsNaN(swellFrom) ? double.NaN : (swellFrom % 360 + 360) % 360);
     }
 
     static List<(int, int)> ParsePeace(JsonElement e, string[] sides)

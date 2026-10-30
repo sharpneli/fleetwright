@@ -13,6 +13,7 @@ public enum WorldCommand : ushort
     SetInterest,
     SetWeather,
     Step,
+    SetSea,
 }
 
 /// <summary>A tier the clock holds whatever the speed asked (<see cref="World.Held"/>).</summary>
@@ -63,6 +64,12 @@ public readonly record struct Command(byte System, ushort Code, int Entity = 0, 
         new(0, (ushort)WorldCommand.SetWeather, (int)Math.Round(Math.Clamp(phosphorescence, 0, 1) * 1000),
             A: (long)Math.Round((windFromDeg % 360 + 360) % 360 * 1000) % 360_000 + (long)Math.Round(Math.Clamp(cloud, 0, 1) * 1000) * 1_000_000,
             X: visibilityM, Y: windMs, B: (int)Math.Round(Math.Clamp(airOverSeaK, -50, 50) * 1000));
+
+    /// <summary>The swell beside the wind's sea, the same everywhere (docs/battle/balance.md BL1a): its significant height,
+    /// m, its peak period, s, and the way it comes from, degrees (NaN: 50° off the wind). The weather's other parts stay.</summary>
+    public static Command SetSea(double swellHsM, double swellTpS, double swellFromDeg = double.NaN) =>
+        new(0, (ushort)WorldCommand.SetSea, double.IsNaN(swellFromDeg) ? -1 : (int)Math.Round((swellFromDeg % 360 + 360) % 360 * 1000) % 360_000,
+            X: swellHsM, Y: swellTpS);
 
     /// <summary>What the clock does when an encounter of a kind opens (<see cref="Interest"/>).</summary>
     public static Command SetInterest(InterestKind kind, InterestAction action, double speed = 1) =>
