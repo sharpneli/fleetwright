@@ -126,6 +126,49 @@ Each step measures against BL0's panel and records before and after here.
 | **BL5** | **The AI's judgement and the ends.** Most of `bugs.md`'s AI items (decision 4), and why fights run to the clock. | Most panel runs end by their own rules. |
 | **BL6** | **The scenarios rebalanced** with their knobs, then the coarse sync (bugs.md's drift, `coarse-parity` standard), then the user's playtest. | Each scenario's intended balance stated and met; the coarse panel in its bands. |
 
+## BL1 Gunnery to the record (proposed 2026-10-30, for the user's agreement)
+
+**What the code has** (read 2026-10-30): the spotter judges each shell of his own salvo over or short with an error of
+`SpotOpticK·R²/h` from his height, and nothing else's splashes reach him; the guns lay from a steady platform (the
+laying error a fixed `LayMil` by fit, times the crew); `GunneryCombat` is 1 (memory: no lumped factors; removed when
+fatigue lands); point blank lays by sight and walks its own fall (F6's bug hunt). The world has a sea already
+(`SeaSpectrum`, from the weather's wind with a default 1 m, 12 s swell, drawn by the ocean shader) and every class has
+the designer's roll period (`RollPeriodS`, shipgen's IMO formula), but nothing in the sim rolls.
+
+**What the record's cases say is missing** (fc-history's "not modelled" lines): the sea's motion (Tsushima's high
+waves, the Orion trial's heavy sea, Bismarck's end in force 8, the practice screens at sea), whose splash (Yellow Sea
+and Tsushima's concentration, Rodney beside KGV, many guns on one boat), the stress of battle on human errors (the
+research's own calibration used x1.5, x2 in a first battle: `manual-gunnery-research.md` 6.2), and the eye's haze and
+smoke (in already since F5 and the smoke field).
+
+**The research to build from:** `research/simulation/ship-motion/` (2026-10-12: roll physics, laying on the roll, the
+heavy-weather cases, a phase per ship rather than a roll simulation, its section 7 written for this codebase) and
+`manual-gunnery-research.md` 5 (whose splash: 1/(1 + 0.6N)).
+
+**Close range stays deadly by construction (decision 2):** each addition is an angular error or a spotting error. At
+point blank the danger space covers the angular errors and nothing is ranged by spots, so the night's and the melee's
+brutality is untouched; BL1g checks it with close-range duels and `night-history`.
+
+| Step | What | Check |
+|---|---|---|
+| **BL1a** | **The sea under the ships.** The weather gains a swell (height, period, direction) beside the wind sea it already has, the scenario's to set (default the shader's 1 m, 12 s), so the sea drawn and the sea ships roll in are one. Each ship gets a roll: period her class's `RollPeriodS` (her GM falling as she floods lengthens it), amplitude from the research's table by the sea, her encounter period (heading and speed to the waves) and damping, a seeded phase; one sin/cos when read, nothing stepped. Bilge keels from 1895 on every ship as a flagged placeholder until the designer has the fit. | Roll by class and sea against the research's table (a destroyer near resonance in a Bft 7 wind sea, a battleship in the swell); zero cost at rest. |
+| **BL1b** | **Laying on a moving platform.** The laying error becomes √(base² + (τ·ω·1000)²) mil, ω the roll (and pitch) rate at the instant, τ by how the guns are laid (a tech row: hand-timed 0.3 s, a director layer by key 0.1 s, later stabilised systems less), so a pointer firing on the roll misses by his reaction time. Roll-timed fire waits for the roll's level: one chance a roll cycle. Heel (a turn, a list from flooding) gives the uncorrected cross-level its deflection error. Each fc-history case gets its record's sea. | Tsushima, the Orion trial, Bismarck's end and the practice cases move toward their bands; calm cases unchanged. |
+| **BL1c** | **Whose splash** (fire-control.md F7). Each target keeps a short ring of the splashes near her, by calibre band and time; a spot finds the other same-calibre splashes in its window (other ships', and its own battery's other guns firing independently) and identifies its own with 1/(1 + 0.6N), salvos of 3 or more always. Not identified, the spot is doubtful, or (a share of the time) read from the wrong fall (KGV on Rodney's splashes). Dyed shells, a later fit, would lift it. | Concentration in the scenarios; fc-history's cases with the record's other shooters added. |
+| **BL1d** | **Stress on the layers.** The station's duress (crew.md N3b: what has landed at and around it, against its men's nerve) adds to its layers' and rangetakers' errors, as a share of the laying error rising with the duress; green crews in their first fight feel it soonest. This is the research's x1.5 combat factor as a system that reads where the shells fall. Fatigue over hours stays out (memory: GunneryCombat goes when fatigue lands). | Ships under fire shoot worse than ships firing unopposed; practice cases unchanged. |
+| **BL1e** | **Local control's judgement** (P4): the judgement preset as local control's computer. | fire-control.md F6's crossing case (12.5% to 21%). |
+| **BL1f** | **Wetness, the first part.** The research's wetness index from the sea, heading, speed and freeboard forward: weather-side low casemates and low forward rangefinders out above its thresholds (with hysteresis), the fall-back to the next instrument as now. Coronel's British casemates. | Coronel's casemates silenced on the weather side in its sea; nothing in a calm. |
+| **BL1g** | **Fit and check.** `shipgen balance`, `fc-history`, `night-history` and close-range duels; only [EST] numbers moved, each move logged. | fc-history mostly in its bands, the rest named; night and point blank as brutal as before. |
+
+**Out of BL1, named:** fatigue over hours (with `GunneryCombat`'s removal), vibration with speed (no numbers in the
+research), stable verticals and fins (later cuts), the captains choosing a course for the sea (BL5's or later), spray
+on turret rangefinders at speed (with BL1f if cheap, else later).
+
+**Questions for the user:**
+
+1. The steps and their order as above?
+2. Bilge keels as a placeholder on every ship from 1895 until the designer gets a damping fit (the UI pass)?
+3. Wetness (BL1f) in this round, or later? It's Coronel's story, but the least of the hit-rate gap.
+
 ## Decided (the user, 2026-10-30)
 
 1. **Gunnery closes the gap with the systems,** not a gameplay exception: "we need the systems in place. We can
