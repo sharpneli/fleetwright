@@ -677,6 +677,13 @@ public sealed record SimSettings
     /// (research/simulation/ship-motion/ship-motion-gunnery-research.md §3.2) [EST].</summary>
     public double RollExcitation { get; init; } = 0.85;
 
+    /// <summary>Continuous aim (docs/battle/balance.md BL1b; Scott's, research §4.2): the guns' layers follow the roll with
+    /// their elevating gear when it lays faster than this many times her peak roll rate (the research's 1.1), firing at any
+    /// point of it with the gear's lag, s, in place of the timing lag at the key (0.05 [EST]); else they fire as the roll
+    /// brings the sight on, once a roll.</summary>
+    public double ContinuousAimMargin { get; init; } = 1.1;
+    public double ContinuousAimTauS { get; init; } = 0.05;
+
     /// <summary>How long after a battery's track starts (its first reading in the computer) it opens fire at the latest,
     /// s (fire_control_ref.py Scenario.t_open). It opens sooner once its computer's doubt of where the shells must go is
     /// within <see cref="OpenDoubtSteps"/> of its first step (twice the sigma) [EST: about two ranging salvos' worth, so
@@ -829,7 +836,7 @@ public sealed record SimSettings
         return new()
         {
             Name = "", Operator = a.Operator * (1 - t) + b.Operator * t, Lay = a.Lay * (1 - t) + b.Lay * t,
-            Pyramid = a.Pyramid * (1 - t) + b.Pyramid * t, Load = a.Load * (1 - t) + b.Load * t,
+            Pyramid = a.Pyramid * (1 - t) + b.Pyramid * t, Load = a.Load * (1 - t) + b.Load * t, RollTiming = a.RollTiming * (1 - t) + b.RollTiming * t,
         };
     }
 
@@ -2569,6 +2576,9 @@ public readonly record struct GunneryCrew
     public double Lay { get; init; }
     public double Pyramid { get; init; }
     public double Load { get; init; } = 1;
+    /// <summary>The layer's timing lag at the roll against a trained man's (docs/battle/balance.md BL1b): USNI 1900's
+    /// untrained pointer 0.3 s against the trained 0.1 s, so 3 for the green [EST].</summary>
+    public double RollTiming { get; init; } = 1;
 }
 
 [JsonSourceGenerationOptions(WriteIndented = true, UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,

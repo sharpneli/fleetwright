@@ -224,6 +224,8 @@
   "FireControlCoarseMs": 3000,
   "GunneryCombat": 1,
   "RollExcitation": 0.85,
+  "ContinuousAimMargin": 1.1,
+  "ContinuousAimTauS": 0.05,
   "GunneryOpenS": 120,
   "OpenDoubtSteps": 2,
   "LayToleranceDeg": 1,
@@ -262,10 +264,10 @@
   "EyeBearingMil": 5,
   "OwnTurnYawDegS": 0.2,
   "GunneryCrews": [
-    { "Name": "green", "Operator": 2, "Lay": 1.3, "Pyramid": 0.25, "Load": 1.5 },
-    { "Name": "average", "Operator": 1.5, "Lay": 1.15, "Pyramid": 0.1, "Load": 1.35 },
-    { "Name": "trained", "Operator": 1, "Lay": 1, "Pyramid": 0.03, "Load": 1.2 },
-    { "Name": "elite", "Operator": 0.85, "Lay": 0.9, "Pyramid": 0, "Load": 1.1 }
+    { "Name": "green", "Operator": 2, "Lay": 1.3, "Pyramid": 0.25, "Load": 1.5, "RollTiming": 3 },
+    { "Name": "average", "Operator": 1.5, "Lay": 1.15, "Pyramid": 0.1, "Load": 1.35, "RollTiming": 2 },
+    { "Name": "trained", "Operator": 1, "Lay": 1, "Pyramid": 0.03, "Load": 1.2, "RollTiming": 1 },
+    { "Name": "elite", "Operator": 0.85, "Lay": 0.9, "Pyramid": 0, "Load": 1.1, "RollTiming": 0.8 }
   ],
   "WorkUpGunneryShare": 0.3,
   "FireReachShare": 1.1,

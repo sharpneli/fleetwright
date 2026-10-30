@@ -148,6 +148,12 @@ public sealed class GunnerySystem : IWorldSystem
         public bool Short, Repick;
         public long FirstHitMs, FirstStraddleMs;
         public BatteryState State;
+        /// <summary>Her roll in the sea as her layers meet it (docs/battle/balance.md BL1b), worked out again when the sea, her
+        /// heading, speed or GM moves a step (<see cref="RollKey"/>); whether they lay on the roll (firing as it brings the
+        /// sight on, once a roll) rather than following it; and when it next brings the sight on for the salvo due.</summary>
+        public RollState Roll;
+        public long RollKey, RollMs;
+        public bool OnRoll;
     }
 
     /// <summary>A rangefinder or an eye a battery reads from: the class's eye (-1: a mount's layer), where it stands and
@@ -832,6 +838,13 @@ public sealed class GunnerySystem : IWorldSystem
         (fc.OwnTurning, fc.Turns) = (turning, fc.Tracker.Turns);
         if (fc.State == BatteryState.Firing && fc.Phase == FirePhase.Opening)
             (fc.Phase, fc.Bracket.Step) = (FirePhase.Ranging, FirstStep(fc));
+        // the sea under her (BL1b): her layers follow the roll with their gear when it lays faster than she rolls (continuous
+        // aim), or a stable vertical gives them the level; else they fire as the roll brings the sight on (a director's
+        // layer always, at the key)
+        RollOf(world, ref fc, ship, cls, cond);
+        double peakRoll = 2 * double.RadiansToDegrees(fc.Roll.RateSigmaRadS);
+        fc.OnRoll = !fc.Fit.Mount.StableVertical && fc.Roll.AmplitudeRad > 0 &&
+                    (fc.Fit.Mount.DirectorFiring || cls.Mounts[mounts[0]].ElevateDegS < settings.ContinuousAimMargin * peakRoll);
 
         // time the salvo: ranging, when the spots it's due are in (the discipline's salvos in flight: a ladder's group at
         // once, else rolling) and enough guns are loaded and laid; firing for effect, the first instant the bearing mounts
@@ -864,12 +877,41 @@ public sealed class GunnerySystem : IWorldSystem
             when = Math.Max(when, Math.Max(ms.LoadedMs, CombatStore.LaidBy(ms, cls.Mounts[mounts[j]])));
             (got, taken) = (got + cond.Guns(mounts[j]), taken + 1);
         }
+        if (fc.OnRoll)
+        {
+            // fired on the roll (research §4.4): once ready, the layer waits for it to bring his sight on, once a roll, unless
+            // the roll stays within his own laying error (the share of a roll his sight is on her anyway); drawn once for the
+            // salvo due, from when it's ready
+            if (fc.RollMs < when)
+            {
+                var rr = stream.Derive((ulong)f).Derive((ulong)fc.Generation).Derive(0x5E1u).Derive((ulong)fc.Salvos);
+                double on = 2 / Math.PI * Math.Asin(Math.Min(1, fc.Fit.Mount.LayMil * crew.Lay * FireControl.Mil / fc.Roll.AmplitudeRad));
+                fc.RollMs = rr.NextDouble() < on ? when : when + (long)(rr.NextDouble() * fc.Roll.PeriodS * 1000);
+            }
+            when = Math.Max(when, fc.RollMs);
+        }
         if (when < now + GridMs(world))
         {
             fc.SalvoPending = true;
             fc.Arm++;
             dueWhen[i] = when;   // scheduled after the job, in battery order
         }
+    }
+
+    /// <summary>A battery's ship's roll now (docs/battle/balance.md BL1b): the world's sea at her heading and speed, her
+    /// natural period stretched as she loses GM (T ∝ 1/√GM: a ship that has taken water rolls slower and heavier), worked
+    /// out again only when the sea, her heading (2°), speed (0.25 m/s) or GM (1%) moves a step, and then from the steps'
+    /// values, so it's the same whenever it's asked (any compression).</summary>
+    void RollOf(World world, ref Fc fc, in ShipState ship, ShipClass cls, ShipCondition cond)
+    {
+        double gm0 = Math.Max(cls.Hydrostatics.GmT, 1e-6);
+        int h = (int)(Mod(ship.HeadingDeg) / 2) % 180, v = (int)Math.Clamp(ship.Speed / 0.25, 0, 4095), g = (int)Math.Clamp(Math.Round(100 * cond.GmM / gm0), 5, 4095);
+        long key = ((long)world.Sea.Id << 40) | ((long)h << 24) | ((long)v << 12) | (uint)g;
+        if (key == fc.RollKey)
+            return;
+        fc.RollKey = key;
+        var m = cls.Motion;
+        fc.Roll = world.Sea.At(h * 2 + 1, (v + 0.5) * 0.25, m.RollPeriodS * Math.Sqrt(100.0 / g), m.RollDamping, settings.RollExcitation);
     }
 
     /// <summary>The air at a place now: the visibility, the night's light (docs/battle/night.md Q1: the sky's luminance,
@@ -1241,6 +1283,31 @@ public sealed class GunnerySystem : IWorldSystem
         var (sr, sd) = FireControl.Dispersion(row.PatternPct, range + dr, n, settings.DispersionDeflectionRatio);
         if (!mount.DirectorFiring)
             (sr, sd) = (Math.Sqrt(sr * sr + Math.Pow(layRad * perRad, 2)), Math.Sqrt(sd * sd + Math.Pow(layRad * range, 2)));
+        if (fc.Roll.AmplitudeRad > 0 || cond.Attitude.HeelDeg != 0)
+        {
+            // the roll (BL1b; research §4.1, §4.3): the layer's timing lag at her roll rate as his sight comes on (the gear's lag
+            // following it, a stable vertical's contacts), into elevation as she rolls across the line of fire and into line by
+            // the trunnions' tilt toward the bow and stern, which a list tilts too; his sights correct a share of the tilt. A
+            // director's layer's slip is the salvo's, each gun's layer's his own (dispersion); a list is every gun's.
+            var rr = stream.Derive((ulong)f).Derive((ulong)fc.Generation).Derive(0x5A2u).Derive((ulong)fc.Salvos);
+            double rel = double.DegreesToRadians(fc.OrderBearingDeg), tanE = Math.Tan(double.DegreesToRadians(e0)), keep = 1 - mount.CrossLevel;
+            double tau = fc.OnRoll ? mount.RollTauS * crew.RollTiming : mount.StableVertical ? mount.RollTauS : settings.ContinuousAimTauS;
+            double omega = fc.Roll.RateAtLevel(ref rr), slip = tau * omega * rr.NextGaussian();
+            // fired anywhere in the roll (following it), the roll's own tilt at that instant; on the roll, at its level
+            double at = fc.OnRoll ? 0 : fc.Roll.AmplitudeRad * Math.Sin(2 * Math.PI * rr.NextDouble());
+            double heel = double.DegreesToRadians(cond.Attitude.HeelDeg) * Math.Cos(rel);
+            if (mount.DirectorFiring)
+            {
+                dr += slip * Math.Sin(rel) * perRad;
+                dl += keep * Math.Atan(Math.Sin(heel + (at + slip) * Math.Cos(rel)) * tanE) * range;
+            }
+            else
+            {
+                double each = tau * fc.Roll.RateSigmaRadS;
+                (sr, sd) = (Math.Sqrt(sr * sr + Math.Pow(each * Math.Sin(rel) * perRad, 2)), Math.Sqrt(sd * sd + Math.Pow(keep * each * Math.Cos(rel) * tanE * range, 2)));
+                dl += keep * Math.Atan(Math.Sin(heel + at * Math.Cos(rel)) * tanE) * range;
+            }
+        }
         var centre = p + u * dr + w * dl;
         // the aim's error against the truth, for the report: where the target goes on its course and speed meanwhile
         var tgt = store[tslot];

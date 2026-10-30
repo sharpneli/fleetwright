@@ -93,6 +93,11 @@ sealed record FcCase
     /// as before the smoke field: calm with a visibility given, else the settings' default (docs/battle/smoke.md Z3).</summary>
     public double WindFromDeg { get; init; } = double.NaN;
     public double WindKn { get; init; } = double.NaN;
+    /// <summary>The swell (docs/battle/balance.md BL1a): significant height, m, peak period, s, the way it comes from
+    /// (degrees true, NaN 50° off the wind); a NaN height leaves the world's (a low 1 m, 12 s swell).</summary>
+    public double SwellM { get; init; } = double.NaN;
+    public double SwellS { get; init; } = 12;
+    public double SwellFromDeg { get; init; } = double.NaN;
     public WorldTime Start { get; init; } = Day;
     /// <summary>Battle against practice (<see cref="SimSettings.GunneryCombat"/>); NaN the settings' (battle).</summary>
     public double Combat { get; init; } = double.NaN;
@@ -167,6 +172,8 @@ static class FcBench
                 c.WindKn * Handling.MsPerKnot));
         else if (c.VisibilityM > 0)
             w.Apply(Command.SetWeather(c.VisibilityM));
+        if (!double.IsNaN(c.SwellM))
+            w.Apply(Command.SetSea(c.SwellM, c.SwellS, c.SwellFromDeg));
         if (c.Experience != Sim.Core.Experience.Trained)
             w.Apply(GunnerySystem.SetExperience(0, c.Experience));
         if (c.WorkUp != 1)

@@ -23,6 +23,20 @@ public static class DesignerPlaceholders
     /// cut waits for it, since a class carries no year and its look never sets a number.</summary>
     public const double BilgeKeelDamping = 0.10;
 
+    /// <summary>PLACEHOLDER: a laying fit's timing lag at the roll, s (docs/battle/balance.md BL1b): a trained layer at the
+    /// key 0.1 (USNI 1900's "corrected" interval), a stable vertical's contacts 0.02 (the USN Mk 41's continuous fire)
+    /// [EST, ship-motion-gunnery-research.md §4.3]. The fire-control tech block should give it (`roll_tau_s`).</summary>
+    public const double RollTauS = 0.1, StableRollTauS = 0.02;
+
+    public static double RollTau(bool stableVertical) => stableVertical ? StableRollTauS : RollTauS;
+
+    /// <summary>PLACEHOLDER: the share of the trunnions' cross-level a laying fit's sights correct (research §4.1): a
+    /// pointer's horizon telescope 0.5, a director's cross-level telescope 0.7, a stable vertical 0.98 [EST]. The fire-control
+    /// tech block should give it (`cross_level`).</summary>
+    public const double PointerCrossLevel = 0.5, DirectorCrossLevel = 0.7, StableCrossLevel = 0.98;
+
+    public static double CrossLevel(bool director, bool stableVertical) => stableVertical ? StableCrossLevel : director ? DirectorCrossLevel : PointerCrossLevel;
+
     // ------------------------------------------------------------------ the eyes' glass (docs/battle/night.md Q1)
 
     /// <summary>PLACEHOLDER: the glass an eye looks through, its exit pupil (mm) and the share of the light it passes,

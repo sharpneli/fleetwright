@@ -251,6 +251,10 @@ public class TorpedoTests(ITestOutputHelper output)
             ai = new AiSystem(w);
             var classes = ScenarioLoader.RequestClasses(s, w.Ships.Registry, designs);
             ScenarioLoader.Apply(s, w, ai, classes);
+            // in a flat calm (docs/battle/balance.md BL1b): the attack's success by day is the balance round's (P10), this
+            // test is its replay and its garbage
+            var calm = w.Weather.At(default, w.Time);
+            w.Apply(Command.SetSea(0, 12));
             // six boats against four battleships by day aren't worth an attack by their own judgement (docs/battle/command.md
             // 5.1g): ordered to, they make it, against a line that holds on (one turning away leaves them astern of its beam)
             w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.TurnAwayDeg, 0));

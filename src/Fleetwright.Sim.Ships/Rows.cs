@@ -566,8 +566,13 @@ public readonly record struct ComputerRow
 
 /// <summary>How a battery's guns are laid: whether a director fires them (its laying error common to the salvo; else
 /// each gun lays itself and its error is dispersion), that laying error, mil, and the salvo-to-salvo wander in
-/// deflection that spotting can't remove, mil.</summary>
-public readonly record struct MountTechRow(bool DirectorFiring, double LayMil, double SalvoDeflMil);
+/// deflection that spotting can't remove, mil; on a rolling ship (docs/battle/balance.md BL1b) the layer's timing lag as
+/// the roll brings his sight on, s (a trained man at the key; his crew's <c>RollTiming</c> scales it), and the share of
+/// the trunnions' cross-level his sights correct (research/simulation/ship-motion/ship-motion-gunnery-research.md §4.1:
+/// a pointer's horizon telescope 0.5, a WWI director's cross-level telescope 0.7), and whether a stable vertical gives
+/// the level, so the guns fire at any point of the roll (continuous fire, research §4.2).</summary>
+public readonly record struct MountTechRow(bool DirectorFiring, double LayMil, double SalvoDeflMil, double RollTauS = DesignerPlaceholders.RollTauS,
+    double CrossLevel = DesignerPlaceholders.PointerCrossLevel, bool StableVertical = false);
 
 /// <summary>A battery's fire-control fit: its instruments' make, its computer and its mounts' laying, from the tech
 /// blocks its fit names (<see cref="FireControlBlocks"/>; a preset's: <see cref="FireControlPresets"/>).</summary>

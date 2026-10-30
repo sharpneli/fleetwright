@@ -274,8 +274,9 @@ public class FireDisciplineTests(ITestOutputHelper output)
         output.WriteLine(string.Join("; ", first.Select(s => $"{(s.FiredMs - first[0].FiredMs) / 1000.0:F0} s step {s.LadderM:+0;-0} {s.Shells} guns")));
         Assert.Equal([-dis.LadderStepM, 0, dis.LadderStepM], first.Select(s => s.LadderM).Order().ToArray());
         Assert.True(first.All(s => s.Phase == FirePhase.Ranging && s.Shells >= dis.GunsMin && s.Shells < seydlitz.Batteries[0].Guns));
-        // the first two go together, before the first one's fall (its flight is ~30 s)
-        Assert.True(first[1].FiredMs - first[0].FiredMs < 10_000);
+        // the first two go before the first one's fall (its flight is ~30 s), each as the roll brings the director's sight on
+        // (docs/battle/balance.md BL1b: once a roll, about 13 s in her 1 m swell)
+        Assert.True(first[1].FiredMs - first[0].FiredMs < 20_000);
 
         var effect = salvos.Where(s => s.Phase == FirePhase.Effect).OrderBy(s => s.FiredMs).Take(12).ToArray();
         output.WriteLine("fire for effect: " + string.Join(", ", effect.Select(s => $"{s.Shells}")));

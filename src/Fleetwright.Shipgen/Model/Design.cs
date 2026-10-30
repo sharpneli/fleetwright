@@ -998,6 +998,10 @@ public sealed record MountTechInput
     public bool? StableVertical { get; init; }
     public double? LayMil { get; init; }
     public double? SalvoDeflMil { get; init; }
+    /// <summary>On a rolling ship (docs/battle/balance.md BL1b): the layer's timing lag at the roll, s, and the share of
+    /// the cross-level his sights correct, 0-1; none: the sim's placeholders.</summary>
+    public double? RollTauS { get; init; }
+    public double? CrossLevel { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 

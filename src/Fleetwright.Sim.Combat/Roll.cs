@@ -34,6 +34,11 @@ public sealed class RollSea
     /// <summary>The significant wave height, m (wind sea and swell).</summary>
     public double HsM { get; }
 
+    /// <summary>A number of its own among the seas built (a cache's key: a battery's roll is worked out again for a new
+    /// sea); it never enters a result.</summary>
+    public int Id { get; } = Interlocked.Increment(ref built) & 0x7F_FFFF;
+    static int built;
+
     public RollSea(SeaSpectrum spectrum)
     {
         HsM = spectrum.HsTarget;

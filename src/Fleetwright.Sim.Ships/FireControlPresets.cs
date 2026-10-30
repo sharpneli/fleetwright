@@ -117,6 +117,10 @@ public static class FireControlBlocks
         SalvoPct = N(c.SalvoPct, "salvo_pct"),
     };
 
-    public static MountTechRow Mount(MountTechInput m) =>
-        new(m.DirectorFiring ?? false, N(m.LayMil, "lay_mil"), N(m.SalvoDeflMil, "salvo_defl_mil"));
+    public static MountTechRow Mount(MountTechInput m)
+    {
+        bool director = m.DirectorFiring ?? false, vertical = m.StableVertical ?? false;
+        return new(director, N(m.LayMil, "lay_mil"), N(m.SalvoDeflMil, "salvo_defl_mil"), m.RollTauS ?? DesignerPlaceholders.RollTau(vertical),
+            m.CrossLevel ?? DesignerPlaceholders.CrossLevel(director, vertical), vertical);
+    }
 }

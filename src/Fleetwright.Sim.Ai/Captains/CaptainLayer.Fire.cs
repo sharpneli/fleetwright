@@ -253,7 +253,7 @@ public sealed partial class CaptainLayer
     double candBold;
     int candUnknown;
     double candUnknownM;
-    readonly Dictionary<Loadout, double[]> reaches = new(ReferenceEqualityComparer.Instance);
+    double[] reaches = new double[16];
     // by target slot, the batteries on her (chief, and the rest), kept as this pass's orders go out; and the ship's own
     // batteries' targets as its captain's orders leave them
     int[] onChief = [], onOther = [];
@@ -554,7 +554,7 @@ public sealed partial class CaptainLayer
 
     // the coarse fire watch's ships (docs/battle/night.md Q11): those whose think found a target for their torpedoes but
     // couldn't fire yet, by entity, each once (Captain.TorpedoWait); found afresh at each think
-    readonly List<int> torpedoWaiting = [];
+    readonly List<int> torpedoWaiting = new(64);   // at its size, as the others: its first Add mid-fight was garbage (balance.md BL1b)
 
     void Wait(ref Captain cap)
     {
@@ -690,18 +690,22 @@ public sealed partial class CaptainLayer
     }
 
     /// <summary>Each battery's reach for fire at will (<see cref="SimSettings.FireReachShare"/> of the range table's), and
-    /// the widest last: worked out once a loadout (her class's own, or the one she was given).</summary>
-    double[] Reaches(in AiContext ctx, Loadout lo)
+    /// the widest last, into a buffer the layer keeps (the range table's reach is the gunnery's, kept by table): a cache by
+    /// loadout grew in the middle of a fight the first time a ship of a new loadout aimed (found by docs/battle/balance.md
+    /// BL1b's flotilla test). Read before the next call.</summary>
+    ReadOnlySpan<double> Reaches(in AiContext ctx, Loadout lo)
     {
-        if (reaches.TryGetValue(lo, out var r))
-            return r;
-        r = new double[lo.Class.Batteries.Length + 1];
-        for (int b = 0; b < lo.Class.Batteries.Length; b++)
+        int n = lo.Class.Batteries.Length + 1;
+        if (reaches.Length < n)
+            reaches = new double[Math.Max(n, reaches.Length * 2)];
+        var r = reaches.AsSpan(0, n);
+        r[^1] = 0;
+        for (int b = 0; b < n - 1; b++)
         {
             r[b] = ctx.World.Gunnery.ReachM(lo, b) * ctx.Settings.FireReachShare;
             r[^1] = Math.Max(r[^1], r[b]);
         }
-        return reaches[lo] = r;
+        return r;
     }
 
     /// <summary>A battery's target at will: the current one while it's held and in reach, unless another is better by

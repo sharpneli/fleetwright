@@ -43,31 +43,35 @@ static class FcHistory
             new("1890-1925", C("Tsushima 1905, Japanese 12\"", "mikasa", "borodino", c => c with
                 {
                     Discipline = "independent", RangeM = 5_000 * FcBench.Yd, BearingDeg = 80, CourseDeg = 10, OwnKn = 15, TargetKn = 11, VisibilityM = 9_000, Minutes = 30,
-                }), "~40 / 446 (~9%), mostly at 6,500 yd or less (the case at 5,000)", 5, 15, "high waves (ship motion)"),
+                    WindFromDeg = 225, WindKn = 20, SwellM = 2, SwellS = 9, SwellFromDeg = 225,
+                }), "~40 / 446 (~9%), mostly at 6,500 yd or less (the case at 5,000)", 5, 15, ""),
             new("1890-1925", C("Tsushima 1905, Japanese 6\"", "mikasa", "borodino", c => c with
                 {
                     Discipline = "independent", Battery = 1, RangeM = 5_000 * FcBench.Yd, BearingDeg = 80, CourseDeg = 10, OwnKn = 15, TargetKn = 11, VisibilityM = 9_000, Minutes = 30,
-                }), "~350 / ~16,900 (~2%, Sims's estimate)", 1, 4, "high waves; whose splash among many 6\""),
+                    WindFromDeg = 225, WindKn = 20, SwellM = 2, SwellS = 9, SwellFromDeg = 225,
+                }), "~350 / ~16,900 (~2%, Sims's estimate)", 1, 4, "whose splash among many 6\""),
             new("1890-1925", C("1912 trial, director (Thunderer)", "orion", "dreadnought", c => c with
                 {
                     Discipline = "rn-1914", Fit = 3, RangeM = 8_200, BearingDeg = 90, CourseDeg = 0, OwnKn = 12, TargetKn = 6, Combat = practice, Minutes = 10,
+                    WindFromDeg = 60, WindKn = 26, SwellM = 3, SwellS = 11, SwellFromDeg = 60,
                 }), "heavy sea: 26 / 39 (67%); clear: about even with independent", double.NaN, double.NaN,
-                "the heavy sea (ship motion); the trial's target and procedure (unknown)"),
+                "the trial's target and procedure (unknown)"),
             new("1890-1925", C("1912 trial, independent (Orion)", "orion", "dreadnought", c => c with
                 {
                     Discipline = "rn-1914", Fit = 2, RangeM = 8_200, BearingDeg = 90, CourseDeg = 0, OwnKn = 12, TargetKn = 6, Combat = practice, Minutes = 10,
+                    WindFromDeg = 60, WindKn = 26, SwellM = 3, SwellS = 11, SwellFromDeg = 60,
                 }), "heavy sea: 4 / 27 (15%); clear: about even with director", double.NaN, double.NaN,
-                "the heavy sea; smoke over the guns (independent aim's collapse in the trial)"),
+                "smoke over the guns (independent aim's collapse in the trial)"),
             new("1890-1925", C("Dogger Bank 1915, British BCs", "lion", "seydlitz", c => c with
                 {
                     Discipline = "rn-1914", RangeM = 16_500, BearingDeg = 20, CourseDeg = 0, OwnKn = 27, TargetKn = 23, Minutes = 30,
-                    WindFromDeg = 20, WindKn = 10,
+                    WindFromDeg = 20, WindKn = 10, SwellM = 1.5, SwellS = 10, SwellFromDeg = 20,
                 }), "16 / 1,150 (1.4%); Lion's first hit after ~10 salvos", 0.7, 2.8, "the Germans' smoke on the British; the Germans' manoeuvres",
                 FirstSalvoLo: 6, FirstSalvoHi: 15),
             new("1890-1925", C("Dogger Bank 1915, German BCs", "seydlitz", "lion", c => c with
                 {
                     Discipline = "german", RangeM = 16_500, BearingDeg = 170, CourseDeg = 0, OwnKn = 23, TargetKn = 27, Minutes = 30,
-                    WindFromDeg = 350, WindKn = 10,
+                    WindFromDeg = 350, WindKn = 10, SwellM = 1.5, SwellS = 10, SwellFromDeg = 350,
                 }), "~21 / 976 (~2.5%)", 1.2, 5, "their own funnel smoke"),
             new("1890-1925", C("Jutland 1916, British 1st/2nd BCS", "lion", "derfflinger", c => c with
                 {
@@ -101,7 +105,7 @@ static class FcHistory
             new("1890-1925", C("Falklands 1914, Invincible", "invincible", "armoured_cruiser", c => c with
                 {
                     Discipline = "rn-1914", RangeM = 13_700, BearingDeg = 30, CourseDeg = 0, OwnKn = 25, TargetKn = 20, Minutes = 30,
-                    WindFromDeg = 210, WindKn = 10,
+                    WindFromDeg = 210, WindKn = 10, SwellM = 0.5,
                 }), "~80 / 1,174 (~7%; hit counts uncertain)", 3.5, 14, "own funnel smoke across the range; the long chase's turns"),
             new("1890-1925", C("USN practice 1912-18, 6 kyd", "pennsylvania", "dreadnought", c => c with
                 {
@@ -120,20 +124,21 @@ static class FcHistory
             new("later", C("Bismarck's end, Rodney", "nelson", "bismarck", c => c with
                 {
                     Discipline = "rn-1917", RangeM = 14_000, BearingDeg = 30, CourseDeg = 210, OwnKn = 20, TargetKn = 7, Behaviour = Policy.Crippled,
-                    VisibilityM = 15_000, Minutes = 25,
+                    VisibilityM = 15_000, Minutes = 25, WindFromDeg = 315, WindKn = 36, SwellM = 4, SwellS = 12, SwellFromDeg = 315,
                 }), "~40 / 375 (~11%)", 6, 20, "splash confusion (two battleships on one target); the closing to 3 kyd"),
             new("later", C("Denmark Strait, Bismarck", "bismarck", "kgv", c => c with
                 {
                     Discipline = "german", RangeM = 20_000, BearingDeg = 60, CourseDeg = 240, OwnKn = 28, TargetKn = 28, VisibilityM = 30_000, Minutes = 10,
+                    WindFromDeg = 30, WindKn = 25, SwellM = 2.5, SwellS = 11, SwellFromDeg = 30,
                 }), "5-6 / 93 (~5.5%)", 2.7, 11, "two targets; the British turning to open their arcs"),
             new("later", C("Komandorski, Japanese on a salvo chaser", "heavy_cruiser", "heavy_cruiser", c => c with
                 {
                     Discipline = "rn-1914", RangeM = 20 * kyd, BearingDeg = 10, CourseDeg = 0, OwnKn = 30, TargetKn = 33, Behaviour = Policy.Chase(35, 30),
-                    VisibilityM = 25_000, Minutes = 30,
+                    VisibilityM = 25_000, Minutes = 30, WindKn = 4, SwellM = 0.5,
                 }), "~8 / ~1,600 (~0.5%); 200+ within 50 yd of Salt Lake City", 0.25, 1, "smoke; the 3.5 h chase reduced to 30 min"),
             new("later", C("Komandorski geometry, a steady target", "heavy_cruiser", "heavy_cruiser", c => c with
                 {
-                    Discipline = "rn-1914", RangeM = 20 * kyd, BearingDeg = 10, CourseDeg = 0, OwnKn = 30, TargetKn = 33, VisibilityM = 25_000, Minutes = 30,
+                    Discipline = "rn-1914", RangeM = 20 * kyd, BearingDeg = 10, CourseDeg = 0, OwnKn = 30, TargetKn = 33, VisibilityM = 25_000, Minutes = 30, WindKn = 4, SwellM = 0.5,
                 }), "(the control: no record)", double.NaN, double.NaN, ""),
             new("later", C("LRBP 1932-33, 16\" at 30 kyd", "colorado", "battleship", c => c with
                 {
@@ -155,7 +160,8 @@ static class FcHistory
             new("later", C("Light guns at a fast boat, 5\"", "fubuki", "pt_boat", c => c with
                 {
                     Discipline = "rn-1914", RangeM = 3_000, BearingDeg = 90, CourseDeg = 0, OwnKn = 20, TargetKn = 38, Behaviour = Policy.Zigzag(30, 30), Minutes = 10,
-                }), "0.5-2% a round", 0.5, 2, "the boat's small silhouette in a sea"),
+                    WindKn = 15, SwellM = 1,
+                }), "0.5-2% a round", 0.5, 2, "the boat's small silhouette half hidden in the waves"),
         ];
     }
 
