@@ -126,7 +126,7 @@ Each step measures against BL0's panel and records before and after here.
 | **BL5** | **The AI's judgement and the ends.** Most of `bugs.md`'s AI items (decision 4), and why fights run to the clock. | Most panel runs end by their own rules. |
 | **BL6** | **The scenarios rebalanced** with their knobs, then the coarse sync (bugs.md's drift, `coarse-parity` standard), then the user's playtest. | Each scenario's intended balance stated and met; the coarse panel in its bands. |
 
-## BL1 Gunnery to the record (proposed 2026-10-30, for the user's agreement)
+## BL1 Gunnery to the record (agreed 2026-10-30)
 
 **What the code has** (read 2026-10-30): the spotter judges each shell of his own salvo over or short with an error of
 `SpotOpticK·R²/h` from his height, and nothing else's splashes reach him; the guns lay from a steady platform (the
@@ -163,11 +163,9 @@ brutality is untouched; BL1g checks it with close-range duels and `night-history
 research), stable verticals and fins (later cuts), the captains choosing a course for the sea (BL5's or later), spray
 on turret rangefinders at speed (with BL1f if cheap, else later).
 
-**Questions for the user:**
-
-1. The steps and their order as above?
-2. Bilge keels as a placeholder on every ship from 1895 until the designer gets a damping fit (the UI pass)?
-3. Wetness (BL1f) in this round, or later? It's Coronel's story, but the least of the hit-rate gap.
+**Decided (the user, 2026-10-30):** the steps and their order as above; bilge keels on every ship from 1895 as a
+flagged placeholder, with the damping fit planned for the designer (`docs/shipgen/TODO.md`), and the hull model to be
+refreshed once ships roll ("the whole hull model is quite old"); wetness in if it's cheap.
 
 ## Decided (the user, 2026-10-30)
 

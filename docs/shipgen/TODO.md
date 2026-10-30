@@ -53,6 +53,13 @@ Open shipgen items, one line each (details in DECISIONS.md, which was shipgen's 
 - [ ] Research a real planing power model (`navarch.planing_power`)
 - [ ] stability.py GM uses its own cwp, not the hull form's; cwp doesn't know about transoms
 - [ ] Ballast hint for low light-condition GM
+- [ ] **Roll damping fit** (docs/battle/balance.md BL1, the user 2026-10-30): none / bilge keels (RN from 1894-95) /
+  anti-roll tanks (Frahm, 1909-14) / gyro (1917+) / fins (1936+), each a weight and resistance line and a damping the
+  battle's roll reads (`research/simulation/ship-motion/ship-motion-gunnery-research.md` 7.4); bilge keels on every
+  ship from 1895 stand in until then (DesignerPlaceholders). The designer's hull tab shows it beside GM and roll.
+- [ ] **The hull model refreshed for motion** (the user, 2026-10-30: "the whole hull model is quite old so we need to
+  tweak that once roll periods etc are in"): once the battle rolls ships (BL1), check `RollPeriod`, GM by loading,
+  freeboard forward (wetness) and casemate sill heights against the research's periods and cases, and refit.
 - [ ] Small craft overmanned (PT boat, MTB): better since engineering crew follows the plant's size (2026-10-15: MTB 20 -> 16 against 13, PT boat 31 -> 27 against 17); the rest is gun and deck crews
 - [ ] Barbette weight doesn't match the barbette hitbox depth
 - [ ] Bulbous bow tickbox (optional)
