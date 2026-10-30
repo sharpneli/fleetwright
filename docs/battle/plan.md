@@ -1,41 +1,49 @@
 # Plan: the battle module
 
-2026-10-11, reframed 2026-10-12. Status: what the battle module is, that it's built from an empty world up, what's
-out of it and the performance targets are the user's (2026-10-12, "Decisions"). The ships' data plan is agreed (2026-10-11), with its open questions settled on
-2026-10-12. "Building it from the ground up" is the step order for all battle module work; its steps from 3.1 on are
-proposed and are agreed one by one.
+2026-10-11, reframed 2026-10-12. What the battle module is, that it's built from an empty world up, what's out of it
+and the performance targets are the user's (2026-10-12, "Decisions"). "Building it from the ground up" is the step
+order for all battle module work; its steps are agreed one by one.
 
 Each step is its own session and starts with an investigation of its own: read the code it touches, check this plan
-against it, agree the step's details with the user, then build. Update this file as steps finish (what was done, what
-changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.5 are done (2026-10-12); 2.6 (one chain of command: 2.6a-c) is done; ships and the land (`docs/world/terrain-plan.md`: T1, `Shore`, 2026-10-12; then, reworked into a slide along the coast, S1 the slide in the fine tier, S2 rails off before land and S3 sliding on rails, 2026-10-13) is done up to its S4 (guided areas), which comes after. 2.7, the Jutland scale test, is done for now (2026-10-13: the user, "fast enough for now"): the scenario, the instruments and the ladder, with the fixes the numbers asked for; what it left open is listed under 2.7 ("Carried on"). Step 3, seeing and knowing, was agreed and built 2026-10-13 (3.1 relations, encounters, the player's interest; 3.2 sighting and pictures), with what it leaves open listed after 3.2. The time rework was agreed 2026-10-13 (the asked speed picks the clock tier, `docs/world/architecture.md` "The speed picks the tier") and 2.8, coarse motion, was built the same day (what it leaves open is under 2.8, "Carried on"). Step 4, fighting, is under way: its detailed plan is
-`docs/battle/fighting.md` (agreed 2026-10-13); 4.0 (the weapon facts), 4.1 (the hit query), 4.2a (ballistics and shells
-in flight), 4.2b (mounts, fire control and spotting) and 4.2c (ordering fire: fire at will, engage, hold fire, the
-admirals' distribution, Fight) are done (2026-10-13), 4.3a (what a hit does: terminal, effects, functions, the
-`DamageSystem`, `shipgen hits`), 4.3b (fire, flooding and going down: `Flooding`, `Fires`, loss by buoyancy, what the
-enemy sees, `shipgen flood`) and 4.4 (damage seen: sinking, trim and list drawn through the height map, turret tints,
-scorches, fires, wrecks, the damage report) are done (2026-10-14): the first pass of fighting is complete. 4.6
-(torpedoes: launchers, torpedoes as tracks, the underwater hit, the destroyers' attack, `shipgen torpedo`, the `flotilla`
-scenario) is done (2026-10-14); collisions moved out of it to a later step, 4.11 (the user, 2026-10-14). 4.8 and 4.9 (the coarse tier's damage and
-fire) move substantially later, after the fine-tune passes of all the systems (the user, 2026-10-14, `fighting.md`
-decision 17). 4.5 (the deepenings) and 4.7 (mines) are moved out of the sequence (the user,
-2026-10-14): a later fine-tune tier of their own, once most of the other components are in. 4.5's deepenings went
-ahead anyway as plans of their own: `shells-armour-damage.md` (phases S and P, E0-E8b; 2026-10-16 to 10-20; PM waits
-for the balance pass), `fire.md`, `damage-control.md`, `shell-contents.md` and `magazines.md` (all complete
-2026-10-19 to 10-20), `fire-control.md` (F0-F6 done 2026-10-18; F7-F12 left, F9 radar out of the first cut) and
-`smoke.md` (built and on by default 2026-10-21, smoke contacts 2026-10-22; its tuning pass under way) and `crew.md`
-(agreed 2026-10-27: one book of men, stations working by their men, reliefs); 4.7, 4.11, 4.8
-and 4.9 are still to come.
+against it, agree the step's details with the user, then build. Most steps grew a plan doc of their own, which leads
+where it and this file differ; the step's section here says what was done and what changed. **Keep "Status" below up to
+date** when a step or a sub-plan starts or finishes, and take stock against it from time to time (the user, 2026-10-30).
 
-Step 5, command, is under way: its detailed plan is `docs/battle/command.md` (agreed 2026-10-14). 5.0 (a scenario that
-ends), 5.1a-d (doctrine and the captains, the squadron, the tasks, the side's commander; 2026-10-14) and 5.1g (the
-matchup, 2026-10-15) are done, and a piece of 5.1f (a decline holds, the done end; 2026-10-20). The order from there
-(the user, 2026-10-14): the UI rework (5.2), the VFX pass and the detail passes, then 5.1e (signals) and 5.1f (the
-whole). 5.2 is the current step: the battle HUD (`docs/map-ui/battle-hud.md`, U0-U7 built 2026-10-22, the user's
-review next), the admiral's orders (`admirals-orders.md`, O1-O9 and O7b-c built 2026-10-23 to 10-24; O10 later), the
-map's symbols (`docs/map-ui/symbols.md`, Y0-Y5, Y7, Y8 built 2026-10-23; Y6 if the playtest asks) and grid
-(`docs/visuals/grid.md`, G0-G2 built 2026-10-23, tuning by eye); what's left of it is listed in `command.md` "5.2".
-Beside it, the sim's workers (`workers.md`, W0-W4 and W6 built 2026-10-24: the Jutland 156 s to 115 s on the default
-2 workers). Step 6, missions, hasn't started.
+## Status (2026-10-30)
+
+**Now: the balance round** (`docs/battle/balance.md`), the pass every deepening deferred its tuning to. Then aims,
+objectives and a result (6.1, the scenarios' wave 2), toward a playtest alpha; then mines, collisions and signals.
+
+| Step | State | Plan | Left |
+|---|---|---|---|
+| 1 A world of water | done 2026-10-12 | here | |
+| 2.1-2.6 Ships that move, groups, the chain of command | done 2026-10-12 | here | the follow fine-tuning ("Fine-tuning") |
+| Ships and the land | T1, S1-S3 done 2026-10-13 | `docs/world/terrain-plan.md` | S4 guided areas; the slide's tuning in archipelagos |
+| 2.7 The Jutland scale test | done 2026-10-13 | here | "Carried on" under 2.7 |
+| 2.8 Coarse motion | done 2026-10-13 | here | "Carried on" under 2.8 |
+| 3 Seeing and knowing | done 2026-10-13 | here | the open questions after 3.2 |
+| 4.0-4.4, 4.6 Fighting, first pass; torpedoes | done 2026-10-14 | `fighting.md` | |
+| 4.5 Shells, armour and damage | S, P, E0-E8b done 2026-10-20 | `shells-armour-damage.md` | PM (the matchup's refit) in the balance round; five E8a items for the user |
+| 4.5 Fire control | F0-F6 done 2026-10-18 | `fire-control.md` | F7 (straddle calls, the main limiter), F8, F10-F12; F9 radar out of the first cut |
+| 4.5 Fire; damage control | done 2026-10-19, 10-20 | `fire.md`, `damage-control.md` | open items in B5, DC9 for the balance round |
+| 4.5 Shell contents; magazines | done 2026-10-19, 10-20 | `shell-contents.md`, `magazines.md` | |
+| 4.5 Smoke | Z0-Z6, T1-T4 done 2026-10-22 | `smoke.md` | its tuning pass |
+| 4.5 Shell choice | A0-A6 done 2026-10-25 | `shell-choice.md` | two restated matchup anchors for the user |
+| 4.5 Crew | N0-N6 done 2026-10-29 | `crew.md` | decision 11 for the user |
+| 4.5 Night | Q0-Q12f done 2026-10-30 | `night.md` | night hit rates left in fine |
+| 4.7 Mines | not started | here | |
+| 4.8-4.9 The coarse tier's fighting | J0-J8 done 2026-10-27 | `coarse.md` | one coarse pass: night leftovers, day gunnery drift since J7 |
+| 4.11 Collisions and ramming | not started | here | |
+| 5.0, 5.1a-d, 5.1g The AI | done 2026-10-14, 10-15 | `command.md` | |
+| 5.1e Signals | not started | `command.md` | |
+| 5.1f The whole | a piece done 2026-10-20 | `command.md` | the AI's bugs in `bugs.md` |
+| 5.2 The UI | HUD U0-U7, orders O1-O9, symbols, grid, input, launch built 2026-10-22 to 10-26 | `docs/map-ui/`, `admirals-orders.md` | edge markers, radial menu, doctrine card, orders as objects, the rumble (`command.md` "5.2"); the user's playtest |
+| The sim's workers | W0-W4, W6 built 2026-10-24 | `workers.md` | W5 |
+| Scenarios | wave 1 and Åland built 2026-10-25 | `docs/missions/scenarios.md` | open questions 1-5 for the user; wave 2 needs aims |
+| 6 Missions | not started | `docs/missions/plan.md` | 6.1 file and objectives, 6.2 UI, 6.3 saves and replays, 6.4 generator |
+
+Beside the steps: the designer's tabs (speed, hull, fire control, crew left: `docs/designer-ui/`), the VFX plans
+waiting for tuning by eye (`docs/visuals/`), and the bugs (`bugs.md`).
 
 **Terms:** a *zoom band* (Globe, Theatre, Operations, Tactical, Ship) is how the map draws things, UI only. A *clock
 tier* (Routine, Rails, Coarse, Fine) is how the sim advances a ship. They're different things
