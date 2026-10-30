@@ -74,7 +74,7 @@ Fine tier, the AI on every side, `shipgen scenario FILE --play --seeds 8` (the J
 | Dogger Bank 1915 | 33 v 26 | 3.2 (0-8) v 6.6 (1-11) | 15 v 14 | 0 v 1 | time 8 |
 | Åland 1921 | 9 v 7 | 4.0 (0-8) v 2.1 (0-4) | 4.1 v 2.4 | (hypothetical) | time 5, done 2, quiet 1 |
 | Tsushima 1905 | 13 v 14 | 5.6 (2-9) v 3.0 (2-5) | | the Russian line sunk or taken v 3 torpedo boats | time 5, quiet 2, done 1 |
-| The Jutland 1916 | | JUT_LOST | | 14 v 11 | JUT_END |
+| The Jutland 1916 (4 seeds) | 151 v 99 | 33.0 (27-40) v 47.5 (30-58) | | 14 v 11 | time 4 |
 
 How the losses went, every run above together: capsized 57%, foundered 33%, broke in two 10%; no magazines.
 
