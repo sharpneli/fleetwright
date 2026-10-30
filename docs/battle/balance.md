@@ -1,7 +1,7 @@
 # Plan: the balance round
 
 Status: **drafted 2026-10-30** (BL0's baseline taken the same day); the user's answers the same day ("Decided");
-the pending decisions gathered for the user.    Updated: 2026-10-30
+P1-P6 answered the same day, P7-P10 after BL1.    Updated: 2026-10-30
 
 Every deepening since 2026-10-14 kept balancing out of its steps and left it "to the balance pass": the physics first,
 sourced, with the combined results judged at the end (memory: realistic, then tune; physics, no guard rules). This is
@@ -136,6 +136,20 @@ Each step measures against BL0's panel and records before and after here.
    most seeds.
 4. **The AI's scope:** at least most of `bugs.md`'s AI items go through BL5, not only those the panel shows.
 
+5. **The pending decisions P1-P6** (the user, 2026-10-30):
+   - **P1** crew.md decision 11 kept and closed: the German big ships' killed a hit stand.
+   - **P2** E8a item 3 kept: the cell-side ruptures stand.
+   - **P3 No overload in this release:** "The fight is inspired by Tsushima, doesn't replicate Tsushima. Reality always
+     has complex issues which can be hard to replicate in a more general system ... I'm tending towards no to avoid
+     feature creep. On the full game we want that." Tsushima's balance is the scenario pass's, with its knobs.
+   - **P4 The judgement is local control's computer** (fire-control.md F6's choice), built in BL1.
+   - **P5 Scenarios are nudged:** "We are inspired by history in force placements etc, not determined. The only
+     absolute (or as absolute as can be in a game) yardsticks are the physics etc. What follows is what follows. And
+     we need to think carefully what effects to include because it will then affect every other battle too." So an
+     effect goes in for the physics' sake and for every battle, never to make one scenario come out right.
+   - **P6** Aims (N1) and wave 2 after this round.
+   - P7-P10 are revisited after BL1.
+
 ## Pending decisions
 
 Gathered from the plans for the user, each with what it is and a recommendation. Those marked **now** can be
@@ -143,12 +157,12 @@ answered today; the rest are best answered when their step has measured.
 
 | # | From | The question | Recommended | When |
 |---|---|---|---|---|
-| P1 | `crew.md` decision 11 | The German big ships lose fewer killed a hit since N1. N6 judged it again: Seydlitz 1.75 (wanted 1-3), Derfflinger 1.28 (wanted "a few"); inside their cases' bands, under G1's average only. | Keep as is, close the decision. | **now** |
-| P2 | `shells-armour-damage.md` E8a item 3 | Small destroyers capsize more since every hole is kept: a 6″ lyddite burst in a small compartment ruptures a whole cell side (9-15 m²); the rupture capacity was left to the destroyer benches. BL0: the destroyer cases are in their bands (10 × 6″ lost 25%, "lost in many runs"). | Keep as is; reopen only if capsizes still dominate after BL1-BL2. | **now** |
-| P3 | E8a item 5 | Tsushima's Russian battleships no longer go down for their hits alone: what sank the Borodinos was overload (coal past full load, the belt under water). A scenario's `fuel` stops at a full load. | Let a scenario carry an overload (fuel past full load, a ship's stores), set in Tsushima in BL6. | **now** |
-| P4 | `fire-control.md` F6 | Local control's computer: a plain rate clock fed by the eye (today) runs a closing rate past the closest approach; the judgement (preset 9) does better crossing (21% against 12.5%), the same elsewhere. | The judgement: it's what a trained officer in local control does, and it keeps point blank deadly (decision 2). | **now** |
-| P5 | `docs/missions/scenarios.md` question 2 | Real battles as history set them, or nudged for balance where history was a massacre? | Answered by decision 3, read as: history's forces and places, nudged with the scenario's knobs (crews, weather, doctrine, stand-ins) to stay within 2x and give the losing side a game. Confirm the reading. | **now** |
-| P6 | scenarios.md question 4 | Aims (N1) before wave 2, or the breakouts as straight fights first? | Aims after this round (plan.md's order: balance, then 6.1 aims and wave 2). | **now** |
+| P1 | `crew.md` decision 11 | The German big ships lose fewer killed a hit since N1. N6 judged it again: Seydlitz 1.75 (wanted 1-3), Derfflinger 1.28 (wanted "a few"); inside their cases' bands, under G1's average only. | Keep as is, close the decision. | decided (5) |
+| P2 | `shells-armour-damage.md` E8a item 3 | Small destroyers capsize more since every hole is kept: a 6″ lyddite burst in a small compartment ruptures a whole cell side (9-15 m²); the rupture capacity was left to the destroyer benches. BL0: the destroyer cases are in their bands (10 × 6″ lost 25%, "lost in many runs"). | Keep as is; reopen only if capsizes still dominate after BL1-BL2. | decided (5) |
+| P3 | E8a item 5 | Tsushima's Russian battleships no longer go down for their hits alone: what sank the Borodinos was overload (coal past full load, the belt under water). A scenario's `fuel` stops at a full load. | Let a scenario carry an overload (fuel past full load, a ship's stores), set in Tsushima in BL6. | decided (5) |
+| P4 | `fire-control.md` F6 | Local control's computer: a plain rate clock fed by the eye (today) runs a closing rate past the closest approach; the judgement (preset 9) does better crossing (21% against 12.5%), the same elsewhere. | The judgement: it's what a trained officer in local control does, and it keeps point blank deadly (decision 2). | decided (5) |
+| P5 | `docs/missions/scenarios.md` question 2 | Real battles as history set them, or nudged for balance where history was a massacre? | Answered by decision 3, read as: history's forces and places, nudged with the scenario's knobs (crews, weather, doctrine, stand-ins) to stay within 2x and give the losing side a game. Confirm the reading. | decided (5) |
+| P6 | scenarios.md question 4 | Aims (N1) before wave 2, or the breakouts as straight fights first? | Aims after this round (plan.md's order: balance, then 6.1 aims and wave 2). | decided (5) |
 | P7 | scenarios.md questions 1, 3, 5 | How many scenarios for the first release (a dozen, three or four a size?); hypotheticals plausible only or wilder too; the prizes' war's ex-German ships in Kiel's looks or French and Italian trim. | Not this round's; answer when wave 2 is planned. | later |
 | P8 | E8a item 2 | Water per heavy hit sits low in the median: missing are waves over holes near the waterline, a captain slowing for holes forward, and the near zone holing a burst space's outside faces. | Waves over holes with BL1's sea state (the same sea that moves the guns); the captain's slowing in BL5; the outer faces in BL3. Decide after BL1 measures. | after BL1 |
 | P9 | `shell-choice.md` A4 | Two matchup anchors restated since battleships fire HE at small ships: "light cruisers with torpedoes take on a battleship" four → five; "destroyers saturate a battleship's defence" eight → twelve. | Set them in BL4: BL1's gunnery (light guns at boats today 3x the record) moves both back. | after BL1 |

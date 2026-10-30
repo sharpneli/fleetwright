@@ -288,8 +288,10 @@ Open:
 ## Open questions for the user
 
 1. Which of these, and how many for the first release? (A dozen seems about right: three or four a size.)
-2. Real battles: as history set them (forces, places, weather), or nudged for balance where history was a massacre
+2. *Answered 2026-10-30 (docs/battle/balance.md decisions 3 and 5): nudged. History inspires the forces and places,
+   the physics is the only yardstick, losses within about 2x of the record; no overload for this release.* Real
+   battles: as history set them (forces, places, weather), or nudged for balance where history was a massacre
    (Coronel, Santiago, Premuda's lone boats)? Tsushima keeps history's forces with designs set for balance; the same?
 3. Hypotheticals: plausible (1920 France-Italy, 1898 Fashoda) only, or wilder too (allow silliness: La Baguette II)?
-4. Aims (N1) before the wave 2 scenarios, or the breakouts first as straight fights and the aims after?
+4. *Answered 2026-10-30 (balance.md P6): aims after the balance round.* Aims (N1) before the wave 2 scenarios, or the breakouts first as straight fights and the aims after?
 5. The prizes' war: the ex-German designs as they are (looks of Kiel), or in French and Italian trim?
