@@ -36,8 +36,13 @@ public static class FireControlPresets
         return -1;
     }
 
-    /// <summary>Local control's: each mount by its layer's eye.</summary>
-    public static ref readonly FireControlFit Local => ref Fits[0].Fit;
+    /// <summary>Local control's: each mount by its layer's eye, the officer at the guns judging her course and speed by her
+    /// look and looking again each minute (the judgement's computer: docs/battle/balance.md P4, BL1e; fire-control.md F6's
+    /// choice: a plain rate clock fed by the eye ran a closing rate past the closest approach, 12.5% crossing at 1.5 km
+    /// against the judgement's 21%, the same elsewhere).</summary>
+    public static ref readonly FireControlFit Local => ref local;
+
+    static readonly FireControlFit local = Fits[0].Fit with { Computer = Fits[Judgement].Fit.Computer };
 
     /// <summary>The level a fit is labelled with (decision 1: a level is a preset's label, read by the matchup until F10
     /// and by the displays): a level preset's own when its computer is that preset's, the presets beside the levels by
