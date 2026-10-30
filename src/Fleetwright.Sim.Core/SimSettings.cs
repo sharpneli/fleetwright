@@ -2261,6 +2261,13 @@ public sealed record SimSettings
     public int TorpedoSpread { get; init; } = 2;
     public int TorpedoRefireMs { get; init; } = 60_000;
     public double TorpedoAttackShare { get; init; } = 0.7;
+
+    /// <summary>By day a torpedo attack's reach (docs/battle/balance.md BL5; the user: "ships seem to wait until very close
+    /// until launching despite torpedo ranges being much farther"): this share of the slow setting's range, at its speed,
+    /// where that's further than the fast setting reaches; in the dark (the AI's night by the light) the fast setting as
+    /// before, run in close. The record's day attacks fired at a line from 5-8 km (the Great War torpedo's 9.2 km slow
+    /// setting: 6.4 km, fired at 0.9 of it) [EST].</summary>
+    public double TorpedoDayShare { get; init; } = 0.7;
     public int TorpedoTurnAwayMs { get; init; } = 180_000;
 
     // ------------------------------------------------------------------ the matchup (docs/battle/command.md 5.1g)

@@ -512,7 +512,7 @@ public sealed partial class CaptainLayer
         bool onOrder = (TorpedoUse)doctrine.Of(own.Entity, own.Side, DoctrineField.Torpedoes) == TorpedoUse.OnOrder;
         if (onOrder && cap.Fire != FireOrder.Engage)
             return;   // only at a ship he's ordered to engage
-        var (reach, speed) = FastSetting(cls);
+        var (reach, speed) = AttackSetting(ctx, cls, own.Position);
         reach *= s.TorpedoFireShare;
         int target = 0;
         if (cap.Fire == FireOrder.Engage && pic.IndexOf(cap.FireTarget) is int ei and >= 0 && pic[ei].InSight && !pic[ei].Lost && Run(ctx, pic, own, ei, speed) <= reach)
@@ -546,7 +546,7 @@ public sealed partial class CaptainLayer
         var aim = own.Position;
         var fwd = Earth.Forward(aim, toward);
         Earth.Advance(ref aim, ref fwd, 1000);
-        if (lines.TorpedoFoul(ctx, own, aim, FastSetting(cls).RangeM, speed))
+        if (lines.TorpedoFoul(ctx, own, aim, reach / s.TorpedoFireShare, speed))
         {
             Wait(ref cap);   // a friend on the track: not now
             return;
@@ -617,7 +617,7 @@ public sealed partial class CaptainLayer
             ctx.World.Torpedoes.Ready(ctx.World, entity, target) == 0)
             return false;
         var own = ctx.Ships[slot];
-        var (range, speed) = FastSetting(own.Handling.Class);
+        var (range, speed) = AttackSetting(ctx, own.Handling.Class, own.Position);   // by day the long setting (BL5)
         var (tq, tv, _) = pic.EstimateAt(ti, ctx.NowMs, s);
         if (!TorpedoAim.Intercept(own.Position, tq, tv, speed, out double toward, out _))
             return false;
@@ -654,6 +654,24 @@ public sealed partial class CaptainLayer
     }
 
     /// <summary>A class's torpedoes' fast setting: the longest range of its launchers' (m), and its speed (m/s).</summary>
+    /// <summary>The torpedoes' reach for an attack at a place now (docs/battle/balance.md BL5): in the dark the fast
+    /// setting's; by day <see cref="SimSettings.TorpedoDayShare"/> of the slow setting's at its speed, where that's further
+    /// (a day attack fires at a line from its torpedoes' reach, not from point blank).</summary>
+    internal static (double RangeM, double SpeedMs) AttackSetting(in AiContext ctx, ShipClass cls, Vec3d at)
+    {
+        var fast = FastSetting(cls);
+        if (AiNight.At(ctx, at, ctx.World.Time))
+            return fast;
+        double range = 0, speed = 0;
+        foreach (ref readonly var l in cls.Launchers)
+        {
+            ref readonly var t = ref cls.Torpedoes[l.Torpedo];
+            if (ctx.Settings.TorpedoDayShare * t.SlowRangeM > range)
+                (range, speed) = (ctx.Settings.TorpedoDayShare * t.SlowRangeM, t.SlowKn * Handling.MsPerKnot);
+        }
+        return range > fast.RangeM ? (range, speed) : fast;
+    }
+
     internal static (double RangeM, double SpeedMs) FastSetting(ShipClass cls)
     {
         double range = 0, speed = 0;
@@ -959,7 +977,7 @@ public sealed partial class CaptainLayer
             // the attack: in to the torpedoes' range, fire, away, and in again
             cap.Attacking = true;
             bool off = cap.TorpedoMs != 0 && ctx.NowMs - cap.TorpedoMs < s.TorpedoTurnAwayMs;
-            double attack = s.TorpedoAttackShare * FastSetting(cls).RangeM;
+            double attack = s.TorpedoAttackShare * AttackSetting(ctx, cls, own.Position).RangeM;
             var (course0, kn0) = off ? Behaviours.Run(own, t) : Behaviours.Fight(own, t, attack, s.FightBandShare, s.FightCloseDeg, s.FightMinCloseKn, ref cap.FightSide);
             // under fire on the run-in, and away after: evading, but steady for the last of it (the research: hold for the launch)
             if (off || Earth.Distance(own.Position, t.Position) > s.EvadeSteadyShare * attack)

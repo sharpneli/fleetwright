@@ -220,8 +220,12 @@ public class TorpedoTests(ITestOutputHelper output)
         }
         output.WriteLine($"fired {fired} at {(w.Time.Ms - Start.Ms) / 1000} s, closest {closest:0} m");
         Assert.True(fired > 0, "it fired");
-        var fast = Class("destroyer").Torpedoes[0].FastRangeM;
-        Assert.True(closest < fast, "it closed to its torpedoes' range");
+        // by day from the long setting's reach (docs/battle/balance.md BL5: the record's day attacks fired from 5-8 km), not
+        // from inside the fast setting's
+        var t = Class("destroyer").Torpedoes[0];
+        double day = Settings.TorpedoDayShare * t.SlowRangeM;
+        Assert.True(closest < day, "it closed to its torpedoes' day reach");
+        Assert.True(closest > t.FastRangeM * Settings.TorpedoFireShare, $"it fired from beyond the fast setting ({closest:0} m)");
         // then away: the range opens over the next minutes
         int ts = w.Ships.Store.SlotOf(1), ss = w.Ships.Store.SlotOf(2);
         double at = Earth.Distance(w.Ships.Store[ss].Position, w.Ships.Store[ts].Position);

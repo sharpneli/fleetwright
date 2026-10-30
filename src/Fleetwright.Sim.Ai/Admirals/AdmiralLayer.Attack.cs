@@ -114,7 +114,7 @@ public sealed partial class AdmiralLayer
             a.Attack = AttackPhase.None;   // lost, or seen going down: chosen again
             return false;
         }
-        var (range, speed) = CaptainLayer.FastSetting(guide.Handling.Class);
+        var (range, speed) = CaptainLayer.AttackSetting(ctx, guide.Handling.Class, t.Position);   // by day the long setting (BL5)
         var target = Unit.Ship(a.AttackTarget);
         var guideOrder = captains.Of(guide.Entity).Order;
 
