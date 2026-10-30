@@ -67,7 +67,8 @@ public sealed class Lights
     /// <summary>A star shell's flare (Q5): where it burns (its height in the place) and how bright; nobody's.</summary>
     public void AddFlare(Vec3d at, double candela)
     {
-        flare[Add(at, candela, -1)] = true;
+        int i = Add(at, candela, -1);   // first: Add may grow the arrays, and flare[...] would read the old one
+        flare[i] = true;
         Flares++;
     }
 

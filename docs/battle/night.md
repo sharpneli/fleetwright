@@ -1,7 +1,7 @@
 # Plan: night fighting (a 4.5 deepening)
 Status: **drafted 2026-10-29**; **agreed with the user 2026-10-29** (decisions 1-5 at the end); Q0-Q10 done 2026-10-29;
-the research arrived 2026-10-29: Q1b, Q0b, Q3b, Q5b added before Q10 (after Q9), done; Q11 next, then Q12
-Updated: 2026-10-29
+the research arrived 2026-10-29: Q1b, Q0b, Q3b, Q5b added before Q10 (after Q9), done; Q11 done 2026-10-30; Q12 next
+Updated: 2026-10-30
 
 How ships see, light, shoot and lose each other in the dark. The user asked for it after the crew plan (2026-10-28),
 naming searchlights and star shell. It builds on the sighting model (`plan.md` 3.2), fire control's air (`fire-control.md`
@@ -1239,6 +1239,38 @@ stars, not the sky's luminance by bearing).
 Lights in coarse's minute look, cheap: a light's on/off and its illuminance per minute, star shell as a minute's
 flare. The parity bench gets night cases. (Night's coarse gap is the AI's minute cadence, `coarse.md` J5; this pass
 doesn't change that.)
+
+**Q11 done (2026-10-30).** The user: keep it simple, coarse results need only be statistically roughly right (humans
+don't play at that tier). Read first: everything night already ran in coarse (the lights gathered at each look, the
+searchlights' orders and star shell's ticks on world time, the captains' night pass at every tier's think), so Q11 was
+measuring and mending what the minute cadence breaks.
+
+- **The bench:** `coarse-parity`'s fifth layer, `night` (`coarse.md` "The parity bench"): the five `night-*` scenarios
+  with the scenarios' measures, and each side's beams and star shell (ship-minutes), first salvo and torpedoes (minutes),
+  hits on ships lit (share). 48 seeds both ways in ~75 s.
+- **A minute's flare** (`StarShellSystem.Gather`): a look takes the flares that burned within its span beyond a fine
+  look's (`dt - SightingMs`): the coarse look the minute's, the 5 s watch its 4 s, a fine look only what burns now (no
+  change there). Burnt flares are kept a coarse step for it. As a gun's flash already showed over the look's span.
+  The 4th Flotilla's British beams came back to fine's (22 → 14 ship-minutes, fine 14), German hits 125 → 132 (fine 198),
+  Southampton's German star shell 53 → 73 (fine 96).
+- **The coarse fire watch** (`AiSystem.WatchFire`, rung 2 as J3's torpedo watch): a coarse captain's think that finds a
+  torpedo target but can't fire (tubes not bearing, a friend on the track) puts her on a watch, and a flotilla's signal
+  to fire puts its boats on it; the same tests run every `CaptainPeriodMs` until that layer's next think, as fine's
+  thinks do. A boat thrown out of the line (hit, falling out) fires as she turns away, the record's way. The 4th
+  Flotilla's British boats firing 2.7 → 4.1 (fine 6.9); Black Prince's German 1.6 → 2.2 (fine 2.6, in the band).
+- **Tried and dropped:** the ready beams on the watch (exposed the moment the target's in reach): German beams 30% → 48%
+  of fine's, their hits unmoved, Tsushima's Japanese beams overshot further. A sub-threshold glimpse held only a fine
+  look's chance in the long look: no effect (below a margin of 1 the rate is nil, so there are no glimpses).
+- **Fixed on the way:** `Lights.AddFlare` wrote past its array when a flare was the 17th light (`flare[Add(...)]` read
+  the array before `Add` grew it).
+- **Left, measured** (the standard panel, `coarse.md`'s log 2026-10-30): Southampton's first salvo 17 min late in coarse.
+  The enemy's minutes-old smoke doesn't reach coarse's sight lines (`bugs.md`), and at night it decides a margin near 1:
+  coarse holds Stettin in sight, the commander counts her as in contact and orders no intercept. With the field off the
+  tiers agree. The 4th Flotilla's British torpedo hits still -70%, German hits -33%, German beams -70%: the minute's
+  thinks in a melee lasting a few minutes (J5's). The day's gunnery drift the panel found is older than Q11 (`bugs.md`).
+- **For Q12:** the night's AI timelines are knife-edged in fine too: an unidentified contact held in sight makes the
+  commander "in contact" while the captains hold fire on unknowns, a standoff only lost sight breaks (Southampton's fine
+  first salvo goes 25 → 45 min with the smoke field off).
 
 ### Q12 Fit and check
 

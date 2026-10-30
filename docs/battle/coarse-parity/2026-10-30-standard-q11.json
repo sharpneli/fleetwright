@@ -1,0 +1,5588 @@
+{
+  "date": "2026-10-30 07:09",
+  "commit": "59715867",
+  "panel": "standard",
+  "runs": 300,
+  "seeds": 48,
+  "coarse_speed": 1000,
+  "fine_s": 8749,
+  "coarse_s": 3525.3,
+  "rows": [
+    {
+      "layer": "duels",
+      "case": "battleship v battleship, 16 kyd",
+      "name": "hits a gun a minute",
+      "floor": 0.005,
+      "absolute": false,
+      "fine": {
+        "n": 300,
+        "mean": 0.07616666666666662,
+        "se": 0.00188427913689168
+      },
+      "coarse": {
+        "n": 300,
+        "mean": 0.07022222222222221,
+        "se": 0.001776697460683387
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "duels",
+      "case": "battleship v battleship, 16 kyd",
+      "name": "rounds a gun a minute",
+      "floor": 0.03,
+      "absolute": false,
+      "fine": {
+        "n": 300,
+        "mean": 1.085444444444444,
+        "se": 0.003554179174324795
+      },
+      "coarse": {
+        "n": 300,
+        "mean": 1.0303333333333335,
+        "se": 0.0033805097109913433
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "duels",
+      "case": "battleship v battleship, 16 kyd",
+      "name": "first straddle, s after the track",
+      "floor": 20,
+      "absolute": false,
+      "fine": {
+        "n": 300,
+        "mean": 159.32874666666677,
+        "se": 5.925901899062321
+      },
+      "coarse": {
+        "n": 300,
+        "mean": 159.2289,
+        "se": 5.618570614356122
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "duels",
+      "case": "battleship v battleship, 16 kyd",
+      "name": "first hit, s after the track",
+      "floor": 30,
+      "absolute": false,
+      "fine": {
+        "n": 300,
+        "mean": 203.35403333333338,
+        "se": 8.039265657049256
+      },
+      "coarse": {
+        "n": 299,
+        "mean": 207.1256622073581,
+        "se": 7.458299369560884
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "duels",
+      "case": "battleship v battleship, 16 kyd, she zigzags",
+      "name": "hits a gun a minute",
+      "floor": 0.005,
+      "absolute": false,
+      "fine": {
+        "n": 300,
+        "mean": 0.04944444444444449,
+        "se": 0.0018234223056053302
+      },
+      "coarse": {
+        "n": 300,
+        "mean": 0.04577777777777782,
+        "se": 0.0015971634503590972
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "duels",
+      "case": "battleship v battleship, 16 kyd, she zigzags",
+      "name": "rounds a gun a minute",
+      "floor": 0.03,
+      "absolute": false,
+      "fine": {
+        "n": 300,
+        "mean": 1.035777777777778,
+        "se": 0.003966893008645083
+      },
+      "coarse": {
+        "n": 300,
+        "mean": 0.9750000000000005,
+        "se": 0.0038718637788233055
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "duels",
+      "case": "battleship v battleship, 16 kyd, she zigzags",
+      "name": "first straddle, s after the track",
+      "floor": 20,
+      "absolute": false,
+      "fine": {
+        "n": 299,
+        "mean": 170.91778595317732,
+        "se": 7.3653012210829205
+      },
+      "coarse": {
+        "n": 299,
+        "mean": 174.30659197324417,
+        "se": 7.356791897219327
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "duels",
+      "case": "battleship v battleship, 16 kyd, she zigzags",
+      "name": "first hit, s after the track",
+      "floor": 30,
+      "absolute": false,
+      "fine": {
+        "n": 293,
+        "mean": 220.19702730375428,
+        "se": 9.504632932321645
+      },
+      "coarse": {
+        "n": 291,
+        "mean": 228.14349484536086,
+        "se": 9.27750744618229
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "duels",
+      "case": "battleship v battleship, 16 kyd, she turns",
+      "name": "hits a gun a minute",
+      "floor": 0.005,
+      "absolute": false,
+      "fine": {
+        "n": 300,
+        "mean": 0.03644444444444448,
+        "se": 0.001206488027876972
+      },
+      "coarse": {
+        "n": 300,
+        "mean": 0.03333333333333337,
+        "se": 0.0011593041562052739
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "duels",
+      "case": "battleship v battleship, 16 kyd, she turns",
+      "name": "rounds a gun a minute",
+      "floor": 0.03,
+      "absolute": false,
+      "fine": {
+        "n": 300,
+        "mean": 0.9904166666666673,
+        "se": 0.004679450591122626
+      },
+      "coarse": {
+        "n": 300,
+        "mean": 0.9433888888888898,
+        "se": 0.004289546904157395
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "duels",
+      "case": "battleship v battleship, 16 kyd, she turns",
+      "name": "first straddle, s after the track",
+      "floor": 20,
+      "absolute": false,
+      "fine": {
+        "n": 300,
+        "mean": 160.1722166666668,
+        "se": 6.0703512905194525
+      },
+      "coarse": {
+        "n": 299,
+        "mean": 162.2014682274248,
+        "se": 6.490880356886636
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "duels",
+      "case": "battleship v battleship, 16 kyd, she turns",
+      "name": "first hit, s after the track",
+      "floor": 30,
+      "absolute": false,
+      "fine": {
+        "n": 292,
+        "mean": 201.33363698630149,
+        "se": 8.605679959909889
+      },
+      "coarse": {
+        "n": 288,
+        "mean": 208.74484722222235,
+        "se": 8.862345746246163
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "duels",
+      "case": "battleship v battleship, 16 kyd, own turn",
+      "name": "hits a gun a minute",
+      "floor": 0.005,
+      "absolute": false,
+      "fine": {
+        "n": 300,
+        "mean": 0.05958333333333326,
+        "se": 0.0016517940091101391
+      },
+      "coarse": {
+        "n": 300,
+        "mean": 0.055361111111111076,
+        "se": 0.0014980779281595893
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "duels",
+      "case": "battleship v battleship, 16 kyd, own turn",
+      "name": "rounds a gun a minute",
+      "floor": 0.03,
+      "absolute": false,
+      "fine": {
+        "n": 300,
+        "mean": 0.7982222222222254,
+        "se": 0.0025113311071964114
+      },
+      "coarse": {
+        "n": 300,
+        "mean": 0.7137777777777742,
+        "se": 0.0018912154775416485
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "duels",
+      "case": "battleship v battleship, 16 kyd, own turn",
+      "name": "first straddle, s after the track",
+      "floor": 20,
+      "absolute": false,
+      "fine": {
+        "n": 299,
+        "mean": 161.59881270903023,
+        "se": 6.3395723664175705
+      },
+      "coarse": {
+        "n": 300,
+        "mean": 164.4307133333333,
+        "se": 6.78802232088913
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "duels",
+      "case": "battleship v battleship, 16 kyd, own turn",
+      "name": "first hit, s after the track",
+      "floor": 30,
+      "absolute": false,
+      "fine": {
+        "n": 299,
+        "mean": 215.44740468227428,
+        "se": 9.490586070010629
+      },
+      "coarse": {
+        "n": 299,
+        "mean": 217.49123076923092,
+        "se": 8.914277599749543
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "duels",
+      "case": "battleship v battleship, 7 km in 8 km haze",
+      "name": "hits a gun a minute",
+      "floor": 0.005,
+      "absolute": false,
+      "fine": {
+        "n": 300,
+        "mean": 0.42222222222222244,
+        "se": 0.004356122601664426
+      },
+      "coarse": {
+        "n": 300,
+        "mean": 0.4248055555555554,
+        "se": 0.0043338654043564556
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "duels",
+      "case": "battleship v battleship, 7 km in 8 km haze",
+      "name": "rounds a gun a minute",
+      "floor": 0.03,
+      "absolute": false,
+      "fine": {
+        "n": 300,
+        "mean": 1.0985555555555553,
+        "se": 0.0036583241242170144
+      },
+      "coarse": {
+        "n": 300,
+        "mean": 1.0835555555555572,
+        "se": 0.0025500967662985467
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "duels",
+      "case": "battleship v battleship, 7 km in 8 km haze",
+      "name": "first straddle, s after the track",
+      "floor": 20,
+      "absolute": false,
+      "fine": {
+        "n": 300,
+        "mean": 71.3322966666667,
+        "se": 1.5522737769844124
+      },
+      "coarse": {
+        "n": 300,
+        "mean": 72.11908333333335,
+        "se": 1.594322331301305
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "duels",
+      "case": "battleship v battleship, 7 km in 8 km haze",
+      "name": "first hit, s after the track",
+      "floor": 30,
+      "absolute": false,
+      "fine": {
+        "n": 300,
+        "mean": 71.3973766666667,
+        "se": 1.5515026822275113
+      },
+      "coarse": {
+        "n": 300,
+        "mean": 72.11908333333335,
+        "se": 1.594322331301305
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "duels",
+      "case": "secondaries v destroyer, 6 km",
+      "name": "hits a gun a minute",
+      "floor": 0.005,
+      "absolute": false,
+      "fine": {
+        "n": 300,
+        "mean": 0.22181481481481474,
+        "se": 0.006433705462915465
+      },
+      "coarse": {
+        "n": 300,
+        "mean": 0.1984444444444445,
+        "se": 0.005925862442370223
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "duels",
+      "case": "secondaries v destroyer, 6 km",
+      "name": "rounds a gun a minute",
+      "floor": 0.03,
+      "absolute": false,
+      "fine": {
+        "n": 300,
+        "mean": 2.938740740740739,
+        "se": 0.012354160264439118
+      },
+      "coarse": {
+        "n": 300,
+        "mean": 2.76474074074074,
+        "se": 0.011810456632583633
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "duels",
+      "case": "secondaries v destroyer, 6 km",
+      "name": "first straddle, s after the track",
+      "floor": 20,
+      "absolute": false,
+      "fine": {
+        "n": 300,
+        "mean": 166.36539333333337,
+        "se": 7.816759421037099
+      },
+      "coarse": {
+        "n": 300,
+        "mean": 168.75150333333335,
+        "se": 6.9792387431942675
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "duels",
+      "case": "secondaries v destroyer, 6 km",
+      "name": "first hit, s after the track",
+      "floor": 30,
+      "absolute": false,
+      "fine": {
+        "n": 299,
+        "mean": 178.7116421404682,
+        "se": 7.926360135245613
+      },
+      "coarse": {
+        "n": 299,
+        "mean": 187.7209096989967,
+        "se": 7.338781697667972
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "duels",
+      "case": "secondaries v destroyer, 6 km, zigzag",
+      "name": "hits a gun a minute",
+      "floor": 0.005,
+      "absolute": false,
+      "fine": {
+        "n": 300,
+        "mean": 0.17707407407407438,
+        "se": 0.012894305803665901
+      },
+      "coarse": {
+        "n": 300,
+        "mean": 0.16022222222222238,
+        "se": 0.012276496276162873
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "duels",
+      "case": "secondaries v destroyer, 6 km, zigzag",
+      "name": "rounds a gun a minute",
+      "floor": 0.03,
+      "absolute": false,
+      "fine": {
+        "n": 300,
+        "mean": 2.5542962962962967,
+        "se": 0.016499977652002236
+      },
+      "coarse": {
+        "n": 300,
+        "mean": 2.3599259259259253,
+        "se": 0.01856746609326077
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "duels",
+      "case": "secondaries v destroyer, 6 km, zigzag",
+      "name": "first straddle, s after the track",
+      "floor": 20,
+      "absolute": false,
+      "fine": {
+        "n": 300,
+        "mean": 195.79662333333332,
+        "se": 9.963889535840671
+      },
+      "coarse": {
+        "n": 288,
+        "mean": 195.26588888888887,
+        "se": 9.48896961413665
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "duels",
+      "case": "secondaries v destroyer, 6 km, zigzag",
+      "name": "first hit, s after the track",
+      "floor": 30,
+      "absolute": false,
+      "fine": {
+        "n": 293,
+        "mean": 210.6916177474402,
+        "se": 10.525279139096615
+      },
+      "coarse": {
+        "n": 280,
+        "mean": 222.6270035714286,
+        "se": 10.456981174364632
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "duels",
+      "case": "light cruiser v destroyer, 8 km, zigzag",
+      "name": "hits a gun a minute",
+      "floor": 0.005,
+      "absolute": false,
+      "fine": {
+        "n": 300,
+        "mean": 0.09102222222222212,
+        "se": 0.00692648472128262
+      },
+      "coarse": {
+        "n": 300,
+        "mean": 0.08737777777777773,
+        "se": 0.007297286042299367
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "duels",
+      "case": "light cruiser v destroyer, 8 km, zigzag",
+      "name": "rounds a gun a minute",
+      "floor": 0.03,
+      "absolute": false,
+      "fine": {
+        "n": 300,
+        "mean": 2.3878666666666675,
+        "se": 0.01688594920532587
+      },
+      "coarse": {
+        "n": 300,
+        "mean": 2.202266666666667,
+        "se": 0.01773981435229965
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "duels",
+      "case": "light cruiser v destroyer, 8 km, zigzag",
+      "name": "first straddle, s after the track",
+      "floor": 20,
+      "absolute": false,
+      "fine": {
+        "n": 295,
+        "mean": 137.4959627118644,
+        "se": 8.171632275776265
+      },
+      "coarse": {
+        "n": 294,
+        "mean": 151.18387755102026,
+        "se": 8.880068461086104
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "duels",
+      "case": "light cruiser v destroyer, 8 km, zigzag",
+      "name": "first hit, s after the track",
+      "floor": 30,
+      "absolute": false,
+      "fine": {
+        "n": 281,
+        "mean": 211.08975088967978,
+        "se": 10.856915310373212
+      },
+      "coarse": {
+        "n": 270,
+        "mean": 221.01735185185188,
+        "se": 12.093810429518472
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "duels",
+      "case": "main battery v torpedo boat, 5 km, zigzag",
+      "name": "hits a gun a minute",
+      "floor": 0.005,
+      "absolute": false,
+      "fine": {
+        "n": 300,
+        "mean": 0.24680555555555542,
+        "se": 0.009431904560066741
+      },
+      "coarse": {
+        "n": 300,
+        "mean": 0.22744444444444445,
+        "se": 0.009653036731018555
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "duels",
+      "case": "main battery v torpedo boat, 5 km, zigzag",
+      "name": "rounds a gun a minute",
+      "floor": 0.03,
+      "absolute": false,
+      "fine": {
+        "n": 300,
+        "mean": 1.1380000000000008,
+        "se": 0.0026574534265406415
+      },
+      "coarse": {
+        "n": 300,
+        "mean": 1.08588888888889,
+        "se": 0.0023165683931436806
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "duels",
+      "case": "main battery v torpedo boat, 5 km, zigzag",
+      "name": "first straddle, s after the track",
+      "floor": 20,
+      "absolute": false,
+      "fine": {
+        "n": 300,
+        "mean": 77.49521333333341,
+        "se": 2.3973717064922795
+      },
+      "coarse": {
+        "n": 300,
+        "mean": 82.61586666666672,
+        "se": 2.841472252515138
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "duels",
+      "case": "main battery v torpedo boat, 5 km, zigzag",
+      "name": "first hit, s after the track",
+      "floor": 30,
+      "absolute": false,
+      "fine": {
+        "n": 300,
+        "mean": 78.68269666666674,
+        "se": 2.5680589068575252
+      },
+      "coarse": {
+        "n": 300,
+        "mean": 85.40426333333338,
+        "se": 3.0649601027921847
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "fights",
+      "case": "battleship v light cruiser, 12 km",
+      "name": "out of the fight, share",
+      "floor": 0.1,
+      "absolute": false,
+      "fine": {
+        "n": 300,
+        "mean": 0.93,
+        "se": 0.014755532945588908
+      },
+      "coarse": {
+        "n": 300,
+        "mean": 0.9466666666666667,
+        "se": 0.012994581954164938
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "fights",
+      "case": "battleship v light cruiser, 12 km",
+      "name": "going down, share",
+      "floor": 0.1,
+      "absolute": false,
+      "fine": {
+        "n": 300,
+        "mean": 0.5433333333333333,
+        "se": 0.028806947219396133
+      },
+      "coarse": {
+        "n": 300,
+        "mean": 0.4533333333333333,
+        "se": 0.028789526978043097
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "fights",
+      "case": "battleship v light cruiser, 12 km",
+      "name": "minutes to out of the fight",
+      "floor": 2,
+      "absolute": false,
+      "fine": {
+        "n": 279,
+        "mean": 13.55442054958185,
+        "se": 0.4171092273884377
+      },
+      "coarse": {
+        "n": 284,
+        "mean": 14.545187793427235,
+        "se": 0.3887780999665377
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "fights",
+      "case": "battleship v light cruiser, 12 km",
+      "name": "hits",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 300,
+        "mean": 14.816666666666666,
+        "se": 0.28875075307042325
+      },
+      "coarse": {
+        "n": 300,
+        "mean": 14.116666666666667,
+        "se": 0.2682973413891887
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "fights",
+      "case": "light cruiser v destroyer, 7 km, zigzag",
+      "name": "out of the fight, share",
+      "floor": 0.1,
+      "absolute": false,
+      "fine": {
+        "n": 300,
+        "mean": 0.53,
+        "se": 0.028863651326417095
+      },
+      "coarse": {
+        "n": 300,
+        "mean": 0.5466666666666666,
+        "se": 0.028789526978043094
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "fights",
+      "case": "light cruiser v destroyer, 7 km, zigzag",
+      "name": "going down, share",
+      "floor": 0.1,
+      "absolute": false,
+      "fine": {
+        "n": 300,
+        "mean": 0.09,
+        "se": 0.016550318531021076
+      },
+      "coarse": {
+        "n": 300,
+        "mean": 0.06333333333333334,
+        "se": 0.014085527360052152
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "fights",
+      "case": "light cruiser v destroyer, 7 km, zigzag",
+      "name": "minutes to out of the fight",
+      "floor": 2,
+      "absolute": false,
+      "fine": {
+        "n": 159,
+        "mean": 17.570335429769383,
+        "se": 0.6176037681661253
+      },
+      "coarse": {
+        "n": 164,
+        "mean": 16.938922764227648,
+        "se": 0.6196267399834906
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "fights",
+      "case": "light cruiser v destroyer, 7 km, zigzag",
+      "name": "hits",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 300,
+        "mean": 23.08,
+        "se": 1.2574242398902389
+      },
+      "coarse": {
+        "n": 300,
+        "mean": 18.566666666666666,
+        "se": 0.9569651180093164
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "dodging",
+      "case": "Flotilla",
+      "name": "hit % on G101-like large torpedo boat (1914)",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 3.1854806856781734,
+        "se": 0.2254055304985537
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 3.9735976511622773,
+        "se": 0.29905159602264614
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "dodging",
+      "case": "Flotilla",
+      "name": "hit % on King George V-like (1912)",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 2.085878861930529,
+        "se": 0.1677362995296658
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 2.4722584856396868,
+        "se": 0.31626368339453426
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "dodging",
+      "case": "Flotilla",
+      "name": "hit % on Orion-like (1912)",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 2.123865110246433,
+        "se": 0.21698475479584028
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 2.566452795600367,
+        "se": 0.22561118295837432
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "dodging",
+      "case": "Flotilla",
+      "name": "hit % on V25-like torpedo boat (1914)",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 3.006934597230046,
+        "se": 0.16200693708665376
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 4.3637189238279035,
+        "se": 0.2588358980608723
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "dodging",
+      "case": "Flotilla",
+      "name": "Britain: ships lost",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "dodging",
+      "case": "Flotilla",
+      "name": "Britain: tonnage lost, share",
+      "floor": 0.05,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "dodging",
+      "case": "Flotilla",
+      "name": "Britain: shell hits made",
+      "floor": 3,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 65.91666666666667,
+        "se": 4.441885714396938
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 77.54166666666667,
+        "se": 3.93880025624921
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "dodging",
+      "case": "Flotilla",
+      "name": "Britain: hit %",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 3.098406729535729,
+        "se": 0.14213394513265507
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 4.165920487106018,
+        "se": 0.1965077625647955
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "dodging",
+      "case": "Flotilla",
+      "name": "Britain: ships firing torpedoes",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "dodging",
+      "case": "Flotilla",
+      "name": "Britain: torpedo hits",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "dodging",
+      "case": "Flotilla",
+      "name": "Germany: ships lost",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 3.8333333333333335,
+        "se": 0.15848723390132302
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 4.354166666666667,
+        "se": 0.13802553768913028
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "dodging",
+      "case": "Flotilla",
+      "name": "Germany: tonnage lost, share",
+      "floor": 0.05,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.6399765729585005,
+        "se": 0.026410044045982066
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.7259965789082256,
+        "se": 0.022983988027344485
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "dodging",
+      "case": "Flotilla",
+      "name": "Germany: shell hits made",
+      "floor": 3,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 10.375,
+        "se": 0.8286882953077965
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 13.895833333333334,
+        "se": 1.3671162067700167
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "dodging",
+      "case": "Flotilla",
+      "name": "Germany: hit %",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 2.092964612927629,
+        "se": 0.14316811990897593
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 2.522788305155263,
+        "se": 0.1847234367850274
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "dodging",
+      "case": "Flotilla",
+      "name": "Germany: ships firing torpedoes",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.08333333333333333,
+        "se": 0.06545891823395296
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "dodging",
+      "case": "Flotilla",
+      "name": "Germany: torpedo hits",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "dodging",
+      "case": "Flotilla",
+      "name": "the exchange: Britain\u0027s share of the tonnage lost",
+      "floor": 0.1,
+      "absolute": true,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "dodging",
+      "case": "Flotilla",
+      "name": "decided, share",
+      "floor": 0.1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.041666666666666664,
+        "se": 0.029147663515556036
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.10416666666666667,
+        "se": 0.04455834621587846
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "dodging",
+      "case": "Flotilla",
+      "name": "the end, hours",
+      "floor": 0.25,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 4.569097222222221,
+        "se": 0.0976980792672365
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 4.452430555555556,
+        "se": 0.15822052531029426
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "dodging",
+      "case": "Running fight",
+      "name": "hit % on B97-like large torpedo boat (1915)",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 4.2699724517906334,
+        "se": 1.7288840063306226
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 1.5239477503628447,
+        "se": 1.0736699877229694
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "dodging",
+      "case": "Running fight",
+      "name": "hit % on Iron Duke-like (1914)",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "dodging",
+      "case": "Running fight",
+      "name": "hit % on Wiesbaden-like (1915)",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.38314176245210724,
+        "se": 0.3652028462372857
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "dodging",
+      "case": "Running fight",
+      "name": "Britain: ships lost",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "dodging",
+      "case": "Running fight",
+      "name": "Britain: tonnage lost, share",
+      "floor": 0.05,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "dodging",
+      "case": "Running fight",
+      "name": "Britain: shell hits made",
+      "floor": 3,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.6458333333333334,
+        "se": 0.6458333333333335
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.4583333333333333,
+        "se": 0.4375527661526652
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "dodging",
+      "case": "Running fight",
+      "name": "Britain: hit %",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 4.2699724517906334,
+        "se": 1.7288840063306226
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 1.342281879194631,
+        "se": 0.9683479692573053
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "dodging",
+      "case": "Running fight",
+      "name": "Britain: ships firing torpedoes",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "dodging",
+      "case": "Running fight",
+      "name": "Britain: torpedo hits",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "dodging",
+      "case": "Running fight",
+      "name": "Germany: ships lost",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.020833333333333332,
+        "se": 0.020833333333333336
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.020833333333333332,
+        "se": 0.020833333333333336
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "dodging",
+      "case": "Running fight",
+      "name": "Germany: tonnage lost, share",
+      "floor": 0.05,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.003948997902292314,
+        "se": 0.003948997902292314
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.003948997902292314,
+        "se": 0.003948997902292314
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "dodging",
+      "case": "Running fight",
+      "name": "Germany: shell hits made",
+      "floor": 3,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "dodging",
+      "case": "Running fight",
+      "name": "Germany: hit %",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "dodging",
+      "case": "Running fight",
+      "name": "Germany: ships firing torpedoes",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "dodging",
+      "case": "Running fight",
+      "name": "Germany: torpedo hits",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "dodging",
+      "case": "Running fight",
+      "name": "the exchange: Britain\u0027s share of the tonnage lost",
+      "floor": 0.1,
+      "absolute": true,
+      "fine": {
+        "n": 1,
+        "mean": 0
+      },
+      "coarse": {
+        "n": 1,
+        "mean": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "dodging",
+      "case": "Running fight",
+      "name": "decided, share",
+      "floor": 0.1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "dodging",
+      "case": "Running fight",
+      "name": "the end, hours",
+      "floor": 0.25,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 3,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 3,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "fights",
+      "case": "Squadrons",
+      "name": "Britain: ships lost",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 1.25,
+        "se": 0.13148092653519441
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.6458333333333334,
+        "se": 0.10092472852291041
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "fights",
+      "case": "Squadrons",
+      "name": "Britain: tonnage lost, share",
+      "floor": 0.05,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.31524361827588837,
+        "se": 0.03296004416970598
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.16457667579700228,
+        "se": 0.025729172799950253
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "fights",
+      "case": "Squadrons",
+      "name": "Britain: shell hits made",
+      "floor": 3,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 198.3125,
+        "se": 27.748301274598532
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 170.5625,
+        "se": 13.373385308843618
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "fights",
+      "case": "Squadrons",
+      "name": "Britain: hit %",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 8.24891461649783,
+        "se": 0.6343618339307994
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 7.180634127088541,
+        "se": 0.3890832324226128
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "fights",
+      "case": "Squadrons",
+      "name": "Britain: ships firing torpedoes",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.3125,
+        "se": 0.07965044420724436
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.3125,
+        "se": 0.10381145108265526
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "fights",
+      "case": "Squadrons",
+      "name": "Britain: torpedo hits",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.14583333333333334,
+        "se": 0.05947154493714113
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.08333333333333333,
+        "se": 0.05011806391880347
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "fights",
+      "case": "Squadrons",
+      "name": "Germany: ships lost",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 2.0833333333333335,
+        "se": 0.1706093930937577
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 1.7083333333333333,
+        "se": 0.14874872111415588
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "fights",
+      "case": "Squadrons",
+      "name": "Germany: tonnage lost, share",
+      "floor": 0.05,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.41831073636160016,
+        "se": 0.034054958833769994
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.35481117730273176,
+        "se": 0.03104355289386613
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "fights",
+      "case": "Squadrons",
+      "name": "Germany: shell hits made",
+      "floor": 3,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 381.5625,
+        "se": 37.41689261628376
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 312.75,
+        "se": 37.23730089593209
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "fights",
+      "case": "Squadrons",
+      "name": "Germany: hit %",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 6.418231070335962,
+        "se": 0.4506414921658114
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 6.012207039072138,
+        "se": 0.4543632955912967
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "fights",
+      "case": "Squadrons",
+      "name": "Germany: ships firing torpedoes",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.6041666666666666,
+        "se": 0.1703656459198647
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.625,
+        "se": 0.17265398102308724
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "fights",
+      "case": "Squadrons",
+      "name": "Germany: torpedo hits",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.6666666666666666,
+        "se": 0.19824883473254823
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.625,
+        "se": 0.20330818935339529
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "fights",
+      "case": "Squadrons",
+      "name": "the exchange: Britain\u0027s share of the tonnage lost",
+      "floor": 0.1,
+      "absolute": true,
+      "fine": {
+        "n": 45,
+        "mean": 0.42179201128053057,
+        "se": 0.037646380873960425
+      },
+      "coarse": {
+        "n": 46,
+        "mean": 0.30783980430751373,
+        "se": 0.04932214089313998
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "fights",
+      "case": "Squadrons",
+      "name": "decided, share",
+      "floor": 0.1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.020833333333333332,
+        "se": 0.02083333333333334
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "fights",
+      "case": "Squadrons",
+      "name": "the end, hours",
+      "floor": 0.25,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 5.564583333333334,
+        "se": 0.13358669873015117
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 5.853472222222222,
+        "se": 0.06038065147569515
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Night in the Dover Strait",
+      "name": "Britain: ships lost",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.6875,
+        "se": 0.09944994999089486
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.3333333333333333,
+        "se": 0.0806299078078161
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Night in the Dover Strait",
+      "name": "Britain: tonnage lost, share",
+      "floor": 0.05,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.34375,
+        "se": 0.04972497499544743
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.16666666666666666,
+        "se": 0.04031495390390805
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Night in the Dover Strait",
+      "name": "Britain: shell hits made",
+      "floor": 3,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 51.083333333333336,
+        "se": 5.6365097637443045
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 42.125,
+        "se": 4.520797586223347
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Night in the Dover Strait",
+      "name": "Britain: hit %",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 44.58992544098927,
+        "se": 5.184859286617844
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 40.54541808702627,
+        "se": 2.900141169709319
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Night in the Dover Strait",
+      "name": "Britain: ships firing torpedoes",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.6666666666666666,
+        "se": 0.10872134550890701
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 1.1666666666666667,
+        "se": 0.12033247873019254
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Night in the Dover Strait",
+      "name": "Britain: torpedo hits",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.3125,
+        "se": 0.10381145108265526
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.5833333333333334,
+        "se": 0.13259993332119316
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Night in the Dover Strait",
+      "name": "Germany: ships lost",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.7916666666666666,
+        "se": 0.1296419418896783
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.8958333333333334,
+        "se": 0.12716069904107424
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Night in the Dover Strait",
+      "name": "Germany: tonnage lost, share",
+      "floor": 0.05,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.13194444444444448,
+        "se": 0.021606990314946374
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.14930555555555555,
+        "se": 0.021193449840179037
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Night in the Dover Strait",
+      "name": "Germany: shell hits made",
+      "floor": 3,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 32.666666666666664,
+        "se": 3.305960302613845
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 17.791666666666668,
+        "se": 3.141457844330694
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Night in the Dover Strait",
+      "name": "Germany: hit %",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 50.94217024041585,
+        "se": 4.835808413285365
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 24.337418067825592,
+        "se": 4.140019189306381
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Night in the Dover Strait",
+      "name": "Germany: ships firing torpedoes",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 1.8541666666666667,
+        "se": 0.22868259642009778
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 1.8958333333333333,
+        "se": 0.25130789677893445
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Night in the Dover Strait",
+      "name": "Germany: torpedo hits",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.8958333333333334,
+        "se": 0.1435355966096558
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.375,
+        "se": 0.11386582249259386
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Night in the Dover Strait",
+      "name": "the exchange: Britain\u0027s share of the tonnage lost",
+      "floor": 0.1,
+      "absolute": true,
+      "fine": {
+        "n": 34,
+        "mean": 0.4912888126748718,
+        "se": 0.06175297802016611
+      },
+      "coarse": {
+        "n": 34,
+        "mean": 0.2408015446955322,
+        "se": 0.05873270669714842
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Night in the Dover Strait",
+      "name": "decided, share",
+      "floor": 0.1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.125,
+        "se": 0.04824031156174748
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.041666666666666664,
+        "se": 0.029147663515556036
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Night in the Dover Strait",
+      "name": "the end, hours",
+      "floor": 0.25,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 3.6208333333333322,
+        "se": 0.1202736283059534
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 3.782638888888887,
+        "se": 0.08426336569588048
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Cape Sarych",
+      "name": "Russia: ships lost",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 1.0208333333333333,
+        "se": 0.14120047406814384
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.7083333333333334,
+        "se": 0.12261314550869591
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Cape Sarych",
+      "name": "Russia: tonnage lost, share",
+      "floor": 0.05,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.12477526635099144,
+        "se": 0.021283726768418006
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.08244272220578082,
+        "se": 0.016412010726472043
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Cape Sarych",
+      "name": "Russia: shell hits made",
+      "floor": 3,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 484.6041666666667,
+        "se": 62.06399508125638
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 247.1875,
+        "se": 34.51232763936503
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Cape Sarych",
+      "name": "Russia: hit %",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 9.553831431000564,
+        "se": 0.9085896735284995
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 8.492956536677546,
+        "se": 0.8758979439945703
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Cape Sarych",
+      "name": "Russia: ships firing torpedoes",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.125,
+        "se": 0.056689086094851654
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.3125,
+        "se": 0.09488818541049489
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Cape Sarych",
+      "name": "Russia: torpedo hits",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.125,
+        "se": 0.06403262687852607
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.3125,
+        "se": 0.1079969545801249
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Cape Sarych",
+      "name": "Ottoman Empire: ships lost",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.5833333333333334,
+        "se": 0.07191241060522428
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.4166666666666667,
+        "se": 0.07191241060522427
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Cape Sarych",
+      "name": "Ottoman Empire: tonnage lost, share",
+      "floor": 0.05,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.1113849650120986,
+        "se": 0.013731362295768988
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.07956068929435618,
+        "se": 0.013731362295768988
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Cape Sarych",
+      "name": "Ottoman Empire: shell hits made",
+      "floor": 3,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 100.22916666666667,
+        "se": 8.432788063519189
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 82.41666666666667,
+        "se": 7.9361276293548215
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Cape Sarych",
+      "name": "Ottoman Empire: hit %",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 5.910609857978279,
+        "se": 0.45063578238689217
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 5.505991732661554,
+        "se": 0.48901218583850514
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Cape Sarych",
+      "name": "Ottoman Empire: ships firing torpedoes",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.5416666666666666,
+        "se": 0.11124032085287931
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.4583333333333333,
+        "se": 0.08399559540405277
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Cape Sarych",
+      "name": "Ottoman Empire: torpedo hits",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.125,
+        "se": 0.056689086094851654
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.16666666666666666,
+        "se": 0.061980703166484165
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Cape Sarych",
+      "name": "the exchange: Russia\u0027s share of the tonnage lost",
+      "floor": 0.1,
+      "absolute": true,
+      "fine": {
+        "n": 41,
+        "mean": 0.593298819801304,
+        "se": 0.057170579692425706
+      },
+      "coarse": {
+        "n": 29,
+        "mean": 0.5971881537079399,
+        "se": 0.06710247464958548
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Cape Sarych",
+      "name": "decided, share",
+      "floor": 0.1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Cape Sarych",
+      "name": "the end, hours",
+      "floor": 0.25,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 6.063888888888887,
+        "se": 0.05161958631779902
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 6.1024305555555545,
+        "se": 0.027660759356692714
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Coronel",
+      "name": "Britain: ships lost",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.3541666666666667,
+        "se": 0.0917210509208933
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.25,
+        "se": 0.06982754846636602
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Coronel",
+      "name": "Britain: tonnage lost, share",
+      "floor": 0.05,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.09748134882450075,
+        "se": 0.02924155760149165
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.05247202323675113,
+        "se": 0.01775703623176899
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Coronel",
+      "name": "Britain: shell hits made",
+      "floor": 3,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 218,
+        "se": 10.422501911695232
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 173.41666666666666,
+        "se": 9.23817210691967
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Coronel",
+      "name": "Britain: hit %",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 10.341658183686983,
+        "se": 0.5058340082651885
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 6.768525219342825,
+        "se": 0.3960905946670167
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Coronel",
+      "name": "Britain: ships firing torpedoes",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.0625,
+        "se": 0.035308292679127
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.10416666666666667,
+        "se": 0.044558346215878473
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Coronel",
+      "name": "Britain: torpedo hits",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.041666666666666664,
+        "se": 0.029147663515556036
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Coronel",
+      "name": "Germany: ships lost",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.625,
+        "se": 0.11386582249259386
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.4583333333333333,
+        "se": 0.08911669243175693
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Coronel",
+      "name": "Germany: tonnage lost, share",
+      "floor": 0.05,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.19775880630274553,
+        "se": 0.0333846361767496
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.09621718574730298,
+        "se": 0.020826366398460052
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Coronel",
+      "name": "Germany: shell hits made",
+      "floor": 3,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 385.7291666666667,
+        "se": 28.141545402568052
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 250.95833333333334,
+        "se": 14.18019665751723
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Coronel",
+      "name": "Germany: hit %",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 7.254127584882891,
+        "se": 0.4969396090049324
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 4.421864847899743,
+        "se": 0.24754780519128358
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Coronel",
+      "name": "Germany: ships firing torpedoes",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.7083333333333334,
+        "se": 0.12617649652067406
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.625,
+        "se": 0.10579402576008166
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Coronel",
+      "name": "Germany: torpedo hits",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.4166666666666667,
+        "se": 0.0933675216005786
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.5,
+        "se": 0.09875106606839944
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Coronel",
+      "name": "the exchange: Britain\u0027s share of the tonnage lost",
+      "floor": 0.1,
+      "absolute": true,
+      "fine": {
+        "n": 29,
+        "mean": 0.27296861727936905,
+        "se": 0.07143042999614858
+      },
+      "coarse": {
+        "n": 24,
+        "mean": 0.30773728422759833,
+        "se": 0.08433879456530298
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Coronel",
+      "name": "decided, share",
+      "floor": 0.1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Coronel",
+      "name": "the end, hours",
+      "floor": 0.25,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 6.839930555555555,
+        "se": 0.06265984206458267
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 6.995486111111112,
+        "se": 0.004513888888888891
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "scenarios",
+      "case": "The prizes\u0027 war, 1920",
+      "name": "France: ships lost",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.8541666666666666,
+        "se": 0.13962203073197665
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.625,
+        "se": 0.12140212179902361
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "scenarios",
+      "case": "The prizes\u0027 war, 1920",
+      "name": "France: tonnage lost, share",
+      "floor": 0.05,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.08812427967729543,
+        "se": 0.01572685698827816
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.05353278268664361,
+        "se": 0.01075275543124812
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "scenarios",
+      "case": "The prizes\u0027 war, 1920",
+      "name": "France: shell hits made",
+      "floor": 3,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 200.08333333333334,
+        "se": 12.032971596299568
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 143.8125,
+        "se": 12.73633519754346
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "The prizes\u0027 war, 1920",
+      "name": "France: hit %",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 3.631509889852267,
+        "se": 0.20147539215127336
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 2.2148923677176953,
+        "se": 0.1914520086301588
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "The prizes\u0027 war, 1920",
+      "name": "France: ships firing torpedoes",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 1.375,
+        "se": 0.2159939091602498
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 1.1041666666666667,
+        "se": 0.19578805874718339
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "The prizes\u0027 war, 1920",
+      "name": "France: torpedo hits",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.4166666666666667,
+        "se": 0.18070324928622758
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.16666666666666666,
+        "se": 0.07493101634438103
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "The prizes\u0027 war, 1920",
+      "name": "Italy: ships lost",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 1.0833333333333333,
+        "se": 0.1292138440496599
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.3125,
+        "se": 0.11202618899737952
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "The prizes\u0027 war, 1920",
+      "name": "Italy: tonnage lost, share",
+      "floor": 0.05,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.1037240399008767,
+        "se": 0.015951601998450412
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.05020157993383398,
+        "se": 0.0185627312859113
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "The prizes\u0027 war, 1920",
+      "name": "Italy: shell hits made",
+      "floor": 3,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 247.22916666666666,
+        "se": 16.839254617842066
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 149.27083333333334,
+        "se": 17.09419926661629
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "The prizes\u0027 war, 1920",
+      "name": "Italy: hit %",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 4.117926705276929,
+        "se": 0.2533598658945169
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 2.365662401981015,
+        "se": 0.2367965584569383
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "The prizes\u0027 war, 1920",
+      "name": "Italy: ships firing torpedoes",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 1.2291666666666667,
+        "se": 0.1935108243104129
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 1.2708333333333333,
+        "se": 0.20572390636510435
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "The prizes\u0027 war, 1920",
+      "name": "Italy: torpedo hits",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.4166666666666667,
+        "se": 0.11847633951977384
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.4583333333333333,
+        "se": 0.14874872111415585
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "scenarios",
+      "case": "The prizes\u0027 war, 1920",
+      "name": "the exchange: France\u0027s share of the tonnage lost",
+      "floor": 0.1,
+      "absolute": true,
+      "fine": {
+        "n": 41,
+        "mean": 0.41082736712062573,
+        "se": 0.057158143947358235
+      },
+      "coarse": {
+        "n": 25,
+        "mean": 0.738637125599867,
+        "se": 0.08085923119387826
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "The prizes\u0027 war, 1920",
+      "name": "decided, share",
+      "floor": 0.1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "scenarios",
+      "case": "The prizes\u0027 war, 1920",
+      "name": "the end, hours",
+      "floor": 0.25,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 7,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 7,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "scenarios",
+      "case": "The battle for \u00C5land, 1921",
+      "name": "Finland: ships lost",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 4.375,
+        "se": 0.41108854803587164
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 3.1041666666666665,
+        "se": 0.3907616486755707
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "The battle for \u00C5land, 1921",
+      "name": "Finland: tonnage lost, share",
+      "floor": 0.05,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.5228651140223193,
+        "se": 0.04771571651669865
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.36287603105288685,
+        "se": 0.045643800978760675
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "The battle for \u00C5land, 1921",
+      "name": "Finland: shell hits made",
+      "floor": 3,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 404,
+        "se": 34.059918000259444
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 345.3333333333333,
+        "se": 44.56561754468887
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "The battle for \u00C5land, 1921",
+      "name": "Finland: hit %",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 14.449213161659513,
+        "se": 0.8314625951434954
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 16.508151497345906,
+        "se": 1.189954711893568
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "The battle for \u00C5land, 1921",
+      "name": "Finland: ships firing torpedoes",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 2.75,
+        "se": 0.26879689925600964
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 1.75,
+        "se": 0.283249883413746
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "The battle for \u00C5land, 1921",
+      "name": "Finland: torpedo hits",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.5208333333333334,
+        "se": 0.16031214933555815
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.22916666666666666,
+        "se": 0.10416666666666664
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "scenarios",
+      "case": "The battle for \u00C5land, 1921",
+      "name": "Sweden: ships lost",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 1.8125,
+        "se": 0.2356826699653282
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 1.2916666666666667,
+        "se": 0.18821279014329087
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "The battle for \u00C5land, 1921",
+      "name": "Sweden: tonnage lost, share",
+      "floor": 0.05,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.2774253425219459,
+        "se": 0.03570435292761417
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.20657765198129455,
+        "se": 0.03440846012636917
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "The battle for \u00C5land, 1921",
+      "name": "Sweden: shell hits made",
+      "floor": 3,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 293.2291666666667,
+        "se": 27.98119048409503
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 219.75,
+        "se": 28.295920752039045
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "The battle for \u00C5land, 1921",
+      "name": "Sweden: hit %",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 10.605752349089375,
+        "se": 0.7401030774843533
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 11.827366202078872,
+        "se": 1.0228449796635717
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "The battle for \u00C5land, 1921",
+      "name": "Sweden: ships firing torpedoes",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 4.583333333333333,
+        "se": 0.2989837001494943
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 4.083333333333333,
+        "se": 0.4209004756494001
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "The battle for \u00C5land, 1921",
+      "name": "Sweden: torpedo hits",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.6875,
+        "se": 0.14933733649332973
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.9166666666666666,
+        "se": 0.1993636448406799
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "The battle for \u00C5land, 1921",
+      "name": "the exchange: Finland\u0027s share of the tonnage lost",
+      "floor": 0.1,
+      "absolute": true,
+      "fine": {
+        "n": 43,
+        "mean": 0.4839787365863193,
+        "se": 0.049302874206531254
+      },
+      "coarse": {
+        "n": 34,
+        "mean": 0.47978013133506087,
+        "se": 0.0558846654775768
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "The battle for \u00C5land, 1921",
+      "name": "decided, share",
+      "floor": 0.1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.125,
+        "se": 0.04824031156174748
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.041666666666666664,
+        "se": 0.02914766351555603
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "The battle for \u00C5land, 1921",
+      "name": "the end, hours",
+      "floor": 0.25,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 9.94375,
+        "se": 0.3616335413276263
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 10.101388888888891,
+        "se": 0.32130171106366723
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Tsushima",
+      "name": "Russia: ships lost",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 5.083333333333333,
+        "se": 0.24881515920766692
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 3.4166666666666665,
+        "se": 0.2415841140488267
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Tsushima",
+      "name": "Russia: tonnage lost, share",
+      "floor": 0.05,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.39529686974380773,
+        "se": 0.028944692817096693
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.23245870292664797,
+        "se": 0.02507788823521811
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Tsushima",
+      "name": "Russia: shell hits made",
+      "floor": 3,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 706.7083333333334,
+        "se": 52.51826732459647
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 600.1666666666666,
+        "se": 44.193725820428995
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Tsushima",
+      "name": "Russia: hit %",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 7.807655746873785,
+        "se": 0.5162489286100109
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 7.5150781559780455,
+        "se": 0.49637620808859406
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Tsushima",
+      "name": "Russia: ships firing torpedoes",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.4375,
+        "se": 0.11874883351424093
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.6458333333333334,
+        "se": 0.1412004740681438
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Tsushima",
+      "name": "Russia: torpedo hits",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.2708333333333333,
+        "se": 0.09292137745269838
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.4166666666666667,
+        "se": 0.14227549608021048
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Tsushima",
+      "name": "Japan: ships lost",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 4.145833333333333,
+        "se": 0.2543758585698884
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 3.7916666666666665,
+        "se": 0.22471087281068097
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Tsushima",
+      "name": "Japan: tonnage lost, share",
+      "floor": 0.05,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.11398968412857302,
+        "se": 0.01842395198340453
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.09446599377154935,
+        "se": 0.013280270153952603
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Tsushima",
+      "name": "Japan: shell hits made",
+      "floor": 3,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 1583.4791666666667,
+        "se": 150.31385896330096
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 904.7916666666666,
+        "se": 58.35243829747002
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Tsushima",
+      "name": "Japan: hit %",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 8.349004582742001,
+        "se": 0.6471686677313853
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 6.72957729019462,
+        "se": 0.3360909282926866
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Tsushima",
+      "name": "Japan: ships firing torpedoes",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.625,
+        "se": 0.141624941706873
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.9375,
+        "se": 0.1720914578302945
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Tsushima",
+      "name": "Japan: torpedo hits",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.22916666666666666,
+        "se": 0.1123554364053405
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.5,
+        "se": 0.13315591032282686
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Tsushima",
+      "name": "the exchange: Russia\u0027s share of the tonnage lost",
+      "floor": 0.1,
+      "absolute": true,
+      "fine": {
+        "n": 48,
+        "mean": 0.7442872485736606,
+        "se": 0.031434579263508934
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.6545891264289356,
+        "se": 0.03438431332750494
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Tsushima",
+      "name": "decided, share",
+      "floor": 0.1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "scenarios",
+      "case": "Tsushima",
+      "name": "the end, hours",
+      "floor": 0.25,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 15.597569444444447,
+        "se": 0.6706874886582456
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 16.68854166666667,
+        "se": 0.5618102013903176
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Tsushima 1905",
+      "name": "Russia: ships lost",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.08333333333333333,
+        "se": 0.040314953903908074
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.041666666666666664,
+        "se": 0.02914766351555603
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Tsushima 1905",
+      "name": "Russia: tonnage lost, share",
+      "floor": 0.05,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.027777777777777776,
+        "se": 0.013438317967969356
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.013888888888888888,
+        "se": 0.009715887838518669
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Tsushima 1905",
+      "name": "Russia: shell hits made",
+      "floor": 3,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 70.125,
+        "se": 16.229723437949904
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 87.625,
+        "se": 14.509767589332846
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Tsushima 1905",
+      "name": "Russia: hit %",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 28.280961182994456,
+        "se": 3.523758235004906
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 34.45564020643893,
+        "se": 1.8301252122237397
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Tsushima 1905",
+      "name": "Russia: ships firing torpedoes",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Tsushima 1905",
+      "name": "Russia: torpedo hits",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Tsushima 1905",
+      "name": "Russia: beams out, ship-minutes",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 8.625,
+        "se": 2.419561423537229
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 15.708333333333334,
+        "se": 3.0932548347676163
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Tsushima 1905",
+      "name": "Russia: star shell, ship-minutes",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Tsushima 1905",
+      "name": "Russia: first salvo, minutes",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 24,
+        "mean": 47.59331319444444,
+        "se": 5.522580359949998
+      },
+      "coarse": {
+        "n": 29,
+        "mean": 38.93202758620689,
+        "se": 5.244479761766257
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Tsushima 1905",
+      "name": "Russia: first torpedoes, minutes",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 0
+      },
+      "coarse": {
+        "n": 0
+      },
+      "verdict": "-"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Tsushima 1905",
+      "name": "Russia: hits on ships lit, share",
+      "floor": 0.1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.2706476530005942,
+        "se": 0.055291492110943634
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.3264384213029006,
+        "se": 0.039868331202446206
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Tsushima 1905",
+      "name": "Japan: ships lost",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.4375,
+        "se": 0.1361393020933635
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.8333333333333334,
+        "se": 0.17190354104313219
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Tsushima 1905",
+      "name": "Japan: tonnage lost, share",
+      "floor": 0.05,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.0546875,
+        "se": 0.017017412761670438
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.10416666666666667,
+        "se": 0.021487942630391523
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Tsushima 1905",
+      "name": "Japan: shell hits made",
+      "floor": 3,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 91.97916666666667,
+        "se": 18.24752216695329
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 155.9375,
+        "se": 25.023878777816986
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Tsushima 1905",
+      "name": "Japan: hit %",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 24.003697058663622,
+        "se": 2.705974476325802
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 21.937280187573272,
+        "se": 1.6957698751749444
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Tsushima 1905",
+      "name": "Japan: ships firing torpedoes",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 1.375,
+        "se": 0.2755153134460268
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 1.5416666666666667,
+        "se": 0.261200062812471
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Tsushima 1905",
+      "name": "Japan: torpedo hits",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.5,
+        "se": 0.14279380561489988
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.375,
+        "se": 0.125
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Tsushima 1905",
+      "name": "Japan: beams out, ship-minutes",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 11.291666666666666,
+        "se": 2.534856007026699
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 18.770833333333332,
+        "se": 3.028856428063293
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Tsushima 1905",
+      "name": "Japan: star shell, ship-minutes",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Tsushima 1905",
+      "name": "Japan: first salvo, minutes",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 26,
+        "mean": 44.86078589743591,
+        "se": 5.335149342988955
+      },
+      "coarse": {
+        "n": 32,
+        "mean": 36.45625052083333,
+        "se": 5.3060635247077395
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Tsushima 1905",
+      "name": "Japan: first torpedoes, minutes",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 20,
+        "mean": 61.8972225,
+        "se": 6.093810695538456
+      },
+      "coarse": {
+        "n": 26,
+        "mean": 50.549025,
+        "se": 5.5443274704065315
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Tsushima 1905",
+      "name": "Japan: hits on ships lit, share",
+      "floor": 0.1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.6761041902604756,
+        "se": 0.061656401077996414
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.6154976619906479,
+        "se": 0.04398010917443529
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Tsushima 1905",
+      "name": "the exchange: Russia\u0027s share of the tonnage lost",
+      "floor": 0.1,
+      "absolute": true,
+      "fine": {
+        "n": 14,
+        "mean": 0.2802600192503522,
+        "se": 0.12299986263702312
+      },
+      "coarse": {
+        "n": 21,
+        "mean": 0.0821386151207346,
+        "se": 0.05676736581106295
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Tsushima 1905",
+      "name": "decided, share",
+      "floor": 0.1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Tsushima 1905",
+      "name": "the end, hours",
+      "floor": 0.25,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 2,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 2,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Southampton, Jutland 1916",
+      "name": "Britain: ships lost",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 1.0416666666666667,
+        "se": 0.14266440476764647
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 1.3125,
+        "se": 0.13695086995029218
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Southampton, Jutland 1916",
+      "name": "Britain: tonnage lost, share",
+      "floor": 0.05,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.25993690029203165,
+        "se": 0.035635347377012704
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.3341220796829371,
+        "se": 0.034649224870748
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Southampton, Jutland 1916",
+      "name": "Britain: shell hits made",
+      "floor": 3,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 46.020833333333336,
+        "se": 5.306015720114672
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 57.020833333333336,
+        "se": 6.532277305330448
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Southampton, Jutland 1916",
+      "name": "Britain: hit %",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 72.42622950819673,
+        "se": 2.8381150843480687
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 76.73114662181104,
+        "se": 2.9704515876798174
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Southampton, Jutland 1916",
+      "name": "Britain: ships firing torpedoes",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 3.2916666666666665,
+        "se": 0.16022571991998374
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 3.0208333333333335,
+        "se": 0.19408263789161895
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Southampton, Jutland 1916",
+      "name": "Britain: torpedo hits",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 4.020833333333333,
+        "se": 0.4887833928057932
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 2.6875,
+        "se": 0.35748859278532397
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Southampton, Jutland 1916",
+      "name": "Britain: beams out, ship-minutes",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 8.333333333333334,
+        "se": 0.7307417132863313
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 9.125,
+        "se": 1.002932314241771
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Southampton, Jutland 1916",
+      "name": "Britain: star shell, ship-minutes",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Southampton, Jutland 1916",
+      "name": "Britain: first salvo, minutes",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 47,
+        "mean": 25.783665248226956,
+        "se": 1.3860121899885298
+      },
+      "coarse": {
+        "n": 44,
+        "mean": 43.85312348484848,
+        "se": 2.270894967319168
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Southampton, Jutland 1916",
+      "name": "Britain: first torpedoes, minutes",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 47,
+        "mean": 24.45345992907801,
+        "se": 1.3936190480603645
+      },
+      "coarse": {
+        "n": 44,
+        "mean": 41.54788257575756,
+        "se": 2.305003769425933
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Southampton, Jutland 1916",
+      "name": "Britain: hits on ships lit, share",
+      "floor": 0.1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.2526029877772748,
+        "se": 0.036673251849150434
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.43149433686518085,
+        "se": 0.046358831223401974
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Southampton, Jutland 1916",
+      "name": "Germany: ships lost",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 1.8541666666666667,
+        "se": 0.2325269437093848
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 1.625,
+        "se": 0.20330818935339529
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Southampton, Jutland 1916",
+      "name": "Germany: tonnage lost, share",
+      "floor": 0.05,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.37779353926830267,
+        "se": 0.04699140078779335
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.32091987927950083,
+        "se": 0.04060583315928616
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Southampton, Jutland 1916",
+      "name": "Germany: shell hits made",
+      "floor": 3,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 185.22916666666666,
+        "se": 17.605488535708666
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 197.66666666666666,
+        "se": 24.91516338357547
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Southampton, Jutland 1916",
+      "name": "Germany: hit %",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 49.23034330011074,
+        "se": 3.2616345480088653
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 59.3,
+        "se": 3.589697687850548
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Southampton, Jutland 1916",
+      "name": "Germany: ships firing torpedoes",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 4.375,
+        "se": 0.13522046615836342
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 4.083333333333333,
+        "se": 0.20806720590939085
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Southampton, Jutland 1916",
+      "name": "Germany: torpedo hits",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 1.3125,
+        "se": 0.1635061594692908
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 2.0625,
+        "se": 0.2196189680668584
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Southampton, Jutland 1916",
+      "name": "Germany: beams out, ship-minutes",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 2.6041666666666665,
+        "se": 0.5756122113443221
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 2.4375,
+        "se": 0.42516814571138745
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Southampton, Jutland 1916",
+      "name": "Germany: star shell, ship-minutes",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 96.10416666666667,
+        "se": 10.15069258298677
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 72.64583333333333,
+        "se": 8.42143971027135
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Southampton, Jutland 1916",
+      "name": "Germany: first salvo, minutes",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 24.984607986111104,
+        "se": 1.358934447621074
+      },
+      "coarse": {
+        "n": 45,
+        "mean": 41.24382407407408,
+        "se": 2.4209373534509413
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Southampton, Jutland 1916",
+      "name": "Germany: first torpedoes, minutes",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 25.533470486111113,
+        "se": 1.5821514954705944
+      },
+      "coarse": {
+        "n": 45,
+        "mean": 41.25402555555556,
+        "se": 2.3964832671560354
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Southampton, Jutland 1916",
+      "name": "Germany: hits on ships lit, share",
+      "floor": 0.1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.0867169047351254,
+        "se": 0.017116335925524268
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.2038364249578415,
+        "se": 0.033370043108846545
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Southampton, Jutland 1916",
+      "name": "the exchange: Britain\u0027s share of the tonnage lost",
+      "floor": 0.1,
+      "absolute": true,
+      "fine": {
+        "n": 43,
+        "mean": 0.3714743491765272,
+        "se": 0.05540092471319372
+      },
+      "coarse": {
+        "n": 43,
+        "mean": 0.4680914058416431,
+        "se": 0.045940682130526905
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Southampton, Jutland 1916",
+      "name": "decided, share",
+      "floor": 0.1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.08333333333333333,
+        "se": 0.04031495390390808
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.041666666666666664,
+        "se": 0.029147663515556036
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Southampton, Jutland 1916",
+      "name": "the end, hours",
+      "floor": 0.25,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 1.9149305555555554,
+        "se": 0.04469282577728509
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 1.9635416666666667,
+        "se": 0.0324713315773928
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 4th Flotilla, Jutland 1916",
+      "name": "Britain: ships lost",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 5.75,
+        "se": 0.34013451656911
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 4.729166666666667,
+        "se": 0.25567943022501655
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 4th Flotilla, Jutland 1916",
+      "name": "Britain: tonnage lost, share",
+      "floor": 0.05,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.5831477732793521,
+        "se": 0.03375674818806442
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.47563259109311734,
+        "se": 0.025579734351989222
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 4th Flotilla, Jutland 1916",
+      "name": "Britain: shell hits made",
+      "floor": 3,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 158.70833333333334,
+        "se": 12.04696624406241
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 156.35416666666666,
+        "se": 10.434041803348258
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 4th Flotilla, Jutland 1916",
+      "name": "Britain: hit %",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 72.84375597628609,
+        "se": 2.3912549930250147
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 72.76517355051386,
+        "se": 1.2828883140182101
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 4th Flotilla, Jutland 1916",
+      "name": "Britain: ships firing torpedoes",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 6.895833333333333,
+        "se": 0.3039917402371119
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 4.104166666666667,
+        "se": 0.4160345382268592
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 4th Flotilla, Jutland 1916",
+      "name": "Britain: torpedo hits",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 7.9375,
+        "se": 0.6346986845840836
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 2.4166666666666665,
+        "se": 0.3595620530261214
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 4th Flotilla, Jutland 1916",
+      "name": "Britain: beams out, ship-minutes",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 14.375,
+        "se": 1.327767082560761
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 13.770833333333334,
+        "se": 1.2010779671182577
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 4th Flotilla, Jutland 1916",
+      "name": "Britain: star shell, ship-minutes",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 4th Flotilla, Jutland 1916",
+      "name": "Britain: first salvo, minutes",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 34.72554513888888,
+        "se": 1.6617060181904786
+      },
+      "coarse": {
+        "n": 47,
+        "mean": 36.18962907801417,
+        "se": 0.8684303773792044
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 4th Flotilla, Jutland 1916",
+      "name": "Britain: first torpedoes, minutes",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 32.80867152777778,
+        "se": 0.24948237009124938
+      },
+      "coarse": {
+        "n": 46,
+        "mean": 43.25031594202898,
+        "se": 1.9150316271988184
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 4th Flotilla, Jutland 1916",
+      "name": "Britain: hits on ships lit, share",
+      "floor": 0.1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.4236019952743502,
+        "se": 0.028909553616344674
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.4703530979347102,
+        "se": 0.030051882528948245
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 4th Flotilla, Jutland 1916",
+      "name": "Germany: ships lost",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 1.1666666666666667,
+        "se": 0.1407091126172092
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.6875,
+        "se": 0.09944994999089486
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 4th Flotilla, Jutland 1916",
+      "name": "Germany: tonnage lost, share",
+      "floor": 0.05,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.16945964605903074,
+        "se": 0.024643022443695477
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.06855300653528412,
+        "se": 0.01239938674608419
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 4th Flotilla, Jutland 1916",
+      "name": "Germany: shell hits made",
+      "floor": 3,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 198.33333333333334,
+        "se": 10.732330577360607
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 132.25,
+        "se": 8.169063550418747
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 4th Flotilla, Jutland 1916",
+      "name": "Germany: hit %",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 51.5737580583997,
+        "se": 1.9882576570417092
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 56.5674567813224,
+        "se": 1.5786712348782588
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 4th Flotilla, Jutland 1916",
+      "name": "Germany: ships firing torpedoes",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 3.7083333333333335,
+        "se": 0.224710872810681
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 5,
+        "se": 0.2400502311500185
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 4th Flotilla, Jutland 1916",
+      "name": "Germany: torpedo hits",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 1.6041666666666667,
+        "se": 0.22624671020164813
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 2.625,
+        "se": 0.26232897164000424
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 4th Flotilla, Jutland 1916",
+      "name": "Germany: beams out, ship-minutes",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 4.145833333333333,
+        "se": 0.7195284996581661
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 1.2291666666666667,
+        "se": 0.3126181809629089
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 4th Flotilla, Jutland 1916",
+      "name": "Germany: star shell, ship-minutes",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 76.9375,
+        "se": 3.9120887215007816
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 59.958333333333336,
+        "se": 3.9937848804604883
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 4th Flotilla, Jutland 1916",
+      "name": "Germany: first salvo, minutes",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 33.73043715277778,
+        "se": 1.6423607727105622
+      },
+      "coarse": {
+        "n": 47,
+        "mean": 34.34997092198582,
+        "se": 0.5170689823923729
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 4th Flotilla, Jutland 1916",
+      "name": "Germany: first torpedoes, minutes",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 36.219684375,
+        "se": 1.8441903525496641
+      },
+      "coarse": {
+        "n": 47,
+        "mean": 35.3033244680851,
+        "se": 0.6753034748914335
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 4th Flotilla, Jutland 1916",
+      "name": "Germany: hits on ships lit, share",
+      "floor": 0.1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.38581932773109245,
+        "se": 0.028048288808047914
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.3794896030245747,
+        "se": 0.02572017318556262
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 4th Flotilla, Jutland 1916",
+      "name": "the exchange: Britain\u0027s share of the tonnage lost",
+      "floor": 0.1,
+      "absolute": true,
+      "fine": {
+        "n": 46,
+        "mean": 0.48201219011451224,
+        "se": 0.051098418748734824
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.6275636824518045,
+        "se": 0.04966197618375715
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 4th Flotilla, Jutland 1916",
+      "name": "decided, share",
+      "floor": 0.1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.041666666666666664,
+        "se": 0.029147663515556043
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 4th Flotilla, Jutland 1916",
+      "name": "the end, hours",
+      "floor": 0.25,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 1.9677083333333334,
+        "se": 0.023425635623261585
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 2,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Black Prince, Jutland 1916",
+      "name": "Britain: ships lost",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.14583333333333334,
+        "se": 0.051481451363722876
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.3125,
+        "se": 0.06761023307918171
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Black Prince, Jutland 1916",
+      "name": "Britain: tonnage lost, share",
+      "floor": 0.05,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.14583333333333334,
+        "se": 0.051481451363722876
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.3125,
+        "se": 0.06761023307918171
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Black Prince, Jutland 1916",
+      "name": "Britain: shell hits made",
+      "floor": 3,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 60.020833333333336,
+        "se": 7.1983357010254245
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 50.125,
+        "se": 6.0793821570409206
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Black Prince, Jutland 1916",
+      "name": "Britain: hit %",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 85.18628030751036,
+        "se": 3.1814051710772793
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 76.11515343245809,
+        "se": 3.328407929454749
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Black Prince, Jutland 1916",
+      "name": "Britain: ships firing torpedoes",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Black Prince, Jutland 1916",
+      "name": "Britain: torpedo hits",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Black Prince, Jutland 1916",
+      "name": "Britain: beams out, ship-minutes",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 4.104166666666667,
+        "se": 0.5524282175805255
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 3.3333333333333335,
+        "se": 0.43386492216538897
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Black Prince, Jutland 1916",
+      "name": "Britain: star shell, ship-minutes",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Black Prince, Jutland 1916",
+      "name": "Britain: first salvo, minutes",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 43.378868402777776,
+        "se": 0.12219007817012367
+      },
+      "coarse": {
+        "n": 45,
+        "mean": 43.88032444444443,
+        "se": 0.1667662153489674
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Black Prince, Jutland 1916",
+      "name": "Britain: first torpedoes, minutes",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 0
+      },
+      "coarse": {
+        "n": 0
+      },
+      "verdict": "-"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Black Prince, Jutland 1916",
+      "name": "Britain: hits on ships lit, share",
+      "floor": 0.1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.44151336341548075,
+        "se": 0.04272904781248253
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.428927680798005,
+        "se": 0.054088695241966085
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Black Prince, Jutland 1916",
+      "name": "Germany: ships lost",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Black Prince, Jutland 1916",
+      "name": "Germany: tonnage lost, share",
+      "floor": 0.05,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Black Prince, Jutland 1916",
+      "name": "Germany: shell hits made",
+      "floor": 3,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 41.833333333333336,
+        "se": 5.236459517100431
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 59.958333333333336,
+        "se": 10.380011749151807
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Black Prince, Jutland 1916",
+      "name": "Germany: hit %",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 55.93314763231197,
+        "se": 1.9941040759486575
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 67.22728334501285,
+        "se": 3.0302558411047262
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Black Prince, Jutland 1916",
+      "name": "Germany: ships firing torpedoes",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 2.625,
+        "se": 0.08221770960717432
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 1.8541666666666667,
+        "se": 0.15179068073008034
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Black Prince, Jutland 1916",
+      "name": "Germany: torpedo hits",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 1.8958333333333333,
+        "se": 0.22916666666666666
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 1.2083333333333333,
+        "se": 0.261200062812471
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Black Prince, Jutland 1916",
+      "name": "Germany: beams out, ship-minutes",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 1.6666666666666667,
+        "se": 0.9992609562215681
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 1.2291666666666667,
+        "se": 0.40633239299049334
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Black Prince, Jutland 1916",
+      "name": "Germany: star shell, ship-minutes",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 21.604166666666668,
+        "se": 2.061711827337529
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 23.458333333333332,
+        "se": 1.965337557252695
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Black Prince, Jutland 1916",
+      "name": "Germany: first salvo, minutes",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 42.762654861111116,
+        "se": 0.087785622262443
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 43.049604861111106,
+        "se": 0.11362491348545893
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Black Prince, Jutland 1916",
+      "name": "Germany: first torpedoes, minutes",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 43.543055555555554,
+        "se": 0.14897273780419826
+      },
+      "coarse": {
+        "n": 45,
+        "mean": 46.074814814814815,
+        "se": 1.8883338178951463
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Black Prince, Jutland 1916",
+      "name": "Germany: hits on ships lit, share",
+      "floor": 0.1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.3610557768924303,
+        "se": 0.04381616868718904
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.6056289089645587,
+        "se": 0.04120553837765839
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Black Prince, Jutland 1916",
+      "name": "the exchange: Britain\u0027s share of the tonnage lost",
+      "floor": 0.1,
+      "absolute": true,
+      "fine": {
+        "n": 7,
+        "mean": 1,
+        "se": 0
+      },
+      "coarse": {
+        "n": 15,
+        "mean": 1,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Black Prince, Jutland 1916",
+      "name": "decided, share",
+      "floor": 0.1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.14583333333333334,
+        "se": 0.051481451363722876
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.3125,
+        "se": 0.06761023307918171
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: Black Prince, Jutland 1916",
+      "name": "the end, hours",
+      "floor": 0.25,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 1.9114583333333333,
+        "se": 0.03583325172485072
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 1.8628472222222223,
+        "se": 0.038860085954249834
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 12th Flotilla, Jutland 1916",
+      "name": "Britain: ships lost",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.1875,
+        "se": 0.06424858913372151
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.10416666666666667,
+        "se": 0.04455834621587848
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 12th Flotilla, Jutland 1916",
+      "name": "Britain: tonnage lost, share",
+      "floor": 0.05,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.02159240443524031,
+        "se": 0.007424307465709346
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.010854851583398049,
+        "se": 0.0046793684359556454
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 12th Flotilla, Jutland 1916",
+      "name": "Britain: shell hits made",
+      "floor": 3,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 1.1458333333333333,
+        "se": 0.6371963073973019
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 1.125,
+        "se": 0.7471132387324974
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 12th Flotilla, Jutland 1916",
+      "name": "Britain: hit %",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 6.351039260969977,
+        "se": 1.311042041700079
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 8.571428571428571,
+        "se": 3.993364082518083
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 12th Flotilla, Jutland 1916",
+      "name": "Britain: ships firing torpedoes",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.020833333333333332,
+        "se": 0.020833333333333336
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.020833333333333332,
+        "se": 0.02083333333333334
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 12th Flotilla, Jutland 1916",
+      "name": "Britain: torpedo hits",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0.020833333333333332,
+        "se": 0.020833333333333336
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 12th Flotilla, Jutland 1916",
+      "name": "Britain: beams out, ship-minutes",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 4.645833333333333,
+        "se": 1.6255085356309222
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 1.8958333333333333,
+        "se": 0.8753112837046118
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 12th Flotilla, Jutland 1916",
+      "name": "Britain: star shell, ship-minutes",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 12th Flotilla, Jutland 1916",
+      "name": "Britain: first salvo, minutes",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 12,
+        "mean": 73.43585694444444,
+        "se": 6.354475468185894
+      },
+      "coarse": {
+        "n": 11,
+        "mean": 51.98181212121213,
+        "se": 5.962324432601468
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 12th Flotilla, Jutland 1916",
+      "name": "Britain: first torpedoes, minutes",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 1,
+        "mean": 115.43996666666666
+      },
+      "coarse": {
+        "n": 1,
+        "mean": 85.5257
+      },
+      "verdict": "FAIL"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 12th Flotilla, Jutland 1916",
+      "name": "Britain: hits on ships lit, share",
+      "floor": 0.1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0.07407407407407407,
+        "se": 0.029602376827409776
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 12th Flotilla, Jutland 1916",
+      "name": "Germany: ships lost",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 12th Flotilla, Jutland 1916",
+      "name": "Germany: tonnage lost, share",
+      "floor": 0.05,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 12th Flotilla, Jutland 1916",
+      "name": "Germany: shell hits made",
+      "floor": 3,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 22.1875,
+        "se": 7.855389364353802
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 5.916666666666667,
+        "se": 2.061946967191027
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 12th Flotilla, Jutland 1916",
+      "name": "Germany: hit %",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 6.906166915245445,
+        "se": 1.651852049921731
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 2.556715880446525,
+        "se": 0.6797174216238022
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 12th Flotilla, Jutland 1916",
+      "name": "Germany: ships firing torpedoes",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 12th Flotilla, Jutland 1916",
+      "name": "Germany: torpedo hits",
+      "floor": 0.5,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 12th Flotilla, Jutland 1916",
+      "name": "Germany: beams out, ship-minutes",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 14.541666666666666,
+        "se": 4.716704727561145
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 10.520833333333334,
+        "se": 4.462708920287142
+      },
+      "verdict": "noisy"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 12th Flotilla, Jutland 1916",
+      "name": "Germany: star shell, ship-minutes",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 12th Flotilla, Jutland 1916",
+      "name": "Germany: first salvo, minutes",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 33.75174166666666,
+        "se": 0.04146546047532872
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 34.34655555555555,
+        "se": 0.12580269600680305
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 12th Flotilla, Jutland 1916",
+      "name": "Germany: first torpedoes, minutes",
+      "floor": 1,
+      "absolute": false,
+      "fine": {
+        "n": 0
+      },
+      "coarse": {
+        "n": 0
+      },
+      "verdict": "-"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 12th Flotilla, Jutland 1916",
+      "name": "Germany: hits on ships lit, share",
+      "floor": 0.1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 12th Flotilla, Jutland 1916",
+      "name": "the exchange: Britain\u0027s share of the tonnage lost",
+      "floor": 0.1,
+      "absolute": true,
+      "fine": {
+        "n": 8,
+        "mean": 1,
+        "se": 0
+      },
+      "coarse": {
+        "n": 5,
+        "mean": 1,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 12th Flotilla, Jutland 1916",
+      "name": "decided, share",
+      "floor": 0.1,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 0,
+        "se": 0
+      },
+      "verdict": "ok"
+    },
+    {
+      "layer": "night",
+      "case": "Night: the 12th Flotilla, Jutland 1916",
+      "name": "the end, hours",
+      "floor": 0.25,
+      "absolute": false,
+      "fine": {
+        "n": 48,
+        "mean": 2,
+        "se": 0
+      },
+      "coarse": {
+        "n": 48,
+        "mean": 2,
+        "se": 0
+      },
+      "verdict": "ok"
+    }
+  ]
+}

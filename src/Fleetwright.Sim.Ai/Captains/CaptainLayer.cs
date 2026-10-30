@@ -124,6 +124,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         public bool Met;                // doctrine's Engage taken up in this encounter
         public long TorpedoMs;          // when he last fired torpedoes (0: never)
         public bool TorpedoHeld;        // his flotilla attacking together: his torpedoes wait for its signal
+        public bool TorpedoWait;        // on the coarse fire watch: a torpedo target found, his tubes not bearing yet
         public bool Attacking;          // fighting: pressing a torpedo attack (his searchlights dark, docs/battle/night.md Q4)
         public CaptainReason Reason;    // why, when it isn't simply his order (fallen out)
         public bool Overruled;          // the player ordered him on after he fell out: he stays, at his ship's risk

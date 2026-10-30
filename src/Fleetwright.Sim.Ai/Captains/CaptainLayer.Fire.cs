@@ -97,6 +97,10 @@ public sealed partial class CaptainLayer
     void FirePass(in AiContext ctx)
     {
         var store = ctx.Ships;
+        foreach (int e in torpedoWaiting)
+            if (Find(e) is int wi and >= 0)
+                captains[wi].TorpedoWait = false;
+        torpedoWaiting.Clear();   // the think finds them again
         fighters.Clear();
         for (int k = 0; k < store.OffRailsCount; k++)
         {
@@ -524,8 +528,14 @@ public sealed partial class CaptainLayer
                     (target, bestRank, bestRun) = (pic[i].Entity, rank, run);
             }
         }
-        if (target == 0 || ctx.World.Torpedoes.Ready(ctx.World, own.Entity, target) == 0)
+        if (target == 0)
             return;
+        if (ctx.World.Torpedoes.Ready(ctx.World, own.Entity, target) == 0)
+        {
+            if (TorpedoesLeft(ctx, own, slot))
+                Wait(ref cap);   // her tubes don't bear yet (or reload): tried again as they come round
+            return;
+        }
         int ti = pic.IndexOf(target);
         var (tq, tv, _) = pic.EstimateAt(ti, now, s);
         if (!TorpedoAim.Intercept(own.Position, tq, tv, speed, out double toward, out _))
@@ -534,9 +544,49 @@ public sealed partial class CaptainLayer
         var fwd = Earth.Forward(aim, toward);
         Earth.Advance(ref aim, ref fwd, 1000);
         if (lines.TorpedoFoul(ctx, own, aim, FastSetting(cls).RangeM, speed))
-            return;   // a friend on the track: not now
+        {
+            Wait(ref cap);   // a friend on the track: not now
+            return;
+        }
         ctx.Issue(TorpedoSystem.Launch(own.Entity, target, s.TorpedoSpread));
         cap.TorpedoMs = now;
+    }
+
+    // the coarse fire watch's ships (docs/battle/night.md Q11): those whose think found a target for their torpedoes but
+    // couldn't fire yet, by entity, each once (Captain.TorpedoWait); found afresh at each think
+    readonly List<int> torpedoWaiting = [];
+
+    void Wait(ref Captain cap)
+    {
+        if (cap.TorpedoWait)
+            return;
+        cap.TorpedoWait = true;
+        torpedoWaiting.Add(cap.Entity);
+    }
+
+    /// <summary>Whether a captain's think left a ship waiting to fire her torpedoes.</summary>
+    internal bool TorpedoesWaiting => torpedoWaiting.Count > 0;
+
+    /// <summary>The coarse fire watch's look (docs/battle/night.md Q11): each ship whose captain's last think found a target
+    /// for her torpedoes but couldn't fire (her tubes not bearing, a friend on the track) tries again by the think's own
+    /// test (<see cref="Torpedoes"/>), as a fine captain does each second; those still waiting stay on the watch.</summary>
+    internal void WatchTorpedoes(in AiContext ctx)
+    {
+        int n = torpedoWaiting.Count;
+        for (int k = 0; k < n; k++)
+        {
+            int e = torpedoWaiting[k];
+            if (Find(e) is not (int i and >= 0))
+                continue;
+            captains[i].TorpedoWait = false;
+            if (ctx.Ships.SlotOf(e) is not (int slot and >= 0) || ctx.Ships.Combat.Condition(slot).Status != ShipStatus.Afloat)
+                continue;
+            var own = ctx.Ships[slot];
+            candUnknowns = (Unknowns)doctrine.Of(own.Entity, own.Side, DoctrineField.Unknowns);
+            candBold = doctrine.Of(own.Entity, own.Side, DoctrineField.Aggression);
+            Torpedoes(ctx, ref captains[i], own, slot, ctx.World.Sightings.Of(own.Side));
+        }
+        torpedoWaiting.RemoveRange(0, n);
     }
 
     /// <summary>His flotilla's admiral holds his torpedoes for its signal, or lets them go (docs/battle/command.md 5.1b).</summary>

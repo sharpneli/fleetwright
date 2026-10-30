@@ -96,11 +96,11 @@ public sealed class StarShellSystem : IWorldSystem
         return i >= 0;
     }
 
-    /// <summary>The flares burning now: how many, and each one's place (its height in it) and light; for tools, tests and the
-    /// map's placeholder.</summary>
+    /// <summary>The flares burning, or out within a coarse step: how many, and each one's place (its height in it; where it
+    /// went out, once out) and light; for tools and tests.</summary>
     public int FlareCount => flareCount;
 
-    public (Vec3d At, double Cd) FlareAt(int i, long nowMs) => (Where(flares[i], nowMs), flares[i].Cd);
+    public (Vec3d At, double Cd) FlareAt(int i, long nowMs) => (Where(flares[i], Math.Min(nowMs, OutMs(flares[i]))), flares[i].Cd);
 
     public void Apply(World world, in Command c)
     {
@@ -186,12 +186,13 @@ public sealed class StarShellSystem : IWorldSystem
         }
     }
 
-    /// <summary>Flares burnt out or in the sea go.</summary>
+    /// <summary>Flares burnt out or in the sea go, once a coarse step past (a coarse look takes those of its minute:
+    /// <see cref="Gather"/>).</summary>
     void Prune(long now)
     {
         int n = 0;
         for (int i = 0; i < flareCount; i++)
-            if (now < OutMs(flares[i]))
+            if (now < OutMs(flares[i]) + settings.CoarseStepMs)
                 flares[n++] = flares[i];
         flareCount = n;
     }
@@ -408,15 +409,18 @@ public sealed class StarShellSystem : IWorldSystem
         return frame.ToWorld(m.X, m.Y, axis - cls.Vertical.Waterline);
     }
 
-    /// <summary>The flares burning now into the lights (at a look).</summary>
-    internal void Gather(World world, Lights lights)
+    /// <summary>The flares into the lights at a look: those burning now, and those that burned within the look's span beyond
+    /// a fine look's (<paramref name="windowMs"/>: the coarse tier's minute, docs/battle/night.md Q11), each where it was
+    /// last burning then. A star shell lights its minute for the coarse look, as a gun's flash shows over the look's span.</summary>
+    internal void Gather(World world, Lights lights, long windowMs)
     {
         long now = world.Time.Ms;
         for (int i = 0; i < flareCount; i++)
         {
             ref readonly var f = ref flares[i];
-            if (now >= f.BurstMs && now < OutMs(f))
-                lights.AddFlare(Where(f, now), f.Cd);
+            long outMs = OutMs(f);
+            if (now >= f.BurstMs && now - windowMs < outMs)
+                lights.AddFlare(Where(f, Math.Min(now, outMs - 1)), f.Cd);
         }
     }
 

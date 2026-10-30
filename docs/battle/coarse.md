@@ -81,7 +81,7 @@ Coarse's yardstick is the fine tier, never history (the user, 2026-10-26). Histo
 (`history-is-the-yardstick`).
 
 **`shipgen coarse-parity`** runs a fixed panel both ways, many seeds each, and prints fine against coarse with the
-bands below. The panel has four layers, cheapest first:
+bands below. The panel has five layers, cheapest first:
 
 - **Duels** (`FcBench` at the tier's speed, 300 runs each): one battery on a scripted target. Battleship on battleship
   at 16 kyd (steady, zigzagging, turning, own ship turning) and at 7 km in haze; secondaries on a destroyer (steady and
@@ -100,6 +100,10 @@ bands below. The panel has four layers, cheapest first:
   and the Jutland). Each side's ships lost, tonnage share lost, shell hits made, hit %, ships firing torpedoes and
   torpedo hits; the exchange (one side's share of the tonnage lost); how often it's decided, and when it ends. This
   layer includes the AI at a minute's cadence.
+- **The night** (added 2026-10-30, `night.md` Q11): the night-history bench's scenarios (`night-tsushima`,
+  `night-southampton`, `night-4th-flotilla`, `night-black-prince`, `night-12th-flotilla`; the Dover Strait is in the
+  scenarios layer), with the scenarios' measures and each side's night ones: beams out and star shell (ship-minutes,
+  read each minute), the first salvo's and the first torpedoes' minute, and the share of its hits on ships lit.
 
 Scenarios play 48 seeds each way by default (`--seeds`), many at once (`--threads`); `--only` picks scenarios by file
 name, and `--fine-from` reuses a kept fine side when only coarse changed. The kept baselines live in
@@ -554,3 +558,4 @@ The user's, 2026-10-26:
 | 2026-10-27 | J5 (sighting and smoke) | standard, both ways (fine rerun: the lines unwound): 186 measures, 14 min on 32 threads | the prizes' war's Italian losses -68% (and France's hits -36%, fine's side moved); squadrons' British tonnage share -44%; the flotilla's hit % +41% | 90 ok, 6 FAIL, 90 noisy: J4's fails in or near the bands; the new ones the AI's minute in smoke (`2026-10-27-standard-j5.json`, the new fine baseline) |
 | 2026-10-27 | J6 (damage at speed) | standard, both ways (the spent magazine fix and the water's clock reach fine) | squadrons' British tonnage share -44%; the prizes' war's Italian ships lost -54%; the Dover Strait's German hit % +48% | 93 ok, 4 FAIL, 89 noisy: nothing moved over 3 SE since J5 (`2026-10-27-standard-j6.json`, the fine baseline now) |
 | 2026-10-27 | J7 (the 3 s fire-control grid in coarse) | standard, coarse only against J6's fine baseline: 186 measures, 3.3 min on 32 threads | the night's hit % (the Dover Strait +65%, +68%; Cape Sarych +75%); squadrons' German tonnage share -42% | 94 ok, 4 FAIL, 88 noisy (`2026-10-27-standard-j7.json`) |
+| 2026-10-30 | night.md Q11 (the night layer; the coarse fire watch, a minute's flare) | standard, both ways (fine moved: the crew and night plans), with the night layer: 311 measures, 17.7 min on 32 threads | day gunnery drifted since J7: coarse shell hits -34 to -49% at Cape Sarych, Coronel, the prizes' war and Tsushima (HEAD before Q11 the same against this fine side: not Q11's); the night: Southampton's first salvo +17 min (bugs.md, the enemy's smoke on coarse lines), the 4th Flotilla's British torpedo hits -70% | 151 ok, 31 FAIL, 126 noisy (`2026-10-30-standard-q11.json`, the fine baseline now) |

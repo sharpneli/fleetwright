@@ -320,6 +320,26 @@ Seen in the AI's baseline after the detail passes (2026-10-20, docs/battle/comma
   2 (workers.md W8). Kept as it is (the user, 2026-10-26): real speed in a fleet action is the coarse tier's (fighting.md
   4.8-4.9), not the fine tier's.
 
+## The coarse tier
+
+- [ ] **The enemy's minutes-old smoke is missing from coarse sight lines** (found 2026-10-30, docs/battle/night.md Q11;
+  `night-southampton`). On the British lines to Stettin, the German column's trails drifting across them on the SW
+  wind, the fine look's depth rises from 0.04 to 0.16-0.20 (top band) and 0.06-0.10 (middle) within a minute or two of
+  the encounter opening. The coarse look's stays at the opening's 0.035 for ten minutes and more, with nothing in the
+  middle band. `smoke run` lays about as many puffs either way (709 against 575 at 2 min), and the pair cache holds 15 s,
+  so the smoke is made but doesn't reach coarse's lines. Not the pose (a coarse ship's `PoseMs` is the store's now) nor
+  the funnels' output (from speed alike). At night it decides a margin near 1 (Stettin at 1.0 fine, 1.1-1.4 coarse): coarse
+  holds her in sight, the commander counts that as in contact and never orders the intercept, and the first salvo
+  comes 17 min late on average (48 seeds). With the field off, fine and coarse agree there (45 min each). By day the
+  margins are too large for it to show. Next: probe `Work` on one pair in each tier (which puffs it finds, their age
+  and height), likely the young part against the minute's air (`Unwind`, the index's cut).
+- [ ] **Coarse day gunnery has drifted since J7** (found 2026-10-30 by the standard panel, `coarse.md`'s parity log):
+  coarse makes 34-49% fewer shell hits than fine at Cape Sarych, Coronel, the prizes' war and Tsushima, where J7 had
+  them in the bands. HEAD before Q11 gives the same against today's fine side, so it came in with a fine pass between
+  2026-10-27 and 2026-10-30 (the crew plan N0-N6, or the night plan's Q1-Q10: the eye, the sky). Next: bisect with
+  `coarse-parity --layer scenarios --only coronel` (both ways, ~2 min) over those commits; then fix on the coarse rung
+  that drifted (`coarse.md` "The principle").
+
 ## The app
 
 - [ ] Dev ships placed with `-ships=...@lat,lon` didn't show in `-screenshot` captures at `-speed=1` or `2` (frames 120-900),

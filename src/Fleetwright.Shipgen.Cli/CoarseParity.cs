@@ -11,13 +11,16 @@ using Fleetwright.Sim.Ships;
 namespace Fleetwright.Shipgen.Cli;
 
 /// <summary><c>shipgen coarse-parity</c> (docs/battle/coarse.md "The parity bench", J0): the coarse tier measured against
-/// the fine one, its gold standard. A fixed panel in four layers, cheapest first, each case run both ways:
+/// the fine one, its gold standard. A fixed panel in five layers, cheapest first, each case run both ways:
 /// <list type="bullet">
 /// <item><b>Duels</b> (<see cref="FcBench"/>, no damage): one battery on a scripted target. Fire alone, no AI.</item>
 /// <item><b>Dodging</b> (decision 1): the AI's own ships under fire, played to the end (a flotilla's attack run, light
 /// ships running from heavy ones); the hit rate on each target class, and the boats' torpedoes.</item>
 /// <item><b>Fights to the end</b>: duels with damage (the target down, out of the fight, and when), and the squadrons.</item>
 /// <item><b>Scenarios</b> played to their end: each side's losses, hits and torpedoes, the end's time, the exchange.</item>
+/// <item><b>The night</b> (docs/battle/night.md Q11): the record's night fights (the <c>night-*</c> scenarios), as
+/// scenarios, with each side's lights (beams and star shell out, ship-minutes), its first salvo and torpedoes, and its
+/// hits on ships lit.</item>
 /// </list>
 /// Each measure's two means are set beside its band (decision 5: ±15% of fine's, an absolute floor for small numbers; the
 /// exchange ±10 points) and judged: ok, FAIL (outside the band by more than twice the noise), or noisy (a standard error
@@ -131,10 +134,11 @@ static class CoarseParity
     static readonly string[] FightScenarios = ["squadrons"];
     static readonly string[] StandardScenarios = ["dover-strait", "cape-sarych", "coronel", "prizes-war", "aland", "tsushima"];
     static readonly string[] FullScenarios = ["heligoland-bight", "dogger-bank", "jutland"];
+    static readonly string[] NightScenarios = ["night-tsushima", "night-southampton", "night-4th-flotilla", "night-black-prince", "night-12th-flotilla"];
 
     public static int Run(SimSettings settings, string root, Func<string, ShipClass> cls, Options o)
     {
-        var all = new[] { "duels", "dodging", "fights", "scenarios" };
+        var all = new[] { "duels", "dodging", "fights", "scenarios", "night" };
         var layers = o.Layers ?? (o.Panel == "quick" ? ["duels"] : all);
         if (layers.FirstOrDefault(l => !all.Contains(l)) is { } bad)
             throw new ArgumentException($"no layer '{bad}' ({string.Join(", ", all)})");
@@ -178,6 +182,8 @@ static class CoarseParity
             plays.AddRange(FightScenarios.Select(n => ("fights", n)));
         if (layers.Contains("scenarios"))
             plays.AddRange((o.Panel == "full" ? [.. StandardScenarios, .. FullScenarios] : StandardScenarios).Select(n => ("scenarios", n)));
+        if (layers.Contains("night"))
+            plays.AddRange(NightScenarios.Select(n => ("night", n)));
         if (o.Only != null)
             plays = [.. plays.Where(p => o.Only.Contains(p.Name))];
         if (plays.Count > 0)
@@ -249,6 +255,9 @@ static class CoarseParity
         /// <summary>Shells fired at, and shell hits on, each target class.</summary>
         public readonly Dictionary<string, (double Shells, double Hits)> At = [];
         public required double[] Shells, ShellHits, TorpedoHits, Launchers;
+        /// <summary>The night's (Q11), each side's: ship-minutes with beams out and with a star shell task's mount, read at
+        /// each minute; the first salvo's and torpedoes' minute from the start (NaN: none); shell hits on ships lit then.</summary>
+        public required double[] BeamMin, StarMin, FirstFireMin, FirstTorpMin, HitsOnLit;
         public long Missed;
     }
 
@@ -313,6 +322,14 @@ static class CoarseParity
                 yield return R($"{who}: hit %", 0.5, p => p.Length == 0 ? Stat.None : Stat.Ratio([.. p.Select(x => (x.ShellHits[sd], x.Shells[sd]))], 100));
                 yield return R($"{who}: ships firing torpedoes", 0.5, p => Mean(p, x => x.Launchers[sd]));
                 yield return R($"{who}: torpedo hits", 0.5, p => Mean(p, x => x.TorpedoHits[sd]));
+                if (layer != "night")
+                    continue;
+                yield return R($"{who}: beams out, ship-minutes", 1, p => Mean(p, x => x.BeamMin[sd]));
+                yield return R($"{who}: star shell, ship-minutes", 1, p => Mean(p, x => x.StarMin[sd]));
+                yield return R($"{who}: first salvo, minutes", 1, p => Mean(p, x => x.FirstFireMin[sd]));
+                yield return R($"{who}: first torpedoes, minutes", 1, p => Mean(p, x => x.FirstTorpMin[sd]));
+                yield return R($"{who}: hits on ships lit, share", 0.1, p => p.Length == 0 ? Stat.None
+                    : Stat.Ratio([.. p.Select(x => (x.HitsOnLit[sd], x.ShellHits[sd]))], 1));
             }
             if (s.Sides.Length == 2)
                 yield return R($"the exchange: {s.Sides[0]}'s share of the tonnage lost", 0.10, p => Mean(p, x =>
@@ -333,6 +350,8 @@ static class CoarseParity
         var p = new Played
         {
             Result = [], Shells = new double[sides], ShellHits = new double[sides], TorpedoHits = new double[sides], Launchers = new double[sides],
+            BeamMin = new double[sides], StarMin = new double[sides], FirstFireMin = [.. Enumerable.Repeat(double.NaN, sides)],
+            FirstTorpMin = [.. Enumerable.Repeat(double.NaN, sides)], HitsOnLit = new double[sides],
         };
         var names = new Dictionary<int, string>();
         var launched = new HashSet<int>();
@@ -352,10 +371,31 @@ static class CoarseParity
                     Class(store[slot].Entity);
         }
         Note();
-        long read = 0;
+        long read = 0, t0 = s.Start.Ms;
         var log = w.CombatLog;
+        // lit by others' beams and flares as her captain judges it (docs/battle/night.md Q7a's LitShare), as night-history reads it
+        bool Lit(int entity)
+        {
+            int slot = store.SlotOf(entity);
+            if (slot < 0 || w.Lights.Beams == 0 && w.Lights.Flares == 0)
+                return false;
+            var at = store[slot].Position;
+            var weather = w.Weather.At(at, w.Time);
+            double lux = w.Lights.LitBy(slot, at, weather.VisibilityM).Lux;
+            return lux > 0 && lux >= settings.LitShare * NightLight.At(at, w.Time, weather.Cloud, settings).Lux;
+        }
         ScenarioPlay.PlayToEnd(w, end, Cruise, speed, () =>
         {
+            for (int k = 0; k < store.OffRailsCount; k++)
+            {
+                int e = store[store.OffRailsSlot(k)].Entity, side = SideOf(e);
+                if (side < 0)
+                    continue;
+                if (w.Searchlights.OrderOf(e, w.Time.Ms).Exposed)
+                    p.BeamMin[side]++;
+                if (w.StarShells.TaskOf(e) is { Mount: >= 0 })
+                    p.StarMin[side]++;
+            }
             long fresh = log.Written - read;
             if (fresh > log.Count)
                 p.Missed += fresh - log.Count;
@@ -370,7 +410,11 @@ static class CoarseParity
                         var at = Class(e.Target);
                         p.At[at] = p.At.TryGetValue(at, out var a) ? (a.Shells + e.Count, a.Hits) : (e.Count, 0);
                         if (side >= 0)
+                        {
                             p.Shells[side] += e.Count;
+                            if (double.IsNaN(p.FirstFireMin[side]))
+                                p.FirstFireMin[side] = (e.Ms - t0) / 60_000.0;
+                        }
                         break;
                     }
                     case CombatEvent.Hit when e.Source is HitSource.Shell or HitSource.Coarse:
@@ -378,7 +422,11 @@ static class CoarseParity
                         var at = Class(e.Target);
                         p.At[at] = p.At.TryGetValue(at, out var a) ? (a.Shells, a.Hits + 1) : (0, 1);
                         if (side >= 0)
+                        {
                             p.ShellHits[side]++;
+                            if (Lit(e.Target))
+                                p.HitsOnLit[side]++;
+                        }
                         break;
                     }
                     case CombatEvent.Hit when e.Source == HitSource.Torpedo:
@@ -388,6 +436,8 @@ static class CoarseParity
                     case CombatEvent.Torpedoes:
                         if (side >= 0 && launched.Add(e.Shooter))
                             p.Launchers[side]++;
+                        if (side >= 0 && double.IsNaN(p.FirstTorpMin[side]))
+                            p.FirstTorpMin[side] = (e.Ms - t0) / 60_000.0;
                         break;
                 }
             }

@@ -162,7 +162,7 @@ public sealed class Sightings
         long now = world.Time.Ms;
         world.Lights.Gather(store, settings);   // the fires that light what's near them (docs/battle/night.md Q2)
         world.Searchlights.Gather(world, world.Lights);   // and the beams out (Q4)
-        world.StarShells.Gather(world, world.Lights);     // and the flares burning (Q5)
+        world.StarShells.Gather(world, world.Lights, Math.Max((long)(dt * 1000) - settings.SightingMs, 0));   // and the flares (Q5; a coarse look's minute, Q11)
         world.Challenges.Gather(world, world.Lights);     // and the challenges' lamps (Q6)
         foreach (var p in pictures)
             p.Reserve(store.Count);

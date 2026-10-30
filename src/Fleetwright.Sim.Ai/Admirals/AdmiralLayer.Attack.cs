@@ -227,6 +227,32 @@ public sealed partial class AdmiralLayer
             captains.FireOnSignal(ctx, g.Line[i], a.AttackTarget, a.AttackMs, a.AttackTubes);
     }
 
+    /// <summary>Whether any flotilla's signal to fire stands (<see cref="AttackPhase.Fire"/>).</summary>
+    internal bool Signalling
+    {
+        get
+        {
+            for (int i = 0; i < count; i++)
+                if (admirals[i].Attack == AttackPhase.Fire)
+                    return true;
+            return false;
+        }
+    }
+
+    /// <summary>The coarse tier's signal watch (docs/battle/night.md Q11): between the admirals' thinks a step apart, each
+    /// flotilla whose signal stands has its boats fire as their tubes bear (<see cref="FireTogether"/>), as the fine
+    /// tier's thinks a second apart do while it turns together.</summary>
+    internal void WatchSignals(in AiContext ctx)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            var a = admirals[i];
+            if (a.Attack != AttackPhase.Fire || groups.Get(a.GroupId) is not { } g)
+                continue;
+            FireTogether(ctx, g, a);
+        }
+    }
+
     /// <summary>The attack over (done, given up, or no longer the order): the boats' torpedoes their own again, and the
     /// guide handed his order afresh (Fight: the guns now).</summary>
     void StopAttack(in AiContext ctx, GroupSystem.Group g, Admiral a)

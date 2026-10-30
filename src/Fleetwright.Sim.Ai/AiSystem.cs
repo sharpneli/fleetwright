@@ -115,6 +115,28 @@ public sealed class AiSystem : IWorldSystem
         world.Schedule(new WorldTime(next), EventTier.Fine, -layers.Length - 1, Id, TrackWatch, watchGen);
     }
 
+    // the coarse fire watch's one wake (docs/battle/night.md Q11): its moment, -1 with none, and its generation
+    const ushort FireWatch = 101;
+    long fireMs = -1;
+    int fireGen;
+
+    /// <summary>The coarse fire watch: torpedoes fired as the tubes come round, between thinks a step apart. While a
+    /// flotilla's signal to fire stands (<see cref="AdmiralLayer.WatchSignals"/>), or a captain's think left a ship with a
+    /// target she couldn't fire at yet (<see cref="CaptainLayer.WatchTorpedoes"/>), woken every
+    /// <see cref="SimSettings.CaptainPeriodMs"/> until that layer's next think, as the fine tier's thinks go. Nothing while
+    /// the layer thinks at that rate itself (the fine tier).</summary>
+    void WatchFire(World world)
+    {
+        long step = world.Settings.CaptainPeriodMs, next = (world.Time.Ms / step + 1) * step;
+        int admirals = Array.IndexOf(layers, Admirals), captains = Array.IndexOf(layers, Captains);
+        bool admiralsLater = nextTick[admirals] < 0 || nextTick[admirals] > next, captainsLater = nextTick[captains] < 0 || nextTick[captains] > next;
+        if (!(Admirals.Signalling && admiralsLater || Captains.TorpedoesWaiting && captainsLater) || fireMs >= 0 && fireMs <= next)
+            return;
+        fireMs = next;
+        fireGen++;
+        world.Schedule(new WorldTime(next), EventTier.Fine, -layers.Length - 2, Id, FireWatch, fireGen);
+    }
+
     AiContext Context(World world) => new(world, picture, Id);
 
     public void Apply(World world, in Command c)
@@ -335,6 +357,18 @@ public sealed class AiSystem : IWorldSystem
             WatchTracks(world);
             return;
         }
+        if (e.Code == FireWatch)
+        {
+            if (e.Generation != fireGen)
+                return;
+            fireMs = -1;
+            var ctx = Context(world);
+            Admirals.WatchSignals(ctx);
+            Captains.WatchTorpedoes(ctx);
+            probes.Add(layerProbes[Array.IndexOf(layers, Captains)], t);
+            WatchFire(world);
+            return;
+        }
         int layer = e.Code;
         if (e.Generation != tickGen[layer])
             return;   // replaced by a sooner one
@@ -344,6 +378,8 @@ public sealed class AiSystem : IWorldSystem
         WakeAll(world);   // a layer's orders can give the one below something to do (an admiral's first stations)
         if (layers[layer] == Captains)
             WatchTracks(world);
+        if (layers[layer] == Captains || layers[layer] == Admirals)
+            WatchFire(world);
     }
 
     public void Hash(ref StateHash h)
@@ -356,6 +392,11 @@ public sealed class AiSystem : IWorldSystem
         {
             h.Add(watchMs);   // only then, so a world never coarse in a fight hashes as it did before the watch
             h.Add(watchGen);
+        }
+        if (fireGen != 0)
+        {
+            h.Add(fireMs);   // only then, as the torpedo watch's
+            h.Add(fireGen);
         }
         foreach (var l in layers)
             l.Hash(ref h);
