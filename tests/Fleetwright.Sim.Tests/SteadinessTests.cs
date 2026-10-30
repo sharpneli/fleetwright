@@ -148,4 +148,24 @@ public class SteadinessTests(ITestOutputHelper output)
         Assert.True(Steadiness.Duress(c, k, g, 1000, Settings) > nerve, "under fire: they wait");
         Assert.True(Steadiness.Duress(c, k, g, 15 * 60_000, Settings) < nerve, "a lull a while on");
     }
+
+    [Fact]
+    public void Stress_raises_a_stations_errors_with_its_duress_and_the_green_feel_it_first()
+    {
+        // docs/battle/balance.md BL1d: nothing for men not under fire; up to 1 + StressGain as the duress reaches their nerve;
+        // a shell near the layers' turret troubles green men's hands more than trained ones'
+        var stress = new double[4];
+        for (int x = 0; x < 4; x++)
+        {
+            var (c, k) = Ship("dreadnought", x);
+            int g = Turret(c);
+            Assert.Equal(1, Steadiness.Stress(c, k, g, 1000, Settings));
+            Hit(c, k, g, 0.1, 1000);
+            stress[x] = Steadiness.Stress(c, k, g, 1000, Settings);
+            output.WriteLine($"{Experience.Names[x]}: stress x{stress[x]:0.00}, duress {Steadiness.Duress(c, k, g, 1000, Settings):0.00}");
+            Assert.InRange(stress[x], 1, 1 + Settings.StressGain);
+            Assert.True(Steadiness.Stress(c, k, g, 60 * 60_000, Settings) < stress[x], "it eases as it's quiet");
+        }
+        Assert.True(stress[0] > stress[2] && stress[0] > 1.2, $"green x{stress[0]:0.00}, trained x{stress[2]:0.00}");
+    }
 }

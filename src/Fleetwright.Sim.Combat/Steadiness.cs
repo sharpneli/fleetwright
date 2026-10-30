@@ -114,6 +114,17 @@ public static class Steadiness
         return n < 0 ? 0 : Level(c, k, n, now, s, s.NerveAt(k.Experience).Fade);
     }
 
+    /// <summary>The stress on a station's men at their work (docs/battle/balance.md BL1d): the multiplier on their errors
+    /// (laying, timing the roll, reading a range), 1 + <see cref="SimSettings.StressGain"/> x their duress against their
+    /// nerve (to 1), by a component's station (one that isn't a station, or none: 1).</summary>
+    public static double Stress(ShipClass c, ShipCondition k, int component, long now, SimSettings s)
+    {
+        if (component < 0 || s.StressGain == 0)
+            return 1;
+        double d = Duress(c, k, Casualties.Part(component), now, s);
+        return d <= 0 ? 1 : 1 + s.StressGain * Math.Min(d / Math.Max(s.NerveAt(k.Experience).Nerve, 1e-6), 1);
+    }
+
     /// <summary>The nerve a party of her men walking in carries (her men's, no officer's or station's own): reliefs wait
     /// while a station's duress is over it (decision 1's lull, CUF R9).</summary>
     public static double ReliefNerve(ShipCondition k, SimSettings s) => s.NerveAt(k.Experience).Nerve;

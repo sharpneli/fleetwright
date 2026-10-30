@@ -761,15 +761,16 @@ public sealed class GunnerySystem : IWorldSystem
             if (!seen)
                 continue;
             double range = Earth.Distance(at, tpos), brg = Earth.Bearing(at, tpos), sr, bias, sb;
+            double st = Steadiness.Stress(cls, cond, s.Eye >= 0 ? cls.Eyes[s.Eye].Component : cls.Mounts[mounts[0]].Component, now, settings);   // BL1d
             if (Ranges(optics, s))
             {
                 // its unit of error, worse as the air takes the target's contrast toward the eye's threshold (F5c)
                 double kAir = SightModel.RangingFactor(margin, optics, settings);
                 double unit = kAir * FireControl.RangefinderUnitM(s.BaseM, optics, FireControl.Magnification(optics, s.Support, s.HeightM), range);
-                (sr, bias, sb) = (crew.Operator * combat * unit, s.Bias * settings.RangefinderBiasUnits * unit, s.BearingMil * Math.Sqrt(kAir) * FireControl.Mil);
+                (sr, bias, sb) = (crew.Operator * combat * st * unit, s.Bias * settings.RangefinderBiasUnits * unit, s.BearingMil * Math.Sqrt(kAir) * FireControl.Mil);
             }
             else
-                (sr, bias, sb) = (settings.EyeRangeShare * range * crew.Operator * combat, s.Bias * settings.EyeRangeBiasShare * range,
+                (sr, bias, sb) = (settings.EyeRangeShare * range * crew.Operator * combat * st, s.Bias * settings.EyeRangeBiasShare * range,
                     s.BearingMil * FireControl.Mil);
             // the same man reads the same ship a minute on and misjudges her much as he did, through a rangefinder or by
             // eye: his error wanders slowly about his own bias (the user, 2026-10-18)
@@ -1285,7 +1286,11 @@ public sealed class GunnerySystem : IWorldSystem
         fc.CorrR = fc.Bracket.Aim(now, fc.DriftMs, Held(fc, now));
         double ladder = phase == FirePhase.Ranging && dis.LadderStepM > 0 && !pointBlank ? (fc.Rung - 0.5 * (dis.InFlight - 1)) * dis.LadderStepM : 0;
         var r = stream.Derive((ulong)f).Derive((ulong)fc.Generation).Derive(0x5A1u).Derive((ulong)fc.Salvos);
-        double layRad = mount.LayMil * FireControl.Mil * crew.Lay * combat;
+        // the layer's stress (BL1d): his station's duress, the director's (its first instrument's) or the guns' own
+        int layerAt = mount.DirectorFiring && fc.SensorCount > 0 && sensors[f * MaxSensors].Eye >= 0 ? cls.Eyes[sensors[f * MaxSensors].Eye].Component
+            : cls.Mounts[mounts[0]].Component;
+        double stress = Steadiness.Stress(cls, cond, layerAt, now, settings);
+        double layRad = mount.LayMil * FireControl.Mil * crew.Lay * combat * stress;
         double eEl = mount.DirectorFiring ? r.NextGaussian() * layRad * perRad : 0, eTr = mount.DirectorFiring ? r.NextGaussian() * layRad * range : 0;
         bool turning = Math.Abs(double.RadiansToDegrees(ship.YawRate)) > settings.OwnTurnYawDegS;
         double kickR = turning ? r.NextGaussian() * computer.OwnTurnKickM : 0, kickL = turning ? r.NextGaussian() * computer.OwnTurnKickM : 0;
@@ -1303,7 +1308,7 @@ public sealed class GunnerySystem : IWorldSystem
             // director's layer's slip is the salvo's, each gun's layer's his own (dispersion); a list is every gun's.
             var rr = stream.Derive((ulong)f).Derive((ulong)fc.Generation).Derive(0x5A2u).Derive((ulong)fc.Salvos);
             double rel = double.DegreesToRadians(fc.OrderBearingDeg), tanE = Math.Tan(double.DegreesToRadians(e0)), keep = 1 - mount.CrossLevel;
-            double tau = fc.OnRoll ? mount.RollTauS * crew.RollTiming : mount.StableVertical ? mount.RollTauS : settings.ContinuousAimTauS;
+            double tau = stress * (fc.OnRoll ? mount.RollTauS * crew.RollTiming : mount.StableVertical ? mount.RollTauS : settings.ContinuousAimTauS);
             double omega = fc.Roll.RateAtLevel(ref rr), slip = tau * omega * rr.NextGaussian();
             // fired anywhere in the roll (following it), the roll's own tilt at that instant; on the roll, at its level
             double at = fc.OnRoll ? 0 : fc.Roll.AmplitudeRad * Math.Sin(2 * Math.PI * rr.NextDouble());

@@ -684,6 +684,13 @@ public sealed record SimSettings
     public double ContinuousAimMargin { get; init; } = 1.1;
     public double ContinuousAimTauS { get; init; } = 0.05;
 
+    /// <summary>Stress on the layers and rangetakers (docs/battle/balance.md BL1d): a station's duress against its men's nerve
+    /// (docs/battle/crew.md N3b) raises their errors (the laying error, the timing lag at the roll, a reading's) by
+    /// 1 + this x min(duress / nerve, 1): up to twice as their station comes to the edge of breaking, nothing at a ship
+    /// firing unopposed. The research's battle factor was x1.5, x2 in a first battle (manual-gunnery-research.md §6.2): a
+    /// green crew's lower nerve reaches it sooner [EST].</summary>
+    public double StressGain { get; init; } = 1;
+
     /// <summary>How long after a battery's track starts (its first reading in the computer) it opens fire at the latest,
     /// s (fire_control_ref.py Scenario.t_open). It opens sooner once its computer's doubt of where the shells must go is
     /// within <see cref="OpenDoubtSteps"/> of its first step (twice the sigma) [EST: about two ranging salvos' worth, so

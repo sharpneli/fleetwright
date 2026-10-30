@@ -226,6 +226,7 @@
   "RollExcitation": 0.85,
   "ContinuousAimMargin": 1.1,
   "ContinuousAimTauS": 0.05,
+  "StressGain": 1,
   "GunneryOpenS": 120,
   "OpenDoubtSteps": 2,
   "LayToleranceDeg": 1,
