@@ -1,6 +1,6 @@
 # Plan: night fighting (a 4.5 deepening)
 Status: **drafted 2026-10-29**; **agreed with the user 2026-10-29** (decisions 1-5 at the end); Q0-Q10 done 2026-10-29;
-the research arrived 2026-10-29: Q1b, Q0b, Q3b, Q5b added before Q10 (after Q9), done; Q11 done 2026-10-30; Q12a (the check) and Q12b (night doctrine one a period) done 2026-10-30; Q12c (the torpedo officer's judgement), Q12d (the AI's night by the light) and Q12e (whose she is, by the light) done 2026-10-30; the night's hit rates await the user
+the research arrived 2026-10-29: Q1b, Q0b, Q3b, Q5b added before Q10 (after Q9), done; Q11 done 2026-10-30; Q12a (the check) and Q12b (night doctrine one a period) done 2026-10-30; Q12c (the torpedo officer's judgement), Q12d (the AI's night by the light) and Q12e (whose she is, by the light) and Q12f (the matchup's torpedoes refitted) done 2026-10-30; the night's hit rates left in fine (the user)
 Updated: 2026-10-30
 
 How ships see, light, shoot and lose each other in the dark. The user asked for it after the crew plan (2026-10-28),
@@ -1428,6 +1428,36 @@ her own.
 - **Moved:** Tsushima's Russian hits 100 → 72 (their sweeping ships take the boats for unknowns longer), the Japanese
   85 → 77; the 4th Flotilla's British torpedoes 24.7 → 27.2 for 6.1 hits; the others within their noise.
 - Sim 877, game 207 passed.
+
+**The user's answers (2026-10-30):** (1) the night's hit rates: approximations that touch only the coarse tier are fine;
+leave the fine tier alone for now. (2) A night attack bar: no; night changes the odds and the commander takes them into
+account (by day destroyers against a battleship is dangerous, by night they have the edge). (3) The matchup's torpedoes:
+refit; optimism is a separate parameter (doctrine's Aggression).
+
+**Q12f, the matchup's torpedoes refitted (2026-10-30).** `MatchupTorpedoHitM` 900 → 350, `MatchupTorpedoHitMax` 0.4 →
+0.2 (Q12c's bench by day: 18% at 1 km, 15% at 2 km, 7% at 3 km). What follows, by the matchup's own odds:
+
+- **By day boats are worth less against a battleship:** 12 V25 against Iron Duke 1.40 → 0.76 (16: 1.20), 8 M class
+  against one dreadnought 1.20 → 0.59, against four 0.15 → 0.07; five Arethusas 1.29 → 0.26 (their spread now does less
+  than their guns on the way in, so they fight with the guns). **By night they keep the edge:** in the dark four V25 and
+  five Arethusas are a match for Iron Duke (the matchup sees them only close; four M class against a dreadnought under a
+  moonless sky 126).
+- **The generic `destroyer` (a WWII fleet destroyer) is no torpedo craft against the 1906 `dreadnought` by day:** her
+  guns over the run-in do more (0.053 of the dreadnought out) than one spread (0.034); against Bismarck she still is.
+  The AI tests used that anachronistic pair as their boats against a battle line: they use the M class (1915) now
+  (`AdmiralOrdersTests`, `CommanderTests`, `ScreenTests`, `TurnAwayTests`), loaded through `Fleet.Scenario`.
+- **Tests restated to the day's new odds:** a pack on a battleship 8 → 16 V25; the flotillas sent in while the heavy
+  units engage, a force's own flotilla, light cruisers leading boats: 4 → 8 boats against one dreadnought. The dark
+  night's battleship 2 → 1 km off the flotilla (an M class makes her out at 1.4 km on a moonless night).
+- **Shadowing at dusk** (`CaptainLayer.ShadowRange`, a fix on the way): a shadower kept a share of how far he can see
+  now, at least `ShadowMinM` 3 km; at dusk the range shrank faster than he closed, and he lost touch (the commander's
+  waiting for the dark then gave up: the declining-by-day flotilla withdrawn at 20:33 instead of going in). Now he keeps
+  it for the lesser sight of now and `ShadowAheadS` 20 min on (closing ahead of the dark), and never the least where he
+  can't see that far. The flotilla keeps touch and goes in at 20:36, the sun 12° down.
+- **The dawn's attack still doesn't come,** by the odds: in that half-light the line makes the boats out at 7 km
+  (Q12d). Whether the dawn's sight is right (the record's ranges were the firing ones) is the fine tier's, left.
+- `night-history --runs 40`: the night cases within their noise but Tsushima's Japanese line, firing 917 shells for 117
+  hits (501 / 77), its torpedo boats 1.2 for 0.3. Sim 877, game 207 passed.
 
 ## Decided (the user, 2026-10-29)
 

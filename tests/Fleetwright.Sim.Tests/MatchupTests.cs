@@ -61,10 +61,13 @@ public class MatchupTests(ITestOutputHelper output)
     public void A_light_cruiser_without_torpedoes_shuns_a_battleship()
     {
         Assert.True(Judge([E("arethusa", torpedoes: false)], [E("iron_duke")]) < 0.2);
-        // a squadron of them with their torpedoes can take her on: five since her guns load HE at them
-        // (docs/battle/shell-choice.md A4, 2026-10-25: four 1.13 -> 0.92, five 1.29; restated, awaiting the user)
-        Assert.True(Judge([E("arethusa", 5)], [E("iron_duke")]) > 1);
+        // by day a squadron of them is no match for her, torpedoes or not: since the torpedo officer's judgement
+        // (docs/battle/night.md Q12f, the matchup's torpedoes refitted) a cruiser's spread does less than her guns would
+        // on the way in, so she fights with her guns (five 1.29 -> 0.26, the user: "destroyers against battleship at day
+        // is dangerous"); by night, made out only close, they can take her on
+        Assert.True(Judge([E("arethusa", 5)], [E("iron_duke")]) < 1);
         Assert.True(Judge([E("arethusa", 4, torpedoes: false)], [E("iron_duke")]) < 1);
+        Assert.True(Judge([E("arethusa", 5)], [E("iron_duke")], Moonless) > 1);
     }
 
     [Fact]
@@ -78,9 +81,11 @@ public class MatchupTests(ITestOutputHelper output)
             last = c;
         }
         Assert.True(Judge([E("v25")], [E("iron_duke")]) < 0.2);
-        // a dozen since her guns load HE at them (docs/battle/shell-choice.md A4, 2026-10-25: eight 1.33 -> 0.80, twelve
-        // 1.40; restated, awaiting the user)
-        Assert.True(Judge([E("v25", 12)], [E("iron_duke")]) > 1);
+        // by day sixteen since the torpedo officer's judgement (docs/battle/night.md Q12f: twelve 1.40 -> 0.76, sixteen
+        // 1.20); by night four are a match for her
+        Assert.True(Judge([E("v25", 12)], [E("iron_duke")]) < 1);
+        Assert.True(Judge([E("v25", 16)], [E("iron_duke")]) > 1);
+        Assert.True(Judge([E("v25", 4)], [E("iron_duke")], Moonless) > 1);
         // by night the battleship's guns open only on what she makes out: the lone boat does better
         Assert.True(Judge([E("v25")], [E("iron_duke")], Moonless) > Judge([E("v25")], [E("iron_duke")]));
     }

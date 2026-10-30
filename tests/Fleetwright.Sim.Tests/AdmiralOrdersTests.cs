@@ -53,13 +53,13 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
     /// screen the line, or (<paramref name="force"/>) a force of them told to; by the player's hand if
     /// <paramref name="hand"/>. The squadrons in the order they were made.</summary>
     static (World W, AiSystem Ai, int Line, int[] Squadrons) Make(int squadrons = 1, int each = 4, bool force = false, bool hand = false,
-        string screenDesign = "destroyer")
+        string screenDesign = "m_class")
     {
         var w = new World(Start, 3, Settings);
         var ai = new AiSystem(w);
         w.Apply(Command.SetWeather(30_000));
         w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.TurnAwayDeg, 0));
-        int bb = w.Ships.AddClass(Fleet.Get("dreadnought").Class!), dd = w.Ships.AddClass(Fleet.Get(screenDesign).Class!);
+        int bb = w.Ships.AddClass(Fleet.Get("dreadnought").Class!), dd = w.Ships.AddClass(Fleet.Scenario(screenDesign));
         var at = Earth.Position(56.0, 4.0);
         int line = Column(w, ai, bb, at, 180, 4, 15);
         var sq = new int[squadrons];
@@ -204,7 +204,7 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
         w.AdvanceTo(w.Time + 30 * 60_000);   // on their stations on either bow
         var g = Ship(w, w.Groups.Get(line)!.Guide);
         // four enemy destroyers 13 km east-south-east of the line's guide, steaming west at 28 kn, through it
-        int dd = w.Ships.AddClass(Fleet.Get("destroyer").Class!);
+        int dd = w.Ships.AddClass(Fleet.Scenario("m_class"));
         var p = Off(g.Position, 110, 13_000);
         for (int i = 0; i < 4; i++)
         {
@@ -263,7 +263,7 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
     public void Destroyers_screen_a_battle_line_from_its_disengaged_side()
     {
         // two pairs of destroyers no match for four dreadnoughts abeam to port: to starboard, one ahead, one astern
-        var rel = ScreenAgainst("destroyer", "dreadnought", 4);
+        var rel = ScreenAgainst("m_class", "dreadnought", 4);
         Assert.All(rel, r => Assert.InRange(r, 20, 170));
         Assert.True(rel.Count(r => r < 90) == 1 && rel.Count(r => r > 90) == 1, "one at the van and one at the rear");
     }
@@ -310,9 +310,11 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
     }
 
     /// <summary>A force heading south at 15 kn: a battle squadron of four dreadnoughts (its guide), two light cruisers and
-    /// four destroyers, in line abreast; with doctrine's Dispose (or not). In a fleet (<paramref name="fleet"/>), the
-    /// force is the fleet's guide and the light cruisers are the fleet's own squadron, not the force's.</summary>
-    static (World W, AiSystem Ai, int Force, int Battle, int Cruisers, int Destroyers, int Fleet) Disposed(bool dispose = true, bool fleet = false)
+    /// four destroyers (or <paramref name="boats"/>), in line abreast; with doctrine's Dispose (or not). In a fleet
+    /// (<paramref name="fleet"/>), the force is the fleet's guide and the light cruisers are the fleet's own squadron, not
+    /// the force's.</summary>
+    static (World W, AiSystem Ai, int Force, int Battle, int Cruisers, int Destroyers, int Fleet) Disposed(bool dispose = true, bool fleet = false,
+        int boats = 4)
     {
         var w = new World(Start, 3, Settings);
         var ai = new AiSystem(w);
@@ -320,11 +322,11 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
         w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.TurnAwayDeg, 0));
         w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.Dispose, dispose ? 1 : 0));
         int bb = w.Ships.AddClass(Fleet.Get("dreadnought").Class!), cl = w.Ships.AddClass(Fleet.Get("light_cruiser").Class!),
-            dd = w.Ships.AddClass(Fleet.Get("destroyer").Class!);
+            dd = w.Ships.AddClass(Fleet.Scenario("m_class"));
         var at = Earth.Position(56.0, 4.0);
         int battle = Column(w, ai, bb, at, 180, 4, 15);
         int cruisers = Column(w, ai, cl, Off(at, 270, 2_000), 180, 2, 15);
-        int destroyers = Column(w, ai, dd, Off(at, 270, 4_000), 180, 4, 15);
+        int destroyers = Column(w, ai, dd, Off(at, 270, 4_000), 180, boats, 15);
         w.Apply(GroupSystem.Form(battle, Formation.LineAbreast, 2_000));
         int force = w.Groups.Get(battle)!.Parent;
         w.Apply(GroupSystem.EnterAlongside(destroyers, battle));
@@ -426,8 +428,9 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
     public void A_force_sends_in_its_own_flotilla_on_a_line_its_battle_squadron_engages()
     {
         // the force of O7 (dreadnoughts, light cruisers, destroyers screening), one enemy dreadnought 14 km on its beam:
-        // the force's admiral sends his destroyers in; the side's commander, on, leaves what's inside the force alone
-        var (w, ai, force, _, _, destroyers, _) = Disposed();
+        // the force's admiral sends his destroyers in; the side's commander, on, leaves what's inside the force alone. Eight
+        // boats: by day four are no match for her since the torpedo officer's judgement (docs/battle/night.md Q12f)
+        var (w, ai, force, _, _, destroyers, _) = Disposed(boats: 8);
         int bb = w.Ships.AddClass(Fleet.Get("dreadnought").Class!);
         var guide = Ship(w, w.Groups.GuideShip(w.Groups.Get(force)!));
         Column(w, ai, bb, Off(guide.Position, 90, 14_000), 180, 1, 15, side: 1);
@@ -459,21 +462,21 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
     [Fact]
     public void A_light_cruiser_leading_destroyers_goes_in_with_them()
     {
-        // a top force of two light cruisers leading four destroyers (the Jutland's "Scouting torpedo boats", Regensburg
-        // leading her flotillas), beside a battle squadron engaging an enemy dreadnought: the cruisers' torpedoes are their
-        // better weapon against her too (O7c), so the side's commander sends the force in whole, and the cruisers go in
-        // with their boats, both firing
+        // a top force of two light cruisers leading eight destroyers (the Jutland's "Scouting torpedo boats", Regensburg
+        // leading her flotillas), beside a battle squadron engaging an enemy dreadnought: the side's commander sends the
+        // force in whole, and the cruisers go in with their boats, both firing (eight boats: by day four are no match for
+        // her since the torpedo officer's judgement, docs/battle/night.md Q12f)
         var w = new World(Start, 3, Settings);
         var ai = new AiSystem(w);
         w.Apply(Command.SetWeather(30_000));
         w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.TurnAwayDeg, 0));
         w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.Dispose, 1));
         int bb = w.Ships.AddClass(Fleet.Get("dreadnought").Class!), cl = w.Ships.AddClass(Fleet.Get("light_cruiser").Class!),
-            dd = w.Ships.AddClass(Fleet.Get("destroyer").Class!);
+            dd = w.Ships.AddClass(Fleet.Scenario("m_class"));
         var at = Earth.Position(56.0, 4.0);
         Column(w, ai, bb, at, 180, 4, 15);
         int cruisers = Column(w, ai, cl, Off(at, 270, 3_000), 180, 2, 15);
-        int destroyers = Column(w, ai, dd, Off(at, 270, 5_000), 180, 4, 15);
+        int destroyers = Column(w, ai, dd, Off(at, 270, 5_000), 180, 8, 15);
         w.Apply(GroupSystem.Form(cruisers, Formation.LineAbreast, 2_000));
         int force = w.Groups.Get(cruisers)!.Parent;
         w.Apply(GroupSystem.EnterAlongside(destroyers, cruisers));
@@ -535,7 +538,7 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
         var dd8 = new MatchupProfile(EightInchDestroyer.Value, Table, Settings);
         foreach (bool battleship in new[] { true, false })
         {
-            var them = new MatchupProfile(Fleet.Get(battleship ? "dreadnought" : "destroyer").Class!, Table, Settings);
+            var them = new MatchupProfile(Fleet.Scenario(battleship ? "dreadnought" : "m_class"), Table, Settings);
             var j = Matchup.Judge([new MatchupEntry(dd8, 4)], [new MatchupEntry(them, battleship ? 1 : 4)], 0.6, 0.6, Settings);
             output.WriteLine($"against {(battleship ? "a dreadnought" : "destroyers")}: confidence {j.Confidence:0.###}, {j.Terms.Style}, attackers {j.Terms.AttackersA}");
             Assert.Equal(battleship ? 1UL : 0UL, j.Terms.AttackersA);
@@ -547,7 +550,7 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
             w.Apply(Command.SetWeather(30_000));
             w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.TurnAwayDeg, 0));
             w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.TorpedoAttack, (double)TorpedoAttack.Together));
-            int ours8 = w.Ships.AddClass(EightInchDestroyer.Value), dd = w.Ships.AddClass(Fleet.Get("destroyer").Class!);
+            int ours8 = w.Ships.AddClass(EightInchDestroyer.Value), dd = w.Ships.AddClass(Fleet.Scenario("m_class"));
             var at = Earth.Position(56.0, 4.0);
             int ours = Column(w, ai, ours8, at, 180, 4, 20);
             int theirs = Column(w, ai, dd, Off(at, 90, 12_000), 180, 4, 15, side: 1);
@@ -610,7 +613,7 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
         var w = new World(Start, 3, Settings);
         var ai = new AiSystem(w);
         w.Apply(Command.SetWeather(30_000));
-        int bb = w.Ships.AddClass(Fleet.Get("dreadnought").Class!), dd = w.Ships.AddClass(Fleet.Get("destroyer").Class!);
+        int bb = w.Ships.AddClass(Fleet.Get("dreadnought").Class!), dd = w.Ships.AddClass(Fleet.Scenario("m_class"));
         var at = Earth.Position(56.0, 4.0);
         int flotilla = Column(w, ai, dd, at, 180, 4, 20);
         int enemy = Column(w, ai, bb, Off(at, 90, 14_000), 180, 1, 15, side: 1);
@@ -653,7 +656,7 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
         var w = new World(Start, 3, Settings);
         var ai = new AiSystem(w);
         w.Apply(Command.SetWeather(30_000));
-        int bb = w.Ships.AddClass(Fleet.Get("dreadnought").Class!), dd = w.Ships.AddClass(Fleet.Get("destroyer").Class!);
+        int bb = w.Ships.AddClass(Fleet.Get("dreadnought").Class!), dd = w.Ships.AddClass(Fleet.Scenario("m_class"));
         var at = Earth.Position(56.0, 4.0);
         int flotilla = Column(w, ai, dd, at, 180, 4, 20);
         int enemy = Column(w, ai, bb, Off(at, 90, 14_000), 180, 1, 15, side: 1);

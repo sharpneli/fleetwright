@@ -25,7 +25,7 @@ public class CommanderTests(ITestOutputHelper output)
         return (w, ai);
     }
 
-    static int Class(World w, string design) => w.Ships.AddClass(Fleet.Get(design).Class!);
+    static int Class(World w, string design) => w.Ships.AddClass(Fleet.Scenario(design));
 
     /// <summary>n ships in line ahead from a point, formed into a squadron if more than one; the unit.</summary>
     static Unit Column(World w, AiSystem ai, int cls, Vec3d at, double heading, int n, byte side = 0, double kn = 15)
@@ -179,11 +179,12 @@ public class CommanderTests(ITestOutputHelper output)
     [Fact]
     public void Flotillas_are_sent_in_on_an_enemy_line_their_heavy_units_engage()
     {
-        // four destroyers against one dreadnought: an attack worth making (docs/battle/command.md 5.1g)
+        // eight destroyers against one dreadnought: an attack worth making (docs/battle/command.md 5.1g; by day four aren't
+        // since the torpedo officer's judgement, docs/battle/night.md Q12f)
         var (w, ai) = Make();
-        int bb = Class(w, "dreadnought"), dd = Class(w, "destroyer");
+        int bb = Class(w, "dreadnought"), dd = Class(w, "m_class");
         var line = Column(w, ai, bb, Earth.Position(Lat, Lon), 180, 4, side: 0);
-        var flotilla = Column(w, ai, dd, Off(270, 3_000), 180, 4, side: 0);
+        var flotilla = Column(w, ai, dd, Off(270, 3_000), 180, 8, side: 0);
         var enemy = Column(w, ai, bb, Off(90, 16_000), 180, 1, side: 1);
         w.Apply(ai.Orders.FireAtWill(flotilla));
         w.Apply(ai.Orders.Screen(flotilla, line, 3_000));
@@ -221,7 +222,7 @@ public class CommanderTests(ITestOutputHelper output)
     {
         // four destroyers against four dreadnoughts by day: the defence's guns beat them off (docs/battle/command.md 5.1g)
         var (w, ai) = Make();
-        int bb = Class(w, "dreadnought"), dd = Class(w, "destroyer");
+        int bb = Class(w, "dreadnought"), dd = Class(w, "m_class");
         Column(w, ai, bb, Earth.Position(Lat, Lon), 180, 4, side: 0);
         var flotilla = Column(w, ai, dd, Off(270, 3_000), 180, 4, side: 0);
         Column(w, ai, bb, Off(90, 16_000), 180, 4, side: 1);
@@ -380,10 +381,10 @@ public class CommanderTests(ITestOutputHelper output)
         var w = new World(WorldTime.FromUtc(1917, 4, 21, 0), 3, Settings);
         var ai = new AiSystem(w);
         w.Apply(Command.SetWeather(30_000));
-        int bb = Class(w, "dreadnought"), dd = Class(w, "destroyer");
+        int bb = Class(w, "dreadnought"), dd = Class(w, "m_class");
         var mine = Column(w, ai, bb, Earth.Position(Lat, Lon), 180, 3, side: 1);
         var flotilla = Column(w, ai, dd, Off(90, 2_000), 180, 4, side: 1);
-        Column(w, ai, bb, Off(90, 4_000), 180, 1, side: 0);   // a battleship the flotilla's attack is worth making on, 2 km off it
+        Column(w, ai, bb, Off(90, 3_000), 180, 1, side: 0);   // a battleship the flotilla's attack is worth making on, 1 km off it (an M class makes her out at 1.4 km on a moonless night)
         w.Apply(ai.Orders.FireAtWill(flotilla));
         var (hla, hlo) = LatLon(Off(270, 150_000));
         w.Apply(ai.Orders.Home(1, hla, hlo));
@@ -421,7 +422,7 @@ public class CommanderTests(ITestOutputHelper output)
         var w = new World(WorldTime.FromUtc(1917, 4, 20, 19, 32), 3, Settings);   // a few minutes before it's dark (the sun at -6°)
         var ai = new AiSystem(w);
         w.Apply(Command.SetWeather(30_000));
-        int bb = Class(w, "dreadnought"), bc = Class(w, "lion"), dd = Class(w, "destroyer");
+        int bb = Class(w, "dreadnought"), bc = Class(w, "lion"), dd = Class(w, "m_class");
         var mine = Column(w, ai, bc, Earth.Position(Lat, Lon), 0, 2, side: 1);
         var flotilla = Column(w, ai, dd, Off(270, 2_000), 0, 4, side: 1);
         Column(w, ai, bb, Off(90, 12_000), 0, 16, side: 0, kn: 12);
@@ -478,7 +479,7 @@ public class CommanderTests(ITestOutputHelper output)
     public void Units_through_with_their_tasks_are_given_their_roles()
     {
         var (w, ai) = Make();
-        int bb = Class(w, "dreadnought"), lc = Class(w, "light_cruiser"), dd = Class(w, "destroyer");
+        int bb = Class(w, "dreadnought"), lc = Class(w, "light_cruiser"), dd = Class(w, "m_class");
         var main = Column(w, ai, bb, Earth.Position(Lat, Lon), 0, 4);
         var heavy = Column(w, ai, bb, Off(270, 6_000), 0, 1);
         var scout = Column(w, ai, lc, Off(0, 10_000), 0, 2);

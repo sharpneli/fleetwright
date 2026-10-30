@@ -25,7 +25,7 @@ public class TurnAwayTests(ITestOutputHelper output)
         var ai = new AiSystem(w);
         w.Apply(Command.SetWeather(30_000));
         w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.TurnAwayDeg, turnAwayDeg));
-        int bb = w.Ships.AddClass(Fleet.Get("dreadnought").Class!), dd = w.Ships.AddClass(Fleet.Get("destroyer").Class!);
+        int bb = w.Ships.AddClass(Fleet.Get("dreadnought").Class!), dd = w.Ships.AddClass(Fleet.Scenario("m_class"));
         var p = Earth.Position(56.0, 4.0);
         var f = Earth.Forward(p, 0);
         for (int i = 0; i < 4; i++)

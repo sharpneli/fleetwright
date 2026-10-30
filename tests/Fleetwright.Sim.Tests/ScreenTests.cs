@@ -26,7 +26,7 @@ public class ScreenTests(ITestOutputHelper output)
         var ai = new AiSystem(w);
         w.Apply(Command.SetWeather(30_000));
         int bb = w.Ships.AddClass(Fleet.Get("dreadnought").Class!), cl = w.Ships.AddClass(Fleet.Get("light_cruiser").Class!),
-            dd = w.Ships.AddClass(Fleet.Get("destroyer").Class!);
+            dd = w.Ships.AddClass(Fleet.Scenario("m_class"));
         var p = Earth.Position(56.0, 4.0);
         var f = Earth.Forward(p, 0);
         for (int i = 0; i < 6; i++)

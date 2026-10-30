@@ -86,7 +86,8 @@ public class MatchupPlayTests(ITestOutputHelper output)
         var (w, ai, ids) = Make(Settings with { HitsDoDamage = false });
         w.Apply(ai.Orders.SideDoctrine(1, DoctrineField.TorpedoAttack, (double)TorpedoAttack.Together));
         var bb = Column(w, ids["iron_duke"], Earth.Position(Lat, Lon), 180, 1, side: 0, kn: 15);
-        var pack = Column(w, ids["v25"], Off(90, 15_000), 270, 8, side: 1, kn: 25, Formation.LineAbreast);
+        // sixteen: by day since the torpedo officer's judgement eight are no match for her (docs/battle/night.md Q12f)
+        var pack = Column(w, ids["v25"], Off(90, 15_000), 270, 16, side: 1, kn: 25, Formation.LineAbreast);
         w.Apply(ShipSystem.LookNow());
         w.AdvanceTo(Start + 30_000);
         w.Apply(ai.Orders.Fight(pack));

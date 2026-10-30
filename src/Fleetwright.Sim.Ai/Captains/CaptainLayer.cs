@@ -595,13 +595,17 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
     }
 
     /// <summary>The range a shadower keeps when he's given none: a share of how far he can see now (the weather's
-    /// visibility, or the dark's), kept between the settings' least and most.</summary>
+    /// visibility, or the dark's), kept between the settings' least and most; never the least where he can't see that
+    /// far (a dark night: he'd lose her, docs/battle/night.md Q12f).</summary>
     static double ShadowRange(in AiContext ctx, ShipState own)
     {
         var s = ctx.Settings;
         var weather = ctx.World.Weather.At(own.Position, ctx.World.Time);
-        double reach = SightModel.SeenToM(weather.VisibilityM, NightLight.At(own.Position, ctx.World.Time, weather.Cloud, s).SkyCdM2, s);
-        return Math.Clamp(s.ShadowVisibilityShare * reach, s.ShadowMinM, s.ShadowMaxM);
+        var ahead = new WorldTime(ctx.NowMs + (long)(s.ShadowAheadS * 1000));   // the light to come: closing as the dark falls
+        double reach = Math.Min(SightModel.SeenToM(weather.VisibilityM, NightLight.At(own.Position, ctx.World.Time, weather.Cloud, s).SkyCdM2, s),
+            SightModel.SeenToM(weather.VisibilityM, NightLight.At(own.Position, ahead, weather.Cloud, s).SkyCdM2, s));
+        double keep = s.ShadowVisibilityShare * reach;
+        return Math.Clamp(keep, Math.Min(s.ShadowMinM, keep), s.ShadowMaxM);
     }
 
     /// <summary>Orders the course and speed if they differ from what the ship has been ordered.</summary>

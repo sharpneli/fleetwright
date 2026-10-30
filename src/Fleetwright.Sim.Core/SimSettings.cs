@@ -565,6 +565,11 @@ public sealed record SimSettings
     public double ShadowMinM { get; init; } = 3_000;
     public double ShadowMaxM { get; init; } = 20_000;
 
+    /// <summary>A shadower keeps his range for the light this far ahead too, s (the lesser sight of now and then): at dusk
+    /// he closes ahead of the dark instead of falling out of touch as it falls (docs/battle/night.md Q12f) [EST: the time
+    /// a boat takes to close from the day's range to the night's, 10 km at 20 kn].</summary>
+    public double ShadowAheadS { get; init; } = 1_200;
+
     // ------------------------------------------------------------------ the AI (docs/battle/plan.md step 2.3b)
 
     /// <summary>How often an AI layer thinks while every ship it commands is on rails, ms: nothing about them changes
@@ -2236,11 +2241,11 @@ public sealed record SimSettings
     /// <summary>A torpedo's hit chance, fired at a range: MatchupTorpedoHitM / range, at most MatchupTorpedoHitMax, by the
     /// square root of the target's length over MatchupTorpedoLengthM, times MatchupTorpedoEvadedShare for her combing and
     /// turning away, and by how much slower than the torpedo she is beside a target at MatchupTorpedoRefKn (a fast ship
-    /// turning away outruns its reach): shipgen torpedo against a steady target at 18 kn, 35% at 3 km, 18% at 5 km, before
-    /// the torpedo officer's judgement (docs/battle/night.md Q12c: now 18% at 1 km, 15% at 2 km, 7% at 3 km, 6% at 5 km; the
-    /// refit waits on the user, as it moves who is taken for an attacker).</summary>
-    public double MatchupTorpedoHitM { get; init; } = 900;
-    public double MatchupTorpedoHitMax { get; init; } = 0.4;
+    /// turning away outruns its reach): shipgen torpedo against a steady target at 18 kn by day, the aim as the torpedo
+    /// officer judges it (docs/battle/night.md Q12c, refitted Q12f): 18% at 1 km, 15% at 2 km, 7% at 3 km, 6% at 5 km. The
+    /// AI's own expectation, not optimism (that's doctrine's Aggression).</summary>
+    public double MatchupTorpedoHitM { get; init; } = 350;
+    public double MatchupTorpedoHitMax { get; init; } = 0.2;
     public double MatchupTorpedoLengthM { get; init; } = 150;
     public double MatchupTorpedoEvadedShare { get; init; } = 0.6;
     public double MatchupTorpedoRefKn { get; init; } = 18;

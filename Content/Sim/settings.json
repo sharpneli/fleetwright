@@ -185,6 +185,7 @@
   "ShadowVisibilityShare": 0.7,
   "ShadowMinM": 3000,
   "ShadowMaxM": 20000,
+  "ShadowAheadS": 1200,
   "ContactScanMs": 3600000,
   "ContactTraceSteps": 64,
 
@@ -853,8 +854,8 @@
 
   "MatchupInPlateShare": 0.5,
   "MatchupLowOrderShare": 0.3,
-  "MatchupTorpedoHitM": 900,
-  "MatchupTorpedoHitMax": 0.4,
+  "MatchupTorpedoHitM": 350,
+  "MatchupTorpedoHitMax": 0.2,
   "MatchupTorpedoLengthM": 150,
   "MatchupTorpedoEvadedShare": 0.6,
   "MatchupTorpedoRefKn": 18,
