@@ -212,7 +212,7 @@ The fire table's close fire (inside 4 km) tagged by the shooter's and the target
   on her, her size and how done for she's seen (`Worth`: only once she's seen low, listing or going down). A cripple
   making for home upright is a full-value target, and usually the nearest.
 
-### BL2 Cripples and escapes (proposed 2026-10-30, for the user's agreement)
+### BL2 Cripples and escapes (agreed 2026-10-30)
 
 Everything below reads what the sim already has: the picture's contacts carry when her guns were last seen firing
 (`Contact.QuietMs`), whether she's seen silent, stopped, low, listing or burning, her estimated course; the smoke field
@@ -220,19 +220,16 @@ can be laid by a ship (`SmokeSystem.MakeSmoke`, which no AI orders yet).
 
 | Step | What | Check |
 |---|---|---|
-| **BL2a** | **What a target is worth, by what's seen of her.** `Worth` grows from "how done for" to "how much she still matters": a contact whose guns are seen firing, or who comes on, counts in full; one gone quiet (her guns not seen for a while) and opening the range counts less, smoothly by how long she's been quiet and how fast she opens; done for, least, as now. A doctrine field (`Finish`, the side's choice like `Wrecks`) sets how much a quiet, running enemy still draws fire: a navy that finishes its cripples against one that fights what fights it. Default: the gunnery officers' habit, fire at what's firing at you. | The scenarios' close hits on ships going home fall; a side ordered to finish still does. |
+| **BL2a** | **What a target is worth, by what's seen of her. Built 2026-10-30:** `CaptainLayer.Matters`: 1 - (1 - Finish) x quiet x away (quiet: her guns unseen for up to `CrippleQuietS` 90 s; away: her own speed opening the range, to `CrippleOpenMs` 4 m/s [EST]), beside `Worth`; doctrine's `Finish`, the default preset's 0.1, the code's 1 (as before). `Worth` grows from "how done for" to "how much she still matters": a contact whose guns are seen firing, or who comes on, counts in full; one gone quiet (her guns not seen for a while) and opening the range counts less, smoothly by how long she's been quiet and how fast she opens; done for, least, as now. A doctrine field (`Finish`, the side's choice like `Wrecks`) sets how much a quiet, running enemy still draws fire: a navy that finishes its cripples against one that fights what fights it. Default: the gunnery officers' habit, fire at what's firing at you. | The scenarios' close hits on ships going home fall; a side ordered to finish still does. |
 | **BL2b** | **A cripple covers her retreat with smoke.** A ship that falls out and turns for home under fire, with steam to make it, makes funnel smoke (the smoke field, as the user's order does now), stopping when she's out of sight or out of touch. | Her pursuers' sight of her is cut by her smoke in the smoke tests; the panel's "home" hits fall. |
 | **BL2c** | **The panel again,** then BL1h (pitch, vibration, yaw). | The Heligoland Bight's and the Dogger Bank's light losses toward twice the record. |
 
 Left for later, named: striking and abandoning (crew.md's "after"), friends covering a cripple, the admirals' tasks
 turning from cripples.
 
-**Questions for the user:**
-
-1. BL2a's default: fire at what fights you (cripples get fire only when nothing else is in reach), with `Finish` as the
-   side's doctrine to press them? Or the other way about?
-2. BL2b's smoke: any ship falling out under fire that can make funnel smoke, or only light ships (destroyers and light
-   cruisers made screens; a battleship's funnel smoke covers less)? The smoke field decides how much it covers either way.
+**Decided (the user, 2026-10-30):** "Fire what's firing at you, or naturally some other target is more pressing.
+Cripples are not interesting when there is something better to do"; and any ship falling out under fire makes smoke if
+she can ("any ships may do so naturally"): no rule by type.
 
 ## Decided (the user, 2026-10-30)
 

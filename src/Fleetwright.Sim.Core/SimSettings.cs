@@ -691,6 +691,12 @@ public sealed record SimSettings
     /// green crew's lower nerve reaches it sooner [EST].</summary>
     public double StressGain { get; init; } = 1;
 
+    /// <summary>An enemy done fighting (docs/battle/balance.md BL2a, doctrine's <c>Finish</c>): quiet once her guns haven't
+    /// been seen firing for this long, s, and making away at this much of her own speed opening the range, m/s (each a
+    /// share to 1 at it, multiplied) [EST: a broadside's interval and more; about 8 kn away].</summary>
+    public double CrippleQuietS { get; init; } = 90;
+    public double CrippleOpenMs { get; init; } = 4;
+
     /// <summary>How long after a battery's track starts (its first reading in the computer) it opens fire at the latest,
     /// s (fire_control_ref.py Scenario.t_open). It opens sooner once its computer's doubt of where the shells must go is
     /// within <see cref="OpenDoubtSteps"/> of its first step (twice the sigma) [EST: about two ranging salvos' worth, so

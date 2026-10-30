@@ -162,6 +162,14 @@ public enum DoctrineField : byte
     /// creeping in for the best ambush). Torpedoes, the player's own orders (an Engage, Beams, Star shell) and what's
     /// burning go as ever.</summary>
     Darkened,
+
+    /// <summary>How much an enemy that's done fighting still draws fire, 0-1 (docs/battle/balance.md BL2a): a contact gone
+    /// quiet (her guns not seen firing for <see cref="SimSettings.CrippleQuietS"/>) and making away (her own course
+    /// opening the range at <see cref="SimSettings.CrippleOpenMs"/>) counts as a target as little as this, smoothly; one
+    /// firing, holding her course or coming on counts in full. 1: every enemy alike (as before). A side's doctrine: one that
+    /// fires at what fights it, or one that finishes its cripples. After <see cref="Darkened"/>, so the fields' numbers in
+    /// logged commands stand.</summary>
+    Finish,
 }
 
 /// <summary>Doctrine's Shells: each battery loads the kind its target calls for (the captain's choice, the matchup's
@@ -293,7 +301,7 @@ public sealed class Doctrine(GroupSystem groups, IReadOnlyDictionary<string, dou
         return r;
     }
 
-    public const int FieldCount = (int)DoctrineField.Darkened + 1;
+    public const int FieldCount = (int)DoctrineField.Finish + 1;
 
     /// <summary>Every field when nothing sets it: a world told nothing (a dev's, a test's) behaves as before doctrine.</summary>
     public static double Default(DoctrineField f) => f switch
@@ -334,6 +342,7 @@ public sealed class Doctrine(GroupSystem groups, IReadOnlyDictionary<string, dou
         DoctrineField.WhenLit => (double)Ai.WhenLit.FightOn,
         DoctrineField.NightSpacingShare => 1,
         DoctrineField.Darkened => 0,
+        DoctrineField.Finish => 1,   // as before: every enemy alike
         _ => throw new ArgumentOutOfRangeException(nameof(f)),
     };
 

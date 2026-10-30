@@ -244,13 +244,15 @@ public sealed partial class CaptainLayer
     // secondary battery
     int[] candEntity = new int[32], candRank = new int[32], candSlot = new int[32], candPic = new int[32];
     double[] candRange = new double[32], candLead = new double[32], candBearing = new double[32], candDone = new double[32];
+    // and how much each still matters as a target (BL2a: quiet and making away, down to doctrine's Finish)
+    double[] candMatters = new double[32];
     Vec3d[] candPos = new Vec3d[32];
     sbyte[] candFoul = new sbyte[32];   // its line of fire: -1 not asked yet, 0 clear, 1 foul
     int candCount;
     // the ship's doctrine on unknowns and her aggression, as of this think; the nearest unknown in reach she won't fire on
     // (an entity, 0: none), found with her candidates, for a challenge (docs/battle/night.md Q6)
     Unknowns candUnknowns;
-    double candBold;
+    double candBold, candFinish;
     int candUnknown;
     double candUnknownM;
     double[] reaches = new double[16];
@@ -270,6 +272,7 @@ public sealed partial class CaptainLayer
         candCount = -1;   // found when a battery first needs them
         candUnknowns = (Unknowns)doctrine.Of(own.Entity, own.Side, DoctrineField.Unknowns);
         candBold = doctrine.Of(own.Entity, own.Side, DoctrineField.Aggression);
+        candFinish = doctrine.Of(own.Entity, own.Side, DoctrineField.Finish);
         if (ownTargets.Length < cls.Batteries.Length)
             ownTargets = new int[Math.Max(cls.Batteries.Length, ownTargets.Length * 2)];
         for (int b = 0; b < cls.Batteries.Length; b++)
@@ -747,7 +750,8 @@ public sealed partial class CaptainLayer
                    (gun == null || HitOn(ctx, gun, own.Side, pic[ci], curRange * s.FireReachShare / s.FireKeepShare) >= floor);
             curCan = Can(Bears(cls, b, Earth.Bearing(p, q) - own.HeadingDeg), curRange <= guns);
             curRank = secondary ? Rank(pic[ci].Type) : 0;
-            curBy = Lead(own, q, v, s) * (1 + s.FireCrowdShare * Crowd(cls, b, current, ctx.Ships.SlotOf(current))) * Sized(s, curRank) / Worth(curDone);
+            curBy = Lead(own, q, v, s) * (1 + s.FireCrowdShare * Crowd(cls, b, current, ctx.Ships.SlotOf(current))) * Sized(s, curRank) /
+                    (Worth(curDone) * Matters(ctx, pic[ci], p, q, v, candFinish));
         }
 
         int best = 0, bestRank = 0, bestCan = -1;
@@ -760,7 +764,7 @@ public sealed partial class CaptainLayer
             if (can < bestCan)
                 continue;
             int rank = secondary ? candRank[k] : 0;
-            double by = candLead[k] * (1 + s.FireCrowdShare * Crowd(cls, b, candEntity[k], candSlot[k])) * Sized(s, rank) / Worth(candDone[k]);
+            double by = candLead[k] * (1 + s.FireCrowdShare * Crowd(cls, b, candEntity[k], candSlot[k])) * Sized(s, rank) / (Worth(candDone[k]) * candMatters[k]);
             // a foul line and the hit floor only rule one out: asked only of one that would be the best yet (they're the cost)
             if ((can > bestCan || by < bestBy) && (gun == null || HitOn(ctx, gun, own.Side, pic[candPic[k]], candRange[k]) >= floor) && !Foul(ctx, own, k))
                 (best, bestCan, bestRank, bestBy) = (candEntity[k], can, rank, by);
@@ -842,7 +846,7 @@ public sealed partial class CaptainLayer
         {
             int n = Math.Max(near.Length, candEntity.Length * 2);
             (candEntity, candRank, candSlot, candRange, candLead, candBearing) = (new int[n], new int[n], new int[n], new double[n], new double[n], new double[n]);
-            (candPic, candDone) = (new int[n], new double[n]);
+            (candPic, candDone, candMatters) = (new int[n], new double[n], new double[n]);
             (candPos, candFoul) = (new Vec3d[n], new sbyte[n]);
         }
         candCount = 0;
@@ -864,8 +868,23 @@ public sealed partial class CaptainLayer
             (candBearing[candCount], candRank[candCount]) = (Earth.Bearing(p, q) - heading, Rank(pic[i].Type));
             (candPos[candCount], candFoul[candCount], candPic[candCount]) = (q, -1, i);
             candDone[candCount] = pic[i].DoneFor(ctx.NowMs, ctx.Settings);
+            candMatters[candCount] = Matters(ctx, pic[i], p, q, seen.Velocity(own.Side, i), candFinish);
             candCount++;
         }
+    }
+
+    /// <summary>How much an enemy still matters as a target (docs/battle/balance.md BL2a: "fire at what's firing at you"):
+    /// 1 unless she's both quiet (her guns not seen firing a while) and making away (her own course opening the range),
+    /// down to doctrine's <see cref="DoctrineField.Finish"/> when she's both; from what his navy sees of her.</summary>
+    static double Matters(in AiContext ctx, in Contact c, Vec3d p, Vec3d q, Vec3d v, double finish)
+    {
+        if (finish >= 1)
+            return 1;
+        var s = ctx.Settings;
+        double quiet = Math.Clamp((ctx.NowMs - c.QuietMs) / (1000 * s.CrippleQuietS), 0, 1);
+        var u = q - p;
+        double d = u.Length, away = d > 0 ? Math.Clamp(Vec3d.Dot(v, u) / d / s.CrippleOpenMs, 0, 1) : 0;
+        return 1 - (1 - finish) * quiet * away;
     }
 
     /// <summary>Whether a candidate's line of fire is foul (a friend near the fall), asked once a think.</summary>

@@ -187,6 +187,26 @@ public class FireOrderTests(ITestOutputHelper output)
         Assert.DoesNotContain(4, new[] { 1, 2, 3 }.Select(e => Target(wg, e, 0)));
     }
 
+    [Theory]
+    [InlineData(0.1, 3)]
+    [InlineData(1, 2)]
+    public void An_enemy_gone_quiet_and_making_away_draws_fire_only_by_doctrines_Finish(double finish, int expected)
+    {
+        // docs/battle/balance.md BL2a (the user: "fire what's firing at you; cripples are not interesting when there is
+        // something better to do"): a dreadnought 7 km off holding her fire and steaming away, another 11 km off firing at
+        // her; a side that fires at what fights it takes the far one once the near one has been quiet a while, one that
+        // finishes its cripples (Finish 1) the nearest
+        var (w, ai) = Make(new Placed("super_dreadnought", 0, 0, 0, 12, 0), new Placed("dreadnought", 80, 7_000, 80, 15, 1),
+            new Placed("dreadnought", 100, 11_000, 0, 12, 1));
+        w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.Finish, finish));
+        w.Apply(ai.Orders.HoldFire(Unit.Ship(2)));
+        Run(w, 30);
+        Assert.Equal(2, Target(w, 1, 0));   // at first the nearest: nobody has been quiet long yet
+        Run(w, 150);
+        output.WriteLine($"Finish {finish}: on {Target(w, 1, 0)}, the near one {Apart(w, 1, 2):0} m off, the far one {Apart(w, 1, 3):0} m");
+        Assert.Equal(expected, Target(w, 1, 0));
+    }
+
     /// <summary>Four QEs (1-4) in column against three dreadnoughts (5-7) in column 13 km to the east, both north.</summary>
     static (World W, AiSystem Ai) Lines(int own = 4)
     {

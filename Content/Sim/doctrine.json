@@ -66,6 +66,11 @@
     // (rounds kept for the next fight) or "finish" her (docs/battle/crew.md N5b; the user: no fire on burning wrecks that
     // show no sign of life); any other target in reach comes first either way, and a gun of hers seen firing brings it back
     "Wrecks": "cease",
+    // an enemy done fighting, her guns quiet and making away (docs/battle/balance.md BL2a; the user, 2026-10-30: "fire
+    // what's firing at you, or naturally some other target is more pressing; cripples are not interesting when there is
+    // something better to do"): she draws fire as little as this share of a fighting one's (her range counts this many
+    // times further, so anything still fighting in reach comes first); 1 finishes cripples as readily as anything [EST]
+    "Finish": 0.1,
     // a ship in sight that can't be made out, friend or foe (docs/battle/night.md Q6): "challenge" her with the bridge
     // lamp first (unanswered she's a foe; the lamp shows the challenger), "hold fire" until she's made out or gives herself
     // away (fires on one of ours, lights one, challenges), or "fire"; a bold captain fires anyway where no friend is
