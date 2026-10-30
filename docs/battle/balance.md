@@ -348,6 +348,11 @@ her task were doing and who was closing whom:
    allow them to do silly things like that." So: no more lowering of the guns' accuracy (BL1 stands, and the 2 km band
    is watched for being too low); the AI's closing inside 1 km is the next thing (BL5).
 
+8. **Long shots only where they have a chance** (the user, 2026-10-30, after the day attacks): "The distance is good, but
+   I'm doubting a captain should just yolo the torps away against fast dodging targets like that. For a line of
+   battleships it would make sense." A captain fires (and a flotilla's admiral signals) only above a chance of a hit
+   from the run's time against the target's speed and what she presents (her length, her line's).
+
 ## Pending decisions
 
 Gathered from the plans for the user, each with what it is and a recommendation. Those marked **now** can be

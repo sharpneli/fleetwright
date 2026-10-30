@@ -310,4 +310,50 @@ public class TorpedoTests(ITestOutputHelper output)
         r.AdvanceTo(w.Time);
         Assert.Equal(w.ComputeHash(), r.ComputeHash());
     }
+
+    /// <summary>A destroyer steaming north by day and, coming south to pass 5 km abeam (never nearer: no close shot), either
+    /// one fast destroyer or a line of four battleships 500 m apart, holding their fire: the torpedoes she fires at will in
+    /// six minutes.</summary>
+    static long LongShots(bool line)
+    {
+        var w = new World(Start, 5, Settings);
+        var ai = new AiSystem(w);
+        w.Apply(Command.SetWeather(25_000));
+        int dd = w.Ships.AddClass(Class("destroyer")), bb = w.Ships.AddClass(Class("super_dreadnought"));
+        var at = Earth.Position(56.0, 4.0);
+        w.Apply(ShipSystem.Spawn(dd, 56.0, 4.0, 0, 15, side: 0));
+        int n = line ? 4 : 1;
+        for (int i = 0; i < n; i++)
+        {
+            var p = at;
+            var f = Earth.Forward(p, 90);
+            Earth.Advance(ref p, ref f, 5_000);
+            f = Earth.Forward(p, 0);
+            Earth.Advance(ref p, ref f, 1_500 + 500 * i);   // the line astern of its leader, who comes south, passing 5 km abeam
+            var (la, lo) = Earth.LatLon(p);
+            w.Apply(ShipSystem.Spawn(line ? bb : dd, la, lo, 180, line ? 18 : 30, side: 1));
+        }
+        if (line)
+        {
+            w.Apply(GroupSystem.Create(2));
+            for (int i = 3; i <= 5; i++)
+                w.Apply(GroupSystem.Add(w.Groups.Of(2)!.GroupId, i));
+        }
+        for (int i = 2; i <= n + 1; i++)
+            w.Apply(ai.Orders.HoldFire(Unit.Ship(i)));
+        w.AdvanceTo(Start + 6 * 60_000);
+        return w.Torpedoes.Fired;
+    }
+
+    [Fact]
+    public void By_day_a_long_shot_goes_at_a_line_of_battleships_not_at_a_fast_destroyer()
+    {
+        // docs/battle/balance.md BL5 (the user: not "yolo the torps away against fast dodging targets"; "for a line of
+        // battleships it would make sense"): the chance of the long setting's run against what she presents and how far she
+        // can get from the aim meanwhile
+        long atDestroyer = LongShots(line: false), atLine = LongShots(line: true);
+        output.WriteLine($"fired at a fast destroyer {atDestroyer}, at a line {atLine}");
+        Assert.Equal(0, atDestroyer);
+        Assert.True(atLine > 0);
+    }
 }

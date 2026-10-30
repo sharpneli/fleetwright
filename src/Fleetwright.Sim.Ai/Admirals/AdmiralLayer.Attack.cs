@@ -160,7 +160,9 @@ public sealed partial class AdmiralLayer
             }
             case AttackPhase.Run:
             {
-                bool inReach = run <= s.TorpedoFireShare * range;
+                // in reach, and with a chance of a hit: a long shot at a fast ship alone isn't one, at a line it is (BL5)
+                bool inReach = run <= s.TorpedoFireShare * range && pic.IndexOf(a.AttackTarget) is int ai2 and >= 0 &&
+                               captains.TorpedoChance(ctx, pic, ai2, run, speed) >= s.TorpedoMinChance;
                 if (!inReach && offBow > 110)
                 {
                     (a.Attack, a.AttackMs) = (AttackPhase.Gain, now);   // he's turned away: abaft his beam, a stern chase; ahead of him again first

@@ -515,7 +515,8 @@ public sealed partial class CaptainLayer
         var (reach, speed) = AttackSetting(ctx, cls, own.Position);
         reach *= s.TorpedoFireShare;
         int target = 0;
-        if (cap.Fire == FireOrder.Engage && pic.IndexOf(cap.FireTarget) is int ei and >= 0 && pic[ei].InSight && !pic[ei].Lost && Run(ctx, pic, own, ei, speed) <= reach)
+        if (cap.Fire == FireOrder.Engage && pic.IndexOf(cap.FireTarget) is int ei and >= 0 && pic[ei].InSight && !pic[ei].Lost && Run(ctx, pic, own, ei, speed) is var er &&
+            er <= reach && TorpedoChance(ctx, pic, ei, er, speed) >= s.TorpedoMinChance)
             target = cap.FireTarget;
         if (target == 0 && !onOrder)
         {
@@ -527,7 +528,7 @@ public sealed partial class CaptainLayer
                     continue;   // not known for a foe (docs/battle/night.md Q6)
                 double run = Run(ctx, pic, own, i, speed);
                 int rank = TorpedoRank(pic[i].Type);
-                if (run <= reach && (rank < bestRank || rank == bestRank && run < bestRun))
+                if (run <= reach && TorpedoChance(ctx, pic, i, run, speed) >= s.TorpedoMinChance && (rank < bestRank || rank == bestRank && run < bestRun))
                     (target, bestRank, bestRun) = (pic[i].Entity, rank, run);
             }
         }
@@ -647,13 +648,46 @@ public sealed partial class CaptainLayer
 
     /// <summary>The run a torpedo at a speed needs to meet a contact going on as its navy holds it, m (infinite when it
     /// can't).</summary>
+    /// <summary>The chance a torpedo fired now at a contact finds a ship (docs/battle/balance.md BL5; the user: no long
+    /// shots at "fast dodging targets", a line of battleships yes): what she presents, her length and her line's within
+    /// <see cref="SimSettings.TorpedoLineM"/> of her (a track that misses one finds the next), against how far she can be
+    /// from where it's aimed by the time it gets there, <see cref="SimSettings.TorpedoDodgeShare"/> of her speed as seen
+    /// times the run's time: L / (L + k V T). A long run at a fast ship, near nothing; at a line, a fair one.</summary>
+    public double TorpedoChance(in AiContext ctx, Picture pic, int i, double runM, double speedMs)
+    {
+        var s = ctx.Settings;
+        var (q, v, _) = pic.EstimateAt(i, ctx.NowMs, s);
+        int e = pic[i].Entity, slot = ctx.Ships.SlotOf(e);
+        if (slot < 0 || !(runM < double.PositiveInfinity))
+            return 0;
+        var t = ctx.Ships[slot];
+        double presented = t.Handling.Class.Motion.LengthM;
+        if (groups.Of(e) is { } g)
+        {
+            // her line's ships near her, as far along it as they reach either way (what a lookout sees of a line)
+            double lo = 0, hi = 0;
+            var line = g.Line;
+            for (int k = 0; k < line.Count; k++)   // by index: a foreach over the interface would allocate its enumerator
+                if (line[k] is int m && m != e && ctx.Ships.SlotOf(m) is int ms and >= 0)
+                {
+                    var d = ctx.Ships[ms].Position - t.Position;
+                    if (d.Length > s.TorpedoLineM)
+                        continue;
+                    double along = Vec3d.Dot(d, t.Forward);
+                    (lo, hi) = (Math.Min(lo, along), Math.Max(hi, along));
+                }
+            presented += hi - lo;
+        }
+        double away = s.TorpedoDodgeShare * v.Length * runM / Math.Max(speedMs, 0.1);
+        return presented / (presented + away);
+    }
+
     double Run(in AiContext ctx, Picture pic, ShipState own, int i, double speedMs)
     {
         var (q, v, _) = pic.EstimateAt(i, ctx.NowMs, ctx.Settings);
         return TorpedoAim.Intercept(own.Position, q, v, speedMs, out _, out double run) ? run : double.PositiveInfinity;
     }
 
-    /// <summary>A class's torpedoes' fast setting: the longest range of its launchers' (m), and its speed (m/s).</summary>
     /// <summary>The torpedoes' reach for an attack at a place now (docs/battle/balance.md BL5): in the dark the fast
     /// setting's; by day <see cref="SimSettings.TorpedoDayShare"/> of the slow setting's at its speed, where that's further
     /// (a day attack fires at a line from its torpedoes' reach, not from point blank).</summary>
@@ -672,6 +706,7 @@ public sealed partial class CaptainLayer
         return range > fast.RangeM ? (range, speed) : fast;
     }
 
+    /// <summary>A class's torpedoes' fast setting: the longest range of its launchers' (m), and its speed (m/s).</summary>
     internal static (double RangeM, double SpeedMs) FastSetting(ShipClass cls)
     {
         double range = 0, speed = 0;

@@ -2269,6 +2269,15 @@ public sealed record SimSettings
     /// setting: 6.4 km, fired at 0.9 of it) [EST].</summary>
     public double TorpedoDayShare { get; init; } = 0.7;
 
+    /// <summary>A torpedo's chance (docs/battle/balance.md BL5; the user: no long shots at "fast dodging targets"): what
+    /// the target presents (her length, and her line's within <see cref="TorpedoLineM"/>, m) against how far she can be
+    /// from the aim when it gets there (<see cref="TorpedoDodgeShare"/> of her speed times the run's time); a captain fires,
+    /// a flotilla's admiral signals, only at <see cref="TorpedoMinChance"/> or better [EST: a slow torpedo at 5 km gives a
+    /// 30 kn destroyer 3%, a battleship alone 9%, a line of four 50%; the fast one close in a destroyer at 2 km 11%].</summary>
+    public double TorpedoDodgeShare { get; init; } = 0.5;
+    public double TorpedoLineM { get; init; } = 3000;
+    public double TorpedoMinChance { get; init; } = 0.1;
+
     /// <summary>A cripple's escape (docs/battle/balance.md BL5; the user: "a bit more sneaky"): she runs from every enemy her
     /// navy holds within FightCompareM, each by its bearing weighted by the inverse square of its range, and bends toward
     /// home as the nearest falls back past this range, m, fully home at twice it [EST].</summary>
