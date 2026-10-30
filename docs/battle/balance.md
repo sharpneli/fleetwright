@@ -1,6 +1,6 @@
 # Plan: the balance round
 
-Status: **drafted 2026-10-30** (BL0's baseline taken the same day); the user's answers the same day ("Decided");
+Status: **drafted 2026-10-30**; BL0 (the panel) done the same day; the user's answers the same day ("Decided");
 P1-P6 answered the same day, P7-P10 after BL1.    Updated: 2026-10-30
 
 Every deepening since 2026-10-14 kept balancing out of its steps and left it "to the balance pass": the physics first,
@@ -106,7 +106,10 @@ The yardsticks at the same commit:
 4. **The scenarios have drifted** since 10-25: Coronel flipped to the Germans losing, the prizes' war is nearly
    bloodless over 7 hours, the Dogger Bank fell from 15 v 14 to 3.2 v 6.6 (still several times the record). They
    rebalance last, with their knobs, once the model has settled.
-5. **Big-ship damage is near its anchors.** The open items there are of shape (Tiger's magazines, water per hit),
+5. **The wrong side on top in the big fights** (the panel, BL0): the record's loser loses more in only 23 of 44 seeds;
+   the Jutland's Germans lose more than the British in all 4 (the record: 11 against 14), and the Heligoland Bight's
+   British hit 22.6% of their shells.
+6. **Big-ship damage is near its anchors.** The open items there are of shape (Tiger's magazines, water per hit),
    not of scale.
 
 ## The steps (proposed)
@@ -115,7 +118,7 @@ Each step measures against BL0's panel and records before and after here.
 
 | Step | What | Done when |
 |---|---|---|
-| **BL0** | **The panel.** `shipgen balance` runs the scenarios and the yardsticks above and prints one table (losses, hits a side, how ships went, how it ended, each yardstick's in-band count), appended as a dated row to "The balance log" at the end of this doc, as coarse's parity log. | It reproduces the table above. |
+| **BL0** | **The panel. Done 2026-10-30.** `shipgen balance [--seeds 8] [--only ...] [--fc-runs 12] [--out FILE.json]`: the scenarios played to their end in the fine tier (the parity bench's plays, `CoarseParity.PlayMany`), each side's losses beside the record's with a 2x verdict (a ship either way for small numbers), the seeds where the record's loser loses more, how ships went; fc-history judged (`FcHistory.Measure`), the cases and orderings out of band listed. About 6.5 min on 32 threads, the Jutland most of it. The log's row is written by hand; the numbers kept in `docs/battle/balance/` (`bl0.json`). The other yardsticks (`damage-history`, `fire-history`, `dc-history`, `crew-history`, `night-history`) run when a step touches their system. | Reproduces the hand-run baseline: yes, every scenario's numbers identical (the plays inline give the same worlds as on workers); `coarse-parity` and `fc-history` byte-identical after the refactors. |
 | **BL1** | **Gunnery to the record.** F7 (spotting by the navy's rules, the straddle calls); then the missing degraders the first cut's battles had, each a physical system with its source: splash confusion (several batteries on one target), the gun platform's motion in a sea, the small fast target (light guns' laying on a turning boat). Systems, approximated where tracing each splash isn't needed (decision 1); point blank stays deadly (decision 2). | `fc-history` mostly in its bands, the rest named; the orderings in; the night cases and close-range duels still brutal. |
 | **BL2** | **Cripples and escapes.** F10's judgement on a ship still afloat (worth falling as she's seen done for, a doctrine field for finishing her); falling-out ships turning away and making smoke; striking and abandoning (crew.md's "after"). | The Heligoland Bight and the Dogger Bank's light losses within about twice the record. |
 | **BL3** | **The damage leftovers that move a scenario.** Triage of the table above by what BL0-BL2's runs show: the cell-side ruptures, settling past 8-9°, Tiger's magazines, the `yamato` TDS, the user's E8a and crew decisions. The rest stays open with its reason. | Each item done or kept open with a reason. |
@@ -173,3 +176,4 @@ answered today; the rest are best answered when their step has measured.
 | Date | Commit | Change | Panel |
 |---|---|---|---|
 | 2026-10-30 | `cfe6c165` | BL0's baseline, by hand | the table in BL0 |
+| 2026-10-30 | BL0's commit | `shipgen balance`, the default panel (`balance/bl0.json`) | 4 of 14 sides within 2x; the record's loser lost more in 23 of 44 seeds; capsized 59%, foundered 31%, broke in two 10%; fc-history 7 of 23 (15 HIGH, 1 LOW), orderings 3 of 7 |

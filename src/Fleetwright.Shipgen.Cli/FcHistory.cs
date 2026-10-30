@@ -171,26 +171,53 @@ static class FcHistory
         new("practice's fall with the range (6 against 10 kyd)", "USN practice 1912-18, 6 kyd", "USN practice 1912-18, 10 kyd", 1.2, 2.5),
     ];
 
+    /// <summary>A case run and judged: its stats and its band's verdict (in, LOW, HIGH; none when it has no band).</summary>
+    public sealed record Measured(string Name, string Era, double Lo, double Hi, FcStats St, string Verdict);
+
+    /// <summary>An ordering judged: a's hit rate over b's, and its verdict.</summary>
+    public sealed record Ordered(string What, double Ratio, double Lo, double Hi, string Verdict);
+
+    /// <summary>Every case (or those whose name holds <paramref name="only"/>) run <paramref name="runs"/> times and judged
+    /// against its band, and the orderings between them: the yardstick, for <see cref="Run"/> and the balance panel.</summary>
+    public static (List<Measured> Cases, List<Ordered> Orderings) Measure(SimSettings settings, int runs, string? only, Func<string, ShipClass> cls) =>
+        Measure(settings, runs, Cases(cls).Where(h => only is null || h.Case.Name.Contains(only, StringComparison.OrdinalIgnoreCase)).ToList());
+
+    static (List<Measured> Cases, List<Ordered> Orderings) Measure(SimSettings settings, int runs, List<HistoryCase> cases)
+    {
+        var res = FcBench.Runs(cases.Select(h => h.Case).ToList(), settings, runs, 1);
+        var measured = new List<Measured>();
+        for (int k = 0; k < cases.Count; k++)
+        {
+            var h = cases[k];
+            var st = FcStats.Of(res[k], h.Case.Minutes);
+            measured.Add(new(h.Case.Name, h.Era, h.Lo, h.Hi, st, double.IsNaN(h.Lo) ? "" : st.HitPct < h.Lo ? "LOW" : st.HitPct > h.Hi ? "HIGH" : "in"));
+        }
+        var hit = measured.ToDictionary(m => m.Name, m => m.St.HitPct);
+        var orderings = Orderings.Where(o => hit.ContainsKey(o.A) && hit.ContainsKey(o.B)).Select(o =>
+        {
+            double r = hit[o.A] / Math.Max(hit[o.B], 1e-9);
+            return new Ordered(o.What, r, o.Lo, o.Hi, r < o.Lo ? "LOW" : r > o.Hi ? "HIGH" : "in");
+        }).ToList();
+        return (measured, orderings);
+    }
+
     public static int Run(SimSettings settings, int runs, string? only, string? refRoot, Func<string, ShipClass> cls)
     {
         var cases = Cases(cls).Where(h => only is null || h.Case.Name.Contains(only, StringComparison.OrdinalIgnoreCase)).ToList();
         Console.WriteLine($"The record, each case at its own range, weather and target behaviour ({runs} runs a case; fire-control.md, \"The yardstick\")");
-        var res = FcBench.Runs(cases.Select(h => h.Case).ToList(), settings, runs, 1);
-        var hit = new Dictionary<string, double>();
+        var (measured, orderings) = Measure(settings, runs, cases);
         string era = "";
         int inBand = 0, banded = 0;
         for (int k = 0; k < cases.Count; k++)
         {
-            var (h, c) = (cases[k], cases[k].Case);
-            var st = FcStats.Of(res[k], c.Minutes);
-            hit[c.Name] = st.HitPct;
+            var (h, c, st) = (cases[k], cases[k].Case, measured[k].St);
             if (h.Era != era)
             {
                 era = h.Era;
                 Console.WriteLine($"\n{(era == "later" ? "Later cuts (secondary checks)" : "The first game's era, " + era)}");
                 Console.WriteLine($"  {"case",-42}{"fit",4}{"km",6}{"model",8}{"band",11}{"verdict",10}{"strad",7}{"1st hit",9}{"after",7}{"from",7}  record");
             }
-            string verdict = double.IsNaN(h.Lo) ? "" : st.HitPct < h.Lo ? "LOW" : st.HitPct > h.Hi ? "HIGH" : "in";
+            string verdict = measured[k].Verdict;
             if (!double.IsNaN(h.Lo))
             {
                 banded++;
@@ -208,16 +235,11 @@ static class FcHistory
                     (double.IsNaN(c.WindKn) ? "" : string.Format(Inv, "; wind from {0:0}° at {1:0} kn", c.WindFromDeg, c.WindKn)));
         }
         Console.WriteLine($"\n{inBand} of {banded} cases in their bands.");
-        var orderings = Orderings.Where(o => hit.ContainsKey(o.A) && hit.ContainsKey(o.B)).ToList();
         if (orderings.Count > 0)
         {
             Console.WriteLine("\nThe orderings (a's hit rate over b's):");
             foreach (var o in orderings)
-            {
-                double r = hit[o.A] / Math.Max(hit[o.B], 1e-9);
-                Console.WriteLine(string.Format(Inv, "  {0,-62} {1,6:0.00}  want {2:0.#}-{3:0.#}  {4}", o.What, r, o.Lo, o.Hi,
-                    r < o.Lo ? "LOW" : r > o.Hi ? "HIGH" : "in"));
-            }
+                Console.WriteLine(string.Format(Inv, "  {0,-62} {1,6:0.00}  want {2:0.#}-{3:0.#}  {4}", o.What, o.Ratio, o.Lo, o.Hi, o.Verdict));
         }
         if (refRoot is not null)
             FcReference.Run(refRoot, "history", runs);

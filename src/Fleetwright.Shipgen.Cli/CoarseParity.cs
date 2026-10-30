@@ -247,9 +247,12 @@ static class CoarseParity
     // ---------------------------------------------------------------- the scenarios
 
     /// <summary>A scenario played once: the end, each side's result, and what the combat log told as it went.</summary>
-    sealed class Played
+    /// <summary>A scenario played to its end: each side's result, and what the panels read from its combat log.</summary>
+    public sealed class Played
     {
         public required SideResult[] Result;
+        /// <summary>The ships lost by how they went, every side's, by <see cref="LossKind"/>.</summary>
+        public readonly int[] LostBy = new int[Enum.GetValues<LossKind>().Length];
         public EndReason Reason;
         public double Hours;
         /// <summary>Shells fired at, and shell hits on, each target class.</summary>
@@ -264,42 +267,16 @@ static class CoarseParity
     static IEnumerable<Row> PlayRows(List<(string Layer, string Name)> plays, SimSettings settings, string root, string landPath, int seeds, bool fine, bool coarse,
         double[] wall, int threads)
     {
-        string dir = Path.Combine(root, "..", "Content", "Scenarios");
-        var scenarios = plays.ToDictionary(p => p.Name, p => Scenario.Load(Path.Combine(dir, p.Name + ".json"), [dir]));
-        var shoreTask = Task.Run(() => Shore.Build(Land.Load(landPath)));
-        using var registry = new ShipClassRegistry(0);
-        var classes = scenarios.ToDictionary(kv => kv.Key, kv => ScenarioLoader.RequestClasses(kv.Value, registry, [Path.Combine(root, "designs")]));
-        registry.WaitAll();
-        var shore = shoreTask.Result;
-
         var tiers = new List<double>();
         if (fine)
             tiers.Add(1);
         if (coarse)
             tiers.Add(CoarseSpeed);
-        var jobs = (from p in plays from t in tiers from i in Enumerable.Range(0, seeds) select (p.Name, Speed: t, Seed: scenarios[p.Name].Seed + (ulong)i)).ToList();
-        var done = new Played[jobs.Count];
-        var took = new double[jobs.Count];
-        Console.WriteLine($"  playing {plays.Count} scenarios {seeds} times each way ({jobs.Count} plays) on {threads} threads...");
-        // the biggest first, so the long ones don't start last
-        var order = Enumerable.Range(0, jobs.Count).OrderByDescending(i => scenarios[jobs[i].Name].ShipCount).ToArray();
-        Parallel.ForEach(order, new ParallelOptions { MaxDegreeOfParallelism = threads }, i =>
-        {
-            var j = jobs[i];
-            var sw = Stopwatch.StartNew();
-            done[i] = Play(scenarios[j.Name], j.Seed, j.Speed, settings, registry, classes[j.Name], shore);
-            took[i] = sw.Elapsed.TotalSeconds;
-        });
-        for (int i = 0; i < jobs.Count; i++)
-            wall[jobs[i].Speed == 1 ? 0 : 1] += took[i];
-        long missed = done.Sum(p => p.Missed);
-        if (missed > 0)
-            Console.WriteLine($"  ({missed} combat log lines went by unread: the ring too small for a minute of a fight)");
-
+        var (scenarios, played) = PlayMany([.. plays.Select(p => p.Name).Distinct()], _ => seeds, [.. tiers], settings, root, landPath, threads, wall);
         foreach (var (layer, name) in plays)
         {
             var s = scenarios[name];
-            Played[] Of(double speed) => [.. jobs.Select((j, i) => (j, i)).Where(x => x.j.Name == name && x.j.Speed == speed).Select(x => done[x.i])];
+            Played[] Of(double speed) => played.TryGetValue((name, speed), out var p) ? p : [];
             var f = Of(1);
             var c = Of(CoarseSpeed);
             Row R(string m, double floor, Func<Played[], Stat> st, bool absolute = false) => new(layer, s.Name, m, floor, absolute, st(f), st(c));
@@ -340,6 +317,44 @@ static class CoarseParity
             yield return R("decided, share", 0.1, p => Mean(p, x => x.Reason == EndReason.Decided ? 1 : 0));
             yield return R("the end, hours", 0.25, p => Mean(p, x => x.Hours));
         }
+    }
+
+    /// <summary>The scenarios (by file name in Content/Scenarios) each played <paramref name="seedsOf"/> times at each of
+    /// <paramref name="speeds"/> (1 the fine tier, <see cref="CoarseSpeed"/> the coarse), many at once on
+    /// <paramref name="threads"/> threads, the biggest first; each play's own seconds summed into <paramref name="wall"/>
+    /// (fine, then coarse) when given. The plays come back by name and speed, in seed order.</summary>
+    public static (Dictionary<string, Scenario> Scenarios, Dictionary<(string Name, double Speed), Played[]> Plays) PlayMany(IReadOnlyList<string> names,
+        Func<string, int> seedsOf, double[] speeds, SimSettings settings, string root, string landPath, int threads, double[]? wall = null)
+    {
+        string dir = Path.Combine(root, "..", "Content", "Scenarios");
+        var scenarios = names.ToDictionary(n => n, n => Scenario.Load(Path.Combine(dir, n + ".json"), [dir]));
+        var shoreTask = Task.Run(() => Shore.Build(Land.Load(landPath)));
+        using var registry = new ShipClassRegistry(0);
+        var classes = scenarios.ToDictionary(kv => kv.Key, kv => ScenarioLoader.RequestClasses(kv.Value, registry, [Path.Combine(root, "designs")]));
+        registry.WaitAll();
+        var shore = shoreTask.Result;
+
+        var jobs = (from n in names from t in speeds from i in Enumerable.Range(0, seedsOf(n)) select (Name: n, Speed: t, Seed: scenarios[n].Seed + (ulong)i)).ToList();
+        var done = new Played[jobs.Count];
+        var took = new double[jobs.Count];
+        Console.WriteLine($"  playing {names.Count} scenarios ({jobs.Count} plays) on {threads} threads...");
+        // the biggest first, so the long ones don't start last
+        var order = Enumerable.Range(0, jobs.Count).OrderByDescending(i => scenarios[jobs[i].Name].ShipCount).ToArray();
+        Parallel.ForEach(order, new ParallelOptions { MaxDegreeOfParallelism = threads }, i =>
+        {
+            var j = jobs[i];
+            var sw = Stopwatch.StartNew();
+            done[i] = Play(scenarios[j.Name], j.Seed, j.Speed, settings, registry, classes[j.Name], shore);
+            took[i] = sw.Elapsed.TotalSeconds;
+        });
+        if (wall != null)
+            for (int i = 0; i < jobs.Count; i++)
+                wall[jobs[i].Speed == 1 ? 0 : 1] += took[i];
+        long missed = done.Sum(p => p.Missed);
+        if (missed > 0)
+            Console.WriteLine($"  ({missed} combat log lines went by unread: the ring too small for a minute of a fight)");
+        var plays = jobs.Select((j, i) => (j, i)).GroupBy(x => (x.j.Name, x.j.Speed)).ToDictionary(g => g.Key, g => g.Select(x => done[x.i]).ToArray());
+        return (scenarios, plays);
     }
 
     static Played Play(Scenario s, ulong seed, double speed, SimSettings settings, ShipClassRegistry registry, Dictionary<string, int> classes, Shore shore)
@@ -445,6 +460,9 @@ static class CoarseParity
             Note();
         });
         p.Result = end.Result();
+        foreach (var l in end.Timeline)
+            if (l.Kind == PlayEvent.Lost)
+                p.LostBy[l.Count]++;
         p.Reason = end.Reason;
         p.Hours = (end.EndMs - s.Start.Ms) / 3_600_000.0;
         return p;

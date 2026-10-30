@@ -321,6 +321,8 @@ public static class Program
                     a.Get("layer")?.Split(','), a.Get("tier", "both")!, a.Int("runs", 0), a.Int("seeds", 0), a.Get("out"), a.Get("fine-from"),
                     a.Get("land") ?? Path.Combine(Root(a), "..", "Content", "World", "land-10m.bin"), a.Int("threads", 0),
                     a.Get("only")?.Split(','))),
+                "balance" => BalancePanel.Run(Settings(a), Root(a), n => Class(a, n), new BalancePanel.Options(a.Int("seeds", 8), a.Get("only")?.Split(','),
+                    a.Int("fc-runs", 12), a.Int("threads", 0), a.Get("land") ?? Path.Combine(Root(a), "..", "Content", "World", "land-10m.bin"), a.Get("out"))),
                 "fc-converge" => FcLevels.Converge(Settings(a), a.Int("runs", 30), a.Has("ref") ? Root(a) : null, n => Class(a, n)),
                 "fc-levels" => FcLevels.Run(Settings(a), a.Int("runs", 20), a.Has("ref") ? Root(a) : null, n => Class(a, n)),
                 "fc-sensors" => FcSensors.Run(Settings(a), a.Int("runs", 12), Root(a), n => Class(a, n)),

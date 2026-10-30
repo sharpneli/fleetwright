@@ -420,7 +420,7 @@ static class ScenarioPlay
     /// <summary>An enum's name in words: "NoContact" as "no contact".</summary>
     static string Words(string name) => string.Concat(name.Select((ch, i) => char.IsUpper(ch) && i > 0 ? " " + char.ToLowerInvariant(ch) : char.ToLowerInvariant(ch).ToString()));
 
-    static string Why(EndReason r) => r switch
+    public static string Why(EndReason r) => r switch
     {
         EndReason.Time => "time",
         EndReason.Decided => "decided",
