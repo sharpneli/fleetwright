@@ -126,6 +126,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         public bool TorpedoHeld;        // his flotilla attacking together: his torpedoes wait for its signal
         public bool TorpedoWait;        // on the coarse fire watch: a torpedo target found, his tubes not bearing yet
         public bool Attacking;          // fighting: pressing a torpedo attack (his searchlights dark, docs/battle/night.md Q4)
+        public bool Finishing;          // fighting: in to finish an enemy that can hardly hurt him (docs/battle/balance.md BL5)
         public CaptainReason Reason;    // why, when it isn't simply his order (fallen out)
         public bool Overruled;          // the player ordered him on after he fell out: he stays, at his ship's risk
         public bool Conn;               // the player has the conn: nothing but the player's helm orders moves her
@@ -245,6 +246,11 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         int i = Find(entity);
         return i >= 0 ? (captains[i].Order, captains[i].Target, captains[i].Whose) : (CaptainOrder.None, 0, Whose.Own);
     }
+
+    /// <summary>A fighting captain's way of it (docs/battle/balance.md BL5, tools): pressing a torpedo attack, in to finish
+    /// an enemy, or turned away from one.</summary>
+    public (bool Attacking, bool Finishing, bool Away) FightOf(int entity) =>
+        Find(entity) is int i and >= 0 ? (captains[i].Attacking, captains[i].Finishing, captains[i].FightAway) : default;
 
     /// <summary>Whether a ship's captain is combing a torpedo's track his lookouts saw (his admiral reads it: tracks seen).</summary>
     public bool Combing(int entity, long nowMs) => Find(entity) is int i and >= 0 && captains[i].HeldUntilMs > nowMs && captains[i].HeldFor == CaptainReason.Combing;

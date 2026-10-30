@@ -21,6 +21,9 @@ static class ScenarioPlay
     {
         // where the hits come from (docs/battle/balance.md BL1g): shells and hits by calibre, range and point blank, every seed
         var fire = new SortedDictionary<(bool Night, bool Small, int Cal, int Range, bool Pb), (long Shells, long Hits)>();
+        // and inside 4 km, why the shooter was there: his captain's order and way of fighting (BL5)
+        var close = new SortedDictionary<string, (long Shells, long Hits)>(StringComparer.Ordinal);
+        var against = new SortedDictionary<string, (long Shells, long Hits)>(StringComparer.Ordinal);
         int[] calBands = [120, 200, 300], rangeBands = [2, 4, 6, 10, 15];
         var settings = SimSettings.Load(settingsPath);
         if (smoke is bool on)
@@ -63,6 +66,42 @@ static class ScenarioPlay
                     var key = (night, small, calBands.Count(b => cal >= b), rangeBands.Count(b => r.TrueRangeM >= b * 1000), r.PointBlank);
                     var (sh, hi) = fire.GetValueOrDefault(key);
                     fire[key] = (sh + r.Shells, hi + r.Hits);
+                    if (r.TrueRangeM < 4000)
+                    {
+                        var (order, _, whose) = ai.Captains.Of(r.Shooter);
+                        var (att, fin, away) = ai.Captains.FightOf(r.Shooter);
+                        string why = $"{(night ? "night" : "day")} {order}{(order == Fleetwright.Sim.Ai.Captains.CaptainOrder.Fight ? att ? " attacking" : fin ? " finishing" : away ? " away" : " in the band" : "")} ({whose})";
+                        // in her line: what her admiral and his task have the line doing
+                        if (w.Groups.UnitOf(r.Shooter) is { } top)
+                        {
+                            var task = ai.Tasks.Of(Fleetwright.Sim.Ai.Unit.Group(top.GroupId));
+                            var (adm, _, _) = ai.Admirals.Of(top.GroupId);
+                            var (phase, _, _) = ai.Admirals.AttackOf(top.GroupId);
+                            why += $" / admiral {adm} / task {task.Kind} {task.Status}" + (phase != default ? $" / attack {phase}" : "");
+                        }
+                        var (cs, ch) = close.GetValueOrDefault(why);
+                        close[why] = (cs + r.Shells, ch + r.Hits);
+                        // the range against the shooter's band (0.6 of her chief guns' reach, the default doctrine's), the
+                        // visibility there, and what her target's captain was doing (BL5: who closed)
+                        var sc = w.Ships.Store[ss].Handling.Class;
+                        int chief = -1;
+                        for (int bi = 0; bi < sc.Batteries.Length && chief < 0; bi++)
+                            chief = sc.Batteries[bi].Chief ? bi : -1;
+                        double bandM = chief >= 0 ? 0.6 * w.Gunnery.ReachM(w.Ships.Store.Combat.Loadout(ss), chief) : double.NaN;
+                        double vis = w.Weather.At(w.Ships.Store[ss].Position, w.Time).VisibilityM;
+                        var (torder, _, _) = ai.Captains.Of(r.Target);
+                        var (tatt, _, taway) = ai.Captains.FightOf(r.Target);
+                        string tw = torder == Fleetwright.Sim.Ai.Captains.CaptainOrder.Fight ? tatt ? "attacking" : taway ? "away" : "fighting" : torder.ToString();
+                        if (w.Groups.UnitOf(r.Target) is { } ttop)
+                        {
+                            var (tadm, _, _) = ai.Admirals.Of(ttop.GroupId);
+                            var (tph, _, _) = ai.Admirals.AttackOf(ttop.GroupId);
+                            tw += $" / her admiral {tadm}" + (tph != default ? $" {tph}" : "");
+                        }
+                        string k2 = $"{(night ? "night" : "day")} range/band {(r.TrueRangeM / bandM < 0.33 ? "<1/3" : r.TrueRangeM / bandM < 0.66 ? "1/3-2/3" : ">2/3")} vis {(vis < 6000 ? "<6 km" : vis < 12000 ? "6-12 km" : ">12 km")} / target {tw}";
+                        var (as2, ah2) = against.GetValueOrDefault(k2);
+                        against[k2] = (as2 + r.Shells, ah2 + r.Hits);
+                    }
                 };
             foreach (var x in start.Warnings)
                 Console.WriteLine($"  {x}");
@@ -151,6 +190,12 @@ static class ScenarioPlay
             Console.WriteLine($"where the hits came from, every seed (shells, hits, hit %; pb: laid point blank; at a ship under 2,000 t or larger):");
             foreach (var ((night, small, cal, range, pb), (sh, hi)) in fire)
                 Console.WriteLine($"  {(night ? "night" : "day"),-6} {(small ? "small" : "large"),-6} {cals[cal],-16} {ranges[range],-15} {(pb ? "pb" : "  ")}  {sh,8} {hi,6} {100.0 * hi / Math.Max(sh, 1),6:F1}%");
+            Console.WriteLine("inside 4 km, by the shooter's captain's order and his way of fighting (shells, hits):");
+            foreach (var (why, (sh, hi)) in close.OrderByDescending(kv => kv.Value.Hits))
+                Console.WriteLine($"  {why,-100} {sh,8} {hi,6}");
+            Console.WriteLine("inside 4 km, by the range against the shooter's band, the visibility and her target's way (shells, hits):");
+            foreach (var (why, (sh, hi)) in against.OrderByDescending(kv => kv.Value.Hits).Take(25))
+                Console.WriteLine($"  {why,-100} {sh,8} {hi,6}");
         }
         if (crashed > 0)
             Console.WriteLine($"the sim broke in {crashed} of {seeds} seeds");

@@ -910,7 +910,7 @@ public sealed partial class CaptainLayer
         var cls = own.Handling.Class;
         int main = ChiefBattery(cls);
         double reach = main >= 0 ? ctx.World.Gunnery.ReachM(ctx.Ships.Combat.Loadout(slot), main) : s.ShadowMinM;
-        cap.Attacking = false;
+        (cap.Attacking, cap.Finishing) = (false, false);
         double band = cap.DistanceM > 0 ? cap.DistanceM : doctrine.Of(own.Entity, own.Side, DoctrineField.RangeShare) * reach;
 
         int enemy = new Unit(cap.Target).ShipOf(groups);
@@ -952,7 +952,7 @@ public sealed partial class CaptainLayer
 
         cap.FightAway = away;
         if (!away && c >= s.FightFinishConfidence && m.Terms.LostA < s.FightFinishLostShare)
-            band *= s.FightFinishShare;   // he can hardly be hurt (a cripple, not a torpedo boat): in to finish her
+            (band, cap.Finishing) = (band * s.FightFinishShare, true);   // he can hardly be hurt (a cripple, not a torpedo boat): in to finish her
         var (course, kn) = away ? Behaviours.Run(own, t) : Behaviours.Fight(own, t, band, s.FightBandShare, s.FightCloseDeg, s.FightMinCloseKn, ref cap.FightSide);
         if (away)
         {
