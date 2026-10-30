@@ -20,7 +20,7 @@
   "readiness": { "Britain": "closed up", "Germany": "closed up" },
   "damage_control": { "Britain": "1916", "Germany": "1916" },
   "fire_discipline": { "Britain": "rn-1914", "Germany": "german" },
-  "doctrine": { "Britain": { "preset": "default", "NightAction": "accept" }, "Germany": { "preset": "default", "NightAction": "accept" } },
+  "doctrine": { "Britain": { "preset": "rn-1914", "NightAction": "accept" }, "Germany": { "preset": "german-1914", "AnswerChallenge": 0.4, "NightAction": "accept" } },
   "crews": { "Britain": "trained", "Germany": "trained" },
   "player": "Britain",
   "until": "1916-05-31T23:30",

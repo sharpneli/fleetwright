@@ -85,5 +85,21 @@
     // a squadron closes up at night (the sun 6° down) to this share of its day's spacing, each ship keeping her next ahead
     // in sight [EST]; one that loses sight of her next ahead holds the course and speed she had until she sees her again
     "NightSpacingShare": 0.5
-  }
+  },
+  // Night doctrine one a period (docs/battle/night.md Q12; research/simulation/night-fighting/d-identification-and-doctrine.md
+  // section 3, written against done), each over the default by "from". The period, not the navy, names it where they
+  // shared one; a side's scenario takes its own.
+  // The RN 1914-16: avoid a night action; searchlights hand-worked by voice pipe and little used (ships that kept them
+  // off weren't seen: Nottingham, Birmingham), on only once fired on; no star shell ("at that time unfamiliar to us");
+  // challenge an unknown and withhold fire until she replies; destroyers challenged at 2-10 cables.
+  "rn-1914": { "from": "default", "Searchlights": "when fired on", "StarShell": "never", "Unknowns": "challenge", "ChallengeM": 2000 },
+  // The RN after Jutland, 1917-18: searchlights from control positions, star shell, screens ordered to open fire on every
+  // ship that approached without challenging where the enemy was expected.
+  "rn-1917": { "from": "default", "Searchlights": "to fire", "StarShell": "to fire", "Unknowns": "fire" },
+  // The German navy 1914-16: coloured-lamp challenge shown first, then searchlights trained dark switched on and fire at
+  // once (Jellicoe: "excellent"); star shell to find destroyers without showing themselves, as well as to fire.
+  "german-1914": { "from": "default", "Searchlights": "to fire", "StarShell": "to find", "Unknowns": "challenge", "ChallengeM": 2000 },
+  // The Russian navy 1904-05: no challenge in the record; ships swept with their own searchlights for torpedo craft
+  // (Tsushima: "revealed their positions ... to spot the attackers"); the officer of the watch fires on an evident attack.
+  "russia-1904": { "from": "default", "Searchlights": "search", "StarShell": "never", "Unknowns": "fire" }
 }

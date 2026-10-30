@@ -26,7 +26,7 @@
   "damage_control": { "Britain": "1916", "Germany": "1916" },
   "fire_discipline": { "Britain": "independent", "Germany": "independent" },
   // a night fight of flotillas: their main bodies accept action by night (doctrine's default avoids it)
-  "doctrine": { "Britain": { "preset": "default", "NightAction": "accept" }, "Germany": { "preset": "default", "NightAction": "accept" } },
+  "doctrine": { "Britain": { "preset": "rn-1917", "NightAction": "accept" }, "Germany": { "preset": "german-1914", "NightAction": "accept" } },
   // the patrol's crews picked, the boats' tired from the raid (balance: two leaders against six)
   "crews": { "Britain": "elite", "Germany": "average" },
   "player": "Britain",

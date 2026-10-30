@@ -19,7 +19,7 @@
   "readiness": { "Russia": "prepared", "Japan": "closed up" },
   "damage_control": { "Russia": "1905", "Japan": "1905" },
   "fire_discipline": { "Russia": "independent", "Japan": "independent" },
-  "doctrine": { "Russia": { "preset": "default", "NightAction": "accept", "ManCasemates": "torpedo craft", "ManOpenGuns": "torpedo craft" }, "Japan": { "preset": "default", "NightAction": "accept" } },
+  "doctrine": { "Russia": { "preset": "russia-1904", "NightAction": "accept", "ManCasemates": "torpedo craft", "ManOpenGuns": "torpedo craft" }, "Japan": { "preset": "default", "NightAction": "accept" } },
   "crews": { "Russia": "average", "Japan": "trained" },
   "player": "Russia",
   "until": "1905-05-27T12:45",

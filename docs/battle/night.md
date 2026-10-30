@@ -1,6 +1,6 @@
 # Plan: night fighting (a 4.5 deepening)
 Status: **drafted 2026-10-29**; **agreed with the user 2026-10-29** (decisions 1-5 at the end); Q0-Q10 done 2026-10-29;
-the research arrived 2026-10-29: Q1b, Q0b, Q3b, Q5b added before Q10 (after Q9), done; Q11 done 2026-10-30; Q12 next
+the research arrived 2026-10-29: Q1b, Q0b, Q3b, Q5b added before Q10 (after Q9), done; Q11 done 2026-10-30; Q12a (the check) and Q12b (night doctrine one a period) done 2026-10-30, the fits next
 Updated: 2026-10-30
 
 How ships see, light, shoot and lose each other in the dark. The user asked for it after the crew plan (2026-10-28),
@@ -1275,6 +1275,53 @@ measuring and mending what the minute cadence breaks.
 ### Q12 Fit and check
 
 Against `night-history` and the night scenarios. Restated anchors and what moved, for the user.
+
+**Q12a, the check (2026-10-30).** The user: do Q12 and see how well it matches; the coarse fixes come later, with
+coarse's day drift (`bugs.md`) in the same pass. `shipgen night-history --runs 40` (the fine tier, 240 plays in 66 s),
+after Q12b's doctrine (below; before it in brackets where it moved):
+
+| Case | The record | The sim |
+|---|---|---|
+| Tsushima | attacks at 600 yd and less; 54 torpedoes and 32 mines for 4-6 hits; ships showing lights found and torpedoed, the dark ones untouched; 3 boats lost | boats fire from 1.0 km, 1.4 torpedoes a run for 0.3 hits (2.8 for 0.5); the Russians sweep from the start (230 ship-min), 48 of the Japanese 104 hits on ships lit; boats lost 0.8 of 8 |
+| Southampton | five ships on the beam at ~1,500 yd; the hot part 4 min of 15; Southampton's one torpedo hits Frauenlob; no British ship lost; Dublin 8 hits, München 3, Elbing 1 | first fire 2.2-2.5 km, salvos at a median 1.5-1.9 km; the British 12.9 torpedoes for 2.9 hits; the Germans 503 shells for 255 hits (385 / 188); lost GB 0.7 of 4 (1.0), DE 1.5 of 5 (2.0) |
+| 4th Flotilla | lit at 1,500-2,000 yd, wrecked in five minutes; ~14 torpedoes at 800-1,000 yd for 1 hit; three boats to gunfire (Sparrowhawk to a collision) | first seen 1.3-1.9 km, fire from 1.0-1.3 km; 27.8 torpedoes from 0.8 km for 9.0 hits; lost GB 6.4 of 10 (5.7), DE 1.4 of 6 |
+| Black Prince | blundered into the line at 750-1,500 yd, taking them for friends; lit and sunk in some 15 min with all hands; perhaps 2 hits on Rheinland | seen both ways at 0.9 km; her challenge answered 0.9 a run (0); she fires 123 shells for 106 hits (73 / 62); lost 0.3 of 1 (0.2) |
+| 12th Flotilla (dawn) | 17 torpedoes at 1,700-3,500 yd for 1 hit (Pommern); "too light for searchlights", mist | the boats see the line in 9 runs of 40 at 8.4 km; 0.1 torpedoes a run; the Germans open at 6.6 km |
+| Dover Strait | point blank, the Germans firing first; G42 and G85 sunk; none British | seen at 0.3-0.4 km both ways; lost GB 0.7 of 2, DE 0.8 of 6 |
+
+**What it says:**
+- **Seeing matches.** First sightings and fighting ranges are the record's in every Jutland case (0.9-1.9 km), the
+  Dover Strait at point blank, Southampton at a median 1.5-1.9 km. Lit ships draw the fire (the 4th Flotilla's Germans
+  111 of their 213 hits on ships lit; Tsushima's on the Russians' sweeping ships).
+- **Torpedoes hit three to nine times the record's rate** (the 4th Flotilla 1 in 3 against 1 in 14; Southampton 1 in 4.4
+  against 1 for 1; Black Prince's Germans 2.7 of 6.0 against none known at Jutland). Not a night term: the day's anchor
+  (`fighting.md` 4.6, a spread of 4 at a steady QE at 2.5 km) hits with 36% of its torpedoes, and the night's 0.8 km gives
+  the same. The aim has no error beyond the picture's estimate (and 11% duds): a model item for the torpedo's fire
+  control, day and night, to decide with the user.
+- **Gunfire at light ships runs high where the fight runs long**: Southampton's Germans 255 hits over the fight against
+  the record's dozen or so in four hot minutes (the record's count is thin: Dublin 8, Southampton's 89 casualties).
+- **Black Prince isn't sunk**: her challenge now meets the German reply (taken for friends, the record's blunder), but she
+  still fires first and hard at 0.7 km, and the Germans' fire is brief (90 shells, their beams 2 ship-minutes; the record:
+  Thüringen's searchlights and four battleships' fire).
+- **The dawn's attack doesn't come**: the flotilla's night attack is keyed to the sun 6° down (`NightSunElevationDeg`),
+  a switch on time of day the principles rule out, and the dawn's mist was thinner than the record's ("three to four
+  miles", Malaya's "no more than two").
+
+**Q12b, night doctrine one a period (2026-10-30).** The research's table (`d-identification-and-doctrine.md` §3) as
+presets over the default (`Content/Sim/doctrine.json`; a preset's `"from"` now takes an earlier one's fields first,
+`DoctrinePresets.Parse`): `rn-1914` (searchlights when fired on, no star shell, challenge and hold, at 2,000 m),
+`rn-1917` (lights and star shell to fire, screens fire on unknowns), `german-1914` (trained dark then light and fire,
+star shell to find, challenge at 2,000 m), `russia-1904` (lights to search, fire on unknowns; no challenge). On the
+night benches, the Dover Strait (`rn-1917` against `german-1914`), Tsushima's two scenarios and the Jutland; the Germans
+at the Jutland answer 0.4 of the British challenges (`AnswerChallenge`: Corbett's "first two signs correct", the
+research's 0.3-0.5 from about 22:00). Japan 1904-05's written doctrine wasn't found: the default. Only night fields
+differ, so the day doesn't move. Sim 877, game 207 passed.
+
+**Left for Q12's next steps** (each a model choice for the user): the torpedo's aim error (day and night: the target's
+course and speed as a director or an eye judges them, firing while turning or under fire); why a light ship lit at
+1.5-2 km takes the fire of a whole long fight (the hot four minutes: turning away by role, the research's item); Black
+Prince (doubt from the partial reply, her guns held until made out); the AI's night by the light, not the sun's angle,
+with the dawn case's visibility to the record; phosphorescence as a sight cue; the moonless hours for raiders.
 
 ## Decided (the user, 2026-10-29)
 

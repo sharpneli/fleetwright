@@ -464,7 +464,22 @@ public sealed class DoctrinePresets
         var d = new DoctrinePresets();
         using var doc = JsonDocument.Parse(json, new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
         foreach (var p in doc.RootElement.EnumerateObject())
-            d.presets[p.Name] = [.. p.Value.EnumerateObject().Select(f => Value(f.Name, f.Value))];
+        {
+            // "from": an earlier preset's fields first, this one's over them (a period's night doctrine over the default)
+            var fields = new List<(DoctrineField Field, double Value)>();
+            if (p.Value.TryGetProperty("from", out var from))
+                fields.AddRange(d.presets.TryGetValue(from.GetString() ?? "", out var b) ? b
+                    : throw new ArgumentException($"doctrine preset \"{p.Name}\": from \"{from}\", which isn't defined before it"));
+            foreach (var f in p.Value.EnumerateObject())
+            {
+                if (f.Name == "from")
+                    continue;
+                var v = Value(f.Name, f.Value);
+                fields.RemoveAll(x => x.Field == v.Item1);
+                fields.Add(v);
+            }
+            d.presets[p.Name] = [.. fields];
+        }
         if (!d.presets.ContainsKey(DefaultName))
             throw new ArgumentException($"doctrine presets: no \"{DefaultName}\"");
         return d;
