@@ -167,6 +167,17 @@ public sealed class GunnerySystem : IWorldSystem
         public long NextMs, WanderMs;
     }
 
+    /// <summary>Whether a mount's guns are awash in the world's sea (docs/battle/balance.md BL1f, <see cref="RollSea.Awash"/>):
+    /// its axis over the sea as she has settled.</summary>
+    static bool Awash(World world, in ShipState ship, ShipClass cls, ShipCondition cond, int mount)
+    {
+        ref readonly var m = ref cls.Mounts[mount];
+        ref readonly var comp = ref cls.Components[m.Component];
+        double axis = comp.Bounds.Base + 0.55 * (comp.Bounds.Top - comp.Bounds.Base) - cls.Vertical.Waterline - cond.Attitude.SinkageM;
+        var mo = cls.Motion;
+        return world.Sea.Awash(axis, m.X / (0.5 * mo.LengthM), m.Y / (0.5 * mo.BeamM), ship.HeadingDeg, ship.Speed / Handling.MsPerKnot);
+    }
+
     /// <summary>A sensor at one of the class's eyes.</summary>
     static Sensor SensorAt(ShipClass cls, int eye)
     {
@@ -832,7 +843,7 @@ public sealed class GunnerySystem : IWorldSystem
             bool works = cond.MountWorks[mounts[j]] && !store.Combat.Illuminating(slot, mounts[j]);
             bool inTraverse = works && store.Combat.Order(slot, mounts[j], mr, now, bearing, elevation);
             firing[j] = inTraverse && cond.Lays(mounts[j], fc.Local) && CombatStore.InArcs(cls, mr, bearing) &&
-                        store.Combat.Mount(slot, mounts[j]).Rounds > 0 && elevation <= mr.MaxElevationDeg;
+                        store.Combat.Mount(slot, mounts[j]).Rounds > 0 && elevation <= mr.MaxElevationDeg && !Awash(world, ship, cls, cond, mounts[j]);
             bears |= firing[j];
         }
         // fire discipline (F6): the bracket widens at the computer's doubt of the range rate along the line of fire; own
@@ -1219,7 +1230,8 @@ public sealed class GunnerySystem : IWorldSystem
             ref readonly var ms = ref store.Combat.Mount(slot, mounts[j]);
             // loaded, with rounds; ordered on the target (not parked at its traverse's end) inside its arcs; and there
             double tol = settings.LayToleranceDeg;
-            bool bears = ms.Rounds > 0 && !store.Combat.Illuminating(slot, mounts[j]) && cond.Lays(mounts[j], fc.Local) && fc.OrderElevationDeg <= mr.MaxElevationDeg && CombatStore.InArcs(cls, mr, fc.OrderBearingDeg);
+            bool bears = ms.Rounds > 0 && !store.Combat.Illuminating(slot, mounts[j]) && cond.Lays(mounts[j], fc.Local) && fc.OrderElevationDeg <= mr.MaxElevationDeg && CombatStore.InArcs(cls, mr, fc.OrderBearingDeg) &&
+                         !Awash(world, ship, cls, cond, mounts[j]);
             (bearingGuns, bearingMounts) = bears ? (bearingGuns + cond.Guns(mounts[j]), bearingMounts + 1) : (bearingGuns, bearingMounts);
             firing[j] = bears && ms.LoadedMs <= now &&
                         Math.Abs(Wrap(ms.TrainTo - fc.OrderBearingDeg)) <= tol &&

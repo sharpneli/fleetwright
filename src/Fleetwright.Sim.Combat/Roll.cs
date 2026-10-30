@@ -39,9 +39,15 @@ public sealed class RollSea
     public int Id { get; } = Interlocked.Increment(ref built) & 0x7F_FFFF;
     static int built;
 
+    /// <summary>The way the bigger of the wind sea and the swell comes from, degrees true (the seas a ship's casemates take
+    /// on her weather side: <see cref="Awash"/>).</summary>
+    public double FromDeg { get; }
+
     public RollSea(SeaSpectrum spectrum)
     {
         HsM = spectrum.HsTarget;
+        var st = spectrum.State;
+        FromDeg = spectrum.WindSeaM0 >= Math.Pow(Math.Max(st.SwellHsM, 0) / 4, 2) ? st.WindFromDeg : st.SwellFromDeg;
         double dt = 2 * Math.PI / Directions, ratio = Math.Pow(WHigh / WLow, 1.0 / Frequencies);
         for (int j = 0; j < Directions; j++)
             (cos[j], sin[j]) = (Math.Cos(j * dt), Math.Sin(j * dt));
@@ -52,6 +58,23 @@ public sealed class RollSea
             for (int j = 0; j < Directions; j++)
                 slope[i * Directions + j] = k * k * spectrum.S(wi, j * dt) * (hi - lo) * dt;
         }
+    }
+
+    /// <summary>Whether a gun at a height over the sea (m, its axis) and a place in its ship (x to the bow and y to starboard,
+    /// as shares of her half length and half beam, -1 to 1) is awash, on a heading (degrees true) at a speed (knots)
+    /// (docs/battle/balance.md BL1f; research/simulation/ship-motion/ship-motion-gunnery-research.md §1.2's casemate rule):
+    /// under H_s x its side (0.6 on the weather side to 0.35 on the lee) x its place (2 at the bow, 1 amidships and aft) x
+    /// (1 + 0.5 (V / 25 kn)² h), h her heading to the sea (1 head on, 0.6 on the bow, 0.2 beam on and abaft). Coronel's
+    /// main-deck casemates (about 3 m) go under on the weather side at about 5 m of sea; a turret's guns never do.</summary>
+    public bool Awash(double heightM, double along, double across, double headingDeg, double kn)
+    {
+        if (HsM <= 0)
+            return false;
+        double rel = double.DegreesToRadians(FromDeg - headingDeg), c = Math.Cos(rel);
+        double heading = 0.2 + 0.8 * Math.Pow(Math.Max(c, 0), 1.7);
+        double side = 0.475 + 0.125 * Math.Sin(rel) * Math.Clamp(across, -1, 1);
+        double place = 1 + Math.Clamp((along - 0.5) / 0.5, 0, 1);
+        return heightM < HsM * side * place * (1 + 0.5 * Math.Pow(kn / 25, 2) * heading);
     }
 
     /// <summary>A ship's roll at a heading (degrees true) and speed (m/s through the water), with her natural period (s;

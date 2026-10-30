@@ -109,4 +109,19 @@ public class RollTests
         Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - before);
         Assert.True(sum > 0);
     }
+
+    [Fact]
+    public void Casemates_go_under_on_the_weather_side_in_a_heavy_sea()
+    {
+        // research §1.2: Coronel's main-deck casemates (about 3 m) out on the weather side at about H_s 5 m, a turret's guns
+        // never; Iron Duke's (about 4.5 m) only in a heavier sea; nothing in a calm. A sea from the west (270), the ship
+        // heading north at 15 kn: her port side is the weather side.
+        var heavy = new RollSea(new SeaSpectrum(SeaState.Of(new WeatherHere(25_000, 270, 0, SwellHsM: 5, SwellTpS: 11, SwellFromDeg: 270))));
+        var calm = Sea(0, 0);
+        Assert.True(heavy.Awash(3, 0.1, -1, 0, 15), "a port casemate amidships, weather side");
+        Assert.False(heavy.Awash(3, 0.1, 1, 0, 15), "a starboard casemate, lee side");
+        Assert.False(heavy.Awash(8, 0.6, -1, 0, 15), "a turret's guns");
+        Assert.True(heavy.Awash(4.5, 0.8, 0, 270, 20), "a bow casemate heading into it");
+        Assert.False(calm.Awash(1.5, 0.8, -1, 0, 25), "a calm");
+    }
 }
