@@ -251,15 +251,20 @@ public sealed partial class AdmiralLayer
     }
 
     /// <summary>The bearing from a ship to the nearest enemy her navy holds in sight within
-    /// <see cref="SimSettings.FightCompareM"/>, or null.</summary>
+    /// <see cref="SimSettings.FightCompareM"/> that still matters (docs/battle/balance.md BL5, the user: a screen doesn't
+    /// put itself between its charge and a cripple: one quiet and making away counts as far off as she matters little,
+    /// <see cref="CaptainLayer.Matters"/> by the side's Finish), or null.</summary>
     double? NearestEnemyBearing(in AiContext ctx, ShipState from)
     {
         double best = double.MaxValue;
         double? bearing = null;
+        var pic = ctx.World.Sightings.Of(from.Side);
+        double finish = doctrine.Of(from.Entity, from.Side, DoctrineField.Finish);
         foreach (int i in seen.Near(ctx.World, from.Side, from.Position, ctx.Settings.FightCompareM))
         {
             var q = seen.Position(from.Side, i);
-            double d = (q - from.Position).LengthSquared;
+            double matters = pic != null ? CaptainLayer.Matters(ctx, pic[i], from.Position, q, seen.Velocity(from.Side, i), finish) : 1;
+            double d = (q - from.Position).LengthSquared / (matters * matters);
             if (d < best)
                 (best, bearing) = (d, Earth.Bearing(from.Position, q));
         }

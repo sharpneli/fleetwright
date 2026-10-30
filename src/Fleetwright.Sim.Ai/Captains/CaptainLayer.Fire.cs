@@ -894,7 +894,7 @@ public sealed partial class CaptainLayer
     /// <summary>How much an enemy still matters as a target (docs/battle/balance.md BL2a: "fire at what's firing at you"):
     /// 1 unless she's both quiet (her guns not seen firing a while) and making away (her own course opening the range),
     /// down to doctrine's <see cref="DoctrineField.Finish"/> when she's both; from what his navy sees of her.</summary>
-    static double Matters(in AiContext ctx, in Contact c, Vec3d p, Vec3d q, Vec3d v, double finish)
+    internal static double Matters(in AiContext ctx, in Contact c, Vec3d p, Vec3d q, Vec3d v, double finish)
     {
         if (finish >= 1)
             return 1;
