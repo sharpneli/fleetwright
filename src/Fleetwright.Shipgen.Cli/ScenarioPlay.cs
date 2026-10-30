@@ -24,6 +24,8 @@ static class ScenarioPlay
         // and inside 4 km, why the shooter was there: his captain's order and way of fighting (BL5)
         var close = new SortedDictionary<string, (long Shells, long Hits)>(StringComparer.Ordinal);
         var against = new SortedDictionary<string, (long Shells, long Hits)>(StringComparer.Ordinal);
+        // ship-minutes inside 1 km of an enemy, by side and what she was doing (BL5: who closes in, and why)
+        var inside = new SortedDictionary<string, long>(StringComparer.Ordinal);
         int[] calBands = [120, 200, 300], rangeBands = [2, 4, 6, 10, 15];
         var settings = SimSettings.Load(settingsPath);
         if (smoke is bool on)
@@ -126,6 +128,8 @@ static class ScenarioPlay
             {
                 PlayToEnd(w, end, fast, fine, () =>
                 {
+                    if (fireTable)
+                        Inside(w, ai, s, inside);
                     if ((w.Time.Ms - hour0) / 3_600_000 > hours.Count)
                         hours.Add(sw.Elapsed.TotalSeconds);
                     guns.Read(w);
@@ -193,6 +197,9 @@ static class ScenarioPlay
             Console.WriteLine("inside 4 km, by the shooter's captain's order and his way of fighting (shells, hits):");
             foreach (var (why, (sh, hi)) in close.OrderByDescending(kv => kv.Value.Hits))
                 Console.WriteLine($"  {why,-100} {sh,8} {hi,6}");
+            Console.WriteLine("ship-minutes inside 1 km of an enemy, by side and what she was doing:");
+            foreach (var (why, count) in inside.OrderByDescending(kv => kv.Value).Take(30))
+                Console.WriteLine($"  {why,-110} {count,6}");
             Console.WriteLine("inside 4 km, by the range against the shooter's band, the visibility and her target's way (shells, hits):");
             foreach (var (why, (sh, hi)) in against.OrderByDescending(kv => kv.Value.Hits).Take(25))
                 Console.WriteLine($"  {why,-100} {sh,8} {hi,6}");
@@ -338,6 +345,64 @@ static class ScenarioPlay
                 return $"main mounts out {Out} of {Mounts} ({OutBarrels} of {Barrels} guns)" + (Out > 0 ? ": " + string.Join(", ", parts) : "");
             }
         }
+    }
+
+    /// <summary>Each ship afloat inside 1 km of an enemy this minute, tallied by her side, day or night and what she's doing:
+    /// her captain's order and way of fighting and reason, her line's admiral's order and attack phase, her unit's task
+    /// (docs/battle/balance.md BL5). Enemies found through a grid of 2 km cells, so linear in ships (a tool's, built each
+    /// minute).</summary>
+    static void Inside(World w, AiSystem ai, Scenario s, SortedDictionary<string, long> inside)
+    {
+        var store = w.Ships.Store;
+        var cells = new Dictionary<(int, int), List<int>>();
+        (int, int) Cell(Vec3d p)
+        {
+            var (la, lo) = Earth.LatLon(p);
+            return ((int)Math.Floor(la / 0.018), (int)Math.Floor(lo * Math.Cos(double.DegreesToRadians(la)) / 0.018));
+        }
+        for (int slot = 0; slot < store.Slots; slot++)
+            if (store.IsAlive(slot) && Fleetwright.Sim.Ai.Commanders.Aims.Afloat(store, slot))
+            {
+                var c = Cell(store[slot].Position);
+                if (!cells.TryGetValue(c, out var l))
+                    cells[c] = l = [];
+                l.Add(slot);
+            }
+        foreach (var l in cells.Values)
+            foreach (int slot in l)
+            {
+                var me = store[slot];
+                var (ci, cj) = Cell(me.Position);
+                int nearest = -1;
+                double nd = 1000;
+                for (int di = -1; di <= 1; di++)
+                    for (int dj = -1; dj <= 1; dj++)
+                        if (cells.TryGetValue((ci + di, cj + dj), out var o))
+                            foreach (int other in o)
+                                if (store[other].Side != me.Side && Earth.Distance(me.Position, store[other].Position) is var d && d < nd)
+                                    (nearest, nd) = (other, d);
+                if (nearest < 0)
+                    continue;
+                // who's closing: her own way toward him, his toward her (m/s along the line between them)
+                var en = store[nearest];
+                var u = (en.Position - me.Position) * (1 / Math.Max((en.Position - me.Position).Length, 1));
+                double mine = Vec3d.Dot(me.Forward * me.Speed, u), his = -Vec3d.Dot(en.Forward * en.Speed, u);
+                string closing = mine > 1 && his > 1 ? "both closing" : mine > 1 ? "she closes" : his > 1 ? "he closes" : "neither";
+                bool night = Light.SunElevationDeg(me.Position, w.Time) < -6;
+                var (order, _, whose) = ai.Captains.Of(me.Entity);
+                var (att, fin, away) = ai.Captains.FightOf(me.Entity);
+                string why = $"{s.Sides[me.Side]} {(night ? "night" : "day")} [{closing}]: {order}" +
+                             (order == Fleetwright.Sim.Ai.Captains.CaptainOrder.Fight ? att ? " attacking" : fin ? " finishing" : away ? " away" : " in the band" : "") +
+                             $" ({whose}, {ai.Captains.ReasonOf(me.Entity)})";
+                if (w.Groups.UnitOf(me.Entity) is { } top)
+                {
+                    var task = ai.Tasks.Of(Fleetwright.Sim.Ai.Unit.Group(top.GroupId));
+                    var (adm, _, _) = ai.Admirals.Of(top.GroupId);
+                    var (phase, _, _) = ai.Admirals.AttackOf(top.GroupId);
+                    why += $" / admiral {adm}" + (phase != default ? $" {phase}" : "") + $" / task {task.Kind}";
+                }
+                inside[why] = inside.GetValueOrDefault(why) + 1;
+            }
     }
 
     /// <summary>A seed's losses by how they went (a magazine, capsized, broke in two, foundered), for its one line.</summary>

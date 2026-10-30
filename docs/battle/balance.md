@@ -264,6 +264,32 @@ British 4.9 → 3.6%, the 3rd BCS 21.9 → 19.8%, the Germans over the British a
 12th Flotilla's dawn shooting at 5-7 km down (12 → 4%). Not the answer for the Heligoland Bight's 2-4 km: there the boats
 are plainly in sight.
 
+### BL5: who closes inside 1 km (2026-10-30, after the user's playtest)
+
+`--fire-table` now also counts the ship-minutes each ship spends inside 1 km of an enemy, by what she, her admiral and
+her task were doing and who was closing whom:
+
+- **The Heligoland Bight (4 seeds, by day):** the British inside 1 km are nearly all screen flotillas on station under
+  their admirals' Screen or Fight (about 110 ship-minutes, mostly closing); the Germans inside 1 km are nearly all
+  cripples going home (72 of 75 ship-minutes: too slow, guns out, steering, a list), mostly being closed on. The
+  screens run the cripples down: a German boat is a torpedo craft to a screen, crippled or not.
+- **The Jutland (2 seeds):** the same cripples by day and night, and the flotillas' torpedo attacks: in their gain, run
+  and fire phases inside 1 km, by day as by night. The attack runs in to 0.7 of the torpedoes' fast setting (2.7 km for
+  the Great War torpedo's 3.9 km) and often comes closer before it fires; the record's day attacks fired from 5-8 km
+  (long settings at a line), the close ones were the night's and the dusk's.
+
+**Proposed for BL5 (for the user):**
+
+1. **A screen counter-attacks a threat, not a cripple:** it goes for a torpedo craft closing its charge within her
+   torpedoes' reach; one making away, or gone quiet and slow, isn't one (BL2a's reading of a target, for the screen's
+   choice), so it keeps its station.
+2. **A day attack fires from its reach, not from point blank:** in daylight a flotilla fires at a line from the range
+   its torpedoes' settings give a fair chance (the long setting at a line, as the record's day attacks did), turns away
+   if the chance passes rather than pressing in, and doesn't gain bearing inside the enemy's secondary guns' close range;
+   at night and at dusk it runs in close, as now.
+3. **A cripple runs from all the enemy about her, not the nearest:** away from where the enemy is (their bearings
+   weighted by nearness), toward home, under her smoke.
+
 ## Decided (the user, 2026-10-30)
 
 1. **Gunnery closes the gap with the systems,** not a gameplay exception: "we need the systems in place. We can
@@ -305,6 +331,12 @@ are plainly in sight.
 6. **Point blank's rate comes down by physics, not a number** (the user, 2026-10-30, on BL1g's finding): pitch,
    vibration at speed and yaw as BL1h ("that's exactly how we want to do it instead of adhoc numbers"); first the AI's
    closing (BL5's part: why light forces get inside 2 km by day).
+
+7. **The user's playtest of the Heligoland Bight (2026-10-30):** "Guns seemed really inaccurate at around 2km, maybe
+   too inaccurate, but bunch of germans died like flies because they went full 'YOLO' mode and came to less than 1km to
+   attempt I don't know what. That's what kills them. That's probably the root cause and guns should not be reduced to
+   allow them to do silly things like that." So: no more lowering of the guns' accuracy (BL1 stands, and the 2 km band
+   is watched for being too low); the AI's closing inside 1 km is the next thing (BL5).
 
 ## Pending decisions
 
