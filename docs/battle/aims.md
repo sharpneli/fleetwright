@@ -5,11 +5,16 @@ once the systems are in place we'll investigate which exact scenarios we want").
 the heart of its wave 2, and the first of the objectives (`docs/missions/plan.md`, 6.1). Bombardment was weighed and
 dropped: with no shore targets and fire control that only aims at ships, any version now would be a hack.
 
+**The user's answers (2026-10-31):** (1) whether a ship counts on entering the zone or after a stay there is the
+aim's setting; (2) a scenario isn't all won or all lost: aims score in part and weigh, and getting home can be a
+bonus aim beside the main one ("better sometimes to reach home damaged than squeeze the last merchant out of the
+enemy"); (3) the aims come now, before the balance round's BL3 and BL4.
+
 ## Status
 
 | Step | State | Left |
 |---|---|---|
-| A0 Investigation | not started | |
+| A0 Investigation | started 2026-10-31 | |
 | A1 Aims as data, their state, the judge | not started | |
 | A2 Reach: the side that wants a place | not started | |
 | A3 Stop: the side that wants to prevent it | not started | |
@@ -35,23 +40,31 @@ into the guns.
 ## The aims
 
 Three new kinds join `DestroyEveryone`. Each is **Open, Met or Lost**, the state `Aims` reads in one place for the
-judge, the commander and the UI. A side's list is all of them, as now.
+judge, the commander and the UI, and has a **score** from 0 to 1 (how much of it was done). A side's list is in the
+order it's wanted (below), each aim with a **weight** (`"weight"`, 1 if not given); the side's result is its aims'
+weighted score.
+
+- **Destroy everyone** scores the share of the enemy's tonnage lost.
 
 - **Reach** (the breakout, the invasion): at least N of the named ships arrive in a zone. A zone is a circle, `"at"`
   and `"km"`. The named ships are a unit's (its name) or a list of units. A ship has arrived from the first time she's
-  afloat inside the zone, and stays arrived (a transport sunk at the beach landed her troops; Goeben in the Dardanelles
-  got away). Lost when it can't be met any more (arrived + still afloat < N), or the side's commander has given up.
+  afloat inside the zone, or with `"stay"` (minutes) once she's been afloat in it that long without leaving (landing
+  troops takes hours, and the defender gets his chance at the beach). An arrival stays (a transport sunk after
+  landing her troops landed them; Goeben in the Dardanelles got away). Scores arrived / N, at most 1. Lost when it
+  can't be met any more (arrived + still afloat < N), or the side's commander has given up. Without named ships it
+  means every ship of the side: the raider's way home, `{ "reach": "all", "zone": ..., "of": 1, "weight": 0.5 }`.
   ```json
   "aims": { "Germany": { "reach": "Mittelmeerdivision", "zone": { "at": [40.05, 26.2], "km": 15 }, "of": 1 } }
   ```
 - **Sink** (commerce raiding): sink, or make strike, a tonnage of an enemy's merchants (full load, as the results'
   tonnes). The kind is the truth's `Sightings.TypeOf` (merchant), never how a ship was made. Optionally a hunting
-  ground, a zone the raider knows to search. Lost when the side has given up, or the enemy's merchants afloat can no
-  longer make up the rest.
+  ground, a zone the raider knows to search. Scores the tonnage sunk over the target, at most 1: every merchant counts.
+  Lost when the side has given up, or the enemy's merchants afloat can no longer make up the rest.
   ```json
   "aims": { "Germany": { "sink": "merchants", "tonnes": 20000, "where": { "at": [8, 80], "km": 600 } } }
   ```
-- **Stop** (the other side of both): the named enemy aim (by its side) is Lost. Met once it is; Lost once it's Met.
+- **Stop** (the other side of both): the named enemy aim (by its side; its first if it has several) is Lost. Met once
+  it is; Lost once it's Met; scores 1 less that aim's score, so three transports of six landed is half a win for each.
   One kind for both counters, so the convoy's escort and the hunters of a raider are the same aim.
   ```json
   "aims": { "Britain": { "stop": "Germany" } }
@@ -65,8 +78,14 @@ Done or Quiet, and never a clock in the middle of a fight (`no-time-cutoffs`).
 the commander (AI state: hashed, snapshotted, replayed), updated at his think, and the judge reads it. Nothing per
 frame; a fixed bit per ship, nothing allocated once grown.
 
-**Not in this plan:** a deadline (`"by"`), a time on the beach to land troops, a weight per aim and the grade
-(decisive, marginal, defeat: 6.1's), Hold, Protect a named ship, Destroy narrowed to a group. Each is a kind more of
+**Wanted in order.** The commander pursues his first aim not yet decided; once it's met or given up, the next. A
+raider with Sink and then Reach home hunts until she has her tonnage, or until the commander gives up the hunt by
+the rules he has (his losses past doctrine's break off, a stronger enemy he declines, his magazines low), and then
+makes for home with what she's done: the score keeps her merchants either way, and getting home adds its weight. A
+convoy's Reach first and the escort's Reach home second sends the escort home once the troops are ashore.
+
+**Not in this plan:** a deadline (`"by"`), the grade's words (decisive, marginal, defeat: 6.1's, read off the score
+later), Hold, Protect a named ship, Destroy narrowed to a group. Each is a kind more of
 the same shape when a scenario wants it.
 
 ## The commander
@@ -115,16 +134,18 @@ Per `docs/ui-language.md`, drawn with `Ui/Pieces.cs`:
 - **A0 Investigation.** Read the files above against this plan; check how auxiliaries on routes behave when a
   hostile is in sight (today they steam on), where a per-unit home goes (`AiSystem.HomeOf`), how the captains rank
   targets (`CaptainLayer.Fire.cs`) and where a named-ship priority enters it; amend the plan; agree it.
-- **A1 Aims as data, their state, the judge.** `AimKind` Reach, Sink, Stop and their data; the scenario format and
-  its errors; `Aims.State` (Open, Met, Lost); the arrival latch in AI state; the judge's Decided and the result's
-  aims met. Tests: parsing, each state's edges, a replay with arrivals.
+- **A1 Aims as data, their state, the judge.** `AimKind` Reach, Sink, Stop and their data (zone, of, stay, weight);
+  the scenario format and its errors; `Aims.State` (Open, Met, Lost) and its score; the arrival latch (and the stay's
+  clock) in AI state; the judge's Decided, the result's aims and the side's weighted score. Tests: parsing, each
+  state's edges and scores, a stay broken by leaving, a replay with arrivals.
 - **A2 Reach.** The reaching units as the main body, the per-unit home, GoTo the zone, declining as carrying on, stop
-  on arrival. A test: an unopposed convoy arrives and the side's aim is Met; a breaker that sees a stronger enemy
-  still makes for her zone.
+  on arrival; the aims pursued in order. A test: an unopposed convoy arrives and the side's aim is Met; a breaker
+  that sees a stronger enemy still makes for her zone; the escort makes for home once the convoy's in.
 - **A3 Stop.** The search across the enemy's way, the first group sent after, the captains' priority on named ships.
   A test: the defender's main body finds a convoy on its way, and his ships shoot transports over escorts.
 - **A4 Sink.** The raider's search and intercept, the merchants' running, the hunters'. A test: a raider among
-  merchants on routes sinks or takes them, and they scatter from her; a raider sighting a stronger cruiser declines.
+  merchants on routes sinks or takes them, and they scatter from her; a raider sighting a stronger cruiser declines
+  and, with Reach home after, makes for home with her score.
 - **A5 The UI.** As above; checked by `-screenshot -ui` readbacks.
 - **A6 Benches and balance.** Three test scenarios (`"test": true`): a breakout, an escorted convoy against a
   squadron, a raider among routes with two hunters. Each played headless (`shipgen scenario FILE --play --seeds N`)
@@ -134,9 +155,4 @@ Per `docs/ui-language.md`, drawn with `Ui/Pieces.cs`:
 
 ## Open questions for the user
 
-1. **Arrival:** counted the moment a ship enters the zone (as above), or after she's stayed in it a while (landing
-   troops takes hours, and the defender gets a chance at the beach)?
-2. **A raider's getting away:** is Sink alone enough, or does a raider also want to get home (a Reach of her own,
-   listed beside it, already allowed by the format)?
-3. **When:** the balance round's BL3 and BL4 are next on its list; aims before them, or after (balance.md P6 said
-   after the balance round)?
+None open (the three answered 2026-10-31, at the top).
