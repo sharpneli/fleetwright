@@ -210,8 +210,10 @@ The biggest build; a later wave.
 
 ## What the game needs
 
-- **N1 aims: Reach, Protect, Avoid** (Aims.cs, the judge) and the side's commander acting on them (steer for a place,
-  keep a convoy covered, refuse a fight he needn't take). The heart of wave 2; its own plan when it starts.
+- **N1 aims:** `docs/battle/aims.md` (drafted 2026-10-31): Reach (the breakout, the invasion), Sink merchants
+  (commerce raiding) and Stop (the other side of both), the judge and the side's commander acting on them. The user
+  (2026-10-31): those three for the first release, bombardment dropped; which scenarios get them is investigated once
+  they're built. The heart of wave 2.
 - **N2 arrivals** ("enters at" on a unit): only if placing far off proves clumsy.
 - **N3 ensigns:** France, Italy, Austria-Hungary, the US, Spain, the Ottoman Empire, Greece, Qing China, Brazil,
   Argentina, the red fleet (by the waves that need them).
