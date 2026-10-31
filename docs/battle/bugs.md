@@ -341,7 +341,7 @@ Seen in the AI's baseline after the detail passes (2026-10-20, docs/battle/comma
   the pocket (rails' own `LandClear` horizon), or keeps the side until the ship has passed the point it first met the
   coast. A test of it would bound how long any ship of the islands test stays off rails.
 
-- [ ] **A ship stopped coasts on for hours** (found 2026-10-31, aims A2). Ordered to 0 kn, a tramp from 8 kn and a light
+- [x] **A ship stopped coasts on for hours** (found 2026-10-31, aims A2). Ordered to 0 kn, a tramp from 8 kn and a light
   cruiser from 8 kn drifted about 9-10 km over six hours (`AimsTests`'s convoy and escort), still moving at the end:
   with drag only as v², the coast's distance grows without bound (its log). Nothing anchors a ship, and a stop order
   doesn't go astern. It matters where a ship must stay put: a convoy landing at a beach drifts out of its zone (its
@@ -354,12 +354,25 @@ Seen in the AI's baseline after the detail passes (2026-10-20, docs/battle/comma
   clamps its speed at 0 when ahead of station, `Behaviours.cs`), so it wants a stop of its own (the AI's "stopped
   there", `TaskLayer` Withdraw's end; a ship struck, `DamageSystem`) apart from engines stopped, and the coarse tier's
   calibration (`Handling.Calibrate`'s "engines stopped" trial) kept apart from it.
+  **Fixed 2026-10-31** (the user: "whack the station holding in"; it needn't be realistic, no anchor, no depth): a stop
+  (0 kn rung) takes the way off, full astern within what the plant can make (`ShipStore.StopPower`; ahead if she's
+  going astern), rings off as she comes to rest, and she lies still (`ShipMotion.Step`). One rule for every 0 kn: formation
+  followers ringing 0 ahead of station brake too, which nothing in the suite minded. The coarse tier brakes a stop at its
+  astern rate (`CoarseMotion.Plan`). The engines stopped without a stop is `Handling.CoastKn`, rung by the trials that
+  measure coasting (`Handling.Calibrate`, the sea trials bench, `ShipMotionTests`). From full speed: Bismarck at rest in
+  187 s and 1.7 km, a destroyer in 58 s and 0.7 km, neither moving in the hour after (`ShipMotionTests`). The end's judge
+  takes a ship anywhere in her zone as home, and one dead in the water (her plant gone) as out of it (`Homes.There`,
+  `ScenarioEnd.AllDone`).
 
 - [ ] **A line abreast stopped against a coast keeps its stations on the land** (found 2026-10-31, Åland's landing).
   Four transports abreast (900 m) stopped at Eckerö heading NNE, the guide nearest the shore: the stations to starboard
   fell on the island, and two of them steamed at 13.5 kn for hours, sliding round its coast, out of the zone. The
   scenario puts them in column (stations astern, to seaward). To hunt: a station on land given up for the nearest
   water astern of the guide, or a stopped formation's followers holding where they are.
+  A column has it too, once its followers are on the far side of land from their guide: in Åland's landing (seed 1924)
+  the guide lay inside the zone south of Eckerö's tip while three followers, in the channel to the north-east after the
+  fight, crept at 0.1-0.3 kn against the shore toward stations across it for six hours, out of the zone (landed, so the
+  aim held; but out of the zone and in touch, they keep the fight from its end).
 
 - [ ] **A Stop side's zone search crosses the land** (found 2026-10-31, the user's playtest of Åland's landing). With no
   estimate of the enemy, the commander's main body searches the Reach zone by sectors through its centre (`AimBook.SearchZone`,

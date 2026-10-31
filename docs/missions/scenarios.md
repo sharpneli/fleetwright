@@ -327,6 +327,10 @@ forces may change with the conditions.
   took Finland to 0.25 (a squadron that broke off didn't come back). Most runs still go to 16:00: a cripple dead in the
   water, or a ship crept past her home's radius (the slide), keeps the sides in touch after the aims are decided.
   Found: the Stop side's zone search crossing Eckerö (`docs/battle/bugs.md`, "The slide").
+- **Stops that hold** (2026-10-31, bugs.md "The slide", fixed): the same 24 seeds, Finland 0.49, Sweden 0.51, the
+  landing made in 11. Most runs still go to 16:00: followers on the far side of Eckerö's tip from their guide creep
+  against the shore toward their stations, out of the zone and in touch (bugs.md, "A line abreast stopped against a
+  coast").
 
 ## Open questions for the user
 

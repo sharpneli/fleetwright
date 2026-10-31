@@ -57,8 +57,14 @@ public static class ShipMotion
             _ => s.jamRudder[i],   // jammed, or trailing
         };
 
-        // the engines toward what's rung: power grows at the plant's rate, falls toward none at the throttle's
+        // the engines toward what's rung: power grows at the plant's rate, falls toward none at the throttle's. A stop
+        // (0 kn rung) takes the way off, astern (or ahead, going astern) as hard as the plant may, and she then lies
+        // still: resistance as v² alone never quite stops a ship (docs/battle/bugs.md "The slide"), and a convoy at its
+        // beach or a ship home must stay put. No anchor, no depth: the game's, not the sea's.
         double p = s.power[i], want = s.powerOrder[i];
+        bool stopping = s.speedOrderKn[i] == 0 && u0 != 0;
+        if (stopping)
+            want = s.StopPower(i, u0);
         if (p != 0 && (Math.Sign(want) != Math.Sign(p) || Math.Abs(want) < Math.Abs(p)))
         {
             double cut = h.PowerCutWs * dt, to = Math.Sign(want) == Math.Sign(p) ? want : 0;
@@ -80,8 +86,12 @@ public static class ShipMotion
         double q = Math.Min(r1 * r1 / (rs * rs), 1);
         double drag = set.PropulsiveEfficiency * h.PowerAtW(u0) * (1 + h.TurnDragFactor * q) / au;   // R(U), U ∝ R²
         double u1 = u0 + dt * (thrust - Math.Sign(u0) * drag) / (h.MassKg + dt * 2 * drag / au);
-        if (thrust == 0 && Math.Sign(u1) != Math.Sign(u0))
-            u1 = 0;   // resistance stops a ship, never backs it
+        if ((thrust == 0 || stopping) && Math.Sign(u1) != Math.Sign(u0))
+        {
+            u1 = 0;   // resistance stops a ship, never backs it; nor does a stop, which rings off as she comes to rest
+            if (stopping)
+                s.power[i] = 0;
+        }
         s.speed[i] = u1;
         s.yawRate[i] = r1;
 

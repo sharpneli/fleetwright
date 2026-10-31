@@ -109,17 +109,25 @@ public class AimsTests(ITestOutputHelper output)
 
     static readonly long T0 = WorldTime.FromUtc(1916, 5, 31, 14).Ms;
 
-    /// <summary>Passing through a zone 4 km across at 15 kn, she's in it about 9 minutes: a stay of 3 counts, one of 20
-    /// doesn't, and the arrival is in the state hash.</summary>
+    /// <summary>Passing through a zone 4 km across at 15 kn (her side's commander off: he'd stop her in it, and a stop
+    /// holds her there), she's in it about 9 minutes: a stay of 3 counts, one of 20 doesn't, and the
+    /// arrival is in the state hash.</summary>
     [Fact]
     public void A_stay_counts_only_once_she_has_been_in_the_zone_that_long()
     {
         ulong? hash = null;
         foreach (var (stay, arrives) in new[] { (3, true), (20, false) })
         {
+            bool given = false;
             var (w, end, start, ai) = Play(Runner($$"""
                 "Britain": { "reach": "Runner", "zone": {{West(10, 2)}}, "stay": {{stay}} }
-                """, until: "1916-05-31T15:00"));
+                """, until: "1916-05-31T15:00"), minute: (w, start, ai) =>
+            {
+                if (given)
+                    return;
+                given = true;
+                w.Apply(ai.Orders.Commander(0, CommanderMode.None));
+            });
             Assert.Equal(arrives, ai.Aims.HasArrived(0, 0, Named(start, "West")));
             Assert.Equal(arrives ? AimState.Met : AimState.Open, end.Reading(0, 0).State);
             Assert.NotEqual(hash, w.ComputeHash());

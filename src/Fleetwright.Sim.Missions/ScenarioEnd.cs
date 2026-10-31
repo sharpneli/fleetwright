@@ -264,8 +264,9 @@ public sealed class ScenarioEnd
 
     /// <summary>Every side still afloat is done (docs/battle/command.md "The end"): its aims all destroy everyone and met
     /// (nobody left to fight), or every aim decided (met or lost: docs/battle/aims.md) or its commander gone home (given
-    /// up, broken off, or declining a stronger enemy), with every ship of it afloat home or out of the area: in no
-    /// encounter. Every side done and none of them in touch: nobody is left seeking a fight, and a convoy landed doesn't end
+    /// up, broken off, or declining a stronger enemy), with every ship of it afloat home (anywhere in a zone she's at),
+    /// out of the area (in no encounter), or dead in the water (her plant gone: she can't go anywhere, and waits for a
+    /// tow). Every side done and none of them in touch: nobody is left seeking a fight, and a convoy landed doesn't end
     /// the fight about it.</summary>
     bool AllDone()
     {
@@ -280,7 +281,7 @@ public sealed class ScenarioEnd
                 return false;
             for (int slot = 0; slot < store.Slots; slot++)
                 if (store.IsAlive(slot) && store[slot].Side == side && Aims.Afloat(store, slot) && world.Encounters.Of(slot, store[slot].Entity) != 0 &&
-                    !(ai.Homes.Of(side, store[slot].Entity, home) is var (h, there) && Earth.Distance(store[slot].Position, h) <= there))
+                    store.PowerCapOf(slot) > 0 && !ai.Homes.There(side, store[slot].Entity, store[slot].Position, home))
                     return false;
         }
         return true;

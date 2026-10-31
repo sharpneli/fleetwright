@@ -38,7 +38,9 @@ public static class CoarseMotion
         double a = 0, tSpeed = double.PositiveInfinity;
         if (Math.Abs(v1 - v0) > SpeedEpsilon)
         {
-            double mag = v1 > v0 && v0 >= 0 ? h.CoarseAccelUp : po < 0 || v0 < 0 ? h.CoarseAccelAstern : h.CoarseAccelDown;
+            // a stop (0 kn rung) takes the way off by going astern, as the fine tick's does
+            double mag = v1 > v0 && v0 >= 0 ? h.CoarseAccelUp
+                : po < 0 || v0 < 0 || s.speedOrderKn[i] == 0 ? h.CoarseAccelAstern : h.CoarseAccelDown;
             a = Math.Sign(v1 - v0) * mag;
             tSpeed = (v1 - v0) / a;
         }

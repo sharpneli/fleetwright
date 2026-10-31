@@ -781,6 +781,11 @@ public sealed class ShipStore
         powerOrder[slot] = PowerFor(slot, kn);
     }
 
+    /// <summary>The power a stop rings while she has way on, watts: against it, full astern (ahead, if she's going
+    /// astern) within what the plant can still make.</summary>
+    internal double StopPower(int slot, double speedMs) =>
+        Capped(slot, speedMs > 0 ? -handling[slot].AsternPowerW : handling[slot].MaxPowerW);
+
     /// <summary>The power rung for a speed, within what the ship's plant can still make.</summary>
     double PowerFor(int slot, double kn) => Capped(slot, handling[slot].PowerFor(kn));
 

@@ -211,7 +211,7 @@ public class ShipMotionTests(ITestOutputHelper output)
                 t++;
             }
             double acc = t;
-            w.Apply(ShipSystem.Speed(1, 0));
+            w.Apply(ShipSystem.Speed(1, Handling.CoastKn));   // the engines stopped, not a stop (that takes the way off)
             double coast = 0;
             while (Ship(w, 1).Speed > 0.6 * full * Kn && coast < 3600)
             {
@@ -221,6 +221,34 @@ public class ShipMotionTests(ITestOutputHelper output)
             output.WriteLine($"{design}: 0 -> 90% of {full} kn in {acc:F0} s; engines stopped, down to 60% in {coast:F0} s");
             Assert.InRange(acc, accLo, accHi);
             Assert.InRange(coast, coastLo, coastHi);
+        }
+    }
+
+    /// <summary>A stop (0 kn rung) takes the way off by going astern and she lies still after (docs/battle/bugs.md "The
+    /// slide": with the engines only stopped, resistance as v² never quite stops her, and she crept on for kilometres).</summary>
+    [Fact]
+    public void A_stop_takes_the_way_off_and_she_lies_still()
+    {
+        foreach (var design in new[] { "bismarck", "destroyer" })
+        {
+            var (w, c) = WorldWith(design);
+            double full = w.Ships.Class(c).Motion.MaxSpeedKn;
+            w.Apply(ShipSystem.Spawn(c, SeaLat, SeaLon, 0, full));
+            var p0 = Ship(w, 1).Position;
+            w.Apply(ShipSystem.Speed(1, 0));
+            double t = 0;
+            while (Ship(w, 1).Speed != 0 && t < 3600)
+            {
+                Run(w, 1);
+                t++;
+            }
+            double run = Earth.Distance(p0, Ship(w, 1).Position);
+            var rest = Ship(w, 1).Position;
+            Run(w, 3600);
+            output.WriteLine($"{design}: from {full} kn stopped in {t:F0} s, {run:F0} m on; an hour after, {Earth.Distance(rest, Ship(w, 1).Position):F1} m more");
+            Assert.InRange(t, 30, 900);   // full astern from full ahead: minutes, not hours
+            Assert.Equal(0, Ship(w, 1).Speed);
+            Assert.True(Earth.Distance(rest, Ship(w, 1).Position) < 1, "lies still once stopped");
         }
     }
 

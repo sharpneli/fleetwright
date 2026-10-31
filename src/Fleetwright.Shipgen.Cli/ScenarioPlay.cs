@@ -527,24 +527,27 @@ static class ScenarioPlay
     }
 
     /// <summary>What the "done" end waits on (command.md "The end"): each side's phase, and its ships afloat not yet home,
-    /// those in an encounter (which keep it from done), stopped, and the farthest from home.</summary>
+    /// those in an encounter (which keep it from done, unless dead in the water), stopped, and the farthest from her side's
+    /// home.</summary>
     static void DoneLines(Scenario s, World w, AiSystem ai, string indent)
     {
         var store = w.Ships.Store;
         for (int side = 0; side < s.Sides.Length; side++)
         {
             var (phase, reason) = ai.Commanders.PhaseOf(side);
-            int afloat = 0, away = 0, inContact = 0, stopped = 0;
+            int afloat = 0, away = 0, inContact = 0, stopped = 0, dead = 0;
             double farthest = 0;
             for (int slot = 0; slot < store.Slots; slot++)
             {
                 if (!store.IsAlive(slot) || store[slot].Side != side || !Fleetwright.Sim.Ai.Commanders.Aims.Afloat(store, slot))
                     continue;
                 afloat++;
+                if (ai.Homes.There(side, store[slot].Entity, store[slot].Position, w.Settings.HomeRadiusM))
+                    continue;   // home as the judge has it: her side's, or the zone she's at
                 double d = ai.HomeOf(side) is { } at ? Earth.Distance(store[slot].Position, at) : double.PositiveInfinity;
-                if (d <= w.Settings.HomeRadiusM)
-                    continue;
                 away++;
+                if (store.PowerCapOf(slot) <= 0)
+                    dead++;
                 farthest = Math.Max(farthest, d);
                 if (w.Encounters.Of(slot, store[slot].Entity) != 0)
                     inContact++;
@@ -552,7 +555,7 @@ static class ScenarioPlay
                     stopped++;
             }
             Console.WriteLine($"{indent}{s.Sides[side],-12} done? {Words(phase.ToString())}" + (reason != 0 ? $" ({Words(reason.ToString())})" : "") +
-                              $"; {afloat - away} of {afloat} afloat home, {away} not ({inContact} in an encounter, {stopped} stopped" +
+                              $"; {afloat - away} of {afloat} afloat home, {away} not ({inContact} in an encounter, {stopped} stopped, {dead} dead in the water" +
                               (away > 0 ? $", the farthest {farthest / 1000:F0} km)" : ")"));
         }
     }

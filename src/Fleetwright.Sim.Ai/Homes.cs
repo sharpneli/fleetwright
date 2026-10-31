@@ -22,6 +22,12 @@ public sealed class Homes(AimBook aims)
         aims.ZoneOf(side, ship) is { } z ? (z.Centre, Math.Min(homeRadiusM, z.RadiusM / 2))
         : sides[side & 255] is { } p ? (p, homeRadiusM) : null;
 
+    /// <summary>Whether a ship at a place is home, for the end (docs/battle/command.md "The end"): anywhere in the zone
+    /// she's at for an aim (a landed convoy, a column astern of its guide), else within her side's radius.</summary>
+    public bool There(int side, int ship, Vec3d at, double homeRadiusM) =>
+        aims.ZoneOf(side, ship) is { } z ? Earth.Distance(at, z.Centre) <= z.RadiusM
+        : sides[side & 255] is { } p && Earth.Distance(at, p) <= homeRadiusM;
+
     internal void Hash(ref StateHash h)
     {
         for (int side = 0; side < sides.Length; side++)

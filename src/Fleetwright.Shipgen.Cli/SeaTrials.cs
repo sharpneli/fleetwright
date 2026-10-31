@@ -136,7 +136,7 @@ static class SeaTrials
 
         (w, s) = Trial(cls, settings, full);
         var p0 = s.Position;
-        w.Apply(ShipSystem.Speed(1, 0));
+        w.Apply(ShipSystem.Speed(1, Handling.CoastKn));   // the engines stopped, not a stop (that takes the way off)
         double coast = 0;
         while (s.Speed > full / 2 * Kn && coast < 7200)
         {

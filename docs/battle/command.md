@@ -353,7 +353,9 @@ A scenario ends when, in order:
    (decision 11): in the release they're relaxed far, and a clock never ends a fight that's going on;
 2. **every side is done:** each commander has met or given up his aims and his units are home or out of the area;
    (2026-10-20: given up, broken off or declining a stronger enemy, and every ship afloat home or in no encounter: every
-   side going home and none of them in touch. A port hundreds of kilometres off doesn't hold it open);
+   side going home and none of them in touch. A port hundreds of kilometres off doesn't hold it open. 2026-10-31: home
+   is anywhere in the zone a ship's at for an aim, a landed convoy's beach; and a ship dead in the water, her plant gone,
+   doesn't hold it open either: she can't go anywhere);
 3. **a side is gone** (sunk, or out of the area);
 4. **nothing has happened for long:** no encounter open and none of a side's units in contact for `QuietEndMs`
    (hours), after the sides have met at least once. A stalemate is an end, and worth flagging.

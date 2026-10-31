@@ -67,6 +67,10 @@ public sealed class Handling
         (CoarseAccelUp, CoarseAccelDown, CoarseAccelAstern) = Calibrate(s);
     }
 
+    /// <summary>A speed to ring that stops the engines without being a stop (which takes the way off: <see
+    /// cref="ShipMotion"/>): the trials' coasting, knots. Its power is next to nothing.</summary>
+    public const double CoastKn = 1e-6;
+
     /// <summary>The coarse tier's constant accelerations, m/s² (docs/battle/plan.md step 2.8): working up ahead, slowing
     /// ahead, and going astern or stopping by it. Each is the fine model's own over its sea trial (0 to 90% of the top
     /// speed at full power; the top speed to half with the engines stopped; the top speed to a stop at full astern), so
@@ -99,7 +103,7 @@ public sealed class Handling
             return Math.Max(t, dt);
         }
         double up = 0.9 * top / Trial(0, maxKn, u => u >= 0.9 * top);
-        double down = 0.5 * top / Trial(top, 0, u => u <= 0.5 * top);
+        double down = 0.5 * top / Trial(top, CoastKn, u => u <= 0.5 * top);
         double astern = top / Trial(top, -maxKn, u => u <= 0);
         return (up, down, astern);
     }
