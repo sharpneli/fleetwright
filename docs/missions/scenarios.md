@@ -200,7 +200,8 @@ Drottning Victoria, Gustaf V: 4 x 283 mm, 200 mm belt, 22.5 kn) against the Väi
 (the real pair came in 1932; here Väinämöinen, Ilmarinen and an invented Lemminkäinen: 4 x 254 mm on a 55 mm belt,
 diesel-electric, 15 kn), Wrangel-like destroyers against invented Finnish torpedo boats. The stronger ship that picks
 the range against numbers, the knife and the haze. **Built 2026-10-25** (`aland.json`; designs sverige, vainamoinen,
-wrangel, finnish_tb, all in 1921 tech so nothing is past its period). See "Åland, as built".
+wrangel, finnish_tb, all in 1921 tech so nothing is past its period). See "Åland, as built". **Reworked to the aims
+2026-10-31:** Sweden's troops for Eckerö, Finland to stop them (see "Åland's landing").
 
 **23. Plan Orange, 1923** (hypothetical, the western Pacific). Fleet, about 80.
 The US battle line (the standard types: slow, tough, all-or-nothing) against Japan's (Nagato, Ise, Fuso, the Kongo
@@ -292,8 +293,30 @@ Open:
 1. **Land that hides.** Islands masking sight (and shells) would give the Finns their real weapon: a skerries
    variant that opens among the islands. It needs land heights (Natural Earth has none) or a nominal height, and the
    archipelago slide's bugs fixed first.
-2. **The wave 2 version:** a Swedish landing convoy for Eckerö (Protect against destroy), once N1 lands.
-3. A fourth Väinämöinen (Joukahainen) or crews are the next knobs if playtests find Finland too weak.
+2. *Done 2026-10-31: the landing at Eckerö ("Åland's landing", below).*
+3. *Joukahainen joined with the landing (2026-10-31).* Crews are the next knob if playtests find Finland too weak.
+
+## Åland's landing (2026-10-31)
+
+The first scenario reworked to the aims (`docs/battle/aims.md`). The user: troop transports and a goal for them; the
+forces may change with the conditions.
+
+- **The aims:** Sweden's Reach, three of four transports (`troopship`, a new design in `Content/Scenarios/Designs`: a
+  coastal passenger steamer taken up, 90 m, 2,877 t full, 13 kn, from `tramp_1914`) in "Eckerö", staying 120 minutes;
+  Finland's Stop. The brief and the characters say it. Eckerö: the main island's west shore facing Sweden, where the
+  crossing from Kapellskär is shortest; the zone (5 km about 60.21, 19.50, 2 km off the 1:10M shore) takes in the
+  shore, so a transport stopped there and sliding stays in it.
+- **The forces:** the transports in column off Kapellskär with the coastal fleet on their eastern flank, all at 11 kn;
+  Finland as before, steering for the beach (300°), and **Joukahainen** a fourth Väinämöinen.
+- **The balance** (`shipgen scenario aland.json --play --seeds 8`, each step): with an hour's stay Sweden 0.88 v
+  Finland 0.25; two hours, 0.38 v 0.67, but that was the transports failing to stay (below); in column, 0.96 v 0.13;
+  three hours' stay, or all four needed, about 0.8 v 0.25; Joukahainen, **0.57 v 0.45 over 24 seeds**, the landing made
+  in half, Finland losing about 4 of 10, Sweden 2 of 11. Gustaf V out (she was commissioned only in January 1922)
+  favoured Sweden, oddly, with three Väinämöinens or four (0.75 v 0.25; 0.69 v 0.31, 16 seeds): not chased.
+- **Found:** a line abreast stopped against the shore keeps its stations on the land, so two transports steamed round
+  the island for hours (the scenario's column avoids it); and the slide (a stopped ship coasts on) moved the guide 5
+  km in three hours. Both in `docs/battle/bugs.md` ("The slide"). The play bench takes `--watch ID,... --every N` now:
+  each side's commander and aims, and the ships named, through one seed (`ScenarioRun --watch` prints the aims too).
 
 ## Open questions for the user
 

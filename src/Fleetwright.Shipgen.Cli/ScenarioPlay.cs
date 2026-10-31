@@ -17,7 +17,8 @@ namespace Fleetwright.Shipgen.Cli;
 static class ScenarioPlay
 {
     public static int Run(string path, string settingsPath, string landPath, string designsPath, int threads, bool land,
-        int seeds, double fast, double fine, bool? smoke = null, int workerCount = -1, ulong shuffle = 0, double spinUs = 250, bool fireTable = false)
+        int seeds, double fast, double fine, bool? smoke = null, int workerCount = -1, ulong shuffle = 0, double spinUs = 250, bool fireTable = false,
+        int[]? watch = null, int every = 10)
     {
         // where the hits come from (docs/battle/balance.md BL1g): shells and hits by calibre, range and point blank, every seed
         var fire = new SortedDictionary<(bool Night, bool Small, int Cal, int Range, bool Pb), (long Shells, long Hits)>();
@@ -128,6 +129,14 @@ static class ScenarioPlay
             {
                 PlayToEnd(w, end, fast, fine, () =>
                 {
+                    // --watch: the sides' aims and the ships named, every so many game minutes
+                    if (watch != null && (w.Time.Ms - hour0) / 60_000 % every == 0)
+                    {
+                        Console.WriteLine($"  {w.Time.ToString()[11..16]} at {w.Speed:G}x asked");
+                        ScenarioRun.Sides(w, ai, s);
+                        foreach (int e in watch)
+                            ScenarioRun.Ship(w, start, e);
+                    }
                     if (fireTable)
                         Inside(w, ai, s, inside);
                     if ((w.Time.Ms - hour0) / 3_600_000 > hours.Count)

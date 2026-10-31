@@ -1,28 +1,29 @@
 // The battle for Åland, 28 June 1921 (hypothetical): four days after the League of Nations gave Åland to Finland,
-// Stockholm refuses the ruling and sends the coastal fleet to Mariehamn; Finland's coastal squadron comes out of the
-// archipelago to meet it in the open water south of the islands. History's Swedish class (Sverige, Drottning Victoria
-// and Gustaf V, the last rushed out of the yard), and the Finnish class a decade early: the Väinämöinens that the 1920s
-// navy debates bought in the game (Väinämöinen and Ilmarinen, and a third of the game's own). The torpedo boats are
-// invented; the destroyers are Wrangel-likes (Hugin and Munin of the older class among them). Set for balance by the
-// haze and Finland's bold doctrine (Aggression +1: the Kommodori fights down to a third of the odds and closes; at the
-// default he declined the fight in most seeds after balance.md BL5, 2026-10-31): as the AI plays it (8 seeds, 6 km)
-// Finland loses about 5 of 9 ships a run, Sweden 3 of 7 (more than a Sverige a run), and either side can be badly beaten.
-// Sweden's admiral spreads his line to search once he knows he can outrun the Finns, so in 8 km he finds them again
-// and hunts them (5.9 v 1.8); 12 km let Sweden keep the range (3.2 v 1.0, every turret dry by 08:00):
-//   Sweden, the stronger ship: 283 mm guns, a 200 mm belt and 22.5 kn; the speed picks the range.
+// Stockholm refuses the ruling and sends troops for Eckerö, on the main island's west shore facing Sweden, under the
+// coastal fleet; Finland's coastal squadron comes out of the archipelago to stop the landing. History's Swedish class
+// (Sverige, Drottning Victoria and Gustaf V, the last rushed out of the yard), and the Finnish class a decade early: the
+// Väinämöinens that the 1920s navy debates bought in the game (Väinämöinen and Ilmarinen, and Lemminkäinen and
+// Joukahainen of the game's own). The torpedo boats are invented; the destroyers are Wrangel-likes (Hugin and Munin of
+// the older class among them); the transports are coastal passenger steamers taken up (13 kn).
+// The aims (docs/battle/aims.md): Sweden's three of the four transports at Eckerö, lying off it two hours while the
+// troops go ashore; Finland's to stop them. Set for balance by the forces (the fourth Väinämöinen), the haze and
+// Finland's bold doctrine (Aggression +1: the Kommodori fights down to a third of the odds and closes): as the AI plays
+// it (24 seeds, 2026-10-31) Sweden scores about 0.57, Finland 0.45; the landing is made in half the seeds,
+// Finland loses about 4 of 10 ships a run, Sweden 2 of 11. Three Sverige and three Väinämöinens: 0.96 v 0.13.
+//   Sweden, the stronger ship: 283 mm guns, a 200 mm belt and 22.5 kn, and the transports to cover.
 //   Finland, the numbers and the knife: big guns on small, slow, thin ships, and torpedo boats in the haze.
 // The weather of the day: a thick midsummer haze on the Åland Sea (6 km), a light south-westerly.
 {
   "scenario": 1,
   "name": "The battle for Åland, 1921",
-  "brief": "28 June 1921, 05:20. Four days ago the League of Nations gave Åland to Finland; Stockholm has refused the ruling, and the Swedish coastal fleet is steaming for Mariehamn. Finland's coastal squadron has come out of the archipelago to stop it: Väinämöinen and her sisters, 254 mm guns on hulls built for the skerries, slow and thinly armoured, with torpedo boats astern. The Sverige class is faster, better armoured and outranges you. The haze is your friend. Get close.",
-  "place": "the Åland Sea, south of Mariehamn",
+  "brief": "28 June 1921, 04:00. Four days ago the League of Nations gave Åland to Finland; Stockholm has refused the ruling, and four transports full of Swedish troops are crossing for Eckerö under the coastal fleet. If three of them lie off the beach for two hours, the troops are ashore and Åland is lost. Finland's coastal squadron has come out of the archipelago to stop them: Väinämöinen and her three sisters, 254 mm guns on hulls built for the skerries, slow and thinly armoured, with torpedo boats astern. The Sverige class is faster, better armoured and outranges you, but it has the transports to guard. The haze is your friend. Sink the transports.",
+  "place": "the Åland Sea, off Eckerö",
   "about": {
-    "Finland": { "character": "The numbers and the knife: three Väinämöinens, big guns on small slow ships, and six torpedo boats.", "commander": "the Kommodori", "ensign": "finland" },
-    "Sweden": { "character": "The stronger ship: the Sverige class, 283 mm guns, a 200 mm belt and the speed to pick the range.", "commander": "the Viceamiral", "ensign": "sweden" } },
+    "Finland": { "character": "The numbers and the knife: four Väinämöinens, big guns on small slow ships, and six torpedo boats. Stop the landing.", "commander": "the Kommodori", "ensign": "finland" },
+    "Sweden": { "character": "The stronger ship: the Sverige class, 283 mm guns, a 200 mm belt and the speed to pick the range, and four transports to see to Eckerö.", "commander": "the Viceamiral", "ensign": "sweden" } },
   "start": "1921-06-28T04:00",
   "seed": 1921,
-  "camera": [59.80, 19.85, 40],
+  "camera": [60.02, 19.65, 40],
   "sides": ["Finland", "Sweden"],
   // the Kommodori's orders: get close (balance: the weaker side must fight, or there's no scenario)
   "doctrine": { "Finland": { "preset": "default", "Aggression": 1 } },
@@ -32,18 +33,24 @@
   "crews": { "Finland": "trained", "Sweden": "trained" },
   "player": "Finland",
   "until": "1921-06-28T16:00",
-  "aims": { "Finland": "destroy everyone", "Sweden": "destroy everyone" },
+  // Sweden's troops for Eckerö: three of the four transports in, lying off the beach two hours while the troops go
+  // ashore (the zone takes in the shore, so a ship stopped there stays in it); Finland's aim is to stop them
+  "aims": {
+    "Sweden": { "reach": "Trupptransporterna", "zone": { "at": [60.21, 19.50], "km": 5, "name": "Eckerö" }, "of": 3, "stay": 120 },
+    "Finland": { "stop": "Sweden" } },
   // where ships out of the fight go: Utö, at the archipelago's edge, and the Stockholm skerries off Sandhamn
   "home": { "Finland": [59.70, 21.20], "Sweden": [59.50, 19.10] },
   "weather": { "visibility_km": 6, "wind_from": 225, "wind_kn": 10 },
   "units": [
-    { "name": "Rannikkolaivasto", "admiral": "the Kommodori", "side": 0, "at": [59.85, 20.15], "course": 255, "kn": 14, "spacing": 3000,
+    { "name": "Rannikkolaivasto", "admiral": "the Kommodori", "side": 0, "at": [59.85, 20.15], "course": 300, "kn": 14, "spacing": 3000,
       "units": [
         { "name": "Panssarilaivat", "spacing": 600, "ships": [
-          { "design": "vainamoinen", "names": ["Väinämöinen", "Ilmarinen", "Lemminkäinen"] } ] },
+          { "design": "vainamoinen", "names": ["Väinämöinen", "Ilmarinen", "Lemminkäinen", "Joukahainen"] } ] },
         { "name": "Torpedovenelaivue", "spacing": 350, "ships": [
           { "design": "finnish_tb", "names": ["Tuima", "Tuisku", "Pyry", "Viima", "Puhuri", "Vihuri"] } ] } ] },
-    { "name": "Kustflottan", "admiral": "the Viceamiral", "side": 1, "at": [59.75, 19.55], "course": 60, "kn": 16, "spacing": 3000,
+    { "name": "Trupptransporterna", "side": 1, "at": [59.86, 19.28], "course": 15, "kn": 11, "formation": "column", "spacing": 600,
+      "ships": [ { "design": "troopship", "names": ["Birger Jarl", "Brage", "Heimdall", "Frej"] } ] },
+    { "name": "Kustflottan", "admiral": "the Viceamiral", "side": 1, "at": [59.87, 19.38], "course": 15, "kn": 11, "spacing": 3000,
       "units": [
         { "name": "Pansarskeppsdivisionen", "spacing": 700, "ships": [
           { "design": "sverige", "names": ["Sverige", "Drottning Victoria", "Gustaf V"] } ] },

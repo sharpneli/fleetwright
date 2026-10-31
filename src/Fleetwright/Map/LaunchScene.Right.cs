@@ -173,7 +173,7 @@ public sealed unsafe partial class LaunchScene
 
     static readonly (string Type, string Group)[] TypeGroups =
         [("BB", "Battleships"), ("BC", "Battlecruisers"), ("CA", "Armoured cruisers"), ("CL", "Cruisers"), ("DD", "Destroyers"), ("TB", "Torpedo boats"),
-         ("AV", "Seaplane carriers"), ("CV", "Carriers")];
+         ("AV", "Seaplane carriers"), ("CV", "Carriers"), ("AP", "Transports"), ("AK", "Cargo ships")];
 
     /// <summary>The sides by group, yours (or the first) against the other: ships by type, guns by calibre, the line's
     /// speed, the gun crews, the tonnage; made again as the classes' figures come in.</summary>

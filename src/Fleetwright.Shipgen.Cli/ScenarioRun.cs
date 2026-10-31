@@ -105,6 +105,8 @@ static class ScenarioRun
                                       $"{fight.Shells} fired, {fight.Hits} hits");
                 if (watch != null)
                     w.Fill(snap);
+                if (watch != null)
+                    Sides(w, ai, s);
                 foreach (int e in watch ?? [])
                 {
                     int j = snap.Ships.IndexOf(e);
@@ -114,18 +116,7 @@ static class ScenarioRun
                         var (sla, slo) = Earth.LatLon(sp);
                         Console.WriteLine($"    #{e} in the snapshot: {sla:F4}, {slo:F4} (pose of {snap.Ships.PoseMs[j] - snap.Time.Ms} ms)");
                     }
-                    int k = store.SlotOf(e);
-                    if (k < 0)
-                    {
-                        Console.WriteLine($"    #{e}: gone");
-                        continue;
-                    }
-                    var sh = store[k];
-                    var (la, lo) = Earth.LatLon(sh.Position);
-                    var g = w.Groups.Of(e);
-                    Console.WriteLine($"    #{e} {start.ShipNames.GetValueOrDefault(e)}: {la:F4}, {lo:F4}, heading {sh.HeadingDeg:F1}, " +
-                                      $"{sh.Speed / Fleetwright.Sim.Combat.Handling.MsPerKnot:F1} kn, helm {sh.Helm} {sh.CourseOrderDeg:F0}° {sh.SpeedOrderKn:F1} kn, " +
-                                      $"{sh.Tier.ToString().ToLowerInvariant()}, {g?.Name ?? "no group"}");
+                    Ship(w, start, e);
                 }
             }
         }
@@ -163,6 +154,36 @@ static class ScenarioRun
                 return 1;
         }
         return failed > 0 ? 1 : 0;
+    }
+
+    /// <summary>Each side's commander and how its aims stand (docs/battle/aims.md), a line a side: what a watch prints.</summary>
+    internal static void Sides(World w, AiSystem ai, Scenario s)
+    {
+        for (int side = 0; side < s.Sides.Length; side++)
+        {
+            var (phase, why) = ai.Commanders.PhaseOf(side);
+            var aims = Enumerable.Range(0, ai.Aims.Count(side)).Select(i => ai.Aims.Read(w, side, i))
+                .Select((r, i) => $"{ai.Aims[side, i].Kind} {r.State} {r.Done:0.#}/{r.Of:0.#}");
+            Console.WriteLine($"    {s.Sides[side]}: {phase} {why}; {string.Join(", ", aims)}");
+        }
+    }
+
+    /// <summary>A watched ship's line: where she is, her way and helm, her tier and group.</summary>
+    internal static void Ship(World w, ScenarioStart start, int e)
+    {
+        var store = w.Ships.Store;
+        int k = store.SlotOf(e);
+        if (k < 0)
+        {
+            Console.WriteLine($"    #{e}: gone");
+            return;
+        }
+        var sh = store[k];
+        var (la, lo) = Earth.LatLon(sh.Position);
+        var g = w.Groups.Of(e);
+        Console.WriteLine($"    #{e} {start.ShipNames.GetValueOrDefault(e)}: {la:F4}, {lo:F4}, heading {sh.HeadingDeg:F1}, " +
+                          $"{sh.Speed / Fleetwright.Sim.Combat.Handling.MsPerKnot:F1} kn, helm {sh.Helm} {sh.CourseOrderDeg:F0}° {sh.SpeedOrderKn:F1} kn, " +
+                          $"{sh.Tier.ToString().ToLowerInvariant()}, {g?.Name ?? "no group"}");
     }
 }
 

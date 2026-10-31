@@ -24,7 +24,7 @@ enemy"); (3) the aims come now, before the balance round's BL3 and BL4.
 | A3 Stop: the side that wants to prevent it | done 2026-10-31 ("A3, as built") | |
 | A4 Sink merchants: the raider, the merchants, the hunters | done 2026-10-31 ("A4, as built") | |
 | A5 The UI: aims, progress, zones | done 2026-10-31 ("A5, as built") | zones on the launch screen's opening |
-| A6 Benches and balance | benches done 2026-10-31 ("A6, as built") | the user's scenario investigation |
+| A6 Benches and balance | benches done 2026-10-31 ("A6, as built"); the scenario pass begun (Åland) | the other scenarios |
 
 ## What's there
 
@@ -331,6 +331,8 @@ Per `docs/ui-language.md`, drawn with `Ui/Pieces.cs`:
   - raider as written: **0.62 v 0.67** (the raider sank her tonnage in 2 of 8, lost in 1 of 8).
 - Next: the user's investigation of which real scenarios get aims (scenarios.md wave 2: the Falklands, Goeben at bay,
   the Lerwick convoy, the Yellow Sea, Dogger Bank's run; Eckerö under Åland).
+- **The scenario pass** (the user, 2026-10-31: rework the scenarios to the aims, forces free to change). Åland first:
+  Sweden's landing at Eckerö (`docs/missions/scenarios.md` "Åland's landing").
 
 ## Steps
 

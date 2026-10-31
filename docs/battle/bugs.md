@@ -348,6 +348,18 @@ Seen in the AI's baseline after the detail passes (2026-10-20, docs/battle/comma
   arrival is kept, so the aim holds), and a ship home at the 10 km radius creeps on. To hunt: the trials bench's
   coasting against the research's (the sea trials notes), a low-speed drag term if the hull model wants one, and a stop
   that goes astern to a halt (and an anchor once a ship is stopped in shallow water).
+  Seen again 2026-10-31 in Åland's landing (a stay of 120 minutes at Eckerö): the transports' guide, stopped at 07:00
+  from 13 kn, crept 5 km along the shore in three hours, toward the zone's edge. A stay longer than an arrival is where
+  it bites. Where the fix goes: an engine-level "stop goes astern" catches formation followers too (station keeping
+  clamps its speed at 0 when ahead of station, `Behaviours.cs`), so it wants a stop of its own (the AI's "stopped
+  there", `TaskLayer` Withdraw's end; a ship struck, `DamageSystem`) apart from engines stopped, and the coarse tier's
+  calibration (`Handling.Calibrate`'s "engines stopped" trial) kept apart from it.
+
+- [ ] **A line abreast stopped against a coast keeps its stations on the land** (found 2026-10-31, Åland's landing).
+  Four transports abreast (900 m) stopped at Eckerö heading NNE, the guide nearest the shore: the stations to starboard
+  fell on the island, and two of them steamed at 13.5 kn for hours, sliding round its coast, out of the zone. The
+  scenario puts them in column (stations astern, to seaward). To hunt: a station on land given up for the nearest
+  water astern of the guide, or a stopped formation's followers holding where they are.
 
 ## Rails and the clock
 
