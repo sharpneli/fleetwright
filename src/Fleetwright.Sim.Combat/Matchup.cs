@@ -553,6 +553,31 @@ public static class Matchup
         return new MatchupResult(t.Confidence(s.MatchupFloor), speedA, speedB, t with { AttackersA = byA, AttackersB = byB }, gunA, gunB);
     }
 
+    /// <summary>How much <paramref name="from"/> threatens <paramref name="to"/> at a range (docs/battle/aims.md A3: a
+    /// captain after the enemy's transports fights the escort that endangers him): the ships of <paramref name="to"/> her
+    /// guns, all on them for <paramref name="minutes"/> (at most her rounds), and a salvo of her torpedoes if they're within
+    /// their reach (at <paramref name="torpedoShare"/> of it), are expected to put out of the fight, a ship of
+    /// <paramref name="to"/>, by the same fire as the lines' (<see cref="Guns"/>, <see cref="Torpedoes"/>); in
+    /// daylight.</summary>
+    public static double Threat(ReadOnlySpan<MatchupEntry> from, ReadOnlySpan<MatchupEntry> to, double rangeM, double minutes, double torpedoShare,
+        SimSettings s)
+    {
+        if (from.Length == 0 || to.Length == 0 || from.Length > MaxClasses || to.Length > MaxClasses)
+            return 0;
+        Span<double> seen = stackalloc double[to.Length], outs = stackalloc double[to.Length], none = stackalloc double[from.Length];
+        Span<bool> all = stackalloc bool[from.Length];
+        seen.Fill(double.PositiveInfinity);
+        outs.Clear();
+        none.Clear();
+        all.Fill(true);
+        Guns(from, default, default, to, default, default, rangeM, 0, 0, minutes, seen, s, outs);
+        Torpedoes(from, all, to, rangeM, s, outs, none, torpedoShare);
+        double put = 0, count = 0;
+        for (int j = 0; j < to.Length; j++)
+            (put, count) = (put + outs[j], count + to[j].Count);
+        return count > 0 ? put / count : 0;
+    }
+
     /// <summary>Each side's band, the range it would fight the lines' gunfight at: of the ranges judged
     /// (<see cref="SimSettings.MatchupBandSteps"/> from <see cref="SimSettings.MatchupBandMinM"/> out to the farthest gun's
     /// reach, <paramref name="far"/>), each with the side going to it from where the fight opens (<paramref name="open"/>)

@@ -86,6 +86,8 @@ public sealed class AimBook
     // every ship seen, in the order seen: its side, tonnage (as the results') and whether she's a merchant
     readonly Dictionary<int, (byte Side, double Tonnes, bool Merchant)> roster = [];
     readonly List<int> seen = [];
+    // by side, the kinds its pursued aim wants sunk (bits of 1 << ShipType), as of the last update
+    readonly int[] wanted = new int[256];
 
     /// <summary>How many aims a side has.</summary>
     public int Count(int side) => sides[side & 255]?.Count ?? 0;
@@ -154,8 +156,25 @@ public sealed class AimBook
     public bool Reaching(int side, int ship) =>
         Pursued(side) is int p and >= 0 && sides[side & 255]![p] is { Aim.Kind: AimKind.Reach } e && e.Named.Contains(ship) && !e.Arrived.Contains(ship);
 
+    /// <summary>The kinds of enemy ship (bits of 1 &lt;&lt; <see cref="ShipType"/>) a side's pursued aim wants sunk before
+    /// the rest (docs/battle/aims.md A3), as of the last update: a Stop of a Reach the named ships' still on their way (a
+    /// convoy's transports, a breaker), as a ship's type reads; a Sink merchants; else none. The side knows what the
+    /// enemy's after (the scenario's intelligence); his captains know a ship by what they take her for.</summary>
+    public int Wanted(int side) => wanted[side & 255];
+
+    /// <summary>The zone the enemy's aim makes for that a side's pursued aim is to stop (a Stop of a Reach), if any, as of
+    /// the last update.</summary>
+    public Zone? StopZone(int side)
+    {
+        if (Pursued(side) is not (int p and >= 0) || this[side, p] is not { Kind: AimKind.Stop, About: >= 0 and < 256 } stop ||
+            FirstNotStop(stop.About) is not (int j and >= 0) || this[stop.About, j] is not { Kind: AimKind.Reach } reach)
+            return null;
+        return reach.Zone;
+    }
+
     /// <summary>The roster taken up to now, and each Reach's ships in their zones: arrived on entering, or once they've
-    /// stayed (afloat, never leaving) the aim's time; then every aim's state as it stands. At the commanders' think.</summary>
+    /// stayed (afloat, never leaving) the aim's time; then every aim's state as it stands, and what each side wants sunk
+    /// first. At the commanders' think.</summary>
     internal void Update(World w)
     {
         var store = w.Ships.Store;
@@ -194,6 +213,26 @@ public sealed class AimBook
         for (int side = 0; side < sides.Length; side++)
             for (int i = 0; i < Count(side); i++)
                 sides[side]![i].State = Read(w, side, i).State;
+        for (int side = 0; side < sides.Length; side++)
+            wanted[side] = Count(side) > 0 ? WantedNow(store, side) : 0;
+    }
+
+    int WantedNow(ShipStore store, int side)
+    {
+        if (Pursued(side) is not (int p and >= 0))
+            return 0;
+        var a = this[side, p];
+        if (a.Kind == AimKind.Sink)
+            return 1 << (int)ShipType.Merchant;
+        if (a.Kind != AimKind.Stop || a.About is not (>= 0 and < 256) || FirstNotStop(a.About) is not (int j and >= 0))
+            return 0;
+        var e = sides[a.About]![j];
+        int bits = 0;
+        if (e.Aim.Kind == AimKind.Reach)
+            foreach (int ship in e.Ships)
+                if (!e.Arrived.Contains(ship) && store.SlotOf(ship) is int slot and >= 0 && Aims.Afloat(store, slot))
+                    bits |= 1 << (int)Sightings.TypeOf(store[slot].Handling.Class);
+        return bits;
     }
 
     /// <summary>How a side's i-th aim stands now.</summary>

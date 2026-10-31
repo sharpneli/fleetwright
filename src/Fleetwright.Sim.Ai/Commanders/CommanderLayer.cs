@@ -183,6 +183,11 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
     int count;
     readonly List<Top> tops = new(64);
     readonly List<(int Ship, double AsternM, double AbeamM)> line = new(64);
+    // the side being commanded at this think: its state, the zone the enemy's aim makes for that it's to stop (docs/
+    // battle/aims.md A3) and the kinds it wants sunk first
+    SideState? cur;
+    Zone? stopZone;
+    int wanted;
 
     internal TaskLayer? Tasks { get; set; }
     internal MatchupJudge Judge { get; set; } = null!;
@@ -367,6 +372,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         // too (docs/battle/aims.md A2): what the rest support
         int pursued = Book.Pursued(side);
         Zone? zone = pursued >= 0 && Book[side, pursued].Kind == AimKind.Reach ? Book[side, pursued].Zone : null;
+        (cur, stopZone, wanted) = (s, Book.StopZone(side), Book.Wanted(side));
         int main = -1;
         for (int i = 0; i < tops.Count; i++)
         {
@@ -397,7 +403,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
             : s.Target != 0 ? (CommanderPhase.Contact, CommanderReason.None)
             : s.Met ? (CommanderPhase.Lost, CommanderReason.LostContact)
             : (CommanderPhase.NoContact, CommanderReason.None);
-        if (s.Phase == CommanderPhase.Lost && main >= 0 && !reach && Commands(tops[main].Unit, side, player) && Search(ctx, s, tops[main]))
+        if (s.Phase == CommanderPhase.Lost && main >= 0 && !reach && stopZone == null && Commands(tops[main].Unit, side, player) && Search(ctx, s, tops[main]))
             (s.GaveUp, s.Phase, s.Reason) = (true, CommanderPhase.Home, CommanderReason.GaveUp);
 
         for (int i = 0; i < tops.Count; i++)
@@ -428,7 +434,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
             {
                 // sent after an enemy group: close its biggest ship, unless it's in a fight already (doctrine's) or closing
                 // one of the group's ships already (its biggest as it was: the picture's shifts don't turn it)
-                int target = held[t.Group].Biggest;
+                int target = WantedIn(ctx, side, held[t.Group]) is int w and not 0 ? w : held[t.Group].Biggest;
                 if (!InContact(ctx, t) && closingGroup[i] != t.Group && FreeToClose(t.Unit, target))
                     Give(ctx, t, ctx.Orders.Intercept(t.Unit, target, 0, OrderSource.Commander), CommanderWhy.Contact);
                 continue;
@@ -436,7 +442,10 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
             // a flotilla through with its torpedoes goes back to its screen at once, contact or not
             bool spent = t.Role == UnitRole.Flotilla && Tasks!.Of(t.Unit) is (TaskKind.Attack, TaskState.Done, TaskReason.Fired);
             bool firstOrders = Tasks!.Of(t.Unit).Kind == TaskKind.None;
-            if (!spent && (!(Tasks.Idle(t.Unit) || firstOrders && s.Met) || InContact(ctx, t) || Home(t.Unit)))
+            // a side out to stop the enemy's aim (docs/battle/aims.md A3) takes up its roles at once, but for those the
+            // scenario gave a route
+            bool deploy = firstOrders && stopZone != null && store[t.Slot].Helm != Helm.Route;
+            if (!spent && (!(Tasks.Idle(t.Unit) || firstOrders && s.Met || deploy) || InContact(ctx, t) || Home(t.Unit)))
                 continue;   // on its task, or on the scenario's orders before the enemy's met, or fighting (doctrine's), or home
             Give(ctx, t, IdleTask(ctx, t, main >= 0 && main != i ? tops[main] : null), spent ? CommanderWhy.Rejoin : CommanderWhy.Idle);
         }
@@ -607,10 +616,11 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
             enemy.Clear();
             AddGroup(ctx, side, held[k], enemy);
             double c = enemy.Count == 0 || mine.Count == 0 ? double.MaxValue : Judge.Judge(ctx, 0, side, held[k].Centre, mine, enemy).Confidence;
-            order.Add((k, c));
+            order.Add((k, c, WantedIn(ctx, side, held[k]) != 0));
             graveness.Add(c);
         }
-        order.Sort((x, y) => x.C != y.C ? x.C.CompareTo(y.C) : x.K.CompareTo(y.K));
+        // those holding what his aim wants sunk first (docs/battle/aims.md A3: the convoy before its escort's other groups)
+        order.Sort((x, y) => x.W != y.W ? y.W.CompareTo(x.W) : x.C != y.C ? x.C.CompareTo(y.C) : x.K.CompareTo(y.K));
         // the group each of his units is closing now, if any: he takes it off that only for a group graver by
         // CommanderRetargetShare, as he keeps his own target (Enemy), or it would turn after each group in turn as
         // they shift
@@ -624,7 +634,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
                         on = k;
             closingGroup.Add(on);
         }
-        foreach (var (k, kc) in order)
+        foreach (var (k, kc, _) in order)
         {
             var g = held[k];
             enemy.Clear();
@@ -682,7 +692,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         }
     }
 
-    readonly List<(int K, double C)> order = new(16);
+    readonly List<(int K, double C, bool W)> order = new(16);
     readonly List<double> graveness = new(16);
     readonly List<int> closingGroup = new(32);
     readonly List<(int I, double D)> near = new(32);
@@ -705,6 +715,21 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
             if (pic[i].Entity == entity)
                 return true;
         return false;
+    }
+
+    /// <summary>The biggest of an enemy group's contacts that his aim wants sunk first (<see cref="AimBook.Wanted"/>: by
+    /// what his navy takes her for), 0 for none.</summary>
+    int WantedIn(in AiContext ctx, byte side, in HeldGroup g)
+    {
+        if (wanted == 0)
+            return 0;
+        var pic = ctx.World.Sightings.Of(side)!;
+        int best = 0;
+        double bestT = -1;
+        foreach (int i in Held.Members(side, g))
+            if ((wanted & 1 << (int)pic[i].Type) != 0 && Judge.Matchups.TonnageOf(ctx.World, pic[i]) is var t && t > bestT)
+                (best, bestT) = (pic[i].Entity, t);
+        return best;
     }
 
     /// <summary>A top unit's ships into a side of a matchup, exactly.</summary>
@@ -924,6 +949,8 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         {
             if (t.Role == UnitRole.Auxiliary)
                 return o.WithdrawHome(t.Unit, By);
+            if (stopZone is { } z)
+                return Across(ctx, t, z);
             var guide = store[t.Slot];
             var p = guide.Position;
             var f = guide.Forward;
@@ -938,6 +965,29 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
             UnitRole.Flotilla or UnitRole.Screen => Dispositions.Attend(o, t.Role, t.Unit, NearestHeavy(t, m).Unit, 0, By),
             _ => o.WithdrawHome(t.Unit, By),
         };
+    }
+
+    /// <summary>His main body's search across the enemy's way to the zone he's to keep him from (docs/battle/aims.md A3):
+    /// where the enemy would be now steaming for it from where he was last held, at the speed he was held at (never past
+    /// the zone); the zone itself if he's never been held. Given again each time the search is through, so it follows the
+    /// enemy's way in.</summary>
+    Command Across(in AiContext ctx, in Top t, Zone zone)
+    {
+        var at = zone.Centre;
+        if (cur is { LastAt: not 0 } s)
+        {
+            var (la, lo) = Earth.UnpackLatLon(s.LastAt);
+            var p = Earth.Position(la, lo);
+            double gone = s.LastMps * Math.Max(ctx.NowMs - s.LastMs, 0) / 1000.0;
+            if (gone < Earth.Distance(p, at))
+            {
+                var f = Earth.Forward(p, Earth.Bearing(p, at));
+                Earth.Advance(ref p, ref f, gone);
+                at = p;
+            }
+        }
+        var (lat, lon) = Earth.LatLon(at);
+        return ctx.Orders.Search(t.Unit, lat, lon, 0, OrderSource.Commander);
     }
 
     /// <summary>The heavy unit of a side nearest a unit (the main body if none is nearer).</summary>

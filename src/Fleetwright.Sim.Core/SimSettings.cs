@@ -1056,6 +1056,27 @@ public sealed record SimSettings
     /// the way out has turned more than this from the one given, degrees.</summary>
     public double WithdrawTurnDeg { get; init; } = 10;
 
+    /// <summary>A contact of a kind his side's aim wants sunk first (docs/battle/aims.md A3: a convoy's transports, a
+    /// breaker) counts this many times nearer in a battery's choice of target; another by as much as she endangers him
+    /// (1 + this less 1, times her threat), so an escort that can put him out is fought on even terms.</summary>
+    public double WantedShare { get; init; } = 3;
+
+    /// <summary>A contact's threat to a ship: what she's expected to put out of him over an action this many minutes
+    /// long, her guns on him (and a salvo of her torpedoes in their reach), read against <see cref="WantedThreatOuts"/>.</summary>
+    public double WantedThreatMin { get; init; } = 60;
+
+    /// <summary>The outs expected of a contact (<see cref="WantedThreatMin"/>) that make most of a full threat: threat 1 -
+    /// exp(-outs / this), so a dreadnought at 8 km is a clear threat to a battlecruiser (about 0.9), a light cruiser
+    /// hardly (about 0.2).</summary>
+    public double WantedThreatOuts { get; init; } = 0.15;
+
+    /// <summary>On a wanted target, a ship's fight course is bent away from the enemies that endanger him: at this range a
+    /// full threat pushes as hard as the course pulls, more nearer (by the inverse square), m.</summary>
+    public double WantedAvoidM { get; init; } = 8000;
+
+    /// <summary>The most that bend takes him off his fight course, degrees.</summary>
+    public double WantedBendDeg { get; init; } = 60;
+
     /// <summary>The side's commander (docs/battle/command.md 5.1d) thinks every CommanderPeriodMs. A contact out of sight
     /// longer than ContactFreshMs is lost: an intercept gives it up, and he holds nothing by it. His target (his phases,
     /// his search) is the biggest ship of the enemy group he's least confident against (5.1g), kept until another group

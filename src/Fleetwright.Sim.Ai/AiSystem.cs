@@ -77,7 +77,7 @@ public sealed class AiSystem : IWorldSystem
         Held = new HeldGroups(Judge.Matchups);
         Captains = new CaptainLayer(world.Groups, world.Encounters, Seen, Doctrine, Homes)
         {
-            Judge = Judge, TrailPoints = world.Settings.FollowTrackPoints, Store = world.Ships.Store,
+            Judge = Judge, TrailPoints = world.Settings.FollowTrackPoints, Store = world.Ships.Store, Book = Aims,
         };
         Roles = new Roles(world, Judge);
         Admirals = new AdmiralLayer(world.Groups, Captains, Seen, Doctrine) { Judge = Judge, Roles = Roles };

@@ -21,7 +21,7 @@ enemy"); (3) the aims come now, before the balance round's BL3 and BL4.
 | A0 Investigation | done 2026-10-31 ("A0: what the code says") | |
 | A1 Aims as data, their state, the judge | done 2026-10-31 ("A1, as built") | |
 | A2 Reach: the side that wants a place | done 2026-10-31 ("A2, as built") | |
-| A3 Stop: the side that wants to prevent it | not started | |
+| A3 Stop: the side that wants to prevent it | done 2026-10-31 ("A3, as built") | |
 | A4 Sink merchants: the raider, the merchants, the hunters | not started | |
 | A5 The UI: aims, progress, zones | not started | |
 | A6 Benches and balance | not started | |
@@ -225,6 +225,39 @@ Per `docs/ui-language.md`, drawn with `Ui/Pieces.cs`:
 - `AimsTests`: an unopposed convoy with no route sent to its zone, stopped there; the breaker declining and still
   getting in; the escort keeping by the convoy, then home once it's in, the convoy staying. `TaskTests`' withdrawal
   now checks the course (away from the enemy, bent for home), not the run order.
+
+## A3, as built (2026-10-31)
+
+- **What a side wants sunk first** (`AimBook.Wanted`, at each update): for a Stop of a Reach, the kinds (as
+  `Sightings.TypeOf` reads a class) of the named ships still on their way, so a convoy's transports or a breaker; for
+  a Sink, merchants (A4's raider reads the same); else none. A captain knows a ship by what his navy takes her for (the
+  picture's type), never by her name.
+- **The commander** (`CommanderLayer`): an enemy group holding a wanted ship goes first in `Assign`, and a unit sent
+  after it intercepts its biggest wanted ship. A Stop side's units not on a scenario route take up their roles at once
+  (they don't wait to meet the enemy); its main body's idle task is `Across`: a search where the enemy would be now
+  steaming for the zone from where he was last held, at the speed held (never past the zone), or the zone itself if
+  he's never been held, given again each time it's through. A Stop side doesn't give up a lost enemy (no `GaveUp`) while
+  the aim's open: it searches across his way again.
+- **The captains, reasonably** (the user: "if a captain is clearly threatened by the escorts he probably wants to
+  fight them, but he'll try to go around if he can"; `CaptainLayer.Fire.cs` `Want`, `Threat`, `Around`):
+  - A wanted contact counts `WantedShare` (3) times nearer in a battery's pick, the main battery and the rest alike.
+  - Any other counts as much nearer by **how much she endangers him**: `1 + (WantedShare - 1) × threat`, the threat
+    `1 - exp(-outs / WantedThreatOuts)` (0.15), the outs what `Matchup.Threat` expects her to put out of him over an
+    hour's action (`WantedThreatMin`, her guns on him, at most her rounds, by the lines' own fire, `Matchup.Guns`) and a
+    salvo of her torpedoes in their reach (`Matchup.Torpedoes`). At 8 km, against a battlecruiser: a dreadnought 0.43
+    outs (threat 0.94), a light cruiser 0.03 (0.2), a tramp none. So a clear threat is fought on even terms with the
+    transports (the nearer by range to come first) and a weak escort is passed over for them.
+  - **Round the escort:** on a wanted target, his fight course is bent away from every other enemy near that endangers
+    him, each pushing by her threat over her range squared (as hard as the course pulls at `WantedAvoidM`, 8 km), at
+    most `WantedBendDeg` (60°) off it.
+  - In the tests' case (a battlecruiser, the tramps 12 km east, the escort 8 km north) with a light cruiser escort she
+    shoots the tramps from her first pick; with a dreadnought she shoots the dreadnought, turns round it for the tramps
+    (its range opening 8 → 10 km as theirs closes 12 → 9) and shifts to them once they're the nearer.
+- Every new rule is gated on a side's aims: the shipped scenarios (destroy everyone) play as before.
+- `AimsTests`: the threat's numbers; the pick with each escort and the going round; the Stop side's battlecruiser,
+  with no orders, searching the zone, finding the convoy on its way in, sent after the tramps (`CommanderWhy.Contact`),
+  its main guns on the tramps more minutes than on the escort while the convoy's aim is open (33 to 25: the escort
+  was the nearer at times), and the convoy not getting in.
 
 ## Steps
 

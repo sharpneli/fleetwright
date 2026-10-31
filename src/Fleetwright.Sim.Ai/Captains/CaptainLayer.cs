@@ -183,6 +183,9 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
     /// <summary>Who can fight whom (docs/battle/command.md 5.1g): Fight's judgement.</summary>
     internal Knowledge.MatchupJudge Judge { get; set; } = null!;
 
+    /// <summary>Every side's aims (docs/battle/aims.md A3): what his side wants sunk first.</summary>
+    internal Commanders.AimBook? Book { get; set; }
+
     /// <summary>How many notices captains have raised (a ship's notice going up): a UI shows the new ones.</summary>
     public int Notices { get; private set; }
 
