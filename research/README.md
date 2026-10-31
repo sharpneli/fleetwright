@@ -129,6 +129,14 @@ Across both: [armour-and-damage.md](simulation/armour-and-damage.md) (draft, 202
 
 Its eight strands, with their full case tables and sources, are in [simulation/night-fighting/](simulation/night-fighting/): searchlights, star shell, lookouts and glasses, the night's light and the eye, identification and doctrine, cases 1890-1905, Jutland's night, cases 1911-1918.
 
+**Ships that can't fight**
+
+| Note | What it covers | Scripts |
+|---|---|---|
+| [striking-colours.md](simulation/striking-colours.md) | Striking colours, abandoning and scuttling, 1890-1925: when and why a captain or admiral gave a ship up (her state, who was near, who decided), the signs of surrender and the delay to cease fire, abandoning and survivor shares by mode of loss, rescue and sea temperature, scuttling means and times (Scapa Flow's 20 big ships), the victor's prizes, tows, finishing and rescue; suggested rules and a yardstick for the command step (draft) | — |
+
+Its seven strands, with their full case tables and sources, are in [simulation/striking-colours/](simulation/striking-colours/): decisions 1890-1905, decisions 1911-1925, signs, law and the cease-fire, abandoning cases, getting off and survival, scuttling, the victor.
+
 **Ship design model**
 
 | Note | What it covers | Scripts |

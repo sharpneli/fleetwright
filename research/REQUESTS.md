@@ -12,23 +12,6 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: (comparison, recommendation, API notes, plan...)
 -->
 
-### 2026-10-31 - Striking colours, abandoning and scuttling, 1890-1925 first
-- Question: how ships that could no longer fight ended, as ranges by type and period (memory: a general system, not
-  replicas). (1) When a captain struck, abandoned or scuttled: what the ship had left (guns, speed, water, list, men),
-  who was near (the enemy closing, friends), and whether the captain or the admiral decided (Oryol and Nebogatov,
-  Rurik, Varyag, Mainz, Blücher, Wiesbaden, Lützow, Cöln, the Yalu's Chinese ships). (2) How a strike was shown and
-  read in the era (colours down, a flag of truce, engines stopped, guns trained fore and aft) and how long before the
-  enemy ceased fire; ships fired on after striking, or taken for struck when not. (3) Abandoning: how long from the
-  order to the boats and rafts away, by size and list; what share of the crew got off, and what share were picked up
-  (by the enemy, by friends, by daylight or dark, by sea temperature). (4) Scuttling: the means (sea cocks,
-  charges, torpedoes from a consort) and how long she took to go. (5) What the victor did with a struck ship: a prize
-  crew, a tow, sinking her, leaving her; and how long rescues held his ships.
-- Context / relevant files: `docs/battle/crew.md` decision 3 and "After this plan", `docs/battle/balance.md` BL5
-  (the user's answer 4: a stopped ship keeps a fight's end open until this exists),
-  `research/simulation/crews-under-fire.md` (§ on captains taking ships out). Wanted before planning the step.
-- Wanted output: cases in a table with sources, and suggested rules (the triggers, the timings, the survivors' shares)
-  by type and period.
-
 ### 2026-10-25 - Which shell at which target, 1890-1925
 - Question: how navies chose the shell by target, as ranges by navy and period. (1) The rules each navy gave its
   gunnery officers (AP, common/CPC, HE; by target type, range, armour), and how far the practice followed them
@@ -260,6 +243,22 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: a table of the ratios per ship, and a recommended range for `strength` and `knuckle`.
 
 ## Done
+
+### 2026-10-31 - Striking colours, abandoning and scuttling, 1890-1925 first
+- Done 2026-10-31 (draft): [simulation/striking-colours.md](simulation/striking-colours.md), its seven strands as
+  appendices in [simulation/striking-colours/](simulation/striking-colours/). 60 decisions and 77 sinkings, Yalu to the 1918 Baltic. A
+  ship was given up when she couldn't hurt the enemy, couldn't get away, and an enemy was in reach; casualties weren't
+  the trigger (7-50% of the crew). Two clocks: 5-50 min (median ~20) after the last gun in action, or 2-14 h nursing a
+  cripple, ended within 0-10 min of an enemy sighted. Land near: beach; sinking at sea: scuttle or abandon; strike rarely,
+  and only an admiral (or a ship with one aboard) gave up a sound ship (Nebogatov, Bedovy, Weihaiwei); Germans and
+  British 1914-18 almost never struck. Believed: every ensign down on a ship stopped and silent, fire ceasing in 0-5 min
+  (doubtful signs 10-30; a gun firing cancels). Saved: blew up 0-2%, fast capsize alone 2-20% or 50-93% with craft near,
+  slow with friends 80-100%, slow and left 0-5%; ~half dead in an hour at 10 C. Scuttling: charges 10-30 min, a consort's
+  torpedoes 2-30 (many failed), prepared valves at Scapa 56-340 min (median ~2 h 40). The victor took sound strikers as
+  prizes the same day, finished wrecks with colours up, left what he couldn't safely reach; rescue held him 10-30 min
+  under threat, 1-3 h without. Proposes triggers, doctrine fields (Strike, Deny, StandBy, Rescue, Trust), a "colours down"
+  seen fact, survivors in three stages, scuttling as openings in FloodModel, an end rule for BL5, and an 18-case yardstick
+  (all [EST]). Not reached: German written orders, prize-crew sizes, tow speeds, Kingston valve sizes, Russian sources.
 
 ### 2026-10-29 - Night fighting, 1890-1925 first
 - Done 2026-10-29 (draft): [simulation/night-fighting.md](simulation/night-fighting.md), its eight strands as appendices in
