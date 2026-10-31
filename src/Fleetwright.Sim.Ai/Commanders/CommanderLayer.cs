@@ -137,6 +137,8 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         public double Confidence;   // his side's matchup against all he holds
         public double TargetC;      // his side's matchup against the target's group
         public long LastAt;    // where the target was last held, a packed lat/lon (0: never)
+        public long LastMs;    // when it was last fixed there (its contact's last sighting)
+        public double LastMps; // and the speed it was held at, m/s
         public double CameT;   // the tonnage he came with (at his first think)
         public int LastTarget;
         public bool Met, Declined, BrokenOff, Searched, GaveUp;
@@ -436,7 +438,8 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
 
     /// <summary>How the balance stands (docs/battle/command.md 5.1g): his losses against doctrine's break off (for good once
     /// past it); and his side's matchup against all he holds: under doctrine's bar by
-    /// <see cref="SimSettings.CommanderMarginShare"/> and able to get away (faster than the enemy), he declines; over it by
+    /// <see cref="SimSettings.CommanderMarginShare"/> and able to get away (his units in touch faster than the enemy about
+    /// them, <see cref="CanGetAway"/>), he declines; over it by
     /// as much against what he holds and against what he declined (the gravest he's held since: a fleet seen in part later
     /// is still the fleet he declined), he accepts again; caught by what he can't beat, he fights. Holding nobody, he keeps
     /// what he decided: a decline lasts out of sight (he goes on home, and doesn't search back into the enemy he declined).</summary>
@@ -466,17 +469,38 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         double bar = Judge.Bars(0, side).Accept, margin = ctx.Settings.CommanderMarginShare, low = bar / (1 + margin), high = bar * (1 + margin);
         if (!s.Declined)
         {
-            if (r.Confidence < low && r.ACanRefuse(ctx.Settings))
+            if (r.Confidence < low && CanGetAway(ctx, side))
                 Decline(s, r.Confidence);
             return;
         }
         if (r.Confidence < s.DeclinedC)
             Decline(s, r.Confidence);   // graver than what he declined: it's what he remembers now
-        if (r.Confidence < high && !r.ACanRefuse(ctx.Settings))
+        if (r.Confidence < high && !CanGetAway(ctx, side))
             s.Declined = false;   // caught by what he can't beat and can't get away from: he fights
         else if (r.Confidence > high && Judge.Judge(ctx, 0, side, at, mine, s.DeclinedFrom).Confidence > high)
             s.Declined = false;   // the balance has turned against what he held and what he declined alike: he accepts
     }
+
+    /// <summary>Whether his side can get away (balance.md BL5, proposal 2): his top units in touch (an enemy in sight within
+    /// <see cref="SimSettings.FightCompareM"/>), the slowest of them, faster by <see cref="SimSettings.MatchupSpeedMarginKn"/>
+    /// than the enemy in sight about them, the slowest of those (<see cref="Matchup.Slowest"/>, as the matchup takes a
+    /// side's speed). Out of touch, a unit is free to go home anyway: a slow ship far from the fight doesn't pin the side.</summary>
+    bool CanGetAway(in AiContext ctx, byte side)
+    {
+        touchMine.Clear();
+        touchEnemy.Clear();
+        foreach (var t in tops)
+            if (t.Side == side && t.Role is not (UnitRole.None or UnitRole.Auxiliary) && InContact(ctx, t))
+            {
+                AddTop(ctx, t, touchMine);
+                Judge.AddNear(ctx.World, side, store[t.Slot].Position, ctx.Settings.FightCompareM, touchEnemy);
+            }
+        if (touchMine.Count == 0 || touchEnemy.Count == 0)
+            return true;
+        return Matchup.Slowest(touchMine.Entries) > Matchup.Slowest(touchEnemy.Entries) + ctx.Settings.MatchupSpeedMarginKn;
+    }
+
+    readonly MatchupSide touchMine = new(), touchEnemy = new();
 
     /// <summary>He declines (or goes on declining) the enemy now in <see cref="enemy"/>, and remembers it: a decline is
     /// judged again against it, not against the part of it he holds later.</summary>
@@ -603,9 +627,11 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
 
     /// <summary>The enemy lost: his main body searches about where he was last held (the picture's estimate now, while
     /// it holds him), once, on legs <see cref="SimSettings.LostSearchLegM"/> long; true once that search is over and found
-    /// nothing (he gives up).</summary>
+    /// nothing, or it's no longer worth making (<see cref="SearchWorth"/>): he gives up.</summary>
     bool Search(in AiContext ctx, SideState s, in Top main)
     {
+        if (s.LastMs > 0 && SearchWorth(ctx, s, main) < ctx.Settings.LostSearchMinChance)
+            return true;
         if (!s.Searched)
         {
             var pic = ctx.World.Sightings.Of(main.Side);
@@ -624,6 +650,39 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         }
         var (kind, state, _) = Tasks!.Of(main.Unit);
         return kind != TaskKind.Search || state is TaskState.Done or TaskState.Cant;
+    }
+
+    /// <summary>His search's chance of a find in the next <see cref="SimSettings.LostSearchAheadMs"/>, on what he knows
+    /// (docs/battle/balance.md BL5, the user's 2026-10-31): the enemy last held at his datum, at the speed he was held at,
+    /// since the last fix; his main body's line abreast as the search forms it (<see cref="SimSettings.SearchSpacingShare"/>
+    /// of the visibility apart), at its slowest ship's best speed (<see cref="SearchChance"/>).</summary>
+    double SearchWorth(in AiContext ctx, SideState s, in Top main)
+    {
+        var st = ctx.Settings;
+        double vis = ctx.World.Weather.At(store[main.Slot].Position, ctx.World.Time).VisibilityM;
+        int ships = 1;
+        double kn = store[main.Slot].Handling.Class.Motion.MaxSpeedKn;
+        if (main.Unit.IsGroup && groups.Get(main.Unit.GroupId) is { } g)
+        {
+            if (!g.IsForce)
+                ships = Math.Max(1, g.Line.Count);
+            groups.LineOffsets(g, line);
+            foreach (var (ship, _, _) in line)
+                if (store.SlotOf(ship) is int m and >= 0)
+                    kn = Math.Min(kn, store[m].Handling.Class.Motion.MaxSpeedKn);
+        }
+        double width = (ships - 1) * st.SearchSpacingShare * vis + 2 * vis;
+        return SearchChance(s.LastMps, (ctx.NowMs - s.LastMs) / 1000.0, st.LostSearchAheadMs / 1000.0, width, kn * Handling.MsPerKnot, vis);
+    }
+
+    /// <summary>The chance a search finds an enemy in the next <paramref name="aheadS"/> (Koopman's random search,
+    /// 1 - exp(-swept / area)): a line <paramref name="widthM"/> wide sweeping at <paramref name="searchMps"/>, against the
+    /// circle he could be in by then, out from the datum at <paramref name="quarryMps"/> since his last fix
+    /// <paramref name="sinceS"/> ago, from the visibility about it (where he could be when last seen).</summary>
+    public static double SearchChance(double quarryMps, double sinceS, double aheadS, double widthM, double searchMps, double visibilityM)
+    {
+        double r = visibilityM + quarryMps * (Math.Max(sinceS, 0) + aheadS);
+        return 1 - Math.Exp(-widthM * searchMps * aheadS / (Math.PI * r * r));
     }
 
     /// <summary>Retiring or gone home: every unit of his for home, unless it's going or there (a flotilla sent in to cover
@@ -680,7 +739,8 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         if (s.Target != 0 && pic!.IndexOf(s.Target) is int ti and >= 0)
         {
             var (lat, lon) = Earth.LatLon(pic[ti].Position);
-            (s.LastAt, s.LastTarget, s.Met, s.Searched) = (Earth.PackLatLon(lat, lon), s.Target, true, false);
+            (s.LastAt, s.LastMs, s.LastMps, s.LastTarget, s.Met, s.Searched) =
+                (Earth.PackLatLon(lat, lon), pic[ti].SeenMs, pic[ti].Velocity.Length, s.Target, true, false);
         }
     }
 
@@ -822,6 +882,8 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
                 h.Add(s.Confidence);
                 h.Add(s.TargetC);
                 h.Add(s.LastAt);
+                h.Add(s.LastMs);
+                h.Add(s.LastMps);
                 h.Add(s.LastTarget);
                 h.Add(s.CameT);
                 h.Add(s.Met);

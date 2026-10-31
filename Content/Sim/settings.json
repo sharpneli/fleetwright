@@ -350,6 +350,8 @@
   "CommanderAttackM": 25000,
   "CommanderMarginShare": 0.25,
   "LostSearchLegM": 20000,
+  "LostSearchAheadMs": 3600000,
+  "LostSearchMinChance": 0.1,
   "NightSkyCdM2": 3,
   "CommanderNightWaitS": 5400,
   "AggressionShift": {

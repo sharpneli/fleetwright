@@ -1067,8 +1067,15 @@ public sealed record SimSettings
     /// (and he can get away), and accepts it again once it's over the bar by this share: his margin either way.</summary>
     public double CommanderMarginShare { get; init; } = 0.25;
 
-    /// <summary>The enemy lost, his main body searches where he was last held on legs this long (m), and gives up after.</summary>
+    /// <summary>The enemy lost, his main body searches where he was last held on legs this long (m), and gives up after (or once it's no longer worth it: <see cref="LostSearchMinChance"/>).</summary>
     public double LostSearchLegM { get; init; } = 20_000;
+
+    /// <summary>The search for a lost enemy goes on while its chance of a find in the next this many ms is at least
+    /// <see cref="LostSearchMinChance"/> (docs/battle/balance.md BL5, the user's 2026-10-31: on what he knows): Koopman's
+    /// random search, his line's sweep against the circle the enemy could be in since he was last held, at the speed he was
+    /// held at. [EST] an hour, a share of 0.1.</summary>
+    public int LostSearchAheadMs { get; init; } = 3_600_000;
+    public double LostSearchMinChance { get; init; } = 0.1;
 
     /// <summary>It's night to the AI (doctrine's NightAction and NightAttack, night's close order; docs/battle/night.md Q12d)
     /// where the sky is darker than this, cd/m² (a clear sky's with the sun 6° down, civil twilight's end: 2.8 by

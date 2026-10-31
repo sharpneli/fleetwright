@@ -296,6 +296,26 @@ public class CommanderTests(ITestOutputHelper output)
         Assert.All(givens, g => Assert.Equal(TaskKind.Withdraw, g));
     }
 
+    /// <summary>His escape is judged on the units in touch (docs/battle/balance.md BL5, proposal 2): Heligoland's Germans were
+    /// pinned to the fight by a slow cruiser 60 km off. Here a dreadnought of his, as slow as the enemy, is far out of
+    /// touch: the battlecruisers in touch still decline.</summary>
+    [Fact]
+    public void A_slow_ship_out_of_touch_doesnt_keep_an_outmatched_side_in_the_fight()
+    {
+        var (w, ai) = Make();
+        int bb = Class(w, "dreadnought"), bc = Class(w, "lion");
+        var mine = Column(w, ai, bc, Earth.Position(Lat, Lon), 0, 2, side: 1);
+        Column(w, ai, bb, Off(270, 80_000), 0, 1, side: 1);   // his slow one, out of touch
+        Column(w, ai, bb, Off(90, 22_000), 0, 8, side: 0, kn: 12);
+        var (hla, hlo) = LatLon(Off(270, 150_000));
+        w.Apply(ai.Orders.Home(1, hla, hlo));
+        w.Apply(ai.Orders.Commander(1, CommanderMode.On));
+        Run(w, 3 * 60);
+        var phase = ai.Commanders.PhaseOf(1);
+        output.WriteLine($"phase {phase}, given {ai.Commanders.GivenOf(mine)}");
+        Assert.Equal((CommanderPhase.Retiring, CommanderReason.Outmatched), phase);
+    }
+
     [Fact]
     public void An_outmatched_side_that_cant_get_away_fights()
     {
@@ -314,10 +334,15 @@ public class CommanderTests(ITestOutputHelper output)
         Assert.NotEqual(TaskKind.Withdraw, ai.Commanders.GivenOf(mine).Given);
     }
 
-    [Fact]
-    public void A_side_that_loses_the_enemy_searches_where_it_was_then_gives_up_and_goes_home()
+    /// <summary>A fast cruiser lost: at the default bar (<see cref="SimSettings.LostSearchMinChance"/>) she's gone too fast
+    /// for a search to be worth it and he gives up at once (it took him six hours before balance.md BL5); at a low bar he
+    /// searches first, and gives up within a few hours.</summary>
+    [Theory]
+    [InlineData(0.1, false)]
+    [InlineData(0.02, true)]
+    public void A_side_that_loses_the_enemy_searches_where_it_was_then_gives_up_and_goes_home(double minChance, bool searches)
     {
-        var w = new World(Start, 3, Settings with { SearchLegM = 8_000 });
+        var w = new World(Start, 3, Settings with { SearchLegM = 8_000, LostSearchMinChance = minChance });
         var ai = new AiSystem(w);
         w.Apply(Command.SetWeather(12_000));
         int bb = Class(w, "dreadnought"), lc = Class(w, "light_cruiser");
@@ -341,10 +366,31 @@ public class CommanderTests(ITestOutputHelper output)
         }
         var given = ai.Commanders.GivenOf(mine);
         output.WriteLine($"phases {string.Join(" > ", seenPhases)}; given {string.Join(" > ", givens)}; at {w.Time}: {ai.Commanders.PhaseOf(1)}, given {given}");
-        Assert.Equal([CommanderPhase.Battle, CommanderPhase.Contact, CommanderPhase.Lost, CommanderPhase.Home],
+        Assert.Equal(searches ? [CommanderPhase.Battle, CommanderPhase.Contact, CommanderPhase.Lost, CommanderPhase.Home]
+                : [CommanderPhase.Battle, CommanderPhase.Contact, CommanderPhase.Home],
             seenPhases.Where(p => p is not (CommanderPhase.None or CommanderPhase.NoContact)).Distinct());
-        Assert.Equal([TaskKind.Intercept, TaskKind.Search, TaskKind.Withdraw], givens);
+        Assert.Equal(searches ? [TaskKind.Intercept, TaskKind.Search, TaskKind.Withdraw] : [TaskKind.Intercept, TaskKind.Withdraw], givens);
         Assert.Equal((TaskKind.Withdraw, CommanderWhy.GaveUp), (given.Given, given.Why));
+        Assert.True(w.Time < Start + 4 * 3_600_000L, "given up within hours");
+    }
+
+    /// <summary>A search's worth on what he knows (docs/battle/balance.md BL5, the user's 2026-10-31): the chance of a find
+    /// in the next hour falls the longer the enemy's been lost and the faster he was going, and rises with the searchers'
+    /// line. Heligoland's mist (5 km): five battlecruisers at 25 kn after cruisers held at 20 kn give up within the hour.</summary>
+    [Fact]
+    public void A_search_is_worth_less_the_longer_and_faster_the_enemy_has_been_gone()
+    {
+        const double Kn = 1852 / 3600.0, Hour = 3600;
+        double Chance(double quarryKn, double sinceS, int ships, double vis = 5_000) =>
+            CommanderLayer.SearchChance(quarryKn * Kn, sinceS, Hour, (ships - 1) * Settings.SearchSpacingShare * vis + 2 * vis, 25 * Kn, vis);
+        double fresh = Chance(20, 0, 5), half = Chance(20, Hour / 2, 5), hour = Chance(20, Hour, 5);
+        output.WriteLine($"20 kn lost: at once {fresh:P0}, half an hour on {half:P0}, an hour on {hour:P0}; 8 kn at once {Chance(8, 0, 5):P0}, " +
+                         $"an hour on {Chance(8, Hour, 5):P0}; one ship at once {Chance(20, 0, 1):P0}");
+        Assert.True(fresh > half && half > hour);
+        Assert.True(Chance(8, Hour, 5) > hour);
+        Assert.True(Chance(20, 0, 1) < fresh);
+        Assert.True(fresh >= Settings.LostSearchMinChance, "worth a search at first");
+        Assert.True(hour < Settings.LostSearchMinChance, "not an hour on");
     }
 
     [Fact]

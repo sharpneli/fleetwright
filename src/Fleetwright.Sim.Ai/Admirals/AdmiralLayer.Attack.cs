@@ -31,7 +31,9 @@ public enum AttackPhase : byte
 /// fighting the target, the boats on station about him); fires every boat's spread on one signal when the guide's run is
 /// within <see cref="SimSettings.TorpedoFireShare"/> of the fast range; runs from the target for
 /// <see cref="SimSettings.TorpedoTurnAwayMs"/>; and attacks again while any boat has torpedoes, then fights with its
-/// guns. Past doctrine's AttackBreakOffShare of its boats gone from its line it's beaten off, and runs. A boat alone, or a
+/// guns. Past doctrine's AttackBreakOffShare of its boats gone from its line it's beaten off, and runs; so does one taken
+/// up by doctrine whose matchup, judged again each think before the signal, falls under its bar by
+/// <see cref="SimSettings.CommanderMarginShare"/> (docs/battle/balance.md BL5). A boat alone, or a
 /// flotilla by doctrine's "alone", attacks as 4.6 has it, each captain on his own.</summary>
 public sealed partial class AdmiralLayer
 {
@@ -82,7 +84,12 @@ public sealed partial class AdmiralLayer
         var o = ctx.Orders;
         const OrderSource Up = OrderSource.Superior;
 
-        if (a.Attack != AttackPhase.None && g.Line.Count < a.AttackShips * (1 - doctrine.OfGroup(g, guide.Side, DoctrineField.AttackBreakOffShare)) - 1e-9)
+        // taken up by doctrine, it's judged again as it goes (docs/battle/balance.md BL5, proposal 1): under the bar by the
+        // commander's margin before the signal (what's come up since it began), it's given up as if beaten off; one ordered
+        // is seen through, whoever ordered it judged
+        bool outmatched = !a.AttackOrdered && a.Attack is AttackPhase.Gain or AttackPhase.Run && Judge.Near(ctx, guide, out var judged) &&
+                          judged.Confidence < Judge.Bars(guide.Entity, guide.Side).Accept / (1 + ctx.Settings.CommanderMarginShare);
+        if (a.Attack != AttackPhase.None && (outmatched || g.Line.Count < a.AttackShips * (1 - doctrine.OfGroup(g, guide.Side, DoctrineField.AttackBreakOffShare)) - 1e-9))
         {
             // beaten off: away from the target, the attack given up
             int from = a.AttackTarget;

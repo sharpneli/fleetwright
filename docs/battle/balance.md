@@ -350,7 +350,29 @@ and nobody giving up, to be read per scenario once proposals 3 and 4 are in. Los
 record's loser lost more in 26 of 44; Heligoland 3.6 v 19.0, Dogger 3.5 v 9.8, Tsushima 4.5 v 2.4, the Jutland 26.5 v
 59.3 (bl5's 47.0 before `ef344c41`'s torpedo chance: 4 seeds, to watch).
 
-Next: the user's word on the proposals, then build, then BL3 and BL4.
+**The user's answers (2026-10-31):**
+
+1. **Yes.** And with it a thought for later: "a real captain does not re-evaluate absolutely everything he's doing
+   every few seconds or whatnot. Captains have finite speed that they can think with. This is mostly for performance
+   reasons though." The captains and admirals think every second today (`CaptainPeriodMs`, `AdmiralPeriodMs`), every
+   judgement with them; a coarser interval for the judgements (the reflexes kept at the second) is "The thinking
+   interval" below.
+2. **As proposed.**
+3. **On what he knows, not where the enemy is:** "The ship can't know when the enemy is at home. That would transfer
+   information from the enemy to the searcher via some unknown means. It has to be based on what the captain knows."
+   So the search ends by search theory on his own picture (built below): the enemy lost at a datum, at the speed he was
+   last held at, could be anywhere in a circle that grows with the time since; the searchers sweep their line's width at
+   their speed; once the chance of a find in the next `LostSearchAheadMs` falls under `LostSearchMinChance`, he gives up.
+4. **No:** "Let's keep those in, and allow it making the results go off rather than monkeypatching a hack. We'd rather
+   do the striking colors/abandon ship next." A stopped ship keeps the end open; striking colours and abandoning ship
+   (crew.md's "after") come next, after proposals 1-3, then BL3 and BL4.
+
+**The thinking interval (later, the user's 2026-10-31):** each captain's and admiral's judgements (fight or run, the
+target, the matchup, an attack's worth) at a slower rate of their own, staggered so not every ship thinks the same
+second, the reflexes (the helm, station keeping, a torpedo track seen, the fire) at the second as now. For the AI's
+cost first; measured before it's planned.
+
+Next: proposals 1-3 built, then striking colours and abandoning ship, then BL3 and BL4.
 
 ## Decided (the user, 2026-10-30)
 

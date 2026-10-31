@@ -1,5 +1,6 @@
 using Fleetwright.Sim.Ai;
 using Fleetwright.Sim.Ai.Admirals;
+using Fleetwright.Sim.Ai.Captains;
 using Fleetwright.Sim.Ai.Commanders;
 using Fleetwright.Sim.Ai.Tasks;
 using Fleetwright.Sim.Core;
@@ -103,6 +104,41 @@ public class MatchupPlayTests(ITestOutputHelper output)
         Assert.Contains(AttackPhase.Run, seen);
         Assert.True(w.Torpedoes.Fired > 0, "the pack fired");
         _ = bb;
+    }
+
+    /// <summary>An attack taken up by doctrine is judged again as it goes (docs/battle/balance.md BL5, proposal 1: the
+    /// Heligoland boats pressed on as the British came up out of the mist): the pack begins on a lone battleship, her
+    /// squadron comes up while it gains its position, and it gives the attack up and runs before its signal.</summary>
+    [Fact]
+    public void A_pack_gives_its_attack_up_when_the_enemy_it_meets_grows_too_strong()
+    {
+        var (w, ai, ids) = Make(Settings with { HitsDoDamage = false });
+        w.Apply(ai.Orders.SideDoctrine(1, DoctrineField.TorpedoAttack, (double)TorpedoAttack.Together));
+        Column(w, ids["iron_duke"], Earth.Position(Lat, Lon), 180, 1, side: 0, kn: 15);
+        var pack = Column(w, ids["v25"], Off(90, 15_000), 270, 16, side: 1, kn: 25, Formation.LineAbreast);
+        w.Apply(ShipSystem.LookNow());
+        w.AdvanceTo(Start + 30_000);
+        w.Apply(ai.Orders.Fight(pack));
+        for (int t = 0; t < 10 * 60 && ai.Admirals.AttackOf(pack.GroupId).Phase == AttackPhase.None; t += 5)
+            w.AdvanceTo(w.Time + 5_000);
+        var began = ai.Admirals.AttackOf(pack.GroupId).Phase;
+        // her squadron comes up, in sight of the pack at once
+        var squadron = Column(w, ids["iron_duke"], Off(0, 4_000), 180, 6, side: 0, kn: 15);
+        w.Apply(ai.Orders.HoldFire(squadron));
+        w.Apply(ShipSystem.LookNow());
+        var seen = new List<AttackPhase>();
+        for (int t = 0; t < 2 * 60; t += 5)
+        {
+            w.AdvanceTo(w.Time + 5_000);
+            var phase = ai.Admirals.AttackOf(pack.GroupId).Phase;
+            if (seen.Count == 0 || seen[^1] != phase)
+                seen.Add(phase);
+        }
+        output.WriteLine($"began {began}; then {string.Join(" > ", seen)}; the pack {ai.Admirals.Of(pack.GroupId)}; torpedoes {w.Torpedoes.Fired}");
+        Assert.True(began is AttackPhase.Gain or AttackPhase.Run, "the attack began");
+        Assert.Equal(AttackPhase.None, ai.Admirals.AttackOf(pack.GroupId).Phase);
+        Assert.Equal(CaptainOrder.Run, ai.Admirals.Of(pack.GroupId).Order);
+        Assert.Equal(0, w.Torpedoes.Fired);
     }
 
     [Fact]

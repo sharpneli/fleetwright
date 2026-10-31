@@ -230,7 +230,8 @@ Seen in the AI's baseline after the detail passes (2026-10-20, docs/battle/comma
   encounter), as command.md's "The end" has it; ports hundreds of kilometres off no longer hold it open. The Jutland's
   seeds still out of time are fights going on at 04:00 (Britain chasing Germany into the Bight, every ship not home in
   an encounter), which no end should cut off.
-- [ ] A commander's search for a lost enemy can take most of a day: in `ScenarioEndTests.Sides_going_home_out_of_touch_end_it_done`
+- [x] (Fixed 2026-10-31, balance.md BL5 proposal 3: the search ends once its chance of a find in the next hour is under
+  0.1, on the datum, the time since and the speed he held the enemy at.) A commander's search for a lost enemy can take most of a day: in `ScenarioEndTests.Sides_going_home_out_of_touch_end_it_done`
   eight dreadnoughts lose two battlecruisers at 15:26 and give up at 08:23 the next morning (17 hours), and shorter
   `LostSearchLegM` (5 km against 20) barely changes it. The task steams to the datum (the picture's estimate when he
   lost them), forms line abreast at the weather's spacing, then runs the ladder; which part takes the hours isn't known.

@@ -930,7 +930,8 @@ public static class Matchup
         return all > 0 ? lost / all : 0;
     }
 
-    static double Slowest(ReadOnlySpan<MatchupEntry> side)
+    /// <summary>A side's speed, its slowest ship's (kn; 0 for none).</summary>
+    public static double Slowest(ReadOnlySpan<MatchupEntry> side)
     {
         double v = double.MaxValue;
         foreach (ref readonly var e in side)

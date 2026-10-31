@@ -796,7 +796,10 @@ doesn't hold the T.
    preset a third of the tonnage he came with; neutral never). Either way every unit goes home (Withdraw), a flotilla near
    the enemy sent in once to cover a break-off. *Lost:* the enemy met and no contact fresh: his main body searches about
    where he was last held (the picture's estimate) on `LostSearchLegM` (20 km) legs, and with nothing found he gives up:
-   every unit home. A new end, `EndReason.Done`: every side afloat has its aims, or has given up or broken off with every
+   every unit home. He gives up sooner once the search isn't worth it on what he knows (balance.md BL5, 2026-10-31):
+   Koopman's random search, his line's sweep in the next `LostSearchAheadMs` (an hour) against the circle the enemy could
+   be in, out from where he was last fixed at the speed he was held at, under `LostSearchMinChance` (0.1). His
+   escape when declining is judged on his units in touch and the enemy about them, not his whole side (proposal 2). A new end, `EndReason.Done`: every side afloat has its aims, or has given up or broken off with every
    ship afloat home.
 4. **Night.** Doctrine's `NightAction` (default preset "avoid"; neutral "accept") and `NightAttack` (1; neutral 0): with
    the enemy held and night at his main body (by the light since night.md Q12d, `AiNight`: the sky darker than
