@@ -278,6 +278,9 @@ The user's ask: Sverige class against Väinämöinen class, the class a design s
   rules the Kommodori, outmatched at the default bar, declined and got away in most seeds (no fight at all in the
   panel, 0 shells). Bold, he fights down to a third of the odds: Finland 4.2 of 9, Sweden 2.0 of 7 (8 seeds), 7 of 8
   seeds a fight. A fourth Väinämöinen with it was worse for Finland (6.4 v 1.6: a bigger bold force presses in harder).
+- **The haze down to 6 km** (2026-10-31, after the admirals' search lines): Sweden's admiral spreads his force to search
+  once he knows each squadron can outrun the Finns, so in 8 km he found them again and hunted them (Finland 5.9 v 1.8).
+  In 6 km, bold: Finland 4.8 of 9, Sweden 2.9 of 7 (15,600 t, more than a Sverige), every seed a fight.
 - **Sizes:** the generator makes Sverige 10,600 t (history 7,100) and Väinämöinen 2,600 t (3,900); both read as
   cruisers to the sim (`Sightings.TypeOf`: under 14,000 t full). The destroyers are about 3x history (Wrangel 1,470 t at
   32 kn, the boats 890 t at 28 kn), as in the destroyer crunch; 34 kn made Wrangel 1,850 t.

@@ -539,20 +539,25 @@ public sealed class GroupSystem : IWorldSystem
 
     /// <summary>A group's whole line into a shape (<see cref="LineShape"/>): in columns, the columns as far apart as the
     /// longest is long (the era's rule: each turning in succession through 8 points, they make one line); abreast, every ship a place
-    /// at the widest spacing of its squadrons.</summary>
-    void Shape(Group g, LineShape shape)
+    /// at the widest spacing of its squadrons, or at <paramref name="spacingM"/> if one's given (every squadron's own
+    /// spacing set to it: a scouting line).</summary>
+    void Shape(Group g, LineShape shape, double spacingM = 0)
     {
-        double column = shape == LineShape.Columns ? Longest(g) : 0, ship = shape == LineShape.Abreast ? Widest(g) : 0;
-        Shape(g, shape, column, ship);
+        bool given = shape == LineShape.Abreast && spacingM > 0;
+        double column = shape == LineShape.Columns ? Longest(g) : 0, ship = shape == LineShape.Abreast ? given ? spacingM : Widest(g) : 0;
+        Shape(g, shape, column, ship, given);
     }
 
-    /// <summary><see cref="Shape(Group, LineShape)"/> down the tree: a squadron keeps its spacing; a force in one line its
-    /// first squadron's, in columns or abreast as many of the unit's slots as its widest member takes.</summary>
-    void Shape(Group g, LineShape shape, double column, double ship)
+    /// <summary><see cref="Shape(Group, LineShape, double)"/> down the tree: a squadron keeps its spacing (abreast, takes
+    /// the one given); a force in one line its first squadron's, in columns or abreast as many of the unit's slots as its
+    /// widest member takes.</summary>
+    void Shape(Group g, LineShape shape, double column, double ship, bool given)
     {
         if (!g.IsForce)
         {
             (g.Formation, g.BearingDeg) = (shape == LineShape.Abreast ? Formation.LineAbreast : Formation.Column, 0);
+            if (given)
+                g.SpacingM = Spacing(ship);
             return;
         }
         double spacing;
@@ -574,7 +579,7 @@ public sealed class GroupSystem : IWorldSystem
         (g.Formation, g.SpacingM, g.BearingDeg) = (shape == LineShape.OneLine ? Formation.Column : Formation.LineAbreast, Spacing(spacing), 0);
         foreach (int m in g.Line)
             if (Get(m) is { } sub)
-                Shape(sub, shape, column, ship);
+                Shape(sub, shape, column, ship, given);
     }
 
     /// <summary>How many places abreast a group takes in columns (a squadron one) or abreast (a squadron one a ship): its
@@ -717,8 +722,9 @@ public sealed class GroupSystem : IWorldSystem
     public static Command Subordinate(int groupId, int underGroupId) => new(Id, (ushort)GroupCommand.Subordinate, A: groupId, Y: underGroupId);
 
     /// <summary>A group's whole line, down its tree, into a <see cref="LineShape"/>: each group's formation and spacing
-    /// (<see cref="Shape(Group, LineShape)"/>). Its orders stand.</summary>
-    public static Command Shape(int groupId, LineShape shape) => new(Id, (ushort)GroupCommand.Shape, A: groupId, B: (int)shape);
+    /// (<see cref="Shape(Group, LineShape, double)"/>); abreast, at a spacing a ship if one's given. Its orders stand.</summary>
+    public static Command Shape(int groupId, LineShape shape, double spacingM = 0) =>
+        new(Id, (ushort)GroupCommand.Shape, A: groupId, B: (int)shape, X: spacingM);
 
     /// <summary>A group gone: its members are free (a force's groups stay squadrons and forces of their own), and it
     /// leaves its force.</summary>
@@ -815,7 +821,7 @@ public sealed class GroupSystem : IWorldSystem
                 break;
             case GroupCommand.Shape:
                 if (Get((int)c.A) is { } shaped)
-                    Shape(shaped, (LineShape)c.B);
+                    Shape(shaped, (LineShape)c.B, c.X);
                 break;
             case GroupCommand.TurnTogether:
                 if (Get((int)c.A) is { } turned)

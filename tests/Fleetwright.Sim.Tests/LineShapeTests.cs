@@ -117,6 +117,23 @@ public class LineShapeTests(ITestOutputHelper output)
         Assert.Equal(Formation.LineAbreast, w.Groups.Get(w.Groups.Get(top.Line[0])!.Line[0])!.Formation);
     }
 
+    /// <summary>Abreast at a spacing given (a search's scouting line, docs/battle/balance.md BL5): all 24 ships one line,
+    /// each that far from the next, however deep the fleet nests.</summary>
+    [Fact]
+    public void Abreast_at_a_spacing_is_one_scouting_line_of_every_ship()
+    {
+        var (w, _, fleet) = Make();
+        w.Apply(GroupSystem.Shape(fleet, LineShape.Abreast, 7_200));
+        var line = new List<(int Ship, double AsternM, double AbeamM)>();
+        w.Groups.LineOffsets(w.Groups.Get(fleet)!, line);
+        var abeam = line.Select(l => l.AbeamM).OrderBy(x => x).ToList();
+        output.WriteLine($"abeam {string.Join(", ", abeam.Select(x => $"{x / 1000:F1}"))} km; astern {line.Max(l => Math.Abs(l.AsternM)):F0} m at most");
+        Assert.Equal(24, abeam.Count);
+        for (int i = 1; i < abeam.Count; i++)
+            Assert.Equal(7_200, abeam[i] - abeam[i - 1], 1e-6);
+        Assert.All(line, l => Assert.Equal(0, l.AsternM, 1e-6));
+    }
+
     [Fact]
     public void Six_columns_form_one_line_and_back_by_one_order_each()
     {

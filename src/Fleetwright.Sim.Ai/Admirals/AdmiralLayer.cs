@@ -172,7 +172,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
                 ctx.Issue(GroupSystem.SetFormation(g.GroupId, (Formation)c.A, c.X, c.Y));   // the line keeps its orders
                 return;
             case AiCommand.Shape:
-                ctx.Issue(GroupSystem.Shape(g.GroupId, (LineShape)c.A));   // the line keeps its orders, its groups making for their places
+                ctx.Issue(GroupSystem.Shape(g.GroupId, (LineShape)c.A, c.X));   // the line keeps its orders, its groups making for their places
                 a.FormingMs = g.IsForce ? ctx.NowMs : 0;
                 return;
             case AiCommand.Conn when c.X == 0:

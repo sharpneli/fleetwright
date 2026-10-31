@@ -483,10 +483,9 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
 
     /// <summary>Whether his side can get away (balance.md BL5, proposal 2): his top units in touch (an enemy group he holds,
     /// in sight or not, within <see cref="SimSettings.FightCompareM"/>: Åland's haze hid the Swedes from the Finnish guide
-    /// for a moment, and touch judged by sight let 15-kn ships "get away" from a 22-kn line), the slowest of them, faster by
-    /// <see cref="SimSettings.MatchupSpeedMarginKn"/> than those groups' ships, the slowest of those that can chase (as the
-    /// matchup takes a side's speed, <see cref="Matchup.Slowest"/>, less any seen stopped). Out of touch, a unit is free to
-    /// go home anyway: a slow ship far from the fight doesn't pin the side.</summary>
+    /// for a moment, and touch judged by sight let 15-kn ships "get away" from a 22-kn line), outrunning those groups'
+    /// ships (<see cref="MatchupJudge.Outruns"/>). Out of touch, a unit is free to go home anyway: a slow ship far from the
+    /// fight doesn't pin the side.</summary>
     bool CanGetAway(in AiContext ctx, byte side, ReadOnlySpan<HeldGroup> held)
     {
         touchMine.Clear();
@@ -507,14 +506,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
             if (touch)
                 AddTop(ctx, t, touchMine);
         }
-        // the enemy who can chase: one seen stopped can't (her speed 0 in the matchup) and doesn't set his
-        double chase = double.MaxValue;
-        foreach (ref readonly var e in touchEnemy.Entries)
-            if (e.Count > 0 && e.SpeedKn > 0)
-                chase = Math.Min(chase, e.SpeedKn);
-        if (touchMine.Count == 0 || chase == double.MaxValue)
-            return true;
-        return Matchup.Slowest(touchMine.Entries) > chase + ctx.Settings.MatchupSpeedMarginKn;
+        return MatchupJudge.Outruns(touchMine, touchEnemy, ctx.Settings);
     }
 
     readonly MatchupSide touchMine = new(), touchEnemy = new();
@@ -671,18 +663,17 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
 
     /// <summary>His search's chance of a find in the next <see cref="SimSettings.LostSearchAheadMs"/>, on what he knows
     /// (docs/battle/balance.md BL5, the user's 2026-10-31): the enemy last held at his datum, at the speed he was held at,
-    /// since the last fix; his main body's line abreast as the search forms it (<see cref="SimSettings.SearchSpacingShare"/>
-    /// of the visibility apart), at its slowest ship's best speed (<see cref="SearchChance"/>).</summary>
+    /// since the last fix; his main body's line as its admiral would search with it (<see cref="AdmiralLayer.SearchLine"/>:
+    /// spread <see cref="SimSettings.SearchSpacingShare"/> of the visibility apart, or closed up), at its slowest ship's
+    /// best speed (<see cref="SearchChance"/>).</summary>
     double SearchWorth(in AiContext ctx, SideState s, in Top main)
     {
         var st = ctx.Settings;
         double vis = ctx.World.Weather.At(store[main.Slot].Position, ctx.World.Time).VisibilityM;
-        int ships = 1;
+        int ships = Tasks!.Admirals!.SearchLine(ctx, main.Unit);   // spread or closed up, as its admiral would search
         double kn = store[main.Slot].Handling.Class.Motion.MaxSpeedKn;
         if (main.Unit.IsGroup && groups.Get(main.Unit.GroupId) is { } g)
         {
-            if (!g.IsForce)
-                ships = Math.Max(1, g.Line.Count);
             groups.LineOffsets(g, line);
             foreach (var (ship, _, _) in line)
                 if (store.SlotOf(ship) is int m and >= 0)

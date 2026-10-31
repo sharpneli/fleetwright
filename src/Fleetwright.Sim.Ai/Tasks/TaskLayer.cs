@@ -565,7 +565,8 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
     }
 
     /// <summary>Search: a group spread abreast <see cref="SimSettings.SearchSpacingShare"/> of the visibility apart (in
-    /// sight of each other, a scouting line), to the point and then a ladder about it (legs <see cref="Task.DistanceM"/>
+    /// sight of each other, a scouting line; a force's whole line too), if its admiral judges the risk worth it
+    /// (<see cref="AdmiralLayer.SearchLine"/>), else closed up; to the point and then a ladder about it (legs <see cref="Task.DistanceM"/>
     /// long, on the course it came in on, its tracks a line's width apart); done on an enemy in sight, or at its end.</summary>
     void Search(in AiContext ctx, ref Task t, Unit u, ShipState guide)
     {
@@ -584,12 +585,10 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
             return;
         }
         double spacing = s.SearchSpacingShare * ctx.World.Weather.At(guide.Position, ctx.World.Time).VisibilityM;
-        int ships = 1;
-        if (u.IsGroup && groups.Get(u.GroupId) is { IsForce: false } g)
-        {
-            ships = Math.Max(1, g.Line.Count);
-            ctx.Issue(o.Form(u, Formation.LineAbreast, spacing, 0, OrderSource.Task));
-        }
+        // spread abreast, a squadron's or a force's whole line, if its admiral judges the risk worth it; else closed up
+        int ships = Admirals!.SearchLine(ctx, u);
+        if (ships > 1)
+            ctx.Issue(o.Shape(u, LineShape.Abreast, OrderSource.Task, spacing));
         var (lat, lon) = Earth.UnpackLatLon(t.Point);
         var datum = Earth.Position(lat, lon);
         double axis = Earth.Bearing(guide.Position, datum);

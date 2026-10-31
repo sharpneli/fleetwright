@@ -310,8 +310,10 @@ public readonly struct UnitOrders(byte system, bool hand = false)
     public Command Form(Unit u, Formation formation, double spacingM, double bearingDeg = 0, OrderSource source = OrderSource.Player) =>
         Make(AiCommand.Form, u, source, a: (long)formation, x: spacingM, y: bearingDeg);
 
-    /// <summary>A unit's whole line into one line ahead, columns or abreast, however deep it nests.</summary>
-    public Command Shape(Unit u, LineShape shape, OrderSource source = OrderSource.Player) => Make(AiCommand.Shape, u, source, a: (long)shape);
+    /// <summary>A unit's whole line into one line ahead, columns or abreast, however deep it nests; abreast, at a spacing a
+    /// ship if one's given (0: its squadrons' widest).</summary>
+    public Command Shape(Unit u, LineShape shape, OrderSource source = OrderSource.Player, double spacingM = 0) =>
+        Make(AiCommand.Shape, u, source, a: (long)shape, x: spacingM);
 
     /// <summary>A unit's main guns load a kind, held against the captains' choice (null: by target, theirs again).</summary>
     public Command Shells(Unit u, Ships.ShellKind? kind, OrderSource source = OrderSource.Player) =>

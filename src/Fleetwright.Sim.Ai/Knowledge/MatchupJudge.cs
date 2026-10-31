@@ -200,6 +200,18 @@ public sealed class MatchupJudge(GroupSystem groups, SeenContacts seen, Doctrine
         return Matchup.Judge(a.Entries, b.Entries, share, share, ctx.Settings, light);
     }
 
+    /// <summary>Whether one side can get away from another: its slowest ship faster by
+    /// <see cref="SimSettings.MatchupSpeedMarginKn"/> than the other's slowest that can chase (as the matchup takes a side's
+    /// speed, <see cref="Matchup.Slowest"/>, less any seen stopped). True with nobody to chase, or nobody to get away.</summary>
+    public static bool Outruns(MatchupSide mine, MatchupSide enemy, SimSettings s)
+    {
+        double chase = double.MaxValue;
+        foreach (ref readonly var e in enemy.Entries)
+            if (e.Count > 0 && e.SpeedKn > 0)
+                chase = Math.Min(chase, e.SpeedKn);
+        return mine.Count == 0 || chase == double.MaxValue || Matchup.Slowest(mine.Entries) > chase + s.MatchupSpeedMarginKn;
+    }
+
     /// <summary>The bar a unit fights down to (1 / doctrine's outgunned ratio), and the one it seeks a fight at (its seek
     /// ratio): a ship's doctrine, else its side's (entity 0).</summary>
     public (double Accept, double Seek) Bars(int entity, byte side)

@@ -2,6 +2,7 @@ using Fleetwright.Sim.Ai;
 using Fleetwright.Sim.Ai.Admirals;
 using Fleetwright.Sim.Ai.Captains;
 using Fleetwright.Sim.Ai.Commanders;
+using Fleetwright.Sim.Ai.Knowledge;
 using Fleetwright.Sim.Ai.Tasks;
 using Fleetwright.Sim.Core;
 using Xunit.Abstractions;
@@ -139,6 +140,34 @@ public class MatchupPlayTests(ITestOutputHelper output)
         Assert.Equal(AttackPhase.None, ai.Admirals.AttackOf(pack.GroupId).Phase);
         Assert.Equal(CaptainOrder.Run, ai.Admirals.Of(pack.GroupId).Order);
         Assert.Equal(0, w.Torpedoes.Fired);
+    }
+
+    /// <summary>A search's line is its admiral's call (docs/battle/balance.md BL5, the user's 2026-10-31): a force spreads
+    /// every ship abreast while nothing's known out there, or while each squadron could get away from what is (light
+    /// cruisers from a battle squadron); slow battleships that a faster enemy force could catch and beat one squadron at
+    /// a time search closed up.</summary>
+    [Theory]
+    [InlineData("arethusa", null, true)]
+    [InlineData("arethusa", "iron_duke", true)]
+    [InlineData("iron_duke", "derfflinger", false)]
+    public void A_force_spreads_to_search_when_its_admiral_judges_the_risk_worth_it(string own, string? known, bool spreads)
+    {
+        var (w, ai, ids) = Make();
+        var a = Column(w, ids[own], Earth.Position(Lat, Lon), 0, 2, side: 0);
+        var b = Column(w, ids[own], Off(90, 3_000), 0, 2, side: 0);
+        w.Apply(GroupSystem.Form(a.GroupId, Formation.LineAbreast, 3_000));
+        int force = w.Groups.Get(a.GroupId)!.Parent;
+        w.Apply(GroupSystem.Enter(force, b.GroupId));
+        if (known != null)
+        {
+            var enemy = Column(w, ids[known], Off(0, 18_000), 180, 4, side: 1);
+            w.Apply(ai.Orders.HoldFire(enemy));
+        }
+        w.Apply(ShipSystem.LookNow());
+        w.AdvanceTo(Start + 30_000);
+        int line = ai.Admirals.SearchLine(new AiContext(w, new NavyPicture(w), ai.Id), Unit.Group(force));
+        output.WriteLine($"{own} x4 in two squadrons, {known ?? "nothing"} known: searches {line} abreast");
+        Assert.Equal(spreads ? 4 : 1, line);
     }
 
     [Fact]
