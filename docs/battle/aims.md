@@ -14,7 +14,7 @@ enemy"); (3) the aims come now, before the balance round's BL3 and BL4.
 
 | Step | State | Left |
 |---|---|---|
-| A0 Investigation | started 2026-10-31 | |
+| A0 Investigation | done 2026-10-31 ("A0: what the code says") | |
 | A1 Aims as data, their state, the judge | not started | |
 | A2 Reach: the side that wants a place | not started | |
 | A3 Stop: the side that wants to prevent it | not started | |
@@ -128,6 +128,44 @@ Per `docs/ui-language.md`, drawn with `Ui/Pieces.cs`:
   marks are.
 - The launch screen lists each side's aims under its character; the result says each aim Met or Lost, with its
   numbers.
+
+## A0: what the code says (2026-10-31)
+
+- **The AI doesn't know the aims.** Only the judge reads them (`Scenario.AimsOf`, `ScenarioEnd`). They go to the AI
+  as commands at load, as homes and doctrine do (`ScenarioLoader.Apply`, `AiCommand.Home`), so a replay carries them:
+  one command an aim (kind, the enemy side it's about, zone packed as a lat/lon, radius, of, stay, tonnes, weight) and
+  one a named ship. The AI keeps them (`Commanders/Aims.cs` becomes the book: the aims by side, each ship's arrival,
+  each aim's state and score), hashed and filled into the snapshot, so the HUD reads live state and the judge reads
+  the AI's book (one implementation; a judge with no AI knows destroy everyone only).
+- **Named ships are ships**, resolved at load from the unit's ships, never a group id: units divide and merge, and a
+  divided convoy is still the convoy (`no-provenance-special-cases`).
+- **Homes are a side's** (`AiSystem.homes`), read in three places: the captain going home and the cripple's escape
+  (`CaptainLayer.Fire.cs` `HomeThink`, `Escape`) and the task layer's Withdraw home (`TaskLayer.cs`). One
+  `HomeOf(side, ship)` replaces them: the zone of the first open Reach naming her, else her side's.
+- **The main body** is the unit with the most capital tonnage, auxiliaries and fallen-out units skipped
+  (`CommanderLayer.Command`); the reaching units go first in that choice (auxiliaries too, a convoy being them).
+  Heavy units **join** a main body that's a group, putting battleships in its line: about a convoy they **cover** it
+  instead, as they already do a ship alone. The balance leaves auxiliaries out, so a convoy's strength is its escort's.
+- **Declining** sends every unit home (`Retire`). With an open Reach first, the reaching units' home is the zone, so
+  they carry on; the others **cover** the reaching units rather than leave them. The search after a lost contact
+  (`Search`, then given up) is skipped for a Reach side; a raider searches its hunting ground rather than where the
+  enemy was last held.
+- **Stop:** the groups go gravest first (`Assign`); a group holding the kind the enemy's aim needs (its named ships'
+  kind as the picture types them; merchants for Sink) goes first. With no contact the main body searches ahead on its
+  course (`IdleTask`); for Stop it searches across the line to the zone.
+- **Targets:** a battery's pick scores each contact by range to come, the fire on her, her size (secondaries only),
+  how done for and whether she still matters (`Pick`). The wanted kind divides that score by a setting, for the main
+  battery and the rest alike.
+- **Nothing unarmed runs.** Doctrine's Engage is Fight or CarryOn; a merchant on her route steams on. The cripple's
+  `Escape` (away from every enemy held near, weighted by range, bent toward home) is the course to reuse: a ship with
+  no main battery and an enemy warship held within `FightCompareM` steers it, and goes back to her route or task once
+  clear (`TaskResumeS`). Whether striking's "hopeless" reads right for an unarmed ship is A4's check, and so is the
+  matchup against an enemy with no guns (`Matchup.cs`: "0 with no guns").
+- **The UI:** the HUD's aim text is the scenario's (`MapScene.AimsText`); the result has `AimsMet` only
+  (`SideResult`, `SideEnd`, `MapScene.Result.cs`, `ScenarioPlay`). Both take the book's states, scores and progress.
+  The launch screen doesn't show aims yet.
+- **No scenario changes ending.** Every shipped file is destroy everyone, and the judge's Decided reads the same for
+  it.
 
 ## Steps
 
