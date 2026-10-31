@@ -12,6 +12,23 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: (comparison, recommendation, API notes, plan...)
 -->
 
+### 2026-10-31 - Striking colours, abandoning and scuttling, 1890-1925 first
+- Question: how ships that could no longer fight ended, as ranges by type and period (memory: a general system, not
+  replicas). (1) When a captain struck, abandoned or scuttled: what the ship had left (guns, speed, water, list, men),
+  who was near (the enemy closing, friends), and whether the captain or the admiral decided (Oryol and Nebogatov,
+  Rurik, Varyag, Mainz, Blücher, Wiesbaden, Lützow, Cöln, the Yalu's Chinese ships). (2) How a strike was shown and
+  read in the era (colours down, a flag of truce, engines stopped, guns trained fore and aft) and how long before the
+  enemy ceased fire; ships fired on after striking, or taken for struck when not. (3) Abandoning: how long from the
+  order to the boats and rafts away, by size and list; what share of the crew got off, and what share were picked up
+  (by the enemy, by friends, by daylight or dark, by sea temperature). (4) Scuttling: the means (sea cocks,
+  charges, torpedoes from a consort) and how long she took to go. (5) What the victor did with a struck ship: a prize
+  crew, a tow, sinking her, leaving her; and how long rescues held his ships.
+- Context / relevant files: `docs/battle/crew.md` decision 3 and "After this plan", `docs/battle/balance.md` BL5
+  (the user's answer 4: a stopped ship keeps a fight's end open until this exists),
+  `research/simulation/crews-under-fire.md` (§ on captains taking ships out). Wanted before planning the step.
+- Wanted output: cases in a table with sources, and suggested rules (the triggers, the timings, the survivors' shares)
+  by type and period.
+
 ### 2026-10-25 - Which shell at which target, 1890-1925
 - Question: how navies chose the shell by target, as ranges by navy and period. (1) The rules each navy gave its
   gunnery officers (AP, common/CPC, HE; by target type, range, armour), and how far the practice followed them
