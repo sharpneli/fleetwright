@@ -278,10 +278,9 @@ public sealed class ScenarioEnd
             var (phase, reason) = ai!.Commanders.PhaseOf(side);
             if (!(AllDecided(side) || phase == CommanderPhase.Home || reason is CommanderReason.BrokenOff or CommanderReason.Outmatched))
                 return false;
-            var at = ai.HomeOf(side);
             for (int slot = 0; slot < store.Slots; slot++)
                 if (store.IsAlive(slot) && store[slot].Side == side && Aims.Afloat(store, slot) && world.Encounters.Of(slot, store[slot].Entity) != 0 &&
-                    !(at is { } h && Earth.Distance(store[slot].Position, h) <= home))
+                    !(ai.Homes.Of(side, store[slot].Entity, home) is var (h, there) && Earth.Distance(store[slot].Position, h) <= there))
                     return false;
         }
         return true;

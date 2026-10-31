@@ -30,7 +30,8 @@ public class AimsTests(ITestOutputHelper output)
     /// <summary>A zone <paramref name="westKm"/> west of 4° E on 56.5° N.</summary>
     static string West(double westKm, double km) => $$"""{ "at": [56.5, {{4.0 - westKm / KmPerLonDeg:R}}], "km": {{km:R}} }""";
 
-    static (World W, ScenarioEnd End, ScenarioStart Start, AiSystem Ai) Play(string json, Action<World, ScenarioStart>? first = null, double hours = 4)
+    static (World W, ScenarioEnd End, ScenarioStart Start, AiSystem Ai) Play(string json, Action<World, ScenarioStart>? first = null, double hours = 4,
+        Action<World, ScenarioStart, AiSystem>? minute = null)
     {
         var s = Scenario.Parse(json);
         var w = new World(s.Start, s.Seed, Settings);
@@ -40,7 +41,10 @@ public class AimsTests(ITestOutputHelper output)
         var end = new ScenarioEnd(s, w, ai);
         first?.Invoke(w, start);
         while (!end.Check() && w.Time.Ms - s.Start.Ms < hours * 3_600_000)
+        {
             w.AdvanceTo(w.Time + 60_000);
+            minute?.Invoke(w, start, ai);
+        }
         return (w, end, start, ai);
     }
 
@@ -164,5 +168,94 @@ public class AimsTests(ITestOutputHelper output)
         w.AdvanceTo(w.Time + 60_000);
         Assert.Equal(AimState.Met, end.Reading(0, 0).State);
         Assert.Equal(AimState.Lost, end.Reading(1, 0).State);
+    }
+
+    // --- A2: the side that wants a place ---
+
+    /// <summary>Two tramps steaming north at 8 kn, a Reach 40 km west, no route: the commander sends them there (GoTo),
+    /// and in the zone they stop (Withdraw's end) and count as arrived.</summary>
+    [Fact]
+    public void An_unopposed_convoy_is_sent_to_its_zone_and_stops_there()
+    {
+        string convoy = """
+            , { "name": "Convoy", "side": 0, "at": [56.3, 4.0], "course": 0, "kn": 8, "spacing": 800,
+                "ships": [ { "design": "tramp_1914", "names": ["One", "Two"] } ] }
+            """;
+        var zone = $$"""{ "at": [56.3, {{4.0 - 40 / KmPerLonDeg:R}}], "km": 4 }""";
+        var (w, end, start, ai) = Play(Runner($$""" "Britain": { "reach": "Convoy", "zone": {{zone}} } """, convoy, until: "1916-05-31T19:00"), hours: 5);
+        var store = w.Ships.Store;
+        foreach (var name in new[] { "One", "Two" })
+        {
+            var x = store[store.SlotOf(Named(start, name))];
+            output.WriteLine($"{name}: arrived {ai.Aims.HasArrived(0, 0, x.Entity)}, {x.SpeedOrderKn:0.0} kn ordered");
+            Assert.True(ai.Aims.HasArrived(0, 0, x.Entity));
+            Assert.InRange(x.SpeedOrderKn, 0, 1);   // stopped, the second keeping station on the first
+        }
+        Assert.Equal(AimState.Met, end.Reading(0, 0).State);
+        Assert.Contains(end.Timeline, l => l.Kind == PlayEvent.Ordered && l.Side == 0 && (CommanderWhy)(l.Other % 256) == CommanderWhy.Reach);
+    }
+
+    /// <summary>A light cruiser (29 kn) for a zone 60 km west, a slower, stronger German dreadnought 12 km off her beam:
+    /// her commander declines it, and she still makes for her zone (it's her home now) and gets there.</summary>
+    [Fact]
+    public void A_breaker_that_declines_a_stronger_enemy_still_makes_for_her_zone()
+    {
+        string json = $$"""
+            { "scenario": 1, "start": "1916-05-31T14:00", "seed": 3, "sides": ["Britain", "Germany"], "until": "1916-05-31T20:00",
+              "aims": { "Britain": { "reach": "Runner", "zone": {{West(60, 4)}} }, "Germany": { "stop": "Britain" } },
+              "units": [
+                { "name": "Runner", "side": 0, "at": [56.5, 4.0], "course": 270, "kn": 20, "ships": [ { "design": "light_cruiser", "name": "West" } ] },
+                { "name": "Battle", "side": 1, "at": [56.61, 4.0], "course": 270, "kn": 18, "ships": [ { "design": "dreadnought", "names": ["D1", "D2"] } ] } ] }
+            """;
+        var (w, end, start, ai) = Play(json, hours: 6, minute: (w, start, ai) =>
+        {
+            if ((w.Time.Ms - T0) % 1_200_000 == 0 && w.Ships.Store.SlotOf(Named(start, "West")) is int slot and >= 0)
+                output.WriteLine($"{(w.Time.Ms - T0) / 60_000,4} min West at {Earth.LatLon(w.Ships.Store[slot].Position)}, {w.Ships.Store[slot].SpeedOrderKn:0} kn, " +
+                                 $"task {ai.Tasks.Of(Unit.Ship(Named(start, "West")))}, {ai.Commanders.PhaseOf(0)}");
+        });
+        foreach (var l in end.Timeline.Where(l => l.Kind is PlayEvent.Ordered or PlayEvent.Phase && l.Side == 0).Take(12))
+            output.WriteLine($"{(l.Ms - T0) / 60_000.0,5:0} min  {l.Kind} {l.Other}");
+        Assert.True(Aims.Afloat(w.Ships.Store, w.Ships.Store.SlotOf(Named(start, "West"))));
+        Assert.Equal(AimState.Met, end.Reading(0, 0).State);
+        Assert.Contains(end.Timeline, l => l.Kind == PlayEvent.Ordered && l.Side == 0 && (CommanderWhy)(l.Other % 256) == CommanderWhy.Outmatched);
+    }
+
+    /// <summary>A convoy for a zone 40 km west with a cruiser by it, and the cruiser's own way home 50 km north as a
+    /// second aim: the cruiser keeps by the convoy until it's in, then makes for home, and the tramps stay at the beach.</summary>
+    [Fact]
+    public void Once_the_convoy_is_in_its_escort_makes_for_home_and_the_convoy_stays()
+    {
+        string units = """
+            , { "name": "Convoy", "side": 0, "at": [56.3, 4.0], "course": 270, "kn": 8, "spacing": 800,
+                "ships": [ { "design": "tramp_1914", "names": ["One", "Two"] } ] }
+            , { "name": "Escort", "side": 0, "at": [56.33, 4.0], "course": 270, "kn": 8, "ships": [ { "design": "light_cruiser", "name": "Guard" } ] }
+            """;
+        var beach = $$"""{ "at": [56.3, {{4.0 - 40 / KmPerLonDeg:R}}], "km": 4 }""";
+        var home = """{ "at": [56.75, 3.35], "km": 4 }""";
+        var (w, end, start, ai) = Play(Runner($$"""
+            "Britain": [ { "reach": "Convoy", "zone": {{beach}} }, { "reach": "Escort", "zone": {{home}}, "weight": 0.5 } ]
+            """, units, until: "1916-05-31T23:00"), hours: 9, minute: (w, start, ai) =>
+        {
+            if ((w.Time.Ms - T0) % 1_200_000 != 0)
+                return;
+            foreach (var n in new[] { "One", "Guard" })
+                if (w.Ships.Store.SlotOf(Named(start, n)) is int slot and >= 0)
+                    output.WriteLine($"{(w.Time.Ms - T0) / 60_000,4} min {n} at {Earth.LatLon(w.Ships.Store[slot].Position)}, {w.Ships.Store[slot].SpeedOrderKn:0} kn, " +
+                                     $"task {ai.Tasks.Of(w.Groups.Of(Named(start, n)) is { } g ? Unit.Group(g.GroupId) : Unit.Ship(Named(start, n)))}, {ai.Commanders.PhaseOf(0)}, pursued {ai.Aims.Pursued(0)}");
+        });
+        var store = w.Ships.Store;
+        var guard = store[store.SlotOf(Named(start, "Guard"))];
+        output.WriteLine($"convoy {end.Reading(0, 0)}, escort {end.Reading(0, 1)}; Guard at {Earth.LatLon(guard.Position)}");
+        Assert.Equal(AimState.Met, end.Reading(0, 0).State);
+        Assert.Equal(AimState.Met, end.Reading(0, 1).State);
+        // still at the beach, stopped: coasting on for hours after (no anchors yet, docs/battle/bugs.md), so within a coast
+        var at = Earth.Position(56.3, 4.0 - 40 / KmPerLonDeg);
+        foreach (var name in new[] { "One", "Two" })
+        {
+            var x = store[store.SlotOf(Named(start, name))];
+            Assert.InRange(x.SpeedOrderKn, 0, 1);
+            Assert.True(Earth.Distance(x.Position, at) <= 15_000);
+        }
+        Assert.Equal(1.0, end.Score(0), 9);
     }
 }

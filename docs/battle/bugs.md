@@ -341,6 +341,14 @@ Seen in the AI's baseline after the detail passes (2026-10-20, docs/battle/comma
   the pocket (rails' own `LandClear` horizon), or keeps the side until the ship has passed the point it first met the
   coast. A test of it would bound how long any ship of the islands test stays off rails.
 
+- [ ] **A ship stopped coasts on for hours** (found 2026-10-31, aims A2). Ordered to 0 kn, a tramp from 8 kn and a light
+  cruiser from 8 kn drifted about 9-10 km over six hours (`AimsTests`'s convoy and escort), still moving at the end:
+  with drag only as v², the coast's distance grows without bound (its log). Nothing anchors a ship, and a stop order
+  doesn't go astern. It matters where a ship must stay put: a convoy landing at a beach drifts out of its zone (its
+  arrival is kept, so the aim holds), and a ship home at the 10 km radius creeps on. To hunt: the trials bench's
+  coasting against the research's (the sea trials notes), a low-speed drag term if the hull model wants one, and a stop
+  that goes astern to a halt (and an anchor once a ship is stopped in shallow water).
+
 ## Rails and the clock
 
 - [x] "event at 09:15:59.999 is before the clock" at 1M (the user, 2026-10-25: Tsushima with 16 Bismarcks, fought at 1x,

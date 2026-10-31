@@ -85,7 +85,7 @@ public enum TaskReason : byte
 /// holding what it was last given, its status the report up: 5.1d's commander gives it the next.
 /// <para>Thinks every <see cref="SimSettings.ForcePeriodMs"/> while any tasked unit is on the fine tick, the coarse step
 /// while any is coarse, else the rails period. Tasks are kept in unit order; nothing allocated once grown.</para></summary>
-public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] homes) : IAiLayer
+public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Homes homes) : IAiLayer
 {
     struct Task
     {
@@ -98,7 +98,7 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
         public double Kn;               // the task's speed (0: as rung, or all it makes)
         public bool Issued;             // its orders given (again after a fight)
         public double CourseDeg;        // the course last given (Intercept, Join)
-        public int RunFrom;             // Withdraw: the enemy it's running from (0: going home)
+        public int RunFrom;             // Withdraw: the enemy it's running from (0: going home), its course in CourseDeg
         public double DistanceM, OffBowDeg;   // Scout, Cover, Screen, Shadow: how far off; a scout's bearing off the bow
         public int ShadowOf;            // Scout: the enemy it's shadowing (0: scouting)
         public int StationOn;           // Scout, Cover: the ship its station was given on
@@ -623,38 +623,44 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
         return best;
     }
 
-    /// <summary>Withdraw: from the nearest enemy in sight while there is one, else to its point (or its side's home);
-    /// done within <see cref="SimSettings.HomeRadiusM"/> of it, stopped.</summary>
+    /// <summary>Withdraw: from the nearest enemy in sight while there is one, else to its point (or its guide's home,
+    /// <see cref="Homes"/>); done within <see cref="SimSettings.HomeRadiusM"/> of it (a zone's own), stopped.</summary>
     void Withdraw(in AiContext ctx, ref Task t, Unit u, ShipState guide)
     {
         var s = ctx.Settings;
         var o = ctx.Orders;
-        int nearest = NearestEnemy(ctx, guide, s.FightCompareM);
+        int nearest = NearestEnemy(ctx, guide, s.FightCompareM, out var nearestAt);
         if (nearest != 0)
         {
-            if (t.RunFrom != nearest)
+            // the cripple's way out (docs/battle/balance.md BL5, docs/battle/aims.md A2): away from every enemy held near,
+            // bent toward home as the nearest falls back, so a unit whose home lies past the enemy (a breaker's strait)
+            // goes round him rather than run from him for ever; given again as it turns
+            double course = Captains!.Escape(ctx, guide, nearestAt);
+            if (t.RunFrom != nearest || Math.Abs(Wrap180(course - t.CourseDeg)) > s.WithdrawTurnDeg)
             {
-                t.RunFrom = nearest;
-                t.Issued = false;
-                ctx.Issue(o.Run(u, Unit.Ship(nearest), OrderSource.Task));
+                (t.RunFrom, t.CourseDeg, t.Issued) = (nearest, course, false);
+                ctx.Issue(o.ClearRoute(u, OrderSource.Task));
+                ctx.Issue(o.Course(u, course, 0, OrderSource.Task));
+                ctx.Issue(o.Speed(u, guide.Handling.Class.Motion.MaxSpeedKn, OrderSource.Task));
             }
             return;
         }
         t.RunFrom = 0;
         Vec3d goal;
+        double there = s.HomeRadiusM;
         if (t.Point != 0)
         {
             var (lat, lon) = Earth.UnpackLatLon(t.Point);
             goal = Earth.Position(lat, lon);
         }
-        else if (homes[guide.Side] is { } home)
-            goal = home;
+        else if (homes.Of(guide.Side, guide.Entity, s.HomeRadiusM) is { } home)
+            (goal, there) = home;
         else
         {
             End(ref t, TaskState.Cant, TaskReason.Nowhere);
             return;
         }
-        if (Earth.Distance(guide.Position, goal) <= s.HomeRadiusM)
+        if (Earth.Distance(guide.Position, goal) <= there)
         {
             ctx.Issue(o.Speed(u, 0, OrderSource.Task));
             End(ref t, TaskState.Done, TaskReason.Home);
@@ -764,16 +770,20 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
     static void End(ref Task t, TaskState status, TaskReason reason) => (t.Status, t.Reason) = (status, reason);
 
     /// <summary>The nearest enemy the unit's navy holds in sight within a radius of its guide, 0 if none.</summary>
-    int NearestEnemy(in AiContext ctx, ShipState guide, double radiusM)
+    int NearestEnemy(in AiContext ctx, ShipState guide, double radiusM) => NearestEnemy(ctx, guide, radiusM, out _);
+
+    int NearestEnemy(in AiContext ctx, ShipState guide, double radiusM, out Vec3d at)
     {
         var pic = ctx.World.Sightings.Of(guide.Side);
         int best = 0;
         double bestD = double.MaxValue;
+        at = default;
         foreach (int i in seen.Near(ctx.World, guide.Side, guide.Position, radiusM))
         {
-            double d = (seen.Position(guide.Side, i) - guide.Position).LengthSquared;
+            var q = seen.Position(guide.Side, i);
+            double d = (q - guide.Position).LengthSquared;
             if (d < bestD)
-                (best, bestD) = (pic![i].Entity, d);
+                (best, bestD, at) = (pic![i].Entity, d, q);
         }
         return best;
     }

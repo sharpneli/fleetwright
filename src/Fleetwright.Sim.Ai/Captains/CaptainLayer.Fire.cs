@@ -1175,8 +1175,8 @@ public sealed partial class CaptainLayer
     }
 
     /// <summary>Out of the fight, each second: away from the nearest enemy his navy holds in sight within
-    /// <see cref="SimSettings.FightCompareM"/>, else for his side's home (great circle), at all she can make; stopped
-    /// within <see cref="SimSettings.HomeRadiusM"/> of it. With no home and nobody near he keeps his course.</summary>
+    /// <see cref="SimSettings.FightCompareM"/>, else for her home (great circle; <see cref="Homes"/>: her side's, or an
+    /// aim's zone), at all she can make; stopped within <see cref="SimSettings.HomeRadiusM"/> of it (a zone's own). With no home and nobody near he keeps his course.</summary>
     void HomeThink(in AiContext ctx, ref Captain cap, ShipState own, int slot)
     {
         var s = ctx.Settings;
@@ -1189,9 +1189,9 @@ public sealed partial class CaptainLayer
             return;
         }
         CoverRetreat(ctx, ref cap, own, slot, near: false);   // out of touch: no more smoke
-        if (homes[own.Side] is not { } home)
+        if (homes.Of(own.Side, own.Entity, s.HomeRadiusM) is not var (home, there))
             return;
-        if (Earth.Distance(own.Position, home) <= s.HomeRadiusM)
+        if (Earth.Distance(own.Position, home) <= there)
         {
             if (own.SpeedOrderKn != 0)
                 Give(ctx, own, own.CourseOrderDeg, 0);
@@ -1205,7 +1205,11 @@ public sealed partial class CaptainLayer
     /// about her, each by its bearing weighted by the inverse square of its range (the nearest most, but not one alone:
     /// running from him straight at another is what she mustn't do), bent toward home as the nearest falls back past
     /// <see cref="SimSettings.CrippleHomeFreeM"/>, fully home at twice it; her own speed and her smoke do the rest.</summary>
-    double Escape(in AiContext ctx, ShipState own, in Sighting nearest)
+    double Escape(in AiContext ctx, ShipState own, in Sighting nearest) => Escape(ctx, own, nearest.Position);
+
+    /// <summary>The way out from the nearest enemy at <paramref name="nearestAt"/> (<see cref="Escape(in AiContext, ShipState, in Sighting)"/>):
+    /// a withdrawing unit's too (docs/battle/aims.md A2), whose guide it's asked of.</summary>
+    internal double Escape(in AiContext ctx, ShipState own, Vec3d nearestAt)
     {
         var s = ctx.Settings;
         var p = own.Position;
@@ -1222,13 +1226,13 @@ public sealed partial class CaptainLayer
                 away += d * (1 / (r2 * Math.Sqrt(r2)));   // its unit bearing over its range squared
             }
         if (away.LengthSquared == 0)
-            away = p - nearest.Position;
+            away = p - nearestAt;
         var up = p.Normalized();
         away -= up * Vec3d.Dot(away, up);
         away = away.Normalized();
-        if (homes[own.Side] is { } home)
+        if (homes.Of(own.Side, own.Entity, s.HomeRadiusM)?.At is { } home)
         {
-            double free = Math.Clamp((Earth.Distance(p, nearest.Position) - s.CrippleHomeFreeM) / s.CrippleHomeFreeM, 0, 1);
+            double free = Math.Clamp((Earth.Distance(p, nearestAt) - s.CrippleHomeFreeM) / s.CrippleHomeFreeM, 0, 1);
             var toward = Earth.Forward(p, Earth.Bearing(p, home));
             // toward home only as far as it doesn't take her back at them
             if (Vec3d.Dot(toward, away) > 0 || free >= 1)

@@ -1052,6 +1052,10 @@ public sealed record SimSettings
     public double FallBackM { get; init; } = 150_000;
     public double FallBackDeg { get; init; } = 100;
 
+    /// <summary>A withdrawal in touch steers the cripple's way out (docs/battle/aims.md A2), its course given again once
+    /// the way out has turned more than this from the one given, degrees.</summary>
+    public double WithdrawTurnDeg { get; init; } = 10;
+
     /// <summary>The side's commander (docs/battle/command.md 5.1d) thinks every CommanderPeriodMs. A contact out of sight
     /// longer than ContactFreshMs is lost: an intercept gives it up, and he holds nothing by it. His target (his phases,
     /// his search) is the biggest ship of the enemy group he's least confident against (5.1g), kept until another group

@@ -75,7 +75,9 @@ public sealed class AimBook
     sealed class Entry
     {
         public Aim Aim;
+        public AimState State;                                // as read at the last update
         public readonly List<int> Ships = [];                 // a Reach's named ships, in the order named
+        public readonly HashSet<int> Named = [];
         public readonly Dictionary<int, long> Since = [];     // a ship in the zone and not yet arrived: since when
         public readonly HashSet<int> Arrived = [];
     }
@@ -108,7 +110,7 @@ public sealed class AimBook
         if (i < 0 || i >= Count(side))
             throw new ArgumentException($"no aim {i} of side {side}");
         var e = sides[side & 255]![i];
-        if (!e.Ships.Contains(ship))
+        if (e.Named.Add(ship))
             e.Ships.Add(ship);
     }
 
@@ -118,8 +120,42 @@ public sealed class AimBook
     /// <summary>Whether a ship has arrived for a side's i-th aim.</summary>
     public bool HasArrived(int side, int i, int ship) => sides[side & 255]![i].Arrived.Contains(ship);
 
+    /// <summary>A side's first aim still open as of the last update (the one its commander pursues: docs/battle/aims.md
+    /// "Wanted in order"), -1 for none.</summary>
+    public int Pursued(int side)
+    {
+        for (int i = 0; i < Count(side); i++)
+            if (sides[side & 255]![i].State == AimState.Open)
+                return i;
+        return -1;
+    }
+
+    /// <summary>The zone a ship of a side is wanted in: its side's first open Reach (as of the last update) naming her that
+    /// she hasn't arrived for; else the last zone she arrived at (landed troops' transports stay at the beach, a breaker
+    /// in the strait she made for, until another aim wants them elsewhere); null for none.</summary>
+    public Zone? ZoneOf(int side, int ship)
+    {
+        if (sides[side & 255] is not { } list)
+            return null;
+        Zone? reached = null;
+        foreach (var e in list)
+        {
+            if (e.Aim.Kind != AimKind.Reach || !e.Named.Contains(ship))
+                continue;
+            if (e.Arrived.Contains(ship))
+                reached = e.Aim.Zone;
+            else if (e.State == AimState.Open)
+                return e.Aim.Zone;
+        }
+        return reached;
+    }
+
+    /// <summary>Whether a ship of a side is reaching for its pursued aim: named in it, a Reach, and not arrived.</summary>
+    public bool Reaching(int side, int ship) =>
+        Pursued(side) is int p and >= 0 && sides[side & 255]![p] is { Aim.Kind: AimKind.Reach } e && e.Named.Contains(ship) && !e.Arrived.Contains(ship);
+
     /// <summary>The roster taken up to now, and each Reach's ships in their zones: arrived on entering, or once they've
-    /// stayed (afloat, never leaving) the aim's time. At the commanders' think.</summary>
+    /// stayed (afloat, never leaving) the aim's time; then every aim's state as it stands. At the commanders' think.</summary>
     internal void Update(World w)
     {
         var store = w.Ships.Store;
@@ -155,6 +191,9 @@ public sealed class AimBook
                         }
                     }
                 }
+        for (int side = 0; side < sides.Length; side++)
+            for (int i = 0; i < Count(side); i++)
+                sides[side]![i].State = Read(w, side, i).State;
     }
 
     /// <summary>How a side's i-th aim stands now.</summary>
@@ -264,6 +303,7 @@ public sealed class AimBook
             foreach (var e in list)
             {
                 h.Add((int)e.Aim.Kind);
+                h.Add((int)e.State);
                 foreach (int ship in e.Ships)
                 {
                     h.Add(ship);

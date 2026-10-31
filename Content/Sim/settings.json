@@ -343,6 +343,7 @@
   "DeployMaxMs": 1800000,
   "FallBackM": 150000,
   "FallBackDeg": 100,
+  "WithdrawTurnDeg": 10,
   "CommanderPeriodMs": 60000,
   "ContactFreshMs": 1800000,
   "CommanderRetargetShare": 1.5,

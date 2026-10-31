@@ -53,14 +53,14 @@ public sealed class AiSystem : IWorldSystem
     /// (docs/battle/admirals-orders.md O7b).</summary>
     public FlotillaAttacks Attacks { get; }
 
-    // each side's home (docs/battle/command.md "home"): where its ships out of the fight go; null for none
-    readonly Vec3d?[] homes = new Vec3d?[256];
-
     /// <summary>A side's home, if it has one.</summary>
-    public Vec3d? HomeOf(int side) => homes[side & 255];
+    public Vec3d? HomeOf(int side) => Homes.OfSide(side);
 
     /// <summary>Every side's aims, and how they stand (docs/battle/aims.md).</summary>
     public AimBook Aims { get; } = new();
+
+    /// <summary>Where each side's ships go out of the fight, and a ship's own while an aim wants her somewhere.</summary>
+    public Homes Homes { get; }
 
     readonly World world;
 
@@ -70,11 +70,12 @@ public sealed class AiSystem : IWorldSystem
     public AiSystem(World world)
     {
         this.world = world;
+        Homes = new Homes(Aims);
         Seen = new SeenContacts();
         Doctrine = new Doctrine(world.Groups, world.Settings.AggressionShift);
         Judge = new MatchupJudge(world.Groups, Seen, Doctrine);
         Held = new HeldGroups(Judge.Matchups);
-        Captains = new CaptainLayer(world.Groups, world.Encounters, Seen, Doctrine, homes)
+        Captains = new CaptainLayer(world.Groups, world.Encounters, Seen, Doctrine, Homes)
         {
             Judge = Judge, TrailPoints = world.Settings.FollowTrackPoints, Store = world.Ships.Store,
         };
@@ -83,7 +84,7 @@ public sealed class AiSystem : IWorldSystem
         Captains.Admirals = Admirals;
         Tactical = new TacticalPicture(Seen, Judge.Matchups);
         Admirals.Tactical = Tactical;
-        Tasks = new TaskLayer(world.Groups, Seen, homes) { Admirals = Admirals, Captains = Captains, Doctrine = Doctrine, Judge = Judge };
+        Tasks = new TaskLayer(world.Groups, Seen, Homes) { Admirals = Admirals, Captains = Captains, Doctrine = Doctrine, Judge = Judge };
         (Admirals.Tasks, Captains.Tasks) = (Tasks, Tasks);
         Attacks = new FlotillaAttacks(Judge, Held, Doctrine, Roles) { Tasks = Tasks };
         Commanders = new CommanderLayer(world.Groups, world.Ships.Store, Seen, Doctrine) { Tasks = Tasks, Captains = Captains, Judge = Judge, Held = Held, Roles = Roles, Attacks = Attacks, Book = Aims };
@@ -228,7 +229,7 @@ public sealed class AiSystem : IWorldSystem
                 WakeAll(world);
                 return;
             case AiCommand.Home:
-                homes[c.Entity & 255] = c.A == 0 ? null : Earth.Position(Earth.UnpackLatLon(c.A).Lat, Earth.UnpackLatLon(c.A).Lon);
+                Homes.Set(c.Entity, c.A == 0 ? null : Earth.Position(Earth.UnpackLatLon(c.A).Lat, Earth.UnpackLatLon(c.A).Lon));
                 return;
             case AiCommand.Shells:
                 if (c.A is < 0 or > (long)Ships.ShellKind.He + 1)
@@ -430,14 +431,7 @@ public sealed class AiSystem : IWorldSystem
         Doctrine.Hash(ref h);
         Roles.Hash(ref h);
         Aims.Hash(ref h);
-        for (int side = 0; side < homes.Length; side++)
-            if (homes[side] is { } p)
-            {
-                h.Add(side);
-                h.Add(p.X);
-                h.Add(p.Y);
-                h.Add(p.Z);
-            }
+        Homes.Hash(ref h);
     }
 
     public void Fill(Snapshot s)

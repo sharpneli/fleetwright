@@ -177,7 +177,9 @@ public class TaskTests(ITestOutputHelper output)
         w.AdvanceTo(w.Time + 60_000);
         w.Apply(ai.Orders.WithdrawHome(Unit.Ship(1)));
         w.AdvanceTo(w.Time + 2 * 60_000);
-        Assert.Equal(Ai.Captains.CaptainOrder.Run, ai.Captains.Of(1).Order);   // away from him first
+        // away from him (north of her) first, by the cripple's way out (docs/battle/aims.md A2): his reciprocal, bent for home
+        output.WriteLine($"running on {Ship(w, 1).CourseOrderDeg:F0}°");
+        Assert.InRange(Ship(w, 1).CourseOrderDeg, 135, 270);
         double s = RunUntil(w, () => ai.Tasks.Of(Unit.Ship(1)).Status != TaskState.OnTask, 6 * 3600);
         output.WriteLine($"home after {s / 60:F0} min: {ai.Tasks.Of(Unit.Ship(1))}, {Earth.Distance(Ship(w, 1).Position, Off(270, 40_000)):F0} m off it");
         Assert.Equal((TaskKind.Withdraw, TaskState.Done, TaskReason.Home), ai.Tasks.Of(Unit.Ship(1)));

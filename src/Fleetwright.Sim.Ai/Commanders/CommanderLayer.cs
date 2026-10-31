@@ -66,6 +66,9 @@ public enum CommanderReason : byte
 
     /// <summary>His search where the enemy was last held found nothing.</summary>
     GaveUp,
+
+    /// <summary>Every aim of his side decided, met or lost (docs/battle/aims.md): home, those at their zones staying.</summary>
+    AimsDecided,
 }
 
 /// <summary>Why the commander gave a unit the task he did (the timeline's, and the UI's reason tag).</summary>
@@ -106,6 +109,12 @@ public enum CommanderWhy : byte
     /// <summary>A flotilla keeping touch with an enemy he declined by day, for its attack once the night falls
     /// (docs/battle/night.md Q7).</summary>
     AwaitNight,
+
+    /// <summary>For the zone its ships are to reach (docs/battle/aims.md A2), or stopped in it.</summary>
+    Reach,
+
+    /// <summary>Home: every aim of his side decided.</summary>
+    AimsDecided,
 }
 
 /// <summary>The side's commander (docs/battle/command.md 5.1d), the layer above the tasks: one per side, the C-in-C on
@@ -166,6 +175,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         public UnitRole Role;
         public double TonnageT, CapitalT;   // its ships', and its capital ships'
         public int Group;           // the enemy group it's sent after at this think (-1: none)
+        public int Reaching;        // its ships reaching for its side's pursued Reach (docs/battle/aims.md A2)
     }
 
     readonly SideState?[] sides = new SideState?[256];
@@ -319,6 +329,8 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
                 continue;
             groups.LineOffsets(g, line);
             double tonnage = 0, capital = 0;
+            int reaching = 0;
+            byte gs = store[slot].Side;
             foreach (var (ship, _, _) in line)
                 if (store.SlotOf(ship) is int m and >= 0)
                 {
@@ -326,9 +338,11 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
                     tonnage += cls.Motion.FullDisplacementT;
                     if (Sightings.TypeOf(cls) == ShipType.Capital)
                         capital += cls.Motion.FullDisplacementT;
+                    if (Book.Reaching(gs, ship))
+                        reaching++;
                 }
-            tops.Add(new Top { Unit = Unit.Group(g.GroupId), Side = store[slot].Side, Slot = slot, TonnageT = tonnage, CapitalT = capital,
-                Role = Roles.Of(Unit.Group(g.GroupId)), Group = -1 });
+            tops.Add(new Top { Unit = Unit.Group(g.GroupId), Side = gs, Slot = slot, TonnageT = tonnage, CapitalT = capital,
+                Role = Roles.Of(Unit.Group(g.GroupId)), Group = -1, Reaching = reaching });
         }
         for (int slot = 0; slot < store.Slots; slot++)
         {
@@ -339,7 +353,8 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
             var role = Captains!.Of(store[slot].Entity).Order == CaptainOrder.Home ? UnitRole.None   // fallen out: the captain's
                 : Roles.Of(Unit.Ship(store[slot].Entity));
             tops.Add(new Top { Unit = Unit.Ship(store[slot].Entity), Side = store[slot].Side, Slot = slot, TonnageT = cls.Motion.FullDisplacementT,
-                CapitalT = capital ? cls.Motion.FullDisplacementT : 0, Role = role, Group = -1 });
+                CapitalT = capital ? cls.Motion.FullDisplacementT : 0, Role = role, Group = -1,
+                Reaching = Book.Reaching(store[slot].Side, store[slot].Entity) ? 1 : 0 });
         }
     }
 
@@ -348,16 +363,20 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
     void Command(in AiContext ctx, SideState s, byte side, int player)
     {
         // the main body: the most capital ships' tonnage, else the biggest (torpedo craft and screens only if there's
-        // nothing else)
+        // nothing else); while his side reaches for a zone, the unit with the most ships reaching, a convoy's auxiliaries
+        // too (docs/battle/aims.md A2): what the rest support
+        int pursued = Book.Pursued(side);
+        Zone? zone = pursued >= 0 && Book[side, pursued].Kind == AimKind.Reach ? Book[side, pursued].Zone : null;
         int main = -1;
         for (int i = 0; i < tops.Count; i++)
         {
             var t = tops[i];
-            if (t.Side != side || t.Role is UnitRole.None or UnitRole.Auxiliary)
+            if (t.Side != side || t.Role is UnitRole.None || t.Role == UnitRole.Auxiliary && t.Reaching == 0)
                 continue;
-            if (main < 0 || Bigger(t, tops[main]))
+            if (main < 0 || (zone != null && t.Reaching != tops[main].Reaching ? t.Reaching > tops[main].Reaching : Bigger(t, tops[main])))
                 main = i;
         }
+        bool reach = zone != null && main >= 0 && tops[main].Reaching > 0;
         if (main >= 0 && tops[main].Role is UnitRole.Heavy or UnitRole.Scout)
             tops[main] = tops[main] with { Role = UnitRole.MainBody };
         var held = Held.Of(ctx, side);
@@ -369,7 +388,8 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         bool battle = false;
         for (int i = 0; i < tops.Count && !battle; i++)
             battle = tops[i].Side == side && tops[i].Role != UnitRole.None && InContact(ctx, tops[i]);
-        (s.Phase, s.Reason) = s.GaveUp ? (CommanderPhase.Home, CommanderReason.GaveUp)
+        (s.Phase, s.Reason) = Book.Count(side) > 0 && pursued < 0 ? (CommanderPhase.Home, CommanderReason.AimsDecided)
+            : s.GaveUp ? (CommanderPhase.Home, CommanderReason.GaveUp)
             : s.BrokenOff ? (CommanderPhase.Retiring, CommanderReason.BrokenOff)
             : s.Declined ? (CommanderPhase.Retiring, CommanderReason.Outmatched)
             : s.Target != 0 && Night(ctx, side, main) ? (CommanderPhase.Night, CommanderReason.None)
@@ -377,7 +397,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
             : s.Target != 0 ? (CommanderPhase.Contact, CommanderReason.None)
             : s.Met ? (CommanderPhase.Lost, CommanderReason.LostContact)
             : (CommanderPhase.NoContact, CommanderReason.None);
-        if (s.Phase == CommanderPhase.Lost && main >= 0 && Commands(tops[main].Unit, side, player) && Search(ctx, s, tops[main]))
+        if (s.Phase == CommanderPhase.Lost && main >= 0 && !reach && Commands(tops[main].Unit, side, player) && Search(ctx, s, tops[main]))
             (s.GaveUp, s.Phase, s.Reason) = (true, CommanderPhase.Home, CommanderReason.GaveUp);
 
         for (int i = 0; i < tops.Count; i++)
@@ -385,8 +405,18 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
             var t = tops[i];
             if (t.Side != side || t.Role == UnitRole.None || !Commands(t.Unit, side, player))
                 continue;
+            if (t.Reaching > 0 && zone is { } z)
+            {
+                Reach(ctx, s, t, z);
+                continue;   // for the zone, whatever else is going on
+            }
             if (t.Role == UnitRole.Flotilla && SendIn(ctx, s, side, held, t))
                 continue;   // in to attack: by day on a line his heavy units engage, by night, or to cover a break off
+            if (s.Phase is CommanderPhase.Retiring && reach)
+            {
+                CoverReaching(ctx, t, tops[main]);
+                continue;   // declining or broken off, the others stay with those reaching, not leave them
+            }
             if (s.Phase is CommanderPhase.Retiring or CommanderPhase.Home)
             {
                 Retire(ctx, s, t);
@@ -410,6 +440,38 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
                 continue;   // on its task, or on the scenario's orders before the enemy's met, or fighting (doctrine's), or home
             Give(ctx, t, IdleTask(ctx, t, main >= 0 && main != i ? tops[main] : null), spent ? CommanderWhy.Rejoin : CommanderWhy.Idle);
         }
+    }
+
+    /// <summary>A unit with ships reaching for his side's pursued Reach (docs/battle/aims.md A2): for its zone by GoTo while
+    /// he accepts battle (fighting on the way as doctrine has it, the task going on after), by Withdraw (breaking off, away
+    /// from what's near, then on for the zone: its home now) while he declines or has broken off; in the zone, Withdraw
+    /// stops it there. Before the enemy's met, a route the scenario gave it is its way there.</summary>
+    void Reach(in AiContext ctx, SideState s, in Top t, Zone zone)
+    {
+        var (kind, state, _) = Tasks!.Of(t.Unit);
+        var guide = store[t.Slot];
+        if (zone.Holds(guide.Position) || s.Declined || s.BrokenOff)
+        {
+            if (kind != TaskKind.Withdraw)
+                Give(ctx, t, ctx.Orders.WithdrawHome(t.Unit, OrderSource.Commander),
+                    zone.Holds(guide.Position) ? CommanderWhy.Reach : s.BrokenOff ? CommanderWhy.BrokenOff : CommanderWhy.Outmatched);
+            return;
+        }
+        if (kind is TaskKind.GoTo or TaskKind.Attack && state is TaskState.OnTask or TaskState.Engaged or TaskState.InContact)
+            return;   // on its way, or its attack first
+        if (kind == TaskKind.None && guide.Helm == Helm.Route && !s.Met)
+            return;   // the scenario's route
+        Give(ctx, t, ctx.Orders.GoTo(t.Unit, zone.LatDeg, zone.LonDeg, 0, OrderSource.Commander), CommanderWhy.Reach);
+    }
+
+    /// <summary>A unit of his not reaching, while he declines or has broken off with units reaching: it covers the main
+    /// body (those reaching), as it would a battle line it supports, rather than go home without them.</summary>
+    void CoverReaching(in AiContext ctx, in Top t, in Top main)
+    {
+        if (t.Unit.Id == main.Unit.Id || Tasks!.Of(t.Unit) is (TaskKind.Cover, TaskState.OnTask or TaskState.Engaged or TaskState.InContact, _) &&
+            Tasks.TargetOf(t.Unit) == main.Unit.Id)
+            return;
+        Give(ctx, t, ctx.Orders.Cover(t.Unit, main.Unit, 0, OrderSource.Commander), CommanderWhy.Reach);
     }
 
     /// <summary>A flotilla of his sent in to attack, by the rule every commander shares (<see cref="FlotillaAttacks"/>):
@@ -577,7 +639,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
             {
                 var t = tops[i];
                 if (t.Side != side || t.Group >= 0 || t.Role is UnitRole.None or UnitRole.Auxiliary or UnitRole.Flotilla or UnitRole.Screen ||
-                    !Commands(t.Unit, side, player))
+                    t.Reaching > 0 || !Commands(t.Unit, side, player))
                     continue;
                 int on = closingGroup[i];
                 if (on == k)
@@ -729,7 +791,8 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
     /// in once it's worth it, and any unit in touch fights as its captains judge it.</summary>
     void Retire(in AiContext ctx, SideState s, in Top t)
     {
-        var why = s.Phase == CommanderPhase.Home ? CommanderWhy.GaveUp : s.BrokenOff ? CommanderWhy.BrokenOff : CommanderWhy.Outmatched;
+        var why = s.Reason == CommanderReason.AimsDecided ? CommanderWhy.AimsDecided
+            : s.Phase == CommanderPhase.Home ? CommanderWhy.GaveUp : s.BrokenOff ? CommanderWhy.BrokenOff : CommanderWhy.Outmatched;
         var (kind, state, _) = Tasks!.Of(t.Unit);
         if (kind == TaskKind.Attack && state is TaskState.OnTask or TaskState.Engaged)
             return;   // its attack first
@@ -851,7 +914,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
     }
 
     /// <summary>A unit's task with no enemy about, by its role: the main body searches ahead on its course; another heavy
-    /// unit joins it (covers it, if it's a ship alone); scouts scout ahead of it, spread off its bow; flotillas and screens
+    /// unit joins it (covers it, if it's a ship alone or a convoy: warships don't join a line of merchants); scouts scout ahead of it, spread off its bow; flotillas and screens
     /// screen the nearest heavy unit; auxiliaries go home. A unit with no main body to support is one.</summary>
     Command IdleTask(in AiContext ctx, in Top t, Top? main)
     {
@@ -870,7 +933,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         }
         return t.Role switch
         {
-            UnitRole.Heavy => m.Unit.IsGroup ? o.Join(t.Unit, m.Unit, By) : o.Cover(t.Unit, m.Unit, 0, By),
+            UnitRole.Heavy => m.Unit.IsGroup && m.Role != UnitRole.Auxiliary ? o.Join(t.Unit, m.Unit, By) : o.Cover(t.Unit, m.Unit, 0, By),
             UnitRole.Scout => Dispositions.Attend(o, t.Role, t.Unit, m.Unit, Scouts(m.Unit), By),
             UnitRole.Flotilla or UnitRole.Screen => Dispositions.Attend(o, t.Role, t.Unit, NearestHeavy(t, m).Unit, 0, By),
             _ => o.WithdrawHome(t.Unit, By),

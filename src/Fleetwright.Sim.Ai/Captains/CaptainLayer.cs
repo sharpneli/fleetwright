@@ -101,7 +101,7 @@ public enum CaptainReason : byte
 /// ship is handed back or let go.</para>
 /// A captain whose ship is gone is dropped; one whose target is gone holds his course. His guns and Fight are in
 /// CaptainLayer.Fire.cs.</summary>
-public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounters, SeenContacts seen, Doctrine doctrine, Vec3d?[] homes) : IAiLayer
+public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounters, SeenContacts seen, Doctrine doctrine, Homes homes) : IAiLayer
 {
     struct Captain
     {

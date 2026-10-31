@@ -5,6 +5,10 @@ once the systems are in place we'll investigate which exact scenarios we want").
 the heart of its wave 2, and the first of the objectives (`docs/missions/plan.md`, 6.1). Bombardment was weighed and
 dropped: with no shore targets and fire control that only aims at ships, any version now would be a hack.
 
+**The future (the user, 2026-10-31):** these aims are what the global map's invasions will be driven by: if the AI
+can run these scenarios, it can work with top-level command goals too. So every rule is general, the aims come as a
+higher command would give them (commands), and the commander pursues them by his ordinary rules.
+
 **The user's answers (2026-10-31):** (1) whether a ship counts on entering the zone or after a stay there is the
 aim's setting; (2) a scenario isn't all won or all lost: aims score in part and weigh, and getting home can be a
 bonus aim beside the main one ("better sometimes to reach home damaged than squeeze the last merchant out of the
@@ -16,7 +20,7 @@ enemy"); (3) the aims come now, before the balance round's BL3 and BL4.
 |---|---|---|
 | A0 Investigation | done 2026-10-31 ("A0: what the code says") | |
 | A1 Aims as data, their state, the judge | done 2026-10-31 ("A1, as built") | |
-| A2 Reach: the side that wants a place | not started | |
+| A2 Reach: the side that wants a place | done 2026-10-31 ("A2, as built") | |
 | A3 Stop: the side that wants to prevent it | not started | |
 | A4 Sink merchants: the raider, the merchants, the hunters | not started | |
 | A5 The UI: aims, progress, zones | not started | |
@@ -190,6 +194,37 @@ Per `docs/ui-language.md`, drawn with `Ui/Pieces.cs`:
 - `AimsTests`: the format and its errors; a Reach met (and Done at once, nobody in touch) and lost; a stay of 3
   minutes met and one of 20 not by a ship passing through, the arrival in the state hash; Sink's tonnage in halves,
   struck counting, a weighted score. The suite: 924 passed.
+
+## A2, as built (2026-10-31)
+
+- **Homes** (`Sim.Ai/Homes.cs`): one place for where a ship goes out of the fight, read by the captain going home,
+  the cripple's escape, the task layer's Withdraw and the judge's Done. A ship's home is the zone of her side's first
+  open Reach naming her that she hasn't arrived for; else the last zone she arrived at (a landed convoy stays at the
+  beach, a breaker in her strait, until another aim wants them); else her side's. There means within half a zone's
+  radius (the side's 10 km at most), so a column stopped about its guide lies inside.
+- **The commander** (`CommanderLayer`): the aim he pursues is his side's first still open (`AimBook.Pursued`). With a
+  Reach, his main body is the unit with the most ships reaching (a convoy's auxiliaries too), and each unit reaching
+  goes for the zone (`Reach`): by GoTo while he accepts battle (doctrine's fights on the way, the task resumed after),
+  by Withdraw while he declines or has broken off, and in the zone Withdraw stops it. A route the scenario gave it is
+  its way there before the enemy's met. His other units take their roles about the main body; heavy units cover a
+  convoy rather than join its line; declining or broken off, they cover those reaching rather than go home without
+  them (`CoverReaching`); those reaching aren't sent after the enemy (`Assign`); no search back after a lost contact.
+  Every aim decided, he goes home (`CommanderReason.AimsDecided`), those at their zones staying.
+- **Withdrawals run the cripple's way** (`TaskLayer.Withdraw`, `CaptainLayer.Escape`): away from every enemy held
+  near, weighted by range, bent toward home as the nearest falls back, its course given again past `WithdrawTurnDeg`
+  (10°), instead of running straight away from the nearest. Found by the breaker's test: a 29-kn light cruiser
+  declining two 21-kn dreadnoughts ran from them for five hours past her strait (they chased from between her and
+  it); now she goes round and is in at 75 minutes. Every withdrawal changes with it. The balance panel (`shipgen
+  balance --seeds 8 --fc-runs 0`), A1 against A2, ships lost a side: Dover 0.4 v 0.9 → 0.4 v 1.0; Coronel 1.3 v 1.1 →
+  1.3 v 1.0; Cape Sarych 1.3 v 0.9 → 1.8 v 0.9; the prizes' war 0.9 v 0.6 → 0.8 v 0.5; Åland 4.3 v 1.8 the same;
+  Heligoland 4.4 v 14.8 → 4.4 v 15.1; Dogger Bank 6.9 v 6.4 the same; Tsushima 2.6 v 2.3 the same; the Jutland (4
+  seeds) 33.8 v 50.0 → 36.8 v 49.3. Within about twice the record: 3 of 14 sides → 5; the record's loser lost more in
+  25 of 44 seeds → 24. About the seeds' spread throughout: nothing moved that the balance round must chase.
+- Found on the way: a ship stopped coasts on for hours (about 10 km from 8 kn), out of a small zone: arrivals are
+  kept, so aims hold; logged in `bugs.md` ("The slide", the last item).
+- `AimsTests`: an unopposed convoy with no route sent to its zone, stopped there; the breaker declining and still
+  getting in; the escort keeping by the convoy, then home once it's in, the convoy staying. `TaskTests`' withdrawal
+  now checks the course (away from the enemy, bent for home), not the run order.
 
 ## Steps
 
