@@ -228,11 +228,18 @@ Seen in the AI's baseline after the detail passes (2026-10-20, docs/battle/comma
   was tried for a graver one, wasn't enough, was freed onto its search, and was sent after Valiant again a moment later
   in the same think. Only those that were closing the group are freed now (Jutland seed 1916: no order given twice in a
   row; intercepts 110 to 93).
-- [ ] A unit closing one enemy group is free for any graver group the commander judges each think, with no margin, so it
+- [x] A unit closing one enemy group is free for any graver group the commander judges each think, with no margin, so it
   hops between them as the held groups and their confidences shift: Jutland seed 1916 (2026-10-31), the Grand Fleet
   sent after Seydlitz, G102, Seydlitz, G103, S23, Seydlitz, Pillau, S23, Pillau ... 16:42-17:09; the 5th Battle
   Squadron between V30, Lützow and Moltke 02:44-03:30. Each is a real retarget (a new course), not the same order
   again. To try: free a closing unit only for a group graver by `CommanderRetargetShare`, as `Enemy` keeps his target.
+  Fixed 2026-10-31 (the user: "no-one likes a commander who flipflops like that"), three margins in `Assign` and the
+  orders after it: a unit closing a group is free for another only if it's graver by `CommanderRetargetShare` (1.5, as
+  his own target); those closing a group go on while they aren't hopeless against it (doctrine's accept bar), sent
+  only at its seek bar, so a confidence about the seek bar no longer frees them to their search and sends them again a
+  minute on; and a unit closing one of its group's ships keeps her when the group's biggest changes. Seed 1916:
+  intercepts 93 to 37, the High Seas Fleet's by day at 15:29, 16:45, 16:59 and 17:55 (five in 18 minutes before);
+  what's left turns for a group at least 1.5x graver or a target the picture lost, more often at night.
 - [x] No Jutland seed ends by its own rules: `Done` needs every side to have its aims, given up or broken off with every
   unit home, and a side retiring outmatched (Germany, seed 1916) is none of them; ships sinking hours later keep it
   from quiet. Whether a decline that has got away should count as an end is for 5.1f.

@@ -394,9 +394,10 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
                 continue;
             if (t.Group >= 0)
             {
-                // sent after an enemy group: close its biggest ship, unless it's in a fight already (doctrine's)
+                // sent after an enemy group: close its biggest ship, unless it's in a fight already (doctrine's) or closing
+                // one of the group's ships already (its biggest as it was: the picture's shifts don't turn it)
                 int target = held[t.Group].Biggest;
-                if (!InContact(ctx, t) && FreeToClose(t.Unit, target))
+                if (!InContact(ctx, t) && closingGroup[i] != t.Group && FreeToClose(t.Unit, target))
                     Give(ctx, t, ctx.Orders.Intercept(t.Unit, target, 0, OrderSource.Commander), CommanderWhy.Contact);
                 continue;
             }
@@ -523,8 +524,11 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
     /// <summary>Which of his units go after which enemy group (docs/battle/command.md 5.1g): the groups gravest first (the
     /// least his side as a whole is confident against); to each, those already closing it and then the nearest free units
     /// that aren't hopeless against it alone (at doctrine's bar), until together they're confident enough to seek a
-    /// fight (doctrine's seek ratio). A group no set of his can take on is left alone, and those closing it are freed.
-    /// Flotillas aren't sent this way: they're sent in to attack.</summary>
+    /// fight (doctrine's seek ratio). Those closing it go on while they aren't hopeless against it, short of that ratio,
+    /// and a unit closing one group is free for another only if that one is graver by
+    /// <see cref="SimSettings.CommanderRetargetShare"/>: he doesn't turn his units at each shift of the picture. A group no
+    /// set of his can take on is left alone, and those closing it are freed. Flotillas aren't sent this way: they're sent
+    /// in to attack.</summary>
     void Assign(in AiContext ctx, byte side, int player, ReadOnlySpan<HeldGroup> held)
     {
         if (held.Length == 0)
@@ -533,14 +537,30 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         var (accept, seek) = Judge.Bars(0, side);
         // the groups, gravest first
         order.Clear();
+        graveness.Clear();
         for (int k = 0; k < held.Length; k++)
         {
             enemy.Clear();
             AddGroup(ctx, side, held[k], enemy);
-            order.Add((k, enemy.Count == 0 || mine.Count == 0 ? double.MaxValue : Judge.Judge(ctx, 0, side, held[k].Centre, mine, enemy).Confidence));
+            double c = enemy.Count == 0 || mine.Count == 0 ? double.MaxValue : Judge.Judge(ctx, 0, side, held[k].Centre, mine, enemy).Confidence;
+            order.Add((k, c));
+            graveness.Add(c);
         }
         order.Sort((x, y) => x.C != y.C ? x.C.CompareTo(y.C) : x.K.CompareTo(y.K));
-        foreach (var (k, _) in order)
+        // the group each of his units is closing now, if any: he takes it off that only for a group graver by
+        // CommanderRetargetShare, as he keeps his own target (Enemy), or it would turn after each group in turn as
+        // they shift
+        closingGroup.Clear();
+        for (int i = 0; i < tops.Count; i++)
+        {
+            int on = -1;
+            if (tops[i].Side == side && Tasks!.Of(tops[i].Unit) is (TaskKind.Intercept, TaskState.OnTask or TaskState.Engaged or TaskState.InContact, _))
+                for (int k = 0; k < held.Length && on < 0; k++)
+                    if (Member(pic, side, held[k], Tasks.TargetOf(tops[i].Unit)))
+                        on = k;
+            closingGroup.Add(on);
+        }
+        foreach (var (k, kc) in order)
         {
             var g = held[k];
             enemy.Clear();
@@ -557,19 +577,19 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
                 if (t.Side != side || t.Group >= 0 || t.Role is UnitRole.None or UnitRole.Auxiliary or UnitRole.Flotilla or UnitRole.Screen ||
                     !Commands(t.Unit, side, player))
                     continue;
-                bool closing = Tasks!.Of(t.Unit) is (TaskKind.Intercept, TaskState.OnTask or TaskState.Engaged or TaskState.InContact, _) &&
-                               Member(pic, side, g, Tasks.TargetOf(t.Unit));
-                if (closing)
+                int on = closingGroup[i];
+                if (on == k)
                 {
                     sent.Add(i);
                     AddTop(ctx, t, set);
                 }
-                else if (FreeToClose(t.Unit, 0) && !InContact(ctx, t))
+                else if ((on < 0 || kc < graveness[on] / ctx.Settings.CommanderRetargetShare) && FreeToClose(t.Unit, 0) && !InContact(ctx, t))
                     near.Add((i, (store[t.Slot].Position - g.Centre).LengthSquared));
             }
             near.Sort((x, y) => x.D != y.D ? x.D.CompareTo(y.D) : x.I.CompareTo(y.I));
             int closers = sent.Count;
-            bool enough = set.Count > 0 && Judge.Judge(ctx, 0, side, g.Centre, set, enemy).Confidence >= seek;
+            double closing = set.Count > 0 ? Judge.Judge(ctx, 0, side, g.Centre, set, enemy).Confidence : 0;
+            bool enough = set.Count > 0 && closing >= seek;
             foreach (var (i, _) in near)
             {
                 if (enough)
@@ -582,7 +602,9 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
                 AddTop(ctx, tops[i], set);
                 enough = Judge.Judge(ctx, 0, side, g.Centre, set, enemy).Confidence >= seek;
             }
-            if (!enough)
+            if (!enough && closers > 0 && closing >= accept)
+                sent.RemoveRange(closers, sent.Count - closers);   // those closing it go on while they're not hopeless against it
+            else if (!enough)
             {
                 // no set of his takes it on: those closing it are freed (their role's task); those only tried for it keep
                 // what they're on (closing another group, as likely as not)
@@ -597,6 +619,8 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
     }
 
     readonly List<(int K, double C)> order = new(16);
+    readonly List<double> graveness = new(16);
+    readonly List<int> closingGroup = new(32);
     readonly List<(int I, double D)> near = new(32);
     readonly List<int> sent = new(16);
     readonly MatchupSide mine = new(), enemy = new(), set = new(), one = new();
