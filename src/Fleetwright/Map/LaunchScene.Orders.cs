@@ -41,7 +41,7 @@ public sealed unsafe partial class LaunchScene
     [
         (DoctrineField.OutgunnedRatio, "Turns away when outgunned", v => $"{v:0.0} : 1"),
         (DoctrineField.SeekRatio, "Sent after an enemy at a matchup of", v => $"{v:0.00}"),
-        (DoctrineField.RangeShare, "Fights at, of the main guns' reach", Percent),
+        (DoctrineField.RangeShare, "Prefers to fight at, of the main guns' reach", Percent),
         (DoctrineField.FallOutSpeedShare, "Falls out under, of her speed", v => v <= 0 ? "never" : Percent(v)),
         (DoctrineField.FallOutGunsShare, "Falls out under, of her main guns", v => v <= 0 ? "never" : Percent(v)),
         (DoctrineField.FallOutListDeg, "Falls out past a list of", v => v >= 90 ? "never" : $"{v:0}°"),

@@ -7,7 +7,8 @@ namespace Fleetwright.Sim.Ai.Knowledge;
 /// asks. A unit (the outermost group a ship moves with, or a ship alone) against the enemy its navy holds in sight round
 /// it, once a moment per unit; or any two sides a layer builds (the commander's units against an enemy group). By its
 /// doctrine's range share both ways (the enemy's own isn't known), in the light at the unit (by night the defence's guns
-/// open, and the lines fight, within sight). Not world state; nothing allocated once grown.</summary>
+/// open, and the lines fight, within sight). Not world state, but for the band each unit holds (kept while it's among
+/// its best: Matchup.Judge's keepA), which the next moment's judgement leans to; nothing allocated once grown.</summary>
 public sealed class MatchupJudge(GroupSystem groups, SeenContacts seen, Doctrine doctrine)
 {
     public Matchups Matchups { get; } = new();
@@ -43,7 +44,7 @@ public sealed class MatchupJudge(GroupSystem groups, SeenContacts seen, Doctrine
     /// <summary>A unit's judgement this moment, and the classes of its own that attack in it.</summary>
     sealed class Judged
     {
-        public long Ms = long.MinValue;
+        public long Ms = long.MinValue, BandMs = long.MinValue;   // judged; its bands thought out
         public MatchupResult Result;
         public bool Any;
         public readonly MatchupProfile?[] Attackers = new MatchupProfile?[Matchup.MaxClasses];
@@ -90,8 +91,16 @@ public sealed class MatchupJudge(GroupSystem groups, SeenContacts seen, Doctrine
         theirs.Clear();
         AddNear(ctx.World, own.Side, own.Position, ctx.Settings.FightCompareM, theirs);
         c.Ms = ctx.NowMs;
+        // the band his unit holds (judged last moment), kept while still among its best; the bands are thought out again
+        // only every MatchupBandThinkS (a captain doesn't re-weigh the range he fights at every second), the judgement at
+        // them each moment
+        double held = c.Any ? c.Result.BandA : 0;
+        bool think = !c.Any || ctx.NowMs - c.BandMs >= (long)(ctx.Settings.MatchupBandThinkS * 1000);
+        var (bandA, bandB) = think ? (0.0, 0.0) : (c.Result.BandA, c.Result.BandB);
         c.Any = theirs.Count > 0 && this.own.Count > 0;
-        c.Result = c.Any ? Judge(ctx, own.Entity, own.Side, own.Position, this.own, theirs) : default;
+        c.Result = c.Any ? Judge(ctx, own.Entity, own.Side, own.Position, this.own, theirs, NearestM(ctx.World, own), held, bandA, bandB) : default;
+        if (think)
+            c.BandMs = ctx.NowMs;
         c.AttackerCount = 0;
         var entries = this.own.Entries;
         for (int i = 0; i < entries.Length && c.Any; i++)
@@ -190,14 +199,25 @@ public sealed class MatchupJudge(GroupSystem groups, SeenContacts seen, Doctrine
     }
 
     /// <summary>A side's judgement of another: by the doctrine of the unit judging (a ship's, else its side's: entity 0),
-    /// in the light where it is.</summary>
-    public MatchupResult Judge(in AiContext ctx, int entity, byte side, Vec3d at, MatchupSide a, MatchupSide b)
+    /// in the light where it is; the fight opening at a range given (where they are), else where the first guns reach.</summary>
+    public MatchupResult Judge(in AiContext ctx, int entity, byte side, Vec3d at, MatchupSide a, MatchupSide b, double openM = 0, double keepA = 0,
+        double bandA = 0, double bandB = 0)
     {
         Matchups.Warm(ctx.World);
         double share = entity != 0 ? doctrine.Of(entity, side, DoctrineField.RangeShare) : doctrine.OfGroup(null, side, DoctrineField.RangeShare);
         var weather = ctx.World.Weather.At(at, ctx.World.Time);
         var light = new MatchupLight(weather.VisibilityM, NightLight.At(at, ctx.World.Time, weather.Cloud, ctx.Settings).SkyCdM2);
-        return Matchup.Judge(a.Entries, b.Entries, share, share, ctx.Settings, light);
+        return Matchup.Judge(a.Entries, b.Entries, share, share, ctx.Settings, light, openM, keepA, bandA, bandB);
+    }
+
+    /// <summary>The range to the nearest enemy a ship's side holds in sight within <see cref="SimSettings.FightCompareM"/>
+    /// of her, m (0: none).</summary>
+    double NearestM(World world, ShipState of)
+    {
+        double least = double.MaxValue;
+        foreach (int i in seen.Near(world, of.Side, of.Position, world.Settings.FightCompareM))
+            least = Math.Min(least, (seen.Position(of.Side, i) - of.Position).Length);
+        return least == double.MaxValue ? 0 : least;
     }
 
     /// <summary>Whether one side can get away from another: its slowest ship faster by

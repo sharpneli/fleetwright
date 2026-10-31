@@ -10,7 +10,8 @@ public enum DoctrineField : byte
     /// <summary>What a unit does when it first meets an enemy in sight in an encounter (<see cref="Engage"/>).</summary>
     Engage,
 
-    /// <summary>The range Fight keeps, a share of the main battery's reach.</summary>
+    /// <summary>The range Fight keeps where the matchup hardly cares (<see cref="Fleetwright.Sim.Combat.Matchup.Judge"/>:
+    /// else where his unit does best), a share of the main battery's reach.</summary>
     RangeShare,
 
     /// <summary>How outmatched a unit fights on: it turns away once its matchup against the enemy (docs/battle/command.md

@@ -37,7 +37,8 @@ namespace Fleetwright.Sim.Ai.Captains;
 /// <item><b>Who gave it:</b> the player's order to the ship, or an admiral's to his tree (its group kept with it). An
 /// admiral's order he hands down again (a redistribution) only reaches the ships still holding his; a fresh one, from a
 /// group just given a fire order, reaches all of them.</item>
-/// <item><b>Fight:</b> a behaviour, as follow and station are: close to the band (by its chief guns' reach), hold it with
+/// <item><b>Fight:</b> a behaviour, as follow and station are: close to the band (where his unit's matchup is best, doctrine's
+/// share of its chief guns' reach where that hardly matters), hold it with
 /// them bearing, turn away when outgunned (<see cref="Behaviours.Fight"/>). A torpedo craft's (no gun of 6" or more, torpedoes left)
 /// is the attack: close to <see cref="SimSettings.TorpedoAttackShare"/> of its torpedoes' fast setting whatever
 /// guns it faces, fire, turn away for <see cref="SimSettings.TorpedoTurnAwayMs"/>, and again (docs/battle/fighting.md
@@ -1000,6 +1001,9 @@ public sealed partial class CaptainLayer
             (cap.FightEnemy, cap.FightSide) = (enemy, 0);
 
         bool judged = Judge.Near(ctx, own, out var m);
+        if (cap.DistanceM <= 0 && judged && m.BandA > 0)
+            band = m.BandA;   // where his unit does best against them (Matchup.Judge), doctrine's where it hardly matters
+        cap.FightBandM = band;
         double accept = Judge.Bars(own.Entity, own.Side).Accept, c = judged ? m.Confidence : double.PositiveInfinity;
         bool away = cap.FightAway ? c < accept / s.FightRallyShare : c < accept;
         double fallBack = double.NaN;

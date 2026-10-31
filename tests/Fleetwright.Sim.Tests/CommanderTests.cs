@@ -608,4 +608,34 @@ public class CommanderTests(ITestOutputHelper output)
             Run(w, 10);
         Assert.Equal((0.0, 1.0, true), (w.RunBack, w.Speed, w.Paused));
     }
+
+    /// <summary>bugs.md's Victory and the Dreadnought (2026-10-19): at 4.8 km, both commanders on, on either side. The
+    /// Dreadnought's commander doesn't withdraw her (the matchup has her the stronger at every range: Victory's 152s put
+    /// her out a tenth of a percent a hit, her 12" Victory a tenth), and Victory's band is where her light, quick guns do
+    /// best, close in, not doctrine's share of their reach (~10 km), though outgunned she turns away.</summary>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    public void A_dreadnought_isnt_withdrawn_from_victory_whose_band_is_close_in(int victorySide)
+    {
+        var (w, ai) = Make();
+        int v = w.Ships.AddClass(Fleet.Get("victory_1944").Class!), d = w.Ships.AddClass(Fleet.Get("dreadnought").Class!);
+        var (la, lo) = LatLon(Earth.Position(Lat, Lon));
+        var (lb, lob) = LatLon(Off(90, 4_800));
+        w.Apply(ShipSystem.Spawn(v, la, lo, 0, 10, (byte)victorySide));
+        w.Apply(ShipSystem.Spawn(d, lb, lob, 0, 10, (byte)(1 - victorySide)));
+        w.Apply(ai.Orders.Commander(0, CommanderMode.On));
+        w.Apply(ai.Orders.Commander(1, CommanderMode.On));
+        w.Apply(ai.Orders.ByHand.Fight(Unit.Ship(1)));   // Victory told to fight: her band (her commander would take her home)
+        double band = 0;
+        for (int m = 0; m < 10; m++)
+        {
+            Run(w, 60);
+            if (band == 0)
+                band = ai.Captains.BandOf(1);   // her first judgement, at 4.8 km (outgunned, she turns away after)
+            Assert.NotEqual(CommanderPhase.Retiring, ai.Commanders.PhaseOf(1 - victorySide).Phase);
+        }
+        output.WriteLine($"Victory on side {victorySide}: her band {band:F0} m; the Dreadnought's side {ai.Commanders.PhaseOf(1 - victorySide)}");
+        Assert.InRange(band, 1, 4_000);
+    }
 }

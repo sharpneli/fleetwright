@@ -459,9 +459,10 @@ public readonly record struct MatchupTerms(double RangeM, MatchupStyle Style, do
     public double Confidence(double floor) => Math.Max(LostB, floor) / Math.Max(LostA, floor);
 }
 
-/// <summary>A's judgement against B: its confidence at the range and style the faster side picks (or A's own at about
-/// equal speed), both sides' speeds (each its slowest ship's), and the terms behind it.</summary>
-public readonly record struct MatchupResult(double Confidence, double SpeedA, double SpeedB, MatchupTerms Terms)
+/// <summary>A's judgement against B: its confidence at the range and style the faster side picks (or the further of the
+/// two sides' at about equal speed), both sides' speeds (each its slowest ship's), the terms behind it, and each side's band (the range it
+/// would fight at, <see cref="Matchup.Judge"/>; 0 with no guns).</summary>
+public readonly record struct MatchupResult(double Confidence, double SpeedA, double SpeedB, MatchupTerms Terms, double BandA = 0, double BandB = 0)
 {
     /// <summary>A can refuse the fight (it's the faster by the margin).</summary>
     public bool ACanRefuse(SimSettings s) => SpeedA > SpeedB + s.MatchupSpeedMarginKn;
@@ -481,15 +482,19 @@ public static class Matchup
     /// <summary>The most classes a side may have in one judgement.</summary>
     public const int MaxClasses = 64;
 
-    /// <summary>A's judgement of B. Each side's gun range is its doctrine's share of its main guns' reach: the lines fight
-    /// at the faster side's (by the margin) best of the two, else at A's. A side's attackers (<see cref="Attackers"/>)
+    /// <summary>A's judgement of B. Each side's gun range is its band (<see cref="Bands"/>: where it does best, closing to
+    /// it from where the fight opens counted, doctrine's share of its main guns' reach where that hardly matters, or for A
+    /// the band it holds, <paramref name="keepA"/>, while that's still among its best, so it doesn't flit between them; both
+    /// given, <paramref name="bandA"/> and <paramref name="bandB"/>, they aren't judged again): the
+    /// lines fight at the faster side's (by the margin) best of the two, else at the further of them (neither can force
+    /// the other in). A side's attackers (<see cref="Attackers"/>)
     /// attack if that's better for it than not (each judged against the other not attacking). In the dark (<paramref name="light"/>;
     /// daylight if none) a gun fires only on a class within the range it's made out at (<see cref="MatchupLight.SeenM"/>):
     /// the defence opens on an attack from there if that's less than its reach, and the lines fight no further off than
     /// both make the other out (a line firing shows itself by its flashes: the sim can't lay a gun on a flash yet, so a
     /// gunfight from the edge of the other's sight isn't judged to go unanswered).</summary>
     public static MatchupResult Judge(ReadOnlySpan<MatchupEntry> a, ReadOnlySpan<MatchupEntry> b, double rangeShareA, double rangeShareB, SimSettings s,
-        MatchupLight? light = null)
+        MatchupLight? light = null, double openM = 0, double keepA = 0, double bandA = 0, double bandB = 0)
     {
         if (a.Length > MaxClasses || b.Length > MaxClasses)
             throw new ArgumentException($"a matchup takes at most {MaxClasses} classes a side");
@@ -500,32 +505,98 @@ public static class Matchup
         bool aPicks = speedA > speedB + s.MatchupSpeedMarginKn, bPicks = speedB > speedA + s.MatchupSpeedMarginKn;
         // in the dark the lines fight where both make the other out: a line firing shows itself by its flashes
         double mutual = Math.Min(Farthest(a, seenA), Farthest(b, seenB));
-        double gunA = Math.Min(rangeShareA * Reach(a), mutual), gunB = Math.Min(rangeShareB * Reach(b), mutual);
-        double line = gunA > 0 ? gunA : gunB;
         ulong byA = Attackers(a, b, s, seenA, seenB), byB = Attackers(b, a, s, seenB, seenA);   // once: they don't hang on the range
-        var plain = Engage(a, b, line, MatchupStyle.Gunfight, byA, byB, s, seenA, seenB);
-        if ((aPicks || bPicks) && gunB > 0 && gunB != line)
+        // the fight opens at the range given (where they are now), else where the first guns reach; the lines go from
+        // there to the range fought at
+        double far = Math.Min(Math.Max(MaxReach(a), MaxReach(b)), mutual);
+        double open = openM > 0 ? Math.Min(openM, far) : far;
+        // A keeps the band it holds while that's among its best, else it's doctrine's range it leans to
+        double prefA = keepA > 0 ? keepA : Math.Min(rangeShareA * Reach(a), mutual);
+        var (gunA, gunB) = bandA > 0 && bandB > 0 ? (Math.Min(bandA, far), Math.Min(bandB, far))   // the bands chosen already (a captain's, thought out a while ago)
+            : Bands(a, b, prefA, Math.Min(rangeShareB * Reach(b), mutual), far, open, speedA, speedB, byA, byB, s, seenA, seenB);
+        // the faster side picks the better of the two for it; at about equal speed neither can force the other in, so
+        // the lines fight at the further of them
+        double line, kn;
+        MatchupTerms plain;
+        if (aPicks || bPicks)
         {
-            var other = Engage(a, b, gunB, MatchupStyle.Gunfight, byA, byB, s, seenA, seenB);
-            double c0 = plain.Confidence(s.MatchupFloor), c1 = other.Confidence(s.MatchupFloor);
-            if (aPicks ? c1 > c0 : c1 < c0)
-                (line, plain) = (gunB, other);
+            kn = aPicks ? speedA : speedB;
+            line = gunA > 0 ? gunA : gunB;
+            plain = Engage(a, b, line, MatchupStyle.Gunfight, byA, byB, s, seenA, seenB, open, kn);
+            if (gunB > 0 && gunB != line)
+            {
+                var other = Engage(a, b, gunB, MatchupStyle.Gunfight, byA, byB, s, seenA, seenB, open, kn);
+                double c0 = plain.Confidence(s.MatchupFloor), c1 = other.Confidence(s.MatchupFloor);
+                if (aPicks ? c1 > c0 : c1 < c0)
+                    (line, plain) = (gunB, other);
+            }
+        }
+        else
+        {
+            (line, kn) = (Math.Max(gunA, gunB), Math.Max(speedA, speedB));
+            plain = Engage(a, b, line, MatchupStyle.Gunfight, byA, byB, s, seenA, seenB, open, kn);
         }
         double c = plain.Confidence(s.MatchupFloor);
         var style = MatchupStyle.Gunfight;
         MatchupTerms withA = default, withB = default;   // each style weighed, kept for the one chosen
-        if (byA != 0 && (withA = Engage(a, b, line, MatchupStyle.AttackByA, byA, byB, s, seenA, seenB)).Confidence(s.MatchupFloor) > c)
+        if (byA != 0 && (withA = Engage(a, b, line, MatchupStyle.AttackByA, byA, byB, s, seenA, seenB, open, kn)).Confidence(s.MatchupFloor) > c)
             style |= MatchupStyle.AttackByA;
-        if (byB != 0 && (withB = Engage(a, b, line, MatchupStyle.AttackByB, byA, byB, s, seenA, seenB)).Confidence(s.MatchupFloor) < c)
+        if (byB != 0 && (withB = Engage(a, b, line, MatchupStyle.AttackByB, byA, byB, s, seenA, seenB, open, kn)).Confidence(s.MatchupFloor) < c)
             style |= MatchupStyle.AttackByB;
         var t = style switch
         {
             MatchupStyle.Gunfight => plain,
             MatchupStyle.AttackByA => withA,
             MatchupStyle.AttackByB => withB,
-            _ => Engage(a, b, line, style, byA, byB, s, seenA, seenB),
+            _ => Engage(a, b, line, style, byA, byB, s, seenA, seenB, open, kn),
         };
-        return new MatchupResult(t.Confidence(s.MatchupFloor), speedA, speedB, t with { AttackersA = byA, AttackersB = byB });
+        return new MatchupResult(t.Confidence(s.MatchupFloor), speedA, speedB, t with { AttackersA = byA, AttackersB = byB }, gunA, gunB);
+    }
+
+    /// <summary>Each side's band, the range it would fight the lines' gunfight at: of the ranges judged
+    /// (<see cref="SimSettings.MatchupBandSteps"/> from <see cref="SimSettings.MatchupBandMinM"/> out to the farthest gun's
+    /// reach, <paramref name="far"/>), each with the side going to it from where the fight opens (<paramref name="open"/>)
+    /// at its speed under fire, those within
+    /// <see cref="SimSettings.MatchupBandFlatShare"/> of its best confidence, and of them the nearest its doctrine's range
+    /// (<paramref name="prefA"/>, <paramref name="prefB"/>): a captain who fights wants the range he does best at, getting
+    /// there counted, and where it hardly matters, doctrine's. A side picks only among the ranges its own guns reach (past
+    /// them it does nothing, and nobody hurting anybody reads as even), short of their reach by what its captains hold a
+    /// band to (<see cref="SimSettings.FightBandShare"/>: outranging the other by metres isn't a range held). Doctrine's
+    /// ranges when there's nothing to judge.</summary>
+    static (double A, double B) Bands(ReadOnlySpan<MatchupEntry> a, ReadOnlySpan<MatchupEntry> b, double prefA, double prefB, double far, double open,
+        double speedA, double speedB, ulong byA, ulong byB, SimSettings s, ReadOnlySpan<double> seenA, ReadOnlySpan<double> seenB)
+    {
+        int n = Math.Max(s.MatchupBandSteps, 1);
+        if (far <= 0)
+            return (prefA, prefB);
+        // a band is held only within FightBandShare of it, so it lies that far inside the side's reach at most
+        double hold = 1 - s.FightBandShare;
+        double near = Math.Min(s.MatchupBandMinM, far), reachA = MaxReach(a) * hold, reachB = MaxReach(b) * hold;
+        double bandA = prefA, bandB = prefB, bestA = 0, bestB = double.MaxValue;
+        Span<double> at = stackalloc double[n], cA = stackalloc double[n], cB = stackalloc double[n];
+        for (int k = 0; k < n; k++)
+        {
+            at[k] = n == 1 ? far : near + (far - near) * k / (n - 1);
+            // A's confidence, A closing (its best the most) and B closing (B's best the least); only where each shoots
+            cA[k] = at[k] <= reachA ? Engage(a, b, at[k], MatchupStyle.Gunfight, byA, byB, s, seenA, seenB, open, speedA).Confidence(s.MatchupFloor) : double.NaN;
+            bool same = at[k] >= open || speedA == speedB;   // no closing to do, or both close alike: the same fight
+            cB[k] = at[k] > reachB ? double.NaN
+                : same && at[k] <= reachA ? cA[k]
+                : Engage(a, b, at[k], MatchupStyle.Gunfight, byA, byB, s, seenA, seenB, open, speedB).Confidence(s.MatchupFloor);
+            if (!double.IsNaN(cA[k]))
+                bestA = Math.Max(bestA, cA[k]);
+            if (!double.IsNaN(cB[k]))
+                bestB = Math.Min(bestB, cB[k]);
+        }
+        double dA = double.MaxValue, dB = double.MaxValue, flat = 1 - s.MatchupBandFlatShare;
+        for (int k = 0; k < n; k++)
+        {
+            if (cA[k] >= bestA * flat && Math.Abs(at[k] - prefA) < dA)
+                (bandA, dA) = (at[k], Math.Abs(at[k] - prefA));
+            if (bestB >= cB[k] * flat && Math.Abs(at[k] - prefB) < dB)
+                (bandB, dB) = (at[k], Math.Abs(at[k] - prefB));
+        }
+        return (bandA, bandB);
     }
 
     /// <summary>How far each entry of a side is made out in the light (unlimited by day or with none).</summary>
@@ -608,8 +679,11 @@ public static class Matchup
         return Engage(a, b, rangeM, style, Attackers(a, b, s, seenA, seenB), Attackers(b, a, s, seenB, seenA), s, seenA, seenB);
     }
 
+    /// <summary><inheritdoc cref="Engage(ReadOnlySpan{MatchupEntry}, ReadOnlySpan{MatchupEntry}, double, MatchupStyle, SimSettings, MatchupLight?)"/>
+    /// Opened further out (<paramref name="openM"/>), the lines first close to the range at <paramref name="closeKn"/>,
+    /// every gun firing at the mean range on the way.</summary>
     static MatchupTerms Engage(ReadOnlySpan<MatchupEntry> a, ReadOnlySpan<MatchupEntry> b, double rangeM, MatchupStyle style, ulong byA, ulong byB,
-        SimSettings s, ReadOnlySpan<double> seenA, ReadOnlySpan<double> seenB)
+        SimSettings s, ReadOnlySpan<double> seenA, ReadOnlySpan<double> seenB, double openM = 0, double closeKn = 0)
     {
         Span<double> outA = stackalloc double[a.Length], outB = stackalloc double[b.Length];
         Span<double> preA = stackalloc double[a.Length], preB = stackalloc double[b.Length];
@@ -620,6 +694,18 @@ public static class Matchup
         inB.Clear();
         double attackA = (style & MatchupStyle.AttackByA) != 0 ? AttackRange(a, byA, inA, s) : 0;
         double attackB = (style & MatchupStyle.AttackByB) != 0 ? AttackRange(b, byB, inB, s) : 0;
+        Span<bool> lineA = stackalloc bool[a.Length], lineB = stackalloc bool[b.Length];
+        for (int i = 0; i < a.Length; i++)
+            lineA[i] = !inA[i];
+        for (int i = 0; i < b.Length; i++)
+            lineB[i] = !inB[i];
+
+        // the lines closing to the range from where the fight opened, under fire through the ranges between (opening it
+        // is turning away: what a faster pursuer makes of that is who picks the range); the attackers run in on their own,
+        // below
+        var (closeMin, closeMid) = openM > rangeM ? RunIn(openM, closeKn, rangeM) : (0, rangeM);
+        Guns(a, lineA, default, b, lineB, default, closeMid, closeMid, closeMid, closeMin, seenB, s, outB);
+        Guns(b, lineB, default, a, lineA, default, closeMid, closeMid, closeMid, closeMin, seenA, s, outA);
 
         // the attacks: in, the salvo, fired, and out; the lines fighting on beside them
         double inMinA = 0, inMinB = 0, midA = rangeM, midB = rangeM;
@@ -645,19 +731,13 @@ public static class Matchup
         }
         // the attackers are out of it: the lines alone for the rest of the fight
         double attackMin = 2 * inMin + fireMin, rest = Math.Max(s.MatchupFightMin - attackMin, 0);
-        Span<bool> lineA = stackalloc bool[a.Length], lineB = stackalloc bool[b.Length];
-        for (int i = 0; i < a.Length; i++)
-            lineA[i] = !inA[i];
-        for (int i = 0; i < b.Length; i++)
-            lineB[i] = !inB[i];
-        Guns(a, lineA, default, b, lineB, default, rangeM, rangeM, rangeM, rest, seenB, s, outB);
-        Guns(b, lineB, default, a, lineA, default, rangeM, rangeM, rangeM, rest, seenA, s, outA);
+        LinesFight(a, lineA, b, lineB, rangeM, rest, seenA, seenB, s, outA, outB);
         outA.CopyTo(preA);
         outB.CopyTo(preB);
         torpOnB += Torpedoes(a, lineA, b, rangeM, s, outB, preA, s.TorpedoFireShare);
         torpOnA += Torpedoes(b, lineB, a, rangeM, s, outA, preB, s.TorpedoFireShare);
         double gunsOnA = Sum(outA, default) - torpOnA, gunsOnB = Sum(outB, default) - torpOnB;
-        return new MatchupTerms(rangeM, style, attackA, attackB, Math.Max(attackMin, s.MatchupFightMin), gunsOnB, torpOnB, gunsOnA, torpOnA, runIn,
+        return new MatchupTerms(rangeM, style, attackA, attackB, closeMin + Math.Max(attackMin, s.MatchupFightMin), gunsOnB, torpOnB, gunsOnA, torpOnA, runIn,
             Lost(a, outA), Lost(b, outB), byA, byB);
     }
 
@@ -748,6 +828,112 @@ public static class Matchup
                     continue;
                 for (int j = 0; j < to.Length; j++)
                     outTo[j] += shells * to[j].Count * k[j] / sum * k[j];
+            }
+        }
+    }
+
+    /// <summary>A thread's room for the lines' fight's tables (<see cref="LinesFight"/>): grown, never shrunk, so a
+    /// judgement allocates nothing once warm.</summary>
+    [ThreadStatic] static double[]? fightTables;
+
+    /// <summary>The lines' gunfight at a range over some minutes (the ships marked of each side), fought in
+    /// <see cref="SimSettings.MatchupFightSlices"/> slices: in each, every side's guns are those of its ships still in it,
+    /// on those of the other still in it (Lanchester's attrition: a line shot to pieces at point blank stops firing), its
+    /// rounds shared out over the slices; otherwise as <see cref="Guns"/>. What a battery does to each class at the range is
+    /// worked out once (<see cref="Tables"/>); the slices are sums.</summary>
+    static void LinesFight(ReadOnlySpan<MatchupEntry> a, ReadOnlySpan<bool> lineA, ReadOnlySpan<MatchupEntry> b, ReadOnlySpan<bool> lineB,
+        double rangeM, double minutes, ReadOnlySpan<double> seenA, ReadOnlySpan<double> seenB, SimSettings s, Span<double> outA, Span<double> outB)
+    {
+        if (minutes <= 0)
+            return;
+        int rowsA = Batteries(a) * (b.Length + 2), rowsB = Batteries(b) * (a.Length + 2);
+        if (fightTables == null || fightTables.Length < rowsA + rowsB)
+            fightTables = new double[Math.Max(rowsA + rowsB, 2 * (fightTables?.Length ?? 512))];
+        var onB = fightTables.AsSpan(0, rowsA);
+        var onA = fightTables.AsSpan(rowsA, rowsB);
+        Tables(a, lineA, b, lineB, rangeM, seenB, s, onB);
+        Tables(b, lineB, a, lineA, rangeM, seenA, s, onA);
+        int slices = Math.Max(s.MatchupFightSlices, 1);
+        Span<double> preA = stackalloc double[a.Length], preB = stackalloc double[b.Length];
+        for (int t = 0; t < slices; t++)
+        {
+            outA.CopyTo(preA);
+            outB.CopyTo(preB);
+            Fire(a, lineA, b, lineB, onB, minutes / slices, 1.0 / slices, preA, preB, outB);
+            Fire(b, lineB, a, lineA, onA, minutes / slices, 1.0 / slices, preB, preA, outA);
+        }
+    }
+
+    /// <summary>Every battery of a side, over its entries.</summary>
+    static int Batteries(ReadOnlySpan<MatchupEntry> side)
+    {
+        int n = 0;
+        foreach (ref readonly var e in side)
+            n += e.Profile.Guns.Length;
+        return n;
+    }
+
+    /// <summary>Each battery of <paramref name="from"/>'s (entry by entry, a row each): its shells a ship a minute, its
+    /// rounds a ship (infinite: no limit given), and what a shell of it does to each of <paramref name="to"/>'s classes at
+    /// the range (hit chance by the out exponent, as <see cref="Guns"/>; 0 out of reach or sight, or not taking part).</summary>
+    static void Tables(ReadOnlySpan<MatchupEntry> from, ReadOnlySpan<bool> fromSel, ReadOnlySpan<MatchupEntry> to, ReadOnlySpan<bool> toSel,
+        double rangeM, ReadOnlySpan<double> seenTo, SimSettings s, Span<double> rows)
+    {
+        int row = 0, width = to.Length + 2;
+        for (int i = 0; i < from.Length; i++)
+        {
+            ref readonly var e = ref from[i];
+            foreach (var g in e.Profile.Guns)
+            {
+                var r = rows.Slice(row, width);
+                row += width;
+                r.Clear();
+                if (e.Count == 0 || fromSel.Length > 0 && !fromSel[i])
+                    continue;
+                r[0] = g.Guns * e.GunShare(g) * g.ShellsPerGunMin;
+                r[1] = g.Rounds == int.MaxValue ? double.PositiveInfinity : g.Rounds * e.RoundsShare(g);
+                if (rangeM > g.KindsReachM)
+                    continue;
+                for (int j = 0; j < to.Length; j++)
+                {
+                    if (to[j].Count == 0 || toSel.Length > 0 && !toSel[j] || rangeM > seenTo[j])
+                        continue;
+                    var (hit, exponent) = g.Chosen(to[j].Profile, rangeM, s);
+                    r[2 + j] = hit * (1 - Math.Exp(-exponent / Math.Max(to[j].Toughness, 1e-3)));
+                }
+            }
+        }
+    }
+
+    /// <summary>A slice of the lines' fight from one side (<see cref="LinesFight"/>): its ships still in it
+    /// (<paramref name="fromOut"/> so far) fire their batteries' rows for the minutes, at most the slice's share of their
+    /// rounds, over the other's ships still in it (<paramref name="toOut"/> so far, at the slice's start), into
+    /// <paramref name="outTo"/>.</summary>
+    static void Fire(ReadOnlySpan<MatchupEntry> from, ReadOnlySpan<bool> fromSel, ReadOnlySpan<MatchupEntry> to, ReadOnlySpan<bool> toSel,
+        ReadOnlySpan<double> rows, double minutes, double roundsShare, ReadOnlySpan<double> fromOut, ReadOnlySpan<double> toOut, Span<double> outTo)
+    {
+        Span<double> left = stackalloc double[to.Length];
+        for (int j = 0; j < to.Length; j++)
+            left[j] = toSel.Length > 0 && !toSel[j] ? 0 : Math.Max(to[j].Count - toOut[j], 0);
+        int row = 0, width = to.Length + 2;
+        for (int i = 0; i < from.Length; i++)
+        {
+            ref readonly var e = ref from[i];
+            double firing = Math.Max(e.Count - fromOut[i], 0);
+            for (int q = 0; q < e.Profile.Guns.Length; q++, row += width)
+            {
+                if (firing <= 0 || fromSel.Length > 0 && !fromSel[i])
+                    continue;
+                var r = rows.Slice(row, width);
+                double shells = Math.Min(r[0] * minutes, r[1] * roundsShare) * firing, sum = 0;
+                if (shells <= 0)
+                    continue;
+                for (int j = 0; j < to.Length; j++)
+                    sum += left[j] * r[2 + j];
+                if (sum <= 0)
+                    continue;
+                for (int j = 0; j < to.Length; j++)
+                    outTo[j] += shells * left[j] * r[2 + j] / sum * r[2 + j];
             }
         }
     }

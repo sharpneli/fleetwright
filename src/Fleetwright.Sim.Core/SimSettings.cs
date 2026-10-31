@@ -2421,6 +2421,22 @@ public sealed record SimSettings
     public double MatchupSpeedMarginKn { get; init; } = 2;
     public double MatchupFloor { get; init; } = 0.001;
 
+    /// <summary>The range each side would fight at (its band, bugs.md 2026-10-31, the user: "a captain, if they choose to
+    /// fight, naturally wants to maximize their chances of winning"): its confidence judged at MatchupBandSteps ranges
+    /// from MatchupBandMinM out to the farthest either side's guns reach, and of those within MatchupBandFlatShare of its
+    /// best, the nearest its doctrine's RangeShare of its main guns' reach (where the matchup is flat, doctrine's range).
+    /// Ranges, m, a share.</summary>
+    public int MatchupBandSteps { get; init; } = 8;
+    public double MatchupBandMinM { get; init; } = 1_000;
+    public double MatchupBandFlatShare { get; init; } = 0.2;
+    /// <summary>A unit's bands against the enemy round it are thought out again this often, s (the user, 2026-10-31: "a real
+    /// captain does not re-evaluate absolutely everything he's doing every few seconds"); its judgement at them each moment.</summary>
+    public double MatchupBandThinkS { get; init; } = 15;
+
+    /// <summary>The lines' gunfight is fought in this many slices, each side firing with the ships it has left on those
+    /// the other has left (attrition: a ship shot to pieces in the first minutes doesn't fire for the rest).</summary>
+    public int MatchupFightSlices { get; init; } = 6;
+
     /// <summary>An enemy's toughness left as it's seen: low in the water, listing, trimmed by the bow or the stern, burning
     /// (each a share, multiplied). Silent, its guns count for nothing; stopped, it can't get away.</summary>
     public double MatchupSeenLowShare { get; init; } = 0.5;

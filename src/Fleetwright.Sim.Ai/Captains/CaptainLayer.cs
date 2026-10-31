@@ -120,6 +120,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         public int FireTarget, FireFrom;   // the ship engaged; the group whose admiral gave the fire order (0: his own)
         public int FightSide, FightEnemy;  // fighting: the side he keeps the enemy on (0: not chosen yet), and whom
         public bool FightAway;          // fighting: outmatched, turned away
+        public double FightBandM;       // fighting: the range he keeps (his unit's matchup's best, or ordered), m
         public bool AttackOrdered;      // fighting by an Attack order: a torpedo craft presses it home whatever the matchup
         public bool Met;                // doctrine's Engage taken up in this encounter
         public long TorpedoMs;          // when he last fired torpedoes (0: never)
@@ -257,6 +258,9 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
     /// an enemy, or turned away from one.</summary>
     public (bool Attacking, bool Finishing, bool Away) FightOf(int entity) =>
         Find(entity) is int i and >= 0 ? (captains[i].Attacking, captains[i].Finishing, captains[i].FightAway) : default;
+
+    /// <summary>The range a fighting captain keeps, m (his unit's matchup's best, or ordered; 0 before he's fought).</summary>
+    public double BandOf(int entity) => Find(entity) is int i and >= 0 ? captains[i].FightBandM : 0;
 
     /// <summary>Whether a ship's captain is combing a torpedo's track his lookouts saw (his admiral reads it: tracks seen).</summary>
     public bool Combing(int entity, long nowMs) => Find(entity) is int i and >= 0 && captains[i].HeldUntilMs > nowMs && captains[i].HeldFor == CaptainReason.Combing;

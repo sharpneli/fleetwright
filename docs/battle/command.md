@@ -170,7 +170,7 @@ own value, else its group's, else the side's. A command sets it, so it's logged 
 | Field | What it decides | v0 default |
 |---|---|---|
 | **Engage** | When a unit fights an enemy it meets: always, if not outgunned, only if attacked, never (evade) | If not outgunned |
-| **Range** | The fighting range, as a share of the main battery's reach (4.2c's `FightRangeShare`) | 0.6 |
+| **Range** | The fighting range, as a share of the main battery's reach (4.2c's `FightRangeShare`); since 2026-10-31 (bugs.md) only where the matchup hardly cares: the band is where the unit does best (`Matchup.Judge`), this the tie-break | 0.6 |
 | **Outgunned** | 1 / it is the matchup under which a unit turns away, and a commander declines battle (5.1g) | 2 |
 | **Seek** (5.1g) | The matchup at which a commander sends units after an enemy | 1 |
 | **Fall out** | When a ship leaves the line: speed under a share of its designed speed, main guns under a share, list over a limit, or water over a share of its reserve | 60% speed, a third of the guns, 10°, half |
@@ -970,6 +970,13 @@ odds, not a forecast of the battle.
 - **The range is the faster side's:** the matchup is judged at a few candidate ranges (torpedo range, each side's
   doctrine range); the side faster by a margin gets the one best for it, and at about equal speed it's the judge's own
   doctrine range. Destroyers can force torpedo range on a battleship; a battleship can't hold a faster cruiser off.
+  Since 2026-10-31 (bugs.md, the user: "a captain, if they choose to fight, naturally wants to maximize their chances of
+  winning"): each side's candidate is its band, the best of `MatchupBandSteps` ranges within its reach (less
+  `FightBandShare`), closing to it from where the fight opens counted (the range now, or the farthest gun's reach), and
+  doctrine's range only the tie-break among those within `MatchupBandFlatShare` of the best (a captain keeps the band he
+  holds while it's among them); at about equal speed the further of the two (neither can force the other in). The lines'
+  fight is fought in `MatchupFightSlices` slices with attrition (a line shot to pieces stops firing), which the closer
+  bands needed: without it a lone light cruiser at point blank put half a battleship out after she'd sunk.
 - **Fire goes where it tells:** a group's batteries are spread over the enemy's classes by what each does to them, not
   by tonnage, so a light cruiser squadron's 6" goes to the destroyers in a mixed group.
 - **Night shortens the run-in:** the defence's guns open on torpedo craft only within the night's sight range, so a

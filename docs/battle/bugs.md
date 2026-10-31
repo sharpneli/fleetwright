@@ -196,16 +196,31 @@ moving underwater shells to a 3-decay reach), which now runs with hits doing no 
 Seen with `victory_1944` against `dreadnought` at 4.8 km (2026-10-19, the bug hunt that gave ships without a main
 battery their heaviest guns as chief, `BatteryRow.Chief`):
 
-- [ ] The Fight band is doctrine's RangeShare (0.6) of the chief guns' reach, whatever they are: Victory's 152s reach
+- [x] The Fight band is doctrine's RangeShare (0.6) of the chief guns' reach, whatever they are: Victory's 152s reach
   16.6 km, so she opens from 4 km out to ~10 km, where her light guns hit far less (7.7% against 40% at 4 km) and the
   Dreadnought's 12" are still in reach. A ship of light, quick guns should want the range where her matchup is best,
   not a share of her reach. A design question for the band (the matchup's best range?), not a quick fix.
+  Fixed 2026-10-31 (the user: "a captain, if they choose to fight, naturally wants to maximize their chances of
+  winning, so the band should be optimal"): `Matchup.Judge` takes each side's band as the best of `MatchupBandSteps`
+  ranges within its guns' reach (less `FightBandShare`: outranging by metres isn't a range held), doctrine's RangeShare
+  the tie-break where the matchup is flat (within `MatchupBandFlatShare`), and the captain's Fight keeps it
+  (`CaptainLayer.BandOf`). Optimal exposed three gaps in the matchup, each fixed physically: closing to a band cost
+  nothing (now the lines close from where the fight opens, the range now for a captain, under fire at the mean range);
+  the gunfight had no attrition (a lone Arethusa at 1 km put 46% of Iron Duke out after she'd sunk: now in
+  `MatchupFightSlices` slices, each side firing with what it has left on what the other has left; Arethusa 0.47 to
+  0.016, two Iron Dukes on one 3.5 to 4.0, the square law); and at about equal speed A judged at its own range (now the
+  further of the two: neither can force the other in). A unit's bands are thought out every `MatchupBandThinkS` (15),
+  kept while among the best. Victory's band at 4.8 km is 1 km now (`CommanderTests`); Lion on Derfflinger 2.5 at 14.9 km.
 - [ ] Britain made the Dreadnought out 20 s later than Germany made Victory out (15:30:35 against 15:30:10), and only
   with Victory on side 0; on side 1 she engages at once. Both in 25 km visibility at 4.8 km, where the first look
   should see a dreadnought. Likely the detection's draw (`Sightings.Sight`, its stream by side, entity and look), but
   20 s at that range is long: check the chance per look for a 15 m eye on a big ship at 5 km.
-- [ ] Germany's commander judged the Dreadnought outmatched by Victory (2,274 t) and withdrew her, a few minutes in.
+- [x] Germany's commander judged the Dreadnought outmatched by Victory (2,274 t) and withdrew her, a few minutes in.
   Victory's 152s were hitting at 40% at 4 km, so maybe right; check the judgement's terms before believing it.
+  Not so, and gone by 2026-10-31: the matchup has the Dreadnought far the stronger at every range (Victory's
+  confidence 0.78 at 2 km to 0.09 at 13: her 152s put the Dreadnought out 0.1-0.2% a hit, the 12" Victory 10-13%), and
+  at HEAD the Dreadnought's commander keeps her in the battle, Victory on either side (it's Victory's own commander who
+  sends her home); `CommanderTests.A_dreadnought_isnt_withdrawn_from_victory_whose_band_is_close_in` keeps it.
 
 Seen in the AI's baseline after the detail passes (2026-10-20, docs/battle/command.md, after 5.1g):
 
