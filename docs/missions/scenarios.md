@@ -273,6 +273,11 @@ The user's ask: Sverige class against Väinämöinen class, the class a design s
   Sweden's 1.0, and every big ship's magazines run dry by about 08:00 at long-range hit rates of 2-4%. In 8 km it's a
   fight: Finland 4.1 of 9, Sweden 2.4 of 7 (about a Sverige a run, 13,600 t), from 0 to 8 lost on each side across
   the seeds (one seed sank all three Sverige).
+- **Finland's doctrine is bold** (Aggression +1; the user, 2026-10-31: "it doesn't make sense for us to have a
+  scenario which is so unbalanced that even the AI decides to bail out"). After balance.md BL5's escape and search
+  rules the Kommodori, outmatched at the default bar, declined and got away in most seeds (no fight at all in the
+  panel, 0 shells). Bold, he fights down to a third of the odds: Finland 4.2 of 9, Sweden 2.0 of 7 (8 seeds), 7 of 8
+  seeds a fight. A fourth Väinämöinen with it was worse for Finland (6.4 v 1.6: a bigger bold force presses in harder).
 - **Sizes:** the generator makes Sverige 10,600 t (history 7,100) and Väinämöinen 2,600 t (3,900); both read as
   cruisers to the sim (`Sightings.TypeOf`: under 14,000 t full). The destroyers are about 3x history (Wrangel 1,470 t at
   32 kn, the boats 890 t at 28 kn), as in the destroyer crunch; 34 kn made Wrangel 1,850 t.

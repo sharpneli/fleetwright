@@ -469,35 +469,52 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         double bar = Judge.Bars(0, side).Accept, margin = ctx.Settings.CommanderMarginShare, low = bar / (1 + margin), high = bar * (1 + margin);
         if (!s.Declined)
         {
-            if (r.Confidence < low && CanGetAway(ctx, side))
+            if (r.Confidence < low && CanGetAway(ctx, side, held))
                 Decline(s, r.Confidence);
             return;
         }
         if (r.Confidence < s.DeclinedC)
             Decline(s, r.Confidence);   // graver than what he declined: it's what he remembers now
-        if (r.Confidence < high && !CanGetAway(ctx, side))
+        if (r.Confidence < high && !CanGetAway(ctx, side, held))
             s.Declined = false;   // caught by what he can't beat and can't get away from: he fights
         else if (r.Confidence > high && Judge.Judge(ctx, 0, side, at, mine, s.DeclinedFrom).Confidence > high)
             s.Declined = false;   // the balance has turned against what he held and what he declined alike: he accepts
     }
 
-    /// <summary>Whether his side can get away (balance.md BL5, proposal 2): his top units in touch (an enemy in sight within
-    /// <see cref="SimSettings.FightCompareM"/>), the slowest of them, faster by <see cref="SimSettings.MatchupSpeedMarginKn"/>
-    /// than the enemy in sight about them, the slowest of those (<see cref="Matchup.Slowest"/>, as the matchup takes a
-    /// side's speed). Out of touch, a unit is free to go home anyway: a slow ship far from the fight doesn't pin the side.</summary>
-    bool CanGetAway(in AiContext ctx, byte side)
+    /// <summary>Whether his side can get away (balance.md BL5, proposal 2): his top units in touch (an enemy group he holds,
+    /// in sight or not, within <see cref="SimSettings.FightCompareM"/>: Åland's haze hid the Swedes from the Finnish guide
+    /// for a moment, and touch judged by sight let 15-kn ships "get away" from a 22-kn line), the slowest of them, faster by
+    /// <see cref="SimSettings.MatchupSpeedMarginKn"/> than those groups' ships, the slowest of those that can chase (as the
+    /// matchup takes a side's speed, <see cref="Matchup.Slowest"/>, less any seen stopped). Out of touch, a unit is free to
+    /// go home anyway: a slow ship far from the fight doesn't pin the side.</summary>
+    bool CanGetAway(in AiContext ctx, byte side, ReadOnlySpan<HeldGroup> held)
     {
         touchMine.Clear();
         touchEnemy.Clear();
+        double reach = ctx.Settings.FightCompareM;
         foreach (var t in tops)
-            if (t.Side == side && t.Role is not (UnitRole.None or UnitRole.Auxiliary) && InContact(ctx, t))
-            {
+        {
+            if (t.Side != side || t.Role is UnitRole.None or UnitRole.Auxiliary)
+                continue;
+            var at = store[t.Slot].Position;
+            bool touch = false;
+            foreach (ref readonly var g in held)
+                if ((g.Centre - at).Length <= reach)
+                {
+                    touch = true;
+                    AddGroup(ctx, side, g, touchEnemy);
+                }
+            if (touch)
                 AddTop(ctx, t, touchMine);
-                Judge.AddNear(ctx.World, side, store[t.Slot].Position, ctx.Settings.FightCompareM, touchEnemy);
-            }
-        if (touchMine.Count == 0 || touchEnemy.Count == 0)
+        }
+        // the enemy who can chase: one seen stopped can't (her speed 0 in the matchup) and doesn't set his
+        double chase = double.MaxValue;
+        foreach (ref readonly var e in touchEnemy.Entries)
+            if (e.Count > 0 && e.SpeedKn > 0)
+                chase = Math.Min(chase, e.SpeedKn);
+        if (touchMine.Count == 0 || chase == double.MaxValue)
             return true;
-        return Matchup.Slowest(touchMine.Entries) > Matchup.Slowest(touchEnemy.Entries) + ctx.Settings.MatchupSpeedMarginKn;
+        return Matchup.Slowest(touchMine.Entries) > chase + ctx.Settings.MatchupSpeedMarginKn;
     }
 
     readonly MatchupSide touchMine = new(), touchEnemy = new();
@@ -739,8 +756,13 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         if (s.Target != 0 && pic!.IndexOf(s.Target) is int ti and >= 0)
         {
             var (lat, lon) = Earth.LatLon(pic[ti].Position);
+            // the speed he holds the target's group at, not hers alone (a torpedo boat's dash isn't where the enemy went)
+            double mps = pic[ti].Velocity.Length;
+            foreach (ref readonly var g in held)
+                if (Member(pic, side, g, s.Target))
+                    mps = g.Velocity.Length;
             (s.LastAt, s.LastMs, s.LastMps, s.LastTarget, s.Met, s.Searched) =
-                (Earth.PackLatLon(lat, lon), pic[ti].SeenMs, pic[ti].Velocity.Length, s.Target, true, false);
+                (Earth.PackLatLon(lat, lon), pic[ti].SeenMs, mps, s.Target, true, false);
         }
     }
 

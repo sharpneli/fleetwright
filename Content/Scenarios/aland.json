@@ -4,8 +4,10 @@
 // and Gustaf V, the last rushed out of the yard), and the Finnish class a decade early: the Väinämöinens that the 1920s
 // navy debates bought in the game (Väinämöinen and Ilmarinen, and a third of the game's own). The torpedo boats are
 // invented; the destroyers are Wrangel-likes (Hugin and Munin of the older class among them). Set for balance by the
-// haze: as the AI plays it (8 seeds) Finland loses about 4 of 9 ships a run, Sweden 2.4 of 7 (a Sverige a run), and
-// either side can be wiped out (12 km of visibility let Sweden keep the range: 3.2 v 1.0, every turret dry by 08:00):
+// haze and Finland's bold doctrine (Aggression +1: the Kommodori fights down to a third of the odds and closes; at the
+// default he declined the fight in most seeds after balance.md BL5, 2026-10-31): as the AI plays it (8 seeds) Finland
+// loses about 4 of 9 ships a run, Sweden 2 of 7 (a Sverige a run), and either side can be badly beaten (12 km of
+// visibility let Sweden keep the range: 3.2 v 1.0, every turret dry by 08:00):
 //   Sweden, the stronger ship: 283 mm guns, a 200 mm belt and 22.5 kn; the speed picks the range.
 //   Finland, the numbers and the knife: big guns on small, slow, thin ships, and torpedo boats in the haze.
 // The weather of the day: a midsummer haze on the Åland Sea (8 km), a light south-westerly.
@@ -21,6 +23,8 @@
   "seed": 1921,
   "camera": [59.80, 19.85, 40],
   "sides": ["Finland", "Sweden"],
+  // the Kommodori's orders: get close (balance: the weaker side must fight, or there's no scenario)
+  "doctrine": { "Finland": { "preset": "default", "Aggression": 1 } },
   "readiness": { "Finland": "closed up", "Sweden": "closed up" },
   "damage_control": { "Finland": "1916", "Sweden": "1916" },
   "fire_discipline": { "Finland": "independent", "Sweden": "independent" },
