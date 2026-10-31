@@ -1,7 +1,8 @@
 # Plan: striking colours, abandoning and scuttling
 
-Status: **drafted 2026-10-31**, awaiting the user's decisions below and the research (`research/REQUESTS.md`,
-2026-10-31: "Striking colours, abandoning and scuttling").    Updated: 2026-10-31
+Status: **drafted 2026-10-31**; the user's decisions the same day ("Decided"); waiting for the research
+(`research/REQUESTS.md`, 2026-10-31: "Striking colours, abandoning and scuttling"), then a session of its own.
+Updated: 2026-10-31
 
 Step letters **SK** (free in the docs).
 
@@ -52,7 +53,8 @@ struck, abandoned or gone, which is what decision 4 asked for in place of an end
     or slower than the enemy in touch, `MatchupJudge.Outruns`), with the enemy closing.
   - *Scuttle* in place of striking where doctrine says so and her people can still do it; a consort's torpedo if one
     is by.
-  - The side's doctrine sets how far: a new field (decision 1), and the captain's own temper moves it.
+  - The side's doctrine sets how far: a new field (decision 1); the captain's own temper moves it, past his doctrine
+    at either end, and the crew's state under fire with it (decision 2).
 - **SK3 Read by the enemy.** A strike is seen as a navy sees anything (range, light, haze): her colours down, stopped,
   quiet. Once read (a new `SeenFlags.Struck`), captains cease fire on her; she isn't a target, a threat or a matchup
   entry. A struck ship whose gun fires again is a foe again, as N5b has it.
@@ -64,7 +66,22 @@ struck, abandoned or gone, which is what decision 4 asked for in place of an end
   list it had; picked up by friends, by the enemy or not at all, as the research's shares have it. Counted, not drawn.
 - **SK7 The panel.** The plays by the clock, and losses, before and after.
 
-## For the user
+## Decided (the user, 2026-10-31)
+
+1. **Doctrine sets it, and the captain moves it:** "Even with merciful doctrine someone will fight to the end, and even
+   with Stalin tier 'not one step back' some will surrender." The side's doctrine field (never to when hopeless) is
+   the bar; each captain's own temper (`DoctrineField.Temper`, the person: memory "captain is the person") shifts it
+   either way, wide enough that a captain can go past his doctrine at both ends. So SK2's thresholds are a spread
+   over captains, not one number a side.
+2. **The player's ships strike without asking,** "as per how much of a wimp the captain is and how shaken the crew
+   is": the captain's temper and the crew's state under fire (`crew.md` N3b's steadiness, read from Experience and
+   WorkUp, and what they've been through) both enter the call. No popup; the log says so; a ship ordered by hand to
+   fight on does.
+3. **Prizes** as recommended: taken if the victor holds the sea about her at the end; prize crews and tows later.
+4. **Scuttling** as recommended: in this cut.
+5. **Survivors** as recommended: counted, roughly (SK6).
+
+## For the user (as asked, 2026-10-31)
 
 | # | The question | Recommended |
 |---|---|---|
