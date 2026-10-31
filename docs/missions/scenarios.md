@@ -317,6 +317,16 @@ forces may change with the conditions.
   the island for hours (the scenario's column avoids it); and the slide (a stopped ship coasts on) moved the guide 5
   km in three hours. Both in `docs/battle/bugs.md` ("The slide"). The play bench takes `--watch ID,... --every N` now:
   each side's commander and aims, and the ships named, through one seed (`ScenarioRun --watch` prints the aims too).
+- **The second iteration** (the user's playtest, 2026-10-31: the beach on the small island's south part; the Finns closer
+  to it, so the Swedes must punch through; their search slid along Åland's side). The zone moved to Eckerö's south
+  tip (5 km about 60.125, 19.56). The Finns start on a patrol line (a looping scenario route) across the Swedes' way,
+  8 km short of the beach and square to it, which the commander keeps until the enemy's met; their home is Mariehamn's
+  roads. The stay is 90 minutes. Played: **Finland 0.56, Sweden 0.48 over 24 seeds**, the landing made in 10, Finland
+  losing about 5 of 10 ships, Sweden 4 of 11: a bloody fight across the way. Tried: three Väinämöinens favoured
+  Finland more (0.75 v 0.33 at a 120-minute stay, 12 seeds), as in 2026-10-25's notes; a home 50 km off south of Föglö
+  took Finland to 0.25 (a squadron that broke off didn't come back). Most runs still go to 16:00: a cripple dead in the
+  water, or a ship crept past her home's radius (the slide), keeps the sides in touch after the aims are decided.
+  Found: the Stop side's zone search crossing Eckerö (`docs/battle/bugs.md`, "The slide").
 
 ## Open questions for the user
 

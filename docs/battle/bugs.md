@@ -361,6 +361,12 @@ Seen in the AI's baseline after the detail passes (2026-10-20, docs/battle/comma
   scenario puts them in column (stations astern, to seaward). To hunt: a station on land given up for the nearest
   water astern of the guide, or a stopped formation's followers holding where they are.
 
+- [ ] **A Stop side's zone search crosses the land** (found 2026-10-31, the user's playtest of Åland's landing). With no
+  estimate of the enemy, the commander's main body searches the Reach zone by sectors through its centre (`AimBook.SearchZone`,
+  `SearchPattern.Sector`, aims.md A6); a zone that takes in the shore (Eckerö's beach) puts legs over the island, and the
+  ships slide round its coasts for the length of a leg. The scenario gives the Finns a patrol line short of the beach
+  instead. To hunt: sector legs clipped at the land (`Land`'s arcs), or the search centred on the zone's sea half.
+
 ## Rails and the clock
 
 - [x] "event at 09:15:59.999 is before the clock" at 1M (the user, 2026-10-25: Tsushima with 16 Bismarcks, fought at 1x,
