@@ -365,8 +365,10 @@ public sealed partial class MapScene
         var sub = g >= 0 ? U8.W($"{cls.Name} · {gv.Name[g]}{(gv.GuideShip[g] == e ? ", guide" : "")}") : U8.W($"{cls.Name}");
         // her state: going down, in action; who commands her; falling out
         bool going = ci >= 0 && s.Conditions.Status[ci] == ShipStatus.GoingDown;
+        var given = ci >= 0 ? s.Conditions.GivenUp[ci] : GivenUp.None;   // docs/battle/striking.md SK1
         var c1 = going
             ? s.Conditions.Loss[ci] switch { LossKind.Magazine => "magazine: going down"u8, LossKind.Capsized => "capsizing"u8, LossKind.BrokeInTwo => "broken in two"u8, _ => "foundering"u8 }
+            : (given & GivenUp.Scuttled) != 0 ? "scuttled"u8 : (given & GivenUp.Abandoned) != 0 ? "abandoned"u8 : given != GivenUp.None ? "colours struck"u8
             : v.Encounter[k] != 0 ? "in action"u8 : default;
         var held = g >= 0 ? DetachmentOf(gv, g, e) : Detachment.InLine;
         bool ai = g >= 0 && gv.Commanded[TopOf(gv, g)] == 1;

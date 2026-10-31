@@ -149,6 +149,18 @@ public enum SteerCause : byte
     Rudder,
 }
 
+/// <summary>How a ship's people gave her up (docs/battle/striking.md SK1): her colours struck (Oryol, Nürnberg), her men
+/// ordered off her (Mainz, Blücher), her own charges set to sink her (Cöln, Gneisenau; always with her men off). Her colours
+/// down and her men off go together where she sinks after striking (Sissoi).</summary>
+[Flags]
+public enum GivenUp : byte
+{
+    None = 0,
+    ColoursDown = 1,
+    Abandoned = 2,
+    Scuttled = 4,
+}
+
 /// <summary>Whether a ship is afloat or going down (its magazine gone, foundered or capsized: <see cref="LossKind"/>).
 /// A ship settling and listing is still afloat until its buoyancy or stability gives out.</summary>
 public enum ShipStatus : byte
@@ -406,6 +418,17 @@ public sealed class ShipCondition
     /// <summary>When the casualty pass under way happens (world ms): where the parties stand then.</summary>
     internal long RiskMs;
     public ShipStatus Status;
+    /// <summary>How her people gave her up (docs/battle/striking.md SK1; None: they haven't), when her colours came down,
+    /// when her men were ordered off her and when the last of them are off (the time to get them out of her, world ms), and
+    /// when her scuttling charges go (0: none set). Afloat still: the water decides the rest.</summary>
+    public GivenUp GivenUp;
+    public long ColoursMs, AbandonMs, OffMs, ScuttleMs;
+    /// <summary>Whether her people have given her up (her colours down or her men ordered off): out of the fight.</summary>
+    public bool IsGivenUp => GivenUp != GivenUp.None;
+    /// <summary>Her colours down: her guns stood down, the enemy may take her.</summary>
+    public bool ColoursDown => (GivenUp & GivenUp.ColoursDown) != 0;
+    /// <summary>Her men ordered off her: nobody works her guns, her plant, her pumps or her damage control.</summary>
+    public bool Abandoned => (GivenUp & GivenUp.Abandoned) != 0;
     /// <summary>How it went down (None while afloat), when it began to and when it's gone under (ms).</summary>
     public LossKind Loss;
     public long LossMs, GoneMs;
@@ -607,6 +630,7 @@ public sealed class ShipCondition
         (CrewLost, Killed, Wounded, Returns) = (0, 0, 0, 0);
         (Status, Loss, Attitude, PowerCap, Steering, JamRudderRad, Conned, Hits, Damaged) = (ShipStatus.Afloat, LossKind.None, Attitude.Upright, 1, Steering.Free, 0, true, 0, false);
         (ConnAt, ConnShiftMs) = (0, 0);
+        (GivenUp, ColoursMs, AbandonMs, OffMs, ScuttleMs) = (GivenUp.None, 0, 0, 0, 0);
         Array.Fill(ClosedUp, true);
         Moves = 0;
         Steadiness.Reset(this);
@@ -1019,6 +1043,14 @@ public sealed class ShipCondition
             h.Add(Wounded);
         }
         h.Add((int)Status | (int)Loss << 8);
+        if (GivenUp != GivenUp.None)
+        {
+            h.Add((int)GivenUp + 7500);
+            h.Add(ColoursMs);
+            h.Add(AbandonMs);
+            h.Add(OffMs);
+            h.Add(ScuttleMs);
+        }
         if (ConnAt != 0 || ConnShiftMs != 0)
         {
             h.Add(ConnAt + 7000);

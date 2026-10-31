@@ -358,8 +358,9 @@ public static class Flooding
                 pump -= v;
                 res.PumpedM3 += v;
             }
-        // the portable pumps the parties rigged (no power: DC4), back to the store once their space is dry
-        if (k.PumpsRigged > 0)
+        // the portable pumps the parties rigged (no power: DC4), back to the store once their space is dry; nobody works
+        // them once her men are ordered off (docs/battle/striking.md SK1)
+        if (k.PumpsRigged > 0 && !k.Abandoned)
             for (int i = 0; i < cells.Length; i++)
             {
                 if (k.PumpsIn[i] == 0)

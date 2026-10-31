@@ -2202,6 +2202,52 @@ public sealed record SimSettings
     public double DoneForKn { get; init; } = 4;
     public double DoneForCease { get; init; } = 0.5;
 
+    // ------------------------------------------------------------------ giving a ship up (docs/battle/striking.md)
+
+    /// <summary>Her men off her (SK1): the last are off this long after the order, s, plus this much a man aboard
+    /// [EST, research/simulation/striking-colours.md §3.2: the order 2-10 min after "she won't float", several ladders at
+    /// 15-25 men a minute; 400 men about 9 min, a thousand about 15].</summary>
+    public double AbandonLeadS { get; init; } = 300;
+    public double AbandonManS { get; init; } = 0.6;
+
+    /// <summary>Scuttling (SK1): her charges go this long after the order, s, holing each of her machinery rooms at its
+    /// floor by this much, m² [EST, §4.2: charges 10-30 min from the order to her end, Dresden ~30, Cöln ~15; sized so a
+    /// light cruiser goes in about that].</summary>
+    public double ScuttleSetS { get; init; } = 600;
+    public double ScuttleChargeM2 { get; init; } = 0.3;
+
+    /// <summary>The captain's call (SK2; research §1.1-1.2, R1): she's hopeless once she can't hurt (her chief guns'
+    /// lasting share at or under <see cref="GiveUpGunsShare"/> with no torpedo ready, or her chief magazines empty), or
+    /// she's sinking (her time left under <see cref="GiveUpSinkingS"/>), and she can't get away (stopped, her steering
+    /// gone, or slower than an enemy in reach), with a foe her navy holds in sight within <see cref="GiveUpEnemyM"/> m
+    /// [every strike and scuttling at sea had one: 6-12 km].</summary>
+    public double GiveUpGunsShare { get; init; } = 0.1;
+    public double GiveUpSinkingS { get; init; } = 3600;
+    public double GiveUpEnemyM { get; init; } = 12_000;
+
+    /// <summary>Her captain's delay from hopeless to his call, s: the median, the spread of its log over captains, by 2 to
+    /// his temper (a bold one later, a timid one sooner), within its bounds [§1.2: 5-50 min, median ~20].</summary>
+    public double GiveUpDelayS { get; init; } = 1200;
+    public double GiveUpDelaySigma { get; init; } = 0.6;
+    public double GiveUpDelayMinS { get; init; } = 300;
+    public double GiveUpDelayMaxS { get; init; } = 3000;
+
+    /// <summary>His readiness to strike: doctrine's StrikeColours less this by his temper (his aggression plus a spread of
+    /// his own, <see cref="GiveUpTemperSpread"/> over captains: decision 1), plus this by the shaken and frozen share of her
+    /// men at their stations (decision 2), plus this when she's sinking too (Sissoi: the enemy will take her men off)
+    /// [EST].</summary>
+    public double GiveUpTemperSpread { get; init; } = 0.35;
+    public double GiveUpTemperShift { get; init; } = 0.5;
+    public double GiveUpShakenShift { get; init; } = 1;
+    public double GiveUpSinkingShift { get; init; } = 0.2;
+
+    /// <summary>Her captain's own reading of her water and list, s: a look this often, its trend over this long; she's
+    /// abandoned once the time left by it is under the time to get her men off and this [EST, §3.2: the order 2-10 min
+    /// after "she won't float"].</summary>
+    public double GiveUpLookS { get; init; } = 30;
+    public double GiveUpTrendS { get; init; } = 300;
+    public double AbandonMarginS { get; init; } = 600;
+
     // ------------------------------------------------------------------ torpedoes (docs/battle/fighting.md 4.6)
 
     /// <summary>Torpedoes running at once (the pool grows past it), and the ring of their ends the screens read.</summary>

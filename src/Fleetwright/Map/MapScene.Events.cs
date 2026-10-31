@@ -182,11 +182,14 @@ public sealed partial class MapScene
             case CombatEvent.DamageControl when targetOurs && x.Count <= (int)DcEvent.SafeSpeed:
                 AddLine(EventKind.Damage, x.Target, line, Form.DamageControl, x.Ms);
                 break;
+            case CombatEvent.GaveUp when targetOurs:   // her captain's call, no popup (docs/battle/striking.md decision 2)
+                AddLine(EventKind.Loss, x.Target, line, Form.GaveUp, x.Ms);
+                break;
         }
     }
 
     /// <summary>Which of the log's sentences an event is told in.</summary>
-    enum Form : byte { Given, HitTaken, HitScored, Straddle, TorpedoesOut, TorpedoesIn, LostOurs, LostTheirs, DamageControl }
+    enum Form : byte { Given, HitTaken, HitScored, Straddle, TorpedoesOut, TorpedoesIn, LostOurs, LostTheirs, DamageControl, GaveUp }
 
     /// <summary>A log line's event in words (made once, when first shown).</summary>
     string Describe(Snapshot s, in MapEvent ev)
@@ -220,6 +223,9 @@ public sealed partial class MapScene
                     _ => $"damage control asks for {x.Battery} kn",
                 };
                 return $"{ShipName(s, x.Target)}: {what}";
+            case Form.GaveUp:
+                var g = (GivenUp)x.Count;
+                return $"{ShipName(s, x.Target)}: {((g & GivenUp.Scuttled) != 0 ? "her captain scuttles her, her men ordered off" : (g & GivenUp.Abandoned) != 0 ? (g & GivenUp.ColoursDown) != 0 ? "her colours struck, her men ordered off" : "her captain orders her abandoned" : "her captain strikes her colours")}";
         }
         return "";
     }

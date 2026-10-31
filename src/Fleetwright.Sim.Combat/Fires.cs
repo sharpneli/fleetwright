@@ -625,8 +625,8 @@ public static class Fires
         if (doc.Name is null)
             return;   // nobody fights her fires (the bench's and the tests' water is their own)
         Array.Clear(k.FireFlow);
-        if (k.Status != ShipStatus.Afloat)
-            return;
+        if (k.Status != ShipStatus.Afloat || k.Abandoned)
+            return;   // going down, or her men ordered off (docs/battle/striking.md SK1): nobody at the hoses
         var nozzle = Nozzle(s, doc.Nozzle);
         // her repair parties (docs/battle/damage-control.md DC3: one pool for fire and water), planned when due
         Repairs.Make(c, f, k, now, s);

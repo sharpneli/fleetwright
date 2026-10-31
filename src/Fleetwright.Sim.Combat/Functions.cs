@@ -132,6 +132,25 @@ public static class Functions
         k.PowerCapLasts = Math.Min(boilers > 0 ? steamBy / boilers : 1, lines > 0 ? shaftsBy / lines : 1);
         k.LastingMs = lastingMs;
         Conn(k, command, now, s);
+        if (k.IsGivenUp)
+            return StoodDown(k, steer || rudders == 0);
         return steer || rudders == 0;
+    }
+
+    /// <summary>A ship given up (docs/battle/striking.md SK1): her colours down, her guns, tubes and searchlights stood
+    /// down (her men stay at the pumps and the conn: Sissoi, Spartak); her men ordered off, nothing worked at all (no
+    /// guns, no plant, no conn, no lookouts), so she floods as her holes let her.</summary>
+    static bool StoodDown(ShipCondition k, bool steers)
+    {
+        Array.Fill(k.MountWorks, false);
+        Array.Fill(k.MountLasts, false);
+        Array.Fill(k.TubeWorks, false);
+        Array.Fill(k.SearchlightWorks, false);
+        if (!k.Abandoned)
+            return steers;
+        Array.Fill(k.DirectorWorks, false);
+        Array.Fill(k.EyeWorks, false);
+        (k.PowerCap, k.PowerCapLasts, k.Conned, k.ConnAt) = (0, 0, false, -1);
+        return false;
     }
 }

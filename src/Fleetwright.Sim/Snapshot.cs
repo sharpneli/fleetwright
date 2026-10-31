@@ -311,6 +311,8 @@ public sealed class ConditionsView
     public Fleetwright.Sim.Combat.Steering[] Steering = [];
     public Fleetwright.Sim.Combat.ShipStatus[] Status = [];
     public bool[] Conned = [];
+    /// <summary>How her people gave her up (docs/battle/striking.md SK1), or None.</summary>
+    public Fleetwright.Sim.Combat.GivenUp[] GivenUp = [];
 
     /// <summary>The row of a ship (an entity), or -1 (not hit).</summary>
     public int IndexOf(int entity)
@@ -347,6 +349,7 @@ public sealed class ConditionsView
         Array.Resize(ref Steering, n);
         Array.Resize(ref Status, n);
         Array.Resize(ref Conned, n);
+        Array.Resize(ref GivenUp, n);
     }
 }
 

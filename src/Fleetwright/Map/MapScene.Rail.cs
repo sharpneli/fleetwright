@@ -430,7 +430,7 @@ public sealed partial class MapScene
         var c = s.Conditions;
         double water = c.WaterT[ci], reserve = c.ReserveT[ci];
         float afloat = (float)(reserve / Math.Max(reserve + water, 1e-6));
-        byte state = c.Status[ci] == ShipStatus.GoingDown ? (byte)2 : afloat < 0.8f ? (byte)1 : (byte)0;
+        byte state = c.Status[ci] == ShipStatus.GoingDown || c.GivenUp[ci] != GivenUp.None ? (byte)2 : afloat < 0.8f ? (byte)1 : (byte)0;   // given up: out, as one going down (striking.md SK1)
         return (state, afloat, c.Fires[ci], c.Hits[ci]);
     }
 

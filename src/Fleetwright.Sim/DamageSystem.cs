@@ -23,6 +23,9 @@ public enum DamageCommand : ushort
     HoldSpeed,
     Posture,
     Relieve,
+    StrikeColours,
+    Abandon,
+    Scuttle,
 }
 
 /// <summary>What set a magazine off (<see cref="DamageSystem.Blast"/>).</summary>
@@ -179,6 +182,19 @@ public sealed class DamageSystem : IWorldSystem
     /// (<see cref="Reliefs.Source"/>): her captain's order (N3a).</summary>
     public static Command Relieve(int entity, long source, int to, int men) => new(Id, (ushort)DamageCommand.Relieve, entity, A: source, B: to, X: men);
 
+    /// <summary>Her colours struck (docs/battle/striking.md SK1): her captain's call (SK2). Her guns stood down, her engines
+    /// stopped, out of her group; her men stay at the pumps. For good: a struck ship never fights again.</summary>
+    public static Command StrikeColours(int entity) => new(Id, (ushort)DamageCommand.StrikeColours, entity);
+
+    /// <summary>Her men ordered off her (SK1): her captain's call. Nothing is worked from the order; the last men are off
+    /// <see cref="SimSettings.AbandonLeadS"/> plus <see cref="SimSettings.AbandonManS"/> a man aboard later.</summary>
+    public static Command Abandon(int entity) => new(Id, (ushort)DamageCommand.Abandon, entity);
+
+    /// <summary>Her own charges set to sink her, and her men ordered off (SK1): the charges go
+    /// <see cref="SimSettings.ScuttleSetS"/> after the order, holing each of her machinery rooms at its floor by
+    /// <see cref="SimSettings.ScuttleChargeM2"/>; the flooding model sinks her.</summary>
+    public static Command Scuttle(int entity) => new(Id, (ushort)DamageCommand.Scuttle, entity);
+
     /// <summary>A ship's orders and firefighting kept to her side's, before anything reads them.</summary>
     void Ready(int slot, ShipCondition k)
     {
@@ -284,6 +300,15 @@ public sealed class DamageSystem : IWorldSystem
                     var rp = stream.Derive(0x9E1Eu).Derive((ulong)c.Entity).Derive((ulong)world.Time.Ms);
                     Recompute(world, ps, pk, ref rp);
                 }
+                break;
+            }
+            case DamageCommand.StrikeColours:
+            case DamageCommand.Abandon:
+            case DamageCommand.Scuttle:
+            {
+                int gs = ships.Store.SlotOf(c.Entity);
+                if (gs >= 0)
+                    GiveUp(world, gs, (DamageCommand)c.Code);
                 break;
             }
             case DamageCommand.HoldSpeed:
@@ -980,6 +1005,66 @@ public sealed class DamageSystem : IWorldSystem
         Lose(world, slot, k, LossKind.Magazine);
     }
 
+    /// <summary>Her people give her up (docs/battle/striking.md SK1): her colours down, her men off, her charges set (each
+    /// once). She stops, her guns go quiet and she leaves her group, as one going down does; her water goes on.</summary>
+    void GiveUp(World world, int slot, DamageCommand what)
+    {
+        var k = ships.Store.Combat.Condition(slot);
+        if (k.Status != ShipStatus.Afloat)
+            return;
+        var was = k.GivenUp;
+        long now = world.Time.Ms;
+        if (what == DamageCommand.StrikeColours && !k.ColoursDown)
+            (k.GivenUp, k.ColoursMs) = (k.GivenUp | GivenUp.ColoursDown, now);
+        if (what is DamageCommand.Abandon or DamageCommand.Scuttle && !k.Abandoned)
+        {
+            double men = Math.Max(Flood(k.Class).Complement - k.Killed, 0);
+            (k.GivenUp, k.AbandonMs) = (k.GivenUp | GivenUp.Abandoned, now);
+            k.OffMs = now + (long)((settings.AbandonLeadS + men * settings.AbandonManS) * 1000);
+        }
+        if (what == DamageCommand.Scuttle && (k.GivenUp & GivenUp.Scuttled) == 0)
+        {
+            (k.GivenUp, k.ScuttleMs) = (k.GivenUp | GivenUp.Scuttled, now + (long)(settings.ScuttleSetS * 1000));   // her steps go on till then (Step)
+        }
+        if (k.GivenUp == was)
+            return;
+        int entity = ships.Store[slot].Entity;
+        k.Damaged = touched = true;
+        Ready(slot, k);
+        var rg = stream.Derive(0x61FEu).Derive((ulong)entity).Derive((ulong)now);
+        Recompute(world, slot, k, ref rg);
+        Hold(world, slot, k, force: true);
+        world.Issue(GunnerySystem.Cease(entity));
+        world.Issue(ShipSystem.Speed(entity, 0));
+        if (was == GivenUp.None)
+            world.Issue(GroupSystem.Remove(entity));
+        log.Add(new CombatEntry(now, CombatEvent.GaveUp, k.LastShooter, k.LastBattery, entity, (int)k.GivenUp));
+        Wake(world, slot, k);
+    }
+
+    /// <summary>Her scuttling charges go (SK1), at her step: each machinery room's cells holed at their floor, the room's
+    /// <see cref="SimSettings.ScuttleChargeM2"/> shared among them, and her watertight doors left open; the water's step at
+    /// once.</summary>
+    void Charges(ShipCondition k, long now)
+    {
+        var cls = k.Class;
+        k.ScuttleMs = 0;
+        foreach (ref readonly var room in cls.Rooms)
+        {
+            if (room.Kind is not (RoomKind.EngineRoom or RoomKind.BoilerRoom))
+                continue;
+            var cells = cls.Links(room.Cells);
+            foreach (int i in cells)
+            {
+                var b = cls.Cells[i].Box;
+                k.Hole(i, settings.ScuttleChargeM2 / cells.Length, new P3((b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2, b.Base + 0.05));
+            }
+        }
+        Leaks.OpenDoors(cls, k);   // her doors left open as her men go (Scapa)
+        (k.Damaged, touched) = (true, true);
+        k.FloodDueMs = Math.Min(k.FloodDueMs, now);
+    }
+
     /// <summary>The ship going down (its magazine, foundered, capsized): it stops, its guns are silent, it leaves its
     /// group, and it goes under a while later; the log's line says how.</summary>
     void Lose(World world, int slot, ShipCondition k, LossKind how)
@@ -1049,6 +1134,8 @@ public sealed class DamageSystem : IWorldSystem
         if (dt <= 0)
             return settings.FloodMs;
         Ready(slot, k);
+        if (k.ScuttleMs != 0 && now >= k.ScuttleMs)
+            Charges(k, now);   // her scuttling charges (docs/battle/striking.md SK1)
         // the water's step: due by its own clock, or the hoses have put a settled step's worth in since (fresh water, a
         // tonne a cubic metre)
         bool flooding = now >= k.FloodDueMs || k.FireWaterM3 >= settings.FloodIdleT;
@@ -1104,6 +1191,8 @@ public sealed class DamageSystem : IWorldSystem
         Hold(world, slot, k, force: false);
         if (k.Fires > 0 || Fires.Hot(k) || k.FloodDueMs - now <= settings.FloodMs)
             return settings.FloodMs;
+        if (k.ScuttleMs != 0)
+            return k.ScuttleMs - now <= k.FloodEveryMs ? settings.FloodMs : k.FloodEveryMs;   // her charges set: stepping till they go
         return k.WaterT > 0 || Holed(cls, k) || Repairs.Busy(cls, k) || Magazines.Busy(cls, f, k, settings) ? k.FloodEveryMs : -1;
     }
 
@@ -1283,7 +1372,7 @@ public sealed class DamageSystem : IWorldSystem
                         directors++;
                 (v.Entity[n], v.Hits[n], v.PowerCap[n], v.Steering[n], v.Status[n]) = (store[slot].Entity, k.Hits, k.PowerCap, k.Steering, k.Status);
                 (v.MountsWorking[n], v.Mounts[n], v.DirectorsWorking[n], v.Directors[n]) = (k.MountsWorking, k.MountWorks.Length, directors, k.DirectorWorks.Length);
-                (v.CrewLost[n], v.Fires[n], v.BreachM2[n], v.Conned[n]) = (k.CrewLost, k.Fires, k.BreachTotalM2, k.Conned);
+                (v.CrewLost[n], v.Fires[n], v.BreachM2[n], v.Conned[n], v.GivenUp[n]) = (k.CrewLost, k.Fires, k.BreachTotalM2, k.Conned, k.GivenUp);
                 (v.WaterT[n], v.ReserveT[n], v.Attitude[n], v.Loss[n], v.HeldCap[n]) = (k.WaterT, Flood(k.Class).ReserveT - k.WaterT, k.Attitude, k.Loss, k.HeldCap);
                 // damage control's (DC8): the speed it asks for, and the counterflooding left on each side (the doom clock)
                 var fm = Flood(k.Class);

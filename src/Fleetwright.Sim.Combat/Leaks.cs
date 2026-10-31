@@ -152,6 +152,20 @@ public static class Leaks
     }
 
     /// <summary>Her watertight doors left open by her readiness, drawn once.</summary>
+    /// <summary>Every watertight door left open (docs/battle/striking.md SK1: a ship scuttled, her people opening her up,
+    /// as at Scapa).</summary>
+    public static void OpenDoors(ShipClass c, ShipCondition k)
+    {
+        var cells = c.Cells;
+        for (int i = 0; i < cells.Length; i++)
+            for (int j = cells[i].Neighbours.Start; j < cells[i].Neighbours.End; j++)
+            {
+                ref readonly var e = ref c.Neighbour(j);
+                if (e.Cell > i && HasDoor(c, e, i))
+                    k.JoinMarks[j] |= JoinMark.DoorOpen;
+            }
+    }
+
     public static void DrawDoors(ShipClass c, ShipCondition k, double share, ref RandomStream r)
     {
         k.DoorsDrawn = true;

@@ -27,6 +27,9 @@ public enum CombatEvent : byte
     /// <see cref="Fleetwright.Sim.Combat.DcEvent"/>), Part the part or room it was about (-1: none), Battery a number with
     /// it (boundaries that gave way, the steering it went to, the side whose counterflood tanks are full).</summary>
     DamageControl,
+    /// <summary>A ship's (Target) people gave her up (docs/battle/striking.md SK1): Count her <see cref="GivenUp"/> now
+    /// (her colours down, her men ordered off, her charges set); Shooter and Battery hit her last.</summary>
+    GaveUp,
 }
 
 /// <summary>What a hit did, as the log tells it.</summary>

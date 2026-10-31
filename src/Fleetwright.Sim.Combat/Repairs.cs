@@ -84,8 +84,8 @@ public static class Repairs
         ref RandomStream rng)
     {
         ref readonly var doc = ref k.DamageControl;
-        if (k.Status != ShipStatus.Afloat)
-            return RepairChange.None;
+        if (k.Status != ShipStatus.Afloat || k.Abandoned)
+            return RepairChange.None;   // her men ordered off (docs/battle/striking.md SK1): no parties, no DC Central
         var change = Steer(c, k, now, s);
         if (doc.Name is null || !k.Damaged && k.Fires == 0)
             return change;
