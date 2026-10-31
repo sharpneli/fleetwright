@@ -113,9 +113,46 @@ public sealed class WorldSession : IDisposable
         return Directory.Exists(dir) ? [.. Directory.GetFiles(dir, "*.json").Where(Sim.Missions.Scenario.IsScenario).Order(StringComparer.Ordinal)] : [];
     }
 
+    /// <summary>The launch screen's copies edited in the designer and not saved (docs/map-ui/launch.md): this run's
+    /// own folder in the temp folder, cleared at the next start (<see cref="ClearUnsaved"/>). Before
+    /// <see cref="DesignFolders"/>, which names it (statics start in order).</summary>
+    public static readonly string UnsavedFolder =
+        Path.Combine(Path.GetTempPath(), "Fleetwright", "Unsaved", Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture));
+
     /// <summary>Where a scenario looks for a design after its own Designs/: the shipped ones, then the player's (a setup
-    /// may swap one in, docs/map-ui/launch.md).</summary>
-    public static readonly string[] DesignFolders = [Path.Combine(AppContext.BaseDirectory, "Content", "Designs"), Designer.DesignDoc.UserFolder];
+    /// may swap one in, docs/map-ui/launch.md), then the copies edited this run and not saved.</summary>
+    public static readonly string[] DesignFolders = [Path.Combine(AppContext.BaseDirectory, "Content", "Designs"), Designer.DesignDoc.UserFolder, UnsavedFolder];
+
+    /// <summary>The unsaved copies of runs that have ended taken away (another run's still running are kept).</summary>
+    public static void ClearUnsaved()
+    {
+        var root = Path.GetDirectoryName(UnsavedFolder)!;
+        if (!Directory.Exists(root))
+            return;
+        foreach (var dir in Directory.GetDirectories(root))
+            try
+            {
+                bool running = int.TryParse(Path.GetFileName(dir), out int pid) && pid != Environment.ProcessId && IsRunning(pid);
+                if (!running)
+                    Directory.Delete(dir, recursive: true);
+            }
+            catch (Exception x) when (x is IOException or UnauthorizedAccessException)
+            {
+            }
+    }
+
+    static bool IsRunning(int pid)
+    {
+        try
+        {
+            using var p = System.Diagnostics.Process.GetProcessById(pid);
+            return !p.HasExited;
+        }
+        catch (ArgumentException)
+        {
+            return false;
+        }
+    }
 
     /// <summary>The dev's -smokefield[=0]: the smoke field on or off (docs/battle/smoke.md; else settings.json's Smoke,
     /// on since 2026-10-21).</summary>

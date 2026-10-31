@@ -620,6 +620,7 @@ public static unsafe class Program
                     session.Copy(d);
                     scenes!.Show(1);   // the designer's own tab
                 },
+                CopyBack = () => session.Copied ? session.Design : null,
                 Begun = () =>
                 {
                     scenes!.Home = 0;

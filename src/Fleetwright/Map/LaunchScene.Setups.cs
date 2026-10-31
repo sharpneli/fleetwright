@@ -61,6 +61,8 @@ public sealed unsafe partial class LaunchScene
         ImGui.PushFont(UiFonts.SansSmall);
         ImGui.PushTextWrapPos(w - P(8));
         ImGui.TextDisabled($"{written!.Name} and its {setup.Changes.Count} change{(setup.Changes.Count == 1 ? "" : "s")}, as a scenario file: listed under Your setups, shared by passing the file round.");
+        if (UnsavedIn(current!) is int unsaved and > 0)
+            ImGui.TextDisabled($"The {(unsaved == 1 ? "unsaved design it uses is" : $"{unsaved} unsaved designs it uses are")} saved to your designs too.");
         ImGui.PopTextWrapPos();
         ImGui.PopFont();
         ImGui.Spacing();
@@ -103,6 +105,7 @@ public sealed unsafe partial class LaunchScene
 
     void Save(string name)
     {
+        SaveUnsaved(current!);   // a setup saved finds its designs at the next start
         Directory.CreateDirectory(SetupsFolder);
         string slug = Slug(name), path = Path.Combine(SetupsFolder, slug + ".json");
         string? mine = entries[pick].Saved ? Path.GetFullPath(entries[pick].Path) : null;

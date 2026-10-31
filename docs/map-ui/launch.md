@@ -308,6 +308,13 @@ entered), and the figures.
 - **The designer round trip:** "Edit a copy in the designer…" (or "+ New design from …" at the list's end) opens the
   designer on a copy, unsaved, with its own history (`DesignSession.Copy`); back on the launch screen (`SceneSwitcher`'s
   `LaunchEntered`) the player's designs are read again and one saved since is picked in the picker, still open.
+  - **Unsaved copies** (2026-10-31, the user: silly edits shouldn't need a save each): a copy back from the designer
+    unsaved and changed since it went (or since it was last kept) is kept for the run as a file in
+    `WorldSession.UnsavedFolder` (the temp folder, one per run, cleared at the next start), which the scenario's design
+    lookup searches last. The picker lists it as "unsaved" among yours ("Borodino-like copy", then "copy 2"...: a name
+    and file no design has), picked, and opens on the copy's row if it was made from the ships' tab. Saved in the
+    designer (`DesignSession.Saved`), it's yours as before; Save setup… saves the unsaved designs the setup uses to the
+    player's folder too, so the setup finds them at the next start.
 - **Left for later:** the admirals' names and tempers on the
   units, the captains' marks (L4); − n + and ✕ (L3b). Jutland's rows draw small because one design is far too long
   (docs/battle/bugs.md, Agincourt-like at 313 m).

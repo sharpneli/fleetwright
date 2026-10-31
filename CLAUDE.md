@@ -85,7 +85,8 @@ Save setup… as a scenario file with `"from"` in My Games/Fleetwright/Setups an
 first tab is each side's ships (`LaunchScene.Ships.cs`, L3): a tree table, a row a design drawn to scale with its
 figures, the selected one's particulars and captains beside it, and its ▾ (or P) opens the design picker
 (`LaunchScene.Picker.cs`): every design the scenario can name, built without art for
-their figures, used for a unit, one ship or every ship of the design; a copy goes to the designer and comes back as yours.
+their figures, used for a unit, one ship or every ship of the design; a copy goes to the designer and comes back listed
+unsaved for the run (`WorldSession.UnsavedFolder`), yours once saved there or with a setup that uses it.
 A row's ◀ n ▶ strikes or adds ships, a unit's ✕ strikes it (undo in place), and + Add a unit… (N) opens the picker's add
 mode (`LaunchScene.Add.cs`, L3b): a new squadron joined to a force, or placed on the opening (a left press for her head,
 a drag for the course, a right click cancels). The opening has the battle map's controls (`LaunchScene.View.cs`, docs/map-ui/input.md: one

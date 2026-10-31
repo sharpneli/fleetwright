@@ -111,8 +111,24 @@ public sealed class DesignSession : IDisposable
         }
     }
 
+    /// <summary>The design is a copy handed in by <see cref="Copy"/>, edited or not, and not saved since: the launch
+    /// screen keeps it for the run when it's shown again.</summary>
+    public bool Copied { get; private set; }
+
     /// <summary>An edit (the designer): the design now, built against the style limits.</summary>
-    public void Edit(Design design) => Set(design, DesignPath, edited: true, limits: true);
+    public void Edit(Design design)
+    {
+        bool copied = Copied;
+        Set(design, DesignPath, edited: true, limits: true);
+        Copied = copied;
+    }
+
+    /// <summary>The design was saved to <paramref name="path"/> (the designer's Save): its file now, no copy.</summary>
+    public void Saved(string path)
+    {
+        DesignPath = path;
+        Copied = false;
+    }
 
     /// <summary>A design from elsewhere (the designer's New or Open): picked as the file it came from, if it's in the
     /// folder.</summary>
@@ -129,7 +145,11 @@ public sealed class DesignSession : IDisposable
 
     /// <summary>A design to start a new one from (the launch screen's "Edit a copy in the designer"): opened as a new,
     /// unsaved design with its own history, saved to the player's folder like any other.</summary>
-    public void Copy(Design design) => Set(design, null, edited: false, limits: true);
+    public void Copy(Design design)
+    {
+        Set(design, null, edited: false, limits: true);
+        Copied = true;
+    }
 
     /// <summary>A design file from outside (dropped on the window): read, then taken as an edit of the design now,
     /// so it stays unsaved (and undoable) until saved. The error when it isn't a design.</summary>
@@ -156,6 +176,7 @@ public sealed class DesignSession : IDisposable
         DesignPath = path;
         EditLabel = null;
         Edited = edited;
+        Copied = false;
         this.limits = limits;
         DesignVersion++;
         Worker.Submit(design, Look, limits);

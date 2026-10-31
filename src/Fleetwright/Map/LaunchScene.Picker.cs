@@ -29,6 +29,10 @@ public sealed unsafe partial class LaunchScene
     /// <summary>The design picker opens a design's copy in the designer.</summary>
     public Action<Design>? EditCopy { get; init; }
 
+    /// <summary>The copy as the designer has it now, while it's still an unsaved copy (null once it's saved there, or
+    /// another design is opened): kept for the run when the screen is entered again.</summary>
+    public Func<Design?>? CopyBack { get; init; }
+
     ShipLine? pickerRow;
     readonly List<Candidate> candidates = [];
     readonly List<int> shownCands = [];
@@ -40,6 +44,8 @@ public sealed unsafe partial class LaunchScene
     readonly HashSet<string> asked = new(StringComparer.OrdinalIgnoreCase);
     readonly ConcurrentQueue<(string Path, int Id)> answered = new();
     DateTime? copyStarted;
+    string? copyJson;   // the copy as handed to the designer, or as last kept: kept again only once it's changed
+    ShipLine? copyFor;   // the row the copy was made for: the picker opens on it when the copy comes back
 
     void OpenPicker(ShipLine row)
     {
@@ -108,7 +114,7 @@ public sealed unsafe partial class LaunchScene
         foreach (var d in Designs())
         {
             var c = new Candidate { Info = d, Scenario = named.Contains(d.Stem) && !d.Yours, InUse = d.Stem.Equals(row.Design, StringComparison.OrdinalIgnoreCase) };
-            c.Chip = d.Yours ? "yours" : c.Scenario ? "scenario" : "shipped";
+            c.Chip = d.Unsaved ? "unsaved" : d.Yours ? "yours" : c.Scenario ? "scenario" : "shipped";
             var sub = new List<string>();
             if (c.Scenario && !mine.Contains(d.Stem))
                 sub.Add("the enemy's own class");
@@ -198,11 +204,15 @@ public sealed unsafe partial class LaunchScene
             Edit(setup.Swap(unit, ship, from, to));
     }
 
-    /// <summary>The screen is entered again (back from the designer): the player's designs read again, and a copy made
-    /// from the picker and saved since is picked there.</summary>
+    /// <summary>The screen is entered again (back from the designer): the designer's copy kept for the run if it
+    /// changed (<see cref="KeepCopy"/>), the player's designs read again, and the copy, or one saved since, picked in
+    /// the picker (opened on the copy's row if it was made from the ships' tab).</summary>
     public void Entered()
     {
+        string? kept = KeepCopy();
         RescanYours();
+        if (pickerRow == null && kept != null && copyFor is { } row && linesBySide.Any(ls => ls.Contains(row)))
+            OpenPicker(row);
         if (pickerRow == null)
             return;
         var since = copyStarted;
@@ -211,7 +221,13 @@ public sealed unsafe partial class LaunchScene
         Candidates();
         if (candidates.FindIndex(c => c.Info.Path == was) is int keep and >= 0)
             chosen = keep;
-        if (since is { } t && candidates.FindIndex(c => c.Info.Yours && c.Info.Modified >= t) is int i and >= 0)
+        if (kept != null && candidates.FindIndex(c => c.Info.Path == kept) is int k0 and >= 0)
+        {
+            fromYours = true;
+            search = "";
+            Choose(k0);
+        }
+        else if (since is { } t && candidates.FindIndex(c => c.Info.Yours && c.Info.Modified >= t) is int i and >= 0)
         {
             int newest = i;
             for (int k = 0; k < candidates.Count; k++)
@@ -223,13 +239,16 @@ public sealed unsafe partial class LaunchScene
         }
     }
 
-    void Copy(Candidate? c)
+    void Copy(Candidate? c, ShipLine? row = null)
     {
         var d = c?.Info.Design ?? (c != null ? TryLoad(c.Info.Path) : null);
         if (d == null || EditCopy == null)
             return;
         copyStarted = DateTime.Now.AddSeconds(-1);
-        EditCopy(d with { Name = c!.Info.Title + " copy" });
+        copyFor = pickerRow ?? row;
+        var copy = d with { Name = CopyRx.Replace(c!.Info.Title, "") + " copy" };
+        copyJson = copy.ToJson();
+        EditCopy(copy);
     }
 
     static Design? TryLoad(string path)
@@ -446,7 +465,7 @@ public sealed unsafe partial class LaunchScene
                 copyRow = click;
                 dl.RowBg(na, lw, RowH, n, hover: hover);
                 dl.Text(UiFonts.Sans, new Vector2(na.X + P(10), Mid(UiFonts.Sans, na.Y, RowH)), hover ? T.Bright : T.Brass, newFrom);
-                dl.Text(UiFonts.SansSmall, new Vector2(cNote, Mid(UiFonts.SansSmall, na.Y, RowH)), T.Muted, "opens the designer on a copy; saved, it's back here as yours");
+                dl.Text(UiFonts.SansSmall, new Vector2(cNote, Mid(UiFonts.SansSmall, na.Y, RowH)), T.Muted, "opens the designer on a copy; back here it's listed, unsaved, for this run");
                 ry += RowH;
             }
             ImGui.SetCursorPos(new Vector2(0, ry + P(4) - lo.Y));

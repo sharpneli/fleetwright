@@ -479,6 +479,7 @@ public sealed unsafe partial class DesignerScene
         {
             var file = DesignDoc.FileName(doc.Current with { Name = saveName.Trim() });
             doc.Save(Path.Combine(DesignDoc.UserFolder, file));
+            session?.Saved(doc.SourcePath!);
             stale = true;
             ImGui.CloseCurrentPopup();
         }

@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using Fleetwright.Shipgen;
 using Fleetwright.Sim.Combat;
+using Fleetwright.Sim.Missions;
 using Fleetwright.Sim.Ships;
 using ImGuiNET;
 using static Fleetwright.Ui.Pieces;
@@ -27,6 +28,7 @@ public sealed unsafe partial class LaunchScene
         public string Title = "", Sub = "", Type = "";
         public int Year;   // the latest year its file names (its tech's, its shells'): the picker's filter, 0 if none
         public bool Yours;
+        public bool Unsaved;   // one of yours kept for this run only (a copy edited and not saved: WorldSession.UnsavedFolder)
         public DateTime Modified;
         public Design? Design;   // read when its class is first asked for
     }
@@ -41,6 +43,7 @@ public sealed unsafe partial class LaunchScene
 
     void ScanShipped()
     {
+        WorldSession.ClearUnsaved();
         var look = new List<string> { ShippedDesigns, Path.Combine(ShippedFolder, "Designs") };
         folderScan = Task.Run(() =>
         {
@@ -50,11 +53,78 @@ public sealed unsafe partial class LaunchScene
         RescanYours();
     }
 
-    void RescanYours() => folders[Designer.DesignDoc.UserFolder] = Scan(Designer.DesignDoc.UserFolder, yours: true);
+    void RescanYours()
+    {
+        folders[Designer.DesignDoc.UserFolder] = Scan(Designer.DesignDoc.UserFolder, yours: true);
+        folders[WorldSession.UnsavedFolder] = Scan(WorldSession.UnsavedFolder, yours: true, unsaved: true);
+    }
 
     static readonly Regex YearRx = new(@"(?<![0-9])(18[5-9][0-9]|19[0-9][0-9]|20[0-4][0-9])(?![0-9])", RegexOptions.Compiled);
+    static readonly Regex CopyRx = new(@" copy(?: [0-9]+)?$", RegexOptions.Compiled);
 
-    static DesignInfo[] Scan(string folder, bool yours)
+    /// <summary>The copy the designer has (<see cref="CopyBack"/>), kept as an unsaved design of this run's when it
+    /// changed since it was handed over or last kept: under a name and file no design has ("Borodino-like copy", then
+    /// "copy 2"...). Its path, or null when there's nothing new.</summary>
+    string? KeepCopy()
+    {
+        if (CopyBack?.Invoke() is not { } d)
+            return null;
+        string json = d.ToJson();
+        if (json == copyJson)
+            return null;
+        copyJson = json;
+        var stems = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var titles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var ds in folders.Values)
+            foreach (var i in ds)
+            {
+                stems.Add(i.Stem);
+                titles.Add(i.Title);
+            }
+        string root = CopyRx.Replace(d.Name ?? "Design", "") + " copy", title = root, stem;
+        for (int n = 2; ; n++)
+        {
+            stem = Path.GetFileNameWithoutExtension(Designer.DesignDoc.FileName(d with { Name = title }));
+            if (!stems.Contains(stem) && !titles.Contains(title))
+                break;
+            title = $"{root} {n}";
+        }
+        try
+        {
+            Directory.CreateDirectory(WorldSession.UnsavedFolder);
+            string path = Path.Combine(WorldSession.UnsavedFolder, stem + ".json");
+            File.WriteAllText(path, (d with { Name = title, Id = stem }).ToJson(indented: true));
+            return path;
+        }
+        catch (Exception x) when (x is IOException or UnauthorizedAccessException)
+        {
+            Console.Error.WriteLine($"launch: the unsaved copy {stem}: {x.Message}");
+            return null;
+        }
+    }
+
+    /// <summary>The unsaved designs a setup names written to the player's folder as theirs (Save setup…: a setup
+    /// saved must find its designs at the next start). How many.</summary>
+    int SaveUnsaved(Scenario s)
+    {
+        int n = 0;
+        foreach (var name in s.DesignNames())
+            if (InfoOf(name) is { Unsaved: true } d)
+            {
+                Directory.CreateDirectory(Designer.DesignDoc.UserFolder);
+                File.Copy(d.Path, Path.Combine(Designer.DesignDoc.UserFolder, Path.GetFileName(d.Path)), overwrite: false);
+                File.Delete(d.Path);
+                n++;
+            }
+        if (n > 0)
+            RescanYours();
+        return n;
+    }
+
+    /// <summary>How many unsaved designs <paramref name="s"/> names.</summary>
+    int UnsavedIn(Scenario s) => s.DesignNames().Count(n => InfoOf(n) is { Unsaved: true });
+
+    static DesignInfo[] Scan(string folder, bool yours, bool unsaved = false)
     {
         if (!Directory.Exists(folder))
             return [];
@@ -71,7 +141,7 @@ public sealed unsafe partial class LaunchScene
                 string name = r.TryGetProperty("name", out var n) && n.ValueKind == JsonValueKind.String ? n.GetString()! : Path.GetFileNameWithoutExtension(path);
                 var d = new DesignInfo
                 {
-                    Stem = Path.GetFileNameWithoutExtension(path), Path = path, Yours = yours, Modified = File.GetLastWriteTime(path),
+                    Stem = Path.GetFileNameWithoutExtension(path), Path = path, Yours = yours, Unsaved = unsaved, Modified = File.GetLastWriteTime(path),
                     Type = r.TryGetProperty("type", out var t) && t.ValueKind == JsonValueKind.String ? t.GetString()! : "",
                 };
                 foreach (Match m in YearRx.Matches(text))
@@ -83,7 +153,9 @@ public sealed unsafe partial class LaunchScene
                     (d.Title, d.Sub) = (name[..open], name[(open + 2)..^1]);
                 else
                     d.Title = name;
-                if (yours)
+                if (unsaved)
+                    d.Sub = "not saved: this run only, until a setup using it is saved";
+                else if (yours)
                     d.Sub = "saved " + (d.Modified.Date == DateTime.Today ? "today " + d.Modified.ToString("HH:mm", CultureInfo.InvariantCulture)
                         : d.Modified.ToString("d MMM yyyy", CultureInfo.InvariantCulture));
                 list.Add(d);

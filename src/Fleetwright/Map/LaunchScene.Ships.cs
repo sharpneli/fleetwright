@@ -695,7 +695,7 @@ public sealed unsafe partial class LaunchScene
             if (dl.Button("##seldesign", new Vector2(o.X + P(6), y), ChangeL, "P", enabled: !begin))
                 OpenPicker(l);
             if (dl.Button("##selcopy", new Vector2(o.X + P(10) + ButtonWidth(ChangeL, "P"), y), CopyL, "E", enabled: !begin && EditCopy != null))
-                Copy(InUseCandidate(l));
+                Copy(InUseCandidate(l), l);
             y += P(28);
             // her captains
             dl.SubHeader(new Vector2(o.X, y), cw, "CAPTAINS", "added to the admiral's temper");
