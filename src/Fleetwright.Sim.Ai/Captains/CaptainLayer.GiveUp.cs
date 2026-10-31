@@ -135,13 +135,14 @@ public sealed partial class CaptainLayer
         return left;
     }
 
-    /// <summary>Whether she can't hurt the enemy: her chief guns' lasting share at or under
-    /// <see cref="SimSettings.GiveUpGunsShare"/>, or her chief magazines empty, and no torpedo ready in a working tube.</summary>
+    /// <summary>Whether she can't hurt the enemy: no main battery at all (a merchant, docs/battle/aims.md A4: her light
+    /// guns don't make her a match for a warship), or her chief guns' lasting share at or under
+    /// <see cref="SimSettings.GiveUpGunsShare"/>, or her chief magazines empty; and no torpedo ready in a working tube.</summary>
     static bool CantHurt(in AiContext ctx, ShipState own, int slot, in Fitness fit, SimSettings s)
     {
         var cls = own.Handling.Class;
         var combat = ctx.Ships.Combat;
-        if (fit.MainGunsShare > s.GiveUpGunsShare && !Spent(cls, combat, slot))
+        if (Sightings.TypeOf(cls) != ShipType.Merchant && fit.MainGunsShare > s.GiveUpGunsShare && !Spent(cls, combat, slot))
             return false;
         var k = combat.Condition(slot);
         for (int l = 0; l < cls.Launchers.Length; l++)

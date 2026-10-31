@@ -183,10 +183,10 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
     int count;
     readonly List<Top> tops = new(64);
     readonly List<(int Ship, double AsternM, double AbeamM)> line = new(64);
-    // the side being commanded at this think: its state, the zone the enemy's aim makes for that it's to stop (docs/
-    // battle/aims.md A3) and the kinds it wants sunk first
+    // the side being commanded at this think: its state, where its aim has it search for the enemy (docs/battle/aims.md
+    // A3, A4: across his way to a zone, or a hunting ground) and the kinds it wants sunk first
     SideState? cur;
-    Zone? stopZone;
+    (Zone Zone, bool Way)? hunt;
     int wanted;
 
     internal TaskLayer? Tasks { get; set; }
@@ -372,7 +372,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         // too (docs/battle/aims.md A2): what the rest support
         int pursued = Book.Pursued(side);
         Zone? zone = pursued >= 0 && Book[side, pursued].Kind == AimKind.Reach ? Book[side, pursued].Zone : null;
-        (cur, stopZone, wanted) = (s, Book.StopZone(side), Book.Wanted(side));
+        (cur, hunt, wanted) = (s, Book.SearchZone(side), Book.Wanted(side));
         int main = -1;
         for (int i = 0; i < tops.Count; i++)
         {
@@ -403,7 +403,11 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
             : s.Target != 0 ? (CommanderPhase.Contact, CommanderReason.None)
             : s.Met ? (CommanderPhase.Lost, CommanderReason.LostContact)
             : (CommanderPhase.NoContact, CommanderReason.None);
-        if (s.Phase == CommanderPhase.Lost && main >= 0 && !reach && stopZone == null && Commands(tops[main].Unit, side, player) && Search(ctx, s, tops[main]))
+        // the enemy lost: a search where he was last held, then home; but with a zone to search (docs/battle/aims.md A3,
+        // A4) he never gives up while the aim's open: across the enemy's way at once, or his hunting ground once that
+        // search is through (his main body idle, its task)
+        if (s.Phase == CommanderPhase.Lost && main >= 0 && !reach && hunt is not { Way: true } && Commands(tops[main].Unit, side, player) &&
+            Search(ctx, s, tops[main]) && hunt == null)
             (s.GaveUp, s.Phase, s.Reason) = (true, CommanderPhase.Home, CommanderReason.GaveUp);
 
         for (int i = 0; i < tops.Count; i++)
@@ -442,11 +446,13 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
             // a flotilla through with its torpedoes goes back to its screen at once, contact or not
             bool spent = t.Role == UnitRole.Flotilla && Tasks!.Of(t.Unit) is (TaskKind.Attack, TaskState.Done, TaskReason.Fired);
             bool firstOrders = Tasks!.Of(t.Unit).Kind == TaskKind.None;
-            // a side out to stop the enemy's aim (docs/battle/aims.md A3) takes up its roles at once, but for those the
-            // scenario gave a route
-            bool deploy = firstOrders && stopZone != null && store[t.Slot].Helm != Helm.Route;
-            if (!spent && (!(Tasks.Idle(t.Unit) || firstOrders && s.Met || deploy) || InContact(ctx, t) || Home(t.Unit)))
-                continue;   // on its task, or on the scenario's orders before the enemy's met, or fighting (doctrine's), or home
+            // a side with a zone to search for the enemy (docs/battle/aims.md A3, A4) takes up its roles at once, but for
+            // those the scenario gave a route
+            bool deploy = firstOrders && hunt != null && t.Role != UnitRole.Auxiliary && store[t.Slot].Helm != Helm.Route;
+            if (!spent && (!(Tasks.Idle(t.Unit) || firstOrders && s.Met || deploy) || InContact(ctx, t) || Home(t.Unit)) ||
+                t.Role == UnitRole.Auxiliary && Tasks.Of(t.Unit) is (TaskKind.Withdraw, TaskState.Cant, TaskReason.Nowhere))
+                continue;   // on its task, or on the scenario's orders before the enemy's met, or fighting (doctrine's), or home,
+                            // or an auxiliary with no home to go to (it holds what it has)
             Give(ctx, t, IdleTask(ctx, t, main >= 0 && main != i ? tops[main] : null), spent ? CommanderWhy.Rejoin : CommanderWhy.Idle);
         }
     }
@@ -949,8 +955,8 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         {
             if (t.Role == UnitRole.Auxiliary)
                 return o.WithdrawHome(t.Unit, By);
-            if (stopZone is { } z)
-                return Across(ctx, t, z);
+            if (hunt is var (z, way))
+                return Across(ctx, t, z, way);
             var guide = store[t.Slot];
             var p = guide.Position;
             var f = guide.Forward;
@@ -967,14 +973,15 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         };
     }
 
-    /// <summary>His main body's search across the enemy's way to the zone he's to keep him from (docs/battle/aims.md A3):
-    /// where the enemy would be now steaming for it from where he was last held, at the speed he was held at (never past
-    /// the zone); the zone itself if he's never been held. Given again each time the search is through, so it follows the
-    /// enemy's way in.</summary>
-    Command Across(in AiContext ctx, in Top t, Zone zone)
+    /// <summary>His main body's search of the zone his aim has him search (<see cref="AimBook.SearchZone"/>), given again
+    /// each time it's through: across the enemy's way to a zone he's to keep him from (docs/battle/aims.md A3), where the
+    /// enemy would be now steaming for it from where he was last held, at the speed he was held at (never past the zone),
+    /// the zone itself if he's never been held, so it follows the enemy's way in; a hunting ground (A4) about its
+    /// centre.</summary>
+    Command Across(in AiContext ctx, in Top t, Zone zone, bool way)
     {
         var at = zone.Centre;
-        if (cur is { LastAt: not 0 } s)
+        if (way && cur is { LastAt: not 0 } s)
         {
             var (la, lo) = Earth.UnpackLatLon(s.LastAt);
             var p = Earth.Position(la, lo);
@@ -987,7 +994,8 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
             }
         }
         var (lat, lon) = Earth.LatLon(at);
-        return ctx.Orders.Search(t.Unit, lat, lon, 0, OrderSource.Commander);
+        var st = ctx.Settings;   // legs as long as the zone is wide, from a lost search's to an open-sea one's
+        return ctx.Orders.Search(t.Unit, lat, lon, Math.Clamp(zone.RadiusM, st.LostSearchLegM, st.SearchLegM), OrderSource.Commander);
     }
 
     /// <summary>The heavy unit of a side nearest a unit (the main body if none is nearer).</summary>

@@ -22,7 +22,7 @@ enemy"); (3) the aims come now, before the balance round's BL3 and BL4.
 | A1 Aims as data, their state, the judge | done 2026-10-31 ("A1, as built") | |
 | A2 Reach: the side that wants a place | done 2026-10-31 ("A2, as built") | |
 | A3 Stop: the side that wants to prevent it | done 2026-10-31 ("A3, as built") | |
-| A4 Sink merchants: the raider, the merchants, the hunters | not started | |
+| A4 Sink merchants: the raider, the merchants, the hunters | done 2026-10-31 ("A4, as built") | |
 | A5 The UI: aims, progress, zones | not started | |
 | A6 Benches and balance | not started | |
 
@@ -255,9 +255,42 @@ Per `docs/ui-language.md`, drawn with `Ui/Pieces.cs`:
     (its range opening 8 → 10 km as theirs closes 12 → 9) and shifts to them once they're the nearer.
 - Every new rule is gated on a side's aims: the shipped scenarios (destroy everyone) play as before.
 - `AimsTests`: the threat's numbers; the pick with each escort and the going round; the Stop side's battlecruiser,
-  with no orders, searching the zone, finding the convoy on its way in, sent after the tramps (`CommanderWhy.Contact`),
-  its main guns on the tramps more minutes than on the escort while the convoy's aim is open (33 to 25: the escort
-  was the nearer at times), and the convoy not getting in.
+  with no orders, searching the zone, finding the convoy on its way in, sent after the tramps (`CommanderWhy.Contact`):
+  the escort came between them, so she fought it at point blank while the tramps were out of reach (made out as
+  merchants at 26 km, in reach under 18), then turned her guns on the tramps, and the convoy was stopped (One struck)
+  with the escort still afloat.
+
+## A4, as built (2026-10-31)
+
+- **Where a side searches** (`AimBook.SearchZone`, replacing A3's stop zone): across the enemy's way to his Reach's
+  zone (A3), or a Sink's hunting ground, the raider's own or, for a Stop of it, the one her hunters know she works. A
+  side with one takes up its roles at once (its auxiliaries aside: they keep their routes), and its main body's idle
+  task is the search there (legs as long as the zone is wide, 20 to 60 km). Losing the enemy, a raider or her hunters
+  search where he was last held as before, and then the ground again rather than give up (the Stop of a Reach skips
+  that search: across the way at once).
+- **The raider:** her Sink wants merchants first (A3's `Wanted`), so her commander sends her after the group that has
+  them and her captain's guns go on them; a stronger warship and she declines by the balance as ever, making for home
+  (her way home a Reach after the Sink: `Homes` already sends her to its zone).
+- **The merchants run** (`CaptainLayer.Flee`, `FleeThink`): a ship with no main battery and no torpedo tubes (what
+  she is: `Sightings.TypeOf` merchant), alone (not in a line: a convoy's admiral takes the line away), meeting an enemy
+  warship near (`FightCompareM`; a known foe not taken for a merchant, an unknown counting as one) flees by the
+  cripple's way out (`Escape`: away from every enemy near, bent toward her home as they fall back) at flank speed,
+  whatever her doctrine, instead of taking up Fight; her light guns fire at will as she goes. Once no warship's been
+  near for `TaskResumeS` (5 min) she's back on her route if it has waypoints left, else her course and speed. A task
+  she had waits, as for a fight (`TaskLayer`: `Captains.Fleeing`). Any order ends the flight, the player's included.
+- **Striking:** a ship with no main battery counts as unable to hurt (`CantHurt`), so a merchant hit and cornered
+  gives up by her doctrine. Undamaged she doesn't (the captain's call is for ships hurt; stopping one by a shot across
+  her bow and prize crews stay striking's "Not in this cut"). In the tests a tramp hit by a light cruiser sank before
+  her call fell due (abandoned as she foundered): physical, left as it is.
+- Found on the way: the Stop side's commander re-ordered its tramps home every minute (A3's deployment caught
+  auxiliaries, and its side had no home); auxiliaries aren't deployed now, and one whose withdrawal found no home holds
+  what it has.
+- The shipped scenarios: only the perf benches (`ladder-4-world`, `ladder-5-world-2000`) carry merchants, so the
+  battle scenarios meet the flight nowhere; the striking change reaches only ships with no main battery.
+- `AimsTests`: the raider, no orders given, searches her ground, finds the three tramps on their routes, sinks her
+  tonnage (one, 9,471 t) and gets home; all three tramps ran, the two that got away back on their routes; the hunters
+  (an armoured cruiser, no orders) search the ground, come on the raider, she declines (at 40 min) and is home at 130
+  with her way home met and her hunt still open.
 
 ## Steps
 

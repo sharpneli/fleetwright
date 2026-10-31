@@ -368,7 +368,8 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Homes homes
             (t.Status, t.Reason) = (TaskState.Cant, TaskReason.None);   // fallen out: the captain's now
             return;
         }
-        if (order == CaptainOrder.Fight && t.Kind != TaskKind.Withdraw && now - t.QuietMs < (long)(s.TaskResumeS * 1000))
+        // a ship fleeing an enemy warship (docs/battle/aims.md A4) is as one in a fight: the task waits for her
+        if ((order == CaptainOrder.Fight || !u.IsGroup && Captains!.Fleeing(u.Entity)) && t.Kind != TaskKind.Withdraw && now - t.QuietMs < (long)(s.TaskResumeS * 1000))
         {
             (t.Status, t.Issued) = (TaskState.Engaged, false);   // a withdrawal never waits on a fight: it breaks it off
             return;

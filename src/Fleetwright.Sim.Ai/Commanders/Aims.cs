@@ -162,14 +162,26 @@ public sealed class AimBook
     /// enemy's after (the scenario's intelligence); his captains know a ship by what they take her for.</summary>
     public int Wanted(int side) => wanted[side & 255];
 
-    /// <summary>The zone the enemy's aim makes for that a side's pursued aim is to stop (a Stop of a Reach), if any, as of
-    /// the last update.</summary>
-    public Zone? StopZone(int side)
+    /// <summary>Where a side's pursued aim has its main body search for the enemy (docs/battle/aims.md A3, A4), as of the
+    /// last update: across the enemy's way (<c>Way</c>) to the zone his Reach makes for, for a Stop of it; the hunting
+    /// ground of a Sink, the raider's own or, for a Stop of it, the one her hunters know she hunts; null for none (no
+    /// such aim, or a Sink with no ground given).</summary>
+    public (Zone Zone, bool Way)? SearchZone(int side)
     {
-        if (Pursued(side) is not (int p and >= 0) || this[side, p] is not { Kind: AimKind.Stop, About: >= 0 and < 256 } stop ||
-            FirstNotStop(stop.About) is not (int j and >= 0) || this[stop.About, j] is not { Kind: AimKind.Reach } reach)
+        if (Pursued(side) is not (int p and >= 0))
             return null;
-        return reach.Zone;
+        var a = this[side, p];
+        if (a.Kind == AimKind.Stop)
+        {
+            if (a.About is not (>= 0 and < 256) || FirstNotStop(a.About) is not (int j and >= 0))
+                return null;
+            a = this[a.About, j];
+            if (a.Kind is not (AimKind.Reach or AimKind.Sink))
+                return null;
+        }
+        else if (a.Kind != AimKind.Sink)
+            return null;
+        return a.Zone.Has ? (a.Zone, a.Kind == AimKind.Reach) : null;
     }
 
     /// <summary>The roster taken up to now, and each Reach's ships in their zones: arrived on entering, or once they've

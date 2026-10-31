@@ -150,6 +150,8 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         public double WaterRate, HeelRate, WaterTrend, HeelTrend;   // their rise over the last window, and the lesser of the last two (t/s, °/s from upright)
         public long HopelessMs, CallMs; // since when she's been hopeless and cornered (0: she isn't), and when his call falls due
         public bool FightsOn;           // his call made: she fights on (abandoned still once she won't float)
+        public long FleeMs;             // fleeing an enemy warship (docs/battle/aims.md A4): when one was last near (0: not fleeing)
+        public double FleeBackDeg, FleeBackKn;   // and the course and speed she had before, for after
     }
 
     /// <summary>What a battery's shell was last judged on (docs/battle/shell-choice.md A3): its target as the picture had
@@ -248,9 +250,12 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
     }
 
     // a behaviour he works at each think (not an order handed the helm once), or a route the player gave to watch
-    static bool IsActive(in Captain c) => c.Order is not (CaptainOrder.None or CaptainOrder.Course or CaptainOrder.Route) || c.Watch;
+    static bool IsActive(in Captain c) => c.Order is not (CaptainOrder.None or CaptainOrder.Course or CaptainOrder.Route) || c.Watch || c.FleeMs != 0;
 
     /// <summary>A ship's captain's order, its target unit and whose it is; None if he has none.</summary>
+    /// <summary>Whether a ship's captain is fleeing an enemy warship (docs/battle/aims.md A4): her task waits, as for a fight.</summary>
+    public bool Fleeing(int entity) => Find(entity) is int i and >= 0 && captains[i].FleeMs != 0;
+
     public (CaptainOrder Order, int Target, Whose Whose) Of(int entity)
     {
         int i = Find(entity);
@@ -386,6 +391,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
             or CaptainReason.OutWater or CaptainReason.OutSteering)
             cap.Overruled = true;
         cap.Reason = CaptainReason.None;   // ordered: doing what he's told
+        cap.FleeMs = 0;                    // and not fleeing (he's told again, if it's still for him to judge)
         switch (code)
         {
             case AiCommand.Course:
@@ -511,6 +517,11 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
                 continue;   // carried on its guide's rails, held exactly on station: an order would only derail the line
             if (cap.HeldUntilMs > ctx.NowMs)
                 continue;   // combing a torpedo's track, or turned from a light: that first
+            if (cap.FleeMs != 0)
+            {
+                FleeThink(ctx, ref cap, own);
+                continue;
+            }
             if (cap.Order == CaptainOrder.Fight)
             {
                 FightThink(ctx, ref cap, own, slot);
@@ -745,6 +756,13 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
                 h.Add(c.StarHeld);
                 h.Add(c.FiredOnMs);
                 h.Add(c.Holding);
+            }
+            if (c.FleeMs != 0)
+            {
+                h.Add(0xF1EEu);   // only then: worlds where nobody flees hash as before
+                h.Add(c.FleeMs);
+                h.Add(c.FleeBackDeg);
+                h.Add(c.FleeBackKn);
             }
             if (c.EndLookMs != 0 || c.FightsOn)
             {

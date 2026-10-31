@@ -125,6 +125,7 @@ public sealed partial class CaptainLayer
             Comb(ctx, ref cap, own);   // coarse, also when a track comes into sight between thinks (WatchTracks)
             TurnFromLight(ctx, ref cap, own, slot);   // a light on her in the dark (docs/battle/night.md Q7)
             Darken(ctx, ref cap, own, slot);          // darkened: her guns hold till she's fired upon (Q9)
+            Flee(ctx, ref cap, own, slot);            // a ship with no main battery from an enemy warship (docs/battle/aims.md A4)
             TakeUpStanding(ctx, ref cap, own, slot);
             Aim(ctx, ref cap, own, slot);
             AnswerChallenges(ctx, own);
@@ -223,12 +224,74 @@ public sealed partial class CaptainLayer
         return false;
     }
 
+    /// <summary>A ship with no main battery and no torpedo tubes (a merchant: what she is, never her side or her scenario;
+    /// docs/battle/aims.md A4) runs from an enemy warship: one held near (<see cref="SimSettings.FightCompareM"/>), a known foe whose type
+    /// isn't a merchant (an unknown counts as one), and she flees by the cripple's way out (<see cref="Escape(in AiContext,
+    /// ShipState, Vec3d)"/>: away from every enemy near, bent toward her home as they fall back) at her best speed,
+    /// whatever her doctrine; her light guns fire at will as she goes. Not one in a line (her admiral takes the line
+    /// away), nor while the player holds her or has her conn, nor gone home.</summary>
+    void Flee(in AiContext ctx, ref Captain cap, ShipState own, int slot)
+    {
+        if (cap.FleeMs != 0 || cap.Whose == Whose.Player || cap.Order == CaptainOrder.Home || Conned(cap, own.Entity) || groups.InLine(own.Entity) ||
+            Sightings.TypeOf(own.Handling.Class) != ShipType.Merchant || own.Handling.Class.Launchers.Length > 0 || NearestWarship(ctx, own, out _) == 0)
+            return;
+        (cap.FleeMs, cap.FleeBackDeg, cap.FleeBackKn) = (ctx.NowMs, own.CourseOrderDeg, own.SpeedOrderKn);
+        Recount();
+        FleeThink(ctx, ref cap, own);
+    }
+
+    /// <summary>Fleeing, each think: away while an enemy warship's near, given again as the way out turns; once none has
+    /// been for <see cref="SimSettings.TaskResumeS"/>, back on her route if it has waypoints left, else the course and
+    /// speed she had (a task she had goes on: it waited, as for a fight).</summary>
+    void FleeThink(in AiContext ctx, ref Captain cap, ShipState own)
+    {
+        if (NearestWarship(ctx, own, out var at) != 0)
+        {
+            cap.FleeMs = ctx.NowMs;
+            Give(ctx, own, Escape(ctx, own, at), Behaviours.Flank(own.Handling));
+            return;
+        }
+        if (ctx.NowMs - cap.FleeMs < (long)(ctx.Settings.TaskResumeS * 1000))
+            return;   // steaming on away a while yet
+        cap.FleeMs = 0;
+        Recount();
+        if (own.RouteCount > own.RouteNext || own.RouteLoop && own.RouteCount > 0)
+            ctx.Helm.ResumeRoute(own.Entity);
+        else
+            Give(ctx, own, cap.FleeBackDeg, cap.FleeBackKn);
+    }
+
+    /// <summary>The nearest enemy warship her navy holds near her (<see cref="SimSettings.FightCompareM"/>), a known foe
+    /// not taken for a merchant (0 for none), and where.</summary>
+    int NearestWarship(in AiContext ctx, ShipState own, out Vec3d at)
+    {
+        at = default;
+        var pic = ctx.World.Sightings.Of(own.Side);
+        if (pic == null)
+            return 0;
+        int best = 0;
+        double bestD = double.MaxValue;
+        foreach (int i in seen.Near(ctx.World, own.Side, own.Position, ctx.Settings.FightCompareM))
+        {
+            if (pic[i].Type == ShipType.Merchant || pic[i].Out)
+                continue;
+            var q = seen.Position(own.Side, i);
+            if (!Opens(ctx, own, pic[i], q))
+                continue;
+            double d = (q - own.Position).LengthSquared;
+            if (d < bestD)
+                (best, bestD, at) = (pic[i].Entity, d, q);
+        }
+        return best;
+    }
+
     /// <summary>A ship alone whose doctrine is to fight (docs/battle/command.md "Doctrine": Engage) takes up Fight when
     /// it first meets an enemy in sight in an encounter; it's armed again once it's out of encounters. Not while the
     /// player holds her (<see cref="Whose.Player"/>): the player's order is what she does.</summary>
     void TakeUpStanding(in AiContext ctx, ref Captain cap, ShipState own, int slot)
     {
-        if (cap.Whose == Whose.Player || cap.Order == CaptainOrder.Home || Tasks?.Avoids(Unit.Ship(own.Entity)) == true || (Engage)doctrine.Of(own.Entity, own.Side, DoctrineField.Engage) != Engage.Fight)
+        if (cap.Whose == Whose.Player || cap.Order == CaptainOrder.Home || cap.FleeMs != 0 || Tasks?.Avoids(Unit.Ship(own.Entity)) == true ||
+            (Engage)doctrine.Of(own.Entity, own.Side, DoctrineField.Engage) != Engage.Fight)
             return;
         if (encounters.Of(slot, own.Entity) == 0)
         {
