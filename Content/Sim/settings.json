@@ -195,7 +195,6 @@
   "CaptainCourseDeadbandDeg": 1,
   "CaptainSpeedDeadbandKn": 0.3,
   "FollowDistanceLengths": 3,
-  "FollowLookaheadLengths": 4,
   "FollowCloseS": 90,
   "FollowMaxSpeedDiffKn": 6,
   "StationFarM": 2000,

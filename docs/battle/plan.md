@@ -769,7 +769,8 @@ a course, follow, run (stage 2).
   - **Follow** keeps station at a distance astern of another ship, matching its speed plus what closes the gap in
     90 s. It steers for a point ahead of itself on the leader's line; while ahead of station it runs parallel to the
     leader and drops back by speed, so it neither turns round nor cuts across the leader. The first version did
-    both.
+    both. (Since 2026-10-31, `docs/battle/bugs.md`: it moves toward its station in the leader's frame, within its
+    speed limits, so ahead or abeam of station it closes the line as it drops back and reaches it at its station.)
   - **Run** turns straight away and rings flank.
   - Captains give an order only when the change is past a deadband (1°, 0.3 kn). The numbers are in `SimSettings`.
 - **Fixed on the way:** `SimEvent.Compare` boxed two enums whenever two events shared a moment (`Enum.CompareTo` takes

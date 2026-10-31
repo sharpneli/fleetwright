@@ -120,11 +120,24 @@ public class ScoutingTests(ITestOutputHelper output)
         Column(w, ai, bb, Off(home, 90, 22_000), 0, 2, side: 1, kn: 15);   // the enemy, in sight to the east
         w.AdvanceTo(w.Time + 60_000);
         w.Apply(ai.Orders.Cover(Unit.Group(battle), Unit.Group(cruisers), 10_000));
+        // 15 km astern of a station 10 km abeam, 4 kn faster than the cruisers: she steers the line of relative motion
+        // through the station (Behaviours.Station), so she's toward the enemy as she comes up, and on station in about two
+        // hours
         w.AdvanceTo(w.Time + 40 * 60_000);
-        var covered = Ship(w, w.Groups.Get(cruisers)!.Guide);
-        var cover = Ship(w, w.Groups.Get(battle)!.Guide);
-        double east = Vec3d.Dot(cover.Position - covered.Position, Earth.Forward(covered.Position, 90));
-        output.WriteLine($"after 40 min the cover is {east:F0} m east of the cruisers: {ai.Tasks.Of(Unit.Group(battle))}");
-        Assert.True(east > 5_000, $"{east:F0} m");
+        var (east, north) = Where(w, battle, cruisers);
+        output.WriteLine($"after 40 min the cover is {east:F0} m east of the cruisers, {north:F0} m north: {ai.Tasks.Of(Unit.Group(battle))}");
+        Assert.True(east > 4_000, $"{east:F0} m");
+        w.AdvanceTo(w.Time + 80 * 60_000);
+        (east, north) = Where(w, battle, cruisers);
+        output.WriteLine($"after 2 h, {east:F0} m east, {north:F0} m north");
+        Assert.True(Math.Sqrt((east - 10_000) * (east - 10_000) + north * north) < 1_500, $"{east:F0} m east, {north:F0} m north");
+    }
+
+    /// <summary>Where one group's guide is from another's, metres east and north.</summary>
+    static (double East, double North) Where(World w, int of, int from)
+    {
+        var a = Ship(w, w.Groups.Get(from)!.Guide);
+        var b = Ship(w, w.Groups.Get(of)!.Guide);
+        return (Vec3d.Dot(b.Position - a.Position, Earth.Forward(a.Position, 90)), Vec3d.Dot(b.Position - a.Position, Earth.Forward(a.Position, 0)));
     }
 }

@@ -9,48 +9,51 @@ namespace Fleetwright.Sim.Ai.Captains;
 public static class Behaviours
 {
     /// <summary>Follow: keep station <paramref name="distanceM"/> astern of the leader (or
-    /// <see cref="SimSettings.FollowDistanceLengths"/> of his own lengths when 0). He steers for a point on the leader's
-    /// line some lengths ahead of himself (abreast of it while he's ahead of station), which brings him onto the line
-    /// without snaking, turning round or cutting across the leader, and he
-    /// rings the leader's speed plus what closes the gap along that line in <see cref="SimSettings.FollowCloseS"/>,
-    /// within <see cref="SimSettings.FollowMaxSpeedDiffKn"/> and what his plant makes.</summary>
+    /// <see cref="SimSettings.FollowDistanceLengths"/> of his own lengths when 0), as <see cref="Station"/> keeps it.</summary>
     public static (double CourseDeg, double SpeedKn) Follow(ShipState own, in Sighting leader, double distanceM, SimSettings s) =>
         Station(own, leader, distanceM > 0 ? distanceM : s.FollowDistanceLengths * own.Handling.LengthM, 0, s);
 
-    /// <summary>Station: as <see cref="Follow"/>, for a station <paramref name="asternM"/> astern of the other ship and
-    /// <paramref name="abeamM"/> to its starboard (negative: port), in its own frame. The line he joins runs through the
-    /// station along the other ship's heading.</summary>
+    /// <summary>Station: keep a station <paramref name="asternM"/> astern of the other ship and <paramref name="abeamM"/>
+    /// to its starboard (negative: port), in its own frame. In that frame he wants to move toward the station at what
+    /// closes the gap in <see cref="SimSettings.FollowCloseS"/>, less what's closing it already (damped: his engines answer
+    /// in minutes, so ringing on the gap alone overshoots, and down a line the swings grow), and he steams the leader's
+    /// course and speed plus that. Further off than his engines and helm allow, he keeps that direction at the most they
+    /// do: along the line at most <see cref="SimSettings.FollowMaxSpeedDiffKn"/> slower than the leader and never astern
+    /// (a follower ahead of station drops back by speed, he doesn't turn round), at most that faster (all she makes more
+    /// than <see cref="SimSettings.StationFarM"/> astern of station), so ahead or abeam of his station he closes the line
+    /// as he drops back or comes up to it and reaches it at his station, not ahead of the leader or far astern.</summary>
     public static (double CourseDeg, double SpeedKn) Station(ShipState own, in Sighting leader, double asternM, double abeamM, SimSettings s)
     {
         var h = own.Handling;
-        double length = h.LengthM;
         var lf = leader.Forward;
         var lup = leader.Position.Normalized();
-        var station = Surface(leader.Position - lf * asternM + Vec3d.Cross(lf, lup) * abeamM);
-        double behind = Vec3d.Dot(station - own.Position, lf);   // positive: astern of station, close up
+        var starboard = Vec3d.Cross(lf, lup);
+        var station = Surface(leader.Position - lf * asternM + starboard * abeamM);
+        var gap = station - own.Position;
+        double behind = Vec3d.Dot(gap, lf), across = Vec3d.Dot(gap, starboard);   // positive: astern of station, to port of it
+        double u = leader.SpeedMs, flank = Flank(h) * Handling.MsPerKnot;
 
-        // the point steered for is some lengths ahead of him along the leader's line, never behind him: a follower
-        // ahead of station drops back by speed, it doesn't turn round. Astern of station it's on the line; well ahead of
-        // station it's abreast of him, so he runs parallel and doesn't cut across the leader; between, a blend
-        double along = Math.Max(-behind, 0) + s.FollowLookaheadLengths * length;
-        var rel = own.Position - station;
-        var up = station.Normalized();
-        var cross = rel - lf * Vec3d.Dot(rel, lf) - up * Vec3d.Dot(rel, up);
-        double join = Math.Clamp(1 + behind / (2 * length), 0, 1);
-        var aim = Surface(station + lf * along + cross * (1 - join));
-        double course = Earth.Bearing(own.Position, aim);
+        // what he'd add to the leader's motion, along the line and across it (m/s)
+        double alongV = own.Speed * Vec3d.Dot(own.Forward, lf), acrossV = own.Speed * Vec3d.Dot(own.Forward, starboard);
+        double ca = behind / s.FollowCloseS - s.FollowSpeedDamping * (alongV - u);
+        double cx = across / s.FollowCloseS - s.FollowSpeedDamping * acrossV;
 
-        // the speed: the leader's, what closes the gap in the closing time, less what's closing it already (damped:
-        // his engines answer in minutes, so ringing on the gap alone overshoots, and down a line the swings grow); far
-        // astern of station, all she makes
-        double leaderKn = leader.SpeedMs / Handling.MsPerKnot;
-        double closing = own.Speed * Vec3d.Dot(own.Forward, lf) - leader.SpeedMs;   // m/s the gap shrinks at
-        if (behind > s.StationFarM)
-            return (course, Flank(h));
-        double extra = Math.Clamp((behind / s.FollowCloseS - s.FollowSpeedDamping * closing) / Handling.MsPerKnot,
-            -s.FollowMaxSpeedDiffKn, s.FollowMaxSpeedDiffKn);
-        double kn = Math.Clamp(leaderKn + extra, 0, Flank(h));
-        return (course, kn);
+        // as much of it as his limits take, its direction kept (the manoeuvring board's line of relative motion through
+        // the station): his speed along the line, then all he makes. Ahead of station he comes onto the line as he
+        // drops back to it; astern of it, as he comes up
+        double diff = s.FollowMaxSpeedDiffKn * Handling.MsPerKnot;
+        double most = behind > s.StationFarM ? flank : Math.Min(u + diff, flank);
+        double share = 1;
+        if (ca < 0)
+            share = Math.Min(share, (u - Math.Max(u - diff, 0)) / -ca);
+        double cc = ca * ca + cx * cx;
+        if (cc > 1e-12 && u < most)
+            share = Math.Min(share, (-u * ca + Math.Sqrt(u * u * ca * ca + cc * (most * most - u * u))) / cc);
+        double va = u + share * ca, vx = share * cx;
+
+        double course = Earth.Heading(leader.Position, lf) + Math.Atan2(vx, va) * 180 / Math.PI;
+        double kn = Math.Clamp(Math.Sqrt(va * va + vx * vx) / Handling.MsPerKnot, 0, Flank(h));
+        return (((course % 360) + 360) % 360, kn);
     }
 
     /// <summary>Track: keep station <paramref name="distanceM"/> astern of the leader along the track he steamed (a

@@ -583,11 +583,10 @@ public sealed record SimSettings
     public double CaptainCourseDeadbandDeg { get; init; } = 1;
     public double CaptainSpeedDeadbandKn { get; init; } = 0.3;
 
-    /// <summary>Following: the station astern of the leader when the order gives none, in the follower's lengths; how far
-    /// past the station he steers for, in the same lengths (pursuing a point ahead keeps him from snaking); how fast he
-    /// closes a gap along the line, seconds to make it good; and the most he goes over or under the leader's speed.</summary>
+    /// <summary>Following: the station astern of the leader when the order gives none, in the follower's lengths; how fast
+    /// he closes a gap to his station, along the line and across it, seconds to make it good; and the most he goes over or
+    /// under the leader's speed along the line.</summary>
     public double FollowDistanceLengths { get; init; } = 3;
-    public double FollowLookaheadLengths { get; init; } = 4;
     public double FollowCloseS { get; init; } = 90;
     public double FollowMaxSpeedDiffKn { get; init; } = 6;
 

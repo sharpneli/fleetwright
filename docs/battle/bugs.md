@@ -219,10 +219,20 @@ Seen in the AI's baseline after the detail passes (2026-10-20, docs/battle/comma
   declined (the gravest held since); he accepts again only over the bar against both what he holds and what he
   declined, or fights when caught by what he can't beat. Keeping it out of sight alone wasn't enough: Japan then
   re-accepted against a lone destroyer, the part of the Russian fleet it still held.
-- [ ] The same intercept is given again every commander think: the High Seas Fleet "to intercept Valiant" every minute
+- [x] The same intercept is given again every commander think: the High Seas Fleet "to intercept Valiant" every minute
   15:56-16:24 (seed 1916), "Lion" 19:46-20:03; the Battlecruiser Fleet "B97" 17:03-17:33. `FreeToClose` lets an
   intercept go only for another target, so the task is likely idle or through between thinks (or the target's id
   differs from `Tasks.TargetOf`). Not known which; each re-order may restart the approach.
+  Fixed 2026-10-31: neither. `Assign`, finding no set of his enough for a group, freed every unit in `sent`, meant as
+  those closing it, but `sent` also held the free units only tried for it. The High Seas Fleet, closing Valiant's group,
+  was tried for a graver one, wasn't enough, was freed onto its search, and was sent after Valiant again a moment later
+  in the same think. Only those that were closing the group are freed now (Jutland seed 1916: no order given twice in a
+  row; intercepts 110 to 93).
+- [ ] A unit closing one enemy group is free for any graver group the commander judges each think, with no margin, so it
+  hops between them as the held groups and their confidences shift: Jutland seed 1916 (2026-10-31), the Grand Fleet
+  sent after Seydlitz, G102, Seydlitz, G103, S23, Seydlitz, Pillau, S23, Pillau ... 16:42-17:09; the 5th Battle
+  Squadron between V30, Lützow and Moltke 02:44-03:30. Each is a real retarget (a new course), not the same order
+  again. To try: free a closing unit only for a group graver by `CommanderRetargetShare`, as `Enemy` keeps his target.
 - [x] No Jutland seed ends by its own rules: `Done` needs every side to have its aims, given up or broken off with every
   unit home, and a side retiring outmatched (Germany, seed 1916) is none of them; ships sinking hours later keep it
   from quiet. Whether a decline that has got away should count as an end is for 5.1f.
@@ -244,10 +254,21 @@ Seen in the AI's baseline after the detail passes (2026-10-20, docs/battle/comma
   (2026-10-29, docs/battle/night.md Q0): Tsushima's eight destroyers never attack the three old battleships in 5 runs.
   Planned in night.md Q7.
 
-- [ ] A ship keeping station far astern of where she is (a column dropping back into one line,
+- [x] A ship keeping station far astern of where she is (a column dropping back into one line,
   `LineShapeTests`) slows by `FollowMaxSpeedDiffKn` and overshoots her station by 1-2 km before closing again at 5 kn
   over the guide: the six columns' line forms in 64 min where the drop back alone takes about 50. Found 2026-10-25
   (docs/map-ui/battle-hud.md P1). To try: the captain easing back up as the gap closes, by her own acceleration.
+  Fixed 2026-10-31, and it wasn't the speed: `Behaviours.Station` ran parallel to the line while more than two lengths
+  ahead of station, then steered for a point four lengths ahead of her on the line, square across it from 7-9 km
+  abeam, so she lost her way along it and came onto it 1.3-1.9 km astern. She now moves toward her station in the
+  leader's frame as the speed law always did along the line (the gap over `FollowCloseS`, damped), both ways, within
+  its limits with the direction kept: closing the line as she drops back, reaching it at her station (at worst 260 m
+  astern). One line in 52.8 min (63.8), six columns again in 74.7 (82.8); `FollowLookaheadLengths` gone. Astern of
+  station it's the manoeuvring board's line of relative motion too: a cover 15 km astern of a station 10 km abeam
+  (`ScoutingTests`) is 4.2 km toward the enemy at 40 min (8.0 before: the old law cut across first, losing way along)
+  and 1.6 km off its station at 2 h (2.2), the test now asking both; a line turned back together is 63 m off at 8 min
+  (56, bound 60 to 70). Crossing first was tried, holding the leader's speed along: the cover 10 km out by 30 min, but
+  columns no longer formed in 90 min (each column's head crossing, then coming up).
 - [ ] A force with every member out of its line drops out of its commander's units. `CommanderLayer.Gather` and its
   count of units by state (the loop over top groups near line 237) find a top group's side through
   `GroupSystem.GuideShip`, and a force whose squadrons are all detached (held by the player, on tasks) has none, so
@@ -340,6 +361,10 @@ Seen in the AI's baseline after the detail passes (2026-10-20, docs/battle/comma
   2026-10-27 and 2026-10-30 (the crew plan N0-N6, or the night plan's Q1-Q10: the eye, the sky). Next: bisect with
   `coarse-parity --layer scenarios --only coronel` (both ways, ~2 min) over those commits; then fix on the coarse rung
   that drifted (`coarse.md` "The principle").
+- [ ] **`CoarseParityTests.Coarse_fire_allocates_nothing` sees 40 bytes** (found 2026-10-31 at `e73a642f`, before that
+  day's AI fixes): every run alone, and in one full suite of two. It passed with the suite before, so it's likely a path
+  first reached in the measured ten minutes (a first hit's damage, a striking check) rather than per salvo. Next: an
+  allocation trace of the test (`tools/alloctop`, docs/profiling.md), then the bisect if it isn't plain.
 
 ## The app
 

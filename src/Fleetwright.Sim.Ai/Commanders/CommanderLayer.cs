@@ -568,6 +568,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
                     near.Add((i, (store[t.Slot].Position - g.Centre).LengthSquared));
             }
             near.Sort((x, y) => x.D != y.D ? x.D.CompareTo(y.D) : x.I.CompareTo(y.I));
+            int closers = sent.Count;
             bool enough = set.Count > 0 && Judge.Judge(ctx, 0, side, g.Centre, set, enemy).Confidence >= seek;
             foreach (var (i, _) in near)
             {
@@ -583,10 +584,11 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
             }
             if (!enough)
             {
-                // no set of his takes it on: those closing it are freed (their role's task)
-                foreach (int i in sent)
-                    if (Tasks!.Of(tops[i].Unit).Kind == TaskKind.Intercept)
-                        Give(ctx, tops[i], IdleTask(ctx, tops[i], MainOf(side, i)), CommanderWhy.Idle);
+                // no set of his takes it on: those closing it are freed (their role's task); those only tried for it keep
+                // what they're on (closing another group, as likely as not)
+                for (int j = 0; j < closers; j++)
+                    if (Tasks!.Of(tops[sent[j]].Unit).Kind == TaskKind.Intercept)
+                        Give(ctx, tops[sent[j]], IdleTask(ctx, tops[sent[j]], MainOf(side, sent[j])), CommanderWhy.Idle);
                 continue;
             }
             foreach (int i in sent)
