@@ -358,7 +358,7 @@ public sealed unsafe partial class LaunchScene
         string end = s.Until is { } u2 ? $"at {u2.ToUtc().AddHours(lon / 15):HH:mm} local" : "";
         for (int sd = 0; sd < s.Sides.Length; sd++)
             if (side < 0 || sd == side)
-                aims.Add((side < 0 ? s.Sides[sd] : "The aim", MapScene.AimsText(s, sd)));
+                aims.Add((side < 0 ? s.Sides[sd] : "The aims", AimWords.Plans(s, sd)));
         aims.Add(("The end", $"when one side is gone or out of the fight{(end.Length > 0 ? ", or " + end : "")}"));
     }
 

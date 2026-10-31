@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Numerics;
 using Fleetwright.Designer;
 using Fleetwright.Sim;
+using Fleetwright.Sim.Ai.Commanders;
 using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
 using ImGuiNET;
@@ -22,6 +23,7 @@ public sealed partial class MapScene
     string resultKick = "", resultTitle = "", resultMeta = "";
     readonly List<(string Name, string[] Cells)> resultSides = [];
     readonly List<(string Name, string Fate, bool Lost, int Side)> resultShips = [];
+    readonly List<(int Side, string Text, AimState State)> resultAims = [];   // each side's aims as they stood (docs/battle/aims.md A5)
     string resultSetup = "";
     readonly List<string> resultChanges = [];
 
@@ -43,17 +45,32 @@ public sealed partial class MapScene
         var sides = end.Sides;
         string at = new WorldTime(end.EndMs).ToUtc().ToString("HH:mm", CultureInfo.InvariantCulture);
         resultKick = $"SCENARIO OVER · {end.Reason.ToUpperInvariant()} AT {at}";
-        // the verdict: the side whose aims are met; else the one that lost much less; else a draw
+        // the verdict: the side whose aims are met; else, with aims scored in part (docs/battle/aims.md), the one whose
+        // score is well ahead; else the one that lost much less; else a draw
         int met = -1, metCount = 0;
         for (int i = 0; i < sides.Length; i++)
             if (sides[i].AimsMet)
                 (met, metCount) = (i, metCount + 1);
+        var scenario = world.Scenario;
+        bool scored = scenario != null && scenario.AimList.Any(a => a.Aim.Kind != AimKind.DestroyEveryone);
         int better = -1;
         if (metCount != 1 && sides.Length == 2)
         {
             double a = sides[0].LostTonnes / Math.Max(sides[0].Tonnes, 1), b = sides[1].LostTonnes / Math.Max(sides[1].Tonnes, 1);
-            better = a < b * 0.5 ? 0 : b < a * 0.5 ? 1 : -1;
+            double ahead = sides[0].Score - sides[1].Score;
+            better = scored ? (ahead > ScoreAhead ? 0 : ahead < -ScoreAhead ? 1 : -1) : a < b * 0.5 ? 0 : b < a * 0.5 ? 1 : -1;
         }
+        resultAims.Clear();
+        if (scenario != null)
+            for (int i = 0; i < sides.Length; i++)
+            {
+                int j = 0;
+                foreach (var aim in scenario.AimEntriesOf(i))
+                {
+                    var v = AimWords.View(s, i, j++);
+                    resultAims.Add((i, v is { } x ? AimWords.Now(scenario, aim, x) : AimWords.Plan(scenario, aim), (AimState)(v?.State ?? 0)));
+                }
+            }
         resultTitle = metCount == 1 ? (met == me ? $"A {sides[met].Name} victory" : me >= 0 ? $"Defeat: a {sides[met].Name} victory" : $"A {sides[met].Name} victory")
             : better >= 0 ? $"{sides[better].Name} had the better of it" : "A draw";
         resultMeta = end.Reason switch
@@ -77,7 +94,8 @@ public sealed partial class MapScene
             resultSides.Add((x.Name, [x.Ships.ToString(CultureInfo.InvariantCulture), x.Lost.ToString(CultureInfo.InvariantCulture),
                 x.LostTonnes.ToString("#,0", CultureInfo.InvariantCulture), x.Damaged.ToString(CultureInfo.InvariantCulture),
                 x.Killed.ToString("#,0", CultureInfo.InvariantCulture), x.Saved.ToString("#,0", CultureInfo.InvariantCulture),
-                x.Hits.ToString(CultureInfo.InvariantCulture), x.Torpedoes.ToString(CultureInfo.InvariantCulture), x.AimsMet ? "met" : "not met"]));
+                x.Hits.ToString(CultureInfo.InvariantCulture), x.Torpedoes.ToString(CultureInfo.InvariantCulture),
+                x.AimsMet ? "met" : scored ? x.Score.ToString("0%", CultureInfo.InvariantCulture) : "not met"]));
         resultShips.Clear();
         foreach (var x in end.Ships)
         {
@@ -153,8 +171,29 @@ public sealed partial class MapScene
             ImGui.EndTable();
         }
         ImGui.Spacing();
-        // each ship's fate, by side
         float colW = (w - 44 * sc) / Math.Max(resultSides.Count, 1);
+        // each side's aims as they stood, in the order wanted
+        if (resultAims.Count > 0 && ImGui.BeginTable("##aims", Math.Max(resultSides.Count, 1), ImGuiTableFlags.BordersInnerV | ImGuiTableFlags.SizingStretchSame,
+                new Vector2(w - 44 * sc, 0)))
+        {
+            for (int side = 0; side < resultSides.Count; side++)
+            {
+                ImGui.TableNextColumn();
+                ImGui.PushFont(UiFonts.SansSmall);
+                ImGui.TextDisabled($"{resultSides[side].Name.ToUpperInvariant()}'S AIMS");
+                ImGui.PopFont();
+                foreach (var x in resultAims)
+                    if (x.Side == side)
+                    {
+                        ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + colW - 12 * sc);
+                        ImGui.TextColored(x.State switch { AimState.Met => Theme.Ok, AimState.Lost => Bad, _ => Theme.Text }, x.Text);
+                        ImGui.PopTextWrapPos();
+                    }
+            }
+            ImGui.EndTable();
+            ImGui.Spacing();
+        }
+        // each ship's fate, by side
         if (ImGui.BeginTable("##fates", Math.Max(resultSides.Count, 1), ImGuiTableFlags.BordersInnerV | ImGuiTableFlags.SizingStretchSame, new Vector2(w - 44 * sc, 0)))
         {
             for (int side = 0; side < resultSides.Count; side++)
@@ -226,4 +265,7 @@ public sealed partial class MapScene
 
     bool resultShut;
     static readonly string[] CountHeads = ["SHIPS", "LOST", "TONNES LOST", "DAMAGED", "MEN LOST", "SAVED", "HITS", "TORPEDOES", "AIMS"];
+
+    /// <summary>How far ahead a side's score must be for the verdict to say it had the better of it (aims in part).</summary>
+    const double ScoreAhead = 0.25;
 }

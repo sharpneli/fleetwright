@@ -1,0 +1,35 @@
+// A raider among the shipping (docs/battle/aims.md A6): a German light cruiser out to sink 25,000 t of British
+// merchants in the lane, then home; six tramps on their routes through it, an armoured cruiser and a light cruiser
+// hunting her. Germany's Sink and its way home (half the weight), Britain's Stop. Not history: a bench for the raid.
+{
+  "scenario": 1,
+  "test": true,
+  "name": "Test: raider",
+  "brief": "A light cruiser is loose in the shipping lane: sink 25,000 t of merchants, then make for home. Two British cruisers are hunting her.",
+  "place": "North Sea",
+  "about": {
+    "Britain": { "character": "Six tramps on their routes; an armoured cruiser and a light cruiser hunting the raider.", "commander": "Commodore Tyrwhitt", "ensign": "britain" },
+    "Germany": { "character": "One fast light cruiser: merchants first, home after, no fight she can't win.", "commander": "Fregattenkapitän von Müller", "ensign": "germany" } },
+  "start": "1916-05-31T12:00",
+  "seed": 7,
+  "camera": [56.5, 4.3, 150],
+  "sides": ["Britain", "Germany"],
+  "player": "Germany",
+  "until": "1916-05-31T22:00",
+  "aims": {
+    "Germany": [ { "sink": "merchants", "tonnes": 25000, "where": { "at": [56.5, 4.3], "km": 50, "name": "the shipping lane" } },
+                 { "reach": "Raider", "zone": { "at": [56.0, 6.9], "km": 10, "name": "the way home" }, "weight": 0.5 } ],
+    "Britain": { "stop": "Germany" } },
+  "home": { "Britain": [56.3, -1.5], "Germany": [54.2, 7.6] },
+  "weather": { "visibility_km": 20, "wind_from": 230, "wind_kn": 10 },
+  "units": [
+    { "name": "Raider", "side": 1, "at": [56.55, 3.2], "course": 90, "kn": 14, "ships": [ { "design": "graudenz", "name": "Karlsruhe" } ] },
+    { "name": "Ardmore", "side": 0, "at": [56.1, 4.0], "course": 30, "kn": 9, "route": [[57.0, 5.0]], "ships": [ { "design": "tramp_1914", "name": "Ardmore" } ] },
+    { "name": "Benlarig", "side": 0, "at": [56.9, 3.8], "course": 150, "kn": 8, "route": [[56.0, 4.9]], "ships": [ { "design": "tramp_1914", "name": "Benlarig" } ] },
+    { "name": "Corrie", "side": 0, "at": [56.5, 5.2], "course": 270, "kn": 9, "route": [[56.5, 3.0]], "ships": [ { "design": "tramp_1914", "name": "Corrie" } ] },
+    { "name": "Dunvegan", "side": 0, "at": [56.3, 3.5], "course": 70, "kn": 8, "route": [[56.8, 5.4]], "ships": [ { "design": "tramp_1914", "name": "Dunvegan" } ] },
+    { "name": "Eriskay", "side": 0, "at": [56.75, 5.0], "course": 230, "kn": 9, "route": [[56.1, 3.4]], "ships": [ { "design": "tramp_1914", "name": "Eriskay" } ] },
+    { "name": "Fernhill", "side": 0, "at": [56.2, 5.1], "course": 300, "kn": 8, "route": [[56.9, 3.4]], "ships": [ { "design": "tramp_1914", "name": "Fernhill" } ] },
+    { "name": "Hunter", "side": 0, "at": [55.9, 5.6], "course": 330, "kn": 14, "ships": [ { "design": "warrior", "name": "Warrior" } ] },
+    { "name": "Light cruiser", "side": 0, "at": [57.1, 3.4], "course": 150, "kn": 14, "ships": [ { "design": "town_chatham", "name": "Southampton" } ] } ]
+}

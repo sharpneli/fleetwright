@@ -56,7 +56,8 @@ namespace Fleetwright.Sim.Missions;
 /// <para>It ends (docs/battle/command.md "The end", <see cref="ScenarioEnd"/>) at <c>"until": "1916-06-01T04:00"</c> (UTC;
 /// <see cref="SimSettings.PlayLimitMs"/> after the start if not given), or before that when it's decided or quiet. Each
 /// side wants its <c>"aims": { "Britain": "destroy everyone" }</c> (an aim, or a list of them in the order wanted; a side
-/// not listed wants to destroy everyone): <c>{ "reach": "Convoy", "zone": { "at": [40, 26], "km": 10 }, "of": 4, "stay": 60 }</c>,
+/// not listed wants to destroy everyone): <c>{ "reach": "Convoy", "zone": { "at": [40, 26], "km": 10, "name": "the
+/// Dardanelles" }, "of": 4, "stay": 60 }</c>,
 /// <c>{ "sink": "merchants", "tonnes": 20000, "where": ZONE }</c>, <c>{ "stop": "Germany" }</c>, any with a
 /// <c>"weight"</c> (docs/battle/aims.md).</para>
 /// <para>Sides are at war with each other unless a pair is listed in <c>"peace"</c>. A unit's side, formation and spacing default to its parent's (side 0, column, 600 m for a squadron, 3 km for
@@ -471,7 +472,8 @@ public sealed record Scenario
             double stay = e.TryGetProperty("stay", out var sy) ? sy.GetDouble() : 0;
             if (!(stay >= 0))
                 throw new ScenarioException($"{at}: stay {stay}: minutes, 0 or more");
-            return new ScenarioAim(side, new Aim(AimKind.Reach, weight) { Zone = ParseZone(z, $"{at}: zone"), Of = of, StayMs = (long)Math.Round(stay * 60_000) }, units);
+            return new ScenarioAim(side, new Aim(AimKind.Reach, weight) { Zone = ParseZone(z, $"{at}: zone"), Of = of, StayMs = (long)Math.Round(stay * 60_000) }, units,
+                ZoneName(z));
         }
         if (sink)
         {
@@ -480,8 +482,9 @@ public sealed record Scenario
             double tonnes = e.TryGetProperty("tonnes", out var t) ? t.GetDouble() : 0;
             if (!(tonnes > 0))
                 throw new ScenarioException($"{at}: sink: \"tonnes\", more than 0");
-            var where = e.TryGetProperty("where", out var wh) ? ParseZone(wh, $"{at}: where") : default;
-            return new ScenarioAim(side, new Aim(AimKind.Sink, weight) { Tonnes = tonnes, Zone = where }, []);
+            bool has = e.TryGetProperty("where", out var wh);
+            return new ScenarioAim(side, new Aim(AimKind.Sink, weight) { Tonnes = tonnes, Zone = has ? ParseZone(wh, $"{at}: where") : default }, [],
+                has ? ZoneName(wh) : "");
         }
         int about = Array.IndexOf(sides, st.GetString());
         if (about < 0 || about == side)
@@ -492,12 +495,18 @@ public sealed record Scenario
     static Zone ParseZone(JsonElement e, string at)
     {
         if (e.ValueKind != JsonValueKind.Object || !e.TryGetProperty("at", out var a) || a.GetArrayLength() != 2 || !e.TryGetProperty("km", out var km))
-            throw new ScenarioException($"{at}: a zone is {{ \"at\": [LAT, LON], \"km\": RADIUS }}");
+            throw new ScenarioException($"{at}: a zone is {{ \"at\": [LAT, LON], \"km\": RADIUS, \"name\": NAME (if wanted) }}");
+        foreach (var k in e.EnumerateObject())
+            if (k.Name is not ("at" or "km" or "name"))
+                throw new ScenarioException($"{at}: no \"{k.Name}\" in a zone (have at, km, name)");
         double r = km.GetDouble();
         if (!(r > 0))
             throw new ScenarioException($"{at}: km {r}: more than 0");
         return new Zone(a[0].GetDouble(), a[1].GetDouble(), r * 1000);
     }
+
+    /// <summary>A zone's name for the UI ("the Dardanelles"), "" if it has none.</summary>
+    static string ZoneName(JsonElement e) => e.TryGetProperty("name", out var n) ? n.GetString() ?? "" : "";
 
     static List<(int, SideAbout)> ParseAbout(JsonElement e, string[] sides)
     {
@@ -890,7 +899,9 @@ public sealed record Scenario
 public sealed record SideAbout(string Character, string Commander, string Ensign);
 
 /// <summary>A side's aim as the file gives it, with the units a Reach names ("all": every ship of the side).</summary>
-public sealed record ScenarioAim(int Side, Aim Aim, string[] Units);
+/// <summary>A side's aim as the file gives it: the aim, a Reach's units by name, and its zone's name ("" for none: the
+/// UI names it by the units).</summary>
+public sealed record ScenarioAim(int Side, Aim Aim, string[] Units, string ZoneName = "");
 
 public sealed class ScenarioUnit
 {

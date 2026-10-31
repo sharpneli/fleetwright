@@ -23,8 +23,8 @@ enemy"); (3) the aims come now, before the balance round's BL3 and BL4.
 | A2 Reach: the side that wants a place | done 2026-10-31 ("A2, as built") | |
 | A3 Stop: the side that wants to prevent it | done 2026-10-31 ("A3, as built") | |
 | A4 Sink merchants: the raider, the merchants, the hunters | done 2026-10-31 ("A4, as built") | |
-| A5 The UI: aims, progress, zones | not started | |
-| A6 Benches and balance | not started | |
+| A5 The UI: aims, progress, zones | done 2026-10-31 ("A5, as built") | zones on the launch screen's opening |
+| A6 Benches and balance | benches done 2026-10-31 ("A6, as built") | the user's scenario investigation |
 
 ## What's there
 
@@ -291,6 +291,46 @@ Per `docs/ui-language.md`, drawn with `Ui/Pieces.cs`:
   tonnage (one, 9,471 t) and gets home; all three tramps ran, the two that got away back on their routes; the hunters
   (an armoured cruiser, no orders) search the ground, come on the raider, she declines (at 40 min) and is home at 130
   with her way home met and her hunt still open.
+
+## A5, as built (2026-10-31)
+
+- **One wording** (`Map/AimWords.cs`), used by every screen: as the scenario gives an aim ("Reach the anchorage with 3
+  of Convoy, to stay 30 min", "Sink 25,000 t of merchants in the shipping lane", "Stop Germany", a weight if not 1) and
+  as it stands from the snapshot's `AimView`s ("Reach the anchorage: 0 in, 3 wanted", "Sink merchants: 8,200 of
+  25,000 t", "Stop Germany: open", then "· met" or "· lost"). A zone may have a `"name"` in the file (`ScenarioAim.ZoneName`;
+  a zone's keys are checked now: at, km, name); without one it's named by the units bound for it.
+- **The top bar** (`MapScene.Hud.cs`): the player's aims as they stand, in order, and the end's time; made again only
+  when a figure changes (`AimWords.Key`, nothing allocated a frame). The briefing says them as given ("YOUR AIMS").
+- **The map** (`MapScene.Zones.cs`): every side's zones (a side knows what the enemy's after), a Reach's a ring and a
+  hunting ground dashed, in the side's colour (yours, the enemy's; brass watching), light, named above.
+- **The launch screen**: Conditions' "The aims" row says them as given. Not yet: the zones on the opening's plan.
+- **The result** (`MapScene.Result.cs`): each side's aims as they stood at the end, met green, lost red; the count's AIMS
+  column the side's score where aims score in part; the verdict, with no single side all met, goes to a side whose score
+  is ahead by `ScoreAhead` (0.25), else a draw (the old tonnage rule for destroy everyone alone).
+- Checked by readbacks (`-screenshot -ui`): the convoy bench's map and top bar, the raider's briefing (both aims, the
+  dashed ground), the convoy's result, the raider's Conditions tab.
+
+## A6, as built (2026-10-31)
+
+- **Three benches** (`"test": true`, in the launch screen's Tests), each played `shipgen scenario FILE --play --seeds 8`:
+  - `test-breakout.json`: two German light cruisers for "the gap" (one through is enough) past two British light
+    cruisers and two dreadnoughts warned of it.
+  - `test-convoy.json`: four tramps for "the anchorage" (three in, staying 30 min) with two light cruisers and four
+    destroyers, against a battlecruiser and two light cruisers.
+  - `test-raider.json`: a light cruiser to sink 25,000 t in "the shipping lane", then home (weight 0.5); six tramps on
+    routes through it; an armoured cruiser and a light cruiser hunting her.
+- **What the first plays found:** the Stop side never saw the enemy. Its zone search was a ladder on from the zone,
+  which combed the zone's far side while the enemy came in from the near. The zone search is now sectors through it
+  (`SearchPattern.Sector`, a pattern the Search order carries now), out to the day's sight less the zone's radius so
+  the zone stays in sight, or to its edge for a ground too wide for that. After that, both benches fought.
+- **Set for balance by the scenario's own knobs**, 8 seeds a step (score Britain v Germany):
+  - breakout 1.00 v 0.00 (never through) → haze to 12 km, the gap to 15 km: 0.13 v 0.88 (7 of 8 through) → 16 km
+    and 12 km: 0.88 v 0.13 → 14 km and 13 km: **0.63 v 0.38, through 3 of 8**. Steep: a couple of km of sight or gap
+    decide it, so a real scenario's balance wants the same care.
+  - convoy 0.04 v 0.96 (in once in 8) → one battlecruiser instead of two, visibility 14 km: **0.38 v 0.63, in 3 of 8**.
+  - raider as written: **0.62 v 0.67** (the raider sank her tonnage in 2 of 8, lost in 1 of 8).
+- Next: the user's investigation of which real scenarios get aims (scenarios.md wave 2: the Falklands, Goeben at bay,
+  the Lerwick convoy, the Yellow Sea, Dogger Bank's run; Eckerö under Åland).
 
 ## Steps
 

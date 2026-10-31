@@ -994,8 +994,13 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
             }
         }
         var (lat, lon) = Earth.LatLon(at);
-        var st = ctx.Settings;   // legs as long as the zone is wide, from a lost search's to an open-sea one's
-        return ctx.Orders.Search(t.Unit, lat, lon, Math.Clamp(zone.RadiusM, st.LostSearchLegM, st.SearchLegM), OrderSource.Commander);
+        // sectors through it (docs/battle/aims.md A6: a ladder on from it combed the zone's far side, the enemy coming
+        // from the near): a zone the day's sight takes in whole kept in sight from every point of them (out to the
+        // sight less its radius), one too wide for that swept out to its edge; at most an open-sea search's legs
+        var st = ctx.Settings;
+        double sight = ctx.World.Weather.At(at, ctx.World.Time).VisibilityM;
+        double leg = Math.Clamp(Math.Max(sight - zone.RadiusM, zone.RadiusM), st.ArrivedM, st.SearchLegM);
+        return ctx.Orders.Search(t.Unit, lat, lon, leg, OrderSource.Commander, Admirals.SearchPattern.Sector);
     }
 
     /// <summary>The heavy unit of a side nearest a unit (the main body if none is nearer).</summary>

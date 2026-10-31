@@ -1,0 +1,35 @@
+// An escorted convoy (docs/battle/aims.md A6): four British tramps for an anchorage 110 km west, two light cruisers
+// and four destroyers by them; a German battlecruiser and two light cruisers out to stop it. Britain's Reach (three
+// of the four in, to stay 30 minutes), Germany's its Stop. Not history: a bench for the convoy's commanders.
+{
+  "scenario": 1,
+  "test": true,
+  "name": "Test: escorted convoy",
+  "brief": "Four tramps are to reach the anchorage in the west and lie there half an hour; three in is enough. Two light cruisers and four destroyers escort them. A German battlecruiser is out.",
+  "place": "North Sea",
+  "about": {
+    "Britain": { "character": "Four slow tramps, two light cruisers, four destroyers: the convoy first.", "commander": "Captain Kelly", "ensign": "britain" },
+    "Germany": { "character": "A battlecruiser and two light cruisers: the transports are what matters.", "commander": "R-Adm Boedicker", "ensign": "germany" } },
+  "start": "1916-05-31T13:00",
+  "seed": 6,
+  "camera": [56.35, 3.9, 120],
+  "sides": ["Britain", "Germany"],
+  "player": "Britain",
+  "until": "1916-05-31T22:00",
+  "aims": {
+    "Britain": { "reach": "Convoy", "zone": { "at": [56.3, 3.0], "km": 6, "name": "the anchorage" }, "of": 3, "stay": 30 },
+    "Germany": { "stop": "Britain" } },
+  "home": { "Britain": [56.3, -1.5], "Germany": [54.2, 7.6] },
+  "weather": { "visibility_km": 14, "wind_from": 250, "wind_kn": 12 },
+  "units": [
+    { "name": "Convoy", "side": 0, "at": [56.2, 4.8], "course": 275, "kn": 9, "formation": "abreast", "spacing": 900,
+      "ships": [ { "design": "tramp_1914", "names": ["Ardmore", "Benlarig", "Corrie", "Dunvegan"] } ] },
+    { "name": "Escort", "side": 0, "at": [56.24, 4.8], "course": 275, "kn": 9, "formation": "column", "spacing": 600,
+      "ships": [ { "design": "town_chatham", "names": ["Chatham", "Dublin"] } ] },
+    { "name": "Screen", "side": 0, "at": [56.17, 4.75], "course": 275, "kn": 9, "formation": "column", "spacing": 400,
+      "ships": [ { "design": "m_class", "names": ["Mons", "Marne", "Mystic", "Moorsom"] } ] },
+    { "name": "Raiding group", "side": 1, "at": [56.75, 3.9], "course": 180, "kn": 15, "formation": "column", "spacing": 600,
+      "ships": [ { "design": "von_der_tann", "name": "Von der Tann" } ] },
+    { "name": "II Scouting Group", "side": 1, "at": [56.8, 3.7], "course": 180, "kn": 15, "formation": "column", "spacing": 600,
+      "ships": [ { "design": "stettin", "names": ["Stettin", "Stuttgart"] } ] } ]
+}

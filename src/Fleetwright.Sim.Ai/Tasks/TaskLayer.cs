@@ -104,6 +104,7 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Homes homes
         public int StationOn;           // Scout, Cover: the ship its station was given on
         public double StationAstern, StationAbeam;
         public long LastWaypoint;       // Search: the route's end
+        public SearchPattern Pattern;   // Search: its pattern (a ladder, or sectors through the point)
         public long StartMs, QuietMs;   // when it began; when the unit last had an enemy in sight
         public bool Hand;               // given by the player's hand: carried out as the AI's, but literally
     }
@@ -274,6 +275,7 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Homes homes
                 _ => 0,
             },
             OffBowDeg = kind == TaskKind.Scout ? c.Y : 0,
+            Pattern = kind == TaskKind.Search ? (SearchPattern)(int)c.Y : SearchPattern.Ladder,
         };
         if (kind == TaskKind.Patrol && ctx.Ships.SlotOf(Lead(u)) is int slot and >= 0)
         {
@@ -593,8 +595,9 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Homes homes
         var (lat, lon) = Earth.UnpackLatLon(t.Point);
         var datum = Earth.Position(lat, lon);
         double axis = Earth.Bearing(guide.Position, datum);
-        Span<Vec3d> legs = stackalloc Vec3d[8];
-        int n = SearchPatterns.Waypoints(SearchPattern.Ladder, datum, axis, t.DistanceM, ships * spacing, 4, starboard: true, legs);
+        Span<Vec3d> legs = stackalloc Vec3d[12];
+        // a ladder of four legs on from the point, or three sectors through it, out to the leg and back
+        int n = SearchPatterns.Waypoints(t.Pattern, datum, axis, t.DistanceM, ships * spacing, t.Pattern == SearchPattern.Sector ? 3 : 4, starboard: true, legs);
         ctx.Issue(o.ClearRoute(u, OrderSource.Task));
         ctx.Issue(o.AddWaypoint(u, t.Point, OrderSource.Task));
         for (int i = 0; i < n; i++)
@@ -833,6 +836,8 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Homes homes
             h.Add(t.StartMs);
             h.Add(t.QuietMs);
             h.Add(t.Hand);
+            if (t.Pattern != SearchPattern.Ladder)
+                h.Add((int)t.Pattern);   // only then: worlds whose searches are all ladders hash as before
         }
     }
 

@@ -368,9 +368,11 @@ public readonly struct UnitOrders(byte system, bool hand = false)
     public Command Scout(Unit u, Unit of, double distanceM = 0, double offBowDeg = 0, OrderSource source = OrderSource.Player) =>
         Make(AiCommand.Scout, u, source, a: of.Id, x: distanceM, y: offBowDeg);
 
-    /// <summary>The task: search about a point (legs of a length, 0: the settings').</summary>
-    public Command Search(Unit u, double latDeg, double lonDeg, double legM = 0, OrderSource source = OrderSource.Player) =>
-        Make(AiCommand.Search, u, source, a: Earth.PackLatLon(latDeg, lonDeg), x: legM);
+    /// <summary>The task: search about a point (legs of a length, 0: the settings'), by a pattern: a ladder on from the
+    /// point (where it was going, a lost enemy's way), or sectors through it (a zone kept: docs/battle/aims.md A6).</summary>
+    public Command Search(Unit u, double latDeg, double lonDeg, double legM = 0, OrderSource source = OrderSource.Player,
+        Admirals.SearchPattern pattern = Admirals.SearchPattern.Ladder) =>
+        Make(AiCommand.Search, u, source, a: Earth.PackLatLon(latDeg, lonDeg), x: legM, y: (int)pattern);
 
     /// <summary>The task: cover an own unit (a distance, 0: the settings').</summary>
     public Command Cover(Unit u, Unit covered, double distanceM = 0, OrderSource source = OrderSource.Player) =>

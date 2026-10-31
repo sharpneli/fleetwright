@@ -1,0 +1,31 @@
+// A breakout (docs/battle/aims.md A6): two German light cruisers make for a gap past a British squadron that knows
+// they're coming. A test of the aims: Germany's a Reach (one of the two through is enough), Britain's its Stop. Not
+// history: a bench for the breakout's commanders, played headless with `shipgen scenario FILE --play --seeds N`.
+{
+  "scenario": 1,
+  "test": true,
+  "name": "Test: breakout",
+  "brief": "Two German light cruisers are to break through to the gap in the north-west; one through is enough. A British light cruiser squadron and two dreadnoughts are out to stop them.",
+  "place": "North Sea",
+  "about": {
+    "Britain": { "character": "Two light cruisers and two dreadnoughts across the way, warned of the breakout.", "commander": "R-Adm Goodenough", "ensign": "britain" },
+    "Germany": { "character": "Two fast light cruisers: through the gap, fighting only what's in the way.", "commander": "Kapitän zur See Reuter", "ensign": "germany" } },
+  "start": "1916-05-31T14:00",
+  "seed": 5,
+  "camera": [56.55, 4.0, 120],
+  "sides": ["Britain", "Germany"],
+  "player": "Germany",
+  "until": "1916-05-31T22:00",
+  "aims": {
+    "Germany": { "reach": "Breakers", "zone": { "at": [56.95, 2.6], "km": 13, "name": "the gap" }, "of": 1 },
+    "Britain": { "stop": "Germany" } },
+  "home": { "Britain": [56.3, -1.5], "Germany": [54.2, 7.6] },
+  "weather": { "visibility_km": 14, "wind_from": 225, "wind_kn": 10 },
+  "units": [
+    { "name": "Breakers", "side": 1, "at": [56.15, 5.6], "course": 300, "kn": 20, "formation": "column", "spacing": 600,
+      "ships": [ { "design": "graudenz", "name": "Graudenz" }, { "design": "pillau", "name": "Pillau" } ] },
+    { "name": "2nd Light Cruiser Squadron", "side": 0, "at": [56.55, 3.9], "course": 150, "kn": 15, "formation": "column", "spacing": 600,
+      "ships": [ { "design": "town_birmingham", "names": ["Birmingham", "Nottingham"] } ] },
+    { "name": "Battle squadron", "side": 0, "at": [56.85, 3.3], "course": 120, "kn": 12, "formation": "column", "spacing": 600,
+      "ships": [ { "design": "st_vincent", "names": ["St Vincent", "Vanguard"] } ] } ]
+}

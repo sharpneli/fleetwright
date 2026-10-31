@@ -188,6 +188,7 @@ public sealed unsafe partial class MapScene
                 }
             }
         }
+        DrawZones(view, s);   // under the ships' marks: the aims' zones (docs/battle/aims.md A5)
         DrawGroups(view, s);
         DrawTaskMarks(view, s);
         DrawHover(view, s);

@@ -11,9 +11,9 @@ date** when a step or a sub-plan starts or finishes, and take stock against it f
 
 ## Status (2026-10-30)
 
-**Now: the aims** (`docs/battle/aims.md`: reach, sink merchants, stop, scored and weighted; the user, 2026-10-31:
-before the balance round's BL3 and BL4), then the rest of the balance round (`docs/battle/balance.md`), toward a
-playtest alpha; then mines, collisions and signals.
+**Now:** the aims are built (`docs/battle/aims.md`: reach, sink merchants, stop, scored and weighted, A0-A6 done
+2026-10-31); the user's investigation of which real scenarios get them waits, and the rest of the balance round
+(`docs/battle/balance.md`: BL3, BL4) comes next, toward a playtest alpha; then mines, collisions and signals.
 
 | Step | State | Plan | Left |
 |---|---|---|---|
@@ -41,8 +41,8 @@ playtest alpha; then mines, collisions and signals.
 | 5.1f The whole | a piece done 2026-10-20 | `command.md` | the AI's bugs in `bugs.md` |
 | 5.2 The UI | HUD U0-U7, orders O1-O9, symbols, grid, input, launch built 2026-10-22 to 10-26 | `docs/map-ui/`, `admirals-orders.md` | edge markers, radial menu, doctrine card, orders as objects, the rumble (`command.md` "5.2"); the user's playtest |
 | The sim's workers | W0-W4, W6 built 2026-10-24 | `workers.md` | W5 |
-| Scenarios | wave 1 and Åland built 2026-10-25 | `docs/missions/scenarios.md` | open questions 1-5 for the user; wave 2 needs aims |
-| 6.1 Aims: reach, sink merchants, stop | A0-A4 done 2026-10-31 | `aims.md` | A5, A6 |
+| Scenarios | wave 1 and Åland built 2026-10-25 | `docs/missions/scenarios.md` | open questions 1-5 for the user; wave 2's aims built (`aims.md`), which scenarios get them the user's |
+| 6.1 Aims: reach, sink merchants, stop | A0-A6 done 2026-10-31 (benches set for balance) | `aims.md` | the user's scenario investigation |
 | 6 Missions | not started | `docs/missions/plan.md` | 6.1 file and objectives, 6.2 UI, 6.3 saves and replays, 6.4 generator |
 
 Beside the steps: the designer's tabs (speed, hull, fire control, crew left: `docs/designer-ui/`), the VFX plans

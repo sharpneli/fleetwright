@@ -48,6 +48,8 @@ public sealed partial class MapScene : ISceneMenu
     string actionText = "";
     int sideGeneration = -1, sidePlayer = int.MinValue;
     string sideText = "", scenarioText = "", aimText = "";
+    double aimKeyShown;
+    int briefAims;   // how many aims the briefing's side has
     int newsShown = -1;
     string newsText = "";
     (int, int, int, int) tallyKey;
@@ -145,7 +147,7 @@ public sealed partial class MapScene : ISceneMenu
         {
             BarText(aimText, Theme.Brass, mid);
             if (ImGui.IsItemHovered())
-                ImGui.SetTooltip("the aim, and when the scenario ends; the briefing is in the menu");
+                ImGui.SetTooltip("your aims as they stand, in the order your side wants them, and when the scenario ends; the briefing is in the menu");
             ImGui.SameLine(0, gap);
         }
         MenuButton(mid, menuW);
@@ -203,13 +205,15 @@ public sealed partial class MapScene : ISceneMenu
             actionMinutes = minutes;
             actionText = minutes < 0 ? "" : $"In action {minutes} min";
         }
-        if (world.Generation != sideGeneration || s.PlayerSide != sidePlayer)
+        double aimKey = s.PlayerSide >= 0 ? AimWords.Key(s, s.PlayerSide) : 0;
+        if (world.Generation != sideGeneration || s.PlayerSide != sidePlayer || aimKey != aimKeyShown)
         {
-            (sideGeneration, sidePlayer) = (world.Generation, s.PlayerSide);
+            (sideGeneration, sidePlayer, aimKeyShown) = (world.Generation, s.PlayerSide, aimKey);
             var sc = world.Scenario;
             sideText = s.PlayerSide < 0 ? "WATCHING" : (sc != null && s.PlayerSide < sc.Sides.Length ? sc.Sides[s.PlayerSide] : $"SIDE {s.PlayerSide}").ToUpperInvariant();
             scenarioText = sc != null ? $"· {sc.Name}" : "· the dev world (F1)";
-            aimText = sc == null || s.PlayerSide < 0 ? "" : $"{AimsText(sc, s.PlayerSide)}{(sc.Until is { } u ? $" · ends {u.ToUtc():HH:mm}" : "")}";
+            // each aim as it stands (docs/battle/aims.md A5), made again when its figures change
+            aimText = sc == null || s.PlayerSide < 0 ? "" : $"{AimWords.Nows(sc, s, s.PlayerSide)}{(sc.Until is { } u ? $" · ends {u.ToUtc():HH:mm}" : "")}";
         }
         // the newest encounter's news, while fresh or the clock is paused at it
         var v = s.Encounters;
@@ -225,12 +229,6 @@ public sealed partial class MapScene : ISceneMenu
                                          (pausedAtIt ? " (paused)" : "");
         }
     }
-
-    internal static string AimsText(Scenario sc, int side) => string.Join(", ", sc.AimsOf(side).Select(a => a.Kind switch
-    {
-        AimKind.DestroyEveryone => "Destroy everyone",
-        _ => a.Kind.ToString(),
-    }));
 
     /// <summary>Pause and run: two bars or a triangle, drawn.</summary>
     void PauseButton(Snapshot s, float mid)
@@ -373,7 +371,8 @@ public sealed partial class MapScene : ISceneMenu
         if (sc.Weather is { } w)
             briefMeta += $" · visibility {w.VisibilityM / 1000:0} km, wind from {w.WindFromDeg:000}° at {w.WindMs / 0.514444:0} kn";
         briefText = sc.Brief;
-        briefAim = $"{AimsText(sc, side)}. {(sc.Until is { } u ? $"The scenario ends when one side is gone or out of the fight, or at {u.ToUtc():HH:mm}." : "The scenario ends when one side is gone or out of the fight.")}";
+        briefAims = sc.AimEntriesOf(side).Count();
+        briefAim = $"{AimWords.Plans(sc, side)}. {(sc.Until is { } u ? $"The scenario ends when one side is gone or out of the fight, or at {u.ToUtc():HH:mm}." : "The scenario ends when one side is gone or out of the fight.")}";
         briefOrders.Clear();
         void Order(string label, List<(int Side, string Name)> list)
         {
@@ -453,7 +452,7 @@ public sealed partial class MapScene : ISceneMenu
             Heading("THE SITUATION");
             ImGui.TextWrapped(briefText.Length > 0 ? briefText : "No brief.");
             ImGui.Spacing();
-            Heading("YOUR AIM");
+            Heading(briefAims > 1 ? "YOUR AIMS" : "YOUR AIM");
             ImGui.TextWrapped(briefAim);
             if (briefOrders.Count > 0)
             {

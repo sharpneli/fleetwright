@@ -36,7 +36,8 @@ public class AimsTests(ITestOutputHelper output)
         var s = Scenario.Parse(json);
         var w = new World(s.Start, s.Seed, Settings);
         var ai = new AiSystem(w);
-        var start = ScenarioLoader.Apply(s, w, ai, ScenarioLoader.RequestClasses(s, w.Ships.Registry, Designs));
+        string[] designs = [Path.Combine(Fleet.Repo, "Content", "Scenarios", "Designs"), .. Designs];
+        var start = ScenarioLoader.Apply(s, w, ai, ScenarioLoader.RequestClasses(s, w.Ships.Registry, designs));
         w.Apply(Command.SetPlayerSide(-1));
         var end = new ScenarioEnd(s, w, ai);
         first?.Invoke(w, start);
