@@ -45,6 +45,8 @@ public sealed unsafe partial class LaunchScene
     readonly ConcurrentQueue<(string Path, int Id)> answered = new();
     DateTime? copyStarted;
     string? copyJson;   // the copy as handed to the designer, or as last kept: kept again only once it's changed
+    string? copyPath;   // the unsaved design the designer's copy is (edited in place, its file), or null: a new one
+    string? copyName, copyTitle;   // the copy's name in the designer, and the one it's listed under (kept unless renamed)
     ShipLine? copyFor;   // the row the copy was made for: the picker opens on it when the copy comes back
 
     void OpenPicker(ShipLine row)
@@ -209,9 +211,22 @@ public sealed unsafe partial class LaunchScene
     /// the picker (opened on the copy's row if it was made from the ships' tab).</summary>
     public void Entered()
     {
-        string? kept = KeepCopy();
+        var (kept, inPlace) = KeepCopy();
         RescanYours();
-        if (pickerRow == null && kept != null && copyFor is { } row && linesBySide.Any(ls => ls.Contains(row)))
+        if (inPlace)
+        {
+            // an unsaved design edited in place: its class asked for again, and if the setup uses it, the setup placed
+            // again so every ship of it takes the edit
+            asked.Remove(kept!);
+            designIds.Remove(kept!);
+            if (current != null && current.DesignNames().Contains(Path.GetFileNameWithoutExtension(kept), StringComparer.OrdinalIgnoreCase))
+            {
+                ClosePicker();   // its rows are made again
+                Apply();
+                return;
+            }
+        }
+        if (pickerRow == null && kept != null && !inPlace && copyFor is { } row && linesBySide.Any(ls => ls.Contains(row)))
             OpenPicker(row);
         if (pickerRow == null)
             return;
@@ -239,14 +254,19 @@ public sealed unsafe partial class LaunchScene
         }
     }
 
-    void Copy(Candidate? c, ShipLine? row = null)
+    /// <summary>A design to the designer: an unsaved one itself, edited in place (unless <paramref name="fresh"/>: a new
+    /// design from it), else a copy.</summary>
+    void Copy(Candidate? c, ShipLine? row = null, bool fresh = false)
     {
         var d = c?.Info.Design ?? (c != null ? TryLoad(c.Info.Path) : null);
         if (d == null || EditCopy == null)
             return;
         copyStarted = DateTime.Now.AddSeconds(-1);
         copyFor = pickerRow ?? row;
-        var copy = d with { Name = CopyRx.Replace(c!.Info.Title, "") + " copy" };
+        bool inPlace = c!.Info.Unsaved && !fresh;
+        copyPath = inPlace ? c.Info.Path : null;
+        var copy = inPlace ? d : d with { Name = CopyRx.Replace(c.Info.Title, "") + " copy" };
+        copyName = copyTitle = copy.Name;
         copyJson = copy.ToJson();
         EditCopy(copy);
     }
@@ -481,7 +501,7 @@ public sealed unsafe partial class LaunchScene
         }
         if (copyRow)
         {
-            Copy(candidates.Find(c => c.InUse) ?? InUseCandidate(row));
+            Copy(candidates.Find(c => c.InUse) ?? InUseCandidate(row), fresh: true);
             return;
         }
 
@@ -494,7 +514,7 @@ public sealed unsafe partial class LaunchScene
         dl.HLine(x0 + 1, x1 - 1, fby, T.Edge);
         float by = fby + P(6);
         var pick = chosen >= 0 ? candidates[chosen] : null;
-        const string CopyL = "Edit a copy in the designer…";
+        string CopyL = pick is { Info.Unsaved: true } ? "Edit in the designer…" : "Edit a copy in the designer…";
         if (dl.Button("##pcopy", new Vector2(x0 + P(8), by), CopyL, "E", enabled: pick != null && EditCopy != null) ||
             pick != null && !ImGui.GetIO().WantTextInput && ImGui.IsKeyPressed(ImGuiKey.E) && !ImGui.GetIO().KeyCtrl)
             Copy(pick);

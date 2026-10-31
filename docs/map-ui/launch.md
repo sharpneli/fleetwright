@@ -315,6 +315,11 @@ entered), and the figures.
     and file no design has), picked, and opens on the copy's row if it was made from the ships' tab. Saved in the
     designer (`DesignSession.Saved`), it's yours as before; Save setup… saves the unsaved designs the setup uses to the
     player's folder too, so the setup finds them at the next start.
+  - **Edited in place** (the same day, the user: iterating on a copy should change the formations that have it): an
+    unsaved design's button reads "Edit in the designer"; it goes to the designer itself, not a copy, and back it's
+    written over its own file (its listed name kept unless renamed there). The copy kept once is that design from then
+    on, so going back to the designer from the menu edits it in place too. If the setup uses it, the setup is placed
+    again, so every ship of it takes the edit. "+ New design from …" still makes a new copy.
 - **Left for later:** the admirals' names and tempers on the
   units, the captains' marks (L4); − n + and ✕ (L3b). Jutland's rows draw small because one design is far too long
   (docs/battle/bugs.md, Agincourt-like at 313 m).

@@ -577,7 +577,7 @@ public sealed unsafe partial class LaunchScene
     {
         public ShipLine? Of;
         public int Id = -2;
-        public bool Figured;
+        public bool Figured, Unsaved;
         public string File = "", Source = "", Length = "", Year = "";
         public (string Label, string Value, string Note)[] Rows = [];
     }
@@ -591,7 +591,8 @@ public sealed unsafe partial class LaunchScene
         (selText.Of, selText.Id, selText.Figured) = (l, id, f != null);
         var info = InfoOf(l.Design);
         selText.File = info != null ? Path.GetFileName(info.Path) : l.Design + ".json";
-        selText.Source = info == null ? "" : info.Yours ? "your design" : written!.DesignNames().Contains(l.Design, StringComparer.OrdinalIgnoreCase) ? "scenario design" : "shipped design";
+        selText.Unsaved = info is { Unsaved: true };
+        selText.Source = info == null ? "" : info.Unsaved ? "unsaved design" : info.Yours ? "your design" : written!.DesignNames().Contains(l.Design, StringComparer.OrdinalIgnoreCase) ? "scenario design" : "shipped design";
         selText.Year = info is { Year: > 0 } ? $"tech {info.Year}" : "";
         selText.Length = f != null ? $"{f.Profile.LengthM:0.0} m oa" : "";
         var rows = new List<(string, string, string)>();
@@ -691,7 +692,8 @@ public sealed unsafe partial class LaunchScene
             if (selText.Year.Length > 0)
                 dl.RightNote(right2, y, RowH, selText.Year);
             y += RowH + P(6);
-            const string ChangeL = "Change design…", CopyL = "Edit a copy in the designer";
+            const string ChangeL = "Change design…";
+            string CopyL = selText.Unsaved ? "Edit in the designer" : "Edit a copy in the designer";
             if (dl.Button("##seldesign", new Vector2(o.X + P(6), y), ChangeL, "P", enabled: !begin))
                 OpenPicker(l);
             if (dl.Button("##selcopy", new Vector2(o.X + P(10) + ButtonWidth(ChangeL, "P"), y), CopyL, "E", enabled: !begin && EditCopy != null))

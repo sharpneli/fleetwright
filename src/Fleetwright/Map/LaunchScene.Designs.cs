@@ -63,16 +63,30 @@ public sealed unsafe partial class LaunchScene
     static readonly Regex CopyRx = new(@" copy(?: [0-9]+)?$", RegexOptions.Compiled);
 
     /// <summary>The copy the designer has (<see cref="CopyBack"/>), kept as an unsaved design of this run's when it
-    /// changed since it was handed over or last kept: under a name and file no design has ("Borodino-like copy", then
-    /// "copy 2"...). Its path, or null when there's nothing new.</summary>
-    string? KeepCopy()
+    /// changed since it was handed over or last kept: in place, over the unsaved design it is (one handed over, or
+    /// kept before), else new, under a name and file no design has ("Borodino-like copy", then "copy 2"...). Its path
+    /// and whether it was in place, or a null path when there's nothing new.</summary>
+    (string? Path, bool InPlace) KeepCopy()
     {
         if (CopyBack?.Invoke() is not { } d)
-            return null;
+            return (null, false);
         string json = d.ToJson();
         if (json == copyJson)
-            return null;
+            return (null, false);
         copyJson = json;
+        if (copyPath != null && File.Exists(copyPath))
+            try
+            {
+                // the name it's listed under, unless it was renamed in the designer
+                string name = d.Name == copyName ? copyTitle! : d.Name ?? copyTitle!;
+                File.WriteAllText(copyPath, (d with { Name = name, Id = Path.GetFileNameWithoutExtension(copyPath) }).ToJson(indented: true));
+                return (copyPath, true);
+            }
+            catch (Exception x) when (x is IOException or UnauthorizedAccessException)
+            {
+                Console.Error.WriteLine($"launch: the unsaved design {copyPath}: {x.Message}");
+                return (null, false);
+            }
         var stems = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var titles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var ds in folders.Values)
@@ -94,12 +108,13 @@ public sealed unsafe partial class LaunchScene
             Directory.CreateDirectory(WorldSession.UnsavedFolder);
             string path = Path.Combine(WorldSession.UnsavedFolder, stem + ".json");
             File.WriteAllText(path, (d with { Name = title, Id = stem }).ToJson(indented: true));
-            return path;
+            (copyPath, copyName, copyTitle) = (path, d.Name, title);   // edited again, it's this one
+            return (path, false);
         }
         catch (Exception x) when (x is IOException or UnauthorizedAccessException)
         {
             Console.Error.WriteLine($"launch: the unsaved copy {stem}: {x.Message}");
-            return null;
+            return (null, false);
         }
     }
 
