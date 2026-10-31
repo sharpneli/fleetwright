@@ -59,11 +59,17 @@ public sealed class AiSystem : IWorldSystem
     /// <summary>A side's home, if it has one.</summary>
     public Vec3d? HomeOf(int side) => homes[side & 255];
 
+    /// <summary>Every side's aims, and how they stand (docs/battle/aims.md).</summary>
+    public AimBook Aims { get; } = new();
+
+    readonly World world;
+
     /// <summary>Orders to units (ships and groups), as commands to send: the player's way in, and the layers'.</summary>
     public UnitOrders Orders => new(Id);
 
     public AiSystem(World world)
     {
+        this.world = world;
         Seen = new SeenContacts();
         Doctrine = new Doctrine(world.Groups, world.Settings.AggressionShift);
         Judge = new MatchupJudge(world.Groups, Seen, Doctrine);
@@ -80,7 +86,7 @@ public sealed class AiSystem : IWorldSystem
         Tasks = new TaskLayer(world.Groups, Seen, homes) { Admirals = Admirals, Captains = Captains, Doctrine = Doctrine, Judge = Judge };
         (Admirals.Tasks, Captains.Tasks) = (Tasks, Tasks);
         Attacks = new FlotillaAttacks(Judge, Held, Doctrine, Roles) { Tasks = Tasks };
-        Commanders = new CommanderLayer(world.Groups, world.Ships.Store, Seen, Doctrine) { Tasks = Tasks, Captains = Captains, Judge = Judge, Held = Held, Roles = Roles, Attacks = Attacks };
+        Commanders = new CommanderLayer(world.Groups, world.Ships.Store, Seen, Doctrine) { Tasks = Tasks, Captains = Captains, Judge = Judge, Held = Held, Roles = Roles, Attacks = Attacks, Book = Aims };
         (Admirals.Attacks, Admirals.Commanders) = (Attacks, Commanders);
         layers = [Commanders, Tasks, Admirals, Captains];
         nextTick = new long[layers.Length];
@@ -141,7 +147,7 @@ public sealed class AiSystem : IWorldSystem
 
     public void Apply(World world, in Command c)
     {
-        if ((AiCommand)c.Code is < AiCommand.Course or > AiCommand.StarShell)
+        if ((AiCommand)c.Code is < AiCommand.Course or > AiCommand.AimShip)
             throw new ArgumentException($"unknown AI command {c.Code}");
         var u = new Unit(c.Entity);
         var code = (AiCommand)c.Code;
@@ -149,6 +155,27 @@ public sealed class AiSystem : IWorldSystem
         var source = from.Source;
         switch (code)
         {
+            case AiCommand.Aim:
+            {
+                int about = c.Entity >> 24 & 255;
+                var (lat, lon) = Earth.UnpackLatLon(c.A);
+                Aims.Set(c.Entity & 255, c.Entity >> 8 & 255, new Aim((AimKind)(c.Entity >> 16 & 255), c.Y)
+                {
+                    Zone = c.X > 0 ? new Zone(lat, lon, c.X) : default, Of = c.B, About = about == 255 ? -1 : about,
+                });
+                return;
+            }
+            case AiCommand.AimFigures:
+            {
+                int side = c.Entity & 255, i = c.Entity >> 8 & 255;
+                if (i >= Aims.Count(side))
+                    throw new ArgumentException($"no aim {i} of side {side}");
+                Aims.Set(side, i, Aims[side, i] with { StayMs = c.A, Tonnes = c.X });
+                return;
+            }
+            case AiCommand.AimShip:
+                Aims.Name(c.B & 255, c.B >> 8 & 255, c.Entity);
+                return;
             case AiCommand.Commander:
                 Commanders.SetMode(c.Entity, (CommanderMode)c.A);
                 WakeAll(world);
@@ -402,6 +429,7 @@ public sealed class AiSystem : IWorldSystem
             l.Hash(ref h);
         Doctrine.Hash(ref h);
         Roles.Hash(ref h);
+        Aims.Hash(ref h);
         for (int side = 0; side < homes.Length; side++)
             if (homes[side] is { } p)
             {
@@ -419,5 +447,6 @@ public sealed class AiSystem : IWorldSystem
         foreach (var l in layers)
             l.Fill(s);
         Roles.Fill(s);
+        Aims.Fill(world, s);
     }
 }

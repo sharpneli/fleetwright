@@ -85,6 +85,11 @@ public sealed class Snapshot
     /// <summary>Each side's doctrine's aggression as set, -1 to +1 (the AI's; 0 unset).</summary>
     public double[] Aggression { get; } = new double[256];
 
+    /// <summary>Every side's aims as they stand (docs/battle/aims.md), side by side in order: the first
+    /// <see cref="AimCount"/>.</summary>
+    public AimView[] Aims { get; } = new AimView[64];
+    public int AimCount { get; set; }
+
     /// <summary>The player's navy's contacts (empty with no player side).</summary>
     public ContactsView Contacts { get; } = new();
 
@@ -175,9 +180,13 @@ public sealed class EndView
 
 /// <summary>A side's count at the end: its ships and tonnage, those lost, damaged and afloat, whether its aims are met,
 /// its hits and torpedoes fired, its men killed and lost with their ships, and those saved from them (rough:
-/// docs/battle/striking.md SK6).</summary>
+/// docs/battle/striking.md SK6), and its aims' weighted score, 0 to 1 (docs/battle/aims.md).</summary>
 public readonly record struct SideEnd(string Name, int Ships, double Tonnes, int Lost, double LostTonnes, int Damaged, int Afloat, bool AimsMet,
-    int Hits, int Torpedoes, int Killed = 0, int Saved = 0);
+    int Hits, int Torpedoes, int Killed = 0, int Saved = 0, double Score = 0);
+
+/// <summary>An aim of a side as it stands (the AI's <c>AimKind</c> and <c>AimState</c>): how much is done of how much,
+/// its weight, and a Stop's enemy side (-1 none).</summary>
+public readonly record struct AimView(byte Side, byte Kind, byte State, double Done, double Of, double Weight, int About);
 
 /// <summary>A ship's fate: lost (how and when) or afloat (damaged or not), the hits she took.</summary>
 public readonly record struct ShipEnd(int Entity, int Side, string Name, bool Lost, Combat.LossKind Loss, long LossMs, bool Damaged, int Hits,

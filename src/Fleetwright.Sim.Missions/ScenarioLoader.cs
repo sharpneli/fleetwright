@@ -202,10 +202,60 @@ public static class ScenarioLoader
             for (int k = 0, given = 0; k < top.Tasks.Count; k++)
                 if (Task(top, top.Tasks[k], unit, w, ai, s, start, entities) is { } c)
                     w.Apply(given++ == 0 ? c : UnitOrders.Then(c));   // the first at once, the rest one after another
+        Aims(s, w, ai, start, entities);
         // the matchup's profiles and tables for every class at load, not at the first judgement in play (docs/battle/command.md 5.1g)
         ai.Judge.Matchups.Warm(w);
         return start;
     }
+
+    /// <summary>Every side's aims to the AI, in order (docs/battle/aims.md), a side not listed destroy everyone: a Reach's
+    /// named ships are those placed under the units it names (any level), or every ship of the side for "all"; its "of"
+    /// every one of them if not given. A unit named that isn't in the scenario is an error, one that placed fewer ships
+    /// than "of" (struck by a setup) a warning, and the aim can't be met.</summary>
+    static void Aims(Scenario s, World w, AiSystem ai, ScenarioStart start, Dictionary<(ScenarioUnit, int), int> entities)
+    {
+        var o = ai.Orders;
+        for (int side = 0; side < s.Sides.Length; side++)
+        {
+            int i = 0;
+            foreach (var entry in s.AimEntriesOf(side))
+            {
+                var aim = entry.Aim;
+                var ships = new List<int>();
+                if (aim.Kind == AimKind.Reach)
+                {
+                    var under = new HashSet<ScenarioUnit>();
+                    bool all = entry.Units is ["all"];
+                    if (!all)
+                        foreach (var name in entry.Units)
+                        {
+                            var found = s.Units.SelectMany(Tree).Where(u => u.Name == name).ToList();
+                            if (found.Count == 0)
+                                throw new ScenarioException($"aims: {s.Sides[side]}: reach \"{name}\": no such unit");
+                            if (found.Any(u => u.Side != side))
+                                throw new ScenarioException($"aims: {s.Sides[side]}: reach \"{name}\": a unit of another side");
+                            foreach (var u in found)
+                                under.UnionWith(Tree(u));
+                        }
+                    foreach (var ((sq, _), e) in entities)
+                        if (all ? w.Ships.Store.SlotOf(e) is int slot and >= 0 && w.Ships.Store[slot].Side == side : under.Contains(sq))
+                            ships.Add(e);
+                    if (aim.Of == 0)
+                        aim = aim with { Of = ships.Count };
+                    else if (aim.Of > ships.Count)
+                        start.Warnings.Add($"aims: {s.Sides[side]}: reach {aim.Of} of {string.Join(", ", entry.Units)}, but {ships.Count} placed: it can't be met");
+                }
+                var (c, figures) = o.Aim(side, i, aim);
+                w.Apply(c);
+                w.Apply(figures);
+                foreach (int e in ships)
+                    w.Apply(o.AimShip(side, i, e));
+                i++;
+            }
+        }
+    }
+
+    static IEnumerable<ScenarioUnit> Tree(ScenarioUnit u) => u.Units.SelectMany(Tree).Prepend(u);
 
     /// <summary>A top unit's opening task (docs/battle/command.md 5.1c), once every unit is placed: its "of" is the first
     /// group of that name (any level), else a top unit of one ship of that name; one not found (a ladder took only part

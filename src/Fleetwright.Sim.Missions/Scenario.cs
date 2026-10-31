@@ -55,8 +55,10 @@ namespace Fleetwright.Sim.Missions;
 /// its captains' by name, <c>"captains": { "Bedovy": -0.5 }</c>, added to their admiral's.</para>
 /// <para>It ends (docs/battle/command.md "The end", <see cref="ScenarioEnd"/>) at <c>"until": "1916-06-01T04:00"</c> (UTC;
 /// <see cref="SimSettings.PlayLimitMs"/> after the start if not given), or before that when it's decided or quiet. Each
-/// side wants its <c>"aims": { "Britain": "destroy everyone" }</c> (a name, or a list of them); a side not listed wants to
-/// destroy everyone, v0's one aim.</para>
+/// side wants its <c>"aims": { "Britain": "destroy everyone" }</c> (an aim, or a list of them in the order wanted; a side
+/// not listed wants to destroy everyone): <c>{ "reach": "Convoy", "zone": { "at": [40, 26], "km": 10 }, "of": 4, "stay": 60 }</c>,
+/// <c>{ "sink": "merchants", "tonnes": 20000, "where": ZONE }</c>, <c>{ "stop": "Germany" }</c>, any with a
+/// <c>"weight"</c> (docs/battle/aims.md).</para>
 /// <para>Sides are at war with each other unless a pair is listed in <c>"peace"</c>. A unit's side, formation and spacing default to its parent's (side 0, column, 600 m for a squadron, 3 km for
 /// a force). A top unit of one ship is that ship, not a group. A top unit with a route steams it (from where it's
 /// placed, its course only the start's heading).</para>
@@ -147,21 +149,24 @@ public sealed record Scenario
     /// <see cref="SimSettings.PlayLimitMs"/>.</summary>
     public WorldTime? Until { get; init; }
 
-    /// <summary>Each side's aims by index, where the file gives them; a side not listed wants to destroy everyone.</summary>
-    public List<(int Side, Aim Aim)> AimList { get; init; } = [];
+    /// <summary>Each side's aims in order, where the file gives them; a side not listed wants to destroy everyone.</summary>
+    public List<ScenarioAim> AimList { get; init; } = [];
 
-    /// <summary>A side's aims: the file's, else destroy everyone (v0's one aim).</summary>
-    public IEnumerable<Aim> AimsOf(int side)
+    /// <summary>A side's aims in order: the file's, else destroy everyone.</summary>
+    public IEnumerable<Aim> AimsOf(int side) => AimEntriesOf(side).Select(a => a.Aim);
+
+    /// <summary>A side's aims in order with the units they name: the file's, else destroy everyone.</summary>
+    public IEnumerable<ScenarioAim> AimEntriesOf(int side)
     {
         bool any = false;
-        foreach (var (s, a) in AimList)
-            if (s == side)
+        foreach (var a in AimList)
+            if (a.Side == side)
             {
                 any = true;
                 yield return a;
             }
         if (!any)
-            yield return new Aim(AimKind.DestroyEveryone);
+            yield return new ScenarioAim(side, new Aim(AimKind.DestroyEveryone), []);
     }
 
     public required List<ScenarioUnit> Units { get; init; }
@@ -413,25 +418,85 @@ public sealed record Scenario
         return list;
     }
 
-    static List<(int, Aim)> ParseAims(JsonElement e, string[] sides)
+    /// <summary>"aims": { "Britain": "destroy everyone" }, a side's an aim or a list of them, in the order wanted
+    /// (docs/battle/aims.md): "destroy everyone"; { "reach": UNIT | [UNITS] | "all", "zone": ZONE, "of": N, "stay": MIN };
+    /// { "sink": "merchants", "tonnes": T, "where": ZONE }; { "stop": SIDE }; any with "weight". A zone is
+    /// { "at": [LAT, LON], "km": R }. A Reach's units are checked when it's placed (a ladder may take only part of it).</summary>
+    static List<ScenarioAim> ParseAims(JsonElement e, string[] sides)
     {
         if (e.ValueKind != JsonValueKind.Object)
             throw new ScenarioException("aims: an object of sides' names, { \"Britain\": \"destroy everyone\" }");
-        var list = new List<(int, Aim)>();
+        var list = new List<ScenarioAim>();
         foreach (var p in e.EnumerateObject())
         {
             int side = Array.IndexOf(sides, p.Name);
             if (side < 0)
                 throw new ScenarioException($"aims: \"{p.Name}\" isn't one of the sides ({string.Join(", ", sides)})");
-            var names = p.Value.ValueKind == JsonValueKind.Array ? p.Value.EnumerateArray().Select(x => x.GetString()).ToArray() : [p.Value.GetString()];
-            foreach (var name in names)
-                list.Add((side, name switch
-                {
-                    "destroy everyone" => new Aim(AimKind.DestroyEveryone),
-                    _ => throw new ScenarioException($"aims: \"{name}\" for {p.Name}: \"destroy everyone\" (v0's one aim)"),
-                }));
+            var items = p.Value.ValueKind == JsonValueKind.Array ? p.Value.EnumerateArray().ToArray() : [p.Value];
+            foreach (var item in items)
+                list.Add(ParseAim(item, side, $"aims: {p.Name}", sides));
         }
         return list;
+    }
+
+    static readonly string[] AimKeys = ["reach", "zone", "of", "stay", "sink", "tonnes", "where", "stop", "weight"];
+
+    static ScenarioAim ParseAim(JsonElement e, int side, string at, string[] sides)
+    {
+        const string Kinds = "\"destroy everyone\", { \"reach\": ... }, { \"sink\": \"merchants\", ... } or { \"stop\": SIDE }";
+        if (e.ValueKind == JsonValueKind.String)
+            return e.GetString() == "destroy everyone" ? new ScenarioAim(side, new Aim(AimKind.DestroyEveryone), [])
+                : throw new ScenarioException($"{at}: \"{e.GetString()}\": an aim is {Kinds}");
+        if (e.ValueKind != JsonValueKind.Object)
+            throw new ScenarioException($"{at}: an aim is {Kinds}");
+        foreach (var k in e.EnumerateObject())
+            if (!AimKeys.Contains(k.Name))
+                throw new ScenarioException($"{at}: no \"{k.Name}\" in an aim (have {string.Join(", ", AimKeys)})");
+        double weight = e.TryGetProperty("weight", out var wt) ? wt.GetDouble() : 1;
+        if (!(weight >= 0))
+            throw new ScenarioException($"{at}: weight {weight}: 0 or more");
+        bool reach = e.TryGetProperty("reach", out var re), sink = e.TryGetProperty("sink", out var si), stop = e.TryGetProperty("stop", out var st);
+        if ((reach ? 1 : 0) + (sink ? 1 : 0) + (stop ? 1 : 0) != 1)
+            throw new ScenarioException($"{at}: an aim is one of reach, sink, stop");
+        if (reach)
+        {
+            string[] units = re.ValueKind == JsonValueKind.Array ? [.. re.EnumerateArray().Select(x => x.GetString() ?? "")] : [re.GetString() ?? ""];
+            if (units.Length == 0 || units.Any(u => u.Length == 0))
+                throw new ScenarioException($"{at}: reach: a unit's name, a list of them, or \"all\"");
+            if (!e.TryGetProperty("zone", out var z))
+                throw new ScenarioException($"{at}: reach: a \"zone\" to reach");
+            int of = e.TryGetProperty("of", out var o) ? o.GetInt32() : 0;   // 0: every ship named
+            if (of < 0)
+                throw new ScenarioException($"{at}: of {of}: 1 or more");
+            double stay = e.TryGetProperty("stay", out var sy) ? sy.GetDouble() : 0;
+            if (!(stay >= 0))
+                throw new ScenarioException($"{at}: stay {stay}: minutes, 0 or more");
+            return new ScenarioAim(side, new Aim(AimKind.Reach, weight) { Zone = ParseZone(z, $"{at}: zone"), Of = of, StayMs = (long)Math.Round(stay * 60_000) }, units);
+        }
+        if (sink)
+        {
+            if (si.GetString() != "merchants")
+                throw new ScenarioException($"{at}: sink \"{si.GetString()}\": \"merchants\" only");
+            double tonnes = e.TryGetProperty("tonnes", out var t) ? t.GetDouble() : 0;
+            if (!(tonnes > 0))
+                throw new ScenarioException($"{at}: sink: \"tonnes\", more than 0");
+            var where = e.TryGetProperty("where", out var wh) ? ParseZone(wh, $"{at}: where") : default;
+            return new ScenarioAim(side, new Aim(AimKind.Sink, weight) { Tonnes = tonnes, Zone = where }, []);
+        }
+        int about = Array.IndexOf(sides, st.GetString());
+        if (about < 0 || about == side)
+            throw new ScenarioException($"{at}: stop \"{st.GetString()}\": another of the sides ({string.Join(", ", sides)})");
+        return new ScenarioAim(side, new Aim(AimKind.Stop, weight) { About = about }, []);
+    }
+
+    static Zone ParseZone(JsonElement e, string at)
+    {
+        if (e.ValueKind != JsonValueKind.Object || !e.TryGetProperty("at", out var a) || a.GetArrayLength() != 2 || !e.TryGetProperty("km", out var km))
+            throw new ScenarioException($"{at}: a zone is {{ \"at\": [LAT, LON], \"km\": RADIUS }}");
+        double r = km.GetDouble();
+        if (!(r > 0))
+            throw new ScenarioException($"{at}: km {r}: more than 0");
+        return new Zone(a[0].GetDouble(), a[1].GetDouble(), r * 1000);
     }
 
     static List<(int, SideAbout)> ParseAbout(JsonElement e, string[] sides)
@@ -823,6 +888,9 @@ public sealed record Scenario
 /// <summary>What a scenario says of a side for the launch screen: its character in a line, its commander, its ensign
 /// (a name the screen draws; "" for none).</summary>
 public sealed record SideAbout(string Character, string Commander, string Ensign);
+
+/// <summary>A side's aim as the file gives it, with the units a Reach names ("all": every ship of the side).</summary>
+public sealed record ScenarioAim(int Side, Aim Aim, string[] Units);
 
 public sealed class ScenarioUnit
 {

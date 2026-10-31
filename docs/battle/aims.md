@@ -15,7 +15,7 @@ enemy"); (3) the aims come now, before the balance round's BL3 and BL4.
 | Step | State | Left |
 |---|---|---|
 | A0 Investigation | done 2026-10-31 ("A0: what the code says") | |
-| A1 Aims as data, their state, the judge | not started | |
+| A1 Aims as data, their state, the judge | done 2026-10-31 ("A1, as built") | |
 | A2 Reach: the side that wants a place | not started | |
 | A3 Stop: the side that wants to prevent it | not started | |
 | A4 Sink merchants: the raider, the merchants, the hunters | not started | |
@@ -166,6 +166,30 @@ Per `docs/ui-language.md`, drawn with `Ui/Pieces.cs`:
   The launch screen doesn't show aims yet.
 - **No scenario changes ending.** Every shipped file is destroy everyone, and the judge's Decided reads the same for
   it.
+
+## A1, as built (2026-10-31)
+
+- `Commanders/Aims.cs`: `AimKind` Reach, Sink, Stop beside destroy everyone; `Aim` with its zone, of, stay, tonnes,
+  about and weight; `AimState`; `AimReading` (state, done, of, score). `AimBook` (`AiSystem.Aims`) holds every side's
+  aims by command (`AiCommand.Aim`, `AimFigures`, `AimShip`), updated at the commanders' think (once a game minute: a
+  stay is measured to the minute, and a zone should be a couple of km across or more so a ship steaming through is
+  seen in it), hashed, and filled into the snapshot (`Snapshot.Aims`, `AimView`).
+- **Read live**, so the judge's ends for destroy everyone are what they were: only the arrivals (and the stay's
+  clocks) and the roster of ships seen are kept. Tonnage lost comes from the roster (a ship gone from the sea is still
+  lost), tonnage afloat from the store as it is, so a reading before the first think has everything afloat.
+- **Scores:** destroy everyone the share of the enemy's tonnage lost (Coronel's two seeds: Britain 0.29, Germany
+  0.28); Reach arrived / of; Sink tonnes / target; Stop 1 less its aim's. `SideResult.Score` and `SideEnd.Score`
+  weigh them; the play bench prints it.
+- **The format:** a side's aim or list of them (`Scenario.ParseAims`); `ScenarioAim` keeps a Reach's unit names, the
+  loader (`ScenarioLoader.Aims`) resolves them to the ships placed under those units at any level, or every ship of
+  the side for `"all"`, an `"of"` not given being all of them. A name not in the scenario is an error; fewer ships
+  placed than `"of"` (a setup struck them) a warning.
+- **The judge:** Decided as before (every side afloat has met every aim). Done takes a side whose aims are all
+  decided (met or lost) as done once its ships afloat are out of touch: a convoy landed ends the reason, not the
+  fight. A side whose aims are all destroy everyone and met is done at once, as before.
+- `AimsTests`: the format and its errors; a Reach met (and Done at once, nobody in touch) and lost; a stay of 3
+  minutes met and one of 20 not by a ship passing through, the arrival in the state hash; Sink's tonnage in halves,
+  struck counting, a weighted score. The suite: 924 passed.
 
 ## Steps
 

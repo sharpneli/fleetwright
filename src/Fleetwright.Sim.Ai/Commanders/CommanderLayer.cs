@@ -180,6 +180,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
     internal Roles Roles { get; set; } = null!;
     internal CaptainLayer? Captains { get; set; }
     internal FlotillaAttacks Attacks { get; set; } = null!;
+    internal AimBook Book { get; set; } = new();
 
     public bool Active
     {
@@ -293,6 +294,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
     public void Think(in AiContext ctx)
     {
         int player = ctx.World.PlayerSide;
+        Book.Update(ctx.World);
         Gather(ctx);
         for (int side = 0; side < sides.Length; side++)
         {

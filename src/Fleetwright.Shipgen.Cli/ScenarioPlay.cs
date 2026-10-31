@@ -166,7 +166,7 @@ static class ScenarioPlay
             }
             else
                 Console.WriteLine($"  seed {seed,6}: {Why(end.Reason),-7} at {Clock(s, end.EndMs)}  " +
-                                  string.Join("   ", result.Select(r => $"{r.Name} lost {r.Lost}/{r.Ships} ({r.LostTonnes:0} t){(r.AimsMet ? ", aims met" : "")}")) +
+                                  string.Join("   ", result.Select(r => $"{r.Name} lost {r.Lost}/{r.Ships} ({r.LostTonnes:0} t){(r.AimsMet ? ", aims met" : "")}, score {r.Score:0.00}")) +
                                   Causes(end) + $"   {w.ComputeHash():x16}   ({wall:F1} s)" + (end.Missed > 0 ? $"   {end.Missed} log lines missed" : ""));
             if (seeds > 1)
             {
@@ -478,7 +478,7 @@ static class ScenarioPlay
         Console.WriteLine($"the result ({Why(end.Reason)} at {Clock(s, end.EndMs)}, played in {wall:F1} s):");
         foreach (var r in result)
             Console.WriteLine($"  {r.Name,-12} {r.Ships,4} ships {r.Tonnes,9:0} t   lost {r.Lost,3} ({r.LostTonnes,7:0} t)   damaged afloat {r.Damaged,3}   " +
-                              $"afloat {r.Afloat,3}   hits made {r.Hits,4}   torpedoes {r.Torpedoes,3}   aims {(r.AimsMet ? "met" : "not met")}" +
+                              $"afloat {r.Afloat,3}   hits made {r.Hits,4}   torpedoes {r.Torpedoes,3}   aims {(r.AimsMet ? "met" : "not met")}, score {r.Score:0.00}" +
                               (r.Taken + r.Struck + r.Scuttled + r.Abandoned > 0 ? $"   of the lost: taken {r.Taken}, struck {r.Struck}, scuttled {r.Scuttled}, abandoned {r.Abandoned}" : "") +
                               $"   men lost {r.Killed}, saved {r.Saved}");
         int own = end.Timeline.Count(l => l.Kind == PlayEvent.Lost && l.Other != 0 && end.SideOf(l.Other) == l.Side);
@@ -559,7 +559,7 @@ static class ScenarioPlay
             var lost = runs.Select(r => r.Result[side].Lost).ToList();
             var tonnes = runs.Select(r => r.Result[side].LostTonnes).ToList();
             Console.WriteLine($"  {s.Sides[side],-12} lost {lost.Average():F1} of {runs[0].Result[side].Ships} ships (from {lost.Min()} to {lost.Max()}), " +
-                              $"{tonnes.Average():0} t; made {runs.Average(r => r.Result[side].Hits):F0} hits, fired {runs.Average(r => r.Result[side].Torpedoes):F1} torpedoes; aims met {runs.Count(r => r.Result[side].AimsMet)} times");
+                              $"{tonnes.Average():0} t; made {runs.Average(r => r.Result[side].Hits):F0} hits, fired {runs.Average(r => r.Result[side].Torpedoes):F1} torpedoes; aims met {runs.Count(r => r.Result[side].AimsMet)} times, score {runs.Average(r => r.Result[side].Score):0.00}");
         }
     }
 

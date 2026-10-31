@@ -16,7 +16,7 @@ public enum EndReason : byte
     /// <summary>Its time ran out (<c>"until"</c>, or <see cref="SimSettings.PlayLimitMs"/> after the start).</summary>
     Time,
 
-    /// <summary>Decided: every side still afloat has its aims (v0's destroy everyone: one side, or sides at peace, left).</summary>
+    /// <summary>Decided: every side still afloat has met its aims (destroy everyone: one side, or sides at peace, left).</summary>
     Decided,
 
     /// <summary>Quiet: the sides met, and no encounter has been open for <see cref="SimSettings.QuietEndMs"/>.</summary>
@@ -80,9 +80,10 @@ public readonly record struct PlayLine(long Ms, PlayEvent Kind, int Side, int En
 /// <summary>How a side came out: the facts, not a grade (grading is the missions', docs/battle/plan.md 6.1). Of those
 /// lost (going down counts, and given up: docs/battle/striking.md SK5), how many were taken (struck, afloat at the end, an
 /// enemy holding the sea about her), struck and left a hulk, scuttled and abandoned; the rest sank.</summary>
-/// <para>Her men (SK6, rough): killed in action and lost with the ships that went, and those saved from them.</para>
+/// <para>Her men (SK6, rough): killed in action and lost with the ships that went, and those saved from them. Its score: its
+/// aims' scores weighted, 0 to 1 (docs/battle/aims.md).</para>
 public readonly record struct SideResult(string Name, int Ships, double Tonnes, int Lost, double LostTonnes, int Damaged, int Afloat, bool AimsMet, int Hits = 0, int Torpedoes = 0,
-    int Taken = 0, int Struck = 0, int Scuttled = 0, int Abandoned = 0, int Killed = 0, int Saved = 0);
+    int Taken = 0, int Struck = 0, int Scuttled = 0, int Abandoned = 0, int Killed = 0, int Saved = 0, double Score = 0);
 
 /// <summary>How a lost ship went (docs/battle/striking.md SK5): sunk, taken, struck (a hulk nobody holds), scuttled,
 /// abandoned.</summary>
@@ -217,26 +218,65 @@ public sealed class ScenarioEnd
             if (afloat[side] == 0)
                 continue;
             any = true;
-            foreach (var a in aims[side])
-                if (!Aims.Met(world, side, a))
+            for (int i = 0; i < aims[side].Length; i++)
+                if (Reading(side, i).State != AimState.Met)
                     return false;
         }
         return any;
     }
 
-    /// <summary>Every side still afloat is done (docs/battle/command.md "The end"): its aims met, or its commander gone
-    /// home (given up, broken off, or declining a stronger enemy) with every ship of it afloat home or out of the area: in
-    /// no encounter. Every side going home and none of them in touch: nobody is left seeking a fight.</summary>
+    /// <summary>How a side's i-th aim stands now: the AI's book (docs/battle/aims.md), or with no AI destroy everyone read
+    /// off the world (any other aim stays open).</summary>
+    public AimReading Reading(int side, int i)
+    {
+        if (ai != null && i < ai.Aims.Count(side))
+            return ai.Aims.Read(world, side, i);
+        return aims[side][i].Kind == AimKind.DestroyEveryone && !Aims.EnemyAfloat(world, side) ? new(AimState.Met, 1, 1) : new(AimState.Open, 0, 1);
+    }
+
+    /// <summary>A side's score, 0 to 1: its aims' scores weighted (docs/battle/aims.md "The aims").</summary>
+    public double Score(int side)
+    {
+        double sum = 0, weights = 0;
+        for (int i = 0; i < aims[side].Length; i++)
+        {
+            sum += aims[side][i].Weight * Reading(side, i).Score;
+            weights += aims[side][i].Weight;
+        }
+        return weights > 0 ? sum / weights : 0;
+    }
+
+    bool AllMet(int side)
+    {
+        for (int i = 0; i < aims[side].Length; i++)
+            if (Reading(side, i).State != AimState.Met)
+                return false;
+        return true;
+    }
+
+    bool AllDecided(int side)
+    {
+        for (int i = 0; i < aims[side].Length; i++)
+            if (Reading(side, i).State == AimState.Open)
+                return false;
+        return true;
+    }
+
+    /// <summary>Every side still afloat is done (docs/battle/command.md "The end"): its aims all destroy everyone and met
+    /// (nobody left to fight), or every aim decided (met or lost: docs/battle/aims.md) or its commander gone home (given
+    /// up, broken off, or declining a stronger enemy), with every ship of it afloat home or out of the area: in no
+    /// encounter. Every side done and none of them in touch: nobody is left seeking a fight, and a convoy landed doesn't end
+    /// the fight about it.</summary>
     bool AllDone()
     {
         var store = world.Ships.Store;
         double home = world.Settings.HomeRadiusM;
         for (int side = 0; side < afloat.Length; side++)
         {
-            if (afloat[side] == 0 || aims[side].All(a => Aims.Met(world, side, a)))
+            if (afloat[side] == 0 || aims[side].All(a => a.Kind == AimKind.DestroyEveryone) && AllMet(side))
                 continue;
             var (phase, reason) = ai!.Commanders.PhaseOf(side);
-            if (!(phase == CommanderPhase.Home || reason is CommanderReason.BrokenOff or CommanderReason.Outmatched))
+            if (!(AllDecided(side) || phase == CommanderPhase.Home || reason is CommanderReason.BrokenOff or CommanderReason.Outmatched))
                 return false;
             var at = ai.HomeOf(side);
             for (int slot = 0; slot < store.Slots; slot++)
@@ -458,10 +498,10 @@ public sealed class ScenarioEnd
                     how[(int)Fate(entity)]++;
                 }
             }
-            bool met = aims[side].All(a => Aims.Met(world, side, a)) && up > 0;
+            bool met = AllMet(side) && up > 0;
             r[side] = new SideResult(scenario.Sides[side], count, t, lost, lostT, damaged, up, met, hits[side], torpedoesFired[side],
                 how[(int)ShipFate.Taken], how[(int)ShipFate.Struck], how[(int)ShipFate.Scuttled], how[(int)ShipFate.Abandoned],
-                (int)Math.Round(killed), (int)Math.Round(saved));
+                (int)Math.Round(killed), (int)Math.Round(saved), Score(side));
         }
         return r;
     }

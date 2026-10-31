@@ -202,6 +202,18 @@ public enum AiCommand : ushort
     /// given with A 0 before then, or the contact's lost. To a group, one ship of its tree fires: the nearest that carries star shell with the target in its reach (else
     /// the nearest that carries it); A 0 stops every ship's.</summary>
     StarShell,
+
+    /// <summary>A side's aim (docs/battle/aims.md), its index the next or one there replaced: Entity the side, its index
+    /// (<c>× 256</c>), its <see cref="Commanders.AimKind"/> (<c>× 65536</c>) and a Stop's enemy side (<c>× 2^24</c>, 255
+    /// none); A its zone's centre (a packed lat/lon), X its radius (m), B a Reach's of, Y its weight.</summary>
+    Aim,
+
+    /// <summary>An aim's other figures: Entity the side and the aim's index as <see cref="Aim"/>'s, A a Reach's stay (ms),
+    /// X a Sink's tonnes. After its <see cref="Aim"/>.</summary>
+    AimFigures,
+
+    /// <summary>A ship named for an aim: Entity the ship, B the side and the aim's index as <see cref="Aim"/>'s.</summary>
+    AimShip,
 }
 
 /// <summary>The night's orders on a ship as the snapshot shows them (<c>ShipsView.Night</c>; docs/battle/night.md Q9).</summary>
@@ -393,6 +405,18 @@ public readonly struct UnitOrders(byte system, bool hand = false)
     /// <summary>A unit handed to its side's commander (true: "leave it to the admiral"), taken from him (false), or as its
     /// side (null).</summary>
     public Command Automate(Unit u, bool? on) => Make(AiCommand.Automate, u, OrderSource.Player, x: on is { } b ? (b ? 1 : 0) : double.NaN);
+
+    /// <summary>A side's i-th aim (docs/battle/aims.md): the aim and its figures, as two commands.</summary>
+    public (Command Aim, Command Figures) Aim(int side, int i, in Commanders.Aim a)
+    {
+        int key = (side & 255) | (i & 255) << 8;
+        return (new(system, (ushort)AiCommand.Aim, key | (int)a.Kind << 16 | (a.About is >= 0 and < 255 ? a.About : 255) << 24,
+                    A: a.Zone.Has ? Earth.PackLatLon(a.Zone.LatDeg, a.Zone.LonDeg) : 0, X: a.Zone.RadiusM, B: a.Of, Y: a.Weight),
+                new(system, (ushort)AiCommand.AimFigures, key, A: a.StayMs, X: a.Tonnes));
+    }
+
+    /// <summary>A ship named for a side's i-th aim.</summary>
+    public Command AimShip(int side, int i, int ship) => new(system, (ushort)AiCommand.AimShip, ship, B: (side & 255) | (i & 255) << 8);
 
     /// <summary>A side's home: where its cripples go.</summary>
     public Command Home(int side, double latDeg, double lonDeg) => new(system, (ushort)AiCommand.Home, side, A: Earth.PackLatLon(latDeg, lonDeg));
