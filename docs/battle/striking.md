@@ -147,8 +147,8 @@ whole.
 Beaching (needs the shore along her course: SC R2's first choice where land is near, Santiago, Emden); a consort's
 torpedo to finish a friend; the admiral's strike of a sound unit (Nebogatov, rare: the admiral's layer, SC R2); prize
 crews and tows (decision 3); running for a neutral port; white flags and partial signs; the victor's rescue as a task
-holding his ships; sea temperatures by area and month for the survivors; every captain's temper drawn at load (a choice
-for the user: it would move the whole balance, not only this call).
+holding his ships; sea temperatures by area and month for the survivors; every captain's temper drawn at load (the user, 2026-10-31: no; the
+call's spread stays one for every side, and captains' tempers are the scenario pass's).
 
 ## The steps (as built, 2026-10-31)
 
@@ -243,6 +243,10 @@ AI (the captains wake on a contact or an order; in play a hit comes with one); t
 - **SK7 The panel.** The plays by the clock, and losses, before and after.
 
 ## Decided (the user, 2026-10-31)
+
+6. **The temper spread is the same for every side** (after the build): "Let's leave that spread identical across
+   sides. We are doing a scenario pass anyhow." `GiveUpTemperSpread` stays one setting; named captains' tempers come with
+   the scenario pass (night fighting scenarios and the rest), not a draw at load.
 
 1. **Doctrine sets it, and the captain moves it:** "Even with merciful doctrine someone will fight to the end, and even
    with Stalin tier 'not one step back' some will surrender." The side's doctrine field (never to when hopeless) is
