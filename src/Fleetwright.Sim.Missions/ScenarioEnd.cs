@@ -80,8 +80,9 @@ public readonly record struct PlayLine(long Ms, PlayEvent Kind, int Side, int En
 /// <summary>How a side came out: the facts, not a grade (grading is the missions', docs/battle/plan.md 6.1). Of those
 /// lost (going down counts, and given up: docs/battle/striking.md SK5), how many were taken (struck, afloat at the end, an
 /// enemy holding the sea about her), struck and left a hulk, scuttled and abandoned; the rest sank.</summary>
+/// <para>Her men (SK6, rough): killed in action and lost with the ships that went, and those saved from them.</para>
 public readonly record struct SideResult(string Name, int Ships, double Tonnes, int Lost, double LostTonnes, int Damaged, int Afloat, bool AimsMet, int Hits = 0, int Torpedoes = 0,
-    int Taken = 0, int Struck = 0, int Scuttled = 0, int Abandoned = 0);
+    int Taken = 0, int Struck = 0, int Scuttled = 0, int Abandoned = 0, int Killed = 0, int Saved = 0);
 
 /// <summary>How a lost ship went (docs/battle/striking.md SK5): sunk, taken, struck (a hulk nobody holds), scuttled,
 /// abandoned.</summary>
@@ -126,6 +127,7 @@ public sealed class ScenarioEnd
     readonly Aim[][] aims;   // by side
     readonly Dictionary<int, (byte Side, double Tonnes)> ships = [];   // every ship seen, kept after it's gone
     readonly Dictionary<int, GivenUp> given = [];   // how each ship given up was (striking.md SK5), kept after she's gone
+    readonly Dictionary<int, (double Killed, double Drowned, double Saved)> crews = [];   // each lost ship's men as she went (SK6)
     readonly List<PlayLine> lines = [];
     readonly bool[] sighted, fired, hit, torpedoes;   // by side: its first already told
     readonly int[] afloat;   // by side, at the last check
@@ -277,6 +279,7 @@ public sealed class ScenarioEnd
                     break;
                 case CombatEvent.Lost:
                     lines.Add(new PlayLine(e.Ms, PlayEvent.Lost, side, e.Target, e.Shooter, e.Count));
+                    Went(e.Target, e.Ms, (LossKind)e.Count);
                     break;
                 case CombatEvent.GaveUp:
                     given[e.Target] = (GivenUp)e.Count;
@@ -362,6 +365,29 @@ public sealed class ScenarioEnd
     /// else a hulk; abandoned.</summary>
     public GivenUp GivenUpOf(int entity) => given.GetValueOrDefault(entity);
 
+    /// <summary>A lost ship's men as she goes (SK6, rough, at the first check after: she's still on the sea, going down):
+    /// those alive aboard, the share got off by the time since the order to abandon her against the time they need, saved
+    /// by the settings' shares as a ship of either side in the fight is within <see cref="SimSettings.SavedRescueM"/> or
+    /// not.</summary>
+    void Went(int entity, long ms, LossKind how)
+    {
+        var store = world.Ships.Store;
+        int slot = store.SlotOf(entity);
+        if (slot < 0 || crews.ContainsKey(entity))
+            return;
+        var k = store.Combat.Condition(slot);
+        var s = world.Settings;
+        double alive = Math.Max(world.Damage.Flood(k.Class).Complement - k.Killed, 0);
+        double off = !k.Abandoned ? 0 : k.OffMs <= k.AbandonMs ? 1 : Math.Clamp((double)(ms - k.AbandonMs) / (k.OffMs - k.AbandonMs), 0, 1);
+        bool near = false;
+        var at = store[slot].Position;
+        for (int o = 0; o < store.Slots && !near; o++)
+            near = o != slot && Aims.Afloat(store, o) && Earth.Distance(at, store[o].Position) <= s.SavedRescueM;
+        double aboard = how == LossKind.Magazine ? s.SavedMagazine : near ? s.SavedAboardNear : s.SavedAboardAlone;
+        double saved = alive * (off * (near ? s.SavedOffNear : s.SavedOffAlone) + (1 - off) * aboard);
+        crews[entity] = (k.Killed, alive - saved, saved);
+    }
+
     public ShipFate Fate(int entity)
     {
         var store = world.Ships.Store;
@@ -407,7 +433,7 @@ public sealed class ScenarioEnd
         {
             int count = 0, lost = 0, damaged = 0, up = 0;
             var how = new int[6];
-            double t = 0, lostT = 0;
+            double t = 0, lostT = 0, killed = 0, saved = 0;
             foreach (var (entity, (s, tonnes)) in ships)
             {
                 if (s != side)
@@ -415,6 +441,10 @@ public sealed class ScenarioEnd
                 count++;
                 t += tonnes;
                 int slot = store.SlotOf(entity);
+                if (crews.TryGetValue(entity, out var men))
+                    (killed, saved) = (killed + men.Killed + men.Drowned, saved + men.Saved);
+                else if (slot >= 0)
+                    killed += store.Combat.Condition(slot).Killed;   // afloat at the end, struck or not: her men with her
                 if (slot >= 0 && Aims.Afloat(store, slot))
                 {
                     up++;
@@ -430,7 +460,8 @@ public sealed class ScenarioEnd
             }
             bool met = aims[side].All(a => Aims.Met(world, side, a)) && up > 0;
             r[side] = new SideResult(scenario.Sides[side], count, t, lost, lostT, damaged, up, met, hits[side], torpedoesFired[side],
-                how[(int)ShipFate.Taken], how[(int)ShipFate.Struck], how[(int)ShipFate.Scuttled], how[(int)ShipFate.Abandoned]);
+                how[(int)ShipFate.Taken], how[(int)ShipFate.Struck], how[(int)ShipFate.Scuttled], how[(int)ShipFate.Abandoned],
+                (int)Math.Round(killed), (int)Math.Round(saved));
         }
         return r;
     }

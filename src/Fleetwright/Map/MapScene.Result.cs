@@ -76,6 +76,7 @@ public sealed partial class MapScene
         foreach (var x in sides)
             resultSides.Add((x.Name, [x.Ships.ToString(CultureInfo.InvariantCulture), x.Lost.ToString(CultureInfo.InvariantCulture),
                 x.LostTonnes.ToString("#,0", CultureInfo.InvariantCulture), x.Damaged.ToString(CultureInfo.InvariantCulture),
+                x.Killed.ToString("#,0", CultureInfo.InvariantCulture), x.Saved.ToString("#,0", CultureInfo.InvariantCulture),
                 x.Hits.ToString(CultureInfo.InvariantCulture), x.Torpedoes.ToString(CultureInfo.InvariantCulture), x.AimsMet ? "met" : "not met"]));
         resultShips.Clear();
         foreach (var x in end.Ships)
@@ -128,7 +129,7 @@ public sealed partial class MapScene
         ImGui.Separator();
         ImGui.Spacing();
         // the count: a row a side
-        if (ImGui.BeginTable("##count", 8, ImGuiTableFlags.SizingStretchProp | ImGuiTableFlags.RowBg, new Vector2(w - 44 * sc, 0)))
+        if (ImGui.BeginTable("##count", CountHeads.Length + 1, ImGuiTableFlags.SizingStretchProp | ImGuiTableFlags.RowBg, new Vector2(w - 44 * sc, 0)))
         {
             ImGui.TableSetupColumn("", ImGuiTableColumnFlags.WidthStretch, 2);
             foreach (var h in CountHeads)
@@ -224,5 +225,5 @@ public sealed partial class MapScene
     }
 
     bool resultShut;
-    static readonly string[] CountHeads = ["SHIPS", "LOST", "TONNES LOST", "DAMAGED", "HITS", "TORPEDOES", "AIMS"];
+    static readonly string[] CountHeads = ["SHIPS", "LOST", "TONNES LOST", "DAMAGED", "MEN LOST", "SAVED", "HITS", "TORPEDOES", "AIMS"];
 }

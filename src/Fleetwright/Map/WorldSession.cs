@@ -178,7 +178,7 @@ public sealed class WorldSession : IDisposable
             {
                 Reason = end.Reason.ToString().ToLowerInvariant(),
                 EndMs = end.EndMs,
-                Sides = [.. sides.Select(r => new SideEnd(r.Name, r.Ships, r.Tonnes, r.Lost, r.LostTonnes, r.Damaged, r.Afloat, r.AimsMet, r.Hits, r.Torpedoes))],
+                Sides = [.. sides.Select(r => new SideEnd(r.Name, r.Ships, r.Tonnes, r.Lost, r.LostTonnes, r.Damaged, r.Afloat, r.AimsMet, r.Hits, r.Torpedoes, r.Killed, r.Saved))],
                 Ships = [.. ships.OrderBy(x => x.Side).ThenBy(x => x.Entity)],
             };
         };

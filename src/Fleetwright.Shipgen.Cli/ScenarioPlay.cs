@@ -479,7 +479,8 @@ static class ScenarioPlay
         foreach (var r in result)
             Console.WriteLine($"  {r.Name,-12} {r.Ships,4} ships {r.Tonnes,9:0} t   lost {r.Lost,3} ({r.LostTonnes,7:0} t)   damaged afloat {r.Damaged,3}   " +
                               $"afloat {r.Afloat,3}   hits made {r.Hits,4}   torpedoes {r.Torpedoes,3}   aims {(r.AimsMet ? "met" : "not met")}" +
-                              (r.Taken + r.Struck + r.Scuttled + r.Abandoned > 0 ? $"   of the lost: taken {r.Taken}, struck {r.Struck}, scuttled {r.Scuttled}, abandoned {r.Abandoned}" : ""));
+                              (r.Taken + r.Struck + r.Scuttled + r.Abandoned > 0 ? $"   of the lost: taken {r.Taken}, struck {r.Struck}, scuttled {r.Scuttled}, abandoned {r.Abandoned}" : "") +
+                              $"   men lost {r.Killed}, saved {r.Saved}");
         int own = end.Timeline.Count(l => l.Kind == PlayEvent.Lost && l.Other != 0 && end.SideOf(l.Other) == l.Side);
         if (own > 0)
             Console.WriteLine($"  {own} of the losses were last hit by their own side (shells and torpedoes hit whatever is in their way)");

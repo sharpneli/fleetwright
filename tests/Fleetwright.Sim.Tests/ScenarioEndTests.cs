@@ -89,6 +89,32 @@ public class ScenarioEndTests(ITestOutputHelper output)
         }
     }
 
+    /// <summary>Survivors, rough (docs/battle/striking.md SK6): a scuttled ship's men are got off before she goes, and
+    /// saved as a ship is near her or not (research §3.4: off with friends alongside 80-100%, off and left 0-5%).</summary>
+    [Fact]
+    public void A_scuttled_ships_men_are_saved_with_a_ship_near_and_few_without()
+    {
+        foreach (var (km, near) in new[] { (3.0, true), (40.0, false) })
+        {
+            // East scuttled, a second German far off keeps the end open till she's gone
+            string json = $$"""
+                { "scenario": 1, "start": "1916-05-31T14:00", "seed": 3, "sides": ["Britain", "Germany"], "until": "1916-05-31T16:00",
+                  "units": [
+                    { "side": 0, "at": [56.5, 4.0], "course": 0, "kn": 0, "ships": [ { "design": "light_cruiser", "name": "West" } ] },
+                    { "side": 1, "at": [56.5, {{4.0 + km / 61.5:R}}], "course": 0, "kn": 0, "ships": [ { "design": "light_cruiser", "name": "East" } ] },
+                    { "side": 1, "at": [58.5, 8.0], "course": 0, "kn": 0, "ships": [ { "design": "light_cruiser", "name": "Far" } ] } ] }
+                """;
+            var (w, end, start) = Play(json, Settings, first: (w, start) => w.Apply(DamageSystem.Scuttle(Named(start, "East"))));
+            Assert.Contains(end.Timeline, l => l.Kind == PlayEvent.Lost && l.Entity == Named(start, "East"));
+            var r = end.Result()[1];
+            double crew = w.Damage.Flood(Fleet.Get("light_cruiser").Class!).Complement;
+            output.WriteLine($"{km} km: {crew:0} aboard, saved {r.Saved}, lost {r.Killed}, {end.Fate(Named(start, "East"))}");
+            Assert.Equal(ShipFate.Scuttled, end.Fate(Named(start, "East")));
+            Assert.InRange(r.Saved, (near ? 0.8 : 0) * crew, (near ? 0.95 : 0.1) * crew);
+            Assert.InRange(r.Saved + r.Killed, crew - 1, crew + 1);   // each rounded
+        }
+    }
+
     [Fact]
     public void Time_runs_out_at_until()
     {

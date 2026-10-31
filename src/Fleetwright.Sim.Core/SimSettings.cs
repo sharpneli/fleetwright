@@ -2253,6 +2253,19 @@ public sealed record SimSettings
     /// boarding party].</summary>
     public double TakenM { get; init; } = 10_000;
 
+    /// <summary>Survivors, rough (SK6; research §3.4's regimes, set by how she went and whether a rescuer was near, not her
+    /// size): of her men alive when she goes, those got off her (by the time from the order to abandon her to her end,
+    /// against the time they need) are saved by these shares with a ship of either side in the fight within
+    /// <see cref="SavedRescueM"/> of her, or alone; those still aboard by these (a magazine: next to none) [INFERRED from
+    /// ~30 cases: off with friends alongside 80-100%, off and left 0-5%; a quick sinking with craft near 50-93%, alone
+    /// 2-20%; blew up 0-2%]. A ship struck or abandoned and afloat at the end keeps her men.</summary>
+    public double SavedOffNear { get; init; } = 0.9;
+    public double SavedOffAlone { get; init; } = 0.05;
+    public double SavedAboardNear { get; init; } = 0.6;
+    public double SavedAboardAlone { get; init; } = 0.1;
+    public double SavedMagazine { get; init; } = 0.01;
+    public double SavedRescueM { get; init; } = 4000;
+
     // ------------------------------------------------------------------ torpedoes (docs/battle/fighting.md 4.6)
 
     /// <summary>Torpedoes running at once (the pool grows past it), and the ring of their ends the screens read.</summary>

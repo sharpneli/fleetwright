@@ -860,6 +860,14 @@
   "AbandonMarginS": 600,
   // a struck ship afloat at the end is taken if an enemy in the fight is nearer her than any friend within 10 km [EST]
   "TakenM": 10000,
+  // survivors, rough (SK6, research §3.4): her men got off saved 90% with a ship within 4 km, 5% alone; still aboard 60%
+  // or 10%; a magazine 1% [INFERRED]
+  "SavedOffNear": 0.9,
+  "SavedOffAlone": 0.05,
+  "SavedAboardNear": 0.6,
+  "SavedAboardAlone": 0.1,
+  "SavedMagazine": 0.01,
+  "SavedRescueM": 4000,
   // torpedoes (docs/battle/fighting.md 4.6; damage-model-research.md §3.4, 05-mechanics-and-games.md A6)
   "TorpedoCapacity": 256,
   "TorpedoEndCapacity": 256,

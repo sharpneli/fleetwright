@@ -1,0 +1,201 @@
+{
+  "date": "2026-10-31 09:48",
+  "seeds": 8,
+  "sides": [
+    {
+      "scenario": "dover-strait",
+      "side": "Britain",
+      "lost": 0.25,
+      "min": 0,
+      "max": 1,
+      "record": 0,
+      "verdict": "in",
+      "hits": 58,
+      "hit_pct": 48.232848232848234
+    },
+    {
+      "scenario": "dover-strait",
+      "side": "Germany",
+      "lost": 1.125,
+      "min": 0,
+      "max": 2,
+      "record": 2,
+      "verdict": "in",
+      "hits": 41.875,
+      "hit_pct": 68.36734693877551
+    },
+    {
+      "scenario": "coronel",
+      "side": "Britain",
+      "lost": 0.75,
+      "min": 0,
+      "max": 2,
+      "record": 2,
+      "verdict": "LOW",
+      "hits": 239.875,
+      "hit_pct": 11.047783534830167
+    },
+    {
+      "scenario": "coronel",
+      "side": "Germany",
+      "lost": 0.75,
+      "min": 0,
+      "max": 2,
+      "record": 0,
+      "verdict": "in",
+      "hits": 440.25,
+      "hit_pct": 8.057099718619176
+    },
+    {
+      "scenario": "cape-sarych",
+      "side": "Russia",
+      "lost": 0.375,
+      "min": 0,
+      "max": 1,
+      "record": 0,
+      "verdict": "in",
+      "hits": 529.5,
+      "hit_pct": 10.519780465393499
+    },
+    {
+      "scenario": "cape-sarych",
+      "side": "Ottoman Empire",
+      "lost": 0.375,
+      "min": 0,
+      "max": 1,
+      "record": 0,
+      "verdict": "in",
+      "hits": 69.5,
+      "hit_pct": 4.397690421577157
+    },
+    {
+      "scenario": "prizes-war",
+      "side": "France",
+      "lost": 1,
+      "min": 0,
+      "max": 2,
+      "verdict": "",
+      "hits": 175.25,
+      "hit_pct": 2.8854861282621225
+    },
+    {
+      "scenario": "prizes-war",
+      "side": "Italy",
+      "lost": 0.875,
+      "min": 0,
+      "max": 2,
+      "verdict": "",
+      "hits": 169.75,
+      "hit_pct": 2.6874591834715322
+    },
+    {
+      "scenario": "aland",
+      "side": "Finland",
+      "lost": 5.125,
+      "min": 2,
+      "max": 8,
+      "verdict": "",
+      "hits": 455,
+      "hit_pct": 16.232607920085623
+    },
+    {
+      "scenario": "aland",
+      "side": "Sweden",
+      "lost": 2.25,
+      "min": 0,
+      "max": 4,
+      "verdict": "",
+      "hits": 314.375,
+      "hit_pct": 13.789133176160973
+    },
+    {
+      "scenario": "heligoland-bight",
+      "side": "Britain",
+      "lost": 3.125,
+      "min": 0,
+      "max": 16,
+      "record": 0,
+      "verdict": "HIGH",
+      "hits": 769,
+      "hit_pct": 20.99873707205516
+    },
+    {
+      "scenario": "heligoland-bight",
+      "side": "Germany",
+      "lost": 10.125,
+      "min": 3,
+      "max": 21,
+      "record": 4,
+      "verdict": "HIGH",
+      "hits": 172.875,
+      "hit_pct": 15.16779995613073
+    },
+    {
+      "scenario": "dogger-bank",
+      "side": "Britain",
+      "lost": 4.375,
+      "min": 0,
+      "max": 9,
+      "record": 0,
+      "verdict": "HIGH",
+      "hits": 902.75,
+      "hit_pct": 8.583109505359987
+    },
+    {
+      "scenario": "dogger-bank",
+      "side": "Germany",
+      "lost": 7.375,
+      "min": 2,
+      "max": 13,
+      "record": 1,
+      "verdict": "HIGH",
+      "hits": 453.25,
+      "hit_pct": 5.930262985738584
+    },
+    {
+      "scenario": "tsushima",
+      "side": "Russia",
+      "lost": 3.875,
+      "min": 1,
+      "max": 8,
+      "record": 7,
+      "verdict": "in",
+      "hits": 649.5,
+      "hit_pct": 7.470776840016678
+    },
+    {
+      "scenario": "tsushima",
+      "side": "Japan",
+      "lost": 3.125,
+      "min": 0,
+      "max": 6,
+      "record": 0,
+      "verdict": "HIGH",
+      "hits": 1640.875,
+      "hit_pct": 7.448027779038627
+    },
+    {
+      "scenario": "jutland",
+      "side": "Britain",
+      "lost": 31.75,
+      "min": 18,
+      "max": 46,
+      "record": 14,
+      "verdict": "HIGH",
+      "hits": 4640.25,
+      "hit_pct": 8.646817946770895
+    },
+    {
+      "scenario": "jutland",
+      "side": "Germany",
+      "lost": 49.75,
+      "min": 38,
+      "max": 57,
+      "record": 11,
+      "verdict": "HIGH",
+      "hits": 3856.25,
+      "hit_pct": 6.797010637266566
+    }
+  ],
+  "fc_history": []
+}

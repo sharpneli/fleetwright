@@ -174,9 +174,10 @@ public sealed class EndView
 }
 
 /// <summary>A side's count at the end: its ships and tonnage, those lost, damaged and afloat, whether its aims are met,
-/// its hits and torpedoes fired.</summary>
+/// its hits and torpedoes fired, its men killed and lost with their ships, and those saved from them (rough:
+/// docs/battle/striking.md SK6).</summary>
 public readonly record struct SideEnd(string Name, int Ships, double Tonnes, int Lost, double LostTonnes, int Damaged, int Afloat, bool AimsMet,
-    int Hits, int Torpedoes);
+    int Hits, int Torpedoes, int Killed = 0, int Saved = 0);
 
 /// <summary>A ship's fate: lost (how and when) or afloat (damaged or not), the hits she took.</summary>
 public readonly record struct ShipEnd(int Entity, int Side, string Name, bool Lost, Combat.LossKind Loss, long LossMs, bool Damaged, int Hits,
