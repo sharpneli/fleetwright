@@ -372,7 +372,7 @@ target, the matchup, an attack's worth) at a slower rate of their own, staggered
 second, the reflexes (the helm, station keeping, a torpedo track seen, the fire) at the second as now. For the AI's
 cost first; measured before it's planned.
 
-Next: proposals 1-3 built, then striking colours and abandoning ship, then BL3 and BL4.
+Next: proposals 1-3 built, then striking colours and abandoning ship (built 2026-10-31: `striking.md`; the ends didn't move, the clock ends are the commanders'), then BL3 and BL4.
 
 ## Decided (the user, 2026-10-30)
 
@@ -461,3 +461,4 @@ answered today; the rest are best answered when their step has measured.
 | 2026-10-31 | `3de89a4b` | Åland fixed: touch judged on the enemy groups he holds (in sight or not, within `FightCompareM`), not on sight this second (the haze hid the Swedes from the Finnish guide a moment and he "got away" at 15 kn from 22.5); the chase speed leaves out ships seen stopped; the search's datum moves at the held group's speed; Finland's doctrine bold (Aggression +1, the user: the weaker side must fight) | Åland alone, 8 seeds: Finland 4.2 v Sweden 2.0 (as built 10-25: 4.1 v 2.4), 7 of 8 seeds a fight, ended time 3, done 5. Without the doctrine, the touch fix alone: 2.5 v 0.2, three seeds parting in the haze with both searches given up (search theory in 8 km of haze: a force sweeps one ship's width) |
 | 2026-10-31 | `3de89a4b` | the panel after the Åland fix (`balance/bl5c.json`, scenarios only) | 6 of 14 sides within 2x; the record's loser lost more in 27 of 44; Åland 4.3 v 2.0; Dover 0.5 v 1.5 (now in); Heligoland 1.5 v 8.4, Dogger 3.1 v 8.8, Tsushima 3.9 v 2.9 (Russia now in), Jutland 33.5 v 45.5; 40 of 68 plays by the clock (Tsushima none: quiet 3, done 5) |
 | 2026-10-31 | `f0f12952` | A search's line is its admiral's call (spread abreast if each piece could stand alone or get away; `AdmiralLayer.SearchLine`); Åland in 6 km of haze (`balance/bl5d.json`, scenarios only) | 7 of 14 sides within 2x; the record's loser lost more in 25 of 44; Åland 4.8 v 2.9 (every seed a fight); Heligoland 1.5 v 9.8 (3-20), Dogger 3.1 v 8.8, Tsushima 3.9 v 2.9, Jutland 26.0 v 48.8 (Britain now in); Dover ends time 8 of 8 (was done 1) |
+| 2026-10-31 | `197437df` | Striking colours, abandoning and scuttling (`striking.md` SK1-SK5; `balance/sk.json`, scenarios only) | 6 of 14 sides within 2x; the record's loser lost more in 25 of 44; Heligoland 3.1 v 10.1, Dogger 4.4 v 7.4, Tsushima 3.9 v 3.1, Jutland 31.8 v 49.8; 41 of 68 plays by the clock (was 40): the clock ends are the commanders', not stopped cripples. Given up: 7 struck, 32 scuttled, 281 abandoned; abandoning off (A/B) moves the losses within the noise |

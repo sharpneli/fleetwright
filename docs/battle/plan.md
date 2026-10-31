@@ -31,6 +31,7 @@ objectives and a result (6.1, the scenarios' wave 2), toward a playtest alpha; t
 | 4.5 Shell choice | A0-A6 done 2026-10-25 | `shell-choice.md` | two restated matchup anchors for the user |
 | 4.5 Crew | N0-N6 done 2026-10-29 | `crew.md` | decision 11 for the user |
 | 4.5 Night | Q0-Q12f done 2026-10-30 | `night.md` | night hit rates left in fine |
+| 4.5 Striking, abandoning, scuttling | SK0-SK7 done 2026-10-31 | `striking.md` | beaching, a consort's torpedo, the admiral's strike, prize crews ("Not in this cut") |
 | 4.7 Mines | not started | here | |
 | 4.8-4.9 The coarse tier's fighting | J0-J8 done 2026-10-27 | `coarse.md` | one coarse pass: night leftovers, day gunnery drift since J7 |
 | 4.11 Collisions and ramming | not started | here | |

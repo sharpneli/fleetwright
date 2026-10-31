@@ -2,7 +2,7 @@
 
 Status: **drafted 2026-10-31**; the user's decisions the same day ("Decided"); the research in the same day
 (`research/simulation/striking-colours.md`, cited as SC with its R1-R8); planned against it and the code ("The plan,
-after the research"), then built.
+after the research"), then built the same day (SK0-SK7, "The steps (as built)").
 Updated: 2026-10-31
 
 Step letters **SK** (free in the docs).
@@ -150,16 +150,69 @@ crews and tows (decision 3); running for a neutral port; white flags and partial
 holding his ships; sea temperatures by area and month for the survivors; every captain's temper drawn at load (a choice
 for the user: it would move the whole balance, not only this call).
 
-## The steps (as built)
+## The steps (as built, 2026-10-31)
 
 - **SK0 The yardstick:** the panel at `f0f12952` (`balance/bl5d.json`) is the before: 40 of 68 plays by the clock.
-- **SK1 Her state:** `ShipCondition.GivenUp` (Struck, Abandoned, Scuttled) and when, the damage system's commands
-  and their effects; the snapshot, the hash, the combat log, the card and the rail.
-- **SK2 The captain's call:** the pressures and the call above, the doctrine fields, the settings.
-- **SK3 Read by the enemy:** `SeenFlags.Struck`, `Contact.Out`.
-- **SK4-SK5 The ends and the result:** `Aims.Afloat`, encounters, the result's ways of going.
-- **SK6 Survivors:** rough, at the result.
-- **SK7 The panel:** before and after; the scenarios' doctrine from the record.
+- **SK1 Her state** (`057b7a2b`): `ShipCondition.GivenUp` (ColoursDown, Abandoned, Scuttled, with their times), its own
+  field beside `ShipStatus`, not two more values of it: a struck or abandoned ship is still afloat, and the water goes
+  on deciding (`ShipStatus` stays the physics). The damage system's commands `StrikeColours`, `Abandon`, `Scuttle`: she
+  stops, her guns go quiet, she leaves her group; struck, her guns, tubes and searchlights stand down and her men stay at
+  the pumps and the conn (`Functions.StoodDown`); abandoned, nothing is worked (no plant, no pumps, no parties, no
+  firefighting), her last men off `AbandonLeadS` + `AbandonManS` a man later; scuttled, her charges go `ScuttleSetS`
+  after the order at her flood step, holing each machinery room's floor by `ScuttleChargeM2`, and her watertight doors
+  are left open (`Leaks.OpenDoors`, as at Scapa: holes alone left a light cruiser afloat at 2,750 t, her subdivision
+  holding). `GivingUpTests`: scuttled, a destroyer goes down 17 min after the order, a light and an armoured cruiser
+  about 40 (the record 10-30, Dresden ~30). The snapshot, the hash, the combat log (`CombatEvent.GaveUp`), the card's
+  state line, the rail and our ships' log line.
+- **SK2 The captain's call** (`197437df`, `CaptainLayer.GiveUp.cs`): the pressures and the call above. Two things the
+  tests taught:
+  - **Her trend is the lesser rise of two windows** (`GiveUpTrendS` 5 min): a torpedoed battleship's sudden list read
+    as a steady roll toward capsizing and had her abandoned on her first look (`PlayerHandTests`). A hit's one-off water
+    or list is in one window and not the next; water coming in steadily is in both.
+  - **Stopped by order isn't cornered:** a ship lying still with her plant and rudder whole can get away, so she isn't
+    given up; her steering or her plant must be gone, or the enemy faster.
+  The draws are the world's stream by her entity (a replay says the same). `CaptainsCallTests`: struck or scuttled by
+  doctrine after the delay, fought on with neither, never with her guns whole or no enemy by, never held by hand;
+  abandoned 28 min before she founders.
+- **SK3 Read by the enemy:** `SeenFlags.ColoursDown`, made out by the sightings' own colours test (her type's margin by
+  day, her class's in the dark) and kept for good; `Contact.Lost` became `Contact.Out` (going down, gone or struck), so
+  every consumer that drops a lost contact as a target, a threat or a matchup entry drops a struck one too.
+  `ReadByTheEnemyTests`: the fire on her stops at once, the encounter closes.
+- **SK4-SK5 The ends and the result:** `Aims.Afloat` is false for a ship given up (the aims, "every side done", the
+  commander's losses for breaking off); a given-up ship heats no encounter; the result's `ShipFate` (sunk, taken,
+  struck, scuttled, abandoned; `TakenM` 10 km for "the victor holds the sea about her"), the timeline's
+  `PlayEvent.GaveUp`, the result screen's fates. `ScenarioEndTests`.
+- **SK6 Survivors** (rough, at the result): each lost ship's men alive when she goes, the share got off by the time from
+  the order against the time they need, saved by §3.4's regimes as a ship of either side in the fight is within 4 km
+  or not; the result's men lost and saved. `ScenarioEndTests`: scuttled with an enemy 3 km off, 90% saved (Mainz ~80%);
+  40 km off, 5% (Cöln ~0).
+- **SK7 The panel:** below. The scenarios' doctrine from the record (§1.3): `rn-1914` and `rn-1917` never strike and
+  seldom scuttle (0, 0.3), `german-1914` and the default-preset Germans 0.1 and 0.9, `russia-1904` 0.2 and 0.8, Japan
+  0.1 and 0.5, Cape Sarych's Ottoman side (Goeben and Breslau's German crews) as the Germans; the rest the default
+  preset's 0.3 and 0.5. The launch screen's standing orders tab sets both.
+
+### SK7: the panel (2026-10-31, `balance/sk.json`, scenarios only, at `197437df`)
+
+Against the before (`bl5d.json`, `f0f12952`): **6 of 14 sides within 2x (was 7); the record's loser lost more in 25 of
+44 (25); 41 of 68 plays end by the clock (40).** Losses side by side: Heligoland 3.1 v 10.1 (1.5 v 9.8), Dogger 4.4 v
+7.4 (3.1 v 8.8), Tsushima 3.9 v 3.1 (3.9 v 2.9), Jutland 31.8 v 49.8 (26.0 v 48.8, now HIGH for Britain), Åland 5.1 v
+2.2 (4.8 v 2.9), the small three within a tenth or two. Given up over the 68 plays: 7 struck (none taken: the end comes
+hours later, the victor long gone), 32 scuttled, 281 abandoned (about four lost ships in ten had the order first, most
+of them going anyway).
+
+- **The ends didn't move: the stopped cripple was not what held them.** Dogger Bank's 8 of 8 by the clock (one seed
+  traced): both commanders still in battle at 15:00, their units on tasks, no cripple in an encounter. The clock ends
+  are the commanders' (pursuits and searches that don't give up, BL5's diagnosis), and the small scenarios' parting;
+  that's BL5's line, not this step's.
+- **The British losses rose a little, within the noise.** An A/B with abandoning switched off (`AbandonMarginS`
+  −1e12, the same seeds): Heligoland Britain 1.5 off v 3.1 on, Dogger 2.9 v 4.4, but Jutland 37.5 v 31.8 the other
+  way and German Dogger 8.8 v 7.4; Heligoland's British range is 0-16 a seed. No clear sign that ships are left that
+  damage control would have saved; to watch at more seeds.
+- **Strikes are rare, as the record's navies were:** the British never, the Germans one in ten. A taken prize needs a
+  victor by her at the end; none was.
+
+**Left, named:** a ship flooding outside any fight while every captain is idle isn't judged until something wakes the
+AI (the captains wake on a contact or an order; in play a hit comes with one); the rest of "Not in this cut" above.
 
 ## The steps (proposed, as drafted)
 
