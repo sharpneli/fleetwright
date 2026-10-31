@@ -179,7 +179,8 @@ public readonly record struct SideEnd(string Name, int Ships, double Tonnes, int
     int Hits, int Torpedoes);
 
 /// <summary>A ship's fate: lost (how and when) or afloat (damaged or not), the hits she took.</summary>
-public readonly record struct ShipEnd(int Entity, int Side, string Name, bool Lost, Combat.LossKind Loss, long LossMs, bool Damaged, int Hits);
+public readonly record struct ShipEnd(int Entity, int Side, string Name, bool Lost, Combat.LossKind Loss, long LossMs, bool Damaged, int Hits,
+    Combat.GivenUp Given = Combat.GivenUp.None, bool Taken = false);
 
 /// <summary>A mount's state as a ship card shows it: ready, loading, jammed in train, down for a while (crew stunned,
 /// power tripped), or out (wrecked, disabled, its magazine flooded or gone).</summary>

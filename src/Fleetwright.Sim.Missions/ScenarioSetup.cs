@@ -702,6 +702,9 @@ public static class DoctrineRules
         new(DoctrineField.WhenLit, "When lit at night", [((double)WhenLit.TurnAway, "lights out, turn away"), ((double)WhenLit.FightOn, "fight on")]),
         new(DoctrineField.NightSpacingShare, "Lines at night", [(0.5, "close up to half"), (1, "the day's spacing")]),
         new(DoctrineField.Darkened, "Darkened at night", [(0, "no"), (1, "no lights, fire once fired on")]),
+        // a hopeless ship (docs/battle/striking.md): each captain's temper and her crew's state move it either way
+        new(DoctrineField.StrikeColours, "Hopeless ships strike", [(0, "never"), (0.1, "rarely"), (0.2, "seldom"), (0.3, "sometimes"), (1, "when hopeless")]),
+        new(DoctrineField.Scuttle, "Hopeless ships not struck are scuttled", [(0, "never"), (0.3, "seldom"), (0.5, "often"), (0.8, "mostly"), (0.9, "nearly always")]),
     ];
 
     public static Rule? Of(DoctrineField f) => Array.Find(All, r => r.Field == f);

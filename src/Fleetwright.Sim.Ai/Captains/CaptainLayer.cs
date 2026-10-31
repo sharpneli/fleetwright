@@ -144,6 +144,11 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         public bool StarHeld;           // the player's: his star shell task (a contact or a point) is the player's
         public long FiredOnMs;          // when she or her squadron was last fired upon, darkened (0: never; docs/battle/night.md Q9)
         public bool Holding;            // darkened in the dark, not fired upon lately: his guns hold (as of his last think)
+        public long EndLookMs, EndWindowMs;   // his last look at her (0: none yet; docs/battle/striking.md SK2), and when his window on her water and list began
+        public double EndWaterT, EndHeelDeg;  // her water and list at its start
+        public double WaterRate, HeelRate, WaterTrend, HeelTrend;   // their rise over the last window, and the lesser of the last two (t/s, °/s from upright)
+        public long HopelessMs, CallMs; // since when she's been hopeless and cornered (0: she isn't), and when his call falls due
+        public bool FightsOn;           // his call made: she fights on (abandoned still once she won't float)
     }
 
     /// <summary>What a battery's shell was last judged on (docs/battle/shell-choice.md A3): its target as the picture had
@@ -286,6 +291,8 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         int e = c.Entity, slot = ctx.Ships.SlotOf(e);
         if (slot < 0)
             return;   // dropped or never made: an order that reached no ship
+        if (ctx.Ships.Combat.Condition(slot).IsGivenUp)
+            return;   // her colours down or her men off her: she takes no orders (docs/battle/striking.md)
         var code = (AiCommand)c.Code;
         var from = OrderFrom.Of(c);
         switch (code)
@@ -475,8 +482,8 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
                 Remove(i--);   // the ship is gone
                 continue;
             }
-            if (!IsActive(cap) || ctx.Ships.Combat.Condition(slot).Status != ShipStatus.Afloat)
-                continue;   // nothing to do, or his ship going down
+            if (!IsActive(cap) || ctx.Ships.Combat.Condition(slot) is not { Status: ShipStatus.Afloat, IsGivenUp: false })
+                continue;   // nothing to do, his ship going down, or given up (docs/battle/striking.md)
             var own = ctx.Ships[slot];
             if (cap.SmokeMade && cap.Order != CaptainOrder.Home)
                 CoverRetreat(ctx, ref cap, own, slot, near: false);   // another order: the smoke he made for his retreat stops
@@ -568,6 +575,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         HurtPass(ctx);   // first: it starts the hurt flag afresh, the fire pass's hurt ships add to it
         if (Fighting)
             FirePass(ctx);
+        EndPass(ctx);   // the captains' call on their ships' ends (docs/battle/striking.md SK2)
         HeldLightsPass(ctx);
         Recount();
     }
@@ -730,6 +738,21 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
                 h.Add(c.StarHeld);
                 h.Add(c.FiredOnMs);
                 h.Add(c.Holding);
+            }
+            if (c.EndLookMs != 0 || c.FightsOn)
+            {
+                h.Add(0x5Cu);   // only then: worlds where no captain has judged his ship's end hash as before
+                h.Add(c.EndLookMs);
+                h.Add(c.EndWindowMs);
+                h.Add(c.EndWaterT);
+                h.Add(c.EndHeelDeg);
+                h.Add(c.WaterRate);
+                h.Add(c.HeelRate);
+                h.Add(c.WaterTrend);
+                h.Add(c.HeelTrend);
+                h.Add(c.HopelessMs);
+                h.Add(c.CallMs);
+                h.Add(c.FightsOn);
             }
             c.Track?.Hash(ref h);
         }

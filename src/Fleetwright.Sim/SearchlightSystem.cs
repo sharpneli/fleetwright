@@ -253,7 +253,7 @@ public sealed class SearchlightSystem : IWorldSystem
         aim = default;
         var pic = world.Sightings.Of(ship.Side);
         int ci = pic?.IndexOf(target) ?? -1;
-        if (ci < 0 || pic![ci].Lost)
+        if (ci < 0 || pic![ci].Out)
             return false;
         ref readonly var c = ref pic[ci];
         if (c.InSight && world.Ships.Store.SlotOf(target) is >= 0 and var ts)

@@ -184,7 +184,7 @@ public sealed partial class CaptainLayer
         for (int i = 0; i < pic.Count; i++)
         {
             ref readonly var c = ref pic[i];
-            if (c.Lost || c.InSight && c.Foe || c.TakenForFriend(ctx.NowMs, ctx.Settings))
+            if (c.Out || c.InSight && c.Foe || c.TakenForFriend(ctx.NowMs, ctx.Settings))
                 continue;
             double d = Earth.Distance(own.Position, c.Position + c.Velocity * ((ctx.NowMs - c.EstMs) / 1000.0));
             if (d < bestD)
@@ -201,7 +201,7 @@ public sealed partial class CaptainLayer
         for (int i = 0; pic != null && i < pic.Count; i++)
         {
             ref readonly var c = ref pic[i];
-            if (c.Lost)
+            if (c.Out)
                 continue;
             var q = c.Position + c.Velocity * ((ctx.NowMs - c.EstMs) / 1000.0);
             double d = (q - own.Position).LengthSquared;
@@ -245,7 +245,7 @@ public sealed partial class CaptainLayer
     {
         distanceM = double.MaxValue;
         int ci = pic?.IndexOf(target) ?? -1;
-        if (ci < 0 || pic![ci].Lost)
+        if (ci < 0 || pic![ci].Out)
             return false;
         ref readonly var c = ref pic[ci];
         distanceM = Earth.Distance(own.Position, c.Position + c.Velocity * ((ctx.NowMs - c.EstMs) / 1000.0));

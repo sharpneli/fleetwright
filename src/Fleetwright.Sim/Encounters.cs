@@ -36,6 +36,7 @@ public sealed class Encounters
     long[] keys = [];
     Vec3d[] pos = [];
     byte[] side = [];
+    bool[] quit = [];   // given up (docs/battle/striking.md SK5): out of the war, she heats nothing
     sbyte[] heat = [];   // per cluster root: 2 ships at war within the range, 1 within the range and margin, else 0
     // the occupied cubes: their keys (sorted), first ship in order, count, coordinates, and their one side (-1 mixed)
     long[] cubeKey = [];
@@ -91,6 +92,7 @@ public sealed class Encounters
             slots[k] = s;
             pos[k] = ship.Position;
             side[k] = ship.Side;
+            quit[k] = store.Combat.Condition(s).IsGivenUp;
             oldId[k] = Of(s, ship.Entity);
             keys[k] = Key(Cube(pos[k].X, cell), Cube(pos[k].Y, cell), Cube(pos[k].Z, cell));
             order[k] = k;
@@ -220,7 +222,7 @@ public sealed class Encounters
             for (int j = c == d ? i + 1 : cubeStart[d]; j < cubeStart[d] + cubeCount[d]; j++)
             {
                 int b = order[j];
-                if (!relations.Hostile(side[a], side[b]))
+                if (!relations.Hostile(side[a], side[b]) || quit[a] || quit[b])
                     continue;
                 double d2 = (pos[a] - pos[b]).LengthSquared;   // the chord: never more than the way round
                 if (d2 > r2)
@@ -384,6 +386,7 @@ public sealed class Encounters
         Array.Resize(ref oldId, c);
         Array.Resize(ref keys, c);
         Array.Resize(ref pos, c);
+        Array.Resize(ref quit, c);
         Array.Resize(ref side, c);
         Array.Resize(ref heat, c);
         Array.Resize(ref cubeKey, c);

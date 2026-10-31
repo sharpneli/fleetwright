@@ -48,8 +48,9 @@ public sealed partial class CaptainLayer
 
     bool hurtAny;   // a ship hurt as of the passes: her captain thinks for her reliefs
 
-    /// <summary>Whether any ship afloat has men out of action (her captain thinks for her reliefs): as the passes last saw
-    /// it, or while none was, by a look over the ships (a first hit outside a fight).</summary>
+    /// <summary>Whether any ship afloat has men out of action (her captain thinks for her reliefs) or water aboard (he
+    /// judges whether she'll float, docs/battle/striking.md SK2): as the passes last saw it, or while none was, by a look
+    /// over the ships (a first hit outside a fight).</summary>
     bool Hurt()
     {
         if (hurtAny)
@@ -57,7 +58,7 @@ public sealed partial class CaptainLayer
         if (Store is not { } store)
             return false;
         for (int slot = 0; slot < store.Slots; slot++)
-            if (store.IsAlive(slot) && store.Combat.Condition(slot) is { CrewLost: > 0, Status: ShipStatus.Afloat })
+            if (store.IsAlive(slot) && store.Combat.Condition(slot) is { Status: ShipStatus.Afloat, Abandoned: false } k && (k.CrewLost > 0 || k.WaterT > 0))
                 return true;
         return false;
     }
@@ -66,7 +67,7 @@ public sealed partial class CaptainLayer
     void Crew(in AiContext ctx, ShipState own, int slot, bool fighting)
     {
         var k = ctx.Ships.Combat.Condition(slot);
-        if (k.Status != ShipStatus.Afloat || k.ClosedUp.Length == 0)
+        if (k.Status != ShipStatus.Afloat || k.IsGivenUp || k.ClosedUp.Length == 0)
             return;
         var cls = own.Handling.Class;
         _ = PlanOf(cls);   // made at her first look (her class's stations, the scratch sized for them), not when she's first hurt
@@ -165,7 +166,7 @@ public sealed partial class CaptainLayer
             if (pic != null)
                 for (int i = 0; i < pic.Count; i++)
                 {
-                    if (!pic[i].InSight || pic.Lost(pic[i].Entity) || !ctx.World.Relations.Hostile(own.Side, pic[i].Side))
+                    if (!pic[i].InSight || pic.Out(pic[i].Entity) || !ctx.World.Relations.Hostile(own.Side, pic[i].Side))
                         continue;
                     var list = sideSeen[side] ??= new (Vec3d, bool)[64];
                     if (sideSeenCount[side] == list.Length)

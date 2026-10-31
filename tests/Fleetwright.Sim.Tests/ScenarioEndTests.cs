@@ -69,6 +69,26 @@ public class ScenarioEndTests(ITestOutputHelper output)
         Assert.Equal((1, 1, 0, false), (r[1].Ships, r[1].Lost, r[1].Afloat, r[1].AimsMet));
     }
 
+    /// <summary>A side whose last ship struck her colours has nothing left in the fight (docs/battle/striking.md SK5): it's
+    /// decided, the timeline says she struck, and she's lost: taken with the enemy by her, struck (a hulk) with him far
+    /// off; a scuttled one counts as scuttled.</summary>
+    [Fact]
+    public void A_side_whose_last_ship_strikes_has_lost_her_taken_if_the_enemy_holds_the_sea_about_her()
+    {
+        foreach (var (km, what, want) in new[] { (5.0, 0, ShipFate.Taken), (40.0, 0, ShipFate.Struck), (5.0, 1, ShipFate.Scuttled) })
+        {
+            var (_, end, start) = Play(Two(km), Settings, first: (w, start) =>
+                w.Apply(what == 0 ? DamageSystem.StrikeColours(Named(start, "East")) : DamageSystem.Scuttle(Named(start, "East"))));
+            Assert.Equal(EndReason.Decided, end.Reason);
+            Assert.Contains(end.Timeline, l => l.Kind == PlayEvent.GaveUp && l.Entity == Named(start, "East") && l.Side == 1);
+            var r = end.Result();
+            Assert.Equal((1, 1, 0), (r[1].Ships, r[1].Lost, r[1].Afloat));
+            Assert.Equal(want, end.Fate(Named(start, "East")));
+            Assert.Equal((want == ShipFate.Taken ? 1 : 0, want == ShipFate.Struck ? 1 : 0, want == ShipFate.Scuttled ? 1 : 0), (r[1].Taken, r[1].Struck, r[1].Scuttled));
+            Assert.Equal(ShipFate.Afloat, end.Fate(Named(start, "West")));
+        }
+    }
+
     [Fact]
     public void Time_runs_out_at_until()
     {

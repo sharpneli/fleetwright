@@ -103,11 +103,11 @@ public sealed partial class AdmiralLayer
             captains.HoldTorpedoes(g.Line[i], true);   // for the signal
 
         var pic = ctx.World.Sightings.Of(guide.Side);
-        if (a.Attack is AttackPhase.None or AttackPhase.Gain && (!ctx.Picture.TryGet(guide.Side, a.AttackTarget, out _) || pic?.Lost(a.AttackTarget) == true))
+        if (a.Attack is AttackPhase.None or AttackPhase.Gain && (!ctx.Picture.TryGet(guide.Side, a.AttackTarget, out _) || pic?.Out(a.AttackTarget) == true))
         {
             // the target: the one ordered while it's held and not seen going down, else the biggest in sight, the nearest first
             int ordered = new Unit(a.Target).Entity;
-            a.AttackTarget = ordered != 0 && ctx.Picture.TryGet(guide.Side, ordered, out _) && pic?.Lost(ordered) != true ? ordered : Biggest(ctx, guide);
+            a.AttackTarget = ordered != 0 && ctx.Picture.TryGet(guide.Side, ordered, out _) && pic?.Out(ordered) != true ? ordered : Biggest(ctx, guide);
             if (a.AttackTarget == 0)
             {
                 a.Attack = AttackPhase.None;
@@ -116,7 +116,7 @@ public sealed partial class AdmiralLayer
             if (a.Attack == AttackPhase.Gain)
                 a.AttackMs = now;
         }
-        if (!ctx.Picture.TryGet(guide.Side, a.AttackTarget, out var t) || pic?.Lost(a.AttackTarget) == true)
+        if (!ctx.Picture.TryGet(guide.Side, a.AttackTarget, out var t) || pic?.Out(a.AttackTarget) == true)
         {
             a.Attack = AttackPhase.None;   // lost, or seen going down: chosen again
             return false;

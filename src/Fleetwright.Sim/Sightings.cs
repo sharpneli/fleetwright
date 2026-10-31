@@ -862,7 +862,9 @@ public sealed class Sightings
         con.From = os.Position;
         if (con.Level < ContactLevel.Ship)
             con.Level = ContactLevel.Ship;   // her smoke's contact: now the ship herself
-        con.Seen = SeenOf(ts, tk) | con.Seen & SeenFlags.Gone;
+        con.Seen = SeenOf(ts, tk) | con.Seen & (SeenFlags.Gone | SeenFlags.ColoursDown);
+        if (tk.ColoursDown && (con.Level >= ContactLevel.Class || margin >= SideMargin(lookNight.SkyCdM2)))
+            con.Seen |= SeenFlags.ColoursDown;   // her colours, where they can be made out: her type's margin by day, her class's in the dark (SK3)
         con.Shape = margin;
         Identify(ref con, ts, margin, d, ref r, classesInUse);
     }

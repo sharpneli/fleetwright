@@ -133,7 +133,7 @@ public sealed class TacticalPicture(SeenContacts seen, Matchups matchups)
         return v;
     }
 
-    static bool InSight(Picture pic, int i) => pic[i].InSight && !pic[i].Lost;
+    static bool InSight(Picture pic, int i) => pic[i].InSight && !pic[i].Out;
 
     static int Find(int[] parent, int i)
     {

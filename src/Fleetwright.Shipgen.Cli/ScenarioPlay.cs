@@ -465,13 +465,21 @@ static class ScenarioPlay
                                      (l.Count != 0 ? $" {UnitName(l.Count)}" : "") +
                                      $" ({Words(((Fleetwright.Sim.Ai.Commanders.CommanderWhy)(l.Other % 256)).ToString())})",
                 PlayEvent.End => $"the end: {Why((EndReason)l.Count)}",
+                PlayEvent.GaveUp => $"{SideName(l.Side)}'s {Name(l.Entity)}: " + ((Fleetwright.Sim.Combat.GivenUp)l.Count switch
+                {
+                    var g when (g & Fleetwright.Sim.Combat.GivenUp.Scuttled) != 0 => "SCUTTLED, her men ordered off",
+                    var g when (g & Fleetwright.Sim.Combat.GivenUp.ColoursDown) != 0 && (g & Fleetwright.Sim.Combat.GivenUp.Abandoned) != 0 => "struck, her men ordered off",
+                    var g when (g & Fleetwright.Sim.Combat.GivenUp.ColoursDown) != 0 => "STRIKES HER COLOURS",
+                    _ => "ABANDONED",
+                }),
                 _ => l.Kind.ToString(),
             });
         Console.WriteLine();
         Console.WriteLine($"the result ({Why(end.Reason)} at {Clock(s, end.EndMs)}, played in {wall:F1} s):");
         foreach (var r in result)
             Console.WriteLine($"  {r.Name,-12} {r.Ships,4} ships {r.Tonnes,9:0} t   lost {r.Lost,3} ({r.LostTonnes,7:0} t)   damaged afloat {r.Damaged,3}   " +
-                              $"afloat {r.Afloat,3}   hits made {r.Hits,4}   torpedoes {r.Torpedoes,3}   aims {(r.AimsMet ? "met" : "not met")}");
+                              $"afloat {r.Afloat,3}   hits made {r.Hits,4}   torpedoes {r.Torpedoes,3}   aims {(r.AimsMet ? "met" : "not met")}" +
+                              (r.Taken + r.Struck + r.Scuttled + r.Abandoned > 0 ? $"   of the lost: taken {r.Taken}, struck {r.Struck}, scuttled {r.Scuttled}, abandoned {r.Abandoned}" : ""));
         int own = end.Timeline.Count(l => l.Kind == PlayEvent.Lost && l.Other != 0 && end.SideOf(l.Other) == l.Side);
         if (own > 0)
             Console.WriteLine($"  {own} of the losses were last hit by their own side (shells and torpedoes hit whatever is in their way)");

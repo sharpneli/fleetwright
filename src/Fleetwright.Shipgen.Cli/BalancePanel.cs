@@ -58,6 +58,7 @@ static class BalancePanel
         var json = new List<(string File, string Side, double Lost, int Min, int Max, int? Record, string Verdict, double Hits, double HitPct)>();
         int sidesBanded = 0, sidesIn = 0, ordered = 0, orderedRight = 0;
         var kinds = new int[Enum.GetValues<LossKind>().Length];
+        var givenAll = new int[4];   // taken, struck, scuttled, abandoned (docs/battle/striking.md SK5)
         foreach (var c in cases)
         {
             var s = scenarios[c.File];
@@ -99,15 +100,21 @@ static class BalancePanel
                     by[k] += x.LostBy[k];
             for (int k = 0; k < by.Length; k++)
                 kinds[k] += by[k];
-            if (by.Sum() > 0)
-                Console.WriteLine($"  how they went: {Kinds(by)}");
+            var given = new int[4];
+            foreach (var x in p)
+                foreach (var r in x.Result)
+                    (given[0], given[1], given[2], given[3]) = (given[0] + r.Taken, given[1] + r.Struck, given[2] + r.Scuttled, given[3] + r.Abandoned);
+            for (int k = 0; k < 4; k++)
+                givenAll[k] += given[k];
+            if (by.Sum() > 0 || given.Sum() > 0)
+                Console.WriteLine($"  how they went: {Kinds(by)}{Given(given)}");
         }
 
         if (cases.Count > 0)
         {
             Console.WriteLine();
             Console.WriteLine($"the scenarios: {sidesIn} of {sidesBanded} sides within about twice the record; the record's loser lost more in {orderedRight} of {ordered} seeds; " +
-                              $"how ships went, all together: {Kinds(kinds)}");
+                              $"how ships went, all together: {Kinds(kinds)}{Given(givenAll)}");
         }
         if (fc.Count > 0)
         {
@@ -163,6 +170,9 @@ static class BalancePanel
         }
         return 0;
     }
+
+    /// <summary>Of the lost, those given up (striking.md SK5): taken, struck, scuttled, abandoned, as counts over the seeds.</summary>
+    static string Given(int[] g) => g.Sum() == 0 ? "" : $"; given up: taken {g[0]}, struck {g[1]}, scuttled {g[2]}, abandoned {g[3]}";
 
     static string Kinds(int[] by)
     {

@@ -25,6 +25,9 @@
   "readiness": { "Russia": "closed up", "Ottoman Empire": "closed up" },
   "damage_control": { "Russia": "1905", "Ottoman Empire": "1916" },
   "fire_discipline": { "Russia": "independent", "Ottoman Empire": "german" },
+  // giving a hopeless ship up (docs/battle/striking.md): the Russians as in 1904-05, scuttling first; Goeben and Breslau's
+  // German crews as the German navy, almost never striking [EST, research/simulation/striking-colours.md §1.3]
+  "doctrine": { "Russia": { "preset": "default", "StrikeColours": 0.2, "Scuttle": 0.8 }, "Ottoman Empire": { "preset": "default", "StrikeColours": 0.1, "Scuttle": 0.9 } },
   "player": "Ottoman Empire",
   "until": "1914-11-18T16:00",
   "aims": { "Russia": "destroy everyone", "Ottoman Empire": "destroy everyone" },

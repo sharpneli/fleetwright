@@ -80,10 +80,13 @@ public sealed partial class MapScene
         resultShips.Clear();
         foreach (var x in end.Ships)
         {
+            // her people's call first (docs/battle/striking.md SK5), then how she went down
+            string given = (x.Given & GivenUp.Scuttled) != 0 ? "scuttled" : x.Taken ? "taken" : (x.Given & GivenUp.ColoursDown) != 0 ? "struck her colours"
+                : (x.Given & GivenUp.Abandoned) != 0 ? "abandoned" : "";
             string fate = x.Lost
-                ? $"sunk {new WorldTime(x.LossMs).ToUtc():HH:mm} · {x.Loss switch { LossKind.Magazine => "her magazine", LossKind.Capsized => "capsized", LossKind.BrokeInTwo => "broke in two", _ => "foundered" }}"
-                : x.Damaged ? $"damaged · {x.Hits} hits" : x.Hits > 0 ? $"{x.Hits} hits" : "unharmed";
-            resultShips.Add((x.Name, fate, x.Lost, x.Side));
+                ? $"{(given.Length > 0 ? given + " · " : "")}sunk {new WorldTime(x.LossMs).ToUtc():HH:mm} · {x.Loss switch { LossKind.Magazine => "her magazine", LossKind.Capsized => "capsized", LossKind.BrokeInTwo => "broke in two", _ => "foundered" }}"
+                : given.Length > 0 ? given : x.Damaged ? $"damaged · {x.Hits} hits" : x.Hits > 0 ? $"{x.Hits} hits" : "unharmed";
+            resultShips.Add((x.Name, fate, x.Lost || given.Length > 0, x.Side));
         }
         resultOpen = true;
         if (!s.Paused)

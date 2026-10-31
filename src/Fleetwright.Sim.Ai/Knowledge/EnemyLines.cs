@@ -27,14 +27,14 @@ public sealed class EnemyLines(SeenContacts seen)
             return;
         if (!pic![ti].InSight)
         {
-            if (!pic[ti].Lost)
+            if (!pic[ti].Out)
                 into.Add(target);
             return;
         }
         var type = pic[ti].Type;
         // one seen going down is no target: the line is chained from where she is, without her
         var (at, v, _) = pic.EstimateAt(ti, world.Time.Ms, world.Settings);
-        int skip = pic[ti].Lost ? 1 : 0;
+        int skip = pic[ti].Out ? 1 : 0;
         if (visited.Length < pic.Count)
             visited = new int[Math.Max(pic.Count, visited.Length * 2)];
         visitStamp++;

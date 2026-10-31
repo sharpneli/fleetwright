@@ -167,12 +167,13 @@ public sealed class WorldSession : IDisposable
                 var k = store.Combat.Condition(slot);
                 bool gone = lost.TryGetValue(x.Entity, out var l);
                 ships.Add(new ShipEnd(x.Entity, x.Side, start.ShipNames.GetValueOrDefault(x.Entity) ?? $"{x.Handling.Class.Name} #{x.Entity}",
-                    gone, gone ? (Sim.Combat.LossKind)l.Count : Sim.Combat.LossKind.None, gone ? l.Ms : 0, k is { Damaged: true }, k?.Hits ?? 0));
+                    gone, gone ? (Sim.Combat.LossKind)l.Count : Sim.Combat.LossKind.None, gone ? l.Ms : 0, k is { Damaged: true }, k?.Hits ?? 0,
+                    end.GivenUpOf(x.Entity), end.Fate(x.Entity) == ShipFate.Taken));
             }
             foreach (var (entity, l) in lost)
                 if (!seen.Contains(entity))
                     ships.Add(new ShipEnd(entity, end.SideOf(entity), start.ShipNames.GetValueOrDefault(entity) ?? $"#{entity}", true,
-                        (Sim.Combat.LossKind)l.Count, l.Ms, true, 0));
+                        (Sim.Combat.LossKind)l.Count, l.Ms, true, 0, end.GivenUpOf(entity)));
             return new EndView
             {
                 Reason = end.Reason.ToString().ToLowerInvariant(),

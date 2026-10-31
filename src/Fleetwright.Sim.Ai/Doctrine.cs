@@ -170,6 +170,16 @@ public enum DoctrineField : byte
     /// fires at what fights it, or one that finishes its cripples. After <see cref="Darkened"/>, so the fields' numbers in
     /// logged commands stand.</summary>
     Finish,
+
+    /// <summary>How readily a ship given up strikes her colours, 0-1 (docs/battle/striking.md SK2, decision 1): 0 never
+    /// (Monmouth, the British 1914-18), 1 whenever she's hopeless; each captain's temper (with a spread of his own) and her
+    /// crew's state move it past either end. A navy's doctrine, set per scenario from the record. After
+    /// <see cref="Finish"/>, so the fields' numbers in logged commands stand.</summary>
+    StrikeColours,
+
+    /// <summary>How readily a hopeless ship that hasn't struck is scuttled (her charges set, her men off) rather than fought
+    /// on, 0-1 (SK2: the Germans 1914-18 and the Russians 1904-05 near always, the British seldom).</summary>
+    Scuttle,
 }
 
 /// <summary>Doctrine's Shells: each battery loads the kind its target calls for (the captain's choice, the matchup's
@@ -301,7 +311,7 @@ public sealed class Doctrine(GroupSystem groups, IReadOnlyDictionary<string, dou
         return r;
     }
 
-    public const int FieldCount = (int)DoctrineField.Finish + 1;
+    public const int FieldCount = (int)DoctrineField.Scuttle + 1;
 
     /// <summary>Every field when nothing sets it: a world told nothing (a dev's, a test's) behaves as before doctrine.</summary>
     public static double Default(DoctrineField f) => f switch
@@ -343,6 +353,7 @@ public sealed class Doctrine(GroupSystem groups, IReadOnlyDictionary<string, dou
         DoctrineField.NightSpacingShare => 1,
         DoctrineField.Darkened => 0,
         DoctrineField.Finish => 1,   // as before: every enemy alike
+        DoctrineField.StrikeColours or DoctrineField.Scuttle => 0,   // as before: she fights on till the water decides
         _ => throw new ArgumentOutOfRangeException(nameof(f)),
     };
 

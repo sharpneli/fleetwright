@@ -90,7 +90,7 @@ public sealed class SeenContacts
         v.Fine.Clear(n, world.Settings.FireLineGapM);
         for (int i = 0; i < n; i++)
         {
-            v.InSight[i] = pic[i].InSight && !pic[i].Lost;   // one seen going under is no target, and no threat
+            v.InSight[i] = pic[i].InSight && !pic[i].Out;   // one seen going under or struck is no target, and no threat (striking.md SK3)
             if (!v.InSight[i])
                 continue;
             var (p, vel, _) = pic.EstimateAt(i, now, world.Settings);

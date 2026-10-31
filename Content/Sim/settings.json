@@ -842,7 +842,8 @@
   // the captain's call (SK2): hopeless at 10% of her chief guns or none ready, or sinking within the hour; stopped,
   // steering gone or slower than an enemy in sight within 12 km; then after 20 min (5-50, by his temper and a spread);
   // strike by doctrine less half his temper (spread 0.35 over captains), plus her men shaken, plus 0.2 sinking; abandon
-  // once his own trend of her water and list leaves less than her men's time off and 10 min [EST]
+  // once his own trend of her water and list (the lesser rise of two 5-min windows) leaves less than her men's time off
+  // and 10 min [EST]
   "GiveUpGunsShare": 0.1,
   "GiveUpSinkingS": 3600,
   "GiveUpEnemyM": 12000,
@@ -857,6 +858,8 @@
   "GiveUpLookS": 30,
   "GiveUpTrendS": 300,
   "AbandonMarginS": 600,
+  // a struck ship afloat at the end is taken if an enemy in the fight is nearer her than any friend within 10 km [EST]
+  "TakenM": 10000,
   // torpedoes (docs/battle/fighting.md 4.6; damage-model-research.md §3.4, 05-mechanics-and-games.md A6)
   "TorpedoCapacity": 256,
   "TorpedoEndCapacity": 256,

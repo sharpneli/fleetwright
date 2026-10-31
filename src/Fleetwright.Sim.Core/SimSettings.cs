@@ -2241,12 +2241,17 @@ public sealed record SimSettings
     public double GiveUpShakenShift { get; init; } = 1;
     public double GiveUpSinkingShift { get; init; } = 0.2;
 
-    /// <summary>Her captain's own reading of her water and list, s: a look this often, its trend over this long; she's
-    /// abandoned once the time left by it is under the time to get her men off and this [EST, §3.2: the order 2-10 min
-    /// after "she won't float"].</summary>
+    /// <summary>Her captain's own reading of her water and list, s: a look this often, their trend the lesser rise of the
+    /// last two windows this long (a hit's one-off list is no trend); she's abandoned once the time left by it is under the
+    /// time to get her men off and this [EST, §3.2: the order 2-10 min after "she won't float"].</summary>
     public double GiveUpLookS { get; init; } = 30;
     public double GiveUpTrendS { get; init; } = 300;
     public double AbandonMarginS { get; init; } = 600;
+
+    /// <summary>A struck ship afloat at the end is taken (SK5, decision 3: the victor holds the sea about her) if a ship of
+    /// a side at war, in the fight, is nearer her than any of her own within this, m [EST: in sight and in reach of a
+    /// boarding party].</summary>
+    public double TakenM { get; init; } = 10_000;
 
     // ------------------------------------------------------------------ torpedoes (docs/battle/fighting.md 4.6)
 

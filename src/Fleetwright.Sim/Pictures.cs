@@ -30,8 +30,9 @@ public enum ShipType : byte
 
 /// <summary>What an observer makes out of a ship's condition (docs/battle/fighting.md 4.3b: the enemy sees only what can
 /// be seen): low in the water, a list, trimmed by the bow or the stern, fires, stopped, its guns silent (a damaged ship not
-/// seen firing for a while: docs/battle/crew.md N5b), going under; and seen to go. Whether it's done for is the
-/// observer's judgement (<see cref="Contact.DoneFor"/>).</summary>
+/// seen firing for a while: docs/battle/crew.md N5b), going under; and seen to go; her colours seen down (docs/battle/
+/// striking.md SK3: struck, made out where her colours can be, and for good). Whether it's done for is the observer's
+/// judgement (<see cref="Contact.DoneFor"/>).</summary>
 [Flags]
 public enum SeenFlags : ushort
 {
@@ -45,6 +46,7 @@ public enum SeenFlags : ushort
     Silent = 64,
     GoingDown = 128,
     Gone = 256,
+    ColoursDown = 512,
 }
 
 /// <summary>A ship as a navy holds it (docs/world/architecture.md "Knowledge"; docs/battle/plan.md step 3.2d): keyed on
@@ -107,8 +109,9 @@ public struct Contact
     /// <see cref="SimSettings.ChallengeTrustS"/>, not since known for a foe).</summary>
     public readonly bool TakenForFriend(long now, SimSettings s) => !Foe && FriendMs > 0 && now - FriendMs < s.ChallengeTrustS * 1000;
 
-    /// <summary>Seen going down or gone: no target, no threat (docs/battle/fighting.md 4.3b).</summary>
-    public readonly bool Lost => (Seen & (SeenFlags.GoingDown | SeenFlags.Gone)) != 0;
+    /// <summary>Out of the fight as seen: going down, gone, or her colours down (docs/battle/fighting.md 4.3b,
+    /// docs/battle/striking.md SK3): no target, no threat, no matchup entry.</summary>
+    public readonly bool Out => (Seen & (SeenFlags.GoingDown | SeenFlags.Gone | SeenFlags.ColoursDown)) != 0;
 
     /// <summary>How done for she looks, 0-1 (docs/battle/crew.md N5b; fire-control.md F10 "ships seen done for"): burning
     /// and silent as seen, by how long her guns have been quiet past <see cref="SimSettings.SeenSilentS"/> (over as long
@@ -144,8 +147,8 @@ public sealed class Picture
     /// <summary>The slot of the contact on a ship, or -1.</summary>
     public int IndexOf(int entity) => index.TryGetValue(entity, out int i) ? i : -1;
 
-    /// <summary>Whether it holds a ship and sees it going down or gone (<see cref="Contact.Lost"/>).</summary>
-    public bool Lost(int entity) => IndexOf(entity) is int i and >= 0 && contacts[i].Lost;
+    /// <summary>Whether it holds a ship and sees her out of the fight: going down, gone, or struck (<see cref="Contact.Out"/>).</summary>
+    public bool Out(int entity) => IndexOf(entity) is int i and >= 0 && contacts[i].Out;
 
     /// <summary>Room for this many contacts (every ship at sea): a picture grows when the fleets do, not when a contact
     /// comes in (a light seen far, docs/battle/night.md Q2, makes many more), so a look never allocates.</summary>

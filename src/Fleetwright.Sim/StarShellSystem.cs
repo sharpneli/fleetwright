@@ -228,7 +228,7 @@ public sealed class StarShellSystem : IWorldSystem
             int ci = pic?.IndexOf(t.Target) ?? -1;
             if (ci < 0)
                 return true;   // not held (yet): nothing to aim at, the task waits
-            if (pic![ci].Lost)
+            if (pic![ci].Out)
                 return false;
             ref readonly var c = ref pic[ci];
             (pos, vel, estMs) = (c.Position, c.Velocity, c.EstMs);

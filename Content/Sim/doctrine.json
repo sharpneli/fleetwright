@@ -71,6 +71,12 @@
     // something better to do"): she draws fire as little as this share of a fighting one's (her range counts this many
     // times further, so anything still fighting in reach comes first); 1 finishes cripples as readily as anything [EST]
     "Finish": 0.1,
+    // a ship given up (docs/battle/striking.md: she can't hurt the enemy, can't get away, and an enemy is in reach): how
+    // readily she strikes her colours (0 never, 1 when hopeless; each captain's temper and her crew's state move it either
+    // way), and, not struck, how readily she's scuttled rather than fought on [EST, research/simulation/striking-colours.md
+    // §1.3: the British 1914-18 0 and seldom, the Germans 0.1 and near always, the Russians 1904-05 0.2 and mostly]
+    "StrikeColours": 0.3,
+    "Scuttle": 0.5,
     // a ship in sight that can't be made out, friend or foe (docs/battle/night.md Q6): "challenge" her with the bridge
     // lamp first (unanswered she's a foe; the lamp shows the challenger), "hold fire" until she's made out or gives herself
     // away (fires on one of ours, lights one, challenges), or "fire"; a bold captain fires anyway where no friend is
@@ -93,18 +99,21 @@
   },
   // Night doctrine one a period (docs/battle/night.md Q12; research/simulation/night-fighting/d-identification-and-doctrine.md
   // section 3, written against done), each over the default by "from". The period, not the navy, names it where they
-  // shared one; a side's scenario takes its own.
+  // shared one; a side's scenario takes its own. Each also carries how its navy gave a hopeless ship up (docs/battle/
+  // striking.md; research/simulation/striking-colours.md §1.3 [EST]): the RN never struck and seldom scuttled, abandoning
+  // as she sank; the Germans almost never struck and scuttled; the Russians of 1904-05 scuttled first and struck only to
+  // save a sinking ship's men.
   // The RN 1914-16: avoid a night action; searchlights hand-worked by voice pipe and little used (ships that kept them
   // off weren't seen: Nottingham, Birmingham), on only once fired on; no star shell ("at that time unfamiliar to us");
   // challenge an unknown and withhold fire until she replies; destroyers challenged at 2-10 cables.
-  "rn-1914": { "from": "default", "Searchlights": "when fired on", "StarShell": "never", "Unknowns": "challenge", "ChallengeM": 2000 },
+  "rn-1914": { "from": "default", "Searchlights": "when fired on", "StarShell": "never", "Unknowns": "challenge", "ChallengeM": 2000, "StrikeColours": 0, "Scuttle": 0.3 },
   // The RN after Jutland, 1917-18: searchlights from control positions, star shell, screens ordered to open fire on every
   // ship that approached without challenging where the enemy was expected.
-  "rn-1917": { "from": "default", "Searchlights": "to fire", "StarShell": "to fire", "Unknowns": "fire" },
+  "rn-1917": { "from": "default", "Searchlights": "to fire", "StarShell": "to fire", "Unknowns": "fire", "StrikeColours": 0, "Scuttle": 0.3 },
   // The German navy 1914-16: coloured-lamp challenge shown first, then searchlights trained dark switched on and fire at
   // once (Jellicoe: "excellent"); star shell to find destroyers without showing themselves, as well as to fire.
-  "german-1914": { "from": "default", "Searchlights": "to fire", "StarShell": "to find", "Unknowns": "challenge", "ChallengeM": 2000 },
+  "german-1914": { "from": "default", "Searchlights": "to fire", "StarShell": "to find", "Unknowns": "challenge", "ChallengeM": 2000, "StrikeColours": 0.1, "Scuttle": 0.9 },
   // The Russian navy 1904-05: no challenge in the record; ships swept with their own searchlights for torpedo craft
   // (Tsushima: "revealed their positions ... to spot the attackers"); the officer of the watch fires on an evident attack.
-  "russia-1904": { "from": "default", "Searchlights": "search", "StarShell": "never", "Unknowns": "fire" }
+  "russia-1904": { "from": "default", "Searchlights": "search", "StarShell": "never", "Unknowns": "fire", "StrikeColours": 0.2, "Scuttle": 0.8 }
 }

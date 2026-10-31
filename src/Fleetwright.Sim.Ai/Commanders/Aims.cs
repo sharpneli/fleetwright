@@ -23,10 +23,11 @@ public static class Aims
         _ => throw new ArgumentOutOfRangeException(nameof(aim)),
     };
 
-    /// <summary>Whether a ship is still in the fight: at sea and not going down. A ship going down counts as lost from
-    /// the moment it starts (the combat log's <see cref="CombatEvent.Lost"/>), not when it's gone from the sea.</summary>
+    /// <summary>Whether a ship is still in the fight: at sea, not going down, and not given up (her colours down or her
+    /// men off her: docs/battle/striking.md SK5). A ship going down counts as lost from the moment it starts (the combat
+    /// log's <see cref="CombatEvent.Lost"/>), not when it's gone from the sea; one given up from her people's call.</summary>
     public static bool Afloat(ShipStore store, int slot) =>
-        store.IsAlive(slot) && store.Combat.Condition(slot) is not { Status: not ShipStatus.Afloat };
+        store.IsAlive(slot) && store.Combat.Condition(slot) is not ({ Status: not ShipStatus.Afloat } or { IsGivenUp: true });
 
     /// <summary>Whether any ship of a side at war with this one is afloat.</summary>
     public static bool EnemyAfloat(World w, int side)

@@ -26,7 +26,7 @@
   "damage_control": { "Britain": "1916", "Germany": "1916" },
   // the guns' crews by the navies' practice (docs/battle/crew.md N3a, CUF §5): the RN's casemates manned in reach and a
   // watch on its open guns; the Germans' casemates kept at their guns, their open guns' crews under cover
-  "doctrine": { "Britain": { "preset": "default", "ManCasemates": "in range", "ManOpenGuns": "torpedo craft" }, "Germany": { "preset": "default", "ManCasemates": "always", "ManOpenGuns": "torpedo craft" } },
+  "doctrine": { "Britain": { "preset": "default", "ManCasemates": "in range", "ManOpenGuns": "torpedo craft", "StrikeColours": 0, "Scuttle": 0.3 }, "Germany": { "preset": "default", "ManCasemates": "always", "ManOpenGuns": "torpedo craft", "StrikeColours": 0.1, "Scuttle": 0.9 } },
   "fire_discipline": { "Britain": "rn-1914", "Germany": "german" },
   "player": "Britain",
   // the end: Beatty broke off at 12:45, eighty miles from Heligoland; the afternoon besides
