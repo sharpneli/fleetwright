@@ -269,8 +269,14 @@ public sealed class World
     {
         if (c.System == 0)
             throw new ArgumentException("the world's own commands come from outside");
+        if (Thinking)
+            throw new InvalidOperationException($"a command to system {c.System} issued while the AI thinks: a think's orders go to its outbox");
         Run(in c);
     }
+
+    /// <summary>Set while the AI thinks (docs/battle/workers.md W9): a think takes the world in and gives orders out,
+    /// through its outbox, applied after it; a command issued straight to the world meanwhile is an error.</summary>
+    public bool Thinking { get; set; }
 
     void Run(in Command c)
     {

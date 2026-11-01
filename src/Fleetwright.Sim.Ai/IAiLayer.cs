@@ -33,8 +33,9 @@ public interface IAiLayer
 }
 
 /// <summary>What a layer thinks with: the time, the settings, its own ships (it knows them fully), the picture of
-/// everything else, and the ways to give orders.</summary>
-public readonly ref struct AiContext(World world, IPicture picture, byte system)
+/// everything else, and the ways to give orders. A think's context has an outbox (docs/battle/workers.md W9): its
+/// orders go there and are applied after it; any other context's are applied at once.</summary>
+public readonly ref struct AiContext(World world, IPicture picture, byte system, Outbox? outbox = null)
 {
     public World World { get; } = world;
     public long NowMs => World.Time.Ms;
@@ -47,21 +48,39 @@ public readonly ref struct AiContext(World world, IPicture picture, byte system)
     public UnitOrders Orders => new(system);
 
     /// <summary>A captain's orders to his ship's helm and engines.</summary>
-    public HelmOrders Helm => new(World);
+    public HelmOrders Helm => new(World, Outbox);
 
-    /// <summary>Gives an order the sim made itself: applied at once by the path the player's take, not logged.</summary>
-    public void Issue(in Command c) => World.Issue(c);
+    /// <summary>Where a think's orders go (null: applied at once).</summary>
+    public Outbox? Outbox { get; } = outbox;
+
+    /// <summary>Gives an order the sim made itself, by the path the player's take, not logged: into the think's outbox,
+    /// else applied at once.</summary>
+    public void Issue(in Command c)
+    {
+        if (Outbox != null)
+            Outbox.Add(World, c);
+        else
+            World.Issue(c);
+    }
 }
 
 /// <summary>How a captain works his ship: the helm and engine commands of <see cref="ShipSystem"/>, applied by the same
 /// path as anyone's but not logged (<see cref="World.Issue"/>), since a replay runs the AI again and it gives them
 /// again. Only captains use it: everyone else orders a unit.</summary>
-public readonly struct HelmOrders(World world)
+public readonly struct HelmOrders(World world, Outbox? outbox = null)
 {
-    public void Course(int entity, double headingDeg, double rudderDeg = 0) => world.Issue(ShipSystem.Course(entity, headingDeg, rudderDeg));
-    public void Speed(int entity, double kn) => world.Issue(ShipSystem.Speed(entity, kn));
-    public void ClearRoute(int entity) => world.Issue(ShipSystem.ClearRoute(entity));
-    public void AddWaypoint(int entity, long packedLatLon) => world.Issue(new Command(ShipSystem.Id, (ushort)ShipCommand.AddWaypoint, entity, A: packedLatLon));
-    public void LoopRoute(int entity, bool loop) => world.Issue(ShipSystem.LoopRoute(entity, loop));
-    public void ResumeRoute(int entity) => world.Issue(ShipSystem.ResumeRoute(entity));
+    public void Course(int entity, double headingDeg, double rudderDeg = 0) => Issue(ShipSystem.Course(entity, headingDeg, rudderDeg));
+    public void Speed(int entity, double kn) => Issue(ShipSystem.Speed(entity, kn));
+    public void ClearRoute(int entity) => Issue(ShipSystem.ClearRoute(entity));
+    public void AddWaypoint(int entity, long packedLatLon) => Issue(new Command(ShipSystem.Id, (ushort)ShipCommand.AddWaypoint, entity, A: packedLatLon));
+    public void LoopRoute(int entity, bool loop) => Issue(ShipSystem.LoopRoute(entity, loop));
+    public void ResumeRoute(int entity) => Issue(ShipSystem.ResumeRoute(entity));
+
+    void Issue(in Command c)
+    {
+        if (outbox != null)
+            outbox.Add(world, c);
+        else
+            world.Issue(c);
+    }
 }

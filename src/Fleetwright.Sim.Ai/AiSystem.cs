@@ -128,8 +128,8 @@ public sealed class AiSystem : IWorldSystem
     int fireGen;
 
     /// <summary>The coarse fire watch: torpedoes fired as the tubes come round, between thinks a step apart. While a
-    /// flotilla's signal to fire stands (<see cref="AdmiralLayer.WatchSignals"/>), or a captain's think left a ship with a
-    /// target she couldn't fire at yet (<see cref="CaptainLayer.WatchTorpedoes"/>), woken every
+    /// flotilla's signal to fire stands with a boat of its line, or a captain's think left a ship with a target she
+    /// couldn't fire at yet (<see cref="CaptainLayer.WatchTorpedoes"/>), woken every
     /// <see cref="SimSettings.CaptainPeriodMs"/> until that layer's next think, as the fine tier's thinks go. Nothing while
     /// the layer thinks at that rate itself (the fine tier).</summary>
     void WatchFire(World world)
@@ -145,6 +145,22 @@ public sealed class AiSystem : IWorldSystem
     }
 
     AiContext Context(World world) => new(world, picture, Id);
+
+    readonly Outbox outbox = new();
+
+    /// <summary>A think's context: its orders into the outbox (docs/battle/workers.md W9), the world refusing any other.</summary>
+    AiContext Thinking(World world)
+    {
+        world.Thinking = true;
+        return new(world, picture, Id, outbox);
+    }
+
+    /// <summary>After a think: its orders applied, in the order given.</summary>
+    void Thought(World world)
+    {
+        world.Thinking = false;
+        outbox.Apply(world);
+    }
 
     public void Apply(World world, in Command c)
     {
@@ -176,14 +192,6 @@ public sealed class AiSystem : IWorldSystem
             }
             case AiCommand.AimShip:
                 Aims.Name(c.B & 255, c.B >> 8 & 255, c.Entity);
-                return;
-            case AiCommand.Commander:
-                Commanders.SetMode(c.Entity, (CommanderMode)c.A);
-                WakeAll(world);
-                return;
-            case AiCommand.Automate:
-                Commanders.Automate(u, c.X);
-                WakeAll(world);
                 return;
         }
         bool task = TaskLayer.IsTask(code, source);
@@ -379,7 +387,14 @@ public sealed class AiSystem : IWorldSystem
             if (e.Generation != watchGen)
                 return;
             watchMs = -1;
-            Captains.WatchTracks(Context(world));
+            try
+            {
+                Captains.WatchTracks(Thinking(world));
+            }
+            finally
+            {
+                Thought(world);
+            }
             probes.Add(layerProbes[Array.IndexOf(layers, Captains)], t);
             WakeAll(world);
             WatchTracks(world);
@@ -390,9 +405,16 @@ public sealed class AiSystem : IWorldSystem
             if (e.Generation != fireGen)
                 return;
             fireMs = -1;
-            var ctx = Context(world);
-            Admirals.WatchSignals(ctx);
-            Captains.WatchTorpedoes(ctx);
+            try
+            {
+                var ctx = Thinking(world);
+                Admirals.WatchSignals(ctx);
+                Captains.WatchTorpedoes(ctx);
+            }
+            finally
+            {
+                Thought(world);
+            }
             probes.Add(layerProbes[Array.IndexOf(layers, Captains)], t);
             WatchFire(world);
             return;
@@ -401,7 +423,14 @@ public sealed class AiSystem : IWorldSystem
         if (e.Generation != tickGen[layer])
             return;   // replaced by a sooner one
         nextTick[layer] = -1;
-        layers[layer].Think(Context(world));
+        try
+        {
+            layers[layer].Think(Thinking(world));
+        }
+        finally
+        {
+            Thought(world);
+        }
         probes.Add(layerProbes[layer], t);
         WakeAll(world);   // a layer's orders can give the one below something to do (an admiral's first stations)
         if (layers[layer] == Captains)
