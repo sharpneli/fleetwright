@@ -15,7 +15,8 @@ date** when a step or a sub-plan starts or finishes, and take stock against it f
 2026-10-31); the user's investigation of which real scenarios get them waits, and the rest of the balance round
 (`docs/battle/balance.md`: BL3, BL4) comes next, toward a playtest alpha; then mines, collisions and signals. BL1 was
 reopened 2026-11-01 (BL1j-BL1n: the roll averaged over the hull and counted once, the own-turn kick by rate of turn,
-the panel reading every hit rate beside its range); the user's playtest next.
+the panel reading every hit rate beside its range; then BL1o-q, the gunnery officer's and the captain's judgement under
+fire); salvo chasing for evasion next (balance.md, after BL1q), then the user's playtest.
 
 | Step | State | Plan | Left |
 |---|---|---|---|
