@@ -927,7 +927,7 @@ public sealed class GunnerySystem : IWorldSystem
         if (fc.State != BatteryState.Firing || fc.SalvoPending || !sees ||
             ranging && (dis.LadderStepM > 0 ? fc.Rung >= dis.InFlight : fc.InFlight >= dis.InFlight && waiting))
         {
-            store.Combat.SetFiresForEffect(slot, fc.Battery, fc.State == BatteryState.Firing && fc.Phase == FirePhase.Effect && !fc.Pared);
+            store.Combat.SetFiresForEffect(slot, fc.Battery, fc.State == BatteryState.Firing && fc.Phase == FirePhase.Effect);
             return;
         }
         // the gunnery officer's worth of the salvo (BL1p): while her turn spoils it he holds it for a steadier moment, up to
@@ -950,7 +950,7 @@ public sealed class GunnerySystem : IWorldSystem
             bool spoiled = pNow < settings.FireWorthSteadyShare * pSteady, poor = pCould < floor;
             fc.Pared = spoiled || poor;
             fc.SpoiledMs = !spoiled ? -1 : fc.SpoiledMs < 0 ? now : fc.SpoiledMs;
-            store.Combat.SetFiresForEffect(slot, fc.Battery, fc.Phase == FirePhase.Effect && !fc.Pared);
+            store.Combat.SetFiresForEffect(slot, fc.Battery, fc.Phase == FirePhase.Effect);   // paced or not: her captain holds for it
             if (spoiled && now - fc.SpoiledMs < 1000 * settings.FireWorthWaitReloads * cls.Mounts[mounts[0]].ReloadS)
                 return;   // for her turn to ease
             if (poor && fc.InFlight > 0)

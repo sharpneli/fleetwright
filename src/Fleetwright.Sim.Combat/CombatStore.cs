@@ -254,8 +254,8 @@ public sealed class CombatStore
     /// batteries' seconds may run on different workers).</summary>
     public void SetSees(int slot, int battery, bool value) => sees[slot]![battery] = value;
 
-    /// <summary>Whether a battery fires for effect at the second, its salvos not pared back (docs/battle/balance.md BL1q:
-    /// its captain holds his course for it).</summary>
+    /// <summary>Whether a battery fires for effect at the second, paced or not (docs/battle/balance.md BL1q: its captain
+    /// holds his course for it; a battery holding fire doesn't).</summary>
     public bool FiresForEffect(int slot, int battery) => effect[slot] is { } e && battery < e.Length && e[battery];
 
     /// <summary>The gunnery's word on whether a battery fires for effect (each its own element, as <see cref="SetSees"/>).</summary>

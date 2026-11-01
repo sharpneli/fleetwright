@@ -136,19 +136,22 @@ public class FireOrderTests(ITestOutputHelper output)
     {
         // a battleship at 11 km: the 15" fire, the 6" don't (the matchup has a round of them putting her out with a
         // chance of 7e-6 there, under doctrine's 1.2e-5); at 7 km (1.8e-5) they do. Doctrine's floor at 0, they take her at
-        // 11 km too. A destroyer at 11 km, which a 6" hit may well put out, they take (docs/battle/balance.md BL1r)
-        foreach (var (target, km, floor, takes) in new[] { ("dreadnought", 11.0, 1.2e-5, false), ("dreadnought", 7.0, 1.2e-5, true),
-                     ("dreadnought", 11.0, 0.0, true), ("destroyer", 11.0, 1.2e-5, true) })
+        // 11 km too. A destroyer at 11 km, which a 6" hit may well put out, they take by the round's worth alone, and leave
+        // by the hit floor (1% of their shells: they'd hit her with 0.3% there), at 6 km take (docs/battle/balance.md BL1r)
+        foreach (var (target, km, floor, hitFloor, takes) in new[] { ("dreadnought", 11.0, 1.2e-5, 0.0, false), ("dreadnought", 7.0, 1.2e-5, 0.01, true),
+                     ("dreadnought", 11.0, 0.0, 0.0, true), ("destroyer", 11.0, 1.2e-5, 0.0, true), ("destroyer", 11.0, 1.2e-5, 0.01, false),
+                     ("destroyer", 6.0, 1.2e-5, 0.01, true) })
         {
             var (w, ai) = Make(new Placed("super_dreadnought", 0, 0, 0, 10, 0), new Placed(target, 90, km * 1000, 0, 10, 1));
             w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.SecondaryRoundFloor, floor));
+            w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.SecondaryHitFloor, hitFloor));
             Run(w, 60);
             var cls = Fleet.Get("super_dreadnought").Class!;
             bool any = false;
             for (int b = 0; b < cls.Batteries.Length; b++)
                 if (!cls.Batteries[b].Chief)
                     any |= Target(w, 1, b) == 2;
-            output.WriteLine($"a {target} at {km} km, floor {floor}: main on {Target(w, 1, 0)}, a secondary on her: {any}");
+            output.WriteLine($"a {target} at {km} km, floors {floor} a round, {hitFloor} a shell: main on {Target(w, 1, 0)}, a secondary on her: {any}");
             Assert.Equal(2, Target(w, 1, 0));
             Assert.Equal(takes, any);
         }

@@ -330,8 +330,12 @@ public static class NearMiss
         return true;
     }
 
-    /// <summary>The outside faces that can be wet: the sides and the bottom.</summary>
-    static readonly int[] WetFaces = [0, 1, 3];   // an array: a constant span literal allocates in unoptimised code (RuntimeHelpers.CreateSpan)
+    /// <summary>The outside faces that can be wet: the sides and the bottom (0, 1 and 3; 2 is the weather deck). Walked
+    /// by index, not over an array: a static one is made by the class's initialiser at the process's first near miss, in
+    /// the middle of a fight (docs/battle/balance.md BL1r), and a constant span literal allocates in unoptimised code.</summary>
+    static int WetFaceAt(int j) => j < 2 ? j : 3;
+
+    const int WetFaceCount = 3;
 
     /// <summary>The ship's shock factor: the most of any wetted face's at its nearest point (15 §6.4: one number per ship),
     /// that face's space, point and plate.</summary>
@@ -343,8 +347,8 @@ public static class NearMiss
         if (!(w > 0))
             return 0;
         for (int i = 0; i < c.Cells.Length; i++)
-            foreach (int face in WetFaces)
-                if (WetFace(c, k, i, face, p, water, s, out var pt, out _, out double plate) && Nsf(w, p, surface, pt) is double n && n > best)
+            for (int j = 0; j < WetFaceCount; j++)
+                if (WetFace(c, k, i, WetFaceAt(j), p, water, s, out var pt, out _, out double plate) && Nsf(w, p, surface, pt) is double n && n > best)
                     (best, cell, at, mm) = (n, i, pt, plate);
         return best;
     }
@@ -377,8 +381,9 @@ public static class NearMiss
         // the structure: the shell's seams, face by face
         if (5 * nsf * s.ShockPlateMm / Math.Max(nearMm, 1) >= s.LeakWeepD)
             for (int i = 0; i < c.Cells.Length; i++)
-                foreach (int face in WetFaces)
+                for (int j = 0; j < WetFaceCount; j++)
                 {
+                    int face = WetFaceAt(j);
                     if (!WetFace(c, k, i, face, p, water, s, out var at, out double area, out double mm))
                         continue;
                     double d0 = 5 * Nsf(w, p, surface, at) * s.ShockPlateMm / Math.Max(mm, 1);

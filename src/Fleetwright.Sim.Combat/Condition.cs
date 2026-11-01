@@ -553,7 +553,6 @@ public sealed class ShipCondition
             (JoinStamp, JoinFate, JoinFelt) = (new int[c.NeighbourCount], new byte[c.NeighbourCount], new double[c.NeighbourCount]);
             (FaceStamp, FaceFate, FaceFelt) = (new int[4 * c.Cells.Length], new byte[4 * c.Cells.Length], new double[4 * c.Cells.Length]);
             (FaceArea, FaceMm, FacePoint, FacesReady) = (new double[4 * c.Cells.Length], new double[4 * c.Cells.Length], new P3[4 * c.Cells.Length], false);
-            Blast.Prepare(c, this);   // the class's outside faces now, at her spawn, not at her first burst mid-fight (a near miss's 40 B: balance.md BL1r)
             int groups = c.Components.Length + c.Cells.Length;
             (Gone, Away, RiskK, RiskC, RiskStamp, Touched) = (new int[groups], new int[groups], new double[groups], new double[groups], new int[groups], new int[groups]);
             In = new int[groups];

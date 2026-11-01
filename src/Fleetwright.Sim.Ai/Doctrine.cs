@@ -107,9 +107,9 @@ public enum DoctrineField : byte
     /// or more, as the matchup reckons it (its hit chance by its fire control's level times the chance a hit puts her out,
     /// <see cref="Combat.Matchup.PerRound"/>'s, the contact as she's made out, at her range): what its shells can hurt, not
     /// a battle line its hits would only scratch (the user, 2026-11-01: "at 15km it probably doesn't make sense for the
-    /// 152mm secondaries just to spray all their shots at the enemy battle line"; docs/battle/balance.md BL1r; it was a
-    /// hit chance, 2026-10-27). 0: anything in reach. An ordered Engage fires regardless. Last, so the fields' numbers in
-    /// logged commands stand.</summary>
+    /// 152mm secondaries just to spray all their shots at the enemy battle line"; docs/battle/balance.md BL1r), beside
+    /// <see cref="SecondaryHitFloor"/>'s share of its shells landing. 0: anything in reach. An ordered Engage fires
+    /// regardless. Where the hit floor stood until 2026-11-01, so the fields' numbers in logged commands stand.</summary>
     SecondaryRoundFloor,
 
     /// <summary>When a secondary's casemated guns are closed up (<see cref="ManGuns"/>; docs/battle/crew.md N3a, decision
@@ -183,6 +183,14 @@ public enum DoctrineField : byte
     /// <summary>How readily a hopeless ship that hasn't struck is scuttled (her charges set, her men off) rather than fought
     /// on, 0-1 (SK2: the Germans 1914-18 and the Russians 1904-05 near always, the British seldom).</summary>
     Scuttle,
+
+    /// <summary>A secondary battery firing at will takes only a contact it hits with this share of its shells or more, as
+    /// the matchup reckons it (<see cref="Combat.Matchup.HitChance"/>, by its fire control's level, the contact as she's
+    /// made out, at her range): no splashing at the edge of its reach (the user, 2026-10-27), beside
+    /// <see cref="SecondaryRoundFloor"/>'s worth of a hit (docs/battle/balance.md BL1r: a round that lands seldom isn't worth
+    /// firing however much a hit would do). 0: anything in reach. After <see cref="Scuttle"/>, so the fields' numbers in
+    /// logged commands stand.</summary>
+    SecondaryHitFloor,
 }
 
 /// <summary>Doctrine's Shells: each battery loads the kind its target calls for (the captain's choice, the matchup's
@@ -314,7 +322,7 @@ public sealed class Doctrine(GroupSystem groups, IReadOnlyDictionary<string, dou
         return r;
     }
 
-    public const int FieldCount = (int)DoctrineField.Scuttle + 1;
+    public const int FieldCount = (int)DoctrineField.SecondaryHitFloor + 1;
 
     /// <summary>Every field when nothing sets it: a world told nothing (a dev's, a test's) behaves as before doctrine.</summary>
     public static double Default(DoctrineField f) => f switch
@@ -356,7 +364,8 @@ public sealed class Doctrine(GroupSystem groups, IReadOnlyDictionary<string, dou
         DoctrineField.NightSpacingShare => 1,
         DoctrineField.Darkened => 0,
         DoctrineField.Finish => 1,   // as before: every enemy alike
-        DoctrineField.StrikeColours or DoctrineField.Scuttle => 0,   // as before: she fights on till the water decides
+        DoctrineField.StrikeColours or DoctrineField.Scuttle => 0,
+        DoctrineField.SecondaryHitFloor => 0,   // as before: she fights on till the water decides
         _ => throw new ArgumentOutOfRangeException(nameof(f)),
     };
 
