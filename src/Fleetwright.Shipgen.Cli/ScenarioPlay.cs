@@ -79,7 +79,7 @@ static class ScenarioPlay
                     if (cal >= 200 && !r.PointBlank)
                     {
                         double yaw = Math.Abs(r.YawDegS);
-                        string band = yaw < SteadyYawDegS ? "steady" : yaw < 0.5 ? "0.2-0.5 deg/s" : yaw < settings.HardTurnYawDegS ? "0.5-1 deg/s" : "over 1 deg/s";
+                        string band = yaw < SteadyYawDegS ? "steady" : yaw < 0.5 ? "0.2-0.5 deg/s" : yaw < 1 ? "0.5-1 deg/s" : "over 1 deg/s";
                         var (hs, hh) = helm.GetValueOrDefault(band);
                         helm[band] = (hs + r.Shells, hh + r.Hits);
                         if (yaw >= SteadyYawDegS)

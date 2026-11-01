@@ -770,7 +770,6 @@ public sealed record SimSettings
 
     /// <summary>A reading more than this many sigma off the computer's own prediction is set aside, unless the next is too.</summary>
     public double ReadingGateSigmas { get; init; } = 3;
-    public double HardTurnYawDegS { get; init; } = 1;
 
     /// <summary>After a spot's correction, the next salvo waits this long for the layers to lay on again, s (fire-control.md
     /// F6d: New York's main battery spent 10 s of its 66 at the director, the USN's secondaries of 1929 fired every 7-10 s,
@@ -846,8 +845,8 @@ public sealed record SimSettings
     /// <summary>A plain computer's (one that doesn't take her motion in) Dumaresq has her course set on it by hand: once
     /// she has turned this many degrees from it, its rates are stale and its battery firing for effect goes back to ranging,
     /// her new course set (docs/battle/balance.md BL1o: the Mk IV kept the enemy's relative direction "within a few degrees"
-    /// during own turns, research fire-control-research/computing.md) [EST]. A machine that takes her motion in is put out
-    /// only by a turn past <see cref="HardTurnYawDegS"/>.</summary>
+    /// during own turns, research fire-control-research/computing.md) [EST]. A machine that takes her motion in isn't put
+    /// out by her turns (BL1t): their cost is the own-turn kick, salvo by salvo.</summary>
     public double OwnCourseStaleDeg { get; init; } = 5;
 
     /// <summary>The rate of turn, °/s, a computer's own-turn kick (<c>own_turn_kick_m</c>) is given at: the reference's

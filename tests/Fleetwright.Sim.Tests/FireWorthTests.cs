@@ -157,4 +157,38 @@ public class FireWorthTests(ITestOutputHelper output)
         Assert.True(steady.Turned / steady.Effect < 0.5 * not.Turned / not.Effect, "she turns half as much for each second of fire");
         Assert.InRange(steady.Gap, 400, 900);   // her station kept
     }
+
+    [Fact]
+    public void A_helm_free_computer_keeps_her_through_a_snake_and_ladders_at_its_doubt()
+    {
+        // a Bismarck snaking 40° either way every minute on full rudder, firing by the German ladder at another 15 km off
+        // (the user's playtest, 2026-11-01: her falls "pulsed" far, near, far, 1 km and more): her Rechenstelle takes her
+        // motion in, so her turns don't send her back to ranging, and a ladder's rungs are at the ranging step, the
+        // computer's doubt, never the doctrine's whole 366 m about a solution good to a pattern (BL1t)
+        int effect = 0, ranging = 0, wild = 0, rungs = 0;
+        double widest = 0;
+        for (ulong seed = 1; seed <= 4; seed++)
+        {
+            var w = Duel("bismarck", "bismarck", 15_000, 24, Settings, seed);
+            w.Apply(GunnerySystem.SetDiscipline(0, 2));
+            var salvos = new List<GunnerySystem.SalvoReport>();
+            w.Gunnery.Reported = salvos.Add;
+            w.AdvanceTo(Start + 5 * 60_000);
+            for (int leg = 0; leg < 12; leg++)
+            {
+                w.Apply(ShipSystem.Course(1, leg % 2 == 0 ? 40 : 320, 35));
+                w.AdvanceTo(w.Time + 60_000);
+            }
+            var main = salvos.Where(s => s.Battery == 0).ToList();
+            rungs += main.Count(s => s.LadderM != 0);
+            widest = Math.Max(widest, main.Count == 0 ? 0 : main.Max(s => Math.Abs(s.LadderM)));
+            var after = main.SkipWhile(s => s.Phase != FirePhase.Effect).ToList();
+            (effect, ranging, wild) = (effect + after.Count, ranging + after.Count(s => s.Phase == FirePhase.Ranging), wild + after.Count(s => Math.Abs(s.MeanX) > 600));
+        }
+        output.WriteLine($"after the first fire for effect: {ranging} ranging salvos of {effect}, {wild} falling over 600 m off; ladder rungs {rungs}, the widest {widest:0} m");
+        Assert.True(effect > 60, "she came to fire for effect");
+        Assert.True(ranging < 0.25 * effect, "her turns don't put her out");
+        Assert.True(wild < 0.08 * effect, "her falls stay near her");
+        Assert.True(rungs > 0 && widest < 366, "the ladder at its doubt");
+    }
 }

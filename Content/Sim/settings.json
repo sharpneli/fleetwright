@@ -252,7 +252,6 @@
   "RangingWaitMarginMs": 15000,
   "SpotsHoldS": 120,
   "ReadingGateSigmas": 3,
-  "HardTurnYawDegS": 1,
   "LayerSettleS": 7,
   "QuickFirerReloadS": 16,
   "FireDisciplines": [

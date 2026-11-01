@@ -133,7 +133,6 @@ public sealed class GunnerySystem : IWorldSystem
         public int Rung;
         /// <summary>Firing for effect in halves, which half goes next (0 the larger).</summary>
         public int Half;
-        public bool OwnTurning;
         /// <summary>Whether its gunnery officer has its fire pared back (BL1p), and since when he's held the salvo due for her
         /// turn to ease (-1: not holding).</summary>
         public bool Pared;
@@ -877,18 +876,19 @@ public sealed class GunnerySystem : IWorldSystem
                         store.Combat.Mount(slot, mounts[j]).Rounds > 0 && elevation <= mr.MaxElevationDeg && !Awash(world, ship, cls, cond, mounts[j]);
             bears |= firing[j];
         }
-        // fire discipline (F6): the bracket widens at the computer's doubt of the range rate along the line of fire; own
-        // ship's turn or the target seen to turn sends a battery firing for effect back to ranging, its bracket opened to
-        // the first step. A machine that takes her motion in is put out by a hard turn; a plain one, whose Dumaresq has her
-        // course set on it by hand, once she has turned a few degrees from that course (docs/battle/balance.md BL1o: the
-        // Mk IV kept the enemy's relative direction "within a few degrees" in a turn), its new course set then
+        // fire discipline (F6): the bracket widens at the computer's doubt of the range rate along the line of fire; the
+        // target seen to turn, or a plain computer's own course gone stale, sends a battery firing for effect back to
+        // ranging, its bracket opened to the first step. A plain computer's Dumaresq has her course set on it by hand: it's
+        // put out once she has turned a few degrees from that course (docs/battle/balance.md BL1o: the Mk IV kept the
+        // enemy's relative direction "within a few degrees" in a turn), its new course set then. A machine that takes her
+        // motion in isn't put out by her turns at all (balance.md BL1t): its solution follows her, and a turn costs what the
+        // own-turn kick costs each salvo fired in it
         var along = Earth.Forward(aim, Earth.Bearing(ship.Position, aim));
         (fc.DriftMs, fc.PosSigmaM, fc.RangeM) = (fc.Tracker.RateSigma(computer, along), fc.Tracker.PositionSigma(along), Earth.Distance(ship.Position, aim));
         if (fc.Phase == FirePhase.Opening && now < fc.OpenMs && (fc.PointBlank || Settled(fc)))
             fc.OpenMs = now;   // the solution good enough to range from (or none needed): no more waiting
         fc.State = !laid ? BatteryState.OutOfRange : !bears ? BatteryState.NotBearing : now < fc.OpenMs ? BatteryState.Tracking : BatteryState.Firing;
-        bool plain = !computer.HelmFree && computer.Tracker is TrackerKind.RateClock or TrackerKind.Judgement;
-        bool turning = false, put = false;
+        bool plain = !computer.HelmFree && computer.Tracker is TrackerKind.RateClock or TrackerKind.Judgement, put = false;
         if (plain)
         {
             double off = double.IsNaN(fc.SetCourseDeg) ? 0 : Mod(ship.HeadingDeg - fc.SetCourseDeg);
@@ -896,14 +896,9 @@ public sealed class GunnerySystem : IWorldSystem
             if (put || double.IsNaN(fc.SetCourseDeg))
                 fc.SetCourseDeg = ship.HeadingDeg;
         }
-        else
-        {
-            turning = Math.Abs(double.RadiansToDegrees(ship.YawRate)) > settings.HardTurnYawDegS;
-            put = turning && !fc.OwnTurning;
-        }
         if (put || fc.Tracker.Turns != fc.Turns)
             Disturbed(ref fc, now);
-        (fc.OwnTurning, fc.Turns) = (turning, fc.Tracker.Turns);
+        fc.Turns = fc.Tracker.Turns;
         if (fc.State == BatteryState.Firing && fc.Phase == FirePhase.Opening)
             (fc.Phase, fc.Bracket.Step) = (FirePhase.Ranging, FirstStep(fc));
         // the sea under her (BL1b): her layers follow the roll with their gear when it lays faster than she rolls (continuous
@@ -1386,7 +1381,10 @@ public sealed class GunnerySystem : IWorldSystem
         // the range correction from the spots' bracket (a ladder's salvo stepped about it), then the salvo's common error
         // (fire_control_ref.py engage(), "fire")
         fc.CorrR = fc.Bracket.Aim(now, fc.DriftMs, Held(fc, now));
-        double ladder = phase == FirePhase.Ranging && dis.LadderStepM > 0 && !pointBlank ? (fc.Rung - 0.5 * (dis.InFlight - 1)) * dis.LadderStepM : 0;
+        // a ladder's rungs at the ranging step, the computer's doubt (balance.md BL1t: never wider than the doctrine's own
+        // step; a ladder of 366 m about a solution good to 100 m threw two salvos of three a ship's danger space off)
+        double ladder = phase == FirePhase.Ranging && dis.LadderStepM > 0 && !pointBlank
+            ? (fc.Rung - 0.5 * (dis.InFlight - 1)) * Math.Min(dis.LadderStepM, fc.Bracket.Step) : 0;
         var r = stream.Derive((ulong)f).Derive((ulong)fc.Generation).Derive(0x5A1u).Derive((ulong)fc.Salvos);
         // the layer's stress (BL1d): his station's duress, the director's (its first instrument's) or the guns' own
         int layerAt = mount.DirectorFiring && fc.SensorCount > 0 && sensors[f * MaxSensors].Eye >= 0 ? cls.Eyes[sensors[f * MaxSensors].Eye].Component
@@ -1771,8 +1769,8 @@ public sealed class GunnerySystem : IWorldSystem
         (fc.Phase, fc.Misses, fc.MissOver, fc.MissShort, fc.Rung, fc.Bracket.Step) = (FirePhase.Ranging, 0, 0, 0, 0, FirstStep(fc));
     }
 
-    /// <summary>The solution disturbed (own ship turning, the target seen to turn): a battery firing for effect goes back
-    /// to ranging, its bracket opened round its middle to the first step.</summary>
+    /// <summary>The solution disturbed (the target seen to turn, a plain computer's own course gone stale): a battery firing
+    /// for effect goes back to ranging, its bracket opened round its middle to the first step.</summary>
     void Disturbed(ref Fc fc, long now)
     {
         fc.Bracket.Step = FirstStep(fc);
