@@ -19,20 +19,23 @@ static class BalancePanel
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
     /// <summary>A scenario of the panel, and the ships each side lost in the record it's inspired by (none for a
-    /// hypothetical). The scenarios' forces are history's thinned, so a record is counted over the ships the file has.</summary>
-    sealed record Case(string File, int[]? Record = null, string Note = "");
+    /// hypothetical). The scenarios' forces are history's thinned, so a record is counted over the ships the file has.
+    /// <paramref name="Range"/>: where the record's fire mostly was, km, for a gun class (<see cref="CoarseParity.Played.CalClass"/>;
+    /// BL1j, rough [EST] from the standard accounts): the hit rates are read beside it, as the AI closing to where it hits
+    /// would hide a weak fire control behind a record-like rate.</summary>
+    sealed record Case(string File, int[]? Record = null, string Note = "", (int Cal, double Lo, double Hi)? Range = null);
 
     static readonly Case[] Panel =
     [
-        new("dover-strait", [0, 2], "G42 and G85"),
-        new("coronel", [2, 0], "Good Hope and Monmouth"),
-        new("cape-sarych", [0, 0]),
+        new("dover-strait", [0, 2], "G42 and G85", (0, 0, 2)),                      // a night melee, Broke ramming G42
+        new("coronel", [2, 0], "Good Hope and Monmouth", (2, 5, 11)),             // opened about 12,000 yd, closed to about 5,500
+        new("cape-sarych", [0, 0], Range: (2, 6, 8)),                             // in fog, about 38 cables
         new("prizes-war"),
         new("aland"),
-        new("heligoland-bight", [0, 4], "Mainz, Cöln, Ariadne, V187"),
-        new("dogger-bank", [0, 1], "Blücher"),
-        new("tsushima", [7, 0], "of the file's 13: six battleships sunk and Buyny scuttled; Oryol and Bedovy taken, which the sim doesn't do"),
-        new("jutland", [14, 11]),
+        new("heligoland-bight", [0, 4], "Mainz, Cöln, Ariadne, V187", (2, 4, 8)), // the battlecruisers on Cöln and Ariadne in the mist
+        new("dogger-bank", [0, 1], "Blücher", (2, 15, 18)),                        // the chase at 17,000-20,000 yd
+        new("tsushima", [7, 0], "of the file's 13: six battleships sunk and Buyny scuttled; Oryol and Bedovy taken, which the sim doesn't do", (2, 3, 7)),
+        new("jutland", [14, 11], Range: (2, 8, 17)),                               // the run to the south 14-17 km, the fleets 8-13 km
     ];
 
     /// <param name="Seeds">Seeds a scenario (the Jutland half as many).</param>
@@ -56,6 +59,7 @@ static class BalancePanel
             : ([], []);
 
         var json = new List<(string File, string Side, double Lost, int Min, int Max, int? Record, string Verdict, double Hits, double HitPct)>();
+        var fire = new List<FireRow>();
         int sidesBanded = 0, sidesIn = 0, ordered = 0, orderedRight = 0;
         var kinds = new int[Enum.GetValues<LossKind>().Length];
         var givenAll = new int[4];   // taken, struck, scuttled, abandoned (docs/battle/striking.md SK5)
@@ -108,6 +112,7 @@ static class BalancePanel
                 givenAll[k] += given[k];
             if (by.Sum() > 0 || given.Sum() > 0)
                 Console.WriteLine($"  how they went: {Kinds(by)}{Given(given)}");
+            Fire(c, s, p, fire);
         }
 
         if (cases.Count > 0)
@@ -155,6 +160,32 @@ static class BalancePanel
                 j.WriteEndObject();
             }
             j.WriteEndArray();
+            j.WriteStartArray("fire");
+            foreach (var f in fire)
+            {
+                j.WriteStartObject();
+                j.WriteString("scenario", f.File);
+                j.WriteString("side", f.Side);
+                j.WriteString("guns", ClassNames[f.Cal]);
+                j.WriteNumber("shells", f.Shells);
+                j.WriteNumber("hits", f.Hits);
+                j.WriteNumber("median_km", f.MedianKm);
+                j.WriteNumber("q1_km", f.Q1Km);
+                j.WriteNumber("q3_km", f.Q3Km);
+                if (!double.IsNaN(f.HitsMedianKm))
+                    j.WriteNumber("hits_median_km", f.HitsMedianKm);
+                j.WriteStartArray("bands");
+                foreach (var (sh, hi) in f.Bands)
+                {
+                    j.WriteStartArray();
+                    j.WriteNumberValue(sh);
+                    j.WriteNumberValue(hi);
+                    j.WriteEndArray();
+                }
+                j.WriteEndArray();
+                j.WriteEndObject();
+            }
+            j.WriteEndArray();
             j.WriteStartArray("fc_history");
             foreach (var m in fc)
             {
@@ -169,6 +200,79 @@ static class BalancePanel
             Console.WriteLine($"kept in {o.Out}");
         }
         return 0;
+    }
+
+    /// <summary>A side's fire with one class of gun, every seed together: shells and hits a run, the true range when fired
+    /// (shells' median and quartiles, hits' median), and the shells and hits a run in each of <see cref="BandsKm"/>.</summary>
+    sealed record FireRow(string File, string Side, int Cal, double Shells, double Hits, double MedianKm, double Q1Km, double Q3Km, double HitsMedianKm,
+        (double Shells, double Hits)[] Bands);
+
+    static readonly string[] ClassNames = ["light", "medium", "heavy"];
+    static readonly string[] ClassLabels = ["light (under 120 mm)", "medium (120-200 mm)", "heavy (200 mm and over)"];
+    static readonly double[] BandsKm = [0, 2, 4, 6, 10, 15];
+
+    /// <summary>Where a scenario's fire was (BL1j), each side's by gun class, and the record's class's median beside the
+    /// record's ranges: CLOSE under them, FAR over.</summary>
+    static void Fire(Case c, Scenario s, CoarseParity.Played[] p, List<FireRow> rows)
+    {
+        const int bins = CoarseParity.Played.RangeBins, classes = CoarseParity.Played.CalClasses;
+        int n = s.Sides.Length * classes * bins;
+        var shellsAt = new double[n];
+        var hitsAt = new double[n];
+        foreach (var x in p)
+            for (int k = 0; k < n; k++)
+                (shellsAt[k], hitsAt[k]) = (shellsAt[k] + x.FireShells[k], hitsAt[k] + x.FireHits[k]);
+        bool any = false;
+        var every = new double[classes * bins];
+        for (int side = 0; side < s.Sides.Length; side++)
+            for (int cal = 0; cal < classes; cal++)
+            {
+                int at = (side * classes + cal) * bins;
+                var sh = shellsAt.AsSpan(at, bins).ToArray();
+                var hi = hitsAt.AsSpan(at, bins).ToArray();
+                for (int b = 0; b < bins; b++)
+                    every[cal * bins + b] += sh[b];
+                double shells = sh.Sum(), hits = hi.Sum();
+                if (shells == 0)
+                    continue;
+                if (!any)
+                    Console.WriteLine("  where the fire was (shells a run, hit %, the true range when fired: the shells' median (quartiles), the hits' median):");
+                any = true;
+                var bands = new (double Shells, double Hits)[BandsKm.Length];
+                for (int b = 0; b < bins; b++)
+                {
+                    int band = BandsKm.Count(k => b * CoarseParity.Played.BinM >= k * 1000) - 1;
+                    bands[band] = (bands[band].Shells + sh[b] / p.Length, bands[band].Hits + hi[b] / p.Length);
+                }
+                var row = new FireRow(c.File, s.Sides[side], cal, shells / p.Length, hits / p.Length, Quantile(sh, 0.5), Quantile(sh, 0.25), Quantile(sh, 0.75),
+                    hits > 0 ? Quantile(hi, 0.5) : double.NaN, bands);
+                rows.Add(row);
+                Console.WriteLine(string.Format(Inv, "    {0,-14}{1,-24}{2,8:0} {3,5:0.0}%  fired at {4,4:0.0} km ({5:0.0}-{6:0.0}), hits at {7}", s.Sides[side], ClassLabels[cal],
+                    row.Shells, 100 * hits / shells, row.MedianKm, row.Q1Km, row.Q3Km, double.IsNaN(row.HitsMedianKm) ? "-" : row.HitsMedianKm.ToString("0.0", Inv) + " km"));
+                Console.WriteLine("      by range: " + string.Join(", ", bands.Select((x, i) => (x, i)).Where(t => t.x.Shells > 0).Select(t =>
+                    string.Format(Inv, "{0} {1:0}% of shells at {2:0.0}%", Band(t.i), 100 * t.x.Shells / row.Shells, 100 * t.x.Hits / t.x.Shells))));
+            }
+        if (c.Range is var (rc, lo, hiKm) && every.AsSpan(rc * bins, bins).ToArray() is var col && col.Sum() > 0)
+        {
+            double m = Quantile(col, 0.5);
+            Console.WriteLine(string.Format(Inv, "  the {0} guns' fire, every side: median {1:0.0} km against the record's {2:0.#}-{3:0.#} km [EST]: {4}", ClassNames[rc], m, lo, hiKm,
+                m < lo ? "CLOSE" : m > hiKm ? "FAR" : "in"));
+        }
+    }
+
+    static string Band(int i) => i == BandsKm.Length - 1 ? $"{BandsKm[i]:0}+ km" : $"{BandsKm[i]:0}-{BandsKm[i + 1]:0} km";
+
+    /// <summary>A quantile of a histogram in <see cref="CoarseParity.Played.BinM"/> bins, km, linear within its bin.</summary>
+    static double Quantile(double[] bins, double q)
+    {
+        double total = bins.Sum(), want = q * total, run = 0;
+        for (int b = 0; b < bins.Length; b++)
+        {
+            if (bins[b] > 0 && run + bins[b] >= want)
+                return (b + (want - run) / bins[b]) * CoarseParity.Played.BinM / 1000;
+            run += bins[b];
+        }
+        return bins.Length * CoarseParity.Played.BinM / 1000;
     }
 
     /// <summary>Of the lost, those given up (striking.md SK5): taken, struck, scuttled, abandoned, as counts over the seeds.</summary>

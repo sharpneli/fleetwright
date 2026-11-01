@@ -262,6 +262,21 @@ static class CoarseParity
         /// each minute; the first salvo's and torpedoes' minute from the start (NaN: none); shell hits on ships lit then.</summary>
         public required double[] BeamMin, StarMin, FirstFireMin, FirstTorpMin, HitsOnLit;
         public long Missed;
+
+        /// <summary>Where the fire was (docs/battle/balance.md BL1j: a hit rate means little without the range it was made
+        /// at): the shells and the hits on their target, each side's, by the gun's class (<see cref="CalClass"/>) and the
+        /// true range when fired, in bins of <see cref="BinM"/>, the last one everything past it; index
+        /// (side * CalClasses + class) * RangeBins + bin. From the salvos' reports, so the fine tier only.</summary>
+        public required double[] FireShells, FireHits;
+
+        public const int CalClasses = 3, RangeBins = 61;
+        public const double BinM = 500;
+
+        /// <summary>A gun's class for the fire's ranges: light under 120 mm, medium to 200 mm, heavy from 200 mm (the
+        /// armoured cruisers' and the capital ships' main guns).</summary>
+        public static int CalClass(double calibreMm) => calibreMm < 120 ? 0 : calibreMm < 200 ? 1 : 2;
+
+        public static int Bin(double rangeM) => Math.Clamp((int)(rangeM / BinM), 0, RangeBins - 1);
     }
 
     static IEnumerable<Row> PlayRows(List<(string Layer, string Name)> plays, SimSettings settings, string root, string landPath, int seeds, bool fine, bool coarse,
@@ -367,6 +382,7 @@ static class CoarseParity
             Result = [], Shells = new double[sides], ShellHits = new double[sides], TorpedoHits = new double[sides], Launchers = new double[sides],
             BeamMin = new double[sides], StarMin = new double[sides], FirstFireMin = [.. Enumerable.Repeat(double.NaN, sides)],
             FirstTorpMin = [.. Enumerable.Repeat(double.NaN, sides)], HitsOnLit = new double[sides],
+            FireShells = new double[sides * Played.CalClasses * Played.RangeBins], FireHits = new double[sides * Played.CalClasses * Played.RangeBins],
         };
         var names = new Dictionary<int, string>();
         var launched = new HashSet<int>();
@@ -379,11 +395,31 @@ static class CoarseParity
             return slot >= 0 ? names[entity] = store[slot].Handling.Class.Name : "?";
         }
         int SideOf(int entity) => end.SideOf(entity) is int x and >= 0 && x < sides ? x : -1;
+        // each ship's batteries' calibres, kept from the start (a salvo lands after its shooter may have gone)
+        var calibres = new Dictionary<int, float[]>();
+        w.Gunnery.Reported = r =>
+        {
+            int side = SideOf(r.Shooter);
+            if (side < 0 || !calibres.TryGetValue(r.Shooter, out var cal) || r.Battery >= cal.Length)
+                return;
+            int k = (side * Played.CalClasses + Played.CalClass(cal[r.Battery])) * Played.RangeBins + Played.Bin(r.TrueRangeM);
+            p.FireShells[k] += r.Shells;
+            p.FireHits[k] += r.Hits;
+        };
         void Note()
         {
             for (int slot = 0; slot < store.Slots; slot++)
                 if (store.IsAlive(slot))
-                    Class(store[slot].Entity);
+                {
+                    int e = store[slot].Entity;
+                    Class(e);
+                    if (calibres.ContainsKey(e))
+                        continue;
+                    var rows = store[slot].Handling.Class.Batteries;
+                    var cal = calibres[e] = new float[rows.Length];
+                    for (int b = 0; b < rows.Length; b++)
+                        cal[b] = (float)rows[b].CalibreMm;
+                }
         }
         Note();
         long read = 0, t0 = s.Start.Ms;

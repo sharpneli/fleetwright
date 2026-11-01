@@ -1,7 +1,8 @@
 # Plan: the balance round
 
 Status: **drafted 2026-10-30**; BL0 (the panel) done the same day; the user's answers the same day ("Decided");
-P1-P10 answered the same day.    Updated: 2026-10-30
+P1-P10 answered the same day; **BL1 reopened 2026-11-01** (the roll, counted once, and the fire's ranges: BL1j-BL1n).
+Updated: 2026-11-01
 
 Every deepening since 2026-10-14 kept balancing out of its steps and left it "to the balance pass": the physics first,
 sourced, with the combined results judged at the end (memory: realistic, then tune; physics, no guard rules). This is
@@ -264,6 +265,47 @@ British 4.9 → 3.6%, the 3rd BCS 21.9 → 19.8%, the Germans over the British a
 12th Flotilla's dawn shooting at 5-7 km down (12 → 4%). Not the answer for the Heligoland Bight's 2-4 km: there the boats
 are plainly in sight.
 
+### BL1 reopened: the roll, counted once, and where the fire is (agreed 2026-11-01)
+
+**Why** (the user's playtest, a Yamato-like at the Jutland "missing like no tomorrow" at 7 km): `shipgen duel yamato
+dreadnought --range 7000` hit 25% in the default weather, 35% in the Jutland's 8 kn, and 11% in a copy of the Jutland
+with Lion and Princess Royal as Yamatos (6-10 km, 51 salvos). The salvos were laid within about 70 m of her and fell
+300-800 m off: at 7 km a mil of elevation is about 99 m, so every angular error costs most close in. Found:
+
+1. **The roll takes every wave's whole slope, however short against the hull** (`RollSea.At`). A wave much shorter
+   than her beam lifts both sides at once, and one met obliquely and short against her length meets her in many
+   phases; the pitch averages over her length and beam (`RollSea.Pitch`), the roll didn't. At speed the overtaken short
+   wind sea is met near her roll period: in a 15 kn wind at 20 kn a Yamato rolled 6-7° on most headings (peak rate
+   2.6°/s), a Dreadnought 8°, where the record has Forrestal 2.7-4.8° at her worst heading in sea states 3-4
+   (research §3.2) and "waves under 400 ft hardly affect a ship of 60 ft beam or more" (USNI 1931). The beam's and the
+   length's averages (sin p / p each) bring them to about 1° and 1.5°, a destroyer 9° → 2.7°; a frigate's calibration
+   (excitation 0.85, ±12° in SS5) barely moves. The other way, heavy weather already rolls short (BL1a: our wind sea is
+   fetch-limited; a Dreadnought 2.2° in "SS7" against the table's 13°), and the averaging takes it lower: it needs its
+   calibration with it.
+2. **The roll counted twice.** `lay_mil` is the reference's (`fire_control_ref.py`) error in a sea up to state 3 with
+   the roll in it (an unstabilised director 1.0 mil against a stabilised one's 0.5, `sea_k` raising only the former),
+   and the sights' rows are table 1's moderate-sea column (manual-gunnery-research.md 2.4, 3°, 10 s); BL1b added the
+   roll again as its own term. The bases go to a steady platform's, the roll left to BL1b alone.
+3. **Fire under helm.** About a quarter of her salvos were fired turning past `OwnTurnYawDegS` (0.2°/s), each with the
+   Type 92's ±400 m own-turn kick in range and line; and a salvo far off for line tells the spotter nothing in range.
+   The kick is the reference's; where the turns come from is to be measured.
+
+The two fixes take `fc-history` from 12 to 9-10 of 23 in band, nearly all HIGH (the USN practice at 6 kyd 35 → 63%
+against 17-39%, Bismarck's end 31 → 48% against 6-20%): BL1b's gain toward the record came partly from the errors.
+**Decided (the user, 2026-11-01):** fix the physics, take the yardstick where it goes and look for what's missing
+(the cases' own "not modelled" lines) rather than keep an error because it lands near the record; then reassess with
+playtesting. And **never read a hit rate without its range**: an AI closing to where it hits hides a weak fire
+control behind a record-like rate (a historical 1.something% at Jutland at 500 m means nothing), so the panel reports
+where the fire is.
+
+| Step | What | Check |
+|---|---|---|
+| **BL1j** | **Where the fire is, in the panel.** `shipgen balance` reports each side's shells and hits by gun class (light under 120 mm, medium to 200, heavy from 200) and the true range when fired: the shells' median and quartiles, the hits' median, the share and hit rate in 0-2, 2-4, 4-6, 6-10, 10-15 and 15+ km; and the record's class's median beside the record's ranges (rough [EST] from the standard accounts: Coronel 5-11 km, Cape Sarych 6-8, the Heligoland Bight 4-8, the Dogger Bank 15-18, Tsushima 3-7, the Jutland 8-17; Dover's light guns 0-2): CLOSE, in, FAR. `--out` keeps them. | The baseline before the fixes (`balance/bl1j.json`). |
+| **BL1k** | **The roll averaged over the hull,** beam and length, as the pitch is; the heavy-weather calibration with it. | `RollTests`, `shipgen roll` against the research's record (Forrestal, the frigate, Hood steady, the destroyers' 8° at SS5). |
+| **BL1l** | **The roll counted once:** the mounts' `lay_mil` to a steady platform's. | `fc-history`, the duel at 5-15 km. |
+| **BL1m** | **Steadiness under fire:** where the turns while firing for effect come from (station keeping, the admiral's, the captain's), then what follows from it. | The fire under helm's share in the scenarios. |
+| **BL1n** | **The panel and fc-history again,** logged; then the user's playtest. | The ranges and the rates read together. |
+
 ### BL5: who closes inside 1 km (2026-10-30, after the user's playtest)
 
 `--fire-table` now also counts the ship-minutes each ship spends inside 1 km of an enemy, by what she, her admiral and
@@ -465,3 +507,4 @@ answered today; the rest are best answered when their step has measured.
 | 2026-10-31 | `07ce9df5` | bugs.md AI fixes: the intercept no longer re-given each think; station keeping by the line of relative motion (`balance/ai.json`, scenarios only) | 6 of 14 sides within 2x; the record's loser lost more in 26 of 44; Heligoland 2.9 v 12.4, Dogger 1.3 v 7.0 (Britain 4.4 before), Tsushima 4.0 v 2.4, Jutland 32.8 v 46.3; 42 of 68 plays by the clock (41). Given up: 7 struck, 28 scuttled, 246 abandoned |
 | 2026-10-31 | `c16f981d` | No flip-flopping between enemy groups: a closing unit moved only for a group 1.5x graver, closers kept while not hopeless (`balance/ai-hop.json`, scenarios only) | 6 of 14 sides within 2x; the record's loser lost more in 22 of 44 (26: Dover 3 of 8, Tsushima 4 of 8); Heligoland 2.3 v 13.3, Dogger 1.0 v 5.6 (Britain in), Tsushima 4.0 v 2.8, Jutland 32.5 v 52.3 (46.3; 4 seeds); 43 of 68 plays by the clock (42). Given up: 2 taken, 12 struck, 32 scuttled, 282 abandoned |
 | 2026-10-31 | (this commit) | The Fight band optimal (bugs.md: each side's best range within its reach, doctrine's the tie-break; closing counted, attrition in slices, the further band at equal speed; `balance/band.json`, scenarios only) | 3 of 14 sides within 2x (6); the record's loser lost more in 25 of 44; Heligoland 4.4 v 14.8, Dogger 6.9 v 6.4 (Britain 1.0 before: German hits 272 to 720), Tsushima 2.6 v 2.3 (Russia LOW, 4.0 before; Japan's hits 1509 to 1039), Cape Sarych 1.3 v 0.9, Jutland 33.8 v 50.0; 42 of 68 by the clock; the panel 652 s (472) |
+| 2026-11-01 | (this commit) | BL1j: where the fire is, in the panel (`balance/bl1j.json`, the baseline before BL1k-BL1m) | 5 of 14 sides within 2x; the record's loser lost more in 23 of 44; Heligoland 4.0 v 15.5, Dogger 7.3 v 6.3, Tsushima 2.5 v 2.1, Jutland 41.0 v 49.5; fc-history 12 of 23 (10 HIGH, 1 LOW), orderings 4 of 7. **The heavy guns' fire against the record's ranges:** Coronel 5.5 km (5-11) in, Cape Sarych 5.9 (6-8) CLOSE, the Heligoland Bight 3.6 (4-8) CLOSE, the Dogger Bank 10.5 (15-18) CLOSE, Tsushima 7.7 (3-7) FAR, the Jutland 12.6 (8-17) in; Dover's light guns 1.1 (0-2) in. At the Jutland the British heavy guns fire at a median 13.3 km and hit at a median 6.3: the 6% of their shells inside 6 km make most of the hits |
