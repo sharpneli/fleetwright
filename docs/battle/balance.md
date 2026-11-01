@@ -405,6 +405,29 @@ of the 4,438 hits on cripples with a fighting enemy in reach, 2,982 went to ones
 fighting held off by not coming on, rather than by her speed making away, so a cripple limping at 5 kn or stopped counts
 as surely done) was tried and stopped before it was measured. BL5e stays as built above.
 
+### How ships come to fall out, from first principles (2026-11-01, the user: "why do they do that here in the first place")
+
+`--fire-table` now also follows every hit on a ship still in the fight and, as she falls out, records who landed most
+of them (by type and by displacement against hers), the hits' median range, the minutes from her first hit, and what she
+was doing when they began (her order, her admiral's, his task) and whether she was firing then.
+
+| Scenario (seeds) | Fall-outs | The biggest rows |
+|---|---|---|
+| The Jutland (2) | about 270 | destroyers by destroyers at 0-2 km 64 (13 hits each, 11 min), by capital ships at 0-4 km 40, at 6-15 km 26; cruisers by capital ships at 10-15 km 11. **What they were doing: about 110 were destroyers keeping station in a flotilla on a day attack** (about 55 a run); the record's day melee between the lines cost about four (Nestor, Nomad, V27, V29) |
+| The Dogger Bank (4) | about 140 | destroyers by capital ships' main guns at 4-15 km 58, under fire 20-40 min, mostly keeping station in a flotilla gaining bearing for an attack, not firing; the record: Blücher alone |
+| The Heligoland Bight (4) | about 100 | destroyers by cruisers at 0-10 km 41, by destroyers at 0-6 km 36; flotillas on patrol, screens, the fight's first rush |
+
+Fall-outs with no shell landed while fighting (13 at the Dogger Bank): not a fault; the damage model counted 10 hits on
+them, shells aimed at a ship near them (the guns out 16, gunhouses 6 of 39 mounts): one such hit on a three-gun boat
+puts her out for her guns.
+
+**What it says:** damage is as brutal as the record has it (a boat falls out to a dozen 4" hits or two heavy ones); what
+isn't the record's is **how often the flotillas are where those hits find them by day**: their attacks press into point
+blank of the enemy's flotillas and heavy ships, and they gain bearing for half an hour inside the heavy guns' reach. The
+next question is the day attack's own course: when a flotilla starts, how near it goes to what, how long it spends
+gaining, where it fires and breaks off, and what it meets on the way, against the record's day attacks (fired from 5-8
+km, turned away; the destroyers meeting between the lines at the Jutland's 16:30).
+
 ### BL5: who closes inside 1 km (2026-10-30, after the user's playtest)
 
 `--fire-table` now also counts the ship-minutes each ship spends inside 1 km of an enemy, by what she, her admiral and

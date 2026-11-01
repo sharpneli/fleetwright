@@ -32,6 +32,13 @@ static class ScenarioPlay
         // cripple's hits taken going home and whether she got there
         var homeWho = new SortedDictionary<string, (long Shells, long Hits)>(StringComparer.Ordinal);
         var homeShips = new Dictionary<(ulong Seed, int Entity), (long Hits, bool Lost)>();
+        // how ships came to fall out (BL6's first principles): every hit on a ship still in the fight, and at her fall-out
+        // what she was doing when they began, who hit her and from how far
+        var fightHits = new Dictionary<(ulong Seed, int Entity), List<FightHit>>();
+        var fellWhy = new SortedDictionary<string, (int Ships, long Hits, double Minutes)>(StringComparer.Ordinal);
+        var fellBy = new SortedDictionary<string, (int Ships, long Hits, double Minutes)>(StringComparer.Ordinal);
+        var noGunfire = new MainGuns.Tally();
+        int noGunfireHits = 0, noGunfireShips = 0;
         // ship-minutes inside 1 km of an enemy, by side and what she was doing (BL5: who closes in, and why)
         var inside = new SortedDictionary<string, long>(StringComparer.Ordinal);
         // the heavy guns' salvos laid by the sights (not point blank) by her rate of turn as she fired, and those fired under
@@ -136,6 +143,22 @@ static class ScenarioPlay
                         var (as2, ah2) = against.GetValueOrDefault(k2);
                         against[k2] = (as2 + r.Shells, ah2 + r.Hits);
                     }
+                    if (ts >= 0 && r.Hits > 0 && ai.Captains.Of(r.Target).Order != Fleetwright.Sim.Ai.Captains.CaptainOrder.Home)
+                    {
+                        var her = w.Ships.Store[ts];
+                        var (ho, _, _) = ai.Captains.Of(r.Target);
+                        var (hatt, hfin, haway) = ai.Captains.FightOf(r.Target);
+                        string way = ho == Fleetwright.Sim.Ai.Captains.CaptainOrder.Fight ? hatt ? "Fight attacking" : hfin ? "Fight finishing" : haway ? "Fight away" : "Fight in the band" : ho.ToString();
+                        if (w.Groups.UnitOf(r.Target) is { } htop)
+                            way += $" / admiral {ai.Admirals.Of(htop.GroupId).Item1} / task {ai.Tasks.Of(Fleetwright.Sim.Ai.Unit.Group(htop.GroupId)).Kind}";
+                        bool answering = w.Time.Ms - w.Ships.Store.Combat.LastFired(ts) < 60_000;
+                        var hk = (seed, r.Target);
+                        if (!fightHits.TryGetValue(hk, out var list))
+                            fightHits[hk] = list = [];
+                        list.Add(new FightHit(r.FiredMs, Sightings.TypeOf(w.Ships.Store[ss].Handling.Class),
+                            w.Ships.Store[ss].Handling.Class.Motion.FullDisplacementT / Math.Max(her.Handling.Class.Motion.FullDisplacementT, 1),
+                            r.TrueRangeM, r.Hits, way, answering, night));
+                    }
                     if (ts >= 0 && ai.Captains.Of(r.Target).Order == Fleetwright.Sim.Ai.Captains.CaptainOrder.Home)
                     {
                         var (so, _, _) = ai.Captains.Of(r.Shooter);
@@ -186,7 +209,7 @@ static class ScenarioPlay
 
             var end = new ScenarioEnd(s, w, ai);
             var guns = new MainGuns();
-            int seen = 0;
+            int seen = 0, seenFell = 0;
             var probes0 = (long[])w.Probes.Ticks.Clone();
             var calls0 = (long[])w.Probes.Calls.Clone();
             w.Probes.ResetMax();
@@ -217,6 +240,20 @@ static class ScenarioPlay
                         if (end.Timeline[seen] is { Kind: PlayEvent.FellOut } l && (Fleetwright.Sim.Ai.Captains.CaptainReason)l.Count ==
                             Fleetwright.Sim.Ai.Captains.CaptainReason.OutGuns && w.Ships.Store.SlotOf(l.Entity) is int fs and >= 0)
                             guns.FellOut.Add(w.Ships.Store.Combat.Condition(fs));
+                    if (fireTable)
+                        for (; seenFell < end.Timeline.Count; seenFell++)
+                            if (end.Timeline[seenFell] is { Kind: PlayEvent.FellOut } fl && w.Ships.Store.SlotOf(fl.Entity) is int fo and >= 0)
+                            {
+                                if (fightHits.GetValueOrDefault((seed, fl.Entity)) is not { Count: > 0 })
+                                {
+                                    // no shell landed on her while she fought: what the damage model has on her
+                                    var fc0 = w.Ships.Store.Combat.Condition(fo);
+                                    noGunfire.Add(fc0);
+                                    (noGunfireShips, noGunfireHits) = (noGunfireShips + 1, noGunfireHits + fc0.Hits);
+                                }
+                                FellOutWhy(w.Ships.Store[fo].Handling.Class, (Fleetwright.Sim.Ai.Captains.CaptainReason)fl.Count, fl.Ms,
+                                    fightHits.GetValueOrDefault((seed, fl.Entity)), fellWhy, fellBy);
+                            }
                 });
                 for (int slot = 0; slot < w.Ships.Store.Slots; slot++)
                     if (w.Ships.Store.IsAlive(slot))
@@ -291,6 +328,19 @@ static class ScenarioPlay
             Console.WriteLine("inside 4 km, by the range against the shooter's band, the visibility and her target's way (shells, hits):");
             foreach (var (why, (sh, hi)) in against.OrderByDescending(kv => kv.Value.Hits).Take(25))
                 Console.WriteLine($"  {why,-100} {sh,8} {hi,6}");
+            if (fellWhy.Count > 0)
+            {
+                Console.WriteLine("how ships came to fall out: her type, who landed most of the hits before she fell out (by their " +
+                                  "displacement against hers) and from how far (ships, hits before, minutes from her first hit):");
+                foreach (var (why, (ns, hi, mins)) in fellBy.OrderByDescending(kv => kv.Value.Ships))
+                    Console.WriteLine($"  {why,-90} {ns,5} {hi,7} {mins / Math.Max(ns, 1),7:F1}");
+                if (noGunfireShips > 0)
+                    Console.WriteLine($"  the {noGunfireShips} with no shell landed while fighting: {noGunfireHits} hits on them by the damage model's count " +
+                                      $"(torpedoes, mines, collisions); main mounts out: {noGunfire.Text()}");
+                Console.WriteLine("  and what she was doing when the hits began, whether she was firing then, and why she fell out:");
+                foreach (var (why, (ns, hi, mins)) in fellWhy.OrderByDescending(kv => kv.Value.Ships).Take(40))
+                    Console.WriteLine($"    {why,-120} {ns,5} {hi,7} {mins / Math.Max(ns, 1),7:F1}");
+            }
             if (homeShips.Count > 0)
             {
                 var hl = homeShips.Values.Select(v => v.Hits).OrderBy(h => h).ToList();
@@ -312,6 +362,41 @@ static class ScenarioPlay
         if (crashed > 0)
             Console.WriteLine($"the sim broke in {crashed} of {seeds} seeds");
         return crashed > 0 ? 1 : 0;
+    }
+
+    /// <summary>A hit on a ship still in the fight (the fire table's fall-out breakdown): when, the shooter's type and her
+    /// displacement over the target's, the range, the hits, what the target was doing, whether she'd fired in the last
+    /// minute, by night.</summary>
+    readonly record struct FightHit(long Ms, ShipType Shooter, double Heavier, double RangeM, int Hits, string Way, bool Answering, bool Night);
+
+    /// <summary>A ship fallen out, into the fall-out breakdown: who landed most of her hits (by type and weight against
+    /// hers), the hits' median range, and what she was doing when they began.</summary>
+    static void FellOutWhy(ShipClass cls, Fleetwright.Sim.Ai.Captains.CaptainReason reason, long ms, List<FightHit>? hits,
+        SortedDictionary<string, (int Ships, long Hits, double Minutes)> why, SortedDictionary<string, (int Ships, long Hits, double Minutes)> by)
+    {
+        string her = Sightings.TypeOf(cls).ToString();
+        if (hits == null || hits.Count == 0)
+        {
+            Add(why, $"{her} {reason}: no gunfire hits (torpedoes, a collision, or the sea)", 0, 0);
+            Add(by, $"{her}: no gunfire hits", 0, 0);
+            return;
+        }
+        static string Weight(double h) => h >= 2 ? "heavier" : h > 0.5 ? "her match" : "lighter";
+        var top = hits.GroupBy(x => (x.Shooter, Weight(x.Heavier))).OrderByDescending(g => g.Sum(x => x.Hits)).First().Key;
+        var ranges = hits.SelectMany(x => Enumerable.Repeat(x.RangeM, x.Hits)).OrderBy(x => x).ToList();
+        double r = ranges[ranges.Count / 2] / 1000;
+        string band = r < 2 ? "0-2 km" : r < 4 ? "2-4 km" : r < 6 ? "4-6 km" : r < 10 ? "6-10 km" : r < 15 ? "10-15 km" : "15 km and over";
+        int n = hits.Sum(x => x.Hits);
+        double minutes = (ms - hits[0].Ms) / 60_000.0;
+        var first = hits[0];
+        Add(by, $"{her} by {top.Item2} {top.Shooter} at {band}", n, minutes);
+        Add(why, $"{her} {(first.Night ? "night" : "day")} {first.Way} {(first.Answering ? "(firing)" : "(not firing)")} -> {reason}", n, minutes);
+
+        static void Add(SortedDictionary<string, (int Ships, long Hits, double Minutes)> d, string k, long h, double m)
+        {
+            var (a, b, c) = d.GetValueOrDefault(k);
+            d[k] = (a + 1, b + h, c + m);
+        }
     }
 
     /// <summary>A seed's world with the scenario in it and the AI on every side (the player's side none), an encounter
