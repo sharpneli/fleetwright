@@ -118,7 +118,7 @@ public sealed partial class AdmiralLayer
         }
         if (!ctx.Picture.TryGet(guide.Side, a.AttackTarget, out var t) || pic?.Out(a.AttackTarget) == true)
         {
-            a.Attack = AttackPhase.None;   // lost, or seen going down: chosen again
+            (a.Attack, a.AttackMs) = (AttackPhase.None, now);   // lost, or seen going down: chosen again
             return false;
         }
         var (range, speed) = CaptainLayer.AttackSetting(ctx, guide.Handling.Class, t.Position);   // by day the long setting (BL5)
@@ -128,6 +128,10 @@ public sealed partial class AdmiralLayer
         if (a.Attack == AttackPhase.None)
         {
             var starboard = Vec3d.Cross(t.Forward, t.Position.Normalized());
+            // the attack's first gain: a target lost and another chosen within the boats' turn-away keeps it, a long lull is
+            // a new attack
+            if (a.AttackStartMs == 0 || now - a.AttackMs > s.TorpedoTurnAwayMs)
+                a.AttackStartMs = now;
             (a.Attack, a.AttackMs, a.AttackShips, a.AttackTubes) = (AttackPhase.Gain, now, g.Line.Count, 0);
             a.AttackSide = Vec3d.Dot(guide.Position - t.Position, starboard) >= 0 ? 1 : -1;
             // in the dark, from the side that has him against the brighter sky (docs/battle/night.md Q7)
@@ -157,7 +161,9 @@ public sealed partial class AdmiralLayer
                 var p = t.Position;
                 var f = Earth.Forward(p, Earth.Heading(t.Position, t.Forward) + a.AttackSide * s.AttackGainDeg);
                 Earth.Advance(ref p, ref f, Math.Max(gain, safe));
-                if (offBow <= 90 && run <= gain || Earth.Distance(guide.Position, p) < 1_500 || now - a.AttackMs > s.AttackGainMaxMs)
+                // the gain's budget runs from the attack's first gain, not this one's (a target chosen again, or a run fallen
+                // back to gaining when he turned away, used to start it over: an attack's gain went on for most of an hour)
+                if (offBow <= 90 && run <= gain || Earth.Distance(guide.Position, p) < 1_500 || now - a.AttackStartMs > s.AttackGainMaxMs)
                 {
                     // ahead of his beam with him in reach of a run in (or there, or no more time): in together
                     (a.Attack, a.AttackMs) = (AttackPhase.Run, now);
@@ -178,7 +184,15 @@ public sealed partial class AdmiralLayer
                                captains.TorpedoChance(ctx, pic, ai2, run, speed) >= s.TorpedoMinChance;
                 if (!inReach && offBow > 110)
                 {
-                    (a.Attack, a.AttackMs) = (AttackPhase.Gain, now);   // he's turned away: abaft his beam, a stern chase; ahead of him again first
+                    // he's turned away: abaft his beam, a stern chase; ahead of him again first while the gain's budget lasts,
+                    // else the attack's given up
+                    if (now - a.AttackStartMs <= s.AttackGainMaxMs)
+                        (a.Attack, a.AttackMs) = (AttackPhase.Gain, now);
+                    else
+                    {
+                        (a.Attack, a.AttackMs) = (AttackPhase.Away, now);
+                        ctx.Issue(o.Run(to, target, Up));
+                    }
                     break;
                 }
                 // the signal will turn the flotilla together through 8 points away from his path: the tubes trained out
@@ -226,7 +240,7 @@ public sealed partial class AdmiralLayer
                 if (guideOrder != CaptainOrder.Run)
                     ctx.Issue(o.Run(to, target, Up));
                 if (now - a.AttackMs >= s.TorpedoTurnAwayMs)
-                    a.Attack = AttackPhase.None;   // and in again, from a new position, while there are torpedoes
+                    (a.Attack, a.AttackStartMs) = (AttackPhase.None, 0);   // and in again, from a new position, while there are torpedoes: a new attack
                 break;
         }
         return false;
@@ -311,7 +325,7 @@ public sealed partial class AdmiralLayer
     /// guide handed his order afresh (Fight: the guns now).</summary>
     void StopAttack(in AiContext ctx, GroupSystem.Group g, Admiral a)
     {
-        (a.Attack, a.AttackTarget, a.AttackOrdered, a.AttackTubes) = (AttackPhase.None, 0, false, 0);
+        (a.Attack, a.AttackTarget, a.AttackOrdered, a.AttackTubes, a.AttackStartMs) = (AttackPhase.None, 0, false, 0, 0);
         for (int i = 0; i < g.Line.Count; i++)
             captains.HoldTorpedoes(g.Line[i], false);
         if (GuideUnit(g) is { Id: not 0 } to)

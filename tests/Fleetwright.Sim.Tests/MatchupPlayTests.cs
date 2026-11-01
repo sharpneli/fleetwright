@@ -117,6 +117,50 @@ public class MatchupPlayTests(ITestOutputHelper output)
         _ = bb;
     }
 
+    [Fact]
+    public void An_attacks_gain_has_one_budget_however_often_its_target_turns_away()
+    {
+        // docs/battle/bugs.md (balance.md BL5h: the Jutland's gains a median 45 min): the pack on a lone battleship that
+        // turns straight away from it whenever it runs in, and back south while it gains, so its runs fall back to gaining;
+        // the gain's 15 minutes run from the attack's first gain, not from each fallback, and once they're gone a target
+        // turned away ends the attack
+        var (w, ai, ids) = Make(Settings with { HitsDoDamage = false });
+        w.Apply(ai.Orders.SideDoctrine(1, DoctrineField.TorpedoAttack, (double)TorpedoAttack.Together));
+        var bb = Column(w, ids["iron_duke"], Earth.Position(Lat, Lon), 180, 1, side: 0, kn: 21);
+        var pack = Column(w, ids["v25"], Off(90, 15_000), 270, 16, side: 1, kn: 25, Formation.LineAbreast);
+        w.Apply(ShipSystem.LookNow());
+        w.AdvanceTo(Start + 30_000);
+        w.Apply(ai.Orders.Fight(pack));
+        w.Apply(ai.Orders.Speed(Unit.Ship(1), 21));
+        double gaining = 0;
+        int fallbacks = 0;
+        long first = -1;
+        var seen = new List<AttackPhase>();
+        for (int t = 0; t < 60 * 60; t += 10)
+        {
+            var was = ai.Admirals.AttackOf(pack.GroupId).Phase;
+            var her = w.Ships.Store[w.Ships.Store.SlotOf(1)];
+            var them = w.Ships.Store[w.Ships.Store.SlotOf(w.Groups.GuideShip(w.Groups.Get(pack.GroupId)!))];
+            w.Apply(ai.Orders.Course(Unit.Ship(1), was == AttackPhase.Run ? Earth.Bearing(them.Position, her.Position) : 180));
+            w.AdvanceTo(w.Time + 10_000);
+            var phase = ai.Admirals.AttackOf(pack.GroupId).Phase;
+            if (was == AttackPhase.Run && phase == AttackPhase.Gain)
+                fallbacks++;
+            if (phase != AttackPhase.None && first < 0)
+                first = t;
+            if (phase == AttackPhase.Gain)
+                gaining += 10;
+            if (seen.Count == 0 || seen[^1] != phase)
+                seen.Add(phase);
+            if (first >= 0 && phase is AttackPhase.Away or AttackPhase.Fire)
+                break;
+        }
+        output.WriteLine($"phases {string.Join(" > ", seen)}; gaining {gaining:0} s in all, {fallbacks} runs fallen back; torpedoes {w.Torpedoes.Fired}");
+        Assert.True(first >= 0, "it attacked");
+        Assert.True(gaining <= Settings.AttackGainMaxMs / 1000.0 + 10, $"{gaining:0} s gaining");
+        _ = bb;
+    }
+
     /// <summary>An attack taken up by doctrine is judged again as it goes (docs/battle/balance.md BL5, proposal 1: the
     /// Heligoland boats pressed on as the British came up out of the mist): the pack begins on a lone battleship, her
     /// squadron comes up while it gains its position, and it gives the attack up and runs before its signal.</summary>

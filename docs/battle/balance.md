@@ -561,8 +561,15 @@ half an hour (the gain's full 15 minutes; the test's window an hour, and `Admira
 `--fire-table`), BL5g → BL5h: 9 → 10 attacks; gaining a median 17 → 45 min, running in 6 → 11; nearest an enemy heavy
 ship 3.1 → 5.6 km, an enemy boat 3.7 → 4.4; the signal made by 5 of 9 → 3 of 10, at 5.0 → 8.3 km; beaten off 3 → 5;
 hits on their boats gaining 201 → 88, running in 213 → 166, firing 177 → 41. The attacks cost half the hits and get in
-less often. Found on the way (bugs.md): a gain runs past `AttackGainMaxMs` (45 min median), its clock started again each
-time the target is chosen again.
+less often. Found on the way: a gain ran past `AttackGainMaxMs` (45 min median).
+
+**Fixed 2026-11-01** (the user: "Our admirals ought to not have dementia"): the gain's clock was started over each time a
+run fell back to gaining (the target turned away: abaft his beam, a stern chase) and each time the target was chosen
+again. An attack now keeps its first gain's time (`Admiral.AttackStartMs`): the gain ends once `AttackGainMaxMs` has gone
+since it, and past it a target turned away ends the attack (away) instead of another gain; a target lost and another
+chosen within `TorpedoTurnAwayMs` keeps the clock, a longer lull is a new attack; done, stopped or ordered anew, it's
+cleared. `MatchupPlayTests`: the pack on an Iron Duke at 21 kn turning straight away whenever it runs in: before, three
+runs fell back and it gained 2,710 s (45 min, the Jutland's median); now 900 s, one run, given up.
 
 ### BL5: who closes inside 1 km (2026-10-30, after the user's playtest)
 

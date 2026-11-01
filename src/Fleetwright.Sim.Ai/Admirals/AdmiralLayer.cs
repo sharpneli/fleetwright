@@ -64,6 +64,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
         public int AttackTarget, AttackShips, AttackSide;   // the ship; the boats it came in with; the side of him it gains (±1)
         public int AttackTubes;                             // the beam the boats' tubes are trained on (±90), 0 none yet
         public long AttackMs;           // when the phase began
+        public long AttackStartMs;      // when the attack first began gaining (0: no attack): its gain's budget runs from it
         public double GainSafeM;        // gaining: the range out of which the enemy's heavy ships let his boats be (BL5h)
         public long GainSafeMs;         // when that was judged (0: not yet)
         public int ScreenOn;            // screening (AdmiralLayer.Screen.cs): the ship his station was given on (0: none yet)
@@ -469,7 +470,8 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
         Ships(g, tree);
         foreach (int ship in tree)
             captains.HoldTorpedoes(ship, false);
-        (a.Attack, a.AttackTarget, a.AttackShips, a.AttackSide, a.AttackTubes, a.AttackMs, a.GainSafeMs) = (AttackPhase.None, 0, 0, 0, 0, 0, 0);
+        (a.Attack, a.AttackTarget, a.AttackShips, a.AttackSide, a.AttackTubes, a.AttackMs, a.GainSafeMs, a.AttackStartMs) =
+            (AttackPhase.None, 0, 0, 0, 0, 0, 0, 0);
         (a.AttackDoneCount, a.AttackBeaten) = (0, false);
         (a.ScreenOn, a.ScreenAstern, a.ScreenAbeam, a.ScreenFight, a.ScreenThreatMs) = (0, 0, 0, 0, 0);
         (a.DeployMs, a.Deployed, a.FormingMs, a.DisposedMs, a.GaveCount) = (0, false, 0, 0, 0);
@@ -745,6 +747,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
                 h.Add(a.AttackSide);
                 h.Add(a.AttackTubes);
                 h.Add(a.AttackMs);
+                h.Add(a.AttackStartMs);
                 if (a.GainSafeMs != 0)
                     h.Add(a.GainSafeM);
             }

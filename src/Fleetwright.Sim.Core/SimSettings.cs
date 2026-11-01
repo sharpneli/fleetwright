@@ -1030,7 +1030,9 @@ public sealed record SimSettings
 
     /// <summary>A flotilla's attack (docs/battle/command.md 5.1b): it first gains a point AttackGainDeg off the target's bow,
     /// AttackGainShare of its torpedoes' fast range from it, on the side it's on; it runs in from there (or once it's that far
-    /// round the target's bow, or after AttackGainMaxMs). Degrees, a share, ms.</summary>
+    /// round the target's bow, or once AttackGainMaxMs has gone since the attack first began gaining: a new target, or a run
+    /// fallen back to gaining when he turned away, doesn't start it over; past it a target turned away ends the attack).
+    /// Degrees, a share, ms.</summary>
     public double AttackGainDeg { get; init; } = 50;
     public double AttackGainShare { get; init; } = 1.5;
 
