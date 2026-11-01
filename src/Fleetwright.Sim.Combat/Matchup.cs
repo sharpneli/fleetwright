@@ -553,6 +553,47 @@ public static class Matchup
         return new MatchupResult(t.Confidence(s.MatchupFloor), speedA, speedB, t with { AttackersA = byA, AttackersB = byB }, gunA, gunB);
     }
 
+    /// <summary>The range out of which <paramref name="from"/>'s guns let a ship of <paramref name="mine"/> be, m
+    /// (docs/battle/balance.md BL5f: a screen's station): none of the guns that work (their secondaries, and their chief guns too with
+    /// <paramref name="chief"/>) would take her as a target by a battery's own floors, its shells landing at
+    /// <paramref name="hitFloor"/> and a round's worth of putting her out at <paramref name="roundFloor"/> (both: the
+    /// captains' rule for letting a target be; with neither, out of their reach); halved to 100 m between 100 m and
+    /// <paramref name="maxM"/> (what can be seen), and <paramref name="maxM"/> if they'd take her even there.</summary>
+    public static double LetBeM(ReadOnlySpan<MatchupEntry> from, in MatchupEntry mine, double hitFloor, double roundFloor, bool chief, double maxM,
+        SimSettings s)
+    {
+        double lo = 100, hi = Math.Max(lo, maxM);
+        if (Takes(from, mine, hitFloor, roundFloor, chief, hi, s))
+            return hi;
+        if (!Takes(from, mine, hitFloor, roundFloor, chief, lo, s))
+            return lo;
+        while (hi - lo > 100)
+        {
+            double mid = 0.5 * (lo + hi);
+            if (Takes(from, mine, hitFloor, roundFloor, chief, mid, s))
+                lo = mid;
+            else
+                hi = mid;
+        }
+        return hi;
+    }
+
+    /// <summary>Whether any of the guns would take a ship of <paramref name="mine"/> as a target at a range by the floors
+    /// (<see cref="LetBeM"/>).</summary>
+    static bool Takes(ReadOnlySpan<MatchupEntry> from, in MatchupEntry mine, double hitFloor, double roundFloor, bool chief, double rangeM, SimSettings s)
+    {
+        foreach (ref readonly var e in from)
+            foreach (var gun in e.Profile.Guns)
+            {
+                if (gun.Chief && !chief || e.GunShare(gun) <= 0 || rangeM > gun.KindsReachM)
+                    continue;
+                var (hit, exponent) = gun.Chosen(mine.Profile, rangeM, s);
+                if (hit >= hitFloor && hit * (1 - Math.Exp(-exponent / Math.Max(mine.Toughness, 1e-3))) >= roundFloor)
+                    return true;
+            }
+        return false;
+    }
+
     /// <summary>How much <paramref name="from"/> threatens <paramref name="to"/> at a range (docs/battle/aims.md A3: a
     /// captain after the enemy's transports fights the escort that endangers him): the ships of <paramref name="to"/> her
     /// guns, all on them for <paramref name="minutes"/> (at most her rounds), and a salvo of her torpedoes if they're within

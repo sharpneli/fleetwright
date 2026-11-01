@@ -1054,11 +1054,11 @@ public sealed record SimSettings
     /// sight of the unit it screens, its station lies toward them only so far that none of their secondary guns would take
     /// one of its ships as a target by doctrine's floors (HitFloor of its shells landing, RoundFloor's worth a round: past
     /// it, they let her be; never past what can be seen of them), nor their chief guns once those have fallen near one of
-    /// its ships within ScreenUnderFireS (the user: "the destroyers don't need to be too scared of them, unless they
+    /// its ships within UnderBigGunsS (the user: "the destroyers don't need to be too scared of them, unless they
     /// actually start shooting at the destroyers"), its ordered distance at most and ScreenMinM off the screened guide
     /// at least; judged again every ScreenSafeEveryS [EST]. m, s.</summary>
     public double ScreenMinM { get; init; } = 1_000;
-    public double ScreenUnderFireS { get; init; } = 120;
+    public double UnderBigGunsS { get; init; } = 120;
     public double ScreenSafeEveryS { get; init; } = 10;
 
     /// <summary>Tasks (docs/battle/command.md 5.1c): the task layer thinks every ForcePeriodMs while any unit on a task is

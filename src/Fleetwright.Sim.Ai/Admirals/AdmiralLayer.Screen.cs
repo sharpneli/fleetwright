@@ -90,7 +90,7 @@ public sealed partial class AdmiralLayer
                 for (int k = start; k < end && !big; k++)
                     if (groups.Get(screening[k].Group) is { } sg)
                         for (int m = 0; m < sg.Line.Count && !big; m++)
-                            big = ctx.World.Gunnery.ChiefFallsNear(ctx.Ships.SlotOf(sg.Line[m]), ctx.NowMs - (long)(s.ScreenUnderFireS * 1000));
+                            big = ctx.World.Gunnery.ChiefFallsNear(ctx.Ships.SlotOf(sg.Line[m]), ctx.NowMs - (long)(s.UnderBigGunsS * 1000));
                 (arc.SafeM, arc.SafeMs) = (SafeOff(ctx, guide, screening[start].Group, big), Math.Max(ctx.NowMs, 1));
             }
 
@@ -216,36 +216,8 @@ public sealed partial class AdmiralLayer
         arcOwn.Clear();
         arcOwn.AddOwn(ctx.World, Judge.Matchups, boat);
         double hitFloor = doctrine.Of(guide.Entity, guide.Side, DoctrineField.HitFloor), roundFloor = doctrine.Of(guide.Entity, guide.Side, DoctrineField.RoundFloor);
-        var mine = arcOwn.Entries[0];
-        bool Reached(double r)
-        {
-            foreach (ref readonly var e in arcEnemy.Entries)
-                foreach (var gun in e.Profile.Guns)
-                {
-                    if (gun.Chief && !underBigGuns || e.GunShare(gun) <= 0 || r > gun.KindsReachM)
-                        continue;
-                    // a battery takes her if both its floors hold (CaptainLayer.WorthOn's: its shells landing, and a round's
-                    // worth of putting her out)
-                    var (hit, exponent) = gun.Chosen(mine.Profile, r, s);
-                    if (hit >= hitFloor && hit * (1 - Math.Exp(-exponent / Math.Max(mine.Toughness, 1e-3))) >= roundFloor)
-                        return true;
-                }
-            return false;
-        }
-        double lo = 100, hi = Math.Max(lo, Math.Min(s.FightCompareM, ctx.World.Weather.At(guide.Position, ctx.World.Time).VisibilityM));
-        if (Reached(hi))
-            return nearest - hi;
-        if (!Reached(lo))
-            return nearest - lo;
-        while (hi - lo > 100)
-        {
-            double mid = 0.5 * (lo + hi);
-            if (Reached(mid))
-                lo = mid;
-            else
-                hi = mid;
-        }
-        return nearest - hi;
+        double seenM = Math.Min(s.FightCompareM, ctx.World.Weather.At(guide.Position, ctx.World.Time).VisibilityM);
+        return nearest - Matchup.LetBeM(arcEnemy.Entries, arcOwn.Entries[0], hitFloor, roundFloor, underBigGuns, seenM, s);
     }
 
     /// <summary>A group of a force told to screen (the i-th of its line, past its guide, which has it handed over): the

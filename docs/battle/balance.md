@@ -494,7 +494,7 @@ arc's `Away` with it). Its distance off the screened guide is as ordered (`Scree
 [EST]) at least, and between them only so far toward the enemy that none of his heavy ships' guns in sight would take one
 of its ships as a target by doctrine's own floors (`HitFloor` of its shells landing and `RoundFloor`'s worth a round: a
 battery's rule for letting a target be, `CaptainLayer.WorthOn`'s), never past what can be seen there: his secondaries
-always, his chief guns only once their falls have come near one of its ships within `ScreenUnderFireS` (120 s [EST]: the
+always, his chief guns only once their falls have come near one of its ships within `UnderBigGunsS` (120 s [EST]: the
 splash ring, `GunnerySystem.ChiefFallsNear`); his boats are the screen's to fight and don't push it in. Judged once every
 `ScreenSafeEveryS` (10 s). `ScreenTests`: four M-class boats screening four dreadnoughts against four more abeam (the
 default preset's floors): about 4 km off at 22, 15 and 12 km (his secondaries out of reach), 1.3 km at 8 km, 1.4 km at 15 km

@@ -336,7 +336,7 @@
   "ScreenArcDeg": 45,
   "ScreenDivideShips": 4,
   "ScreenMinM": 1000,
-  "ScreenUnderFireS": 120,
+  "UnderBigGunsS": 120,
   "ScreenSafeEveryS": 10,
   "ForcePeriodMs": 10000,
   "ArrivedM": 2000,
