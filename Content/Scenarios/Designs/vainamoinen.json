@@ -479,7 +479,7 @@
    "mount": {
     "director_firing": true,
     "stable_vertical": false,
-    "lay_mil": 1,
+    "lay_mil": 0.5,
     "salvo_defl_mil": 2
    }
   }

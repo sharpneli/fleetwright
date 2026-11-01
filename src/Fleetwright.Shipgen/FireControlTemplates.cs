@@ -166,28 +166,32 @@ public static class FireControlTemplates
             "The 1970s digital systems with a turn-following filter (level 8, designer C6; the filter [INFERRED]). Its speed noise is the sim's " +
             "0.1, not the reference's 0.05² (F2: ships lose way in a turn)."),
 
-        // ---- mounts. A gun laid by its own layer: lay_mil is his whole elevation error a shot, 1 sigma, in mil (the sight's,
-        // his method's, the roll's), from manual-gunnery-research.md table 1 in a moderate sea (3°, 10 s) less the gun's own
-        // 2′ (its pattern has that), for a trained layer (the crews' Lay multiplies it): 1′ = 0.291 mil.
-        M("Open sights", false, 3.1, 3,
-            "Each gun laid by its layer over open sights, fired on the roll (table 1: 12.6′ an average layer, 10.8′ trained less " +
-            "the gun's 2′: 3.1 mil): before continuous aim, to the late 1890s (level 0)."),
-        M("Telescopic sights, fired on the roll", false, 2.0, 2.5,
-            "Each gun by its own telescope, fired as the roll brings the sight on (table 1: roll, telescope, trained 7.1′, less the " +
-            "gun's: 2.0 mil): heavy guns until power laying, continuous aim working only to about 9.2″ (fire-control-research.md §6)."),
-        M("Early telescopic sights", false, 0.85, 2.5,
-            "Each gun by its own early telescope, continuous aim (table 1: continuous, early telescope, average 4.1′, 3.6′ trained " +
-            "less the gun's: 0.85 mil; M0): the medium guns of 1899-1905, the Tsushima era (level 1)."),
-        M("Telescopic sights", false, 0.55, 2.5,
-            "Each gun by a good telescope, continuous aim (table 1: continuous, telescope, trained 2.7′, less the gun's: 0.55 " +
-            "mil), no director (level 2)."),
-        M("Director, follow the pointer", true, 1, 2,
-            "Director firing: the guns laid and fired from the director, the turrets following its pointers (M1, 1912-16; level 3)."),
-        M("Director, follow the pointer (no RPC)", true, 1, 1.5,
+        // ---- mounts. lay_mil is the layer's elevation error a shot on a steady platform, 1 sigma, in mil, for a trained layer
+        // (the crews' Lay multiplies it); the sea's share is the roll's and the pitch's (docs/battle/balance.md BL1b: his timing
+        // lag at her roll rate), counted there once (BL1l: these were table 1's moderate-sea values, the roll in them, and the
+        // reference's at sea states up to 3). A gun laid by its own layer: his sight's own error (manual-gunnery-research.md
+        // §2.3's model, 1σ: open 4′, early telescope 2.5′, telescope 1.2′; 1′ = 0.291 mil), the gun's own 2′ in its pattern.
+        M("Open sights", false, 1.15, 3,
+            "Each gun laid by its layer over open sights, fired on the roll (the open sight's 4′ on a steady platform: 1.15 mil; the " +
+            "roll his timing's): before continuous aim, to the late 1890s (level 0)."),
+        M("Telescopic sights, fired on the roll", false, 0.35, 2.5,
+            "Each gun by its own telescope, fired as the roll brings the sight on (the telescope's 1.2′: 0.35 mil; the roll his " +
+            "timing's): heavy guns until power laying, continuous aim working only to about 9.2″ (fire-control-research.md §6)."),
+        M("Early telescopic sights", false, 0.73, 2.5,
+            "Each gun by its own early telescope, continuous aim (the early telescope's 2.5′: 0.73 mil; M0): the medium guns of " +
+            "1899-1905, the Tsushima era (level 1)."),
+        M("Telescopic sights", false, 0.35, 2.5,
+            "Each gun by a good telescope, continuous aim (the telescope's 1.2′: 0.35 mil), no director (level 2)."),
+        // the directors: the reference's (fire_control_ref.py) at sea states up to 3 halved, its own split (an unstabilised
+        // director 1.0 mil against a stabilised one's 0.5, its sea factor on the former only, so the roll is the other half)
+        M("Director, follow the pointer", true, 0.5, 2,
+            "Director firing: the guns laid and fired from the director, the turrets following its pointers (M1, 1912-16; level 3; " +
+            "the reference's 1 mil less its roll: 0.5)."),
+        M("Director, follow the pointer (no RPC)", true, 0.5, 1.5,
             "Director firing without remote power control, the Japanese 1930s (no RPC on Yamato, computing.md §3): the Japanese plot's " +
-            "preset numbers."),
-        M("Director, power drive", true, 0.8, 1.5,
-            "Director firing with power training and elevation (M2, interwar; level 4)."),
+            "preset numbers (the reference's 1 mil less its roll: 0.5)."),
+        M("Director, power drive", true, 0.4, 1.5,
+            "Director firing with power training and elevation (M2, interwar; level 4; the reference's 0.8 mil less its roll: 0.4)."),
         M("Stable vertical, remote power control", true, 0.5, 1.2,
             "A stable vertical and gyro firing, the mounts under remote power control (M3, 1941-45; levels 5-6).", stable: true),
         M("Stable vertical, power servo", true, 0.4, 0.8,

@@ -1,5 +1,6 @@
 using Fleetwright.Sim.Ai;
 using Fleetwright.Sim.Ai.Commanders;
+using Fleetwright.Sim.Ai.Tasks;
 using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Missions;
@@ -205,7 +206,10 @@ public class AimsTests(ITestOutputHelper output)
     }
 
     /// <summary>A light cruiser (29 kn) for a zone 60 km west, a slower, stronger German dreadnought 12 km off her beam:
-    /// her commander declines it, and she still makes for her zone (it's her home now) and gets there.</summary>
+    /// her commander declines it, and she still makes for her zone (it's her home now), running for it at her best speed.
+    /// Whether she gets there under the dreadnoughts' fire is the guns' to say, not her commander's: with the laying right
+    /// (docs/battle/balance.md BL1l) a 12" hit in her first two minutes slowed her in this seed and she was finished, where
+    /// the old laying missed her all the way; and her captains don't chase salvos yet (BL1n).</summary>
     [Fact]
     public void A_breaker_that_declines_a_stronger_enemy_still_makes_for_her_zone()
     {
@@ -216,17 +220,23 @@ public class AimsTests(ITestOutputHelper output)
                 { "name": "Runner", "side": 0, "at": [56.5, 4.0], "course": 270, "kn": 20, "ships": [ { "design": "light_cruiser", "name": "West" } ] },
                 { "name": "Battle", "side": 1, "at": [56.61, 4.0], "course": 270, "kn": 18, "ships": [ { "design": "dreadnought", "names": ["D1", "D2"] } ] } ] }
             """;
+        TaskKind task = default;
+        double lon = double.NaN;
         var (w, end, start, ai) = Play(json, hours: 6, minute: (w, start, ai) =>
         {
             if ((w.Time.Ms - T0) % 1_200_000 == 0 && w.Ships.Store.SlotOf(Named(start, "West")) is int slot and >= 0)
+            {
                 output.WriteLine($"{(w.Time.Ms - T0) / 60_000,4} min West at {Earth.LatLon(w.Ships.Store[slot].Position)}, {w.Ships.Store[slot].SpeedOrderKn:0} kn, " +
                                  $"task {ai.Tasks.Of(Unit.Ship(Named(start, "West")))}, {ai.Commanders.PhaseOf(0)}");
+                if (w.Time.Ms - T0 == 1_200_000)
+                    (task, lon) = (ai.Tasks.Of(Unit.Ship(Named(start, "West"))).Kind, Earth.LatLon(w.Ships.Store[slot].Position).Lon);
+            }
         });
         foreach (var l in end.Timeline.Where(l => l.Kind is PlayEvent.Ordered or PlayEvent.Phase && l.Side == 0).Take(12))
             output.WriteLine($"{(l.Ms - T0) / 60_000.0,5:0} min  {l.Kind} {l.Other}");
-        Assert.True(Aims.Afloat(w.Ships.Store, w.Ships.Store.SlotOf(Named(start, "West"))));
-        Assert.Equal(AimState.Met, end.Reading(0, 0).State);
         Assert.Contains(end.Timeline, l => l.Kind == PlayEvent.Ordered && l.Side == 0 && (CommanderWhy)(l.Other % 256) == CommanderWhy.Outmatched);
+        Assert.Equal(TaskKind.Withdraw, task);   // home is her zone now
+        Assert.True(lon < 4.0 - 12 / KmPerLonDeg, $"12 km west in her first 20 minutes: at {lon:0.000}°");
     }
 
     /// <summary>A convoy for a zone 40 km west with a cruiser by it, and the cruiser's own way home 50 km north as a
@@ -352,14 +362,14 @@ public class AimsTests(ITestOutputHelper output)
 
     /// <summary>A3's commander: his battlecruiser, with no orders, searches the zone the convoy makes for (he's never held
     /// it), finds it on its way in and is sent after the tramps; she fights the escort while it's between them at point
-    /// blank and the tramps are out of reach, then goes for the tramps, and the convoy is stopped with its escort still
-    /// afloat.</summary>
+    /// blank and the tramps are out of reach, then goes for the tramps, and the convoy is stopped. (The escort, a light
+    /// cruiser under a battlecruiser's guns at point blank, may be sunk first: with the laying right, docs/battle/balance.md
+    /// BL1l, she went down in 25 minutes where she had lasted the fight.)</summary>
     [Fact]
     public void A_stop_side_finds_the_convoy_on_its_way_and_shoots_the_transports_first()
     {
         int onTramps = 0, onGuard = 0;
         var seq = new System.Text.StringBuilder();
-        bool guardAtEnd = false;   // the escort afloat when the convoy's aim was decided
         var (w, end, start, ai) = Play(Convoy(), hours: 8, minute: (w, start, ai) =>
         {
             if (w.Ships.Store.SlotOf(Named(start, "Hunter")) < 0)
@@ -373,8 +383,6 @@ public class AimsTests(ITestOutputHelper output)
                 onTramps++;
             if (t != 0)
                 seq.Append(t == Named(start, "Guard") ? 'G' : 'T');
-            if (ai.Aims.Read(w, 0, 0).State == AimState.Open)
-                guardAtEnd = w.Ships.Store.SlotOf(Named(start, "Guard")) is int gs and >= 0 && Aims.Afloat(w.Ships.Store, gs);
             if ((w.Time.Ms - T0) % 1_800_000 == 0)
                 output.WriteLine($"{(w.Time.Ms - T0) / 60_000,4} min Hunter task {ai.Tasks.Of(Unit.Ship(Named(start, "Hunter")))}, {ai.Commanders.PhaseOf(1)}, " +
                                  $"on {t}, convoy {ai.Aims.Read(w, 0, 0)}");
@@ -386,7 +394,8 @@ public class AimsTests(ITestOutputHelper output)
         foreach (var l in end.Timeline.Where(l => l.Kind is PlayEvent.Lost or PlayEvent.GaveUp or PlayEvent.Fired or PlayEvent.Hit))
             output.WriteLine($"{(l.Ms - T0) / 60_000.0,5:0} min  {l.Kind} {start.ShipNames.GetValueOrDefault(l.Entity)} {start.ShipNames.GetValueOrDefault(l.Other)} {l.Count}");
         Assert.True(onTramps > 0);
-        Assert.True(guardAtEnd, "the convoy stopped with its escort still afloat");
+        Assert.True(seq.Length > 0 && seq[0] == 'G' && seq.ToString().TrimStart('G').Length > 0 && seq.ToString().TrimStart('G').All(c => c == 'T'),
+            "the escort first, while it's between them, then the tramps");
         Assert.NotEqual(AimState.Met, end.Reading(0, 0).State);
         Assert.Contains(end.Timeline, l => l.Kind == PlayEvent.Ordered && l.Side == 1 && (CommanderWhy)(l.Other % 256) == CommanderWhy.Contact);
     }

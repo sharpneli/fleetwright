@@ -495,7 +495,7 @@
    "mount": {
     "director_firing": true,
     "stable_vertical": false,
-    "lay_mil": 1,
+    "lay_mil": 0.5,
     "salvo_defl_mil": 2
    }
   },
@@ -503,7 +503,7 @@
    "mount": {
     "director_firing": false,
     "stable_vertical": false,
-    "lay_mil": 2,
+    "lay_mil": 0.35,
     "salvo_defl_mil": 2.5
    }
   },
@@ -511,7 +511,7 @@
    "mount": {
     "director_firing": false,
     "stable_vertical": false,
-    "lay_mil": 0.55,
+    "lay_mil": 0.35,
     "salvo_defl_mil": 2.5
    }
   }

@@ -42,9 +42,9 @@ public class CoarseParityTests(ITestOutputHelper output)
     /// <summary>A duel's world: the two ships at sea, the shooter's battery engaged at once (or after
     /// <paramref name="engageAfterS"/>: the panel's, once the coarse tier's first look has had them see each other, so it
     /// compares the fire and not the minute's first sighting).</summary>
-    static World Make(Duel d, double speed, int seed, double engageAfterS = 0)
+    static World Make(Duel d, double speed, int seed, double engageAfterS = 0, bool smoke = true)
     {
-        var w = new World(Start, (ulong)seed, Settings with { HitsDoDamage = d.Damage });
+        var w = new World(Start, (ulong)seed, Settings with { HitsDoDamage = d.Damage, Smoke = smoke && Settings.Smoke });
         int a = w.Ships.AddClass(Fleet.Get(d.Shooter).Class!), b = w.Ships.AddClass(Fleet.Get(d.Target).Class!);
         var p = Earth.Position(Lat, Lon);
         var f = Earth.Forward(p, 90);
@@ -138,12 +138,14 @@ public class CoarseParityTests(ITestOutputHelper output)
     }
 
     /// <summary>Coarse fire allocates nothing (coarse.md's invariants): a light cruiser engaging a zigzagging destroyer
-    /// with damage on, the second ten minutes against the first's warmed buffers.</summary>
+    /// with damage on, the second ten minutes against the first's warmed buffers. The smoke field off: a burning target's
+    /// smoke grows its index to a new high (doubling, `SmokeSystemTests.Nothing_allocated_once_grown`'s rule), which the
+    /// second ten minutes reached once BL1l's laying hit her more (docs/battle/balance.md).</summary>
     [Fact]
     public void Coarse_fire_allocates_nothing()
     {
         var d = Duels[^1] with { RangeM = 7_000, Damage = true };
-        var w = Make(d, Coarse, 5);
+        var w = Make(d, Coarse, 5, smoke: false);
         int side = 1;
         void Legs(int n)
         {
