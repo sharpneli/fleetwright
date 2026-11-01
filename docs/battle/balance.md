@@ -537,6 +537,13 @@ the Jutland 84.2 / 82.2 / 77.0 (the British 26.5, now within twice the record's 
 18.1 (the Germans 12.0 → 16.1, a scenario with a wide spread, 0-24 a run); Tsushima 4.8 / 4.5 / 6.1; Coronel 2.4 / 2.4 /
 1.4; 5 of 14 sides within 2x (4). (a), the disengaged side under the big guns, waits on the user's look.
 
+**Is (a) needed?** The Dogger Bank's fire table (4 seeds), hits on boats in a fighting unit by the battery that landed
+them, BL5f → BL5g: capital ships' chief guns 325 → 171 (on the screens 141 → 46), their secondaries 132 → 206,
+destroyers' guns 218 → 170, cruisers' chief guns 125 → 81. The screens are now hit mostly by enemy boats (153) and capital
+ships' secondaries (115) about 3.4 km from the enemy's heavy ships: counter-attacks chasing his boats in under his line,
+not the screen's station. So (a) buys little now; a counter-attack that breaks off at BL5f's safe line (`Matchup.LetBeM`)
+would be the next small step, beside proposal 3 (the day attack gaining round the enemy's reach).
+
 ### BL5: who closes inside 1 km (2026-10-30, after the user's playtest)
 
 `--fire-table` now also counts the ship-minutes each ship spends inside 1 km of an enemy, by what she, her admiral and
