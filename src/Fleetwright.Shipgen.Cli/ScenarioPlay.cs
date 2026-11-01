@@ -147,7 +147,7 @@ static class ScenarioPlay
                         against[k2] = (as2 + r.Shells, ah2 + r.Hits);
                     }
                     if (ts >= 0 && r.Hits > 0)
-                        attacks.Hit(w, ai, seed, ts, r.Hits, night);
+                        attacks.Hit(w, ai, seed, ts, r.Hits, night, ss, r.Battery);
                     if (ts >= 0 && r.Hits > 0 && ai.Captains.Of(r.Target).Order != Fleetwright.Sim.Ai.Captains.CaptainOrder.Home)
                     {
                         var her = w.Ships.Store[ts];
@@ -470,7 +470,7 @@ static class ScenarioPlay
             active.Remove(key);
         }
 
-        public void Hit(World w, AiSystem ai, ulong seed, int slot, int hits, bool night)
+        public void Hit(World w, AiSystem ai, ulong seed, int slot, int hits, bool night, int shooter, int battery)
         {
             var store = w.Ships.Store;
             var her = store[slot];
@@ -483,6 +483,12 @@ static class ScenarioPlay
                 int phase = (int)ai.Admirals.AttackOf(g.GroupId).Phase;
                 way = $"admiral {adm} / task {ai.Tasks.Of(Fleetwright.Sim.Ai.Unit.Group(g.GroupId)).Kind}" +
                       (phase != 0 ? $" / attack {(AttackPhase)phase}" : "");
+                // whom her unit's guide fights, and what landed the hits
+                int foe = ai.Captains.FightEnemyOf(w.Groups.GuideShip(g));
+                if (foe != 0 && store.SlotOf(foe) is int fs and >= 0)
+                    way += $" / its guide fights a {Sightings.TypeOf(store[fs].Handling.Class)}";
+                var sc = store[shooter].Handling.Class;
+                way += $" / hit by a {Sightings.TypeOf(sc)}'s {(sc.Batteries[battery].Chief ? "chief" : "secondary")} guns";
                 if (active.TryGetValue((seed, g.GroupId), out var run))
                     run.Hits[phase] += hits;
             }

@@ -267,6 +267,9 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
     public (bool Attacking, bool Finishing, bool Away) FightOf(int entity) =>
         Find(entity) is int i and >= 0 ? (captains[i].Attacking, captains[i].Finishing, captains[i].FightAway) : default;
 
+    /// <summary>Whom a fighting captain is fighting (an entity, tools; 0: nobody).</summary>
+    public int FightEnemyOf(int entity) => Find(entity) is int i and >= 0 ? captains[i].FightEnemy : 0;
+
     /// <summary>The range a fighting captain keeps, m (his unit's matchup's best, or ordered; 0 before he's fought).</summary>
     public double BandOf(int entity) => Find(entity) is int i and >= 0 ? captains[i].FightBandM : 0;
 

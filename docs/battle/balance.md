@@ -501,6 +501,22 @@ default preset's floors): about 4 km off at 22, 15 and 12 km (his secondaries ou
 with his big guns on them; always on his side. `AdmiralOrdersTests`: destroyers against dreadnoughts 14 km abeam now
 screen on the enemy's side, one division ahead and one astern.
 
+**Measured** (the panel, `balance/bl5f.json`, against BL5e's): **the Dogger Bank worse, 14.8 → 21.1 ships lost a run**
+(the British 7.1 → 11.9, the German hits on them 531 → 1,034); the Jutland 84.2 → 82.2; the rest within their noise. The
+fire table at the Dogger Bank (4 seeds), each hit on a boat now also by whom her unit's guide fights and which battery
+landed it: the screens hug their battlecruisers (1.2 km from their own, 6.4 km from the enemy's: the lines are about 7 km
+apart, the record's 15-18) and take **141 hits from capital ships' chief guns** (and 81 from their secondaries); the
+flotillas in their admiral's Fight 128 from capital ships' chief guns, most with no target of their own. **The enemy's
+main batteries take the destroyers:** on the engaged bow of her own line a boat is inside his big guns wherever she is,
+so BL5f's floor (on his side) holds her there. Tried and taken out: a captain's fight band kept out of a target's guns
+when his own can't take her (a destroyer told to fight a battlecruiser alone already holds 13 km: nothing to correct).
+Not yet built: proposal 3, the day attack gaining round the enemy's reach.
+
+**For the user:** (a) the disengaged side again once the big guns are on the screen (BL5f's floor only while they
+aren't), or (b) the chief batteries' targets by the fleets' practice: a battle line's main guns for his heavy ships, his
+boats to the secondaries unless they close to attack (the research request on fire distribution); and why the Dogger
+Bank's lines close to 7 km.
+
 ### BL5: who closes inside 1 km (2026-10-30, after the user's playtest)
 
 `--fire-table` now also counts the ship-minutes each ship spends inside 1 km of an enemy, by what she, her admiral and
