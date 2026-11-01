@@ -1382,9 +1382,14 @@ public sealed class GunnerySystem : IWorldSystem
         // (fire_control_ref.py engage(), "fire")
         fc.CorrR = fc.Bracket.Aim(now, fc.DriftMs, Held(fc, now));
         // a ladder's rungs at the ranging step, the computer's doubt (balance.md BL1t: never wider than the doctrine's own
-        // step; a ladder of 366 m about a solution good to 100 m threw two salvos of three a ship's danger space off)
-        double ladder = phase == FirePhase.Ranging && dis.LadderStepM > 0 && !pointBlank
-            ? (fc.Rung - 0.5 * (dis.InFlight - 1)) * Math.Min(dis.LadderStepM, fc.Bracket.Step) : 0;
+        // step; a ladder of 366 m about a solution good to 100 m threw two salvos of three a ship's danger space off); and
+        // once its falls have closed the bracket, inside it at a quarter of its width, so each group halves it as every
+        // navy's bracket did (the RN's 400-200-100, the USN's "reverse and halve"; at the floor, the rocking ladder's
+        // ±100 yd): at a fixed step the next group fell where the last had and never closed in
+        double rung = Math.Min(dis.LadderStepM, fc.Bracket.Step);
+        if (fc.Bracket.Closed)
+            rung = Math.Min(rung, 0.25 * (fc.Bracket.HiAt(now, fc.DriftMs) - fc.Bracket.LoAt(now, fc.DriftMs)));
+        double ladder = phase == FirePhase.Ranging && dis.LadderStepM > 0 && !pointBlank ? (fc.Rung - 0.5 * (dis.InFlight - 1)) * rung : 0;
         var r = stream.Derive((ulong)f).Derive((ulong)fc.Generation).Derive(0x5A1u).Derive((ulong)fc.Salvos);
         // the layer's stress (BL1d): his station's duress, the director's (its first instrument's) or the guns' own
         int layerAt = mount.DirectorFiring && fc.SensorCount > 0 && sensors[f * MaxSensors].Eye >= 0 ? cls.Eyes[sensors[f * MaxSensors].Eye].Component

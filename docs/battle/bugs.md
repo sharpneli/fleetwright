@@ -128,6 +128,13 @@ runs 5-7, after its fix, and the Debug run had none.
 
 ## Balance and calibration
 
+- [ ] The post-war designs with the radar stand-in range by eye (found 2026-11-01, balance.md BL1u's sweep): `tiger`,
+  `daring`, `colbert`, `hamburg`, `akizuki_1960`, `impetuoso` fit "Auto-track ranging (radar stand-in)" with the Mk 1A,
+  but their `rangefinder_m` is 0 (their radar is `radar_t`), so the sensor's base is 0, `Ranges` is false, and every
+  reading is the eye's (12.5% of the range): a steady target at 12 km is held 1.3 km off by `tiger`, 3 km by `daring`,
+  the spots carrying corrections of 1.8 km; `tiger` hits about 3% at 12 km where a Ford Mk 8 `battleship` hits 19% at
+  15 km. Outside the first cut (1890-1925). Fix: the stand-in reads at its own row's base when the design has radar and
+  no rangefinder, or the designs get the base the stand-in means (weights and goldens move); or wait for the radar pass.
 - [ ] The flotilla scenario's day attack (six boats ordered against four battleships) is beaten off before it fires
   together in half the runs: 4 of 8 seeds both before and after the destroyer crunch's lighter boats (2026-10-15),
   boats falling out for steering and speed and the line dropping under the break-off share. `FlotillaAttackTests`

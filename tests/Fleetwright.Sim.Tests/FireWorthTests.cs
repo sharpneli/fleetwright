@@ -191,4 +191,31 @@ public class FireWorthTests(ITestOutputHelper output)
         Assert.True(wild < 0.08 * effect, "her falls stay near her");
         Assert.True(rungs > 0 && widest < 366, "the ladder at its doubt");
     }
+
+    [Fact]
+    public void A_ladder_that_has_bracketed_her_halves_into_the_bracket()
+    {
+        // an armoured cruiser's EU-Anzeiger on another 8 km off, both steady, by the German ladder: a group whose falls
+        // closed the bracket is followed by one inside it at a quarter of its width, so the groups close in instead of
+        // falling where the last fell (BL1u: at a fixed step the ladder never got nearer than its step, and ranged on for
+        // minutes against a steady target)
+        var steps = new List<double>();
+        int effect = 0, ranging = 0;
+        for (ulong seed = 1; seed <= 3; seed++)
+        {
+            var w = Duel("armoured_cruiser", "armoured_cruiser", 8_000, 16, Settings, seed);
+            w.Apply(GunnerySystem.SetDiscipline(0, 2));
+            var salvos = new List<GunnerySystem.SalvoReport>();
+            w.Gunnery.Reported = salvos.Add;
+            w.AdvanceTo(Start + 14 * 60_000);
+            var main = salvos.Where(s => s.Battery == 0).ToList();
+            steps.AddRange(main.Where(s => s.LadderM > 0).Select(s => s.LadderM));
+            var after = main.SkipWhile(s => s.Phase != FirePhase.Effect).ToList();
+            (effect, ranging) = (effect + after.Count, ranging + after.Count(s => s.Phase == FirePhase.Ranging));
+        }
+        output.WriteLine($"ladder steps {string.Join(", ", steps.Select(s => s.ToString("0")))}; ranging {ranging} of {effect} after the first fire for effect");
+        Assert.True(steps.Count >= 3, "she laddered");
+        Assert.True(steps.Min() < 0.5 * steps.Max(), "a later group closed in");
+        Assert.True(ranging < 0.2 * effect, "and she came to fire for effect");
+    }
 }
