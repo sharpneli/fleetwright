@@ -28,6 +28,10 @@ static class ScenarioPlay
         // and inside 4 km, why the shooter was there: his captain's order and way of fighting (BL5)
         var close = new SortedDictionary<string, (long Shells, long Hits)>(StringComparer.Ordinal);
         var against = new SortedDictionary<string, (long Shells, long Hits)>(StringComparer.Ordinal);
+        // the fire at ships going home (BL2's cripples, after BL5): who fires, from how near, closing or not; and each
+        // cripple's hits taken going home and whether she got there
+        var homeWho = new SortedDictionary<string, (long Shells, long Hits)>(StringComparer.Ordinal);
+        var homeShips = new Dictionary<(ulong Seed, int Entity), (long Hits, bool Lost)>();
         // ship-minutes inside 1 km of an enemy, by side and what she was doing (BL5: who closes in, and why)
         var inside = new SortedDictionary<string, long>(StringComparer.Ordinal);
         // the heavy guns' salvos laid by the sights (not point blank) by her rate of turn as she fired, and those fired under
@@ -35,6 +39,7 @@ static class ScenarioPlay
         var helm = new SortedDictionary<string, (long Shells, long Hits)>(StringComparer.Ordinal);
         var helmWhy = new SortedDictionary<string, (long Shells, long Hits)>(StringComparer.Ordinal);
         int[] calBands = [120, 200, 300], rangeBands = [2, 4, 6, 10, 15];
+        string[] rangeNames = ["0-2 km", "2-4 km", "4-6 km", "6-10 km", "10-15 km", "15 km and over"];
         var settings = SimSettings.Load(settingsPath);
         if (smoke is bool on)
             settings = settings with { Smoke = on };   // docs/battle/smoke.md: --smoke or --no-smoke
@@ -131,6 +136,37 @@ static class ScenarioPlay
                         var (as2, ah2) = against.GetValueOrDefault(k2);
                         against[k2] = (as2 + r.Shells, ah2 + r.Hits);
                     }
+                    if (ts >= 0 && ai.Captains.Of(r.Target).Order == Fleetwright.Sim.Ai.Captains.CaptainOrder.Home)
+                    {
+                        var (so, _, _) = ai.Captains.Of(r.Shooter);
+                        var (satt, sfin, saway) = ai.Captains.FightOf(r.Shooter);
+                        string sw2 = so == Fleetwright.Sim.Ai.Captains.CaptainOrder.Fight ? satt ? "Fight attacking" : sfin ? "Fight finishing" : saway ? "Fight away" : "Fight in the band" : so.ToString();
+                        if (w.Groups.UnitOf(r.Shooter) is { } stop)
+                            sw2 += $" / admiral {ai.Admirals.Of(stop.GroupId).Item1} / task {ai.Tasks.Of(Fleetwright.Sim.Ai.Unit.Group(stop.GroupId)).Kind}";
+                        var sh0 = w.Ships.Store[ss];
+                        var th0 = w.Ships.Store[ts];
+                        var u = th0.Position - sh0.Position;
+                        double rate = Fleetwright.Sim.Core.Vec3d.Dot(th0.Forward * th0.Speed - sh0.Forward * sh0.Speed, u * (1 / Math.Max(u.Length, 1)));
+                        // was there a better target for her: an enemy in sight of her side, still fighting (not going home),
+                        // within this battery's reach
+                        double reach = w.Gunnery.ReachM(w.Ships.Store.Combat.Loadout(ss), r.Battery);
+                        bool better = false;
+                        if (w.Sightings.Of(sh0.Side) is { } pic)
+                            for (int ci = 0; ci < pic.Count && !better; ci++)
+                            {
+                                ref readonly var ct = ref pic[ci];
+                                if (!ct.InSight || ct.Entity == r.Target || ct.Side == sh0.Side || !ct.Foe || w.Ships.Store.SlotOf(ct.Entity) < 0)
+                                    continue;
+                                better = ai.Captains.Of(ct.Entity).Order != Fleetwright.Sim.Ai.Captains.CaptainOrder.Home &&
+                                         Earth.Distance(sh0.Position, ct.Position) < reach;
+                            }
+                        string k3 = $"{(better ? "a fighting enemy in reach" : "no other in reach      ")} {(night ? "night" : "day")} {rangeNames[rangeBands.Count(b => r.TrueRangeM >= b * 1000)],-8} {(rate < -1 ? "closing" : rate > 1 ? "opening" : "holding"),-7} " +
+                                    $"{(th0.Speed < 0.6 * th0.Handling.Class.Motion.MaxSpeedKn * Fleetwright.Sim.Combat.Handling.MsPerKnot ? "she's slow" : "she's quick"),-10} / {sw2}";
+                        var (hs3, hh3) = homeWho.GetValueOrDefault(k3);
+                        homeWho[k3] = (hs3 + r.Shells, hh3 + r.Hits);
+                        var hk = (seed, r.Target);
+                        homeShips[hk] = (homeShips.GetValueOrDefault(hk).Hits + r.Hits, false);
+                    }
                 };
             foreach (var x in start.Warnings)
                 Console.WriteLine($"  {x}");
@@ -177,6 +213,8 @@ static class ScenarioPlay
                 for (int slot = 0; slot < w.Ships.Store.Slots; slot++)
                     if (w.Ships.Store.IsAlive(slot))
                         guns.End.Add(w.Ships.Store.Combat.Condition(slot));
+                foreach (var k in homeShips.Keys.Where(k => k.Seed == seed).ToList())
+                    homeShips[k] = (homeShips[k].Hits, w.Ships.Store.SlotOf(k.Entity) < 0);
             }
             catch (Exception x) when (x is ArgumentException or InvalidOperationException or IndexOutOfRangeException or NullReferenceException)
             {
@@ -245,6 +283,19 @@ static class ScenarioPlay
             Console.WriteLine("inside 4 km, by the range against the shooter's band, the visibility and her target's way (shells, hits):");
             foreach (var (why, (sh, hi)) in against.OrderByDescending(kv => kv.Value.Hits).Take(25))
                 Console.WriteLine($"  {why,-100} {sh,8} {hi,6}");
+            if (homeShips.Count > 0)
+            {
+                var hl = homeShips.Values.Select(v => v.Hits).OrderBy(h => h).ToList();
+                Console.WriteLine($"ships going home under fire: {homeShips.Count} ({homeShips.Values.Count(v => v.Lost)} lost by the end), {hl.Sum()} hits on them going home " +
+                                  $"(median {hl[hl.Count / 2]}, the top quarter from {hl[3 * hl.Count / 4]}, the most {hl[^1]}); by range, closing, her speed and the shooter (shells, hits):");
+                foreach (var yes in new[] { true, false })
+                {
+                    var part = homeWho.Where(kv => kv.Key.StartsWith("a fighting", StringComparison.Ordinal) == yes).ToList();
+                    Console.WriteLine($"  {(yes ? "with a fighting enemy in the battery's reach" : "with none other in reach")}: {part.Sum(kv => kv.Value.Shells)} shells, {part.Sum(kv => kv.Value.Hits)} hits");
+                }
+                foreach (var (why, (sh, hi)) in homeWho.OrderByDescending(kv => kv.Value.Hits).Take(30))
+                    Console.WriteLine($"  {why,-130} {sh,8} {hi,6}");
+            }
         }
         if (crashed > 0)
             Console.WriteLine($"the sim broke in {crashed} of {seeds} seeds");

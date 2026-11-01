@@ -320,6 +320,41 @@ where the fire is.
 
 **What chasing can buy, measured (2026-11-01, after BL1u, `scenario jutland.json --play --seeds 2 --fire-table`):** lost 40.5 of 151 British and 46 of 99 German (the record 14 v 11); 7,060 hits a run. Evasion works only where the shell flies long (evasion-research.md: heavy guns beyond about 9 kyd, hits halved; destroyers inside 4 kyd nothing, or worse), and the heavy guns' hits beyond 10 km are about 450 of the 7,060 (6%); on large ships the heavy hits inside 6 km (about 740) outnumber those beyond (about 470). The bulk is close: under-120 mm guns by day at large ships 1,900 hits at 2-4 km (24%), 1,220 point blank inside 2 km, 1,120 at 4-6 km. Inside 4 km the shooters are ships going home through the enemy (day 895, night 556 hits), flotillas gaining bearing in their day attacks (805 + 301), ships whose intercept is done (751), scouts shadowing (683 + 446 + 164), screens on station (676), the night attacks (698). So salvo chasing is right for its own sake (the 10+ km duels, the shadowers, the runners) but takes off a few percent of the blood; the rest is who closes by day (BL5's question again, after BL2, BL5's fixes and striking colours).
 
+### BL5 again: the blood inside 4 km is the cripples (2026-11-01, the user: "Close-range first")
+
+`--fire-table` now also breaks down the fire at ships going home (a captain's Home order): who fires, the range, closing
+or not, her speed, whether the shooter had a fighting enemy (in sight of her side, not going home) within the battery's
+reach, and each cripple's hits after she turned for home and whether she got there. The Jutland, 2 seeds:
+
+- **211 ships fell out and went home under fire** (about 105 a run of 250); **155 of them were lost** (73%). They took
+  **5,381 hits going home**, over a third of all the hits (median 10 a ship, the top quarter 35 or more, the most 309).
+- **Why so many fall out:** 115 of the 211 for their main guns (326 main mounts out: guns out 133, gunhouse out of
+  action 93, magazine flooded by the sea 47, gunhouse destroyed 25); the rest for speed, list and water.
+- **Who fires on them:** mostly ships keeping station in their lines under their admirals' Fight in an attack, closing
+  on slow cripples at 2-6 km; then screens, shadowers, ships whose intercept is done.
+- **3,332 of the 5,381 (62%) were fired with a fighting enemy in sight within the battery's reach;** 2,049 with none
+  (finishing a cripple with nothing better to do: the user's "an important thing", 2026-10-30).
+- **Why:** a target's score is her lead over his worth of her (`Worth` by how done for she's seen, BL2a's `Matters`,
+  the aims' `Want`). `Matters` is 1 while her guns are seen firing: a cripple going home that fires back at whoever is
+  near counts in full, and she's the nearest and the easiest to hit. `Matchup.Threat` (what her guns and torpedoes are
+  expected to put out of him) weighs a target only when an aim wants something sunk, and from her class's whole
+  armament, not what she has left.
+
+**Proposed:**
+
+1. **A target by what she can still do to him** (the user's "fire at what's firing at you... cripples are not
+   interesting when there is something better to do"): `Threat` in every target choice, not only the aims': a fighting
+   enemy in reach that can hurt him comes before a cripple making away with a turret left; with nothing else in reach
+   the cripple is taken as now. Her threat from what his navy sees of her: the guns seen in her salvos (their flashes),
+   her speed, her course away, not her class's full armament.
+2. **Fewer cripples to begin with (the root):** about 105 fall-outs a run against the record's handful; over half for
+   main guns. A `damage-history`-style check of mounts put out a hit against the record (Jutland's turrets knocked out
+   on both sides), then BL3's damage leftovers and BL1's missing degraders (fatigue, smoke over the guns) by what it
+   shows.
+3. (Alternative to 1) **The admiral's fire distribution:** a line fights the enemy's line ship for ship by its
+   admiral's signal, as the record's fleets did; a cripple out of the enemy line drops out of the distribution and is
+   left to whoever has nothing better.
+
 ### BL5: who closes inside 1 km (2026-10-30, after the user's playtest)
 
 `--fire-table` now also counts the ship-minutes each ship spends inside 1 km of an enemy, by what she, her admiral and
