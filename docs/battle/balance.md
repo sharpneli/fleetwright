@@ -318,6 +318,8 @@ where the fire is.
 
 **After the fire control (the user, 2026-11-01):** salvo chasing for evasion: "first we tune how to shoot, then we'll tune what happens if you're being shot at." A captain under fire steering for the last fall, as the record's light cruisers did in the run to the north (BL1l's breaker test; fc-history's steady-against-chaser ordering), once BL1's shooting is settled.
 
+**What chasing can buy, measured (2026-11-01, after BL1u, `scenario jutland.json --play --seeds 2 --fire-table`):** lost 40.5 of 151 British and 46 of 99 German (the record 14 v 11); 7,060 hits a run. Evasion works only where the shell flies long (evasion-research.md: heavy guns beyond about 9 kyd, hits halved; destroyers inside 4 kyd nothing, or worse), and the heavy guns' hits beyond 10 km are about 450 of the 7,060 (6%); on large ships the heavy hits inside 6 km (about 740) outnumber those beyond (about 470). The bulk is close: under-120 mm guns by day at large ships 1,900 hits at 2-4 km (24%), 1,220 point blank inside 2 km, 1,120 at 4-6 km. Inside 4 km the shooters are ships going home through the enemy (day 895, night 556 hits), flotillas gaining bearing in their day attacks (805 + 301), ships whose intercept is done (751), scouts shadowing (683 + 446 + 164), screens on station (676), the night attacks (698). So salvo chasing is right for its own sake (the 10+ km duels, the shadowers, the runners) but takes off a few percent of the blood; the rest is who closes by day (BL5's question again, after BL2, BL5's fixes and striking colours).
+
 ### BL5: who closes inside 1 km (2026-10-30, after the user's playtest)
 
 `--fire-table` now also counts the ship-minutes each ship spends inside 1 km of an enemy, by what she, her admiral and
