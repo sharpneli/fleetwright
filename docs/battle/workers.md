@@ -1,5 +1,5 @@
 # Plan: the sim's workers (the job system)
-Status: **agreed 2026-10-24** (the decisions below answered); W0-W4 and W6 built 2026-10-24; W7 tried and left serial; W8's curve measured; the default count capped at 2 (the user, 2026-10-24), reassessed whenever more goes onto the workers. The AI on workers (W9-W15, superseding W5) drafted 2026-11-01; W9-W13 built 2026-11-01, W14 2026-11-02, W15 next.
+Status: **agreed 2026-10-24** (the decisions below answered); W0-W4 and W6 built 2026-10-24; W7 tried and left serial; W8's curve measured; the default count capped at 2 (the user, 2026-10-24), reassessed whenever more goes onto the workers. The AI on workers (W9-W15, superseding W5) drafted 2026-11-01; W9-W13 built 2026-11-01, W14 2026-11-02, W15's curve measured 2026-11-02 (the cap's answer waits on the user).
     Updated: 2026-11-01
 
 The job system the architecture agreed from the start (`docs/world/architecture.md` "Threaded throughout", decision 1)
@@ -469,6 +469,29 @@ layer each tick on the sim thread, as planned for the dispatch, and what's heavy
 
 The Jutland back to back with W13 (2 workers): 242.0 -> 212.7 s; the admirals 61.5 -> 49.3 µs a tick. The machine
 drifted between the two (the ships' step 29.6 -> 22.7 µs a tick), so part of it is the machine.
+
+W13-W14's panel (their output changes: each ship's own doctrine in her scratch, the knowledge built by version and
+period): Dover 0.6 / 1.5, Coronel 1.1 / 0.8, Cape Sarych 2.3 / 0.6, Prizes 1.1 / 0.6, Åland 4.0 / 5.3, Heligoland
+2.1 / 12.8, Dogger Bank 6.6 / 10.9, Tsushima 3.8 / 5.5, the Jutland 30.5 / 51.3; 6 of 14 sides within about twice the
+record, the record's loser losing more in 25 of 44 seeds: as W12's but for Heligoland and the Jutland's spread.
+
+### W15 The curve - measured 2026-11-02
+
+The Jutland (`--play`, W9-W14, this machine's 16 cores, nothing else running, one after another), every run the same
+battle and the same hash:
+
+| workers | played in | vs inline | the step, a tick | sighting, a look | the captains' job, a tick | the admirals, a tick |
+|---|---|---|---|---|---|---|
+| 0 | 299.9 s | | 46.1 µs | 1342 µs | 64.5 µs | 44.9 µs |
+| 1 | 269.5 s | -10% | 33.9 µs | 1076 µs | 54.2 µs | 50.5 µs |
+| 2 | 211.2 s | -30% | 23.1 µs | 702 µs | 37.4 µs | 49.6 µs |
+| 4 | 185.3 s | -38% | 18.3 µs | 520 µs | 29.9 µs | 49.0 µs |
+| 8 | 163.7 s | -45% | 11.9 µs | 391 µs | 25.5 µs | 48.0 µs |
+
+Against October's curve (W8: 2 -> 4 workers bought 7%, 4 -> 8 another 5%), more of a play now goes wide: 2 -> 4 buys 12%
+and 4 -> 8 another 12%. The serial floor at 8 workers is the admirals (29% of the play: their thinks themselves, a few a
+tick), the smoke's upkeep (11%), the commander (4%), the applies. **The cap, for the user** (the user, 2026-11-01: reassessed
+whenever more goes onto the workers): 4 gives two thirds of 8's gain over 2; proposed 4, kept at 2 until answered.
 
 ### The panel, W10 and W11 (2026-11-01)
 

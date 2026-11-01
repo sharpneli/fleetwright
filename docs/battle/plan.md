@@ -17,7 +17,7 @@ date** when a step or a sub-plan starts or finishes, and take stock against it f
 reopened 2026-11-01 (BL1j-BL1n: the roll averaged over the hull and counted once, the own-turn kick by rate of turn,
 the panel reading every hit rate beside its range; then BL1o-q, the gunnery officer's and the captain's judgement under
 fire; BL1t-u, no pulsing falls under helm, the German ladder halving; BL5e-h, the targets by doctrine, the screens' station,
-the main guns for heavy ships, the day attack's gain out of reach); AI threading next (the user, 2026-11-01: `workers.md` W9-W15, every captain, admiral and commander a think from state to commands, spread over the ticks); salvo chasing for evasion next (balance.md, after BL1q), then the user's
+the main guns for heavy ships, the day attack's gain out of reach); AI threading built (the user, 2026-11-01: `workers.md` W9-W15, every captain, admiral and commander a think from state to commands, spread over the ticks; W9-W14 done 2026-11-02, the cap for the user); salvo chasing for evasion next (balance.md, after BL1q), then the user's
 playtest.
 
 | Step | State | Plan | Left |
@@ -45,7 +45,7 @@ playtest.
 | 5.1e Signals | not started | `command.md` | |
 | 5.1f The whole | a piece done 2026-10-20 | `command.md` | the AI's bugs in `bugs.md` |
 | 5.2 The UI | HUD U0-U7, orders O1-O9, symbols, grid, input, launch built 2026-10-22 to 10-26 | `docs/map-ui/`, `admirals-orders.md` | edge markers, radial menu, doctrine card, orders as objects, the rumble (`command.md` "5.2"); the user's playtest |
-| The sim's workers | W0-W4, W6 built 2026-10-24; the AI on workers drafted 2026-11-01 | `workers.md` | W9-W15 (W5 superseded) |
+| The sim's workers | W0-W4, W6 built 2026-10-24; the AI on workers W9-W14 built 2026-11-02, W15's curve measured | `workers.md` | the worker cap (4 proposed); the admirals' thinks serial |
 | Scenarios | wave 1 and Åland built 2026-10-25 | `docs/missions/scenarios.md` | open questions 1-5 for the user; wave 2's aims built (`aims.md`), which scenarios get them the user's |
 | 6.1 Aims: reach, sink merchants, stop | A0-A6 done 2026-10-31 (benches set for balance) | `aims.md` | the user's scenario investigation |
 | 6 Missions | not started | `docs/missions/plan.md` | 6.1 file and objectives, 6.2 UI, 6.3 saves and replays, 6.4 generator |
