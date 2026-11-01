@@ -866,7 +866,7 @@ public sealed record SimSettings
     /// he pares back the same way; under <see cref="FireWorthHoldShare"/> of it, he holds fire (not worth a shell). The
     /// floor rises as her magazines empty: over the rounds-left share, from <see cref="FireWorthLowRounds"/> left on (the
     /// user, 2026-11-01: "shell usage should be reasonably optimized") [EST].</summary>
-    public double FireWorthFloorPct { get; init; } = 0.5;
+    public double FireWorthFloorPct { get; init; } = 1;
     public double FireWorthHoldShare { get; init; } = 0.25;
     public double FireWorthLowRounds { get; init; } = 0.25;
 

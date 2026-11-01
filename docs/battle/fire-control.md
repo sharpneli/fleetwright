@@ -1211,7 +1211,8 @@ are the AI's passes (`command.md`).
   (closing range, a settled track). The reserve's share has no source yet (the research request on fire discipline).
   *The secondaries' part done 2026-10-27* (the user: "secondary should not just waste its shells splashing around to
   max range"): doctrine's `SecondaryHitFloor` (1% [EST], 0 none), read by the captain's pick at will from the matchup's
-  hit chance (by level, the contact as made out) until `FireEstimate` comes; below it a secondary takes nothing rather
+  hit chance (by level, the contact as made out) until `FireEstimate` comes (2026-11-01, balance.md BL1r:
+  `SecondaryRoundFloor`, what a round does, the hit chance times a hit's chance of putting her out); below it a secondary takes nothing rather
   than holding fire on her (no state beside the phase yet). The main batteries and the reserve wait for the rest of F10.
   Anchors: a battle line's magazines last the hours of a Jutland, not 1.5 hours of unbroken fire (F6d's rate);
   `command.md` 5.1g's Tsushima, where both sides' battleships emptied their main magazines in 1.5-2 hours.

@@ -103,12 +103,14 @@ public enum DoctrineField : byte
     /// by the magazine order. After <see cref="Temper"/>, so the fields' numbers in logged commands stand.</summary>
     Shells,
 
-    /// <summary>A secondary battery firing at will takes only a contact it hits with this share of its shells or more, as
-    /// the matchup reckons it (<see cref="Combat.Matchup.HitChance"/>, by its fire control's level, the contact as she's made out,
-    /// at her range): no splashing at the edge of its reach (the user, 2026-10-27; docs/battle/fire-control.md F10's
-    /// ammunition floor, the secondaries' first). 0: anything in reach. An ordered Engage fires regardless. Last, so
-    /// the fields' numbers in logged commands stand.</summary>
-    SecondaryHitFloor,
+    /// <summary>A secondary battery firing at will takes only a contact a round of it puts out of the fight with this chance
+    /// or more, as the matchup reckons it (its hit chance by its fire control's level times the chance a hit puts her out,
+    /// <see cref="Combat.Matchup.PerRound"/>'s, the contact as she's made out, at her range): what its shells can hurt, not
+    /// a battle line its hits would only scratch (the user, 2026-11-01: "at 15km it probably doesn't make sense for the
+    /// 152mm secondaries just to spray all their shots at the enemy battle line"; docs/battle/balance.md BL1r; it was a
+    /// hit chance, 2026-10-27). 0: anything in reach. An ordered Engage fires regardless. Last, so the fields' numbers in
+    /// logged commands stand.</summary>
+    SecondaryRoundFloor,
 
     /// <summary>When a secondary's casemated guns are closed up (<see cref="ManGuns"/>; docs/battle/crew.md N3a, decision
     /// 10: a navy's doctrine, set by the scenario from the record): the rest of the time their crews wait under cover.</summary>
@@ -341,7 +343,7 @@ public sealed class Doctrine(GroupSystem groups, IReadOnlyDictionary<string, dou
         DoctrineField.Dispose => 0,
         DoctrineField.Temper => 0,
         DoctrineField.Shells => (double)ShellUse.MagazineOrder,
-        DoctrineField.SecondaryHitFloor => 0,
+        DoctrineField.SecondaryRoundFloor => 0,
         DoctrineField.ManCasemates or DoctrineField.ManOpenGuns => (double)ManGuns.Always,   // as before the crews' posture
         DoctrineField.ReliefOrder => (double)Ai.ReliefOrder.HandlingRoomProtected,
         DoctrineField.Wrecks => (double)WreckFire.Finish,   // as before: fire on while she's the one in reach

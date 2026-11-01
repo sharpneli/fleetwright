@@ -849,7 +849,7 @@ public sealed partial class CaptainLayer
         if (candCount < 0)
             Candidates(ctx, pic, own, widest);
         double guns = reach / s.FireReachShare;   // the guns' own reach: past it she's tracked, not fired on
-        double floor = secondary ? doctrine.Of(own.Entity, own.Side, DoctrineField.SecondaryHitFloor) : 0;
+        double floor = secondary ? doctrine.Of(own.Entity, own.Side, DoctrineField.SecondaryRoundFloor) : 0;
         var gun = floor > 0 ? GunOf(ctx, slot, b) : null;
         // a ship seen done for: any other target first; with a side ceasing on wrecks, none at all (crew.md N5b)
         double cease = (WreckFire)(int)doctrine.Of(own.Entity, own.Side, DoctrineField.Wrecks) == WreckFire.Cease ? s.DoneForCease : double.PositiveInfinity;
@@ -869,7 +869,7 @@ public sealed partial class CaptainLayer
             double curRange = (q - p).Length;
             // held a little further than taken (by range, and by the hit floor at that much less range): no flicking at the edge
             keep = curRange <= reach * s.FireKeepShare / s.FireReachShare &&
-                   (gun == null || HitOn(ctx, gun, own.Side, pic[ci], curRange * s.FireReachShare / s.FireKeepShare) >= floor);
+                   (gun == null || RoundOn(ctx, gun, own.Side, pic[ci], curRange * s.FireReachShare / s.FireKeepShare) >= floor);
             curCan = Can(Bears(cls, b, Earth.Bearing(p, q) - own.HeadingDeg), curRange <= guns);
             curRank = secondary ? Rank(pic[ci].Type) : 0;
             double curLead = Lead(own, q, v, s);
@@ -890,7 +890,7 @@ public sealed partial class CaptainLayer
             double by = candLead[k] * (1 + s.FireCrowdShare * Crowd(cls, b, candEntity[k], candSlot[k])) * Sized(s, rank) /
                         (Worth(candDone[k]) * candMatters[k] * candWant[k]);
             // a foul line and the hit floor only rule one out: asked only of one that would be the best yet (they're the cost)
-            if ((can > bestCan || by < bestBy) && (gun == null || HitOn(ctx, gun, own.Side, pic[candPic[k]], candRange[k]) >= floor) && !Foul(ctx, own, k))
+            if ((can > bestCan || by < bestBy) && (gun == null || RoundOn(ctx, gun, own.Side, pic[candPic[k]], candRange[k]) >= floor) && !Foul(ctx, own, k))
                 (best, bestCan, bestRank, bestBy) = (candEntity[k], can, rank, by);
         }
         if (!keep)
@@ -998,18 +998,22 @@ public sealed partial class CaptainLayer
         return twin;
     }
 
-    /// <summary>A battery's hit chance a shell on a contact at a range, as the matchup reckons it: the kind its captain
-    /// would load there, over the classes his navy may take her for; 0 past its reach.</summary>
-    double HitOn(in AiContext ctx, MatchupGun gun, byte side, in Contact c, double rangeM)
+    /// <summary>What a round of a battery does to a contact at a range, as the matchup reckons it: its hit chance with the
+    /// kind its captain would load there times the chance a hit puts her out of the fight (<see cref="Matchup.PerRound"/>'s
+    /// form), over the classes his navy may take her for; 0 past its reach (docs/battle/balance.md BL1r).</summary>
+    double RoundOn(in AiContext ctx, MatchupGun gun, byte side, in Contact c, double rangeM)
     {
         if (rangeM > gun.KindsReachM)
             return 0;
         shellTarget.Clear();
         shellTarget.AddContact(ctx.World, Judge.Matchups, side, c);
-        double hit = 0, n = 0;
+        double round = 0, n = 0;
         foreach (ref readonly var e in shellTarget.Entries)
-            (hit, n) = (hit + e.Count * gun.Chosen(e.Profile, rangeM, ctx.Settings).Hit, n + e.Count);
-        return n > 0 ? hit / n : 0;
+        {
+            var (hit, exponent) = gun.Chosen(e.Profile, rangeM, ctx.Settings);
+            (round, n) = (round + e.Count * hit * (1 - Math.Exp(-exponent / Math.Max(e.Toughness, 1e-3))), n + e.Count);
+        }
+        return n > 0 ? round / n : 0;
     }
 
     /// <summary>A secondary battery's range to a contact counts longer by <see cref="SimSettings.FireSizeShare"/> for each

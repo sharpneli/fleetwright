@@ -281,7 +281,7 @@
   "OwnTurnKickYawDegS": 1,
   "FireWorthSteadyShare": 0.5,
   "FireWorthWaitReloads": 1,
-  "FireWorthFloorPct": 0.5,
+  "FireWorthFloorPct": 1,
   "FireWorthHoldShare": 0.25,
   "FireWorthLowRounds": 0.25,
   "SteadyForGunsDeg": 5,
