@@ -496,7 +496,7 @@ of its ships as a target by doctrine's own floors (`HitFloor` of its shells land
 battery's rule for letting a target be, `CaptainLayer.WorthOn`'s), never past what can be seen there: his secondaries
 always, his chief guns only once their falls have come near one of its ships within `UnderBigGunsS` (120 s [EST]: the
 splash ring, `GunnerySystem.ChiefFallsNear`); his boats are the screen's to fight and don't push it in. Judged once every
-`ScreenSafeEveryS` (10 s). `ScreenTests`: four M-class boats screening four dreadnoughts against four more abeam (the
+`SafeRangeEveryS` (10 s). `ScreenTests`: four M-class boats screening four dreadnoughts against four more abeam (the
 default preset's floors): about 4 km off at 22, 15 and 12 km (his secondaries out of reach), 1.3 km at 8 km, 1.4 km at 15 km
 with his big guns on them; always on his side. `AdmiralOrdersTests`: destroyers against dreadnoughts 14 km abeam now
 screen on the enemy's side, one division ahead and one astern.
@@ -543,6 +543,26 @@ destroyers' guns 218 → 170, cruisers' chief guns 125 → 81. The screens are n
 ships' secondaries (115) about 3.4 km from the enemy's heavy ships: counter-attacks chasing his boats in under his line,
 not the screen's station. So (a) buys little now; a counter-attack that breaks off at BL5f's safe line (`Matchup.LetBeM`)
 would be the next small step, beside proposal 3 (the day attack gaining round the enemy's reach).
+
+**The user (2026-11-01):** "Please go with the proposal 3 and see what comes out of it. At the rate we're adding new AI
+stuffs in we're going to look at the much delayed AI threading after this."
+
+**BL5h, a day attack gains its bearing out of the enemy's reach. Built 2026-11-01.** In its gain the flotilla's point lies
+no nearer the target than the range out of which the enemy's heavy ships in sight let its boats be (BL5f's
+`Matchup.LetBeM`, now `AdmiralLayer.SafeRange` for the screen and the attack: their secondaries, their chief guns too once
+those fall about any of its boats), and its course is bent along the tangent of the first such circle round any of them
+the straight course would cross (`RoundHeavies`; from inside one, out and round toward the point); judged every
+`SafeRangeEveryS` (renamed from the screen's own). The run in and the signal are as before: the risky part, the user's.
+`MatchupPlayTests`: sixteen boats on a lone Iron Duke gain at 13.9 km at the nearest (9.3 km before) and fire after about
+half an hour (the gain's full 15 minutes; the test's window an hour, and `AdmiralOrdersTests`' cruisers-with-boats one).
+
+**Measured** (the panel, `balance/bl5h.json`, against BL5g's): the Jutland 77.0 → 74.2 ships lost a run, the Dogger Bank
+15.2 → 14.1, the Heligoland Bight 18.1 → 18.6, the rest unchanged (no day attacks). The Jutland's day attacks (2 seeds,
+`--fire-table`), BL5g → BL5h: 9 → 10 attacks; gaining a median 17 → 45 min, running in 6 → 11; nearest an enemy heavy
+ship 3.1 → 5.6 km, an enemy boat 3.7 → 4.4; the signal made by 5 of 9 → 3 of 10, at 5.0 → 8.3 km; beaten off 3 → 5;
+hits on their boats gaining 201 → 88, running in 213 → 166, firing 177 → 41. The attacks cost half the hits and get in
+less often. Found on the way (bugs.md): a gain runs past `AttackGainMaxMs` (45 min median), its clock started again each
+time the target is chosen again.
 
 ### BL5: who closes inside 1 km (2026-10-30, after the user's playtest)
 

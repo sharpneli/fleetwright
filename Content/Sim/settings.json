@@ -338,7 +338,7 @@
   "ScreenDivideShips": 4,
   "ScreenMinM": 1000,
   "UnderBigGunsS": 120,
-  "ScreenSafeEveryS": 10,
+  "SafeRangeEveryS": 10,
   "ForcePeriodMs": 10000,
   "ArrivedM": 2000,
   "JoinM": 3000,

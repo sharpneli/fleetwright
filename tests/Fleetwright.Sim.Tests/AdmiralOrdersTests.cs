@@ -499,7 +499,8 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
                     return g.GroupId;
             return 0;
         }
-        for (int min = 1; min <= 40; min++)
+        // an hour: the boats gain their bearing out of her secondaries' reach first (balance.md BL5h)
+        for (int min = 1; min <= 60; min++)
         {
             w.AdvanceTo(w.Time + 60_000);
             if (double.IsNaN(sent) && ai.Commanders.GivenOf(Unit.Group(force)).Given == TaskKind.Attack)

@@ -148,16 +148,22 @@ public sealed partial class AdmiralLayer
         {
             case AttackPhase.Gain:
             {
+                // gaining bearing out of the enemy's heavy ships' reach (docs/battle/balance.md BL5h; the user: the torpedo
+                // attack "is the risky manouver", the run in, not the half hour before it): the point no nearer him than
+                // their guns let the boats be, the course bent round any of them it would cross
+                if (a.GainSafeMs == 0 || now - a.GainSafeMs >= (long)(s.SafeRangeEveryS * 1000))
+                    (a.GainSafeM, a.GainSafeMs) = (SafeRange(ctx, guide, g.GroupId, UnderBigGuns(ctx, g), out _), Math.Max(now, 1));
+                double safe = double.IsFinite(a.GainSafeM) ? a.GainSafeM : 0;
                 var p = t.Position;
                 var f = Earth.Forward(p, Earth.Heading(t.Position, t.Forward) + a.AttackSide * s.AttackGainDeg);
-                Earth.Advance(ref p, ref f, gain);
+                Earth.Advance(ref p, ref f, Math.Max(gain, safe));
                 if (offBow <= 90 && run <= gain || Earth.Distance(guide.Position, p) < 1_500 || now - a.AttackMs > s.AttackGainMaxMs)
                 {
                     // ahead of his beam with him in reach of a run in (or there, or no more time): in together
                     (a.Attack, a.AttackMs) = (AttackPhase.Run, now);
                     goto case AttackPhase.Run;
                 }
-                double course = Earth.Bearing(guide.Position, p);
+                double course = safe > 0 ? RoundHeavies(ctx, guide, p, safe) : Earth.Bearing(guide.Position, p);
                 if (guideOrder != CaptainOrder.Course || Math.Abs(Wrap180(course - guide.CourseOrderDeg)) > s.CaptainCourseDeadbandDeg)
                     ctx.Issue(o.Course(to, course, 0, Up));
                 double flank = guide.Handling.Class.Motion.MaxSpeedKn;
@@ -224,6 +230,45 @@ public sealed partial class AdmiralLayer
                 break;
         }
         return false;
+    }
+
+    /// <summary>A course from a guide to a point round the enemy's heavy ships in sight (BL5h): straight unless it would come
+    /// within <paramref name="safeM"/> of one; then along the tangent of the first such circle, the side nearer the course
+    /// to the point; from inside one, out of it and round toward the point.</summary>
+    double RoundHeavies(in AiContext ctx, ShipState guide, Vec3d to, double safeM)
+    {
+        var pic = ctx.World.Sightings.Of(guide.Side);
+        var at = guide.Position;
+        double straight = Earth.Bearing(at, to), along = (to - at).Length;
+        if (pic == null || along < 1)
+            return straight;
+        var dir = (to - at) * (1 / along);
+        double first = double.PositiveInfinity;
+        Vec3d? circle = null;
+        foreach (int i in seen.Near(ctx.World, guide.Side, at, ctx.Settings.FightCompareM))
+        {
+            if (pic[i].Type is not (ShipType.Capital or ShipType.Cruiser) || pic[i].Out)
+                continue;
+            var q = seen.Position(guide.Side, i);
+            var rel = q - at;
+            double ahead = Vec3d.Dot(rel, dir), d = rel.Length;
+            double off = (rel - dir * ahead).Length;
+            bool crosses = d < safeM || ahead > 0 && ahead < along + safeM && off < safeM;
+            if (crosses && ahead < first)
+                (first, circle) = (ahead, q);
+        }
+        if (circle is not { } c)
+            return straight;
+        double toward = Earth.Bearing(at, c), dist = (c - at).Length;
+        if (dist <= safeM)
+        {
+            // inside his reach: out of it, round toward the point
+            double outward = Earth.Bearing(c, at);
+            return Math.Abs(Wrap180(outward + 60 - straight)) < Math.Abs(Wrap180(outward - 60 - straight)) ? outward + 60 : outward - 60;
+        }
+        double half = Math.Asin(safeM / dist) * 180 / Math.PI;
+        double left = toward - half, right = toward + half;
+        return Math.Abs(Wrap180(left - straight)) <= Math.Abs(Wrap180(right - straight)) ? (left + 360) % 360 : right % 360;
     }
 
     /// <summary>The signal made: each boat of the line fires her spread at the target as her tubes bear, once (also while

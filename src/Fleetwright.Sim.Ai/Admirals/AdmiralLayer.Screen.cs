@@ -83,14 +83,12 @@ public sealed partial class AdmiralLayer
             double moveDeg = s.ScreenMoveM / s.ScreenM * 180 / Math.PI;
             if (!arc.Placed || Math.Abs(Wrap180(axis - arc.AxisDeg)) > moveDeg)
                 (arc.AxisDeg, arc.Placed) = (axis, true);
-            if (arc.SafeMs == 0 || ctx.NowMs - arc.SafeMs >= (long)(s.ScreenSafeEveryS * 1000))
+            if (arc.SafeMs == 0 || ctx.NowMs - arc.SafeMs >= (long)(s.SafeRangeEveryS * 1000))
             {
                 // the big guns count once their falls come near any of its ships
                 bool big = false;
                 for (int k = start; k < end && !big; k++)
-                    if (groups.Get(screening[k].Group) is { } sg)
-                        for (int m = 0; m < sg.Line.Count && !big; m++)
-                            big = ctx.World.Gunnery.ChiefFallsNear(ctx.Ships.SlotOf(sg.Line[m]), ctx.NowMs - (long)(s.UnderBigGunsS * 1000));
+                    big = groups.Get(screening[k].Group) is { } sg && UnderBigGuns(ctx, sg);
                 (arc.SafeM, arc.SafeMs) = (SafeOff(ctx, guide, screening[start].Group, big), Math.Max(ctx.NowMs, 1));
             }
 
@@ -197,12 +195,22 @@ public sealed partial class AdmiralLayer
     /// more than what can be seen there; unbounded with none of his heavy ships in sight.</summary>
     double SafeOff(in AiContext ctx, ShipState guide, int screen, bool underBigGuns)
     {
+        double r = SafeRange(ctx, guide, screen, underBigGuns, out double nearest);
+        return double.IsPositiveInfinity(r) ? r : nearest - r;
+    }
+
+    /// <summary>The range out of which the enemy's heavy ships in sight of a guide's side (capital ships and cruisers within
+    /// <see cref="SimSettings.FightCompareM"/> of her) let a group's ships be by doctrine's floors (<see cref="Matchup.LetBeM"/>:
+    /// their secondaries, their chief guns too <paramref name="underBigGuns"/>; what can be seen at most), m, and the
+    /// nearest of them; infinite with none, or no ship of the group to judge by.</summary>
+    double SafeRange(in AiContext ctx, ShipState guide, int group, bool underBigGuns, out double nearest)
+    {
         var s = ctx.Settings;
+        nearest = double.PositiveInfinity;
         var pic = ctx.World.Sightings.Of(guide.Side);
-        if (pic == null || groups.Get(screen) is not { } sg || ctx.Ships.SlotOf(groups.GuideShip(sg)) is not (int boat and >= 0))
+        if (pic == null || groups.Get(group) is not { } sg || ctx.Ships.SlotOf(groups.GuideShip(sg)) is not (int boat and >= 0))
             return double.PositiveInfinity;
         arcEnemy.Clear();
-        double nearest = double.PositiveInfinity;
         foreach (int i in seen.Near(ctx.World, guide.Side, guide.Position, s.FightCompareM))
         {
             if (pic[i].Type is not (ShipType.Capital or ShipType.Cruiser) || pic[i].Out)
@@ -217,7 +225,17 @@ public sealed partial class AdmiralLayer
         arcOwn.AddOwn(ctx.World, Judge.Matchups, boat);
         double hitFloor = doctrine.Of(guide.Entity, guide.Side, DoctrineField.HitFloor), roundFloor = doctrine.Of(guide.Entity, guide.Side, DoctrineField.RoundFloor);
         double seenM = Math.Min(s.FightCompareM, ctx.World.Weather.At(guide.Position, ctx.World.Time).VisibilityM);
-        return nearest - Matchup.LetBeM(arcEnemy.Entries, arcOwn.Entries[0], hitFloor, roundFloor, underBigGuns, seenM, s);
+        return Matchup.LetBeM(arcEnemy.Entries, arcOwn.Entries[0], hitFloor, roundFloor, underBigGuns, seenM, s);
+    }
+
+    /// <summary>Whether a chief battery's shells have fallen near any ship of a group lately
+    /// (<see cref="SimSettings.UnderBigGunsS"/>; the splash ring).</summary>
+    bool UnderBigGuns(in AiContext ctx, GroupSystem.Group g)
+    {
+        for (int m = 0; m < g.Line.Count; m++)
+            if (ctx.World.Gunnery.ChiefFallsNear(ctx.Ships.SlotOf(g.Line[m]), ctx.NowMs - (long)(ctx.Settings.UnderBigGunsS * 1000)))
+                return true;
+        return false;
     }
 
     /// <summary>A group of a force told to screen (the i-th of its line, past its guide, which has it handed over): the

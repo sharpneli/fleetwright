@@ -94,16 +94,26 @@ public class MatchupPlayTests(ITestOutputHelper output)
         w.AdvanceTo(Start + 30_000);
         w.Apply(ai.Orders.Fight(pack));
         var seen = new List<AttackPhase>();
-        for (int t = 0; t < 30 * 60 && w.Torpedoes.Fired == 0; t += 10)
+        double gaining = double.MaxValue;
+        // an hour: gaining its bearing out of her secondaries' reach takes it the gain's full 15 minutes (balance.md BL5h)
+        for (int t = 0; t < 60 * 60 && w.Torpedoes.Fired == 0; t += 10)
         {
             w.AdvanceTo(w.Time + 10_000);
             var phase = ai.Admirals.AttackOf(pack.GroupId).Phase;
+            var guide = w.Ships.Store[w.Ships.Store.SlotOf(w.Groups.GuideShip(w.Groups.Get(pack.GroupId)!))];
+            if (phase == AttackPhase.Gain)
+                gaining = Math.Min(gaining, Earth.Distance(guide.Position, w.Ships.Store[w.Ships.Store.SlotOf(1)].Position));
             if (seen.Count == 0 || seen[^1] != phase)
+            {
                 seen.Add(phase);
+                var g = w.Ships.Store[w.Ships.Store.SlotOf(w.Groups.GuideShip(w.Groups.Get(pack.GroupId)!))];
+                output.WriteLine($"  {t + 10} s: {phase}, {Earth.Distance(g.Position, w.Ships.Store[w.Ships.Store.SlotOf(1)].Position):0} m off her");
+            }
         }
-        output.WriteLine($"phases {string.Join(" > ", seen)}; torpedoes {w.Torpedoes.Fired}");
+        output.WriteLine($"phases {string.Join(" > ", seen)}; torpedoes {w.Torpedoes.Fired}; nearest her while gaining {gaining:0} m");
         Assert.Contains(AttackPhase.Run, seen);
         Assert.True(w.Torpedoes.Fired > 0, "the pack fired");
+        Assert.True(gaining > 10_000, "it gains its bearing out of her secondaries' reach");
         _ = bb;
     }
 

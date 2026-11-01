@@ -1063,10 +1063,10 @@ public sealed record SimSettings
     /// it, they let her be; never past what can be seen of them), nor their chief guns once those have fallen near one of
     /// its ships within UnderBigGunsS (the user: "the destroyers don't need to be too scared of them, unless they
     /// actually start shooting at the destroyers"), its ordered distance at most and ScreenMinM off the screened guide
-    /// at least; judged again every ScreenSafeEveryS [EST]. m, s.</summary>
+    /// at least; judged again every SafeRangeEveryS (a flotilla gaining bearing for its attack too, BL5h) [EST]. m, s.</summary>
     public double ScreenMinM { get; init; } = 1_000;
     public double UnderBigGunsS { get; init; } = 120;
-    public double ScreenSafeEveryS { get; init; } = 10;
+    public double SafeRangeEveryS { get; init; } = 10;
 
     /// <summary>Tasks (docs/battle/command.md 5.1c): the task layer thinks every ForcePeriodMs while any unit on a task is
     /// on the fine tick; a GoTo is there within ArrivedM; a Join takes its unit in within JoinM of it; a task a fight

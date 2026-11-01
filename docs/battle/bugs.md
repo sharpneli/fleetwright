@@ -177,6 +177,10 @@ runs 5-7, after its fix, and the Debug run had none.
 
 ## The AI
 
+- [ ] A flotilla's gain runs far past `AttackGainMaxMs` (15 min): the Jutland's day attacks gained a median 45 min after
+  balance.md BL5h. `AdmiralLayer.AttackStep` sets `AttackMs = now` whenever the target is chosen again in the gain (the
+  old one lost or seen going down), so the gain's clock starts over; the tracer's gain time also adds the gains after a
+  Run fell back to Gain (he turned away). To check which, then keep the clock from the attack's first gain.
 Both seen in `MatchupPlayTests.A_pack_of_destroyers_presses_its_attack_home_on_a_battleship` (2026-10-16, while
 moving underwater shells to a 3-decay reach), which now runs with hits doing no damage so it tests the attack alone.
 

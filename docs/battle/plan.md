@@ -16,7 +16,8 @@ date** when a step or a sub-plan starts or finishes, and take stock against it f
 (`docs/battle/balance.md`: BL3, BL4) comes next, toward a playtest alpha; then mines, collisions and signals. BL1 was
 reopened 2026-11-01 (BL1j-BL1n: the roll averaged over the hull and counted once, the own-turn kick by rate of turn,
 the panel reading every hit rate beside its range; then BL1o-q, the gunnery officer's and the captain's judgement under
-fire; BL1t-u, no pulsing falls under helm, the German ladder halving); salvo chasing for evasion next (balance.md, after BL1q), then the user's
+fire; BL1t-u, no pulsing falls under helm, the German ladder halving; BL5e-h, the targets by doctrine, the screens' station,
+the main guns for heavy ships, the day attack's gain out of reach); AI threading next (the user, 2026-11-01); salvo chasing for evasion next (balance.md, after BL1q), then the user's
 playtest.
 
 | Step | State | Plan | Left |
