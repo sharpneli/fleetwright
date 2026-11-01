@@ -20,8 +20,10 @@ namespace Fleetwright.Sim.Ai.Captains;
 /// <see cref="SimSettings.FireKeepShare"/> of its reach, or another it can fire on where it can't, or is nearer so than
 /// <see cref="SimSettings.FireSwitchShare"/> of it (an unknown's size taken as the held one's at most, or each ship coming
 /// out of the haze would take the fire off the one held): no flicking between targets, as each shift starts the track again.
-/// A secondary takes none it'd hit with fewer than doctrine's <see cref="DoctrineField.SecondaryHitFloor"/> of its shells
-/// (the matchup's estimate), and drops one at that much less range: no splashing at the edge of its reach.
+/// A battery, main or secondary, takes none it'd hit with fewer than doctrine's <see cref="DoctrineField.HitFloor"/> of its
+/// shells nor whose round would put her out with less than its <see cref="DoctrineField.RoundFloor"/> (the matchup's
+/// estimates), and drops one at that much less range: no splashing at the edge of its reach, no shells on what they can't
+/// hurt (docs/battle/balance.md BL1r, BL1s).
 /// A ship seen done for (burning, silent and stopped: <see cref="Contact.DoneFor"/>) counts as further off the more done for
 /// she looks, so any other in reach is taken first; with doctrine's <see cref="DoctrineField.Wrecks"/> ceasing, one
 /// <see cref="SimSettings.DoneForCease"/> done for is no target at all (docs/battle/crew.md N5b).
@@ -836,8 +838,8 @@ public sealed partial class CaptainLayer
     /// <summary>A battery's target at will: the current one while it's held and in reach, unless another is better by
     /// what the battery can do about her (fire on her now, bearing and within its guns' reach, before one it can only
     /// track: the user, 2026-10-27, a casemate side kept on a ship it couldn't reach) or by much in range to come, her
-    /// size and the fire on her; else the best in sight; 0 for none. A secondary takes none it'd hit with fewer than
-    /// doctrine's <see cref="DoctrineField.SecondaryHitFloor"/> of its shells.</summary>
+    /// size and the fire on her; else the best in sight; 0 for none. Any battery takes none under doctrine's
+    /// <see cref="DoctrineField.HitFloor"/> and <see cref="DoctrineField.RoundFloor"/> (<see cref="WorthOn"/>).</summary>
     int Pick(in AiContext ctx, Picture? pic, ShipState own, int slot, ShipClass cls, int b, double reach, double widest, int current)
     {
         if (pic == null)
@@ -849,8 +851,8 @@ public sealed partial class CaptainLayer
         if (candCount < 0)
             Candidates(ctx, pic, own, widest);
         double guns = reach / s.FireReachShare;   // the guns' own reach: past it she's tracked, not fired on
-        double floor = secondary ? doctrine.Of(own.Entity, own.Side, DoctrineField.SecondaryRoundFloor) : 0,
-               hitFloor = secondary ? doctrine.Of(own.Entity, own.Side, DoctrineField.SecondaryHitFloor) : 0;
+        // what a round is worth is the gun's and the target's, not the battery's rank (BL1s): main and secondary alike
+        double floor = doctrine.Of(own.Entity, own.Side, DoctrineField.RoundFloor), hitFloor = doctrine.Of(own.Entity, own.Side, DoctrineField.HitFloor);
         var gun = floor > 0 || hitFloor > 0 ? GunOf(ctx, slot, b) : null;
         // a ship seen done for: any other target first; with a side ceasing on wrecks, none at all (crew.md N5b)
         double cease = (WreckFire)(int)doctrine.Of(own.Entity, own.Side, DoctrineField.Wrecks) == WreckFire.Cease ? s.DoneForCease : double.PositiveInfinity;
@@ -999,7 +1001,7 @@ public sealed partial class CaptainLayer
         return twin;
     }
 
-    /// <summary>Whether a secondary's rounds are worth a contact at a range, as the matchup reckons it: its hit chance with the
+    /// <summary>Whether a battery's rounds are worth a contact at a range, as the matchup reckons it: its hit chance with the
     /// kind its captain would load there at <paramref name="hitFloor"/> or more, and that times the chance a hit puts her out
     /// of the fight (<see cref="Matchup.PerRound"/>'s form) at <paramref name="roundFloor"/> or more, over the classes his
     /// navy may take her for; never past its reach (docs/battle/balance.md BL1r: a round must land often enough and do

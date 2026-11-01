@@ -143,8 +143,8 @@ public class FireOrderTests(ITestOutputHelper output)
                      ("destroyer", 6.0, 1.2e-5, 0.01, true) })
         {
             var (w, ai) = Make(new Placed("super_dreadnought", 0, 0, 0, 10, 0), new Placed(target, 90, km * 1000, 0, 10, 1));
-            w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.SecondaryRoundFloor, floor));
-            w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.SecondaryHitFloor, hitFloor));
+            w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.RoundFloor, floor));
+            w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.HitFloor, hitFloor));
             Run(w, 60);
             var cls = Fleet.Get("super_dreadnought").Class!;
             bool any = false;
@@ -154,6 +154,26 @@ public class FireOrderTests(ITestOutputHelper output)
             output.WriteLine($"a {target} at {km} km, floors {floor} a round, {hitFloor} a shell: main on {Target(w, 1, 0)}, a secondary on her: {any}");
             Assert.Equal(2, Target(w, 1, 0));
             Assert.Equal(takes, any);
+        }
+    }
+
+    [Fact]
+    public void Main_batteries_at_will_are_judged_by_the_same_worth()
+    {
+        // the same two floors for a main battery (docs/battle/balance.md BL1s): a light cruiser's 6" leaves a destroyer at
+        // 13 km (the matchup has it hitting her with under 1% of its shells there), takes her at 9 km; a battlecruiser takes
+        // another at 19 km (13.5" hitting 2%, the Dogger Bank's opening kept) and a battleship another at 15 km; with the
+        // floors at 0 the light cruiser takes the destroyer at 13 km too
+        foreach (var (shooter, target, km, floors, takes) in new[] { ("light_cruiser", "destroyer", 13.0, true, false), ("light_cruiser", "destroyer", 9.0, true, true),
+                     ("light_cruiser", "destroyer", 13.0, false, true), ("lion", "seydlitz", 19.0, true, true), ("super_dreadnought", "dreadnought", 15.0, true, true) })
+        {
+            var (w, ai) = Make(new Placed(shooter, 0, 0, 0, 10, 0), new Placed(target, 90, km * 1000, 0, 10, 1));
+            // the default preset's floors (Content/Sim/doctrine.json), or none
+            w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.RoundFloor, floors ? 1.2e-5 : 0));
+            w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.HitFloor, floors ? 0.01 : 0));
+            Run(w, 60);
+            output.WriteLine($"{shooter} on a {target} at {km} km, floors {(floors ? "the preset's" : "0")}: main on {Target(w, 1, 0)}");
+            Assert.Equal(takes ? 2 : 0, Target(w, 1, 0));
         }
     }
 

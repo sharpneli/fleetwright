@@ -626,10 +626,11 @@ rework, with the fire-control computers by era, revisits these):
     battery prefers one it can fire on now (she bears, within its guns' reach; the reach for taking one is
     `FireReachShare` past it, to track before she's in it), then one it can train on, then one it can only track, and
     leaves one held for another a step up that list; before, a held target past the guns' reach was kept while
-    another in reach wasn't 30% nearer. And a secondary takes none a round of it would put out with less than doctrine's
-    `SecondaryRoundFloor` (since 2026-11-01, balance.md BL1r: the matchup's hit chance by its fire-control level times a
-    hit's chance of putting her out, the ship as made out, at her range; 1.2e-5 in the default preset, a 6" on a battleship
-    inside about 8 km; 0 none; it was `SecondaryHitFloor`, 1% of its shells), keeping one to that floor at `FireReachShare / FireKeepShare` of her
+    another in reach wasn't 30% nearer. And a battery, main or secondary since 2026-11-01 (balance.md BL1r, BL1s), takes none
+    it'd hit with less than doctrine's `HitFloor` of its shells (1%) nor whose round would put her out with less than its
+    `RoundFloor` (the matchup's hit chance by its fire-control level times a hit's chance of putting her out, the ship as made
+    out, at her range; 1.2e-5 in the default preset, a 6" on a battleship inside about 8 km; 0 none; until then the
+    secondaries' `SecondaryHitFloor` alone), keeping one to those floors at `FireReachShare / FireKeepShare` of her
     range: a 6" by eye on a battleship to about 10 km, on a torpedo-boat destroyer to about 7 km, no longer splashing
     at 12. This is the left-as-it-is below, and F10's ammunition floor for the secondaries (fire-control.md); an
     ordered Engage puts the chief guns on her, the secondaries still at will;
@@ -692,7 +693,7 @@ What it settled, beyond the plan:
 - **The Jutland and ladder-2 don't fight in their first hours:** the scouting forces keep their 14:00 courses north,
   50 miles apart, and nothing turns Beatty at 14:32. Their fights need standing orders (a `"fight"` for their sides
   would do it) or 5.1's admirals.
-- **Left as it is (v0; done 2026-10-27 by doctrine's `SecondaryHitFloor`, since 2026-11-01 `SecondaryRoundFloor`, above):** the secondaries fire at capital ships at the edge of their reach, mostly to no effect. They
+- **Left as it is (v0; done 2026-10-27 by doctrine's `SecondaryHitFloor`, since 2026-11-01 `HitFloor` and `RoundFloor` for every battery, above):** the secondaries fire at capital ships at the edge of their reach, mostly to no effect. They
   do it at will, as the German 15 cm did at Jutland, until a rule of engagement (5.1) or a shell choice (4.5) says
   otherwise. Fight closes at 50° off the bow, so from twice the band it takes half an hour.
 - **`GunnerySystem.Engage`** stays the low-level command: for the bench (`duel`), the dev's `-engage`, and the

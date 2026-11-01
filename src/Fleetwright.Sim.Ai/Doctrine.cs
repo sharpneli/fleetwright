@@ -103,14 +103,15 @@ public enum DoctrineField : byte
     /// by the magazine order. After <see cref="Temper"/>, so the fields' numbers in logged commands stand.</summary>
     Shells,
 
-    /// <summary>A secondary battery firing at will takes only a contact a round of it puts out of the fight with this chance
-    /// or more, as the matchup reckons it (its hit chance by its fire control's level times the chance a hit puts her out,
-    /// <see cref="Combat.Matchup.PerRound"/>'s, the contact as she's made out, at her range): what its shells can hurt, not
-    /// a battle line its hits would only scratch (the user, 2026-11-01: "at 15km it probably doesn't make sense for the
-    /// 152mm secondaries just to spray all their shots at the enemy battle line"; docs/battle/balance.md BL1r), beside
-    /// <see cref="SecondaryHitFloor"/>'s share of its shells landing. 0: anything in reach. An ordered Engage fires
-    /// regardless. Where the hit floor stood until 2026-11-01, so the fields' numbers in logged commands stand.</summary>
-    SecondaryRoundFloor,
+    /// <summary>A battery firing at will, main or secondary, takes only a contact a round of it puts out of the fight with
+    /// this chance or more, as the matchup reckons it (its hit chance by its fire control's level times the chance a hit
+    /// puts her out, <see cref="Combat.Matchup.PerRound"/>'s, the contact as she's made out, at her range): what its shells
+    /// can hurt, not a battle line its hits would only scratch (the user, 2026-11-01: "at 15km it probably doesn't make
+    /// sense for the 152mm secondaries just to spray all their shots at the enemy battle line"; docs/battle/balance.md
+    /// BL1r, every battery alike since BL1s: a round's worth is the gun's and the target's, not the battery's rank), beside
+    /// <see cref="HitFloor"/>'s share of its shells landing. 0: anything in reach. An ordered Engage fires regardless.
+    /// Where the secondaries' hit floor stood until 2026-11-01, so the fields' numbers in logged commands stand.</summary>
+    RoundFloor,
 
     /// <summary>When a secondary's casemated guns are closed up (<see cref="ManGuns"/>; docs/battle/crew.md N3a, decision
     /// 10: a navy's doctrine, set by the scenario from the record): the rest of the time their crews wait under cover.</summary>
@@ -184,13 +185,13 @@ public enum DoctrineField : byte
     /// on, 0-1 (SK2: the Germans 1914-18 and the Russians 1904-05 near always, the British seldom).</summary>
     Scuttle,
 
-    /// <summary>A secondary battery firing at will takes only a contact it hits with this share of its shells or more, as
-    /// the matchup reckons it (<see cref="Combat.Matchup.HitChance"/>, by its fire control's level, the contact as she's
-    /// made out, at her range): no splashing at the edge of its reach (the user, 2026-10-27), beside
-    /// <see cref="SecondaryRoundFloor"/>'s worth of a hit (docs/battle/balance.md BL1r: a round that lands seldom isn't worth
-    /// firing however much a hit would do). 0: anything in reach. After <see cref="Scuttle"/>, so the fields' numbers in
-    /// logged commands stand.</summary>
-    SecondaryHitFloor,
+    /// <summary>A battery firing at will, main or secondary, takes only a contact it hits with this share of its shells or
+    /// more, as the matchup reckons it (<see cref="Combat.Matchup.HitChance"/>, by its fire control's level, the contact as
+    /// she's made out, at her range): no splashing at the edge of its reach (the user, 2026-10-27, the secondaries'; every
+    /// battery since docs/battle/balance.md BL1s), beside <see cref="RoundFloor"/>'s worth of a hit (BL1r: a round that
+    /// lands seldom isn't worth firing however much a hit would do). 0: anything in reach. After <see cref="Scuttle"/>, so
+    /// the fields' numbers in logged commands stand.</summary>
+    HitFloor,
 }
 
 /// <summary>Doctrine's Shells: each battery loads the kind its target calls for (the captain's choice, the matchup's
@@ -322,7 +323,7 @@ public sealed class Doctrine(GroupSystem groups, IReadOnlyDictionary<string, dou
         return r;
     }
 
-    public const int FieldCount = (int)DoctrineField.SecondaryHitFloor + 1;
+    public const int FieldCount = (int)DoctrineField.HitFloor + 1;
 
     /// <summary>Every field when nothing sets it: a world told nothing (a dev's, a test's) behaves as before doctrine.</summary>
     public static double Default(DoctrineField f) => f switch
@@ -351,7 +352,7 @@ public sealed class Doctrine(GroupSystem groups, IReadOnlyDictionary<string, dou
         DoctrineField.Dispose => 0,
         DoctrineField.Temper => 0,
         DoctrineField.Shells => (double)ShellUse.MagazineOrder,
-        DoctrineField.SecondaryRoundFloor => 0,
+        DoctrineField.RoundFloor => 0,
         DoctrineField.ManCasemates or DoctrineField.ManOpenGuns => (double)ManGuns.Always,   // as before the crews' posture
         DoctrineField.ReliefOrder => (double)Ai.ReliefOrder.HandlingRoomProtected,
         DoctrineField.Wrecks => (double)WreckFire.Finish,   // as before: fire on while she's the one in reach
@@ -364,8 +365,8 @@ public sealed class Doctrine(GroupSystem groups, IReadOnlyDictionary<string, dou
         DoctrineField.NightSpacingShare => 1,
         DoctrineField.Darkened => 0,
         DoctrineField.Finish => 1,   // as before: every enemy alike
-        DoctrineField.StrikeColours or DoctrineField.Scuttle => 0,
-        DoctrineField.SecondaryHitFloor => 0,   // as before: she fights on till the water decides
+        DoctrineField.StrikeColours or DoctrineField.Scuttle => 0,   // as before: she fights on till the water decides
+        DoctrineField.HitFloor => 0,
         _ => throw new ArgumentOutOfRangeException(nameof(f)),
     };
 
