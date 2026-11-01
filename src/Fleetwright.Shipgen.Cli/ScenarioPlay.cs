@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using Fleetwright.Sim;
 using Fleetwright.Sim.Ai;
+using Fleetwright.Sim.Ai.Admirals;
+using Fleetwright.Sim.Ai.Captains;
 using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Missions;
@@ -38,6 +40,7 @@ static class ScenarioPlay
         var fellWhy = new SortedDictionary<string, (int Ships, long Hits, double Minutes)>(StringComparer.Ordinal);
         var fellBy = new SortedDictionary<string, (int Ships, long Hits, double Minutes)>(StringComparer.Ordinal);
         var noGunfire = new MainGuns.Tally();
+        var attacks = new AttackTrace();
         int noGunfireHits = 0, noGunfireShips = 0;
         // ship-minutes inside 1 km of an enemy, by side and what she was doing (BL5: who closes in, and why)
         var inside = new SortedDictionary<string, long>(StringComparer.Ordinal);
@@ -143,6 +146,8 @@ static class ScenarioPlay
                         var (as2, ah2) = against.GetValueOrDefault(k2);
                         against[k2] = (as2 + r.Shells, ah2 + r.Hits);
                     }
+                    if (ts >= 0 && r.Hits > 0)
+                        attacks.Hit(w, ai, seed, ts, r.Hits, night);
                     if (ts >= 0 && r.Hits > 0 && ai.Captains.Of(r.Target).Order != Fleetwright.Sim.Ai.Captains.CaptainOrder.Home)
                     {
                         var her = w.Ships.Store[ts];
@@ -231,7 +236,10 @@ static class ScenarioPlay
                             ScenarioRun.Ship(w, start, e);
                     }
                     if (fireTable)
+                    {
                         Inside(w, ai, s, inside);
+                        attacks.Sample(w, ai, seed);
+                    }
                     if ((w.Time.Ms - hour0) / 3_600_000 > hours.Count)
                         hours.Add(sw.Elapsed.TotalSeconds);
                     guns.Read(w);
@@ -244,6 +252,7 @@ static class ScenarioPlay
                         for (; seenFell < end.Timeline.Count; seenFell++)
                             if (end.Timeline[seenFell] is { Kind: PlayEvent.FellOut } fl && w.Ships.Store.SlotOf(fl.Entity) is int fo and >= 0)
                             {
+                                attacks.FellOut(w, ai, seed, fo);
                                 if (fightHits.GetValueOrDefault((seed, fl.Entity)) is not { Count: > 0 })
                                 {
                                     // no shell landed on her while she fought: what the damage model has on her
@@ -328,6 +337,7 @@ static class ScenarioPlay
             Console.WriteLine("inside 4 km, by the range against the shooter's band, the visibility and her target's way (shells, hits):");
             foreach (var (why, (sh, hi)) in against.OrderByDescending(kv => kv.Value.Hits).Take(25))
                 Console.WriteLine($"  {why,-100} {sh,8} {hi,6}");
+            attacks.Print();
             if (fellWhy.Count > 0)
             {
                 Console.WriteLine("how ships came to fall out: her type, who landed most of the hits before she fell out (by their " +
@@ -362,6 +372,175 @@ static class ScenarioPlay
         if (crashed > 0)
             Console.WriteLine($"the sim broke in {crashed} of {seeds} seeds");
         return crashed > 0 ? 1 : 0;
+    }
+
+    /// <summary>The flotillas' torpedo attacks as they went (the fire table; balance.md "How ships come to fall out"): each
+    /// attack from its gain to its end, sampled every 5 s of game time (its phase, its guide's range to the target, to the
+    /// enemy's nearest heavy ship and his nearest torpedo craft), the hits and fall-outs among its boats by phase, the range
+    /// at the signal and how it ended; and every hit on a torpedo craft by what her unit was doing, with her distance to her
+    /// own side's nearest heavy ship and to the enemy's.</summary>
+    sealed class AttackTrace
+    {
+        sealed class Run
+        {
+            public long StartMs, LastMs;
+            public int Boats;
+            public bool Night;
+            public AttackPhase Last;
+            public double MinTarget = double.PositiveInfinity, MinHeavy = double.PositiveInfinity, MinBoat = double.PositiveInfinity, FireM = double.NaN;
+            public double GainS, RunS, AwayS;
+            public readonly int[] Hits = new int[5], Fell = new int[5];
+            public string End = "";
+        }
+
+        readonly Dictionary<(ulong, int), Run> active = [];
+        readonly List<Run> done = [];
+        readonly SortedDictionary<string, (long Hits, List<double> Own, List<double> Heavy, List<double> Boat)> onBoats = new(StringComparer.Ordinal);
+        long lastMs;
+        readonly HashSet<int> seenGroups = [];
+
+        static bool Heavy(ShipType t) => t is ShipType.Capital or ShipType.Cruiser;
+        static bool Boat(ShipType t) => t is ShipType.Destroyer or ShipType.Small;
+
+        /// <summary>The nearest live ship of a kind to a point, on her side (own) or the other's, m.</summary>
+        static double Nearest(ShipStore store, Vec3d p, int side, bool own, Func<ShipType, bool> kind)
+        {
+            double best = double.PositiveInfinity;
+            for (int k = 0; k < store.Slots; k++)
+                if (store.IsAlive(k) && (store[k].Side == side) == own && kind(Sightings.TypeOf(store[k].Handling.Class)))
+                    best = Math.Min(best, (store[k].Position - p).Length);
+            return best;
+        }
+
+        public void Sample(World w, AiSystem ai, ulong seed)
+        {
+            if (w.Time.Ms - lastMs < 5_000)
+                return;
+            lastMs = w.Time.Ms;
+            var store = w.Ships.Store;
+            seenGroups.Clear();
+            for (int slot = 0; slot < store.Slots; slot++)
+            {
+                if (!store.IsAlive(slot) || !Boat(Sightings.TypeOf(store[slot].Handling.Class)) || w.Groups.UnitOf(store[slot].Entity) is not { } g ||
+                    !seenGroups.Add(g.GroupId))
+                    continue;
+                var (phase, target, _) = ai.Admirals.AttackOf(g.GroupId);
+                var key = (seed, g.GroupId);
+                active.TryGetValue(key, out var run);
+                if (phase == AttackPhase.None)
+                {
+                    if (run != null)
+                        Close(key, run, ai.Admirals.Of(g.GroupId).Item1 == CaptainOrder.Run ? "beaten off (run)" :
+                            run.Last == AttackPhase.Away ? "fired and away" : $"stopped in {run.Last}");
+                    continue;
+                }
+                if (run == null)
+                    active[key] = run = new Run { StartMs = w.Time.Ms, Boats = g.Line.Count, Night = Light.SunElevationDeg(store[slot].Position, w.Time) < -6 };
+                int gs = store.SlotOf(w.Groups.GuideShip(g));
+                if (gs < 0)
+                    continue;
+                var guide = store[gs];
+                double dt = (w.Time.Ms - Math.Max(run.LastMs, run.StartMs)) / 1000.0;
+                switch (run.Last)
+                {
+                    case AttackPhase.Gain: run.GainS += dt; break;
+                    case AttackPhase.Run: run.RunS += dt; break;
+                    case AttackPhase.Away: run.AwayS += dt; break;
+                }
+                if (store.SlotOf(target) is int tslot and >= 0)
+                {
+                    double rt = (store[tslot].Position - guide.Position).Length;
+                    run.MinTarget = Math.Min(run.MinTarget, rt);
+                    if (phase == AttackPhase.Fire && double.IsNaN(run.FireM))
+                        run.FireM = rt;
+                }
+                if (phase is AttackPhase.Gain or AttackPhase.Run)
+                {
+                    run.MinHeavy = Math.Min(run.MinHeavy, Nearest(store, guide.Position, guide.Side, false, Heavy));
+                    run.MinBoat = Math.Min(run.MinBoat, Nearest(store, guide.Position, guide.Side, false, Boat));
+                }
+                (run.Last, run.LastMs) = (phase, w.Time.Ms);
+            }
+        }
+
+        void Close((ulong, int) key, Run run, string end)
+        {
+            run.End = end;
+            done.Add(run);
+            active.Remove(key);
+        }
+
+        public void Hit(World w, AiSystem ai, ulong seed, int slot, int hits, bool night)
+        {
+            var store = w.Ships.Store;
+            var her = store[slot];
+            if (!Boat(Sightings.TypeOf(her.Handling.Class)))
+                return;
+            string way = "alone";
+            if (w.Groups.UnitOf(her.Entity) is { } g)
+            {
+                var (adm, _, _) = ai.Admirals.Of(g.GroupId);
+                int phase = (int)ai.Admirals.AttackOf(g.GroupId).Phase;
+                way = $"admiral {adm} / task {ai.Tasks.Of(Fleetwright.Sim.Ai.Unit.Group(g.GroupId)).Kind}" +
+                      (phase != 0 ? $" / attack {(AttackPhase)phase}" : "");
+                if (active.TryGetValue((seed, g.GroupId), out var run))
+                    run.Hits[phase] += hits;
+            }
+            if (ai.Captains.Of(her.Entity).Order == CaptainOrder.Home)
+                way = "going home";
+            string k = $"{(night ? "night" : "day")} {way}";
+            if (!onBoats.TryGetValue(k, out var e))
+                onBoats[k] = e = (0, [], [], []);
+            onBoats[k] = (e.Hits + hits, e.Own, e.Heavy, e.Boat);
+            e.Own.Add(Nearest(store, her.Position, her.Side, true, Heavy));
+            e.Heavy.Add(Nearest(store, her.Position, her.Side, false, Heavy));
+            e.Boat.Add(Nearest(store, her.Position, her.Side, false, Boat));
+        }
+
+        public void FellOut(World w, AiSystem ai, ulong seed, int slot)
+        {
+            // she's left her line as she falls out: her group's top unit
+            if (w.Groups.Of(w.Ships.Store[slot].Entity) is { } own && w.Groups.TopOf(own) is var g && active.TryGetValue((seed, g.GroupId), out var run))
+                run.Fell[(int)ai.Admirals.AttackOf(g.GroupId).Phase]++;
+        }
+
+        static string Km(IEnumerable<double> xs)
+        {
+            var l = xs.Where(double.IsFinite).OrderBy(x => x).ToList();
+            return l.Count == 0 ? "   -" : $"{l[l.Count / 2] / 1000,4:F1}";
+        }
+
+        static double Med(IEnumerable<double> xs)
+        {
+            var l = xs.OrderBy(x => x).ToList();
+            return l.Count == 0 ? double.NaN : l[l.Count / 2];
+        }
+
+        public void Print()
+        {
+            foreach (var (k, r) in active.ToList())
+                Close(k, r, $"still on in {r.Last} at the end");
+            Console.WriteLine("the flotillas' torpedo attacks, every seed (attacks, boats; how they ended; the medians of the seconds gaining and " +
+                              "running in, the guide's nearest to the target, and to an enemy heavy ship and an enemy boat while gaining and running, " +
+                              "the range at the signal; the hits on its boats and the boats fallen out, gaining/running/firing/away):");
+            foreach (var night in new[] { false, true })
+            {
+                var rs = done.Where(r => r.Night == night).ToList();
+                if (rs.Count == 0)
+                    continue;
+                Console.WriteLine($"  {(night ? "night" : "day")}: {rs.Count} attacks, {rs.Sum(r => r.Boats)} boats; " +
+                                  string.Join(", ", rs.GroupBy(r => r.End).OrderByDescending(g => g.Count()).Select(g => $"{g.Key} {g.Count()}")));
+                Console.WriteLine($"    gaining {Med(rs.Select(r => r.GainS)),5:0} s, running {Med(rs.Select(r => r.RunS)),5:0} s; nearest the target {Km(rs.Select(r => r.MinTarget))}, " +
+                                  $"an enemy heavy ship {Km(rs.Select(r => r.MinHeavy))}, an enemy boat {Km(rs.Select(r => r.MinBoat))} km; the signal at {Km(rs.Select(r => r.FireM))} km " +
+                                  $"({rs.Count(r => double.IsFinite(r.FireM))} made it)");
+                Console.WriteLine($"    hits {string.Join("/", Enumerable.Range(1, 4).Select(i => rs.Sum(r => r.Hits[i])))}, " +
+                                  $"fallen out {string.Join("/", Enumerable.Range(1, 4).Select(i => rs.Sum(r => r.Fell[i])))}");
+            }
+            Console.WriteLine("hits on torpedo craft, by what her unit was doing (hits; the medians of her distance to her own side's nearest heavy ship, " +
+                              "to the enemy's nearest heavy ship and to his nearest boat, km):");
+            foreach (var (k, e) in onBoats.OrderByDescending(kv => kv.Value.Hits).Take(25))
+                Console.WriteLine($"  {k,-80} {e.Hits,6}  own {Km(e.Own)}  enemy heavy {Km(e.Heavy)}  enemy boat {Km(e.Boat)}");
+        }
     }
 
     /// <summary>A hit on a ship still in the fight (the fire table's fall-out breakdown): when, the shooter's type and her

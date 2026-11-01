@@ -428,6 +428,58 @@ next question is the day attack's own course: when a flotilla starts, how near i
 gaining, where it fires and breaks off, and what it meets on the way, against the record's day attacks (fired from 5-8
 km, turned away; the destroyers meeting between the lines at the Jutland's 16:30).
 
+**The flotillas traced (2026-11-01, the user: "Please do so that we have more data. My initial hunch is that the
+flotilla keeping station should probably take the enemy into account and move bit closer to their own ships, as in keep
+screening the force but shift closer for safety").** `--fire-table` now follows each torpedo attack from its gain to
+its end (5 s samples: its phase, its guide's nearest to the target, to an enemy heavy ship and to an enemy boat, the
+range at the signal, the hits on its boats by phase, how it ended) and every hit on a torpedo craft by what her unit was
+doing, with her distance to her own side's nearest heavy ship and to the enemy's (medians):
+
+| Scenario | Her unit doing | Hits | Own heavy | Enemy heavy | Enemy boat |
+|---|---|---|---|---|---|
+| Jutland (2) | going home, day | 2,731 | 10.0 km | 4.1 | 1.7 |
+| | going home, night | 816 | 21.4 | 9.6 | 3.4 |
+| | a day attack, gaining | 467 | 2.9 | 6.7 | 2.1 |
+| | a day attack, running in | 463 | 3.3 | 4.8 | 1.0 |
+| | screening | 265 | 3.5 | 3.6 | 2.6 |
+| | a day attack, firing | 140 | 3.9 | 3.8 | 1.6 |
+| Dogger Bank (4) | going home | 917 | 8.9 | 3.4 | 13.2 |
+| | in her admiral's Fight (task Attack: guns, no torpedo attack begun) | 311 | 8.5 | 5.9 | 20.5 |
+| | screening in a Fight | 121 | 6.7 | 2.8 | - |
+| Heligoland (4) | going home | 1,486 | 11.1 | 4.0 | 2.3 |
+| | on patrol | 378 | 10.4 | 4.1 | 3.6 |
+| | screening in a Fight | 237 | 2.8 | 4.4 | 2.8 |
+
+The Jutland's day attacks (2 seeds): 9, with 100 boats; gaining a median 17 min and running in 6, coming within 3.1 km of
+an enemy heavy ship and 3.7 km of an enemy boat; 5 of 9 made the signal, at a median 5.0 km; hits on their boats 201
+gaining, 213 running in, 177 firing, 15 going away; 3 beaten off, 1 fired and got away (the rest stopped when their
+orders changed). At the Dogger Bank no torpedo attack began at all: the flotillas fought their admirals' Fight with
+their guns, closing to their 4" guns' band of the battlecruisers.
+
+**What it says:**
+
+1. **Screens sit between the lines.** A screen keeps `ScreenM` (5 km) off its charge on the bearing toward the nearest
+   enemy unless it judges itself no match: with the enemy's line 8-10 km off, that's halfway to his guns, where its hits
+   came (3.5 km from its own heavies, 3.6 from his). The record's screens in a gun action kept the disengaged bow or the
+   van and rear of their line, out of the line of fire, ready to go out against the enemy's attacks (the Grand Fleet's
+   battle orders; to source with the request on fire distribution). The user's hunch.
+2. **Destroyers fight heavy ships with their guns.** Without a torpedo attack judged worth it, a flotilla in its
+   admiral's Fight closes to its guns' band (0.6 of a 4" gun's reach, about 5 km) on whatever its unit fights,
+   battlecruisers included.
+3. **Day attacks gain bearing for a quarter of an hour inside the enemy's guns,** 3 km from his heavy ships, and run into
+   his flotillas (the enemy boat 1 km off as they run in): the two sides' attacks and screens meet between the lines and
+   fight it out at point blank. The record's day attacks fired from 5-8 km and turned away; the Jutland's 16:30 melee
+   was the one meeting.
+4. **Cripples go home from where they fell out,** about 4 km from the enemy's heavy ships, slow, and take the most hits
+   of all.
+
+**Proposed:** (1) a screen's station weighs the enemy's guns: with his heavy ships in reach of it, it shifts to its
+charge's disengaged bow and closer in, still between its charge and his torpedo craft, and goes out to counter-attack
+as now (the user's hunch); (2) a flotilla's own Fight keeps out of heavy ships' guns: it doesn't close a heavy ship to
+its guns' band unless attacking; (3) a day attack gains bearing outside the enemy heavy ships' and screens' close reach
+(round them, as `Around` bends an aim's course), fires from its long setting and turns away; (4) the cripples left as
+they are for now (BL2's smoke, BL5e's targets), measured again after 1-3.
+
 ### BL5: who closes inside 1 km (2026-10-30, after the user's playtest)
 
 `--fire-table` now also counts the ship-minutes each ship spends inside 1 km of an enemy, by what she, her admiral and
