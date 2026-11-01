@@ -27,6 +27,7 @@ public sealed class HeldGroups(Matchups matchups)
     {
         public long BuiltMs = long.MinValue;
         public Picture? Picture;
+        public int Version;
         public int[] Parent = [], Slot = [], Index = [], Members = [];
         public Vec3d[] Position = [];
         public HeldGroup[] Groups = [];
@@ -55,9 +56,9 @@ public sealed class HeldGroups(Matchups matchups)
             return null;
         var v = sides[side] ??= new Side();
         long now = ctx.NowMs;
-        if (v.BuiltMs == now && v.Picture == pic)
-            return v;
-        (v.BuiltMs, v.Picture, v.Count, v.Held) = (now, pic, 0, 0);
+        if (v.Picture == pic && v.Version == pic.Version && now - v.BuiltMs < ctx.Settings.AdmiralPeriodMs)
+            return v;   // the picture as it was built from, within a think's period (docs/battle/workers.md W14)
+        (v.BuiltMs, v.Picture, v.Version, v.Count, v.Held) = (now, pic, pic.Version, 0, 0);
         int n = pic.Count;
         if (v.Parent.Length < n)
         {

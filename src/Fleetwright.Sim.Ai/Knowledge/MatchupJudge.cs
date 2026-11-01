@@ -41,16 +41,7 @@ public sealed class MatchupJudge(GroupSystem groups, SeenContacts seen, Doctrine
     {
         if (ctx.Ships.Count != unitsShips || groups.Count != unitsGroups)
             MakeUnits(ctx);
-        if (this.lanes.Length < lanes)
-        {
-            int had = this.lanes.Length;
-            Array.Resize(ref this.lanes, lanes);
-            for (int i = had; i < lanes; i++)
-            {
-                this.lanes[i] = new Lane();
-                this.lanes[i].Written.Capacity = Math.Max(64, units.Count);
-            }
-        }
+        Lanes(lanes);
         Matchups.Prepare(ctx.World);
         frozen = true;
     }
@@ -199,11 +190,66 @@ public sealed class MatchupJudge(GroupSystem groups, SeenContacts seen, Doctrine
                 fallCands.Add((d, k, gs));
         }
         fallCands.Sort();
-        MatchupSide? near = null;   // the enemy round him, once
-        foreach (var (_, k, gs) in fallCands)
-            if (!(GroupAgainst(ctx, groups[k], guide, near ??= EnemyNear(ctx, guide)) < accept))
-                return ctx.Ships[gs].Entity;
+        var cands = fallCands;
+        if (cands.Count == 0)
+            return 0;
+        var near = EnemyNear(ctx, guide);   // the enemy round him, once
+        if (!(GroupAgainst(ctx, groups[cands[0].K], guide, near) < accept))
+            return ctx.Ships[cands[0].Slot].Entity;   // the nearest, most often the one
+        var workers = ctx.World.Workers;
+        if (cands.Count < 3 || !workers.CanDispatch)
+        {
+            for (int c = 1; c < cands.Count; c++)
+                if (!(GroupAgainst(ctx, groups[cands[c].K], guide, near) < accept))
+                    return ctx.Ships[cands[c].Slot].Entity;
+            return 0;
+        }
+        // the rest judged as a job (docs/battle/workers.md W14), the first over the bar in order taken: the same as asking
+        // them one by one
+        if (fallConf.Length < cands.Count)
+            fallConf = new double[Math.Max(cands.Count, 2 * fallConf.Length)];
+        Lanes(workers.Participants);
+        Matchups.Prepare(ctx.World);
+        try
+        {
+            workers.For(new FallJob(this, ctx.World, ctx.Picture, ctx.System, guide, near, cands, fallConf), cands.Count - 1, 1);
+        }
+        finally
+        {
+            Matchups.Thaw();
+        }
+        for (int c = 1; c < cands.Count; c++)
+            if (!(fallConf[c] < accept))
+                return ctx.Ships[cands[c].Slot].Entity;
         return 0;
+    }
+
+    double[] fallConf = new double[32];
+
+    /// <summary>The fall-back's forces past the nearest, each one's matchup against the enemy round the guide, on the
+    /// workers (each with its lane's own side; the enemy's and the candidates only read).</summary>
+    readonly struct FallJob(MatchupJudge judge, World world, IPicture picture, byte system, ShipState guide, MatchupSide near,
+        List<(double D, int K, int Slot)> cands, double[] conf) : IJob
+    {
+        public void Run(int from, int to, int worker)
+        {
+            var ctx = new AiContext(world, picture, system);
+            for (int i = from; i < to; i++)
+                conf[i + 1] = judge.GroupAgainst(ctx, world.Groups[cands[i + 1].K], guide, near);
+        }
+    }
+
+    void Lanes(int n)
+    {
+        if (lanes.Length >= n)
+            return;
+        int had = lanes.Length;
+        Array.Resize(ref lanes, n);
+        for (int i = had; i < n; i++)
+        {
+            lanes[i] = new Lane();
+            lanes[i].Written.Capacity = Math.Max(64, units.Count);
+        }
     }
 
 

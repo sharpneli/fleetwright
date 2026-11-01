@@ -144,11 +144,19 @@ public sealed class Picture
     public byte Side { get; }
     public int Count { get; private set; }
 
+    /// <summary>Changed whenever a contact is added, dropped or written (by a look): what the AI's knowledge built from
+    /// the picture checks to know it's still the picture's (docs/battle/workers.md W14). Not world state.</summary>
+    public int Version { get; private set; }
+
     internal Picture(byte side) => Side = side;
 
     public ref readonly Contact this[int i] => ref contacts[i];
 
-    internal ref Contact At(int i) => ref contacts[i];
+    internal ref Contact At(int i)
+    {
+        Version++;
+        return ref contacts[i];
+    }
 
     /// <summary>The slot of the contact on a ship, or -1.</summary>
     public int IndexOf(int entity) => index.TryGetValue(entity, out int i) ? i : -1;
@@ -169,6 +177,7 @@ public sealed class Picture
     {
         if (Count == contacts.Length)
             Array.Resize(ref contacts, Count * 2);
+        Version++;
         index[entity] = Count;
         contacts[Count] = new Contact { Entity = entity, TakenFor = -1 };
         return ref contacts[Count++];
@@ -176,6 +185,7 @@ public sealed class Picture
 
     internal void RemoveAt(int i)
     {
+        Version++;
         index.Remove(contacts[i].Entity);
         int last = --Count;
         if (i != last)

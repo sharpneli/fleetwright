@@ -30,6 +30,7 @@ public sealed class TacticalPicture(SeenContacts seen, Matchups matchups)
     {
         public long BuiltMs = long.MinValue;
         public Picture? Picture;
+        public int Version;
         public int[] Parent = [], Slot = [];
         public EnemyGroup[] Groups = [];
         public int Count;
@@ -64,9 +65,9 @@ public sealed class TacticalPicture(SeenContacts seen, Matchups matchups)
             return null;
         var v = sides[side] ??= new Side();
         long now = world.Time.Ms;
-        if (v.BuiltMs == now && v.Picture == pic)
-            return v;
-        (v.BuiltMs, v.Picture, v.Count) = (now, pic, 0);
+        if (v.Picture == pic && v.Version == pic.Version && now - v.BuiltMs < world.Settings.AdmiralPeriodMs)
+            return v;   // the picture as it was built from, within a think's period (docs/battle/workers.md W14)
+        (v.BuiltMs, v.Picture, v.Version, v.Count) = (now, pic, pic.Version, 0);
         int n = pic.Count;
         if (v.Parent.Length < n)
         {

@@ -79,8 +79,8 @@ public sealed class FlotillaAttacks(MatchupJudge judge, HeldGroups held, Doctrin
     public List<Vec3d> Heavy(in AiContext ctx, byte side)
     {
         var list = heavy[side] ??= new List<Vec3d>(16);
-        if (heavyMs[side] == ctx.NowMs && ctx.NowMs != 0)
-            return list;
+        if (heavyMs[side] != 0 && ctx.NowMs - heavyMs[side] < ctx.Settings.AdmiralPeriodMs)
+            return list;   // once a think's period (docs/battle/workers.md W14)
         heavyMs[side] = ctx.NowMs;
         list.Clear();
         var groups = ctx.World.Groups;

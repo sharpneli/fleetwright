@@ -624,11 +624,10 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         // the groups, gravest first
         order.Clear();
         graveness.Clear();
+        JudgeGroups(ctx, side, held, default, byCentre: true);
         for (int k = 0; k < held.Length; k++)
         {
-            enemy.Clear();
-            AddGroup(ctx, side, held[k], enemy);
-            double c = enemy.Count == 0 || mine.Count == 0 ? double.MaxValue : Judge.Judge(ctx, 0, side, held[k].Centre, mine, enemy).Confidence;
+            double c = groupCount[k] == 0 || mine.Count == 0 ? double.MaxValue : groupConf[k];
             order.Add((k, c, WantedIn(ctx, side, held[k]) != 0));
             graveness.Add(c);
         }
@@ -755,6 +754,63 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
     }
 
     /// <summary>An enemy group's contacts into a side of a matchup, as they're taken.</summary>
+    // each held group's matchup against all of his (mine): its ships as taken, and his confidence (0 with nobody either side)
+    HeldGroup[] heldBuf = new HeldGroup[16];
+    int[] groupCount = new int[16];
+    double[] groupConf = new double[16];
+    MatchupSide[] laneEnemy = [new()];
+
+    /// <summary>Each held group against all of his (<see cref="mine"/>), at its own centre or at a point: on the workers
+    /// when there are a few (docs/battle/workers.md W14), each with its lane's own side, his read; the same either way.</summary>
+    void JudgeGroups(in AiContext ctx, byte side, ReadOnlySpan<HeldGroup> held, Vec3d at, bool byCentre)
+    {
+        int n = held.Length;
+        if (heldBuf.Length < n)
+            (heldBuf, groupCount, groupConf) = (new HeldGroup[2 * n], new int[2 * n], new double[2 * n]);
+        held.CopyTo(heldBuf);
+        var workers = ctx.World.Workers;
+        if (n < 3 || mine.Count == 0 || !workers.CanDispatch)
+        {
+            for (int k = 0; k < n; k++)
+                JudgeGroup(ctx, side, k, at, byCentre, laneEnemy[0]);
+            return;
+        }
+        if (laneEnemy.Length < workers.Participants)
+        {
+            int had = laneEnemy.Length;
+            Array.Resize(ref laneEnemy, workers.Participants);
+            for (int i = had; i < laneEnemy.Length; i++)
+                laneEnemy[i] = new MatchupSide();
+        }
+        Judge.Matchups.Prepare(ctx.World);
+        try
+        {
+            workers.For(new GroupsJob(this, ctx.World, ctx.Picture, ctx.System, side, at, byCentre), n, 1);
+        }
+        finally
+        {
+            Judge.Matchups.Thaw();
+        }
+    }
+
+    void JudgeGroup(in AiContext ctx, byte side, int k, Vec3d at, bool byCentre, MatchupSide e)
+    {
+        e.Clear();
+        AddGroup(ctx, side, heldBuf[k], e);
+        groupCount[k] = e.Count;
+        groupConf[k] = e.Count > 0 && mine.Count > 0 ? Judge.Judge(ctx, 0, side, byCentre ? heldBuf[k].Centre : at, mine, e).Confidence : 0;
+    }
+
+    readonly struct GroupsJob(CommanderLayer layer, World world, IPicture picture, byte system, byte side, Vec3d at, bool byCentre) : IJob
+    {
+        public void Run(int from, int to, int worker)
+        {
+            var ctx = new AiContext(world, picture, system);
+            for (int k = from; k < to; k++)
+                layer.JudgeGroup(ctx, side, k, at, byCentre, layer.laneEnemy[Workers.Lane]);
+        }
+    }
+
     void AddGroup(in AiContext ctx, byte side, in HeldGroup g, MatchupSide into)
     {
         var pic = ctx.World.Sightings.Of(side)!;
@@ -859,13 +915,13 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         int best = 0;
         double bestC = double.MaxValue;
         bool kept = false;
-        foreach (ref readonly var g in held)
+        JudgeGroups(ctx, side, held, at, byCentre: false);
+        for (int k = 0; k < held.Length; k++)
         {
-            enemy.Clear();
-            AddGroup(ctx, side, g, enemy);
-            if (enemy.Count == 0)
+            ref readonly var g = ref held[k];
+            if (groupCount[k] == 0)
                 continue;
-            double c = mine.Count == 0 ? 0 : Judge.Judge(ctx, 0, side, at, mine, enemy).Confidence;
+            double c = mine.Count == 0 ? 0 : groupConf[k];
             if (c < bestC)
                 (best, bestC) = (g.Biggest, c);
             kept |= s.Target != 0 && Member(ctx.World.Sightings.Of(side)!, side, g, s.Target);

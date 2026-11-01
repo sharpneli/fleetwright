@@ -104,6 +104,12 @@ public sealed class Workers : IDisposable
     /// the job's worker number down every call would reach too far (the AI's knowledge, docs/battle/workers.md W13).</summary>
     public static int Lane => lane;
 
+    /// <summary>Whether a dispatch can start from here: a thread of none under way (one isn't started from inside another,
+    /// nor from a worker); else a job's work runs on the calling thread.</summary>
+    public bool CanDispatch => !dispatching && inline == 0 && lane == 0;
+
+    int inline;   // jobs running inline on the dispatching thread now (one may hold the shuffled order)
+
     /// <summary>Per-worker scratch slots a job needs: the workers and the dispatching thread.</summary>
     public int Participants => threads.Length + 1;
 
@@ -165,6 +171,19 @@ public sealed class Workers : IDisposable
     }
 
     long RunInline<T>(in T job, int count, int chunkSize, int chunks) where T : struct, IJob
+    {
+        inline++;
+        try
+        {
+            return RunInlineNow(job, count, chunkSize, chunks);
+        }
+        finally
+        {
+            inline--;
+        }
+    }
+
+    long RunInlineNow<T>(in T job, int count, int chunkSize, int chunks) where T : struct, IJob
     {
         long t = Stopwatch.GetTimestamp();
         if (!shuffle)

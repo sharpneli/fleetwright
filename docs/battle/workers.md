@@ -1,5 +1,5 @@
 # Plan: the sim's workers (the job system)
-Status: **agreed 2026-10-24** (the decisions below answered); W0-W4 and W6 built 2026-10-24; W7 tried and left serial; W8's curve measured; the default count capped at 2 (the user, 2026-10-24), reassessed whenever more goes onto the workers. The AI on workers (W9-W15, superseding W5) drafted 2026-11-01; W9-W13 built 2026-11-01, W14 next.
+Status: **agreed 2026-10-24** (the decisions below answered); W0-W4 and W6 built 2026-10-24; W7 tried and left serial; W8's curve measured; the default count capped at 2 (the user, 2026-10-24), reassessed whenever more goes onto the workers. The AI on workers (W9-W15, superseding W5) drafted 2026-11-01; W9-W13 built 2026-11-01, W14 2026-11-02, W15 next.
     Updated: 2026-11-01
 
 The job system the architecture agreed from the start (`docs/world/architecture.md` "Threaded throughout", decision 1)
@@ -444,6 +444,31 @@ The Jutland (2 workers, the machine's quick state, the step 22.5 µs a tick): **
 A tick's dozen ships are uneven (a fighter with many candidates is most of it), so three threads buy about a fifth;
 the machine's own swing is wider than that (the same W12 build played 189.8 s and 255.3 s an hour apart: compare only
 runs back to back).
+
+### W14 The admirals' and commander's heavy parts - done 2026-11-02
+
+Spread over the ticks (W12), a tick has two or three admirals due, the commander one side: too few items to share
+between threads, and very uneven (a fighting force's call is most of it). So the admirals and the commander think as a
+layer each tick on the sim thread, as planned for the dispatch, and what's heavy inside a think goes to the workers:
+
+- **The fall-back search** (`MatchupJudge.FallBackShip`): the nearest force judged first, alone (most often the match);
+  past it, the rest as a job, each force's matchup against the enemy round the guide on a worker with its lane's own
+  side, the first over the bar in nearest-first order taken: the same answer as asking them one by one.
+- **The commander's held groups** (`JudgeGroups`): each enemy group he holds against all of his, for `Assign`'s
+  gravest-first order and `Enemy`'s target, as a job; the greedy sets after it stay in order (each judgement leans on
+  the set so far).
+- **Not to rebuild what only a look changes:** since W12 every tick is a moment, so the knowledge built once a moment
+  was built up to 20 times a second (the tactical picture alone 6.3 of 117 s traced, through deploying admirals). A
+  navy's picture now has a version (`Picture.Version`, changed by a look's every write), and the tactical picture and
+  the held groups are built again when it changes or a think's period has passed; the flotillas' heavy units once a
+  period.
+- **Nested work runs where it is:** a job is never started from inside another (`Workers.CanDispatch`: none under way,
+  inline or on the threads, and the sim thread's); a lone captain's fall-back search inside the captains' job runs on
+  his thread. Found by the shuffled check: an inline job's shuffled order was overwritten by a job started inside it.
+- **Checked:** Tsushima and the Jutland the same end hash on 0, 8, 2 shuffled and 0 shuffled workers.
+
+The Jutland back to back with W13 (2 workers): 242.0 -> 212.7 s; the admirals 61.5 -> 49.3 µs a tick. The machine
+drifted between the two (the ships' step 29.6 -> 22.7 µs a tick), so part of it is the machine.
 
 ### The panel, W10 and W11 (2026-11-01)
 
