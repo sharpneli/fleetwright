@@ -301,7 +301,7 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Homes homes
             // a task the player gave by hand ended, the last of its plan: what a run waits for (docs/map-ui/input.md T1)
             if (live && !Live(tasks[i].Status) && tasks[i].Hand && Next(tasks[i].Unit) < 0
                 && ctx.Ships.SlotOf(lead) is int ls and >= 0 && ctx.Ships[ls].Side == ctx.World.PlayerSide)
-                ctx.World.Matters();
+                ctx.Matters();
             if (queued > 0 && !Live(tasks[i].Status) && Next(tasks[i].Unit) is int q and >= 0)
             {
                 var c = queue[q];
@@ -532,7 +532,8 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Homes homes
         int enemy = NearestEnemy(ctx, guide, s.FightCompareM);
         if (enemy == 0)
             return false;
-        if (!Judge.Near(ctx, guide, out var m) || m.Confidence >= Judge.Bars(guide.Entity, guide.Side).Accept)
+        var call = Judge.Told(ctx, guide);   // its unit's, as its head last told it
+        if (!call.Any || call.Result.Confidence >= Judge.Bars(guide.Entity, guide.Side).Accept)
             return false;
         (t.ShadowOf, t.Status, t.Reason) = (enemy, TaskState.InContact, TaskReason.InContact);
         ctx.Issue(ctx.Orders.Shadow(u, Unit.Ship(enemy), 0, OrderSource.Task));

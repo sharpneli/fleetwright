@@ -125,6 +125,9 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         public bool Met;                // doctrine's Engage taken up in this encounter
         public long TorpedoMs;          // when he last fired torpedoes (0: never)
         public bool TorpedoHeld;        // his flotilla attacking together: his torpedoes wait for its signal
+        public int SignalTarget;        // his flotilla's signal standing: fire at her as his tubes bear (0: none)
+        public long SignalMs;           // when it was made
+        public double SignalTubes;      // his tubes' beam it was made for (degrees from ahead, 0 none)
         public bool TorpedoWait;        // on the coarse fire watch: a torpedo target found, his tubes not bearing yet
         public bool Attacking;          // fighting: pressing a torpedo attack (his searchlights dark, docs/battle/night.md Q4)
         public bool Finishing;          // fighting: in to finish an enemy that can hardly hurt him (docs/battle/balance.md BL5)
@@ -525,6 +528,8 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
                 FleeThink(ctx, ref cap, own);
                 continue;
             }
+            if (cap.Order != CaptainOrder.Fight && Tasks?.Of(Unit.Ship(cap.Entity)).Kind == Ai.Tasks.TaskKind.Scout && groups.UnitOf(cap.Entity) == null)
+                Judge.Call(ctx, own);   // a scout alone: his own call, for his task (docs/battle/workers.md W11)
             if (cap.Order == CaptainOrder.Fight)
             {
                 FightThink(ctx, ref cap, own, slot);
@@ -730,6 +735,12 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
             h.Add(c.TorpedoMs);
             if (c.TorpedoHeld)
                 h.Add(true);   // only then: worlds without flotilla attacks hash as before
+            if (c.SignalTarget != 0)
+            {
+                h.Add(c.SignalTarget);   // only then, as the hold
+                h.Add(c.SignalMs);
+                h.Add(c.SignalTubes);
+            }
             if (c.Attacking)
                 h.Add(2);      // only then: worlds without a torpedo attack hash as before
             h.Add((int)c.Reason);
@@ -890,7 +901,6 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
     {
         if (count == captains.Length)
             Array.Resize(ref captains, captains.Length * 2);
-        fallBacks.EnsureCapacity(captains.Length);
         int i = count;
         while (i > 0 && captains[i - 1].Entity > entity)
         {

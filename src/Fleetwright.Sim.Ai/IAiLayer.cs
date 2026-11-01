@@ -62,6 +62,16 @@ public readonly ref struct AiContext(World world, IPicture picture, byte system,
         else
             World.Issue(c);
     }
+
+    /// <summary>Tells the player something they want to know happened (<see cref="World.Matters"/>): after the think, by
+    /// its outbox, else at once.</summary>
+    public void Matters()
+    {
+        if (Outbox != null)
+            Outbox.Matters(World);
+        else
+            World.Matters();
+    }
 }
 
 /// <summary>How a captain works his ship: the helm and engine commands of <see cref="ShipSystem"/>, applied by the same

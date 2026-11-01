@@ -74,8 +74,9 @@ public sealed partial class AdmiralLayer
         // taken up by doctrine (not ordered), an attack is begun only if its guide's torpedoes are her better weapon there
         // (O7c) and its matchup has it worth making (docs/battle/command.md 5.1g: it presses in when its numbers saturate
         // the defence); once begun it's seen through
+        var call = Judge.Told(ctx, guide);   // his unit's, as its head last told it
         if (!a.AttackOrdered && a.Attack == AttackPhase.None &&
-            !(Judge.Near(ctx, guide, out var m) && (m.Terms.Style & MatchupStyle.AttackByA) != 0 && m.Confidence >= Judge.Bars(guide.Entity, guide.Side).Accept &&
+            !(call.Any && (call.Result.Terms.Style & MatchupStyle.AttackByA) != 0 && call.Result.Confidence >= Judge.Bars(guide.Entity, guide.Side).Accept &&
               Judge.Attacks(ctx, guide)))
             return false;
         var s = ctx.Settings;
@@ -87,8 +88,8 @@ public sealed partial class AdmiralLayer
         // taken up by doctrine, it's judged again as it goes (docs/battle/balance.md BL5, proposal 1): under the bar by the
         // commander's margin before the signal (what's come up since it began), it's given up as if beaten off; one ordered
         // is seen through, whoever ordered it judged
-        bool outmatched = !a.AttackOrdered && a.Attack is AttackPhase.Gain or AttackPhase.Run && Judge.Near(ctx, guide, out var judged) &&
-                          judged.Confidence < Judge.Bars(guide.Entity, guide.Side).Accept / (1 + ctx.Settings.CommanderMarginShare);
+        bool outmatched = !a.AttackOrdered && a.Attack is AttackPhase.Gain or AttackPhase.Run && call.Any &&
+                          call.Result.Confidence < Judge.Bars(guide.Entity, guide.Side).Accept / (1 + ctx.Settings.CommanderMarginShare);
         if (a.Attack != AttackPhase.None && (outmatched || g.Line.Count < a.AttackShips * (1 - doctrine.OfGroup(g, guide.Side, DoctrineField.AttackBreakOffShare)) - 1e-9))
         {
             // beaten off: away from the target, the attack given up
@@ -100,7 +101,7 @@ public sealed partial class AdmiralLayer
         }
 
         for (int i = 0; i < g.Line.Count; i++)
-            captains.HoldTorpedoes(g.Line[i], true);   // for the signal
+            HoldTorpedoes(ctx, g.Line[i], true);   // for the signal
 
         var pic = ctx.World.Sightings.Of(guide.Side);
         if (a.Attack is AttackPhase.None or AttackPhase.Gain && (!ctx.Picture.TryGet(guide.Side, a.AttackTarget, out _) || pic?.Out(a.AttackTarget) == true))
@@ -211,6 +212,7 @@ public sealed partial class AdmiralLayer
                     // line of sight now); each boat fires as hers bear
                     (a.Attack, a.AttackMs) = (AttackPhase.Fire, now);
                     StartTurn(ctx, g, a, turn, rearFirst: false, keep: true);
+                    Signal(ctx, g, a.AttackTarget, now, a.AttackTubes);
                     return true;
                 }
                 if (now - a.AttackMs > s.AttackGainMaxMs)
@@ -229,10 +231,10 @@ public sealed partial class AdmiralLayer
                 break;
             }
             case AttackPhase.Fire:
-                FireTogether(ctx, g, a);
                 if (now - a.AttackMs >= (long)(s.AttackFireS * 1000))
                 {
                     (a.Attack, a.AttackMs) = (AttackPhase.Away, now);
+                    Signal(ctx, g, 0, now, 0);   // its time up: the signal down
                     ctx.Issue(o.Run(to, target, Up));
                 }
                 break;
@@ -285,40 +287,19 @@ public sealed partial class AdmiralLayer
         return Math.Abs(Wrap180(left - straight)) <= Math.Abs(Wrap180(right - straight)) ? (left + 360) % 360 : right % 360;
     }
 
-    /// <summary>The signal made: each boat of the line fires her spread at the target as her tubes bear, once (also while
-    /// the flotilla is turning together, when the think gives no other orders).</summary>
-    void FireTogether(in AiContext ctx, GroupSystem.Group g, Admiral a)
+    /// <summary>The signal made, or taken down (target 0), to each boat of the line: each fires her spread at the target
+    /// as her tubes bear, once (<see cref="CaptainLayer.Signal"/>), until it comes down.</summary>
+    static void Signal(in AiContext ctx, GroupSystem.Group g, int target, long madeMs, double tubesDeg)
     {
-        if (a.Attack != AttackPhase.Fire)
-            return;
         for (int i = 0; i < g.Line.Count; i++)
-            captains.FireOnSignal(ctx, g.Line[i], a.AttackTarget, a.AttackMs, a.AttackTubes);
+            ctx.Issue(ctx.Orders.TorpedoSignal(g.Line[i], target, madeMs, tubesDeg));
     }
 
-    /// <summary>Whether any flotilla's signal to fire stands (<see cref="AttackPhase.Fire"/>).</summary>
-    internal bool Signalling
+    /// <summary>A boat's torpedoes held for the signal, or hers again (its signal down with them), unless they are so.</summary>
+    void HoldTorpedoes(in AiContext ctx, int ship, bool held)
     {
-        get
-        {
-            for (int i = 0; i < count; i++)
-                if (admirals[i].Attack == AttackPhase.Fire)
-                    return true;
-            return false;
-        }
-    }
-
-    /// <summary>The coarse tier's signal watch (docs/battle/night.md Q11): between the admirals' thinks a step apart, each
-    /// flotilla whose signal stands has its boats fire as their tubes bear (<see cref="FireTogether"/>), as the fine
-    /// tier's thinks a second apart do while it turns together.</summary>
-    internal void WatchSignals(in AiContext ctx)
-    {
-        for (int i = 0; i < count; i++)
-        {
-            var a = admirals[i];
-            if (a.Attack != AttackPhase.Fire || groups.Get(a.GroupId) is not { } g)
-                continue;
-            FireTogether(ctx, g, a);
-        }
+        if (captains.TorpedoesHeld(ship) != held || !held && captains.SignalOf(ship) != 0)
+            ctx.Issue(ctx.Orders.TorpedoHold(ship, held));
     }
 
     /// <summary>The attack over (done, given up, or no longer the order): the boats' torpedoes their own again, and the
@@ -327,7 +308,7 @@ public sealed partial class AdmiralLayer
     {
         (a.Attack, a.AttackTarget, a.AttackOrdered, a.AttackTubes, a.AttackStartMs) = (AttackPhase.None, 0, false, 0, 0);
         for (int i = 0; i < g.Line.Count; i++)
-            captains.HoldTorpedoes(g.Line[i], false);
+            HoldTorpedoes(ctx, g.Line[i], false);
         if (GuideUnit(g) is { Id: not 0 } to)
         {
             a.HandedTo = 0;
@@ -365,7 +346,7 @@ public sealed partial class AdmiralLayer
         if (!beaten && !at && groups.Get(member) is { } msub && ctx.Ships.SlotOf(groups.GuideShip(msub)) is int gs and >= 0)
         {
             var mg = ctx.Ships[gs];
-            if (!Judge.Near(ctx, mg, out _))
+            if (!Judge.Told(ctx, mg).Any)
                 return false;   // the enemy not in sight yet: judged when he is
             no = !Judge.Attacks(ctx, mg);
         }

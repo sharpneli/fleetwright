@@ -135,9 +135,9 @@ public sealed class AiSystem : IWorldSystem
     void WatchFire(World world)
     {
         long step = world.Settings.CaptainPeriodMs, next = (world.Time.Ms / step + 1) * step;
-        int admirals = Array.IndexOf(layers, Admirals), captains = Array.IndexOf(layers, Captains);
-        bool admiralsLater = nextTick[admirals] < 0 || nextTick[admirals] > next, captainsLater = nextTick[captains] < 0 || nextTick[captains] > next;
-        if (!(Admirals.Signalling && admiralsLater || Captains.TorpedoesWaiting && captainsLater) || fireMs >= 0 && fireMs <= next)
+        int captains = Array.IndexOf(layers, Captains);
+        bool captainsLater = nextTick[captains] < 0 || nextTick[captains] > next;
+        if (!((Captains.TorpedoesWaiting || Captains.Signalled) && captainsLater) || fireMs >= 0 && fireMs <= next)
             return;
         fireMs = next;
         fireGen++;
@@ -146,7 +146,9 @@ public sealed class AiSystem : IWorldSystem
 
     AiContext Context(World world) => new(world, picture, Id);
 
-    readonly Outbox outbox = new();
+    /// <summary>A layer's orders wait for the end of its think (docs/battle/workers.md W10): no unit sees what another
+    /// of the layer just decided, a subordinate an order only once it's given.</summary>
+    readonly Outbox outbox = new() { Deferred = true };
 
     /// <summary>A think's context: its orders into the outbox (docs/battle/workers.md W9), the world refusing any other.</summary>
     AiContext Thinking(World world)
@@ -159,12 +161,13 @@ public sealed class AiSystem : IWorldSystem
     void Thought(World world)
     {
         world.Thinking = false;
+        Judge.Publish();   // the units' calls its heads made, told to the chain (docs/battle/workers.md W11)
         outbox.Apply(world);
     }
 
     public void Apply(World world, in Command c)
     {
-        if ((AiCommand)c.Code is < AiCommand.Course or > AiCommand.AimShip)
+        if ((AiCommand)c.Code is < AiCommand.Course or > AiCommand.Release)
             throw new ArgumentException($"unknown AI command {c.Code}");
         var u = new Unit(c.Entity);
         var code = (AiCommand)c.Code;
@@ -192,6 +195,34 @@ public sealed class AiSystem : IWorldSystem
             }
             case AiCommand.AimShip:
                 Aims.Name(c.B & 255, c.B >> 8 & 255, c.Entity);
+                return;
+            case AiCommand.TorpedoHold:
+                Captains.HoldTorpedoes(c.Entity, c.X != 0);
+                return;
+            case AiCommand.TorpedoSignal:
+                Captains.Signal(c.Entity, (int)c.A, (long)c.Y, c.X);
+                WakeAll(world);
+                return;
+            case AiCommand.Ask:
+                if (u.IsShip)
+                    Captains.Ask(u.Entity);
+                else
+                    Admirals.Ask(u.GroupId);
+                return;
+            case AiCommand.Release:
+                if (u.IsShip)
+                    Captains.Release(Context(world), u.Entity);
+                else
+                    Admirals.Release(Context(world), u.GroupId);
+                WakeAll(world);
+                return;
+            case AiCommand.Commander:
+                Commanders.SetMode(c.Entity, (CommanderMode)c.A);
+                WakeAll(world);
+                return;
+            case AiCommand.Automate:
+                Commanders.Automate(u, c.X);
+                WakeAll(world);
                 return;
         }
         bool task = TaskLayer.IsTask(code, source);
@@ -407,9 +438,7 @@ public sealed class AiSystem : IWorldSystem
             fireMs = -1;
             try
             {
-                var ctx = Thinking(world);
-                Admirals.WatchSignals(ctx);
-                Captains.WatchTorpedoes(ctx);
+                Captains.WatchTorpedoes(Thinking(world));
             }
             finally
             {

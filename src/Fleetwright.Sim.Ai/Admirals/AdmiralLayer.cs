@@ -164,7 +164,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
         var parent = g.Parent != 0 ? groups.Get(g.Parent) : null;
         var detached = parent?.DetachmentOf(g.GroupId) ?? Detachment.InLine;
         var a = Get(g.GroupId);
-        Rekind(g, a);
+        Rekind(ctx, g, a);
 
         switch (code)
         {
@@ -344,7 +344,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
         {
             var g = groups[k];
             var a = Get(g.GroupId);
-            Rekind(g, a);
+            Rekind(ctx, g, a);
             int lead = ships.SlotOf(groups.GuideShip(g));
             if (a.Watch && lead >= 0)
             {
@@ -362,13 +362,14 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
             var to = GuideUnit(g);
             if (to.Id == 0 || lead < 0)
                 continue;
+            if (groups.UnitOf(ships[lead].Entity) == g)
+                Judge.Call(ctx, ships[lead]);   // his unit's call, told to the chain after this think (docs/battle/workers.md W11)
             if (a.Turning)
                 TurnStep(ctx, g, a);
             if (Manoeuvring(g))
             {
                 // turning together: every ship has her course; no stations, no new guide's orders until it's done (a
-                // flotilla firing as it turns)
-                FireTogether(ctx, g, a);
+                // flotilla firing as it turns: its boats on the signal they hold)
                 if (a.Fire == FireOrder.Engage)
                     HandFire(ctx, g, a, fresh: false);
                 Limit(ctx, g, a);
@@ -421,11 +422,11 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
         {
             int e = captains.SuperiorsAt(i);
             if (e != 0 && !groups.InLine(e))
-                captains.Release(ctx, e);
+                ctx.Issue(ctx.Orders.Release(Unit.Ship(e)));
         }
         for (int i = 0; i < count; i++)
             if (admirals[i].Whose == Whose.Superior && groups.Get(admirals[i].GroupId) is { } g && !groups.InForceLine(g))
-                Release(ctx, g, admirals[i]);
+                ctx.Issue(ctx.Orders.Release(Unit.Group(g.GroupId)));
     }
 
     /// <summary>Night's close order (docs/battle/night.md Q7): by night at his guide (<see cref="AiNight"/>), a squadron's spacing closed to doctrine's <see cref="DoctrineField.NightSpacingShare"/> of the day's
@@ -462,14 +463,14 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
     /// dispositions and its groups' attacks; every boat of his tree has her torpedoes back from the signal she waited for.
     /// His order, and his divide once an order (<see cref="Admiral.ScreenDivided"/>), stay: an ordered attack is taken up
     /// afresh as the new kind takes it (a force hands it to its divisions).</summary>
-    void Rekind(GroupSystem.Group g, Admiral a)
+    void Rekind(in AiContext ctx, GroupSystem.Group g, Admiral a)
     {
         if (a.Force == g.IsForce)
             return;
         a.Force = g.IsForce;
         Ships(g, tree);
         foreach (int ship in tree)
-            captains.HoldTorpedoes(ship, false);
+            HoldTorpedoes(ctx, ship, false);
         (a.Attack, a.AttackTarget, a.AttackShips, a.AttackSide, a.AttackTubes, a.AttackMs, a.GainSafeMs, a.AttackStartMs) =
             (AttackPhase.None, 0, 0, 0, 0, 0, 0, 0);
         (a.AttackDoneCount, a.AttackBeaten) = (0, false);
@@ -502,6 +503,20 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
                 else
                     captains.Ask(g.Members[i]);
             }
+    }
+
+    /// <summary>A notice raised on a group the player holds (<see cref="AiCommand.Ask"/>).</summary>
+    internal void Ask(int groupId)
+    {
+        if (groups.Get(groupId) != null)
+            Ask(Get(groupId));
+    }
+
+    /// <summary>A group out of its force's line is its admiral's own again (<see cref="AiCommand.Release"/>).</summary>
+    internal void Release(in AiContext ctx, int groupId)
+    {
+        if (groups.Get(groupId) is { } g && Find(groupId) is int i and >= 0)
+            Release(ctx, g, admirals[i]);
     }
 
     void Ask(Admiral a)

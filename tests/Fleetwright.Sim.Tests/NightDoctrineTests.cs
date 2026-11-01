@@ -34,8 +34,8 @@ public class NightDoctrineTests(ITestOutputHelper output)
 
     static ShipState Ship(World w, int e) => w.Ships.Store[w.Ships.Store.SlotOf(e)];
 
-    /// <summary>Held in the destroyer's beam, the cruiser turns stern to it with her own lights out by "turn away"; by
-    /// "fight on" she holds her course.</summary>
+    /// <summary>Held in the destroyer's beam (the player's, so her captain keeps it on her), the cruiser turns stern to it
+    /// with her own lights out by "turn away"; by "fight on" she holds her course.</summary>
     [Fact]
     public void A_ship_lit_turns_away_with_her_lights_out_or_fights_on()
     {
@@ -45,6 +45,7 @@ public class NightDoctrineTests(ITestOutputHelper output)
             w.Apply(ai.Orders.SideDoctrine(1, DoctrineField.WhenLit, (double)rule));
             w.Apply(ai.Orders.SideDoctrine(2, DoctrineField.Unknowns, (double)Unknowns.Hold));
             w.AdvanceTo(w.Time + 30_000);
+            w.Apply(ai.Orders.Beams(Unit.Ship(2), true));
             w.Apply(SearchlightSystem.Order(2, SearchlightOrder.Illuminate, 1));
             w.AdvanceTo(w.Time + 30_000);
             return (Ship(w, 1).CourseOrderDeg, ai.Captains.ReasonOf(1), w.Searchlights.OrderOf(1, w.Time.Ms).Order);

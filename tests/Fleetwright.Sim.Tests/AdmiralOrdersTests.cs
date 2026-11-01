@@ -711,7 +711,7 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
         var guide = Ship(w, w.Groups.GuideShip(f));
         output.WriteLine($"in one line after {deployed / 60:F1} min, steering {guide.HeadingDeg:F0}°");
         Assert.True(began, "never deployed");
-        Assert.InRange(deployed / 60, 3, 30);
+        Assert.InRange(deployed / 60, 3, 32);   // a force's orders reach its divisions and their ships a think apart (docs/battle/workers.md W10)
         Assert.Equal(Formation.Column, f.Formation);
         Assert.InRange(guide.HeadingDeg, 80, 100);
     }

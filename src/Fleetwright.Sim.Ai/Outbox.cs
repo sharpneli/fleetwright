@@ -16,6 +16,18 @@ public sealed class Outbox
 
     public int Count => count;
 
+    bool matters;
+
+    /// <summary>Something the player wants to know happened (<see cref="World.Matters"/>), told once the orders are
+    /// applied.</summary>
+    public void Matters(World world)
+    {
+        if (Deferred)
+            matters = true;
+        else
+            Run(world, static w => w.Matters());
+    }
+
     public void Add(World world, in Command c)
     {
         if (!Deferred)
@@ -34,6 +46,11 @@ public sealed class Outbox
         for (int i = 0; i < count; i++)
             Run(world, items[i]);
         count = 0;
+        if (matters)
+        {
+            matters = false;
+            Run(world, static w => w.Matters());
+        }
     }
 
     static void Run(World world, in Command c)
@@ -43,6 +60,20 @@ public sealed class Outbox
         try
         {
             world.Issue(c);
+        }
+        finally
+        {
+            world.Thinking = thinking;
+        }
+    }
+
+    static void Run(World world, Action<World> tell)
+    {
+        bool thinking = world.Thinking;
+        world.Thinking = false;
+        try
+        {
+            tell(world);
         }
         finally
         {

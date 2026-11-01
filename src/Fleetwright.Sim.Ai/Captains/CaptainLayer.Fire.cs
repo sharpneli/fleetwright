@@ -129,6 +129,8 @@ public sealed partial class CaptainLayer
             Darken(ctx, ref cap, own, slot);          // darkened: her guns hold till she's fired upon (Q9)
             Flee(ctx, ref cap, own, slot);            // a ship with no main battery from an enemy warship (docs/battle/aims.md A4)
             TakeUpStanding(ctx, ref cap, own, slot);
+            if (cap.SignalTarget != 0)
+                FireOnSignal(ctx, ref cap, own.Entity, slot);   // his flotilla's signal standing
             Aim(ctx, ref cap, own, slot);
             AnswerChallenges(ctx, own);
             NightLights(ctx, ref cap, own, slot);   // star shell or searchlights on what the guns can't see (docs/battle/night.md Q4, Q5)
@@ -644,9 +646,14 @@ public sealed partial class CaptainLayer
 
     /// <summary>The coarse fire watch's look (docs/battle/night.md Q11): each ship whose captain's last think found a target
     /// for her torpedoes but couldn't fire (her tubes not bearing, a friend on the track) tries again by the think's own
-    /// test (<see cref="Torpedoes"/>), as a fine captain does each second; those still waiting stay on the watch.</summary>
+    /// test (<see cref="Torpedoes"/>), as a fine captain does each second; those still waiting stay on the watch. And
+    /// each holding his flotilla's signal fires on it as his tubes bear (<see cref="FireOnSignal"/>).</summary>
     internal void WatchTorpedoes(in AiContext ctx)
     {
+        for (int i = 0; i < count; i++)
+            if (captains[i].SignalTarget != 0 && ctx.Ships.SlotOf(captains[i].Entity) is int ss and >= 0 &&
+                ctx.Ships.Combat.Condition(ss).Status == ShipStatus.Afloat)
+                FireOnSignal(ctx, ref captains[i], captains[i].Entity, ss);
         int n = torpedoWaiting.Count;
         for (int k = 0; k < n; k++)
         {
@@ -664,27 +671,58 @@ public sealed partial class CaptainLayer
         torpedoWaiting.RemoveRange(0, n);
     }
 
-    /// <summary>His flotilla's admiral holds his torpedoes for its signal, or lets them go (docs/battle/command.md 5.1b).</summary>
+    /// <summary>His flotilla's admiral holds his torpedoes for its signal, or lets them go (docs/battle/command.md 5.1b),
+    /// its signal down with them.</summary>
     internal void HoldTorpedoes(int entity, bool held)
     {
-        if (Find(entity) is int i and >= 0 ? captains[i].TorpedoHeld != held : held)
-            Get(entity).TorpedoHeld = held;
+        if (Find(entity) is int i and >= 0 ? captains[i].TorpedoHeld != held || !held && captains[i].SignalTarget != 0 : held)
+        {
+            ref var cap = ref Get(entity);
+            cap.TorpedoHeld = held;
+            if (!held)
+                (cap.SignalTarget, cap.SignalMs, cap.SignalTubes) = (0, 0, 0);
+        }
+    }
+
+    /// <summary>His flotilla's signal (docs/battle/command.md 5.1b): fire at a target as his tubes bear, until it's taken
+    /// down (target 0); his think fires on it (<see cref="FireOnSignal"/>).</summary>
+    internal void Signal(int entity, int target, long madeMs, double tubesDeg)
+    {
+        if (target == 0 && (Find(entity) is not (int i and >= 0) || captains[i].SignalTarget == 0))
+            return;
+        ref var cap = ref Get(entity);
+        (cap.SignalTarget, cap.SignalMs, cap.SignalTubes) = target == 0 ? (0, 0L, 0.0) : (target, madeMs, tubesDeg);
+    }
+
+    /// <summary>Whether any captain holds a flotilla's signal standing.</summary>
+    internal bool Signalled
+    {
+        get
+        {
+            for (int i = 0; i < count; i++)
+                if (captains[i].SignalTarget != 0)
+                    return true;
+            return false;
+        }
     }
 
     /// <summary>Whether her torpedoes wait for her flotilla's signal.</summary>
     internal bool TorpedoesHeld(int entity) => Find(entity) is int i and >= 0 && captains[i].TorpedoHeld;
 
+    /// <summary>The target of the flotilla's signal she holds (0: none).</summary>
+    internal int SignalOf(int entity) => Find(entity) is int i and >= 0 ? captains[i].SignalTarget : 0;
+
     /// <summary>His flotilla's signal to fire (docs/battle/command.md 5.1b): a spread at the target from his launchers that
-    /// are ready, aimed where his navy's picture says it'll be, unless a friend is on the track; once for a signal made at
-    /// <paramref name="signalMs"/>: once torpedoes have gone since, or while a launch waits for its tubes to train (one
+    /// are ready, aimed where his navy's picture says it'll be, unless a friend is on the track; once for the signal he
+    /// holds: once torpedoes have gone since it was made, or while a launch waits for its tubes to train (one
     /// that no longer bears by then holds its fire, and he tries again). With his tubes trained out on a beam
-    /// (<paramref name="tubesDeg"/>, from ahead; 0 none) he waits for the turn to bring the aim on that side of him,
+    /// (the signal's, from ahead; 0 none) he waits for the turn to bring the aim on that side of him,
     /// rather than swing them round. Whether he fired.</summary>
-    internal bool FireOnSignal(in AiContext ctx, int entity, int target, long signalMs, double tubesDeg)
+    bool FireOnSignal(in AiContext ctx, ref Captain cap, int entity, int slot)
     {
         var s = ctx.Settings;
-        int slot = ctx.Ships.SlotOf(entity);
-        var pic = slot >= 0 ? ctx.World.Sightings.Of(ctx.Ships[slot].Side) : null;
+        var (target, signalMs, tubesDeg) = (cap.SignalTarget, cap.SignalMs, cap.SignalTubes);
+        var pic = ctx.World.Sightings.Of(ctx.Ships[slot].Side);
         if (pic == null || pic.IndexOf(target) is not (int ti and >= 0) || pic[ti].Out || FiredSince(ctx, slot, signalMs) || ctx.World.Torpedoes.Launching(entity) ||
             ctx.World.Torpedoes.Ready(ctx.World, entity, target) == 0)
             return false;
@@ -701,7 +739,7 @@ public sealed partial class CaptainLayer
         if (lines.TorpedoFoul(ctx, own, aim, range, speed))
             return false;
         ctx.Issue(TorpedoSystem.Launch(entity, target, s.TorpedoSpread));
-        Get(entity).TorpedoMs = ctx.NowMs;
+        cap.TorpedoMs = ctx.NowMs;
         return true;
     }
 
@@ -1151,9 +1189,10 @@ public sealed partial class CaptainLayer
     };
 
     /// <summary>His Fight, each second (docs/battle/command.md 5.1g): the enemy (the one ordered, else the main battery's
-    /// target, else the nearest in sight), and his unit's matchup against what his navy holds in sight round him. Under
-    /// doctrine's bar (1 / OutgunnedRatio) he turns away, and comes back once he's well over it; but one that can't get
-    /// away (the enemy as fast) runs only to a stronger force of his own, else he fights. A torpedo craft attacks when
+    /// target, else the nearest in sight), and his unit's call (<see cref="MatchupJudge.Call"/>, docs/battle/workers.md W11):
+    /// his own alone, else as his unit's admiral last told it. Under doctrine's bar (1 / OutgunnedRatio) it turns away, and
+    /// comes back once it's well over it; but one that can't get away (the enemy as fast) runs only to a stronger force of
+    /// its own, else it fights. A torpedo craft attacks when
     /// the judgement has its side attacking, or when it's ordered to (whoever ordered it judged): in to its torpedoes'
     /// range, fire, away, and in again. One that can hardly be
     /// hurt (<see cref="SimSettings.FightFinishConfidence"/>) closes in to finish the enemy. Nothing while there's nobody
@@ -1179,20 +1218,20 @@ public sealed partial class CaptainLayer
         if (enemy != cap.FightEnemy)
             (cap.FightEnemy, cap.FightSide) = (enemy, 0);
 
-        bool judged = Judge.Near(ctx, own, out var m);
-        if (cap.DistanceM <= 0 && judged && m.BandA > 0)
+        bool alone = groups.UnitOf(own.Entity) == null;   // his own unit's head: he makes its call
+        var call = alone ? Judge.Call(ctx, own) : Judge.Told(ctx, own);
+        var m = call.Result;
+        if (cap.DistanceM <= 0 && call.Any && m.BandA > 0)
             band = m.BandA;   // where his unit does best against them (Matchup.Judge), doctrine's where it hardly matters
         cap.FightBandM = band;
-        double accept = Judge.Bars(own.Entity, own.Side).Accept, c = judged ? m.Confidence : double.PositiveInfinity;
-        bool away = cap.FightAway ? c < accept / s.FightRallyShare : c < accept;
-        double fallBack = double.NaN;
-        if (away && !m.ACanRefuse(s) && double.IsNaN(fallBack = FallBack(ctx, own)))
-            away = false;   // no escape: he fights
+        double c = call.Any ? m.Confidence : double.PositiveInfinity;
+        bool away = call.Away;
+        double fallBack = call.FallBack != 0 && ctx.Ships.SlotOf(call.FallBack) is int fs and >= 0 ? Earth.Bearing(own.Position, ctx.Ships[fs].Position) : double.NaN;
 
         // ordered to attack, or in his flotilla's attack (his torpedoes held for its signal): whoever ordered it judged;
         // else his own unit's attack, if his torpedoes are his better weapon here (O7c)
         if (TorpedoesLeft(ctx, own, slot) && (cap.AttackOrdered || cap.TorpedoHeld ||
-                                             !away && (m.Terms.Style & MatchupStyle.AttackByA) != 0 && Judge.Attacks(ctx, own)))
+                                             !away && (m.Terms.Style & MatchupStyle.AttackByA) != 0 && Judge.Attacks(ctx, own, mine: alone)))
         {
             // the attack: in to the torpedoes' range, fire, away, and in again
             cap.Attacking = true;
@@ -1216,62 +1255,11 @@ public sealed partial class CaptainLayer
             (candWanted & 1 << (int)fp[fi].Type) != 0)
             course = Around(ctx, own, slot, course, enemy);   // on what his aim wants: round what endangers him, if he can
         if (away)
-        {
-            if (double.IsNaN(fallBack))
-                fallBack = FallBack(ctx, own);
             course = Evade(ctx, own, slot, FallBackCourse(course, fallBack, s), attackRun: false);
-        }
         if (cap.LimitKn > 0)
             kn = Math.Min(kn, cap.LimitKn);
         Give(ctx, own, course, kn);
     }
-
-    /// <summary>Falling back on the main body (docs/battle/command.md 5.1c): the bearing of the nearest own force (another
-    /// top unit of his side) within <see cref="SimSettings.FallBackM"/> that's a match for the enemy in sight round him
-    /// (its matchup against them at doctrine's bar or better); NaN if none. Judged once a moment for his unit.</summary>
-    double FallBack(in AiContext ctx, ShipState own)
-    {
-        var s = ctx.Settings;
-        var mine = groups.UnitOf(own.Entity);
-        int key = mine != null ? Unit.Group(mine.GroupId).Id : Unit.Ship(own.Entity).Id;
-        if (fallBacksMs != ctx.NowMs)
-        {
-            fallBacks.Clear();   // a moment's judgements only: at most one a captain
-            fallBacksMs = ctx.NowMs;
-        }
-        if (fallBacks.TryGetValue(key, out double fb))
-            return fb;
-        double accept = Judge.Bars(own.Entity, own.Side).Accept, deg = double.NaN;
-        // the forces in reach nearest first (ties by index), so the first that's a match is the one
-        fallCands.Clear();
-        for (int k = 0; k < groups.Count; k++)
-        {
-            var g = groups[k];
-            if (g.Parent != 0 || mine != null && g.GroupId == mine.GroupId || ctx.Ships.SlotOf(groups.GuideShip(g)) is not (int gs and >= 0))
-                continue;
-            var guide = ctx.Ships[gs];
-            double d = Earth.Distance(own.Position, guide.Position);
-            if (guide.Side == own.Side && d < s.FallBackM)
-                fallCands.Add((d, k, gs));
-        }
-        fallCands.Sort();
-        MatchupSide? near = null;   // the enemy round him, once
-        foreach (var (_, k, gs) in fallCands)
-            if (!(Judge.GroupAgainst(ctx, groups[k], own, near ??= Judge.EnemyNear(ctx, own)) < accept))
-            {
-                deg = Earth.Bearing(own.Position, ctx.Ships[gs].Position);
-                break;
-            }
-        fallBacks[key] = deg;
-        return deg;
-    }
-
-    readonly List<(double D, int K, int Slot)> fallCands = [];
-
-    /// <summary>This moment's fall-back bearings by unit, sized with the captains (<see cref="Insert"/>), so the first
-    /// captain to fall back in a fight allocates nothing.</summary>
-    readonly Dictionary<int, double> fallBacks = [];
-    long fallBacksMs = -1;
 
     /// <summary>The course away: toward the force he falls back on if that's within <see cref="SimSettings.FallBackDeg"/>
     /// of straight away, else straight away.</summary>

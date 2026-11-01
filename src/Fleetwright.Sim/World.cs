@@ -395,6 +395,8 @@ public sealed class World
     /// a run drops back to its speed here, as <see cref="Halt"/>; without a run, nothing.</summary>
     public void Matters()
     {
+        if (Thinking)
+            throw new InvalidOperationException("the player told something while the AI thinks: a think's reports go to its outbox");
         if (RunBack > 0)
             Halt(pause: false, RunBack);
     }

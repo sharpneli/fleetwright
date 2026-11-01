@@ -214,6 +214,22 @@ public enum AiCommand : ushort
 
     /// <summary>A ship named for an aim: Entity the ship, B the side and the aim's index as <see cref="Aim"/>'s.</summary>
     AimShip,
+
+    /// <summary>A flotilla's admiral to a boat of its line (docs/battle/command.md 5.1b): X 1 her torpedoes held for his
+    /// signal, 0 hers again (and his signal down). Between layers only (docs/battle/workers.md W10).</summary>
+    TorpedoHold,
+
+    /// <summary>A flotilla's signal to a boat of its line: fire as her tubes bear at A (a ship, as her navy holds her; 0:
+    /// the signal down), X her tubes' beam (degrees from ahead, 0 none), Y the moment it was made (ms of world time).
+    /// Between layers only.</summary>
+    TorpedoSignal,
+
+    /// <summary>A notice raised on a unit the player holds: its superior's orders changed. Between layers only.</summary>
+    Ask,
+
+    /// <summary>A unit no longer its superior's (out of his line): it holds what it's doing now, his limits gone. Between
+    /// layers only.</summary>
+    Release,
 }
 
 /// <summary>The night's orders on a ship as the snapshot shows them (<c>ShipsView.Night</c>; docs/battle/night.md Q9).</summary>
@@ -436,6 +452,19 @@ public readonly struct UnitOrders(byte system, bool hand = false)
     public Command Detach(Unit u, OrderSource source = OrderSource.Player) => Make(AiCommand.Detach, u, source);
 
     public Command Resume(Unit u, OrderSource source = OrderSource.Player) => Make(AiCommand.Resume, u, source);
+
+    /// <summary>A flotilla's admiral holds a boat's torpedoes for his signal, or lets them go.</summary>
+    public Command TorpedoHold(int ship, bool held) => Make(AiCommand.TorpedoHold, Unit.Ship(ship), OrderSource.Superior, x: held ? 1 : 0);
+
+    /// <summary>A flotilla's signal to a boat: fire at a target as her tubes bear (0: the signal down).</summary>
+    public Command TorpedoSignal(int ship, int target, long madeMs, double tubesDeg) =>
+        Make(AiCommand.TorpedoSignal, Unit.Ship(ship), OrderSource.Superior, a: target, x: tubesDeg, y: madeMs);
+
+    /// <summary>A superior raises a notice on a unit the player holds.</summary>
+    public Command Ask(Unit u) => Make(AiCommand.Ask, u, OrderSource.Superior);
+
+    /// <summary>A unit out of its superior's line is his no longer.</summary>
+    public Command Release(Unit u) => Make(AiCommand.Release, u, OrderSource.Superior);
 
     Command Make(AiCommand code, Unit u, OrderSource source, long a = 0, double x = 0, double y = 0) =>
         new(system, (ushort)code, u.Id, A: a, X: x, B: (int)source | (hand && source == OrderSource.Player ? Hand : 0), Y: y);

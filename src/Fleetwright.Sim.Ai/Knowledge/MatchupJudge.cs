@@ -5,7 +5,7 @@ namespace Fleetwright.Sim.Ai.Knowledge;
 
 /// <summary>The AI's judgements of who can fight whom (docs/battle/command.md 5.1g, piece 3): the one place every layer
 /// asks. A unit (the outermost group a ship moves with, or a ship alone) against the enemy its navy holds in sight round
-/// it, once a moment per unit; or any two sides a layer builds (the commander's units against an enemy group). By its
+/// it, made by the unit's head and told to the rest of the chain (<see cref="Call"/>); or any two sides a layer builds (the commander's units against an enemy group). By its
 /// doctrine's range share both ways (the enemy's own isn't known), in the light at the unit (by night the defence's guns
 /// open, and the lines fight, within sight). Not world state, but for the band each unit holds (kept while it's among
 /// its best: Matchup.Judge's keepA), which the next moment's judgement leans to; nothing allocated once grown.</summary>
@@ -15,7 +15,8 @@ public sealed class MatchupJudge(GroupSystem groups, SeenContacts seen, Doctrine
 
     readonly MatchupSide own = new(), theirs = new();
     readonly List<(int Ship, double AsternM, double AbeamM)> line = new(32);
-    readonly Dictionary<int, Judged> units = [];
+    readonly Dictionary<int, Judged> units = [], told = [];   // the heads' own, and as they last told them
+    readonly List<int> written = new(64);                      // units whose call was made since the last Publish
     readonly Dictionary<(MatchupProfile, MatchupProfile, double), bool> pairs = [];
     readonly MatchupEntry[] oneA = new MatchupEntry[1], oneB = new MatchupEntry[1];
 
@@ -30,43 +31,125 @@ public sealed class MatchupJudge(GroupSystem groups, SeenContacts seen, Doctrine
     {
         var store = ctx.Ships;
         for (int slot = 0; slot < store.Slots; slot++)
-            if (store.IsAlive(slot) && !units.ContainsKey(Unit.Ship(store[slot].Entity).Id))
-                units[Unit.Ship(store[slot].Entity).Id] = new Judged();
+            if (store.IsAlive(slot))
+                Room(Unit.Ship(store[slot].Entity).Id);
         for (int k = 0; k < groups.Count; k++)
-            if (!units.ContainsKey(Unit.Group(groups[k].GroupId).Id))
-                units[Unit.Group(groups[k].GroupId).Id] = new Judged();
+            Room(Unit.Group(groups[k].GroupId).Id);
+        written.Capacity = Math.Max(written.Capacity, units.Count);
         var reg = ctx.World.Ships.Registry;
         int classes = reg.Count + reg.LoadoutCount;
         pairs.EnsureCapacity(2 * classes * classes);
         (unitsShips, unitsGroups) = (store.Count, groups.Count);
     }
 
-    /// <summary>A unit's judgement this moment, and the classes of its own that attack in it.</summary>
+    Judged Room(int key)
+    {
+        if (!units.TryGetValue(key, out var c))
+            (units[key], told[key]) = (c = new Judged(), new Judged());
+        return c;
+    }
+
+    /// <summary>A unit's judgement this moment, the classes of its own that attack in it, and its head's call on it.</summary>
     sealed class Judged
     {
-        public long Ms = long.MinValue, BandMs = long.MinValue;   // judged; its bands thought out
+        public long Ms = long.MinValue, BandMs = long.MinValue, CallMs = long.MinValue;   // judged; its bands thought out; called
         public MatchupResult Result;
         public bool Any;
         public readonly MatchupProfile?[] Attackers = new MatchupProfile?[Matchup.MaxClasses];
         public int AttackerCount;
+        public bool Away;          // turned away under doctrine's bar (back over it by FightRallyShare)
+        public int FallBack;       // the guide ship of the own force it falls back on (0: none)
+
+        public void CopyTo(Judged to)
+        {
+            (to.Ms, to.BandMs, to.CallMs, to.Result, to.Any, to.AttackerCount, to.Away, to.FallBack) =
+                (Ms, BandMs, CallMs, Result, Any, AttackerCount, Away, FallBack);
+            Array.Copy(Attackers, to.Attackers, AttackerCount);
+        }
     }
 
-    /// <summary>A ship's unit against the enemy in sight within <see cref="SimSettings.FightCompareM"/> of her: false if
-    /// there's none. Judged once a moment a unit.</summary>
-    public bool Near(in AiContext ctx, ShipState own, out MatchupResult r)
+    /// <summary>A unit's call (docs/battle/workers.md W11): its head's judgement of it against the enemy in sight round it
+    /// (none: <see cref="Any"/> false), whether he turns it away under doctrine's bar, and the own force he falls back on
+    /// (its guide ship, 0 none).</summary>
+    public readonly record struct UnitCall(bool Any, MatchupResult Result, bool Away, int FallBack);
+
+    /// <summary>The unit's head makes its call (docs/battle/workers.md W11): the admiral of the outermost group a ship moves
+    /// with, from its guide, or a ship's captain alone, once a think. Its judgement against the enemy in sight within
+    /// <see cref="SimSettings.FightCompareM"/> of the guide (docs/battle/command.md 5.1g); away under doctrine's bar
+    /// (1 / OutgunnedRatio), back once well over it (<see cref="SimSettings.FightRallyShare"/>); and away, the nearest own
+    /// force a match for the enemy (<see cref="FallBackShip"/>). One that can't get away (the enemy as fast) and has no
+    /// force to fall back on fights. The rest of the chain hear it as he last told it (<see cref="Told"/>).</summary>
+    public UnitCall Call(in AiContext ctx, ShipState guide)
     {
-        var c = JudgedNear(ctx, own);
-        r = c.Result;
-        return c.Any;
+        var c = JudgedNear(ctx, guide);
+        if (c.CallMs != ctx.NowMs)
+        {
+            double accept = Bars(guide.Entity, guide.Side).Accept, conf = c.Any ? c.Result.Confidence : double.PositiveInfinity;
+            bool away = c.Away ? conf < accept / ctx.Settings.FightRallyShare : conf < accept;
+            int fallBack = away ? FallBackShip(ctx, guide, accept) : 0;
+            if (away && fallBack == 0 && !c.Result.ACanRefuse(ctx.Settings))
+                away = false;   // no escape: it fights
+            (c.Away, c.FallBack, c.CallMs) = (away, fallBack, ctx.NowMs);
+            written.Add(UnitKey(guide.Entity));
+        }
+        return new UnitCall(c.Any, c.Result, c.Away, c.FallBack);
     }
 
-    /// <summary>Whether a ship's class is among her unit's attackers against the enemy in sight round her
-    /// (<see cref="Matchup.Attackers"/>, docs/battle/admirals-orders.md O7c): where her torpedoes do more than her guns.
-    /// Not whether she has any left, nor whether the attack is worth making (the judgement's style).</summary>
-    public bool Attacks(in AiContext ctx, ShipState own)
+    /// <summary>A ship's unit's call as its head last told it (<see cref="Call"/>, published at the end of his layer's
+    /// think): what the rest of the chain act on.</summary>
+    public UnitCall Told(in AiContext ctx, ShipState own)
     {
-        var c = JudgedNear(ctx, own);
-        if (!c.Any || c.AttackerCount == 0 || ctx.Ships.SlotOf(own.Entity) is not (int slot and >= 0))
+        var c = told.TryGetValue(UnitKey(own.Entity), out var t) ? t : null;
+        return c == null || c.CallMs == long.MinValue ? default : new UnitCall(c.Any, c.Result, c.Away, c.FallBack);
+    }
+
+    /// <summary>The calls made since the last time told to the chain (after each layer's think).</summary>
+    public void Publish()
+    {
+        foreach (int key in written)
+            units[key].CopyTo(told[key]);
+        written.Clear();
+    }
+
+    int UnitKey(int entity) => groups.UnitOf(entity) is { } unit ? Unit.Group(unit.GroupId).Id : Unit.Ship(entity).Id;
+
+    /// <summary>Falling back on the main body (docs/battle/command.md 5.1c): the guide ship of the nearest own force
+    /// (another top unit of the guide's side) within <see cref="SimSettings.FallBackM"/> that's a match for the enemy in
+    /// sight round the guide (its matchup against them at the bar or better); 0 if none.</summary>
+    int FallBackShip(in AiContext ctx, ShipState guide, double accept)
+    {
+        var s = ctx.Settings;
+        var mine = groups.UnitOf(guide.Entity);
+        // the forces in reach nearest first (ties by index), so the first that's a match is the one
+        fallCands.Clear();
+        for (int k = 0; k < groups.Count; k++)
+        {
+            var g = groups[k];
+            if (g.Parent != 0 || mine != null && g.GroupId == mine.GroupId || ctx.Ships.SlotOf(groups.GuideShip(g)) is not (int gs and >= 0))
+                continue;
+            var head = ctx.Ships[gs];
+            double d = Earth.Distance(guide.Position, head.Position);
+            if (head.Side == guide.Side && d < s.FallBackM)
+                fallCands.Add((d, k, gs));
+        }
+        fallCands.Sort();
+        MatchupSide? near = null;   // the enemy round him, once
+        foreach (var (_, k, gs) in fallCands)
+            if (!(GroupAgainst(ctx, groups[k], guide, near ??= EnemyNear(ctx, guide)) < accept))
+                return ctx.Ships[gs].Entity;
+        return 0;
+    }
+
+    readonly List<(double D, int K, int Slot)> fallCands = new(32);
+
+    /// <summary>Whether a ship's class is among her unit's attackers against the enemy in sight round her, by its call as
+    /// told (<paramref name="mine"/>: as she, its head, just made it) (<see cref="Matchup.Attackers"/>,
+    /// docs/battle/admirals-orders.md O7c): where her torpedoes do more than her guns. Not whether she has any left, nor
+    /// whether the attack is worth making (the judgement's style).</summary>
+    public bool Attacks(in AiContext ctx, ShipState own, bool mine = false)
+    {
+        var c = (mine ? units : told).TryGetValue(UnitKey(own.Entity), out var j) ? j : null;
+        if (c == null || !c.Any || c.AttackerCount == 0 || ctx.Ships.SlotOf(own.Entity) is not (int slot and >= 0))
             return false;
         var p = Matchups.Profile(ctx.World, ctx.Ships.Combat.Loadout(slot));
         for (int i = 0; i < c.AttackerCount; i++)
@@ -77,12 +160,10 @@ public sealed class MatchupJudge(GroupSystem groups, SeenContacts seen, Doctrine
 
     Judged JudgedNear(in AiContext ctx, ShipState own)
     {
-        var unit = groups.UnitOf(own.Entity);
-        int key = unit != null ? Unit.Group(unit.GroupId).Id : Unit.Ship(own.Entity).Id;
+        int key = UnitKey(own.Entity);
         if (ctx.Ships.Count != unitsShips || groups.Count != unitsGroups)
             MakeUnits(ctx);
-        if (!units.TryGetValue(key, out var c))
-            units[key] = c = new Judged();   // (made by MakeUnits; a ship that came another way)
+        var c = Room(key);   // (made by MakeUnits; a ship that came another way)
         if (c.Ms == ctx.NowMs)
             return c;
         Matchups.Warm(ctx.World);
