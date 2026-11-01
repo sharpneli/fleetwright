@@ -12,6 +12,19 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: (comparison, recommendation, API notes, plan...)
 -->
 
+### 2026-11-01 - Fire distribution and cripples, 1890-1925 first
+- Question: what the fleets' doctrine said about whom the guns fire on, and what they did. (1) Fire distribution: the
+  rules each navy gave its lines (the Grand Fleet Battle Orders' ship for ship from the van or the rear, concentrating,
+  leaving a ship unfired on; the High Seas Fleet's; the Japanese at Tsushima), and how a ship chose when its
+  distributed target wasn't seen. (2) Disabled enemy ships: whether battle orders left them to the light forces and
+  their torpedoes, and the cases that went otherwise (Blücher at the Dogger Bank, Wiesbaden and Defence at Jutland,
+  Suvorov at Tsushima, Monmouth at Coronel, Scharnhorst's and Gneisenau's ends at the Falklands): who fired on the
+  cripple, how much, and what it cost. (3) Light forces' and cruisers' own rules for finishing cripples.
+- Context / relevant files: `docs/battle/balance.md` "BL5 again: the blood inside 4 km is the cripples" (the
+  proposed doctrine field `Targets`: fight or tonnage), `src/Fleetwright.Sim.Ai/Captains/CaptainLayer.Fire.cs`
+  (`Matters`, `Threat`, the target score). Not blocking: the doctrine field is the user's choice either way.
+- Wanted output: the rules by navy with sources, the cases with the fire on the cripple, ranges by type.
+
 ### 2026-10-25 - Which shell at which target, 1890-1925
 - Question: how navies chose the shell by target, as ranges by navy and period. (1) The rules each navy gave its
   gunnery officers (AP, common/CPC, HE; by target type, range, armour), and how far the practice followed them
