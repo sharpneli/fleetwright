@@ -78,9 +78,10 @@
     // Done fighting is read from her guns: quiet a while, or most of her main turrets seen silent though she fires the
     // rest (docs/battle/balance.md BL5e)
     "Finish": 0.1,
-    // what the guns are for (BL5e; the user, 2026-11-01): "fight" (win the fight: the enemy's fighting ships first, a ship
-    // done fighting counted as Finish has it, the record's battle orders) or "tonnage" (sink tonnage: every enemy alike,
-    // the cripples nearest and easiest first)
+    // what the guns are for (BL5e, BL5g; the user, 2026-11-01): "fight" (win the fight: the enemy's fighting ships first, a
+    // ship done fighting counted as Finish has it, the chief guns on his heavy ships and a boat not closing to attack left
+    // to the secondaries: the record's battle orders) or "tonnage" (sink tonnage: every enemy alike, the cripples nearest
+    // and easiest first)
     "Targets": "fight",
     // a ship given up (docs/battle/striking.md: she can't hurt the enemy, can't get away, and an enemy is in reach): how
     // readily she strikes her colours (0 never, 1 when hopeless; each captain's temper and her crew's state move it either

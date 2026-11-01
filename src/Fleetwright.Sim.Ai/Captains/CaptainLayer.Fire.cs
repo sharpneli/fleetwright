@@ -314,7 +314,7 @@ public sealed partial class CaptainLayer
     double[] candRange = new double[32], candLead = new double[32], candBearing = new double[32], candDone = new double[32];
     // and how much each still matters as a target (BL2a: quiet and making away, down to doctrine's Finish), and how much
     // his side's aim wants her (docs/battle/aims.md A3: what it wants sunk, or one that endangers him; 1 for neither)
-    double[] candMatters = new double[32], candWant = new double[32];
+    double[] candMatters = new double[32], candWant = new double[32], candClosing = new double[32];
     Vec3d[] candPos = new Vec3d[32];
     sbyte[] candFoul = new sbyte[32];   // its line of fire: -1 not asked yet, 0 clear, 1 foul
     int candCount;
@@ -850,6 +850,9 @@ public sealed partial class CaptainLayer
         var p = own.Position;
         if (candCount < 0)
             Candidates(ctx, pic, own, widest);
+        // fighting to win, the chief guns are for his heavy ships (docs/battle/balance.md BL5g): a boat not closing to attack
+        // is left to the secondaries
+        bool heavy = !secondary && (Targets)(int)doctrine.Of(own.Entity, own.Side, DoctrineField.Targets) == Targets.Fight;
         double guns = reach / s.FireReachShare;   // the guns' own reach: past it she's tracked, not fired on
         // what a round is worth is the gun's and the target's, not the battery's rank (BL1s): main and secondary alike
         double floor = doctrine.Of(own.Entity, own.Side, DoctrineField.RoundFloor), hitFloor = doctrine.Of(own.Entity, own.Side, DoctrineField.HitFloor);
@@ -876,7 +879,8 @@ public sealed partial class CaptainLayer
             curCan = Can(Bears(cls, b, Earth.Bearing(p, q) - own.HeadingDeg), curRange <= guns);
             curRank = secondary ? Rank(pic[ci].Type) : 0;
             double curLead = Lead(own, q, v, s);
-            curBy = curLead * (1 + s.FireCrowdShare * Crowd(cls, b, current, ctx.Ships.SlotOf(current))) * Sized(s, curRank) /
+            curBy = curLead * (1 + s.FireCrowdShare * Crowd(cls, b, current, ctx.Ships.SlotOf(current))) * Sized(s, curRank) *
+                    (heavy ? Heavy(s, Rank(pic[ci].Type), Closing(s, p, q, v)) : 1) /
                     (Worth(curDone) * Matters(ctx, pic[ci], p, q, v, candFinish) * Want(ctx, own, slot, pic[ci], curLead));
         }
 
@@ -890,7 +894,8 @@ public sealed partial class CaptainLayer
             if (can < bestCan)
                 continue;
             int rank = secondary ? candRank[k] : 0;
-            double by = candLead[k] * (1 + s.FireCrowdShare * Crowd(cls, b, candEntity[k], candSlot[k])) * Sized(s, rank) /
+            double by = candLead[k] * (1 + s.FireCrowdShare * Crowd(cls, b, candEntity[k], candSlot[k])) * Sized(s, rank) *
+                        (heavy ? Heavy(s, candRank[k], candClosing[k]) : 1) /
                         (Worth(candDone[k]) * candMatters[k] * candWant[k]);
             // a foul line and the hit floor only rule one out: asked only of one that would be the best yet (they're the cost)
             if ((can > bestCan || by < bestBy) && (gun == null || WorthOn(ctx, gun, own.Side, pic[candPic[k]], candRange[k], hitFloor, floor)) && !Foul(ctx, own, k))
@@ -1026,6 +1031,23 @@ public sealed partial class CaptainLayer
     /// alongside.</summary>
     static double Sized(SimSettings s, int rank) => 1 + s.FireSizeShare * rank;
 
+    /// <summary>A chief battery fighting to win (docs/battle/balance.md BL5g; the user: "b", a battle line's main guns for
+    /// his heavy ships, his boats to the secondaries unless they close to attack): a contact's range counts longer by
+    /// <see cref="SimSettings.FireHeavyShare"/> for each step of her type's rank under a capital ship's, the steps fading as
+    /// she comes on (<paramref name="closing"/>: in full holding off, none closing at <see cref="SimSettings.CrippleOpenMs"/>
+    /// of her own speed). A merchant counts as a small craft.</summary>
+    static double Heavy(SimSettings s, int rank, double closing) =>
+        1 + s.FireHeavyShare * (Rank(ShipType.Capital) - (rank > Rank(ShipType.Capital) ? Rank(ShipType.Small) : rank)) * (1 - closing);
+
+    /// <summary>How fast a contact comes on by her own course, 0-1: her speed toward the observer over
+    /// <see cref="SimSettings.CrippleOpenMs"/>.</summary>
+    static double Closing(SimSettings s, Vec3d p, Vec3d q, Vec3d v)
+    {
+        var u = p - q;
+        double d = u.Length;
+        return d > 0 ? Math.Clamp(Vec3d.Dot(v, u) / d / s.CrippleOpenMs, 0, 1) : 0;
+    }
+
     /// <summary>The range a contact (where and how his navy has her going) will be at <see cref="SimSettings.FireLeadS"/>
     /// on at the rate it's opening or closing now, m: never under a tenth of the range now.</summary>
     static double Lead(ShipState own, Vec3d q, Vec3d v, SimSettings s)
@@ -1049,7 +1071,7 @@ public sealed partial class CaptainLayer
         {
             int n = Math.Max(near.Length, candEntity.Length * 2);
             (candEntity, candRank, candSlot, candRange, candLead, candBearing) = (new int[n], new int[n], new int[n], new double[n], new double[n], new double[n]);
-            (candPic, candDone, candMatters, candWant) = (new int[n], new double[n], new double[n], new double[n]);
+            (candPic, candDone, candMatters, candWant, candClosing) = (new int[n], new double[n], new double[n], new double[n], new double[n]);
             (candPos, candFoul) = (new Vec3d[n], new sbyte[n]);
         }
         candCount = 0;
@@ -1073,6 +1095,7 @@ public sealed partial class CaptainLayer
             candDone[candCount] = pic[i].DoneFor(ctx.NowMs, ctx.Settings);
             candMatters[candCount] = Matters(ctx, pic[i], p, q, seen.Velocity(own.Side, i), candFinish);
             candWant[candCount] = Want(ctx, own, ctx.Ships.SlotOf(own.Entity), pic[i], candLead[candCount]);
+            candClosing[candCount] = Closing(ctx.Settings, p, q, seen.Velocity(own.Side, i));
             candCount++;
         }
     }

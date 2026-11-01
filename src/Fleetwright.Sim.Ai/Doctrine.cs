@@ -196,7 +196,8 @@ public enum DoctrineField : byte
 
     /// <summary>What the guns are for (<see cref="Ai.Targets"/>; docs/battle/balance.md BL5e, the user: "focus on winning the
     /// fight vs focus on sinking as much tonnage as possible"): win the fight, a ship done fighting counting as
-    /// <see cref="Finish"/> has it; or sink tonnage, every enemy alike, the nearest and easiest first. After
+    /// <see cref="Finish"/> has it and the chief guns on his heavy ships (BL5g: a boat not closing to attack left to the
+    /// secondaries); or sink tonnage, every enemy alike, the nearest and easiest first. After
     /// <see cref="HitFloor"/>, so the fields' numbers in logged commands stand.</summary>
     Targets,
 }
@@ -384,7 +385,7 @@ public sealed class Doctrine(GroupSystem groups, IReadOnlyDictionary<string, dou
         DoctrineField.Finish => 1,   // as before: every enemy alike
         DoctrineField.StrikeColours or DoctrineField.Scuttle => 0,   // as before: she fights on till the water decides
         DoctrineField.HitFloor => 0,
-        DoctrineField.Targets => (double)Ai.Targets.Fight,   // as before with Finish 1: every enemy alike
+        DoctrineField.Targets => (double)Ai.Targets.Tonnage,   // as before: every enemy alike
         _ => throw new ArgumentOutOfRangeException(nameof(f)),
     };
 

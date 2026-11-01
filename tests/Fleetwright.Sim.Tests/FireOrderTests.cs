@@ -224,6 +224,7 @@ public class FireOrderTests(ITestOutputHelper output)
         var (w, ai) = Make(new Placed("super_dreadnought", 0, 0, 0, 12, 0), new Placed("dreadnought", 80, 7_000, 80, 15, 1),
             new Placed("dreadnought", 100, 11_000, 0, 12, 1));
         w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.Finish, finish));
+        w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.Targets, (double)Targets.Fight));   // Finish is fighting to win's (BL5e)
         w.Apply(ai.Orders.HoldFire(Unit.Ship(2)));
         Run(w, 30);
         Assert.Equal(2, Target(w, 1, 0));   // at first the nearest: nobody has been quiet long yet
@@ -261,6 +262,36 @@ public class FireOrderTests(ITestOutputHelper output)
         Assert.True(w.Ships.Store.NowMs - w.Ships.Store.Combat.LastFired(w.Ships.Store.SlotOf(2)) < 90_000, "she fires her last turret");
         Assert.InRange(near.MountsQuiet, 0.5, 0.99);
         Assert.Equal(expected, Target(w, 1, 0));
+    }
+
+    [Theory]
+    [InlineData(Targets.Fight, false, 3)]
+    [InlineData(Targets.Fight, true, 2)]
+    [InlineData(Targets.Tonnage, false, 2)]
+    public void Fighting_to_win_the_main_guns_take_the_battleship_and_leave_the_boat_to_the_secondaries(Targets targets, bool closing, int expected)
+    {
+        // docs/battle/balance.md BL5g (the user: "b", a battle line's main guns for his heavy ships, his boats to the
+        // secondaries unless they close to attack): a battleship with an enemy destroyer 7 km off steaming her way, not
+        // closing, and a dreadnought 13 km off; fighting to win, her main guns take the dreadnought and her secondaries the
+        // boat, unless the boat comes at her to attack; sinking tonnage, the main guns the nearest
+        var (w, ai) = Make(new Placed("super_dreadnought", 0, 0, 0, 12, 0), new Placed("tb_destroyer", 90, 7_000, closing ? 270 : 0, 12, 1),
+            new Placed("dreadnought", 80, 13_000, 0, 12, 1));
+        w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.Targets, (double)targets));
+        w.Apply(ai.Orders.HoldFire(Unit.Ship(2)));
+        w.Apply(ai.Orders.HoldFire(Unit.Ship(3)));
+        w.Apply(ai.Orders.Course(Unit.Ship(2), closing ? 270 : 0));
+        Run(w, 90);
+        var cls = w.Ships.Store[w.Ships.Store.SlotOf(1)].Handling.Class;
+        int chief = 0, second = -1;
+        while (!cls.Batteries[chief].Chief)
+            chief++;
+        for (int b = 0; b < cls.Batteries.Length && second < 0; b++)
+            second = b != chief ? b : -1;
+        output.WriteLine($"{targets}{(closing ? ", the boat closing" : "")}: the main guns on {Target(w, 1, chief)}, the secondaries on {(second >= 0 ? Target(w, 1, second) : -1)}");
+
+        Assert.Equal(expected, Target(w, 1, chief));
+        if (targets == Targets.Fight && !closing && second >= 0)
+            Assert.Equal(2, Target(w, 1, second));
     }
 
     /// <summary>Four QEs (1-4) in column against three dreadnoughts (5-7) in column 13 km to the east, both north.</summary>

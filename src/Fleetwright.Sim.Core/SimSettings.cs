@@ -695,6 +695,7 @@ public sealed record SimSettings
     /// share to 1 at it, multiplied) [EST: a broadside's interval and more; about 8 kn away].</summary>
     public double CrippleQuietS { get; init; } = 90;
 
+
     /// <summary>A turret of hers is read as silenced once it hasn't fired for this many of its reloads (docs/battle/balance.md
     /// BL5e: a lookout watching her salvos misses its flash in two of them), to whole over as long again [EST].</summary>
     public double SilentMountReloads { get; init; } = 2;
@@ -943,6 +944,12 @@ public sealed record SimSettings
     /// 6" left one alongside for a destroyer 8 km off). A capital ship counts as at three times her range, a destroyer one
     /// and a half: a boat 8 km off before a battleship beyond 4, a battleship at 1.5 km before a boat beyond 4.5.</summary>
     public double FireSizeShare { get; init; } = 0.5;
+
+    /// <summary>A chief battery fighting to win (doctrine's Targets, docs/battle/balance.md BL5g) counts a contact's range
+    /// longer by this share for each step of her type's rank under a capital ship's (a cruiser one, a destroyer three, a small
+    /// craft four), the steps fading as she comes on [EST]: a destroyer holding off counts as at four times her range, so a
+    /// battle line 13 km off comes before a boat at 3.5 km; one closing to attack, as near as she is.</summary>
+    public double FireHeavyShare { get; init; } = 1;
 
     /// <summary>The shell by target (docs/battle/shell-choice.md A3): a captain changes a battery's load only for a kind
     /// whose rounds do this many times the one loaded [EST], since each change costs the round in the gun.</summary>

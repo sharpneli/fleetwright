@@ -517,6 +517,26 @@ aren't), or (b) the chief batteries' targets by the fleets' practice: a battle l
 boats to the secondaries unless they close to attack (the research request on fire distribution); and why the Dogger
 Bank's lines close to 7 km.
 
+**The user (2026-11-01):** "b first, let's see a after that if it's even needed."
+
+**BL5g, the main guns for his heavy ships. Built 2026-11-01.** Fighting to win (doctrine's `Targets` fight, the default
+preset's), a chief battery counts a contact's range longer by `FireHeavyShare` (1 [EST]) for each step of her type's rank
+under a capital ship's (a cruiser one, a destroyer three, a small craft or merchant four), the steps fading as she comes on
+by her own course (none at `CrippleOpenMs` toward him): the secondaries' `Sized` rule turned round, so a boat holding off
+is left to the secondaries unless she's four times nearer than his line, and one closing to attack is taken as near as she
+is. Sinking tonnage, every enemy alike, as before; the code's neutral doctrine is now tonnage (as before), the preset's
+fight. Tried first and taken out: weighing each contact by `Matchup.Threat` (what her guns and torpedoes would put out of
+him): a 5" destroyer at 7 km rates 0.36 against a dreadnought at 13 km 0.47 (the sim's 12" at 13 km is hardly more
+dangerous over an hour), so threat can't say the fleets' practice, which is a doctrine of roles. `FireOrderTests`: a
+super-dreadnought with a torpedo-boat destroyer 7 km off and a dreadnought 13 km: fighting to win, the main guns on the
+dreadnought and the secondaries on the boat; the boat coming at her, the main guns on the boat; sinking tonnage, on the
+nearest. (A 1940s fleet destroyer over 2,500 t is reported as a cruiser, `Sightings.TypeOf`: one step only.)
+
+**Measured** (the panel, `balance/bl5g.json`; ships lost a run, BL5e / BL5f / BL5g): the Dogger Bank 14.8 / 21.1 / 15.2;
+the Jutland 84.2 / 82.2 / 77.0 (the British 26.5, now within twice the record's 14); the Heligoland Bight 14.8 / 14.8 /
+18.1 (the Germans 12.0 → 16.1, a scenario with a wide spread, 0-24 a run); Tsushima 4.8 / 4.5 / 6.1; Coronel 2.4 / 2.4 /
+1.4; 5 of 14 sides within 2x (4). (a), the disengaged side under the big guns, waits on the user's look.
+
 ### BL5: who closes inside 1 km (2026-10-30, after the user's playtest)
 
 `--fire-table` now also counts the ship-minutes each ship spends inside 1 km of an enemy, by what she, her admiral and

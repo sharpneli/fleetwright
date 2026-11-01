@@ -300,6 +300,7 @@
   "FireLeadS": 120,
   "FireCrowdShare": 0.25,
   "FireSizeShare": 0.5,
+  "FireHeavyShare": 1,
   "FireLineGapM": 3000,
   "FightBandShare": 0.15,
   "FightCloseDeg": 40,
