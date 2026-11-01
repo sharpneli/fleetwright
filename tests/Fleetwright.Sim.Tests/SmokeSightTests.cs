@@ -258,9 +258,9 @@ public class SmokeSightTests(ITestOutputHelper output)
             double sum = 0;
             int n = 0;
             w.AdvanceTo(w.Time + 120_000);
-            for (int s = 0; s < 240; s += 5)
+            for (int s = 0; s < 240; s++)
             {
-                w.AdvanceTo(w.Time + 5_000);
+                w.AdvanceTo(w.Time + 1_000);
                 w.Smoke.TauUncached(w, w.Ships.Store.SlotOf(1), w.Ships.Store.SlotOf(2), tau);
                 double most = 0;
                 foreach (double x in tau)

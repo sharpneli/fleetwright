@@ -954,7 +954,7 @@ public sealed class GunnerySystem : IWorldSystem
             return;
         fc.RollKey = key;
         var m = cls.Motion;
-        fc.Roll = world.Sea.At(h * 2 + 1, (v + 0.5) * 0.25, m.RollPeriodS * Math.Sqrt(100.0 / g), m.RollDamping, settings.RollExcitation);
+        fc.Roll = world.Sea.At(h * 2 + 1, (v + 0.5) * 0.25, m.LengthM, m.BeamM, m.RollPeriodS * Math.Sqrt(100.0 / g), m.RollDamping, settings.RollExcitation);
         fc.Pitch = world.Sea.Pitch(h * 2 + 1, (v + 0.5) * 0.25, m.LengthM, m.BeamM, settings.PitchPeriodK * Math.Sqrt(Math.Max(m.DraughtM, 0.5)), settings.PitchDamping);
     }
 

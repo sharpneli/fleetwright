@@ -301,6 +301,7 @@ Seen in the AI's baseline after the detail passes (2026-10-20, docs/battle/comma
 
 ## Shipgen sizing
 
+- [ ] **The destroyers roll too slowly** (found 2026-11-01, balance.md BL1k): the designer's IMO roll period gives `destroyer`, `tb_destroyer`, `fubuki`, `daring` 11.2-11.7 s, where the research's real ones roll at 8.4-8.8 s (Type 1934 8.8, Knox 8.4, Belknap 8.9; ship-motion-gunnery-research.md §3.1). Off resonance in a sea state 5 (9.5 s) they roll about 5° beam on where the record has the USN's 8° limit reached and an RN frigate's ±12.5°; their gunnery and wetness at sea read too steady. The period's GM or its radius of gyration for a light, fine hull: with the hull model's refresh (`docs/shipgen/TODO.md`).
 - [ ] A little weight up a destroyer's mast made her shorter (fire-control.md F4d, 2026-10-18): the crow's nest's 0.7 t
   at ~17 m took `destroyer` from 116.3 m and 2,084 t to 113.6 m and 2,064 t. The sizer is right to move a little (more
   topweight), but the wrong way: with the nest, the layout at 112.3 m (its trim shift -1.62 against -1.47 m) finds
@@ -405,6 +406,7 @@ Seen in the AI's baseline after the detail passes (2026-10-20, docs/battle/comma
 
 ## The coarse tier
 
+- [ ] **Coarse gun smoke runs over fine's once ships stop waiting on the roll** (found 2026-11-01, balance.md BL1k): `SmokeSightTests`' two battleships at 7 km, both at 25 kn in the default weather, the most smoke on the line, mean of 4 min: fine 0.54 → 0.57, coarse 0.64 → 0.88 when the roll's averaging took their roll from about 6° to 1° (fine sampled each second now). Coarse's statistical salvos seem not to follow the fine tier's roll timing (fire on the roll once a roll, or at once in a small roll): for the coarse sync (BL6).
 - [ ] **The enemy's minutes-old smoke is missing from coarse sight lines** (found 2026-10-30, docs/battle/night.md Q11;
   `night-southampton`). On the British lines to Stettin, the German column's trails drifting across them on the SW
   wind, the fine look's depth rises from 0.04 to 0.16-0.20 (top band) and 0.06-0.10 (middle) within a minute or two of

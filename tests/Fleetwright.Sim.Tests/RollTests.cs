@@ -19,10 +19,13 @@ public class RollTests(Xunit.Abstractions.ITestOutputHelper output)
 
     static double Deg(RollState r) => double.RadiansToDegrees(r.AmplitudeRad);
 
+    /// <summary>The hulls the cases roll: a battleship's waterline length and beam, and a destroyer's (m).</summary>
+    const double BbL = 180, BbB = 27, DdL = 100, DdB = 10;
+
     [Fact]
     public void A_flat_sea_rolls_nobody()
     {
-        var r = Sea(0, 0).At(90, 5, 14, 0.1, Settings.RollExcitation);
+        var r = Sea(0, 0).At(90, 5, BbL, BbB, 14, 0.1, Settings.RollExcitation);
         Assert.Equal(0, r.AmplitudeRad);
         Assert.Equal(0, r.RateSigmaRadS);
     }
@@ -32,7 +35,7 @@ public class RollTests(Xunit.Abstractions.ITestOutputHelper output)
     {
         // a swell from the north: heading 0 meets it head on, 90 beam on
         var sea = Sea(0, 3, 13, 0);
-        double head = Deg(sea.At(0, 0, 13, 0.1, Settings.RollExcitation)), beam = Deg(sea.At(90, 0, 13, 0.1, Settings.RollExcitation));
+        double head = Deg(sea.At(0, 0, BbL, BbB, 13, 0.1, Settings.RollExcitation)), beam = Deg(sea.At(90, 0, BbL, BbB, 13, 0.1, Settings.RollExcitation));
         Assert.True(beam > 3 * head, $"beam {beam:0.0}° against head {head:0.0}°");
     }
 
@@ -42,9 +45,9 @@ public class RollTests(Xunit.Abstractions.ITestOutputHelper output)
         // research §3.2: the heaviest rolling near T_ship/T_wave 1, a tender ship (long period) steady, and a short-period
         // ship in long waves riding their slope ("lively", "jerky": Bismarck), fast; §3.3: bilge keels about x0.5 at resonance
         var sea = Sea(0, 3, 13, 0);
-        var tuned = sea.At(90, 0, 13, 0.1, Settings.RollExcitation);
-        var stiff = sea.At(90, 0, 7, 0.1, Settings.RollExcitation);
-        double tender = Deg(sea.At(90, 0, 22, 0.1, Settings.RollExcitation)), bare = Deg(sea.At(90, 0, 13, 0.04, Settings.RollExcitation));
+        var tuned = sea.At(90, 0, BbL, BbB, 13, 0.1, Settings.RollExcitation);
+        var stiff = sea.At(90, 0, BbL, BbB, 7, 0.1, Settings.RollExcitation);
+        double tender = Deg(sea.At(90, 0, BbL, BbB, 22, 0.1, Settings.RollExcitation)), bare = Deg(sea.At(90, 0, BbL, BbB, 13, 0.04, Settings.RollExcitation));
         Assert.True(Deg(tuned) > 3 * tender, $"tuned {Deg(tuned):0.0}°, a 22 s ship {tender:0.0}°");
         Assert.InRange(Deg(tuned) / bare, 0.35, 0.65);
         Assert.True(stiff.RateSigmaRadS > tuned.RateSigmaRadS, $"a 7 s ship's roll rate {double.RadiansToDegrees(stiff.RateSigmaRadS):0.0}°/s, the tuned ship's {double.RadiansToDegrees(tuned.RateSigmaRadS):0.0}°/s");
@@ -54,19 +57,52 @@ public class RollTests(Xunit.Abstractions.ITestOutputHelper output)
     public void A_long_period_ship_rolls_in_the_swell_not_in_a_short_wind_sea()
     {
         // research §7.3: "small ships roll in the wind sea and big ships roll in the swell"
-        double wind = Deg(Sea(18, 0).At(90, 0, 15, 0.1, Settings.RollExcitation));
-        double swell = Deg(Sea(0, 2, 14, 270).At(0, 0, 15, 0.1, Settings.RollExcitation));
-        double destroyer = Deg(Sea(18, 0).At(90, 0, 8.5, 0.1, Settings.RollExcitation));
+        double wind = Deg(Sea(18, 0).At(90, 0, BbL, BbB, 15, 0.1, Settings.RollExcitation));
+        double swell = Deg(Sea(0, 2, 14, 270).At(0, 0, BbL, BbB, 15, 0.1, Settings.RollExcitation));
+        double destroyer = Deg(Sea(18, 0).At(90, 0, DdL, DdB, 8.5, 0.1, Settings.RollExcitation));
         Assert.True(swell > 2 * wind, $"a 15 s ship in a 2 m swell {swell:0.0}°, in a Bft 5 wind sea {wind:0.0}°");
         Assert.True(destroyer > 2 * wind, $"a 8.5 s ship in the wind sea {destroyer:0.0}° against the 15 s ship's {wind:0.0}°");
+    }
+
+    [Fact]
+    public void A_big_fast_ship_overtaking_a_short_wind_sea_rolls_little()
+    {
+        // docs/battle/balance.md BL1k: the short wind sea a fast ship overtakes is met near her roll period, but it's short
+        // against her beam and her length, and her hull feels little of it ("waves under 400 ft hardly affect a ship of 60
+        // ft beam or more", research §3.2); unaveraged, a Yamato-like rolled 6-7° in this 15 kn breeze at 20 kn
+        var sea = Sea(15, 1, 12, 300);
+        double worst = 0, small = 0;
+        for (int h = 0; h < 360; h += 15)
+        {
+            worst = Math.Max(worst, Deg(sea.At(h, 20 * 0.514444, 234, 36, 16.9, 0.1, Settings.RollExcitation)));
+            small = Math.Max(small, Deg(sea.At(h, 20 * 0.514444, DdL, DdB, 8.5, 0.1, Settings.RollExcitation)));
+        }
+        output.WriteLine($"the worst heading at 20 kn: a 234 m battleship {worst:0.0}°, a destroyer {small:0.0}°");
+        Assert.InRange(worst, 0.3, 2);
+        Assert.True(small > 2 * worst);
+    }
+
+    [Fact]
+    public void A_frigate_rolls_her_record_in_sea_state_5()
+    {
+        // the excitation's anchor (research §3.2): an RN frigate about ±12.5° unstabilised in about SS5, the USN's 8°
+        // destroyer limit reached at about SS5; beam on at no speed, ζ 0.10, in a fully developed sea (H_s 3.25 m:
+        // Pierson-Moskowitz, 0.21 U²/g). The research fitted 0.85 to ±12° in a long-crested sea; ours is short-crested
+        // (10.3° unaveraged), and her length's average over the spread takes 1.5° more (BL1k): 0.85 stays, a physical
+        // share of the slope, with the frigate between the two records
+        double u = Math.Sqrt(3.25 * SeaSpectrum.G / 0.21);
+        var sea = new RollSea(new SeaSpectrum(SeaState.Of(new WeatherHere(25_000, 0, u, SwellHsM: 0)) with { FetchM = 1e12 }));
+        double frigate = Deg(sea.At(90, 0, 113, 12.5, 9.5, 0.1, Settings.RollExcitation));
+        output.WriteLine($"a frigate in SS5 beam on: {frigate:0.0}° (H_s {sea.HsM:0.00} m)");
+        Assert.InRange(frigate, 8, 13);
     }
 
     [Fact]
     public void She_rolls_at_her_own_period_near_resonance_and_at_the_waves_far_from_it()
     {
         // research §3.2: T_roll when 0.7 < r < 1.4, the encounter period otherwise
-        Assert.InRange(Sea(0, 2, 13, 0).At(90, 0, 14, 0.1, Settings.RollExcitation).PeriodS, 12.5, 15);
-        Assert.InRange(Sea(20, 0).At(90, 0, 18, 0.1, Settings.RollExcitation).PeriodS, 5, 9);
+        Assert.InRange(Sea(0, 2, 13, 0).At(90, 0, BbL, BbB, 14, 0.1, Settings.RollExcitation).PeriodS, 12.5, 15);
+        Assert.InRange(Sea(20, 0).At(90, 0, BbL, BbB, 18, 0.1, Settings.RollExcitation).PeriodS, 5, 9);
     }
 
     [Fact]
@@ -101,11 +137,11 @@ public class RollTests(Xunit.Abstractions.ITestOutputHelper output)
     public void A_roll_costs_no_garbage()
     {
         var sea = Sea(20, 2);
-        sea.At(45, 8, 13, 0.1, Settings.RollExcitation);
+        sea.At(45, 8, BbL, BbB, 13, 0.1, Settings.RollExcitation);
         long before = GC.GetAllocatedBytesForCurrentThread();
         double sum = 0;
         for (int i = 0; i < 100; i++)
-            sum += sea.At(i * 3.6, 8, 13, 0.1, Settings.RollExcitation).AmplitudeRad;
+            sum += sea.At(i * 3.6, 8, BbL, BbB, 13, 0.1, Settings.RollExcitation).AmplitudeRad;
         Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - before);
         Assert.True(sum > 0);
     }

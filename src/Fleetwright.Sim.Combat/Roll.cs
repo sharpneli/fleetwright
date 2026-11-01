@@ -16,9 +16,10 @@ public readonly record struct RollState(double AmplitudeRad, double RateSigmaRad
 /// weather's directional spectrum (<see cref="SeaSpectrum"/>, the one the map draws) as wave-slope variance by frequency
 /// and direction, built once per weather. A ship's roll is the linear one-degree-of-freedom response to it: each component
 /// met at its encounter frequency (her heading and speed to it), its slope taken by her beam-on share (sin of the angle
-/// between it and her heading) and an excitation coefficient (<see cref="SimSettings.RollExcitation"/>), magnified by her
+/// between it and her heading), the share of it her hull feels (averaged over her beam and her length, as the pitch is:
+/// docs/battle/balance.md BL1k) and an excitation coefficient (<see cref="SimSettings.RollExcitation"/>), magnified by her
 /// resonance (natural period, damping). Short-crestedness comes with the spread; a swell near her period rolls her hard,
-/// a short wind sea only a short-period ship. A pure function of the sea and her state, so nothing is stepped and it's the
+/// a short wind sea only a short-period ship, and a big ship overtaking a short sea little. A pure function of the sea and her state, so nothing is stepped and it's the
 /// same at any compression; a few µs a call, no garbage.</summary>
 public sealed class RollSea
 {
@@ -114,20 +115,27 @@ public sealed class RollSea
         return m0 > 0 ? new RollState(2 * Math.Sqrt(m0), Math.Sqrt(m2), 2 * Math.PI * Math.Sqrt(m0 / Math.Max(m2, 1e-30))) : default;
     }
 
-    /// <summary>A ship's roll at a heading (degrees true) and speed (m/s through the water), with her natural period (s;
-    /// none, or 0 or less: she doesn't roll) and damping ratio; <paramref name="excitation"/> the share of the wave slope
-    /// that heels her (<see cref="SimSettings.RollExcitation"/>).</summary>
-    public RollState At(double headingDeg, double speedMs, double naturalPeriodS, double damping, double excitation)
+    /// <summary>A ship's roll at a heading (degrees true) and speed (m/s through the water), with her waterline length and
+    /// beam (m), her natural period (s; none, or 0 or less: she doesn't roll) and damping ratio; <paramref name="excitation"/>
+    /// the share of the wave slope that heels her (<see cref="SimSettings.RollExcitation"/>). Each wave's slope is the
+    /// share of it her hull feels (docs/battle/balance.md BL1k): averaged across her beam (sin p / p, p her half beam in
+    /// the wave's across-ship wavenumber: a wave much shorter than her beam lifts both sides at once) and along her length
+    /// (sin q / q, q her half length in its along-ship wavenumber: one met obliquely, short against her, meets her in
+    /// many phases). Without them the short wind sea a fast ship overtakes, met near her roll period, rolled a 70,000 t
+    /// battleship 7° in a 15 kn breeze (the record: "waves under 400 ft hardly affect a ship of 60 ft beam or more",
+    /// research §3.2).</summary>
+    public RollState At(double headingDeg, double speedMs, double lengthM, double beamM, double naturalPeriodS, double damping, double excitation)
     {
         if (!(naturalPeriodS > 0) || double.IsInfinity(naturalPeriodS))
             return default;
         // her heading in the spectrum's frame: x east, y north, counter-clockwise from east
         double psi = double.DegreesToRadians(90 - headingDeg), cp = Math.Cos(psi), sp = Math.Sin(psi);
         double wn = 2 * Math.PI / naturalPeriodS, z2 = 4 * damping * damping, e2 = excitation * excitation;
+        double half = 0.5 * Math.Max(lengthM, 0), halfBeam = 0.5 * Math.Max(beamM, 0);
         double m0 = 0, m2 = 0;
         for (int i = 0; i < Frequencies; i++)
         {
-            double wi = w[i], doppler = wi * wi * speedMs / SeaSpectrum.G;
+            double wi = w[i], k = wi * wi / SeaSpectrum.G, doppler = k * speedMs;
             int row = i * Directions;
             for (int j = 0; j < Directions; j++)
             {
@@ -136,8 +144,10 @@ public sealed class RollSea
                     continue;
                 // the wave's travel against her heading: cos β (0 a following sea), sin β her beam-on share
                 double cb = cos[j] * cp + sin[j] * sp, sb = sin[j] * cp - cos[j] * sp;
+                double q = k * Math.Abs(cb) * half, pb = k * Math.Abs(sb) * halfBeam;
+                double felt = (q < 1e-3 ? 1 : Math.Sin(q) / q) * (pb < 1e-3 ? 1 : Math.Sin(pb) / pb);
                 double we = Math.Abs(wi - doppler * cb), l = we / wn, d = 1 - l * l;
-                double v = s * e2 * sb * sb / (d * d + z2 * l * l);
+                double v = s * e2 * sb * sb * felt * felt / (d * d + z2 * l * l);
                 m0 += v;
                 m2 += v * we * we;
             }

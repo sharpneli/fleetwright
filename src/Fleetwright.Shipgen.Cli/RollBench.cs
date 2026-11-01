@@ -9,7 +9,9 @@ namespace Fleetwright.Shipgen.Cli;
 /// to the waves and speed: the significant amplitude, the peak roll rate (2 sigma) and the mean period, beside each
 /// class's GM, natural period and damping. The sea is a weather's (a wind and a swell), or a sea state's: the wind that
 /// raises its height fully developed (Pierson-Moskowitz: H_s = 0.21 U²/g), no swell, as the research's table has it
-/// (research/simulation/ship-motion/ship-motion-gunnery-research.md §3.2).</summary>
+/// (research/simulation/ship-motion/ship-motion-gunnery-research.md §3.2). <c>--developed</c> lets the wind blow over an
+/// unlimited fetch (the spectrum capped at Pierson-Moskowitz, the research's own seas) where the world's is fetch-limited
+/// at 150 km under a gale (docs/battle/balance.md BL1k: a heavy sea is compared with the record like for like).</summary>
 static class RollBench
 {
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
@@ -18,7 +20,7 @@ static class RollBench
     static readonly double[] SeaStateHs = [0.9, 1.9, 3.25, 5, 7.5];
 
     public static int Run(IReadOnlyList<string> names, Func<string, ShipClass> cls, SimSettings settings, int seaState, double windKn, double windFrom,
-        double swellM, double swellS, double swellFrom, double[] speedsKn)
+        double swellM, double swellS, double swellFrom, double[] speedsKn, bool developed = false)
     {
         WeatherHere w;
         if (seaState >= 3)
@@ -32,11 +34,12 @@ static class RollBench
             w = new WeatherHere(25_000, windFrom, windKn * 0.514444, SwellHsM: swellM, SwellTpS: swellS, SwellFromDeg: swellFrom);
             Console.WriteLine(string.Format(Inv, "a wind of {0:0} kn from {1:0}°, a swell of {2:0.0} m at {3:0} s from {4:0}°", windKn, windFrom, swellM, swellS, w.SwellFrom));
         }
-        var spectrum = new SeaSpectrum(SeaState.Of(w));
+        var state = SeaState.Of(w);
+        var spectrum = new SeaSpectrum(developed ? state with { FetchM = 1e12 } : state);
         var sea = new RollSea(spectrum);
         double waveFrom = seaState >= 3 ? w.WindFromDeg : w.SwellFrom;
         Console.WriteLine(string.Format(Inv, "  significant height {0:0.00} m; the wind sea's peak {1:0.0} s; headings below are to the {2} (0 head on, 90 beam on, 180 following)",
-            sea.HsM, 2 * Math.PI / spectrum.PeakW, seaState >= 3 ? "wind sea" : "swell"));
+            sea.HsM, 2 * Math.PI / spectrum.PeakW, seaState >= 3 ? "wind sea" : "swell") + (developed ? "; fully developed" : ""));
         int[] rel = [0, 30, 60, 90, 120, 150, 180];
         foreach (var n in names)
         {
@@ -51,7 +54,7 @@ static class RollBench
                 var cells = rel.Select(h =>
                 {
                     // heading h off the waves' coming: the ship steers toward where they come from at 0
-                    var r = sea.At((waveFrom + h) % 360, kn * 0.514444, m.RollPeriodS, m.RollDamping, settings.RollExcitation);
+                    var r = sea.At((waveFrom + h) % 360, kn * 0.514444, m.LengthM, m.BeamM, m.RollPeriodS, m.RollDamping, settings.RollExcitation);
                     return string.Format(Inv, "{0,5:0.0}° {1,4:0.0}°/s {2,4:0.0}s", double.RadiansToDegrees(r.AmplitudeRad), double.RadiansToDegrees(2 * r.RateSigmaRadS), r.PeriodS);
                 });
                 Console.WriteLine(string.Format(Inv, "  {0,4:0} kn  ", kn) + string.Concat(cells.Select(x => $"{x,18}")));
