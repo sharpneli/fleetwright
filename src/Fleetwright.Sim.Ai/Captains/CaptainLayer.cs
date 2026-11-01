@@ -588,6 +588,8 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
                 (course, kn) = cap.Order == CaptainOrder.Station ? Behaviours.Station(own, t, cap.DistanceM, cap.AbeamM, ctx.Settings) : Behaviours.Run(own, t);
             if (cap.LimitKn > 0)
                 kn = Math.Min(kn, cap.LimitKn);
+            if (cap.Order is CaptainOrder.Follow or CaptainOrder.Station)
+                course = SteadyForTheGuns(ctx, own, slot, course);
             Give(ctx, own, course, kn);
         }
         HurtPass(ctx);   // first: it starts the hurt flag afresh, the fire pass's hurt ships add to it

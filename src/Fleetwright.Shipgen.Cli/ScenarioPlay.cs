@@ -16,6 +16,9 @@ namespace Fleetwright.Shipgen.Cli;
 /// picks the tiers here; the run goes at full tilt either way.</summary>
 static class ScenarioPlay
 {
+    /// <summary>The fire table's "steady": under this rate of turn, °/s (BL1m).</summary>
+    const double SteadyYawDegS = 0.2;
+
     public static int Run(string path, string settingsPath, string landPath, string designsPath, int threads, bool land,
         int seeds, double fast, double fine, bool? smoke = null, int workerCount = -1, ulong shuffle = 0, double spinUs = 250, bool fireTable = false,
         int[]? watch = null, int every = 10)
@@ -76,10 +79,10 @@ static class ScenarioPlay
                     if (cal >= 200 && !r.PointBlank)
                     {
                         double yaw = Math.Abs(r.YawDegS);
-                        string band = yaw < settings.OwnTurnYawDegS ? "steady" : yaw < 0.5 ? "0.2-0.5 deg/s" : yaw < settings.HardTurnYawDegS ? "0.5-1 deg/s" : "over 1 deg/s";
+                        string band = yaw < SteadyYawDegS ? "steady" : yaw < 0.5 ? "0.2-0.5 deg/s" : yaw < settings.HardTurnYawDegS ? "0.5-1 deg/s" : "over 1 deg/s";
                         var (hs, hh) = helm.GetValueOrDefault(band);
                         helm[band] = (hs + r.Shells, hh + r.Hits);
-                        if (yaw >= settings.OwnTurnYawDegS)
+                        if (yaw >= SteadyYawDegS)
                         {
                             var (order, _, whose) = ai.Captains.Of(r.Shooter);
                             string why = $"{band}: {order} ({whose})";

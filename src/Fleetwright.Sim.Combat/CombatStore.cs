@@ -45,6 +45,9 @@ public sealed class CombatStore
     // by battery, whether its fire control made its target out at its last second (the gunnery's, for the captains:
     // docs/battle/night.md Q4, a searchlight on a target the guns can't see); not world state, the gunnery's own copy is
     bool[]?[] sees = [];
+    // by battery, whether it fires for effect at the second (the gunnery's, for the captains: docs/battle/balance.md
+    // BL1q, holding course for the guns); not world state, as sees
+    bool[]?[] effect = [];
     // by mount, whether it's an illuminating mount (docs/battle/night.md Q5): out of its battery's salvos, firing star shell
     bool[]?[] illuminating = [];
     int[] engaged = [];
@@ -72,6 +75,7 @@ public sealed class CombatStore
             Array.Resize(ref conditions, n);
             Array.Resize(ref targets, n);
             Array.Resize(ref sees, n);
+            Array.Resize(ref effect, n);
             Array.Resize(ref illuminating, n);
             Array.Resize(ref engaged, n);
             Array.Resize(ref moved, n);
@@ -114,6 +118,11 @@ public sealed class CombatStore
             sees[slot] = new bool[cls.Batteries.Length];
         else
             Array.Clear(sw);
+        var ew = effect[slot];
+        if (ew == null || ew.Length != cls.Batteries.Length)
+            effect[slot] = new bool[cls.Batteries.Length];
+        else
+            Array.Clear(ew);
         var il = illuminating[slot];
         if (il == null || il.Length != cls.Mounts.Length)
             illuminating[slot] = new bool[cls.Mounts.Length];
@@ -235,6 +244,7 @@ public sealed class CombatStore
         engaged[slot] = Math.Max(engaged[slot] + (target != 0 ? 1 : 0) - (t != 0 ? 1 : 0), 0);
         t = target;
         sees[slot]![battery] = false;
+        effect[slot]![battery] = false;
     }
 
     /// <summary>Whether an engaged battery's fire control made its target out at its last second (docs/battle/night.md Q4).</summary>
@@ -243,6 +253,13 @@ public sealed class CombatStore
     /// <summary>The gunnery's word on whether a battery's fire control makes its target out (each its own element: its
     /// batteries' seconds may run on different workers).</summary>
     public void SetSees(int slot, int battery, bool value) => sees[slot]![battery] = value;
+
+    /// <summary>Whether a battery fires for effect at the second, its salvos not pared back (docs/battle/balance.md BL1q:
+    /// its captain holds his course for it).</summary>
+    public bool FiresForEffect(int slot, int battery) => effect[slot] is { } e && battery < e.Length && e[battery];
+
+    /// <summary>The gunnery's word on whether a battery fires for effect (each its own element, as <see cref="SetSees"/>).</summary>
+    public void SetFiresForEffect(int slot, int battery, bool value) => effect[slot]![battery] = value;
 
     /// <summary>Whether a mount fires star shell for its ship's illuminating task (docs/battle/night.md Q5), out of its
     /// battery's salvos.</summary>

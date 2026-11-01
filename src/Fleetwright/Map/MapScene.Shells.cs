@@ -470,6 +470,7 @@ public sealed partial class MapScene
         BatteryState.Firing => phase == FirePhase.Effect ? "fire for effect" : "ranging",
         BatteryState.NotBearing => "not bearing",
         BatteryState.OutOfRange => "out of range",
+        BatteryState.Holding => "holding fire",
         _ => "",
     };
 

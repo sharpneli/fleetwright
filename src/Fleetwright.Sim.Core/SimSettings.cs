@@ -758,7 +758,7 @@ public sealed record SimSettings
     /// the salvo's patterns (the USN's "never below the pattern"), nor than <see cref="BracketFloorM"/>, m. A ranging
     /// salvo waits for the spots it's due, or this long past its time of flight and the spot's delay, ms (a spot that
     /// never came). Firing for effect, own ship's turn past this yaw rate, °/s, sends a battery back to ranging when its
-    /// computer takes own ship's motion in (any turn past <see cref="OwnTurnYawDegS"/> when it doesn't). The rest is the
+    /// computer takes own ship's motion in (<see cref="OwnCourseStaleDeg"/> of turn when it doesn't). The rest is the
     /// side's doctrine (<see cref="FireDisciplines"/>).</summary>
     public double BracketFloorPatterns { get; init; } = 1;
     public double BracketFloorM { get; init; } = 92;
@@ -843,14 +843,36 @@ public sealed record SimSettings
     public double EyeWanderTauS { get; init; } = 300;
     public double EyeBearingMil { get; init; } = 5;
 
-    /// <summary>Own ship counts as turning past this rate of yaw, °/s, for a computer that doesn't take her motion in (its
-    /// battery firing for effect goes back to ranging: <see cref="HardTurnYawDegS"/> for one that does).</summary>
-    public double OwnTurnYawDegS { get; init; } = 0.2;
+    /// <summary>A plain computer's (one that doesn't take her motion in) Dumaresq has her course set on it by hand: once
+    /// she has turned this many degrees from it, its rates are stale and its battery firing for effect goes back to ranging,
+    /// her new course set (docs/battle/balance.md BL1o: the Mk IV kept the enemy's relative direction "within a few degrees"
+    /// during own turns, research fire-control-research/computing.md) [EST]. A machine that takes her motion in is put out
+    /// only by a turn past <see cref="HardTurnYawDegS"/>.</summary>
+    public double OwnCourseStaleDeg { get; init; } = 5;
 
     /// <summary>The rate of turn, °/s, a computer's own-turn kick (<c>own_turn_kick_m</c>) is given at: the reference's
     /// turns (fire_control_ref.py, 1°/s). A salvo's kick is that times her rate of turn over this, 1 sigma, in range and in
     /// line (docs/battle/balance.md BL1m: a threshold at 0.2°/s gave a station keeper's every correction the whole kick).</summary>
     public double OwnTurnKickYawDegS { get; init; } = 1;
+
+    /// <summary>The gunnery officer's worth of a salvo (docs/battle/balance.md BL1p): he judges its chance a shell from what
+    /// he knows (his aim's doubt, her own motion, the pattern, the target's hitting space as he sees her). While her turn
+    /// takes the chance now under this share of what it'd be steady, he holds the salvo for a steadier moment, up to
+    /// <see cref="FireWorthWaitReloads"/> of its guns' reload, then fires it [EST].</summary>
+    public double FireWorthSteadyShare { get; init; } = 0.5;
+    public double FireWorthWaitReloads { get; init; } = 1;
+
+    /// <summary>A shell's worth, % a shell: fire for effect from here (his aim at the bracket's floor, steady) under this, and
+    /// he pares back the same way; under <see cref="FireWorthHoldShare"/> of it, he holds fire (not worth a shell). The
+    /// floor rises as her magazines empty: over the rounds-left share, from <see cref="FireWorthLowRounds"/> left on (the
+    /// user, 2026-11-01: "shell usage should be reasonably optimized") [EST].</summary>
+    public double FireWorthFloorPct { get; init; } = 0.5;
+    public double FireWorthHoldShare { get; init; } = 0.25;
+    public double FireWorthLowRounds { get; init; } = 0.25;
+
+    /// <summary>A station keeper whose chief battery fires for effect holds his course for the guns while the correction
+    /// his station wants is under this, degrees (docs/battle/balance.md BL1q: at 20 kn about 100 m off the line) [EST].</summary>
+    public double SteadyForGunsDeg { get; init; } = 5;
 
     /// <summary>A side's gun crews, anchors at the whole numbers of the gunnery level (docs/battle/crew.md decision 6: a row
     /// for each of <see cref="Experience.Names"/> in order), read between them linearly (<see cref="GunneryCrewAt"/>): the

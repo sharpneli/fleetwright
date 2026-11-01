@@ -66,7 +66,7 @@ public sealed class MatchupProfile
         DisplacementT = m.FullDisplacementT;
         LengthM = m.LengthM;
         BeamM = m.BeamM;
-        HeightM = Math.Max(c.Vertical.Freeboard, 1) * s.MatchupHeightShare;
+        HeightM = Matchup.DangerHeightM(c, s);
         SpeedKn = m.MaxSpeedKn;
         (Side, Deck) = (SideArmour(c, Eight), DeckArmour(c, Eight));
         (Side16, Deck16) = (SideArmour(c, 2 * Eight), DeckArmour(c, 2 * Eight));
@@ -1008,10 +1008,22 @@ public static class Matchup
         int lvl = Math.Clamp(g.Level, 0, s.MatchupMpiPct.Length - 1);
         double sr = Math.Sqrt(Sq(s.MatchupMpiPct[lvl] / 100 * rangeM) + dr * dr);
         double sd = Math.Sqrt(Sq(s.MatchupDeflectionMil[Math.Min(lvl, s.MatchupDeflectionMil.Length - 1)] * FireControl.Mil * rangeM) + dd * dd);
-        double pr = Phi(depth / 2 / sr) - Phi((-depth / 2 - danger) / sr);
-        double pd = 2 * Phi(width / 2 / sd) - 1;
+        return ShellChance(danger, depth, width, sr, sd);
+    }
+
+    /// <summary>The chance a shell falls in a target's hitting space (fire-control-research.md §8.3): her depth along the
+    /// line of fire (m) and the danger space short of it (her height over the fall), and her width across it, against the
+    /// fall's spread about the aim, 1 sigma in range and in line (the aim's error and the pattern together). The matchup's
+    /// estimate and a gunnery officer's (docs/battle/balance.md BL1p) both.</summary>
+    public static double ShellChance(double dangerM, double depthM, double widthM, double sigmaRangeM, double sigmaLineM)
+    {
+        double pr = Phi(depthM / 2 / sigmaRangeM) - Phi((-depthM / 2 - dangerM) / sigmaRangeM);
+        double pd = 2 * Phi(widthM / 2 / sigmaLineM) - 1;
         return Math.Max(pr * pd, 0);
     }
+
+    /// <summary>A class's height for its danger space, m: its freeboard by <see cref="SimSettings.MatchupHeightShare"/>.</summary>
+    public static double DangerHeightM(ShipClass c, SimSettings s) => Math.Max(c.Vertical.Freeboard, 1) * s.MatchupHeightShare;
 
     /// <summary>What a round from a battery does to a ship at a range (docs/battle/shell-choice.md A3): the chance it hits
     /// times the chance a hit puts her out of the fight, from the pair's table; 0 beyond its reach.</summary>

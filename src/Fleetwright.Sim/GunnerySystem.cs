@@ -26,6 +26,9 @@ public enum BatteryState : byte
     NotBearing,
     /// <summary>The target is beyond the guns' reach.</summary>
     OutOfRange,
+    /// <summary>Laid and ready, the gunnery officer holds fire: a shell isn't worth firing at her from here
+    /// (docs/battle/balance.md BL1p).</summary>
+    Holding,
 }
 
 /// <summary>Where an engaged battery is in its fire discipline (docs/battle/fire-control.md F6).</summary>
@@ -131,6 +134,13 @@ public sealed class GunnerySystem : IWorldSystem
         /// <summary>Firing for effect in halves, which half goes next (0 the larger).</summary>
         public int Half;
         public bool OwnTurning;
+        /// <summary>Whether its gunnery officer has its fire pared back (BL1p), and since when he's held the salvo due for her
+        /// turn to ease (-1: not holding).</summary>
+        public bool Pared;
+        public long SpoiledMs;
+        /// <summary>Her course as it was last set on a plain computer's Dumaresq, degrees (NaN: not yet): past
+        /// <see cref="SimSettings.OwnCourseStaleDeg"/> from it, its rates are stale and its battery ranges again.</summary>
+        public double SetCourseDeg;
         public int RangingSalvos, RangingShells;
         public long EffectMs, LastSalvoMs, SettleMs;
         /// <summary>When the spotter last called a straddle (or saw a hit): the spots hold her for a while after.</summary>
@@ -433,7 +443,7 @@ public sealed class GunnerySystem : IWorldSystem
             {
                 Alive = true, Generation = gen, Shooter = shooter, Battery = b, Target = target, StartMs = now, Level = lv, Local = row.Local, Preset = level >= 0,
                 FirstHitMs = -1, FirstStraddleMs = -1, EffectMs = -1, LastSign = -1, DirectorLevel = lv, Fit = fit, DirectorFit = fit,
-                Table = shells.TableOf(store.Combat.Loadout(slot), b), ElevationDeg = double.NaN,
+                Table = shells.TableOf(store.Combat.Loadout(slot), b), ElevationDeg = double.NaN, SetCourseDeg = double.NaN, SpoiledMs = -1,
             };
             fc.Bracket = FireControl.Bracket.Open(fit.Computer.FirstStepM);
             var r = stream.Derive((ulong)f).Derive((ulong)gen);
@@ -868,17 +878,30 @@ public sealed class GunnerySystem : IWorldSystem
             bears |= firing[j];
         }
         // fire discipline (F6): the bracket widens at the computer's doubt of the range rate along the line of fire; own
-        // ship's turn (any for a machine that takes it as the target's, a hard one for the rest) or the target seen to
-        // turn sends a battery firing for effect back to ranging, its bracket opened to the first step
+        // ship's turn or the target seen to turn sends a battery firing for effect back to ranging, its bracket opened to
+        // the first step. A machine that takes her motion in is put out by a hard turn; a plain one, whose Dumaresq has her
+        // course set on it by hand, once she has turned a few degrees from that course (docs/battle/balance.md BL1o: the
+        // Mk IV kept the enemy's relative direction "within a few degrees" in a turn), its new course set then
         var along = Earth.Forward(aim, Earth.Bearing(ship.Position, aim));
         (fc.DriftMs, fc.PosSigmaM, fc.RangeM) = (fc.Tracker.RateSigma(computer, along), fc.Tracker.PositionSigma(along), Earth.Distance(ship.Position, aim));
         if (fc.Phase == FirePhase.Opening && now < fc.OpenMs && (fc.PointBlank || Settled(fc)))
             fc.OpenMs = now;   // the solution good enough to range from (or none needed): no more waiting
         fc.State = !laid ? BatteryState.OutOfRange : !bears ? BatteryState.NotBearing : now < fc.OpenMs ? BatteryState.Tracking : BatteryState.Firing;
-        double yaw = Math.Abs(double.RadiansToDegrees(ship.YawRate));
         bool plain = !computer.HelmFree && computer.Tracker is TrackerKind.RateClock or TrackerKind.Judgement;
-        bool turning = yaw > (plain ? settings.OwnTurnYawDegS : settings.HardTurnYawDegS);
-        if (turning && !fc.OwnTurning || fc.Tracker.Turns != fc.Turns)
+        bool turning = false, put = false;
+        if (plain)
+        {
+            double off = double.IsNaN(fc.SetCourseDeg) ? 0 : Mod(ship.HeadingDeg - fc.SetCourseDeg);
+            put = Math.Min(off, 360 - off) > settings.OwnCourseStaleDeg;
+            if (put || double.IsNaN(fc.SetCourseDeg))
+                fc.SetCourseDeg = ship.HeadingDeg;
+        }
+        else
+        {
+            turning = Math.Abs(double.RadiansToDegrees(ship.YawRate)) > settings.HardTurnYawDegS;
+            put = turning && !fc.OwnTurning;
+        }
+        if (put || fc.Tracker.Turns != fc.Turns)
             Disturbed(ref fc, now);
         (fc.OwnTurning, fc.Turns) = (turning, fc.Tracker.Turns);
         if (fc.State == BatteryState.Firing && fc.Phase == FirePhase.Opening)
@@ -903,7 +926,38 @@ public sealed class GunnerySystem : IWorldSystem
             fc.Rung = 0;   // the ladder's falls all spotted: the next group
         if (fc.State != BatteryState.Firing || fc.SalvoPending || !sees ||
             ranging && (dis.LadderStepM > 0 ? fc.Rung >= dis.InFlight : fc.InFlight >= dis.InFlight && waiting))
+        {
+            store.Combat.SetFiresForEffect(slot, fc.Battery, fc.State == BatteryState.Firing && fc.Phase == FirePhase.Effect && !fc.Pared);
             return;
+        }
+        // the gunnery officer's worth of the salvo (BL1p): while her turn spoils it he holds it for a steadier moment, up to
+        // a reload's worth; a shell worth little from here, one salvo at a time; worth nothing, held. Point blank his layers
+        // fire as fast as they lay
+        int guns = 0;
+        for (int j = 0; j < mounts.Length; j++)
+            guns += firing[j] ? cond.Guns(mounts[j]) : 0;
+        fc.Pared = false;
+        if (!fc.PointBlank && guns > 0)
+        {
+            var (pNow, pSteady, pCould) = Worth(fc, cls, ship, frame, store[tslot], row, mounts, guns, crew, now);
+            double floor = settings.FireWorthFloorPct / 100 / Math.Max(RoundsShare(slot, cls, mounts), settings.FireWorthLowRounds);
+            if (pCould < settings.FireWorthHoldShare * floor)
+            {
+                fc.State = BatteryState.Holding;
+                store.Combat.SetFiresForEffect(slot, fc.Battery, false);
+                return;
+            }
+            bool spoiled = pNow < settings.FireWorthSteadyShare * pSteady, poor = pCould < floor;
+            fc.Pared = spoiled || poor;
+            fc.SpoiledMs = !spoiled ? -1 : fc.SpoiledMs < 0 ? now : fc.SpoiledMs;
+            store.Combat.SetFiresForEffect(slot, fc.Battery, fc.Phase == FirePhase.Effect && !fc.Pared);
+            if (spoiled && now - fc.SpoiledMs < 1000 * settings.FireWorthWaitReloads * cls.Mounts[mounts[0]].ReloadS)
+                return;   // for her turn to ease
+            if (poor && fc.InFlight > 0)
+                return;   // one salvo at a time: the next waits on the last's fall
+        }
+        else
+            store.Combat.SetFiresForEffect(slot, fc.Battery, fc.Phase == FirePhase.Effect);
         long when = now;
         int bearingGuns = 0, bearingMounts = 0;
         for (int j = 0; j < mounts.Length; j++)
@@ -1454,6 +1508,7 @@ public sealed class GunnerySystem : IWorldSystem
         fc.Salvos++;
         fc.Shells += sv.Shells;
         fc.LastSalvoMs = now;
+        fc.SpoiledMs = -1;   // a salvo held for her turn waits afresh
         fc.InFlight++;
         fc.WaitMs = now + (long)(tof * 1000) + settings.SpotDelayMs + settings.RangingWaitMarginMs;
         if (phase == FirePhase.Ranging)
@@ -1749,6 +1804,61 @@ public sealed class GunnerySystem : IWorldSystem
         double step = Math.Max(fc.Fit.Computer.FirstStepM, settings.BracketFloorM);
         return 2 * Math.Sqrt(fc.PosSigmaM * fc.PosSigmaM + rate * rate) <= settings.OpenDoubtSteps * step;
     }
+
+    /// <summary>The gunnery officer's worth of a salvo (docs/battle/balance.md BL1p): his chance a shell, from what he
+    /// knows, in <see cref="Matchup.ShellChance"/>'s form: the target's hitting space as he sees her (her aspect, her
+    /// freeboard's danger space at the fall), against his aim's doubt (a closed bracket's width, else his computer's own
+    /// sigma of her position and rate over the time of flight and the residual bias), the laying and the roll's slip
+    /// (as BL1b has them, by a trained man's numbers), her turn's kick (BL1m) and the pattern. Now; steady (her turn
+    /// left out); and what fire for effect could do from here, steady (his aim at the bracket's floor).</summary>
+    (double Now, double Steady, double Could) Worth(in Fc fc, ShipClass cls, in ShipState ship, in ShipFrame frame, in ShipState tgt, in BatteryRow row,
+        ReadOnlySpan<int> mounts, int guns, GunneryCrew crew, long now)
+    {
+        var table = shells.Ballistics[fc.Table];
+        double h0 = Muzzle(cls, frame, mounts[0]).Length - Earth.Radius, range = Math.Max(fc.RangeM, 1);
+        double e = double.IsNaN(fc.ElevationDeg) ? table.ElevationFor(range, h0) : fc.ElevationDeg;
+        if (double.IsNaN(e))
+            return (0, 0, 0);
+        double fall = table.Fall(e, h0).FallDeg, perRad = table.RangePerDeg(e, h0) * 180 / Math.PI;
+        var (sr, sd) = FireControl.Dispersion(row.PatternPct, range, guns, settings.DispersionDeflectionRatio);
+        var computer = fc.Fit.Computer;
+        var mount = fc.Fit.Mount;
+        // his aim's doubt along the line of fire
+        double aim = fc.Bracket.Closed
+            ? Math.Max(fc.Bracket.HiAt(now, fc.DriftMs) - fc.Bracket.LoAt(now, fc.DriftMs), 0) / Math.Sqrt(12)
+            : Math.Sqrt(fc.PosSigmaM * fc.PosSigmaM + Sq(fc.DriftMs * fc.TofS) + Sq(computer.ResidPct / 100 * range));
+        double floorM = Math.Max(settings.BracketFloorM, settings.BracketFloorPatterns * 4 * sr);
+        double could = Math.Sqrt(Sq(floorM / Math.Sqrt(12)) + Sq(fc.DriftMs * fc.TofS));
+        // the laying and the roll's slip at the key (or the gear's lag following it), as BL1b lays them
+        double lay = mount.LayMil * FireControl.Mil * crew.Lay;
+        double tau = fc.OnRoll ? mount.RollTauS * crew.RollTiming : mount.StableVertical ? mount.RollTauS : settings.ContinuousAimTauS;
+        double sea = Sq(lay * perRad) + Sq(tau * Math.Sqrt(2) * fc.Roll.RateSigmaRadS * perRad);
+        double kick = Math.Abs(double.RadiansToDegrees(ship.YawRate)) / settings.OwnTurnKickYawDegS * computer.OwnTurnKickM;
+        double rSteady = aim * aim + sea + sr * sr, rCould = could * could + sea + sr * sr;
+        // and in line: his deflection's residual bias until a spot has corrected it, the laying, the pattern
+        double defl = computer.DeflBiasMil * FireControl.Mil * range * (fc.LastSign < 0 ? 1 : 0.5);
+        double lSteady = defl * defl + Sq(lay * range) + sd * sd;
+        // her hitting space as he sees her: her length and beam on the line of fire by her aspect
+        var tm = tgt.Handling.Class.Motion;
+        var u = Earth.Forward(ship.Position, Earth.Bearing(ship.Position, tgt.Position));
+        double ca = Math.Abs(Vec3d.Dot(tgt.Forward, u)), sa = Math.Sqrt(Math.Max(1 - ca * ca, 0));
+        double depth = tm.LengthM * ca + tm.BeamM * sa, width = tm.LengthM * sa + tm.BeamM * ca;
+        double danger = Matchup.DangerHeightM(tgt.Handling.Class, settings) / Math.Tan(double.DegreesToRadians(Math.Max(fall, 0.1)));
+        return (Matchup.ShellChance(danger, depth, width, Math.Sqrt(rSteady + kick * kick), Math.Sqrt(lSteady + kick * kick)),
+            Matchup.ShellChance(danger, depth, width, Math.Sqrt(rSteady), Math.Sqrt(lSteady)),
+            Matchup.ShellChance(danger, depth, width, Math.Sqrt(rCould), Math.Sqrt(lSteady)));
+    }
+
+    /// <summary>The share of a battery's mounts' rounds still in them (their stowage's).</summary>
+    double RoundsShare(int slot, ShipClass cls, ReadOnlySpan<int> mounts)
+    {
+        double left = 0, full = 0;
+        for (int j = 0; j < mounts.Length; j++)
+            (left, full) = (left + ships.Store.Combat.Mount(slot, mounts[j]).Rounds, full + cls.Mounts[mounts[j]].Rounds);
+        return full > 0 ? left / full : 1;
+    }
+
+    static double Sq(double x) => x * x;
 
     /// <summary>Whether a battery fires independently (F6d): its discipline's range for it, and its guns quick-firers.</summary>
     bool Independent(FireDiscipline dis, ShipClass cls, ReadOnlySpan<int> mounts, double rangeM) =>

@@ -1535,6 +1535,20 @@ public sealed partial class CaptainLayer
         return entity;
     }
 
+    /// <summary>The captain's call between his station and his guns (docs/battle/balance.md BL1q; the user, 2026-11-01:
+    /// "it should be a captain's decision if they want to fire for effect or turn"): while his chief battery fires for
+    /// effect, a correction to his station of under <see cref="SimSettings.SteadyForGunsDeg"/> isn't steered; he holds his
+    /// course for the guns and keeps station on his revolutions, as the record's ships did. A bigger one (the line turning,
+    /// his offset grown past it) he steers as ordered.</summary>
+    static double SteadyForTheGuns(in AiContext ctx, in ShipState own, int slot, double course)
+    {
+        int chief = ChiefBattery(own.Handling.Class);
+        if (chief < 0 || !ctx.Ships.Combat.FiresForEffect(slot, chief))
+            return course;
+        double off = ((course - own.HeadingDeg) % 360 + 360) % 360;
+        return Math.Min(off, 360 - off) < ctx.Settings.SteadyForGunsDeg ? own.HeadingDeg : course;
+    }
+
     /// <summary>A class's heaviest chief battery (<see cref="BatteryRow.Chief"/>: its main, else its heaviest guns), -1 for none.</summary>
     static int ChiefBattery(ShipClass cls)
     {
