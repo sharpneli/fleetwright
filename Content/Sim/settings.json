@@ -227,6 +227,7 @@
   "ContinuousAimTauS": 0.05,
   "StressGain": 1,
   "CrippleQuietS": 90,
+  "SilentMountReloads": 2,
   "PitchPeriodK": 2.4,
   "PitchDamping": 0.3,
   "VibrationLightShpT": 3,

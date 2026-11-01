@@ -693,6 +693,7 @@ public static class DoctrineRules
             ((double)ManGuns.TorpedoCraft, "for torpedo craft")]),
         new(DoctrineField.ReliefOrder, "Reliefs", [((double)ReliefOrder.HandlingRoomProtected, "handling rooms kept"),
             ((double)ReliefOrder.ReserveInSupply, "from the supply first")]),
+        new(DoctrineField.Targets, "The guns are for", [((double)Targets.Fight, "winning the fight"), ((double)Targets.Tonnage, "sinking tonnage")]),
         new(DoctrineField.Wrecks, "Wrecks seen done for", [((double)WreckFire.Cease, "cease fire"), ((double)WreckFire.Finish, "finish them")]),
         new(DoctrineField.Unknowns, "Ships not made out", [((double)Unknowns.Challenge, "challenge"), ((double)Unknowns.Hold, "hold fire"),
             ((double)Unknowns.Fire, "fire")]),

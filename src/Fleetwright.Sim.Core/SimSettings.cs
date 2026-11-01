@@ -695,6 +695,10 @@ public sealed record SimSettings
     /// share to 1 at it, multiplied) [EST: a broadside's interval and more; about 8 kn away].</summary>
     public double CrippleQuietS { get; init; } = 90;
 
+    /// <summary>A turret of hers is read as silenced once it hasn't fired for this many of its reloads (docs/battle/balance.md
+    /// BL5e: a lookout watching her salvos misses its flash in two of them), to whole over as long again [EST].</summary>
+    public double SilentMountReloads { get; init; } = 2;
+
     /// <summary>Pitch (docs/battle/balance.md BL1h): a hull's natural pitch period, s, as this times the square root of her
     /// draught, m (about her heave's: 4.5 s at 3.5 m, 7 s at 8.5 m), and its damping ratio, heavy (the hull's own wave
     /// making) [EST].</summary>

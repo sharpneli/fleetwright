@@ -171,8 +171,9 @@ public enum DoctrineField : byte
     /// quiet (her guns not seen firing for <see cref="SimSettings.CrippleQuietS"/>) and making away (her own course
     /// opening the range at <see cref="SimSettings.CrippleOpenMs"/>) counts as a target as little as this, smoothly; one
     /// firing, holding her course or coming on counts in full. 1: every enemy alike (as before). A side's doctrine: one that
-    /// fires at what fights it, or one that finishes its cripples. After <see cref="Darkened"/>, so the fields' numbers in
-    /// logged commands stand.</summary>
+    /// fires at what fights it, or one that finishes its cripples; <see cref="Targets"/>'s tonnage takes it as 1. Done
+    /// fighting is read from her guns: quiet a while, or most of her chief battery's turrets seen silent though she fires
+    /// the rest (BL5e). After <see cref="Darkened"/>, so the fields' numbers in logged commands stand.</summary>
     Finish,
 
     /// <summary>How readily a ship given up strikes her colours, 0-1 (docs/battle/striking.md SK2, decision 1): 0 never
@@ -192,6 +193,12 @@ public enum DoctrineField : byte
     /// lands seldom isn't worth firing however much a hit would do). 0: anything in reach. After <see cref="Scuttle"/>, so
     /// the fields' numbers in logged commands stand.</summary>
     HitFloor,
+
+    /// <summary>What the guns are for (<see cref="Ai.Targets"/>; docs/battle/balance.md BL5e, the user: "focus on winning the
+    /// fight vs focus on sinking as much tonnage as possible"): win the fight, a ship done fighting counting as
+    /// <see cref="Finish"/> has it; or sink tonnage, every enemy alike, the nearest and easiest first. After
+    /// <see cref="HitFloor"/>, so the fields' numbers in logged commands stand.</summary>
+    Targets,
 }
 
 /// <summary>Doctrine's Shells: each battery loads the kind its target calls for (the captain's choice, the matchup's
@@ -279,6 +286,16 @@ public enum Evasion : byte
     Zigzag,
 }
 
+/// <summary>Doctrine's Targets (docs/battle/balance.md BL5e): win the fight (the record's battle orders: the enemy's
+/// fighting ships first, the cripples to whoever has nothing better: Tsushima's line on from Suvorov, Coronel's on from
+/// Monmouth), or sink tonnage (every enemy alike: the cripples, nearest and easiest, as Blücher drew the Dogger Bank's
+/// battlecruisers and Wiesbaden Arbuthnot's cruisers).</summary>
+public enum Targets : byte
+{
+    Fight,
+    Tonnage,
+}
+
 /// <summary>Doctrine's TorpedoEvasion: nothing, or comb the track (turn parallel to it, bow or stern on).</summary>
 public enum TorpedoEvasion : byte
 {
@@ -323,7 +340,7 @@ public sealed class Doctrine(GroupSystem groups, IReadOnlyDictionary<string, dou
         return r;
     }
 
-    public const int FieldCount = (int)DoctrineField.HitFloor + 1;
+    public const int FieldCount = (int)DoctrineField.Targets + 1;
 
     /// <summary>Every field when nothing sets it: a world told nothing (a dev's, a test's) behaves as before doctrine.</summary>
     public static double Default(DoctrineField f) => f switch
@@ -367,6 +384,7 @@ public sealed class Doctrine(GroupSystem groups, IReadOnlyDictionary<string, dou
         DoctrineField.Finish => 1,   // as before: every enemy alike
         DoctrineField.StrikeColours or DoctrineField.Scuttle => 0,   // as before: she fights on till the water decides
         DoctrineField.HitFloor => 0,
+        DoctrineField.Targets => (double)Ai.Targets.Fight,   // as before with Finish 1: every enemy alike
         _ => throw new ArgumentOutOfRangeException(nameof(f)),
     };
 
@@ -542,6 +560,7 @@ public sealed class DoctrinePresets
             DoctrineField.Searchlights when Enum.TryParse<SearchlightUse>(name, ignoreCase: true, out var sl) => (f, (double)sl),
             DoctrineField.StarShell when Enum.TryParse<StarShellUse>(name, ignoreCase: true, out var ss) => (f, (double)ss),
             DoctrineField.WhenLit when Enum.TryParse<WhenLit>(name, ignoreCase: true, out var wl) => (f, (double)wl),
+            DoctrineField.Targets when Enum.TryParse<Targets>(name, ignoreCase: true, out var tg) => (f, (double)tg),
             _ => throw new ArgumentException($"doctrine: \"{v}\" isn't a value of {field}"),
         };
     }
@@ -566,6 +585,7 @@ public sealed class DoctrinePresets
             DoctrineField.Searchlights => ((SearchlightUse)(int)v).ToString(),
             DoctrineField.StarShell => ((StarShellUse)(int)v).ToString(),
             DoctrineField.WhenLit => ((WhenLit)(int)v).ToString(),
+            DoctrineField.Targets => ((Targets)(int)v).ToString(),
             _ => null,
         };
         // "CarryOn" -> "carry on"

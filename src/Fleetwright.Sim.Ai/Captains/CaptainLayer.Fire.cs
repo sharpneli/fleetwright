@@ -342,7 +342,7 @@ public sealed partial class CaptainLayer
         candCount = -1;   // found when a battery first needs them
         candUnknowns = (Unknowns)doctrine.Of(own.Entity, own.Side, DoctrineField.Unknowns);
         candBold = doctrine.Of(own.Entity, own.Side, DoctrineField.Aggression);
-        candFinish = doctrine.Of(own.Entity, own.Side, DoctrineField.Finish);
+        candFinish = FinishOf(doctrine, own);
         candWanted = Book?.Wanted(own.Side) ?? 0;
         if (ownTargets.Length < cls.Batteries.Length)
             ownTargets = new int[Math.Max(cls.Batteries.Length, ownTargets.Length * 2)];
@@ -1077,15 +1077,23 @@ public sealed partial class CaptainLayer
         }
     }
 
+    /// <summary>How much a ship done fighting still counts as a target, by his doctrine (<see cref="Matters"/>'s
+    /// <paramref name="finish"/>): its <see cref="DoctrineField.Finish"/> to win the fight, 1 (every enemy alike) to sink
+    /// tonnage (<see cref="DoctrineField.Targets"/>).</summary>
+    internal static double FinishOf(Doctrine doctrine, ShipState own) =>
+        (Targets)(int)doctrine.Of(own.Entity, own.Side, DoctrineField.Targets) == Targets.Tonnage ? 1 : doctrine.Of(own.Entity, own.Side, DoctrineField.Finish);
+
     /// <summary>How much an enemy still matters as a target (docs/battle/balance.md BL2a: "fire at what's firing at you"):
-    /// 1 unless she's both quiet (her guns not seen firing a while) and making away (her own course opening the range),
-    /// down to doctrine's <see cref="DoctrineField.Finish"/> when she's both; from what his navy sees of her.</summary>
+    /// 1 unless she's both done fighting and making away (her own course opening the range), down to doctrine's
+    /// <see cref="DoctrineField.Finish"/> when she's both; done fighting is her guns quiet a while, or her chief battery's
+    /// turrets seen silent though she fires the rest (BL5e: a cripple going home firing her last turret back is done, the
+    /// share of them silent); from what his navy sees of her.</summary>
     internal static double Matters(in AiContext ctx, in Contact c, Vec3d p, Vec3d q, Vec3d v, double finish)
     {
         if (finish >= 1)
             return 1;
         var s = ctx.Settings;
-        double quiet = Math.Clamp((ctx.NowMs - c.QuietMs) / (1000 * s.CrippleQuietS), 0, 1);
+        double quiet = Math.Max(Math.Clamp((ctx.NowMs - c.QuietMs) / (1000 * s.CrippleQuietS), 0, 1), c.MountsQuiet);
         var u = q - p;
         double d = u.Length, away = d > 0 ? Math.Clamp(Vec3d.Dot(v, u) / d / s.CrippleOpenMs, 0, 1) : 0;
         return 1 - (1 - finish) * quiet * away;

@@ -160,7 +160,15 @@ static class ScenarioPlay
                                 better = ai.Captains.Of(ct.Entity).Order != Fleetwright.Sim.Ai.Captains.CaptainOrder.Home &&
                                          Earth.Distance(sh0.Position, ct.Position) < reach;
                             }
-                        string k3 = $"{(better ? "a fighting enemy in reach" : "no other in reach      ")} {(night ? "night" : "day")} {rangeNames[rangeBands.Count(b => r.TrueRangeM >= b * 1000)],-8} {(rate < -1 ? "closing" : rate > 1 ? "opening" : "holding"),-7} " +
+                        // what the shooter's side sees of her: her turrets seen silent, her guns quiet
+                        string seenOf = "unseen";
+                        if (w.Sightings.Of(sh0.Side) is { } pic2 && pic2.IndexOf(r.Target) is int ti and >= 0)
+                        {
+                            ref readonly var tc = ref pic2[ti];
+                            double q = Math.Max(Math.Clamp((w.Ships.Store.NowMs - tc.QuietMs) / (1000 * settings.CrippleQuietS), 0, 1), tc.MountsQuiet);
+                            seenOf = q < 0.25 ? "fighting" : q < 0.75 ? "half silent" : "silent";
+                        }
+                        string k3 = $"{(better ? "a fighting enemy in reach" : "no other in reach      ")} seen {seenOf,-11} {(night ? "night" : "day")} {rangeNames[rangeBands.Count(b => r.TrueRangeM >= b * 1000)],-8} {(rate < -1 ? "closing" : rate > 1 ? "opening" : "holding"),-7} " +
                                     $"{(th0.Speed < 0.6 * th0.Handling.Class.Motion.MaxSpeedKn * Fleetwright.Sim.Combat.Handling.MsPerKnot ? "she's slow" : "she's quick"),-10} / {sw2}";
                         var (hs3, hh3) = homeWho.GetValueOrDefault(k3);
                         homeWho[k3] = (hs3 + r.Shells, hh3 + r.Hits);
@@ -293,6 +301,10 @@ static class ScenarioPlay
                     var part = homeWho.Where(kv => kv.Key.StartsWith("a fighting", StringComparison.Ordinal) == yes).ToList();
                     Console.WriteLine($"  {(yes ? "with a fighting enemy in the battery's reach" : "with none other in reach")}: {part.Sum(kv => kv.Value.Shells)} shells, {part.Sum(kv => kv.Value.Hits)} hits");
                 }
+                static string Who(string k) => k[..(k.IndexOf(" day ", StringComparison.Ordinal) is int di and > 0 ? di : k.IndexOf(" night ", StringComparison.Ordinal))];
+                foreach (var g in homeWho.GroupBy(kv => Who(kv.Key))
+                             .OrderByDescending(g => g.Sum(kv => kv.Value.Hits)))
+                    Console.WriteLine($"    {g.Key,-50} {g.Sum(kv => kv.Value.Shells),8} {g.Sum(kv => kv.Value.Hits),6}");
                 foreach (var (why, (sh, hi)) in homeWho.OrderByDescending(kv => kv.Value.Hits).Take(30))
                     Console.WriteLine($"  {why,-130} {sh,8} {hi,6}");
             }

@@ -634,6 +634,10 @@ rework, with the fire-control computers by era, revisits these):
     range: a 6" by eye on a battleship to about 10 km, on a torpedo-boat destroyer to about 7 km, no longer splashing
     at 12. This is the left-as-it-is below, and F10's ammunition floor for the secondaries (fire-control.md); an
     ordered Engage puts the chief guns on her, the secondaries still at will;
+  - *what the guns are for* (balance.md BL2a, BL5e): doctrine's `Targets`, fight or tonnage. Fighting to win, an enemy
+    done fighting (her guns quiet a while, or her chief battery's turrets seen silent though she fires the rest) and
+    making away counts as doctrine's `Finish` of one fighting (0.1: her range ten times longer); sinking tonnage, every
+    enemy alike;
   - with nothing to shoot at, it ceases fire, so the ship can go back on rails when the encounter closes;
   - the contacts in sight come from one `CubeIndex` per navy, built once a think, not ships × contacts.
 - **To a group:** its admiral hands the order to every ship of his tree (the group they came from is his). `Engage` is

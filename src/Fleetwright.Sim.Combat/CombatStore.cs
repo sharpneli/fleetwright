@@ -10,10 +10,11 @@ namespace Fleetwright.Sim.Combat;
 /// ahead, unwrapped inside the mount's traverse (an interval that never wraps: shipgen's <c>traverse_deg</c>). Stiff
 /// (docs/battle/shells-armour-damage.md E4): the share of its training rate a hit that held took (0 none). Its ready-use
 /// rounds (fire-control.md F6d), as they stood at <see cref="ReadyMs"/>: the hoists fill them back at their rate. What
-/// its guns hold (docs/battle/shell-choice.md A1): <see cref="InGuns"/>.</summary>
+/// its guns hold (docs/battle/shell-choice.md A1): <see cref="InGuns"/>. When its guns last fired (0: never): her
+/// enemy's lookouts read which of her turrets are still fighting from it (docs/battle/balance.md BL5e).</summary>
 public struct MountState
 {
-    public long TrainMs, ElevMs, LoadedMs, ReadyMs;
+    public long TrainMs, ElevMs, LoadedMs, ReadyMs, FiredMs;
     public double TrainFrom, TrainTo, ElevFrom, ElevTo;
     public int Rounds;
     /// <summary>The load its guns were loaded with, its index in the battery's loads + 1; 0 when none was chosen (no
@@ -357,6 +358,7 @@ public sealed class CombatStore
         ref var s = ref mounts[slot]![mount];
         ref readonly var row = ref cls.Mounts[mount];
         firedMs[slot] = Math.Max(firedMs[slot], ms);
+        s.FiredMs = Math.Max(s.FiredMs, ms);
         double flash = FlashPerGun(cls, mount) * guns;
         if (ms > flashMs[slot])
             (flashCd[slot], flashMs[slot]) = (flash, ms);
@@ -533,6 +535,8 @@ public sealed class CombatStore
                     h.Add(s.Stiff);
                 if (s.InGuns != 0)
                     h.Add(s.InGuns);
+                if (s.FiredMs != 0)
+                    h.Add(s.FiredMs);
             }
             foreach (int r in loadRounds[slot].AsSpan())
                 h.Add(r);

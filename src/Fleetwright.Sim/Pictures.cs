@@ -105,6 +105,12 @@ public struct Contact
     /// of hers seen, or her coming into sight, starts it again. Silent is read from it.</summary>
     public long QuietMs;
 
+    /// <summary>The share of her chief battery's mounts her navy's lookouts haven't seen fire lately, 0-1
+    /// (docs/battle/balance.md BL5e: a ship down to a turret fights on with it, and is read by it): each counts quiet once
+    /// it hasn't fired for <see cref="SimSettings.SilentMountReloads"/> of its reloads since she was first seen, to whole
+    /// over as long again; read while she's in sight, held when she isn't.</summary>
+    public double MountsQuiet;
+
     /// <summary>Whether she's taken for a friend now (answered its challenge rightly within
     /// <see cref="SimSettings.ChallengeTrustS"/>, not since known for a foe).</summary>
     public readonly bool TakenForFriend(long now, SimSettings s) => !Foe && FriendMs > 0 && now - FriendMs < s.ChallengeTrustS * 1000;
@@ -226,6 +232,8 @@ public sealed class Picture
             h.Add(c.TakenFor);
             h.Add(c.QuietMs);
             h.Add(c.Shape);
+            if (c.MountsQuiet != 0)
+                h.Add(c.MountsQuiet);
             if (c.Foe != c.Level >= ContactLevel.Type || c.FriendMs != 0)
             {
                 h.Add(0x0F0Eu);   // (only when not as the type alone says: the hashes of worlds with no challenge as they were)

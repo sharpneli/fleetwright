@@ -259,7 +259,7 @@ public sealed partial class AdmiralLayer
         double best = double.MaxValue;
         double? bearing = null;
         var pic = ctx.World.Sightings.Of(from.Side);
-        double finish = doctrine.Of(from.Entity, from.Side, DoctrineField.Finish);
+        double finish = CaptainLayer.FinishOf(doctrine, from);
         foreach (int i in seen.Near(ctx.World, from.Side, from.Position, ctx.Settings.FightCompareM))
         {
             var q = seen.Position(from.Side, i);

@@ -501,6 +501,7 @@ public sealed class Sightings
                 now, ref r, classesInUse);
             ref var con = ref pic.At(ci >= 0 ? ci : pic.IndexOf(ts.Entity));
             Quiet(ref con, inSight, store.Combat.LastFired(ts.Slot), now, dt);
+            con.MountsQuiet = MountsQuiet(store, ts, con.FirstMs, now);
             if (!con.Foe && GivesAway(world, store, ts, row.By, now, dt))
                 con.Foe = true;
             return true;
@@ -882,6 +883,29 @@ public sealed class Sightings
         if ((con.Seen & (SeenFlags.Burning | SeenFlags.Low | SeenFlags.Listing | SeenFlags.ByBow | SeenFlags.ByStern)) != 0 &&
             now - con.QuietMs >= settings.SeenSilentS * 1000)
             con.Seen |= SeenFlags.Silent;
+    }
+
+    /// <summary>The share of a ship's chief battery's mounts not seen firing lately (<see cref="Contact.MountsQuiet"/>):
+    /// each quiet once its guns haven't fired for <see cref="SimSettings.SilentMountReloads"/> of its reloads since the
+    /// later of their last salvo and her first sighting, to whole over as long again.</summary>
+    double MountsQuiet(ShipStore store, ShipState ts, long firstMs, long now)
+    {
+        var cls = ts.Handling.Class;
+        double quiet = 0;
+        int n = 0;
+        for (int b = 0; b < cls.Batteries.Length; b++)
+        {
+            if (!cls.Batteries[b].Chief)
+                continue;
+            foreach (int m in cls.Links(cls.Batteries[b].Mounts))
+            {
+                double gap = settings.SilentMountReloads * Math.Max(cls.Mounts[m].ReloadS, 1);
+                double since = (now - Math.Max(store.Combat.Mount(ts.Slot, m).FiredMs, firstMs)) / 1000.0;
+                quiet += Math.Clamp(since / gap - 1, 0, 1);
+                n++;
+            }
+        }
+        return n > 0 ? quiet / n : 0;
     }
 
     /// <summary>What an observer makes out of a ship's condition (docs/battle/fighting.md 4.3b): settled low, a list, a

@@ -232,6 +232,37 @@ public class FireOrderTests(ITestOutputHelper output)
         Assert.Equal(expected, Target(w, 1, 0));
     }
 
+    [Theory]
+    [InlineData(Targets.Fight, 3)]
+    [InlineData(Targets.Tonnage, 2)]
+    public void A_cripple_making_away_firing_her_last_turret_is_left_for_one_still_fighting(Targets targets, int expected)
+    {
+        // docs/battle/balance.md BL5e (the user: "focus on winning the fight vs focus on sinking as much tonnage as
+        // possible"): a dreadnought 7 km off with all her main turrets but one out, opening the range and firing that one
+        // back; another 11 km off with all hers; a side fighting to win takes the far one once the near one's turrets have
+        // been seen silent a while, one sinking tonnage the nearest (before BL5e her one turret firing kept her in full)
+        var (w, ai) = Make(new Placed("super_dreadnought", 0, 0, 0, 12, 0), new Placed("dreadnought", 80, 7_000, 140, 15, 1),
+            new Placed("dreadnought", 100, 11_000, 0, 12, 1));
+        w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.Finish, 0.1));
+        w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.Targets, (double)targets));
+        var cls = w.Ships.Store[w.Ships.Store.SlotOf(2)].Handling.Class;
+        int chief = 0;
+        while (!cls.Batteries[chief].Chief)
+            chief++;
+        var mounts = cls.Links(cls.Batteries[chief].Mounts).ToArray();
+        foreach (int m in mounts[..^1])
+            w.Apply(DamageSystem.Jam(2, m));
+        Run(w, 30);
+        Assert.Equal(2, Target(w, 1, 0));   // at first the nearest: her turrets not yet seen silent
+        Run(w, 210);
+        var near = w.Sightings.Of(0)![w.Sightings.Of(0)!.IndexOf(2)];
+        output.WriteLine($"{targets}: on {Target(w, 1, 0)}; the near one's turrets seen quiet {near.MountsQuiet:0.00} of {mounts.Length}, " +
+                         $"her guns last fired {(w.Ships.Store.NowMs - w.Ships.Store.Combat.LastFired(w.Ships.Store.SlotOf(2))) / 1000} s ago, {Apart(w, 1, 2):0} m off");
+        Assert.True(w.Ships.Store.NowMs - w.Ships.Store.Combat.LastFired(w.Ships.Store.SlotOf(2)) < 90_000, "she fires her last turret");
+        Assert.InRange(near.MountsQuiet, 0.5, 0.99);
+        Assert.Equal(expected, Target(w, 1, 0));
+    }
+
     /// <summary>Four QEs (1-4) in column against three dreadnoughts (5-7) in column 13 km to the east, both north.</summary>
     static (World W, AiSystem Ai) Lines(int own = 4)
     {
