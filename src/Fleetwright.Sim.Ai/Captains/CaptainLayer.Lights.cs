@@ -160,7 +160,7 @@ public sealed partial class CaptainLayer
         for (int i = 0; i < count; i++)
         {
             ref var cap = ref captains[i];
-            if (!cap.BeamsHeld && !cap.StarHeld)
+            if (!cap.BeamsHeld && !cap.StarHeld || !ctx.Due(cap.Entity))
                 continue;
             int slot = ctx.Ships.SlotOf(cap.Entity);
             if (slot >= 0 && ctx.Ships.Combat.Condition(slot).Status == ShipStatus.Afloat && !InFight(ctx, slot, cap.Entity))

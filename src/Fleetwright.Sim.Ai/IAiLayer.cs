@@ -21,6 +21,10 @@ public interface IAiLayer
     /// <summary>Anything for it to watch: while false its ticks stop, so a world of ships on plain orders stays free.</summary>
     bool Active { get; }
 
+    /// <summary>Its own period, ms of world time: while <see cref="PeriodMs"/> is this, each unit thinks at a phase of its
+    /// own within it (docs/battle/workers.md W12), a tick of the ship clock a think.</summary>
+    int OwnPeriodMs(SimSettings s);
+
     void Think(in AiContext ctx);
 
     /// <summary>An order to one of this layer's units, from the player or the layer above, as a command.</summary>
@@ -34,8 +38,9 @@ public interface IAiLayer
 
 /// <summary>What a layer thinks with: the time, the settings, its own ships (it knows them fully), the picture of
 /// everything else, and the ways to give orders. A think's context has an outbox (docs/battle/workers.md W9): its
-/// orders go there and are applied after it; any other context's are applied at once.</summary>
-public readonly ref struct AiContext(World world, IPicture picture, byte system, Outbox? outbox = null)
+/// orders go there and are applied after it; any other context's are applied at once. A think spread over its period's
+/// ticks (W12) has the tick's slot: only the units whose phase it is think.</summary>
+public readonly ref struct AiContext(World world, IPicture picture, byte system, Outbox? outbox = null, int slot = -1, int slots = 0)
 {
     public World World { get; } = world;
     public long NowMs => World.Time.Ms;
@@ -52,6 +57,15 @@ public readonly ref struct AiContext(World world, IPicture picture, byte system,
 
     /// <summary>Where a think's orders go (null: applied at once).</summary>
     public Outbox? Outbox { get; } = outbox;
+
+    /// <summary>The tick's slot of its period's (-1: every unit thinks), and how many there are.</summary>
+    public int Slot { get; } = slot;
+    public int Slots { get; } = slots;
+
+    /// <summary>Whether a unit (by its id: a ship's entity, a group's, a side) thinks now: at its phase, its id's slot of the
+    /// period's ticks (docs/battle/workers.md W12). Ids come in order, so a squadron's ships think on ticks one after
+    /// another and the slots stay even.</summary>
+    public bool Due(int id) => Slot < 0 || (id % Slots + Slots) % Slots == Slot;
 
     /// <summary>Gives an order the sim made itself, by the path the player's take, not logged: into the think's outbox,
     /// else applied at once.</summary>

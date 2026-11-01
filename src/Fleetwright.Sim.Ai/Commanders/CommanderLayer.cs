@@ -210,6 +210,8 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
 
     public int PeriodMs(in AiContext ctx) => ctx.Settings.CommanderPeriodMs;
 
+    public int OwnPeriodMs(SimSettings s) => s.CommanderPeriodMs;
+
     /// <summary>A side's commander's mode, and whether he commands now.</summary>
     public CommanderMode ModeOf(int side) => sides[side & 255]?.Mode ?? CommanderMode.None;
 
@@ -309,12 +311,17 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
     public void Think(in AiContext ctx)
     {
         int player = ctx.World.PlayerSide;
+        bool any = false;
+        for (int side = 0; side < sides.Length && !any; side++)
+            any = sides[side] is { Mode: not CommanderMode.None } && ctx.Due(side);
+        if (!any)
+            return;   // no side's tick (docs/battle/workers.md W12)
         Book.Update(ctx.World);
         Gather(ctx);
         for (int side = 0; side < sides.Length; side++)
         {
             var s = sides[side];
-            if (s == null || s.Mode == CommanderMode.None)
+            if (s == null || s.Mode == CommanderMode.None || !ctx.Due(side))
                 continue;
             Command(ctx, s, (byte)side, player);   // his own units only: those of a side he's off for that were handed to him
         }

@@ -150,11 +150,13 @@ public sealed class AiSystem : IWorldSystem
     /// of the layer just decided, a subordinate an order only once it's given.</summary>
     readonly Outbox outbox = new() { Deferred = true };
 
-    /// <summary>A think's context: its orders into the outbox (docs/battle/workers.md W9), the world refusing any other.</summary>
-    AiContext Thinking(World world)
+    /// <summary>A think's context: its orders into the outbox (docs/battle/workers.md W9), the world refusing any other;
+    /// spread over <paramref name="slots"/> ticks, the slot of this one (W12).</summary>
+    AiContext Thinking(World world, int slots = 0)
     {
         world.Thinking = true;
-        return new(world, picture, Id, outbox);
+        int tick = world.Settings.ShipTickMs;
+        return new(world, picture, Id, outbox, slots > 0 ? (int)(world.Time.Ms / tick % slots) : -1, slots);
     }
 
     /// <summary>After a think: its orders applied, in the order given.</summary>
@@ -393,18 +395,23 @@ public sealed class AiSystem : IWorldSystem
     public void OffRails(World world) => WakeAll(world);
 
     /// <summary>Schedules a layer's next think at its period now, on a grid of world time; a think already due sooner
-    /// stands, one due later (a slow rails period, now a ship is back on the fine tick) is replaced.</summary>
+    /// stands, one due later (a slow rails period, now a ship is back on the fine tick) is replaced. At its own period its
+    /// units' thinks are spread over the period's ticks (docs/battle/workers.md W12): it thinks every tick, each unit at
+    /// its phase; at a slower one (the coarse step, the rails') every unit thinks at once.</summary>
     void Wake(World world, int layer)
     {
         if (!layers[layer].Active)
             return;
         long p = layers[layer].PeriodMs(Context(world));
-        long next = (world.Time.Ms / p + 1) * p;
+        int own = layers[layer].OwnPeriodMs(world.Settings), tick = world.Settings.ShipTickMs;
+        int slots = p == own && own > tick ? own / tick : 0;
+        long step = slots > 0 ? tick : p;
+        long next = (world.Time.Ms / step + 1) * step;
         if (nextTick[layer] >= 0 && nextTick[layer] <= next)
             return;
         nextTick[layer] = next;
         tickGen[layer]++;
-        world.Schedule(new WorldTime(next), EventTier.Fine, layer - layers.Length, Id, (ushort)layer, tickGen[layer]);   // before the ship tick, the top layer first
+        world.Schedule(new WorldTime(next), EventTier.Fine, layer - layers.Length, Id, (ushort)layer, tickGen[layer], slots);   // before the ship tick, the top layer first
     }
 
     /// <summary>When a layer (top-down: commanders 0, tasks 1, admirals 2, captains 3) next thinks, ms of world time, or -1 (tests).</summary>
@@ -454,7 +461,7 @@ public sealed class AiSystem : IWorldSystem
         nextTick[layer] = -1;
         try
         {
-            layers[layer].Think(Thinking(world));
+            layers[layer].Think(Thinking(world, (int)e.A));
         }
         finally
         {

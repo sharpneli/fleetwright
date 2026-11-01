@@ -37,7 +37,7 @@ public sealed partial class CaptainLayer
         hurtAny = false;
         for (int slot = 0; slot < store.Slots; slot++)
         {
-            if (!store.IsAlive(slot))
+            if (!store.IsAlive(slot) || !ctx.Due(store[slot].Entity))
                 continue;
             var k = store.Combat.Condition(slot);
             if (k.CrewLost <= 0 || Fighting && (encounters.Of(slot, store[slot].Entity) != 0 || store.Combat.Engaged(slot) > 0))

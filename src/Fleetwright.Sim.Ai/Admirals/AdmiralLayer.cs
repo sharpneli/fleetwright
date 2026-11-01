@@ -102,6 +102,8 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
     /// <summary>How many notices admirals have raised (a group's notice going up).</summary>
     public int Notices { get; private set; }
 
+    public int OwnPeriodMs(SimSettings s) => s.AdmiralPeriodMs;
+
     public int PeriodMs(in AiContext ctx)
     {
         int period = ctx.Settings.AiRailsPeriodMs;
@@ -338,11 +340,14 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
         for (int i = count - 1; i >= 0; i--)
             if (groups.Get(admirals[i].GroupId) == null)
                 Remove(i);
-        Arcs(ctx);   // the screens' arcs, each judged once
+        if (ctx.Slot <= 0)
+            Arcs(ctx);   // the screens' arcs, each judged once a period (the first tick's)
 
         for (int k = 0; k < groups.Count; k++)   // indexed: a foreach over the interfaces would allocate
         {
             var g = groups[k];
+            if (!ctx.Due(g.GroupId))
+                continue;   // not his tick (docs/battle/workers.md W12)
             var a = Get(g.GroupId);
             Rekind(ctx, g, a);
             int lead = ships.SlotOf(groups.GuideShip(g));
@@ -363,7 +368,15 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
             if (to.Id == 0 || lead < 0)
                 continue;
             if (groups.UnitOf(ships[lead].Entity) == g)
-                Judge.Call(ctx, ships[lead]);   // his unit's call, told to the chain after this think (docs/battle/workers.md W11)
+            {
+                // his unit's call, told to the chain after this think (docs/battle/workers.md W11): while its guide fights,
+                // he fights, or it scouts (its task reads it); a unit on other orders has nobody to tell
+                bool fights = captains.Of(ships[lead].Entity).Order == CaptainOrder.Fight;
+                if (fights || a.Order == CaptainOrder.Fight || Tasks?.Of(Unit.Group(g.GroupId)).Kind == Ai.Tasks.TaskKind.Scout)
+                    Judge.Call(ctx, ships[lead], fights);
+                else
+                    Judge.Quiet(ships[lead]);
+            }
             if (a.Turning)
                 TurnStep(ctx, g, a);
             if (Manoeuvring(g))

@@ -1,5 +1,5 @@
 # Plan: the sim's workers (the job system)
-Status: **agreed 2026-10-24** (the decisions below answered); W0-W4 and W6 built 2026-10-24; W7 tried and left serial; W8's curve measured; the default count capped at 2 (the user, 2026-10-24), reassessed whenever more goes onto the workers. The AI on workers (W9-W15, superseding W5) drafted 2026-11-01.
+Status: **agreed 2026-10-24** (the decisions below answered); W0-W4 and W6 built 2026-10-24; W7 tried and left serial; W8's curve measured; the default count capped at 2 (the user, 2026-10-24), reassessed whenever more goes onto the workers. The AI on workers (W9-W15, superseding W5) drafted 2026-11-01; W9-W12 built 2026-11-01, W13 next.
     Updated: 2026-11-01
 
 The job system the architecture agreed from the start (`docs/world/architecture.md` "Threaded throughout", decision 1)
@@ -308,9 +308,10 @@ The draws are keyed already (`World.Stream(name).Derive(entity...)`), and each l
   phase it is, a dispatch a layer, each layer's outbox applied after its dispatch in unit order. Every unit thinks
   every period however many there are (the user: enough slots that every ship has its think in time, no captain
   waiting on others thinking); no budget a tick, no queue.
-- **The phase** is a slot of the period's ticks, the least filled when the unit's record is made (ties: the lowest),
-  kept in the AI's state and hashed: the slots stay even, and it's the same on any worker count, after a load and in a
-  replay. The coarse tier and rails keep their step (cheap; "What stays out").
+- **The phase** is the unit's id modulo the period's ticks (a ship's entity, a group's id, a side): ids come in order,
+  so the slots stay even and a squadron's ships think on ticks one after another; nothing to keep or hash, the same on
+  any worker count, after a load and in a replay (W12, simpler than the least-filled slot first drafted). The coarse
+  tier and rails keep their step (cheap; "What stays out").
 
 Results stay the workers' principles: the same on 0, 2 and 8 workers and shuffled, nothing allocated in play.
 
@@ -356,12 +357,86 @@ ticks would be up to 20 times today's) and fits the admirals' own calls (the use
 | W14 | Admirals, tasks and the commander as jobs; the commander's judgements split |
 | W15 | The curve measured (0, 1, 2, 4, 8); the worker cap reassessed (the user: whenever more goes onto the workers) |
 
+### W9 The outbox - done 2026-11-01
+
+`Sim.Ai/Outbox.cs`: a think's orders (`AiContext.Issue`, `HelmOrders`) go to the AI system's outbox, applied on the sim
+thread in the order given; `World.Thinking` is set while a layer thinks, and `World.Issue` (and, W10, `World.Matters`)
+refuse a call then, so every order of a think goes through the outbox. Orders still applied as given: squadrons,
+Tsushima and the Jutland the same output and end hash as before.
+
+### W10 Orders after the think - done 2026-11-01
+
+- The outbox defers: a layer's orders are applied after its think, in the order given.
+- The admirals' calls into the captains became commands (`AiCommand.TorpedoHold`, `TorpedoSignal`, `Ask`, `Release`,
+  between layers only): a flotilla's admiral makes the signal once, each boat holds it and fires on it at her own think
+  (the coarse fire watch is the captains' now); the housekeeping release of units out of a line is an order too.
+- A by-hand task's end reaches the player through the outbox (`AiContext.Matters`).
+- **Reads of another layer:** with one dispatch a layer, a layer's records change only in its own think and when orders
+  are applied, so what another layer reads (a captain's orders as held, an admiral's order and attack, a task's state)
+  is that unit's output as it last left it. They stay reads; what has to go is a unit reading a peer of its own layer
+  thinking at the same time (W12, W13).
+- **What it changed:** a think no longer reads back its own orders. Two tests leaned on that: the lit cruiser engaged and
+  lit a destroyer in the same think because gunnery hadn't judged yet whether it could see a target engaged that instant
+  (now it checks a second later, sees her by the full moon, keeps dark: the test now holds the destroyer's beam by the
+  player's hand, as it meant); a force's deployment takes 2 s longer, its orders reaching divisions and ships a think
+  apart (the bound 30 -> 32 min). A line's station keeping now matches the next ahead's speed order a think late.
+
+### W11 The unit's call - done 2026-11-01
+
+`MatchupJudge.Call`, `Told`, `Publish`: a unit's call (its judgement against the enemy in sight round its guide, away
+under doctrine's bar and back over it by `FightRallyShare`, the own force it falls back on) is made by its head once a
+think: the admiral of the outermost group a ship moves with, or her captain alone. The calls made in a layer's think are
+told to the chain after it; the guide's captain fights by his unit's call (alone, his own), the flotilla's attack, a
+force's handed attacks and a scout's task read it as told. The fall-back search moved from the captains to the judge
+(`FallBackShip`), its per-moment cache gone. The captain's own latitude (targets, torpedoes, evading, combing, lights,
+falling out, giving up) is as before; a judgement of his ship alone wasn't needed for any of it yet (open item).
+
+### W12 Phases - done 2026-11-01
+
+Each layer at its own period (`IAiLayer.OwnPeriodMs`) thinks every ship tick (50 ms), each unit at its phase: its id
+modulo the period's ticks (`AiContext.Due`; captains and admirals 20 slots, tasks 200, the commander 1200: his two sides
+on ticks of their own). At a slower period (the coarse step, the rails') every unit thinks at once, as before. The
+layer-wide passes take only the units due (the main loop, the hurt, end and held-lights passes, the fire pass, which
+counts every engaged ship for the layer's period); the screens' arcs are worked out once a period, the commander's
+gathering and aims only on a side's tick. The crowd counts are the world's battery targets at the tick (the ships that
+thought on earlier ticks with their picks), never this tick's picks: a captain's own as the world has them are taken out.
+The pick's own hysteresis (`FireSwitchShare`, `FireKeepShare`) is the switch's cost; no new rule.
+
+A fix to W11 found here: every head made his unit's call every think, so every unit under the bar ran the fall-back
+search whether anyone fought or not (the Jutland 281 -> 426 s, the admirals 52%). Now a head calls while his guide
+fights, he fights, or the unit scouts, the fall-back search only while the guide fights, and takes the call back
+(`MatchupJudge.Quiet`) when nobody needs it.
+
+The Jutland (Release, 2 workers): **189.8 s** (281 s before W10; a different battle, so rough): the captains 58.7 µs a
+tick (1.2 ms a game second against 2.2 before), the admirals 37.4 µs a tick (0.75 ms a game second against 0.27: their
+housekeeping runs every tick), the commander 11 µs a tick, his longest 25 ms (47 before).
+
+### The panel, W10 and W11 (2026-11-01)
+
+`shipgen balance`, 8 seeds (the Jutland 4), lost a run before -> after W10 -> after W11:
+
+| | before | W10 | W11 |
+|---|---|---|---|
+| Dover Strait, Britain / Germany | 0.4 / 1.4 | 0.6 / 0.6 | 0.6 / 1.8 |
+| Coronel | 0.9 / 0.5 | 1.4 / 1.3 | 0.9 / 0.8 |
+| Cape Sarych | 1.5 / 0.8 | 2.1 / 0.9 | 3.0 / 0.8 |
+| Prizes' war | 0.1 / 0.6 | 1.1 / 0.9 | 1.5 / 0.8 |
+| Åland | 4.6 / 3.4 | 5.6 / 4.9 | 5.9 / 5.3 |
+| Heligoland | 2.8 / 15.9 | 3.1 / 16.8 | 3.8 / 16.1 |
+| Dogger Bank | 5.9 / 5.6 | 7.0 / 8.8 | 7.1 / 8.8 |
+| Tsushima, Russia / Japan | 2.6 / 3.8 | 4.4 / 3.4 | 4.3 / 3.5 |
+| Jutland | 33.5 / 53.5 | 25.8 / 51.3 | 30.5 / 52.5 |
+| sides within ~2x the record | 4 of 14 | 5 of 14 | 5 of 14 |
+| the record's loser lost more | 23 of 44 | 23 of 44 | 25 of 44 |
+
+Mostly a reshuffle, a little more fighting in the small actions; squadrons (not in the panel) fought less over 8 seeds
+(Germany's hits 454 -> 201), its first difference a line's station keeping a think late, then the chaos of a
+different battle. The Jutland's German torpedo hits 6 -> 18 a run after W11.
+
 ### Open items
 
-- Which of the ~25 cross-layer reads become a report, which an order held, which the ship's visible state (W10's list).
 - The captain's latitude under orders, item by item, against the player's overrule (the player's
   orders beat the AI's; by-hand orders hold).
-- Whether a phase may move when slots get uneven (ships lost), or stays for the unit's life.
 
 ## What to expect
 

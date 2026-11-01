@@ -78,14 +78,16 @@ public sealed class MatchupJudge(GroupSystem groups, SeenContacts seen, Doctrine
     /// <see cref="SimSettings.FightCompareM"/> of the guide (docs/battle/command.md 5.1g); away under doctrine's bar
     /// (1 / OutgunnedRatio), back once well over it (<see cref="SimSettings.FightRallyShare"/>); and away, the nearest own
     /// force a match for the enemy (<see cref="FallBackShip"/>). One that can't get away (the enemy as fast) and has no
-    /// force to fall back on fights. The rest of the chain hear it as he last told it (<see cref="Told"/>).</summary>
-    public UnitCall Call(in AiContext ctx, ShipState guide)
+    /// force to fall back on fights. The rest of the chain hear it as he last told it (<see cref="Told"/>). Only a unit
+    /// whose guide fights (<paramref name="fights"/>) is turned away; the rest have the judgement alone (an attack's, a
+    /// scout's), the fall-back search being the cost.</summary>
+    public UnitCall Call(in AiContext ctx, ShipState guide, bool fights = true)
     {
         var c = JudgedNear(ctx, guide);
         if (c.CallMs != ctx.NowMs)
         {
             double accept = Bars(guide.Entity, guide.Side).Accept, conf = c.Any ? c.Result.Confidence : double.PositiveInfinity;
-            bool away = c.Away ? conf < accept / ctx.Settings.FightRallyShare : conf < accept;
+            bool away = fights && (c.Away ? conf < accept / ctx.Settings.FightRallyShare : conf < accept);
             int fallBack = away ? FallBackShip(ctx, guide, accept) : 0;
             if (away && fallBack == 0 && !c.Result.ACanRefuse(ctx.Settings))
                 away = false;   // no escape: it fights
@@ -93,6 +95,18 @@ public sealed class MatchupJudge(GroupSystem groups, SeenContacts seen, Doctrine
             written.Add(UnitKey(guide.Entity));
         }
         return new UnitCall(c.Any, c.Result, c.Away, c.FallBack);
+    }
+
+    /// <summary>The head has no call to make for his unit now (nobody fights or scouts in it): what he last told is taken
+    /// back, so a later fight starts from none rather than an old one.</summary>
+    public void Quiet(ShipState guide)
+    {
+        int key = UnitKey(guide.Entity);
+        if (units.TryGetValue(key, out var c) && c.CallMs != long.MinValue)
+        {
+            (c.Any, c.Away, c.FallBack, c.CallMs, c.AttackerCount) = (false, false, 0, long.MinValue, 0);
+            written.Add(key);
+        }
     }
 
     /// <summary>A ship's unit's call as its head last told it (<see cref="Call"/>, published at the end of his layer's

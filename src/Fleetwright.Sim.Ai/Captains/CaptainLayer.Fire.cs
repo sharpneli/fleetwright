@@ -100,10 +100,15 @@ public sealed partial class CaptainLayer
     void FirePass(in AiContext ctx)
     {
         var store = ctx.Ships;
-        foreach (int e in torpedoWaiting)
+        for (int k = torpedoWaiting.Count - 1; k >= 0; k--)
+        {
+            int e = torpedoWaiting[k];
+            if (!ctx.Due(e))
+                continue;
             if (Find(e) is int wi and >= 0)
                 captains[wi].TorpedoWait = false;
-        torpedoWaiting.Clear();   // the think finds them again
+            torpedoWaiting.RemoveAt(k);   // his think finds them again
+        }
         fighters.Clear();
         for (int k = 0; k < store.OffRailsCount; k++)
         {
@@ -119,6 +124,12 @@ public sealed partial class CaptainLayer
             var own = store[slot];
             if (store.Combat.Condition(slot).IsGivenUp)
                 continue;   // given up (docs/battle/striking.md): her guns stood down, her captain's call made
+            if (!ctx.Due(own.Entity))
+            {
+                if (store.Combat.Engaged(slot) > 0)
+                    (fighting, fightingFine) = (fighting + 1, fightingFine || own.Tier == ClockTier.Fine);
+                continue;   // not his tick (docs/battle/workers.md W12): counted, not thought for
+            }
             ref var cap = ref Get(own.Entity);
             if (cap.TorpedoHeld && !groups.InLine(own.Entity))
                 cap.TorpedoHeld = false;   // out of her flotilla's line: her torpedoes her own again
@@ -331,7 +342,7 @@ public sealed partial class CaptainLayer
     // by target slot, the batteries on her (chief, and the rest), kept as this pass's orders go out; and the ship's own
     // batteries' targets as its captain's orders leave them
     int[] onChief = [], onOther = [];
-    int[] ownTargets = new int[8];
+    int[] ownTargets = new int[8], heldTargets = new int[8];   // his batteries' targets as his orders leave them, and as the world has them
 
     /// <summary>His ship's batteries on what his fire order wants.</summary>
     void Aim(in AiContext ctx, ref Captain cap, ShipState own, int slot)
@@ -348,8 +359,10 @@ public sealed partial class CaptainLayer
         candWanted = Book?.Wanted(own.Side) ?? 0;
         if (ownTargets.Length < cls.Batteries.Length)
             ownTargets = new int[Math.Max(cls.Batteries.Length, ownTargets.Length * 2)];
+        if (heldTargets.Length < ownTargets.Length)
+            heldTargets = new int[ownTargets.Length];
         for (int b = 0; b < cls.Batteries.Length; b++)
-            ownTargets[b] = ctx.Ships.Combat.Target(slot, b);
+            heldTargets[b] = ownTargets[b] = ctx.Ships.Combat.Target(slot, b);
         for (int b = 0; b < cls.Batteries.Length; b++)
         {
             int current = ownTargets[b];
@@ -364,13 +377,7 @@ public sealed partial class CaptainLayer
             if (want == current)
                 continue;
             ctx.Issue(want == 0 ? GunnerySystem.Cease(own.Entity, b) : GunnerySystem.Engage(own.Entity, b, want));
-            // the next ships' picks see it at once, so a line doesn't all take the same one in the same second
-            var on = cls.Batteries[b].Chief ? onChief : onOther;
-            if (ctx.Ships.SlotOf(current) is int cs and >= 0 && cs < on.Length)
-                on[cs] = Math.Max(on[cs] - 1, 0);
-            if (ctx.Ships.SlotOf(want) is int ws and >= 0 && ws < on.Length)
-                on[ws]++;
-            ownTargets[b] = want;
+            ownTargets[b] = want;   // a line's next ships see it once it's given: they think on later ticks (W12)
         }
         Torpedoes(ctx, ref cap, own, slot, pic);
         if (pic != null)
@@ -537,7 +544,8 @@ public sealed partial class CaptainLayer
         return null;
     }
 
-    /// <summary>The batteries on each ship (by her slot), main and the rest, from the targets the last pass set.</summary>
+    /// <summary>The batteries on each ship (by her slot), main and the rest, as the world has them at this tick: the
+    /// ships that thought on earlier ticks with their picks (docs/battle/workers.md W12).</summary>
     void CountOn(ShipStore store)
     {
         if (onChief.Length < store.Slots)
@@ -568,7 +576,7 @@ public sealed partial class CaptainLayer
             return 0;
         int n = on[targetSlot];
         for (int k = 0; k < cls.Batteries.Length; k++)
-            if (ownTargets[k] == target && cls.Batteries[k].Chief == chief)
+            if (heldTargets[k] == target && cls.Batteries[k].Chief == chief)
                 n--;   // his own aren't another ship's splashes
         return Math.Max(n, 0);
     }

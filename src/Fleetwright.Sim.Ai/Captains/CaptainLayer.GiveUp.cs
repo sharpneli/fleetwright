@@ -32,6 +32,8 @@ public sealed partial class CaptainLayer
             if (!store.IsAlive(slot) || store.Combat.Condition(slot) is not { Damaged: true, Status: ShipStatus.Afloat } k || k.Abandoned)
                 continue;
             var own = store[slot];
+            if (!ctx.Due(own.Entity))
+                continue;
             hurtAny |= k.WaterT > 0;   // her captain keeps thinking while she's wet (Hurt)
             int i = Find(own.Entity);
             if (i < 0 && k.WaterT <= 0 && encounters.Of(slot, own.Entity) == 0)

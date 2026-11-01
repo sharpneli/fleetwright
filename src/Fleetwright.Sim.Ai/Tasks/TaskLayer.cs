@@ -139,6 +139,8 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Homes homes
         }
     }
 
+    public int OwnPeriodMs(SimSettings s) => s.ForcePeriodMs;
+
     public int PeriodMs(in AiContext ctx)
     {
         int period = ctx.Settings.AiRailsPeriodMs;
@@ -295,6 +297,8 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Homes homes
                 Remove(i--);   // the unit's gone
                 continue;
             }
+            if (!ctx.Due(tasks[i].Unit))
+                continue;   // not its tick (docs/battle/workers.md W12)
             bool live = Live(tasks[i].Status);
             if (live)
                 Step(ctx, ref tasks[i]);

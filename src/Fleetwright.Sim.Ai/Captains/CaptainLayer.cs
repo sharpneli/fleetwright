@@ -224,6 +224,8 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
     /// his ship is hurt, whatever his order).</summary>
     public ShipStore? Store { get; init; }
 
+    public int OwnPeriodMs(SimSettings s) => s.CaptainPeriodMs;
+
     public int PeriodMs(in AiContext ctx)
     {
         int period = ctx.Settings.AiRailsPeriodMs;
@@ -501,6 +503,8 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
                 Remove(i--);   // the ship is gone
                 continue;
             }
+            if (!ctx.Due(cap.Entity))
+                continue;   // not his tick (docs/battle/workers.md W12)
             if (!IsActive(cap) || ctx.Ships.Combat.Condition(slot) is not { Status: ShipStatus.Afloat, IsGivenUp: false })
                 continue;   // nothing to do, his ship going down, or given up (docs/battle/striking.md)
             var own = ctx.Ships[slot];
@@ -529,7 +533,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
                 continue;
             }
             if (cap.Order != CaptainOrder.Fight && Tasks?.Of(Unit.Ship(cap.Entity)).Kind == Ai.Tasks.TaskKind.Scout && groups.UnitOf(cap.Entity) == null)
-                Judge.Call(ctx, own);   // a scout alone: his own call, for his task (docs/battle/workers.md W11)
+                Judge.Call(ctx, own, fights: false);   // a scout alone: his own call, for his task (docs/battle/workers.md W11)
             if (cap.Order == CaptainOrder.Fight)
             {
                 FightThink(ctx, ref cap, own, slot);
