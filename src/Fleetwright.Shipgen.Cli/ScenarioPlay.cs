@@ -27,6 +27,10 @@ static class ScenarioPlay
         var against = new SortedDictionary<string, (long Shells, long Hits)>(StringComparer.Ordinal);
         // ship-minutes inside 1 km of an enemy, by side and what she was doing (BL5: who closes in, and why)
         var inside = new SortedDictionary<string, long>(StringComparer.Ordinal);
+        // the heavy guns' salvos laid by the sights (not point blank) by her rate of turn as she fired, and those fired under
+        // helm by what she was doing (BL1m: where the turns while firing come from)
+        var helm = new SortedDictionary<string, (long Shells, long Hits)>(StringComparer.Ordinal);
+        var helmWhy = new SortedDictionary<string, (long Shells, long Hits)>(StringComparer.Ordinal);
         int[] calBands = [120, 200, 300], rangeBands = [2, 4, 6, 10, 15];
         var settings = SimSettings.Load(settingsPath);
         if (smoke is bool on)
@@ -69,6 +73,25 @@ static class ScenarioPlay
                     var key = (night, small, calBands.Count(b => cal >= b), rangeBands.Count(b => r.TrueRangeM >= b * 1000), r.PointBlank);
                     var (sh, hi) = fire.GetValueOrDefault(key);
                     fire[key] = (sh + r.Shells, hi + r.Hits);
+                    if (cal >= 200 && !r.PointBlank)
+                    {
+                        double yaw = Math.Abs(r.YawDegS);
+                        string band = yaw < settings.OwnTurnYawDegS ? "steady" : yaw < 0.5 ? "0.2-0.5 deg/s" : yaw < settings.HardTurnYawDegS ? "0.5-1 deg/s" : "over 1 deg/s";
+                        var (hs, hh) = helm.GetValueOrDefault(band);
+                        helm[band] = (hs + r.Shells, hh + r.Hits);
+                        if (yaw >= settings.OwnTurnYawDegS)
+                        {
+                            var (order, _, whose) = ai.Captains.Of(r.Shooter);
+                            string why = $"{band}: {order} ({whose})";
+                            if (w.Groups.UnitOf(r.Shooter) is { } top)
+                            {
+                                var (adm, _, _) = ai.Admirals.Of(top.GroupId);
+                                why += $" / admiral {adm} / {(w.Groups.GuideShip(top) == r.Shooter ? "the guide" : "in the line")}";
+                            }
+                            var (ws, wh) = helmWhy.GetValueOrDefault(why);
+                            helmWhy[why] = (ws + r.Shells, wh + r.Hits);
+                        }
+                    }
                     if (r.TrueRangeM < 4000)
                     {
                         var (order, _, whose) = ai.Captains.Of(r.Shooter);
@@ -206,6 +229,13 @@ static class ScenarioPlay
             Console.WriteLine("inside 4 km, by the shooter's captain's order and his way of fighting (shells, hits):");
             foreach (var (why, (sh, hi)) in close.OrderByDescending(kv => kv.Value.Hits))
                 Console.WriteLine($"  {why,-100} {sh,8} {hi,6}");
+            long all0 = helm.Values.Sum(x => x.Shells);
+            Console.WriteLine("the heavy guns' (200 mm and over) salvos laid by the sights, by her rate of turn as she fired (shells, share, hits, hit %):");
+            foreach (var (band, (sh, hi)) in helm)
+                Console.WriteLine($"  {band,-16} {sh,8} {100.0 * sh / Math.Max(all0, 1),5:F1}% {hi,6} {100.0 * hi / Math.Max(sh, 1),6:F1}%");
+            Console.WriteLine("  under helm, by what she was doing (shells, hits):");
+            foreach (var (why, (sh, hi)) in helmWhy.OrderByDescending(kv => kv.Value.Shells).Take(20))
+                Console.WriteLine($"    {why,-98} {sh,8} {hi,6}");
             Console.WriteLine("ship-minutes inside 1 km of an enemy, by side and what she was doing:");
             foreach (var (why, count) in inside.OrderByDescending(kv => kv.Value).Take(30))
                 Console.WriteLine($"  {why,-110} {count,6}");

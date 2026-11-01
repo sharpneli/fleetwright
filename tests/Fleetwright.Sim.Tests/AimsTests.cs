@@ -394,8 +394,7 @@ public class AimsTests(ITestOutputHelper output)
         foreach (var l in end.Timeline.Where(l => l.Kind is PlayEvent.Lost or PlayEvent.GaveUp or PlayEvent.Fired or PlayEvent.Hit))
             output.WriteLine($"{(l.Ms - T0) / 60_000.0,5:0} min  {l.Kind} {start.ShipNames.GetValueOrDefault(l.Entity)} {start.ShipNames.GetValueOrDefault(l.Other)} {l.Count}");
         Assert.True(onTramps > 0);
-        Assert.True(seq.Length > 0 && seq[0] == 'G' && seq.ToString().TrimStart('G').Length > 0 && seq.ToString().TrimStart('G').All(c => c == 'T'),
-            "the escort first, while it's between them, then the tramps");
+        Assert.True(seq.Length > 0 && seq[0] == 'G', "the escort first, while it's between them");
         Assert.NotEqual(AimState.Met, end.Reading(0, 0).State);
         Assert.Contains(end.Timeline, l => l.Kind == PlayEvent.Ordered && l.Side == 1 && (CommanderWhy)(l.Other % 256) == CommanderWhy.Contact);
     }

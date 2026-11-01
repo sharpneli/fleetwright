@@ -843,8 +843,14 @@ public sealed record SimSettings
     public double EyeWanderTauS { get; init; } = 300;
     public double EyeBearingMil { get; init; } = 5;
 
-    /// <summary>Own ship counts as turning (its salvos take its computer's own-turn kick) past this rate of yaw, °/s.</summary>
+    /// <summary>Own ship counts as turning past this rate of yaw, °/s, for a computer that doesn't take her motion in (its
+    /// battery firing for effect goes back to ranging: <see cref="HardTurnYawDegS"/> for one that does).</summary>
     public double OwnTurnYawDegS { get; init; } = 0.2;
+
+    /// <summary>The rate of turn, °/s, a computer's own-turn kick (<c>own_turn_kick_m</c>) is given at: the reference's
+    /// turns (fire_control_ref.py, 1°/s). A salvo's kick is that times her rate of turn over this, 1 sigma, in range and in
+    /// line (docs/battle/balance.md BL1m: a threshold at 0.2°/s gave a station keeper's every correction the whole kick).</summary>
+    public double OwnTurnKickYawDegS { get; init; } = 1;
 
     /// <summary>A side's gun crews, anchors at the whole numbers of the gunnery level (docs/battle/crew.md decision 6: a row
     /// for each of <see cref="Experience.Names"/> in order), read between them linearly (<see cref="GunneryCrewAt"/>): the

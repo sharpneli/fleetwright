@@ -213,6 +213,8 @@ public sealed class GunnerySystem : IWorldSystem
         /// says nothing to the bracket: its range was the layers' own).</summary>
         public double Shift, TrueRangeM, PbCorrR;
         public bool PointBlank;
+        /// <summary>Her rate of turn as it was fired, °/s (positive to starboard): fired under helm or steady, for tools.</summary>
+        public float YawDegS;
         /// <summary>Its ladder's step off the bracket's aim, m (in its correction).</summary>
         public double LadderM;
         public Vec3d U, W;
@@ -228,10 +230,10 @@ public sealed class GunnerySystem : IWorldSystem
     /// the range correction it was fired with (its ladder's step in it; laid point blank, what its layers had walked onto
     /// their sight), its hits, whether it straddled, the phase it was fired in, her true range, whether point blank, and
     /// where the guns were laid against where she went, along the line (the aim with its correction, before the salvo's own
-    /// errors), m.</summary>
+    /// errors), m; and her rate of turn as she fired it, °/s (docs/battle/balance.md BL1m: fire under helm).</summary>
     public readonly record struct SalvoReport(long FiredMs, int Shooter, int Battery, double RangeM, int Shells, double MeanX, double MeanY, double AimErrM,
         double AimErrAcrossM, double CorrR, int Hits, bool Straddle, FirePhase Phase, double LadderM, double TrueRangeM, bool PointBlank, double LaidErrM,
-        int Target = 0);
+        int Target = 0, double YawDegS = 0);
 
     /// <summary>A salvo's spot, for tools: the salvo (by when it was fired), whether the spotter saw its fall and what he
     /// judged it, the bracket after it (m; infinite: open) and the correction the next salvo goes with, and the phase
@@ -1342,8 +1344,11 @@ public sealed class GunnerySystem : IWorldSystem
         // and the air on his sight (BL1i): a grey shape at the edge of what he can make out
         double layRad = mount.LayMil * FireControl.Mil * crew.Lay * combat * stress * shake * SightModel.HazeFactor(fc.Margin, settings.AimHazePower, settings);
         double eEl = mount.DirectorFiring ? r.NextGaussian() * layRad * perRad : 0, eTr = mount.DirectorFiring ? r.NextGaussian() * layRad * range : 0;
-        bool turning = Math.Abs(double.RadiansToDegrees(ship.YawRate)) > settings.OwnTurnYawDegS;
-        double kickR = turning ? r.NextGaussian() * computer.OwnTurnKickM : 0, kickL = turning ? r.NextGaussian() * computer.OwnTurnKickM : 0;
+        // own ship's turn (docs/battle/balance.md BL1m): the computer's own-turn kick, given at the reference's turn
+        // (fire_control_ref.py's 1°/s), grows with her rate of turn, so a station keeper's few tenths of a degree a second
+        // cost a share of it and a hard turn the whole
+        double turn = Math.Abs(double.RadiansToDegrees(ship.YawRate)) / settings.OwnTurnKickYawDegS * computer.OwnTurnKickM;
+        double kickR = r.NextGaussian() * turn, kickL = r.NextGaussian() * turn;
         double eSr = r.NextGaussian() * combat * computer.SalvoPct / 100 * range, eSd = r.NextGaussian() * combat * mount.SalvoDeflMil * FireControl.Mil * range;
         double dr = (pointBlank ? 0 : fc.CorrR + ladder) + eEl + eSr + fc.BiasR * computer.ResidPct / 100 * range + kickR;
         double dl = fc.CorrD * range + eTr + eSd + fc.BiasD * computer.DeflBiasMil * FireControl.Mil * range + kickL;
@@ -1402,7 +1407,7 @@ public sealed class GunnerySystem : IWorldSystem
             MaxX = double.MinValue, TargetLengthM = store[tslot].Handling.Class.Silhouette.LengthM, FiredMs = now,
             AimErrM = Vec3d.Dot(p - truth, u), AimErrAcrossM = Vec3d.Dot(p - truth, w), Phase = phase, LadderM = ladder, Shift = fc.Shift,
             PointBlank = pointBlank, TrueRangeM = Earth.Distance(ship.Position, tgt.Position), PbCorrR = fc.PbCorrR,
-            CalibreMm = row.CalibreMm, Shooter = fc.Shooter, FirstDownMs = -1,
+            CalibreMm = row.CalibreMm, Shooter = fc.Shooter, FirstDownMs = -1, YawDegS = (float)double.RadiansToDegrees(ship.YawRate),
         };
         int salvo = shells.NewSalvo();
         for (int j = 0; j < mounts.Length; j++)
@@ -1562,7 +1567,7 @@ public sealed class GunnerySystem : IWorldSystem
             long now = world.Time.Ms;
             Reported?.Invoke(new SalvoReport(sv.FiredMs, fc.Shooter, fc.Battery, sv.RangeM, sv.Landed, sv.SumX / Math.Max(sv.Landed, 1),
                 sv.SumY / Math.Max(sv.Landed, 1), sv.AimErrM, sv.AimErrAcrossM, sv.PointBlank ? sv.PbCorrR * sv.TrueRangeM : sv.CorrR, sv.Hits, straddle, sv.Phase, sv.LadderM,
-                sv.TrueRangeM, sv.PointBlank, sv.AimErrM + (sv.PointBlank ? 0 : sv.CorrR), sv.Target));
+                sv.TrueRangeM, sv.PointBlank, sv.AimErrM + (sv.PointBlank ? 0 : sv.CorrR), sv.Target, sv.YawDegS));
             fc.Hits += sv.Hits;
             if (sv.Hits > 0 && fc.FirstHitMs < 0)
                 fc.FirstHitMs = now;
