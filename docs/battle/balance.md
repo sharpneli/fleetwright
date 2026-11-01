@@ -480,6 +480,27 @@ its guns' band unless attacking; (3) a day attack gains bearing outside the enem
 (round them, as `Around` bends an aim's course), fires from its long setting and turns away; (4) the cripples left as
 they are for now (BL2's smoke, BL5e's targets), measured again after 1-3.
 
+**The user (2026-11-01):** "The proposals are sound. The captains should aim to protect their own battleline with the
+exception of a torpedo attack which is the risky manouver, so their position should be far enough to be safe(ish) but at
+minimum on the enemys side of the formation"; "if the lines are far enough the destoyers should be further to defend
+against enemy torpedo attack. So they try to stay just on the safe side ready to defend, and ready to attack"; "The
+destroyers should care more about enemys secondaries in this case. In case of battleline, as in enemy is shooting big guns
+at our own battleships, the destoyers don't need to be too scared of them, unless they actually start shooting at the
+destroyers."
+
+**BL5f, the screen's station by the enemy's guns. Built 2026-11-01.** A screen's bearing is toward the nearest enemy in
+sight, always (O5's disengaged side for a screen judged no match is gone, at the user's word: `ScreenMarginShare` and the
+arc's `Away` with it). Its distance off the screened guide is as ordered (`ScreenM` 5 km) at most and `ScreenMinM` (1 km
+[EST]) at least, and between them only so far toward the enemy that none of his heavy ships' guns in sight would take one
+of its ships as a target by doctrine's own floors (`HitFloor` of its shells landing and `RoundFloor`'s worth a round: a
+battery's rule for letting a target be, `CaptainLayer.WorthOn`'s), never past what can be seen there: his secondaries
+always, his chief guns only once their falls have come near one of its ships within `ScreenUnderFireS` (120 s [EST]: the
+splash ring, `GunnerySystem.ChiefFallsNear`); his boats are the screen's to fight and don't push it in. Judged once every
+`ScreenSafeEveryS` (10 s). `ScreenTests`: four M-class boats screening four dreadnoughts against four more abeam (the
+default preset's floors): about 4 km off at 22, 15 and 12 km (his secondaries out of reach), 1.3 km at 8 km, 1.4 km at 15 km
+with his big guns on them; always on his side. `AdmiralOrdersTests`: destroyers against dreadnoughts 14 km abeam now
+screen on the enemy's side, one division ahead and one astern.
+
 ### BL5: who closes inside 1 km (2026-10-30, after the user's playtest)
 
 `--fire-table` now also counts the ship-minutes each ship spends inside 1 km of an enemy, by what she, her admiral and

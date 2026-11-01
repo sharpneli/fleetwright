@@ -9,10 +9,11 @@ namespace Fleetwright.Sim.Ai.Admirals;
 /// formation: a squadron told to screen a unit keeps <see cref="SimSettings.ScreenM"/> (or the distance ordered) off
 /// the screened unit's guide, on a station of that unit's <b>arc</b>, which every squadron screening it shares.
 /// <para><b>The arc</b> (<see cref="Arcs"/>, once a think): its bearing is dead ahead of the screened unit with no enemy
-/// in sight of it within <see cref="SimSettings.FightCompareM"/>; with one, toward the nearest, unless the screens
-/// together are no match for the enemy in sight (the matchup, under doctrine's bar by
-/// <see cref="SimSettings.ScreenMarginShare"/>, back over it by as much): then away from him, on the disengaged side. It
-/// moves only when that moves its stations more than <see cref="SimSettings.ScreenMoveM"/>. One screen sits on the
+/// in sight of it within <see cref="SimSettings.FightCompareM"/>; with one, toward the nearest, always on his side of
+/// it, and out only as far as his heavy ships' guns let it lie safe(ish) (<see cref="SafeOff"/>; docs/battle/balance.md
+/// BL5f, the user: "protect their own battleline... at minimum on the enemy's side of the formation", in place of O5's
+/// disengaged side for a screen no match for him). It moves only when that moves its stations more than
+/// <see cref="SimSettings.ScreenMoveM"/>. One screen sits on the
 /// bearing; two or more spread evenly to <see cref="SimSettings.ScreenArcDeg"/> either side of it (two: the usual four
 /// points on either bow; three: either bow and dead ahead), taking the stations in the order they lie about it, so none
 /// crosses another.</para>
@@ -32,10 +33,11 @@ public sealed partial class AdmiralLayer
     {
         public int Target;          // the unit screened
         public double AxisDeg;      // the bearing screened on, off the screened guide's bow
-        public bool Away;           // on the disengaged side: the screens no match for the enemy in sight
         public bool Placed;
         public long BuiltMs;
         public int Craft, Fighter;  // enemy torpedo craft closing (0: none) and the screen counter-attacking them
+        public double SafeM;        // how far off the screened guide toward the enemy a station lies safe(ish) (BL5f)
+        public long SafeMs;         // when that was judged (0: not yet)
     }
 
     Arc[] arcs = new Arc[4];
@@ -76,25 +78,21 @@ public sealed partial class AdmiralLayer
             ref var arc = ref ArcOf(target);
             arc.BuiltMs = ctx.NowMs;
 
-            // the bearing: ahead; toward the nearest enemy in sight; or away from him
-            double axis = 0;
-            bool away = false;
-            if (NearestEnemyBearing(ctx, guide) is double b)
-            {
-                arcOwn.Clear();
-                for (int k = start; k < end; k++)
-                    if (groups.Get(screening[k].Group) is { } sg)
-                        Judge.AddGroup(ctx.World, sg, arcOwn);
-                arcEnemy.Clear();
-                Judge.AddNear(ctx.World, guide.Side, guide.Position, s.FightCompareM, arcEnemy);
-                double c = arcEnemy.Count == 0 ? double.PositiveInfinity : arcOwn.Count == 0 ? 0 : Judge.Judge(ctx, guide.Entity, guide.Side, guide.Position, arcOwn, arcEnemy).Confidence;
-                double bar = Judge.Bars(guide.Entity, guide.Side).Accept, margin = s.ScreenMarginShare;
-                away = arc.Away ? c <= bar * (1 + margin) : c < bar / (1 + margin);
-                axis = Wrap180(b - guide.HeadingDeg + (away ? 180 : 0));
-            }
+            // the bearing: ahead, or toward the nearest enemy in sight; and how far toward him its stations may lie (BL5f)
+            double axis = NearestEnemyBearing(ctx, guide) is double b ? Wrap180(b - guide.HeadingDeg) : 0;
             double moveDeg = s.ScreenMoveM / s.ScreenM * 180 / Math.PI;
-            if (!arc.Placed || away != arc.Away || Math.Abs(Wrap180(axis - arc.AxisDeg)) > moveDeg)
-                (arc.AxisDeg, arc.Away, arc.Placed) = (axis, away, true);
+            if (!arc.Placed || Math.Abs(Wrap180(axis - arc.AxisDeg)) > moveDeg)
+                (arc.AxisDeg, arc.Placed) = (axis, true);
+            if (arc.SafeMs == 0 || ctx.NowMs - arc.SafeMs >= (long)(s.ScreenSafeEveryS * 1000))
+            {
+                // the big guns count once their falls come near any of its ships
+                bool big = false;
+                for (int k = start; k < end && !big; k++)
+                    if (groups.Get(screening[k].Group) is { } sg)
+                        for (int m = 0; m < sg.Line.Count && !big; m++)
+                            big = ctx.World.Gunnery.ChiefFallsNear(ctx.Ships.SlotOf(sg.Line[m]), ctx.NowMs - (long)(s.ScreenUnderFireS * 1000));
+                (arc.SafeM, arc.SafeMs) = (SafeOff(ctx, guide, screening[start].Group, big), Math.Max(ctx.NowMs, 1));
+            }
 
             // the stations, in the order the screens lie about the bearing
             for (int k = start; k < end; k++)
@@ -178,13 +176,76 @@ public sealed partial class AdmiralLayer
                 return;
             (a.ScreenFight, force) = (0, true);   // beaten off: back to its station
         }
-        double rad = a.ScreenBearingDeg * Math.PI / 180;
-        double astern = -a.DistanceM * Math.Cos(rad), abeam = a.DistanceM * Math.Sin(rad);
+        // as far out as ordered, toward the enemy only as far as his heavy ships' guns let it lie safe(ish), and at least just
+        // off the screened guide on his side (BL5f)
+        double rad = a.ScreenBearingDeg * Math.PI / 180, distance = Math.Min(a.DistanceM, Math.Max(arc.SafeM, s.ScreenMinM));
+        double astern = -distance * Math.Cos(rad), abeam = distance * Math.Sin(rad);
         double moved = Math.Sqrt((astern - a.ScreenAstern) * (astern - a.ScreenAstern) + (abeam - a.ScreenAbeam) * (abeam - a.ScreenAbeam));
         if (!force && moved <= s.ScreenMoveM)
             return;
         (a.ScreenOn, a.ScreenAstern, a.ScreenAbeam) = (guide.Entity, astern, abeam);
         ctx.Issue(o.Station(to, Unit.Ship(guide.Entity), astern, abeam, Up));
+    }
+
+    /// <summary>How far off a screened guide toward the enemy a screen's station lies safe(ish) (BL5f): the nearest of his
+    /// heavy ships in sight of her side (capital ships and cruisers: his boats are the screen's to fight) less the range out
+    /// of which none of their guns that work would take one of the screen's ships as a target by doctrine's floors: their
+    /// secondaries, and their chief guns only once those are falling about the screen (<paramref name="underBigGuns"/>;
+    /// the user: they're for the screened line until then) (its
+    /// <see cref="DoctrineField.HitFloor"/> of its shells landing and its <see cref="DoctrineField.RoundFloor"/>'s worth a
+    /// round: a battery's own rule for letting a target be; with none, out of their reach; halved to 100 m), that range no
+    /// more than what can be seen there; unbounded with none of his heavy ships in sight.</summary>
+    double SafeOff(in AiContext ctx, ShipState guide, int screen, bool underBigGuns)
+    {
+        var s = ctx.Settings;
+        var pic = ctx.World.Sightings.Of(guide.Side);
+        if (pic == null || groups.Get(screen) is not { } sg || ctx.Ships.SlotOf(groups.GuideShip(sg)) is not (int boat and >= 0))
+            return double.PositiveInfinity;
+        arcEnemy.Clear();
+        double nearest = double.PositiveInfinity;
+        foreach (int i in seen.Near(ctx.World, guide.Side, guide.Position, s.FightCompareM))
+        {
+            if (pic[i].Type is not (ShipType.Capital or ShipType.Cruiser) || pic[i].Out)
+                continue;
+            arcEnemy.AddContact(ctx.World, Judge.Matchups, guide.Side, pic[i]);
+            nearest = Math.Min(nearest, (seen.Position(guide.Side, i) - guide.Position).Length);
+        }
+        if (arcEnemy.Count == 0)
+            return double.PositiveInfinity;
+        Judge.Matchups.Warm(ctx.World);
+        arcOwn.Clear();
+        arcOwn.AddOwn(ctx.World, Judge.Matchups, boat);
+        double hitFloor = doctrine.Of(guide.Entity, guide.Side, DoctrineField.HitFloor), roundFloor = doctrine.Of(guide.Entity, guide.Side, DoctrineField.RoundFloor);
+        var mine = arcOwn.Entries[0];
+        bool Reached(double r)
+        {
+            foreach (ref readonly var e in arcEnemy.Entries)
+                foreach (var gun in e.Profile.Guns)
+                {
+                    if (gun.Chief && !underBigGuns || e.GunShare(gun) <= 0 || r > gun.KindsReachM)
+                        continue;
+                    // a battery takes her if both its floors hold (CaptainLayer.WorthOn's: its shells landing, and a round's
+                    // worth of putting her out)
+                    var (hit, exponent) = gun.Chosen(mine.Profile, r, s);
+                    if (hit >= hitFloor && hit * (1 - Math.Exp(-exponent / Math.Max(mine.Toughness, 1e-3))) >= roundFloor)
+                        return true;
+                }
+            return false;
+        }
+        double lo = 100, hi = Math.Max(lo, Math.Min(s.FightCompareM, ctx.World.Weather.At(guide.Position, ctx.World.Time).VisibilityM));
+        if (Reached(hi))
+            return nearest - hi;
+        if (!Reached(lo))
+            return nearest - lo;
+        while (hi - lo > 100)
+        {
+            double mid = 0.5 * (lo + hi);
+            if (Reached(mid))
+                lo = mid;
+            else
+                hi = mid;
+        }
+        return nearest - hi;
     }
 
     /// <summary>A group of a force told to screen (the i-th of its line, past its guide, which has it handed over): the
@@ -242,11 +303,11 @@ public sealed partial class AdmiralLayer
             ref readonly var arc = ref arcs[i];
             h.Add(arc.Target);
             h.Add(arc.AxisDeg);
-            h.Add(arc.Away);
             h.Add(arc.Placed);
             h.Add(arc.BuiltMs);
             h.Add(arc.Craft);
             h.Add(arc.Fighter);
+            h.Add(arc.SafeM);
         }
     }
 

@@ -158,7 +158,9 @@ Decision 2: the screen's place is its admiral's judgement, not a fixed geometry.
 - **Nothing in sight** of the screened unit: on its bows (the bearing screened on dead ahead, the divisions 45° either
   side of it).
 - **Torpedo craft closing:** the division on their side counter-attacks, as in O1b.
-- **An enemy in sight:** the admiral judges his screen alone against the enemy in sight of the screened unit (the
+- **An enemy in sight** (replaced 2026-11-01 by balance.md BL5f, the user: always on the enemy's side, as far out as his
+  secondaries, and his big guns once they fire on it, leave it safe; what follows is the rule as first built): the admiral
+  judges his screen alone against the enemy in sight of the screened unit (the
   matchup, `MatchupJudge.GroupAgainstNear`). A match for him (at doctrine's bar), the screen sits toward him; no match,
   it goes to the **disengaged side**, its divisions at the van and the rear of the screened line, out of the line of fire
   and the enemy's secondaries, ready to go round the ends (the Grand Fleet's battle orders). `ScreenMarginShare` (25%)

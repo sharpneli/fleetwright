@@ -250,6 +250,25 @@ public sealed class GunnerySystem : IWorldSystem
     public readonly record struct SpotReport(long FiredMs, int Shooter, int Battery, bool Seen, FireControl.Sign Sign, double Lo, double Hi, double Next,
         FirePhase Phase, bool Told = true);
 
+    /// <summary>Whether a chief battery's shells have fallen near a ship since a time (docs/battle/balance.md BL5f: her
+    /// lookouts see the big splashes about her): a fall in her ring of a calibre her shooter's chief battery fires.</summary>
+    public bool ChiefFallsNear(int slot, long sinceMs)
+    {
+        if (slot < 0 || slot >= splashHead.Length)
+            return false;
+        var store = ships.Store;
+        for (int k = slot * SplashRing, end = k + SplashRing; k < end; k++)
+        {
+            if (splashMs[k] < sinceMs || splashMs[k] <= 0 || store.SlotOf(splashShooter[k]) is not (int ss and >= 0))
+                continue;
+            var cls = store[ss].Handling.Class;
+            for (int b = 0; b < cls.Batteries.Length; b++)
+                if (cls.Batteries[b].Chief && Math.Abs(cls.Batteries[b].CalibreMm - splashCal[k]) < 1)
+                    return true;
+        }
+        return false;
+    }
+
     /// <summary>A ship's battery's best margin over the air on its target as of its last second (BL1i; tools), 0 if it isn't
     /// engaged.</summary>
     public double MarginOf(int shooter, int battery)

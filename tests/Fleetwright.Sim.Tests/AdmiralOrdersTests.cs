@@ -249,31 +249,34 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
         }
     }
 
-    /// <summary>Two screening squadrons' guides' bearings off the line's bow, an hour after an enemy comes abeam.</summary>
-    double[] ScreenAgainst(string screenDesign, string enemyDesign, int enemies)
+    /// <summary>Two screening squadrons' guides' bearings off the line's bow and distances from its guide, an hour after
+    /// an enemy comes abeam.</summary>
+    (double Rel, double R)[] ScreenAgainst(string screenDesign, string enemyDesign, int enemies)
     {
         var (w, ai, line, sq) = Make(squadrons: 2, each: 2, screenDesign: screenDesign);
         w.AdvanceTo(w.Time + 30 * 60_000);   // on the bows
         EnemyAbeam(w, ai, line, enemyDesign, enemies);
         w.AdvanceTo(w.Time + 60 * 60_000);   // dreadnoughts swing round the arc slowly
-        return Guides(w, line, sq).Select(a => a.Rel).ToArray();
+        return Guides(w, line, sq);
     }
 
     [Fact]
-    public void Destroyers_screen_a_battle_line_from_its_disengaged_side()
+    public void Destroyers_screen_a_battle_line_on_the_enemys_side()
     {
-        // two pairs of destroyers no match for four dreadnoughts abeam to port: to starboard, one ahead, one astern
-        var rel = ScreenAgainst("m_class", "dreadnought", 4);
-        Assert.All(rel, r => Assert.InRange(r, 20, 170));
-        Assert.True(rel.Count(r => r < 90) == 1 && rel.Count(r => r > 90) == 1, "one at the van and one at the rear");
+        // two pairs of destroyers against four dreadnoughts 14 km abeam to port, out of their secondaries' reach and not
+        // fired on (docs/battle/balance.md BL5f, the user: "at minimum on the enemy's side of the formation", in place of
+        // O5's disengaged side): to port at their distance, one ahead and one astern
+        var at = ScreenAgainst("m_class", "dreadnought", 4);
+        Assert.All(at, a => Assert.InRange(a.Rel, -170, -10));
+        Assert.True(at.Count(a => a.Rel > -90) == 1 && at.Count(a => a.Rel < -90) == 1, "one at the van and one at the rear");
     }
 
     [Fact]
     public void A_screen_that_is_a_match_for_the_enemy_keeps_toward_him()
     {
-        // two pairs of dreadnoughts screening against two light cruisers abeam to port: toward them
-        var rel = ScreenAgainst("dreadnought", "light_cruiser", 2);
-        Assert.All(rel, r => Assert.InRange(r, -170, -20));
+        // two pairs of dreadnoughts screening against two light cruisers abeam to port: toward them, out at their distance
+        var at = ScreenAgainst("dreadnought", "light_cruiser", 2);
+        Assert.All(at, a => Assert.InRange(a.Rel, -170, -20));
     }
 
     [Fact]

@@ -1048,10 +1048,18 @@ public sealed record SimSettings
     /// divisions by its admiral to cover both bows (unless its order is the player's by hand; 0: never). Ships.</summary>
     public int ScreenDivideShips { get; init; } = 4;
 
-    /// <summary>Where a screen sits with the enemy in sight (docs/battle/admirals-orders.md O5): its admiral judges his
-    /// screen alone against the enemy in sight of the screened unit, and under doctrine's bar by ScreenMarginShare takes it
-    /// to the disengaged side; back toward the enemy once over the bar by as much. A share.</summary>
-    public double ScreenMarginShare { get; init; } = 0.25;
+    /// <summary>A screen's distance by the enemy's guns (docs/battle/balance.md BL5f; the user, 2026-11-01: "protect their
+    /// own battleline... far enough to be safe(ish) but at minimum on the enemy's side of the formation... if the lines are
+    /// far enough the destroyers should be further to defend against enemy torpedo attack"): with the enemy's heavy ships in
+    /// sight of the unit it screens, its station lies toward them only so far that none of their secondary guns would take
+    /// one of its ships as a target by doctrine's floors (HitFloor of its shells landing, RoundFloor's worth a round: past
+    /// it, they let her be; never past what can be seen of them), nor their chief guns once those have fallen near one of
+    /// its ships within ScreenUnderFireS (the user: "the destroyers don't need to be too scared of them, unless they
+    /// actually start shooting at the destroyers"), its ordered distance at most and ScreenMinM off the screened guide
+    /// at least; judged again every ScreenSafeEveryS [EST]. m, s.</summary>
+    public double ScreenMinM { get; init; } = 1_000;
+    public double ScreenUnderFireS { get; init; } = 120;
+    public double ScreenSafeEveryS { get; init; } = 10;
 
     /// <summary>Tasks (docs/battle/command.md 5.1c): the task layer thinks every ForcePeriodMs while any unit on a task is
     /// on the fine tick; a GoTo is there within ArrivedM; a Join takes its unit in within JoinM of it; a task a fight

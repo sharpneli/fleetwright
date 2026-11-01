@@ -34,7 +34,7 @@ static class ScenarioPlay
         // cripple's hits taken going home and whether she got there
         var homeWho = new SortedDictionary<string, (long Shells, long Hits)>(StringComparer.Ordinal);
         var homeShips = new Dictionary<(ulong Seed, int Entity), (long Hits, bool Lost)>();
-        // how ships came to fall out (BL6's first principles): every hit on a ship still in the fight, and at her fall-out
+        // how ships came to fall out (balance.md's first principles): every hit on a ship still in the fight, and at her fall-out
         // what she was doing when they began, who hit her and from how far
         var fightHits = new Dictionary<(ulong Seed, int Entity), List<FightHit>>();
         var fellWhy = new SortedDictionary<string, (int Ships, long Hits, double Minutes)>(StringComparer.Ordinal);
