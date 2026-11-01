@@ -1828,7 +1828,11 @@ public sealed class GunnerySystem : IWorldSystem
             ? Math.Max(fc.Bracket.HiAt(now, fc.DriftMs) - fc.Bracket.LoAt(now, fc.DriftMs), 0) / Math.Sqrt(12)
             : Math.Sqrt(fc.PosSigmaM * fc.PosSigmaM + Sq(fc.DriftMs * fc.TofS) + Sq(computer.ResidPct / 100 * range));
         double floorM = Math.Max(settings.BracketFloorM, settings.BracketFloorPatterns * 4 * sr);
-        double could = Math.Sqrt(Sq(floorM / Math.Sqrt(12)) + Sq(fc.DriftMs * fc.TofS));
+        // and where his spots put it: his spotter's own error over or short of a splash (k R² / h from his height, through
+        // the air), the bracket's place as good as the spots it was set by
+        double spot = settings.SpotOpticK * range * range / Math.Max(fc.SpotHeightM, 1) * SightModel.HazeFactor(fc.Margin, settings.SpotHazePower, settings);
+        aim = Math.Sqrt(aim * aim + spot * spot);
+        double could = Math.Sqrt(Sq(floorM / Math.Sqrt(12)) + Sq(fc.DriftMs * fc.TofS) + spot * spot);
         // the laying and the roll's slip at the key (or the gear's lag following it), as BL1b lays them
         double lay = mount.LayMil * FireControl.Mil * crew.Lay;
         double tau = fc.OnRoll ? mount.RollTauS * crew.RollTiming : mount.StableVertical ? mount.RollTauS : settings.ContinuousAimTauS;
