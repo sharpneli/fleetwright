@@ -9,11 +9,13 @@ against it, agree the step's details with the user, then build. Most steps grew 
 where it and this file differ; the step's section here says what was done and what changed. **Keep "Status" below up to
 date** when a step or a sub-plan starts or finishes, and take stock against it from time to time (the user, 2026-10-30).
 
-## Status (2026-10-30)
+## Status (2026-11-01)
 
 **Now:** the aims are built (`docs/battle/aims.md`: reach, sink merchants, stop, scored and weighted, A0-A6 done
 2026-10-31); the user's investigation of which real scenarios get them waits, and the rest of the balance round
-(`docs/battle/balance.md`: BL3, BL4) comes next, toward a playtest alpha; then mines, collisions and signals.
+(`docs/battle/balance.md`: BL3, BL4) comes next, toward a playtest alpha; then mines, collisions and signals. BL1 was
+reopened 2026-11-01 (BL1j-BL1n: the roll averaged over the hull and counted once, the own-turn kick by rate of turn,
+the panel reading every hit rate beside its range); the user's playtest next.
 
 | Step | State | Plan | Left |
 |---|---|---|---|
