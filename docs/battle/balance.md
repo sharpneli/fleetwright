@@ -355,6 +355,28 @@ reach, and each cripple's hits after she turned for home and whether she got the
    admiral's signal, as the record's fleets did; a cripple out of the enemy line drops out of the distribution and is
    left to whoever has nothing better.
 
+**The user (2026-11-01):** "What was done historically? Alternatively we can make this a decision in doctrine, as in
+focus on winning the fight vs focus on sinking as much tonnage as possible."
+
+**The record** (the standard accounts; not yet in the research files, a request): the battle fleets' doctrine put the
+enemy's fighting line first and left the cripples to the light forces' torpedoes, and the famous lapses were costly.
+The Grand Fleet's battle orders distributed fire ship for ship along the enemy line (the run to the south's misread
+distribution left Derfflinger unfired on). Dogger Bank: Beatty's signals misread, the battlecruisers turned on the
+crippled Blücher and Hipper's three got away, held a blunder. Jutland: Wiesbaden, stopped between the fleets, drew fire
+from many passing British ships (often the only target in the mist), and Arbuthnot's Defence and Warrior, closing to
+finish her, were caught by the German heavy ships (Defence blew up). Tsushima: the Japanese line shifted from a
+Suvorov fallen out burning to the next fighting ships; torpedo boats finished her that evening. Coronel: the squadron
+went on after Good Hope; the crippled Monmouth was found and finished by Nürnberg alone.
+
+**Proposed (after the user):** a doctrine field for what the fire is for (`Targets`):
+- **Fight** (the default, the record's doctrine): a target by what she can still do to his ship and his line
+  (`Matchup.Threat` from what's seen of her: the guns in her salvos, her speed, her course away); a cripple making
+  away counts at doctrine's `Finish` share even while she fires back, so the fighting enemy in reach comes first, and
+  the cripple is taken when nothing that fights is in reach.
+- **Tonnage:** a target by the tonnage his fire can expect to sink a shell (the matchup's per round over her
+  displacement): the cripples first, the easy kills, as Arbuthnot did.
+Scenarios and players set it per side and per unit, as doctrine does (a flotilla's "tonnage" beside a line's "fight").
+
 ### BL5: who closes inside 1 km (2026-10-30, after the user's playtest)
 
 `--fire-table` now also counts the ship-minutes each ship spends inside 1 km of an enemy, by what she, her admiral and
