@@ -306,7 +306,7 @@ public static class Program
                 "sim" => SimCmd(a),
                 "workers" => WorkersBench.Run(a.Int("items", 250), D(a, "item-ns", 160), D(a, "gap-us", 100), a.Int("dispatches", 20_000)),
                 "shore" => ShoreBench.Run(a.Get("land") ?? Path.Combine(Root(a), "..", "Content", "World", "land-10m.bin"), a.Int("points", 100_000)),
-                "scenario" when a.Has("play") => ScenarioPlay.Run(a.Positional.FirstOrDefault() ?? Path.Combine(Root(a), "..", "Content", "Scenarios", "jutland.json"),
+                "scenario" when a.Has("play") && (ScenarioPlay.Hashes = a.Has("hashes")) is var _ => ScenarioPlay.Run(a.Positional.FirstOrDefault() ?? Path.Combine(Root(a), "..", "Content", "Scenarios", "jutland.json"),
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
                     a.Get("land") ?? Path.Combine(Root(a), "..", "Content", "World", "land-10m.bin"), Path.Combine(Root(a), "designs"),
                     a.Int("threads", 0), !a.Has("no-land"), a.Int("seeds", 1), D(a, "fast", 1000), D(a, "fine", TierSpeed(a)), SmokeSwitch(a),
@@ -442,7 +442,7 @@ public static class Program
                 int eq = s.IndexOf('=');
                 if (eq > 0)
                     flags[s[2..eq]] = s[(eq + 1)..];
-                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay" or "--research" or "--trace" or "--damage" or "--cells" or "--play" or "--dry" or "--loadouts" or "--summary" or "--rooms" or "--write" or "--materials" or "--fire-trace" or "--race" or "--smoke" or "--no-smoke" or "--fire-table" or "--developed")   // the switches
+                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay" or "--research" or "--trace" or "--damage" or "--cells" or "--play" or "--dry" or "--loadouts" or "--summary" or "--rooms" or "--write" or "--materials" or "--fire-trace" or "--race" or "--smoke" or "--no-smoke" or "--fire-table" or "--developed" or "--hashes")   // the switches
                     flags[s[2..]] = null;
                 else if (i + 1 < list.Count)
                     flags[s[2..]] = list[++i];

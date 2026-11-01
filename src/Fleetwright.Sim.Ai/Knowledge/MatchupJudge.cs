@@ -13,10 +13,54 @@ public sealed class MatchupJudge(GroupSystem groups, SeenContacts seen, Doctrine
 {
     public Matchups Matchups { get; } = new();
 
-    readonly MatchupSide own = new(), theirs = new();
-    readonly List<(int Ship, double AsternM, double AbeamM)> line = new(32);
     readonly Dictionary<int, Judged> units = [], told = [];   // the heads' own, and as they last told them
-    readonly List<int> written = new(64);                      // units whose call was made since the last Publish
+
+    /// <summary>A judger's scratch: one per worker lane (docs/battle/workers.md W13).</summary>
+    sealed class Lane
+    {
+        public readonly MatchupSide Own = new(), Theirs = new(), NearTheirs = new();
+        public readonly List<(int Ship, double AsternM, double AbeamM)> Line = new(32);
+        public readonly List<(double D, int K, int Slot)> FallCands = new(32);
+        public readonly List<int> Written = new(64);   // units whose call was made since the last Publish
+    }
+
+    Lane[] lanes = [new()];
+    bool frozen;   // made ready for a dispatch: no unit's room made until Thaw
+
+    Lane L => lanes[Workers.Lane];
+    MatchupSide own => L.Own;
+    MatchupSide theirs => L.Theirs;
+    MatchupSide nearTheirs => L.NearTheirs;
+    List<(int Ship, double AsternM, double AbeamM)> line => L.Line;
+    List<(double D, int K, int Slot)> fallCands => L.FallCands;
+
+    /// <summary>Before a dispatch of thinks on the workers (docs/battle/workers.md W13): a room for every unit, the
+    /// matchups warmed and counted, a judger's scratch for each of <paramref name="lanes"/>; until <see cref="Thaw"/>
+    /// judging only reads what's shared.</summary>
+    public void Prepare(in AiContext ctx, int lanes)
+    {
+        if (ctx.Ships.Count != unitsShips || groups.Count != unitsGroups)
+            MakeUnits(ctx);
+        if (this.lanes.Length < lanes)
+        {
+            int had = this.lanes.Length;
+            Array.Resize(ref this.lanes, lanes);
+            for (int i = had; i < lanes; i++)
+            {
+                this.lanes[i] = new Lane();
+                this.lanes[i].Written.Capacity = Math.Max(64, units.Count);
+            }
+        }
+        Matchups.Prepare(ctx.World);
+        frozen = true;
+    }
+
+    /// <summary>After the dispatch.</summary>
+    public void Thaw()
+    {
+        frozen = false;
+        Matchups.Thaw();
+    }
     readonly Dictionary<(MatchupProfile, MatchupProfile, double), bool> pairs = [];
     readonly MatchupEntry[] oneA = new MatchupEntry[1], oneB = new MatchupEntry[1];
 
@@ -35,7 +79,8 @@ public sealed class MatchupJudge(GroupSystem groups, SeenContacts seen, Doctrine
                 Room(Unit.Ship(store[slot].Entity).Id);
         for (int k = 0; k < groups.Count; k++)
             Room(Unit.Group(groups[k].GroupId).Id);
-        written.Capacity = Math.Max(written.Capacity, units.Count);
+        foreach (var l in lanes)
+            l.Written.Capacity = Math.Max(l.Written.Capacity, units.Count);
         var reg = ctx.World.Ships.Registry;
         int classes = reg.Count + reg.LoadoutCount;
         pairs.EnsureCapacity(2 * classes * classes);
@@ -45,7 +90,11 @@ public sealed class MatchupJudge(GroupSystem groups, SeenContacts seen, Doctrine
     Judged Room(int key)
     {
         if (!units.TryGetValue(key, out var c))
+        {
+            if (frozen)
+                throw new InvalidOperationException("a unit's judgement room made during a dispatch: Prepare makes them first");
             (units[key], told[key]) = (c = new Judged(), new Judged());
+        }
         return c;
     }
 
@@ -92,7 +141,7 @@ public sealed class MatchupJudge(GroupSystem groups, SeenContacts seen, Doctrine
             if (away && fallBack == 0 && !c.Result.ACanRefuse(ctx.Settings))
                 away = false;   // no escape: it fights
             (c.Away, c.FallBack, c.CallMs) = (away, fallBack, ctx.NowMs);
-            written.Add(UnitKey(guide.Entity));
+            L.Written.Add(UnitKey(guide.Entity));
         }
         return new UnitCall(c.Any, c.Result, c.Away, c.FallBack);
     }
@@ -105,7 +154,7 @@ public sealed class MatchupJudge(GroupSystem groups, SeenContacts seen, Doctrine
         if (units.TryGetValue(key, out var c) && c.CallMs != long.MinValue)
         {
             (c.Any, c.Away, c.FallBack, c.CallMs, c.AttackerCount) = (false, false, 0, long.MinValue, 0);
-            written.Add(key);
+            L.Written.Add(key);
         }
     }
 
@@ -120,9 +169,12 @@ public sealed class MatchupJudge(GroupSystem groups, SeenContacts seen, Doctrine
     /// <summary>The calls made since the last time told to the chain (after each layer's think).</summary>
     public void Publish()
     {
-        foreach (int key in written)
-            units[key].CopyTo(told[key]);
-        written.Clear();
+        foreach (var l in lanes)
+        {
+            foreach (int key in l.Written)
+                units[key].CopyTo(told[key]);
+            l.Written.Clear();
+        }
     }
 
     int UnitKey(int entity) => groups.UnitOf(entity) is { } unit ? Unit.Group(unit.GroupId).Id : Unit.Ship(entity).Id;
@@ -154,7 +206,6 @@ public sealed class MatchupJudge(GroupSystem groups, SeenContacts seen, Doctrine
         return 0;
     }
 
-    readonly List<(double D, int K, int Slot)> fallCands = new(32);
 
     /// <summary>Whether a ship's class is among her unit's attackers against the enemy in sight round her, by its call as
     /// told (<paramref name="mine"/>: as she, its head, just made it) (<see cref="Matchup.Attackers"/>,
@@ -231,7 +282,6 @@ public sealed class MatchupJudge(GroupSystem groups, SeenContacts seen, Doctrine
         return nearTheirs;
     }
 
-    readonly MatchupSide nearTheirs = new();
 
     /// <summary>A group's matchup against the enemy round a ship (<see cref="EnemyNear"/>: one falling back on it, is it a
     /// match for them?); infinite with none.</summary>

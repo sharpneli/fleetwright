@@ -15,23 +15,43 @@ public sealed class TorpedoWatch
     readonly CubeIndex grid = new();
     long builtMs = long.MinValue;
     int any;
+    CubeIndex.Query[] lanes = [new()];   // a querier's scratch a worker lane (docs/battle/workers.md W13)
+
+    /// <summary>Before a dispatch of thinks on the workers: a querier's scratch for each lane. The grid is built by the
+    /// first to ask at a moment, the rest waiting for it.</summary>
+    public void Prepare(int lanes)
+    {
+        if (this.lanes.Length < lanes)
+        {
+            int had = this.lanes.Length;
+            Array.Resize(ref this.lanes, lanes);
+            for (int i = had; i < lanes; i++)
+                this.lanes[i] = new CubeIndex.Query();
+        }
+    }
 
     /// <summary>Sized for 256 torpedoes running, so the first spread of a fight doesn't grow it.</summary>
     public TorpedoWatch() => grid.Clear(256, 1);
 
     void Build(in AiContext ctx)
     {
-        if (builtMs == ctx.NowMs)
+        if (Volatile.Read(ref builtMs) == ctx.NowMs)
             return;
-        builtMs = ctx.NowMs;
-        var torpedoes = ctx.World.Torpedoes;
-        any = torpedoes.Running;
-        if (any == 0)
-            return;
-        grid.Clear(torpedoes.Slots, ctx.Settings.TorpedoSeenM);
-        for (int i = 0; i < torpedoes.Slots; i++)
-            if (torpedoes[i].Alive)
-                grid.Add(i, TorpedoSystem.Where(torpedoes[i], ctx.NowMs).Position);
+        lock (grid)
+        {
+            if (builtMs == ctx.NowMs)
+                return;
+            var torpedoes = ctx.World.Torpedoes;
+            any = torpedoes.Running;
+            if (any > 0)
+            {
+                grid.Clear(torpedoes.Slots, ctx.Settings.TorpedoSeenM);
+                for (int i = 0; i < torpedoes.Slots; i++)
+                    if (torpedoes[i].Alive)
+                        grid.Add(i, TorpedoSystem.Where(torpedoes[i], ctx.NowMs).Position);
+            }
+            Volatile.Write(ref builtMs, ctx.NowMs);   // built: read from here on
+        }
     }
 
     /// <summary>The course that combs the first torpedo seen coming at her, how long until it's past her, s, and its
@@ -49,8 +69,9 @@ public sealed class TorpedoWatch
         var vs = own.Forward * own.Speed;
         var torpedoes = ctx.World.Torpedoes;
         double soonest = double.MaxValue;
-        int n = grid.Near(p);
-        foreach (int i in grid.Found(n))
+        var lq = lanes[Workers.Lane];
+        int n = grid.Near(p, lq);
+        foreach (int i in lq.Found(n))
         {
             ref readonly var t = ref torpedoes[i];
             if (!t.Alive)

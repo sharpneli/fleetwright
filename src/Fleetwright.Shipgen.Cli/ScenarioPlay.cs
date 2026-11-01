@@ -610,8 +610,13 @@ static class ScenarioPlay
                 w.Apply(Command.SetSpeed(want));
             w.AdvanceTo(w.Time + 60_000);
             minute?.Invoke();
+            if (Hashes)
+                Console.WriteLine($"  hashes {w.Time}: " + string.Join(" ", w.HashParts().Select(p => $"{p.Part}={p.Hash:x16}")));
         }
     }
+
+    /// <summary>Every game minute, each part of the state hash (<c>--hashes</c>): where two runs first differ.</summary>
+    public static bool Hashes;
 
     /// <summary>Why ships' main guns are out (the user's question, 2026-10-20: "a lot of ships with disabled main guns"):
     /// their chief batteries' mounts not working, each by its first cause (the magazine, the gunhouse, the barbette, a jam,

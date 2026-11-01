@@ -50,7 +50,10 @@ public readonly ref struct AiContext(World world, IPicture picture, byte system,
     public IPicture Picture { get; } = picture;
 
     /// <summary>Orders to units, for the layer below (<see cref="Issue"/> them).</summary>
-    public UnitOrders Orders => new(system);
+    public UnitOrders Orders => new(System);
+
+    /// <summary>The AI system's id (its commands').</summary>
+    public byte System { get; } = system;
 
     /// <summary>A captain's orders to his ship's helm and engines.</summary>
     public HelmOrders Helm => new(World, Outbox);

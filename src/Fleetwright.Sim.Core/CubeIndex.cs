@@ -55,7 +55,43 @@ public sealed class CubeIndex
 
     /// <summary><see cref="Near"/> in no particular order: for a question whose answer doesn't hang on the order (is any
     /// of them there?), without the sort.</summary>
-    public int NearAnyOrder(Vec3d p)
+    public int NearAnyOrder(Vec3d p) => NearAnyOrder(p, ref stamp, seen, found);
+
+    /// <summary>A querier's own scratch (docs/battle/workers.md W13): queries on several threads at once, each with its
+    /// own, while nothing is added. Grown to the index's items at a query, so make it ready (<see cref="Ready"/>) before
+    /// the threads start where allocating then matters.</summary>
+    public sealed class Query
+    {
+        internal int[] Seen = [], Hits = [];
+        internal int Stamp;
+
+        /// <summary>What its last query found.</summary>
+        public ReadOnlySpan<int> Found(int count) => Hits.AsSpan(0, count);
+    }
+
+    /// <summary>A query's scratch grown to this index's items.</summary>
+    public void Ready(Query q)
+    {
+        if (q.Seen.Length < next.Length)
+            (q.Seen, q.Hits, q.Stamp) = (new int[next.Length], new int[next.Length], 0);
+    }
+
+    /// <summary><see cref="Near"/> with a querier's own scratch.</summary>
+    public int Near(Vec3d p, Query q)
+    {
+        int n = NearAnyOrder(p, q);
+        Array.Sort(q.Hits, 0, n);
+        return n;
+    }
+
+    /// <summary><see cref="NearAnyOrder(Vec3d)"/> with a querier's own scratch.</summary>
+    public int NearAnyOrder(Vec3d p, Query q)
+    {
+        Ready(q);
+        return NearAnyOrder(p, ref q.Stamp, q.Seen, q.Hits);
+    }
+
+    int NearAnyOrder(Vec3d p, ref int stamp, int[] seen, int[] found)
     {
         long cx = Cube(p.X), cy = Cube(p.Y), cz = Cube(p.Z);
         int n = 0;

@@ -1,3 +1,4 @@
+using Fleetwright.Sim.Ai;
 using Fleetwright.Sim.Core;
 
 namespace Fleetwright.Sim.Tests;
@@ -5,7 +6,7 @@ namespace Fleetwright.Sim.Tests;
 /// <summary>The sim's workers (docs/battle/workers.md W1): a dispatch fills the same slots and makes the same chunked sums
 /// on any number of workers, the shuffled mode catches a job that depends on its chunks' order, a job's exception
 /// reaches the dispatcher, nothing allocates after a job type's first dispatch, and a world of ships steps to the same
-/// state on any count (W2).</summary>
+/// state on any count (W2); the captains think the same on any count (W13).</summary>
 public class WorkersTests
 {
     /// <summary>Each item's slot from the item alone; each chunk's sum of floats that don't add associatively.</summary>
@@ -216,6 +217,41 @@ public class WorkersTests
         using var four = new Workers(4);
         Assert.Equal(h0, Play(four, out _));
         using var shuffled = new Workers(0, shuffleSeed: 2);
+        Assert.Equal(h0, Play(shuffled, out _));
+    }
+
+    [Fact]
+    public void Captains_think_the_same_on_any_number_of_workers()
+    {
+        // two fleets of forty in sight of each other, every captain told to fight: enough ships that each tick's captains
+        // (a twentieth of them, docs/battle/workers.md W12) are a dispatch (W13); their orders, records and the world in
+        // the hash
+        var settings = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json"));
+        ulong Play(Workers workers, out int engaged)
+        {
+            var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), 4, settings) { Workers = workers };
+            var ai = new AiSystem(w);
+            int c = w.Ships.AddClass(Fleet.Get("dreadnought").Class!), d = w.Ships.AddClass(Fleet.Get("destroyer").Class!);
+            w.Apply(Command.SetWeather(25_000));
+            for (int k = 0; k < 40; k++)
+            {
+                w.Apply(ShipSystem.Spawn(k % 4 == 0 ? c : d, 56.5 + 0.01 * (k % 10), 4.0 + 0.02 * (k / 10), 90, 15, side: 1));
+                w.Apply(ShipSystem.Spawn(k % 4 == 0 ? c : d, 56.5 + 0.01 * (k % 10), 4.2 + 0.02 * (k / 10), 270, 15, side: 2));
+            }
+            for (int e = 1; e <= 80; e++)
+                w.Apply(ai.Orders.Fight(Unit.Ship(e)));
+            w.AdvanceTo(w.Time + 240_000);
+            engaged = 0;
+            for (int slot = 0; slot < w.Ships.Store.Slots; slot++)
+                engaged += w.Ships.Store.IsAlive(slot) && w.Ships.Store.Combat.Engaged(slot) > 0 ? 1 : 0;
+            return w.ComputeHash();
+        }
+        using var inline = new Workers(0);
+        ulong h0 = Play(inline, out int engaged);
+        Assert.True(engaged >= 20, $"{engaged} ships with a battery engaged: the captains didn't fight");
+        using var four = new Workers(4);
+        Assert.Equal(h0, Play(four, out _));
+        using var shuffled = new Workers(0, shuffleSeed: 6);
         Assert.Equal(h0, Play(shuffled, out _));
     }
 }

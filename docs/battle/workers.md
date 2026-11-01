@@ -1,5 +1,5 @@
 # Plan: the sim's workers (the job system)
-Status: **agreed 2026-10-24** (the decisions below answered); W0-W4 and W6 built 2026-10-24; W7 tried and left serial; W8's curve measured; the default count capped at 2 (the user, 2026-10-24), reassessed whenever more goes onto the workers. The AI on workers (W9-W15, superseding W5) drafted 2026-11-01; W9-W12 built 2026-11-01, W13 next.
+Status: **agreed 2026-10-24** (the decisions below answered); W0-W4 and W6 built 2026-10-24; W7 tried and left serial; W8's curve measured; the default count capped at 2 (the user, 2026-10-24), reassessed whenever more goes onto the workers. The AI on workers (W9-W15, superseding W5) drafted 2026-11-01; W9-W13 built 2026-11-01, W14 next.
     Updated: 2026-11-01
 
 The job system the architecture agreed from the start (`docs/world/architecture.md` "Threaded throughout", decision 1)
@@ -410,6 +410,40 @@ fights, he fights, or the unit scouts, the fall-back search only while the guide
 The Jutland (Release, 2 workers): **189.8 s** (281 s before W10; a different battle, so rough): the captains 58.7 µs a
 tick (1.2 ms a game second against 2.2 before), the admirals 37.4 µs a tick (0.75 ms a game second against 0.27: their
 housekeeping runs every tick), the commander 11 µs a tick, his longest 25 ms (47 before).
+
+W12's panel (lost a run, as the table below): Dover 0.6 / 1.5, Coronel 1.0 / 0.6, Cape Sarych 2.3 / 0.6, Prizes 1.1 /
+0.6, Åland 4.0 / 5.3, Heligoland 1.4 / 12.6, Dogger Bank 6.6 / 10.9, Tsushima 3.8 / 5.9, the Jutland 26.8 / 53.0; 7 of 14
+sides within about twice the record, the record's loser losing more in 24 of 44 seeds.
+
+### W13 The captains as a job - done 2026-11-01
+
+A captains' think is a job (`CaptainLayer.Workers.cs`): its items the ships due at the tick by slot, each ship's whole
+part in its old order (her captain's own think, her men's reliefs if hurt out of the fight, her guns if in it, his call
+on her end, the player's lights held), a chunk a ship, each chunk's orders in an outbox of its own, moved into the
+think's in chunk order after. Before the dispatch, on the sim thread: captains whose ships are gone dropped, the ones
+the items need made (none is made or dropped during it: refused), who's under fire and the layer's fighting counted, the
+guns' and star shell's reaches, the squadrons' index, the judge's rooms and the matchups' profiles and tables (against
+given loadouts too) warmed. After it: the waits for the coarse fire watch collected in item order, the counts made.
+
+- **Scratch per worker lane** (`Workers.Lane`: a worker's number, fixed for its life, 0 for the sim thread): the
+  captains' own (`Mind`: candidates, reaches, crews' lists, the threat memo), the judge's sides, the contacts' found
+  lists and every grid query's (`CubeIndex.Query`).
+- **What's worked out a moment** (each navy's contacts in grids, friends' and torpedoes' grids, the census, each side's
+  enemies for the crews) is built by the first thread to ask, under a lock, the rest reading it after: a pure function
+  of the frozen world, so whoever builds it, it's the same. A question wider than the contacts' cubes during a
+  dispatch looks at every contact, and widens the cubes after.
+- **A bug found by it, as principle 5 meant:** a ship's think read the doctrine a previous ship's guns had left in the
+  layer's scratch (`Opens` from `Flee` before `Aim`, from her end's judgement, homeward): each ship's item now starts
+  with her own. The shuffled chunks and `--hashes` (each system's hash part every game minute: where two runs part)
+  found it on the Jutland's first minute.
+- **Checked:** squadrons, Tsushima and the Jutland the same end hash on 0, 8 and 2 workers shuffled;
+  `WorkersTests.Captains_think_the_same_on_any_number_of_workers` (80 ships fighting, 0 = 4 workers = shuffled).
+
+The Jutland (2 workers, the machine's quick state, the step 22.5 µs a tick): **222.9 s**; the captains 46.6 µs a tick
+(58.7 before at the same state), of it 8.1 µs prepared (24.4 before the moment's builds went lazy) and 37.1 µs the job.
+A tick's dozen ships are uneven (a fighter with many candidates is most of it), so three threads buy about a fifth;
+the machine's own swing is wider than that (the same W12 build played 189.8 s and 255.3 s an hour apart: compare only
+runs back to back).
 
 ### The panel, W10 and W11 (2026-11-01)
 

@@ -8,7 +8,8 @@ namespace Fleetwright.Sim.Ai.Knowledge;
 /// from the world's own range tables, and each side's classes at sea by type (the census), made once a moment it's
 /// asked, from which a contact not yet made out to its class is taken as the average of what its side has of its type
 /// (the user's pick: closer to the truth, though it knows which classes are at sea). Not world state: everything here
-/// is made again from the world and the pictures.</summary>
+/// is made again from the world and the pictures. While the AI thinks on the workers (docs/battle/workers.md W13) its
+/// profiles are only read, and the census is counted by the first to ask at a moment.</summary>
 public sealed class Matchups
 {
     readonly Dictionary<ShipClass, MatchupProfile> profiles = new(ReferenceEqualityComparer.Instance);
@@ -25,6 +26,8 @@ public sealed class Matchups
     {
         if (!profiles.TryGetValue(c, out var p))
         {
+            if (frozen)
+                throw new InvalidOperationException($"{c.Name}'s matchup profile made during a dispatch: Prepare warms them first");
             var reg = world.Shells.Ballistics;
             profiles[c] = p = new MatchupProfile(c, k => reg[reg.Ensure(k)], world.Settings);
         }
@@ -39,6 +42,8 @@ public sealed class Matchups
             return Profile(world, lo.Class);
         if (!given.TryGetValue(lo, out var p))
         {
+            if (frozen)
+                throw new InvalidOperationException("a loadout's matchup profile made during a dispatch: Prepare warms them first");
             var reg = world.Shells.Ballistics;
             given[lo] = p = new MatchupProfile(lo.Class, k => reg[reg.Ensure(k)], world.Settings, lo);
         }
@@ -46,12 +51,26 @@ public sealed class Matchups
     }
 
     int warmed, warmedLoadouts;
+    bool frozen;   // made ready for a dispatch (docs/battle/workers.md W13): only read until Thaw
+
+    /// <summary>Before a dispatch of thinks on the workers (docs/battle/workers.md W13): every profile and table warmed,
+    /// this moment's census counted; only read until <see cref="Thaw"/>.</summary>
+    public void Prepare(World world)
+    {
+        Warm(world);
+        frozen = true;
+    }
+
+    /// <summary>After the dispatch: made and counted when asked again.</summary>
+    public void Thaw() => frozen = false;
 
     /// <summary>Every class the world's registry holds profiled, and every gun's table against every class (once, and again
     /// when it grows): a contact may be taken for any of them, and a profile or a table made then would be garbage in the
     /// middle of a fight.</summary>
     public void Warm(World world)
     {
+        if (frozen)
+            return;   // warmed by Prepare
         var reg = world.Ships.Registry;
         int n = reg.Count, loadouts = reg.LoadoutCount;
         if (n == warmed && loadouts == warmedLoadouts)
@@ -64,10 +83,11 @@ public sealed class Matchups
             else
                 n = Math.Min(n, id);   // one still building: from it again next time
         warmed = n;
-        // and every gun's table against every class (a few hundred bytes a pair), so none is made in a fight
+        // and every gun's table against every class and given loadout (a few hundred bytes a pair), so none is made in a
+        // fight, nor while the AI thinks on the workers (an own ship with a loadout given is judged by it)
         foreach (var a in profiles.Values.Concat(given.Values))
             foreach (var g in a.Guns)
-                foreach (var t in profiles.Values)
+                foreach (var t in profiles.Values.Concat(given.Values))
                 {
                     foreach (var k in g.Kinds)
                         k.Against(t, 0, world.Settings);
@@ -79,8 +99,10 @@ public sealed class Matchups
     /// they are in all; made once a moment.</summary>
     public (List<(MatchupProfile Profile, int Count)>? Classes, int Total) Census(World world, byte side, ShipType type)
     {
-        if (censusMs != world.Time.Ms)
-            Count(world);
+        if (Volatile.Read(ref censusMs) != world.Time.Ms)
+            lock (census)
+                if (censusMs != world.Time.Ms)
+                    Count(world);   // the first to ask at a moment counts it, the rest wait and read (W13)
         int i = side * (Types + 1) + (type == ShipType.Unknown ? Types : (int)type);
         return (census[i], censusTotal[i]);
     }
@@ -106,7 +128,6 @@ public sealed class Matchups
 
     void Count(World world)
     {
-        censusMs = world.Time.Ms;
         foreach (var l in census)
             l?.Clear();
         Array.Clear(censusTotal);
@@ -121,6 +142,7 @@ public sealed class Matchups
             Tally(ship.Side * (Types + 1) + (int)Sightings.TypeOf(cls), p);
             Tally(ship.Side * (Types + 1) + Types, p);
         }
+        Volatile.Write(ref censusMs, world.Time.Ms);   // counted: read from here on
     }
 
     void Tally(int i, MatchupProfile p)

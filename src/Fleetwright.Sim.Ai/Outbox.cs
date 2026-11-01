@@ -40,6 +40,25 @@ public sealed class Outbox
         items[count++] = c;
     }
 
+    /// <summary>Moves what waits here into another outbox (a chunk's into its think's: docs/battle/workers.md W13), in the
+    /// order given, after what waits there; applied at once if there's none.</summary>
+    public void MoveTo(World world, Outbox? to)
+    {
+        if (to == null)
+        {
+            Apply(world);
+            return;
+        }
+        for (int i = 0; i < count; i++)
+            to.Add(world, items[i]);
+        count = 0;
+        if (matters)
+        {
+            matters = false;
+            to.Matters(world);
+        }
+    }
+
     /// <summary>Applies the orders waiting, in the order given, and empties it.</summary>
     public void Apply(World world)
     {

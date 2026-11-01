@@ -23,30 +23,87 @@ public sealed class SeenContacts
 
     readonly Side?[] sides = new Side?[256];
     double cell = 30_000;
-    int[] found = new int[64];
+
+    /// <summary>A querier's scratch: one per worker lane (docs/battle/workers.md W13).</summary>
+    sealed class Lane
+    {
+        public int[] Found = new int[64];
+        public readonly CubeIndex.Query Wide = new(), Fine = new();
+        public double Wider;   // the widest question past the cubes asked during a dispatch (0: none)
+    }
+
+    Lane[] lanes = [new()];
+    bool frozen;   // made ready for a dispatch: every side built, nothing rebuilt or grown until Thaw
+
+    /// <summary>Before a dispatch of thinks on the workers (docs/battle/workers.md W13): a querier's scratch for each of
+    /// <paramref name="lanes"/>, and no widening until <see cref="Thaw"/> (a question past the cubes looks at every
+    /// contact). A side is built by the first to ask at a moment, the rest waiting for it.</summary>
+    public void Prepare(int lanes)
+    {
+        if (this.lanes.Length < lanes)
+        {
+            int had = this.lanes.Length;
+            Array.Resize(ref this.lanes, lanes);
+            for (int i = had; i < lanes; i++)
+                this.lanes[i] = new Lane();
+        }
+        frozen = true;
+    }
+
+    /// <summary>After the dispatch: built and grown when asked again, wider for a question that was past the cubes.</summary>
+    public void Thaw()
+    {
+        frozen = false;
+        double wider = 0;
+        foreach (var l in lanes)
+            (wider, l.Wider) = (Math.Max(wider, l.Wider), 0);
+        if (wider > cell)
+            Widen(wider);
+    }
+
+    void Widen(double radiusM)
+    {
+        cell = radiusM * 1.25;   // a wider question than the cubes: every side's grid is rebuilt wider
+        foreach (var s in sides)
+            if (s != null)
+                s.BuiltMs = long.MinValue;
+    }
 
     /// <summary>The contacts a side holds in sight within a radius of a point now, by their index in its picture, in
     /// index order; their positions from <see cref="Position"/>.</summary>
     public ReadOnlySpan<int> Near(World world, byte side, Vec3d p, double radiusM)
     {
+        if (radiusM > cell && frozen)
+            return Scan(world, side, p, radiusM);   // wider than the cubes during a dispatch: every contact looked at
         if (radiusM > cell)
-        {
-            cell = radiusM * 1.25;   // a wider question than the cubes: every side's grid is rebuilt wider
-            foreach (var s in sides)
-                if (s != null)
-                    s.BuiltMs = long.MinValue;
-        }
+            Widen(radiusM);
         var v = Build(world, side);
         if (v == null)
             return [];
-        return Filter(v, v.Wide, p, radiusM);
+        return Filter(v, v.Wide, p, radiusM, wide: true);
+    }
+
+    ReadOnlySpan<int> Scan(World world, byte side, Vec3d p, double radiusM)
+    {
+        var v = Build(world, side);
+        if (v == null)
+            return [];
+        var lane = lanes[Workers.Lane];
+        lane.Wider = Math.Max(lane.Wider, radiusM);
+        var found = lane.Found;
+        int m = 0;
+        double r2 = radiusM * radiusM;
+        for (int i = 0; i < v.Picture!.Count; i++)
+            if (v.InSight[i] && (v.Position[i] - p).LengthSquared <= r2)
+                found[m++] = i;
+        return found.AsSpan(0, m);
     }
 
     /// <summary>As <see cref="Near"/>, within <see cref="SimSettings.FireLineGapM"/> (the fine grid).</summary>
     public ReadOnlySpan<int> Close(World world, byte side, Vec3d p)
     {
         var v = Build(world, side);
-        return v == null ? [] : Filter(v, v.Fine, p, world.Settings.FireLineGapM);
+        return v == null ? [] : Filter(v, v.Fine, p, world.Settings.FireLineGapM, wide: false);
     }
 
     /// <summary>Where a side's picture puts its contact (by index) now, and its velocity; built by a
@@ -55,12 +112,15 @@ public sealed class SeenContacts
 
     public Vec3d Velocity(byte side, int i) => sides[side]!.Velocity[i];
 
-    ReadOnlySpan<int> Filter(Side v, CubeIndex grid, Vec3d p, double radiusM)
+    ReadOnlySpan<int> Filter(Side v, CubeIndex grid, Vec3d p, double radiusM, bool wide)
     {
-        int n = grid.Near(p), m = 0;
-        if (found.Length < n)
-            found = new int[Math.Max(n, found.Length * 2)];
-        var all = grid.Found(n);
+        var lane = lanes[Workers.Lane];
+        var q = wide ? lane.Wide : lane.Fine;
+        int n = grid.Near(p, q), m = 0;
+        if (lane.Found.Length < n)
+            lane.Found = new int[Math.Max(n, lane.Found.Length * 2)];
+        var found = lane.Found;
+        var all = q.Found(n);
         double r2 = radiusM * radiusM;
         foreach (int i in all)
             if ((v.Position[i] - p).LengthSquared <= r2)
@@ -73,11 +133,23 @@ public sealed class SeenContacts
         var pic = world.Sightings.Of(side);
         if (pic == null)
             return null;
-        var v = sides[side] ??= new Side();
         long now = world.Time.Ms;
-        if (v.BuiltMs == now && v.Picture == pic && v.Cell == cell)
+        var v = Volatile.Read(ref sides[side]);
+        if (v != null && Volatile.Read(ref v.BuiltMs) == now && v.Picture == pic && v.Cell == cell)
             return v;
-        (v.BuiltMs, v.Picture, v.Cell) = (now, pic, cell);
+        lock (sides)
+        {
+            v = sides[side] ??= new Side();
+            if (v.BuiltMs == now && v.Picture == pic && v.Cell == cell)
+                return v;   // built meanwhile by another thread
+            Fill(world, v, pic, now);
+            return v;
+        }
+    }
+
+    void Fill(World world, Side v, Picture pic, long now)
+    {
+        (v.Picture, v.Cell) = (pic, cell);
         int n = pic.Count;
         if (v.Position.Length < n)
         {
@@ -98,6 +170,6 @@ public sealed class SeenContacts
             v.Wide.Add(i, p);
             v.Fine.Add(i, p);
         }
-        return v;
+        Volatile.Write(ref v.BuiltMs, now);   // built: read from here on
     }
 }

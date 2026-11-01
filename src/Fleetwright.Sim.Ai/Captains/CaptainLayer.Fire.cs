@@ -56,12 +56,11 @@ namespace Fleetwright.Sim.Ai.Captains;
 /// <see cref="WatchTracks"/>, J3).</summary>
 public sealed partial class CaptainLayer
 {
-    readonly List<int> fighters = new(64), watched = new(64);
+    readonly List<int> watched = new(64);
     readonly LineOfFire lines = new();
     readonly TorpedoWatch torpedoWatch = new();
     double[] underFire = [];   // by slot: the range of the nearest enemy battery on her, m (0: none), as of this think
     bool anyUnderFire;
-    readonly List<(int Ship, double AsternM, double AbeamM)> unitLine = new(16);
     int fighting;          // ships with a battery engaged after the last pass
     bool fightingFine;     // any of them on the fine tick
 
@@ -96,62 +95,25 @@ public sealed partial class CaptainLayer
             ctx.Issue(GunnerySystem.Cease(e));
     }
 
-    /// <summary>Each fighting ship's batteries put on their targets (and a ship alone's doctrine taken up).</summary>
-    void FirePass(in AiContext ctx)
+    /// <summary>A fighting ship's think for her guns (and a ship alone's doctrine taken up), every tier at its think: the fine
+    /// tick's second, the coarse step's minute (docs/battle/coarse.md J2).</summary>
+    void FireOne(in AiContext ctx, ref Captain cap, ShipState own, int slot)
     {
-        var store = ctx.Ships;
-        for (int k = torpedoWaiting.Count - 1; k >= 0; k--)
-        {
-            int e = torpedoWaiting[k];
-            if (!ctx.Due(e))
-                continue;
-            if (Find(e) is int wi and >= 0)
-                captains[wi].TorpedoWait = false;
-            torpedoWaiting.RemoveAt(k);   // his think finds them again
-        }
-        fighters.Clear();
-        for (int k = 0; k < store.OffRailsCount; k++)
-        {
-            int slot = store.OffRailsSlot(k);
-            if (encounters.Of(slot, store[slot].Entity) != 0 || store.Combat.Engaged(slot) > 0)
-                fighters.Add(slot);
-        }
-        (fighting, fightingFine) = (0, false);
-        CountOn(store);
-        foreach (int slot in fighters)
-        {
-            // every tier, at its think: the fine tick's second, the coarse step's minute (docs/battle/coarse.md J2)
-            var own = store[slot];
-            if (store.Combat.Condition(slot).IsGivenUp)
-                continue;   // given up (docs/battle/striking.md): her guns stood down, her captain's call made
-            if (!ctx.Due(own.Entity))
-            {
-                if (store.Combat.Engaged(slot) > 0)
-                    (fighting, fightingFine) = (fighting + 1, fightingFine || own.Tier == ClockTier.Fine);
-                continue;   // not his tick (docs/battle/workers.md W12): counted, not thought for
-            }
-            ref var cap = ref Get(own.Entity);
-            if (cap.TorpedoHeld && !groups.InLine(own.Entity))
-                cap.TorpedoHeld = false;   // out of her flotilla's line: her torpedoes her own again
-            FallOut(ctx, ref cap, own, slot);
-            OutOfRounds(ctx, ref cap, own);
-            Comb(ctx, ref cap, own);   // coarse, also when a track comes into sight between thinks (WatchTracks)
-            TurnFromLight(ctx, ref cap, own, slot);   // a light on her in the dark (docs/battle/night.md Q7)
-            Darken(ctx, ref cap, own, slot);          // darkened: her guns hold till she's fired upon (Q9)
-            Flee(ctx, ref cap, own, slot);            // a ship with no main battery from an enemy warship (docs/battle/aims.md A4)
-            TakeUpStanding(ctx, ref cap, own, slot);
-            if (cap.SignalTarget != 0)
-                FireOnSignal(ctx, ref cap, own.Entity, slot);   // his flotilla's signal standing
-            Aim(ctx, ref cap, own, slot);
-            AnswerChallenges(ctx, own);
-            NightLights(ctx, ref cap, own, slot);   // star shell or searchlights on what the guns can't see (docs/battle/night.md Q4, Q5)
-            Crew(ctx, own, slot, fighting: true);   // where her men stand (docs/battle/crew.md N3a)
-            if (store.Combat.Engaged(slot) > 0)
-            {
-                fighting++;
-                fightingFine |= own.Tier == ClockTier.Fine;
-            }
-        }
+        if (cap.TorpedoHeld && !groups.InLine(own.Entity))
+            cap.TorpedoHeld = false;   // out of her flotilla's line: her torpedoes her own again
+        FallOut(ctx, ref cap, own, slot);
+        OutOfRounds(ctx, ref cap, own);
+        Comb(ctx, ref cap, own);   // coarse, also when a track comes into sight between thinks (WatchTracks)
+        TurnFromLight(ctx, ref cap, own, slot);   // a light on her in the dark (docs/battle/night.md Q7)
+        Darken(ctx, ref cap, own, slot);          // darkened: her guns hold till she's fired upon (Q9)
+        Flee(ctx, ref cap, own, slot);            // a ship with no main battery from an enemy warship (docs/battle/aims.md A4)
+        TakeUpStanding(ctx, ref cap, own, slot);
+        if (cap.SignalTarget != 0)
+            FireOnSignal(ctx, ref cap, own.Entity, slot);   // his flotilla's signal standing
+        Aim(ctx, ref cap, own, slot);
+        AnswerChallenges(ctx, own);
+        NightLights(ctx, ref cap, own, slot);   // star shell or searchlights on what the guns can't see (docs/battle/night.md Q4, Q5)
+        Crew(ctx, own, slot, fighting: true);   // where her men stand (docs/battle/crew.md N3a)
     }
 
     /// <summary>The coarse tier's next wake for the torpedo watch before <paramref name="untilMs"/> (the captains' next
@@ -209,7 +171,6 @@ public sealed partial class CaptainLayer
         }
     }
 
-    bool candDark;   // darkened in the dark, as of this ship's think (docs/battle/night.md Q9)
 
     /// <summary>Darkened (doctrine's <see cref="DoctrineField.Darkened"/>, docs/battle/night.md Q9) in the dark: his guns
     /// hold until she or a ship of her squadron is fired upon (an enemy battery on her), then fight by his orders for
@@ -320,29 +281,8 @@ public sealed partial class CaptainLayer
         Recount();
     }
 
-    // a ship's candidates, found once for all its batteries: each contact in sight within its widest reach, its entity
-    // and slot, range (m), the range it'll be at FireLeadS on (m), bearing from ahead and the rank of its type for a
-    // secondary battery
-    int[] candEntity = new int[32], candRank = new int[32], candSlot = new int[32], candPic = new int[32];
-    double[] candRange = new double[32], candLead = new double[32], candBearing = new double[32], candDone = new double[32];
-    // and how much each still matters as a target (BL2a: quiet and making away, down to doctrine's Finish), and how much
-    // his side's aim wants her (docs/battle/aims.md A3: what it wants sunk, or one that endangers him; 1 for neither)
-    double[] candMatters = new double[32], candWant = new double[32], candClosing = new double[32];
-    Vec3d[] candPos = new Vec3d[32];
-    sbyte[] candFoul = new sbyte[32];   // its line of fire: -1 not asked yet, 0 clear, 1 foul
-    int candCount;
-    // the ship's doctrine on unknowns and her aggression, as of this think; the nearest unknown in reach she won't fire on
-    // (an entity, 0: none), found with her candidates, for a challenge (docs/battle/night.md Q6)
-    Unknowns candUnknowns;
-    double candBold, candFinish;
-    int candWanted;   // the kinds his side's aim wants sunk first (AimBook.Wanted), as of this think
-    int candUnknown;
-    double candUnknownM;
-    double[] reaches = new double[16];
-    // by target slot, the batteries on her (chief, and the rest), kept as this pass's orders go out; and the ship's own
-    // batteries' targets as its captain's orders leave them
+    // by target slot, the batteries on her (chief, and the rest), as the world has them at the tick
     int[] onChief = [], onOther = [];
-    int[] ownTargets = new int[8], heldTargets = new int[8];   // his batteries' targets as his orders leave them, and as the world has them
 
     /// <summary>His ship's batteries on what his fire order wants.</summary>
     void Aim(in AiContext ctx, ref Captain cap, ShipState own, int slot)
@@ -434,7 +374,6 @@ public sealed partial class CaptainLayer
                !lines.FriendNear(ctx, groups, own, at, Math.Min(ctx.Settings.UnknownFriendM * (1 - candBold), ctx.Settings.LineOfFireCellM));
     }
 
-    readonly MatchupSide shellTarget = new();
 
     /// <summary>His battery's shell for its target (docs/battle/shell-choice.md A3), by doctrine's Shells: each kind it
     /// has rounds of judged by what a round does to her as his navy has her made out (<see cref="Matchup.PerRound"/>
@@ -646,7 +585,8 @@ public sealed partial class CaptainLayer
         if (cap.TorpedoWait)
             return;
         cap.TorpedoWait = true;
-        torpedoWaiting.Add(cap.Entity);
+        if (!thinking)
+            torpedoWaiting.Add(cap.Entity);   // in a think, collected after it in item order
     }
 
     /// <summary>Whether a captain's think left a ship waiting to fire her torpedoes.</summary>
@@ -990,9 +930,6 @@ public sealed partial class CaptainLayer
         return 1 - Math.Exp(-Matchup.Threat(threatFrom.Entries, threatTo.Entries, rangeM, s.WantedThreatMin, 1, s) / s.WantedThreatOuts);
     }
 
-    readonly MatchupSide threatFrom = new(), threatTo = new();
-    int threatOwn;
-    long threatMs = -1;
 
     /// <summary>His fight course on a contact his side's aim wants (docs/battle/aims.md A3: round the escort if he can),
     /// bent away from every other enemy held near that endangers him: each pushes by her <see cref="Threat"/> over her

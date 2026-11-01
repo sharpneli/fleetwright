@@ -151,23 +151,6 @@ public sealed partial class CaptainLayer
     bool InFight(in AiContext ctx, int slot, int entity) =>
         Fighting && !ctx.Ships.OnRails(slot) && (encounters.Of(slot, entity) != 0 || ctx.Ships.Combat.Engaged(slot) > 0);
 
-    /// <summary>The player's lights out of a fight (docs/battle/night.md Q9): his beams burn whenever it's dark, not only in
-    /// an encounter, and his star shell's flag is cleared once its task is gone. The fire pass sees to the rest.</summary>
-    void HeldLightsPass(in AiContext ctx)
-    {
-        if (lightsHeld == 0)
-            return;
-        for (int i = 0; i < count; i++)
-        {
-            ref var cap = ref captains[i];
-            if (!cap.BeamsHeld && !cap.StarHeld || !ctx.Due(cap.Entity))
-                continue;
-            int slot = ctx.Ships.SlotOf(cap.Entity);
-            if (slot >= 0 && ctx.Ships.Combat.Condition(slot).Status == ShipStatus.Afloat && !InFight(ctx, slot, cap.Entity))
-                HeldLights(ctx, ref cap, slot);
-        }
-    }
-
     void HeldLights(in AiContext ctx, ref Captain cap, int slot)
     {
         var own = ctx.Ships[slot];

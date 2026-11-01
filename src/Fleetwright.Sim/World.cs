@@ -484,6 +484,27 @@ public sealed class World
     }
 
     /// <summary>A hash of all the world's state (not the target, which is the host's pacing, nor the log).</summary>
+    /// <summary>The state hash's parts, each system's and the world's own sections (a determinism hunt's: which part first
+    /// differs between two runs; docs/battle/workers.md W13).</summary>
+    public IEnumerable<(string Part, ulong Hash)> HashParts()
+    {
+        var h = new StateHash();
+        Encounters.Hash(ref h);
+        yield return ("encounters", h.Value);
+        h = new StateHash();
+        Sightings.Hash(ref h);
+        yield return ("sightings", h.Value);
+        h = new StateHash();
+        scheduler.Hash(ref h);
+        yield return ("scheduler", h.Value);
+        foreach (var s in systems)
+        {
+            h = new StateHash();
+            s.Hash(ref h);
+            yield return (s.GetType().Name, h.Value);
+        }
+    }
+
     public ulong ComputeHash()
     {
         var h = new StateHash();

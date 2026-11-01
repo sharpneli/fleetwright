@@ -19,12 +19,32 @@ public sealed class LineOfFire
     readonly List<byte> sides = [];   // the sides with ships off rails at this moment
     long builtMs = long.MinValue;
     double cell;
+    CubeIndex.Query[] lanes = [new()];   // a querier's scratch a worker lane (docs/battle/workers.md W13)
+
+    /// <summary>Before a dispatch of thinks on the workers: a querier's scratch for each lane. The grids are built by the
+    /// first to ask at a moment, the rest waiting for it.</summary>
+    public void Prepare(int lanes)
+    {
+        if (this.lanes.Length < lanes)
+        {
+            int had = this.lanes.Length;
+            Array.Resize(ref this.lanes, lanes);
+            for (int i = had; i < lanes; i++)
+                this.lanes[i] = new CubeIndex.Query();
+        }
+    }
 
     void Build(in AiContext ctx)
     {
-        if (builtMs == ctx.NowMs)
+        if (Volatile.Read(ref builtMs) == ctx.NowMs)
             return;
-        builtMs = ctx.NowMs;
+        lock (sides)
+            if (builtMs != ctx.NowMs)
+                Fill(ctx);
+    }
+
+    void Fill(in AiContext ctx)
+    {
         var store = ctx.Ships;
         cell = ctx.Settings.LineOfFireCellM;
         sides.Clear();
@@ -40,6 +60,7 @@ public sealed class LineOfFire
             }
             grid.Add(slot, x.Position);
         }
+        Volatile.Write(ref builtMs, ctx.NowMs);   // built: read from here on
     }
 
     /// <summary>Whether a friend of <paramref name="own"/> is near the fall of his shells at <paramref name="target"/>.</summary>
@@ -81,8 +102,9 @@ public sealed class LineOfFire
             var grid = grids[side]!;
             for (int i = 0; i <= steps; i++)
             {
-                int n = grid.NearAnyOrder(own.Position + dir * Math.Min(runM, i * cell));
-                foreach (int slot in grid.Found(n))
+                var lq = lanes[Workers.Lane];
+                int n = grid.NearAnyOrder(own.Position + dir * Math.Min(runM, i * cell), lq);
+                foreach (int slot in lq.Found(n))
                 {
                     var x = store[slot];
                     if (x.Entity == own.Entity)
@@ -142,8 +164,9 @@ public sealed class LineOfFire
             if (relations.Hostile(own.Side, side))
                 continue;
             var grid = grids[side]!;
-            int n = grid.NearAnyOrder(p);
-            foreach (int slot in grid.Found(n))
+            var lq = lanes[Workers.Lane];
+            int n = grid.NearAnyOrder(p, lq);
+            foreach (int slot in lq.Found(n))
             {
                 var x = store[slot];
                 if (x.Entity != own.Entity && (unit == null || groups.Of(x.Entity) != unit) && (x.Position - p).LengthSquared <= r2)
@@ -174,8 +197,9 @@ public sealed class LineOfFire
             for (int i = 0; i <= steps; i++)
             {
                 var p = one ? a + dir * (len / 2) : a + dir * Math.Min(len, i * cell);
-                int n = grid.NearAnyOrder(p);
-                foreach (int slot in grid.Found(n))
+                var lq = lanes[Workers.Lane];
+                int n = grid.NearAnyOrder(p, lq);
+                foreach (int slot in lq.Found(n))
                 {
                     var x = store[slot];
                     if (x.Entity == own.Entity)

@@ -97,6 +97,13 @@ public sealed class Workers : IDisposable
     /// <summary>The worker threads (0: inline).</summary>
     public int Count => threads.Length;
 
+    [ThreadStatic] static int lane;
+
+    /// <summary>The calling thread's slot among <see cref="Participants"/>: a worker's number (1..), fixed for its life;
+    /// 0 for any other thread (the dispatching one). What a class keeping scratch per worker indexes it by, where handing
+    /// the job's worker number down every call would reach too far (the AI's knowledge, docs/battle/workers.md W13).</summary>
+    public static int Lane => lane;
+
     /// <summary>Per-worker scratch slots a job needs: the workers and the dispatching thread.</summary>
     public int Participants => threads.Length + 1;
 
@@ -242,6 +249,7 @@ public sealed class Workers : IDisposable
 
     void Work(int w)
     {
+        lane = w;
         int seen = 0;
         while (true)
         {

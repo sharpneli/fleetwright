@@ -22,25 +22,15 @@ namespace Fleetwright.Sim.Ai.Captains;
 /// call only (the plan: every captain's temper drawn at load is a later choice).</summary>
 public sealed partial class CaptainLayer
 {
-    /// <summary>Every ship hurt and afloat whose people haven't left her: her captain's call (a captain made for one with
-    /// water aboard or one fighting).</summary>
-    void EndPass(in AiContext ctx)
+    /// <summary>A ship hurt and afloat whose people haven't left her: her captain's call (a captain made for one with water
+    /// aboard or one fighting, before the think).</summary>
+    void EndOne(in AiContext ctx, ShipState own, int slot)
     {
-        var store = ctx.Ships;
-        for (int slot = 0; slot < store.Slots; slot++)
-        {
-            if (!store.IsAlive(slot) || store.Combat.Condition(slot) is not { Damaged: true, Status: ShipStatus.Afloat } k || k.Abandoned)
-                continue;
-            var own = store[slot];
-            if (!ctx.Due(own.Entity))
-                continue;
-            hurtAny |= k.WaterT > 0;   // her captain keeps thinking while she's wet (Hurt)
-            int i = Find(own.Entity);
-            if (i < 0 && k.WaterT <= 0 && encounters.Of(slot, own.Entity) == 0)
-                continue;   // dry and out of the fight: nothing to judge, no captain made for it
-            ref var cap = ref i >= 0 ? ref captains[i] : ref Get(own.Entity);
-            Ending(ctx, ref cap, own, slot, k);
-        }
+        if (ctx.Ships.Combat.Condition(slot) is not { Damaged: true, Status: ShipStatus.Afloat } k || k.Abandoned)
+            return;
+        hurtAny |= k.WaterT > 0;   // her captain keeps thinking while she's wet (Hurt)
+        if (Find(own.Entity) is int i and >= 0)
+            Ending(ctx, ref captains[i], own, slot, k);   // none: dry and out of the fight, nothing to judge
     }
 
     void Ending(in AiContext ctx, ref Captain cap, ShipState own, int slot, ShipCondition k)

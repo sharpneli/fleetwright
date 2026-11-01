@@ -24,27 +24,6 @@ namespace Fleetwright.Sim.Ai.Captains;
 /// </list></summary>
 public sealed partial class CaptainLayer
 {
-    // the enemies in sight within the widest reach this think: bearing off the bow, range, a torpedo craft
-    (double Rel, double Range, bool Small)[] crewEnemies = new (double, double, bool)[64];
-    int crewEnemyCount;
-    int[] crewTargets = new int[64];   // the stations to fill, in order
-
-    /// <summary>The reliefs of every ship hurt that isn't fighting (those are the fire pass's), captain or not: a lull after
-    /// the action is when her guns are manned again (Southampton's stokers).</summary>
-    void HurtPass(in AiContext ctx)
-    {
-        var store = ctx.Ships;
-        hurtAny = false;
-        for (int slot = 0; slot < store.Slots; slot++)
-        {
-            if (!store.IsAlive(slot) || !ctx.Due(store[slot].Entity))
-                continue;
-            var k = store.Combat.Condition(slot);
-            if (k.CrewLost <= 0 || Fighting && (encounters.Of(slot, store[slot].Entity) != 0 || store.Combat.Engaged(slot) > 0))
-                continue;   // a fighting ship's are the fire pass's
-            Crew(ctx, store[slot], slot, fighting: false);
-        }
-    }
 
     bool hurtAny;   // a ship hurt as of the passes: her captain thinks for her reliefs
 
@@ -154,26 +133,37 @@ public sealed partial class CaptainLayer
     readonly int[] sideSeenCount = new int[256];
     readonly (Vec3d At, bool Small)[]?[] sideSeen = new (Vec3d, bool)[]?[256];
 
-    /// <summary>The enemies her side holds in sight within a range of her.</summary>
-    void Enemies(in AiContext ctx, ShipState own, double within)
+    /// <summary>Her side's enemies in sight, worked out by the first of its ships to ask at a moment, the rest waiting for
+    /// it (docs/battle/workers.md W13).</summary>
+    void EnemiesOf(in AiContext ctx, int side)
     {
-        crewEnemyCount = 0;
-        int side = own.Side;
-        if (sideSeenMs[side] != ctx.NowMs + 1)
+        if (Volatile.Read(ref sideSeenMs[side]) == ctx.NowMs + 1)
+            return;
+        lock (sideSeen)
         {
-            (sideSeenMs[side], sideSeenCount[side]) = (ctx.NowMs + 1, 0);
-            var pic = ctx.World.Sightings.Of(own.Side);
-            if (pic != null)
+            if (sideSeenMs[side] == ctx.NowMs + 1)
+                return;
+            sideSeenCount[side] = 0;
+            if (ctx.World.Sightings.Of((byte)side) is { } pic)
                 for (int i = 0; i < pic.Count; i++)
                 {
-                    if (!pic[i].InSight || pic.Out(pic[i].Entity) || !ctx.World.Relations.Hostile(own.Side, pic[i].Side))
+                    if (!pic[i].InSight || pic.Out(pic[i].Entity) || !ctx.World.Relations.Hostile((byte)side, pic[i].Side))
                         continue;
                     var list = sideSeen[side] ??= new (Vec3d, bool)[64];
                     if (sideSeenCount[side] == list.Length)
                         Array.Resize(ref sideSeen[side], list.Length * 2);
                     sideSeen[side]![sideSeenCount[side]++] = (pic.EstimateAt(i, ctx.NowMs, ctx.Settings).Position, pic[i].Type is ShipType.Small or ShipType.Destroyer);
                 }
+            Volatile.Write(ref sideSeenMs[side], ctx.NowMs + 1);   // worked out: read from here on
         }
+    }
+
+    /// <summary>The enemies her side holds in sight within a range of her.</summary>
+    void Enemies(in AiContext ctx, ShipState own, double within)
+    {
+        crewEnemyCount = 0;
+        int side = own.Side;
+        EnemiesOf(ctx, side);
         var p = own.Position;
         var seen = sideSeen[side];
         for (int i = 0; i < sideSeenCount[side]; i++)
@@ -195,6 +185,7 @@ public sealed partial class CaptainLayer
         public int[] Conn = [];
         public (int Mount, int Gun, int Handling, bool Chief)[] Mounts = [];
         public (int Group, int Crew)[] Stokers = [];
+        public int Targets, Sources;   // the scratch big enough for her: every station a target, every mount, party and stokehold a source
     }
 
     readonly Dictionary<ShipClass, CrewPlan> crewPlans = [];
@@ -229,13 +220,9 @@ public sealed partial class CaptainLayer
             mounts.Add((m, Casualties.Part(row.Component), row.Barbette >= 0 ? Casualties.Part(row.Barbette) : -1,
                 row.Battery >= 0 && cls.Batteries[row.Battery].Chief));
         }
-        // the scratch big enough for her: every station a target, every mount, party and stokehold a source
+        // the scratch big enough for her (each lane's sized to it before a think)
         int targets = conn.Count + 2 * mounts.Count, sources = 3 * mounts.Count + ShipCondition.MaxParties + stokers.Count;
-        if (crewTargets.Length < targets)
-            Array.Resize(ref crewTargets, targets);
-        if (crewSources.Length < sources)
-            Array.Resize(ref crewSources, sources);
-        return crewPlans[cls] = new CrewPlan { Conn = [.. conn], Mounts = [.. mounts], Stokers = [.. stokers] };
+        return crewPlans[cls] = new CrewPlan { Conn = [.. conn], Mounts = [.. mounts], Stokers = [.. stokers], Targets = targets, Sources = sources };
     }
 
     /// <summary>Her stations short of men filled in order from her spare men (see the class): the spare men gathered once,
@@ -281,7 +268,6 @@ public sealed partial class CaptainLayer
         }
     }
 
-    (long Source, int Group, int Men, bool Supply)[] crewSources = new (long, int, int, bool)[64];
 
     void AddTarget(ref int n, int g)
     {

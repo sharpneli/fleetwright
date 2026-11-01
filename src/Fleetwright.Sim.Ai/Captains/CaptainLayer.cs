@@ -490,126 +490,107 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         }
     }
 
-    public void Think(in AiContext ctx)
+    /// <summary>His own think (docs/battle/plan.md 2.3b, 2.6): what his order asks of him now, a behaviour worked at or a
+    /// route watched; nothing while there's nothing to do, his ship going down, given up, or carried on her guide's rails.</summary>
+    void Behave(in AiContext ctx, ref Captain cap, ShipState own, int slot)
     {
-        thinkMs = ctx.NowMs;
-        MarkUnderFire(ctx);
-        for (int i = 0; i < count; i++)
+        if (!IsActive(cap) || ctx.Ships.Combat.Condition(slot) is not { Status: ShipStatus.Afloat, IsGivenUp: false })
+            return;   // nothing to do, his ship going down, or given up (docs/battle/striking.md)
+        if (cap.SmokeMade && cap.Order != CaptainOrder.Home)
+            CoverRetreat(ctx, ref cap, own, slot, near: false);   // another order: the smoke he made for his retreat stops
+        if (cap.Watch)
         {
-            ref var cap = ref captains[i];
-            int slot = ctx.Ships.SlotOf(cap.Entity);
-            if (slot < 0)
+            // a route the player gave a ship out of its line: at its end, back to its admiral
+            if (own.RouteLoop)
+                cap.Watch = false;   // a patrol has no end
+            else if (own.Helm != Helm.Route && cap.HeldUntilMs == 0)   // off it while holding a course (a comb, a light) isn't its end
             {
-                Remove(i--);   // the ship is gone
-                continue;
+                (cap.Watch, cap.Order) = (false, CaptainOrder.Course);
+                if (groups.Of(cap.Entity)?.DetachmentOf(cap.Entity) == Detachment.Nudged)
+                    ctx.Issue(GroupSystem.Detach(cap.Entity, Detachment.InLine));
             }
-            if (!ctx.Due(cap.Entity))
-                continue;   // not his tick (docs/battle/workers.md W12)
-            if (!IsActive(cap) || ctx.Ships.Combat.Condition(slot) is not { Status: ShipStatus.Afloat, IsGivenUp: false })
-                continue;   // nothing to do, his ship going down, or given up (docs/battle/striking.md)
-            var own = ctx.Ships[slot];
-            if (cap.SmokeMade && cap.Order != CaptainOrder.Home)
-                CoverRetreat(ctx, ref cap, own, slot, near: false);   // another order: the smoke he made for his retreat stops
-            if (cap.Watch)
-            {
-                // a route the player gave a ship out of its line: at its end, back to its admiral
-                if (own.RouteLoop)
-                    cap.Watch = false;   // a patrol has no end
-                else if (own.Helm != Helm.Route && cap.HeldUntilMs == 0)   // off it while holding a course (a comb, a light) isn't its end
-                {
-                    (cap.Watch, cap.Order) = (false, CaptainOrder.Course);
-                    if (groups.Of(cap.Entity)?.DetachmentOf(cap.Entity) == Detachment.Nudged)
-                        ctx.Issue(GroupSystem.Detach(cap.Entity, Detachment.InLine));
-                }
-                continue;
-            }
-            if (ctx.Ships.RidesAnother(slot))
-                continue;   // carried on its guide's rails, held exactly on station: an order would only derail the line
-            if (cap.HeldUntilMs > ctx.NowMs)
-                continue;   // combing a torpedo's track, or turned from a light: that first
-            if (cap.FleeMs != 0)
-            {
-                FleeThink(ctx, ref cap, own);
-                continue;
-            }
-            if (cap.Order != CaptainOrder.Fight && Tasks?.Of(Unit.Ship(cap.Entity)).Kind == Ai.Tasks.TaskKind.Scout && groups.UnitOf(cap.Entity) == null)
-                Judge.Call(ctx, own, fights: false);   // a scout alone: his own call, for his task (docs/battle/workers.md W11)
-            if (cap.Order == CaptainOrder.Fight)
-            {
-                FightThink(ctx, ref cap, own, slot);
-                continue;
-            }
-            if (cap.Order == CaptainOrder.Home)
-            {
-                HomeThink(ctx, ref cap, own, slot);
-                continue;
-            }
-            int target = new Unit(cap.Target).ShipOf(groups);
-            if (target == 0 || target == cap.Entity || !ctx.Picture.TryGet(own.Side, target, out var t))
-            {
-                (cap.Order, cap.Target, cap.AskedKn) = (CaptainOrder.Course, 0, own.SpeedOrderKn);   // lost: he holds his course
-                continue;
-            }
-            double course, kn;
-            if ((cap.Order == CaptainOrder.Follow || cap.Order == CaptainOrder.Station && cap.AbeamM == 0 && cap.DistanceM > 0) &&
-                ctx.Ships.SlotOf(target) is int ahead and >= 0)
-            {
-                // in line ahead in the dark: she keeps station only on a next ahead she makes out (docs/battle/night.md Q7)
-                bool sees = SeesAhead(ctx, own, ctx.Ships[ahead]);
-                if (!sees)
-                {
-                    if (cap.Reason == CaptainReason.None)
-                        cap.Reason = CaptainReason.LostTouch;
-                    continue;   // the course and speed she had
-                }
-                if (cap.Reason == CaptainReason.LostTouch)
-                    cap.Reason = CaptainReason.None;
-            }
-            if (own.Tier == ClockTier.Coarse && cap.Order is CaptainOrder.Follow or CaptainOrder.Station or CaptainOrder.Shadow)
-            {
-                // coarse, deciding once a step: steer for where the station will be a step on (a trail recorded once
-                // a minute is no track to steer by; the line ahead's turns are its guide's rails, ShipSystem.Tiers.cs)
-                if (own.YawRate != 0)
-                    continue;   // mid-turn (turning together with its guide, ShipSystem.Tiers.cs, or his own last order): done within a step or two, steered on from where it comes out
-                var s = ctx.Settings;
-                var (astern, abeam) = cap.Order switch
-                {
-                    CaptainOrder.Shadow => Behaviours.ShadowStation(own, t, cap.DistanceM > 0 ? cap.DistanceM : ShadowRange(ctx, own)),
-                    CaptainOrder.Follow => (cap.DistanceM > 0 ? cap.DistanceM : s.FollowDistanceLengths * own.Handling.LengthM, 0.0),
-                    _ => (cap.DistanceM, cap.AbeamM),
-                };
-                (course, kn) = Behaviours.Rendezvous(own, t, astern, abeam, s.CoarseRendezvousSteps * s.CoarseStepMs / 1000.0, s);
-            }
-            else if (cap.Order == CaptainOrder.Follow || cap.Order == CaptainOrder.Station && cap.AbeamM == 0 && cap.DistanceM > 0)
-            {
-                // in line ahead (a station dead astern; one dead ahead, a scout's, is a plain station): on the track the
-                // ship ahead steamed, so he turns where it turned (laid straight astern
-                // of it when he starts following it, or comes off rails, where the line steamed straight)
-                var s = ctx.Settings;
-                double distance = cap.DistanceM > 0 ? cap.DistanceM : s.FollowDistanceLengths * own.Handling.LengthM;
-                var track = cap.Track ??= new Trail(s.FollowTrackPoints);
-                if (track.Of != target || track.Count == 0 || ctx.NowMs - track.LastMs > 3 * s.CaptainPeriodMs)
-                    track.Lay(target, t.Position, t.Forward, 1.5 * distance + 2000, s.FollowTrackStepM, ctx.NowMs);
-                track.Record(t.Position, s.FollowTrackStepM, ctx.NowMs);
-                if (!Behaviours.Track(own, t, track, distance, s, out course, out kn))
-                    (course, kn) = Behaviours.Station(own, t, distance, 0, s);   // off the track: onto its line first
-            }
-            else if (cap.Order == CaptainOrder.Shadow)
-                (course, kn) = Behaviours.Shadow(own, t, cap.DistanceM > 0 ? cap.DistanceM : ShadowRange(ctx, own), ctx.Settings);
-            else
-                (course, kn) = cap.Order == CaptainOrder.Station ? Behaviours.Station(own, t, cap.DistanceM, cap.AbeamM, ctx.Settings) : Behaviours.Run(own, t);
-            if (cap.LimitKn > 0)
-                kn = Math.Min(kn, cap.LimitKn);
-            if (cap.Order is CaptainOrder.Follow or CaptainOrder.Station)
-                course = SteadyForTheGuns(ctx, own, slot, course);
-            Give(ctx, own, course, kn);
+            return;
         }
-        HurtPass(ctx);   // first: it starts the hurt flag afresh, the fire pass's hurt ships add to it
-        if (Fighting)
-            FirePass(ctx);
-        EndPass(ctx);   // the captains' call on their ships' ends (docs/battle/striking.md SK2)
-        HeldLightsPass(ctx);
-        Recount();
+        if (ctx.Ships.RidesAnother(slot))
+            return;   // carried on its guide's rails, held exactly on station: an order would only derail the line
+        if (cap.HeldUntilMs > ctx.NowMs)
+            return;   // combing a torpedo's track, or turned from a light: that first
+        if (cap.FleeMs != 0)
+        {
+            FleeThink(ctx, ref cap, own);
+            return;
+        }
+        if (cap.Order != CaptainOrder.Fight && Tasks?.Of(Unit.Ship(cap.Entity)).Kind == Ai.Tasks.TaskKind.Scout && groups.UnitOf(cap.Entity) == null)
+            Judge.Call(ctx, own, fights: false);   // a scout alone: his own call, for his task (docs/battle/workers.md W11)
+        if (cap.Order == CaptainOrder.Fight)
+        {
+            FightThink(ctx, ref cap, own, slot);
+            return;
+        }
+        if (cap.Order == CaptainOrder.Home)
+        {
+            HomeThink(ctx, ref cap, own, slot);
+            return;
+        }
+        int target = new Unit(cap.Target).ShipOf(groups);
+        if (target == 0 || target == cap.Entity || !ctx.Picture.TryGet(own.Side, target, out var t))
+        {
+            (cap.Order, cap.Target, cap.AskedKn) = (CaptainOrder.Course, 0, own.SpeedOrderKn);   // lost: he holds his course
+            return;
+        }
+        double course, kn;
+        if ((cap.Order == CaptainOrder.Follow || cap.Order == CaptainOrder.Station && cap.AbeamM == 0 && cap.DistanceM > 0) &&
+            ctx.Ships.SlotOf(target) is int ahead and >= 0)
+        {
+            // in line ahead in the dark: she keeps station only on a next ahead she makes out (docs/battle/night.md Q7)
+            bool sees = SeesAhead(ctx, own, ctx.Ships[ahead]);
+            if (!sees)
+            {
+                if (cap.Reason == CaptainReason.None)
+                    cap.Reason = CaptainReason.LostTouch;
+                return;   // the course and speed she had
+            }
+            if (cap.Reason == CaptainReason.LostTouch)
+                cap.Reason = CaptainReason.None;
+        }
+        if (own.Tier == ClockTier.Coarse && cap.Order is CaptainOrder.Follow or CaptainOrder.Station or CaptainOrder.Shadow)
+        {
+            // coarse, deciding once a step: steer for where the station will be a step on (a trail recorded once
+            // a minute is no track to steer by; the line ahead's turns are its guide's rails, ShipSystem.Tiers.cs)
+            if (own.YawRate != 0)
+                return;   // mid-turn (turning together with its guide, ShipSystem.Tiers.cs, or his own last order): done within a step or two, steered on from where it comes out
+            var s = ctx.Settings;
+            var (astern, abeam) = cap.Order switch
+            {
+                CaptainOrder.Shadow => Behaviours.ShadowStation(own, t, cap.DistanceM > 0 ? cap.DistanceM : ShadowRange(ctx, own)),
+                CaptainOrder.Follow => (cap.DistanceM > 0 ? cap.DistanceM : s.FollowDistanceLengths * own.Handling.LengthM, 0.0),
+                _ => (cap.DistanceM, cap.AbeamM),
+            };
+            (course, kn) = Behaviours.Rendezvous(own, t, astern, abeam, s.CoarseRendezvousSteps * s.CoarseStepMs / 1000.0, s);
+        }
+        else if (cap.Order == CaptainOrder.Follow || cap.Order == CaptainOrder.Station && cap.AbeamM == 0 && cap.DistanceM > 0)
+        {
+            // in line ahead (a station dead astern; one dead ahead, a scout's, is a plain station): on the track the
+            // ship ahead steamed, so he turns where it turned (laid straight astern
+            // of it when he starts following it, or comes off rails, where the line steamed straight)
+            var s = ctx.Settings;
+            double distance = cap.DistanceM > 0 ? cap.DistanceM : s.FollowDistanceLengths * own.Handling.LengthM;
+            var track = cap.Track ??= new Trail(s.FollowTrackPoints);
+            if (track.Of != target || track.Count == 0 || ctx.NowMs - track.LastMs > 3 * s.CaptainPeriodMs)
+                track.Lay(target, t.Position, t.Forward, 1.5 * distance + 2000, s.FollowTrackStepM, ctx.NowMs);
+            track.Record(t.Position, s.FollowTrackStepM, ctx.NowMs);
+            if (!Behaviours.Track(own, t, track, distance, s, out course, out kn))
+                (course, kn) = Behaviours.Station(own, t, distance, 0, s);   // off the track: onto its line first
+        }
+        else if (cap.Order == CaptainOrder.Shadow)
+            (course, kn) = Behaviours.Shadow(own, t, cap.DistanceM > 0 ? cap.DistanceM : ShadowRange(ctx, own), ctx.Settings);
+        else
+            (course, kn) = cap.Order == CaptainOrder.Station ? Behaviours.Station(own, t, cap.DistanceM, cap.AbeamM, ctx.Settings) : Behaviours.Run(own, t);
+        if (cap.LimitKn > 0)
+            kn = Math.Min(kn, cap.LimitKn);
+        if (cap.Order is CaptainOrder.Follow or CaptainOrder.Station)
+            course = SteadyForTheGuns(ctx, own, slot, course);
+        Give(ctx, own, course, kn);
     }
 
     /// <summary>Whether a ship in line ahead makes out her next ahead (docs/battle/night.md Q7: a station-keeping look, one
@@ -699,6 +680,8 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
 
     void Recount()
     {
+        if (thinking)
+            return;   // made again after the think (docs/battle/workers.md W13)
         (active, lightsHeld) = (0, 0);
         for (int i = 0; i < count; i++)
         {
@@ -903,6 +886,8 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
 
     int Insert(int entity)
     {
+        if (thinking)
+            throw new InvalidOperationException("a captain made while the captains think: the think makes those it needs first");
         if (count == captains.Length)
             Array.Resize(ref captains, captains.Length * 2);
         int i = count;
@@ -918,6 +903,8 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
 
     void Remove(int i)
     {
+        if (thinking)
+            throw new InvalidOperationException("a captain dropped while the captains think");
         Array.Copy(captains, i + 1, captains, i, count - i - 1);
         captains[--count] = default;
     }
