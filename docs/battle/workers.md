@@ -1,6 +1,6 @@
 # Plan: the sim's workers (the job system)
-Status: **agreed 2026-10-24** (the decisions below answered); W0-W4 and W6 built 2026-10-24; W7 tried and left serial; W8's curve measured; the default count capped at 2 (the user, 2026-10-24).
-    Updated: 2026-10-24
+Status: **agreed 2026-10-24** (the decisions below answered); W0-W4 and W6 built 2026-10-24; W7 tried and left serial; W8's curve measured; the default count capped at 2 (the user, 2026-10-24), reassessed whenever more goes onto the workers. The AI on workers (W9-W15, superseding W5) drafted 2026-11-01.
+    Updated: 2026-11-01
 
 The job system the architecture agreed from the start (`docs/world/architecture.md` "Threaded throughout", decision 1)
 and `docs/battle/plan.md` 2.7d left for when the numbers asked for it: a few fixed worker threads under the sim thread,
@@ -176,7 +176,7 @@ workers and with the chunks shuffled. What's left serial-heavy: the AI 32 s (cap
 workers asleep after long moments), smoke upkeep 18 s (the merge, the emission, the index's filing), sighting 14 s,
 gunnery 11 s, damage 10 s.
 
-### W5 The AI's read-only part
+### W5 The AI's read-only part - superseded by W9-W15 (2026-11-01)
 
 The decisions stay sequential (a pick sees the batteries the ships before it put on a target, `CaptainLayer.Fire.cs`
 "the next ships' picks see it at once"; an admiral's orders reach the captains after). What goes wide is what they read:
@@ -251,6 +251,117 @@ better) holds with room: the whole 14 hours average ~2 ms of sim a game second.
 
 **The default count, the user's (2026-10-24): at most 2** (`Workers.DefaultCap`), headless and in the app; `--workers N`
 still takes any count. AI threads of their own may come later. W5 waits: features first.
+
+## The AI on workers (W9-W15) - drafted 2026-11-01
+
+The AI has grown from ~30 s of the Jutland to the largest serial part of a play, and the user's frame for it
+(2026-11-01) is bigger than W5's judgements made ahead: every captain, admiral and commander a think that takes the
+game state in and gives commands out, on the workers.
+
+### Measured 2026-11-01
+
+`shipgen scenario jutland.json --play`, Release, the default 2 workers: **281 s** (115 s on 2026-10-24; the step's
+23 µs a tick unchanged, so not the machine). The probe table:
+
+| | share | s | on workers |
+|---|---|---|---|
+| AI | 49% | 138 | no |
+| of it the captains | 40% | 111 | no |
+| the admirals | 5% | 14 | no |
+| the commander | 5% | 13 (15 ms a think, 47 the longest) | no |
+| Sighting | 20% | 55 | W3 (heavier with the night's lights since) |
+| Gunnery | 8% | 24 | W6 |
+| Ships' step | 8% | 24 | W2 |
+| Smoke, upkeep and queries | ~16% | ~45 | W4 in part |
+| Damage | 5% | 15 | no (W7) |
+
+A trace of the first 90 s (the sim thread): `Matchup.Judge` 21% of it (17.7 s of 85), asked by the captains' fall-back
+8.6 s (`FallBack` judges every own force within `FallBackM`, 150 km: every force on the map, nearest first until one is
+a match, cached a moment), `JudgedNear` 3.4 s (from `FightThink` and the admirals' `AttackStep`), the commander 4.9 s
+(`Assign`, `Enemy`, `Balance`). The captains' fire pass 19 s: the picks 6.7 s (their candidates 2.8 s), torpedoes 3.1 s
+(`NightLight.At` in it), night lights 2.9 s, the torpedo watch 1.2 s.
+
+### What holds it on one thread today
+
+1. **Orders act at once.** `ctx.Issue` and `ctx.Helm` go to `World.Issue`, which applies the command and runs every
+   system's `Applied`: the next captain in the loop reads a world his predecessor just changed.
+2. **Captains read each other on purpose.** The crowd counts (`onChief`, `onOther`: "the next ships' picks see it at
+   once"), the challenge's "a ship of his navy asking her already", the lights and star shell likewise.
+3. **Layers reach into each other.** Admirals call `captains.FireOnSignal` (a launch, then and there), `HoldTorpedoes`,
+   `Release`, `Ask`, and read `FireOf`, `SpeedOf`, `Combing`, `Holds`, `SuperiorsAt`; captains read
+   `Admirals.LineConned`, `Tasks.Of`, `Tasks.Avoids`; the commander reads the tasks. The layers cascade at a shared
+   moment, top down, so an admiral's order reaches his captains the same second.
+4. **Shared lazy caches and scratch.** The judge's moment caches (`units`, `pairs`), `Matchups`' profiles and census,
+   `SeenContacts`' grids; the layers' scratch (`cand*`, `fallCands`, `LineOfFire`, `TorpedoWatch`, the judge's `line`).
+
+The draws are keyed already (`World.Stream(name).Derive(entity...)`), and each layer's state is per unit.
+
+### The model (the user's, 2026-11-01)
+
+- **A think takes the game state in and gives commands out.** A unit writes only its own record and its outbox.
+- **Others see only a unit's outputs:** what its ship does (course, speed, guns on a target, lights, smoke), the
+  orders it sent down, the requests and reports it sent up. Never another unit's inner state, peers or other layers.
+- **Orders land on the next think.** No telepathic cascade within a moment; no signal delay simulated either (the
+  outbox is where one would go, if ever).
+- **One dispatch a layer, the thinks spread over time.** Each unit keeps its period (captains and admirals 1 s, the
+  commander 60 s) but thinks at a phase of its own within it: each fine tick (50 ms, 20 a second) runs the units whose
+  phase it is, a dispatch a layer, each layer's outbox applied after its dispatch in unit order. Every unit thinks
+  every period however many there are (the user: enough slots that every ship has its think in time, no captain
+  waiting on others thinking); no budget a tick, no queue.
+- **The phase** is a slot of the period's ticks, the least filled when the unit's record is made (ties: the lowest),
+  kept in the AI's state and hashed: the slots stay even, and it's the same on any worker count, after a load and in a
+  replay. The coarse tier and rails keep their step (cheap; "What stays out").
+
+Results stay the workers' principles: the same on 0, 2 and 8 workers and shuffled, nothing allocated in play.
+
+### Judgement: the force's and the ship's (the user's, 2026-11-01)
+
+- **The admiral judges from the force's viewpoint**, once a period: his unit against the enemy round it, and its
+  output is the order: fight (and the band), fall back on a force (his is the search of own forces, `FallBack`'s
+  today), hold off, attack.
+- **The captain judges from his ship's viewpoint**: his ship against what's near her, for the decisions that are his
+  within his orders (targets, torpedoes, evading, combing, lights, a ship hopeless where she is turning away, falling
+  out, giving up). One class against the near enemy, so cheaper than his unit's.
+- **A ship alone** is her own admiral: both are hers.
+
+This takes away the duplicated judgement (each captain of a squadron judging the same unit, which spread over the
+ticks would be up to 20 times today's) and fits the admirals' own calls (the user, 2026-10-31: tactical choices are the leading admiral's, with thresholds).
+
+### What follows
+
+- **Herding mostly goes.** A line's captains think on different ticks, so a later one sees the earlier ships' guns on
+  a target (an output). The crowd counts become a reading of the world's battery targets, not shared scratch; only
+  captains on the same tick don't see each other, which the cost of a switch covers (a new target restarts the ranging
+  and the solution, which gunnery models: the pick weighs it, physics, not a rule). The line's fire distribution as
+  doctrine only if herding is left (the user agreed).
+- **The layer-wide passes split.** `MarkUnderFire`, `CountOn`, `HurtPass`, `EndPass`, `HeldLightsPass`, `Recount` walk
+  every ship once a think; on every tick they'd cost 20 times. Each becomes the captain's own, a read-only build before
+  the dispatch from the world (who fires at whom is an output), or kept as it changes.
+- **Spikes flatten.** 250 captains are ~12 a tick; the commander's two sides on different ticks. Better for real time
+  than one moment made parallel, and the gain no longer waits on the worker count.
+- **The commander** is still one item of ~7.5 ms a side on his tick: his per-group judgements (`Assign`, `Enemy`,
+  `Balance`) as a job. Thinking on over several ticks, orders landing at a set game moment, only if that's not enough.
+- **The output changes once** (W10-W12): the balance panel (`shipgen balance`) before and after each, fire
+  distribution by eye.
+
+### The steps
+
+| | |
+|---|---|
+| W9 | The outbox and a Debug guard (`World.Issue` throws during an AI dispatch); orders still applied at once in today's order: output identical. The audit: a think that reads back the world after its own order (it'd read stale with an outbox) keeps what it ordered itself |
+| W10 | Reads become outputs: reports up (fallen out, out of rounds, combing, asking), orders held as received, the direct calls as commands; orders land on the next think. Output changes: the panel |
+| W11 | The force's and the ship's judgement: the admiral's order carries the unit's call, the captain judges his ship. The panel |
+| W12 | Phases: each unit its slot, the layer-wide passes split, the crowd counts from the world and the switch's cost in the pick. The panel, fire distribution by eye |
+| W13 | Per-worker scratch, the warm step (grids, profiles, census, doctrine before a dispatch, lazy creation inside one an error asserted in Debug); captains as a job a tick: 0 = 2 = 8 workers, shuffled, zero-allocation tests |
+| W14 | Admirals, tasks and the commander as jobs; the commander's judgements split |
+| W15 | The curve measured (0, 1, 2, 4, 8); the worker cap reassessed (the user: whenever more goes onto the workers) |
+
+### Open items
+
+- Which of the ~25 cross-layer reads become a report, which an order held, which the ship's visible state (W10's list).
+- The captain's latitude under orders, item by item, against the player's overrule (the player's
+  orders beat the AI's; by-hand orders hold).
+- Whether a phase may move when slots get uneven (ships lost), or stays for the unit's life.
 
 ## What to expect
 
