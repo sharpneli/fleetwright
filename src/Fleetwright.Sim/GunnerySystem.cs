@@ -129,6 +129,9 @@ public sealed class GunnerySystem : IWorldSystem
         /// shrunk by, which way it last stepped (-1 down, +1 up, 0 none yet), and how far (m) and in how many steps it has gone
         /// that way in a row.</summary>
         public double WalkStep, WalkRunM;
+        /// <summary>Ranging, the corrections the last over and the last short were fired with, on today's solution (NaN
+        /// none yet): crossed within a pattern, she's found.</summary>
+        public double OverAt, ShortAt;
         public int WalkN, WalkDir, WalkRun;
         /// <summary>Which mount the next partial salvo starts from (the groups alternate), and the tracker's turns seen.</summary>
         public int Group, Turns;
@@ -462,7 +465,7 @@ public sealed class GunnerySystem : IWorldSystem
             fc = new Fc
             {
                 Alive = true, Generation = gen, Shooter = shooter, Battery = b, Target = target, StartMs = now, Level = lv, Local = row.Local, Preset = level >= 0,
-                FirstHitMs = -1, FirstStraddleMs = -1, EffectMs = -1, LastSign = -1, DirectorLevel = lv, Fit = fit, DirectorFit = fit,
+                FirstHitMs = -1, FirstStraddleMs = -1, EffectMs = -1, LastSign = -1, OverAt = double.NaN, ShortAt = double.NaN, DirectorLevel = lv, Fit = fit, DirectorFit = fit,
                 Table = shells.TableOf(store.Combat.Loadout(slot), b), ElevationDeg = double.NaN, SetCourseDeg = double.NaN, SpoiledMs = -1,
             };
             fc.Bracket = FireControl.Bracket.Open(fit.Computer.FirstStepM);
@@ -1188,6 +1191,7 @@ public sealed class GunnerySystem : IWorldSystem
             return;
         fc.Bracket.Shift(-dr);
         fc.CorrR -= dr;
+        (fc.OverAt, fc.ShortAt) = (fc.OverAt - dr, fc.ShortAt - dr);
         fc.Shift += dr;
     }
 
@@ -1756,15 +1760,27 @@ public sealed class GunnerySystem : IWorldSystem
             Walk(ref fc, sign, at, now);
         else
         {
-            fc.Bracket.Spot(sign, at, now, fc.DriftMs, sv.PatternM, Math.Max(settings.BracketFloorM, settings.BracketFloorPatterns * sv.PatternM));
+            double pattern = Math.Max(settings.BracketFloorM, settings.BracketFloorPatterns * sv.PatternM);
+            fc.Bracket.Spot(sign, at, now, fc.DriftMs, sv.PatternM, pattern);
             fc.CorrR = fc.Bracket.Aim(now, fc.DriftMs);
-            if (sign == FireControl.Sign.Straddle)
+            if (sign == FireControl.Sign.Over)
+                fc.OverAt = at;
+            else if (sign == FireControl.Sign.Short)
+                fc.ShortAt = at;
+            // she's found by a straddle, or by the fall crossing her within a pattern: an over and a short fired that close
+            // (the RN's "correct until the fall crosses the target", the USN's "never below the pattern"); the halving after
+            // it is fire for effect's own (BL1y: the bracket's bounds, widened by the computer's doubt of the rate as they
+            // aged, never closed with perfect information)
+            bool crossed = fc.OverAt - fc.ShortAt is > 0 and var gap && gap <= pattern;
+            if (sign == FireControl.Sign.Straddle || crossed)
             {
-                // the straddle: fire for effect, the spots' mean starting at half what the bracket still doubts
                 if (fc.EffectMs < 0)
                     fc.EffectMs = now;
-                double width = fc.Bracket.HiAt(now, fc.DriftMs) - fc.Bracket.LoAt(now, fc.DriftMs);
+                double width = sign == FireControl.Sign.Straddle ? fc.Bracket.HiAt(now, fc.DriftMs) - fc.Bracket.LoAt(now, fc.DriftMs) : fc.OverAt - fc.ShortAt;
+                if (sign != FireControl.Sign.Straddle)
+                    fc.CorrR = 0.5 * (fc.OverAt + fc.ShortAt);
                 (fc.Phase, fc.Misses, fc.WalkStep, fc.WalkN, fc.WalkDir, fc.WalkRunM, fc.WalkRun) = (FirePhase.Effect, 0, 0.5 * width, 1, 0, 0, 0);
+                (fc.OverAt, fc.ShortAt) = (double.NaN, double.NaN);
             }
         }
         // the layers lay on again after a correction; the range rate is the computer's, from its readings (the rate spot,
@@ -1804,6 +1820,7 @@ public sealed class GunnerySystem : IWorldSystem
         {
             fc.Bracket = FireControl.Bracket.Beyond(sign, at, now, FirstStep(fc));
             (fc.Phase, fc.Misses, fc.WalkDir, fc.WalkRunM, fc.WalkRun, fc.Rung) = (FirePhase.Ranging, 0, 0, 0, 0, 0);
+            (fc.OverAt, fc.ShortAt) = sign == FireControl.Sign.Over ? (at, double.NaN) : (double.NaN, at);
             fc.CorrR = fc.Bracket.Aim(now, fc.DriftMs);
             return;
         }
@@ -1828,7 +1845,7 @@ public sealed class GunnerySystem : IWorldSystem
                 (FireControl.Bracket.About(fc.CorrR, fc.Bracket.Step, now, fc.Bracket.Step), FirePhase.Ranging, 0, 0, 0, 0);
         else
             fc.Bracket.Widen(now, fc.DriftMs, fc.Bracket.Step);
-        fc.Rung = 0;
+        (fc.Rung, fc.OverAt, fc.ShortAt) = (0, double.NaN, double.NaN);
     }
 
     /// <summary>The first step beyond a bound (F6): twice the error the computer expects of its own solution over the time

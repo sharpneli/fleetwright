@@ -196,9 +196,9 @@ public class FireWorthTests(ITestOutputHelper output)
     public void A_ladder_that_has_bracketed_her_halves_into_the_bracket()
     {
         // an armoured cruiser's EU-Anzeiger on another 8 km off, both steady, by the German ladder: a group whose falls
-        // closed the bracket is followed by one inside it at a quarter of its width, so the groups close in instead of
-        // falling where the last fell (BL1u: at a fixed step the ladder never got nearer than its step, and ranged on for
-        // minutes against a steady target)
+        // cross her within a pattern has found her, and fire for effect's spots close in from there (BL1y); a group that
+        // closed the bracket without is followed by one inside it at a quarter of its width (BL1u: at a fixed step the
+        // ladder never got nearer than its step, and ranged on for minutes against a steady target)
         var steps = new List<double>();
         int effect = 0, ranging = 0;
         for (ulong seed = 1; seed <= 3; seed++)
@@ -215,7 +215,7 @@ public class FireWorthTests(ITestOutputHelper output)
         }
         output.WriteLine($"ladder steps {string.Join(", ", steps.Select(s => s.ToString("0")))}; ranging {ranging} of {effect} after the first fire for effect");
         Assert.True(steps.Count >= 3, "she laddered");
-        Assert.True(steps.Min() < 0.5 * steps.Max(), "a later group closed in");
+        Assert.True(steps.Count <= 6 || steps.Min() < 0.5 * steps.Max(), "a group or two found her, or a later group closed in");
         Assert.True(ranging < 0.2 * effect, "and she came to fire for effect");
     }
 }

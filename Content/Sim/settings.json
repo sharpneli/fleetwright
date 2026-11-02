@@ -251,7 +251,7 @@
   "SplashMisreadShare": 0.3,
   "BracketFloorPatterns": 1,
   "BracketFloorM": 92,
-  "SpotStepFloorM": 23,
+  "SpotStepFloorM": 46,
   "RangeLostCalls": 4,
   "RangingWaitMarginMs": 15000,
   "ReadingGateSigmas": 3,

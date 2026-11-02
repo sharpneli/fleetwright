@@ -773,8 +773,11 @@ public sealed record SimSettings
     public double BracketFloorPatterns { get; init; } = 1;
     public double BracketFloorM { get; init; } = 92;
 
-    /// <summary>Firing for effect, the spots' running mean never steps less than this, m [EST: a range dial's 25 yd].</summary>
-    public double SpotStepFloorM { get; init; } = 23;
+    /// <summary>Firing for effect, the spots' running mean never steps less than this, m [EST: 50 yd, the RN's spotting
+    /// corrections in fifties and hundreds]: the rangetakers' error wanders over minutes (`RangefinderWanderTauS`) and the
+    /// spots must follow it (BL1y: at 23 m the mean lagged a closing range by 50-250 m; at 92 it rocked across a target
+    /// smaller than its step).</summary>
+    public double SpotStepFloorM { get; init; } = 46;
 
     /// <summary>Firing for effect, the range is lost only after this many calls the same way in a row, at least [EST: by
     /// chance one in eight; the RN's three misses came of the salvos' scatter as often as of a lost range].</summary>
