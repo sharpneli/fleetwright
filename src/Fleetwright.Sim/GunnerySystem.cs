@@ -151,7 +151,7 @@ public sealed class GunnerySystem : IWorldSystem
         public bool SetAside;
         /// <summary>The last spot's call (a FireControl.Sign; -1 none yet).</summary>
         public int LastSign;
-        public int Salvos, Shells, Hits, Straddles, Arm, SensorCount, PendHead, PendCount;
+        public int Salvos, Shells, Hits, Straddles, Arm, SensorCount, SensorSet, PendHead, PendCount;
         /// <summary>The shooter's condition's version its instruments were picked at (damage: a director lost).</summary>
         public int Condition;
         /// <summary>The fire-control units it reads from (a bit a unit), and whether a working one of its own was held by a
@@ -183,6 +183,10 @@ public sealed class GunnerySystem : IWorldSystem
         /// draw each reading, or a wander, moved the guns with them): the instrument's own bias, its man's misjudgement of
         /// her range and of her bearing, each in sigmas.</summary>
         public double Bias, RangeZ, BearingZ;
+        /// <summary>Its cuts on the plot so far, how far they lie off the computer's line on average in range (m) and
+        /// bearing (deg), and their weights (1/sigma² of its last reading).</summary>
+        public int Cuts;
+        public double OffRangeM, OffBearingDeg, WRange, WBearing;
         public long NextMs;
     }
 
@@ -588,12 +592,14 @@ public sealed class GunnerySystem : IWorldSystem
                 (fc.Local, fc.Level, fc.Fit) = (false, fc.DirectorLevel, fit);   // a director back (E4: a timed outage over): under it again
         }
         fc.SensorCount = n;
+        fc.SensorSet++;   // readings of the set before still in the computer's queue go in as they are
         fc.SpotHeightM = 0;
         var optics = fc.Fit.Optics;
         for (int k = 0; k < n; k++)
         {
             ref var s = ref sensors[f * MaxSensors + k];
             (s.Bias, s.RangeZ, s.BearingZ) = (r.NextGaussian(), r.NextGaussian(), r.NextGaussian());
+            (s.Cuts, s.OffRangeM, s.OffBearingDeg) = (0, 0, 0);
             // put on her at once, its first reading now (the user, 2026-10-27: one at a random point of its cycle left a
             // layer by eye looking at a ship alongside for up to a minute); its own rate from there
             s.NextMs = now;
@@ -850,7 +856,7 @@ public sealed class GunnerySystem : IWorldSystem
             // correction: a director forward and one aft see the target on bearings tens of mils apart close in)
             pending[at2] = new FcReading
             {
-                Ms = now, ArriveMs = now + latencyMs, From = ship.Position, OwnVelocity = ownV, Z = z,
+                Sensor = k, SensorSet = fc.SensorSet, Ms = now, ArriveMs = now + latencyMs, From = ship.Position, OwnVelocity = ownV, Z = z,
                 RangeM = Earth.Distance(ship.Position, z), BearingDeg = Earth.Bearing(ship.Position, z), SigmaRangeM = sr, SigmaBearingRad = sb, R11 = r11,
                 R12 = r12, R22 = r22,
             };
@@ -1129,27 +1135,57 @@ public sealed class GunnerySystem : IWorldSystem
     /// course and speed.</summary>
     void PopReading(ref Fc fc, int f, in ShipState target, long now, Vec3d ownP, Vec3d ownV)
     {
-        ref readonly var r = ref pending[f * PendingCap + fc.PendHead];
+        var r = pending[f * PendingCap + fc.PendHead];
         var computer = fc.Fit.Computer;
         if (!fc.Tracking)
         {
             fc.Tracker = FcTracker.Start(computer, r, Guess(computer, fc, target.Position, target.Forward * target.Speed), FcTracker.GuessSigma(computer, target.Speed));
             (fc.Tracking, fc.TrackMs, fc.OpenMs) = (true, now, now + (long)(settings.GunneryOpenS * 1000));
             fc.JudgeMs = now + (long)(computer.RejudgeS * 1000);
+            Plot(ref fc, f, ref r, r.Z);   // its first cut lies on the line
         }
-        else if (Plausible(ref fc, r, now, ownP, ownV))
-            fc.Tracker.Fix(computer, r);   // the guns follow the computer, the spots' correction on it (BL1z)
+        else
+        {
+            fc.Tracker.At(computer, r.Ms, now, ownP, ownV, out var p, out _);
+            Plot(ref fc, f, ref r, p);
+            if (Plausible(ref fc, r, p))
+                fc.Tracker.Fix(computer, r);   // the guns follow the computer, the spots' correction on it (BL1z)
+        }
         fc.PendHead = (fc.PendHead + 1) % PendingCap;
         fc.PendCount--;
+    }
+
+    /// <summary>A reading's cut on the plot, and what the computer takes from it (docs/battle/balance.md BL1ab): the plot
+    /// marked each instrument's cuts with its own symbol, so the plotter saw how each lay off the others
+    /// (fire-control-research.md §3.5, the 1918 handbook) and drew his line through the middle of them all, not toward
+    /// whichever had cut last. Each instrument's offset from the computer's line (p, where it has her at the reading's
+    /// time) is the running mean of its last <see cref="SimSettings.PlotCuts"/> cuts; the reading goes in less its offset
+    /// from the instruments' mean, each weighed by its spread.</summary>
+    void Plot(ref Fc fc, int f, ref FcReading r, Vec3d p)
+    {
+        if (r.SensorSet != fc.SensorSet || r.Sensor >= fc.SensorCount)
+            return;
+        var set = sensors.AsSpan(f * MaxSensors, fc.SensorCount);
+        ref var s = ref set[r.Sensor];
+        double a = 1.0 / Math.Min(++s.Cuts, settings.PlotCuts);
+        s.OffRangeM += a * (r.RangeM - Earth.Distance(r.From, p) - s.OffRangeM);
+        s.OffBearingDeg += a * (Math.IEEERemainder(r.BearingDeg - Earth.Bearing(r.From, p), 360) - s.OffBearingDeg);
+        (s.WRange, s.WBearing) = (1 / Math.Max(r.SigmaRangeM * r.SigmaRangeM, 1e-6), 1 / Math.Max(r.SigmaBearingRad * r.SigmaBearingRad, 1e-12));
+        double mr = 0, wr = 0, mb = 0, wb = 0;
+        foreach (ref readonly var o in set)
+            if (o.Cuts > 0)
+                (mr, wr, mb, wb) = (mr + o.WRange * o.OffRangeM, wr + o.WRange, mb + o.WBearing * o.OffBearingDeg, wb + o.WBearing);
+        double range = Math.Max(r.RangeM - s.OffRangeM + mr / wr, 100), bearing = r.BearingDeg - s.OffBearingDeg + mb / wb;
+        (r.Z, r.R11, r.R12, r.R22) = Track.Reading(r.From, range, bearing, r.SigmaRangeM, r.SigmaBearingRad);
+        (r.RangeM, r.BearingDeg) = (range, Mod(bearing));
     }
 
     /// <summary>Whether a reading is one she could have made (the short-range bug hunt, 2026-10-18: "Sir, the target
     /// teleported 200 m!"): one more than 3 sigma off the computer's own prediction for its time (the prediction's doubt
     /// and the reading's together) is set aside, unless the one before was too: two in a row, and she really did move, or
     /// the old picture was wrong.</summary>
-    bool Plausible(ref Fc fc, in FcReading r, long now, Vec3d ownP, Vec3d ownV)
+    bool Plausible(ref Fc fc, in FcReading r, Vec3d p)
     {
-        fc.Tracker.At(fc.Fit.Computer, r.Ms, now, ownP, ownV, out var p, out _);
         double predicted = Earth.Distance(r.From, p);
         double sigma = Math.Sqrt(Math.Pow(fc.Tracker.PositionSigma(Earth.Forward(p, Earth.Bearing(r.From, p))), 2) + r.SigmaRangeM * r.SigmaRangeM);
         bool odd = Math.Abs(r.RangeM - predicted) > settings.ReadingGateSigmas * sigma;

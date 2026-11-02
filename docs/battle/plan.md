@@ -18,9 +18,9 @@ reopened 2026-11-01 (BL1j-BL1n: the roll averaged over the hull and counted once
 the panel reading every hit rate beside its range; then BL1o-q, the gunnery officer's and the captain's judgement under
 fire; BL1t-u, no pulsing falls under helm, the German ladder halving; BL5e-h, the targets by doctrine, the screens' station,
 the main guns for heavy ships, the day attack's gain out of reach); AI threading built (the user, 2026-11-01: `workers.md` W9-W15, every captain, admiral and commander a think from state to commands, spread over the ticks; W9-W14 done 2026-11-02, the cap for the user); the user's playtest of squadrons (2026-11-02): BL1v-z built (the error ladder,
-`duel --errors`; the spots' running mean; ranging ends when the fall crosses her; the guns follow the computer); BL1aa reading errors once per target; next
-(the user, 2026-11-02) the computer's swing (its solution moves ~58 m salvo to salvo in fire for effect, likely its
-instruments read in turn each with its own fixed error: balance.md BL1aa "Left"), then `salvo_pct` derived from first
+`duel --errors`; the spots' running mean; ranging ends when the fall crosses her; the guns follow the computer); BL1aa reading errors once per target; BL1ab the plot
+takes each instrument's offset off its cuts (the computer's swing salvo to salvo 82 → 11 m, readings alone); next
+(the user, 2026-11-02) `salvo_pct` derived from first
 principles rather than set (the user: "it feels like ad hoc number as we are meant to reproduce realistic results from first
 principles without ad hoc numbers. We should derive those numbers": the salvo's common error from what makes it, the
 salvo-mean muzzle velocity, laying, roll, servo, fire-control-research.md §1 item 4, §7), then the captains' cost of switching targets (parked:

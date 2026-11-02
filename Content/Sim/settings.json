@@ -255,6 +255,7 @@
   "RangeLostCalls": 4,
   "RangingWaitMarginMs": 15000,
   "ReadingGateSigmas": 3,
+  "PlotCuts": 5,
   "LayerSettleS": 7,
   "QuickFirerReloadS": 16,
   "FireDisciplines": [

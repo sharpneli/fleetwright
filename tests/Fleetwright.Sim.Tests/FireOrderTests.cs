@@ -369,10 +369,11 @@ public class FireOrderTests(ITestOutputHelper output)
         // over the first 5 minutes: hit and slowed later she can't refuse them, and with nowhere to fall back on she fights
         // (she turned back at about 330 s once the battleships' after control rangefinders read too, fire-control.md F4b, and
         // at about 250 s once their turrets' report to the computer as well, F5; from 16 km they hit her five times in her
-        // first three minutes once their instruments read at once, 2026-10-27, and she fought: so 18 km)
+        // first three minutes once their instruments read at once, 2026-10-27, and she fought: so 18 km; at 18 km a hit at about
+        // 150 s took her speed below theirs once their plots took the mean of their rangefinders, BL1ab: so 19 km)
         var ships = new List<Placed> { new("lion", 0, 0, 90, 18, 0) };
         for (int i = 0; i < 4; i++)
-            ships.Add(new Placed("super_dreadnought", 90 + i * 3, 18_000, 270, 15, 1));
+            ships.Add(new Placed("super_dreadnought", 90 + i * 3, 19_000, 270, 15, 1));
         var (w, ai) = Make([.. ships]);
         w.Apply(ai.Orders.Fight(Unit.Ship(1)));
         Run(w, 30);

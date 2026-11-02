@@ -787,6 +787,11 @@ public sealed record SimSettings
     /// <summary>A reading more than this many sigma off the computer's own prediction is set aside, unless the next is too.</summary>
     public double ReadingGateSigmas { get; init; } = 3;
 
+    /// <summary>How many of an instrument's last cuts the plotter judges its offset from the others by (BL1ab) [INFERRED: a
+    /// plot sheet's few minutes, at two readings a minute]: its errors are held for a target, so this only follows what the
+    /// range changes in them.</summary>
+    public int PlotCuts { get; init; } = 5;
+
     /// <summary>After a spot's correction, the next salvo waits this long for the layers to lay on again, s (fire-control.md
     /// F6d: New York's main battery spent 10 s of its 66 at the director, the USN's secondaries of 1929 fired every 7-10 s,
     /// computing.md §2.5; salvos at unchanged settings go as the guns load, Bismarck's ladder 2 s apart). A battery whose
