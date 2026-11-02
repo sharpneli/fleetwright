@@ -189,11 +189,48 @@ public class GunneryTests(ITestOutputHelper output)
     }
 
     /// <summary>A class refitted: its main battery's fire control the blocks named (the catalogue's, or its design's own).</summary>
-    static ShipClass Refit(string name, string optics, string computer, string sights)
+    static ShipClass Refit(string name, string optics, string computer, string sights, Func<Shipgen.ComputerTechInput, Shipgen.ComputerTechInput>? change = null)
     {
         var d = Shipgen.Design.Load(Fleet.Get(name).Case.DesignPath);
+        if (change != null)
+        {
+            // the computer's block changed, as the design's own
+            var b = Shipgen.FireControlTemplates.Get(computer)!.Value;
+            var tech = new Dictionary<string, Shipgen.FcTechInput>(d.FireControlTech ?? []) { [computer + ", changed"] = b with { Computer = change(b.Computer!) } };
+            (d, computer) = (d with { FireControlTech = tech }, computer + ", changed");
+        }
         d = d with { FireControl = d.FireControl! with { Main = d.FireControl.Main! with { Fit = [optics, computer, sights] } } };
         return ShipClassCompiler.Compile(Shipgen.ShipDesign.Build(d));
+    }
+
+    /// <summary>Hits per shell (%) over n duels, the shooter steaming north at 18 kn, the target at a bearing and range from
+    /// her on a course at a speed, zigzagging zig° either side of it every legS if asked.</summary>
+    static double Engaged(ShipClass shooter, ShipClass target, double bearingDeg, double rangeM, double courseDeg, double kn, double minutes, SimSettings s,
+        int n = 16, double zig = 0, double legS = 75)
+    {
+        var tallies = new GunnerySystem.Tally[n];
+        Parallel.For(0, n, k =>
+        {
+            var w = new World(Start, (ulong)(1 + k), s);
+            int a = w.Ships.AddClass(shooter), b = w.Ships.AddClass(target);
+            var p = Earth.Position(Lat, Lon);
+            var f = Earth.Forward(p, bearingDeg);
+            Earth.Advance(ref p, ref f, rangeM);
+            var (tl, to) = Earth.LatLon(p);
+            w.Apply(ShipSystem.Spawn(a, Lat, Lon, 0, 18, side: 0));
+            w.Apply(ShipSystem.Spawn(b, tl, to, courseDeg, kn, side: 1));
+            w.AdvanceTo(Start + 1);
+            w.Apply(GunnerySystem.Engage(1, 0, 2));
+            var end = Start + (long)(minutes * 60_000);
+            for (int leg = 1; zig > 0 && w.Time.Ms < end.Ms; leg++)
+            {
+                w.AdvanceTo(new WorldTime(Math.Min(Start.Ms + (long)(leg * legS * 1000), end.Ms)));
+                w.Apply(ShipSystem.Course(2, courseDeg + (leg % 2 == 1 ? zig : -zig)));
+            }
+            w.AdvanceTo(end);
+            tallies[k] = w.Gunnery.TallyOf(1, 0)!.Value;
+        });
+        return 100.0 * tallies.Sum(t => t.Hits) / Math.Max(tallies.Sum(t => t.Shells), 1);
     }
 
     /// <summary>Level 1 to 2 where they must differ (fc-ladder-check.md FL4), Dreadnought on Dreadnought at 11 km, each part
@@ -266,6 +303,48 @@ public class GunneryTests(ITestOutputHelper output)
                          $"{Clear("Telescopic sights", null):F1}, {Clear(director, null):F1}%");
         Assert.True(table > 2 * dumaresq, "her own turns put the hand-set Dumaresq out, not the gyro-fed table");
         Assert.True(layers > 0.95 * aloft, "in clear air the layers do as well as the director");
+    }
+
+    /// <summary>Level 3 to 4 where they must differ (fc-ladder-check.md FL6), QE behind the same FQ/FT and director. A fast
+    /// target crossing close: a destroyer at 30 kn passing at 4 km, past the Dreyer's ±15°/min bearing gear and through the
+    /// range rate its constant-rate clock can't follow, where the AFCT tracks her true course (measured, 24 duels: the Dreyer
+    /// 38.9%, the AFCT 73.5; the Dreyer with the AFCT's latency and residuals, the tracker alone, 60.4). Her zigzag (20°
+    /// either side every 75 s at 14 km): both straight-course machines, the AFCT ahead by its 8 s latency against the
+    /// Dreyer's 15 (17.6 v 20.6%; with the latency and residuals the Dreyer 20.6). Steady at 14 km the two filters are one
+    /// (the Dreyer with the AFCT's latency and residuals 74.8, the AFCT 74.7); the officer's step and doubt from his machine's
+    /// residual bias (1.2 against 0.6%) and the latency make the rest (67.0). The long-base stereo over the FQ/FT and the
+    /// power drive over follow the pointer, a little each on their rungs (printed).</summary>
+    [Fact]
+    public void Where_the_levels_differ_level_4_follows_a_fast_crossing()
+    {
+        var qe = Class("super_dreadnought");
+        var dd = Class("destroyer");
+        var readings = Settings with { Smoke = false, GunneryErrors = GunneryErrorScale.Parse("all=0,readings=1,own=1,prior=1") };
+        var ranges = Settings with { Smoke = false, GunneryErrors = GunneryErrorScale.Parse("all=0,readings=1,own=1") };
+        var laying = Settings with { Smoke = false, GunneryErrors = GunneryErrorScale.Parse("all=0,laying=1,dispersion=1") };
+        const string fq = "Barr & Stroud FQ/FT (O2)", o3 = "Stereo, long base (O3)", dreyer = "Dreyer table Mk III-V", afct = "Admiralty Fire Control Table",
+            pointer = "Director, follow the pointer", power = "Director, power drive";
+        var byDreyer = Refit("super_dreadnought", fq, dreyer, pointer);
+        var byLike = Refit("super_dreadnought", fq, dreyer, pointer, c => c with { ResidPct = 0.6, DeflBiasMil = 1.5, LatencyS = 8 });
+        var byAfct = Refit("super_dreadnought", fq, afct, pointer);
+        double passD = Engaged(byDreyer, dd, 30, 8_000, 180, 30, 6, readings), passL = Engaged(byLike, dd, 30, 8_000, 180, 30, 6, readings),
+            passA = Engaged(byAfct, dd, 30, 8_000, 180, 30, 6, readings);
+        double zigD = Engaged(byDreyer, qe, 90, 14_000, 0, 18, 10, readings, zig: 20), zigA = Engaged(byAfct, qe, 90, 14_000, 0, 18, 10, readings, zig: 20);
+        double steadyL = Engaged(byLike, qe, 90, 14_000, 0, 18, 10, readings), steadyA = Engaged(byAfct, qe, 90, 14_000, 0, 18, 10, readings);
+        var all = Settings with { Smoke = false };
+        output.WriteLine($"the readings and the priors: a destroyer passing at 4 km at 30 kn, the Dreyer {passD:F1}%, the Dreyer with the AFCT's latency and " +
+                         $"residuals {passL:F1}, the AFCT {passA:F1}; her zigzag {zigD:F1}, {zigA:F1}; steady, the like Dreyer {steadyL:F1}, the AFCT {steadyA:F1}; " +
+                         $"every error on, the destroyer passing {Engaged(byDreyer, dd, 30, 8_000, 180, 30, 6, all):F1}, {Engaged(byAfct, dd, 30, 8_000, 180, 30, 6, all):F1}%");
+        var stereoPointer = Refit("super_dreadnought", o3, afct, pointer);
+        double rf = Engaged(byAfct, qe, 90, 14_630, 0, 18, 10, ranges), stereo = Engaged(stereoPointer, qe, 90, 14_630, 0, 18, 10, ranges);
+        double lp = Engaged(stereoPointer, qe, 90, 14_630, 0, 18, 10, laying), lw = Engaged(Refit("super_dreadnought", o3, afct, power), qe, 90, 14_630, 0, 18, 10, laying);
+        output.WriteLine($"16 kyd steady: the readings only, the FQ/FT {rf:F1}%, the long-base stereo {stereo:F1}; the laying and the pattern, follow the pointer " +
+                         $"{lp:F1}, the power drive {lw:F1}");
+        Assert.True(passA > 1.5 * passD, "the true-course table follows a fast crossing the rate clock can't");
+        Assert.True(passA > 1.1 * passL, "the tracker's own part of it");
+        Assert.True(zigA > zigD, "the shorter latency re-learns her turns sooner");
+        Assert.InRange(steadyL, 0.96 * steadyA, 1.04 * steadyA);
+        Assert.True(stereo > 0.98 * rf && lw > 0.98 * lp, "the longer base and the power drive no worse");
     }
 
     [Fact]

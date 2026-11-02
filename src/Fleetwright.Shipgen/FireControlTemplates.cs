@@ -137,18 +137,19 @@ public static class FireControlTemplates
         C("Argo clock Mk IV", K("true_course", true, 8, 0.03, 2.5, 15, 1.2, 2, 30, 366, 2, 4, 1),
             "Pollen's true-course plotter and variable-speed clock (1912-13): follows a changing range rate, gyro-corrected; about six in RN " +
             "service at Jutland (computing.md §3; fire_control_ref.py level 3b). Mass and crew [EST]."),
-        C("Admiralty Fire Control Table", K("true_course", true, 8, 0.03, 2, 12, 0.6, 1.5, 3, 366, 5, 8, 5),
-            "The AFCT Mk I-X (1927-45): clock and MPI plot, helm-free, a straight-course target (computing.md §3; level 4, designer C3)."),
-        C("Admiralty Fire Control Clock", K("true_course", true, 8, 0.03, 2, 12, 0.6, 1.5, 3, 366, 3, 4, 3),
+        C("Admiralty Fire Control Table", K("true_course", true, 8, 0.03, 3, 20, 0.6, 1.5, 3, 366, 5, 8, 5),
+            "The AFCT Mk I-X (1927-45): clock and MPI plot, helm-free, a straight-course target (computing.md §3; level 4, designer C3). " +
+            "Its first guess at her course and speed the Dumaresq's, from the same eye (docs/battle/fc-ladder-check.md FL6)."),
+        C("Admiralty Fire Control Clock", K("true_course", true, 8, 0.03, 3, 20, 0.6, 1.5, 3, 366, 3, 4, 3),
             "The AFCC, the AFCT without its plot, for destroyers and secondaries (computing.md §3; Haida's Mk III limited to 16,000 yd): the " +
             "table's numbers [EST]; mass and crew [EST]."),
-        C("Admiralty Fire Control Table, turn setting", K("turn_rate", true, 8, 0.03, 2, 12, 0.6, 1.5, 3, 366, 5, 8, 5) with
+        C("Admiralty Fire Control Table, turn setting", K("turn_rate", true, 8, 0.03, 3, 20, 0.6, 1.5, 3, 366, 5, 8, 5) with
             {
                 TurnQ = 1e-7, SpeedQ = 0.1,
             },
             "The AFCT with a hand-set enemy rate of turn: a turn filter whose rate adapts slowly (level 4t; [UNCERTAIN] in the research, a " +
             "computer option anyone may fit, decision 5)."),
-        C("German Rechenstelle (1930s)", K("true_course", true, 8, 0.03, 2, 12, 0.6, 1.5, 3, 366, 5, 8, 5),
+        C("German Rechenstelle (1930s)", K("true_course", true, 8, 0.03, 3, 20, 0.6, 1.5, 3, 366, 5, 8, 5),
             "The German computing rooms of the 1930s, fore and aft under armour (computing.md §3): no specifications found; the research's " +
             "table puts them with the AFCT, whose numbers they take [EST]."),
         C("Type 92 Shagekiban", K("rate_clock", true, 15, 0.03, 2, 12, 0.6, 1.5, 20, 366, 4, 15, 2) with { OwnCourseLagS = 0.5 },

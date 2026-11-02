@@ -35,7 +35,7 @@ haze. QE on QE at 16 kyd unless the step's period fought nearer (the 1905 levels
 | FL3 | 0 → 1 | the eye (20% of range) → FA 2 m; open sights 1.15 → telescopic 0.73 mil; the same hand plot (its own "eye and hand plot" gone) | ranges found at once, not by long ranging; a tighter pattern | the opening at 6-8 km | done 2026-11-02 |
 | FL4 | 1 → 2 | FA → FQ/FT 4 m; hand plot → Dumaresq and Vickers clock; telescopic 0.73 → 0.35 mil | the clock runs the range on between sparse readings from her course and speed | a crossing or closing target, readings 2 a minute; haze that loses readings | done 2026-11-02 |
 | FL5 | 2 → 3 | Dumaresq → Dreyer Mk III-V (helm-free, the bearing gear); local laying → director 0.5 mil | through her own turns (FL1); the director's layer above the smoke and spray, one fall to spot | her own zigzag; a seaway; her own and the enemy's smoke, spray at speed. On the way: the catalogue's "Dreyer table Mk I-II" (not helm-free) fits the Mk I only; the Mk I* took her heading automatically and the Mk II probably (own-motion-inputs.md §2): split the row | done 2026-11-02 (the smoke and spray's size to the error sources' session) |
-| FL6 | 3 → 4 | Dreyer (rate clock, latency 15 s, bias 1.2%) → AFCT (true course, 8 s, 0.6%); FQ/FT → stereo 5 m; director power drive 0.4 mil | a target's turns re-learned sooner; the bearing rate past the Dreyer's 0.25°/s; less bias to range out | the target's zigzag; a fast crossing near | |
+| FL6 | 3 → 4 | Dreyer (rate clock, latency 15 s, bias 1.2%) → AFCT (true course, 8 s, 0.6%); FQ/FT → stereo 5 m; director power drive 0.4 mil | a target's turns re-learned sooner; the bearing rate past the Dreyer's 0.25°/s; less bias to range out | the target's zigzag; a fast crossing near | done 2026-11-02 |
 | FL7 | 4 → 5 | AFCT → Ford Mk 8 (3 s, 0.4%); stable vertical, RPC; coated, stabilised O4 | fire at any point of the roll, not on it; the rangefinder in a seaway; and the stable vertical's own error in a turn, the record's "several hundred yards" (North Carolina 1945): its mercury erection cut out while the turn's acceleration lasts, the gyro drifting free some 2-3′ a minute, ~200 yd through a 450° turn at 20-25 kyd, re-erecting after (own-motion-inputs.md §4, recommendation 6) | a seaway, rate of fire in it; long own turns | |
 | FL8 | 5 → 6 | radar ranging (stand-in) | ranges through haze and at night | haze, night: radar is out of the first game, so checked last | |
 | FL9 | 6 → 7 | Mk 8 → Mk 1A (acceleration, turn detection) | follows a target in a steady turn ("a steady turn cuts hits 2-4x for every straight-line machine", research §5.6) | a target circling | |
@@ -69,7 +69,11 @@ lumped stand-in for something the chain now models?
   once instead hit the same (9.4 v 9.9%), its early salvos 970 m off: left.
 - The priors (`prior_kn`, `prior_deg`): the eye's first guess at her course and speed, before any reading; tighter on
   every later machine (4/25 the hand plot, 2.5/15 the Dreyer, 2/12 the AFCT). Physical if the instruments that make the
-  guess improve (the rangefinder's ×28 on her inclination); check in FL4-FL6 where it's the same eye.
+  guess improve (the rangefinder's ×28 on her inclination); check in FL4-FL6 where it's the same eye. Done to the AFCT:
+  the Dumaresq's 3 kn and 20° for every machine from it through the AFCT family (FL5, FL6), the same eye behind ×28;
+  the Argo (FL11), the Type 92 (FL11), the Mk 8 on (FL7, FL9, FL10) still their own.
+- `latency_s`: the Dreyer's 15 s and the Mk 8's 2-3 s are the research's (evasion-research.md, "about 15 s for a Dreyer table, 2-3 s for a Mk 8"), the AFCT's 8 s
+  between them; on a steady target it's what's left between the Dreyer and the AFCT besides the residual (FL6).
 - The captain's ranging record (`RangingRecord`, BL1ae): its cycles count the turrets' first swing from rest as ranging;
   a shift's own swing is its change of bearing over the training rate (a target on the other beam, 90 s at 2°/s).
 - `GunneryCombat`: the lumped battle factor, goes when fatigue comes (no-lumped-battle-factors).
@@ -244,3 +248,30 @@ were helm-free (own-motion-inputs.md §2), as the Mk III-V row, which says so. T
 guess at her course and speed was tighter than the Dumaresq's (2.5 kn and 15° against 3 and 20) with the same FQ/FT and
 the same eye, the Dreyer holding a Dumaresq: the Dumaresq's now (the catalogue and 51 designs' own blocks). The residual
 biases (1.5% against 1.2) wait for the wind (audit list). `GunneryTests.Where_the_levels_differ_level_3_keeps_its_solution_through_her_turns`.
+
+## FL6: the Dreyer to the AFCT (done 2026-11-02)
+
+**Should give:** the AFCT tracks her true course and speed, the Dreyer her range and bearing at constant rates clamped at
+±1,200 yd/min and ±15°/min: on a fast target crossing close, past the bearing gear and with the range rate changing
+through her passing, the Dreyer drifts where the AFCT follows; on her zigzag, both straight-course machines, the AFCT
+re-learns sooner by its shorter latency (8 s against 15); steady, alike but for what the machines are (the latency, the
+residual bias the officer expects of his). The long-base stereo (5 m, 4 readings a minute) over the FQ/FT, and the
+director's power drive (0.4 mil) over following the pointer (0.5), a little each on their rungs.
+
+**Found** (QE behind the same FQ/FT and director; the readings and the priors, 24 duels):
+
+| | the Dreyer | the Dreyer with the AFCT's latency and residuals | the AFCT |
+|---|---|---|---|
+| a destroyer at 30 kn passing at 4 km | 38.9% | 60.4% | 73.5% |
+| the same at 5 km | 55.8% | 66.0% | 77.4% |
+| her zigzag, 20° either side every 75 s at 14 km | 17.6% | 20.6% | 20.6% |
+| steady at 14 km (readings alone) | 67.0% | 74.8% | 74.7% |
+
+The rate clock and the true course are one filter on a steady target and on a zigzag; the tracker's own part is the fast
+crossing (60 against 74%). Every error on, the destroyer passing: 33.1 against 48.7%. Passing another battleship at 4 km
+the Dreyer's limit hardly shows: the bearing it loses (some 120 m over the flight and latency) lies along her 190 m.
+The stereo over the FQ/FT 70.1 → 75.7% on the readings' rung at 16 kyd, the power drive 21.2 → 21.4 on the laying's.
+
+**On the way:** the AFCT family's first guess (2 kn and 12°) was tighter than the Dreyer's with the same eye behind the
+same ×28: the Dumaresq's 3 and 20 now, the AFCT, the AFCC, the turn setting and the German Rechenstelle (the catalogue and
+7 designs' own blocks). `GunneryTests.Where_the_levels_differ_level_4_follows_a_fast_crossing`.
