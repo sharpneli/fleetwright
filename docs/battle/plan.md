@@ -9,7 +9,7 @@ against it, agree the step's details with the user, then build. Most steps grew 
 where it and this file differ; the step's section here says what was done and what changed. **Keep "Status" below up to
 date** when a step or a sub-plan starts or finishes, and take stock against it from time to time (the user, 2026-10-30).
 
-## Status (2026-11-01)
+## Status (2026-11-02)
 
 **Now:** the aims are built (`docs/battle/aims.md`: reach, sink merchants, stop, scored and weighted, A0-A6 done
 2026-10-31); the user's investigation of which real scenarios get them waits, and the rest of the balance round
@@ -17,8 +17,9 @@ date** when a step or a sub-plan starts or finishes, and take stock against it f
 reopened 2026-11-01 (BL1j-BL1n: the roll averaged over the hull and counted once, the own-turn kick by rate of turn,
 the panel reading every hit rate beside its range; then BL1o-q, the gunnery officer's and the captain's judgement under
 fire; BL1t-u, no pulsing falls under helm, the German ladder halving; BL5e-h, the targets by doctrine, the screens' station,
-the main guns for heavy ships, the day attack's gain out of reach); AI threading built (the user, 2026-11-01: `workers.md` W9-W15, every captain, admiral and commander a think from state to commands, spread over the ticks; W9-W14 done 2026-11-02, the cap for the user); salvo chasing for evasion next (balance.md, after BL1q), then the user's
-playtest.
+the main guns for heavy ships, the day attack's gain out of reach); AI threading built (the user, 2026-11-01: `workers.md` W9-W15, every captain, admiral and commander a think from state to commands, spread over the ticks; W9-W14 done 2026-11-02, the cap for the user); the user's playtest of squadrons (2026-11-02): BL1v, the spots walk the fall
+onto her (built), then the captains' cost of switching targets, then a pass on `salvo_pct`; salvo chasing for evasion after
+(balance.md, after BL1q).
 
 | Step | State | Plan | Left |
 |---|---|---|---|

@@ -151,7 +151,8 @@ public static class FireControl
     /// goes a step beyond the bound seen; closed, into its middle: the RN's 400, 200, 100 yd and the USN's bracket and
     /// halve are both this, and the bracket is never let narrower than a floor (the USN's "never below the pattern").
     /// It isn't hard: each bound widens with time at the computer's own doubt of the range rate (the truth drifts in
-    /// range as the rate's error carries it), and a spot against a bound drops it.</summary>
+    /// range as the rate's error carries it), and a spot against a bound drops it. It's the ranging's: firing for effect,
+    /// the spots walk the correction instead (GunnerySystem.Walk).</summary>
     public struct Bracket
     {
         /// <summary>The correction the target needs is over <see cref="Lo"/> and under <see cref="Hi"/>, m along the line
@@ -160,6 +161,17 @@ public static class FireControl
         public long LoMs, HiMs;
         /// <summary>The step beyond a bound while the other side is open, m.</summary>
         public double Step;
+
+        /// <summary>Closed about a correction, a width wide (the walk's, as a disturbance sends fire for effect back to
+        /// ranging).</summary>
+        public static Bracket About(double at, double widthM, long ms, double stepM) =>
+            new() { Lo = at - 0.5 * widthM, Hi = at + 0.5 * widthM, LoMs = ms, HiMs = ms, Step = stepM };
+
+        /// <summary>Open beyond a salvo's correction the way its spot said (the range lost): short, the target lies beyond
+        /// it; over, short of it.</summary>
+        public static Bracket Beyond(Sign side, double at, long ms, double stepM) => side == Sign.Short
+            ? new() { Lo = at, Hi = double.PositiveInfinity, LoMs = ms, HiMs = ms, Step = stepM }
+            : new() { Lo = double.NegativeInfinity, Hi = at, LoMs = ms, HiMs = ms, Step = stepM };
 
         public static Bracket Open(double stepM) => new() { Lo = double.NegativeInfinity, Hi = double.PositiveInfinity, Step = stepM };
 
@@ -170,15 +182,14 @@ public static class FireControl
 
         public readonly double HiAt(long ms, double driftMs) => Hi + driftMs * Math.Max(ms - HiMs, 0) / 1000.0;
 
-        /// <summary>The correction to fire with now. While the spots hold her (<paramref name="held"/>: a hit or a straddle
-        /// lately), the bracket's: its middle closed, a step beyond its bound open; the computer's new ranges move the
-        /// bracket with them (Rebase), so they never move the guns ("Sir, the target teleported 200 m": the user,
-        /// 2026-10-18). Otherwise none while the solution lies inside the bracket (the spots say nothing against it: a computer
-        /// that took a good range in stands), else the bracket's as before. None before the first spot.</summary>
-        public readonly double Aim(long ms, double driftMs, bool held = false)
+        /// <summary>The correction to fire with now: its middle closed, a step beyond its bound open, none before the
+        /// first spot. The computer's new ranges move the bracket with them (Rebase), so they never move the guns ("Sir,
+        /// the target teleported 200 m": the user, 2026-10-18); what the spots learnt stands however long ago they learnt
+        /// it (a hold that lapsed back to the bare solution put the fire back on its ballistic bias: 2026-11-02).</summary>
+        public readonly double Aim(long ms, double driftMs)
         {
             double lo = LoAt(ms, driftMs), hi = HiAt(ms, driftMs);
-            if (double.IsInfinity(Lo) && double.IsInfinity(Hi) || !held && lo < 0 && hi > 0)
+            if (double.IsInfinity(Lo) && double.IsInfinity(Hi))
                 return 0;
             return Closed ? 0.5 * (lo + hi) : !double.IsInfinity(Lo) ? lo + Step : hi - Step;
         }
@@ -222,14 +233,6 @@ public static class FireControl
                 return;
             double lo = LoAt(ms, driftMs), hi = HiAt(ms, driftMs), mid = 0.5 * (lo + hi), half = 0.5 * Math.Max(hi - lo, widthM);
             (Lo, Hi, LoMs, HiMs) = (mid - half, mid + half, ms, ms);
-        }
-
-        /// <summary>One side dropped (fire for effect gone wrong one way): the spots said the target is beyond (short) or
-        /// short of (over) the bracket, so it opens that way from the bound they set.</summary>
-        public void OpenToward(Sign side, long ms, double driftMs)
-        {
-            double lo = LoAt(ms, driftMs), hi = HiAt(ms, driftMs);
-            (Lo, Hi, LoMs, HiMs) = side == Sign.Short ? (lo, double.PositiveInfinity, ms, ms) : (double.NegativeInfinity, hi, ms, ms);
         }
     }
 }

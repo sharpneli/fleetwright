@@ -769,10 +769,6 @@ public sealed record SimSettings
     public double BracketFloorM { get; init; } = 92;
     public int RangingWaitMarginMs { get; init; } = 15_000;
 
-    /// <summary>After a straddle or a hit the spots hold her for this long, s [EST]: the guns lay by the bracket, and the
-    /// computer's new ranges don't move them (the short-range bug hunt, 2026-10-18).</summary>
-    public double SpotsHoldS { get; init; } = 120;
-
     /// <summary>A reading more than this many sigma off the computer's own prediction is set aside, unless the next is too.</summary>
     public double ReadingGateSigmas { get; init; } = 3;
 
@@ -792,11 +788,11 @@ public sealed record SimSettings
 /// independent within 5.5 km (the pre-dreadnoughts' shift at 5-6 km), the heavy guns by single salvos.</summary>
     public FireDiscipline[] FireDisciplines { get; init; } =
     [
-        new() { Name = "rn-1914", InFlight = 1, GunsShare = 0.5, GunsMin = 4, EffectHalves = true, MissesToRange = 3, RateSpotShare = 0.5 },
-        new() { Name = "rn-1917", InFlight = 2, GunsShare = 0.5, GunsMin = 4, EffectHalves = true, MissesToRange = 3, RateSpotShare = 0.5 },
-        new() { Name = "german", InFlight = 3, LadderStepM = 366, GunsShare = 0.2, GunsMin = 2, EffectHalves = true, MissesToRange = 3 },
-        new() { Name = "usn", InFlight = 1, GunsShare = 0.5, GunsMin = 4, MissesToRange = 3 },
-        new() { Name = "independent", InFlight = 1, GunsShare = 0.5, GunsMin = 4, MissesToRange = 3, IndependentWithinM = 5_500 },
+        new() { Name = "rn-1914", InFlight = 1, GunsShare = 0.5, GunsMin = 4, EffectHalves = true },
+        new() { Name = "rn-1917", InFlight = 2, GunsShare = 0.5, GunsMin = 4, EffectHalves = true },
+        new() { Name = "german", InFlight = 3, LadderStepM = 366, GunsShare = 0.2, GunsMin = 2, EffectHalves = true },
+        new() { Name = "usn", InFlight = 1, GunsShare = 0.5, GunsMin = 4 },
+        new() { Name = "independent", InFlight = 1, GunsShare = 0.5, GunsMin = 4, IndependentWithinM = 5_500 },
     ];
 
     /// <summary>A shell's dispersion across the line of fire as a share of its dispersion along it (Gun.defl_ratio).</summary>
@@ -2695,10 +2691,7 @@ public static class Experience
 /// <item>a partial salvo's share of the guns that bear, at least a number of them (enough to spot a wild shot by:
 /// navalgazing Spotting, 3 and better 4; all of them if fewer);</item>
 /// <item>fire for effect in alternating halves (each half as it loads, so the spotter has falls twice as often) or full
-/// salvos; and how many spots in a row without a straddle send it back to ranging;</item>
-/// <item>the rate spot: when two spots in a row move the aim the same way, the range rate is corrected too, by this share
-/// of the move a minute (the RN's "down 200, rate down 100", computing.md §2.5; 0 for none: the USN's manual held
-/// spotting during rate corrections the same as pyramiding);</item>
+/// salvos (back to ranging only when the spots' walk has lost the range: GunnerySystem.Walk);</item>
 /// <item>independent fire: inside this range (m; 0 never) a quick-firing battery (<see cref="SimSettings.QuickFirerReloadS"/>)
 /// fires each mount as it loads and lays, each fall spotted on its own (whose splash it is: F7), salvo fire beyond.</item>
 /// </list></summary>
@@ -2710,8 +2703,6 @@ public sealed record FireDiscipline
     public double GunsShare { get; init; } = 0.5;
     public int GunsMin { get; init; } = 4;
     public bool EffectHalves { get; init; }
-    public int MissesToRange { get; init; } = 3;
-    public double RateSpotShare { get; init; }
     public double IndependentWithinM { get; init; }
 }
 

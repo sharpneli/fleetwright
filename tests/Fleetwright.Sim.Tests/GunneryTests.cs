@@ -87,8 +87,10 @@ public class GunneryTests(ITestOutputHelper output)
             pct[level] = 100.0 * hits / shells;
             output.WriteLine($"level {level}: {pct[level]:F1}% hits ({hits} of {shells}), {100.0 * straddles / salvos:F0}% of {salvos} salvos straddled");
         }
-        // the reference on a QE-size box: 5.0% at level 3; level 0 about a fifth of it
-        Assert.InRange(pct[3], 2.5, 8);
+        // the reference on a QE-size box: 5.0% at level 3; level 0 about a fifth of it. The walk (balance.md BL1v) puts
+        // level 3 at 8%: its spots centre the fall where the bracket's lapsed hold went back to the bias, and the hits may
+        // rise until the degraders come (the user, 2026-11-02)
+        Assert.InRange(pct[3], 2.5, 10);
         Assert.True(pct[0] < pct[1] && pct[1] < pct[3], "the levels' order");
     }
 

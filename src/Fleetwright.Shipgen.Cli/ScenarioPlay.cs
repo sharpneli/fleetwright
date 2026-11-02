@@ -27,7 +27,7 @@ static class ScenarioPlay
     {
         using var salvoLog = SalvoLog is { } logPath ? new StreamWriter(logPath) : null;
         salvoLog?.WriteLine("F,seed,t,shooter,battery,target,cal,range,shells,fallX,fallY,aimErr,corr,laid,phase,straddle,hits,pb,yaw,targetYaw");
-        salvoLog?.WriteLine("S,seed,t,shooter,battery,call,lo,hi,next,phase,drift,possigma,tracker");
+        salvoLog?.WriteLine("S,seed,t,shooter,battery,call,lo,hi,next,phase,drift,possigma,tracker,spotsigma,spotheight");
         // where the hits come from (docs/battle/balance.md BL1g): shells and hits by calibre, range and point blank, every seed
         var fire = new SortedDictionary<(bool Night, bool Small, int Cal, int Range, bool Pb), (long Shells, long Hits)>();
         // and inside 4 km, why the shooter was there: his captain's order and way of fighting (BL5)
@@ -633,7 +633,7 @@ static class ScenarioPlay
         // its spot, a line of its own six seconds on: S, the salvo's time, whose, the call, the correction it leaves
         w.Gunnery.Spotted = p => log.WriteLine(string.Join(",", "S", seed, p.FiredMs / 1000.0, p.Shooter, p.Battery, p.Seen ? p.Sign.ToString() : "unseen",
             Math.Round(p.Lo), Math.Round(p.Hi), Math.Round(p.Next), p.Phase,
-            Math.Round(p.DriftMs, 2), Math.Round(p.PosSigmaM), (TrackerKind)p.Tracker));
+            Math.Round(p.DriftMs, 2), Math.Round(p.PosSigmaM), (TrackerKind)p.Tracker, Math.Round(p.SpotSigmaM), Math.Round(p.SpotHeightM, 1)));
         w.Gunnery.Reported = r =>
         {
             prev?.Invoke(r);

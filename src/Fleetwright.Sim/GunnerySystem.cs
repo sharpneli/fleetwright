@@ -40,7 +40,7 @@ public enum FirePhase : byte
     /// new.</summary>
     Ranging,
     /// <summary>Fire for effect, from the spotter's straddle: full salvos as fast as the guns load and lay, the spots
-    /// still correcting; back to ranging when a run of them isn't straddling or the solution is disturbed.</summary>
+    /// walking the fall onto her; back to ranging when the range is clearly lost or the solution is disturbed.</summary>
     Effect,
 }
 
@@ -65,9 +65,9 @@ public enum FirePhase : byte
 /// director firing), each shell its own dispersion from the gun's pattern; a ship swinging adds the computer's own-turn
 /// kick.</item>
 /// <item><b>Spot.</b> When a salvo's last shell is down, and <see cref="SimSettings.SpotDelayMs"/> on, the spotter (the
-/// highest eye) judges it over, short or straddling (σ = k·R²/h) and sees its deflection; the range spots make a bracket
-/// in correction space (<see cref="FireControl.Bracket"/>), each against the correction its salvo was fired with, and
-/// the next salvo goes into it.</item>
+/// highest eye) judges it over, short or straddling (σ = k·R²/h) and sees its deflection; ranging, the range spots make a
+/// bracket in correction space (<see cref="FireControl.Bracket"/>), each against the correction its salvo was fired with,
+/// and the next salvo goes into it; firing for effect, they walk the correction (<see cref="Walk"/>).</item>
 /// </list>
 /// Hits are counted and logged but do nothing yet (4.3a). Batteries fire only on the fine tick. World state: replays,
 /// hashes. Registered fourth, so its id is always <see cref="Id"/>.</summary>
@@ -119,14 +119,15 @@ public sealed class GunnerySystem : IWorldSystem
         /// <summary>The computer's doubt of the target's position along the line of fire (m), and the range to its aim
         /// (m), for the first step.</summary>
         public double PosSigmaM, RangeM;
-        /// <summary>Which way the last spot moved the aim (-1, 0, +1): two the same way correct the rate too.</summary>
-        public int LastMove;
         /// <summary>Its salvos in the air or down and not yet spotted; while ranging the next waits for them, or until
         /// <see cref="WaitMs"/> (a spot that never came).</summary>
         public int InFlight;
         public long WaitMs;
-        /// <summary>In fire for effect, the spots in a row that weren't straddles, and of them overs and shorts.</summary>
-        public int Misses, MissOver, MissShort;
+        /// <summary>In fire for effect, the spots in a row that weren't straddles.</summary>
+        public int Misses;
+        /// <summary>In fire for effect, the walk's step (m) and which way it last stepped (-1 down, +1 up, 0 held).</summary>
+        public double WalkStep;
+        public int WalkDir;
         /// <summary>Which mount the next partial salvo starts from (the groups alternate), and the tracker's turns seen.</summary>
         public int Group, Turns;
         /// <summary>A ladder's salvos fired in its group so far (the discipline's ladder: the group goes at once, stepped).</summary>
@@ -142,8 +143,6 @@ public sealed class GunnerySystem : IWorldSystem
         public double SetCourseDeg;
         public int RangingSalvos, RangingShells;
         public long EffectMs, LastSalvoMs, SettleMs;
-        /// <summary>When the spotter last called a straddle (or saw a hit): the spots hold her for a while after.</summary>
-        public long HeldMs;
         /// <summary>Whether the computer set its last reading aside as one she couldn't have made.</summary>
         public bool SetAside;
         /// <summary>The last spot's call (a FireControl.Sign; -1 none yet).</summary>
@@ -246,9 +245,10 @@ public sealed class GunnerySystem : IWorldSystem
 
     /// <summary>A salvo's spot, for tools: the salvo (by when it was fired), whether the spotter saw its fall and what he
     /// judged it, the bracket after it (m; infinite: open) and the correction the next salvo goes with, and the phase
-    /// after it; the computer's doubt of the range rate (m/s) and of her place along the line (m), and its tracker.</summary>
+    /// after it; the computer's doubt of the range rate (m/s) and of her place along the line (m), and its tracker; the
+    /// spotter's error over or short of a splash (m) and his height (m).</summary>
     public readonly record struct SpotReport(long FiredMs, int Shooter, int Battery, bool Seen, FireControl.Sign Sign, double Lo, double Hi, double Next,
-        FirePhase Phase, bool Told = true, double DriftMs = 0, double PosSigmaM = 0, int Tracker = 0);
+        FirePhase Phase, bool Told = true, double DriftMs = 0, double PosSigmaM = 0, int Tracker = 0, double SpotSigmaM = 0, double SpotHeightM = 0);
 
     /// <summary>Whether a chief battery's shells have fallen near a ship since a time (docs/battle/balance.md BL5f: her
     /// lookouts see the big splashes about her): a fall in her ring of a calibre her shooter's chief battery fires.</summary>
@@ -1175,9 +1175,6 @@ public sealed class GunnerySystem : IWorldSystem
         return Earth.Distance(ownP, p);
     }
 
-    /// <summary>Whether the spots hold her: a straddle or a hit called within <see cref="SimSettings.SpotsHoldS"/>.</summary>
-    bool Held(in Fc fc, long now) => fc.HeldMs > 0 && now - fc.HeldMs < 1000 * settings.SpotsHoldS;
-
     /// <summary>The computer's solution moved by a reading (or a judgement's new look) by dr in range: the spots' bracket
     /// and the correction in force move the other way, so they keep saying where the target is (they're corrections to
     /// the solution: a solution that jumps 900 m on an eye's range would otherwise carry the old corrections with it, and
@@ -1397,9 +1394,10 @@ public sealed class GunnerySystem : IWorldSystem
             return;
         double perRad = table.RangePerDeg(e0, h0) * 180 / Math.PI;
 
-        // the range correction from the spots' bracket (a ladder's salvo stepped about it), then the salvo's common error
-        // (fire_control_ref.py engage(), "fire")
-        fc.CorrR = fc.Bracket.Aim(now, fc.DriftMs, Held(fc, now));
+        // the range correction: ranging, from the spots' bracket (a ladder's salvo stepped about it); firing for effect, the
+        // walk's, as the spots left it; then the salvo's common error (fire_control_ref.py engage(), "fire")
+        if (phase != FirePhase.Effect)
+            fc.CorrR = fc.Bracket.Aim(now, fc.DriftMs);
         // a ladder's rungs at the ranging step, the computer's doubt (balance.md BL1t: never wider than the doctrine's own
         // step; a ladder of 366 m about a solution good to 100 m threw two salvos of three a ship's danger space off); and
         // once its falls have closed the bracket, inside it at a quarter of its width, so each group halves it as every
@@ -1711,7 +1709,7 @@ public sealed class GunnerySystem : IWorldSystem
                 var rp = stream.Derive(0x5B09u).Derive((ulong)si).Derive((ulong)sv.Generation);
                 bool pyramid = rp.NextDouble() < CrewOf(ship).Pyramid;
                 if (sign != FireControl.Sign.Doubtful)
-                    SpotRange(ref fc, sv, ship.Side, sign, pyramid, now);
+                    SpotRange(ref fc, sv, sign, pyramid, now);
                 // the line, spotted whether the range could be or not (off for line, it's corrected first): an angle, so
                 // it holds as the range changes
                 var r = stream.Derive(0x5B08u).Derive((ulong)si).Derive((ulong)sv.Generation);
@@ -1733,74 +1731,95 @@ public sealed class GunnerySystem : IWorldSystem
                 if (Math.Abs(defl) > 0.25 * sv.PatternAcrossM)
                     fc.CorrD = sv.CorrD - settings.SpotDeflectionGain * defl / sv.RangeM;
             }
-            Spotted?.Invoke(new SpotReport(sv.FiredMs, fc.Shooter, fc.Battery, sees, sign, fc.Bracket.LoAt(now, fc.DriftMs), fc.Bracket.HiAt(now, fc.DriftMs),
-                fc.CorrR, fc.Phase, told, fc.DriftMs, fc.PosSigmaM, (int)fc.Fit.Computer.Tracker));
+            bool walking = fc.Phase == FirePhase.Effect;
+            Spotted?.Invoke(new SpotReport(sv.FiredMs, fc.Shooter, fc.Battery, sees, sign,
+                walking ? fc.CorrR - fc.WalkStep : fc.Bracket.LoAt(now, fc.DriftMs), walking ? fc.CorrR + fc.WalkStep : fc.Bracket.HiAt(now, fc.DriftMs),
+                fc.CorrR, fc.Phase, told, fc.DriftMs, fc.PosSigmaM, (int)fc.Fit.Computer.Tracker, sv.SpotSigmaM, fc.SpotHeightM));
         }
         FreeSalvo(si);
     }
 
-    /// <summary>A salvo's range spot (over, short or straddling) into the bracket, the correction, the rate spot and the
-    /// phase.</summary>
-    void SpotRange(ref Fc fc, in Salvo sv, int side, FireControl.Sign sign, bool pyramid, long now)
+    /// <summary>A salvo's range spot (over, short or straddling): ranging, into the bracket, a straddle opening fire for
+    /// effect; firing for effect, the walk.</summary>
+    void SpotRange(ref Fc fc, in Salvo sv, FireControl.Sign sign, bool pyramid, long now)
     {
-        var dis = settings.FireDisciplines[disciplines[side]];
         double before = fc.CorrR;
-        // firing for effect, one over or short among straddles is the salvo's own scatter: the aim holds until a second the
-        // same way in a row says it's off (the user, 2026-10-18: "if one hits they keep firing at that point"; the
-        // research's full corrections chasing the random salvo error)
-        bool lone = fc.Phase == FirePhase.Effect && sign != FireControl.Sign.Straddle && fc.LastSign != (int)sign;
         fc.LastSign = (int)sign;
-        if (!lone)
-            fc.Bracket.Spot(sign, pyramid ? fc.CorrR + sv.LadderM : sv.CorrR - (fc.Shift - sv.Shift), now, fc.DriftMs, sv.PatternM,
-                Math.Max(settings.BracketFloorM, settings.BracketFloorPatterns * sv.PatternM));
-        if (sign == FireControl.Sign.Straddle)
-            fc.HeldMs = now;   // the spots have her
-        fc.CorrR = fc.Bracket.Aim(now, fc.DriftMs, Held(fc, now));
-        // the rate spot: two moves the same way, and the range rate takes a share of this one a minute
-        int move = Math.Abs(fc.CorrR - before) < 1 ? 0 : Math.Sign(fc.CorrR - before);
-        if (dis.RateSpotShare > 0 && move != 0 && move == fc.LastMove)
-            fc.Tracker.CorrectRate(sv.U, dis.RateSpotShare * (fc.CorrR - before) / 60);
-        fc.LastMove = move;
-        if (move != 0)
+        // the correction its salvo was fired with, as it stands on today's solution; a crew that pyramids puts the spot on
+        // the one in force (F6: the green most often)
+        double at = pyramid ? fc.CorrR + sv.LadderM : sv.CorrR - (fc.Shift - sv.Shift);
+        if (fc.Phase == FirePhase.Effect)
+            Walk(ref fc, sign, at, now);
+        else
+        {
+            fc.Bracket.Spot(sign, at, now, fc.DriftMs, sv.PatternM, Math.Max(settings.BracketFloorM, settings.BracketFloorPatterns * sv.PatternM));
+            fc.CorrR = fc.Bracket.Aim(now, fc.DriftMs);
+            if (sign == FireControl.Sign.Straddle)
+            {
+                // the straddle: fire for effect, the walk starting from it at its floor
+                if (fc.EffectMs < 0)
+                    fc.EffectMs = now;
+                (fc.Phase, fc.Misses, fc.WalkStep, fc.WalkDir) = (FirePhase.Effect, 0, settings.BracketFloorM, 0);
+            }
+        }
+        // the layers lay on again after a correction; the range rate is the computer's, from its readings (the rate spot,
+        // the RN's "down 200, rate down 100", put the spots' noise into the clock: with the walk it cost 20-60 m of the
+        // fall's centre on every bench, 2026-11-02)
+        if (Math.Abs(fc.CorrR - before) >= 1)
             fc.SettleMs = now + (long)(1000 * settings.LayerSettleS);
-        NextPhase(ref fc, sign, now, dis.MissesToRange);
     }
 
-    /// <summary>A spot's say on the phase (F6): a straddle while ranging opens fire for effect; in fire for effect a run
-    /// of spots without one goes back to ranging, the bracket opened the way they all pointed if they did.</summary>
-    void NextPhase(ref Fc fc, FireControl.Sign sign, long now, int missesToRange)
+    /// <summary>Fire for effect's spotting: the correction walked onto her (the user, 2026-11-02: "walk basically arbitrary
+    /// error into target and keep it there"). A straddle (or a hit) keeps the correction in force and halves the step (one
+    /// called on a salvo fired before the last step doesn't take it back: at 15 km a spotter calls straddles on falls
+    /// half a kilometre short); an over or short steps it the other way from the correction its salvo was fired with, the
+    /// step doubled when the last miss went the same way (a drift, or an error bigger than the step) and halved when it
+    /// went the other (she's crossed); never under the
+    /// bracket's floor (the RN's 100 yd) nor over the computer's first ranging step. A spot of a salvo fired before the
+    /// walk last moved, saying what that move already answered, changes nothing (one salvo still in the air isn't a second
+    /// miss). Where an over and a short are as likely, the falls' mean is on her: the spots centre the fire, whatever the
+    /// bias they started from. Only when the walk has stepped its full stride and the falls are still on the same side is
+    /// the range clearly lost (the user: "dropping to ladder should only happen when one has clearly lost the range"): back
+    /// to ranging, the bracket open beyond that salvo's correction.</summary>
+    void Walk(ref Fc fc, FireControl.Sign sign, double at, long now)
     {
+        double floor = settings.BracketFloorM, top = Math.Max(fc.Fit.Computer.FirstStepM, floor);
         if (sign == FireControl.Sign.Straddle)
         {
-            if (fc.Phase == FirePhase.Ranging && fc.EffectMs < 0)
-                fc.EffectMs = now;
-            if (fc.Phase == FirePhase.Ranging)
-                fc.Phase = FirePhase.Effect;
-            (fc.Misses, fc.MissOver, fc.MissShort) = (0, 0, 0);
+            (fc.WalkStep, fc.Misses) = (Math.Max(floor, 0.5 * fc.WalkStep), 0);
             return;
         }
-        if (fc.Phase != FirePhase.Effect)
-            return;
+        int d = sign == FireControl.Sign.Over ? -1 : 1;
+        if (d * (fc.CorrR - at) > 0.5)
+            return;   // already stepped past it that way
         fc.Misses++;
-        if (sign == FireControl.Sign.Over)
-            fc.MissOver++;
-        else
-            fc.MissShort++;
-        if (fc.Misses < missesToRange)
-            return;
-        if (fc.MissOver == 0 || fc.MissShort == 0)
-            fc.Bracket.OpenToward(sign, now, fc.DriftMs);
-        (fc.Phase, fc.Misses, fc.MissOver, fc.MissShort, fc.Rung, fc.Bracket.Step) = (FirePhase.Ranging, 0, 0, 0, 0, FirstStep(fc));
+        if (d == fc.WalkDir)
+        {
+            if (fc.WalkStep >= top)
+            {
+                fc.Bracket = FireControl.Bracket.Beyond(sign, at, now, FirstStep(fc));
+                (fc.Phase, fc.Misses, fc.WalkDir, fc.Rung) = (FirePhase.Ranging, 0, 0, 0);
+                fc.CorrR = fc.Bracket.Aim(now, fc.DriftMs);
+                return;
+            }
+            fc.WalkStep = Math.Min(top, 2 * fc.WalkStep);
+        }
+        else if (fc.WalkDir != 0)
+            fc.WalkStep = Math.Max(floor, 0.5 * fc.WalkStep);
+        fc.WalkDir = d;
+        fc.CorrR = at + d * fc.WalkStep;
     }
 
     /// <summary>The solution disturbed (the target seen to turn, a plain computer's own course gone stale): a battery firing
-    /// for effect goes back to ranging, its bracket opened round its middle to the first step.</summary>
+    /// for effect goes back to ranging, its bracket closed round the walk's correction at the first step; one ranging opens
+    /// its bracket round its middle to the first step.</summary>
     void Disturbed(ref Fc fc, long now)
     {
         fc.Bracket.Step = FirstStep(fc);
-        fc.Bracket.Widen(now, fc.DriftMs, fc.Bracket.Step);
         if (fc.Phase == FirePhase.Effect)
-            (fc.Phase, fc.Misses, fc.MissOver, fc.MissShort) = (FirePhase.Ranging, 0, 0, 0);
+            (fc.Bracket, fc.Phase, fc.Misses, fc.WalkDir) = (FireControl.Bracket.About(fc.CorrR, fc.Bracket.Step, now, fc.Bracket.Step), FirePhase.Ranging, 0, 0);
+        else
+            fc.Bracket.Widen(now, fc.DriftMs, fc.Bracket.Step);
         fc.Rung = 0;
     }
 
@@ -1830,7 +1849,8 @@ public sealed class GunnerySystem : IWorldSystem
     /// <summary>The gunnery officer's worth of a salvo (docs/battle/balance.md BL1p): his chance a shell, from what he
     /// knows, in <see cref="Matchup.ShellChance"/>'s form: the target's hitting space as he sees her (her aspect, her
     /// freeboard's danger space at the fall), against his aim's doubt (a closed bracket's width, else his computer's own
-    /// sigma of her position and rate over the time of flight and the residual bias), the laying and the roll's slip
+    /// sigma of her position and rate over the time of flight and the residual bias; firing for effect, the walk's rocking
+    /// at its step), the laying and the roll's slip
     /// (as BL1b has them, by a trained man's numbers), her turn's kick (BL1m) and the pattern. Now; steady (her turn
     /// left out); and what fire for effect could do from here, steady (his aim at the bracket's floor).</summary>
     (double Now, double Steady, double Could) Worth(in Fc fc, ShipClass cls, in ShipState ship, in ShipFrame frame, in ShipState tgt, in BatteryRow row,
@@ -1846,8 +1866,8 @@ public sealed class GunnerySystem : IWorldSystem
         var computer = fc.Fit.Computer;
         var mount = fc.Fit.Mount;
         // his aim's doubt along the line of fire
-        double aim = fc.Bracket.Closed
-            ? Math.Max(fc.Bracket.HiAt(now, fc.DriftMs) - fc.Bracket.LoAt(now, fc.DriftMs), 0) / Math.Sqrt(12)
+        double aim = fc.Phase == FirePhase.Effect ? fc.WalkStep / Math.Sqrt(3)
+            : fc.Bracket.Closed ? Math.Max(fc.Bracket.HiAt(now, fc.DriftMs) - fc.Bracket.LoAt(now, fc.DriftMs), 0) / Math.Sqrt(12)
             : Math.Sqrt(fc.PosSigmaM * fc.PosSigmaM + Sq(fc.DriftMs * fc.TofS) + Sq(computer.ResidPct / 100 * range));
         double floorM = Math.Max(settings.BracketFloorM, settings.BracketFloorPatterns * 4 * sr);
         // and where his spots put it: his spotter's own error over or short of a splash (k R² / h from his height, through
@@ -2004,6 +2024,7 @@ public sealed class GunnerySystem : IWorldSystem
             h.Add(fc.CorrD);
             h.Add(fc.Bracket.Lo);
             h.Add(fc.Bracket.Hi);
+            h.Add(fc.WalkStep);
             h.Add((int)fc.Phase);
             h.Add(fc.InFlight);
             h.Add(fc.Salvos);

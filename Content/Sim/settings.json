@@ -251,16 +251,15 @@
   "BracketFloorPatterns": 1,
   "BracketFloorM": 92,
   "RangingWaitMarginMs": 15000,
-  "SpotsHoldS": 120,
   "ReadingGateSigmas": 3,
   "LayerSettleS": 7,
   "QuickFirerReloadS": 16,
   "FireDisciplines": [
-    { "Name": "rn-1914", "InFlight": 1, "LadderStepM": 0, "GunsShare": 0.5, "GunsMin": 4, "EffectHalves": true, "MissesToRange": 3, "RateSpotShare": 0.5, "IndependentWithinM": 0 },
-    { "Name": "rn-1917", "InFlight": 2, "LadderStepM": 0, "GunsShare": 0.5, "GunsMin": 4, "EffectHalves": true, "MissesToRange": 3, "RateSpotShare": 0.5, "IndependentWithinM": 0 },
-    { "Name": "german", "InFlight": 3, "LadderStepM": 366, "GunsShare": 0.2, "GunsMin": 2, "EffectHalves": true, "MissesToRange": 3, "RateSpotShare": 0, "IndependentWithinM": 0 },
-    { "Name": "usn", "InFlight": 1, "LadderStepM": 0, "GunsShare": 0.5, "GunsMin": 4, "EffectHalves": false, "MissesToRange": 3, "RateSpotShare": 0, "IndependentWithinM": 0 },
-    { "Name": "independent", "InFlight": 1, "LadderStepM": 0, "GunsShare": 0.5, "GunsMin": 4, "EffectHalves": false, "MissesToRange": 3, "RateSpotShare": 0, "IndependentWithinM": 5500 }
+    { "Name": "rn-1914", "InFlight": 1, "LadderStepM": 0, "GunsShare": 0.5, "GunsMin": 4, "EffectHalves": true, "IndependentWithinM": 0 },
+    { "Name": "rn-1917", "InFlight": 2, "LadderStepM": 0, "GunsShare": 0.5, "GunsMin": 4, "EffectHalves": true, "IndependentWithinM": 0 },
+    { "Name": "german", "InFlight": 3, "LadderStepM": 366, "GunsShare": 0.2, "GunsMin": 2, "EffectHalves": true, "IndependentWithinM": 0 },
+    { "Name": "usn", "InFlight": 1, "LadderStepM": 0, "GunsShare": 0.5, "GunsMin": 4, "EffectHalves": false, "IndependentWithinM": 0 },
+    { "Name": "independent", "InFlight": 1, "LadderStepM": 0, "GunsShare": 0.5, "GunsMin": 4, "EffectHalves": false, "IndependentWithinM": 5500 }
   ],
   "DispersionDeflectionRatio": 0.4,
   "RangefinderBiasUnits": 1.5,
