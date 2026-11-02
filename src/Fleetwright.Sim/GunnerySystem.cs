@@ -917,6 +917,16 @@ public sealed class GunnerySystem : IWorldSystem
         if (!fc.Tracking)
         {
             fc.State = BatteryState.Tracking;   // its first reading still on its way
+            if (sees)
+            {
+                // the turrets train on her as she's seen (the director's train, or each trainer on his own sight), not
+                // when the plot has its first range (docs/battle/fc-ladder-check.md FL2): their elevation waits for it
+                double seen = Mod(Earth.Bearing(ship.Position, tpos) - ship.HeadingDeg);
+                for (int j = 0; j < mounts.Length; j++)
+                    if (cond.MountWorks[mounts[j]] && !store.Combat.Illuminating(slot, mounts[j]))
+                        store.Combat.Order(slot, mounts[j], cls.Mounts[mounts[j]], now, seen,
+                            CombatStore.ElevationAt(store.Combat.Mount(slot, mounts[j]), cls.Mounts[mounts[j]], now));
+            }
             return;
         }
         if (computer.Tracker == TrackerKind.Judgement && sees && now >= fc.JudgeMs)

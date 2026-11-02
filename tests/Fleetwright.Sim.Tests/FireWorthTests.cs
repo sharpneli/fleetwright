@@ -71,15 +71,19 @@ public class FireWorthTests(ITestOutputHelper output)
     }
 
     /// <summary>Her own turns cost a helm-free table only what its own-ship inputs bring it late (docs/battle/fc-ladder-check.md
-    /// FL1; the own-turn kick, a draw a salvo, gone): her course comes by the gyro's repeat motor at once, her speed by log.
-    /// A Yamato weaving 20° either way every minute at 8 km hardly loses way, and hits as with her speed fed exactly; a Lion
-    /// in 90° legs every two minutes at 12 km sheds speed in each turn, her Forbes log read and set by hand 30 s late
-    /// [EST], and hits less (8 seeds, measured: 648 v 650; 126 v 156). The officer's paring (BL1p) has nothing to hold for
-    /// in either: what the log's lag costs him is small beside the rest of his doubt.</summary>
+    /// FL1; the own-turn kick, a draw a salvo, gone): her course comes by the gyro's repeat motor at once, her speed by log,
+    /// and that costs little even in hard turns. The table reckons her readings and her gun orders from the same place, so
+    /// where its dead reckoning has drifted cancels; what's left is her speed's error now times the flight and the plot's
+    /// latency, bounded by the speed she sheds in the turn however late her log (at 18 kn some 1.5-3 m/s, 50-100 m in the
+    /// line). Measured on the readings' rung with her own inputs on against exact (8 seeds, fc-ladder-check.md FL2): a Yamato
+    /// weaving 20° either way every minute at 8 km 954 v 963 hits; a Lion in 90° legs every two minutes at 12 km, her Forbes
+    /// log read and set by hand 30 s late [EST], 374 v 360, and 366 with it two minutes late. (FL1 had the Lion hit 126 v
+    /// 156 with every error on: 8 duels' noise; 138 v 140 since.) The officer's paring (BL1p) has nothing to hold for in
+    /// either.</summary>
     [Theory]
-    [InlineData("yamato", 8_000, 20.0, 60, false)]
-    [InlineData("lion", 12_000, 90.0, 120, true)]
-    public void Her_own_turns_cost_a_helm_free_table_only_her_speed_fed_late(string ship, double rangeM, double deg, int legS, bool costs)
+    [InlineData("yamato", 8_000, 20.0, 60)]
+    [InlineData("lion", 12_000, 90.0, 120)]
+    public void Her_own_turns_cost_a_helm_free_table_little(string ship, double rangeM, double deg, int legS)
     {
         (int Shells, int Hits) Run(SimSettings s)
         {
@@ -97,13 +101,13 @@ public class FireWorthTests(ITestOutputHelper output)
             }
             return (shells, hits);
         }
-        var fed = Run(Settings);
-        var exact = Run(Settings with { GunneryErrors = GunneryErrorScale.Parse("own=0") });
-        output.WriteLine($"{ship}, {deg}° legs every {legS} s: {fed.Hits} hits of {fed.Shells} with her speed fed late, {exact.Hits} of {exact.Shells} exactly");
-        if (costs)
-            Assert.True(fed.Hits < 0.9 * exact.Hits, "her speed shed in the turns reaches the table late");
-        else
-            Assert.InRange(fed.Hits, 0.95 * exact.Hits, 1.05 * exact.Hits);
+        var fed = Run(Settings with { GunneryErrors = GunneryErrorScale.Parse("all=0,readings=1,own=1") });
+        var exact = Run(Settings with { GunneryErrors = GunneryErrorScale.Parse("all=0,readings=1") });
+        var allFed = Run(Settings);
+        var allExact = Run(Settings with { GunneryErrors = GunneryErrorScale.Parse("own=0") });
+        output.WriteLine($"{ship}, {deg}° legs every {legS} s, the readings only: {fed.Hits} hits of {fed.Shells} with her speed fed late, {exact.Hits} of {exact.Shells} exactly; " +
+                         $"every error on: {allFed.Hits} of {allFed.Shells}, {allExact.Hits} of {allExact.Shells}");
+        Assert.InRange(fed.Hits, 0.94 * exact.Hits, 1.06 * exact.Hits);
     }
 
     [Fact]

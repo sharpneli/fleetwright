@@ -31,7 +31,7 @@ haze. QE on QE at 16 kyd unless the step's period fought nearer (the 1905 levels
 |---|---|---|---|---|---|
 | FL0 | bench | | | | done (BL1ag) |
 | FL1 | own turns | `own_turn_kick_m`, a Gaussian a salvo by rate of turn (Dreyer 300 m, Mk 8 150 m, digital 20 m): the reference's lumped stand-in | a helm-free machine keeps its solution through her own turns, losing only what its own course and speed inputs lag: the speed she loses in a turn (`TurnDragFactor`) reaching a hand-fed Forbes log late (Dreyer: "manually fed to Dumaresq"), a pitometer at once (Mk 8); her course by gyro repeat | her own zigzag, every error on: level 3 above level 1 | done 2026-11-02 |
-| FL2 | the opening | | a longer base and a better first guess open and straddle sooner | the first 5 min, every error on (on the readings rung 193 v 266 s already; every error on 143 v 141 s): first suspect the open's longest wait, `GunneryOpenS` 120 s | |
+| FL2 | the opening | | a longer base and a better first guess put the first salvo nearer her, so it straddles more often and comes to effect sooner | the first salvo's fall, every error on (the first straddle's median time, 143 v 141 s, hid it) | done 2026-11-02 |
 | FL3 | 0 → 1 | the eye (20% of range) → FA 2 m; eye and hand plot → hand plot; open sights 1.15 → telescopic 0.73 mil | ranges found at once, not by long ranging; a tighter pattern | the opening at 6-8 km | |
 | FL4 | 1 → 2 | FA → FQ/FT 4 m; hand plot → Dumaresq and Vickers clock; telescopic 0.73 → 0.35 mil | the clock runs the range on between sparse readings from her course and speed | a crossing or closing target, readings 2 a minute; haze that loses readings | |
 | FL5 | 2 → 3 | Dumaresq → Dreyer Mk III-V (helm-free, the bearing gear); local laying → director 0.5 mil | through her own turns (FL1); the director's layer above the smoke and spray, one fall to spot | her own zigzag; a seaway; her own and the enemy's smoke, spray at speed. On the way: the catalogue's "Dreyer table Mk I-II" (not helm-free) fits the Mk I only; the Mk I* took her heading automatically and the Mk II probably (own-motion-inputs.md §2): split the row | |
@@ -60,7 +60,10 @@ lumped stand-in for something the chain now models?
 - `lay_mil` by mount: a director (0.5 mil) lays worse than a turret's telescopic sights (0.35), and a stable vertical with
   RPC (0.5) worse than a director's power drive (0.4), on a steady platform. Check the sources' split (BL1l) in FL5 and FL7.
 - `latency_s`, `q`, the priors: the machine's own assumptions; fine as such, each checked by its step.
-- `GunneryOpenS`, `OpenDoubtSteps`: FL2.
+- `GunneryOpenS`, `OpenDoubtSteps`: FL2, neither held the opening on the bench (the track settles on its first reading at
+  16 kyd for both levels; the turrets' swing held it). Their own check wants a case the swing doesn't cover: a shift.
+- The captain's ranging record (`RangingRecord`, BL1ae): its cycles count the turrets' first swing from rest as ranging;
+  a shift's own swing is its change of bearing over the training rate (a target on the other beam, 90 s at 2°/s).
 - `GunneryCombat`: the lumped battle factor, goes when fatigue comes (no-lumped-battle-factors).
 - `first_step_m`: doctrine's, per navy's practice; FL3-FL5.
 
@@ -81,7 +84,7 @@ nothing substantial, this stays.
 **Measured** (QE on QE, 16 kyd, 16 duels, her own zigzag 10° either side every 90 s): every error on, level 1 12.1%,
 level 3 14.6% (the kick's 10.6%), level 5 18.9%; steady, unchanged. A Yamato weaving 20° every minute at 8 km hits
 as with her speed fed exactly (648 v 650 of 969); a Lion in 90° legs every two minutes at 12 km sheds speed and hits
-126 against 156 exactly. **On the way:** a first try gave the course a 2 s lag [EST] too: the Dreyer's zigzag fell
+126 against 156 exactly (**not so**, FL2: 8 duels' noise; her speed's lag costs little anywhere). **On the way:** a first try gave the course a 2 s lag [EST] too: the Dreyer's zigzag fell
 from 83 to 16% on the readings' rung (2° of bearing at 15 km is 500 m), and at a quarter of the lags it held: a cliff
 too sharp for the error, so it looked as if something in the chain amplified a bearing error that size. **Checked (no
 amplifier):** that error put back by hand into the readings' bearings, one duel traced salvo by salvo: the aim across
@@ -97,6 +100,50 @@ gyro's pointer by hand ("Follow up compass course as received from the gyrocompa
 director's train comes in at once, and its bearings turn by the lag: `own_course_lag_s` (0 everywhere else), 0.5 s [EST, the
 user: "I definitely don't have that much latency if I just follow something"]. Measured in the levels' zigzag (readings'
 rung): 83.8% with her course exact, 83.8 at 0.5 s, 73.4 at 1 s; every error on 16.8, 17.0, 14.7
-(`GunneryTests.The_Type_92_follows_her_course_by_hand_half_a_second_behind`). The rest went where each belongs: the stable
+(`GunneryTests.The_Type_92_follows_her_course_by_hand_half_a_second_behind`). **Measured again in FL2:** `all=0` sets the
+own rung to 0 too, so the 0.5 s run had her inputs exact; with `own=1` on the readings' rung 81.8% exact, 82.1 at 0.5 s,
+68.8 at 1 s, every error on 18.3 v 17.2 (the turrets now training at first sight): the conclusion stands. The rest went where each belongs: the stable
 vertical in a turn to FL7, the apparent wind to the `resid_pct` audit, the speed lags and the drift angle to the audit list,
 the Dreyer Mk I/II split to FL5.
+
+## FL2: the opening (done 2026-11-02)
+
+**Should give:** level 3's 4 m rangefinder reads her range about three times better at 16 kyd than level 1's FA 2 m
+(σ some 110 against 360 m a reading), and its Dreyer's priors are tighter: its first salvo falls nearer her, so it
+straddles more often and comes to fire for effect in fewer salvos. Neither should wait longer than its track needs.
+
+**Found:** the measure was wrong, not the mechanism. The first straddle's median time over 16 duels (143 v 141 s) sat on
+the second salvo for both: level 3's first straddles a little under half the time. The opening's timeline (QE on QE at
+16 kyd, her abeam, the turrets at rest fore and aft): sighted at 7 s; the first reading through the plot 15 s later (its
+latency); settled at once, both levels (twice its doubt within two first steps of 366 m), so neither `GunneryOpenS` (120
+s) nor the settled test held either; the turrets ordered only then, training 88° at 2°/s, 44 s; level 3's director then
+waiting up to a roll to fire (research §4.4). First salvos at 76 and 82 s. The falls, every error on, 64 duels:
+
+| | level 1 | level 3 |
+|---|---|---|
+| first salvo's fall, rms | 349 m | 210 m |
+| first salvos straddling | 28% | 44% |
+| firing for effect by the third salvo | 86% | 100% |
+| hits in the first 5 min | 109 of 1,280 | 130 of 1,280 |
+
+**Built:** the turrets train on her as she's seen (the director's train, or each trainer on his own sight) from first
+sight, not when the plot has its first range; their elevation waits for it (`GunnerySystem`'s computer step, before the
+first reading). The first salvo 15 s sooner for both (61, 67 s). `GunneryTests.Where_the_levels_differ_level_3_does_better`
+measures the first salvo's fall (32 duels): readings' rung 200 v 122 m, every error on 407 v 214 m with 25 v 38%
+straddling.
+
+**On the way:**
+- `all=0` sets the own rung to 0 as well: every "all=0,readings=1" run had her own inputs exact. FL1's Type 92 check
+  compared exact with exact; measured again (FL1's section), it stands. The levels' zigzag on the readings' rung has the
+  own rung on now.
+- FL1's Lion (her 30 s hand-fed log costing hits in 90° legs, 126 v 156 every error on) was 8 duels' noise: 138 v 140
+  since, 374 v 360 on the readings' rung, 366 with the log two minutes late. Why: the table reckons her readings and her
+  gun orders from the same place, so its dead reckoning's drift cancels; what's left is her speed's error now times the
+  flight and the latency, bounded by the speed she sheds (1.5-3 m/s at 18 kn, 50-100 m) however late the log.
+  `FireWorthTests.Her_own_turns_cost_a_helm_free_table_little` says so.
+- The captain's cost of a shift (BL1ae): the battery's ranging record came down 15 s, to about 70 s on the bench; 12 km
+  against 13 is a tie at that (8% nearer over his 600 s is 48 s), so `FireOrderTests`' "a little nearer" case is 12.5 km
+  now. The record still counts the turrets' first swing as ranging (audit list).
+- The bracket: level 3's second salvo falls no nearer than its first (210 → 206 m rms, every error on). Its first step
+  (twice its doubt, mostly the 1.2% residual bias, capped at 366 m) moves the fall the step's length on the spot's sign
+  alone, however near the first fell: bracket and halve, as doctrine had it. Checked where `first_step_m` is (FL3-FL5).

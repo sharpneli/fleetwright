@@ -64,11 +64,12 @@ public class FireOrderTests(ITestOutputHelper output)
     }
 
     /// <summary>The cost of a shift (docs/battle/balance.md BL1ae): a battleship on another at 13 km, a second enemy coming
-    /// into sight at 12 or 5 km after a time. Firing for effect she holds against the one a little nearer (her fire there
-    /// would count only once she'd ranged her) and shifts to the one much nearer; still ranging, she shifts to the nearer
-    /// at once (she'd range either from the start).</summary>
+    /// into sight at 12.5, 12 or 5 km after a time. Firing for effect she holds against the one a little nearer (her fire
+    /// there would count only once she'd ranged her) and shifts to the one much nearer; still ranging, she shifts to the
+    /// nearer at once (she'd range either from the start). 12 km against 13 is a tie at her ranging's 70 s
+    /// (fc-ladder-check.md FL2: the turrets training at first sight took 15 s off it).</summary>
     [Theory]
-    [InlineData(12_000, 6 * 60, false)]
+    [InlineData(12_500, 6 * 60, false)]
     [InlineData(5_000, 6 * 60, true)]
     [InlineData(12_000, 20, true)]
     public void A_shift_of_target_is_worth_its_ranging(double secondM, double afterS, bool shifts)

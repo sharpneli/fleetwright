@@ -83,37 +83,32 @@ public class GunneryTests(ITestOutputHelper output)
         return (tallies.Sum(t => t.Hits), tallies.Sum(t => t.Shells), tallies.Sum(t => t.Straddles), tallies.Sum(t => t.Salvos));
     }
 
-    /// <summary>The first straddle's time over n duels, its median (s; a duel without one counts as the whole run), and the
-    /// hits in the first minutes.</summary>
-    static (double StraddleS, double HitPct) Opening(ShipClass shooter, ShipClass target, double rangeM, int level, int n, double minutes,
-        SimSettings? with = null)
+    /// <summary>The opening over n duels (fc-ladder-check.md FL2): the first salvo's fall over or short of her, rms (m), and
+    /// the share of first salvos that straddled (%), when it was fired on average (s), and the hits in the first minutes (%).</summary>
+    static (double FirstFallM, double FirstStraddlePct, double FirstS, double HitPct) Opening(ShipClass shooter, ShipClass target, double rangeM,
+        int level, int n, double minutes, SimSettings? with = null)
     {
         var tallies = new GunnerySystem.Tally[n];
+        var first = new GunnerySystem.SalvoReport?[n];
         Parallel.For(0, n, k =>
         {
             var w = Make(shooter, target, rangeM, 90, 0, 25, 1 + k, level, settings: with ?? Settings with { Smoke = false });
+            w.Gunnery.Reported = r => first[k] ??= r.Shooter == 1 ? r : null;
             w.AdvanceTo(Start + (long)(minutes * 60_000));
             tallies[k] = w.Gunnery.TallyOf(1, 0)!.Value;
         });
-        var times = tallies.Select(t => t.FirstStraddleMs >= 0 ? (t.FirstStraddleMs - Start.Ms) / 1000.0 : minutes * 60).Order().ToArray();
-        return (times[n / 2], 100.0 * tallies.Sum(t => t.Hits) / Math.Max(tallies.Sum(t => t.Shells), 1));
+        var fs = first.Where(r => r.HasValue).Select(r => r!.Value).ToArray();
+        return (Math.Sqrt(fs.Average(r => r.MeanX * r.MeanX)), 100.0 * fs.Count(r => r.Straddle) / fs.Length, fs.Average(r => (r.FiredMs - Start.Ms) / 1000.0),
+            100.0 * tallies.Sum(t => t.Hits) / Math.Max(tallies.Sum(t => t.Shells), 1));
     }
 
-    /// <summary>Where the levels must differ (the user, 2026-11-02: "In ideal circumstances one is not really expecting any
-    /// difference, so we should do a test with a situation where difference is expected"), QE on QE at 16 kyd, each on the
-    /// ladder's rung that holds the mechanism (balance.md BL1ag): with her own zigzag (10° either side every 90 s, past the
-    /// plain clock's 5°) and the readings' errors alone, level 1's hand plot is put out by each turn and ranges again where
-    /// level 3's Dreyer, fed her own course and speed, keeps its solution (measured 15 v 81%); and opening fire, level 3's
-    /// 4 m rangefinder (the FA's 2 m reads her range some 2.7 times worse at the range) straddles her sooner (193 v 266 s).
-    /// With every error on, the zigzag shows it too since fc-ladder-check.md FL1 took the own-turn kick (one lumped draw a
-    /// salvo, which took level 3 to 10.6%) for the table's own reckoning (level 1 12.1%, level 3 14.6%); the opening is
-    /// FL2's (both straddle at about 140 s).</summary>
     /// <summary>The Type 92's own course is followed by hand from the gyro's pointer (fc-ladder-check.md FL1;
     /// ship-motion/own-motion-inputs.md §2), 0.5 s behind [EST, the user: "I definitely don't have that much latency if I
     /// just follow something"], while the director's train comes in at once: her turns turn its bearings by the lag. In the
     /// levels' zigzag (QE on QE at 16 kyd, 10° either side every 90 s, at most 0.47°/s) half a second is a quarter of a
-    /// degree, 60 m along a target 190 m long, and costs nothing; twice the lag costs (readings' rung, 16 duels: 83.8% with
-    /// her course exact, 83.8 at 0.5 s, 73.4 at 1 s).</summary>
+    /// degree, 60 m along a target 190 m long, and costs nothing; twice the lag costs (readings' rung, her own inputs on, 16
+    /// duels: 81.8% with them exact, 82.1 at 0.5 s, 68.8 at 1 s; fc-ladder-check.md FL2 put the own rung back in, "all=0"
+    /// had taken it out).</summary>
     [Fact]
     public void The_Type_92_follows_her_course_by_hand_half_a_second_behind()
     {
@@ -125,31 +120,45 @@ public class GunneryTests(ITestOutputHelper output)
                 with: Settings with { Smoke = false, GunneryErrors = GunneryErrorScale.Parse(errors) });
             return 100.0 * h / sh;
         }
-        double exact = Zig("all=0,readings=1,own=0"), half = Zig("all=0,readings=1"), one = Zig("all=0,readings=1,own=2");
-        output.WriteLine($"zigzagging, the readings only: her course exact {exact:F1}%, 0.5 s behind {half:F1}%, 1 s {one:F1}%");
+        double exact = Zig("all=0,readings=1"), half = Zig("all=0,readings=1,own=1"), one = Zig("all=0,readings=1,own=2");
+        double allExact = Zig("own=0"), allHalf = Zig("all=1");
+        output.WriteLine($"zigzagging, the readings only: her course exact {exact:F1}%, 0.5 s behind {half:F1}%, 1 s {one:F1}%; every error on: exact {allExact:F1}%, 0.5 s {allHalf:F1}%");
         Assert.InRange(half, 0.97 * exact, 1.03 * exact);
         Assert.True(one < 0.95 * exact, "a hand-followed course late enough turns the bearings off her");
     }
 
+    /// <summary>Where the levels must differ (the user, 2026-11-02: "In ideal circumstances one is not really expecting any
+    /// difference, so we should do a test with a situation where difference is expected"), QE on QE at 16 kyd, each on the
+    /// ladder's rung that holds the mechanism (balance.md BL1ag): with her own zigzag (10° either side every 90 s, past the
+    /// plain clock's 5°) and the readings' errors alone, level 1's hand plot is put out by each turn and ranges again where
+    /// level 3's Dreyer, fed her own course and speed, keeps its solution (measured 15 v 81%). With every error on, the
+    /// zigzag shows it too since fc-ladder-check.md FL1 took the own-turn kick (one lumped draw a salvo, which took level 3
+    /// to 10.6%) for the table's own reckoning (level 1 12.1%, level 3 14.6%). Opening fire (FL2), level 3's 4 m
+    /// rangefinder (the FA's 2 m reads her range some 3 times worse at the range) puts its first salvo nearer her: on the
+    /// readings' rung 131 v 221 m rms over 32 duels; every error on (the residual bias and the pattern beside it) 219 v 395 m,
+    /// 39 v 23% of first salvos straddling. The first straddle's median time hid it (both about 140 s): level 3's first
+    /// salvo straddles a little under half the time, so the median fell on the second salvo for both.</summary>
     [Fact]
     public void Where_the_levels_differ_level_3_does_better()
     {
         var qe = Class("super_dreadnought");
-        var readings = Settings with { Smoke = false, GunneryErrors = GunneryErrorScale.Parse("all=0,readings=1") };
+        var readings = Settings with { Smoke = false, GunneryErrors = GunneryErrorScale.Parse("all=0,readings=1,own=1") };
         var zig = new double[4];
         var open = new double[4];
         foreach (int level in new[] { 1, 3 })
         {
             var (h, sh, _, _) = Duels(qe, qe, 16 * Kyd, 90, level, 16, zigDeg: 10, with: readings);
             zig[level] = 100.0 * h / sh;
-            open[level] = Opening(qe, qe, 16 * Kyd, level, 16, 5, readings).StraddleS;
+            var (of, ost, ot, _) = Opening(qe, qe, 16 * Kyd, level, 32, 2, readings);
+            open[level] = of;
             var (ah, ash, _, _) = Duels(qe, qe, 16 * Kyd, 90, level, 16, zigDeg: 10);
-            var (aos, aop) = Opening(qe, qe, 16 * Kyd, level, 16, 5);
-            output.WriteLine($"level {level}, the readings only: zigzagging {zig[level]:F1}% hits, the first straddle at {open[level]:F0} s; " +
-                             $"every error on: zigzagging {100.0 * ah / ash:F1}%, the first straddle at {aos:F0} s, {aop:F1}% in 5 min");
+            var (af, ast, _, ap) = Opening(qe, qe, 16 * Kyd, level, 32, 5);
+            output.WriteLine($"level {level}, the readings only: zigzagging {zig[level]:F1}% hits, the first salvo at {ot:F0} s falling {of:F0} m rms " +
+                             $"({ost:F0}% straddled); every error on: zigzagging {100.0 * ah / ash:F1}%, the first salvo {af:F0} m rms ({ast:F0}% straddled), " +
+                             $"{ap:F1}% in 5 min");
         }
         Assert.True(zig[3] > 2 * zig[1], "her own turns put the plain clock out, not the helm-free table");
-        Assert.True(open[3] < 0.85 * open[1], "the longer base straddles sooner");
+        Assert.True(open[3] < 0.75 * open[1], "the longer base puts the first salvo nearer");
     }
 
     [Fact]
