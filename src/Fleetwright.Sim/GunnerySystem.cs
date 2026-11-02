@@ -838,7 +838,8 @@ public sealed class GunnerySystem : IWorldSystem
             // but a coincidence set's halves are brought into line afresh each reading: a share of his error is fresh
             double fresh = !Ranges(optics, s) ? 0 : optics.Kind == InstrumentKind.Coincidence ? settings.RangefinderFreshCoincidence : settings.RangefinderFreshStereo;
             double err = fresh > 0 ? Math.Sqrt(1 - fresh * fresh) * s.Wander + fresh * r.NextGaussian() : s.Wander;
-            double zr = Math.Max(range + bias + sr * err, 100), zb = brg + double.RadiansToDegrees(sb * r.NextGaussian());
+            double ek = settings.GunneryErrors.Readings;
+            double zr = Math.Max(range + ek * bias + ek * sr * err, 100), zb = brg + double.RadiansToDegrees(ek * sb * r.NextGaussian());
             var (z, r11, r12, r22) = Track.Reading(at, zr, zb, sr, sb);
             if (fc.PendCount == PendingCap)
                 PopReading(ref fc, f, target, now, ship.Position, ownV);   // the computer's queue is full: the oldest goes in now
@@ -868,7 +869,7 @@ public sealed class GunnerySystem : IWorldSystem
             // a sailor looks at her again: a fresh guess at her course and speed
             var rg = stream.Derive((ulong)f).Derive((ulong)fc.Generation).Derive(0xE7Fu).Derive((ulong)now);
             double before = SolutionRangeM(fc, now, ship.Position, ownV);
-            fc.Tracker.Rejudge(Guess(computer, target.Position, target.Forward * target.Speed, ref rg));
+            fc.Tracker.Rejudge(Guess(computer, target.Position, target.Forward * target.Speed, ref rg, settings.GunneryErrors.Prior));
             Rebase(ref fc, SolutionRangeM(fc, now, ship.Position, ownV) - before);
             fc.JudgeMs = now + (long)(computer.RejudgeS * 1000);
         }
@@ -1135,7 +1136,7 @@ public sealed class GunnerySystem : IWorldSystem
         {
             var rg = stream.Derive((ulong)f).Derive((ulong)fc.Generation).Derive(0xE7Eu);
             var truth = target.Forward * target.Speed;
-            fc.Tracker = FcTracker.Start(computer, r, Guess(computer, target.Position, truth, ref rg), FcTracker.GuessSigma(computer, target.Speed));
+            fc.Tracker = FcTracker.Start(computer, r, Guess(computer, target.Position, truth, ref rg, settings.GunneryErrors.Prior), FcTracker.GuessSigma(computer, target.Speed));
             (fc.Tracking, fc.TrackMs, fc.OpenMs) = (true, now, now + (long)(settings.GunneryOpenS * 1000));
             fc.JudgeMs = now + (long)(computer.RejudgeS * 1000);
         }
@@ -1189,10 +1190,10 @@ public sealed class GunnerySystem : IWorldSystem
     }
 
     /// <summary>The eye's guess at a target's velocity: its speed and course, each off by the computer's prior (1 sigma).</summary>
-    static Vec3d Guess(in ComputerRow c, Vec3d position, Vec3d velocity, ref RandomStream r)
+    static Vec3d Guess(in ComputerRow c, Vec3d position, Vec3d velocity, ref RandomStream r, double prior = 1)
     {
         double speed = velocity.Length, course = speed > 1e-6 ? Earth.Heading(position, velocity) : 0;
-        double ds = r.NextGaussian() * c.PriorKn * Handling.MsPerKnot, dc = r.NextGaussian() * c.PriorDeg;
+        double ds = r.NextGaussian() * c.PriorKn * Handling.MsPerKnot * prior, dc = r.NextGaussian() * c.PriorDeg * prior;
         return Earth.Forward(position, course + dc) * Math.Max(speed + ds, 0);
     }
 
@@ -1416,16 +1417,17 @@ public sealed class GunnerySystem : IWorldSystem
         double shake = mount.DirectorFiring && fc.SensorCount > 0 ? Vibration(cls, ship, sensors[f * MaxSensors].Support, sensors[f * MaxSensors].X)
             : Vibration(cls, ship, InstrumentSupport.Turret, cls.Mounts[mounts[0]].X);
         // and the air on his sight (BL1i): a grey shape at the edge of what he can make out
-        double layRad = mount.LayMil * FireControl.Mil * crew.Lay * combat * stress * shake * SightModel.HazeFactor(fc.Margin, settings.AimHazePower, settings);
+        var errs = settings.GunneryErrors;
+        double layRad = errs.Laying * mount.LayMil * FireControl.Mil * crew.Lay * combat * stress * shake * SightModel.HazeFactor(fc.Margin, settings.AimHazePower, settings);
         double eEl = mount.DirectorFiring ? r.NextGaussian() * layRad * perRad : 0, eTr = mount.DirectorFiring ? r.NextGaussian() * layRad * range : 0;
         // own ship's turn (docs/battle/balance.md BL1m): the computer's own-turn kick, given at the reference's turn
         // (fire_control_ref.py's 1°/s), grows with her rate of turn, so a station keeper's few tenths of a degree a second
         // cost a share of it and a hard turn the whole
-        double turn = Math.Abs(double.RadiansToDegrees(ship.YawRate)) / settings.OwnTurnKickYawDegS * computer.OwnTurnKickM;
+        double turn = errs.Laying * Math.Abs(double.RadiansToDegrees(ship.YawRate)) / settings.OwnTurnKickYawDegS * computer.OwnTurnKickM;
         double kickR = r.NextGaussian() * turn, kickL = r.NextGaussian() * turn;
-        double eSr = r.NextGaussian() * combat * computer.SalvoPct / 100 * range, eSd = r.NextGaussian() * combat * mount.SalvoDeflMil * FireControl.Mil * range;
-        double dr = (pointBlank ? 0 : fc.CorrR + ladder) + eEl + eSr + fc.BiasR * computer.ResidPct / 100 * range + kickR;
-        double dl = fc.CorrD * range + eTr + eSd + fc.BiasD * computer.DeflBiasMil * FireControl.Mil * range + kickL;
+        double eSr = errs.Salvo * r.NextGaussian() * combat * computer.SalvoPct / 100 * range, eSd = errs.Salvo * r.NextGaussian() * combat * mount.SalvoDeflMil * FireControl.Mil * range;
+        double dr = (pointBlank ? 0 : fc.CorrR + ladder) + eEl + eSr + errs.Bias * fc.BiasR * computer.ResidPct / 100 * range + kickR;
+        double dl = fc.CorrD * range + eTr + eSd + errs.Bias * fc.BiasD * computer.DeflBiasMil * FireControl.Mil * range + kickL;
         var (sr, sd) = FireControl.Dispersion(row.PatternPct, range + dr, n, settings.DispersionDeflectionRatio);
         if (!mount.DirectorFiring)
             (sr, sd) = (Math.Sqrt(sr * sr + Math.Pow(layRad * perRad, 2)), Math.Sqrt(sd * sd + Math.Pow(layRad * range, 2)));
@@ -1437,7 +1439,7 @@ public sealed class GunnerySystem : IWorldSystem
             // director's layer's slip is the salvo's, each gun's layer's his own (dispersion); a list is every gun's.
             var rr = stream.Derive((ulong)f).Derive((ulong)fc.Generation).Derive(0x5A2u).Derive((ulong)fc.Salvos);
             double rel = double.DegreesToRadians(fc.OrderBearingDeg), tanE = Math.Tan(double.DegreesToRadians(e0)), keep = 1 - mount.CrossLevel;
-            double tau = stress * (fc.OnRoll ? mount.RollTauS * crew.RollTiming : mount.StableVertical ? mount.RollTauS : settings.ContinuousAimTauS);
+            double tau = errs.Laying * stress * (fc.OnRoll ? mount.RollTauS * crew.RollTiming : mount.StableVertical ? mount.RollTauS : settings.ContinuousAimTauS);
             double omega = fc.Roll.RateAtLevel(ref rr), slip = tau * omega * rr.NextGaussian();
             // and her pitch (BL1h): the same lag at its rate, into elevation toward the bow and stern, cross-level abeam
             double pslip = tau * fc.Pitch.RateAtLevel(ref rr) * rr.NextGaussian();
@@ -1445,7 +1447,7 @@ public sealed class GunnerySystem : IWorldSystem
             // own yaw, a degree or two, left out)
             double yslip = tau * ship.YawRate * rr.NextGaussian();
             // fired anywhere in the roll (following it), the roll's own tilt at that instant; on the roll, at its level
-            double at = fc.OnRoll ? 0 : fc.Roll.AmplitudeRad * Math.Sin(2 * Math.PI * rr.NextDouble());
+            double at = fc.OnRoll ? 0 : errs.Laying * fc.Roll.AmplitudeRad * Math.Sin(2 * Math.PI * rr.NextDouble());
             double heel = double.DegreesToRadians(cond.Attitude.HeelDeg) * Math.Cos(rel);
             if (mount.DirectorFiring)
             {
@@ -1477,7 +1479,7 @@ public sealed class GunnerySystem : IWorldSystem
         sv = new Salvo
         {
             Alive = true, Generation = sv.Generation + 1, Fc = f, FcGeneration = fc.Generation, Target = fc.Target, CorrR = fc.CorrR + ladder, CorrD = fc.CorrD,
-            PatternM = 4 * sr, PatternAcrossM = 4 * sd, RangeM = range, SpotSigmaM = spot, Common = 0.5 * spot * r.NextGaussian(), U = u, W = w, MinX = double.MaxValue,
+            PatternM = 4 * sr, PatternAcrossM = 4 * sd, RangeM = range, SpotSigmaM = spot, Common = errs.Spotting * 0.5 * spot * r.NextGaussian(), U = u, W = w, MinX = double.MaxValue,
             MaxX = double.MinValue, TargetLengthM = store[tslot].Handling.Class.Silhouette.LengthM, FiredMs = now,
             AimErrM = Vec3d.Dot(p - truth, u), AimErrAcrossM = Vec3d.Dot(p - truth, w), Phase = phase, LadderM = ladder, Shift = fc.Shift,
             PointBlank = pointBlank, TrueRangeM = Earth.Distance(ship.Position, tgt.Position), PbCorrR = fc.PbCorrR,
@@ -1499,7 +1501,7 @@ public sealed class GunnerySystem : IWorldSystem
             double firstEl = 0;
             for (int g = 0; g < barrels; g++)
             {
-                var point = centre + u * (sr * r.NextGaussian()) + w * (sd * r.NextGaussian());
+                var point = centre + u * (errs.Dispersion * sr * r.NextGaussian()) + w * (errs.Dispersion * sd * r.NextGaussian());
                 point = point.Normalized() * Earth.Radius;
                 if (FireControl.Solve(ownTable, muzzle, velocity, point, out var lay, e0) &&
                     shells.Launch(world, own, muzzle, lay.Forward, lay.ElevationDeg, lay.Speed, salvo, fc.Shooter, fc.Battery, si, type, loads))
@@ -1603,7 +1605,7 @@ public sealed class GunnerySystem : IWorldSystem
             var d = end - store[tslot].Position;
             double x = Vec3d.Dot(d, sv.U), y = Vec3d.Dot(d, sv.W);
             var r = stream.Derive(0x5B07u).Derive((ulong)si).Derive((ulong)sv.Generation).Derive((ulong)sv.Landed);
-            double seen = hit == sv.Target ? 0 : x + sv.Common + sv.SpotSigmaM * r.NextGaussian();
+            double seen = hit == sv.Target ? 0 : x + sv.Common + settings.GunneryErrors.Spotting * sv.SpotSigmaM * r.NextGaussian();
             // line first: a splash is judged over or short only in line with her (against her hull, hidden behind it or
             // in front of it), within her width across the line of sight and a margin; one off for line could be either
             var tgt = store[tslot];
@@ -1713,7 +1715,7 @@ public sealed class GunnerySystem : IWorldSystem
                 // the line, spotted whether the range could be or not (off for line, it's corrected first): an angle, so
                 // it holds as the range changes
                 var r = stream.Derive(0x5B08u).Derive((ulong)si).Derive((ulong)sv.Generation);
-                double defl = sv.SumY / Math.Max(sv.Landed, 1) + settings.SpotDeflectionMil * FireControl.Mil * sv.RangeM * r.NextGaussian();
+                double defl = sv.SumY / Math.Max(sv.Landed, 1) + settings.GunneryErrors.Spotting * settings.SpotDeflectionMil * FireControl.Mil * sv.RangeM * r.NextGaussian();
                 if (told && Math.Abs(defl) > 0.25 * sv.PatternAcrossM)
                     fc.CorrD = (pyramid ? fc.CorrD : sv.CorrD) - settings.SpotDeflectionGain * defl / sv.RangeM;
             }
@@ -1724,10 +1726,10 @@ public sealed class GunnerySystem : IWorldSystem
                 // (this branch isn't taken); a miss, they take half of it off, as magnitude spots go (half gain, a dead band
                 // of half a pattern, so the gun's own scatter isn't chased: fire-control-research.md §9)
                 var r = stream.Derive(0x5B0Bu).Derive((ulong)si).Derive((ulong)sv.Generation);
-                double x = sv.SumX / Math.Max(sv.Landed, 1) + sv.SpotSigmaM * r.NextGaussian();
+                double x = sv.SumX / Math.Max(sv.Landed, 1) + settings.GunneryErrors.Spotting * sv.SpotSigmaM * r.NextGaussian();
                 if (Math.Abs(x) > 0.5 * sv.PatternM)
                     fc.PbCorrR = sv.PbCorrR - 0.5 * x / Math.Max(sv.TrueRangeM, 1);
-                double defl = sv.SumY / Math.Max(sv.Landed, 1) + settings.SpotDeflectionMil * FireControl.Mil * sv.RangeM * r.NextGaussian();
+                double defl = sv.SumY / Math.Max(sv.Landed, 1) + settings.GunneryErrors.Spotting * settings.SpotDeflectionMil * FireControl.Mil * sv.RangeM * r.NextGaussian();
                 if (Math.Abs(defl) > 0.25 * sv.PatternAcrossM)
                     fc.CorrD = sv.CorrD - settings.SpotDeflectionGain * defl / sv.RangeM;
             }

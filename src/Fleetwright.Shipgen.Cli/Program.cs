@@ -88,12 +88,14 @@ public static class Program
             as DIR/<design>_turns.svg
         shipgen duel SHOOTER [TARGET] [--range M] [--fit design|0-8|NAME] [--runs N] [--minutes M] [--speed KN] [--target-speed KN] [--bearing DEG] [--course DEG]
                 [--target-policy P] [--own-policy P] [--visibility KM] [--wind FROM,KN] [--night | --at ISO] [--combat X] [--crew trained|0-3] [--work-up 0-1] [--battery B] [--seed S] [--trace] [--damage] [--smoke | --no-smoke]
+                [--swell M] [--errors all=0,bias=1,...]
             the fire-control bench (docs/battle/fire-control.md F1): the shooter steams north, the target at a bearing and range on
             a course; a policy is steady, zigzag:AMP:PERIOD, circle:RATE:FROM (°/s, s after the track), chase:AMP:PERIOD (steer for
             the last splash), turn:DEG:AT or crippled; --fit a preset (--level the same) or the battery's own; --combat 1 for
             practice; --wind the way it blows from (the shooter's base course north) and kn; --no-smoke the smoke field off,
             --smoke on (it's on by default; any command reading the sim's settings takes them). Prints hits, straddles, the first hit by salvo, the track's aim error
-            as it settles and after manoeuvres.
+            as it settles and after manoeuvres. --swell the swell's height, m (0 a flat calm); --errors scales each error the
+            chain draws (all, readings, prior, bias, laying, salvo, dispersion, spotting), e.g. all=0,bias=1: the error ladder.
         shipgen fc-converge [--runs N] [--ref]
             the computers alone (the research's tables 5 and 12): each preset's predicted-position error over a 25 s time of
             flight against a crossing target that turns 45° at 300 s, or circles at 1°/s; --ref runs fire_control_ref.py's beside
@@ -736,9 +738,13 @@ public static class Program
             WorkUp = D(a, "work-up", 1), Damage = a.Has("damage"), Discipline = a.Get("discipline"),
             WindFromDeg = a.Get("wind") is { } wf ? double.Parse(wf.Split(',')[0], inv) : double.NaN,
             WindKn = a.Get("wind") is { } wk ? double.Parse(wk.Split(',')[^1], inv) : double.NaN,
+            SwellM = D(a, "swell", double.NaN),
             Speed = TierSpeed(a),
         };
-        return Duel.Run(c, Settings(a), a.Int("runs", 20), a.Int("seed", 1), a.Has("trace"));
+        var settings = Settings(a);
+        if (a.Get("errors") is { } errors)
+            settings = settings with { GunneryErrors = GunneryErrorScale.Parse(errors) };
+        return Duel.Run(c, settings, a.Int("runs", 20), a.Int("seed", 1), a.Has("trace"));
     }
 
     /// <summary>The asked speed <c>--tier fine|coarse</c> picks (docs/battle/coarse.md J0): 1x, or
