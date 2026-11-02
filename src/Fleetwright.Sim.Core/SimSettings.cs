@@ -697,8 +697,10 @@ public sealed record SimSettings
 
     /// <summary>An enemy done fighting (docs/battle/balance.md BL2a, doctrine's <c>Finish</c>): quiet once her guns haven't
     /// been seen firing for this long, s, and making away at this much of her own speed opening the range, m/s (each a
-    /// share to 1 at it, multiplied) [EST: a broadside's interval and more; about 8 kn away].</summary>
-    public double CrippleQuietS { get; init; } = 90;
+    /// share to 1 at it, multiplied) [EST: about 8 kn away; quiet longer than a leg or two turned away under fire, her guns
+    /// off the bearing (docs/battle/balance.md BL1af: at 90 s she read done fighting as she dodged, and the fire flipped
+    /// between her and the next ship each minute), where a ship going home holds away].</summary>
+    public double CrippleQuietS { get; init; } = 240;
 
 
     /// <summary>A turret of hers is read as silenced once it hasn't fired for this many of its reloads (docs/battle/balance.md

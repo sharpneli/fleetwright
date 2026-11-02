@@ -22,10 +22,7 @@ the main guns for heavy ships, the day attack's gain out of reach); AI threading
 takes each instrument's offset off its cuts (the computer's swing salvo to salvo 82 → 11 m, readings alone); BL1ac
 `salvo_pct` gone (the user: "We should derive those numbers"): each of its parts, the computer's wander, the laying, the roll's
 and the pointers' lag, the salvo-mean muzzle velocity, the guns' calibration, was already drawn in its place, so it counted them
-twice (fc-history 9 → 5 of 23, all HIGH: the degraders come as their own systems); next the captains' cost of switching targets (parked:
-a battery counts the time it has put into her range, up to 150 s, over a 600 s horizon; the median hold in squadrons 161 →
-543 s; and a target "done fighting" after 90 s quiet flips their choice, 240 s halves the flips but touches BL2's
-cripples, the user's to decide); salvo chasing for evasion after (balance.md, after BL1q).
+twice (fc-history 9 → 5 of 23, all HIGH: the degraders come as their own systems); BL1ad-af a shift of target keeps the battery's ballistics, the captain's cost of a shift over a 600 s horizon (`FireSwitchShare` gone), `CrippleQuietS` 240 s (the user: a ship turned away under fire read done fighting at 90 s and the fire flipped; squadrons' median hold 226 → 350 s); next salvo chasing for evasion after (balance.md, after BL1q).
 
 | Step | State | Plan | Left |
 |---|---|---|---|
