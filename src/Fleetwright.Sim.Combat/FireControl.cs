@@ -161,6 +161,9 @@ public static class FireControl
         public long LoMs, HiMs;
         /// <summary>The step beyond a bound while the other side is open, m.</summary>
         public double Step;
+        /// <summary>The correction to fire with while both sides are open, m: none, or what its battery carried from its
+        /// last target (docs/battle/balance.md BL1ad).</summary>
+        public double Mid;
 
         /// <summary>Closed about a correction, a width wide (the walk's, as a disturbance sends fire for effect back to
         /// ranging).</summary>
@@ -173,7 +176,8 @@ public static class FireControl
             ? new() { Lo = at, Hi = double.PositiveInfinity, LoMs = ms, HiMs = ms, Step = stepM }
             : new() { Lo = double.NegativeInfinity, Hi = at, LoMs = ms, HiMs = ms, Step = stepM };
 
-        public static Bracket Open(double stepM) => new() { Lo = double.NegativeInfinity, Hi = double.PositiveInfinity, Step = stepM };
+        public static Bracket Open(double stepM, double midM = 0) =>
+            new() { Lo = double.NegativeInfinity, Hi = double.PositiveInfinity, Step = stepM, Mid = midM };
 
         public readonly bool Closed => !double.IsInfinity(Lo) && !double.IsInfinity(Hi);
 
@@ -182,15 +186,15 @@ public static class FireControl
 
         public readonly double HiAt(long ms, double driftMs) => Hi + driftMs * Math.Max(ms - HiMs, 0) / 1000.0;
 
-        /// <summary>The correction to fire with now: its middle closed, a step beyond its bound open, none before the
-        /// first spot. It's a correction on the computer's solution, which the guns follow as its readings move it (the
+        /// <summary>The correction to fire with now: its middle closed, a step beyond its bound open, before the first spot
+        /// its <see cref="Mid"/>. It's a correction on the computer's solution, which the guns follow as its readings move it (the
         /// clock's range cuts: BL1z); what the spots learnt stands however long ago they learnt it (a hold that lapsed back to
         /// the bare solution put the fire back on its ballistic bias: 2026-11-02).</summary>
         public readonly double Aim(long ms, double driftMs)
         {
             double lo = LoAt(ms, driftMs), hi = HiAt(ms, driftMs);
             if (double.IsInfinity(Lo) && double.IsInfinity(Hi))
-                return 0;
+                return Mid;
             return Closed ? 0.5 * (lo + hi) : !double.IsInfinity(Lo) ? lo + Step : hi - Step;
         }
 

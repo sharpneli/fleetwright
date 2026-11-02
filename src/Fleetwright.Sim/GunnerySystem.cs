@@ -101,6 +101,10 @@ public sealed class GunnerySystem : IWorldSystem
         public long JudgeMs;
         public double GuessSpeedZ, GuessCourseZ;
         public double BiasR, BiasD, CorrR, CorrD, SpotHeightM;
+        /// <summary>What its battery carried from its last target (docs/battle/balance.md BL1ad): the correction in range it
+        /// opens its bracket about, a share of the range, and its doubt of the residual bias in range (a share) and in line
+        /// (rad), the computer's own residual bias with nothing carried.</summary>
+        public double CarryR, ResidShare, DeflDoubtRad;
         /// <summary>Its fire discipline (F6): the phase, the spots' bracket, and the computer's doubt of the range rate
         /// along the line of fire (m/s: the bracket widens at it).</summary>
         public FirePhase Phase;
@@ -475,9 +479,15 @@ public sealed class GunnerySystem : IWorldSystem
                 Table = shells.TableOf(store.Combat.Loadout(slot), b), ElevationDeg = double.NaN, SetCourseDeg = double.NaN, SpoiledMs = -1,
             };
             fc.Bracket = FireControl.Bracket.Open(fit.Computer.FirstStepM);
+            // the residual ballistic bias is the guns' and the day's air (wind, density, the powder's lot, drift), not the
+            // target's: one draw a ship's battery (BL1ad); and what its spots learnt of it on its last target goes with it
+            var rb = stream.Derive(0xB1A5u).Derive((ulong)(uint)shooter).Derive((ulong)b);
+            (fc.BiasR, fc.BiasD) = (rb.NextGaussian(), rb.NextGaussian());
+            var carried = store.Combat.Carried(slot, b);
+            (fc.CarryR, fc.CorrD, fc.ResidShare, fc.DeflDoubtRad) = carried.Known
+                ? (carried.RangeShare, carried.LineRad, carried.RangeDoubtShare, carried.LineDoubtRad)
+                : (0, 0, fit.Computer.ResidPct / 100, fit.Computer.DeflBiasMil * FireControl.Mil);
             var r = stream.Derive((ulong)f).Derive((ulong)gen);
-            fc.BiasR = r.NextGaussian();
-            fc.BiasD = r.NextGaussian();
             (fc.GuessSpeedZ, fc.GuessCourseZ) = (r.NextGaussian(), r.NextGaussian());
             AddSensors(ref fc, f, cls, row, store.Combat.Condition(slot), now, ref r);
             store.Combat.Engage(slot, b, target);
@@ -653,7 +663,11 @@ public sealed class GunnerySystem : IWorldSystem
             return;
         int slot = ships.Store.SlotOf(fc.Shooter);
         if (slot >= 0)
+        {
+            if (fc.Phase == FirePhase.Effect && fc.RangeM > 0)
+                ships.Store.Combat.Carry(slot, fc.Battery, Learnt(f));
             ships.Store.Combat.Engage(slot, fc.Battery, 0);
+        }
         fc.Alive = false;
         fc.Generation++;   // its salvo and spot events go stale
         if (fc.Units != 0)
@@ -925,7 +939,7 @@ public sealed class GunnerySystem : IWorldSystem
             Disturbed(ref fc, now);
         fc.Turns = fc.Tracker.Turns;
         if (fc.State == BatteryState.Firing && fc.Phase == FirePhase.Opening)
-            (fc.Phase, fc.Bracket.Step) = (FirePhase.Ranging, FirstStep(fc));
+            (fc.Phase, fc.Bracket) = (FirePhase.Ranging, FireControl.Bracket.Open(FirstStep(fc), fc.CarryR * fc.RangeM));
         // the sea under her (BL1b): her layers follow the roll with their gear when it lays faster than she rolls (continuous
         // aim), or a stable vertical gives them the level; else they fire as the roll brings the sight on (a director's
         // layer always, at the key)
@@ -1856,13 +1870,37 @@ public sealed class GunnerySystem : IWorldSystem
         (fc.Rung, fc.OverAt, fc.ShortAt) = (0, double.NaN, double.NaN);
     }
 
+    /// <summary>What an engagement firing for effect leaves its battery of its own ballistics (docs/battle/balance.md
+    /// BL1ad): its correction is a reading of the residual bias with the rest of what's in it (in range the computer's doubt
+    /// of her place, the error its instruments held on her, which the plot's mean of them still has (BL1aa-ab: 1/Σ 1/σᵢ²),
+    /// and the walk's step, the officer's own doubt of his aim; in line the spots' noise through their gain),
+    /// so it keeps σb²/(σb²+σe²) of it, and doubts σbσe/√(σb²+σe²) of the bias still, σb the computer's residual bias
+    /// [INFERRED: no source on the RN's spotting correction kept over a shift of target].</summary>
+    CarriedCorrection Learnt(int f)
+    {
+        ref readonly var fc = ref fcs[f];
+        var c = fc.Fit.Computer;
+        double weight = 0;
+        foreach (ref readonly var s in sensors.AsSpan(f * MaxSensors, fc.SensorCount))
+            if (s.Cuts > 0)
+                weight += s.WRange;
+        double held = weight > 0 ? 1 / weight : 0;
+        double bR = c.ResidPct / 100, eR = Math.Sqrt(Sq(fc.PosSigmaM) + held + Sq(SpotStep(fc)) / 3) / fc.RangeM;
+        double g = settings.SpotDeflectionGain, bD = c.DeflBiasMil * FireControl.Mil, eD = settings.SpotDeflectionMil * FireControl.Mil * Math.Sqrt(g / (2 - g));
+        static (double Keep, double Doubt) Shrink(double b, double e) =>
+            b <= 0 ? (0, 0) : (b * b / (b * b + e * e), b * e / Math.Sqrt(b * b + e * e));
+        var (kR, dR) = Shrink(bR, eR);
+        var (kD, dD) = Shrink(bD, eD);
+        return new(true, kR * fc.CorrR / fc.RangeM, kD * fc.CorrD, dR, dD);
+    }
+
     /// <summary>The first step beyond a bound (F6): twice the error the computer expects of its own solution over the time
     /// of flight (its doubt of the target's position and rate along the line of fire, and its residual bias), never more
     /// than its own first step (the RN's 400 yd) nor under the bracket's floor.</summary>
     double FirstStep(in Fc fc)
     {
         var c = fc.Fit.Computer;
-        double rate = fc.DriftMs * fc.TofS, resid = c.ResidPct / 100 * fc.RangeM;
+        double rate = fc.DriftMs * fc.TofS, resid = fc.ResidShare * fc.RangeM;
         double sigma = Math.Sqrt(fc.PosSigmaM * fc.PosSigmaM + rate * rate + resid * resid);
         return Math.Clamp(2 * sigma, settings.BracketFloorM, Math.Max(c.FirstStepM, settings.BracketFloorM));
     }
@@ -1901,7 +1939,7 @@ public sealed class GunnerySystem : IWorldSystem
         // his aim's doubt along the line of fire
         double aim = fc.Phase == FirePhase.Effect ? SpotStep(fc) / Math.Sqrt(3)
             : fc.Bracket.Closed ? Math.Max(fc.Bracket.HiAt(now, fc.DriftMs) - fc.Bracket.LoAt(now, fc.DriftMs), 0) / Math.Sqrt(12)
-            : Math.Sqrt(fc.PosSigmaM * fc.PosSigmaM + Sq(fc.DriftMs * fc.TofS) + Sq(computer.ResidPct / 100 * range));
+            : Math.Sqrt(fc.PosSigmaM * fc.PosSigmaM + Sq(fc.DriftMs * fc.TofS) + Sq(fc.ResidShare * range));
         double floorM = Math.Max(settings.BracketFloorM, settings.BracketFloorPatterns * 4 * sr);
         // and where his spots put it: his spotter's own error over or short of a splash (k R² / h from his height, through
         // the air), the bracket's place as good as the spots it was set by
@@ -1915,7 +1953,7 @@ public sealed class GunnerySystem : IWorldSystem
         double kick = Math.Abs(double.RadiansToDegrees(ship.YawRate)) / settings.OwnTurnKickYawDegS * computer.OwnTurnKickM;
         double rSteady = aim * aim + sea + sr * sr, rCould = could * could + sea + sr * sr;
         // and in line: his deflection's residual bias until a spot has corrected it, the laying, the pattern
-        double defl = computer.DeflBiasMil * FireControl.Mil * range * (fc.LastSign < 0 ? 1 : 0.5);
+        double defl = fc.DeflDoubtRad * range * (fc.LastSign < 0 ? 1 : 0.5);
         double lSteady = defl * defl + Sq(lay * range) + sd * sd;
         // her hitting space as he sees her: her length and beam on the line of fire by her aspect
         var tm = tgt.Handling.Class.Motion;

@@ -31,6 +31,11 @@ public struct LauncherState
     public long LoadedMs, FiredMs;
 }
 
+/// <summary>What a battery's spots learnt of its own ballistics on its last target fired on for effect (docs/battle/
+/// balance.md BL1ad): the correction its next engagement opens with, in range a share of the range and in line an angle
+/// (rad), and the doubt of the residual bias left, the same; none until an engagement has ended firing for effect.</summary>
+public readonly record struct CarriedCorrection(bool Known, double RangeShare, double LineRad, double RangeDoubtShare, double LineDoubtRad);
+
 /// <summary>Each ship's combat columns beside its <see cref="ShipStore"/> (docs/battle/fighting.md "Where it lives"):
 /// its mounts' state, made at spawn and sized by the class, how many of its batteries are engaged and on what. Reached through
 /// <see cref="ShipState"/>'s accessors and the gunnery system; and its condition (the damage system's, 4.3a).</summary>
@@ -49,6 +54,8 @@ public sealed class CombatStore
     // by battery, whether it fires for effect at the second (the gunnery's, for the captains: docs/battle/balance.md
     // BL1q, holding course for the guns); not world state, as sees
     bool[]?[] effect = [];
+    // by battery, what its spots learnt of its own ballistics, carried to its next target (the gunnery's, BL1ad)
+    CarriedCorrection[]?[] carried = [];
     // by mount, whether it's an illuminating mount (docs/battle/night.md Q5): out of its battery's salvos, firing star shell
     bool[]?[] illuminating = [];
     int[] engaged = [];
@@ -77,6 +84,7 @@ public sealed class CombatStore
             Array.Resize(ref targets, n);
             Array.Resize(ref sees, n);
             Array.Resize(ref effect, n);
+            Array.Resize(ref carried, n);
             Array.Resize(ref illuminating, n);
             Array.Resize(ref engaged, n);
             Array.Resize(ref moved, n);
@@ -124,6 +132,11 @@ public sealed class CombatStore
             effect[slot] = new bool[cls.Batteries.Length];
         else
             Array.Clear(ew);
+        var cw = carried[slot];
+        if (cw == null || cw.Length != cls.Batteries.Length)
+            carried[slot] = new CarriedCorrection[cls.Batteries.Length];
+        else
+            Array.Clear(cw);
         var il = illuminating[slot];
         if (il == null || il.Length != cls.Mounts.Length)
             illuminating[slot] = new bool[cls.Mounts.Length];
@@ -261,6 +274,12 @@ public sealed class CombatStore
 
     /// <summary>The gunnery's word on whether a battery fires for effect (each its own element, as <see cref="SetSees"/>).</summary>
     public void SetFiresForEffect(int slot, int battery, bool value) => effect[slot]![battery] = value;
+
+    /// <summary>What a battery carries to its next target of its own ballistics (docs/battle/balance.md BL1ad).</summary>
+    public CarriedCorrection Carried(int slot, int battery) => carried[slot] is { } c && battery < c.Length ? c[battery] : default;
+
+    /// <summary>The gunnery's word on what a battery's spots learnt of its ballistics, as an engagement of it ends.</summary>
+    public void Carry(int slot, int battery, CarriedCorrection value) => carried[slot]![battery] = value;
 
     /// <summary>Whether a mount fires star shell for its ship's illuminating task (docs/battle/night.md Q5), out of its
     /// battery's salvos.</summary>
@@ -547,6 +566,12 @@ public sealed class CombatStore
                 h.Add(l.LoadedMs);
                 h.Add(l.FiredMs);
             }
+            foreach (ref readonly var c in carried[slot].AsSpan())
+                if (c.Known)
+                {
+                    h.Add(c.RangeShare);
+                    h.Add(c.LineRad);
+                }
         }
     }
 }

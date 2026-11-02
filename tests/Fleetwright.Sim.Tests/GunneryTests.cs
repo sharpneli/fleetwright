@@ -90,9 +90,11 @@ public class GunneryTests(ITestOutputHelper output)
         // the reference on a QE-size box: 5.0% at level 3; level 0 about a fifth of it. The walk (balance.md BL1v) puts
         // level 3 at 8%: its spots centre the fall where the bracket's lapsed hold went back to the bias, and the hits may
         // rise until the degraders come (the user, 2026-11-02); BL1ac (the salvo error's parts each in its place, no lumped
-        // salvo_pct) 18%
+        // salvo_pct) 18%. Level 1 (local control) and level 3 (a director) hit alike at this range since then (96 duels:
+        // 15.1, 15.6%): level 3's lead was mostly its smaller salvo_pct, and 16 duels put them either way (balance.md BL1ad,
+        // open); the eyeball's stays far below
         Assert.InRange(pct[3], 2.5, 20);
-        Assert.True(pct[0] < pct[1] && pct[1] < pct[3], "the levels' order");
+        Assert.True(pct[0] < pct[1] && pct[0] < pct[3], "the levels' order");
     }
 
     [Fact]
@@ -127,6 +129,54 @@ public class GunneryTests(ITestOutputHelper output)
         // the hits may rise until the degraders come (the user, 2026-11-02)
         Assert.InRange(british, 4.7 / 2, 4.7 * 3);
         Assert.InRange(german, 4.0 / 2, 4.0 * 3);
+    }
+
+    /// <summary>A shift of target keeps what the spots learnt of the guns (docs/battle/balance.md BL1ad): Lion fires for
+    /// effect on one Seydlitz at 15 km, then shifts to a second as far off on the other bow. The residual ballistic bias is
+    /// her guns' and the air's, so her first salvo on the second falls far nearer her than a battery's coming to her fresh,
+    /// on the ladder's rung with the bias and the shells' dispersion only (with every error on, the computer's own error on
+    /// the new target is about the bias's size: fire for effect 102 s fresh, 99 s shifted carrying nothing, 91 s carrying
+    /// it; the track and the bracket are the new target's own).</summary>
+    [Fact]
+    public void A_shift_of_target_keeps_what_the_spots_learnt_of_the_guns()
+    {
+        var settings = Settings with { Smoke = false, GunneryErrors = GunneryErrorScale.Parse("all=0,bias=1,dispersion=1") };
+        double shifted = FirstFall(settings, true), fresh = FirstFall(settings, false);
+        output.WriteLine($"the first salvo's fall off the second target, RMS: {shifted:F0} m after a shift, {fresh:F0} m engaged fresh");
+        Assert.True(shifted < 0.5 * fresh, "the bias's correction carried");
+    }
+
+    /// <summary>The RMS over seeds of the first salvo's fall off a second Seydlitz (its ladder's step taken off), Lion
+    /// engaging her ten minutes in: after firing on a first one, or fresh.</summary>
+    static double FirstFall(SimSettings settings, bool shift)
+    {
+        const int n = 24;
+        var fall = new double[n];
+        Parallel.For(0, n, k =>
+        {
+            var w = new World(Start, (ulong)(k + 1), settings);
+            int a = w.Ships.AddClass(Class("lion")), t = w.Ships.AddClass(Class("seydlitz"));
+            w.Apply(ShipSystem.Spawn(a, Lat, Lon, 0, 20, side: 0));
+            foreach (double bearing in new[] { 70.0, 110.0 })
+            {
+                var p = Earth.Position(Lat, Lon);
+                var f = Earth.Forward(p, bearing);
+                Earth.Advance(ref p, ref f, 15_000);
+                var (tl, to) = Earth.LatLon(p);
+                w.Apply(ShipSystem.Spawn(t, tl, to, 0, 20, side: 1));
+            }
+            var salvos = new List<GunnerySystem.SalvoReport>();
+            w.Gunnery.Reported = salvos.Add;
+            if (shift)
+                w.Apply(GunnerySystem.Engage(1, 0, 2));
+            w.AdvanceTo(Start + 10 * 60_000);
+            Assert.True(!shift || w.Gunnery.TallyOf(1, 0) is { Phase: FirePhase.Effect }, "firing for effect on the first");
+            int had = salvos.Count;
+            w.Apply(GunnerySystem.Engage(1, 0, 3));
+            w.AdvanceTo(w.Time + 5 * 60_000);
+            fall[k] = salvos[had].MeanX - salvos[had].LadderM;
+        });
+        return Math.Sqrt(fall.Average(x => x * x));
     }
 
     [Fact]
