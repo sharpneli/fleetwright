@@ -332,9 +332,9 @@
    }
   },
   {
-   "name": "Dreyer table Mk I-II",
+   "name": "Dreyer table Mk I",
    "group": "computer",
-   "note": "The Dreyer table's range and bearing plots and clock before the gyro feed (1911-12): the Mk III's numbers without helm-free, so own ship's turns are re-learnt (computing.md §3: helm-free from the Mk III).",
+   "note": "The first Dreyer table's range and bearing plots and clock (1911), her course set on it by handwheel: the Mk III's numbers without helm-free, so own ship's turns are re-learnt (ship-motion/own-motion-inputs.md §2: the 1918 handbook has the Mk I's course by \"handwheel input\", the Mk I* on \"automatic\", the Mk II \"automatic ?\"; docs/battle/fc-ladder-check.md FL5).",
    "value": {
     "computer": {
      "tracker": "rate_clock",
@@ -349,8 +349,8 @@
      "speed_q": 0,
      "detect": false,
      "rejudge_s": 0,
-     "prior_kn": 2.5,
-     "prior_deg": 15,
+     "prior_kn": 3,
+     "prior_deg": 20,
      "resid_pct": 1.2,
      "defl_bias_mil": 2,
      "own_speed_lag_s": 0,
@@ -364,7 +364,7 @@
   {
    "name": "Dreyer table Mk III-V",
    "group": "computer",
-   "note": "The Dreyer table from the Mk III (1914-22), helm-free by the gyro: a rate clock limited to ±1,200 yd/min and ±15°/min, its bearing plot the weak point (computing.md §3; level 3, designer C2). Crew 7-8 at the table, up to 30 in the station.",
+   "note": "The Dreyer table from the Mk I* (1912-22; named for the Mk III, the marks most ships had), helm-free by the gyro: a rate clock limited to ±1,200 yd/min and ±15°/min, its bearing plot the weak point (computing.md §3; level 3, designer C2). Crew 7-8 at the table, up to 30 in the station. Its first guess at her course and speed the Dumaresq's in it, from the same eye (FL5).",
    "value": {
     "computer": {
      "tracker": "rate_clock",
@@ -379,8 +379,8 @@
      "speed_q": 0,
      "detect": false,
      "rejudge_s": 0,
-     "prior_kn": 2.5,
-     "prior_deg": 15,
+     "prior_kn": 3,
+     "prior_deg": 20,
      "resid_pct": 1.2,
      "defl_bias_mil": 2,
      "own_speed_lag_s": 30,
@@ -409,8 +409,8 @@
      "speed_q": 0,
      "detect": false,
      "rejudge_s": 0,
-     "prior_kn": 2.5,
-     "prior_deg": 15,
+     "prior_kn": 3,
+     "prior_deg": 20,
      "resid_pct": 1.2,
      "defl_bias_mil": 2,
      "own_speed_lag_s": 30,

@@ -114,19 +114,21 @@ public static class FireControlTemplates
         C("German range clock (EU-Anzeiger)", K("rate_clock", false, 15, 0.03, 3, 20, 1.5, 2.5, 0, 366, 0.8, 4, 0) with { MaxRangeRateMs = DreyerRangeRate },
             "The German WWI range-rate indicator and clock without the plot, the cruisers' (computing.md §3): no specifications found; taken as " +
             "the Dumaresq and Vickers clock's [EST]."),
-        C("Dreyer table Mk I-II", K("rate_clock", false, 15, 0.03, 2.5, 15, 1.2, 2, 0, 366, 4, 10, 1) with
+        C("Dreyer table Mk I", K("rate_clock", false, 15, 0.03, 3, 20, 1.2, 2, 0, 366, 4, 10, 1) with
             {
                 MaxRangeRateMs = DreyerRangeRate, MaxBearingRateDegS = DreyerBearingRate,
             },
-            "The Dreyer table's range and bearing plots and clock before the gyro feed (1911-12): the Mk III's numbers without helm-free, so own " +
-            "ship's turns are re-learnt (computing.md §3: helm-free from the Mk III)."),
-        C("Dreyer table Mk III-V", K("rate_clock", true, 15, 0.03, 2.5, 15, 1.2, 2, 30, 366, 4, 10, 1) with
+            "The first Dreyer table's range and bearing plots and clock (1911), her course set on it by handwheel: the Mk III's numbers without " +
+            "helm-free, so own ship's turns are re-learnt (ship-motion/own-motion-inputs.md §2: the 1918 handbook has the Mk I's course by " +
+            "\"handwheel input\", the Mk I* on \"automatic\", the Mk II \"automatic ?\"; docs/battle/fc-ladder-check.md FL5)."),
+        C("Dreyer table Mk III-V", K("rate_clock", true, 15, 0.03, 3, 20, 1.2, 2, 30, 366, 4, 10, 1) with
             {
                 MaxRangeRateMs = DreyerRangeRate, MaxBearingRateDegS = DreyerBearingRate,
             },
-            "The Dreyer table from the Mk III (1914-22), helm-free by the gyro: a rate clock limited to ±1,200 yd/min and ±15°/min, its bearing " +
-            "plot the weak point (computing.md §3; level 3, designer C2). Crew 7-8 at the table, up to 30 in the station."),
-        C("German clock and plot (EU-Anzeiger, C12)", K("rate_clock", true, 15, 0.03, 2.5, 15, 1.2, 2, 30, 366, 4, 10, 1) with
+            "The Dreyer table from the Mk I* (1912-22; named for the Mk III, the marks most ships had), helm-free by the gyro: a rate clock " +
+            "limited to ±1,200 yd/min and ±15°/min, its bearing plot the weak point (computing.md §3; level 3, designer C2). Crew 7-8 at the " +
+            "table, up to 30 in the station. Its first guess at her course and speed the Dumaresq's in it, from the same eye (FL5)."),
+        C("German clock and plot (EU-Anzeiger, C12)", K("rate_clock", true, 15, 0.03, 3, 20, 1.2, 2, 30, 366, 4, 10, 1) with
             {
                 MaxRangeRateMs = DreyerRangeRate, MaxBearingRateDegS = DreyerBearingRate,
             },

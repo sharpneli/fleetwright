@@ -75,9 +75,9 @@ own numbers. Mass t, crew, power kW.
 | Hand plot | rate_clock | 15 | 0.02 | - | 4, 25 | 2, 3 | -, 0 | 366 | -; rates by the plot alone; no clock | 0.2, 3, 0 |
 | Dumaresq and Vickers clock | rate_clock | 15 | 0.03 | 18.3, 0 | 3, 20 | 1.5, 2.5 | -, 0 | 366 | - | 0.8, 4, 0 |
 | German range clock (EU-Anzeiger) | rate_clock | 15 | 0.03 | 18.3, 0 | 3, 20 | 1.5, 2.5 | -, 0 | 366 | - | 0.8, 4, 0 |
-| Dreyer table Mk I-II | rate_clock | 15 | 0.03 | 18.3, 0.25 | 2.5, 15 | 1.2, 2 | -, 0 | 366 | - | 4, 10, 1 |
-| Dreyer table Mk III-V | rate_clock, helm-free | 15 | 0.03 | 18.3, 0.25 | 2.5, 15 | 1.2, 2 | -, 30 | 366 | - | 4, 10, 1 |
-| German clock and plot (EU-Anzeiger, C12) | rate_clock, helm-free | 15 | 0.03 | 18.3, 0.25 | 2.5, 15 | 1.2, 2 | -, 30 | 366 | - | 4, 10, 1 |
+| Dreyer table Mk I | rate_clock | 15 | 0.03 | 18.3, 0.25 | 3, 20 | 1.2, 2 | -, 0 | 366 | - | 4, 10, 1 |
+| Dreyer table Mk III-V | rate_clock, helm-free | 15 | 0.03 | 18.3, 0.25 | 3, 20 | 1.2, 2 | -, 30 | 366 | - | 4, 10, 1 |
+| German clock and plot (EU-Anzeiger, C12) | rate_clock, helm-free | 15 | 0.03 | 18.3, 0.25 | 3, 20 | 1.2, 2 | -, 30 | 366 | - | 4, 10, 1 |
 | Argo clock Mk IV | true_course, helm-free | 8 | 0.03 | - | 2.5, 15 | 1.2, 2 | -, 30 | 366 | - | 2, 4, 1 |
 | Admiralty Fire Control Table | true_course, helm-free | 8 | 0.03 | - | 2, 12 | 0.6, 1.5 | -, 3 | 366 | - | 5, 8, 5 |
 | Admiralty Fire Control Clock | true_course, helm-free | 8 | 0.03 | - | 2, 12 | 0.6, 1.5 | -, 3 | 366 | - | 3, 4, 3 |
@@ -119,8 +119,8 @@ own numbers. Mass t, crew, power kW.
 - **Hand plot:** Ranges, by rangefinder or by eye, plotted by hand, no machine (levels 0 and 1: the Tsushima era; designer C0). Its rates are the plot's trend alone (no Dumaresq to make them from her course and speed: "range rate was ignored, or guessed by rule of thumb"), and the range passed at each plot stays on the sights until the next (no clock to run it on): manual-gunnery-research.md §3.2, computing.md §2 (docs/battle/fc-ladder-check.md FL4). The reference's level 0 had an "eye and hand plot" of its own, slower and with worse guesses and corrections for no difference in the plot: gone (FL3).
 - **Dumaresq and Vickers clock:** The Dumaresq's rates run on by the Vickers range clock (1906): constant rates only, the roller slipping on a change (computing.md §3; level 2, designer C1).
 - **German range clock (EU-Anzeiger):** The German WWI range-rate indicator and clock without the plot, the cruisers' (computing.md §3): no specifications found; taken as the Dumaresq and Vickers clock's [EST].
-- **Dreyer table Mk I-II:** The Dreyer table's range and bearing plots and clock before the gyro feed (1911-12): the Mk III's numbers without helm-free, so own ship's turns are re-learnt (computing.md §3: helm-free from the Mk III).
-- **Dreyer table Mk III-V:** The Dreyer table from the Mk III (1914-22), helm-free by the gyro: a rate clock limited to ±1,200 yd/min and ±15°/min, its bearing plot the weak point (computing.md §3; level 3, designer C2). Crew 7-8 at the table, up to 30 in the station.
+- **Dreyer table Mk I:** The first Dreyer table's range and bearing plots and clock (1911), her course set on it by handwheel: the Mk III's numbers without helm-free, so own ship's turns are re-learnt (ship-motion/own-motion-inputs.md §2: the 1918 handbook has the Mk I's course by "handwheel input", the Mk I* on "automatic", the Mk II "automatic ?"; docs/battle/fc-ladder-check.md FL5).
+- **Dreyer table Mk III-V:** The Dreyer table from the Mk I* (1912-22; named for the Mk III, the marks most ships had), helm-free by the gyro: a rate clock limited to ±1,200 yd/min and ±15°/min, its bearing plot the weak point (computing.md §3; level 3, designer C2). Crew 7-8 at the table, up to 30 in the station. Its first guess at her course and speed the Dumaresq's in it, from the same eye (FL5).
 - **German clock and plot (EU-Anzeiger, C12):** The German WWI range-rate clock and plot (computing.md §3). No specifications found; taken as the Dreyer Mk III's, helm-free by the gyro [EST], the two navies' 1916 machines doing the same job.
 - **Argo clock Mk IV:** Pollen's true-course plotter and variable-speed clock (1912-13): follows a changing range rate, gyro-corrected; about six in RN service at Jutland (computing.md §3; fire_control_ref.py level 3b). Mass and crew [EST].
 - **Admiralty Fire Control Table:** The AFCT Mk I-X (1927-45): clock and MPI plot, helm-free, a straight-course target (computing.md §3; level 4, designer C3).

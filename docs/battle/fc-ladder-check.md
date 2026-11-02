@@ -34,7 +34,7 @@ haze. QE on QE at 16 kyd unless the step's period fought nearer (the 1905 levels
 | FL2 | the opening | | a longer base and a better first guess put the first salvo nearer her, so it straddles more often and comes to effect sooner | the first salvo's fall, every error on (the first straddle's median time, 143 v 141 s, hid it) | done 2026-11-02 |
 | FL3 | 0 → 1 | the eye (20% of range) → FA 2 m; open sights 1.15 → telescopic 0.73 mil; the same hand plot (its own "eye and hand plot" gone) | ranges found at once, not by long ranging; a tighter pattern | the opening at 6-8 km | done 2026-11-02 |
 | FL4 | 1 → 2 | FA → FQ/FT 4 m; hand plot → Dumaresq and Vickers clock; telescopic 0.73 → 0.35 mil | the clock runs the range on between sparse readings from her course and speed | a crossing or closing target, readings 2 a minute; haze that loses readings | done 2026-11-02 |
-| FL5 | 2 → 3 | Dumaresq → Dreyer Mk III-V (helm-free, the bearing gear); local laying → director 0.5 mil | through her own turns (FL1); the director's layer above the smoke and spray, one fall to spot | her own zigzag; a seaway; her own and the enemy's smoke, spray at speed. On the way: the catalogue's "Dreyer table Mk I-II" (not helm-free) fits the Mk I only; the Mk I* took her heading automatically and the Mk II probably (own-motion-inputs.md §2): split the row | |
+| FL5 | 2 → 3 | Dumaresq → Dreyer Mk III-V (helm-free, the bearing gear); local laying → director 0.5 mil | through her own turns (FL1); the director's layer above the smoke and spray, one fall to spot | her own zigzag; a seaway; her own and the enemy's smoke, spray at speed. On the way: the catalogue's "Dreyer table Mk I-II" (not helm-free) fits the Mk I only; the Mk I* took her heading automatically and the Mk II probably (own-motion-inputs.md §2): split the row | done 2026-11-02 (the smoke and spray's size to the error sources' session) |
 | FL6 | 3 → 4 | Dreyer (rate clock, latency 15 s, bias 1.2%) → AFCT (true course, 8 s, 0.6%); FQ/FT → stereo 5 m; director power drive 0.4 mil | a target's turns re-learned sooner; the bearing rate past the Dreyer's 0.25°/s; less bias to range out | the target's zigzag; a fast crossing near | |
 | FL7 | 4 → 5 | AFCT → Ford Mk 8 (3 s, 0.4%); stable vertical, RPC; coated, stabilised O4 | fire at any point of the roll, not on it; the rangefinder in a seaway; and the stable vertical's own error in a turn, the record's "several hundred yards" (North Carolina 1945): its mercury erection cut out while the turn's acceleration lasts, the gyro drifting free some 2-3′ a minute, ~200 yd through a 450° turn at 20-25 kyd, re-erecting after (own-motion-inputs.md §4, recommendation 6) | a seaway, rate of fire in it; long own turns | |
 | FL8 | 5 → 6 | radar ranging (stand-in) | ranges through haze and at night | haze, night: radar is out of the first game, so checked last | |
@@ -59,6 +59,9 @@ lumped stand-in for something the chain now models?
   (heading times log speed) picks it up with no change to `Reckon`.
 - `lay_mil` by mount: a director (0.5 mil) lays worse than a turret's telescopic sights (0.35), and a stable vertical with
   RPC (0.5) worse than a director's power drive (0.4), on a steady platform. Check the sources' split (BL1l) in FL5 and FL7.
+  FL5: the director's 0.5 is the reference's 1.0 halved by its own split; the research's one director figure, "about
+  0.5-1 mil with ×12 trainer and pointer optics" (fire-control-research.md, inferred from the Mk 38), doesn't argue it
+  lower, and the layers' lead in clear air fits the record: kept. FL7 still to check.
 - `latency_s`, `q`, the priors: the machine's own assumptions; fine as such, each checked by its step.
 - `GunneryOpenS`, `OpenDoubtSteps`: FL2, neither held the opening on the bench (the track settles on its first reading at
   16 kyd for both levels; the turrets' swing held it). Their own check wants a case the swing doesn't cover: a shift.
@@ -211,3 +214,33 @@ on the readings' rung); the telescope's 0.35 mil over the early one's 0.73 a lit
 **On the way:** the hand plot's priors (4 kn, 25°) now set only what it doesn't use (its guess goes unread without a
 Dumaresq); the judgement still leads by its guess (the rule of thumb). Haze losing readings, the row's other place, is
 the same mechanism with sparser readings: not measured apart.
+
+## FL5: the Dumaresq to the Dreyer, the layers to the director (done 2026-11-02)
+
+**Should give:** the Dreyer from the Mk I* takes her course from the gyro and keeps its solution through her turns,
+where the Dumaresq, its course set by hand, is put out by each (FL1's mechanism, now between these two). The director: in
+good visibility nothing over a good layer at his own telescope, perhaps less (the trial repeated in good visibility:
+"Orion (individual aim) did much better and apparently beat Thunderer", emergency-eyeball.md); in smoke and a heavy sea
+all ("Thunderer 26 of 39
+rounds, Orion 4 of 27", the 1912 trial at 9,000 yd; "smoke over the guns is the main reason individual aim collapsed").
+
+**Found:** her turns as they should (QE on QE at 16 kyd behind the same FQ/FT and director, 10° either side every 90 s,
+readings' rung: the Dumaresq 9.7%, the Dreyer 78.0%; every error on 10.3, 16.2). The guns in clear air at 9,000 yd
+(behind the Dreyer, readings, laying and pattern): the layers 57.3%, the director 47.5%; every error on 54.1, 44.7. The
+director fires all its guns at one instant of the roll, his error common to the salvo, at 0.5 mil to the telescope's
+0.35 (audit list): the record's good-visibility result, if wider. **Missing:** a gun laid by its own layer fired on what
+the control top saw; nothing asked whether the man at the turret's sight could see her.
+
+**Built:** a gun laid by its own layer fires only while he makes her out from his sight, on the gunhouse's roof as local
+control takes him, by eye through his telescope, through the smoke there (`GunnerySystem.LayerSees`; asked only in smoked
+air: in clear air a sight lower down sees what the top does). It runs (24 duels, 8 km, a 4 m/s wind across: layers blind
+in 4% of their checks, 9% with a destroyer making smoke between) but costs almost nothing yet (2,176 against 2,168
+shells): the smoke field never lies dense and low over her guns for long, and spray on the turrets' sights isn't in the
+chain (ship-motion-gunnery-research.md summary 1: spray and smoke, not vibration). Both are the error sources' session's
+(the user, 2026-11-02: a big session of error sources and harsher weather next); the 1912 trial is its check.
+
+**On the way:** the catalogue's "Dreyer table Mk I-II" is "Dreyer table Mk I" (her course by handwheel); the Mk I* and Mk II
+were helm-free (own-motion-inputs.md §2), as the Mk III-V row, which says so. The Dreyer's and the German C12's first
+guess at her course and speed was tighter than the Dumaresq's (2.5 kn and 15° against 3 and 20) with the same FQ/FT and
+the same eye, the Dreyer holding a Dumaresq: the Dumaresq's now (the catalogue and 51 designs' own blocks). The residual
+biases (1.5% against 1.2) wait for the wind (audit list). `GunneryTests.Where_the_levels_differ_level_3_keeps_its_solution_through_her_turns`.

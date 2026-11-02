@@ -234,6 +234,40 @@ public class GunneryTests(ITestOutputHelper output)
         Assert.True(tele > 0.98 * early, "the telescope lays no worse");
     }
 
+    /// <summary>Level 2 to 3 where they must differ (fc-ladder-check.md FL5). The computer, QE on QE at 16 kyd behind the
+    /// same FQ/FT and director, her own zigzag (10° either side every 90 s): the Dumaresq has her course set on it by hand
+    /// and is put out by each turn, the Dreyer from the Mk I* takes it from the gyro and keeps its solution. The guns, the
+    /// Dreyer behind both, at 9,000 yd in clear air: each layer's own telescope against the director, and the record has
+    /// the layers as good or better in good visibility (the 1912 trial repeated: "Orion apparently beat Thunderer"); the
+    /// director's lead was in smoke and a heavy sea (67 v 15%), which needs the smoke over her guns and the spray on their
+    /// sights the chain doesn't have yet (its layers do lose her in the smoke there is: FL5).</summary>
+    [Fact]
+    public void Where_the_levels_differ_level_3_keeps_its_solution_through_her_turns()
+    {
+        var qe = Class("super_dreadnought");
+        var readings = Settings with { Smoke = false, GunneryErrors = GunneryErrorScale.Parse("all=0,readings=1,own=1") };
+        var guns = Settings with { Smoke = false, GunneryErrors = GunneryErrorScale.Parse("all=0,readings=1,own=1,laying=1,dispersion=1") };
+        const string fq = "Barr & Stroud FQ/FT (O2)", dreyer = "Dreyer table Mk III-V", director = "Director, follow the pointer";
+        double Zig(string computer, SimSettings? s)
+        {
+            var (h, sh, _, _) = Duels(Refit("super_dreadnought", fq, computer, director), qe, 16 * Kyd, 90, -1, 16, zigDeg: 10, with: s);
+            return 100.0 * h / sh;
+        }
+        double Clear(string sights, SimSettings? s)
+        {
+            var (h, sh, _, _) = Duels(Refit("super_dreadnought", fq, dreyer, sights), qe, 9_000 * 0.9144, 90, -1, 16, minutes: 10, with: s);
+            return 100.0 * h / sh;
+        }
+        double dumaresq = Zig("Dumaresq and Vickers clock", readings), table = Zig(dreyer, readings);
+        double layers = Clear("Telescopic sights", guns), aloft = Clear(director, guns);
+        output.WriteLine($"zigzagging, the readings only: the Dumaresq {dumaresq:F1}%, the Dreyer {table:F1}%; every error on: " +
+                         $"{Zig("Dumaresq and Vickers clock", null):F1}, {Zig(dreyer, null):F1}%");
+        output.WriteLine($"9,000 yd in clear air, the readings, the laying and the pattern: the layers {layers:F1}%, the director {aloft:F1}%; every error on: " +
+                         $"{Clear("Telescopic sights", null):F1}, {Clear(director, null):F1}%");
+        Assert.True(table > 2 * dumaresq, "her own turns put the hand-set Dumaresq out, not the gyro-fed table");
+        Assert.True(layers > 0.95 * aloft, "in clear air the layers do as well as the director");
+    }
+
     [Fact]
     public void The_levels_keep_their_order_and_level_3_lands_near_the_reference()
     {

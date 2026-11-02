@@ -655,6 +655,16 @@ public sealed class GunnerySystem : IWorldSystem
     /// eyeball's can't: a director's rangefinder under it ranges by eye).</summary>
     static bool Ranges(in OpticsRow o, in Sensor s) => s.BaseM > 0 && o.Reads;
 
+    /// <summary>Whether a mount's own layer makes the target out from his sight, on its gunhouse's roof (as local control
+    /// takes him: fire-control.md F4b), by eye through his telescope (FL5).</summary>
+    bool LayerSees(ShipClass cls, int mount, in OpticsRow optics, in ShipState ship, in ShipState target, in Air air, ReadOnlySpan<double> smoke, int slot,
+        in ShipFrame frame)
+    {
+        ref readonly var m = ref cls.Mounts[mount];
+        var s = new Sensor { Eye = -1, X = m.X, Y = m.Y, HeightM = cls.Components[m.Component].Bounds.Top - cls.Vertical.Waterline, BearingMil = settings.EyeBearingMil };
+        return MarginOf(cls, s, optics, frame.ToWorld(s.X, s.Y, 0), ship.HeadingDeg, target, air, smoke, slot, frame) >= 1;
+    }
+
     /// <summary>Whether a battery of the same ship on another target holds a unit.</summary>
     bool HeldElsewhere(int f, int unit)
     {
@@ -952,6 +962,14 @@ public sealed class GunnerySystem : IWorldSystem
             firingOf[worker] = new bool[Math.Max(mounts.Length, firingOf[worker].Length * 2)];
         var firing = firingOf[worker];
         bool bears = false;
+        // a gun laid by its own layer fires only while he sees her from his sight (docs/battle/fc-ladder-check.md FL5): on
+        // the gunhouse's roof, through the smoke there, her own funnels' over her guns as much as the enemy's (the 1912
+        // trial: Orion's layers lost her in it where Thunderer's director aloft didn't); a director's guns follow its
+        // layer. In clear air a sight lower down sees what the top does
+        bool ownSight = !fc.Fit.Mount.DirectorFiring && sees;
+        if (ownSight && !aired)
+            (air, aired) = (AirAt(world, ship.Position, slot, tslot, smoke, i, worker), true);
+        ownSight &= air.Smoked;
         for (int j = 0; j < mounts.Length; j++)
         {
             ref readonly var mr = ref cls.Mounts[mounts[j]];
@@ -960,6 +978,8 @@ public sealed class GunnerySystem : IWorldSystem
             bool inTraverse = works && store.Combat.Order(slot, mounts[j], mr, now, bearing, elevation);
             firing[j] = inTraverse && cond.Lays(mounts[j], fc.Local) && CombatStore.InArcs(cls, mr, bearing) &&
                         store.Combat.Mount(slot, mounts[j]).Rounds > 0 && elevation <= mr.MaxElevationDeg && !Awash(world, ship, cls, cond, mounts[j]);
+            if (firing[j] && ownSight)
+                firing[j] = LayerSees(cls, mounts[j], optics, ship, target, air, smoke, slot, frame);
             bears |= firing[j];
         }
         // fire discipline (F6): the bracket widens at the computer's doubt of the range rate along the line of fire; the
