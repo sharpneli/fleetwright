@@ -772,6 +772,13 @@ public sealed record SimSettings
     /// side's doctrine (<see cref="FireDisciplines"/>).</summary>
     public double BracketFloorPatterns { get; init; } = 1;
     public double BracketFloorM { get; init; } = 92;
+
+    /// <summary>Firing for effect, the spots' running mean never steps less than this, m [EST: a range dial's 25 yd].</summary>
+    public double SpotStepFloorM { get; init; } = 23;
+
+    /// <summary>Firing for effect, the range is lost only after this many calls the same way in a row, at least [EST: by
+    /// chance one in eight; the RN's three misses came of the salvos' scatter as often as of a lost range].</summary>
+    public int RangeLostCalls { get; init; } = 4;
     public int RangingWaitMarginMs { get; init; } = 15_000;
 
     /// <summary>A reading more than this many sigma off the computer's own prediction is set aside, unless the next is too.</summary>

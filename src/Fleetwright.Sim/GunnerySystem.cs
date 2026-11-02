@@ -125,9 +125,11 @@ public sealed class GunnerySystem : IWorldSystem
         public long WaitMs;
         /// <summary>In fire for effect, the spots in a row that weren't straddles.</summary>
         public int Misses;
-        /// <summary>In fire for effect, the walk's step (m) and which way it last stepped (-1 down, +1 up, 0 held).</summary>
-        public double WalkStep;
-        public int WalkDir;
+        /// <summary>In fire for effect, the spots' running mean (<see cref="Walk"/>): its first step (m), the spots it has
+        /// shrunk by, which way it last stepped (-1 down, +1 up, 0 none yet), and how far (m) and in how many steps it has gone
+        /// that way in a row.</summary>
+        public double WalkStep, WalkRunM;
+        public int WalkN, WalkDir, WalkRun;
         /// <summary>Which mount the next partial salvo starts from (the groups alternate), and the tracker's turns seen.</summary>
         public int Group, Turns;
         /// <summary>A ladder's salvos fired in its group so far (the discipline's ladder: the group goes at once, stepped).</summary>
@@ -1735,7 +1737,7 @@ public sealed class GunnerySystem : IWorldSystem
             }
             bool walking = fc.Phase == FirePhase.Effect;
             Spotted?.Invoke(new SpotReport(sv.FiredMs, fc.Shooter, fc.Battery, sees, sign,
-                walking ? fc.CorrR - fc.WalkStep : fc.Bracket.LoAt(now, fc.DriftMs), walking ? fc.CorrR + fc.WalkStep : fc.Bracket.HiAt(now, fc.DriftMs),
+                walking ? fc.CorrR - SpotStep(fc) : fc.Bracket.LoAt(now, fc.DriftMs), walking ? fc.CorrR + SpotStep(fc) : fc.Bracket.HiAt(now, fc.DriftMs),
                 fc.CorrR, fc.Phase, told, fc.DriftMs, fc.PosSigmaM, (int)fc.Fit.Computer.Tracker, sv.SpotSigmaM, fc.SpotHeightM));
         }
         FreeSalvo(si);
@@ -1758,10 +1760,11 @@ public sealed class GunnerySystem : IWorldSystem
             fc.CorrR = fc.Bracket.Aim(now, fc.DriftMs);
             if (sign == FireControl.Sign.Straddle)
             {
-                // the straddle: fire for effect, the walk starting from it at its floor
+                // the straddle: fire for effect, the spots' mean starting at half what the bracket still doubts
                 if (fc.EffectMs < 0)
                     fc.EffectMs = now;
-                (fc.Phase, fc.Misses, fc.WalkStep, fc.WalkDir) = (FirePhase.Effect, 0, settings.BracketFloorM, 0);
+                double width = fc.Bracket.HiAt(now, fc.DriftMs) - fc.Bracket.LoAt(now, fc.DriftMs);
+                (fc.Phase, fc.Misses, fc.WalkStep, fc.WalkN, fc.WalkDir, fc.WalkRunM, fc.WalkRun) = (FirePhase.Effect, 0, 0.5 * width, 1, 0, 0, 0);
             }
         }
         // the layers lay on again after a correction; the range rate is the computer's, from its readings (the rate spot,
@@ -1771,46 +1774,48 @@ public sealed class GunnerySystem : IWorldSystem
             fc.SettleMs = now + (long)(1000 * settings.LayerSettleS);
     }
 
-    /// <summary>Fire for effect's spotting: the correction walked onto her (the user, 2026-11-02: "walk basically arbitrary
-    /// error into target and keep it there"). A straddle (or a hit) keeps the correction in force and halves the step (one
-    /// called on a salvo fired before the last step doesn't take it back: at 15 km a spotter calls straddles on falls
-    /// half a kilometre short); an over or short steps it the other way from the correction its salvo was fired with, the
-    /// step doubled when the last miss went the same way (a drift, or an error bigger than the step) and halved when it
-    /// went the other (she's crossed); never under the
-    /// bracket's floor (the RN's 100 yd) nor over the computer's first ranging step. A spot of a salvo fired before the
-    /// walk last moved, saying what that move already answered, changes nothing (one salvo still in the air isn't a second
-    /// miss). Where an over and a short are as likely, the falls' mean is on her: the spots centre the fire, whatever the
-    /// bias they started from. Only when the walk has stepped its full stride and the falls are still on the same side is
-    /// the range clearly lost (the user: "dropping to ladder should only happen when one has clearly lost the range"): back
-    /// to ranging, the bracket open beyond that salvo's correction.</summary>
+    /// <summary>Fire for effect's spotting: the spots' running mean (the user, 2026-11-02: "walk basically arbitrary error
+    /// into target and keep it there, eventually"; balance.md BL1w-x). Each spot is a noisy sign of where the falls' centre
+    /// lies, the salvo's own error in it: an over steps the correction in force down, a short up, by a step that shrinks
+    /// as the evidence comes in, half the bracket's width when fire for effect began over the spots' count (each time the
+    /// fall crosses her, or a straddle says it's on her), never under <see cref="SimSettings.SpotStepFloorM"/>. Calls the
+    /// same way don't shrink it: that's an offset to walk off, not noise; from the third in a row it doubles back toward
+    /// its first (two alike are a coin's flip, three a target that has moved: a zigzag's leg). So the correction settles where an over and a
+    /// short are as likely, the falls' mean on her, and stops chasing the salvos' own scatter. A spot of a salvo fired
+    /// before the correction last moved, saying what that move already answered, changes nothing. When the calls the same
+    /// way, <see cref="SimSettings.RangeLostCalls"/> of them in a row at least (fewer come of the salvos' own scatter: two
+    /// alike are a coin's flip), have walked it a whole ranging step without the fall crossing, the range is clearly lost
+    /// (the user: "dropping to ladder should only happen when one has clearly lost the range"): back to ranging, the
+    /// bracket open beyond that salvo's correction.</summary>
     void Walk(ref Fc fc, FireControl.Sign sign, double at, long now)
     {
-        double floor = settings.BracketFloorM, top = Math.Max(fc.Fit.Computer.FirstStepM, floor);
         if (sign == FireControl.Sign.Straddle)
         {
-            (fc.WalkStep, fc.Misses) = (Math.Max(floor, 0.5 * fc.WalkStep), 0);
+            (fc.WalkN, fc.Misses, fc.WalkRunM, fc.WalkRun) = (fc.WalkN + 1, 0, 0, 0);
             return;
         }
         int d = sign == FireControl.Sign.Over ? -1 : 1;
         if (d * (fc.CorrR - at) > 0.5)
-            return;   // already stepped past it that way
+            return;   // already moved past it that way
         fc.Misses++;
-        if (d == fc.WalkDir)
+        if (fc.WalkDir == -d)
+            (fc.WalkN, fc.WalkRunM, fc.WalkRun) = (fc.WalkN + 1, 0, 0);   // crossed her
+        if (fc.WalkRun >= settings.RangeLostCalls - 1 && fc.WalkRunM >= fc.Fit.Computer.FirstStepM)
         {
-            if (fc.WalkStep >= top)
-            {
-                fc.Bracket = FireControl.Bracket.Beyond(sign, at, now, FirstStep(fc));
-                (fc.Phase, fc.Misses, fc.WalkDir, fc.Rung) = (FirePhase.Ranging, 0, 0, 0);
-                fc.CorrR = fc.Bracket.Aim(now, fc.DriftMs);
-                return;
-            }
-            fc.WalkStep = Math.Min(top, 2 * fc.WalkStep);
+            fc.Bracket = FireControl.Bracket.Beyond(sign, at, now, FirstStep(fc));
+            (fc.Phase, fc.Misses, fc.WalkDir, fc.WalkRunM, fc.WalkRun, fc.Rung) = (FirePhase.Ranging, 0, 0, 0, 0, 0);
+            fc.CorrR = fc.Bracket.Aim(now, fc.DriftMs);
+            return;
         }
-        else if (fc.WalkDir != 0)
-            fc.WalkStep = Math.Max(floor, 0.5 * fc.WalkStep);
-        fc.WalkDir = d;
-        fc.CorrR = at + d * fc.WalkStep;
+        if (fc.WalkRun >= 2)
+            fc.WalkN = Math.Max(fc.WalkN / 2, 1);   // a third call the same way: she's moved, the step grows back
+        double step = SpotStep(fc);
+        (fc.WalkDir, fc.WalkRunM, fc.WalkRun) = (d, fc.WalkRunM + step, fc.WalkRun + 1);
+        fc.CorrR += d * step;
     }
+
+    /// <summary>Fire for effect's step now, m (<see cref="Walk"/>).</summary>
+    double SpotStep(in Fc fc) => Math.Max(settings.SpotStepFloorM, fc.WalkStep / Math.Max(fc.WalkN, 1));
 
     /// <summary>The solution disturbed (the target seen to turn, a plain computer's own course gone stale): a battery firing
     /// for effect goes back to ranging, its bracket closed round the walk's correction at the first step; one ranging opens
@@ -1819,7 +1824,8 @@ public sealed class GunnerySystem : IWorldSystem
     {
         fc.Bracket.Step = FirstStep(fc);
         if (fc.Phase == FirePhase.Effect)
-            (fc.Bracket, fc.Phase, fc.Misses, fc.WalkDir) = (FireControl.Bracket.About(fc.CorrR, fc.Bracket.Step, now, fc.Bracket.Step), FirePhase.Ranging, 0, 0);
+            (fc.Bracket, fc.Phase, fc.Misses, fc.WalkDir, fc.WalkRunM, fc.WalkRun) =
+                (FireControl.Bracket.About(fc.CorrR, fc.Bracket.Step, now, fc.Bracket.Step), FirePhase.Ranging, 0, 0, 0, 0);
         else
             fc.Bracket.Widen(now, fc.DriftMs, fc.Bracket.Step);
         fc.Rung = 0;
@@ -1868,7 +1874,7 @@ public sealed class GunnerySystem : IWorldSystem
         var computer = fc.Fit.Computer;
         var mount = fc.Fit.Mount;
         // his aim's doubt along the line of fire
-        double aim = fc.Phase == FirePhase.Effect ? fc.WalkStep / Math.Sqrt(3)
+        double aim = fc.Phase == FirePhase.Effect ? SpotStep(fc) / Math.Sqrt(3)
             : fc.Bracket.Closed ? Math.Max(fc.Bracket.HiAt(now, fc.DriftMs) - fc.Bracket.LoAt(now, fc.DriftMs), 0) / Math.Sqrt(12)
             : Math.Sqrt(fc.PosSigmaM * fc.PosSigmaM + Sq(fc.DriftMs * fc.TofS) + Sq(computer.ResidPct / 100 * range));
         double floorM = Math.Max(settings.BracketFloorM, settings.BracketFloorPatterns * 4 * sr);
@@ -2027,6 +2033,7 @@ public sealed class GunnerySystem : IWorldSystem
             h.Add(fc.Bracket.Lo);
             h.Add(fc.Bracket.Hi);
             h.Add(fc.WalkStep);
+            h.Add(fc.WalkN);
             h.Add((int)fc.Phase);
             h.Add(fc.InFlight);
             h.Add(fc.Salvos);
