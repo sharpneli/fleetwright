@@ -32,7 +32,7 @@ haze. QE on QE at 16 kyd unless the step's period fought nearer (the 1905 levels
 | FL0 | bench | | | | done (BL1ag) |
 | FL1 | own turns | `own_turn_kick_m`, a Gaussian a salvo by rate of turn (Dreyer 300 m, Mk 8 150 m, digital 20 m): the reference's lumped stand-in | a helm-free machine keeps its solution through her own turns, losing only what its own course and speed inputs lag: the speed she loses in a turn (`TurnDragFactor`) reaching a hand-fed Forbes log late (Dreyer: "manually fed to Dumaresq"), a pitometer at once (Mk 8); her course by gyro repeat | her own zigzag, every error on: level 3 above level 1 | done 2026-11-02 |
 | FL2 | the opening | | a longer base and a better first guess put the first salvo nearer her, so it straddles more often and comes to effect sooner | the first salvo's fall, every error on (the first straddle's median time, 143 v 141 s, hid it) | done 2026-11-02 |
-| FL3 | 0 → 1 | the eye (20% of range) → FA 2 m; eye and hand plot → hand plot; open sights 1.15 → telescopic 0.73 mil | ranges found at once, not by long ranging; a tighter pattern | the opening at 6-8 km | |
+| FL3 | 0 → 1 | the eye (20% of range) → FA 2 m; open sights 1.15 → telescopic 0.73 mil; the same hand plot (its own "eye and hand plot" gone) | ranges found at once, not by long ranging; a tighter pattern | the opening at 6-8 km | done 2026-11-02 |
 | FL4 | 1 → 2 | FA → FQ/FT 4 m; hand plot → Dumaresq and Vickers clock; telescopic 0.73 → 0.35 mil | the clock runs the range on between sparse readings from her course and speed | a crossing or closing target, readings 2 a minute; haze that loses readings | |
 | FL5 | 2 → 3 | Dumaresq → Dreyer Mk III-V (helm-free, the bearing gear); local laying → director 0.5 mil | through her own turns (FL1); the director's layer above the smoke and spray, one fall to spot | her own zigzag; a seaway; her own and the enemy's smoke, spray at speed. On the way: the catalogue's "Dreyer table Mk I-II" (not helm-free) fits the Mk I only; the Mk I* took her heading automatically and the Mk II probably (own-motion-inputs.md §2): split the row | |
 | FL6 | 3 → 4 | Dreyer (rate clock, latency 15 s, bias 1.2%) → AFCT (true course, 8 s, 0.6%); FQ/FT → stereo 5 m; director power drive 0.4 mil | a target's turns re-learned sooner; the bearing rate past the Dreyer's 0.25°/s; less bias to range out | the target's zigzag; a fast crossing near | |
@@ -62,6 +62,11 @@ lumped stand-in for something the chain now models?
 - `latency_s`, `q`, the priors: the machine's own assumptions; fine as such, each checked by its step.
 - `GunneryOpenS`, `OpenDoubtSteps`: FL2, neither held the opening on the bench (the track settles on its first reading at
   16 kyd for both levels; the turrets' swing held it). Their own check wants a case the swing doesn't cover: a shift.
+  FL3: an eye's doubt never comes within two steps, so an eye-ranged battery opens on `GunneryOpenS` alone; opening at
+  once instead hit the same (9.4 v 9.9%), its early salvos 970 m off: left.
+- The priors (`prior_kn`, `prior_deg`): the eye's first guess at her course and speed, before any reading; tighter on
+  every later machine (4/25 the hand plot, 2.5/15 the Dreyer, 2/12 the AFCT). Physical if the instruments that make the
+  guess improve (the rangefinder's ×28 on her inclination); check in FL4-FL6 where it's the same eye.
 - The captain's ranging record (`RangingRecord`, BL1ae): its cycles count the turrets' first swing from rest as ranging;
   a shift's own swing is its change of bearing over the training rate (a target on the other beam, 90 s at 2°/s).
 - `GunneryCombat`: the lumped battle factor, goes when fatigue comes (no-lumped-battle-factors).
@@ -147,3 +152,28 @@ straddling.
 - The bracket: level 3's second salvo falls no nearer than its first (210 → 206 m rms, every error on). Its first step
   (twice its doubt, mostly the 1.2% residual bias, capped at 366 m) moves the fall the step's length on the spot's sign
   alone, however near the first fell: bracket and halve, as doctrine had it. Checked where `first_step_m` is (FL3-FL5).
+
+## FL3: the eye to the rangefinder (done 2026-11-02)
+
+**Should give:** the eye guesses her range to some 20% (1,400 m at 7 km), and a man misjudges a ship the same way all
+through, so his readings don't average it out; the FA reads it to some 100 m. Level 0's first salvo should fall far off
+and it should range for minutes where level 1 ranges in a salvo or two. Open sights lay to 1.15 mil, the early telescope
+to 0.73: some 75 against 50 m in range a gun at 7 km, a wider pattern about the same centre, fewer hits firing for effect.
+
+**Found:** both show, each on its rung (Mikasa on Mikasa at 7 km, 15 kn, 48 duels, 10 minutes):
+
+| | level 0 | level 1 |
+|---|---|---|
+| readings' rung: the first salvo's fall, rms | 788 m | 174 m |
+| readings' rung: ranging salvos; effect at (median) | 3.8; 271 s | 1.8; 131 s |
+| laying and pattern's rung: hits | 19.0% | 22.3% |
+| every error on: hits | 9.9% | 16.1% |
+
+**On the way:** level 0's computer, the reference's "eye and hand plot", was the hand plot with worse numbers for no
+difference in the plot: 20 s latency for 15, the eye's guess at her course and speed 5 kn and 30° for 4 and 25 (the same
+eye), the corrections' residual 2.5% and 4 mil for 2% and 3 (the same tables), a 550 m first step for 366 (the same
+navy). Gone: level 0 is the hand plot with the eye (with that row level 0 hit 10.2% every error on, without it 9.9%: its
+deficit was the eye's, not the numbers'). The judgement (local control's computer) had the same numbers and takes the hand
+plot's error budget too, keeping its own (no plot: 5 s; no rate ever learnt). A fit's level label tells the eyeball from
+the rangefinder by its instrument now that they share the plot (`FireControlPresets.LevelOf`).
+`GunneryTests.Where_the_levels_differ_level_1_ranges_where_the_eye_guesses` asserts both on their rungs.

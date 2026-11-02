@@ -47,11 +47,12 @@ public static class FireControlPresets
     /// <summary>The level a fit is labelled with (decision 1: a level is a preset's label, read by the matchup until F10
     /// and by the displays): a level preset's own when its computer is that preset's, the presets beside the levels by
     /// the level they stand beside (judgement the eyeball, the Argo and the Japanese plot the Dreyer's, the turn setting
-    /// the table's), any other computer by its kind.</summary>
+    /// the table's), any other computer by its kind. The eyeball and the rangefinder share the hand plot (docs/battle/
+    /// fc-ladder-check.md FL3): a fit's own instrument tells them apart, a rangefinder read or not.</summary>
     public static FireControlLevel LevelOf(in FireControlFit fit)
     {
         for (int i = 0; i < Fits.Length; i++)
-            if (Fits[i].Fit.Computer == fit.Computer)
+            if (Fits[i].Fit.Computer == fit.Computer && (i >= Judgement || Fits[i].Fit.Optics.Reads == fit.Optics.Reads))
                 return i switch
                 {
                     < Judgement => (FireControlLevel)i,

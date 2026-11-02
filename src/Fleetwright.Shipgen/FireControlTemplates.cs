@@ -98,13 +98,14 @@ public static class FireControlTemplates
             coated: true, gyro: true),
 
         // ---- computers
-        C("Judgement", K("judgement", false, 5, 0, 5, 30, 2.5, 4, 0, 550, 0, 0, 0) with { RejudgeS = 60 },
+        C("Judgement", K("judgement", false, 5, 0, 4, 25, 2, 3, 0, 366, 0, 0, 0) with { RejudgeS = 60 },
             "A sailor's eye and head: the range guessed, the target's course and speed guessed from her look and led by it, looked at again " +
-            "each minute, never a rate learnt (F2: the worst computer there is)."),
-        C("Eye and hand plot", K("rate_clock", false, 20, 0.02, 5, 30, 2.5, 4, 0, 550, 0.2, 3, 0),
-            "Ranges by eye, rates by a hand plot (fire_control_ref.py level 0; designer C0)."),
+            "each minute, never a rate learnt (F2: the worst computer there is). The eye's guess and the tables' corrections as the hand " +
+            "plot's: the same eye, the same tables (docs/battle/fc-ladder-check.md FL3)."),
         C("Hand plot", K("rate_clock", false, 15, 0.02, 4, 25, 2, 3, 0, 366, 0.2, 3, 0),
-            "Rangefinder ranges, rates from a hand plot and estimates, no machine (level 1: the Tsushima era; designer C0)."),
+            "Ranges, by rangefinder or by eye, and rates from a hand plot and estimates, no machine (levels 0 and 1: the Tsushima era; " +
+            "designer C0). The reference's level 0 had an \"eye and hand plot\" of its own, slower and with worse guesses and corrections " +
+            "than this one for no difference in the plot: gone (docs/battle/fc-ladder-check.md FL3)."),
         C("Dumaresq and Vickers clock", K("rate_clock", false, 15, 0.03, 3, 20, 1.5, 2.5, 0, 366, 0.8, 4, 0) with { MaxRangeRateMs = DreyerRangeRate },
             "The Dumaresq's rates run on by the Vickers range clock (1906): constant rates only, the roller slipping on a change (computing.md " +
             "§3; level 2, designer C1)."),
@@ -205,7 +206,7 @@ public static class FireControlTemplates
     /// <summary>The presets: the levels 0-8 in order (fire_control_ref.py LEVELS), then the reference's rows beside them.</summary>
     public static readonly IReadOnlyList<Preset> Presets =
     [
-        new("eyeball", "By eye", "Eye and hand plot", "Open sights", "Level 0, c.1890: ranges by eye, each gun laid by its own layer."),
+        new("eyeball", "By eye", "Hand plot", "Open sights", "Level 0, c.1890: ranges by eye, each gun laid by its own layer."),
         new("rangefinder", "Barr & Stroud FA (O1)", "Hand plot", "Early telescopic sights", "Level 1, 1905: an early rangefinder."),
         new("clock", "Barr & Stroud FQ/FT (O2)", "Dumaresq and Vickers clock", "Telescopic sights", "Level 2, 1910: Dumaresq and range clock."),
         new("director", "Barr & Stroud FQ/FT (O2)", "Dreyer table Mk III-V", "Director, follow the pointer", "Level 3, 1916: the Dreyer table and director firing."),

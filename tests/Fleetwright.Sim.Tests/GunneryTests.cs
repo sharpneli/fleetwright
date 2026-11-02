@@ -161,6 +161,33 @@ public class GunneryTests(ITestOutputHelper output)
         Assert.True(open[3] < 0.75 * open[1], "the longer base puts the first salvo nearer");
     }
 
+    /// <summary>Level 0 to 1 where they must differ (fc-ladder-check.md FL3), Mikasa on Mikasa at 7 km, the plot the same
+    /// hand plot: the eye guesses her range to 20% (a man's misjudgement his own all through, so his readings don't average
+    /// it out) where the FA reads it to some 100 m, so on the readings' rung the eye's first salvo falls far off and it
+    /// ranges for minutes (measured, 48 duels: 788 v 174 m rms, effect at 271 v 131 s); open sights lay to 1.15 mil, the
+    /// early telescope to 0.73, some 75 v 50 m in range a gun at the range, so on the laying's rung (with the pattern) the
+    /// telescope hits more firing for effect (19.0 v 22.3%). Every error on, measured 9.9 v 16.1% in 10 minutes.</summary>
+    [Fact]
+    public void Where_the_levels_differ_level_1_ranges_where_the_eye_guesses()
+    {
+        var mikasa = Class("mikasa");
+        var readings = Settings with { Smoke = false, GunneryErrors = GunneryErrorScale.Parse("all=0,readings=1,own=1") };
+        var laying = Settings with { Smoke = false, GunneryErrors = GunneryErrorScale.Parse("all=0,laying=1,dispersion=1") };
+        var fall = new double[2];
+        var laid = new double[2];
+        foreach (int level in new[] { 0, 1 })
+        {
+            var (f, st, at, _) = Opening(mikasa, mikasa, 7_000, level, 24, 3, readings);
+            fall[level] = f;
+            laid[level] = Opening(mikasa, mikasa, 7_000, level, 24, 10, laying).HitPct;
+            var (af, ast, _, ap) = Opening(mikasa, mikasa, 7_000, level, 24, 10);
+            output.WriteLine($"level {level}: the readings only, the first salvo at {at:F0} s falling {f:F0} m rms ({st:F0}% straddled); the laying " +
+                             $"and the pattern only, {laid[level]:F1}% hits in 10 min; every error on, the first salvo {af:F0} m rms ({ast:F0}%), {ap:F1}% in 10 min");
+        }
+        Assert.True(fall[1] < 0.4 * fall[0], "the rangefinder's first range is nearer than the eye's");
+        Assert.True(laid[1] > laid[0], "the telescope lays closer than open sights");
+    }
+
     [Fact]
     public void The_levels_keep_their_order_and_level_3_lands_near_the_reference()
     {
