@@ -183,9 +183,9 @@ public static class FireControl
         public readonly double HiAt(long ms, double driftMs) => Hi + driftMs * Math.Max(ms - HiMs, 0) / 1000.0;
 
         /// <summary>The correction to fire with now: its middle closed, a step beyond its bound open, none before the
-        /// first spot. The computer's new ranges move the bracket with them (Rebase), so they never move the guns ("Sir,
-        /// the target teleported 200 m": the user, 2026-10-18); what the spots learnt stands however long ago they learnt
-        /// it (a hold that lapsed back to the bare solution put the fire back on its ballistic bias: 2026-11-02).</summary>
+        /// first spot. It's a correction on the computer's solution, which the guns follow as its readings move it (the
+        /// clock's range cuts: BL1z); what the spots learnt stands however long ago they learnt it (a hold that lapsed back to
+        /// the bare solution put the fire back on its ballistic bias: 2026-11-02).</summary>
         public readonly double Aim(long ms, double driftMs)
         {
             double lo = LoAt(ms, driftMs), hi = HiAt(ms, driftMs);
@@ -221,9 +221,6 @@ public static class FireControl
             }
             (Lo, Hi, LoMs, HiMs) = (lo, hi, ms, ms);
         }
-
-        /// <summary>The bracket moved by dr, m (the solution it's a correction to moved the other way).</summary>
-        public void Shift(double dr) => (Lo, Hi) = (Lo + dr, Hi + dr);
 
         /// <summary>The bracket opened round its middle to at least a width (the solution disturbed: own ship turning, the
         /// target seen to turn).</summary>

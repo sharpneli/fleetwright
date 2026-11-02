@@ -167,8 +167,10 @@ public class FireDisciplineTests(ITestOutputHelper output)
         // that hit, the next is laid where it was (the user, 2026-10-18: "the target teleported 200 m!" isn't a reason to
         // toss shells over her). Before the eye's error wandered slowly, the spots held her and lone overs held the aim, the
         // laid point moved 67 and 192 m on average, and up to 700 m. Opening once the track is good enough to range from
-        // (2026-10-18, not a fixed two minutes) gives Lion a less settled track when she first hits: 52 m, so 60 is the
-        // bound (flagged for the tuning: docs/battle/bugs.md)
+        // (2026-10-18, not a fixed two minutes) gives Lion a less settled track when she first hits: 52 m, so 60 was the
+        // bound. Since BL1z (2026-11-02, the user's decision) the guns follow the computer as its readings move it (the
+        // clock's range cuts; the spots' correction held on it), so the lay moves with the rangetakers' wander: 92 m by eye
+        // at 3 km and 89 m at 15 km on average, a spot's step about it; 120 is the bound
         var cases = new (ShipClass Shooter, ShipClass Target, int Battery, double RangeM, double Bearing)[]
         {
             (Fleet.Get("mikasa").Class!, Fleet.Scenario("aurora"), -1, 3_000, 90),
@@ -205,7 +207,7 @@ public class FireDisciplineTests(ITestOutputHelper output)
             output.WriteLine($"{shooter.Name} at {rangeM / 1000:F0} km: {moves.Count} salvos after a hit, laid {mean:F0} m from the last on average, " +
                              $"{moves.Count(m => m > 100)} over 100 m");
             Assert.True(moves.Count >= 5, "it hit");
-            Assert.True(mean < 60, $"the lay moved {mean:F0} m on average after a hit");
+            Assert.True(mean < 120, $"the lay moved {mean:F0} m on average after a hit");
         }
     }
 

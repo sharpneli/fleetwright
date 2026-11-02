@@ -17,9 +17,12 @@ date** when a step or a sub-plan starts or finishes, and take stock against it f
 reopened 2026-11-01 (BL1j-BL1n: the roll averaged over the hull and counted once, the own-turn kick by rate of turn,
 the panel reading every hit rate beside its range; then BL1o-q, the gunnery officer's and the captain's judgement under
 fire; BL1t-u, no pulsing falls under helm, the German ladder halving; BL5e-h, the targets by doctrine, the screens' station,
-the main guns for heavy ships, the day attack's gain out of reach); AI threading built (the user, 2026-11-01: `workers.md` W9-W15, every captain, admiral and commander a think from state to commands, spread over the ticks; W9-W14 done 2026-11-02, the cap for the user); the user's playtest of squadrons (2026-11-02): BL1v, the spots walk the fall
-onto her (built), then the captains' cost of switching targets, then a pass on `salvo_pct`; salvo chasing for evasion after
-(balance.md, after BL1q).
+the main guns for heavy ships, the day attack's gain out of reach); AI threading built (the user, 2026-11-01: `workers.md` W9-W15, every captain, admiral and commander a think from state to commands, spread over the ticks; W9-W14 done 2026-11-02, the cap for the user); the user's playtest of squadrons (2026-11-02): BL1v-z built (the error ladder,
+`duel --errors`; the spots' running mean; ranging ends when the fall crosses her; the guns follow the computer); next a pass
+on `salvo_pct` (the salvo-to-salvo error, now the largest error left), then the captains' cost of switching targets (parked:
+a battery counts the time it has put into her range, up to 150 s, over a 600 s horizon; the median hold in squadrons 161 →
+543 s; and a target "done fighting" after 90 s quiet flips their choice, 240 s halves the flips but touches BL2's
+cripples, the user's to decide); salvo chasing for evasion after (balance.md, after BL1q).
 
 | Step | State | Plan | Left |
 |---|---|---|---|

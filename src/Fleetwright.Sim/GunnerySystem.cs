@@ -113,9 +113,6 @@ public sealed class GunnerySystem : IWorldSystem
         public long PbLeftMs;
         public FireControl.Bracket Bracket;
         public double DriftMs;
-        /// <summary>How far the computer's solution has moved in range by its readings since the engagement began, m (the
-        /// bracket moves the other way: <see cref="Rebase"/>).</summary>
-        public double Shift;
         /// <summary>The computer's doubt of the target's position along the line of fire (m), and the range to its aim
         /// (m), for the first step.</summary>
         public double PosSigmaM, RangeM;
@@ -129,8 +126,8 @@ public sealed class GunnerySystem : IWorldSystem
         /// shrunk by, which way it last stepped (-1 down, +1 up, 0 none yet), and how far (m) and in how many steps it has gone
         /// that way in a row.</summary>
         public double WalkStep, WalkRunM;
-        /// <summary>Ranging, the corrections the last over and the last short were fired with, on today's solution (NaN
-        /// none yet): crossed within a pattern, she's found.</summary>
+        /// <summary>Ranging, the corrections the last over and the last short were fired with (NaN none yet): crossed
+        /// within a pattern, she's found.</summary>
         public double OverAt, ShortAt;
         public int WalkN, WalkDir, WalkRun;
         /// <summary>Which mount the next partial salvo starts from (the groups alternate), and the tracker's turns seen.</summary>
@@ -222,9 +219,8 @@ public sealed class GunnerySystem : IWorldSystem
         public double CorrR, CorrD, PatternM, PatternAcrossM, RangeM, SpotSigmaM, Common, SumY, MinX, MaxX, TargetLengthM, SumX, AimErrM, AimErrAcrossM;
         public long FiredMs;
         public FirePhase Phase;
-        /// <summary>Its battery's <see cref="Fc.Shift"/> when it was fired, and whether it was laid point blank (its fall
-        /// says nothing to the bracket: its range was the layers' own).</summary>
-        public double Shift, TrueRangeM, PbCorrR;
+        /// <summary>Whether it was laid point blank (its fall says nothing to the bracket: its range was the layers' own).</summary>
+        public double TrueRangeM, PbCorrR;
         public bool PointBlank;
         /// <summary>Her rate of turn as it was fired, °/s (positive to starboard): fired under helm or steady, for tools.</summary>
         public float YawDegS;
@@ -873,9 +869,7 @@ public sealed class GunnerySystem : IWorldSystem
         {
             // a sailor looks at her again: a fresh guess at her course and speed
             var rg = stream.Derive((ulong)f).Derive((ulong)fc.Generation).Derive(0xE7Fu).Derive((ulong)now);
-            double before = SolutionRangeM(fc, now, ship.Position, ownV);
             fc.Tracker.Rejudge(Guess(computer, target.Position, target.Forward * target.Speed, ref rg, settings.GunneryErrors.Prior));
-            Rebase(ref fc, SolutionRangeM(fc, now, ship.Position, ownV) - before);
             fc.JudgeMs = now + (long)(computer.RejudgeS * 1000);
         }
 
@@ -1146,11 +1140,7 @@ public sealed class GunnerySystem : IWorldSystem
             fc.JudgeMs = now + (long)(computer.RejudgeS * 1000);
         }
         else if (Plausible(ref fc, r, now, ownP, ownV))
-        {
-            double before = SolutionRangeM(fc, now, ownP, ownV);
-            fc.Tracker.Fix(computer, r);
-            Rebase(ref fc, SolutionRangeM(fc, now, ownP, ownV) - before);
-        }
+            fc.Tracker.Fix(computer, r);   // the guns follow the computer, the spots' correction on it (BL1z)
         fc.PendHead = (fc.PendHead + 1) % PendingCap;
         fc.PendCount--;
     }
@@ -1172,27 +1162,6 @@ public sealed class GunnerySystem : IWorldSystem
         }
         fc.SetAside = false;
         return true;
-    }
-
-    /// <summary>The range the computer's solution puts the target at when a shell fired now would fall, m.</summary>
-    double SolutionRangeM(in Fc fc, long now, Vec3d ownP, Vec3d ownV)
-    {
-        fc.Tracker.At(fc.Fit.Computer, now + (long)(fc.TofS * 1000), now, ownP, ownV, out var p, out _);
-        return Earth.Distance(ownP, p);
-    }
-
-    /// <summary>The computer's solution moved by a reading (or a judgement's new look) by dr in range: the spots' bracket
-    /// and the correction in force move the other way, so they keep saying where the target is (they're corrections to
-    /// the solution: a solution that jumps 900 m on an eye's range would otherwise carry the old corrections with it, and
-    /// put the salvo behind the ship), and the salvos in the air are spotted against what their correction now means.</summary>
-    static void Rebase(ref Fc fc, double dr)
-    {
-        if (!(Math.Abs(dr) > 1e-6))
-            return;
-        fc.Bracket.Shift(-dr);
-        fc.CorrR -= dr;
-        (fc.OverAt, fc.ShortAt) = (fc.OverAt - dr, fc.ShortAt - dr);
-        fc.Shift += dr;
     }
 
     /// <summary>The eye's guess at a target's velocity: its speed and course, each off by the computer's prior (1 sigma).</summary>
@@ -1487,7 +1456,7 @@ public sealed class GunnerySystem : IWorldSystem
             Alive = true, Generation = sv.Generation + 1, Fc = f, FcGeneration = fc.Generation, Target = fc.Target, CorrR = fc.CorrR + ladder, CorrD = fc.CorrD,
             PatternM = 4 * sr, PatternAcrossM = 4 * sd, RangeM = range, SpotSigmaM = spot, Common = errs.Spotting * 0.5 * spot * r.NextGaussian(), U = u, W = w, MinX = double.MaxValue,
             MaxX = double.MinValue, TargetLengthM = store[tslot].Handling.Class.Silhouette.LengthM, FiredMs = now,
-            AimErrM = Vec3d.Dot(p - truth, u), AimErrAcrossM = Vec3d.Dot(p - truth, w), Phase = phase, LadderM = ladder, Shift = fc.Shift,
+            AimErrM = Vec3d.Dot(p - truth, u), AimErrAcrossM = Vec3d.Dot(p - truth, w), Phase = phase, LadderM = ladder,
             PointBlank = pointBlank, TrueRangeM = Earth.Distance(ship.Position, tgt.Position), PbCorrR = fc.PbCorrR,
             CalibreMm = row.CalibreMm, Shooter = fc.Shooter, FirstDownMs = -1, YawDegS = (float)double.RadiansToDegrees(ship.YawRate),
         };
@@ -1755,7 +1724,7 @@ public sealed class GunnerySystem : IWorldSystem
         fc.LastSign = (int)sign;
         // the correction its salvo was fired with, as it stands on today's solution; a crew that pyramids puts the spot on
         // the one in force (F6: the green most often)
-        double at = pyramid ? fc.CorrR + sv.LadderM : sv.CorrR - (fc.Shift - sv.Shift);
+        double at = pyramid ? fc.CorrR + sv.LadderM : sv.CorrR;
         if (fc.Phase == FirePhase.Effect)
             Walk(ref fc, sign, at, now);
         else
