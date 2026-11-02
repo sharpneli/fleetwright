@@ -208,11 +208,22 @@ public class GunneryTests(ITestOutputHelper output)
     static double Engaged(ShipClass shooter, ShipClass target, double bearingDeg, double rangeM, double courseDeg, double kn, double minutes, SimSettings s,
         int n = 16, double zig = 0, double legS = 75)
     {
+        var (hits, shells) = EngagedHits(shooter, target, bearingDeg, rangeM, courseDeg, kn, minutes, s, n, zig, legS);
+        return 100.0 * hits / Math.Max(shells, 1);
+    }
+
+    /// <summary><see cref="Engaged"/>'s hits and shells, in a swell from abeam of her (her own course north) if asked
+    /// (Hs, m; a 10 s period).</summary>
+    static (int Hits, int Shells) EngagedHits(ShipClass shooter, ShipClass target, double bearingDeg, double rangeM, double courseDeg, double kn, double minutes,
+        SimSettings s, int n = 16, double zig = 0, double legS = 75, double swellHs = 0)
+    {
         var tallies = new GunnerySystem.Tally[n];
         Parallel.For(0, n, k =>
         {
             var w = new World(Start, (ulong)(1 + k), s);
             int a = w.Ships.AddClass(shooter), b = w.Ships.AddClass(target);
+            if (swellHs > 0)
+                w.Apply(Command.SetSea(swellHs, 10, 90));
             var p = Earth.Position(Lat, Lon);
             var f = Earth.Forward(p, bearingDeg);
             Earth.Advance(ref p, ref f, rangeM);
@@ -230,7 +241,7 @@ public class GunneryTests(ITestOutputHelper output)
             w.AdvanceTo(end);
             tallies[k] = w.Gunnery.TallyOf(1, 0)!.Value;
         });
-        return 100.0 * tallies.Sum(t => t.Hits) / Math.Max(tallies.Sum(t => t.Shells), 1);
+        return (tallies.Sum(t => t.Hits), tallies.Sum(t => t.Shells));
     }
 
     /// <summary>Level 1 to 2 where they must differ (fc-ladder-check.md FL4), Dreadnought on Dreadnought at 11 km, each part
@@ -345,6 +356,89 @@ public class GunneryTests(ITestOutputHelper output)
         Assert.True(zigA > zigD, "the shorter latency re-learns her turns sooner");
         Assert.InRange(steadyL, 0.96 * steadyA, 1.04 * steadyA);
         Assert.True(stereo > 0.98 * rf && lw > 0.98 * lp, "the longer base and the power drive no worse");
+    }
+
+    /// <summary>Level 4 to 5 where they must differ (fc-ladder-check.md FL7), QE refitted. The mount, behind the long-base
+    /// stereo and the AFCT at 16 km: the director's layer fires on the roll at the key, the stable vertical anywhere in it
+    /// (ship-motion-gunnery-research.md: "continuous fire at any point of roll, tilt-corrected"), so in a beam swell the
+    /// director waits for her roll and lays worse as it grows, the vertical neither (measured, 24 duels, hits a run: calm
+    /// 281 v 318, a 2 m swell 271 v 324, 4 m 250 v 317; the director's 15.0% a shell falling to 13.4, the vertical's 14.8
+    /// holding). The computer, the Mk 8 against the AFCT behind the same: steady alike (76.4 v 76.0%), ahead on a fast
+    /// crossing by its 3 s latency and readier manoeuvre allowance (a destroyer at 30 kn passing at 4 km 92.2 v 83.5). The
+    /// coated, stabilised O4 over the O3 at 20 kyd, a little (48 duels: 61.0 v 58.8% on the readings' rung; 6 m at ×25 against
+    /// 5 m at ×28, 6 readings a minute against 4). And the vertical's own error in her long turns: its erection cut out by
+    /// the turn's acceleration, it drifts at some 2.5′ a minute (QE's 450° at 18 kn with 20° of helm, some 7 minutes, leaves
+    /// 17′; the research's 4-5 minute turn 12-15′, ~200 yd at 20 kyd: North Carolina 1945's "several hundreds of yards",
+    /// aiming at the sun and moon), walked out by the spots as it grows ("no more than would be desirable when using a
+    /// rocking ladder": the falls after it 44 m rms against 45 with it exact).</summary>
+    [Fact]
+    public void Where_the_levels_differ_level_5_fires_anywhere_in_the_roll()
+    {
+        var qe = Class("super_dreadnought");
+        var dd = Class("destroyer");
+        var guns = Settings with { Smoke = false, GunneryErrors = GunneryErrorScale.Parse("all=0,readings=1,own=1,laying=1,dispersion=1") };
+        var readings = Settings with { Smoke = false, GunneryErrors = GunneryErrorScale.Parse("all=0,readings=1,own=1,prior=1") };
+        var ranges = Settings with { Smoke = false, GunneryErrors = GunneryErrorScale.Parse("all=0,readings=1,own=1") };
+        const string o3 = "Stereo, long base (O3)", o4 = "Coated, stabilised (O4)", afct = "Admiralty Fire Control Table", mk8 = "Ford Mk 8 rangekeeper",
+            power = "Director, power drive", vertical = "Stable vertical, remote power control";
+        var byPower = Refit("super_dreadnought", o3, afct, power);
+        var byVertical = Refit("super_dreadnought", o3, afct, vertical);
+        var (pc, pcs) = EngagedHits(byPower, qe, 90, 16_000, 0, 18, 10, guns, 24);
+        var (vc, vcs) = EngagedHits(byVertical, qe, 90, 16_000, 0, 18, 10, guns, 24);
+        var (ps, pss) = EngagedHits(byPower, qe, 90, 16_000, 0, 18, 10, guns, 24, swellHs: 4);
+        var (vs, vss) = EngagedHits(byVertical, qe, 90, 16_000, 0, 18, 10, guns, 24, swellHs: 4);
+        output.WriteLine($"the mount at 16 km: calm, the director {pc} hits of {pcs}, the vertical {vc} of {vcs}; a 4 m swell abeam, {ps} of {pss}, {vs} of {vss}");
+        var byMk8 = Refit("super_dreadnought", o3, mk8, power);
+        double steadyA = Engaged(byPower, qe, 90, 16_000, 0, 18, 10, readings), steadyM = Engaged(byMk8, qe, 90, 16_000, 0, 18, 10, readings);
+        double passA = Engaged(byPower, dd, 30, 8_000, 180, 30, 6, readings), passM = Engaged(byMk8, dd, 30, 8_000, 180, 30, 6, readings);
+        output.WriteLine($"the computer: steady at 16 km the AFCT {steadyA:F1}%, the Mk 8 {steadyM:F1}; a destroyer passing at 4 km {passA:F1}, {passM:F1}");
+        double rf3 = Engaged(Refit("super_dreadnought", o3, mk8, vertical), qe, 90, 18_300, 0, 18, 10, ranges, 48);
+        double rf4 = Engaged(Refit("super_dreadnought", o4, mk8, vertical), qe, 90, 18_300, 0, 18, 10, ranges, 48);
+        output.WriteLine($"the readings only at 20 kyd: the O3 {rf3:F1}%, the O4 {rf4:F1}");
+        // her long turn: 450° from her course, the vertical's tilt at its end and the falls after it, the own rung on and off
+        var level5 = Refit("super_dreadnought", o4, mk8, vertical);
+        (double Tilt, double Minutes, double Fall) Turn(SimSettings s)
+        {
+            const int n = 12;
+            var tilt = new double[n];
+            var minutes = new double[n];
+            var falls = new List<double>[n];
+            Parallel.For(0, n, k =>
+            {
+                var w = Make(level5, qe, 20_000, 90, 0, 18, 1 + k, settings: s);
+                var l = falls[k] = [];
+                w.Gunnery.Reported = r => { if (r.Shooter == 1 && r.Battery == 0 && r.FiredMs > Start.Ms + 240_000) l.Add(r.MeanX); };
+                w.AdvanceTo(Start + 240_000L);
+                // one turn, the helm held over till she's come 450° round, then steadied
+                w.Apply(ShipSystem.Rudder(1, 20));
+                long from = w.Time.Ms;
+                double turned = 0, was = w.Ships.Store[w.Ships.Store.SlotOf(1)].HeadingDeg;
+                while (turned < 450)
+                {
+                    w.AdvanceTo(w.Time + 1000);
+                    double h = w.Ships.Store[w.Ships.Store.SlotOf(1)].HeadingDeg;
+                    turned += Math.Abs(Math.IEEERemainder(h - was, 360));
+                    was = h;
+                }
+                w.Apply(ShipSystem.Course(1, was));
+                (tilt[k], minutes[k]) = (w.Gunnery.TallyOf(1, 0)!.Value.VerticalTiltRad, (w.Time.Ms - from) / 60_000.0);
+                w.AdvanceTo(Start + 720_000L);
+            });
+            var all = falls.SelectMany(l => l).ToArray();
+            return (tilt.Average() * 10_800 / Math.PI, minutes.Average(), Math.Sqrt(all.Average(x => x * x)));
+        }
+        var drift = Turn(Settings with { Smoke = false, GunneryErrors = GunneryErrorScale.Parse("all=0,own=1") });
+        var exact = Turn(Settings with { Smoke = false, GunneryErrors = GunneryErrorScale.Parse("all=0") });
+        output.WriteLine($"a 450° turn at 20 kyd in {drift.Minutes:F1} min: the vertical {drift.Tilt:F1}′ off at its end, the falls after it {drift.Fall:F0} m rms " +
+                         $"(exact {exact.Fall:F0})");
+        Assert.True(vs > 1.15 * ps, "in a swell the vertical fires anywhere in the roll, the director waits for it");
+        Assert.True((double)ps / pss < 0.95 * pc / pcs && (double)vs / vss > 0.95 * vc / vcs, "the director's laying worse as she rolls more, the vertical's not");
+        Assert.InRange(steadyM, 0.96 * steadyA, 1.04 * steadyA);
+        Assert.True(passM > 1.05 * passA, "the Mk 8 follows a fast crossing more closely");
+        Assert.True(rf4 > rf3, "the O4's longer base and readings");
+        double free = Settings.StableVerticalDriftArcminMin * drift.Minutes;
+        Assert.InRange(drift.Tilt, 0.7 * free, 1.05 * free);
+        Assert.True(drift.Fall < 1.2 * exact.Fall + 5, "the spots walk the vertical's drift out as it grows");
     }
 
     [Fact]

@@ -36,8 +36,8 @@ haze. QE on QE at 16 kyd unless the step's period fought nearer (the 1905 levels
 | FL4 | 1 → 2 | FA → FQ/FT 4 m; hand plot → Dumaresq and Vickers clock; telescopic 0.73 → 0.35 mil | the clock runs the range on between sparse readings from her course and speed | a crossing or closing target, readings 2 a minute; haze that loses readings | done 2026-11-02 |
 | FL5 | 2 → 3 | Dumaresq → Dreyer Mk III-V (helm-free, the bearing gear); local laying → director 0.5 mil | through her own turns (FL1); the director's layer above the smoke and spray, one fall to spot | her own zigzag; a seaway; her own and the enemy's smoke, spray at speed. On the way: the catalogue's "Dreyer table Mk I-II" (not helm-free) fits the Mk I only; the Mk I* took her heading automatically and the Mk II probably (own-motion-inputs.md §2): split the row | done 2026-11-02 (the smoke and spray's size to the error sources' session) |
 | FL6 | 3 → 4 | Dreyer (rate clock, latency 15 s, bias 1.2%) → AFCT (true course, 8 s, 0.6%); FQ/FT → stereo 5 m; director power drive 0.4 mil | a target's turns re-learned sooner; the bearing rate past the Dreyer's 0.25°/s; less bias to range out | the target's zigzag; a fast crossing near | done 2026-11-02 |
-| FL7 | 4 → 5 | AFCT → Ford Mk 8 (3 s, 0.4%); stable vertical, RPC; coated, stabilised O4 | fire at any point of the roll, not on it; the rangefinder in a seaway; and the stable vertical's own error in a turn, the record's "several hundred yards" (North Carolina 1945): its mercury erection cut out while the turn's acceleration lasts, the gyro drifting free some 2-3′ a minute, ~200 yd through a 450° turn at 20-25 kyd, re-erecting after (own-motion-inputs.md §4, recommendation 6) | a seaway, rate of fire in it; long own turns | |
-| FL8 | 5 → 6 | radar ranging (stand-in) | ranges through haze and at night | haze, night: radar is out of the first game, so checked last | |
+| FL7 | 4 → 5 | AFCT → Ford Mk 8 (3 s, 0.4%); stable vertical, RPC; coated, stabilised O4 | fire at any point of the roll, not on it; the rangefinder in a seaway; and the stable vertical's own error in a turn, the record's "several hundred yards" (North Carolina 1945): its mercury erection cut out while the turn's acceleration lasts, the gyro drifting free some 2-3′ a minute, ~200 yd through a 450° turn at 20-25 kyd, re-erecting after (own-motion-inputs.md §4, recommendation 6) | a seaway, rate of fire in it; long own turns | done 2026-11-02 (the rangefinder in a seaway to the error sources' session) |
+| FL8 | 5 → 6 | radar ranging (stand-in) | ranges through haze and at night | haze, night: radar is out of the first game, so checked last | skipped for now (the user, 2026-11-02: no radar yet) |
 | FL9 | 6 → 7 | Mk 8 → Mk 1A (acceleration, turn detection) | follows a target in a steady turn ("a steady turn cuts hits 2-4x for every straight-line machine", research §5.6) | a target circling | |
 | FL10 | 7 → 8 | Mk 1A → digital turn filter | the same, quicker; a zigzag | a target circling and zigzagging | |
 | FL11 | side steps | Argo (true course 1912, gyro-mounted rangefinder 8 a minute) v Dreyer; AFCT turn setting v AFCT; Type 92 v AFCT | the Argo through her own turns and in a seaway; the turn setting on a circling target; the Japanese plot per its record | as each says | |
@@ -61,7 +61,13 @@ lumped stand-in for something the chain now models?
   RPC (0.5) worse than a director's power drive (0.4), on a steady platform. Check the sources' split (BL1l) in FL5 and FL7.
   FL5: the director's 0.5 is the reference's 1.0 halved by its own split; the research's one director figure, "about
   0.5-1 mil with ×12 trainer and pointer optics" (fire-control-research.md, inferred from the Mk 38), doesn't argue it
-  lower, and the layers' lead in clear air fits the record: kept. FL7 still to check.
+  lower, and the layers' lead in clear air fits the record: kept. FL7: the stable vertical's 0.5 against the power
+  drive's 0.4 in a calm matters little (its lead is firing anywhere in the roll, 14% more shells even in a calm) and
+  has no source either way: kept.
+- An unstabilised rangefinder in a seaway: the gyro mounting's gain is a fixed reading rate (fire-control-research.md
+  §3.5: Pollen's mounting "raised range-taking about fivefold"; 2 against 8 a minute, 4 against 6), the same in a calm as
+  in a gale, and nothing slows an unstabilised instrument's readings or widens them as she rolls. Its law wants a source:
+  the error sources' session (FL7).
 - `latency_s`, `q`, the priors: the machine's own assumptions; fine as such, each checked by its step.
 - `GunneryOpenS`, `OpenDoubtSteps`: FL2, neither held the opening on the bench (the track settles on its first reading at
   16 kyd for both levels; the turrets' swing held it). Their own check wants a case the swing doesn't cover: a shift.
@@ -71,7 +77,8 @@ lumped stand-in for something the chain now models?
   every later machine (4/25 the hand plot, 2.5/15 the Dreyer, 2/12 the AFCT). Physical if the instruments that make the
   guess improve (the rangefinder's ×28 on her inclination); check in FL4-FL6 where it's the same eye. Done to the AFCT:
   the Dumaresq's 3 kn and 20° for every machine from it through the AFCT family (FL5, FL6), the same eye behind ×28;
-  the Argo (FL11), the Type 92 (FL11), the Mk 8 on (FL7, FL9, FL10) still their own.
+  the Argo (FL11), the Type 92 (FL11), the Mk 8 on (FL7, FL9, FL10) still their own. FL7: the Mk 8 too; its radar
+  stand-in row keeps 2 and 12 till FL8.
 - `latency_s`: the Dreyer's 15 s and the Mk 8's 2-3 s are the research's (evasion-research.md, "about 15 s for a Dreyer table, 2-3 s for a Mk 8"), the AFCT's 8 s
   between them; on a steady target it's what's left between the Dreyer and the AFCT besides the residual (FL6).
 - The captain's ranging record (`RangingRecord`, BL1ae): its cycles count the turrets' first swing from rest as ranging;
@@ -275,3 +282,41 @@ The stereo over the FQ/FT 70.1 → 75.7% on the readings' rung at 16 kyd, the po
 **On the way:** the AFCT family's first guess (2 kn and 12°) was tighter than the Dreyer's with the same eye behind the
 same ×28: the Dumaresq's 3 and 20 now, the AFCT, the AFCC, the turn setting and the German Rechenstelle (the catalogue and
 7 designs' own blocks). `GunneryTests.Where_the_levels_differ_level_4_follows_a_fast_crossing`.
+
+## FL7: the AFCT to the Mk 8 and the stable vertical (done 2026-11-02)
+
+**Should give:** the stable vertical fires anywhere in the roll, "tilt-corrected" (ship-motion-gunnery-research.md), where
+the director's layer fires on it at the key: in a seaway the director waits for her roll and lays worse as it grows, the
+vertical neither. The Mk 8 follows a target more closely than the AFCT by its shorter latency (2-3 s against 8) and its
+readier manoeuvre allowance, alike on a steady one. The O4 a little over the O3. And the vertical's own error in her long
+turns (own-motion-inputs.md §4): its mercury erection "cannot distinguish between gravity and acceleration forces", so
+it was cut out in a turn and the gyro "free to drift until the acceleration disappeared", some 3′ a minute; a 450° turn
+of 4-5 minutes leaves 12-15′, about 200 yd at 20-25 kyd (North Carolina 1945: "several hundreds of yards at battle
+ranges", aiming at the sun and moon).
+
+**Found** (QE refitted; 24 duels): the mount as it should, behind the O3 and the AFCT at 16 km:
+
+| hits a run (of shells) | the director, power drive | the stable vertical |
+|---|---|---|
+| calm | 282 (1,876) | 318 (2,148) |
+| a 2 m swell abeam | 271 | 324 |
+| a 4 m swell abeam | 250 (1,868) | 317 (2,144) |
+
+The director's 15.0% a shell falls to 13.4 as she rolls more, the vertical's holds at 14.8; even in a calm the director
+waits for what roll there is (14% fewer shells). The computer: steady alike (the AFCT 76.2%, the Mk 8 75.2), a destroyer
+at 30 kn passing at 4 km 83.6 against 90.3. The O4 over the O3 at 20 kyd, 58.8 → 61.0% on the readings' rung (48 duels:
+a rangefinder man's misjudgement, drawn once a target, spreads the duels wide). **Missing:** the vertical's own error.
+
+**Built:** the stable vertical's tilt (`GunnerySystem.Vertical`, `Fc.SvTilt*`; the tally's `VerticalTiltRad`): cut out
+while her turn's acceleration (speed times rate of turn) passes `StableVerticalCutMs2` [EST 0.05 m/s², the research's],
+drifting one way drawn each turn at `StableVerticalDriftArcminMin` [EST 2.5: the research's 2-3, the free gyro of 1921 "three
+minutes of arc per minute of time"], erected again after over `StableVerticalErectS` [EST 120 s: "over minutes"]; along
+the line of fire it lays the guns' elevation off, across it cants their trunnions; the own rung's. A director lays to the
+horizon and has none. Measured, QE's 450° at 18 kn with 20° of helm (7.2 minutes): 17.6′ at its end; the falls after it
+44 m rms against 45 with the vertical exact, the spots walking the drift out as it grows, some 36 m of range a minute at
+20 kyd (North Carolina's verdict: "no more than would be desirable when using a rocking ladder"; commanders "might
+maneuver freely"). Kept a battery's, not its ship's: a shift of target starts it level (a small omission).
+
+**On the way:** the Mk 8's first guess (2 kn and 12°) the Dumaresq's 3 and 20, the same eye (the catalogue and 11
+designs' own blocks); its radar stand-in row keeps its own till FL8. An unstabilised rangefinder in a seaway isn't in the
+chain (audit list). `GunneryTests.Where_the_levels_differ_level_5_fires_anywhere_in_the_roll`.

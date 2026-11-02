@@ -605,7 +605,7 @@
   {
    "name": "Ford Mk 8 rangekeeper",
    "group": "computer",
-   "note": "The Ford Mk 8 with the stable vertical (1941-42): continuous, helm-free, tilt, wind and drift corrected; one operator (computing.md §3; level 5, designer C4).",
+   "note": "The Ford Mk 8 with the stable vertical (1941-42): continuous, helm-free, tilt, wind and drift corrected; one operator (computing.md §3; level 5, designer C4). Its first guess at her course and speed the Dumaresq's, from the same eye (docs/battle/fc-ladder-check.md FL7).",
    "value": {
     "computer": {
      "tracker": "true_course",
@@ -620,8 +620,8 @@
      "speed_q": 0,
      "detect": false,
      "rejudge_s": 0,
-     "prior_kn": 2,
-     "prior_deg": 12,
+     "prior_kn": 3,
+     "prior_deg": 20,
      "resid_pct": 0.4,
      "defl_bias_mil": 1,
      "own_speed_lag_s": 3,

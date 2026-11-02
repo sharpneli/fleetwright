@@ -115,6 +115,12 @@ public sealed class GunnerySystem : IWorldSystem
         /// (ms).</summary>
         public Vec3d OwnHatP, OwnHatV;
         public double OwnHatHeadingDeg, OwnHatSpeed;
+        /// <summary>A stable vertical's own error (docs/battle/fc-ladder-check.md FL7): its tilt off the true vertical, east
+        /// and north (rad), the way it drifts while its erection is cut out in her turn (a unit vector, east and north),
+        /// whether cut out, as of when (ms).</summary>
+        public double SvTiltE, SvTiltN, SvDriftE, SvDriftN;
+        public bool SvCut;
+        public long SvMs;
         public long OwnHatMs;
         /// <summary>Its fire discipline (F6): the phase, the spots' bracket, and the computer's doubt of the range rate
         /// along the line of fire (m/s: the bracket widens at it).</summary>
@@ -512,6 +518,7 @@ public sealed class GunnerySystem : IWorldSystem
             (fc.BiasR, fc.BiasD) = (rb.NextGaussian(), rb.NextGaussian());
             var own = store[slot];
             (fc.OwnHatP, fc.OwnHatV, fc.OwnHatHeadingDeg, fc.OwnHatSpeed, fc.OwnHatMs) = (own.Position, own.Forward * own.Speed, own.HeadingDeg, own.Speed, now);
+            fc.SvMs = now;
             var carried = store.Combat.Carried(slot, b);
             (fc.CarryR, fc.CorrD, fc.ResidShare, fc.DeflDoubtRad) = carried.Known
                 ? (carried.RangeShare, carried.LineRad, carried.RangeDoubtShare, carried.LineDoubtRad)
@@ -849,6 +856,7 @@ public sealed class GunnerySystem : IWorldSystem
         }
         var ownV = ship.Forward * ship.Speed;
         Reckon(ref fc, ship, now);
+        Vertical(ref fc, f, ship, now);
         bool inputs = computer.HelmFree;   // a machine that takes her motion in reads and orders from its own ship (FL1)
 
         // measure: each sensor that's due and makes the target out through its optics
@@ -1430,6 +1438,35 @@ public sealed class GunnerySystem : IWorldSystem
         fc.OwnHatV = Earth.Forward(p, heading) * speed;
     }
 
+    /// <summary>A stable vertical's own tilt carried on to now (FL7): drifting one way (drawn as each turn begins) while her
+    /// turn's acceleration has its erection cut out, erected again after. None on a mount without one: a director lays to
+    /// the horizon.</summary>
+    void Vertical(ref Fc fc, int f, in ShipState ship, long now)
+    {
+        double dt = (now - fc.SvMs) / 1000.0;
+        fc.SvMs = now;
+        if (!fc.Fit.Mount.StableVertical || dt <= 0)
+            return;
+        bool cut = Math.Abs(ship.Speed * ship.YawRate) > settings.StableVerticalCutMs2;
+        if (cut && !fc.SvCut)
+        {
+            var r = stream.Derive((ulong)f).Derive((ulong)fc.Generation).Derive(0x5F1u).Derive((ulong)now);
+            double a = 2 * Math.PI * r.NextDouble();
+            (fc.SvDriftE, fc.SvDriftN) = (Math.Cos(a), Math.Sin(a));
+        }
+        fc.SvCut = cut;
+        if (cut)
+        {
+            double d = settings.StableVerticalDriftArcminMin / 60 * Math.PI / 10_800 * dt;   // arc-minutes a minute, rad a second
+            (fc.SvTiltE, fc.SvTiltN) = (fc.SvTiltE + d * fc.SvDriftE, fc.SvTiltN + d * fc.SvDriftN);
+        }
+        else
+        {
+            double k = Math.Exp(-dt / settings.StableVerticalErectS);
+            (fc.SvTiltE, fc.SvTiltN) = (fc.SvTiltE * k, fc.SvTiltN * k);
+        }
+    }
+
     /// <summary>A point by own ship (an instrument's) where a machine fed her motion reckons it: as far off her reference
     /// point as it truly is (FL1).</summary>
     static Vec3d Reckoned(in Fc fc, in ShipState ship, Vec3d at) => (fc.OwnHatP + (at - ship.Position)).Normalized() * Earth.Radius;
@@ -1582,6 +1619,14 @@ public sealed class GunnerySystem : IWorldSystem
         // own draws, the measured pattern's)
         double dr = (pointBlank ? 0 : fc.CorrR + ladder) + eEl + errs.Bias * fc.BiasR * computer.ResidPct / 100 * range;
         double dl = fc.CorrD * range + eTr + errs.Bias * fc.BiasD * computer.DeflBiasMil * FireControl.Mil * range;
+        if (mount.StableVertical && (fc.SvTiltE != 0 || fc.SvTiltN != 0))
+        {
+            // the vertical's own tilt (FL7): along the line of fire it lays the guns' elevation off, across it cants their
+            // trunnions; the own rung's, as her motion's
+            var tilt = Earth.East(ship.Position) * fc.SvTiltE + Earth.North(ship.Position) * fc.SvTiltN;
+            dr += errs.Own * Vec3d.Dot(tilt, u) * perRad;
+            dl += errs.Own * Vec3d.Dot(tilt, w) * Math.Tan(double.DegreesToRadians(e0)) * range;
+        }
         var (sr, sd) = FireControl.Dispersion(row.PatternPct, range + dr, n, settings.DispersionDeflectionRatio);
         if (!mount.DirectorFiring)
             (sr, sd) = (Math.Sqrt(sr * sr + Math.Pow(layRad * perRad, 2)), Math.Sqrt(sd * sd + Math.Pow(layRad * range, 2)));
@@ -2142,9 +2187,10 @@ public sealed class GunnerySystem : IWorldSystem
 
     /// <summary>An engaged battery's counts so far, for tools and tests: salvos, shells, hits, straddles, when it first
     /// hit and straddled (ms, -1 if not yet), when its track started, what it's doing and whether it's in local control;
-    /// its fire discipline's phase, the salvos and shells it fired ranging, and when it first fired for effect (-1).</summary>
+    /// its fire discipline's phase, the salvos and shells it fired ranging, and when it first fired for effect (-1); its
+    /// stable vertical's tilt off the true vertical, rad (docs/battle/fc-ladder-check.md FL7).</summary>
     public readonly record struct Tally(int Salvos, int Shells, int Hits, int Straddles, long FirstHitMs, long FirstStraddleMs, long TrackMs,
-        BatteryState State, bool Local, FirePhase Phase, int RangingSalvos, int RangingShells, long EffectMs);
+        BatteryState State, bool Local, FirePhase Phase, int RangingSalvos, int RangingShells, long EffectMs, double VerticalTiltRad = 0);
 
     /// <summary>The engagements' pool, for the coarse tier's watch (docs/battle/coarse.md J5): how far it's used, and
     /// engagement i's shooter and target (entities), true while it's live.</summary>
@@ -2165,7 +2211,7 @@ public sealed class GunnerySystem : IWorldSystem
             {
                 ref readonly var fc = ref fcs[i];
                 return new Tally(fc.Salvos, fc.Shells, fc.Hits, fc.Straddles, fc.FirstHitMs, fc.FirstStraddleMs, fc.Tracking ? fc.TrackMs : -1, fc.State, fc.Local,
-                    fc.Phase, fc.RangingSalvos, fc.RangingShells, fc.EffectMs);
+                    fc.Phase, fc.RangingSalvos, fc.RangingShells, fc.EffectMs, Math.Sqrt(fc.SvTiltE * fc.SvTiltE + fc.SvTiltN * fc.SvTiltN));
             }
         return null;
     }

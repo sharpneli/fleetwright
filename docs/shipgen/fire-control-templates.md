@@ -84,7 +84,7 @@ own numbers. Mass t, crew, power kW.
 | Admiralty Fire Control Table, turn setting | turn_rate, helm-free | 8 | 0.03 | - | 3, 20 | 0.6, 1.5 | -, 3 | 366 | turn 0, speed 0.1 | 5, 8, 5 |
 | German Rechenstelle (1930s) | true_course, helm-free | 8 | 0.03 | - | 3, 20 | 0.6, 1.5 | -, 3 | 366 | - | 5, 8, 5 |
 | Type 92 Shagekiban | rate_clock, helm-free | 15 | 0.03 | - | 2, 12 | 0.6, 1.5 | 0.5, 20 | 366 | - | 4, 15, 2 |
-| Ford Mk 8 rangekeeper | true_course, helm-free | 3 | 0.05 | - | 2, 12 | 0.4, 1 | -, 3 | 366 | - | 3, 4, 10 |
+| Ford Mk 8 rangekeeper | true_course, helm-free | 3 | 0.05 | - | 3, 20 | 0.4, 1 | -, 3 | 366 | - | 3, 4, 10 |
 | Ford Mk 8 rangekeeper, radar ranging (stand-in) | true_course, helm-free | 2 | 0.05 | - | 2, 12 | 0.4, 1 | -, 3 | 366 | - | 3, 4, 10 |
 | Mk 1A computer | acceleration, helm-free | 1 | 0.02 | - | 2, 12 | 0.4, 0.8 | -, 2 | 366 | τ 20 s, σ 0.1 m/s²; detects turns | 2.5, 3, 10 |
 | Digital turn filter (Mk 86, WM-25) | turn_rate, helm-free | 0.5 | 0.01 | - | 2, 12 | 0.3, 0.5 | -, 1 | 366 | turn 0, speed 0.1; detects turns | 0.8, 2, 8 |
@@ -128,7 +128,7 @@ own numbers. Mass t, crew, power kW.
 - **Admiralty Fire Control Table, turn setting:** The AFCT with a hand-set enemy rate of turn: a turn filter whose rate adapts slowly (level 4t; [UNCERTAIN] in the research, a computer option anyone may fit, decision 5).
 - **German Rechenstelle (1930s):** The German computing rooms of the 1930s, fore and aft under armour (computing.md §3): no specifications found; the research's table puts them with the AFCT, whose numbers they take [EST].
 - **Type 92 Shagekiban:** The Japanese Type 92 (1932) with its Sokutekiban: rates from a range-rate plot, deflection by hand, no gyro horizon; rates rebuilt after a manoeuvre (computing.md §3; level 4j). Crew 7 + 8; mass [EST]. Own course followed by hand from the gyro's pointer ("Follow up compass course as received from the gyrocompass": ship-motion/own-motion-inputs.md §2), 0.5 s behind [EST: a man following a pointer, the user]; own speed set by crank, 20 s [EST].
-- **Ford Mk 8 rangekeeper:** The Ford Mk 8 with the stable vertical (1941-42): continuous, helm-free, tilt, wind and drift corrected; one operator (computing.md §3; level 5, designer C4).
+- **Ford Mk 8 rangekeeper:** The Ford Mk 8 with the stable vertical (1941-42): continuous, helm-free, tilt, wind and drift corrected; one operator (computing.md §3; level 5, designer C4). Its first guess at her course and speed the Dumaresq's, from the same eye (docs/battle/fc-ladder-check.md FL7).
 - **Ford Mk 8 rangekeeper, radar ranging (stand-in):** The Mk 8 fed by radar spotting (level 6): its shorter latency is the radar's, standing in until the radar pass.
 - **Mk 1A computer:** The 1950s analog with a curved-course (acceleration) predictor and the "target just turned" button (level 7, designer C5).
 - **Digital turn filter (Mk 86, WM-25):** The 1970s digital systems with a turn-following filter (level 8, designer C6; the filter [INFERRED]). Its speed noise is the sim's 0.1, not the reference's 0.05² (F2: ships lose way in a turn).

@@ -157,9 +157,10 @@ public static class FireControlTemplates
             "after a manoeuvre (computing.md §3; level 4j). Crew 7 + 8; mass [EST]. Own course followed by hand from the gyro's pointer " +
             "(\"Follow up compass course as received from the gyrocompass\": ship-motion/own-motion-inputs.md §2), 0.5 s behind [EST: a man " +
             "following a pointer, the user]; own speed set by crank, 20 s [EST]."),
-        C("Ford Mk 8 rangekeeper", K("true_course", true, 3, 0.05, 2, 12, 0.4, 1, 3, 366, 3, 4, 10),
+        C("Ford Mk 8 rangekeeper", K("true_course", true, 3, 0.05, 3, 20, 0.4, 1, 3, 366, 3, 4, 10),
             "The Ford Mk 8 with the stable vertical (1941-42): continuous, helm-free, tilt, wind and drift corrected; one operator (computing.md " +
-            "§3; level 5, designer C4)."),
+            "§3; level 5, designer C4). Its first guess at her course and speed the Dumaresq's, from the same eye (docs/battle/" +
+            "fc-ladder-check.md FL7)."),
         C("Ford Mk 8 rangekeeper, radar ranging (stand-in)", K("true_course", true, 2, 0.05, 2, 12, 0.4, 1, 3, 366, 3, 4, 10),
             "The Mk 8 fed by radar spotting (level 6): its shorter latency is the radar's, standing in until the radar pass."),
         C("Mk 1A computer", K("acceleration", true, 1, 0.02, 2, 12, 0.4, 0.8, 2, 366, 2.5, 3, 10) with

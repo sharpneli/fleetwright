@@ -723,6 +723,18 @@ public sealed record SimSettings
     public double VibrationAft { get; init; } = 1.3;
     public double CrippleOpenMs { get; init; } = 4;
 
+    /// <summary>A stable vertical in her turns (docs/battle/fc-ladder-check.md FL7; ship-motion/own-motion-inputs.md §4,
+    /// recommendation 6): its mercury erection "cannot distinguish between gravity and acceleration forces", so it's cut out
+    /// while her turn's acceleration (her speed times her rate of turn) passes <see cref="StableVerticalCutMs2"/> [EST
+    /// 0.05 m/s², ~0.3°], the gyro left "free to drift until the acceleration disappeared" at
+    /// <see cref="StableVerticalDriftArcminMin"/> arc-minutes a minute, one way drawn a turn [EST 2-3: the free gyro of
+    /// 1921 "three minutes of arc per minute of time"], and erected again after, its tilt falling off over
+    /// <see cref="StableVerticalErectS"/> [EST: "over minutes"]. A 450° turn of 4-5 minutes leaves some 12′ of level, ~200 yd
+    /// at 20-25 kyd (North Carolina 1945: "several hundreds of yards at battle ranges").</summary>
+    public double StableVerticalCutMs2 { get; init; } = 0.05;
+    public double StableVerticalDriftArcminMin { get; init; } = 2.5;
+    public double StableVerticalErectS { get; init; } = 120;
+
     /// <summary>How long after a battery's track starts (its first reading in the computer) it opens fire at the latest,
     /// s (fire_control_ref.py Scenario.t_open). It opens sooner once its computer's doubt of where the shells must go is
     /// within <see cref="OpenDoubtSteps"/> of its first step (twice the sigma) [EST: about two ranging salvos' worth, so
