@@ -76,4 +76,8 @@ level 3 14.6% (the kick's 10.6%), level 5 18.9%; steady, unchanged. A Yamato wea
 as with her speed fed exactly (648 v 650 of 969); a Lion in 90° legs every two minutes at 12 km sheds speed and hits
 126 against 156 exactly. **On the way:** a first try gave the course a 2 s lag [EST] too: the Dreyer's zigzag fell
 from 83 to 16% on the readings' rung (2° of bearing at 15 km is 500 m), and at a quarter of the lags it held: a cliff
-too sharp for the error, so something in the chain amplifies a bearing error that size (next: the amplifier).
+too sharp for the error, so it looked as if something in the chain amplified a bearing error that size. **Checked (no
+amplifier):** that error put back by hand into the readings' bearings, one duel traced salvo by salvo: the aim across
+the line off by 50-220 m, where her rate of turn (at most 0.47°/s) times 2 s at 14.6 km is 100-250 m, one for one; the
+range untouched, no reading set aside by the gate, no return to ranging. The cliff is the target: broadside to us she is
+some 190 m long, so a quarter of the error (65 m) falls along her and the whole (260 m) off her ends. Hits 96 → 24.
