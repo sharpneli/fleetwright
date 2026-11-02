@@ -119,13 +119,12 @@ public static class FireControlBlocks
         SpeedQ = c.SpeedQ ?? 0, Detect = c.Detect ?? false, RejudgeS = c.RejudgeS ?? 0, LatencyS = N(c.LatencyS, "latency_s"), Q = c.Q ?? 0,
         PriorKn = N(c.PriorKn, "prior_kn"), PriorDeg = N(c.PriorDeg, "prior_deg"), ResidPct = N(c.ResidPct, "resid_pct"),
         DeflBiasMil = N(c.DeflBiasMil, "defl_bias_mil"), OwnTurnKickM = c.OwnTurnKickM ?? 0, FirstStepM = N(c.FirstStepM, "first_step_m"),
-        SalvoPct = N(c.SalvoPct, "salvo_pct"),
     };
 
     public static MountTechRow Mount(MountTechInput m)
     {
         bool director = m.DirectorFiring ?? false, vertical = m.StableVertical ?? false;
-        return new(director, N(m.LayMil, "lay_mil"), N(m.SalvoDeflMil, "salvo_defl_mil"), m.RollTauS ?? DesignerPlaceholders.RollTau(vertical),
+        return new(director, N(m.LayMil, "lay_mil"), m.RollTauS ?? DesignerPlaceholders.RollTau(vertical),
             m.CrossLevel ?? DesignerPlaceholders.CrossLevel(director, vertical), vertical);
     }
 }

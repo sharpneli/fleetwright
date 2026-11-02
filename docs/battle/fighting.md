@@ -437,7 +437,7 @@ between cells), its thickness, material and normal.
     the range table). Elevation comes from the range table, plus the engagement's residual bias (a % of range drawn
     once, by level) and the spot correction. Train is the predicted bearing plus the deflection correction.
   - **LAY, FIRE** (salvo error, dispersion): each salvo draws one common error (`salvo_pct` of range in range, mil in
-    deflection, by level, times the combat factor 1.5). Each shell then adds its own dispersion (the gun's
+    deflection, by level, times the combat factor 1.5; gone since balance.md BL1ac, its parts drawn where they arise). Each shell then adds its own dispersion (the gun's
     `pattern_pct`). The laying error's base comes by level. Own turns add `own_turn_kick` while the ship swings. Roll
     is 4.5's.
   - **SPOT:** when a salvo has landed, the spotter (the director's eye height) judges it over, short or straddling,

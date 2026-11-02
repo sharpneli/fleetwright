@@ -1,5 +1,5 @@
 """The fire-control error ladder (docs/battle/balance.md BL1w): one duel case run seed by seed with each rung's
-`--errors` (each error source the chain draws scaled: all, readings, prior, bias, laying, salvo, dispersion, spotting),
+`--errors` (each error source the chain draws scaled: all, readings, prior, bias, laying, dispersion, spotting),
 and per window of minutes since the first salvo: the computer's own error, where the guns were laid (with its wander
 within a run), the salvos' mean fall against her, the hits and the share of ranging salvos. All in range, metres (RMS,
 mean in brackets).

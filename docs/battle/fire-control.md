@@ -438,8 +438,9 @@ weather** (1.6x, want 0.7-1.5).
     the typical fits by type and period are a research request (`research/REQUESTS.md`).
   - **Departures from the text above, for the steps that own them:** the computer's mass, crew and power are in its
     block, but shipgen still weighs `computer_t`: the computer's weight goes with the transmitting station as a room
-    (F4), so no ship's displacement moved here. The salvo error is still one number (`salvo_pct`); splitting off the
-    propellant's share needs each charge's muzzle-velocity spread as data, left for F11. The stadimeter isn't an
+    (F4), so no ship's displacement moved here. The salvo error was still one number (`salvo_pct`); splitting off the
+    propellant's share needed each charge's muzzle-velocity spread as data, left for F11. (Gone since balance.md BL1ac:
+    each of its parts is drawn where it arises, the propellant's in each shell's own draw.) The stadimeter isn't an
     instrument kind yet (the Russians keep the FA, as Oslyabya had): F5, with stereo's haze and contrast gains.
   - **Against the record** (`fc-history --runs 24`): 10 of 23 in band before, 11 with the optics' make (the Grand
     Fleet BS comes in; Tsushima's 12" 9.2 to 8.7% from the FA's 14″), 12 with the real fits (Denmark Strait comes in:

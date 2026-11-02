@@ -222,7 +222,7 @@
   "FireControlMs": 1000,
   "FireControlCoarseMs": 3000,
   "GunneryCombat": 1,
-  "GunneryErrors": { "Readings": 1, "Prior": 1, "Bias": 1, "Laying": 1, "Salvo": 1, "Dispersion": 1, "Spotting": 1 },
+  "GunneryErrors": { "Readings": 1, "Prior": 1, "Bias": 1, "Laying": 1, "Dispersion": 1, "Spotting": 1 },
   "RollExcitation": 0.85,
   "ContinuousAimMargin": 1.1,
   "ContinuousAimTauS": 0.05,

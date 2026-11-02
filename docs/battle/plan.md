@@ -19,11 +19,10 @@ the panel reading every hit rate beside its range; then BL1o-q, the gunnery offi
 fire; BL1t-u, no pulsing falls under helm, the German ladder halving; BL5e-h, the targets by doctrine, the screens' station,
 the main guns for heavy ships, the day attack's gain out of reach); AI threading built (the user, 2026-11-01: `workers.md` W9-W15, every captain, admiral and commander a think from state to commands, spread over the ticks; W9-W14 done 2026-11-02, the cap for the user); the user's playtest of squadrons (2026-11-02): BL1v-z built (the error ladder,
 `duel --errors`; the spots' running mean; ranging ends when the fall crosses her; the guns follow the computer); BL1aa reading errors once per target; BL1ab the plot
-takes each instrument's offset off its cuts (the computer's swing salvo to salvo 82 → 11 m, readings alone); next
-(the user, 2026-11-02) `salvo_pct` derived from first
-principles rather than set (the user: "it feels like ad hoc number as we are meant to reproduce realistic results from first
-principles without ad hoc numbers. We should derive those numbers": the salvo's common error from what makes it, the
-salvo-mean muzzle velocity, laying, roll, servo, fire-control-research.md §1 item 4, §7), then the captains' cost of switching targets (parked:
+takes each instrument's offset off its cuts (the computer's swing salvo to salvo 82 → 11 m, readings alone); BL1ac
+`salvo_pct` gone (the user: "We should derive those numbers"): each of its parts, the computer's wander, the laying, the roll's
+and the pointers' lag, the salvo-mean muzzle velocity, the guns' calibration, was already drawn in its place, so it counted them
+twice (fc-history 9 → 5 of 23, all HIGH: the degraders come as their own systems); next the captains' cost of switching targets (parked:
 a battery counts the time it has put into her range, up to 150 s, over a 600 s horizon; the median hold in squadrons 161 →
 543 s; and a target "done fighting" after 90 s quiet flips their choice, 240 s halves the flips but touches BL2's
 cripples, the user's to decide); salvo chasing for evasion after (balance.md, after BL1q).

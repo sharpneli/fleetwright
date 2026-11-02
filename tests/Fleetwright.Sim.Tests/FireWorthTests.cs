@@ -35,8 +35,23 @@ public class FireWorthTests(ITestOutputHelper output)
     {
         // a light cruiser's Dumaresq and Vickers clock (her course set on it by hand) firing for effect at 9 km: four minutes
         // of weaving 3° either way leave it be; four of 12° turns put it out, its battery ranging again until a straddle
-        // has her once more (a salvo in the air when she's put out may straddle and bring it straight back) (BL1o)
+        // has her once more (BL1o). A salvo in the air when she's put out may straddle and bring it straight back before a
+        // ranging salvo goes (since balance.md BL1ac's tighter falls, nearly always), so the phase is watched second by second
         int weaved = 0, turned = 0, runs = 0;
+        int Legs(World w, int legs, double degrees, long ms)
+        {
+            int ranging = 0;
+            for (int leg = 0; leg < legs; leg++)
+            {
+                w.Apply(ShipSystem.Course(1, leg % 2 == 0 ? degrees : 360 - degrees));
+                for (long end = w.Time.Ms + ms; w.Time.Ms < end;)
+                {
+                    w.AdvanceTo(w.Time + 1_000);
+                    ranging += w.Gunnery.TallyOf(1, 0) is { Phase: FirePhase.Ranging } ? 1 : 0;
+                }
+            }
+            return ranging;
+        }
         for (ulong seed = 1; seed <= 4; seed++)
         {
             var w = Duel("light_cruiser", "dreadnought", 9_000, 12, Settings, seed);
@@ -46,22 +61,10 @@ public class FireWorthTests(ITestOutputHelper output)
             if (salvos.Count == 0 || salvos[^1].Phase != FirePhase.Effect)
                 continue;
             runs++;
-            int n = salvos.Count;
-            for (int leg = 0; leg < 6; leg++)
-            {
-                w.Apply(ShipSystem.Course(1, leg % 2 == 0 ? 3 : 357));
-                w.AdvanceTo(w.Time + 40_000);
-            }
-            weaved += salvos.Skip(n).Count(s => s.Phase == FirePhase.Ranging);
-            n = salvos.Count;
-            for (int leg = 0; leg < 4; leg++)
-            {
-                w.Apply(ShipSystem.Course(1, leg % 2 == 0 ? 12 : 348));
-                w.AdvanceTo(w.Time + 60_000);
-            }
-            turned += salvos.Skip(n).Count(s => s.Phase == FirePhase.Ranging);
+            weaved += Legs(w, 6, 3, 40_000);
+            turned += Legs(w, 4, 12, 60_000);
         }
-        output.WriteLine($"{runs} runs firing for effect: ranging salvos in the 3° weave {weaved}, in the 12° turns {turned}");
+        output.WriteLine($"{runs} runs firing for effect: seconds ranging in the 3° weave {weaved}, in the 12° turns {turned}");
         Assert.True(runs >= 3, "it came to fire for effect");
         Assert.Equal(0, weaved);
         Assert.True(turned > 0, "the turns put it out");

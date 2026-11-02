@@ -1406,7 +1406,8 @@ public sealed class GunnerySystem : IWorldSystem
         double perRad = table.RangePerDeg(e0, h0) * 180 / Math.PI;
 
         // the range correction: ranging, from the spots' bracket (a ladder's salvo stepped about it); firing for effect, the
-        // walk's, as the spots left it; then the salvo's common error (fire_control_ref.py engage(), "fire")
+        // walk's, as the spots left it; then the salvo's common errors, each where it arises (fire_control_ref.py engage(),
+        // "fire")
         if (phase != FirePhase.Effect)
             fc.CorrR = fc.Bracket.Aim(now, fc.DriftMs);
         // a ladder's rungs at the ranging step, the computer's doubt (balance.md BL1t: never wider than the doctrine's own
@@ -1435,9 +1436,12 @@ public sealed class GunnerySystem : IWorldSystem
         // cost a share of it and a hard turn the whole
         double turn = errs.Laying * Math.Abs(double.RadiansToDegrees(ship.YawRate)) / settings.OwnTurnKickYawDegS * computer.OwnTurnKickM;
         double kickR = r.NextGaussian() * turn, kickL = r.NextGaussian() * turn;
-        double eSr = errs.Salvo * r.NextGaussian() * combat * computer.SalvoPct / 100 * range, eSd = errs.Salvo * r.NextGaussian() * combat * mount.SalvoDeflMil * FireControl.Mil * range;
-        double dr = (pointBlank ? 0 : fc.CorrR + ladder) + eEl + eSr + errs.Bias * fc.BiasR * computer.ResidPct / 100 * range + kickR;
-        double dl = fc.CorrD * range + eTr + eSd + errs.Bias * fc.BiasD * computer.DeflBiasMil * FireControl.Mil * range + kickL;
+        // no salvo-to-salvo draw of its own (balance.md BL1ac): the reference's salvo_pct lumped what the chain now draws
+        // in place, the computer's wander (its track, the plot), the director's laying (above), the stable element's and
+        // the pointers' lag at the roll (below), the salvo's mean muzzle velocity and each gun's calibration (its shells'
+        // own draws, the measured pattern's)
+        double dr = (pointBlank ? 0 : fc.CorrR + ladder) + eEl + errs.Bias * fc.BiasR * computer.ResidPct / 100 * range + kickR;
+        double dl = fc.CorrD * range + eTr + errs.Bias * fc.BiasD * computer.DeflBiasMil * FireControl.Mil * range + kickL;
         var (sr, sd) = FireControl.Dispersion(row.PatternPct, range + dr, n, settings.DispersionDeflectionRatio);
         if (!mount.DirectorFiring)
             (sr, sd) = (Math.Sqrt(sr * sr + Math.Pow(layRad * perRad, 2)), Math.Sqrt(sd * sd + Math.Pow(layRad * range, 2)));

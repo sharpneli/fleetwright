@@ -486,7 +486,6 @@
     "defl_bias_mil": 2,
     "own_turn_kick_m": 300,
     "first_step_m": 366,
-    "salvo_pct": 1.5,
     "mass_t": 4,
     "crew": 10,
     "power_kw": 1
@@ -496,24 +495,21 @@
    "mount": {
     "director_firing": true,
     "stable_vertical": false,
-    "lay_mil": 0.5,
-    "salvo_defl_mil": 2
+    "lay_mil": 0.5
    }
   },
   "Telescopic sights, fired on the roll": {
    "mount": {
     "director_firing": false,
     "stable_vertical": false,
-    "lay_mil": 0.35,
-    "salvo_defl_mil": 2.5
+    "lay_mil": 0.35
    }
   },
   "Telescopic sights": {
    "mount": {
     "director_firing": false,
     "stable_vertical": false,
-    "lay_mil": 0.35,
-    "salvo_defl_mil": 2.5
+    "lay_mil": 0.35
    }
   }
  },

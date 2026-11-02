@@ -982,7 +982,6 @@ public sealed record ComputerTechInput
     public double? DeflBiasMil { get; init; }
     public double? OwnTurnKickM { get; init; }
     public double? FirstStepM { get; init; }
-    public double? SalvoPct { get; init; }
     public double? MassT { get; init; }
     public double? Crew { get; init; }
     public double? PowerKw { get; init; }
@@ -990,14 +989,12 @@ public sealed record ComputerTechInput
 }
 
 /// <summary>How the guns are laid (designer §2.4): from a director (its laying error common to the salvo) or each gun by
-/// its own sights; a stable vertical (no sea-state penalty, with ship motion); the laying error and the salvo's
-/// deflection wander, mil.</summary>
+/// its own sights; a stable vertical (no sea-state penalty, with ship motion); the laying error, mil.</summary>
 public sealed record MountTechInput
 {
     public bool? DirectorFiring { get; init; }
     public bool? StableVertical { get; init; }
     public double? LayMil { get; init; }
-    public double? SalvoDeflMil { get; init; }
     /// <summary>On a rolling ship (docs/battle/balance.md BL1b): the layer's timing lag at the roll, s, and the share of
     /// the cross-level his sights correct, 0-1; none: the sim's placeholders.</summary>
     public double? RollTauS { get; init; }

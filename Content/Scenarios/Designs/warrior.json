@@ -482,7 +482,6 @@
     "defl_bias_mil": 2.5,
     "own_turn_kick_m": 0,
     "first_step_m": 366,
-    "salvo_pct": 1.8,
     "mass_t": 0.8,
     "crew": 4,
     "power_kw": 0
@@ -492,8 +491,7 @@
    "mount": {
     "director_firing": false,
     "stable_vertical": false,
-    "lay_mil": 0.35,
-    "salvo_defl_mil": 2.5
+    "lay_mil": 0.35
    }
   }
  },

@@ -538,9 +538,8 @@ public enum TrackerKind : byte
 /// a hard turn, a fifth of her speed in a minute); whether it opens up on a manoeuvre (two large
 /// surprises in a row: the Mk 1A's "target just turned"); how often a judgement looks at the target again, s; the eye's
 /// first guess at the target's speed and course it starts from (1 sigma); the residual ballistic bias before spotting, %
-/// of range, and in deflection, mil; the extra error while own ship turns, m; the first ladder step, m; the
-/// salvo-to-salvo error in range, % of range, that spotting can't remove (the propellant's share and the computer's own
-/// wander, one number until they're split). A tech block's (<see cref="FireControlBlocks"/>).</summary>
+/// of range, and in deflection, mil; the extra error while own ship turns, m; the first ladder step, m. No salvo-to-salvo
+/// number: each of its parts is drawn where it arises (docs/battle/balance.md BL1ac). A tech block's (<see cref="FireControlBlocks"/>).</summary>
 public readonly record struct ComputerRow
 {
     public TrackerKind Tracker { get; init; }
@@ -561,17 +560,15 @@ public readonly record struct ComputerRow
     public double DeflBiasMil { get; init; }
     public double OwnTurnKickM { get; init; }
     public double FirstStepM { get; init; }
-    public double SalvoPct { get; init; }
 }
 
 /// <summary>How a battery's guns are laid: whether a director fires them (its laying error common to the salvo; else
-/// each gun lays itself and its error is dispersion), that laying error, mil, and the salvo-to-salvo wander in
-/// deflection that spotting can't remove, mil; on a rolling ship (docs/battle/balance.md BL1b) the layer's timing lag as
+/// each gun lays itself and its error is dispersion), that laying error, mil; on a rolling ship (docs/battle/balance.md BL1b) the layer's timing lag as
 /// the roll brings his sight on, s (a trained man at the key; his crew's <c>RollTiming</c> scales it), and the share of
 /// the trunnions' cross-level his sights correct (research/simulation/ship-motion/ship-motion-gunnery-research.md §4.1:
 /// a pointer's horizon telescope 0.5, a WWI director's cross-level telescope 0.7), and whether a stable vertical gives
 /// the level, so the guns fire at any point of the roll (continuous fire, research §4.2).</summary>
-public readonly record struct MountTechRow(bool DirectorFiring, double LayMil, double SalvoDeflMil, double RollTauS = DesignerPlaceholders.RollTauS,
+public readonly record struct MountTechRow(bool DirectorFiring, double LayMil, double RollTauS = DesignerPlaceholders.RollTauS,
     double CrossLevel = DesignerPlaceholders.PointerCrossLevel, bool StableVertical = false);
 
 /// <summary>A battery's fire-control fit: its instruments' make, its computer and its mounts' laying, from the tech

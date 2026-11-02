@@ -21,7 +21,7 @@ values, tiers O1-O4, C0-C6, M0-M4), `fire-control-research.md` §3.3-3.5 and §5
 `fire-control-research/computing.md` §3; [EST] marks numbers no source gives.
 
 Read by the sim so far: the optics' magnification and readings a minute; every computer number above the mass;
-the mounts' director firing, laying error and deflection wander. Shipgen reads the computer's mass and crew: its
+the mounts' director firing and laying error. Shipgen reads the computer's mass and crew: its
 transmitting station's weight and men (F4c). The rest (acuity, rigid base and flex, the top magnification,
 coatings, the gyro mounting, the optics' and mounts' masses and crews, power, the stable vertical) is carried for
 the steps that read it (F5: the sensors proper; ship motion; power with the power networks).
@@ -66,44 +66,44 @@ gyro-stabilised; mass kg per m² of base.
 ## Computers
 
 Tracker, helm-free; latency s; q m²/s³; the clock's limits (m/s, °/s); the eye's first guess (kn, °); the residual
-bias (% of range, mil); own turn's kick m; first ladder step m; salvo-to-salvo error % of range; and the filters'
+bias (% of range, mil); own turn's kick m; first ladder step m; and the filters'
 own numbers. Mass t, crew, power kW.
 
-| Block | Tracker | Latency | q | Limits | Prior | Bias | Kick | Step | Salvo | Filter | t, crew, kW |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| Judgement | judgement | 5 | 0 | - | 5, 30 | 2.5, 4 | 0 | 550 | 2.5 | looks again 60 s | 0, 0, 0 |
-| Eye and hand plot | rate_clock | 20 | 0.02 | - | 5, 30 | 2.5, 4 | 0 | 550 | 2.5 | - | 0.2, 3, 0 |
-| Hand plot | rate_clock | 15 | 0.02 | - | 4, 25 | 2, 3 | 0 | 366 | 2 | - | 0.2, 3, 0 |
-| Dumaresq and Vickers clock | rate_clock | 15 | 0.03 | 18.3, 0 | 3, 20 | 1.5, 2.5 | 0 | 366 | 1.8 | - | 0.8, 4, 0 |
-| German range clock (EU-Anzeiger) | rate_clock | 15 | 0.03 | 18.3, 0 | 3, 20 | 1.5, 2.5 | 0 | 366 | 1.8 | - | 0.8, 4, 0 |
-| Dreyer table Mk I-II | rate_clock | 15 | 0.03 | 18.3, 0.25 | 2.5, 15 | 1.2, 2 | 300 | 366 | 1.5 | - | 4, 10, 1 |
-| Dreyer table Mk III-V | rate_clock, helm-free | 15 | 0.03 | 18.3, 0.25 | 2.5, 15 | 1.2, 2 | 300 | 366 | 1.5 | - | 4, 10, 1 |
-| German clock and plot (EU-Anzeiger, C12) | rate_clock, helm-free | 15 | 0.03 | 18.3, 0.25 | 2.5, 15 | 1.2, 2 | 300 | 366 | 1.5 | - | 4, 10, 1 |
-| Argo clock Mk IV | true_course, helm-free | 8 | 0.03 | - | 2.5, 15 | 1.2, 2 | 200 | 366 | 1.5 | - | 2, 4, 1 |
-| Admiralty Fire Control Table | true_course, helm-free | 8 | 0.03 | - | 2, 12 | 0.6, 1.5 | 250 | 366 | 1.2 | - | 5, 8, 5 |
-| Admiralty Fire Control Clock | true_course, helm-free | 8 | 0.03 | - | 2, 12 | 0.6, 1.5 | 250 | 366 | 1.2 | - | 3, 4, 3 |
-| Admiralty Fire Control Table, turn setting | turn_rate, helm-free | 8 | 0.03 | - | 2, 12 | 0.6, 1.5 | 250 | 366 | 1.2 | turn 0, speed 0.1 | 5, 8, 5 |
-| German Rechenstelle (1930s) | true_course, helm-free | 8 | 0.03 | - | 2, 12 | 0.6, 1.5 | 250 | 366 | 1.2 | - | 5, 8, 5 |
-| Type 92 Shagekiban | rate_clock, helm-free | 15 | 0.03 | - | 2, 12 | 0.6, 1.5 | 400 | 366 | 1.3 | - | 4, 15, 2 |
-| Ford Mk 8 rangekeeper | true_course, helm-free | 3 | 0.05 | - | 2, 12 | 0.4, 1 | 150 | 366 | 1 | - | 3, 4, 10 |
-| Ford Mk 8 rangekeeper, radar ranging (stand-in) | true_course, helm-free | 2 | 0.05 | - | 2, 12 | 0.4, 1 | 150 | 366 | 1 | - | 3, 4, 10 |
-| Mk 1A computer | acceleration, helm-free | 1 | 0.02 | - | 2, 12 | 0.4, 0.8 | 50 | 366 | 0.7 | τ 20 s, σ 0.1 m/s²; detects turns | 2.5, 3, 10 |
-| Digital turn filter (Mk 86, WM-25) | turn_rate, helm-free | 0.5 | 0.01 | - | 2, 12 | 0.3, 0.5 | 20 | 366 | 0.4 | turn 0, speed 0.1; detects turns | 0.8, 2, 8 |
+| Block | Tracker | Latency | q | Limits | Prior | Bias | Kick | Step | Filter | t, crew, kW |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Judgement | judgement | 5 | 0 | - | 5, 30 | 2.5, 4 | 0 | 550 | looks again 60 s | 0, 0, 0 |
+| Eye and hand plot | rate_clock | 20 | 0.02 | - | 5, 30 | 2.5, 4 | 0 | 550 | - | 0.2, 3, 0 |
+| Hand plot | rate_clock | 15 | 0.02 | - | 4, 25 | 2, 3 | 0 | 366 | - | 0.2, 3, 0 |
+| Dumaresq and Vickers clock | rate_clock | 15 | 0.03 | 18.3, 0 | 3, 20 | 1.5, 2.5 | 0 | 366 | - | 0.8, 4, 0 |
+| German range clock (EU-Anzeiger) | rate_clock | 15 | 0.03 | 18.3, 0 | 3, 20 | 1.5, 2.5 | 0 | 366 | - | 0.8, 4, 0 |
+| Dreyer table Mk I-II | rate_clock | 15 | 0.03 | 18.3, 0.25 | 2.5, 15 | 1.2, 2 | 300 | 366 | - | 4, 10, 1 |
+| Dreyer table Mk III-V | rate_clock, helm-free | 15 | 0.03 | 18.3, 0.25 | 2.5, 15 | 1.2, 2 | 300 | 366 | - | 4, 10, 1 |
+| German clock and plot (EU-Anzeiger, C12) | rate_clock, helm-free | 15 | 0.03 | 18.3, 0.25 | 2.5, 15 | 1.2, 2 | 300 | 366 | - | 4, 10, 1 |
+| Argo clock Mk IV | true_course, helm-free | 8 | 0.03 | - | 2.5, 15 | 1.2, 2 | 200 | 366 | - | 2, 4, 1 |
+| Admiralty Fire Control Table | true_course, helm-free | 8 | 0.03 | - | 2, 12 | 0.6, 1.5 | 250 | 366 | - | 5, 8, 5 |
+| Admiralty Fire Control Clock | true_course, helm-free | 8 | 0.03 | - | 2, 12 | 0.6, 1.5 | 250 | 366 | - | 3, 4, 3 |
+| Admiralty Fire Control Table, turn setting | turn_rate, helm-free | 8 | 0.03 | - | 2, 12 | 0.6, 1.5 | 250 | 366 | turn 0, speed 0.1 | 5, 8, 5 |
+| German Rechenstelle (1930s) | true_course, helm-free | 8 | 0.03 | - | 2, 12 | 0.6, 1.5 | 250 | 366 | - | 5, 8, 5 |
+| Type 92 Shagekiban | rate_clock, helm-free | 15 | 0.03 | - | 2, 12 | 0.6, 1.5 | 400 | 366 | - | 4, 15, 2 |
+| Ford Mk 8 rangekeeper | true_course, helm-free | 3 | 0.05 | - | 2, 12 | 0.4, 1 | 150 | 366 | - | 3, 4, 10 |
+| Ford Mk 8 rangekeeper, radar ranging (stand-in) | true_course, helm-free | 2 | 0.05 | - | 2, 12 | 0.4, 1 | 150 | 366 | - | 3, 4, 10 |
+| Mk 1A computer | acceleration, helm-free | 1 | 0.02 | - | 2, 12 | 0.4, 0.8 | 50 | 366 | τ 20 s, σ 0.1 m/s²; detects turns | 2.5, 3, 10 |
+| Digital turn filter (Mk 86, WM-25) | turn_rate, helm-free | 0.5 | 0.01 | - | 2, 12 | 0.3, 0.5 | 20 | 366 | turn 0, speed 0.1; detects turns | 0.8, 2, 8 |
 
 ## Mounts
 
-| Block | Director firing | Stable vertical | Laying mil | Deflection wander mil |
-|---|---|---|---|---|
-| Open sights | no | no | 1.15 | 3 |
-| Telescopic sights, fired on the roll | no | no | 0.35 | 2.5 |
-| Early telescopic sights | no | no | 0.73 | 2.5 |
-| Telescopic sights | no | no | 0.35 | 2.5 |
-| Director, follow the pointer | yes | no | 0.5 | 2 |
-| Director, follow the pointer (no RPC) | yes | no | 0.5 | 1.5 |
-| Director, power drive | yes | no | 0.4 | 1.5 |
-| Stable vertical, remote power control | yes | yes | 0.5 | 1.2 |
-| Stable vertical, power servo | yes | yes | 0.4 | 0.8 |
-| Digital servo | yes | yes | 0.3 | 0.5 |
+| Block | Director firing | Stable vertical | Laying mil |
+|---|---|---|---|
+| Open sights | no | no | 1.15 |
+| Telescopic sights, fired on the roll | no | no | 0.35 |
+| Early telescopic sights | no | no | 0.73 |
+| Telescopic sights | no | no | 0.35 |
+| Director, follow the pointer | yes | no | 0.5 |
+| Director, follow the pointer (no RPC) | yes | no | 0.5 |
+| Director, power drive | yes | no | 0.4 |
+| Stable vertical, remote power control | yes | yes | 0.5 |
+| Stable vertical, power servo | yes | yes | 0.4 |
+| Digital servo | yes | yes | 0.3 |
 
 - **By eye:** No instrument: ranges by eye, about 20% of the range (fire-control-research.md §3.1). A director without a rangefinder, or one whose instrument isn't read.
 - **Barr & Stroud FA (O1):** Early coincidence, c.1895-1906: the FA2 and FA3 4.5 ft (1.37 m) at ×24, the Japanese ships' at Tsushima and Oslyabya's (§3.3; early-hit-rates.md). O1: 14″, rigid to 2 m, ×20 at a full image (designer §2.5). Unstabilised, 2 readings a minute (§3.5).

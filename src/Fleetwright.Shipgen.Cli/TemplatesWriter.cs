@@ -174,7 +174,7 @@ static class TemplatesWriter
             `fire-control-research/computing.md` §3; [EST] marks numbers no source gives.
 
             Read by the sim so far: the optics' magnification and readings a minute; every computer number above the mass;
-            the mounts' director firing, laying error and deflection wander. Shipgen reads the computer's mass and crew: its
+            the mounts' director firing and laying error. Shipgen reads the computer's mass and crew: its
             transmitting station's weight and men (F4c). The rest (acuity, rigid base and flex, the top magnification,
             coatings, the gyro mounting, the optics' and mounts' masses and crews, power, the stable vertical) is carried for
             the steps that read it (F5: the sensors proper; ship motion; power with the power networks).
@@ -209,11 +209,11 @@ static class TemplatesWriter
             ## Computers
 
             Tracker, helm-free; latency s; q m²/s³; the clock's limits (m/s, °/s); the eye's first guess (kn, °); the residual
-            bias (% of range, mil); own turn's kick m; first ladder step m; salvo-to-salvo error % of range; and the filters'
+            bias (% of range, mil); own turn's kick m; first ladder step m; and the filters'
             own numbers. Mass t, crew, power kW.
 
-            | Block | Tracker | Latency | q | Limits | Prior | Bias | Kick | Step | Salvo | Filter | t, crew, kW |
-            |---|---|---|---|---|---|---|---|---|---|---|---|
+            | Block | Tracker | Latency | q | Limits | Prior | Bias | Kick | Step | Filter | t, crew, kW |
+            |---|---|---|---|---|---|---|---|---|---|---|
 
             """.Replace("\r\n", "\n"));
         foreach (var t in FireControlTemplates.All.Where(t => t.Kind == "computer"))
@@ -228,21 +228,21 @@ static class TemplatesWriter
                 _ => "-",
             } + (c.Detect == true ? "; detects turns" : "");
             sb.Append(Inv, $"| {t.Name} | {c.Tracker}{(c.HelmFree == true ? ", helm-free" : "")} | {N(c.LatencyS)} | {N(c.Q)} | {limits} | " +
-                $"{N(c.PriorKn)}, {N(c.PriorDeg)} | {N(c.ResidPct)}, {N(c.DeflBiasMil)} | {N(c.OwnTurnKickM)} | {N(c.FirstStepM)} | {N(c.SalvoPct)} | " +
+                $"{N(c.PriorKn)}, {N(c.PriorDeg)} | {N(c.ResidPct)}, {N(c.DeflBiasMil)} | {N(c.OwnTurnKickM)} | {N(c.FirstStepM)} | " +
                 $"{filter} | {N(c.MassT)}, {N(c.Crew)}, {N(c.PowerKw)} |\n");
         }
         sb.Append("""
 
             ## Mounts
 
-            | Block | Director firing | Stable vertical | Laying mil | Deflection wander mil |
-            |---|---|---|---|---|
+            | Block | Director firing | Stable vertical | Laying mil |
+            |---|---|---|---|
 
             """.Replace("\r\n", "\n"));
         foreach (var t in FireControlTemplates.All.Where(t => t.Kind == "mount"))
         {
             var m = t.Value.Mount!;
-            sb.Append(Inv, $"| {t.Name} | {(m.DirectorFiring == true ? "yes" : "no")} | {(m.StableVertical == true ? "yes" : "no")} | {N(m.LayMil)} | {N(m.SalvoDeflMil)} |\n");
+            sb.Append(Inv, $"| {t.Name} | {(m.DirectorFiring == true ? "yes" : "no")} | {(m.StableVertical == true ? "yes" : "no")} | {N(m.LayMil)} |\n");
         }
         sb.Append('\n');
         foreach (var t in FireControlTemplates.All)

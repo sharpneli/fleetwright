@@ -2711,7 +2711,7 @@ public static class Experience
 /// <summary>The fire-control chain's errors, a scale on each source (<see cref="SimSettings.GunneryErrors"/>): the
 /// rangefinders' and the eye's readings (their wander, bias and bearing); the eye's first guess at her course and speed;
 /// the residual ballistic bias in range and line; the laying (the layer's error, the roll's and helm's slips, the own-turn
-/// kick); the salvo-to-salvo error; each shell's dispersion about the salvo's centre; the spotter's judgement (over or
+/// kick); each shell's dispersion about the salvo's centre; the spotter's judgement (over or
 /// short, and the line).</summary>
 public sealed record GunneryErrorScale
 {
@@ -2719,11 +2719,10 @@ public sealed record GunneryErrorScale
     public double Prior { get; init; } = 1;
     public double Bias { get; init; } = 1;
     public double Laying { get; init; } = 1;
-    public double Salvo { get; init; } = 1;
     public double Dispersion { get; init; } = 1;
     public double Spotting { get; init; } = 1;
 
-    /// <summary>"all=0,bias=1": each named source set, in order (all, readings, prior, bias, laying, salvo, dispersion,
+    /// <summary>"all=0,bias=1": each named source set, in order (all, readings, prior, bias, laying, dispersion,
     /// spotting).</summary>
     public static GunneryErrorScale Parse(string text)
     {
@@ -2734,22 +2733,21 @@ public sealed record GunneryErrorScale
             double v = kv.Length > 1 ? double.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture) : 1;
             e = kv[0].ToLowerInvariant() switch
             {
-                "all" => new GunneryErrorScale { Readings = v, Prior = v, Bias = v, Laying = v, Salvo = v, Dispersion = v, Spotting = v },
+                "all" => new GunneryErrorScale { Readings = v, Prior = v, Bias = v, Laying = v, Dispersion = v, Spotting = v },
                 "readings" => e with { Readings = v },
                 "prior" => e with { Prior = v },
                 "bias" => e with { Bias = v },
                 "laying" => e with { Laying = v },
-                "salvo" => e with { Salvo = v },
                 "dispersion" => e with { Dispersion = v },
                 "spotting" => e with { Spotting = v },
-                _ => throw new ArgumentException($"--errors: no source '{kv[0]}' (all, readings, prior, bias, laying, salvo, dispersion, spotting)"),
+                _ => throw new ArgumentException($"--errors: no source '{kv[0]}' (all, readings, prior, bias, laying, dispersion, spotting)"),
             };
         }
         return e;
     }
 
     public override string ToString() => FormattableString.Invariant(
-        $"readings {Readings:G}, prior {Prior:G}, bias {Bias:G}, laying {Laying:G}, salvo {Salvo:G}, dispersion {Dispersion:G}, spotting {Spotting:G}");
+        $"readings {Readings:G}, prior {Prior:G}, bias {Bias:G}, laying {Laying:G}, dispersion {Dispersion:G}, spotting {Spotting:G}");
 }
 
 public sealed record FireDiscipline

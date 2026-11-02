@@ -42,21 +42,21 @@ public static class FireControlTemplates
 
     static Template C(string name, ComputerTechInput c, string note) => new(name, "computer", note, new FcTechInput { Computer = c });
 
-    static Template M(string name, bool director, double lay, double defl, string note, bool stable = false) =>
+    static Template M(string name, bool director, double lay, string note, bool stable = false) =>
         new(name, "mount", note, new FcTechInput
         {
-            Mount = new MountTechInput { DirectorFiring = director, StableVertical = stable, LayMil = lay, SalvoDeflMil = defl },
+            Mount = new MountTechInput { DirectorFiring = director, StableVertical = stable, LayMil = lay },
         });
 
     /// <summary>A computer's numbers: the tracker and the error budget every block gives (the clocks' and filters'
     /// own numbers are added with `with`).</summary>
     static ComputerTechInput K(string tracker, bool helmFree, double latency, double q, double priorKn, double priorDeg, double resid, double defl,
-        double kick, double step, double salvo, double massT, double crew, double powerKw) =>
+        double kick, double step, double massT, double crew, double powerKw) =>
         new()
         {
             Tracker = tracker, HelmFree = helmFree, LatencyS = latency, Q = q, MaxRangeRateMs = 0, MaxBearingRateDegS = 0, AccelTauS = 0, AccelSigmaMs2 = 0,
             TurnQ = 0, SpeedQ = 0, Detect = false, RejudgeS = 0, PriorKn = priorKn, PriorDeg = priorDeg, ResidPct = resid, DeflBiasMil = defl,
-            OwnTurnKickM = kick, FirstStepM = step, SalvoPct = salvo, MassT = massT, Crew = crew, PowerKw = powerKw,
+            OwnTurnKickM = kick, FirstStepM = step, MassT = massT, Crew = crew, PowerKw = powerKw,
         };
 
     /// <summary>The Dreyer's clock limits: ±1,200 yd/min in range, ±15°/min in bearing (computing.md §3, the 1918 handbook).</summary>
@@ -98,68 +98,68 @@ public static class FireControlTemplates
             coated: true, gyro: true),
 
         // ---- computers
-        C("Judgement", K("judgement", false, 5, 0, 5, 30, 2.5, 4, 0, 550, 2.5, 0, 0, 0) with { RejudgeS = 60 },
+        C("Judgement", K("judgement", false, 5, 0, 5, 30, 2.5, 4, 0, 550, 0, 0, 0) with { RejudgeS = 60 },
             "A sailor's eye and head: the range guessed, the target's course and speed guessed from her look and led by it, looked at again " +
             "each minute, never a rate learnt (F2: the worst computer there is)."),
-        C("Eye and hand plot", K("rate_clock", false, 20, 0.02, 5, 30, 2.5, 4, 0, 550, 2.5, 0.2, 3, 0),
+        C("Eye and hand plot", K("rate_clock", false, 20, 0.02, 5, 30, 2.5, 4, 0, 550, 0.2, 3, 0),
             "Ranges by eye, rates by a hand plot (fire_control_ref.py level 0; designer C0)."),
-        C("Hand plot", K("rate_clock", false, 15, 0.02, 4, 25, 2, 3, 0, 366, 2, 0.2, 3, 0),
+        C("Hand plot", K("rate_clock", false, 15, 0.02, 4, 25, 2, 3, 0, 366, 0.2, 3, 0),
             "Rangefinder ranges, rates from a hand plot and estimates, no machine (level 1: the Tsushima era; designer C0)."),
-        C("Dumaresq and Vickers clock", K("rate_clock", false, 15, 0.03, 3, 20, 1.5, 2.5, 0, 366, 1.8, 0.8, 4, 0) with { MaxRangeRateMs = DreyerRangeRate },
+        C("Dumaresq and Vickers clock", K("rate_clock", false, 15, 0.03, 3, 20, 1.5, 2.5, 0, 366, 0.8, 4, 0) with { MaxRangeRateMs = DreyerRangeRate },
             "The Dumaresq's rates run on by the Vickers range clock (1906): constant rates only, the roller slipping on a change (computing.md " +
             "§3; level 2, designer C1)."),
-        C("German range clock (EU-Anzeiger)", K("rate_clock", false, 15, 0.03, 3, 20, 1.5, 2.5, 0, 366, 1.8, 0.8, 4, 0) with { MaxRangeRateMs = DreyerRangeRate },
+        C("German range clock (EU-Anzeiger)", K("rate_clock", false, 15, 0.03, 3, 20, 1.5, 2.5, 0, 366, 0.8, 4, 0) with { MaxRangeRateMs = DreyerRangeRate },
             "The German WWI range-rate indicator and clock without the plot, the cruisers' (computing.md §3): no specifications found; taken as " +
             "the Dumaresq and Vickers clock's [EST]."),
-        C("Dreyer table Mk I-II", K("rate_clock", false, 15, 0.03, 2.5, 15, 1.2, 2, 300, 366, 1.5, 4, 10, 1) with
+        C("Dreyer table Mk I-II", K("rate_clock", false, 15, 0.03, 2.5, 15, 1.2, 2, 300, 366, 4, 10, 1) with
             {
                 MaxRangeRateMs = DreyerRangeRate, MaxBearingRateDegS = DreyerBearingRate,
             },
             "The Dreyer table's range and bearing plots and clock before the gyro feed (1911-12): the Mk III's numbers without helm-free, so own " +
             "ship's turns are re-learnt (computing.md §3: helm-free from the Mk III)."),
-        C("Dreyer table Mk III-V", K("rate_clock", true, 15, 0.03, 2.5, 15, 1.2, 2, 300, 366, 1.5, 4, 10, 1) with
+        C("Dreyer table Mk III-V", K("rate_clock", true, 15, 0.03, 2.5, 15, 1.2, 2, 300, 366, 4, 10, 1) with
             {
                 MaxRangeRateMs = DreyerRangeRate, MaxBearingRateDegS = DreyerBearingRate,
             },
             "The Dreyer table from the Mk III (1914-22), helm-free by the gyro: a rate clock limited to ±1,200 yd/min and ±15°/min, its bearing " +
             "plot the weak point (computing.md §3; level 3, designer C2). Crew 7-8 at the table, up to 30 in the station."),
-        C("German clock and plot (EU-Anzeiger, C12)", K("rate_clock", true, 15, 0.03, 2.5, 15, 1.2, 2, 300, 366, 1.5, 4, 10, 1) with
+        C("German clock and plot (EU-Anzeiger, C12)", K("rate_clock", true, 15, 0.03, 2.5, 15, 1.2, 2, 300, 366, 4, 10, 1) with
             {
                 MaxRangeRateMs = DreyerRangeRate, MaxBearingRateDegS = DreyerBearingRate,
             },
             "The German WWI range-rate clock and plot (computing.md §3). No specifications found; taken as the Dreyer Mk III's, helm-free by " +
             "the gyro [EST], the two navies' 1916 machines doing the same job."),
-        C("Argo clock Mk IV", K("true_course", true, 8, 0.03, 2.5, 15, 1.2, 2, 200, 366, 1.5, 2, 4, 1),
+        C("Argo clock Mk IV", K("true_course", true, 8, 0.03, 2.5, 15, 1.2, 2, 200, 366, 2, 4, 1),
             "Pollen's true-course plotter and variable-speed clock (1912-13): follows a changing range rate, gyro-corrected; about six in RN " +
             "service at Jutland (computing.md §3; fire_control_ref.py level 3b). Mass and crew [EST]."),
-        C("Admiralty Fire Control Table", K("true_course", true, 8, 0.03, 2, 12, 0.6, 1.5, 250, 366, 1.2, 5, 8, 5),
+        C("Admiralty Fire Control Table", K("true_course", true, 8, 0.03, 2, 12, 0.6, 1.5, 250, 366, 5, 8, 5),
             "The AFCT Mk I-X (1927-45): clock and MPI plot, helm-free, a straight-course target (computing.md §3; level 4, designer C3)."),
-        C("Admiralty Fire Control Clock", K("true_course", true, 8, 0.03, 2, 12, 0.6, 1.5, 250, 366, 1.2, 3, 4, 3),
+        C("Admiralty Fire Control Clock", K("true_course", true, 8, 0.03, 2, 12, 0.6, 1.5, 250, 366, 3, 4, 3),
             "The AFCC, the AFCT without its plot, for destroyers and secondaries (computing.md §3; Haida's Mk III limited to 16,000 yd): the " +
             "table's numbers [EST]; mass and crew [EST]."),
-        C("Admiralty Fire Control Table, turn setting", K("turn_rate", true, 8, 0.03, 2, 12, 0.6, 1.5, 250, 366, 1.2, 5, 8, 5) with
+        C("Admiralty Fire Control Table, turn setting", K("turn_rate", true, 8, 0.03, 2, 12, 0.6, 1.5, 250, 366, 5, 8, 5) with
             {
                 TurnQ = 1e-7, SpeedQ = 0.1,
             },
             "The AFCT with a hand-set enemy rate of turn: a turn filter whose rate adapts slowly (level 4t; [UNCERTAIN] in the research, a " +
             "computer option anyone may fit, decision 5)."),
-        C("German Rechenstelle (1930s)", K("true_course", true, 8, 0.03, 2, 12, 0.6, 1.5, 250, 366, 1.2, 5, 8, 5),
+        C("German Rechenstelle (1930s)", K("true_course", true, 8, 0.03, 2, 12, 0.6, 1.5, 250, 366, 5, 8, 5),
             "The German computing rooms of the 1930s, fore and aft under armour (computing.md §3): no specifications found; the research's " +
             "table puts them with the AFCT, whose numbers they take [EST]."),
-        C("Type 92 Shagekiban", K("rate_clock", true, 15, 0.03, 2, 12, 0.6, 1.5, 400, 366, 1.3, 4, 15, 2),
+        C("Type 92 Shagekiban", K("rate_clock", true, 15, 0.03, 2, 12, 0.6, 1.5, 400, 366, 4, 15, 2),
             "The Japanese Type 92 (1932) with its Sokutekiban: rates from a range-rate plot, deflection by hand, no gyro horizon; rates rebuilt " +
             "after a manoeuvre (computing.md §3; level 4j). Crew 7 + 8; mass [EST]."),
-        C("Ford Mk 8 rangekeeper", K("true_course", true, 3, 0.05, 2, 12, 0.4, 1, 150, 366, 1.0, 3, 4, 10),
+        C("Ford Mk 8 rangekeeper", K("true_course", true, 3, 0.05, 2, 12, 0.4, 1, 150, 366, 3, 4, 10),
             "The Ford Mk 8 with the stable vertical (1941-42): continuous, helm-free, tilt, wind and drift corrected; one operator (computing.md " +
             "§3; level 5, designer C4)."),
-        C("Ford Mk 8 rangekeeper, radar ranging (stand-in)", K("true_course", true, 2, 0.05, 2, 12, 0.4, 1, 150, 366, 1.0, 3, 4, 10),
+        C("Ford Mk 8 rangekeeper, radar ranging (stand-in)", K("true_course", true, 2, 0.05, 2, 12, 0.4, 1, 150, 366, 3, 4, 10),
             "The Mk 8 fed by radar spotting (level 6): its shorter latency is the radar's, standing in until the radar pass."),
-        C("Mk 1A computer", K("acceleration", true, 1, 0.02, 2, 12, 0.4, 0.8, 50, 366, 0.7, 2.5, 3, 10) with
+        C("Mk 1A computer", K("acceleration", true, 1, 0.02, 2, 12, 0.4, 0.8, 50, 366, 2.5, 3, 10) with
             {
                 AccelTauS = 20, AccelSigmaMs2 = 0.1, Detect = true,
             },
             "The 1950s analog with a curved-course (acceleration) predictor and the \"target just turned\" button (level 7, designer C5)."),
-        C("Digital turn filter (Mk 86, WM-25)", K("turn_rate", true, 0.5, 0.01, 2, 12, 0.3, 0.5, 20, 366, 0.4, 0.8, 2, 8) with
+        C("Digital turn filter (Mk 86, WM-25)", K("turn_rate", true, 0.5, 0.01, 2, 12, 0.3, 0.5, 20, 366, 0.8, 2, 8) with
             {
                 TurnQ = 5e-7, SpeedQ = 0.1, Detect = true,
             },
@@ -171,32 +171,32 @@ public static class FireControlTemplates
         // lag at her roll rate), counted there once (BL1l: these were table 1's moderate-sea values, the roll in them, and the
         // reference's at sea states up to 3). A gun laid by its own layer: his sight's own error (manual-gunnery-research.md
         // §2.3's model, 1σ: open 4′, early telescope 2.5′, telescope 1.2′; 1′ = 0.291 mil), the gun's own 2′ in its pattern.
-        M("Open sights", false, 1.15, 3,
+        M("Open sights", false, 1.15,
             "Each gun laid by its layer over open sights, fired on the roll (the open sight's 4′ on a steady platform: 1.15 mil; the " +
             "roll his timing's): before continuous aim, to the late 1890s (level 0)."),
-        M("Telescopic sights, fired on the roll", false, 0.35, 2.5,
+        M("Telescopic sights, fired on the roll", false, 0.35,
             "Each gun by its own telescope, fired as the roll brings the sight on (the telescope's 1.2′: 0.35 mil; the roll his " +
             "timing's): heavy guns until power laying, continuous aim working only to about 9.2″ (fire-control-research.md §6)."),
-        M("Early telescopic sights", false, 0.73, 2.5,
+        M("Early telescopic sights", false, 0.73,
             "Each gun by its own early telescope, continuous aim (the early telescope's 2.5′: 0.73 mil; M0): the medium guns of " +
             "1899-1905, the Tsushima era (level 1)."),
-        M("Telescopic sights", false, 0.35, 2.5,
+        M("Telescopic sights", false, 0.35,
             "Each gun by a good telescope, continuous aim (the telescope's 1.2′: 0.35 mil), no director (level 2)."),
         // the directors: the reference's (fire_control_ref.py) at sea states up to 3 halved, its own split (an unstabilised
         // director 1.0 mil against a stabilised one's 0.5, its sea factor on the former only, so the roll is the other half)
-        M("Director, follow the pointer", true, 0.5, 2,
+        M("Director, follow the pointer", true, 0.5,
             "Director firing: the guns laid and fired from the director, the turrets following its pointers (M1, 1912-16; level 3; " +
             "the reference's 1 mil less its roll: 0.5)."),
-        M("Director, follow the pointer (no RPC)", true, 0.5, 1.5,
+        M("Director, follow the pointer (no RPC)", true, 0.5,
             "Director firing without remote power control, the Japanese 1930s (no RPC on Yamato, computing.md §3): the Japanese plot's " +
             "preset numbers (the reference's 1 mil less its roll: 0.5)."),
-        M("Director, power drive", true, 0.4, 1.5,
+        M("Director, power drive", true, 0.4,
             "Director firing with power training and elevation (M2, interwar; level 4; the reference's 0.8 mil less its roll: 0.4)."),
-        M("Stable vertical, remote power control", true, 0.5, 1.2,
+        M("Stable vertical, remote power control", true, 0.5,
             "A stable vertical and gyro firing, the mounts under remote power control (M3, 1941-45; levels 5-6).", stable: true),
-        M("Stable vertical, power servo", true, 0.4, 0.8,
+        M("Stable vertical, power servo", true, 0.4,
             "The 1950s' servos (fire_control_ref.py level 7), between M3 and M4.", stable: true),
-        M("Digital servo", true, 0.3, 0.5,
+        M("Digital servo", true, 0.3,
             "Digital servos (M4, 1970s; level 8).", stable: true),
     ];
 
@@ -247,8 +247,11 @@ public static class FireControlTemplates
         "gyro_stabilised", "mass_kg_m2"];
     static readonly string[] ComputerFields = ["tracker", "helm_free", "latency_s", "q", "max_range_rate_ms", "max_bearing_rate_deg_s", "accel_tau_s",
         "accel_sigma_ms2", "turn_q", "speed_q", "detect", "rejudge_s", "prior_kn", "prior_deg", "resid_pct", "defl_bias_mil", "own_turn_kick_m",
-        "first_step_m", "salvo_pct", "mass_t", "crew", "power_kw"];
-    static readonly string[] MountFields = ["director_firing", "stable_vertical", "lay_mil", "salvo_defl_mil"];
+        "first_step_m", "mass_t", "crew", "power_kw"];
+    static readonly string[] MountFields = ["director_firing", "stable_vertical", "lay_mil"];
+    /// <summary>Fields once given, read no more, so a design saved with them still checks: the salvo-to-salvo error, each
+    /// of its parts drawn where it arises since docs/battle/balance.md BL1ac.</summary>
+    static readonly string[] Retired = ["salvo_pct", "salvo_defl_mil"];
 
     /// <summary>The design's fire_control_tech blocks: each one kind, its fields known, its numbers given and 0 or more; and
     /// each battery's fit: names that resolve, one block of each kind.</summary>
@@ -290,21 +293,21 @@ public static class FireControlTemplates
             }
             if (b.Computer is { } c)
             {
-                foreach (var k in c.Extra.KeysOrEmpty())
+                foreach (var k in c.Extra.KeysOrEmpty().Except(Retired))
                     errs.Add($"{at}.computer.{k}: not a computer field ({string.Join(", ", ComputerFields)})");
                 if (!Trackers.Contains(c.Tracker))
                     errs.Add($"{at}.computer.tracker = {Style.Quote(c.Tracker ?? "")}: use {string.Join(", ", Trackers)}");
                 Numbers("computer", [("latency_s", c.LatencyS), ("q", c.Q), ("max_range_rate_ms", c.MaxRangeRateMs), ("max_bearing_rate_deg_s", c.MaxBearingRateDegS),
                     ("accel_tau_s", c.AccelTauS), ("accel_sigma_ms2", c.AccelSigmaMs2), ("turn_q", c.TurnQ), ("speed_q", c.SpeedQ), ("rejudge_s", c.RejudgeS),
                     ("prior_kn", c.PriorKn), ("prior_deg", c.PriorDeg), ("resid_pct", c.ResidPct), ("defl_bias_mil", c.DeflBiasMil), ("own_turn_kick_m", c.OwnTurnKickM),
-                    ("first_step_m", c.FirstStepM), ("salvo_pct", c.SalvoPct), ("mass_t", c.MassT), ("crew", c.Crew), ("power_kw", c.PowerKw)],
-                    ["latency_s", "prior_kn", "prior_deg", "resid_pct", "defl_bias_mil", "first_step_m", "salvo_pct"]);
+                    ("first_step_m", c.FirstStepM), ("mass_t", c.MassT), ("crew", c.Crew), ("power_kw", c.PowerKw)],
+                    ["latency_s", "prior_kn", "prior_deg", "resid_pct", "defl_bias_mil", "first_step_m"]);
             }
             if (b.Mount is { } m)
             {
-                foreach (var k in m.Extra.KeysOrEmpty())
+                foreach (var k in m.Extra.KeysOrEmpty().Except(Retired))
                     errs.Add($"{at}.mount.{k}: not a mount field ({string.Join(", ", MountFields)})");
-                Numbers("mount", [("lay_mil", m.LayMil), ("salvo_defl_mil", m.SalvoDeflMil)], ["lay_mil", "salvo_defl_mil"]);
+                Numbers("mount", [("lay_mil", m.LayMil)], ["lay_mil"]);
             }
         }
         foreach (var bat in (ReadOnlySpan<string>)["main", "secondary", "aa"])

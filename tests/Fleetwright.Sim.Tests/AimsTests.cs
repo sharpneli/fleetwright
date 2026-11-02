@@ -209,7 +209,9 @@ public class AimsTests(ITestOutputHelper output)
     /// her commander declines it, and she still makes for her zone (it's her home now), running for it at her best speed.
     /// Whether she gets there under the dreadnoughts' fire is the guns' to say, not her commander's: with the laying right
     /// (docs/battle/balance.md BL1l) a 12" hit in her first two minutes slowed her in this seed and she was finished, where
-    /// the old laying missed her all the way; and her captains don't chase salvos yet (BL1n).</summary>
+    /// the old laying missed her all the way; and her captains don't chase salvos yet (BL1n). Since the salvo error's parts
+    /// went to their places (BL1ac) a hit slows her in her first quarter hour: caught, she makes for her zone by a GoTo
+    /// rather than going home to it.</summary>
     [Fact]
     public void A_breaker_that_declines_a_stronger_enemy_still_makes_for_her_zone()
     {
@@ -235,7 +237,7 @@ public class AimsTests(ITestOutputHelper output)
         foreach (var l in end.Timeline.Where(l => l.Kind is PlayEvent.Ordered or PlayEvent.Phase && l.Side == 0).Take(12))
             output.WriteLine($"{(l.Ms - T0) / 60_000.0,5:0} min  {l.Kind} {l.Other}");
         Assert.Contains(end.Timeline, l => l.Kind == PlayEvent.Ordered && l.Side == 0 && (CommanderWhy)(l.Other % 256) == CommanderWhy.Outmatched);
-        Assert.Equal(TaskKind.Withdraw, task);   // home is her zone now
+        Assert.Contains(task, new[] { TaskKind.Withdraw, TaskKind.GoTo });   // home is her zone now, or she's for it caught
         Assert.True(lon < 4.0 - 12 / KmPerLonDeg, $"12 km west in her first 20 minutes: at {lon:0.000}°");
     }
 
