@@ -64,16 +64,68 @@ public class GunneryTests(ITestOutputHelper output)
     /// <summary>Hits and shells over n duels of a quarter of an hour, on threads, in clear air (fire control's own rules;
     /// the smoke's part is SmokeSightTests').</summary>
     static (int Hits, int Shells, int Straddles, int Salvos) Duels(ShipClass shooter, ShipClass target, double rangeM, double bearingDeg, int level,
-        int n, int seed0 = 1)
+        int n, int seed0 = 1, double zigDeg = 0, double legS = 90, double minutes = 15, SimSettings? with = null)
     {
         var tallies = new GunnerySystem.Tally[n];
         Parallel.For(0, n, k =>
         {
-            var w = Make(shooter, target, rangeM, bearingDeg, 0, 25, seed0 + k, level, settings: Settings with { Smoke = false });
-            w.AdvanceTo(Start + 15 * 60_000);
+            var w = Make(shooter, target, rangeM, bearingDeg, 0, 25, seed0 + k, level, settings: with ?? Settings with { Smoke = false });
+            // her own zigzag, if any: legs either side of her course from the first leg's end
+            var end = Start + (long)(minutes * 60_000);
+            for (int leg = 1; zigDeg > 0 && w.Time.Ms < end.Ms; leg++)
+            {
+                w.AdvanceTo(new WorldTime(Math.Min(Start.Ms + (long)(leg * legS * 1000), end.Ms)));
+                w.Apply(ShipSystem.Course(1, leg % 2 == 1 ? zigDeg : 360 - zigDeg));
+            }
+            w.AdvanceTo(end);
             tallies[k] = w.Gunnery.TallyOf(1, 0)!.Value;
         });
         return (tallies.Sum(t => t.Hits), tallies.Sum(t => t.Shells), tallies.Sum(t => t.Straddles), tallies.Sum(t => t.Salvos));
+    }
+
+    /// <summary>The first straddle's time over n duels, its median (s; a duel without one counts as the whole run), and the
+    /// hits in the first minutes.</summary>
+    static (double StraddleS, double HitPct) Opening(ShipClass shooter, ShipClass target, double rangeM, int level, int n, double minutes,
+        SimSettings? with = null)
+    {
+        var tallies = new GunnerySystem.Tally[n];
+        Parallel.For(0, n, k =>
+        {
+            var w = Make(shooter, target, rangeM, 90, 0, 25, 1 + k, level, settings: with ?? Settings with { Smoke = false });
+            w.AdvanceTo(Start + (long)(minutes * 60_000));
+            tallies[k] = w.Gunnery.TallyOf(1, 0)!.Value;
+        });
+        var times = tallies.Select(t => t.FirstStraddleMs >= 0 ? (t.FirstStraddleMs - Start.Ms) / 1000.0 : minutes * 60).Order().ToArray();
+        return (times[n / 2], 100.0 * tallies.Sum(t => t.Hits) / Math.Max(tallies.Sum(t => t.Shells), 1));
+    }
+
+    /// <summary>Where the levels must differ (the user, 2026-11-02: "In ideal circumstances one is not really expecting any
+    /// difference, so we should do a test with a situation where difference is expected"), QE on QE at 16 kyd, each on the
+    /// ladder's rung that holds the mechanism (balance.md BL1ag): with her own zigzag (10° either side every 90 s, past the
+    /// plain clock's 5°) and the readings' errors alone, level 1's hand plot is put out by each turn and ranges again where
+    /// level 3's Dreyer, fed her own course and speed, keeps its solution (measured 15 v 81%); and opening fire, level 3's
+    /// 4 m rangefinder (the FA's 2 m reads her range some 2.7 times worse at the range) straddles her sooner (193 v 266 s).
+    /// With every error on, both are open (BL1ag): the Dreyer's own-turn kick, one lumped draw a salvo, takes its zigzag
+    /// from 18 to 11% (level 1 14%), and both straddle at about 140 s.</summary>
+    [Fact]
+    public void Where_the_levels_differ_level_3_does_better()
+    {
+        var qe = Class("super_dreadnought");
+        var readings = Settings with { Smoke = false, GunneryErrors = GunneryErrorScale.Parse("all=0,readings=1") };
+        var zig = new double[4];
+        var open = new double[4];
+        foreach (int level in new[] { 1, 3 })
+        {
+            var (h, sh, _, _) = Duels(qe, qe, 16 * Kyd, 90, level, 16, zigDeg: 10, with: readings);
+            zig[level] = 100.0 * h / sh;
+            open[level] = Opening(qe, qe, 16 * Kyd, level, 16, 5, readings).StraddleS;
+            var (ah, ash, _, _) = Duels(qe, qe, 16 * Kyd, 90, level, 16, zigDeg: 10);
+            var (aos, aop) = Opening(qe, qe, 16 * Kyd, level, 16, 5);
+            output.WriteLine($"level {level}, the readings only: zigzagging {zig[level]:F1}% hits, the first straddle at {open[level]:F0} s; " +
+                             $"every error on: zigzagging {100.0 * ah / ash:F1}%, the first straddle at {aos:F0} s, {aop:F1}% in 5 min");
+        }
+        Assert.True(zig[3] > 2 * zig[1], "her own turns put the plain clock out, not the helm-free table");
+        Assert.True(open[3] < 0.85 * open[1], "the longer base straddles sooner");
     }
 
     [Fact]
