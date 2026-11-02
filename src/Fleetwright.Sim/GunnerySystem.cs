@@ -246,9 +246,9 @@ public sealed class GunnerySystem : IWorldSystem
 
     /// <summary>A salvo's spot, for tools: the salvo (by when it was fired), whether the spotter saw its fall and what he
     /// judged it, the bracket after it (m; infinite: open) and the correction the next salvo goes with, and the phase
-    /// after it.</summary>
+    /// after it; the computer's doubt of the range rate (m/s) and of her place along the line (m), and its tracker.</summary>
     public readonly record struct SpotReport(long FiredMs, int Shooter, int Battery, bool Seen, FireControl.Sign Sign, double Lo, double Hi, double Next,
-        FirePhase Phase, bool Told = true);
+        FirePhase Phase, bool Told = true, double DriftMs = 0, double PosSigmaM = 0, int Tracker = 0);
 
     /// <summary>Whether a chief battery's shells have fallen near a ship since a time (docs/battle/balance.md BL5f: her
     /// lookouts see the big splashes about her): a fall in her ring of a calibre her shooter's chief battery fires.</summary>
@@ -1734,7 +1734,7 @@ public sealed class GunnerySystem : IWorldSystem
                     fc.CorrD = sv.CorrD - settings.SpotDeflectionGain * defl / sv.RangeM;
             }
             Spotted?.Invoke(new SpotReport(sv.FiredMs, fc.Shooter, fc.Battery, sees, sign, fc.Bracket.LoAt(now, fc.DriftMs), fc.Bracket.HiAt(now, fc.DriftMs),
-                fc.CorrR, fc.Phase, told));
+                fc.CorrR, fc.Phase, told, fc.DriftMs, fc.PosSigmaM, (int)fc.Fit.Computer.Tracker));
         }
         FreeSalvo(si);
     }

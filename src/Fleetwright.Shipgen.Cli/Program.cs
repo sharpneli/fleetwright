@@ -256,11 +256,11 @@ public static class Program
             --replay runs the command log again and compares the hashes; --fire-trace logs each battery's target,
             state and phase as they change (the time a new target takes to come under fire)
         shipgen scenario [SCENARIO.json] --play [--seeds N] [--fast 1000] [--tier fine|coarse] [--fine 1] [--threads N] [--no-land]
-                         [--watch ID,...] [--every 10]
+                         [--watch ID,...] [--every 10] [--salvo-log FILE]
             the scenario played to its end with the AI on every side (docs/battle/command.md 5.0): one seed's
             timeline and result, or a line a seed and the spread; the asked speed is --fine while an encounter is
             open (1x, or 1000x with --tier coarse) and --fast otherwise; --watch prints each side's commander and
-            aims and the ships named every --every game minutes
+            aims and the ships named every --every game minutes; --salvo-log writes every salvo's fall and spot as CSV
         shipgen coarse-parity [--panel quick|standard|full] [--layer duels,dodging,fights,scenarios] [--tier both|fine|coarse]
                               [--runs N] [--seeds N] [--threads N] [--only SCENARIO,...] [--out FILE.json] [--fine-from FILE.json]
             the coarse tier against the fine one (docs/battle/coarse.md "The parity bench"): the panel's duels,
@@ -306,7 +306,7 @@ public static class Program
                 "sim" => SimCmd(a),
                 "workers" => WorkersBench.Run(a.Int("items", 250), D(a, "item-ns", 160), D(a, "gap-us", 100), a.Int("dispatches", 20_000)),
                 "shore" => ShoreBench.Run(a.Get("land") ?? Path.Combine(Root(a), "..", "Content", "World", "land-10m.bin"), a.Int("points", 100_000)),
-                "scenario" when a.Has("play") && (ScenarioPlay.Hashes = a.Has("hashes")) is var _ => ScenarioPlay.Run(a.Positional.FirstOrDefault() ?? Path.Combine(Root(a), "..", "Content", "Scenarios", "jutland.json"),
+                "scenario" when a.Has("play") && (ScenarioPlay.Hashes = a.Has("hashes")) is var _ && (ScenarioPlay.SalvoLog = a.Get("salvo-log")) is var _ => ScenarioPlay.Run(a.Positional.FirstOrDefault() ?? Path.Combine(Root(a), "..", "Content", "Scenarios", "jutland.json"),
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
                     a.Get("land") ?? Path.Combine(Root(a), "..", "Content", "World", "land-10m.bin"), Path.Combine(Root(a), "designs"),
                     a.Int("threads", 0), !a.Has("no-land"), a.Int("seeds", 1), D(a, "fast", 1000), D(a, "fine", TierSpeed(a)), SmokeSwitch(a),

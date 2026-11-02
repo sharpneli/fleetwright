@@ -25,6 +25,9 @@ static class ScenarioPlay
         int seeds, double fast, double fine, bool? smoke = null, int workerCount = -1, ulong shuffle = 0, double spinUs = 250, bool fireTable = false,
         int[]? watch = null, int every = 10)
     {
+        using var salvoLog = SalvoLog is { } logPath ? new StreamWriter(logPath) : null;
+        salvoLog?.WriteLine("F,seed,t,shooter,battery,target,cal,range,shells,fallX,fallY,aimErr,corr,laid,phase,straddle,hits,pb,yaw,targetYaw");
+        salvoLog?.WriteLine("S,seed,t,shooter,battery,call,lo,hi,next,phase,drift,possigma,tracker");
         // where the hits come from (docs/battle/balance.md BL1g): shells and hits by calibre, range and point blank, every seed
         var fire = new SortedDictionary<(bool Night, bool Small, int Cal, int Range, bool Pb), (long Shells, long Hits)>();
         // and inside 4 km, why the shooter was there: his captain's order and way of fighting (BL5)
@@ -204,6 +207,8 @@ static class ScenarioPlay
                         homeShips[hk] = (homeShips.GetValueOrDefault(hk).Hits + r.Hits, false);
                     }
                 };
+            if (salvoLog != null)
+                LogSalvos(w, seed, salvoLog);
             foreach (var x in start.Warnings)
                 Console.WriteLine($"  {x}");
             var names = new Dictionary<int, string>(start.ShipNames);
@@ -617,6 +622,31 @@ static class ScenarioPlay
 
     /// <summary>Every game minute, each part of the state hash (<c>--hashes</c>): where two runs first differ.</summary>
     public static bool Hashes;
+
+    /// <summary>A CSV of every salvo and its spot (<c>--salvo-log FILE</c>): where the falls stood against the target
+    /// salvo by salvo, the correction and the call it drew, to see whether the spotting walks the fall onto her.</summary>
+    public static string? SalvoLog;
+
+    static void LogSalvos(World w, ulong seed, TextWriter log)
+    {
+        var prev = w.Gunnery.Reported;
+        // its spot, a line of its own six seconds on: S, the salvo's time, whose, the call, the correction it leaves
+        w.Gunnery.Spotted = p => log.WriteLine(string.Join(",", "S", seed, p.FiredMs / 1000.0, p.Shooter, p.Battery, p.Seen ? p.Sign.ToString() : "unseen",
+            Math.Round(p.Lo), Math.Round(p.Hi), Math.Round(p.Next), p.Phase,
+            Math.Round(p.DriftMs, 2), Math.Round(p.PosSigmaM), (TrackerKind)p.Tracker));
+        w.Gunnery.Reported = r =>
+        {
+            prev?.Invoke(r);
+            var store = w.Ships.Store;
+            int ss = store.SlotOf(r.Shooter), ts = store.SlotOf(r.Target);
+            if (ss < 0 || ts < 0)
+                return;
+            log.WriteLine(string.Join(",", "F", seed, r.FiredMs / 1000.0, r.Shooter, r.Battery, r.Target, store[ss].Handling.Class.Batteries[r.Battery].CalibreMm,
+                Math.Round(r.TrueRangeM), r.Shells, Math.Round(r.MeanX), Math.Round(r.MeanY), Math.Round(r.AimErrM), Math.Round(r.CorrR), Math.Round(r.LaidErrM),
+                r.Phase, r.Straddle ? 1 : 0, r.Hits, r.PointBlank ? 1 : 0, Math.Round(r.YawDegS, 2),
+                Math.Round(double.RadiansToDegrees(store[ts].YawRate), 2)));
+        };
+    }
 
     /// <summary>Why ships' main guns are out (the user's question, 2026-10-20: "a lot of ships with disabled main guns"):
     /// their chief batteries' mounts not working, each by its first cause (the magazine, the gunhouse, the barbette, a jam,
