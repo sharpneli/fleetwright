@@ -94,6 +94,10 @@ public sealed class GunnerySystem : IWorldSystem
         /// elevation in the plane of fire and time of flight (where the next second's starts).</summary>
         public double OrderBearingDeg, OrderElevationDeg, ElevationDeg, TofS;
         public long StartMs, OpenMs, TrackMs;
+        /// <summary>A computer with no range clock (a hand plot, fc-ladder-check.md FL4): when it last plotted a reading, and
+        /// the range it passed to the sights then (held till the next), as of which plot.</summary>
+        public long PlotMs, HeldMs;
+        public double HeldRangeM;
         public bool Tracking, SalvoPending;
         public FcTracker Tracker;
         /// <summary>When a judgement looks at the target again, and the eye's misjudgement of her speed and course, in the
@@ -1199,6 +1203,7 @@ public sealed class GunnerySystem : IWorldSystem
             fc.Tracker = FcTracker.Start(computer, r, Guess(computer, fc, target.Position, target.Forward * target.Speed), FcTracker.GuessSigma(computer, target.Speed));
             (fc.Tracking, fc.TrackMs, fc.OpenMs) = (true, now, now + (long)(settings.GunneryOpenS * 1000));
             fc.JudgeMs = now + (long)(computer.RejudgeS * 1000);
+            fc.PlotMs = now;
             Plot(ref fc, f, ref r, r.Z);   // its first cut lies on the line
         }
         else
@@ -1207,6 +1212,7 @@ public sealed class GunnerySystem : IWorldSystem
             Plot(ref fc, f, ref r, p);
             if (Plausible(ref fc, r, p))
                 fc.Tracker.Fix(computer, r);   // the guns follow the computer, the spots' correction on it (BL1z)
+            fc.PlotMs = now;
         }
         fc.PendHead = (fc.PendHead + 1) % PendingCap;
         fc.PendCount--;
@@ -1361,6 +1367,16 @@ public sealed class GunnerySystem : IWorldSystem
             fc.TofS = table.Fall(e, h0).Tof;
             fc.Tracker.At(computer, now + (long)(fc.TofS * 1000), now, ownPosition, ownVelocity, out p, out _);
             p = Ordered(fc, p, ownPosition, headingDeg);
+        }
+        if (!computer.RangeClock)
+        {
+            // no clock to run it on (FL4): the range passed at the last plot stays on the sights, the trainers on her bearing
+            if (fc.HeldMs != fc.PlotMs)
+                (fc.HeldRangeM, fc.HeldMs) = (Earth.Distance(ownPosition, p), fc.PlotMs);
+            var q = ownPosition;
+            var fw = Earth.Forward(q, Earth.Bearing(ownPosition, p));
+            Earth.Advance(ref q, ref fw, fc.HeldRangeM);
+            p = q;
         }
         return p;
     }

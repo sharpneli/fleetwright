@@ -975,6 +975,8 @@ public sealed record ComputerTechInput
     public double? TurnQ { get; init; }
     public double? SpeedQ { get; init; }
     public bool? Detect { get; init; }
+    public bool? CourseRate { get; init; }
+    public bool? RangeClock { get; init; }
     public double? RejudgeS { get; init; }
     public double? PriorKn { get; init; }
     public double? PriorDeg { get; init; }

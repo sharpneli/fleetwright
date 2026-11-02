@@ -554,6 +554,13 @@ public readonly record struct ComputerRow
     public double TurnQ { get; init; }
     public double SpeedQ { get; init; }
     public bool Detect { get; init; }
+    /// <summary>A rate clock's rates from her estimated course and speed and own ship's (the Dumaresq's synthetic method),
+    /// corrected by the readings; without (a hand plot) they're the plot's trend alone, from nothing known
+    /// (docs/battle/fc-ladder-check.md FL4).</summary>
+    public bool CourseRate { get; init; }
+    /// <summary>The range runs on between readings at the rate (the Vickers clock); without (a hand plot) the range passed
+    /// at each plot stays on the sights until the next (FL4).</summary>
+    public bool RangeClock { get; init; }
     public double RejudgeS { get; init; }
     public double LatencyS { get; init; }
     public double Q { get; init; }

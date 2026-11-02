@@ -102,10 +102,12 @@ public static class FireControlTemplates
             "A sailor's eye and head: the range guessed, the target's course and speed guessed from her look and led by it, looked at again " +
             "each minute, never a rate learnt (F2: the worst computer there is). The eye's guess and the tables' corrections as the hand " +
             "plot's: the same eye, the same tables (docs/battle/fc-ladder-check.md FL3)."),
-        C("Hand plot", K("rate_clock", false, 15, 0.02, 4, 25, 2, 3, 0, 366, 0.2, 3, 0),
-            "Ranges, by rangefinder or by eye, and rates from a hand plot and estimates, no machine (levels 0 and 1: the Tsushima era; " +
-            "designer C0). The reference's level 0 had an \"eye and hand plot\" of its own, slower and with worse guesses and corrections " +
-            "than this one for no difference in the plot: gone (docs/battle/fc-ladder-check.md FL3)."),
+        C("Hand plot", K("rate_clock", false, 15, 0.02, 4, 25, 2, 3, 0, 366, 0.2, 3, 0) with { CourseRate = false, RangeClock = false },
+            "Ranges, by rangefinder or by eye, plotted by hand, no machine (levels 0 and 1: the Tsushima era; designer C0). Its rates are " +
+            "the plot's trend alone (no Dumaresq to make them from her course and speed: \"range rate was ignored, or guessed by rule of " +
+            "thumb\"), and the range passed at each plot stays on the sights until the next (no clock to run it on): manual-gunnery-" +
+            "research.md §3.2, computing.md §2 (docs/battle/fc-ladder-check.md FL4). The reference's level 0 had an \"eye and hand plot\" " +
+            "of its own, slower and with worse guesses and corrections for no difference in the plot: gone (FL3)."),
         C("Dumaresq and Vickers clock", K("rate_clock", false, 15, 0.03, 3, 20, 1.5, 2.5, 0, 366, 0.8, 4, 0) with { MaxRangeRateMs = DreyerRangeRate },
             "The Dumaresq's rates run on by the Vickers range clock (1906): constant rates only, the roller slipping on a change (computing.md " +
             "§3; level 2, designer C1)."),
@@ -249,7 +251,7 @@ public static class FireControlTemplates
     static readonly string[] OpticsFields = ["kind", "delta_arcsec", "rigid_base_m", "flex_exp", "magnification", "m_max", "readings_per_min", "coated",
         "gyro_stabilised", "mass_kg_m2"];
     static readonly string[] ComputerFields = ["tracker", "helm_free", "latency_s", "q", "max_range_rate_ms", "max_bearing_rate_deg_s", "accel_tau_s",
-        "accel_sigma_ms2", "turn_q", "speed_q", "detect", "rejudge_s", "prior_kn", "prior_deg", "resid_pct", "defl_bias_mil", "own_course_lag_s", "own_speed_lag_s",
+        "accel_sigma_ms2", "turn_q", "speed_q", "detect", "course_rate", "range_clock", "rejudge_s", "prior_kn", "prior_deg", "resid_pct", "defl_bias_mil", "own_course_lag_s", "own_speed_lag_s",
         "first_step_m", "mass_t", "crew", "power_kw"];
     static readonly string[] MountFields = ["director_firing", "stable_vertical", "lay_mil"];
     /// <summary>Fields once given, read no more, so a design saved with them still checks: the salvo-to-salvo error, each

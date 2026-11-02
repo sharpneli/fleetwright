@@ -33,7 +33,7 @@ haze. QE on QE at 16 kyd unless the step's period fought nearer (the 1905 levels
 | FL1 | own turns | `own_turn_kick_m`, a Gaussian a salvo by rate of turn (Dreyer 300 m, Mk 8 150 m, digital 20 m): the reference's lumped stand-in | a helm-free machine keeps its solution through her own turns, losing only what its own course and speed inputs lag: the speed she loses in a turn (`TurnDragFactor`) reaching a hand-fed Forbes log late (Dreyer: "manually fed to Dumaresq"), a pitometer at once (Mk 8); her course by gyro repeat | her own zigzag, every error on: level 3 above level 1 | done 2026-11-02 |
 | FL2 | the opening | | a longer base and a better first guess put the first salvo nearer her, so it straddles more often and comes to effect sooner | the first salvo's fall, every error on (the first straddle's median time, 143 v 141 s, hid it) | done 2026-11-02 |
 | FL3 | 0 → 1 | the eye (20% of range) → FA 2 m; open sights 1.15 → telescopic 0.73 mil; the same hand plot (its own "eye and hand plot" gone) | ranges found at once, not by long ranging; a tighter pattern | the opening at 6-8 km | done 2026-11-02 |
-| FL4 | 1 → 2 | FA → FQ/FT 4 m; hand plot → Dumaresq and Vickers clock; telescopic 0.73 → 0.35 mil | the clock runs the range on between sparse readings from her course and speed | a crossing or closing target, readings 2 a minute; haze that loses readings | |
+| FL4 | 1 → 2 | FA → FQ/FT 4 m; hand plot → Dumaresq and Vickers clock; telescopic 0.73 → 0.35 mil | the clock runs the range on between sparse readings from her course and speed | a crossing or closing target, readings 2 a minute; haze that loses readings | done 2026-11-02 |
 | FL5 | 2 → 3 | Dumaresq → Dreyer Mk III-V (helm-free, the bearing gear); local laying → director 0.5 mil | through her own turns (FL1); the director's layer above the smoke and spray, one fall to spot | her own zigzag; a seaway; her own and the enemy's smoke, spray at speed. On the way: the catalogue's "Dreyer table Mk I-II" (not helm-free) fits the Mk I only; the Mk I* took her heading automatically and the Mk II probably (own-motion-inputs.md §2): split the row | |
 | FL6 | 3 → 4 | Dreyer (rate clock, latency 15 s, bias 1.2%) → AFCT (true course, 8 s, 0.6%); FQ/FT → stereo 5 m; director power drive 0.4 mil | a target's turns re-learned sooner; the bearing rate past the Dreyer's 0.25°/s; less bias to range out | the target's zigzag; a fast crossing near | |
 | FL7 | 4 → 5 | AFCT → Ford Mk 8 (3 s, 0.4%); stable vertical, RPC; coated, stabilised O4 | fire at any point of the roll, not on it; the rangefinder in a seaway; and the stable vertical's own error in a turn, the record's "several hundred yards" (North Carolina 1945): its mercury erection cut out while the turn's acceleration lasts, the gyro drifting free some 2-3′ a minute, ~200 yd through a 450° turn at 20-25 kyd, re-erecting after (own-motion-inputs.md §4, recommendation 6) | a seaway, rate of fire in it; long own turns | |
@@ -177,3 +177,37 @@ deficit was the eye's, not the numbers'). The judgement (local control's compute
 plot's error budget too, keeping its own (no plot: 5 s; no rate ever learnt). A fit's level label tells the eyeball from
 the rangefinder by its instrument now that they share the plot (`FireControlPresets.LevelOf`).
 `GunneryTests.Where_the_levels_differ_level_1_ranges_where_the_eye_guesses` asserts both on their rungs.
+
+## FL4: the hand plot to the Dumaresq and clock (done 2026-11-02)
+
+**Should give:** before the Dumaresq "range rate was ignored, or guessed by rule of thumb", and "with no rate aid, the
+sight carries that range unchanged" between ranges passed down (manual-gunnery-research.md §3.2); the hand plot's rate
+was the trend of its plotted ranges (the "analytic" method, which the synthetic beat in trials: by 1919 the RN held
+"range rate could not reliably be taken from the range-plot trend alone", computing.md §2). The Dumaresq makes the rate
+from her course and speed as estimated at once, and the Vickers clock runs the range on at it. So against a target
+closing across, the plot ranges longer and its held range goes stale between plots; on a parallel course (no rate) no
+difference.
+
+**Found:** none in the chain. Both were the same rate clock, the plot starting from the guessed course and speed and
+running the range on as the clock does: level 1 had level 2's mechanism, the difference left to its numbers (Dreadnought
+on Dreadnought at 11 km behind the same FQ/FT and sights, readings' rung: closing across 68.2 v 69.0%, parallel 69.2 v
+70.0).
+
+**Built:** a computer's `course_rate` and `range_clock` (true from the Dumaresq on, false on the hand plot; the designs'
+own hand plot blocks have them). Without a course rate its rates start at none, as doubtful as her speed and ours
+together, and come from the readings alone (`FcTracker.Start`); without a clock the range passed at each plot stays on the
+sights till the next, the trainers on her bearing (`GunnerySystem.Predict`). Measured (15 and 18 kn, 32 duels):
+
+| | hand plot | Dumaresq and clock |
+|---|---|---|
+| closing across, readings' rung: hits; first fall; effect at | 59.2%; 367 m; 147 s | 69.0%; 165 m; 99 s |
+| parallel, readings' rung: hits | 70.8% | 70.0% |
+| closing across, every error on: hits | 14.8% | 16.3% |
+
+The step's other parts each on its rung, behind the clock: the FQ/FT's first salvo nearer than the FA's (151 v 103 m rms
+on the readings' rung); the telescope's 0.35 mil over the early one's 0.73 a little (14.5 v 15.0% firing for effect: some
+27 against 56 m in range a gun at 11 km beside a pattern of some 200). `GunneryTests.Where_the_levels_differ_level_2_runs_the_range_on`.
+
+**On the way:** the hand plot's priors (4 kn, 25°) now set only what it doesn't use (its guess goes unread without a
+Dumaresq); the judgement still leads by its guess (the rule of thumb). Haze losing readings, the row's other place, is
+the same mechanism with sparser readings: not measured apart.

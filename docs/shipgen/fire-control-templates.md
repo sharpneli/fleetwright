@@ -72,7 +72,7 @@ own numbers. Mass t, crew, power kW.
 | Block | Tracker | Latency | q | Limits | Prior | Bias | Own lags | Step | Filter | t, crew, kW |
 |---|---|---|---|---|---|---|---|---|---|---|
 | Judgement | judgement | 5 | 0 | - | 4, 25 | 2, 3 | -, 0 | 366 | looks again 60 s | 0, 0, 0 |
-| Hand plot | rate_clock | 15 | 0.02 | - | 4, 25 | 2, 3 | -, 0 | 366 | - | 0.2, 3, 0 |
+| Hand plot | rate_clock | 15 | 0.02 | - | 4, 25 | 2, 3 | -, 0 | 366 | -; rates by the plot alone; no clock | 0.2, 3, 0 |
 | Dumaresq and Vickers clock | rate_clock | 15 | 0.03 | 18.3, 0 | 3, 20 | 1.5, 2.5 | -, 0 | 366 | - | 0.8, 4, 0 |
 | German range clock (EU-Anzeiger) | rate_clock | 15 | 0.03 | 18.3, 0 | 3, 20 | 1.5, 2.5 | -, 0 | 366 | - | 0.8, 4, 0 |
 | Dreyer table Mk I-II | rate_clock | 15 | 0.03 | 18.3, 0.25 | 2.5, 15 | 1.2, 2 | -, 0 | 366 | - | 4, 10, 1 |
@@ -116,7 +116,7 @@ own numbers. Mass t, crew, power kW.
 - **Auto-track ranging (radar stand-in):** O4's instruments read as an auto-tracking radar's range: 60 a minute (§3.5). Stands in for the radar block until the radar pass.
 - **Digital ranging (radar and laser stand-in):** O4's instruments read as the 1970s' radar and laser: 30 a minute (fire_control_ref.py LEVELS 8). Stands in for the radar block.
 - **Judgement:** A sailor's eye and head: the range guessed, the target's course and speed guessed from her look and led by it, looked at again each minute, never a rate learnt (F2: the worst computer there is). The eye's guess and the tables' corrections as the hand plot's: the same eye, the same tables (docs/battle/fc-ladder-check.md FL3).
-- **Hand plot:** Ranges, by rangefinder or by eye, and rates from a hand plot and estimates, no machine (levels 0 and 1: the Tsushima era; designer C0). The reference's level 0 had an "eye and hand plot" of its own, slower and with worse guesses and corrections than this one for no difference in the plot: gone (docs/battle/fc-ladder-check.md FL3).
+- **Hand plot:** Ranges, by rangefinder or by eye, plotted by hand, no machine (levels 0 and 1: the Tsushima era; designer C0). Its rates are the plot's trend alone (no Dumaresq to make them from her course and speed: "range rate was ignored, or guessed by rule of thumb"), and the range passed at each plot stays on the sights until the next (no clock to run it on): manual-gunnery-research.md §3.2, computing.md §2 (docs/battle/fc-ladder-check.md FL4). The reference's level 0 had an "eye and hand plot" of its own, slower and with worse guesses and corrections for no difference in the plot: gone (FL3).
 - **Dumaresq and Vickers clock:** The Dumaresq's rates run on by the Vickers range clock (1906): constant rates only, the roller slipping on a change (computing.md §3; level 2, designer C1).
 - **German range clock (EU-Anzeiger):** The German WWI range-rate indicator and clock without the plot, the cruisers' (computing.md §3): no specifications found; taken as the Dumaresq and Vickers clock's [EST].
 - **Dreyer table Mk I-II:** The Dreyer table's range and bearing plots and clock before the gyro feed (1911-12): the Mk III's numbers without helm-free, so own ship's turns are re-learnt (computing.md §3: helm-free from the Mk III).

@@ -242,7 +242,7 @@
   {
    "name": "Hand plot",
    "group": "computer",
-   "note": "Ranges, by rangefinder or by eye, and rates from a hand plot and estimates, no machine (levels 0 and 1: the Tsushima era; designer C0). The reference's level 0 had an \"eye and hand plot\" of its own, slower and with worse guesses and corrections than this one for no difference in the plot: gone (docs/battle/fc-ladder-check.md FL3).",
+   "note": "Ranges, by rangefinder or by eye, plotted by hand, no machine (levels 0 and 1: the Tsushima era; designer C0). Its rates are the plot's trend alone (no Dumaresq to make them from her course and speed: \"range rate was ignored, or guessed by rule of thumb\"), and the range passed at each plot stays on the sights until the next (no clock to run it on): manual-gunnery-research.md §3.2, computing.md §2 (docs/battle/fc-ladder-check.md FL4). The reference's level 0 had an \"eye and hand plot\" of its own, slower and with worse guesses and corrections for no difference in the plot: gone (FL3).",
    "value": {
     "computer": {
      "tracker": "rate_clock",
@@ -256,6 +256,8 @@
      "turn_q": 0,
      "speed_q": 0,
      "detect": false,
+     "course_rate": false,
+     "range_clock": false,
      "rejudge_s": 0,
      "prior_kn": 4,
      "prior_deg": 25,

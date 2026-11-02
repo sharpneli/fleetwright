@@ -96,7 +96,11 @@ public struct FcTracker
             {
                 var e = Earth.East(r.From);
                 var n = Earth.North(r.From);
-                var rel = guess - ownVelocity;
+                // a Dumaresq makes its rates from her course and speed as guessed; a plot without one knows nothing of them till
+                // its trend shows it: no rate, as doubtful as her speed and ours together could make it (fc-ladder-check.md FL4)
+                var rel = c.CourseRate ? guess - ownVelocity : default;
+                if (!c.CourseRate)
+                    sv = ownVelocity.Length + guess.Length;
                 double re = Vec3d.Dot(rel, e), rn = Vec3d.Dot(rel, n), b = r.BearingDeg * Math.PI / 180, sb = Math.Sin(b), cb = Math.Cos(b);
                 (t.X[0], t.X[1], t.X[2], t.X[3]) = (r.RangeM, re * sb + rn * cb, b, (re * cb - rn * sb) / r.RangeM);
                 (t.P[0], t.P[1], t.P[2]) = (r.SigmaRangeM * r.SigmaRangeM, 0, sv * sv);

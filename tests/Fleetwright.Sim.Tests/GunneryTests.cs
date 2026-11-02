@@ -64,12 +64,12 @@ public class GunneryTests(ITestOutputHelper output)
     /// <summary>Hits and shells over n duels of a quarter of an hour, on threads, in clear air (fire control's own rules;
     /// the smoke's part is SmokeSightTests').</summary>
     static (int Hits, int Shells, int Straddles, int Salvos) Duels(ShipClass shooter, ShipClass target, double rangeM, double bearingDeg, int level,
-        int n, int seed0 = 1, double zigDeg = 0, double legS = 90, double minutes = 15, SimSettings? with = null)
+        int n, int seed0 = 1, double zigDeg = 0, double legS = 90, double minutes = 15, SimSettings? with = null, double courseDeg = 0)
     {
         var tallies = new GunnerySystem.Tally[n];
         Parallel.For(0, n, k =>
         {
-            var w = Make(shooter, target, rangeM, bearingDeg, 0, 25, seed0 + k, level, settings: with ?? Settings with { Smoke = false });
+            var w = Make(shooter, target, rangeM, bearingDeg, courseDeg, 25, seed0 + k, level, settings: with ?? Settings with { Smoke = false });
             // her own zigzag, if any: legs either side of her course from the first leg's end
             var end = Start + (long)(minutes * 60_000);
             for (int leg = 1; zigDeg > 0 && w.Time.Ms < end.Ms; leg++)
@@ -186,6 +186,52 @@ public class GunneryTests(ITestOutputHelper output)
         }
         Assert.True(fall[1] < 0.4 * fall[0], "the rangefinder's first range is nearer than the eye's");
         Assert.True(laid[1] > laid[0], "the telescope lays closer than open sights");
+    }
+
+    /// <summary>A class refitted: its main battery's fire control the blocks named (the catalogue's, or its design's own).</summary>
+    static ShipClass Refit(string name, string optics, string computer, string sights)
+    {
+        var d = Shipgen.Design.Load(Fleet.Get(name).Case.DesignPath);
+        d = d with { FireControl = d.FireControl! with { Main = d.FireControl.Main! with { Fit = [optics, computer, sights] } } };
+        return ShipClassCompiler.Compile(Shipgen.ShipDesign.Build(d));
+    }
+
+    /// <summary>Level 1 to 2 where they must differ (fc-ladder-check.md FL4), Dreadnought on Dreadnought at 11 km, each part
+    /// behind the same others. The computer: a hand plot's rates are its trend alone and the range it passes stays on the
+    /// sights till the next plot, where the Dumaresq makes the rate from her course and speed at once and the clock runs
+    /// the range on; on a target closing across (her course 225°, the shooter's 0°) the plot ranges longer and hits less
+    /// (readings' rung, measured 32 duels: 59.2 v 69.0%), on a parallel one alike (70.8 v 70.0: its steady range is right
+    /// there). Here both at 25 kn, 24 duels: 50.2 v 55.9% closing across, 69.3 v 68.2 parallel, every error on 10.5 v 12.5.
+    /// The rangefinder, FA to FQ/FT: the first salvo nearer (the readings alone, 15 and 18 kn: 151 v 103 m rms). The sights,
+    /// the early telescope's 0.73 mil to 0.35: some 56 against 27 m in range a gun at the range beside a pattern of some
+    /// 200 m, so a little (14.0 v 15.5% here).</summary>
+    [Fact]
+    public void Where_the_levels_differ_level_2_runs_the_range_on()
+    {
+        var target = Class("dreadnought");
+        var readings = Settings with { Smoke = false, GunneryErrors = GunneryErrorScale.Parse("all=0,readings=1,own=1,prior=1") };
+        var ranges = Settings with { Smoke = false, GunneryErrors = GunneryErrorScale.Parse("all=0,readings=1,own=1") };
+        var laying = Settings with { Smoke = false, GunneryErrors = GunneryErrorScale.Parse("all=0,laying=1,dispersion=1") };
+        const string fq = "Barr & Stroud FQ/FT (O2)", plot = "Hand plot", clock = "Dumaresq and Vickers clock";
+        double Pct(ShipClass c, double course, SimSettings? s = null)
+        {
+            var (h, sh, _, _) = Duels(c, target, 11_000, 90, -1, 24, minutes: 10, with: s, courseDeg: course);
+            return 100.0 * h / sh;
+        }
+        var byPlot = Refit("dreadnought", fq, plot, "Telescopic sights");
+        var byClock = Refit("dreadnought", fq, clock, "Telescopic sights");
+        double plotX = Pct(byPlot, 225, readings), clockX = Pct(byClock, 225, readings), plotP = Pct(byPlot, 0, readings), clockP = Pct(byClock, 0, readings);
+        output.WriteLine($"the readings only, closing across: the hand plot {plotX:F1}%, the Dumaresq and clock {clockX:F1}%; parallel: {plotP:F1}, {clockP:F1}%; " +
+                         $"every error on, closing across: {Pct(byPlot, 225):F1}, {Pct(byClock, 225):F1}%");
+        var fa = Opening(Refit("dreadnought", "Barr & Stroud FA (O1)", clock, "Early telescopic sights"), target, 11_000, -1, 24, 3, ranges).FirstFallM;
+        var fqf = Opening(Refit("dreadnought", fq, clock, "Early telescopic sights"), target, 11_000, -1, 24, 3, ranges).FirstFallM;
+        double early = Pct(Refit("dreadnought", fq, clock, "Early telescopic sights"), 0, laying), tele = Pct(byClock, 0, laying);
+        output.WriteLine($"the first salvo, the readings only: the FA {fa:F0} m rms, the FQ/FT {fqf:F0} m; the laying and the pattern only: early telescope " +
+                         $"{early:F1}%, telescope {tele:F1}%");
+        Assert.True(clockX > 1.06 * plotX, "the clock runs the range on where the plot's held range goes stale");
+        Assert.InRange(plotP, 0.94 * clockP, 1.08 * clockP);
+        Assert.True(fqf < 0.8 * fa, "the longer base's first range is nearer");
+        Assert.True(tele > 0.98 * early, "the telescope lays no worse");
     }
 
     [Fact]

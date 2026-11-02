@@ -484,7 +484,7 @@
     "accel_sigma_ms2": 0,
     "turn_q": 0,
     "speed_q": 0,
-    "detect": false,
+    "detect": false, "course_rate": false, "range_clock": false,
     "rejudge_s": 0,
     "prior_kn": 4,
     "prior_deg": 25,

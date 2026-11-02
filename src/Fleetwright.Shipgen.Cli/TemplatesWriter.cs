@@ -226,7 +226,8 @@ static class TemplatesWriter
                 "turn_rate" => $"turn {N(c.TurnQ)}, speed {N(c.SpeedQ)}",
                 "judgement" => $"looks again {N(c.RejudgeS)} s",
                 _ => "-",
-            } + (c.Detect == true ? "; detects turns" : "");
+            } + (c.Detect == true ? "; detects turns" : "") + (c.CourseRate == false ? "; rates by the plot alone" : "") +
+                (c.RangeClock == false ? "; no clock" : "");
             sb.Append(Inv, $"| {t.Name} | {c.Tracker}{(c.HelmFree == true ? ", helm-free" : "")} | {N(c.LatencyS)} | {N(c.Q)} | {limits} | " +
                 $"{N(c.PriorKn)}, {N(c.PriorDeg)} | {N(c.ResidPct)}, {N(c.DeflBiasMil)} | {N(c.OwnCourseLagS)}, {N(c.OwnSpeedLagS)} | {N(c.FirstStepM)} | " +
                 $"{filter} | {N(c.MassT)}, {N(c.Crew)}, {N(c.PowerKw)} |\n");
