@@ -30,7 +30,7 @@ haze. QE on QE at 16 kyd unless the step's period fought nearer (the 1905 levels
 | | Step up | What changes | Should give | Where it shows | State |
 |---|---|---|---|---|---|
 | FL0 | bench | | | | done (BL1ag) |
-| FL1 | own turns | `own_turn_kick_m`, a Gaussian a salvo by rate of turn (Dreyer 300 m, Mk 8 150 m, digital 20 m): the reference's lumped stand-in | a helm-free machine keeps its solution through her own turns, losing only what its own course and speed inputs lag: the speed she loses in a turn (`TurnDragFactor`) reaching a hand-fed Forbes log late (Dreyer: "manually fed to Dumaresq"), a pitometer at once (Mk 8); her course by gyro repeat | her own zigzag, every error on: level 3 above level 1 | next |
+| FL1 | own turns | `own_turn_kick_m`, a Gaussian a salvo by rate of turn (Dreyer 300 m, Mk 8 150 m, digital 20 m): the reference's lumped stand-in | a helm-free machine keeps its solution through her own turns, losing only what its own course and speed inputs lag: the speed she loses in a turn (`TurnDragFactor`) reaching a hand-fed Forbes log late (Dreyer: "manually fed to Dumaresq"), a pitometer at once (Mk 8); her course by gyro repeat | her own zigzag, every error on: level 3 above level 1 | done 2026-11-02 |
 | FL2 | the opening | | a longer base and a better first guess open and straddle sooner | the first 5 min, every error on (on the readings rung 193 v 266 s already; every error on 143 v 141 s): first suspect the open's longest wait, `GunneryOpenS` 120 s | |
 | FL3 | 0 → 1 | the eye (20% of range) → FA 2 m; eye and hand plot → hand plot; open sights 1.15 → telescopic 0.73 mil | ranges found at once, not by long ranging; a tighter pattern | the opening at 6-8 km | |
 | FL4 | 1 → 2 | FA → FQ/FT 4 m; hand plot → Dumaresq and Vickers clock; telescopic 0.73 → 0.35 mil | the clock runs the range on between sparse readings from her course and speed | a crossing or closing target, readings 2 a minute; haze that loses readings | |
@@ -56,3 +56,24 @@ lumped stand-in for something the chain now models?
 - `GunneryOpenS`, `OpenDoubtSteps`: FL2.
 - `GunneryCombat`: the lumped battle factor, goes when fatigue comes (no-lumped-battle-factors).
 - `first_step_m`: doctrine's, per navy's practice; FL3-FL5.
+
+## FL1: own turns (done 2026-11-02)
+
+**Built:** `own_turn_kick_m` gone (retired: a design saved with it still checks). A machine that takes her motion in
+(helm-free, or in true motion) works from its own reckoning of her (`GunnerySystem.Reckon`, `Fc.OwnHat*`): her course
+by the gyro's repeat motor, geared to the table, so at once (the user, 2026-11-02: "Dreyer table is a mechanical
+instrument. Is there any expectation of any sort of lag whatsoever?"); her speed late by the machine's
+`own_speed_lag_s`, a first-order lag [EST: 30 s a Forbes log read and set by hand (the Dreyer, the German plot, the
+Argo), 20 s the Type 92, 3 s a log fed automatically (the AFCT family, the Mk 8), 2 s the Mk 1A, 1 s digital]; her
+place dead reckoned from them. Its readings are taken where it reckons her and its gun orders laid off from where she
+is (`Reckoned`, `Ordered`). The ladder's `own` rung scales the lag. A plain clock takes nothing in and is put out by her
+turns as before. The officer's worth reads his table's speed off hers over the flight and the plot's latency. The
+gyrocompass's own error after a manoeuvre is a research request (`research/REQUESTS.md`, 2026-11-02); if it finds
+nothing substantial, this stays.
+
+**Measured** (QE on QE, 16 kyd, 16 duels, her own zigzag 10° either side every 90 s): every error on, level 1 12.1%,
+level 3 14.6% (the kick's 10.6%), level 5 18.9%; steady, unchanged. A Yamato weaving 20° every minute at 8 km hits
+as with her speed fed exactly (648 v 650 of 969); a Lion in 90° legs every two minutes at 12 km sheds speed and hits
+126 against 156 exactly. **On the way:** a first try gave the course a 2 s lag [EST] too: the Dreyer's zigzag fell
+from 83 to 16% on the readings' rung (2° of bearing at 15 km is 500 m), and at a quarter of the lags it held: a cliff
+too sharp for the error, so something in the chain amplifies a bearing error that size (next: the amplifier).

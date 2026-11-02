@@ -118,7 +118,7 @@ public static class FireControlBlocks
         MaxBearingRateDegS = c.MaxBearingRateDegS ?? 0, AccelTauS = c.AccelTauS ?? 0, AccelSigmaMs2 = c.AccelSigmaMs2 ?? 0, TurnQ = c.TurnQ ?? 0,
         SpeedQ = c.SpeedQ ?? 0, Detect = c.Detect ?? false, RejudgeS = c.RejudgeS ?? 0, LatencyS = N(c.LatencyS, "latency_s"), Q = c.Q ?? 0,
         PriorKn = N(c.PriorKn, "prior_kn"), PriorDeg = N(c.PriorDeg, "prior_deg"), ResidPct = N(c.ResidPct, "resid_pct"),
-        DeflBiasMil = N(c.DeflBiasMil, "defl_bias_mil"), OwnTurnKickM = c.OwnTurnKickM ?? 0, FirstStepM = N(c.FirstStepM, "first_step_m"),
+        DeflBiasMil = N(c.DeflBiasMil, "defl_bias_mil"), OwnSpeedLagS = c.OwnSpeedLagS ?? 0, FirstStepM = N(c.FirstStepM, "first_step_m"),
     };
 
     public static MountTechRow Mount(MountTechInput m)

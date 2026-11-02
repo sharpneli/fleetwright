@@ -23,9 +23,11 @@ public class FireOrderTests(ITestOutputHelper output)
     record Placed(string Design, double BearingDeg, double RangeM, double CourseDeg, double Kn, byte Side);
 
     /// <summary>A world in clear weather with the AI, the ships placed in order (entities 1, 2, ...).</summary>
-    static (World W, AiSystem Ai) Make(params Placed[] ships)
+    static (World W, AiSystem Ai) Make(params Placed[] ships) => Make(Settings, ships);
+
+    static (World W, AiSystem Ai) Make(SimSettings settings, params Placed[] ships)
     {
-        var w = new World(Start, 7, Settings);
+        var w = new World(Start, 7, settings);
         var ai = new AiSystem(w);
         w.Apply(Command.SetWeather(25_000));
         foreach (var s in ships)
@@ -267,8 +269,10 @@ public class FireOrderTests(ITestOutputHelper output)
         // docs/battle/balance.md BL5e (the user: "focus on winning the fight vs focus on sinking as much tonnage as
         // possible"): a dreadnought 7 km off with all her main turrets but one out, opening the range and firing that one
         // back; another 11 km off with all hers; a side fighting to win takes the far one once the near one's turrets have
-        // been seen silent a while, one sinking tonnage the nearest (before BL5e her one turret firing kept her in full)
-        var (w, ai) = Make(new Placed("super_dreadnought", 0, 0, 0, 12, 0), new Placed("dreadnought", 80, 7_000, 140, 15, 1),
+        // been seen silent a while, one sinking tonnage the nearest (before BL5e her one turret firing kept her in full). Hits
+        // do no damage: the choice is the subject, and a hit taking out her last turret makes her another case (FL1 changed
+        // the hits of a battleship manoeuvring under her captain, and one did)
+        var (w, ai) = Make(Settings with { HitsDoDamage = false }, new Placed("super_dreadnought", 0, 0, 0, 12, 0), new Placed("dreadnought", 80, 7_000, 140, 15, 1),
             new Placed("dreadnought", 100, 11_000, 0, 12, 1));
         w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.Finish, 0.1));
         w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.Targets, (double)targets));

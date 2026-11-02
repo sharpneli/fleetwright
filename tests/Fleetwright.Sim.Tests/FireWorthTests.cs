@@ -70,34 +70,40 @@ public class FireWorthTests(ITestOutputHelper output)
         Assert.True(turned > 0, "the turns put it out");
     }
 
-    [Fact]
-    public void Her_gunnery_officer_pares_his_fire_back_while_her_turns_spoil_it()
+    /// <summary>Her own turns cost a helm-free table only what its own-ship inputs bring it late (docs/battle/fc-ladder-check.md
+    /// FL1; the own-turn kick, a draw a salvo, gone): her course comes by the gyro's repeat motor at once, her speed by log.
+    /// A Yamato weaving 20° either way every minute at 8 km hardly loses way, and hits as with her speed fed exactly; a Lion
+    /// in 90° legs every two minutes at 12 km sheds speed in each turn, her Forbes log read and set by hand 30 s late
+    /// [EST], and hits less (8 seeds, measured: 648 v 650; 126 v 156). The officer's paring (BL1p) has nothing to hold for
+    /// in either: what the log's lag costs him is small beside the rest of his doubt.</summary>
+    [Theory]
+    [InlineData("yamato", 8_000, 20.0, 60, false)]
+    [InlineData("lion", 12_000, 90.0, 120, true)]
+    public void Her_own_turns_cost_a_helm_free_table_only_her_speed_fed_late(string ship, double rangeM, double deg, int legS, bool costs)
     {
-        // a Yamato-like weaving 20° either way every minute at 8 km, turning too gently for her helm-free plot to range
-        // again but enough for its own-turn kick: with the officer's judgement she holds her salvos for the steadier
-        // moments, fires fewer shells and hits with more of them (BL1p; 8 seeds: 684 shells and 194 hits against 840 and 133)
         (int Shells, int Hits) Run(SimSettings s)
         {
             int shells = 0, hits = 0;
             for (ulong seed = 1; seed <= 8; seed++)
             {
-                var w = Duel("yamato", "dreadnought", 8_000, 18, s, seed);
-                for (int leg = 0; leg < 12; leg++)
+                var w = Duel(ship, "dreadnought", rangeM, 18, s, seed);
+                for (int leg = 0; leg < 720 / legS; leg++)
                 {
-                    w.Apply(ShipSystem.Course(1, leg % 2 == 0 ? 20 : 340));
-                    w.AdvanceTo(w.Time + 60_000);
+                    w.Apply(ShipSystem.Course(1, leg % 2 == 0 ? deg : 360 - deg));
+                    w.AdvanceTo(w.Time + legS * 1000);
                 }
                 var t = w.Gunnery.TallyOf(1, 0)!.Value;
                 (shells, hits) = (shells + t.Shells, hits + t.Hits);
             }
             return (shells, hits);
         }
-        var judged = Run(Settings);
-        var blind = Run(Settings with { FireWorthSteadyShare = 0, FireWorthFloorPct = 0 });
-        output.WriteLine($"weaving: judged {judged.Shells} shells, {judged.Hits} hits; firing whenever laid {blind.Shells} shells, {blind.Hits} hits");
-        Assert.True(judged.Shells < 0.9 * blind.Shells, "fewer shells");
-        Assert.True((double)judged.Hits / Math.Max(judged.Shells, 1) > 1.2 * blind.Hits / Math.Max(blind.Shells, 1), "a better shell's worth");
-        Assert.True(judged.Hits >= blind.Hits, "and as many hits");
+        var fed = Run(Settings);
+        var exact = Run(Settings with { GunneryErrors = GunneryErrorScale.Parse("own=0") });
+        output.WriteLine($"{ship}, {deg}° legs every {legS} s: {fed.Hits} hits of {fed.Shells} with her speed fed late, {exact.Hits} of {exact.Shells} exactly");
+        if (costs)
+            Assert.True(fed.Hits < 0.9 * exact.Hits, "her speed shed in the turns reaches the table late");
+        else
+            Assert.InRange(fed.Hits, 0.95 * exact.Hits, 1.05 * exact.Hits);
     }
 
     [Fact]

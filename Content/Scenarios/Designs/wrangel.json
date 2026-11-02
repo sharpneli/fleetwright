@@ -385,7 +385,7 @@
     "prior_deg": 20,
     "resid_pct": 1.5,
     "defl_bias_mil": 2.5,
-    "own_turn_kick_m": 0,
+    "own_speed_lag_s": 0,
     "first_step_m": 366,
     "mass_t": 0.8,
     "crew": 4,

@@ -538,7 +538,9 @@ public enum TrackerKind : byte
 /// a hard turn, a fifth of her speed in a minute); whether it opens up on a manoeuvre (two large
 /// surprises in a row: the Mk 1A's "target just turned"); how often a judgement looks at the target again, s; the eye's
 /// first guess at the target's speed and course it starts from (1 sigma); the residual ballistic bias before spotting, %
-/// of range, and in deflection, mil; the extra error while own ship turns, m; the first ladder step, m. No salvo-to-salvo
+/// of range, and in deflection, mil; for a machine that takes own ship's motion in (helm-free, or in true motion), how
+/// late her speed reaches it, s, a first-order lag (a Forbes log read and set by hand, a pitometer's own response: her course
+/// comes by the gyro's repeat motor, geared, at once; docs/battle/fc-ladder-check.md FL1); the first ladder step, m. No salvo-to-salvo
 /// number: each of its parts is drawn where it arises (docs/battle/balance.md BL1ac). A tech block's (<see cref="FireControlBlocks"/>).</summary>
 public readonly record struct ComputerRow
 {
@@ -558,7 +560,7 @@ public readonly record struct ComputerRow
     public double PriorDeg { get; init; }
     public double ResidPct { get; init; }
     public double DeflBiasMil { get; init; }
-    public double OwnTurnKickM { get; init; }
+    public double OwnSpeedLagS { get; init; }
     public double FirstStepM { get; init; }
 }
 

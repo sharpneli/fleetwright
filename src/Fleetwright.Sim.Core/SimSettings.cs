@@ -862,13 +862,9 @@ public sealed record SimSettings
     /// she has turned this many degrees from it, its rates are stale and its battery firing for effect goes back to ranging,
     /// her new course set (docs/battle/balance.md BL1o: the Mk IV kept the enemy's relative direction "within a few degrees"
     /// during own turns, research fire-control-research/computing.md) [EST]. A machine that takes her motion in isn't put
-    /// out by her turns (BL1t): their cost is the own-turn kick, salvo by salvo.</summary>
+    /// out by her turns (BL1t): their cost is what their own course and speed inputs lag (docs/battle/fc-ladder-check.md FL1).</summary>
     public double OwnCourseStaleDeg { get; init; } = 5;
 
-    /// <summary>The rate of turn, °/s, a computer's own-turn kick (<c>own_turn_kick_m</c>) is given at: the reference's
-    /// turns (fire_control_ref.py, 1°/s). A salvo's kick is that times her rate of turn over this, 1 sigma, in range and in
-    /// line (docs/battle/balance.md BL1m: a threshold at 0.2°/s gave a station keeper's every correction the whole kick).</summary>
-    public double OwnTurnKickYawDegS { get; init; } = 1;
 
     /// <summary>The gunnery officer's worth of a salvo (docs/battle/balance.md BL1p): he judges its chance a shell from what
     /// he knows (his aim's doubt, her own motion, the pattern, the target's hitting space as he sees her). While her turn
@@ -2722,7 +2718,7 @@ public static class Experience
 /// <summary>The fire-control chain's errors, a scale on each source (<see cref="SimSettings.GunneryErrors"/>): the
 /// rangefinders' and the eye's readings (their wander, bias and bearing); the eye's first guess at her course and speed;
 /// the residual ballistic bias in range and line; the laying (the layer's error, the roll's and helm's slips, the own-turn
-/// kick); each shell's dispersion about the salvo's centre; the spotter's judgement (over or
+/// kick, gone: FL1); own ship's course and speed as a machine fed them has them (their lags, FL1); each shell's dispersion about the salvo's centre; the spotter's judgement (over or
 /// short, and the line).</summary>
 public sealed record GunneryErrorScale
 {
@@ -2730,11 +2726,12 @@ public sealed record GunneryErrorScale
     public double Prior { get; init; } = 1;
     public double Bias { get; init; } = 1;
     public double Laying { get; init; } = 1;
+    public double Own { get; init; } = 1;
     public double Dispersion { get; init; } = 1;
     public double Spotting { get; init; } = 1;
 
-    /// <summary>"all=0,bias=1": each named source set, in order (all, readings, prior, bias, laying, dispersion,
-    /// spotting).</summary>
+    /// <summary>"all=0,bias=1": each named source set, in order (all, readings, prior, bias, laying, own,
+    /// dispersion, spotting).</summary>
     public static GunneryErrorScale Parse(string text)
     {
         var e = new GunneryErrorScale();
@@ -2744,21 +2741,22 @@ public sealed record GunneryErrorScale
             double v = kv.Length > 1 ? double.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture) : 1;
             e = kv[0].ToLowerInvariant() switch
             {
-                "all" => new GunneryErrorScale { Readings = v, Prior = v, Bias = v, Laying = v, Dispersion = v, Spotting = v },
+                "all" => new GunneryErrorScale { Readings = v, Prior = v, Bias = v, Laying = v, Own = v, Dispersion = v, Spotting = v },
                 "readings" => e with { Readings = v },
                 "prior" => e with { Prior = v },
                 "bias" => e with { Bias = v },
                 "laying" => e with { Laying = v },
+                "own" => e with { Own = v },
                 "dispersion" => e with { Dispersion = v },
                 "spotting" => e with { Spotting = v },
-                _ => throw new ArgumentException($"--errors: no source '{kv[0]}' (all, readings, prior, bias, laying, dispersion, spotting)"),
+                _ => throw new ArgumentException($"--errors: no source '{kv[0]}' (all, readings, prior, bias, laying, own, dispersion, spotting)"),
             };
         }
         return e;
     }
 
     public override string ToString() => FormattableString.Invariant(
-        $"readings {Readings:G}, prior {Prior:G}, bias {Bias:G}, laying {Laying:G}, dispersion {Dispersion:G}, spotting {Spotting:G}");
+        $"readings {Readings:G}, prior {Prior:G}, bias {Bias:G}, laying {Laying:G}, own {Own:G}, dispersion {Dispersion:G}, spotting {Spotting:G}");
 }
 
 public sealed record FireDiscipline

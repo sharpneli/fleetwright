@@ -490,7 +490,7 @@
     "prior_deg": 25,
     "resid_pct": 2,
     "defl_bias_mil": 3,
-    "own_turn_kick_m": 0,
+    "own_speed_lag_s": 0,
     "first_step_m": 366,
     "mass_t": 0.2,
     "crew": 3,

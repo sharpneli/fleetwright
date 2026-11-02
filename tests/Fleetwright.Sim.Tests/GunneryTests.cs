@@ -105,8 +105,9 @@ public class GunneryTests(ITestOutputHelper output)
     /// plain clock's 5°) and the readings' errors alone, level 1's hand plot is put out by each turn and ranges again where
     /// level 3's Dreyer, fed her own course and speed, keeps its solution (measured 15 v 81%); and opening fire, level 3's
     /// 4 m rangefinder (the FA's 2 m reads her range some 2.7 times worse at the range) straddles her sooner (193 v 266 s).
-    /// With every error on, both are open (BL1ag): the Dreyer's own-turn kick, one lumped draw a salvo, takes its zigzag
-    /// from 18 to 11% (level 1 14%), and both straddle at about 140 s.</summary>
+    /// With every error on, the zigzag shows it too since fc-ladder-check.md FL1 took the own-turn kick (one lumped draw a
+    /// salvo, which took level 3 to 10.6%) for the table's own reckoning (level 1 12.1%, level 3 14.6%); the opening is
+    /// FL2's (both straddle at about 140 s).</summary>
     [Fact]
     public void Where_the_levels_differ_level_3_does_better()
     {

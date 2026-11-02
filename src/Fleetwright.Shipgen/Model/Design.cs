@@ -980,7 +980,7 @@ public sealed record ComputerTechInput
     public double? PriorDeg { get; init; }
     public double? ResidPct { get; init; }
     public double? DeflBiasMil { get; init; }
-    public double? OwnTurnKickM { get; init; }
+    public double? OwnSpeedLagS { get; init; }
     public double? FirstStepM { get; init; }
     public double? MassT { get; init; }
     public double? Crew { get; init; }
