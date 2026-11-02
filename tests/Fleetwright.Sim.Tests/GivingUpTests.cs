@@ -294,6 +294,7 @@ public class ReadByTheEnemyTests(ITestOutputHelper output)
         Assert.True(pic.Out(1));
         Assert.Equal(0, store.Combat.Engaged(store.SlotOf(2)));
         Assert.False(Ai.Commanders.Aims.Afloat(store, store.SlotOf(1)));
+        w.AdvanceTo(w.Time + 30_000);   // the shells already in the air come down (a salvo fired as she struck may hit)
         int hits = w.Ships.Store.Combat.Condition(store.SlotOf(1)).Hits;
         w.AdvanceTo(w.Time + Settings.EncounterCloseMs + 120_000);
         Assert.Equal(hits, w.Ships.Store.Combat.Condition(store.SlotOf(1)).Hits);

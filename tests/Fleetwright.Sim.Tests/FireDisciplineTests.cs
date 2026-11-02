@@ -169,8 +169,8 @@ public class FireDisciplineTests(ITestOutputHelper output)
         // laid point moved 67 and 192 m on average, and up to 700 m. Opening once the track is good enough to range from
         // (2026-10-18, not a fixed two minutes) gives Lion a less settled track when she first hits: 52 m, so 60 was the
         // bound. Since BL1z (2026-11-02, the user's decision) the guns follow the computer as its readings move it (the
-        // clock's range cuts; the spots' correction held on it), so the lay moves with the rangetakers' wander: 92 m by eye
-        // at 3 km and 89 m at 15 km on average, a spot's step about it; 120 is the bound
+        // clock's range cuts; the spots' correction held on it), so the lay moves with the computer's solution: since BL1aa
+        // (errors drawn once a target) 98 m by eye at 3 km and 83 m at 15 km on average; 120 is the bound
         var cases = new (ShipClass Shooter, ShipClass Target, int Battery, double RangeM, double Bearing)[]
         {
             (Fleet.Get("mikasa").Class!, Fleet.Scenario("aurora"), -1, 3_000, 90),

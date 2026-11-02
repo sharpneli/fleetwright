@@ -774,9 +774,9 @@ public sealed record SimSettings
     public double BracketFloorM { get; init; } = 92;
 
     /// <summary>Firing for effect, the spots' running mean never steps less than this, m [EST: 50 yd, the RN's spotting
-    /// corrections in fifties and hundreds]: the rangetakers' error wanders over minutes (`RangefinderWanderTauS`) and the
-    /// spots must follow it (BL1y: at 23 m the mean lagged a closing range by 50-250 m; at 92 it rocked across a target
-    /// smaller than its step).</summary>
+    /// corrections in fifties and hundreds]: the spots must follow what moves under them, a plain clock's drift on a crossing
+    /// target the most (BL1y: at 23 m the mean lagged a closing range by 50-250 m; at 92 it rocked across a target smaller
+    /// than its step).</summary>
     public double SpotStepFloorM { get; init; } = 46;
 
     /// <summary>Firing for effect, the range is lost only after this many calls the same way in a row, at least [EST: by
@@ -815,17 +815,11 @@ public sealed record SimSettings
 
     /// <summary>Rangefinding (fire-control-research.md §3.2): a reading's unit of error is the optics' (their acuity,
     /// rigid base and flex: the fit's tech block, F3); an instrument's own bias after calibration, in units of error. Its
-    /// bearing's error is its post's (SightModel.BearingSigmaRad, fire-control.md F5). The rangetaker's own error is no
-    /// fresh draw each reading: the same man reads all through a fight, so his error wanders about the bias as the eye's
-    /// does (his eyes tiring, the image's edges judged a little differently), with this time constant, s [EST] (the user,
-    /// 2026-10-18: a fresh error each reading would be a different man at each). A coincidence set's two half-images are
-    /// brought into line afresh each reading, a vernier setting the eye scatters on and the image shaking as it's caught,
-    /// so this share of its man's error (of the sigma) is fresh and the wander √(1 - share²); a stereo set's fused
-    /// picture holds his error, all wander [EST] (the user, 2026-10-18: the kinds differing makes the choice matter).</summary>
+    /// bearing's error is its post's (SightModel.BearingSigmaRad, fire-control.md F5). The rangetaker's own error is
+    /// drawn once as he's put on a target and holds for her: the same man reads her all through (the user, 2026-10-18, a
+    /// fresh error each reading would be a different man at each; 2026-11-02, "once per fresh target": a wander moved the
+    /// guns as much).</summary>
     public double RangefinderBiasUnits { get; init; } = 1.5;
-    public double RangefinderWanderTauS { get; init; } = 300;
-    public double RangefinderFreshCoincidence { get; init; } = 0.5;
-    public double RangefinderFreshStereo { get; init; } = 0;
 
     /// <summary>The air on a rangefinder (fire-control.md F5c): a rangetaker reads at his trained acuity while the target's
     /// contrast through the instrument is this many times the eye's threshold (the sighting model's margin) or more; under
@@ -848,14 +842,13 @@ public sealed record SimSettings
     public double RangingCoatedShare { get; init; } = 0.8;
 
     /// <summary>A range by eye (fire-control-research.md §3.1: "σ ≈ 20% of range untrained, 10-15% practised", the whole
-    /// error of one estimate, a trained crew's 12.5%): a man's own bias, the same in every estimate he makes, and a wander
-    /// about it that changes slowly, with this time constant, s [EST], not a fresh draw each reading (the user,
-    /// 2026-10-18: spotting walks out a steady error, no walking follows a fresh 19% a minute). Together √(0.10² + 0.075²)
-    /// = 12.5%; battle (the combat factor) and the crew (its Operator: green ×2) multiply the wander. Its bearing's error,
-    /// mil.</summary>
+    /// error of one estimate, a trained crew's 12.5%): a man's own bias, the same in every estimate he makes, and his
+    /// misjudgement of this target, drawn once as he's put on her (the user, 2026-10-18: spotting walks out a steady
+    /// error, no walking follows a fresh 19% a minute; 2026-11-02: once per fresh target). Together √(0.10² + 0.075²) =
+    /// 12.5%; battle (the combat factor) and the crew (its Operator: green ×2) multiply the misjudgement. Its bearing's
+    /// error, mil.</summary>
     public double EyeRangeShare { get; init; } = 0.075;
     public double EyeRangeBiasShare { get; init; } = 0.10;
-    public double EyeWanderTauS { get; init; } = 300;
     public double EyeBearingMil { get; init; } = 5;
 
     /// <summary>A plain computer's (one that doesn't take her motion in) Dumaresq has her course set on it by hand: once

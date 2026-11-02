@@ -96,8 +96,10 @@ public sealed class GunnerySystem : IWorldSystem
         public long StartMs, OpenMs, TrackMs;
         public bool Tracking, SalvoPending;
         public FcTracker Tracker;
-        /// <summary>When a judgement looks at the target again.</summary>
+        /// <summary>When a judgement looks at the target again, and the eye's misjudgement of her speed and course, in the
+        /// computer's priors' sigmas, drawn once a target: each look at her misjudges her the same way.</summary>
         public long JudgeMs;
+        public double GuessSpeedZ, GuessCourseZ;
         public double BiasR, BiasD, CorrR, CorrD, SpotHeightM;
         /// <summary>Its fire discipline (F6): the phase, the spots' bracket, and the computer's doubt of the range rate
         /// along the line of fire (m/s: the bracket widens at it).</summary>
@@ -176,8 +178,12 @@ public sealed class GunnerySystem : IWorldSystem
     {
         public int Eye;
         public InstrumentSupport Support;
-        public double X, Y, HeightM, BaseM, BearingMil, Bias, Wander;
-        public long NextMs, WanderMs;
+        public double X, Y, HeightM, BaseM, BearingMil;
+        /// <summary>Its errors, drawn once when it's put on a target (the user, 2026-11-02: "once per fresh target"; a
+        /// draw each reading, or a wander, moved the guns with them): the instrument's own bias, its man's misjudgement of
+        /// her range and of her bearing, each in sigmas.</summary>
+        public double Bias, RangeZ, BearingZ;
+        public long NextMs;
     }
 
     /// <summary>Whether a mount's guns are awash in the world's sea (docs/battle/balance.md BL1f, <see cref="RollSea.Awash"/>):
@@ -468,6 +474,7 @@ public sealed class GunnerySystem : IWorldSystem
             var r = stream.Derive((ulong)f).Derive((ulong)gen);
             fc.BiasR = r.NextGaussian();
             fc.BiasD = r.NextGaussian();
+            (fc.GuessSpeedZ, fc.GuessCourseZ) = (r.NextGaussian(), r.NextGaussian());
             AddSensors(ref fc, f, cls, row, store.Combat.Condition(slot), now, ref r);
             store.Combat.Engage(slot, b, target);
         }
@@ -586,8 +593,7 @@ public sealed class GunnerySystem : IWorldSystem
         for (int k = 0; k < n; k++)
         {
             ref var s = ref sensors[f * MaxSensors + k];
-            s.Bias = r.NextGaussian();
-            (s.Wander, s.WanderMs) = (r.NextGaussian(), now);
+            (s.Bias, s.RangeZ, s.BearingZ) = (r.NextGaussian(), r.NextGaussian(), r.NextGaussian());
             // put on her at once, its first reading now (the user, 2026-10-27: one at a random point of its cycle left a
             // layer by eye looking at a ship alongside for up to a minute); its own rate from there
             s.NextMs = now;
@@ -831,16 +837,11 @@ public sealed class GunnerySystem : IWorldSystem
             else
                 (sr, bias, sb) = (settings.EyeRangeShare * range * crew.Operator * combat * st, s.Bias * settings.EyeRangeBiasShare * range,
                     s.BearingMil * FireControl.Mil);
-            // the same man reads the same ship a minute on and misjudges her much as he did, through a rangefinder or by
-            // eye: his error wanders slowly about his own bias (the user, 2026-10-18)
-            double tau = Ranges(optics, s) ? settings.RangefinderWanderTauS : settings.EyeWanderTauS;
-            double rho = Math.Exp(-Math.Max(now - s.WanderMs, 0) / (1000 * tau));
-            (s.Wander, s.WanderMs) = (rho * s.Wander + Math.Sqrt(1 - rho * rho) * r.NextGaussian(), now);
-            // but a coincidence set's halves are brought into line afresh each reading: a share of his error is fresh
-            double fresh = !Ranges(optics, s) ? 0 : optics.Kind == InstrumentKind.Coincidence ? settings.RangefinderFreshCoincidence : settings.RangefinderFreshStereo;
-            double err = fresh > 0 ? Math.Sqrt(1 - fresh * fresh) * s.Wander + fresh * r.NextGaussian() : s.Wander;
+            // the same man reads the same ship all through and misjudges her the same way, through a rangefinder or by eye:
+            // his error drawn once as he was put on her, scaled by what he reads through now (the range, the air, his
+            // stress); never a fresh draw each reading, nor a wander (the user, 2026-11-02: each moved the guns)
             double ek = settings.GunneryErrors.Readings;
-            double zr = Math.Max(range + ek * bias + ek * sr * err, 100), zb = brg + double.RadiansToDegrees(ek * sb * r.NextGaussian());
+            double zr = Math.Max(range + ek * bias + ek * sr * s.RangeZ, 100), zb = brg + double.RadiansToDegrees(ek * sb * s.BearingZ);
             var (z, r11, r12, r22) = Track.Reading(at, zr, zb, sr, sb);
             if (fc.PendCount == PendingCap)
                 PopReading(ref fc, f, target, now, ship.Position, ownV);   // the computer's queue is full: the oldest goes in now
@@ -868,8 +869,7 @@ public sealed class GunnerySystem : IWorldSystem
         if (computer.Tracker == TrackerKind.Judgement && sees && now >= fc.JudgeMs)
         {
             // a sailor looks at her again: a fresh guess at her course and speed
-            var rg = stream.Derive((ulong)f).Derive((ulong)fc.Generation).Derive(0xE7Fu).Derive((ulong)now);
-            fc.Tracker.Rejudge(Guess(computer, target.Position, target.Forward * target.Speed, ref rg, settings.GunneryErrors.Prior));
+            fc.Tracker.Rejudge(Guess(computer, fc, target.Position, target.Forward * target.Speed));
             fc.JudgeMs = now + (long)(computer.RejudgeS * 1000);
         }
 
@@ -1133,9 +1133,7 @@ public sealed class GunnerySystem : IWorldSystem
         var computer = fc.Fit.Computer;
         if (!fc.Tracking)
         {
-            var rg = stream.Derive((ulong)f).Derive((ulong)fc.Generation).Derive(0xE7Eu);
-            var truth = target.Forward * target.Speed;
-            fc.Tracker = FcTracker.Start(computer, r, Guess(computer, target.Position, truth, ref rg, settings.GunneryErrors.Prior), FcTracker.GuessSigma(computer, target.Speed));
+            fc.Tracker = FcTracker.Start(computer, r, Guess(computer, fc, target.Position, target.Forward * target.Speed), FcTracker.GuessSigma(computer, target.Speed));
             (fc.Tracking, fc.TrackMs, fc.OpenMs) = (true, now, now + (long)(settings.GunneryOpenS * 1000));
             fc.JudgeMs = now + (long)(computer.RejudgeS * 1000);
         }
@@ -1164,11 +1162,12 @@ public sealed class GunnerySystem : IWorldSystem
         return true;
     }
 
-    /// <summary>The eye's guess at a target's velocity: its speed and course, each off by the computer's prior (1 sigma).</summary>
-    static Vec3d Guess(in ComputerRow c, Vec3d position, Vec3d velocity, ref RandomStream r, double prior = 1)
+    /// <summary>The eye's guess at a target's velocity: its speed and course, each off by the battery's misjudgement of her
+    /// (drawn once a target) in the computer's priors.</summary>
+    Vec3d Guess(in ComputerRow c, in Fc fc, Vec3d position, Vec3d velocity)
     {
-        double speed = velocity.Length, course = speed > 1e-6 ? Earth.Heading(position, velocity) : 0;
-        double ds = r.NextGaussian() * c.PriorKn * Handling.MsPerKnot * prior, dc = r.NextGaussian() * c.PriorDeg * prior;
+        double speed = velocity.Length, course = speed > 1e-6 ? Earth.Heading(position, velocity) : 0, prior = settings.GunneryErrors.Prior;
+        double ds = fc.GuessSpeedZ * c.PriorKn * Handling.MsPerKnot * prior, dc = fc.GuessCourseZ * c.PriorDeg * prior;
         return Earth.Forward(position, course + dc) * Math.Max(speed + ds, 0);
     }
 
