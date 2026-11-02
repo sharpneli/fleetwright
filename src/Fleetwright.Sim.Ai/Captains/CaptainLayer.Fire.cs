@@ -18,8 +18,9 @@ namespace Fleetwright.Sim.Ai.Captains;
 /// <see cref="SimSettings.FireSizeShare"/> for each step of her type's size (a boat before a battleship at much her
 /// range, never one alongside). It keeps its target until it's unseen for <see cref="SimSettings.FireLostMs"/> or past
 /// <see cref="SimSettings.FireKeepShare"/> of its reach, or another it can fire on where it can't, or is nearer so than
-/// <see cref="SimSettings.FireSwitchShare"/> of it (an unknown's size taken as the held one's at most, or each ship coming
-/// out of the haze would take the fire off the one held): no flicking between targets, as each shift starts the track again.
+/// to be worth the shift (an unknown's size taken as the held one's at most, or each ship coming out of the haze would take
+/// the fire off the one held): a shift starts the track and the ranging again, so over <see cref="SimSettings.FireHorizonS"/>
+/// the new one's fire counts from when she'd be ranged (docs/battle/balance.md BL1ae).
 /// A battery, main or secondary, takes none it'd hit with fewer than doctrine's <see cref="DoctrineField.HitFloor"/> of its
 /// shells nor whose round would put her out with less than its <see cref="DoctrineField.RoundFloor"/> (the matchup's
 /// estimates), and drops one at that much less range: no splashing at the edge of its reach, no shells on what they can't
@@ -850,7 +851,7 @@ public sealed partial class CaptainLayer
         bool keep = ci >= 0 && !pic[ci].Out && now - pic[ci].SeenMs <= s.FireLostMs && Opens(ctx, own, pic[ci], pic[ci].Position);
         if (keep && lines.GunsFoul(ctx, own, pic.EstimateAt(ci, now, s).Position))
             keep = false;   // a friend in the way: not while he's there
-        double curBy = 0;
+        double curBy = 0, curRange = 0;
         int curRank = 0, curCan = 0;
         double curDone = keep ? pic[ci].DoneFor(now, s) : 0;
         if (keep && curDone >= cease)
@@ -858,7 +859,7 @@ public sealed partial class CaptainLayer
         if (keep)
         {
             var (q, v, _) = pic.EstimateAt(ci, now, s);
-            double curRange = (q - p).Length;
+            curRange = (q - p).Length;
             // held a little further than taken (by range, and by the hit floor at that much less range): no flicking at the edge
             keep = curRange <= reach * s.FireKeepShare / s.FireReachShare &&
                    (gun == null || WorthOn(ctx, gun, own.Side, pic[ci], curRange * s.FireReachShare / s.FireKeepShare, hitFloor, floor));
@@ -871,7 +872,7 @@ public sealed partial class CaptainLayer
         }
 
         int best = 0, bestRank = 0, bestCan = -1;
-        double bestBy = double.MaxValue;
+        double bestBy = double.MaxValue, bestRange = 0;
         for (int k = 0; k < candCount; k++)
         {
             if (candRange[k] > reach || candDone[k] >= cease)
@@ -885,7 +886,7 @@ public sealed partial class CaptainLayer
                         (Worth(candDone[k]) * candMatters[k] * candWant[k]);
             // a foul line and the hit floor only rule one out: asked only of one that would be the best yet (they're the cost)
             if ((can > bestCan || by < bestBy) && (gun == null || WorthOn(ctx, gun, own.Side, pic[candPic[k]], candRange[k], hitFloor, floor)) && !Foul(ctx, own, k))
-                (best, bestCan, bestRank, bestBy) = (candEntity[k], can, rank, by);
+                (best, bestCan, bestRank, bestBy, bestRange) = (candEntity[k], can, rank, by, candRange[k]);
         }
         if (!keep)
             return best;
@@ -896,7 +897,22 @@ public sealed partial class CaptainLayer
         // an unknown's smaller size is a guess: against the one held she counts as its size
         if (bestRank < curRank && bestRank == Rank(ShipType.Unknown))
             bestBy *= Sized(s, curRank) / Sized(s, bestRank);
-        return bestBy < s.FireSwitchShare * curBy ? best : current;
+        // a shift costs the ranging (BL1ae): over his horizon her fire counts from when she'd be ranged, the one held's from
+        // when it's ranged (now, firing for effect)
+        double h = s.FireHorizonS, fresh = RangingS(ctx, slot, b, bestRange);
+        double left = ctx.Ships.Combat.FiresForEffect(slot, b) ? 0
+            : Math.Max(RangingS(ctx, slot, b, curRange) - (now - ctx.Ships.Combat.Ranging(slot, b).StartMs) / 1000.0, 0);
+        return bestBy * (h - Math.Min(left, h)) < curBy * (h - fresh) ? best : current;
+    }
+
+    /// <summary>The time his battery would take to range a target at a range, s (docs/battle/balance.md BL1ae): its track's
+    /// settling and its cycles ranging, as its own record has them (the priors before it has one), at her range's cycle.</summary>
+    static double RangingS(in AiContext ctx, int slot, int b, double rangeM)
+    {
+        var s = ctx.Settings;
+        var rec = ctx.Ships.Combat.Ranging(slot, b);
+        var (open, cycles) = rec.Ranged > 0 ? (rec.OpenS, rec.Cycles) : (s.RangingOpenPriorS, s.RangingCyclesPrior);
+        return open + cycles * ctx.World.Gunnery.RangingCycleS(ctx.Ships.Combat.Loadout(slot), b, rangeM);
     }
 
     /// <summary>How much his side's aim wants a contact as a target (docs/battle/aims.md A3; the user: reasonable about

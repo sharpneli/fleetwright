@@ -397,7 +397,8 @@ public sealed class GunnerySystem : IWorldSystem
 
     public FireDiscipline Discipline(int side) => settings.FireDisciplines[disciplines[side & 255]];
 
-    readonly Dictionary<(int Table, double Elevation), double> reach = [];
+    // filled as the captains ask, on the AI's workers (concurrent: a captain's miss mustn't tear another's read)
+    readonly System.Collections.Concurrent.ConcurrentDictionary<(int Table, double Elevation), double> reach = new();
 
     /// <summary>How far a ship's battery reaches with its loadout's lead shell: its range table's fall at its mounts'
     /// highest elevation from a muzzle 10 m up, m (worked out once per gun and elevation).</summary>
@@ -411,9 +412,24 @@ public sealed class GunnerySystem : IWorldSystem
         if (!reach.TryGetValue((table, top), out double r))
         {
             var t = shells.Ballistics[table];
-            reach[(table, top)] = r = t.Fall(Math.Min(top, t.MaxElevationDeg), 10).Range;
+            reach.TryAdd((table, top), r = t.Fall(Math.Min(top, t.MaxElevationDeg), 10).Range);
         }
         return r;
+    }
+
+    /// <summary>A ship's battery's ranging cycle at a range, s (docs/battle/balance.md BL1ae): ranging, each salvo waits
+    /// for the last one's fall to be spotted, its flight with the spot's delay and the wait's margin, or its guns' reload
+    /// if that's longer; its lead shell's range table from a muzzle 10 m up (its reach's flight past it).</summary>
+    public double RangingCycleS(Loadout lo, int battery, double rangeM)
+    {
+        var cls = lo.Class;
+        double reload = 0;
+        foreach (int m in cls.Links(cls.Batteries[battery].Mounts))
+            reload = Math.Max(reload, cls.Mounts[m].ReloadS);
+        var t = shells.Ballistics[shells.TableOf(lo, battery)];
+        double e = t.ElevationFor(Math.Min(rangeM, ReachM(lo, battery)), 10);
+        double tof = double.IsNaN(e) ? 0 : t.Fall(e, 10).Tof;
+        return Math.Max(reload, tof + (settings.SpotDelayMs + settings.RangingWaitMarginMs) / 1000.0);
     }
 
     public void Apply(World world, in Command c)
@@ -491,6 +507,7 @@ public sealed class GunnerySystem : IWorldSystem
             (fc.GuessSpeedZ, fc.GuessCourseZ) = (r.NextGaussian(), r.NextGaussian());
             AddSensors(ref fc, f, cls, row, store.Combat.Condition(slot), now, ref r);
             store.Combat.Engage(slot, b, target);
+            store.Combat.Began(slot, b, now);
         }
         ever = true;
         if (store[slot].Tier != ClockTier.Fine && store[slot].OnRails)
@@ -1797,7 +1814,16 @@ public sealed class GunnerySystem : IWorldSystem
             if (sign == FireControl.Sign.Straddle || crossed)
             {
                 if (fc.EffectMs < 0)
+                {
                     fc.EffectMs = now;
+                    // its record (BL1ae): how long its track took to settle, and how many of its cycles it ranged
+                    if (ships.Store.SlotOf(fc.Shooter) is int rs and >= 0 && fc.OpenMs >= fc.StartMs)
+                    {
+                        var lo = ships.Store.Combat.Loadout(rs);
+                        ships.Store.Combat.Ranged(rs, fc.Battery, (fc.OpenMs - fc.StartMs) / 1000.0,
+                            (now - fc.OpenMs) / 1000.0 / RangingCycleS(lo, fc.Battery, fc.RangeM));
+                    }
+                }
                 double width = sign == FireControl.Sign.Straddle ? fc.Bracket.HiAt(now, fc.DriftMs) - fc.Bracket.LoAt(now, fc.DriftMs) : fc.OverAt - fc.ShortAt;
                 if (sign != FireControl.Sign.Straddle)
                     fc.CorrR = 0.5 * (fc.OverAt + fc.ShortAt);

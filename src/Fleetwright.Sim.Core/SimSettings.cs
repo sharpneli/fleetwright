@@ -935,7 +935,7 @@ public sealed record SimSettings
     /// <summary>Fire at will: a battery takes contacts in sight within its reach (the range table at its highest
     /// elevation) times <see cref="FireReachShare"/>, so it tracks one a little before it can fire, and keeps one to
     /// <see cref="FireKeepShare"/> of it (no flicking at the edge); it keeps its target until the contact is unseen for
-    /// <see cref="FireLostMs"/>, or another is nearer than <see cref="FireSwitchShare"/> of its range. Nearer is the range
+    /// <see cref="FireLostMs"/>, or another is worth the shift (<see cref="FireHorizonS"/>). Nearer is the range
     /// she'll be at <see cref="FireLeadS"/> on, as the picture has her moving [EST: a destroyer's run of 1.5-2 km], so
     /// one closing comes before one turning away (Tsushima, 2026-10-18: the line kept hammering a destroyer already
     /// running while the others closed); and each other ship's battery of the same kind already on her counts as
@@ -944,7 +944,16 @@ public sealed record SimSettings
     public double FireReachShare { get; init; } = 1.1;
     public double FireKeepShare { get; init; } = 1.25;
     public long FireLostMs { get; init; } = 30_000;
-    public double FireSwitchShare { get; init; } = 0.7;
+
+    /// <summary>A shift of target costs the ranging (docs/battle/balance.md BL1ae): the captain weighs each target's fire
+    /// over this horizon, s, the new one's less the time to range her [EST: ten minutes, in which the ranges change enough
+    /// to choose again]; the time to range her is the battery's own record (its track's settling, its cycles ranging), and
+    /// before it has one these: the settling, s [EST: the gunnery's open wait is 120 s at most; the BL1ad ladder's Lion
+    /// at 15 km fired her first salvo about a minute in], and the cycles [S: practice hit from the 2nd to the 5th salvo,
+    /// fire-control-research.md §10].</summary>
+    public double FireHorizonS { get; init; } = 600;
+    public double RangingOpenPriorS { get; init; } = 60;
+    public double RangingCyclesPrior { get; init; } = 3.5;
     public double FireLeadS { get; init; } = 120;
     public double FireCrowdShare { get; init; } = 0.25;
 

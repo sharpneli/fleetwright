@@ -36,6 +36,12 @@ public struct LauncherState
 /// (rad), and the doubt of the residual bias left, the same; none until an engagement has ended firing for effect.</summary>
 public readonly record struct CarriedCorrection(bool Known, double RangeShare, double LineRad, double RangeDoubtShare, double LineDoubtRad);
 
+/// <summary>A battery's own record of ranging (docs/battle/balance.md BL1ae), for its captain's cost of a shift: when
+/// its engagement began (ms; -1 none), and over the engagements it has brought to fire for effect (how many), the mean
+/// time its track took to settle enough to open fire, s, and the mean time it ranged after, in its ranging cycles (a
+/// salvo's flight, the spot's delay and the wait's margin, or its reload if longer: a ladder's salvos go in one).</summary>
+public readonly record struct RangingRecord(long StartMs, int Ranged, double OpenS, double Cycles);
+
 /// <summary>Each ship's combat columns beside its <see cref="ShipStore"/> (docs/battle/fighting.md "Where it lives"):
 /// its mounts' state, made at spawn and sized by the class, how many of its batteries are engaged and on what. Reached through
 /// <see cref="ShipState"/>'s accessors and the gunnery system; and its condition (the damage system's, 4.3a).</summary>
@@ -56,6 +62,8 @@ public sealed class CombatStore
     bool[]?[] effect = [];
     // by battery, what its spots learnt of its own ballistics, carried to its next target (the gunnery's, BL1ad)
     CarriedCorrection[]?[] carried = [];
+    // by battery, its record of ranging (the gunnery's, for the captains: BL1ae)
+    RangingRecord[]?[] ranging = [];
     // by mount, whether it's an illuminating mount (docs/battle/night.md Q5): out of its battery's salvos, firing star shell
     bool[]?[] illuminating = [];
     int[] engaged = [];
@@ -85,6 +93,7 @@ public sealed class CombatStore
             Array.Resize(ref sees, n);
             Array.Resize(ref effect, n);
             Array.Resize(ref carried, n);
+            Array.Resize(ref ranging, n);
             Array.Resize(ref illuminating, n);
             Array.Resize(ref engaged, n);
             Array.Resize(ref moved, n);
@@ -137,6 +146,10 @@ public sealed class CombatStore
             carried[slot] = new CarriedCorrection[cls.Batteries.Length];
         else
             Array.Clear(cw);
+        var rw = ranging[slot];
+        if (rw == null || rw.Length != cls.Batteries.Length)
+            ranging[slot] = rw = new RangingRecord[cls.Batteries.Length];
+        rw.AsSpan().Fill(new RangingRecord(-1, 0, 0, 0));
         var il = illuminating[slot];
         if (il == null || il.Length != cls.Mounts.Length)
             illuminating[slot] = new bool[cls.Mounts.Length];
@@ -280,6 +293,21 @@ public sealed class CombatStore
 
     /// <summary>The gunnery's word on what a battery's spots learnt of its ballistics, as an engagement of it ends.</summary>
     public void Carry(int slot, int battery, CarriedCorrection value) => carried[slot]![battery] = value;
+
+    /// <summary>A battery's record of ranging (docs/battle/balance.md BL1ae).</summary>
+    public RangingRecord Ranging(int slot, int battery) => ranging[slot] is { } r && battery < r.Length ? r[battery] : new(-1, 0, 0, 0);
+
+    /// <summary>The gunnery's word that a battery's engagement began.</summary>
+    public void Began(int slot, int battery, long ms) => ranging[slot]![battery] = ranging[slot]![battery] with { StartMs = ms };
+
+    /// <summary>The gunnery's word that a battery came to fire for effect: its track settled in this long, s, and it ranged
+    /// so many cycles after, each into its means.</summary>
+    public void Ranged(int slot, int battery, double openS, double cycles)
+    {
+        ref var r = ref ranging[slot]![battery];
+        int n = r.Ranged + 1;
+        r = r with { Ranged = n, OpenS = r.OpenS + (openS - r.OpenS) / n, Cycles = r.Cycles + (cycles - r.Cycles) / n };
+    }
 
     /// <summary>Whether a mount fires star shell for its ship's illuminating task (docs/battle/night.md Q5), out of its
     /// battery's salvos.</summary>
@@ -566,6 +594,12 @@ public sealed class CombatStore
                 h.Add(l.LoadedMs);
                 h.Add(l.FiredMs);
             }
+            foreach (ref readonly var r in ranging[slot].AsSpan())
+                if (r.Ranged > 0)
+                {
+                    h.Add(r.Ranged);
+                    h.Add(r.Cycles);
+                }
             foreach (ref readonly var c in carried[slot].AsSpan())
                 if (c.Known)
                 {

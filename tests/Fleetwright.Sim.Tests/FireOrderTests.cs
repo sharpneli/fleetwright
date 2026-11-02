@@ -61,6 +61,32 @@ public class FireOrderTests(ITestOutputHelper output)
         Assert.True(a.Salvos > 0 && b.Salvos > 0, "both opened fire");
     }
 
+    /// <summary>The cost of a shift (docs/battle/balance.md BL1ae): a battleship on another at 13 km, a second enemy coming
+    /// into sight at 12 or 5 km after a time. Firing for effect she holds against the one a little nearer (her fire there
+    /// would count only once she'd ranged her) and shifts to the one much nearer; still ranging, she shifts to the nearer
+    /// at once (she'd range either from the start).</summary>
+    [Theory]
+    [InlineData(12_000, 6 * 60, false)]
+    [InlineData(5_000, 6 * 60, true)]
+    [InlineData(12_000, 20, true)]
+    public void A_shift_of_target_is_worth_its_ranging(double secondM, double afterS, bool shifts)
+    {
+        var (w, _) = Make(new Placed("super_dreadnought", 0, 0, 0, 15, 0), new Placed("super_dreadnought", 90, 13_000, 0, 15, 1));
+        Run(w, afterS);
+        Assert.Equal(2, Target(w, 1, 0));
+        bool effect = w.Ships.Store.Combat.FiresForEffect(w.Ships.Store.SlotOf(1), 0);
+        Assert.Equal(afterS > 60, effect);
+        int c = w.Ships.AddClass(Fleet.Get("super_dreadnought").Class!);
+        var p = Earth.Position(Lat, Lon);
+        var f = Earth.Forward(p, 80);
+        Earth.Advance(ref p, ref f, secondM);
+        var (la, lo) = Earth.LatLon(p);
+        w.Apply(ShipSystem.Spawn(c, la, lo, 0, 15, 1));
+        Run(w, 60);
+        output.WriteLine($"firing for effect {effect}: the second at {secondM / 1000:0} km, on {Target(w, 1, 0)}");
+        Assert.Equal(shifts ? 3 : 2, Target(w, 1, 0));
+    }
+
     [Fact]
     public void Hold_fire_ceases_and_fire_at_will_opens_again()
     {
